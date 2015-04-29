@@ -2913,17 +2913,24 @@ namespace Aris
 		{
 			if (XML_Doc.LoadFile(filename) != 0)
 			{
-				throw std::logic_error((string("could not open file:")+string(filename)));
+				throw std::logic_error((string("could not open file:") + string(filename)));
 			}
 
 			const Aris::Core::ELEMENT *pModel = XML_Doc.FirstChildElement("Model");
+			if (pModel == nullptr)throw(std::logic_error("XML file must have model element"));
 
 			const Aris::Core::ELEMENT *pVar = pModel->FirstChildElement("Variable");
-			const Aris::Core::ELEMENT *pEnv = pModel->FirstChildElement("Enviroment");
+			if (pModel == nullptr)throw(std::logic_error("Model must have variable element"));
+			const Aris::Core::ELEMENT *pEnv = pModel->FirstChildElement("Environment");
+			if (pEnv == nullptr)throw(std::logic_error("Model must have environment element"));
 			const Aris::Core::ELEMENT *pPrt = pModel->FirstChildElement("Part");
+			if (pPrt == nullptr)throw(std::logic_error("Model must have part element"));
 			const Aris::Core::ELEMENT *pJnt = pModel->FirstChildElement("Joint");
+			if (pJnt == nullptr)throw(std::logic_error("Model must have joint element"));
 			const Aris::Core::ELEMENT *pMot = pModel->FirstChildElement("Motion");
+			if (pMot == nullptr)throw(std::logic_error("Model must have motion element"));
 			const Aris::Core::ELEMENT *pFce = pModel->FirstChildElement("Force");
+			if (pFce == nullptr)throw(std::logic_error("Model must have force element"));
 
 			calculator.ClearVariables();
 			for (const Aris::Core::ELEMENT *ele = pVar->FirstChildElement();
@@ -2942,7 +2949,7 @@ namespace Aris
 
 			/*读入地面*/
 			for (const Aris::Core::ELEMENT *ele = pPrt->FirstChildElement();
-				ele != 0;
+				ele != nullptr;
 				ele = ele->NextSiblingElement())
 			{
 				if (std::string(ele->Name()) == "Ground")
@@ -2960,7 +2967,7 @@ namespace Aris
 
 			/*读入其他部件*/
 			for (const Aris::Core::ELEMENT *ele = pPrt->FirstChildElement();
-				ele != 0; 
+				ele != nullptr; 
 				ele = ele->NextSiblingElement())
 			{
 				if (std::string(ele->Name()) != "Ground")
@@ -2971,7 +2978,7 @@ namespace Aris
 			}
 
 			for (const Aris::Core::ELEMENT *ele = pJnt->FirstChildElement();
-				ele != 0;
+				ele != nullptr;
 				ele = ele->NextSiblingElement())
 			{
 				AddJoint(ele->Name());
@@ -2980,7 +2987,7 @@ namespace Aris
 			}
 
 			for (const Aris::Core::ELEMENT *ele = pMot->FirstChildElement();
-				ele != 0;
+				ele != nullptr;
 				ele = ele->NextSiblingElement())
 			{
 				AddMotion(ele->Name());
