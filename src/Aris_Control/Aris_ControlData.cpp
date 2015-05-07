@@ -11,22 +11,15 @@
 #include <string.h>
 
 
-char ServoStateName[14][20]=
+char ServoStateName[7][20]=
 	{
 		"EMSTAT_NONE",
-		"EMSTAT_INVALID",
-		"EMSTAT_POWEROFF",
-		"EMSTAT_POED",
-		"EMSTAT_STOP",
+		"EMSTAT_POWEREDOFF",
 		"EMSTAT_STOPPED",
-		"EMSTAT_ENABLE",
 		"EMSTAT_ENABLED",
-		"EMSTAT_HOMING",
-		"EMSTAT_HOMED",
-		"EMSTAT_H2RING",
 		"EMSTAT_RUNNING",
-		"EMSTAT_STSTILL",
-		"EMSTAT_EMERGE",
+		"EMSTAT_HOMING",
+		"EMSTAT_FAULT",
 	};
 
 namespace Aris
@@ -44,20 +37,22 @@ CSysInitParameters::CSysInitParameters()
 //    m_motorGeneralSettings.p2pSpeed = PTP_SPEED;
 //    m_motorGeneralSettings.nsPerCyclePeriod = PERIOD_NS_CORE;
 
-    homeMode 			= HOMING_MODE;;
+    motorNum 			= ACTUAL_MOTOR_NUMBER;
+    homeMode 			= HOMING_MODE;
     homeAccel 			= HOMING_ACC;
     homeLowSpeed 		= HOMING_LO_SPEED;
     homeHighSpeed 		= HOMING_HI_SPEED;
     p2pMaxSpeed 		= PTP_MAX_SPEED;
     p2pSpeed 			= PTP_SPEED;
     nsPerCyclePeriod 	= PERIOD_NS_CORE;
-    motorNum 			= ACTUAL_MOTOR_NUMBER;
-    homeOffset			= NULL;
-	/*
-	 * Following two parameters is convenient for testing
-	 */
-	startMotorID 		= 0;
-	endMotorID 			= ACTUAL_MOTOR_NUMBER;
+    homeOffsets=NULL;
+    driverIDs=NULL;
+  /*  for(int i=0;i<ACTUAL_MOTOR_NUMBER;i++)
+    {
+    	homeOffsets[i]=HEXBOT_HOME_OFFSETS_RESOLVER[i];
+    	driverIDs[i]=i;
+    }
+*/
 };
 
 CSysInitParameters::~CSysInitParameters()

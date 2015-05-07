@@ -9,11 +9,10 @@
 #define ARIS_CONTROLDATA_H_
 #include "Aris_Core.h"
 
+#define AXIS_NUMBER 18
 
-#define MAX_AXIS_NUMBER 20
 
-
-extern char ServoStateName[14][20];
+extern char ServoStateName[7][20];
 
 class CSysBase;
 
@@ -23,31 +22,74 @@ namespace RT_CONTROL
 {
 class ACTUATION;
 
+
+
 enum EServoState
 {
-	EMSTAT_NONE		= 0,// init
-
-	EMSTAT_INVALID	= 1,
-
-	EMSTAT_POWEROFF	= 2,
-	EMSTAT_POED		= 3,
-
-	EMSTAT_STOP		= 4,// atfer
-	EMSTAT_STOPPED	= 5,
-
-	EMSTAT_ENABLE	= 6,
-	EMSTAT_ENABLED	= 7,
-
-	EMSTAT_HOMING	= 8,// a transistion state to HOMED
-	EMSTAT_HOMED	= 9,
-
-	EMSTAT_H2RING	= 10,//home to running
-	EMSTAT_RUNNING	= 11,// but not sure which mode is
-
-	EMSTAT_STSTILL	= 12,// a transistion state from HOMED to RUNNING
-
-	EMSTAT_EMERGE	= 13,
+    EMSTAT_NONE=0,
+	EMSTAT_POWEREDOFF=1,
+	EMSTAT_STOPPED=2,
+	EMSTAT_ENABLED=3,
+	EMSTAT_RUNNING=4,
+	EMSTAT_HOMING=5,
+	EMSTAT_FAULT,
+	EMSTAT_INVALID,
+	EMSTAT_EMERGE,
 };
+const int N_MOTOR_STATE=9;
+
+enum EOperationMode
+{
+    OM_NOMODE     = -1,
+    OM_PROFILEPOS = 1,
+    OM_CYCLICPOS  = 8,
+    OM_CYCLICVEL  = 9,
+    OM_CYCLICTORQ = 10,
+    OM_OTHER      = 18
+};
+
+enum EOperationModeDisplay
+{
+    OMD_NOMODE     = -1,
+    OMD_HOMING     = 6,
+    OMD_PROFILEPOS = 1,
+    OMD_CYCLICPOS  = 8,
+    OMD_CYCLICVEL  = 9,
+    OMD_CYCLICTORQ = 10,
+    OMD_OTHER      = 18
+};
+enum EServoCommand
+{
+	EMCMD_NONE=0,
+	EMCMD_POWEROFF=1,
+	EMCMD_STOP=2,
+	EMCMD_ENABLE=3,
+	EMCMD_RUNNING=4,
+	EMCMD_GOHOME=5,
+};
+
+const int N_MOTOR_CMD=6;
+
+enum EControl_Msg
+{
+	CM_PUSH_CMD_TO_MOTORS=100,
+	CM_GO_TRAJ,
+	CM_CUS_MESSAGE,
+	CM_NONE,
+};
+
+
+
+enum EMachineState
+{
+	CS_UNINITED,
+	CS_INITED,
+	CS_COMM_INITED,
+ 	CS_RTTASK_STARTED,
+ 	CS_STOPPED,
+};
+
+
 
 
 
@@ -61,6 +103,7 @@ public:
 	CSysInitParameters();
 	~CSysInitParameters();
 //	CSysInitParameters& operator=(const CSysInitParameters& other);
+	int motorNum;
     int homeMode;
     int homeAccel;
     int homeLowSpeed;
@@ -68,14 +111,10 @@ public:
     int p2pMaxSpeed;
     int p2pSpeed;
     int nsPerCyclePeriod;
-    int motorNum;
-    int* homeOffset;
-	/*
-	 * Following two parameter is convenient for testing
-	 */
-	int startMotorID;
-	int endMotorID;
+    int* homeOffsets;
+    int* driverIDs;
 };
+
 
 /*
  * CMotorData struct contain one single motor's data, used by CMachineData
@@ -99,13 +138,18 @@ class CMachineData
 {
 public:
 	int motorNum;
-	EServoState state;
+	EMachineState machinestate;
+
 	long long int time;
 	//Motor Data
 	CMachineData& operator=(const CMachineData& other);
-	CMotorData feedbackData[MAX_AXIS_NUMBER];//currentFeedback,collected after read()
-	CMotorData commandData[MAX_AXIS_NUMBER];//lastCommand,collected before write()
 
+	bool isMotorHomed[AXIS_NUMBER];
+    EServoState motorsStates[AXIS_NUMBER];
+    EServoCommand motorsCommands[AXIS_NUMBER];
+    EOperationMode motorsModes[AXIS_NUMBER];
+	CMotorData feedbackData[AXIS_NUMBER];//currentFeedback,collected after read()
+	CMotorData commandData[AXIS_NUMBER];//lastCommand,collected before write()
 	//sensor data
 
 };
@@ -124,7 +168,7 @@ public:
  */
 #define RT_MSG_BUFFER_SIZE 8192
 #define RT_MSG_HEADER_LENGTH MSG_HEADER_LENGTH
-
+#define PRINT_INFO_BUFFER_SIZE 200
 class RT_MSG
 {
 	friend class ::CSysBase;
@@ -209,7 +253,7 @@ private:
 /*
  * Function pointer with peculiar parameters
  */
-typedef int (*FuncPtrWork)(Aris::RT_CONTROL::CMachineData&);
+typedef int (*FuncPtrWork)(Aris::RT_CONTROL::CMachineData&, Aris::RT_CONTROL::RT_MSG&);
 typedef int (*FuncPtrInit)(Aris::RT_CONTROL::CSysInitParameters&);
 typedef int (*FuncPtrState)(void*);
 typedef int (*FuncPtrCustom)(Aris::Core::MSG&);

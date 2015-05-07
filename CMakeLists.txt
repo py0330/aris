@@ -98,12 +98,12 @@ target_include_directories(Aris_Plan PRIVATE "src/Aris_DynKer" "src/Aris_ExpCal"
 
 # Aris_Control project only in linux
 if(UNIX)
-set(SOURCE Aris_Control Aris_ControlData AnalogInputs AnalogOutputs EthercatCoupler ElmoMotorData ElmoMotorDriver DeviceMaster RealtimeCore SysBase SysPID)
-PREPEND_CPP(FULL_SRC src/Aris_Control ${SOURCE})
-PREPEND_H(FULL_H src/Aris_Control ${SOURCE})
-add_library(Aris_Control STATIC ${FULL_SRC} ${FULL_H})
-target_include_directories(Aris_Control PRIVATE "src/Aris_Core" ${ARIS_COMMOM_HEADERS} ${XENOMAI_INCLUDE_DIRECTORIES} ${ETHERLAB_INCLUDE_DIRECTORIES})
-set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
+set(SOURCE_FILES Aris_Control.cpp Aris_ControlData.cpp Aris_Sensor.cpp Aris_Device.cpp Aris_SysBase.cpp )
+PREPEND(FULL_SRC src/Aris_Control ${SOURCE_FILES})
+add_library(Aris_Control STATIC ${FULL_SRC})
+set(HEADER_FILES Aris_Control.h Aris_ControlData.h)
+PREPEND(FULL_SRC ${PROJECT_SOURCE_DIR}/src/Aris_Control ${HEADER_FILES})
+set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_SRC})
 endif(UNIX)
 
 ################################### build demos for aris_Core ####################################
