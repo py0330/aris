@@ -1,24 +1,26 @@
 #include "Aris_Control.h"
-#include "SysBase.h"
+#include "Aris_SysBase.h"
 using namespace Aris::RT_CONTROL;
 
 CSysBase shadow;
 
 CSysBase* Aris::RT_CONTROL::ACTUATION::sysBase;
 
-Aris::Core::MSG Aris::RT_CONTROL::ACTUATION::m_recvData;
+//Aris::Core::MSG Aris::RT_CONTROL::ACTUATION::m_recvData;
 
-Aris::Core::THREAD Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher;
+//Aris::Core::THREAD Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher;
 
-Aris::RT_CONTROL::RT_MSG* Aris::RT_CONTROL::ACTUATION::DataRecv;
-Aris::RT_CONTROL::RT_MSG* Aris::RT_CONTROL::ACTUATION::DataSend;
+//Aris::RT_CONTROL::RT_MSG* Aris::RT_CONTROL::ACTUATION::DataRecv;
+//Aris::RT_CONTROL::RT_MSG* Aris::RT_CONTROL::ACTUATION::DataSend;
+//Aris::RT_CONTROL::CMachineData  Aris::RT_CONTROL::ACTUATION::MachineData;
 
 Aris::RT_CONTROL::ACTUATION::ACTUATION()
 {
-	sysBase=&shadow;
-	DataRecv=&shadow.m_rtDataRecv;
-	DataSend=&shadow.m_rtDataSend;
-
+	rt_printf("actuation constructed\n");
+   	sysBase=&shadow;
+  	//DataRecv=&shadow.m_rtDataRecv;
+ 	//DataSend=&shadow.m_rtDataSend;
+ 	//MachineData=&shadow.m_machineDataCore;
 };
 
 Aris::RT_CONTROL::ACTUATION::~ACTUATION()
@@ -32,7 +34,7 @@ int Aris::RT_CONTROL::ACTUATION::SetSysInitializer(FuncPtrInit p_Initializer)
 
 int  Aris::RT_CONTROL::ACTUATION::SysInit(CSysInitParameters p_Param)
 {
-	Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.SetFunction(NRT_Watcher);
+	//Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.SetFunction(NRT_Watcher);
 	return sysBase->SysInit(p_Param);
 };
 
@@ -40,13 +42,13 @@ int Aris::RT_CONTROL::ACTUATION::SysStart()
 {
 	int ret;
 	ret=sysBase->SysStart();
-	Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.Start(0);
+	//Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.Start(0);
 	return ret;
 };
 
 int Aris::RT_CONTROL::ACTUATION::SysStop()
 {
-	Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.Terminate();
+	//Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.Terminate();
 	return sysBase->SysStop();
 };
 
@@ -73,6 +75,7 @@ bool Aris::RT_CONTROL::ACTUATION::IsSysStopped()
 	return sysBase->IsSysStopped();
 };
 
+/*
 int Aris::RT_CONTROL::ACTUATION::SetModeP2P()
 {
 	return sysBase->SetModeP2P();
@@ -89,35 +92,9 @@ int Aris::RT_CONTROL::ACTUATION::SetModeCycVel()
 int Aris::RT_CONTROL::ACTUATION::SetModeCycTor()
 {
 	return sysBase->SetModeCycTor();
-};
+};*/
 
-int Aris::RT_CONTROL::ACTUATION::NRT_PrePostCustomMessage()
-{
-	return sysBase->NRT_PrePostCustomMessage();
-};
-int Aris::RT_CONTROL::ACTUATION::RT_PrePostCustomMessage()
-{
-	return sysBase->RT_PrePostCustomMessage();
-};
-
-int Aris::RT_CONTROL::ACTUATION::NRT_GetMessageRaw(void* p_MsgBuffer,const unsigned int p_MsgBufSize)
-{
-	return sysBase->NRT_GetMessageRaw(p_MsgBuffer,p_MsgBufSize);
-};
-int Aris::RT_CONTROL::ACTUATION::NRT_PostMessageRaw(const void* p_MsgPointer, const int p_MsgLength)
-{
-	return sysBase->NRT_PostMessageRaw(p_MsgPointer,p_MsgLength);
-};
-int Aris::RT_CONTROL::ACTUATION::RT_PostMessageRaw(const void* p_MsgPointer,const int p_MsgLength)
-{
-	return sysBase->RT_PostMessageRaw(p_MsgPointer,p_MsgLength);
-};
-int Aris::RT_CONTROL::ACTUATION::RT_GetMessageRaw(void* p_MsgBuffer,const int p_MsgBufSize)
-{
-	return sysBase->RT_GetMessageRaw(p_MsgBuffer,p_MsgBufSize);
-};
-
-
+/*
 int Aris::RT_CONTROL::ACTUATION::NRT_MCPowerOff()
 {
 	CSysBase::EInternCmd cmd = sysBase->EInternCmd::EIC_POWEROFF;
@@ -131,6 +108,7 @@ int Aris::RT_CONTROL::ACTUATION::NRT_MCPowerOff()
 
 	//return sysBase->NRT_MCPowerOff();
 };
+
 int Aris::RT_CONTROL::ACTUATION::NRT_MCHome()
 {
 	CSysBase::EInternCmd cmd = sysBase->EInternCmd::EIC_HOME;
@@ -180,15 +158,21 @@ int Aris::RT_CONTROL::ACTUATION::NRT_MCStop()
 	//return sysBase->NRT_MCStop();
 };
 
-Aris::RT_CONTROL::EServoState Aris::RT_CONTROL::ACTUATION::NRT_MCMachineState()
+
+*/
+
+
+
+/*Aris::RT_CONTROL::EServoState Aris::RT_CONTROL::ACTUATION::NRT_MCMachineState()
 {
 	return sysBase->NRT_MCMachineState();
-};
+};*/
 
+/*
 bool Aris::RT_CONTROL::ACTUATION::RT_IsCusMsg()
 {
 	return sysBase->RT_IsCusMsg();
-};
+};*/
 
 //bool Aris::Control::CONTROL_SYSTEM::NRT_IsCusMsg()
 //{
@@ -331,7 +315,7 @@ int Aris::RT_CONTROL::ACTUATION::SetOnDataUpdateHandler(FuncPtrWork p_DataUpdate
 	return sysBase->SetOnDataUpdateHandler(p_DataUpdater);
 };
 
-
+/*
 int Aris::RT_CONTROL::ACTUATION::SetOnPowerOff(FuncPtrState p_Handler)
 {
 	return sysBase->SetOnPOWEROFF(p_Handler);
@@ -390,28 +374,11 @@ int Aris::RT_CONTROL::ACTUATION::SetOnCustomMessage(FuncPtrCustom p_Handler)
 {
 	return sysBase->SetOnCustomMessage(p_Handler);
 };
-
-
-
-
-
-
+*/
 	//generate a CONN_DATA,then send buffer
-int Aris::RT_CONTROL::ACTUATION::RT_SendData(const void* p_ptrData, const int p_dataLength) //TBD!!!!!!!!!!!!!!!!!!!!!
-{
-//	*sysBase->m_rtDataSend.m_ptrDataLength=p_dataLength;
-	sysBase->m_rtDataSend.SetLength(p_dataLength);
-//	*sysBase->m_rtDataSend.m_ptrDataType=(int)CSysBase::EInternDataType::EMIT_STA;
-	sysBase->m_rtDataSend.SetType(CSysBase::EInternDataType::EIMT_CUS);
-	memcpy(sysBase->m_rtDataSend.m_ptrData+RT_MSG_HEADER_LENGTH,p_ptrData,p_dataLength);
-	sysBase->RT_SendDataRaw(sysBase->m_rtDataSend.m_ptrData,RT_MSG_HEADER_LENGTH);
-	if(sysBase->m_rtDataSend.GetLength()>0)
-	{
-		sysBase->RT_SendDataRaw(sysBase->m_rtDataSend.GetDataAddress(),sysBase->m_rtDataSend.GetLength());
-	}
 
-	return 0;
-};
+
+/*
 
 int Aris::RT_CONTROL::ACTUATION::RT_SendData(Aris::RT_CONTROL::RT_MSG &p_data)
 {
@@ -427,13 +394,6 @@ int Aris::RT_CONTROL::ACTUATION::RT_SendData(Aris::RT_CONTROL::RT_MSG &p_data)
 	return ret;
 };
 
-	/*
-	 * just copy from buffer, receiving happens in RT_UpdateData()
-	 */
-	//static int RT_RecvData(void* p_ptrData,const int p_dataLength);
-
-	//only rt side need this function
-	//
 int Aris::RT_CONTROL::ACTUATION::RT_ReadData(void* p_ptrData,const int p_dataLength) //DONE
 {
 	//copy data from buffer
@@ -443,6 +403,7 @@ int Aris::RT_CONTROL::ACTUATION::RT_ReadData(void* p_ptrData,const int p_dataLen
 
 int Aris::RT_CONTROL::ACTUATION::NRT_SendData(Aris::Core::MSG &p_data)//DONE
 {
+	//Aris::RT_CONTROL::RT_MSG msg(p_data);
 	int ret;
 	//printf("sizeof %d\n",sizeof(p_data));
 	p_data.SetType((int)sysBase->EInternDataType::EIMT_CUS);
@@ -459,7 +420,6 @@ int Aris::RT_CONTROL::ACTUATION::NRT_SendCommand(Aris::Core::MSG &p_data)
 	ret=sysBase->NRT_SendDataRaw(p_data._pData,p_data.GetLength()+MSG_HEADER_LENGTH);
 	printf("NRT_SendCommand:%d\n",ret);
 	return 0;
-
 };
 
 // NRT_RecvData will not be used by user
@@ -472,8 +432,69 @@ int Aris::RT_CONTROL::ACTUATION::NRT_RecvData(Aris::Core::MSG &p_data)// TBD!!!!
 	sysBase->NRT_RecvDataRaw(p_data.GetDataAddress(),p_data.GetLength());
 	return 0;
 };
+*/
 
 
+/*int Aris::RT_CONTROL::ACTUATION::NRT_PostCommandMsg(Aris::Core::MSG &p_data)
+{
+	int ret;
+  	ret=sysBase->NRT_SendDataRaw(p_data._pData,p_data.GetLength()+MSG_HEADER_LENGTH);
+ 	return 0;
+}//ok*/
+
+int Aris::RT_CONTROL::ACTUATION::NRT_PostMsg(Aris::Core::MSG &p_data)
+{
+	int ret;
+	//printf("sizeof %d\n",sizeof(p_data));
+	//p_data.SetMsgID((int)Aris::RT_CONTROL::CM_CUS_MESSAGE);
+	ret=sysBase->NRT_SendDataRaw(p_data._pData,p_data.GetLength()+MSG_HEADER_LENGTH);
+	//printf("NRT_SendData is me :%d\n",ret);
+	return 0;
+}//ok
+
+/*int Aris::RT_CONTROL::ACTUATION::NRT_GetStateMsg(Aris::Core::MSG p_msg)
+{
+
+    printf("nrt_getstatemsg start\n");
+	char Head[MSG_HEADER_LENGTH];
+	sysBase->NRT_RecvDataRaw(Head,MSG_HEADER_LENGTH);
+
+	p_msg.SetLength((unsigned int)Head[0]);
+	printf("length get in function: %d\n",Head[0]);
+	p_msg.SetMsgID((long long int)Head[4]);
+	printf("ID get in function: %d\n",Head[4]);
+
+ 	return sysBase->NRT_RecvDataRaw(p_msg.GetDataAddress(),p_msg.GetLength());
+}*/
+ void Aris::RT_CONTROL::ACTUATION::GetMachineState(Aris::RT_CONTROL::EMachineState p_state )
+{
+	p_state=sysBase->m_machineDataCore.machinestate;
+
+}
+
+
+
+/*Aris::RT_CONTROL::RT_MSG Aris::RT_CONTROL::ACTUATION::RT_GetCommandMsg()
+{
+	return sysBase->m_rtDataRecv;
+}*/
+
+
+//not used by users
+/*
+int Aris::RT_CONTROL::ACTUATION::RT_PostStateMsg()
+{
+	return sysBase->RT_PostStateMsg();
+
+}
+*/
+int Aris::RT_CONTROL::ACTUATION::RT_PostMsg(Aris::RT_CONTROL::RT_MSG &p_data)
+{
+	return sysBase->RT_PostMsg(p_data);
+
+}
+
+/*
 void* Aris::RT_CONTROL::ACTUATION::NRT_Watcher(void*)
 {
 	printf("NRT_Watcher\n");
@@ -599,8 +620,12 @@ void* Aris::RT_CONTROL::ACTUATION::NRT_Watcher(void*)
 
 	}
 };
+*/
 
-
+int Aris::RT_CONTROL::ACTUATION::Load_XML_PrintMessage()
+{
+	return sysBase->Load_XML_PrintMessages();
+}
 
 
 
