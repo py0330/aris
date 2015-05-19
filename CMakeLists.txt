@@ -124,11 +124,6 @@ endif(UNIX)
 set(MAKE_DEMO " ")
 if(MAKE_DEMO)
 
-
-
-
-
-
 # Set link labraries
 if(WIN32)
 set(SYSTEM_LINK_LIBS ws2_32)
