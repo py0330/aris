@@ -64,13 +64,29 @@ set(LAPACK_INCLUDE_DIRECTORIES "C:/include/Lapack")
 endif(WIN32)
 set(ARIS_COMMOM_HEADERS ${PROJECT_BINARY_DIR}/common_headers)
 
+include_directories("src/Aris_Core")
+include_directories("src/Aris_ExpCal")
+include_directories("src/Aris_DynKer")
+include_directories("src/Aris_Plan")
+include_directories("src/Aris_Control")
+include_directories(${ARIS_COMMOM_HEADERS})
+include_directories(${ETHERLAB_INCLUDE_DIRECTORIES})
+include_directories(${XENOMAI_INCLUDE_DIRECTORIES})
+include_directories(${LAPACK_INCLUDE_DIRECTORIES})
+
+if(UNIX)
+link_directories(/usr/lib/Lapack)
+endif(UNIX)
+if(WIN32)
+link_directories(C:/lib/Lapack)
+endif(WIN32)
+
 # Aris_Core project
 set(SOURCE Aris_Socket Aris_Core Aris_Thread tinyxml2 Aris_Message Aris_XML)
 PREPEND_CPP(FULL_SRC src/Aris_Core ${SOURCE})
 PREPEND_H(FULL_H src/Aris_Core ${SOURCE})
 add_library(Aris_Core STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
-target_include_directories(Aris_Core PRIVATE ${ARIS_COMMOM_HEADERS})
 
 # Aris_ExpCal project
 set(SOURCE Aris_ExpCal)
@@ -78,7 +94,6 @@ PREPEND_CPP(FULL_SRC src/Aris_ExpCal ${SOURCE})
 PREPEND_H(FULL_H src/Aris_ExpCal ${SOURCE})
 add_library(Aris_ExpCal STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
-target_include_directories(Aris_ExpCal PRIVATE "src/Aris_Core" ${ARIS_COMMOM_HEADERS} ${LAPACK_INCLUDE_DIRECTORIES})
 
 # Aris_DynKer project
 set(SOURCE Aris_DynKer)
@@ -86,7 +101,6 @@ PREPEND_CPP(FULL_SRC src/Aris_DynKer ${SOURCE})
 PREPEND_H(FULL_H src/Aris_DynKer ${SOURCE})
 add_library(Aris_DynKer STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
-target_include_directories(Aris_DynKer PRIVATE "src/Aris_ExpCal" "src/Aris_Core" ${ARIS_COMMOM_HEADERS} ${LAPACK_INCLUDE_DIRECTORIES})
 
 # Aris_Plan project
 set(SOURCE Aris_Plan)
@@ -94,7 +108,6 @@ PREPEND_CPP(FULL_SRC src/Aris_Plan ${SOURCE})
 PREPEND_H(FULL_H src/Aris_Plan ${SOURCE})
 add_library(Aris_Plan STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
-target_include_directories(Aris_Plan PRIVATE "src/Aris_DynKer" "src/Aris_ExpCal" "src/Aris_Core" ${ARIS_COMMOM_HEADERS} ${LAPACK_INCLUDE_DIRECTORIES})
 
 # Aris_Control project only in linux
 if(UNIX)
@@ -104,7 +117,6 @@ add_library(Aris_Control STATIC ${FULL_SRC})
 set(HEADER_FILES Aris_Control.h Aris_ControlData.h)
 PREPEND(FULL_SRC ${PROJECT_SOURCE_DIR}/src/Aris_Control ${HEADER_FILES})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_SRC})
-target_include_directories(Aris_Control PRIVATE ${ARIS_COMMOM_HEADERS} ${ETHERLAB_INCLUDE_DIRECTORIES} ${XENOMAI_INCLUDE_DIRECTORIES})
 endif(UNIX)
 
 ################################### build demos for aris_Core ####################################
@@ -112,18 +124,9 @@ endif(UNIX)
 set(MAKE_DEMO " ")
 if(MAKE_DEMO)
 
-if(UNIX)
-include_directories("/usr/include/Lapack")
-include_directories("/usr/include/Aris")
-link_directories(/usr/lib/Lapack)
-link_directories(/usr/lib/Aris)
-endif(UNIX)
-if(WIN32)
-include_directories("C:/include/Lapack")
-include_directories("C:/include/Aris")
-link_directories(C:/lib/Lapack)
-link_directories(C:/lib/Aris)
-endif(WIN32)
+
+
+
 
 
 # Set link labraries
