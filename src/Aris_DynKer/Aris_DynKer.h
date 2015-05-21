@@ -28,7 +28,8 @@ namespace Aris
 		void s_dgeev(int n, double* a, int lda, double* wr, double* wi);
 		
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
-		void dlmwrite(const char *FileName,const double *pMatrix,const unsigned int m,const unsigned int n);
+		void dlmwrite(const char *FileName, const double *pMatrix, const unsigned int m, const unsigned int n);
+		void dlmread(const char *FileName, double *pMatrix);
 		
 		int s_sgn(double x);
 

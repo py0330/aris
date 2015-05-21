@@ -82,6 +82,23 @@ namespace Aris
 				file << endl;
 			}
 		}
+		void dlmread(const char *FileName, double *pMatrix)
+		{
+			ifstream file;
+
+			file.open(FileName);
+
+			if (!file)
+				throw std::logic_error("file not exist");
+
+
+			int i = 0;
+			while (!file.eof())
+			{        
+				file >> *(pMatrix + i);
+				++i;
+			}
+		}
 		void dsp(const double *p, const int m, const int n, const int begin_row, const int begin_col, int ld)
 		{
 			if (ld < 1)
