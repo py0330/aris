@@ -57,10 +57,10 @@ endif(UNIX)
 if(UNIX)
 set(XENOMAI_INCLUDE_DIRECTORIES "/usr/xenomai/include")
 set(ETHERLAB_INCLUDE_DIRECTORIES "/opt/etherlab/include")
-set(LAPACK_INCLUDE_DIRECTORIES "/usr/include/Lapack")
+set(LAPACK_INCLUDE_DIRECTORIES "/usr/lapack/include")
 endif(UNIX)
 if(WIN32)
-set(LAPACK_INCLUDE_DIRECTORIES "C:/include/Lapack")
+set(LAPACK_INCLUDE_DIRECTORIES "C:/lapack/include/")
 endif(WIN32)
 set(ARIS_COMMOM_HEADERS ${PROJECT_BINARY_DIR}/common_headers)
 
@@ -75,10 +75,10 @@ include_directories(${XENOMAI_INCLUDE_DIRECTORIES})
 include_directories(${LAPACK_INCLUDE_DIRECTORIES})
 
 if(UNIX)
-link_directories(/usr/lib/Lapack)
+link_directories(/usr/lapack/lib)
 endif(UNIX)
 if(WIN32)
-link_directories(C:/lib/Lapack)
+link_directories(C:/lapack/lib)
 endif(WIN32)
 
 # Aris_Core project
@@ -175,23 +175,23 @@ endif(MAKE_DEMO)
 
 ############################################ install aris ############################################
 if(UNIX)
-	set(CMAKE_INSTALL_PREFIX "/usr")
-	install(TARGETS Aris_Control ARCHIVE DESTINATION lib/Aris)
+	set(CMAKE_INSTALL_PREFIX "/usr/Aris")
+	install(TARGETS Aris_Control ARCHIVE DESTINATION lib)
 endif(UNIX)
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/")
+	set(CMAKE_INSTALL_PREFIX "C:/Aris")
 endif(WIN32)
 
 
 
-install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan ARCHIVE DESTINATION lib/Aris)
-install(FILES ${INCLUDE_HEADER_FILES} DESTINATION include/Aris)
+install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan ARCHIVE DESTINATION lib)
+install(FILES ${INCLUDE_HEADER_FILES} DESTINATION include)
 
 
 
 ############################################ uninstall aris ############################################
 if(UNIX)
-	add_custom_target(uninstall cat install_manifest.txt | sudo xargs rm)
+	add_custom_target(uninstall rm -r /usr/Aris)
 endif(UNIX)
 
 
