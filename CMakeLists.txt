@@ -189,6 +189,11 @@ install(FILES ${INCLUDE_HEADER_FILES} DESTINATION include/Aris)
 
 
 
+############################################ uninstall aris ############################################
+if(UNIX)
+	add_custom_target(uninstall cat install_manifest.txt | sudo xargs rm)
+endif(UNIX)
+
 
 
 
