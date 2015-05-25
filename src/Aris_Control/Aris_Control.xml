@@ -1,0 +1,36 @@
+<Aris>
+<SysInit>
+<SysInitBegin>SYSTEM INITIALIZING...</SysInitBegin>
+<InitRTMessage>RT Message Initiated.</InitRTMessage>
+<InitEthercat>Device(Master/Slaves/IMU) Initiated.</InitEthercat>
+<InitLog>Log File Initiated.</InitLog>
+<InitLogHeap>Log Heap Created, Log Data Allocated.</InitLogHeap>
+<InitRTTask>RT Task Created.</InitRTTask>
+<SysInitFinish>SYSTEM INITIALIZED.</SysInitFinish>
+</SysInit>
+
+<SysInitCommunication>
+<SysInitCommunicationBegin>SYSTEM COMMUNICATION INITIALIZING...</SysInitCommunicationBegin>
+<Init_XDDP_RT>XDDP in RT Initialized.</Init_XDDP_RT>
+<Init_XDDP_Data_RT>XDDP Data in RT Initialized.</Init_XDDP_Data_RT>
+<Init_XDDP_NRT>XDDP in NRT Initialized.</Init_XDDP_NRT>
+<Init_XDDP_Data_NRT>XDDP Data in NRT Initialized.</Init_XDDP_Data_NRT>
+<SysInitCommunicationFinish>SYSTEM COMMUNICATION INITIALIZED.</SysInitCommunicationFinish>
+</SysInitCommunication>
+
+<SysTask>
+<SysStart>TASK STARTED...</SysStart>
+<SysStop>TASK WILL STOP.</SysStop>
+</SysTask>
+
+
+<DriverState>
+<PoweredOff>Driver State Changes to POWEREDOFF.</PoweredOff>
+<Stop>Driver State Changes to STOP.</Stop>
+<Enabled>Driver State Changes to ENABLED.</Enabled>
+<Homing>Driver State Changes to HOMING.</Homing>
+<Running>Driver State Changes to RUNNING.</Running>
+<Fault>Driver has Fault!!</Fault>
+</DriverState>
+
+</Aris>

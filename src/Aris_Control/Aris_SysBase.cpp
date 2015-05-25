@@ -867,8 +867,12 @@ int CSysBase::RT_PostMsg(Aris::RT_CONTROL::RT_MSG &p_data)
 int CSysBase::Load_XML_PrintMessages()
 {
     tinyxml2::XMLDocument doc;
-    tinyxml2::XMLError err=doc.LoadFile("./PrintInfo.xml");
-    printf("xml err %d\n",err);
+    tinyxml2::XMLError err=doc.LoadFile("/usr/Aris/resource/Aris_Control.xml");
+    if(err!=0)
+    	printf("XML Loading err %d\n, check if file Aris_Control.xml installed in directory /usr/Aris/resource/ ",err);
+    else
+    	printf("XML Loading ...\n");
+
     if(err==0)
     {
 
