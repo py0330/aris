@@ -615,6 +615,20 @@ namespace Aris
 					fun(i.get());
 				}
 			}
+			/*void ForEachMotion(std::function<void(MOTION*)> fun)
+			{
+				for (auto&i : _motions)
+				{
+					fun(i.get());
+				}
+			}*/
+			void ForEachMotion(std::function<void(MOTION*)> fun) const
+			{
+				for (auto&i : _motions)
+				{
+					fun(i.get());
+				}
+			}
 
 		public:
 			void DynPre();

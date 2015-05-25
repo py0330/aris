@@ -39,6 +39,15 @@ namespace Aris
 			MATRIX(const std::initializer_list<double> &Data);
 			MATRIX(const std::initializer_list<std::vector<MATRIX> > &matrices);
 
+			unsigned RowNum()
+			{
+				return m;
+			}
+			unsigned ColNum()
+			{
+				return n;
+			}
+
 			void Transpose(){ isRowMajor = !isRowMajor; int loc = m; m = n; n = loc; };
 			void Resize(unsigned int m, unsigned int n);
 			unsigned int Length() const { return m*n; };

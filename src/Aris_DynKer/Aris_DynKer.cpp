@@ -2892,6 +2892,8 @@ namespace Aris
 
 			s_dgemm(clb_dim_m, 1, dim, 1, &A(beginRow,0), dim, f, 1, 1, _clb_b.Data(), 1);
 
+			//dsp(f, dim, 1);
+
 
 			/*以下添加驱动摩擦系数*/
 			row = 0;
