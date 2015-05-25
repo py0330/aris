@@ -186,6 +186,7 @@ endif(WIN32)
 
 install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} DESTINATION include)
+install(DIRECTORY src/Aris_Control/resource/ DESTINATION resource/Aris_Control)
 
 
 
