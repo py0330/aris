@@ -608,21 +608,14 @@ namespace Aris
 			unsigned GetForceNum() const{ return _forces.size(); };
 			unsigned GetMarkerNum() const{ return _markers.size(); };
 
-			void ForEachPart(std::function<void(const PART*)> fun) const
+			void ForEachPart(std::function<void(PART*)> fun)
 			{
 				for (auto&i : _parts)
 				{
 					fun(i.get());
 				}
 			}
-			/*void ForEachMotion(std::function<void(MOTION*)> fun)
-			{
-				for (auto&i : _motions)
-				{
-					fun(i.get());
-				}
-			}*/
-			void ForEachMotion(std::function<void(MOTION*)> fun) const
+			void ForEachMotion(std::function<void(MOTION*)> fun)
 			{
 				for (auto&i : _motions)
 				{
