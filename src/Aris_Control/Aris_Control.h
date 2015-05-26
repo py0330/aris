@@ -117,7 +117,6 @@ public:
 	 */
 	static bool IsSysStopped();
 
-
 	/**
 	 * \brief Post message from non-Real-time to Real-time
 	 *

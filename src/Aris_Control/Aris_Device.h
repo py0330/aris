@@ -65,7 +65,7 @@ public:
 
  void operator=(const CElmoMotorData &other);
 
- CElmoMotorData(short int mode=8,
+ CElmoMotorData(short int mode=DEFAULT_OPERATION_MODE,
      int position=0,
      int velocity=0,
      short int current=0,
@@ -111,6 +111,7 @@ struct SMotorGeneralSettings {
  int p2pMaxSpeed;
  int p2pSpeed;
  int nsPerCyclePeriod;
+ int homeTorqueLimit;
 };
 
 
@@ -208,8 +209,7 @@ public:
     // Set the home offset of the motor
    // void SetOffset(int offset);
 
-    void SetMotorCommand(Aris::RT_CONTROL::EServoCommand p_command );
-    void SetMotorMode(Aris::RT_CONTROL::EOperationMode p_mode);
+
 
     // function to initialize the driver, mush be called after ecrt_request_master(0) which is defined in the EthercatMaster object
     
@@ -232,8 +232,12 @@ public:
     // Get the value of the driver's digital input
     int GetDigitalInput() const;
 
+
+    void SetMotorCommand(Aris::RT_CONTROL::EServoCommand p_command );
+    void SetMotorMode(Aris::RT_CONTROL::EOperationMode p_mode);
+
     Aris::RT_CONTROL::EServoState GetMotorState() const;
-    Aris::RT_CONTROL::EOperationMode GetMotorMode() const;
+    Aris::RT_CONTROL::EOperationModeDisplay GetMotorMode() const;
 
     // Update the motor state
     void UpdateMotorState();
@@ -269,8 +273,11 @@ private:
     Aris::RT_CONTROL::EServoState _currentState;
     Aris::RT_CONTROL::EServoCommand _currentCommand;
     Aris::RT_CONTROL::EServoState m_nextState;
+
+//display
     EMOTOR_SUB_STATE m_subState;
-    Aris::RT_CONTROL::EOperationMode m_motorMode;
+    Aris::RT_CONTROL::EOperationModeDisplay m_motorMode;
+   // Aris::RT_CONTROL::EOperationModeDisplay m_motor
 
     int WriteData(const CElmoMotorData& data);//cyclic tasks
     int ReadData(CElmoMotorData *p_data)  const;//cyclic tasks

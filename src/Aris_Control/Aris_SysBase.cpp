@@ -104,7 +104,7 @@ RT_HEAP CSysBase::m_logHeap;
 
 CSysBase::CLogData CSysBase::m_logDataRC;
 Aris::RT_CONTROL::CMachineData CSysBase::m_machineDataCore;
-Aris::RT_CONTROL::CMachineData CSysBase::m_machineData;
+//Aris::RT_CONTROL::CMachineData CSysBase::m_machineData;
 bool CSysBase::m_isLog;
 long long int CSysBase::m_logCount;
 void* CSysBase::m_logDataVoid;
@@ -587,6 +587,7 @@ void CSysBase::PushDatatoMotors()
 	  		{
 	  	        m_deviceMaster.m_motors[i].SetMotorCommand(m_machineDataCore.motorsCommands[i]);
 	  	        m_deviceMaster.m_motors[i].SetMotorMode(m_machineDataCore.motorsModes[i]);
+	  	        //rt_printf("mode of driver from command: %d\n",m_machineDataCore.motorsModes[0]);
 	  		}
 
       //  rt_printf("Pushdata:command data machine pos:%d\n",m_machineDataCore.commandData[0].Position);
@@ -601,6 +602,7 @@ void CSysBase::UploadDatafromMotors()
 	for(int i=0;i<m_deviceMaster.m_motorNum;i++)
 	{
         m_machineDataCore.motorsStates[i]=m_deviceMaster.m_motors[i].GetMotorState();
+        m_machineDataCore.motorsModesDisplay[i]=m_deviceMaster.m_motors[i].GetMotorMode();
         if(m_deviceMaster.m_motors[i].CheckMotorHomed())
         	m_machineDataCore.isMotorHomed[i]=true;
 	}
@@ -650,9 +652,11 @@ void CSysBase::RealtimeCore(void* arg)
         timeNow = rt_timer_read();
 
         // receive ethercat**************************************************************###
-        m_deviceMaster.Read();
+        m_deviceMaster.Read();//motors and sensors get data
 
-        UploadDatafromMotors();
+        UploadDatafromMotors();//motor data to machine data
+       // rt_printf("motor 0 mode:%d\n",m_deviceMaster.m_motors[0].GetMotorMode());
+
         ret=RT_RecvDataRaw(CSysBase::m_rtDataRecvBuffer,RT_MSG_BUFFER_SIZE);
 
         if(ret>=0)
@@ -671,6 +675,7 @@ void CSysBase::RealtimeCore(void* arg)
         	trajectoryGenerator(m_machineDataCore, m_rtDataRecv);
 
         PushDatatoMotors();
+        //machine data to motor data
 
 
 
@@ -688,7 +693,8 @@ void CSysBase::RealtimeCore(void* arg)
 //        							);
 
         m_deviceMaster.DCSyncTime(rt_timer_read());
-        m_deviceMaster.Write();
+        m_deviceMaster.Write();//motor data write and state machine/mode transition
+
         timePrevious = timeNow;
 
         m_logDataRC.time=m_cycleCount;
@@ -872,7 +878,6 @@ int CSysBase::Load_XML_PrintMessages()
     	printf("XML Loading err %d\n, check if file Aris_Control.xml installed in directory /usr/Aris/resource/Aris_Control ",err);
     else
     	printf("XML Loading ...\n");
-
     if(err==0)
     {
 
@@ -1076,9 +1081,9 @@ void *CSysBase::dataServer(void* arg)
 		/*
 		 * Copy data to shared variable with mutex
 		 */
-		pthread_mutex_lock(&m_dataMutex);
-		memcpy(&m_machineData,&m_logMachineDataBuffer,sizeof(m_logMachineDataBuffer));
-		pthread_mutex_unlock(&m_dataMutex);
+	//	pthread_mutex_lock(&m_dataMutex);
+	//	memcpy(&m_machineData,&m_logMachineDataBuffer,sizeof(m_logMachineDataBuffer));
+	//	pthread_mutex_unlock(&m_dataMutex);
 
 		//Call Updater
 	//	if(CSysBase::dataUpdater!=NULL)
