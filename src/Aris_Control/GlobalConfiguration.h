@@ -65,7 +65,9 @@ static const int HEXBOT_HOME_OFFSETS_ENCODER[18]={
 #define ECAT_START_POS_EL3104  (ECAT_POS_COUPLER + 1)
 #define ECAT_START_POS_EL4002  (ECAT_POS_COUPLER + 3)
 #define ECAT_START_POS_ELMODRIVE  0
+// Motor Default Operation Mode
 
+#define DEFAULT_OPERATION_MODE 9
 
 /////////////////////////////////////////////////////////////
 
@@ -102,6 +104,7 @@ static const int HEXBOT_HOME_OFFSETS_ENCODER[18]={
 #define HOMING_ACC        (10*HOMING_HI_SPEED)
 #define PTP_SPEED         1792
 #define PTP_MAX_SPEED     2560
+#define HOMING_TORQUE_LIMIT 1000
 
 //MOTOR SPEED LIMIT
 #define MAX_MOTOR_SPEED		4960.0/60.0

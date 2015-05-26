@@ -45,6 +45,7 @@ CSysInitParameters::CSysInitParameters()
     p2pMaxSpeed 		= PTP_MAX_SPEED;
     p2pSpeed 			= PTP_SPEED;
     nsPerCyclePeriod 	= PERIOD_NS_CORE;
+    homeTorqueLimit     = HOMING_TORQUE_LIMIT;
     homeOffsets=NULL;
     driverIDs=NULL;
   /*  for(int i=0;i<ACTUAL_MOTOR_NUMBER;i++)

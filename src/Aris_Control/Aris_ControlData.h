@@ -40,24 +40,25 @@ const int N_MOTOR_STATE=9;
 
 enum EOperationMode
 {
-    OM_NOMODE     = -1,
-    OM_PROFILEPOS = 1,
+    OM_INVALID     = -1,
+    //OM_PROFILEPOS = 1,
     OM_CYCLICPOS  = 8,
     OM_CYCLICVEL  = 9,
     OM_CYCLICTORQ = 10,
-    OM_OTHER      = 18
+  //  OM_OTHER      = 18
 };
 
 enum EOperationModeDisplay
 {
-    OMD_NOMODE     = -1,
-    OMD_HOMING     = 6,
+    OMD_INVALID     = -1,
     OMD_PROFILEPOS = 1,
+	OMD_HOMING =6,
     OMD_CYCLICPOS  = 8,
     OMD_CYCLICVEL  = 9,
     OMD_CYCLICTORQ = 10,
     OMD_OTHER      = 18
 };
+
 enum EServoCommand
 {
 	EMCMD_NONE=0,
@@ -111,6 +112,7 @@ public:
     int p2pMaxSpeed;
     int p2pSpeed;
     int nsPerCyclePeriod;
+    int homeTorqueLimit;
     int* homeOffsets;
     int* driverIDs;
 };
@@ -148,6 +150,7 @@ public:
     EServoState motorsStates[AXIS_NUMBER];
     EServoCommand motorsCommands[AXIS_NUMBER];
     EOperationMode motorsModes[AXIS_NUMBER];
+    EOperationModeDisplay motorsModesDisplay[AXIS_NUMBER];
 	CMotorData feedbackData[AXIS_NUMBER];//currentFeedback,collected after read()
 	CMotorData commandData[AXIS_NUMBER];//lastCommand,collected before write()
 	//sensor data

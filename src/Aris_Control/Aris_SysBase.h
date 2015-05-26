@@ -197,7 +197,7 @@ static RT_HEAP  m_logHeap;
 
 static  CLogData  m_logDataRC;
 static Aris::RT_CONTROL::CMachineData  m_machineDataCore;
-static Aris::RT_CONTROL::CMachineData  m_machineData;
+//static Aris::RT_CONTROL::CMachineData  m_machineData;
 static bool m_isLog;
 static long long int  m_logCount;
 static void* m_logDataVoid;
