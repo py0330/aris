@@ -61,7 +61,7 @@ int main()
 
 	k({ 1, 2 }, { 0, 1 }).dsp();
 
-	k = {};
+	k = MATRIX();
 
 
 

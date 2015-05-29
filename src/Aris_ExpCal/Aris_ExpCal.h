@@ -292,189 +292,11 @@ namespace Aris
 			}
 
 			template <typename MATRIX_LIST>
-			friend MATRIX CombineColMatrices(const MATRIX_LIST &matrices)
-			{
-				MATRIX ret;
-
-				/*获取全部矩阵的行数和列数*/
-				for (const auto &i : matrices)
-				{
-					if (i.Length() == 0)
-						continue;
-
-					ret.m += i.m;
-					ret.n = i.n;
-				}
-
-				/*判断所有矩阵是否拥有一样的列数*/
-				for (const auto &i : matrices)
-				{
-					if (i.Length() == 0)
-						continue;
-
-					if (ret.n != i.n)
-					{
-						ret.m = 0;
-						ret.n = 0;
-						throw std::logic_error("input do not have valid size");
-					}
-				}
-
-				/*判断最后的矩阵是否为空*/
-				if (ret.m*ret.n == 0)
-					return ret;
-
-				/*申请内存*/
-				ret.pData = new double[ret.m*ret.n];
-
-				/*赋值*/
-				unsigned int beginRow = 0;
-				for (const auto &a : matrices)
-				{
-					for (unsigned i = 0; i < a.m; i++)
-					{
-						for (unsigned j = 0; j < a.n; j++)
-						{
-							ret(i + beginRow, j) = a(i, j);
-						}
-					}
-					beginRow += a.m;
-				}
-
-				return ret;
-			};
+			friend MATRIX CombineColMatrices(const MATRIX_LIST &matrices);
 			template <typename MATRIX_LIST>
-			friend MATRIX CombineRowMatrices(const MATRIX_LIST &matrices)
-			{
-				MATRIX ret;
-
-				/*获取全部矩阵的行数和列数*/
-				for (const auto &i : matrices)
-				{
-					if (i.Length() == 0)
-						continue;
-
-					ret.m = i.m;
-					ret.n += i.n;
-				}
-
-				/*判断所有矩阵是否拥有一样的列数*/
-				for (const auto &i : matrices)
-				{
-					if (i.Length() == 0)
-						continue;
-
-					if (ret.m != i.m)
-					{
-						ret.m = 0;
-						ret.n = 0;
-						throw std::logic_error("input do not have valid size");
-					}
-				}
-
-				/*判断最后的矩阵是否为空*/
-				if (ret.m*ret.n == 0)
-					return ret;
-
-				/*申请内存*/
-				ret.pData = new double[ret.m*ret.n];
-
-				/*赋值*/
-				unsigned int beginCol = 0;
-				for (const auto &a : matrices)
-				{
-					for (unsigned i = 0; i < a.m; i++)
-					{
-						for (unsigned j = 0; j < a.n; j++)
-						{
-							ret(i, j + beginCol) = a(i, j);
-						}
-					}
-					beginCol += a.n;
-				}
-
-				return ret;
-			};
+			friend MATRIX CombineRowMatrices(const MATRIX_LIST &matrices);
 			template <typename MATRIX_LISTLIST>
-			friend MATRIX CombineMatrices(const MATRIX_LISTLIST &matrices)
-			{
-				MATRIX ret;
-
-				/*获取全部矩阵的行数和列数*/
-				for (const auto &i : matrices)
-				{
-					unsigned loc_m = 0, loc_n = 0;
-
-					/*获得行矩阵们的总列数和行数*/
-					for (const auto &j : i)
-					{
-						if (j.Length() == 0)
-							continue;
-
-						if (loc_m == 0)
-							loc_m = j.m;
-
-						if (loc_m != j.m)
-						{
-							ret.m = 0;
-							ret.n = 0;
-							throw std::logic_error("input do not have valid size");
-						}
-							
-						loc_n += j.n;
-					}
-
-					if (loc_m*loc_n == 0)
-						continue;
-
-					if (ret.n == 0)
-						ret.n = loc_n;
-
-					if (ret.n != loc_n)
-					{
-						ret.m = 0;
-						ret.n = 0;
-						throw std::logic_error("input do not have valid size");
-					}
-						
-					ret.m += loc_m;
-				}
-
-
-				/*判断最后的矩阵是否为空*/
-				if (ret.m*ret.n == 0)
-					return ret;
-
-				/*申请内存*/
-				ret.pData = new double[ret.m*ret.n];
-
-				/*赋值*/
-				unsigned beginRow = 0;
-				for (const auto &a : matrices)
-				{
-					unsigned beginCol = 0;
-					unsigned locRow = 0;
-
-					for (const auto &b : a)
-					{
-						for (unsigned i = 0; i < b.m; i++)
-						{
-							for (unsigned j = 0; j < b.n; j++)
-							{
-								ret(i + beginRow, j + beginCol) = b(i, j);
-							}
-						}
-						beginCol += b.n;
-
-						if (b.m != 0)
-							locRow = b.m;
-
-					}
-					beginRow += locRow;
-				}
-
-				return ret;
-			};
+			friend MATRIX CombineMatrices(const MATRIX_LISTLIST &matrices);
 
 			std::string ToString() const;
 			double ToDouble() const;
@@ -493,6 +315,191 @@ namespace Aris
 				}
 				std::cout << std::endl;
 			}
+		};
+
+		template <typename MATRIX_LIST>
+		MATRIX CombineColMatrices(const MATRIX_LIST &matrices)
+		{
+			MATRIX ret;
+
+			/*获取全部矩阵的行数和列数*/
+			for (const auto &i : matrices)
+			{
+				if (i.Length() == 0)
+					continue;
+
+				ret.m += i.m;
+				ret.n = i.n;
+			}
+
+			/*判断所有矩阵是否拥有一样的列数*/
+			for (const auto &i : matrices)
+			{
+				if (i.Length() == 0)
+					continue;
+
+				if (ret.n != i.n)
+				{
+					ret.m = 0;
+					ret.n = 0;
+					throw std::logic_error("input do not have valid size");
+				}
+			}
+
+			/*判断最后的矩阵是否为空*/
+			if (ret.m*ret.n == 0)
+				return ret;
+
+			/*申请内存*/
+			ret.pData = new double[ret.m*ret.n];
+
+			/*赋值*/
+			unsigned int beginRow = 0;
+			for (const auto &a : matrices)
+			{
+				for (unsigned i = 0; i < a.m; i++)
+				{
+					for (unsigned j = 0; j < a.n; j++)
+					{
+						ret(i + beginRow, j) = a(i, j);
+					}
+				}
+				beginRow += a.m;
+			}
+
+			return ret;
+		};
+		template <typename MATRIX_LIST>
+		MATRIX CombineRowMatrices(const MATRIX_LIST &matrices)
+		{
+			MATRIX ret;
+
+			/*获取全部矩阵的行数和列数*/
+			for (const auto &i : matrices)
+			{
+				if (i.Length() == 0)
+					continue;
+
+				ret.m = i.m;
+				ret.n += i.n;
+			}
+
+			/*判断所有矩阵是否拥有一样的列数*/
+			for (const auto &i : matrices)
+			{
+				if (i.Length() == 0)
+					continue;
+
+				if (ret.m != i.m)
+				{
+					ret.m = 0;
+					ret.n = 0;
+					throw std::logic_error("input do not have valid size");
+				}
+			}
+
+			/*判断最后的矩阵是否为空*/
+			if (ret.m*ret.n == 0)
+				return ret;
+
+			/*申请内存*/
+			ret.pData = new double[ret.m*ret.n];
+
+			/*赋值*/
+			unsigned int beginCol = 0;
+			for (const auto &a : matrices)
+			{
+				for (unsigned i = 0; i < a.m; i++)
+				{
+					for (unsigned j = 0; j < a.n; j++)
+					{
+						ret(i, j + beginCol) = a(i, j);
+					}
+				}
+				beginCol += a.n;
+			}
+
+			return ret;
+		};
+		template <typename MATRIX_LISTLIST>
+		MATRIX CombineMatrices(const MATRIX_LISTLIST &matrices)
+		{
+			MATRIX ret;
+
+			/*获取全部矩阵的行数和列数*/
+			for (const auto &i : matrices)
+			{
+				unsigned loc_m = 0, loc_n = 0;
+
+				/*获得行矩阵们的总列数和行数*/
+				for (const auto &j : i)
+				{
+					if (j.Length() == 0)
+						continue;
+
+					if (loc_m == 0)
+						loc_m = j.m;
+
+					if (loc_m != j.m)
+					{
+						ret.m = 0;
+						ret.n = 0;
+						throw std::logic_error("input do not have valid size");
+					}
+
+					loc_n += j.n;
+				}
+
+				if (loc_m*loc_n == 0)
+					continue;
+
+				if (ret.n == 0)
+					ret.n = loc_n;
+
+				if (ret.n != loc_n)
+				{
+					ret.m = 0;
+					ret.n = 0;
+					throw std::logic_error("input do not have valid size");
+				}
+
+				ret.m += loc_m;
+			}
+
+
+			/*判断最后的矩阵是否为空*/
+			if (ret.m*ret.n == 0)
+				return ret;
+
+			/*申请内存*/
+			ret.pData = new double[ret.m*ret.n];
+
+			/*赋值*/
+			unsigned beginRow = 0;
+			for (const auto &a : matrices)
+			{
+				unsigned beginCol = 0;
+				unsigned locRow = 0;
+
+				for (const auto &b : a)
+				{
+					for (unsigned i = 0; i < b.m; i++)
+					{
+						for (unsigned j = 0; j < b.n; j++)
+						{
+							ret(i + beginRow, j + beginCol) = b(i, j);
+						}
+					}
+					beginCol += b.n;
+
+					if (b.m != 0)
+						locRow = b.m;
+
+				}
+				beginRow += locRow;
+			}
+
+			return ret;
 		};
 
 		class CALCULATOR

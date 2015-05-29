@@ -1,10 +1,10 @@
-﻿#include "Aris_ExpCal.h"
-
-#include <sstream>
+﻿#include <sstream>
 #include <iostream>
 #include <exception>
 #include <stdexcept>
 #include <cstring>
+
+#include "Aris_ExpCal.h"
 
 namespace Aris
 {
@@ -80,12 +80,12 @@ namespace Aris
 			{
 				A.push_back(i);
 			}
-			(*this) = CombineRowMatrices<std::vector<MATRIX> >(A);
+			(*this) = Aris::DynKer::CombineRowMatrices<std::vector<MATRIX> >(A);
 		}
 		MATRIX::MATRIX(const std::initializer_list<std::vector<MATRIX> > &matrices)
 			: MATRIX()
 		{
-			(*this) = CombineMatrices<decltype(matrices)>(matrices);
+			(*this) = Aris::DynKer::CombineMatrices<decltype(matrices)>(matrices);
 		}
 
 		MATRIX &MATRIX::operator=(const MATRIX &other)

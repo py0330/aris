@@ -11,7 +11,7 @@ namespace Aris
 	namespace Core
 	{
 		class CONN;
-		void* _ConnReceiveDataThreadFunc(void* pConn);
+		void _ConnReceiveDataThreadFunc(void* pConn);
 
 // 0-3  字节，  unsigned int 代表数据大小
 // 4-7  字节，  int          代表msgID
@@ -23,7 +23,7 @@ namespace Aris
 		class MSG
 		{
 			friend class CONN;
-			friend void* _ConnReceiveDataThreadFunc(void* pConn);
+			friend void _ConnReceiveDataThreadFunc(void* pConn);
 			friend class Aris::RT_CONTROL::ACTUATION;
 
 		private:

@@ -19,9 +19,8 @@
 #include<arpa/inet.h>
 #endif
 
-using namespace std;
-
 #define pCONN_STRUCT ((CONN_STRUCT*)(((CONN *)pConn)->_pData))
+
 
 namespace Aris
 {
@@ -45,19 +44,22 @@ namespace Aris
 			int(*_OnReceivedConnection)(CONN *, const char *, int);
 			int(*_OnLoseConnection)(CONN *);
 
-			Aris::Core::THREAD _ReceiveConnectionThread, _ReceiveDataThread;
 			Aris::Core::MUTEX _DataSection; //保护所有数据
 			Aris::Core::MSG _ReceivedData;//收到的数据，为临时变量，外界无法访问
 			
-
 			/* 连接的socket */
 #ifdef PLATFORM_IS_WINDOWS
 			WSADATA _WsaData;              //windows下才用，linux下无该项
 #endif
 		};
 		
-		void* _ConnReceiveConnectionThreadFunc(void* pConn)
+
+		void _ConnReceiveDataThreadFunc(void* pConn);
+		void _ConnReceiveConnectionThreadFunc(void* pConn)
 		{
+			std::cout << "start server:" << (void*)pConn << std::endl;
+			std::cout << "listen socket:" << pCONN_STRUCT->_LisnSocket << std::endl;
+			
 			/* 服务器阻塞,直到客户程序建立连接 */
 			pCONN_STRUCT->_ConnSocket = accept(pCONN_STRUCT->_LisnSocket, (struct sockaddr *)(&pCONN_STRUCT->_ClientAddr), &pCONN_STRUCT->_SinSize);
 
@@ -66,25 +68,30 @@ namespace Aris
 			if (pCONN_STRUCT->_ConnSocket == -1)
 			{
 				pCONN_STRUCT->_DataSection.Unlock();
-				return 0;
+				return;
 			}
 
 			/* 创建线程 */
-
-			pCONN_STRUCT->_ReceiveDataThread.Start(pCONN_STRUCT);
+			((CONN*)pConn)->_recvDataThread = std::thread(_ConnReceiveDataThreadFunc, pCONN_STRUCT);
 			pCONN_STRUCT->_ConnState = CONN::WORKING;
+
+
+
 
 			if (pCONN_STRUCT->_OnReceivedConnection != 0)
 			{
 				pCONN_STRUCT->_OnReceivedConnection((CONN*)pConn, inet_ntoa(pCONN_STRUCT->_ClientAddr.sin_addr), ntohs(pCONN_STRUCT->_ClientAddr.sin_port));
 			}
+
+			std::cout << "server:" << (void*)pConn << std::endl;
+			std::cout << "listen socket:" << pCONN_STRUCT->_LisnSocket << std::endl;
 				
 
 			pCONN_STRUCT->_DataSection.Unlock();
 
-			return 0;
+			return;
 		}
-		void* _ConnReceiveDataThreadFunc(void* pConn)
+		void _ConnReceiveDataThreadFunc(void* pConn)
 		{
 			while (1)
 			{
@@ -110,7 +117,7 @@ namespace Aris
 					if (pCONN_STRUCT->_OnLoseConnection != 0)
 						pCONN_STRUCT->_OnLoseConnection((CONN*)pConn);
 
-					return 0;
+					return;
 				}
 
 				/*读取数据头*/
@@ -140,7 +147,7 @@ namespace Aris
 					if (pCONN_STRUCT->_OnLoseConnection != 0)
 						pCONN_STRUCT->_OnLoseConnection((CONN*)pConn);
 
-					return 0;
+					return;
 				}
 				else
 				{
@@ -152,7 +159,7 @@ namespace Aris
 
 		CONN::CONN()
 		{
-			static_assert(sizeof(CONN_STRUCT) <= CONN::_SIZE, "Aris::Core::CONN need more memory");
+			static_assert(sizeof(CONN_STRUCT) <= sizeof(CONN::_pData), "Aris::Core::CONN need more memory");
 
 			((CONN_STRUCT*)_pData)->_LisnSocket = 0;
 			((CONN_STRUCT*)_pData)->_ConnSocket = 0;
@@ -162,60 +169,49 @@ namespace Aris
 			((CONN_STRUCT*)_pData)->_SinSize = sizeof(struct sockaddr_in);
 			((CONN_STRUCT*)_pData)->_ConnState = IDLE;
 
-			new(&((CONN_STRUCT*)_pData)->_ReceiveConnectionThread)Aris::Core::THREAD(_ConnReceiveConnectionThreadFunc);
-			new(&((CONN_STRUCT*)_pData)->_ReceiveDataThread)Aris::Core::THREAD(_ConnReceiveDataThreadFunc);
+			//new(&((CONN_STRUCT*)_pData)->_ReceiveConnectionThread)Aris::Core::THREAD(_ConnReceiveConnectionThreadFunc);
+			//new(&((CONN_STRUCT*)_pData)->_ReceiveDataThread)Aris::Core::THREAD(_ConnReceiveDataThreadFunc);
 			new(&((CONN_STRUCT*)_pData)->_DataSection)Aris::Core::MUTEX;
 			new(&((CONN_STRUCT*)_pData)->_ReceivedData)Aris::Core::MSG;
 			
 		}
 		CONN::~CONN()
 		{
-			_TerminateConnThread();
+			Close();
+			//_TerminateConnThread();
 
-			(&((CONN_STRUCT*)_pData)->_ReceiveConnectionThread)->~THREAD();
-			(&((CONN_STRUCT*)_pData)->_ReceiveDataThread)->~THREAD();
+			//(&((CONN_STRUCT*)_pData)->_ReceiveConnectionThread)->~THREAD();
+			//(&((CONN_STRUCT*)_pData)->_ReceiveDataThread)->~THREAD();
 			(&((CONN_STRUCT*)_pData)->_DataSection)->~MUTEX();
 			(&((CONN_STRUCT*)_pData)->_ReceivedData)->~MSG();
 		}
 
-		bool CONN::_TerminateConnThread()
+		void CONN::Close()
 		{
-			((CONN_STRUCT*)_pData)->_DataSection.Lock();
-
-			if (((CONN_STRUCT*)_pData)->_ConnState == WAITING_FOR_CONNECTION)
+			if (((CONN_STRUCT*)_pData)->_ConnState == CONN::WAITING_FOR_CONNECTION)
 			{
-				((CONN_STRUCT*)_pData)->_ReceiveConnectionThread.Terminate();
-
+#ifdef PLATFORM_IS_WINDOWS
+				closesocket(((CONN_STRUCT*)_pData)->_LisnSocket);
+#endif
+#ifdef PLATFORM_IS_LINUX
+				close(((CONN_STRUCT*)_pData)->_LisnSocket);
+#endif
+			}
+			else if (((CONN_STRUCT*)_pData)->_ConnState == CONN::WORKING)
+			{
 #ifdef PLATFORM_IS_WINDOWS
 				closesocket(((CONN_STRUCT*)_pData)->_ConnSocket);
-				closesocket(((CONN_STRUCT*)_pData)->_LisnSocket);
-				WSACleanup();
 #endif
 #ifdef PLATFORM_IS_LINUX
 				close(((CONN_STRUCT*)_pData)->_ConnSocket);
-				close(((CONN_STRUCT*)_pData)->_LisnSocket);
 #endif
-
-				((CONN_STRUCT*)_pData)->_ConnState = IDLE;
-			}
-			else if (((CONN_STRUCT*)_pData)->_ConnState == WORKING)
-			{
-				((CONN_STRUCT*)_pData)->_ReceiveDataThread.Terminate();
-
-#ifdef PLATFORM_IS_WINDOWS
-				closesocket(((CONN_STRUCT*)_pData)->_ConnSocket);
-				closesocket(((CONN_STRUCT*)_pData)->_LisnSocket);
-				WSACleanup();
-#endif
-#ifdef PLATFORM_IS_LINUX
-				close(((CONN_STRUCT*)_pData)->_ConnSocket);
-				close(((CONN_STRUCT*)_pData)->_LisnSocket);
-#endif
-				((CONN_STRUCT*)_pData)->_ConnState = IDLE;
+				
 			}
 
-			((CONN_STRUCT*)_pData)->_DataSection.Unlock();
-			return true;
+			if (_recvDataThread.joinable())
+				_recvDataThread.join();
+			if (_recvConnThread.joinable())
+				_recvConnThread.join();
 		}
 
 		bool CONN::IsConnected()
@@ -233,6 +229,15 @@ namespace Aris
 		{
 			((CONN_STRUCT*)_pData)->_DataSection.Lock();
 
+			std::cout << "step 1" << std::endl;
+
+			Close();
+
+			std::cout << "step 2" << std::endl;
+
+			////////////////////////////////
+			int &a = ((CONN_STRUCT*)_pData)->_LisnSocket;
+
 			if (((CONN_STRUCT*)_pData)->_ConnState != IDLE)
 			{
 				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
@@ -247,6 +252,8 @@ namespace Aris
 				return -2;
 			}
 #endif
+			a = 130;
+			std::cout << "listen socket is0:" << ((CONN_STRUCT*)_pData)->_LisnSocket << std::endl;
 
 			/* 服务器端开始建立socket描述符 */
 			if ((((CONN_STRUCT*)_pData)->_LisnSocket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -254,6 +261,7 @@ namespace Aris
 				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return -3;
 			}
+			std::cout << "listen socket is1:" << ((CONN_STRUCT*)_pData)->_LisnSocket << std::endl;
 
 			/* 服务器端填充_ServerAddr结构 */
 			memset(&((CONN_STRUCT*)_pData)->_ServerAddr, 0, sizeof(struct sockaddr_in));
@@ -262,7 +270,7 @@ namespace Aris
 			((CONN_STRUCT*)_pData)->_ServerAddr.sin_port = htons(atoi(port));
 
 			/* 捆绑_LisnSocket描述符 */
-			if (bind(((CONN_STRUCT*)_pData)->_LisnSocket, (struct sockaddr *)(&((CONN_STRUCT*)_pData)->_ServerAddr), sizeof(struct sockaddr)) == -1)
+			if (::bind(((CONN_STRUCT*)_pData)->_LisnSocket, (struct sockaddr *)(&((CONN_STRUCT*)_pData)->_ServerAddr), sizeof(struct sockaddr)) == -1)
 			{
 #ifdef PLATFORM_IS_WINDOWS
 				((CONN_STRUCT*)_pData)->_Err = WSAGetLastError();
@@ -274,12 +282,18 @@ namespace Aris
 			/* 监听_LisnSocket描述符 */
 			if (listen(((CONN_STRUCT*)_pData)->_LisnSocket, 5) == -1)
 			{
+				std::cout << "failed to listen" << std::endl;
 				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return -5;
 			}
 
+			std::cout << "listen socket is2:" << ((CONN_STRUCT*)_pData)->_LisnSocket << std::endl;
+
 			/* 启动等待连接的线程 */
-			if (((CONN_STRUCT*)_pData)->_ReceiveConnectionThread.IsRunning())
+			_recvConnThread = std::thread(_ConnReceiveConnectionThreadFunc,this);
+
+			std::cout << "step 3" << std::endl;
+			/*if (((CONN_STRUCT*)_pData)->_ReceiveConnectionThread.IsRunning())
 			{
 				((CONN_STRUCT*)_pData)->_ReceiveConnectionThread.Join();
 			}
@@ -288,17 +302,11 @@ namespace Aris
 			{
 				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return -6;
-			}
+			}*/
 			
 			((CONN_STRUCT*)_pData)->_ConnState = WAITING_FOR_CONNECTION;
 
 			((CONN_STRUCT*)_pData)->_DataSection.Unlock();
-			return 0;
-		}
-		int CONN::CloseServer()
-		{
-			_TerminateConnThread();
-
 			return 0;
 		}
 		int CONN::Connect(const char *address, const char *port)
@@ -343,14 +351,9 @@ namespace Aris
 			((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 
 			/* Start Thread */
-			((CONN_STRUCT*)_pData)->_ReceiveDataThread.Start(this);
+			_recvDataThread = std::thread(_ConnReceiveDataThreadFunc, this);
+			
 			((CONN_STRUCT*)_pData)->_ConnState = WORKING;
-
-			return 0;
-		}
-		int CONN::DisConnect()
-		{
-			_TerminateConnThread();
 
 			return 0;
 		}

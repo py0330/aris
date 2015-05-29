@@ -51,6 +51,10 @@ int main()
 		ControlSystem.SetCallBackOnReceivedData(OnConnDataReceived);
 		ControlSystem.SetCallBackOnLoseConnection(OnConnectionLost);
 		
+		cout << "vision system address:" << (void*)&VisualSystem << endl;
+		cout << "control system address:" << (void*)&ControlSystem << endl;
+
+
 		/*打开客户端*/
 		VisualSystem.StartServer("5688");
 		ControlSystem.StartServer("5689");
@@ -58,8 +62,6 @@ int main()
 
 		/*开始消息循环*/
 		Aris::Core::RunMsgLoop();
-
-		
 	}
 
 #ifdef PLATFORM_IS_WINDOWS  

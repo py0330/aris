@@ -84,7 +84,7 @@ int OnVisualSystemLost(Aris::Core::MSG &msg)
 /*当和控制客户端建立连接时，执行本函数*/
 int OnControlSystemConnected(Aris::Core::MSG &msg)
 {
-	cout << "Received connection from vision system:" << endl;
+	cout << "Received connection from control system:" << endl;
 	cout << "    Remote IP is: " << msg.GetDataAddress()+4 << endl;
 	cout << "    Port is     : " << *((int*)msg.GetDataAddress()) << endl << endl;
 
@@ -142,6 +142,9 @@ int OnConnectionReceived(Aris::Core::CONN *pConn, const char *addr, int port)
 {
 	Aris::Core::MSG msg;
 	
+	cout << "conn address:" << (void*)pConn << endl;
+
+
 	if (pConn == &VisualSystem)
 	{
 		msg.SetMsgID( VisualSystemConnected);

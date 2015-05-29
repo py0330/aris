@@ -103,14 +103,6 @@ namespace Aris
 				return -1;
 			else
 				isRunning = true;
-			
-			/*清空消息队列*/
-			MsgCallbackMutex.Lock();
-			while (!msgq.empty())
-			{
-				msgq.pop();
-			}
-			MsgCallbackMutex.Unlock();
 
 			Aris::Core::MSG Msg;
 			ifSkipLoop = false;
@@ -145,14 +137,6 @@ namespace Aris
 				MsgCallbackMutex.Unlock();
 			}
 
-			/*清空消息队列*/
-			MsgCallbackMutex.Lock();
-			while (!msgq.empty())
-			{
-				msgq.pop();
-			}
-			MsgCallbackMutex.Unlock();
-
 			isRunning = false;
 			return 0;
 		}
@@ -168,7 +152,18 @@ namespace Aris
 			{
 				return -1;
 			}
-			
+		}
+		int ClearMsgLoop()
+		{
+			/*清空消息队列*/
+			MsgCallbackMutex.Lock();
+			while (!msgq.empty())
+			{
+				msgq.pop();
+			}
+			MsgCallbackMutex.Unlock();
+
+			return 0;
 		}
 	}
 }

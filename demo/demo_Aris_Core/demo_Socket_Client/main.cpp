@@ -6,14 +6,18 @@
 #include "Platform.h"
 #include "Aris_Socket.h"
 #include "Client.h"
-
-using namespace std;
-using namespace Aris::Core;
-
+#include <thread>
 
 #ifdef PLATFORM_IS_LINUX
 #include <unistd.h>
 #endif
+
+#ifdef PLATFORM_IS_WINDOWS
+#include <Windows.h>
+#endif
+
+using namespace std;
+using namespace Aris::Core;
 
 
 /*以下用于VS内存泄露检测*/
@@ -53,6 +57,10 @@ int main()
 		pControlSystem = &ControlSystem;
 
 
+
+
+
+
 		/*注册所有的消息函数*/
 		Aris::Core::RegisterMsgCallback(VisualSystemDataNeeded, OnVisualSystemDataNeeded);
 		Aris::Core::RegisterMsgCallback(VisualSystemLost, OnVisualSystemLost);
@@ -76,6 +84,47 @@ int main()
 		/*连接服务器*/
 		VisualSystem.Connect(RemoteIp, "5688");
 		ControlSystem.Connect(RemoteIp, "5689");
+
+		//VisualSystem.Close();
+
+		//std::thread closeThread;
+
+		//if (closeThread.joinable())
+		//	closeThread.join();
+
+		//
+		//closeThread = std::thread([]()
+		//{
+		//	std::cout << "begin to close"<<endl;
+		//});
+
+		//if (closeThread.joinable())
+		//{
+		//	cout << "can join" << endl;
+		//	closeThread.join();
+		//}
+		//else
+		//{
+		//	cout << "can not join" << endl;
+		//	//closeThread.join();
+		//}
+		//	
+
+		//std::cout << "after join" << endl;
+
+		//closeThread = std::thread([&ControlSystem]()
+		//{
+		//	cout << "now try to close" << endl;
+
+		//	Sleep(10000);
+
+		//	cout << "now close connection" << endl;
+
+		//	ControlSystem.Close();
+		//});
+
+		//closeThread.detach();
+
 
 		/*开始消息循环*/
 		Aris::Core::RunMsgLoop();
