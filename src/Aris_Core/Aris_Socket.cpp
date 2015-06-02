@@ -1,5 +1,9 @@
 ﻿#include "Aris_Socket.h"
 
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
@@ -19,15 +23,14 @@
 #include<arpa/inet.h>
 #endif
 
-#define pCONN_STRUCT ((CONN_STRUCT*)(((CONN *)pConn)->_pData))
-
-
 namespace Aris
 {
 	namespace Core
 	{
-		struct CONN_STRUCT
+		struct CONN::CONN_STRUCT
 		{
+			CONN* pConn;
+			
 			int _iRes, _Err;
 			int _LisnSocket, _ConnSocket;   //也可以用SOCKET类型
 			struct sockaddr_in _ServerAddr, _ClientAddr;
@@ -40,183 +43,237 @@ namespace Aris
 				char _ReceivedDataHeader[MSG_HEADER_LENGTH];
 			};
 
-			int(*_OnReceivedData)(CONN *, Aris::Core::MSG &);
-			int(*_OnReceivedConnection)(CONN *, const char *, int);
-			int(*_OnLoseConnection)(CONN *);
+			std::function<int(CONN *, Aris::Core::MSG &)> _OnReceivedData;
+			std::function<int(CONN *, const char *, int)> _OnReceivedConnection;
+			std::function<int(CONN *)> _OnLoseConnection;
 
-			Aris::Core::MUTEX _DataSection; //保护所有数据
+			/*线程同步变量*/
+			std::thread _recvDataThread, _recvConnThread;
+			std::recursive_mutex _re_mutex;
+			std::mutex _close_mutex,_cv_mutex;
+			std::condition_variable _cv;
+
 			Aris::Core::MSG _ReceivedData;//收到的数据，为临时变量，外界无法访问
 			
 			/* 连接的socket */
 #ifdef PLATFORM_IS_WINDOWS
 			WSADATA _WsaData;              //windows下才用，linux下无该项
 #endif
+			CONN_STRUCT()
+				: _LisnSocket(0)
+				, _ConnSocket(0)
+				, _OnReceivedData(nullptr)
+				, _OnReceivedConnection(nullptr)
+				, _OnLoseConnection(nullptr)
+				, _SinSize(sizeof(struct sockaddr_in))
+				, _ConnState(CONN::IDLE)
+			{
+			};
+
+			~CONN_STRUCT() = default;
 		};
 		
-
-		void _ConnReceiveDataThreadFunc(void* pConn);
-		void _ConnReceiveConnectionThreadFunc(void* pConn)
+		void CONN::_AcceptThread(CONN::CONN_STRUCT* pConnS)
 		{
-			std::cout << "start server:" << (void*)pConn << std::endl;
-			std::cout << "listen socket:" << pCONN_STRUCT->_LisnSocket << std::endl;
+			int lisnSock,connSock;
+			struct sockaddr_in clientAddr;
+			socklen_t sinSize; 
+
+			/*以下从对象中copy内容，此时Start_Server在阻塞，因此CONN内部数据安全，
+			拷贝好后告诉Start_Server函数已经拷贝好*/
+			lisnSock = pConnS->_LisnSocket;
+			clientAddr = pConnS->_ClientAddr;
+			sinSize = pConnS->_SinSize;
+
+			pConnS->_ConnState = WAITING_FOR_CONNECTION;
 			
+			/*通知主线程，accept线程已经拷贝完毕，准备监听*/
+			std::unique_lock<std::mutex> cv_lck(pConnS->_cv_mutex);
+			pConnS->_cv.notify_one();
+			cv_lck.unlock();
+			cv_lck.release();
+
 			/* 服务器阻塞,直到客户程序建立连接 */
-			pCONN_STRUCT->_ConnSocket = accept(pCONN_STRUCT->_LisnSocket, (struct sockaddr *)(&pCONN_STRUCT->_ClientAddr), &pCONN_STRUCT->_SinSize);
+			connSock = accept(lisnSock, (struct sockaddr *)(&clientAddr), &sinSize);
 
-			pCONN_STRUCT->_DataSection.Lock();
-
-			if (pCONN_STRUCT->_ConnSocket == -1)
+			/*检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源*/
+			std::unique_lock<std::mutex> cls_lck(pConnS->_close_mutex, std::defer_lock);
+			if (!cls_lck.try_lock())
 			{
-				pCONN_STRUCT->_DataSection.Unlock();
+				return;
+			}
+
+			std::unique_lock<std::recursive_mutex> lck(pConnS->_re_mutex);
+			cls_lck.unlock();
+			cls_lck.release();
+
+
+			/*否则，开始开启数据线程*/
+			if (connSock == -1)
+			{
+				pConnS->pConn->Close();
 				return;
 			}
 
 			/* 创建线程 */
-			((CONN*)pConn)->_recvDataThread = std::thread(_ConnReceiveDataThreadFunc, pCONN_STRUCT);
-			pCONN_STRUCT->_ConnState = CONN::WORKING;
+			pConnS->_ConnState = CONN::WORKING;
+			pConnS->_ConnSocket = connSock;
+			pConnS->_ClientAddr = clientAddr;
+
+			cv_lck = std::unique_lock<std::mutex>(pConnS->_cv_mutex);
+			pConnS->_recvDataThread = std::thread(_ReceiveThread, pConnS);
+			pConnS->_cv.wait(cv_lck);
 
 
-
-
-			if (pCONN_STRUCT->_OnReceivedConnection != 0)
+			if (pConnS->_OnReceivedConnection != nullptr)
 			{
-				pCONN_STRUCT->_OnReceivedConnection((CONN*)pConn, inet_ntoa(pCONN_STRUCT->_ClientAddr.sin_addr), ntohs(pCONN_STRUCT->_ClientAddr.sin_port));
+				pConnS->_OnReceivedConnection(pConnS->pConn, inet_ntoa(pConnS->_ClientAddr.sin_addr), ntohs(pConnS->_ClientAddr.sin_port));
 			}
-
-			std::cout << "server:" << (void*)pConn << std::endl;
-			std::cout << "listen socket:" << pCONN_STRUCT->_LisnSocket << std::endl;
-				
-
-			pCONN_STRUCT->_DataSection.Unlock();
 
 			return;
 		}
-		void _ConnReceiveDataThreadFunc(void* pConn)
+		void CONN::_ReceiveThread(CONN::CONN_STRUCT* pConnS)
 		{
+			char Header[MSG_HEADER_LENGTH];
+			int connSocket = pConnS->_ConnSocket;
+
+			/*通知accept线程已经准备好，下一步开始收发数据*/
+			std::unique_lock<std::mutex> cv_lck(pConnS->_cv_mutex);
+			pConnS->_cv.notify_one();
+			cv_lck.unlock();
+			cv_lck.release();
+
+			/*开启接受数据的循环*/
 			while (1)
 			{
-				pCONN_STRUCT->_iRes = recv(pCONN_STRUCT->_ConnSocket, pCONN_STRUCT->_ReceivedDataHeader, MSG_HEADER_LENGTH, 0);
-				pCONN_STRUCT->_DataSection.Lock();
+				int res = recv(connSocket, Header, MSG_HEADER_LENGTH, 0);
 
-				if (pCONN_STRUCT->_iRes <= 0)
+				/*检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源，
+				若能锁住，则开始获取CONN_STRUCT所有权*/
+				std::unique_lock<std::mutex> cls_lck(pConnS->_close_mutex, std::defer_lock);
+				if (!cls_lck.try_lock())
 				{
-#ifdef PLATFORM_IS_WINDOWS
-					closesocket(pCONN_STRUCT->_ConnSocket);
-					closesocket(pCONN_STRUCT->_LisnSocket);
-					WSACleanup();
-#endif
-#ifdef PLATFORM_IS_LINUX
-					close(pCONN_STRUCT->_ConnSocket);
-					close(pCONN_STRUCT->_LisnSocket);
-#endif
-					pCONN_STRUCT->_ConnState = CONN::IDLE;
+					return;
+				}
+
+				std::unique_lock<std::recursive_mutex> lck(pConnS->_re_mutex);
+				cls_lck.unlock();
+				cls_lck.release();
+				
+				/*证明没有在close，于是正常接收数据*/
+				pConnS->_iRes = res;
+				memcpy(pConnS->_ReceivedDataHeader, Header, MSG_HEADER_LENGTH);
 
 
-					pCONN_STRUCT->_DataSection.Unlock();
+				if (pConnS->_iRes <= 0)
+				{
+					pConnS->pConn->Close();
 
-					if (pCONN_STRUCT->_OnLoseConnection != 0)
-						pCONN_STRUCT->_OnLoseConnection((CONN*)pConn);
+					if (pConnS->_OnLoseConnection != 0)
+						pConnS->_OnLoseConnection(pConnS->pConn);
 
 					return;
 				}
 
 				/*读取数据头*/
-				pCONN_STRUCT->_ReceivedData.SetLength(pCONN_STRUCT->_ReceivedDataLength);
-				memcpy(pCONN_STRUCT->_ReceivedData._pData, pCONN_STRUCT->_ReceivedDataHeader, MSG_HEADER_LENGTH);
+				pConnS->_ReceivedData.SetLength(pConnS->_ReceivedDataLength);
+				memcpy(pConnS->_ReceivedData._pData, pConnS->_ReceivedDataHeader, MSG_HEADER_LENGTH);
 
 				/*读取数据*/
-				if (pCONN_STRUCT->_ReceivedData.GetLength()>0)
-					pCONN_STRUCT->_iRes = recv(pCONN_STRUCT->_ConnSocket, pCONN_STRUCT->_ReceivedData.GetDataAddress(), pCONN_STRUCT->_ReceivedData.GetLength(), 0);
+				if (pConnS->_ReceivedData.GetLength()>0)
+					pConnS->_iRes = recv(pConnS->_ConnSocket, pConnS->_ReceivedData.GetDataAddress(), pConnS->_ReceivedData.GetLength(), 0);
 
-
-				if (pCONN_STRUCT->_iRes <= 0)
+				if (pConnS->_iRes <= 0)
 				{
-#ifdef PLATFORM_IS_WINDOWS
-					closesocket(pCONN_STRUCT->_ConnSocket);
-					closesocket(pCONN_STRUCT->_LisnSocket);
-					WSACleanup();
-#endif
-#ifdef PLATFORM_IS_LINUX
-					close(pCONN_STRUCT->_ConnSocket);
-					close(pCONN_STRUCT->_LisnSocket);
-#endif
-					pCONN_STRUCT->_ConnState = CONN::IDLE;
+					pConnS->pConn->Close();
 
-					pCONN_STRUCT->_DataSection.Unlock();
-
-					if (pCONN_STRUCT->_OnLoseConnection != 0)
-						pCONN_STRUCT->_OnLoseConnection((CONN*)pConn);
+					if (pConnS->_OnLoseConnection != 0)
+						pConnS->_OnLoseConnection(pConnS->pConn);
 
 					return;
 				}
 				else
 				{
-					pCONN_STRUCT->_DataSection.Unlock();
-					pCONN_STRUCT->_OnReceivedData((CONN*)pConn, pCONN_STRUCT->_ReceivedData);
+					pConnS->_OnReceivedData(pConnS->pConn, pConnS->_ReceivedData);
 				}
-			}
+			}		
 		}
 
 		CONN::CONN()
+			:pConnStruct(reinterpret_cast<CONN_STRUCT*>(_pData))
 		{
 			static_assert(sizeof(CONN_STRUCT) <= sizeof(CONN::_pData), "Aris::Core::CONN need more memory");
 
-			((CONN_STRUCT*)_pData)->_LisnSocket = 0;
-			((CONN_STRUCT*)_pData)->_ConnSocket = 0;
-			((CONN_STRUCT*)_pData)->_OnReceivedData = 0;
-			((CONN_STRUCT*)_pData)->_OnReceivedConnection = 0;
-			((CONN_STRUCT*)_pData)->_OnLoseConnection = 0;
-			((CONN_STRUCT*)_pData)->_SinSize = sizeof(struct sockaddr_in);
-			((CONN_STRUCT*)_pData)->_ConnState = IDLE;
-
-			//new(&((CONN_STRUCT*)_pData)->_ReceiveConnectionThread)Aris::Core::THREAD(_ConnReceiveConnectionThreadFunc);
-			//new(&((CONN_STRUCT*)_pData)->_ReceiveDataThread)Aris::Core::THREAD(_ConnReceiveDataThreadFunc);
-			new(&((CONN_STRUCT*)_pData)->_DataSection)Aris::Core::MUTEX;
-			new(&((CONN_STRUCT*)_pData)->_ReceivedData)Aris::Core::MSG;
-			
+			new(pConnStruct)CONN_STRUCT;
+			pConnStruct->pConn = this;
 		}
 		CONN::~CONN()
 		{
 			Close();
-			//_TerminateConnThread();
-
-			//(&((CONN_STRUCT*)_pData)->_ReceiveConnectionThread)->~THREAD();
-			//(&((CONN_STRUCT*)_pData)->_ReceiveDataThread)->~THREAD();
-			(&((CONN_STRUCT*)_pData)->_DataSection)->~MUTEX();
-			(&((CONN_STRUCT*)_pData)->_ReceivedData)->~MSG();
+			pConnStruct->~CONN_STRUCT();
 		}
 
 		void CONN::Close()
 		{
-			if (((CONN_STRUCT*)_pData)->_ConnState == CONN::WAITING_FOR_CONNECTION)
+			std::lock(pConnStruct->_re_mutex, pConnStruct->_close_mutex);
+			std::unique_lock<std::recursive_mutex> lck1(pConnStruct->_re_mutex, std::adopt_lock);
+			std::unique_lock<std::mutex> lck2(pConnStruct->_close_mutex, std::adopt_lock);
+			
+			if (pConnStruct->_ConnState == CONN::WAITING_FOR_CONNECTION)
 			{
 #ifdef PLATFORM_IS_WINDOWS
-				closesocket(((CONN_STRUCT*)_pData)->_LisnSocket);
+				shutdown(pConnStruct->_LisnSocket, 2);
+				closesocket(pConnStruct->_LisnSocket);
+				WSACleanup();
 #endif
 #ifdef PLATFORM_IS_LINUX
-				close(((CONN_STRUCT*)_pData)->_LisnSocket);
+				shutdown(pConnStruct->_LisnSocket, 2);
+				close(pConnStruct->_LisnSocket);
 #endif
 			}
-			else if (((CONN_STRUCT*)_pData)->_ConnState == CONN::WORKING)
+			else if (pConnStruct->_ConnState == CONN::WORKING)
 			{
 #ifdef PLATFORM_IS_WINDOWS
-				closesocket(((CONN_STRUCT*)_pData)->_ConnSocket);
+				shutdown(pConnStruct->_ConnSocket, 2);
+				shutdown(pConnStruct->_LisnSocket, 2);
+				closesocket(pConnStruct->_ConnSocket);
+				closesocket(pConnStruct->_LisnSocket);
+				WSACleanup();
 #endif
 #ifdef PLATFORM_IS_LINUX
-				close(((CONN_STRUCT*)_pData)->_ConnSocket);
+				shutdown(pConnStruct->_ConnSocket, 2);
+				shutdown(pConnStruct->_LisnSocket, 2);
+				close(pConnStruct->_ConnSocket);
+				close(pConnStruct->_LisnSocket);
 #endif
+			}
+			
+			if (std::this_thread::get_id() == pConnStruct->_recvDataThread.get_id())
+			{
+				pConnStruct->_recvDataThread.detach();
+			}
+			else if(pConnStruct->_recvDataThread.joinable())
+			{
+				pConnStruct->_recvDataThread.join();
+			}
 				
+
+			if (std::this_thread::get_id() == pConnStruct->_recvConnThread.get_id())
+			{
+				pConnStruct->_recvConnThread.detach();
+			}
+			else if(pConnStruct->_recvConnThread.joinable())
+			{
+				pConnStruct->_recvConnThread.join();
 			}
 
-			if (_recvDataThread.joinable())
-				_recvDataThread.join();
-			if (_recvConnThread.joinable())
-				_recvConnThread.join();
+			pConnStruct->_ConnState = CONN::IDLE;
 		}
-
 		bool CONN::IsConnected()
 		{
-			if (((CONN_STRUCT*)_pData)->_ConnState == WORKING)
+			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_re_mutex);
+
+			if (pConnStruct->_ConnState == WORKING)
 			{
 				return true;
 			}
@@ -227,169 +284,134 @@ namespace Aris
 		}
 		int CONN::StartServer(const char *port)
 		{
-			((CONN_STRUCT*)_pData)->_DataSection.Lock();
-
-			std::cout << "step 1" << std::endl;
-
-			Close();
-
-			std::cout << "step 2" << std::endl;
-
-			////////////////////////////////
-			int &a = ((CONN_STRUCT*)_pData)->_LisnSocket;
-
-			if (((CONN_STRUCT*)_pData)->_ConnState != IDLE)
+			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_re_mutex);
+			
+			if (pConnStruct->_ConnState != IDLE)
 			{
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return -1;
 			}
 
 			/* 启动服务器 */
 #ifdef PLATFORM_IS_WINDOWS 
-			if (WSAStartup(0x0101, &((CONN_STRUCT*)_pData)->_WsaData) != 0)
+			if (WSAStartup(0x0101, &pConnStruct->_WsaData) != 0)
 			{
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return -2;
 			}
 #endif
-			a = 130;
-			std::cout << "listen socket is0:" << ((CONN_STRUCT*)_pData)->_LisnSocket << std::endl;
 
 			/* 服务器端开始建立socket描述符 */
-			if ((((CONN_STRUCT*)_pData)->_LisnSocket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+			if ((pConnStruct->_LisnSocket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 			{
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return -3;
 			}
-			std::cout << "listen socket is1:" << ((CONN_STRUCT*)_pData)->_LisnSocket << std::endl;
 
 			/* 服务器端填充_ServerAddr结构 */
-			memset(&((CONN_STRUCT*)_pData)->_ServerAddr, 0, sizeof(struct sockaddr_in));
-			((CONN_STRUCT*)_pData)->_ServerAddr.sin_family = AF_INET;
-			((CONN_STRUCT*)_pData)->_ServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-			((CONN_STRUCT*)_pData)->_ServerAddr.sin_port = htons(atoi(port));
+			memset(&pConnStruct->_ServerAddr, 0, sizeof(struct sockaddr_in));
+			pConnStruct->_ServerAddr.sin_family = AF_INET;
+			pConnStruct->_ServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+			pConnStruct->_ServerAddr.sin_port = htons(atoi(port));
 
 			/* 捆绑_LisnSocket描述符 */
-			if (::bind(((CONN_STRUCT*)_pData)->_LisnSocket, (struct sockaddr *)(&((CONN_STRUCT*)_pData)->_ServerAddr), sizeof(struct sockaddr)) == -1)
+			if (::bind(pConnStruct->_LisnSocket, (struct sockaddr *)(&pConnStruct->_ServerAddr), sizeof(struct sockaddr)) == -1)
 			{
 #ifdef PLATFORM_IS_WINDOWS
-				((CONN_STRUCT*)_pData)->_Err = WSAGetLastError();
+				pConnStruct->_Err = WSAGetLastError();
 #endif
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return -4;
 			}
 
 			/* 监听_LisnSocket描述符 */
-			if (listen(((CONN_STRUCT*)_pData)->_LisnSocket, 5) == -1)
+			if (listen(pConnStruct->_LisnSocket, 5) == -1)
 			{
-				std::cout << "failed to listen" << std::endl;
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return -5;
 			}
 
-			std::cout << "listen socket is2:" << ((CONN_STRUCT*)_pData)->_LisnSocket << std::endl;
-
 			/* 启动等待连接的线程 */
-			_recvConnThread = std::thread(_ConnReceiveConnectionThreadFunc,this);
-
-			std::cout << "step 3" << std::endl;
-			/*if (((CONN_STRUCT*)_pData)->_ReceiveConnectionThread.IsRunning())
-			{
-				((CONN_STRUCT*)_pData)->_ReceiveConnectionThread.Join();
-			}
-
-			if (((CONN_STRUCT*)_pData)->_ReceiveConnectionThread.Start(this) != 0)
-			{
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
-				return -6;
-			}*/
+			std::unique_lock<std::mutex> cv_lck(pConnStruct->_cv_mutex);
+			pConnStruct->_recvConnThread = std::thread(CONN::_AcceptThread, this->pConnStruct);
+			pConnStruct->_cv.wait(cv_lck);
 			
-			((CONN_STRUCT*)_pData)->_ConnState = WAITING_FOR_CONNECTION;
-
-			((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 			return 0;
 		}
 		int CONN::Connect(const char *address, const char *port)
 		{
-			((CONN_STRUCT*)_pData)->_DataSection.Lock();
-
-			if (((CONN_STRUCT*)_pData)->_ConnState != IDLE)
+			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_re_mutex);
+			
+			if (pConnStruct->_ConnState != IDLE)
 			{
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return false;
 			}
 
 			/* 启动服务器 */
 #ifdef PLATFORM_IS_WINDOWS
-			if (WSAStartup(0x0101, &((CONN_STRUCT*)_pData)->_WsaData) != 0)
+			if (WSAStartup(0x0101, &pConnStruct->_WsaData) != 0)
 			{
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return false;
 			}
 #endif
 			/* 服务器端开始建立socket描述符 */
-			if ((((CONN_STRUCT*)_pData)->_ConnSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+			if ((pConnStruct->_ConnSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 			{
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return false;
 			}
 
 			/* 客户端填充_ServerAddr结构 */
-			memset(&((CONN_STRUCT*)_pData)->_ServerAddr, 0, sizeof(((CONN_STRUCT*)_pData)->_ServerAddr));
-			((CONN_STRUCT*)_pData)->_ServerAddr.sin_family = AF_INET;
-			((CONN_STRUCT*)_pData)->_ServerAddr.sin_addr.s_addr = inet_addr(address); //与linux不同
-			((CONN_STRUCT*)_pData)->_ServerAddr.sin_port = htons(atoi(port));
+			memset(&pConnStruct->_ServerAddr, 0, sizeof(pConnStruct->_ServerAddr));
+			pConnStruct->_ServerAddr.sin_family = AF_INET;
+			pConnStruct->_ServerAddr.sin_addr.s_addr = inet_addr(address); //与linux不同
+			pConnStruct->_ServerAddr.sin_port = htons(atoi(port));
 
 			/* 连接 */
-
-			if (connect(((CONN_STRUCT*)_pData)->_ConnSocket, (const struct sockaddr *)&((CONN_STRUCT*)_pData)->_ServerAddr, sizeof(((CONN_STRUCT*)_pData)->_ServerAddr)) == -1)
+			if (connect(pConnStruct->_ConnSocket, (const struct sockaddr *)&pConnStruct->_ServerAddr, sizeof(pConnStruct->_ServerAddr)) == -1)
 			{
-				((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 				return false;
 			}
 
-			((CONN_STRUCT*)_pData)->_DataSection.Unlock();
-
 			/* Start Thread */
-			_recvDataThread = std::thread(_ConnReceiveDataThreadFunc, this);
+			pConnStruct->_recvDataThread = std::thread(_ReceiveThread, this->pConnStruct);
 			
-			((CONN_STRUCT*)_pData)->_ConnState = WORKING;
+			pConnStruct->_ConnState = WORKING;
 
 			return 0;
 		}
 		int CONN::SendData(const Aris::Core::MSG &data)
 		{
-			int ret = 0;
+			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_re_mutex);
 			
-			((CONN_STRUCT*)_pData)->_DataSection.Lock();
+			int ret = 0;
 
-			if (((CONN_STRUCT*)_pData)->_ConnState != WORKING)
+			if (pConnStruct->_ConnState != WORKING)
 			{
 				ret = -1;
 			}
 			else
 			{
-				((CONN_STRUCT*)_pData)->_Err = send(((CONN_STRUCT*)_pData)->_ConnSocket, data._pData, data.GetLength() + MSG_HEADER_LENGTH, 0);
-				if (((CONN_STRUCT*)_pData)->_Err == -1)
+				pConnStruct->_Err = send(pConnStruct->_ConnSocket, data._pData, data.GetLength() + MSG_HEADER_LENGTH, 0);
+				if (pConnStruct->_Err == -1)
 					ret = -1;
 			}
 
-			((CONN_STRUCT*)_pData)->_DataSection.Unlock();
 			return ret;
 		}
-		int CONN::SetCallBackOnReceivedData(int(*ArgOnReceivedData)(CONN*,Aris::Core::MSG &))
+		int CONN::SetCallBackOnReceivedData(std::function<int(CONN*, Aris::Core::MSG &)> OnReceivedData)
 		{
-			((CONN_STRUCT*)_pData)->_OnReceivedData = ArgOnReceivedData;
+			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_re_mutex);
+			
+			pConnStruct->_OnReceivedData = OnReceivedData;
 			return 0;
 		}
-		int CONN::SetCallBackOnReceivedConnection(int(*OnReceivedConnection)(CONN *, const char *,int))
+		int CONN::SetCallBackOnReceivedConnection(std::function<int(CONN*, const char*, int)> OnReceivedConnection)
 		{
-			((CONN_STRUCT*)_pData)->_OnReceivedConnection = OnReceivedConnection;
+			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_re_mutex);
+			
+			pConnStruct->_OnReceivedConnection = OnReceivedConnection;
 			return 0;
 		}
-		int CONN::SetCallBackOnLoseConnection(int(*OnLoseConnection)(CONN*))
+		int CONN::SetCallBackOnLoseConnection(std::function<int(CONN*)> OnLoseConnection)
 		{
-			((CONN_STRUCT*)_pData)->_OnLoseConnection = OnLoseConnection;
+			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_re_mutex);
+			
+			pConnStruct->_OnLoseConnection = OnLoseConnection;
 			return 0;
 		}
 	}

@@ -85,46 +85,6 @@ int main()
 		VisualSystem.Connect(RemoteIp, "5688");
 		ControlSystem.Connect(RemoteIp, "5689");
 
-		//VisualSystem.Close();
-
-		//std::thread closeThread;
-
-		//if (closeThread.joinable())
-		//	closeThread.join();
-
-		//
-		//closeThread = std::thread([]()
-		//{
-		//	std::cout << "begin to close"<<endl;
-		//});
-
-		//if (closeThread.joinable())
-		//{
-		//	cout << "can join" << endl;
-		//	closeThread.join();
-		//}
-		//else
-		//{
-		//	cout << "can not join" << endl;
-		//	//closeThread.join();
-		//}
-		//	
-
-		//std::cout << "after join" << endl;
-
-		//closeThread = std::thread([&ControlSystem]()
-		//{
-		//	cout << "now try to close" << endl;
-
-		//	Sleep(10000);
-
-		//	cout << "now close connection" << endl;
-
-		//	ControlSystem.Close();
-		//});
-
-		//closeThread.detach();
-
 
 		/*开始消息循环*/
 		Aris::Core::RunMsgLoop();

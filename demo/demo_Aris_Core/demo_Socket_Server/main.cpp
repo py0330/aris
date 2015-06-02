@@ -38,23 +38,57 @@ int main()
 		/*注册所有的消息函数*/
 		Aris::Core::RegisterMsgCallback(VisualSystemConnected, OnVisualSystemConnected);
 		Aris::Core::RegisterMsgCallback(VisualSystemDataReceived, OnVisualSystemDataReceived);
-		Aris::Core::RegisterMsgCallback(VisualSystemLost, OnVisualSystemLost);
 		Aris::Core::RegisterMsgCallback(ControlSystemConnected, OnControlSystemConnected);
 		Aris::Core::RegisterMsgCallback(ControlTrajectoryFinished, OnControlTrajectoryFinished);
-		Aris::Core::RegisterMsgCallback(ControlSystemLost, OnControlSystemLost);
 
 		/*设置所有CONN类型的回调函数*/
-		VisualSystem.SetCallBackOnReceivedConnection(OnConnectionReceived);
-		VisualSystem.SetCallBackOnReceivedData(OnConnDataReceived);
-		VisualSystem.SetCallBackOnLoseConnection(OnConnectionLost);
-		ControlSystem.SetCallBackOnReceivedConnection(OnConnectionReceived);
-		ControlSystem.SetCallBackOnReceivedData(OnConnDataReceived);
-		ControlSystem.SetCallBackOnLoseConnection(OnConnectionLost);
+		VisualSystem.SetCallBackOnReceivedConnection([](Aris::Core::CONN *pConn, const char *addr, int port)
+		{
+			Aris::Core::MSG msg;
+
+			msg.SetMsgID(VisualSystemConnected);
+			msg.Copy(&port, sizeof(int));
+			msg.CopyMore(addr, strlen(addr) + 1);
+
+			PostMsg(msg);
+
+			return 0;
+		});
+		VisualSystem.SetCallBackOnReceivedData([](Aris::Core::CONN *pConn, Aris::Core::MSG &msg)
+		{
+			msg.SetMsgID(VisualSystemDataReceived);
+			Aris::Core::PostMsg(msg);
+			return 0;
+		});
+		VisualSystem.SetCallBackOnLoseConnection([](Aris::Core::CONN *pConn)
+		{
+			cout << "Vision system connection lost" << endl;
+			return pConn->StartServer("5688");
+		});
+		ControlSystem.SetCallBackOnReceivedConnection([](Aris::Core::CONN *pConn, const char *addr, int port)
+		{
+			Aris::Core::MSG msg;
+			
+			msg.SetMsgID(ControlSystemConnected);
+			msg.Copy(&port, sizeof(int));
+			msg.CopyMore(addr, strlen(addr) + 1);
+
+			PostMsg(msg);
+
+			return 0;
+		});
+		ControlSystem.SetCallBackOnReceivedData([](Aris::Core::CONN *pConn, Aris::Core::MSG &msg)
+		{
+			msg.SetMsgID(ControlTrajectoryFinished);
+			Aris::Core::PostMsg(msg);
+			return 0;
+		});
+		ControlSystem.SetCallBackOnLoseConnection([](Aris::Core::CONN *pConn)
+		{
+			cout << "Control system connection lost" << endl;
+			return pConn->StartServer("5689");
+		});
 		
-		cout << "vision system address:" << (void*)&VisualSystem << endl;
-		cout << "control system address:" << (void*)&ControlSystem << endl;
-
-
 		/*打开客户端*/
 		VisualSystem.StartServer("5688");
 		ControlSystem.StartServer("5689");

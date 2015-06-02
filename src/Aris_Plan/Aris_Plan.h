@@ -258,7 +258,7 @@ namespace Aris
 							{
 								ifOK = false;
 							}
-							else if ((i == 0) )
+							else if (i == 0)
 							{
 								if (loc_ds + maxL*dt>maxDs[i + 1])
 								{
@@ -323,7 +323,7 @@ namespace Aris
 							{
 								ifOK = false;
 							}
-							else if ((i == 0))
+							else if (i == 0)
 							{
 								if (loc_ds + maxL*dt>maxDs[i + 1])
 								{

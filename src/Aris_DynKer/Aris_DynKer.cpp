@@ -864,13 +864,13 @@ namespace Aris
 			double to_pnt[3], to_pv[3], tem[3],tem2[3],tem3[3];
 			s_inv_pv2pv(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_pv, to_pv, to_pnt);
 
-			if ((inv_relative_acc_in == 0))
+			if (inv_relative_acc_in == nullptr)
 			{
 				memset(tem, 0, sizeof(tem));
 			}
 			else
 			{
-				if (from_pnt == 0)
+				if (from_pnt == nullptr)
 				{
 					memcpy(tem, inv_relative_acc_in, sizeof(tem));
 				}
@@ -881,13 +881,13 @@ namespace Aris
 				}
 			}
 
-			if (inv_relative_vel_in == 0)
+			if (inv_relative_vel_in == nullptr)
 			{
 				memset(tem3, 0, sizeof(tem3));
 			}
 			else
 			{
-				if (inv_relative_pm_in == 0)
+				if (inv_relative_pm_in == nullptr)
 				{
 					memcpy(tem2, to_pv, sizeof(tem2));
 				}
@@ -896,7 +896,7 @@ namespace Aris
 					s_dgemm(3, 1, 3, 1, inv_relative_pm_in, 4, to_pv, 1, 0, tem2, 1);
 				}
 
-				if (from_pv == 0)
+				if (from_pv == nullptr)
 				{
 
 				}
@@ -910,9 +910,9 @@ namespace Aris
 
 			s_daxpy(3, 1, tem, 1, tem3, 1);
 
-			if (from_pv == 0)
+			if (from_pv == nullptr)
 			{
-				if (inv_relative_pm_in == 0)
+				if (inv_relative_pm_in == nullptr)
 				{
 					memset(to_pa_out, 0, sizeof(double)* 3);
 					if (to_pa_out!=0)
@@ -920,13 +920,13 @@ namespace Aris
 				}
 				else
 				{
-					if (to_pa_out != 0)
+					if (to_pa_out != nullptr)
 						s_dgemmTN(3, 1, 3, -1, inv_relative_pm_in, 4, tem3, 1, 0, to_pa_out, 1);
 				}
 			}
 			else
 			{
-				if (from_pa == 0)
+				if (from_pa == nullptr)
 				{
 					memset(tem, 0, sizeof(tem));
 				}
@@ -936,16 +936,16 @@ namespace Aris
 				}
 				
 				s_daxpy(3, -1, tem3, 1, tem, 1);
-				if (to_pa_out != 0)
+				if (to_pa_out != nullptr)
 					s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pa_out, 1);
 			}
 
-			if (to_pv_out != 0)
+			if (to_pv_out != nullptr)
 			{
 				memcpy(to_pv_out, to_pv, sizeof(to_pv));
 			}
 
-			if (to_pnt_out != 0)
+			if (to_pnt_out != nullptr)
 			{
 				memcpy(to_pnt_out, to_pnt, sizeof(to_pnt));
 			}

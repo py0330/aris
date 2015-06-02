@@ -522,6 +522,8 @@ namespace Aris
 				case TOKEN::BRACE_R:
 					bceNum--;
 					break;
+				default:
+					break;
 				}
 
 				nextPlace++;

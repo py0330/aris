@@ -17,7 +17,42 @@ int main()
 {
 	CALCULATOR c;
 
+	double pm_G02G[4][4] = 
+	{
+		{ -1, 0, 0, 0 },
+		{ 0, 0, 1, 0 },
+		{ 0, 1, 0, 0 },
+		{ 0, 0, 0, 1 }
+	};
+	
+	double ep[6] = {PI,0,PI,0,0,0};
+	double pm_I2G0[4][4];
+	s_ep2pm(ep, *pm_I2G0, "321");
+	dsp(*pm_I2G0, 4, 4);
 
+	double pm_R2I[4][4] =
+	{
+		{ 1, 0, 0, 0 },
+		{ 0, 0, 1, 0 },
+		{ 0, -1, 0,  0},
+		{ 0, 0, 0, 1}
+	};
+	
+
+	double pm_R2G0[4][4];
+
+	double pm_R2G[4][4];
+
+	s_pm_dot_pm(*pm_I2G0, *pm_R2I, *pm_R2G0);
+	s_pm_dot_pm(*pm_G02G, *pm_R2G0, *pm_R2G);
+	dsp(*pm_R2G, 4, 4);
+	
+	
+	
+	
+	
+	
+	
 	try
 	{
 		c.AddVariable("fiveee", 5);
@@ -61,7 +96,7 @@ int main()
 
 	k({ 1, 2 }, { 0, 1 }).dsp();
 
-	k = MATRIX();
+	k = {};
 
 
 

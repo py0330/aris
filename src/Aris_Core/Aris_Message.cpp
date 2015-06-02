@@ -1,11 +1,19 @@
 ﻿#include "Platform.h"
-#include "Aris_Thread.h"
+//#include "Aris_Thread.h"
 #include "Aris_Message.h"
 
+#include <mutex>
 #include <queue>
 #include <vector>
 #include <algorithm>
 #include <map>
+
+#ifdef PLATFORM_IS_WINDOWS 
+#include <Windows.h>
+#endif
+#ifdef PLATFORM_IS_LINUX 
+#include <semaphore.h>
+#endif
 
 using namespace std;
 
@@ -13,9 +21,49 @@ namespace Aris
 {
 	namespace Core
 	{
+		/** \brief 信号量
+		*
+		* 用于线程之间通讯，每当触发，信号+1，每当等待，信号-1。
+		*
+		*/
+		class SEM
+		{
+		private:
+#ifdef PLATFORM_IS_WINDOWS 
+			const static int _SIZE = 4;
+#endif
+#ifdef PLATFORM_IS_LINUX 
+			const static int _SIZE = 32;
+#endif
+			char _pData[_SIZE];
+
+
+
+		public:
+			SEM(const SEM & other) = delete;
+			SEM &operator=(const SEM& other) = delete;
+			SEM(SEM && other) = delete;
+			SEM &operator=(SEM&& other) = delete;
+
+			/*! \brief 构造函数，并初始化信号量的值
+			* \param iniValue 当信号量被创建时，该信号量的初始值。在Windows平台下该值最大为256。
+			*/
+			SEM(unsigned int iniValue = 0);
+			~SEM();/*!< \brief 析构函数 */
+			int Post();/*!< \brief 在某线程中触发信号，该动作使得信号值+1 */
+			/*! \brief 在某线程中等待信号，该动作使得信号值-1
+			*
+			* 当某线程等待信号时，若当前信号值为0，那么本线程阻塞，直到其他线程触发信号，之后信号值-1；
+			*若当前信号值大于0，则本线程继续运行，同时信号值-1。
+			*/
+			int Wait();
+
+		};
+
+		
 		std::queue<Aris::Core::MSG> msgq;
 		SEM MsgReceived;
-		MUTEX MsgMutex,MsgCallbackMutex;
+		std::mutex MsgMutex,MsgCallbackMutex;
 		bool ifSkipLoop = false;
 		bool isRunning = false;
 
@@ -24,9 +72,9 @@ namespace Aris
 
 		int PostMsg(const Aris::Core::MSG &InMsg)
 		{
-			MsgMutex.Lock();
+			MsgMutex.lock();
 			msgq.push(InMsg);
-			MsgMutex.Unlock();
+			MsgMutex.unlock();
 
 			MsgReceived.Post();
 
@@ -39,10 +87,10 @@ namespace Aris
 			{
 				MsgReceived.Wait();
 
-				MsgMutex.Lock();
+				MsgMutex.lock();
 				if(msgq.empty())
 				{
-					MsgMutex.Unlock();
+					MsgMutex.unlock();
 					continue;
 				}
 				else
@@ -51,13 +99,13 @@ namespace Aris
 					msgq.pop();
 					Flag=false;
 				}
-				MsgMutex.Unlock();
+				MsgMutex.unlock();
 			}
 			return 0;
 		}
 		int RegisterMsgCallback(unsigned int message, function<int(Aris::Core::MSG &)> CallBack)
 		{
-			MsgCallbackMutex.Lock();
+			MsgCallbackMutex.lock();
 			
 			auto found = Msg_CallBack_Map.find(message);
 			if (found == Msg_CallBack_Map.end())
@@ -78,13 +126,13 @@ namespace Aris
 				}
 			}
 
-			MsgCallbackMutex.Unlock();
+			MsgCallbackMutex.unlock();
 
 			return 0;
 		}
 		int RegisterDefaultCallback(std::function<int(Aris::Core::MSG &)> CallBack)
 		{
-			MsgCallbackMutex.Lock();
+			MsgCallbackMutex.lock();
 			
 			DefaultCallBacks.clear();
 			if (CallBack != nullptr)
@@ -92,7 +140,7 @@ namespace Aris
 				DefaultCallBacks.push_back(CallBack);
 			}
 
-			MsgCallbackMutex.Unlock();
+			MsgCallbackMutex.unlock();
 
 			return 0;
 		}
@@ -109,7 +157,7 @@ namespace Aris
 
 			while ((GetMsg(&Msg) == 0) && (ifSkipLoop==false))
 			{
-				MsgCallbackMutex.Lock();
+				MsgCallbackMutex.lock();
 
 				auto found = Msg_CallBack_Map.find(Msg.GetMsgID());
 
@@ -134,7 +182,7 @@ namespace Aris
 					}
 				}
 				
-				MsgCallbackMutex.Unlock();
+				MsgCallbackMutex.unlock();
 			}
 
 			isRunning = false;
@@ -156,12 +204,12 @@ namespace Aris
 		int ClearMsgLoop()
 		{
 			/*清空消息队列*/
-			MsgCallbackMutex.Lock();
+			MsgCallbackMutex.lock();
 			while (!msgq.empty())
 			{
 				msgq.pop();
 			}
-			MsgCallbackMutex.Unlock();
+			MsgCallbackMutex.unlock();
 
 			return 0;
 		}
