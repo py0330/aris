@@ -7,44 +7,6 @@ namespace Aris
 {
 	namespace Core
 	{
-		/** \brief 信号量
-		*
-		* 用于线程之间通讯，每当触发，信号+1，每当等待，信号-1。
-		*
-		*/
-		class SEM
-		{
-		private:
-#ifdef PLATFORM_IS_WINDOWS 
-			const static int _SIZE = 4;
-#endif
-#ifdef PLATFORM_IS_LINUX 
-			const static int _SIZE = 32;
-#endif
-			char _pData[_SIZE];
-		
-			
-
-		public:
-			SEM(const SEM & other) = delete;
-			SEM &operator=(const SEM& other) = delete;
-			SEM(SEM && other) = delete;
-			SEM &operator=(SEM&& other) = delete;
-
-			/*! \brief 构造函数，并初始化信号量的值
-			* \param iniValue 当信号量被创建时，该信号量的初始值。在Windows平台下该值最大为256。
-			*/
-			SEM(unsigned int iniValue = 0);
-			~SEM();/*!< \brief 析构函数 */
-			int Post();/*!< \brief 在某线程中触发信号，该动作使得信号值+1 */
-			/*! \brief 在某线程中等待信号，该动作使得信号值-1
-			*
-			* 当某线程等待信号时，若当前信号值为0，那么本线程阻塞，直到其他线程触发信号，之后信号值-1；
-			*若当前信号值大于0，则本线程继续运行，同时信号值-1。
-			*/
-			int Wait();
-		
-		};
 		/** \brief 互斥量
 		*
 		* 用于保护变量或内存同一时间只能被一个线程访问。当某线程锁住互斥量时，其他想锁住该互斥量的线程阻塞

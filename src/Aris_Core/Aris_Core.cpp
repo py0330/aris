@@ -74,7 +74,7 @@ namespace Aris
 			if (GetLength() > 0)
 				return &_pData[MSG_HEADER_LENGTH];
 			else
-				return 0;
+				return nullptr;
 		}
 
 		void Core::MSG::SetType(long long type)

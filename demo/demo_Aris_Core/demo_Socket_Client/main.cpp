@@ -53,30 +53,90 @@ int main()
 #endif
 
 		CONN VisualSystem, ControlSystem;
-		pVisualSystem = &VisualSystem;
-		pControlSystem = &ControlSystem;
-
-
-
-
-
 
 		/*注册所有的消息函数*/
-		Aris::Core::RegisterMsgCallback(VisualSystemDataNeeded, OnVisualSystemDataNeeded);
-		Aris::Core::RegisterMsgCallback(VisualSystemLost, OnVisualSystemLost);
-		Aris::Core::RegisterMsgCallback(ControlCommandReceived, OnControlCommandReceived);
-		Aris::Core::RegisterMsgCallback(ControlSystemLost, OnControlSystemLost);
+		Aris::Core::RegisterMsgCallback(VisualSystemDataNeeded, [&VisualSystem](Aris::Core::MSG &msg)
+		{
+			/*只要收到数据，就认为服务器在索取地图数据，于是生成地图并发送过去*/
+			static int i = 0;
+
+			i++;
+
+			cout << "Visual data needed" << endl;
+			double map[9] = { (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i };
+
+			Aris::Core::MSG data;
+			data.Copy(map, sizeof(map));
+
+			VisualSystem.SendData(data);
+
+			return 0;
+		});
+		Aris::Core::RegisterMsgCallback(VisualSystemLost, [](Aris::Core::MSG &msg)
+		{
+			cout << "Vision system connection lost" << endl;
+
+			Aris::Core::StopMsgLoop();
+
+			return 0;
+		});
+		Aris::Core::RegisterMsgCallback(ControlCommandReceived, [&ControlSystem](Aris::Core::MSG &msg)
+		{
+			/*只要收到数据，就认为服务器让机器人行动，于是sleep 2秒之后发送回去数据，告诉机器人已经走到位*/
+
+			cout << "begin walking" << endl;
+#ifdef PLATFORM_IS_WINDOWS
+			Sleep(2000);
+#endif
+#ifdef PLATFORM_IS_LINUX
+			usleep(2000000);
+#endif
+
+
+
+			Aris::Core::MSG data;
+			ControlSystem.SendData(data);
+			cout << "end walking" << endl;
+
+			return 0;
+
+		});
+		Aris::Core::RegisterMsgCallback(ControlSystemLost, [](Aris::Core::MSG &msg)
+		{
+			cout << "Control system connection lost" << endl;
+
+			return 0;
+		});
 
 		/*设置所有CONN类型的回调函数*/
-		VisualSystem.SetCallBackOnReceivedData(OnConnDataReceived);
-		VisualSystem.SetCallBackOnLoseConnection(OnConnectionLost);
-		ControlSystem.SetCallBackOnReceivedData(OnConnDataReceived);
-		ControlSystem.SetCallBackOnLoseConnection(OnConnectionLost);
+		VisualSystem.SetCallBackOnReceivedData([](Aris::Core::CONN *pConn, Aris::Core::MSG &data)
+		{
+			Aris::Core::PostMsg(Aris::Core::MSG(VisualSystemDataNeeded));
+
+			return 0;
+		});
+		VisualSystem.SetCallBackOnLoseConnection([](Aris::Core::CONN *pConn)
+		{
+			PostMsg(Aris::Core::MSG(VisualSystemLost));
+
+			return 0;
+		});
+		ControlSystem.SetCallBackOnReceivedData([](Aris::Core::CONN *pConn, Aris::Core::MSG &data)
+		{
+			Aris::Core::PostMsg(Aris::Core::MSG(ControlCommandReceived));
+
+			return 0;
+		});
+		ControlSystem.SetCallBackOnLoseConnection([](Aris::Core::CONN *pConn)
+		{
+			PostMsg(Aris::Core::MSG(ControlSystemLost));
+
+			return 0;
+		});
 
 		/*以下使用lambda函数做回调*/
 		VisualSystem.SetCallBackOnReceivedData([](Aris::Core::CONN *pConn, Aris::Core::MSG &data)
 		{
-			cout << "using new lambda callback" << endl;
 			Aris::Core::PostMsg(Aris::Core::MSG(VisualSystemDataNeeded));
 			return 0;
 		});
@@ -88,7 +148,6 @@ int main()
 
 		/*开始消息循环*/
 		Aris::Core::RunMsgLoop();
-
 	}
 
 #ifdef PLATFORM_IS_WINDOWS  

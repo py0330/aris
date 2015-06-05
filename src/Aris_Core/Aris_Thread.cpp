@@ -19,56 +19,7 @@ namespace Aris
 {
 	namespace Core
 	{
-		struct SEM_STRUCT
-		{
-#ifdef PLATFORM_IS_WINDOWS 
-			HANDLE m_Sem;
-#endif
-#ifdef PLATFORM_IS_LINUX 
-			sem_t m_Sem;
-#endif
-		};
 
-		SEM::SEM(unsigned int iniValue)
-		{
-			static_assert(sizeof(SEM_STRUCT) <= SEM::_SIZE, "Aris::Core::SEM need more memory");
-
-			#ifdef PLATFORM_IS_WINDOWS 
-			((SEM_STRUCT*)_pData)->m_Sem = CreateSemaphore(NULL, iniValue, 256, NULL);
-			#endif
-			#ifdef PLATFORM_IS_LINUX 
-			sem_init(&((SEM_STRUCT*)_pData)->m_Sem,iniValue,0);
-			#endif
-		}
-		SEM::~SEM()
-		{
-			#ifdef PLATFORM_IS_WINDOWS 
-			CloseHandle(((SEM_STRUCT*)_pData)->m_Sem);
-			#endif
-			#ifdef PLATFORM_IS_LINUX 
-			//none
-			#endif
-		}
-		int SEM::Post()
-		{
-			#ifdef PLATFORM_IS_WINDOWS 
-			ReleaseSemaphore(((SEM_STRUCT*)_pData)->m_Sem, 1, NULL);
-			return 0;
-			#endif
-			#ifdef PLATFORM_IS_LINUX 
-			return sem_post(&((SEM_STRUCT*)_pData)->m_Sem);
-			#endif
-		}
-		int SEM::Wait()
-		{
-			#ifdef PLATFORM_IS_WINDOWS 
-			WaitForSingleObject(((SEM_STRUCT*)_pData)->m_Sem, INFINITE);
-			return 0;
-			#endif
-			#ifdef PLATFORM_IS_LINUX 
-			return sem_wait(&((SEM_STRUCT*)_pData)->m_Sem);
-			#endif
-		}
 
 		struct MUTEX_STRUCT
 		{
