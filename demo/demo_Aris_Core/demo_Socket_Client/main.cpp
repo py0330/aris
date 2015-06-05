@@ -2,11 +2,11 @@
 #include <cstring>
 #include <iomanip> 
 #include <bitset>
-
-#include "Platform.h"
-#include "Aris_Socket.h"
-#include "Client.h"
 #include <thread>
+
+#include <Platform.h>
+#include <Aris_Socket.h>
+#include <Aris_Message.h>
 
 #ifdef PLATFORM_IS_LINUX
 #include <unistd.h>
@@ -19,6 +19,13 @@
 using namespace std;
 using namespace Aris::Core;
 
+enum ClientMessage
+{
+	VisualSystemDataNeeded,
+	VisualSystemLost,
+	ControlSystemLost,
+	ControlCommandReceived,
+};
 
 /*以下用于VS内存泄露检测*/
 #ifdef PLATFORM_IS_WINDOWS  
