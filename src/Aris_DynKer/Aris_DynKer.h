@@ -13,13 +13,15 @@
 #define PI 3.141592653589793
 #endif
 
-#include "Aris_XML.h"
-#include "Aris_ExpCal.h"
 #include <vector>
 #include <map>
 #include <string>
 #include <memory>
 #include <functional>
+
+#include <Aris_XML.h>
+#include <Aris_ExpCal.h>
+
 
 namespace Aris
 {
@@ -235,7 +237,6 @@ namespace Aris
 		public:
 			void ToXMLElement(Aris::Core::ELEMENT *pEle) const;
 			void FromXMLElement(const Aris::Core::ELEMENT *pEle);
-
 		};
 		class MARKER :public OBJECT
 		{
@@ -544,7 +545,7 @@ namespace Aris
 			std::vector<double> _s;
 			std::vector<double> _x;
 
-		public:
+		protected:
 			double *C, *pI, *f, *a_c, *D, *b,*s,*x;
 
 			ENVIRONMENT _Environment;
