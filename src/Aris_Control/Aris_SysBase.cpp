@@ -697,13 +697,13 @@ void CSysBase::RealtimeCore(void* arg)
 
         timePrevious = timeNow;
 
-        m_logDataRC.time=m_cycleCount;
-        m_logDataRC.m_machineState=CSysBase::m_machineDataCore.machinestate;
-        //m_logDataRC.m_servoState=CSysBase::m_machineState;
-        memcpy(&m_logDataRC.m_feedbackData,&CSysBase::m_deviceMaster.m_feedbackData,
-        		sizeof(CSysBase::m_deviceMaster.m_feedbackData));
-        memcpy(&m_logDataRC.m_commandData,&CSysBase::m_deviceMaster.m_commandData,
-        		sizeof(CSysBase::m_deviceMaster.m_commandData));
+//        m_logDataRC.time=m_cycleCount;
+//        m_logDataRC.m_machineState=CSysBase::m_machineDataCore.machinestate;
+//        //m_logDataRC.m_servoState=CSysBase::m_machineState;
+//        memcpy(&m_logDataRC.m_feedbackData,&CSysBase::m_deviceMaster.m_feedbackData,
+//        		sizeof(CSysBase::m_deviceMaster.m_feedbackData));
+//        memcpy(&m_logDataRC.m_commandData,&CSysBase::m_deviceMaster.m_commandData,
+//        		sizeof(CSysBase::m_deviceMaster.m_commandData));
 
 		m_logCount++;
 		/*
@@ -727,10 +727,11 @@ void CSysBase::RealtimeCore(void* arg)
 			 */
 //			int * a = new int();
 //			delete a;
-			ret = rt_dev_sendto(m_xddp_socket_data_rt,&m_logDataRC,sizeof(m_logDataRC),0,NULL,0);
+//			ret = rt_dev_sendto(m_xddp_socket_data_rt,&m_logDataRC,sizeof(m_logDataRC),0,NULL,0);
+			ret = rt_dev_sendto(m_xddp_socket_data_rt,&m_machineDataCore,sizeof(m_machineDataCore),0,NULL,0);
 			if(ret==-12)
 			{
-				rt_printf("WARN:Internal communication buffer 2 is full.%lld\n",m_cycleCount);
+//				rt_printf("WARN:Internal communication buffer 2 is full.%lld\n",m_cycleCount);
 			}
 
 			//rt_printf("%d\n",ret);
@@ -1053,25 +1054,28 @@ void *CSysBase::dataServer(void* arg)
 
 		do
 		{
-			ret = read(m_xddp_fd_data,&m_logDataBuffer,sizeof(m_logDataBuffer));
+			//ret = read(m_xddp_fd_data,&m_logDataBuffer,sizeof(m_logDataBuffer));
+			ret = read(m_xddp_fd_data,&m_logMachineDataBuffer,sizeof(m_logMachineDataBuffer));
 //			printf("%d,%lld\n",ret,m_logDataBuffer.time);
-			if(ret>0&&m_logCount<MAX_LOG_ENTRIES)
+			if(ret>0)
 			{
-				memcpy(&m_logData[m_logCount],&m_logDataBuffer,sizeof(m_logDataBuffer));
-				RawLogDataToMachineData(m_logMachineDataBuffer,m_logDataBuffer);
+//				memcpy(&m_logData[m_logCount],&m_logDataBuffer,sizeof(m_logDataBuffer));
+//				RawLogDataToMachineData(m_logMachineDataBuffer,m_logDataBuffer);
 				m_logCount++;
 				/*
 				 * Write to file
 				 */
+				//printf("motor state:%d\n",m_logMachineDataBuffer.motorsStates[0]);
 				fwrite(&m_logMachineDataBuffer,sizeof(m_logMachineDataBuffer),1,fp);
 
 				if(m_logCount%1000==0)
 				{
-					printf("TIME:%lld %d POS:%d VEL%d POD:%d\n",m_cycleCount,
+					printf("TIME:%lld %d POS:%d VEL%d POD:%d Motor State: %d\n",m_cycleCount,
 							m_logDataBuffer.m_feedbackData.m_motorData[0].StatusWord,
 							m_logDataBuffer.m_feedbackData.m_motorData[0].Position,
 							m_logDataBuffer.m_feedbackData.m_motorData[0].Velocity,
-							m_logDataBuffer.m_commandData.m_motorData[0].Position);
+							m_logDataBuffer.m_commandData.m_motorData[0].Position,
+							m_logMachineDataBuffer.motorsStates[0]);
 				}
 
 			}
