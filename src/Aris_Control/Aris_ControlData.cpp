@@ -68,11 +68,13 @@ CSysInitParameters::~CSysInitParameters()
 
 CMotorData& CMotorData::operator=(const CMotorData& other)
 {
+    memcpy(this,&other,sizeof(*this));
 	return *this;
 };
 
 CMachineData& CMachineData::operator=(const CMachineData& other)
 {
+    memcpy(this,&other,sizeof(*this));
 	return *this;
 };
 
