@@ -153,7 +153,10 @@ namespace Aris
 		};
 		class RT_MSG final:public MSG_BASE
 		{
-			friend class Aris::RT_CONTROL::CSysBase;
+			//friend class Aris::RT_CONTROL::CSysBase;
+		public:
+			static RT_MSG instance;
+
 		private:
 			RT_MSG();
 			~RT_MSG() = default;

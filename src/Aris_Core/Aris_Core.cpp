@@ -64,6 +64,8 @@ namespace Aris
 			log_file.logfile(address);
 		}
 		
+		RT_MSG RT_MSG::instance;
+		
 		void Core::MSG_BASE::SetMsgID(int msgID)
 		{
 			*((int *)(_pData + 4)) = msgID;

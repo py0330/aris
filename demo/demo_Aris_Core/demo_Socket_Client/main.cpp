@@ -170,6 +170,7 @@ int main()
 		
 		cout << (char*)ret.GetDataAddress() << endl;
 
+		
 
 
 		/*开始消息循环*/

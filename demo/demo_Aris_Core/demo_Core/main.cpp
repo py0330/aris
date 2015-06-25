@@ -49,7 +49,8 @@ int main()
 
 	show(m3);
 
-
+	Aris::Core::RT_MSG::instance.Copy("rt msg");
+	cout << (char *)Aris::Core::RT_MSG::instance.GetDataAddress() << endl;
 
 	int i;
 	cin >> i;
