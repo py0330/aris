@@ -150,15 +150,14 @@ namespace Aris
 			*/
 			void Swap(MSG &other);
 		};
-		class RT_MSG final:public MSG_BASE
+		class RT_MSG final :public MSG_BASE
 		{
-			//friend class Aris::RT_CONTROL::CSysBase;
 		public:
-			static RT_MSG instance;
+			static RT_MSG instance[2];
 
 		private:
 			RT_MSG();
-			~RT_MSG() = default;
+			~RT_MSG();
 			RT_MSG(const RT_MSG &other) = delete;
 			RT_MSG(RT_MSG &&other) = delete;
 			RT_MSG &operator=(const RT_MSG& other) = delete;

@@ -64,7 +64,7 @@ namespace Aris
 			log_file.logfile(address);
 		}
 		
-		RT_MSG RT_MSG::instance;
+		RT_MSG RT_MSG::instance[2];
 		
 		void Core::MSG_BASE::SetMsgID(int msgID)
 		{
@@ -171,10 +171,13 @@ namespace Aris
 
 		RT_MSG::RT_MSG()
 		{
-			static char data[8192];
-			
-			_pData = data;
-			memset(_pData, 0, MSG_HEADER_LENGTH);
+			_pData = new char[8192 + MSG_HEADER_LENGTH];
+			memset(_pData, 0, 8192 + MSG_HEADER_LENGTH);
+			SetLength(0);
+		}
+		RT_MSG::~RT_MSG()
+		{
+			delete[] _pData;
 		}
 		void RT_MSG::SetLength(unsigned int dataLength)
 		{
