@@ -6,7 +6,6 @@ namespace Aris
 	namespace RT_CONTROL
 	{
 		class ACTUATION;
-		class CSysBase;
 	}
 	
 	namespace Core
