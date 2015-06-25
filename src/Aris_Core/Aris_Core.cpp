@@ -33,7 +33,7 @@ public:
 	void logfile(const char *address)
 	{
 		file.close();
-		file.open(address);
+		file.open(address, std::ios::out | std::ios::trunc);
 		if (!file.good())
 		{
 			throw std::logic_error("can't not start log function");
