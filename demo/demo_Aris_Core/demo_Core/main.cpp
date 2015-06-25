@@ -25,7 +25,6 @@ int main()
 {
 	Aris::Core::MSG m1, m2;
 
-
 	m1.SetLength(10);
 	
 	memcpy(m1.GetDataAddress(), "12345679", 10);
@@ -49,11 +48,6 @@ int main()
 	m3.SetLength(15);
 
 	show(m3);
-
-
-
-
-
 
 
 
