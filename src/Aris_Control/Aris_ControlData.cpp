@@ -78,6 +78,9 @@ CMachineData& CMachineData::operator=(const CMachineData& other)
 	return *this;
 };
 
+
+
+/*
 RT_MSG::RT_MSG()
 {
 
@@ -206,6 +209,8 @@ void RT_MSG::PasteAt(void * toThisMemory, const unsigned int dataLength,const un
 		memcpy(toThisMemory,&GetDataAddress()[atThisPositionInMsg],actualLength);
 	}
 }
+
+*/
 }
 
 }

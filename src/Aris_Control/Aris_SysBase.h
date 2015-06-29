@@ -145,8 +145,8 @@ static long long int  m_cycleCount;
 //static bool CSysBase::m_isAllComplete;
 
 
-static Aris::RT_CONTROL::RT_MSG  m_rtDataRecv;
-static Aris::RT_CONTROL::RT_MSG  m_rtDataSend;
+static Aris::Core::RT_MSG*  m_rtDataRecv;
+static Aris::Core::RT_MSG*  m_rtDataSend;
 
 static char  m_rtDataRecvBuffer[RT_MSG_BUFFER_SIZE];
 static char  m_rtDataSendBuffer[RT_MSG_BUFFER_SIZE];
@@ -276,8 +276,8 @@ static int RT_SendDataRaw(const void* p_ptrData, const int p_dataLength);
 static int RT_RecvDataRaw(void* p_ptrData,const int p_dataLength);
 static int NRT_SendDataRaw(const void* p_ptrData, const int p_dataLength);
 static int NRT_RecvDataRaw(void* p_ptrData,const unsigned int p_dataLength);
-static int RT_PostStateMsg();
-static int RT_PostMsg(Aris::RT_CONTROL::RT_MSG &p_data);
+//static int RT_PostStateMsg();
+//static int RT_PostMsg(Aris::Core::RT_MSG &p_data);
 
 
 

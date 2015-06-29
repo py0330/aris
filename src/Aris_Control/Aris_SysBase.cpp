@@ -90,8 +90,8 @@ char CSysBase::print_Ethercat_Initialized[PRINT_INFO_BUFFER_SIZE];
 
 
 
-Aris::RT_CONTROL::RT_MSG CSysBase::m_rtDataRecv;
-Aris::RT_CONTROL::RT_MSG CSysBase::m_rtDataSend;
+Aris::Core::RT_MSG* CSysBase::m_rtDataRecv;
+Aris::Core::RT_MSG*  CSysBase::m_rtDataSend;
 char CSysBase::m_rtDataRecvBuffer[RT_MSG_BUFFER_SIZE];
 char CSysBase::m_rtDataSendBuffer[RT_MSG_BUFFER_SIZE];
 
@@ -659,20 +659,45 @@ void CSysBase::RealtimeCore(void* arg)
 
         ret=RT_RecvDataRaw(CSysBase::m_rtDataRecvBuffer,RT_MSG_BUFFER_SIZE);
 
+
+
+       // memcpy(m_rtDataRecv->GetDataAddress(),m_rtDataRecvBuffer+MSG_HEADER_LENGTH,*(m_rtDataRecvBuffer+4));
+
         if(ret>=0)
         {
-        	rt_printf("msg id GET IN RT: %d\n",m_rtDataRecv.GetMsgID());
+            m_rtDataRecv->SetLength(*((int*)m_rtDataRecvBuffer));
+            m_rtDataRecv->SetMsgID(*((int*)(m_rtDataRecvBuffer+4)));
+
+            m_rtDataRecv->Copy(m_rtDataRecvBuffer+MSG_HEADER_LENGTH,m_rtDataRecv->GetLength());
+       //  m_rtDataRecv->Copy((int*)(m_rtDataRecvBuffer+MSG_HEADER_LENGTH),m_rtDataRecv->GetLength());
+       //     m_rtDataRecv->SetLength(*((int*)m_rtDataRecvBuffer));
+
+
+           /*int p;
+            p=0;
+        	rt_printf("data content %d\n",p);
+
+            m_rtDataRecv->Paste(&p,sizeof(int));
+
+
+
+        	rt_printf("data content %d\n",p);
+         	rt_printf("data  length  get in rt-core %d\n" ,m_rtDataRecv->GetLength());
+
+        	rt_printf("msg id GET IN RT: %d\n" ,m_rtDataRecv ->GetMsgID());*/
+
+
         }
 
         if(ret<0)
         {
-        	CSysBase::m_rtDataRecv.SetMsgID(-100);
+        	(*CSysBase::m_rtDataRecv).SetMsgID(-100);
         	//rt_printf("msg in RT not get!!\n");
 
         }
 
         if(trajectoryGenerator!=NULL)
-        	trajectoryGenerator(m_machineDataCore, m_rtDataRecv);
+        	trajectoryGenerator(m_machineDataCore, *m_rtDataRecv,*m_rtDataSend);
 
         PushDatatoMotors();
         //machine data to motor data
@@ -748,33 +773,18 @@ void CSysBase::RealtimeCore(void* arg)
 int CSysBase::InitRT_MSG()
 {
 	//after this function, this address should not be changed any more in RT side
-	CSysBase::m_rtDataRecv.m_ptrData=(char *)CSysBase::m_rtDataRecvBuffer;
-	CSysBase::m_rtDataSend.m_ptrData=(char *)CSysBase::m_rtDataSendBuffer;
+//	 CSysBase::m_rtDataRecv=(Aris::Core::RT_MSG *)CSysBase::m_rtDataRecvBuffer;
+	// CSysBase::m_rtDataSend=(Aris::Core::RT_MSG*)CSysBase::m_rtDataSendBuffer;
 
-//	CSysBase::m_rtDataRecv.m_ptrDataLength=(int*)CSysBase::m_rtDataRecv.m_ptrData;
-//	CSysBase::m_rtDataSend.m_ptrDataLength=(int*)CSysBase::m_rtDataSend.m_ptrData;
-//
+ 	//CSysBase::m_rtDataRecv.m_ptrDataLength=(int*)CSysBase::m_rtDataRecv.m_ptrData;
+ //	CSysBase::m_rtDataSend.m_ptrDataLength=(int*)CSysBase::m_rtDataSend.m_ptrData;
+       //   m_rtDataRecvBuffer="";
 //	CSysBase::m_rtDataRecv.m_ptrDataType=(int*)(CSysBase::m_rtDataRecv.m_ptrData+sizeof(int));
 //	CSysBase::m_rtDataSend.m_ptrDataType=(int*)(CSysBase::m_rtDataSend.m_ptrData+sizeof(int));
 	return 0;
 }
 
-/*int CSysBase::PostStateToNRT(const Aris::RT_CONTROL::EServoState p_state)
-{
-	int ret;
-	CSysBase::EInternDataType type = CSysBase::EInternDataType::EMIT_STA;
-//	ret = CSysBase::RT_PostMessageRaw(&type,sizeof(type));
-//	ret = CSysBase::RT_PostMessageRaw(&p_state,sizeof(p_state));
-	CSysBase::m_rtDataSend.SetType(type);
-	CSysBase::m_rtDataSend.SetLength(sizeof(p_state));
-	CSysBase::m_rtDataSend.Copy(&p_state,sizeof(p_state));
-	//send in two steps *****************************************************TBD!!!!!!!!!!!!!!!!
 
-    // transfer the whole rt msg
-	CSysBase::RT_SendDataRaw(CSysBase::m_rtDataSend.m_ptrData,RT_MSG_HEADER_LENGTH);
-	CSysBase::RT_SendDataRaw(CSysBase::m_rtDataSend.GetDataAddress(),CSysBase::m_rtDataSend.GetLength());
-	return 0;
-};*/
 
 int CSysBase::RT_SendDataRaw(const void* p_ptrData, const int p_dataLength)
 {
@@ -785,13 +795,7 @@ int CSysBase::RT_SendDataRaw(const void* p_ptrData, const int p_dataLength)
 		return -14;//EFAULT 14 bad address
 	}
 
-	//send two datagram, one is head, one is data
-
 	ret = rt_dev_sendto(m_xddp_socket_rt,p_ptrData,p_dataLength,0,NULL,0);
-	if(ret<0)
-	{
-		rt_printf("RT_SendDataRaw%d\n",ret);
-	}
 	return ret;
 };
 
@@ -803,8 +807,7 @@ int CSysBase::RT_RecvDataRaw(void* p_ptrData,const int p_dataLength)
 		rt_printf("RT_RecvData: NULL ptr is fed\n");
 		return -14;//EFAULT 14 bad address
 	}
-	//just a copy function
-	//ret = rt_dev_recvfrom(m_xddp_socket_rt,m_rtDataRecvBuffer,RT_CONN_DATA_BUFFER_SIZE,MSG_DONTWAIT,NULL,0);
+ 	//ret = rt_dev_recvfrom(m_xddp_socket_rt,m_rtDataRecvBuffer,RT_CONN_DATA_BUFFER_SIZE,MSG_DONTWAIT,NULL,0);
 	ret = rt_dev_recvfrom(m_xddp_socket_rt,p_ptrData,p_dataLength,MSG_DONTWAIT,NULL,0);
 	return ret-RT_MSG_HEADER_LENGTH;
 };
@@ -826,47 +829,14 @@ int CSysBase::NRT_SendDataRaw(const void* p_ptrData, const int p_dataLength)
 int CSysBase::NRT_RecvDataRaw(void* p_ptrData,const unsigned int p_dataLength)
 {
 	int ret;
-	if(p_ptrData==NULL)
+ 	if(p_ptrData==NULL)
 	{
 		rt_printf("NRT_RecvData: NULL ptr is fed\n");
 		return -14;//EFAULT 14 bad address
 	}
-	//just a copy function?
-	ret=read(m_xddp_fd,p_ptrData,p_dataLength);
+ 	ret=read(m_xddp_fd,p_ptrData,p_dataLength);
 	return ret;
 };
-
-
-int CSysBase::RT_PostStateMsg()
-{
-/*	int ret;
-	ret=RT_SendDataRaw(CSysBase::m_rtDataSend.m_ptrData,RT_MSG_HEADER_LENGTH);
-	if(ret < 0)
-		return ret;
-	if(m_rtDataSend.GetLength()>0)
-	{
-		ret=RT_SendDataRaw(m_rtDataSend.GetDataAddress(),m_rtDataSend.GetLength());
-	}
-	return ret;*/
-	int ret;
-	ret=RT_SendDataRaw(m_rtDataSend.m_ptrData,m_rtDataSend.GetLength()+RT_MSG_HEADER_LENGTH);
-	return ret-RT_MSG_HEADER_LENGTH;
-}
-
-
-int CSysBase::RT_PostMsg(Aris::RT_CONTROL::RT_MSG &p_data)
-{
-	int ret;
-	ret=RT_SendDataRaw(p_data.m_ptrData,RT_MSG_HEADER_LENGTH);
-	if(ret < 0)
-		return ret;
-	if(p_data.GetLength()>0)
-	{
-		ret=RT_SendDataRaw(p_data.GetDataAddress(),p_data.GetLength());
-	}
-	return ret;
-
-}
 
 
 //**************************************************XML*********************************************//

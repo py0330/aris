@@ -32,7 +32,7 @@ public:
 	}
 	void logfile(const char *address)
 	{
-		file.close();
+/*		file.close();
 		file.open(address);
 		if (!file.good())
 		{
@@ -44,7 +44,7 @@ public:
 		time_t now = beginTime;
 		struct tm * timeinfo;
 		timeinfo = localtime(&now);
-		file << asctime(timeinfo) << std::endl;
+		file << asctime(timeinfo) << std::endl;*/
 	}
 };
 
