@@ -152,6 +152,8 @@ namespace Aris
 		};
 		class RT_MSG final :public MSG_BASE
 		{
+			friend class Aris::RT_CONTROL::ACTUATION;
+
 		public:
 			static RT_MSG instance[2];
 
