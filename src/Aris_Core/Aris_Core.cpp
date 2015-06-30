@@ -91,8 +91,12 @@ public:
 
 
 		if(opendir("log")==nullptr)
-		if(mkdir("log",0755 )!=0)
-			throw std::logic_error("can't create log folder\n");
+		{
+			umask(0);
+			if(mkdir("log",0777 )!=0)
+						throw std::logic_error("can't create log folder\n");
+		}
+
 
 		strcat(name, "log/");
 #endif
