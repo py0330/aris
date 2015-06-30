@@ -1,8 +1,24 @@
-﻿#include "Aris_Core.h"
+﻿#include <Platform.h>
+
+#include "Aris_Core.h"
 #include <cstring>
 #include <fstream>
 #include <ctime>
 #include <mutex>
+
+
+
+#ifdef PLATFORM_IS_LINUX
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>//for mkdir()
+#include <dirent.h>
+#include <sys/types.h>
+#endif
+
+#ifdef PLATFORM_IS_WINDOWS
+#include <windows.h>
+#endif
 
 class LOG_FILE
 {
@@ -13,7 +29,92 @@ private:
 public:
 	LOG_FILE()
 	{
-		logfile("log.txt");
+		const int TASK_NAME_LEN = 256;
+		char name[TASK_NAME_LEN] = { 0 };
+
+#ifdef PLATFORM_IS_WINDOWS
+		char path[TASK_NAME_LEN] = {0};
+		GetModuleFileName(NULL, path, TASK_NAME_LEN);
+
+		char *p = strrchr(path, '\\');
+		if (p == nullptr)
+			throw std::logic_error("windows can't identify the program name");
+		
+
+		
+		char proName[TASK_NAME_LEN] = { 0 };
+
+		char *dot = strrchr(path, '.');
+		if ((dot != nullptr) && (dot - p > 0))
+		{
+			unsigned n = dot - p - 1;
+			strncpy(proName, p + 1, n);
+		}
+
+
+		std::cout << proName << std::endl;
+
+		CreateDirectory("log", NULL);
+		strcat(name, "log\\");
+#endif
+
+#ifdef PLATFORM_IS_LINUX
+		int count = 0;
+		int nIndex = 0;
+		char path[TASK_NAME_LEN] = {0};
+		char cParam[100] = {0};
+		char *proName = path;
+		int tmp_len;
+
+		pid_t pId = getpid();
+		sprintf(cParam,"/proc/%d/exe",pId);
+		count = readlink(cParam, path, TASK_NAME_LEN);
+
+		if (count < 0 || count >= TASK_NAME_LEN)
+	    {
+	        throw std::logic_error("Current System Not Surport Proc.\n");
+	    }
+		else
+		{
+			nIndex = count - 1;
+
+			for( ; nIndex >= 0; nIndex--)
+			{
+				if( path[nIndex] == '/' )//筛选出进程名
+			    {
+					nIndex++;
+					proName += nIndex;
+					break;
+			    }
+			}
+		}
+
+
+		if(opendir("log")==nullptr)
+		if(mkdir("log",0755 )!=0)
+			throw std::logic_error("can't create log folder\n");
+
+		strcat(name, "log/");
+#endif
+
+
+
+
+		time(&beginTime);
+		struct tm * timeinfo;
+		timeinfo = localtime(&beginTime);
+
+		char timeCh[TASK_NAME_LEN]={0};
+
+		strftime(timeCh,TASK_NAME_LEN,"_%Y-%m-%d_%H-%M-%S_log.txt",timeinfo);
+
+		
+
+		
+		strcat(name,proName);
+		strcat(name,timeCh);
+
+		logfile(name);
 	};
 	~LOG_FILE()
 	{
@@ -29,6 +130,8 @@ public:
 
 		file << difftime(now, beginTime) << ":";
 		file << data << std::endl;
+
+		//return data;
 	}
 	void logfile(const char *address)
 	{
@@ -38,8 +141,6 @@ public:
 		{
 			throw std::logic_error("can't not start log function");
 		}
-		time(&beginTime);
-
 
 		time_t now = beginTime;
 		struct tm * timeinfo;
@@ -55,13 +156,10 @@ namespace Aris
 {
 	namespace Core
 	{
-		void log(const char *data)
+		const char * log(const char *data)
 		{
 			log_file.log(data);
-		}
-		void logfile(const char *address)
-		{
-			log_file.logfile(address);
+			return data;
 		}
 		
 		RT_MSG RT_MSG::instance[2];

@@ -20,10 +20,14 @@ int show(const Aris::Core::MSG &msg)
 	return 0;
 }
 
+using namespace Aris::Core;
 
 int main()
 {
 	Aris::Core::MSG m1, m2;
+	
+	cout << log("first log") << endl;
+
 
 	m1.SetLength(10);
 	
@@ -31,7 +35,7 @@ int main()
 
 	m1.SetLength(12);
 
-	
+
 
 
 	m1.SetMsgID(101);

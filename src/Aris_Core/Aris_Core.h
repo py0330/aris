@@ -176,8 +176,7 @@ namespace Aris
 			SOCKET_REPLY
 		};
 
-		void log(const char *data);
-		void logfile(const char *address);
+		const char * log(const char *data);
 	}
 }
 

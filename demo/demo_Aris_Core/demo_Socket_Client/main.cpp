@@ -59,8 +59,6 @@ int main()
 		char RemoteIp[] = "127.0.0.1";
 #endif
 
-		Aris::Core::logfile("client_log.txt");
-
 		CONN VisualSystem, ControlSystem;
 
 		/*注册所有的消息函数*/

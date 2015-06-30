@@ -45,8 +45,6 @@ int main()
 	//_CrtSetBreakAlloc(203);
 #endif
 
-	Aris::Core::logfile("server_log.txt");
-
 	/*内存检测泄露完毕*/
 	{	
 		/*注册所有的消息函数*/
