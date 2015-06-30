@@ -13,7 +13,9 @@
 #include <sys/mman.h>
 #include <rtdk.h>
 #include "Aris_Socket.h"
+#include "Aris_Message.h"
 #include "Aris_ControlData.h"
+#include "Aris_Thread.h"
 
 
 /**\file Aris_Control.h
@@ -134,7 +136,7 @@ public:
   	 * applied in the customized functions defined by users, such as TrajectoryGenerator.
 	 *
 	 */
-	static int RT_PostMsg(Aris::RT_CONTROL::RT_MSG &p_data);
+	static int RT_PostMsg(Aris::Core::RT_MSG&p_data);
 
 	/**
 	 * \brief Get the machine current status
@@ -152,10 +154,20 @@ public:
 	 */
     static int Load_XML_PrintMessage();
 
-
 private:
+	static Aris::Core::RT_MSG*  DataSend;
+	static Aris::Core::RT_MSG*  DataRecv;
+	static Aris::Core::MSG nrt_DataRecv;
 
 	static CSysBase* sysBase;
+
+	static void* NRT_Watcher(void*);
+	static int NRT_RecvMsg(Aris::Core::MSG &p_data);
+	static Aris::Core::THREAD m_threadNRTWatcher;
+
+
+	//static Aris::Core::RT_MSG::instance;//  DataRecv;
+	//static Aris::Core::RT_MSG DataSend;
 
 };
 

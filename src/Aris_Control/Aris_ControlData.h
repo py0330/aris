@@ -141,11 +141,9 @@ class CMachineData
 public:
 	int motorNum;
 	EMachineState machinestate;
-
 	long long int time;
 	//Motor Data
 	CMachineData& operator=(const CMachineData& other);
-
 	bool isMotorHomed[AXIS_NUMBER];
     EServoState motorsStates[AXIS_NUMBER];
     EServoCommand motorsCommands[AXIS_NUMBER];
@@ -172,7 +170,8 @@ public:
 #define RT_MSG_BUFFER_SIZE 8192
 #define RT_MSG_HEADER_LENGTH MSG_HEADER_LENGTH
 #define PRINT_INFO_BUFFER_SIZE 200
-class RT_MSG
+
+/*class RT_MSG
 {
 	friend class ::CSysBase;
 	friend class Aris::RT_CONTROL::ACTUATION;
@@ -239,15 +238,15 @@ public:
 	//used in send data
 	//void SetData(const unsigned int p_dataLength = 0, const int p_dataType = 0, const void *p_src = 0);
 	//used in receive data,
-	//int GetData();
-private:
+	//int GetData();*/
+/*private:
 	void SetType(long long message);
 	long long GetType() const;
 
 //	int *m_ptrDataType;// address will be setup in SetBuffer
 //	int *m_ptrDataLength;// address will be setup in SetBuffer
 	char *m_ptrData;// assign to whatever buffer you want to use.
-};
+};*/
 
 }
 
@@ -256,7 +255,7 @@ private:
 /*
  * Function pointer with peculiar parameters
  */
-typedef int (*FuncPtrWork)(Aris::RT_CONTROL::CMachineData&, Aris::RT_CONTROL::RT_MSG&);
+typedef int (*FuncPtrWork)(Aris::RT_CONTROL::CMachineData&, Aris::Core::RT_MSG&,Aris::Core::RT_MSG&);
 typedef int (*FuncPtrInit)(Aris::RT_CONTROL::CSysInitParameters&);
 typedef int (*FuncPtrState)(void*);
 typedef int (*FuncPtrCustom)(Aris::Core::MSG&);
