@@ -51,9 +51,6 @@ public:
 			strncpy(proName, p + 1, n);
 		}
 
-
-		std::cout << proName << std::endl;
-
 		CreateDirectory("log", NULL);
 		strcat(name, "log\\");
 #endif
@@ -134,8 +131,6 @@ public:
 
 		file << difftime(now, beginTime) << ":";
 		file << data << std::endl;
-
-		//return data;
 	}
 	void logfile(const char *address)
 	{
@@ -239,7 +234,6 @@ namespace Aris
 				memcpy(&GetDataAddress()[pos], fromThisMemory, dataLength);
 			}
 		}
-
 		void Core::MSG_BASE::Paste(void * toThisMemory, unsigned int dataLength) const
 		{
 			if ((dataLength > 0) && (GetLength() > 0))

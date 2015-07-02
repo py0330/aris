@@ -43,6 +43,8 @@ namespace Aris
 		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder = "xy");
 		void s_pm2ep(const double *pm_in, double *ep_out, const char *EurType="313");
 		void s_ep2pm(const double *ep_in, double *pm_out, const char *EurType="313");
+		void s_pm2ap(const double *pm_in, double *ap_out);
+		void s_ap2pm(const double *ap_in, double *pm_out);
 		void s_tmf(const double *pm_in, double *tm_out);
 		void s_tmv(const double *pm_in, double *tmd_out);
 		void s_cmf(const double *vel_in, double *cm_out);

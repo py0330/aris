@@ -7,7 +7,6 @@
 
 #include <Aris_ExpCal.h>
 
-
 using namespace std;
 
 
@@ -115,6 +114,30 @@ int main()
 	{
 		cout << e.what() << endl;
 	}
+
+	cout.precision(15);
+
+	cout << sqrt(0.000000002*0.000000002 + (PI - 0.0000000001)*(PI - 0.0000000001)) << endl<<endl;
+
+	double ap[6] = { 0, 0.000000002, PI-0.0000000001, 0.1, 0.2, 0.3 };
+	double ap2[6];
+	double pm[4][4];
+
+	s_ap2pm(ap, *pm);
+
+	//dsp(*pm, 4, 4);
+
+	s_pm2ap(*pm, ap2);
+
+	//dsp(ap2, 6, 1);
+
+	cout << ap2[0] << endl;
+	cout << ap2[1] << endl;
+	cout << ap2[2] << endl;
+	cout << ap2[3] << endl;
+	cout << ap2[4] << endl;
+	cout << ap2[5] << endl;
+
 	
 	char aaa;
 	cin>>aaa;

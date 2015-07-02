@@ -436,6 +436,154 @@ namespace Aris
 			pm_out[11] = ep_in[5];
 			pm_out[15] = 1;
 		}
+		void s_pm2ap(const double *pm_in, double *ap_out)
+		{
+			double c_theta = (pm_in[0] + pm_in[5] + pm_in[10]-1)/2;
+			double theta;
+
+			const double &r11 = pm_in[0];
+			const double &r12 = pm_in[1];
+			const double &r13 = pm_in[2];
+			const double &r21 = pm_in[4];
+			const double &r22 = pm_in[5];
+			const double &r23 = pm_in[6];
+			const double &r31 = pm_in[8];
+			const double &r32 = pm_in[9];
+			const double &r33 = pm_in[10];
+
+			double &a = ap_out[0];
+			double &b = ap_out[1];
+			double &c = ap_out[2];
+			double &x = ap_out[3];
+			double &y = ap_out[4];
+			double &z = ap_out[5];
+
+
+			if (c_theta > 0.7071)
+			{
+				theta = asin(sqrt(((r32 - r23)*(r32 - r23) + (r13 - r31)*(r13 - r31) + (r21 - r12)*(r21 - r12))/4));
+			}
+			else if (c_theta > -0.7071)
+			{
+				theta = acos(c_theta);
+			}
+			else
+			{
+				theta = PI - asin(sqrt(((r32 - r23)*(r32 - r23) + (r13 - r31)*(r13 - r31) + (r21 - r12)*(r21 - r12)) / 4));
+			}
+
+			if (theta < 1e-8)
+			{
+				a = 0.5*(r32 - r23);
+				b = 0.5*(r13 - r31);
+				c = 0.5*(r21 - r12);
+			}
+			else if (theta < 0.785398163397448)
+			{
+				double  ratio = theta / sin(theta);
+				
+				a = 0.5*(r32 - r23)*ratio;
+				b = 0.5*(r13 - r31)*ratio;
+				c = 0.5*(r21 - r12)*ratio;
+			}
+			else
+			{
+				int a_sig,b_sig,c_sig;
+				
+				/*以下判断符号*/
+				if (abs(r32 - r23) > abs(r13 - r31))
+				{
+					if (abs(r32 - r23) > abs(r21 - r12))
+					{
+						//a'的绝对值最大
+						a_sig = s_sgn(r32 - r23);
+						b_sig = s_sgn(r21 + r12)*a_sig;
+						c_sig = s_sgn(r31 + r13)*a_sig;
+					}
+					else
+					{
+						//c'的绝对值最大
+						c_sig = s_sgn(r21 - r12);
+						a_sig = s_sgn(r31 + r13)*c_sig;
+						b_sig = s_sgn(r32 + r23)*c_sig;
+					}
+				}
+				else
+				{
+					if (abs(r13 - r31) > abs(r21 - r12))
+					{
+						//b'的绝对值最大
+						b_sig = s_sgn(r13 - r31);
+						a_sig = s_sgn(r21 + r12)*b_sig;
+						c_sig = s_sgn(r32 + r23)*b_sig;
+					}
+					else
+					{
+						//c'的绝对值最大
+						c_sig = s_sgn(r21 - r12);
+						a_sig = s_sgn(r31 + r13)*c_sig;
+						b_sig = s_sgn(r32 + r23)*c_sig;
+					}
+				}
+
+				a = a_sig * theta*sqrt(abs(1 + r11 - r22 - r33) / 2.0 / (1 - cos(theta)));
+				b = b_sig * theta*sqrt(abs(1 + r22 - r11 - r33) / 2.0 / (1 - cos(theta)));
+				c = c_sig * theta*sqrt(abs(1 + r33 - r11 - r22) / 2.0 / (1 - cos(theta)));
+			}
+			                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+			x = pm_in[3];
+			y = pm_in[7];
+			z = pm_in[11];
+
+
+
+		}
+		void s_ap2pm(const double *ap_in, double *pm_out)
+		{
+			double theta = sqrt(ap_in[0] * ap_in[0] + ap_in[1] * ap_in[1] + ap_in[2] * ap_in[2]);
+
+			double A, B;
+
+			const double &a = ap_in[0];
+			const double &b = ap_in[1];
+			const double &c = ap_in[2];
+			const double &x = ap_in[3];
+			const double &y = ap_in[4];
+			const double &z = ap_in[5];
+
+			if (theta < 1e-8)
+			{
+				A = 1;
+				B = 0.5;
+			}
+			else
+			{
+				A = sin(theta)/theta;
+				B = (1-cos(theta))/theta/theta;
+			}
+
+			memset(pm_out, 0, sizeof(double) * 16);
+			
+			pm_out[0] = 1 - (b*b + c*c)*B;
+			pm_out[1] = -c*A + a*b*B;
+			pm_out[2] = b*A + a*c*B;
+			pm_out[3] = x;
+
+			pm_out[4] = c*A + a*b*B;
+			pm_out[5] = 1 - (a*a + c*c)*B;
+			pm_out[6] = -a*A + b*c*B;
+			pm_out[7] = y;
+
+			pm_out[8] = -b*A + a*c*B;
+			pm_out[9] = a*A + b*c*B;
+			pm_out[10] = 1 - (a*a + b*b)*B;
+			pm_out[11] = z;
+
+			pm_out[15] = 1;
+				
+
+
+		}
 		void s_tmf(const double *pm_in, double *tmf_out)
 		{
 			memset(tmf_out, 0, sizeof(double)* 36);

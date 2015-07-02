@@ -1,6 +1,8 @@
 ﻿#ifndef ARIS_CORE_H_
 #define ARIS_CORE_H_
 
+#include <cstring>
+
 namespace Aris
 {
 	namespace RT_CONTROL
@@ -36,6 +38,7 @@ namespace Aris
 			MSG_BASE &operator=(const MSG_BASE& other) = delete;
 			MSG_BASE &operator=(MSG_BASE&& other) = delete;
 
+			unsigned pasteID{0};
 		protected:
 			char *_pData;
 
@@ -86,6 +89,39 @@ namespace Aris
 			*/
 			void CopyMore(const void * fromThisMemory, unsigned int dataLength);
 
+			template<class... Args>
+			void CopyStruct(const Args&... args)
+			{
+				SetLength(0);
+				CopyStructMore(args...);
+			}
+
+			template<class FirstArg, class... Args>
+			void CopyStructMore(const FirstArg& firstArg, const Args&... args)
+			{
+				CopyMore((const void*)&firstArg, sizeof(FirstArg));
+				CopyStructMore(args...);
+			}
+
+			template<class FirstArg, class... Args>
+			void PasteStruct(FirstArg& firstArg, Args&... args)
+			{
+				PasteAt((void*)&firstArg, sizeof(FirstArg), pasteID);
+				pasteID += sizeof(FirstArg);
+				PasteStruct(args...);
+			}
+
+		private:
+			void CopyStructMore()
+			{
+			} 
+			void PasteStruct()
+			{
+				pasteID = 0;
+			}
+
+		public:
+
 			/** \brief 向toThisMemory指针中粘贴dataLength长度的数据，若dataLength大于自身的数据长度，则只拷贝自身长度的内存。
 			* \param fromThisMemory    目标内存地址。
 			* \param dataLength        数据长度
@@ -128,6 +164,15 @@ namespace Aris
 			* \param other    another message
 			*/
 			MSG(MSG&& other);
+
+			//template<class... Args>
+			//explicit MSG(int msgID, const Args... &args)
+			//{
+
+
+
+			//};
+
 			/** \brief Destructor
 			*
 			*/
@@ -141,6 +186,9 @@ namespace Aris
 			* \param other    another message
 			*/
 			MSG &operator=(MSG&& other);
+
+
+
 
 			void SetLength(unsigned int dataLength);
 
