@@ -1,9 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 ip_strings=$(ifconfig | grep "eth")
 ip_address=${ip_strings#*HWaddr }
-#ip_address=${ip_address}
-echo "ip address is:"
-echo ${ip_address}
+ip_address=${ip_address:0:17}
+echo "ip address is: ${ip_address}"
 
 sed "s/\*\*:\*\*:\*\*:\*\*:\*\*:\*\*/$ip_address/g" /etc/ethercat.conf_backup > /etc/ethercat.conf
 sed "s/\*\*:\*\*:\*\*:\*\*:\*\*:\*\*/$ip_address/g" /etc/sysconfig/ethercat_backup > /etc/sysconfig/ethercat
