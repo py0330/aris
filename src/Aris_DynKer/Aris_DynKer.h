@@ -180,7 +180,7 @@ namespace Aris
 			int _RowId;
 
 		private:
-			PART(MODEL *pModel
+			explicit PART(MODEL *pModel
 				, const std::string &Name = ""
 				, const double *PrtIm = nullptr
 				, const double *pm = nullptr
@@ -315,7 +315,7 @@ namespace Aris
 			void _Initiate();
 
 		private:
-			JOINT(MODEL *pModel , const std::string &Name = "", JOINT_TYPE Type = ROTATIONAL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
+			explicit JOINT(MODEL *pModel , const std::string &Name = "", JOINT_TYPE Type = ROTATIONAL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
 			
 			JOINT(const JOINT &) = delete;
 			JOINT(JOINT &&) = delete;
@@ -386,7 +386,7 @@ namespace Aris
 			void _Initiate();
 
 		private:
-			MOTION(MODEL *pModel , const std::string &Name = "", MOTION_TYPE type = LINEAR, MOTION_MODE mode = POS_CONTROL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
+			explicit MOTION(MODEL *pModel , const std::string &Name = "", MOTION_TYPE type = LINEAR, MOTION_MODE mode = POS_CONTROL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
 
 			MOTION(const MOTION &) = delete;
 			MOTION(MOTION &&) = delete;
@@ -476,7 +476,7 @@ namespace Aris
 			double _Fce[6];
 
 		private:
-			FORCE(MODEL *pModel = nullptr, const std::string &Name = "", FORCE_TYPE type = BODY2BODY, PART *pPrtI = 0, PART *pPrtJ = 0, MARKER *pMakA = 0, MARKER *pMakP = 0, const double *force = 0);
+			explicit FORCE(MODEL *pModel, const std::string &Name = "", FORCE_TYPE type = BODY2BODY, PART *pPrtI = 0, PART *pPrtJ = 0, MARKER *pMakA = 0, MARKER *pMakP = 0, const double *force = 0);
 			
 			FORCE(const FORCE &) = delete;
 			FORCE(FORCE &&) = delete;
@@ -507,7 +507,7 @@ namespace Aris
 			double Gravity[6];
 
 		private:
-			ENVIRONMENT(MODEL *pModel);
+			explicit ENVIRONMENT(MODEL *pModel);
 			~ENVIRONMENT();
 
 			int ToXMLElement(Aris::Core::ELEMENT *pEle) const;
@@ -555,7 +555,7 @@ namespace Aris
 		public:
 			PART* pGround;
 		public:
-			MODEL(const std::string & Name = "Model");
+			explicit MODEL(const std::string & Name = "Model");
 			~MODEL();
 
 			MODEL(const MODEL &) = delete;

@@ -43,9 +43,6 @@ int main()
 
 	m1.SetLength(12);
 
-
-
-
 	m1.SetMsgID(101);
 	//m1.SetType(1233);
 

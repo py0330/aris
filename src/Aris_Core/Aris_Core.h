@@ -155,7 +155,7 @@ namespace Aris
 			* \param length   The length of message(not count message header), the unit of which is byte.
 			* \param msgID  The ID of message
 			*/
-			MSG(int msgID = 0, unsigned int dataLength = 0);
+			explicit MSG(int msgID = 0, unsigned int dataLength = 0);
 			/** \brief Copy Constructor
 			* \param other    another message
 			*/
@@ -164,14 +164,6 @@ namespace Aris
 			* \param other    another message
 			*/
 			MSG(MSG&& other);
-
-			//template<class... Args>
-			//explicit MSG(int msgID, const Args... &args)
-			//{
-
-
-
-			//};
 
 			/** \brief Destructor
 			*

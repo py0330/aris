@@ -109,8 +109,8 @@ namespace Aris
 			~CONN();
 
 			CONN(const CONN & other) = delete;
-			CONN &operator=(const CONN& other) = delete;
 			CONN(CONN && other) = delete;
+			CONN &operator=(const CONN& other) = delete;
 			CONN &operator=(CONN&& other) = delete;
 
 		public:
