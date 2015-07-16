@@ -33,6 +33,7 @@ public:
 		char name[TASK_NAME_LEN] = { 0 };
 
 #ifdef PLATFORM_IS_WINDOWS
+
 		char path[TASK_NAME_LEN] = {0};
 		GetModuleFileName(NULL, path, TASK_NAME_LEN);
 

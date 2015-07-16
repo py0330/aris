@@ -96,7 +96,7 @@ add_library(Aris_ExpCal STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
 # Aris_DynKer project
-set(SOURCE Aris_DynKer)
+set(SOURCE Aris_DynKer Aris_DynModel)
 PREPEND_CPP(FULL_SRC src/Aris_DynKer ${SOURCE})
 PREPEND_H(FULL_H src/Aris_DynKer ${SOURCE})
 add_library(Aris_DynKer STATIC ${FULL_SRC} ${FULL_H})

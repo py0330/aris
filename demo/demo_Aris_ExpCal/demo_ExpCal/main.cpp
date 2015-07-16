@@ -26,7 +26,7 @@ int main()
 	
 	double ep[6] = {PI,0,PI,0,0,0};
 	double pm_I2G0[4][4];
-	s_ep2pm(ep, *pm_I2G0, "321");
+	s_pe2pm(ep, *pm_I2G0, "321");
 	dsp(*pm_I2G0, 4, 4);
 
 	double pm_R2I[4][4] =
@@ -119,24 +119,75 @@ int main()
 
 	cout << sqrt(0.000000002*0.000000002 + (PI - 0.0000000001)*(PI - 0.0000000001)) << endl<<endl;
 
-	double ap[6] = { 0, 0.000000002, PI-0.0000000001, 0.1, 0.2, 0.3 };
-	double ap2[6];
+	double u[3] = { 0.15, 0.3, -0.5 };
+	double pq[7] = { 0.1, 0.3, 0.5, 0.2, 0.4, 0.6, 0 };
+	double ap[6] = { 0, 0.000000002, PI - 0.0000000001, 0.1, 0.2, 0.3 };
 	double pm[4][4];
 
+	double mag = sqrt(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]);
+	u[0] /= mag;
+	u[1] /= mag;
+	u[2] /= mag;
+
+	double theta = 0.123;
+
+	ap[0] = u[0] * theta;
+	ap[1] = u[1] * theta;
+	ap[2] = u[2] * theta;
+
 	s_ap2pm(ap, *pm);
+	dsp(*pm, 4, 4);
 
-	//dsp(*pm, 4, 4);
+	pq[3] = u[0] * sin(theta / 2);
+	pq[4] = u[1] * sin(theta / 2);
+	pq[5] = u[2] * sin(theta / 2);
+	pq[6] = cos(theta / 2);
 
-	s_pm2ap(*pm, ap2);
+	s_pq2pm(pq, *pm);
+	dsp(*pm, 4, 4);
+
+
+	//dsp(ap, 6, 1);
+
+	dsp(pq, 7, 1);
+
+	double pq2[7];
+
+	s_pm2pq(*pm, pq2);
+
+	dsp(pq2, 7, 1);
+
+
+	double v[6] = { 0.1, 0.2, 0.3, 0.1, -0.5, 0.23 };
+	double vq[7];
+
+	dsp(v, 6, 1);
+
+	s_v2vq(*pm, v, vq);
+
+	dsp(vq, 7, 1);
+
+	s_vq2v(pq, vq, v);
+
+	dsp(v, 6, 1);
+
+
+
+
+
+
+	
+
+	//s_pm2ap(*pm, ap2);
 
 	//dsp(ap2, 6, 1);
 
-	cout << ap2[0] << endl;
-	cout << ap2[1] << endl;
-	cout << ap2[2] << endl;
-	cout << ap2[3] << endl;
-	cout << ap2[4] << endl;
-	cout << ap2[5] << endl;
+	//cout << ap2[0] << endl;
+	//cout << ap2[1] << endl;
+	//cout << ap2[2] << endl;
+	//cout << ap2[3] << endl;
+	//cout << ap2[4] << endl;
+	//cout << ap2[5] << endl;
 
 	
 	char aaa;
