@@ -5,6 +5,7 @@
 #include <fstream>
 #include <ctime>
 #include <mutex>
+#include <algorithm>
 
 
 
@@ -295,30 +296,28 @@ namespace Aris
 		}
 		Core::MSG::MSG(MSG&& other)
 		{
-			_pData = other._pData;
-			other._pData = nullptr;
+			this->Swap(other);
 		}
 		Core::MSG::~MSG()
 		{
 			delete [] _pData;
 		}
 
-		Core::MSG &Core::MSG::operator=(const MSG& other)
+		Core::MSG &Core::MSG::operator=(const MSG &other)
 		{
-			char *pNew = new char[MSG_HEADER_LENGTH + other.GetLength()];
-			memcpy(pNew, other._pData, MSG_HEADER_LENGTH + other.GetLength());
-			delete[]_pData;
-			_pData = pNew;
-
-			return *this;
+			MSG tem(other);
+			this->Swap(tem);
+			return (*this);
 		}
 		Core::MSG &Core::MSG::operator=(MSG&& other)
 		{
-			delete[]_pData;
-			_pData = other._pData;
-			other._pData = nullptr;
-
+			this->Swap(other);
 			return *this;
+		}
+
+		void Core::MSG::Swap(MSG &other)
+		{
+			std::swap(this->_pData, other._pData);
 		}
 
 		void Core::MSG::SetLength(unsigned int dataLength)
@@ -334,12 +333,6 @@ namespace Aris
 
 			delete [] pOldData;
 		}
-		void Core::MSG::Swap(MSG &other)
-		{
-			char * pData;
-			pData = this->_pData;
-			this->_pData = other._pData;
-			other._pData = pData;
-		}
+		
 	}
 }

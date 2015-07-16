@@ -31,6 +31,7 @@ namespace Aris
 			MATRIX(MATRIX &&other);
 			MATRIX &operator=(const MATRIX &other);
 			MATRIX &operator=(MATRIX &&other);
+			MATRIX &Swap(MATRIX &other);
 			~MATRIX();
 
 			MATRIX(double value);

@@ -32,7 +32,7 @@ namespace Aris
 
 		private:
 			MSG_BASE() = default;
-			~MSG_BASE() = default;
+			virtual ~MSG_BASE() = default;
 			MSG_BASE(const MSG_BASE &other) = delete;
 			MSG_BASE(MSG_BASE &&other) = delete;
 			MSG_BASE &operator=(const MSG_BASE& other) = delete;
@@ -173,22 +173,23 @@ namespace Aris
 			/** \brief Assignment Operator, which is deep copy from another message
 			* \param other    another message
 			*/
-			MSG &operator=(const MSG& other);
+			MSG &operator=(const MSG &other);
 			/** \brief 右值赋值操作符
 			* \param other    another message
 			*/
 			MSG &operator=(MSG&& other);
-
-
-
-
-			void SetLength(unsigned int dataLength);
 
 			/** \brief 跟另外一个MSG对象交换数据。仅仅改变双方指针，因此效率高于任何一个构造函数。
 			* \param other    另外一个消息。
 			*
 			*/
 			void Swap(MSG &other);
+
+
+
+			void SetLength(unsigned int dataLength);
+
+			
 		};
 		class RT_MSG final :public MSG_BASE
 		{

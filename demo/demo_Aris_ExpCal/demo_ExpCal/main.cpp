@@ -45,10 +45,13 @@ int main()
 	s_pm_dot_pm(*pm_I2G0, *pm_R2I, *pm_R2G0);
 	s_pm_dot_pm(*pm_G02G, *pm_R2G0, *pm_R2G);
 	dsp(*pm_R2G, 4, 4);
-	
-	
-	
-	
+
+
+
+	{
+		MATRIX X(0.1);
+		MATRIX Y = X;
+	}
 	
 	
 	
@@ -95,7 +98,8 @@ int main()
 
 	k({ 1, 2 }, { 0, 1 }).dsp();
 
-	k = {};
+	/*not compatible for clang*/
+	//k = {};
 
 
 
@@ -135,7 +139,7 @@ int main()
 	ap[1] = u[1] * theta;
 	ap[2] = u[2] * theta;
 
-	s_ap2pm(ap, *pm);
+	s_pr2pm(ap, *pm);
 	dsp(*pm, 4, 4);
 
 	pq[3] = u[0] * sin(theta / 2);

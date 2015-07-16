@@ -3,6 +3,7 @@
 #include <exception>
 #include <stdexcept>
 #include <cstring>
+#include <algorithm>
 
 #include "Aris_ExpCal.h"
 
@@ -20,48 +21,27 @@ namespace Aris
 			: m(other.m)
 			, n(other.n)
 			, isRowMajor(other.isRowMajor)
-			, pData(nullptr)
+			, pData(m*n > 0 ? new double[m*n]: nullptr)
 		{
-			if (m*n > 0)
-			{
-				pData = new double[m*n];
-				memcpy(pData, other.pData, m*n*sizeof(double));
-			}
+			memcpy(pData, other.pData, m*n*sizeof(double));
 		}
 		MATRIX::MATRIX(MATRIX &&other)
-			: m(other.m)
-			, n(other.n)
-			, isRowMajor(other.isRowMajor)
-			, pData(other.pData)
+			:MATRIX()
 		{
-			other.pData = nullptr;
-			other.m = 0;
-			other.n = 0;
+			this->Swap(other);
 		}
 		MATRIX::MATRIX(unsigned int m, unsigned int n)
 			: m(m)
 			, n(n)
 			, isRowMajor(true)
-			, pData(nullptr)
+			, pData(m*n > 0 ? new double[m*n] : nullptr)
 		{
-			if (m*n > 0)
-			{
-				pData = new double[m*n];
-			}
 		}
 		MATRIX::MATRIX(unsigned int m, unsigned int n, const double *Data)
-			: m(m)
-			, n(n)
-			, isRowMajor(true)
-			, pData(nullptr)
+			: MATRIX(m,n)
 		{
-			if (m*n > 0)
-			{
-				pData = new double[m*n];
-
-				if (Data!=nullptr)
-					memcpy(pData, Data, m*n*sizeof(double));
-			}
+			if ((m*n>0) && (Data != nullptr))
+				memcpy(pData, Data, m*n*sizeof(double));
 		}
 
 		MATRIX::MATRIX(double value)
@@ -90,41 +70,28 @@ namespace Aris
 
 		MATRIX &MATRIX::operator=(const MATRIX &other)
 		{
-			m = other.m;
-			n = other.n;
-			isRowMajor = other.isRowMajor;
-
-			double *pOld = pData;
-			if (other.m*other.n > 0)
-			{
-				pData = new double[other.m*other.n];
-				memcpy(pData, other.pData, m*n*sizeof(double));
-			}
-			else
-			{
-				pData = nullptr;
-			}
-
-			if (pOld != nullptr)
-				delete[]pOld;
-
+			MATRIX tem(other);
+			this->Swap(tem);
 			return *this;
 		}
 		MATRIX &MATRIX::operator=(MATRIX &&other)
 		{
-			m = other.m;
-			n = other.n;
-			isRowMajor = other.isRowMajor;
-
-			pData = other.pData;
-			other.pData = nullptr;
-
+			this->Swap(other);
 			return *this;
 		}
 		MATRIX::~MATRIX()
 		{
-			if (pData != nullptr)
+			if (pData!=nullptr)
 				delete[]pData;
+		}
+		MATRIX &MATRIX::Swap(MATRIX &other)
+		{
+			std::swap(this->m, other.m);
+			std::swap(this->n, other.n);
+			std::swap(this->isRowMajor, other.isRowMajor);
+			std::swap(this->pData, other.pData);
+
+			return *this;
 		}
 
 		void MATRIX::Resize(unsigned int i, unsigned int j)
