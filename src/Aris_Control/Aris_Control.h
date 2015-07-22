@@ -2,6 +2,8 @@
 #ifndef ARIS_CONTROL_H_
 #define ARIS_CONTROL_H_
 
+#include <thread>
+
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -15,7 +17,6 @@
 #include "Aris_Socket.h"
 #include "Aris_Message.h"
 #include "Aris_ControlData.h"
-#include "Aris_Thread.h"
 
 
 /**\file Aris_Control.h
@@ -161,9 +162,9 @@ private:
 
 	static CSysBase* sysBase;
 
-	static void* NRT_Watcher(void*);
+	static void NRT_Watcher(void*);
 	static int NRT_RecvMsg(Aris::Core::MSG &p_data);
-	static Aris::Core::THREAD m_threadNRTWatcher;
+	static std::thread m_threadNRTWatcher;
 
 
 	//static Aris::Core::RT_MSG::instance;//  DataRecv;

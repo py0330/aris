@@ -8,7 +8,7 @@ CSysBase* Aris::RT_CONTROL::ACTUATION::sysBase;
 
 //Aris::Core::MSG Aris::RT_CONTROL::ACTUATION::m_recvData;
 
- Aris::Core::THREAD Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher;
+std::thread Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher;
 
 Aris::Core::RT_MSG*  Aris::RT_CONTROL::ACTUATION::DataRecv;
 Aris::Core::RT_MSG*  Aris::RT_CONTROL::ACTUATION::DataSend;
@@ -43,7 +43,7 @@ int Aris::RT_CONTROL::ACTUATION::SetSysInitializer(FuncPtrInit p_Initializer)
 
 int  Aris::RT_CONTROL::ACTUATION::SysInit(CSysInitParameters p_Param)
 {
-	 Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.SetFunction(NRT_Watcher);
+	 /*Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.SetFunction(NRT_Watcher);*/
 	return sysBase->SysInit(p_Param);
 };
 
@@ -51,7 +51,8 @@ int Aris::RT_CONTROL::ACTUATION::SysStart()
 {
 	int ret;
 	ret=sysBase->SysStart();
-	 Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher.Start(0);
+	 Aris::RT_CONTROL::ACTUATION::m_threadNRTWatcher
+=std::thread(Aris::RT_CONTROL::ACTUATION::NRT_Watcher,nullptr);
 	return ret;
 };
 
@@ -101,7 +102,7 @@ int Aris::RT_CONTROL::ACTUATION::SetOnDataUpdateHandler(FuncPtrWork p_DataUpdate
  int Aris::RT_CONTROL::ACTUATION::NRT_PostMsg(Aris::Core::MSG &p_data)
  {
  	int ret;
-   	ret=sysBase->NRT_SendDataRaw(p_data._pData,p_data.GetLength()+MSG_HEADER_LENGTH);
+   	ret=sysBase->NRT_SendDataRaw(p_data._pData,p_data.GetLength()+sizeof(Aris::Core::MSG_HEADER));
  	//printf("NRT_SendData is me :%d\n",ret);
  	return 0;
  }//ok
@@ -125,8 +126,8 @@ int Aris::RT_CONTROL::ACTUATION::RT_PostMsg(Aris::Core::RT_MSG &p_data)
 int Aris::RT_CONTROL::ACTUATION::NRT_RecvMsg(Aris::Core::MSG &p_data)
 {
  	int ret;
-	char Head[MSG_HEADER_LENGTH];
-	sysBase->NRT_RecvDataRaw(Head,MSG_HEADER_LENGTH);
+	char Head[sizeof(Aris::Core::MSG_HEADER)];
+	sysBase->NRT_RecvDataRaw(Head,sizeof(Aris::Core::MSG_HEADER));
 
 	 p_data.SetLength(*((unsigned int*)Head));
 	 p_data.SetMsgID(*((int*)(Head+4)));
@@ -139,7 +140,7 @@ int Aris::RT_CONTROL::ACTUATION::NRT_RecvMsg(Aris::Core::MSG &p_data)
 
 
 
-void* Aris::RT_CONTROL::ACTUATION::NRT_Watcher(void*)
+void Aris::RT_CONTROL::ACTUATION::NRT_Watcher(void*)
 {
 
 	printf("NRT_Watcher\n");

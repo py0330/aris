@@ -19,6 +19,8 @@
 #include <memory>
 #include <functional>
 
+
+
 #include <Aris_XML.h>
 #include <Aris_ExpCal.h>
 
@@ -27,6 +29,21 @@ namespace Aris
 {
 	namespace DynKer
 	{
+		const size_t im_size = sizeof(double) * 36;
+		const size_t pm_size = sizeof(double) * 16;
+		const size_t pe_size = sizeof(double) * 6;
+		const size_t pr_size = sizeof(double) * 6;
+		const size_t pq_size = sizeof(double) * 7;
+		const size_t pnt_size = sizeof(double) * 3;
+		const size_t pa_size = sizeof(double) * 3;
+		const size_t pv_size = sizeof(double) * 3;
+		const size_t vel_size = sizeof(double) * 6;
+		const size_t acc_size = sizeof(double) * 6;
+		const size_t fce_size = sizeof(double) * 6;
+		
+		
+		
+		
 		void s_dgeev(int n, double* a, int lda, double* wr, double* wi);
 		
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
@@ -217,7 +234,27 @@ namespace Aris
 		void s_dgelsd(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank);
 		void s_dgelsdT(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank);
 
-		void s_akima(unsigned inNum, unsigned outNum, const double *x_in, const double *y_in, const double *x, double *y,unsigned order=0);
+
+		class AKIMA
+		{
+		public:
+			AKIMA(unsigned inNum, const double *x_in, const double *y_in);
+			AKIMA(const AKIMA &) = default;
+			~AKIMA() = default;
+			AKIMA &operator =(const AKIMA &) = default;
+
+			double operator()(double x, char derivativeOrder = '0') const;
+			void operator()(unsigned length, const double *x_in, double *y_out, char derivativeOrder = '0')const;
+
+			const std::vector<double> &x() const { return _x; };
+			const std::vector<double> &y() const { return _y; };
+		private:
+			std::vector<double> _x, _y;
+			std::vector<double> _p0;
+			std::vector<double> _p1;
+			std::vector<double> _p2;
+			std::vector<double> _p3;
+		};
 	}
 }
 

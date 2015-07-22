@@ -29,8 +29,8 @@ namespace Aris
 			MATRIX();
 			MATRIX(const MATRIX &other);
 			MATRIX(MATRIX &&other);
-			MATRIX &operator=(const MATRIX &other);
-			MATRIX &operator=(MATRIX &&other);
+			MATRIX &operator=(MATRIX other);
+			//MATRIX &operator=(MATRIX &&other);
 			MATRIX &Swap(MATRIX &other);
 			~MATRIX();
 

@@ -99,7 +99,7 @@ int main()
 	k({ 1, 2 }, { 0, 1 }).dsp();
 
 	/*not compatible for clang*/
-	//k = {};
+	k = {};
 
 
 
@@ -179,8 +179,12 @@ int main()
 
 
 
+	double xxx[] = { 2.0, 1.0, 4.0, 3.0, 5.0, 6.0, 7.0, 8.0, 9.0 };
+	double yyy[] = { 0, 0, 1, 0, 2, 2.3, 1.4, 1.63, 2.56 };
 
-	
+	AKIMA a(9, xxx, yyy);
+
+	cout << a(3.58,'2') << endl;
 
 	//s_pm2ap(*pm, ap2);
 

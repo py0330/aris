@@ -168,7 +168,7 @@ public:
  * RT_MSG related settings
  */
 #define RT_MSG_BUFFER_SIZE 8192
-#define RT_MSG_HEADER_LENGTH MSG_HEADER_LENGTH
+#define RT_MSG_HEADER_LENGTH sizeof(Aris::Core::MSG_HEADER)
 #define PRINT_INFO_BUFFER_SIZE 200
 
 /*class RT_MSG

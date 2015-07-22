@@ -1,11 +1,16 @@
 ﻿#include <Platform.h>
 
+#ifdef PLATFORM_IS_WINDOWS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "Aris_Core.h"
 #include <cstring>
 #include <fstream>
 #include <ctime>
 #include <mutex>
 #include <algorithm>
+#include <iostream>
 
 
 
@@ -23,14 +28,47 @@
 
 class LOG_FILE
 {
+public:
+	void log(const char *data)
+	{
+		std::lock_guard<std::mutex> lck(dataMutex);
+
+		time_t now;
+		time(&now);
+
+		file << difftime(now, beginTime) << ":";
+		file << data << std::endl;
+	}
+	void logfile(const char *address)
+	{
+		file.close();
+		file.open(address, std::ios::out | std::ios::trunc);
+		if (!file.good())
+		{
+			throw std::logic_error("can't not start log function");
+		}
+
+		time_t now = beginTime;
+		struct tm * timeinfo;
+		timeinfo = localtime(&now);
+		file << asctime(timeinfo) << std::endl;
+	}
+	static LOG_FILE &getInstance()
+	{
+		static LOG_FILE logFile;
+		return logFile;
+	};
+
 private:
 	std::fstream file;
 	std::mutex dataMutex;
 	std::time_t beginTime;
-public:
+
 	LOG_FILE()
 	{
-		const int TASK_NAME_LEN = 256;
+		std::cout << "begin logging" << std::endl;
+		
+		const std::uint32_t TASK_NAME_LEN = 256;
 		char name[TASK_NAME_LEN] = { 0 };
 
 #ifdef PLATFORM_IS_WINDOWS
@@ -41,15 +79,13 @@ public:
 		char *p = strrchr(path, '\\');
 		if (p == nullptr)
 			throw std::logic_error("windows can't identify the program name");
-		
 
-		
 		char proName[TASK_NAME_LEN] = { 0 };
 
 		char *dot = strrchr(path, '.');
 		if ((dot != nullptr) && (dot - p > 0))
 		{
-			unsigned n = dot - p - 1;
+			std::uint32_t n = dot - p - 1;
 			strncpy(proName, p + 1, n);
 		}
 
@@ -58,12 +94,12 @@ public:
 #endif
 
 #ifdef PLATFORM_IS_LINUX
-		int count = 0;
-		int nIndex = 0;
+		std::int32_t count = 0;
+		std::int32_t nIndex = 0;
 		char path[TASK_NAME_LEN] = {0};
 		char cParam[100] = {0};
 		char *proName = path;
-		int tmp_len;
+		std::int32_t tmp_len;
 
 		pid_t pId = getpid();
 		sprintf(cParam,"/proc/%d/exe",pId);
@@ -100,9 +136,6 @@ public:
 		strcat(name, "log/");
 #endif
 
-
-
-
 		time(&beginTime);
 		struct tm * timeinfo;
 		timeinfo = localtime(&beginTime);
@@ -123,34 +156,7 @@ public:
 	{
 		file.close();
 	};
-
-	void log(const char *data)
-	{
-		std::lock_guard<std::mutex> lck(dataMutex);
-		
-		time_t now;
-		time(&now);
-
-		file << difftime(now, beginTime) << ":";
-		file << data << std::endl;
-	}
-	void logfile(const char *address)
-	{
-		file.close();
-		file.open(address, std::ios::out | std::ios::trunc);
-		if (!file.good())
-		{
-			throw std::logic_error("can't not start log function");
-		}
-
-		time_t now = beginTime;
-		struct tm * timeinfo;
-		timeinfo = localtime(&now);
-		file << asctime(timeinfo) << std::endl;
-	}
 };
-
-static LOG_FILE log_file;
 
 
 namespace Aris
@@ -159,76 +165,54 @@ namespace Aris
 	{
 		const char * log(const char *data)
 		{
-			log_file.log(data);
+			LOG_FILE::getInstance().log(data);
 			return data;
 		}
-		
-		RT_MSG RT_MSG::instance[2];
-		
-		void Core::MSG_BASE::SetMsgID(int msgID)
-		{
-			*((int *)(_pData + 4)) = msgID;
-		}
-		unsigned int Core::MSG_BASE::GetLength()  const
-		{
-			return *((unsigned int *)_pData);
-		}
-		int Core::MSG_BASE::GetMsgID() const
-		{
-			return *((int *)(_pData + 4));
-		}
-		char* Core::MSG_BASE::GetDataAddress() const
-		{
-			if (GetLength() > 0)
-				return &_pData[MSG_HEADER_LENGTH];
-			else
-				return nullptr;
-		}
 
-		void Core::MSG_BASE::SetType(long long type)
+		std::uint32_t MSG_BASE::GetLength()  const
 		{
-			*((long long *)(_pData + 8)) = type;
+			return *reinterpret_cast<std::uint32_t *>(_pData);
 		}
-		long long Core::MSG_BASE::GetType() const
+		void MSG_BASE::SetMsgID(std::int32_t msgID)
 		{
-			return *((long long *)(_pData + 8));
+			*reinterpret_cast<std::int32_t *>(_pData + 4) = msgID;
 		}
-
-		void Core::MSG_BASE::Copy(const char * fromThisMemory)
+		std::int32_t MSG_BASE::GetMsgID() const
+		{
+			return *reinterpret_cast<std::int32_t *>(_pData + 4);
+		}
+		char* MSG_BASE::GetDataAddress() const
+		{
+			return GetLength() > 0 ? &_pData[sizeof(MSG_HEADER)] : nullptr;
+		}
+		void MSG_BASE::Copy(const char * fromThisMemory)
 		{
 			Copy((void*)fromThisMemory, strlen(fromThisMemory) + 1);
 		}
-		void Core::MSG_BASE::Copy(const void * fromThisMemory, unsigned int dataLength)
+		void MSG_BASE::Copy(const void * fromThisMemory, std::uint32_t dataLength)
 		{
 			SetLength(dataLength);
-			if (dataLength > 0)
-			{
-				memcpy(GetDataAddress(), fromThisMemory, dataLength);
-			}
+			memcpy(GetDataAddress(), fromThisMemory, GetLength());//no need to check if length is 0
 		}
-		void Core::MSG_BASE::Copy(const void * fromThisMemory)
+		void MSG_BASE::Copy(const void * fromThisMemory)
 		{
-			if (GetLength() > 0)
-			{
-				memcpy(GetDataAddress(), fromThisMemory, GetLength());
-			}
+			//no need to check if length is 0
+			memcpy(GetDataAddress(), fromThisMemory, GetLength());
 		}
-		void Core::MSG_BASE::CopyAt(const void * fromThisMemory, unsigned int dataLength, unsigned int atThisPositionInMsg)
+		void MSG_BASE::CopyAt(const void * fromThisMemory, std::uint32_t dataLength, std::uint32_t atThisPositionInMsg)
 		{
 			if ((dataLength + atThisPositionInMsg) > GetLength())
 			{
 				SetLength(dataLength + atThisPositionInMsg);
 			}
 
-			if (dataLength > 0)
-			{
-				memcpy(&GetDataAddress()[atThisPositionInMsg], fromThisMemory, dataLength);
-			}
+			//no need to check if length is 0
+			memcpy(&GetDataAddress()[atThisPositionInMsg], fromThisMemory, dataLength);
 
 		}
-		void Core::MSG_BASE::CopyMore(const void * fromThisMemory, unsigned int dataLength)
+		void MSG_BASE::CopyMore(const void * fromThisMemory, std::uint32_t dataLength)
 		{
-			unsigned int pos = GetLength();
+			std::uint32_t pos = GetLength();
 
 			if (dataLength > 0)
 			{
@@ -236,103 +220,89 @@ namespace Aris
 				memcpy(&GetDataAddress()[pos], fromThisMemory, dataLength);
 			}
 		}
-		void Core::MSG_BASE::Paste(void * toThisMemory, unsigned int dataLength) const
+		void MSG_BASE::Paste(void * toThisMemory, std::uint32_t dataLength) const
 		{
-			if ((dataLength > 0) && (GetLength() > 0))
-			{
-				if (dataLength > GetLength())
-				{
-					memcpy(toThisMemory, GetDataAddress(), GetLength());
-				}
-				else
-				{
-					memcpy(toThisMemory, GetDataAddress(), dataLength);
-				}
-			}
+			// no need to check if length is zero
+			memcpy(toThisMemory, GetDataAddress(), GetLength() < dataLength ? GetLength() : dataLength);
 		}
-		void Core::MSG_BASE::Paste(void * toThisMemory) const
+		void MSG_BASE::Paste(void * toThisMemory) const
 		{
-			if (GetLength() > 0)
-			{
-				memcpy(toThisMemory, GetDataAddress(), GetLength());
-			}
+			// no need to check if length is zero
+			memcpy(toThisMemory, GetDataAddress(), GetLength());
 		}
-		void Core::MSG_BASE::PasteAt(void * toThisMemory, unsigned int dataLength, unsigned int atThisPositionInMsg) const
+		void MSG_BASE::PasteAt(void * toThisMemory, std::uint32_t dataLength, std::uint32_t atThisPositionInMsg) const
 		{
-			int actualLength = ((atThisPositionInMsg + dataLength) > GetLength() ? (GetLength() - atThisPositionInMsg) : dataLength);
+			// no need to check
+			memcpy(toThisMemory, &GetDataAddress()[atThisPositionInMsg], 
+				(atThisPositionInMsg + dataLength) > GetLength() ? (GetLength() - atThisPositionInMsg) : dataLength);
+		}
+		void MSG_BASE::SetType(std::int64_t type)
+		{
+			*reinterpret_cast<std::int64_t *>(_pData + 8) = type;
+		}
+		std::int64_t MSG_BASE::GetType() const
+		{
+			return *reinterpret_cast<std::int64_t *>(_pData + 8);
+		}
 
-			if (actualLength > 0)
-			{
-				memcpy(toThisMemory, &GetDataAddress()[atThisPositionInMsg], actualLength);
-			}
-		}
+		RT_MSG RT_MSG::instance[2];
 
 		RT_MSG::RT_MSG()
 		{
-			_pData = new char[8192 + MSG_HEADER_LENGTH];
-			memset(_pData, 0, 8192 + MSG_HEADER_LENGTH);
+			_pData = new char[RT_MSG_LENGTH + sizeof(MSG_HEADER)];
+			memset(_pData, 0, RT_MSG_LENGTH + sizeof(MSG_HEADER));
 			SetLength(0);
 		}
 		RT_MSG::~RT_MSG()
 		{
 			delete[] _pData;
 		}
-		void RT_MSG::SetLength(unsigned int dataLength)
+		void RT_MSG::SetLength(std::uint32_t dataLength)
 		{
-			*((unsigned int *)_pData) = dataLength;
+			*reinterpret_cast<std::uint32_t *>(_pData) = dataLength;
 		}
 
-		Core::MSG::MSG(int msgID, unsigned int dataLength)
+		MSG::MSG(std::int32_t msgID, std::uint32_t dataLength)
 		{
-			_pData = new char[MSG_HEADER_LENGTH + dataLength];
-			memset(_pData, 0, MSG_HEADER_LENGTH);
-			*((unsigned int *)_pData) = dataLength;
-			*((int *)(_pData + 4)) = msgID;
+			_pData = new char[sizeof(MSG_HEADER) + dataLength];
+			memset(_pData, 0, sizeof(MSG_HEADER) + dataLength);
+			
+			MSG_HEADER *pHeader = reinterpret_cast<MSG_HEADER *>(_pData);
+			pHeader->msgLength = dataLength;
+			pHeader->msgID = msgID;
 		}
-		Core::MSG::MSG(const MSG& other)
+		MSG::MSG(const MSG& other)
 		{
-			_pData = new char[MSG_HEADER_LENGTH + other.GetLength()];
-			memcpy(_pData, other._pData, MSG_HEADER_LENGTH + other.GetLength());
+			_pData = new char[sizeof(MSG_HEADER) + other.GetLength()];
+			memcpy(_pData, other._pData, sizeof(MSG_HEADER) + other.GetLength());
 		}
-		Core::MSG::MSG(MSG&& other)
+		MSG::MSG(MSG&& other)
 		{
 			this->Swap(other);
 		}
-		Core::MSG::~MSG()
+		MSG::~MSG()
 		{
 			delete [] _pData;
 		}
-
-		Core::MSG &Core::MSG::operator=(const MSG &other)
-		{
-			MSG tem(other);
-			this->Swap(tem);
-			return (*this);
-		}
-		Core::MSG &Core::MSG::operator=(MSG&& other)
+		MSG &MSG::operator=(MSG other)
 		{
 			this->Swap(other);
-			return *this;
+			return (*this);
 		}
-
-		void Core::MSG::Swap(MSG &other)
+		void MSG::Swap(MSG &other)
 		{
 			std::swap(this->_pData, other._pData);
 		}
-
-		void Core::MSG::SetLength(unsigned int dataLength)
+		void MSG::SetLength(std::uint32_t dataLength)
 		{
-			char * pOldData = _pData;
-			unsigned int oldLength = this->GetLength();
+			MSG otherMsg(0, sizeof(MSG_HEADER) + dataLength);
 
-			_pData = new char[MSG_HEADER_LENGTH + dataLength];
-			memcpy(_pData, pOldData, MSG_HEADER_LENGTH + 
-				(((oldLength) < (dataLength)) ? (oldLength) : (dataLength)));
+			memcpy(otherMsg._pData, this->_pData, sizeof(MSG_HEADER) +
+				(this->GetLength() < dataLength ? this->GetLength() : dataLength));
 
-			*((unsigned int *)_pData) = dataLength;
+			*reinterpret_cast<std::uint32_t *&>(otherMsg._pData) = dataLength;
 
-			delete [] pOldData;
+			this->Swap(otherMsg);
 		}
-		
 	}
 }

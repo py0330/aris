@@ -1,6 +1,7 @@
 ﻿#include "Platform.h"
 
-#include "Aris_Thread.h"
+#include <thread>
+
 #include "Aris_Message.h"
 
 #include <stdio.h>

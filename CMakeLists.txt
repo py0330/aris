@@ -82,7 +82,7 @@ link_directories(C:/lapack/lib)
 endif(WIN32)
 
 # Aris_Core project
-set(SOURCE Aris_Socket Aris_Core Aris_Thread tinyxml2 Aris_Message Aris_XML)
+set(SOURCE Aris_Socket Aris_Core tinyxml2 Aris_Message Aris_XML)
 PREPEND_CPP(FULL_SRC src/Aris_Core ${SOURCE})
 PREPEND_H(FULL_H src/Aris_Core ${SOURCE})
 add_library(Aris_Core STATIC ${FULL_SRC} ${FULL_H})

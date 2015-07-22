@@ -148,7 +148,7 @@ namespace Aris
 					int msgID;
 					long long type;
 				};
-				char header[MSG_HEADER_LENGTH];
+				char header[sizeof(MSG_HEADER)];
 			} head;
 			Aris::Core::MSG receivedData;
 			
@@ -163,7 +163,7 @@ namespace Aris
 			/*开启接受数据的循环*/
 			while (1)
 			{
-				int res = recv(connSocket, head.header, MSG_HEADER_LENGTH, 0);
+				int res = recv(connSocket, head.header, sizeof(MSG_HEADER), 0);
 
 				/*检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源，
 				若能锁住，则开始获取CONN_STRUCT所有权*/
@@ -190,7 +190,7 @@ namespace Aris
 
 				/*接收消息本体*/
 				receivedData.SetLength(head.dataLength);
-				memcpy(receivedData._pData, head.header, MSG_HEADER_LENGTH);
+				memcpy(receivedData._pData, head.header, sizeof(MSG_HEADER));
 
 				if (receivedData.GetLength()>0)
 					res = recv(connSocket, receivedData.GetDataAddress(), receivedData.GetLength(), 0);
@@ -199,7 +199,7 @@ namespace Aris
 				{
 					pConnS->pConn->Close();
 
-					if (pConnS->_OnLoseConnection != 0)
+					if (pConnS->_OnLoseConnection != nullptr)
 						pConnS->_OnLoseConnection(pConnS->pConn);
 
 					return;
@@ -213,20 +213,23 @@ namespace Aris
 						pConnS->_OnReceivedData(pConnS->pConn, receivedData);
 					break;
 				case SOCKET_REQUEST:
+				{
+					Aris::Core::MSG m;
 					if (pConnS->_OnReceivedRequest != nullptr)
 					{
-						Aris::Core::MSG m = pConnS->_OnReceivedRequest(pConnS->pConn, receivedData);
-						m.SetType(SOCKET_REPLY);
-						pConnS->pConn->SendData(m);
+						m = pConnS->_OnReceivedRequest(pConnS->pConn, receivedData);
 					}
-					else
+					m.SetType(SOCKET_REPLY);
+
+					if (send(pConnS->_ConnSocket, m._pData, m.GetLength() + sizeof(MSG_HEADER), 0) == -1)
 					{
-						Aris::Core::MSG m;
-						m.SetType(SOCKET_REPLY);
-						pConnS->pConn->SendData(m);
+						pConnS->pConn->Close();
+						if (pConnS->_OnLoseConnection != nullptr)
+							pConnS->_OnLoseConnection(pConnS->pConn);
+						return;
 					}
-						
 					break;
+				}	
 				case SOCKET_REPLY:
 					if (pConnS->_ConnState != WAITING_FOR_REPLY)
 					{
@@ -450,7 +453,7 @@ namespace Aris
 			{
 			case WORKING:
 			case WAITING_FOR_REPLY:
-				if (send(pConnStruct->_ConnSocket, data._pData, data.GetLength() + MSG_HEADER_LENGTH, 0) == -1)
+				if (send(pConnStruct->_ConnSocket, data._pData, data.GetLength() + sizeof(MSG_HEADER), 0) == -1)
 					throw SEND_DATA_ERROR("CONN failed sending data, because network failed\n", this, 0);
 				else
 					return;
@@ -496,7 +499,7 @@ namespace Aris
 				return reply;
 			}
 		}
-		void CONN::SetCallBackOnReceivedData(std::function<int(CONN*, Aris::Core::MSG &)> OnReceivedData)
+		void CONN::SetOnReceivedData(std::function<int(CONN*, Aris::Core::MSG &)> OnReceivedData)
 		{
 			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_state_mutex);
 			pConnStruct->_OnReceivedData = OnReceivedData;
@@ -506,12 +509,12 @@ namespace Aris
 			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_state_mutex);
 			pConnStruct->_OnReceivedRequest = OnReceivedRequest;
 		}
-		void CONN::SetCallBackOnReceivedConnection(std::function<int(CONN*, const char*, int)> OnReceivedConnection)
+		void CONN::SetOnReceivedConnection(std::function<int(CONN*, const char*, int)> OnReceivedConnection)
 		{
 			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_state_mutex);
 			pConnStruct->_OnReceivedConnection = OnReceivedConnection;
 		}
-		void CONN::SetCallBackOnLoseConnection(std::function<int(CONN*)> OnLoseConnection)
+		void CONN::SetOnLoseConnection(std::function<int(CONN*)> OnLoseConnection)
 		{
 			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_state_mutex);
 			pConnStruct->_OnLoseConnection = OnLoseConnection;

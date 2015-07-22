@@ -28,13 +28,12 @@
 #include <rtdk.h>
 #include <ecrt.h>
 #include <rtdm/rtipc.h>
-#include <pthread.h>
+#include <thread>
 
 #include <tinyxml2.h>
 
 #include "Aris_Device.h"
 
-#include "Aris_Thread.h"
 #include "Aris_Socket.h"
 
 

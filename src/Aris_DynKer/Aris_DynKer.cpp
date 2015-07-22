@@ -13,6 +13,8 @@
 #include <sstream>
 using namespace std;
 
+
+
 #include <Platform.h>
 #include "Aris_DynKer.h"
 #include "Aris_ExpCal.h"
@@ -1705,5 +1707,101 @@ namespace Aris
 			}
 			cout << endl;
 		}
+		
+		AKIMA::AKIMA(unsigned inNum, const double *x_in, const double *y_in)
+		{
+			/*对数据进行排序,并保存*/
+			std::list<std::pair<double, double> > v;
+
+			for (unsigned i = 0; i < inNum; ++i)
+			{
+				v.push_back(std::make_pair(x_in[i], y_in[i]));
+			}
+
+			v.sort([](std::pair<double, double> a, std::pair<double, double> b)
+			{
+				return a.first < b.first;
+			});
+
+			for (auto &p : v)
+			{
+				_x.push_back(p.first);
+				_y.push_back(p.second);
+			}
+
+			/*开始计算*/
+			std::vector<double> s(inNum + 3), ds(inNum + 2), t(inNum);
+
+			for (unsigned i = 0; i < inNum - 1; ++i)
+			{
+				s[i + 2] = (_y[i + 1] - _y[i]) / (_x[i + 1] - _x[i]);
+			}
+
+			s[1] = 2 * s[2] - s[3];
+			s[0] = 2 * s[1] - s[2];
+			s[inNum + 1] = 2 * s[inNum] - s[inNum - 1];
+			s[inNum + 2] = 2 * s[inNum + 1] - s[inNum];
+
+			for (unsigned i = 0; i < inNum + 2; ++i)
+			{
+				ds[i] = std::abs(s[i + 1] - s[i]);
+			}
+
+			for (unsigned i = 0; i < inNum; ++i)
+			{
+				if (ds[i] + ds[i + 2]<1e-12)/*前后两段的斜斜率都为0*/
+				{
+					t[i] = (s[i + 1] + s[i + 2]) / 2;
+				}
+				else
+				{
+					t[i] = (ds[i + 2] * s[i + 1] + ds[i] * s[i + 2]) / (ds[i] + ds[i + 2]);
+				}
+
+			}
+
+			/*所需储存的变量*/
+			_p0.resize(inNum - 1);
+			_p1.resize(inNum - 1);
+			_p2.resize(inNum - 1);
+			_p3.resize(inNum - 1);
+
+			for (unsigned i = 0; i < inNum - 1; ++i)
+			{
+				_p0[i] = _y[i];
+				_p1[i] = t[i];
+				_p2[i] = (3 * s[i + 2] - 2 * t[i] - t[i + 1]) / (_x[i + 1] - _x[i]);
+				_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (_x[i + 1] - _x[i]) / (_x[i + 1] - _x[i]);
+			}
+		}
+		double AKIMA::operator()(double x, char order) const
+		{
+			/*寻找第一个大于x的位置*/
+			auto bIn = std::upper_bound(_x.begin(), _x.end() - 1, x);
+
+			unsigned id = std::max<int>(bIn - _x.begin() - 1, 0);
+
+			double w = x - _x[id];
+
+			switch (order)
+			{
+			case '1':
+				return (3 * w*_p3[id] + 2 * _p2[id])*w + _p1[id];
+			case '2':
+				return (6 * w*_p3[id] + 2 * _p2[id]);
+			case '0':
+			default:
+				return ((w*_p3[id] + _p2[id])*w + _p1[id])*w + _p0[id];
+			}
+		}
+		void AKIMA::operator()(unsigned length, const double *x_in, double *y_out, char order)const
+		{
+			for(unsigned i = 0; i < length; ++i)
+			{
+				y_out[i] = this->operator()(x_in[i], order);
+			}
+		}
+
+
 	}
 }

@@ -11,11 +11,22 @@
 #include <algorithm>
 #include <limits>
 #include <sstream>
+
+
+
+
 using namespace std;
 
 #include <Platform.h>
 #include "Aris_DynKer.h"
 #include "Aris_DynModel.h"
+
+#ifdef PLATFORM_IS_WINDOWS
+#include <stdlib.h>
+#endif
+#ifdef PLATFORM_IS_LINUX
+#include <stdlib.h>
+#endif
 
 extern "C"
 {
@@ -32,15 +43,12 @@ namespace Aris
 		{
 			auto p = std::find_if(container.begin(), container.end(), [pData](typename T::const_reference p)
 			{
-				if (p.get() == pData)
-					return true;
-				else
-					return false;
+				return (p.get() == pData);
 			});
 
 			if (p == container.end())
 			{
-				return std::numeric_limits<unsigned>::max();
+				return container.size();
 			}
 			else
 			{
@@ -48,10 +56,8 @@ namespace Aris
 			}
 		}
 
-
 		OBJECT::OBJECT(MODEL *pModel, const string &Name)
-			:_IsActive(true)
-			, _Name(Name)
+			: _Name(Name)
 			, _pModel(pModel)
 		{
 		}
@@ -62,23 +68,9 @@ namespace Aris
 		{
 			return this->_Name;
 		}
-		bool OBJECT::GetActive() const
-		{
-			return this->_IsActive;
-		}
-		int OBJECT::Activate()
-		{
-			_IsActive = true;
-			return 0;
-		}
-		int OBJECT::Deactivate()
-		{
-			_IsActive = false;
-			return 0;
-		}
 
 		PART::PART(MODEL *pModel, const string &Name, const double *Im, const double *pm, const double *Vel, const double *Acc)
-			:OBJECT(pModel, Name)
+			:ELEMENT(pModel, Name)
 		{
 			if (Im == 0)
 			{
@@ -189,11 +181,11 @@ namespace Aris
 				return nullptr;
 			}
 			
-			_pModel->_markers.push_back(std::shared_ptr<MARKER>(new MARKER(_pModel, Name, this, pm, pRelativeTo)));
+			_pModel->_markers.push_back(std::unique_ptr<MARKER>(new MARKER(_pModel, Name, this, pm, pRelativeTo)));
 			_markerNames[Name] = _pModel->_markers.size() - 1;
 			return _pModel->_markers.back().get();
 		}
-		void PART::ToXMLElement(Aris::Core::ELEMENT *pEle) const
+		void PART::ToXmlElement(Aris::Core::ELEMENT *pEle) const
 		{
 			double value[10];
 			
@@ -232,7 +224,7 @@ namespace Aris
 			{
 				Aris::Core::ELEMENT *ele = pEle->GetDocument()->NewElement("");
 
-				_pModel->_markers.at(m.second)->ToXMLElement(ele);
+				_pModel->_markers.at(m.second)->ToXmlElement(ele);
 				pChildMak->InsertEndChild(ele);
 			}
 
@@ -240,7 +232,7 @@ namespace Aris
 			pGraphicFilePath->SetText(this->graphicFilePath.c_str());
 			pEle->InsertEndChild(pGraphicFilePath);
 		}
-		void PART::FromXMLElement(const Aris::Core::ELEMENT *pEle)
+		void PART::FromXmlElement(const Aris::Core::ELEMENT *pEle)
 		{
 			this->_Name = pEle->Name();
 
@@ -275,7 +267,7 @@ namespace Aris
 
 			for (const Aris::Core::ELEMENT *ele = pEle->FirstChildElement("ChildMarker")->FirstChildElement(); ele != 0; ele=ele->NextSiblingElement())
 			{
-				AddMarker(ele->Name())->FromXMLElement(ele);
+				AddMarker(ele->Name())->FromXmlElement(ele);
 			}
 
 			if (pEle->FirstChildElement("Graphic_File_Path")->GetText()!=nullptr)
@@ -287,7 +279,7 @@ namespace Aris
 		}
 
 		MARKER::MARKER(MODEL *pModel, const string &Name, PART* pPart, const double *pLocPm, MARKER *pRelativeTo)
-			: OBJECT(pModel, Name)
+			: ELEMENT(pModel, Name)
 			, _pPrt(pPart)
 		{
 			if (pRelativeTo == nullptr)
@@ -323,11 +315,11 @@ namespace Aris
 		{
 			s_dgemm(4, 4, 4, 1, _pPrt->GetPmPtr(), 4, *_PrtPm, 4, 0, *_Pm, 4);
 		}
-		const double* MARKER::GetPrtPmPtr() const
+		unsigned MARKER::GetID() const
 		{
-			return *_PrtPm;
+			return DynKer::GetID<decltype(_pModel->_markers)>(_pModel->_markers, this);
 		}
-		int MARKER::ToXMLElement(Aris::Core::ELEMENT *pEle) const
+		void MARKER::ToXmlElement(Aris::Core::ELEMENT *pEle) const
 		{
 			double value[10];
 
@@ -342,10 +334,8 @@ namespace Aris
 			Aris::Core::ELEMENT *pRelativeMakEle = pEle->GetDocument()->NewElement("RelativeTo");
 			pRelativeMakEle->SetText("");
 			pEle->InsertEndChild(pRelativeMakEle);
-
-			return 0;
 		}
-		int MARKER::FromXMLElement(const Aris::Core::ELEMENT *pEle)
+		void MARKER::FromXmlElement(const Aris::Core::ELEMENT *pEle)
 		{
 			double pm[4][4];
 
@@ -363,16 +353,10 @@ namespace Aris
 			{
 				memcpy(_PrtPm, *pm, sizeof(_PrtPm));
 			}
-
-			return 0;
-		}
-		unsigned MARKER::GetID() const
-		{
-			return DynKer::GetID<decltype(_pModel->_markers)>(_pModel->_markers, this);
 		}
 
 		JOINT::JOINT(MODEL *pModel, const std::string &Name, JOINT_TYPE Type, MARKER *pMakI, MARKER *pMakJ)
-			: OBJECT(pModel, Name)
+			: ELEMENT(pModel, Name)
 			, _Type(Type)
 			, _pMakI(pMakI)
 			, _pMakJ(pMakJ)
@@ -535,7 +519,7 @@ namespace Aris
 				return 5;
 			}
 		}
-		int JOINT::ToXMLElement(Aris::Core::ELEMENT *pEle) const
+		void JOINT::ToXmlElement(Aris::Core::ELEMENT *pEle) const
 		{
 			pEle->DeleteChildren();
 			pEle->SetName(this->_Name.data());
@@ -580,10 +564,8 @@ namespace Aris
 			Aris::Core::ELEMENT *pMakJ = pEle->GetDocument()->NewElement("jMarker");
 			pMakJ->SetText(_pMakJ->GetName().data());
 			pEle->InsertEndChild(pMakJ);
-
-			return 0;
 		}
-		int JOINT::FromXMLElement(const Aris::Core::ELEMENT *pEle)
+		void JOINT::FromXmlElement(const Aris::Core::ELEMENT *pEle)
 		{
 			this->_Name = pEle->Name();
 
@@ -594,7 +576,7 @@ namespace Aris
 				this->_IsActive = false;
 			}
 			else{
-				return -1;
+				throw std::logic_error("faild load xml file in joint");
 			}
 
 			if (strcmp(pEle->FirstChildElement("Type")->GetText(), "Rotational") == 0)
@@ -615,13 +597,11 @@ namespace Aris
 			}
 			else
 			{
-				return -1;
+				throw std::logic_error("faild load xml file in joint");
 			}
 
 			_pMakI = _pModel->GetPart(pEle->FirstChildElement("iPart")->GetText())->GetMarker(pEle->FirstChildElement("iMarker")->GetText());
 			_pMakJ = _pModel->GetPart(pEle->FirstChildElement("jPart")->GetText())->GetMarker(pEle->FirstChildElement("jMarker")->GetText());
-
-			return 0;
 		}
 		unsigned JOINT::GetID() const
 		{
@@ -629,7 +609,7 @@ namespace Aris
 		}
 
 		MOTION::MOTION(MODEL *pModel, const std::string &Name, MOTION_TYPE type, MOTION_MODE mode, MARKER *pMakI, MARKER *pMakJ)
-			: OBJECT(pModel, Name)
+			: ELEMENT(pModel, Name)
 			, _Type(type)
 			, _Mode(mode)
 			, _pMakI(pMakI)
@@ -697,7 +677,7 @@ namespace Aris
 		{
 			return 1;
 		}
-		int MOTION::ToXMLElement(Aris::Core::ELEMENT *pEle) const
+		void MOTION::ToXmlElement(Aris::Core::ELEMENT *pEle) const
 		{
 			pEle->DeleteChildren();
 			pEle->SetName(this->_Name.data());
@@ -750,10 +730,8 @@ namespace Aris
 			
 			pFrictionCoefficients->SetText(MATRIX(1,3,_frc_coe).ToString().c_str());
 			pEle->InsertEndChild(pFrictionCoefficients);
-
-			return 0;
 		}
-		int MOTION::FromXMLElement(const Aris::Core::ELEMENT *pEle)
+		void MOTION::FromXmlElement(const Aris::Core::ELEMENT *pEle)
 		{
 			this->_Name = pEle->Name();
 
@@ -767,7 +745,7 @@ namespace Aris
 			}
 			else
 			{
-				return -1;
+				throw std::logic_error("failed load xml file in motion");
 			}
 
 			if (strcmp(pEle->FirstChildElement("Type")->GetText(), "Linear") == 0)
@@ -789,9 +767,6 @@ namespace Aris
 
 			_pMakI = _pModel->GetPart(pEle->FirstChildElement("iPart")->GetText())->GetMarker(pEle->FirstChildElement("iMarker")->GetText());
 			_pMakJ = _pModel->GetPart(pEle->FirstChildElement("jPart")->GetText())->GetMarker(pEle->FirstChildElement("jMarker")->GetText());
-
-
-			return 0;
 		}
 		unsigned MOTION::GetID() const
 		{
@@ -799,7 +774,7 @@ namespace Aris
 		}
 
 		FORCE::FORCE(MODEL *pModel, const std::string &Name, FORCE::FORCE_TYPE type, PART *pPrtI, PART *pPrtJ, MARKER *pMakA, MARKER *pMakP, const double *force)
-			: OBJECT(pModel, Name)
+			: ELEMENT(pModel, Name)
 			, _Type(type)
 			, _pPrtI(pPrtI)
 			, _pPrtJ(pPrtJ)
@@ -854,7 +829,7 @@ namespace Aris
 		{
 		}
 
-		int ENVIRONMENT::ToXMLElement(Aris::Core::ELEMENT *pEle) const
+		void ENVIRONMENT::ToXmlElement(Aris::Core::ELEMENT *pEle) const
 		{
 			pEle->DeleteChildren();
 			pEle->SetName("Enviroment");
@@ -862,14 +837,11 @@ namespace Aris
 			Aris::Core::ELEMENT *pGravity = pEle->GetDocument()->NewElement("Gravity");
 			pGravity->SetText(MATRIX(1, 6, Gravity).ToString().c_str());
 			pEle->InsertEndChild(pGravity);
-
-			return 0;
 		}
-		int ENVIRONMENT::FromXMLElement(const Aris::Core::ELEMENT *pEle)
+		void ENVIRONMENT::FromXmlElement(const Aris::Core::ELEMENT *pEle)
 		{
 			MATRIX m = _pModel->calculator.CalculateExpression(pEle->FirstChildElement("Gravity")->GetText());
 			memcpy(Gravity, m.Data(), sizeof(Gravity));
-			return 0;
 		}
 
 		MODEL::MODEL(const std::string & Name)
@@ -891,7 +863,7 @@ namespace Aris
 				return nullptr;
 			}
 			
-			_parts.push_back(std::shared_ptr<PART>(new PART(this, Name, Im, pm, Vel, Acc)));
+			_parts.push_back(std::unique_ptr<PART>(new PART(this, Name, Im, pm, Vel, Acc)));
 			return _parts.back().get();
 		}
 		JOINT* MODEL::AddJoint(const std::string & Name, Aris::DynKer::JOINT::JOINT_TYPE type, MARKER* pMakI, MARKER* pMakJ)
@@ -901,7 +873,7 @@ namespace Aris
 				return nullptr;
 			}
 			
-			_joints.push_back(std::shared_ptr<JOINT>(new JOINT(this, Name, type, pMakI, pMakJ)));
+			_joints.push_back(std::unique_ptr<JOINT>(new JOINT(this, Name, type, pMakI, pMakJ)));
 			return _joints.back().get();
 		}
 		MOTION* MODEL::AddMotion(const std::string & Name, Aris::DynKer::MOTION::MOTION_TYPE type, MOTION::MOTION_MODE mode, MARKER *pMakI, MARKER *pMakJ)
@@ -911,7 +883,7 @@ namespace Aris
 				return nullptr;
 			}
 
-			_motions.push_back(std::shared_ptr<MOTION>(new MOTION(this, Name, type, mode, pMakI, pMakJ)));
+			_motions.push_back(std::unique_ptr<MOTION>(new MOTION(this, Name, type, mode, pMakI, pMakJ)));
 			return _motions.back().get();
 		}
 		FORCE* MODEL::AddForce(const std::string & Name, FORCE::FORCE_TYPE type, PART *pPrtI, PART *pPrtJ, MARKER *pMakI, MARKER *pMakJ, const double *fce)
@@ -921,7 +893,7 @@ namespace Aris
 				return nullptr;
 			}
 
-			_forces.push_back(std::shared_ptr<FORCE>(new FORCE(this, Name, type, pPrtI, pPrtJ, pMakI, pMakJ, fce)));
+			_forces.push_back(std::unique_ptr<FORCE>(new FORCE(this, Name, type, pPrtI, pPrtJ, pMakI, pMakJ, fce)));
 			return _forces.back().get();
 		}
 		
@@ -930,10 +902,7 @@ namespace Aris
 		{
 			auto p = std::find_if(container.begin(), container.end(), [Name](typename T::const_reference p)
 			{
-				if (p->GetName() == Name)
-					return true;
-				else
-					return false;
+				return (p->GetName() == Name);
 			});
 
 			if (p == container.end())
@@ -1571,7 +1540,7 @@ namespace Aris
 				calculator.AddVariable(ele->Name(), calculator.CalculateExpression(ele->GetText()));
 			}
 
-			_Environment.FromXMLElement(pEnv);
+			_Environment.FromXmlElement(pEnv);
 
 			_parts.clear();
 			_joints.clear();
@@ -1586,7 +1555,7 @@ namespace Aris
 				if (std::string(ele->Name()) == "Ground")
 				{
 					AddPart(ele->Name());
-					GetPart(ele->Name())->FromXMLElement(ele);
+					GetPart(ele->Name())->FromXmlElement(ele);
 					pGround = GetPart("Ground");
 				}
 			}
@@ -1604,7 +1573,7 @@ namespace Aris
 				if (std::string(ele->Name()) != "Ground")
 				{
 					AddPart(ele->Name());
-					GetPart(ele->Name())->FromXMLElement(ele);
+					GetPart(ele->Name())->FromXmlElement(ele);
 				}
 			}
 
@@ -1613,7 +1582,7 @@ namespace Aris
 				ele = ele->NextSiblingElement())
 			{
 				AddJoint(ele->Name());
-				GetJoint(ele->Name())->FromXMLElement(ele);
+				GetJoint(ele->Name())->FromXmlElement(ele);
 				GetJoint(ele->Name())->_Initiate();
 			}
 
@@ -1622,7 +1591,7 @@ namespace Aris
 				ele = ele->NextSiblingElement())
 			{
 				AddMotion(ele->Name());
-				GetMotion(ele->Name())->FromXMLElement(ele);
+				GetMotion(ele->Name())->FromXmlElement(ele);
 				GetMotion(ele->Name())->_Initiate();
 			}
 		}
@@ -1638,7 +1607,7 @@ namespace Aris
 			XML_Doc.InsertEndChild(pModel);
 
 			Aris::Core::ELEMENT *pEnvironment = XML_Doc.NewElement("");
-			_Environment.ToXMLElement(pEnvironment);
+			_Environment.ToXmlElement(pEnvironment);
 			pModel->InsertEndChild(pEnvironment);
 
 			Aris::Core::ELEMENT *pVar = XML_Doc.NewElement("Variable");
@@ -1659,34 +1628,204 @@ namespace Aris
 			for (auto &p:_parts)
 			{
 				Aris::Core::ELEMENT *ele = XML_Doc.NewElement("");
-				p->ToXMLElement(ele);
+				p->ToXmlElement(ele);
 				pPrt->InsertEndChild(ele);
 			}
 
 			for (auto &j : _joints)
 			{
 				Aris::Core::ELEMENT *ele = XML_Doc.NewElement("");
-				j->ToXMLElement(ele);
+				j->ToXmlElement(ele);
 				pJnt->InsertEndChild(ele);
 			}
 
 			for (auto &m : _motions)
 			{
 				Aris::Core::ELEMENT *ele = XML_Doc.NewElement("");
-				m->ToXMLElement(ele);
+				m->ToXmlElement(ele);
 				pMot->InsertEndChild(ele);
 			}
 
 
 			XML_Doc.SaveFile(filename);
 		}
-		void MODEL::SaveAdams(const char *filename) const
+		void MODEL::SaveAdams(const char *filename, SIMULATE_SCRIPT* pScript) const
 		{
 			ofstream file;
 
-			file.open(filename);
+			const int maxPath = 1000;
+
+			std::string cmdName = std::string(filename) + std::string(".cmd");
+			std::string acfName = std::string(filename) + std::string(".acf");
+			std::string fullAcfPath;
+			/*******写acf文件********/
+			if (pScript)
+			{
+				file.open(acfName, std::ios::out | std::ios::trunc);
+				file.close();
+				char fullPath[maxPath];
+#ifdef PLATFORM_IS_WINDOWS
+				_fullpath(fullPath, acfName.c_str(), maxPath);
+#endif
+#ifdef PLATFORM_IS_LINUX
+				realpath(acfName.c_str(), fullPath);
+#endif
+				fullAcfPath = std::string(fullPath);
+
+				/*创建acf文件*/
+				file.open(acfName, std::ios::out | std::ios::trunc);
+
+				file << setprecision(15);
+
+				double beginTime = 0;
+				double endTime = pScript->endTime/1000.0;
+				double dt = pScript->dt/1000.0;
+
+
+				file << "\r\n\r\n";
+				/*设置起始的关节和电机状态*/
+				if (std::find_if(_joints.begin(), _joints.end(), [](const std::unique_ptr<JOINT> &j)
+				{
+					return (j->GetActive()==false);
+				}) != _joints.end())
+				{
+					file << "deactivate/joint, id= ";
+
+					bool isFirst = true;
+					for (auto &j : _joints)
+					{
+						if (j->GetActive() == false)
+						{
+							if (isFirst)
+							{
+								file << j->GetID() + 1;
+								isFirst = false;
+							}
+							else
+							{
+								file << "," << j->GetID() + 1;
+							}
+						}
+
+					}
+					file << "\r\n";
+				};
+				if (std::find_if(_motions.begin(), _motions.end(), [](const std::unique_ptr<MOTION> &m)
+					{
+						return (m->GetMode() == MOTION::FCE_CONTROL);
+					}) != _motions.end())
+				{
+					file << "deactivate/motion, id= ";
+
+					bool isFirst = true;
+					for (auto &m : _motions)
+					{
+						if (m->GetMode() == MOTION::FCE_CONTROL)
+						{
+							if (isFirst)
+							{
+								file << m->GetID() + 1;
+								isFirst = false;
+							}
+							else
+							{
+								file << "," << m->GetID() + 1;
+							}
+						}
+						
+					}
+					file << "\r\n";
+				};
+				if (std::find_if(_motions.begin(), _motions.end(), [](const std::unique_ptr<MOTION> &m)
+					{
+						return (m->GetMode() == MOTION::POS_CONTROL);
+					}) != _motions.end())
+				{
+					file << "deactivate/sforce, id= ";
+
+					bool isFirst = true;
+					for (auto &m : _motions)
+					{
+						if (m->GetMode() == MOTION::POS_CONTROL)
+						{
+							if (isFirst)
+							{
+								file << m->GetID() + 1;
+								isFirst = false;
+							}
+							else
+							{
+								file << "," << m->GetID() + 1;
+							}
+						}
+						
+					}
+					file << "\r\n";
+				};
+
+				/*设置脚本*/
+				for (auto &i : pScript->script)
+				{
+					double now = double(i.first) / 1000.0;
+					if (now > beginTime)
+					{
+						file << "simulate/transient, dur=" << now - beginTime << ", dtout=" << dt << "\r\n";
+						beginTime = now;
+					}
+
+					for (auto &j : i.second.joints)
+					{
+						JOINT *pJnt = j.first;
+
+						if (j.second.active)
+						{
+							file << "activate/joint, id=" << pJnt->GetID() + 1 << "\r\n";
+							if (j.second.isModifyMakI)
+							{
+								file << "marker/" << pJnt->GetMakI()->GetID() + 1 << ", QP=" << j.second.peMakI[0] << "," << j.second.peMakI[1] << "," << j.second.peMakI[2] << "\r\n";
+								file << "marker/" << pJnt->GetMakI()->GetID() + 1 << ", REULER=" << j.second.peMakI[3] << "," << j.second.peMakI[4] << "," << j.second.peMakI[5] << "\r\n";
+							}
+							if (j.second.isModifyMakJ)
+							{
+								file << "marker/" << pJnt->GetMakJ()->GetID() + 1 << ", QP=" << j.second.peMakJ[0] << "," << j.second.peMakJ[1] << "," << j.second.peMakJ[2] << "\r\n";
+								file << "marker/" << pJnt->GetMakJ()->GetID() + 1 << ", REULER=" << j.second.peMakJ[3] << "," << j.second.peMakJ[4] << "," << j.second.peMakJ[5] << "\r\n";
+							}
+
+						}
+						else
+						{
+							file << "deactivate/joint, id=" << pJnt->GetID() + 1 << "\r\n";
+						}
+					}
+
+					for (auto &j : i.second.motions)
+					{
+						if (j.second == MOTION::FCE_CONTROL)
+						{
+							file << "deactivate/motion, id= " << j.first->GetID() + 1 << "\r\n";
+							file << "activate/sforce, id= " << j.first->GetID() + 1 << "\r\n";
+						}
+						else
+						{
+							file << "activate/motion, id= " << j.first->GetID() + 1 << "\r\n";
+							file << "deactivate/sforce, id= " << j.first->GetID() + 1 << "\r\n";
+						}
+					}
+				}
+
+				if (endTime > beginTime)
+				{
+					file << "simulate/transient, dur=" << endTime - beginTime << ", dtout=" << dt << "\r\n";
+				}
+
+				file.close();
+			}
+
+			/*******写cmd文件********/
+			file.open(cmdName, std::ios::out | std::ios::trunc);
 
 			file << setprecision(15);
+
 			/*  Basic  */
 			file << "!-------------------------- Default Units for Model ---------------------------!\r\n"
 				<< "!\r\n"
@@ -1758,7 +1897,7 @@ namespace Aris
 				
 				file << "marker create  &\r\n"
 					<< "    marker_name = ." << this->GetName() << ".ground." << _markers.at(i.second)->GetName() << "  &\r\n"
-					<< "    adams_id = " << i.second << "  &\r\n"
+					<< "    adams_id = " << i.second + 1 << "  &\r\n"
 					<< "    location = (" << loc.ToString() << ")  &\r\n"
 					<< "    orientation = (" << ori.ToString() << ") \r\n"
 					<< "!\r\n";
@@ -1811,7 +1950,7 @@ namespace Aris
 					
 					file << "marker create  &\r\n"
 						<< "marker_name = ." << GetName() << "." << i->GetName() << "." << _markers.at(j.second)->GetName() <<"  &\r\n"
-						<< "adams_id = " << j.second << "  &\r\n"
+						<< "adams_id = " << j.second + 1 << "  &\r\n"
 						<< "location = (" << loc.ToString() << ")  &\r\n"
 						<< "orientation = (" << ori.ToString() << ")\r\n"
 						<< "!\r\n";
@@ -1893,19 +2032,27 @@ namespace Aris
 
 				file << "constraint create joint " << s << "  &\r\n"
 					<< "    joint_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
-					<< "    adams_id = " << i->GetID() << "  &\r\n"
+					<< "    adams_id = " << i->GetID() + 1 << "  &\r\n"
 					<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
 					<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  \r\n"
 					<< "!\r\n";
 
-				if (i->GetActive() == false)
+				/*如果有脚本，那么关节的active在脚本里设置*/
+				if (pScript == nullptr)
 				{
-					file << "constraint attributes  &\r\n"
-						<< "constraint_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
-						<< "active = off \r\n"
-						<< "!\r\n";
+					if (i->GetActive() == false)
+					{
+						file << "constraint attributes  &\r\n"
+							<< "constraint_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
+							<< "active = off \r\n"
+							<< "!\r\n";
+					}
 				}
 			}
+
+			file << "!----------------------------------- Motions -----------------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n";
 
 			for (auto &i : _motions)
 			{
@@ -1917,45 +2064,123 @@ namespace Aris
 					break;
 				}
 
-				file << "constraint create motion_generator &\r\n"
-					<< "    motion_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
-					<< "    adams_id = " << i->GetID() << "  &\r\n"
-					<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
-					<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  &\r\n"
-					<< "    axis = "<< s <<"  &\r\n"
-					<< "    function = \"" << *i->GetP_mPtr() <<"\"  \r\n"
-					<< "!\r\n";
-				
-				std::string type= "translational";
-
-				file << "force create direct single_component_force  &\r\n"
-					<< "    single_component_force_name = ." << GetName() << "." << i->GetName() << "_fce  &\r\n"
-					<< "    adams_id = " << i->GetID() << "  &\r\n"
-					<< "    type_of_freedom = " << type << "  &\r\n"
-					<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
-					<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  &\r\n"
-					<< "    action_only = off  &\r\n"
-					<< "    function = \"" << *i->GetF_mPtr() << "\"  \r\n"
-					<< "!\r\n";
-
-				if (i->GetMode()==MOTION::FCE_CONTROL)
+				if (i->posCurve == nullptr)
 				{
-					file << "constraint attributes  &\r\n"
-						<< "constraint_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
-						<< "active = off \r\n"
+					file << "constraint create motion_generator &\r\n"
+						<< "    motion_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
+						<< "    adams_id = " << i->GetID() + 1 << "  &\r\n"
+						<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
+						<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  &\r\n"
+						<< "    axis = " << s << "  &\r\n"
+						<< "    function = \"" << *i->GetP_mPtr() << "\"  \r\n"
 						<< "!\r\n";
 				}
 				else
 				{
-					file << "force attributes  &\r\n"
-						<< "force_name = ." << GetName() << "." << i->GetName() << "_fce  &\r\n"
-						<< "active = off \r\n"
+					file << "data_element create spline &\r\n"
+						<< "    spline_name = ." << GetName() << "." << i->GetName() << "_pos_spl  &\r\n"
+						<< "    adams_id = " << i->GetID() * 2 << "  &\r\n"
+						<< "    units = m &\r\n"
+						<< "    x = " << i->posCurve->x().at(0);
+					for (auto p = i->posCurve->x().begin() + 1; p < i->posCurve->x().end();++p)
+					{
+						file << "," << *p;
+					}
+					file << "    y = " << i->posCurve->y().at(0);
+					for (auto p = i->posCurve->y().begin() + 1; p < i->posCurve->y().end(); ++p)
+					{
+						file << "," << *p;
+					}
+					file << " \r\n!\r\n";
+
+					file << "constraint create motion_generator &\r\n"
+						<< "    motion_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
+						<< "    adams_id = " << i->GetID() << "  &\r\n"
+						<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
+						<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  &\r\n"
+						<< "    axis = " << s << "  &\r\n"
+						<< "    function = \"AKISPL(time,0," << i->GetName() << "_pos_spl)\"  \r\n"
 						<< "!\r\n";
 				}
 
+				if (i->fceCurve == nullptr)
+				{
+					std::string type = "translational";
 
-					
+					file << "force create direct single_component_force  &\r\n"
+						<< "    single_component_force_name = ." << GetName() << "." << i->GetName() << "_fce  &\r\n"
+						<< "    adams_id = " << i->GetID() + 1 << "  &\r\n"
+						<< "    type_of_freedom = " << type << "  &\r\n"
+						<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
+						<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  &\r\n"
+						<< "    action_only = off  &\r\n"
+						<< "    function = \"" << *i->GetF_mPtr() << "\"  \r\n"
+						<< "!\r\n";
+				}
+				else
+				{
+					std::string type = "translational";
+
+					file << "data_element create spline &\r\n"
+						<< "    spline_name = ." << GetName() << "." << i->GetName() << "_fce_spl  &\r\n"
+						<< "    adams_id = " << i->GetID() * 2 + 1 << "  &\r\n"
+						<< "    units = N &\r\n"
+						<< "    x = " << i->fceCurve->x().at(0);
+					for (auto p = i->fceCurve->x().begin() + 1; p < i->fceCurve->x().end(); ++p)
+					{
+						file << "," << *p;
+					}
+					file << "    y = " << i->fceCurve->y().at(0);
+					for (auto p = i->fceCurve->y().begin() + 1; p < i->fceCurve->y().end(); ++p)
+					{
+						file << "," << *p;
+					}
+					file << " \r\n!\r\n";
+
+					file << "force create direct single_component_force  &\r\n"
+						<< "    single_component_force_name = ." << GetName() << "." << i->GetName() << "_fce  &\r\n"
+						<< "    adams_id = " << i->GetID() << "  &\r\n"
+						<< "    type_of_freedom = " << type << "  &\r\n"
+						<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
+						<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  &\r\n"
+						<< "    action_only = off  &\r\n"
+						<< "    function = \"AKISPL(time,0," << i->GetName() << "_fce_spl)\"  \r\n"
+						<< "!\r\n";
+				}
+
+				/*没有仿真脚本时，才需要设置力控或者位置控制*/
+				if (pScript == nullptr)
+				{
+					if (i->GetMode() == MOTION::FCE_CONTROL)
+					{
+						file << "constraint attributes  &\r\n"
+							<< "constraint_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
+							<< "active = off \r\n"
+							<< "!\r\n";
+					}
+					else
+					{
+						file << "force attributes  &\r\n"
+							<< "force_name = ." << GetName() << "." << i->GetName() << "_fce  &\r\n"
+							<< "active = off \r\n"
+							<< "!\r\n";
+					}
+				}
+				
 			}
+
+			/*读入acf文件*/
+			if (pScript)
+			{
+				file << "!-------------------------- Reading ACF File ---------------------------!\r\n"
+					<< "simulation script read_acf &\n"
+					<< "    sim_script_name = SIM_SCRIPT_1 &\n"
+					<< "file_name = \"" << fullAcfPath << "\"";
+
+			}
+
+
+			file.close();
 		}
 	}
 }

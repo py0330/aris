@@ -668,7 +668,7 @@ void CSysBase::RealtimeCore(void* arg)
             m_rtDataRecv->SetLength(*((int*)m_rtDataRecvBuffer));
             m_rtDataRecv->SetMsgID(*((int*)(m_rtDataRecvBuffer+4)));
 
-            m_rtDataRecv->Copy(m_rtDataRecvBuffer+MSG_HEADER_LENGTH,m_rtDataRecv->GetLength());
+            m_rtDataRecv->Copy(m_rtDataRecvBuffer+sizeof(Aris::Core::MSG_HEADER),m_rtDataRecv->GetLength());
        //  m_rtDataRecv->Copy((int*)(m_rtDataRecvBuffer+MSG_HEADER_LENGTH),m_rtDataRecv->GetLength());
        //     m_rtDataRecv->SetLength(*((int*)m_rtDataRecvBuffer));
 

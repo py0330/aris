@@ -5,6 +5,8 @@
 #include <cstring>
 #include <algorithm>
 
+using namespace std;
+
 #include "Aris_ExpCal.h"
 
 namespace Aris
@@ -16,7 +18,8 @@ namespace Aris
 			, n(0)
 			, isRowMajor(true)
 			, pData(nullptr)
-		{}
+		{
+		}
 		MATRIX::MATRIX(const MATRIX &other)
 			: m(other.m)
 			, n(other.n)
@@ -68,21 +71,14 @@ namespace Aris
 			(*this) = Aris::DynKer::CombineMatrices<decltype(matrices)>(matrices);
 		}
 
-		MATRIX &MATRIX::operator=(const MATRIX &other)
-		{
-			MATRIX tem(other);
-			this->Swap(tem);
-			return *this;
-		}
-		MATRIX &MATRIX::operator=(MATRIX &&other)
+		MATRIX &MATRIX::operator=(MATRIX other)
 		{
 			this->Swap(other);
 			return *this;
 		}
 		MATRIX::~MATRIX()
 		{
-			if (pData!=nullptr)
-				delete[]pData;
+			delete[]pData;
 		}
 		MATRIX &MATRIX::Swap(MATRIX &other)
 		{

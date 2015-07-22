@@ -56,27 +56,5 @@ namespace Aris
 			}
 			return 0;
 		}
-
-		int str2doubleArray(const char *str, double *doubleArray, unsigned int ArrayLength)
-		{
-			const char * begin = str;
-			char *end;
-			
-			for (unsigned int i = 0; i < ArrayLength; ++i)
-			{
-				doubleArray[i] = std::strtod(begin, &end);
-				begin = end;
-			}
-			return 0;
-		};
-		int doubleArray2str(char *str, const double *doubleArray, unsigned int ArrayLength)
-		{
-			for (unsigned int i = 0; i < ArrayLength; ++i)
-			{
-				sprintf(str + i * DOUBLE_SIZE, "%-25.15e", doubleArray[i]);
-			}
-			
-			return 0;
-		}
 	}
 }
