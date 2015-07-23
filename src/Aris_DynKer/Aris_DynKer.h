@@ -19,11 +19,8 @@
 #include <memory>
 #include <functional>
 
-
-
 #include <Aris_XML.h>
 #include <Aris_ExpCal.h>
-
 
 namespace Aris
 {

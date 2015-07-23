@@ -301,10 +301,6 @@ namespace Aris
 			double _a_c[6];
 
 			friend class MODEL;
-			friend class std::vector < JOINT >;
-			friend class std::allocator < JOINT >;
-			friend struct std::pair < const std::string, JOINT >;
-			friend struct std::pair < std::string, JOINT >;
 		};
 		class MOTION :public ELEMENT
 		{
