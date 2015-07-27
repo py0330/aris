@@ -30,10 +30,10 @@ project(ARIS)
 # set the platform.h, which define the OS platform
 if(UNIX)
 	set(PLATFORM "PLATFORM_IS_LINUX")
-#	set(CMAKE_C_COMPILER "/usr/bin/gcc")
-#	set(CMAKE_CXX_COMPILER "/usr/bin/g++")
-	set(CMAKE_C_COMPILER "/usr/bin/clang")
-	set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+	set(CMAKE_C_COMPILER "/usr/bin/gcc")
+	set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+#	set(CMAKE_C_COMPILER "/usr/bin/clang")
+#	set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 endif(UNIX)
 if(WIN32)
 	set(PLATFORM "PLATFORM_IS_WINDOWS")
@@ -50,7 +50,7 @@ set(LIBRARY_OUTPUT_PATH lib)
 
 # set compile options
 if(UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2")
 endif(UNIX)
 
 # set dependency include folder
