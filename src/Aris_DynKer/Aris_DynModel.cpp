@@ -1506,7 +1506,7 @@ namespace Aris
 			clb_b_ptr = _clb_b.Data();
 		}
 
-		void MODEL::LoadXML(const char *filename)
+		void MODEL::LoadXml(const char *filename)
 		{
 			if (XML_Doc.LoadFile(filename) != 0)
 			{
@@ -1592,7 +1592,7 @@ namespace Aris
 				GetMotion(ele->Name())->_Initiate();
 			}
 		}
-		void MODEL::SaveSnapshotXML(const char *filename) const
+		void MODEL::SaveSnapshotXml(const char *filename) const
 		{
 			Aris::Core::DOCUMENT XML_Doc;
 			XML_Doc.DeleteChildren();

@@ -7,6 +7,7 @@
 #endif
 
 #include "Aris_Core.h"
+#include "Aris_XML.h"
 
 #ifdef PLATFORM_IS_LINUX
 #include <unistd.h>
@@ -107,6 +108,26 @@ int main()
 		int i;
 		cin >> i;
 	}
+
+
+	Aris::Core::DOCUMENT doc;
+
+	Aris::Core::ELEMENT *ele=doc.NewElement("test");
+
+
+
+	ele->SetAttribute("boolVar", false);
+
+
+	
+
+
+	doc.InsertFirstChild(ele);
+
+	doc.SaveFile("test.xml");
+
+
+
 
 #ifdef PLATFORM_IS_WINDOWS
 	_CrtDumpMemoryLeaks();

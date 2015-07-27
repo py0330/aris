@@ -648,9 +648,9 @@ namespace Aris
 
 			void ClbEqnTo(double *&clb_d_ptr, double *&clb_b_ptr, unsigned int &clb_dim_m, unsigned int &clb_dim_n);
 
-			void LoadXML(const char *filename);
-			void SaveSnapshotXML(const char *filename) const;
-			virtual void SaveAdams(const char *filename, SIMULATE_SCRIPT* pScript=nullptr) const;
+			void LoadXml(const char *filename);
+			void SaveSnapshotXml(const char *filename) const;
+			void SaveAdams(const char *filename, SIMULATE_SCRIPT* pScript=nullptr) const;
 
 		private:
 			MODEL(const MODEL &) = delete;
@@ -698,32 +698,5 @@ namespace Aris
 		};
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif

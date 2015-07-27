@@ -110,14 +110,14 @@ namespace Aris
 			template<class FirstArg, class... Args>
 			void CopyStructMore(const FirstArg& firstArg, const Args&... args)
 			{
-				CopyMore((const void*)&firstArg, sizeof(FirstArg));
+				CopyMore(static_cast<const void*>(&firstArg), sizeof(FirstArg));
 				CopyStructMore(args...);
 			}
 
 			template<class FirstArg, class... Args>
 			void PasteStruct(FirstArg& firstArg, Args&... args)
 			{
-				PasteAt((void*)&firstArg, sizeof(FirstArg), pasteID);
+				PasteAt(static_cast<void*>(&firstArg), sizeof(FirstArg), pasteID);
 				pasteID += sizeof(FirstArg);
 				PasteStruct(args...);
 			}
