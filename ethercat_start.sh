@@ -12,4 +12,7 @@ cp /etc/sysconfig/ethercat /opt/etherlab/etc/sysconfig/ethercat
 /opt/etherlab/etc/init.d/ethercat start
 /opt/etherlab/etc/init.d/ethercat restart
 /opt/etherlab/etc/init.d/ethercat status
+
+sleep 3
+
 /opt/etherlab/bin/ethercat sla

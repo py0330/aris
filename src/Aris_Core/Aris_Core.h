@@ -115,7 +115,7 @@ namespace Aris
 			}
 
 			template<class FirstArg, class... Args>
-			void PasteStruct(FirstArg& firstArg, Args&... args)
+			void PasteStruct(FirstArg& firstArg, Args&... args) const
 			{
 				PasteAt(static_cast<void*>(&firstArg), sizeof(FirstArg), pasteID);
 				pasteID += sizeof(FirstArg);
@@ -128,7 +128,7 @@ namespace Aris
 			void CopyStructMore()
 			{
 			} 
-			void PasteStruct()
+			void PasteStruct() const
 			{
 				pasteID = 0;
 			}
@@ -141,7 +141,7 @@ namespace Aris
 			MSG_BASE &operator=(MSG_BASE&& other) = delete;
 
 		private:
-			std::uint32_t pasteID{ 0 };
+			mutable std::uint32_t pasteID{ 0 };
 			char *_pData{ nullptr };
 
 			friend class MSG;
