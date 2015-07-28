@@ -1665,7 +1665,8 @@ namespace Aris
 				_fullpath(fullPath, acfName.c_str(), maxPath);
 #endif
 #ifdef PLATFORM_IS_LINUX
-				realpath(acfName.c_str(), fullPath);
+				if(realpath(acfName.c_str(), fullPath)==nullptr)
+					throw std::logic_error("can't identify realpath");
 #endif
 				fullAcfPath = std::string(fullPath);
 
@@ -2092,7 +2093,7 @@ namespace Aris
 
 					file << "constraint create motion_generator &\r\n"
 						<< "    motion_name = ." << GetName() << "." << i->GetName() << "  &\r\n"
-						<< "    adams_id = " << i->GetID() << "  &\r\n"
+						<< "    adams_id = " << i->GetID() + 1 << "  &\r\n"
 						<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
 						<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  &\r\n"
 						<< "    axis = " << s << "  &\r\n"
@@ -2136,7 +2137,7 @@ namespace Aris
 
 					file << "force create direct single_component_force  &\r\n"
 						<< "    single_component_force_name = ." << GetName() << "." << i->GetName() << "_fce  &\r\n"
-						<< "    adams_id = " << i->GetID() << "  &\r\n"
+						<< "    adams_id = " << i->GetID() + 1 << "  &\r\n"
 						<< "    type_of_freedom = " << type << "  &\r\n"
 						<< "    i_marker_name = ." << GetName() << "." << i->_pMakI->_pPrt->GetName() << "." << i->_pMakI->GetName() << "  &\r\n"
 						<< "    j_marker_name = ." << GetName() << "." << i->_pMakJ->_pPrt->GetName() << "." << i->_pMakJ->GetName() << "  &\r\n"
