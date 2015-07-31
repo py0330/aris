@@ -12,8 +12,23 @@ using namespace std;
 
 using namespace Aris::DynKer;
 
+constexpr int geta(const char *EurType)
+{
+	return EurType[0] - '1';
+}
+
+
 int main()
 {
+	
+	char aaaa[geta("313")];
+
+
+
+
+
+
+
 	CALCULATOR c;
 
 	double pm_G02G[4][4] = 

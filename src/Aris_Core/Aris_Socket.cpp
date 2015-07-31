@@ -142,12 +142,7 @@ namespace Aris
 		{
 			union HEAD
 			{
-				struct
-				{
-					unsigned int dataLength;
-					int msgID;
-					long long type;
-				};
+				MSG_HEADER msgHeader;
 				char header[sizeof(MSG_HEADER)];
 			} head;
 			Aris::Core::MSG receivedData;
@@ -189,7 +184,7 @@ namespace Aris
 				}
 
 				/*接收消息本体*/
-				receivedData.SetLength(head.dataLength);
+				receivedData.SetLength(head.msgHeader.msgLength);
 				memcpy(receivedData._pData, head.header, sizeof(MSG_HEADER));
 
 				if (receivedData.GetLength()>0)
@@ -206,12 +201,14 @@ namespace Aris
 				}
 
 				/*根据消息type来确定消息类型*/
-				switch (head.type)
+				switch (head.msgHeader.msgType)
 				{
 				case SOCKET_GENERAL_DATA:
-					if (pConnS->_OnReceivedData!=nullptr)
+				{
+					if (pConnS->_OnReceivedData != nullptr)
 						pConnS->_OnReceivedData(pConnS->pConn, receivedData);
 					break;
+				}
 				case SOCKET_REQUEST:
 				{
 					Aris::Core::MSG m;
@@ -229,8 +226,9 @@ namespace Aris
 						return;
 					}
 					break;
-				}	
+				}
 				case SOCKET_REPLY:
+				{
 					if (pConnS->_ConnState != WAITING_FOR_REPLY)
 					{
 						if (pConnS->_OnReceiveError != nullptr)
@@ -243,9 +241,9 @@ namespace Aris
 						pConnS->_replyData.Swap(receivedData);
 						pConnS->_cv_reply_data_received.notify_one();
 					}
-						
-						
+
 					break;
+				}
 				}
 			}		
 		}

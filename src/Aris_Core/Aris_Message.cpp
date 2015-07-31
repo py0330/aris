@@ -26,7 +26,7 @@ namespace Aris
 		private:
 			std::mutex _mutex;
 			std::condition_variable _cv;
-			volatile unsigned int _sig_value;
+			volatile int _sig_value;
 
 		public:
 			SEM(const SEM & other) = delete;
@@ -34,14 +34,14 @@ namespace Aris
 			SEM(SEM && other) = delete;
 			SEM &operator=(SEM&& other) = delete;
 
-			SEM(unsigned int iniValue = 0);
+			SEM(int iniValue = 0);
 			~SEM();
-			int Post();
-			int Wait();
+			void Post();
+			void Wait();
 
 		};
 
-		SEM::SEM(unsigned int iniValue)
+		SEM::SEM(int iniValue)
 		{
 			std::lock_guard<std::mutex> lck(_mutex);
 			_sig_value = iniValue;
@@ -49,7 +49,7 @@ namespace Aris
 		SEM::~SEM()
 		{
 		}
-		int SEM::Post()
+		void SEM::Post()
 		{
 			std::lock_guard<std::mutex> lck(_mutex);
 			_sig_value++;
@@ -57,10 +57,8 @@ namespace Aris
 			{
 				_cv.notify_one();
 			}
-
-			return 0;
 		}
-		int SEM::Wait()
+		void SEM::Wait()
 		{
 			std::unique_lock<std::mutex> lck(_mutex);
 			if (_sig_value == 0)
@@ -68,12 +66,10 @@ namespace Aris
 				_cv.wait(lck);
 			}
 			_sig_value--;
-
-			return 0;
 		}
-
 		
 		std::queue<Aris::Core::MSG> msgq;
+		
 		SEM MsgReceived;
 		std::mutex MsgMutex,MsgCallbackMutex;
 		bool ifSkipLoop = false;
@@ -82,16 +78,14 @@ namespace Aris
 		map < int, vector<function<int(Aris::Core::MSG &)> > > Msg_CallBack_Map;
 		vector<function<int(Aris::Core::MSG &)> > DefaultCallBacks;
 
-		int PostMsg(const Aris::Core::MSG &InMsg)
+		void PostMsg(const Aris::Core::MSG &InMsg)
 		{
 			std::lock_guard<std::mutex> lck(MsgMutex);
 			
 			msgq.push(InMsg);
 			MsgReceived.Post();
-
-			return 0;
 		}
-		int GetMsg(Aris::Core::MSG &rMsg)
+		void GetMsg(Aris::Core::MSG &rMsg)
 		{
 			bool Flag=true;
 			while(Flag)
@@ -107,9 +101,8 @@ namespace Aris
 					Flag=false;
 				}
 			}
-			return 0;
 		}
-		int RegisterMsgCallback(unsigned int message, function<int(Aris::Core::MSG &)> CallBack)
+		void RegisterMsgCallback(int message, function<int(Aris::Core::MSG &)> CallBack)
 		{
 			MsgCallbackMutex.lock();
 			
@@ -133,10 +126,8 @@ namespace Aris
 			}
 
 			MsgCallbackMutex.unlock();
-
-			return 0;
 		}
-		int RegisterDefaultCallback(std::function<int(Aris::Core::MSG &)> CallBack)
+		void RegisterDefaultCallback(std::function<int(Aris::Core::MSG &)> CallBack)
 		{
 			MsgCallbackMutex.lock();
 			
@@ -147,21 +138,19 @@ namespace Aris
 			}
 
 			MsgCallbackMutex.unlock();
-
-			return 0;
 		}
 
-		int RunMsgLoop()
+		void RunMsgLoop()
 		{
 			if (isRunning)
-				return -1;
+				throw(std::logic_error("the msg loop is already started"));
 			else
 				isRunning = true;
 
 			Aris::Core::MSG Msg;
 			ifSkipLoop = false;
 
-			while ((GetMsg(Msg) == 0) && (ifSkipLoop==false))
+			while (GetMsg(Msg),ifSkipLoop==false)
 			{
 				std::lock_guard<std::mutex> lck(MsgCallbackMutex);
 
@@ -191,22 +180,20 @@ namespace Aris
 			}
 
 			isRunning = false;
-			return 0;
 		}
-		int StopMsgLoop()
+		void StopMsgLoop()
 		{
 			if (isRunning)
 			{
 				ifSkipLoop = true;
 				PostMsg(Core::MSG(0, 0));
-				return 0;
 			}
 			else
 			{
-				return -1;
+				throw(std::logic_error("the msg loop is not started, thus can not be stoped"));
 			}
 		}
-		int ClearMsgLoop()
+		void ClearMsgLoop()
 		{
 			/*清空消息队列*/
 			MsgCallbackMutex.lock();
@@ -215,8 +202,6 @@ namespace Aris
 				msgq.pop();
 			}
 			MsgCallbackMutex.unlock();
-
-			return 0;
 		}
 	}
 }

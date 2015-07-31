@@ -9,7 +9,7 @@ namespace Aris
 {
 	namespace Core
 	{
-		int ReplaceVariable(ELEMENT* pEle)
+		void ReplaceVariable(ELEMENT* pEle)
 		{
 			/*递归函数，用来访问pEle下所有元素*/
 			function<void(ELEMENT*, function<void(ELEMENT*)>)>
@@ -54,7 +54,6 @@ namespace Aris
 				});
 				
 			}
-			return 0;
 		}
 	}
 }

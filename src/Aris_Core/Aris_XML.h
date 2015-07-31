@@ -14,7 +14,7 @@ namespace Aris
 		typedef tinyxml2::XMLElement ELEMENT;
 		typedef tinyxml2::XMLAttribute ATTRIBUTE;
 
-		int ReplaceVariable(ELEMENT* pEle);
+		void ReplaceVariable(ELEMENT* pEle);
 	}
 }
 

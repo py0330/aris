@@ -419,8 +419,8 @@ namespace Aris
 			double inverse_of_pmI[4][4];
 			double v[3];
 		
-			memset(*_PrtCstMtxJ, 0, sizeof(double)* 36);
-			memset(_a_c, 0, sizeof(double)* 6);
+			memset(_PrtCstMtxJ, 0, im_size);
+			memset(_a_c, 0, acc_size);
 
 			double a, a_dot;
 		
@@ -429,7 +429,6 @@ namespace Aris
 			s_tmf(*_pm_M2N, *_tm_M2N);
 
 			/* Get Prt velocity and cro*/
-
 			switch (_Type)
 			{
 			case ROTATIONAL:
@@ -447,11 +446,12 @@ namespace Aris
 				s_dgemmTN(6, 1, 6, 1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
 				s_dgemmTN(6, 1, 6, 1, _pMakI->GetFatherPrt()->GetPrtCmfPtr(), 6, _tem_v1, 1, 0, _tem_v2, 1);
 				s_dgemmTN(5, 1, 6, 1, *_PrtCstMtxI, 6, _tem_v2, 1, 0, &_a_c[0], 1);
+
 				break;
 			case UNIVERSAL:
 				/*update PrtCstMtx*/
 				memset(*_pm_I2J, 0, sizeof(double)* 16);
-				  //get pm from I to J
+				//get pm from I to J
 				_pMakI->Update();
 				_pMakJ->Update();
 				s_inv_pm(_pMakI->GetPmPtr(), *inverse_of_pmI);
@@ -483,6 +483,7 @@ namespace Aris
 
 				s_dgemmTN(6, 1, 6, 1, *_tm_I2M, 6, _tem_v1, 1, 0, _tem_v2, 1);
 				_a_c[3] += v[0] * _tem_v2[4] + v[1] * _tem_v2[5];
+
 				break;
 			case SPHERICAL:
 				/*update PrtCstMtx*/
@@ -491,6 +492,7 @@ namespace Aris
 				s_dgemmTN(6, 1, 6, 1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
 				s_dgemmTN(6, 1, 6, 1, _pMakI->GetFatherPrt()->GetPrtCmfPtr(), 6, _tem_v1, 1, 0, _tem_v2, 1);
 				s_dgemmTN(3, 1, 6, 1, *_PrtCstMtxI, 6, _tem_v2, 1, 0, &_a_c[0], 1);
+
 				break;
 			default:
 				;
@@ -662,6 +664,7 @@ namespace Aris
 					
 					s_dgemmTN(6, 1, 6, 1, _pMakI->GetFatherPrt()->GetPrtCmfPtr(), 6, tem_v1, 1, 0, tem_v2, 1);
 					s_dgemmTN(1, 1, 6, 1, *_PrtCstMtxI, 6, tem_v2, 1, 0, &_a_c[0], 1);
+
 					_a_c[0] += _a_m[0];
 					break;
 				case FCE_CONTROL:

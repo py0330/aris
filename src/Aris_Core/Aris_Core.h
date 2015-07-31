@@ -20,7 +20,7 @@ namespace Aris
 
 		struct MSG_HEADER
 		{
-			std::uint32_t msgLength;
+			std::int32_t msgLength;
 			std::int32_t msgID;
 			std::int64_t msgType;
 			std::int64_t reserved1;
@@ -33,11 +33,11 @@ namespace Aris
 			/** \brief 设置MSG中所包含的数据的长度
 			* \param dataLength    数据长度
 			*/
-			virtual void SetLength(std::uint32_t dataLength) = 0;
+			virtual void SetLength(std::int32_t dataLength) = 0;
 			/** \brief 获取MSG中所包含的数据的长度
 			*
 			*/
-			std::uint32_t GetLength() const;
+			std::int32_t GetLength() const;
 			/** \brief 设置MSG的ID，在消息循环中根据该ID来查找对应的消息回调函数
 			* \param msgID   MSG的ID
 			*/
@@ -61,7 +61,7 @@ namespace Aris
 			* \param dataLength        数据长度
 			*
 			*/
-			void Copy(const void * fromThisMemory, std::uint32_t dataLength);
+			void Copy(const void * fromThisMemory, std::int32_t dataLength);
 			/** \brief 从fromThisMemory指针中拷贝MSG.GetLength()大小的数据。
 			* \param fromThisMemory    待拷贝的内存地址。
 			*
@@ -72,18 +72,18 @@ namespace Aris
 			* \param dataLength           数据长度
 			* \param atThisPositionInMsg  将数据拷贝到MSG.GetDataAddress()[atThisPositionInMsg]处。
 			*/
-			void CopyAt(const void * fromThisMemory, std::uint32_t dataLength, std::uint32_t atThisPositionInMsg);
+			void CopyAt(const void * fromThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg);
 			/** \brief 从fromThisMemory指针中拷贝dataLength长度的数据，这些数据添加到自身的尾部，在拷贝完之后，MSG的长度自动增加dataLength。
 			* \param fromThisMemory    目标内存地址。
 			*
 			*/
-			void CopyMore(const void * fromThisMemory, std::uint32_t dataLength);
+			void CopyMore(const void * fromThisMemory, std::int32_t dataLength);
 			/** \brief 向toThisMemory指针中粘贴dataLength长度的数据，若dataLength大于自身的数据长度，则只拷贝自身长度的内存。
 			* \param fromThisMemory    目标内存地址。
 			* \param dataLength        数据长度
 			*
 			*/
-			void Paste(void * toThisMemory, std::uint32_t dataLength) const;
+			void Paste(void * toThisMemory, std::int32_t dataLength) const;
 			/** \brief 向toThisMemory指针中粘贴MSG.GetLength()长度的数据。
 			* \param fromThisMemory    目标内存地址。
 			*
@@ -94,7 +94,7 @@ namespace Aris
 			* \param dataLength        数据长度
 			*
 			*/
-			void PasteAt(void * toThisMemory, std::uint32_t dataLength, std::uint32_t atThisPositionInMsg) const;
+			void PasteAt(void * toThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg) const;
 			/** \brief 默认析构函数
 			*
 			*/
@@ -141,7 +141,7 @@ namespace Aris
 			MSG_BASE &operator=(MSG_BASE&& other) = delete;
 
 		private:
-			mutable std::uint32_t pasteID{ 0 };
+			mutable std::int32_t pasteID{ 0 };
 			char *_pData{ nullptr };
 
 			friend class MSG;
@@ -156,7 +156,7 @@ namespace Aris
 			* \param length   The length of message(not count message header), the unit of which is byte.
 			* \param msgID  The ID of message
 			*/
-			explicit MSG(std::int32_t msgID = 0, std::uint32_t dataLength = 0);
+			explicit MSG(std::int32_t msgID = 0, std::int32_t dataLength = 0);
 			/** \brief Copy Constructor
 			* \param other    another message
 			*/
@@ -181,7 +181,7 @@ namespace Aris
 			/** \brief Set msg length
 			*
 			*/
-			virtual void SetLength(std::uint32_t dataLength);
+			virtual void SetLength(std::int32_t dataLength);
 
 		private:
 			friend class CONN;
@@ -190,7 +190,7 @@ namespace Aris
 		class RT_MSG final :public MSG_BASE
 		{
 		public:
-			virtual void SetLength(std::uint32_t dataLength);
+			virtual void SetLength(std::int32_t dataLength);
 
 			enum { RT_MSG_LENGTH = 8192 };
 			static RT_MSG instance[2];
@@ -205,12 +205,7 @@ namespace Aris
 
 			friend class Aris::RT_CONTROL::ACTUATION;
 		};
-		enum MSG_TYPE
-		{
-			SOCKET_GENERAL_DATA,
-			SOCKET_REQUEST,
-			SOCKET_REPLY
-		};
+		
 
 		const char * log(const char *data);
 	}

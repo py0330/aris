@@ -24,6 +24,8 @@
 
 #ifdef PLATFORM_IS_WINDOWS
 #include <windows.h>
+#undef min
+#undef max
 #endif
 
 class LOG_FILE
@@ -66,13 +68,10 @@ private:
 
 	LOG_FILE()
 	{
-		std::cout << "begin logging" << std::endl;
-		
-		const std::uint32_t TASK_NAME_LEN = 256;
+		const std::int32_t TASK_NAME_LEN = 1024;
 		char name[TASK_NAME_LEN] = { 0 };
 
 #ifdef PLATFORM_IS_WINDOWS
-
 		char path[TASK_NAME_LEN] = {0};
 		GetModuleFileName(NULL, path, TASK_NAME_LEN);
 
@@ -85,7 +84,7 @@ private:
 		char *dot = strrchr(path, '.');
 		if ((dot != nullptr) && (dot - p > 0))
 		{
-			std::uint32_t n = dot - p - 1;
+			std::int32_t n = dot - p - 1;
 			strncpy(proName, p + 1, n);
 		}
 
@@ -144,9 +143,6 @@ private:
 
 		strftime(timeCh,TASK_NAME_LEN,"_%Y-%m-%d_%H-%M-%S_log.txt",timeinfo);
 
-		
-
-		
 		strcat(name,proName);
 		strcat(name,timeCh);
 
@@ -169,17 +165,17 @@ namespace Aris
 			return data;
 		}
 
-		std::uint32_t MSG_BASE::GetLength()  const
+		std::int32_t MSG_BASE::GetLength()  const
 		{
-			return *reinterpret_cast<std::uint32_t *>(_pData);
+			return reinterpret_cast<MSG_HEADER *>(_pData)->msgLength;
 		}
 		void MSG_BASE::SetMsgID(std::int32_t msgID)
 		{
-			*reinterpret_cast<std::int32_t *>(_pData + 4) = msgID;
+			reinterpret_cast<MSG_HEADER *>(_pData)->msgID=msgID;
 		}
 		std::int32_t MSG_BASE::GetMsgID() const
 		{
-			return *reinterpret_cast<std::int32_t *>(_pData + 4);
+			return reinterpret_cast<MSG_HEADER *>(_pData)->msgID;
 		}
 		char* MSG_BASE::GetDataAddress() const
 		{
@@ -187,19 +183,18 @@ namespace Aris
 		}
 		void MSG_BASE::Copy(const char * fromThisMemory)
 		{
-			Copy((void*)fromThisMemory, strlen(fromThisMemory) + 1);
+			Copy(static_cast<const void *>(fromThisMemory), strlen(fromThisMemory) + 1);
 		}
-		void MSG_BASE::Copy(const void * fromThisMemory, std::uint32_t dataLength)
+		void MSG_BASE::Copy(const void * fromThisMemory, std::int32_t dataLength)
 		{
 			SetLength(dataLength);
 			memcpy(GetDataAddress(), fromThisMemory, GetLength());//no need to check if length is 0
 		}
 		void MSG_BASE::Copy(const void * fromThisMemory)
 		{
-			//no need to check if length is 0
 			memcpy(GetDataAddress(), fromThisMemory, GetLength());
 		}
-		void MSG_BASE::CopyAt(const void * fromThisMemory, std::uint32_t dataLength, std::uint32_t atThisPositionInMsg)
+		void MSG_BASE::CopyAt(const void * fromThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg)
 		{
 			if ((dataLength + atThisPositionInMsg) > GetLength())
 			{
@@ -210,17 +205,17 @@ namespace Aris
 			memcpy(&GetDataAddress()[atThisPositionInMsg], fromThisMemory, dataLength);
 
 		}
-		void MSG_BASE::CopyMore(const void * fromThisMemory, std::uint32_t dataLength)
+		void MSG_BASE::CopyMore(const void * fromThisMemory, std::int32_t dataLength)
 		{
-			std::uint32_t pos = GetLength();
+			std::int32_t pos = GetLength();
 
 			if (dataLength > 0)
 			{
 				SetLength(GetLength() + dataLength);
-				memcpy(&GetDataAddress()[pos], fromThisMemory, dataLength);
+				memcpy(GetDataAddress() + pos, fromThisMemory, dataLength);
 			}
 		}
-		void MSG_BASE::Paste(void * toThisMemory, std::uint32_t dataLength) const
+		void MSG_BASE::Paste(void * toThisMemory, std::int32_t dataLength) const
 		{
 			// no need to check if length is zero
 			memcpy(toThisMemory, GetDataAddress(), GetLength() < dataLength ? GetLength() : dataLength);
@@ -230,19 +225,18 @@ namespace Aris
 			// no need to check if length is zero
 			memcpy(toThisMemory, GetDataAddress(), GetLength());
 		}
-		void MSG_BASE::PasteAt(void * toThisMemory, std::uint32_t dataLength, std::uint32_t atThisPositionInMsg) const
+		void MSG_BASE::PasteAt(void * toThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg) const
 		{
 			// no need to check
-			memcpy(toThisMemory, &GetDataAddress()[atThisPositionInMsg], 
-				(atThisPositionInMsg + dataLength) > GetLength() ? (GetLength() - atThisPositionInMsg) : dataLength);
+			memcpy(toThisMemory, &GetDataAddress()[atThisPositionInMsg], std::min(dataLength, GetLength() - atThisPositionInMsg));
 		}
 		void MSG_BASE::SetType(std::int64_t type)
 		{
-			*reinterpret_cast<std::int64_t *>(_pData + 8) = type;
+			reinterpret_cast<MSG_HEADER*>(_pData)->msgType = type;
 		}
 		std::int64_t MSG_BASE::GetType() const
 		{
-			return *reinterpret_cast<std::int64_t *>(_pData + 8);
+			return reinterpret_cast<MSG_HEADER*>(_pData)->msgType;
 		}
 
 		RT_MSG RT_MSG::instance[2];
@@ -257,19 +251,18 @@ namespace Aris
 		{
 			delete[] _pData;
 		}
-		void RT_MSG::SetLength(std::uint32_t dataLength)
+		void RT_MSG::SetLength(std::int32_t dataLength)
 		{
-			*reinterpret_cast<std::uint32_t *>(_pData) = dataLength;
+			reinterpret_cast<MSG_HEADER *>(_pData)->msgLength = dataLength;
 		}
 
-		MSG::MSG(std::int32_t msgID, std::uint32_t dataLength)
+		MSG::MSG(std::int32_t msgID, std::int32_t dataLength)
 		{
 			_pData = new char[sizeof(MSG_HEADER) + dataLength];
 			memset(_pData, 0, sizeof(MSG_HEADER) + dataLength);
 			
-			MSG_HEADER *pHeader = reinterpret_cast<MSG_HEADER *>(_pData);
-			pHeader->msgLength = dataLength;
-			pHeader->msgID = msgID;
+			reinterpret_cast<MSG_HEADER *>(_pData)->msgLength = dataLength;
+			reinterpret_cast<MSG_HEADER *>(_pData)->msgID = msgID;
 		}
 		MSG::MSG(const MSG& other)
 		{
@@ -293,14 +286,13 @@ namespace Aris
 		{
 			std::swap(this->_pData, other._pData);
 		}
-		void MSG::SetLength(std::uint32_t dataLength)
+		void MSG::SetLength(std::int32_t dataLength)
 		{
 			MSG otherMsg(0, sizeof(MSG_HEADER) + dataLength);
 
-			memcpy(otherMsg._pData, this->_pData, sizeof(MSG_HEADER) +
-				(this->GetLength() < dataLength ? this->GetLength() : dataLength));
-
-			*reinterpret_cast<std::uint32_t *&>(otherMsg._pData) = dataLength;
+			memcpy(otherMsg._pData, this->_pData, sizeof(MSG_HEADER) + std::min(GetLength(), dataLength));
+			
+			reinterpret_cast<MSG_HEADER*>(otherMsg._pData)->msgLength = dataLength;
 
 			this->Swap(otherMsg);
 		}

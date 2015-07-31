@@ -163,6 +163,13 @@ namespace Aris
 			};
 
 		private:
+			enum MSG_TYPE
+			{
+				SOCKET_GENERAL_DATA,
+				SOCKET_REQUEST,
+				SOCKET_REPLY
+			};
+
 			CONN(const CONN & other) = delete;
 			CONN(CONN && other) = delete;
 			CONN &operator=(const CONN& other) = delete;
