@@ -650,6 +650,7 @@ namespace Aris
 			void ClbEqnTo(double *&clb_d_ptr, double *&clb_b_ptr, int &clb_dim_m, int &clb_dim_n);
 
 			void LoadXml(const char *filename);
+			void FromXmlElement(const Aris::Core::ELEMENT *pEle);
 			void SaveSnapshotXml(const char *filename) const;
 			void SaveAdams(const char *filename, SIMULATE_SCRIPT* pScript=nullptr) const;
 
@@ -659,7 +660,6 @@ namespace Aris
 			MODEL& operator=(const MODEL &) = delete;
 			MODEL& operator=(MODEL &&) = delete;
 
-			Aris::Core::DOCUMENT XML_Doc;
 			CALCULATOR calculator;
 			
 			int C_dim;//real dimension of constraint matrix

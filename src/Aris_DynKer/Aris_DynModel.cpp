@@ -1491,12 +1491,19 @@ namespace Aris
 
 		void MODEL::LoadXml(const char *filename)
 		{
+			Aris::Core::DOCUMENT XML_Doc;
+			
 			if (XML_Doc.LoadFile(filename) != 0)
 			{
 				throw std::logic_error((string("could not open file:") + string(filename)));
 			}
 
-			const Aris::Core::ELEMENT *pModel = XML_Doc.FirstChildElement("Model");
+			const Aris::Core::ELEMENT *pModel = XML_Doc.RootElement()->FirstChildElement("Model");
+			
+			FromXmlElement(pModel);
+		}
+		void MODEL::FromXmlElement(const Aris::Core::ELEMENT *pModel)
+		{
 			if (pModel == nullptr)throw(std::logic_error("XML file must have model element"));
 
 			const Aris::Core::ELEMENT *pVar = pModel->FirstChildElement("Variable");
@@ -1514,7 +1521,7 @@ namespace Aris
 
 			calculator.ClearVariables();
 			for (const Aris::Core::ELEMENT *ele = pVar->FirstChildElement();
-				ele != nullptr;
+			ele != nullptr;
 				ele = ele->NextSiblingElement())
 			{
 				calculator.AddVariable(ele->Name(), calculator.CalculateExpression(ele->GetText()));
@@ -1529,7 +1536,7 @@ namespace Aris
 
 			/*读入地面*/
 			for (const Aris::Core::ELEMENT *ele = pPrt->FirstChildElement();
-				ele != nullptr;
+			ele != nullptr;
 				ele = ele->NextSiblingElement())
 			{
 				if (std::string(ele->Name()) == "Ground")
@@ -1547,7 +1554,7 @@ namespace Aris
 
 			/*读入其他部件*/
 			for (const Aris::Core::ELEMENT *ele = pPrt->FirstChildElement();
-				ele != nullptr; 
+			ele != nullptr;
 				ele = ele->NextSiblingElement())
 			{
 				if (std::string(ele->Name()) != "Ground")
@@ -1558,7 +1565,7 @@ namespace Aris
 			}
 
 			for (const Aris::Core::ELEMENT *ele = pJnt->FirstChildElement();
-				ele != nullptr;
+			ele != nullptr;
 				ele = ele->NextSiblingElement())
 			{
 				AddJoint(ele->Name());
@@ -1567,7 +1574,7 @@ namespace Aris
 			}
 
 			for (const Aris::Core::ELEMENT *ele = pMot->FirstChildElement();
-				ele != nullptr;
+			ele != nullptr;
 				ele = ele->NextSiblingElement())
 			{
 				AddMotion(ele->Name());
