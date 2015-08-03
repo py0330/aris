@@ -180,6 +180,7 @@ if(UNIX)
 endif(UNIX)
 if(WIN32)
 	set(CMAKE_INSTALL_PREFIX "C:/Aris")
+	set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} src/Aris_Control/Aris_ControlData.h)
 endif(WIN32)
 
 

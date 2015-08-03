@@ -8,35 +8,14 @@
 
 
 // Task frequency
-#define FREQUENCY_MAIN  25
-#define FREQUENCY_CORE  1000
-
-// Task time period
-#define NSEC_PER_SEC (1000000000L)
-#define PERIOD_NS_MAIN (NSEC_PER_SEC * 1.0 / FREQUENCY_MAIN)
-#define PERIOD_NS_CORE (NSEC_PER_SEC * 1.0 / FREQUENCY_CORE)
+//#define FREQUENCY_MAIN  25
+//#define FREQUENCY_CORE  1000
 
 ///////////////////////////////////////////////////////////
 // Hardware Global Settings                              //
 ///////////////////////////////////////////////////////////
-// Actuation number settings
-#define ACTUAL_MOTOR_NUMBER 18
 
 // HomeOffsets, for resolver
-//static const int HEXBOT_HOME_OFFSETS_RESOLVER[18] =
-//{   -895506, -852986, -895530,
-//    -893893, -852967, -896492,
-//    -895547, -853462, -895931,
-//    -896141, -854825, -895228,
-//    -895048, -855014, -894660,
-//    -893680, -853916, -894525};
-
-//-15849882	 -16354509	 -16354509
-//-15849882	 -16354509	 -16354509
-//-15849882	 -16354509	 -16354509
-//-15849882	 -16354509	 -16354509
-//-15849882	 -16354509	 -16354509
-//-15849882	 -16354509	 -16354509
 static const int HEXBOT_HOME_OFFSETS_RESOLVER[18] = 		
 {
 		-15849882,	 -16354509,	 -16354509,
@@ -96,19 +75,5 @@ static const int HEXBOT_HOME_OFFSETS_ENCODER[18]={
 
 //output msg
 #define OUTPUT 0
-
-// SDO configuration
-#define HOMING_HI_SPEED   2560
-#define HOMING_LO_SPEED   (0.1*HOMING_HI_SPEED)
-#define HOMING_MODE       17
-#define HOMING_ACC        (10*HOMING_HI_SPEED)
-#define PTP_SPEED         1792
-#define PTP_MAX_SPEED     2560
-#define HOMING_TORQUE_LIMIT 1000
-
-//MOTOR SPEED LIMIT
-#define MAX_MOTOR_SPEED		4960.0/60.0
-#define COUNTS_PER_ROUND	4096.0
-#define MAX_SPEED			(int)MAX_MOTOR_SPEED*COUNTS_PER_ROUND
 
 #endif // GLOBALCONFIGURATION_H

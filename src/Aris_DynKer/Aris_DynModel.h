@@ -9,6 +9,14 @@
 #ifndef Aris_DynModel_H
 #define Aris_DynModel_H
 
+#include <Platform.h>
+
+#ifdef PLATFORM_IS_WINDOWS
+#ifndef _SCL_SECURE_NO_WARNINGS
+#define _SCL_SECURE_NO_WARNINGS
+#endif
+#endif
+
 #ifndef PI
 #define PI 3.141592653589793
 #endif
@@ -18,6 +26,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <algorithm>
 
 #include <cstdlib>
 
@@ -65,10 +74,10 @@ namespace Aris
 			void Activate(){ _IsActive = true; };
 			void Deactivate(){ _IsActive = false; };
 
-			virtual unsigned GetID() const = 0;
+			virtual int GetID() const = 0;
 
-			virtual void SaveResult(unsigned id){};
-			virtual void SetResultSize(unsigned size){};
+			virtual void SaveResult(int id){};
+			virtual void SetResultSize(int size){};
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const{};
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle){};
 
@@ -99,10 +108,6 @@ namespace Aris
 
 			const double* GetPrtImPtr() const{ return *_PrtIm; };
 			const double* GetPrtPmPtr() const{ return *_PrtPm; };
-			const double* GetPrtTmfPtr() const{ return *_PrtTmf; };
-			const double* GetPrtTmvPtr() const{ return *_PrtTmv; };
-			const double* GetPrtCmfPtr() const{ return *_PrtCmf; };
-			const double* GetPrtCmvPtr() const{ return *_PrtCmv; };
 			const double* GetPrtAccPtr() const{ return _PrtAcc; };
 			const double* GetPrtVelPtr() const{ return _PrtVel; };
 			const double* GetPrtFgPtr() const{ return _PrtFg; };
@@ -111,27 +116,27 @@ namespace Aris
 
 			void UpdateInPrt();
 
-			void SetPrtIm(const double *pPrtIm){ memcpy(_PrtIm, pPrtIm, sizeof(_PrtIm)); };
-			void SetPm(const double *pPm){ memcpy(_Pm, pPm, pm_size); };
-			void SetVel(const double *pVel){ memcpy(_Vel, pVel, vel_size); };
-			void SetAcc(const double *pAcc){ memcpy(_Acc, pAcc, acc_size); };
+			void SetPrtIm(const double *pPrtIm) { std::copy_n(pPrtIm, 36, static_cast<double*>(*_PrtIm));};
+			void SetPm(const double *pPm){ std::copy_n(pPm, 16, static_cast<double*>(*_Pm)); };
+			void SetVel(const double *pVel){ std::copy_n(pVel, 6, _Vel); };
+			void SetAcc(const double *pAcc){ std::copy_n(pAcc, 6, _Acc); };
 
 			MARKER* GetMarker(const std::string &Name);
 			const MARKER* GetMarker(const std::string &Name)const;
 			MARKER* AddMarker(const std::string &Name, const double *pm = 0, MARKER *pRelativeTo = 0);
 
-			virtual unsigned GetID() const;
+			virtual int GetID() const;
 			
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
 
-			virtual void SaveResult(unsigned id)
+			virtual void SaveResult(int id)
 			{
 				s_pm2pe(*_Pm, result.at(id).pe);
-				memcpy(result.at(id).vel, _Vel, vel_size);
-				memcpy(result.at(id).acc, _Acc, acc_size);
+				std::copy_n(_Vel, 6, result.at(id).vel);
+				std::copy_n(_Acc, 6, result.at(id).acc);
 			}
-			virtual void SetResultSize(unsigned size)
+			virtual void SetResultSize(int size)
 			{
 				result.resize(size);
 			}
@@ -160,7 +165,7 @@ namespace Aris
 			PART & operator =(PART &&) = delete;
 
 		private:
-			std::map<std::string, unsigned> _markerNames;
+			std::map<std::string, int> _markerNames;
 		
 		private:
 			double _Pm[4][4];
@@ -170,10 +175,6 @@ namespace Aris
 		private:
 			double _PrtIm[6][6];
 			double _PrtPm[4][4];//inverse of the _Pm
-			double _PrtTmf[6][6];//inverse of the _Tmf
-			double _PrtTmv[6][6];//inverse of the _Tmv
-			double _PrtCmf[6][6];
-			double _PrtCmv[6][6];
 			double _PrtGravity[6];
 			double _PrtAcc[6];
 			double _PrtVel[6];
@@ -203,7 +204,7 @@ namespace Aris
 			const double* GetAccPtr() const{ return _pPrt->GetAccPtr(); };
 			const PART* GetFatherPrt() const{ return _pPrt; };
 
-			virtual unsigned GetID() const;
+			virtual int GetID() const;
 
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
@@ -254,15 +255,15 @@ namespace Aris
 
 			void UpdateInPrt();
 
-			virtual unsigned GetID() const;
+			virtual int GetID() const;
 
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
-			virtual void SaveResult(unsigned id)
+			virtual void SaveResult(int id)
 			{
-				memcpy(result.at(id).fce, _CstFce, fce_size);
+				std::copy_n(_CstFce, 6, result.at(id).fce);
 			}
-			virtual void SetResultSize(unsigned size)
+			virtual void SetResultSize(int size)
 			{
 				result.resize(size);
 			}
@@ -330,27 +331,27 @@ namespace Aris
 			const double* GetPrtCstMtxJPtr() const{ return *_PrtCstMtxJ; };
 			const double* GetPrtA_cPtr() const{ return _a_c; };
 
-			void SetP_m(const double *p_m){ memcpy(_p_m, p_m, sizeof(double)*GetCstDim()); };
-			void SetV_m(const double *v_m){ memcpy(_v_m, v_m, sizeof(double)*GetCstDim()); };
-			void SetA_m(const double *a_m){ memcpy(_a_m, a_m, sizeof(double)*GetCstDim()); };
-			void SetF_m(const double *f_m){ memcpy(_f_m, f_m, sizeof(double)*GetCstDim()); };
+			void SetP_m(const double *p_m){ std::copy_n(p_m, GetCstDim(), _p_m); };
+			void SetV_m(const double *v_m){ std::copy_n(v_m, GetCstDim(), _v_m); };
+			void SetA_m(const double *a_m){ std::copy_n(a_m, GetCstDim(), _a_m); };
+			void SetF_m(const double *f_m){ std::copy_n(f_m, GetCstDim(), _f_m); };
 			void SetMode(MOTION_MODE mode){ _Mode = mode; };
-			void SetFrcCoe(const double *frc_coe){ memcpy(_frc_coe, frc_coe, sizeof(double) * 3 * GetCstDim()); };
+			void SetFrcCoe(const double *frc_coe) { std::copy_n(frc_coe, 3 * GetCstDim(), _frc_coe); };
 
 			void UpdateInPrt();
 
-			virtual unsigned GetID() const;
+			virtual int GetID() const;
 
 			double FceAkima(double t, char derivativeOrder = '0'){ return fceCurve->operator()(t, derivativeOrder); };
 			double PosAkima(double t, char derivativeOrder = '0'){ return posCurve->operator()(t, derivativeOrder); };
-			void FceAkima(unsigned length, const double *t, double *fce, char order = '0'){ fceCurve->operator()(length, t, fce, order); };
-			void PosAkima(unsigned length, const double *t, double *pos, char order = '0'){ posCurve->operator()(length, t, pos, order); };
+			void FceAkima(int length, const double *t, double *fce, char order = '0'){ fceCurve->operator()(length, t, fce, order); };
+			void PosAkima(int length, const double *t, double *pos, char order = '0'){ posCurve->operator()(length, t, pos, order); };
 
-			void SetPosAkimaCurve(const unsigned num, const double* time, const double *pos)
+			void SetPosAkimaCurve(const int num, const double* time, const double *pos)
 			{
 				this->posCurve.reset(new AKIMA(num, time, pos));
 			}
-			void SetFceAkimaCurve(const unsigned num, const double* time, const double *fce)
+			void SetFceAkimaCurve(const int num, const double* time, const double *fce)
 			{
 				this->fceCurve.reset(new AKIMA(num, time, fce));
 			}
@@ -358,14 +359,14 @@ namespace Aris
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
 
-			virtual void SaveResult(unsigned id)
+			virtual void SaveResult(int id)
 			{
-				memcpy(result.at(id).fce, GetF_mPtr(), fce_size);
-				memcpy(result.at(id).pos, GetP_mPtr(), pe_size);
-				memcpy(result.at(id).vel, GetV_mPtr(), vel_size);
-				memcpy(result.at(id).acc, GetA_mPtr(), acc_size);
+				std::copy_n(GetF_mPtr(), 6, result.at(id).fce);
+				std::copy_n(GetP_mPtr(), 6, result.at(id).pos);
+				std::copy_n(GetV_mPtr(), 6, result.at(id).vel);
+				std::copy_n(GetA_mPtr(), 6, result.at(id).acc);
 			}
-			virtual void SetResultSize(unsigned size)
+			virtual void SetResultSize(int size)
 			{
 				result.resize(size);
 			}
@@ -431,7 +432,7 @@ namespace Aris
 			double* GetFceMtxPtr() const;
 			void SetFce(const double* pFce);
 
-			virtual unsigned GetID() const;
+			virtual int GetID() const;
 
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const{};
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle){};
@@ -478,7 +479,7 @@ namespace Aris
 		class SIMULATE_SCRIPT
 		{
 		public:
-			void ScriptActivate(unsigned time, JOINT * jnt, const double *peMakI=nullptr, const double *peMakJ=nullptr)
+			void ScriptActivate(int time, JOINT * jnt, const double *peMakI=nullptr, const double *peMakJ=nullptr)
 			{
 				JOINT_STRUCT jnt_struct;
 				jnt_struct.active = true;
@@ -487,25 +488,25 @@ namespace Aris
 				jnt_struct.isModifyMakJ = peMakJ!=nullptr;
 
 				if (peMakI)
-					memcpy(jnt_struct.peMakI, peMakI, pe_size);
+					std::copy_n(peMakI, 6, jnt_struct.peMakI);
 				if (peMakJ)
-					memcpy(jnt_struct.peMakJ, peMakJ, pe_size);
+					std::copy_n(peMakJ, 6, jnt_struct.peMakJ);
 				
 				script[time].joints[jnt] = jnt_struct;
 			};
-			void ScriptDeactivate(unsigned time, JOINT * jnt)
+			void ScriptDeactivate(int time, JOINT * jnt)
 			{
 				JOINT_STRUCT jnt_struct;
 				jnt_struct.active = false;
 				script[time].joints[jnt] = jnt_struct;
 			}
-			void ScriptSwitchMode(unsigned time, MOTION * ele, MOTION::MOTION_MODE mode)
+			void ScriptSwitchMode(int time, MOTION * ele, MOTION::MOTION_MODE mode)
 			{
 				script[time].motions[ele] = mode;
 			}
 			void ScriptClear(){ script.clear(); };
-			void ScriptEndTime(unsigned endTime){ this->endTime = endTime; };
-			void ScriptDt(unsigned dt){ this->dt = dt; };
+			void ScriptEndTime(int endTime){ this->endTime = endTime; };
+			void ScriptDt(int dt){ this->dt = dt; };
 
 			struct JOINT_STRUCT
 			{
@@ -520,11 +521,11 @@ namespace Aris
 				std::map<JOINT *, JOINT_STRUCT> joints;
 				std::map<MOTION *, MOTION::MOTION_MODE> motions;
 			};
-			std::map < unsigned/*time*/, NODE > script;
+			std::map < int/*time*/, NODE > script;
 
 		private:
-			unsigned endTime{0};
-			unsigned dt{ 1 };
+			int endTime{0};
+			int dt{ 1 };
 
 
 			friend class MODEL;
@@ -559,16 +560,16 @@ namespace Aris
 				, const double *fce = nullptr);
 
 
-			const PART *GetPart(unsigned id) const;
-			const JOINT *GetJoint(unsigned id) const;
-			const MOTION *GetMotion(unsigned id) const;
-			const FORCE *GetForce(unsigned id) const;
-			const MARKER *GetMarker(unsigned id) const;
-			PART *GetPart(unsigned id);
-			JOINT *GetJoint(unsigned id);
-			MOTION *GetMotion(unsigned id);
-			FORCE *GetForce(unsigned id);
-			MARKER *GetMarker(unsigned id);
+			const PART *GetPart(int id) const;
+			const JOINT *GetJoint(int id) const;
+			const MOTION *GetMotion(int id) const;
+			const FORCE *GetForce(int id) const;
+			const MARKER *GetMarker(int id) const;
+			PART *GetPart(int id);
+			JOINT *GetJoint(int id);
+			MOTION *GetMotion(int id);
+			FORCE *GetForce(int id);
+			MARKER *GetMarker(int id);
 			const PART *GetPart(const std::string &Name)const;
 			const JOINT *GetJoint(const std::string &Name)const;
 			const MOTION *GetMotion(const std::string &Name)const;
@@ -577,11 +578,11 @@ namespace Aris
 			JOINT *GetJoint(const std::string &Name);
 			MOTION *GetMotion(const std::string &Name);
 			FORCE *GetForce(const std::string &Name);
-			unsigned GetPartNum() const{ return _parts.size(); };
-			unsigned GetMotionNum() const{ return _motions.size(); };
-			unsigned GetJointNum() const{ return _joints.size(); };
-			unsigned GetForceNum() const{ return _forces.size(); };
-			unsigned GetMarkerNum() const{ return _markers.size(); };
+			int GetPartNum() const{ return _parts.size(); };
+			int GetMotionNum() const{ return _motions.size(); };
+			int GetJointNum() const{ return _joints.size(); };
+			int GetForceNum() const{ return _forces.size(); };
+			int GetMarkerNum() const{ return _markers.size(); };
 
 			void ForEachPart(std::function<void(PART*)> fun)
 			{
@@ -646,7 +647,7 @@ namespace Aris
 			void DynPrtMtx();
 			void Dyn();
 
-			void ClbEqnTo(double *&clb_d_ptr, double *&clb_b_ptr, unsigned int &clb_dim_m, unsigned int &clb_dim_n);
+			void ClbEqnTo(double *&clb_d_ptr, double *&clb_b_ptr, int &clb_dim_m, int &clb_dim_n);
 
 			void LoadXml(const char *filename);
 			void SaveSnapshotXml(const char *filename) const;
@@ -661,8 +662,8 @@ namespace Aris
 			Aris::Core::DOCUMENT XML_Doc;
 			CALCULATOR calculator;
 			
-			unsigned int C_dim;//real dimension of constraint matrix
-			unsigned int I_dim;//real dimension of inertia matrix
+			int C_dim;//real dimension of constraint matrix
+			int I_dim;//real dimension of inertia matrix
 
 		protected:
 			std::vector<std::unique_ptr<PART> > _parts;

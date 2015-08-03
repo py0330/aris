@@ -12,16 +12,24 @@ using namespace std;
 
 using namespace Aris::DynKer;
 
-constexpr int geta(const char *EurType)
-{
-	return EurType[0] - '1';
-}
-
 
 int main()
 {
+	double cmf[6][6];
+
+	double vel[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	double fce[6]{0.1,0.01,0.001,0.2,-0.02,0.003};
+	double vec1[6]{-1,-2,-0.5,-0.2,1,3};
+	double vec2[6]{ -1,-2,-0.5,-0.2,1,3 };
+
+	s_cmv(vel, *cmf);
+	s_dgemm(6, 1, 6, 1.2, *cmf, 6, fce, 1, 1.5, vec1, 1);
+	dsp(vec1, 1, 6);
+
+
+	s_crov(1.2, vel, fce,1.5, vec2);	
+	dsp(vec2, 1, 6);
 	
-	char aaaa[geta("313")];
 
 
 

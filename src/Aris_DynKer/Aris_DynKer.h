@@ -27,20 +27,8 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		constexpr size_t im_size = sizeof(double) * 36;
-		constexpr size_t pm_size = sizeof(double) * 16;
-		constexpr size_t pe_size = sizeof(double) * 6;
-		constexpr size_t pr_size = sizeof(double) * 6;
-		constexpr size_t pq_size = sizeof(double) * 7;
-		constexpr size_t pnt_size = sizeof(double) * 3;
-		constexpr size_t pa_size = sizeof(double) * 3;
-		constexpr size_t pv_size = sizeof(double) * 3;
-		constexpr size_t vel_size = sizeof(double) * 6;
-		constexpr size_t acc_size = sizeof(double) * 6;
-		constexpr size_t fce_size = sizeof(double) * 6;
-		
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
-		void dlmwrite(const char *FileName, const double *pMatrix, const unsigned int m, const unsigned int n);
+		void dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n);
 		void dlmread(const char *FileName, double *pMatrix);
 		
 		template <typename T> inline int s_sgn(T val) {
@@ -50,8 +38,18 @@ namespace Aris
 			return val < T(0) ? -1 : 1;
 		}
 
-
+		/** \brief 计算三维向量叉乘
+		*
+		* 用来计算：vec_out = cro_vec_in x vec_in
+		*
+		*/
 		void s_cro3(const double *cro_vec_in, const double *vec_in, double *vec_out) noexcept;
+		/** \brief 计算三维向量叉乘
+		*
+		* 用来计算：vec_out = alpha * cro_vec_in x vec_in + beta * vec_out
+		*
+		*/
+		void s_cro3(double alpha, const double *cro_vec_in, const double *vec_in, double beta, double *vec_out) noexcept;
 		void s_cm3(const double *cro_vec_in, double *cm_out) noexcept;
 
 		void s_inv_pm(const double *pm_in, double *pm_out) noexcept;
@@ -67,8 +65,56 @@ namespace Aris
 		void s_v2vq(const double *pm_in, const double *v_in, double *vq_out) noexcept;
 		void s_tmf(const double *pm_in, double *tm_out) noexcept;
 		void s_tmv(const double *pm_in, double *tmd_out) noexcept;
+		/** \brief 根据位姿矩阵转换六维力向量
+		*
+		* 等同于： vec_out = tmf(pm_in) * fce_in
+		*
+		*/
+		void s_tf(const double *pm_in, const double *fce_in, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵转换六维力向量
+		*
+		* 等同于： vec_out = alpha * tmf(pm_in) * fce_in + beta * vec_out
+		*
+		*/
+		void s_tf(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵转换六维速度向量
+		*
+		* 等同于： vec_out = tmv(pm_in) * vel_in
+		*
+		*/
+		void s_tv(const double *pm_in, const double *vel_in, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵转换六维速度向量
+		*
+		* 等同于： vec_out = alpha * tmv(pm_in) * vel_in + beta * vec_out
+		*
+		*/
+		void s_tv(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept;
 		void s_cmf(const double *vel_in, double *cm_out) noexcept;
 		void s_cmv(const double *vel_in, double *cmd_out) noexcept;
+		/** \brief 计算六维向量叉乘
+		*
+		* 用来计算：vec_out = cro_vec_in xf vec_in
+		*
+		*/
+		void s_crof(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept;
+		/** \brief 计算六维向量叉乘
+		*
+		* 用来计算：vec_out = alpha * cro_vec_in xf vec_in + beta * vec_out
+		*
+		*/
+		void s_crof(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept;
+		/** \brief 计算六维向量叉乘
+		*
+		* 用来计算：vec_out = cro_vec_in xv vec_in
+		*
+		*/
+		void s_crov(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept;
+		/** \brief 计算六维向量叉乘
+		*
+		* 用来计算：vec_out = alpha * cro_vec_in xv vec_in + beta * vec_out
+		*
+		*/
+		void s_crov(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept;
 		void s_i2i(const double *from_pm_in, const double *from_im_in, double *to_im_out) noexcept;
 		/** \brief 计算点加速度
 		*
@@ -120,9 +166,8 @@ namespace Aris
 		void s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;
 		void s_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
 		void s_inv_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
-		void s_tmf_dot_fce(const double *tm_in, const double *fce_in, double *fce_out) noexcept;
-		void s_tmv_dot_vel(const double *tmd_in, const double *vel_in, double *vel_out) noexcept;
-		void s_im_dot_gravity(const double *im_in, const double *gravity, double *gravity_fce_out) noexcept;
+		void s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept;
+		void s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept;
 
 		void s_v_cro_pm(const double *v_in, const double *pm_in, double *vpm_out) noexcept;
 
@@ -145,13 +190,13 @@ namespace Aris
 		class AKIMA
 		{
 		public:
-			AKIMA(unsigned inNum, const double *x_in, const double *y_in);
+			AKIMA(int inNum, const double *x_in, const double *y_in);
 			AKIMA(const AKIMA &) = default;
 			~AKIMA() = default;
 			AKIMA &operator =(const AKIMA &) = default;
 
 			double operator()(double x, char derivativeOrder = '0') const;
-			void operator()(unsigned length, const double *x_in, double *y_out, char derivativeOrder = '0')const;
+			void operator()(int length, const double *x_in, double *y_out, char derivativeOrder = '0') const;
 
 			const std::vector<double> &x() const { return _x; };
 			const std::vector<double> &y() const { return _y; };

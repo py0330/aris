@@ -1,6 +1,7 @@
-﻿#ifdef PLATFORM_IS_WINDOWS
-	#define HAVE_LAPACK_CONFIG_H
-	#define LAPACK_COMPLEX_STRUCTURE
+﻿#include <Platform.h>
+
+#ifdef PLATFORM_IS_WINDOWS
+#define _SCL_SECURE_NO_WARNINGS
 #endif
 
 #include <cmath>
@@ -14,7 +15,7 @@
 
 using namespace std;
 
-#include <Platform.h>
+
 #include "Aris_DynKer.h"
 #include "Aris_DynModel.h"
 
@@ -36,7 +37,7 @@ namespace Aris
 	namespace DynKer
 	{
 		template<class T>
-		unsigned GetID(const T &container, const typename T::value_type::element_type *pData)
+		int GetID(const T &container, const typename T::value_type::element_type *pData)
 		{
 			auto p = std::find_if(container.begin(), container.end(), [pData](typename T::const_reference p)
 			{
@@ -69,9 +70,9 @@ namespace Aris
 		PART::PART(MODEL *pModel, const string &Name, const double *Im, const double *pm, const double *Vel, const double *Acc)
 			:ELEMENT(pModel, Name)
 		{
-			if (Im == 0)
+			if (Im == nullptr)
 			{
-				memset(*_PrtIm, 0, sizeof(double)* 36);
+				std::fill_n(static_cast<double *>(*_PrtIm), 36, 0);
 				_PrtIm[0][0] = 1;
 				_PrtIm[1][1] = 1;
 				_PrtIm[2][2] = 1;
@@ -81,71 +82,51 @@ namespace Aris
 			}
 			else
 			{
-				cblas_dcopy(36, Im, 1, *_PrtIm, 1);
+				std::copy_n(Im, 36, *_PrtIm);
 			}
 
-			if (pm == 0)
+			if (pm == nullptr)
 			{
-				double temp_pm[4][4];
-				memset(temp_pm, 0, sizeof(double)* 16);
-				temp_pm[0][0] = 1;
-				temp_pm[1][1] = 1;
-				temp_pm[2][2] = 1;
-				temp_pm[3][3] = 1;
-
-				SetPm(*temp_pm);
-				s_inv_pm(*temp_pm, *_PrtPm);
+				std::fill_n(static_cast<double *>(*_Pm), 16, 0);
+				_Pm[0][0] = 1;
+				_Pm[1][1] = 1;
+				_Pm[2][2] = 1;
+				_Pm[3][3] = 1;
 			}
 			else
 			{
-				//cblas_dcopy(16, pm, 1, *_Pm, 1);
 				SetPm(pm);
-				s_inv_pm(pm, *_PrtPm);
 			}
 
-			if (Vel == 0)
+			if (Vel == nullptr)
 			{
-				double temp_vel[6];
-				memset(temp_vel, 0, sizeof(double)* 6);
-				SetVel(temp_vel);
-				//s_v2v(*_PrtPm, 0, temp_vel, _PrtVel);
+				std::fill_n(_Vel, 6, 0);
 			}
 			else
 			{
-				//cblas_dcopy(6, Vel, 1, _Vel, 1);
 				SetVel(Vel);
-				//s_v2v(*_PrtPm, 0, Vel, _PrtVel);
 			}
 
-			if (Acc == 0)
+			if (Acc == nullptr)
 			{
-				memset(_Acc, 0, sizeof(double)* 6);
-				memset(_PrtAcc, 0, sizeof(double)* 6);
+				std::fill_n(_Acc, 6, 0);
 			}
 			else
 			{
-				cblas_dcopy(6, Acc, 1, _Acc, 1);
+				SetAcc(Acc);
 			}
 		}
 		void PART::UpdateInPrt()
 		{
-			static double tem[6];
+			double tem[6];
 		
 			s_inv_pm(*_Pm, *_PrtPm);
-			s_tmf(*_PrtPm, *_PrtTmf);
-			s_tmv(*_PrtPm, *_PrtTmv);
-
-			s_tmv_dot_vel(*_PrtTmv, _Vel, _PrtVel);
-			s_cmf(_PrtVel, *_PrtCmf);
-			s_cmv(_PrtVel, *_PrtCmv);
-
-			s_tmv_dot_vel(*_PrtTmv, _Acc, _PrtAcc);
-
-			s_dgemm(6, 1, 6, 1, *_PrtTmv, 6, _pModel->_Environment.Gravity, 1, 0, _PrtGravity, 1);
-			s_dgemm(6, 1, 6, 1, *_PrtIm, 6, _PrtGravity, 1, 0, _PrtFg, 1);
-		
-			s_dgemm(6, 1, 6, 1, *_PrtIm, 6, _PrtVel, 1, 0, tem, 1);
-			s_dgemm(6, 1, 6, 1, *_PrtCmf, 6, tem, 1, 0, _PrtFv, 1);
+			s_tv(*_PrtPm, _Vel, _PrtVel);
+			s_tv(*_PrtPm, _Acc, _PrtAcc);
+			s_tv(*_PrtPm, _pModel->_Environment.Gravity, _PrtGravity);
+			s_m6_dot_v6(*_PrtIm, _PrtGravity, _PrtFg);
+			s_m6_dot_v6(*_PrtIm, _PrtVel, tem);
+			s_crof(_PrtVel, tem, _PrtFv);
 		}
 		MARKER* PART::GetMarker(const std::string &Name)
 		{
@@ -270,7 +251,7 @@ namespace Aris
 			if (pEle->FirstChildElement("Graphic_File_Path")->GetText()!=nullptr)
 				graphicFilePath = pEle->FirstChildElement("Graphic_File_Path")->GetText();
 		}
-		unsigned PART::GetID() const
+		int PART::GetID() const
 		{
 			return DynKer::GetID<decltype(_pModel->_parts)>(_pModel->_parts, this);
 		}
@@ -310,9 +291,9 @@ namespace Aris
 		}
 		void MARKER::Update()
 		{
-			s_dgemm(4, 4, 4, 1, _pPrt->GetPmPtr(), 4, *_PrtPm, 4, 0, *_Pm, 4);
+			s_pm_dot_pm(_pPrt->GetPmPtr(), *_PrtPm, *_Pm);
 		}
-		unsigned MARKER::GetID() const
+		int MARKER::GetID() const
 		{
 			return DynKer::GetID<decltype(_pModel->_markers)>(_pModel->_markers, this);
 		}
@@ -380,7 +361,7 @@ namespace Aris
 				loc_cst[3][3] = 1;
 				loc_cst[4][4] = 1;
 
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 5, 6, 1, *_tm_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
+				s_dgemm(6, 5, 6, 1, *_tm_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
 				break;
 			case PRISMATIC:
 				loc_cst[0][0] = 1;
@@ -389,21 +370,21 @@ namespace Aris
 				loc_cst[4][3] = 1;
 				loc_cst[5][4] = 1;
 
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 5, 6, 1, *_tm_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
+				s_dgemm(6, 5, 6, 1, *_tm_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
 				break;
 			case UNIVERSAL:
 				loc_cst[0][0] = 1;
 				loc_cst[1][1] = 1;
 				loc_cst[2][2] = 1;
 
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 3, 6, 1, *_tm_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
+				s_dgemm(6, 3, 6, 1, *_tm_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
 				break;
 			case SPHERICAL:
 				loc_cst[0][0] = 1;
 				loc_cst[1][1] = 1;
 				loc_cst[2][2] = 1;
 
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 3, 6, 1, *_tm_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
+				s_dgemm(6, 3, 6, 1, *_tm_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
 				break;
 			default:
 				;
@@ -411,19 +392,10 @@ namespace Aris
 		}
 		void JOINT::UpdateInPrt()
 		{
-			double _pm_I2J[4][4];
+			double _pm_M2N[4][4];
 			double _tm_M2N[6][6];
 			double _tem_v1[6], _tem_v2[6];
-			
-			double _pm_M2N[4][4];
-			double inverse_of_pmI[4][4];
-			double v[3];
-		
-			memset(_PrtCstMtxJ, 0, im_size);
-			memset(_a_c, 0, acc_size);
 
-			double a, a_dot;
-		
 			/* Get pm M2N */
 			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
 			s_tmf(*_pm_M2N, *_tm_M2N);
@@ -433,36 +405,49 @@ namespace Aris
 			{
 			case ROTATIONAL:
 				/*update PrtCstMtx*/
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 5, 6, -1, *_tm_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
+				s_dgemm(6, 5, 6, -1, *_tm_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
 				/*update A_c*/
-				s_dgemmTN(6, 1, 6, 1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
-				s_dgemmTN(6, 1, 6, 1, _pMakI->GetFatherPrt()->GetPrtCmfPtr(), 6, _tem_v1, 1, 0, _tem_v2, 1);
-				s_dgemmTN(5, 1, 6, 1, *_PrtCstMtxI, 6, _tem_v2, 1, 0, &_a_c[0], 1);
+				s_dgemmTN(6, 1, 6, -1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
+				s_crov(_pMakI->GetFatherPrt()->GetPrtVelPtr(), _tem_v1, _tem_v2);
+				s_dgemmTN(5, 1, 6, 1, *_PrtCstMtxI, 6, _tem_v2, 1, 0, _a_c, 1);
 				break;
 			case PRISMATIC:
 				/*update PrtCstMtx*/
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 5, 6, -1, *_tm_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
+				s_dgemm(6, 5, 6, -1, *_tm_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
 				/*update A_c*/
-				s_dgemmTN(6, 1, 6, 1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
-				s_dgemmTN(6, 1, 6, 1, _pMakI->GetFatherPrt()->GetPrtCmfPtr(), 6, _tem_v1, 1, 0, _tem_v2, 1);
-				s_dgemmTN(5, 1, 6, 1, *_PrtCstMtxI, 6, _tem_v2, 1, 0, &_a_c[0], 1);
+				s_dgemmTN(6, 1, 6, -1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
+				s_crov(_pMakI->GetFatherPrt()->GetPrtVelPtr(), _tem_v1, _tem_v2);
+				s_dgemmTN(5, 1, 6, 1, *_PrtCstMtxI, 6, _tem_v2, 1, 0, _a_c, 1);
 
 				break;
 			case UNIVERSAL:
+			{
+				double v[3];
+				double a, a_dot;
+
+				std::fill_n(_a_c, 6, 0);
+
 				/*update PrtCstMtx*/
-				memset(*_pm_I2J, 0, sizeof(double)* 16);
-				//get pm from I to J
+				//get sin(a) and cos(a)
 				_pMakI->Update();
 				_pMakJ->Update();
-				s_inv_pm(_pMakI->GetPmPtr(), *inverse_of_pmI);
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 4, 4, 4, 1, *inverse_of_pmI, 4, _pMakJ->GetPmPtr(), 4, 0, *_pm_I2J, 4);
 
-				a = std::atan2(_pm_I2J[2][1], _pm_I2J[1][1]);
-				v[0] = -std::sin(a);
-				v[1] = std::cos(a);
+				double s = _pMakI->GetPmPtr()[2] * _pMakJ->GetPmPtr()[1]
+					+ _pMakI->GetPmPtr()[6] * _pMakJ->GetPmPtr()[5]
+					+ _pMakI->GetPmPtr()[10] * _pMakJ->GetPmPtr()[9];
 
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 3, 1, 2, 1, *_tm_I2M + 22, 6, v, 1, 0, *_PrtCstMtxI + 21, 6);
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 4, 6, -1, *_tm_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
+				double c = _pMakI->GetPmPtr()[1] * _pMakJ->GetPmPtr()[1]
+					+ _pMakI->GetPmPtr()[5] * _pMakJ->GetPmPtr()[5]
+					+ _pMakI->GetPmPtr()[9] * _pMakJ->GetPmPtr()[9];
+
+				a = std::atan2(s, c);
+
+				/*edit CstMtxI*/
+				_PrtCstMtxI[3][3] = -_tm_I2M[3][4] * s + _tm_I2M[3][5] * c;
+				_PrtCstMtxI[4][3] = -_tm_I2M[4][4] * s + _tm_I2M[4][5] * c;
+				_PrtCstMtxI[5][3] = -_tm_I2M[5][4] * s + _tm_I2M[5][5] * c;
+				
+				s_dgemm(6, 4, 6, -1, *_tm_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
 				/*update A_c*/
 				  /*calculate a_dot*/
 				v[0] = _pMakJ->GetVelPtr()[3] - _pMakI->GetVelPtr()[3];
@@ -470,27 +455,27 @@ namespace Aris
 				v[2] = _pMakJ->GetVelPtr()[5] - _pMakI->GetVelPtr()[5];
 
 				a_dot = _pMakI->GetPmPtr()[0] * v[0] + _pMakI->GetPmPtr()[4] * v[1] + _pMakI->GetPmPtr()[8] * v[2];
-				  /*calculate part m*/
-				v[0] = -std::cos(a)*a_dot;
-				v[1] = -std::sin(a)*a_dot;
+				/*calculate part m*/
+				v[0] = -c*a_dot;
+				v[1] = -s*a_dot;
 
-				s_dgemmTN(6, 1, 6, 1, *_tm_I2M, 6, _pMakI->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
+				s_dgemmTN(2, 1, 6, 1, *_tm_I2M + 24, 6, _pMakI->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1 + 4, 1);
 				_a_c[3] -= v[0] * _tem_v1[4] + v[1] * _tem_v1[5];
-				  /*calculate part n*/
+				/*calculate part n*/
 				s_dgemmTN(6, 1, 6, 1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
-				s_dgemmTN(6, 1, 6, 1, _pMakI->GetFatherPrt()->GetPrtCmfPtr(), 6, _tem_v1, 1, 0, _tem_v2, 1);
+				s_crov(-1, _pMakI->GetFatherPrt()->GetPrtVelPtr(), _tem_v1, 0, _tem_v2);
 				s_dgemmTN(4, 1, 6, 1, *_PrtCstMtxI, 6, _tem_v2, 1, 1, &_a_c[0], 1);
-
 				s_dgemmTN(6, 1, 6, 1, *_tm_I2M, 6, _tem_v1, 1, 0, _tem_v2, 1);
 				_a_c[3] += v[0] * _tem_v2[4] + v[1] * _tem_v2[5];
 
 				break;
+			}
 			case SPHERICAL:
 				/*update PrtCstMtx*/
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 3, 6, -1, *_tm_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
+				s_dgemm(6, 3, 6, -1, *_tm_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
 				/*update A_c*/
-				s_dgemmTN(6, 1, 6, 1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
-				s_dgemmTN(6, 1, 6, 1, _pMakI->GetFatherPrt()->GetPrtCmfPtr(), 6, _tem_v1, 1, 0, _tem_v2, 1);
+				s_dgemmTN(6, 1, 6, -1, *_tm_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, _tem_v1, 1);
+				s_crov(_pMakI->GetFatherPrt()->GetPrtVelPtr(), _tem_v1, _tem_v2);
 				s_dgemmTN(3, 1, 6, 1, *_PrtCstMtxI, 6, _tem_v2, 1, 0, &_a_c[0], 1);
 
 				break;
@@ -602,7 +587,7 @@ namespace Aris
 			_pMakI = _pModel->GetPart(pEle->FirstChildElement("iPart")->GetText())->GetMarker(pEle->FirstChildElement("iMarker")->GetText());
 			_pMakJ = _pModel->GetPart(pEle->FirstChildElement("jPart")->GetText())->GetMarker(pEle->FirstChildElement("jMarker")->GetText());
 		}
-		unsigned JOINT::GetID() const
+		int JOINT::GetID() const
 		{
 			return DynKer::GetID<decltype(_pModel->_joints)>(_pModel->_joints, this);
 		}
@@ -632,8 +617,7 @@ namespace Aris
 			{
 			case LINEAR:
 				loc_cst[2][0] = 1;
-
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 1, 6, 1, *_tmf_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
+				s_dgemm(6, 1, 6, 1, *_tmf_I2M, 6, *loc_cst, 6, 0, *_PrtCstMtxI, 6);
 				break;
 			}
 		}
@@ -655,14 +639,14 @@ namespace Aris
 			{
 			case LINEAR:
 				/*计算约束矩阵*/
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 1, 6, -1, *_tmf_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
+				s_dgemm(6, 1, 6, -1, *_tmf_M2N, 6, *_PrtCstMtxI, 6, 0, *_PrtCstMtxJ, 6);
+
 				/* 计算a_c */
 				switch (_Mode)
 				{
 				case POS_CONTROL:
-					s_dgemmTN(6, 1, 6, 1, *_tmf_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, tem_v1, 1);
-					
-					s_dgemmTN(6, 1, 6, 1, _pMakI->GetFatherPrt()->GetPrtCmfPtr(), 6, tem_v1, 1, 0, tem_v2, 1);
+					s_dgemmTN(6, 1, 6, -1, *_tmf_M2N, 6, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 1, 0, tem_v1, 1);
+					s_crov(_pMakI->GetFatherPrt()->GetPrtVelPtr(), tem_v1, tem_v2);
 					s_dgemmTN(1, 1, 6, 1, *_PrtCstMtxI, 6, tem_v2, 1, 0, &_a_c[0], 1);
 
 					_a_c[0] += _a_m[0];
@@ -768,7 +752,7 @@ namespace Aris
 			_pMakI = _pModel->GetPart(pEle->FirstChildElement("iPart")->GetText())->GetMarker(pEle->FirstChildElement("iMarker")->GetText());
 			_pMakJ = _pModel->GetPart(pEle->FirstChildElement("jPart")->GetText())->GetMarker(pEle->FirstChildElement("jMarker")->GetText());
 		}
-		unsigned MOTION::GetID() const
+		int MOTION::GetID() const
 		{
 			return DynKer::GetID<decltype(_pModel->_motions)>(_pModel->_motions, this);
 		}
@@ -781,30 +765,26 @@ namespace Aris
 			, _pMakA(pMakA)
 			, _pMakP(pMakP)
 		{
-			if (force == 0)
+			if (force == nullptr)
 			{
-				memset(_LocFce, 0, sizeof(double)* 6);
+				std::fill_n(_LocFce, 6, 0);
 			}
 			else
 			{
-				cblas_dcopy(6, force, 1, _LocFce, 1);
+				std::copy_n(force, 6, _LocFce);
 			}
 		}
 		void FORCE::Update()
 		{
-			static double pm[4][4];
-			static double tm[6][6];
+			double pm[4][4];
 
-			cblas_dcopy(16, _pMakA->GetPmPtr(), 1, *pm, 1);
+			std::copy_n(_pMakA->GetPmPtr(), 16, *pm);
+
 			pm[0][3] = _pMakP->GetPmPtr()[3];
 			pm[1][3] = _pMakP->GetPmPtr()[7];
 			pm[2][3] = _pMakP->GetPmPtr()[11];
 
-			s_tmf(*pm, *tm);
-
-			memset(_Fce, 0, sizeof(double)* 6);
-
-			cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 1, 6, 1, *tm, 6, _LocFce, 1, 0, _Fce, 1);
+			s_tf(*pm, _LocFce, _Fce);
 		}
 		double* FORCE::GetFceMtxPtr() const
 		{
@@ -812,9 +792,9 @@ namespace Aris
 		}
 		void FORCE::SetFce(const double* pFce)
 		{
-			cblas_dcopy(6, pFce, 1, _LocFce, 1);
+			std::copy_n(pFce, 6, _LocFce);
 		}
-		unsigned FORCE::GetID() const
+		int FORCE::GetID() const
 		{
 			return DynKer::GetID<decltype(_pModel->_forces)>(_pModel->_forces, this);
 		}
@@ -915,43 +895,43 @@ namespace Aris
 			}
 		}
 
-		const PART *MODEL::GetPart(unsigned id) const
+		const PART *MODEL::GetPart(int id) const
 		{
 			return _parts.at(id).get();
 		}
-		const JOINT *MODEL::GetJoint(unsigned id)const
+		const JOINT *MODEL::GetJoint(int id)const
 		{
 			return _joints.at(id).get();
 		}
-		const MOTION *MODEL::GetMotion(unsigned id)const
+		const MOTION *MODEL::GetMotion(int id)const
 		{
 			return _motions.at(id).get();
 		}
-		const FORCE *MODEL::GetForce(unsigned id)const
+		const FORCE *MODEL::GetForce(int id)const
 		{
 			return _forces.at(id).get();
 		}
-		const MARKER *MODEL::GetMarker(unsigned id)const
+		const MARKER *MODEL::GetMarker(int id)const
 		{
 			return _markers.at(id).get();
 		}
-		PART *MODEL::GetPart(unsigned id)
+		PART *MODEL::GetPart(int id)
 		{
 			return _parts.at(id).get();
 		}
-		JOINT *MODEL::GetJoint(unsigned id)
+		JOINT *MODEL::GetJoint(int id)
 		{
 			return _joints.at(id).get();
 		}
-		MOTION *MODEL::GetMotion(unsigned id)
+		MOTION *MODEL::GetMotion(int id)
 		{
 			return _motions.at(id).get();
 		}
-		FORCE *MODEL::GetForce(unsigned id)
+		FORCE *MODEL::GetForce(int id)
 		{
 			return _forces.at(id).get();
 		}
-		MARKER *MODEL::GetMarker(unsigned id)
+		MARKER *MODEL::GetMarker(int id)
 		{
 			return _markers.at(id).get();
 		}
@@ -1272,7 +1252,7 @@ namespace Aris
 
 		}
 
-		void MODEL::ClbEqnTo(double *&clb_d_ptr, double *&clb_b_ptr, unsigned int &clb_dim_m, unsigned int &clb_dim_n)
+		void MODEL::ClbEqnTo(double *&clb_d_ptr, double *&clb_b_ptr, int &clb_dim_m, int &clb_dim_n)
 		{
 			this->DynPre();
 			if (C_dim != I_dim)
@@ -1280,7 +1260,7 @@ namespace Aris
 				throw std::logic_error("must calibrate square matrix");
 			}
 			
-			unsigned dim = I_dim;
+			int dim = I_dim;
 
 			static MATRIX _clb_d;
 			static MATRIX _clb_b;
@@ -1288,7 +1268,7 @@ namespace Aris
 			/*初始化*/
 			clb_dim_m = 0;
 			clb_dim_n = 0;
-			unsigned clb_prt_dim_n = 0;
+			int clb_prt_dim_n = 0;
 			for (auto &i : _motions)
 			{
 				if (i->GetActive() && (i->GetMode() == MOTION::POS_CONTROL))
@@ -1408,7 +1388,7 @@ namespace Aris
 
 					memcpy(v, i->GetPrtVelPtr(), sizeof(double) * 6);
 
-					for (unsigned int j = 0; j < clb_dim_m; ++j)
+					for (int j = 0; j < clb_dim_m; ++j)
 					{
 						/*_clb_d[j][col1] = A[beginRow + j][col2 + 0] * q[0] + A[beginRow + j][col2 + 1] * q[1] + A[beginRow + j][col2 + 2] * q[2];
 						_clb_d[j][col1 + 1] = A[beginRow + j][col2 + 1] * q[5] + A[beginRow + j][col2 + 5] * q[1] - A[beginRow + j][col2 + 2] * q[4] - A[beginRow + j][col2 + 4] * q[2];
@@ -1478,7 +1458,7 @@ namespace Aris
 
 			/*以下添加驱动摩擦系数*/
 			row = 0;
-			unsigned num = 0;
+			int num = 0;
 			for (auto &i:_motions)
 			{
 				if (i->GetActive())
