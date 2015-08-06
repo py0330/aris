@@ -33,14 +33,14 @@ namespace Aris
 		{
 			this->Swap(other);
 		}
-		MATRIX::MATRIX(unsigned int m, unsigned int n)
+		MATRIX::MATRIX(int m, int n)
 			: m(m)
 			, n(n)
 			, isRowMajor(true)
 			, pData(m*n > 0 ? new double[m*n] : nullptr)
 		{
 		}
-		MATRIX::MATRIX(unsigned int m, unsigned int n, const double *Data)
+		MATRIX::MATRIX(int m, int n, const double *Data)
 			: MATRIX(m,n)
 		{
 			if ((m*n>0) && (Data != nullptr))
@@ -90,7 +90,7 @@ namespace Aris
 			return *this;
 		}
 
-		void MATRIX::Resize(unsigned int i, unsigned int j)
+		void MATRIX::Resize(int i, int j)
 		{
 			m = i;
 			n = j;
@@ -100,16 +100,16 @@ namespace Aris
 
 			pData = new double[i*j];
 		}
-		void MATRIX::CopySubMatrixTo(const MATRIX &subMat, unsigned beginRow, unsigned beginCol, unsigned rowNum, unsigned colNum)
+		void MATRIX::CopySubMatrixTo(const MATRIX &subMat, int beginRow, int beginCol, int rowNum, int colNum)
 		{
 			if ((beginRow + subMat.m > m) || (beginCol + subMat.n > n))
 			{
 				throw std::logic_error("Function CopySubMatrixTo must have subMat smaller than self matrix");
 			}
 
-			for (unsigned i = 0; i < subMat.m; ++i)
+			for (int i = 0; i < subMat.m; ++i)
 			{
-				for (unsigned j = 0; j < subMat.n; ++j)
+				for (int j = 0; j < subMat.n; ++j)
 				{
 					this->operator()(i + beginRow, j + beginCol)=subMat(i,j);
 				}
@@ -122,9 +122,9 @@ namespace Aris
 			
 			stream.precision(15);
 			stream << "{";
-			for (unsigned i = 0; i < m; ++i)
+			for (int i = 0; i < m; ++i)
 			{
-				for (unsigned j = 0; j < n; ++j)
+				for (int j = 0; j < n; ++j)
 				{
 					stream << this->operator()(i, j);
 					if (j<n - 1)
@@ -494,7 +494,7 @@ namespace Aris
 
 			return nextPlace;
 		}
-		CALCULATOR::TOKENS::iterator CALCULATOR::FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, unsigned precedence)
+		CALCULATOR::TOKENS::iterator CALCULATOR::FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence)
 		{
 			auto nextOpr= beginToken;
 

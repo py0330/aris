@@ -21,7 +21,7 @@ namespace Aris
 		class MATRIX
 		{
 		private:
-			unsigned int m, n;
+			int m, n;
 			double *pData;
 			bool isRowMajor;
 
@@ -35,40 +35,34 @@ namespace Aris
 			~MATRIX();
 
 			MATRIX(double value);
-			MATRIX(unsigned int m, unsigned int n);
-			MATRIX(unsigned int m, unsigned int n, const double *Data);
+			MATRIX(int m, int n);
+			MATRIX(int m, int n, const double *Data);
 			MATRIX(const std::initializer_list<double> &Data);
 			MATRIX(const std::initializer_list<std::vector<MATRIX> > &matrices);
 
-			unsigned RowNum()
-			{
-				return m;
-			}
-			unsigned ColNum()
-			{
-				return n;
-			}
+			int RowNum(){return m;}
+			int ColNum(){return n;}
 
 			void Transpose(){ isRowMajor = !isRowMajor; int loc = m; m = n; n = loc; };
-			void Resize(unsigned int m, unsigned int n);
-			unsigned int Length() const { return m*n; };
+			void Resize(int m, int n);
+			int Length() const { return m*n; };
 			double * Data(){ return pData; };
 			const double * Data() const{ return pData; };
-			void CopySubMatrixTo(const MATRIX &subMat, unsigned beginRow, unsigned beginCol,unsigned rowNum,unsigned colNum);
-			void CopySubMatrixTo(const MATRIX &subMat, unsigned beginRow, unsigned beginCol){ CopySubMatrixTo(subMat, beginRow, beginCol, subMat.m, subMat.n); };
+			void CopySubMatrixTo(const MATRIX &subMat, int beginRow, int beginCol, int rowNum, int colNum);
+			void CopySubMatrixTo(const MATRIX &subMat, int beginRow, int beginCol){ CopySubMatrixTo(subMat, beginRow, beginCol, subMat.m, subMat.n); };
 			void ForEachElement(std::function<double(double)> f)
 			{
-				for (unsigned i = 0; i < Length(); ++i)
+				for (int i = 0; i < Length(); ++i)
 				{
 					pData[i] = f(pData[i]);
 				}
 			};
 
-			double & operator()(unsigned int i, unsigned int j)
+			double & operator()(int i, int j)
 			{ 
 				return isRowMajor ? pData[i*n + j] : pData[j*m + i];
 			};
-			double operator() (unsigned int i, unsigned int j) const
+			double operator() (int i, int j) const
 			{
 				return isRowMajor ? pData[i*n + j] : pData[j*m + i];
 			};
@@ -77,17 +71,17 @@ namespace Aris
 				MATRIX ret;
 				ret.Resize(i.Length(), j.Length());
 
-				for (unsigned int a = 0; a < i.Length(); ++a)
+				for (int a = 0; a < i.Length(); ++a)
 				{
-					for (unsigned int b = 0; b < j.Length(); ++b)
+					for (int b = 0; b < j.Length(); ++b)
 					{
-						if ((i.pData[a] < 0) || ((unsigned int)i.pData[a] >= m) || (j.pData[b] < 0) || ((unsigned int)j.pData[b] >= n))
+						if ((i.pData[a] < 0) || ((int)i.pData[a] >= m) || (j.pData[b] < 0) || (( int)j.pData[b] >= n))
 						{
 							throw std::logic_error("matrix index out of range");
 						}
 						else
 						{
-							ret(a, b) = this->operator()((unsigned)i.pData[a], (unsigned)j.pData[b]);
+							ret(a, b) = this->operator()((int)i.pData[a], (int)j.pData[b]);
 						}
 
 					}
@@ -104,7 +98,7 @@ namespace Aris
 				{
 					ret = MATRIX(m2);
 
-					for (unsigned i = 0; i < ret.Length(); ++i)
+					for (int i = 0; i < ret.Length(); ++i)
 					{
 						ret.pData[i] += m1(0, 0);
 					}
@@ -113,7 +107,7 @@ namespace Aris
 				{
 					ret = MATRIX(m1);
 
-					for (unsigned i = 0; i < ret.Length(); ++i)
+					for (int i = 0; i < ret.Length(); ++i)
 					{
 						ret.pData[i] += m2(0, 0);
 					}
@@ -122,9 +116,9 @@ namespace Aris
 				{
 					ret.Resize(m1.m, m1.n);
 
-					for (unsigned i = 0; i < ret.m; i++)
+					for (int i = 0; i < ret.m; i++)
 					{
-						for (unsigned j = 0; j < ret.n; j++)
+						for (int j = 0; j < ret.n; j++)
 						{
 							ret(i, j) = m1(i, j) + m2(i, j);
 						}
@@ -144,7 +138,7 @@ namespace Aris
 				{
 					ret = MATRIX(m2);
 
-					for (unsigned i = 0; i < ret.Length(); ++i)
+					for (int i = 0; i < ret.Length(); ++i)
 					{
 						ret.pData[i] = m1(0, 0) - ret.pData[i];
 					}
@@ -153,7 +147,7 @@ namespace Aris
 				{
 					ret = MATRIX(m1);
 
-					for (unsigned i = 0; i < ret.Length(); ++i)
+					for (int i = 0; i < ret.Length(); ++i)
 					{
 						ret.pData[i] -= m2(0, 0);
 					}
@@ -162,9 +156,9 @@ namespace Aris
 				{
 					ret.Resize(m1.m, m1.n);
 
-					for (unsigned i = 0; i < ret.m; i++)
+					for (int i = 0; i < ret.m; i++)
 					{
-						for (unsigned j = 0; j < ret.n; j++)
+						for (int j = 0; j < ret.n; j++)
 						{
 							ret(i, j) = m1(i, j) - m2(i, j);
 						}
@@ -185,7 +179,7 @@ namespace Aris
 				{
 					ret=MATRIX(m2);
 					
-					for (unsigned i = 0; i < ret.Length(); ++i)
+					for (int i = 0; i < ret.Length(); ++i)
 					{
 						ret.pData[i] *= m1(0, 0);
 					}
@@ -194,7 +188,7 @@ namespace Aris
 				{
 					ret = MATRIX(m1);
 
-					for (unsigned i = 0; i < ret.Length(); ++i)
+					for (int i = 0; i < ret.Length(); ++i)
 					{
 						ret.pData[i] *= m2(0, 0);
 					}
@@ -255,7 +249,7 @@ namespace Aris
 				{
 					ret = MATRIX(m2);
 
-					for (unsigned i = 0; i < ret.Length(); ++i)
+					for (int i = 0; i < ret.Length(); ++i)
 					{
 						ret.pData[i] = m1(0, 0)/ret.pData[i];
 					}
@@ -264,7 +258,7 @@ namespace Aris
 				{
 					ret = MATRIX(m1);
 
-					for (unsigned i = 0; i < ret.Length(); ++i)
+					for (int i = 0; i < ret.Length(); ++i)
 					{
 						ret.pData[i] /= m2(0, 0);
 					}
@@ -281,7 +275,7 @@ namespace Aris
 				MATRIX m;
 				m.Resize(m1.m, m1.n);
 
-				for (unsigned int i = 0; i < m1.m*m1.n; i++)
+				for ( int i = 0; i < m1.m*m1.n; i++)
 				{
 					m.pData[i] = -m1.pData[i];
 				}
@@ -306,9 +300,9 @@ namespace Aris
 				std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(5);
 
 				std::cout << std::endl;
-				for (unsigned int i = 0; i < m; i++)
+				for ( int i = 0; i < m; i++)
 				{
-					for (unsigned int j = 0; j < n; j++)
+					for ( int j = 0; j < n; j++)
 					{
 						std::cout << this->operator()(i,j) << "   ";
 					}
@@ -355,12 +349,12 @@ namespace Aris
 			ret.pData = new double[ret.m*ret.n];
 
 			/*赋值*/
-			unsigned int beginRow = 0;
+			int beginRow = 0;
 			for (const auto &a : matrices)
 			{
-				for (unsigned i = 0; i < a.m; i++)
+				for (int i = 0; i < a.m; i++)
 				{
-					for (unsigned j = 0; j < a.n; j++)
+					for (int j = 0; j < a.n; j++)
 					{
 						ret(i + beginRow, j) = a(i, j);
 					}
@@ -407,12 +401,12 @@ namespace Aris
 			ret.pData = new double[ret.m*ret.n];
 
 			/*赋值*/
-			unsigned int beginCol = 0;
+			int beginCol = 0;
 			for (const auto &a : matrices)
 			{
-				for (unsigned i = 0; i < a.m; i++)
+				for (int i = 0; i < a.m; i++)
 				{
-					for (unsigned j = 0; j < a.n; j++)
+					for (int j = 0; j < a.n; j++)
 					{
 						ret(i, j + beginCol) = a(i, j);
 					}
@@ -430,7 +424,7 @@ namespace Aris
 			/*获取全部矩阵的行数和列数*/
 			for (const auto &i : matrices)
 			{
-				unsigned loc_m = 0, loc_n = 0;
+				int loc_m = 0, loc_n = 0;
 
 				/*获得行矩阵们的总列数和行数*/
 				for (const auto &j : i)
@@ -476,17 +470,17 @@ namespace Aris
 			ret.pData = new double[ret.m*ret.n];
 
 			/*赋值*/
-			unsigned beginRow = 0;
+			int beginRow = 0;
 			for (const auto &a : matrices)
 			{
-				unsigned beginCol = 0;
-				unsigned locRow = 0;
+				int beginCol = 0;
+				int locRow = 0;
 
 				for (const auto &b : a)
 				{
-					for (unsigned i = 0; i < b.m; i++)
+					for (int i = 0; i < b.m; i++)
 					{
-						for (unsigned j = 0; j < b.n; j++)
+						for (int j = 0; j < b.n; j++)
 						{
 							ret(i + beginRow, j + beginCol) = b(i, j);
 						}
@@ -544,9 +538,9 @@ namespace Aris
 			public:
 				std::string name;
 
-				unsigned int priority_ul;
-				unsigned int priority_ur;
-				unsigned int priority_b;
+				int priority_ul;
+				int priority_ur;
+				int priority_b;
 
 				typedef std::function<MATRIX(MATRIX)> U_FUN;
 				typedef std::function<MATRIX(MATRIX, MATRIX)> B_FUN;
@@ -557,18 +551,18 @@ namespace Aris
 
 				OPERATOR() :priority_ul(0), priority_ur(0), priority_b(0){};
 
-				void SetUnaryLeftOpr(unsigned int priority, U_FUN fun){ priority_ul = priority; this->fun_ul = fun; };
-				void SetUnaryRightOpr(unsigned int priority, U_FUN fun){ priority_ur = priority; this->fun_ur = fun; };
-				void SetBinaryOpr(unsigned int priority, B_FUN fun){ priority_b = priority; this->fun_b = fun; };
+				void SetUnaryLeftOpr(int priority, U_FUN fun){ priority_ul = priority; this->fun_ul = fun; };
+				void SetUnaryRightOpr(int priority, U_FUN fun){ priority_ur = priority; this->fun_ur = fun; };
+				void SetBinaryOpr(int priority, B_FUN fun){ priority_b = priority; this->fun_b = fun; };
 			};
 			class FUNCTION
 			{
 				typedef std::function<MATRIX(std::vector<MATRIX>)> FUN;
 			public:
 				std::string name;
-				std::map<unsigned int, FUN> funs;
+				std::map<int, FUN> funs;
 
-				void AddOverloadFun(unsigned int n, FUN fun){ funs.insert(make_pair(n, fun)); };
+				void AddOverloadFun(int n, FUN fun){ funs.insert(make_pair(n, fun)); };
 			};
 
 			typedef std::vector<TOKEN> TOKENS;
@@ -582,7 +576,7 @@ namespace Aris
 			MATRIX CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator endToken);
 
 			TOKENS::iterator FindNextOutsideToken(TOKENS::iterator leftPar, TOKENS::iterator endToken, TOKEN::TYPE type);
-			TOKENS::iterator FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, unsigned precedence);
+			TOKENS::iterator FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence);
 			std::vector<std::vector<MATRIX> > GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken);
 		
 		private:
@@ -613,7 +607,7 @@ namespace Aris
 
 			MATRIX CalculateExpression(const std::string &expression);
 			void AddVariable(const std::string &name, const MATRIX &value);
-			void AddFunction(const std::string &name, std::function<MATRIX(std::vector<MATRIX>)> f,unsigned int n)
+			void AddFunction(const std::string &name, std::function<MATRIX(std::vector<MATRIX>)> f,int n)
 			{
 				functions[name].AddOverloadFun(n,f);
 			};

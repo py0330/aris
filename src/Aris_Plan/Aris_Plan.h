@@ -915,14 +915,36 @@ namespace Aris
 			}
 		};
 
-		double acc_up(unsigned int n, unsigned int i);
-		double acc_down(unsigned int n, unsigned int i);
-		double dec_up(unsigned int n, unsigned int i);
-		double dec_down(unsigned int n, unsigned int i);
+		inline double acc_up(int n, int i)
+		{
+			return (-1.0 / 2 / n / n / n * i*i*i + 3.0 / 2 / n / n * i*i);
+		}
+		inline double acc_down(int n, int i)
+		{
+			return (-1.0*i*i*i / 2.0 / n / n / n + 3.0 * i*i / 2 / n / n);
+		}
+		inline double dec_up(int n, int i)
+		{
+			return 1 - (-1.0 / 2 / n / n / n * (n - i)*(n - i)*(n - i) + 3.0 / 2 / n / n * (n - i)*(n - i));
+		}
+		inline double dec_down(int n, int i)
+		{
+			return 1 - (-1.0*(n - i)*(n - i)*(n - i) / 2.0 / n / n / n + 3.0 * (n - i)*(n - i) / 2 / n / n);
+		}
 
-		double acc_even(unsigned int n, unsigned int i);
-		double dec_even(unsigned int n, unsigned int i);
-		double even(unsigned int n, unsigned int i);
+
+		inline double acc_even(int n, int i)
+		{
+			return 1.0 / n / n  * i * i;
+		}
+		inline double dec_even(int n, int i)
+		{
+			return 1.0 - 1.0 / n / n * (n - i)*(n - i);
+		}
+		inline double even(int n, int i)
+		{
+			return 1.0 / n*i;
+		}
 	}
 }
 
