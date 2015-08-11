@@ -77,6 +77,12 @@ namespace Aris
 		*
 		*/
 		void s_tf(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵的逆矩阵转换六维力向量
+		*
+		* 等同于： vec_out = tmv(pm_in^-1) * fce_in
+		*
+		*/
+		void s_inv_tf(const double *inv_pm_in, const double *fce_in, double *vec_out) noexcept;
 		/** \brief 根据位姿矩阵转换六维速度向量
 		*
 		* 等同于： vec_out = tmv(pm_in) * vel_in
@@ -88,7 +94,13 @@ namespace Aris
 		* 等同于： vec_out = alpha * tmv(pm_in) * vel_in + beta * vec_out
 		*
 		*/
-		void s_tv(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept;
+		void s_tv(double alpha, const double *pm_in, const double *vel_in, double beta, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		*
+		* 等同于： vec_out = tmv(pm_in^-1) * vel_in
+		*
+		*/
+		void s_inv_tv(const double *inv_pm_in, const double *vel_in, double *vec_out) noexcept;
 		void s_cmf(const double *vel_in, double *cm_out) noexcept;
 		void s_cmv(const double *vel_in, double *cmd_out) noexcept;
 		/** \brief 计算六维向量叉乘
@@ -126,6 +138,7 @@ namespace Aris
 		* \param to_vel_out 表示转换完成的速度向量，即A坐标系中的速度向量。
 		*/
 		void s_v2v(const double *relative_pm_in, const double *relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept;
+		void s_inv_v2v(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept;
 		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
 			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out = 0) noexcept;
 		void s_pnt2pnt(const double *relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept;
@@ -166,8 +179,11 @@ namespace Aris
 		void s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;
 		void s_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
 		void s_inv_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
-		void s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept;
 		void s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept;
+		void s_inv_pm_dot_v3(const double *inv_pm_in, const double *v3_in, double *v3_out) noexcept;
+		void s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept;
+
+		void s_vn_add_vn(int N, const double *v1_in, const double *v2_in, double *v_out) noexcept;
 
 		void s_v_cro_pm(const double *v_in, const double *pm_in, double *vpm_out) noexcept;
 

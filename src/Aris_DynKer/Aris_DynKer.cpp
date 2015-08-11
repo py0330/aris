@@ -790,29 +790,23 @@ namespace Aris
 			vec_out[4] += pm_in[11] * vec_out[0] - pm_in[3] * vec_out[2];
 			vec_out[5] += -pm_in[7] * vec_out[0] + pm_in[3] * vec_out[1];
 		}
-		/*void s_tf(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept
+		void s_tf(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept
 		{
 			double tem[6];
-			
-			s_pm_dot_v3(pm_in, fce_in, tem);
-			s_pm_dot_v3(pm_in, fce_in + 3, tem + 3);
 
-			for (auto &i : tem)
-			{
-				i *= alpha;
-			}
-
-			tem[3] += -pm_in[11] * tem[1] + pm_in[7] * tem[2];
-			tem[4] += pm_in[11] * tem[0] - pm_in[3] * tem[2];
-			tem[5] += -pm_in[7] * tem[0] + pm_in[3] * tem[1];
-
+			s_tf(pm_in, fce_in, tem);
 
 			for (int i = 0; i < 6; ++i)
 			{
-				vec_out[i] *= beta;
-				vec_out[i] += tem[3];
+				vec_out[i] = alpha * tem[i] + beta * vec_out[i];
 			}
-		}*/
+		}
+		void s_inv_tf(const double *inv_pm_in, const double *fce_in, double *vec_out) noexcept
+		{
+			double pm_in[16];
+			s_inv_pm(inv_pm_in, pm_in);
+			s_tf(pm_in, fce_in, vec_out);
+		}
 		void s_tv(const double *pm_in, const double *vel_in, double *vec_out) noexcept
 		{
 			s_pm_dot_v3(pm_in, vel_in, vec_out);
@@ -822,15 +816,23 @@ namespace Aris
 			vec_out[1] += pm_in[11] * vec_out[3] - pm_in[3] * vec_out[5];
 			vec_out[2] += -pm_in[7] * vec_out[3] + pm_in[3] * vec_out[4];
 		}
-		/*void s_tv(double alpha, const double *pm_in, const double *vel_in, double beta, double *vec_out) noexcept
+		void s_tv(double alpha, const double *pm_in, const double *vel_in, double beta, double *vec_out) noexcept
 		{
-			cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 3, 1, 3, alpha, pm_in, 4, vel_in, 1, beta, vec_out, 1);
-			cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 3, 1, 3, alpha, pm_in, 4, vel_in + 3, 1, beta, vec_out + 3, 1);
+			double tem[6];
+			
+			s_tv(pm_in, vel_in, tem);
 
-			vec_out[0] += alpha*(-pm_in[11] * vec_out[4] + pm_in[7] * vec_out[5]);
-			vec_out[1] += alpha*(pm_in[11] * vec_out[3] - pm_in[3] * vec_out[5]);
-			vec_out[2] += alpha*(-pm_in[7] * vec_out[3] + pm_in[3] * vec_out[4]);
-		}*/
+			for (int i = 0; i < 6; ++i)
+			{
+				vec_out[i] = alpha * tem[i] + beta * vec_out[i];
+			}
+		}
+		void s_inv_tv(const double *inv_pm_in, const double *vel_in, double *vec_out) noexcept
+		{
+			double pm_in[16];
+			s_inv_pm(inv_pm_in, pm_in);
+			s_tv(pm_in, vel_in, vec_out);
+		}
 		void s_cmf(const double *vel_in, double *cmf_out) noexcept
 		{
 			std::fill_n(cmf_out, 36, 0);
@@ -996,7 +998,7 @@ namespace Aris
 
 				if (relative_vel_in != nullptr)
 				{
-					s_daxpy(6, 1, relative_vel_in, 1, to_vel_out, 1);
+					s_vn_add_vn(6, relative_vel_in, to_vel_out, to_vel_out);
 				}
 			}
 			else
@@ -1006,6 +1008,47 @@ namespace Aris
 					std::copy_n(relative_vel_in, 6, to_vel_out);
 				}
 			}
+		}
+		void s_inv_v2v(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept
+		{
+			double relative_pm_in[16], relative_vel_in[6];
+			double *relative_pm_in_ptr, *relative_vel_in_ptr;
+			
+			if (inv_relative_pm_in != nullptr)
+			{
+				s_inv_pm(inv_relative_pm_in, relative_pm_in);
+				relative_pm_in_ptr = relative_pm_in;
+
+				if (inv_relative_vel_in != nullptr)
+				{
+					s_tv(-1, relative_pm_in, inv_relative_vel_in, 0, relative_vel_in);
+					relative_vel_in_ptr = relative_vel_in;
+				}
+				else
+				{
+					relative_vel_in_ptr = nullptr;
+				}
+
+			}
+			else
+			{
+				relative_pm_in_ptr = nullptr;
+
+				if (inv_relative_vel_in != nullptr)
+				{
+					for (int i = 0; i < 6; ++i)
+					{
+						relative_vel_in[i] = -inv_relative_vel_in[i];
+					}
+				}
+				else
+				{
+					relative_vel_in_ptr = nullptr;
+				}
+			}
+
+			
+			s_v2v(relative_pm_in_ptr, relative_vel_in_ptr, from_vel_in, to_vel_out);
 		}
 		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
 			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out) noexcept
@@ -1513,6 +1556,22 @@ namespace Aris
 			cblas_daxpy(3, -1, &pm_in[3], 4, tem, 1);
 			cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, 3, 1, 3, 1, pm_in, 4, tem, 1, 0, pos_out, 1);
 		}
+		void s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept
+		{
+			/*seemed that loop is faster than cblas*/
+			for (int i = 0; i < 3; ++i)
+			{
+				v3_out[i] = pm_in[i * 4] * v3_in[0] + pm_in[i * 4 + 1] * v3_in[1] + pm_in[i * 4 + 2] * v3_in[2];
+			}
+		}
+		void s_inv_pm_dot_v3(const double *inv_pm_in, const double *v3_in, double *v3_out) noexcept
+		{
+			for (int i = 0; i < 3; ++i)
+			{
+				v3_out[i] = inv_pm_in[i] * v3_in[0] + inv_pm_in[i + 4] * v3_in[1] + inv_pm_in[i + 8] * v3_in[2];
+			}
+		}
+		
 		void s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept
 		{
 			//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 1, 6, 1, m6_in, 6, v6_in, 1, 0, v6_out, 1);
@@ -1524,15 +1583,13 @@ namespace Aris
 					m6_in[i * 6 + 3] * v6_in[3] + m6_in[i * 6 + 4] * v6_in[4] + m6_in[i * 6 + 5] * v6_in[5];
 			}
 		}
-		void s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept
+		void s_vn_add_vn(int N, const double *v1_in, const double *v2_in, double *v_out) noexcept
 		{
-			/*seemed that loop is faster than cblas*/
-			for (int i = 0; i < 3; ++i)
+			for (int i = 0; i < N; ++i)
 			{
-				v3_out[i] = pm_in[i * 4] * v3_in[0] + pm_in[i * 4 + 1] * v3_in[1] + pm_in[i * 4 + 2] * v3_in[2];
+				v_out[i] = v1_in[i] + v2_in[i];
 			}
 		}
-
 		void s_v_cro_pm(const double *v_in, const double *pm_in, double *vpm_out) noexcept
 		{
 			vpm_out[0] = -v_in[5] * pm_in[4] + v_in[4] * pm_in[8];
