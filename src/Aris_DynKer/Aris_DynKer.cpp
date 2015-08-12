@@ -371,14 +371,24 @@ namespace Aris
 			phi[2] = P[b][e] * (phi13 + phi31) / 2;
 
 			/*检查*/
-			double sig1 = pm_in[4 * a + e] * (P[a][e] + Q[a][e])*cos(phi[2]);
-			double sig2 = pm_in[4 * d + c] * (P[d][c] + Q[d][c])*cos(phi[0]);
-
-			if (std::max(sig1, sig2, [](double d1, double d2) {return std::abs(d1) < abs(d2); }) < 0)
+			double sig[4];
+			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * pm_in[a * 4 + b] * sin(phi[2]);
+			sig[1] = (P[a][e] + Q[a][e])*pm_in[4 * a + e] * cos(phi[2]);
+			sig[2] = (P[d][c] + Q[d][c])*P[b][d] * pm_in[b * 4 + c] * sin(phi[0]);
+			sig[3] = (P[d][c] + Q[d][c])*pm_in[4 * d + c] * cos(phi[0]);
+			
+			if (*std::max_element(sig, sig + 4, [](double d1, double d2) {return std::abs(d1) < abs(d2); })<0)
 			{
 				phi[0] += PI;
 				phi[2] += PI;
 			}
+			//double sig1 = pm_in[4 * a + e] * (P[a][e] + Q[a][e])*cos(phi[2]);
+			//double sig2 = pm_in[4 * d + c] * (P[d][c] + Q[d][c])*cos(phi[0]);
+			//if (std::max(sig1, sig2, [](double d1, double d2) {return std::abs(d1) < abs(d2); }) < 0)
+			//{
+			//	phi[0] += PI;
+			//	phi[2] += PI;
+			//}
 
 			phi[0] = (phi[0] < 0 ? phi[0] + 2 * PI : phi[0]);
 			phi[2] = (phi[2] < 0 ? phi[2] + 2 * PI : phi[2]);

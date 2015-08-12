@@ -222,22 +222,15 @@ int main()
 
 	
 
-	double pe1[6]{ 1,0,0,0,0,0 };
-	double pe2[6]{ 2,0,0,0,0,0 };
-	double pe3[6]{ 3,0,0,0,0,0 };
+	double pe1[6]{ 0,0,0,PI/2,0.524950,-PI/2 };
 
-	double pm11[16],pm22[16],pm33[16];
-	double ret[16];
+	double pm11[16];
 
 	s_pe2pm(pe1, pm11);
-	s_pe2pm(pe2, pm22);
-	s_pe2pm(pe3, pm33);
 
-	s_pm_dot_pm(pm11, pm22, pm33, ret);
+	dsp(pm11, 4, 4);
 
-	dsp(ret, 4, 4);
-
-	s_pm_dot_pm(pm11, pm22, ret);
+	s_pm2pe(pm11, pe1);
 
 	char aaa;
 	cin>>aaa;
