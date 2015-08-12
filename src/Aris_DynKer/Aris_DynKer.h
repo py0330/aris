@@ -27,6 +27,17 @@ namespace Aris
 {
 	namespace DynKer
 	{
+		inline double *s_get_last_ptr(double *arg)
+		{
+			return arg;
+		}
+		template <typename ...Args>
+		double *s_get_last_ptr(const double *, Args ...args)
+		{
+			return s_get_last_ptr(args...);
+		}
+		
+		
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
 		void dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n);
 		void dlmread(const char *FileName, double *pMatrix);
@@ -55,6 +66,7 @@ namespace Aris
 		void s_inv_pm(const double *pm_in, double *pm_out) noexcept;
 		void s_inv_im(const double *im_in, double *im_out) noexcept;
 		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder = "xy") noexcept;
+		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out);
 		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType="313") noexcept;
 		void s_pe2pm(const double *pe_in, double *pm_out, const char *EurType="313") noexcept;
 		void s_pm2pr(const double *pm_in, double *pr_out) noexcept;
@@ -176,6 +188,16 @@ namespace Aris
 		void s_dlt_col(const int &dlt_col_num, const int *col_index, const int &m, const int &n, double *A, const int &ldA) noexcept;
 
 		void s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept;
+		template <typename ...Args>
+		void s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args)
+		{
+			s_pm_dot_pm(pm2, args...);
+			double *ret = s_get_last_ptr(args...);
+
+			double pm[16];
+			std::copy_n(ret, 16, pm);
+			s_pm_dot_pm(pm1, pm, ret);
+		}
 		void s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;
 		void s_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
 		void s_inv_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;

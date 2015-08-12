@@ -333,7 +333,12 @@ namespace Aris
 
 			pm_out[15] = 1;
 		}
-		
+		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out)
+		{
+			double pm[16];
+			s_pe2pm(pe_in, pm, type1_in);
+			s_pm2pe(pm, pe_out, type2_in);
+		}
 		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType) noexcept
 		{
 			static const double P[3][3] = { { 0, -1, 1 }, { 1, 0, -1 }, { -1, 1, 0 } };

@@ -221,6 +221,24 @@ int main()
 	//cout << ap2[5] << endl;
 
 	
+
+	double pe1[6]{ 1,0,0,0,0,0 };
+	double pe2[6]{ 2,0,0,0,0,0 };
+	double pe3[6]{ 3,0,0,0,0,0 };
+
+	double pm11[16],pm22[16],pm33[16];
+	double ret[16];
+
+	s_pe2pm(pe1, pm11);
+	s_pe2pm(pe2, pm22);
+	s_pe2pm(pe3, pm33);
+
+	s_pm_dot_pm(pm11, pm22, pm33, ret);
+
+	dsp(ret, 4, 4);
+
+	s_pm_dot_pm(pm11, pm22, ret);
+
 	char aaa;
 	cin>>aaa;
 	return 0;
