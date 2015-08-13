@@ -51,30 +51,33 @@ namespace Aris
 		class OBJECT
 		{
 		public:
-			OBJECT(MODEL *pModel, const std::string &);
-			virtual ~OBJECT();
-
-			std::string GetName() const;
+			const std::string& Name() const { return _Name; };
+			const MODEL* Model()const { return _pModel; };
+			MODEL* Model() { return _pModel; };
 		
 		protected:
-			std::string _Name;
+			void SetName(const std::string &name) { _Name = name; };
+
+			explicit OBJECT(MODEL *pModel, const std::string &name) :_pModel(pModel), _Name(name) {};
+			OBJECT(const OBJECT &) = delete;
+			OBJECT(OBJECT &&) = delete;
+
+			virtual ~OBJECT() {};
+
+			OBJECT &operator=(const OBJECT &) = delete;
+			OBJECT &operator=(OBJECT &&) = delete;
+
+		private:
 			MODEL *_pModel;
+			std::string _Name;
 		};
 		class ELEMENT :public OBJECT
 		{
 		public:
-			ELEMENT(MODEL *pModel, const std::string &name)
-				:OBJECT(pModel, name)
-			{
-
-			};
-			virtual ~ELEMENT() = default;
-
-			bool GetActive() const{ return _IsActive; };
+			bool Active() const{ return _IsActive; };
 			void Activate(){ _IsActive = true; };
 			void Deactivate(){ _IsActive = false; };
-
-			virtual int GetID() const = 0;
+			int GetID() const { return _id; };
 
 			virtual void SaveResult(int id){};
 			virtual void SetResultSize(int size){};
@@ -82,7 +85,17 @@ namespace Aris
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle){};
 
 		protected:
+			explicit ELEMENT(MODEL *pModel, const std::string &name, int id)
+				: OBJECT(pModel, name)
+				, _id(id)
+			{
+
+			};
+			virtual ~ELEMENT() = default;
+
+		private:
 			bool _IsActive;
+			const int _id;
 		};
 		/** \brief 部件类型
 		*
@@ -124,8 +137,6 @@ namespace Aris
 			MARKER* GetMarker(const std::string &Name);
 			const MARKER* GetMarker(const std::string &Name)const;
 			MARKER* AddMarker(const std::string &Name, const double *pm = 0, MARKER *pRelativeTo = 0);
-
-			virtual int GetID() const;
 			
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
@@ -153,7 +164,8 @@ namespace Aris
 
 		private:
 			explicit PART(MODEL *pModel
-				, const std::string &Name = ""
+				, const std::string &Name
+				, int id
 				, const double *PrtIm = nullptr
 				, const double *pm = nullptr
 				, const double *Vel = nullptr
@@ -189,7 +201,6 @@ namespace Aris
 			
 
 			friend class MODEL;
-		
 		};
 		class MARKER :public ELEMENT
 		{
@@ -204,13 +215,13 @@ namespace Aris
 			const double* GetAccPtr() const{ return _pPrt->GetAccPtr(); };
 			const PART* GetFatherPrt() const{ return _pPrt; };
 
-			virtual int GetID() const;
+			//virtual int GetID() const;
 
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
 
 		private:
-			MARKER(MODEL *pModel, const std::string &Name = "", PART* pPart = 0, const double *pLocPm = 0, MARKER *pRelativeTo = 0);
+			MARKER(MODEL *pModel, const std::string &Name, int id, PART* pPart = 0, const double *pLocPm = 0, MARKER *pRelativeTo = 0);
 
 			MARKER(const MARKER &) = delete;
 			MARKER(MARKER &&) = delete;
@@ -242,20 +253,21 @@ namespace Aris
 
 			int GetCstDim() const;
 
-			const MARKER* GetMakI() const{ return _pMakI; };
-			const MARKER* GetMakJ() const{ return _pMakJ; };
+			
 			const double* GetCstFcePtr() const{ return _CstFce; };
 			const double* GetPrtCstMtxIPtr() const{ return *_PrtCstMtxI; };
 			const double* GetPrtCstMtxJPtr() const{ return *_PrtCstMtxJ; };
 			const double* GetPrtA_cPtr() const{ return _a_c; };
 			JOINT_TYPE GetType() const{ return _Type; };
 
+			const MARKER* GetMakI() const { return _pMakI; };
+			const MARKER* GetMakJ() const { return _pMakJ; };
 			MARKER* GetMakI() { return _pMakI; };
 			MARKER* GetMakJ() { return _pMakJ; };
 
 			void UpdateInPrt();
 
-			virtual int GetID() const;
+			//virtual int GetID() const;
 
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
@@ -277,7 +289,7 @@ namespace Aris
 			std::vector<RESULT_NODE> result;
 
 		private:
-			explicit JOINT(MODEL *pModel, const std::string &Name = "", JOINT_TYPE Type = ROTATIONAL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
+			explicit JOINT(MODEL *pModel, const std::string &Name, int id, JOINT_TYPE Type = ROTATIONAL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
 
 			JOINT(const JOINT &) = delete;
 			JOINT(JOINT &&) = delete;
@@ -340,7 +352,7 @@ namespace Aris
 
 			void UpdateInPrt();
 
-			virtual int GetID() const;
+			//virtual int GetID() const;
 
 			double FceAkima(double t, char derivativeOrder = '0'){ return fceCurve->operator()(t, derivativeOrder); };
 			double PosAkima(double t, char derivativeOrder = '0'){ return posCurve->operator()(t, derivativeOrder); };
@@ -384,7 +396,7 @@ namespace Aris
 			std::vector<RESULT_NODE> result;
 
 		private:
-			explicit MOTION(MODEL *pModel, const std::string &Name = "", MOTION_TYPE type = LINEAR, MOTION_MODE mode = POS_CONTROL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
+			explicit MOTION(MODEL *pModel, const std::string &Name, int id, MOTION_TYPE type = LINEAR, MOTION_MODE mode = POS_CONTROL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
 
 			MOTION(const MOTION &) = delete;
 			MOTION(MOTION &&) = delete;
@@ -432,13 +444,13 @@ namespace Aris
 			double* GetFceMtxPtr() const;
 			void SetFce(const double* pFce);
 
-			virtual int GetID() const;
+			//virtual int GetID() const;
 
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const{};
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle){};
 
 		private:
-			explicit FORCE(MODEL *pModel, const std::string &Name = "", FORCE_TYPE type = BODY2BODY, PART *pPrtI = 0, PART *pPrtJ = 0, MARKER *pMakA = 0, MARKER *pMakP = 0, const double *force = 0);
+			explicit FORCE(MODEL *pModel, const std::string &Name, int id, FORCE_TYPE type = BODY2BODY, PART *pPrtI = 0, PART *pPrtJ = 0, MARKER *pMakA = 0, MARKER *pMakP = 0, const double *force = 0);
 
 			FORCE(const FORCE &) = delete;
 			FORCE(FORCE &&) = delete;
