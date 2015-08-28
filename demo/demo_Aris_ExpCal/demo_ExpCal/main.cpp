@@ -27,7 +27,7 @@ int main()
 	dsp(vec1, 1, 6);
 
 
-	s_crov(1.2, vel, fce,1.5, vec2);	
+	s_cv(1.2, vel, fce,1.5, vec2);	
 	dsp(vec2, 1, 6);
 	
 

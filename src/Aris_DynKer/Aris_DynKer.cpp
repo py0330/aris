@@ -98,7 +98,7 @@ namespace Aris
 			if (ld < 1)
 				ld = n;
 		
-			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(15);
+			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(5);
 
 			std::cout << std::endl;
 			for (int i = 0; i < m; i++)
@@ -816,6 +816,21 @@ namespace Aris
 				vec_out[i] = alpha * tem[i] + beta * vec_out[i];
 			}
 		}
+		void s_tf_n(int n, double alpha, const double *pm_in, const double *fces_in, double beta, double *m_out) noexcept
+		{
+			double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
+			double *m_out_tran = fces_in_tran + 6 * n;
+
+			s_transpose(6, n, fces_in, n, fces_in_tran, 6);
+			s_transpose(6, n, m_out, n, m_out_tran, 6);
+
+			for (int i = 0; i < n; ++i)
+			{
+				s_tf(alpha, pm_in, fces_in_tran+i*6, beta, m_out_tran + i * 6);
+			}
+
+			s_transpose(n, 6, m_out_tran, 6, m_out, n);
+		}
 		void s_inv_tf(const double *inv_pm_in, const double *fce_in, double *vec_out) noexcept
 		{
 			double pm_in[16];
@@ -898,7 +913,7 @@ namespace Aris
 			cmv_out[5] = vel_in[1];
 			cmv_out[11] = -vel_in[0];
 		}
-		void s_crof(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept
+		void s_cf(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept
 		{
 			s_cro3(cro_vel_in + 3, vec_in, vec_out);
 			s_cro3(cro_vel_in + 3, vec_in + 3, vec_out + 3);
@@ -907,7 +922,7 @@ namespace Aris
 			vec_out[4] += cro_vel_in[2] * vec_in[0] - cro_vel_in[0] * vec_in[2];
 			vec_out[5] += -cro_vel_in[1] * vec_in[0] + cro_vel_in[0] * vec_in[1];
 		}
-		void s_crof(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept
+		void s_cf(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept
 		{
 			s_cro3(alpha, cro_vel_in + 3, vec_in, beta, vec_out);
 			s_cro3(alpha, cro_vel_in + 3, vec_in + 3, beta, vec_out + 3);
@@ -916,7 +931,7 @@ namespace Aris
 			vec_out[4] += alpha*(cro_vel_in[2] * vec_in[0] - cro_vel_in[0] * vec_in[2]);
 			vec_out[5] += alpha*(-cro_vel_in[1] * vec_in[0] + cro_vel_in[0] * vec_in[1]);
 		}
-		void s_crov(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept
+		void s_cv(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept
 		{
 			s_cro3(cro_vel_in + 3, vec_in, vec_out);
 			s_cro3(cro_vel_in + 3, vec_in+3, vec_out+3);
@@ -925,7 +940,7 @@ namespace Aris
 			vec_out[1] += cro_vel_in[2] * vec_in[3] - cro_vel_in[0] * vec_in[5];
 			vec_out[2] += -cro_vel_in[1] * vec_in[3] + cro_vel_in[0] * vec_in[4];
 		}
-		void s_crov(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept
+		void s_cv(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept
 		{
 			s_cro3(alpha, cro_vel_in + 3, vec_in, beta, vec_out);
 			s_cro3(alpha, cro_vel_in + 3, vec_in + 3, beta, vec_out + 3);
@@ -1095,7 +1110,7 @@ namespace Aris
 			/* calculate to_acc_out */
 			if (relative_vel_in != nullptr)
 			{
-				s_crov(1, relative_vel_in, to_vel, 1, to_acc_out);
+				s_cv(1, relative_vel_in, to_vel, 1, to_acc_out);
 			}
 
 			if (to_vel_out != nullptr)

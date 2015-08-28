@@ -75,8 +75,8 @@ namespace Aris
 		void s_pq2pm(const double *pq_in, double *pm_out) noexcept;
 		void s_vq2v(const double *pq_in, const double *vq_in, double *v_out) noexcept;
 		void s_v2vq(const double *pm_in, const double *v_in, double *vq_out) noexcept;
-		void s_tmf(const double *pm_in, double *tm_out) noexcept;
-		void s_tmv(const double *pm_in, double *tmd_out) noexcept;
+		void s_tmf(const double *pm_in, double *tmf_out) noexcept;
+		void s_tmv(const double *pm_in, double *tmv_out) noexcept;
 		/** \brief 根据位姿矩阵转换六维力向量
 		*
 		* 等同于： vec_out = tmf(pm_in) * fce_in
@@ -89,6 +89,12 @@ namespace Aris
 		*
 		*/
 		void s_tf(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵转换六维力矩阵
+		*
+		* 等同于： m_out = alpha * tmf(pm_in) * fces_in + beta * m_out
+		*
+		*/
+		void s_tf_n(int n, double alpha, const double *pm_in, const double *fces_in, double beta, double *m_out) noexcept;
 		/** \brief 根据位姿矩阵的逆矩阵转换六维力向量
 		*
 		* 等同于： vec_out = tmv(pm_in^-1) * fce_in
@@ -120,25 +126,25 @@ namespace Aris
 		* 用来计算：vec_out = cro_vec_in xf vec_in
 		*
 		*/
-		void s_crof(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept;
+		void s_cf(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept;
 		/** \brief 计算六维向量叉乘
 		*
 		* 用来计算：vec_out = alpha * cro_vec_in xf vec_in + beta * vec_out
 		*
 		*/
-		void s_crof(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept;
+		void s_cf(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept;
 		/** \brief 计算六维向量叉乘
 		*
 		* 用来计算：vec_out = cro_vec_in xv vec_in
 		*
 		*/
-		void s_crov(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept;
+		void s_cv(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept;
 		/** \brief 计算六维向量叉乘
 		*
 		* 用来计算：vec_out = alpha * cro_vec_in xv vec_in + beta * vec_out
 		*
 		*/
-		void s_crov(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept;
+		void s_cv(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept;
 		void s_i2i(const double *from_pm_in, const double *from_im_in, double *to_im_out) noexcept;
 		/** \brief 计算点加速度
 		*
@@ -189,7 +195,7 @@ namespace Aris
 
 		void s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept;
 		template <typename ...Args>
-		void s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args)
+		void s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept
 		{
 			s_pm_dot_pm(pm2, args...);
 			double *ret = s_get_last_ptr(args...);
