@@ -305,12 +305,21 @@ namespace Aris
 		{
 
 		}
-		void JOINT_BASE::Initiate()
+		void JOINT_BASE::Update()
 		{
-			std::fill_n(_PrtCstMtxIPtr, this->GetCstDim() * 6, 0);
-			std::fill_n(_PrtCstMtxJPtr, this->GetCstDim() * 6, 0);
+			double _pm_M2N[4][4];
+			double _tem_v1[6], _tem_v2[6];
 
-			s_tmf(_pMakI->GetPrtPmPtr(), *_tm_I2M);
+			/* Get pm M2N */
+			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
+
+			/*update PrtCstMtx*/
+			s_tf_n(GetCstDim(), -1, *_pm_M2N, _PrtCstMtxIPtr, 0, _PrtCstMtxJPtr);
+
+			/*update A_c*/
+			s_inv_tv(-1, *_pm_M2N, GetMakJ()->GetFatherPrt()->GetPrtVelPtr(), 0, _tem_v1);
+			s_cv(GetMakI()->GetFatherPrt()->GetPrtVelPtr(), _tem_v1, _tem_v2);
+			s_dgemmTN(GetCstDim(), 1, 6, 1, _PrtCstMtxIPtr, GetCstDim(), _tem_v2, 1, 0, _a_cPtr, 1);
 		};
 		void JOINT_BASE::ToXmlElement(Aris::Core::ELEMENT *pEle) const
 		{
@@ -649,185 +658,126 @@ namespace Aris
 			I_dim = pid;
 			C_dim = cid;
 
-			_C.resize(C_dim*I_dim);
-			C = _C.data();
-			memset(C, 0, sizeof(double)*I_dim*C_dim);
+			C.resize(C_dim*I_dim);
+			pC = C.data();
+			memset(pC, 0, sizeof(double)*I_dim*C_dim);
 
-			_I.resize(I_dim*I_dim);
-			pI = _I.data();
+			I.resize(I_dim*I_dim);
+			pI = I.data();
 			memset(pI, 0, sizeof(double)*I_dim*I_dim);
 				
-			_f.resize(I_dim);
-			f = _f.data();
-			memset(f, 0, sizeof(double)*I_dim);
+			f.resize(I_dim);
+			pf = f.data();
+			memset(pf, 0, sizeof(double)*I_dim);
 
-			_a_c.resize(C_dim);
-			a_c = _a_c.data();
-			memset(a_c, 0, sizeof(double)*C_dim);
+			a_c.resize(C_dim);
+			pa_c = a_c.data();
+			memset(pa_c, 0, sizeof(double)*C_dim);
 				
-			_D.resize((I_dim + C_dim)*(I_dim + C_dim));
-			D = _D.data();
-			memset(D, 0, sizeof(double)*(I_dim + C_dim)*(I_dim + C_dim));
+			D.resize((I_dim + C_dim)*(I_dim + C_dim));
+			pD = D.data();
+			memset(pD, 0, sizeof(double)*(I_dim + C_dim)*(I_dim + C_dim));
 
-			_b.resize(I_dim + C_dim);
-			b = _b.data();
-			memset(b, 0, sizeof(double)*(I_dim + C_dim));
+			b.resize(I_dim + C_dim);
+			pb = b.data();
+			memset(pb, 0, sizeof(double)*(I_dim + C_dim));
 
-			_s.resize(I_dim + C_dim);
-			s = _s.data();
-			memset(s, 0, sizeof(double)*(I_dim + C_dim));
+			s.resize(I_dim + C_dim);
+			ps = s.data();
+			memset(ps, 0, sizeof(double)*(I_dim + C_dim));
 
-			_x.resize(I_dim + C_dim);
-			x = _x.data();
-			memset(x, 0, sizeof(double)*(I_dim + C_dim));
+			x.resize(I_dim + C_dim);
+			px = x.data();
+			memset(px, 0, sizeof(double)*(I_dim + C_dim));
 
 			for (int i = 0; i < 6; ++i)
 			{
-				pI[I_dim*pGround->_RowId + pGround->_RowId] = 1;
+				pI[I_dim*(pGround->_RowId + i) + pGround->_RowId + i] = 1;
 				C[C_dim*(pGround->_RowId + i) + i] = 1;
 			}
 
 		}
 		void MODEL::DynPrtMtx()
 		{
-			memset(f, 0, I_dim*sizeof(double));
-			memset(D, 0, (C_dim + I_dim)*(C_dim + I_dim)*sizeof(double));
-			/*Update pI,and fces*/
-			for (auto &p:_parts)
+			memset(pf, 0, I_dim*sizeof(double));
+			memset(pD, 0, (C_dim + I_dim)*(C_dim + I_dim)*sizeof(double));
+			/*Update all elements*/
+			for (auto &prt : _parts)
 			{
-				if (p->Active())
+				if (prt->Active())
 				{
-					p->Update();
-					s_block_cpy(6, 6, *(p->_PrtIm), 0, 0, 6, pI, p->_RowId, p->_RowId, I_dim);
+					prt->Update();
+					s_block_cpy(6, 6, *(prt->_PrtIm), 0, 0, 6, pI, prt->_RowId, prt->_RowId, I_dim);
 
-					s_daxpy(6, -1, p->_PrtFg, 1, &f[p->_RowId], 1);
-					s_daxpy(6, 1, p->_PrtFv, 1, &f[p->_RowId], 1);
+					s_daxpy(6, -1, prt->_PrtFg, 1, &f[prt->_RowId], 1);
+					s_daxpy(6, 1, prt->_PrtFv, 1, &f[prt->_RowId], 1);
 				}
 			}
-			/*Update C , a_c and force-controlled-motion force*/
-			for (auto &j:_joints)
-			{
-				if (j->Active())
-				{
-					j->Update();
-
-					s_block_cpy(6, j->GetCstDim(), j->GetPrtCstMtxIPtr(), 0, 0, j->GetCstDim(), C, j->_pMakI->GetFatherPrt()->_RowId, j->_ColId, C_dim);
-					s_block_cpy(6, j->GetCstDim(), j->GetPrtCstMtxJPtr(), 0, 0, j->GetCstDim(), C, j->_pMakJ->GetFatherPrt()->_RowId, j->_ColId, C_dim);
-
-					memcpy(&a_c[j->_ColId], j->GetPrtA_cPtr(), j->GetCstDim() * sizeof(double));
-				}
-			}
-			for (auto &m : _motions)
-			{
-				if (m->Active())
-				{
-					double tem_f[6];
-					m->Update();
-					switch (m->_Mode)
-					{
-					case MOTION_BASE::POS_CONTROL:
-						s_block_cpy(6, m->GetCstDim(), m->GetPrtCstMtxIPtr(), 0, 0, 6, C, m->_pMakI->GetFatherPrt()->_RowId, m->_ColId, C_dim);
-						s_block_cpy(6, m->GetCstDim(), m->GetPrtCstMtxJPtr(), 0, 0, 6, C, m->_pMakJ->GetFatherPrt()->_RowId, m->_ColId, C_dim);
-
-						memcpy(&a_c[m->_ColId], m->GetPrtA_cPtr(), m->GetCstDim() * sizeof(double));
-						break;
-					case MOTION_BASE::FCE_CONTROL:
-						/*补偿摩擦力*/
-						for (int j = 0; j < m->GetCstDim(); j++)
-						{
-							tem_f[j] = m->_f_m[j]
-								- s_sgn(m->GetV_mPtr()[j]) * m->_frc_coe[0]
-								- m->GetV_mPtr()[j] * m->_frc_coe[1]
-								- m->GetA_mPtr()[j] * m->_frc_coe[2];
-						}
-						/*补偿摩擦力完毕*/
-						s_dgemm(6, 1, m->GetCstDim(), -1, m->GetPrtCstMtxIPtr(), 6, tem_f, 1, 1, &f[m->_pMakI->GetFatherPrt()->_RowId], 1);
-						s_dgemm(6, 1, m->GetCstDim(), -1, m->GetPrtCstMtxJPtr(), 6, tem_f, 1, 1, &f[m->_pMakJ->GetFatherPrt()->_RowId], 1);
-						break;
-					}
-				}
-			}
-
-			/*calculate D and b*/
-			/* for D*/
-			for (int i = 0; i < 6; ++i)
-			{
-				D[(C_dim + I_dim)*(pGround->_RowId + i) + (i + I_dim)] = 1;
-				D[(C_dim + I_dim)*(i + I_dim) + (pGround->_RowId + i)] = 1;
-			}
-
-			for (auto &p : _parts)
-			{
-				if (p->Active())
-				{
-					for (int i = 0; i < 6; ++i)
-					{
-						for (int j = 0; j < 6; ++j)
-						{
-							D[(I_dim + C_dim)*(p->_RowId + i) + (p->_RowId + j)]
-								= -pI[I_dim*(p->_RowId + i) + (p->_RowId + j)];
-						}
-					}
-				}
-			}
-
 			for (auto &jnt : _joints)
 			{
 				if (jnt->Active())
 				{
-					for (int i = 0; i < 6; i++)
-					{
-						for (int j = 0; j < jnt->GetCstDim(); j++)
-						{
-							D[(C_dim + I_dim)*(jnt->_pMakI->GetFatherPrt()->_RowId + i) + (I_dim + jnt->_ColId + j)]
-								= C[C_dim*(jnt->_pMakI->GetFatherPrt()->_RowId + i) + jnt->_ColId + j];
-							D[(C_dim + I_dim)*(jnt->_pMakJ->GetFatherPrt()->_RowId + i) + (I_dim + jnt->_ColId + j)]
-								= C[C_dim*(jnt->_pMakJ->GetFatherPrt()->_RowId + i) + jnt->_ColId + j];
-							D[(jnt->_pMakI->GetFatherPrt()->_RowId + i) + (C_dim + I_dim)*(I_dim + jnt->_ColId + j)]
-								= C[C_dim*(jnt->_pMakI->GetFatherPrt()->_RowId + i) + jnt->_ColId + j];
-							D[(jnt->_pMakJ->GetFatherPrt()->_RowId + i) + (C_dim + I_dim)*(I_dim + jnt->_ColId + j)]
-								= C[C_dim*(jnt->_pMakJ->GetFatherPrt()->_RowId + i) + jnt->_ColId + j];
-						}
-					}
+					jnt->Update();
 
+					s_block_cpy(6, jnt->GetCstDim(), jnt->GetPrtCstMtxIPtr(), 0, 0, jnt->GetCstDim(), pC, jnt->_pMakI->GetFatherPrt()->_RowId, jnt->_ColId, C_dim);
+					s_block_cpy(6, jnt->GetCstDim(), jnt->GetPrtCstMtxJPtr(), 0, 0, jnt->GetCstDim(), pC, jnt->_pMakJ->GetFatherPrt()->_RowId, jnt->_ColId, C_dim);
+
+					memcpy(&a_c[jnt->_ColId], jnt->GetPrtA_cPtr(), jnt->GetCstDim() * sizeof(double));
 				}
 			}
-
-			for (auto &m : _motions)
+			for (auto &mot : _motions)
 			{
-				if (m->Active())
+				if (mot->Active())
 				{
-					switch (m->_Mode)
+					mot->Update();
+					switch (mot->_Mode)
 					{
 					case MOTION_BASE::POS_CONTROL:
-						for (int i = 0; i < 6; i++)
-						{
-							for (int j = 0; j < m->GetCstDim(); j++)
-							{
-								D[(C_dim + I_dim)*(m->_pMakI->GetFatherPrt()->_RowId + i) + (I_dim + m->_ColId + j)]
-									= C[C_dim*(m->_pMakI->GetFatherPrt()->_RowId + i) + m->_ColId + j];
-								D[(C_dim + I_dim)*(m->_pMakJ->GetFatherPrt()->_RowId + i) + (I_dim + m->_ColId + j)]
-									= C[C_dim*(m->_pMakJ->GetFatherPrt()->_RowId + i) + m->_ColId + j];
-								D[(m->_pMakI->GetFatherPrt()->_RowId + i) + (C_dim + I_dim)*(I_dim + m->_ColId + j)]
-									= C[C_dim*(m->_pMakI->GetFatherPrt()->_RowId + i) + m->_ColId + j];
-								D[(m->_pMakJ->GetFatherPrt()->_RowId + i) + (C_dim + I_dim)*(I_dim + m->_ColId + j)]
-									= C[C_dim*(m->_pMakJ->GetFatherPrt()->_RowId + i) + m->_ColId + j];
-							}
-						}
+						s_block_cpy(6, mot->GetCstDim(), mot->GetPrtCstMtxIPtr(), 0, 0, 6, pC, mot->_pMakI->GetFatherPrt()->_RowId, mot->_ColId, C_dim);
+						s_block_cpy(6, mot->GetCstDim(), mot->GetPrtCstMtxJPtr(), 0, 0, 6, pC, mot->_pMakJ->GetFatherPrt()->_RowId, mot->_ColId, C_dim);
+
+						memcpy(&a_c[mot->_ColId], mot->GetPrtA_cPtr(), mot->GetCstDim() * sizeof(double));
 						break;
 					case MOTION_BASE::FCE_CONTROL:
+						/*补偿摩擦力*/
+						double tem_f = mot->GetMotFce();
+							- s_sgn(mot->GetMotVel()) * mot->_frc_coe[0]
+							- mot->GetMotVel() * mot->_frc_coe[1]
+							- mot->GetMotVel() * mot->_frc_coe[2];
 
+						/*补偿摩擦力完毕*/
+						s_dgemm(6, 1, mot->GetCstDim(), -1, mot->GetPrtCstMtxIPtr(), 6, &tem_f, 1, 1, &pf[mot->_pMakI->GetFatherPrt()->_RowId], 1);
+						s_dgemm(6, 1, mot->GetCstDim(), -1, mot->GetPrtCstMtxJPtr(), 6, &tem_f, 1, 1, &pf[mot->_pMakJ->GetFatherPrt()->_RowId], 1);
 						break;
 					}
 				}
 			}
+			for (auto &fce : _forces)
+			{
+				if (fce->Active())
+				{
+					fce->Update();
 
-			s_block_cpy(I_dim, 1, f, 0, 0, 1, b, 0, 0, 1);
-			s_block_cpy(C_dim, 1, a_c, 0, 0, 1, b, I_dim, 0, 1);
+					s_daxpy(6, -1, fce->GetPrtFceIPtr(), 1, &f[fce->_pPrtM->_RowId], 1);
+					s_daxpy(6, -1, fce->GetPrtFceJPtr(), 1, &f[fce->_pPrtN->_RowId], 1);
+				}
+				
 
+
+
+			}
+
+			/*calculate D and b*/
+			/* for D*/
+			s_block_cpy(I_dim, I_dim, -1, pI, 0, 0, I_dim, 0, pD, 0, 0, C_dim + I_dim);
+			s_block_cpy(I_dim, C_dim, pC, 0, 0, C_dim, pD, 0, I_dim, C_dim + I_dim);
+			s_block_cpyT(I_dim, C_dim, pC, 0, 0, C_dim, pD, I_dim, 0, C_dim + I_dim);
+
+			s_block_cpy(I_dim, 1, pf, 0, 0, 1, pb, 0, 0, 1);
+			s_block_cpy(C_dim, 1, pa_c, 0, 0, 1, pb, I_dim, 0, 1);
 
 			/*以下求解*/
-			memcpy(x, b, (C_dim + I_dim)*sizeof(double));
+			memcpy(px, pb, (C_dim + I_dim)*sizeof(double));
 		}
 		void MODEL::Dyn()
 		{
@@ -836,46 +786,37 @@ namespace Aris
 			s_dgelsd(C_dim + I_dim,
 				C_dim + I_dim,
 				1,
-				D,
+				pD,
 				C_dim + I_dim,
-				x,
+				px,
 				1,
-				s,
+				ps,
 				rcond,
 				&rank);
 
-			for (auto &p:_parts)
+			for (auto &prt:_parts)
 			{
-				if (p->Active())
+				if (prt->Active())
 				{
 					//p->SetPrtAcc(&x[p->_RowId]);
-					memcpy(p->GetPrtAccPtr(), &x[p->_RowId], sizeof(double) * 6);
+					memcpy(prt->GetPrtAccPtr(), &px[prt->_RowId], sizeof(double) * 6);
 				}
 			}
-			for (auto &j : _joints)
+			for (auto &jnt : _joints)
 			{
-				if (j->Active())
+				if (jnt->Active())
 				{
-					memcpy(j->_CstFcePtr, &x[j->_ColId + I_dim], j->GetCstDim() * sizeof(double));
+					memcpy(jnt->_CstFcePtr, &px[jnt->_ColId + I_dim], jnt->GetCstDim() * sizeof(double));
 				}
 			}
-			for (auto &m:_motions)
+			for (auto &mot:_motions)
 			{
-				if (m->Active())
+				if (mot->Active())
 				{
-					switch (m->_Mode)
+					switch (mot->_Mode)
 					{
 					case MOTION_BASE::POS_CONTROL:
-						/*补偿摩擦力*/
-						/*x[m->_ColId + I_dim] += m->_frc_coe[0] * s_sgn(*m->GetV_mPtr())
-							+ m->_frc_coe[1] * (*m->GetV_mPtr())
-							+ m->_frc_coe[2] * (*m->GetA_mPtr());*/
-
-						memcpy(m->_f_m, &x[m->_ColId + I_dim], m->GetCstDim() * sizeof(double));
-						/*补偿摩擦力*/
-						*m->_f_m += m->_frc_coe[0] * s_sgn(*m->GetV_mPtr())
-							+ m->_frc_coe[1] * (*m->GetV_mPtr())
-							+ m->_frc_coe[2] * (*m->GetA_mPtr());
+						mot->MotDynFce = x[mot->_ColId + I_dim];
 						break;
 					case MOTION_BASE::FCE_CONTROL:
 						break;
@@ -928,7 +869,7 @@ namespace Aris
 			memset(_clb_b.Data(), 0, _clb_b.Length() * sizeof(double));
 
 			/*开始计算*/
-			memset(C, 0, dim*dim * sizeof(double));
+			memset(pC, 0, dim*dim * sizeof(double));
 
 			/*Update all*/
 			for (auto &i:_parts)
@@ -953,8 +894,8 @@ namespace Aris
 				{
 					j->Update();
 
-					s_block_cpy(6, j->GetCstDim(), j->GetPrtCstMtxIPtr(), 0, 0, j->GetCstDim(), C, j->_pMakI->GetFatherPrt()->_RowId, j->_ColId, dim);
-					s_block_cpy(6, j->GetCstDim(), j->GetPrtCstMtxJPtr(), 0, 0, j->GetCstDim(), C, j->_pMakJ->GetFatherPrt()->_RowId, j->_ColId, dim);
+					s_block_cpy(6, j->GetCstDim(), j->GetPrtCstMtxIPtr(), 0, 0, j->GetCstDim(), pC, j->_pMakI->GetFatherPrt()->_RowId, j->_ColId, dim);
+					s_block_cpy(6, j->GetCstDim(), j->GetPrtCstMtxJPtr(), 0, 0, j->GetCstDim(), pC, j->_pMakJ->GetFatherPrt()->_RowId, j->_ColId, dim);
 
 					memcpy(&a_c[j->_ColId], j->GetPrtA_cPtr(), j->GetCstDim() * sizeof(double));
 				}
@@ -967,12 +908,12 @@ namespace Aris
 					switch (m->_Mode)
 					{
 					case MOTION_BASE::POS_CONTROL:
-						s_block_cpy(6, m->GetCstDim(), m->GetPrtCstMtxIPtr(), 0, 0, 6, C, m->_pMakI->GetFatherPrt()->_RowId, m->_ColId, dim);
-						s_block_cpy(6, m->GetCstDim(), m->GetPrtCstMtxJPtr(), 0, 0, 6, C, m->_pMakJ->GetFatherPrt()->_RowId, m->_ColId, dim);
+						s_block_cpy(6, m->GetCstDim(), m->GetPrtCstMtxIPtr(), 0, 0, 6, pC, m->_pMakI->GetFatherPrt()->_RowId, m->_ColId, dim);
+						s_block_cpy(6, m->GetCstDim(), m->GetPrtCstMtxJPtr(), 0, 0, 6, pC, m->_pMakJ->GetFatherPrt()->_RowId, m->_ColId, dim);
 						break;
 					case MOTION_BASE::FCE_CONTROL:
-						s_dgemm(6, 1, m->GetCstDim(), 1, m->GetPrtCstMtxIPtr(), 6, m->_f_m, 1, 1, &f[m->_pMakI->GetFatherPrt()->_RowId], 1);
-						s_dgemm(6, 1, m->GetCstDim(), 1, m->GetPrtCstMtxJPtr(), 6, m->_f_m, 1, 1, &f[m->_pMakJ->GetFatherPrt()->_RowId], 1);
+						s_dgemm(6, 1, m->GetCstDim(), 1, m->GetPrtCstMtxIPtr(), 6, &m->MotDynFce, 1, 1, &f[m->_pMakI->GetFatherPrt()->_RowId], 1);
+						s_dgemm(6, 1, m->GetCstDim(), 1, m->GetPrtCstMtxJPtr(), 6, &m->MotDynFce, 1, 1, &f[m->_pMakJ->GetFatherPrt()->_RowId], 1);
 						break;
 					}
 				}
@@ -986,7 +927,7 @@ namespace Aris
 			MATRIX A(dim, dim), B(dim, dim);
 			std::vector<int> ipiv(dim);
 
-			memcpy(A.Data(), C, sizeof(double)*A.Length());
+			memcpy(A.Data(), pC, sizeof(double)*A.Length());
 			s_dgeinv(dim, A.Data(), dim, ipiv.data());
 
 			
@@ -1079,12 +1020,12 @@ namespace Aris
 			{
 				if ((i->Active()) && (i->_Mode == MOTION_BASE::POS_CONTROL))
 				{
-					memcpy(&_clb_b(row, 0), i->_f_m, sizeof(double)*i->GetCstDim());
+					memcpy(&_clb_b(row, 0), &i->MotDynFce, sizeof(double)*i->GetCstDim());
 					row += i->GetCstDim();
 				}
 			}
 
-			s_dgemm(clb_dim_m, 1, dim, 1, &A(beginRow,0), dim, f, 1, 1, _clb_b.Data(), 1);
+			s_dgemm(clb_dim_m, 1, dim, 1, &A(beginRow,0), dim, pf, 1, 1, _clb_b.Data(), 1);
 
 			//dsp(f, dim, 1);
 
@@ -1099,19 +1040,19 @@ namespace Aris
 					if (i->_Mode == MOTION_BASE::POS_CONTROL)
 					{
 
-						_clb_d(row, clb_prt_dim_n + num * 3) += s_sgn(*i->GetV_mPtr());
-						_clb_d(row, clb_prt_dim_n + num * 3 + 1) += *i->GetV_mPtr();
-						_clb_d(row, clb_prt_dim_n + num * 3 + 2) += *i->GetA_mPtr();
+						_clb_d(row, clb_prt_dim_n + num * 3) += s_sgn(i->GetMotVel());
+						_clb_d(row, clb_prt_dim_n + num * 3 + 1) += i->GetMotVel();
+						_clb_d(row, clb_prt_dim_n + num * 3 + 2) += i->GetMotAcc();
 						++row;
 					}
 					else
 					{
-						s_dgemm(clb_dim_m, 1, 6, s_sgn(*i->GetV_mPtr()), &A(beginRow, i->_pMakI->_pPrt->_RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3), clb_dim_n);
-						s_dgemm(clb_dim_m, 1, 6, s_sgn(*i->GetV_mPtr()), &A(beginRow, i->_pMakJ->_pPrt->_RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3), clb_dim_n);
-						s_dgemm(clb_dim_m, 1, 6, *i->GetV_mPtr(), &A(beginRow, i->_pMakI->_pPrt->_RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 1), clb_dim_n);
-						s_dgemm(clb_dim_m, 1, 6, *i->GetV_mPtr(), &A(beginRow, i->_pMakJ->_pPrt->_RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 1), clb_dim_n);
-						s_dgemm(clb_dim_m, 1, 6, *i->GetA_mPtr(), &A(beginRow, i->_pMakI->_pPrt->_RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 2), clb_dim_n);
-						s_dgemm(clb_dim_m, 1, 6, *i->GetA_mPtr(), &A(beginRow, i->_pMakJ->_pPrt->_RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 2), clb_dim_n);
+						s_dgemm(clb_dim_m, 1, 6, s_sgn(i->GetMotVel()), &A(beginRow, i->_pMakI->_pPrt->_RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3), clb_dim_n);
+						s_dgemm(clb_dim_m, 1, 6, s_sgn(i->GetMotVel()), &A(beginRow, i->_pMakJ->_pPrt->_RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3), clb_dim_n);
+						s_dgemm(clb_dim_m, 1, 6, i->GetMotVel(), &A(beginRow, i->_pMakI->_pPrt->_RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 1), clb_dim_n);
+						s_dgemm(clb_dim_m, 1, 6, i->GetMotVel(), &A(beginRow, i->_pMakJ->_pPrt->_RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 1), clb_dim_n);
+						s_dgemm(clb_dim_m, 1, 6, i->GetMotAcc(), &A(beginRow, i->_pMakI->_pPrt->_RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 2), clb_dim_n);
+						s_dgemm(clb_dim_m, 1, 6, i->GetMotAcc(), &A(beginRow, i->_pMakJ->_pPrt->_RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 2), clb_dim_n);
 					}
 				}
 				num++;
@@ -1223,6 +1164,15 @@ namespace Aris
 				}
 				GetMotion(ele->Name())->FromXmlElement(ele);
 				GetMotion(ele->Name())->_Initiate();
+			}
+
+			for (auto ele = pFce->FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())
+			{
+				if (strcmp(SINGLE_COMPONENT_FORCE::type, ele->Attribute("Type")) == 0)
+				{
+					AddForce<SINGLE_COMPONENT_FORCE>(ele->Name(), ele);
+				}
+				GetForce(ele->Name())->FromXmlElement(ele);
 			}
 		}
 		void MODEL::SaveSnapshotXml(const char *filename) const
@@ -1684,7 +1634,7 @@ namespace Aris
 						<< "    i_marker_name = ." << Name() << "." << i->_pMakI->_pPrt->Name() << "." << i->_pMakI->Name() << "  &\r\n"
 						<< "    j_marker_name = ." << Name() << "." << i->_pMakJ->_pPrt->Name() << "." << i->_pMakJ->Name() << "  &\r\n"
 						<< "    axis = " << s << "  &\r\n"
-						<< "    function = \"" << *i->GetP_mPtr() << "\"  \r\n"
+						<< "    function = \"" << i->GetMotPos() << "\"  \r\n"
 						<< "!\r\n";
 				}
 				else
@@ -1726,7 +1676,7 @@ namespace Aris
 						<< "    i_marker_name = ." << Name() << "." << i->_pMakI->_pPrt->Name() << "." << i->_pMakI->Name() << "  &\r\n"
 						<< "    j_marker_name = ." << Name() << "." << i->_pMakJ->_pPrt->Name() << "." << i->_pMakJ->Name() << "  &\r\n"
 						<< "    action_only = off  &\r\n"
-						<< "    function = \"" << *i->GetF_mPtr() << "\"  \r\n"
+						<< "    function = \"" << i->GetMotFce() << "\"  \r\n"
 						<< "!\r\n";
 				}
 				else

@@ -28,12 +28,11 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		class TRANSLATIONAL_JOINT final :JOINT_BASE
+		class TRANSLATIONAL_JOINT final :public JOINT_BASE
 		{
 		public:
 			virtual const char* GetType() const { return type; };
 			virtual int GetCstDim() const { return DIMENSION; };
-			virtual void Update();
 
 		private:
 			static const char *const type;
@@ -49,7 +48,7 @@ namespace Aris
 
 			friend class MODEL;
 		};
-		class UNIVERSAL_JOINT final :JOINT_BASE
+		class UNIVERSAL_JOINT final :public JOINT_BASE
 		{
 		public:
 			virtual const char* GetType() const { return type; };
@@ -68,12 +67,11 @@ namespace Aris
 
 			friend class MODEL;
 		};
-		class SPHERICAL_JOINT final :JOINT_BASE
+		class SPHERICAL_JOINT final :public JOINT_BASE
 		{
 		public:
 			virtual const char* GetType() const { return type; };
 			virtual int GetCstDim() const { return DIMENSION; };
-			virtual void Update();
 
 		private:
 			static const char *const type;
@@ -128,22 +126,28 @@ namespace Aris
 			friend class MODEL;
 		};
 
-		class SINGLE_COMPONENT_FORCE final :FORCE_BASE
+		class SINGLE_COMPONENT_FORCE final :public FORCE_BASE
 		{
 		public:
 			virtual ~SINGLE_COMPONENT_FORCE() = default;
 			virtual void Update();
+			virtual const char* GetType() const { return type; };
 
 			void SetComponentID(int id) { componentID = id; };
 			void SetFce(double value) { std::fill_n(fceI, 6, 0); fceI[componentID] = value; };
 			void SetFce(double value, int componentID) { this->componentID = componentID; SetFce(value); };
 		
 		private:
+			static const char *const type;
+
 			SINGLE_COMPONENT_FORCE(MODEL *pModel, const std::string &name, int id, MARKER* pMak, PART* pPrtNI, int componentID);
+			SINGLE_COMPONENT_FORCE(MODEL *pModel, const std::string &name, int id, const Aris::Core::ELEMENT *xmlEle);
 
 			int componentID;
 			double fceI[6];
 			MARKER *pMakI;
+
+			friend class MODEL;
 		};
 	}
 }

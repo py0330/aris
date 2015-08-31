@@ -816,6 +816,21 @@ namespace Aris
 				vec_out[i] = alpha * tem[i] + beta * vec_out[i];
 			}
 		}
+		void s_tf_n(int n, const double *pm_in, const double *fces_in, double *m_out) noexcept
+		{
+			double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
+			double *m_out_tran = fces_in_tran + 6 * n;
+
+			s_transpose(6, n, fces_in, n, fces_in_tran, 6);
+			s_transpose(6, n, m_out, n, m_out_tran, 6);
+
+			for (int i = 0; i < n; ++i)
+			{
+				s_tf(pm_in, fces_in_tran + i * 6, m_out_tran + i * 6);
+			}
+
+			s_transpose(n, 6, m_out_tran, 6, m_out, n);
+		}
 		void s_tf_n(int n, double alpha, const double *pm_in, const double *fces_in, double beta, double *m_out) noexcept
 		{
 			double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
@@ -837,6 +852,12 @@ namespace Aris
 			s_inv_pm(inv_pm_in, pm_in);
 			s_tf(pm_in, fce_in, vec_out);
 		}
+		void s_inv_tf(double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept
+		{
+			double pm_in[16];
+			s_inv_pm(inv_pm_in, pm_in);
+			s_tf(alpha, pm_in, vel_in, beta, vec_out);
+		}
 		void s_tv(const double *pm_in, const double *vel_in, double *vec_out) noexcept
 		{
 			s_pm_dot_v3(pm_in, vel_in, vec_out);
@@ -857,11 +878,59 @@ namespace Aris
 				vec_out[i] = alpha * tem[i] + beta * vec_out[i];
 			}
 		}
+		void s_tv_n(int n, const double *pm_in, const double *vels_in, double *m_out) noexcept
+		{
+			double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
+			double *m_out_tran = fces_in_tran + 6 * n;
+
+			s_transpose(6, n, vels_in, n, fces_in_tran, 6);
+			s_transpose(6, n, m_out, n, m_out_tran, 6);
+
+			for (int i = 0; i < n; ++i)
+			{
+				s_tv(pm_in, fces_in_tran + i * 6, m_out_tran + i * 6);
+			}
+
+			s_transpose(n, 6, m_out_tran, 6, m_out, n);
+		}
+		void s_tv_n(int n, double alpha, const double *pm_in, const double *vels_in, double beta, double *m_out) noexcept
+		{
+			double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
+			double *m_out_tran = fces_in_tran + 6 * n;
+
+			s_transpose(6, n, vels_in, n, fces_in_tran, 6);
+			s_transpose(6, n, m_out, n, m_out_tran, 6);
+
+			for (int i = 0; i < n; ++i)
+			{
+				s_tv(alpha, pm_in, fces_in_tran + i * 6, beta, m_out_tran + i * 6);
+			}
+
+			s_transpose(n, 6, m_out_tran, 6, m_out, n);
+		}
 		void s_inv_tv(const double *inv_pm_in, const double *vel_in, double *vec_out) noexcept
 		{
 			double pm_in[16];
 			s_inv_pm(inv_pm_in, pm_in);
 			s_tv(pm_in, vel_in, vec_out);
+		}
+		void s_inv_tv(double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept
+		{
+			double pm_in[16];
+			s_inv_pm(inv_pm_in, pm_in);
+			s_tv(alpha, pm_in, vel_in, beta, vec_out);
+		}
+		void s_inv_tv_n(int n, const double *inv_pm_in, const double *vel_in, double *vec_out) noexcept
+		{
+			double pm_in[16];
+			s_inv_pm(inv_pm_in, pm_in);
+			s_tv_n(n, pm_in, vel_in, vec_out);
+		}
+		void s_inv_tv_n(int n, double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept
+		{
+			double pm_in[16];
+			s_inv_pm(inv_pm_in, pm_in);
+			s_tv_n(n, alpha, pm_in, vel_in, beta, vec_out);
 		}
 		void s_cmf(const double *vel_in, double *cmf_out) noexcept
 		{
@@ -1501,13 +1570,76 @@ namespace Aris
 
 			for (int i = 0; i < block_size_m; i++)
 			{
-				//memcpy(&to_mtrx[tm_place]
-				//	, &from_mtrx[fm_place], sizeof(double)*block_size_n);
-
 				std::copy_n(&from_mtrx[fm_place], block_size_n, &to_mtrx[tm_place]);
 
 				fm_place += fm_ld;
 				tm_place += tm_ld;
+			}
+
+		}
+		void s_block_cpy(const int &block_size_m, const int &block_size_n,
+			double alpha, const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double beta, double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept
+		{
+			int fm_place;
+			int tm_place;
+
+			fm_place = fm_begin_row*fm_ld + fm_begin_col;
+			tm_place = tm_begin_row*tm_ld + tm_begin_col;
+
+			for (int i = 0; i < block_size_m; i++)
+			{
+				for (int j = 0; j < block_size_n; j++)
+				{
+					to_mtrx[tm_place + j] = alpha*from_mtrx[fm_place + j] + beta*to_mtrx[tm_place + j];
+				}
+
+				fm_place += fm_ld;
+				tm_place += tm_ld;
+			}
+
+		}
+		void s_block_cpyT(const int &block_size_m, const int &block_size_n,
+			const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept
+		{
+			int fm_place;
+			int tm_place;
+
+			fm_place = fm_begin_row*fm_ld + fm_begin_col;
+			tm_place = tm_begin_row*tm_ld + tm_begin_col;
+
+			for (int i = 0; i < block_size_m; i++)
+			{
+				for (int j = 0; j < block_size_n; j++)
+				{
+					to_mtrx[tm_place + tm_ld * j] = from_mtrx[fm_place + j];
+				}
+
+				fm_place += fm_ld;
+				tm_place += 1;
+			}
+
+		}
+		void s_block_cpyT(const int &block_size_m, const int &block_size_n,
+			double alpha, const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double beta, double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept
+		{
+			int fm_place;
+			int tm_place;
+
+			fm_place = fm_begin_row*fm_ld + fm_begin_col;
+			tm_place = tm_begin_row*tm_ld + tm_begin_col;
+
+			for (int i = 0; i < block_size_m; i++)
+			{
+				for (int j = 0; j < block_size_n; j++)
+				{
+					to_mtrx[tm_place + tm_ld * j] = alpha*from_mtrx[fm_place + j] + beta*to_mtrx[tm_place + tm_ld * j];
+				}
+
+				fm_place += fm_ld;
+				tm_place += 1;
 			}
 
 		}
@@ -1568,6 +1700,12 @@ namespace Aris
 			pm_out[13] = 0;
 			pm_out[14] = 0;
 			pm_out[15] = 1;
+		}
+		void s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out) noexcept
+		{
+			double tem[16];
+			s_inv_pm(inv_pm2_in, tem);
+			s_pm_dot_pm(pm1_in, tem, pm_out);
 		}
 		void s_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept
 		{

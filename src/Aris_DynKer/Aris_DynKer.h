@@ -91,6 +91,12 @@ namespace Aris
 		void s_tf(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept;
 		/** \brief 根据位姿矩阵转换六维力矩阵
 		*
+		* 等同于： m_out = tmf(pm_in) * fces_in
+		*
+		*/
+		void s_tf_n(int n, const double *pm_in, const double *fces_in, double *m_out) noexcept;
+		/** \brief 根据位姿矩阵转换六维力矩阵
+		*
 		* 等同于： m_out = alpha * tmf(pm_in) * fces_in + beta * m_out
 		*
 		*/
@@ -101,6 +107,12 @@ namespace Aris
 		*
 		*/
 		void s_inv_tf(const double *inv_pm_in, const double *fce_in, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		*
+		* 等同于： vec_out = alpha * tmf(pm_in^-1) * vel_in + beta * vec_out
+		*
+		*/
+		void s_inv_tf(double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept;
 		/** \brief 根据位姿矩阵转换六维速度向量
 		*
 		* 等同于： vec_out = tmv(pm_in) * vel_in
@@ -113,12 +125,42 @@ namespace Aris
 		*
 		*/
 		void s_tv(double alpha, const double *pm_in, const double *vel_in, double beta, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵转换六维力矩阵
+		*
+		* 等同于： m_out = tmv(pm_in) * fces_in
+		*
+		*/
+		void s_tv_n(int n, const double *pm_in, const double *vels_in, double *m_out) noexcept;
+		/** \brief 根据位姿矩阵转换六维力矩阵
+		*
+		* 等同于： m_out = alpha * tmv(pm_in) * fces_in + beta * m_out
+		*
+		*/
+		void s_tv_n(int n, double alpha, const double *pm_in, const double *vels_in, double beta, double *m_out) noexcept;
 		/** \brief 根据位姿矩阵的逆矩阵转换六维速度向量
 		*
 		* 等同于： vec_out = tmv(pm_in^-1) * vel_in
 		*
 		*/
 		void s_inv_tv(const double *inv_pm_in, const double *vel_in, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		*
+		* 等同于： vec_out = alpha * tmv(pm_in^-1) * vel_in + beta * vec_out
+		*
+		*/
+		void s_inv_tv(double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		*
+		* 等同于： vec_out = tmv(pm_in^-1) * vel_in
+		*
+		*/
+		void s_inv_tv_n(int n, const double *inv_pm_in, const double *vel_in, double *vec_out) noexcept;
+		/** \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		*
+		* 等同于： vec_out = alpha * tmv(pm_in^-1) * vel_in + beta * vec_out
+		*
+		*/
+		void s_inv_tv_n(int n, double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept;
 		void s_cmf(const double *vel_in, double *cm_out) noexcept;
 		void s_cmv(const double *vel_in, double *cmd_out) noexcept;
 		/** \brief 计算六维向量叉乘
@@ -190,6 +232,15 @@ namespace Aris
 		void s_block_cpy(const int &block_size_m, const int &block_size_n,
 			const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
 			double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept;
+		void s_block_cpy(const int &block_size_m, const int &block_size_n,
+			double alpha, const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double beta, double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept;
+		void s_block_cpyT(const int &block_size_m, const int &block_size_n,
+			const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept;
+		void s_block_cpyT(const int &block_size_m, const int &block_size_n,
+			double alpha, const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double beta, double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept;
 
 		void s_dlt_col(const int &dlt_col_num, const int *col_index, const int &m, const int &n, double *A, const int &ldA) noexcept;
 
@@ -205,6 +256,7 @@ namespace Aris
 			s_pm_dot_pm(pm1, pm, ret);
 		}
 		void s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;
+		void s_pm_dot_inv_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;
 		void s_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
 		void s_inv_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
 		void s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept;

@@ -245,7 +245,7 @@ namespace Aris
 			virtual ~JOINT_BASE() = default;
 			virtual int GetCstDim() const = 0;
 			virtual const char* GetType() const = 0;
-			virtual void Update() = 0;
+			virtual void Update();
 
 			const double* GetCstFcePtr() const { return _CstFcePtr; };
 			const double* GetPrtCstMtxIPtr() const { return _PrtCstMtxIPtr; };
@@ -275,9 +275,7 @@ namespace Aris
 		protected:
 			explicit JOINT_BASE(MODEL *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ
 				, double *PrtCstMtxI, double *PrtCstMtxJ, double *CstFce, double *a_c);
-			virtual void Initiate();
-
-			double _tm_I2M[6][6];
+			virtual void Initiate() = 0;
 
 		private:
 			JOINT_BASE(const JOINT_BASE &) = delete;
@@ -320,21 +318,20 @@ namespace Aris
 			virtual int GetCstDim() const = 0;
 			virtual const char* GetType() const = 0;
 			const double* GetFrcCoePtr() const { return _frc_coe; };
-			const double* GetF_mPtr() const { return _f_m; };
-			const double* GetA_mPtr() const { return _a_m; };
-			const double* GetV_mPtr() const { return _v_m; };
-			const double* GetP_mPtr() const { return _p_m; };
+			double GetMotPos() const { return MotPos; };
+			double GetMotVel() const { return MotVel; };
+			double GetMotAcc() const { return MotAcc; };
+			double GetMotFce() const { return GetMotDynFce() + GetMotFrcFce();	};
+			double GetMotFrcFce() const { return s_sgn(MotVel)*_frc_coe[0] + MotVel*_frc_coe[1] + MotAcc*_frc_coe[2]; };
+			double GetMotDynFce() const { return MotDynFce; }
+			
 			const double* GetPrtCstMtxIPtr() const { return *_PrtCstMtxI; };
 			const double* GetPrtCstMtxJPtr() const { return *_PrtCstMtxJ; };
 			const double* GetPrtA_cPtr() const { return _a_c; };
 
-			void SetP_m(const double *p_m) { std::copy_n(p_m, GetCstDim(), _p_m); };
-			void SetV_m(const double *v_m) { std::copy_n(v_m, GetCstDim(), _v_m); };
-			void SetA_m(const double *a_m) { std::copy_n(a_m, GetCstDim(), _a_m); };
-			void SetF_m(const double *f_m) { std::copy_n(f_m, GetCstDim(), _f_m); };
 			void SetMode(MOTION_MODE mode) { _Mode = mode; };
 			void SetFrcCoe(const double *frc_coe) { std::copy_n(frc_coe, 3 * GetCstDim(), _frc_coe); };
-
+			void SetMotFce(double fce) { MotDynFce = fce; };
 			virtual void Update() = 0;
 
 			double FceAkima(double t, char derivativeOrder = '0') { return fceCurve->operator()(t, derivativeOrder); };
@@ -355,10 +352,10 @@ namespace Aris
 
 			virtual void SaveResult(int id)
 			{
-				std::copy_n(GetF_mPtr(), 6, result.at(id).fce);
-				std::copy_n(GetP_mPtr(), 6, result.at(id).pos);
-				std::copy_n(GetV_mPtr(), 6, result.at(id).vel);
-				std::copy_n(GetA_mPtr(), 6, result.at(id).acc);
+				//std::copy_n(i->GetMotFce(), 6, result.at(id).fce);
+				//std::copy_n(GetP_mPtr(), 6, result.at(id).pos);
+				//std::copy_n(GetV_mPtr(), 6, result.at(id).vel);
+				//std::copy_n(GetA_mPtr(), 6, result.at(id).acc);
 			}
 			virtual void SetResultSize(int size)
 			{
@@ -396,10 +393,8 @@ namespace Aris
 			MARKER *_pMakI, *_pMakJ;
 
 			/*pos\vel\acc\fce of motion*/
-			double _p_m[6];
-			double _v_m[6];
-			double _a_m[6];
-			double _f_m[6];
+			double MotPos, MotVel, MotAcc, MotDynFce;
+
 			double _frc_coe[3];
 
 			int _ColId;
@@ -425,11 +420,6 @@ namespace Aris
 		protected:
 			explicit FORCE_BASE(MODEL *pModel, const std::string &Name, int id, PART *pPrtM, PART *pPrtN);
 
-			FORCE_BASE(const FORCE_BASE &) = delete;
-			FORCE_BASE(FORCE_BASE &&) = delete;
-			FORCE_BASE& operator=(const FORCE_BASE &) = delete;
-			FORCE_BASE& operator=(FORCE_BASE &&) = delete;
-
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const {};
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle) {};
 
@@ -438,6 +428,13 @@ namespace Aris
 
 			double _PrtFceI[6];
 			double _PrtFceJ[6];
+
+
+		private:
+			FORCE_BASE(const FORCE_BASE &) = delete;
+			FORCE_BASE(FORCE_BASE &&) = delete;
+			FORCE_BASE& operator=(const FORCE_BASE &) = delete;
+			FORCE_BASE& operator=(FORCE_BASE &&) = delete;
 
 			friend class MODEL;
 		};
@@ -673,19 +670,19 @@ namespace Aris
 			std::vector<std::unique_ptr<FORCE_BASE> > _forces;
 			std::vector<std::unique_ptr<MARKER> > _markers;
 			
-			std::vector<double> _C;
-			std::vector<double> _I;
+			std::vector<double> C;
+			std::vector<double> I;
 
-			std::vector<double> _f;
-			std::vector<double> _a_c;
+			std::vector<double> f;
+			std::vector<double> a_c;
 
-			std::vector<double> _D;
-			std::vector<double> _b;
+			std::vector<double> D;
+			std::vector<double> b;
 
-			std::vector<double> _s;
-			std::vector<double> _x;
+			std::vector<double> s;
+			std::vector<double> x;
 
-			double *C, *pI, *f, *a_c, *D, *b,*s,*x;
+			double *pC, *pI, *pf, *pa_c, *pD, *pb,*ps,*px;
 
 			ENVIRONMENT _Environment;
 
