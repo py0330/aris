@@ -49,7 +49,7 @@ int main()
 		m1.SetLength(10);
 		
 
-		memcpy(m1.GetDataAddress(), "12345679", 10);
+		memcpy(m1.GetDataAddress(), "123456789", 10);
 
 		m1.SetLength(12);
 

@@ -43,7 +43,7 @@ namespace Aris
 			int RowNum(){return m;}
 			int ColNum(){return n;}
 
-			void Transpose(){ isRowMajor = !isRowMajor; int loc = m; m = n; n = loc; };
+			void Transpose() { isRowMajor = !isRowMajor; std::swap(m, n); };
 			void Resize(int m, int n);
 			int Length() const { return m*n; };
 			double * Data(){ return pData; };
@@ -204,14 +204,14 @@ namespace Aris
 							cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 
 								m1.m, m2.n, m1.n, 
 								1, m1.Data(), m1.n, m2.Data(), m2.n, 
-								0, ret.Data(), ret.m);
+								0, ret.Data(), ret.n);
 						}
 						else
 						{
 							cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
 								m1.m, m2.n, m1.n,
 								1, m1.Data(), m1.n, m2.Data(), m2.m,
-								0, ret.Data(), ret.m);
+								0, ret.Data(), ret.n);
 						}
 					}
 					else
@@ -221,14 +221,14 @@ namespace Aris
 							cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
 								m1.m, m2.n, m1.n,
 								1, m1.Data(), m1.m, m2.Data(), m2.n,
-								0, ret.Data(), ret.m);
+								0, ret.Data(), ret.n);
 						}
 						else
 						{
 							cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans,
 								m1.m, m2.n, m1.n,
 								1, m1.Data(), m1.m, m2.Data(), m2.m,
-								0, ret.Data(), ret.m);
+								0, ret.Data(), ret.n);
 						}
 					}
 

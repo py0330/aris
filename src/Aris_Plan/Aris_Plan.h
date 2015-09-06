@@ -945,6 +945,22 @@ namespace Aris
 		{
 			return 1.0 / n*i;
 		}
+
+		class FAST_PATH
+		{
+			struct NODE
+			{
+				double s;
+				double ds;
+				double dds;
+				bool isAccelerating{true};
+			};
+
+			void run(std::function<void(double t_in,double s_in, double ds_in
+				, double* Ji, double** dJi_over_b, double* cA_out, double* g_out, double* h_out)>);
+
+			std::vector<NODE> forwardVec, backwardVec;
+		};
 	}
 }
 

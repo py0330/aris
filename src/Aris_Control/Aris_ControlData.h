@@ -8,7 +8,6 @@
 #ifndef ARIS_CONTROLDATA_H_
 #define ARIS_CONTROLDATA_H_
 #include "Aris_Core.h"
-//#include "GlobalConfiguration.h"
 
 #define AXIS_NUMBER 18
 

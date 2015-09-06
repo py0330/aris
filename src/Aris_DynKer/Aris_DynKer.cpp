@@ -112,18 +112,6 @@ namespace Aris
 			std::cout << std::endl;
 		}
 	
-		void s_cm3(const double *cro_vec_in, double *cm_out) noexcept
-		{
-			cm_out[0] = 0;
-			cm_out[1] = -cro_vec_in[2];
-			cm_out[2] = cro_vec_in[1];
-			cm_out[3] = cro_vec_in[2];
-			cm_out[4] = 0;
-			cm_out[5] = -cro_vec_in[0];
-			cm_out[6] = -cro_vec_in[1];
-			cm_out[7] = cro_vec_in[0];
-			cm_out[8] = 0;
-		}
 		void s_cro3(const double *cro_vec_in, const double *vec_in, double *vec_out) noexcept
 		{
 			vec_out[0] = -cro_vec_in[2] * vec_in[1] + cro_vec_in[1] * vec_in[2];
@@ -139,6 +127,18 @@ namespace Aris
 			vec_out[0] += alpha*(-cro_vec_in[2] * vec_in[1] + cro_vec_in[1] * vec_in[2]);
 			vec_out[1] += alpha*(cro_vec_in[2] * vec_in[0] - cro_vec_in[0] * vec_in[2]);
 			vec_out[2] += alpha*(-cro_vec_in[1] * vec_in[0] + cro_vec_in[0] * vec_in[1]);
+		}
+		void s_cm3(const double *cro_vec_in, double *cm_out) noexcept
+		{
+			cm_out[0] = 0;
+			cm_out[1] = -cro_vec_in[2];
+			cm_out[2] = cro_vec_in[1];
+			cm_out[3] = cro_vec_in[2];
+			cm_out[4] = 0;
+			cm_out[5] = -cro_vec_in[0];
+			cm_out[6] = -cro_vec_in[1];
+			cm_out[7] = cro_vec_in[0];
+			cm_out[8] = 0;
 		}
 
 		void s_inv_pm(const double *pm_in, double *pm_out) noexcept
@@ -333,7 +333,7 @@ namespace Aris
 
 			pm_out[15] = 1;
 		}
-		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out)
+		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out) noexcept
 		{
 			double pm[16];
 			s_pe2pm(pe_in, pm, type1_in);
@@ -355,8 +355,7 @@ namespace Aris
 			int e = 3 - b - c;
 
 			/*计算phi2*/
-			s_ = sqrt((
-				pm_in[4 * a + b] * pm_in[4 * a + b] + pm_in[4 * a + e] * pm_in[4 * a + e]
+			s_ = sqrt((pm_in[4 * a + b] * pm_in[4 * a + b] + pm_in[4 * a + e] * pm_in[4 * a + e]
 				+ pm_in[4 * b + c] * pm_in[4 * b + c] + pm_in[4 * d + c] * pm_in[4 * d + c])/2);
 				
 			c_ = pm_in[4 * a + c];
@@ -382,13 +381,6 @@ namespace Aris
 				phi[0] += PI;
 				phi[2] += PI;
 			}
-			//double sig1 = pm_in[4 * a + e] * (P[a][e] + Q[a][e])*cos(phi[2]);
-			//double sig2 = pm_in[4 * d + c] * (P[d][c] + Q[d][c])*cos(phi[0]);
-			//if (std::max(sig1, sig2, [](double d1, double d2) {return std::abs(d1) < abs(d2); }) < 0)
-			//{
-			//	phi[0] += PI;
-			//	phi[2] += PI;
-			//}
 
 			phi[0] = (phi[0] < 0 ? phi[0] + 2 * PI : phi[0]);
 			phi[2] = (phi[2] < 0 ? phi[2] + 2 * PI : phi[2]);
@@ -1135,10 +1127,13 @@ namespace Aris
 
 				if (inv_relative_vel_in != nullptr)
 				{
+					
 					for (int i = 0; i < 6; ++i)
 					{
 						relative_vel_in[i] = -inv_relative_vel_in[i];
 					}
+
+					relative_vel_in_ptr = relative_vel_in;
 				}
 				else
 				{
@@ -1681,8 +1676,6 @@ namespace Aris
 		}
 		void s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept
 		{
-			//cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, 3, 4, 3, 1, inv_pm1_in, 4, pm2_in, 4, 0, pm_out, 4);
-
 			/*seemed that loop is faster than cblas*/
 			for (int i = 0; i < 3; ++i)
 			{

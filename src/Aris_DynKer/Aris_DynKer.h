@@ -27,17 +27,6 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		inline double *s_get_last_ptr(double *arg)
-		{
-			return arg;
-		}
-		template <typename ...Args>
-		double *s_get_last_ptr(const double *, Args ...args)
-		{
-			return s_get_last_ptr(args...);
-		}
-		
-		
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
 		void dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n);
 		void dlmread(const char *FileName, double *pMatrix);
@@ -61,13 +50,51 @@ namespace Aris
 		*
 		*/
 		void s_cro3(double alpha, const double *cro_vec_in, const double *vec_in, double beta, double *vec_out) noexcept;
+		/** \brief 计算三维向量叉乘矩阵
+		*
+		* 用来计算：cm_out =
+		* [ 0  -z   y
+		*   z   0  -x
+		*  -y   x   0 ]
+		* 
+		*/
 		void s_cm3(const double *cro_vec_in, double *cm_out) noexcept;
 
+		/** \brief 计算位姿矩阵的逆矩阵
+		*
+		* 用来计算：pm_out = pm_in^-1
+		*
+		*/
 		void s_inv_pm(const double *pm_in, double *pm_out) noexcept;
+		/** \brief 计算6维惯量矩阵的逆矩阵
+		*
+		* 用来计算：im_out = im_in^-1
+		*
+		*/
 		void s_inv_im(const double *im_in, double *im_out) noexcept;
+		/** \brief 根据原点和两个坐标轴上的点来求位姿矩阵
+		*
+		* 这里原点origin为位姿矩阵pm_out的点，firstAxisPnt位于第一根坐标轴，secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
+		*
+		*/
 		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder = "xy") noexcept;
-		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out);
+		/** \brief 将一种形式的欧拉角转换到另一种形式下
+		*
+		* 例如可以将313的欧拉角转换到321的欧拉角
+		*
+		*/
+		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out) noexcept;
+		/** \brief 将位姿矩阵转化成欧拉角
+		*
+		* 
+		*
+		*/
 		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType="313") noexcept;
+		/** \brief 将欧拉角转化成位姿矩阵
+		*
+		*
+		*
+		*/
 		void s_pe2pm(const double *pe_in, double *pm_out, const char *EurType="313") noexcept;
 		void s_pm2pr(const double *pm_in, double *pr_out) noexcept;
 		void s_pr2pm(const double *pr_in, double *pm_out) noexcept;
@@ -209,11 +236,11 @@ namespace Aris
 		*/
 		void s_pv2pv(const double *relative_pm_in, const double *relative_vel_in, 
 			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out = 0) noexcept;
+		void s_inv_pv2pv(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
+			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out = 0) noexcept;
 		void s_pa2pa(const double *relative_pm_in, const double *relative_vel_in, const double *inv_relative_acc_in,
 			const double *from_pnt, const double *from_pv, const double *from_pa,
 			double *to_pa_out, double *to_pv_out = 0, double *to_pnt_out = 0) noexcept;
-		void s_inv_pv2pv(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
-			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out = 0) noexcept;
 		void s_inv_pa2pa(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
 			const double *from_pnt, const double *from_pv, const double *from_pa, 
 			double *to_pa_out, double *to_pv_out = 0, double *to_pnt_out = 0) noexcept;
@@ -248,12 +275,9 @@ namespace Aris
 		template <typename ...Args>
 		void s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept
 		{
-			s_pm_dot_pm(pm2, args...);
-			double *ret = s_get_last_ptr(args...);
-
 			double pm[16];
-			std::copy_n(ret, 16, pm);
-			s_pm_dot_pm(pm1, pm, ret);
+			s_pm_dot_pm(pm1, pm2, pm);
+			s_pm_dot_pm(pm, args...);
 		}
 		void s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;
 		void s_pm_dot_inv_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;

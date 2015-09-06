@@ -79,13 +79,14 @@ private:
 		if (p == nullptr)
 			throw std::logic_error("windows can't identify the program name");
 
-		char proName[TASK_NAME_LEN] = { 0 };
+		char proName[TASK_NAME_LEN]{ 0 };
 
 		char *dot = strrchr(path, '.');
 		if ((dot != nullptr) && (dot - p > 0))
 		{
 			std::int32_t n = dot - p - 1;
 			strncpy(proName, p + 1, n);
+			proName[n] = 0;
 		}
 
 		CreateDirectory("log", NULL);

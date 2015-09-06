@@ -26,7 +26,8 @@ namespace Aris
 			, isRowMajor(other.isRowMajor)
 			, pData(m*n > 0 ? new double[m*n]: nullptr)
 		{
-			memcpy(pData, other.pData, m*n*sizeof(double));
+			//memcpy(pData, other.pData, m*n*sizeof(double));
+			std::copy_n(other.pData, m*n, pData);
 		}
 		MATRIX::MATRIX(MATRIX &&other)
 			:MATRIX()

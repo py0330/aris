@@ -28,62 +28,51 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		class TRANSLATIONAL_JOINT final :public JOINT_BASE
+		class TRANSLATIONAL_JOINT final :public JOINT_BASE_DIM<5>
 		{
 		public:
+			virtual ~TRANSLATIONAL_JOINT() = default;
 			virtual const char* GetType() const { return type; };
-			virtual int GetCstDim() const { return DIMENSION; };
 
 		private:
 			static const char *const type;
-			enum { DIMENSION = 5 };
+			explicit TRANSLATIONAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
+			explicit TRANSLATIONAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
 			virtual void Initiate();
 
-			TRANSLATIONAL_JOINT(MODEL *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-
-			double _PrtCstMtxI[6][DIMENSION];
-			double _PrtCstMtxJ[6][DIMENSION];
-			double _CstFce[DIMENSION];
-			double _a_c[DIMENSION];
-
+			friend class MODEL_BASE;
 			friend class MODEL;
 		};
-		class UNIVERSAL_JOINT final :public JOINT_BASE
+		class UNIVERSAL_JOINT final :public JOINT_BASE_DIM<4>
 		{
 		public:
+			virtual ~UNIVERSAL_JOINT() = default;
 			virtual const char* GetType() const { return type; };
-			virtual int GetCstDim() const { return DIMENSION; };
 			virtual void Update();
 
 		private:
 			static const char *const type;
-			enum { DIMENSION = 4 };
+			UNIVERSAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
+			UNIVERSAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
+			virtual void ToAdamsCmd(std::ofstream &file) const;
 			virtual void Initiate();
-			UNIVERSAL_JOINT(MODEL *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			double _PrtCstMtxI[6][DIMENSION];
-			double _PrtCstMtxJ[6][DIMENSION];
-			double _CstFce[DIMENSION];
-			double _a_c[DIMENSION];
 
+			friend class MODEL_BASE;
 			friend class MODEL;
 		};
-		class SPHERICAL_JOINT final :public JOINT_BASE
+		class SPHERICAL_JOINT final :public JOINT_BASE_DIM<3>
 		{
 		public:
+			virtual ~SPHERICAL_JOINT() = default;
 			virtual const char* GetType() const { return type; };
-			virtual int GetCstDim() const { return DIMENSION; };
 
 		private:
 			static const char *const type;
-			enum { DIMENSION = 3 };
+			SPHERICAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
+			SPHERICAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
 			virtual void Initiate();
-			SPHERICAL_JOINT(MODEL *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
 
-			double _PrtCstMtxI[6][DIMENSION];
-			double _PrtCstMtxJ[6][DIMENSION];
-			double _CstFce[DIMENSION];
-			double _a_c[DIMENSION];
-
+			friend class MODEL_BASE;
 			friend class MODEL;
 		};
 
@@ -91,38 +80,21 @@ namespace Aris
 		{
 		public:
 			virtual ~LINEAR_MOTION() = default;
-			virtual int GetCstDim() const { return 1; };
 			virtual const char* GetType() const { return type; };
 			virtual void Update();
 
 		private:
-			explicit LINEAR_MOTION(MODEL *pModel, const std::string &Name, int id, MOTION_MODE mode = POS_CONTROL, MARKER *pMakI = 0, MARKER *pMakJ = 0);
-
-			virtual void _Initiate();
-			//virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
-			//virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
+			static const char *const type;
+			explicit LINEAR_MOTION(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI = 0, MARKER *pMakJ = 0);
+			explicit LINEAR_MOTION(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *pEle);
+			virtual void Initiate();
 
 		private:
-			static const char *const type;
-			//MOTION_TYPE _Type;
-			//MOTION_MODE _Mode;
-			//MARKER *_pMakI, *_pMakJ;
-
-			/*pos\vel\acc\fce of motion*/
-			/*double _p_m[6];
-			double _v_m[6];
-			double _a_m[6];
-			double _f_m[6];
-			double _frc_coe[3];
-
-			double _PrtCstMtxI[6][6];
-			double _PrtCstMtxJ[6][6];
-			double _a_c[6];
-
 			/*for adams*/
 			std::unique_ptr<AKIMA> posCurve;
 			std::unique_ptr<AKIMA> fceCurve;
 
+			friend class MODEL_BASE;
 			friend class MODEL;
 		};
 
@@ -136,18 +108,27 @@ namespace Aris
 			void SetComponentID(int id) { componentID = id; };
 			void SetFce(double value) { std::fill_n(fceI, 6, 0); fceI[componentID] = value; };
 			void SetFce(double value, int componentID) { this->componentID = componentID; SetFce(value); };
-		
+			double GetFce()const { return fceI[componentID]; };
+
 		private:
 			static const char *const type;
-
-			SINGLE_COMPONENT_FORCE(MODEL *pModel, const std::string &name, int id, MARKER* pMak, PART* pPrtNI, int componentID);
-			SINGLE_COMPONENT_FORCE(MODEL *pModel, const std::string &name, int id, const Aris::Core::ELEMENT *xmlEle);
+			SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, MARKER* pMakI, MARKER* pMakJ, int componentID);
+			SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, const Aris::Core::ELEMENT *xmlEle);
+			virtual void ToAdamsCmd(std::ofstream &file) const;
 
 			int componentID;
 			double fceI[6];
 			MARKER *pMakI;
+			MARKER *pMakJ;
 
+			friend class MODEL_BASE;
 			friend class MODEL;
+		};
+
+		class MODEL :public MODEL_BASE 
+		{
+		public:
+			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
 		};
 	}
 }

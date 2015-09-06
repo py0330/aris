@@ -97,6 +97,7 @@ namespace Aris
 
 			/* 服务器阻塞,直到客户程序建立连接 */
 			connSock = accept(lisnSock, (struct sockaddr *)(&clientAddr), &sinSize);
+			
 
 			/*检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源*/
 			std::unique_lock<std::mutex> cls_lck(pConnS->_close_mutex, std::defer_lock);
@@ -109,7 +110,6 @@ namespace Aris
 			cls_lck.unlock();
 			cls_lck.release();
 
-
 			/*否则，开始开启数据线程*/
 			if (connSock == -1)
 			{
@@ -120,6 +120,7 @@ namespace Aris
 
 				return;
 			}
+			
 
 			/* 创建线程 */
 			pConnS->_ConnState = CONN::WORKING;
