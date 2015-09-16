@@ -249,27 +249,44 @@ namespace Aris
 					<< "    default_coordinate_system = ." << Model()->Name() << "." << this->Name() << " \r\n"
 					<< "!\r\n";
 
+				
 				double mass = this->GetPrtImPtr()[0] == 0 ? 1 : GetPrtImPtr()[0];
+				std::fill_n(pe, 6, 0);
+				pe[0] = this->GetPrtImPtr()[11] / mass;
+				pe[1] = -this->GetPrtImPtr()[5] / mass;
+				pe[2] = this->GetPrtImPtr()[4] / mass;				
 
-				file << "! ****** Markers for current part ******\r\n"
+				file << "! ****** cm and mass for current part ******\r\n"
 					<< "marker create  &\r\n"
 					<< "    marker_name = ." << Model()->Name() << "." << this->Name() << ".cm  &\r\n"
 					<< "    adams_id = " << this->GetID() + Model()->GetMarkerNum() << "  &\r\n"
-					<< "    location = ({" << this->GetPrtImPtr()[11] / mass << "," << -this->GetPrtImPtr()[5] / mass << "," << -this->GetPrtImPtr()[4] / mass << "})  &\r\n"
+					<< "    location = ({" << pe[0] << "," << pe[1] << "," << pe[2] << "})  &\r\n"
 					<< "    orientation = (" << "{0,0,0}" << ")\r\n"
 					<< "!\r\n";
 
+				double pm[16];
+				double im[6][6];
+
+				pe[0] = -pe[0];
+				pe[1] = -pe[1];
+				pe[2] = -pe[2];
+
+				s_pe2pm(pe, pm);
+				s_i2i(pm, this->GetPrtImPtr(), *im);
+
+				/*！注意！*/
+				//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy，Ixz，Iyz上互为相反数。别问我为什么，我也不知道。
 				file << "part create rigid_body mass_properties  &\r\n"
 					<< "    part_name = ." << Model()->Name() << "." << this->Name() << "  &\r\n"
 					<< "    mass = " << this->GetPrtImPtr()[0] << "  &\r\n"
 					<< "    center_of_mass_marker = ." << Model()->Name() << "." << this->Name() << ".cm  &\r\n"
 					<< "    inertia_marker = ." << Model()->Name() << "." << this->Name() << ".cm  &\r\n"
-					<< "    ixx = " << this->GetPrtImPtr()[21] << "  &\r\n"
-					<< "    iyy = " << this->GetPrtImPtr()[28] << "  &\r\n"
-					<< "    izz = " << this->GetPrtImPtr()[35] << "  &\r\n"
-					<< "    ixy = " << this->GetPrtImPtr()[27] << "  &\r\n"
-					<< "    izx = " << this->GetPrtImPtr()[33] << "  &\r\n"
-					<< "    iyz = " << this->GetPrtImPtr()[34] << "\r\n"
+					<< "    ixx = " << im[3][3] << "  &\r\n"
+					<< "    iyy = " << im[4][4] << "  &\r\n"
+					<< "    izz = " << im[5][5] << "  &\r\n"
+					<< "    ixy = " << -im[4][3] << "  &\r\n"
+					<< "    izx = " << -im[5][3] << "  &\r\n"
+					<< "    iyz = " << -im[5][4] << "\r\n"
 					<< "!\r\n";
 
 				
@@ -600,6 +617,51 @@ namespace Aris
 			MATRIX m = Model()->calculator.CalculateExpression(pEle->FirstChildElement("Gravity")->GetText());
 			memcpy(Gravity, m.Data(), sizeof(Gravity));
 		}
+		void ENVIRONMENT::ToAdamsCmd(std::ofstream &file) const
+		{
+			file << "!-------------------------- Default Units for Model ---------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n"
+				<< "defaults units  &\r\n"
+				<< "    length = meter  &\r\n"
+				<< "    angle = rad  &\r\n"
+				<< "    force = newton  &\r\n"
+				<< "    mass = kg  &\r\n"
+				<< "    time = sec\r\n"
+				<< "!\n"
+				<< "defaults units  &\r\n"
+				<< "    coordinate_system_type = cartesian  &\r\n"
+				<< "    orientation_type = body313\r\n"
+				<< "!\r\n"
+				<< "!------------------------ Default Attributes for Model ------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n"
+				<< "defaults attributes  &\r\n"
+				<< "    inheritance = bottom_up  &\r\n"
+				<< "    icon_visibility = off  &\r\n"
+				<< "    grid_visibility = off  &\r\n"
+				<< "    size_of_icons = 5.0E-002  &\r\n"
+				<< "    spacing_for_grid = 1.0\r\n"
+				<< "!\r\n"
+				<< "!------------------------------ Adams/View Model ------------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n"
+				<< "model create  &\r\n"
+				<< "   model_name = " << this->Model()->Name() << "\r\n"
+				<< "!\r\n"
+				<< "view erase\r\n"
+				<< "!\r\n"
+				<< "!---------------------------------- Accgrav -----------------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n"
+				<< "force create body gravitational  &\r\n"
+				<< "    gravity_field_name = gravity  &\r\n"
+				<< "    x_component_gravity = " << this->Gravity[0] << "  &\r\n"
+				<< "    y_component_gravity = " << this->Gravity[1] << "  &\r\n"
+				<< "    z_component_gravity = " << this->Gravity[2] << "\r\n"
+				<< "!\r\n";
+		};
+
 
 		MODEL_BASE::MODEL_BASE(const std::string & Name)
 			: OBJECT(this , Name)
@@ -704,7 +766,7 @@ namespace Aris
 			return GetContent<decltype(_forces)>(_forces, Name);
 		}
 
-		void MODEL_BASE::DynPre()
+		void MODEL_BASE::DynPre(int &I_dim, int &C_dim)
 		{
 			int pid = 0;//part id
 			int cid = 6;//Constraint id
@@ -752,57 +814,31 @@ namespace Aris
 
 			I_dim = pid;
 			C_dim = cid;
-
-			C.resize(C_dim*I_dim);
-			pC = C.data();
-			memset(pC, 0, sizeof(double)*I_dim*C_dim);
-
-			I_mat.resize(I_dim*I_dim);
-			pI = I_mat.data();
-			memset(pI, 0, sizeof(double)*I_dim*I_dim);
-				
-			f.resize(I_dim);
-			pf = f.data();
-			memset(pf, 0, sizeof(double)*I_dim);
-
-			a_c.resize(C_dim);
-			pa_c = a_c.data();
-			memset(pa_c, 0, sizeof(double)*C_dim);
-				
-			D.resize((I_dim + C_dim)*(I_dim + C_dim));
-			pD = D.data();
-			memset(pD, 0, sizeof(double)*(I_dim + C_dim)*(I_dim + C_dim));
-
-			b.resize(I_dim + C_dim);
-			pb = b.data();
-			memset(pb, 0, sizeof(double)*(I_dim + C_dim));
-
-			s.resize(I_dim + C_dim);
-			ps = s.data();
-			memset(ps, 0, sizeof(double)*(I_dim + C_dim));
-
-			x.resize(I_dim + C_dim);
-			px = x.data();
-			memset(px, 0, sizeof(double)*(I_dim + C_dim));
-
+			this->I_dim = I_dim;
+			this->C_dim = C_dim;
+		}
+		void MODEL_BASE::DynMtx(double *C, double*a_c, double *I_mat, double*f, double *D, double *b)
+		{
+			std::fill_n(C, I_dim*C_dim, 0);
+			std::fill_n(a_c, C_dim, 0);
+			std::fill_n(I_mat, I_dim*I_dim, 0);
+			std::fill_n(f, I_dim, 0);
+			std::fill_n(D, (I_dim + C_dim)*(I_dim + C_dim), 0);
+			std::fill_n(b, (I_dim + C_dim), 0);
+			
 			for (int i = 0; i < 6; ++i)
 			{
-				pI[I_dim*(pGround->_RowId + i) + pGround->_RowId + i] = 1;
+				I_mat[I_dim*(pGround->_RowId + i) + pGround->_RowId + i] = 1;
 				C[C_dim*(pGround->_RowId + i) + i] = 1;
 			}
 
-		}
-		void MODEL_BASE::DynMtx()
-		{
-			memset(pf, 0, I_dim*sizeof(double));
-			memset(pD, 0, (C_dim + I_dim)*(C_dim + I_dim)*sizeof(double));
 			/*Update all elements*/
 			for (auto &prt : _parts)
 			{
 				if (prt->Active())
 				{
 					prt->Update();
-					s_block_cpy(6, 6, *(prt->_PrtIm), 0, 0, 6, pI, prt->_RowId, prt->_RowId, I_dim);
+					s_block_cpy(6, 6, *(prt->_PrtIm), 0, 0, 6, I_mat, prt->_RowId, prt->_RowId, I_dim);
 
 					s_daxpy(6, -1, prt->_PrtFg, 1, &f[prt->_RowId], 1);
 					s_daxpy(6, 1, prt->_PrtFv, 1, &f[prt->_RowId], 1);
@@ -814,10 +850,10 @@ namespace Aris
 				{
 					jnt->Update();
 
-					s_block_cpy(6, jnt->GetCstDim(), jnt->GetPrtCstMtxIPtr(), 0, 0, jnt->GetCstDim(), pC, jnt->_pMakI->GetFatherPrt()->_RowId, jnt->_ColId, C_dim);
-					s_block_cpy(6, jnt->GetCstDim(), jnt->GetPrtCstMtxJPtr(), 0, 0, jnt->GetCstDim(), pC, jnt->_pMakJ->GetFatherPrt()->_RowId, jnt->_ColId, C_dim);
+					s_block_cpy(6, jnt->GetCstDim(), jnt->GetPrtCstMtxIPtr(), 0, 0, jnt->GetCstDim(), C, jnt->_pMakI->GetFatherPrt()->_RowId, jnt->_ColId, C_dim);
+					s_block_cpy(6, jnt->GetCstDim(), jnt->GetPrtCstMtxJPtr(), 0, 0, jnt->GetCstDim(), C, jnt->_pMakJ->GetFatherPrt()->_RowId, jnt->_ColId, C_dim);
 
-					memcpy(&a_c[jnt->_ColId], jnt->GetPrtA_cPtr(), jnt->GetCstDim() * sizeof(double));
+					std::copy_n(jnt->GetPrtA_cPtr(), jnt->GetCstDim(), &a_c[jnt->_ColId]);
 				}
 			}
 			for (auto &mot : _motions)
@@ -826,11 +862,10 @@ namespace Aris
 				{
 					mot->Update();
 
-					s_block_cpy(6, 1, mot->GetPrtCstMtxIPtr(), 0, 0, 1, pC, mot->_pMakI->GetFatherPrt()->_RowId, mot->_ColId, C_dim);
-					s_block_cpy(6, 1, mot->GetPrtCstMtxJPtr(), 0, 0, 1, pC, mot->_pMakJ->GetFatherPrt()->_RowId, mot->_ColId, C_dim);
+					s_block_cpy(6, 1, mot->GetPrtCstMtxIPtr(), 0, 0, 1, C, mot->_pMakI->GetFatherPrt()->_RowId, mot->_ColId, C_dim);
+					s_block_cpy(6, 1, mot->GetPrtCstMtxJPtr(), 0, 0, 1, C, mot->_pMakJ->GetFatherPrt()->_RowId, mot->_ColId, C_dim);
 
 					a_c[mot->_ColId] = *mot->GetPrtA_cPtr();
-					//memcpy(&a_c[mot->_ColId], mot->GetPrtA_cPtr(), mot->GetCstDim() * sizeof(double));
 				}
 			}
 			for (auto &fce : _forces)
@@ -843,39 +878,29 @@ namespace Aris
 					s_daxpy(6, -1, fce->GetPrtFceJPtr(), 1, &f[fce->_pPrtN->_RowId], 1);
 				}
 			}
-
 			/*calculate D and b*/
 			/* for D*/
-			s_block_cpy(I_dim, I_dim, -1, pI, 0, 0, I_dim, 0, pD, 0, 0, C_dim + I_dim);
-			s_block_cpy(I_dim, C_dim, pC, 0, 0, C_dim, pD, 0, I_dim, C_dim + I_dim);
-			s_block_cpyT(I_dim, C_dim, pC, 0, 0, C_dim, pD, I_dim, 0, C_dim + I_dim);
+			s_block_cpy(I_dim, I_dim, -1, I_mat, 0, 0, I_dim, 0, D, 0, 0, C_dim + I_dim);
+			s_block_cpy(I_dim, C_dim, C, 0, 0, C_dim, D, 0, I_dim, C_dim + I_dim);
+			s_block_cpyT(I_dim, C_dim, C, 0, 0, C_dim, D, I_dim, 0, C_dim + I_dim);
 
-			s_block_cpy(I_dim, 1, pf, 0, 0, 1, pb, 0, 0, 1);
-			s_block_cpy(C_dim, 1, pa_c, 0, 0, 1, pb, I_dim, 0, 1);
-
-			/*以下求解*/
-			memcpy(px, pb, (C_dim + I_dim)*sizeof(double));
+			s_block_cpy(I_dim, 1, f, 0, 0, 1, b, 0, 0, 1);
+			s_block_cpy(C_dim, 1, a_c, 0, 0, 1, b, I_dim, 0, 1);
 		}
-		void MODEL_BASE::DynSov()
-		{
-			double rcond = 0.000000000001;
-			int rank;
-			s_dgelsd(C_dim + I_dim, C_dim + I_dim, 1, pD, C_dim + I_dim, px, 1, ps, rcond, &rank);
-		}
-		void MODEL_BASE::DynEnd()
+		void MODEL_BASE::DynEnd(const double *x)
 		{
 			for (auto &prt : _parts)
 			{
 				if (prt->Active())
 				{
-					memcpy(prt->GetPrtAccPtr(), &px[prt->_RowId], sizeof(double) * 6);
+					std::copy_n(&x[prt->_RowId], 6, prt->GetPrtAccPtr());
 				}
 			}
 			for (auto &jnt : _joints)
 			{
 				if (jnt->Active())
 				{
-					memcpy(jnt->GetCstFcePtr(), &px[jnt->_ColId + I_dim], jnt->GetCstDim() * sizeof(double));
+					std::copy_n(&x[jnt->_ColId + I_dim], jnt->GetCstDim(), jnt->GetCstFcePtr());
 				}
 			}
 			for (auto &mot : _motions)
@@ -886,16 +911,55 @@ namespace Aris
 				}
 			}
 		}
+		void MODEL_BASE::DynUkn(double *a, double*f_c)
+		{
+			for (auto &prt : _parts)
+			{
+				if (prt->Active())
+				{
+					prt->Update();
+					std::copy_n(prt->GetPrtAccPtr(), 6, &a[prt->_RowId]);
+				}
+			}
+			for (auto &jnt : _joints)
+			{
+				if (jnt->Active())
+				{
+					std::copy_n(jnt->GetCstFcePtr(), jnt->GetCstDim(), &f_c[jnt->_ColId]);
+				}
+			}
+			for (auto &mot : _motions)
+			{
+				if (mot->Active())
+				{
+					f_c[mot->_ColId] = mot->GetMotFceDyn();
+				}
+			}
+		}
 		void MODEL_BASE::Dyn()
 		{
-			DynMtx();
-			DynSov();
-			DynEnd();
+			DynPre(this->I_dim, this->C_dim);
+			
+			static std::vector<double> C(I_dim * C_dim);
+			static std::vector<double> a_c(C_dim);
+			static std::vector<double> I_mat(I_dim * I_dim);
+			static std::vector<double> f(I_dim);
+			static std::vector<double> D((I_dim + C_dim) * (I_dim + C_dim));
+			static std::vector<double> b(I_dim + C_dim);
+
+			DynMtx(C.data(), a_c.data(), I_mat.data(), f.data(), D.data(), b.data());
+
+			static std::vector<double> s(I_dim + C_dim);
+			double rcond = 0.000000000001;
+			int rank;
+			s_dgelsd(I_dim + C_dim, I_dim + C_dim, 1, D.data(), I_dim + C_dim, b.data(), 1,s.data(), rcond, &rank);
+
+			DynEnd(b.data());
 		}
 
-		void MODEL_BASE::ClbDim(int &clb_dim_m, int &clb_dim_n, int &gamma_dim, int &frc_coe_dim)
+		void MODEL_BASE::ClbPre(int &clb_dim_m, int &clb_dim_n, int &gamma_dim, int &frc_coe_dim)
 		{
-			DynPre();
+			DynPre(clb_dim_m, clb_dim_n);
 
 			if (C_dim != I_dim)
 			{
@@ -930,7 +994,7 @@ namespace Aris
 		void MODEL_BASE::ClbMtx(double *clb_d_ptr, double *clb_b_ptr)
 		{
 			int clb_dim_m, clb_dim_n, gamma_dim, frc_coe_dim;
-			ClbDim(clb_dim_m, clb_dim_n, gamma_dim, frc_coe_dim);
+			ClbPre(clb_dim_m, clb_dim_n, gamma_dim, frc_coe_dim);
 
 			int dim = I_dim;
 
@@ -943,14 +1007,39 @@ namespace Aris
 			memset(_clb_d.Data(), 0, _clb_d.Length() * sizeof(double));
 			memset(_clb_b.Data(), 0, _clb_b.Length() * sizeof(double));
 
-			/*开始计算*/
-			DynMtx();
-
 			/*求A，即C的逆*/
 			MATRIX A(dim, dim), B(dim, dim);
 			std::vector<int> ipiv(dim);
+			
+			std::vector<double> C(dim * dim);
+			std::vector<double> f(dim);
+			
+			for (int i = 0; i < 6; ++i)
+			{
+				C.data()[C_dim*(pGround->_RowId + i) + i] = 1;
+			}
+			for (auto &jnt : _joints)
+			{
+				if (jnt->Active())
+				{
+					jnt->Update();
 
-			memcpy(A.Data(), pC, sizeof(double)*A.Length());
+					s_block_cpy(6, jnt->GetCstDim(), jnt->GetPrtCstMtxIPtr(), 0, 0, jnt->GetCstDim(), C.data(), jnt->_pMakI->GetFatherPrt()->_RowId, jnt->_ColId, C_dim);
+					s_block_cpy(6, jnt->GetCstDim(), jnt->GetPrtCstMtxJPtr(), 0, 0, jnt->GetCstDim(), C.data(), jnt->_pMakJ->GetFatherPrt()->_RowId, jnt->_ColId, C_dim);
+				}
+			}
+			for (auto &mot : _motions)
+			{
+				if (mot->Active())
+				{
+					mot->Update();
+
+					s_block_cpy(6, 1, mot->GetPrtCstMtxIPtr(), 0, 0, 1, C.data(), mot->_pMakI->GetFatherPrt()->_RowId, mot->_ColId, C_dim);
+					s_block_cpy(6, 1, mot->GetPrtCstMtxJPtr(), 0, 0, 1, C.data(), mot->_pMakJ->GetFatherPrt()->_RowId, mot->_ColId, C_dim);
+				}
+			}
+
+			std::copy(C.begin(), C.end(), A.Data());
 			s_dgeinv(dim, A.Data(), dim, ipiv.data());
 
 			/*求B*/
@@ -961,7 +1050,6 @@ namespace Aris
 				if (i->Active())
 				{
 					double cm[6][6];
-					
 					s_cmf(i->GetPrtVelPtr(), *cm);
 					s_dgemm(clb_dim_m, 6, 6, 1, &A(beginRow,i->_RowId), dim, *cm, 6, 0, &B(beginRow, i->_RowId), dim);
 				}
@@ -974,14 +1062,12 @@ namespace Aris
 			{
 				if (i->Active())
 				{
-					double q[6], v[6];
-
-					memset(q, 0, sizeof(double) * 6);
-
-					memcpy(q, i->GetPrtAccPtr(), sizeof(double) * 6);
+					double q[6]{0};
+					std::copy_n(i->GetPrtAccPtr(), 6, q);
 					s_daxpy(6, -1, i->GetPrtGravityPtr(), 1, q, 1);
-
-					memcpy(v, i->GetPrtVelPtr(), sizeof(double) * 6);
+					
+					double v[6];
+					std::copy_n(i->GetPrtVelPtr(), 6, v);
 
 					for (int j = 0; j < clb_dim_m; ++j)
 					{
@@ -1094,10 +1180,10 @@ namespace Aris
 			std::copy_n(_clb_d.Data(), _clb_d.Length(), clb_d_ptr);
 			std::copy_n(_clb_b.Data(), _clb_b.Length(), clb_b_ptr);
 		}
-		void MODEL_BASE::ClbGammaAndFrcCoe(double *clb_gamma_and_frcCoe_ptr)
+		void MODEL_BASE::ClbUkn(double *clb_gamma_and_frcCoe_ptr)
 		{
 			int clb_dim_m, clb_dim_n, gamma_dim, frc_coe_dim;
-			ClbDim(clb_dim_m, clb_dim_n, gamma_dim, frc_coe_dim);
+			ClbPre(clb_dim_m, clb_dim_n, gamma_dim, frc_coe_dim);
 			
 			int row = 0;
 			for (auto &prt : _parts)
@@ -1115,7 +1201,7 @@ namespace Aris
 				row += 3;
 			}
 		}
-
+		
 		void MODEL_BASE::LoadXml(const char *filename)
 		{
 			Aris::Core::DOCUMENT XML_Doc;
@@ -1232,7 +1318,7 @@ namespace Aris
 
 			XML_Doc.SaveFile(filename);
 		}
-		void MODEL_BASE::SaveAdams(const char *filename, SIMULATE_SCRIPT* pScript) const
+		void MODEL_BASE::SaveAdams(const char *filename, const SIMULATE_SCRIPT* pScript) const
 		{
 			ofstream file;
 
@@ -1450,6 +1536,95 @@ namespace Aris
 				
 			}
 			file.close();
+		}
+		void MODEL_BASE::SaveAdams(const char *filename, bool isModifyActive) const
+		{
+			ofstream file;
+
+			std::string cmdName = std::string(filename) + std::string(".cmd");
+
+			/*******写cmd文件********/
+			file.open(cmdName, std::ios::out | std::ios::trunc);
+
+			file << setprecision(15);
+
+			file << "!----------------------------------- Environment -------------------------------!\r\n!\r\n!\r\n";
+			_Environment.ToAdamsCmd(file);
+
+			file << "!----------------------------------- Parts -------------------------------------!\r\n!\r\n!\r\n";
+			pGround->ToAdamsCmd(file);
+			for (auto &prt : _parts)
+			{
+				if (prt.get() != pGround)
+				{
+					prt->ToAdamsCmd(file);
+				}
+			}
+
+			file << "!----------------------------------- Joints ------------------------------------!\r\n!\r\n!\r\n";
+			for (auto &jnt : _joints)
+			{
+				jnt->ToAdamsCmd(file);
+			}
+
+			file << "!----------------------------------- Motions -----------------------------------!\r\n!\r\n!\r\n";
+			for (auto &mot : _motions)
+			{
+				mot->ToAdamsCmd(file);
+			}
+
+			file << "!----------------------------------- Forces ------------------------------------!\r\n!\r\n!\r\n";
+			for (auto &fce : _forces)
+			{
+				fce->ToAdamsCmd(file);
+			}
+
+			if (isModifyActive)
+			{
+				file << "!----------------------------------- Motify Active -------------------------------------!\r\n!\r\n!\r\n";
+				for (auto &prt : _parts)
+				{
+					if ((prt.get() != pGround) && (!prt->Active()))
+					{
+						file << "part attributes  &\r\n"
+							<< "    constraint_name = ." << Name() << "." << prt->Name() << "  &\r\n"
+							<< "    active = off \r\n!\r\n";
+					}
+				}
+				for (auto &jnt : _joints)
+				{
+					if (!jnt->Active())
+					{
+						file << "constraint attributes  &\r\n"
+							<< "    constraint_name = ." << Name() << "." << jnt->Name() << "  &\r\n"
+							<< "    active = off \r\n!\r\n";
+					}
+					
+				}
+				for (auto &mot : _motions)
+				{
+					if (!mot->Active())
+					{
+						file << "constraint attributes  &\r\n"
+							<< "    constraint_name = ." << Name() << "." << mot->Name() << "  &\r\n"
+							<< "    active = off \r\n!\r\n";
+					}
+					
+				}
+				for (auto &fce : _forces)
+				{
+					if (!fce->Active())
+					{
+						file << "force attributes  &\r\n"
+							<< "    force_name = ." << Name() << "." << fce->Name() << "  &\r\n"
+							<< "    active = off \r\n!\r\n";
+					}
+				}
+			}
+			
+			file.close();
+
+
 		}
 	}
 }

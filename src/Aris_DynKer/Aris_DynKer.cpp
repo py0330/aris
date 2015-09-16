@@ -14,7 +14,7 @@
 #include <limits>
 #include <sstream>
 #include <cstddef>
-
+#include <array>
 
 #include "Aris_DynKer.h"
 #include "Aris_ExpCal.h"
@@ -98,7 +98,7 @@ namespace Aris
 			if (ld < 1)
 				ld = n;
 		
-			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(5);
+			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(10);
 
 			std::cout << std::endl;
 			for (int i = 0; i < m; i++)
@@ -164,42 +164,6 @@ namespace Aris
 			pm_out[13] = 0;
 			pm_out[14] = 0;
 			pm_out[15] = 1;
-		}
-		void s_inv_im(const double *im_in, double *im_out) noexcept
-		{
-			int ipiv[6];
-			std::copy_n(im_in, 36, im_out);
-
-			double query,*work;
-			lapack_int lwork;
-			LAPACKE_dsytrf_work(CblasRowMajor, 'L', 6, im_out, 6, ipiv, &query, -1);
-			lwork = (lapack_int)query;
-			work = (double *)s_malloc(lwork*sizeof(double));
-			LAPACKE_dsytrf_work(CblasRowMajor, 'L', 6, im_out, 6, ipiv, work, lwork);
-
-			/*不确定为啥这里不用查询work的size,大概因为这个函数不需要work的buffer吧*/
-			LAPACKE_dsytri_work(CblasRowMajor, 'L', 6, im_out, 6, ipiv, work);
-
-			im_out[1] = im_out[6];
-			im_out[2] = im_out[12];
-			im_out[3] = im_out[18];
-			im_out[4] = im_out[24];
-			im_out[5] = im_out[30];
-
-			im_out[8] = im_out[13];
-			im_out[9] = im_out[19];
-			im_out[10] = im_out[25];
-			im_out[11] = im_out[31];
-
-			im_out[15] = im_out[20];
-			im_out[16] = im_out[26];
-			im_out[17] = im_out[32];
-
-			im_out[22] = im_out[27];
-			im_out[23] = im_out[33];
-
-			im_out[29] = im_out[34];
-
 		}
 		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder) noexcept
 		{
@@ -359,24 +323,24 @@ namespace Aris
 				+ pm_in[4 * b + c] * pm_in[4 * b + c] + pm_in[4 * d + c] * pm_in[4 * d + c])/2);
 				
 			c_ = pm_in[4 * a + c];
-			phi[1] = (a == c ? atan2(s_,c_) : atan2(P[a][c]*c_,s_));
+			phi[1] = (a == c ? std::atan2(s_,c_) : std::atan2(P[a][c]*c_,s_));
 
 			/*计算phi1和phi3*/
 
-			phi13 = atan2(pm_in[4 * b + e] - pm_in[4 * d + b], pm_in[4 * b + b] + pm_in[4 * d + e]);
-			phi31 = atan2(pm_in[4 * b + e] + pm_in[4 * d + b], pm_in[4 * b + b] - pm_in[4 * d + e]);
+			phi13 = std::atan2(pm_in[4 * b + e] - pm_in[4 * d + b], pm_in[4 * b + b] + pm_in[4 * d + e]);
+			phi31 = std::atan2(pm_in[4 * b + e] + pm_in[4 * d + b], pm_in[4 * b + b] - pm_in[4 * d + e]);
 
 			phi[0] = P[b][d] * (phi13 - phi31) / 2;
 			phi[2] = P[b][e] * (phi13 + phi31) / 2;
 
 			/*检查*/
 			double sig[4];
-			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * pm_in[a * 4 + b] * sin(phi[2]);
-			sig[1] = (P[a][e] + Q[a][e])*pm_in[4 * a + e] * cos(phi[2]);
-			sig[2] = (P[d][c] + Q[d][c])*P[b][d] * pm_in[b * 4 + c] * sin(phi[0]);
-			sig[3] = (P[d][c] + Q[d][c])*pm_in[4 * d + c] * cos(phi[0]);
+			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * pm_in[a * 4 + b] * std::sin(phi[2]);
+			sig[1] = (P[a][e] + Q[a][e])*pm_in[4 * a + e] * std::cos(phi[2]);
+			sig[2] = (P[d][c] + Q[d][c])*P[b][d] * pm_in[b * 4 + c] * std::sin(phi[0]);
+			sig[3] = (P[d][c] + Q[d][c])*pm_in[4 * d + c] * std::cos(phi[0]);
 			
-			if (*std::max_element(sig, sig + 4, [](double d1, double d2) {return std::abs(d1) < abs(d2); })<0)
+			if (*std::max_element(sig, sig + 4, [](double d1, double d2) {return (std::abs(d1) < std::abs(d2)); })<0)
 			{
 				phi[0] += PI;
 				phi[2] += PI;
@@ -449,6 +413,18 @@ namespace Aris
 			pm_out[14] = 0;
 			pm_out[15] = 1;
 		}
+		void s_pq2pe(const double *pq_in, double *pe_out, const char *EurType) noexcept
+		{
+			double pm[16];
+			s_pq2pm(pq_in, pm);
+			s_pm2pe(pm, pe_out, EurType);
+		}
+		void s_pe2pq(const double *pe_in, double *pq_out, const char *EurType) noexcept
+		{
+			double pm[16];
+			s_pe2pm(pe_in, pm, EurType);
+			s_pm2pq(pm, pq_out);
+		}
 		void s_pm2pr(const double *pm_in, double *pr_out) noexcept
 		{
 			double c_theta = (pm_in[0] + pm_in[5] + pm_in[10]-1)/2;
@@ -494,7 +470,7 @@ namespace Aris
 			}
 			else if (theta < 0.785398163397448)
 			{
-				double  ratio = theta / sin(theta);
+				double  ratio = theta / std::sin(theta);
 				
 				a = 0.5*(r32 - r23)*ratio;
 				b = 0.5*(r13 - r31)*ratio;
@@ -505,9 +481,9 @@ namespace Aris
 				int a_sig,b_sig,c_sig;
 				
 				/*以下判断符号*/
-				if (abs(r32 - r23) > abs(r13 - r31))
+				if (std::abs(r32 - r23) > std::abs(r13 - r31))
 				{
-					if (abs(r32 - r23) > abs(r21 - r12))
+					if (std::abs(r32 - r23) > std::abs(r21 - r12))
 					{
 						//a'的绝对值最大
 						a_sig = s_sgn(r32 - r23);
@@ -524,7 +500,7 @@ namespace Aris
 				}
 				else
 				{
-					if (abs(r13 - r31) > abs(r21 - r12))
+					if (std::abs(r13 - r31) > std::abs(r21 - r12))
 					{
 						//b'的绝对值最大
 						b_sig = s_sgn(r13 - r31);
@@ -540,9 +516,9 @@ namespace Aris
 					}
 				}
 
-				a = a_sig * theta*sqrt(abs(1 + r11 - r22 - r33) / 2.0 / (1 - cos(theta)));
-				b = b_sig * theta*sqrt(abs(1 + r22 - r11 - r33) / 2.0 / (1 - cos(theta)));
-				c = c_sig * theta*sqrt(abs(1 + r33 - r11 - r22) / 2.0 / (1 - cos(theta)));
+				a = a_sig * theta*sqrt(std::abs(1 + r11 - r22 - r33) / 2.0 / (1 - std::cos(theta)));
+				b = b_sig * theta*sqrt(std::abs(1 + r22 - r11 - r33) / 2.0 / (1 - std::cos(theta)));
+				c = c_sig * theta*sqrt(std::abs(1 + r33 - r11 - r22) / 2.0 / (1 - std::cos(theta)));
 			}
 			                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
 			x = pm_in[3];
@@ -570,8 +546,8 @@ namespace Aris
 			}
 			else
 			{
-				A = sin(theta)/theta;
-				B = (1-cos(theta))/theta/theta;
+				A = std::sin(theta)/theta;
+				B = (1- std::cos(theta))/theta/theta;
 			}
 
 			//memset(pm_out, 0, sizeof(double) * 16);
@@ -698,8 +674,6 @@ namespace Aris
 			v_out[4] = -4 * (q[1] * vq[1] + q[2] * vq[2])*pm[2][0] + 2 * (p12 - p43)*pm[2][1]                   + 2 * (p13 + p42)*pm[2][2];
 			v_out[5] = 2 * (p12 + p43)*pm[0][0]                    - 4 * (q[0] * vq[0] + q[2] * vq[2])*pm[0][1] + 2 * (p23 - p41)*pm[0][2];
 		
-			//memcpy(&v_out[0], &vq_in[0], sizeof(double) * 3);
-			
 			//note only first 3 elements
 			std::copy_n(vq_in, 3, v_out);
 			
@@ -810,33 +784,65 @@ namespace Aris
 		}
 		void s_tf_n(int n, const double *pm_in, const double *fces_in, double *m_out) noexcept
 		{
-			double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
-			double *m_out_tran = fces_in_tran + 6 * n;
-
-			s_transpose(6, n, fces_in, n, fces_in_tran, 6);
-			s_transpose(6, n, m_out, n, m_out_tran, 6);
+			s_dgemm(3, n, 3, 1, pm_in, 4, fces_in, n, 0, m_out, n);
+			s_dgemm(3, n, 3, 1, pm_in, 4, fces_in + 3 * n, n, 0, m_out + 3 * n, n);
 
 			for (int i = 0; i < n; ++i)
 			{
-				s_tf(pm_in, fces_in_tran + i * 6, m_out_tran + i * 6);
+				m_out[n * 3 + i] += -pm_in[11] * m_out[n + i] + pm_in[7] * m_out[n * 2 + i];
+				m_out[n * 4 + i] += pm_in[11] * m_out[i] - pm_in[3] * m_out[n * 2 + i];
+				m_out[n * 5 + i] += -pm_in[7] * m_out[i] + pm_in[3] * m_out[n + i];
 			}
 
-			s_transpose(n, 6, m_out_tran, 6, m_out, n);
+
+
+
+
+
+
+
+			
+			//double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
+			//double *m_out_tran = fces_in_tran + 6 * n;
+
+			//s_transpose(6, n, fces_in, n, fces_in_tran, 6);
+			//s_transpose(6, n, m_out, n, m_out_tran, 6);
+
+			//for (int i = 0; i < n; ++i)
+			//{
+			//	s_tf(pm_in, fces_in_tran + i * 6, m_out_tran + i * 6);
+			//}
+
+			//s_transpose(n, 6, m_out_tran, 6, m_out, n);
 		}
 		void s_tf_n(int n, double alpha, const double *pm_in, const double *fces_in, double beta, double *m_out) noexcept
 		{
-			double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
-			double *m_out_tran = fces_in_tran + 6 * n;
+			double* tem = static_cast<double *>(s_malloc(sizeof(double)*n * 6));
 
-			s_transpose(6, n, fces_in, n, fces_in_tran, 6);
-			s_transpose(6, n, m_out, n, m_out_tran, 6);
+			s_tf_n(n, pm_in, fces_in, tem);
 
-			for (int i = 0; i < n; ++i)
+			for (int i = 0; i < n * 6; ++i)
 			{
-				s_tf(alpha, pm_in, fces_in_tran+i*6, beta, m_out_tran + i * 6);
+				m_out[i] = alpha*tem[i] + beta*m_out[i];
 			}
+			
+			
+			
+			
+			
+			
+			//double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
+			//double *m_out_tran = fces_in_tran + 6 * n;
 
-			s_transpose(n, 6, m_out_tran, 6, m_out, n);
+			//s_transpose(6, n, fces_in, n, fces_in_tran, 6);
+			//s_transpose(6, n, m_out, n, m_out_tran, 6);
+
+			//for (int i = 0; i < n; ++i)
+			//{
+			//	s_tf(alpha, pm_in, fces_in_tran+i*6, beta, m_out_tran + i * 6);
+			//}
+
+			//s_transpose(n, 6, m_out_tran, 6, m_out, n);
 		}
 		void s_inv_tf(const double *inv_pm_in, const double *fce_in, double *vec_out) noexcept
 		{
@@ -1012,443 +1018,268 @@ namespace Aris
 		}
 		void s_i2i(const double *from_pm_in, const double *from_im_in, double *to_im_out) noexcept
 		{
-			double x, y, z, old_x, old_y, old_z, new_x, new_y, new_z, m;
+			//double x, y, z, old_x, old_y, old_z, new_x, new_y, new_z, m;
 
-			m = from_im_in[0];
+			//m = from_im_in[0];
 
-			x = from_pm_in[3];
-			y = from_pm_in[7];
-			z = from_pm_in[11];
+			//x = from_pm_in[3];
+			//y = from_pm_in[7];
+			//z = from_pm_in[11];
 
-			old_x = from_im_in[11];
-			old_y = from_im_in[15];
-			old_z = from_im_in[4];
+			//old_x = from_im_in[11];
+			//old_y = from_im_in[15];
+			//old_z = from_im_in[4];
 
-			new_x = from_pm_in[0] * old_x + from_pm_in[1] * old_y + from_pm_in[2] * old_z;
-			new_y = from_pm_in[4] * old_x + from_pm_in[5] * old_y + from_pm_in[6] * old_z;
-			new_z = from_pm_in[8] * old_x + from_pm_in[9] * old_y + from_pm_in[10] * old_z;
+			//new_x = from_pm_in[0] * old_x + from_pm_in[1] * old_y + from_pm_in[2] * old_z;
+			//new_y = from_pm_in[4] * old_x + from_pm_in[5] * old_y + from_pm_in[6] * old_z;
+			//new_z = from_pm_in[8] * old_x + from_pm_in[9] * old_y + from_pm_in[10] * old_z;
 
-			//memset(to_im_out, 0, sizeof(double)* 36);
-			std::fill_n(to_im_out, 36, 0);
-			/* 设置左上角的3*3的矩阵 */
-			to_im_out[0] = from_im_in[0];
-			to_im_out[7] = from_im_in[7];
-			to_im_out[14] = from_im_in[14];
-			/* 设置右上角的3*3的矩阵 */
-			to_im_out[4] = m*z + new_z;
-			to_im_out[5] = -m*y - new_y;
-			to_im_out[11] = m*x + new_x;
-			to_im_out[9] = -to_im_out[4];
-			to_im_out[15] = -to_im_out[5];
-			to_im_out[16] = -to_im_out[11];
-			/* 设置左下角的3*3的矩阵 */
-			to_im_out[24] = to_im_out[4];
-			to_im_out[30] = to_im_out[5];
-			to_im_out[19] = to_im_out[9];
-			to_im_out[31] = to_im_out[11];
-			to_im_out[20] = to_im_out[15];
-			to_im_out[26] = to_im_out[16];
-			/* 设置右下角的3*3的矩阵 */
-			for (int i = 0; i < 3; ++i)
-			{
-				for (int j = 0; j < 3; ++j)
-				{
-					to_im_out[21] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 0];
-					to_im_out[22] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 4];
-					to_im_out[23] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
-					to_im_out[28] += from_pm_in[4 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 4];
-					to_im_out[29] += from_pm_in[4 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
-					to_im_out[35] += from_pm_in[8 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
-				}
-			}
+			////memset(to_im_out, 0, sizeof(double)* 36);
+			//std::fill_n(to_im_out, 36, 0);
+			///* 设置左上角的3*3的矩阵 */
+			//to_im_out[0] = from_im_in[0];
+			//to_im_out[7] = from_im_in[7];
+			//to_im_out[14] = from_im_in[14];
+			///* 设置右上角的3*3的矩阵 */
+			//to_im_out[4] = m*z + new_z;
+			//to_im_out[5] = -m*y - new_y;
+			//to_im_out[11] = m*x + new_x;
+			//to_im_out[9] = -to_im_out[4];
+			//to_im_out[15] = -to_im_out[5];
+			//to_im_out[16] = -to_im_out[11];
+			///* 设置左下角的3*3的矩阵 */
+			//to_im_out[24] = to_im_out[4];
+			//to_im_out[30] = to_im_out[5];
+			//to_im_out[19] = to_im_out[9];
+			//to_im_out[31] = to_im_out[11];
+			//to_im_out[20] = to_im_out[15];
+			//to_im_out[26] = to_im_out[16];
+			///* 设置右下角的3*3的矩阵 */
+			//for (int i = 0; i < 3; ++i)
+			//{
+			//	for (int j = 0; j < 3; ++j)
+			//	{
+			//		to_im_out[21] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 0];
+			//		to_im_out[22] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 4];
+			//		to_im_out[23] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
+			//		to_im_out[28] += from_pm_in[4 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 4];
+			//		to_im_out[29] += from_pm_in[4 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
+			//		to_im_out[35] += from_pm_in[8 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
+			//	}
+			//}
 
-			to_im_out[21] += m*(y*y + z*z) + 2 * (new_y*y + new_z*z);
-			to_im_out[22] += -m*x*y - new_x*y - x*new_y;
-			to_im_out[23] += -m*x*z - new_x*z - x*new_z;
-			to_im_out[28] += m*(x*x + z*z) + 2 * (new_x*x + new_z*z);
-			to_im_out[29] += -m*y*z - new_y*z - y*new_z;
-			to_im_out[35] += m*(x*x + y*y) + 2 * (new_x*x + new_y*y);
+			//to_im_out[21] += m*(y*y + z*z) + 2 * (new_y*y + new_z*z);
+			//to_im_out[22] += -m*x*y - new_x*y - x*new_y;
+			//to_im_out[23] += -m*x*z - new_x*z - x*new_z;
+			//to_im_out[28] += m*(x*x + z*z) + 2 * (new_x*x + new_z*z);
+			//to_im_out[29] += -m*y*z - new_y*z - y*new_z;
+			//to_im_out[35] += m*(x*x + y*y) + 2 * (new_x*x + new_y*y);
 
-			to_im_out[27] = to_im_out[22];
-			to_im_out[33] = to_im_out[23];
-			to_im_out[34] = to_im_out[29];
+			//to_im_out[27] = to_im_out[22];
+			//to_im_out[33] = to_im_out[23];
+			//to_im_out[34] = to_im_out[29];
+
+
+
+
+
+			/*以下为慢速但准确的算法*/
+			double tem[6][6], tmf[6][6];
+			s_tmf(from_pm_in, *tmf);
+			s_dgemm(6, 6, 6, 1, *tmf, 6, from_im_in, 6, 0, *tem, 6);
+			s_dgemmNT(6, 6, 6, 1, *tem, 6, *tmf, 6, 0, to_im_out, 6);
 
 		}
 		void s_v2v(const double *relative_pm_in, const double *relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept
 		{
-			if (from_vel_in != nullptr)
-			{
-				if (relative_pm_in != nullptr)
-				{
-					s_tv(relative_pm_in, from_vel_in, to_vel_out);
-				}
-				else
-				{
-					std::copy_n(from_vel_in, 6, to_vel_out);
-				}
-
-				if (relative_vel_in != nullptr)
-				{
-					s_vn_add_vn(6, relative_vel_in, to_vel_out, to_vel_out);
-				}
-			}
-			else
-			{
-				if (relative_vel_in != nullptr)
-				{
-					std::copy_n(relative_vel_in, 6, to_vel_out);
-				}
-			}
+			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
+			double to_vel[6]{ 0,0,0,0,0,0 };
+			
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
+			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
+			to_vel_out = to_vel_out ? to_vel_out : to_vel;
+			
+			s_tv(relative_pm_in, from_vel_in, to_vel_out);
+			s_vn_add_vn(6, relative_vel_in, to_vel_out, to_vel_out);
 		}
 		void s_inv_v2v(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept
 		{
+			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
+			double to_vel[6]{ 0,0,0,0,0,0 };
+			
+			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
+			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
+			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
+			to_vel_out = to_vel_out ? to_vel_out : to_vel;
+
 			double relative_pm_in[16], relative_vel_in[6];
-			double *relative_pm_in_ptr, *relative_vel_in_ptr;
 			
-			if (inv_relative_pm_in != nullptr)
-			{
-				s_inv_pm(inv_relative_pm_in, relative_pm_in);
-				relative_pm_in_ptr = relative_pm_in;
-
-				if (inv_relative_vel_in != nullptr)
-				{
-					s_tv(-1, relative_pm_in, inv_relative_vel_in, 0, relative_vel_in);
-					relative_vel_in_ptr = relative_vel_in;
-				}
-				else
-				{
-					relative_vel_in_ptr = nullptr;
-				}
-
-			}
-			else
-			{
-				relative_pm_in_ptr = nullptr;
-
-				if (inv_relative_vel_in != nullptr)
-				{
-					
-					for (int i = 0; i < 6; ++i)
-					{
-						relative_vel_in[i] = -inv_relative_vel_in[i];
-					}
-
-					relative_vel_in_ptr = relative_vel_in;
-				}
-				else
-				{
-					relative_vel_in_ptr = nullptr;
-				}
-			}
-
-			
-			s_v2v(relative_pm_in_ptr, relative_vel_in_ptr, from_vel_in, to_vel_out);
+			s_inv_pm(inv_relative_pm_in, relative_pm_in);
+			s_tv(-1, relative_pm_in, inv_relative_vel_in, 0, relative_vel_in);
+			s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel_out);
 		}
 		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
 			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out) noexcept
 		{
-			double to_vel[6];
+			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_acc_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_acc_in[6]{ 0,0,0,0,0,0 };
+			double to_vel[6]{ 0,0,0,0,0,0 };
+			double to_acc[6]{ 0,0,0,0,0,0 };
+
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
+			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
+			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
+			from_acc_in = from_acc_in ? from_acc_in : default_from_acc_in;
+			to_vel_out = to_vel_out ? to_vel_out : to_vel;
+			to_acc_out = to_acc_out ? to_acc_out : to_acc;
 		
-			/* calculate to_vel */
-			s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel);
-			/* calculate to_acc_out */
-			if (from_acc_in != nullptr)
-			{
-				if (relative_pm_in != nullptr)
-				{
-					s_tv(relative_pm_in, from_acc_in, to_acc_out);
-				}
-				else
-				{
-					std::copy_n(from_acc_in, 6, to_acc_out);
-				}
-			}
-			else
-			{
-				std::fill_n(to_acc_out, 6, 0);
-			}
+			//s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel_out);
+			s_tv(relative_pm_in, from_vel_in, to_vel_out);
+			s_cv(relative_vel_in, to_vel_out, to_acc_out);
+			s_tv(1, relative_pm_in, from_acc_in, 1, to_acc_out);
+			s_daxpy(6, 1, relative_acc_in, 1, to_acc_out, 1);
 			
-			if (relative_acc_in != nullptr)
-				s_daxpy(6, 1, relative_acc_in, 1, to_acc_out, 1);
-
-			/* calculate to_acc_out */
-			if (relative_vel_in != nullptr)
-			{
-				s_cv(1, relative_vel_in, to_vel, 1, to_acc_out);
-			}
-
-			if (to_vel_out != nullptr)
-			{
-				std::copy_n(to_vel, 6, to_vel_out);
-			}
 		}
 		void s_pnt2pnt(const double *relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept
 		{
-			if (relative_pm_in == nullptr)
-			{
-				if (from_pnt == nullptr)
-				{
-					std::fill_n(to_pnt_out, 3, 0);
-				}
-				else
-				{
-					std::copy_n(from_pnt, 3, to_pnt_out);
-				}
-			}
-			else
-			{
-				if (from_pnt == nullptr)
-				{
-					to_pnt_out[0] = relative_pm_in[3];
-					to_pnt_out[1] = relative_pm_in[7];
-					to_pnt_out[2] = relative_pm_in[11];
-				}
-				else
-				{
-					s_pm_dot_pnt(relative_pm_in, from_pnt, to_pnt_out);
-				}
-			}
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			double default_to_pnt[3];
+			
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+
+			s_pm_dot_pnt(relative_pm_in, from_pnt, to_pnt_out);
 		}
 		void s_pv2pv(const double *relative_pm_in, const double *relative_vel_in, const double *from_pnt, const double *from_pv,
 			double *to_pv_out, double *to_pnt_out) noexcept
 		{
-			double to_pnt[3];
-			s_pnt2pnt(relative_pm_in, from_pnt, to_pnt);
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			double default_to_pv[3];
+			double default_to_pnt[3];
 
-			if (relative_vel_in != nullptr)
-			{
-				s_cro3(relative_vel_in + 3, to_pnt, to_pv_out);
-				s_daxpy(3, 1, relative_vel_in, 1, to_pv_out, 1);
-			}
-			else
-			{
-				std::fill_n(to_pv_out, 3, 0);
-			}
-
-			if (from_pv != nullptr)
-			{
-				if (relative_pm_in == nullptr)
-				{
-					s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, to_pv_out, 1);
-				}
-				else
-				{
-					s_daxpy(3, 1, from_pv, 1, to_pv_out, 1);
-				}
-			}
-
-			if (to_pnt_out != nullptr)
-				std::copy_n(to_pnt, 3, to_pnt_out);
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+			
+			s_pnt2pnt(relative_pm_in, from_pnt, to_pnt_out);
+			s_cro3(relative_vel_in + 3, to_pnt_out, to_pv_out);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, to_pv_out, 1);
+			s_daxpy(3, 1, relative_vel_in, 1, to_pv_out, 1);
 		}
 		void s_pa2pa(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
 			const double *from_pnt, const double *from_pv, const double *from_pa, 
 			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept
 		{
-			double to_pnt[3],to_pv[3],tem_pv[3],tem_pa[3];
-			/* 计算to_pnt和to_pv*/
-			s_pv2pv(relative_pm_in, relative_vel_in, from_pnt, from_pv, to_pv, to_pnt);
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_acc_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			static const double default_from_pa[3] = { 0,0,0 };
+			double default_pa_out[3]{ 0 };
+			double default_pv_out[3]{ 0 };
+			double default_pnt_out[3]{ 0 };
 
-			/* 计算to_pa */
-			if (relative_acc_in != nullptr)
-			{
-				s_cro3(relative_acc_in + 3, to_pnt, to_pa_out);
-			}
-			else
-			{
-				std::fill_n(to_pa_out, 3, 0);
-			}
-				
-			if (relative_vel_in != nullptr)
-			{
-				std::copy_n(to_pv, 3, tem_pv);
-				
-				if (from_pv != nullptr)
-				{
-					if (relative_pm_in != nullptr)
-					{
-						
-						s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, tem_pv, 1);
-					}
-					else
-					{
-						s_daxpy(3, 1, from_pv, 1, tem_pv, 1);
-					}
-				}
-				
-				s_cro3(relative_vel_in + 3, tem_pv, tem_pa);
-				s_daxpy(3, 1, tem_pa, 1, to_pa_out, 1);
-			}
-
-
-			if (from_pa != nullptr)
-			{
-				if (relative_pm_in != nullptr)
-				{
-					s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pa, 1, 1, to_pa_out, 1);
-				}
-				else
-				{
-					s_daxpy(3, 1, from_pa, 1, to_pa_out, 1);
-				}
-			}
-
-			if (relative_acc_in!= nullptr)
-				s_daxpy(3, 1, relative_acc_in, 1, to_pa_out, 1);
-
-			if (to_pv_out != nullptr)
-				std::copy_n(to_pv, 3, to_pv_out);
-
-			if (to_pnt_out != nullptr)
-				std::copy_n(to_pnt, 3, to_pnt_out);
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
+			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			from_pa = from_pa ? from_pa : default_from_pa;
+			to_pa_out = to_pa_out ? to_pa_out : default_pa_out;
+			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
+			
+			double tem_pv[3];
+			s_pv2pv(relative_pm_in, relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
+			
+			s_cro3(relative_acc_in + 3, to_pnt_out, to_pa_out);
+			std::copy_n(to_pv_out, 3, tem_pv);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, tem_pv, 1);
+			s_cro3(1, relative_vel_in + 3, tem_pv, 1, to_pa_out);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pa, 1, 1, to_pa_out, 1);
+			s_daxpy(3, 1, relative_acc_in, 1, to_pa_out, 1);
 		}
 		void s_inv_pv2pv(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
 			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out) noexcept
 		{
-			double tem[3],tem2[3];
-			if (from_pv != nullptr)
-			{
-				std::copy_n(from_pv, 3, tem);
-			}
-			else
-			{
-				std::fill_n(tem, 3, 0);
-			}
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			double default_to_pv[3];
+			double default_to_pnt[3];
 
-			if (inv_relative_vel_in != nullptr)
-			{
-				s_daxpy(3, -1, inv_relative_vel_in, 1, tem, 1);
-				if (from_pnt != nullptr)
-				{
-					s_cro3(inv_relative_vel_in + 3, from_pnt, tem2);
-					s_daxpy(3, -1, tem2, 1, tem, 1);
-				}
-			}
+			inv_relative_pm_in = inv_relative_pm_in?inv_relative_pm_in:default_pm_in;
+			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+			
+			double tem[3];
+			std::copy_n(from_pv, 3, tem);
+			s_cro3(-1, inv_relative_vel_in + 3, from_pnt, 1, tem);
+			s_daxpy(3, -1, inv_relative_vel_in, 1, tem, 1);
+			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pv_out, 1);
+			
+			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
 
-			if (inv_relative_pm_in != nullptr)
-			{
-				s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pv_out, 1);
-			}
-			else
-			{
-				std::copy_n(tem, 3, to_pv_out);
-			}
-
-			if (to_pnt_out != nullptr)
-			{
-				if (inv_relative_pm_in != nullptr)
-				{
-					s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
-				}
-				else
-				{
-					std::copy_n(from_pnt, 3, to_pnt_out);
-				}
-			}
 		}
 		void s_inv_pa2pa(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
 			const double *from_pnt, const double *from_pv, const double *from_pa,
 			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept
 		{
-			double to_pnt[3], to_pv[3], tem[3],tem2[3],tem3[3];
-			s_inv_pv2pv(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_pv, to_pv, to_pnt);
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_acc_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			static const double default_from_pa[3] = { 0,0,0 };
+			double default_pa_out[3]{ 0 };
+			double default_pv_out[3]{ 0 };
+			double default_pnt_out[3]{ 0 };
 
-			if (inv_relative_acc_in == nullptr)
-			{
-				//memset(tem, 0, sizeof(tem));
-				std::fill_n(tem, 3, 0);
-			}
-			else
-			{
-				if (from_pnt == nullptr)
-				{
-					//memcpy(tem, inv_relative_acc_in, sizeof(tem));
-					std::copy_n(inv_relative_acc_in, 3, tem);
-				}
-				else
-				{
-					s_cro3(inv_relative_acc_in + 3, from_pnt, tem);
-					s_daxpy(3, 1, inv_relative_acc_in, 1, tem, 1);
-				}
-			}
+			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
+			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
+			inv_relative_acc_in = inv_relative_acc_in ? inv_relative_acc_in : default_acc_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			from_pa = from_pa ? from_pa : default_from_pa;
+			to_pa_out = to_pa_out ? to_pa_out : default_pa_out;
+			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
 
-			if (inv_relative_vel_in == nullptr)
-			{
-				//memset(tem3, 0, sizeof(tem3));
-				std::fill_n(tem3, 3, 0);
-			}
-			else
-			{
-				if (inv_relative_pm_in == nullptr)
-				{
-					//memcpy(tem2, to_pv, sizeof(tem2));
-					std::copy_n(to_pv, 3, tem2);
-				}
-				else
-				{
-					s_dgemm(3, 1, 3, 1, inv_relative_pm_in, 4, to_pv, 1, 0, tem2, 1);
-				}
+			double tem[3],tem2[3];
+			s_inv_pv2pv(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
 
-				if (from_pv == nullptr)
-				{
+			std::copy_n(from_pa, 3, tem);
+			s_cro3(-1, inv_relative_acc_in + 3, from_pnt, 1, tem);
 
-				}
-				else
-				{
-					s_daxpy(3, 1, from_pv, 1, tem2, 1);
-				}
+			std::copy_n(from_pv, 3, tem2);
+			s_dgemm(3, 1, 3, 1, inv_relative_pm_in, 4, to_pv_out, 1, 1, tem2, 1);
+			s_cro3(-1, inv_relative_vel_in + 3, tem2, 1, tem);
 
-				s_cro3(inv_relative_vel_in + 3, tem2, tem3);
-			}
-
-			s_daxpy(3, 1, tem, 1, tem3, 1);
-
-			if (from_pv == nullptr)
-			{
-				if (inv_relative_pm_in == nullptr)
-				{
-					//memset(to_pa_out, 0, sizeof(double)* 3);
-					std::fill_n(to_pa_out, 3, 0);
-					if (to_pa_out!=0)
-						s_daxpy(3, -1, tem3, 1, to_pa_out, 1);
-				}
-				else
-				{
-					if (to_pa_out != nullptr)
-						s_dgemmTN(3, 1, 3, -1, inv_relative_pm_in, 4, tem3, 1, 0, to_pa_out, 1);
-				}
-			}
-			else
-			{
-				if (from_pa == nullptr)
-				{
-					//memset(tem, 0, sizeof(tem));
-					std::fill_n(tem, 3, 0);
-				}
-				else
-				{
-					//memcpy(tem, from_pa, sizeof(tem));
-					std::copy_n(from_pa, 3, tem);
-				}
-				
-				s_daxpy(3, -1, tem3, 1, tem, 1);
-				if (to_pa_out != nullptr)
-					s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pa_out, 1);
-			}
-
-			if (to_pv_out != nullptr)
-			{
-				//memcpy(to_pv_out, to_pv, sizeof(to_pv));
-				std::copy_n(to_pv, 3, to_pv_out);
-			}
-
-			if (to_pnt_out != nullptr)
-			{
-				//memcpy(to_pnt_out, to_pnt, sizeof(to_pnt));
-				std::copy_n(to_pnt, 3, to_pnt_out);
-			}
-
-
+			s_daxpy(3, -1, inv_relative_acc_in, 1, tem, 1);
 			
+			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pa_out, 1);
 		}
 		void s_mass2im(const double mass_in, const double * inertia_in, const double *pm_in, double *im_out) noexcept
 		{
@@ -1777,24 +1608,49 @@ namespace Aris
 
 		void s_dscal(const int n, const double a, double *x, const int incx) noexcept
 		{
-			cblas_dscal(n, a, x, incx);
+			int finalIdx = n*incx;
+			
+			for (int i = 0; i < n*incx; i+=incx)
+			{
+				x[i] *= a;
+			}
 		}
 		double s_dnrm2(const int n, const double *x, const int incx) noexcept
 		{
 			double nrm=0;
-			for (int i = 0; i < n; ++i)
+
+			int finalIdx = n*incx;
+
+			for (int i = 0; i < finalIdx; i+=incx)
 			{
-				nrm += x[incx*i] * x[incx*i];
+				nrm += x[i] * x[i];
 			}
 			return sqrt(nrm);
 		}
 		void s_daxpy(const int N, const double alpha, const double *X, const int incX, double *Y, const int incY) noexcept
 		{
-			cblas_daxpy(N, alpha, X, incX, Y, incY);
+			int xIdx{ 0 }, yIdx{ 0 };
+			
+			for (int i = 0; i < N; ++i)
+			{
+				Y[yIdx] += alpha*X[xIdx];
+				xIdx += incX;
+				yIdx += incY;
+			}
+			
+			//cblas_daxpy(N, alpha, X, incX, Y, incY);
 		}
 		void s_swap(const int N, double *X, const int incX, double *Y, const int incY) noexcept
 		{
-			cblas_dswap(N, X, incX, Y, incY);
+			int xIdx{ 0 }, yIdx{ 0 };
+
+			for (int i = 0; i < N; ++i)
+			{
+				std::swap(X[xIdx], Y[yIdx]);
+			}
+			
+			
+			//cblas_dswap(N, X, incX, Y, incY);
 		}
 		void s_transpose(const int m, const int n, const double *A, const int ldA, double *B_out, const int ldB) noexcept
 		{
@@ -1807,30 +1663,94 @@ namespace Aris
 			}
 		}
 
+		void s_dgemm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
+		{
+			//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha,  A, lda,  B, ldb, beta, C, ldc);
+			for (int i = 0; i < m; ++i)
+			{
+				int rowIndex = i*lda;
+				for (int j = 0; j < n; ++j)
+				{
+					int idx = i*ldc + j;
+					C[idx] *= beta;
+
+					double addFactor = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						addFactor +=  A[rowIndex + u] * B[j + u*ldb];
+					}
+					
+					C[idx] += alpha *addFactor;
+				}
+			}
+		}
+		void s_dgemmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
+		{
+			//cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					int idx = i*ldc + j;
+					C[idx] *= beta;
+
+					double addFactor = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						addFactor += A[i + u*lda] * B[j + u*ldb];
+					}
+
+					C[idx] += alpha *addFactor;
+				}
+			}
+		}
+		void s_dgemmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
+		{
+			//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+			for (int i = 0; i < m; ++i)
+			{
+				int rowIndex = i*lda;
+				for (int j = 0; j < n; ++j)
+				{
+					int colIndex = j*ldb;
+					
+					int idx = i*ldc + j;
+					C[idx] *= beta;
+
+					double addFactor = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						addFactor += A[rowIndex + u] * B[colIndex + u];
+					}
+
+					C[idx] += alpha *addFactor;
+				}
+			}
+		}
+
 		void s_dgeinv(const int n, double* A, const int lda, int *ipiv) noexcept
 		{
 			LAPACKE_dgetrf_work(CblasRowMajor, n, n, A, lda, ipiv);
 			double query;
 			lapack_int lwork;
-			LAPACKE_dgetri_work(CblasRowMajor, n, A, lda, ipiv,&query,-1);
+			LAPACKE_dgetri_work(CblasRowMajor, n, A, lda, ipiv, &query, -1);
 			lwork = (lapack_int)query;
 
-			double* work=(double *)s_malloc(lwork*sizeof(double));
+			double* work = (double *)s_malloc(lwork*sizeof(double));
 			LAPACKE_dgetri_work(CblasRowMajor, n, A, lda, ipiv, work, lwork);
 		}
-		void s_dgemm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
+		void s_dsyinv(const int n, double* A, const int lda, int *ipiv) noexcept
 		{
-			cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha,  A, lda,  B, ldb, beta, C, ldc);
-		}
-		void s_dgemmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
-		{
-			cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
-		}
-		void s_dgemmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
-		{
-			cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
-		}
+			double query, *work;
+			lapack_int lwork;
+			LAPACKE_dsytrf_work(CblasRowMajor, 'L', n, A, lda, ipiv, &query, -1);
+			lwork = (lapack_int)query;
+			work = (double *)s_malloc(lwork*sizeof(double));
+			LAPACKE_dsytrf_work(CblasRowMajor, 'L', n, A, lda, ipiv, work, lwork);
 
+			/*不确定为啥这里不用查询work的size,大概因为这个函数不需要work的buffer吧*/
+			LAPACKE_dsytri_work(CblasRowMajor, 'L', 6, A, 6, ipiv, work);
+		}
 		void s_dgesv(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept
 		{
 			LAPACKE_dgesv_work(CblasRowMajor, n, nrhs, a, lda, ipiv, b, ldb);

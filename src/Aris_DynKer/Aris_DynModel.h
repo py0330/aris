@@ -23,7 +23,6 @@
 
 #include <Aris_DynModelBase.h>
 
-
 namespace Aris
 {
 	namespace DynKer

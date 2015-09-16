@@ -116,7 +116,10 @@ namespace Aris
 			double v[3];
 			double a, a_dot;
 
-			std::fill_n(GetPrtA_cPtr(), UNIVERSAL_JOINT::GetCstDim(), 0);
+			double _tm_M2N[6][6];
+			double _tm_I2M[6][6];
+			s_tmf(*_pm_M2N, *_tm_M2N);
+			s_tmf(GetMakI()->GetPrtPmPtr(), *_tm_I2M);
 
 			/*update PrtCstMtx*/
 			//get sin(a) and cos(a)
@@ -141,6 +144,8 @@ namespace Aris
 
 			s_tf_n(GetDim(), -1, *_pm_M2N, *_PrtCstMtxI, 0, *_PrtCstMtxJ);
 			/*update A_c*/
+			std::fill_n(_a_c, UNIVERSAL_JOINT::GetCstDim(), 0);
+			
 			/*calculate a_dot*/
 			v[0] = GetMakJ()->GetVelPtr()[3] - GetMakI()->GetVelPtr()[3];
 			v[1] = GetMakJ()->GetVelPtr()[4] - GetMakI()->GetVelPtr()[4];
@@ -151,8 +156,7 @@ namespace Aris
 			v[0] = -c*a_dot;
 			v[1] = -s*a_dot;
 
-			s_dgemmTN(2, 1, 3, 1, GetMakI()->GetPrtPmPtr() + 4, 4, GetMakI()->GetFatherPrt()->GetPrtVelPtr() + 3, 1, 0, _tem_v1 + 4, 1);
-
+			s_inv_tv(GetMakI()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPrtVelPtr(), _tem_v1);
 			_a_c[3] -= v[0] * _tem_v1[4] + v[1] * _tem_v1[5];
 			/*calculate part n*/
 			s_inv_tv(*_pm_M2N, GetMakJ()->GetFatherPrt()->GetPrtVelPtr(), _tem_v1);
@@ -222,10 +226,10 @@ namespace Aris
 			s_inv_tv(_pMakJ->GetPmPtr(), velDiff, velDiff_in_J);
 			MotVel = velDiff_in_J[2];
 			
-			std::copy_n(_pMakI->GetAccPtr(), 6, velDiff);
+			/*std::copy_n(_pMakI->GetAccPtr(), 6, velDiff);
 			s_daxpy(6, -1, _pMakJ->GetAccPtr(), 1, velDiff, 1);
 			s_inv_tv(_pMakJ->GetPmPtr(), velDiff, velDiff_in_J);
-			MotAcc = velDiff_in_J[2];
+			MotAcc = velDiff_in_J[2];*/
 
 			/*update cst fce*/
 			double tem_v1[6], tem_v2[6];
@@ -305,7 +309,7 @@ namespace Aris
 				file << " \r\n!\r\n";
 
 				file << "force create direct single_component_force  &\r\n"
-					<< "    single_component_force_name = ." << Model()->Name() << "." << Name() << "_fce  &\r\n"
+					<< "    single_component_force_name = ." << Model()->Name() << "." << Name() << "  &\r\n"
 					<< "    adams_id = " << GetID() + 1 << "  &\r\n"
 					<< "    type_of_freedom = " << type << "  &\r\n"
 					<< "    i_marker_name = ." << Model()->Name() << "." << pMakI->GetFatherPrt()->Name() << "." << pMakI->Name() << "  &\r\n"

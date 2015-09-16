@@ -33,7 +33,6 @@
 #include <Aris_ExpCal.h>
 #include <Aris_DynKer.h>
 
-
 namespace Aris
 {
 	namespace DynKer
@@ -71,6 +70,7 @@ namespace Aris
 		{
 		public:
 			bool Active() const{ return _IsActive; };
+			void SetActive(bool isActive) { _IsActive = isActive; };
 			void Activate(){ _IsActive = true; };
 			void Deactivate(){ _IsActive = false; };
 			int GetID() const { return _id; };
@@ -154,6 +154,8 @@ namespace Aris
 			double _PrtFg[6];
 			double _PrtFv[6];
 
+
+		public:
 			int _RowId;
 
 		private:
@@ -235,25 +237,27 @@ namespace Aris
 			double GetMotPos() const { return MotPos; };
 			double GetMotVel() const { return MotVel; };
 			double GetMotAcc() const { return MotAcc; };
-			double GetMotFce() const { return GetMotDynFce() + GetMotFrcFce();	};
-			double GetMotFrcFce() const { return s_sgn(MotVel)*_frc_coe[0] + MotVel*_frc_coe[1] + MotAcc*_frc_coe[2]; };
-			double GetMotDynFce() const { return MotDynFce; }
+			double GetMotFce() const { return GetMotFceDyn() + GetMotFceFrc();	};
+			double GetMotFceFrc() const { return s_sgn(MotVel)*_frc_coe[0] + MotVel*_frc_coe[1] + MotAcc*_frc_coe[2]; };
+			double GetMotFceDyn() const { return MotDynFce; }
 			
 			const double* GetPrtCstMtxIPtr() const { return _PrtCstMtxI; };
 			const double* GetPrtCstMtxJPtr() const { return _PrtCstMtxJ; };
 			const double* GetPrtA_cPtr() const { return _a_c; };
 
 			void SetFrcCoe(const double *frc_coe) { std::copy_n(frc_coe, 3, _frc_coe); };
-			void SetMotDynFce(double fce) { MotDynFce = fce; };
-			virtual void Update() = 0;
+			void SetMotAcc(double motAcc) { this->MotAcc = motAcc; };
 
-			double PosAkima(double t, char derivativeOrder = '0') { return posCurve->operator()(t, derivativeOrder); };
-			void PosAkima(int length, const double *t, double *pos, char order = '0') { posCurve->operator()(length, t, pos, order); };
+			virtual void Update() = 0;
 
 			void SetPosAkimaCurve(const int num, const double* time, const double *pos)
 			{
 				this->posCurve.reset(new AKIMA(num, time, pos));
 			}
+			double PosAkima(double t, char derivativeOrder = '0') { return posCurve->operator()(t, derivativeOrder); };
+			void PosAkima(int length, const double *t, double *pos, char order = '0') { posCurve->operator()(length, t, pos, order); };
+
+			
 
 
 
@@ -296,7 +300,8 @@ namespace Aris
 			{
 				this->fceCurve.reset(new AKIMA(num, time, fce));
 			}
-
+			double FceAkima(double t, char derivativeOrder = '0') { return fceCurve->operator()(t, derivativeOrder); };
+			void FceAkima(int length, const double *t, double *pos, char order = '0') { fceCurve->operator()(length, t, pos, order); };
 		protected:
 			explicit FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, PART *pPrtM, PART *pPrtN);
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const {};
@@ -352,7 +357,7 @@ namespace Aris
 
 			void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			void FromXmlElement(const Aris::Core::ELEMENT *pEle);
-
+			void ToAdamsCmd(std::ofstream &file) const;
 		private:
 			double Gravity[6];
 
@@ -375,8 +380,10 @@ namespace Aris
 				std::copy_n(data, 6, script[time].markers[ele].data());
 			}
 			void ScriptClear(){ script.clear(); };
-			void ScriptEndTime(int endTime){ this->endTime = endTime; };
-			void ScriptDt(int dt){ this->dt = dt; };
+			void SetEndTime(int endTime){ this->endTime = endTime; };
+			void SetDt(int dt){ this->dt = dt; };
+			int GetEndTime() const { return endTime; };
+			int GetDt() const { return dt; };
 
 			struct NODE
 			{
@@ -527,20 +534,21 @@ namespace Aris
 				}
 			}
 
-			void DynPre();
-			void DynMtx();
-			void DynSov();
-			void DynEnd();
+			void DynPre(int &I_dim,int &C_dim);
+			void DynMtx(double *C, double*a_c, double *I_mat, double*f, double *D, double *b);
+			void DynUkn(double *a, double*f_c);
+			void DynEnd(const double *x);
 			void Dyn();
 
-			void ClbDim(int &clb_dim_m, int &clb_dim_n, int &gamma_dim, int &frc_coe_dim);
+			void ClbPre(int &clb_dim_m, int &clb_dim_n, int &gamma_dim, int &frc_coe_dim);
 			void ClbMtx(double *clb_d_ptr, double *clb_b_ptr);
-			void ClbGammaAndFrcCoe(double *clb_gamma_and_frcCoe_ptr);
+			void ClbUkn(double *clb_gamma_and_frcCoe_ptr);
 
 			void LoadXml(const char *filename);
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
 			void SaveSnapshotXml(const char *filename) const;
-			void SaveAdams(const char *filename, SIMULATE_SCRIPT* pScript=nullptr) const;
+			void SaveAdams(const char *filename, const SIMULATE_SCRIPT* pScript) const;
+			void SaveAdams(const char *filename, bool isModifyActive = true) const;
 
 		private:
 			CALCULATOR calculator;
@@ -558,22 +566,7 @@ namespace Aris
 			std::vector<std::unique_ptr<FORCE_BASE> > _forces;
 			std::vector<std::unique_ptr<MARKER> > _markers;
 			
-			std::vector<double> C;
-			std::vector<double> I_mat;
-
-			std::vector<double> f;
-			std::vector<double> a_c;
-
-			std::vector<double> D;
-			std::vector<double> b;
-
-			std::vector<double> s;
-			std::vector<double> x;
-
-			double *pC, *pI, *pf, *pa_c, *pD, *pb,*ps,*px;
-
 			ENVIRONMENT _Environment;
-
 			PART* pGround;
 		
 			friend class ENVIRONMENT;

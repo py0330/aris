@@ -66,12 +66,6 @@ namespace Aris
 		*
 		*/
 		void s_inv_pm(const double *pm_in, double *pm_out) noexcept;
-		/** \brief 计算6维惯量矩阵的逆矩阵
-		*
-		* 用来计算：im_out = im_in^-1
-		*
-		*/
-		void s_inv_im(const double *im_in, double *im_out) noexcept;
 		/** \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		*
 		* 这里原点origin为位姿矩阵pm_out的点，firstAxisPnt位于第一根坐标轴，secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
@@ -96,6 +90,18 @@ namespace Aris
 		*
 		*/
 		void s_pe2pm(const double *pe_in, double *pm_out, const char *EurType="313") noexcept;
+		/** \brief 将位姿矩阵转化成欧拉角
+		*
+		*
+		*
+		*/
+		void s_pq2pe(const double *pq_in, double *pe_out, const char *EurType = "313") noexcept;
+		/** \brief 将欧拉角转化成位姿矩阵
+		*
+		*
+		*
+		*/
+		void s_pe2pq(const double *pe_in, double *pq_out, const char *EurType = "313") noexcept;
 		void s_pm2pr(const double *pm_in, double *pr_out) noexcept;
 		void s_pr2pm(const double *pr_in, double *pm_out) noexcept;
 		void s_pm2pq(const double *pm_in, double *qp_out) noexcept;
@@ -297,10 +303,12 @@ namespace Aris
 		void s_swap(const int N, double *X, const int incX, double *Y, const int incY) noexcept;
 		void s_transpose(const int m, const int n, const double *A, const int ldA, double *B_out, const int ldB) noexcept;
 
-		void s_dgeinv(const int n, double* A,const int lda, int *ipiv) noexcept;
+		
 		void s_dgemm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
 		void s_dgemmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
 		void s_dgemmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
+		
+		void s_dgeinv(const int n, double* A, const int lda, int *ipiv) noexcept;
 		void s_dgesv(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept;
 		void s_dgesvT(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept;
 		void s_dgelsd(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept;
