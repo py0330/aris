@@ -165,6 +165,11 @@ namespace Aris
 			LOG_FILE::getInstance().log(data);
 			return data;
 		}
+		const std::string& log(const std::string& data)
+		{
+			log(data.c_str());
+			return data;
+		};
 
 		std::int32_t MSG_BASE::GetLength()  const
 		{

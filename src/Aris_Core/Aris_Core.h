@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cstdint>
 #include <cstdio>
+#include <string>
 
 namespace Aris
 {
@@ -127,7 +128,7 @@ namespace Aris
 			std::int64_t GetType() const;
 			void CopyStructMore()
 			{
-			} 
+			}
 			void PasteStruct() const
 			{
 				pasteID = 0;
@@ -205,9 +206,10 @@ namespace Aris
 
 			friend class Aris::RT_CONTROL::ACTUATION;
 		};
-		
+
 
 		const char * log(const char *data);
+		const std::string& log(const std::string& data);
 	}
 }
 

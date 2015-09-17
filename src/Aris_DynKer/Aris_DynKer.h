@@ -96,7 +96,7 @@ namespace Aris
 		*
 		*/
 		void s_pq2pe(const double *pq_in, double *pe_out, const char *EurType = "313") noexcept;
-		/** \brief 将欧拉角转化成位姿矩阵
+		/** \brief 将位置和欧拉角转化成位置和四元数
 		*
 		*
 		*
