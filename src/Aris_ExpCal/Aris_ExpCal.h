@@ -294,7 +294,7 @@ namespace Aris
 			friend MATRIX CombineMatrices(const MATRIX_LISTLIST &matrices);
 
 			std::string ToString() const;
-			double ToDouble() const;
+			double ToDouble() const { return pData[0]; };
 			void dsp()
 			{
 				std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(5);
