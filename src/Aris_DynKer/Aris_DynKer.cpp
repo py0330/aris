@@ -1582,6 +1582,17 @@ namespace Aris
 				v_out[i] = v1_in[i] + v2_in[i];
 			}
 		}
+		double s_vn_dot_vn(int N, const double *v1_in, const double *v2_in) noexcept
+		{
+			double ret{0};
+
+			for (int i = 0; i < N; ++i)
+			{
+				ret += v1_in[i] * v2_in[i];
+			}
+
+			return ret;
+		}
 		void s_v_cro_pm(const double *v_in, const double *pm_in, double *vpm_out) noexcept
 		{
 			vpm_out[0] = -v_in[5] * pm_in[4] + v_in[4] * pm_in[8];

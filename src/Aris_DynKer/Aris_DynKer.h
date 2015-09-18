@@ -294,6 +294,7 @@ namespace Aris
 		void s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept;
 
 		void s_vn_add_vn(int N, const double *v1_in, const double *v2_in, double *v_out) noexcept;
+		double s_vn_dot_vn(int N, const double *v1_in, const double *v2_in) noexcept;
 
 		void s_v_cro_pm(const double *v_in, const double *pm_in, double *vpm_out) noexcept;
 

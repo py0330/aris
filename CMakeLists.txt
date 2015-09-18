@@ -109,6 +109,13 @@ PREPEND_H(FULL_H src/Aris_Plan ${SOURCE})
 add_library(Aris_Plan STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
+# Aris_Plan project
+set(SOURCE Aris_Sensor)
+PREPEND_CPP(FULL_SRC src/Aris_Sensor ${SOURCE})
+PREPEND_H(FULL_H src/Aris_Sensor ${SOURCE})
+add_library(Aris_Sensor STATIC ${FULL_SRC} ${FULL_H})
+set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
+
 # Aris_Control project only in linux
 if(UNIX)
 set(SOURCE_FILES Aris_Control.cpp Aris_ControlData.cpp Aris_Sensor.cpp Aris_Device.cpp Aris_SysBase.cpp )
@@ -185,7 +192,7 @@ endif(WIN32)
 
 
 
-install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan ARCHIVE DESTINATION lib)
+install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan Aris_Sensor ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} DESTINATION include)
 install(DIRECTORY src/Aris_Control/resource/ DESTINATION resource/Aris_Control)
 

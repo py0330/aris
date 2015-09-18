@@ -89,9 +89,6 @@ namespace Aris
 			virtual void Initiate();
 
 		private:
-			/*for adams*/
-			std::unique_ptr<AKIMA> posCurve;
-			std::unique_ptr<AKIMA> fceCurve;
 
 			friend class MODEL_BASE;
 			friend class MODEL;
