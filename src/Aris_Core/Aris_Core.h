@@ -1,10 +1,14 @@
 ﻿#ifndef ARIS_CORE_H_
 #define ARIS_CORE_H_
 
+#include <Platform.h>
+
 #include <cstring>
 #include <cstdint>
 #include <cstdio>
 #include <string>
+
+
 
 namespace Aris
 {
@@ -210,6 +214,9 @@ namespace Aris
 
 		const char * log(const char *data);
 		const std::string& log(const std::string& data);
+
+		void Sleep(int mSeconds);
+
 	}
 }
 

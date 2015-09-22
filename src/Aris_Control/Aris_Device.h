@@ -4,7 +4,7 @@
 #include "Aris_ControlData.h"
 #include "ecrt.h"
 #include "GlobalConfiguration.h"
-#include "Aris_Sensor.h"
+#include "Aris_Control_Sensor.h"
 
 #include <sys/mman.h>
 #include <stdio.h>

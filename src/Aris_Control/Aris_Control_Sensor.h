@@ -5,8 +5,8 @@
  *      Author: hex
  */
 
-#ifndef ARIS_SENSOR_H_
-#define ARIS_SENSOR_H_
+#ifndef ARIS_CONTROL_SENSOR_H_
+#define ARIS_CONTROL_SENSOR_H_
 
 #include "ecrt.h"
 #include <sys/mman.h>

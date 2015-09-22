@@ -302,5 +302,15 @@ namespace Aris
 
 			this->Swap(otherMsg);
 		}
+
+		void Sleep(int mSeconds)
+		{
+#ifdef PLATFORM_IS_WINDOWS
+			::Sleep(mSeconds);
+#endif
+#ifdef PLATFORM_IS_LINUX
+			usleep(mSeconds * 1000);
+#endif
+		}
 	}
 }

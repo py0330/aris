@@ -4,7 +4,7 @@
  *  Created on: Apr 22, 2015
  *      Author: hex
  */
-#include "Aris_Sensor.h"
+#include "Aris_Control_Sensor.h"
 
 namespace ElmoMotor{
 

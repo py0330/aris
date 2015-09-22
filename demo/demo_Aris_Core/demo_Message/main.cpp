@@ -6,13 +6,6 @@
 
 #include <stdio.h>
 
-#ifdef PLATFORM_IS_LINUX
-#include <unistd.h>
-#endif
-#ifdef PLATFORM_IS_WINDOWS
-#include<windows.h>
-#endif
-
 
 #include <iostream>
 #include <cstring>

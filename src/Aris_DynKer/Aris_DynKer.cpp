@@ -793,27 +793,6 @@ namespace Aris
 				m_out[n * 4 + i] += pm_in[11] * m_out[i] - pm_in[3] * m_out[n * 2 + i];
 				m_out[n * 5 + i] += -pm_in[7] * m_out[i] + pm_in[3] * m_out[n + i];
 			}
-
-
-
-
-
-
-
-
-			
-			//double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
-			//double *m_out_tran = fces_in_tran + 6 * n;
-
-			//s_transpose(6, n, fces_in, n, fces_in_tran, 6);
-			//s_transpose(6, n, m_out, n, m_out_tran, 6);
-
-			//for (int i = 0; i < n; ++i)
-			//{
-			//	s_tf(pm_in, fces_in_tran + i * 6, m_out_tran + i * 6);
-			//}
-
-			//s_transpose(n, 6, m_out_tran, 6, m_out, n);
 		}
 		void s_tf_n(int n, double alpha, const double *pm_in, const double *fces_in, double beta, double *m_out) noexcept
 		{
@@ -825,24 +804,6 @@ namespace Aris
 			{
 				m_out[i] = alpha*tem[i] + beta*m_out[i];
 			}
-			
-			
-			
-			
-			
-			
-			//double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
-			//double *m_out_tran = fces_in_tran + 6 * n;
-
-			//s_transpose(6, n, fces_in, n, fces_in_tran, 6);
-			//s_transpose(6, n, m_out, n, m_out_tran, 6);
-
-			//for (int i = 0; i < n; ++i)
-			//{
-			//	s_tf(alpha, pm_in, fces_in_tran+i*6, beta, m_out_tran + i * 6);
-			//}
-
-			//s_transpose(n, 6, m_out_tran, 6, m_out, n);
 		}
 		void s_inv_tf(const double *inv_pm_in, const double *fce_in, double *vec_out) noexcept
 		{
