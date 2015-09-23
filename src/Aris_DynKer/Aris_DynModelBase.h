@@ -178,8 +178,8 @@ namespace Aris
 			PART* GetFatherPrt() { return _pPrt; };
 
 		private:
-			MARKER(PART *pPrt, const std::string &Name, int id, const double *pLocPm = nullptr, MARKER *pRelativeTo = nullptr);
-			MARKER(PART *pPrt, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
+			explicit MARKER(PART *pPrt, const std::string &Name, int id, const double *pLocPm = nullptr, MARKER *pRelativeTo = nullptr);
+			explicit MARKER(PART *pPrt, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void ToAdamsCmd(std::ofstream &file) const {};
 
@@ -210,7 +210,6 @@ namespace Aris
 			MARKER* GetMakI() { return _pMakI; };
 			MARKER* GetMakJ() { return _pMakJ; };
 
-			/*for simulation*/
 		protected:
 			explicit JOINT_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
 			explicit JOINT_BASE(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
@@ -223,7 +222,6 @@ namespace Aris
 
 			int _ColId;
 
-			/*for simulation*/
 		private:
 			friend class MODEL_BASE;
 		};
@@ -257,11 +255,6 @@ namespace Aris
 			double PosAkima(double t, char derivativeOrder = '0') { return posCurve->operator()(t, derivativeOrder); };
 			void PosAkima(int length, const double *t, double *pos, char order = '0') { posCurve->operator()(length, t, pos, order); };
 
-			
-
-
-
-
 		protected:
 			explicit MOTION_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI = 0, MARKER *pMakJ = 0);
 			explicit MOTION_BASE(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
@@ -291,24 +284,26 @@ namespace Aris
 		class FORCE_BASE :public ELEMENT
 		{
 		public:
-			virtual ~FORCE_BASE() = default;
-			virtual void Update() = 0;
 			const double* GetPrtFceIPtr() const { return _PrtFceI; };
 			const double* GetPrtFceJPtr() const { return _PrtFceJ; };
-
+			
 			void SetFceAkimaCurve(const int num, const double* time, const double *fce)
 			{
 				this->fceCurve.reset(new AKIMA(num, time, fce));
 			}
 			double FceAkima(double t, char derivativeOrder = '0') { return fceCurve->operator()(t, derivativeOrder); };
 			void FceAkima(int length, const double *t, double *pos, char order = '0') { fceCurve->operator()(length, t, pos, order); };
+
+			virtual ~FORCE_BASE() = default;
+			virtual void Update() = 0;
+
 		protected:
-			explicit FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, PART *pPrtM, PART *pPrtN);
+			explicit FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
+			explicit FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *pEle);
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const {};
 			virtual void ToAdamsCmd(std::ofstream &file) const {};
 
-			PART *_pPrtM;
-			PART *_pPrtN;
+			MARKER *_pMakI, *_pMakJ;
 
 			double _PrtFceI[6];
 			double _PrtFceJ[6];

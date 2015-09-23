@@ -51,8 +51,8 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			UNIVERSAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			UNIVERSAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
+			explicit UNIVERSAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
+			explicit UNIVERSAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 			virtual void Initiate();
 
@@ -67,8 +67,8 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			SPHERICAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			SPHERICAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
+			explicit SPHERICAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
+			explicit SPHERICAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
 			virtual void Initiate();
 
 			friend class MODEL_BASE;
@@ -108,14 +108,12 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, MARKER* pMakI, MARKER* pMakJ, int componentID);
-			SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, const Aris::Core::ELEMENT *xmlEle);
+			explicit SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, MARKER* pMakI, MARKER* pMakJ, int componentID);
+			explicit SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, const Aris::Core::ELEMENT *xmlEle);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 
 			int componentID;
 			double fceI[6];
-			MARKER *pMakI;
-			MARKER *pMakJ;
 
 			friend class MODEL_BASE;
 			friend class MODEL;

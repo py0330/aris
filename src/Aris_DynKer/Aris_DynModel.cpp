@@ -253,22 +253,19 @@ namespace Aris
 		const char *const SINGLE_COMPONENT_FORCE::type = "single_component_force";
 		void SINGLE_COMPONENT_FORCE::Update()
 		{
-			s_tf(this->pMakI->GetPrtPmPtr(), fceI, _PrtFceI);
-			double pm[16];
-			s_inv_pm_dot_pm(_pPrtN->GetPmPtr(), pMakI->GetPmPtr(), pm);
-			s_tf(-1, pm, fceI, 0, _PrtFceJ);
+			s_tf(_pMakI->GetPrtPmPtr(), fceI, _PrtFceI);
+			double pm_M2N[16];
+			s_inv_pm_dot_pm(_pMakJ->GetFatherPrt()->GetPmPtr(), _pMakI->GetFatherPrt()->GetPmPtr(), pm_M2N);
+			s_tf(-1, pm_M2N, _PrtFceI, 0, _PrtFceJ);
 		}
 		SINGLE_COMPONENT_FORCE::SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, MARKER* makI, MARKER* makJ, int componentID)
-			: FORCE_BASE(pModel, name, id, makI->GetFatherPrt(), makJ->GetFatherPrt())
-			, pMakI(makI)
+			: FORCE_BASE(pModel, name, id, makI, makJ)
 			, componentID(componentID)
 		{
 
 		}
 		SINGLE_COMPONENT_FORCE::SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, const Aris::Core::ELEMENT *xmlEle)
-			: FORCE_BASE(pModel, name, id, pModel->GetPart(xmlEle->Attribute("PrtM")), pModel->GetPart(xmlEle->Attribute("PrtN")))
-			, pMakI(pModel->GetPart(xmlEle->Attribute("PrtM"))->GetMarker(xmlEle->Attribute("MakI")))
-			, pMakJ(pModel->GetPart(xmlEle->Attribute("PrtN"))->GetMarker(xmlEle->Attribute("MakJ")))
+			: FORCE_BASE(pModel, name, id, xmlEle)
 			, componentID(std::stoi(xmlEle->Attribute("Component")))
 		{
 		}
@@ -282,8 +279,8 @@ namespace Aris
 					<< "    single_component_force_name = ." << Model()->Name() << "." << Name() << "  &\r\n"
 					<< "    adams_id = " << GetID() + 1 << "  &\r\n"
 					<< "    type_of_freedom = " << type << "  &\r\n"
-					<< "    i_marker_name = ." << Model()->Name() << "." << pMakI->GetFatherPrt()->Name() << "." << pMakI->Name() << "  &\r\n"
-					<< "    j_marker_name = ." << Model()->Name() << "." << pMakJ->GetFatherPrt()->Name() << "." << pMakJ->Name() << "  &\r\n"
+					<< "    i_marker_name = ." << Model()->Name() << "." << _pMakI->GetFatherPrt()->Name() << "." << _pMakI->Name() << "  &\r\n"
+					<< "    j_marker_name = ." << Model()->Name() << "." << _pMakJ->GetFatherPrt()->Name() << "." << _pMakJ->Name() << "  &\r\n"
 					<< "    action_only = off  &\r\n"
 					<< "    function = \"" << GetFce() << "\"  \r\n"
 					<< "!\r\n";
@@ -312,8 +309,8 @@ namespace Aris
 					<< "    single_component_force_name = ." << Model()->Name() << "." << Name() << "  &\r\n"
 					<< "    adams_id = " << GetID() + 1 << "  &\r\n"
 					<< "    type_of_freedom = " << type << "  &\r\n"
-					<< "    i_marker_name = ." << Model()->Name() << "." << pMakI->GetFatherPrt()->Name() << "." << pMakI->Name() << "  &\r\n"
-					<< "    j_marker_name = ." << Model()->Name() << "." << pMakJ->GetFatherPrt()->Name() << "." << pMakJ->Name() << "  &\r\n"
+					<< "    i_marker_name = ." << Model()->Name() << "." << _pMakI->GetFatherPrt()->Name() << "." << _pMakI->Name() << "  &\r\n"
+					<< "    j_marker_name = ." << Model()->Name() << "." << _pMakJ->GetFatherPrt()->Name() << "." << _pMakJ->Name() << "  &\r\n"
 					<< "    action_only = off  &\r\n"
 					<< "    function = \"AKISPL(time,0," << Name() << "_fce_spl)\"  \r\n"
 					<< "!\r\n";

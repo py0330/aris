@@ -587,11 +587,18 @@ namespace Aris
 			}
 		}
 
-		FORCE_BASE::FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, PART *pPrtI, PART *pPrtJ)
+		FORCE_BASE::FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ)
 			: ELEMENT(pModel, Name, id)
-			, _pPrtM(pPrtI)
-			, _pPrtN(pPrtJ)
+			, _pMakI(pMakI)
+			, _pMakJ(pMakJ)
 		{
+		}
+		FORCE_BASE::FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *xmlEle)
+			: ELEMENT(pModel, Name, id)
+			, _pMakI(pModel->GetPart(xmlEle->Attribute("PrtM"))->GetMarker(xmlEle->Attribute("MakI")))
+			, _pMakJ(pModel->GetPart(xmlEle->Attribute("PrtN"))->GetMarker(xmlEle->Attribute("MakJ")))
+		{
+
 		}
 
 		ENVIRONMENT::ENVIRONMENT(MODEL_BASE *pModel)
@@ -874,8 +881,8 @@ namespace Aris
 				{
 					fce->Update();
 
-					s_daxpy(6, -1, fce->GetPrtFceIPtr(), 1, &f[fce->_pPrtM->_RowId], 1);
-					s_daxpy(6, -1, fce->GetPrtFceJPtr(), 1, &f[fce->_pPrtN->_RowId], 1);
+					s_daxpy(6, -1, fce->GetPrtFceIPtr(), 1, &f[fce->_pMakI->GetFatherPrt()->_RowId], 1);
+					s_daxpy(6, -1, fce->GetPrtFceJPtr(), 1, &f[fce->_pMakJ->GetFatherPrt()->_RowId], 1);
 				}
 			}
 			/*calculate D and b*/

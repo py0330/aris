@@ -7,8 +7,6 @@
 #include <cmath>
 #include <iostream>
 
-using namespace std;
-
 namespace Aris
 {
 	namespace Plan
@@ -549,7 +547,7 @@ namespace Aris
 					if ((testNum >0)
 						&& (testNum % 100 == 0))
 					{
-						cout << testNum << endl;
+						std::cout << testNum << std::endl;
 					}
 					testNum++;
 				}
@@ -658,14 +656,14 @@ namespace Aris
 				/*检查迭代过程中开始点和结束点的导数是否被改过*/
 				if ((ds_itv[0][b_itv[0]] == beginDotS) && (ds_itv[intervalNum - 1][f_itv[intervalNum - 1]] == endDotS))
 				{
-					cout << "Trace is good" << endl;
+					std::cout << "Trace is good" << std::endl;
 				}
 				else
 				{
 					if (ds_itv[0][b_itv[0]] != beginDotS)
-						cout << "Begin trace is bad" << endl;
+						std::cout << "Begin trace is bad" << std::endl;
 					if (ds_itv[intervalNum - 1][f_itv[intervalNum - 1]] != endDotS)
-						cout << "End trace is bad" << endl;
+						std::cout << "End trace is bad" << std::endl;
 				}
 
 
