@@ -154,7 +154,7 @@ namespace Aris
 					}
 				}
 			};
-		private:
+		public:
 			int dataToBeRead;
 			DATA_TYPE data[3];
 			std::recursive_mutex dataMutex[3];
