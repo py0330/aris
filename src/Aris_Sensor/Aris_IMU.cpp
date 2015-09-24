@@ -17,7 +17,7 @@ namespace Aris
 {
 	namespace Sensor
 	{
-		class IMU_IMPLEMENT :public DeviceClass{};
+		class IMU::IMU_IMPLEMENT :public DeviceClass{};
 		
 		IMU::IMU()
 		{
@@ -136,6 +136,7 @@ namespace Aris
 				// Convert packet to euler
 				XsEuler euler = packet.orientationEuler();
 
+				data.time = packet.timeOfArrival().msTimeOfDay();
 
 				data.a = euler.pitch();
 				data.b = euler.roll();

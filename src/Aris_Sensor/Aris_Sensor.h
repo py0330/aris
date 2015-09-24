@@ -16,63 +16,42 @@ namespace Aris
 		class SENSOR_DATA
 		{
 		public:
-			const DATA_TYPE &Get() const
-			{
-				return *pData;
-			};
+			const DATA_TYPE &Get() const { return *pData; };
 			explicit SENSOR_DATA(SENSOR_BASE<DATA_TYPE> *pSensor): pSensor(pSensor), pData(nullptr)
 			{
-				for (int i = 0; i < 3; ++i)
+				/*
+				这里dataToBeRead指向最新的内存，例如如果dataToBeRead为2，那么有两种情况：
+				1.此时正在写内存0，内存1空闲。
+				2.在某些极端特殊时刻下，sensor正好刚刚写到内存1，正准备释放dataMutex0，并且之后准备将dataToBeRead置为0。
+				无论以上哪种情况，dataMutex2都会被锁住。
+				紧接着以上两种情况，继而会发生以下情况：
+				1.正在写内存0，内存1空闲，dataMutex2都会被锁住后dataToBeRead依然为2，那么此后数据一直在操作内存2，安全。
+				2.dataMutex2被锁住的同时，dataToBeRead被更新到0，此时传感器开始写内存1，由于dataMutex2被锁，因此传感器一直无法
+				更新到内存2；但是数据读取的是内存0，安全。
+				*/
+				while (!lock.owns_lock())
 				{
-					lock[i] = std::unique_lock<std::recursive_mutex>(pSensor->dataMutex[i], std::defer_lock);
+					lock = std::unique_lock<std::recursive_mutex>(pSensor->dataMutex[pSensor->dataToBeRead], std::try_to_lock);
 				}
-				
-				/*这里总是尝试去读取上次读过的内存所对应的下一块内存*/
-				while (!pData)
-				{
-					if (lock[pSensor->dataToBeRead].try_lock())
-					{
-						pData = &pSensor->data[pSensor->dataToBeRead];
-						pSensor->dataToBeRead = (pSensor->dataToBeRead + 1) % 3;
-					}
-					else if (lock[(pSensor->dataToBeRead+2)%3].try_lock())
-					{
-						pData = &pSensor->data[(pSensor->dataToBeRead + 2) % 3];
-					}
-					else
-					{
-						pData = &pSensor->data[(pSensor->dataToBeRead + 1) % 3];
-						pSensor->dataToBeRead = (pSensor->dataToBeRead + 2) % 3;
-					};
-				}
+				//lock = std::unique_lock<std::recursive_mutex>(pSensor->dataMutex[pSensor->dataToBeRead]);
+				pData = &pSensor->data[pSensor->dataToBeRead];
 			};
-			SENSOR_DATA(SENSOR_DATA<DATA_TYPE> && other)
-			{
-				this->Swap(other);
-			};
-			virtual ~SENSOR_DATA()
-			{
-			};
+			SENSOR_DATA(SENSOR_DATA<DATA_TYPE> && other) { this->Swap(other); };
+			virtual ~SENSOR_DATA() = default;
 			void Swap(SENSOR_DATA<DATA_TYPE> &other)
 			{
 				std::swap(this->pSensor, other.pSensor);
 				std::swap(this->pData, other.pData);
-
-				int i{ 0 };
-				for (auto &l : lock)
-				{
-					l.swap(other.lock[i]);
-					++i;
-				}
+				std::swap(this->lock, other.lock);
 			}
 
 		private:
 			SENSOR_DATA(const SENSOR_DATA&) = delete;
 			SENSOR_DATA & operator=(const SENSOR_DATA&) = delete;
 
-			std::unique_lock<std::recursive_mutex> lock[3];
 			SENSOR_BASE<DATA_TYPE> *pSensor;
 			const DATA_TYPE *pData;
+			std::unique_lock<std::recursive_mutex> lock;
 		};
 		
 		class SENSOR_INTERFACE
@@ -110,7 +89,7 @@ namespace Aris
 					}
 					
 					isStoping = false;
-					dataToBeRead = 0;
+					dataToBeRead = 2;
 
 					this->sensor_thread = std::thread(SENSOR_BASE::update_thread, this);
 				}
@@ -130,7 +109,7 @@ namespace Aris
 			};
 
 			SENSOR_BASE() = default;
-			virtual ~SENSOR_BASE() = default;
+			virtual ~SENSOR_BASE() { Stop(); };
 
 		private:
 			virtual void Initiate() {};
@@ -148,19 +127,20 @@ namespace Aris
 				{
 					for (int i = 0; i < 3; ++i)
 					{
+						pSensor->dataToBeRead = (i + 2) % 3;
 						pSensor->UpdateData(pSensor->data[i]);
 						std::unique_lock<std::recursive_mutex> nextLock(pSensor->dataMutex[(i+1)%3]);
 						lock.swap(nextLock);
 					}
 				}
 			};
-		public:
-			int dataToBeRead;
-			DATA_TYPE data[3];
-			std::recursive_mutex dataMutex[3];
+		private:
 			std::atomic_bool isStoping;
 			std::thread sensor_thread;
-
+			std::atomic_int dataToBeRead;
+			std::recursive_mutex dataMutex[3];
+			DATA_TYPE data[3];
+			
 			friend class SENSOR_DATA<DATA_TYPE>;
 		};
 	}

@@ -50,7 +50,8 @@ set(LIBRARY_OUTPUT_PATH lib)
 
 # set compile options
 if(UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2 -pthread -lrt -ldl")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2 -pthread -lrt -ldl ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2 -pthread")
 endif(UNIX)
 
 # set dependency include folder
@@ -143,43 +144,47 @@ set(SYSTEM_LINK_LIBS ws2_32)
 set(LAPACK_LINK_LIBS liblapacke liblapack cblas libblas)
 set(XSENS_LINK_LIBS xdeviceclass)
 set(ARIS_LINK_LIBS Aris_Plan Aris_Sensor Aris_ExpCal Aris_DynKer Aris_Core)
+
+set(ALL_LINK_LIBS ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${XSENS_LINK_LIBS} ${SYSTEM_LINK_LIBS})
 endif(WIN32)
 if(UNIX)
 set(SYSTEM_LINK_LIBS pthread gfortran)
 set(LAPACK_LINK_LIBS lapacke lapack cblas refblas)
 set(XSENS_LINK_LIBS xdeviceclass xcommunication xstypes)
 set(ARIS_LINK_LIBS Aris_Control Aris_Plan Aris_Sensor Aris_ExpCal Aris_DynKer Aris_Core)
+
+set(ALL_LINK_LIBS ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${XSENS_LINK_LIBS} ${SYSTEM_LINK_LIBS})
 endif(UNIX)
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_Core/demo_Core ${SOURCE_FILES})
 add_executable(demo_Core ${FULL_SRC})
-target_link_libraries(demo_Core ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${SYSTEM_LINK_LIBS})
+target_link_libraries(demo_Core ${ALL_LINK_LIBS})
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_Core/demo_Message ${SOURCE_FILES})
 add_executable(demo_Message ${FULL_SRC})
-target_link_libraries(demo_Message ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${SYSTEM_LINK_LIBS})
+target_link_libraries(demo_Message ${ALL_LINK_LIBS})
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_Core/demo_Socket_Client ${SOURCE_FILES})
 add_executable(demo_Socket_Client ${FULL_SRC})
-target_link_libraries(demo_Socket_Client ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${SYSTEM_LINK_LIBS})
+target_link_libraries(demo_Socket_Client ${ALL_LINK_LIBS})
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_Core/demo_Socket_Server ${SOURCE_FILES})
 add_executable(demo_Socket_Server ${FULL_SRC})
-target_link_libraries(demo_Socket_Server ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${SYSTEM_LINK_LIBS})
+target_link_libraries(demo_Socket_Server ${ALL_LINK_LIBS})
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_ExpCal/demo_ExpCal ${SOURCE_FILES})
 add_executable(demo_ExpCal ${FULL_SRC})
-target_link_libraries(demo_ExpCal ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${SYSTEM_LINK_LIBS})
+target_link_libraries(demo_ExpCal ${ALL_LINK_LIBS})
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_Sensor/demo_Sensor ${SOURCE_FILES})
 add_executable(demo_Sensor ${FULL_SRC})
-target_link_libraries(demo_Sensor ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${XSENS_LINK_LIBS} ${SYSTEM_LINK_LIBS})
+target_link_libraries(demo_Sensor ${ALL_LINK_LIBS})
 
 endif(MAKE_DEMO)
 

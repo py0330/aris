@@ -6,6 +6,7 @@
 #include <mutex>
 #include <atomic>
 #include <iostream>
+#include <cstdint>
 
 #include <Aris_Sensor.h>
 
@@ -15,6 +16,8 @@ namespace Aris
 	{
 		struct IMU_DATA
 		{
+			std::int64_t time;
+			
 			union
 			{
 				double eul[3];
@@ -52,8 +55,6 @@ namespace Aris
 			};
 		};
 
-		class IMU_IMPLEMENT;
-
 		class IMU :public SENSOR_BASE<IMU_DATA>
 		{
 		public:
@@ -66,6 +67,7 @@ namespace Aris
 			virtual void UpdateData(IMU_DATA &data);
 
 		private:
+			class IMU_IMPLEMENT;
 			IMU_IMPLEMENT *pDevice;
 		};
 	}
