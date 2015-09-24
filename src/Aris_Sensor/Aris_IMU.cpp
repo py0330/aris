@@ -144,6 +144,9 @@ namespace Aris
 			}
 			msgs.clear();
 			
+			static int count = 0;
+			data.count = count;
+			count++;
 			
 
 		}

@@ -17,6 +17,7 @@ namespace Aris
 		struct IMU_DATA
 		{
 			std::int64_t time;
+			int count;
 			
 			union
 			{
