@@ -1,6 +1,7 @@
 ﻿#include <Platform.h>
 
-#include"Aris_IMU.h"
+#include "Aris_Core.h"
+#include "Aris_IMU.h"
 
 #include <xsens/xsportinfoarray.h>
 #include <xsens/xsdatapacket.h>
@@ -111,8 +112,13 @@ namespace Aris
 			XsByteArray imuData;
 			XsMessageArray msgs;
 
-			pDevice->readDataToBuffer(imuData);
-			pDevice->processBufferedData(imuData, msgs);
+			while (msgs.empty())
+			{
+				Aris::Core::Sleep(1);
+				pDevice->readDataToBuffer(imuData);
+				pDevice->processBufferedData(imuData, msgs);
+			}
+
 			for (XsMessageArray::iterator it = msgs.begin(); it != msgs.end(); ++it)
 			{
 				// Retrieve a packet
