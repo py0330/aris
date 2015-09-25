@@ -1,9 +1,11 @@
-﻿#include <iostream>
+﻿#include "Platform.h"
+
+#include <iostream>
 #include <iomanip>
 
 #include "Aris_Core.h"
 #include "Aris_IMU.h"
-
+#include "Aris_DynKer.h"
 
 class SENSOR :public Aris::Sensor::SENSOR_BASE<double>
 {
@@ -19,40 +21,64 @@ class SENSOR :public Aris::Sensor::SENSOR_BASE<double>
 
 int main()
 {
-	//Aris::Sensor::IMU imu;
+	Aris::Core::DOCUMENT doc;
+#ifdef PLATFORM_IS_WINDOWS
+	doc.LoadFile("C:\\Robots\\resource\\HexapodIII\\HexapodIII.xml");
+#endif
+#ifdef PLATFORM_IS_LINUX
+	doc.LoadFile("/usr/Robots/resource/HexapodIII/HexapodIII.xml");
+#endif
 
-	//imu.Start();
+	auto p = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU");
+	
+	Aris::Sensor::IMU imu;
 
-	//while (true)
-	//{
-	//	auto data = imu.GetSensorData();
-
-	//	std::cout << data.Get().a << "    " << data.Get().b <<"    "<< data.Get().c << std::endl;
-
-	//	Aris::Core::Sleep(1);
-	//}
-
-	SENSOR sensor;
-
-	sensor.Start();
-
-	for (int i = 0; i < 200;++i)
+	imu.Start();
+	
+	for (int i = 0; i < 1000;++i)
 	{
-		
-		
-		auto data = sensor.GetSensorData();
+		auto data = imu.GetSensorData();
 
-		//std::cout << data.Get()<< std::endl;
+		double eul[3];
+		//data.Get().ToBodyEul(eul);
+		//Aris::DynKer::dsp(eul, 1, 3);
+		
+		data.Get().ToBodyEul(eul, PI);
+		Aris::DynKer::dsp(eul, 1, 3);
+
+		//double pm[16];
+		//data.Get().ToBodyPm(pm, 0.0);
+		//Aris::DynKer::dsp(pm, 4, 4);
+
+		//Aris::DynKer::dsp(data.Get().eul321, 1, 3);
 
 		Aris::Core::Sleep(1);
 	}
 
-	{
-		auto data = sensor.GetSensorData();
+	imu.Stop();
 
-		std::cout << data.Get() << std::endl;
-	}
-	sensor.Stop();
+
+	//SENSOR sensor;
+
+	//sensor.Start();
+
+	//for (int i = 0; i < 200;++i)
+	//{
+	//	
+	//	
+	//	auto data = sensor.GetSensorData();
+
+	//	//std::cout << data.Get()<< std::endl;
+
+	//	Aris::Core::Sleep(1);
+	//}
+
+	//{
+	//	auto data = sensor.GetSensorData();
+
+	//	std::cout << data.Get() << std::endl;
+	//}
+	//sensor.Stop();
 
 
 

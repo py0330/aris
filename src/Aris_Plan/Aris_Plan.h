@@ -3,7 +3,7 @@
 
 #include"Aris_DynKer.h"
 
-#include <vector>
+#include <list>
 #include <cmath>
 #include <iostream>
 
@@ -957,7 +957,7 @@ namespace Aris
 			void run(std::function<void(double t_in,double s_in, double ds_in
 				, double* Ji, double** dJi_over_b, double* g_out, double* h_out)>);
 
-			std::vector<NODE> forwardVec, backwardVec;
+			std::list<NODE> forwardVec, backwardVec;
 		};
 	}
 }

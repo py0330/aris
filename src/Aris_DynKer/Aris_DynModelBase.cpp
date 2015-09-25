@@ -394,6 +394,8 @@ namespace Aris
 
 		JOINT_BASE::JOINT_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ)
 			: ELEMENT(pModel, Name, id)
+			, _pMakI(pMakI)
+			, _pMakJ(pMakJ)
 		{
 
 		}

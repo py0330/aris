@@ -8,7 +8,7 @@
 using namespace std;
 
 #include "Aris_ExpCal.h"
-
+#include<cblas.h>
 namespace Aris
 {
 	namespace DynKer
@@ -89,6 +89,201 @@ namespace Aris
 			std::swap(this->pData, other.pData);
 
 			return *this;
+		}
+		MATRIX operator + (const MATRIX &m1, const MATRIX &m2)
+		{
+			MATRIX ret;
+
+			if ((m1.m == 1) && (m1.n == 1))
+			{
+				ret = MATRIX(m2);
+
+				for (int i = 0; i < ret.Length(); ++i)
+				{
+					ret.pData[i] += m1(0, 0);
+				}
+			}
+			else if ((m2.m == 1) && (m2.n == 1))
+			{
+				ret = MATRIX(m1);
+
+				for (int i = 0; i < ret.Length(); ++i)
+				{
+					ret.pData[i] += m2(0, 0);
+				}
+			}
+			else if ((m1.m == m2.m) && (m1.n == m2.n))
+			{
+				ret.Resize(m1.m, m1.n);
+
+				for (int i = 0; i < ret.m; i++)
+				{
+					for (int j = 0; j < ret.n; j++)
+					{
+						ret(i, j) = m1(i, j) + m2(i, j);
+					}
+				}
+			}
+			else
+			{
+				throw std::logic_error("Can't plus matrices, the dimensions are not equal");
+			}
+			return ret;
+		}
+		MATRIX operator - (const MATRIX &m1, const MATRIX &m2)
+		{
+			MATRIX ret;
+
+			if ((m1.m == 1) && (m1.n == 1))
+			{
+				ret = MATRIX(m2);
+
+				for (int i = 0; i < ret.Length(); ++i)
+				{
+					ret.pData[i] = m1(0, 0) - ret.pData[i];
+				}
+			}
+			else if ((m2.m == 1) && (m2.n == 1))
+			{
+				ret = MATRIX(m1);
+
+				for (int i = 0; i < ret.Length(); ++i)
+				{
+					ret.pData[i] -= m2(0, 0);
+				}
+			}
+			else if ((m1.m == m2.m) && (m1.n == m2.n))
+			{
+				ret.Resize(m1.m, m1.n);
+
+				for (int i = 0; i < ret.m; i++)
+				{
+					for (int j = 0; j < ret.n; j++)
+					{
+						ret(i, j) = m1(i, j) - m2(i, j);
+					}
+				}
+			}
+			else
+			{
+				throw std::logic_error("Can't minus matrices, the dimensions are not equal");
+			}
+
+			return ret;
+		}
+		MATRIX operator * (const MATRIX &m1, const MATRIX &m2)
+		{
+			MATRIX ret;
+
+			if ((m1.m == 1) && (m1.n == 1))
+			{
+				ret = MATRIX(m2);
+
+				for (int i = 0; i < ret.Length(); ++i)
+				{
+					ret.pData[i] *= m1(0, 0);
+				}
+			}
+			else if ((m2.m == 1) && (m2.n == 1))
+			{
+				ret = MATRIX(m1);
+
+				for (int i = 0; i < ret.Length(); ++i)
+				{
+					ret.pData[i] *= m2(0, 0);
+				}
+			}
+			else if (m1.n == m2.m)
+			{
+				ret.Resize(m1.m, m2.n);
+
+				if (m1.isRowMajor)
+				{
+					if (m2.isRowMajor)
+					{
+						cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+							m1.m, m2.n, m1.n,
+							1, m1.Data(), m1.n, m2.Data(), m2.n,
+							0, ret.Data(), ret.n);
+					}
+					else
+					{
+						cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+							m1.m, m2.n, m1.n,
+							1, m1.Data(), m1.n, m2.Data(), m2.m,
+							0, ret.Data(), ret.n);
+					}
+				}
+				else
+				{
+					if (m2.isRowMajor)
+					{
+						cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+							m1.m, m2.n, m1.n,
+							1, m1.Data(), m1.m, m2.Data(), m2.n,
+							0, ret.Data(), ret.n);
+					}
+					else
+					{
+						cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans,
+							m1.m, m2.n, m1.n,
+							1, m1.Data(), m1.m, m2.Data(), m2.m,
+							0, ret.Data(), ret.n);
+					}
+				}
+
+
+			}
+			else
+			{
+				throw std::logic_error("Can't multiply matrices, the dimensions are not equal");
+			}
+
+			return ret;
+		}
+		MATRIX operator / (const MATRIX &m1, const MATRIX &m2)
+		{
+			MATRIX ret;
+
+			if ((m1.m == 1) && (m1.n == 1))
+			{
+				ret = MATRIX(m2);
+
+				for (int i = 0; i < ret.Length(); ++i)
+				{
+					ret.pData[i] = m1(0, 0) / ret.pData[i];
+				}
+			}
+			else if ((m2.m == 1) && (m2.n == 1))
+			{
+				ret = MATRIX(m1);
+
+				for (int i = 0; i < ret.Length(); ++i)
+				{
+					ret.pData[i] /= m2(0, 0);
+				}
+			}
+			else
+			{
+				throw std::logic_error("Right now, divide operator of matrices is not added");
+			}
+
+			return ret;
+		}
+		MATRIX operator - (const MATRIX &m1)
+		{
+			MATRIX m;
+			m.Resize(m1.m, m1.n);
+
+			for (int i = 0; i < m1.m*m1.n; i++)
+			{
+				m.pData[i] = -m1.pData[i];
+			}
+			return m;
+		}
+		MATRIX operator + (const MATRIX &m1)
+		{
+			return m1;
 		}
 
 		void MATRIX::Resize(int i, int j)

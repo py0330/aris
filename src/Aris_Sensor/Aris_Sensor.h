@@ -82,7 +82,7 @@ namespace Aris
 					std::unique_lock<std::recursive_mutex> lock1(dataMutex[0], std::adopt_lock);
 					std::unique_lock<std::recursive_mutex> lock2(dataMutex[1], std::adopt_lock);
 					std::unique_lock<std::recursive_mutex> lock3(dataMutex[2], std::adopt_lock);
-
+					
 					for (auto &d:data)
 					{
 						this->UpdateData(d);

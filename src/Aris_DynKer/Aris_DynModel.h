@@ -84,7 +84,7 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			explicit LINEAR_MOTION(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI = 0, MARKER *pMakJ = 0);
+			explicit LINEAR_MOTION(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
 			explicit LINEAR_MOTION(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *pEle);
 			virtual void Initiate();
 

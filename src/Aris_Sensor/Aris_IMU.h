@@ -8,7 +8,9 @@
 #include <iostream>
 #include <cstdint>
 
+#include <Aris_XML.h>
 #include <Aris_Sensor.h>
+
 
 namespace Aris
 {
@@ -16,18 +18,19 @@ namespace Aris
 	{
 		struct IMU_DATA
 		{
+			/*时间戳*/
 			std::int64_t time;
-			int count;
 			
+			/*原生数据，相对于陀螺仪自身定义的地面坐标系的321欧拉角*/
 			union
 			{
-				double eul[3];
+				double eul321[3];
 				struct
 				{
-					double a, b, c;
+					double yaw, pitch, roll;
 				};
 			};
-
+			/*原生数据，相对于陀螺仪坐标系的角速度*/
 			union
 			{
 				double omega[3];
@@ -36,30 +39,37 @@ namespace Aris
 					double va, vb, vc;
 				};
 			};
-
+			/*原生数据，相对于陀螺仪坐标系的线加速度*/
 			union
 			{
-				double alpha[3];
+				double acc[3];
 				struct
 				{
-					double aa, ab, ac;
+					double ax, ay, az;
 				};
 			};
 
-			union
-			{
-				double gravity[3];
-				struct
-				{
-					double gx, gy, gz;
-				};
-			};
+			void ToBodyEul(double *eul, const char *eulType="313") const;
+			void ToBodyEul(double *eul, double yawValue, const char *eulType="313") const;
+			void ToBodyPm(double *pm) const;
+			void ToBodyPm(double *pm, double yawValue) const;
+			void ToBodyOmega(double *omega) const;
+			void ToBodyOmega(double *omega, double yawValue) const;
+			void ToBodyAcc(double *acc) const;
+			void ToBodyAcc(double *acc, double yawValue) const;
+
+		private:
+			const double * pmLhs;
+			const double * pmRhs;
+
+			friend class IMU;
 		};
 
 		class IMU :public SENSOR_BASE<IMU_DATA>
 		{
 		public:
 			IMU();
+			IMU(const Aris::Core::ELEMENT *xmlEle);
 			~IMU();
 		
 		private:
@@ -68,8 +78,8 @@ namespace Aris
 			virtual void UpdateData(IMU_DATA &data);
 
 		private:
-			class IMU_IMPLEMENT;
-			IMU_IMPLEMENT *pDevice;
+			class IMU_IMP;
+			IMU_IMP *pDevice;
 		};
 	}
 }

@@ -1,7 +1,10 @@
 ﻿#include <Platform.h>
 
+#include <string>
+
 #include "Aris_Core.h"
 #include "Aris_IMU.h"
+#include "Aris_DynKer.h"
 
 #include <xsens/xsportinfoarray.h>
 #include <xsens/xsdatapacket.h>
@@ -18,11 +21,98 @@ namespace Aris
 {
 	namespace Sensor
 	{
-		class IMU::IMU_IMPLEMENT :public DeviceClass{};
-		
-		IMU::IMU()
+		void IMU_DATA::ToBodyPm(double *pm) const
 		{
-			pDevice = new IMU_IMPLEMENT;
+			ToBodyPm(pm, this->yaw);
+		}
+		void IMU_DATA::ToBodyPm(double *pm, double yawValue) const
+		{
+			double tem_pm[16];
+			double pe[6]{ 0,0,0,yawValue, pitch, roll };
+			Aris::DynKer::s_pe2pm(pe, tem_pm, "321");
+			Aris::DynKer::s_pm_dot_pm(pmLhs, tem_pm, pmRhs, pm);
+		}
+		void IMU_DATA::ToBodyEul(double *eul, const char *eulType) const
+		{
+			this->ToBodyEul(eul, this->yaw, eulType);
+		}
+		void IMU_DATA::ToBodyEul(double *eul, double yawValue, const char *eulType) const
+		{
+			double pm[16], pe[6];
+			this->ToBodyPm(pm, yawValue);
+			Aris::DynKer::s_pm2pe(pm, pe, eulType);
+			std::copy_n(pe + 3, 3, eul);
+		}
+		void IMU_DATA::ToBodyOmega(double *omega) const
+		{
+			
+		}
+		void IMU_DATA::ToBodyOmega(double *omega, double yawValue) const
+		{
+			double pm[16];
+			ToBodyPm(pm, yawValue);
+
+
+		}
+		void IMU_DATA::ToBodyAcc(double *acc) const
+		{
+		}
+		void IMU_DATA::ToBodyAcc(double *acc, double yawValue) const
+		{
+		}
+		
+		
+		
+		class IMU::IMU_IMP :public DeviceClass
+		{
+		public:
+			std::string port;
+			int baudRate;
+			int sampleRate;
+
+			double pmImuGround2BodyGround[4][4];
+			double pmBody2Imu[4][4];
+		};
+		
+		IMU::IMU() 
+		{
+			pDevice = new IMU_IMP;
+			pDevice->port = "/dev/ttyUSB0";
+			pDevice->baudRate = 921600;
+			pDevice->sampleRate = 400;
+
+			std::fill_n(&pDevice->pmImuGround2BodyGround[0][0], 16, 0);
+			pDevice->pmImuGround2BodyGround[0][0] = -1;
+			pDevice->pmImuGround2BodyGround[1][2] = 1;
+			pDevice->pmImuGround2BodyGround[2][1] = 1;
+			pDevice->pmImuGround2BodyGround[3][3] = 1;
+
+			std::fill_n(&pDevice->pmBody2Imu[0][0], 16, 0);
+			pDevice->pmBody2Imu[0][0] = 1;
+			pDevice->pmBody2Imu[1][2] = 1;
+			pDevice->pmBody2Imu[2][1] = -1;
+			pDevice->pmBody2Imu[3][3] = 1;
+		}
+		IMU::IMU(const Aris::Core::ELEMENT *xmlEle)
+		{
+			pDevice = new IMU_IMP;
+			
+#ifdef PLATFORM_IS_LINUX
+			pDevice->port = xmlEle->Attribute("portLinux");
+#endif
+			pDevice->baudRate = std::stoi(xmlEle->Attribute("baudRate"));
+			pDevice->sampleRate = std::stoi(xmlEle->Attribute("sampleRate"));;
+
+			Aris::DynKer::CALCULATOR c;
+			c.AddVariable("PI", PI);
+			
+			auto m = c.CalculateExpression(xmlEle->Attribute("PeImuGround2BodyGound"));
+			Aris::DynKer::s_pe2pm(m.Data(), &pDevice->pmImuGround2BodyGround[0][0]);
+			m = c.CalculateExpression(xmlEle->Attribute("PeImu2Body"));
+			double pmImu2Body[16];
+			Aris::DynKer::s_pe2pm(m.Data(), pmImu2Body);
+			Aris::DynKer::s_inv_pm(pmImu2Body, &pDevice->pmBody2Imu[0][0]);
+
 		}
 		IMU::~IMU()
 		{
@@ -40,55 +130,49 @@ namespace Aris
 				throw std::runtime_error("IMU: failed to find IMU sensor");
 #endif
 #ifdef PLATFORM_IS_LINUX
-				std::string portNumber = "/dev/ttyUSB0";
-				int baudRate = 921600;
-
-				XsPortInfo portInfo(portNumber, XsBaud::numericToRate(baudRate));
+				XsPortInfo portInfo(pDevice->port, XsBaud::numericToRate(pDevice->baudRate));
 				portInfoArray.push_back(portInfo);
 #endif
 			}
-
+			
 			mtPort = portInfoArray.at(0);
-
+			
 			// Open the port with the detected device
 			if (!pDevice->openPort(mtPort))
 				throw std::runtime_error("IMU: could not open port.");
+			
+			Aris::Core::Sleep(10);
 
 			// Put the device in configuration mode
 			if (!pDevice->gotoConfig()) // Put the device into configuration mode before configuring the device
 			{
 				throw std::runtime_error("IMU: could not put device into configuration mode");
 			}
-
+			
 			// Request the device Id to check the device type
 			mtPort.setDeviceId(pDevice->getDeviceId());
-
+			
 			// Check if we have an MTi / MTx / MTmk4 device
-			if (!mtPort.deviceId().isMt9c() && !mtPort.deviceId().isMtMk4())
+			if (!mtPort.deviceId().isMtMk4())
 			{
 				throw std::runtime_error("IMU: No MTi / MTx / MTmk4 device found.");
 			}
-
+			
 			// Check device type
-			if (mtPort.deviceId().isMt9c())
+			if (mtPort.deviceId().isMtMk4())
 			{
-				XsOutputMode outputMode = XOM_Orientation; // output orientation data
-				XsOutputSettings outputSettings = XOS_OrientationMode_Quaternion; // output orientation data as quaternion
+				XsOutputConfiguration config0(XDI_Quaternion, pDevice->sampleRate);
+				XsOutputConfiguration config1(XDI_DeltaQ, pDevice->sampleRate);
+				XsOutputConfiguration config2(XDI_DeltaV, pDevice->sampleRate);
+				XsOutputConfiguration config3(XDI_Acceleration, pDevice->sampleRate);
 
-																				  // set the device configuration
-				if (!pDevice->setDeviceMode(outputMode, outputSettings))
-				{
-					throw std::runtime_error("IMU: Could not configure MT pDevice-> Aborting.");
-				}
-			}
-			else if (mtPort.deviceId().isMtMk4())
-			{
-				XsOutputConfiguration quat(XDI_Quaternion, 100);
 				XsOutputConfigurationArray configArray;
-				configArray.push_back(quat);
+				configArray.push_back(config0);
+				configArray.push_back(config1);
+				configArray.push_back(config2);
+				configArray.push_back(config3);
 				if (!pDevice->setOutputConfiguration(configArray))
 				{
-
 					throw std::runtime_error("IMU: Could not configure MTmk4 pDevice-> Aborting.");
 				}
 			}
@@ -96,7 +180,7 @@ namespace Aris
 			{
 				throw std::runtime_error("IMU: Unknown device while configuring. Aborting.");
 			}
-
+			
 			// Put the device in measurement mode
 			if (!pDevice->gotoMeasurement())
 			{
@@ -112,6 +196,7 @@ namespace Aris
 			XsByteArray imuData;
 			XsMessageArray msgs;
 
+
 			while (msgs.empty())
 			{
 				Aris::Core::Sleep(1);
@@ -119,42 +204,39 @@ namespace Aris
 				pDevice->processBufferedData(imuData, msgs);
 			}
 
+			std::cout << "msg num:" << msgs.size()<<std::endl;
+
 			for (XsMessageArray::iterator it = msgs.begin(); it != msgs.end(); ++it)
 			{
 				// Retrieve a packet
 				XsDataPacket packet;
-				if ((*it).getMessageId() == XMID_MtData) {
-					LegacyDataPacket lpacket(1, false);
-					lpacket.setMessage((*it));
-					lpacket.setXbusSystem(false, false);
-					lpacket.setDeviceId(mtPort.deviceId(), 0);
-					lpacket.setDataFormat(XOM_Orientation, XOS_OrientationMode_Quaternion, 0);	//lint !e534
-					XsDataPacket_assignFromXsLegacyDataPacket(&packet, &lpacket, 0);
-				}
-				else if ((*it).getMessageId() == XMID_MtData2) {
+				if ((*it).getMessageId() == XMID_MtData2) 
+				{
 					packet.setMessage((*it));
 					packet.setDeviceId(mtPort.deviceId());
 				}
 
-				// Get the quaternion data
-				XsQuaternion quaternion = packet.orientationQuaternion();
+				// Get the all data
+				auto eul = packet.orientationEuler();
+				auto sdi = packet.sdiData();
+				auto acc = packet.calibratedAcceleration();
 
-				// Convert packet to euler
-				XsEuler euler = packet.orientationEuler();
+				data.yaw = eul.yaw()*PI / 180;
+				data.pitch = eul.pitch()*PI / 180;
+				data.roll = eul.roll()*PI / 180;
 
-				data.time = packet.timeOfArrival().msTimeOfDay();
+				data.va = sdi.orientationIncrement().x() * 2 * 100;
+				data.vb = sdi.orientationIncrement().y() * 2 * 100;
+				data.vc = sdi.orientationIncrement().z() * 2 * 100;
+				
+				std::copy_n(acc.data(), acc.size(), data.acc);
 
-				data.a = euler.pitch();
-				data.b = euler.roll();
-				data.c = euler.yaw();
+				data.time = packet.timeOfArrival().nowMs();
+				data.pmLhs = *pDevice->pmImuGround2BodyGround;
+				data.pmRhs = *pDevice->pmBody2Imu;
 			}
-			msgs.clear();
-			
-			static int count = 0;
-			data.count = count;
-			count++;
-			
 
+			msgs.clear();
 		}
 	}
 }

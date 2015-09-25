@@ -18,13 +18,6 @@ using namespace std;
 
 #include <Aris_DynModel.h>
 
-#ifdef PLATFORM_IS_WINDOWS
-#include <stdlib.h>
-#endif
-#ifdef PLATFORM_IS_LINUX
-#include <stdlib.h>
-#endif
-
 extern "C"
 {
 #include <cblas.h>
