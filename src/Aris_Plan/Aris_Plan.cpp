@@ -44,7 +44,6 @@ namespace Aris
 
 		double dt = 0.001;
 
-
 		bool FAST_PATH::Compute(std::list<NODE>::iterator iter, FAST_PATH::DATA &data)
 		{
 			auto r_iter = std::next(iter);
