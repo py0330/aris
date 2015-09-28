@@ -1,4 +1,5 @@
-﻿#include "Aris_Socket.h"
+﻿#include "Platform.h"
+#include "Aris_Socket.h"
 
 #include <thread>
 #include <mutex>
@@ -11,7 +12,6 @@
 #include <new>
 
 #ifdef PLATFORM_IS_WINDOWS
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <ws2tcpip.h>
 #endif
 
@@ -37,13 +37,13 @@ namespace Aris
 			CONN::STATE _ConnState;
 			
 
-			std::function<Aris::Core::MSG(CONN *, Aris::Core::MSG &)> _OnReceivedRequest;
-			std::function<int(CONN *, Aris::Core::MSG &)> _OnReceivedData;
-			std::function<int(CONN *, const char *, int)> _OnReceivedConnection;
-			std::function<int(CONN *)> _OnLoseConnection;
+			std::function<Aris::Core::MSG(CONN *, Aris::Core::MSG &)> onReceivedRequest;
+			std::function<int(CONN *, Aris::Core::MSG &)> onReceivedData;
+			std::function<int(CONN *, const char *, int)> onReceivedConnection;
+			std::function<int(CONN *)> onLoseConnection;
 
-			std::function<void(CONN *)> _OnAcceptError;
-			std::function<void(CONN *)> _OnReceiveError;
+			std::function<void(CONN *)> onAcceptError;
+			std::function<void(CONN *)> onReceiveError;
 			
 
 			/*线程同步变量*/
@@ -63,12 +63,12 @@ namespace Aris
 			CONN_STRUCT()
 				: _LisnSocket(0)
 				, _ConnSocket(0)
-				, _OnReceivedData(nullptr)
-				, _OnReceivedConnection(nullptr)
-				, _OnLoseConnection(nullptr)
-				, _OnReceivedRequest(nullptr)
 				, _SinSize(sizeof(struct sockaddr_in))
 				, _ConnState(CONN::IDLE)
+				, onReceivedRequest(nullptr)
+				, onReceivedData(nullptr)
+				, onReceivedConnection(nullptr)
+				, onLoseConnection(nullptr)
 			{
 			};
 
@@ -115,8 +115,8 @@ namespace Aris
 			{
 				pConnS->pConn->Close();
 
-				if (pConnS->_OnAcceptError != nullptr)
-					pConnS->_OnAcceptError(pConnS->pConn);
+				if (pConnS->onAcceptError != nullptr)
+					pConnS->onAcceptError(pConnS->pConn);
 
 				return;
 			}
@@ -132,9 +132,9 @@ namespace Aris
 			pConnS->_cv.wait(cv_lck);
 
 
-			if (pConnS->_OnReceivedConnection != nullptr)
+			if (pConnS->onReceivedConnection != nullptr)
 			{
-				pConnS->_OnReceivedConnection(pConnS->pConn, inet_ntoa(pConnS->_ClientAddr.sin_addr), ntohs(pConnS->_ClientAddr.sin_port));
+				pConnS->onReceivedConnection(pConnS->pConn, inet_ntoa(pConnS->_ClientAddr.sin_addr), ntohs(pConnS->_ClientAddr.sin_port));
 			}
 
 			return;
@@ -178,8 +178,8 @@ namespace Aris
 				{
 					pConnS->pConn->Close();
 
-					if (pConnS->_OnLoseConnection != 0)
-						pConnS->_OnLoseConnection(pConnS->pConn);
+					if (pConnS->onLoseConnection != 0)
+						pConnS->onLoseConnection(pConnS->pConn);
 
 					return;
 				}
@@ -195,8 +195,8 @@ namespace Aris
 				{
 					pConnS->pConn->Close();
 
-					if (pConnS->_OnLoseConnection != nullptr)
-						pConnS->_OnLoseConnection(pConnS->pConn);
+					if (pConnS->onLoseConnection != nullptr)
+						pConnS->onLoseConnection(pConnS->pConn);
 
 					return;
 				}
@@ -206,24 +206,24 @@ namespace Aris
 				{
 				case SOCKET_GENERAL_DATA:
 				{
-					if (pConnS->_OnReceivedData != nullptr)
-						pConnS->_OnReceivedData(pConnS->pConn, receivedData);
+					if (pConnS->onReceivedData != nullptr)
+						pConnS->onReceivedData(pConnS->pConn, receivedData);
 					break;
 				}
 				case SOCKET_REQUEST:
 				{
 					Aris::Core::MSG m;
-					if (pConnS->_OnReceivedRequest != nullptr)
+					if (pConnS->onReceivedRequest != nullptr)
 					{
-						m = pConnS->_OnReceivedRequest(pConnS->pConn, receivedData);
+						m = pConnS->onReceivedRequest(pConnS->pConn, receivedData);
 					}
 					m.SetType(SOCKET_REPLY);
 
 					if (send(pConnS->_ConnSocket, m._pData, m.GetLength() + sizeof(MSG_HEADER), 0) == -1)
 					{
 						pConnS->pConn->Close();
-						if (pConnS->_OnLoseConnection != nullptr)
-							pConnS->_OnLoseConnection(pConnS->pConn);
+						if (pConnS->onLoseConnection != nullptr)
+							pConnS->onLoseConnection(pConnS->pConn);
 						return;
 					}
 					break;
@@ -232,8 +232,8 @@ namespace Aris
 				{
 					if (pConnS->_ConnState != WAITING_FOR_REPLY)
 					{
-						if (pConnS->_OnReceiveError != nullptr)
-							pConnS->_OnReceiveError(pConnS->pConn);
+						if (pConnS->onReceiveError != nullptr)
+							pConnS->onReceiveError(pConnS->pConn);
 
 						return;
 					}
@@ -501,30 +501,30 @@ namespace Aris
 		void CONN::SetOnReceivedData(std::function<int(CONN*, Aris::Core::MSG &)> OnReceivedData)
 		{
 			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_state_mutex);
-			pConnStruct->_OnReceivedData = OnReceivedData;
+			pConnStruct->onReceivedData = OnReceivedData;
 		}
 		void CONN::SetOnReceiveRequest(std::function<Aris::Core::MSG(CONN*, Aris::Core::MSG &)> OnReceivedRequest)
 		{
 			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_state_mutex);
-			pConnStruct->_OnReceivedRequest = OnReceivedRequest;
+			pConnStruct->onReceivedRequest = OnReceivedRequest;
 		}
 		void CONN::SetOnReceivedConnection(std::function<int(CONN*, const char*, int)> OnReceivedConnection)
 		{
 			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_state_mutex);
-			pConnStruct->_OnReceivedConnection = OnReceivedConnection;
+			pConnStruct->onReceivedConnection = OnReceivedConnection;
 		}
 		void CONN::SetOnLoseConnection(std::function<int(CONN*)> OnLoseConnection)
 		{
 			std::unique_lock<std::recursive_mutex> lck(pConnStruct->_state_mutex);
-			pConnStruct->_OnLoseConnection = OnLoseConnection;
+			pConnStruct->onLoseConnection = OnLoseConnection;
 		}
 		void CONN::SetOnAcceptError(std::function<void(CONN*)> onAcceptError)
 		{
-			pConnStruct->_OnAcceptError = onAcceptError;
+			pConnStruct->onAcceptError = onAcceptError;
 		}
 		void CONN::SetOnReceiveError(std::function<void(CONN*)> onReceiveError)
 		{
-			pConnStruct->_OnReceiveError = onReceiveError;
+			pConnStruct->onReceiveError = onReceiveError;
 		}
 	}
 }

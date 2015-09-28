@@ -8,7 +8,8 @@
 using namespace std;
 
 #include "Aris_ExpCal.h"
-#include<cblas.h>
+#include <Eigen/Eigen>
+
 namespace Aris
 {
 	namespace DynKer
@@ -201,34 +202,58 @@ namespace Aris
 				{
 					if (m2.isRowMajor)
 					{
-						cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m1Eigen(m1.pData, m1.m, m1.n);
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m2Eigen(m2.pData, m2.m, m2.n);
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.pData, ret.m, ret.n);
+						
+						retEigen = m1Eigen*m2Eigen;
+						/*cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
 							m1.m, m2.n, m1.n,
 							1, m1.Data(), m1.n, m2.Data(), m2.n,
-							0, ret.Data(), ret.n);
+							0, ret.Data(), ret.n);*/
 					}
 					else
 					{
-						cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m1Eigen(m1.pData, m1.m, m1.n);
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m2Eigen(m2.pData, m2.m, m2.n);
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.pData, ret.m, ret.n);
+
+						retEigen = m1Eigen*m2Eigen;
+						
+						/*cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
 							m1.m, m2.n, m1.n,
 							1, m1.Data(), m1.n, m2.Data(), m2.m,
-							0, ret.Data(), ret.n);
+							0, ret.Data(), ret.n);*/
 					}
 				}
 				else
 				{
 					if (m2.isRowMajor)
 					{
-						cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m1Eigen(m1.pData, m1.m, m1.n);
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m2Eigen(m2.pData, m2.m, m2.n);
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.pData, ret.m, ret.n);
+
+						retEigen = m1Eigen*m2Eigen;
+						
+						
+						/*cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
 							m1.m, m2.n, m1.n,
 							1, m1.Data(), m1.m, m2.Data(), m2.n,
-							0, ret.Data(), ret.n);
+							0, ret.Data(), ret.n);*/
 					}
 					else
 					{
-						cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans,
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m1Eigen(m1.pData, m1.m, m1.n);
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m2Eigen(m2.pData, m2.m, m2.n);
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.pData, ret.m, ret.n);
+
+						retEigen = m1Eigen*m2Eigen;
+						
+						/*cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans,
 							m1.m, m2.n, m1.n,
 							1, m1.Data(), m1.m, m2.Data(), m2.m,
-							0, ret.Data(), ret.n);
+							0, ret.Data(), ret.n);*/
 					}
 				}
 

@@ -99,7 +99,6 @@ private:
 		char path[TASK_NAME_LEN] = {0};
 		char cParam[100] = {0};
 		char *proName = path;
-		std::int32_t tmp_len;
 
 		pid_t pId = getpid();
 		sprintf(cParam,"/proc/%d/exe",pId);

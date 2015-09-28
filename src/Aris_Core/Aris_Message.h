@@ -8,9 +8,10 @@
 #ifndef ARIS_MESSAGE_H_
 #define ARIS_MESSAGE_H_
 
-#include "Aris_Core.h"
 #include <functional>
 #include <cstdint>
+
+#include <Aris_Core.h>
 
 namespace Aris
 {

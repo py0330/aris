@@ -20,9 +20,6 @@
 #include <functional>
 #include <algorithm>
 
-#include <Aris_XML.h>
-#include <Aris_ExpCal.h>
-
 namespace Aris
 {
 	namespace DynKer
@@ -309,11 +306,11 @@ namespace Aris
 		void s_dgemmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
 		void s_dgemmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
 		
-		void s_dgeinv(const int n, double* A, const int lda, int *ipiv) noexcept;
-		void s_dgesv(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept;
-		void s_dgesvT(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept;
-		void s_dgelsd(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept;
-		void s_dgelsdT(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept;
+		//void s_dgeinv(const int n, double* A, const int lda, int *ipiv) noexcept;
+		//void s_dgesv(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept;
+		//void s_dgesvT(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept;
+		//void s_dgelsd(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept;
+		//void s_dgelsdT(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept;
 
 
 		class AKIMA

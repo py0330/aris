@@ -1,10 +1,5 @@
 ﻿#include <Platform.h>
 
-#ifdef PLATFORM_IS_WINDOWS
-#define _SCL_SECURE_NO_WARNINGS
-#endif
-
-
 #include <cmath>
 #include <cstring>
 #include <fstream>
@@ -15,50 +10,14 @@
 #include <sstream>
 #include <cstddef>
 #include <array>
+#include <list>
 
 #include "Aris_DynKer.h"
-#include "Aris_ExpCal.h"
-
-extern "C"
-{
-#include <cblas.h>
-}
-#include <lapacke.h>
 
 namespace Aris
 {
 	namespace DynKer
 	{
-		class S_MALLOC
-		{
-		private:
-			void *pMem;
-			std::size_t currentSize;
-		public:
-			S_MALLOC()
-			{
-				pMem = malloc(10000000);
-				currentSize = 10000000;
-			}
-			~S_MALLOC()
-			{
-				free(pMem);
-			};
-
-			void* operator()(std::size_t size)
-			{
-				if (size > currentSize)
-				{
-					free(pMem);
-					pMem = malloc(size);
-					currentSize = size;
-				}
-
-				return pMem;
-			}
-		};
-		S_MALLOC s_malloc;
-		
 		void dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n)
 		{
 			std::ofstream file;
@@ -174,9 +133,6 @@ namespace Aris
 			Order[0] = axesOrder[0] - 'w';//asc玛顺序 uvw  xyz……
 			Order[1] = axesOrder[1] - 'w';//asc玛顺序 uvw  xyz……
 			Order[2] = 6 - Order[1] - Order[0];
-
-			//memcpy(Axis1, firstAxisPnt, sizeof(Axis1));
-			//memcpy(Axis2, secondAxisPnt, sizeof(Axis2));
 
 			std::copy_n(firstAxisPnt, 3, Axis1);
 			std::copy_n(secondAxisPnt, 3, Axis2);
@@ -572,16 +528,6 @@ namespace Aris
 		}
 		void s_pm2pq(const double *pm_in, double *pq_out) noexcept
 		{
-			const double &r11 = pm_in[0];
-			const double &r12 = pm_in[1];
-			const double &r13 = pm_in[2];
-			const double &r21 = pm_in[4];
-			const double &r22 = pm_in[5];
-			const double &r23 = pm_in[6];
-			const double &r31 = pm_in[8];
-			const double &r32 = pm_in[9];
-			const double &r33 = pm_in[10];
-			
 			double &x = pq_out[0];
 			double &y = pq_out[1];
 			double &z = pq_out[2];
@@ -592,7 +538,7 @@ namespace Aris
 
 			double *q = &pq_out[3];
 
-			double tr = r11 + r22 + r33;
+			double tr = pm_in[0] + pm_in[5] + pm_in[10];
 
 			/*因为无法确保在截断误差的情况下，tr+1一定为正，因此这里需要判断*/
 			q4 = tr>-1 ? sqrt((tr + 1) / 4) : 0;
@@ -614,8 +560,6 @@ namespace Aris
 				/*qp_out 是通过开方计算而得，因此一定为正*/
 				id = std::max_element(q, q + 3) - q;
 				
-				//DynKer::s_max(q, 3, &id);
-
 				q[id] *= s_sgn2(pm_in[(id + 2) % 3 * 4 + (id + 1) % 3] - pm_in[(id + 1) % 3 * 4 + (id + 2) % 3]);
 				q[(id + 1) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 1) % 3] + pm_in[((id + 1) % 3) * 4 + id]);
 				q[(id + 2) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 2) % 3] + pm_in[((id + 2) % 3) * 4 + id]);
@@ -703,15 +647,13 @@ namespace Aris
 			else
 			{
 				int j = (i + 1) % 3;
-				int k = (i + 1) % 3;
+				int k = (i + 2) % 3;
 				
 				vq[i] = (vpm[i][i] - vpm[j][j] - vpm[k][k]) / 8 * q[i];
 				vq[j] = (vpm[j][i] + vpm[i][j] - 4 * q[j] * vq[i]) / 4 * q[i];
 				vq[k] = (vpm[k][i] + vpm[i][k] - 4 * q[k] * vq[i]) / 4 * q[i];
 				vq[3] = (vpm[k][j] - vpm[j][k] - 4 * q[4] * vq[i]) / 4 * q[i];
 			}
-
-			//memcpy(&vq_out[0], &v_in[0], sizeof(double) * 3);
 
 			//note that only first 3 elements
 			std::copy_n(v_in, 3, vq_out);
@@ -784,6 +726,8 @@ namespace Aris
 		}
 		void s_tf_n(int n, const double *pm_in, const double *fces_in, double *m_out) noexcept
 		{
+			std::fill_n(m_out, 6 * n, 0);
+			
 			s_dgemm(3, n, 3, 1, pm_in, 4, fces_in, n, 0, m_out, n);
 			s_dgemm(3, n, 3, 1, pm_in, 4, fces_in + 3 * n, n, 0, m_out + 3 * n, n);
 
@@ -796,15 +740,6 @@ namespace Aris
 		}
 		void s_tf_n(int n, double alpha, const double *pm_in, const double *fces_in, double beta, double *m_out) noexcept
 		{
-			//double* tem = static_cast<double *>(s_malloc(sizeof(double)*n * 6));
-
-			//s_tf_n(n, pm_in, fces_in, tem);
-
-			//for (int i = 0; i < n * 6; ++i)
-			//{
-			//	m_out[i] = alpha*tem[i] + beta*m_out[i];
-			//}
-
 			double vRm[3][3];
 
 			for (int i = 0; i < 3; ++i)
@@ -852,6 +787,8 @@ namespace Aris
 		}
 		void s_tv_n(int n, const double *pm_in, const double *vels_in, double *m_out) noexcept
 		{
+			std::fill_n(m_out, 6 * n, 0);
+			
 			s_dgemm(3, n, 3, 1, pm_in, 4, vels_in, n, 0, m_out, n);
 			s_dgemm(3, n, 3, 1, pm_in, 4, vels_in + 3 * n, n, 0, m_out + 3 * n, n);
 
@@ -861,35 +798,9 @@ namespace Aris
 				m_out[n * 1 + i] += pm_in[11] * m_out[3 * n + i] - pm_in[3] * m_out[5 * n + i];
 				m_out[n * 2 + i] += -pm_in[7] * m_out[3 * n + i] + pm_in[3] * m_out[4 * n + i];
 			}
-			
-			//double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
-			//double *m_out_tran = fces_in_tran + 6 * n;
-
-			//s_transpose(6, n, vels_in, n, fces_in_tran, 6);
-			//s_transpose(6, n, m_out, n, m_out_tran, 6);
-
-			//for (int i = 0; i < n; ++i)
-			//{
-			//	s_tv(pm_in, fces_in_tran + i * 6, m_out_tran + i * 6);
-			//}
-
-			//s_transpose(n, 6, m_out_tran, 6, m_out, n);
 		}
 		void s_tv_n(int n, double alpha, const double *pm_in, const double *vels_in, double beta, double *m_out) noexcept
 		{
-			//double *fces_in_tran = static_cast<double *>(s_malloc(sizeof(double)*n * 12));
-			//double *m_out_tran = fces_in_tran + 6 * n;
-
-			//s_transpose(6, n, vels_in, n, fces_in_tran, 6);
-			//s_transpose(6, n, m_out, n, m_out_tran, 6);
-
-			//for (int i = 0; i < n; ++i)
-			//{
-			//	s_tv(alpha, pm_in, fces_in_tran + i * 6, beta, m_out_tran + i * 6);
-			//}
-
-			//s_transpose(n, 6, m_out_tran, 6, m_out, n);
-
 			double vRm[3][3];
 
 			for (int i = 0; i < 3; ++i)
@@ -1081,7 +992,8 @@ namespace Aris
 
 
 			/*以下为慢速但准确的算法*/
-			double tem[6][6], tmf[6][6];
+			std::fill_n(to_im_out, 36, 0);
+			double tem[6][6]{ {0} }, tmf[6][6]{ {0} };
 			s_tmf(from_pm_in, *tmf);
 			s_dgemm(6, 6, 6, 1, *tmf, 6, from_im_in, 6, 0, *tem, 6);
 			s_dgemmNT(6, 6, 6, 1, *tem, 6, *tmf, 6, 0, to_im_out, 6);
@@ -1114,7 +1026,7 @@ namespace Aris
 			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
 			to_vel_out = to_vel_out ? to_vel_out : to_vel;
 
-			double relative_pm_in[16], relative_vel_in[6];
+			double relative_pm_in[16], relative_vel_in[6]{ 0 };
 			
 			s_inv_pm(inv_relative_pm_in, relative_pm_in);
 			s_tv(-1, relative_pm_in, inv_relative_vel_in, 0, relative_vel_in);
@@ -1139,7 +1051,6 @@ namespace Aris
 			to_vel_out = to_vel_out ? to_vel_out : to_vel;
 			to_acc_out = to_acc_out ? to_acc_out : to_acc;
 		
-			//s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel_out);
 			s_tv(relative_pm_in, from_vel_in, to_vel_out);
 			s_cv(relative_vel_in, to_vel_out, to_acc_out);
 			s_tv(1, relative_pm_in, from_acc_in, 1, to_acc_out);
@@ -1231,6 +1142,8 @@ namespace Aris
 			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
 			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
 			
+			std::fill_n(to_pv_out, 3, 0);
+
 			double tem[3];
 			std::copy_n(from_pv, 3, tem);
 			s_cro3(-1, inv_relative_vel_in + 3, from_pnt, 1, tem);
@@ -1264,6 +1177,8 @@ namespace Aris
 			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
 			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
 
+			std::fill_n(to_pa_out, 3, 0);
+
 			double tem[3],tem2[3];
 			s_inv_pv2pv(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
 
@@ -1280,7 +1195,7 @@ namespace Aris
 		}
 		void s_mass2im(const double mass_in, const double * inertia_in, const double *pm_in, double *im_out) noexcept
 		{
-			double loc_im[6][6], loc_tm[6][6];
+			double loc_im[6][6]{ {0} }, loc_tm[6][6];
 		
 			//memset(im_out, 0, sizeof(double)* 36);
 			std::fill_n(im_out, 36, 0);
@@ -1345,9 +1260,6 @@ namespace Aris
 		}
 		void s_im2gamma(const double * im_in, double *gamma_out) noexcept
 		{
-			//memset(gamma_out, 0, sizeof(double)* 10);
-			std::fill_n(gamma_out, 10, 0);
-
 			gamma_out[0] = im_in[0];
 			gamma_out[1] = im_in[11];
 			gamma_out[2] = im_in[15];
@@ -1482,8 +1394,6 @@ namespace Aris
 
 		void s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept
 		{
-			//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 3, 4, 3, 1, pm1_in, 4, pm2_in, 4, 0, pm_out, 4);
-
 			/*seemed that loop is faster than cblas*/
 			for (int i = 0; i < 3; ++i)
 			{
@@ -1538,12 +1448,14 @@ namespace Aris
 		}
 		void s_inv_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept
 		{
-			/*有待优化*/
+			std::fill_n(pos_out, 3, 0);
+
+
 			double tem[3];
 			std::copy_n(pos_in, 3, tem);
 
-			cblas_daxpy(3, -1, &pm_in[3], 4, tem, 1);
-			cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, 3, 1, 3, 1, pm_in, 4, tem, 1, 0, pos_out, 1);
+			s_daxpy(3, -1, &pm_in[3], 4, tem, 1);
+			s_dgemmTN(3, 1, 3, 1, pm_in, 4, tem, 1, 0, pos_out, 1);
 		}
 		void s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept
 		{
@@ -1563,8 +1475,6 @@ namespace Aris
 		
 		void s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept
 		{
-			//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 1, 6, 1, m6_in, 6, v6_in, 1, 0, v6_out, 1);
-
 			/*seemed that loop is faster than cblas*/
 			for (int i = 0; i < 6; ++i)
 			{
@@ -1616,8 +1526,6 @@ namespace Aris
 
 		void s_dscal(const int n, const double a, double *x, const int incx) noexcept
 		{
-			int finalIdx = n*incx;
-			
 			for (int i = 0; i < n*incx; i+=incx)
 			{
 				x[i] *= a;
@@ -1673,7 +1581,6 @@ namespace Aris
 
 		void s_dgemm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
 		{
-			//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha,  A, lda,  B, ldb, beta, C, ldc);
 			for (int i = 0; i < m; ++i)
 			{
 				int rowIndex = i*lda;
@@ -1694,7 +1601,6 @@ namespace Aris
 		}
 		void s_dgemmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
 		{
-			//cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 			for (int i = 0; i < m; ++i)
 			{
 				for (int j = 0; j < n; ++j)
@@ -1714,7 +1620,6 @@ namespace Aris
 		}
 		void s_dgemmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept
 		{
-			//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 			for (int i = 0; i < m; ++i)
 			{
 				int rowIndex = i*lda;
@@ -1736,66 +1641,7 @@ namespace Aris
 			}
 		}
 
-		void s_dgeinv(const int n, double* A, const int lda, int *ipiv) noexcept
-		{
-			LAPACKE_dgetrf_work(CblasRowMajor, n, n, A, lda, ipiv);
-			double query;
-			lapack_int lwork;
-			LAPACKE_dgetri_work(CblasRowMajor, n, A, lda, ipiv, &query, -1);
-			lwork = (lapack_int)query;
 
-			double* work = (double *)s_malloc(lwork*sizeof(double));
-			LAPACKE_dgetri_work(CblasRowMajor, n, A, lda, ipiv, work, lwork);
-		}
-		void s_dsyinv(const int n, double* A, const int lda, int *ipiv) noexcept
-		{
-			double query, *work;
-			lapack_int lwork;
-			LAPACKE_dsytrf_work(CblasRowMajor, 'L', n, A, lda, ipiv, &query, -1);
-			lwork = (lapack_int)query;
-			work = (double *)s_malloc(lwork*sizeof(double));
-			LAPACKE_dsytrf_work(CblasRowMajor, 'L', n, A, lda, ipiv, work, lwork);
-
-			/*不确定为啥这里不用查询work的size,大概因为这个函数不需要work的buffer吧*/
-			LAPACKE_dsytri_work(CblasRowMajor, 'L', 6, A, 6, ipiv, work);
-		}
-		void s_dgesv(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept
-		{
-			LAPACKE_dgesv_work(CblasRowMajor, n, nrhs, a, lda, ipiv, b, ldb);
-		}
-		void s_dgesvT(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept
-		{
-			LAPACKE_dgesv_work(CblasColMajor, n, nrhs, a, lda, ipiv, b, ldb);
-		}
-		void s_dgelsd(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept
-		{
-			double queryDouble;
-			lapack_int queryInt;
-			double *work_double;
-			lapack_int* work_int;
-			lapack_int lwork;
-			LAPACKE_dgelsd_work(CblasRowMajor, m, n, nrhs, a, lda, b, ldb, s, rcond, rank, &queryDouble, -1, &queryInt);
-
-			lwork = (lapack_int)queryDouble;
-			work_double = (double *)s_malloc(sizeof(double)*(lapack_int)queryDouble + sizeof(lapack_int)*queryInt);
-			work_int = (int *)(work_double + (lapack_int)queryDouble);
-			LAPACKE_dgelsd_work(CblasRowMajor, m, n, nrhs, a, lda, b, ldb, s, rcond, rank, work_double, lwork, work_int);
-
-		}
-		void s_dgelsdT(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept
-		{
-			double queryDouble;
-			lapack_int queryInt;
-			double *work_double;
-			lapack_int* work_int;
-			lapack_int lwork;
-			LAPACKE_dgelsd_work(CblasColMajor, m, n, nrhs, a, lda, b, ldb, s, rcond, rank, &queryDouble, -1, &queryInt);
-
-			lwork = (lapack_int)queryDouble;
-			work_double = (double *)s_malloc(sizeof(double)*(lapack_int)queryDouble + sizeof(lapack_int)*queryInt);
-			work_int = (int *)(work_double + (lapack_int)queryDouble);
-			LAPACKE_dgelsd_work(CblasColMajor, m, n, nrhs, a, lda, b, ldb, s, rcond, rank, work_double, lwork, work_int);
-		}
 
 		AKIMA::AKIMA(int inNum, const double *x_in, const double *y_in)
 		{
@@ -1890,7 +1736,5 @@ namespace Aris
 				y_out[i] = this->operator()(x_in[i], order);
 			}
 		}
-
-
 	}
 }

@@ -1,14 +1,10 @@
 ﻿#ifndef ARIS_CORE_H_
 #define ARIS_CORE_H_
 
-#include <Platform.h>
-
 #include <cstring>
 #include <cstdint>
 #include <cstdio>
 #include <string>
-
-
 
 namespace Aris
 {

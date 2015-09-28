@@ -946,18 +946,56 @@ namespace Aris
 
 		class FAST_PATH
 		{
+		public:
+			struct MOTOR_LIMIT
+			{
+				double maxVel, minVel, maxAcc, minAcc;
+			};
 			struct NODE
 			{
-				double s;
-				double ds;
-				double dds;
-				bool isAccelerating{true};
+				double time, s, ds, dds;
+				bool isAccelerating;
+			};
+			struct DATA
+			{
+				double * const Ji;
+				double * const Cv;
+				double * const Ca;
+				double * const g;
+				double * const h;
+				const int size;
+				double time, s, ds;
+				double lhs, rhs;
 			};
 
-			void run(std::function<void(double t_in,double s_in, double ds_in
-				, double* Ji, double** dJi_over_b, double* g_out, double* h_out)>);
 
-			std::list<NODE> forwardVec, backwardVec;
+			template <typename LIMIT_ARRAY>
+			void SetMotorLimit(LIMIT_ARRAY limits)
+			{
+				motor_limits.clear();
+				for (auto &limit : limits)
+				{
+					motor_limits.push_back(limit);
+				}
+			}
+			void SetBeginNode(NODE node) { list.push_front(node); };
+			void SetEndNode(NODE node) { list.push_back(node); };
+			void SetFunction(std::function<void(FAST_PATH::DATA &)> getEveryThing) { this->getEveryThing = getEveryThing; };
+			std::list<NODE> &Result() { return retList; };
+			void Run();
+			
+
+			FAST_PATH() = default;
+			~FAST_PATH() = default;
+
+		private:
+			bool Compute(std::list<NODE>::iterator iter, FAST_PATH::DATA &data);
+
+		private:
+			std::list<NODE> list, retList;//Forward List , Backward List and Result List
+			std::list<NODE>::iterator iter;
+			std::vector<MOTOR_LIMIT> motor_limits;
+			std::function<void(FAST_PATH::DATA &)> getEveryThing;
 		};
 	}
 }

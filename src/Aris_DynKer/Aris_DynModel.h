@@ -9,14 +9,6 @@
 #ifndef Aris_DynModel_H
 #define Aris_DynModel_H
 
-#include <Platform.h>
-
-#ifdef PLATFORM_IS_WINDOWS
-#ifndef _SCL_SECURE_NO_WARNINGS
-#define _SCL_SECURE_NO_WARNINGS
-#endif
-#endif
-
 #ifndef PI
 #define PI 3.141592653589793
 #endif

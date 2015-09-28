@@ -1,9 +1,5 @@
 ﻿#include <Platform.h>
 
-#ifdef PLATFORM_IS_WINDOWS
-#define _SCL_SECURE_NO_WARNINGS
-#endif
-
 #include <cmath>
 #include <cstring>
 #include <fstream>
@@ -13,16 +9,9 @@
 #include <limits>
 #include <sstream>
 
-using namespace std;
-
-
-#include <Aris_DynModel.h>
-
-extern "C"
-{
-#include <cblas.h>
-}
-#include <lapacke.h>
+#include "Aris_ExpCal.h"
+#include "Aris_DynKer.h"
+#include "Aris_DynModel.h"
 
 namespace Aris
 {
@@ -100,25 +89,11 @@ namespace Aris
 		};
 		void UNIVERSAL_JOINT::Update()
 		{
-			double _pm_M2N[4][4];
-			double _tem_v1[6], _tem_v2[6];
-
-			/* Get pm M2N */
-			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
-
-			double v[3];
-			double a, a_dot;
-
-			double _tm_M2N[6][6];
-			double _tm_I2M[6][6];
-			s_tmf(*_pm_M2N, *_tm_M2N);
-			s_tmf(GetMakI()->GetPrtPmPtr(), *_tm_I2M);
-
-			/*update PrtCstMtx*/
-			//get sin(a) and cos(a)
+			/*update PrtCstMtxI*/
 			GetMakI()->Update();
 			GetMakJ()->Update();
 
+			//get sin(a) and cos(a)
 			double s = GetMakI()->GetPmPtr()[2] * GetMakJ()->GetPmPtr()[1]
 				+ GetMakI()->GetPmPtr()[6] * GetMakJ()->GetPmPtr()[5]
 				+ GetMakI()->GetPmPtr()[10] * GetMakJ()->GetPmPtr()[9];
@@ -126,31 +101,38 @@ namespace Aris
 			double c = GetMakI()->GetPmPtr()[1] * GetMakJ()->GetPmPtr()[1]
 				+ GetMakI()->GetPmPtr()[5] * GetMakJ()->GetPmPtr()[5]
 				+ GetMakI()->GetPmPtr()[9] * GetMakJ()->GetPmPtr()[9];
-
-			a = std::atan2(s, c);
-
-			/*edit CstMtxI*/
+			
 			_PrtCstMtxI[3][3] = -(GetMakI()->GetPrtPmPtr()[0 * 4 + 1]) * s + (GetMakI()->GetPrtPmPtr()[0 * 4 + 2]) * c;
 			_PrtCstMtxI[4][3] = -(GetMakI()->GetPrtPmPtr()[1 * 4 + 1]) * s + (GetMakI()->GetPrtPmPtr()[1 * 4 + 2]) * c;
 			_PrtCstMtxI[5][3] = -(GetMakI()->GetPrtPmPtr()[2 * 4 + 1]) * s + (GetMakI()->GetPrtPmPtr()[2 * 4 + 2]) * c;
 
-
+			/*edit CstMtxJ*/
+			std::fill_n(this->GetPrtCstMtxJPtr(), this->GetCstDim() * 6, 0);
+			double _pm_M2N[4][4];
+			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
 			s_tf_n(GetDim(), -1, *_pm_M2N, *_PrtCstMtxI, 0, *_PrtCstMtxJ);
+			
+			
+			
 			/*update A_c*/
 			std::fill_n(_a_c, UNIVERSAL_JOINT::GetCstDim(), 0);
 			
 			/*calculate a_dot*/
+			double v[3];
 			v[0] = GetMakJ()->GetVelPtr()[3] - GetMakI()->GetVelPtr()[3];
 			v[1] = GetMakJ()->GetVelPtr()[4] - GetMakI()->GetVelPtr()[4];
 			v[2] = GetMakJ()->GetVelPtr()[5] - GetMakI()->GetVelPtr()[5];
 
-			a_dot = GetMakI()->GetPmPtr()[0] * v[0] + GetMakI()->GetPmPtr()[4] * v[1] + GetMakI()->GetPmPtr()[8] * v[2];
+			double a_dot = GetMakI()->GetPmPtr()[0] * v[0] + GetMakI()->GetPmPtr()[4] * v[1] + GetMakI()->GetPmPtr()[8] * v[2];
+			
 			/*calculate part m*/
 			v[0] = -c*a_dot;
 			v[1] = -s*a_dot;
 
+			double _tem_v1[6]{ 0 }, _tem_v2[6]{ 0 };
 			s_inv_tv(GetMakI()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPrtVelPtr(), _tem_v1);
 			_a_c[3] -= v[0] * _tem_v1[4] + v[1] * _tem_v1[5];
+			
 			/*calculate part n*/
 			s_inv_tv(*_pm_M2N, GetMakJ()->GetFatherPrt()->GetPrtVelPtr(), _tem_v1);
 			s_cv(-1, GetMakI()->GetFatherPrt()->GetPrtVelPtr(), _tem_v1, 0, _tem_v2);
@@ -203,13 +185,11 @@ namespace Aris
 		}
 		void LINEAR_MOTION::Update()
 		{
-			double pm_M2N[4][4];
-			double pm_I2J[4][4];
-			
-			/*update motPos motVel motAcc*/
+			/*update motPos motVel,  motAcc should be given, not computed by part acc*/
 			_pMakI->Update();
 			_pMakJ->Update();
 
+			double pm_I2J[4][4];
 			s_inv_pm_dot_pm(_pMakJ->GetPmPtr(), _pMakI->GetPmPtr(), *pm_I2J);
 			MotPos = pm_I2J[2][3];
 
@@ -219,21 +199,15 @@ namespace Aris
 			s_inv_tv(_pMakJ->GetPmPtr(), velDiff, velDiff_in_J);
 			MotVel = velDiff_in_J[2];
 			
-			/*std::copy_n(_pMakI->GetAccPtr(), 6, velDiff);
-			s_daxpy(6, -1, _pMakJ->GetAccPtr(), 1, velDiff, 1);
-			s_inv_tv(_pMakJ->GetPmPtr(), velDiff, velDiff_in_J);
-			MotAcc = velDiff_in_J[2];*/
-
 			/*update cst fce*/
-			double tem_v1[6], tem_v2[6];
-
 			std::fill_n(_PrtCstMtxJ, 6, 0);
-			memset(_a_c, 0, sizeof(double) * 6);
-
-			/* Get tmf M2N */
+			double pm_M2N[4][4];
 			s_pm_dot_pm(_pMakJ->GetFatherPrt()->GetPrtPmPtr(), _pMakI->GetFatherPrt()->GetPmPtr(), *pm_M2N);
 			s_tf(-1, *pm_M2N, _PrtCstMtxI, 0, _PrtCstMtxJ);
 
+			/*update a_c*/
+			std::fill_n(_a_c, 6, 0);
+			double tem_v1[6]{ 0 }, tem_v2[6]{ 0 };
 			s_inv_tv(-1, *pm_M2N, _pMakJ->GetFatherPrt()->GetPrtVelPtr(), 0, tem_v1);
 			s_cv(_pMakI->GetFatherPrt()->GetPrtVelPtr(), tem_v1, tem_v2);
 			s_dgemmTN(1, 1, 6, 1, _PrtCstMtxI, 1, tem_v2, 1, 0, &_a_c[0], 1);

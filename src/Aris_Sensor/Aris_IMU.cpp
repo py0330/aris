@@ -5,6 +5,7 @@
 #include "Aris_Core.h"
 #include "Aris_IMU.h"
 #include "Aris_DynKer.h"
+#include "Aris_ExpCal.h"
 
 #include <xsens/xsportinfoarray.h>
 #include <xsens/xsdatapacket.h>
@@ -15,50 +16,51 @@
 
 #include "deviceclass.h"
 
-XsPortInfo mtPort;
-
 namespace Aris
 {
 	namespace Sensor
 	{
-		void IMU_DATA::ToBodyPm(double *pm) const
+		void IMU_DATA::ToPmBody2Ground(double *pm) const
 		{
-			ToBodyPm(pm, this->yaw);
+			ToPmBody2Ground(pm, this->yaw);
 		}
-		void IMU_DATA::ToBodyPm(double *pm, double yawValue) const
+		void IMU_DATA::ToPmBody2Ground(double *pm, double yawValue) const
 		{
 			double tem_pm[16];
 			double pe[6]{ 0,0,0,yawValue, pitch, roll };
 			Aris::DynKer::s_pe2pm(pe, tem_pm, "321");
 			Aris::DynKer::s_pm_dot_pm(pmLhs, tem_pm, pmRhs, pm);
 		}
-		void IMU_DATA::ToBodyEul(double *eul, const char *eulType) const
+		void IMU_DATA::ToEulBody2Ground(double *eul, const char *eulType) const
 		{
-			this->ToBodyEul(eul, this->yaw, eulType);
+			this->ToEulBody2Ground(eul, this->yaw, eulType);
 		}
-		void IMU_DATA::ToBodyEul(double *eul, double yawValue, const char *eulType) const
+		void IMU_DATA::ToEulBody2Ground(double *eul, double yawValue, const char *eulType) const
 		{
 			double pm[16], pe[6];
-			this->ToBodyPm(pm, yawValue);
+			this->ToPmBody2Ground(pm, yawValue);
 			Aris::DynKer::s_pm2pe(pm, pe, eulType);
 			std::copy_n(pe + 3, 3, eul);
 		}
-		void IMU_DATA::ToBodyOmega(double *omega) const
+		void IMU_DATA::ToOmegaBody2Ground(double *omega) const
 		{
-			
+			ToOmegaBody2Ground(omega, this->yaw);
 		}
-		void IMU_DATA::ToBodyOmega(double *omega, double yawValue) const
+		void IMU_DATA::ToOmegaBody2Ground(double *omega, double yawValue) const
 		{
 			double pm[16];
-			ToBodyPm(pm, yawValue);
-
-
+			ToPmBody2Ground(pm, yawValue);
+			Aris::DynKer::s_pm_dot_v3(pm, this->omega, omega);
 		}
-		void IMU_DATA::ToBodyAcc(double *acc) const
+		void IMU_DATA::ToPntAccBody2Ground(double *acc) const
 		{
+			ToPntAccBody2Ground(acc, this->yaw);
 		}
-		void IMU_DATA::ToBodyAcc(double *acc, double yawValue) const
+		void IMU_DATA::ToPntAccBody2Ground(double *acc, double yawValue) const
 		{
+			/*需要角加速度才能算出准确值*/
+			
+			//ToPntAccBody2Ground(acc, this->yaw);
 		}
 		
 		
@@ -72,6 +74,10 @@ namespace Aris
 
 			double pmImuGround2BodyGround[4][4];
 			double pmBody2Imu[4][4];
+
+
+		public:
+			XsPortInfo mtPort;
 		};
 		
 		IMU::IMU() 
@@ -135,10 +141,10 @@ namespace Aris
 #endif
 			}
 			
-			mtPort = portInfoArray.at(0);
+			pDevice->mtPort = portInfoArray.at(0);
 			
 			// Open the port with the detected device
-			if (!pDevice->openPort(mtPort))
+			if (!pDevice->openPort(pDevice->mtPort))
 				throw std::runtime_error("IMU: could not open port.");
 			
 			Aris::Core::Sleep(10);
@@ -150,16 +156,16 @@ namespace Aris
 			}
 			
 			// Request the device Id to check the device type
-			mtPort.setDeviceId(pDevice->getDeviceId());
+			pDevice->mtPort.setDeviceId(pDevice->getDeviceId());
 			
 			// Check if we have an MTi / MTx / MTmk4 device
-			if (!mtPort.deviceId().isMtMk4())
+			if (!pDevice->mtPort.deviceId().isMtMk4())
 			{
 				throw std::runtime_error("IMU: No MTi / MTx / MTmk4 device found.");
 			}
 			
 			// Check device type
-			if (mtPort.deviceId().isMtMk4())
+			if (pDevice->mtPort.deviceId().isMtMk4())
 			{
 				XsOutputConfiguration config0(XDI_Quaternion, pDevice->sampleRate);
 				XsOutputConfiguration config1(XDI_DeltaQ, pDevice->sampleRate);
@@ -213,7 +219,7 @@ namespace Aris
 				if ((*it).getMessageId() == XMID_MtData2) 
 				{
 					packet.setMessage((*it));
-					packet.setDeviceId(mtPort.deviceId());
+					packet.setDeviceId(pDevice->mtPort.deviceId());
 				}
 
 				// Get the all data

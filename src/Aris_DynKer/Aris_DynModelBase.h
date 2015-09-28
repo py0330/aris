@@ -9,14 +9,6 @@
 #ifndef Aris_DynModelBase_H
 #define Aris_DynModelBase_H
 
-#include <Platform.h>
-
-#ifdef PLATFORM_IS_WINDOWS
-#ifndef _SCL_SECURE_NO_WARNINGS
-#define _SCL_SECURE_NO_WARNINGS
-#endif
-#endif
-
 #ifndef PI
 #define PI 3.141592653589793
 #endif
@@ -142,17 +134,17 @@ namespace Aris
 			std::map<std::string, int> _markerNames;
 		
 		private:
-			double _Pm[4][4];
-			double _Vel[6];
-			double _Acc[6];
+			double _Pm[4][4]{ {0} };
+			double _Vel[6]{0};
+			double _Acc[6]{0};
 
-			double _PrtIm[6][6];
-			double _PrtPm[4][4];//inverse of the _Pm
-			double _PrtGravity[6];
-			double _PrtAcc[6];
-			double _PrtVel[6];
-			double _PrtFg[6];
-			double _PrtFv[6];
+			double _PrtIm[6][6]{ { 0 } };
+			double _PrtPm[4][4]{ { 0 } };//inverse of the _Pm
+			double _PrtGravity[6]{ 0 };
+			double _PrtAcc[6]{ 0 };
+			double _PrtVel[6]{ 0 };
+			double _PrtFg[6]{ 0 };
+			double _PrtFv[6]{ 0 };
 
 
 		public:
@@ -186,8 +178,8 @@ namespace Aris
 		private:
 			PART *_pPrt;
 
-			double _Pm[4][4];
-			double _PrtPm[4][4];
+			double _Pm[4][4]{ { 0 } };
+			double _PrtPm[4][4]{ { 0 } };
 
 			friend class PART;
 			friend class MODEL_BASE;
@@ -266,15 +258,15 @@ namespace Aris
 			MARKER *_pMakI, *_pMakJ;
 
 			/*pos\vel\acc\fce of motion*/
-			double MotPos, MotVel, MotAcc, MotDynFce;
+			double MotPos{ 0 }, MotVel{ 0 }, MotAcc{ 0 }, MotDynFce{ 0 };
 
-			double _frc_coe[3];
+			double _frc_coe[3]{0};
 
-			int _ColId;
+			int _ColId{ 0 };
 
-			double _PrtCstMtxI[6];
-			double _PrtCstMtxJ[6];
-			double _a_c[6];
+			double _PrtCstMtxI[6]{ 0 };
+			double _PrtCstMtxJ[6]{ 0 };
+			double _a_c[6]{ 0 };
 
 			/*for adams*/
 			std::unique_ptr<AKIMA> posCurve;
@@ -305,8 +297,8 @@ namespace Aris
 
 			MARKER *_pMakI, *_pMakJ;
 
-			double _PrtFceI[6];
-			double _PrtFceJ[6];
+			double _PrtFceI[6]{ 0 };
+			double _PrtFceJ[6]{ 0 };
 
 			std::unique_ptr<AKIMA> fceCurve;
 
@@ -335,10 +327,10 @@ namespace Aris
 				:JOINT_BASE(pModel, Name, id, ele) {};
 
 		protected:
-			double _PrtCstMtxI[6][DIMENSION];
-			double _PrtCstMtxJ[6][DIMENSION];
-			double _CstFce[DIMENSION];
-			double _a_c[DIMENSION];
+			double _PrtCstMtxI[6][DIMENSION]{ { 0 } };
+			double _PrtCstMtxJ[6][DIMENSION]{ { 0 } };
+			double _CstFce[DIMENSION]{ 0 };
+			double _a_c[DIMENSION]{ 0 };
 
 		private:
 			friend class MODEL_BASE;
@@ -354,7 +346,7 @@ namespace Aris
 			void FromXmlElement(const Aris::Core::ELEMENT *pEle);
 			void ToAdamsCmd(std::ofstream &file) const;
 		private:
-			double Gravity[6];
+			double Gravity[6]{ 0, -9.8, 0, 0, 0, 0 };
 
 			friend class PART;
 			friend class MODEL_BASE;
@@ -529,17 +521,18 @@ namespace Aris
 				}
 			}
 
-			void DynPre(int &I_dim,int &C_dim);
+			void DynPre(int *pI_dim = nullptr, int *pC_dim = nullptr);
 			void DynMtx(double *C, double*a_c, double *I_mat, double*f, double *D, double *b);
 			void DynUkn(double *a, double*f_c);
 			void DynEnd(const double *x);
-			void Dyn();
+			void Dyn(std::function<void(int dim, const double *D, const double *b, double *x)> solveMethod);
 
 			void ClbPre(int &clb_dim_m, int &clb_dim_n, int &gamma_dim, int &frc_coe_dim);
-			void ClbMtx(double *clb_d_ptr, double *clb_b_ptr);
+			void ClbMtx(double *clb_d_ptr, double *clb_b_ptr, std::function<void(int n, double *A)> inverseMethod);
 			void ClbUkn(double *clb_gamma_and_frcCoe_ptr);
 
 			void LoadXml(const char *filename);
+			void LoadXml(const Aris::Core::DOCUMENT &xmlDoc);
 			virtual void FromXmlElement(const Aris::Core::ELEMENT *pEle);
 			void SaveSnapshotXml(const char *filename) const;
 			void SaveAdams(const char *filename, const SIMULATE_SCRIPT* pScript) const;

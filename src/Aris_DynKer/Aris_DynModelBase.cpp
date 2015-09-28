@@ -1,9 +1,5 @@
 ﻿#include <Platform.h>
 
-#ifdef PLATFORM_IS_WINDOWS
-#define _SCL_SECURE_NO_WARNINGS
-#endif
-
 #include <cmath>
 #include <cstring>
 #include <fstream>
@@ -13,31 +9,15 @@
 #include <limits>
 #include <sstream>
 
-using namespace std;
-
-
+#include "Aris_ExpCal.h"
 #include "Aris_DynKer.h"
 #include "Aris_DynModelBase.h"
-#include "Aris_DynModel.h"
-
-#ifdef PLATFORM_IS_WINDOWS
-#include <stdlib.h>
-#endif
-#ifdef PLATFORM_IS_LINUX
-#include <stdlib.h>
-#endif
-
-extern "C"
-{
-#include <cblas.h>
-}
-#include <lapacke.h>
 
 namespace Aris
 {
 	namespace DynKer
 	{
-		PART::PART(MODEL_BASE *pModel, const string &Name, int id, const double *Im, const double *pm, const double *Vel, const double *Acc)
+		PART::PART(MODEL_BASE *pModel, const std::string &Name, int id, const double *Im, const double *pm, const double *Vel, const double *Acc)
 			:ELEMENT(pModel, Name, id)
 		{
 			if (Im == nullptr)
@@ -309,7 +289,7 @@ namespace Aris
 			}
 			//导入parasolid
 			std::stringstream stream(this->graphicFilePath);
-			string path;
+			std::string path;
 			while (stream >> path)
 			{
 				file << "file parasolid read &\r\n"
@@ -320,7 +300,7 @@ namespace Aris
 			}
 		}
 
-		MARKER::MARKER(PART *pPrt, const string &Name, int id, const double *pLocPm, MARKER *pRelativeTo)
+		MARKER::MARKER(PART *pPrt, const std::string &Name, int id, const double *pLocPm, MARKER *pRelativeTo)
 			: ELEMENT(pPrt->Model(), Name, id)
 			, _pPrt(pPrt)
 		{
@@ -422,15 +402,17 @@ namespace Aris
 		void JOINT_BASE::Update()
 		{
 			double _pm_M2N[4][4];
-			double _tem_v1[6], _tem_v2[6];
+			double _tem_v1[6]{ 0 }, _tem_v2[6]{ 0 };
 
 			/* Get pm M2N */
 			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
 
 			/*update PrtCstMtx*/
+			std::fill_n(this->GetPrtCstMtxJPtr(), this->GetCstDim() * 6, 0);
 			s_tf_n(GetCstDim(), -1, *_pm_M2N, this->GetPrtCstMtxIPtr(), 0, this->GetPrtCstMtxJPtr());
 
 			/*update A_c*/
+			std::fill_n(this->GetPrtA_cPtr(), this->GetCstDim(), 0);
 			s_inv_tv(-1, *_pm_M2N, GetMakJ()->GetFatherPrt()->GetPrtVelPtr(), 0, _tem_v1);
 			s_cv(GetMakI()->GetFatherPrt()->GetPrtVelPtr(), _tem_v1, _tem_v2);
 			s_dgemmTN(GetCstDim(), 1, 6, 1, GetPrtCstMtxIPtr(), GetCstDim(), _tem_v2, 1, 0, GetPrtA_cPtr(), 1);
@@ -606,8 +588,6 @@ namespace Aris
 		ENVIRONMENT::ENVIRONMENT(MODEL_BASE *pModel)
 			:OBJECT(pModel,"Environment")
 		{
-			double data[] = { 0, -9.8, 0, 0, 0, 0 };
-			memcpy(Gravity, data, sizeof(Gravity));
 		}
 		ENVIRONMENT::~ENVIRONMENT()
 		{
@@ -671,7 +651,6 @@ namespace Aris
 				<< "!\r\n";
 		};
 
-
 		MODEL_BASE::MODEL_BASE(const std::string & Name)
 			: OBJECT(this , Name)
 			, _Environment(this)
@@ -685,7 +664,7 @@ namespace Aris
 		}
 
 		template<class T>
-		typename T::value_type::element_type * GetContent(const T &container, const string &Name)
+		typename T::value_type::element_type * GetContent(const T &container, const std::string &Name)
 		{
 			auto p = std::find_if(container.begin(), container.end(), [Name](typename T::const_reference p)
 			{
@@ -775,7 +754,7 @@ namespace Aris
 			return GetContent<decltype(_forces)>(_forces, Name);
 		}
 
-		void MODEL_BASE::DynPre(int &I_dim, int &C_dim)
+		void MODEL_BASE::DynPre(int *pI_dim, int *pC_dim)
 		{
 			int pid = 0;//part id
 			int cid = 6;//Constraint id
@@ -810,7 +789,6 @@ namespace Aris
 				if (motion->Active())
 				{
 					motion->_ColId = cid;
-					//cid += motion->GetCstDim();
 					cid++;
 					motion->Initiate();
 				}
@@ -823,8 +801,9 @@ namespace Aris
 
 			I_dim = pid;
 			C_dim = cid;
-			this->I_dim = I_dim;
-			this->C_dim = C_dim;
+
+			if (pI_dim) *pI_dim = pid;
+			if (pC_dim) *pC_dim = cid;
 		}
 		void MODEL_BASE::DynMtx(double *C, double*a_c, double *I_mat, double*f, double *D, double *b)
 		{
@@ -945,30 +924,28 @@ namespace Aris
 				}
 			}
 		}
-		void MODEL_BASE::Dyn()
+		void MODEL_BASE::Dyn(std::function<void(int dim, const double *D, const double *b, double *x)> solveMethod)
 		{
-			DynPre(this->I_dim, this->C_dim);
+			DynPre();
 			
-			static std::vector<double> C(I_dim * C_dim);
-			static std::vector<double> a_c(C_dim);
-			static std::vector<double> I_mat(I_dim * I_dim);
-			static std::vector<double> f(I_dim);
-			static std::vector<double> D((I_dim + C_dim) * (I_dim + C_dim));
-			static std::vector<double> b(I_dim + C_dim);
+			std::vector<double> C(I_dim * C_dim);
+			std::vector<double> a_c(C_dim);
+			std::vector<double> I_mat(I_dim * I_dim);
+			std::vector<double> f(I_dim);
+			std::vector<double> D((I_dim + C_dim) * (I_dim + C_dim));
+			std::vector<double> b(I_dim + C_dim);
 
 			DynMtx(C.data(), a_c.data(), I_mat.data(), f.data(), D.data(), b.data());
 
-			static std::vector<double> s(I_dim + C_dim);
-			double rcond = 0.000000000001;
-			int rank;
-			s_dgelsd(I_dim + C_dim, I_dim + C_dim, 1, D.data(), I_dim + C_dim, b.data(), 1,s.data(), rcond, &rank);
+			std::vector<double> x(I_dim + C_dim);
+			solveMethod(I_dim + C_dim, D.data(), b.data(), x.data());
 
-			DynEnd(b.data());
+			DynEnd(x.data());
 		}
 
 		void MODEL_BASE::ClbPre(int &clb_dim_m, int &clb_dim_n, int &gamma_dim, int &frc_coe_dim)
 		{
-			DynPre(clb_dim_m, clb_dim_n);
+			DynPre(&clb_dim_m, &clb_dim_n);
 
 			if (C_dim != I_dim)
 			{
@@ -1000,7 +977,7 @@ namespace Aris
 			}
 
 		}
-		void MODEL_BASE::ClbMtx(double *clb_d_ptr, double *clb_b_ptr)
+		void MODEL_BASE::ClbMtx(double *clb_d_ptr, double *clb_b_ptr, std::function<void(int n, double *A)> inverseMethod)
 		{
 			int clb_dim_m, clb_dim_n, gamma_dim, frc_coe_dim;
 			ClbPre(clb_dim_m, clb_dim_n, gamma_dim, frc_coe_dim);
@@ -1049,7 +1026,7 @@ namespace Aris
 			}
 
 			std::copy(C.begin(), C.end(), A.Data());
-			s_dgeinv(dim, A.Data(), dim, ipiv.data());
+			inverseMethod(dim, A.Data());
 
 			/*求B*/
 			const int beginRow = dim - clb_dim_m;
@@ -1213,15 +1190,19 @@ namespace Aris
 		
 		void MODEL_BASE::LoadXml(const char *filename)
 		{
-			Aris::Core::DOCUMENT XML_Doc;
+			Aris::Core::DOCUMENT xmlDoc;
 			
-			if (XML_Doc.LoadFile(filename) != 0)
+			if (xmlDoc.LoadFile(filename) != 0)
 			{
-				throw std::logic_error((string("could not open file:") + string(filename)));
+				throw std::logic_error((std::string("could not open file:") + std::string(filename)));
 			}
 
-			const Aris::Core::ELEMENT *pModel = XML_Doc.RootElement()->FirstChildElement("Model");
-			
+			LoadXml(xmlDoc);
+		}
+		void MODEL_BASE::LoadXml(const Aris::Core::DOCUMENT &xmlDoc)
+		{
+			const Aris::Core::ELEMENT *pModel = xmlDoc.RootElement()->FirstChildElement("Model");
+
 			FromXmlElement(pModel);
 		}
 		void MODEL_BASE::FromXmlElement(const Aris::Core::ELEMENT *pModel)
@@ -1329,7 +1310,7 @@ namespace Aris
 		}
 		void MODEL_BASE::SaveAdams(const char *filename, const SIMULATE_SCRIPT* pScript) const
 		{
-			ofstream file;
+			std::ofstream file;
 
 			std::string cmdName = std::string(filename) + std::string(".cmd");
 			std::string acfName = std::string(filename) + std::string(".acf");
@@ -1337,9 +1318,8 @@ namespace Aris
 			/*******写acf文件********/
 			if (pScript)
 			{
-				const int maxPath = 2000;
-
 #ifdef PLATFORM_IS_WINDOWS
+				const int maxPath = 2000;
 				char fullPath[maxPath];
 				if (_fullpath(fullPath, acfName.c_str(), maxPath) == nullptr)
 				{
@@ -1356,7 +1336,7 @@ namespace Aris
 				/*创建acf文件*/
 				file.open(acfName, std::ios::out | std::ios::trunc);
 
-				file << setprecision(15);
+				file << std::setprecision(15);
 
 				double beginTime = 0;
 				double endTime = pScript->endTime/1000.0;
@@ -1438,7 +1418,7 @@ namespace Aris
 			/*******写cmd文件********/
 			file.open(cmdName, std::ios::out | std::ios::trunc);
 
-			file << setprecision(15);
+			file << std::setprecision(15);
 
 			/*  Basic  */
 			file << "!-------------------------- Default Units for Model ---------------------------!\r\n"
@@ -1548,14 +1528,14 @@ namespace Aris
 		}
 		void MODEL_BASE::SaveAdams(const char *filename, bool isModifyActive) const
 		{
-			ofstream file;
+			std::ofstream file;
 
 			std::string cmdName = std::string(filename) + std::string(".cmd");
 
 			/*******写cmd文件********/
 			file.open(cmdName, std::ios::out | std::ios::trunc);
 
-			file << setprecision(15);
+			file << std::setprecision(15);
 
 			file << "!----------------------------------- Environment -------------------------------!\r\n!\r\n!\r\n";
 			_Environment.ToAdamsCmd(file);

@@ -12,8 +12,6 @@
 #include<initializer_list>
 #include<cmath>
 
-//#include<cblas.h>
-
 namespace Aris
 {
 	namespace DynKer
@@ -22,8 +20,9 @@ namespace Aris
 		{
 		private:
 			int m, n;
-			double *pData;
 			bool isRowMajor;
+			double *pData;
+			
 
 		public:
 			MATRIX();

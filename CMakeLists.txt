@@ -39,66 +39,61 @@ if(WIN32)
 	set(PLATFORM "PLATFORM_IS_WINDOWS")
 endif(WIN32)
 
-configure_file(
-	"${PROJECT_SOURCE_DIR}/common_headers/Platform.h.in" 
-	"${PROJECT_BINARY_DIR}/common_headers/Platform.h")
+configure_file("${PROJECT_SOURCE_DIR}/common_headers/Platform.h.in" "${PROJECT_BINARY_DIR}/common_headers/Platform.h")
 set(INCLUDE_HEADER_FILES "${PROJECT_BINARY_DIR}/common_headers/Platform.h")
 
 # set binary and library folders
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
+set(CMAKE_BUILD_TYPE "Release")
 
 # set compile options
 if(UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2 -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -msse2")
 endif(UNIX)
 
-# set dependency include folder
+# set debug and release options
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+set(CMAKE_BUILD_TYPE "Release")
+#set(CMAKE_CONFIGURATION_TYPES Debug Release)
+
+# set include and lib folders
 if(UNIX)
-set(ARIS_COMMOM_HEADERS ${PROJECT_BINARY_DIR}/common_headers)
+set(GENERAL_INCLUDE_DIR "/usr/Aris_Dependent")
+set(SYSTEM_LINK_LIBS pthread gfortran)
+set(ARIS_INCLUDE_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control)
+set(ARIS_LINK_LIBS Aris_Control Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Core)
 set(XENOMAI_INCLUDE_DIR "/usr/xenomai/include")
 set(ETHERLAB_INCLUDE_DIR "/opt/etherlab/include")
-set(LAPACK_INCLUDE_DIR "/usr/lapack/include")
-set(XSENS_INCLUDE_DIR "/usr/xsens/include")
-set(SYSTEM_LINK_LIBS pthread gfortran)
-set(LAPACK_LINK_LIBS lapacke lapack cblas refblas)
+set(XSENS_INCLUDE_DIR "/usr/Aris_Dependent/xsens/include")
 set(XSENS_LINK_LIBS xdeviceclass xcommunication xstypes)
-set(ARIS_LINK_LIBS Aris_Control Aris_Plan Aris_Sensor Aris_ExpCal Aris_DynKer Aris_Core)
+set(XSENS_LINK_DIR "/usr/Aris_Dependent/xsens/lib")
 
-set(ALL_INCLUDE_DIR ${ARIS_COMMOM_HEADERS} ${ETHERLAB_INCLUDE_DIR} ${XENOMAI_INCLUDE_DIR} ${LAPACK_INCLUDE_DIR} ${XSENS_INCLUDE_DIR})
+
+set(ALL_INCLUDE_DIR ${GENERAL_INCLUDE_DIR} ${ARIS_INCLUDE_DIR} ${ETHERLAB_INCLUDE_DIR} ${XENOMAI_INCLUDE_DIR} ${LAPACK_INCLUDE_DIR} ${XSENS_INCLUDE_DIR})
+set(ALL_LINK_DIR ${XSENS_LINK_DIR} ${LAPACK_LINK_DIR})
 set(ALL_LINK_LIBS ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${XSENS_LINK_LIBS} ${SYSTEM_LINK_LIBS})
 endif(UNIX)
 if(WIN32)
-set(ARIS_COMMOM_HEADERS ${PROJECT_BINARY_DIR}/common_headers)
-set(LAPACK_INCLUDE_DIR "C:/lapack/include/")
-set(XSENS_INCLUDE_DIR "C:/xsens/include")
-set(SYSTEM_LINK_LIBS ws2_32)
-set(LAPACK_LINK_LIBS liblapacke liblapack cblas libblas)
-set(XSENS_LINK_LIBS xdeviceclass setupapi)
-set(ARIS_LINK_LIBS Aris_Plan Aris_Sensor Aris_ExpCal Aris_DynKer Aris_Core)
+set(GENERAL_INCLUDE_DIR "C:/Aris_Dependent")
+set(SYSTEM_LINK_LIBS ws2_32 setupapi)
+set(ARIS_INCLUDE_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control)
+set(ARIS_LINK_LIBS Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Core)
+set(XSENS_INCLUDE_DIR "C:/Aris_Dependent/xsens/include")
+set(XSENS_LINK_DIR "C:/Aris_Dependent/xsens/lib")
+set(XSENS_LINK_LIBS xdeviceclass)
 
-set(ALL_INCLUDE_DIR ${ARIS_COMMOM_HEADERS} ${ETHERLAB_INCLUDE_DIR} ${XENOMAI_INCLUDE_DIR} ${LAPACK_INCLUDE_DIR} ${XSENS_INCLUDE_DIR})
+
+set(ALL_INCLUDE_DIR ${GENERAL_INCLUDE_DIR} ${ARIS_INCLUDE_DIR} ${ETHERLAB_INCLUDE_DIR} ${XENOMAI_INCLUDE_DIR} ${LAPACK_INCLUDE_DIR} ${XSENS_INCLUDE_DIR})
+set(ALL_LINK_DIR ${XSENS_LINK_DIR} ${LAPACK_LINK_DIR})
 set(ALL_LINK_LIBS ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${XSENS_LINK_LIBS} ${SYSTEM_LINK_LIBS})
 endif(WIN32)
 
 
-
-include_directories("src/Aris_Core")
-include_directories("src/Aris_ExpCal")
-include_directories("src/Aris_DynKer")
-include_directories("src/Aris_Plan")
-include_directories("src/Aris_Sensor")
-include_directories("src/Aris_Control")
 include_directories(${ALL_INCLUDE_DIR})
+link_directories(${ALL_LINK_DIR})
 
-if(UNIX)
-link_directories(/usr/lapack/lib)
-link_directories(/usr/xsens/lib)
-endif(UNIX)
-if(WIN32)
-link_directories(C:/lapack/lib)
-link_directories(C:/xsens/lib)
-endif(WIN32)
 
 # Aris_Core project
 set(SOURCE Aris_Socket Aris_Core tinyxml2 Aris_Message Aris_XML)

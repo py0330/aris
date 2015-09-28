@@ -49,14 +49,14 @@ namespace Aris
 				};
 			};
 
-			void ToBodyEul(double *eul, const char *eulType="313") const;
-			void ToBodyEul(double *eul, double yawValue, const char *eulType="313") const;
-			void ToBodyPm(double *pm) const;
-			void ToBodyPm(double *pm, double yawValue) const;
-			void ToBodyOmega(double *omega) const;
-			void ToBodyOmega(double *omega, double yawValue) const;
-			void ToBodyAcc(double *acc) const;
-			void ToBodyAcc(double *acc, double yawValue) const;
+			void ToPmBody2Ground(double *pm) const;
+			void ToPmBody2Ground(double *pm, double yawValue) const;
+			void ToEulBody2Ground(double *eul, const char *eulType="313") const;
+			void ToEulBody2Ground(double *eul, double yawValue, const char *eulType="313") const;
+			void ToOmegaBody2Ground(double *omega) const;
+			void ToOmegaBody2Ground(double *omega, double yawValue) const;
+			void ToPntAccBody2Ground(double *acc) const;
+			void ToPntAccBody2Ground(double *acc, double yawValue) const;
 
 		private:
 			const double * pmLhs;

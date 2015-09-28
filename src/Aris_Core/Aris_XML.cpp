@@ -44,7 +44,7 @@ namespace Aris
 					if ((text=p->GetText()) != nullptr)
 					{
 						string str(text);
-						int pos;
+						std::size_t pos;
 						while ((pos = str.find(vName)) != str.npos)
 						{
 							str.replace(pos, vName.length(), vValue);
