@@ -41,8 +41,7 @@ namespace Aris
 
 			file.open(FileName);
 
-			if (!file)
-				throw std::logic_error("file not exist");
+			if (!file) throw std::logic_error("file not exist");
 
 
 			int i = 0;
@@ -369,163 +368,6 @@ namespace Aris
 			pm_out[14] = 0;
 			pm_out[15] = 1;
 		}
-		void s_pq2pe(const double *pq_in, double *pe_out, const char *EurType) noexcept
-		{
-			double pm[16];
-			s_pq2pm(pq_in, pm);
-			s_pm2pe(pm, pe_out, EurType);
-		}
-		void s_pe2pq(const double *pe_in, double *pq_out, const char *EurType) noexcept
-		{
-			double pm[16];
-			s_pe2pm(pe_in, pm, EurType);
-			s_pm2pq(pm, pq_out);
-		}
-		void s_pm2pr(const double *pm_in, double *pr_out) noexcept
-		{
-			double c_theta = (pm_in[0] + pm_in[5] + pm_in[10]-1)/2;
-			double theta;
-
-			const double &r11 = pm_in[0];
-			const double &r12 = pm_in[1];
-			const double &r13 = pm_in[2];
-			const double &r21 = pm_in[4];
-			const double &r22 = pm_in[5];
-			const double &r23 = pm_in[6];
-			const double &r31 = pm_in[8];
-			const double &r32 = pm_in[9];
-			const double &r33 = pm_in[10];
-
-			double &x = pr_out[0];
-			double &y = pr_out[1];
-			double &z = pr_out[2];
-			double &a = pr_out[3];
-			double &b = pr_out[4];
-			double &c = pr_out[5];
-			
-
-
-			if (c_theta > 0.7071)
-			{
-				theta = asin(sqrt(((r32 - r23)*(r32 - r23) + (r13 - r31)*(r13 - r31) + (r21 - r12)*(r21 - r12))/4));
-			}
-			else if (c_theta > -0.7071)
-			{
-				theta = acos(c_theta);
-			}
-			else
-			{
-				theta = PI - asin(sqrt(((r32 - r23)*(r32 - r23) + (r13 - r31)*(r13 - r31) + (r21 - r12)*(r21 - r12)) / 4));
-			}
-
-			if (theta < 1e-8)
-			{
-				a = 0.5*(r32 - r23);
-				b = 0.5*(r13 - r31);
-				c = 0.5*(r21 - r12);
-			}
-			else if (theta < 0.785398163397448)
-			{
-				double  ratio = theta / std::sin(theta);
-				
-				a = 0.5*(r32 - r23)*ratio;
-				b = 0.5*(r13 - r31)*ratio;
-				c = 0.5*(r21 - r12)*ratio;
-			}
-			else
-			{
-				int a_sig,b_sig,c_sig;
-				
-				/*以下判断符号*/
-				if (std::abs(r32 - r23) > std::abs(r13 - r31))
-				{
-					if (std::abs(r32 - r23) > std::abs(r21 - r12))
-					{
-						//a'的绝对值最大
-						a_sig = s_sgn(r32 - r23);
-						b_sig = s_sgn(r21 + r12)*a_sig;
-						c_sig = s_sgn(r31 + r13)*a_sig;
-					}
-					else
-					{
-						//c'的绝对值最大
-						c_sig = s_sgn(r21 - r12);
-						a_sig = s_sgn(r31 + r13)*c_sig;
-						b_sig = s_sgn(r32 + r23)*c_sig;
-					}
-				}
-				else
-				{
-					if (std::abs(r13 - r31) > std::abs(r21 - r12))
-					{
-						//b'的绝对值最大
-						b_sig = s_sgn(r13 - r31);
-						a_sig = s_sgn(r21 + r12)*b_sig;
-						c_sig = s_sgn(r32 + r23)*b_sig;
-					}
-					else
-					{
-						//c'的绝对值最大
-						c_sig = s_sgn(r21 - r12);
-						a_sig = s_sgn(r31 + r13)*c_sig;
-						b_sig = s_sgn(r32 + r23)*c_sig;
-					}
-				}
-
-				a = a_sig * theta*sqrt(std::abs(1 + r11 - r22 - r33) / 2.0 / (1 - std::cos(theta)));
-				b = b_sig * theta*sqrt(std::abs(1 + r22 - r11 - r33) / 2.0 / (1 - std::cos(theta)));
-				c = c_sig * theta*sqrt(std::abs(1 + r33 - r11 - r22) / 2.0 / (1 - std::cos(theta)));
-			}
-			                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-			x = pm_in[3];
-			y = pm_in[7];
-			z = pm_in[11];
-		}
-		void s_pr2pm(const double *pr_in, double *pm_out) noexcept
-		{
-			double theta = sqrt(pr_in[3] * pr_in[3] + pr_in[4] * pr_in[4] + pr_in[5] * pr_in[5]);
-
-			double A, B;
-
-			const double &x = pr_in[0];
-			const double &y = pr_in[1];
-			const double &z = pr_in[2];
-			const double &a = pr_in[3];
-			const double &b = pr_in[4];
-			const double &c = pr_in[5];
-			
-
-			if (theta < 1e-8)
-			{
-				A = 1;
-				B = 0.5;
-			}
-			else
-			{
-				A = std::sin(theta)/theta;
-				B = (1- std::cos(theta))/theta/theta;
-			}
-
-			//memset(pm_out, 0, sizeof(double) * 16);
-			std::fill_n(pm_out, 16, 0);
-			
-			pm_out[0] = 1 - (b*b + c*c)*B;
-			pm_out[1] = -c*A + a*b*B;
-			pm_out[2] = b*A + a*c*B;
-			pm_out[3] = x;
-
-			pm_out[4] = c*A + a*b*B;
-			pm_out[5] = 1 - (a*a + c*c)*B;
-			pm_out[6] = -a*A + b*c*B;
-			pm_out[7] = y;
-
-			pm_out[8] = -b*A + a*c*B;
-			pm_out[9] = a*A + b*c*B;
-			pm_out[10] = 1 - (a*a + b*b)*B;
-			pm_out[11] = z;
-
-			pm_out[15] = 1;
-		}
 		void s_pm2pq(const double *pm_in, double *pq_out) noexcept
 		{
 			double &x = pq_out[0];
@@ -552,14 +394,14 @@ namespace Aris
 			else
 			{
 				int id;
-				
+
 				q1 = sqrt((1 + pm_in[0] - pm_in[5] - pm_in[10])) / 2;
 				q2 = sqrt((1 + pm_in[5] - pm_in[0] - pm_in[10])) / 2;
 				q3 = sqrt((1 + pm_in[10] - pm_in[0] - pm_in[5])) / 2;
 
 				/*qp_out 是通过开方计算而得，因此一定为正*/
 				id = std::max_element(q, q + 3) - q;
-				
+
 				q[id] *= s_sgn2(pm_in[(id + 2) % 3 * 4 + (id + 1) % 3] - pm_in[(id + 1) % 3 * 4 + (id + 2) % 3]);
 				q[(id + 1) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 1) % 3] + pm_in[((id + 1) % 3) * 4 + id]);
 				q[(id + 2) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 2) % 3] + pm_in[((id + 2) % 3) * 4 + id]);
@@ -578,7 +420,7 @@ namespace Aris
 			const double &q2 = pq_in[4];
 			const double &q3 = pq_in[5];
 			const double &q4 = pq_in[6];
-			
+
 			pm_out[0] = 1 - 2 * q2 * q2 - 2 * q3 * q3;
 			pm_out[1] = 2 * q1 * q2 - 2 * q4 * q3;
 			pm_out[2] = 2 * q1 * q3 + 2 * q4 * q2;;
@@ -598,6 +440,18 @@ namespace Aris
 			pm_out[13] = 0;
 			pm_out[14] = 0;
 			pm_out[15] = 1;
+		}
+		void s_pq2pe(const double *pq_in, double *pe_out, const char *EurType) noexcept
+		{
+			double pm[16];
+			s_pq2pm(pq_in, pm);
+			s_pm2pe(pm, pe_out, EurType);
+		}
+		void s_pe2pq(const double *pe_in, double *pq_out, const char *EurType) noexcept
+		{
+			double pm[16];
+			s_pe2pm(pe_in, pm, EurType);
+			s_pm2pq(pm, pq_out);
 		}
 		void s_vq2v(const double *pq_in, const double *vq_in, double *v_out) noexcept
 		{
@@ -658,6 +512,235 @@ namespace Aris
 			//note that only first 3 elements
 			std::copy_n(v_in, 3, vq_out);
 		}
+		
+		void s_vp(const double *pnt_in, const double *vel_in, double *pv_out) noexcept
+		{
+			s_cro3(vel_in + 3, pnt_in, pv_out);
+			s_daxpy(3, 1, vel_in, 1, pv_out, 1);
+		}
+		void s_ap(const double *pnt_in, const double *vel_in, const double *acc_in, double *pnt_acc_out) noexcept
+		{
+			double tem1[3], tem2[3], tem3[3];
+			//omega cross omega cross r
+			s_cro3(vel_in + 3, pnt_in, tem2);
+			s_cro3(vel_in + 3, tem2, tem1);
+
+			s_cro3(vel_in + 3, vel_in, tem2);
+
+			s_cro3(acc_in + 3, pnt_in, tem3);
+
+			pnt_acc_out[0] = acc_in[0] + tem1[0] + tem2[0] + tem3[0];
+			pnt_acc_out[1] = acc_in[1] + tem1[1] + tem2[1] + tem3[1];
+			pnt_acc_out[2] = acc_in[2] + tem1[2] + tem2[2] + tem3[2];
+		}
+
+		void s_v2v(const double *relative_pm_in, const double *relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept
+		{
+			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
+			double to_vel[6]{ 0,0,0,0,0,0 };
+
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
+			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
+			to_vel_out = to_vel_out ? to_vel_out : to_vel;
+
+			s_tv(relative_pm_in, from_vel_in, to_vel_out);
+			s_vn_add_vn(6, relative_vel_in, to_vel_out, to_vel_out);
+		}
+		void s_inv_v2v(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept
+		{
+			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
+			double to_vel[6]{ 0,0,0,0,0,0 };
+
+			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
+			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
+			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
+			to_vel_out = to_vel_out ? to_vel_out : to_vel;
+
+			double relative_pm_in[16], relative_vel_in[6]{ 0 };
+
+			s_inv_pm(inv_relative_pm_in, relative_pm_in);
+			s_tv(-1, relative_pm_in, inv_relative_vel_in, 0, relative_vel_in);
+			s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel_out);
+		}
+		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
+			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out) noexcept
+		{
+			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_acc_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_acc_in[6]{ 0,0,0,0,0,0 };
+			double to_vel[6]{ 0,0,0,0,0,0 };
+			double to_acc[6]{ 0,0,0,0,0,0 };
+
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
+			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
+			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
+			from_acc_in = from_acc_in ? from_acc_in : default_from_acc_in;
+			to_vel_out = to_vel_out ? to_vel_out : to_vel;
+			to_acc_out = to_acc_out ? to_acc_out : to_acc;
+
+			s_tv(relative_pm_in, from_vel_in, to_vel_out);
+			s_cv(relative_vel_in, to_vel_out, to_acc_out);
+			s_tv(1, relative_pm_in, from_acc_in, 1, to_acc_out);
+			s_daxpy(6, 1, relative_acc_in, 1, to_acc_out, 1);
+
+		}
+		void s_pp2pp(const double *relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			double default_to_pnt[3];
+
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+
+			s_pm_dot_pnt(relative_pm_in, from_pnt, to_pnt_out);
+		}
+		void s_inv_pp2pp(const double *inv_relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			double default_to_pnt[3];
+
+			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+
+			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
+		}
+		void s_vp2vp(const double *relative_pm_in, const double *relative_vel_in, const double *from_pnt, const double *from_pv,
+			double *to_pv_out, double *to_pnt_out) noexcept
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			double default_to_pv[3];
+			double default_to_pnt[3];
+
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+
+			s_pp2pp(relative_pm_in, from_pnt, to_pnt_out);
+			s_cro3(relative_vel_in + 3, to_pnt_out, to_pv_out);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, to_pv_out, 1);
+			s_daxpy(3, 1, relative_vel_in, 1, to_pv_out, 1);
+		}
+		void s_ap2ap(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
+			const double *from_pnt, const double *from_pv, const double *from_pa,
+			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_acc_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			static const double default_from_pa[3] = { 0,0,0 };
+			double default_pa_out[3]{ 0 };
+			double default_pv_out[3]{ 0 };
+			double default_pnt_out[3]{ 0 };
+
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
+			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			from_pa = from_pa ? from_pa : default_from_pa;
+			to_pa_out = to_pa_out ? to_pa_out : default_pa_out;
+			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
+
+			double tem_pv[3];
+			s_vp2vp(relative_pm_in, relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
+
+			s_cro3(relative_acc_in + 3, to_pnt_out, to_pa_out);
+			std::copy_n(to_pv_out, 3, tem_pv);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, tem_pv, 1);
+			s_cro3(1, relative_vel_in + 3, tem_pv, 1, to_pa_out);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pa, 1, 1, to_pa_out, 1);
+			s_daxpy(3, 1, relative_acc_in, 1, to_pa_out, 1);
+		}
+		void s_inv_vp2vp(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
+			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out) noexcept
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			double default_to_pv[3];
+			double default_to_pnt[3];
+
+			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
+			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+
+			std::fill_n(to_pv_out, 3, 0);
+
+			double tem[3];
+			std::copy_n(from_pv, 3, tem);
+			s_cro3(-1, inv_relative_vel_in + 3, from_pnt, 1, tem);
+			s_daxpy(3, -1, inv_relative_vel_in, 1, tem, 1);
+			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pv_out, 1);
+
+			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
+
+		}
+		void s_inv_ap2ap(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
+			const double *from_pnt, const double *from_pv, const double *from_pa,
+			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_acc_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			static const double default_from_pa[3] = { 0,0,0 };
+			double default_pa_out[3]{ 0 };
+			double default_pv_out[3]{ 0 };
+			double default_pnt_out[3]{ 0 };
+
+			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
+			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
+			inv_relative_acc_in = inv_relative_acc_in ? inv_relative_acc_in : default_acc_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			from_pa = from_pa ? from_pa : default_from_pa;
+			to_pa_out = to_pa_out ? to_pa_out : default_pa_out;
+			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
+
+			std::fill_n(to_pa_out, 3, 0);
+
+			double tem[3], tem2[3];
+			s_inv_vp2vp(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
+
+			std::copy_n(from_pa, 3, tem);
+			s_cro3(-1, inv_relative_acc_in + 3, from_pnt, 1, tem);
+
+			std::copy_n(from_pv, 3, tem2);
+			s_dgemm(3, 1, 3, 1, inv_relative_pm_in, 4, to_pv_out, 1, 1, tem2, 1);
+			s_cro3(-1, inv_relative_vel_in + 3, tem2, 1, tem);
+
+			s_daxpy(3, -1, inv_relative_acc_in, 1, tem, 1);
+
+			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pa_out, 1);
+		}
+
 		void s_tmf(const double *pm_in, double *tmf_out) noexcept
 		{
 			std::fill_n(tmf_out + 3, 3, 0);
@@ -999,200 +1082,7 @@ namespace Aris
 			s_dgemmNT(6, 6, 6, 1, *tem, 6, *tmf, 6, 0, to_im_out, 6);
 
 		}
-		void s_v2v(const double *relative_pm_in, const double *relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept
-		{
-			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
-			double to_vel[6]{ 0,0,0,0,0,0 };
-			
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
-			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
-			to_vel_out = to_vel_out ? to_vel_out : to_vel;
-			
-			s_tv(relative_pm_in, from_vel_in, to_vel_out);
-			s_vn_add_vn(6, relative_vel_in, to_vel_out, to_vel_out);
-		}
-		void s_inv_v2v(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept
-		{
-			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
-			double to_vel[6]{ 0,0,0,0,0,0 };
-			
-			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
-			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
-			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
-			to_vel_out = to_vel_out ? to_vel_out : to_vel;
-
-			double relative_pm_in[16], relative_vel_in[6]{ 0 };
-			
-			s_inv_pm(inv_relative_pm_in, relative_pm_in);
-			s_tv(-1, relative_pm_in, inv_relative_vel_in, 0, relative_vel_in);
-			s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel_out);
-		}
-		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
-			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out) noexcept
-		{
-			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_acc_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_acc_in[6]{ 0,0,0,0,0,0 };
-			double to_vel[6]{ 0,0,0,0,0,0 };
-			double to_acc[6]{ 0,0,0,0,0,0 };
-
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
-			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
-			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
-			from_acc_in = from_acc_in ? from_acc_in : default_from_acc_in;
-			to_vel_out = to_vel_out ? to_vel_out : to_vel;
-			to_acc_out = to_acc_out ? to_acc_out : to_acc;
 		
-			s_tv(relative_pm_in, from_vel_in, to_vel_out);
-			s_cv(relative_vel_in, to_vel_out, to_acc_out);
-			s_tv(1, relative_pm_in, from_acc_in, 1, to_acc_out);
-			s_daxpy(6, 1, relative_acc_in, 1, to_acc_out, 1);
-			
-		}
-		void s_pnt2pnt(const double *relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept
-		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			double default_to_pnt[3];
-			
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
-
-			s_pm_dot_pnt(relative_pm_in, from_pnt, to_pnt_out);
-		}
-		void s_pv2pv(const double *relative_pm_in, const double *relative_vel_in, const double *from_pnt, const double *from_pv,
-			double *to_pv_out, double *to_pnt_out) noexcept
-		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
-			double default_to_pv[3];
-			double default_to_pnt[3];
-
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
-			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
-			
-			s_pnt2pnt(relative_pm_in, from_pnt, to_pnt_out);
-			s_cro3(relative_vel_in + 3, to_pnt_out, to_pv_out);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, to_pv_out, 1);
-			s_daxpy(3, 1, relative_vel_in, 1, to_pv_out, 1);
-		}
-		void s_pa2pa(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
-			const double *from_pnt, const double *from_pv, const double *from_pa, 
-			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept
-		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_acc_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
-			static const double default_from_pa[3] = { 0,0,0 };
-			double default_pa_out[3]{ 0 };
-			double default_pv_out[3]{ 0 };
-			double default_pnt_out[3]{ 0 };
-
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
-			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
-			from_pa = from_pa ? from_pa : default_from_pa;
-			to_pa_out = to_pa_out ? to_pa_out : default_pa_out;
-			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
-			
-			double tem_pv[3];
-			s_pv2pv(relative_pm_in, relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
-			
-			s_cro3(relative_acc_in + 3, to_pnt_out, to_pa_out);
-			std::copy_n(to_pv_out, 3, tem_pv);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, tem_pv, 1);
-			s_cro3(1, relative_vel_in + 3, tem_pv, 1, to_pa_out);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pa, 1, 1, to_pa_out, 1);
-			s_daxpy(3, 1, relative_acc_in, 1, to_pa_out, 1);
-		}
-		void s_inv_pv2pv(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
-			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out) noexcept
-		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
-			double default_to_pv[3];
-			double default_to_pnt[3];
-
-			inv_relative_pm_in = inv_relative_pm_in?inv_relative_pm_in:default_pm_in;
-			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
-			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
-			
-			std::fill_n(to_pv_out, 3, 0);
-
-			double tem[3];
-			std::copy_n(from_pv, 3, tem);
-			s_cro3(-1, inv_relative_vel_in + 3, from_pnt, 1, tem);
-			s_daxpy(3, -1, inv_relative_vel_in, 1, tem, 1);
-			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pv_out, 1);
-			
-			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
-
-		}
-		void s_inv_pa2pa(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
-			const double *from_pnt, const double *from_pv, const double *from_pa,
-			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept
-		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_acc_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
-			static const double default_from_pa[3] = { 0,0,0 };
-			double default_pa_out[3]{ 0 };
-			double default_pv_out[3]{ 0 };
-			double default_pnt_out[3]{ 0 };
-
-			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
-			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
-			inv_relative_acc_in = inv_relative_acc_in ? inv_relative_acc_in : default_acc_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
-			from_pa = from_pa ? from_pa : default_from_pa;
-			to_pa_out = to_pa_out ? to_pa_out : default_pa_out;
-			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
-
-			std::fill_n(to_pa_out, 3, 0);
-
-			double tem[3],tem2[3];
-			s_inv_pv2pv(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
-
-			std::copy_n(from_pa, 3, tem);
-			s_cro3(-1, inv_relative_acc_in + 3, from_pnt, 1, tem);
-
-			std::copy_n(from_pv, 3, tem2);
-			s_dgemm(3, 1, 3, 1, inv_relative_pm_in, 4, to_pv_out, 1, 1, tem2, 1);
-			s_cro3(-1, inv_relative_vel_in + 3, tem2, 1, tem);
-
-			s_daxpy(3, -1, inv_relative_acc_in, 1, tem, 1);
-			
-			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pa_out, 1);
-		}
 		void s_mass2im(const double mass_in, const double * inertia_in, const double *pm_in, double *im_out) noexcept
 		{
 			double loc_im[6][6]{ {0} }, loc_tm[6][6];
@@ -1272,26 +1162,7 @@ namespace Aris
 			gamma_out[9] = im_in[29];
 		}
 	
-		void s_pv(const double *pnt_in, const double *vel_in, double *pv_out) noexcept
-		{
-			s_cro3(vel_in + 3, pnt_in, pv_out);
-			s_daxpy(3, 1, vel_in, 1, pv_out, 1);
-		}
-		void s_pa(const double *pnt_in, const double *vel_in, const double *acc_in, double *pnt_acc_out) noexcept
-		{
-			double tem1[3], tem2[3], tem3[3];
-			//omega cross omega cross r
-			s_cro3(vel_in + 3, pnt_in, tem2);
-			s_cro3(vel_in + 3, tem2, tem1);
-
-			s_cro3(vel_in + 3, vel_in, tem2);
-
-			s_cro3(acc_in + 3, pnt_in, tem3);
-
-			pnt_acc_out[0] = acc_in[0] + tem1[0] + tem2[0] + tem3[0];
-			pnt_acc_out[1] = acc_in[1] + tem1[1] + tem2[1] + tem3[1];
-			pnt_acc_out[2] = acc_in[2] + tem1[2] + tem2[2] + tem3[2];
-		}
+		
 
 		void s_block_cpy(const int &block_size_m, const int &block_size_n,
 			const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,

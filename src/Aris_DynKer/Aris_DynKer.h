@@ -19,14 +19,36 @@
 #include <memory>
 #include <functional>
 #include <algorithm>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 
 namespace Aris
 {
 	namespace DynKer
 	{
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
+		template<class CONTAINER>
+		void dlmwrite(const char *FileName, const CONTAINER &container)
+		{
+			std::ofstream file;
+
+			file.open(FileName);
+
+			file << std::setprecision(15);
+
+			for (auto i : container)
+			{
+				for (auto j : i)
+				{
+					file << j << "   ";
+				}
+				file << std::endl;
+			}
+		}
 		void dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n);
 		void dlmread(const char *FileName, double *pMatrix);
+
 		
 		template <typename T> inline int s_sgn(T val) {
 			return (T(0) < val) - (val < T(0));
@@ -34,6 +56,23 @@ namespace Aris
 		template <typename T> inline int s_sgn2(T val) {
 			return val < T(0) ? -1 : 1;
 		}
+
+		/*************************symbol meanings************************
+		* pm  :  4x4 matrix, pose matrix
+		* pe  :  6x1 vector, position and eula angle  
+		* v   :  6x1 vector, velocity of a screw
+		* a   :  6x1 vector, acceleration of a screw
+		* pq  :  7x1 vector, position and quaternion
+		* vq  :  7x1 vector, velocity of a screw, while the angle part is the differentiation of quaternion
+		* aq  :  7x1 vector, acceleration of a screw, while the angle part is the 2nd differentiation of quaternion
+		* pp  :  3x1 vector, position of a point
+		* vp  :  3x1 vector, velocity of a point
+		* ap  :  3x1 vector, acceleration of a point
+		* pa  :  3x1 vector, position of angle
+		* va  :  3x1 vector, velocity of angle
+		* aa  :  3x1 vector, acceleration of angle
+		* apa :  6x1 vector, acceleration of a point, and together with angle accleration
+		*/
 
 		/** \brief 计算三维向量叉乘
 		*
@@ -57,12 +96,7 @@ namespace Aris
 		*/
 		void s_cm3(const double *cro_vec_in, double *cm_out) noexcept;
 
-		/** \brief 计算位姿矩阵的逆矩阵
-		*
-		* 用来计算：pm_out = pm_in^-1
-		*
-		*/
-		void s_inv_pm(const double *pm_in, double *pm_out) noexcept;
+		
 		/** \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		*
 		* 这里原点origin为位姿矩阵pm_out的点，firstAxisPnt位于第一根坐标轴，secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
@@ -80,13 +114,25 @@ namespace Aris
 		* 
 		*
 		*/
-		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType="313") noexcept;
+		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType = "313") noexcept;
 		/** \brief 将欧拉角转化成位姿矩阵
 		*
 		*
 		*
 		*/
-		void s_pe2pm(const double *pe_in, double *pm_out, const char *EurType="313") noexcept;
+		void s_pe2pm(const double *pe_in, double *pm_out, const char *EurType = "313") noexcept;
+		/** \brief 将位姿矩阵转换为位置和四元数
+		*
+		*
+		*
+		*/
+		void s_pm2pq(const double *pm_in, double *qp_out) noexcept;
+		/** \brief 将位置和四元数转换为位姿矩阵
+		*
+		*
+		*
+		*/
+		void s_pq2pm(const double *pq_in, double *pm_out) noexcept;
 		/** \brief 将位姿矩阵转化成欧拉角
 		*
 		*
@@ -99,13 +145,110 @@ namespace Aris
 		*
 		*/
 		void s_pe2pq(const double *pe_in, double *pq_out, const char *EurType = "313") noexcept;
-		void s_pm2pr(const double *pm_in, double *pr_out) noexcept;
-		void s_pr2pm(const double *pr_in, double *pm_out) noexcept;
-		void s_pm2pq(const double *pm_in, double *qp_out) noexcept;
-		void s_pq2pm(const double *pq_in, double *pm_out) noexcept;
+		/** \brief 将螺旋线速度和四元数导数转换为螺旋线速度和角速度
+		*
+		*
+		*
+		*/
 		void s_vq2v(const double *pq_in, const double *vq_in, double *v_out) noexcept;
+		/** \brief 将螺旋线速度和角速度转换为螺旋线速度和四元数导数
+		*
+		*
+		*
+		*/
 		void s_v2vq(const double *pm_in, const double *v_in, double *vq_out) noexcept;
+
+		/** \brief 计算点速度
+		*
+		* 根据数据点位置、空间速度来计算该点的速度。
+		*
+		*/
+		void s_vp(const double *pnt_in, const double *vel_in, double *pv_out) noexcept;
+		/** \brief 计算点加速度
+		*
+		* 根据数据点位置、空间速度和空间加速度来计算该点的加速度。
+		*
+		*/
+		void s_ap(const double *pnt_in, const double *vel_in, const double *acc_in, double *pnt_acc_out) noexcept;
+
+
+		/** \brief 将6维空间速度移动坐标系
+		*
+		* 用来将6维空间速度从一个坐标系中转化到另一个坐标系中。例如将B坐标系中的速度转换到A坐标系中。
+		*
+		* \param relative_pm_in 表示两个坐标系之间的位姿矩阵。即B相对于A的位姿矩阵。
+		* \param relative_vel_in 表示两个坐标系之间的相对速度。即B相对于A的空间速度向量，这个向量在坐标系A中表达。
+		* \param from_vel_in 表示坐标系B中待转换的速度向量。
+		* \param to_vel_out 表示转换完成的速度向量，即A坐标系中的速度向量。
+		*/
+		void s_v2v(const double *relative_pm_in, const double *relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept;
+		/** \brief 将6维空间速度移动坐标系
+		*
+		* 用来将6维空间速度从一个坐标系中转化到另一个坐标系中。例如将B坐标系中的速度转换到A坐标系中。
+		*
+		* \param inv_relative_pm_in 表示两个坐标系之间的相反的位姿矩阵。即A相对于B的位姿矩阵。
+		* \param inv_relative_vel_in 表示两个坐标系之间的相对速度。即A相对于B的空间速度向量，这个向量在坐标系B中表达。
+		* \param from_vel_in 表示坐标系B中待转换的速度向量。
+		* \param to_vel_out 表示转换完成的速度向量，即A坐标系中的速度向量。
+		*/
+		void s_inv_v2v(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept;
+		/** \brief 将6维空间速度移动坐标系
+		*
+		* 用来将6维空间速度从一个坐标系中转化到另一个坐标系中。例如将B坐标系中的速度转换到A坐标系中。
+		*
+		* \param relative_pm_in 表示两个坐标系之间的位姿矩阵。即B相对于A的位姿矩阵。
+		* \param relative_vel_in 表示两个坐标系之间的相对速度。即B相对于A的空间速度向量，这个向量在坐标系A中表达。
+		* \param relative_acc_in 表示两个坐标系之间的相对加速度。即B相对于A的空间加速度向量，这个向量在坐标系A中表达。
+		* \param from_vel_in 表示坐标系B中的速度向量。
+		* \param from_acc_in 表示坐标系B中待转换的加速度向量。
+		* \param to_vel_out 表示转换完成的加速度向量，即A坐标系中的加速度向量。
+		* \param to_vel_out 表示转换完成的速度向量，即A坐标系中的速度向量。
+		*/
+		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
+			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out = nullptr) noexcept;
+		/** \brief 转化点位置的坐标系
+		*
+		* 转化点位置的坐标系。
+		*
+		*/
+		void s_pp2pp(const double *relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept;
+		/** \brief 转化点位置的坐标系
+		*
+		* 转化点位置的坐标系。
+		*
+		*/
+		void s_inv_pp2pp(const double *inv_relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept;
+		/** \brief 转化点速度的坐标系
+		*
+		* 转化点速度的坐标系。
+		*
+		*/
+		void s_vp2vp(const double *relative_pm_in, const double *relative_vel_in,
+			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out = nullptr) noexcept;
+		void s_inv_vp2vp(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
+			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out = nullptr) noexcept;
+		void s_ap2ap(const double *relative_pm_in, const double *relative_vel_in, const double *inv_relative_acc_in,
+			const double *from_pnt, const double *from_pv, const double *from_pa,
+			double *to_pa_out, double *to_pv_out = nullptr, double *to_pnt_out = nullptr) noexcept;
+		void s_inv_ap2ap(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
+			const double *from_pnt, const double *from_pv, const double *from_pa,
+			double *to_pa_out, double *to_pv_out = nullptr, double *to_pnt_out = nullptr) noexcept;
+		void s_i2i(const double *from_pm_in, const double *from_im_in, double *to_im_out) noexcept;
+		void s_mass2im(const double mass_in, const double * inertia_in, const double *pm_in, double *im_out) noexcept;
+		void s_gamma2im(const double * gamma_in, double *im_out) noexcept;
+		void s_im2gamma(const double * im_in, double *gamma_out) noexcept;
+
+		/** \brief 构造6x6的力转换矩阵
+		*
+		*  其中，tmf = [rm (3x3),  pp x rm (3x3); O (3x3), rm (3x3)]
+		*
+		*/
 		void s_tmf(const double *pm_in, double *tmf_out) noexcept;
+		/** \brief 构造6x6的速度转换矩阵
+		*
+		*  其中，tmv = [rm (3x3),  O (3x3); pp x rm (3x3), rm (3x3)]
+		*
+		*/
 		void s_tmv(const double *pm_in, double *tmv_out) noexcept;
 		/** \brief 根据位姿矩阵转换六维力向量
 		*
@@ -191,8 +334,18 @@ namespace Aris
 		*
 		*/
 		void s_inv_tv_n(int n, double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept;
-		void s_cmf(const double *vel_in, double *cm_out) noexcept;
-		void s_cmv(const double *vel_in, double *cmd_out) noexcept;
+		/** \brief 构造6x6的力叉乘矩阵
+		*
+		*  其中，cmf = [w x,  O; v x, w x]
+		*
+		*/
+		void s_cmf(const double *vel_in, double *cmf_out) noexcept;
+		/** \brief 构造6x6的速度叉乘矩阵
+		*
+		*  其中，cmv = [w x,  v x; O , w x]
+		*
+		*/
+		void s_cmv(const double *vel_in, double *cmv_out) noexcept;
 		/** \brief 计算六维向量叉乘
 		*
 		* 用来计算：vec_out = cro_vec_in xf vec_in
@@ -217,47 +370,6 @@ namespace Aris
 		*
 		*/
 		void s_cv(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept;
-		void s_i2i(const double *from_pm_in, const double *from_im_in, double *to_im_out) noexcept;
-		/** \brief 计算点加速度
-		*
-		* 用来将6维空间速度从一个坐标系中转化到另一个坐标系中。例如将B坐标系中的速度转换到A坐标系中。
-		*
-		* \param relative_pm_in 表示两个坐标系之间的位姿矩阵。即B相对于A的位姿矩阵。
-		* \param relative_vel_in 表示两个坐标系之间的相对速度。即B相对于A的空间速度向量，这个向量在坐标系A中表达。
-		* \param from_vel_in 表示坐标系B中待转换的速度向量。
-		* \param to_vel_out 表示转换完成的速度向量，即A坐标系中的速度向量。
-		*/
-		void s_v2v(const double *relative_pm_in, const double *relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept;
-		void s_inv_v2v(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept;
-		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
-			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out = 0) noexcept;
-		void s_pnt2pnt(const double *relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept;
-		/** \brief 计算点加速度
-		*
-		* 转化点速度的坐标系。
-		*
-		*/
-		void s_pv2pv(const double *relative_pm_in, const double *relative_vel_in, 
-			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out = 0) noexcept;
-		void s_inv_pv2pv(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
-			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out = 0) noexcept;
-		void s_pa2pa(const double *relative_pm_in, const double *relative_vel_in, const double *inv_relative_acc_in,
-			const double *from_pnt, const double *from_pv, const double *from_pa,
-			double *to_pa_out, double *to_pv_out = 0, double *to_pnt_out = 0) noexcept;
-		void s_inv_pa2pa(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
-			const double *from_pnt, const double *from_pv, const double *from_pa, 
-			double *to_pa_out, double *to_pv_out = 0, double *to_pnt_out = 0) noexcept;
-		void s_mass2im(const double mass_in, const double * inertia_in, const double *pm_in, double *im_out) noexcept;
-		void s_gamma2im(const double * gamma_in, double *im_out) noexcept;
-		void s_im2gamma(const double * im_in, double *gamma_out) noexcept;
-
-		void s_pv(const double *pnt_in, const double *vel_in, double *pv_out) noexcept;
-		/** \brief 计算点加速度
-		*
-		* 根据数据点位置、空间速度和空间加速度来计算该点的加速度。
-		*
-		*/
-		void s_pa(const double *pnt_in, const double *vel_in, const double *acc_in, double *pnt_acc_out) noexcept;
 
 		void s_block_cpy(const int &block_size_m, const int &block_size_n,
 			const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
@@ -274,6 +386,12 @@ namespace Aris
 
 		void s_dlt_col(const int &dlt_col_num, const int *col_index, const int &m, const int &n, double *A, const int &ldA) noexcept;
 
+		/** \brief 计算位姿矩阵的逆矩阵
+		*
+		* 用来计算：pm_out = pm_in^-1
+		*
+		*/
+		void s_inv_pm(const double *pm_in, double *pm_out) noexcept;
 		void s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept;
 		template <typename ...Args>
 		void s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept
@@ -305,13 +423,6 @@ namespace Aris
 		void s_dgemm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
 		void s_dgemmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
 		void s_dgemmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
-		
-		//void s_dgeinv(const int n, double* A, const int lda, int *ipiv) noexcept;
-		//void s_dgesv(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept;
-		//void s_dgesvT(int n, int nrhs, double* a, int lda, int* ipiv, double* b, int ldb) noexcept;
-		//void s_dgelsd(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept;
-		//void s_dgelsdT(int m, int n, int nrhs, double* a, int lda, double* b, int ldb, double* s, double rcond, int* rank) noexcept;
-
 
 		class AKIMA
 		{
