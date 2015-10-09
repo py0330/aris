@@ -147,7 +147,7 @@ public:
 	/*
 	 * will be feed commanddata
 	 */
-	void DoPID(ElmoMotor::CElmoMotorData* p_Data,ElmoMotor::CElmoMotorData* p_Order,int SpeedLimit=5417643,int n=ACTUAL_MOTOR_NUMBER);
+	void DoPID(ElmoMotor::CElmoMotorData* p_Data,ElmoMotor::CElmoMotorData* p_Order,int SpeedLimit=9830400,int n=ACTUAL_MOTOR_NUMBER);
 	void InitPositionToTorque();
 private:
 

@@ -7,11 +7,11 @@
 #include <native/task.h>
 #include <native/timer.h>
 #include <rtdk.h>
-
 #endif
 
 
 #include <string>
+#include <iostream>
 
 #include <Aris_Device.h>
 
@@ -301,6 +301,14 @@ namespace Aris
 		{
 #define TASK_PRIO_CORE 99
 			int ret;
+			
+			rt_print_auto_init(1);
+						
+			std::cout<<"cout:: now create rt task"<<std::endl;			
+			rt_printf("now create rt task.\n");
+			
+
+
 			ret = rt_task_create(&ETHERCAT_MASTER::IMP::realtimeCore, "realtime core", 0, TASK_PRIO_CORE, T_FPU);
 			ret = rt_task_start(&ETHERCAT_MASTER::IMP::realtimeCore, &ETHERCAT_MASTER::IMP::RealTimeCore, NULL);
 		};

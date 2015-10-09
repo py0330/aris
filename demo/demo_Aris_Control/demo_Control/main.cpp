@@ -1,5 +1,6 @@
 ﻿#include "Platform.h"
 #include <Aris_Device.h>
+#include <iostream>
 
 #ifdef PLATFORM_IS_LINUX
 #include "ecrt.h"
@@ -20,6 +21,17 @@ int main()
 
 	auto pMas = Aris::Control::ETHERCAT_MASTER::GetInstance();
 	pMas->LoadXml(ele);
+
+	pMas->Initialize();
+
+	std::cout<<"before run"<<std::endl;
+	
+	pMas->Run();
+
+	std::cout<<"after run"<<std::endl;
+
+	char a;
+	std::cin>>a;
 
 	return 0;
 }
