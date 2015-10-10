@@ -1,6 +1,6 @@
 #include <Platform.h>
 #ifdef PLATFORM_IS_WINDOWS
-#include <ecrt_windows_py.h>
+#include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
 #endif
 #ifdef PLATFORM_IS_LINUX
 #include <ecrt.h>
@@ -29,19 +29,39 @@ namespace Aris
 			void Write();
 
 		private:
-			struct PDO
+			class PDO
 			{
+			public:
+				IMP *pImp;
 				std::uint16_t index;
 				std::uint8_t subIndex;
-				std::uint32_t offset;
 				std::uint8_t size;
+				std::uint32_t offset;
+				
+				virtual ~PDO() = default;
+				virtual void ReadValue(std::int8_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
+				virtual void ReadValue(std::int16_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
+				virtual void ReadValue(std::int32_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
+				virtual void ReadValue(std::uint8_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
+				virtual void ReadValue(std::uint16_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
+				virtual void ReadValue(std::uint32_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
+				virtual void WriteValue(const void *value) {};
 			};
+			template<typename TYPE>
+			class PDO_TYPE :public PDO
+			{
+			public:
+				virtual ~PDO_TYPE() = default;
+				virtual void ReadValue(TYPE &value) const { static_cast<TYPE&>(value) = *reinterpret_cast<const TYPE*>(pImp->pDomainPd + offset); };
+				virtual void WriteValue(const void *value) { *reinterpret_cast<TYPE*>(pImp->pDomainPd + offset) = *static_cast<const TYPE*>(value); };
+			};
+
 			class POD_GROUP
 			{
 			public:
 				bool isTx;
 				uint16_t index;
-				std::vector<PDO> pdos;
+				std::vector<std::unique_ptr<PDO> > pdos;
 				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
 			};
 			std::vector<POD_GROUP> pdoGroups;
@@ -57,6 +77,7 @@ namespace Aris
 			std::uint8_t* pDomainPd;
 
 			friend class ETHERCAT_MASTER::IMP;
+			friend class ETHERCAT_SLAVE;
 		};
 		class ETHERCAT_MASTER::IMP
 		{
@@ -74,15 +95,18 @@ namespace Aris
 		private:
 			std::vector<std::unique_ptr<ETHERCAT_SLAVE> > devices;
 			ec_master_t* pEcMaster;
+
+			const int samplePeriodNs = 1000000;
+
+#ifdef PLATFORM_IS_LINUX
 			static RT_TASK realtimeCore;
-			
+#endif
 			friend class ETHERCAT_SLAVE::IMP;
 		};
+
+#ifdef PLATFORM_IS_LINUX
 		RT_TASK ETHERCAT_MASTER::IMP::realtimeCore;
-
-
-		
-
+#endif
 		ETHERCAT_SLAVE::IMP::IMP(Aris::Core::ELEMENT *ele)
 		{
 			/*load product id...*/
@@ -99,14 +123,45 @@ namespace Aris
 				pdo_group.isTx = p_g->Attribute("isTx", "true") ? true : false;
 				for (auto p = p_g->FirstChildElement(); p != nullptr; p = p->NextSiblingElement())
 				{
-					IMP::PDO pdo;
-					pdo.index = std::stoi(p->Attribute("index"), nullptr, 0);
-					pdo.subIndex = std::stoi(p->Attribute("subIndex"), nullptr, 0);
-					pdo.size = std::stoi(p->Attribute("size"), nullptr, 0);
-
-					pdo_group.pdos.push_back(pdo);
+					if (p->Attribute("type", "int8"))
+					{
+						pdo_group.pdos.push_back(std::unique_ptr<ETHERCAT_SLAVE::IMP::PDO>(new ETHERCAT_SLAVE::IMP::PDO_TYPE<std::int8_t>()));
+						pdo_group.pdos.back()->size = 8;
+					}
+					else if(p->Attribute("type", "uint8"))
+					{
+						pdo_group.pdos.push_back(std::unique_ptr<ETHERCAT_SLAVE::IMP::PDO>(new ETHERCAT_SLAVE::IMP::PDO_TYPE<std::uint8_t>()));
+						pdo_group.pdos.back()->size = 8;
+					}
+					else if (p->Attribute("type", "int16"))
+					{
+						pdo_group.pdos.push_back(std::unique_ptr<ETHERCAT_SLAVE::IMP::PDO>(new ETHERCAT_SLAVE::IMP::PDO_TYPE<std::int16_t>()));
+						pdo_group.pdos.back()->size = 16;
+					}
+					else if (p->Attribute("type", "uint16"))
+					{
+						pdo_group.pdos.push_back(std::unique_ptr<ETHERCAT_SLAVE::IMP::PDO>(new ETHERCAT_SLAVE::IMP::PDO_TYPE<std::uint16_t>()));
+						pdo_group.pdos.back()->size = 16;
+					}
+					else if (p->Attribute("type", "int32"))
+					{
+						pdo_group.pdos.push_back(std::unique_ptr<ETHERCAT_SLAVE::IMP::PDO>(new ETHERCAT_SLAVE::IMP::PDO_TYPE<std::int32_t>()));
+						pdo_group.pdos.back()->size = 32;
+					}
+					else if (p->Attribute("type", "uint32"))
+					{
+						pdo_group.pdos.push_back(std::unique_ptr<ETHERCAT_SLAVE::IMP::PDO>(new ETHERCAT_SLAVE::IMP::PDO_TYPE<std::uint32_t>()));
+						pdo_group.pdos.back()->size = 32;
+					}
+					else
+					{
+						throw std::runtime_error("invalid type of pdo");
+					}
+					
+					pdo_group.pdos.back()->index = std::stoi(p->Attribute("index"), nullptr, 0);
+					pdo_group.pdos.back()->subIndex = std::stoi(p->Attribute("subIndex"), nullptr, 0);
 				}
-				pdoGroups.push_back(pdo_group);
+				pdoGroups.push_back(std::move(pdo_group));
 			}
 
 
@@ -115,8 +170,8 @@ namespace Aris
 			{
 				for (auto &p : p_g.pdos)
 				{
-					ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ alias,position,venderID,productCode,p.index,p.subIndex,&p.offset });
-					p_g.ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ p.index,p.subIndex,p.size });
+					ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ alias,position,venderID,productCode,p->index,p->subIndex,&p->offset });
+					p_g.ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ p->index,p->subIndex,p->size });
 				}
 
 				if (p_g.isTx)
@@ -193,7 +248,10 @@ namespace Aris
 		void ETHERCAT_SLAVE::IMP::Read()
 		{
 			ecrt_domain_process(pDomain);
-			auto vel = EC_READ_S32(pDomainPd + this->pdoGroups[1].pdos[0].offset);
+			std::int32_t vel;
+			this->pdoGroups[1].pdos[0]->ReadValue(vel);
+
+			//auto vel = EC_READ_S32(pDomainPd + this->pdoGroups[1].pdos[0]->offset);
 
 			static int i = 0;
 
@@ -208,14 +266,17 @@ namespace Aris
 		}
 		void ETHERCAT_SLAVE::IMP::Write()
 		{
-			EC_WRITE_S32(pDomainPd + this->pdoGroups[0].pdos[0].offset, 0);
-			EC_WRITE_S16(pDomainPd + this->pdoGroups[0].pdos[1].offset, 0);
-			EC_WRITE_S32(pDomainPd + this->pdoGroups[0].pdos[2].offset, 0);
-			EC_WRITE_S16(pDomainPd + this->pdoGroups[0].pdos[3].offset, 0);
-			EC_WRITE_U16(pDomainPd + this->pdoGroups[0].pdos[4].offset, 0);
-			EC_WRITE_U8(pDomainPd + this->pdoGroups[0].pdos[5].offset, 0);
+			EC_WRITE_S32(pDomainPd + this->pdoGroups[0].pdos[0]->offset, 0);
+			//EC_WRITE_S16(pDomainPd + this->pdoGroups[0].pdos[1].offset, 0);
+			//EC_WRITE_S32(pDomainPd + this->pdoGroups[0].pdos[2].offset, 0);
+			//EC_WRITE_S16(pDomainPd + this->pdoGroups[0].pdos[3].offset, 0);
+			//EC_WRITE_U16(pDomainPd + this->pdoGroups[0].pdos[4].offset, 0);
+			//EC_WRITE_U8(pDomainPd + this->pdoGroups[0].pdos[5].offset, 0);
 			ecrt_domain_queue(pDomain);
 		}
+
+
+
 
 		ETHERCAT_SLAVE::ETHERCAT_SLAVE(Aris::Core::ELEMENT *ele)
 		{
@@ -229,14 +290,30 @@ namespace Aris
 		{
 			this->pImp->Initialize();
 		}
-		void ETHERCAT_SLAVE::Read()
+		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const
 		{
-			pImp->Read();
+			 pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
 		}
-		void ETHERCAT_SLAVE::Write()
+		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const
 		{
-			pImp->Write();
+
 		}
+		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::uint32_t &value) const
+		{
+
+		}
+		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::int8_t &value) const
+		{
+		}
+		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::int16_t &value) const
+		{
+		}
+		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::int32_t &value) const
+		{
+		}
+
+
+
 
 		void ETHERCAT_MASTER::IMP::LoadXml(Aris::Core::ELEMENT *ele)
 		{
@@ -286,31 +363,27 @@ namespace Aris
 			ecrt_master_receive(pEcMaster);
 			for (auto &pSla : devices)
 			{
-				pSla->Read();
+				pSla->pImp->Read();
 			}
 		}
 		void ETHERCAT_MASTER::IMP::Write()
 		{
 			for (auto &pSla : devices)
 			{
-				pSla->Write();
+				pSla->pImp->Write();
 			}
 			ecrt_master_send(pEcMaster);
 		}
 		void ETHERCAT_MASTER::IMP::Run()
 		{
-#define TASK_PRIO_CORE 99
-			int ret;
-			
+#ifdef PLARFORM_IS_LINUX
 			rt_print_auto_init(1);
-						
-			std::cout<<"cout:: now create rt task"<<std::endl;			
-			rt_printf("now create rt task.\n");
 			
+			const int priority = 99;
 
-
-			ret = rt_task_create(&ETHERCAT_MASTER::IMP::realtimeCore, "realtime core", 0, TASK_PRIO_CORE, T_FPU);
-			ret = rt_task_start(&ETHERCAT_MASTER::IMP::realtimeCore, &ETHERCAT_MASTER::IMP::RealTimeCore, NULL);
+			rt_task_create(&ETHERCAT_MASTER::IMP::realtimeCore, "realtime core", 0, priority, T_FPU);
+			rt_task_start(&ETHERCAT_MASTER::IMP::realtimeCore, &ETHERCAT_MASTER::IMP::RealTimeCore, NULL);
+#endif
 		};
 		void ETHERCAT_MASTER::IMP::Sync(uint64_t nanoSecond)
 		{
@@ -320,11 +393,8 @@ namespace Aris
 		}
 		void ETHERCAT_MASTER::IMP::RealTimeCore(void *)
 		{
-			rt_printf("Realtime Core started.\n");
-
-			//float period;
-#define PERIOD_NS_CORE 1000000
-			rt_task_set_periodic(NULL, TM_NOW, PERIOD_NS_CORE);
+#ifdef PLARFORM_IS_LINUX
+			rt_task_set_periodic(NULL, TM_NOW, samplePeriodNs);
 
 			while (1)
 			{
@@ -334,6 +404,7 @@ namespace Aris
 				ETHERCAT_MASTER::GetInstance()->pImp->Sync(rt_timer_read());
 				ETHERCAT_MASTER::GetInstance()->pImp->Write();//motor data write and state machine/mode transition
 			}
+#endif
 		};
 		
 
@@ -357,14 +428,6 @@ namespace Aris
 		void ETHERCAT_MASTER::Initialize()
 		{
 			pImp->Initialize();
-		}
-		void ETHERCAT_MASTER::Read()
-		{
-			pImp->Read();
-		}
-		void ETHERCAT_MASTER::Write()
-		{
-			pImp->Write();
 		}
 		void ETHERCAT_MASTER::Run()
 		{

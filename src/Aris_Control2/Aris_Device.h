@@ -16,8 +16,22 @@ namespace Aris
 		public:
 			virtual ~ETHERCAT_SLAVE();
 			virtual void Initialize();
-			void Read();
-			void Write();
+
+			void ReadPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const;
+			void ReadPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const;
+			void ReadPdo(int pdoGroupID, int pdoID, std::uint32_t &value) const;
+			void ReadPdo(int pdoGroupID, int pdoID, std::int8_t &value) const;
+			void ReadPdo(int pdoGroupID, int pdoID, std::int16_t &value) const;
+			void ReadPdo(int pdoGroupID, int pdoID, std::int32_t &value) const;
+			void WritePdo(int pdoGroupID, int pdoID, const std::int16_t &value);
+
+
+
+
+
+
+			void ReadPdo(int pdoGroupID, int pdoID, void *dataAddress);
+			void WritePdo(int pdoGroupID, int pdoID, void *dataAddress);
 			
 		private:
 			ETHERCAT_SLAVE(Aris::Core::ELEMENT *);
@@ -38,11 +52,8 @@ namespace Aris
 		public:
 			static ETHERCAT_MASTER *GetInstance() ;
 
-			
 			void LoadXml(Aris::Core::ELEMENT *);
 			void Initialize();
-			void Read();
-			void Write();
 			void Run();
 			
 		private:
