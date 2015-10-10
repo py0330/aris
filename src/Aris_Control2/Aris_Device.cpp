@@ -360,11 +360,13 @@ namespace Aris
 		}
 		void ETHERCAT_MASTER::IMP::Read()
 		{
+			rt_printf("in read\n");
 			ecrt_master_receive(pEcMaster);
 			for (auto &pSla : devices)
 			{
 				pSla->pImp->Read();
 			}
+			rt_printf("in read after\n");
 		}
 		void ETHERCAT_MASTER::IMP::Write()
 		{
@@ -394,6 +396,7 @@ namespace Aris
 		void ETHERCAT_MASTER::IMP::RealTimeCore(void *)
 		{
 #ifdef PLARFORM_IS_LINUX
+			rt_printf("in real time core\n");
 			rt_task_set_periodic(NULL, TM_NOW, samplePeriodNs);
 
 			while (1)
