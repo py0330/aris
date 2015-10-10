@@ -52,7 +52,7 @@ namespace Aris
 			{
 			public:
 				virtual ~PDO_TYPE() = default;
-				virtual void ReadValue(TYPE &value) const { static_cast<TYPE&>(value) = *reinterpret_cast<const TYPE*>(pImp->pDomainPd + offset); };
+				virtual void ReadValue(TYPE &value) const override { static_cast<TYPE&>(value) = *reinterpret_cast<const TYPE*>(pImp->pDomainPd + offset); };
 				virtual void WriteValue(const void *value) { *reinterpret_cast<TYPE*>(pImp->pDomainPd + offset) = *static_cast<const TYPE*>(value); };
 			};
 
