@@ -49,7 +49,7 @@ set(CMAKE_BUILD_TYPE "Release")
 
 # set compile options
 if(UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -msse2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 endif(UNIX)
 
 # set debug and release options
@@ -61,7 +61,7 @@ set(CMAKE_BUILD_TYPE "Release")
 # set include and lib folders
 if(UNIX)
 set(GENERAL_INCLUDE_DIR "/usr/Aris_Dependent")
-set(SYSTEM_LINK_LIBS pthread gfortran)
+set(SYSTEM_LINK_LIBS pthread)
 set(ARIS_INCLUDE_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control2 src/Aris_Control)
 set(ARIS_LINK_LIBS Aris_Control Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Control2 Aris_Core)
 set(XENOMAI_INCLUDE_DIR "/usr/xenomai/include")

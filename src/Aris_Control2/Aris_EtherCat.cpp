@@ -69,6 +69,8 @@ namespace Aris
 			public:
 				virtual ~PDO_TYPE_RX() = default;
 				virtual void WriteValue(TYPE value) override { *reinterpret_cast<TYPE*>(pImp->pDomainPd + offset) = value; };
+				//virtual void ReadValue(TYPE &value) const override { value = *reinterpret_cast<const TYPE*>(pImp->pDomainPd + offset); };
+
 			};
 
 			class POD_GROUP
@@ -132,12 +134,12 @@ namespace Aris
 			this->alias = std::stoi(ele->Attribute("alias"), nullptr, 0);
 
 			/*load PDO*/
-			auto AddDoType = [](Aris::Core::ELEMENT *ele)-> DO*
+			auto AddDoType = [](Aris::Core::ELEMENT *ele, bool isTx)-> DO*
 			{
 				DO* ret;
 				if (ele->Attribute("type", "int8"))
 				{
-					if(ele->Attribute("isTx", "true"))
+					if(isTx)
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::int8_t>();
 					else
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::int8_t>();
@@ -145,7 +147,7 @@ namespace Aris
 				}
 				else if (ele->Attribute("type", "uint8"))
 				{
-					if (ele->Attribute("isTx", "true"))
+					if (isTx)
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::uint8_t>();
 					else
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::uint8_t>();
@@ -153,7 +155,7 @@ namespace Aris
 				}
 				else if (ele->Attribute("type", "int16"))
 				{
-					if (ele->Attribute("isTx", "true"))
+					if (isTx)
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::int16_t>();
 					else
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::int16_t>();
@@ -161,7 +163,7 @@ namespace Aris
 				}
 				else if (ele->Attribute("type", "uint16"))
 				{
-					if (ele->Attribute("isTx", "true"))
+					if (isTx)
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::uint16_t>();
 					else
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::uint16_t>();
@@ -169,7 +171,7 @@ namespace Aris
 				}
 				else if (ele->Attribute("type", "int32"))
 				{
-					if (ele->Attribute("isTx", "true"))
+					if (isTx)
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::int32_t>();
 					else
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::int32_t>();
@@ -177,7 +179,7 @@ namespace Aris
 				}
 				else if (ele->Attribute("type", "uint32"))
 				{
-					if (ele->Attribute("isTx", "true"))
+					if (isTx)
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::uint32_t>();
 					else
 						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::uint32_t>();
@@ -198,7 +200,7 @@ namespace Aris
 				pdo_group.isTx = p_g->Attribute("isTx", "true") ? true : false;
 				for (auto p = p_g->FirstChildElement(); p != nullptr; p = p->NextSiblingElement())
 				{
-					pdo_group.pdos.push_back(std::unique_ptr<DO>(AddDoType(p)));				
+					pdo_group.pdos.push_back(std::unique_ptr<DO>(AddDoType(p,pdo_group.isTx)));				
 					pdo_group.pdos.back()->index = std::stoi(p->Attribute("index"), nullptr, 0);
 					pdo_group.pdos.back()->subIndex = std::stoi(p->Attribute("subIndex"), nullptr, 0);
 					pdo_group.pdos.back()->pImp = this;
@@ -206,10 +208,11 @@ namespace Aris
 				pdoGroups.push_back(std::move(pdo_group));
 			}
 
+
 			/*load SDO*/
 			auto SDO = ele->FirstChildElement("SDO");
-			for (auto s = PDO->FirstChildElement(); s != nullptr; s = s->NextSiblingElement())
-			{
+			for (auto s = SDO->FirstChildElement(); s != nullptr; s = s->NextSiblingElement())
+			{			
 				sdos.push_back(std::unique_ptr<DO>(new DO));
 				sdos.back()->size = 32;
 				sdos.back()->index = std::stoi(s->Attribute("index"), nullptr, 0);
@@ -245,11 +248,10 @@ namespace Aris
 			ec_sync_info[4] = ec_sync_info_t{ 0xff };
 		};
 		void ETHERCAT_SLAVE::IMP::Initialize()
-		{
+		{		
 			auto pEcMaster = ETHERCAT_MASTER::GetInstance()->pImp->pEcMaster;
 
 			pDomain = ecrt_master_create_domain(pEcMaster);
-
 			if (!pDomain)
 			{
 				throw std::runtime_error("failed to create domain");
@@ -317,7 +319,7 @@ namespace Aris
 		}
 		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const
 		{
-			 pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
+			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
 		}
 		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const
 		{
@@ -380,13 +382,13 @@ namespace Aris
 		void ETHERCAT_MASTER::IMP::Run()
 		{
 			static bool isFirstTime{ true };
-
 			if (!isFirstTime)
 			{
 				throw std::runtime_error("master already running");
 			}
 			isFirstTime = false;
 			
+
 			this->Initialize();
 
 #ifdef PLATFORM_IS_LINUX
@@ -412,19 +414,20 @@ namespace Aris
 			{
 				throw std::runtime_error("master request failed!");
 			}
-
 			for (size_t i = 0; i < slaves.size(); ++i)
-			{
+			{				
 				slaves[i]->Initialize();
 				slaves[i]->pImp->position = static_cast<std::uint16_t>(i);
 			}
 
+			
 			ecrt_master_activate(pEcMaster);
 
 			for (auto &pSla : slaves)
 			{
 				pSla->pImp->pDomainPd = ecrt_domain_data(pSla->pImp->pDomain);
 			}
+			
 		}
 		void ETHERCAT_MASTER::IMP::Sync(uint64_t nanoSecond)
 		{

@@ -21,9 +21,11 @@ int main()
 
 	//auto pMas = Aris::Control::ETHERCAT_MASTER::GetInstance();
 	auto pMas = Aris::Control::ETHERCAT_MASTER::CreateMaster<Aris::Control::CONTROLLER>();
+	std::cout<<"1"<<std::endl;	
 	pMas->LoadXml(ele);
+std::cout<<"2"<<std::endl;
 	pMas->Run();
-
+std::cout<<"3"<<std::endl;
 	char a;
 	std::cin>>a;
 
