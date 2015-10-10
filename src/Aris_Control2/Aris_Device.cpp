@@ -7,6 +7,7 @@
 #include <native/task.h>
 #include <native/timer.h>
 #include <rtdk.h>
+#include <sys/mman.h>
 #endif
 
 
@@ -39,12 +40,12 @@ namespace Aris
 				std::uint32_t offset;
 				
 				virtual ~PDO() = default;
-				virtual void ReadValue(std::int8_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
-				virtual void ReadValue(std::int16_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
-				virtual void ReadValue(std::int32_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
-				virtual void ReadValue(std::uint8_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
-				virtual void ReadValue(std::uint16_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
-				virtual void ReadValue(std::uint32_t &value) const { throw std::runtime_error("the pdo type and input param is same"); };
+				virtual void ReadValue(std::int8_t &value) const { throw std::runtime_error("Param type is not the same with pdo data type"); };
+				virtual void ReadValue(std::int16_t &value) const { throw std::runtime_error("Param type is not the same with pdo data type"); };
+				virtual void ReadValue(std::int32_t &value) const { throw std::runtime_error("Param type is not the same with pdo data type"); };
+				virtual void ReadValue(std::uint8_t &value) const { throw std::runtime_error("Param type is not the same with pdo data type"); };
+				virtual void ReadValue(std::uint16_t &value) const { throw std::runtime_error("Param type is not the same with pdo data type"); };
+				virtual void ReadValue(std::uint32_t &value) const { throw std::runtime_error("Param type is not the same with pdo data type"); };
 				virtual void WriteValue(const void *value) {};
 			};
 			template<typename TYPE>
@@ -52,7 +53,7 @@ namespace Aris
 			{
 			public:
 				virtual ~PDO_TYPE() = default;
-				virtual void ReadValue(TYPE &value) const override { static_cast<TYPE&>(value) = *reinterpret_cast<const TYPE*>(pImp->pDomainPd + offset); };
+				virtual void ReadValue(TYPE &value) const override { value = *reinterpret_cast<const TYPE*>(pImp->pDomainPd + offset); };
 				virtual void WriteValue(const void *value) { *reinterpret_cast<TYPE*>(pImp->pDomainPd + offset) = *static_cast<const TYPE*>(value); };
 			};
 
@@ -96,7 +97,7 @@ namespace Aris
 			std::vector<std::unique_ptr<ETHERCAT_SLAVE> > devices;
 			ec_master_t* pEcMaster;
 
-			const int samplePeriodNs = 1000000;
+			static const int samplePeriodNs;
 
 #ifdef PLATFORM_IS_LINUX
 			static RT_TASK realtimeCore;
@@ -106,6 +107,7 @@ namespace Aris
 
 #ifdef PLATFORM_IS_LINUX
 		RT_TASK ETHERCAT_MASTER::IMP::realtimeCore;
+		const int ETHERCAT_MASTER::IMP::samplePeriodNs = 1000000;
 #endif
 		ETHERCAT_SLAVE::IMP::IMP(Aris::Core::ELEMENT *ele)
 		{
@@ -160,6 +162,7 @@ namespace Aris
 					
 					pdo_group.pdos.back()->index = std::stoi(p->Attribute("index"), nullptr, 0);
 					pdo_group.pdos.back()->subIndex = std::stoi(p->Attribute("subIndex"), nullptr, 0);
+					pdo_group.pdos.back()->pImp = this;
 				}
 				pdoGroups.push_back(std::move(pdo_group));
 			}
@@ -248,7 +251,7 @@ namespace Aris
 		void ETHERCAT_SLAVE::IMP::Read()
 		{
 			ecrt_domain_process(pDomain);
-			std::int32_t vel;
+			std::uint32_t vel;
 			this->pdoGroups[1].pdos[0]->ReadValue(vel);
 
 			//auto vel = EC_READ_S32(pDomainPd + this->pdoGroups[1].pdos[0]->offset);
@@ -260,6 +263,7 @@ namespace Aris
 #ifdef PLATFORM_IS_LINUX
 				rt_printf("position is : %d\n", vel);
 #endif
+				rt_printf("position is : %d\n", vel);
 			}
 
 			++i;
@@ -331,7 +335,7 @@ namespace Aris
 			if (isFirstTime)
 			{
 				
-#ifdef PLARFORM_IS_LINUX
+#ifdef PLATFORM_IS_LINUX
 				if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1)
 				{
 					throw std::runtime_error("lock failed");
@@ -360,13 +364,11 @@ namespace Aris
 		}
 		void ETHERCAT_MASTER::IMP::Read()
 		{
-			rt_printf("in read\n");
 			ecrt_master_receive(pEcMaster);
 			for (auto &pSla : devices)
 			{
 				pSla->pImp->Read();
 			}
-			rt_printf("in read after\n");
 		}
 		void ETHERCAT_MASTER::IMP::Write()
 		{
@@ -378,11 +380,11 @@ namespace Aris
 		}
 		void ETHERCAT_MASTER::IMP::Run()
 		{
-#ifdef PLARFORM_IS_LINUX
-			rt_print_auto_init(1);
-			
-			const int priority = 99;
+#ifdef PLATFORM_IS_LINUX
+			rt_print_auto_init(1);		
 
+			const int priority = 99;
+			
 			rt_task_create(&ETHERCAT_MASTER::IMP::realtimeCore, "realtime core", 0, priority, T_FPU);
 			rt_task_start(&ETHERCAT_MASTER::IMP::realtimeCore, &ETHERCAT_MASTER::IMP::RealTimeCore, NULL);
 #endif
@@ -395,8 +397,7 @@ namespace Aris
 		}
 		void ETHERCAT_MASTER::IMP::RealTimeCore(void *)
 		{
-#ifdef PLARFORM_IS_LINUX
-			rt_printf("in real time core\n");
+#ifdef PLATFORM_IS_LINUX
 			rt_task_set_periodic(NULL, TM_NOW, samplePeriodNs);
 
 			while (1)
@@ -434,7 +435,7 @@ namespace Aris
 		}
 		void ETHERCAT_MASTER::Run()
 		{
-			pImp->Run();
+			this->pImp->Run();
 		}
 
 
