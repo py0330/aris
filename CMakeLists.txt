@@ -107,7 +107,7 @@ add_library(Aris_Core STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
 # Aris_Control project
-set(SOURCE Aris_Device Aris_ControlData)
+set(SOURCE Aris_Motion Aris_EtherCat Aris_ControlData)
 PREPEND_CPP(FULL_SRC src/Aris_Control2 ${SOURCE})
 PREPEND_H(FULL_H src/Aris_Control2 ${SOURCE})
 add_library(Aris_Control2 STATIC ${FULL_SRC} ${FULL_H})

@@ -1,5 +1,5 @@
 ﻿#include "Platform.h"
-#include <Aris_Device.h>
+#include <Aris_Motion.h>
 #include <iostream>
 
 #ifdef PLATFORM_IS_LINUX
@@ -19,16 +19,10 @@ int main()
 	auto ele = doc.RootElement()->FirstChildElement("Server")
 		->FirstChildElement("Control")->FirstChildElement("EtherCat");
 
-	auto pMas = Aris::Control::ETHERCAT_MASTER::GetInstance();
+	//auto pMas = Aris::Control::ETHERCAT_MASTER::GetInstance();
+	auto pMas = Aris::Control::ETHERCAT_MASTER::CreateMaster<Aris::Control::CONTROLLER>();
 	pMas->LoadXml(ele);
-
-	pMas->Initialize();
-
-	std::cout<<"before run"<<std::endl;
-	
 	pMas->Run();
-
-	std::cout<<"after run"<<std::endl;
 
 	char a;
 	std::cin>>a;
