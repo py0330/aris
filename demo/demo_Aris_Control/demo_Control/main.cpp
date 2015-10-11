@@ -19,13 +19,24 @@ int main()
 	auto ele = doc.RootElement()->FirstChildElement("Server")
 		->FirstChildElement("Control")->FirstChildElement("EtherCat");
 
-	//auto pMas = Aris::Control::ETHERCAT_MASTER::GetInstance();
 	auto pMas = Aris::Control::ETHERCAT_MASTER::CreateMaster<Aris::Control::CONTROLLER>();
 	std::cout<<"1"<<std::endl;	
 	pMas->LoadXml(ele);
-std::cout<<"2"<<std::endl;
+	std::cout<<"2"<<std::endl;
 	pMas->Run();
-std::cout<<"3"<<std::endl;
+	std::cout<<"3"<<std::endl;
+	
+	while (true)
+	{
+		Aris::Core::MSG msg;
+		pMas->pipe_msg.RecvMsgInNRT(msg);
+		std::cout << "NRT msg length:" << msg.GetLength()<<" pos:" << *reinterpret_cast<std::int32_t*>(msg.GetDataAddress())<<std::endl;
+
+	}
+	
+	
+	
+	
 	char a;
 	std::cin>>a;
 

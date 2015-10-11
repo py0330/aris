@@ -2,6 +2,7 @@
 #define ARIS_ETHERCAT_H
 
 #include "Aris_XML.h"
+#include "Aris_Core.h"
 
 #include <vector>
 #include <memory>
@@ -11,6 +12,36 @@ namespace Aris
 {
 	namespace Control
 	{	
+		class PIPE_BASE
+		{
+		protected:
+			PIPE_BASE(int port, bool isBlock);
+			~PIPE_BASE();
+
+			class IMP;
+			IMP *pImp;
+		};
+
+		class PIPE : public PIPE_BASE
+		{
+		public:
+			PIPE(int port, bool isBlock);
+			int SendToRT(const void *pData, int size);
+			int SendToNRT(const void* pData, int size);
+			int RecvInRT(void* pData, int size);
+			int RecvInNRT(void *pData, int size);
+		};
+
+		class PIPE_MSG :public PIPE_BASE
+		{
+		public:
+			PIPE_MSG(int port, bool isBlock);
+			void SendMsgToRT(const Aris::Core::MSG &msg);
+			void SendMsgToNRT(const Aris::Core::RT_MSG &msg);
+			void RecvMsgInRT(Aris::Core::RT_MSG &msg);
+			void RecvMsgInNRT(Aris::Core::MSG &msg);
+		};
+		
 		class ETHERCAT_SLAVE
 		{
 		public:
@@ -45,7 +76,6 @@ namespace Aris
 
 			friend class ETHERCAT_MASTER;
 		};
-
 		class ETHERCAT_MASTER
 		{
 		public:

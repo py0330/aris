@@ -405,37 +405,39 @@ namespace Aris
 				return _parts.back().get();
 			}
 			template<typename JOINT, typename ...Args>
-			JOINT_BASE* AddJoint(const std::string & Name, Args ...args)
+			JOINT* AddJoint(const std::string & Name, Args ...args)
 			{
 				if (GetJoint(Name) != nullptr)
 				{
 					return nullptr;
 				}
 
-				_joints.push_back(std::unique_ptr<JOINT_BASE>(new JOINT(this, Name, _joints.size(), args...)));
-				return _joints.back().get();
+				auto ret = new JOINT(this, Name, _joints.size(), args...);
+				_joints.push_back(std::unique_ptr<JOINT_BASE>(ret));
+				return ret;
 			}
 			template<typename MOTION, typename ...Args>
-			MOTION_BASE* AddMotion(const std::string & Name, Args ...args)
+			MOTION* AddMotion(const std::string & Name, Args ...args)
 			{
 				if (GetMotion(Name) != nullptr)
 				{
 					return nullptr;
 				}
 
-				_motions.push_back(std::unique_ptr<MOTION_BASE>(new MOTION(this, Name, _motions.size(), args...)));
-				return _motions.back().get();
+				auto ret = new MOTION(this, Name, _motions.size(), args...);
+				_motions.push_back(std::unique_ptr<MOTION_BASE>(ret));
+				return ret;
 			};
 			template<typename FORCE, typename ...Args>
-			FORCE_BASE* AddForce(const std::string & Name, Args ...args)
+			FORCE* AddForce(const std::string & Name, Args ...args)
 			{
 				if (GetForce(Name) != nullptr)
 				{
 					return nullptr;
 				}
-
-				_forces.push_back(std::unique_ptr<FORCE_BASE>(new FORCE(this, Name, _forces.size(), args...)));
-				return _forces.back().get();
+				auto ret = new FORCE(this, Name, _joints.size(), args...);
+				_forces.push_back(std::unique_ptr<FORCE_BASE>(ret));
+				return ret;
 			}
 
 			const PART *GetPart(int id) const;

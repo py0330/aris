@@ -4,13 +4,22 @@
 #endif
 #ifdef PLATFORM_IS_LINUX
 #include <ecrt.h>
+#include <rtdk.h>
 #include <native/task.h>
 #include <native/timer.h>
-#include <rtdk.h>
 #include <sys/mman.h>
+
+// following for pipe
+#include <cstdio>
+#include <cstdlib>
+#include <unistd.h>
+#include <fcntl.h>
+#include <rtdm/rtdm.h>
+#include <rtdm/rtipc.h>
+#include <mutex>
 #endif
 
-
+#include <mutex>
 #include <string>
 #include <iostream>
 
@@ -21,6 +30,188 @@ namespace Aris
 {
 	namespace Control
 	{
+
+#ifdef PLATFORM_IS_LINUX
+		class PIPE::IMP
+		{
+		public:
+			IMP(int port, bool isBlock)
+			{
+				InitRT(port);
+				InitNRT(port, isBlock);
+			}
+			// return the size of data received, -1 means nothing received
+			int SendToRT(const void *pData, int size)
+			{
+				if (pData == nullptr)
+				{
+					throw std::runtime_error("SendNRTtoRT:Invalid pointer");
+				}
+				std::lock_guard<std::mutex> guard(mutexInNRT);
+				return write(FD_NRT, pData, size);
+			}
+			int SendToNRT(const void* pData, int size)
+			{
+				if (pData == nullptr)
+				{
+					throw std::runtime_error("SendRTtoNRT:Invalid pointer");
+				}
+				return rt_dev_sendto(FD_RT, pData, size, 0, NULL, 0);;
+			}
+			int RecvInRT(void* pData, int size)
+			{
+				if (pData == nullptr)
+				{
+					throw std::runtime_error("RecvRTfromNRT:Invalid pointer");
+				}
+				return rt_dev_recvfrom(FD_RT, pData, size, MSG_DONTWAIT, NULL, 0);
+			}
+			int RecvInNRT(void *pData, int size)
+			{
+				if (pData == nullptr)
+				{
+					throw std::runtime_error("RecvNRTfromRT:Invalid pointer");
+				}
+				std::lock_guard<std::mutex> guard(mutexInNRT);
+				return read(FD_NRT, pData, size);
+			}
+		private:
+			void InitRT(int port)
+			{
+				struct sockaddr_ipc saddr;
+
+				size_t poolsz;
+
+				FD_RT = rt_dev_socket(AF_RTIPC, SOCK_DGRAM, IPCPROTO_XDDP);
+				if (FD_RT < 0)
+				{
+					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
+				}
+
+				struct timeval tv;
+				tv.tv_sec = 0;  /* 30 Secs Timeout */
+				tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+				if (rt_dev_setsockopt(FD_RT, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)))
+				{
+					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
+				}
+
+				/*
+				* Set a local 16k pool for the RT endpoint. Memory needed to
+				* convey datagrams will be pulled from this pool, instead of
+				* Xenomai's system pool.
+				*/
+				poolsz = 16384; /* bytes */
+				if (rt_dev_setsockopt(FD_RT, SOL_XDDP, XDDP_POOLSZ, &poolsz, sizeof(poolsz)))
+				{
+					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
+				}
+
+				/*
+				* Bind the socket to the port, to setup a proxy to channel
+				* traffic to/from the Linux domain.
+				*
+				* saddr.sipc_port specifies the port number to use.
+				*/
+				memset(&saddr, 0, sizeof(saddr));
+				saddr.sipc_family = AF_RTIPC;
+				saddr.sipc_port = port;
+				if (rt_dev_bind(FD_RT, (struct sockaddr *)&saddr, sizeof(saddr)))
+				{
+					throw std::runtime_error(std::string("RT pipe init failed! Port:") + std::to_string(port));
+				}
+			}
+			void InitNRT(int port, bool isBlock)
+			{
+				if (asprintf(&FD_NRT_DEVNAME, "/dev/rtp%d", port) < 0)
+				{
+					throw std::runtime_error("Error in asprintf");
+				}
+				FD_NRT = open(FD_NRT_DEVNAME, O_RDWR);
+				free(FD_NRT_DEVNAME);
+
+				if (FD_NRT < 0)
+				{
+					throw std::runtime_error(std::string("NRT pipe init failed! Port:") + std::to_string(port));
+				}
+
+
+				if (isBlock)
+				{
+					//            set to block
+					int flags = fcntl(FD_NRT, F_GETFL, 0);
+					fcntl(FD_NRT, F_SETFL, flags &~O_NONBLOCK);
+				}
+				else
+				{
+					//            set to nonblock
+					int flags = fcntl(FD_NRT, F_GETFL, 0);
+					fcntl(FD_NRT, F_SETFL, flags | O_NONBLOCK);
+				}
+			}
+
+			int FD_RT;
+			int FD_NRT;
+			char* FD_NRT_DEVNAME;
+
+			std::mutex mutexInNRT;
+
+			friend class PIPE;
+		};
+
+		PIPE_BASE::PIPE_BASE(int port, bool isBlock)
+		{
+			pImp = new PIPE::IMP(port, isBlock);
+		}
+		PIPE_BASE::~PIPE_BASE()
+		{
+			delete pImp;
+		}
+
+		PIPE::PIPE(int port, bool isBlock):PIPE_BASE(port, isBlock)
+		{
+		}
+		int PIPE::SendToRT(const void *pData, int size)
+		{
+			return pImp->SendToRT(pData, size);
+		}
+		int PIPE::SendToNRT(const void* pData, int size)
+		{
+			return pImp->SendToNRT(pData, size);
+		}
+		int PIPE::RecvInRT(void* pData, int size)
+		{
+			return pImp->RecvInRT(pData, size);
+		}
+		int PIPE::RecvInNRT(void *pData, int size)
+		{
+			return pImp->RecvInNRT(pData, size);
+		}
+
+		PIPE_MSG::PIPE_MSG(int port, bool isBlock) :PIPE_BASE(port, isBlock)
+		{
+		}
+		void PIPE_MSG::SendMsgToRT(const Aris::Core::MSG &msg)
+		{
+			pImp->SendToRT(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
+		}
+		void PIPE_MSG::SendMsgToNRT(const Aris::Core::RT_MSG &msg)
+		{
+			pImp->SendToNRT(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
+		}
+		void PIPE_MSG::RecvMsgInRT(Aris::Core::RT_MSG &msg)
+		{
+			pImp->RecvInRT(msg._pData, sizeof(Aris::Core::MSG_HEADER));
+			pImp->RecvInRT(msg.GetDataAddress(), msg.GetLength());
+		}
+		void PIPE_MSG::RecvMsgInNRT(Aris::Core::MSG &msg)
+		{
+			pImp->RecvInRT(msg._pData, sizeof(Aris::Core::MSG_HEADER));
+			msg.SetLength(msg.GetLength());
+			pImp->RecvInRT(msg.GetDataAddress(), msg.GetLength());
+		}
+#endif
+		
 		class ETHERCAT_SLAVE::IMP 
 		{
 		public:
@@ -278,7 +469,7 @@ namespace Aris
 			// Configure the slave's domain
 			if (ecrt_domain_reg_pdo_entry_list(pDomain, ec_pdo_entry_reg_vec.data()))
 			{
-				throw std::runtime_error("failed to slave config pdos");
+				throw std::runtime_error("failed domain_reg_pdo_entry");
 			}
 
 			// Configure the slave's discrete clock

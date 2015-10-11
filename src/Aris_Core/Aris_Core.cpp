@@ -293,9 +293,9 @@ namespace Aris
 		}
 		void MSG::SetLength(std::int32_t dataLength)
 		{
-			MSG otherMsg(0, sizeof(MSG_HEADER) + dataLength);
+			MSG otherMsg(0, dataLength);
 
-			memcpy(otherMsg._pData, this->_pData, sizeof(MSG_HEADER) + std::min(GetLength(), dataLength));
+			std::copy_n(this->_pData, sizeof(MSG_HEADER) + std::min(GetLength(), dataLength), otherMsg._pData);
 			
 			reinterpret_cast<MSG_HEADER*>(otherMsg._pData)->msgLength = dataLength;
 

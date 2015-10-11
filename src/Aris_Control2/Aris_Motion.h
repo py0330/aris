@@ -9,22 +9,22 @@ namespace Aris
 {
 	namespace Control
 	{	
-		struct MOTION_DATA
-		{
-		public:
-			int status;
-			int command;
-			int current;
-			int position;
-			int velocity;
-		};
-		
-	
 		class MOTION :public ETHERCAT_SLAVE
 		{
 		public:
 			virtual ~MOTION() {};
 			MOTION(Aris::Core::ELEMENT *);
+
+			/*return 0 means successful, 1 means still enabling, -1 means error*/
+			int Enable();
+			int Disable();
+			int Home();
+			int RunPos(std::int32_t pos);
+			int RunVel(std::int32_t vel);
+			int RunCur(std::int32_t cur);
+			std::int32_t Pos() { std::int32_t pos; this->ReadPdo(0, 0, pos); return pos; };
+			std::int32_t Vel() { std::int32_t vel; this->ReadPdo(0, 1, vel); return vel; };
+			std::int32_t Cur() { std::int32_t cur; this->ReadPdo(0, 2, cur); return cur; };
 
 		protected:
 			virtual void Initialize() override;
@@ -37,15 +37,18 @@ namespace Aris
 		class CONTROLLER :public ETHERCAT_MASTER
 		{
 		public:
-			virtual ~CONTROLLER() {};
+			virtual ~CONTROLLER(){};
 			virtual void LoadXml(Aris::Core::ELEMENT *) override;
-			
+			MOTION * Motion(int i) { return pMotions.at(i); };
+			PIPE_MSG pipe_msg;
+
 		protected:
-			CONTROLLER() = default;
+			CONTROLLER() :ETHERCAT_MASTER(),pipe_msg(0, true) {};
 			virtual void ControlStrategy() override;
 
 		private:
-			MOTION *pMotions[1];
+			std::vector<MOTION *> pMotions;
+			
 
 			friend class ETHERCAT_MASTER;
 		};
