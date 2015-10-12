@@ -22,9 +22,9 @@ namespace Aris
 			int RunPos(std::int32_t pos);
 			int RunVel(std::int32_t vel);
 			int RunCur(std::int32_t cur);
-			std::int32_t Pos() { std::int32_t pos; this->ReadPdo(0, 0, pos); return pos; };
-			std::int32_t Vel() { std::int32_t vel; this->ReadPdo(0, 1, vel); return vel; };
-			std::int32_t Cur() { std::int32_t cur; this->ReadPdo(0, 2, cur); return cur; };
+			std::int32_t Pos() { std::int32_t pos; this->ReadPdo(1, 0, pos); return pos; };
+			std::int32_t Vel() { std::int32_t vel; this->ReadPdo(1, 2, vel); return vel; };
+			std::int32_t Cur() { std::int32_t cur; this->ReadPdo(2, 0, cur); return cur; };
 
 		protected:
 			virtual void Initialize() override;
@@ -40,15 +40,16 @@ namespace Aris
 			virtual ~CONTROLLER(){};
 			virtual void LoadXml(Aris::Core::ELEMENT *) override;
 			MOTION * Motion(int i) { return pMotions.at(i); };
-			PIPE_MSG pipe_msg;
+			PIPE<Aris::Core::MSG>& MsgPipe(){return msgPipe;};
+			 
 
 		protected:
-			CONTROLLER() :ETHERCAT_MASTER(),pipe_msg(0, true) {};
+			CONTROLLER() :ETHERCAT_MASTER(),msgPipe(0, true) {};
 			virtual void ControlStrategy() override;
 
 		private:
 			std::vector<MOTION *> pMotions;
-			
+			PIPE<Aris::Core::MSG> msgPipe;
 
 			friend class ETHERCAT_MASTER;
 		};

@@ -15,6 +15,7 @@ namespace Aris
 	namespace Control
 	{
 		class PIPE_MSG;
+		template<typename T> class PIPE;
 	}
 	
 	namespace Core
@@ -154,6 +155,7 @@ namespace Aris
 			friend class CONN;
 			friend class Aris::RT_CONTROL::ACTUATION;
 			friend class Aris::Control::PIPE_MSG;
+			template<typename T> friend class Aris::Control::PIPE;
 		};
 		class MSG final :public MSG_BASE
 		{

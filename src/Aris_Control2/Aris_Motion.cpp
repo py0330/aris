@@ -51,9 +51,15 @@ namespace Aris
 			{
 				rt_printf("pos is:%d\n", pos);
 				Aris::Core::RT_MSG::instance[0].CopyStruct(pos);
-				pipe_msg.SendMsgToNRT(Aris::Core::RT_MSG::instance[0]);
+				MsgPipe().SendToNRT(Aris::Core::RT_MSG::instance[0]);
 			}
 #endif
+			int length;
+			if((length=MsgPipe().RecvInRT(Aris::Core::RT_MSG::instance[0]))>0)
+			{
+				rt_printf("length is:%d\n", length);
+				rt_printf(Aris::Core::RT_MSG::instance[0].GetDataAddress());
+			};
 			
 		}
 

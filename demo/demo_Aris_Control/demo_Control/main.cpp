@@ -29,9 +29,11 @@ int main()
 	while (true)
 	{
 		Aris::Core::MSG msg;
-		pMas->pipe_msg.RecvMsgInNRT(msg);
+		pMas->MsgPipe().RecvInNRT(msg);
 		std::cout << "NRT msg length:" << msg.GetLength()<<" pos:" << *reinterpret_cast<std::int32_t*>(msg.GetDataAddress())<<std::endl;
-
+		//msg.SetLength(10);
+		msg.Copy("congratulations\n");
+		pMas->MsgPipe().SendToRT(msg);
 	}
 	
 	

@@ -32,7 +32,7 @@ namespace Aris
 	{
 
 #ifdef PLATFORM_IS_LINUX
-		class PIPE::IMP
+		class PIPE_BASE::IMP
 		{
 		public:
 			IMP(int port, bool isBlock)
@@ -40,41 +40,7 @@ namespace Aris
 				InitRT(port);
 				InitNRT(port, isBlock);
 			}
-			// return the size of data received, -1 means nothing received
-			int SendToRT(const void *pData, int size)
-			{
-				if (pData == nullptr)
-				{
-					throw std::runtime_error("SendNRTtoRT:Invalid pointer");
-				}
-				std::lock_guard<std::mutex> guard(mutexInNRT);
-				return write(FD_NRT, pData, size);
-			}
-			int SendToNRT(const void* pData, int size)
-			{
-				if (pData == nullptr)
-				{
-					throw std::runtime_error("SendRTtoNRT:Invalid pointer");
-				}
-				return rt_dev_sendto(FD_RT, pData, size, 0, NULL, 0);;
-			}
-			int RecvInRT(void* pData, int size)
-			{
-				if (pData == nullptr)
-				{
-					throw std::runtime_error("RecvRTfromNRT:Invalid pointer");
-				}
-				return rt_dev_recvfrom(FD_RT, pData, size, MSG_DONTWAIT, NULL, 0);
-			}
-			int RecvInNRT(void *pData, int size)
-			{
-				if (pData == nullptr)
-				{
-					throw std::runtime_error("RecvNRTfromRT:Invalid pointer");
-				}
-				std::lock_guard<std::mutex> guard(mutexInNRT);
-				return read(FD_NRT, pData, size);
-			}
+			
 		private:
 			void InitRT(int port)
 			{
@@ -154,61 +120,81 @@ namespace Aris
 			int FD_NRT;
 			char* FD_NRT_DEVNAME;
 
-			std::mutex mutexInNRT;
+			std::recursive_mutex mutexInNRT;
 
-			friend class PIPE;
+			friend class PIPE_BASE;
 		};
 
 		PIPE_BASE::PIPE_BASE(int port, bool isBlock)
 		{
-			pImp = new PIPE::IMP(port, isBlock);
+			pImp = new PIPE_BASE::IMP(port, isBlock);
 		}
 		PIPE_BASE::~PIPE_BASE()
 		{
 			delete pImp;
 		}
 
-		PIPE::PIPE(int port, bool isBlock):PIPE_BASE(port, isBlock)
-		{
-		}
-		int PIPE::SendToRT(const void *pData, int size)
-		{
-			return pImp->SendToRT(pData, size);
-		}
-		int PIPE::SendToNRT(const void* pData, int size)
-		{
-			return pImp->SendToNRT(pData, size);
-		}
-		int PIPE::RecvInRT(void* pData, int size)
-		{
-			return pImp->RecvInRT(pData, size);
-		}
-		int PIPE::RecvInNRT(void *pData, int size)
-		{
-			return pImp->RecvInNRT(pData, size);
-		}
 
-		PIPE_MSG::PIPE_MSG(int port, bool isBlock) :PIPE_BASE(port, isBlock)
+		int PIPE_BASE::SendToRT_RawData(const void *pData, int size)
+		{
+			if (pData == nullptr)
+			{
+				throw std::runtime_error("SendNRTtoRT:Invalid pointer");
+			}
+			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
+			return write(pImp->FD_NRT, pData, size);
+		}
+		int PIPE_BASE::SendToNRT_RawData(const void* pData, int size)
+		{
+			if (pData == nullptr)
+			{
+				throw std::runtime_error("SendRTtoNRT:Invalid pointer");
+			}
+			return rt_dev_sendto(pImp->FD_RT, pData, size, 0, NULL, 0);;
+		}
+		int PIPE_BASE::RecvInRT_RawData(void* pData, int size)
+		{
+			if (pData == nullptr)
+			{
+				throw std::runtime_error("RecvRTfromNRT:Invalid pointer");
+			}
+			return rt_dev_recvfrom(pImp->FD_RT, pData, size, MSG_DONTWAIT, NULL, 0);
+		}
+		int PIPE_BASE::RecvInNRT_RawData(void *pData, int size)
+		{
+			if (pData == nullptr)
+			{
+				throw std::runtime_error("RecvNRTfromRT:Invalid pointer");
+			}
+			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
+			return read(pImp->FD_NRT, pData, size);
+		}
+		
+		PIPE<Aris::Core::MSG>::PIPE(int port, bool isBlock) :PIPE_BASE(port, isBlock)
 		{
 		}
-		void PIPE_MSG::SendMsgToRT(const Aris::Core::MSG &msg)
+		int PIPE<Aris::Core::MSG>::SendToRT(const Aris::Core::MSG &msg)
 		{
-			pImp->SendToRT(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
+			SendToRT_RawData(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
+			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
 		}
-		void PIPE_MSG::SendMsgToNRT(const Aris::Core::RT_MSG &msg)
+		int PIPE<Aris::Core::MSG>::SendToNRT(const Aris::Core::RT_MSG &msg)
 		{
-			pImp->SendToNRT(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
+			SendToNRT_RawData(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
+			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
 		}
-		void PIPE_MSG::RecvMsgInRT(Aris::Core::RT_MSG &msg)
+		int PIPE<Aris::Core::MSG>::RecvInRT(Aris::Core::RT_MSG &msg)
 		{
-			pImp->RecvInRT(msg._pData, sizeof(Aris::Core::MSG_HEADER));
-			pImp->RecvInRT(msg.GetDataAddress(), msg.GetLength());
+			int length = RecvInRT_RawData(msg._pData, sizeof(Aris::Core::MSG_HEADER)+Aris::Core::RT_MSG::RT_MSG_LENGTH);		
+			return length<=0?0:length;			
 		}
-		void PIPE_MSG::RecvMsgInNRT(Aris::Core::MSG &msg)
+		int PIPE<Aris::Core::MSG>::RecvInNRT(Aris::Core::MSG &msg)
 		{
-			pImp->RecvInRT(msg._pData, sizeof(Aris::Core::MSG_HEADER));
+						
+			int err = RecvInNRT_RawData(msg._pData, sizeof(Aris::Core::MSG_HEADER));
 			msg.SetLength(msg.GetLength());
-			pImp->RecvInRT(msg.GetDataAddress(), msg.GetLength());
+			RecvInNRT_RawData(msg.GetDataAddress(), msg.GetLength());
+			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
 		}
 #endif
 		
