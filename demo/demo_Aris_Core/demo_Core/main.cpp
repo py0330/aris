@@ -37,9 +37,60 @@ int show(const Aris::Core::MSG &msg)
 
 using namespace Aris::Core;
 
+template<class... Args>
+void test(Args... args);
+void test();
+
+template<class FirstArg, class... Args>
+class test_class
+{
+public:
+	static void test(FirstArg firstArg, Args... args)
+	{
+		std::cout << "test::" << firstArg << std::endl;
+		::test(args...);
+	};
+};
+
+template<class FirstArg, class... Args>
+class test_class<const FirstArg *,Args...>
+{
+public:
+	static void test(const FirstArg *firstArg, Args... args)
+	{
+		std::cout << "test::" << *firstArg << std::endl;
+		::test(args...);
+	};
+};
+
+template<class... Args>
+class test_class<char [], Args...>
+{
+public:
+	static void test(char firstArg[], Args... args)
+	{
+		std::cout << "test::char::" << firstArg << std::endl;
+		::test(args...);
+	};
+};
+
+template<class... Args>
+void test(Args... args)
+{
+	test_class<Args...>::test(args...);
+}
+
+void test()
+{
+	std::cout << "test end" << std::endl;
+}
+
+
+
+
 int main()
 {
-	{
+	/*{
 		Aris::Core::MSG m1, m2;
 
 		cout << log("first log") << endl;
@@ -107,31 +158,24 @@ int main()
 
 		int i;
 		cin >> i;
-	}
+	}*/
 
+	double i = 0.11;
+	const double *p = &i;
 
-	Aris::Core::DOCUMENT doc;
-
-	Aris::Core::ELEMENT *ele=doc.NewElement("test");
-
-
-
-	ele->SetAttribute("boolVar", false);
-
-
-	
-
-
-	doc.InsertFirstChild(ele);
-
-	doc.SaveFile("test.xml");
-
-
-
+	char b[4] = "222";
+	//char *c = b;
+	test("222");
+	//test_class<int, int, int>::test(1, 1, 1);
+	//test(1, 1.0, 2.11, &i, "end", "end?");
+	//test(1, 0);
 
 #ifdef PLATFORM_IS_WINDOWS
 	_CrtDumpMemoryLeaks();
 #endif
+
+	char a;
+	std::cin >> a;
 
 	return 0;
 }

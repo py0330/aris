@@ -16,6 +16,9 @@ int main()
 	doc.LoadFile("/usr/Robots/resource/Robot_Type_I/Robot_VIII.xml");
 #endif
 
+#ifdef PLATFORM_IS_LINUX
+
+
 	auto ele = doc.RootElement()->FirstChildElement("Server")
 		->FirstChildElement("Control")->FirstChildElement("EtherCat");
 
@@ -37,7 +40,7 @@ int main()
 	}
 	
 	
-	
+#endif
 	
 	char a;
 	std::cin>>a;

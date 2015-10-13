@@ -15,8 +15,17 @@ namespace Aris
 			virtual ~MOTION() {};
 			MOTION(Aris::Core::ELEMENT *);
 
+			enum MODE
+			{
+				POSITION,
+				VELOCITY,
+				CURRENT,
+			};
+
+
 			/*return 0 means successful, 1 means still enabling, -1 means error*/
-			int Enable();
+			MODE Mode();
+			int Enable(MODE mode, std::int32_t iniValue);
 			int Disable();
 			int Home();
 			int RunPos(std::int32_t pos);

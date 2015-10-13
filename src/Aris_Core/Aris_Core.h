@@ -194,7 +194,6 @@ namespace Aris
 		private:
 			friend class CONN;
 			friend class Aris::RT_CONTROL::ACTUATION;
-			friend class Aris::Control::PIPE_MSG;
 		};
 		class RT_MSG final :public MSG_BASE
 		{
@@ -213,7 +212,6 @@ namespace Aris
 			RT_MSG &operator=(RT_MSG&& other) = delete;
 
 			friend class Aris::RT_CONTROL::ACTUATION;
-			friend class Aris::Control::PIPE_MSG;
 		};
 
 

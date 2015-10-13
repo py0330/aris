@@ -48,7 +48,7 @@ namespace Aris
 				RecvInNRT_RawData(static_cast<void*>(&data),sizeof(data));
 			};
 		};
-		
+
 		template <>
 		class PIPE<Aris::Core::MSG>:public PIPE_BASE
 		{
