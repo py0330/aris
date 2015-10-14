@@ -638,6 +638,34 @@ namespace Aris
 			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, to_pv_out, 1);
 			s_daxpy(3, 1, relative_vel_in, 1, to_pv_out, 1);
 		}
+		void s_inv_vp2vp(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
+			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out) noexcept
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
+			static const double default_from_pnt[3] = { 0,0,0 };
+			static const double default_from_pv[3] = { 0,0,0 };
+			double default_to_pv[3];
+			double default_to_pnt[3];
+
+			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
+			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
+			from_pnt = from_pnt ? from_pnt : default_from_pnt;
+			from_pv = from_pv ? from_pv : default_from_pv;
+			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+
+			std::fill_n(to_pv_out, 3, 0);
+
+			double tem[3];
+			std::copy_n(from_pv, 3, tem);
+			s_cro3(-1, inv_relative_vel_in + 3, from_pnt, 1, tem);
+			s_daxpy(3, -1, inv_relative_vel_in, 1, tem, 1);
+			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pv_out, 1);
+
+			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
+
+		}
 		void s_ap2ap(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
 			const double *from_pnt, const double *from_pv, const double *from_pa,
 			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept
@@ -671,34 +699,6 @@ namespace Aris
 			s_cro3(1, relative_vel_in + 3, tem_pv, 1, to_pa_out);
 			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pa, 1, 1, to_pa_out, 1);
 			s_daxpy(3, 1, relative_acc_in, 1, to_pa_out, 1);
-		}
-		void s_inv_vp2vp(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
-			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out) noexcept
-		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
-			double default_to_pv[3];
-			double default_to_pnt[3];
-
-			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
-			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
-			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
-
-			std::fill_n(to_pv_out, 3, 0);
-
-			double tem[3];
-			std::copy_n(from_pv, 3, tem);
-			s_cro3(-1, inv_relative_vel_in + 3, from_pnt, 1, tem);
-			s_daxpy(3, -1, inv_relative_vel_in, 1, tem, 1);
-			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pv_out, 1);
-
-			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
-
 		}
 		void s_inv_ap2ap(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
 			const double *from_pnt, const double *from_pv, const double *from_pa,

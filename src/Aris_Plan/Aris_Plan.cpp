@@ -285,8 +285,6 @@ namespace Aris
 		void FAST_PATH::Concate(FAST_PATH::DATA &data)
 		{
 			static FAST_PATH::NODE node;
-			bool isEnded;
-
 
 			/*使得双方速度接近*/
 			if (finalIter->ds < std::next(finalIter)->ds)
@@ -329,14 +327,14 @@ namespace Aris
 			}
 
 			/*使得双方时间一致*/
-			int size = std::round(this->list.back().time / dt);
+			int size = std::lround(this->list.back().time / dt);
 			resultVec.resize(size);
 			for (int i = 0; i < size; ++i)
 			{
 				double id = static_cast<double>(i + 1) * (this->list.size() - 1) / size;
 
-				int down = std::floor(id);
-				int up = std::ceil(id);
+				int down = std::lround(std::floor(id));
+				int up = std::lround(std::ceil(id));
 
 				down = std::max(down, 0);
 				down = std::min(down, static_cast<int>(this->list.size()) - 1);

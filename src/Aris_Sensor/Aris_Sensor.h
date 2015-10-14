@@ -54,24 +54,11 @@ namespace Aris
 			std::unique_lock<std::recursive_mutex> lock;
 		};
 		
-		class SENSOR_INTERFACE
-		{
-		public:
-			virtual void Start() = 0;
-			virtual void Stop() = 0;
-			SENSOR_INTERFACE() = default;
-			virtual ~SENSOR_INTERFACE() = default;
-
-		private:
-			SENSOR_INTERFACE(const SENSOR_INTERFACE&) = delete;
-			SENSOR_INTERFACE & operator=(const SENSOR_INTERFACE&) = delete;
-		};
-
 		template <class DATA_TYPE>
-		class SENSOR_BASE:public SENSOR_INTERFACE
+		class SENSOR_BASE
 		{
 		public:
-			virtual void Start() final
+			void Start()
 			{
 				if (!sensor_thread.joinable())
 				{
@@ -94,7 +81,7 @@ namespace Aris
 					this->sensor_thread = std::thread(SENSOR_BASE::update_thread, this);
 				}
 			};
-			virtual void Stop() final
+			void Stop()
 			{
 				if (sensor_thread.joinable())
 				{
@@ -103,7 +90,7 @@ namespace Aris
 					this->Release();
 				}
 			};
-			virtual SENSOR_DATA<DATA_TYPE> GetSensorData()
+			SENSOR_DATA<DATA_TYPE> GetSensorData()
 			{
 				return std::move(SENSOR_DATA<DATA_TYPE>(this));
 			};

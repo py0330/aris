@@ -1,9 +1,5 @@
 ﻿#include <Platform.h>
 
-#ifdef PLATFORM_IS_WINDOWS
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-
 #include "Aris_Core.h"
 #include <cstring>
 #include <fstream>

@@ -110,10 +110,10 @@ namespace Aris
 		{
 			double tem[6];
 		
-			s_inv_pm(*_Pm, *_PrtPm);
-			s_tv(*_PrtPm, _Vel, _PrtVel);
-			s_tv(*_PrtPm, _Acc, _PrtAcc);
-			s_tv(*_PrtPm, Model()->_Environment.Gravity, _PrtGravity);
+			s_inv_pm(*_Pm, *_InvPm);
+			s_tv(*_InvPm, _Vel, _PrtVel);
+			s_tv(*_InvPm, _Acc, _PrtAcc);
+			s_tv(*_InvPm, Model()->_Environment.Gravity, _PrtGravity);
 			s_m6_dot_v6(*_PrtIm, _PrtGravity, _PrtFg);
 			s_m6_dot_v6(*_PrtIm, _PrtVel, tem);
 			s_cf(_PrtVel, tem, _PrtFv);
@@ -405,7 +405,7 @@ namespace Aris
 			double _tem_v1[6]{ 0 }, _tem_v2[6]{ 0 };
 
 			/* Get pm M2N */
-			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
+			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetInvPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
 
 			/*update PrtCstMtx*/
 			std::fill_n(this->GetPrtCstMtxJPtr(), this->GetCstDim() * 6, 0);

@@ -93,28 +93,27 @@ namespace Aris
 		{
 		public:
 			virtual ~PART() = default;
+			virtual void Update();
 
 			double* GetPmPtr() { return *_Pm; };
+			double* GetInvPmPtr() { return *_InvPm; };
 			double* GetVelPtr() { return _Vel; };
 			double* GetAccPtr() { return _Acc; };
-			const double* GetPmPtr() const{ return *_Pm; };
-			const double* GetVelPtr() const{ return _Vel; };
-			const double* GetAccPtr() const{ return _Acc; };
-			double* GetPrtPmPtr() { return *_PrtPm; };
+			const double* GetPmPtr() const { return *_Pm; };
+			const double* GetVelPtr() const { return _Vel; };
+			const double* GetAccPtr() const { return _Acc; };
 			double* GetPrtVelPtr() { return _PrtVel; };
 			double* GetPrtAccPtr() { return _PrtAcc; };
-			const double* GetPrtImPtr() const{ return *_PrtIm; };
-			const double* GetPrtPmPtr() const{ return *_PrtPm; };
+			const double* GetPrtImPtr() const { return *_PrtIm; };
+			const double* GetInvPmPtr() const { return *_InvPm; };
 			const double* GetPrtVelPtr() const { return _PrtVel; };
-			const double* GetPrtAccPtr() const{ return _PrtAcc; };
-			const double* GetPrtFgPtr() const{ return _PrtFg; };
-			const double* GetPrtFvPtr() const{ return _PrtFv; };
-			const double* GetPrtGravityPtr() const{ return _PrtGravity; };
+			const double* GetPrtAccPtr() const { return _PrtAcc; };
+			const double* GetPrtFgPtr() const { return _PrtFg; };
+			const double* GetPrtFvPtr() const { return _PrtFv; };
+			const double* GetPrtGravityPtr() const { return _PrtGravity; };
 			void SetPm(const double *pPm) { std::copy_n(pPm, 16, static_cast<double*>(*_Pm)); };
 			void SetVel(const double *pVel) { std::copy_n(pVel, 6, _Vel); };
 			void SetAcc(const double *pAcc) { std::copy_n(pAcc, 6, _Acc); };
-
-			void Update();
 
 			MARKER* GetMarker(const std::string &Name);
 			const MARKER* GetMarker(const std::string &Name)const;
@@ -132,14 +131,15 @@ namespace Aris
 
 		private:
 			std::map<std::string, int> _markerNames;
-		
+
 		private:
-			double _Pm[4][4]{ {0} };
-			double _Vel[6]{0};
-			double _Acc[6]{0};
+			double _Pm[4][4]{ { 0 } };
+			double _InvPm[4][4]{ { 0 } };
+			double _Vel[6]{ 0 };
+			double _Acc[6]{ 0 };
 
 			double _PrtIm[6][6]{ { 0 } };
-			double _PrtPm[4][4]{ { 0 } };//inverse of the _Pm
+
 			double _PrtGravity[6]{ 0 };
 			double _PrtAcc[6]{ 0 };
 			double _PrtVel[6]{ 0 };
@@ -147,30 +147,30 @@ namespace Aris
 			double _PrtFv[6]{ 0 };
 
 
-		public:
+		private:
 			int _RowId;
 
 		private:
 			std::string graphicFilePath;
 
+			friend class MARKER;
 			friend class MODEL_BASE;
 		};
 		class MARKER :public ELEMENT
 		{
 		public:
 			virtual ~MARKER() = default;
-
-			void Update();
+			virtual void Update();
 
 			const double* GetPrtPmPtr() const { return *_PrtPm; };
 			const double* GetPmPtr() const { return *_Pm; };
-			const double* GetVelPtr() const { return _pPrt->GetVelPtr(); };
-			const double* GetAccPtr() const { return _pPrt->GetAccPtr(); };
+			const double* GetVelPtr() const { return _pPrt->_Vel; };
+			const double* GetAccPtr() const { return _pPrt->_Acc; };
 			const PART* GetFatherPrt() const { return _pPrt; };
 			PART* GetFatherPrt() { return _pPrt; };
 
 		private:
-			explicit MARKER(PART *pPrt, const std::string &Name, int id, const double *pLocPm = nullptr, MARKER *pRelativeTo = nullptr);
+			explicit MARKER(PART *pPrt, const std::string &Name, int id, const double *pPrtPm = nullptr, MARKER *pRelativeTo = nullptr);
 			explicit MARKER(PART *pPrt, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
 			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
 			virtual void ToAdamsCmd(std::ofstream &file) const {};
@@ -184,6 +184,7 @@ namespace Aris
 			friend class PART;
 			friend class MODEL_BASE;
 		};
+		
 		class JOINT_BASE :public ELEMENT
 		{
 		public:

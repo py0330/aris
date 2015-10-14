@@ -109,7 +109,7 @@ namespace Aris
 			/*edit CstMtxJ*/
 			std::fill_n(this->GetPrtCstMtxJPtr(), this->GetCstDim() * 6, 0);
 			double _pm_M2N[4][4];
-			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetPrtPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
+			s_pm_dot_pm(GetMakJ()->GetFatherPrt()->GetInvPmPtr(), GetMakI()->GetFatherPrt()->GetPmPtr(), *_pm_M2N);
 			s_tf_n(GetDim(), -1, *_pm_M2N, *_PrtCstMtxI, 0, *_PrtCstMtxJ);
 			
 			
@@ -202,7 +202,7 @@ namespace Aris
 			/*update cst fce*/
 			std::fill_n(_PrtCstMtxJ, 6, 0);
 			double pm_M2N[4][4];
-			s_pm_dot_pm(_pMakJ->GetFatherPrt()->GetPrtPmPtr(), _pMakI->GetFatherPrt()->GetPmPtr(), *pm_M2N);
+			s_pm_dot_pm(_pMakJ->GetFatherPrt()->GetInvPmPtr(), _pMakI->GetFatherPrt()->GetPmPtr(), *pm_M2N);
 			s_tf(-1, *pm_M2N, _PrtCstMtxI, 0, _PrtCstMtxJ);
 
 			/*update a_c*/

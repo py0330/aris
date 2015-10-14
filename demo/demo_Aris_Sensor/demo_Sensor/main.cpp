@@ -48,33 +48,33 @@ int main()
 	
 	kinect.Stop();
 #endif
-	//auto p = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU");
+	auto p = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU");
 	
-	//Aris::Sensor::IMU imu;
+	Aris::Sensor::IMU imu;
 
-	//imu.Start();
-	//
-	//for (int i = 0; i < 1000;++i)
-	//{
-	//	auto data = imu.GetSensorData();
+	imu.Start();
+	
+	for (int i = 0; i < 1000;++i)
+	{
+		auto data = imu.GetSensorData();
 
-	//	double eul[3];
-	//	//data.Get().ToBodyEul(eul);
-	//	//Aris::DynKer::dsp(eul, 1, 3);
-	//	
-	//	data.Get().ToEulBody2Ground(eul, PI);
-	//	Aris::DynKer::dsp(eul, 1, 3);
+		double eul[3];
+		//data.Get().ToBodyEul(eul);
+		//Aris::DynKer::dsp(eul, 1, 3);
+		
+		data.Get().ToEulBody2Ground(eul, PI);
+		Aris::DynKer::dsp(eul, 1, 3);
 
-	//	//double pm[16];
-	//	//data.Get().ToBodyPm(pm, 0.0);
-	//	//Aris::DynKer::dsp(pm, 4, 4);
+		//double pm[16];
+		//data.Get().ToBodyPm(pm, 0.0);
+		//Aris::DynKer::dsp(pm, 4, 4);
 
-	//	//Aris::DynKer::dsp(data.Get().eul321, 1, 3);
+		//Aris::DynKer::dsp(data.Get().eul321, 1, 3);
 
-	//	Aris::Core::Sleep(1);
-	//}
+		Aris::Core::Sleep(1);
+	}
 
-	//imu.Stop();
+	imu.Stop();
 
 
 	//SENSOR sensor;
