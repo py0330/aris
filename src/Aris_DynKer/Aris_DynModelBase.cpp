@@ -17,8 +17,82 @@ namespace Aris
 {
 	namespace DynKer
 	{
+		MARKER::MARKER(MODEL_BASE *pModel, PART *pPrt, const std::string &Name, int id)
+			: ELEMENT(pModel, Name, id), _pPrt(pPrt)
+		{
+			std::fill_n(static_cast<double *>(*_PrtPm), 16, 0);
+			_PrtPm[0][0] = 1;
+			_PrtPm[1][1] = 1;
+			_PrtPm[2][2] = 1;
+			_PrtPm[3][3] = 1;
+
+			std::fill_n(static_cast<double *>(*_Pm), 16, 0);
+			_Pm[0][0] = 1;
+			_Pm[1][1] = 1;
+			_Pm[2][2] = 1;
+			_Pm[3][3] = 1;
+		}
+		MARKER::MARKER(PART *pPrt, const std::string &Name, int id, const double *pPrtPm, MARKER *pRelativeTo)
+			: MARKER(pPrt->Model(), pPrt, Name, id)
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			pPrtPm = pPrtPm ? pPrtPm : default_pm_in;
+			
+			
+			if (pRelativeTo)
+			{
+				if (pRelativeTo->GetFatherPrt() != pPrt)
+					throw std::logic_error("relative marker must has same father part with this marker");
+				
+				s_pm_dot_pm(pRelativeTo->GetPrtPmPtr(), pPrtPm, *_PrtPm);
+			}
+			else
+			{
+				std::copy_n(pPrtPm, 16, static_cast<double *>(*_PrtPm));
+			}
+		}
+		MARKER::MARKER(PART *pPrt, const std::string &Name, int id, const Aris::Core::ELEMENT *ele)
+			: MARKER(pPrt->Model(), pPrt, Name, id)
+		{
+			double pm[16];
+			MATRIX m = Model()->calculator.CalculateExpression(ele->Attribute("Pos"));
+			s_pe2pm(m.Data(), pm);
+
+			if (ele->Attribute("RelativeTo") && (!ele->Attribute("RelativeTo", "")))
+			{
+				MARKER *pRelativeMak = _pPrt->GetMarker(ele->Attribute("RelativeTo"));
+				s_pm_dot_pm(pRelativeMak->GetPrtPmPtr(), pm, *_PrtPm);
+			}
+			else
+			{
+				std::copy_n(pm, 16, static_cast<double*>(*_PrtPm));
+			}
+		}
+		const double* MARKER::GetVelPtr() const { return _pPrt->_Vel; };
+		const double* MARKER::GetAccPtr() const { return _pPrt->_Acc; };
+		void MARKER::Update()
+		{
+			s_pm_dot_pm(_pPrt->GetPmPtr(), *_PrtPm, *_Pm);
+		}
+		void MARKER::ToXmlElement(Aris::Core::ELEMENT *pEle) const
+		{
+			double value[10];
+
+			pEle->DeleteChildren();
+			pEle->SetName(this->Name().data());
+
+			Aris::Core::ELEMENT *pPE = pEle->GetDocument()->NewElement("Pos");
+			s_pm2pe(*_PrtPm, value);
+			pPE->SetText(MATRIX(1, 6, value).ToString().c_str());
+			pEle->InsertEndChild(pPE);
+
+			Aris::Core::ELEMENT *pRelativeMakEle = pEle->GetDocument()->NewElement("RelativeTo");
+			pRelativeMakEle->SetText("");
+			pEle->InsertEndChild(pRelativeMakEle);
+		}
+		
 		PART::PART(MODEL_BASE *pModel, const std::string &Name, int id, const double *Im, const double *pm, const double *Vel, const double *Acc)
-			:ELEMENT(pModel, Name, id)
+			: MARKER(pModel, this, Name, id)
 		{
 			if (Im == nullptr)
 			{
@@ -67,7 +141,7 @@ namespace Aris
 			}
 		}
 		PART::PART(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele)
-			:ELEMENT(pModel, Name, id)
+			: MARKER(pModel, this, Name, id)
 		{
 			if (ele->Attribute("Active", "true"))
 			{
@@ -300,77 +374,7 @@ namespace Aris
 			}
 		}
 
-		MARKER::MARKER(PART *pPrt, const std::string &Name, int id, const double *pLocPm, MARKER *pRelativeTo)
-			: ELEMENT(pPrt->Model(), Name, id)
-			, _pPrt(pPrt)
-		{
-			if (pRelativeTo == nullptr)
-			{
-				if (pLocPm == nullptr)
-				{
-					memset(_PrtPm, 0, sizeof(_PrtPm));
-					_PrtPm[0][0] = 1;
-					_PrtPm[1][1] = 1;
-					_PrtPm[2][2] = 1;
-					_PrtPm[3][3] = 1;
-				}
-				else
-				{
-					memcpy(_PrtPm, pLocPm, sizeof(_PrtPm));
-				}
-			}
-			else
-			{
-				if (pLocPm == nullptr)
-				{
-					memcpy(_PrtPm, pRelativeTo->GetPrtPmPtr(), sizeof(_PrtPm));
-				}
-				else
-				{
-					s_pm_dot_pm(pRelativeTo->GetPrtPmPtr(), pLocPm, *_PrtPm);
-				}
-			}
-			
-			
-		}
-		MARKER::MARKER(PART *pPrt, const std::string &Name, int id, const Aris::Core::ELEMENT *ele)
-			: ELEMENT(pPrt->Model(), Name, id)
-			, _pPrt(pPrt)
-		{
-			double pm[16];
-			MATRIX m = Model()->calculator.CalculateExpression(ele->Attribute("Pos"));
-			s_pe2pm(m.Data(), pm);
-
-			if (ele->Attribute("RelativeTo")&&(!ele->Attribute("RelativeTo","")))
-			{
-				MARKER *pRelativeMak = _pPrt->GetMarker(ele->Attribute("RelativeTo"));
-				s_pm_dot_pm(pRelativeMak->GetPrtPmPtr(), pm, *_PrtPm);
-			}
-			else
-			{
-				std::copy_n(pm, 16, static_cast<double*>(*_PrtPm));
-			}
-		}
-		void MARKER::Update()
-		{
-			s_pm_dot_pm(_pPrt->GetPmPtr(), *_PrtPm, *_Pm);
-		}
-		void MARKER::ToXmlElement(Aris::Core::ELEMENT *pEle) const
-		{
-			double value[10];
-
-			pEle->DeleteChildren();
-			pEle->SetName(this->Name().data());
-
-			Aris::Core::ELEMENT *pPE = pEle->GetDocument()->NewElement("Pos");
-			s_pm2pe(*_PrtPm, value);
-			pPE->SetText(MATRIX(1,6,value).ToString().c_str());
-			pEle->InsertEndChild(pPE);
-
-			Aris::Core::ELEMENT *pRelativeMakEle = pEle->GetDocument()->NewElement("RelativeTo");
-			pRelativeMakEle->SetText("");
-			pEle->InsertEndChild(pRelativeMakEle);
-		}
+		
 
 		JOINT_BASE::JOINT_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ)
 			: ELEMENT(pModel, Name, id)
@@ -881,7 +885,7 @@ namespace Aris
 			{
 				if (prt->Active())
 				{
-					std::copy_n(&x[prt->_RowId], 6, prt->GetPrtAccPtr());
+					std::copy_n(&x[prt->_RowId], 6, prt->_PrtAcc);
 				}
 			}
 			for (auto &jnt : _joints)
@@ -1203,9 +1207,9 @@ namespace Aris
 		{
 			const Aris::Core::ELEMENT *pModel = xmlDoc.RootElement()->FirstChildElement("Model");
 
-			FromXmlElement(pModel);
+			LoadXml(pModel);
 		}
-		void MODEL_BASE::FromXmlElement(const Aris::Core::ELEMENT *pModel)
+		void MODEL_BASE::LoadXml(const Aris::Core::ELEMENT *pModel)
 		{
 			if (pModel == nullptr)throw(std::logic_error("XML file must have model element"));
 

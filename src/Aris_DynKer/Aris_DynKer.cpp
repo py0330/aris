@@ -561,11 +561,16 @@ namespace Aris
 			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
 			to_vel_out = to_vel_out ? to_vel_out : to_vel;
 
-			double relative_pm_in[16], relative_vel_in[6]{ 0 };
-
+			/*double relative_pm_in[16], relative_vel_in[6]{ 0 };
 			s_inv_pm(inv_relative_pm_in, relative_pm_in);
 			s_tv(-1, relative_pm_in, inv_relative_vel_in, 0, relative_vel_in);
-			s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel_out);
+			s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel_out);*/
+
+			double tem[6];
+			std::fill_n(to_vel_out, 6, 0);
+			std::copy_n(from_vel_in, 6, tem);
+			s_daxpy(6, -1, inv_relative_vel_in, 1, tem, 1);
+			s_inv_tv(inv_relative_pm_in, tem, to_vel_out);
 		}
 		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
 			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out) noexcept
@@ -591,6 +596,34 @@ namespace Aris
 			s_tv(1, relative_pm_in, from_acc_in, 1, to_acc_out);
 			s_daxpy(6, 1, relative_acc_in, 1, to_acc_out, 1);
 
+		}
+		void s_inv_a2a(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
+			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out) noexcept
+		{
+			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_acc_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
+			static const double default_from_acc_in[6]{ 0,0,0,0,0,0 };
+			double to_vel[6]{ 0,0,0,0,0,0 };
+			double to_acc[6]{ 0,0,0,0,0,0 };
+
+			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
+			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
+			inv_relative_acc_in = inv_relative_acc_in ? inv_relative_acc_in : default_acc_in;
+			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
+			from_acc_in = from_acc_in ? from_acc_in : default_from_acc_in;
+			to_vel_out = to_vel_out ? to_vel_out : to_vel;
+			to_acc_out = to_acc_out ? to_acc_out : to_acc;
+
+			
+			s_inv_v2v(inv_relative_pm_in, inv_relative_vel_in, from_vel_in, to_vel_out);
+			double tem[6];
+			std::fill_n(to_acc_out, 6, 0);
+			std::copy_n(from_acc_in, 6, tem);
+			s_daxpy(6, -1, inv_relative_acc_in, 1, tem, 1);
+			s_cv(-1, inv_relative_vel_in, from_vel_in, 1, tem);
+			s_inv_tv(inv_relative_pm_in, tem, to_acc_out);
 		}
 		void s_pp2pp(const double *relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept
 		{

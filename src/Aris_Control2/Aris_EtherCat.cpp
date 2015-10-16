@@ -31,7 +31,7 @@ namespace Aris
 	namespace Control
 	{
 
-#ifdef PLATFORM_IS_LINUX
+//#ifdef PLATFORM_IS_LINUX
 		class PIPE_BASE::IMP
 		{
 		public:
@@ -196,7 +196,7 @@ namespace Aris
 			RecvInNRT_RawData(msg.GetDataAddress(), msg.GetLength());
 			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
 		}
-#endif
+//#endif
 		
 		class ETHERCAT_SLAVE::IMP 
 		{

@@ -206,6 +206,20 @@ namespace Aris
 		*/
 		void s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
 			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out = nullptr) noexcept;
+		/** \brief 将6维空间速度移动坐标系
+		*
+		* 用来将6维空间速度从一个坐标系中转化到另一个坐标系中。例如将B坐标系中的速度转换到A坐标系中。
+		*
+		* \param relative_pm_in 表示两个坐标系之间的位姿矩阵。即A相对于B的位姿矩阵。
+		* \param relative_vel_in 表示两个坐标系之间的相对速度。即A相对于B的空间速度向量，这个向量在坐标系B中表达。
+		* \param relative_acc_in 表示两个坐标系之间的相对加速度。即A相对于B的空间加速度向量，这个向量在坐标系B中表达。
+		* \param from_vel_in 表示坐标系B中的速度向量。
+		* \param from_acc_in 表示坐标系B中待转换的加速度向量。
+		* \param to_vel_out 表示转换完成的加速度向量，即A坐标系中的加速度向量。
+		* \param to_vel_out 表示转换完成的速度向量，即A坐标系中的速度向量。
+		*/
+		void s_inv_a2a(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
+			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out = nullptr) noexcept;
 		/** \brief 转化点位置的坐标系
 		*
 		* 转化点位置的坐标系。

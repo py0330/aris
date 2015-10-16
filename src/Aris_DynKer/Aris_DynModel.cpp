@@ -17,6 +17,24 @@ namespace Aris
 {
 	namespace DynKer
 	{
+		COORDINATE::COORDINATE(const PART &prt, const double *_prtPe, const char* eulType)
+			: pPrt(&prt)
+		{
+			static const double defaultPe[6] = { 0 };
+			_prtPe = _prtPe ? _prtPe : defaultPe;
+
+			s_pe2pm(_prtPe, prtPm, eulType);
+		}
+		COORDINATE::COORDINATE(const MARKER &mak)
+			:COORDINATE(*mak.GetFatherPrt())
+		{
+			std::copy_n(mak.GetPrtPmPtr(), 16, prtPm);
+		}
+		void COORDINATE::Update()
+		{
+			s_pm_dot_pm(pPrt->GetPmPtr(), prtPm, pm);
+		}
+		
 		const char *const TRANSLATIONAL_JOINT::type = "translational";
 		TRANSLATIONAL_JOINT::TRANSLATIONAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ)
 			: JOINT_BASE_DIM(pModel, Name, id, pMakI, pMakJ)
@@ -287,9 +305,9 @@ namespace Aris
 
 		}
 	
-		void MODEL::FromXmlElement(const Aris::Core::ELEMENT *pModel)
+		void MODEL::LoadXml(const Aris::Core::ELEMENT *pModel)
 		{
-			MODEL_BASE::FromXmlElement(pModel);
+			MODEL_BASE::LoadXml(pModel);
 			
 			const Aris::Core::ELEMENT *pJnt = pModel->FirstChildElement("Joint");
 			if (pJnt == nullptr)throw(std::logic_error("Model must have joint element"));
