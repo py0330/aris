@@ -281,18 +281,25 @@ namespace Aris
 		{
 			isStoping = false;
 			
-			std::vector<MOTION_DATA> data(this->motionData);
-			std::fstream file;
-			std::string name = Aris::Core::logFileName();
-			name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
-			file.open(name);
-			/*启动线程用于接收所传来的数据*/
-			motionDataThread = std::thread([this, &data, &file]()
+			this->motionData.resize(this->pMotions.size());			
+			
+			
+			
+			/*begin thread which will save data*/
+			motionDataThread = std::thread([this]()
 			{
+				static std::fstream file;
+				std::string name = Aris::Core::logFileName();
+				name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
+				file.open(name.c_str(), std::ios::out | std::ios::trunc);
+				
+				std::vector<MOTION_DATA> data;
+				data.resize(this->motionData.size());
+
 				while (!isStoping)
 				{
 					this->pMotDataPipe->RecvInNRT(data);
-					
+
 					for (auto &d : data)
 					{
 						file << d.feedbackPos << "  ";
@@ -300,6 +307,7 @@ namespace Aris
 
 					}
 					file << std::endl;
+
 				}
 
 				file.close();
