@@ -465,7 +465,7 @@ namespace Aris
 #ifdef PLATFORM_IS_LINUX
 			rt_task_set_periodic(NULL, TM_NOW, samplePeriodNs);
 
-			while (!isStoping)
+			while (!isStopping)
 			{
 				rt_task_wait_period(NULL);
 
