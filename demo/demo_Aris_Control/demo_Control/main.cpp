@@ -26,7 +26,7 @@ int main()
 	std::cout<<"1"<<std::endl;	
 	pMas->LoadXml(ele);
 	std::cout<<"2"<<std::endl;
-	pMas->Run();
+	pMas->Start();
 	std::cout<<"3"<<std::endl;
 	
 	while (true)

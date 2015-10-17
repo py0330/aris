@@ -3,6 +3,7 @@
 
 #include "Aris_XML.h"
 #include "Aris_Core.h"
+#include "Aris_Pipe.h"
 
 #include <vector>
 #include <memory>
@@ -12,55 +13,6 @@ namespace Aris
 {
 	namespace Control
 	{	
-		class PIPE_BASE
-		{
-		protected:
-			PIPE_BASE(int port, bool isBlock);
-			~PIPE_BASE();
-
-			int SendToRT_RawData(const void *pData, int size);
-			int SendToNRT_RawData(const void* pData, int size);
-			int RecvInRT_RawData(void* pData, int size);
-			int RecvInNRT_RawData(void *pData, int size);
-
-			class IMP;
-			IMP *pImp;
-		};
-
-		template <typename STANDARD_LAYOUT_STRUCT>
-		class PIPE:private PIPE_BASE
-		{
-			PIPE(int port, bool isBlock):PIPE_BASE(port,isBlock){};
-			int SendToRT(const STANDARD_LAYOUT_STRUCT &data)
-			{
-				SendToRT_RawData(static_cast<const void*>(&data),sizeof(data));
-			};
-			int SendToNRT(const STANDARD_LAYOUT_STRUCT &data)
-			{
-				SendToNRT_RawData(static_cast<const void*>(&data),sizeof(data));
-			};
-			int RecvInRT(STANDARD_LAYOUT_STRUCT &data)
-			{
-				RecvInRT_RawData(static_cast<void*>(&data),sizeof(data));
-			};
-			int RecvInNRT(STANDARD_LAYOUT_STRUCT &data)
-			{
-				RecvInNRT_RawData(static_cast<void*>(&data),sizeof(data));
-			};
-		};
-
-		template <>
-		class PIPE<Aris::Core::MSG>:public PIPE_BASE
-		{
-		public:
-			PIPE(int port, bool isBlock);
-			int SendToRT(const Aris::Core::MSG &msg);
-			int SendToNRT(const Aris::Core::RT_MSG &msg);
-			int RecvInRT(Aris::Core::RT_MSG &msg);
-			int RecvInNRT(Aris::Core::MSG &msg);
-		};
-
-		
 		class ETHERCAT_SLAVE
 		{
 		public:
@@ -81,7 +33,7 @@ namespace Aris
 			void WriteSdo(int sdoID, std::int32_t value);
 
 		protected:
-			ETHERCAT_SLAVE(Aris::Core::ELEMENT *);
+            ETHERCAT_SLAVE(Aris::Core::ELEMENT *);
 			virtual void Initialize();
 
 		private:
@@ -91,16 +43,16 @@ namespace Aris
 			ETHERCAT_SLAVE & operator=(ETHERCAT_SLAVE &&other) = delete;
 
 			class IMP;
-			IMP *pImp;
+			std::unique_ptr<IMP> pImp;
 
 			friend class ETHERCAT_MASTER;
 		};
 		class ETHERCAT_MASTER
 		{
 		public:
+			static ETHERCAT_MASTER *GetInstance();
 			virtual ~ETHERCAT_MASTER();
 			virtual void LoadXml(Aris::Core::ELEMENT *);
-			static ETHERCAT_MASTER *GetInstance();
 			template <class CONTROLLER>	static CONTROLLER* CreateMaster()
 			{
 				if (pInstance)
@@ -108,7 +60,7 @@ namespace Aris
 					throw std::runtime_error("ETHERCAT_MASTER can not create a controller, because it already has one");
 				}
 
-				pInstance = std::unique_ptr<ETHERCAT_MASTER>(new CONTROLLER);
+				pInstance.reset(new CONTROLLER);
 				return static_cast<CONTROLLER*>(pInstance.get());
 			}
 			template <class SLAVE, typename ...Args> SLAVE* AddSlave(Args ...args)
@@ -117,7 +69,7 @@ namespace Aris
 				this->AddSlavePtr(pSla);
 				return pSla;
 			}
-			void Run();
+			void Start();
 			
 		protected:
 			ETHERCAT_MASTER();
@@ -133,25 +85,10 @@ namespace Aris
 		private:
 			static std::unique_ptr<ETHERCAT_MASTER> pInstance;
 			class IMP;
-			IMP *pImp;
+			std::unique_ptr<IMP> pImp;
 
 			friend class ETHERCAT_SLAVE::IMP;
 		};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	}
 }
 

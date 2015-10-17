@@ -8,7 +8,6 @@
 #include <native/task.h>
 #include <native/timer.h>
 #include <sys/mman.h>
-
 // following for pipe
 #include <cstdio>
 #include <cstdlib>
@@ -22,6 +21,7 @@
 #include <mutex>
 #include <string>
 #include <iostream>
+#include <map>
 
 #include <Aris_EtherCat.h>
 
@@ -30,178 +30,10 @@ namespace Aris
 {
 	namespace Control
 	{
-
-//#ifdef PLATFORM_IS_LINUX
-		class PIPE_BASE::IMP
-		{
-		public:
-			IMP(int port, bool isBlock)
-			{
-				InitRT(port);
-				InitNRT(port, isBlock);
-			}
-			
-		private:
-			void InitRT(int port)
-			{
-				struct sockaddr_ipc saddr;
-
-				size_t poolsz;
-
-				FD_RT = rt_dev_socket(AF_RTIPC, SOCK_DGRAM, IPCPROTO_XDDP);
-				if (FD_RT < 0)
-				{
-					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
-				}
-
-				struct timeval tv;
-				tv.tv_sec = 0;  /* 30 Secs Timeout */
-				tv.tv_usec = 0;  // Not init'ing this can cause strange errors
-				if (rt_dev_setsockopt(FD_RT, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)))
-				{
-					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
-				}
-
-				/*
-				* Set a local 16k pool for the RT endpoint. Memory needed to
-				* convey datagrams will be pulled from this pool, instead of
-				* Xenomai's system pool.
-				*/
-				poolsz = 16384; /* bytes */
-				if (rt_dev_setsockopt(FD_RT, SOL_XDDP, XDDP_POOLSZ, &poolsz, sizeof(poolsz)))
-				{
-					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
-				}
-
-				/*
-				* Bind the socket to the port, to setup a proxy to channel
-				* traffic to/from the Linux domain.
-				*
-				* saddr.sipc_port specifies the port number to use.
-				*/
-				memset(&saddr, 0, sizeof(saddr));
-				saddr.sipc_family = AF_RTIPC;
-				saddr.sipc_port = port;
-				if (rt_dev_bind(FD_RT, (struct sockaddr *)&saddr, sizeof(saddr)))
-				{
-					throw std::runtime_error(std::string("RT pipe init failed! Port:") + std::to_string(port));
-				}
-			}
-			void InitNRT(int port, bool isBlock)
-			{
-				if (asprintf(&FD_NRT_DEVNAME, "/dev/rtp%d", port) < 0)
-				{
-					throw std::runtime_error("Error in asprintf");
-				}
-				FD_NRT = open(FD_NRT_DEVNAME, O_RDWR);
-				free(FD_NRT_DEVNAME);
-
-				if (FD_NRT < 0)
-				{
-					throw std::runtime_error(std::string("NRT pipe init failed! Port:") + std::to_string(port));
-				}
-
-
-				if (isBlock)
-				{
-					//            set to block
-					int flags = fcntl(FD_NRT, F_GETFL, 0);
-					fcntl(FD_NRT, F_SETFL, flags &~O_NONBLOCK);
-				}
-				else
-				{
-					//            set to nonblock
-					int flags = fcntl(FD_NRT, F_GETFL, 0);
-					fcntl(FD_NRT, F_SETFL, flags | O_NONBLOCK);
-				}
-			}
-
-			int FD_RT;
-			int FD_NRT;
-			char* FD_NRT_DEVNAME;
-
-			std::recursive_mutex mutexInNRT;
-
-			friend class PIPE_BASE;
-		};
-
-		PIPE_BASE::PIPE_BASE(int port, bool isBlock)
-		{
-			pImp = new PIPE_BASE::IMP(port, isBlock);
-		}
-		PIPE_BASE::~PIPE_BASE()
-		{
-			delete pImp;
-		}
-
-
-		int PIPE_BASE::SendToRT_RawData(const void *pData, int size)
-		{
-			if (pData == nullptr)
-			{
-				throw std::runtime_error("SendNRTtoRT:Invalid pointer");
-			}
-			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
-			return write(pImp->FD_NRT, pData, size);
-		}
-		int PIPE_BASE::SendToNRT_RawData(const void* pData, int size)
-		{
-			if (pData == nullptr)
-			{
-				throw std::runtime_error("SendRTtoNRT:Invalid pointer");
-			}
-			return rt_dev_sendto(pImp->FD_RT, pData, size, 0, NULL, 0);;
-		}
-		int PIPE_BASE::RecvInRT_RawData(void* pData, int size)
-		{
-			if (pData == nullptr)
-			{
-				throw std::runtime_error("RecvRTfromNRT:Invalid pointer");
-			}
-			return rt_dev_recvfrom(pImp->FD_RT, pData, size, MSG_DONTWAIT, NULL, 0);
-		}
-		int PIPE_BASE::RecvInNRT_RawData(void *pData, int size)
-		{
-			if (pData == nullptr)
-			{
-				throw std::runtime_error("RecvNRTfromRT:Invalid pointer");
-			}
-			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
-			return read(pImp->FD_NRT, pData, size);
-		}
-		
-		PIPE<Aris::Core::MSG>::PIPE(int port, bool isBlock) :PIPE_BASE(port, isBlock)
-		{
-		}
-		int PIPE<Aris::Core::MSG>::SendToRT(const Aris::Core::MSG &msg)
-		{
-			SendToRT_RawData(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
-			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
-		}
-		int PIPE<Aris::Core::MSG>::SendToNRT(const Aris::Core::RT_MSG &msg)
-		{
-			SendToNRT_RawData(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
-			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
-		}
-		int PIPE<Aris::Core::MSG>::RecvInRT(Aris::Core::RT_MSG &msg)
-		{
-			int length = RecvInRT_RawData(msg._pData, sizeof(Aris::Core::MSG_HEADER)+Aris::Core::RT_MSG::RT_MSG_LENGTH);		
-			return length<=0?0:length;			
-		}
-		int PIPE<Aris::Core::MSG>::RecvInNRT(Aris::Core::MSG &msg)
-		{
-						
-			int err = RecvInNRT_RawData(msg._pData, sizeof(Aris::Core::MSG_HEADER));
-			msg.SetLength(msg.GetLength());
-			RecvInNRT_RawData(msg.GetDataAddress(), msg.GetLength());
-			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
-		}
-//#endif
-		
 		class ETHERCAT_SLAVE::IMP 
 		{
 		public:
-			IMP(Aris::Core::ELEMENT *ele);
+            IMP(Aris::Core::ELEMENT *ele);
 			void Initialize();
 			void Read();
 			void Write();
@@ -250,7 +82,7 @@ namespace Aris
 
 			};
 
-			class POD_GROUP
+			class PDO_GROUP
 			{
 			public:
 				bool isTx;
@@ -258,7 +90,7 @@ namespace Aris
 				std::vector<std::unique_ptr<DO> > pdos;
 				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
 			};
-			std::vector<POD_GROUP> pdoGroups;
+			std::vector<PDO_GROUP> pdoGroups;
 			std::vector<std::unique_ptr<DO> > sdos;
 			std::uint32_t productCode, venderID;
 			std::uint16_t position, alias;
@@ -279,7 +111,7 @@ namespace Aris
 		public:
 			void Read();
 			void Write();
-			void Run();
+			void Start();
 			
 		private:
 			void Initialize();
@@ -303,7 +135,7 @@ namespace Aris
 		RT_TASK ETHERCAT_MASTER::IMP::realtimeCore;
 		const int ETHERCAT_MASTER::IMP::samplePeriodNs = 1000000;
 #endif
-		ETHERCAT_SLAVE::IMP::IMP(Aris::Core::ELEMENT *ele)
+        ETHERCAT_SLAVE::IMP::IMP(Aris::Core::ELEMENT *ele)
 		{
 			/*load product id...*/
 			this->productCode = std::stoi(ele->Attribute("productCode"), nullptr, 0);
@@ -372,7 +204,7 @@ namespace Aris
 			auto PDO = ele->FirstChildElement("PDO");
 			for (auto p_g = PDO->FirstChildElement(); p_g != nullptr; p_g = p_g->NextSiblingElement())
 			{
-				POD_GROUP pdo_group;
+				PDO_GROUP pdo_group;
 				pdo_group.index = std::stoi(p_g->Attribute("index"), nullptr, 0);
 				pdo_group.isTx = p_g->Attribute("isTx", "true") ? true : false;
 				for (auto p = p_g->FirstChildElement(); p != nullptr; p = p->NextSiblingElement())
@@ -428,7 +260,12 @@ namespace Aris
 		{		
 			auto pEcMaster = ETHERCAT_MASTER::GetInstance()->pImp->pEcMaster;
 
-			pDomain = ecrt_master_create_domain(pEcMaster);
+            for(auto &reg:ec_pdo_entry_reg_vec)
+            {
+                reg.position = this->position;
+            }
+
+            pDomain = ecrt_master_create_domain(pEcMaster);
 			if (!pDomain)
 			{
 				throw std::runtime_error("failed to create domain");
@@ -470,14 +307,10 @@ namespace Aris
 			ecrt_domain_queue(pDomain);
 		}
 
-		ETHERCAT_SLAVE::ETHERCAT_SLAVE(Aris::Core::ELEMENT *ele)
+        ETHERCAT_SLAVE::ETHERCAT_SLAVE(Aris::Core::ELEMENT *ele):pImp(new IMP{ ele })
 		{
-			this->pImp = new IMP{ ele };
 		}
-		ETHERCAT_SLAVE::~ETHERCAT_SLAVE()
-		{
-			delete this->pImp;
-		}
+		ETHERCAT_SLAVE::~ETHERCAT_SLAVE() {};
 		void ETHERCAT_SLAVE::Initialize()
 		{
 			this->pImp->Initialize();
@@ -550,13 +383,16 @@ namespace Aris
 		}
 		void ETHERCAT_MASTER::IMP::Write()
 		{
-			for (auto &pSla : slaves)
+
+            for (auto &pSla : slaves)
 			{
 				pSla->pImp->Write();
-			}
+            }
+
+
 			ecrt_master_send(pEcMaster);
 		}
-		void ETHERCAT_MASTER::IMP::Run()
+		void ETHERCAT_MASTER::IMP::Start()
 		{
 			static bool isFirstTime{ true };
 			if (!isFirstTime)
@@ -593,8 +429,11 @@ namespace Aris
 			}
 			for (size_t i = 0; i < slaves.size(); ++i)
 			{				
-				slaves[i]->Initialize();
-				slaves[i]->pImp->position = static_cast<std::uint16_t>(i);
+
+
+                slaves[i]->pImp->position = static_cast<std::uint16_t>(i);
+                slaves[i]->Initialize();
+
 			}
 
 			
@@ -635,28 +474,36 @@ namespace Aris
 		
 		ETHERCAT_MASTER * ETHERCAT_MASTER::GetInstance()
 		{
+			if (!pInstance)
+			{
+				throw std::runtime_error("please first create an instance fo ETHERCAT_MASTER");
+			}
+			
 			return pInstance.get();
 		}
-		ETHERCAT_MASTER::ETHERCAT_MASTER()
-		{
-			pImp = new IMP;
-		}
-		ETHERCAT_MASTER::~ETHERCAT_MASTER()
-		{
-			delete pImp;
-		}
+		ETHERCAT_MASTER::ETHERCAT_MASTER():pImp(new IMP){}
+		ETHERCAT_MASTER::~ETHERCAT_MASTER()	{}
 		void ETHERCAT_MASTER::LoadXml(Aris::Core::ELEMENT *ele)
 		{
+			/*Load EtherCat slave types*/
+			std::map<std::string, Aris::Core::ELEMENT *> slaveTypeMap;
+			
+			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
+			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
+			{
+				slaveTypeMap.insert(std::make_pair(std::string(pType->Name()), pType));
+			}
+			
+			/*Load all slaves*/
 			auto pSlaves = ele->FirstChildElement("Slave");
-
 			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
 			{
-				this->AddSlavePtr(new ETHERCAT_SLAVE(pSla));
+				this->AddSlave<ETHERCAT_SLAVE>(slaveTypeMap.at(std::string(pSla->Attribute("type"))));
 			}
 		}
-		void ETHERCAT_MASTER::Run()
+		void ETHERCAT_MASTER::Start()
 		{
-			this->pImp->Run();
+			this->pImp->Start();
 		}
 		void ETHERCAT_MASTER::AddSlavePtr(ETHERCAT_SLAVE *pSla)
 		{
