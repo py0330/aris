@@ -215,6 +215,7 @@ namespace Aris
 		};
 
 
+		const std::string& logFileName();
 		const char * log(const char *data);
 		const std::string& log(const std::string& data);
 

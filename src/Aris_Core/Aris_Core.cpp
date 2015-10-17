@@ -57,6 +57,7 @@ public:
 		return logFile;
 	};
 
+	std::string fileName;
 private:
 	std::fstream file;
 	std::mutex dataMutex;
@@ -143,6 +144,8 @@ private:
 		strcat(name,timeCh);
 
 		logfile(name);
+
+		this->fileName = name;
 	};
 	~LOG_FILE()
 	{
@@ -155,6 +158,10 @@ namespace Aris
 {
 	namespace Core
 	{
+		const std::string& logFileName()
+		{
+			return LOG_FILE::getInstance().fileName;
+		}
 		const char * log(const char *data)
 		{
 			LOG_FILE::getInstance().log(data);

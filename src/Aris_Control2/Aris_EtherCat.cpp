@@ -22,6 +22,7 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <atomic>
 
 #include <Aris_EtherCat.h>
 
@@ -112,6 +113,7 @@ namespace Aris
 			void Read();
 			void Write();
 			void Start();
+			void Stop();
 			
 		private:
 			void Initialize();
@@ -123,6 +125,7 @@ namespace Aris
 			ec_master_t* pEcMaster;
 
 			static const int samplePeriodNs;
+			std::atomic_bool isStopping;
 
 #ifdef PLATFORM_IS_LINUX
 			static RT_TASK realtimeCore;
@@ -409,10 +412,16 @@ namespace Aris
 
 			const int priority = 99;
 			
+			isStopping = false;
+
 			rt_task_create(&ETHERCAT_MASTER::IMP::realtimeCore, "realtime core", 0, priority, T_FPU);
 			rt_task_start(&ETHERCAT_MASTER::IMP::realtimeCore, &ETHERCAT_MASTER::IMP::RealTimeCore, NULL);
 #endif
 		};
+		void ETHERCAT_MASTER::IMP::Stop()
+		{
+			isStopping = true;
+		}
 		void ETHERCAT_MASTER::IMP::Initialize()
 		{
 #ifdef PLATFORM_IS_LINUX
@@ -456,7 +465,7 @@ namespace Aris
 #ifdef PLATFORM_IS_LINUX
 			rt_task_set_periodic(NULL, TM_NOW, samplePeriodNs);
 
-			while (1)
+			while (!isStoping)
 			{
 				rt_task_wait_period(NULL);
 
@@ -504,6 +513,10 @@ namespace Aris
 		void ETHERCAT_MASTER::Start()
 		{
 			this->pImp->Start();
+		}
+		void ETHERCAT_MASTER::Stop()
+		{
+			this->pImp->Stop();
 		}
 		void ETHERCAT_MASTER::AddSlavePtr(ETHERCAT_SLAVE *pSla)
 		{

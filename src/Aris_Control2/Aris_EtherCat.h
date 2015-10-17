@@ -53,6 +53,8 @@ namespace Aris
 			static ETHERCAT_MASTER *GetInstance();
 			virtual ~ETHERCAT_MASTER();
 			virtual void LoadXml(Aris::Core::ELEMENT *);
+			virtual void Start();
+			virtual void Stop();
 			template <class CONTROLLER>	static CONTROLLER* CreateMaster()
 			{
 				if (pInstance)
@@ -69,7 +71,7 @@ namespace Aris
 				this->AddSlavePtr(pSla);
 				return pSla;
 			}
-			void Start();
+			
 			
 		protected:
 			ETHERCAT_MASTER();

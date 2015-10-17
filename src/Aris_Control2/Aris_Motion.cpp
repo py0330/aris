@@ -15,6 +15,7 @@
 #include <iostream>
 #include <map>
 #include <Aris_Motion.h>
+#include <fstream>
 
 
 namespace Aris
@@ -258,6 +259,8 @@ namespace Aris
 				
 			}
 			
+			pMotDataPipe.reset(new PIPE<std::vector<MOTION_DATA> >(1, true, pMotions.size()));
+
 			/*
 			auto pSlaves = ele->FirstChildElement("Slave");
 
@@ -267,174 +270,62 @@ namespace Aris
 				pMotions.push_back(AddSlave<MOTION>(pSla));
 			}*/
 		}
+		void CONTROLLER::SetControlStrategy(std::function<void(CONTROLLER *pController)>)
+		{
+			if (strategy)
+			{
+				throw std::runtime_error("failed to set control strategy, because it already has one");
+			}
+		}
+		void CONTROLLER::Start()
+		{
+			isStoping = false;
+			
+			std::vector<MOTION_DATA> data(this->motionData);
+			std::fstream file;
+			std::string name = Aris::Core::logFileName();
+			name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
+			file.open(name);
+			/*启动线程用于接收所传来的数据*/
+			motionDataThread = std::thread([this, &data, &file]()
+			{
+				while (!isStoping)
+				{
+					this->pMotDataPipe->RecvInNRT(data);
+					
+					for (auto &d : data)
+					{
+						file << d.feedbackPos << "  ";
+
+
+					}
+					file << std::endl;
+				}
+
+				file.close();
+			});
+			
+			
+			this->ETHERCAT_MASTER::Start();
+		}
+		void CONTROLLER::Stop()
+		{
+			this->ETHERCAT_MASTER::Stop();
+			this->isStoping = true;
+		}
 		void CONTROLLER::ControlStrategy()
 		{
-
-            static int i = 0;
-            i++;
-
-            const int motorNum=1;
-
-///////*************disable************//////////
-          static int disabledNum=0;
-
-          static bool isDisabled[motorNum];
-
-
-
-          if(i>1000)
-          {
-              if(disabledNum<motorNum)
-             {
-
-                 for(int i=0;i<motorNum;i++)
-                 {
-                     if(isDisabled[i]==false)
-                     {
-                         if(Motion(i)->Disable()==0)
-                         {
-                             isDisabled[i]=true;
-                             rt_printf("motor %d disabled\n",i);
-                             disabledNum++;
-                         }
-                      }
-                 }
-
-
-             }
-          }
-
-
-
-
-///////*************enable************//////////
-       /*   if(disabledNum==1)
-          {
-              Motion(0)->Enable(MOTION::VELOCITY);
-          }*/
-
-         static int enabledNum=0;
-
-          static bool isEnabled[motorNum];
-
-
-          if(i>5000)
-          {
-
-              if(disabledNum==motorNum)
-              {
-
-                  if(enabledNum<motorNum)
-                  {
-                       //rt_printf("enabling...\n");
-
-                      for(int i=0;i<motorNum;i++)
-                      {
-                          if(isEnabled[i]==false)
-                          {
-                              if(Motion(i)->Enable(MOTION::VELOCITY)==0)
-                              {
-                                  isEnabled[i]=true;
-                                  rt_printf("motor %d enabled\n",i);
-                                  enabledNum++;
-                                  rt_printf("enabled num %d\n",enabledNum);
-                              }
-
-                          }
-
-                      }
-                  }
-
-
-              }
-
-          }
-
-          static bool ishomed[motorNum];
-          static int homedNum;
-          if(enabledNum==motorNum)
-          {
-
-              for(int i=0;i<motorNum;i++)
-              {
-                  if(ishomed[i]==false)
-                  {
-                      if(Motion(i)->Home()==0)
-                      {
-                          ishomed[i]=true;
-                          homedNum++;
-                      }
-                   }
-              }
-
-
-
-          }
-
-
-
-
-
-
-
-
-
-/////////////////*****go position**********///////////////
-
-                if(homedNum==motorNum)
-               {
-
-                   static int k[motorNum];
-
-                   for(int i=0;i<motorNum;i++)
-                   {
-                       std::int32_t pos=k[i]*200;
-                       Motion(i)->RunPos(pos);
-                       k[i]++;
-                    }
-               }
-
-
-#ifdef PLATFORM_IS_LINUX
-
-            if(i%1000==0)
-            {
-                for(int i=0;i<motorNum;i++)
-                {
-                    std::uint16_t state;
-                    std::uint8_t mode;
-                    std::int16_t current;
-                    Motion(i)->ReadPdo(1,3,state);
-                    Motion(i)->ReadPdo(4,0,mode);
-                    Motion(i)->ReadPdo(2,0,current);
-                    rt_printf("motor %d,state 0x%4x,mode %d pos %d, current %d\n",i,state,mode,Motion(i)->Pos(),current);
-                    std::int32_t home_mode,home_offset,home_torque,home_speed,home_acc;
-                    Motion(i)->ReadSdo(0,home_mode);
-                    Motion(i)->ReadSdo(9,home_offset);
-                    Motion(i)->ReadSdo(6,home_torque);
-                    Motion(i)->ReadSdo(3,home_speed);
-                    Motion(i)->ReadSdo(2,home_acc);
-                    //rt_printf("mode home%d offset %d torquelimit%d, home_speed %d home-acc %d\n",home_mode,home_offset,home_torque,home_speed,home_acc);
-
-
-                }
-
-
-            }
-
-            if ((i % 10000) == 0)
+			for (int i = 0; i < motionData.size(); ++i)
 			{
-              //rt_printf("pos is:%d\n", pos);
-                Aris::Core::RT_MSG::instance[0].CopyStruct(Motion(0)->Pos());
-				MsgPipe().SendToNRT(Aris::Core::RT_MSG::instance[0]);
+				motionData.at(i).feedbackPos = Motion(i)->Pos();
 			}
-#endif
-			int length;
-			if((length=MsgPipe().RecvInRT(Aris::Core::RT_MSG::instance[0]))>0)
-			{
-				rt_printf(Aris::Core::RT_MSG::instance[0].GetDataAddress());
-			};
+
+			pMotDataPipe->SendToNRT(motionData);
 			
+			if (strategy)
+			{
+				strategy(this);
+			}
 		}
 	}
 }
