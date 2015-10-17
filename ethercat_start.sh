@@ -1,5 +1,19 @@
 #!/bin/bash
-ip_strings=$(ifconfig | grep "eth")
+
+
+judge_strings=$(ifconfig | grep -A 1 "HWaddr")
+
+inet6_strings=$(echo "${judge_strings}" | grep -B 1 "inet6")
+
+ip_strings=$(echo "${inet6_strings}" | grep "HWaddr")
+
+if [ -z "$ip_strings"]
+then
+	echo "can not find EtherCat port, maybe already started, try to list slaves:"
+	/opt/etherlab/bin/ethercat sla
+	exit
+fi
+
 ip_address=${ip_strings#*HWaddr }
 ip_address=${ip_address:0:17}
 echo "ip address is: ${ip_address}"

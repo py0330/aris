@@ -273,7 +273,7 @@ namespace Aris
             static int i = 0;
             i++;
 
-            const int motorNum=3;
+            const int motorNum=1;
 
 ///////*************disable************//////////
           static int disabledNum=0;
