@@ -125,7 +125,7 @@ namespace Aris
 			ec_master_t* pEcMaster;
 
 			static const int samplePeriodNs;
-			std::atomic_bool isStopping;
+			static std::atomic_bool isStopping;
 
 #ifdef PLATFORM_IS_LINUX
 			static RT_TASK realtimeCore;
