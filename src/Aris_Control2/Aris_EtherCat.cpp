@@ -375,7 +375,8 @@ namespace Aris
 			this->pImp->sdos[sdoID]->value = value;
 		}
 
-		std::unique_ptr<ETHERCAT_MASTER> ETHERCAT_MASTER::pInstance;
+		
+		std::atomic_bool ETHERCAT_MASTER::IMP::isStopping;
 		void ETHERCAT_MASTER::IMP::Read()
 		{
 			ecrt_master_receive(pEcMaster);
@@ -481,6 +482,7 @@ namespace Aris
 #endif
 		};
 		
+		std::unique_ptr<ETHERCAT_MASTER> ETHERCAT_MASTER::pInstance;
 		ETHERCAT_MASTER * ETHERCAT_MASTER::GetInstance()
 		{
 			if (!pInstance)
