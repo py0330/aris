@@ -169,6 +169,7 @@ namespace Aris
 			}
 			std::int16_t RunPos(const std::int32_t pos)
 			{
+				rt_printf("run pos\n");				
 				std::uint16_t statusword;
 				pFather->ReadPdo(1, 3, statusword);
 				int motorState = (statusword & 0x000F);
@@ -226,7 +227,7 @@ namespace Aris
 			}
 			std::int32_t Pos() { std::int32_t pos; pFather->ReadPdo(1, 0, pos); return pos; };
 			std::int32_t Vel() { std::int32_t vel; pFather->ReadPdo(1, 2, vel); return vel; };
-			std::int32_t Cur() { std::int32_t cur; pFather->ReadPdo(2, 0, cur); return cur; };
+			std::int32_t Cur() { std::int16_t cur; pFather->ReadPdo(2, 0, cur); return cur; };
 
 			std::int32_t homePos{0};
 			double countPerUnit{65536};
@@ -247,21 +248,27 @@ namespace Aris
 		}
 		void MOTION::DoCommand(const DATA &data)
 		{
+			//rt_printf("do command\n");		
 			switch (data.cmd)
 			{
 			case IDLE:
+				//rt_printf("idle\n");
 				data.ret = 0;
 				return;
 			case ENABLE:
+				rt_printf("enable\n");
 				data.ret = pImp->Enable(data.mode);
 				return;
 			case DISABLE:
+				rt_printf("disable\n");
 				data.ret = pImp->Disable();
 				return;
 			case HOME:
+				rt_printf("home\n");
 				data.ret = pImp->Home();
 				return;
 			case RUN:
+				rt_printf("begin to run\n");
 				switch (data.mode)
 				{
 				case POSITION:
@@ -278,6 +285,7 @@ namespace Aris
 					return;
 				}
 			default:
+				rt_printf("default\n");
 				data.ret = -1;
 				return;
 			}
@@ -312,12 +320,14 @@ namespace Aris
 			/*Load EtherCat slave types*/
 			std::map<std::string, const Aris::Core::ELEMENT *> slaveTypeMap;
 
+			
+			std::cout<<"load control 1"<<std::endl;
 			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
 			{
 				slaveTypeMap.insert(std::make_pair(std::string(pType->Name()), pType));
 			}
-
+std::cout<<"load control 1"<<std::endl;
 			/*Load all slaves*/
 			auto pSlaves = ele->FirstChildElement("Slave");
 			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
@@ -326,7 +336,7 @@ namespace Aris
 				if (type == "ElmoSoloWhistle")
 				{
 					pMotions.push_back(AddSlave<MOTION>(slaveTypeMap.at(type)));
-					pMotions.back()->pImp->homePos = std::stoi(pSla->Attribute("homePos"));
+					pMotions.back()->pImp->homePos = std::stoi(pSla->Attribute("homeOffSet"));
 					pMotions.back()->pImp->countPerUnit = std::stod(pSla->Attribute("countPerUnit"));
 					pMotions.back()->WriteSdo(9, pMotions.back()->HomePos());
 				}
@@ -339,10 +349,10 @@ namespace Aris
 				}
 				
 			}
-			
+			std::cout<<"load control 1"<<std::endl;
 			pMotDataPipe.reset(new PIPE<std::vector<MOTION::DATA> >(1, true, pMotions.size()));
 		}
-		void CONTROLLER::SetControlStrategy(std::function<void(DATA)> strategy)
+		void CONTROLLER::SetControlStrategy(std::function<int(DATA&)> strategy)
 		{
 			if (this->strategy)
 			{
@@ -394,6 +404,10 @@ namespace Aris
 		}
 		void CONTROLLER::ControlStrategy()
 		{
+			static int count = 0;
+			if(++count%1000==0)
+				rt_printf("running\n");			
+
 			/*构造传入strategy的参数*/
 			DATA data{ &lastMotionData, &motionData, nullptr, nullptr };
 			

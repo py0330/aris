@@ -75,14 +75,14 @@ namespace Aris
 			virtual void Stop();
 			MOTION * Motion(int i) { return pMotions.at(i); };
 			PIPE<Aris::Core::MSG>& MsgPipe(){return msgPipe;};
-			void SetControlStrategy(std::function<void(DATA)>);
+			void SetControlStrategy(std::function<int(DATA&)>);
 
 		protected:
 			CONTROLLER() :ETHERCAT_MASTER(),msgPipe(0, true) {};
 			virtual void ControlStrategy() override;
 
 		private:
-			std::function<void(DATA)> strategy;
+			std::function<int(DATA&)> strategy;
 
 			std::vector<MOTION *> pMotions;
 			PIPE<Aris::Core::MSG> msgPipe;

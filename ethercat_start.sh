@@ -7,7 +7,7 @@ inet6_strings=$(echo "${judge_strings}" | grep -B 1 "inet6")
 
 ip_strings=$(echo "${inet6_strings}" | grep "HWaddr")
 
-if [ -z "$ip_strings"]
+if [ -z "$ip_strings" ]
 then
 	echo "can not find EtherCat port, maybe already started, try to list slaves:"
 	/opt/etherlab/bin/ethercat sla
