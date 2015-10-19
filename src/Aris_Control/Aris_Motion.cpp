@@ -84,8 +84,9 @@ namespace Aris
 						pFather->WritePdo(0, 3, static_cast<std::int16_t>(1500));
 						break;
 					}
+
 					if (++enablePeriod >= 10)
-					{
+					{	
 						runningMode = mode;
 						enablePeriod = 0;
 						return 0;
@@ -129,10 +130,21 @@ namespace Aris
 			}
 			std::int16_t Home()
 			{
+				if(isWaitingMode)
+				{
+					auto ret = this->Enable(runningMode);	
+					isWaitingMode = (ret==0?false:true);
+					return ret;
+				}
+				
 				std::uint16_t statusWord;
 				pFather->ReadPdo(1, 3, statusWord);
 				int motorState = (statusWord & 0x000F);
-				if (motorState == 0x0007)
+				if (motorState != 0x0007)
+				{
+					return -1;
+				}
+				else
 				{
 					/*motor is in running state*/
 					std::uint8_t mode_read;
@@ -150,9 +162,11 @@ namespace Aris
 							/*home finished, set mode to running mode, whose value is decided by 
 							enable function, also write velocity to 0*/
 							pFather->WritePdo(0, 5, static_cast<uint8_t>(runningMode));
-							pFather->WritePdo(0, 1, static_cast<std::int32_t>(0));
+							//pFather->WritePdo(0, 1, static_cast<std::int32_t>(0));
 							isEverHomed = true;
-							return 0;
+							rt_printf("to waiting\n");	
+							isWaitingMode = true;
+							return 1;
 						}
 						else
 						{
@@ -161,10 +175,6 @@ namespace Aris
 							return 1;
 						}
 					}
-				}
-				else
-				{
-					return -1;
 				}
 			}
 			std::int16_t RunPos(const std::int32_t pos)
@@ -231,7 +241,7 @@ namespace Aris
 			std::int32_t homeOffSet{0};
 		private:
 			MOTION *pFather;
-
+			bool isWaitingMode{false};
 			bool isEverHomed{ false };
 			int enablePeriod{ 0 };
 			std::uint8_t runningMode{ 9 };
