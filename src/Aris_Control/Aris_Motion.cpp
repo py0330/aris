@@ -30,6 +30,8 @@ namespace Aris
 
 			std::int16_t Enable(const std::uint8_t mode)
 			{
+				isFake = false;				
+
 				std::uint16_t statusWord;
 				pFather->ReadPdo(1, 3, statusWord);
 
@@ -105,6 +107,8 @@ namespace Aris
 			}
 			std::int16_t Disable()
 			{
+				isFake = false;					
+
 				std::uint16_t statusWord;
 				pFather->ReadPdo(1, 3, statusWord);
 
@@ -130,6 +134,8 @@ namespace Aris
 			}
 			std::int16_t Home()
 			{
+				isFake = false;					
+
 				if(isWaitingMode)
 				{
 					auto ret = this->Enable(runningMode);	
@@ -162,9 +168,7 @@ namespace Aris
 							/*home finished, set mode to running mode, whose value is decided by 
 							enable function, also write velocity to 0*/
 							pFather->WritePdo(0, 5, static_cast<uint8_t>(runningMode));
-							//pFather->WritePdo(0, 1, static_cast<std::int32_t>(0));
 							isEverHomed = true;
-							rt_printf("to waiting\n");	
 							isWaitingMode = true;
 							return 1;
 						}
@@ -179,6 +183,8 @@ namespace Aris
 			}
 			std::int16_t RunPos(const std::int32_t pos)
 			{
+				if(isFake)return 0;				
+
 				std::uint16_t statusword;
 				pFather->ReadPdo(1, 3, statusword);
 				int motorState = (statusword & 0x000F);
@@ -200,6 +206,8 @@ namespace Aris
 			}
 			std::int16_t RunVel(const std::int32_t vel)
 			{
+				if(isFake)return 0;				
+
 				std::uint16_t statusword;
 				pFather->ReadPdo(1, 3, statusword);
 				int motorState = (statusword & 0x000F);
@@ -218,13 +226,15 @@ namespace Aris
 			}
 			std::int16_t RunCur(const std::int16_t cur)
 			{
+				if(isFake)return 0;				
+								
 				std::uint16_t statusword;
 				pFather->ReadPdo(1, 3, statusword);
 				int motorState = (statusword & 0x000F);
 
 				std::uint8_t mode_read;
 				pFather->ReadPdo(4, 0, mode_read);
-				if (motorState != 0x0007 || mode_read != CURRENT) //need running and cur mode
+				if (motorState != 0x0007 || mode_read != CURRENT) //need running and cur mode and everhomed
 				{
 					return -1;
 				}
@@ -243,6 +253,7 @@ namespace Aris
 			MOTION *pFather;
 			bool isWaitingMode{false};
 			bool isEverHomed{ false };
+			bool isFake{true};
 			int enablePeriod{ 0 };
 			std::uint8_t runningMode{ 9 };
 		};
@@ -256,12 +267,6 @@ namespace Aris
 		}
 		void MOTION::DoCommand(const DATA &data)
 		{		
-			if (this->HasFault())
-			{
-				data.ret = -1;
-				return;
-			}
-			
 			switch (data.cmd)
 			{
 			case IDLE:
@@ -400,10 +405,6 @@ namespace Aris
 		}
 		void CONTROLLER::ControlStrategy()
 		{
-			static int count = 0;
-			if(++count%1000==0)
-				rt_printf("running\n");
-
 			/*构造传入strategy的参数*/
 			DATA data{ &lastMotionData, &motionData, nullptr, nullptr };
 			
