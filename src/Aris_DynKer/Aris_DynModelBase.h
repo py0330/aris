@@ -97,10 +97,11 @@ namespace Aris
 
 			const double* GetPrtPmPtr() const { return *_PrtPm; };
 			const double* GetPmPtr() const { return *_Pm; };
-			const double* GetVelPtr() const; 
+			const double* GetVelPtr() const;
 			const double* GetAccPtr() const;
 			const PART* GetFatherPrt() const { return _pPrt; };
 
+			explicit MARKER(const PART *pPrt, const double *_prtPe = nullptr, const char* eulType = "313");//for constructing marker outside model
 		private:
 			explicit MARKER(MODEL_BASE *pModel, PART *pPrt, const std::string &Name, int id);//only for child class PART to construct
 			explicit MARKER(PART *pPrt, const std::string &Name, int id, const double *pPrtPm = nullptr, MARKER *pRelativeTo = nullptr);
@@ -109,7 +110,7 @@ namespace Aris
 			virtual void ToAdamsCmd(std::ofstream &file) const {};
 
 		private:
-			PART *_pPrt;
+			const PART *_pPrt;
 
 			double _Pm[4][4];
 			double _PrtPm[4][4];

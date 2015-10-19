@@ -33,7 +33,7 @@ namespace Aris
 			void WriteSdo(int sdoID, std::int32_t value);
 
 		protected:
-            ETHERCAT_SLAVE(Aris::Core::ELEMENT *);
+            ETHERCAT_SLAVE(const Aris::Core::ELEMENT *);
 			virtual void Initialize();
 
 		private:
@@ -52,7 +52,7 @@ namespace Aris
 		public:
 			static ETHERCAT_MASTER *GetInstance();
 			virtual ~ETHERCAT_MASTER();
-			virtual void LoadXml(Aris::Core::ELEMENT *);
+			virtual void LoadXml(const Aris::Core::ELEMENT *);
 			virtual void Start();
 			virtual void Stop();
 			template <class CONTROLLER>	static CONTROLLER* CreateMaster()

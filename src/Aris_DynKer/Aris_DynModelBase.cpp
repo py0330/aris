@@ -17,6 +17,14 @@ namespace Aris
 {
 	namespace DynKer
 	{
+		MARKER::MARKER(const PART *pPrt, const double *_prtPe, const char* eulType)
+			: ELEMENT(nullptr, "", 0), _pPrt(pPrt)
+		{
+			static const double defaultPe[6] = { 0 };
+			_prtPe = _prtPe ? _prtPe : defaultPe;
+
+			s_pe2pm(_prtPe, *_PrtPm, eulType);
+		}
 		MARKER::MARKER(MODEL_BASE *pModel, PART *pPrt, const std::string &Name, int id)
 			: ELEMENT(pModel, Name, id), _pPrt(pPrt)
 		{
@@ -60,7 +68,7 @@ namespace Aris
 
 			if (ele->Attribute("RelativeTo") && (!ele->Attribute("RelativeTo", "")))
 			{
-				MARKER *pRelativeMak = _pPrt->GetMarker(ele->Attribute("RelativeTo"));
+				const MARKER *pRelativeMak = _pPrt->GetMarker(ele->Attribute("RelativeTo"));
 				s_pm_dot_pm(pRelativeMak->GetPrtPmPtr(), pm, *_PrtPm);
 			}
 			else

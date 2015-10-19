@@ -34,7 +34,7 @@ namespace Aris
 		class ETHERCAT_SLAVE::IMP 
 		{
 		public:
-            IMP(Aris::Core::ELEMENT *ele);
+            IMP(const Aris::Core::ELEMENT *ele);
 			void Initialize();
 			void Read();
 			void Write();
@@ -138,7 +138,7 @@ namespace Aris
 		RT_TASK ETHERCAT_MASTER::IMP::realtimeCore;
 		const int ETHERCAT_MASTER::IMP::samplePeriodNs = 1000000;
 #endif
-        ETHERCAT_SLAVE::IMP::IMP(Aris::Core::ELEMENT *ele)
+        ETHERCAT_SLAVE::IMP::IMP(const Aris::Core::ELEMENT *ele)
 		{
 			/*load product id...*/
 			this->productCode = std::stoi(ele->Attribute("productCode"), nullptr, 0);
@@ -146,7 +146,7 @@ namespace Aris
 			this->alias = std::stoi(ele->Attribute("alias"), nullptr, 0);
 
 			/*load PDO*/
-			auto AddDoType = [](Aris::Core::ELEMENT *ele, bool isTx)-> DO*
+			auto AddDoType = [](const Aris::Core::ELEMENT *ele, bool isTx)-> DO*
 			{
 				DO* ret;
 				if (ele->Attribute("type", "int8"))
@@ -310,7 +310,7 @@ namespace Aris
 			ecrt_domain_queue(pDomain);
 		}
 
-        ETHERCAT_SLAVE::ETHERCAT_SLAVE(Aris::Core::ELEMENT *ele):pImp(new IMP{ ele })
+        ETHERCAT_SLAVE::ETHERCAT_SLAVE(const Aris::Core::ELEMENT *ele):pImp(new IMP{ ele })
 		{
 		}
 		ETHERCAT_SLAVE::~ETHERCAT_SLAVE() {};
@@ -494,10 +494,10 @@ namespace Aris
 		}
 		ETHERCAT_MASTER::ETHERCAT_MASTER():pImp(new IMP){}
 		ETHERCAT_MASTER::~ETHERCAT_MASTER()	{}
-		void ETHERCAT_MASTER::LoadXml(Aris::Core::ELEMENT *ele)
+		void ETHERCAT_MASTER::LoadXml(const Aris::Core::ELEMENT *ele)
 		{
 			/*Load EtherCat slave types*/
-			std::map<std::string, Aris::Core::ELEMENT *> slaveTypeMap;
+			std::map<std::string, const Aris::Core::ELEMENT *> slaveTypeMap;
 			
 			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())

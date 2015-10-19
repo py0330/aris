@@ -82,8 +82,8 @@ set(XNNITE_LINK_LIB )
 set(OPENNI_INCL_DIR "/usr/include/ni")#open NI for kinect
 set(OPENNI_LINK_DIR "/usr/lib")
 set(OPENNI_LINK_LIB OpenNI)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control2 src/Aris_Control)
-set(ARIS_LINK_LIB Aris_Control Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Control2 Aris_Core)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control)
+set(ARIS_LINK_LIB Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Control Aris_Core)
 
 
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${OPENNI_INCL_DIR} ${XNNITE_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
@@ -96,8 +96,8 @@ set(SYSTEM_LINK_LIB ws2_32 setupapi)#ws2_32 is needed for socket setuaipi is nee
 set(XSENS_INCL_DIR "C:/Aris_Dependent/xsens/include")
 set(XSENS_LINK_DIR "C:/Aris_Dependent/xsens/lib")
 set(XSENS_LINK_LIB xdeviceclass)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control2)
-set(ARIS_LINK_LIB Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Control2 Aris_Core)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control)
+set(ARIS_LINK_LIB Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Control Aris_Core)
 
 
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
@@ -119,9 +119,9 @@ set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
 # Aris_Control project
 set(SOURCE Aris_Motion Aris_EtherCat Aris_Pipe)
-PREPEND_CPP(FULL_SRC src/Aris_Control2 ${SOURCE})
-PREPEND_H(FULL_H src/Aris_Control2 ${SOURCE})
-add_library(Aris_Control2 STATIC ${FULL_SRC} ${FULL_H})
+PREPEND_CPP(FULL_SRC src/Aris_Control ${SOURCE})
+PREPEND_H(FULL_H src/Aris_Control ${SOURCE})
+add_library(Aris_Control STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
 # Aris_ExpCal project
@@ -157,15 +157,6 @@ PREPEND_H(FULL_H src/Aris_Sensor ${SOURCE})
 add_library(Aris_Sensor STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
-# Aris_Control project only in linux
-if(UNIX)
-set(SOURCE_FILES Aris_Control.cpp Aris_ControlData.cpp Aris_Control_Sensor.cpp Aris_Device.cpp Aris_SysBase.cpp )
-PREPEND(FULL_SRC src/Aris_Control ${SOURCE_FILES})
-add_library(Aris_Control STATIC ${FULL_SRC})
-set(HEADER_FILES Aris_Control.h Aris_ControlData.h)
-PREPEND(FULL_SRC ${PROJECT_SOURCE_DIR}/src/Aris_Control ${HEADER_FILES})
-set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_SRC})
-endif(UNIX)
 
 ################################### build demos for aris_Core ####################################
 # Make demo projects
@@ -222,18 +213,15 @@ endif(MAKE_DEMO)
 ############################################ install aris ############################################
 if(UNIX)
 	set(CMAKE_INSTALL_PREFIX "/usr/Aris")
-	install(TARGETS Aris_Control ARCHIVE DESTINATION lib)
 endif(UNIX)
 if(WIN32)
 	set(CMAKE_INSTALL_PREFIX "C:/Aris")
-	set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} src/Aris_Control/Aris_ControlData.h)
 endif(WIN32)
 
 
 
-install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan Aris_Sensor ARCHIVE DESTINATION lib)
+install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan Aris_Sensor Aris_Control ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} DESTINATION include)
-install(DIRECTORY src/Aris_Control/resource/ DESTINATION resource/Aris_Control)
 
 
 

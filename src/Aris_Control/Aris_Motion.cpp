@@ -1,0 +1,436 @@
+﻿#include <Platform.h>
+#ifdef PLATFORM_IS_LINUX
+#include <ecrt.h>
+#include <native/task.h>
+#include <native/timer.h>
+#include <rtdk.h>
+#include <sys/mman.h>
+#endif
+#ifdef PLATFORM_IS_WINDOWS
+#define rt_printf printf
+#endif
+
+
+#include <string>
+#include <iostream>
+#include <map>
+#include <Aris_Motion.h>
+#include <fstream>
+
+
+namespace Aris
+{
+	namespace Control
+	{
+		class MOTION::IMP 
+		{
+		public:
+			IMP(MOTION *mot) :pFather(mot) {};
+			~IMP() = default;
+
+			std::int16_t Enable(const std::uint8_t mode)
+			{
+				std::uint16_t statusWord;
+				pFather->ReadPdo(1, 3, statusWord);
+
+				std::uint8_t modeRead;
+				pFather->ReadPdo(4, 0, modeRead);
+
+				int motorState = (statusWord & 0x000F);
+
+				if (motorState == 0x0000)
+				{
+					/*state is POWERED_OFF, now set it to STOPPED*/
+					pFather->WritePdo(0, 4, static_cast<std::uint16_t>(0x06));
+					return 1;
+				}
+				else if (motorState == 0x0001)
+				{
+					/*state is STOPPED, now set it to ENABLED*/
+					pFather->WritePdo(0, 4, static_cast<std::uint16_t>(0x07));
+					return 1;
+				}
+				else if (motorState == 0x0003)
+				{
+					/*state is ENABLED, now set it to RUNNING*/
+					pFather->WritePdo(0, 4, static_cast<std::uint16_t>(0x0F));
+					return 1;
+				}
+				else if ((mode == POSITION) && (modeRead != VELOCITY))
+				{
+					/*state is RUNNING, now to set desired mode*/
+					/*desired mode is POSITION, but we need to use our own velocity loop*/
+					pFather->WritePdo(0, 5, static_cast<std::uint8_t>(VELOCITY));
+					return 1;
+				}
+				else if ((mode != POSITION) && (modeRead != mode))
+				{
+					/*state is RUNNING, now change it to desired mode*/
+					pFather->WritePdo(0, 5, static_cast<std::uint8_t>(mode));
+					return 1;
+				}
+				else if (motorState == 0x0007)
+				{
+					/*successfull, but still need to wait for 10 more cycles to make it stable*/
+					switch (mode)
+					{
+					case POSITION:
+					case VELOCITY:
+						/*velocity loop to set velocity of 0*/
+						pFather->WritePdo(0, 1, static_cast<std::int32_t>(0));
+						break;
+					case CURRENT:
+						pFather->WritePdo(0, 2, static_cast<std::int16_t>(0));
+						pFather->WritePdo(0, 3, static_cast<std::int16_t>(1500));
+						break;
+					}
+					if (++enablePeriod >= 10)
+					{
+						runningMode = mode;
+						enablePeriod = 0;
+						return 0;
+					}
+					else
+					{
+						return 1;
+					}
+				}
+				else
+				{
+					/*the motor is in fault*/
+					pFather->WritePdo(0, 4, static_cast<std::uint16_t>(0x80));
+					return 1;
+				}
+			}
+			std::int16_t Disable()
+			{
+				std::uint16_t statusWord;
+				pFather->ReadPdo(1, 3, statusWord);
+
+				int motorState = (statusWord & 0x000F);
+				if (motorState == 0x0001)
+				{
+					/*already disabled*/
+					return 0;
+				}
+				else if (motorState == 0x0003 || motorState == 0x0007 || motorState == 0x0000)
+				{
+					/*try to disable*/
+					pFather->WritePdo(0, 4, static_cast<std::uint16_t>(0x06));
+					return 1;
+				}
+				else
+				{
+					/*the motor is in fault*/
+					pFather->WritePdo(0, 4, static_cast<std::uint16_t>(0x80));
+					return 1;
+				}
+
+			}
+			std::int16_t Home()
+			{
+				std::uint16_t statusWord;
+				pFather->ReadPdo(1, 3, statusWord);
+				int motorState = (statusWord & 0x000F);
+				if (motorState == 0x0007)
+				{
+					/*motor is in running state*/
+					std::uint8_t mode_read;
+					pFather->ReadPdo(4, 0, mode_read);
+					if (mode_read != 0x0006)
+					{
+						/*set motor to mode 0x006, which is homing mode*/
+						pFather->WritePdo(0, 5, static_cast<std::uint8_t>(0x006));
+						return 1;
+					}
+					else
+					{
+						if (statusWord & 0x1000)
+						{
+							/*home finished, set mode to running mode, whose value is decided by 
+							enable function, also write velocity to 0*/
+							pFather->WritePdo(0, 5, static_cast<uint8_t>(runningMode));
+							pFather->WritePdo(0, 1, static_cast<std::int32_t>(0));
+							isEverHomed = true;
+							return 0;
+						}
+						else
+						{
+							/*still homing*/
+							pFather->WritePdo(0, 4, static_cast<uint16_t>(0x1F));
+							return 1;
+						}
+					}
+				}
+				else
+				{
+					return -1;
+				}
+			}
+			std::int16_t RunPos(const std::int32_t pos)
+			{
+				std::uint16_t statusword;
+				pFather->ReadPdo(1, 3, statusword);
+				int motorState = (statusword & 0x000F);
+
+				std::uint8_t mode_read;
+				pFather->ReadPdo(4, 0, mode_read);
+				if (motorState != 0x0007 || mode_read != VELOCITY)
+				{
+					return -1;
+				}
+				else
+				{
+					std::int32_t current_pos = this->Pos();
+					double Kp = 150;
+					std::int32_t desired_vel = static_cast<std::int32_t>(Kp*(pos - current_pos));
+					pFather->WritePdo(0, 1, desired_vel);
+					return 0;
+				}
+			}
+			std::int16_t RunVel(const std::int32_t vel)
+			{
+				std::uint16_t statusword;
+				pFather->ReadPdo(1, 3, statusword);
+				int motorState = (statusword & 0x000F);
+
+				std::uint8_t mode_read;
+				pFather->ReadPdo(4, 0, mode_read);
+				if (motorState != 0x0007 || mode_read != VELOCITY)
+				{
+					return -1;
+				}
+				else
+				{
+					pFather->WritePdo(0, 1, vel);
+					return 0;
+				}
+			}
+			std::int16_t RunCur(const std::int16_t cur)
+			{
+				std::uint16_t statusword;
+				pFather->ReadPdo(1, 3, statusword);
+				int motorState = (statusword & 0x000F);
+
+				std::uint8_t mode_read;
+				pFather->ReadPdo(4, 0, mode_read);
+				if (motorState != 0x0007 || mode_read != CURRENT) //need running and cur mode
+				{
+					return -1;
+				}
+				else
+				{
+					pFather->WritePdo(0, 2, cur);
+					return 0;
+				}
+			}
+			std::int32_t Pos() { std::int32_t pos; pFather->ReadPdo(1, 0, pos); return pos; };
+			std::int32_t Vel() { std::int32_t vel; pFather->ReadPdo(1, 2, vel); return vel; };
+			std::int32_t Cur() { std::int32_t cur; pFather->ReadPdo(2, 0, cur); return cur; };
+
+			std::int32_t homePos{0};
+			double countPerUnit{65536};
+		private:
+			MOTION *pFather;
+
+			bool isEverHomed{ false };
+			int enablePeriod{ 0 };
+			std::uint8_t runningMode{ 9 };
+		};
+		MOTION::~MOTION() {}
+		MOTION::MOTION(const Aris::Core::ELEMENT *ele) :ETHERCAT_SLAVE(ele), pImp(new MOTION::IMP(this))
+		{
+		};
+		void MOTION::Initialize()
+		{
+			this->ETHERCAT_SLAVE::Initialize();
+		}
+		void MOTION::DoCommand(const DATA &data)
+		{
+			switch (data.cmd)
+			{
+			case IDLE:
+				data.ret = 0;
+				return;
+			case ENABLE:
+				data.ret = pImp->Enable(data.mode);
+				return;
+			case DISABLE:
+				data.ret = pImp->Disable();
+				return;
+			case HOME:
+				data.ret = pImp->Home();
+				return;
+			case RUN:
+				switch (data.mode)
+				{
+				case POSITION:
+					data.ret = pImp->RunPos(data.targetPos);
+					return;
+				case VELOCITY:
+					data.ret = pImp->RunVel(data.targetVel);
+					return;
+				case CURRENT:
+					data.ret = pImp->RunCur(data.targetCur);
+					return;
+				default:
+					data.ret = -1;
+					return;
+				}
+			default:
+				data.ret = -1;
+				return;
+			}
+		}
+		void MOTION::ReadFeedback(DATA &data)
+		{
+			data.feedbackCur = pImp->Cur();
+			data.feedbackPos = pImp->Pos();
+			data.feedbackVel = pImp->Vel();
+		}
+		std::int32_t MOTION::HomePos()
+		{
+			return pImp->homePos;
+		}
+		double MOTION::CountPerUnit()
+		{
+			return pImp->countPerUnit;
+		}
+		bool MOTION::HasFault()
+		{
+			std::uint16_t statusword;
+			this->ReadPdo(1, 3, statusword);
+			int motorState = (statusword & 0x000F);
+			if (motorState != 0x0003 && motorState != 0x0007 && motorState != 0x0001 && motorState != 0x0000)
+				return true;
+			else
+				return false;
+		}
+		
+		void CONTROLLER::LoadXml(const Aris::Core::ELEMENT *ele)
+		{
+			/*Load EtherCat slave types*/
+			std::map<std::string, const Aris::Core::ELEMENT *> slaveTypeMap;
+
+			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
+			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
+			{
+				slaveTypeMap.insert(std::make_pair(std::string(pType->Name()), pType));
+			}
+
+			/*Load all slaves*/
+			auto pSlaves = ele->FirstChildElement("Slave");
+			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
+			{
+				std::string type{ pSla->Attribute("type") };
+				if (type == "ElmoSoloWhistle")
+				{
+					pMotions.push_back(AddSlave<MOTION>(slaveTypeMap.at(type)));
+					pMotions.back()->pImp->homePos = std::stoi(pSla->Attribute("homePos"));
+					pMotions.back()->pImp->countPerUnit = std::stod(pSla->Attribute("countPerUnit"));
+					pMotions.back()->WriteSdo(9, pMotions.back()->HomePos());
+				}
+				else if (type == "AtiForceSensor")
+				{
+				}
+				else
+				{
+					throw std::runtime_error(std::string("unknown slave type of \"") + type + "\"");
+				}
+				
+			}
+			
+			pMotDataPipe.reset(new PIPE<std::vector<MOTION::DATA> >(1, true, pMotions.size()));
+		}
+		void CONTROLLER::SetControlStrategy(std::function<void(DATA)> strategy)
+		{
+			if (this->strategy)
+			{
+				throw std::runtime_error("failed to set control strategy, because it already has one");
+			}
+
+			this->strategy = strategy;
+		}
+		void CONTROLLER::Start()
+		{
+			isStoping = false;
+			
+			this->motionData.resize(this->pMotions.size());
+			this->lastMotionData.resize(this->pMotions.size());
+
+			/*begin thread which will save data*/
+			motionDataThread = std::thread([this]()
+			{
+				static std::fstream file;
+				std::string name = Aris::Core::logFileName();
+				name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
+				file.open(name.c_str(), std::ios::out | std::ios::trunc);
+				
+				std::vector<MOTION::DATA> data;
+				data.resize(this->pMotions.size());
+
+				
+				long long count = 0;
+				while (!isStoping)
+				{
+					this->pMotDataPipe->RecvInNRT(data);
+
+					for (auto &d : data)
+					{
+						file << d.feedbackPos << "  ";
+					}
+					file << std::endl;
+				}
+
+				file.close();
+			});
+			
+			this->ETHERCAT_MASTER::Start();
+		}
+		void CONTROLLER::Stop()
+		{
+			this->ETHERCAT_MASTER::Stop();
+			this->isStoping = true;
+		}
+		void CONTROLLER::ControlStrategy()
+		{
+			/*构造传入strategy的参数*/
+			DATA data{ &lastMotionData, &motionData, nullptr, nullptr };
+			
+			/*收取消息*/
+			if (this->MsgPipe().RecvInRT(Aris::Core::RT_MSG::instance[0]) > 0)
+			{
+				data.pMsgRecv = &Aris::Core::RT_MSG::instance[0];
+			};
+			
+			/*读取反馈*/
+			for (std::size_t i = 0; i < motionData.size(); ++i)
+			{
+				Motion(i)->ReadFeedback(motionData[i]);
+			}
+			
+			/*执行自定义的控制策略*/
+			if (strategy)
+			{
+				strategy(data);
+			}
+
+			/*重新读取反馈信息，因为strategy可能修改，之后写入PDO，之后放进lastMotionData中*/
+			for (std::size_t i = 0; i < motionData.size(); ++i)
+			{
+				Motion(i)->ReadFeedback(motionData[i]);
+				Motion(i)->DoCommand(motionData[i]);
+				lastMotionData[i] = motionData[i];
+			}
+
+			/*发送数据到记录的线程*/
+			pMotDataPipe->SendToNRT(motionData);
+
+			/*向外发送消息*/
+			if (data.pMsgSend)
+			{
+				this->MsgPipe().SendToNRT(*data.pMsgSend);
+			}
+		}
+	}
+}

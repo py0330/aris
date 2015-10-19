@@ -19,26 +19,6 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		class COORDINATE final
-		{
-		public:
-			COORDINATE() = default;
-			COORDINATE(const PART &prt, const double *_prtPe = nullptr, const char* eulType="313");
-			COORDINATE(const MARKER &mak);
-			void Update();
-
-			const double* GetPrtPmPtr() const { return prtPm; };
-			const double* GetPmPtr() const { return pm; };
-			const double* GetVelPtr() const { return pPrt->GetVelPtr(); };
-			const double* GetAccPtr() const { return pPrt->GetAccPtr(); };
-			const PART* GetFatherPrt() const { return pPrt; };
-
-		private:
-			const PART *pPrt;
-			double pm[16];
-			double prtPm[16];
-		};
-		
 		class TRANSLATIONAL_JOINT final :public JOINT_BASE_DIM<5>
 		{
 		public:
