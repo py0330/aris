@@ -242,7 +242,6 @@ namespace Aris
 		};
 		void MOTION::Initialize()
 		{
-			this->WriteSdo(9, this->pImp->homeOffSet);
 			this->ETHERCAT_SLAVE::Initialize();
 		}
 		void MOTION::DoCommand(const DATA &data)
@@ -298,10 +297,6 @@ namespace Aris
 			else
 				return false;
 		}
-		void MOTION::SetHomeOffSet(std::int32_t homeOffSet)
-		{
-			pImp->homeOffSet = homeOffSet;
-		}
 
 		void CONTROLLER::LoadXml(const Aris::Core::ELEMENT *ele)
 		{
@@ -324,8 +319,6 @@ namespace Aris
 				if (type == "ElmoSoloWhistle")
 				{
 					pMotions.push_back(AddSlave<MOTION>(slaveTypeMap.at(type)));
-					pMotions.back()->pImp->homeOffSet = std::stoi(pSla->Attribute("homeOffSet"));
-					
 				}
 				else if (type == "AtiForceSensor")
 				{
