@@ -45,8 +45,7 @@ namespace Aris
 			bool HasFault();
 			void ReadFeedback(DATA &data);
 			void DoCommand(const DATA &data);
-			std::int32_t HomePos();
-			double CountPerUnit();
+			void SetHomeOffSet(std::int32_t homeOffSet);
 
 		protected:
 			virtual void Initialize() override;
