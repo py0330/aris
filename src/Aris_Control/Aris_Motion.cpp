@@ -256,6 +256,12 @@ namespace Aris
 		}
 		void MOTION::DoCommand(const DATA &data)
 		{		
+			if (this->HasFault())
+			{
+				data.ret = -1;
+				return;
+			}
+			
 			switch (data.cmd)
 			{
 			case IDLE:
