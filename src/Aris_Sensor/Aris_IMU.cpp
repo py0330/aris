@@ -210,7 +210,7 @@ namespace Aris
 				pDevice->processBufferedData(imuData, msgs);
 			}
 
-			std::cout << "msg num:" << msgs.size()<<std::endl;
+			//std::cout << "msg num:" << msgs.size()<<std::endl;
 
 			for (XsMessageArray::iterator it = msgs.begin(); it != msgs.end(); ++it)
 			{

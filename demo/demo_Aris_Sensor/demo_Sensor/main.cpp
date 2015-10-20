@@ -30,12 +30,13 @@ int main()
 {
 	Aris::Core::DOCUMENT doc;
 #ifdef PLATFORM_IS_WINDOWS
-	doc.LoadFile("C:\\Robots\\resource\\HexapodIII\\HexapodIII.xml");
+	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III.xml");
 #endif
 #ifdef PLATFORM_IS_LINUX
-	doc.LoadFile("/usr/Robots/resource/HexapodIII/HexapodIII.xml");
+	doc.LoadFile("/usr/Robots/resource/Robot_Type_I/Robot_III.xml");
 #endif
 
+/*
 #ifdef PLATFORM_IS_LINUX
 	kinect.Start();
 
@@ -48,9 +49,10 @@ int main()
 	
 	kinect.Stop();
 #endif
+*/
 	auto p = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU");
 	
-	Aris::Sensor::IMU imu;
+	Aris::Sensor::IMU imu(p);
 
 	imu.Start();
 	
@@ -62,7 +64,7 @@ int main()
 		//data.Get().ToBodyEul(eul);
 		//Aris::DynKer::dsp(eul, 1, 3);
 		
-		data.Get().ToEulBody2Ground(eul, PI);
+		data.Get().ToEulBody2Ground(eul, PI, "321");
 		Aris::DynKer::dsp(eul, 1, 3);
 
 		//double pm[16];

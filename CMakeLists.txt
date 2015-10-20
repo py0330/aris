@@ -219,11 +219,10 @@ if(WIN32)
 endif(WIN32)
 
 
-
+install(DIRECTORY sh DESTINATION .)
 install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan Aris_Sensor Aris_Control ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} DESTINATION include)
-
-
+install(DIRECTORY src/Aris_Control/resource/ DESTINATION resource/Aris_Control)
 
 ############################################ uninstall aris ############################################
 if(UNIX)
