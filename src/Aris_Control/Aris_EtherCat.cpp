@@ -422,6 +422,9 @@ namespace Aris
 		void ETHERCAT_MASTER::IMP::Stop()
 		{
 			isStopping = true;
+#ifdef PLATFORM_IS_LINUX
+			rt_task_join(&ETHERCAT_MASTER::IMP::realtimeCore);
+#endif
 		}
 		void ETHERCAT_MASTER::IMP::Initialize()
 		{

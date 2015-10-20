@@ -16,7 +16,10 @@ namespace Aris
 		class SENSOR_DATA
 		{
 		public:
-			const DATA_TYPE &Get() const { return *pData; };
+			virtual ~SENSOR_DATA() = default;
+			SENSOR_DATA() : pSensor(nullptr), pData(nullptr)
+			{
+			};
 			explicit SENSOR_DATA(SENSOR_BASE<DATA_TYPE> *pSensor): pSensor(pSensor), pData(nullptr)
 			{
 				/*
@@ -37,13 +40,14 @@ namespace Aris
 				pData = &pSensor->data[pSensor->dataToBeRead];
 			};
 			SENSOR_DATA(SENSOR_DATA<DATA_TYPE> && other) { this->Swap(other); };
-			virtual ~SENSOR_DATA() = default;
+			SENSOR_DATA & operator=(SENSOR_DATA&&other) { this->Swap(other); return *this; };
 			void Swap(SENSOR_DATA<DATA_TYPE> &other)
 			{
 				std::swap(this->pSensor, other.pSensor);
 				std::swap(this->pData, other.pData);
 				std::swap(this->lock, other.lock);
 			}
+			const DATA_TYPE &Get() const { return *pData; };
 
 		private:
 			SENSOR_DATA(const SENSOR_DATA&) = delete;

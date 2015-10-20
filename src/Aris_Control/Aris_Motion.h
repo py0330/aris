@@ -55,6 +55,17 @@ namespace Aris
 
 			friend class CONTROLLER;
 		};
+		class FORCE_SENSOR :public ETHERCAT_SLAVE
+		{
+		public:
+			struct DATA
+			{
+				double Fx, Fy, Fz, Mx, My, Mz;
+			};
+
+			FORCE_SENSOR(const Aris::Core::ELEMENT *ele): ETHERCAT_SLAVE(ele){};
+			void ReadData(DATA &data);
+		};
 
 		class CONTROLLER :public ETHERCAT_MASTER
 		{
@@ -71,9 +82,12 @@ namespace Aris
 			virtual void LoadXml(const Aris::Core::ELEMENT *) override;
 			virtual void Start();
 			virtual void Stop();
-			MOTION * Motion(int i) { return pMotions.at(i); };
-			PIPE<Aris::Core::MSG>& MsgPipe(){return msgPipe;};
 			void SetControlStrategy(std::function<int(DATA&)>);
+			
+			MOTION * Motion(int i) { return pMotions.at(i); };
+			FORCE_SENSOR* ForceSensor(int i) { return pSensors.at(i); };
+			PIPE<Aris::Core::MSG>& MsgPipe(){return msgPipe;};
+			
 
 		protected:
 			CONTROLLER() :ETHERCAT_MASTER(),msgPipe(0, true) {};
@@ -81,15 +95,19 @@ namespace Aris
 
 		private:
 			std::function<int(DATA&)> strategy;
+			PIPE<Aris::Core::MSG> msgPipe;
+			std::atomic_bool isStoping;
 
 			std::vector<MOTION *> pMotions;
-			PIPE<Aris::Core::MSG> msgPipe;
-
 			std::vector<MOTION::DATA> motionData, lastMotionData;
+
+			std::vector<FORCE_SENSOR *> pSensors;
+			std::vector<FORCE_SENSOR::DATA> sensorData;
+
 			std::unique_ptr<PIPE<std::vector<MOTION::DATA> > > pMotDataPipe;
 			std::thread motionDataThread;
 
-			std::atomic_bool isStoping;
+			
 
 			friend class ETHERCAT_MASTER;
 		};

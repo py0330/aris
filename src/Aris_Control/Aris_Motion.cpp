@@ -251,9 +251,9 @@ namespace Aris
 			std::int32_t homeOffSet{0};
 		private:
 			MOTION *pFather;
-			bool isWaitingMode{false};
+			bool isWaitingMode{ false };
 			bool isEverHomed{ false };
-			bool isFake{true};
+			bool isFake{ true };
 			int enablePeriod{ 0 };
 			std::uint8_t runningMode{ 9 };
 		};
@@ -319,12 +319,34 @@ namespace Aris
 				return false;
 		}
 
+		void FORCE_SENSOR::ReadData(DATA &data)
+		{
+			std::int32_t value;
+			
+			this->ReadPdo(0, 0, value);
+			data.Fx = value / 1000.0;
+
+			this->ReadPdo(0, 1, value);
+			data.Fy = value / 1000.0;
+
+			this->ReadPdo(0, 2, value);
+			data.Fz = value / 1000.0;
+
+			this->ReadPdo(0, 3, value);
+			data.Mx = value / 1000.0;
+
+			this->ReadPdo(0, 4, value);
+			data.My = value / 1000.0;
+
+			this->ReadPdo(0, 5, value);
+			data.Mz = value / 1000.0;
+		}
+
 		void CONTROLLER::LoadXml(const Aris::Core::ELEMENT *ele)
 		{
 			/*Load EtherCat slave types*/
 			std::map<std::string, const Aris::Core::ELEMENT *> slaveTypeMap;
 
-			
 			std::cout<<"load control 1"<<std::endl;
 			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
@@ -343,6 +365,7 @@ namespace Aris
 				}
 				else if (type == "AtiForceSensor")
 				{
+					pSensors.push_back(AddSlave<FORCE_SENSOR>(slaveTypeMap.at(type)));
 				}
 				else
 				{
@@ -350,8 +373,14 @@ namespace Aris
 				}
 				
 			}
+			this->motionData.resize(this->pMotions.size());
+			this->lastMotionData.resize(this->pMotions.size());
+			this->sensorData.resize(this->pSensors.size());
+
 
 			pMotDataPipe.reset(new PIPE<std::vector<MOTION::DATA> >(1, true, pMotions.size()));
+
+			
 		}
 		void CONTROLLER::SetControlStrategy(std::function<int(DATA&)> strategy)
 		{
@@ -365,9 +394,6 @@ namespace Aris
 		void CONTROLLER::Start()
 		{
 			isStoping = false;
-			
-			this->motionData.resize(this->pMotions.size());
-			this->lastMotionData.resize(this->pMotions.size());
 
 			/*begin thread which will save data*/
 			motionDataThread = std::thread([this]()
@@ -401,7 +427,9 @@ namespace Aris
 		void CONTROLLER::Stop()
 		{
 			this->ETHERCAT_MASTER::Stop();
+
 			this->isStoping = true;
+			this->motionDataThread.join();
 		}
 		void CONTROLLER::ControlStrategy()
 		{
@@ -417,7 +445,7 @@ namespace Aris
 			/*读取反馈*/
 			for (std::size_t i = 0; i < motionData.size(); ++i)
 			{
-				Motion(i)->ReadFeedback(motionData[i]);
+				pMotions.at(i)->ReadFeedback(motionData[i]);
 			}
 			
 			/*执行自定义的控制策略*/
@@ -429,8 +457,8 @@ namespace Aris
 			/*重新读取反馈信息，因为strategy可能修改，之后写入PDO，之后放进lastMotionData中*/
 			for (std::size_t i = 0; i < motionData.size(); ++i)
 			{
-				Motion(i)->ReadFeedback(motionData[i]);
-				Motion(i)->DoCommand(motionData[i]);
+				pMotions.at(i)->ReadFeedback(motionData[i]);
+				pMotions.at(i)->DoCommand(motionData[i]);
 				lastMotionData[i] = motionData[i];
 			}
 

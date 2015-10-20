@@ -72,7 +72,6 @@ namespace Aris
 				return pSla;
 			}
 			
-			
 		protected:
 			ETHERCAT_MASTER();
 			virtual void ControlStrategy() {};
