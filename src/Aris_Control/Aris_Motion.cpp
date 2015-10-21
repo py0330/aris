@@ -332,7 +332,7 @@ namespace Aris
 		void FORCE_SENSOR::ReadData(DATA &data)
 		{
 			std::int32_t value;
-			
+
 			this->ReadPdo(0, 0, value);
 			data.Fx = value / 1000.0;
 
@@ -372,9 +372,10 @@ namespace Aris
 				{
 					pMotions.push_back(AddSlave<MOTION>(slaveTypeMap.at(type)));
 					if (pSla->QueryIntAttribute("maxSpeed", &pMotions.back()->pImp->maxSpeed) != tinyxml2::XML_NO_ERROR)
-					{
+					{						
 						throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
 					}
+
 				}
 				else if (type == "AtiForceSensor")
 				{
@@ -401,6 +402,7 @@ namespace Aris
 			{
 				throw std::runtime_error("failed to set control strategy, because it already has one");
 			}
+
 
 			this->strategy = strategy;
 		}
@@ -462,7 +464,9 @@ namespace Aris
 			}
 			for (std::size_t i = 0; i < pForceSensors.size(); ++i)
 			{
+							
 				pForceSensors.at(i)->ReadData(forceSensorData[i]);
+					
 			}
 			
 			/*执行自定义的控制策略*/

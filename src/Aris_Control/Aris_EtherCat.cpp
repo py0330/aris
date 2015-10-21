@@ -23,6 +23,7 @@
 #include <iostream>
 #include <map>
 #include <atomic>
+#include <memory>
 
 #include <Aris_EtherCat.h>
 
@@ -34,7 +35,7 @@ namespace Aris
 		class ETHERCAT_SLAVE::IMP 
 		{
 		public:
-            IMP(const Aris::Core::ELEMENT *ele);
+			IMP(const Aris::Core::ELEMENT *ele);
 			void Initialize();
 			void Read();
 			void Write();
@@ -95,6 +96,7 @@ namespace Aris
 			std::vector<std::unique_ptr<DO> > sdos;
 			std::uint32_t productCode, venderID;
 			std::uint16_t position, alias;
+			std::unique_ptr<int> distributedClock;
 
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
 			std::vector<ec_pdo_info_t> ec_pdo_info_vec_Tx, ec_pdo_info_vec_Rx;
@@ -138,12 +140,23 @@ namespace Aris
 		RT_TASK ETHERCAT_MASTER::IMP::realtimeCore;
 		const int ETHERCAT_MASTER::IMP::samplePeriodNs = 1000000;
 #endif
-        ETHERCAT_SLAVE::IMP::IMP(const Aris::Core::ELEMENT *ele)
+		ETHERCAT_SLAVE::IMP::IMP(const Aris::Core::ELEMENT *ele)
 		{
 			/*load product id...*/
 			this->productCode = std::stoi(ele->Attribute("productCode"), nullptr, 0);
 			this->venderID = std::stoi(ele->Attribute("venderID"), nullptr, 0);
 			this->alias = std::stoi(ele->Attribute("alias"), nullptr, 0);
+			this->distributedClock.reset(new std::int32_t);
+						
+			if (ele->Attribute("distributedClock"))
+			{						
+				*distributedClock.get() = std::stoi(ele->Attribute("distributedClock"),nullptr,0);				
+			}
+			else
+			{
+				distributedClock.reset();
+			}
+
 
 			/*load PDO*/
 			auto AddDoType = [](const Aris::Core::ELEMENT *ele, bool isTx)-> DO*
@@ -255,51 +268,49 @@ namespace Aris
 
 			ec_sync_info[0] = ec_sync_info_t{ 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE };
 			ec_sync_info[1] = ec_sync_info_t{ 1, EC_DIR_INPUT, 0, NULL, EC_WD_DISABLE };
-			ec_sync_info[2] = ec_sync_info_t{ 2, EC_DIR_OUTPUT, 1, ec_pdo_info_vec_Rx.data(), EC_WD_ENABLE };
-			ec_sync_info[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, 4, ec_pdo_info_vec_Tx.data(), EC_WD_ENABLE };
+			ec_sync_info[2] = ec_sync_info_t{ 2, EC_DIR_OUTPUT, static_cast<unsigned int>(ec_pdo_info_vec_Rx.size()), ec_pdo_info_vec_Rx.data(), EC_WD_ENABLE };
+			ec_sync_info[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, static_cast<unsigned int>(ec_pdo_info_vec_Tx.size()), ec_pdo_info_vec_Tx.data(), EC_WD_ENABLE };
 			ec_sync_info[4] = ec_sync_info_t{ 0xff };
 		};
 		void ETHERCAT_SLAVE::IMP::Initialize()
 		{		
 			auto pEcMaster = ETHERCAT_MASTER::GetInstance()->pImp->pEcMaster;
 
-            for(auto &reg:ec_pdo_entry_reg_vec)
-            {
-                reg.position = this->position;
-            }
-
-            pDomain = ecrt_master_create_domain(pEcMaster);
+			for(auto &reg:ec_pdo_entry_reg_vec)
+			{
+				reg.position = this->position;
+ 			}
+            		pDomain = ecrt_master_create_domain(pEcMaster);
 			if (!pDomain)
 			{
 				throw std::runtime_error("failed to create domain");
 			}
-
 			// Get the slave configuration 
 			if (!(ec_slave_config = ecrt_master_slave_config(pEcMaster, alias, position, venderID, productCode)))
 			{
 				throw std::runtime_error("failed to slave config");
 			}
-
 			/*Set Sdo*/
 			for (auto &sdo : sdos)
 			{
 				ecrt_slave_config_sdo32(ec_slave_config, sdo->index, sdo->subIndex, sdo->value);
 			}
-
 			// Configure the slave's PDOs and sync masters
 			if (ecrt_slave_config_pdos(ec_slave_config, 4, ec_sync_info))
 			{
 				throw std::runtime_error("failed to slave config pdos");
 			}
-
 			// Configure the slave's domain
 			if (ecrt_domain_reg_pdo_entry_list(pDomain, ec_pdo_entry_reg_vec.data()))
 			{
 				throw std::runtime_error("failed domain_reg_pdo_entry");
 			}
-
-			// Configure the slave's discrete clock
-			ecrt_slave_config_dc(ec_slave_config, 0x0300, 1000000, 4400000, 0, 0);
+			// Configure the slave's discrete clock			
+			if(this->distributedClock)
+			{
+				ecrt_slave_config_dc(ec_slave_config, *distributedClock.get(), 1000000, 4400000, 0, 0);
+			}
+			
 		}
 		void ETHERCAT_SLAVE::IMP::Read()
 		{
@@ -310,7 +321,7 @@ namespace Aris
 			ecrt_domain_queue(pDomain);
 		}
 
-        ETHERCAT_SLAVE::ETHERCAT_SLAVE(const Aris::Core::ELEMENT *ele):pImp(new IMP{ ele })
+		ETHERCAT_SLAVE::ETHERCAT_SLAVE(const Aris::Core::ELEMENT *ele):pImp(new IMP{ ele })
 		{
 		}
 		ETHERCAT_SLAVE::~ETHERCAT_SLAVE() {};
@@ -388,10 +399,10 @@ namespace Aris
 		void ETHERCAT_MASTER::IMP::Write()
 		{
 
-            for (auto &pSla : slaves)
+			for (auto &pSla : slaves)
 			{
 				pSla->pImp->Write();
-            }
+			}
 
 
 			ecrt_master_send(pEcMaster);
@@ -405,9 +416,7 @@ namespace Aris
 			}
 			isFirstTime = false;
 			
-
 			this->Initialize();
-
 #ifdef PLATFORM_IS_LINUX
 			rt_print_auto_init(1);		
 
@@ -435,7 +444,6 @@ namespace Aris
 			}
 #endif
 			pEcMaster = ecrt_request_master(0);
-
 			if (!pEcMaster)
 			{
 				throw std::runtime_error("master request failed!");
@@ -444,11 +452,10 @@ namespace Aris
 			{				
 
 
-                slaves[i]->pImp->position = static_cast<std::uint16_t>(i);
-                slaves[i]->Initialize();
+				slaves[i]->pImp->position = static_cast<std::uint16_t>(i);
+				slaves[i]->Initialize();
 
 			}
-
 			
 			ecrt_master_activate(pEcMaster);
 
@@ -456,7 +463,6 @@ namespace Aris
 			{
 				pSla->pImp->pDomainPd = ecrt_domain_data(pSla->pImp->pDomain);
 			}
-			
 		}
 		void ETHERCAT_MASTER::IMP::Sync(uint64_t nanoSecond)
 		{

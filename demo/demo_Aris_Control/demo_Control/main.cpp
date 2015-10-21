@@ -10,10 +10,10 @@ int main()
 {
 	Aris::Core::DOCUMENT doc;
 #ifdef PLATFORM_IS_WINDOWS
-	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_VIII.xml");
+	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III.xml");
 #endif
 #ifdef PLATFORM_IS_LINUX
-	doc.LoadFile("/usr/Robots/resource/Robot_Type_I/Robot_VIII.xml");
+	doc.LoadFile("/usr/Robots/resource/Robot_Type_I/Robot_III.xml");
 #endif
 
 #ifdef PLATFORM_IS_LINUX
@@ -36,7 +36,7 @@ int main()
 		std::cout << "NRT msg length:" << msg.GetLength()<<" pos:" << *reinterpret_cast<std::int32_t*>(msg.GetDataAddress())<<std::endl;
 		//msg.SetLength(10);
 		msg.Copy("congratulations\n");
-		pMas->MsgPipe().SendToRT(msg);
+		//pMas->MsgPipe().SendToRT(msg);
 	}
 	
 	
