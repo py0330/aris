@@ -422,14 +422,18 @@ namespace Aris
 				data.resize(this->pMotions.size());
 
 				
-				long long count = 0;
+				long long count = -1;
 				while (!isStoping)
 				{
 					this->pMotDataPipe->RecvInNRT(data);
 
+					file << ++count << " ";
+
 					for (auto &d : data)
 					{
-						file << d.feedbackPos << "  ";
+						file << d.feedbackPos << " ";
+						file << d.targetPos << " ";
+						file << d.feedbackCur << " ";
 					}
 					file << std::endl;
 				}
