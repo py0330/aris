@@ -60,7 +60,12 @@ namespace Aris
 		public:
 			struct DATA
 			{
-				double Fx, Fy, Fz, Mx, My, Mz;
+				union
+				{
+					struct { double Fx, Fy, Fz, Mx, My, Mz; };
+					double fce[6];
+				};
+				
 			};
 
 			FORCE_SENSOR(const Aris::Core::ELEMENT *ele): ETHERCAT_SLAVE(ele){};
@@ -74,6 +79,7 @@ namespace Aris
 			{
 				const std::vector<MOTION::DATA> *pLastMotionData;
 				std::vector<MOTION::DATA> *pMotionData;
+				std::vector<FORCE_SENSOR::DATA> *pForceSensorData;
 				const Aris::Core::RT_MSG *pMsgRecv;
 				Aris::Core::RT_MSG *pMsgSend;
 			};
@@ -85,7 +91,7 @@ namespace Aris
 			void SetControlStrategy(std::function<int(DATA&)>);
 			
 			MOTION * Motion(int i) { return pMotions.at(i); };
-			FORCE_SENSOR* ForceSensor(int i) { return pSensors.at(i); };
+			FORCE_SENSOR* ForceSensor(int i) { return pForceSensors.at(i); };
 			PIPE<Aris::Core::MSG>& MsgPipe(){return msgPipe;};
 			
 
@@ -101,8 +107,8 @@ namespace Aris
 			std::vector<MOTION *> pMotions;
 			std::vector<MOTION::DATA> motionData, lastMotionData;
 
-			std::vector<FORCE_SENSOR *> pSensors;
-			std::vector<FORCE_SENSOR::DATA> sensorData;
+			std::vector<FORCE_SENSOR *> pForceSensors;
+			std::vector<FORCE_SENSOR::DATA> forceSensorData;
 
 			std::unique_ptr<PIPE<std::vector<MOTION::DATA> > > pMotDataPipe;
 			std::thread motionDataThread;

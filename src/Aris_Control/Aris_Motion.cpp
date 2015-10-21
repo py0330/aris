@@ -16,6 +16,7 @@
 #include <map>
 #include <Aris_Motion.h>
 #include <fstream>
+#include <algorithm>
 
 
 namespace Aris
@@ -200,6 +201,12 @@ namespace Aris
 					std::int32_t current_pos = this->Pos();
 					double Kp = 150;
 					std::int32_t desired_vel = static_cast<std::int32_t>(Kp*(pos - current_pos));
+					
+					/*保护上下限*/
+					desired_vel = std::max(desired_vel, -maxSpeed);
+					desired_vel = std::min(desired_vel, maxSpeed);
+					
+					
 					pFather->WritePdo(0, 1, desired_vel);
 					return 0;
 				}
@@ -249,8 +256,11 @@ namespace Aris
 			std::int32_t Cur() { std::int16_t cur; pFather->ReadPdo(2, 0, cur); return cur; };
 
 			std::int32_t homeOffSet{0};
+			std::int32_t maxSpeed{ 0 };
 		private:
 			MOTION *pFather;
+			
+
 			bool isWaitingMode{ false };
 			bool isEverHomed{ false };
 			bool isFake{ true };
@@ -347,7 +357,6 @@ namespace Aris
 			/*Load EtherCat slave types*/
 			std::map<std::string, const Aris::Core::ELEMENT *> slaveTypeMap;
 
-			std::cout<<"load control 1"<<std::endl;
 			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
 			{
@@ -362,10 +371,14 @@ namespace Aris
 				if (type == "ElmoSoloWhistle")
 				{
 					pMotions.push_back(AddSlave<MOTION>(slaveTypeMap.at(type)));
+					if (pSla->QueryIntAttribute("maxSpeed", &pMotions.back()->pImp->maxSpeed) != tinyxml2::XML_NO_ERROR)
+					{
+						throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
+					}
 				}
 				else if (type == "AtiForceSensor")
 				{
-					pSensors.push_back(AddSlave<FORCE_SENSOR>(slaveTypeMap.at(type)));
+					pForceSensors.push_back(AddSlave<FORCE_SENSOR>(slaveTypeMap.at(type)));
 				}
 				else
 				{
@@ -375,7 +388,7 @@ namespace Aris
 			}
 			this->motionData.resize(this->pMotions.size());
 			this->lastMotionData.resize(this->pMotions.size());
-			this->sensorData.resize(this->pSensors.size());
+			this->forceSensorData.resize(this->pForceSensors.size());
 
 
 			pMotDataPipe.reset(new PIPE<std::vector<MOTION::DATA> >(1, true, pMotions.size()));
@@ -434,7 +447,7 @@ namespace Aris
 		void CONTROLLER::ControlStrategy()
 		{
 			/*构造传入strategy的参数*/
-			DATA data{ &lastMotionData, &motionData, nullptr, nullptr };
+			DATA data{ &lastMotionData, &motionData, &forceSensorData, nullptr, nullptr };
 			
 			/*收取消息*/
 			if (this->MsgPipe().RecvInRT(Aris::Core::RT_MSG::instance[0]) > 0)
@@ -443,9 +456,13 @@ namespace Aris
 			};
 			
 			/*读取反馈*/
-			for (std::size_t i = 0; i < motionData.size(); ++i)
+			for (std::size_t i = 0; i < pMotions.size(); ++i)
 			{
 				pMotions.at(i)->ReadFeedback(motionData[i]);
+			}
+			for (std::size_t i = 0; i < pForceSensors.size(); ++i)
+			{
+				pForceSensors.at(i)->ReadData(forceSensorData[i]);
 			}
 			
 			/*执行自定义的控制策略*/
