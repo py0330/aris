@@ -50,6 +50,7 @@ int main()
 	kinect.Stop();
 #endif
 */
+	/*
 	auto p = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU");
 	
 	Aris::Sensor::IMU imu(p);
@@ -77,7 +78,7 @@ int main()
 	}
 
 	imu.Stop();
-
+	*/
 
 	//SENSOR sensor;
 
@@ -103,7 +104,7 @@ int main()
 
 
 
-
+	Aris::Core::RT_MSG::instance[0].Copy("123");
 
 
 	char aaa;
