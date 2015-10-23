@@ -184,7 +184,7 @@ namespace Aris
 			}
 			std::int16_t RunPos(const std::int32_t pos)
 			{
-				if(isFake)return 0;				
+				if (isFake)return 0;
 
 				std::uint16_t statusword;
 				pFather->ReadPdo(1, 3, statusword);
@@ -199,7 +199,7 @@ namespace Aris
 				else
 				{
 					std::int32_t current_pos = this->Pos();
-					double Kp = 150;
+					double Kp = 200;
 					std::int32_t desired_vel = static_cast<std::int32_t>(Kp*(pos - current_pos));
 					
 					/*保护上下限*/
@@ -213,7 +213,7 @@ namespace Aris
 			}
 			std::int16_t RunVel(const std::int32_t vel)
 			{
-				if(isFake)return 0;				
+				if (isFake)return 0;
 
 				std::uint16_t statusword;
 				pFather->ReadPdo(1, 3, statusword);
@@ -233,7 +233,7 @@ namespace Aris
 			}
 			std::int16_t RunCur(const std::int16_t cur)
 			{
-				if(isFake)return 0;				
+				if (isFake)return 0;
 								
 				std::uint16_t statusword;
 				pFather->ReadPdo(1, 3, statusword);
@@ -241,7 +241,7 @@ namespace Aris
 
 				std::uint8_t mode_read;
 				pFather->ReadPdo(4, 0, mode_read);
-				if (motorState != 0x0007 || mode_read != CURRENT) //need running and cur mode and everhomed
+				if (motorState != 0x0007 || mode_read != CURRENT) //need running and cur mode
 				{
 					return -1;
 				}
@@ -255,7 +255,7 @@ namespace Aris
 			std::int32_t Vel() { std::int32_t vel; pFather->ReadPdo(1, 2, vel); return vel; };
 			std::int32_t Cur() { std::int16_t cur; pFather->ReadPdo(2, 0, cur); return cur; };
 
-			std::int32_t homeOffSet{0};
+			std::int32_t homeOffSet{ 0 };
 			std::int32_t maxSpeed{ 0 };
 		private:
 			MOTION *pFather;

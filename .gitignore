@@ -1,7 +1,7 @@
 # for cmake
 CMakeCache.txt
 CMakeFiles
-Makefile
+# Makefile     this should be commented because we have Makefile in sh folder
 cmake_install.cmake
 install_manifest.txt
 
