@@ -33,22 +33,23 @@ namespace Aris
 		template <typename STANDARD_LAYOUT_STRUCT>
 		class PIPE:private PIPE_BASE
 		{
-			PIPE(int port, bool isBlock):PIPE_BASE(port,isBlock){};
+		public:
+			PIPE(int port, bool isBlock) :PIPE_BASE(port, isBlock) {};
 			int SendToRT(const STANDARD_LAYOUT_STRUCT &data)
 			{
-				return SendToRT_RawData(static_cast<const void*>(&data),sizeof(data));
+				return SendToRT_RawData(static_cast<const void*>(&data), sizeof(data));
 			};
 			int SendToNRT(const STANDARD_LAYOUT_STRUCT &data)
 			{
-				return SendToNRT_RawData(static_cast<const void*>(&data),sizeof(data));
+				return SendToNRT_RawData(static_cast<const void*>(&data), sizeof(data));
 			};
 			int RecvInRT(STANDARD_LAYOUT_STRUCT &data)
 			{
-				return RecvInRT_RawData(static_cast<void*>(&data),sizeof(data));
+				return RecvInRT_RawData(static_cast<void*>(&data), sizeof(data));
 			};
 			int RecvInNRT(STANDARD_LAYOUT_STRUCT &data)
 			{
-				return RecvInNRT_RawData(static_cast<void*>(&data),sizeof(data));
+				return RecvInNRT_RawData(static_cast<void*>(&data), sizeof(data));
 			};
 		};
 		
