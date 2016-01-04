@@ -53,7 +53,7 @@ namespace Aris
 			class Imp;
 			std::unique_ptr<Imp> pImp;
 
-			friend class Controller;
+			friend class EthercatController;
 		};
 		class EthercatForceSensor :public EthercatSlave
 		{
@@ -72,7 +72,7 @@ namespace Aris
 			void ReadData(Data &data);
 		};
 
-		class Controller :public EthercatMaster
+		class EthercatController :public EthercatMaster
 		{
 		public:
 			struct Data
@@ -84,7 +84,7 @@ namespace Aris
 				Aris::Core::MsgRT *pMsgSend;
 			};
 
-			virtual ~Controller(){};
+			virtual ~EthercatController(){};
 			virtual void LoadXml(const Aris::Core::XmlElement *) override;
 			virtual void Start();
 			virtual void Stop();
@@ -96,7 +96,7 @@ namespace Aris
 			
 
 		protected:
-			Controller() :EthercatMaster(),msgPipe(0, true) {};
+			EthercatController() :EthercatMaster(),msgPipe(0, true) {};
 			virtual void ControlStrategy() override;
 
 		private:

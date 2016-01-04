@@ -22,7 +22,7 @@ int main()
 	auto ele = doc.RootElement()->FirstChildElement("Server")
 		->FirstChildElement("Control")->FirstChildElement("EtherCat");
 
-	auto pMas = Aris::Control::EthercatMaster::CreateMaster<Aris::Control::Controller>();
+	auto pMas = Aris::Control::EthercatMaster::CreateMaster<Aris::Control::EthercatController>();
 	std::cout<<"1"<<std::endl;	
 	pMas->LoadXml(ele);
 	std::cout<<"2"<<std::endl;

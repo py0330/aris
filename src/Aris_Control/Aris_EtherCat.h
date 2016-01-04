@@ -55,15 +55,15 @@ namespace Aris
 			virtual void LoadXml(const Aris::Core::XmlElement *);
 			virtual void Start();
 			virtual void Stop();
-			template <class Controller>	static Controller* CreateMaster()
+			template <class EthercatController>	static EthercatController* CreateMaster()
 			{
 				if (pInstance)
 				{
 					throw std::runtime_error("EthercatMaster can not create a controller, because it alReady has one");
 				}
 
-				pInstance.reset(new Controller);
-				return static_cast<Controller*>(pInstance.get());
+				pInstance.reset(new EthercatController);
+				return static_cast<EthercatController*>(pInstance.get());
 			}
 			template <class SLAVE, typename ...Args> SLAVE* AddSlave(Args ...args)
 			{

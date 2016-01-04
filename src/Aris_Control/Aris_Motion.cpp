@@ -350,7 +350,7 @@ namespace Aris
 			data.Mz = value / 1000.0;
 		}
 
-		void Controller::LoadXml(const Aris::Core::XmlElement *ele)
+		void EthercatController::LoadXml(const Aris::Core::XmlElement *ele)
 		{
 			/*Load EtherCat slave types*/
 			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
@@ -394,7 +394,7 @@ namespace Aris
 
 			
 		}
-		void Controller::SetControlStrategy(std::function<int(Data&)> strategy)
+		void EthercatController::SetControlStrategy(std::function<int(Data&)> strategy)
 		{
 			if (this->strategy)
 			{
@@ -404,7 +404,7 @@ namespace Aris
 
 			this->strategy = strategy;
 		}
-		void Controller::Start()
+		void EthercatController::Start()
 		{
 			isStoping = false;
 
@@ -441,14 +441,14 @@ namespace Aris
 			
 			this->EthercatMaster::Start();
 		}
-		void Controller::Stop()
+		void EthercatController::Stop()
 		{
 			this->EthercatMaster::Stop();
 
 			this->isStoping = true;
 			this->motionDataThread.join();
 		}
-		void Controller::ControlStrategy()
+		void EthercatController::ControlStrategy()
 		{
 			/*构造传入strategy的参数*/
 			Data data{ &lastMotionData, &motionData, &forceSensorData, nullptr, nullptr };
