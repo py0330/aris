@@ -14,42 +14,21 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		MATRIX::MATRIX()
-			: m(0)
-			, n(0)
-			, isRowMajor(true)
-			, pData(nullptr)
-		{
-		}
-		MATRIX::MATRIX(const MATRIX &other)
-			: m(other.m)
-			, n(other.n)
-			, isRowMajor(other.isRowMajor)
-			, pData(m*n > 0 ? new double[m*n]: nullptr)
-		{
-			//memcpy(pData, other.pData, m*n*sizeof(double));
-			std::copy_n(other.pData, m*n, pData);
-		}
-		MATRIX::MATRIX(MATRIX &&other)
-			:MATRIX()
-		{
-			this->Swap(other);
-		}
-		MATRIX::MATRIX(int m, int n)
+		Matrix::Matrix(int m, int n)
 			: m(m)
 			, n(n)
 			, isRowMajor(true)
 			, pData(m*n > 0 ? new double[m*n] : nullptr)
 		{
 		}
-		MATRIX::MATRIX(int m, int n, const double *Data)
-			: MATRIX(m,n)
+		Matrix::Matrix(int m, int n, const double *Data)
+			: Matrix(m,n)
 		{
 			if ((m*n>0) && (Data != nullptr))
 				memcpy(pData, Data, m*n*sizeof(double));
 		}
 
-		MATRIX::MATRIX(double value)
+		Matrix::Matrix(double value)
 			: m(1)
 			, n(1)
 			, isRowMajor(true)
@@ -57,47 +36,18 @@ namespace Aris
 		{
 			*pData = value;
 		}
-		MATRIX::MATRIX(const std::initializer_list<double> &Data)
-			: MATRIX()
-		{
-			std::vector<MATRIX> A;
-			for (auto i : Data)
-			{
-				A.push_back(i);
-			}
-			(*this) = Aris::DynKer::CombineRowMatrices<std::vector<MATRIX> >(A);
-		}
-		MATRIX::MATRIX(const std::initializer_list<std::vector<MATRIX> > &matrices)
-			: MATRIX()
-		{
-			(*this) = Aris::DynKer::CombineMatrices<decltype(matrices)>(matrices);
-		}
-
-		MATRIX &MATRIX::operator=(MATRIX other)
-		{
-			this->Swap(other);
-			return *this;
-		}
-		MATRIX::~MATRIX()
+		
+		Matrix::~Matrix()
 		{
 			delete[]pData;
 		}
-		MATRIX &MATRIX::Swap(MATRIX &other)
+		Matrix operator + (const Matrix &m1, const Matrix &m2)
 		{
-			std::swap(this->m, other.m);
-			std::swap(this->n, other.n);
-			std::swap(this->isRowMajor, other.isRowMajor);
-			std::swap(this->pData, other.pData);
-
-			return *this;
-		}
-		MATRIX operator + (const MATRIX &m1, const MATRIX &m2)
-		{
-			MATRIX ret;
+			Matrix ret;
 
 			if ((m1.m == 1) && (m1.n == 1))
 			{
-				ret = MATRIX(m2);
+				ret = Matrix(m2);
 
 				for (int i = 0; i < ret.Length(); ++i)
 				{
@@ -106,7 +56,7 @@ namespace Aris
 			}
 			else if ((m2.m == 1) && (m2.n == 1))
 			{
-				ret = MATRIX(m1);
+				ret = Matrix(m1);
 
 				for (int i = 0; i < ret.Length(); ++i)
 				{
@@ -131,13 +81,13 @@ namespace Aris
 			}
 			return ret;
 		}
-		MATRIX operator - (const MATRIX &m1, const MATRIX &m2)
+		Matrix operator - (const Matrix &m1, const Matrix &m2)
 		{
-			MATRIX ret;
+			Matrix ret;
 
 			if ((m1.m == 1) && (m1.n == 1))
 			{
-				ret = MATRIX(m2);
+				ret = Matrix(m2);
 
 				for (int i = 0; i < ret.Length(); ++i)
 				{
@@ -146,7 +96,7 @@ namespace Aris
 			}
 			else if ((m2.m == 1) && (m2.n == 1))
 			{
-				ret = MATRIX(m1);
+				ret = Matrix(m1);
 
 				for (int i = 0; i < ret.Length(); ++i)
 				{
@@ -172,13 +122,13 @@ namespace Aris
 
 			return ret;
 		}
-		MATRIX operator * (const MATRIX &m1, const MATRIX &m2)
+		Matrix operator * (const Matrix &m1, const Matrix &m2)
 		{
-			MATRIX ret;
+			Matrix ret;
 
 			if ((m1.m == 1) && (m1.n == 1))
 			{
-				ret = MATRIX(m2);
+				ret = Matrix(m2);
 
 				for (int i = 0; i < ret.Length(); ++i)
 				{
@@ -187,7 +137,7 @@ namespace Aris
 			}
 			else if ((m2.m == 1) && (m2.n == 1))
 			{
-				ret = MATRIX(m1);
+				ret = Matrix(m1);
 
 				for (int i = 0; i < ret.Length(); ++i)
 				{
@@ -266,13 +216,13 @@ namespace Aris
 
 			return ret;
 		}
-		MATRIX operator / (const MATRIX &m1, const MATRIX &m2)
+		Matrix operator / (const Matrix &m1, const Matrix &m2)
 		{
-			MATRIX ret;
+			Matrix ret;
 
 			if ((m1.m == 1) && (m1.n == 1))
 			{
-				ret = MATRIX(m2);
+				ret = Matrix(m2);
 
 				for (int i = 0; i < ret.Length(); ++i)
 				{
@@ -281,7 +231,7 @@ namespace Aris
 			}
 			else if ((m2.m == 1) && (m2.n == 1))
 			{
-				ret = MATRIX(m1);
+				ret = Matrix(m1);
 
 				for (int i = 0; i < ret.Length(); ++i)
 				{
@@ -295,9 +245,9 @@ namespace Aris
 
 			return ret;
 		}
-		MATRIX operator - (const MATRIX &m1)
+		Matrix operator - (const Matrix &m1)
 		{
-			MATRIX m;
+			Matrix m;
 			m.Resize(m1.m, m1.n);
 
 			for (int i = 0; i < m1.m*m1.n; i++)
@@ -306,12 +256,12 @@ namespace Aris
 			}
 			return m;
 		}
-		MATRIX operator + (const MATRIX &m1)
+		Matrix operator + (const Matrix &m1)
 		{
 			return m1;
 		}
 
-		void MATRIX::Resize(int i, int j)
+		void Matrix::Resize(int i, int j)
 		{
 			m = i;
 			n = j;
@@ -321,7 +271,7 @@ namespace Aris
 
 			pData = new double[i*j];
 		}
-		void MATRIX::CopySubMatrixTo(const MATRIX &subMat, int beginRow, int beginCol, int rowNum, int colNum)
+		void Matrix::CopySubMatrixTo(const Matrix &subMat, int beginRow, int beginCol, int rowNum, int colNum)
 		{
 			if ((beginRow + subMat.m > m) || (beginCol + subMat.n > n))
 			{
@@ -337,7 +287,7 @@ namespace Aris
 			}
 
 		}
-		std::string MATRIX::ToString() const
+		std::string Matrix::ToString() const
 		{
 			std::stringstream stream;
 			
@@ -396,7 +346,7 @@ namespace Aris
 			return ret;
 		};
 		
-		CALCULATOR::TOKENS CALCULATOR::Expression2Tokens(const std::string &expression)
+		Calculator::TOKENS Calculator::Expression2Tokens(const std::string &expression)
 		{
 			TOKENS tokens;
 			TOKEN token;
@@ -474,7 +424,7 @@ namespace Aris
 				if (stream >> num)
 				{
 					token.type = TOKEN::CONST_VALUE;
-					token.cst = MATRIX(num);
+					token.cst = Matrix(num);
 					tokens.push_back(token);
 					continue;
 				}
@@ -533,7 +483,7 @@ namespace Aris
 
 			return tokens;
 		}
-		MATRIX CALCULATOR::CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken)
+		Matrix Calculator::CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken)
 		{
 			if (beginToken >= endToken)
 			{
@@ -542,7 +492,7 @@ namespace Aris
 			
 			auto i = beginToken;
 
-			MATRIX value;
+			Matrix value;
 			value.Resize(0, 0);
 
 			bool isBegin = true;
@@ -611,7 +561,7 @@ namespace Aris
 			return value;
 		}
 
-		MATRIX CALCULATOR::CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
+		Matrix Calculator::CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
 		{
 			auto beginPar = i+1;
 			auto endPar = FindNextOutsideToken(i + 1, maxEndToken, TOKEN::PARENTHESIS_R);
@@ -620,9 +570,9 @@ namespace Aris
 
 			return CaculateTokens(beginPar, endPar);
 		}
-		MATRIX CALCULATOR::CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
+		Matrix Calculator::CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
 		{
-			std::vector<std::vector<MATRIX>> matrices;
+			std::vector<std::vector<Matrix>> matrices;
 
 			auto endBce = FindNextOutsideToken(i+1, maxEndToken, TOKEN::BRACE_R);
 			matrices = GetMatrices(i+1, endBce);
@@ -630,7 +580,7 @@ namespace Aris
 
 			return CombineMatrices(matrices);
 		}
-		MATRIX CALCULATOR::CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
+		Matrix Calculator::CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
 		{
 			auto beginPar = i + 1;
 			auto endPar = FindNextOutsideToken(beginPar + 1, maxEndToken, TOKEN::PARENTHESIS_R);
@@ -642,7 +592,7 @@ namespace Aris
 				throw std::logic_error("some function in expression do not have valid inputs");
 			}
 
-			std::vector<MATRIX> params = matrices.front();
+			std::vector<Matrix> params = matrices.front();
 
 			auto f=i->fun->funs.find(params.size());
 			if (f != i->fun->funs.end())
@@ -661,14 +611,14 @@ namespace Aris
 				throw std::logic_error(s.c_str());
 			}
 		}
-		MATRIX CALCULATOR::CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
+		Matrix Calculator::CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
 		{
 			auto opr = i;
 			i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, maxEndToken, opr->opr->priority_ul);
 			return opr->opr->fun_ul(CaculateTokens(opr + 1, i));
 		}
 		
-		CALCULATOR::TOKENS::iterator CALCULATOR::FindNextOutsideToken(TOKENS::iterator beginToken, TOKENS::iterator endToken, TOKEN::TYPE type)
+		Calculator::TOKENS::iterator Calculator::FindNextOutsideToken(TOKENS::iterator beginToken, TOKENS::iterator endToken, TOKEN::TYPE type)
 		{
 			int parNum = 0;
 			int braNum = 0;
@@ -715,7 +665,7 @@ namespace Aris
 
 			return nextPlace;
 		}
-		CALCULATOR::TOKENS::iterator CALCULATOR::FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence)
+		Calculator::TOKENS::iterator Calculator::FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence)
 		{
 			auto nextOpr= beginToken;
 
@@ -735,9 +685,9 @@ namespace Aris
 
 			return nextOpr;
 		}
-		std::vector<std::vector<MATRIX> > CALCULATOR::GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken)
+		std::vector<std::vector<Matrix> > Calculator::GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken)
 		{
-			std::vector<std::vector<MATRIX> > ret;
+			std::vector<std::vector<Matrix> > ret;
 			
 			auto rowBegin = beginToken;
 			while (rowBegin < endToken)
@@ -745,7 +695,7 @@ namespace Aris
 				auto rowEnd = FindNextOutsideToken(rowBegin, endToken, TOKEN::SEMICOLON);
 				auto colBegin = rowBegin;
 
-				ret.push_back(std::vector<MATRIX>());
+				ret.push_back(std::vector<Matrix>());
 
 				while (colBegin < rowEnd)
 				{
@@ -771,12 +721,12 @@ namespace Aris
 		}
 
 
-		MATRIX CALCULATOR::CalculateExpression(const std::string &expression)
+		Matrix Calculator::CalculateExpression(const std::string &expression)
 		{
 			this->tokens=Expression2Tokens(expression);
 			return CaculateTokens(tokens.begin(), tokens.end());
 		}
-		void CALCULATOR::AddVariable(const std::string &name, const MATRIX &value)
+		void Calculator::AddVariable(const std::string &name, const Matrix &value)
 		{
 			if (variables.find(name) != variables.end())
 			{

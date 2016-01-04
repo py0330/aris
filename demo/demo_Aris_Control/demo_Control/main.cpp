@@ -8,7 +8,7 @@
 
 int main()
 {
-	Aris::Core::DOCUMENT doc;
+	Aris::Core::XmlDocument doc;
 #ifdef PLATFORM_IS_WINDOWS
 	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III.xml");
 #endif
@@ -22,7 +22,7 @@ int main()
 	auto ele = doc.RootElement()->FirstChildElement("Server")
 		->FirstChildElement("Control")->FirstChildElement("EtherCat");
 
-	auto pMas = Aris::Control::ETHERCAT_MASTER::CreateMaster<Aris::Control::CONTROLLER>();
+	auto pMas = Aris::Control::EthercatMaster::CreateMaster<Aris::Control::Controller>();
 	std::cout<<"1"<<std::endl;	
 	pMas->LoadXml(ele);
 	std::cout<<"2"<<std::endl;
@@ -31,7 +31,7 @@ int main()
 	
 	while (true)
 	{
-		Aris::Core::MSG msg;
+		Aris::Core::Msg msg;
 		pMas->MsgPipe().RecvInNRT(msg);
 		std::cout << "NRT msg length:" << msg.GetLength()<<" pos:" << *reinterpret_cast<std::int32_t*>(msg.GetDataAddress())<<std::endl;
 		//msg.SetLength(10);

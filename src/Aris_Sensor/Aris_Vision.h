@@ -20,7 +20,7 @@ namespace Aris
 			friend class KINECT;
 		};
 
-		class KINECT: public SENSOR_BASE<VISION_DATA>
+		class KINECT: public SensorBase<VISION_DATA>
 		{
 
 		public:
@@ -28,7 +28,7 @@ namespace Aris
 			~KINECT();
 
 		private:
-			virtual void Initiate();
+			virtual void Init();
 			virtual void UpdateData(VISION_DATA &data);
 			virtual void Release();
 

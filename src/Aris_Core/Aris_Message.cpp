@@ -68,24 +68,24 @@ namespace Aris
 			_sig_value--;
 		}
 		
-		std::queue<Aris::Core::MSG> msgq;
+		std::queue<Aris::Core::Msg> msgq;
 		
 		SEM MsgReceived;
 		std::mutex MsgMutex,MsgCallbackMutex;
 		bool ifSkipLoop = false;
 		bool isRunning = false;
 
-		map < int, vector<function<int(Aris::Core::MSG &)> > > Msg_CallBack_Map;
-		vector<function<int(Aris::Core::MSG &)> > DefaultCallBacks;
+		map < int, vector<function<int(Aris::Core::Msg &)> > > Msg_CallBack_Map;
+		vector<function<int(Aris::Core::Msg &)> > DefaultCallBacks;
 
-		void PostMsg(const Aris::Core::MSG &InMsg)
+		void PostMsg(const Aris::Core::Msg &InMsg)
 		{
 			std::lock_guard<std::mutex> lck(MsgMutex);
 			
 			msgq.push(InMsg);
 			MsgReceived.Post();
 		}
-		void GetMsg(Aris::Core::MSG &rMsg)
+		void GetMsg(Aris::Core::Msg &rMsg)
 		{
 			bool Flag=true;
 			while(Flag)
@@ -102,14 +102,14 @@ namespace Aris
 				}
 			}
 		}
-		void RegisterMsgCallback(int message, function<int(Aris::Core::MSG &)> CallBack)
+		void RegisterMsgCallback(int message, function<int(Aris::Core::Msg &)> CallBack)
 		{
 			MsgCallbackMutex.lock();
 			
 			auto found = Msg_CallBack_Map.find(message);
 			if (found == Msg_CallBack_Map.end())
 			{
-				vector<function<int(Aris::Core::MSG &)> > Msg_CallBacks;
+				vector<function<int(Aris::Core::Msg &)> > Msg_CallBacks;
 				if (CallBack != nullptr)
 				{
 					Msg_CallBacks.push_back(CallBack);
@@ -127,7 +127,7 @@ namespace Aris
 
 			MsgCallbackMutex.unlock();
 		}
-		void RegisterDefaultCallback(std::function<int(Aris::Core::MSG &)> CallBack)
+		void RegisterDefaultCallback(std::function<int(Aris::Core::Msg &)> CallBack)
 		{
 			MsgCallbackMutex.lock();
 			
@@ -147,7 +147,7 @@ namespace Aris
 			else
 				isRunning = true;
 
-			Aris::Core::MSG Msg;
+			Aris::Core::Msg Msg;
 			ifSkipLoop = false;
 
 			while (GetMsg(Msg),ifSkipLoop==false)
@@ -186,7 +186,7 @@ namespace Aris
 			if (isRunning)
 			{
 				ifSkipLoop = true;
-				PostMsg(Core::MSG(0, 0));
+				PostMsg(Core::Msg(0, 0));
 			}
 			else
 			{

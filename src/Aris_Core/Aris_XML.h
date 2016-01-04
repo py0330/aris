@@ -8,13 +8,13 @@ namespace Aris
 {
 	namespace Core
 	{
-		typedef tinyxml2::XMLDocument DOCUMENT;
-		typedef tinyxml2::XMLDeclaration DECLARATION;
-		typedef tinyxml2::XMLNode NODE;
-		typedef tinyxml2::XMLElement ELEMENT;
-		typedef tinyxml2::XMLAttribute ATTRIBUTE;
+		typedef tinyxml2::XMLDocument XmlDocument;
+		typedef tinyxml2::XMLDeclaration XmlDeclaration;
+		typedef tinyxml2::XMLNode XmlNode;
+		typedef tinyxml2::XMLElement XmlElement;
+		typedef tinyxml2::XMLAttribute XmlAttribute;
 
-		void ReplaceVariable(ELEMENT* pEle);
+		void ReplaceVariable(XmlElement* pEle);
 	}
 }
 

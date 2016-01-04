@@ -11,44 +11,72 @@
 #include<iomanip>
 #include<initializer_list>
 #include<cmath>
+#include<algorithm>
 
 namespace Aris
 {
 	namespace DynKer
 	{
-		class MATRIX
+		class Matrix
 		{
-		private:
-			int m, n;
-			bool isRowMajor;
-			double *pData;
-			
-
 		public:
-			MATRIX();
-			MATRIX(const MATRIX &other);
-			MATRIX(MATRIX &&other);
-			MATRIX &operator=(MATRIX other);
-			//MATRIX &operator=(MATRIX &&other);
-			MATRIX &Swap(MATRIX &other);
-			~MATRIX();
+			Matrix(double value);
+			Matrix(int m, int n);
+			Matrix(int m, int n, const double *Data);
+			Matrix(const std::initializer_list<Matrix> &Data) :Matrix()
+			{
+				std::list<std::list<Matrix> > matListList;
 
-			MATRIX(double value);
-			MATRIX(int m, int n);
-			MATRIX(int m, int n, const double *Data);
-			MATRIX(const std::initializer_list<double> &Data);
-			MATRIX(const std::initializer_list<std::vector<MATRIX> > &matrices);
+				bool needNewRow = true;
+				for (auto &i : Data)
+				{
+					if (i.Empty())
+					{
+						needNewRow = true;
+					}
+					else
+					{
+						if (needNewRow)
+						{
+							matListList.push_back(std::list<Matrix>());
+							needNewRow = false;
+						}
 
-			int RowNum(){return m;}
-			int ColNum(){return n;}
+						matListList.back().push_back(i);
+					}
+				}
+
+
+				(*this) = Aris::DynKer::CombineMatrices(matListList);
+			}
+
+			Matrix() :m(0), n(0), isRowMajor(true), pData(nullptr) {};
+			Matrix(const Matrix &other) :m(other.m), n(other.n), isRowMajor(true), pData(m*n > 0 ? new double[m*n] : nullptr) { std::copy_n(other.pData, m*n, pData); };
+			Matrix(Matrix &&other) :Matrix() { this->Swap(other); };
+			Matrix &operator=(Matrix other) { this->Swap(other);	return *this; };
+			Matrix &Swap(Matrix &other)
+			{
+				std::swap(this->m, other.m);
+				std::swap(this->n, other.n);
+				std::swap(this->isRowMajor, other.isRowMajor);
+				std::swap(this->pData, other.pData);
+
+				return *this;
+			}
+			~Matrix();
+
+
+			bool Empty() const { return !pData; }
+			int RowNum() const { return m; }
+			int ColNum() const { return n; }
+			int Length() const { return m*n; };
+			double * Data() { return pData; };
+			const double * Data() const { return pData; };
 
 			void Transpose() { isRowMajor = !isRowMajor; std::swap(m, n); };
 			void Resize(int m, int n);
-			int Length() const { return m*n; };
-			double * Data(){ return pData; };
-			const double * Data() const{ return pData; };
-			void CopySubMatrixTo(const MATRIX &subMat, int beginRow, int beginCol, int rowNum, int colNum);
-			void CopySubMatrixTo(const MATRIX &subMat, int beginRow, int beginCol){ CopySubMatrixTo(subMat, beginRow, beginCol, subMat.m, subMat.n); };
+			void CopySubMatrixTo(const Matrix &subMat, int beginRow, int beginCol, int rowNum, int colNum);
+			void CopySubMatrixTo(const Matrix &subMat, int beginRow, int beginCol){ CopySubMatrixTo(subMat, beginRow, beginCol, subMat.m, subMat.n); };
 			void ForEachElement(std::function<double(double)> f)
 			{
 				for (int i = 0; i < Length(); ++i)
@@ -65,9 +93,9 @@ namespace Aris
 			{
 				return isRowMajor ? pData[i*n + j] : pData[j*m + i];
 			};
-			MATRIX operator()(const MATRIX &i, const MATRIX &j) const
+			Matrix operator()(const Matrix &i, const Matrix &j) const
 			{
-				MATRIX ret;
+				Matrix ret;
 				ret.Resize(i.Length(), j.Length());
 
 				for (int a = 0; a < i.Length(); ++a)
@@ -89,19 +117,19 @@ namespace Aris
 				return ret;
 			};
 			
-			friend MATRIX operator + (const MATRIX &m1, const MATRIX &m2);
-			friend MATRIX operator - (const MATRIX &m1, const MATRIX &m2);
-			friend MATRIX operator * (const MATRIX &m1, const MATRIX &m2);
-			friend MATRIX operator / (const MATRIX &m1, const MATRIX &m2);
-			friend MATRIX operator - (const MATRIX &m1);
-			friend MATRIX operator + (const MATRIX &m1);
+			friend Matrix operator + (const Matrix &m1, const Matrix &m2);
+			friend Matrix operator - (const Matrix &m1, const Matrix &m2);
+			friend Matrix operator * (const Matrix &m1, const Matrix &m2);
+			friend Matrix operator / (const Matrix &m1, const Matrix &m2);
+			friend Matrix operator - (const Matrix &m1);
+			friend Matrix operator + (const Matrix &m1);
 
 			template <typename MATRIX_LIST>
-			friend MATRIX CombineColMatrices(const MATRIX_LIST &matrices);
+			friend Matrix CombineColMatrices(const MATRIX_LIST &matrices);
 			template <typename MATRIX_LIST>
-			friend MATRIX CombineRowMatrices(const MATRIX_LIST &matrices);
+			friend Matrix CombineRowMatrices(const MATRIX_LIST &matrices);
 			template <typename MATRIX_LISTLIST>
-			friend MATRIX CombineMatrices(const MATRIX_LISTLIST &matrices);
+			friend Matrix CombineMatrices(const MATRIX_LISTLIST &matrices);
 
 			std::string ToString() const;
 			double ToDouble() const { return pData[0]; };
@@ -120,12 +148,18 @@ namespace Aris
 				}
 				std::cout << std::endl;
 			}
+
+			
+			private:
+				int m, n;
+				bool isRowMajor;
+				double *pData;
 		};
 
 		template <typename MATRIX_LIST>
-		MATRIX CombineColMatrices(const MATRIX_LIST &matrices)
+		Matrix CombineColMatrices(const MATRIX_LIST &matrices)
 		{
-			MATRIX ret;
+			Matrix ret;
 
 			/*获取全部矩阵的行数和列数*/
 			for (const auto &i : matrices)
@@ -134,7 +168,7 @@ namespace Aris
 					continue;
 
 				ret.m += i.m;
-				ret.n = i.n;
+				ret.n = std::max(i.n, ret.n);
 			}
 
 			/*判断所有矩阵是否拥有一样的列数*/
@@ -175,9 +209,9 @@ namespace Aris
 			return ret;
 		};
 		template <typename MATRIX_LIST>
-		MATRIX CombineRowMatrices(const MATRIX_LIST &matrices)
+		Matrix CombineRowMatrices(const MATRIX_LIST &matrices)
 		{
-			MATRIX ret;
+			Matrix ret;
 
 			/*获取全部矩阵的行数和列数*/
 			for (const auto &i : matrices)
@@ -227,9 +261,9 @@ namespace Aris
 			return ret;
 		};
 		template <typename MATRIX_LISTLIST>
-		MATRIX CombineMatrices(const MATRIX_LISTLIST &matrices)
+		Matrix CombineMatrices(const MATRIX_LISTLIST &matrices)
 		{
-			MATRIX ret;
+			Matrix ret;
 
 			/*获取全部矩阵的行数和列数*/
 			for (const auto &i : matrices)
@@ -307,7 +341,7 @@ namespace Aris
 			return ret;
 		};
 
-		class CALCULATOR
+		class Calculator
 		{
 		private:
 			class OPERATOR;
@@ -338,10 +372,10 @@ namespace Aris
 				int id;
 
 				std::string word;
-				MATRIX cst;
-				const MATRIX *var;
-				const CALCULATOR::FUNCTION *fun;
-				const CALCULATOR::OPERATOR *opr;
+				Matrix cst;
+				const Matrix *var;
+				const Calculator::FUNCTION *fun;
+				const Calculator::OPERATOR *opr;
 			};
 			class OPERATOR
 			{
@@ -352,8 +386,8 @@ namespace Aris
 				int priority_ur;
 				int priority_b;
 
-				typedef std::function<MATRIX(MATRIX)> U_FUN;
-				typedef std::function<MATRIX(MATRIX, MATRIX)> B_FUN;
+				typedef std::function<Matrix(Matrix)> U_FUN;
+				typedef std::function<Matrix(Matrix, Matrix)> B_FUN;
 
 				U_FUN fun_ul;
 				U_FUN fun_ur;
@@ -367,7 +401,7 @@ namespace Aris
 			};
 			class FUNCTION
 			{
-				typedef std::function<MATRIX(std::vector<MATRIX>)> FUN;
+				typedef std::function<Matrix(std::vector<Matrix>)> FUN;
 			public:
 				std::string name;
 				std::map<int, FUN> funs;
@@ -378,46 +412,46 @@ namespace Aris
 			typedef std::vector<TOKEN> TOKENS;
 			TOKENS tokens;
 			TOKENS Expression2Tokens(const std::string &expression);
-			MATRIX CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken);
+			Matrix CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken);
 			
-			MATRIX CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator endToken);
-			MATRIX CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator endToken);
-			MATRIX CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator endToken);
-			MATRIX CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator endToken);
+			Matrix CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator endToken);
+			Matrix CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator endToken);
+			Matrix CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator endToken);
+			Matrix CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator endToken);
 
 			TOKENS::iterator FindNextOutsideToken(TOKENS::iterator leftPar, TOKENS::iterator endToken, TOKEN::TYPE type);
 			TOKENS::iterator FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence);
-			std::vector<std::vector<MATRIX> > GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken);
+			std::vector<std::vector<Matrix> > GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken);
 		
 		private:
 			std::map<std::string, OPERATOR> operators;
 			std::map<std::string, FUNCTION> functions;
-			std::map<std::string, MATRIX> variables;
+			std::map<std::string, Matrix> variables;
 
 			
 
 		public:
-			CALCULATOR()
+			Calculator()
 			{
-				operators["+"].SetBinaryOpr(1, [](MATRIX m1, MATRIX m2){return m1 + m2; });
-				operators["+"].SetUnaryLeftOpr(1, [](MATRIX m){return m; });
-				operators["-"].SetBinaryOpr(1, [](MATRIX m1, MATRIX m2){return m1 - m2; });
-				operators["-"].SetUnaryLeftOpr(1, [](MATRIX m){return -m; });
-				operators["*"].SetBinaryOpr(2, [](MATRIX m1, MATRIX m2){return m1 * m2; });
-				operators["/"].SetBinaryOpr(2, [](MATRIX m1, MATRIX m2){return m1 / m2; });
+				operators["+"].SetBinaryOpr(1, [](Matrix m1, Matrix m2){return m1 + m2; });
+				operators["+"].SetUnaryLeftOpr(1, [](Matrix m){return m; });
+				operators["-"].SetBinaryOpr(1, [](Matrix m1, Matrix m2){return m1 - m2; });
+				operators["-"].SetUnaryLeftOpr(1, [](Matrix m){return -m; });
+				operators["*"].SetBinaryOpr(2, [](Matrix m1, Matrix m2){return m1 * m2; });
+				operators["/"].SetBinaryOpr(2, [](Matrix m1, Matrix m2){return m1 / m2; });
 
-				AddFunction("sqrt", [](std::vector<MATRIX> v)
+				AddFunction("sqrt", [](std::vector<Matrix> v)
 				{
-					MATRIX ret = v.front();
+					Matrix ret = v.front();
 					ret.ForEachElement([](double d){return std::sqrt(d); });
 
 					return ret;
 				}, 1);
 			}
 
-			MATRIX CalculateExpression(const std::string &expression);
-			void AddVariable(const std::string &name, const MATRIX &value);
-			void AddFunction(const std::string &name, std::function<MATRIX(std::vector<MATRIX>)> f,int n)
+			Matrix CalculateExpression(const std::string &expression);
+			void AddVariable(const std::string &name, const Matrix &value);
+			void AddFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f,int n)
 			{
 				functions[name].AddOverloadFun(n,f);
 			};

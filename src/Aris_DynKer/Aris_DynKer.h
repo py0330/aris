@@ -28,8 +28,8 @@ namespace Aris
 	namespace DynKer
 	{
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
-		template<class CONTAINER>
-		void dlmwrite(const char *FileName, const CONTAINER &container)
+		template<class Container>
+		void dlmwrite(const char *FileName, const Container &container)
 		{
 			std::ofstream file;
 
@@ -48,6 +48,8 @@ namespace Aris
 		}
 		void dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n);
 		void dlmread(const char *FileName, double *pMatrix);
+
+		bool isEqual(int n, const double *v1, const double *v2, double error) noexcept;
 
 		
 		template <typename T> inline int s_sgn(T val) {
@@ -96,43 +98,30 @@ namespace Aris
 		*/
 		void s_cm3(const double *cro_vec_in, double *cm_out) noexcept;
 
-		
-		/** \brief 根据原点和两个坐标轴上的点来求位姿矩阵
-		*
-		* 这里原点origin为位姿矩阵pm_out的点，firstAxisPnt位于第一根坐标轴，secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
-		*
-		*/
-		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder = "xy") noexcept;
-		/** \brief 将一种形式的欧拉角转换到另一种形式下
-		*
-		* 例如可以将313的欧拉角转换到321的欧拉角
-		*
-		*/
-		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out) noexcept;
-		/** \brief 将位姿矩阵转化成欧拉角
-		*
-		* 
-		*
-		*/
-		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType = "313") noexcept;
 		/** \brief 将欧拉角转化成位姿矩阵
 		*
 		*
 		*
 		*/
 		void s_pe2pm(const double *pe_in, double *pm_out, const char *EurType = "313") noexcept;
-		/** \brief 将位姿矩阵转换为位置和四元数
+		/** \brief 将位姿矩阵转化成欧拉角
 		*
-		*
+		* 
 		*
 		*/
-		void s_pm2pq(const double *pm_in, double *qp_out) noexcept;
+		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType = "313") noexcept;
 		/** \brief 将位置和四元数转换为位姿矩阵
 		*
 		*
 		*
 		*/
 		void s_pq2pm(const double *pq_in, double *pm_out) noexcept;
+		/** \brief 将位姿矩阵转换为位置和四元数
+		*
+		*
+		*
+		*/
+		void s_pm2pq(const double *pm_in, double *qp_out) noexcept;
 		/** \brief 将位姿矩阵转化成欧拉角
 		*
 		*
@@ -145,6 +134,12 @@ namespace Aris
 		*
 		*/
 		void s_pe2pq(const double *pe_in, double *pq_out, const char *EurType = "313") noexcept;
+		/** \brief 将一种形式的欧拉角转换到另一种形式下
+		*
+		* 例如可以将313的欧拉角转换到321的欧拉角
+		*
+		*/
+		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out) noexcept;
 		/** \brief 将螺旋线速度和四元数导数转换为螺旋线速度和角速度
 		*
 		*
@@ -415,7 +410,7 @@ namespace Aris
 			s_pm_dot_pm(pm, args...);
 		}
 		void s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;
-		void s_pm_dot_inv_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept;
+		void s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out) noexcept;
 		void s_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
 		void s_inv_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept;
 		void s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept;
@@ -438,13 +433,20 @@ namespace Aris
 		void s_dgemmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
 		void s_dgemmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept;
 
-		class AKIMA
+		/** \brief 根据原点和两个坐标轴上的点来求位姿矩阵
+		*
+		* 这里原点origin为位姿矩阵pm_out的点，firstAxisPnt位于第一根坐标轴，secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
+		*
+		*/
+		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder = "xy") noexcept;
+
+		class Akima
 		{
 		public:
-			AKIMA(int inNum, const double *x_in, const double *y_in);
-			AKIMA(const AKIMA &) = default;
-			~AKIMA() = default;
-			AKIMA &operator =(const AKIMA &) = default;
+			Akima(int inNum, const double *x_in, const double *y_in);
+			Akima(const Akima &) = default;
+			~Akima() = default;
+			Akima &operator =(const Akima &) = default;
 
 			double operator()(double x, char derivativeOrder = '0') const;
 			void operator()(int length, const double *x_in, double *y_out, char derivativeOrder = '0') const;

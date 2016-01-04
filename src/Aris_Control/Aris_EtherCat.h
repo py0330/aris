@@ -13,10 +13,10 @@ namespace Aris
 {
 	namespace Control
 	{	
-		class ETHERCAT_SLAVE
+		class EthercatSlave
 		{
 		public:
-			virtual ~ETHERCAT_SLAVE();
+			virtual ~EthercatSlave();
 			void ReadPdo(int pdoGroupID, int pdoID, std::int8_t &value) const;
 			void ReadPdo(int pdoGroupID, int pdoID, std::int16_t &value) const;
 			void ReadPdo(int pdoGroupID, int pdoID, std::int32_t &value) const;
@@ -33,37 +33,37 @@ namespace Aris
 			void WriteSdo(int sdoID, std::int32_t value);
 
 		protected:
-            ETHERCAT_SLAVE(const Aris::Core::ELEMENT *);
-			virtual void Initialize();
+            EthercatSlave(const Aris::Core::XmlElement *);
+			virtual void Init();
 
 		private:
-			ETHERCAT_SLAVE(const ETHERCAT_SLAVE &other) = delete;
-			ETHERCAT_SLAVE(ETHERCAT_SLAVE &&other) = delete;
-			ETHERCAT_SLAVE & operator=(const ETHERCAT_SLAVE &other) = delete;
-			ETHERCAT_SLAVE & operator=(ETHERCAT_SLAVE &&other) = delete;
+			EthercatSlave(const EthercatSlave &other) = delete;
+			EthercatSlave(EthercatSlave &&other) = delete;
+			EthercatSlave & operator=(const EthercatSlave &other) = delete;
+			EthercatSlave & operator=(EthercatSlave &&other) = delete;
 
-			class IMP;
-			std::unique_ptr<IMP> pImp;
+			class Imp;
+			std::unique_ptr<Imp> pImp;
 
-			friend class ETHERCAT_MASTER;
+			friend class EthercatMaster;
 		};
-		class ETHERCAT_MASTER
+		class EthercatMaster
 		{
 		public:
-			static ETHERCAT_MASTER *GetInstance();
-			virtual ~ETHERCAT_MASTER();
-			virtual void LoadXml(const Aris::Core::ELEMENT *);
+			static EthercatMaster *GetInstance();
+			virtual ~EthercatMaster();
+			virtual void LoadXml(const Aris::Core::XmlElement *);
 			virtual void Start();
 			virtual void Stop();
-			template <class CONTROLLER>	static CONTROLLER* CreateMaster()
+			template <class Controller>	static Controller* CreateMaster()
 			{
 				if (pInstance)
 				{
-					throw std::runtime_error("ETHERCAT_MASTER can not create a controller, because it already has one");
+					throw std::runtime_error("EthercatMaster can not create a controller, because it alReady has one");
 				}
 
-				pInstance.reset(new CONTROLLER);
-				return static_cast<CONTROLLER*>(pInstance.get());
+				pInstance.reset(new Controller);
+				return static_cast<Controller*>(pInstance.get());
 			}
 			template <class SLAVE, typename ...Args> SLAVE* AddSlave(Args ...args)
 			{
@@ -73,22 +73,22 @@ namespace Aris
 			}
 			
 		protected:
-			ETHERCAT_MASTER();
+			EthercatMaster();
 			virtual void ControlStrategy() {};
 			
 		private:
-			ETHERCAT_MASTER(const ETHERCAT_MASTER &other) = delete;
-			ETHERCAT_MASTER(ETHERCAT_MASTER &&other) = delete;
-			ETHERCAT_MASTER & operator=(const ETHERCAT_MASTER &other) = delete;
-			ETHERCAT_MASTER & operator=(ETHERCAT_MASTER &&other) = delete;
-			void AddSlavePtr(ETHERCAT_SLAVE *pSla);
+			EthercatMaster(const EthercatMaster &other) = delete;
+			EthercatMaster(EthercatMaster &&other) = delete;
+			EthercatMaster & operator=(const EthercatMaster &other) = delete;
+			EthercatMaster & operator=(EthercatMaster &&other) = delete;
+			void AddSlavePtr(EthercatSlave *pSla);
 			
 		private:
-			static std::unique_ptr<ETHERCAT_MASTER> pInstance;
-			class IMP;
-			std::unique_ptr<IMP> pImp;
+			static std::unique_ptr<EthercatMaster> pInstance;
+			class Imp;
+			std::unique_ptr<Imp> pImp;
 
-			friend class ETHERCAT_SLAVE::IMP;
+			friend class EthercatSlave::Imp;
 		};
 	}
 }

@@ -19,77 +19,77 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		class TRANSLATIONAL_JOINT final :public JOINT_BASE_DIM<5>
+		class TranslationalJoint final :public JointBaseDim<5>
 		{
 		public:
-			virtual ~TRANSLATIONAL_JOINT() = default;
+			virtual ~TranslationalJoint() = default;
 			virtual const char* GetType() const { return type; };
 
 		private:
 			static const char *const type;
-			explicit TRANSLATIONAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			explicit TRANSLATIONAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
-			virtual void Initiate();
+			explicit TranslationalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
+			explicit TranslationalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			virtual void Init();
 
-			friend class MODEL_BASE;
-			friend class MODEL;
+			friend class ModelBase;
+			friend class Model;
 		};
-		class UNIVERSAL_JOINT final :public JOINT_BASE_DIM<4>
+		class UniversalJoint final :public JointBaseDim<4>
 		{
 		public:
-			virtual ~UNIVERSAL_JOINT() = default;
+			virtual ~UniversalJoint() = default;
 			virtual const char* GetType() const { return type; };
 			virtual void Update();
 
 		private:
 			static const char *const type;
-			explicit UNIVERSAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			explicit UNIVERSAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
+			explicit UniversalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
+			explicit UniversalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
-			virtual void Initiate();
+			virtual void Init();
 
-			friend class MODEL_BASE;
-			friend class MODEL;
+			friend class ModelBase;
+			friend class Model;
 		};
-		class SPHERICAL_JOINT final :public JOINT_BASE_DIM<3>
+		class SphericalJoint final :public JointBaseDim<3>
 		{
 		public:
-			virtual ~SPHERICAL_JOINT() = default;
+			virtual ~SphericalJoint() = default;
 			virtual const char* GetType() const { return type; };
 
 		private:
 			static const char *const type;
-			explicit SPHERICAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			explicit SPHERICAL_JOINT(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
-			virtual void Initiate();
+			explicit SphericalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
+			explicit SphericalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			virtual void Init();
 
-			friend class MODEL_BASE;
-			friend class MODEL;
+			friend class ModelBase;
+			friend class Model;
 		};
 
-		class LINEAR_MOTION final :public MOTION_BASE
+		class LinearMotion final :public MotionBase
 		{
 		public:
-			virtual ~LINEAR_MOTION() = default;
+			virtual ~LinearMotion() = default;
 			virtual const char* GetType() const { return type; };
 			virtual void Update();
 
 		private:
 			static const char *const type;
-			explicit LINEAR_MOTION(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			explicit LINEAR_MOTION(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *pEle);
-			virtual void Initiate();
+			explicit LinearMotion(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
+			explicit LinearMotion(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *pEle);
+			virtual void Init();
 
 		private:
 
-			friend class MODEL_BASE;
-			friend class MODEL;
+			friend class ModelBase;
+			friend class Model;
 		};
 
-		class SINGLE_COMPONENT_FORCE final :public FORCE_BASE
+		class SingleComponentForce final :public ForceBase
 		{
 		public:
-			virtual ~SINGLE_COMPONENT_FORCE() = default;
+			virtual ~SingleComponentForce() = default;
 			virtual void Update();
 			virtual const char* GetType() const { return type; };
 
@@ -100,23 +100,23 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			explicit SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, MARKER* pMakI, MARKER* pMakJ, int componentID);
-			explicit SINGLE_COMPONENT_FORCE(MODEL_BASE *pModel, const std::string &name, int id, const Aris::Core::ELEMENT *xmlEle);
+			explicit SingleComponentForce(ModelBase *pModel, const std::string &name, int id, Marker* pMakI, Marker* pMakJ, int componentID);
+			explicit SingleComponentForce(ModelBase *pModel, const std::string &name, int id, const Aris::Core::XmlElement *xmlEle);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 
 			int componentID;
 			double fceI[6];
 
-			friend class MODEL_BASE;
-			friend class MODEL;
+			friend class ModelBase;
+			friend class Model;
 		};
 
-		class MODEL :public MODEL_BASE 
+		class Model :public ModelBase 
 		{
 		public:
-			virtual void LoadXml(const Aris::Core::ELEMENT *pEle);
-			virtual void LoadXml(const Aris::Core::DOCUMENT &doc) { this->MODEL_BASE::LoadXml(doc); };
-			virtual void LoadXml(const char *filename) { this->MODEL_BASE::LoadXml(filename); };
+			virtual void LoadXml(const Aris::Core::XmlElement *pEle);
+			virtual void LoadXml(const Aris::Core::XmlDocument &doc) { this->ModelBase::LoadXml(doc); };
+			virtual void LoadXml(const char *filename) { this->ModelBase::LoadXml(filename); };
 		};
 	}
 }

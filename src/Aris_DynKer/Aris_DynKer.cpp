@@ -69,7 +69,21 @@ namespace Aris
 			}
 			std::cout << std::endl;
 		}
-	
+		
+		bool isEqual(int n, const double *v1, const double *v2, double error) noexcept
+		{
+			double diff_square = 0;
+
+			for (int i = 0; i < n; ++i)
+			{
+				diff_square += v1[i] * v1[i] - v2[i] * v2[i];
+			}
+
+			diff_square = std::sqrt(std::abs(diff_square));
+
+			return diff_square > error ? false : true;
+		}
+
 		void s_cro3(const double *cro_vec_in, const double *vec_in, double *vec_out) noexcept
 		{
 			vec_out[0] = -cro_vec_in[2] * vec_in[1] + cro_vec_in[1] * vec_in[2];
@@ -99,227 +113,14 @@ namespace Aris
 			cm_out[8] = 0;
 		}
 
-		void s_inv_pm(const double *pm_in, double *pm_out) noexcept
-		{
-			//转置
-			pm_out[0] = pm_in[0];
-			pm_out[1] = pm_in[4];
-			pm_out[2] = pm_in[8];
-			pm_out[4] = pm_in[1];
-			pm_out[5] = pm_in[5];
-			pm_out[6] = pm_in[9];
-			pm_out[8] = pm_in[2];
-			pm_out[9] = pm_in[6];
-			pm_out[10] = pm_in[10];
-
-			//位置
-			pm_out[3] = -pm_out[0] * pm_in[3] - pm_out[1] * pm_in[7] - pm_out[2] * pm_in[11];
-			pm_out[7] = -pm_out[4] * pm_in[3] - pm_out[5] * pm_in[7] - pm_out[6] * pm_in[11];
-			pm_out[11] = -pm_out[8] * pm_in[3] - pm_out[9] * pm_in[7] - pm_out[10] * pm_in[11];
-
-			//其他
-			pm_out[12] = 0;
-			pm_out[13] = 0;
-			pm_out[14] = 0;
-			pm_out[15] = 1;
-		}
-		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder) noexcept
-		{
-			int Order[3];
-			double Axis1[3], Axis2[3], Axis3[3];
-			double nrm;
-
-			Order[0] = axesOrder[0] - 'w';//asc玛顺序 uvw  xyz……
-			Order[1] = axesOrder[1] - 'w';//asc玛顺序 uvw  xyz……
-			Order[2] = 6 - Order[1] - Order[0];
-
-			std::copy_n(firstAxisPnt, 3, Axis1);
-			std::copy_n(secondAxisPnt, 3, Axis2);
-
-			s_daxpy(3, -1, origin, 1, Axis1, 1);
-			s_daxpy(3, -1, origin, 1, Axis2, 1);
-
-			nrm = s_dnrm2(3, Axis1, 1);
-			if (nrm != 0)
-			{
-				for (int i = 0; i < 3; ++i)
-				{
-					Axis1[i] = Axis1[i] / nrm;
-				}
-			}
-			else
-			{
-				Axis1[Order[0]] = 1;
-			}
-
-			nrm = s_dnrm2(3, Axis2, 1);
-			if (nrm != 0)
-			{
-				for (int i = 0; i < 3; ++i)
-				{
-					Axis2[i] = Axis2[i] / nrm;
-				}
-			}
-			else
-			{
-				Axis2[Order[1]] = 1;
-			}
-
-			//下求差乘计算。首先要判断差乘之后的正负号。
-			s_cro3(Axis1, Axis2, Axis3);
-
-			nrm = s_dnrm2(3, Axis3, 1);
-			if (nrm == 0)
-			{
-				//有待补充
-			}
-			else
-			{
-				for (int i = 0; i < 3; ++i)
-				{
-					Axis3[i] = Axis3[i] / nrm;
-				}
-			}
-
-			//判断第三根轴的正负号
-			if (Order[1]>Order[0])
-			{
-				if ((Order[1] - Order[0]) == 1)
-				{
-				}
-				else
-				{
-					s_dscal(3, -1, Axis3, 1);
-				}
-			}
-			else
-			{
-				if ((Order[1] - Order[0]) == -1)
-				{
-					s_dscal(3, -1, Axis3, 1);
-				}
-				else
-				{
-				}
-			}
-
-			s_cro3(Axis3, Axis1, Axis2);
-
-			if (Order[0]>Order[2])
-			{
-				if ((Order[0] - Order[2]) == 1)
-				{
-				}
-				else
-				{
-					s_dscal(3, -1, Axis2, 1);
-				}
-			}
-			else
-			{
-				if ((Order[0] - Order[2]) == -1)
-				{
-					s_dscal(3, -1, Axis2, 1);
-				}
-				else
-				{
-				}
-			}
-
-			nrm = s_dnrm2(3, Axis2, 1);
-			for (int i = 0; i < 3; ++i)
-			{
-				Axis2[i] = Axis2[i] / nrm;
-			}
-
-			std::fill_n(pm_out, 16, 0);
-
-			pm_out[3] = origin[0];
-			pm_out[7] = origin[1];
-			pm_out[11] = origin[2];
-
-			pm_out[0 + Order[0] - 1] = Axis1[0];
-			pm_out[4 + Order[0] - 1] = Axis1[1];
-			pm_out[8 + Order[0] - 1] = Axis1[2];
-
-			pm_out[0 + Order[1] - 1] = Axis2[0];
-			pm_out[4 + Order[1] - 1] = Axis2[1];
-			pm_out[8 + Order[1] - 1] = Axis2[2];
-
-			pm_out[0 + Order[2] - 1] = Axis3[0];
-			pm_out[4 + Order[2] - 1] = Axis3[1];
-			pm_out[8 + Order[2] - 1] = Axis3[2];
-
-			pm_out[15] = 1;
-		}
-		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out) noexcept
-		{
-			double pm[16];
-			s_pe2pm(pe_in, pm, type1_in);
-			s_pm2pe(pm, pe_out, type2_in);
-		}
-		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType) noexcept
-		{
-			static const double P[3][3] = { { 0, -1, 1 }, { 1, 0, -1 }, { -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
-
-			double phi13, phi31;
-			double phi[3];
-			double s_, c_;
-
-			int a = EurType[0] - '1';
-			int b = EurType[1] - '1';
-			int c = EurType[2] - '1';
-			int d = 3 - a - b;
-			int e = 3 - b - c;
-
-			/*计算phi2*/
-			s_ = sqrt((pm_in[4 * a + b] * pm_in[4 * a + b] + pm_in[4 * a + e] * pm_in[4 * a + e]
-				+ pm_in[4 * b + c] * pm_in[4 * b + c] + pm_in[4 * d + c] * pm_in[4 * d + c])/2);
-				
-			c_ = pm_in[4 * a + c];
-			phi[1] = (a == c ? std::atan2(s_,c_) : std::atan2(P[a][c]*c_,s_));
-
-			/*计算phi1和phi3*/
-
-			phi13 = std::atan2(pm_in[4 * b + e] - pm_in[4 * d + b], pm_in[4 * b + b] + pm_in[4 * d + e]);
-			phi31 = std::atan2(pm_in[4 * b + e] + pm_in[4 * d + b], pm_in[4 * b + b] - pm_in[4 * d + e]);
-
-			phi[0] = P[b][d] * (phi13 - phi31) / 2;
-			phi[2] = P[b][e] * (phi13 + phi31) / 2;
-
-			/*检查*/
-			double sig[4];
-			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * pm_in[a * 4 + b] * std::sin(phi[2]);
-			sig[1] = (P[a][e] + Q[a][e])*pm_in[4 * a + e] * std::cos(phi[2]);
-			sig[2] = (P[d][c] + Q[d][c])*P[b][d] * pm_in[b * 4 + c] * std::sin(phi[0]);
-			sig[3] = (P[d][c] + Q[d][c])*pm_in[4 * d + c] * std::cos(phi[0]);
-			
-			if (*std::max_element(sig, sig + 4, [](double d1, double d2) {return (std::abs(d1) < std::abs(d2)); })<0)
-			{
-				phi[0] += PI;
-				phi[2] += PI;
-			}
-
-			phi[0] = (phi[0] < 0 ? phi[0] + 2 * PI : phi[0]);
-			phi[2] = (phi[2] < 0 ? phi[2] + 2 * PI : phi[2]);
-
-			/*对位置赋值*/
-			std::copy_n(phi, 3, pe_out + 3);
-			
-			pe_out[0] = pm_in[3];
-			pe_out[1] = pm_in[7];
-			pe_out[2] = pm_in[11];
-
-		}
 		void s_pe2pm(const double *pe_in, double *pm_out, const char *EurType) noexcept
 		{
-			static const double P[3][3] = { { 0, -1, 1 }, { 1, 0, -1 }, { -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
+			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
 
-			double Abb,Add,Abd,Adb;
-			double Bac,Bae,Bdc,Bde;
-			double Cbb,Cee,Cbe,Ceb;
+			double Abb, Add, Abd, Adb;
+			double Bac, Bae, Bdc, Bde;
+			double Cbb, Cee, Cbe, Ceb;
 			double s_, c_;
 
 			int a = EurType[0] - '1';
@@ -327,7 +128,7 @@ namespace Aris
 			int c = EurType[2] - '1';
 			int d = 3 - a - b;
 			int e = 3 - b - c;
-			
+
 			c_ = std::cos(pe_in[3]);
 			s_ = std::sin(pe_in[3]);
 			Abb = c_;
@@ -368,48 +169,59 @@ namespace Aris
 			pm_out[14] = 0;
 			pm_out[15] = 1;
 		}
-		void s_pm2pq(const double *pm_in, double *pq_out) noexcept
+		void s_pm2pe(const double *pm_in, double *pe_out, const char *EurType) noexcept
 		{
-			double &x = pq_out[0];
-			double &y = pq_out[1];
-			double &z = pq_out[2];
-			double &q1 = pq_out[3];
-			double &q2 = pq_out[4];
-			double &q3 = pq_out[5];
-			double &q4 = pq_out[6];
+			static const double P[3][3] = { { 0, -1, 1 }, { 1, 0, -1 }, { -1, 1, 0 } };
+			static const double Q[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 
-			double *q = &pq_out[3];
+			double phi13, phi31;
+			double phi[3];
+			double s_, c_;
 
-			double tr = pm_in[0] + pm_in[5] + pm_in[10];
+			int a = EurType[0] - '1';
+			int b = EurType[1] - '1';
+			int c = EurType[2] - '1';
+			int d = 3 - a - b;
+			int e = 3 - b - c;
 
-			/*因为无法确保在截断误差的情况下，tr+1一定为正，因此这里需要判断*/
-			q4 = tr>-1 ? sqrt((tr + 1) / 4) : 0;
+			/*计算phi2*/
+			s_ = std::sqrt((pm_in[4 * a + b] * pm_in[4 * a + b] + pm_in[4 * a + e] * pm_in[4 * a + e]
+				+ pm_in[4 * b + c] * pm_in[4 * b + c] + pm_in[4 * d + c] * pm_in[4 * d + c])/2);
+				
+			c_ = pm_in[4 * a + c];
+			phi[1] = (a == c ? std::atan2(s_,c_) : std::atan2(P[a][c]*c_,s_));
 
-			if (q4 > 0.1)
+			/*计算phi1和phi3*/
+
+			phi13 = std::atan2(pm_in[4 * b + e] - pm_in[4 * d + b], pm_in[4 * b + b] + pm_in[4 * d + e]);
+			phi31 = std::atan2(pm_in[4 * b + e] + pm_in[4 * d + b], pm_in[4 * b + b] - pm_in[4 * d + e]);
+
+			phi[0] = P[b][d] * (phi13 - phi31) / 2;
+			phi[2] = P[b][e] * (phi13 + phi31) / 2;
+
+			/*检查*/
+			double sig[4];
+			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * pm_in[a * 4 + b] * std::sin(phi[2]);
+			sig[1] = (P[a][e] + Q[a][e])*pm_in[4 * a + e] * std::cos(phi[2]);
+			sig[2] = (P[d][c] + Q[d][c])*P[b][d] * pm_in[b * 4 + c] * std::sin(phi[0]);
+			sig[3] = (P[d][c] + Q[d][c])*pm_in[4 * d + c] * std::cos(phi[0]);
+			
+			if (*std::max_element(sig, sig + 4, [](double d1, double d2) {return (std::abs(d1) < std::abs(d2)); })<0)
 			{
-				q1 = (pm_in[9] - pm_in[6]) / q4 / 4;
-				q2 = (pm_in[2] - pm_in[8]) / q4 / 4;
-				q3 = (pm_in[4] - pm_in[1]) / q4 / 4;
-			}
-			else
-			{
-				int id;
-
-				q1 = sqrt((1 + pm_in[0] - pm_in[5] - pm_in[10])) / 2;
-				q2 = sqrt((1 + pm_in[5] - pm_in[0] - pm_in[10])) / 2;
-				q3 = sqrt((1 + pm_in[10] - pm_in[0] - pm_in[5])) / 2;
-
-				/*qp_out 是通过开方计算而得，因此一定为正*/
-				id = std::max_element(q, q + 3) - q;
-
-				q[id] *= s_sgn2(pm_in[(id + 2) % 3 * 4 + (id + 1) % 3] - pm_in[(id + 1) % 3 * 4 + (id + 2) % 3]);
-				q[(id + 1) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 1) % 3] + pm_in[((id + 1) % 3) * 4 + id]);
-				q[(id + 2) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 2) % 3] + pm_in[((id + 2) % 3) * 4 + id]);
+				phi[0] += PI;
+				phi[2] += PI;
 			}
 
-			x = pm_in[3];
-			y = pm_in[7];
-			z = pm_in[11];
+			phi[0] = (phi[0] < 0 ? phi[0] + 2 * PI : phi[0]);
+			phi[2] = (phi[2] < 0 ? phi[2] + 2 * PI : phi[2]);
+
+			/*对位置赋值*/
+			std::copy_n(phi, 3, pe_out + 3);
+			
+			pe_out[0] = pm_in[3];
+			pe_out[1] = pm_in[7];
+			pe_out[2] = pm_in[11];
+
 		}
 		void s_pq2pm(const double *pq_in, double *pm_out) noexcept
 		{
@@ -441,6 +253,49 @@ namespace Aris
 			pm_out[14] = 0;
 			pm_out[15] = 1;
 		}
+		void s_pm2pq(const double *pm_in, double *pq_out) noexcept
+		{
+			double &x = pq_out[0];
+			double &y = pq_out[1];
+			double &z = pq_out[2];
+			double &q1 = pq_out[3];
+			double &q2 = pq_out[4];
+			double &q3 = pq_out[5];
+			double &q4 = pq_out[6];
+
+			double *q = &pq_out[3];
+
+			double tr = pm_in[0] + pm_in[5] + pm_in[10];
+
+			/*因为无法确保在截断误差的情况下，tr+1一定为正，因此这里需要判断*/
+			q4 = tr>-1 ? std::sqrt((tr + 1) / 4) : 0;
+
+			if (q4 > 0.1)
+			{
+				q1 = (pm_in[9] - pm_in[6]) / q4 / 4;
+				q2 = (pm_in[2] - pm_in[8]) / q4 / 4;
+				q3 = (pm_in[4] - pm_in[1]) / q4 / 4;
+			}
+			else
+			{
+				int id;
+
+				q1 = std::sqrt((1 + pm_in[0] - pm_in[5] - pm_in[10])) / 2;
+				q2 = std::sqrt((1 + pm_in[5] - pm_in[0] - pm_in[10])) / 2;
+				q3 = std::sqrt((1 + pm_in[10] - pm_in[0] - pm_in[5])) / 2;
+
+				/*qp_out 是通过开方计算而得，因此一定为正*/
+				id = std::max_element(q, q + 3) - q;
+
+				q[id] *= s_sgn2(pm_in[(id + 2) % 3 * 4 + (id + 1) % 3] - pm_in[(id + 1) % 3 * 4 + (id + 2) % 3]);
+				q[(id + 1) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 1) % 3] + pm_in[((id + 1) % 3) * 4 + id]);
+				q[(id + 2) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 2) % 3] + pm_in[((id + 2) % 3) * 4 + id]);
+			}
+
+			x = pm_in[3];
+			y = pm_in[7];
+			z = pm_in[11];
+		}
 		void s_pq2pe(const double *pq_in, double *pe_out, const char *EurType) noexcept
 		{
 			double pm[16];
@@ -452,6 +307,12 @@ namespace Aris
 			double pm[16];
 			s_pe2pm(pe_in, pm, EurType);
 			s_pm2pq(pm, pq_out);
+		}
+		void s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out) noexcept
+		{
+			double pm[16];
+			s_pe2pm(pe_in, pm, type1_in);
+			s_pm2pe(pm, pe_out, type2_in);
 		}
 		void s_vq2v(const double *pq_in, const double *vq_in, double *v_out) noexcept
 		{
@@ -1195,8 +1056,6 @@ namespace Aris
 			gamma_out[9] = im_in[29];
 		}
 	
-		
-
 		void s_block_cpy(const int &block_size_m, const int &block_size_n,
 			const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
 			double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept
@@ -1296,6 +1155,30 @@ namespace Aris
 			}
 		}
 
+		void s_inv_pm(const double *pm_in, double *pm_out) noexcept
+		{
+			//转置
+			pm_out[0] = pm_in[0];
+			pm_out[1] = pm_in[4];
+			pm_out[2] = pm_in[8];
+			pm_out[4] = pm_in[1];
+			pm_out[5] = pm_in[5];
+			pm_out[6] = pm_in[9];
+			pm_out[8] = pm_in[2];
+			pm_out[9] = pm_in[6];
+			pm_out[10] = pm_in[10];
+
+			//位置
+			pm_out[3] = -pm_out[0] * pm_in[3] - pm_out[1] * pm_in[7] - pm_out[2] * pm_in[11];
+			pm_out[7] = -pm_out[4] * pm_in[3] - pm_out[5] * pm_in[7] - pm_out[6] * pm_in[11];
+			pm_out[11] = -pm_out[8] * pm_in[3] - pm_out[9] * pm_in[7] - pm_out[10] * pm_in[11];
+
+			//其他
+			pm_out[12] = 0;
+			pm_out[13] = 0;
+			pm_out[14] = 0;
+			pm_out[15] = 1;
+		}
 		void s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept
 		{
 			/*seemed that loop is faster than cblas*/
@@ -1445,7 +1328,7 @@ namespace Aris
 			{
 				nrm += x[i] * x[i];
 			}
-			return sqrt(nrm);
+			return std::sqrt(nrm);
 		}
 		void s_daxpy(const int N, const double alpha, const double *X, const int incX, double *Y, const int incY) noexcept
 		{
@@ -1545,9 +1428,137 @@ namespace Aris
 			}
 		}
 
+		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder) noexcept
+		{
+			int Order[3];
+			double Axis1[3], Axis2[3], Axis3[3];
+			double nrm;
 
+			Order[0] = axesOrder[0] - 'w';//asc玛顺序 uvw  xyz……
+			Order[1] = axesOrder[1] - 'w';//asc玛顺序 uvw  xyz……
+			Order[2] = 6 - Order[1] - Order[0];
 
-		AKIMA::AKIMA(int inNum, const double *x_in, const double *y_in)
+			std::copy_n(firstAxisPnt, 3, Axis1);
+			std::copy_n(secondAxisPnt, 3, Axis2);
+
+			s_daxpy(3, -1, origin, 1, Axis1, 1);
+			s_daxpy(3, -1, origin, 1, Axis2, 1);
+
+			nrm = s_dnrm2(3, Axis1, 1);
+			if (nrm != 0)
+			{
+				for (int i = 0; i < 3; ++i)
+				{
+					Axis1[i] = Axis1[i] / nrm;
+				}
+			}
+			else
+			{
+				Axis1[Order[0]] = 1;
+			}
+
+			nrm = s_dnrm2(3, Axis2, 1);
+			if (nrm != 0)
+			{
+				for (int i = 0; i < 3; ++i)
+				{
+					Axis2[i] = Axis2[i] / nrm;
+				}
+			}
+			else
+			{
+				Axis2[Order[1]] = 1;
+			}
+
+			//下求差乘计算。首先要判断差乘之后的正负号。
+			s_cro3(Axis1, Axis2, Axis3);
+
+			nrm = s_dnrm2(3, Axis3, 1);
+			if (nrm == 0)
+			{
+				//有待补充
+			}
+			else
+			{
+				for (int i = 0; i < 3; ++i)
+				{
+					Axis3[i] = Axis3[i] / nrm;
+				}
+			}
+
+			//判断第三根轴的正负号
+			if (Order[1]>Order[0])
+			{
+				if ((Order[1] - Order[0]) == 1)
+				{
+				}
+				else
+				{
+					s_dscal(3, -1, Axis3, 1);
+				}
+			}
+			else
+			{
+				if ((Order[1] - Order[0]) == -1)
+				{
+					s_dscal(3, -1, Axis3, 1);
+				}
+				else
+				{
+				}
+			}
+
+			s_cro3(Axis3, Axis1, Axis2);
+
+			if (Order[0]>Order[2])
+			{
+				if ((Order[0] - Order[2]) == 1)
+				{
+				}
+				else
+				{
+					s_dscal(3, -1, Axis2, 1);
+				}
+			}
+			else
+			{
+				if ((Order[0] - Order[2]) == -1)
+				{
+					s_dscal(3, -1, Axis2, 1);
+				}
+				else
+				{
+				}
+			}
+
+			nrm = s_dnrm2(3, Axis2, 1);
+			for (int i = 0; i < 3; ++i)
+			{
+				Axis2[i] = Axis2[i] / nrm;
+			}
+
+			std::fill_n(pm_out, 16, 0);
+
+			pm_out[3] = origin[0];
+			pm_out[7] = origin[1];
+			pm_out[11] = origin[2];
+
+			pm_out[0 + Order[0] - 1] = Axis1[0];
+			pm_out[4 + Order[0] - 1] = Axis1[1];
+			pm_out[8 + Order[0] - 1] = Axis1[2];
+
+			pm_out[0 + Order[1] - 1] = Axis2[0];
+			pm_out[4 + Order[1] - 1] = Axis2[1];
+			pm_out[8 + Order[1] - 1] = Axis2[2];
+
+			pm_out[0 + Order[2] - 1] = Axis3[0];
+			pm_out[4 + Order[2] - 1] = Axis3[1];
+			pm_out[8 + Order[2] - 1] = Axis3[2];
+
+			pm_out[15] = 1;
+		}
+
+		Akima::Akima(int inNum, const double *x_in, const double *y_in)
 		{
 			/*对数据进行排序,并保存*/
 			std::list<std::pair<double, double> > v;
@@ -1613,7 +1624,7 @@ namespace Aris
 				_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (_x[i + 1] - _x[i]) / (_x[i + 1] - _x[i]);
 			}
 		}
-		double AKIMA::operator()(double x, char order) const
+		double Akima::operator()(double x, char order) const
 		{
 			/*寻找第一个大于x的位置*/
 			auto bIn = std::upper_bound(_x.begin(), _x.end() - 1, x);
@@ -1633,7 +1644,7 @@ namespace Aris
 				return ((w*_p3[id] + _p2[id])*w + _p1[id])*w + _p0[id];
 			}
 		}
-		void AKIMA::operator()(int length, const double *x_in, double *y_out, char order)const
+		void Akima::operator()(int length, const double *x_in, double *y_out, char order)const
 		{
 			for(int i = 0; i < length; ++i)
 			{

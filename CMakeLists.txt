@@ -158,7 +158,18 @@ add_library(Aris_Sensor STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
 
-################################### build demos for aris_Core ####################################
+################################### build tests for Aris ####################################
+enable_testing()
+
+add_executable(test_DynKer test/test_DynKer.cpp)
+target_link_libraries(test_DynKer ${ALL_LINK_LIB})
+add_test(NAME test_DynKer COMMAND test_DynKer)
+set_tests_properties (test_DynKer PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+
+
+
+
+################################### build demos for Aris ####################################
 # Make demo projects
 set(MAKE_DEMO " ")
 if(MAKE_DEMO)

@@ -10,7 +10,7 @@
 #include "Aris_Vision.h"
 #endif
 
-class SENSOR :public Aris::Sensor::SENSOR_BASE<double>
+class SENSOR :public Aris::Sensor::SensorBase<double>
 {
 	virtual void UpdateData(double &data)
 	{
@@ -28,7 +28,7 @@ Aris::Sensor::KINECT kinect;
 
 int main()
 {
-	Aris::Core::DOCUMENT doc;
+	Aris::Core::XmlDocument doc;
 #ifdef PLATFORM_IS_WINDOWS
 	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III.xml");
 #endif
@@ -104,7 +104,7 @@ int main()
 
 
 
-	Aris::Core::RT_MSG::instance[0].Copy("123");
+	Aris::Core::MsgRT::instance[0].Copy("123");
 
 
 	char aaa;

@@ -23,11 +23,11 @@ namespace Aris
 {
 	namespace Control
 	{
-		class MOTION::IMP 
+		class EthercatMotion::Imp 
 		{
 		public:
-			IMP(MOTION *mot) :pFather(mot) {};
-			~IMP() = default;
+			Imp(EthercatMotion *mot) :pFather(mot) {};
+			~Imp() = default;
 
 			std::int16_t Enable(const std::uint8_t mode)
 			{
@@ -116,7 +116,7 @@ namespace Aris
 				int motorState = (statusWord & 0x000F);
 				if (motorState == 0x0001)
 				{
-					/*already disabled*/
+					/*alReady disabled*/
 					return 0;
 				}
 				else if (motorState == 0x0003 || motorState == 0x0007 || motorState == 0x0000)
@@ -154,9 +154,9 @@ namespace Aris
 				else
 				{
 					/*motor is in running state*/
-					std::uint8_t mode_read;
-					pFather->ReadPdo(4, 0, mode_read);
-					if (mode_read != 0x0006)
+					std::uint8_t mode_Read;
+					pFather->ReadPdo(4, 0, mode_Read);
+					if (mode_Read != 0x0006)
 					{
 						/*set motor to mode 0x006, which is homing mode*/
 						pFather->WritePdo(0, 5, static_cast<std::uint8_t>(0x006));
@@ -190,9 +190,9 @@ namespace Aris
 				pFather->ReadPdo(1, 3, statusword);
 				int motorState = (statusword & 0x000F);
 
-				std::uint8_t mode_read;
-				pFather->ReadPdo(4, 0, mode_read);
-				if (motorState != 0x0007 || mode_read != VELOCITY)
+				std::uint8_t mode_Read;
+				pFather->ReadPdo(4, 0, mode_Read);
+				if (motorState != 0x0007 || mode_Read != VELOCITY)
 				{
 					return -1;
 				}
@@ -206,7 +206,6 @@ namespace Aris
 					desired_vel = std::max(desired_vel, -maxSpeed);
 					desired_vel = std::min(desired_vel, maxSpeed);
 					
-					
 					pFather->WritePdo(0, 1, desired_vel);
 					return 0;
 				}
@@ -219,9 +218,9 @@ namespace Aris
 				pFather->ReadPdo(1, 3, statusword);
 				int motorState = (statusword & 0x000F);
 
-				std::uint8_t mode_read;
-				pFather->ReadPdo(4, 0, mode_read);
-				if (motorState != 0x0007 || mode_read != VELOCITY)
+				std::uint8_t mode_Read;
+				pFather->ReadPdo(4, 0, mode_Read);
+				if (motorState != 0x0007 || mode_Read != VELOCITY)
 				{
 					return -1;
 				}
@@ -239,9 +238,9 @@ namespace Aris
 				pFather->ReadPdo(1, 3, statusword);
 				int motorState = (statusword & 0x000F);
 
-				std::uint8_t mode_read;
-				pFather->ReadPdo(4, 0, mode_read);
-				if (motorState != 0x0007 || mode_read != CURRENT) //need running and cur mode
+				std::uint8_t mode_Read;
+				pFather->ReadPdo(4, 0, mode_Read);
+				if (motorState != 0x0007 || mode_Read != CURRENT) //need running and cur mode
 				{
 					return -1;
 				}
@@ -258,24 +257,23 @@ namespace Aris
 			std::int32_t homeOffSet{ 0 };
 			std::int32_t maxSpeed{ 0 };
 		private:
-			MOTION *pFather;
+			EthercatMotion *pFather;
 			
-
 			bool isWaitingMode{ false };
 			bool isEverHomed{ false };
 			bool isFake{ true };
 			int enablePeriod{ 0 };
 			std::uint8_t runningMode{ 9 };
 		};
-		MOTION::~MOTION() {}
-		MOTION::MOTION(const Aris::Core::ELEMENT *ele) :ETHERCAT_SLAVE(ele), pImp(new MOTION::IMP(this))
+		EthercatMotion::~EthercatMotion() {}
+		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement *ele) :EthercatSlave(ele), pImp(new EthercatMotion::Imp(this))
 		{
 		};
-		void MOTION::Initialize()
+		void EthercatMotion::Init()
 		{
-			this->ETHERCAT_SLAVE::Initialize();
+			this->EthercatSlave::Init();
 		}
-		void MOTION::DoCommand(const DATA &data)
+		void EthercatMotion::DoCommand(const Data &data)
 		{		
 			switch (data.cmd)
 			{
@@ -312,13 +310,13 @@ namespace Aris
 				return;
 			}
 		}
-		void MOTION::ReadFeedback(DATA &data)
+		void EthercatMotion::ReadFeedback(Data &data)
 		{
 			data.feedbackCur = pImp->Cur();
 			data.feedbackPos = pImp->Pos();
 			data.feedbackVel = pImp->Vel();
 		}
-		bool MOTION::HasFault()
+		bool EthercatMotion::HasFault()
 		{
 			std::uint16_t statusword;
 			this->ReadPdo(1, 3, statusword);
@@ -329,7 +327,7 @@ namespace Aris
 				return false;
 		}
 
-		void FORCE_SENSOR::ReadData(DATA &data)
+		void EthercatForceSensor::ReadData(Data &data)
 		{
 			std::int32_t value;
 
@@ -352,10 +350,10 @@ namespace Aris
 			data.Mz = value / 1000.0;
 		}
 
-		void CONTROLLER::LoadXml(const Aris::Core::ELEMENT *ele)
+		void Controller::LoadXml(const Aris::Core::XmlElement *ele)
 		{
 			/*Load EtherCat slave types*/
-			std::map<std::string, const Aris::Core::ELEMENT *> slaveTypeMap;
+			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
 
 			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
@@ -370,7 +368,7 @@ namespace Aris
 				std::string type{ pSla->Attribute("type") };
 				if (type == "ElmoSoloWhistle")
 				{
-					pMotions.push_back(AddSlave<MOTION>(slaveTypeMap.at(type)));
+					pMotions.push_back(AddSlave<EthercatMotion>(slaveTypeMap.at(type)));
 					if (pSla->QueryIntAttribute("maxSpeed", &pMotions.back()->pImp->maxSpeed) != tinyxml2::XML_NO_ERROR)
 					{						
 						throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
@@ -379,7 +377,7 @@ namespace Aris
 				}
 				else if (type == "AtiForceSensor")
 				{
-					pForceSensors.push_back(AddSlave<FORCE_SENSOR>(slaveTypeMap.at(type)));
+					pForceSensors.push_back(AddSlave<EthercatForceSensor>(slaveTypeMap.at(type)));
 				}
 				else
 				{
@@ -392,25 +390,25 @@ namespace Aris
 			this->forceSensorData.resize(this->pForceSensors.size());
 
 
-			pMotDataPipe.reset(new PIPE<std::vector<MOTION::DATA> >(1, true, pMotions.size()));
+			pMotDataPipe.reset(new Pipe<std::vector<EthercatMotion::Data> >(1, true, pMotions.size()));
 
 			
 		}
-		void CONTROLLER::SetControlStrategy(std::function<int(DATA&)> strategy)
+		void Controller::SetControlStrategy(std::function<int(Data&)> strategy)
 		{
 			if (this->strategy)
 			{
-				throw std::runtime_error("failed to set control strategy, because it already has one");
+				throw std::runtime_error("failed to set control strategy, because it alReady has one");
 			}
 
 
 			this->strategy = strategy;
 		}
-		void CONTROLLER::Start()
+		void Controller::Start()
 		{
 			isStoping = false;
 
-			/*begin thread which will save data*/
+			/*begin thRead which will save data*/
 			motionDataThread = std::thread([this]()
 			{
 				static std::fstream file;
@@ -418,7 +416,7 @@ namespace Aris
 				name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
 				file.open(name.c_str(), std::ios::out | std::ios::trunc);
 				
-				std::vector<MOTION::DATA> data;
+				std::vector<EthercatMotion::Data> data;
 				data.resize(this->pMotions.size());
 
 				
@@ -441,24 +439,24 @@ namespace Aris
 				file.close();
 			});
 			
-			this->ETHERCAT_MASTER::Start();
+			this->EthercatMaster::Start();
 		}
-		void CONTROLLER::Stop()
+		void Controller::Stop()
 		{
-			this->ETHERCAT_MASTER::Stop();
+			this->EthercatMaster::Stop();
 
 			this->isStoping = true;
 			this->motionDataThread.join();
 		}
-		void CONTROLLER::ControlStrategy()
+		void Controller::ControlStrategy()
 		{
 			/*构造传入strategy的参数*/
-			DATA data{ &lastMotionData, &motionData, &forceSensorData, nullptr, nullptr };
+			Data data{ &lastMotionData, &motionData, &forceSensorData, nullptr, nullptr };
 			
 			/*收取消息*/
-			if (this->MsgPipe().RecvInRT(Aris::Core::RT_MSG::instance[0]) > 0)
+			if (this->MsgPipe().RecvInRT(Aris::Core::MsgRT::instance[0]) > 0)
 			{
-				data.pMsgRecv = &Aris::Core::RT_MSG::instance[0];
+				data.pMsgRecv = &Aris::Core::MsgRT::instance[0];
 			};
 			
 			/*读取反馈*/
@@ -468,9 +466,7 @@ namespace Aris
 			}
 			for (std::size_t i = 0; i < pForceSensors.size(); ++i)
 			{
-							
 				pForceSensors.at(i)->ReadData(forceSensorData[i]);
-					
 			}
 			
 			/*执行自定义的控制策略*/

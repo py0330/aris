@@ -32,20 +32,20 @@ namespace Aris
 {
 	namespace Control
 	{
-		class ETHERCAT_SLAVE::IMP 
+		class EthercatSlave::Imp 
 		{
 		public:
-			IMP(const Aris::Core::ELEMENT *ele);
-			void Initialize();
+			Imp(const Aris::Core::XmlElement *ele);
+			void Init();
 			void Read();
-			void Write();
+			void write();
 
 		private:
 			/*data object, can be PDO or SDO*/
 			class DO
 			{
 			public:
-				IMP *pImp;
+				Imp *pImp;
 				std::uint16_t index;
 				std::uint8_t subIndex;
 				std::uint8_t size;
@@ -106,24 +106,24 @@ namespace Aris
 			ec_domain_t* pDomain;
 			std::uint8_t* pDomainPd;
 
-			friend class ETHERCAT_MASTER::IMP;
-			friend class ETHERCAT_SLAVE;
+			friend class EthercatMaster::Imp;
+			friend class EthercatSlave;
 		};
-		class ETHERCAT_MASTER::IMP
+		class EthercatMaster::Imp
 		{
 		public:
 			void Read();
-			void Write();
+			void write();
 			void Start();
 			void Stop();
 			
 		private:
-			void Initialize();
+			void Init();
 			void Sync(uint64_t nanoSecond);
 			static void RealTimeCore(void *);
 
 		private:
-			std::vector<std::unique_ptr<ETHERCAT_SLAVE> > slaves;
+			std::vector<std::unique_ptr<EthercatSlave> > slaves;
 			ec_master_t* pEcMaster;
 
 			static const int samplePeriodNs;
@@ -132,15 +132,15 @@ namespace Aris
 #ifdef PLATFORM_IS_LINUX
 			static RT_TASK realtimeCore;
 #endif
-			friend class ETHERCAT_SLAVE::IMP;
-			friend class ETHERCAT_MASTER;
+			friend class EthercatSlave::Imp;
+			friend class EthercatMaster;
 		};
 
 #ifdef PLATFORM_IS_LINUX
-		RT_TASK ETHERCAT_MASTER::IMP::realtimeCore;
-		const int ETHERCAT_MASTER::IMP::samplePeriodNs = 1000000;
+		RT_TASK EthercatMaster::Imp::realtimeCore;
+		const int EthercatMaster::Imp::samplePeriodNs = 1000000;
 #endif
-		ETHERCAT_SLAVE::IMP::IMP(const Aris::Core::ELEMENT *ele)
+		EthercatSlave::Imp::Imp(const Aris::Core::XmlElement *ele)
 		{
 			/*load product id...*/
 			this->productCode = std::stoi(ele->Attribute("productCode"), nullptr, 0);
@@ -159,55 +159,55 @@ namespace Aris
 
 
 			/*load PDO*/
-			auto AddDoType = [](const Aris::Core::ELEMENT *ele, bool isTx)-> DO*
+			auto AddDoType = [](const Aris::Core::XmlElement *ele, bool isTx)-> DO*
 			{
 				DO* ret;
 				if (ele->Attribute("type", "int8"))
 				{
 					if(isTx)
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::int8_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int8_t>();
 					else
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::int8_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int8_t>();
 					ret->size = 8;
 				}
 				else if (ele->Attribute("type", "uint8"))
 				{
 					if (isTx)
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::uint8_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint8_t>();
 					else
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::uint8_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::uint8_t>();
 					ret->size = 8;
 				}
 				else if (ele->Attribute("type", "int16"))
 				{
 					if (isTx)
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::int16_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int16_t>();
 					else
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::int16_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int16_t>();
 					ret->size = 16;
 				}
 				else if (ele->Attribute("type", "uint16"))
 				{
 					if (isTx)
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::uint16_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint16_t>();
 					else
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::uint16_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::uint16_t>();
 					ret->size = 16;
 				}
 				else if (ele->Attribute("type", "int32"))
 				{
 					if (isTx)
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::int32_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int32_t>();
 					else
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::int32_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int32_t>();
 					ret->size = 32;
 				}
 				else if (ele->Attribute("type", "uint32"))
 				{
 					if (isTx)
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_TX<std::uint32_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint32_t>();
 					else
-						ret = new ETHERCAT_SLAVE::IMP::PDO_TYPE_RX<std::uint32_t>();
+						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::uint32_t>();
 					ret->size = 32;
 				}
 				else
@@ -272,9 +272,9 @@ namespace Aris
 			ec_sync_info[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, static_cast<unsigned int>(ec_pdo_info_vec_Tx.size()), ec_pdo_info_vec_Tx.data(), EC_WD_ENABLE };
 			ec_sync_info[4] = ec_sync_info_t{ 0xff };
 		};
-		void ETHERCAT_SLAVE::IMP::Initialize()
+		void EthercatSlave::Imp::Init()
 		{		
-			auto pEcMaster = ETHERCAT_MASTER::GetInstance()->pImp->pEcMaster;
+			auto pEcMaster = EthercatMaster::GetInstance()->pImp->pEcMaster;
 
 			for(auto &reg:ec_pdo_entry_reg_vec)
 			{
@@ -312,83 +312,81 @@ namespace Aris
 			}
 			
 		}
-		void ETHERCAT_SLAVE::IMP::Read()
+		void EthercatSlave::Imp::Read()
 		{
 			ecrt_domain_process(pDomain);
 		}
-		void ETHERCAT_SLAVE::IMP::Write()
+		void EthercatSlave::Imp::write()
 		{
 			ecrt_domain_queue(pDomain);
 		}
 
-		ETHERCAT_SLAVE::ETHERCAT_SLAVE(const Aris::Core::ELEMENT *ele):pImp(new IMP{ ele })
+		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement *ele) :pImp(new Imp{ ele }) {}
+		EthercatSlave::~EthercatSlave() {};
+		void EthercatSlave::Init()
 		{
+			this->pImp->Init();
 		}
-		ETHERCAT_SLAVE::~ETHERCAT_SLAVE() {};
-		void ETHERCAT_SLAVE::Initialize()
-		{
-			this->pImp->Initialize();
-		}
-		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::int8_t &value) const
+		void EthercatSlave::ReadPdo(int pdoGroupID, int pdoID, std::int8_t &value) const
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
 		}
-		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::int16_t &value) const
+		void EthercatSlave::ReadPdo(int pdoGroupID, int pdoID, std::int16_t &value) const
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
 		}
-		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::int32_t &value) const
+		void EthercatSlave::ReadPdo(int pdoGroupID, int pdoID, std::int32_t &value) const
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
 		}
-		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const
+		void EthercatSlave::ReadPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
 		}
-		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const
+		void EthercatSlave::ReadPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
 		}
-		void ETHERCAT_SLAVE::ReadPdo(int pdoGroupID, int pdoID, std::uint32_t &value) const
+		void EthercatSlave::ReadPdo(int pdoGroupID, int pdoID, std::uint32_t &value) const
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->ReadValue(value);
 		}
-		void ETHERCAT_SLAVE::WritePdo(int pdoGroupID, int pdoID, std::int8_t value)
+		void EthercatSlave::WritePdo(int pdoGroupID, int pdoID, std::int8_t value)
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->WriteValue(value);
 		}
-		void ETHERCAT_SLAVE::WritePdo(int pdoGroupID, int pdoID, std::int16_t value)
+		void EthercatSlave::WritePdo(int pdoGroupID, int pdoID, std::int16_t value)
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->WriteValue(value);
 		}
-		void ETHERCAT_SLAVE::WritePdo(int pdoGroupID, int pdoID, std::int32_t value)
+		void EthercatSlave::WritePdo(int pdoGroupID, int pdoID, std::int32_t value)
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->WriteValue(value);
 		}
-		void ETHERCAT_SLAVE::WritePdo(int pdoGroupID, int pdoID, std::uint8_t value)
+		void EthercatSlave::WritePdo(int pdoGroupID, int pdoID, std::uint8_t value)
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->WriteValue(value);
 		}
-		void ETHERCAT_SLAVE::WritePdo(int pdoGroupID, int pdoID, std::uint16_t value)
+		void EthercatSlave::WritePdo(int pdoGroupID, int pdoID, std::uint16_t value)
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->WriteValue(value);
 		}
-		void ETHERCAT_SLAVE::WritePdo(int pdoGroupID, int pdoID, std::uint32_t value)
+		void EthercatSlave::WritePdo(int pdoGroupID, int pdoID, std::uint32_t value)
 		{
 			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->WriteValue(value);
 		}
-		void ETHERCAT_SLAVE::ReadSdo(int sdoID, std::int32_t &value) const
+		void EthercatSlave::ReadSdo(int sdoID, std::int32_t &value) const
 		{
 			value = this->pImp->sdos[sdoID]->value;
 		}
-		void ETHERCAT_SLAVE::WriteSdo(int sdoID, std::int32_t value)
+		void EthercatSlave::WriteSdo(int sdoID, std::int32_t value)
 		{
 			this->pImp->sdos[sdoID]->value = value;
 		}
 
 		
-		std::atomic_bool ETHERCAT_MASTER::IMP::isStopping;
-		void ETHERCAT_MASTER::IMP::Read()
+		std::atomic_bool EthercatMaster::Imp::isStopping;
+		void EthercatMaster::Imp::Read()
 		{
 			ecrt_master_receive(pEcMaster);
 			for (auto &pSla : slaves)
@@ -396,27 +394,27 @@ namespace Aris
 				pSla->pImp->Read();
 			}
 		}
-		void ETHERCAT_MASTER::IMP::Write()
+		void EthercatMaster::Imp::write()
 		{
 
 			for (auto &pSla : slaves)
 			{
-				pSla->pImp->Write();
+				pSla->pImp->write();
 			}
 
 
 			ecrt_master_send(pEcMaster);
 		}
-		void ETHERCAT_MASTER::IMP::Start()
+		void EthercatMaster::Imp::Start()
 		{
 			static bool isFirstTime{ true };
 			if (!isFirstTime)
 			{
-				throw std::runtime_error("master already running");
+				throw std::runtime_error("master alReady running");
 			}
 			isFirstTime = false;
 			
-			this->Initialize();
+			this->Init();
 #ifdef PLATFORM_IS_LINUX
 			rt_print_auto_init(1);		
 
@@ -424,18 +422,18 @@ namespace Aris
 			
 			isStopping = false;
 
-			rt_task_create(&ETHERCAT_MASTER::IMP::realtimeCore, "realtime core", 0, priority, T_FPU);
-			rt_task_start(&ETHERCAT_MASTER::IMP::realtimeCore, &ETHERCAT_MASTER::IMP::RealTimeCore, NULL);
+			rt_task_create(&EthercatMaster::Imp::realtimeCore, "realtime core", 0, priority, T_FPU);
+			rt_task_start(&EthercatMaster::Imp::realtimeCore, &EthercatMaster::Imp::RealTimeCore, NULL);
 #endif
 		};
-		void ETHERCAT_MASTER::IMP::Stop()
+		void EthercatMaster::Imp::Stop()
 		{
 			isStopping = true;
 #ifdef PLATFORM_IS_LINUX
-			rt_task_join(&ETHERCAT_MASTER::IMP::realtimeCore);
+			rt_task_join(&EthercatMaster::Imp::realtimeCore);
 #endif
 		}
-		void ETHERCAT_MASTER::IMP::Initialize()
+		void EthercatMaster::Imp::Init()
 		{
 #ifdef PLATFORM_IS_LINUX
 			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1)
@@ -453,7 +451,7 @@ namespace Aris
 
 
 				slaves[i]->pImp->position = static_cast<std::uint16_t>(i);
-				slaves[i]->Initialize();
+				slaves[i]->Init();
 
 			}
 			
@@ -464,13 +462,13 @@ namespace Aris
 				pSla->pImp->pDomainPd = ecrt_domain_data(pSla->pImp->pDomain);
 			}
 		}
-		void ETHERCAT_MASTER::IMP::Sync(uint64_t nanoSecond)
+		void EthercatMaster::Imp::Sync(uint64_t nanoSecond)
 		{
 			ecrt_master_application_time(pEcMaster, nanoSecond);
 			ecrt_master_sync_reference_clock(pEcMaster);
 			ecrt_master_sync_slave_clocks(pEcMaster);
 		}
-		void ETHERCAT_MASTER::IMP::RealTimeCore(void *)
+		void EthercatMaster::Imp::RealTimeCore(void *)
 		{
 #ifdef PLATFORM_IS_LINUX
 			rt_task_set_periodic(NULL, TM_NOW, samplePeriodNs);
@@ -479,34 +477,34 @@ namespace Aris
 			{
 				rt_task_wait_period(NULL);
 
-				ETHERCAT_MASTER::GetInstance()->pImp->Read();//motors and sensors get data
+				EthercatMaster::GetInstance()->pImp->Read();//motors and sensors get data
 				
 				/*Here is tg*/
-				ETHERCAT_MASTER::GetInstance()->ControlStrategy();
+				EthercatMaster::GetInstance()->ControlStrategy();
 				/*tg finished*/
 
-				ETHERCAT_MASTER::GetInstance()->pImp->Sync(rt_timer_read());
-				ETHERCAT_MASTER::GetInstance()->pImp->Write();//motor data write and state machine/mode transition
+				EthercatMaster::GetInstance()->pImp->Sync(rt_timer_read());
+				EthercatMaster::GetInstance()->pImp->write();//motor data write and state machine/mode transition
 			}
 #endif
 		};
 		
-		std::unique_ptr<ETHERCAT_MASTER> ETHERCAT_MASTER::pInstance;
-		ETHERCAT_MASTER * ETHERCAT_MASTER::GetInstance()
+		std::unique_ptr<EthercatMaster> EthercatMaster::pInstance;
+		EthercatMaster * EthercatMaster::GetInstance()
 		{
 			if (!pInstance)
 			{
-				throw std::runtime_error("please first create an instance fo ETHERCAT_MASTER");
+				throw std::runtime_error("please first create an instance fo EthercatMaster");
 			}
 			
 			return pInstance.get();
 		}
-		ETHERCAT_MASTER::ETHERCAT_MASTER():pImp(new IMP){}
-		ETHERCAT_MASTER::~ETHERCAT_MASTER()	{}
-		void ETHERCAT_MASTER::LoadXml(const Aris::Core::ELEMENT *ele)
+		EthercatMaster::EthercatMaster():pImp(new Imp){}
+		EthercatMaster::~EthercatMaster()	{}
+		void EthercatMaster::LoadXml(const Aris::Core::XmlElement *ele)
 		{
 			/*Load EtherCat slave types*/
-			std::map<std::string, const Aris::Core::ELEMENT *> slaveTypeMap;
+			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
 			
 			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
@@ -518,20 +516,20 @@ namespace Aris
 			auto pSlaves = ele->FirstChildElement("Slave");
 			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
 			{
-				this->AddSlave<ETHERCAT_SLAVE>(slaveTypeMap.at(std::string(pSla->Attribute("type"))));
+				this->AddSlave<EthercatSlave>(slaveTypeMap.at(std::string(pSla->Attribute("type"))));
 			}
 		}
-		void ETHERCAT_MASTER::Start()
+		void EthercatMaster::Start()
 		{
 			this->pImp->Start();
 		}
-		void ETHERCAT_MASTER::Stop()
+		void EthercatMaster::Stop()
 		{
 			this->pImp->Stop();
 		}
-		void ETHERCAT_MASTER::AddSlavePtr(ETHERCAT_SLAVE *pSla)
+		void EthercatMaster::AddSlavePtr(EthercatSlave *pSla)
 		{
-			pImp->slaves.push_back(std::unique_ptr<ETHERCAT_SLAVE>(pSla));
+			pImp->slaves.push_back(std::unique_ptr<EthercatSlave>(pSla));
 		}
 
 		

@@ -16,7 +16,7 @@ namespace Aris
 {
 	namespace Sensor
 	{
-		struct IMU_DATA
+		struct ImuData
 		{
 			/*时间戳*/
 			std::int64_t time;
@@ -65,21 +65,21 @@ namespace Aris
 			friend class IMU;
 		};
 
-		class IMU :public SENSOR_BASE<IMU_DATA>
+		class IMU :public SensorBase<ImuData>
 		{
 		public:
 			IMU();
-			IMU(const Aris::Core::ELEMENT *xmlEle);
+			IMU(const Aris::Core::XmlElement *xmlEle);
 			~IMU();
 		
 		private:
-			virtual void Initiate();
+			virtual void Init();
 			virtual void Release();
-			virtual void UpdateData(IMU_DATA &data);
+			virtual void UpdateData(ImuData &data);
 
 		private:
 			class IMU_IMP;
-			IMU_IMP *pDevice;
+			std::unique_ptr<IMU_IMP> pDevice;
 		};
 	}
 }

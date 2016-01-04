@@ -41,19 +41,19 @@ namespace Aris
 			return 1.0 / n*i;
 		}
 
-		class FAST_PATH
+		class FastPath
 		{
 		public:
-			struct MOTOR_LIMIT
+			struct MotionLimit
 			{
 				double maxVel, minVel, maxAcc, minAcc;
 			};
-			struct NODE
+			struct Node
 			{
 				double time, s, ds, dds;
 				bool isAccelerating;
 			};
-			struct DATA
+			struct Data
 			{
 				double * const Ji;
 				double * const dJi;
@@ -67,9 +67,8 @@ namespace Aris
 				double ddsLhs, ddsRhs;
 			};
 
-
-			template <typename LIMIT_ARRAY>
-			void SetMotorLimit(LIMIT_ARRAY limits)
+			template <typename LimitArray>
+			void SetMotorLimit(LimitArray limits)
 			{
 				motor_limits.clear();
 				for (auto &limit : limits)
@@ -77,33 +76,33 @@ namespace Aris
 					motor_limits.push_back(limit);
 				}
 			}
-			void SetBeginNode(NODE node) { beginNode=node; };
-			void SetEndNode(NODE node) { endNode = node; };
-			void SetFunction(std::function<void(FAST_PATH::DATA &)> getEveryThing) { this->getEveryThing = getEveryThing; };
+			void SetBeginNode(Node node) { beginNode=node; };
+			void SetEndNode(Node node) { endNode = node; };
+			void SetFunction(std::function<void(FastPath::Data &)> getEveryThing) { this->getEveryThing = getEveryThing; };
 			std::vector<double> &Result() { return resultVec; };
 			void Run();
 			
 
-			FAST_PATH() = default;
-			~FAST_PATH() = default;
+			FastPath() = default;
+			~FastPath() = default;
 
 		private:
-			bool ComputeDsBundPure(FAST_PATH::DATA &data, std::vector<FAST_PATH::MOTOR_LIMIT> &limits);
-			bool ComputeDdsBundPure(FAST_PATH::DATA &data, std::vector<FAST_PATH::MOTOR_LIMIT> &limits);
-			bool ComputeDsBund(FAST_PATH::DATA &data, std::vector<FAST_PATH::MOTOR_LIMIT> &limits);
-			bool ComputeDdsBund(FAST_PATH::DATA &data, std::vector<FAST_PATH::MOTOR_LIMIT> &limits);
+			bool ComputeDsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits);
+			bool ComputeDdsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits);
+			bool ComputeDsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits);
+			bool ComputeDdsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits);
 			
-			int ComputeForward(std::list<NODE>::iterator iter, FAST_PATH::DATA &data, int num);
-			int ComputeBackward(std::list<NODE>::iterator iter, FAST_PATH::DATA &data, int num);
-			bool Compute(std::list<NODE>::iterator iter, FAST_PATH::DATA &data);
+			int ComputeForward(std::list<Node>::iterator iter, FastPath::Data &data, int num);
+			int ComputeBackward(std::list<Node>::iterator iter, FastPath::Data &data, int num);
+			bool Compute(std::list<Node>::iterator iter, FastPath::Data &data);
 
-			void Concate(FAST_PATH::DATA &data);
+			void Concate(FastPath::Data &data);
 		public:
-			NODE beginNode, endNode;
-			std::list<NODE> list;
-			std::list<NODE>::iterator finalIter;
-			std::vector<MOTOR_LIMIT> motor_limits;
-			std::function<void(FAST_PATH::DATA &)> getEveryThing;
+			Node beginNode, endNode;
+			std::list<Node> list;
+			std::list<Node>::iterator finalIter;
+			std::vector<MotionLimit> motor_limits;
+			std::function<void(FastPath::Data &)> getEveryThing;
 
 			std::vector<double> resultVec;
 		};

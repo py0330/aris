@@ -10,7 +10,7 @@ namespace Aris
 		const double dt = 0.001;
 		
 		/*只根据电机最大速度和最小速度来计算ds的最大和最小值*/
-		bool FAST_PATH::ComputeDsBundPure(FAST_PATH::DATA &data, std::vector<FAST_PATH::MOTOR_LIMIT> &limits)
+		bool FastPath::ComputeDsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			static std::vector<double> J_dot_g(data.size);
 			static std::vector<double> lhs(data.size), rhs(data.size);
@@ -38,7 +38,7 @@ namespace Aris
 			return (data.dsLhs < data.dsRhs);
 		}
 		/*只根据电机的最大最小加速度和当前ds来计算dds的最大和最小值*/
-		bool FAST_PATH::ComputeDdsBundPure(FAST_PATH::DATA &data, std::vector<FAST_PATH::MOTOR_LIMIT> &limits)
+		bool FastPath::ComputeDdsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			auto locData = data;
 			
@@ -72,7 +72,7 @@ namespace Aris
 			return ((data.ddsLhs < 0) && (data.ddsRhs > 0));
 		}
 		/*考虑dds是否有合法取值的情况下，来计算ds的取值范围*/
-		bool FAST_PATH::ComputeDsBund(FAST_PATH::DATA &data, std::vector<FAST_PATH::MOTOR_LIMIT> &limits)
+		bool FastPath::ComputeDsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			const double errorBund = 1e-7;
 			
@@ -144,7 +144,7 @@ namespace Aris
 			return true;
 		}
 		/*考虑下一时刻ds能否让dds取到合法值的dds范围*/
-		bool FAST_PATH::ComputeDdsBund(FAST_PATH::DATA &data, std::vector<FAST_PATH::MOTOR_LIMIT> &limits)
+		bool FastPath::ComputeDdsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			auto locData = data;
 
@@ -162,7 +162,7 @@ namespace Aris
 		}
 
 		/*经过多少个减速后加速*/
-		int FAST_PATH::ComputeForward(std::list<NODE>::iterator iter, FAST_PATH::DATA &data, int num)
+		int FastPath::ComputeForward(std::list<Node>::iterator iter, FastPath::Data &data, int num)
 		{
 			/*进行n个减速*/
 			for (int i = 0; i < num; ++i)
@@ -198,7 +198,7 @@ namespace Aris
 			std::next(iter)->s = iter->s + iter->ds * dt + 0.5 * iter->dds * dt*dt;
 			return 0;
 		}
-		int FAST_PATH::ComputeBackward(std::list<NODE>::iterator iter, FAST_PATH::DATA &data, int num)
+		int FastPath::ComputeBackward(std::list<Node>::iterator iter, FastPath::Data &data, int num)
 		{
 			/*进行n个加速*/
 			for (int i = 0; i < num; ++i)
@@ -238,7 +238,7 @@ namespace Aris
 			std::prev(iter)->s = iter->s - iter->ds * dt + 0.5 * iter->dds * dt*dt;
 			return 0;
 		}
-		bool FAST_PATH::Compute(std::list<NODE>::iterator iter, FAST_PATH::DATA &data)
+		bool FastPath::Compute(std::list<Node>::iterator iter, FastPath::Data &data)
 		{
 			/*获取反向迭代器的位置，即为正向迭代器的下一个位置*/
 			auto r_iter = std::next(iter);
@@ -262,7 +262,7 @@ namespace Aris
 /////////////////////debug
 
 			/*新添加一个结点*/
-			static FAST_PATH::NODE node;
+			static FastPath::Node node;
 			this->list.insert(r_iter, node);
 
 			/*判断从前添加还是从后添加*/
@@ -282,9 +282,9 @@ namespace Aris
 			
 		}
 		
-		void FAST_PATH::Concate(FAST_PATH::DATA &data)
+		void FastPath::Concate(FastPath::Data &data)
 		{
-			static FAST_PATH::NODE node;
+			static FastPath::Node node;
 
 			/*使得双方速度接近*/
 			if (finalIter->ds < std::next(finalIter)->ds)
@@ -360,12 +360,12 @@ namespace Aris
 
 		}
 
-		void FAST_PATH::Run()
+		void FastPath::Run()
 		{
 			const int size = motor_limits.size();
 			std::vector<double> Ji(size*size), dJi(size*size), Cv(size), Ca(size), g(size), h(size);
 			
-			FAST_PATH::DATA data{ Ji.data(),dJi.data(),Cv.data() ,Ca.data() ,g.data() ,h.data(), size };
+			FastPath::Data data{ Ji.data(),dJi.data(),Cv.data() ,Ca.data() ,g.data() ,h.data(), size };
 
 			list.clear();
 			list.push_front(beginNode);

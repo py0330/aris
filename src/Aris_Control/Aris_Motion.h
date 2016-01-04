@@ -12,10 +12,10 @@ namespace Aris
 {
 	namespace Control
 	{	
-		class MOTION :public ETHERCAT_SLAVE
+		class EthercatMotion :public EthercatSlave
 		{
 		public:
-			enum CMD
+			enum Cmd
 			{
 				IDLE = 0,
 				ENABLE,
@@ -23,13 +23,13 @@ namespace Aris
 				HOME,
 				RUN
 			};
-			enum MODE
+			enum Mode
 			{
 				POSITION = 0x0008,
 				VELOCITY = 0x0009,
 				CURRENT = 0x0010,
 			};
-			struct DATA
+			struct Data
 			{
 				std::int32_t targetPos{ 0 }, feedbackPos{ 0 };
 				std::int32_t targetVel{ 0 }, feedbackVel{ 0 };
@@ -39,26 +39,26 @@ namespace Aris
 				mutable std::int16_t ret{ 0 };
 			};
 
-			virtual ~MOTION();
-			MOTION(const Aris::Core::ELEMENT *);
+			virtual ~EthercatMotion();
+			EthercatMotion(const Aris::Core::XmlElement *);
 			
 			bool HasFault();
-			void ReadFeedback(DATA &data);
-			void DoCommand(const DATA &data);
+			void ReadFeedback(Data &data);
+			void DoCommand(const Data &data);
 
 		protected:
-			virtual void Initialize() override;
+			virtual void Init() override;
 
 		private:
-			class IMP;
-			std::unique_ptr<IMP> pImp;
+			class Imp;
+			std::unique_ptr<Imp> pImp;
 
-			friend class CONTROLLER;
+			friend class Controller;
 		};
-		class FORCE_SENSOR :public ETHERCAT_SLAVE
+		class EthercatForceSensor :public EthercatSlave
 		{
 		public:
-			struct DATA
+			struct Data
 			{
 				union
 				{
@@ -68,70 +68,53 @@ namespace Aris
 				
 			};
 
-			FORCE_SENSOR(const Aris::Core::ELEMENT *ele): ETHERCAT_SLAVE(ele){};
-			void ReadData(DATA &data);
+			EthercatForceSensor(const Aris::Core::XmlElement *ele): EthercatSlave(ele){};
+			void ReadData(Data &data);
 		};
 
-		class CONTROLLER :public ETHERCAT_MASTER
+		class Controller :public EthercatMaster
 		{
 		public:
-			struct DATA
+			struct Data
 			{
-				const std::vector<MOTION::DATA> *pLastMotionData;
-				std::vector<MOTION::DATA> *pMotionData;
-				std::vector<FORCE_SENSOR::DATA> *pForceSensorData;
-				const Aris::Core::RT_MSG *pMsgRecv;
-				Aris::Core::RT_MSG *pMsgSend;
+				const std::vector<EthercatMotion::Data> *pLastMotionData;
+				std::vector<EthercatMotion::Data> *pMotionData;
+				std::vector<EthercatForceSensor::Data> *pForceSensorData;
+				const Aris::Core::MsgRT *pMsgRecv;
+				Aris::Core::MsgRT *pMsgSend;
 			};
 
-			virtual ~CONTROLLER(){};
-			virtual void LoadXml(const Aris::Core::ELEMENT *) override;
+			virtual ~Controller(){};
+			virtual void LoadXml(const Aris::Core::XmlElement *) override;
 			virtual void Start();
 			virtual void Stop();
-			void SetControlStrategy(std::function<int(DATA&)>);
+			void SetControlStrategy(std::function<int(Data&)>);
 			
-			MOTION * Motion(int i) { return pMotions.at(i); };
-			FORCE_SENSOR* ForceSensor(int i) { return pForceSensors.at(i); };
-			PIPE<Aris::Core::MSG>& MsgPipe(){return msgPipe;};
+			EthercatMotion * Motion(int i) { return pMotions.at(i); };
+			EthercatForceSensor* ForceSensor(int i) { return pForceSensors.at(i); };
+			Pipe<Aris::Core::Msg>& MsgPipe(){return msgPipe;};
 			
 
 		protected:
-			CONTROLLER() :ETHERCAT_MASTER(),msgPipe(0, true) {};
+			Controller() :EthercatMaster(),msgPipe(0, true) {};
 			virtual void ControlStrategy() override;
 
 		private:
-			std::function<int(DATA&)> strategy;
-			PIPE<Aris::Core::MSG> msgPipe;
+			std::function<int(Data&)> strategy;
+			Pipe<Aris::Core::Msg> msgPipe;
 			std::atomic_bool isStoping;
 
-			std::vector<MOTION *> pMotions;
-			std::vector<MOTION::DATA> motionData, lastMotionData;
+			std::vector<EthercatMotion *> pMotions;
+			std::vector<EthercatMotion::Data> motionData, lastMotionData;
 
-			std::vector<FORCE_SENSOR *> pForceSensors;
-			std::vector<FORCE_SENSOR::DATA> forceSensorData;
+			std::vector<EthercatForceSensor *> pForceSensors;
+			std::vector<EthercatForceSensor::Data> forceSensorData;
 
-			std::unique_ptr<PIPE<std::vector<MOTION::DATA> > > pMotDataPipe;
+			std::unique_ptr<Pipe<std::vector<EthercatMotion::Data> > > pMotDataPipe;
 			std::thread motionDataThread;
 
-			
-
-			friend class ETHERCAT_MASTER;
+			friend class EthercatMaster;
 		};
-
-		struct CONTROL_DATA;
-
-
-
-
-
-
-
-
-
-
-
-
-
 	}
 }
 

@@ -25,7 +25,7 @@ struct AAA
 };
 
 
-int show(const Aris::Core::MSG &msg)
+int show(const Aris::Core::Msg &msg)
 {
 	cout << "Msg Length:" << msg.GetLength()<<endl;
 	cout << "Msg MsgID :" << msg.GetMsgID()<<endl;
@@ -91,10 +91,10 @@ void test()
 int main()
 {
 	/*{
-		Aris::Core::MSG m1, m2;
+		Aris::Core::Msg m1, m2;
 
 		cout << log("first log") << endl;
-		MSG_BASE *p = new MSG;
+		MsgBase *p = new Msg;
 		delete p;
 
 		m1.SetLength(10);
@@ -107,12 +107,12 @@ int main()
 		m1.SetMsgID(101);
 		//m1.SetType(1233);
 
-		MSG m4(m1);
+		Msg m4(m1);
 
 		m2 = m1;
 		show(m1);
 
-		Aris::Core::MSG m3(m1);
+		Aris::Core::Msg m3(m1);
 
 		show(m2);
 
@@ -120,16 +120,16 @@ int main()
 
 		show(m3);
 
-		Aris::Core::RT_MSG::instance[0].CopyMore("rt msg123", 10);
+		Aris::Core::MsgRT::instance[0].CopyMore("rt msg123", 10);
 
 		cout << "1" << endl;
 
-		//Aris::Core::RT_MSG::instance[0].CopyMore("rt msg123", 10);
-		Aris::Core::RT_MSG::instance[1].CopyMore("98765", 6);
-		cout << (char *)Aris::Core::RT_MSG::instance[0].GetDataAddress() << endl;
-		cout << (char *)Aris::Core::RT_MSG::instance[1].GetDataAddress() << endl;
-		cout << Aris::Core::RT_MSG::instance[0].GetLength() << endl;
-		cout << Aris::Core::RT_MSG::instance[1].GetLength() << endl;
+		//Aris::Core::MsgRT::instance[0].CopyMore("rt msg123", 10);
+		Aris::Core::MsgRT::instance[1].CopyMore("98765", 6);
+		cout << (char *)Aris::Core::MsgRT::instance[0].GetDataAddress() << endl;
+		cout << (char *)Aris::Core::MsgRT::instance[1].GetDataAddress() << endl;
+		cout << Aris::Core::MsgRT::instance[0].GetLength() << endl;
+		cout << Aris::Core::MsgRT::instance[1].GetLength() << endl;
 
 
 		AAA aaa = { 0, 0, 1 };
@@ -138,7 +138,7 @@ int main()
 		AAA ccc;
 		AAA ddd;
 
-		MSG m;
+		Msg m;
 
 		m.CopyStruct(aaa, bbb, aaa);
 		m.CopyStruct(aaa, bbb, aaa);

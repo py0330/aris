@@ -29,131 +29,135 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		class PART;
-		class MARKER;
-		class JOINT_BASE;
-		class MOTION_BASE;
-		class FORCE_BASE;
+		typedef double double6x6[6][6];
+		typedef double double4x4[4][4];
+		typedef double double3[3];
+		typedef double double6[6];
+		
+		class Part;
+		class Marker;
+		class JointBase;
+		class MotionBase;
+		class ForceBase;
 
-		class ENVIRONMENT;
-		class MODEL_BASE;
+		class Environment;
+		class ModelBase;
 
-		class OBJECT
+		class Object
 		{
 		public:
 			const std::string& Name() const { return _Name; };
-			const MODEL_BASE* Model()const { return _pModel; };
-			MODEL_BASE* Model() { return _pModel; };
+			const ModelBase& Model()const { return *_pModel; };
+			ModelBase& Model() { return *_pModel; };
 		
 		protected:
-			explicit OBJECT(MODEL_BASE *pModel, const std::string &name) :_pModel(pModel), _Name(name) {};
-			virtual ~OBJECT() {};
+			explicit Object(ModelBase *pModel, const std::string &name) :_pModel(pModel), _Name(name) {};
+			virtual ~Object() {};
 
 		private:
-			OBJECT(const OBJECT &) = delete;
-			OBJECT(OBJECT &&) = delete;
-			OBJECT &operator=(const OBJECT &) = delete;
-			OBJECT &operator=(OBJECT &&) = delete;
+			Object(const Object &) = delete;
+			Object(Object &&) = delete;
+			Object &operator=(const Object &) = delete;
+			Object &operator=(Object &&) = delete;
 
-			MODEL_BASE *_pModel;
+			ModelBase *_pModel;
 			std::string _Name;
 		};
-		class ELEMENT :public OBJECT
+		class Element :public Object
 		{
 		public:
-			bool Active() const{ return _IsActive; };
-			void SetActive(bool isActive) { _IsActive = isActive; };
-			void Activate(){ _IsActive = true; };
-			void Deactivate(){ _IsActive = false; };
-			int GetID() const { return _id; };
+			bool IsActive() const{ return _IsActive; };
+			void Activate(bool isActive = true) { _IsActive = isActive; };
+			int ID() const { return _id; };
 
 			virtual void SaveResult(int id){};
 			virtual void SetResultSize(int size){};
 
 		private:
-			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const = 0;
+			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const = 0;
 			virtual void ToAdamsCmd(std::ofstream &file) const = 0;
 
 		protected:
-			explicit ELEMENT(MODEL_BASE *pModel, const std::string &name, int id)
-				: OBJECT(pModel, name)
+			explicit Element(ModelBase *pModel, const std::string &name, int id)
+				: Object(pModel, name)
 				, _id(id)
 			{
 			};
-			virtual ~ELEMENT() = default;
+			virtual ~Element() = default;
 
 		private:
 			bool _IsActive{true};
 			const int _id;
 
-			friend class MODEL_BASE;
+			friend class ModelBase;
 		};
 		
-		class MARKER :public ELEMENT
+		class Marker :public Element
 		{
 		public:
-			virtual ~MARKER() = default;
+			virtual ~Marker() = default;
 			virtual void Update();
+			
+			const double4x4& Pm() const { return pm; };
+			const double6& Vel() const;
+			const double6& Acc() const;
+			const double4x4& PrtPm() const { return prtPm; };
+			const Part& Father() const { return *pPrt; };
 
-			const double* GetPrtPmPtr() const { return *_PrtPm; };
-			const double* GetPmPtr() const { return *_Pm; };
-			const double* GetVelPtr() const;
-			const double* GetAccPtr() const;
-			const PART* GetFatherPrt() const { return _pPrt; };
-
-			explicit MARKER(const PART *pPrt, const double *_prtPe = nullptr, const char* eulType = "313");//for constructing marker outside model
+			explicit Marker(const Part *pPrt, const double *_prtPe = nullptr, const char* eulType = "313");//for constructing marker outside model
 		private:
-			explicit MARKER(MODEL_BASE *pModel, PART *pPrt, const std::string &Name, int id);//only for child class PART to construct
-			explicit MARKER(PART *pPrt, const std::string &Name, int id, const double *pPrtPm = nullptr, MARKER *pRelativeTo = nullptr);
-			explicit MARKER(PART *pPrt, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
-			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
+			explicit Marker(ModelBase *pModel, Part *pPrt, const std::string &Name, int id);//only for child class Part to construct
+			explicit Marker(Part *pPrt, const std::string &Name, int id, const double *pPrtPm = nullptr, Marker *pRelativeTo = nullptr);
+			explicit Marker(Part *pPrt, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const;
 			virtual void ToAdamsCmd(std::ofstream &file) const {};
 
 		private:
-			const PART *_pPrt;
+			const Part *pPrt;
 
-			double _Pm[4][4];
-			double _PrtPm[4][4];
+			double pm[4][4];
+			double prtPm[4][4];
 
-			friend class PART;
-			friend class MODEL_BASE;
+			friend class Part;
+			friend class ModelBase;
 		};
 		
-		class PART :public MARKER
+		class Part :public Marker
 		{
 		public:
-			virtual ~PART() = default;
+			virtual ~Part() = default;
 			virtual void Update();
 
-			using MARKER::GetPmPtr;
-			using MARKER::GetVelPtr;
-			using MARKER::GetAccPtr;
-			double* GetPmPtr() { return *_Pm; };
-			double* GetVelPtr() { return _Vel; };
-			double* GetAccPtr() { return _Acc; };
-			void SetPm(const double *pPm) { std::copy_n(pPm, 16, static_cast<double*>(*_Pm)); };
-			void SetVel(const double *pVel) { std::copy_n(pVel, 6, _Vel); };
-			void SetAcc(const double *pAcc) { std::copy_n(pAcc, 6, _Acc); };
-			const double* GetInvPmPtr() const { return *_InvPm; };
-			const double* GetPrtImPtr() const { return *_PrtIm; };
-			const double* GetPrtVelPtr() const { return _PrtVel; };
-			const double* GetPrtAccPtr() const { return _PrtAcc; };
-			const double* GetPrtFgPtr() const { return _PrtFg; };
-			const double* GetPrtFvPtr() const { return _PrtFv; };
-			const double* GetPrtGravityPtr() const { return _PrtGravity; };
+			const double4x4& Pm()const { return pm; };
+			double4x4& Pm() { return pm; };
+			const double6& Vel()const { return vel; };
+			double6& Vel() { return vel; };
+			const double6& Acc()const { return _Acc; };
+			double6& Acc() { return _Acc; };
+			const double4x4& InvPm() const { return _InvPm; };
+			const double6x6& PrtIm() const { return _PrtIm; };
+			const double6& PrtVel() const { return _PrtVel; };
+			const double6& PrtAcc() const { return _PrtAcc; };
+			const double6& PrtFg() const { return _PrtFg; };
+			const double6& PrtFv() const { return _PrtFv; };
+			const double6& PrtGravity() const { return _PrtGravity; };
+
+			void SetPm(const double *pPm) { std::copy_n(pPm, 16, static_cast<double*>(*pm)); };
+			void SetVel(const double *pVel) { std::copy_n(pVel, 6, Vel()); };
+			void SetAcc(const double *pAcc) { std::copy_n(pAcc, 6, Acc()); };
 			
-			MARKER* GetMarker(const std::string &Name);
-			const MARKER* GetMarker(const std::string &Name)const;
+			Marker* FindMarker(const std::string &Name);
+			const Marker* FindMarker(const std::string &Name)const;
 
 			template<typename ...Args>
-			MARKER* AddMarker(const std::string & Name, Args ...args);
+			Marker* AddMarker(const std::string & Name, Args ...args);
 
 		private:
-			explicit PART(MODEL_BASE *pModel, const std::string &Name, int id
+			explicit Part(ModelBase *pModel, const std::string &Name, int id
 				, const double *PrtIm = nullptr, const double *pm = nullptr
 				, const double *Vel = nullptr, const double *Acc = nullptr);
-			explicit PART(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
-			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
+			explicit Part(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const;
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 
 		private:
@@ -161,7 +165,7 @@ namespace Aris
 
 		private:
 			double _InvPm[4][4]{ { 0 } };
-			double _Vel[6]{ 0 };
+			double vel[6]{ 0 };
 			double _Acc[6]{ 0 };
 
 			double _PrtIm[6][6]{ { 0 } };
@@ -178,84 +182,84 @@ namespace Aris
 		private:
 			std::string graphicFilePath;
 
-			friend class MARKER;
-			friend class MODEL_BASE;
+			friend class Marker;
+			friend class ModelBase;
 		};
-		class JOINT_BASE :public ELEMENT
+		class JointBase :public Element
 		{
 		public:
-			virtual ~JOINT_BASE() = default;
-			virtual int GetCstDim() const = 0;
+			virtual ~JointBase() = default;
+			virtual int CstDim() const = 0;
 			virtual const char* GetType() const = 0;
-			virtual double* GetCstFcePtr() = 0;
-			virtual double* GetPrtCstMtxIPtr() = 0;
-			virtual double* GetPrtCstMtxJPtr()  = 0;
-			virtual double* GetPrtA_cPtr() = 0;
+			virtual double* CstFce() = 0;
+			virtual double* PrtCstMtxI() = 0;
+			virtual double* PrtCstMtxJ()  = 0;
+			virtual double* PrtA_c() = 0;
 
 			virtual void Update();
 
-			const MARKER* GetMakI() const { return _pMakI; };
-			const MARKER* GetMakJ() const { return _pMakJ; };
-			MARKER* GetMakI() { return _pMakI; };
-			MARKER* GetMakJ() { return _pMakJ; };
+			const Marker& MakI() const { return *_pMakI; };
+			Marker& MakI() { return *_pMakI; };
+			const Marker& MakJ() const { return *_pMakJ; };
+			Marker& MakJ() { return *_pMakJ; };
 
 		protected:
-			explicit JOINT_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			explicit JOINT_BASE(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
-			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
+			explicit JointBase(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
+			explicit JointBase(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const;
 			virtual void ToAdamsCmd(std::ofstream &file) const;
-			virtual void Initiate() = 0;
+			virtual void Init() = 0;
 		private:
-			MARKER *_pMakI;
-			MARKER *_pMakJ;
+			Marker *_pMakI;
+			Marker *_pMakJ;
 
 			int _ColId;
 
 		private:
-			friend class MODEL_BASE;
+			friend class ModelBase;
 		};
-		class MOTION_BASE :public ELEMENT
+		class MotionBase :public Element
 		{
 		public:
-			virtual ~MOTION_BASE() = default;
+			virtual ~MotionBase() = default;
 
 			virtual const char* GetType() const = 0;
 			const double* GetFrcCoePtr() const { return _frc_coe; };
-			double GetMotPos() const { return MotPos; };
-			double GetMotVel() const { return MotVel; };
-			double GetMotAcc() const { return MotAcc; };
-			double GetMotFce() const { return GetMotFceDyn() + GetMotFceFrc();	};
-			double GetMotFceFrc() const { return s_sgn(MotVel)*_frc_coe[0] + MotVel*_frc_coe[1] + MotAcc*_frc_coe[2]; };
-			double GetMotFceDyn() const { return MotDynFce; }
+			double MotPos() const { return motPos; };
+			double MotVel() const { return motVel; };
+			double MotAcc() const { return motAcc; };
+			double MotFce() const { return MotFceDyn() + MotFceFrc();	};
+			double MotFceFrc() const { return s_sgn(motVel)*_frc_coe[0] + motVel*_frc_coe[1] + motAcc*_frc_coe[2]; };
+			double MotFceDyn() const { return motDynFce; }
 			
-			const double* GetPrtCstMtxIPtr() const { return _PrtCstMtxI; };
-			const double* GetPrtCstMtxJPtr() const { return _PrtCstMtxJ; };
-			const double* GetPrtA_cPtr() const { return _a_c; };
+			const double* PrtCstMtxI() const { return _PrtCstMtxI; };
+			const double* PrtCstMtxJ() const { return _PrtCstMtxJ; };
+			const double* PrtA_c() const { return _a_c; };
 
 			void SetFrcCoe(const double *frc_coe) { std::copy_n(frc_coe, 3, _frc_coe); };
-			void SetMotAcc(double motAcc) { this->MotAcc = motAcc; };
+			void SetMotAcc(double motAcc) { this->motAcc = motAcc; };
 
 			virtual void Update() = 0;
 
 			void SetPosAkimaCurve(const int num, const double* time, const double *pos)
 			{
-				this->posCurve.reset(new AKIMA(num, time, pos));
+				this->posCurve.reset(new Akima(num, time, pos));
 			}
 			double PosAkima(double t, char derivativeOrder = '0') { return posCurve->operator()(t, derivativeOrder); };
 			void PosAkima(int length, const double *t, double *pos, char order = '0') { posCurve->operator()(length, t, pos, order); };
 
 		protected:
-			explicit MOTION_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI = 0, MARKER *pMakJ = 0);
-			explicit MOTION_BASE(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele);
-			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
+			explicit MotionBase(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI = 0, Marker *pMakJ = 0);
+			explicit MotionBase(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const;
 			virtual void ToAdamsCmd(std::ofstream &file) const;
-			virtual void Initiate() = 0;
+			virtual void Init() = 0;
 
 		protected:
-			MARKER *_pMakI, *_pMakJ;
+			Marker *_pMakI, *_pMakJ;
 
 			/*pos\vel\acc\fce of motion*/
-			double MotPos{ 0 }, MotVel{ 0 }, MotAcc{ 0 }, MotDynFce{ 0 };
+			double motPos{ 0 }, motVel{ 0 }, motAcc{ 0 }, motDynFce{ 0 };
 
 			double _frc_coe[3]{0};
 
@@ -266,11 +270,11 @@ namespace Aris
 			double _a_c[6]{ 0 };
 
 			/*for adams*/
-			std::unique_ptr<AKIMA> posCurve;
+			std::unique_ptr<Akima> posCurve;
 
-			friend class MODEL_BASE;
+			friend class ModelBase;
 		};
-		class FORCE_BASE :public ELEMENT
+		class ForceBase :public Element
 		{
 		public:
 			const double* GetPrtFceIPtr() const { return _PrtFceI; };
@@ -278,50 +282,53 @@ namespace Aris
 			
 			void SetFceAkimaCurve(const int num, const double* time, const double *fce)
 			{
-				this->fceCurve.reset(new AKIMA(num, time, fce));
+				this->fceCurve.reset(new Akima(num, time, fce));
 			}
 			double FceAkima(double t, char derivativeOrder = '0') { return fceCurve->operator()(t, derivativeOrder); };
 			void FceAkima(int length, const double *t, double *pos, char order = '0') { fceCurve->operator()(length, t, pos, order); };
 
-			virtual ~FORCE_BASE() = default;
+			virtual ~ForceBase() = default;
 			virtual void Update() = 0;
 
 		protected:
-			explicit FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ);
-			explicit FORCE_BASE(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *pEle);
-			virtual void ToXmlElement(Aris::Core::ELEMENT *pEle) const {};
+			explicit ForceBase(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
+			explicit ForceBase(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *pEle);
+			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const {};
 			virtual void ToAdamsCmd(std::ofstream &file) const {};
 
-			MARKER *_pMakI, *_pMakJ;
+			Marker *_pMakI, *_pMakJ;
 
 			double _PrtFceI[6]{ 0 };
 			double _PrtFceJ[6]{ 0 };
 
-			std::unique_ptr<AKIMA> fceCurve;
+			std::unique_ptr<Akima> fceCurve;
 
-			friend class MODEL_BASE;
+			friend class ModelBase;
 		};
 
 		template<int DIMENSION>
-		class JOINT_BASE_DIM :public JOINT_BASE
+		class JointBaseDim :public JointBase
 		{
 		public:
-			static constexpr int GetDim() { return DIMENSION; };
-			virtual int GetCstDim() const { return DIMENSION; };
-			virtual double* GetCstFcePtr() { return _CstFce; };
-			virtual double* GetPrtCstMtxIPtr() { return *_PrtCstMtxI; };
-			virtual double* GetPrtCstMtxJPtr() { return *_PrtCstMtxJ; };
-			virtual double* GetPrtA_cPtr() { return _a_c; };
-			virtual const double* GetCstFcePtr() const { return _CstFce; };
-			virtual const double* GetPrtCstMtxIPtr() const { return *_PrtCstMtxI; };
-			virtual const double* GetPrtCstMtxJPtr() const { return *_PrtCstMtxJ; };
-			virtual const double* GetPrtA_cPtr() const { return _a_c; };
+			typedef double double6xd[6][DIMENSION];
+			
+			
+			static constexpr int Dim() { return DIMENSION; };
+			virtual int CstDim() const { return DIMENSION; };
+			virtual double* CstFce() { return _CstFce; };
+			virtual double* PrtCstMtxI() { return *_PrtCstMtxI; };
+			virtual double* PrtCstMtxJ() { return *_PrtCstMtxJ; };
+			virtual double* PrtA_c() { return _a_c; };
+			virtual const double* CstFce() const { return _CstFce; };
+			virtual const double* PrtCstMtxI() const { return *_PrtCstMtxI; };
+			virtual const double* PrtCstMtxJ() const { return *_PrtCstMtxJ; };
+			virtual const double* PrtA_c() const { return _a_c; };
 
 		protected:
-			explicit JOINT_BASE_DIM(MODEL_BASE *pModel, const std::string &Name, int id, MARKER *pMakI, MARKER *pMakJ)
-				:JOINT_BASE(pModel, Name, id, pMakI, pMakJ) {};
-			explicit JOINT_BASE_DIM(MODEL_BASE *pModel, const std::string &Name, int id, const Aris::Core::ELEMENT *ele)
-				:JOINT_BASE(pModel, Name, id, ele) {};
+			explicit JointBaseDim(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ)
+				:JointBase(pModel, Name, id, pMakI, pMakJ) {};
+			explicit JointBaseDim(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
+				:JointBase(pModel, Name, id, ele) {};
 
 		protected:
 			double _PrtCstMtxI[6][DIMENSION]{ { 0 } };
@@ -330,36 +337,36 @@ namespace Aris
 			double _a_c[DIMENSION]{ 0 };
 
 		private:
-			friend class MODEL_BASE;
+			friend class ModelBase;
 		};
 
-		class ENVIRONMENT:public OBJECT
+		class Environment:public Object
 		{
 		private:
-			explicit ENVIRONMENT(MODEL_BASE *pModel);
-			~ENVIRONMENT();
+			explicit Environment(ModelBase *pModel);
+			~Environment();
 
-			void ToXmlElement(Aris::Core::ELEMENT *pEle) const;
-			void FromXmlElement(const Aris::Core::ELEMENT *pEle);
+			void ToXmlElement(Aris::Core::XmlElement *pEle) const;
+			void FromXmlElement(const Aris::Core::XmlElement *pEle);
 			void ToAdamsCmd(std::ofstream &file) const;
 		private:
 			double Gravity[6]{ 0, -9.8, 0, 0, 0, 0 };
 
-			friend class PART;
-			friend class MODEL_BASE;
+			friend class Part;
+			friend class ModelBase;
 		};
-		class SIMULATE_SCRIPT
+		class SimulateScript
 		{
 		public:
-			void ScriptActivate(int time, ELEMENT * ele)
+			void ScriptActivate(int time, Element * ele)
 			{
 				script[time].elements[ele] = true;
 			};
-			void ScriptDeactivate(int time, ELEMENT * ele)
+			void ScriptDeactivate(int time, Element * ele)
 			{
 				script[time].elements[ele] = false;
 			}
-			void ScriptMoveMarker(int time, MARKER * ele, double * data)
+			void ScriptMoveMarker(int time, Marker * ele, double * data)
 			{
 				std::copy_n(data, 6, script[time].markers[ele].data());
 			}
@@ -371,8 +378,8 @@ namespace Aris
 
 			struct NODE
 			{
-				std::map<ELEMENT *, bool> elements;
-				std::map<MARKER *, std::array<double, 6> > markers;
+				std::map<Element *, bool> elements;
+				std::map<Marker *, std::array<double, 6> > markers;
 			};
 			std::map < int/*time*/, NODE > script;
 
@@ -381,24 +388,24 @@ namespace Aris
 			int dt{ 1 };
 
 
-			friend class MODEL_BASE;
+			friend class ModelBase;
 		};
 
-		class MODEL_BASE :public OBJECT
+		class ModelBase :public Object
 		{
 		public:
-			explicit MODEL_BASE(const std::string & Name = "Model");
-			virtual ~MODEL_BASE();
+			explicit ModelBase(const std::string & Name = "Model");
+			virtual ~ModelBase();
 
 			template<typename ...Args>
-			PART* AddPart(const std::string & Name, Args ...args)
+			Part* AddPart(const std::string & Name, Args ...args)
 			{
 				if (GetPart(Name) != nullptr)
 				{
 					return nullptr;
 				}
 
-				_parts.push_back(std::unique_ptr<PART>(new PART(this, Name, _parts.size(), args...)));
+				_parts.push_back(std::unique_ptr<Part>(new Part(this, Name, _parts.size(), args...)));
 				return _parts.back().get();
 			}
 			template<typename JOINT, typename ...Args>
@@ -410,7 +417,7 @@ namespace Aris
 				}
 
 				auto ret = new JOINT(this, Name, _joints.size(), args...);
-				_joints.push_back(std::unique_ptr<JOINT_BASE>(ret));
+				_joints.push_back(std::unique_ptr<JointBase>(ret));
 				return ret;
 			}
 			template<typename MOTION, typename ...Args>
@@ -422,7 +429,7 @@ namespace Aris
 				}
 
 				auto ret = new MOTION(this, Name, _motions.size(), args...);
-				_motions.push_back(std::unique_ptr<MOTION_BASE>(ret));
+				_motions.push_back(std::unique_ptr<MotionBase>(ret));
 				return ret;
 			};
 			template<typename FORCE, typename ...Args>
@@ -432,71 +439,71 @@ namespace Aris
 				{
 					return nullptr;
 				}
-				auto ret = new FORCE(this, Name, _joints.size(), args...);
-				_forces.push_back(std::unique_ptr<FORCE_BASE>(ret));
+				auto ret = new FORCE(this, Name, _forces.size(), args...);
+				_forces.push_back(std::unique_ptr<ForceBase>(ret));
 				return ret;
 			}
 
-			const PART *GetPart(int id) const;
-			const JOINT_BASE *GetJoint(int id) const;
-			const MOTION_BASE *GetMotion(int id) const;
-			const FORCE_BASE *GetForce(int id) const;
-			const MARKER *GetMarker(int id) const;
-			PART *GetPart(int id);
-			JOINT_BASE *GetJoint(int id);
-			MOTION_BASE *GetMotion(int id);
-			FORCE_BASE *GetForce(int id);
-			MARKER *GetMarker(int id);
-			const PART *GetPart(const std::string &Name)const;
-			const JOINT_BASE *GetJoint(const std::string &Name)const;
-			const MOTION_BASE *GetMotion(const std::string &Name)const;
-			const FORCE_BASE *GetForce(const std::string &Name)const;
-			PART *GetPart(const std::string &Name);
-			JOINT_BASE *GetJoint(const std::string &Name);
-			MOTION_BASE *GetMotion(const std::string &Name);
-			FORCE_BASE *GetForce(const std::string &Name);
+			const Part *GetPart(int id) const;
+			const JointBase *GetJoint(int id) const;
+			const MotionBase *GetMotion(int id) const;
+			const ForceBase *GetForce(int id) const;
+			const Marker *GetMarker(int id) const;
+			Part *GetPart(int id);
+			JointBase *GetJoint(int id);
+			MotionBase *GetMotion(int id);
+			ForceBase *GetForce(int id);
+			Marker *GetMarker(int id);
+			const Part *GetPart(const std::string &Name)const;
+			const JointBase *GetJoint(const std::string &Name)const;
+			const MotionBase *GetMotion(const std::string &Name)const;
+			const ForceBase *GetForce(const std::string &Name)const;
+			Part *GetPart(const std::string &Name);
+			JointBase *GetJoint(const std::string &Name);
+			MotionBase *GetMotion(const std::string &Name);
+			ForceBase *GetForce(const std::string &Name);
 			int GetPartNum() const{ return _parts.size(); };
 			int GetMotionNum() const{ return _motions.size(); };
 			int GetJointNum() const{ return _joints.size(); };
 			int GetForceNum() const{ return _forces.size(); };
 			int GetMarkerNum() const{ return _markers.size(); };
 
-			void ForEachPart(std::function<void(PART*)> fun)
+			void ForEachPart(std::function<void(Part*)> fun)
 			{
 				for (auto&i : _parts)
 				{
 					fun(i.get());
 				}
 			}
-			void ForEachMarker(std::function<void(MARKER*)> fun)
+			void ForEachMarker(std::function<void(Aris::DynKer::Marker*)> fun)
 			{
 				for (auto&i : _markers)
 				{
 					fun(i.get());
 				}
 			}
-			void ForEachMotion(std::function<void(MOTION_BASE*)> fun)
+			void ForEachMotion(std::function<void(MotionBase*)> fun)
 			{
 				for (auto&i : _motions)
 				{
 					fun(i.get());
 				}
 			}
-			void ForEachForce(std::function<void(FORCE_BASE*)> fun)
+			void ForEachForce(std::function<void(ForceBase*)> fun)
 			{
 				for (auto&i : _forces)
 				{
 					fun(i.get());
 				}
 			}
-			void ForEachJoint(std::function<void(JOINT_BASE*)> fun)
+			void ForEachJoint(std::function<void(JointBase*)> fun)
 			{
 				for (auto&i : _joints)
 				{
 					fun(i.get());
 				}
 			}
-			void ForEachElement(std::function<void(ELEMENT*)> fun)
+			void ForEachElement(std::function<void(Element*)> fun)
 			{
 				for (auto&i : _parts)
 				{
@@ -531,50 +538,47 @@ namespace Aris
 			void ClbUkn(double *clb_gamma_and_frcCoe_ptr);
 
 			virtual void LoadXml(const char *filename);
-			virtual void LoadXml(const Aris::Core::DOCUMENT &xmlDoc);
-			virtual void LoadXml(const Aris::Core::ELEMENT *pEle);
+			virtual void LoadXml(const Aris::Core::XmlDocument &xmlDoc);
+			virtual void LoadXml(const Aris::Core::XmlElement *pEle);
 			void SaveSnapshotXml(const char *filename) const;
-			void SaveAdams(const char *filename, const SIMULATE_SCRIPT* pScript) const;
+			void SaveAdams(const char *filename, const SimulateScript* pScript) const;
 			void SaveAdams(const char *filename, bool isModifyActive = true) const;
 
 		private:
-			CALCULATOR calculator;
+			Calculator calculator;
 			
 			int C_dim;//real dimension of constraint matrix
 			int I_dim;//real dimension of inertia matrix
 
 		protected:
 			template<typename CONSTRAINT>
-			void InitiateElement(CONSTRAINT *pConstraint) { pConstraint->Initiate(); };
+			void InitiateElement(CONSTRAINT *pConstraint) { pConstraint->Init(); };
 
-			std::vector<std::unique_ptr<PART> > _parts;
-			std::vector<std::unique_ptr<JOINT_BASE> > _joints;
-			std::vector<std::unique_ptr<MOTION_BASE> > _motions;
-			std::vector<std::unique_ptr<FORCE_BASE> > _forces;
-			std::vector<std::unique_ptr<MARKER> > _markers;
+			std::vector<std::unique_ptr<Part> > _parts;
+			std::vector<std::unique_ptr<JointBase> > _joints;
+			std::vector<std::unique_ptr<MotionBase> > _motions;
+			std::vector<std::unique_ptr<ForceBase> > _forces;
+			std::vector<std::unique_ptr<Aris::DynKer::Marker> > _markers;
 			
-			ENVIRONMENT _Environment;
-			PART* pGround;
+			Environment _Environment;
+			Part* pGround;
 		
-			friend class ENVIRONMENT;
-			friend class PART;
-			friend class MOTION_BASE;
+			friend class Environment;
+			friend class Part;
+			friend class MotionBase;
 			friend class JOINT;
-			friend class MARKER;
-			friend class FORCE_BASE;
+			friend class Marker;
+			friend class ForceBase;
 		};
 
 		template<typename ...Args>
-		MARKER* PART::AddMarker(const std::string & Name, Args ...args)
+		Marker* Part::AddMarker(const std::string & Name, Args ...args)
 		{
-			if (GetMarker(Name) != nullptr)
-			{
-				return nullptr;
-			}
+			if (FindMarker(Name))return nullptr;
 
-			Model()->_markers.push_back(std::unique_ptr<MARKER>(new MARKER(this, Name, Model()->_markers.size(), args...)));
-			_markerNames.insert(std::make_pair(Name, Model()->_markers.size() - 1));
-			return Model()->_markers.back().get();
+			Model()._markers.push_back(std::unique_ptr<Aris::DynKer::Marker>(new Aris::DynKer::Marker(this, Name, Model()._markers.size(), args...)));
+			_markerNames.insert(std::make_pair(Name, Model()._markers.size() - 1));
+			return Model()._markers.back().get();
 		}
 	}
 }

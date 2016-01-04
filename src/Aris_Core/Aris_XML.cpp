@@ -9,18 +9,18 @@ namespace Aris
 {
 	namespace Core
 	{
-		void ReplaceVariable(ELEMENT* pEle)
+		void ReplaceVariable(XmlElement* pEle)
 		{
 			/*递归函数，用来访问pEle下所有元素*/
-			function<void(ELEMENT*, function<void(ELEMENT*)>)>
-				recursiveFunc = [&recursiveFunc](ELEMENT* pEle, function<void(ELEMENT*)> pFunc)->void
+			function<void(XmlElement*, function<void(XmlElement*)>)>
+				recursiveFunc = [&recursiveFunc](XmlElement* pEle, function<void(XmlElement*)> pFunc)->void
 			{
 				if (pFunc != nullptr)
 				{
 					pFunc(pEle);
 				}
 
-				for (ELEMENT* p = pEle->FirstChildElement();
+				for (XmlElement* p = pEle->FirstChildElement();
 					p != 0;
 					p = p->NextSiblingElement())
 				{
@@ -29,7 +29,7 @@ namespace Aris
 			};
 			
 			/*以下用来将内容替换成变量中内容*/
-			for (ELEMENT* p = pEle->FirstChildElement("Variable")->FirstChildElement();
+			for (XmlElement* p = pEle->FirstChildElement("Variable")->FirstChildElement();
 				p != 0;
 				p=p->NextSiblingElement())
 			{
@@ -38,7 +38,7 @@ namespace Aris
 				vName = string("$(") + string(p->Name()) + string(")");
 				vValue = std::string(p->GetText());
 				
-				recursiveFunc(pEle, [vName,vValue](ELEMENT* p)->void
+				recursiveFunc(pEle, [vName,vValue](XmlElement* p)->void
 				{
 					const char* text;
 					if ((text=p->GetText()) != nullptr)

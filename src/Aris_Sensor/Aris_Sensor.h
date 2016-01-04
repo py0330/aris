@@ -10,17 +10,17 @@ namespace Aris
 {
 	namespace Sensor
 	{
-		template<class DATA_TYPE> class SENSOR_BASE;
+		template<class DataType> class SensorBase;
 		
-		template<class DATA_TYPE>
-		class SENSOR_DATA
+		template<class DataType>
+		class SensorData
 		{
 		public:
-			virtual ~SENSOR_DATA() = default;
-			SENSOR_DATA() : pSensor(nullptr), pData(nullptr)
+			virtual ~SensorData() = default;
+			SensorData() : pSensor(nullptr), pData(nullptr)
 			{
 			};
-			explicit SENSOR_DATA(SENSOR_BASE<DATA_TYPE> *pSensor): pSensor(pSensor), pData(nullptr)
+			explicit SensorData(SensorBase<DataType> *pSensor): pSensor(pSensor), pData(nullptr)
 			{
 				/*
 				这里dataToBeRead指向最新的内存，例如如果dataToBeRead为2，那么有两种情况：
@@ -39,34 +39,34 @@ namespace Aris
 				//lock = std::unique_lock<std::recursive_mutex>(pSensor->dataMutex[pSensor->dataToBeRead]);
 				pData = &pSensor->data[pSensor->dataToBeRead];
 			};
-			SENSOR_DATA(SENSOR_DATA<DATA_TYPE> && other) { this->Swap(other); };
-			SENSOR_DATA & operator=(SENSOR_DATA&&other) { this->Swap(other); return *this; };
-			void Swap(SENSOR_DATA<DATA_TYPE> &other)
+			SensorData(SensorData<DataType> && other) { this->Swap(other); };
+			SensorData & operator=(SensorData<DataType> && other) { this->Swap(other); return *this; };
+			void Swap(SensorData<DataType> &other)
 			{
 				std::swap(this->pSensor, other.pSensor);
 				std::swap(this->pData, other.pData);
 				std::swap(this->lock, other.lock);
 			}
-			const DATA_TYPE &Get() const { return *pData; };
+			const DataType &Get() const { return *pData; };
 
 		private:
-			SENSOR_DATA(const SENSOR_DATA&) = delete;
-			SENSOR_DATA & operator=(const SENSOR_DATA&) = delete;
+			SensorData(const SensorData<DataType>&) = delete;
+			SensorData & operator=(const SensorData<DataType>&) = delete;
 
-			SENSOR_BASE<DATA_TYPE> *pSensor;
-			const DATA_TYPE *pData;
+			SensorBase<DataType> *pSensor;
+			const DataType *pData;
 			std::unique_lock<std::recursive_mutex> lock;
 		};
 		
-		template <class DATA_TYPE>
-		class SENSOR_BASE
+		template <class DataType>
+		class SensorBase
 		{
 		public:
 			void Start()
 			{
 				if (!sensor_thread.joinable())
 				{
-					this->Initiate();
+					this->Init();
 					
 					std::lock(dataMutex[0], dataMutex[1], dataMutex[2]);
 
@@ -82,7 +82,7 @@ namespace Aris
 					isStoping = false;
 					dataToBeRead = 2;
 
-					this->sensor_thread = std::thread(SENSOR_BASE::update_thread, this);
+					this->sensor_thread = std::thread(SensorBase::update_thread, this);
 				}
 			};
 			void Stop()
@@ -94,23 +94,23 @@ namespace Aris
 					this->Release();
 				}
 			};
-			SENSOR_DATA<DATA_TYPE> GetSensorData()
+			SensorData<DataType> GetSensorData()
 			{
-				return std::move(SENSOR_DATA<DATA_TYPE>(this));
+				return std::move(SensorData<DataType>(this));
 			};
 
-			SENSOR_BASE() = default;
-			virtual ~SENSOR_BASE() { Stop(); };
+			SensorBase() = default;
+			virtual ~SensorBase() { Stop(); };
 
 		private:
-			virtual void Initiate() {};
+			virtual void Init() {};
 			virtual void Release() {};
-			virtual void UpdateData(DATA_TYPE &data) = 0;
+			virtual void UpdateData(DataType &data) = 0;
 
-			SENSOR_BASE(const SENSOR_BASE&) = delete;
-			SENSOR_BASE & operator=(const SENSOR_BASE&) = delete;
+			SensorBase(const SensorBase&) = delete;
+			SensorBase & operator=(const SensorBase&) = delete;
 
-			static void update_thread(SENSOR_BASE *pSensor)
+			static void update_thread(SensorBase *pSensor)
 			{
 				std::unique_lock<std::recursive_mutex> lock(pSensor->dataMutex[0]);
 				
@@ -120,7 +120,7 @@ namespace Aris
 					{
 						pSensor->dataToBeRead = (i + 2) % 3;
 						pSensor->UpdateData(pSensor->data[i]);
-						std::unique_lock<std::recursive_mutex> nextLock(pSensor->dataMutex[(i+1)%3]);
+						std::unique_lock<std::recursive_mutex> nextLock(pSensor->dataMutex[(i + 1) % 3]);
 						lock.swap(nextLock);
 					}
 				}
@@ -130,9 +130,9 @@ namespace Aris
 			std::thread sensor_thread;
 			std::atomic_int dataToBeRead;
 			std::recursive_mutex dataMutex[3];
-			DATA_TYPE data[3];
+			DataType data[3];
 			
-			friend class SENSOR_DATA<DATA_TYPE>;
+			friend class SensorData<DataType>;
 		};
 	}
 }

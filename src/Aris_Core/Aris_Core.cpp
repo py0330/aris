@@ -43,7 +43,7 @@ public:
 		file.open(address, std::ios::out | std::ios::trunc);
 		if (!file.good())
 		{
-			throw std::logic_error("can't not start log function");
+			throw std::logic_error("can't not Start log function");
 		}
 
 		time_t now = beginTime;
@@ -173,36 +173,36 @@ namespace Aris
 			return data;
 		};
 
-		std::int32_t MSG_BASE::GetLength()  const
+		std::int32_t MsgBase::GetLength()  const
 		{
-			return reinterpret_cast<MSG_HEADER *>(_pData)->msgLength;
+			return reinterpret_cast<MsgHeader *>(_pData)->msgLength;
 		}
-		void MSG_BASE::SetMsgID(std::int32_t msgID)
+		void MsgBase::SetMsgID(std::int32_t msgID)
 		{
-			reinterpret_cast<MSG_HEADER *>(_pData)->msgID=msgID;
+			reinterpret_cast<MsgHeader *>(_pData)->msgID=msgID;
 		}
-		std::int32_t MSG_BASE::GetMsgID() const
+		std::int32_t MsgBase::GetMsgID() const
 		{
-			return reinterpret_cast<MSG_HEADER *>(_pData)->msgID;
+			return reinterpret_cast<MsgHeader *>(_pData)->msgID;
 		}
-		char* MSG_BASE::GetDataAddress() const
+		char* MsgBase::GetDataAddress() const
 		{
-			return GetLength() > 0 ? &_pData[sizeof(MSG_HEADER)] : nullptr;
+			return GetLength() > 0 ? &_pData[sizeof(MsgHeader)] : nullptr;
 		}
-		void MSG_BASE::Copy(const char * fromThisMemory)
+		void MsgBase::Copy(const char * fromThisMemory)
 		{
 			Copy(static_cast<const void *>(fromThisMemory), strlen(fromThisMemory) + 1);
 		}
-		void MSG_BASE::Copy(const void * fromThisMemory, std::int32_t dataLength)
+		void MsgBase::Copy(const void * fromThisMemory, std::int32_t dataLength)
 		{
 			SetLength(dataLength);
 			memcpy(GetDataAddress(), fromThisMemory, GetLength());//no need to check if length is 0
 		}
-		void MSG_BASE::Copy(const void * fromThisMemory)
+		void MsgBase::Copy(const void * fromThisMemory)
 		{
 			memcpy(GetDataAddress(), fromThisMemory, GetLength());
 		}
-		void MSG_BASE::CopyAt(const void * fromThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg)
+		void MsgBase::CopyAt(const void * fromThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg)
 		{
 			if ((dataLength + atThisPositionInMsg) > GetLength())
 			{
@@ -213,7 +213,7 @@ namespace Aris
 			memcpy(&GetDataAddress()[atThisPositionInMsg], fromThisMemory, dataLength);
 
 		}
-		void MSG_BASE::CopyMore(const void * fromThisMemory, std::int32_t dataLength)
+		void MsgBase::CopyMore(const void * fromThisMemory, std::int32_t dataLength)
 		{
 			std::int32_t pos = GetLength();
 
@@ -223,33 +223,33 @@ namespace Aris
 				memcpy(GetDataAddress() + pos, fromThisMemory, dataLength);
 			}
 		}
-		void MSG_BASE::Paste(void * toThisMemory, std::int32_t dataLength) const
+		void MsgBase::Paste(void * toThisMemory, std::int32_t dataLength) const
 		{
 			// no need to check if length is zero
 			memcpy(toThisMemory, GetDataAddress(), GetLength() < dataLength ? GetLength() : dataLength);
 		}
-		void MSG_BASE::Paste(void * toThisMemory) const
+		void MsgBase::Paste(void * toThisMemory) const
 		{
 			// no need to check if length is zero
 			memcpy(toThisMemory, GetDataAddress(), GetLength());
 		}
-		void MSG_BASE::PasteAt(void * toThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg) const
+		void MsgBase::PasteAt(void * toThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg) const
 		{
 			// no need to check
 			memcpy(toThisMemory, &GetDataAddress()[atThisPositionInMsg], std::min(dataLength, GetLength() - atThisPositionInMsg));
 		}
-		void MSG_BASE::SetType(std::int64_t type)
+		void MsgBase::SetType(std::int64_t type)
 		{
-			reinterpret_cast<MSG_HEADER*>(_pData)->msgType = type;
+			reinterpret_cast<MsgHeader*>(_pData)->msgType = type;
 		}
-		std::int64_t MSG_BASE::GetType() const
+		std::int64_t MsgBase::GetType() const
 		{
-			return reinterpret_cast<MSG_HEADER*>(_pData)->msgType;
+			return reinterpret_cast<MsgHeader*>(_pData)->msgType;
 		}
 
-		RT_MSG RT_MSG::instance[2];
+		MsgRT MsgRT::instance[2];
 
-		RT_MSG::RT_MSG()
+		MsgRT::MsgRT()
 		{
 			std::time_t timer;
 			std::time(&timer);
@@ -266,56 +266,56 @@ namespace Aris
 				std::abort();
 			}
 
-			_pData = new char[RT_MSG_LENGTH + sizeof(MSG_HEADER)];
-			memset(_pData, 0, RT_MSG_LENGTH + sizeof(MSG_HEADER));
+			_pData = new char[RT_MSG_LENGTH + sizeof(MsgHeader)];
+			memset(_pData, 0, RT_MSG_LENGTH + sizeof(MsgHeader));
 			SetLength(0);
 		}
-		RT_MSG::~RT_MSG()
+		MsgRT::~MsgRT()
 		{
 			delete[] _pData;
 		}
-		void RT_MSG::SetLength(std::int32_t dataLength)
+		void MsgRT::SetLength(std::int32_t dataLength)
 		{
-			reinterpret_cast<MSG_HEADER *>(_pData)->msgLength = dataLength;
+			reinterpret_cast<MsgHeader *>(_pData)->msgLength = dataLength;
 		}
 
-		MSG::MSG(std::int32_t msgID, std::int32_t dataLength)
+		Msg::Msg(std::int32_t msgID, std::int32_t dataLength)
 		{
-			_pData = new char[sizeof(MSG_HEADER) + dataLength];
-			memset(_pData, 0, sizeof(MSG_HEADER) + dataLength);
+			_pData = new char[sizeof(MsgHeader) + dataLength];
+			memset(_pData, 0, sizeof(MsgHeader) + dataLength);
 			
-			reinterpret_cast<MSG_HEADER *>(_pData)->msgLength = dataLength;
-			reinterpret_cast<MSG_HEADER *>(_pData)->msgID = msgID;
+			reinterpret_cast<MsgHeader *>(_pData)->msgLength = dataLength;
+			reinterpret_cast<MsgHeader *>(_pData)->msgID = msgID;
 		}
-		MSG::MSG(const MSG& other)
+		Msg::Msg(const Msg& other)
 		{
-			_pData = new char[sizeof(MSG_HEADER) + other.GetLength()];
-			memcpy(_pData, other._pData, sizeof(MSG_HEADER) + other.GetLength());
+			_pData = new char[sizeof(MsgHeader) + other.GetLength()];
+			memcpy(_pData, other._pData, sizeof(MsgHeader) + other.GetLength());
 		}
-		MSG::MSG(MSG&& other)
+		Msg::Msg(Msg&& other)
 		{
 			this->Swap(other);
 		}
-		MSG::~MSG()
+		Msg::~Msg()
 		{
 			delete [] _pData;
 		}
-		MSG &MSG::operator=(MSG other)
+		Msg &Msg::operator=(Msg other)
 		{
 			this->Swap(other);
 			return (*this);
 		}
-		void MSG::Swap(MSG &other)
+		void Msg::Swap(Msg &other)
 		{
 			std::swap(this->_pData, other._pData);
 		}
-		void MSG::SetLength(std::int32_t dataLength)
+		void Msg::SetLength(std::int32_t dataLength)
 		{
-			MSG otherMsg(0, dataLength);
+			Msg otherMsg(0, dataLength);
 
-			std::copy_n(this->_pData, sizeof(MSG_HEADER) + std::min(GetLength(), dataLength), otherMsg._pData);
+			std::copy_n(this->_pData, sizeof(MsgHeader) + std::min(GetLength(), dataLength), otherMsg._pData);
 			
-			reinterpret_cast<MSG_HEADER*>(otherMsg._pData)->msgLength = dataLength;
+			reinterpret_cast<MsgHeader*>(otherMsg._pData)->msgLength = dataLength;
 
 			this->Swap(otherMsg);
 		}

@@ -142,7 +142,7 @@ namespace Aris
 			mKinectStruct->mStatus = XN_STATUS_OK;
 		}
 
-		void KINECT::Initiate()
+		void KINECT::Init()
 		{
 			mKinectStruct->mStatus = mKinectStruct->mContext.Init();
 			mKinectStruct->CheckOpenNIError(mKinectStruct->mStatus, "initialize context");

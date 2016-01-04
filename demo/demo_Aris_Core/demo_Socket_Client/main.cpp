@@ -59,10 +59,10 @@ int main()
 		char RemoteIp[] = "127.0.0.1";
 #endif
 
-		CONN VisualSystem, ControlSystem;
+		Socket VisualSystem, ControlSystem;
 
 		/*注册所有的消息函数*/
-		Aris::Core::RegisterMsgCallback(VisualSystemDataNeeded, [&VisualSystem](Aris::Core::MSG &msg)
+		Aris::Core::RegisterMsgCallback(VisualSystemDataNeeded, [&VisualSystem](Aris::Core::Msg &msg)
 		{
 			/*只要收到数据，就认为服务器在索取地图数据，于是生成地图并发送过去*/
 			static int i = 0;
@@ -72,14 +72,14 @@ int main()
 			cout << "Visual data needed" << endl;
 			double map[9] = { (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i };
 
-			Aris::Core::MSG data;
+			Aris::Core::Msg data;
 			data.Copy(map, sizeof(map));
 
 			VisualSystem.SendData(data);
 
 			return 0;
 		});
-		Aris::Core::RegisterMsgCallback(VisualSystemLost, [](Aris::Core::MSG &msg)
+		Aris::Core::RegisterMsgCallback(VisualSystemLost, [](Aris::Core::Msg &msg)
 		{
 			cout << "Vision system connection lost" << endl;
 
@@ -87,7 +87,7 @@ int main()
 
 			return 0;
 		});
-		Aris::Core::RegisterMsgCallback(ControlCommandReceived, [&ControlSystem](Aris::Core::MSG &msg)
+		Aris::Core::RegisterMsgCallback(ControlCommandReceived, [&ControlSystem](Aris::Core::Msg &msg)
 		{
 			/*只要收到数据，就认为服务器让机器人行动，于是sleep 2秒之后发送回去数据，告诉机器人已经走到位*/
 
@@ -101,50 +101,50 @@ int main()
 
 
 
-			Aris::Core::MSG data;
+			Aris::Core::Msg data;
 			ControlSystem.SendData(data);
 			cout << "end walking" << endl;
 
 			return 0;
 
 		});
-		Aris::Core::RegisterMsgCallback(ControlSystemLost, [](Aris::Core::MSG &msg)
+		Aris::Core::RegisterMsgCallback(ControlSystemLost, [](Aris::Core::Msg &msg)
 		{
 			cout << "Control system connection lost" << endl;
 
 			return 0;
 		});
 
-		/*设置所有CONN类型的回调函数*/
-		VisualSystem.SetOnReceivedData([](Aris::Core::CONN *pConn, Aris::Core::MSG &data)
+		/*设置所有Socket类型的回调函数*/
+		VisualSystem.SetOnReceivedData([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
 		{
-			Aris::Core::PostMsg(Aris::Core::MSG(VisualSystemDataNeeded));
+			Aris::Core::PostMsg(Aris::Core::Msg(VisualSystemDataNeeded));
 
 			return 0;
 		});
-		VisualSystem.SetOnLoseConnection([](Aris::Core::CONN *pConn)
+		VisualSystem.SetOnLoseConnection([](Aris::Core::Socket *pConn)
 		{
-			PostMsg(Aris::Core::MSG(VisualSystemLost));
+			PostMsg(Aris::Core::Msg(VisualSystemLost));
 
 			return 0;
 		});
-		ControlSystem.SetOnReceivedData([](Aris::Core::CONN *pConn, Aris::Core::MSG &data)
+		ControlSystem.SetOnReceivedData([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
 		{
-			Aris::Core::PostMsg(Aris::Core::MSG(ControlCommandReceived));
+			Aris::Core::PostMsg(Aris::Core::Msg(ControlCommandReceived));
 
 			return 0;
 		});
-		ControlSystem.SetOnLoseConnection([](Aris::Core::CONN *pConn)
+		ControlSystem.SetOnLoseConnection([](Aris::Core::Socket *pConn)
 		{
-			PostMsg(Aris::Core::MSG(ControlSystemLost));
+			PostMsg(Aris::Core::Msg(ControlSystemLost));
 
 			return 0;
 		});
 
 		/*以下使用lambda函数做回调*/
-		VisualSystem.SetOnReceivedData([](Aris::Core::CONN *pConn, Aris::Core::MSG &data)
+		VisualSystem.SetOnReceivedData([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
 		{
-			Aris::Core::PostMsg(Aris::Core::MSG(VisualSystemDataNeeded));
+			Aris::Core::PostMsg(Aris::Core::Msg(VisualSystemDataNeeded));
 			return 0;
 		});
 
@@ -164,7 +164,7 @@ int main()
 		Aris::Core::log("after connect");
 
 
-		Aris::Core::MSG ret = ControlSystem.SendRequest(Aris::Core::MSG());
+		Aris::Core::Msg ret = ControlSystem.SendRequest(Aris::Core::Msg());
 		
 		cout << (char*)ret.GetDataAddress() << endl;
 

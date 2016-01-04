@@ -25,10 +25,10 @@ namespace Aris
 	namespace Control
 	{
 #ifdef PLATFORM_IS_LINUX
-		class PIPE_BASE::IMP
+		class PipeBase::Imp
 		{
 		public:
-			IMP(int port, bool isBlock)
+			Imp(int port, bool isBlock)
 			{
 				InitRT(port);
 				InitNRT(port, isBlock);
@@ -44,7 +44,7 @@ namespace Aris
 
 				struct timeval tv;
 				tv.tv_sec = 0;  /* 30 Secs Timeout */
-				tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+				tv.tv_usec = 0;  // Not Init'ing this can cause strange errors
 				if (rt_dev_setsockopt(FD_RT, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)))
 				{
 					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
@@ -73,7 +73,7 @@ namespace Aris
 				saddr.sipc_port = port;
 				if (rt_dev_bind(FD_RT, (struct sockaddr *)&saddr, sizeof(saddr)))
 				{
-					throw std::runtime_error(std::string("RT pipe init failed! Port:") + std::to_string(port));
+					throw std::runtime_error(std::string("RT pipe Init failed! Port:") + std::to_string(port));
 				}
 			}
 			void InitNRT(int port, bool isBlock)
@@ -87,7 +87,7 @@ namespace Aris
 
 				if (FD_NRT < 0)
 				{
-					throw std::runtime_error(std::string("NRT pipe init failed! Port:") + std::to_string(port));
+					throw std::runtime_error(std::string("NRT pipe Init failed! Port:") + std::to_string(port));
 				}
 
 
@@ -111,12 +111,12 @@ namespace Aris
 
 			std::recursive_mutex mutexInNRT;
 
-			friend class PIPE_BASE;
+			friend class PipeBase;
 		};
 
-		PIPE_BASE::PIPE_BASE(int port, bool isBlock):pImp(new PIPE_BASE::IMP(port, isBlock)){}
-		PIPE_BASE::~PIPE_BASE(){}
-		int PIPE_BASE::SendToRT_RawData(const void *pData, int size)
+		PipeBase::PipeBase(int port, bool isBlock):pImp(new PipeBase::Imp(port, isBlock)){}
+		PipeBase::~PipeBase(){}
+		int PipeBase::SendToRT_RawData(const void *pData, int size)
 		{
 			if (pData == nullptr)
 			{
@@ -125,7 +125,7 @@ namespace Aris
 			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
 			return write(pImp->FD_NRT, pData, size);
 		}
-		int PIPE_BASE::SendToNRT_RawData(const void* pData, int size)
+		int PipeBase::SendToNRT_RawData(const void* pData, int size)
 		{
 			if (pData == nullptr)
 			{
@@ -133,7 +133,7 @@ namespace Aris
 			}
 			return rt_dev_sendto(pImp->FD_RT, pData, size, 0, NULL, 0);;
 		}
-		int PIPE_BASE::RecvInRT_RawData(void* pData, int size)
+		int PipeBase::RecvInRT_RawData(void* pData, int size)
 		{
 			if (pData == nullptr)
 			{
@@ -141,7 +141,7 @@ namespace Aris
 			}
 			return rt_dev_recvfrom(pImp->FD_RT, pData, size, MSG_DONTWAIT, NULL, 0);
 		}
-		int PIPE_BASE::RecvInNRT_RawData(void *pData, int size)
+		int PipeBase::RecvInNRT_RawData(void *pData, int size)
 		{
 			if (pData == nullptr)
 			{
@@ -151,31 +151,31 @@ namespace Aris
 			return read(pImp->FD_NRT, pData, size);
 		}
 		
-		PIPE<Aris::Core::MSG>::PIPE(int port, bool isBlock) :PIPE_BASE(port, isBlock)
+		Pipe<Aris::Core::Msg>::Pipe(int port, bool isBlock) :PipeBase(port, isBlock)
 		{
 		}
-		int PIPE<Aris::Core::MSG>::SendToRT(const Aris::Core::MSG &msg)
+		int Pipe<Aris::Core::Msg>::SendToRT(const Aris::Core::Msg &msg)
 		{
-			SendToRT_RawData(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
-			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
+			SendToRT_RawData(msg._pData, msg.GetLength() + sizeof(Aris::Core::MsgHeader));
+			return msg.GetLength() + sizeof(Aris::Core::MsgHeader);
 		}
-		int PIPE<Aris::Core::MSG>::SendToNRT(const Aris::Core::RT_MSG &msg)
+		int Pipe<Aris::Core::Msg>::SendToNRT(const Aris::Core::MsgRT &msg)
 		{
-			SendToNRT_RawData(msg._pData, msg.GetLength() + sizeof(Aris::Core::MSG_HEADER));
-			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
+			SendToNRT_RawData(msg._pData, msg.GetLength() + sizeof(Aris::Core::MsgHeader));
+			return msg.GetLength() + sizeof(Aris::Core::MsgHeader);
 		}
-		int PIPE<Aris::Core::MSG>::RecvInRT(Aris::Core::RT_MSG &msg)
+		int Pipe<Aris::Core::Msg>::RecvInRT(Aris::Core::MsgRT &msg)
 		{
-			int length = RecvInRT_RawData(msg._pData, sizeof(Aris::Core::MSG_HEADER)+Aris::Core::RT_MSG::RT_MSG_LENGTH);		
+			int length = RecvInRT_RawData(msg._pData, sizeof(Aris::Core::MsgHeader)+Aris::Core::MsgRT::RT_MSG_LENGTH);		
 			return length<=0?0:length;			
 		}
-		int PIPE<Aris::Core::MSG>::RecvInNRT(Aris::Core::MSG &msg)
+		int Pipe<Aris::Core::Msg>::RecvInNRT(Aris::Core::Msg &msg)
 		{
 						
-			int err = RecvInNRT_RawData(msg._pData, sizeof(Aris::Core::MSG_HEADER));
+			int err = RecvInNRT_RawData(msg._pData, sizeof(Aris::Core::MsgHeader));
 			msg.SetLength(msg.GetLength());
 			RecvInNRT_RawData(msg.GetDataAddress(), msg.GetLength());
-			return msg.GetLength() + sizeof(Aris::Core::MSG_HEADER);
+			return msg.GetLength() + sizeof(Aris::Core::MsgHeader);
 		}
 #endif
 		

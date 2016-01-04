@@ -20,43 +20,43 @@ namespace Aris
 {
 	namespace Sensor
 	{
-		void IMU_DATA::ToPmBody2Ground(double *pm) const
+		void ImuData::ToPmBody2Ground(double *pm) const
 		{
 			ToPmBody2Ground(pm, this->yaw);
 		}
-		void IMU_DATA::ToPmBody2Ground(double *pm, double yawValue) const
+		void ImuData::ToPmBody2Ground(double *pm, double yawValue) const
 		{
 			double tem_pm[16];
 			double pe[6]{ 0,0,0,yawValue, pitch, roll };
 			Aris::DynKer::s_pe2pm(pe, tem_pm, "321");
 			Aris::DynKer::s_pm_dot_pm(pmLhs, tem_pm, pmRhs, pm);
 		}
-		void IMU_DATA::ToEulBody2Ground(double *eul, const char *eulType) const
+		void ImuData::ToEulBody2Ground(double *eul, const char *eulType) const
 		{
 			this->ToEulBody2Ground(eul, this->yaw, eulType);
 		}
-		void IMU_DATA::ToEulBody2Ground(double *eul, double yawValue, const char *eulType) const
+		void ImuData::ToEulBody2Ground(double *eul, double yawValue, const char *eulType) const
 		{
 			double pm[16], pe[6];
 			this->ToPmBody2Ground(pm, yawValue);
 			Aris::DynKer::s_pm2pe(pm, pe, eulType);
 			std::copy_n(pe + 3, 3, eul);
 		}
-		void IMU_DATA::ToOmegaBody2Ground(double *omega) const
+		void ImuData::ToOmegaBody2Ground(double *omega) const
 		{
 			ToOmegaBody2Ground(omega, this->yaw);
 		}
-		void IMU_DATA::ToOmegaBody2Ground(double *omega, double yawValue) const
+		void ImuData::ToOmegaBody2Ground(double *omega, double yawValue) const
 		{
 			double pm[16];
 			ToPmBody2Ground(pm, yawValue);
 			Aris::DynKer::s_pm_dot_v3(pm, this->omega, omega);
 		}
-		void IMU_DATA::ToPntAccBody2Ground(double *acc) const
+		void ImuData::ToPntAccBody2Ground(double *acc) const
 		{
 			ToPntAccBody2Ground(acc, this->yaw);
 		}
-		void IMU_DATA::ToPntAccBody2Ground(double *acc, double yawValue) const
+		void ImuData::ToPntAccBody2Ground(double *acc, double yawValue) const
 		{
 			/*需要角加速度才能算出准确值*/
 			
@@ -80,9 +80,8 @@ namespace Aris
 			XsPortInfo mtPort;
 		};
 		
-		IMU::IMU() 
+		IMU::IMU():pDevice(new IMU_IMP)
 		{
-			pDevice = new IMU_IMP;
 			pDevice->port = "/dev/ttyUSB0";
 			pDevice->baudRate = 921600;
 			pDevice->sampleRate = 400;
@@ -99,17 +98,15 @@ namespace Aris
 			pDevice->pmBody2Imu[2][1] = -1;
 			pDevice->pmBody2Imu[3][3] = 1;
 		}
-		IMU::IMU(const Aris::Core::ELEMENT *xmlEle)
+		IMU::IMU(const Aris::Core::XmlElement *xmlEle) :pDevice(new IMU_IMP)
 		{
-			pDevice = new IMU_IMP;
-			
 #ifdef PLATFORM_IS_LINUX
 			pDevice->port = xmlEle->Attribute("portLinux");
 #endif
 			pDevice->baudRate = std::stoi(xmlEle->Attribute("baudRate"));
 			pDevice->sampleRate = std::stoi(xmlEle->Attribute("sampleRate"));;
 
-			Aris::DynKer::CALCULATOR c;
+			Aris::DynKer::Calculator c;
 			c.AddVariable("PI", PI);
 			
 			auto m = c.CalculateExpression(xmlEle->Attribute("PeImuGround2BodyGound"));
@@ -122,10 +119,9 @@ namespace Aris
 		}
 		IMU::~IMU()
 		{
-			delete pDevice;
 		}
 
-		void IMU::Initiate()
+		void IMU::Init()
 		{
 			XsPortInfoArray portInfoArray;
 			xsEnumerateUsbDevices(portInfoArray);
@@ -197,7 +193,7 @@ namespace Aris
 		{
 			pDevice->close();
 		}
-		void IMU::UpdateData(IMU_DATA &data)
+		void IMU::UpdateData(ImuData &data)
 		{
 			XsByteArray imuData;
 			XsMessageArray msgs;

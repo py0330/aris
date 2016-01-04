@@ -14,19 +14,19 @@ namespace Aris
 		/** \brief Socket connection class
 		*
 		*/
-		class CONN final
+		class Socket final
 		{
 		public:
 			/** \brief 构造函数
 			*
 			*
 			*/
-			CONN();
+			Socket();
 			/** \brief 析构函数
 			*
 			*
 			*/
-			~CONN();
+			~Socket();
 			/** \brief 查看Socket是否处于连接状态
 			*
 			*
@@ -45,49 +45,49 @@ namespace Aris
 			*
 			*/
 			void Close();
-			/** \brief 使用CONN发送数据
+			/** \brief 使用Socket发送数据
 			*
 			* \param data 待发送的数据。
 			*/
-			void SendData(const Aris::Core::MSG &data);
-			/** \brief 使用CONN发送问讯，此后函数阻塞，直到对面应答
+			void SendData(const Aris::Core::Msg &data);
+			/** \brief 使用Socket发送问讯，此后函数阻塞，直到对面应答
 			*
 			* \param data 待发送的数据。
 			*/
-			Aris::Core::MSG SendRequest(const Aris::Core::MSG &request);
-			/** \brief 设置收到数据时，CONN所需要执行的函数
+			Aris::Core::Msg SendRequest(const Aris::Core::Msg &request);
+			/** \brief 设置收到数据时，Socket所需要执行的函数
 			*
-			* \param OnReceivedData 为形如int(CONN*, Aris::Core::MSG &)的函数。每当CONN收到数据后在CONN自己的内部线程中执行。
+			* \param OnReceivedData 为形如int(Socket*, Aris::Core::Msg &)的函数。每当Socket收到数据后在Socket自己的内部线程中执行。
 			*/
-			void SetOnReceivedData(std::function<int(CONN*, Aris::Core::MSG &)> = nullptr);
+			void SetOnReceivedData(std::function<int(Socket*, Aris::Core::Msg &)> = nullptr);
 			/** \brief 设置服务器端收到连接后所执行的函数
 			*
-			* \param OnReceivedConnection 为形如int(CONN*, const char* pRemoteIP, int remotePort)的函数。每当CONN收到连接后在CONN自己的内部线程中执行。
+			* \param OnReceivedConnection 为形如int(Socket*, const char* pRemoteIP, int remotePort)的函数。每当Socket收到连接后在Socket自己的内部线程中执行。
 			*/
-			void SetOnReceivedConnection(std::function<int(CONN*, const char* pRemoteIP, int remotePort)> = nullptr);
+			void SetOnReceivedConnection(std::function<int(Socket*, const char* pRemoteIP, int remotePort)> = nullptr);
 			/** \brief 设置服务器端收到连接后所执行的函数
 			*
-			* \param OnLoseConnection 为形如int(CONN*)的函数。每当CONN失去连接后在CONN自己的内部线程中执行。
+			* \param OnLoseConnection 为形如int(Socket*)的函数。每当Socket失去连接后在Socket自己的内部线程中执行。
 			*/
-			void SetOnLoseConnection(std::function<int(CONN*)> = nullptr);
-			/** \brief 设置收到讯问时，CONN所需要回答的函数
+			void SetOnLoseConnection(std::function<int(Socket*)> = nullptr);
+			/** \brief 设置收到讯问时，Socket所需要回答的函数
 			*
-			* \param 为形如Aris::Core::MSG(CONN*, Aris::Core::MSG &)的函数。每当CONN收到问讯后在CONN自己的内部线程中执行。
+			* \param 为形如Aris::Core::Msg(Socket*, Aris::Core::Msg &)的函数。每当Socket收到问讯后在Socket自己的内部线程中执行。
 			*/
-			void SetOnReceiveRequest(std::function<Aris::Core::MSG(CONN*, Aris::Core::MSG &)> = nullptr);
-			/** \brief 设置出现监听错误时，CONN所需要执行的函数
+			void SetOnReceiveRequest(std::function<Aris::Core::Msg(Socket*, Aris::Core::Msg &)> = nullptr);
+			/** \brief 设置出现监听错误时，Socket所需要执行的函数
 			*
-			* \param 为形如void(CONN*)的函数。在CONN自己的内部线程中执行。
+			* \param 为形如void(Socket*)的函数。在Socket自己的内部线程中执行。
 			*/
-			void SetOnAcceptError(std::function<void(CONN*)> = nullptr);
-			/** \brief 设置出现接收数据错误时，CONN所需要执行的函数
+			void SetOnAcceptError(std::function<void(Socket*)> = nullptr);
+			/** \brief 设置出现接收数据错误时，Socket所需要执行的函数
 			*
-			* \param 为形如void(CONN*)的函数。在CONN自己的内部线程中执行。
+			* \param 为形如void(Socket*)的函数。在Socket自己的内部线程中执行。
 			*/
-			void SetOnReceiveError(std::function<void(CONN*)> = nullptr);
+			void SetOnReceiveError(std::function<void(Socket*)> = nullptr);
 
 		public:
-			enum STATE
+			enum State
 			{
 				IDLE,/*!< \brief 空闲状态 */
 				WAITING_FOR_CONNECTION,/*!< \brief 服务器已经打开端口，等待客户端连接 */
@@ -95,90 +95,56 @@ namespace Aris
 				WAITING_FOR_REPLY
 			};
 
-			class START_SERVER_ERROR :public std::runtime_error
+			class StartServerError :public std::runtime_error
 			{
 			public:
-				CONN *pConn;
+				Socket *pConn;
 				int id;
 
 			private:
-				START_SERVER_ERROR(const char* what, CONN *pConn, int id)
-					: runtime_error(what)
-					, pConn(pConn)
-					, id(id)
-				{
-
-				}
-
-				friend class CONN;
+				StartServerError(const char* what, Socket *pConn, int id) : runtime_error(what), pConn(pConn), id(id) {};
+				friend class Socket;
 			};
-			class CONNECT_ERROR :public std::runtime_error
+			class ConnectError :public std::runtime_error
 			{
-				friend class CONN;
 			public:
-				CONN *pConn;
+				Socket *pConn;
 				int id;
 
 			private:
-				CONNECT_ERROR(const char* what, CONN *pConn, int id)
-					: runtime_error(what)
-					, pConn(pConn)
-					, id(id)
-				{
-
-				}
+				ConnectError(const char* what, Socket *pConn, int id) : runtime_error(what), pConn(pConn), id(id) {};
+				friend class Socket;
 			};
-			class SEND_DATA_ERROR :public std::runtime_error
+			class SendDataError :public std::runtime_error
 			{
-				friend class CONN;
 			public:
-				CONN *pConn;
+				Socket *pConn;
 				int id;
 
 			private:
-				SEND_DATA_ERROR(const char* what, CONN *pConn, int id)
-					: runtime_error(what)
-					, pConn(pConn)
-					, id(id)
-				{
-
-				}
+				SendDataError(const char* what, Socket *pConn, int id) : runtime_error(what), pConn(pConn), id(id) {};
+				friend class Socket;
 			};
-			class SEND_REQUEST_ERROR :public std::runtime_error
+			class SendRequestError :public std::runtime_error
 			{
 			public:
-				CONN *pConn;
+				Socket *pConn;
 				int id;
 
-				friend class CONN;
-
 			private:
-				SEND_REQUEST_ERROR(const char* what, CONN *pConn, int id)
-					: runtime_error(what)
-					, pConn(pConn)
-					, id(id)
-				{
-				}
+				SendRequestError(const char* what, Socket *pConn, int id) : runtime_error(what), pConn(pConn), id(id) {};
+				friend class Socket;
 			};
 
 		private:
-			enum MSG_TYPE
-			{
-				SOCKET_GENERAL_DATA,
-				SOCKET_REQUEST,
-				SOCKET_REPLY
-			};
-
-			CONN(const CONN & other) = delete;
-			CONN(CONN && other) = delete;
-			CONN &operator=(const CONN& other) = delete;
-			CONN &operator=(CONN&& other) = delete;
+			Socket(const Socket & other) = delete;
+			Socket(Socket && other) = delete;
+			Socket &operator=(const Socket& other) = delete;
+			Socket &operator=(Socket&& other) = delete;
 
 		private:
-			struct CONN_STRUCT;
-			const std::unique_ptr<CONN_STRUCT> pConnStruct;
-			static void _ReceiveThread(CONN::CONN_STRUCT* pCONN_STRUCT);
-			static void _AcceptThread(CONN::CONN_STRUCT* pCONN_STRUCT);
+			struct Imp;
+			const std::unique_ptr<Imp> pConnStruct;
 		};
 	}
 }
