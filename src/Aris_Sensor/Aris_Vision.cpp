@@ -140,6 +140,16 @@ namespace Aris
 		KINECT::KINECT():mKinectStruct(new KINECT_STRUCT)
 		{
 			mKinectStruct->mStatus = XN_STATUS_OK;
+
+			double  locKinectToRobot[4][4] = { { 0.9995, 0.0134, -0.0273, 0.0224 },
+			{ -0.0304, 0.5120, -0.8584, 0.2026 + 0.038 },
+			{ 0.0025, 0.8589, 0.5122, 0.5733 },
+			{ 0, 0, 0, 1 } };
+
+			std::copy_n(static_cast<double *>(locKinectToRobot), 16, static_cast<double *>(this->kinectToRobot));
+
+			
+
 		}
 
 		void KINECT::Init()

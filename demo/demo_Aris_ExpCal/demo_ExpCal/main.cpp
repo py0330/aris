@@ -8,12 +8,11 @@
 #include <Aris_ExpCal.h>
 
 using namespace std;
-
-
 using namespace Aris::DynKer;
 
 int main()
 {
+	/*
 	Calculator c;
 
 
@@ -48,8 +47,8 @@ int main()
 
 	double x = 0.1;
 
-	Matrix m = { { 1, 2.2, 3 }, { 2, 3.2, 4 } };
-	Matrix n = { { x, x + 0.1} };
+	Matrix m = { 1, 2.2, 3,{}, 2, 3.2, 4 };
+	Matrix n = { x,{}, x + 0.1 };
 
 	m.Transpose();
 
@@ -87,7 +86,7 @@ int main()
 	{
 		cout << e.what() << endl;
 	}
-	
+	*/
 	char aaa;
 	cin>>aaa;
 	return 0;

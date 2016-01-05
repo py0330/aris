@@ -17,31 +17,38 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		Marker::Marker(const Part *pPrt, const double *_prtPe, const char* eulType)
-			: Element(nullptr, "", 0), pPrt(pPrt)
+		Interaction::Interaction(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele)
+			: Element(model, name, id)
+			, makI_(*Model().GetPart(ele->Attribute("PrtM"))->FindMarker(ele->Attribute("MakI")))
+			, makJ_(*Model().GetPart(ele->Attribute("PrtN"))->FindMarker(ele->Attribute("MakJ"))) 
+		{
+		}
+		
+		Marker::Marker(const Part &prt, const double *prt_pe, const char* eulType)
+			: Element(const_cast<ModelBase &>(prt.Model()), "", 0), prt_(prt)
 		{
 			static const double defaultPe[6] = { 0 };
-			_prtPe = _prtPe ? _prtPe : defaultPe;
+			prt_pe = prt_pe ? prt_pe : defaultPe;
 
-			s_pe2pm(_prtPe, *prtPm, eulType);
+			s_pe2pm(prt_pe, *prt_pm_, eulType);
 		}
-		Marker::Marker(ModelBase *pModel, Part *pPrt, const std::string &Name, int id)
-			: Element(pModel, Name, id), pPrt(pPrt)
+		Marker::Marker(ModelBase &model, Part &prt, const std::string &name, int id)
+			: Element(model, name, id), prt_(prt)
 		{
-			std::fill_n(static_cast<double *>(*prtPm), 16, 0);
-			prtPm[0][0] = 1;
-			prtPm[1][1] = 1;
-			prtPm[2][2] = 1;
-			prtPm[3][3] = 1;
+			std::fill_n(static_cast<double *>(*prt_pm_), 16, 0);
+			prt_pm_[0][0] = 1;
+			prt_pm_[1][1] = 1;
+			prt_pm_[2][2] = 1;
+			prt_pm_[3][3] = 1;
 
-			std::fill_n(static_cast<double *>(*this->pm), 16, 0);
-			this->pm[0][0] = 1;
-			this->pm[1][1] = 1;
-			this->pm[2][2] = 1;
-			this->pm[3][3] = 1;
+			std::fill_n(static_cast<double *>(*this->pm_), 16, 0);
+			this->pm_[0][0] = 1;
+			this->pm_[1][1] = 1;
+			this->pm_[2][2] = 1;
+			this->pm_[3][3] = 1;
 		}
-		Marker::Marker(Part *pPrt, const std::string &Name, int id, const double *pPrtPm, Marker *pRelativeTo)
-			: Marker(&pPrt->Model(), pPrt, Name, id)
+		Marker::Marker(Part &prt, const std::string &name, int id, const double *pPrtPm, Marker *pRelativeTo)
+			: Marker(prt.Model(), prt, name, id)
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			pPrtPm = pPrtPm ? pPrtPm : default_pm_in;
@@ -49,38 +56,39 @@ namespace Aris
 			
 			if (pRelativeTo)
 			{
-				if (&pRelativeTo->Father() != pPrt)
+				if (&pRelativeTo->Father() != &prt_)
 					throw std::logic_error("relative marker must has same father part with this marker");
 				
-				s_pm_dot_pm(*pRelativeTo->PrtPm(), pPrtPm, *prtPm);
+				s_pm_dot_pm(*pRelativeTo->PrtPm(), pPrtPm, *prt_pm_);
 			}
 			else
 			{
-				std::copy_n(pPrtPm, 16, static_cast<double *>(*prtPm));
+				std::copy_n(pPrtPm, 16, static_cast<double *>(*prt_pm_));
 			}
 		}
-		Marker::Marker(Part *pPrt, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: Marker(&pPrt->Model(), pPrt, Name, id)
+		Marker::Marker(Part &prt, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
+			: Marker(prt.Model(), prt, Name, id)
 		{
 			double pm[16];
-			Matrix m = Model().calculator.CalculateExpression(ele->Attribute("Pos"));
+
+			Matrix m = prt.Model().calculator.CalculateExpression(ele->Attribute("Pos"));
 			s_pe2pm(m.Data(), pm);
 
 			if (ele->Attribute("RelativeTo") && (!ele->Attribute("RelativeTo", "")))
 			{
 				const Marker *pRelativeMak = Father().FindMarker(ele->Attribute("RelativeTo"));
-				s_pm_dot_pm(*pRelativeMak->PrtPm(), pm, *prtPm);
+				s_pm_dot_pm(*pRelativeMak->PrtPm(), pm, *prt_pm_);
 			}
 			else
 			{
-				std::copy_n(pm, 16, static_cast<double*>(*prtPm));
+				std::copy_n(pm, 16, static_cast<double*>(*prt_pm_));
 			}
 		}
 		const double6& Marker::Vel() const { return Father().Vel(); };
 		const double6& Marker::Acc() const { return Father().Acc(); };
 		void Marker::Update()
 		{
-			s_pm_dot_pm(*Father().Pm(), *prtPm, *this->pm);
+			s_pm_dot_pm(*Father().Pm(), *PrtPm(), *pm_);
 		}
 		void Marker::ToXmlElement(Aris::Core::XmlElement *pEle) const
 		{
@@ -90,7 +98,7 @@ namespace Aris
 			pEle->SetName(this->Name().data());
 
 			Aris::Core::XmlElement *pPE = pEle->GetDocument()->NewElement("Pos");
-			s_pm2pe(*prtPm, value);
+			s_pm2pe(*PrtPm(), value);
 			pPE->SetText(Matrix(1, 6, value).ToString().c_str());
 			pEle->InsertEndChild(pPE);
 
@@ -99,57 +107,57 @@ namespace Aris
 			pEle->InsertEndChild(pRelativeMakEle);
 		}
 		
-		Part::Part(ModelBase *pModel, const std::string &Name, int id, const double *Im, const double *pm, const double *Vel, const double *Acc)
-			: Marker(pModel, this, Name, id)
+		Part::Part(ModelBase &model, const std::string &Name, int id, const double *im, const double *pm, const double *vel, const double *acc)
+			: Marker(model, *this, Name, id)
 		{
-			if (Im == nullptr)
+			if (im == nullptr)
 			{
-				std::fill_n(static_cast<double *>(*_PrtIm), 36, 0);
-				_PrtIm[0][0] = 1;
-				_PrtIm[1][1] = 1;
-				_PrtIm[2][2] = 1;
-				_PrtIm[3][3] = 1;
-				_PrtIm[4][4] = 1;
-				_PrtIm[5][5] = 1;
+				std::fill_n(static_cast<double *>(*prt_im_), 36, 0);
+				prt_im_[0][0] = 1;
+				prt_im_[1][1] = 1;
+				prt_im_[2][2] = 1;
+				prt_im_[3][3] = 1;
+				prt_im_[4][4] = 1;
+				prt_im_[5][5] = 1;
 			}
 			else
 			{
-				std::copy_n(Im, 36, *_PrtIm);
+				std::copy_n(im, 36, *prt_im_);
 			}
 
 			if (pm == nullptr)
 			{
-				std::fill_n(static_cast<double *>(*this->pm), 16, 0);
-				this->pm[0][0] = 1;
-				this->pm[1][1] = 1;
-				this->pm[2][2] = 1;
-				this->pm[3][3] = 1;
+				std::fill_n(static_cast<double *>(*this->Pm()), 16, 0);
+				this->pm_[0][0] = 1;
+				this->pm_[1][1] = 1;
+				this->pm_[2][2] = 1;
+				this->pm_[3][3] = 1;
 			}
 			else
 			{
 				SetPm(pm);
 			}
 
-			if (Vel == nullptr)
+			if (vel == nullptr)
 			{
-				std::fill_n(vel, 6, 0);
+				std::fill_n(Vel(), 6, 0);
 			}
 			else
 			{
-				SetVel(Vel);
+				SetVel(vel);
 			}
 
-			if (Acc == nullptr)
+			if (acc == nullptr)
 			{
-				std::fill_n(_Acc, 6, 0);
+				std::fill_n(Acc(), 6, 0);
 			}
 			else
 			{
-				SetAcc(Acc);
+				SetAcc(acc);
 			}
 		}
-		Part::Part(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: Marker(pModel, this, Name, id)
+		Part::Part(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
+			: Marker(model, *this, Name, id)
 		{
 			if (ele->Attribute("Active", "true"))
 			{
@@ -167,10 +175,10 @@ namespace Aris
 			Matrix m;
 
 			m = Model().calculator.CalculateExpression(ele->Attribute("Inertia"));
-			s_gamma2im(m.Data(), *_PrtIm);
+			s_gamma2im(m.Data(), *prt_im_);
 
 			m = Model().calculator.CalculateExpression(ele->Attribute("Pos"));
-			s_pe2pm(m.Data(), *pm);
+			s_pe2pm(m.Data(), *Pm());
 
 			m = Model().calculator.CalculateExpression(ele->Attribute("Vel"));
 			std::copy_n(m.Data(), 6, Vel());
@@ -178,7 +186,7 @@ namespace Aris
 			m = Model().calculator.CalculateExpression(ele->Attribute("Acc"));
 			std::copy_n(m.Data(), 6, Acc());
 
-			_markerNames.clear();
+			marker_names_.clear();
 
 			for (auto makEle = ele->FirstChildElement("ChildMarker")->FirstChildElement(); makEle != nullptr; makEle = makEle->NextSiblingElement())
 			{
@@ -186,24 +194,24 @@ namespace Aris
 			}
 
 			if (ele->Attribute("Graphic_File_Path") && (!ele->Attribute("Graphic_File_Path", "")))
-				graphicFilePath = ele->Attribute("Graphic_File_Path");
+				graphic_file_path_ = ele->Attribute("Graphic_File_Path");
 		}
 		void Part::Update()
 		{
 			double tem[6];
 		
-			s_inv_pm(*this->pm, *_InvPm);
-			s_tv(*_InvPm, vel, _PrtVel);
-			s_tv(*_InvPm, _Acc, _PrtAcc);
-			s_tv(*_InvPm, Model()._Environment.Gravity, _PrtGravity);
-			s_m6_dot_v6(*_PrtIm, _PrtGravity, _PrtFg);
-			s_m6_dot_v6(*_PrtIm, _PrtVel, tem);
-			s_cf(_PrtVel, tem, _PrtFv);
+			s_inv_pm(*Pm(), *inv_pm_);
+			s_tv(*inv_pm_, Vel(), prt_vel_);
+			s_tv(*inv_pm_, Acc(), prt_acc_);
+			s_tv(*inv_pm_, Model()._Environment.Gravity, prt_gravity_);
+			s_m6_dot_v6(*prt_im_, prt_gravity_, prt_fg_);
+			s_m6_dot_v6(*prt_im_, prt_vel_, tem);
+			s_cf(prt_vel_, tem, prt_fv_);
 		}
 		Marker* Part::FindMarker(const std::string &Name)
 		{
-			auto pMak = _markerNames.find(Name);
-			if (pMak != _markerNames.end())
+			auto pMak = marker_names_.find(Name);
+			if (pMak != marker_names_.end())
 			{
 				return Model()._markers.at(pMak->second).get();
 			}
@@ -214,8 +222,8 @@ namespace Aris
 		}
 		const Marker* Part::FindMarker(const std::string &Name)const
 		{
-			auto pMak = _markerNames.find(Name);
-			if (pMak != _markerNames.end())
+			auto pMak = marker_names_.find(Name);
+			if (pMak != marker_names_.end())
 			{
 				return Model()._markers.at(pMak->second).get();
 			}
@@ -249,17 +257,17 @@ namespace Aris
 			pEle->InsertEndChild(pPE);
 
 			Aris::Core::XmlElement *pVel = pEle->GetDocument()->NewElement("Vel");
-			pVel->SetText(Matrix(1, 6, vel).ToString().c_str());
+			pVel->SetText(Matrix(1, 6, Vel()).ToString().c_str());
 			pEle->InsertEndChild(pVel);
 
 			Aris::Core::XmlElement *pAcc = pEle->GetDocument()->NewElement("Acc");
-			pAcc->SetText(Matrix(1, 6, _Acc).ToString().c_str());
+			pAcc->SetText(Matrix(1, 6, Acc()).ToString().c_str());
 			pEle->InsertEndChild(pAcc);
 
 			Aris::Core::XmlElement *pChildMak = pEle->GetDocument()->NewElement("ChildMarker");
 			pEle->InsertEndChild(pChildMak);
 
-			for (auto &m:_markerNames)
+			for (auto &m : marker_names_)
 			{
 				Aris::Core::XmlElement *ele = pEle->GetDocument()->NewElement("");
 
@@ -268,7 +276,7 @@ namespace Aris
 			}
 
 			Aris::Core::XmlElement *pGraphicFilePath = pEle->GetDocument()->NewElement("Graphic_File_Path");
-			pGraphicFilePath->SetText(this->graphicFilePath.c_str());
+			pGraphicFilePath->SetText(this->graphic_file_path_.c_str());
 			pEle->InsertEndChild(pGraphicFilePath);
 		}
 		void Part::ToAdamsCmd(std::ofstream &file) const
@@ -355,7 +363,7 @@ namespace Aris
 			}
 
 			//导入marker
-			for (auto &mak : this->_markerNames)
+			for (auto &mak : this->marker_names_)
 			{
 				double pe[6];
 
@@ -370,7 +378,7 @@ namespace Aris
 					<< "!\r\n";
 			}
 			//导入parasolid
-			std::stringstream stream(this->graphicFilePath);
+			std::stringstream stream(this->graphic_file_path_);
 			std::string path;
 			while (stream >> path)
 			{
@@ -382,15 +390,15 @@ namespace Aris
 			}
 		}
 
-		JointBase::JointBase(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ)
-			: Element(pModel, Name, id)
-			, _pMakI(pMakI)
-			, _pMakJ(pMakJ)
+		JointBase::JointBase(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
+			: Element(model, Name, id), mak_i_(makI), mak_j_(makJ)
 		{
 
 		}
-		JointBase::JointBase(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: Element(pModel, Name, id)
+		JointBase::JointBase(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
+			: Element(model, Name, id)
+			, mak_i_(*Model().GetPart(ele->Attribute("PrtM"))->FindMarker(ele->Attribute("MakI")))
+			, mak_j_(*Model().GetPart(ele->Attribute("PrtN"))->FindMarker(ele->Attribute("MakJ")))
 		{
 			if (strcmp("true", ele->Attribute("Active")) == 0)
 			{
@@ -404,10 +412,6 @@ namespace Aris
 			{
 				throw std::logic_error("failed load xml file in joint");
 			}
-
-			_pMakI = Model().GetPart(ele->Attribute("PrtM"))->FindMarker(ele->Attribute("MakI"));
-			_pMakJ = Model().GetPart(ele->Attribute("PrtN"))->FindMarker(ele->Attribute("MakJ"));
-
 		}
 		void JointBase::Update()
 		{
@@ -422,10 +426,10 @@ namespace Aris
 			s_tf_n(CstDim(), -1, *_pm_M2N, this->PrtCstMtxI(), 0, this->PrtCstMtxJ());
 
 			/*update A_c*/
-			std::fill_n(this->PrtA_c(), this->CstDim(), 0);
+			std::fill_n(this->PrtAc(), this->CstDim(), 0);
 			s_inv_tv(-1, *_pm_M2N, MakJ().Father().PrtVel(), 0, _tem_v1);
 			s_cv(MakI().Father().PrtVel(), _tem_v1, _tem_v2);
-			s_dgemmTN(CstDim(), 1, 6, 1, PrtCstMtxI(), CstDim(), _tem_v2, 1, 0, PrtA_c(), 1);
+			s_dgemmTN(CstDim(), 1, 6, 1, PrtCstMtxI(), CstDim(), _tem_v2, 1, 0, PrtAc(), 1);
 		};
 		void JointBase::ToXmlElement(Aris::Core::XmlElement *pEle) const
 		{
@@ -444,19 +448,19 @@ namespace Aris
 			pEle->InsertEndChild(pType);
 
 			Aris::Core::XmlElement *pPrtI = pEle->GetDocument()->NewElement("iPart");
-			pPrtI->SetText(_pMakI->Father().Name().data());
+			pPrtI->SetText(MakI().Father().Name().data());
 			pEle->InsertEndChild(pPrtI);
 
 			Aris::Core::XmlElement *pPrtJ = pEle->GetDocument()->NewElement("jPart");
-			pPrtJ->SetText(_pMakJ->Father().Name().data());
+			pPrtJ->SetText(MakJ().Father().Name().data());
 			pEle->InsertEndChild(pPrtJ);
 
 			Aris::Core::XmlElement *pMakI = pEle->GetDocument()->NewElement("iMarker");
-			pMakI->SetText(_pMakI->Name().data());
+			pMakI->SetText(MakI().Name().data());
 			pEle->InsertEndChild(pMakI);
 
 			Aris::Core::XmlElement *pMakJ = pEle->GetDocument()->NewElement("jMarker");
-			pMakJ->SetText(_pMakJ->Name().data());
+			pMakJ->SetText(MakJ().Name().data());
 			pEle->InsertEndChild(pMakJ);
 		}
 		void JointBase::ToAdamsCmd(std::ofstream &file) const
@@ -464,20 +468,20 @@ namespace Aris
 			file << "constraint create joint " << this->GetType() << "  &\r\n"
 				<< "    joint_name = ." <<	Model().Name() << "." << this->Name() << "  &\r\n"
 				<< "    adams_id = " << this->ID() + 1 << "  &\r\n"
-				<< "    i_marker_name = ." << Model().Name() << "." << this->_pMakI->Father().Name() << "." << this->_pMakI->Name() << "  &\r\n"
-				<< "    j_marker_name = ." << Model().Name() << "." << this->_pMakJ->Father().Name() << "." << this->_pMakJ->Name() << "  \r\n"
+				<< "    i_marker_name = ." << Model().Name() << "." << this->MakI().Father().Name() << "." << this->MakI().Name() << "  &\r\n"
+				<< "    j_marker_name = ." << Model().Name() << "." << this->MakJ().Father().Name() << "." << this->MakJ().Name() << "  \r\n"
 				<< "!\r\n";
 		}
 
-		MotionBase::MotionBase(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ)
-			: Element(pModel, Name, id)
-			, _pMakI(pMakI)
-			, _pMakJ(pMakJ)
+		MotionBase::MotionBase(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
+			: Element(model, Name, id)
+			, _pMakI(&makI)
+			, _pMakJ(&makJ)
 		{
 			memset(_frc_coe, 0, sizeof(double) * 3);
 		}
-		MotionBase::MotionBase(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: Element(pModel, Name, id)
+		MotionBase::MotionBase(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
+			: Element(model, Name, id)
 		{
 			if (strcmp("true", ele->Attribute("Active")) == 0)
 			{
@@ -516,19 +520,19 @@ namespace Aris
 			pEle->InsertEndChild(pType);
 
 			Aris::Core::XmlElement *pPrtI = pEle->GetDocument()->NewElement("iPart");
-			pPrtI->SetText(_pMakI->Father().Name().data());
+			pPrtI->SetText(MakI().Father().Name().data());
 			pEle->InsertEndChild(pPrtI);
 
 			Aris::Core::XmlElement *pPrtJ = pEle->GetDocument()->NewElement("jPart");
-			pPrtJ->SetText(_pMakJ->Father().Name().data());
+			pPrtJ->SetText(MakJ().Father().Name().data());
 			pEle->InsertEndChild(pPrtJ);
 
 			Aris::Core::XmlElement *pMakI = pEle->GetDocument()->NewElement("iMarker");
-			pMakI->SetText(_pMakI->Name().data());
+			pMakI->SetText(MakI().Name().data());
 			pEle->InsertEndChild(pMakI);
 
 			Aris::Core::XmlElement *pMakJ = pEle->GetDocument()->NewElement("jMarker");
-			pMakJ->SetText(_pMakJ->Name().data());
+			pMakJ->SetText(MakJ().Name().data());
 			pEle->InsertEndChild(pMakJ);
 
 			Aris::Core::XmlElement *pFrictionCoefficients = pEle->GetDocument()->NewElement("Friction_Coefficients");
@@ -546,8 +550,8 @@ namespace Aris
 				file << "constraint create motion_generator &\r\n"
 					<< "    motion_name = ." << Model().Name() << "." << this->Name() << "  &\r\n"
 					<< "    adams_id = " << this->ID() + 1 << "  &\r\n"
-					<< "    i_marker_name = ." << Model().Name() << "." << this->_pMakI->Father().Name() << "." << this->_pMakI->Name() << "  &\r\n"
-					<< "    j_marker_name = ." << Model().Name() << "." << this->_pMakJ->Father().Name() << "." << this->_pMakJ->Name() << "  &\r\n"
+					<< "    i_marker_name = ." << Model().Name() << "." << this->MakI().Father().Name() << "." << this->MakI().Name() << "  &\r\n"
+					<< "    j_marker_name = ." << Model().Name() << "." << this->MakJ().Father().Name() << "." << this->MakJ().Name() << "  &\r\n"
 					<< "    axis = " << s << "  &\r\n"
 					<< "    function = \"" << this->MotPos() << "\"  \r\n"
 					<< "!\r\n";
@@ -573,30 +577,28 @@ namespace Aris
 				file << "constraint create motion_generator &\r\n"
 					<< "    motion_name = ." << Model().Name() << "." << this->Name() << "  &\r\n"
 					<< "    adams_id = " << this->ID() + 1 << "  &\r\n"
-					<< "    i_marker_name = ." << Model().Name() << "." << this->_pMakI->Father().Name() << "." << this->_pMakI->Name() << "  &\r\n"
-					<< "    j_marker_name = ." << Model().Name() << "." << this->_pMakJ->Father().Name() << "." << this->_pMakJ->Name() << "  &\r\n"
+					<< "    i_marker_name = ." << Model().Name() << "." << this->MakI().Father().Name() << "." << this->MakI().Name() << "  &\r\n"
+					<< "    j_marker_name = ." << Model().Name() << "." << this->MakJ().Father().Name() << "." << this->MakJ().Name() << "  &\r\n"
 					<< "    axis = " << s << "  &\r\n"
 					<< "    function = \"AKISPL(time,0," << this->Name() << "_pos_spl)\"  \r\n"
 					<< "!\r\n";
 			}
 		}
 
-		ForceBase::ForceBase(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ)
-			: Element(pModel, Name, id)
-			, _pMakI(pMakI)
-			, _pMakJ(pMakJ)
+		ForceBase::ForceBase(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
+			: Element(model, Name, id), _pMakI(&makI), _pMakJ(&makJ)
 		{
 		}
-		ForceBase::ForceBase(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *xmlEle)
-			: Element(pModel, Name, id)
-			, _pMakI(pModel->GetPart(xmlEle->Attribute("PrtM"))->FindMarker(xmlEle->Attribute("MakI")))
-			, _pMakJ(pModel->GetPart(xmlEle->Attribute("PrtN"))->FindMarker(xmlEle->Attribute("MakJ")))
+		ForceBase::ForceBase(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *xmlEle)
+			: Element(model, Name, id)
+			, _pMakI(model.GetPart(xmlEle->Attribute("PrtM"))->FindMarker(xmlEle->Attribute("MakI")))
+			, _pMakJ(model.GetPart(xmlEle->Attribute("PrtN"))->FindMarker(xmlEle->Attribute("MakJ")))
 		{
 
 		}
 
-		Environment::Environment(ModelBase *pModel)
-			:Object(pModel,"Environment")
+		Environment::Environment(ModelBase &model)
+			:Object(model,"Environment")
 		{
 		}
 		Environment::~Environment()
@@ -662,8 +664,8 @@ namespace Aris
 		};
 
 		ModelBase::ModelBase(const std::string & Name)
-			: Object(this , Name)
-			, _Environment(this)
+			: Object(*this, Name)
+			, _Environment(*this)
 			, pGround(nullptr)
 		{
 			AddPart("Ground");
@@ -773,12 +775,12 @@ namespace Aris
 			{
 				if (part->IsActive())
 				{
-					part->_RowId = pid;
+					part->row_id_ = pid;
 					pid += 6;
 				}
 				else
 				{
-					part->_RowId = 0;
+					part->row_id_ = 0;
 				}
 			}
 			for (auto &joint:_joints)
@@ -826,8 +828,8 @@ namespace Aris
 			
 			for (int i = 0; i < 6; ++i)
 			{
-				I_mat[I_dim*(pGround->_RowId + i) + pGround->_RowId + i] = 1;
-				C[C_dim*(pGround->_RowId + i) + i] = 1;
+				I_mat[I_dim*(pGround->row_id_ + i) + pGround->row_id_ + i] = 1;
+				C[C_dim*(pGround->row_id_ + i) + i] = 1;
 			}
 
 			/*Update all elements*/
@@ -836,10 +838,10 @@ namespace Aris
 				if (prt->IsActive())
 				{
 					prt->Update();
-					s_block_cpy(6, 6, *(prt->_PrtIm), 0, 0, 6, I_mat, prt->_RowId, prt->_RowId, I_dim);
+					s_block_cpy(6, 6, *(prt->prt_im_), 0, 0, 6, I_mat, prt->row_id_, prt->row_id_, I_dim);
 
-					s_daxpy(6, -1, prt->_PrtFg, 1, &f[prt->_RowId], 1);
-					s_daxpy(6, 1, prt->_PrtFv, 1, &f[prt->_RowId], 1);
+					s_daxpy(6, -1, prt->prt_fg_, 1, &f[prt->row_id_], 1);
+					s_daxpy(6, 1, prt->prt_fv_, 1, &f[prt->row_id_], 1);
 				}
 			}
 			for (auto &jnt : _joints)
@@ -848,10 +850,10 @@ namespace Aris
 				{
 					jnt->Update();
 
-					s_block_cpy(6, jnt->CstDim(), jnt->PrtCstMtxI(), 0, 0, jnt->CstDim(), C, jnt->_pMakI->Father()._RowId, jnt->_ColId, C_dim);
-					s_block_cpy(6, jnt->CstDim(), jnt->PrtCstMtxJ(), 0, 0, jnt->CstDim(), C, jnt->_pMakJ->Father()._RowId, jnt->_ColId, C_dim);
+					s_block_cpy(6, jnt->CstDim(), jnt->PrtCstMtxI(), 0, 0, jnt->CstDim(), C, jnt->MakI().Father().row_id_, jnt->_ColId, C_dim);
+					s_block_cpy(6, jnt->CstDim(), jnt->PrtCstMtxJ(), 0, 0, jnt->CstDim(), C, jnt->MakJ().Father().row_id_, jnt->_ColId, C_dim);
 
-					std::copy_n(jnt->PrtA_c(), jnt->CstDim(), &a_c[jnt->_ColId]);
+					std::copy_n(jnt->PrtAc(), jnt->CstDim(), &a_c[jnt->_ColId]);
 				}
 			}
 			for (auto &mot : _motions)
@@ -860,10 +862,10 @@ namespace Aris
 				{
 					mot->Update();
 
-					s_block_cpy(6, 1, mot->PrtCstMtxI(), 0, 0, 1, C, mot->_pMakI->Father()._RowId, mot->_ColId, C_dim);
-					s_block_cpy(6, 1, mot->PrtCstMtxJ(), 0, 0, 1, C, mot->_pMakJ->Father()._RowId, mot->_ColId, C_dim);
+					s_block_cpy(6, 1, mot->PrtCstMtxI(), 0, 0, 1, C, mot->MakI().Father().row_id_, mot->_ColId, C_dim);
+					s_block_cpy(6, 1, mot->PrtCstMtxJ(), 0, 0, 1, C, mot->MakJ().Father().row_id_, mot->_ColId, C_dim);
 
-					a_c[mot->_ColId] = *mot->PrtA_c();
+					a_c[mot->_ColId] = *mot->PrtAc();
 				}
 			}
 			for (auto &fce : _forces)
@@ -872,8 +874,8 @@ namespace Aris
 				{
 					fce->Update();
 
-					s_daxpy(6, -1, fce->GetPrtFceIPtr(), 1, &f[fce->_pMakI->Father()._RowId], 1);
-					s_daxpy(6, -1, fce->GetPrtFceJPtr(), 1, &f[fce->_pMakJ->Father()._RowId], 1);
+					s_daxpy(6, -1, fce->GetPrtFceIPtr(), 1, &f[fce->MakI().Father().row_id_], 1);
+					s_daxpy(6, -1, fce->GetPrtFceJPtr(), 1, &f[fce->MakJ().Father().row_id_], 1);
 				}
 			}
 			/*calculate D and b*/
@@ -891,7 +893,7 @@ namespace Aris
 			{
 				if (prt->IsActive())
 				{
-					std::copy_n(&x[prt->_RowId], 6, prt->_PrtAcc);
+					std::copy_n(&x[prt->row_id_], 6, prt->prt_acc_);
 				}
 			}
 			for (auto &jnt : _joints)
@@ -916,7 +918,7 @@ namespace Aris
 				if (prt->IsActive())
 				{
 					prt->Update();
-					std::copy_n(prt->PrtAcc(), 6, &a[prt->_RowId]);
+					std::copy_n(prt->PrtAcc(), 6, &a[prt->row_id_]);
 				}
 			}
 			for (auto &jnt : _joints)
@@ -1012,7 +1014,7 @@ namespace Aris
 			
 			for (int i = 0; i < 6; ++i)
 			{
-				C.data()[C_dim*(pGround->_RowId + i) + i] = 1;
+				C.data()[C_dim*(pGround->row_id_ + i) + i] = 1;
 			}
 			for (auto &jnt : _joints)
 			{
@@ -1020,8 +1022,8 @@ namespace Aris
 				{
 					jnt->Update();
 
-					s_block_cpy(6, jnt->CstDim(), jnt->PrtCstMtxI(), 0, 0, jnt->CstDim(), C.data(), jnt->_pMakI->Father()._RowId, jnt->_ColId, C_dim);
-					s_block_cpy(6, jnt->CstDim(), jnt->PrtCstMtxJ(), 0, 0, jnt->CstDim(), C.data(), jnt->_pMakJ->Father()._RowId, jnt->_ColId, C_dim);
+					s_block_cpy(6, jnt->CstDim(), jnt->PrtCstMtxI(), 0, 0, jnt->CstDim(), C.data(), jnt->MakI().Father().row_id_, jnt->_ColId, C_dim);
+					s_block_cpy(6, jnt->CstDim(), jnt->PrtCstMtxJ(), 0, 0, jnt->CstDim(), C.data(), jnt->MakJ().Father().row_id_, jnt->_ColId, C_dim);
 				}
 			}
 			for (auto &mot : _motions)
@@ -1030,8 +1032,8 @@ namespace Aris
 				{
 					mot->Update();
 
-					s_block_cpy(6, 1, mot->PrtCstMtxI(), 0, 0, 1, C.data(), mot->_pMakI->Father()._RowId, mot->_ColId, C_dim);
-					s_block_cpy(6, 1, mot->PrtCstMtxJ(), 0, 0, 1, C.data(), mot->_pMakJ->Father()._RowId, mot->_ColId, C_dim);
+					s_block_cpy(6, 1, mot->PrtCstMtxI(), 0, 0, 1, C.data(), mot->MakI().Father().row_id_, mot->_ColId, C_dim);
+					s_block_cpy(6, 1, mot->PrtCstMtxJ(), 0, 0, 1, C.data(), mot->MakJ().Father().row_id_, mot->_ColId, C_dim);
 				}
 			}
 
@@ -1047,7 +1049,7 @@ namespace Aris
 				{
 					double cm[6][6];
 					s_cmf(i->PrtVel(), *cm);
-					s_dgemm(clb_dim_m, 6, 6, 1, &A(beginRow,i->_RowId), dim, *cm, 6, 0, &B(beginRow, i->_RowId), dim);
+					s_dgemm(clb_dim_m, 6, 6, 1, &A(beginRow,i->row_id_), dim, *cm, 6, 0, &B(beginRow, i->row_id_), dim);
 				}
 			}
 
@@ -1132,8 +1134,8 @@ namespace Aris
 				{
 					mot->Update();
 
-					s_daxpy(6, mot->MotFce(), mot->PrtCstMtxI(), 1, &f[mot->_pMakI->Father()._RowId], 1);
-					s_daxpy(6, mot->MotFce(), mot->PrtCstMtxJ(), 1, &f[mot->_pMakJ->Father()._RowId], 1);
+					s_daxpy(6, mot->MotFce(), mot->PrtCstMtxI(), 1, &f[mot->MakI().Father().row_id_], 1);
+					s_daxpy(6, mot->MotFce(), mot->PrtCstMtxJ(), 1, &f[mot->MakJ().Father().row_id_], 1);
 				}
 			}
 
@@ -1154,19 +1156,19 @@ namespace Aris
 				}
 				else
 				{
-					s_dgemm(clb_dim_m, 1, 6, s_sgn(mot->MotVel()), &A(beginRow, mot->_pMakI->Father()._RowId), dim, mot->PrtCstMtxI(), 1, 1, &_clb_d(0, gamma_dim + num * 3), clb_dim_n);
-					s_dgemm(clb_dim_m, 1, 6, s_sgn(mot->MotVel()), &A(beginRow, mot->_pMakJ->Father()._RowId), dim, mot->PrtCstMtxJ(), 1, 1, &_clb_d(0, gamma_dim + num * 3), clb_dim_n);
-					s_dgemm(clb_dim_m, 1, 6, mot->MotVel(), &A(beginRow, mot->_pMakI->Father()._RowId), dim, mot->PrtCstMtxI(), 1, 1, &_clb_d(0, gamma_dim + num * 3 + 1), clb_dim_n);
-					s_dgemm(clb_dim_m, 1, 6, mot->MotVel(), &A(beginRow, mot->_pMakJ->Father()._RowId), dim, mot->PrtCstMtxJ(), 1, 1, &_clb_d(0, gamma_dim + num * 3 + 1), clb_dim_n);
-					s_dgemm(clb_dim_m, 1, 6, mot->MotAcc(), &A(beginRow, mot->_pMakI->Father()._RowId), dim, mot->PrtCstMtxI(), 1, 1, &_clb_d(0, gamma_dim + num * 3 + 2), clb_dim_n);
-					s_dgemm(clb_dim_m, 1, 6, mot->MotAcc(), &A(beginRow, mot->_pMakJ->Father()._RowId), dim, mot->PrtCstMtxJ(), 1, 1, &_clb_d(0, gamma_dim + num * 3 + 2), clb_dim_n);
+					s_dgemm(clb_dim_m, 1, 6, s_sgn(mot->MotVel()), &A(beginRow, mot->MakI().Father().row_id_), dim, mot->PrtCstMtxI(), 1, 1, &_clb_d(0, gamma_dim + num * 3), clb_dim_n);
+					s_dgemm(clb_dim_m, 1, 6, s_sgn(mot->MotVel()), &A(beginRow, mot->MakJ().Father().row_id_), dim, mot->PrtCstMtxJ(), 1, 1, &_clb_d(0, gamma_dim + num * 3), clb_dim_n);
+					s_dgemm(clb_dim_m, 1, 6, mot->MotVel(), &A(beginRow, mot->MakI().Father().row_id_), dim, mot->PrtCstMtxI(), 1, 1, &_clb_d(0, gamma_dim + num * 3 + 1), clb_dim_n);
+					s_dgemm(clb_dim_m, 1, 6, mot->MotVel(), &A(beginRow, mot->MakJ().Father().row_id_), dim, mot->PrtCstMtxJ(), 1, 1, &_clb_d(0, gamma_dim + num * 3 + 1), clb_dim_n);
+					s_dgemm(clb_dim_m, 1, 6, mot->MotAcc(), &A(beginRow, mot->MakI().Father().row_id_), dim, mot->PrtCstMtxI(), 1, 1, &_clb_d(0, gamma_dim + num * 3 + 2), clb_dim_n);
+					s_dgemm(clb_dim_m, 1, 6, mot->MotAcc(), &A(beginRow, mot->MakJ().Father().row_id_), dim, mot->PrtCstMtxJ(), 1, 1, &_clb_d(0, gamma_dim + num * 3 + 2), clb_dim_n);
 
-					//s_dgemm(clb_dim_m, 1, 6, s_sgn(*i->GetV_mPtr()), &A(beginRow, i->_pMakI->Father()._RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3), clb_dim_n);
-					//s_dgemm(clb_dim_m, 1, 6, s_sgn(*i->GetV_mPtr()), &A(beginRow, i->_pMakJ->Father()._RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3), clb_dim_n);
-					//s_dgemm(clb_dim_m, 1, 6, *i->GetV_mPtr(), &A(beginRow, i->_pMakI->Father()._RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 1), clb_dim_n);
-					//s_dgemm(clb_dim_m, 1, 6, *i->GetV_mPtr(), &A(beginRow, i->_pMakJ->Father()._RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 1), clb_dim_n);
-					//s_dgemm(clb_dim_m, 1, 6, *i->GetA_mPtr(), &A(beginRow, i->_pMakI->Father()._RowId), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 2), clb_dim_n);
-					//s_dgemm(clb_dim_m, 1, 6, *i->GetA_mPtr(), &A(beginRow, i->_pMakJ->Father()._RowId), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 2), clb_dim_n);
+					//s_dgemm(clb_dim_m, 1, 6, s_sgn(*i->GetV_mPtr()), &A(beginRow, i->MakI().Father().row_id_), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3), clb_dim_n);
+					//s_dgemm(clb_dim_m, 1, 6, s_sgn(*i->GetV_mPtr()), &A(beginRow, i->MakJ().Father().row_id_), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3), clb_dim_n);
+					//s_dgemm(clb_dim_m, 1, 6, *i->GetV_mPtr(), &A(beginRow, i->MakI().Father().row_id_), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 1), clb_dim_n);
+					//s_dgemm(clb_dim_m, 1, 6, *i->GetV_mPtr(), &A(beginRow, i->MakJ().Father().row_id_), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 1), clb_dim_n);
+					//s_dgemm(clb_dim_m, 1, 6, *i->GetA_mPtr(), &A(beginRow, i->MakI().Father().row_id_), dim, i->_PrtCstMtxI[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 2), clb_dim_n);
+					//s_dgemm(clb_dim_m, 1, 6, *i->GetA_mPtr(), &A(beginRow, i->MakJ().Father().row_id_), dim, i->_PrtCstMtxJ[0], 6, 1, &_clb_d(0, clb_prt_dim_n + num * 3 + 2), clb_dim_n);
 
 				}
 

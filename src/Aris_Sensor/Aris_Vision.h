@@ -17,6 +17,8 @@ namespace Aris
 		{
 			std::int64_t timeStamp;
 			double gridMap[120][120];
+			double depth[640][480];
+			double pointCloud[640][480][3];
 			friend class KINECT;
 		};
 
@@ -33,6 +35,10 @@ namespace Aris
 			virtual void Release();
 
 		private:
+			double kinectToRobot[4][4];
+
+
+
 			class KINECT_STRUCT;
 			std::auto_ptr<KINECT_STRUCT> mKinectStruct;
 		};

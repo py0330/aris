@@ -88,8 +88,6 @@ void test()
 
 int main()
 {
-	
-	
 	/*{
 		Aris::Core::Msg m1, m2;
 

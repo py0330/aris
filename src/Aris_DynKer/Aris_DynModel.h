@@ -27,8 +27,8 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			explicit TranslationalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
-			explicit TranslationalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			explicit TranslationalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
+			explicit TranslationalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
 			virtual void Init();
 
 			friend class ModelBase;
@@ -43,8 +43,8 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			explicit UniversalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
-			explicit UniversalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			explicit UniversalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
+			explicit UniversalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 			virtual void Init();
 
@@ -59,8 +59,8 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			explicit SphericalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
-			explicit SphericalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			explicit SphericalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
+			explicit SphericalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
 			virtual void Init();
 
 			friend class ModelBase;
@@ -76,8 +76,8 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			explicit LinearMotion(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ);
-			explicit LinearMotion(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *pEle);
+			explicit LinearMotion(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
+			explicit LinearMotion(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *pEle);
 			virtual void Init();
 
 		private:
@@ -100,8 +100,8 @@ namespace Aris
 
 		private:
 			static const char *const type;
-			explicit SingleComponentForce(ModelBase *pModel, const std::string &name, int id, Marker* pMakI, Marker* pMakJ, int componentID);
-			explicit SingleComponentForce(ModelBase *pModel, const std::string &name, int id, const Aris::Core::XmlElement *xmlEle);
+			explicit SingleComponentForce(ModelBase &model, const std::string &name, int id, Marker& makI, Marker& makJ, int componentID);
+			explicit SingleComponentForce(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *xmlEle);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 
 			int componentID;

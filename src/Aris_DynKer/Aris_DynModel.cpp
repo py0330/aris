@@ -18,12 +18,12 @@ namespace Aris
 	namespace DynKer
 	{
 		const char *const TranslationalJoint::type = "translational";
-		TranslationalJoint::TranslationalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ)
-			: JointBaseDim(pModel, Name, id, pMakI, pMakJ)
+		TranslationalJoint::TranslationalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
+			: JointBaseDim(model, Name, id, makI, makJ)
 		{
 		}
-		TranslationalJoint::TranslationalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: JointBaseDim(pModel, Name, id, ele)
+		TranslationalJoint::TranslationalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
+			: JointBaseDim(model, Name, id, ele)
 		{
 		}
 		void TranslationalJoint::Init()
@@ -41,12 +41,12 @@ namespace Aris
 		};
 		
 		const char *const UniversalJoint::type = "universal";
-		UniversalJoint::UniversalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ)
-			: JointBaseDim(pModel, Name, id, pMakI, pMakJ)
+		UniversalJoint::UniversalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
+			: JointBaseDim(model, Name, id, makI, makJ)
 		{
 		}
-		UniversalJoint::UniversalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: JointBaseDim(pModel, Name, id, ele)
+		UniversalJoint::UniversalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
+			: JointBaseDim(model, Name, id, ele)
 		{
 		}
 		void UniversalJoint::ToAdamsCmd(std::ofstream &file) const
@@ -142,12 +142,12 @@ namespace Aris
 		};
 		
 		const char *const SphericalJoint::type = "spherical";
-		SphericalJoint::SphericalJoint(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ)
-			: JointBaseDim(pModel, Name, id, pMakI, pMakJ)
+		SphericalJoint::SphericalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
+			: JointBaseDim(model, Name, id, makI, makJ)
 		{
 		}
-		SphericalJoint::SphericalJoint(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: JointBaseDim(pModel, Name, id, ele)
+		SphericalJoint::SphericalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
+			: JointBaseDim(model, Name, id, ele)
 		{
 		}
 		void SphericalJoint::Init()
@@ -163,12 +163,12 @@ namespace Aris
 		};
 
 		const char *const LinearMotion::type = "linear";
-		LinearMotion::LinearMotion(ModelBase *pModel, const std::string &Name, int id, Marker *pMakI, Marker *pMakJ)
-			: MotionBase(pModel, Name, id, pMakI, pMakJ)
+		LinearMotion::LinearMotion(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
+			: MotionBase(model, Name, id, makI, makJ)
 		{
 		}
-		LinearMotion::LinearMotion(ModelBase *pModel, const std::string &Name, int id, const Aris::Core::XmlElement *pEle)
-			: MotionBase(pModel, Name, id, pEle)
+		LinearMotion::LinearMotion(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *pEle)
+			: MotionBase(model, Name, id, pEle)
 		{
 
 		}
@@ -181,35 +181,35 @@ namespace Aris
 
 			/* Get tm I2M */
 			loc_cst[2] = 1;
-			s_tf(*_pMakI->PrtPm(), loc_cst, _PrtCstMtxI);
+			s_tf(*MakI().PrtPm(), loc_cst, _PrtCstMtxI);
 		}
 		void LinearMotion::Update()
 		{
 			/*update motPos motVel,  motAcc should be given, not computed by part acc*/
-			_pMakI->Update();
-			_pMakJ->Update();
+			MakI().Update();
+			MakJ().Update();
 
 			double pm_I2J[4][4];
-			s_inv_pm_dot_pm(*_pMakJ->Pm(), *_pMakI->Pm(), *pm_I2J);
+			s_inv_pm_dot_pm(*MakJ().Pm(), *MakI().Pm(), *pm_I2J);
 			motPos = pm_I2J[2][3];
 
 			double velDiff[6],velDiff_in_J[6];
-			std::copy_n(_pMakI->Vel(), 6, velDiff);
-			s_daxpy(6, -1, _pMakJ->Vel(), 1, velDiff, 1);
-			s_inv_tv(*_pMakJ->Pm(), velDiff, velDiff_in_J);
+			std::copy_n(MakI().Vel(), 6, velDiff);
+			s_daxpy(6, -1, MakJ().Vel(), 1, velDiff, 1);
+			s_inv_tv(*MakJ().Pm(), velDiff, velDiff_in_J);
 			motVel = velDiff_in_J[2];
 			
 			/*update cst fce*/
 			std::fill_n(_PrtCstMtxJ, 6, 0);
 			double pm_M2N[4][4];
-			s_pm_dot_pm(*_pMakJ->Father().InvPm(), *_pMakI->Father().Pm(), *pm_M2N);
+			s_pm_dot_pm(*MakJ().Father().InvPm(), *MakI().Father().Pm(), *pm_M2N);
 			s_tf(-1, *pm_M2N, _PrtCstMtxI, 0, _PrtCstMtxJ);
 
 			/*update a_c*/
 			std::fill_n(_a_c, 6, 0);
 			double tem_v1[6]{ 0 }, tem_v2[6]{ 0 };
-			s_inv_tv(-1, *pm_M2N, _pMakJ->Father().PrtVel(), 0, tem_v1);
-			s_cv(_pMakI->Father().PrtVel(), tem_v1, tem_v2);
+			s_inv_tv(-1, *pm_M2N, MakJ().Father().PrtVel(), 0, tem_v1);
+			s_cv(MakI().Father().PrtVel(), tem_v1, tem_v2);
 			s_dgemmTN(1, 1, 6, 1, _PrtCstMtxI, 1, tem_v2, 1, 0, &_a_c[0], 1);
 
 			_a_c[0] += motAcc;
@@ -220,19 +220,19 @@ namespace Aris
 		const char *const SingleComponentForce::type = "single_component_force";
 		void SingleComponentForce::Update()
 		{
-			s_tf(*_pMakI->PrtPm(), fceI, _PrtFceI);
+			s_tf(*MakI().PrtPm(), fceI, _PrtFceI);
 			double pm_M2N[16];
-			s_inv_pm_dot_pm(*_pMakJ->Father().Pm(), *_pMakI->Father().Pm(), pm_M2N);
+			s_inv_pm_dot_pm(*MakJ().Father().Pm(), *MakI().Father().Pm(), pm_M2N);
 			s_tf(-1, pm_M2N, _PrtFceI, 0, _PrtFceJ);
 		}
-		SingleComponentForce::SingleComponentForce(ModelBase *pModel, const std::string &name, int id, Marker* makI, Marker* makJ, int componentID)
-			: ForceBase(pModel, name, id, makI, makJ)
+		SingleComponentForce::SingleComponentForce(ModelBase &model, const std::string &name, int id, Marker& makI, Marker& makJ, int componentID)
+			: ForceBase(model, name, id, makI, makJ)
 			, componentID(componentID)
 		{
 
 		}
-		SingleComponentForce::SingleComponentForce(ModelBase *pModel, const std::string &name, int id, const Aris::Core::XmlElement *xmlEle)
-			: ForceBase(pModel, name, id, xmlEle)
+		SingleComponentForce::SingleComponentForce(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *xmlEle)
+			: ForceBase(model, name, id, xmlEle)
 			, componentID(std::stoi(xmlEle->Attribute("Component")))
 		{
 		}
@@ -246,8 +246,8 @@ namespace Aris
 					<< "    single_component_force_name = ." << Model().Name() << "." << Name() << "  &\r\n"
 					<< "    adams_id = " << ID() + 1 << "  &\r\n"
 					<< "    type_of_freedom = " << type << "  &\r\n"
-					<< "    i_marker_name = ." << Model().Name() << "." << _pMakI->Father().Name() << "." << _pMakI->Name() << "  &\r\n"
-					<< "    j_marker_name = ." << Model().Name() << "." << _pMakJ->Father().Name() << "." << _pMakJ->Name() << "  &\r\n"
+					<< "    i_marker_name = ." << Model().Name() << "." << MakI().Father().Name() << "." << MakI().Name() << "  &\r\n"
+					<< "    j_marker_name = ." << Model().Name() << "." << MakJ().Father().Name() << "." << MakJ().Name() << "  &\r\n"
 					<< "    action_only = off  &\r\n"
 					<< "    function = \"" << GetFce() << "\"  \r\n"
 					<< "!\r\n";
@@ -276,8 +276,8 @@ namespace Aris
 					<< "    single_component_force_name = ." << Model().Name() << "." << Name() << "  &\r\n"
 					<< "    adams_id = " << ID() + 1 << "  &\r\n"
 					<< "    type_of_freedom = " << type << "  &\r\n"
-					<< "    i_marker_name = ." << Model().Name() << "." << _pMakI->Father().Name() << "." << _pMakI->Name() << "  &\r\n"
-					<< "    j_marker_name = ." << Model().Name() << "." << _pMakJ->Father().Name() << "." << _pMakJ->Name() << "  &\r\n"
+					<< "    i_marker_name = ." << Model().Name() << "." << MakI().Father().Name() << "." << MakI().Name() << "  &\r\n"
+					<< "    j_marker_name = ." << Model().Name() << "." << MakJ().Father().Name() << "." << MakJ().Name() << "  &\r\n"
 					<< "    action_only = off  &\r\n"
 					<< "    function = \"AKISPL(time,0," << Name() << "_fce_spl)\"  \r\n"
 					<< "!\r\n";
