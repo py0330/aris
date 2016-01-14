@@ -6,14 +6,28 @@
 #include <cstdio>
 #include <string>
 
+
+/// \defgroup Aris
+///
+///
+
+/// \brief 总命名空间。
+/// \ingroup Aris
+/// 
+///
+///
 namespace Aris
 {
 	namespace Control
 	{
-		class PIPE_MSG;
 		template<typename T> class Pipe;
 	}
 	
+	/// \brief Aris核心命名空间
+	/// \ingroup Aris
+	/// 
+	///
+	///
 	namespace Core
 	{
 		class Socket;
@@ -149,7 +163,6 @@ namespace Aris
 			friend class Msg;
 			friend class MsgRT;
 			friend class Socket;
-			friend class Aris::Control::PIPE_MSG;
 			template<typename T> friend class Aris::Control::Pipe;
 		};
 		class Msg final :public MsgBase

@@ -11,11 +11,11 @@
 #include <stdint.h>
 #include <new>
 
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 #include <ws2tcpip.h>
 #endif
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 #include<pthread.h>
 #include<semaphore.h>
 #include<netdb.h>
@@ -56,7 +56,7 @@ namespace Aris
 			Aris::Core::Msg _replyData;
 			
 			/* 连接的socket */
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 			WSADATA _WsaData;              //windows下才用，linux下无该项
 #endif
 			Imp()
@@ -279,25 +279,25 @@ namespace Aris
 			case IDLE:
 				return;
 			case WAITING_FOR_CONNECTION:
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 				shutdown(pConnStruct->_LisnSocket, 2);
 				closesocket(pConnStruct->_LisnSocket);
 				WSACleanup();
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 				shutdown(pConnStruct->_LisnSocket, 2);
 				close(pConnStruct->_LisnSocket);
 #endif
 				break;
 			case WORKING:
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 				shutdown(pConnStruct->_ConnSocket, 2);
 				shutdown(pConnStruct->_LisnSocket, 2);
 				closesocket(pConnStruct->_ConnSocket);
 				closesocket(pConnStruct->_LisnSocket);
 				WSACleanup();
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 				shutdown(pConnStruct->_ConnSocket, 2);
 				shutdown(pConnStruct->_LisnSocket, 2);
 				close(pConnStruct->_ConnSocket);
@@ -305,14 +305,14 @@ namespace Aris
 #endif
 				break;
 			case WAITING_FOR_REPLY:
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 				shutdown(pConnStruct->_ConnSocket, 2);
 				shutdown(pConnStruct->_LisnSocket, 2);
 				closesocket(pConnStruct->_ConnSocket);
 				closesocket(pConnStruct->_LisnSocket);
 				WSACleanup();
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 				shutdown(pConnStruct->_ConnSocket, 2);
 				shutdown(pConnStruct->_LisnSocket, 2);
 				close(pConnStruct->_ConnSocket);
@@ -368,7 +368,7 @@ namespace Aris
 			}
 
 			/* 启动服务器 */
-#ifdef PLATFORM_IS_WINDOWS 
+#ifdef WIN32 
 			if (WSAStartup(0x0101, &pConnStruct->_WsaData) != 0)
 			{
 				throw(StartServerError("Socket can't Start as server, because it can't WSAstartup\n", this, 0));
@@ -390,7 +390,7 @@ namespace Aris
 			/* 捆绑_LisnSocket描述符 */
 			if (::bind(pConnStruct->_LisnSocket, (struct sockaddr *)(&pConnStruct->_ServerAddr), sizeof(struct sockaddr)) == -1)
 			{
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 				int err = WSAGetLastError();
 #endif
 				throw(StartServerError("Socket can't Start as server, because it can't bind\n", this, 0));
@@ -422,7 +422,7 @@ namespace Aris
 			}
 
 			/* 启动服务器 */
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 			if (WSAStartup(0x0101, &pConnStruct->_WsaData) != 0)
 			{
 				throw ConnectError("Socket can't connect, because can't WSAstartup\n", this, 0);

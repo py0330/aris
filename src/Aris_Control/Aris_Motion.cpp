@@ -1,12 +1,12 @@
-﻿#include <Platform.h>
-#ifdef PLATFORM_IS_LINUX
+﻿
+#ifdef UNIX
 #include <ecrt.h>
 #include <native/task.h>
 #include <native/timer.h>
 #include <rtdk.h>
 #include <sys/mman.h>
 #endif
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 #define rt_printf printf
 #endif
 

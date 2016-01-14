@@ -1,8 +1,8 @@
-#include <Platform.h>
-#ifdef PLATFORM_IS_WINDOWS
+
+#ifdef WIN32
 #include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 // following for pipe
 #include <cstdio>
 #include <cstdlib>
@@ -24,7 +24,7 @@ namespace Aris
 {
 	namespace Control
 	{
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 		class PipeBase::Imp
 		{
 		public:

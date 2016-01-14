@@ -1,6 +1,6 @@
 ﻿#include "Platform.h"
 
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 #define CRTDBG_MAP_ALLOC    
 #include <stdlib.h>    
 #include <crtdbg.h>    
@@ -9,7 +9,7 @@
 #include "Aris_Core.h"
 #include "Aris_XML.h"
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 #include <unistd.h>
 #endif
 
@@ -168,7 +168,7 @@ int main()
 	//test(1, 1.0, 2.11, &i, "end", "end?");
 	//test(1, 0);
 
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 	_CrtDumpMemoryLeaks();
 #endif
 

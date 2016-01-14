@@ -6,7 +6,7 @@
 #include "Aris_Core.h"
 #include "Aris_IMU.h"
 #include "Aris_DynKer.h"
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 #include "Aris_Vision.h"
 #endif
 
@@ -22,22 +22,22 @@ class SENSOR :public Aris::Sensor::SensorBase<double>
 };
 
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 Aris::Sensor::KINECT kinect;
 #endif
 
 int main()
 {
 	Aris::Core::XmlDocument doc;
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III.xml");
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 	doc.LoadFile("/usr/Robots/resource/Robot_Type_I/Robot_III.xml");
 #endif
 
 /*
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 	kinect.Start();
 
 	for (int i = 0; i < 1000; ++i)

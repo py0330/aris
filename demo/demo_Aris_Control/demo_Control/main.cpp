@@ -2,21 +2,21 @@
 #include <Aris_Motion.h>
 #include <iostream>
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 #include "ecrt.h"
 #endif
 
 int main()
 {
 	Aris::Core::XmlDocument doc;
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III.xml");
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 	doc.LoadFile("/usr/Robots/resource/Robot_Type_I/Robot_III.xml");
 #endif
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 
 
 	auto ele = doc.RootElement()->FirstChildElement("Server")

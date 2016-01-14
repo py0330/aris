@@ -1,8 +1,8 @@
-#include <Platform.h>
-#ifdef PLATFORM_IS_WINDOWS
+
+#ifdef WIN32
 #include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 #include <ecrt.h>
 #include <rtdk.h>
 #include <native/task.h>
@@ -38,7 +38,7 @@ namespace Aris
 			Imp(const Aris::Core::XmlElement *ele);
 			void Init();
 			void Read();
-			void write();
+			void Write();
 
 		private:
 			/*data object, can be PDO or SDO*/
@@ -113,7 +113,7 @@ namespace Aris
 		{
 		public:
 			void Read();
-			void write();
+			void Write();
 			void Start();
 			void Stop();
 			
@@ -129,14 +129,14 @@ namespace Aris
 			static const int samplePeriodNs;
 			static std::atomic_bool isStopping;
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 			static RT_TASK realtimeCore;
 #endif
 			friend class EthercatSlave::Imp;
 			friend class EthercatMaster;
 		};
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 		RT_TASK EthercatMaster::Imp::realtimeCore;
 		const int EthercatMaster::Imp::samplePeriodNs = 1000000;
 #endif
@@ -274,49 +274,36 @@ namespace Aris
 		};
 		void EthercatSlave::Imp::Init()
 		{		
-			auto pEcMaster = EthercatMaster::GetInstance()->pImp->pEcMaster;
+			auto pEcMaster = EthercatMaster::Instance().pImp->pEcMaster;
 
-			for(auto &reg:ec_pdo_entry_reg_vec)
-			{
-				reg.position = this->position;
- 			}
-            		pDomain = ecrt_master_create_domain(pEcMaster);
-			if (!pDomain)
-			{
-				throw std::runtime_error("failed to create domain");
-			}
+			for (auto &reg : ec_pdo_entry_reg_vec)	reg.position = this->position;
+
+			// Create domain
+			if (!(pDomain = ecrt_master_create_domain(pEcMaster)))throw std::runtime_error("failed to create domain");
+
 			// Get the slave configuration 
 			if (!(ec_slave_config = ecrt_master_slave_config(pEcMaster, alias, position, venderID, productCode)))
 			{
 				throw std::runtime_error("failed to slave config");
 			}
-			/*Set Sdo*/
-			for (auto &sdo : sdos)
-			{
-				ecrt_slave_config_sdo32(ec_slave_config, sdo->index, sdo->subIndex, sdo->value);
-			}
+			// Set Sdo
+			for (auto &sdo : sdos)ecrt_slave_config_sdo32(ec_slave_config, sdo->index, sdo->subIndex, sdo->value);
+
 			// Configure the slave's PDOs and sync masters
-			if (ecrt_slave_config_pdos(ec_slave_config, 4, ec_sync_info))
-			{
-				throw std::runtime_error("failed to slave config pdos");
-			}
+			if (ecrt_slave_config_pdos(ec_slave_config, 4, ec_sync_info))throw std::runtime_error("failed to slave config pdos");
+
 			// Configure the slave's domain
-			if (ecrt_domain_reg_pdo_entry_list(pDomain, ec_pdo_entry_reg_vec.data()))
-			{
-				throw std::runtime_error("failed domain_reg_pdo_entry");
-			}
+			if (ecrt_domain_reg_pdo_entry_list(pDomain, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
+
 			// Configure the slave's discrete clock			
-			if(this->distributedClock)
-			{
-				ecrt_slave_config_dc(ec_slave_config, *distributedClock.get(), 1000000, 4400000, 0, 0);
-			}
+			if (this->distributedClock)ecrt_slave_config_dc(ec_slave_config, *distributedClock.get(), 1000000, 4400000, 0, 0);
 			
 		}
 		void EthercatSlave::Imp::Read()
 		{
 			ecrt_domain_process(pDomain);
 		}
-		void EthercatSlave::Imp::write()
+		void EthercatSlave::Imp::Write()
 		{
 			ecrt_domain_queue(pDomain);
 		}
@@ -394,12 +381,12 @@ namespace Aris
 				pSla->pImp->Read();
 			}
 		}
-		void EthercatMaster::Imp::write()
+		void EthercatMaster::Imp::Write()
 		{
 
 			for (auto &pSla : slaves)
 			{
-				pSla->pImp->write();
+				pSla->pImp->Write();
 			}
 
 
@@ -410,12 +397,12 @@ namespace Aris
 			static bool isFirstTime{ true };
 			if (!isFirstTime)
 			{
-				throw std::runtime_error("master alReady running");
+				throw std::runtime_error("master already running");
 			}
 			isFirstTime = false;
 			
 			this->Init();
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 			rt_print_auto_init(1);		
 
 			const int priority = 99;
@@ -429,13 +416,13 @@ namespace Aris
 		void EthercatMaster::Imp::Stop()
 		{
 			isStopping = true;
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 			rt_task_join(&EthercatMaster::Imp::realtimeCore);
 #endif
 		}
 		void EthercatMaster::Imp::Init()
 		{
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1)
 			{
 				throw std::runtime_error("lock failed");
@@ -470,34 +457,34 @@ namespace Aris
 		}
 		void EthercatMaster::Imp::RealTimeCore(void *)
 		{
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 			rt_task_set_periodic(NULL, TM_NOW, samplePeriodNs);
 
 			while (!isStopping)
 			{
 				rt_task_wait_period(NULL);
 
-				EthercatMaster::GetInstance()->pImp->Read();//motors and sensors get data
+				EthercatMaster::Instance().pImp->Read();//motors and sensors get data
 				
 				/*Here is tg*/
-				EthercatMaster::GetInstance()->ControlStrategy();
+				EthercatMaster::Instance().ControlStrategy();
 				/*tg finished*/
 
-				EthercatMaster::GetInstance()->pImp->Sync(rt_timer_read());
-				EthercatMaster::GetInstance()->pImp->write();//motor data write and state machine/mode transition
+				EthercatMaster::Instance().pImp->Sync(rt_timer_read());
+				EthercatMaster::Instance().pImp->Write();//motor data write and state machine/mode transition
 			}
 #endif
 		};
 		
 		std::unique_ptr<EthercatMaster> EthercatMaster::pInstance;
-		EthercatMaster * EthercatMaster::GetInstance()
+		EthercatMaster& EthercatMaster::Instance()
 		{
 			if (!pInstance)
 			{
 				throw std::runtime_error("please first create an instance fo EthercatMaster");
 			}
 			
-			return pInstance.get();
+			return *pInstance.get();
 		}
 		EthercatMaster::EthercatMaster():pImp(new Imp){}
 		EthercatMaster::~EthercatMaster()	{}
@@ -531,9 +518,5 @@ namespace Aris
 		{
 			pImp->slaves.push_back(std::unique_ptr<EthercatSlave>(pSla));
 		}
-
-		
-
-
 	}
 }

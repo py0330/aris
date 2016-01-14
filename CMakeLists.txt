@@ -29,7 +29,7 @@ project(ARIS)
 
 # set the platform.h, which define the OS platform
 if(UNIX)
-	set(PLATFORM "PLATFORM_IS_LINUX")
+	set(PLATFORM "UNIX")
 	set(CMAKE_C_COMPILER "/usr/bin/gcc")
 	set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 #	set(CMAKE_C_COMPILER "/usr/bin/clang")
@@ -38,9 +38,6 @@ endif(UNIX)
 if(WIN32)
 	set(PLATFORM "PLATFORM_IS_WINDOWS")
 endif(WIN32)
-
-configure_file("${PROJECT_SOURCE_DIR}/common_headers/Platform.h.in" "${PROJECT_BINARY_DIR}/common_headers/Platform.h")
-set(INCLUDE_HEADER_FILES "${PROJECT_BINARY_DIR}/common_headers/Platform.h")
 
 # set binary and library folders
 set(EXECUTABLE_OUTPUT_PATH bin)
@@ -54,8 +51,11 @@ endif(UNIX)
 
 # set definitions to disable some warning
 if(WIN32)
-add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+add_definitions(-DWIN32 -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 endif(WIN32)
+if(UNIX)
+add_definitions(-DUNIX)
+endif(UNIX)
 
 # set debug and release options
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")

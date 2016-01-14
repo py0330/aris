@@ -15,6 +15,7 @@
 
 #include <Aris_DynModelBase.h>
 
+
 namespace Aris
 {
 	namespace DynKer
@@ -23,13 +24,13 @@ namespace Aris
 		{
 		public:
 			virtual ~TranslationalJoint() = default;
-			virtual const char* GetType() const { return type; };
+			virtual const char* AdamsType() const override { return type; };
 
 		private:
 			static const char *const type;
 			explicit TranslationalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
 			explicit TranslationalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
-			virtual void Init();
+			virtual void Init() override;
 
 			friend class ModelBase;
 			friend class Model;
@@ -38,7 +39,7 @@ namespace Aris
 		{
 		public:
 			virtual ~UniversalJoint() = default;
-			virtual const char* GetType() const { return type; };
+			virtual const char* AdamsType() const override { return type; };
 			virtual void Update();
 
 		private:
@@ -46,7 +47,7 @@ namespace Aris
 			explicit UniversalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
 			explicit UniversalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
-			virtual void Init();
+			virtual void Init() override;
 
 			friend class ModelBase;
 			friend class Model;
@@ -55,13 +56,13 @@ namespace Aris
 		{
 		public:
 			virtual ~SphericalJoint() = default;
-			virtual const char* GetType() const { return type; };
+			virtual const char* AdamsType() const override { return type; };
 
 		private:
 			static const char *const type;
 			explicit SphericalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
 			explicit SphericalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
-			virtual void Init();
+			virtual void Init() override;
 
 			friend class ModelBase;
 			friend class Model;
@@ -71,14 +72,14 @@ namespace Aris
 		{
 		public:
 			virtual ~LinearMotion() = default;
-			virtual const char* GetType() const { return type; };
-			virtual void Update();
+			virtual const char* AdamsType() const override { return type; };
+			virtual void Update() override;
 
 		private:
 			static const char *const type;
 			explicit LinearMotion(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
 			explicit LinearMotion(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *pEle);
-			virtual void Init();
+			virtual void Init() override;
 
 		private:
 

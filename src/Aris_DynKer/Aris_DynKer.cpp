@@ -1,6 +1,4 @@
-﻿#include <Platform.h>
-
-#include <cmath>
+﻿#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iomanip>

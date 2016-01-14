@@ -9,6 +9,11 @@
 
 namespace Aris
 {
+	/// \brief 轨迹规划命名空间
+	/// \ingroup Aris
+	/// 
+	///
+	///
 	namespace Plan
 	{
 		inline double acc_up(int n, int i)

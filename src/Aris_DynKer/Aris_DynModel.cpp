@@ -1,6 +1,4 @@
-﻿#include <Platform.h>
-
-#include <cmath>
+﻿#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -37,7 +35,7 @@ namespace Aris
 			loc_cst[4][3] = 1;
 			loc_cst[5][4] = 1;
 
-			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, PrtCstMtxI());
+			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, CsmI());
 		};
 		
 		const char *const UniversalJoint::type = "universal";
@@ -73,7 +71,7 @@ namespace Aris
 				<< "    orientation = (" << Matrix(1, 3, &pe[3]).ToString() << ") \r\n"
 				<< "!\r\n";
 
-			JointBase::ToAdamsCmd(file);
+			Constraint::ToAdamsCmd(file);
 		}
 		void UniversalJoint::Init()
 		{
@@ -84,7 +82,7 @@ namespace Aris
 			loc_cst[1][1] = 1;
 			loc_cst[2][2] = 1;
 
-			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, PrtCstMtxI());
+			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, CsmI());
 
 		};
 		void UniversalJoint::Update()
@@ -102,20 +100,20 @@ namespace Aris
 				+ MakI().Pm()[1][1] * MakJ().Pm()[1][1]
 				+ MakI().Pm()[2][1] * MakJ().Pm()[2][1];
 			
-			_PrtCstMtxI[3][3] = -(MakI().PrtPm()[0][1]) * s + (MakI().PrtPm()[0][2]) * c;
-			_PrtCstMtxI[4][3] = -(MakI().PrtPm()[1][1]) * s + (MakI().PrtPm()[1][2]) * c;
-			_PrtCstMtxI[5][3] = -(MakI().PrtPm()[2][1]) * s + (MakI().PrtPm()[2][2]) * c;
+			csmI_[3][3] = -(MakI().PrtPm()[0][1]) * s + (MakI().PrtPm()[0][2]) * c;
+			csmI_[4][3] = -(MakI().PrtPm()[1][1]) * s + (MakI().PrtPm()[1][2]) * c;
+			csmI_[5][3] = -(MakI().PrtPm()[2][1]) * s + (MakI().PrtPm()[2][2]) * c;
 
 			/*edit CstMtxJ*/
-			std::fill_n(this->PrtCstMtxJ(), this->CstDim() * 6, 0);
+			std::fill_n(static_cast<double *>(CsmJ()), this->CstDim() * 6, 0);
 			double _pm_M2N[4][4];
 			s_pm_dot_pm(*MakJ().Father().InvPm(), *MakI().Father().Pm(), *_pm_M2N);
-			s_tf_n(Dim(), -1, *_pm_M2N, *_PrtCstMtxI, 0, *_PrtCstMtxJ);
+			s_tf_n(Dim(), -1, *_pm_M2N, CsmI(), 0, CsmJ());
 			
 			
 			
 			/*update A_c*/
-			std::fill_n(_a_c, UniversalJoint::CstDim(), 0);
+			std::fill_n(Csa(), UniversalJoint::CstDim(), 0);
 			
 			/*calculate a_dot*/
 			double v[3];
@@ -131,14 +129,14 @@ namespace Aris
 
 			double _tem_v1[6]{ 0 }, _tem_v2[6]{ 0 };
 			s_inv_tv(*MakI().PrtPm(), MakI().Father().PrtVel(), _tem_v1);
-			_a_c[3] -= v[0] * _tem_v1[4] + v[1] * _tem_v1[5];
+			Csa()[3] -= v[0] * _tem_v1[4] + v[1] * _tem_v1[5];
 			
 			/*calculate part n*/
 			s_inv_tv(*_pm_M2N, MakJ().Father().PrtVel(), _tem_v1);
 			s_cv(-1, MakI().Father().PrtVel(), _tem_v1, 0, _tem_v2);
-			s_dgemmTN(4, 1, 6, 1, *_PrtCstMtxI, Dim(), _tem_v2, 1, 1, &_a_c[0], 1);
+			s_dgemmTN(4, 1, 6, 1, CsmI(), Dim(), _tem_v2, 1, 1, &Csa()[0], 1);
 			s_inv_tv(*MakI().PrtPm(), _tem_v1, _tem_v2);
-			_a_c[3] += v[0] * _tem_v2[4] + v[1] * _tem_v2[5];
+			Csa()[3] += v[0] * _tem_v2[4] + v[1] * _tem_v2[5];
 		};
 		
 		const char *const SphericalJoint::type = "spherical";
@@ -159,7 +157,7 @@ namespace Aris
 			loc_cst[1][1] = 1;
 			loc_cst[2][2] = 1;
 
-			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, PrtCstMtxI());
+			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, CsmI());
 		};
 
 		const char *const LinearMotion::type = "linear";
@@ -176,12 +174,12 @@ namespace Aris
 		{
 			double loc_cst[6]{0};
 
-			std::fill_n(_PrtCstMtxI, 6, 0);
-			std::fill_n(_PrtCstMtxJ, 6, 0);
+			std::fill_n(CsmI(), 6, 0);
+			std::fill_n(CsmJ(), 6, 0);
 
 			/* Get tm I2M */
 			loc_cst[2] = 1;
-			s_tf(*MakI().PrtPm(), loc_cst, _PrtCstMtxI);
+			s_tf(*MakI().PrtPm(), loc_cst, CsmI());
 		}
 		void LinearMotion::Update()
 		{
@@ -191,39 +189,38 @@ namespace Aris
 
 			double pm_I2J[4][4];
 			s_inv_pm_dot_pm(*MakJ().Pm(), *MakI().Pm(), *pm_I2J);
-			motPos = pm_I2J[2][3];
+			mot_pos_ = pm_I2J[2][3];
 
 			double velDiff[6],velDiff_in_J[6];
 			std::copy_n(MakI().Vel(), 6, velDiff);
 			s_daxpy(6, -1, MakJ().Vel(), 1, velDiff, 1);
 			s_inv_tv(*MakJ().Pm(), velDiff, velDiff_in_J);
-			motVel = velDiff_in_J[2];
+			mot_vel_ = velDiff_in_J[2];
 			
-			/*update cst fce*/
-			std::fill_n(_PrtCstMtxJ, 6, 0);
+			/*update cst mtx*/
+			std::fill_n(CsmJ(), 6, 0);
 			double pm_M2N[4][4];
 			s_pm_dot_pm(*MakJ().Father().InvPm(), *MakI().Father().Pm(), *pm_M2N);
-			s_tf(-1, *pm_M2N, _PrtCstMtxI, 0, _PrtCstMtxJ);
+			s_tf(-1, *pm_M2N, CsmI(), 0, CsmJ());
 
 			/*update a_c*/
-			std::fill_n(_a_c, 6, 0);
+			std::fill_n(Csa(), 1, 0);
 			double tem_v1[6]{ 0 }, tem_v2[6]{ 0 };
 			s_inv_tv(-1, *pm_M2N, MakJ().Father().PrtVel(), 0, tem_v1);
 			s_cv(MakI().Father().PrtVel(), tem_v1, tem_v2);
-			s_dgemmTN(1, 1, 6, 1, _PrtCstMtxI, 1, tem_v2, 1, 0, &_a_c[0], 1);
+			s_dgemmTN(1, 1, 6, 1, CsmI(), 1, tem_v2, 1, 0, Csa(), 1);
 
-			_a_c[0] += motAcc;
-
+			Csa()[0] += mot_acc_;
 			/*update motPos motVel motAcc*/
 		}
 
 		const char *const SingleComponentForce::type = "single_component_force";
 		void SingleComponentForce::Update()
 		{
-			s_tf(*MakI().PrtPm(), fceI, _PrtFceI);
+			s_tf(*MakI().PrtPm(), fceI, fceI_);
 			double pm_M2N[16];
 			s_inv_pm_dot_pm(*MakJ().Father().Pm(), *MakI().Father().Pm(), pm_M2N);
-			s_tf(-1, pm_M2N, _PrtFceI, 0, _PrtFceJ);
+			s_tf(-1, pm_M2N, fceI_, 0, fceJ_);
 		}
 		SingleComponentForce::SingleComponentForce(ModelBase &model, const std::string &name, int id, Marker& makI, Marker& makJ, int componentID)
 			: ForceBase(model, name, id, makI, makJ)
@@ -313,7 +310,7 @@ namespace Aris
 					AddJoint<UniversalJoint>(ele->Name(), ele);
 				}
 
-				InitiateElement(GetJoint(ele->Name()));
+				InitiateElement(FindJoint(ele->Name()));
 			}
 
 			for (auto ele = pMot->FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())
@@ -322,7 +319,7 @@ namespace Aris
 				{
 					AddMotion<LinearMotion>(ele->Name(), ele);
 				}
-				InitiateElement(GetMotion(ele->Name()));
+				InitiateElement(FindMotion(ele->Name()));
 			}
 
 			for (auto ele = pFce->FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())

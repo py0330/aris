@@ -1,6 +1,4 @@
-﻿#include <Platform.h>
-
-#include "Aris_Core.h"
+﻿#include "Aris_Core.h"
 #include <cstring>
 #include <fstream>
 #include <ctime>
@@ -8,9 +6,7 @@
 #include <algorithm>
 #include <iostream>
 
-
-
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/stat.h>//for mkdir()
@@ -18,7 +14,7 @@
 #include <sys/types.h>
 #endif
 
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 #include <windows.h>
 #undef min
 #undef max
@@ -68,7 +64,7 @@ private:
 		const std::int32_t TASK_NAME_LEN = 1024;
 		char name[TASK_NAME_LEN] = { 0 };
 
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 		char path[TASK_NAME_LEN] = {0};
 		GetModuleFileName(NULL, path, TASK_NAME_LEN);
 
@@ -90,7 +86,7 @@ private:
 		strcat(name, "log\\");
 #endif
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 		std::int32_t count = 0;
 		std::int32_t nIndex = 0;
 		char path[TASK_NAME_LEN] = {0};
@@ -322,10 +318,10 @@ namespace Aris
 
 		void Sleep(int mSeconds)
 		{
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 			::Sleep(mSeconds);
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 			usleep(mSeconds * 1000);
 #endif
 		}

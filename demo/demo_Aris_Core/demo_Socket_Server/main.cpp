@@ -2,7 +2,7 @@
 #include <iomanip> 
 #include <cstring>
 
-#include <Platform.h>
+
 #include <Aris_Socket.h>
 #include <Aris_Message.h>
 
@@ -19,12 +19,12 @@ enum ClientMessage
 using namespace std;
 
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 #include <unistd.h>
 #endif
 
 /*以下用于VS内存泄露检测*/
-#ifdef PLATFORM_IS_WINDOWS  
+#ifdef WIN32  
 #include <Windows.h>
 
 #define CRTDBG_MAP_ALLOC  
@@ -41,7 +41,7 @@ int main()
 {
 	
 	/*以下用于VS内存泄露检测*/
-#ifdef PLATFORM_IS_WINDOWS  
+#ifdef WIN32  
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	_CrtMemCheckpoint(&s1);
 	//_CrtSetBreakAlloc(203);
@@ -175,10 +175,10 @@ int main()
 		ControlSystem.SetOnReceiveRequest([](Aris::Core::Socket *pConn,Aris::Core::Msg)
 		{
 			cout << "received request" << endl;
-#ifdef PLATFORM_IS_LINUX  
+#ifdef UNIX  
 			usleep(1000000);
 #endif
-#ifdef PLATFORM_IS_WINDOWS  
+#ifdef WIN32  
 			Sleep(1000);
 #endif
 			
@@ -197,7 +197,7 @@ int main()
 		Aris::Core::RunMsgLoop();
 	}
 
-#ifdef PLATFORM_IS_WINDOWS  
+#ifdef WIN32  
 	_CrtMemCheckpoint(&s2);
 	if (_CrtMemDifference(&s3, &s1, &s2))
 		_CrtMemDumpStatistics(&s3);

@@ -8,6 +8,11 @@
 
 namespace Aris
 {
+	/// \brief 传感器命名空间
+	/// \ingroup Aris
+	/// 
+	///
+	///
 	namespace Sensor
 	{
 		template<class DataType> class SensorBase;

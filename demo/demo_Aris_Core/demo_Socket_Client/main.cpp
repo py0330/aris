@@ -4,15 +4,15 @@
 #include <bitset>
 #include <thread>
 
-#include <Platform.h>
+
 #include <Aris_Socket.h>
 #include <Aris_Message.h>
 
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 #include <unistd.h>
 #endif
 
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 #include <Windows.h>
 #endif
 
@@ -28,7 +28,7 @@ enum ClientMessage
 };
 
 /*以下用于VS内存泄露检测*/
-#ifdef PLATFORM_IS_WINDOWS  
+#ifdef WIN32  
 #define CRTDBG_MAP_ALLOC  
 #include <stdlib.h>  
 #include <crtdbg.h>  
@@ -41,7 +41,7 @@ int main()
 {
 	
 	/*以下用于VS内存泄露检测*/
-#ifdef PLATFORM_IS_WINDOWS  
+#ifdef WIN32  
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	_CrtMemCheckpoint(&s1);
 	//_CrtSetBreakAlloc(52);
@@ -52,10 +52,10 @@ int main()
 	/*设置完毕*/
 	{
 		/*以下在不同的操作系统下设置不同的服务器IP*/
-#ifdef PLATFORM_IS_WINDOWS  
+#ifdef WIN32  
 		char RemoteIp[] = "127.0.0.1";
 #endif
-#ifdef PLATFORM_IS_LINUX  
+#ifdef UNIX  
 		char RemoteIp[] = "127.0.0.1";
 #endif
 
@@ -92,10 +92,10 @@ int main()
 			/*只要收到数据，就认为服务器让机器人行动，于是sleep 2秒之后发送回去数据，告诉机器人已经走到位*/
 
 			cout << "begin walking" << endl;
-#ifdef PLATFORM_IS_WINDOWS
+#ifdef WIN32
 			Sleep(2000);
 #endif
-#ifdef PLATFORM_IS_LINUX
+#ifdef UNIX
 			usleep(2000000);
 #endif
 
@@ -175,7 +175,7 @@ int main()
 		Aris::Core::RunMsgLoop();
 	}
 
-#ifdef PLATFORM_IS_WINDOWS  
+#ifdef WIN32  
 	_CrtMemCheckpoint(&s2);
 	if (_CrtMemDifference(&s3, &s1, &s2))
 		_CrtMemDumpStatistics(&s3);

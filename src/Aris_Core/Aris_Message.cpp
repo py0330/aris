@@ -8,10 +8,10 @@
 #include <algorithm>
 #include <map>
 
-#ifdef PLATFORM_IS_WINDOWS 
+#ifdef WIN32 
 #include <Windows.h>
 #endif
-#ifdef PLATFORM_IS_LINUX 
+#ifdef UNIX 
 #include <semaphore.h>
 #endif
 

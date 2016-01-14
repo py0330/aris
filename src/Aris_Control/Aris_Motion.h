@@ -90,8 +90,8 @@ namespace Aris
 			virtual void Stop();
 			void SetControlStrategy(std::function<int(Data&)>);
 			
-			EthercatMotion * Motion(int i) { return pMotions.at(i); };
-			EthercatForceSensor* ForceSensor(int i) { return pForceSensors.at(i); };
+			EthercatMotion * MotionAt(int i) { return pMotions.at(i); };
+			EthercatForceSensor* ForceSensorAt(int i) { return pForceSensors.at(i); };
 			Pipe<Aris::Core::Msg>& MsgPipe(){return msgPipe;};
 			
 

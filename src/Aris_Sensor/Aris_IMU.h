@@ -78,8 +78,8 @@ namespace Aris
 			virtual void UpdateData(ImuData &data);
 
 		private:
-			class IMU_IMP;
-			std::unique_ptr<IMU_IMP> pDevice;
+			class Imp;
+			std::unique_ptr<Imp> pImp;
 		};
 	}
 }

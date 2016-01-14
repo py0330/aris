@@ -1,4 +1,4 @@
-#ifndef ARIS_ETHERCAT_H
+﻿#ifndef ARIS_ETHERCAT_H
 #define ARIS_ETHERCAT_H
 
 #include "Aris_XML.h"
@@ -11,6 +11,11 @@
 
 namespace Aris
 {
+	/// \brief 控制命名空间
+	/// \ingroup Aris
+	/// 
+	///
+	///
 	namespace Control
 	{	
 		class EthercatSlave
@@ -50,7 +55,7 @@ namespace Aris
 		class EthercatMaster
 		{
 		public:
-			static EthercatMaster *GetInstance();
+			static EthercatMaster &Instance();
 			virtual ~EthercatMaster();
 			virtual void LoadXml(const Aris::Core::XmlElement *);
 			virtual void Start();
@@ -59,15 +64,15 @@ namespace Aris
 			{
 				if (pInstance)
 				{
-					throw std::runtime_error("EthercatMaster can not create a controller, because it alReady has one");
+					throw std::runtime_error("EthercatMaster can not create a controller, because it already has one");
 				}
 
 				pInstance.reset(new EthercatController);
 				return static_cast<EthercatController*>(pInstance.get());
 			}
-			template <class SLAVE, typename ...Args> SLAVE* AddSlave(Args ...args)
+			template <class Slave, typename ...Args> Slave* AddSlave(Args ...args)
 			{
-				auto pSla = new SLAVE(args...);
+				auto pSla = new Slave(args...);
 				this->AddSlavePtr(pSla);
 				return pSla;
 			}

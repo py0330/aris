@@ -1,17 +1,11 @@
-﻿/*!
-* \file Aris_DynKer.h
-* \brief 概述
-* \author 潘阳
-* \version 1.0.0.0
-* \date 2014/4/5
-*/
-
-#ifndef Aris_DynKer_H
+﻿#ifndef Aris_DynKer_H
 #define Aris_DynKer_H
 
 #ifndef PI
 #define PI 3.141592653589793
 #endif
+
+#define test 2222
 
 #include <vector>
 #include <map>
@@ -23,8 +17,35 @@
 #include <iomanip>
 #include <fstream>
 
+
 namespace Aris
 {
+	///
+	/// 符号定义: \n
+	/// pm  :  4x4的位姿矩阵（pose matrix）\n
+	/// pe  :  6x1的位姿向量，前3个元素为位置，后三个为欧拉角（position and eula angle）\n
+	/// v   :  6x1的速度螺旋（velocity of a screw）\n
+	/// a   :  6x1的加速度螺旋（acceleration of a screw）\n
+	/// pq  :  7x1的位姿向量，前3个元素为位置，后4个位四元数（position and quaternion）\n
+	/// vq  :  7x1的速度向量，前3个元素为速度螺旋的线速度部分，后4个为四元数的微分（velocity of quaternion)\n
+	/// aq  :  7x1的加速度向量，前3个元素为加速度螺旋的线速度部分，后4个为四元数的二阶微分（acceleration of quaternion）\n
+	/// pp  :  3x1的点位置（position of a point）\n
+	/// vp  :  3x1的点速度（velocity of a point）\n
+	/// ap  :  3x1的点加速度（acceleration of a point）\n
+	/// eu  :  3x1的欧拉角（eula angle）\n
+	/// va  :  3x1的角速度（velocity of angle）\n
+	/// aa  :  3x1的角加速度（accleration of angle)\n
+	/// apa :  6x1的加速度向量，前3个元素为点加速度，后三个元素为角加速度（acceleration of a point and angle）\n
+	///
+	
+	
+	
+	
+	/// \brief 动力学命名空间
+	/// \ingroup Aris
+	/// 
+	///
+	///
 	namespace DynKer
 	{
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
@@ -51,36 +72,16 @@ namespace Aris
 
 		bool isEqual(int n, const double *v1, const double *v2, double error) noexcept;
 
+		template <typename T> inline int s_sgn(T val) { return (T(0) < val) - (val < T(0)); }
+		template <typename T> inline int s_sgn2(T val) { return val < T(0) ? -1 : 1; }
+
 		
-		template <typename T> inline int s_sgn(T val) {
-			return (T(0) < val) - (val < T(0));
-		}
-		template <typename T> inline int s_sgn2(T val) {
-			return val < T(0) ? -1 : 1;
-		}
 
-		/*************************symbol meanings************************
-		* pm  :  4x4 matrix, pose matrix
-		* pe  :  6x1 vector, position and eula angle  
-		* v   :  6x1 vector, velocity of a screw
-		* a   :  6x1 vector, acceleration of a screw
-		* pq  :  7x1 vector, position and quaternion
-		* vq  :  7x1 vector, velocity of a screw, while the angle part is the differentiation of quaternion
-		* aq  :  7x1 vector, acceleration of a screw, while the angle part is the 2nd differentiation of quaternion
-		* pp  :  3x1 vector, position of a point
-		* vp  :  3x1 vector, velocity of a point
-		* ap  :  3x1 vector, acceleration of a point
-		* pa  :  3x1 vector, position of angle
-		* va  :  3x1 vector, velocity of angle
-		* aa  :  3x1 vector, acceleration of angle
-		* apa :  6x1 vector, acceleration of a point, and together with angle accleration
-		*/
-
-		/** \brief 计算三维向量叉乘
-		*
-		* 用来计算：vec_out = cro_vec_in x vec_in
-		*
-		*/
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：vec_out = cro_vec_in x vec_in
+		///
+		///
 		void s_cro3(const double *cro_vec_in, const double *vec_in, double *vec_out) noexcept;
 		/** \brief 计算三维向量叉乘
 		*
@@ -90,9 +91,9 @@ namespace Aris
 		void s_cro3(double alpha, const double *cro_vec_in, const double *vec_in, double beta, double *vec_out) noexcept;
 		/** \brief 计算三维向量叉乘矩阵
 		*
-		* 用来计算：cm_out =
-		* [ 0  -z   y
-		*   z   0  -x
+		* 用来计算：cm_out = \n
+		* [ 0  -z   y \n
+		*   z   0  -x \n
 		*  -y   x   0 ]
 		* 
 		*/
@@ -237,11 +238,11 @@ namespace Aris
 		void s_inv_vp2vp(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
 			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out = nullptr) noexcept;
 		void s_ap2ap(const double *relative_pm_in, const double *relative_vel_in, const double *inv_relative_acc_in,
-			const double *from_pnt, const double *from_pv, const double *from_pa,
-			double *to_pa_out, double *to_pv_out = nullptr, double *to_pnt_out = nullptr) noexcept;
+			const double *from_pnt, const double *from_pv, const double *from_ap,
+			double *to_ap_out, double *to_pv_out = nullptr, double *to_pnt_out = nullptr) noexcept;
 		void s_inv_ap2ap(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
-			const double *from_pnt, const double *from_pv, const double *from_pa,
-			double *to_pa_out, double *to_pv_out = nullptr, double *to_pnt_out = nullptr) noexcept;
+			const double *from_pnt, const double *from_pv, const double *from_ap,
+			double *to_ap_out, double *to_pv_out = nullptr, double *to_pnt_out = nullptr) noexcept;
 		void s_i2i(const double *from_pm_in, const double *from_im_in, double *to_im_out) noexcept;
 		void s_mass2im(const double mass_in, const double * inertia_in, const double *pm_in, double *im_out) noexcept;
 		void s_gamma2im(const double * gamma_in, double *im_out) noexcept;
@@ -351,7 +352,9 @@ namespace Aris
 		void s_cmf(const double *vel_in, double *cmf_out) noexcept;
 		/** \brief 构造6x6的速度叉乘矩阵
 		*
-		*  其中，cmv = [w x,  v x; O , w x]
+		*  其中，cmv = \n
+		*  [w x,  v x \n
+		*   O  ,  w x] \n
 		*
 		*/
 		void s_cmv(const double *vel_in, double *cmv_out) noexcept;
