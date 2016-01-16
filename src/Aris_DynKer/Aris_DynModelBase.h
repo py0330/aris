@@ -60,7 +60,7 @@ namespace Aris
 			virtual std::string GroupName() = 0;
 
 		private:
-			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const = 0;
+			virtual void ToXmlElement(Aris::Core::XmlElement &xml_ele) const = 0;
 			virtual void ToAdamsCmd(std::ofstream &file) const = 0;
 
 		protected:
@@ -77,28 +77,28 @@ namespace Aris
 		class Interaction :public Element
 		{
 		public:
-			const Marker& MakI() const { return makI_; };
-			Marker& MakI() { return makI_; };
-			const Marker& MakJ() const { return makJ_; };
-			Marker& MakJ() { return makJ_; };
+			virtual std::string AdamsType() const = 0;
+			const Marker& MakI() const { return *makI_; };
+			Marker& MakI() { return *makI_; };
+			const Marker& MakJ() const { return *makJ_; };
+			Marker& MakJ() { return *makJ_; };
 
 		protected:
 			virtual ~Interaction() = default;
 			explicit Interaction(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
-				: Element(model, name, id), makI_(makI), makJ_(makJ) {};
-			explicit Interaction(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele);
+				: Element(model, name, id), makI_(&makI), makJ_(&makJ) {};
+			explicit Interaction(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele);
 
 		private:
-			Marker &makI_;
-			Marker &makJ_;
+			Marker *makI_;
+			Marker *makJ_;
 		};
 		class Constraint :public Interaction
 		{
 		public:
 			virtual int CstDim() const = 0;
-			virtual const char* AdamsType() const = 0;
 			virtual void Update();
-			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const override;
+			virtual void ToXmlElement(Aris::Core::XmlElement &xml_ele) const override;
 			virtual void ToAdamsCmd(std::ofstream &file) const override;
 
 			const double* CstMtxI() const { return const_cast<Constraint*>(this)->CsmI(); };
@@ -110,8 +110,8 @@ namespace Aris
 			virtual ~Constraint() = default;
 			explicit Constraint(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
 				: Interaction(model, name, id, makI, makJ) {};
-			explicit Constraint(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele)
-				: Interaction(model, name, id, ele) {};
+			explicit Constraint(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+				: Interaction(model, name, id, xml_ele) {};
 
 		private:
 			virtual void Init() = 0;
@@ -123,6 +123,7 @@ namespace Aris
 			int col_id_;
 
 			friend class ModelBase;
+			friend class Model;
 		};
 
 		class Marker :public Element
@@ -151,7 +152,7 @@ namespace Aris
 			explicit Marker(ModelBase &model, Part &prt, const std::string &name, int id);//only for child class Part to construct
 			explicit Marker(Part &prt, const std::string &name, int id, const double *pPrtPm = nullptr, Marker *pRelativeTo = nullptr);
 			explicit Marker(Part &prt, const std::string &name, int id, const Aris::Core::XmlElement *ele);
-			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const;
+			virtual void ToXmlElement(Aris::Core::XmlElement &xml_ele) const;
 			virtual void ToAdamsCmd(std::ofstream &file) const {};
 
 		private:
@@ -204,7 +205,7 @@ namespace Aris
 			explicit Part(ModelBase &model, const std::string &name, int id, const double *prtIm = nullptr
 				, const double *pm = nullptr, const double *vel = nullptr, const double *acc = nullptr);
 			explicit Part(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele);
-			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const;
+			virtual void ToXmlElement(Aris::Core::XmlElement &xml_ele) const;
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 
 		private:
@@ -241,8 +242,8 @@ namespace Aris
 		protected:
 			explicit JointBase(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
 				: Constraint(model, name, id, makI, makJ) {};
-			explicit JointBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele)
-				: Constraint(model, name, id, ele) {};
+			explicit JointBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+				: Constraint(model, name, id, xml_ele) {};
 
 			friend class ModelBase;
 		};
@@ -263,7 +264,7 @@ namespace Aris
 			double MotFceFrc() const { return s_sgn(mot_vel_)*frc_coe_[0] + mot_vel_*frc_coe_[1] + mot_acc_*frc_coe_[2]; };
 			double MotFceDyn() const { return mot_fce_dyn_; }
 			void SetMotAcc(double mot_acc) { this->mot_acc_ = mot_acc; };
-			void SetMotFce(double mot_fce) {};
+			void SetMotFce(double mot_fce) { this->mot_fce_ = mot_fce; };
 
 			void SetPosAkimaCurve(const int num, const double* time, const double *pos)
 			{
@@ -274,19 +275,19 @@ namespace Aris
 
 		protected:
 			explicit MotionBase(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ);
-			explicit MotionBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele);
-			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const override;
-			virtual void ToAdamsCmd(std::ofstream &file) const override;
+			explicit MotionBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele);
+			virtual void ToXmlElement(Aris::Core::XmlElement &xml_ele) const override;
 
 		protected:
 			double* CsmI() override { return csmI_; };
 			double* CsmJ() override { return csmJ_; };
 			double* Csa() override { return &csa_; };
 			double* Csf() override { return &mot_fce_dyn_; };
+			void SetMotFceDyn(double mot_dyn_fce) { this->mot_fce_dyn_ = mot_dyn_fce; };
 
 			/*pos\vel\acc\fce of motion*/
 			double mot_pos_{ 0 }, mot_vel_{ 0 }, mot_acc_{ 0 }, mot_fce_dyn_{ 0 };
-
+			double mot_fce_{ 0 };//仅仅用于标定
 			double frc_coe_[3]{ 0 };
 
 			double csmI_[6]{ 0 };
@@ -318,8 +319,8 @@ namespace Aris
 
 		protected:
 			explicit ForceBase(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ);
-			explicit ForceBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *pEle);
-			virtual void ToXmlElement(Aris::Core::XmlElement *pEle) const {};
+			explicit ForceBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele);
+			virtual void ToXmlElement(Aris::Core::XmlElement &xml_ele) const {};
 			virtual void ToAdamsCmd(std::ofstream &file) const {};
 
 			double fceI_[6]{ 0 };
@@ -351,8 +352,8 @@ namespace Aris
 		protected:
 			explicit JointBaseDim(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
 				:JointBase(model, name, id, makI, makJ) {};
-			explicit JointBaseDim(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele)
-				:JointBase(model, name, id, ele) {};
+			explicit JointBaseDim(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+				:JointBase(model, name, id, xml_ele) {};
 
 			virtual double* CsmI() override { return *csmI_; };
 			virtual double* CsmJ() override { return *csmJ_; };
@@ -374,8 +375,8 @@ namespace Aris
 			explicit Environment(ModelBase &model) :Object(model, "Environment") {};
 			~Environment() = default;
 
-			void ToXmlElement(Aris::Core::XmlElement *pEle) const;
-			void FromXmlElement(const Aris::Core::XmlElement *pEle);
+			void ToXmlElement(Aris::Core::XmlElement &xml_ele) const;
+			void FromXmlElement(const Aris::Core::XmlElement &xml_ele);
 			void ToAdamsCmd(std::ofstream &file) const;
 		private:
 			double Gravity[6]{ 0, -9.8, 0, 0, 0, 0 };
@@ -387,12 +388,15 @@ namespace Aris
 		{
 		public:
 			void Activate(Element &ele, bool isActive);
-			void MoveMarker(Marker &mak, double *pe);
+			void MoveMarker(Marker &mak_move, const Marker& mak_target);
 			void Simulate(std::uint32_t ms_dur, std::uint32_t ms_dt);
 			void ToAdamsCmd(std::ofstream &file) const;
-			void ToAdamsScript(std::ofstream &file) const;
 
 			bool Empty() const;
+			std::uint32_t EndTime()const;
+			void SetTopologyAt(std::uint32_t ms_time);
+			void UpdateAt(std::uint32_t ms_time);
+
 			void Clear();
 		private:
 			class Imp;
@@ -534,9 +538,6 @@ namespace Aris
 			/// 约束力为n维的向量，约束加速度为n维向量
 			/// 部件力为m维的向量，部件加速度为m维向量
 			/// 动力学为所求的未知量为部件加速度和约束力，其他均为已知
-
-
-
 			int DynDimM()const { return dyn_prt_dim_; };
 			int DynDimN()const { return dyn_cst_dim_; };
 			int DynDim()const { return DynDimN() + DynDimM(); };
@@ -561,15 +562,16 @@ namespace Aris
 			int ClbDimFrc()const { return clb_dim_frc_; };
 			void ClbSetInverseMethod(std::function<void(int n, double *A)> inverse_method);
 			void ClbPre();
+			void ClbUpd();
 			void ClbMtx(double *clb_D, double *clb_b) const;
 			void ClbUkn(double *clb_x) const;
 
-
-			virtual void LoadXml(const char *filename);
-			virtual void LoadXml(const Aris::Core::XmlDocument &xmlDoc);
-			virtual void LoadXml(const Aris::Core::XmlElement *pEle);
+			void LoadXml(const char* filename) { LoadXml(std::string(filename)); };
+			void LoadXml(const std::string &filename);
+			void LoadXml(const Aris::Core::XmlDocument &xml_doc);
+			virtual void LoadXml(const Aris::Core::XmlElement &xml_ele);
 			void SaveSnapshotXml(const char *filename) const;
-			void SaveAdams(const char *filename, bool isModifyActive = true) const;
+			void SaveAdams(const std::string &filename, bool using_script = false) const;
 
 		private:
 			Calculator calculator;

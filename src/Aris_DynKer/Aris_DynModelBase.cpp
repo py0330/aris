@@ -15,11 +15,22 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		Interaction::Interaction(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele)
+		Interaction::Interaction(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
 			: Element(model, name, id)
-			, makI_(*Model().FindPart(ele->Attribute("PrtM"))->FindMarker(ele->Attribute("MakI")))
-			, makJ_(*Model().FindPart(ele->Attribute("PrtN"))->FindMarker(ele->Attribute("MakJ"))) 
+			//, makI_(*Model().FindPart(xml_ele.Attribute("PrtM"))->FindMarker(xml_ele.Attribute("MakI")))
+			//, makJ_(*Model().FindPart(xml_ele.Attribute("PrtN"))->FindMarker(xml_ele.Attribute("MakJ")))
 		{
+			if (!Model().FindPart(xml_ele.Attribute("PrtM")))
+				throw std::runtime_error(std::string("can't find part M for element \"") + this->Name() + "\"");
+			
+			makI_ = Model().FindPart(xml_ele.Attribute("PrtM"))->FindMarker(xml_ele.Attribute("MakI"));
+			if(!makI_)throw std::runtime_error(std::string("can't find marker I for element \"") + this->Name() + "\"");
+
+			if (!Model().FindPart(xml_ele.Attribute("PrtN")))
+				throw std::runtime_error(std::string("can't find part N for element \"") + this->Name() + "\"");
+
+			makJ_ = Model().FindPart(xml_ele.Attribute("PrtN"))->FindMarker(xml_ele.Attribute("MakJ"));
+			if (!makJ_)throw std::runtime_error(std::string("can't find marker J for element \"") + this->Name() + "\"");
 		}
 		void Constraint::Update()
 		{
@@ -39,37 +50,37 @@ namespace Aris
 			s_cv(MakI().Father().PrtVel(), _tem_v1, _tem_v2);
 			s_dgemmTN(CstDim(), 1, 6, 1, CsmI(), CstDim(), _tem_v2, 1, 0, Csa(), 1);
 		}
-		void Constraint::ToXmlElement(Aris::Core::XmlElement *pEle) const
+		void Constraint::ToXmlElement(Aris::Core::XmlElement &xml_ele) const
 		{
-			pEle->DeleteChildren();
-			pEle->SetName(this->Name().data());
+			xml_ele.DeleteChildren();
+			xml_ele.SetName(this->Name().data());
 
-			Aris::Core::XmlElement *pActive = pEle->GetDocument()->NewElement("Active");
+			Aris::Core::XmlElement *pActive = xml_ele.GetDocument()->NewElement("Active");
 			if (this->IsActive())
 				pActive->SetText("True");
 			else
 				pActive->SetText("False");
-			pEle->InsertEndChild(pActive);
+			xml_ele.InsertEndChild(pActive);
 
-			Aris::Core::XmlElement *pType = pEle->GetDocument()->NewElement("Type");
-			pType->SetText(this->AdamsType());
-			pEle->InsertEndChild(pType);
+			Aris::Core::XmlElement *pType = xml_ele.GetDocument()->NewElement("Type");
+			pType->SetText(this->AdamsType().c_str());
+			xml_ele.InsertEndChild(pType);
 
-			Aris::Core::XmlElement *pPrtI = pEle->GetDocument()->NewElement("iPart");
+			Aris::Core::XmlElement *pPrtI = xml_ele.GetDocument()->NewElement("iPart");
 			pPrtI->SetText(MakI().Father().Name().data());
-			pEle->InsertEndChild(pPrtI);
+			xml_ele.InsertEndChild(pPrtI);
 
-			Aris::Core::XmlElement *pPrtJ = pEle->GetDocument()->NewElement("jPart");
+			Aris::Core::XmlElement *pPrtJ = xml_ele.GetDocument()->NewElement("jPart");
 			pPrtJ->SetText(MakJ().Father().Name().data());
-			pEle->InsertEndChild(pPrtJ);
+			xml_ele.InsertEndChild(pPrtJ);
 
-			Aris::Core::XmlElement *pMakI = pEle->GetDocument()->NewElement("iMarker");
+			Aris::Core::XmlElement *pMakI = xml_ele.GetDocument()->NewElement("iMarker");
 			pMakI->SetText(MakI().Name().data());
-			pEle->InsertEndChild(pMakI);
+			xml_ele.InsertEndChild(pMakI);
 
-			Aris::Core::XmlElement *pMakJ = pEle->GetDocument()->NewElement("jMarker");
+			Aris::Core::XmlElement *pMakJ = xml_ele.GetDocument()->NewElement("jMarker");
 			pMakJ->SetText(MakJ().Name().data());
-			pEle->InsertEndChild(pMakJ);
+			xml_ele.InsertEndChild(pMakJ);
 		}
 		void Constraint::ToAdamsCmd(std::ofstream &file) const
 		{
@@ -147,21 +158,21 @@ namespace Aris
 		{
 			s_pm_dot_pm(*Father().Pm(), *PrtPm(), *pm_);
 		}
-		void Marker::ToXmlElement(Aris::Core::XmlElement *pEle) const
+		void Marker::ToXmlElement(Aris::Core::XmlElement &xml_ele) const
 		{
 			double value[10];
 
-			pEle->DeleteChildren();
-			pEle->SetName(this->Name().data());
+			xml_ele.DeleteChildren();
+			xml_ele.SetName(this->Name().data());
 
-			Aris::Core::XmlElement *pPE = pEle->GetDocument()->NewElement("Pos");
+			Aris::Core::XmlElement *pPE = xml_ele.GetDocument()->NewElement("Pos");
 			s_pm2pe(*PrtPm(), value);
 			pPE->SetText(Matrix(1, 6, value).ToString().c_str());
-			pEle->InsertEndChild(pPE);
+			xml_ele.InsertEndChild(pPE);
 
-			Aris::Core::XmlElement *pRelativeMakEle = pEle->GetDocument()->NewElement("RelativeTo");
+			Aris::Core::XmlElement *pRelativeMakEle = xml_ele.GetDocument()->NewElement("RelativeTo");
 			pRelativeMakEle->SetText("");
-			pEle->InsertEndChild(pRelativeMakEle);
+			xml_ele.InsertEndChild(pRelativeMakEle);
 		}
 		
 		Part::Part(ModelBase &model, const std::string &Name, int id, const double *im, const double *pm, const double *vel, const double *acc)
@@ -289,52 +300,52 @@ namespace Aris
 				return nullptr;
 			}
 		}
-		void Part::ToXmlElement(Aris::Core::XmlElement *pEle) const
+		void Part::ToXmlElement(Aris::Core::XmlElement &xml_ele) const
 		{
 			double value[10];
 			
-			pEle->DeleteChildren();
-			pEle->SetName(this->Name().data());
+			xml_ele.DeleteChildren();
+			xml_ele.SetName(this->Name().data());
 
-			Aris::Core::XmlElement *pActive = pEle->GetDocument()->NewElement("Active");
+			Aris::Core::XmlElement *pActive = xml_ele.GetDocument()->NewElement("Active");
 			if (this->IsActive())
 				pActive->SetText("True");
 			else
 				pActive->SetText("False");
-			pEle->InsertEndChild(pActive);
+			xml_ele.InsertEndChild(pActive);
 			
-			Aris::Core::XmlElement *pInertia = pEle->GetDocument()->NewElement("Inertia");
+			Aris::Core::XmlElement *pInertia = xml_ele.GetDocument()->NewElement("Inertia");
 			s_im2gamma(*this->PrtIm(),value);
 			pInertia->SetText(Matrix(1,10,value).ToString().c_str());
-			pEle->InsertEndChild(pInertia);
+			xml_ele.InsertEndChild(pInertia);
 
-			Aris::Core::XmlElement *pPE = pEle->GetDocument()->NewElement("Pos");
+			Aris::Core::XmlElement *pPE = xml_ele.GetDocument()->NewElement("Pos");
 			s_pm2pe(*this->Pm(), value);
 			pPE->SetText(Matrix(1, 6, value).ToString().c_str());
-			pEle->InsertEndChild(pPE);
+			xml_ele.InsertEndChild(pPE);
 
-			Aris::Core::XmlElement *pVel = pEle->GetDocument()->NewElement("Vel");
+			Aris::Core::XmlElement *pVel = xml_ele.GetDocument()->NewElement("Vel");
 			pVel->SetText(Matrix(1, 6, Vel()).ToString().c_str());
-			pEle->InsertEndChild(pVel);
+			xml_ele.InsertEndChild(pVel);
 
-			Aris::Core::XmlElement *pAcc = pEle->GetDocument()->NewElement("Acc");
+			Aris::Core::XmlElement *pAcc = xml_ele.GetDocument()->NewElement("Acc");
 			pAcc->SetText(Matrix(1, 6, Acc()).ToString().c_str());
-			pEle->InsertEndChild(pAcc);
+			xml_ele.InsertEndChild(pAcc);
 
-			Aris::Core::XmlElement *pChildMak = pEle->GetDocument()->NewElement("ChildMarker");
-			pEle->InsertEndChild(pChildMak);
+			Aris::Core::XmlElement *pChildMak = xml_ele.GetDocument()->NewElement("ChildMarker");
+			xml_ele.InsertEndChild(pChildMak);
 
 			for (auto &m : marker_names_)
 			{
-				Aris::Core::XmlElement *ele = pEle->GetDocument()->NewElement("");
+				Aris::Core::XmlElement *ele = xml_ele.GetDocument()->NewElement("");
 
-				Model().markers_.at(m.second)->ToXmlElement(ele);
+				Model().markers_.at(m.second)->ToXmlElement(*ele);
 				pChildMak->InsertEndChild(ele);
 			}
 
-			Aris::Core::XmlElement *pGraphicFilePath = pEle->GetDocument()->NewElement("Graphic_File_Path");
+			Aris::Core::XmlElement *pGraphicFilePath = xml_ele.GetDocument()->NewElement("Graphic_File_Path");
 			pGraphicFilePath->SetText(this->graphic_file_path_.c_str());
-			pEle->InsertEndChild(pGraphicFilePath);
+			xml_ele.InsertEndChild(pGraphicFilePath);
 		}
 		void Part::ToAdamsCmd(std::ofstream &file) const
 		{
@@ -452,14 +463,14 @@ namespace Aris
 		{
 			std::fill_n(static_cast<double*>(frc_coe_), 3, 0);
 		}
-		MotionBase::MotionBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *ele)
-			: Constraint(model, name, id, ele)
+		MotionBase::MotionBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+			: Constraint(model, name, id, xml_ele)
 		{
-			if (strcmp("true", ele->Attribute("Active")) == 0)
+			if (strcmp("true", xml_ele.Attribute("Active")) == 0)
 			{
 				this->Activate();
 			}
-			else if (strcmp("false", ele->Attribute("Active")) == 0)
+			else if (strcmp("false", xml_ele.Attribute("Active")) == 0)
 			{
 				this->Activate(false);
 			}
@@ -468,113 +479,69 @@ namespace Aris
 				throw std::logic_error("failed load xml file in motion");
 			}
 
-			Matrix m = Model().calculator.CalculateExpression(ele->Attribute("FrcCoe"));
+			Matrix m = Model().calculator.CalculateExpression(xml_ele.Attribute("FrcCoe"));
 			std::copy_n(m.Data(), 3, static_cast<double*>(frc_coe_));
 		}
-		void MotionBase::ToXmlElement(Aris::Core::XmlElement *pEle) const
+		void MotionBase::ToXmlElement(Aris::Core::XmlElement &xml_ele) const
 		{
-			pEle->DeleteChildren();
-			pEle->SetName(this->Name().data());
+			xml_ele.DeleteChildren();
+			xml_ele.SetName(this->Name().data());
 
-			Aris::Core::XmlElement *pActive = pEle->GetDocument()->NewElement("Active");
+			Aris::Core::XmlElement *pActive = xml_ele.GetDocument()->NewElement("Active");
 			if (this->IsActive())
 				pActive->SetText("True");
 			else
 				pActive->SetText("False");
-			pEle->InsertEndChild(pActive);
+			xml_ele.InsertEndChild(pActive);
 
-			Aris::Core::XmlElement *pType = pEle->GetDocument()->NewElement("Type");
-			pType->SetText(this->AdamsType());
-			pEle->InsertEndChild(pType);
+			Aris::Core::XmlElement *pType = xml_ele.GetDocument()->NewElement("Type");
+			pType->SetText(this->AdamsType().c_str());
+			xml_ele.InsertEndChild(pType);
 
-			Aris::Core::XmlElement *pPrtI = pEle->GetDocument()->NewElement("iPart");
+			Aris::Core::XmlElement *pPrtI = xml_ele.GetDocument()->NewElement("iPart");
 			pPrtI->SetText(MakI().Father().Name().data());
-			pEle->InsertEndChild(pPrtI);
+			xml_ele.InsertEndChild(pPrtI);
 
-			Aris::Core::XmlElement *pPrtJ = pEle->GetDocument()->NewElement("jPart");
+			Aris::Core::XmlElement *pPrtJ = xml_ele.GetDocument()->NewElement("jPart");
 			pPrtJ->SetText(MakJ().Father().Name().data());
-			pEle->InsertEndChild(pPrtJ);
+			xml_ele.InsertEndChild(pPrtJ);
 
-			Aris::Core::XmlElement *pMakI = pEle->GetDocument()->NewElement("iMarker");
+			Aris::Core::XmlElement *pMakI = xml_ele.GetDocument()->NewElement("iMarker");
 			pMakI->SetText(MakI().Name().data());
-			pEle->InsertEndChild(pMakI);
+			xml_ele.InsertEndChild(pMakI);
 
-			Aris::Core::XmlElement *pMakJ = pEle->GetDocument()->NewElement("jMarker");
+			Aris::Core::XmlElement *pMakJ = xml_ele.GetDocument()->NewElement("jMarker");
 			pMakJ->SetText(MakJ().Name().data());
-			pEle->InsertEndChild(pMakJ);
+			xml_ele.InsertEndChild(pMakJ);
 
-			Aris::Core::XmlElement *pFrictionCoefficients = pEle->GetDocument()->NewElement("Friction_Coefficients");
+			Aris::Core::XmlElement *pFrictionCoefficients = xml_ele.GetDocument()->NewElement("Friction_Coefficients");
 
 			pFrictionCoefficients->SetText(Matrix(1, 3, FrcCoe()).ToString().c_str());
-			pEle->InsertEndChild(pFrictionCoefficients);
-		}
-		void MotionBase::ToAdamsCmd(std::ofstream &file) const
-		{
-			std::string s;
-			s = "z";
-
-			if (this->posCurve == nullptr)
-			{
-				file << "constraint create motion_generator &\r\n"
-					<< "    motion_name = ." << Model().Name() << "." << this->Name() << "  &\r\n"
-					<< "    adams_id = " << this->ID() + 1 << "  &\r\n"
-					<< "    i_marker_name = ." << Model().Name() << "." << this->MakI().Father().Name() << "." << this->MakI().Name() << "  &\r\n"
-					<< "    j_marker_name = ." << Model().Name() << "." << this->MakJ().Father().Name() << "." << this->MakJ().Name() << "  &\r\n"
-					<< "    axis = " << s << "  &\r\n"
-					<< "    function = \"" << this->MotPos() << "\"  \r\n"
-					<< "!\r\n";
-			}
-			else
-			{
-				file << "data_element create spline &\r\n"
-					<< "    spline_name = ." << Model().Name() << "." << this->Name() << "_pos_spl  &\r\n"
-					<< "    adams_id = " << this->ID() * 2 << "  &\r\n"
-					<< "    units = m &\r\n"
-					<< "    x = " << this->posCurve->x().at(0);
-				for (auto p = this->posCurve->x().begin() + 1; p < this->posCurve->x().end(); ++p)
-				{
-					file << "," << *p;
-				}
-				file << "    y = " << this->posCurve->y().at(0);
-				for (auto p = this->posCurve->y().begin() + 1; p < this->posCurve->y().end(); ++p)
-				{
-					file << "," << *p;
-				}
-				file << " \r\n!\r\n";
-
-				file << "constraint create motion_generator &\r\n"
-					<< "    motion_name = ." << Model().Name() << "." << this->Name() << "  &\r\n"
-					<< "    adams_id = " << this->ID() + 1 << "  &\r\n"
-					<< "    i_marker_name = ." << Model().Name() << "." << this->MakI().Father().Name() << "." << this->MakI().Name() << "  &\r\n"
-					<< "    j_marker_name = ." << Model().Name() << "." << this->MakJ().Father().Name() << "." << this->MakJ().Name() << "  &\r\n"
-					<< "    axis = " << s << "  &\r\n"
-					<< "    function = \"AKISPL(time,0," << this->Name() << "_pos_spl)\"  \r\n"
-					<< "!\r\n";
-			}
+			xml_ele.InsertEndChild(pFrictionCoefficients);
 		}
 
 		ForceBase::ForceBase(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
 			: Interaction(model, name, id, makI, makJ)
 		{
 		}
-		ForceBase::ForceBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *xmlEle)
-			: Interaction(model, name, id, xmlEle)
+		ForceBase::ForceBase(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+			: Interaction(model, name, id, xml_ele)
 		{
 
 		}
 
-		void Environment::ToXmlElement(Aris::Core::XmlElement *pEle) const
+		void Environment::ToXmlElement(Aris::Core::XmlElement &xml_ele) const
 		{
-			pEle->DeleteChildren();
-			pEle->SetName("Enviroment");
+			xml_ele.DeleteChildren();
+			xml_ele.SetName("Enviroment");
 
-			Aris::Core::XmlElement *pGravity = pEle->GetDocument()->NewElement("Gravity");
+			Aris::Core::XmlElement *pGravity = xml_ele.GetDocument()->NewElement("Gravity");
 			pGravity->SetText(Matrix(1, 6, Gravity).ToString().c_str());
-			pEle->InsertEndChild(pGravity);
+			xml_ele.InsertEndChild(pGravity);
 		}
-		void Environment::FromXmlElement(const Aris::Core::XmlElement *pEle)
+		void Environment::FromXmlElement(const Aris::Core::XmlElement &xml_ele)
 		{
-			Matrix m = Model().calculator.CalculateExpression(pEle->FirstChildElement("Gravity")->GetText());
+			Matrix m = Model().calculator.CalculateExpression(xml_ele.FirstChildElement("Gravity")->GetText());
 			memcpy(Gravity, m.Data(), sizeof(Gravity));
 		}
 		void Environment::ToAdamsCmd(std::ofstream &file) const
@@ -622,23 +589,20 @@ namespace Aris
 				<< "!\r\n";
 		};
 
-		
 		class Script::Imp 
 		{
 		public:
 			struct Node
 			{
-				virtual void Simulate() = 0;
-				virtual std::string AdamsScript() = 0;
+				virtual void DoNode() {};
+				virtual void Update() {};
+				virtual std::uint32_t MsConsumed()const { return 0; };
+				virtual std::string AdamsScript()const = 0;
 			};
 			struct ActivateNode final :public Node
 			{
-				bool isActive;
-				Element *pEle;
-
-				explicit ActivateNode(Element &ele, bool isActive) :pEle(&ele), isActive(isActive) {};
-				virtual void Simulate()override { pEle->Activate(isActive); };
-				virtual std::string AdamsScript()override
+				virtual void DoNode()override { pEle->Activate(isActive); };
+				virtual std::string AdamsScript()const override
 				{
 					std::stringstream ss;
 					std::string cmd = isActive ? "activate/" : "deactivate/";
@@ -652,54 +616,65 @@ namespace Aris
 					}
 					return std::move(ss.str());
 				};
+				
+				explicit ActivateNode(Element &ele, bool isActive) :pEle(&ele), isActive(isActive) {};
+				bool isActive;
+				Element *pEle;
 			};
 			struct MoveMarkerNode final :public Node
 			{
-				Marker *pMak;
-				double prtPe[6];
-				virtual void Simulate()override { s_pe2pm(prtPe, *pMak->prt_pm_); };
-				virtual std::string AdamsScript()override
+				virtual void DoNode()override 
+				{
+					s_pm2pe(prtPe, *mak_move_.prt_pm_);
+				};
+				void Update() override 
+				{
+					double pm_target_g[16];
+
+					s_pm_dot_pm(*mak_target_.Father().Pm(), *mak_target_.PrtPm(), pm_target_g);
+					s_inv_pm_dot_pm(*mak_move_.Father().Pm(), pm_target_g, &mak_move_.prt_pm_[0][0]);
+					s_pm2pe(*mak_move_.prt_pm_, prtPe);
+				};
+				virtual std::string AdamsScript()const override
 				{
 					std::stringstream ss;
-					ss << "marker/" << pMak->ID() + 1
+					ss << "marker/" << mak_move_.ID() + 1
 						<< " , QP = " << prtPe[0] << "," << prtPe[1] << "," << prtPe[2]
 						<< " , REULER =" << prtPe[3] << "," << prtPe[4] << "," << prtPe[5];
 					return std::move(ss.str());
 				};
-				explicit MoveMarkerNode(Marker &mak, double *pe) :pMak(&mak) { std::copy_n(pe, 6, prtPe); };
+				
+				explicit MoveMarkerNode(Marker &mak_move, const Marker &mak_target) :mak_move_(mak_move), mak_target_(mak_target){};
+				Marker &mak_move_;
+				const Marker &mak_target_;
+				double prtPe[6];
 			};
 			struct SimulateNode final :public Node
 			{
-				std::uint32_t ms_dur_;
-				std::uint32_t ms_dt_;
-				virtual void Simulate()override { };
-				virtual std::string AdamsScript()override
+				virtual std::uint32_t MsConsumed()const { return ms_dur_; };
+				virtual std::string AdamsScript()const override
 				{
 					std::stringstream ss;
-					ss << "simulate/transient, dur=" << double(ms_dur_)/1000.0 << ", dtout=" << double(ms_dt_) / 1000.0;
+					ss << "simulate/transient, dur=" << double(ms_dur_) / 1000.0 << ", dtout=" << double(ms_dt_) / 1000.0;
 					return std::move(ss.str());
 				};
+				
 				explicit SimulateNode(std::uint32_t ms_dur, std::uint32_t ms_dt) :ms_dur_(ms_dur), ms_dt_(ms_dt) { };
+				std::uint32_t ms_dur_;
+				std::uint32_t ms_dt_;
 			};
 
 			void Activate(Element &ele, bool isActive)
 			{
-				node_list.push_back(std::unique_ptr<Node>(new ActivateNode(ele,isActive)));
+				node_list_.push_back(std::unique_ptr<Node>(new ActivateNode(ele,isActive)));
 			}
-			void MoveMarker(Marker &mak, double *pe)
+			void MoveMarker(Marker &mak, const Marker& mak_target)
 			{
-				node_list.push_back(std::unique_ptr<Node>(new MoveMarkerNode(mak, pe)));
+				node_list_.push_back(std::unique_ptr<Node>(new MoveMarkerNode(mak, mak_target)));
 			}
 			void Simulate(std::uint32_t ms_dur, std::uint32_t ms_dt)
 			{
-				node_list.push_back(std::unique_ptr<Node>(new SimulateNode(ms_dur, ms_dt)));
-			}
-			void ToAdamsScript(std::ofstream &file) const
-			{
-				for (auto &pNode : node_list)
-				{
-					file << pNode->AdamsScript();
-				}
+				node_list_.push_back(std::unique_ptr<Node>(new SimulateNode(ms_dur, ms_dt)));
 			}
 			void ToAdamsCmd(std::ofstream &file) const
 			{
@@ -707,33 +682,60 @@ namespace Aris
 					<< "sim_script_name = default_script &\r\n"
 					<< "solver_commands = ";
 				
-				for (auto &pNode : node_list)
+				for (auto &pNode : node_list_)
 				{
 					file <<"&\r\n\""<< pNode->AdamsScript() << "\",";
 				}
 
 				file << "\"\"\r\n\r\n";
 			}
+			std::int32_t EndTime()const
+			{
+				std::uint32_t end_time{0};
+
+				for (auto& node : node_list_)end_time += node->MsConsumed();
+				
+				return end_time;
+			}
+			void SetTopologyAt(std::uint32_t ms_time) 
+			{
+				std::uint32_t now{ 0 };
+				for (auto p = node_list_.begin(); (p != node_list_.end()) && (now + (*p)->MsConsumed() <= ms_time); ++p)
+				{
+					(*p)->DoNode();
+				}
+			};
+
 		private:
-			std::list<std::unique_ptr<Node> > node_list;
+			std::list<std::unique_ptr<Node> > node_list_;
 
 			friend Script;
 		};
 		Script::Script() :pImp(new Imp) {};
 		Script::~Script() {};
 		void Script::Activate(Element &ele, bool isActive) { pImp->Activate(ele, isActive); };
-		void Script::MoveMarker(Marker &mak, double *pe) { pImp->MoveMarker(mak, pe); };
+		void Script::MoveMarker(Marker &mak, const Marker& mak_target) { pImp->MoveMarker(mak, mak_target); };
 		void Script::Simulate(std::uint32_t ms_dur, std::uint32_t ms_dt) { pImp->Simulate(ms_dur, ms_dt); };
 		void Script::ToAdamsCmd(std::ofstream &file) const
 		{
 			pImp->ToAdamsCmd(file);
 		}
-		void Script::ToAdamsScript(std::ofstream &file) const
+		bool Script::Empty()const { return pImp->node_list_.empty(); };
+		std::uint32_t Script::EndTime()const 
 		{
-			pImp->ToAdamsScript(file);
+			return pImp->EndTime();
+		};
+		void Script::SetTopologyAt(std::uint32_t ms_time) { pImp->SetTopologyAt(ms_time); };
+		void Script::UpdateAt(std::uint32_t ms_time)
+		{
+			std::uint32_t now = 0;
+			for (auto&node : pImp->node_list_)
+			{
+				now += node->MsConsumed();
+				if (now == ms_time)node->Update();
+			}
 		}
-		bool Script::Empty()const { return pImp->node_list.empty(); };
-		void Script::Clear() { pImp->node_list.clear(); };
+		void Script::Clear() { pImp->node_list_.clear(); };
 
 		ModelBase::ModelBase(const std::string & name)
 			: Object(*this, name)
@@ -1068,13 +1070,12 @@ namespace Aris
 
 			for (auto &i : motions_)
 			{
-				/*对于未激活的motion,认为其正在受到力控制*/
 				if (i->IsActive())
 				{
 					clb_dim_m_++;
+					clb_dim_frc_ += 3;
+					clb_dim_n_ += 3;
 				}
-				clb_dim_frc_ += 3;
-				clb_dim_n_ += 3;
 			}
 			for (auto &i : parts_)
 			{
@@ -1085,6 +1086,10 @@ namespace Aris
 				}
 			}
 
+		}
+		void ModelBase::ClbUpd()
+		{
+			DynUpd();
 		}
 		void ModelBase::ClbMtx(double *clb_D, double *clb_b)const
 		{
@@ -1173,7 +1178,7 @@ namespace Aris
 			{
 				if (mot->IsActive())
 				{
-					clb_b_m(row, 0) = mot->MotFce();
+					clb_b_m(row, 0) = mot->mot_fce_;
 					++row;
 				}
 			}
@@ -1189,28 +1194,16 @@ namespace Aris
 
 			/*以下添加驱动摩擦系数*/
 			row = 0;
-			int num = 0;
 			for (auto &mot : motions_)
 			{
 				//默认未激活的motion处于力控模式
 				if (mot->IsActive())
 				{
-					clb_d_m(row, ClbDimGam() + num * 3) += s_sgn(mot->MotVel());
-					clb_d_m(row, ClbDimGam() + num * 3 + 1) += mot->MotVel();
-					clb_d_m(row, ClbDimGam() + num * 3 + 2) += mot->MotAcc();
+					clb_d_m(row, ClbDimGam() + row * 3) += s_sgn(mot->MotVel());
+					clb_d_m(row, ClbDimGam() + row * 3 + 1) += mot->MotVel();
+					clb_d_m(row, ClbDimGam() + row * 3 + 2) += mot->MotAcc();
 					++row;
 				}
-				else
-				{
-					s_dgemm(ClbDimM(), 1, 6, s_sgn(mot->MotVel()), &A(beginRow, mot->MakI().Father().row_id_), DynDimM(), mot->CsmI(), 1, 1, &clb_d_m(0, ClbDimGam() + num * 3), ClbDimN());
-					s_dgemm(ClbDimM(), 1, 6, s_sgn(mot->MotVel()), &A(beginRow, mot->MakJ().Father().row_id_), DynDimM(), mot->CsmJ(), 1, 1, &clb_d_m(0, ClbDimGam() + num * 3), ClbDimN());
-					s_dgemm(ClbDimM(), 1, 6, mot->MotVel(), &A(beginRow, mot->MakI().Father().row_id_), DynDimM(), mot->CsmI(), 1, 1, &clb_d_m(0, ClbDimGam() + num * 3 + 1), ClbDimN());
-					s_dgemm(ClbDimM(), 1, 6, mot->MotVel(), &A(beginRow, mot->MakJ().Father().row_id_), DynDimM(), mot->CsmJ(), 1, 1, &clb_d_m(0, ClbDimGam() + num * 3 + 1), ClbDimN());
-					s_dgemm(ClbDimM(), 1, 6, mot->MotAcc(), &A(beginRow, mot->MakI().Father().row_id_), DynDimM(), mot->CsmI(), 1, 1, &clb_d_m(0, ClbDimGam() + num * 3 + 2), ClbDimN());
-					s_dgemm(ClbDimM(), 1, 6, mot->MotAcc(), &A(beginRow, mot->MakJ().Father().row_id_), DynDimM(), mot->CsmJ(), 1, 1, &clb_d_m(0, ClbDimGam() + num * 3 + 2), ClbDimN());
-				}
-
-				num++;
 			}
 
 			std::copy_n(clb_d_m.Data(), clb_d_m.Length(), clb_D);
@@ -1224,44 +1217,47 @@ namespace Aris
 				if (prt->IsActive())
 				{
 					s_im2gamma(*prt->PrtIm(), clb_x + row);
+					row += 10;
 				}
-				row += 10;
 			}
 
 			for (auto &mot : motions_)
 			{
-				std::copy_n(mot->FrcCoe(),3, clb_x + row);
-				row += 3;
+				if (mot->IsActive())
+				{
+					std::copy_n(mot->FrcCoe(), 3, clb_x + row);
+					row += 3;
+				}
 			}
 		}
 		
-		void ModelBase::LoadXml(const char *filename)
+		void ModelBase::LoadXml(const std::string &filename)
 		{
 			Aris::Core::XmlDocument xmlDoc;
 			
-			if (xmlDoc.LoadFile(filename) != 0)
+			if (xmlDoc.LoadFile(filename.c_str()) != 0)
 			{
 				throw std::logic_error((std::string("could not open file:") + std::string(filename)));
 			}
 
 			LoadXml(xmlDoc);
 		}
-		void ModelBase::LoadXml(const Aris::Core::XmlDocument &xmlDoc)
+		void ModelBase::LoadXml(const Aris::Core::XmlDocument &xml_doc)
 		{
-			const Aris::Core::XmlElement *pModel = xmlDoc.RootElement()->FirstChildElement("Model");
+			auto pModel = xml_doc.RootElement()->FirstChildElement("Model");
 
-			LoadXml(pModel);
+			if (!pModel)throw std::logic_error("can't find Model element in xml file");
+
+			LoadXml(*pModel);
 		}
-		void ModelBase::LoadXml(const Aris::Core::XmlElement *pModel)
+		void ModelBase::LoadXml(const Aris::Core::XmlElement &xml_ele)
 		{
-			if (pModel == nullptr)throw(std::logic_error("XML file must have model element"));
-
-			const Aris::Core::XmlElement *pVar = pModel->FirstChildElement("Variable");
-			if (pModel == nullptr)throw(std::logic_error("Model must have variable element"));
-			const Aris::Core::XmlElement *pEnv = pModel->FirstChildElement("Environment");
-			if (pEnv == nullptr)throw(std::logic_error("Model must have environment element"));
-			const Aris::Core::XmlElement *pPrt = pModel->FirstChildElement("Part");
-			if (pPrt == nullptr)throw(std::logic_error("Model must have part element"));
+			auto pVar = xml_ele.FirstChildElement("Variable");
+			if (!pVar)throw(std::logic_error("Model must have variable element"));
+			auto pEnv = xml_ele.FirstChildElement("Environment");
+			if (!pEnv)throw(std::logic_error("Model must have environment element"));
+			auto pPrt = xml_ele.FirstChildElement("Part");
+			if (!pPrt)throw(std::logic_error("Model must have part element"));
 
 			calculator.ClearVariables();
 			for (auto ele = pVar->FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())
@@ -1269,7 +1265,7 @@ namespace Aris
 				calculator.AddVariable(ele->Name(), calculator.CalculateExpression(ele->GetText()));
 			}
 
-			Environment().FromXmlElement(pEnv);
+			Environment().FromXmlElement(*pEnv);
 
 			parts_.clear();
 			joints_.clear();
@@ -1313,7 +1309,7 @@ namespace Aris
 			XML_Doc.InsertEndChild(pModel);
 
 			Aris::Core::XmlElement *pEnvironment = XML_Doc.NewElement("");
-			Environment().ToXmlElement(pEnvironment);
+			Environment().ToXmlElement(*pEnvironment);
 			pModel->InsertEndChild(pEnvironment);
 
 			Aris::Core::XmlElement *pVar = XML_Doc.NewElement("Variable");
@@ -1334,33 +1330,37 @@ namespace Aris
 			for (auto &p:parts_)
 			{
 				Aris::Core::XmlElement *ele = XML_Doc.NewElement("");
-				p->ToXmlElement(ele);
+				p->ToXmlElement(*ele);
 				pPrt->InsertEndChild(ele);
 			}
 
 			for (auto &j : joints_)
 			{
 				Aris::Core::XmlElement *ele = XML_Doc.NewElement("");
-				j->ToXmlElement(ele);
+				j->ToXmlElement(*ele);
 				pJnt->InsertEndChild(ele);
 			}
 
 			for (auto &m : motions_)
 			{
 				Aris::Core::XmlElement *ele = XML_Doc.NewElement("");
-				m->ToXmlElement(ele);
+				m->ToXmlElement(*ele);
 				pMot->InsertEndChild(ele);
 			}
 
 
 			XML_Doc.SaveFile(filename);
 		}
-		void ModelBase::SaveAdams(const char *filename, bool isModifyActive) const
+		void ModelBase::SaveAdams(const std::string &filename, bool using_script) const
 		{
-			std::string cmdName = std::string(filename) + std::string(".cmd");
+			std::string filename_ = filename;
+			if (filename_.size() < 4 || filename_.substr(filename.size() - 4, 4) != ".cmd")
+			{
+				filename_ += ".cmd";
+			}
 			
 			std::ofstream file;
-			file.open(cmdName, std::ios::out | std::ios::trunc);
+			file.open(filename_, std::ios::out | std::ios::trunc);
 			file << std::setprecision(15);
 
 			file << "!----------------------------------- Environment -------------------------------!\r\n!\r\n!\r\n";
@@ -1394,7 +1394,12 @@ namespace Aris
 				fce->ToAdamsCmd(file);
 			}
 
-			if (isModifyActive)
+			if (using_script)
+			{
+				file << "!----------------------------------- Script ------------------------------------!\r\n!\r\n!\r\n";
+				this->Script().ToAdamsCmd(file);
+			}
+			else
 			{
 				file << "!----------------------------------- Motify Active -------------------------------------!\r\n!\r\n!\r\n";
 				for (auto &prt : parts_)
@@ -1437,9 +1442,6 @@ namespace Aris
 				}
 			}
 			
-			file << "!----------------------------------- Script ------------------------------------!\r\n!\r\n!\r\n";
-			this->Script().ToAdamsCmd(file);
-
 			file.close();
 
 

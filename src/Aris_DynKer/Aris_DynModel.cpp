@@ -15,13 +15,34 @@ namespace Aris
 {
 	namespace DynKer
 	{
-		const char *const TranslationalJoint::type = "translational";
-		TranslationalJoint::TranslationalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
-			: JointBaseDim(model, Name, id, makI, makJ)
+		RevoluteJoint::RevoluteJoint(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
+			: JointBaseDim(model, name, id, makI, makJ)
 		{
 		}
-		TranslationalJoint::TranslationalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: JointBaseDim(model, Name, id, ele)
+		RevoluteJoint::RevoluteJoint(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+			: JointBaseDim(model, name, id, xml_ele)
+		{
+		}
+		void RevoluteJoint::Init() 
+		{
+			double loc_cst[6][Dim()];
+			std::fill_n(&loc_cst[0][0], 6 * Dim(), 0);
+
+			loc_cst[0][0] = 1;
+			loc_cst[1][1] = 1;
+			loc_cst[2][2] = 1;
+			loc_cst[3][3] = 1;
+			loc_cst[4][4] = 1;
+
+			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, CsmI());
+		}
+		
+		TranslationalJoint::TranslationalJoint(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
+			: JointBaseDim(model, name, id, makI, makJ)
+		{
+		}
+		TranslationalJoint::TranslationalJoint(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+			: JointBaseDim(model, name, id, xml_ele)
 		{
 		}
 		void TranslationalJoint::Init()
@@ -38,13 +59,12 @@ namespace Aris
 			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, CsmI());
 		};
 		
-		const char *const UniversalJoint::type = "universal";
-		UniversalJoint::UniversalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
-			: JointBaseDim(model, Name, id, makI, makJ)
+		UniversalJoint::UniversalJoint(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
+			: JointBaseDim(model, name, id, makI, makJ)
 		{
 		}
-		UniversalJoint::UniversalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: JointBaseDim(model, Name, id, ele)
+		UniversalJoint::UniversalJoint(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+			: JointBaseDim(model, name, id, xml_ele)
 		{
 		}
 		void UniversalJoint::ToAdamsCmd(std::ofstream &file) const
@@ -139,13 +159,12 @@ namespace Aris
 			Csa()[3] += v[0] * _tem_v2[4] + v[1] * _tem_v2[5];
 		};
 		
-		const char *const SphericalJoint::type = "spherical";
-		SphericalJoint::SphericalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
-			: JointBaseDim(model, Name, id, makI, makJ)
+		SphericalJoint::SphericalJoint(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
+			: JointBaseDim(model, name, id, makI, makJ)
 		{
 		}
-		SphericalJoint::SphericalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele)
-			: JointBaseDim(model, Name, id, ele)
+		SphericalJoint::SphericalJoint(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+			: JointBaseDim(model, name, id, xml_ele)
 		{
 		}
 		void SphericalJoint::Init()
@@ -160,43 +179,44 @@ namespace Aris
 			s_tf_n(Dim(), *MakI().PrtPm(), *loc_cst, CsmI());
 		};
 
-		const char *const LinearMotion::type = "linear";
-		LinearMotion::LinearMotion(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ)
-			: MotionBase(model, Name, id, makI, makJ)
+		SingleComponentMotion::SingleComponentMotion(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ, int component_axis)
+			: MotionBase(model, name, id, makI, makJ)
+			, component_axis_(component_axis)
 		{
 		}
-		LinearMotion::LinearMotion(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *pEle)
-			: MotionBase(model, Name, id, pEle)
+		SingleComponentMotion::SingleComponentMotion(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+			: MotionBase(model, name, id, xml_ele)
 		{
-
+			component_axis_ = std::stoi(xml_ele.Attribute("Component"));
 		}
-		void LinearMotion::Init()
+		void SingleComponentMotion::Init()
 		{
-			double loc_cst[6]{0};
+			double loc_cst[6]{ 0 };
 
 			std::fill_n(CsmI(), 6, 0);
 			std::fill_n(CsmJ(), 6, 0);
 
 			/* Get tm I2M */
-			loc_cst[2] = 1;
+			loc_cst[component_axis_] = 1;
 			s_tf(*MakI().PrtPm(), loc_cst, CsmI());
 		}
-		void LinearMotion::Update()
+		void SingleComponentMotion::Update()
 		{
 			/*update motPos motVel,  motAcc should be given, not computed by part acc*/
 			MakI().Update();
 			MakJ().Update();
 
-			double pm_I2J[4][4];
+			double pm_I2J[4][4], pe[6];
 			s_inv_pm_dot_pm(*MakJ().Pm(), *MakI().Pm(), *pm_I2J);
-			mot_pos_ = pm_I2J[2][3];
+			s_pm2pe(&pm_I2J[0][0], pe,"123");
+			mot_pos_ = pe[component_axis_];
 
-			double velDiff[6],velDiff_in_J[6];
+			double velDiff[6], velDiff_in_J[6];
 			std::copy_n(MakI().Vel(), 6, velDiff);
 			s_daxpy(6, -1, MakJ().Vel(), 1, velDiff, 1);
 			s_inv_tv(*MakJ().Pm(), velDiff, velDiff_in_J);
-			mot_vel_ = velDiff_in_J[2];
-			
+			mot_vel_ = velDiff_in_J[component_axis_];
+
 			/*update cst mtx*/
 			std::fill_n(CsmJ(), 6, 0);
 			double pm_M2N[4][4];
@@ -213,8 +233,73 @@ namespace Aris
 			Csa()[0] += mot_acc_;
 			/*update motPos motVel motAcc*/
 		}
+		void SingleComponentMotion::ToAdamsCmd(std::ofstream &file) const
+		{
+			std::string s;
 
-		const char *const SingleComponentForce::type = "single_component_force";
+			switch (component_axis_)
+			{
+			case 0:
+				s = "x";
+				break;
+			case 1:
+				s = "y";
+				break;
+			case 2:
+				s = "z";
+				break;
+			case 3:
+				s = "B1";
+				break;
+			case 4:
+				s = "B2";
+				break;
+			case 5:
+				s = "B3";
+				break;
+			}
+			
+			
+			if (this->posCurve == nullptr)
+			{
+				file << "constraint create motion_generator &\r\n"
+					<< "    motion_name = ." << Model().Name() << "." << this->Name() << "  &\r\n"
+					<< "    adams_id = " << this->ID() + 1 << "  &\r\n"
+					<< "    i_marker_name = ." << Model().Name() << "." << this->MakI().Father().Name() << "." << this->MakI().Name() << "  &\r\n"
+					<< "    j_marker_name = ." << Model().Name() << "." << this->MakJ().Father().Name() << "." << this->MakJ().Name() << "  &\r\n"
+					<< "    axis = " << s << "  &\r\n"
+					<< "    function = \"" << this->MotPos() << "\"  \r\n"
+					<< "!\r\n";
+			}
+			else
+			{
+				file << "data_element create spline &\r\n"
+					<< "    spline_name = ." << Model().Name() << "." << this->Name() << "_pos_spl  &\r\n"
+					<< "    adams_id = " << this->ID() * 2 << "  &\r\n"
+					<< "    units = m &\r\n"
+					<< "    x = " << this->posCurve->x().at(0);
+				for (auto p = this->posCurve->x().begin() + 1; p < this->posCurve->x().end(); ++p)
+				{
+					file << "," << *p;
+				}
+				file << "    y = " << this->posCurve->y().at(0);
+				for (auto p = this->posCurve->y().begin() + 1; p < this->posCurve->y().end(); ++p)
+				{
+					file << "," << *p;
+				}
+				file << " \r\n!\r\n";
+
+				file << "constraint create motion_generator &\r\n"
+					<< "    motion_name = ." << Model().Name() << "." << this->Name() << "  &\r\n"
+					<< "    adams_id = " << this->ID() + 1 << "  &\r\n"
+					<< "    i_marker_name = ." << Model().Name() << "." << this->MakI().Father().Name() << "." << this->MakI().Name() << "  &\r\n"
+					<< "    j_marker_name = ." << Model().Name() << "." << this->MakJ().Father().Name() << "." << this->MakJ().Name() << "  &\r\n"
+					<< "    axis = " << s << "  &\r\n"
+					<< "    function = \"AKISPL(time,0," << this->Name() << "_pos_spl)\"  \r\n"
+					<< "!\r\n";
+			}
+		}
+
 		void SingleComponentForce::Update()
 		{
 			s_tf(*MakI().PrtPm(), fceI, fceI_);
@@ -228,9 +313,9 @@ namespace Aris
 		{
 
 		}
-		SingleComponentForce::SingleComponentForce(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *xmlEle)
-			: ForceBase(model, name, id, xmlEle)
-			, componentID(std::stoi(xmlEle->Attribute("Component")))
+		SingleComponentForce::SingleComponentForce(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
+			: ForceBase(model, name, id, xml_ele)
+			, componentID(std::stoi(xml_ele.Attribute("Component")))
 		{
 		}
 		void SingleComponentForce::ToAdamsCmd(std::ofstream &file) const
@@ -284,50 +369,81 @@ namespace Aris
 
 		}
 	
-		void Model::LoadXml(const Aris::Core::XmlElement *pModel)
+		void Model::LoadXml(const Aris::Core::XmlElement &xml_ele)
 		{
-			ModelBase::LoadXml(pModel);
+			ModelBase::LoadXml(xml_ele);
 			
-			const Aris::Core::XmlElement *pJnt = pModel->FirstChildElement("Joint");
-			if (pJnt == nullptr)throw(std::logic_error("Model must have joint element"));
-			const Aris::Core::XmlElement *pMot = pModel->FirstChildElement("Motion");
-			if (pMot == nullptr)throw(std::logic_error("Model must have motion element"));
-			const Aris::Core::XmlElement *pFce = pModel->FirstChildElement("Force");
-			if (pFce == nullptr)throw(std::logic_error("Model must have force element"));
+			auto pJnt = xml_ele.FirstChildElement("Joint");
+			if (!pJnt)throw(std::logic_error("Model must have joint element"));
+			auto pMot = xml_ele.FirstChildElement("Motion");
+			if (!pMot)throw(std::logic_error("Model must have motion element"));
+			auto pFce = xml_ele.FirstChildElement("Force");
+			if (!pFce)throw(std::logic_error("Model must have force element"));
 			
 			for (auto ele = pJnt->FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())
 			{
-				if (strcmp(TranslationalJoint::type, ele->Attribute("Type")) == 0)
+				JointBase *pJnt;
+
+				if (RevoluteJoint::Type() == ele->Attribute("Type"))
 				{
-					AddJoint<TranslationalJoint>(ele->Name(), ele);
+					pJnt = AddJoint<RevoluteJoint>(ele->Name(), std::ref(*ele));
 				}
-				if (strcmp(SphericalJoint::type, ele->Attribute("Type")) == 0)
+				else if (TranslationalJoint::Type() == ele->Attribute("Type"))
 				{
-					AddJoint<SphericalJoint>(ele->Name(), ele);
+					pJnt = AddJoint<TranslationalJoint>(ele->Name(), std::ref(*ele));
 				}
-				if (strcmp(UniversalJoint::type, ele->Attribute("Type")) == 0)
+				else if (SphericalJoint::Type() == ele->Attribute("Type"))
 				{
-					AddJoint<UniversalJoint>(ele->Name(), ele);
+					pJnt = AddJoint<SphericalJoint>(ele->Name(), std::ref(*ele));
+				}
+				else if (UniversalJoint::Type() == ele->Attribute("Type"))
+				{
+					pJnt = AddJoint<UniversalJoint>(ele->Name(), std::ref(*ele));
+				}
+				else
+				{
+					throw std::runtime_error(std::string("invalid joint type in Aris::Model::LoadXml of \"") + ele->Name() + "\"");
 				}
 
-				InitiateElement(FindJoint(ele->Name()));
+				if (pJnt)
+					pJnt->Init();
+				else 
+					throw std::runtime_error(std::string("failed to add joint \"")+ ele->Name() +"\", because it already has one");
 			}
 
 			for (auto ele = pMot->FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())
 			{
-				if (strcmp(LinearMotion::type, ele->Attribute("Type")) == 0)
+				MotionBase *pMot;
+				
+				if (SingleComponentMotion::Type() == ele->Attribute("Type"))
 				{
-					AddMotion<LinearMotion>(ele->Name(), ele);
+					pMot = AddMotion<SingleComponentMotion>(ele->Name(), std::ref(*ele));
 				}
-				InitiateElement(FindMotion(ele->Name()));
+				else
+				{
+					throw std::runtime_error(std::string("invalid motion type in Aris::Model::LoadXml of \"") + ele->Name() + "\"");
+				}
+
+				if (pMot)
+					pMot->Init();
+				else
+					throw std::runtime_error(std::string("failed to add motion \"") + ele->Name() + "\", because it already has one");
 			}
 
 			for (auto ele = pFce->FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())
 			{
-				if (strcmp(SingleComponentForce::type, ele->Attribute("Type")) == 0)
+				ForceBase *pFce;
+				
+				if (SingleComponentForce::Type()==ele->Attribute("Type")) 
 				{
-					AddForce<SingleComponentForce>(ele->Name(), ele);
+					pFce = AddForce<SingleComponentForce>(ele->Name(), std::ref(*ele));
 				}
+				else
+				{
+					throw std::runtime_error(std::string("invalid force type in Aris::Model::LoadXml of \"") + ele->Name() + "\"");
+				}
+
+				if(!pFce)throw std::runtime_error(std::string("failed to add force \"") + ele->Name() + "\", because it already has one");
 			}
 		}
 	}

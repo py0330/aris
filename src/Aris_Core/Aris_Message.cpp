@@ -1,4 +1,4 @@
-﻿#include "Platform.h"
+﻿
 #include "Aris_Message.h"
 
 #include <mutex>

@@ -1,4 +1,4 @@
-﻿#include "Platform.h"
+﻿
 #include <Aris_Motion.h>
 #include <iostream>
 

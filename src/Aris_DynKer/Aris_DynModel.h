@@ -20,16 +20,31 @@ namespace Aris
 {
 	namespace DynKer
 	{
+		class RevoluteJoint final :public JointBaseDim<5>
+		{
+		public:
+			static std::string Type() { return "revolute"; };
+			virtual ~RevoluteJoint() = default;
+			virtual std::string AdamsType() const override { return std::move(Type()); };
+
+		private:
+			explicit RevoluteJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
+			explicit RevoluteJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement &xml_ele);
+			virtual void Init() override;
+
+			friend class ModelBase;
+			friend class Model;
+		};
 		class TranslationalJoint final :public JointBaseDim<5>
 		{
 		public:
+			static std::string Type() { return "translational"; };
 			virtual ~TranslationalJoint() = default;
-			virtual const char* AdamsType() const override { return type; };
+			virtual std::string AdamsType() const override { return std::move(Type()); };
 
 		private:
-			static const char *const type;
 			explicit TranslationalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
-			explicit TranslationalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			explicit TranslationalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement &xml_ele);
 			virtual void Init() override;
 
 			friend class ModelBase;
@@ -38,14 +53,14 @@ namespace Aris
 		class UniversalJoint final :public JointBaseDim<4>
 		{
 		public:
+			static std::string Type() { return "universal"; };
 			virtual ~UniversalJoint() = default;
-			virtual const char* AdamsType() const override { return type; };
+			virtual std::string AdamsType() const override { return std::move(Type()); };
 			virtual void Update();
 
 		private:
-			static const char *const type;
 			explicit UniversalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
-			explicit UniversalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			explicit UniversalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement &xml_ele);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 			virtual void Init() override;
 
@@ -55,34 +70,35 @@ namespace Aris
 		class SphericalJoint final :public JointBaseDim<3>
 		{
 		public:
+			static std::string Type() { return "spherical"; };
 			virtual ~SphericalJoint() = default;
-			virtual const char* AdamsType() const override { return type; };
-
+			virtual std::string AdamsType() const override { return std::move(Type()); };
+			
 		private:
-			static const char *const type;
 			explicit SphericalJoint(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
-			explicit SphericalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *ele);
+			explicit SphericalJoint(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement &xml_ele);
 			virtual void Init() override;
 
 			friend class ModelBase;
 			friend class Model;
 		};
 
-		class LinearMotion final :public MotionBase
+		class SingleComponentMotion final :public MotionBase
 		{
 		public:
-			virtual ~LinearMotion() = default;
-			virtual const char* AdamsType() const override { return type; };
+			static std::string Type() { return "single_component_motion"; };
+			virtual ~SingleComponentMotion() = default;
+			virtual std::string AdamsType() const override { return std::move(Type()); };
 			virtual void Update() override;
 
 		private:
-			static const char *const type;
-			explicit LinearMotion(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ);
-			explicit LinearMotion(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement *pEle);
+			explicit SingleComponentMotion(ModelBase &model, const std::string &Name, int id, Marker &makI, Marker &makJ, int componentAxis);
+			explicit SingleComponentMotion(ModelBase &model, const std::string &Name, int id, const Aris::Core::XmlElement &xml_ele);
 			virtual void Init() override;
+			void ToAdamsCmd(std::ofstream &file) const override;
 
+			int component_axis_;
 		private:
-
 			friend class ModelBase;
 			friend class Model;
 		};
@@ -90,9 +106,10 @@ namespace Aris
 		class SingleComponentForce final :public ForceBase
 		{
 		public:
+			static std::string Type() { return "single_component_force"; };
 			virtual ~SingleComponentForce() = default;
+			virtual std::string AdamsType() const override { return std::move(Type()); };
 			virtual void Update();
-			virtual const char* GetType() const { return type; };
 
 			void SetComponentID(int id) { componentID = id; };
 			void SetFce(double value) { std::fill_n(fceI, 6, 0); fceI[componentID] = value; };
@@ -100,9 +117,8 @@ namespace Aris
 			double GetFce()const { return fceI[componentID]; };
 
 		private:
-			static const char *const type;
 			explicit SingleComponentForce(ModelBase &model, const std::string &name, int id, Marker& makI, Marker& makJ, int componentID);
-			explicit SingleComponentForce(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement *xmlEle);
+			explicit SingleComponentForce(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele);
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 
 			int componentID;
@@ -115,9 +131,8 @@ namespace Aris
 		class Model :public ModelBase 
 		{
 		public:
-			virtual void LoadXml(const Aris::Core::XmlElement *pEle);
-			virtual void LoadXml(const Aris::Core::XmlDocument &doc) { this->ModelBase::LoadXml(doc); };
-			virtual void LoadXml(const char *filename) { this->ModelBase::LoadXml(filename); };
+			virtual void LoadXml(const Aris::Core::XmlElement &ele)override;
+			using ModelBase::LoadXml;
 		};
 	}
 }

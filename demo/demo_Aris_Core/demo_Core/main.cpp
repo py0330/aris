@@ -1,4 +1,4 @@
-﻿#include "Platform.h"
+﻿
 
 #ifdef WIN32
 #define CRTDBG_MAP_ALLOC    
