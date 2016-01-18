@@ -31,6 +31,20 @@ namespace Aris
 		class Environment;
 		class ModelBase;
 
+		struct PlanParamBase
+		{
+			std::int32_t cmd_type{ 0 };
+			std::int32_t cmd_ID{ 0 };
+			mutable std::int32_t count{ 0 };
+		};
+		typedef std::function<int(ModelBase &, const PlanParamBase &)> PlanFunc;
+
+		struct SimResult
+		{
+			std::list<double> time_;
+			std::vector<std::list<double> > Pin_, Fin_;//vector18维，但list维数为时间的维数
+		};
+
 		class Object
 		{
 		public:
@@ -450,11 +464,11 @@ namespace Aris
 				forces_.push_back(std::unique_ptr<ForceBase>(ret));
 				return ret;
 			}
-			int PartNum() const { return parts_.size(); };
-			int MotionNum() const { return motions_.size(); };
-			int JointNum() const { return joints_.size(); };
-			int ForceNum() const { return forces_.size(); };
-			int MarkerNum() const { return markers_.size(); };
+			std::size_t PartNum() const { return parts_.size(); };
+			std::size_t MotionNum() const { return motions_.size(); };
+			std::size_t JointNum() const { return joints_.size(); };
+			std::size_t ForceNum() const { return forces_.size(); };
+			std::size_t MarkerNum() const { return markers_.size(); };
 			Part &PartAt(int id) { return *parts_.at(id).get(); };
 			const Part &PartAt(int id) const { return *parts_.at(id).get(); };
 			JointBase &JointAt(int id) { return *joints_.at(id).get(); };
@@ -533,7 +547,6 @@ namespace Aris
 				}
 			}
 
-
 			/// 约束矩阵C为m x n维的矩阵，惯量矩阵为m x m维的矩阵
 			/// 约束力为n维的向量，约束加速度为n维向量
 			/// 部件力为m维的向量，部件加速度为m维向量
@@ -556,6 +569,7 @@ namespace Aris
 			void DynEnd(const double *x);
 			virtual void Dyn();
 
+			/// 标定矩阵为m x n维的矩阵，其中m为驱动的数目，n为部件个数*10+驱动数*3
 			int ClbDimM()const { return clb_dim_m_; };
 			int ClbDimN()const { return clb_dim_n_; };
 			int ClbDimGam()const { return clb_dim_gam_; };
@@ -565,6 +579,18 @@ namespace Aris
 			void ClbUpd();
 			void ClbMtx(double *clb_D, double *clb_b) const;
 			void ClbUkn(double *clb_x) const;
+
+			/// 仿真函数
+			virtual void KinFromPin() {};
+			virtual void KinFromVin() {};
+			virtual void KinFromAin() {};
+
+			void SimPosCurve(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval = 1);
+			void SimFceCurve(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script = false);
+			void SimByAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt = 10, bool using_script = false);
+			void SimByAdamsResultAt(int ms_time);
+
+
 
 			void LoadXml(const char* filename) { LoadXml(std::string(filename)); };
 			void LoadXml(const std::string &filename);

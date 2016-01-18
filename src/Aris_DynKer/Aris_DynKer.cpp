@@ -1555,47 +1555,78 @@ namespace Aris
 
 			pm_out[15] = 1;
 		}
+		void s_sov_theta(double k1, double k2, double b, double *theta_out)
+		{
+			double K = std::sqrt(k1*k1 + k2*k2);
+			double rhs = b / K;
+
+			if (std::abs(rhs) < 0.7)
+			{
+				double alpha_plus_theta = std::asin(rhs);
+				double alpha = std::atan2(k2, k1);
+				theta_out[0] = alpha_plus_theta - alpha;
+				theta_out[1] = PI - alpha_plus_theta - alpha;
+			}
+			else
+			{
+				double alpha_plus_theta = std::acos(rhs);
+				double alpha = std::atan2(-k1, k2);
+				theta_out[0] = alpha_plus_theta - alpha;
+				theta_out[1] = -alpha_plus_theta - alpha;
+			}
+
+			if (theta_out[0] > 2 * PI)theta_out[0] -= 2 * PI;
+			if (theta_out[1] > 2 * PI)theta_out[1] -= 2 * PI;
+			if (theta_out[0] < -2 * PI)theta_out[0] += 2 * PI;
+			if (theta_out[1] < -2 * PI)theta_out[1] += 2 * PI;
+		};
 
 		Akima::Akima(int inNum, const double *x_in, const double *y_in)
 		{
-			/*对数据进行排序,并保存*/
-			std::list<std::pair<double, double> > v;
+			std::list<std::pair<double, double> > data_list;
 
 			for (int i = 0; i < inNum; ++i)
 			{
-				v.push_back(std::make_pair(x_in[i], y_in[i]));
+				data_list.push_back(std::make_pair(x_in[i], y_in[i]));
 			}
 
-			v.sort([](std::pair<double, double> a, std::pair<double, double> b)
+			Init(data_list);
+		}
+		void Akima::Init(std::list<std::pair<double, double> > &data_list)
+		{
+			if (data_list.size() < 4)throw std::runtime_error("Akima must be inited with data size more than 4");
+			
+			/*对数据进行排序,并保存*/
+			data_list.sort([](std::pair<double, double> a, std::pair<double, double> b)
 			{
 				return a.first < b.first;
 			});
 
-			for (auto &p : v)
+			for (auto &p : data_list)
 			{
 				_x.push_back(p.first);
 				_y.push_back(p.second);
 			}
 
 			/*开始计算*/
-			std::vector<double> s(inNum + 3), ds(inNum + 2), t(inNum);
+			std::vector<double> s(data_list.size() + 3), ds(data_list.size() + 2), t(data_list.size());
 
-			for (int i = 0; i < inNum - 1; ++i)
+			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
 			{
 				s[i + 2] = (_y[i + 1] - _y[i]) / (_x[i + 1] - _x[i]);
 			}
 
 			s[1] = 2 * s[2] - s[3];
 			s[0] = 2 * s[1] - s[2];
-			s[inNum + 1] = 2 * s[inNum] - s[inNum - 1];
-			s[inNum + 2] = 2 * s[inNum + 1] - s[inNum];
+			s[data_list.size() + 1] = 2 * s[data_list.size()] - s[data_list.size() - 1];
+			s[data_list.size() + 2] = 2 * s[data_list.size() + 1] - s[data_list.size()];
 
-			for (int i = 0; i < inNum + 2; ++i)
+			for (std::size_t i = 0; i < data_list.size() + 2; ++i)
 			{
 				ds[i] = std::abs(s[i + 1] - s[i]);
 			}
 
-			for (int i = 0; i < inNum; ++i)
+			for (std::size_t i = 0; i < data_list.size(); ++i)
 			{
 				if (ds[i] + ds[i + 2]<1e-12)/*前后两段的斜斜率都为0*/
 				{
@@ -1609,12 +1640,12 @@ namespace Aris
 			}
 
 			/*所需储存的变量*/
-			_p0.resize(inNum - 1);
-			_p1.resize(inNum - 1);
-			_p2.resize(inNum - 1);
-			_p3.resize(inNum - 1);
+			_p0.resize(data_list.size() - 1);
+			_p1.resize(data_list.size() - 1);
+			_p2.resize(data_list.size() - 1);
+			_p3.resize(data_list.size() - 1);
 
-			for (int i = 0; i < inNum - 1; ++i)
+			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
 			{
 				_p0[i] = _y[i];
 				_p1[i] = t[i];
@@ -1622,6 +1653,7 @@ namespace Aris
 				_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (_x[i + 1] - _x[i]) / (_x[i + 1] - _x[i]);
 			}
 		}
+		
 		double Akima::operator()(double x, char order) const
 		{
 			/*寻找第一个大于x的位置*/

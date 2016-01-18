@@ -1231,6 +1231,79 @@ namespace Aris
 			}
 		}
 		
+		void ModelBase::SimPosCurve(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval)
+		{
+			result.Pin_.clear();
+			result.Fin_.clear();
+
+			result.Pin_.resize(this->MotionNum());
+			result.Fin_.resize(this->MotionNum());
+
+			std::vector<std::list<double> > pos_akima_data(MotionNum());
+			std::list<double> time_akima_data;
+
+			for (param.count = 0; true; ++param.count)
+			{
+				auto is_sim = func(*this, param);
+
+				result.time_.push_back(param.count);
+				for (std::size_t i = 0; i < MotionNum(); ++i)
+				{
+					result.Pin_.at(i).push_back(MotionAt(i).MotPos());
+				}
+
+				if ((!is_sim) || (param.count%akima_interval == 0))
+				{
+					time_akima_data.push_back(param.count);
+					
+					for (std::size_t i = 0; i < MotionNum(); ++i)
+					{
+						pos_akima_data.at(i).push_back(MotionAt(i).MotPos());
+					}
+				}
+
+				if (!is_sim)break;
+			}
+
+			for (std::size_t i = 0; i < MotionNum(); ++i)
+			{
+				MotionAt(i).posCurve.reset(new Akima(time_akima_data, pos_akima_data.at(i)));
+			}
+		}
+		void ModelBase::SimFceCurve(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script)
+		{
+			SimPosCurve(func, param, result);
+			
+			for (param.count = 0; true; ++param.count)
+			{
+				auto is_sim = func(*this, param);
+				
+				if (using_script)
+				{
+					this->Script().UpdateAt(param.count + 1);
+					this->Script().SetTopologyAt(param.count + 1);
+				}
+
+
+				for (std::size_t i = 0; i < MotionNum(); ++i)
+				{
+					result.Pin_.at(i).push_back(MotionAt(i).MotPos());
+				}
+				
+				
+
+				this->Dyn();
+
+				if (!is_sim)break;
+			}
+		}
+		void ModelBase::SimByAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt, bool using_script)
+		{
+		}
+		void ModelBase::SimByAdamsResultAt(int ms_time) 
+		{
+		}
+
 		void ModelBase::LoadXml(const std::string &filename)
 		{
 			Aris::Core::XmlDocument xmlDoc;

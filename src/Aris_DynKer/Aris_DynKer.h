@@ -5,8 +5,6 @@
 #define PI 3.141592653589793
 #endif
 
-#define test 2222
-
 #include <vector>
 #include <map>
 #include <string>
@@ -442,10 +440,34 @@ namespace Aris
 		*
 		*/
 		void s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder = "xy") noexcept;
+		
+		/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程，该方程有2个根
+		///
+		///
+		void s_sov_theta(double k1, double k2, double b, double *theta_out);
 
 		class Akima
 		{
 		public:
+			template<typename Container1, typename Container2>
+			Akima(const Container1 &x_in, const Container2 &y_in)
+			{
+				if (x_in.size() != y_in.size())throw std::runtime_error("input x and y must have same length");
+				
+				std::list<std::pair<double, double> > data_list;
+
+				auto pX = x_in.begin();
+				auto pY = x_in.begin();
+
+				for (std::size_t i = 0; i < x_in.size(); ++i)
+				{
+					data_list.push_back(std::make_pair(*pX, *pY));
+					++pX;
+					++pY;
+				}
+
+				Init(data_list);
+			}
 			Akima(int inNum, const double *x_in, const double *y_in);
 			Akima(const Akima &) = default;
 			~Akima() = default;
@@ -457,6 +479,8 @@ namespace Aris
 			const std::vector<double> &x() const { return _x; };
 			const std::vector<double> &y() const { return _y; };
 		private:
+			void Init(std::list<std::pair<double, double> > &data_list);
+
 			std::vector<double> _x, _y;
 			std::vector<double> _p0;
 			std::vector<double> _p1;
