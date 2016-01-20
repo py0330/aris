@@ -14,6 +14,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <list>
 
 
 namespace Aris
@@ -457,7 +458,7 @@ namespace Aris
 				std::list<std::pair<double, double> > data_list;
 
 				auto pX = x_in.begin();
-				auto pY = x_in.begin();
+				auto pY = y_in.begin();
 
 				for (std::size_t i = 0; i < x_in.size(); ++i)
 				{

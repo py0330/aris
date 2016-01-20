@@ -41,8 +41,23 @@ namespace Aris
 
 		struct SimResult
 		{
+			std::list<std::array<double, 6> > begin_prt_pe_;
+			
 			std::list<double> time_;
-			std::vector<std::list<double> > Pin_, Fin_;//vector18维，但list维数为时间的维数
+			std::vector<std::list<double> > Pin_, Fin_, Vin_, Ain_;//vector18维，但list维数为时间的维数
+		
+			void SaveToFile(const std::string &filename) 
+			{
+				auto f_name = filename + "_Fin.txt";
+				auto p_name = filename + "_Pin.txt";
+				auto v_name = filename + "_Vin.txt";
+				auto a_name = filename + "_Ain.txt";
+
+				dlmwrite(f_name.c_str(), Fin_);
+				dlmwrite(p_name.c_str(), Pin_);
+				dlmwrite(v_name.c_str(), Vin_);
+				dlmwrite(a_name.c_str(), Ain_);
+			};
 		};
 
 		class Object
@@ -204,7 +219,7 @@ namespace Aris
 			const double6& PrtGravity() const { return prt_gravity_; };
 
 			void SetPm(const double *pm) { std::copy_n(pm, 16, static_cast<double*>(*pm_)); };
-			void SetPe(const double *pe, const char *type) { s_pe2pm(pe, *Pm(), type); };
+			void SetPe(const double *pe, const char *type = "313") { s_pe2pm(pe, *Pm(), type); };
 			void SetPq(const double *pq) { s_pq2pm(pq, *Pm()); };
 			void SetVel(const double *vel) { std::copy_n(vel, 6, Vel()); };
 			void SetAcc(const double *acc) { std::copy_n(acc, 6, Acc()); };
@@ -584,13 +599,16 @@ namespace Aris
 			virtual void KinFromPin() {};
 			virtual void KinFromVin() {};
 			virtual void KinFromAin() {};
-
-			void SimPosCurve(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval = 1);
-			void SimFceCurve(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script = false);
-			void SimByAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt = 10, bool using_script = false);
-			void SimByAdamsResultAt(int ms_time);
-
-
+			/// 静态仿真，结果仅仅返回驱动的位置
+			void SimKin(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script = false);
+			/// 动态仿真，待完善
+			void SimDyn(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script = false);
+			/// 静态仿真，并将结果设置到驱动的Akima函数中
+			void SimKinAkima(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval = 1, bool using_script = false);
+			/// 动态仿真，根据静态得到的Akima插值，计算驱动的速度和加速度，并且计算动力学。依赖KinFrom系列函数
+			void SimDynAkima(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval = 1, bool using_script = false);
+			/// 直接生成Adams模型，依赖SimDynAkima
+			void SimToAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt = 10, bool using_script = false);
 
 			void LoadXml(const char* filename) { LoadXml(std::string(filename)); };
 			void LoadXml(const std::string &filename);

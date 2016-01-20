@@ -17,8 +17,6 @@ namespace Aris
 	{
 		Interaction::Interaction(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
 			: Element(model, name, id)
-			//, makI_(*Model().FindPart(xml_ele.Attribute("PrtM"))->FindMarker(xml_ele.Attribute("MakI")))
-			//, makJ_(*Model().FindPart(xml_ele.Attribute("PrtN"))->FindMarker(xml_ele.Attribute("MakJ")))
 		{
 			if (!Model().FindPart(xml_ele.Attribute("PrtM")))
 				throw std::runtime_error(std::string("can't find part M for element \"") + this->Name() + "\"");
@@ -1231,77 +1229,165 @@ namespace Aris
 			}
 		}
 		
-		void ModelBase::SimPosCurve(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval)
+		void ModelBase::SimKin(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script)
 		{
+			//储存起始的每个杆件的位置
+			result.begin_prt_pe_.clear();
+			for (std::size_t i = 0; i < PartNum(); ++i)
+			{
+				std::array<double, 6>pe;
+				PartAt(i).GetPe(pe.data());
+				result.begin_prt_pe_.push_back(pe);
+			}
+
+			//初始化变量
 			result.Pin_.clear();
-			result.Fin_.clear();
-
 			result.Pin_.resize(this->MotionNum());
-			result.Fin_.resize(this->MotionNum());
 
-			std::vector<std::list<double> > pos_akima_data(MotionNum());
-			std::list<double> time_akima_data;
+			//起始位置
+			result.time_.push_back(0);
+			for (std::size_t i = 0; i < MotionNum(); ++i)
+			{
+				MotionAt(i).Update();
+				result.Pin_.at(i).push_back(MotionAt(i).MotPos());
+			}
 
+			if (using_script)
+			{
+				this->Script().UpdateAt(0);
+				this->Script().SetTopologyAt(0);
+			}
+
+			//其他位置
 			for (param.count = 0; true; ++param.count)
 			{
 				auto is_sim = func(*this, param);
 
-				result.time_.push_back(param.count);
+				result.time_.push_back(param.count + 1);
 				for (std::size_t i = 0; i < MotionNum(); ++i)
 				{
 					result.Pin_.at(i).push_back(MotionAt(i).MotPos());
 				}
 
-				if ((!is_sim) || (param.count%akima_interval == 0))
-				{
-					time_akima_data.push_back(param.count);
-					
-					for (std::size_t i = 0; i < MotionNum(); ++i)
-					{
-						pos_akima_data.at(i).push_back(MotionAt(i).MotPos());
-					}
-				}
-
-				if (!is_sim)break;
-			}
-
-			for (std::size_t i = 0; i < MotionNum(); ++i)
-			{
-				MotionAt(i).posCurve.reset(new Akima(time_akima_data, pos_akima_data.at(i)));
-			}
-		}
-		void ModelBase::SimFceCurve(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script)
-		{
-			SimPosCurve(func, param, result);
-			
-			for (param.count = 0; true; ++param.count)
-			{
-				auto is_sim = func(*this, param);
-				
 				if (using_script)
 				{
 					this->Script().UpdateAt(param.count + 1);
 					this->Script().SetTopologyAt(param.count + 1);
 				}
 
-
-				for (std::size_t i = 0; i < MotionNum(); ++i)
-				{
-					result.Pin_.at(i).push_back(MotionAt(i).MotPos());
-				}
-				
-				
-
-				this->Dyn();
-
 				if (!is_sim)break;
 			}
+
+			//恢复起始位置
+			auto pe = result.begin_prt_pe_.begin();
+			for (std::size_t i = 0; i < PartNum(); ++i)
+			{
+				PartAt(i).SetPe(pe->data());
+				++pe;
+			}
 		}
-		void ModelBase::SimByAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt, bool using_script)
+		void ModelBase::SimDyn(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script)
 		{
+			
 		}
-		void ModelBase::SimByAdamsResultAt(int ms_time) 
+		void ModelBase::SimKinAkima(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval, bool using_script)
 		{
+			SimKin(func, param, result, using_script);
+			
+			//生成Akima
+			std::list<double> time_akima_data;
+			std::vector<std::list<double> > pos_akima_data(MotionNum());
+
+			//初始化迭代器
+			auto p_time = result.time_.begin();
+			std::vector<std::list<double>::iterator> p_Pin(MotionNum());
+			for (std::size_t i = 0; i < MotionNum(); ++i)
+				p_Pin.at(i) = result.Pin_.at(i).begin();
+
+			//生成Akima
+			for (std::size_t i = 0; i < result.time_.size(); ++i)
+			{
+				if ((i == (result.time_.size() - 1)) || (i%akima_interval == 0))
+				{
+					time_akima_data.push_back(*p_time / 1000.0);
+
+					for (std::size_t j = 0; j < MotionNum(); ++j)
+					{
+						pos_akima_data.at(j).push_back(*p_Pin.at(j));
+					}
+				}
+
+				++p_time;
+				for (auto &j : p_Pin)++j;
+			}
+
+			//设置Akima
+			for (std::size_t i = 0; i < MotionNum(); ++i)
+			{
+				MotionAt(i).posCurve.reset(new Akima(time_akima_data, pos_akima_data.at(i)));
+			}
+		}
+		void ModelBase::SimDynAkima(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval, bool using_script)
+		{
+			SimKinAkima(func, param, result, akima_interval, using_script);
+			
+			result.Pin_.clear();
+			result.Fin_.clear();
+			result.Ain_.clear();
+			result.Vin_.clear();
+
+			result.Pin_.resize(MotionNum());
+			result.Fin_.resize(MotionNum());
+			result.Vin_.resize(MotionNum());
+			result.Ain_.resize(MotionNum());
+
+			//仿真计算
+			for (std::size_t t = 0; t < result.time_.size();++t)
+			{
+				std::cout << t << std::endl;
+				
+				if (using_script)
+				{
+					this->Script().SetTopologyAt(t);
+				}
+				for (std::size_t j = 0; j < MotionNum(); ++j)
+				{
+					MotionAt(j).mot_pos_ = MotionAt(j).PosAkima(t / 1000.0, '0');
+				}
+				KinFromPin();
+				for (std::size_t j = 0; j < MotionNum(); ++j)
+				{
+					MotionAt(j).mot_vel_ = MotionAt(j).PosAkima(t / 1000.0, '1');
+				}
+				KinFromVin();
+				for (std::size_t j = 0; j < MotionNum(); ++j)
+				{
+					MotionAt(j).mot_acc_ = MotionAt(j).PosAkima(t / 1000.0, '2');
+				}
+				KinFromAin();
+				Dyn();
+				for (std::size_t j = 0; j < MotionNum(); ++j)
+				{
+					result.Fin_.at(j).push_back(MotionAt(j).mot_fce_dyn_);
+					result.Pin_.at(j).push_back(MotionAt(j).MotPos());
+					result.Vin_.at(j).push_back(MotionAt(j).MotVel());
+					result.Ain_.at(j).push_back(MotionAt(j).MotAcc());
+				}
+			}
+
+			//恢复起始位置
+			auto pe = result.begin_prt_pe_.begin();
+			for (std::size_t i = 0; i < PartNum(); ++i)
+			{
+				PartAt(i).SetPe(pe->data());
+				++pe;
+			}
+		}
+		void ModelBase::SimToAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt, bool using_script)
+		{
+			SimResult result;
+			SimKinAkima(fun, param, result, ms_dt, using_script);
+			this->SaveAdams(adams_file, using_script);
 		}
 
 		void ModelBase::LoadXml(const std::string &filename)

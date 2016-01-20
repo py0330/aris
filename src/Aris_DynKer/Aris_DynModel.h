@@ -114,7 +114,7 @@ namespace Aris
 			void SetComponentID(int id) { componentID = id; };
 			void SetFce(double value) { std::fill_n(fceI, 6, 0); fceI[componentID] = value; };
 			void SetFce(double value, int componentID) { this->componentID = componentID; SetFce(value); };
-			double GetFce()const { return fceI[componentID]; };
+			double Fce()const { return fceI[componentID]; };
 
 		private:
 			explicit SingleComponentForce(ModelBase &model, const std::string &name, int id, Marker& makI, Marker& makJ, int componentID);
@@ -122,7 +122,7 @@ namespace Aris
 			virtual void ToAdamsCmd(std::ofstream &file) const;
 
 			int componentID;
-			double fceI[6];
+			double fceI[6]{0};
 
 			friend class ModelBase;
 			friend class Model;

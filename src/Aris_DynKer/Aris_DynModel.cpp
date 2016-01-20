@@ -331,7 +331,7 @@ namespace Aris
 					<< "    i_marker_name = ." << Model().Name() << "." << MakI().Father().Name() << "." << MakI().Name() << "  &\r\n"
 					<< "    j_marker_name = ." << Model().Name() << "." << MakJ().Father().Name() << "." << MakJ().Name() << "  &\r\n"
 					<< "    action_only = off  &\r\n"
-					<< "    function = \"" << GetFce() << "\"  \r\n"
+					<< "    function = \"" << Fce() << "\"  \r\n"
 					<< "!\r\n";
 			}
 			else
