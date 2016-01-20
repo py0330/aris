@@ -832,112 +832,19 @@ namespace Aris
 	{
 		if (cmd == "en")
 		{
-			BasicFunctionParam cmdParam;
-			cmdParam.cmd_type = ENABLE;
-
-			for (auto &i : params)
-			{
-				if (i.first == "all")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, true);
-				}
-				else if (i.first == "first")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					std::fill_n(cmdParam.isMotorActive + 0, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 6, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 12, 3, true);
-				}
-				else if (i.first == "second")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					std::fill_n(cmdParam.isMotorActive + 3, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 9, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 15, 3, true);
-				}
-				else if (i.first == "motor")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					int id = { stoi(i.second) };
-					cmdParam.isMotorActive[id] = true;
-				}
-			}
-
-			msg.CopyStruct(cmdParam);
+			this->pServer->ParseEnableMsg(cmd, params, msg);
 			return;
 		}
 
 		if (cmd == "ds")
 		{
-			BasicFunctionParam cmdParam;
-			cmdParam.cmd_type = DISABLE;
-
-			for (auto &i : params)
-			{
-				if (i.first == "all")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, true);
-				}
-				else if (i.first == "first")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					std::fill_n(cmdParam.isMotorActive + 0, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 6, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 12, 3, true);
-				}
-				else if (i.first == "second")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					std::fill_n(cmdParam.isMotorActive + 3, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 9, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 15, 3, true);
-				}
-				else if (i.first == "motor")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					int id = { stoi(i.second) };
-					cmdParam.isMotorActive[id] = true;
-				}
-			}
-
-			msg.CopyStruct(cmdParam);
+			this->pServer->ParseDisableMsg(cmd, params, msg);
 			return;
 		}
 
 		if (cmd == "hm")
 		{
-			BasicFunctionParam cmdParam;
-			cmdParam.cmd_type = HOME;
-
-			for (auto &i : params)
-			{
-				if (i.first == "all")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, true);
-				}
-				else if (i.first == "first")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					std::fill_n(cmdParam.isMotorActive + 0, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 6, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 12, 3, true);
-				}
-				else if (i.first == "second")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					std::fill_n(cmdParam.isMotorActive + 3, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 9, 3, true);
-					std::fill_n(cmdParam.isMotorActive + 15, 3, true);
-				}
-				else if (i.first == "motor")
-				{
-					std::fill_n(cmdParam.isMotorActive, 18, false);
-					int id = { stoi(i.second) };
-					cmdParam.isMotorActive[id] = true;
-				}
-			}
-
-			msg.CopyStruct(cmdParam);
+			this->pServer->ParseHomeMsg(cmd, params, msg);
 			return;
 		}
 
@@ -1421,6 +1328,28 @@ namespace Aris
 	void RobotServer::Stop()
 	{
 		this->pImp->Stop();
+	}
+
+	void RobotServer::ParseHomeMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
+	{
+		BasicFunctionParam param;
+		param.cmd_type = Imp::RobotCmdID::HOME;
+		std::fill_n(param.isMotorActive, pRobot->MotionNum(), false);
+		param.isMotorActive[0] = true;
+	};
+	void RobotServer::ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
+	{
+		BasicFunctionParam param;
+		param.cmd_type = Imp::RobotCmdID::ENABLE;
+		std::fill_n(param.isMotorActive, pRobot->MotionNum(), false);
+		param.isMotorActive[0] = true;
+	}
+	void RobotServer::ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
+	{
+		BasicFunctionParam param;
+		param.cmd_type = Imp::RobotCmdID::DISABLE;
+		std::fill_n(param.isMotorActive, pRobot->MotionNum(), false);
+		param.isMotorActive[0] = true;
 	}
 }
 

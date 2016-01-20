@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 
+#include <aris_core.h>
 #include <aris_motion.h>
 #include <aris_imu.h>
 #include <aris_dyn_model.h>
@@ -72,8 +73,11 @@ namespace Aris
 		RobotServer(const RobotServer &) = delete;
 		RobotServer &operator=(const RobotServer &) = delete;
 
-		std::unique_ptr<DynKer::Model> pRobot;
+		virtual void ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
+		virtual void ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
+		virtual void ParseHomeMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
 
+		std::unique_ptr<DynKer::Model> pRobot;
 	private:
 		class Imp;
 		std::unique_ptr<Imp> pImp;
