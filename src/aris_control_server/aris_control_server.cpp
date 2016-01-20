@@ -1335,7 +1335,14 @@ namespace Aris
 		BasicFunctionParam param;
 		param.cmd_type = Imp::RobotCmdID::HOME;
 		std::fill_n(param.isMotorActive, pRobot->MotionNum(), false);
-		param.isMotorActive[0] = true;
+		
+		if (params.begin()->first == "motor")
+		{
+			int i = std::stoi(params.begin()->second);
+			param.isMotorActive[0] = true;
+		}
+		
+		msg_out.CopyStruct(param);
 	};
 	void RobotServer::ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
 	{
