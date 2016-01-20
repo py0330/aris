@@ -1,8 +1,6 @@
-﻿
+﻿#include <thread>
 
-#include <thread>
-
-#include "Aris_Message.h"
+#include "aris_message.h"
 
 #include <stdio.h>
 

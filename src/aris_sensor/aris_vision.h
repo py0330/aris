@@ -1,7 +1,7 @@
 #ifndef ARIS_VISION_H_
 #define ARIS_VISION_H_
 
-#include "Aris_Sensor.h"
+#include "aris_sensor.h"
 #include <memory>
 #include <stdlib.h>
 #include <iostream>

@@ -6,8 +6,8 @@
 #include <crtdbg.h>    
 #endif
 
-#include "Aris_Core.h"
-#include "Aris_XML.h"
+#include "aris_core.h"
+#include "aris_xml.h"
 
 #ifdef UNIX
 #include <unistd.h>

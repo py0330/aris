@@ -1,5 +1,5 @@
 ﻿
-#include <Aris_Motion.h>
+#include <aris_motion.h>
 #include <iostream>
 
 #ifdef UNIX
