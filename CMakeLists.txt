@@ -82,7 +82,7 @@ set(XNNITE_LINK_LIB )
 set(OPENNI_INCL_DIR "/usr/include/ni")#open NI for kinect
 set(OPENNI_LINK_DIR "/usr/lib")
 set(OPENNI_LINK_LIB OpenNI)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/aris_Core src/aris_dyn src/aris_exp_cal src/aris_plan src/aris_sensor src/aris_control)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/aris_core src/aris_dyn src/aris_exp_cal src/aris_plan src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_plan aris_sensor aris_dyn aris_exp_cal aris_control aris_core)
 
 
