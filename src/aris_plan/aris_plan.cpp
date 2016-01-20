@@ -1,6 +1,6 @@
 ﻿#include <algorithm>
 
-#include"Aris_Plan.h"
+#include"aris_plan.h"
 
 namespace Aris
 {

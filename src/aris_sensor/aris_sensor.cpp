@@ -1,4 +1,4 @@
-﻿#include"Aris_Sensor.h"
+﻿#include"aris_sensor.h"
 
 namespace Aris
 {

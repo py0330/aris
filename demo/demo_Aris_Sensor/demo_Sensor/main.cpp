@@ -3,11 +3,11 @@
 #include <iostream>
 #include <iomanip>
 
-#include "Aris_Core.h"
-#include "Aris_IMU.h"
+#include "aris_core.h"
+#include "aris_imu.h"
 #include "aris_dyn_kernel.h"
 #ifdef UNIX
-#include "Aris_Vision.h"
+#include "aris_vision.h"
 #endif
 
 class SENSOR :public Aris::Sensor::SensorBase<double>
