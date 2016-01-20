@@ -1,5 +1,4 @@
-﻿#include "Aris_Core.h"
-#include <cstring>
+﻿#include <cstring>
 #include <fstream>
 #include <ctime>
 #include <mutex>
@@ -19,6 +18,8 @@
 #undef min
 #undef max
 #endif
+
+#include "aris_core.h"
 
 class LOG_FILE
 {

@@ -5,7 +5,7 @@
 
 #include "Aris_Core.h"
 #include "Aris_IMU.h"
-#include "Aris_DynKer.h"
+#include "aris_dyn_kernel.h"
 #ifdef UNIX
 #include "Aris_Vision.h"
 #endif

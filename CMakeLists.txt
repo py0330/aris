@@ -25,7 +25,7 @@ FUNCTION(PREPEND_H var prefix)
    SET(${var} "${listVar}" PARENT_SCOPE)
 ENDFUNCTION(PREPEND_H)
 
-project(ARIS)
+project(aris)
 
 # set the platform.h, which define the OS platform
 if(UNIX)
@@ -82,8 +82,8 @@ set(XNNITE_LINK_LIB )
 set(OPENNI_INCL_DIR "/usr/include/ni")#open NI for kinect
 set(OPENNI_LINK_DIR "/usr/lib")
 set(OPENNI_LINK_LIB OpenNI)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control)
-set(ARIS_LINK_LIB Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Control Aris_Core)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/aris_Core src/aris_dyn src/aris_exp_cal src/aris_plan src/aris_sensor src/aris_control)
+set(ARIS_LINK_LIB aris_plan aris_sensor aris_dyn aris_exp_cal aris_control aris_core)
 
 
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${OPENNI_INCL_DIR} ${XNNITE_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
@@ -96,8 +96,8 @@ set(SYSTEM_LINK_LIB ws2_32 setupapi)#ws2_32 is needed for socket setuaipi is nee
 set(XSENS_INCL_DIR "C:/Aris_Dependent/xsens/include")
 set(XSENS_LINK_DIR "C:/Aris_Dependent/xsens/lib")
 set(XSENS_LINK_LIB xdeviceclass)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR}/common_headers src/Aris_Core src/Aris_DynKer src/Aris_ExpCal src/Aris_Plan src/Aris_Sensor src/Aris_Control)
-set(ARIS_LINK_LIB Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Control Aris_Core)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/aris_Core src/aris_dyn src/aris_exp_cal src/aris_plan src/aris_sensor src/aris_control)
+set(ARIS_LINK_LIB aris_plan aris_sensor aris_dyn aris_exp_cal aris_control aris_core)
 
 
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
@@ -110,51 +110,58 @@ include_directories(${ALL_INCL_DIR})
 link_directories(${ALL_LINK_DIR})
 
 
-# Aris_Core project
-set(SOURCE Aris_Socket Aris_Core tinyxml2 Aris_Message Aris_XML)
-PREPEND_CPP(FULL_SRC src/Aris_Core ${SOURCE})
-PREPEND_H(FULL_H src/Aris_Core ${SOURCE})
-add_library(Aris_Core STATIC ${FULL_SRC} ${FULL_H})
+# aris core project
+set(SOURCE aris_socket aris_core tinyxml2 aris_message aris_xml)
+PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
+PREPEND_H(FULL_H src/aris_core ${SOURCE})
+add_library(aris_core STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
-# Aris_Control project
-set(SOURCE Aris_Motion Aris_EtherCat Aris_Pipe)
-PREPEND_CPP(FULL_SRC src/Aris_Control ${SOURCE})
-PREPEND_H(FULL_H src/Aris_Control ${SOURCE})
-add_library(Aris_Control STATIC ${FULL_SRC} ${FULL_H})
+# aris control project
+set(SOURCE aris_motion aris_ethercat aris_pipe)
+PREPEND_CPP(FULL_SRC src/aris_control ${SOURCE})
+PREPEND_H(FULL_H src/aris_control ${SOURCE})
+add_library(aris_control STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
-# Aris_ExpCal project
-set(SOURCE Aris_ExpCal)
-PREPEND_CPP(FULL_SRC src/Aris_ExpCal ${SOURCE})
-PREPEND_H(FULL_H src/Aris_ExpCal ${SOURCE})
-add_library(Aris_ExpCal STATIC ${FULL_SRC} ${FULL_H})
+# aris expression calculator project
+set(SOURCE aris_exp_cal)
+PREPEND_CPP(FULL_SRC src/aris_exp_cal ${SOURCE})
+PREPEND_H(FULL_H src/aris_exp_cal ${SOURCE})
+add_library(aris_exp_cal STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
-# Aris_DynKer project
-set(SOURCE Aris_DynKer Aris_DynModel Aris_DynModelBase)
-PREPEND_CPP(FULL_SRC src/Aris_DynKer ${SOURCE})
-PREPEND_H(FULL_H src/Aris_DynKer ${SOURCE})
-add_library(Aris_DynKer STATIC ${FULL_SRC} ${FULL_H})
+# aris dyn project
+set(SOURCE aris_dyn_kernel aris_dyn_model aris_dyn_model_base)
+PREPEND_CPP(FULL_SRC src/aris_dyn ${SOURCE})
+PREPEND_H(FULL_H src/aris_dyn ${SOURCE})
+add_library(aris_dyn STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
-# Aris_Plan project
-set(SOURCE Aris_Plan)
-PREPEND_CPP(FULL_SRC src/Aris_Plan ${SOURCE})
-PREPEND_H(FULL_H src/Aris_Plan ${SOURCE})
-add_library(Aris_Plan STATIC ${FULL_SRC} ${FULL_H})
+# aris plan project
+set(SOURCE aris_plan)
+PREPEND_CPP(FULL_SRC src/aris_plan ${SOURCE})
+PREPEND_H(FULL_H src/aris_plan ${SOURCE})
+add_library(aris_plan STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
-# Aris_Sensor project
+# aris sensor project
 if(UNIX)
-set(SOURCE Aris_Sensor Aris_IMU Aris_Vision)
+set(SOURCE aris_sensor aris_imu aris_vision)
 endif(UNIX)
 if(WIN32)
-set(SOURCE Aris_Sensor Aris_IMU)
+set(SOURCE aris_sensor aris_imu)
 endif(WIN32)
-PREPEND_CPP(FULL_SRC src/Aris_Sensor ${SOURCE})
-PREPEND_H(FULL_H src/Aris_Sensor ${SOURCE})
-add_library(Aris_Sensor STATIC ${FULL_SRC} ${FULL_H})
+PREPEND_CPP(FULL_SRC src/aris_sensor ${SOURCE})
+PREPEND_H(FULL_H src/aris_sensor ${SOURCE})
+add_library(aris_sensor STATIC ${FULL_SRC} ${FULL_H})
+set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
+
+# aris control server project
+set(SOURCE aris_control_server)
+PREPEND_CPP(FULL_SRC src/aris_control_server ${SOURCE})
+PREPEND_H(FULL_H src/aris_control_server ${SOURCE})
+add_library(aris_control_server STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
 
@@ -231,9 +238,9 @@ endif(WIN32)
 
 
 install(DIRECTORY sh DESTINATION .)
-install(TARGETS Aris_Core Aris_DynKer Aris_ExpCal Aris_Plan Aris_Sensor Aris_Control ARCHIVE DESTINATION lib)
+install(TARGETS aris_core aris_dyn aris_exp_cal aris_plan aris_sensor aris_control aris_control_server ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} DESTINATION include)
-install(DIRECTORY src/Aris_Control/resource/ DESTINATION resource/Aris_Control)
+install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 ############################################ uninstall aris ############################################
 if(UNIX)

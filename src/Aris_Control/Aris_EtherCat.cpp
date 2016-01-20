@@ -1,4 +1,3 @@
-
 #ifdef WIN32
 #include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
 #endif
@@ -25,8 +24,7 @@
 #include <atomic>
 #include <memory>
 
-#include <Aris_EtherCat.h>
-
+#include "aris_ethercat.h"
 
 namespace Aris
 {

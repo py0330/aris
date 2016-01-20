@@ -1,12 +1,12 @@
 #ifndef ARIS_PIPE_H
 #define ARIS_PIPE_H
 
-#include "Aris_XML.h"
-#include "Aris_Core.h"
-
 #include <vector>
 #include <memory>
 #include <cstdint>
+
+#include "aris_xml.h"
+#include "aris_core.h"
 
 namespace Aris
 {

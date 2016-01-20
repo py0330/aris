@@ -1,11 +1,11 @@
 ﻿#include <iostream>
 #include <iomanip>
 #include <cmath>
-#include <Aris_Core.h>
-#include <Aris_Socket.h>
-#include <Aris_DynKer.h>
+#include "aris_core.h"
+#include "aris_socket.h"
+#include "aris_dyn_kernel.h"
 
-#include <Aris_ExpCal.h>
+#include "aris_exp_cal.h"
 
 using namespace std;
 using namespace Aris::DynKer;

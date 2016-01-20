@@ -9,9 +9,9 @@
 #include <functional>
 #include <algorithm>
 
-#include <Aris_XML.h>
-#include <Aris_ExpCal.h>
-#include <Aris_DynKer.h>
+#include "aris_xml.h"
+#include "aris_exp_cal.h"
+#include "aris_dyn_kernel.h"
 
 namespace Aris
 {
@@ -629,8 +629,6 @@ namespace Aris
 			std::function<void(int n, double *A)> clb_inverse_method_{ nullptr };
 
 		protected:
-			template<typename CONSTRAINT>
-			void InitiateElement(CONSTRAINT *pConstraint) { pConstraint->Init(); };
 
 			Aris::DynKer::Environment environment_;
 			Aris::DynKer::Script script_;

@@ -1,13 +1,13 @@
 ﻿#ifndef ARIS_ETHERCAT_H
 #define ARIS_ETHERCAT_H
 
-#include "Aris_XML.h"
-#include "Aris_Core.h"
-#include "Aris_Pipe.h"
-
 #include <vector>
 #include <memory>
 #include <cstdint>
+
+#include "aris_xml.h"
+#include "aris_core.h"
+#include "aris_pipe.h"
 
 namespace Aris
 {

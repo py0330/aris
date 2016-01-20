@@ -5,10 +5,11 @@
 #include <cstring>
 #include <algorithm>
 
-using namespace std;
-
-#include "Aris_ExpCal.h"
 #include <Eigen/Eigen>
+
+#include "aris_exp_cal.h"
+
+using namespace std;
 
 namespace Aris
 {

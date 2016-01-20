@@ -1,7 +1,4 @@
-﻿
-#include "Aris_Socket.h"
-
-#include <thread>
+﻿#include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <functional>
@@ -22,6 +19,8 @@
 #include<unistd.h>
 #include<arpa/inet.h>
 #endif
+
+#include "aris_socket.h"
 
 namespace Aris
 {

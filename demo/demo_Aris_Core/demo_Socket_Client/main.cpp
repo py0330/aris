@@ -5,8 +5,8 @@
 #include <thread>
 
 
-#include <Aris_Socket.h>
-#include <Aris_Message.h>
+#include "aris_socket.h"
+#include "aris_message.h"
 
 #ifdef UNIX
 #include <unistd.h>

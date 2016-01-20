@@ -11,7 +11,7 @@
 #include <functional>
 #include <cstdint>
 
-#include <Aris_Core.h>
+#include "aris_core.h"
 
 namespace Aris
 {

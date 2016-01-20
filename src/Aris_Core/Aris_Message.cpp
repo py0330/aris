@@ -1,7 +1,4 @@
-﻿
-#include "Aris_Message.h"
-
-#include <mutex>
+﻿#include <mutex>
 #include <condition_variable>
 #include <queue>
 #include <vector>
@@ -14,6 +11,8 @@
 #ifdef UNIX 
 #include <semaphore.h>
 #endif
+
+#include "aris_message.h"
 
 using namespace std;
 

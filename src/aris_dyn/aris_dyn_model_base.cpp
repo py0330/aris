@@ -7,9 +7,9 @@
 #include <limits>
 #include <sstream>
 
-#include "Aris_ExpCal.h"
-#include "Aris_DynKer.h"
-#include "Aris_DynModelBase.h"
+#include "aris_exp_cal.h"
+#include "aris_dyn_kernel.h"
+#include "aris_dyn_model_base.h"
 
 namespace Aris
 {

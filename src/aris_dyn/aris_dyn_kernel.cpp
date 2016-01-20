@@ -10,7 +10,7 @@
 #include <array>
 #include <list>
 
-#include "Aris_DynKer.h"
+#include "aris_dyn_kernel.h"
 
 namespace Aris
 {

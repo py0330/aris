@@ -5,7 +5,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include <Aris_Core.h>
+#include "aris_core.h"
 
 namespace Aris
 {

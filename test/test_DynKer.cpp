@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Aris_DynKer.h"
+#include "aris_dyn_kernel.h"
 
 using namespace Aris::DynKer;
 

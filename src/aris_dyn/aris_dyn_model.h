@@ -13,7 +13,7 @@
 #define PI 3.141592653589793
 #endif
 
-#include <Aris_DynModelBase.h>
+#include "aris_dyn_model_base.h"
 
 
 namespace Aris

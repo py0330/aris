@@ -1,5 +1,4 @@
-﻿
-#ifdef UNIX
+﻿#ifdef UNIX
 #include <ecrt.h>
 #include <native/task.h>
 #include <native/timer.h>
@@ -14,9 +13,10 @@
 #include <string>
 #include <iostream>
 #include <map>
-#include <Aris_Motion.h>
 #include <fstream>
 #include <algorithm>
+
+#include "aris_motion.h"
 
 
 namespace Aris
@@ -268,6 +268,16 @@ namespace Aris
 		EthercatMotion::~EthercatMotion() {}
 		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement *ele) :EthercatSlave(ele), pImp(new EthercatMotion::Imp(this))
 		{
+			if (ele->QueryIntAttribute("maxSpeed", &max_speed) != tinyxml2::XML_NO_ERROR)
+			{
+				throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
+			}
+			
+			input2count = ele->IntAttribute("input2count");
+			home_pos = ele->IntAttribute("homePos");
+			model_id = ele->IntAttribute("modelID");
+
+			WriteSdo(9, static_cast<std::int32_t>(-home_pos));
 		};
 		void EthercatMotion::Init()
 		{
@@ -369,10 +379,7 @@ namespace Aris
 				if (type == "ElmoSoloWhistle")
 				{
 					pMotions.push_back(AddSlave<EthercatMotion>(slaveTypeMap.at(type)));
-					if (pSla->QueryIntAttribute("maxSpeed", &pMotions.back()->pImp->maxSpeed) != tinyxml2::XML_NO_ERROR)
-					{						
-						throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
-					}
+					
 
 				}
 				else if (type == "AtiForceSensor")

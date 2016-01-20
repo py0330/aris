@@ -1,9 +1,9 @@
 ﻿#include <string>
 
-#include "Aris_Core.h"
-#include "Aris_IMU.h"
-#include "Aris_DynKer.h"
-#include "Aris_ExpCal.h"
+#include "aris_core.h"
+#include "aris_imu.h"
+#include "aris_dyn_kernel.h"
+#include "aris_exp_cal.h"
 
 #include <xsens/xsportinfoarray.h>
 #include <xsens/xsdatapacket.h>

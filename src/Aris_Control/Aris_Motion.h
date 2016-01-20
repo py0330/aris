@@ -1,12 +1,12 @@
 #ifndef ARIS_MOTION_H
 #define ARIS_MOTION_H
 
-#include "Aris_EtherCat.h"
-
 #include <functional>
 #include <thread>
-
 #include <atomic>
+
+#include "aris_ethercat.h"
+
 
 namespace Aris
 {
@@ -45,11 +45,20 @@ namespace Aris
 			bool HasFault();
 			void ReadFeedback(Data &data);
 			void DoCommand(const Data &data);
+			std::int32_t MaxSpeed() { return max_speed; };
+			std::int32_t ID() { return model_id; };
+			std::int32_t InputRatio() { return input2count; };
 
 		protected:
 			virtual void Init() override;
 
 		private:
+			std::int32_t input2count;
+			std::int32_t max_speed;
+			std::int32_t home_pos;
+			std::int32_t model_id;
+			
+
 			class Imp;
 			std::unique_ptr<Imp> pImp;
 

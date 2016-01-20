@@ -1,11 +1,11 @@
 ﻿#ifndef ARIS_PLAN_H_
 #define ARIS_PLAN_H_
 
-#include"Aris_DynKer.h"
-
 #include <list>
 #include <cmath>
 #include <iostream>
+
+#include"aris_dyn_kernel.h"
 
 namespace Aris
 {
