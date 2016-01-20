@@ -426,29 +426,6 @@ namespace Aris
 		void GenerateCmdMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg);
 		void OnReceiveMsg(const Aris::Core::Msg &m, Aris::Core::Msg &retError);
 
-		inline int p2a(const int phy)
-		{
-			return mapPhy2Abs[phy];
-		}
-		inline int a2p(const int abs)
-		{
-			return mapAbs2Phy[abs];
-		}
-		inline void p2a(const int *phy, int *abs, int num = 18)
-		{
-			for (int i = 0; i<num; ++i)
-			{
-				abs[i] = mapPhy2Abs[phy[i]];
-			}
-		}
-		inline void a2p(const int *abs, int *phy, int num = 18)
-		{
-			for (int i = 0; i<num; ++i)
-			{
-				phy[i] = mapAbs2Phy[abs[i]];
-			}
-		}
-
 		int home(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data);
 		int enable(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data);
 		int disable(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data);
@@ -483,9 +460,6 @@ namespace Aris
 
 		double alignEE[18], alignIn[18], recoverEE[18];
 		double meter2count{ 0 };
-
-		int mapPhy2Abs[18];
-		int mapAbs2Phy[18];
 
 		Aris::Control::EthercatController *pController;
 
@@ -918,25 +892,25 @@ namespace Aris
 			if (pParam->isMotorActive[i])
 			{
 				/*根据返回值来判断是否走到home了*/
-				if ((pParam->count != 0) && (data.pMotionData->operator[](a2p(i)).ret == 0))
+				if ((pParam->count != 0) && (data.pMotionData->operator[](i).ret == 0))
 				{
 					/*判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值*/
-					if (data.pMotionData->operator[](a2p(i)).cmd ==  Aris::Control::EthercatMotion::HOME)
+					if (data.pMotionData->operator[](i).cmd ==  Aris::Control::EthercatMotion::HOME)
 					{
-						data.pMotionData->operator[](a2p(i)).cmd =  Aris::Control::EthercatMotion::RUN;
-						data.pMotionData->operator[](a2p(i)).targetPos = data.pMotionData->operator[](a2p(i)).feedbackPos;
-						data.pMotionData->operator[](a2p(i)).targetVel = 0;
-						data.pMotionData->operator[](a2p(i)).targetCur = 0;
+						data.pMotionData->operator[](i).cmd =  Aris::Control::EthercatMotion::RUN;
+						data.pMotionData->operator[](i).targetPos = data.pMotionData->operator[](i).feedbackPos;
+						data.pMotionData->operator[](i).targetVel = 0;
+						data.pMotionData->operator[](i).targetCur = 0;
 					}
 				}
 				else
 				{
 					isAllHomed = false;
-					data.pMotionData->operator[](a2p(i)).cmd =  Aris::Control::EthercatMotion::HOME;
+					data.pMotionData->operator[](i).cmd =  Aris::Control::EthercatMotion::HOME;
 
 					if (pParam->count % 1000 == 0)
 					{
-						rt_printf("Unhomed motor, physical id: %d, absolute id: %d\n", a2p(i), i);
+						rt_printf("Unhomed motor, physical id: %d, absolute id: %d\n", this->pController->a2p(i), i);
 					}
 				}
 			}
@@ -953,27 +927,27 @@ namespace Aris
 			if (pParam->isMotorActive[i])
 			{
 				/*判断是否已经Enable了*/
-				if ((pParam->count != 0) && (data.pMotionData->operator[](a2p(i)).ret == 0))
+				if ((pParam->count != 0) && (data.pMotionData->operator[](i).ret == 0))
 				{
 					/*判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值*/
-					if (data.pMotionData->operator[](a2p(i)).cmd ==  Aris::Control::EthercatMotion::ENABLE)
+					if (data.pMotionData->operator[](i).cmd ==  Aris::Control::EthercatMotion::ENABLE)
 					{
-						data.pMotionData->operator[](a2p(i)).cmd =  Aris::Control::EthercatMotion::RUN;
-						data.pMotionData->operator[](a2p(i)).mode =  Aris::Control::EthercatMotion::POSITION;
-						data.pMotionData->operator[](a2p(i)).targetPos = data.pMotionData->operator[](a2p(i)).feedbackPos;
-						data.pMotionData->operator[](a2p(i)).targetVel = 0;
-						data.pMotionData->operator[](a2p(i)).targetCur = 0;
+						data.pMotionData->operator[](i).cmd =  Aris::Control::EthercatMotion::RUN;
+						data.pMotionData->operator[](i).mode =  Aris::Control::EthercatMotion::POSITION;
+						data.pMotionData->operator[](i).targetPos = data.pMotionData->operator[](i).feedbackPos;
+						data.pMotionData->operator[](i).targetVel = 0;
+						data.pMotionData->operator[](i).targetCur = 0;
 					}
 				}
 				else
 				{
 					isAllEnabled = false;
-					data.pMotionData->operator[](a2p(i)).cmd =  Aris::Control::EthercatMotion::ENABLE;
-					data.pMotionData->operator[](a2p(i)).mode =  Aris::Control::EthercatMotion::POSITION;
+					data.pMotionData->operator[](i).cmd =  Aris::Control::EthercatMotion::ENABLE;
+					data.pMotionData->operator[](i).mode =  Aris::Control::EthercatMotion::POSITION;
 
 					if (pParam->count % 1000 == 0)
 					{
-						rt_printf("Unenabled motor, physical id: %d, absolute id: %d\n", a2p(i), i);
+						rt_printf("Unenabled motor, physical id: %d, absolute id: %d\n", this->pController->a2p(i), i);
 					}
 				}
 			}
@@ -990,7 +964,7 @@ namespace Aris
 			if (pParam->isMotorActive[i])
 			{
 				/*判断是否已经Disabled了*/
-				if ((pParam->count != 0) && (data.pMotionData->operator[](a2p(i)).ret == 0))
+				if ((pParam->count != 0) && (data.pMotionData->operator[](i).ret == 0))
 				{
 					/*如果已经disable了，那么什么都不做*/
 				}
@@ -998,11 +972,11 @@ namespace Aris
 				{
 					/*否则往下刷disable指令*/
 					isAllDisabled = false;
-					data.pMotionData->operator[](a2p(i)).cmd =  Aris::Control::EthercatMotion::DISABLE;
+					data.pMotionData->operator[](i).cmd =  Aris::Control::EthercatMotion::DISABLE;
 
 					if (pParam->count % 1000 == 0)
 					{
-						rt_printf("Undisabled motor, physical id: %d, absolute id: %d\n", a2p(i), i);
+						rt_printf("Undisabled motor, physical id: %d, absolute id: %d\n", this->pController->a2p(i), i);
 					}
 				}
 			}
@@ -1017,7 +991,7 @@ namespace Aris
 		{
 			for (int i = 0; i<18; ++i)
 			{
-				pParam->beginPin[i] = data.pMotionData->operator[](a2p(i)).feedbackPos/ meter2count;
+				pParam->beginPin[i] = data.pMotionData->operator[](i).feedbackPos/ meter2count;
 				rt_printf("%f ", pParam->beginPin[i]);
 			}
 			rt_printf("\n");
@@ -1063,8 +1037,8 @@ namespace Aris
 				//this->pServer->pRobot->pLegs[i]->GetPin(pIn);
 				for (int j = 0; j < 3; ++j)
 				{
-					data.pMotionData->operator[](a2p(i * 3 + j)).cmd =  Aris::Control::EthercatMotion::RUN;
-					data.pMotionData->operator[](a2p(i * 3 + j)).targetPos = static_cast<std::int32_t>(pIn[j] * meter2count);
+					data.pMotionData->operator[](i * 3 + j).cmd =  Aris::Control::EthercatMotion::RUN;
+					data.pMotionData->operator[](i * 3 + j).targetPos = static_cast<std::int32_t>(pIn[j] * meter2count);
 				}
 				
 			}
@@ -1115,8 +1089,8 @@ namespace Aris
 		//向下写入输入位置
 		for (int i = 0; i<18; ++i)
 		{
-			data.pMotionData->operator[](a2p(i)).cmd =  Aris::Control::EthercatMotion::RUN;
-			data.pMotionData->operator[](a2p(i)).targetPos = static_cast<std::int32_t>(pIn[i] * meter2count);
+			data.pMotionData->operator[](i).cmd =  Aris::Control::EthercatMotion::RUN;
+			data.pMotionData->operator[](i).targetPos = static_cast<std::int32_t>(pIn[i] * meter2count);
 		}
 
 		return ret;

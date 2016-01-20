@@ -390,14 +390,28 @@ namespace Aris
 				}
 				
 			}
+
+			/*update map*/
+			map_phy2abs.resize(pMotions.size());
+			map_abs2phy.resize(pMotions.size());
+
+			for (std::size_t i = 0; i < pMotions.size(); ++i)
+			{
+				map_phy2abs[i] = pMotions[i]->AbsID();
+			}
+
+			for (std::size_t i = 0; i < pMotions.size(); ++i)
+			{
+				map_abs2phy[i] = std::find(map_phy2abs.begin(), map_phy2abs.end(), i) - map_phy2abs.begin();
+			}
+
+			/*resize other var*/
 			this->motionData.resize(this->pMotions.size());
 			this->lastMotionData.resize(this->pMotions.size());
 			this->forceSensorData.resize(this->pForceSensors.size());
 
 
 			pMotDataPipe.reset(new Pipe<std::vector<EthercatMotion::Data> >(1, true, pMotions.size()));
-
-			
 		}
 		void EthercatController::SetControlStrategy(std::function<int(Data&)> strategy)
 		{
@@ -413,7 +427,7 @@ namespace Aris
 		{
 			isStoping = false;
 
-			/*begin thRead which will save data*/
+			/*begin thread which will save data*/
 			motionDataThread = std::thread([this]()
 			{
 				static std::fstream file;
@@ -467,7 +481,7 @@ namespace Aris
 			/*读取反馈*/
 			for (std::size_t i = 0; i < pMotions.size(); ++i)
 			{
-				pMotions.at(i)->ReadFeedback(motionData[i]);
+				MotionAtAbs(i).ReadFeedback(motionData[i]);
 			}
 			for (std::size_t i = 0; i < pForceSensors.size(); ++i)
 			{
@@ -483,8 +497,8 @@ namespace Aris
 			/*重新读取反馈信息，因为strategy可能修改，之后写入PDO，之后放进lastMotionData中*/
 			for (std::size_t i = 0; i < motionData.size(); ++i)
 			{
-				pMotions.at(i)->ReadFeedback(motionData[i]);
-				pMotions.at(i)->DoCommand(motionData[i]);
+				MotionAtAbs(i).ReadFeedback(motionData[i]);
+				MotionAtAbs(i).DoCommand(motionData[i]);
 				lastMotionData[i] = motionData[i];
 			}
 

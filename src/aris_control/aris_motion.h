@@ -46,8 +46,8 @@ namespace Aris
 			void ReadFeedback(Data &data);
 			void DoCommand(const Data &data);
 			std::int32_t MaxSpeed() { return max_speed; };
-			std::int32_t ID() { return model_id; };
-			std::int32_t InputRatio() { return input2count; };
+			std::int32_t AbsID() { return model_id; };
+			std::int32_t Input2Count() { return input2count; };
 
 		protected:
 			virtual void Init() override;
@@ -99,16 +99,25 @@ namespace Aris
 			virtual void Stop();
 			void SetControlStrategy(std::function<int(Data&)>);
 			
-			EthercatMotion * MotionAt(int i) { return pMotions.at(i); };
+			EthercatMotion &MotionAtAbs(int i) { return *pMotions.at(a2p(i)); };
+			EthercatMotion &MotionAtPhy(int i) { return *pMotions.at(i); };
 			EthercatForceSensor* ForceSensorAt(int i) { return pForceSensors.at(i); };
 			Pipe<Aris::Core::Msg>& MsgPipe(){return msgPipe;};
 			
+			inline int p2a(const int phy){	return map_phy2abs[phy];}
+			inline int a2p(const int abs){	return map_abs2phy[abs];}
+			inline void p2a(const int *phy, int *abs, int num) { for (int i = 0; i < num; ++i)abs[i] = p2a(phy[i]); }
+			inline void a2p(const int *abs, int *phy, int num) { for (int i = 0; i < num; ++i)phy[i] = a2p(abs[i]); }
 
 		protected:
 			EthercatController() :EthercatMaster(),msgPipe(0, true) {};
 			virtual void ControlStrategy() override;
 
 		private:
+			std::vector<int> map_phy2abs, map_abs2phy;
+
+
+
 			std::function<int(Data&)> strategy;
 			Pipe<Aris::Core::Msg> msgPipe;
 			std::atomic_bool isStoping;
