@@ -268,16 +268,6 @@ namespace Aris
 		EthercatMotion::~EthercatMotion() {}
 		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement *ele) :EthercatSlave(ele), pImp(new EthercatMotion::Imp(this))
 		{
-			if (ele->QueryIntAttribute("maxSpeed", &max_speed) != tinyxml2::XML_NO_ERROR)
-			{
-				throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
-			}
-			
-			input2count = ele->IntAttribute("input2count");
-			home_pos = ele->IntAttribute("homePos");
-			model_id = ele->IntAttribute("modelID");
-
-			WriteSdo(9, static_cast<std::int32_t>(-home_pos));
 		};
 		void EthercatMotion::Init()
 		{
@@ -379,7 +369,15 @@ namespace Aris
 				if (type == "ElmoSoloWhistle")
 				{
 					pMotions.push_back(AddSlave<EthercatMotion>(slaveTypeMap.at(type)));
-					
+					if (pSla->QueryIntAttribute("maxSpeed", &pMotions.back()->max_speed) != tinyxml2::XML_NO_ERROR)
+					{
+						throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
+					}
+					pMotions.back()->input2count = pSla->IntAttribute("input2count");
+					pMotions.back()->home_pos = pSla->IntAttribute("homePos");
+					pMotions.back()->model_id = pSla->IntAttribute("modelID");
+
+					pMotions.back()->WriteSdo(9, static_cast<std::int32_t>(-pMotions.back()->home_pos));
 
 				}
 				else if (type == "AtiForceSensor")
