@@ -422,16 +422,16 @@ namespace Aris
 	private:
 		Imp(const Imp&) = delete;
 
-		void DecodeMsg(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params);
-		void GenerateCmdMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg);
+		void DecodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params);
+		void SendParam2RT(const std::string &cmd, const std::map<std::string, std::string> &params);
 		void OnReceiveMsg(const Aris::Core::Msg &m, Aris::Core::Msg &retError);
 
-		int home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data data);
-		int enable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data data);
-		int disable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data data);
-		int runGait(GaitParamBase &param, Aris::Control::EthercatController::Data data);
+		int home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data);
+		int enable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data);
+		int disable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data);
+		int run(GaitParamBase &param, Aris::Control::EthercatController::Data &data);
 
-		int execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data data);
+		int execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data &data);
 		static int tg(Aris::Control::EthercatController::Data &data);
 
 	private:
@@ -450,6 +450,28 @@ namespace Aris
 		std::map<std::string, int> mapName2ID;//store gait id in follow vector
 		std::vector<DynKer::PlanFunc> allGaits;
 		std::vector<ParseFunc> allParsers;
+
+		ParseFunc parse_enable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg) 
+		{
+			BasicFunctionParam param;
+			param.cmd_type = Imp::RobotCmdID::ENABLE;
+			std::fill_n(param.isMotorActive, this->pModel_->MotionNum(), true);
+			msg.CopyStruct(param);
+		} };
+		ParseFunc parse_disable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
+		{
+			BasicFunctionParam param;
+			param.cmd_type = Imp::RobotCmdID::DISABLE;
+			std::fill_n(param.isMotorActive, this->pModel_->MotionNum(), true);
+			msg.CopyStruct(param);
+		} };
+		ParseFunc parse_home_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
+		{
+			BasicFunctionParam param;
+			param.cmd_type = Imp::RobotCmdID::HOME;
+			std::fill_n(param.isMotorActive, this->pModel_->MotionNum(), true);
+			msg.CopyStruct(param);
+		} };
 
 		std::map<std::string, std::unique_ptr<CommandStruct> > mapCmd;//store Node of command
 
@@ -618,29 +640,20 @@ namespace Aris
 
 	void ControlServer::Imp::OnReceiveMsg(const Aris::Core::Msg &msg, Aris::Core::Msg &retError)
 	{
-		Aris::Core::Msg cmdMsg;
 		try
 		{
 			std::string cmd;
 			std::map<std::string, std::string> params;
 
-			DecodeMsg(msg, cmd, params);
-			GenerateCmdMsg(cmd, params, cmdMsg);
+			DecodeMsg2Param(msg, cmd, params);
+			SendParam2RT(cmd, params);
 		}
 		catch (std::exception &e)
 		{
-			cmdMsg.SetLength(0);
 			retError.Copy(e.what());
-			return;
 		}
-
-		cmdMsg.SetMsgID(0);
-
-#ifdef UNIX
-		this->pController->MsgPipe().SendToRT(cmdMsg);
-#endif
 	}
-	void ControlServer::Imp::DecodeMsg(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)
+	void ControlServer::Imp::DecodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)
 	{
 		std::vector<std::string> paramVector;
 		int paramNum{0};
@@ -798,47 +811,57 @@ namespace Aris
 			std::cout << std::string(paramPrintLength-i.first.length(),' ') << i.first << " : " << i.second << std::endl;
 		}
 	}
-	void ControlServer::Imp::GenerateCmdMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
+	void ControlServer::Imp::SendParam2RT(const std::string &cmd, const std::map<std::string, std::string> &params)
 	{
+		Aris::Core::Msg cmd_msg;
+		
 		if (cmd == "en")
 		{
-			this->pServer->ParseEnableMsg(cmd, params, msg);
-			return;
+			parse_enable_func_(cmd, params, cmd_msg);
+			if (cmd_msg.GetLength() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function for en");
+			reinterpret_cast<BasicFunctionParam *>(cmd_msg.GetDataAddress())->cmd_type = Aris::ControlServer::Imp::ENABLE;
 		}
-
-		if (cmd == "ds")
+		else if (cmd == "ds")
 		{
-			this->pServer->ParseDisableMsg(cmd, params, msg);
-			return;
+			parse_disable_func_(cmd, params, cmd_msg);
+			if (cmd_msg.GetLength() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function for ds");
+			reinterpret_cast<BasicFunctionParam *>(cmd_msg.GetDataAddress())->cmd_type = Aris::ControlServer::Imp::DISABLE;
 		}
-
-		if (cmd == "hm")
+		else if (cmd == "hm")
 		{
-			this->pServer->ParseHomeMsg(cmd, params, msg);
-			return;
-		}
-
-		auto cmdPair = this->mapName2ID.find(cmd);
-
-		if (cmdPair != this->mapName2ID.end())
-		{
-			msg = this->allParsers.at(cmdPair->second).operator()(cmd, params);
-
-			if (msg.GetLength() < sizeof(GaitParamBase))
-			{
-				throw std::logic_error(std::string("parse function of command \"") + cmdPair->first + "\" failed: because it returned invalid msg");
-			}
-
-			reinterpret_cast<GaitParamBase *>(msg.GetDataAddress())->cmd_type=RUN_GAIT;
-			reinterpret_cast<GaitParamBase *>(msg.GetDataAddress())->cmd_ID=cmdPair->second;
+			parse_home_func_(cmd, params, cmd_msg);
+			if (cmd_msg.GetLength() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function for hm");
+			reinterpret_cast<BasicFunctionParam *>(cmd_msg.GetDataAddress())->cmd_type = Aris::ControlServer::Imp::HOME;
 		}
 		else
 		{
-			throw std::logic_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddGait() first");
+			auto cmdPair = this->mapName2ID.find(cmd);
+
+			if (cmdPair == this->mapName2ID.end())
+			{
+				throw std::logic_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddGait() first");
+			}
+
+			this->allParsers.at(cmdPair->second).operator()(cmd, params, cmd_msg);
+
+			if (cmd_msg.GetLength() < sizeof(GaitParamBase))
+			{
+				throw std::logic_error(std::string("parse function of command \"") + cmdPair->first + "\" failed: because it returned invalid cmd_msg");
+			}
+
+			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_type = RUN_GAIT;
+			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_ID = cmdPair->second;
+
+			if (allGaits.at(cmdPair->second) == nullptr) return;
 		}
+
+		cmd_msg.SetMsgID(0);
+#ifdef UNIX
+		this->pController->MsgPipe().SendToRT(cmdMsg);
+#endif
 	}
 	
-	int ControlServer::Imp::home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)
 	{
 		bool isAllHomed = true;
 
@@ -873,7 +896,7 @@ namespace Aris
 
 		return isAllHomed ? 0 : 1;
 	};
-	int ControlServer::Imp::enable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::enable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)
 	{
 		bool isAllEnabled = true;
 
@@ -881,8 +904,6 @@ namespace Aris
 		{
 			if (param.isMotorActive[i])
 			{
-				rt_printf("cmd on motor %d\n", this->pController->a2p(i));
-				
 				/*判断是否已经Enable了*/
 				if ((param.count != 0) && (data.pMotionData->operator[](i).ret == 0))
 				{
@@ -912,7 +933,7 @@ namespace Aris
 
 		return isAllEnabled ? 0 : 1;
 	};
-	int ControlServer::Imp::disable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::disable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)
 	{
 		bool isAllDisabled = true;
 
@@ -941,11 +962,8 @@ namespace Aris
 
 		return isAllDisabled ? 0 : 1;
 	}
-
-	int ControlServer::Imp::runGait(GaitParamBase &param, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::run(GaitParamBase &param, Aris::Control::EthercatController::Data &data)
 	{
-		//预处理param
-		
 		//获取陀螺仪传感器数据
 		Aris::Sensor::SensorData<Aris::Sensor::ImuData> imuDataProtected;
 		if (pImu) imuDataProtected = pImu->GetSensorData();
@@ -967,7 +985,7 @@ namespace Aris
 		return ret;
 	}
 	
-	int ControlServer::Imp::execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data &data)
 	{
 		int ret;
 		Aris::DynKer::PlanParamBase *pParam = reinterpret_cast<Aris::DynKer::PlanParamBase *>(cmd);
@@ -985,7 +1003,7 @@ namespace Aris
 			ret = home(static_cast<BasicFunctionParam &>(*pParam), data);
 			break;
 		case RUN_GAIT:
-			ret = runGait(static_cast<GaitParamBase &>(*pParam), data);
+			ret = run(static_cast<GaitParamBase &>(*pParam), data);
 			break;
 		default:
 			rt_printf("unknown cmd type\n");
@@ -1158,51 +1176,27 @@ namespace Aris
 	{
 		this->pImp->Stop();
 	}
-
-	void ControlServer::ParseHomeMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
+	void ControlServer::SetParseFunc(const std::string &cmd, const ParseFunc &parse_func)
 	{
-		BasicFunctionParam param;
-		param.cmd_type = Imp::RobotCmdID::HOME;
-		std::fill_n(param.isMotorActive, pImp->pModel_->MotionNum(), false);
-		
-		if (params.begin()->first == "motor")
+		if (cmd == "en")
 		{
-			int i = std::stoi(params.begin()->second);
-			param.isMotorActive[i] = true;
+			pImp->parse_enable_func_ = parse_func;
 		}
-		
-		msg_out.CopyStruct(param);
-	};
-	void ControlServer::ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
-	{
-		BasicFunctionParam param;
-		param.cmd_type = Imp::RobotCmdID::ENABLE;
-		std::fill_n(param.isMotorActive, pImp->pModel_->MotionNum(), false);
-		
-		if (params.begin()->first == "motor")
+		else if (cmd == "ds")
 		{
-			int i = std::stoi(params.begin()->second);
-			param.isMotorActive[i] = true;
+			pImp->parse_disable_func_ = parse_func;
+		}
+		else if (cmd == "hm")
+		{
+			pImp->parse_home_func_ = parse_func;
+		}
+		else
+		{
+			throw std::runtime_error("you can not set parse function for normal gait");
 		}
 
-		msg_out.CopyStruct(param);
 	}
-	void ControlServer::ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
-	{
-		BasicFunctionParam param;
-		param.cmd_type = Imp::RobotCmdID::DISABLE;
-		std::fill_n(param.isMotorActive, pImp->pModel_->MotionNum(), false);
 
-		if (params.begin()->first == "motor")
-		{
-			int i = std::stoi(params.begin()->second);
-			param.isMotorActive[i] = true;
-		}
-
-
-
-		msg_out.CopyStruct(param);
-	}
 }
 
 

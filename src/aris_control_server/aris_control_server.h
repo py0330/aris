@@ -29,8 +29,7 @@ namespace Aris
 		const std::vector<Aris::Control::EthercatForceSensor::Data> *pForceData;
 	};
 	
-	
-	typedef std::function<Aris::Core::Msg(const std::string &cmd, const std::map<std::string, std::string> &params)> ParseFunc;
+	typedef std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)> ParseFunc;
 
 	class ControlServer
 	{
@@ -46,16 +45,14 @@ namespace Aris
 		void AddGait(std::string cmdName, Aris::DynKer::PlanFunc gaitFunc, ParseFunc parseFunc);
 		void Start();
 		void Stop();
+		void SetParseFunc(const std::string &cmd, const ParseFunc &parse_func);
 
 	private:
 		ControlServer();
-		virtual ~ControlServer();
+		~ControlServer();
 		ControlServer(const ControlServer &) = delete;
 		ControlServer &operator=(const ControlServer &) = delete;
 
-		virtual void ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
-		virtual void ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
-		virtual void ParseHomeMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
 	private:
 		class Imp;
 		std::unique_ptr<Imp> pImp;
