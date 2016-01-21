@@ -40,7 +40,7 @@ namespace Aris
 			};
 
 			virtual ~EthercatMotion();
-			EthercatMotion(const Aris::Core::XmlElement *);
+			EthercatMotion(const Aris::Core::XmlElement &xml_ele);
 			
 			bool HasFault();
 			void ReadFeedback(Data &data);
@@ -77,7 +77,7 @@ namespace Aris
 				
 			};
 
-			EthercatForceSensor(const Aris::Core::XmlElement *ele): EthercatSlave(ele){};
+			EthercatForceSensor(const Aris::Core::XmlElement &xml_ele): EthercatSlave(xml_ele){};
 			void ReadData(Data &data);
 		};
 
@@ -94,7 +94,7 @@ namespace Aris
 			};
 
 			virtual ~EthercatController(){};
-			virtual void LoadXml(const Aris::Core::XmlElement *) override;
+			virtual void LoadXml(const Aris::Core::XmlElement &xml_ele) override;
 			virtual void Start();
 			virtual void Stop();
 			void SetControlStrategy(std::function<int(Data&)>);

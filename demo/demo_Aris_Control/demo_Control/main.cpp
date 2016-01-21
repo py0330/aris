@@ -24,7 +24,7 @@ int main()
 
 	auto pMas = Aris::Control::EthercatMaster::CreateMaster<Aris::Control::EthercatController>();
 	std::cout<<"1"<<std::endl;	
-	pMas->LoadXml(ele);
+	pMas->LoadXml(std::ref(*ele));
 	std::cout<<"2"<<std::endl;
 	pMas->Start();
 	std::cout<<"3"<<std::endl;

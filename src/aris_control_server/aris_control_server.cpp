@@ -404,7 +404,7 @@ namespace Aris
 		}
 	};
 	
-	class RobotServer::Imp
+	class ControlServer::Imp
 	{
 	public:
 		void LoadXml(const Aris::Core::XmlDocument &doc);
@@ -412,7 +412,7 @@ namespace Aris
 		void Start();
 		void Stop();
 
-		Imp(RobotServer *pServer) 
+		Imp(ControlServer *pServer) 
 		{ 
 			this->pServer = pServer;
 #ifdef UNIX
@@ -448,7 +448,7 @@ namespace Aris
 		};
 
 	private:
-		RobotServer *pServer;
+		ControlServer *pServer;
 		std::map<std::string, int> mapName2ID;//store gait id in follow vector
 		std::vector<DynKer::PlanFunc> allGaits;
 		std::vector<ParseFunc> allParsers;
@@ -464,10 +464,10 @@ namespace Aris
 		Aris::Control::EthercatController *pController;
 
 		std::unique_ptr<Aris::Sensor::IMU> pImu;
-		friend class RobotServer;
+		friend class ControlServer;
 	};
 
-	void RobotServer::Imp::LoadXml(const Aris::Core::XmlDocument &doc)
+	void ControlServer::Imp::LoadXml(const Aris::Core::XmlDocument &doc)
 	{
 		/*load robot model*/
 		pServer->pRobot->LoadXml(doc);
@@ -485,7 +485,7 @@ namespace Aris
 
 		/*begin to load controller*/
 #ifdef UNIX
-		pController->LoadXml(doc.RootElement()->FirstChildElement("Controller")->FirstChildElement("EtherCat"));
+		pController->LoadXml(std::ref(*doc.RootElement()->FirstChildElement("Controller")->FirstChildElement("EtherCat")));
 		pController->SetControlStrategy(tg);
 #endif
 
@@ -565,7 +565,7 @@ namespace Aris
 			return 0;
 		});
 	}
-	void RobotServer::Imp::AddGait(std::string cmdName, DynKer::PlanFunc gaitFunc, ParseFunc parseFunc)
+	void ControlServer::Imp::AddGait(std::string cmdName, DynKer::PlanFunc gaitFunc, ParseFunc parseFunc)
 	{
 		if (mapName2ID.find(cmdName) != mapName2ID.end())
 		{
@@ -581,7 +581,7 @@ namespace Aris
 			std::cout << cmdName << ":" << mapName2ID.at(cmdName) << std::endl;
 		}
 	};
-	void RobotServer::Imp::Start()
+	void ControlServer::Imp::Start()
 	{
 		/*start sensors*/
 		if (pImu)
@@ -607,7 +607,7 @@ namespace Aris
 		pController->Start();
 #endif
 	}
-	void RobotServer::Imp::Stop()
+	void ControlServer::Imp::Stop()
 	{
 		server.Close();
 
@@ -620,7 +620,7 @@ namespace Aris
 		}
 	}
 
-	void RobotServer::Imp::OnReceiveMsg(const Aris::Core::Msg &msg, Aris::Core::Msg &retError)
+	void ControlServer::Imp::OnReceiveMsg(const Aris::Core::Msg &msg, Aris::Core::Msg &retError)
 	{
 		Aris::Core::Msg cmdMsg;
 		try
@@ -644,7 +644,7 @@ namespace Aris
 		this->pController->MsgPipe().SendToRT(cmdMsg);
 #endif
 	}
-	void RobotServer::Imp::DecodeMsg(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)
+	void ControlServer::Imp::DecodeMsg(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)
 	{
 		std::vector<std::string> paramVector;
 		int paramNum{0};
@@ -802,7 +802,7 @@ namespace Aris
 			std::cout << std::string(paramPrintLength-i.first.length(),' ') << i.first << " : " << i.second << std::endl;
 		}
 	}
-	void RobotServer::Imp::GenerateCmdMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
+	void ControlServer::Imp::GenerateCmdMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
 	{
 		if (cmd == "en")
 		{
@@ -819,47 +819,6 @@ namespace Aris
 		if (cmd == "hm")
 		{
 			this->pServer->ParseHomeMsg(cmd, params, msg);
-			return;
-		}
-
-		if (cmd == "rc")
-		{
-			RecoverParam cmdParam;
-			cmdParam.cmd_type = RECOVER;
-
-			std::copy_n(this->recoverEE, 18, cmdParam.recoverPee);
-			std::copy_n(this->alignIn, 18, cmdParam.alignPin);
-			std::copy_n(this->alignEE, 18, cmdParam.alignPee);
-
-			for (auto &i : params)
-			{
-				if (i.first == "all")
-				{
-					std::fill_n(cmdParam.isLegActive, 6, true);
-				}
-				else if (i.first == "first")
-				{
-					std::fill_n(cmdParam.isLegActive, 6, false);
-					cmdParam.isLegActive[0] = true;
-					cmdParam.isLegActive[2] = true;
-					cmdParam.isLegActive[4] = true;
-				}
-				else if (i.first == "second")
-				{
-					std::fill_n(cmdParam.isLegActive, 6, false);					
-					cmdParam.isLegActive[1] = true;
-					cmdParam.isLegActive[3] = true;
-					cmdParam.isLegActive[5] = true;
-				}
-				else if (i.first == "leg")
-				{
-					std::fill_n(cmdParam.isLegActive, 6, false);
-					int id = { stoi(i.second) };
-					cmdParam.isLegActive[id] = true;
-				}
-			}
-
-			msg.CopyStruct(cmdParam);
 			return;
 		}
 
@@ -883,7 +842,7 @@ namespace Aris
 		}
 	}
 	
-	int RobotServer::Imp::home(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::home(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data)
 	{
 		bool isAllHomed = true;
 
@@ -918,7 +877,7 @@ namespace Aris
 
 		return isAllHomed ? 0 : 1;
 	};
-	int RobotServer::Imp::enable(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::enable(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data)
 	{
 		bool isAllEnabled = true;
 
@@ -957,7 +916,7 @@ namespace Aris
 
 		return isAllEnabled ? 0 : 1;
 	};
-	int RobotServer::Imp::disable(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::disable(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data)
 	{
 		bool isAllDisabled = true;
 
@@ -986,71 +945,8 @@ namespace Aris
 
 		return isAllDisabled ? 0 : 1;
 	}
-	int RobotServer::Imp::recover(RecoverParam *pParam, Aris::Control::EthercatController::Data data)
-	{
-		/*写入初值*/
-		if (pParam->count == 0)
-		{
-			for (int i = 0; i<18; ++i)
-			{
-				pParam->beginPin[i] = data.pMotionData->operator[](i).feedbackPos/ meter2count;
-				rt_printf("%f ", pParam->beginPin[i]);
-			}
-			rt_printf("\n");
-		}
-		
-		
-		const double pe[6]{ 0 };
-		//this->pServer->pRobot->SetPeb(pe);
 
-		int leftCount = pParam->count < pParam->alignCount ? 0 : pParam->alignCount;
-		int rightCount = pParam->count < pParam->alignCount ? pParam->alignCount : pParam->alignCount + pParam->recoverCount;
-
-		double s = -(PI / 2)*cos(PI * (pParam->count - leftCount + 1) / (rightCount - leftCount)) + PI / 2;
-
-		for (int i = 0; i < 6; ++i)
-		{
-			if (pParam->isLegActive[i])
-			{				
-				if (pParam->count < pParam->alignCount)
-				{
-					double pIn[3];
-					for (int j = 0; j < 3; ++j)
-					{
-						pIn[j] = pParam->beginPin[i * 3 + j] * (cos(s) + 1) / 2 + pParam->alignPin[i * 3 + j] * (1 - cos(s)) / 2;
-					}
-
-					//this->pServer->pRobot->pLegs[i]->SetPin(pIn);
-
-				}
-				else
-				{
-					double pEE[3];
-					for (int j = 0; j < 3; ++j)
-					{
-						pEE[j] = pParam->alignPee[i * 3 + j] * (cos(s) + 1) / 2 + pParam->recoverPee[i * 3 + j] * (1 - cos(s)) / 2;
-											
-					}
-
-					//this->pServer->pRobot->pLegs[i]->SetPee(pEE);
-				}
-				
-				double pIn[3];
-				//this->pServer->pRobot->pLegs[i]->GetPin(pIn);
-				for (int j = 0; j < 3; ++j)
-				{
-					data.pMotionData->operator[](i * 3 + j).cmd =  Aris::Control::EthercatMotion::RUN;
-					data.pMotionData->operator[](i * 3 + j).targetPos = static_cast<std::int32_t>(pIn[j] * meter2count);
-				}
-				
-			}
-		}
-
-		//向下写入输入位置
-		return pParam->alignCount + pParam->recoverCount - pParam->count - 1;
-	}
-	
-	int RobotServer::Imp::runGait(GaitParamBase *pParam, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::runGait(GaitParamBase *pParam, Aris::Control::EthercatController::Data data)
 	{
 		//保存初始位置
 		static double pBody[6]{ 0 }, vBody[6]{ 0 }, pEE[18]{ 0 }, vEE[18]{ 0 };
@@ -1098,7 +994,7 @@ namespace Aris
 		return ret;
 	}
 	
-	int RobotServer::Imp::execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data data)
+	int ControlServer::Imp::execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data data)
 	{
 		int ret;
 		Aris::DynKer::PlanParamBase *pParam = reinterpret_cast<Aris::DynKer::PlanParamBase *>(cmd);
@@ -1129,7 +1025,7 @@ namespace Aris
 
 		return ret;
 	}
-	int RobotServer::Imp::tg(Aris::Control::EthercatController::Data &data)
+	int ControlServer::Imp::tg(Aris::Control::EthercatController::Data &data)
 	{
 		enum { CMD_POOL_SIZE = 50 };
 		
@@ -1157,7 +1053,11 @@ namespace Aris
 			}
 		}
 		static int faultCount = 0;
-		if (!isAllNormal)
+		if (isAllNormal)
+		{
+			faultCount = 0;
+		}
+		else
 		{
 			if (faultCount++ % 1000 == 0)
 			{
@@ -1178,10 +1078,6 @@ namespace Aris
 			cmdNum = 0;
 			count = 0;
 			return 0;
-		}
-		else
-		{
-			faultCount = 0;
 		}
 
 
@@ -1205,24 +1101,21 @@ namespace Aris
 		//执行cmd queue中的cmd
 		if (cmdNum>0)
 		{
-			if (RobotServer::Instance()->pImp->execute_cmd(count, cmdQueue[currentCmd], data) == 0)
+			if (ControlServer::Instance().pImp->execute_cmd(count, cmdQueue[currentCmd], data) == 0)
 			{
 				rt_printf("cmd finished, spend %d counts\n\n", count + 1);				
 				count = 0;
 				currentCmd = (currentCmd + 1) % CMD_POOL_SIZE;
-				cmdNum--;				
+				--cmdNum;				
 			}
 			else
 			{
-				count++;
-
+				++count;
 				if (count % 1000 == 0)
 				{
 					rt_printf("execute cmd in count: %d\n", count);
 				}
 			}
-
-			
 		}
 
 		//检查连续
@@ -1234,7 +1127,7 @@ namespace Aris
 			{
 				rt_printf("Data not continuous in count:%d\n", count);
 
-				auto pR = RobotServer::Instance()->pRobot.get();
+				auto pR = ControlServer::Instance().pRobot.get();
 				double pEE[18];
 				double pBody[6];
 				//pR->GetPee(pEE);
@@ -1271,14 +1164,14 @@ namespace Aris
 		return 0;
 	}
 
-	RobotServer * RobotServer::Instance()
+	ControlServer &ControlServer::Instance()
 	{
-		static RobotServer instance;
-		return &instance;
+		static ControlServer instance;
+		return std::ref(instance);
 	}
-	RobotServer::RobotServer():pImp(new Imp(this)){}
-	RobotServer::~RobotServer(){}
-	void RobotServer::LoadXml(const char *fileName)
+	ControlServer::ControlServer():pImp(new Imp(this)){}
+	ControlServer::~ControlServer(){}
+	void ControlServer::LoadXml(const char *fileName)
 	{
 		Aris::Core::XmlDocument doc;
 
@@ -1289,24 +1182,24 @@ namespace Aris
 		
 		pImp->LoadXml(doc);
 	}
-	void RobotServer::LoadXml(const Aris::Core::XmlDocument &xmlDoc)
+	void ControlServer::LoadXml(const Aris::Core::XmlDocument &xmlDoc)
 	{
 		pImp->LoadXml(xmlDoc);
 	}
-	void RobotServer::AddGait(std::string cmdName, DynKer::PlanFunc gaitFunc, ParseFunc parseFunc)
+	void ControlServer::AddGait(std::string cmdName, DynKer::PlanFunc gaitFunc, ParseFunc parseFunc)
 	{
 		pImp->AddGait(cmdName, gaitFunc, parseFunc);
 	}
-	void RobotServer::Start()
+	void ControlServer::Start()
 	{
 		pImp->Start();
 	}
-	void RobotServer::Stop()
+	void ControlServer::Stop()
 	{
 		this->pImp->Stop();
 	}
 
-	void RobotServer::ParseHomeMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
+	void ControlServer::ParseHomeMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
 	{
 		BasicFunctionParam param;
 		param.cmd_type = Imp::RobotCmdID::HOME;
@@ -1320,7 +1213,7 @@ namespace Aris
 		
 		msg_out.CopyStruct(param);
 	};
-	void RobotServer::ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
+	void ControlServer::ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
 	{
 		BasicFunctionParam param;
 		param.cmd_type = Imp::RobotCmdID::ENABLE;
@@ -1334,7 +1227,7 @@ namespace Aris
 
 		msg_out.CopyStruct(param);
 	}
-	void RobotServer::ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
+	void ControlServer::ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
 	{
 		BasicFunctionParam param;
 		param.cmd_type = Imp::RobotCmdID::DISABLE;

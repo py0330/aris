@@ -266,7 +266,7 @@ namespace Aris
 			std::uint8_t runningMode{ 9 };
 		};
 		EthercatMotion::~EthercatMotion() {}
-		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement *ele) :EthercatSlave(ele), pImp(new EthercatMotion::Imp(this))
+		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement &xml_ele) :EthercatSlave(xml_ele), pImp(new EthercatMotion::Imp(this))
 		{
 		};
 		void EthercatMotion::Init()
@@ -350,25 +350,28 @@ namespace Aris
 			data.Mz = value / 1000.0;
 		}
 
-		void EthercatController::LoadXml(const Aris::Core::XmlElement *ele)
+		void EthercatController::LoadXml(const Aris::Core::XmlElement &xml_ele)
 		{
 			/*Load EtherCat slave types*/
 			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
 
-			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
+			auto pSlaveTypes = xml_ele.FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
 			{
 				slaveTypeMap.insert(std::make_pair(std::string(pType->Name()), pType));
 			}
 
 			/*Load all slaves*/
-			auto pSlaves = ele->FirstChildElement("Slave");
+			pMotions.clear();
+			pForceSensors.clear();
+
+			auto pSlaves = xml_ele.FirstChildElement("Slave");
 			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
 			{
 				std::string type{ pSla->Attribute("type") };
 				if (type == "ElmoSoloWhistle")
 				{
-					pMotions.push_back(AddSlave<EthercatMotion>(slaveTypeMap.at(type)));
+					pMotions.push_back(AddSlave<EthercatMotion>(std::ref(*slaveTypeMap.at(type))));
 					if (pSla->QueryIntAttribute("maxSpeed", &pMotions.back()->max_speed) != tinyxml2::XML_NO_ERROR)
 					{
 						throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
@@ -382,13 +385,12 @@ namespace Aris
 				}
 				else if (type == "AtiForceSensor")
 				{
-					pForceSensors.push_back(AddSlave<EthercatForceSensor>(slaveTypeMap.at(type)));
+					pForceSensors.push_back(AddSlave<EthercatForceSensor>(std::ref(*slaveTypeMap.at(type))));
 				}
 				else
 				{
 					throw std::runtime_error(std::string("unknown slave type of \"") + type + "\"");
 				}
-				
 			}
 
 			/*update map*/
@@ -404,12 +406,6 @@ namespace Aris
 			{
 				map_abs2phy[i] = std::find(map_phy2abs.begin(), map_phy2abs.end(), i) - map_phy2abs.begin();
 			}
-
-			for (auto &p : map_abs2phy)
-			{
-				std::cout << p << std::endl;
-			}
-			std::cout << std::endl;
 
 			/*resize other var*/
 			this->motionData.resize(this->pMotions.size());

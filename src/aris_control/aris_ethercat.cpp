@@ -33,7 +33,7 @@ namespace Aris
 		class EthercatSlave::Imp 
 		{
 		public:
-			Imp(const Aris::Core::XmlElement *ele);
+			Imp(const Aris::Core::XmlElement &xml_ele);
 			void Init();
 			void Read();
 			void Write();
@@ -138,17 +138,17 @@ namespace Aris
 		RT_TASK EthercatMaster::Imp::realtimeCore;
 		const int EthercatMaster::Imp::samplePeriodNs = 1000000;
 #endif
-		EthercatSlave::Imp::Imp(const Aris::Core::XmlElement *ele)
+		EthercatSlave::Imp::Imp(const Aris::Core::XmlElement &xml_ele)
 		{
 			/*load product id...*/
-			this->productCode = std::stoi(ele->Attribute("productCode"), nullptr, 0);
-			this->venderID = std::stoi(ele->Attribute("venderID"), nullptr, 0);
-			this->alias = std::stoi(ele->Attribute("alias"), nullptr, 0);
+			this->productCode = std::stoi(xml_ele.Attribute("productCode"), nullptr, 0);
+			this->venderID = std::stoi(xml_ele.Attribute("venderID"), nullptr, 0);
+			this->alias = std::stoi(xml_ele.Attribute("alias"), nullptr, 0);
 			this->distributedClock.reset(new std::int32_t);
 						
-			if (ele->Attribute("distributedClock"))
+			if (xml_ele.Attribute("distributedClock"))
 			{						
-				*distributedClock.get() = std::stoi(ele->Attribute("distributedClock"),nullptr,0);				
+				*distributedClock.get() = std::stoi(xml_ele.Attribute("distributedClock"),nullptr,0);				
 			}
 			else
 			{
@@ -157,10 +157,10 @@ namespace Aris
 
 
 			/*load PDO*/
-			auto AddDoType = [](const Aris::Core::XmlElement *ele, bool isTx)-> DO*
+			auto AddDoType = [](const Aris::Core::XmlElement &ele, bool isTx)-> DO*
 			{
 				DO* ret;
-				if (ele->Attribute("type", "int8"))
+				if (ele.Attribute("type", "int8"))
 				{
 					if(isTx)
 						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int8_t>();
@@ -168,7 +168,7 @@ namespace Aris
 						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int8_t>();
 					ret->size = 8;
 				}
-				else if (ele->Attribute("type", "uint8"))
+				else if (ele.Attribute("type", "uint8"))
 				{
 					if (isTx)
 						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint8_t>();
@@ -176,7 +176,7 @@ namespace Aris
 						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::uint8_t>();
 					ret->size = 8;
 				}
-				else if (ele->Attribute("type", "int16"))
+				else if (ele.Attribute("type", "int16"))
 				{
 					if (isTx)
 						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int16_t>();
@@ -184,7 +184,7 @@ namespace Aris
 						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int16_t>();
 					ret->size = 16;
 				}
-				else if (ele->Attribute("type", "uint16"))
+				else if (ele.Attribute("type", "uint16"))
 				{
 					if (isTx)
 						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint16_t>();
@@ -192,7 +192,7 @@ namespace Aris
 						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::uint16_t>();
 					ret->size = 16;
 				}
-				else if (ele->Attribute("type", "int32"))
+				else if (ele.Attribute("type", "int32"))
 				{
 					if (isTx)
 						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int32_t>();
@@ -200,7 +200,7 @@ namespace Aris
 						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int32_t>();
 					ret->size = 32;
 				}
-				else if (ele->Attribute("type", "uint32"))
+				else if (ele.Attribute("type", "uint32"))
 				{
 					if (isTx)
 						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint32_t>();
@@ -215,7 +215,7 @@ namespace Aris
 
 				return ret;
 			};
-			auto PDO = ele->FirstChildElement("PDO");
+			auto PDO = xml_ele.FirstChildElement("PDO");
 			for (auto p_g = PDO->FirstChildElement(); p_g != nullptr; p_g = p_g->NextSiblingElement())
 			{
 				PDO_GROUP pdo_group;
@@ -223,7 +223,7 @@ namespace Aris
 				pdo_group.isTx = p_g->Attribute("isTx", "true") ? true : false;
 				for (auto p = p_g->FirstChildElement(); p != nullptr; p = p->NextSiblingElement())
 				{
-					pdo_group.pdos.push_back(std::unique_ptr<DO>(AddDoType(p,pdo_group.isTx)));				
+					pdo_group.pdos.push_back(std::unique_ptr<DO>(AddDoType(*p,pdo_group.isTx)));				
 					pdo_group.pdos.back()->index = std::stoi(p->Attribute("index"), nullptr, 0);
 					pdo_group.pdos.back()->subIndex = std::stoi(p->Attribute("subIndex"), nullptr, 0);
 					pdo_group.pdos.back()->pImp = this;
@@ -233,7 +233,7 @@ namespace Aris
 
 
 			/*load SDO*/
-			auto SDO = ele->FirstChildElement("SDO");
+			auto SDO = xml_ele.FirstChildElement("SDO");
 			for (auto s = SDO->FirstChildElement(); s != nullptr; s = s->NextSiblingElement())
 			{			
 				sdos.push_back(std::unique_ptr<DO>(new DO));
@@ -306,7 +306,7 @@ namespace Aris
 			ecrt_domain_queue(pDomain);
 		}
 
-		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement *ele) :pImp(new Imp{ ele }) {}
+		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement &xml_ele) :pImp(new Imp{ xml_ele }) {}
 		EthercatSlave::~EthercatSlave() {};
 		void EthercatSlave::Init()
 		{
@@ -486,22 +486,22 @@ namespace Aris
 		}
 		EthercatMaster::EthercatMaster():pImp(new Imp){}
 		EthercatMaster::~EthercatMaster()	{}
-		void EthercatMaster::LoadXml(const Aris::Core::XmlElement *ele)
+		void EthercatMaster::LoadXml(const Aris::Core::XmlElement &xml_ele)
 		{
 			/*Load EtherCat slave types*/
 			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
 			
-			auto pSlaveTypes = ele->FirstChildElement("SlaveType");
+			auto pSlaveTypes = xml_ele.FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
 			{
 				slaveTypeMap.insert(std::make_pair(std::string(pType->Name()), pType));
 			}
 			
 			/*Load all slaves*/
-			auto pSlaves = ele->FirstChildElement("Slave");
+			auto pSlaves = xml_ele.FirstChildElement("Slave");
 			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
 			{
-				this->AddSlave<EthercatSlave>(slaveTypeMap.at(std::string(pSla->Attribute("type"))));
+				this->AddSlave<EthercatSlave>(std::ref(*slaveTypeMap.at(std::string(pSla->Attribute("type")))));
 			}
 		}
 		void EthercatMaster::Start()

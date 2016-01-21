@@ -48,10 +48,10 @@ namespace Aris
 	
 	typedef std::function<Aris::Core::Msg(const std::string &cmd, const std::map<std::string, std::string> &params)> ParseFunc;
 
-	class RobotServer
+	class ControlServer
 	{
 	public:
-		static RobotServer * Instance();
+		static ControlServer &Instance();
 
 		template<typename T>
 		void CreateRobot()
@@ -68,10 +68,10 @@ namespace Aris
 		void Stop();
 
 	private:
-		RobotServer();
-		~RobotServer();
-		RobotServer(const RobotServer &) = delete;
-		RobotServer &operator=(const RobotServer &) = delete;
+		ControlServer();
+		virtual ~ControlServer();
+		ControlServer(const ControlServer &) = delete;
+		ControlServer &operator=(const ControlServer &) = delete;
 
 		virtual void ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
 		virtual void ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
