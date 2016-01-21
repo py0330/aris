@@ -926,7 +926,7 @@ namespace Aris
 		{
 			if (pParam->isMotorActive[i])
 			{
-				rt_printf("cmd on motor %d", i);
+				rt_printf("cmd on motor %d\n", this->pController->a2p(i));
 				
 				/*判断是否已经Enable了*/
 				if ((pParam->count != 0) && (data.pMotionData->operator[](i).ret == 0))
@@ -1315,7 +1315,7 @@ namespace Aris
 		if (params.begin()->first == "motor")
 		{
 			int i = std::stoi(params.begin()->second);
-			param.isMotorActive[0] = true;
+			param.isMotorActive[i] = true;
 		}
 		
 		msg_out.CopyStruct(param);
@@ -1325,7 +1325,12 @@ namespace Aris
 		BasicFunctionParam param;
 		param.cmd_type = Imp::RobotCmdID::ENABLE;
 		std::fill_n(param.isMotorActive, pRobot->MotionNum(), false);
-		param.isMotorActive[0] = true;
+		
+		if (params.begin()->first == "motor")
+		{
+			int i = std::stoi(params.begin()->second);
+			param.isMotorActive[i] = true;
+		}
 
 		msg_out.CopyStruct(param);
 	}
@@ -1335,6 +1340,8 @@ namespace Aris
 		param.cmd_type = Imp::RobotCmdID::DISABLE;
 		std::fill_n(param.isMotorActive, pRobot->MotionNum(), false);
 		param.isMotorActive[0] = true;
+
+
 
 		msg_out.CopyStruct(param);
 	}

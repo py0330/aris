@@ -405,6 +405,12 @@ namespace Aris
 				map_abs2phy[i] = std::find(map_phy2abs.begin(), map_phy2abs.end(), i) - map_phy2abs.begin();
 			}
 
+			for (auto &p : map_abs2phy)
+			{
+				std::cout << p << std::endl;
+			}
+			std::cout << std::endl;
+
 			/*resize other var*/
 			this->motionData.resize(this->pMotions.size());
 			this->lastMotionData.resize(this->pMotions.size());
