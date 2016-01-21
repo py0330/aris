@@ -429,7 +429,6 @@ namespace Aris
 		int home(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data);
 		int enable(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data);
 		int disable(const BasicFunctionParam *pParam, Aris::Control::EthercatController::Data data);
-		int recover(RecoverParam *pParam, Aris::Control::EthercatController::Data data);
 		int runGait(GaitParamBase *pParam, Aris::Control::EthercatController::Data data);
 
 		int execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data data);
@@ -441,7 +440,6 @@ namespace Aris
 			ENABLE,
 			DISABLE,
 			HOME,
-			RECOVER,
 			RUN_GAIT,
 
 			ROBOT_CMD_COUNT
@@ -1010,9 +1008,6 @@ namespace Aris
 			break;
 		case HOME:
 			ret = home(static_cast<BasicFunctionParam *>(pParam), data);
-			break;
-		case RECOVER:
-			ret = recover(static_cast<RecoverParam *>(pParam), data);
 			break;
 		case RUN_GAIT:
 			ret = runGait(static_cast<GaitParamBase *>(pParam), data);
