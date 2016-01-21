@@ -926,6 +926,8 @@ namespace Aris
 		{
 			if (pParam->isMotorActive[i])
 			{
+				rt_printf("cmd on motor %d", i);
+				
 				/*判断是否已经Enable了*/
 				if ((pParam->count != 0) && (data.pMotionData->operator[](i).ret == 0))
 				{
@@ -1324,6 +1326,8 @@ namespace Aris
 		param.cmd_type = Imp::RobotCmdID::ENABLE;
 		std::fill_n(param.isMotorActive, pRobot->MotionNum(), false);
 		param.isMotorActive[0] = true;
+
+		msg_out.CopyStruct(param);
 	}
 	void RobotServer::ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)
 	{
@@ -1331,6 +1335,8 @@ namespace Aris
 		param.cmd_type = Imp::RobotCmdID::DISABLE;
 		std::fill_n(param.isMotorActive, pRobot->MotionNum(), false);
 		param.isMotorActive[0] = true;
+
+		msg_out.CopyStruct(param);
 	}
 }
 

@@ -598,7 +598,6 @@ namespace Aris
 			/// 仿真函数
 			virtual void KinFromPin() {};
 			virtual void KinFromVin() {};
-			virtual void KinFromAin() {};
 			/// 静态仿真，结果仅仅返回驱动的位置
 			void SimKin(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script = false);
 			/// 动态仿真，待完善

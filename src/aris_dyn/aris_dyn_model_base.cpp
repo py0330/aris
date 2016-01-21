@@ -1364,7 +1364,6 @@ namespace Aris
 				{
 					MotionAt(j).mot_acc_ = MotionAt(j).PosAkima(t / 1000.0, '2');
 				}
-				KinFromAin();
 				Dyn();
 				for (std::size_t j = 0; j < MotionNum(); ++j)
 				{
