@@ -818,6 +818,9 @@ namespace Aris
 		if (cmd == "en")
 		{
 			parse_enable_func_(cmd, params, cmd_msg);
+
+			std::cout << cmd_msg.GetLength() << "  " << sizeof(BasicFunctionParam) << std::endl;
+
 			if (cmd_msg.GetLength() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function for en");
 			reinterpret_cast<BasicFunctionParam *>(cmd_msg.GetDataAddress())->cmd_type = Aris::ControlServer::Imp::ENABLE;
 		}
