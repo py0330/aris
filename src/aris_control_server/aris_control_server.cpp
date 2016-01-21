@@ -857,7 +857,7 @@ namespace Aris
 
 		cmd_msg.SetMsgID(0);
 #ifdef UNIX
-		this->pController->MsgPipe().SendToRT(cmdMsg);
+		this->pController->MsgPipe().SendToRT(cmd_msg);
 #endif
 	}
 	
