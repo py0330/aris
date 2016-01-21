@@ -23,26 +23,10 @@ namespace Aris
 		bool isMotorActive[MAX_MOTOR_NUM]{ false };
 	};
 
-	/*for recover*/
-	struct RecoverParam final :Aris::DynKer::PlanParamBase
-	{
-		std::int32_t alignCount{ 3000 };
-		std::int32_t recoverCount{ 3000 };
-		double beginPin[18]{ 0 };
-		double alignPin[18]{ 0 };
-		double alignPee[18]{ 0 };
-		double recoverPee[18]{ 0 };
-		bool isLegActive[6]{ true,true,true,true,true,true };
-	};
-	
 	struct GaitParamBase :DynKer::PlanParamBase
 	{
-		const Aris::Sensor::ImuData *imuData;
+		const Aris::Sensor::ImuData *pImuData;
 		const std::vector<Aris::Control::EthercatForceSensor::Data> *pForceData;
-		double beginPee[18]{ 0 };
-		double beginVee[18]{ 0 };
-		double beginPeb[6]{ 0 };
-		double beginVb[6]{ 0 };
 	};
 	
 	
@@ -54,13 +38,9 @@ namespace Aris
 		static ControlServer &Instance();
 
 		template<typename T>
-		void CreateRobot()
-		{
-			if (pRobot)
-				throw std::logic_error("already has a robot instance");
-			else
-				pRobot.reset(new T);
-		};
+		void CreateModel() { this->CreateModel(new T); };
+		void CreateModel(DynKer::Model *pModel);
+
 		void LoadXml(const char *fileName);
 		void LoadXml(const Aris::Core::XmlDocument &xmlDoc);
 		void AddGait(std::string cmdName, Aris::DynKer::PlanFunc gaitFunc, ParseFunc parseFunc);
@@ -76,8 +56,6 @@ namespace Aris
 		virtual void ParseEnableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
 		virtual void ParseDisableMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
 		virtual void ParseHomeMsg(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out);
-
-		std::unique_ptr<DynKer::Model> pRobot;
 	private:
 		class Imp;
 		std::unique_ptr<Imp> pImp;

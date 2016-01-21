@@ -99,9 +99,11 @@ namespace Aris
 			virtual void Stop();
 			void SetControlStrategy(std::function<int(Data&)>);
 			
+			std::size_t MotNum() { return pMotions.size(); };
 			EthercatMotion &MotionAtAbs(int i) { return *pMotions.at(a2p(i)); };
 			EthercatMotion &MotionAtPhy(int i) { return *pMotions.at(i); };
-			EthercatForceSensor* ForceSensorAt(int i) { return pForceSensors.at(i); };
+			std::size_t ForceSensorNum() { return pForceSensors.size(); };
+			EthercatForceSensor &ForceSensorAt(int i) { return *pForceSensors.at(i); };
 			Pipe<Aris::Core::Msg>& MsgPipe(){return msgPipe;};
 			
 			inline int p2a(const int phy){	return map_phy2abs[phy];}
