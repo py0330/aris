@@ -45,18 +45,18 @@ namespace Aris
 			bool HasFault();
 			void ReadFeedback(Data &data);
 			void DoCommand(const Data &data);
-			std::int32_t MaxSpeed() { return max_speed; };
-			std::int32_t AbsID() { return model_id; };
-			std::int32_t Input2Count() { return input2count; };
+			std::int32_t AbsID() { return abs_id_; };
+			std::int32_t MaxVelCount() { return max_vel_count_; };
+			std::int32_t Input2Count() { return input2count_; };
 
 		protected:
 			virtual void Init() override;
 
 		private:
-			std::int32_t input2count;
-			std::int32_t max_speed;
-			std::int32_t home_pos;
-			std::int32_t model_id;
+			std::int32_t input2count_;
+			std::int32_t home_count_;
+			std::int32_t max_vel_count_;
+			std::int32_t abs_id_;
 			
 
 			class Imp;

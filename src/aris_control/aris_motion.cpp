@@ -372,15 +372,31 @@ namespace Aris
 				if (type == "ElmoSoloWhistle")
 				{
 					pMotions.push_back(AddSlave<EthercatMotion>(std::ref(*slaveTypeMap.at(type))));
-					if (pSla->QueryIntAttribute("maxSpeed", &pMotions.back()->max_speed) != tinyxml2::XML_NO_ERROR)
+					
+					if (pSla->QueryIntAttribute("input2count", &pMotions.back()->input2count_) != tinyxml2::XML_NO_ERROR)
 					{
-						throw std::runtime_error("failed to find motion attribute \"maxSpeed\"");
+						throw std::runtime_error("failed to find motion attribute \"input2count\"");
 					}
-					pMotions.back()->input2count = pSla->IntAttribute("input2count");
-					pMotions.back()->home_pos = pSla->IntAttribute("homePos");
-					pMotions.back()->model_id = pSla->IntAttribute("modelID");
 
-					pMotions.back()->WriteSdo(9, static_cast<std::int32_t>(-pMotions.back()->home_pos));
+					double value;
+					if (pSla->QueryDoubleAttribute("maxVel", &value) != tinyxml2::XML_NO_ERROR)
+					{
+						throw std::runtime_error("failed to find motion attribute \"maxVel\"");
+					}
+					pMotions.back()->max_vel_count_ = static_cast<std::int32_t>(value * pMotions.back()->input2count_);
+
+					if (pSla->QueryDoubleAttribute("homePos", &value) != tinyxml2::XML_NO_ERROR)
+					{
+						throw std::runtime_error("failed to find motion attribute \"homePos\"");
+					}
+					pMotions.back()->home_count_ = static_cast<std::int32_t>(pSla->DoubleAttribute("homePos")*pMotions.back()->input2count_);
+
+					if (pSla->QueryIntAttribute("absID", &pMotions.back()->abs_id_) != tinyxml2::XML_NO_ERROR)
+					{
+						throw std::runtime_error("failed to find motion attribute \"input2count\"");
+					}
+
+					pMotions.back()->WriteSdo(9, static_cast<std::int32_t>(-pMotions.back()->home_count_));
 
 				}
 				else if (type == "AtiForceSensor")
