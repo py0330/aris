@@ -169,7 +169,6 @@ namespace Aris
 							/*home finished, set mode to running mode, whose value is decided by 
 							enable function, also write velocity to 0*/
 							pFather->WritePdo(0, 5, static_cast<uint8_t>(runningMode));
-							isEverHomed = true;
 							isWaitingMode = true;
 							return 1;
 						}
@@ -257,7 +256,6 @@ namespace Aris
 			EthercatMotion *pFather;
 			
 			bool isWaitingMode{ false };
-			bool isEverHomed{ false };
 			bool isFake{ true };
 			int enablePeriod{ 0 };
 			std::uint8_t runningMode{ 9 };
