@@ -203,8 +203,8 @@ namespace Aris
 					std::int32_t desired_vel = static_cast<std::int32_t>(Kp*(pos - current_pos));
 					
 					/*保护上下限*/
-					desired_vel = std::max(desired_vel, -maxSpeed);
-					desired_vel = std::min(desired_vel, maxSpeed);
+					desired_vel = std::max(desired_vel, -pFather->max_vel_count_);
+					desired_vel = std::min(desired_vel, pFather->max_vel_count_);
 					
 					pFather->WritePdo(0, 1, desired_vel);
 					return 0;
@@ -253,9 +253,6 @@ namespace Aris
 			std::int32_t Pos() { std::int32_t pos; pFather->ReadPdo(1, 0, pos); return pos; };
 			std::int32_t Vel() { std::int32_t vel; pFather->ReadPdo(1, 2, vel); return vel; };
 			std::int32_t Cur() { std::int16_t cur; pFather->ReadPdo(2, 0, cur); return cur; };
-
-			std::int32_t homeOffSet{ 0 };
-			std::int32_t maxSpeed{ 0 };
 		private:
 			EthercatMotion *pFather;
 			
