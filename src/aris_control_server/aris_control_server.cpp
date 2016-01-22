@@ -437,7 +437,6 @@ namespace Aris
 			ENABLE,
 			DISABLE,
 			HOME,
-			RECOVER,//recover是正常步态，但是在该步态中不检查连续，所以务必慎重！
 			RUN_GAIT,
 
 			ROBOT_CMD_COUNT
@@ -871,16 +870,7 @@ namespace Aris
 				throw std::logic_error(std::string("parse function of command \"") + cmdPair->first + "\" failed: because it returned invalid cmd_msg");
 			}
 
-			if (cmd == "rc")
-			{
-				reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_type = RECOVER;
-			}
-			else
-			{
-				reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_type = RUN_GAIT;
-			}
-
-			
+			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_type = RUN_GAIT;
 			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->gait_id = cmdPair->second;
 
 			if (plan_vec_.at(cmdPair->second) == nullptr) return;
@@ -1040,7 +1030,6 @@ namespace Aris
 		case HOME:
 			ret = home(static_cast<BasicFunctionParam &>(*pParam), data);
 			break;
-		case RECOVER:
 		case RUN_GAIT:
 			ret = run(static_cast<GaitParamBase &>(*pParam), data);
 			break;
