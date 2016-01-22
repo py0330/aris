@@ -18,15 +18,19 @@ namespace Aris
 	const int MAX_MOTOR_NUM = 100;
 	
 	/*for enable, disable, and home*/
-	struct BasicFunctionParam final :Aris::DynKer::PlanParamBase
+	struct BasicFunctionParam final :Aris::Dynamic::PlanParamBase
 	{
-		bool isMotorActive[MAX_MOTOR_NUM]{ false };
+		bool active_motor[MAX_MOTOR_NUM]{ false };
 	};
 
-	struct GaitParamBase :DynKer::PlanParamBase
+	/*for all ordinary gaits*/
+	struct GaitParamBase :Dynamic::PlanParamBase
 	{
-		const Aris::Sensor::ImuData *pImuData;
-		const std::vector<Aris::Control::EthercatForceSensor::Data> *pForceData;
+		std::int32_t gait_id;
+		const Aris::Sensor::ImuData *imu_data;
+		const std::vector<Aris::Control::EthercatForceSensor::Data> *force_data;
+		const std::vector<Aris::Control::EthercatMotion::Data> *motion_raw_data;
+		const std::vector<double> *motion_feedback_pos;
 	};
 	
 	typedef std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)> ParseFunc;
@@ -38,11 +42,11 @@ namespace Aris
 
 		template<typename T>
 		void CreateModel() { this->CreateModel(new T); };
-		void CreateModel(DynKer::Model *pModel);
+		void CreateModel(Dynamic::Model *pModel);
 
 		void LoadXml(const char *fileName);
 		void LoadXml(const Aris::Core::XmlDocument &xmlDoc);
-		void AddGait(std::string cmdName, Aris::DynKer::PlanFunc gaitFunc, ParseFunc parseFunc);
+		void AddGait(std::string cmdName, Aris::Dynamic::PlanFunc gaitFunc, ParseFunc parseFunc);
 		void Start();
 		void Stop();
 		void SetParseFunc(const std::string &cmd, const ParseFunc &parse_func);

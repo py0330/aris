@@ -63,16 +63,16 @@ int main()
 
 		double eul[3];
 		//data.Get().ToBodyEul(eul);
-		//Aris::DynKer::dsp(eul, 1, 3);
+		//Aris::Dynamic::dsp(eul, 1, 3);
 		
 		data.Get().ToEulBody2Ground(eul, PI, "321");
-		Aris::DynKer::dsp(eul, 1, 3);
+		Aris::Dynamic::dsp(eul, 1, 3);
 
 		//double pm[16];
 		//data.Get().ToBodyPm(pm, 0.0);
-		//Aris::DynKer::dsp(pm, 4, 4);
+		//Aris::Dynamic::dsp(pm, 4, 4);
 
-		//Aris::DynKer::dsp(data.Get().eul321, 1, 3);
+		//Aris::Dynamic::dsp(data.Get().eul321, 1, 3);
 
 		Aris::Core::Sleep(1);
 	}

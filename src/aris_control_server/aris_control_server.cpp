@@ -398,17 +398,14 @@ namespace Aris
 		std::map<std::string, Node *> allParams{};
 		std::map<char, std::string> shortNames{};
 
-		CommandStruct(const std::string &name) 
-			:root(new RootNode(name.c_str()))
-		{
-		}
+		CommandStruct(const std::string &name) :root(new RootNode(name.c_str())) {};
 	};
 	
 	class ControlServer::Imp
 	{
 	public:
 		void LoadXml(const Aris::Core::XmlDocument &doc);
-		void AddGait(std::string cmdName, DynKer::PlanFunc gaitFunc, ParseFunc parseFunc);
+		void AddGait(std::string cmdName, Dynamic::PlanFunc gaitFunc, ParseFunc parseFunc);
 		void Start();
 		void Stop();
 
@@ -447,41 +444,48 @@ namespace Aris
 
 	private:
 		ControlServer *pServer;
-		std::map<std::string, int> mapName2ID;//store gait id in follow vector
-		std::vector<DynKer::PlanFunc> allGaits;
-		std::vector<ParseFunc> allParsers;
 
+		/*以下储存所有的命令*/
+		std::map<std::string, int> map_cmd2id_;//store gait id in follow vector
+		std::vector<Dynamic::PlanFunc> plan_vec_;
+		std::vector<ParseFunc> parser_vec_;
+		std::map<std::string, std::unique_ptr<CommandStruct> > mapCmd;//store Node of command
+
+		/*储存特殊命令的parse_func*/
 		ParseFunc parse_enable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg) 
 		{
 			BasicFunctionParam param;
 			param.cmd_type = Imp::RobotCmdID::ENABLE;
-			std::fill_n(param.isMotorActive, this->pModel_->MotionNum(), true);
+			std::fill_n(param.active_motor, this->pModel_->MotionNum(), true);
 			msg.CopyStruct(param);
 		} };
 		ParseFunc parse_disable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
 		{
 			BasicFunctionParam param;
 			param.cmd_type = Imp::RobotCmdID::DISABLE;
-			std::fill_n(param.isMotorActive, this->pModel_->MotionNum(), true);
+			std::fill_n(param.active_motor, this->pModel_->MotionNum(), true);
 			msg.CopyStruct(param);
 		} };
 		ParseFunc parse_home_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
 		{
 			BasicFunctionParam param;
 			param.cmd_type = Imp::RobotCmdID::HOME;
-			std::fill_n(param.isMotorActive, this->pModel_->MotionNum(), true);
+			std::fill_n(param.active_motor, this->pModel_->MotionNum(), true);
 			msg.CopyStruct(param);
 		} };
 
-		std::map<std::string, std::unique_ptr<CommandStruct> > mapCmd;//store Node of command
+		/*socket*/
+		Aris::Core::Socket server_socket_;
+		std::string server_socket_ip_, server_socket_port_;
 
-		Aris::Core::Socket server;
-		std::string ip, port;
-
+		/*储存控制器等*/
 		Aris::Control::EthercatController *pController;
-		std::unique_ptr<Aris::DynKer::Model> pModel_;
-
+		std::unique_ptr<Aris::Dynamic::Model> pModel_;
 		std::unique_ptr<Aris::Sensor::IMU> pImu;
+
+
+		/**/
+		std::vector<double> motion_pos_;
 		friend class ControlServer;
 	};
 
@@ -509,8 +513,8 @@ namespace Aris
 
 		/*load connection param*/
 		auto pConnEle = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Connection");
-		ip = pConnEle->Attribute("IP");
-		port = pConnEle->Attribute("Port");
+		server_socket_ip_ = pConnEle->Attribute("IP");
+		server_socket_port_ = pConnEle->Attribute("Port");
 
 		/*begin to copy client and insert cmd nodes*/
 		const int TASK_NAME_LEN = 1024;
@@ -551,26 +555,26 @@ namespace Aris
 		}
 
 		/*Set socket connection callback function*/
-		server.SetOnReceivedConnection([](Aris::Core::Socket *pConn, const char *pRemoteIP, int remotePort)
+		server_socket_.SetOnReceivedConnection([](Aris::Core::Socket *pConn, const char *pRemoteIP, int remotePort)
 		{
-			Aris::Core::log(std::string("received connection, the ip is: ") + pRemoteIP);
+			Aris::Core::log(std::string("received connection, the server_socket_ip_ is: ") + pRemoteIP);
 			return 0;
 		});
-		server.SetOnReceiveRequest([this](Aris::Core::Socket *pConn, Aris::Core::Msg &msg)
+		server_socket_.SetOnReceiveRequest([this](Aris::Core::Socket *pConn, Aris::Core::Msg &msg)
 		{
 			Aris::Core::Msg ret;
 			this->OnReceiveMsg(msg, ret);
 
 			return ret;
 		});
-		server.SetOnLoseConnection([this](Aris::Core::Socket *pConn)
+		server_socket_.SetOnLoseConnection([this](Aris::Core::Socket *pConn)
 		{
 			Aris::Core::log("lost connection");
 			while (true)
 			{
 				try
 				{
-					pConn->StartServer(this->port.c_str());
+					pConn->StartServer(this->server_socket_port_.c_str());
 					break;
 				}
 				catch (Aris::Core::Socket::StartServerError &e)
@@ -583,35 +587,34 @@ namespace Aris
 			return 0;
 		});
 	}
-	void ControlServer::Imp::AddGait(std::string cmdName, DynKer::PlanFunc gaitFunc, ParseFunc parseFunc)
+	void ControlServer::Imp::AddGait(std::string cmdName, Dynamic::PlanFunc gaitFunc, ParseFunc parseFunc)
 	{
-		if (mapName2ID.find(cmdName) != mapName2ID.end())
+		if (map_cmd2id_.find(cmdName) != map_cmd2id_.end())
 		{
 			throw std::runtime_error(std::string("failed to add gait, because \"")+cmdName+"\" already exists");
 		}
 		else
 		{
-			allGaits.push_back(gaitFunc);
-			allParsers.push_back(parseFunc);
+			plan_vec_.push_back(gaitFunc);
+			parser_vec_.push_back(parseFunc);
 
-			mapName2ID.insert(std::make_pair(cmdName, allGaits.size() - 1));
+			map_cmd2id_.insert(std::make_pair(cmdName, plan_vec_.size() - 1));
 
-			std::cout << cmdName << ":" << mapName2ID.at(cmdName) << std::endl;
+			std::cout << cmdName << ":" << map_cmd2id_.at(cmdName) << std::endl;
 		}
 	};
 	void ControlServer::Imp::Start()
 	{
+		motion_pos_.resize(pController->MotNum());
+		
 		/*start sensors*/
-		if (pImu)
-		{
-			pImu->Start();
-		}
+		if (pImu)pImu->Start();
 
 		while (true)
 		{
 			try
 			{
-				server.StartServer(port.c_str());
+				server_socket_.StartServer(server_socket_port_.c_str());
 				break;
 			}
 			catch (Aris::Core::Socket::StartServerError &e)
@@ -627,7 +630,7 @@ namespace Aris
 	}
 	void ControlServer::Imp::Stop()
 	{
-		server.Close();
+		server_socket_.Close();
 
 #ifdef UNIX
 		pController->Stop();
@@ -688,7 +691,7 @@ namespace Aris
 		}
 		else
 		{
-			throw std::logic_error(Aris::Core::log(std::string("invalid command name, server does not have command \"") + cmd + "\""));
+			throw std::logic_error(Aris::Core::log(std::string("invalid command name, server_socket_ does not have command \"") + cmd + "\""));
 		}
 
 		for (int i = 0; i<paramNum; ++i)
@@ -818,9 +821,6 @@ namespace Aris
 		if (cmd == "en")
 		{
 			parse_enable_func_(cmd, params, cmd_msg);
-
-			std::cout << cmd_msg.GetLength() << "  " << sizeof(BasicFunctionParam) << std::endl;
-
 			if (cmd_msg.GetLength() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function for en");
 			reinterpret_cast<BasicFunctionParam *>(cmd_msg.GetDataAddress())->cmd_type = Aris::ControlServer::Imp::ENABLE;
 		}
@@ -838,14 +838,14 @@ namespace Aris
 		}
 		else
 		{
-			auto cmdPair = this->mapName2ID.find(cmd);
+			auto cmdPair = this->map_cmd2id_.find(cmd);
 
-			if (cmdPair == this->mapName2ID.end())
+			if (cmdPair == this->map_cmd2id_.end())
 			{
 				throw std::logic_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddGait() first");
 			}
 
-			this->allParsers.at(cmdPair->second).operator()(cmd, params, cmd_msg);
+			this->parser_vec_.at(cmdPair->second).operator()(cmd, params, cmd_msg);
 
 			if (cmd_msg.GetLength() < sizeof(GaitParamBase))
 			{
@@ -853,9 +853,9 @@ namespace Aris
 			}
 
 			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_type = RUN_GAIT;
-			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_ID = cmdPair->second;
+			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->gait_id = cmdPair->second;
 
-			if (allGaits.at(cmdPair->second) == nullptr) return;
+			if (plan_vec_.at(cmdPair->second) == nullptr) return;
 		}
 
 		cmd_msg.SetMsgID(0);
@@ -870,7 +870,7 @@ namespace Aris
 
 		for (std::size_t i = 0; i < pController->MotNum(); ++i)
 		{
-			if (param.isMotorActive[i])
+			if (param.active_motor[i])
 			{
 				/*根据返回值来判断是否走到home了*/
 				if ((param.count != 0) && (data.pMotionData->operator[](i).ret == 0))
@@ -905,7 +905,7 @@ namespace Aris
 
 		for (std::size_t  i = 0; i < pController->MotNum(); ++i)
 		{
-			if (param.isMotorActive[i])
+			if (param.active_motor[i])
 			{
 				/*判断是否已经Enable了*/
 				if ((param.count != 0) && (data.pMotionData->operator[](i).ret == 0))
@@ -942,7 +942,7 @@ namespace Aris
 
 		for (std::size_t  i = 0; i < pController->MotNum(); ++i)
 		{
-			if (param.isMotorActive[i])
+			if (param.active_motor[i])
 			{
 				/*判断是否已经Disabled了*/
 				if ((param.count != 0) && (data.pMotionData->operator[](i).ret == 0))
@@ -970,13 +970,20 @@ namespace Aris
 		//获取陀螺仪传感器数据
 		Aris::Sensor::SensorData<Aris::Sensor::ImuData> imuDataProtected;
 		if (pImu) imuDataProtected = pImu->GetSensorData();
-		param.pImuData = &imuDataProtected.Get();
+		param.imu_data = &imuDataProtected.Get();
 
-		//获取力传感器数据
-		param.pForceData = data.pForceSensorData;
+		//获取力传感器数据与电机数据
+		param.force_data = data.pForceSensorData;
+		param.motion_raw_data = data.pMotionData;
+		param.motion_feedback_pos = &this->motion_pos_;
+
+		for (std::size_t i = 0; i < data.pMotionData->size(); ++i)
+		{
+			this->motion_pos_[i] = static_cast<double>(data.pMotionData->at(i).feedbackPos) / pController->MotionAtAbs(i).Input2Count();
+		}
 
 		//执行gait函数
-		int ret = this->allGaits.at(param.cmd_ID).operator()(*pModel_.get(),param);
+		int ret = this->plan_vec_.at(param.gait_id).operator()(*pModel_.get(),param);
 
 		//向下写入输入位置
 		for (std::size_t  i = 0; i<pController->MotNum(); ++i)
@@ -991,7 +998,7 @@ namespace Aris
 	int ControlServer::Imp::execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data &data)
 	{
 		int ret;
-		Aris::DynKer::PlanParamBase *pParam = reinterpret_cast<Aris::DynKer::PlanParamBase *>(cmd);
+		Aris::Dynamic::PlanParamBase *pParam = reinterpret_cast<Aris::Dynamic::PlanParamBase *>(cmd);
 		pParam->count = count;
 
 		switch (pParam->cmd_type)
@@ -1035,15 +1042,8 @@ namespace Aris
 		}*/
 
 		/*检查是否出错*/
-		bool isAllNormal = true;
-		for (auto &motData : *data.pMotionData)
-		{
-			if (motData.ret < 0)
-			{
-				isAllNormal = false;
-				break;
-			}
-		}
+		bool isAllNormal = data.pMotionData->end()==std::find_if(data.pMotionData->begin(), data.pMotionData->end(), [](const Aris::Control::EthercatMotion::Data &data) {return data.ret < 0; });
+
 		static int faultCount = 0;
 		if (isAllNormal)
 		{
@@ -1146,7 +1146,7 @@ namespace Aris
 	}
 	ControlServer::ControlServer():pImp(new Imp(this)){}
 	ControlServer::~ControlServer(){}
-	void ControlServer::CreateModel(DynKer::Model *pModel)
+	void ControlServer::CreateModel(Dynamic::Model *pModel)
 	{
 		if (pImp->pModel_)throw std::runtime_error("control sever can't create model because it already has one");
 
@@ -1167,7 +1167,7 @@ namespace Aris
 	{
 		pImp->LoadXml(xmlDoc);
 	}
-	void ControlServer::AddGait(std::string cmdName, DynKer::PlanFunc gaitFunc, ParseFunc parseFunc)
+	void ControlServer::AddGait(std::string cmdName, Dynamic::PlanFunc gaitFunc, ParseFunc parseFunc)
 	{
 		pImp->AddGait(cmdName, gaitFunc, parseFunc);
 	}

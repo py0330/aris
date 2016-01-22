@@ -9,11 +9,9 @@
 
 #include "aris_exp_cal.h"
 
-using namespace std;
-
 namespace Aris
 {
-	namespace DynKer
+	namespace Dynamic
 	{
 		Matrix::Matrix(int m, int n)
 			: m(m)

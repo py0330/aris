@@ -13,7 +13,7 @@
 
 namespace Aris
 {
-	namespace DynKer
+	namespace Dynamic
 	{
 		RevoluteJoint::RevoluteJoint(ModelBase &model, const std::string &name, int id, Marker &makI, Marker &makJ)
 			: JointBaseDim(model, name, id, makI, makJ)

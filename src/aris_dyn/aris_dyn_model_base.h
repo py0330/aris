@@ -15,7 +15,7 @@
 
 namespace Aris
 {
-	namespace DynKer
+	namespace Dynamic
 	{
 		typedef double double6x6[6][6];
 		typedef double double4x4[4][4];
@@ -34,7 +34,6 @@ namespace Aris
 		struct PlanParamBase
 		{
 			std::int32_t cmd_type{ 0 };
-			std::int32_t cmd_ID{ 0 };
 			mutable std::int32_t count{ 0 };
 		};
 		typedef std::function<int(ModelBase &, const PlanParamBase &)> PlanFunc;
@@ -287,13 +286,16 @@ namespace Aris
 			void SetFrcCoe(const double *frc_coe) { std::copy_n(frc_coe, 3, frc_coe_); };
 
 			double MotPos() const { return mot_pos_; };
+			void SetMotPos(double mot_pos) { mot_pos_ = mot_pos; };
 			double MotVel() const { return mot_vel_; };
+			void SetMotVel(double mot_vel) { mot_vel_ = mot_vel; };
 			double MotAcc() const { return mot_acc_; };
-			double MotFce() const { return MotFceDyn() + MotFceFrc();	};
-			double MotFceFrc() const { return s_sgn(mot_vel_)*frc_coe_[0] + mot_vel_*frc_coe_[1] + mot_acc_*frc_coe_[2]; };
-			double MotFceDyn() const { return mot_fce_dyn_; }
 			void SetMotAcc(double mot_acc) { this->mot_acc_ = mot_acc; };
+			double MotFce() const { return MotFceDyn() + MotFceFrc();	};
 			void SetMotFce(double mot_fce) { this->mot_fce_ = mot_fce; };
+			double MotFceDyn() const { return mot_fce_dyn_; }
+			void SetMotFceDyn(double mot_dyn_fce) { this->mot_fce_dyn_ = mot_dyn_fce; };
+			double MotFceFrc() const { return s_sgn(mot_vel_)*frc_coe_[0] + mot_vel_*frc_coe_[1] + mot_acc_*frc_coe_[2]; };
 
 			void SetPosAkimaCurve(const int num, const double* time, const double *pos)
 			{
@@ -312,7 +314,7 @@ namespace Aris
 			double* CsmJ() override { return csmJ_; };
 			double* Csa() override { return &csa_; };
 			double* Csf() override { return &mot_fce_dyn_; };
-			void SetMotFceDyn(double mot_dyn_fce) { this->mot_fce_dyn_ = mot_dyn_fce; };
+			
 
 			/*pos\vel\acc\fce of motion*/
 			double mot_pos_{ 0 }, mot_vel_{ 0 }, mot_acc_{ 0 }, mot_fce_dyn_{ 0 };
@@ -443,10 +445,10 @@ namespace Aris
 			explicit ModelBase(const std::string & name = "Model");
 			virtual ~ModelBase();
 
-			Aris::DynKer::Environment& Environment() { return environment_; };
-			const Aris::DynKer::Environment& Environment()const { return environment_; };
-			Aris::DynKer::Script& Script() { return script_; };
-			const Aris::DynKer::Script& Script()const { return script_; };
+			Aris::Dynamic::Environment& Environment() { return environment_; };
+			const Aris::Dynamic::Environment& Environment()const { return environment_; };
+			Aris::Dynamic::Script& Script() { return script_; };
+			const Aris::Dynamic::Script& Script()const { return script_; };
 
 			template<typename ...Args>
 			Part* AddPart(const std::string & name, Args ...args)
@@ -629,8 +631,8 @@ namespace Aris
 
 		protected:
 
-			Aris::DynKer::Environment environment_;
-			Aris::DynKer::Script script_;
+			Aris::Dynamic::Environment environment_;
+			Aris::Dynamic::Script script_;
 
 			std::vector<std::unique_ptr<Part> > parts_;
 			std::vector<std::unique_ptr<JointBase> > joints_;

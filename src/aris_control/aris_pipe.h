@@ -93,9 +93,6 @@ namespace Aris
 			int RecvInRT(Aris::Core::MsgRT &msg);
 			int RecvInNRT(Aris::Core::Msg &msg);
 		};
-
-		
-
 	}
 }
 

@@ -13,7 +13,7 @@
 
 namespace Aris
 {
-	namespace DynKer
+	namespace Dynamic
 	{
 		Interaction::Interaction(ModelBase &model, const std::string &name, int id, const Aris::Core::XmlElement &xml_ele)
 			: Element(model, name, id)

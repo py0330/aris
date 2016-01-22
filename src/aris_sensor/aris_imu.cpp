@@ -26,8 +26,8 @@ namespace Aris
 		{
 			double tem_pm[16];
 			double pe[6]{ 0,0,0,yawValue, pitch, roll };
-			Aris::DynKer::s_pe2pm(pe, tem_pm, "321");
-			Aris::DynKer::s_pm_dot_pm(pmLhs, tem_pm, pmRhs, pm);
+			Aris::Dynamic::s_pe2pm(pe, tem_pm, "321");
+			Aris::Dynamic::s_pm_dot_pm(pmLhs, tem_pm, pmRhs, pm);
 		}
 		void ImuData::ToEulBody2Ground(double *eul, const char *eulType) const
 		{
@@ -37,7 +37,7 @@ namespace Aris
 		{
 			double pm[16], pe[6];
 			this->ToPmBody2Ground(pm, yawValue);
-			Aris::DynKer::s_pm2pe(pm, pe, eulType);
+			Aris::Dynamic::s_pm2pe(pm, pe, eulType);
 			std::copy_n(pe + 3, 3, eul);
 		}
 		void ImuData::ToOmegaBody2Ground(double *omega) const
@@ -48,7 +48,7 @@ namespace Aris
 		{
 			double pm[16];
 			ToPmBody2Ground(pm, yawValue);
-			Aris::DynKer::s_pm_dot_v3(pm, this->omega, omega);
+			Aris::Dynamic::s_pm_dot_v3(pm, this->omega, omega);
 		}
 		void ImuData::ToPntAccBody2Ground(double *acc) const
 		{
@@ -102,15 +102,15 @@ namespace Aris
 			pImp->baudRate = std::stoi(xmlEle->Attribute("baudRate"));
 			pImp->sampleRate = std::stoi(xmlEle->Attribute("sampleRate"));;
 
-			Aris::DynKer::Calculator c;
+			Aris::Dynamic::Calculator c;
 			c.AddVariable("PI", PI);
 			
 			auto m = c.CalculateExpression(xmlEle->Attribute("PeImuGround2BodyGound"));
-			Aris::DynKer::s_pe2pm(m.Data(), &pImp->pmImuGround2BodyGround[0][0]);
+			Aris::Dynamic::s_pe2pm(m.Data(), &pImp->pmImuGround2BodyGround[0][0]);
 			m = c.CalculateExpression(xmlEle->Attribute("PeImu2Body"));
 			double pmImu2Body[16];
-			Aris::DynKer::s_pe2pm(m.Data(), pmImu2Body);
-			Aris::DynKer::s_inv_pm(pmImu2Body, &pImp->pmBody2Imu[0][0]);
+			Aris::Dynamic::s_pe2pm(m.Data(), pmImu2Body);
+			Aris::Dynamic::s_inv_pm(pmImu2Body, &pImp->pmBody2Imu[0][0]);
 
 		}
 		IMU::~IMU()

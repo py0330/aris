@@ -14,7 +14,7 @@
 
 namespace Aris
 {
-	namespace DynKer
+	namespace Dynamic
 	{
 		void dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n)
 		{

@@ -18,7 +18,7 @@
 
 namespace Aris
 {
-	namespace DynKer
+	namespace Dynamic
 	{
 		class RevoluteJoint final :public JointBaseDim<5>
 		{

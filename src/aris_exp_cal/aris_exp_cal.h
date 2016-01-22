@@ -15,7 +15,7 @@
 
 namespace Aris
 {
-	namespace DynKer
+	namespace Dynamic
 	{
 		class Matrix
 		{
@@ -47,7 +47,7 @@ namespace Aris
 				}
 
 
-				(*this) = Aris::DynKer::CombineMatrices(matListList);
+				(*this) = Aris::Dynamic::CombineMatrices(matListList);
 			}
 
 			Matrix() :m(0), n(0), isRowMajor(true), pData(nullptr) {};
@@ -149,7 +149,6 @@ namespace Aris
 				std::cout << std::endl;
 			}
 
-			
 			private:
 				int m, n;
 				bool isRowMajor;

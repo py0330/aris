@@ -45,7 +45,7 @@ namespace Aris
 	/// 
 	///
 	///
-	namespace DynKer
+	namespace Dynamic
 	{
 		void dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0);
 		template<class Container>

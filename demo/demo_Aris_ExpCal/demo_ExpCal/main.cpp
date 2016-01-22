@@ -8,7 +8,7 @@
 #include "aris_exp_cal.h"
 
 using namespace std;
-using namespace Aris::DynKer;
+using namespace Aris::Dynamic;
 
 int main()
 {
@@ -34,11 +34,11 @@ int main()
 	c.AddVariable("FIVE", 5);
 	c.AddVariable("TWO", 2);
 	c.AddVariable("PI", 3.141592653);
-	c.AddFunction("multiply", [](std::vector<Aris::DynKer::Matrix> matrices)
+	c.AddFunction("multiply", [](std::vector<Aris::Dynamic::Matrix> matrices)
 	{
 		return matrices.at(0)*matrices.at(1);
 	}, 2);
-	c.AddFunction("addTwo", [](std::vector<Aris::DynKer::Matrix> matrices)
+	c.AddFunction("addTwo", [](std::vector<Aris::Dynamic::Matrix> matrices)
 	{
 		return matrices.at(0) + 2;
 	}, 1);
