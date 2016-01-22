@@ -46,10 +46,9 @@ namespace Aris
 
 		void LoadXml(const char *fileName);
 		void LoadXml(const Aris::Core::XmlDocument &xmlDoc);
-		void AddGait(std::string cmdName, Aris::Dynamic::PlanFunc gaitFunc, ParseFunc parseFunc);
+		void AddCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func);
 		void Start();
 		void Stop();
-		void SetParseFunc(const std::string &cmd, const ParseFunc &parse_func);
 
 	private:
 		ControlServer();

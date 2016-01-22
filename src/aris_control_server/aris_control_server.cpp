@@ -405,7 +405,7 @@ namespace Aris
 	{
 	public:
 		void LoadXml(const Aris::Core::XmlDocument &doc);
-		void AddGait(std::string cmdName, Dynamic::PlanFunc gaitFunc, ParseFunc parseFunc);
+		void AddCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func);
 		void Start();
 		void Stop();
 
@@ -437,6 +437,7 @@ namespace Aris
 			ENABLE,
 			DISABLE,
 			HOME,
+			RECOVER,//recover是正常步态，但是在该步态中不检查连续，所以务必慎重！
 			RUN_GAIT,
 
 			ROBOT_CMD_COUNT
@@ -587,20 +588,38 @@ namespace Aris
 			return 0;
 		});
 	}
-	void ControlServer::Imp::AddGait(std::string cmdName, Dynamic::PlanFunc gaitFunc, ParseFunc parseFunc)
+	void ControlServer::Imp::AddCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)
 	{
-		if (map_cmd2id_.find(cmdName) != map_cmd2id_.end())
+		if (cmd_name == "en")
 		{
-			throw std::runtime_error(std::string("failed to add gait, because \"")+cmdName+"\" already exists");
+			if (gait_func)throw std::runtime_error("you can not set plan_func for enable command");
+			this->parse_enable_func_ = parse_func;
+		}
+		else if (cmd_name == "ds")
+		{
+			if (gait_func)throw std::runtime_error("you can not set plan_func for disable command");
+			this->parse_disable_func_ = parse_func;
+		}
+		else if (cmd_name == "hm")
+		{
+			if (gait_func)throw std::runtime_error("you can not set plan_func for home command");
+			this->parse_home_func_ = parse_func;
 		}
 		else
 		{
-			plan_vec_.push_back(gaitFunc);
-			parser_vec_.push_back(parseFunc);
+			if (map_cmd2id_.find(cmd_name) != map_cmd2id_.end())
+			{
+				throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
+			}
+			else
+			{
+				plan_vec_.push_back(gait_func);
+				parser_vec_.push_back(parse_func);
 
-			map_cmd2id_.insert(std::make_pair(cmdName, plan_vec_.size() - 1));
+				map_cmd2id_.insert(std::make_pair(cmd_name, plan_vec_.size() - 1));
 
-			std::cout << cmdName << ":" << map_cmd2id_.at(cmdName) << std::endl;
+				std::cout << cmd_name << ":" << map_cmd2id_.at(cmd_name) << std::endl;
+			}
 		}
 	};
 	void ControlServer::Imp::Start()
@@ -842,7 +861,7 @@ namespace Aris
 
 			if (cmdPair == this->map_cmd2id_.end())
 			{
-				throw std::logic_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddGait() first");
+				throw std::logic_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddCmd() first");
 			}
 
 			this->parser_vec_.at(cmdPair->second).operator()(cmd, params, cmd_msg);
@@ -852,7 +871,16 @@ namespace Aris
 				throw std::logic_error(std::string("parse function of command \"") + cmdPair->first + "\" failed: because it returned invalid cmd_msg");
 			}
 
-			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_type = RUN_GAIT;
+			if (cmd == "rc")
+			{
+				reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_type = RECOVER;
+			}
+			else
+			{
+				reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->cmd_type = RUN_GAIT;
+			}
+
+			
 			reinterpret_cast<GaitParamBase *>(cmd_msg.GetDataAddress())->gait_id = cmdPair->second;
 
 			if (plan_vec_.at(cmdPair->second) == nullptr) return;
@@ -1012,6 +1040,7 @@ namespace Aris
 		case HOME:
 			ret = home(static_cast<BasicFunctionParam &>(*pParam), data);
 			break;
+		case RECOVER:
 		case RUN_GAIT:
 			ret = run(static_cast<GaitParamBase &>(*pParam), data);
 			break;
@@ -1167,9 +1196,9 @@ namespace Aris
 	{
 		pImp->LoadXml(xmlDoc);
 	}
-	void ControlServer::AddGait(std::string cmdName, Dynamic::PlanFunc gaitFunc, ParseFunc parseFunc)
+	void ControlServer::AddCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)
 	{
-		pImp->AddGait(cmdName, gaitFunc, parseFunc);
+		pImp->AddCmd(cmd_name, parse_func, gait_func);
 	}
 	void ControlServer::Start()
 	{
@@ -1179,27 +1208,6 @@ namespace Aris
 	{
 		this->pImp->Stop();
 	}
-	void ControlServer::SetParseFunc(const std::string &cmd, const ParseFunc &parse_func)
-	{
-		if (cmd == "en")
-		{
-			pImp->parse_enable_func_ = parse_func;
-		}
-		else if (cmd == "ds")
-		{
-			pImp->parse_disable_func_ = parse_func;
-		}
-		else if (cmd == "hm")
-		{
-			pImp->parse_home_func_ = parse_func;
-		}
-		else
-		{
-			throw std::runtime_error("you can not set parse function for normal gait");
-		}
-
-	}
-
 }
 
 
