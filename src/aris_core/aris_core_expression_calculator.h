@@ -168,8 +168,8 @@ namespace Aris
 				if (i.length() == 0)
 					continue;
 
-				ret.m += i.m;
-				ret.n = std::max(i.n, ret.n);
+				ret.m_ += i.m();
+				ret.n_ = std::max(i.n(), ret.n());
 			}
 
 			/*判断所有矩阵是否拥有一样的列数*/
@@ -178,20 +178,20 @@ namespace Aris
 				if (i.length() == 0)
 					continue;
 
-				if (ret.n != i.n)
+				if (ret.n() != i.n())
 				{
-					ret.m = 0;
-					ret.n = 0;
+					ret.m_ = 0;
+					ret.n_ = 0;
 					throw std::logic_error("input do not have valid size");
 				}
 			}
 
 			/*判断最后的矩阵是否为空*/
-			if (ret.m*ret.n == 0)
+			if (ret.m()*ret.n() == 0)
 				return ret;
 
 			/*申请内存*/
-			ret.pData = new double[ret.m*ret.n];
+			ret.data_ = new double[ret.m()*ret.n()];
 
 			/*赋值*/
 			int beginRow = 0;
@@ -204,7 +204,7 @@ namespace Aris
 						ret(i + beginRow, j) = a(i, j);
 					}
 				}
-				beginRow += a.m;
+				beginRow += a.m();
 			}
 
 			return ret;
@@ -220,8 +220,8 @@ namespace Aris
 				if (i.length() == 0)
 					continue;
 
-				ret.m = i.m;
-				ret.n += i.n;
+				ret.m_ = i.m();
+				ret.n_ += i.n();
 			}
 
 			/*判断所有矩阵是否拥有一样的列数*/
@@ -230,28 +230,28 @@ namespace Aris
 				if (i.length() == 0)
 					continue;
 
-				if (ret.m != i.m)
+				if (ret.m() != i.m())
 				{
-					ret.m = 0;
-					ret.n = 0;
+					ret.m_ = 0;
+					ret.n_ = 0;
 					throw std::logic_error("input do not have valid size");
 				}
 			}
 
 			/*判断最后的矩阵是否为空*/
-			if (ret.m*ret.n == 0)
+			if (ret.m()*ret.n() == 0)
 				return ret;
 
 			/*申请内存*/
-			ret.pData = new double[ret.m*ret.n];
+			ret.data_ = new double[ret.m()*ret.n()];
 
 			/*赋值*/
 			int beginCol = 0;
 			for (const auto &a : matrices)
 			{
-				for (int i = 0; i < a.m; i++)
+				for (int i = 0; i < a.m(); i++)
 				{
-					for (int j = 0; j < a.n; j++)
+					for (int j = 0; j < a.n(); j++)
 					{
 						ret(i, j + beginCol) = a(i, j);
 					}
