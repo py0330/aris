@@ -107,7 +107,7 @@ namespace Aris
 			Pipe<Aris::Core::Msg>& msgPipe(){return msg_pipe_;};
 			
 			inline int p2a(const int phy){	return map_phy2abs_[phy];}
-			inline int a2p(const int abs){	return map_phy2abs_[abs];}
+			inline int a2p(const int abs){	return map_abs2phy_[abs];}
 			inline void p2a(const int *phy, int *abs, int num) { for (int i = 0; i < num; ++i)abs[i] = p2a(phy[i]); }
 			inline void a2p(const int *abs, int *phy, int num) { for (int i = 0; i < num; ++i)phy[i] = a2p(abs[i]); }
 
