@@ -171,7 +171,7 @@ public:
 
     const char* GetStr();
 
-    bool Empty() const {
+    bool empty() const {
         return _start == _end;
     }
 
@@ -222,7 +222,7 @@ public:
         }
     }
 
-    void Clear() {
+    void clear() {
         _size = 0;
     }
 
@@ -247,7 +247,7 @@ public:
         _size -= count;
     }
 
-    bool Empty() const					{
+    bool empty() const					{
         return _size == 0;
     }
 
@@ -266,7 +266,7 @@ public:
         return _mem[ _size - 1];
     }
 
-    int Size() const					{
+    int size() const					{
         return _size;
     }
 
@@ -330,7 +330,7 @@ public:
     MemPoolT() : _root(0), _currentAllocs(0), _nAllocs(0), _maxAllocs(0), _nUntracked(0)	{}
     ~MemPoolT() {
         // Delete the blocks.
-        for( int i=0; i<_blockPtrs.Size(); ++i ) {
+        for( int i=0; i<_blockPtrs.size(); ++i ) {
             delete _blockPtrs[i];
         }
     }
@@ -379,7 +379,7 @@ public:
     }
     void Trace( const char* name ) {
         printf( "Mempool %s watermark=%d [%dk] current=%d size=%d nAlloc=%d blocks=%d\n",
-                name, _maxAllocs, _maxAllocs*SIZE/1024, _currentAllocs, SIZE, _nAllocs, _blockPtrs.Size() );
+                name, _maxAllocs, _maxAllocs*SIZE/1024, _currentAllocs, SIZE, _nAllocs, _blockPtrs.size() );
     }
 
     void SetTracked() {
@@ -1036,7 +1036,7 @@ class TINYXML2_LIB XMLAttribute
     friend class XMLElement;
 public:
     /// The name of the attribute.
-    const char* Name() const;
+    const char* name() const;
 
     /// The value of the attribute.
     const char* Value() const;
@@ -1136,7 +1136,7 @@ class TINYXML2_LIB XMLElement : public XMLNode
     friend class XMLDocument;
 public:
     /// Get the name of an element (which is the Value() of the node.)
-    const char* Name() const		{
+    const char* name() const		{
         return Value();
     }
     /// Set the name of the element.
@@ -1675,7 +1675,7 @@ public:
     void PrintError() const;
     
     /// Clear the document, resetting it to the initial state.
-    void Clear();
+    void clear();
 
     // internal
     char* Identify( char* p, XMLNode** node );
@@ -2024,14 +2024,14 @@ public:
     	includes the terminating null.)
     */
     int CStrSize() const {
-        return _buffer.Size();
+        return _buffer.size();
     }
     /**
     	If in print to memory mode, reset the buffer to the
     	beginning.
     */
     void ClearBuffer() {
-        _buffer.Clear();
+        _buffer.clear();
         _buffer.Push(0);
     }
 

@@ -7,7 +7,7 @@
 #endif
 
 #include "aris_core.h"
-#include "aris_xml.h"
+#include "aris_core_xml.h"
 
 #ifdef UNIX
 #include <unistd.h>
@@ -27,10 +27,10 @@ struct AAA
 
 int show(const Aris::Core::Msg &msg)
 {
-	cout << "Msg Length:" << msg.GetLength()<<endl;
-	cout << "Msg MsgID :" << msg.GetMsgID()<<endl;
+	cout << "Msg Length:" << msg.size()<<endl;
+	cout << "Msg MsgID :" << msg.msgID()<<endl;
 	//cout << "Msg Type  :" << msg.GetType()<<endl;
-	cout << "Msg Data  :" << msg.GetDataAddress()<<endl<<endl;
+	cout << "Msg Data  :" << msg.data()<<endl<<endl;
 
 	return 0;
 }
@@ -98,12 +98,12 @@ int main()
 		m1.SetLength(10);
 		
 
-		memcpy(m1.GetDataAddress(), "123456789", 10);
+		memcpy(m1.data(), "123456789", 10);
 
 		m1.SetLength(12);
 
-		m1.SetMsgID(101);
-		//m1.SetType(1233);
+		m1.setMsgID(101);
+		//m1.setType(1233);
 
 		Msg m4(m1);
 
@@ -118,14 +118,14 @@ int main()
 
 		show(m3);
 
-		Aris::Core::MsgRT::instance[0].CopyMore("rt msg123", 10);
+		Aris::Core::MsgRT::instance[0].copyMore("rt msg123", 10);
 
 		cout << "1" << endl;
 
-		//Aris::Core::MsgRT::instance[0].CopyMore("rt msg123", 10);
-		Aris::Core::MsgRT::instance[1].CopyMore("98765", 6);
-		cout << (char *)Aris::Core::MsgRT::instance[0].GetDataAddress() << endl;
-		cout << (char *)Aris::Core::MsgRT::instance[1].GetDataAddress() << endl;
+		//Aris::Core::MsgRT::instance[0].copyMore("rt msg123", 10);
+		Aris::Core::MsgRT::instance[1].copyMore("98765", 6);
+		cout << (char *)Aris::Core::MsgRT::instance[0].data() << endl;
+		cout << (char *)Aris::Core::MsgRT::instance[1].data() << endl;
 		cout << Aris::Core::MsgRT::instance[0].GetLength() << endl;
 		cout << Aris::Core::MsgRT::instance[1].GetLength() << endl;
 
@@ -138,14 +138,14 @@ int main()
 
 		Msg m;
 
-		m.CopyStruct(aaa, bbb, aaa);
-		m.CopyStruct(aaa, bbb, aaa);
-		m.PasteStruct(ccc, ccc, ddd);
+		m.copyStruct(aaa, bbb, aaa);
+		m.copyStruct(aaa, bbb, aaa);
+		m.pasteStruct(ccc, ccc, ddd);
 
 		cout << "ccc:" << endl << "    " << ccc.a << endl << "    " << ccc.b << endl << "    " << ccc.c << endl;
 		cout << "ddd:" << endl << "    " << ddd.a << endl << "    " << ddd.b << endl << "    " << ddd.c << endl;
 
-		cout << (char*)m.GetDataAddress() << endl;
+		cout << (char*)m.data() << endl;
 
 
 

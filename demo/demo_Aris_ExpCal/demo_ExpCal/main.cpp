@@ -2,10 +2,10 @@
 #include <iomanip>
 #include <cmath>
 #include "aris_core.h"
-#include "aris_socket.h"
-#include "aris_dyn_kernel.h"
+#include "aris_core_socket.h"
+#include "aris_dynamic_kernel.h"
 
-#include "aris_exp_cal.h"
+#include "aris_core_expression_calculator.h"
 
 using namespace std;
 using namespace Aris::Dynamic;
@@ -50,7 +50,7 @@ int main()
 	Matrix m = { 1, 2.2, 3,{}, 2, 3.2, 4 };
 	Matrix n = { x,{}, x + 0.1 };
 
-	m.Transpose();
+	m.transpose();
 
 	Matrix m2;
 
@@ -61,7 +61,7 @@ int main()
 
 	k(1, 1) = 31.415926532345e16;
 
-	cout << k.ToString();
+	cout << k.toString();
 
 
 	k({ 1, 2 }, { 0, 1 }).dsp();

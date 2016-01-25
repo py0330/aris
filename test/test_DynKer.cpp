@@ -1,5 +1,5 @@
 #include <iostream>
-#include "aris_dyn_kernel.h"
+#include "aris_dynamic_kernel.h"
 
 using namespace Aris::Dynamic;
 

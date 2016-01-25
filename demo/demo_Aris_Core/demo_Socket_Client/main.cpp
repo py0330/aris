@@ -5,8 +5,8 @@
 #include <thread>
 
 
-#include "aris_socket.h"
-#include "aris_message.h"
+#include "aris_core_socket.h"
+#include "aris_core_msg_loop.h"
 
 #ifdef UNIX
 #include <unistd.h>
@@ -62,7 +62,7 @@ int main()
 		Socket VisualSystem, ControlSystem;
 
 		/*注册所有的消息函数*/
-		Aris::Core::RegisterMsgCallback(VisualSystemDataNeeded, [&VisualSystem](Aris::Core::Msg &msg)
+		Aris::Core::registerMsgCallback(VisualSystemDataNeeded, [&VisualSystem](Aris::Core::Msg &msg)
 		{
 			/*只要收到数据，就认为服务器在索取地图数据，于是生成地图并发送过去*/
 			static int i = 0;
@@ -73,27 +73,27 @@ int main()
 			double map[9] = { (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i, (double)i };
 
 			Aris::Core::Msg data;
-			data.Copy(map, sizeof(map));
+			data.copy(map, sizeof(map));
 
-			VisualSystem.SendData(data);
+			VisualSystem.sendMsg(data);
 
 			return 0;
 		});
-		Aris::Core::RegisterMsgCallback(VisualSystemLost, [](Aris::Core::Msg &msg)
+		Aris::Core::registerMsgCallback(VisualSystemLost, [](Aris::Core::Msg &msg)
 		{
 			cout << "Vision system connection lost" << endl;
 
-			Aris::Core::StopMsgLoop();
+			Aris::Core::stopMsgLoop();
 
 			return 0;
 		});
-		Aris::Core::RegisterMsgCallback(ControlCommandReceived, [&ControlSystem](Aris::Core::Msg &msg)
+		Aris::Core::registerMsgCallback(ControlCommandReceived, [&ControlSystem](Aris::Core::Msg &msg)
 		{
 			/*只要收到数据，就认为服务器让机器人行动，于是sleep 2秒之后发送回去数据，告诉机器人已经走到位*/
 
 			cout << "begin walking" << endl;
 #ifdef WIN32
-			Sleep(2000);
+			msSleep(2000);
 #endif
 #ifdef UNIX
 			usleep(2000000);
@@ -102,13 +102,13 @@ int main()
 
 
 			Aris::Core::Msg data;
-			ControlSystem.SendData(data);
+			ControlSystem.sendMsg(data);
 			cout << "end walking" << endl;
 
 			return 0;
 
 		});
-		Aris::Core::RegisterMsgCallback(ControlSystemLost, [](Aris::Core::Msg &msg)
+		Aris::Core::registerMsgCallback(ControlSystemLost, [](Aris::Core::Msg &msg)
 		{
 			cout << "Control system connection lost" << endl;
 
@@ -116,35 +116,35 @@ int main()
 		});
 
 		/*设置所有Socket类型的回调函数*/
-		VisualSystem.SetOnReceivedData([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
+		VisualSystem.setOnReceivedMsg([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
 		{
-			Aris::Core::PostMsg(Aris::Core::Msg(VisualSystemDataNeeded));
+			Aris::Core::postMsg(Aris::Core::Msg(VisualSystemDataNeeded));
 
 			return 0;
 		});
-		VisualSystem.SetOnLoseConnection([](Aris::Core::Socket *pConn)
+		VisualSystem.setOnLoseConnection([](Aris::Core::Socket *pConn)
 		{
-			PostMsg(Aris::Core::Msg(VisualSystemLost));
+			postMsg(Aris::Core::Msg(VisualSystemLost));
 
 			return 0;
 		});
-		ControlSystem.SetOnReceivedData([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
+		ControlSystem.setOnReceivedMsg([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
 		{
-			Aris::Core::PostMsg(Aris::Core::Msg(ControlCommandReceived));
+			Aris::Core::postMsg(Aris::Core::Msg(ControlCommandReceived));
 
 			return 0;
 		});
-		ControlSystem.SetOnLoseConnection([](Aris::Core::Socket *pConn)
+		ControlSystem.setOnLoseConnection([](Aris::Core::Socket *pConn)
 		{
-			PostMsg(Aris::Core::Msg(ControlSystemLost));
+			postMsg(Aris::Core::Msg(ControlSystemLost));
 
 			return 0;
 		});
 
 		/*以下使用lambda函数做回调*/
-		VisualSystem.SetOnReceivedData([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
+		VisualSystem.setOnReceivedMsg([](Aris::Core::Socket *pConn, Aris::Core::Msg &data)
 		{
-			Aris::Core::PostMsg(Aris::Core::Msg(VisualSystemDataNeeded));
+			Aris::Core::postMsg(Aris::Core::Msg(VisualSystemDataNeeded));
 			return 0;
 		});
 
@@ -153,8 +153,8 @@ int main()
 		Aris::Core::log("before connect");
 		try
 		{
-			VisualSystem.Connect(RemoteIp, "5688");
-			ControlSystem.Connect(RemoteIp, "5689");
+			VisualSystem.connect(RemoteIp, "5688");
+			ControlSystem.connect(RemoteIp, "5689");
 		}
 		catch (std::logic_error &e)
 		{
@@ -164,15 +164,15 @@ int main()
 		Aris::Core::log("after connect");
 
 
-		Aris::Core::Msg ret = ControlSystem.SendRequest(Aris::Core::Msg());
+		Aris::Core::Msg ret = ControlSystem.sendRequest(Aris::Core::Msg());
 		
-		cout << (char*)ret.GetDataAddress() << endl;
+		cout << (char*)ret.data() << endl;
 
 		
 
 
 		/*开始消息循环*/
-		Aris::Core::RunMsgLoop();
+		Aris::Core::runMsgLoop();
 	}
 
 #ifdef WIN32  

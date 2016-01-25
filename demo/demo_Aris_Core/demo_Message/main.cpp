@@ -1,6 +1,6 @@
 ﻿#include <thread>
 
-#include "aris_message.h"
+#include "aris_core_msg_loop.h"
 
 #include <stdio.h>
 

@@ -732,7 +732,7 @@ const XMLElement* XMLNode::FirstChildElement( const char* value ) const
     for( XMLNode* node=_firstChild; node; node=node->_next ) {
         XMLElement* element = node->ToElement();
         if ( element ) {
-            if ( !value || XMLUtil::StringEqual( element->Name(), value ) ) {
+            if ( !value || XMLUtil::StringEqual( element->name(), value ) ) {
                 return element;
             }
         }
@@ -746,7 +746,7 @@ const XMLElement* XMLNode::LastChildElement( const char* value ) const
     for( XMLNode* node=_lastChild; node; node=node->_prev ) {
         XMLElement* element = node->ToElement();
         if ( element ) {
-            if ( !value || XMLUtil::StringEqual( element->Name(), value ) ) {
+            if ( !value || XMLUtil::StringEqual( element->name(), value ) ) {
                 return element;
             }
         }
@@ -833,15 +833,15 @@ char* XMLNode::ParseDeep( char* p, StrPair* parentEnd )
         // Handle an end tag returned to this level.
         // And handle a bunch of annoying errors.
         if ( ele ) {
-            if ( endTag.Empty() && ele->ClosingType() == XMLElement::OPEN ) {
+            if ( endTag.empty() && ele->ClosingType() == XMLElement::OPEN ) {
                 _document->SetError( XML_ERROR_MISMATCHED_ELEMENT, node->Value(), 0 );
                 p = 0;
             }
-            else if ( !endTag.Empty() && ele->ClosingType() != XMLElement::OPEN ) {
+            else if ( !endTag.empty() && ele->ClosingType() != XMLElement::OPEN ) {
                 _document->SetError( XML_ERROR_MISMATCHED_ELEMENT, node->Value(), 0 );
                 p = 0;
             }
-            else if ( !endTag.Empty() ) {
+            else if ( !endTag.empty() ) {
                 if ( !XMLUtil::StringEqual( endTag.GetStr(), node->Value() )) {
                     _document->SetError( XML_ERROR_MISMATCHED_ELEMENT, node->Value(), 0 );
                     p = 0;
@@ -1065,7 +1065,7 @@ bool XMLUnknown::Accept( XMLVisitor* visitor ) const
 
 // --------- XMLAttribute ---------- //
 
-const char* XMLAttribute::Name() const 
+const char* XMLAttribute::name() const 
 {
     return _name.GetStr();
 }
@@ -1219,7 +1219,7 @@ XMLElement::~XMLElement()
 XMLAttribute* XMLElement::FindAttribute( const char* name )
 {
     for( XMLAttribute* a = _rootAttribute; a; a = a->_next ) {
-        if ( XMLUtil::StringEqual( a->Name(), name ) ) {
+        if ( XMLUtil::StringEqual( a->name(), name ) ) {
             return a;
         }
     }
@@ -1230,7 +1230,7 @@ XMLAttribute* XMLElement::FindAttribute( const char* name )
 const XMLAttribute* XMLElement::FindAttribute( const char* name ) const
 {
     for( XMLAttribute* a = _rootAttribute; a; a = a->_next ) {
-        if ( XMLUtil::StringEqual( a->Name(), name ) ) {
+        if ( XMLUtil::StringEqual( a->name(), name ) ) {
             return a;
         }
     }
@@ -1384,7 +1384,7 @@ XMLAttribute* XMLElement::FindOrCreateAttribute( const char* name )
     for( attrib = _rootAttribute;
             attrib;
             last = attrib, attrib = attrib->_next ) {
-        if ( XMLUtil::StringEqual( attrib->Name(), name ) ) {
+        if ( XMLUtil::StringEqual( attrib->name(), name ) ) {
             break;
         }
     }
@@ -1408,7 +1408,7 @@ void XMLElement::DeleteAttribute( const char* name )
 {
     XMLAttribute* prev = 0;
     for( XMLAttribute* a=_rootAttribute; a; a=a->_next ) {
-        if ( XMLUtil::StringEqual( name, a->Name() ) ) {
+        if ( XMLUtil::StringEqual( name, a->name() ) ) {
             if ( prev ) {
                 prev->_next = a->_next;
             }
@@ -1432,7 +1432,7 @@ char* XMLElement::ParseAttributes( char* p )
     while( p ) {
         p = XMLUtil::SkipWhiteSpace( p );
         if ( !p || !(*p) ) {
-            _document->SetError( XML_ERROR_PARSING_ELEMENT, start, Name() );
+            _document->SetError( XML_ERROR_PARSING_ELEMENT, start, name() );
             return 0;
         }
 
@@ -1443,7 +1443,7 @@ char* XMLElement::ParseAttributes( char* p )
 			attrib->_memPool->SetTracked();
 
             p = attrib->ParseDeep( p, _document->ProcessEntities() );
-            if ( !p || Attribute( attrib->Name() ) ) {
+            if ( !p || Attribute( attrib->name() ) ) {
                 DeleteAttribute( attrib );
                 _document->SetError( XML_ERROR_PARSING_ATTRIBUTE, start, p );
                 return 0;
@@ -1510,7 +1510,7 @@ char* XMLElement::ParseDeep( char* p, StrPair* strPair )
     }
 
     p = _value.ParseName( p );
-    if ( _value.Empty() ) {
+    if ( _value.empty() ) {
         return 0;
     }
 
@@ -1532,7 +1532,7 @@ XMLNode* XMLElement::ShallowClone( XMLDocument* doc ) const
     }
     XMLElement* element = doc->NewElement( Value() );					// fixme: this will always allocate memory. Intern?
     for( const XMLAttribute* a=FirstAttribute(); a; a=a->Next() ) {
-        element->SetAttribute( a->Name(), a->Value() );					// fixme: this will always allocate memory. Intern?
+        element->SetAttribute( a->name(), a->Value() );					// fixme: this will always allocate memory. Intern?
     }
     return element;
 }
@@ -1614,7 +1614,7 @@ XMLDocument::~XMLDocument()
 }
 
 
-void XMLDocument::Clear()
+void XMLDocument::clear()
 {
     DeleteChildren();
 
@@ -1687,7 +1687,7 @@ static FILE* callfopen( const char* filepath, const char* mode )
 
 XMLError XMLDocument::LoadFile( const char* filename )
 {
-    Clear();
+    clear();
     FILE* fp = callfopen( filename, "rb" );
     if ( !fp ) {
         SetError( XML_ERROR_FILE_NOT_FOUND, filename, 0 );
@@ -1701,7 +1701,7 @@ XMLError XMLDocument::LoadFile( const char* filename )
 
 XMLError XMLDocument::LoadFile( FILE* fp )
 {
-    Clear();
+    clear();
 
     fseek( fp, 0, SEEK_SET );
     if ( fgetc( fp ) == EOF && ferror( fp ) != 0 ) {
@@ -1769,7 +1769,7 @@ XMLError XMLDocument::SaveFile( FILE* fp, bool compact )
 XMLError XMLDocument::Parse( const char* p, size_t len )
 {
 	const char* start = p;
-    Clear();
+    clear();
 
     if ( len == 0 || !p || !*p ) {
         SetError( XML_ERROR_EMPTY_DOCUMENT, 0, 0 );
@@ -2167,9 +2167,9 @@ bool XMLPrinter::VisitEnter( const XMLElement& element, const XMLAttribute* attr
 {
 	const XMLElement*	parentElem = element.Parent()->ToElement();
 	bool		compactMode = parentElem ? CompactMode(*parentElem) : _compactMode;
-    OpenElement( element.Name(), compactMode );
+    OpenElement( element.name(), compactMode );
     while ( attribute ) {
-        PushAttribute( attribute->Name(), attribute->Value() );
+        PushAttribute( attribute->name(), attribute->Value() );
         attribute = attribute->Next();
     }
     return true;
