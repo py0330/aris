@@ -408,10 +408,13 @@ namespace Aris
 			map_phy2abs_.resize(motion_vec_.size());
 			map_abs2phy_.resize(motion_vec_.size());
 
+			std::cout << "p2a:";
 			for (std::size_t i = 0; i < motion_vec_.size(); ++i)
 			{
 				map_phy2abs_[i] = motion_vec_[i]->absID();
+				std::cout << map_phy2abs_[i] <<"  ";
 			}
+			std::cout << std::endl;
 
 			for (std::size_t i = 0; i < motion_vec_.size(); ++i)
 			{
