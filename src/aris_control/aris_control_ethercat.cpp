@@ -35,8 +35,8 @@ namespace Aris
 		public:
 			Imp(const Aris::Core::XmlElement &xml_ele);
 			void init();
-			void Read();
-			void Write();
+			void read();
+			void write();
 
 		private:
 			/*data object, can be PDO or SDO*/
@@ -108,8 +108,8 @@ namespace Aris
 		class EthercatMaster::Imp
 		{
 		public:
-			void Read();
-			void Write();
+			void read();
+			void write();
 			void start();
 			void stop();
 			
@@ -295,11 +295,11 @@ namespace Aris
 			if (this->distributedClock)ecrt_slave_config_dc(ec_slave_config, *distributedClock.get(), 1000000, 4400000, 0, 0);
 			
 		}
-		void EthercatSlave::Imp::Read()
+		void EthercatSlave::Imp::read()
 		{
 			ecrt_domain_process(pDomain);
 		}
-		void EthercatSlave::Imp::Write()
+		void EthercatSlave::Imp::write()
 		{
 			ecrt_domain_queue(pDomain);
 		}
@@ -369,20 +369,20 @@ namespace Aris
 
 		
 		std::atomic_bool EthercatMaster::Imp::isStopping;
-		void EthercatMaster::Imp::Read()
+		void EthercatMaster::Imp::read()
 		{
 			ecrt_master_receive(pEcMaster);
 			for (auto &pSla : slaves)
 			{
-				pSla->pImp->Read();
+				pSla->pImp->read();
 			}
 		}
-		void EthercatMaster::Imp::Write()
+		void EthercatMaster::Imp::write()
 		{
 
 			for (auto &pSla : slaves)
 			{
-				pSla->pImp->Write();
+				pSla->pImp->write();
 			}
 
 
@@ -460,14 +460,14 @@ namespace Aris
 			{
 				rt_task_wait_period(NULL);
 
-				EthercatMaster::instance().pImp->Read();//motors and sensors get data
+				EthercatMaster::instance().pImp->read();//motors and sensors get data
 				
 				/*Here is tg*/
 				EthercatMaster::instance().controlStrategy();
 				/*tg finished*/
 
 				EthercatMaster::instance().pImp->sync(rt_timer_read());
-				EthercatMaster::instance().pImp->Write();//motor data write and state machine/mode transition
+				EthercatMaster::instance().pImp->write();//motor data write and state machine/mode transition
 			}
 #endif
 		};

@@ -62,8 +62,6 @@ namespace Aris
 			class Imp;
 			std::unique_ptr<Imp> pImp;
 		};
-
-		int sendRequest(int argc, char *argv[], const char *xmlFileName);
 	}
 }
 
