@@ -455,21 +455,21 @@ namespace Aris
 			{
 				BasicFunctionParam param;
 				param.cmd_type = Imp::RobotCmdID::ENABLE;
-				std::fill_n(param.active_motor, this->pModel_->motionNum(), true);
+				std::fill_n(param.active_motor, this->pModel_->motionPool().size(), true);
 				msg.copyStruct(param);
 			} };
 			ParseFunc parse_disable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
 			{
 				BasicFunctionParam param;
 				param.cmd_type = Imp::RobotCmdID::DISABLE;
-				std::fill_n(param.active_motor, this->pModel_->motionNum(), true);
+				std::fill_n(param.active_motor, this->pModel_->motionPool().size(), true);
 				msg.copyStruct(param);
 			} };
 			ParseFunc parse_home_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
 			{
 				BasicFunctionParam param;
 				param.cmd_type = Imp::RobotCmdID::HOME;
-				std::fill_n(param.active_motor, this->pModel_->motionNum(), true);
+				std::fill_n(param.active_motor, this->pModel_->motionPool().size(), true);
 				msg.copyStruct(param);
 			} };
 
@@ -998,7 +998,7 @@ namespace Aris
 			for (std::size_t i = 0; i<pController->motionNum(); ++i)
 			{
 				data.motion_rawdata->operator[](i).cmd = Aris::Control::EthercatMotion::RUN;
-				data.motion_rawdata->operator[](i).target_pos = static_cast<std::int32_t>(pModel_->motionAt(i).motPos() * pController->motionAtAbs(i).pos2countRatio());
+				data.motion_rawdata->operator[](i).target_pos = static_cast<std::int32_t>(pModel_->motionPool().at(i).motPos() * pController->motionAtAbs(i).pos2countRatio());
 			}
 
 			return ret;

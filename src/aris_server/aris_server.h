@@ -17,7 +17,7 @@ namespace Aris
 {
 	namespace Server
 	{
-		const int MAX_MOTOR_NUM = 100;
+		enum { MAX_MOTOR_NUM = 100 };
 
 		/*for enable, disable, and home*/
 		struct BasicFunctionParam final :Aris::Dynamic::PlanParamBase

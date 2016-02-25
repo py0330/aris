@@ -125,7 +125,7 @@ add_library(aris_control STATIC ${FULL_SRC} ${FULL_H} src/aris_control/aris_cont
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H} src/aris_control/aris_control.h)
 
 # aris dynamic project
-set(SOURCE aris_dynamic_plan aris_dynamic_kernel aris_dynamic_model aris_dynamic_model_base)
+set(SOURCE aris_dynamic_plan aris_dynamic_kernel aris_dynamic_model)
 PREPEND_CPP(FULL_SRC src/aris_dynamic ${SOURCE})
 PREPEND_H(FULL_H src/aris_dynamic ${SOURCE})
 add_library(aris_dynamic STATIC ${FULL_SRC} ${FULL_H} src/aris_dynamic/aris_dynamic.h)

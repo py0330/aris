@@ -410,18 +410,18 @@ namespace Aris
 			};
 
 			typedef std::vector<TOKEN> TOKENS;
-			TOKENS tokens;
-			TOKENS Expression2Tokens(const std::string &expression);
-			Matrix CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken);
+			mutable TOKENS tokens;
+			TOKENS Expression2Tokens(const std::string &expression)const;
+			Matrix CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken) const;
 			
-			Matrix CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator endToken);
-			Matrix CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator endToken);
-			Matrix CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator endToken);
-			Matrix CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator endToken);
+			Matrix CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator endToken) const;
+			Matrix CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator endToken) const;
+			Matrix CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator endToken) const;
+			Matrix CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator endToken) const;
 
-			TOKENS::iterator FindNextOutsideToken(TOKENS::iterator leftPar, TOKENS::iterator endToken, TOKEN::TYPE type);
-			TOKENS::iterator FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence);
-			std::vector<std::vector<Matrix> > GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken);
+			TOKENS::iterator FindNextOutsideToken(TOKENS::iterator leftPar, TOKENS::iterator endToken, TOKEN::TYPE type) const;
+			TOKENS::iterator FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence)const;
+			std::vector<std::vector<Matrix> > GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken)const;
 		
 		private:
 			std::map<std::string, OPERATOR> operators;
@@ -449,7 +449,7 @@ namespace Aris
 				}, 1);
 			}
 
-			Matrix CalculateExpression(const std::string &expression);
+			Matrix CalculateExpression(const std::string &expression) const;
 			void AddVariable(const std::string &name, const Matrix &value);
 			void AddFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f,int n)
 			{

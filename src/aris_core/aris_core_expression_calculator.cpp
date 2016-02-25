@@ -344,7 +344,7 @@ namespace Aris
 			return ret;
 		};
 		
-		Calculator::TOKENS Calculator::Expression2Tokens(const std::string &expression)
+		Calculator::TOKENS Calculator::Expression2Tokens(const std::string &expression)const
 		{
 			TOKENS tokens;
 			TOKEN token;
@@ -481,7 +481,7 @@ namespace Aris
 
 			return tokens;
 		}
-		Matrix Calculator::CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken)
+		Matrix Calculator::CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken) const
 		{
 			if (beginToken >= endToken)
 			{
@@ -559,7 +559,7 @@ namespace Aris
 			return value;
 		}
 
-		Matrix Calculator::CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
+		Matrix Calculator::CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator maxEndToken)const
 		{
 			auto beginPar = i+1;
 			auto endPar = FindNextOutsideToken(i + 1, maxEndToken, TOKEN::PARENTHESIS_R);
@@ -568,7 +568,7 @@ namespace Aris
 
 			return CaculateTokens(beginPar, endPar);
 		}
-		Matrix Calculator::CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
+		Matrix Calculator::CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator maxEndToken)const
 		{
 			std::vector<std::vector<Matrix>> matrices;
 
@@ -578,7 +578,7 @@ namespace Aris
 
 			return combineMatrices(matrices);
 		}
-		Matrix Calculator::CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
+		Matrix Calculator::CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator maxEndToken)const
 		{
 			auto beginPar = i + 1;
 			auto endPar = FindNextOutsideToken(beginPar + 1, maxEndToken, TOKEN::PARENTHESIS_R);
@@ -609,14 +609,14 @@ namespace Aris
 				throw std::logic_error(s.c_str());
 			}
 		}
-		Matrix Calculator::CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator maxEndToken)
+		Matrix Calculator::CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator maxEndToken)const
 		{
 			auto opr = i;
 			i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, maxEndToken, opr->opr->priority_ul);
 			return opr->opr->fun_ul(CaculateTokens(opr + 1, i));
 		}
 		
-		Calculator::TOKENS::iterator Calculator::FindNextOutsideToken(TOKENS::iterator beginToken, TOKENS::iterator endToken, TOKEN::TYPE type)
+		Calculator::TOKENS::iterator Calculator::FindNextOutsideToken(TOKENS::iterator beginToken, TOKENS::iterator endToken, TOKEN::TYPE type)const
 		{
 			int parNum = 0;
 			int braNum = 0;
@@ -663,7 +663,7 @@ namespace Aris
 
 			return nextPlace;
 		}
-		Calculator::TOKENS::iterator Calculator::FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence)
+		Calculator::TOKENS::iterator Calculator::FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence)const
 		{
 			auto nextOpr= beginToken;
 
@@ -683,7 +683,7 @@ namespace Aris
 
 			return nextOpr;
 		}
-		std::vector<std::vector<Matrix> > Calculator::GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken)
+		std::vector<std::vector<Matrix> > Calculator::GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken)const
 		{
 			std::vector<std::vector<Matrix> > ret;
 			
@@ -719,7 +719,7 @@ namespace Aris
 		}
 
 
-		Matrix Calculator::CalculateExpression(const std::string &expression)
+		Matrix Calculator::CalculateExpression(const std::string &expression)const
 		{
 			this->tokens=Expression2Tokens(expression);
 			return CaculateTokens(tokens.begin(), tokens.end());

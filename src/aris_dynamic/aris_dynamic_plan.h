@@ -46,6 +46,33 @@ namespace Aris
 			return 1.0 / n*i;
 		}
 
+		inline double s_p2p(int n, int i, double begin_pos, double end_pos)
+		{
+			double a = 4 * (end_pos - begin_pos) / n / n;
+			return i <= n / 2 ? 0.5*a*i*i + begin_pos : end_pos - 0.5*a*(n - i)*(n - i);
+		}
+		inline double s_v2v(int n, int i, double begin_vel, double end_vel)
+		{
+			double s = static_cast<double>(i) / n;
+			double m = 1 - s;
+
+			return (s*s*s - s*s)*end_vel*n + (m*m - m*m*m)*begin_vel*n;
+		}
+
+		inline double s_interp(int n, int i, double begin_pos, double end_pos, double begin_vel, double end_vel)
+		{
+			double s = static_cast<double>(i) / n;
+			
+			double a, b, c, d;
+
+			c = begin_vel*n;
+			d = begin_pos;
+			a = end_vel*n - 2 * end_pos + c + 2 * d;
+			b = end_pos - c - d - a;
+
+			return a*s*s*s+b*s*s+c*s+d;
+		}
+
 		class FastPath
 		{
 		public:
