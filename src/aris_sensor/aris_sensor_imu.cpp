@@ -102,11 +102,11 @@ namespace Aris
 			pImp->sampleRate = std::stoi(xmlEle->Attribute("sampleRate"));;
 
 			Aris::Core::Calculator c;
-			c.AddVariable("PI", PI);
+			c.addVariable("PI", PI);
 			
-			auto m = c.CalculateExpression(xmlEle->Attribute("PeImuGround2BodyGound"));
+			auto m = c.calculateExpression(xmlEle->Attribute("PeImuGround2BodyGound"));
 			Aris::Dynamic::s_pe2pm(m.data(), &pImp->pmImuGround2BodyGround[0][0]);
-			m = c.CalculateExpression(xmlEle->Attribute("PeImu2Body"));
+			m = c.calculateExpression(xmlEle->Attribute("PeImu2Body"));
 			double pmImu2Body[16];
 			Aris::Dynamic::s_pe2pm(m.data(), pmImu2Body);
 			Aris::Dynamic::s_inv_pm(pmImu2Body, &pImp->pmBody2Imu[0][0]);

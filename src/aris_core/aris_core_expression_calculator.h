@@ -20,103 +20,46 @@ namespace Aris
 		class Matrix
 		{
 		public:
+			~Matrix() {};
+			Matrix() :m_(0), n_(0), is_row_major_(true) {};
+			Matrix(const Matrix &other) = default;
+			Matrix(Matrix &&other) { this->swap(other); };
+			Matrix &operator=(Matrix other) { this->swap(other); return *this; };
 			Matrix(double value);
-			Matrix(int m, int n);
-			Matrix(int m, int n, const double *data);
-			Matrix(const std::initializer_list<Matrix> &data) :Matrix()
+			Matrix(std::size_t m, std::size_t n, double value = 0);
+			Matrix(std::size_t m, std::size_t n, const double *data);
+			Matrix(const std::initializer_list<Matrix> &data);
+			auto swap(Matrix &other)->Matrix&;
+			auto empty() const->bool { return data_vec_.empty(); };
+			auto size() const->std::size_t { return m()*n(); };
+			auto data()->double * { return data_vec_.data(); };
+			auto data() const->const double * { return data_vec_.data(); };
+			auto begin() ->double * { return data(); };
+			auto begin() const ->const double * { return data(); };
+			auto end() ->double * { return data() + size(); };
+			auto end()  const ->const double * { return data() + size(); };
+			auto m() const->std::size_t { return m_; };
+			auto n() const->std::size_t { return n_; };
+			auto resize(std::size_t m, std::size_t n)->Matrix &;
+			auto transpose()->Matrix &;
+			
+			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol, std::size_t rowNum, std::size_t colNum)->void;
+			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol)->void { copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); };
+
+			auto toString() const->std::string;
+			auto toDouble() const->double { return data()[0]; };
+			auto dsp() const ->void
 			{
-				std::list<std::list<Matrix> > mat_list_list;
-
-				bool need_new_row = true;
-				for (auto &i : data)
-				{
-					if (i.empty())
-					{
-						need_new_row = true;
-					}
-					else
-					{
-						if (need_new_row)
-						{
-							mat_list_list.push_back(std::list<Matrix>());
-							need_new_row = false;
-						}
-
-						mat_list_list.back().push_back(i);
-					}
-				}
-
-
-				(*this) = Aris::Core::combineMatrices(mat_list_list);
+				std::cout << this->toString();
 			}
 
-			Matrix() :m_(0), n_(0), is_row_major_(true), data_(nullptr) {};
-			Matrix(const Matrix &other) :m_(other.m()), n_(other.n()), is_row_major_(true), data_(m()*n() > 0 ? new double[m()*n()] : nullptr) { std::copy_n(other.data_, m()*n(), data_); };
-			Matrix(Matrix &&other) :Matrix() { this->swap(other); };
-			Matrix &operator=(Matrix other) { this->swap(other);	return *this; };
-			Matrix &swap(Matrix &other)
-			{
-				std::swap(this->m_, other.m_);
-				std::swap(this->n_, other.n_);
-				std::swap(this->is_row_major_, other.is_row_major_);
-				std::swap(this->data_, other.data_);
-
-				return *this;
-			}
-			~Matrix();
-
-
-			bool empty() const { return !data_; }
-			int m() const { return m_; };
-			int n() const { return n_; };
-			int rowNum() const { return m(); }
-			int colNum() const { return n(); }
-			int length() const { return m()*n(); };
-			double * data() { return data_; };
-			const double * data() const { return data_; };
-
-			void transpose() { is_row_major_ = !is_row_major_; std::swap(m_, n_); };
-			void resize(int m, int n);
-			void copySubMatrixTo(const Matrix &subMat, int beginRow, int beginCol, int rowNum, int colNum);
-			void copySubMatrixTo(const Matrix &subMat, int beginRow, int beginCol){ copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); };
-			void forEachElement(std::function<double(double)> f)
-			{
-				for (int i = 0; i < length(); ++i)
-				{
-					data()[i] = f(data()[i]);
-				}
-			};
-
-			double & operator()(int i, int j)
-			{ 
-				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
-			};
-			double operator() (int i, int j) const
+			auto operator()(std::size_t i, std::size_t j)->double &
 			{
 				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
 			};
-			Matrix operator()(const Matrix &i, const Matrix &j) const
+			auto operator()(std::size_t i, std::size_t j) const->const double &
 			{
-				Matrix ret;
-				ret.resize(i.length(), j.length());
-
-				for (int a = 0; a < i.length(); ++a)
-				{
-					for (int b = 0; b < j.length(); ++b)
-					{
-						if ((i.data()[a] < 0) || ((int)i.data()[a] >= m()) || (j.data()[b] < 0) || (( int)j.data()[b] >= n()))
-						{
-							throw std::logic_error("matrix index out of range");
-						}
-						else
-						{
-							ret(a, b) = this->operator()((int)i.data()[a], (int)j.data()[b]);
-						}
-
-					}
-				}
-
-				return ret;
+				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
 			};
 			
 			friend Matrix operator + (const Matrix &m1, const Matrix &m2);
@@ -133,28 +76,10 @@ namespace Aris
 			template <typename MATRIX_LISTLIST>
 			friend Matrix combineMatrices(const MATRIX_LISTLIST &matrices);
 
-			std::string toString() const;
-			double toDouble() const { return data()[0]; };
-			void dsp()
-			{
-				std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(5);
-
-				std::cout << std::endl;
-				for ( int i = 0; i < m(); i++)
-				{
-					for ( int j = 0; j < n(); j++)
-					{
-						std::cout << this->operator()(i,j) << "   ";
-					}
-					std::cout << std::endl;
-				}
-				std::cout << std::endl;
-			}
-
 			private:
 				int m_, n_;
 				bool is_row_major_;
-				double *data_;
+				std::vector<double> data_vec_;
 		};
 
 		template <typename MATRIX_LIST>
@@ -163,48 +88,29 @@ namespace Aris
 			Matrix ret;
 
 			/*获取全部矩阵的行数和列数*/
-			for (const auto &i : matrices)
+			for (const auto &mat : matrices)
 			{
-				if (i.length() == 0)
-					continue;
+				if (mat.size() == 0)continue;
+				if ((ret.n() != 0) && (ret.n() != mat.n()))throw std::runtime_error("input do not have valid size");
 
-				ret.m_ += i.m();
-				ret.n_ = std::max(i.n(), ret.n());
+				ret.m_ += mat.m();
+				ret.n_ = mat.n();
 			}
 
-			/*判断所有矩阵是否拥有一样的列数*/
-			for (const auto &i : matrices)
-			{
-				if (i.length() == 0)
-					continue;
-
-				if (ret.n() != i.n())
-				{
-					ret.m_ = 0;
-					ret.n_ = 0;
-					throw std::logic_error("input do not have valid size");
-				}
-			}
-
-			/*判断最后的矩阵是否为空*/
-			if (ret.m()*ret.n() == 0)
-				return ret;
-
-			/*申请内存*/
-			ret.data_ = new double[ret.m()*ret.n()];
+			ret.resize(ret.m(), ret.n());
 
 			/*赋值*/
-			int beginRow = 0;
-			for (const auto &a : matrices)
+			std::size_t beginRow = 0;
+			for (const auto &mat : matrices)
 			{
-				for (int i = 0; i < a.m; i++)
+				for (std::size_t i = 0; i < mat.m(); i++)
 				{
-					for (int j = 0; j < a.n; j++)
+					for (std::size_t j = 0; j < mat.n(); j++)
 					{
-						ret(i + beginRow, j) = a(i, j);
+						ret(i + beginRow, j) = mat(i, j);
 					}
 				}
-				beginRow += a.m();
+				beginRow += mat.m();
 			}
 
 			return ret;
@@ -215,48 +121,29 @@ namespace Aris
 			Matrix ret;
 
 			/*获取全部矩阵的行数和列数*/
-			for (const auto &i : matrices)
+			for (const auto &mat : matrices)
 			{
-				if (i.length() == 0)
-					continue;
+				if (mat.size() == 0)continue;
+				if ((ret.m() != 0) && (ret.m() != mat.m()))throw std::runtime_error("input do not have valid size");
 
-				ret.m_ = i.m();
-				ret.n_ += i.n();
+				ret.m_ = mat.m();
+				ret.n_ += mat.n();
 			}
 
-			/*判断所有矩阵是否拥有一样的列数*/
-			for (const auto &i : matrices)
-			{
-				if (i.length() == 0)
-					continue;
-
-				if (ret.m() != i.m())
-				{
-					ret.m_ = 0;
-					ret.n_ = 0;
-					throw std::logic_error("input do not have valid size");
-				}
-			}
-
-			/*判断最后的矩阵是否为空*/
-			if (ret.m()*ret.n() == 0)
-				return ret;
-
-			/*申请内存*/
-			ret.data_ = new double[ret.m()*ret.n()];
+			ret.resize(ret.m(), ret.n());
 
 			/*赋值*/
 			int beginCol = 0;
-			for (const auto &a : matrices)
+			for (const auto &mat : matrices)
 			{
-				for (int i = 0; i < a.m(); i++)
+				for (std::size_t i = 0; i < mat.m(); i++)
 				{
-					for (int j = 0; j < a.n(); j++)
+					for (std::size_t j = 0; j < mat.n(); j++)
 					{
-						ret(i, j + beginCol) = a(i, j);
+						ret(i, j + beginCol) = mat(i, j);
 					}
 				}
-				beginCol += a.n;
+				beginCol += mat.n();
 			}
 
 			return ret;
@@ -264,93 +151,46 @@ namespace Aris
 		template <typename MATRIX_LISTLIST>
 		Matrix combineMatrices(const MATRIX_LISTLIST &matrices)
 		{
-			Matrix ret;
-
-			/*获取全部矩阵的行数和列数*/
-			for (const auto &i : matrices)
-			{
-				int loc_m = 0, loc_n = 0;
-
-				/*获得行矩阵们的总列数和行数*/
-				for (const auto &j : i)
-				{
-					if (j.length() == 0)
-						continue;
-
-					if (loc_m == 0)
-						loc_m = j.m();
-
-					if (loc_m != j.m())
-					{
-						ret.m_ = 0;
-						ret.n_ = 0;
-						throw std::logic_error("input do not have valid size");
-					}
-
-					loc_n += j.n();
-				}
-
-				if (loc_m*loc_n == 0)
-					continue;
-
-				if (ret.n() == 0)
-					ret.n_ = loc_n;
-
-				if (ret.n() != loc_n)
-				{
-					ret.m_ = 0;
-					ret.n_ = 0;
-					throw std::logic_error("input do not have valid size");
-				}
-
-				ret.m_ += loc_m;
-			}
-
-
-			/*判断最后的矩阵是否为空*/
-			if (ret.m()*ret.n() == 0)
-				return ret;
-
-			/*申请内存*/
-			ret.data_ = new double[ret.m()*ret.n()];
-
-			/*赋值*/
-			int beginRow = 0;
-			for (const auto &a : matrices)
-			{
-				int beginCol = 0;
-				int locRow = 0;
-
-				for (const auto &b : a)
-				{
-					for (int i = 0; i < b.m(); i++)
-					{
-						for (int j = 0; j < b.n(); j++)
-						{
-							ret(i + beginRow, j + beginCol) = b(i, j);
-						}
-					}
-					beginCol += b.n();
-
-					if (b.m())locRow = b.m();
-
-				}
-				beginRow += locRow;
-			}
-
-			return ret;
+			std::list<Matrix> mat_col_list;
+			for (const auto &mat_list : matrices)mat_col_list.push_back(combineRowMatrices(mat_list));
+			return combineColMatrices(mat_col_list);
 		};
 
 		class Calculator
 		{
-		private:
-			class OPERATOR;
-			class FUNCTION;
+		public:
+			Calculator()
+			{
+				operator_map_["+"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 + m2; });
+				operator_map_["+"].SetUnaryLeftOpr(1, [](Matrix m) {return m; });
+				operator_map_["-"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 - m2; });
+				operator_map_["-"].SetUnaryLeftOpr(1, [](Matrix m) {return -m; });
+				operator_map_["*"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 * m2; });
+				operator_map_["/"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 / m2; });
 
-			class TOKEN
+				addFunction("sqrt", [](std::vector<Matrix> v)
+				{
+					Matrix ret = v.front();
+
+					for (auto &d : ret)	d = std::sqrt(d);
+
+					return ret;
+				}, 1);
+			}
+
+			auto calculateExpression(const std::string &expression) const->Matrix;
+			auto addVariable(const std::string &name, const Matrix &value)->void;
+			auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, int n)->void;
+			auto clearVariables()->void { variable_map_.clear(); };
+
+		private:
+			class Operator;
+			class Function;
+
+			class Token
 			{
 			public:
-				enum TYPE
+				enum Type
 				{
 					NO,     //not determined
 					COMMA,    //comma,which is ','
@@ -361,30 +201,28 @@ namespace Aris
 					BRACKET_R,  //bracket end(right)
 					BRACE_L,
 					BRACE_R,
-					CONST_VALUE,    //const matrix
 					OPERATOR,    //operator
+					NUMBER,    //const matrix
 					VARIABLE,    //variable
-					FUNCTION     //function
+					Function     //function
 				};
 
-				TYPE type;
-
-				int id;
-
+				Type type;
 				std::string word;
-				Matrix cst;
+
+				double num;
 				const Matrix *var;
-				const Calculator::FUNCTION *fun;
-				const Calculator::OPERATOR *opr;
+				const Calculator::Function *fun;
+				const Calculator::Operator *opr;
 			};
-			class OPERATOR
+			class Operator
 			{
 			public:
 				std::string name;
 
-				int priority_ul;
-				int priority_ur;
-				int priority_b;
+				int priority_ul;///unary left
+				int priority_ur;///unary right
+				int priority_b;///binary
 
 				typedef std::function<Matrix(Matrix)> U_FUN;
 				typedef std::function<Matrix(Matrix, Matrix)> B_FUN;
@@ -393,13 +231,13 @@ namespace Aris
 				U_FUN fun_ur;
 				B_FUN fun_b;
 
-				OPERATOR() :priority_ul(0), priority_ur(0), priority_b(0){};
+				Operator() :priority_ul(0), priority_ur(0), priority_b(0){};
 
 				void SetUnaryLeftOpr(int priority, U_FUN fun){ priority_ul = priority; this->fun_ul = fun; };
 				void SetUnaryRightOpr(int priority, U_FUN fun){ priority_ur = priority; this->fun_ur = fun; };
 				void SetBinaryOpr(int priority, B_FUN fun){ priority_b = priority; this->fun_b = fun; };
 			};
-			class FUNCTION
+			class Function
 			{
 				typedef std::function<Matrix(std::vector<Matrix>)> FUN;
 			public:
@@ -409,56 +247,23 @@ namespace Aris
 				void AddOverloadFun(int n, FUN fun){ funs.insert(make_pair(n, fun)); };
 			};
 
-			typedef std::vector<TOKEN> TOKENS;
-			mutable TOKENS tokens;
-			TOKENS Expression2Tokens(const std::string &expression)const;
-			Matrix CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken) const;
-			
-			Matrix CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator endToken) const;
-			Matrix CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator endToken) const;
-			Matrix CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator endToken) const;
-			Matrix CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator endToken) const;
+			typedef std::vector<Token> TokenVec;
+			TokenVec Expression2Tokens(const std::string &expression)const;
+			Matrix CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator maxEndToken) const;
 
-			TOKENS::iterator FindNextOutsideToken(TOKENS::iterator leftPar, TOKENS::iterator endToken, TOKEN::TYPE type) const;
-			TOKENS::iterator FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence)const;
-			std::vector<std::vector<Matrix> > GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken)const;
+			Matrix CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
+			Matrix CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
+			Matrix CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
+			Matrix CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
+
+			TokenVec::iterator FindNextOutsideToken(TokenVec::iterator leftPar, TokenVec::iterator endToken, Token::Type type) const;
+			TokenVec::iterator FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, int precedence)const;
+			std::vector<std::vector<Matrix> > GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const;
 		
 		private:
-			std::map<std::string, OPERATOR> operators;
-			std::map<std::string, FUNCTION> functions;
-			std::map<std::string, Matrix> variables;
-
-			
-
-		public:
-			Calculator()
-			{
-				operators["+"].SetBinaryOpr(1, [](Matrix m1, Matrix m2){return m1 + m2; });
-				operators["+"].SetUnaryLeftOpr(1, [](Matrix m){return m; });
-				operators["-"].SetBinaryOpr(1, [](Matrix m1, Matrix m2){return m1 - m2; });
-				operators["-"].SetUnaryLeftOpr(1, [](Matrix m){return -m; });
-				operators["*"].SetBinaryOpr(2, [](Matrix m1, Matrix m2){return m1 * m2; });
-				operators["/"].SetBinaryOpr(2, [](Matrix m1, Matrix m2){return m1 / m2; });
-
-				AddFunction("sqrt", [](std::vector<Matrix> v)
-				{
-					Matrix ret = v.front();
-					ret.forEachElement([](double d){return std::sqrt(d); });
-
-					return ret;
-				}, 1);
-			}
-
-			Matrix CalculateExpression(const std::string &expression) const;
-			void AddVariable(const std::string &name, const Matrix &value);
-			void AddFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f,int n)
-			{
-				functions[name].AddOverloadFun(n,f);
-			};
-			void ClearVariables()
-			{
-				variables.clear();
-			};
+			std::map<std::string, Operator> operator_map_;
+			std::map<std::string, Function> function_map_;
+			std::map<std::string, Matrix> variable_map_;
 		};
 	}
 }

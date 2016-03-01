@@ -13,62 +13,136 @@ namespace Aris
 {
 	namespace Core
 	{
-		Matrix::Matrix(int m, int n)
-			: m_(m)
-			, n_(n)
-			, is_row_major_(true)
-			, data_(m_*n_ > 0 ? new double[m_*n_] : nullptr)
+		Matrix::Matrix(std::size_t m, std::size_t n, double value) : m_(m), n_(n), is_row_major_(true), data_vec_(m*n, value)
 		{
 		}
-		Matrix::Matrix(int m, int n, const double *Data)
+		Matrix::Matrix(std::size_t m, std::size_t n, const double *Data)
 			: Matrix(m,n)
 		{
 			if ((m*n>0) && (Data != nullptr))
 				memcpy(data(), Data, m*n*sizeof(double));
 		}
-
 		Matrix::Matrix(double value)
 			: m_(1)
 			, n_(1)
 			, is_row_major_(true)
-			, data_(new double[1])
+			, data_vec_(1, value)
 		{
-			*data() = value;
 		}
+		Matrix::Matrix(const std::initializer_list<Matrix> &data) :Matrix()
+		{
+			std::list<std::list<Matrix> > mat_list_list;
+
+			bool need_new_row = true;
+			for (auto &i : data)
+			{
+				if (i.empty())
+				{
+					need_new_row = true;
+				}
+				else
+				{
+					if (need_new_row)
+					{
+						mat_list_list.push_back(std::list<Matrix>());
+						need_new_row = false;
+					}
+
+					mat_list_list.back().push_back(i);
+				}
+			}
+
+
+			(*this) = Aris::Core::combineMatrices(mat_list_list);
+		}
+		auto Matrix::swap(Matrix &other)->Matrix&
+		{
+			std::swap(this->m_, other.m_);
+			std::swap(this->n_, other.n_);
+			std::swap(this->is_row_major_, other.is_row_major_);
+			std::swap(this->data_vec_, other.data_vec_);
+
+			return *this;
+		}
+		auto Matrix::resize(std::size_t m, std::size_t n)->Matrix &
+		{
+			m_ = m;
+			n_ = n;
+			data_vec_.resize(m*n);
+			return *this;
+		}
+		auto Matrix::transpose()->Matrix &
+		{
+			is_row_major_ = !is_row_major_;
+			std::swap(m_, n_);
+			return *this;
+		};
+		auto Matrix::copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol, std::size_t rowNum, std::size_t colNum)->void
+		{
+			if ((beginRow + subMat.m() > m()) || (beginCol + subMat.n() > n()))
+			{
+				throw std::logic_error("Function CopySubMatrixTo must have subMat smaller than self matrix");
+			}
+
+			for (std::size_t i = 0; i < subMat.m(); ++i)
+			{
+				for (std::size_t j = 0; j < subMat.n(); ++j)
+				{
+					this->operator()(i + beginRow, j + beginCol)=subMat(i,j);
+				}
+			}
+
+		}
+		auto Matrix::toString() const->std::string
+		{
+			std::stringstream stream;
+			
+			stream.precision(15);
+			stream << "{";
+			for (std::size_t i = 0; i < m(); ++i)
+			{
+				for (std::size_t j = 0; j < n(); ++j)
+				{
+					stream << this->operator()(i, j);
+					if (j<n() - 1)stream << " , ";
+				}
+				if (i<m() -1)
+					stream << " ;\n";
+			}
+			stream << "}";
+
+			return stream.str();
+		};
 		
-		Matrix::~Matrix()
-		{
-			delete[]data_;
-		}
 		Matrix operator + (const Matrix &m1, const Matrix &m2)
 		{
 			Matrix ret;
 
-			if ((m1.m() == 1) && (m1.n() == 1))
+			if (m1.size() == 1)
 			{
 				ret = Matrix(m2);
 
-				for (int i = 0; i < ret.length(); ++i)
+				for (auto &d : ret)
 				{
-					ret.data()[i] += m1(0, 0);
+					d += *m1.data();
 				}
 			}
-			else if ((m2.m() == 1) && (m2.n() == 1))
+			else if (m2.size() == 1)
 			{
 				ret = Matrix(m1);
 
-				for (int i = 0; i < ret.length(); ++i)
+				for (auto &d : ret)
 				{
-					ret.data()[i] += m2(0, 0);
+					d += *m2.data();
 				}
 			}
 			else if ((m1.m() == m2.m()) && (m1.n() == m2.n()))
 			{
 				ret.resize(m1.m(), m1.n());
 
-				for (int i = 0; i < ret.m(); i++)
+				for (std::size_t i = 0; i < ret.m(); ++i)
 				{
-					for (int j = 0; j < ret.n(); j++)
+					for (std::size_t j = 0; j < ret.n(); ++j)
 					{
 						ret(i, j) = m1(i, j) + m2(i, j);
 					}
@@ -76,7 +150,7 @@ namespace Aris
 			}
 			else
 			{
-				throw std::logic_error("Can't plus matrices, the dimensions are not equal");
+				throw std::runtime_error("Can't plus matrices, the dimensions are not equal");
 			}
 			return ret;
 		}
@@ -88,7 +162,7 @@ namespace Aris
 			{
 				ret = Matrix(m2);
 
-				for (int i = 0; i < ret.length(); ++i)
+				for (std::size_t i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] = m1(0, 0) - ret.data()[i];
 				}
@@ -97,7 +171,7 @@ namespace Aris
 			{
 				ret = Matrix(m1);
 
-				for (int i = 0; i < ret.length(); ++i)
+				for (std::size_t i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] -= m2(0, 0);
 				}
@@ -106,9 +180,9 @@ namespace Aris
 			{
 				ret.resize(m1.m(), m1.n());
 
-				for (int i = 0; i < ret.m(); i++)
+				for (std::size_t i = 0; i < ret.m(); i++)
 				{
-					for (int j = 0; j < ret.n(); j++)
+					for (std::size_t j = 0; j < ret.n(); j++)
 					{
 						ret(i, j) = m1(i, j) - m2(i, j);
 					}
@@ -116,7 +190,7 @@ namespace Aris
 			}
 			else
 			{
-				throw std::logic_error("Can't minus matrices, the dimensions are not equal");
+				throw std::runtime_error("Can't minus matrices, the dimensions are not equal");
 			}
 
 			return ret;
@@ -129,7 +203,7 @@ namespace Aris
 			{
 				ret = Matrix(m2);
 
-				for (int i = 0; i < ret.length(); ++i)
+				for (std::size_t i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] *= m1(0, 0);
 				}
@@ -138,7 +212,7 @@ namespace Aris
 			{
 				ret = Matrix(m1);
 
-				for (int i = 0; i < ret.length(); ++i)
+				for (std::size_t i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] *= m2(0, 0);
 				}
@@ -151,58 +225,38 @@ namespace Aris
 				{
 					if (m2.is_row_major_)
 					{
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m1Eigen(m1.data_, m1.m(), m1.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m2Eigen(m2.data_, m2.m(), m2.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
-						
-						retEigen = m1Eigen*m2Eigen;
-						/*cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-							m1.m, m2.n, m1.n,
-							1, m1.Data(), m1.n, m2.Data(), m2.n,
-							0, ret.Data(), ret.n);*/
-					}
-					else
-					{
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m1Eigen(m1.data_, m1.m(), m1.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m2Eigen(m2.data_, m2.m(), m2.n());
+						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m1Eigen(m1.data(), m1.m(), m1.n());
+						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m2Eigen(m2.data(), m2.m(), m2.n());
 						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
 
 						retEigen = m1Eigen*m2Eigen;
-						
-						/*cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-							m1.m, m2.n, m1.n,
-							1, m1.Data(), m1.n, m2.Data(), m2.m,
-							0, ret.Data(), ret.n);*/
+					}
+					else
+					{
+						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m1Eigen(m1.data(), m1.m(), m1.n());
+						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m2Eigen(m2.data(), m2.m(), m2.n());
+						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
+
+						retEigen = m1Eigen*m2Eigen;
 					}
 				}
 				else
 				{
 					if (m2.is_row_major_)
 					{
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m1Eigen(m1.data_, m1.m(), m1.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m2Eigen(m2.data_, m2.m(), m2.n());
+						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m1Eigen(m1.data(), m1.m(), m1.n());
+						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m2Eigen(m2.data(), m2.m(), m2.n());
 						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
 
 						retEigen = m1Eigen*m2Eigen;
-						
-						
-						/*cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
-							m1.m, m2.n, m1.n,
-							1, m1.Data(), m1.m, m2.Data(), m2.n,
-							0, ret.Data(), ret.n);*/
 					}
 					else
 					{
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m1Eigen(m1.data_, m1.m(), m1.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m2Eigen(m2.data_, m2.m(), m2.n());
+						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m1Eigen(m1.data(), m1.m(), m1.n());
+						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m2Eigen(m2.data(), m2.m(), m2.n());
 						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
 
 						retEigen = m1Eigen*m2Eigen;
-						
-						/*cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans,
-							m1.m, m2.n, m1.n,
-							1, m1.Data(), m1.m, m2.Data(), m2.m,
-							0, ret.Data(), ret.n);*/
 					}
 				}
 
@@ -210,7 +264,7 @@ namespace Aris
 			}
 			else
 			{
-				throw std::logic_error("Can't multiply matrices, the dimensions are not equal");
+				throw std::runtime_error("Can't multiply matrices, the dimensions are not equal");
 			}
 
 			return ret;
@@ -223,7 +277,7 @@ namespace Aris
 			{
 				ret = Matrix(m2);
 
-				for (int i = 0; i < ret.length(); ++i)
+				for (std::size_t i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] = m1(0, 0) / ret.data()[i];
 				}
@@ -232,27 +286,23 @@ namespace Aris
 			{
 				ret = Matrix(m1);
 
-				for (int i = 0; i < ret.length(); ++i)
+				for (std::size_t i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] /= m2(0, 0);
 				}
 			}
 			else
 			{
-				throw std::logic_error("Right now, divide operator of matrices is not added");
+				throw std::runtime_error("Right now, divide operator of matrices is not added");
 			}
 
 			return ret;
 		}
 		Matrix operator - (const Matrix &m1)
 		{
-			Matrix m;
-			m.resize(m1.m(), m1.n());
+			Matrix m(m1.m(), m1.n());
+			for (std::size_t i = 0; i < m1.size(); ++i)m.data()[i] = -m1.data()[i];
 
-			for (int i = 0; i < m1.m()*m1.n(); i++)
-			{
-				m.data()[i] = -m1.data()[i];
-			}
 			return m;
 		}
 		Matrix operator + (const Matrix &m1)
@@ -260,60 +310,13 @@ namespace Aris
 			return m1;
 		}
 
-		void Matrix::resize(int i, int j)
-		{
-			m_ = i;
-			n_ = j;
-
-			delete[]data_;
-
-			data_ = new double[i*j];
-		}
-		void Matrix::copySubMatrixTo(const Matrix &subMat, int beginRow, int beginCol, int rowNum, int colNum)
-		{
-			if ((beginRow + subMat.m() > m()) || (beginCol + subMat.n() > n()))
-			{
-				throw std::logic_error("Function CopySubMatrixTo must have subMat smaller than self matrix");
-			}
-
-			for (int i = 0; i < subMat.m(); ++i)
-			{
-				for (int j = 0; j < subMat.n(); ++j)
-				{
-					this->operator()(i + beginRow, j + beginCol)=subMat(i,j);
-				}
-			}
-
-		}
-		std::string Matrix::toString() const
-		{
-			std::stringstream stream;
-			
-			stream.precision(15);
-			stream << "{";
-			for (int i = 0; i < m(); ++i)
-			{
-				for (int j = 0; j < n(); ++j)
-				{
-					stream << this->operator()(i, j);
-					if (j<n() - 1)
-						stream << " , ";
-				}
-				if (i<m() -1)
-					stream << " ;\n";
-			}
-			stream << "}";
-
-			return stream.str();
-		};
-
 		std::string SeperateString(const std::string &s)
 		{
-			static const std::string SEMICOLONrateOpr("+-*/^()[]{},;");
+			static const std::string seperateOpr("+-*/^()[]{},;");
 			std::string ret;
 
 			for (const char &key : s)
-			{
+			{	
 				/*判断是否为科学计数法的数字*/
 				if ((&key > s.data() + 1) && (&key<s.data() +s.size() - 2))
 				{
@@ -332,7 +335,7 @@ namespace Aris
 				}
 
 				
-				if (SEMICOLONrateOpr.find(key) != SEMICOLONrateOpr.npos)
+				if (seperateOpr.find(key) != seperateOpr.npos)
 				{
 					ret = ret + " " + key + " ";
 				}
@@ -344,154 +347,74 @@ namespace Aris
 			return ret;
 		};
 		
-		Calculator::TOKENS Calculator::Expression2Tokens(const std::string &expression)const
+		Calculator::TokenVec Calculator::Expression2Tokens(const std::string &expression)const
 		{
-			TOKENS tokens;
-			TOKEN token;
+			std::stringstream stream(SeperateString(expression));
+
+			TokenVec tokens;
+			Token token;
 			
-			std::string text = SeperateString(expression);
-
-			std::stringstream stream(text);
-
-			int id = 0;
-
 			while (stream >> token.word)
 			{
-				token.id = id;
-				id++;
+				token.type = Token::NO;
 				
-				/*判断是否为逗号*/
-				if (*token.word.c_str() == ',')
+				switch (*token.word.c_str())
 				{
-					token.type = TOKEN::COMMA;
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为分号*/
-				if (*token.word.c_str() == ';')
-				{
-					token.type = TOKEN::SEMICOLON;
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为左括号*/
-				if (*token.word.c_str() == '(')
-				{
-					token.type = TOKEN::PARENTHESIS_L;
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为右括号*/
-				if (*token.word.c_str() == ')')
-				{
-					token.type = TOKEN::PARENTHESIS_R;
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为左中括号*/
-				if (*token.word.c_str() == '[')
-				{
-					token.type = TOKEN::BRACKET_L;
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为右中括号*/
-				if (*token.word.c_str() == ']')
-				{
-					token.type = TOKEN::BRACKET_R;
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为左大括号*/
-				if (*token.word.c_str() == '{')
-				{
-					token.type = TOKEN::BRACE_L;
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为右大括号*/
-				if (*token.word.c_str() == '}')
-				{
-					token.type = TOKEN::BRACE_R;
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为数字*/
-				std::stringstream stream(token.word);
-				double num;
-				if (stream >> num)
-				{
-					token.type = TOKEN::CONST_VALUE;
-					token.cst = Matrix(num);
-					tokens.push_back(token);
-					continue;
-				}
-				/*判断是否为操作符*/
-				auto f = operators.find(token.word);
-				if (operators.find(token.word) != operators.end())
-				{
-					token.type = TOKEN::OPERATOR;
-					token.opr = &f->second;
-					tokens.push_back(token);
-					continue;
-				}
-
-				/*否则则可能为函数或者变量，这里先不做处理*/
-				token.type = TOKEN::NO;
+				case ',':token.type = Token::COMMA; break;
+				case ';':token.type = Token::SEMICOLON; break;
+				case '(':token.type = Token::PARENTHESIS_L; break;
+				case ')':token.type = Token::PARENTHESIS_R; break;
+				case '[':token.type = Token::BRACKET_L; break;
+				case ']':token.type = Token::BRACKET_R; break;
+				case '{':token.type = Token::BRACE_L; break;
+				case '}':token.type = Token::BRACE_R; break;
+				default:
+					///数字
+					if (std::stringstream(token.word) >> token.num)
+					{
+						token.type = Token::NUMBER;
+						break;
+					}
+					///操作符
+					if (operator_map_.find(token.word) != operator_map_.end())
+					{
+						token.type = Token::OPERATOR;
+						token.opr = &operator_map_.find(token.word)->second;
+						break;
+					}
+					///变量
+					if (variable_map_.find(token.word) != variable_map_.end())
+					{
+						token.type = Token::VARIABLE;
+						token.var = &variable_map_.find(token.word)->second;
+						break;
+					}
+					///函数
+					if (function_map_.find(token.word) != function_map_.end())
+					{
+						token.type = Token::Function;
+						token.fun = &function_map_.find(token.word)->second;
+						break;
+					}
 				
+				}
+				if (token.type == Token::NO) throw std::runtime_error("unrecognized symbol \"" + token.word + "\"");
 				tokens.push_back(token);
 				continue;
 			}
 
-			for (auto i = tokens.begin(); i != tokens.end();++i)
-			{
-				if (i->type == TOKEN::NO)
-				{
-					/*识别下一个是否为括号，即函数开始符*/
-					if (((i+1)!=tokens.end())&&((i + 1)->type == TOKEN::PARENTHESIS_L))
-					{
-						auto f = this->functions.find(i->word);
-						if (f != functions.end())
-						{
-							i->type = TOKEN::FUNCTION;
-							i->fun = &f->second;
-						}
-						else
-						{
-							std::string information = "unrecognized function:" + i->word;
-							throw std::logic_error(information.c_str());
-						}
-					}
-					else
-					{
-						auto f = variables.find(i->word);
-						if (f != variables.end())
-						{
-							i->type = TOKEN::VARIABLE;
-							i->var = &f->second;
-						}
-						else
-						{
-							std::string information = "unrecognized varible:" + i->word;
-							throw std::logic_error(information.data());
-						}
-					}
-				}
-			}
-
 			return tokens;
 		}
-		Matrix Calculator::CaculateTokens(TOKENS::iterator beginToken, TOKENS::iterator endToken) const
+		Matrix Calculator::CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator endToken) const
 		{
 			if (beginToken >= endToken)
 			{
-				throw std::logic_error("invalid expression");
+				throw std::runtime_error("invalid expression");
 			}
 			
 			auto i = beginToken;
 
 			Matrix value;
-			value.resize(0, 0);
 
 			bool isBegin = true;
 
@@ -503,33 +426,33 @@ namespace Aris
 					isBegin = false;
 					switch (i->type)
 					{
-					case TOKEN::PARENTHESIS_L:
+					case Token::PARENTHESIS_L:
 						value = CaculateValueInParentheses(i, endToken);
 						break;
-					case TOKEN::BRACE_L:
+					case Token::BRACE_L:
 						value = CaculateValueInBraces(i, endToken);
 						break;
-					case TOKEN::CONST_VALUE:
-						value = i->cst;
+					case Token::NUMBER:
+						value = i->num;
 						i++;
 						break;
-					case TOKEN::OPERATOR:
+					case Token::OPERATOR:
 						value = CaculateValueInOperator(i, endToken);
 						break;
-					case TOKEN::VARIABLE:
+					case Token::VARIABLE:
 						value = *i->var;
 						i++;
 						break;
-					case TOKEN::FUNCTION:
+					case Token::Function:
 						value = CaculateValueInFunction(i, endToken);
 						break;
 					default:
-						throw std::logic_error("expression not valid");
+						throw std::runtime_error("expression not valid");
 					}
 				}
 				else//如果有当前值，但没有操作符
 				{				
-					if (i->type == TOKEN::OPERATOR)
+					if (i->type == Token::OPERATOR)
 					{
 						if (i->opr->priority_ur)
 						{
@@ -544,132 +467,90 @@ namespace Aris
 						}
 						else
 						{
-							throw std::logic_error("expression not valid");
+							throw std::runtime_error("expression not valid");
 						}
 					}
 					else
 					{
-						throw std::logic_error("expression not valid: lack operator");
+						throw std::runtime_error("expression not valid: lack operator");
 					}
 				}
 			}
 
-
-
 			return value;
 		}
 
-		Matrix Calculator::CaculateValueInParentheses(TOKENS::iterator &i, TOKENS::iterator maxEndToken)const
+		Matrix Calculator::CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
 		{
-			auto beginPar = i+1;
-			auto endPar = FindNextOutsideToken(i + 1, maxEndToken, TOKEN::PARENTHESIS_R);
-
+			auto beginPar = i + 1;
+			auto endPar = FindNextOutsideToken(i + 1, maxEndToken, Token::PARENTHESIS_R);
 			i = endPar + 1;
 
 			return CaculateTokens(beginPar, endPar);
 		}
-		Matrix Calculator::CaculateValueInBraces(TOKENS::iterator &i, TOKENS::iterator maxEndToken)const
+		Matrix Calculator::CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
 		{
-			std::vector<std::vector<Matrix>> matrices;
+			auto beginBce = i + 1;
+			auto endBce = FindNextOutsideToken(i + 1, maxEndToken, Token::BRACE_R);
+			i = endBce + 1;
 
-			auto endBce = FindNextOutsideToken(i+1, maxEndToken, TOKEN::BRACE_R);
-			matrices = GetMatrices(i+1, endBce);
-			i = endBce+1;
-
-			return combineMatrices(matrices);
+			return combineMatrices(GetMatrices(beginBce, endBce));
 		}
-		Matrix Calculator::CaculateValueInFunction(TOKENS::iterator &i, TOKENS::iterator maxEndToken)const
+		Matrix Calculator::CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
 		{
 			auto beginPar = i + 1;
-			auto endPar = FindNextOutsideToken(beginPar + 1, maxEndToken, TOKEN::PARENTHESIS_R);
+			if (i + 1 >= maxEndToken) throw std::runtime_error("invalid expression");
+			if (beginPar->type != Token::PARENTHESIS_L)throw std::runtime_error("function must be followed by \"(\"");
 
+			auto endPar = FindNextOutsideToken(beginPar + 1, maxEndToken, Token::PARENTHESIS_R);
 			auto matrices = GetMatrices(beginPar + 1, endPar);
 			
-			if (matrices.size() != 1)
-			{
-				throw std::logic_error("some function in expression do not have valid inputs");
-			}
+			if (matrices.size() != 1)throw std::runtime_error("function \"" + i->word + "\" + do not has invalid param type");
 
-			std::vector<Matrix> params = matrices.front();
-
+			auto params = matrices.front();
 			auto f=i->fun->funs.find(params.size());
-			if (f != i->fun->funs.end())
-			{
-				i = endPar + 1;
-				return f->second(params);
-			}
-			else
-			{
-				std::string s = "function ",s1;
-				s += i->word + " do not has vesion with ";
-				std::stringstream ss;
-				ss << params.size();
-				ss >> s1;
-				s+=s1+ " parameters";
-				throw std::logic_error(s.c_str());
-			}
+			if(f == i->fun->funs.end())throw std::runtime_error("function \"" + i->word + "\" + do not has invalid param num");
+
+			i = endPar + 1;
+			return f->second(params);
 		}
-		Matrix Calculator::CaculateValueInOperator(TOKENS::iterator &i, TOKENS::iterator maxEndToken)const
+		Matrix Calculator::CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
 		{
 			auto opr = i;
 			i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, maxEndToken, opr->opr->priority_ul);
 			return opr->opr->fun_ul(CaculateTokens(opr + 1, i));
 		}
 		
-		Calculator::TOKENS::iterator Calculator::FindNextOutsideToken(TOKENS::iterator beginToken, TOKENS::iterator endToken, TOKEN::TYPE type)const
+		auto Calculator::FindNextOutsideToken(TokenVec::iterator beginToken, TokenVec::iterator endToken, Token::Type type)const->Calculator::TokenVec::iterator
 		{
-			int parNum = 0;
-			int braNum = 0;
-			int bceNum = 0;
-
+			int parNum = 0, braNum = 0, bceNum = 0;
 			auto nextPlace = beginToken;
 
 			while (nextPlace < endToken)
 			{
-				if ((parNum == 0) && (braNum == 0) && (bceNum == 0))
-				{
-					if (nextPlace->type == type)
-					{
-						return nextPlace;
-					}
-				}
-				
+				if ((parNum == 0) && (braNum == 0) && (bceNum == 0) && (nextPlace->type == type))return nextPlace;
 				switch (nextPlace->type)
 				{
-				case TOKEN::PARENTHESIS_L:
-					parNum++;
-					break;
-				case TOKEN::PARENTHESIS_R:
-					parNum--;
-					break;
-				case TOKEN::BRACKET_L:
-					braNum++;
-					break;
-				case TOKEN::BRACKET_R:
-					braNum--;
-					break;
-				case TOKEN::BRACE_L:
-					bceNum++;
-					break;
-				case TOKEN::BRACE_R:
-					bceNum--;
-					break;
-				default:
-					break;
+				case Token::PARENTHESIS_L:parNum++; break;
+				case Token::PARENTHESIS_R:parNum--; break;
+				case Token::BRACKET_L:braNum++; break;
+				case Token::BRACKET_R:braNum--; break;
+				case Token::BRACE_L:bceNum++; break;
+				case Token::BRACE_R:bceNum--; break;
 				}
 
-				nextPlace++;
+				++nextPlace;
 			}
 
 			return nextPlace;
 		}
-		Calculator::TOKENS::iterator Calculator::FindNextEqualLessPrecedenceBinaryOpr(TOKENS::iterator beginToken, TOKENS::iterator endToken, int precedence)const
+		auto Calculator::FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, int precedence)const->Calculator::TokenVec::iterator
 		{
 			auto nextOpr= beginToken;
 
 			while (nextOpr < endToken)
 			{
-				nextOpr = FindNextOutsideToken(nextOpr, endToken, TOKEN::OPERATOR);
+				nextOpr = FindNextOutsideToken(nextOpr, endToken, Token::OPERATOR);
 
 				if ((nextOpr==endToken) || (nextOpr->opr->priority_b <= precedence))
 				{
@@ -677,27 +558,27 @@ namespace Aris
 				}
 				else
 				{
-					nextOpr++;
+					++nextOpr;
 				}
 			}
 
 			return nextOpr;
 		}
-		std::vector<std::vector<Matrix> > Calculator::GetMatrices(TOKENS::iterator beginToken, TOKENS::iterator endToken)const
+		auto Calculator::GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const->std::vector<std::vector<Matrix> >
 		{
 			std::vector<std::vector<Matrix> > ret;
 			
 			auto rowBegin = beginToken;
 			while (rowBegin < endToken)
 			{
-				auto rowEnd = FindNextOutsideToken(rowBegin, endToken, TOKEN::SEMICOLON);
+				auto rowEnd = FindNextOutsideToken(rowBegin, endToken, Token::SEMICOLON);
 				auto colBegin = rowBegin;
 
 				ret.push_back(std::vector<Matrix>());
 
 				while (colBegin < rowEnd)
 				{
-					auto colEnd = FindNextOutsideToken(colBegin, rowEnd, TOKEN::COMMA);
+					auto colEnd = FindNextOutsideToken(colBegin, rowEnd, Token::COMMA);
 
 					ret.back().push_back(CaculateTokens(colBegin, colEnd));
 
@@ -718,21 +599,33 @@ namespace Aris
 			return ret;
 		}
 
-
-		Matrix Calculator::CalculateExpression(const std::string &expression)const
+		auto Calculator::calculateExpression(const std::string &expression) const->Matrix
 		{
-			this->tokens=Expression2Tokens(expression);
+			auto tokens=Expression2Tokens(expression);
 			return CaculateTokens(tokens.begin(), tokens.end());
 		}
-		void Calculator::AddVariable(const std::string &name, const Matrix &value)
+		auto Calculator::addVariable(const std::string &name, const Matrix &value)->void
 		{
-			if (variables.find(name) != variables.end())
+			if (function_map_.find(name) != function_map_.end())
 			{
-				throw std::logic_error("variable already exists");
+				throw std::runtime_error("function \"" + name + "already exists, can't add variable");
 			}
-			variables.insert(make_pair(name, value));
+			
+			if (variable_map_.find(name) != variable_map_.end())
+			{
+				throw std::runtime_error("variable \"" + name + "already exists, can't add variable");
+			}
+			variable_map_.insert(make_pair(name, value));
 		}
-
+		auto Calculator::addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, int n)->void
+		{
+			if (variable_map_.find(name) != variable_map_.end())
+			{
+				throw std::runtime_error("variable \"" + name + "already exists, can't add function");
+			}
+			
+			function_map_[name].AddOverloadFun(n, f);
+		};
 
 	}
 

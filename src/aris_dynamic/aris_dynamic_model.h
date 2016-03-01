@@ -20,7 +20,7 @@ namespace Aris
 		typedef double double4x4[4][4];
 		typedef double double3[3];
 		typedef double double6[6];
-		
+
 		class Element;
 		class Part;
 		class Marker;
@@ -40,11 +40,11 @@ namespace Aris
 		struct SimResult
 		{
 			std::list<std::array<double, 6> > begin_prt_pe_;
-			
+
 			std::list<double> time_;
 			std::vector<std::list<double> > Pin_, Fin_, Vin_, Ain_;//vector18维，但list维数为时间的维数
-		
-			void saveToTxt(const std::string &filename) 
+
+			void saveToTxt(const std::string &filename)
 			{
 				auto f_name = filename + "_Fin.txt";
 				auto p_name = filename + "_Pin.txt";
@@ -61,11 +61,13 @@ namespace Aris
 		class Object
 		{
 		public:
-			virtual auto model()->Model& { return model_; };
-			virtual auto model()const->const Model&{ return model_; };
+			virtual auto model()->Model& { return *model_; };
+			virtual auto model()const->const Model&{ return *model_; };
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void;
+			virtual auto saveAdams(std::ofstream &file) const->void {};
 			auto name() const->const std::string&{ return name_; };
-			auto father()->Object& { return father_; };
-			auto father()const->const Object&{ return father_; };
+			auto father()->Object& { return *father_; };
+			auto father()const->const Object&{ return *father_; };
 
 		protected:
 			virtual ~Object() = default;
@@ -73,12 +75,12 @@ namespace Aris
 			Object(Object &&) = default;
 			Object &operator=(const Object &) = default;
 			Object &operator=(Object &&) = default;
-			explicit Object(Object &father, const std::string &name) :model_(father.model()), father_(father), name_(name) {};
-			explicit Object(Object &father, const Aris::Core::XmlElement &xml_ele) :model_(father.model()), father_(father), name_(xml_ele.name()) {};
-			
+			explicit Object(Object &father, const std::string &name) :model_(&father.model()), father_(&father), name_(name) {};
+			explicit Object(Object &father, const Aris::Core::XmlElement &xml_ele) :model_(&father.model()), father_(&father), name_(xml_ele.name()) {};
+
 		private:
-			Model &model_;
-			Object &father_;
+			Model *model_;
+			Object *father_;
 			std::string name_;
 
 			friend class Model;
@@ -87,13 +89,15 @@ namespace Aris
 		{
 		public:
 			virtual ~Environment() = default;
+			Environment(const Environment &) = default;
+			Environment(Environment &&) = default;
+			Environment &operator=(const Environment &) = default;
+			Environment &operator=(Environment &&) = default;
+			explicit Environment(Object &father, const std::string &name) :Object(father, name) {};
+			explicit Environment(Object &father, const Aris::Core::XmlElement &xml_ele);
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
+			virtual auto saveAdams(std::ofstream &file) const->void override;
 
-		private:
-			explicit Environment(Object &father) :Object(father, "Environment") {};
-
-			void saveXml(Aris::Core::XmlElement &xml_ele) const;
-			void fromXmlElement(const Aris::Core::XmlElement &xml_ele);
-			void saveAdams(std::ofstream &file) const;
 		private:
 			double gravity_[6]{ 0, -9.8, 0, 0, 0, 0 };
 
@@ -127,6 +131,7 @@ namespace Aris
 		class Element :public Object
 		{
 		public:
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
 			virtual auto typeName() const->const std::string& = 0;
 			virtual auto groupName()const->const std::string& = 0;
 			virtual auto adamsID()const->std::size_t { return id() + 1; };
@@ -138,31 +143,18 @@ namespace Aris
 
 		protected:
 			virtual ~Element() = default;
-			Element(const Element &) = default;
-			Element(Element &&) = default;
-			Element &operator=(const Element &) = default;
-			Element &operator=(Element &&) = default;
-			explicit Element(Object &father, const std::string &name, int id, bool active = true) : Object(father, name), id_(id), is_active_(active) {};
-			explicit Element(Object &father, const Aris::Core::XmlElement &xml_ele, int id) :Object(father, xml_ele), id_(id)
-			{
-				if (xml_ele.Attribute("Active"))
-				{
-					if (xml_ele.Attribute("Active", "true"))is_active_ = true;
-					else if (xml_ele.Attribute("Active", "false"))is_active_ = false;
-					else throw std::runtime_error(std::string("Element \"") + xml_ele.name() + "\" must have valid attibute of Active");
-				}
-				else
-				{
-					is_active_ = true;
-				}
-			};
+			Element(const Element &) = delete;
+			Element(Element &&) = delete;
+			Element &operator=(const Element &) = delete;
+			Element &operator=(Element &&) = delete;
+			explicit Element(Object &father, const std::string &name, std::size_t id, bool active = true) : Object(father, name), id_(id), is_active_(active) {};
+			explicit Element(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			virtual auto init()->void {};
-			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void = 0;
-			virtual auto saveAdams(std::ofstream &file) const->void = 0;
-			
+
+
 		private:
-			bool is_active_{true};
-			const int id_;
+			bool is_active_{ true };
+			const std::size_t id_;
 
 			friend class Model;
 			template<typename Type>friend class ElementPool;
@@ -176,18 +168,11 @@ namespace Aris
 				if (typeInfoMap().find(ChildType::TypeName()) != typeInfoMap().end())
 					throw std::runtime_error("can not register joint of " + ChildType::TypeName() + " cause it already registered");
 
-				TypeInfo info;
-
-				info.newFromXml = [](Object &father, const Aris::Core::XmlElement &xml_ele, int id)->ElementType*
-				{
-					return new ChildType(father, xml_ele, id);
-				};
-
-				typeInfoMap().insert(std::make_pair(ChildType::TypeName(), info));
+				typeInfoMap().insert(std::make_pair(ChildType::TypeName(), TypeInfo::template create<ChildType>()));
 			};
-			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override
 			{
-				xml_ele.SetName(this->name().c_str());
+				Object::saveXml(xml_ele);
 				for (auto &ele : element_vec_)
 				{
 					auto xml_iter = xml_ele.GetDocument()->NewElement("");
@@ -195,7 +180,7 @@ namespace Aris
 					xml_ele.InsertEndChild(xml_iter);
 				}
 			}
-			virtual auto saveAdams(std::ofstream &file) const->void
+			virtual auto saveAdams(std::ofstream &file) const->void override
 			{
 				for (auto &ele : element_vec_)ele->saveAdams(file);
 			}
@@ -210,7 +195,7 @@ namespace Aris
 			auto add(const Aris::Core::XmlElement &xml_ele)->ElementType&
 			{
 				if (find(xml_ele.name()))throw std::runtime_error(ElementType::TypeName() + " \"" + xml_ele.name() + "\" already exists, can't add element");
-				std::string type = xml_ele.Attribute("Type") ? xml_ele.Attribute("Type") : ElementType::TypeName();
+				std::string type = xml_ele.Attribute("type") ? xml_ele.Attribute("type") : ElementType::TypeName();
 				if (typeInfoMap().find(type) == typeInfoMap().end())throw std::runtime_error(std::string("can't find type ") + type);
 
 				auto ret = typeInfoMap().at(type).newFromXml(this->father(), xml_ele, element_vec_.size());
@@ -253,6 +238,7 @@ namespace Aris
 			auto end() const ->typename std::vector<std::unique_ptr<ElementType>>::const_iterator { return element_vec_.end(); };
 			auto clear() -> void { element_vec_.clear(); };
 
+		private:
 			~ElementPool() = default;
 			ElementPool(const ElementPool &other) = delete;
 			ElementPool(ElementPool && other) :element_vec_(std::move(other.element_vec_)) {};
@@ -276,25 +262,29 @@ namespace Aris
 
 			struct TypeInfo
 			{
-				std::function<ElementType*(Object &, const Aris::Core::XmlElement &xml_ele, int id)> newFromXml;
+				std::function<ElementType*(Object &, const Aris::Core::XmlElement &xml_ele, std::size_t id)> newFromXml;
 
-				template<typename ChildType> TypeInfo()
+				template<typename ChildType> static auto create()->TypeInfo
 				{
-					this->newFromXml = [](Object &father, const Aris::Core::XmlElement &xml_ele, int id)->ElementType*
+					TypeInfo info;
+
+					info.newFromXml = [](Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)->ElementType*
 					{
 						return new ChildType(father, xml_ele, id);
 					};
+
+					return info;
 				}
 			};
-			static auto typeInfoMap()-> std::map<std::string, TypeInfo>&
-			{
-				static std::map<std::string, TypeInfo> info_map;
-				return std::ref(info_map);
-			};
+			static auto typeInfoMap()->std::map<std::string, TypeInfo>&;
+
+			friend class Part;
+			friend class Model;
 		};
 		class Interaction :public Element
 		{
 		public:
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
 			auto makI()->Marker& { return *makI_; };
 			auto makI() const->const Marker&{ return *makI_; };
 			auto makJ()->Marker& { return *makJ_; };
@@ -302,13 +292,9 @@ namespace Aris
 
 		protected:
 			virtual ~Interaction() = default;
-			Interaction(const Interaction &) = default;
-			Interaction(Interaction &&) = default;
-			Interaction &operator=(const Interaction &) = default;
-			Interaction &operator=(Interaction &&) = default;
-			explicit Interaction(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ, bool is_active = true)
+			explicit Interaction(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, bool is_active = true)
 				: Element(father, name, id, is_active), makI_(&makI), makJ_(&makJ) {};
-			explicit Interaction(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
+			explicit Interaction(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 
 		private:
 			Marker *makI_;
@@ -317,10 +303,9 @@ namespace Aris
 		class Constraint :public Interaction
 		{
 		public:
-			virtual auto dim() const->std::size_t = 0;
-			virtual auto update()->void;
-			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
 			virtual auto saveAdams(std::ofstream &file) const->void override;
+			virtual auto update()->void;
+			virtual auto dim() const->std::size_t = 0;
 			auto cstMtxI() const->const double* { return const_cast<Constraint*>(this)->csmI(); };
 			auto cstMtxJ() const->const double* { return const_cast<Constraint*>(this)->csmJ(); };
 			auto cstAcc() const->const double* { return const_cast<Constraint*>(this)->csa(); };
@@ -328,13 +313,9 @@ namespace Aris
 
 		protected:
 			virtual ~Constraint() = default;
-			Constraint(const Constraint &) = default;
-			Constraint(Constraint &&) = default;
-			Constraint &operator=(const Constraint &) = default;
-			Constraint &operator=(Constraint &&) = default;
-			explicit Constraint(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ, bool is_active = true)
+			explicit Constraint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, bool is_active = true)
 				: Interaction(father, name, id, makI, makJ, is_active) {};
-			explicit Constraint(Object &father, const Aris::Core::XmlElement &xml_ele, int id)
+			explicit Constraint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
 				: Interaction(father, xml_ele, id) {};
 
 		private:
@@ -348,40 +329,54 @@ namespace Aris
 			friend class Model;
 		};
 
+		class Variable:public Element
+		{
+		public:
+			static auto TypeName()->const std::string &{ static const std::string type{ "variable" }; return type; };
+			virtual ~Variable() = default;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override
+			{
+				Element::saveXml(xml_ele);
+				xml_ele.SetText(this->toString().c_str());
+			}
+			virtual auto typeName() const->const std::string& override{ return TypeName(); };
+			virtual auto groupName()const->const std::string& override{ return TypeName(); };
+			virtual auto toString() const->std::string { return ""; };
+			
+		protected:
+			explicit Variable(Object &father, const std::string &name, std::size_t id, bool active = true): Element(father, name, id, active) {};
+			explicit Variable(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id): Element(father, xml_ele, id) {};
+		
+		private:
+			friend class ElementPool<Variable>;
+		};
 		class Marker :public Element
 		{
 		public:
 			static auto TypeName()->const std::string &{ static const std::string type{ "marker" }; return type; };
 			virtual ~Marker() = default;
-			virtual auto update()->void;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
+			virtual auto saveAdams(std::ofstream &file) const->void override;
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
 			virtual auto groupName()const->const std::string& override{ return TypeName(); };
-			virtual auto adamsID()const->std::size_t;
+			virtual auto adamsID()const->std::size_t override;
+			virtual auto update()->void;
 			virtual auto fatherPart() const->const Part&;
-			virtual auto fatherPart() ->Part&;
+			virtual auto fatherPart()->Part&;
 			auto pm() const->const double4x4&{ return pm_; };
 			auto vel() const->const double6&;
 			auto acc() const->const double6&;
 			auto prtPm() const->const double4x4&{ return prt_pm_; };
 			auto getPm(double *pm_in)->void { std::copy_n(static_cast<const double *>(*pm()), 16, pm_in); };
-			auto getPe(double *pe, const char *type = "313")const->void{ s_pm2pe(*pm(), pe, type); };
+			auto getPe(double *pe, const char *type = "313")const->void { s_pm2pe(*pm(), pe, type); };
 			auto getPq(double *pq)const->void { s_pm2pq(*pm(), pq); };
 			auto getVel(double *vel_in)const->void { std::copy_n(vel(), 6, vel_in); };
 			auto getAcc(double *acc_in)const->void { std::copy_n(acc(), 6, acc_in); };
 
-		private:
-			Marker(const Marker &) = default;
-			Marker(Marker &&) = default;
-			Marker &operator=(const Marker &) = default;
-			Marker &operator=(Marker &&) = default;
-			explicit Marker(Object &father, const std::string &name, int id, const double *prt_pm = nullptr, Marker *relative_mak = nullptr, bool active =true);//only for child class Part to construct
-			explicit Marker(Object &father, const Aris::Core::XmlElement &ele, int id);//only for child class Part to construct
-			//explicit Marker(Part &prt, const std::string &name, int id, const double *prt_pm = nullptr, Marker *relative_mak = nullptr, bool active = true);
-			//explicit Marker(Part &prt, const Aris::Core::XmlElement &ele, int id);
+		protected:
+			explicit Marker(Object &father, const std::string &name, std::size_t id, const double *prt_pm = nullptr, Marker *relative_mak = nullptr, bool active = true);//only for child class Part to construct
+			explicit Marker(Object &father, const Aris::Core::XmlElement &ele, std::size_t id);
 			explicit Marker(Part &prt, const double *prt_pe = nullptr, const char* eul_type = "313");
-
-			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
-			virtual auto saveAdams(std::ofstream &file) const->void override{};
 
 		private:
 			double pm_[4][4];
@@ -398,10 +393,12 @@ namespace Aris
 		public:
 			static auto TypeName()->const std::string &{ static const std::string type{ "part" }; return type; };
 			virtual ~Part() = default;
-			virtual auto update()->void;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
+			virtual auto saveAdams(std::ofstream &file) const->void override;
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
 			virtual auto groupName()const->const std::string& override{ return TypeName(); };
-			virtual auto adamsID()const->std::size_t { return id() + 1; };
+			virtual auto adamsID()const->std::size_t override { return id() + 1; };
+			virtual auto update()->void;
 			virtual auto fatherPart() const->const Part&{ return *this; };
 			virtual auto fatherPart() ->Part& { return *this; };
 			auto pm()const->const double4x4&{ return pm_; };
@@ -422,20 +419,15 @@ namespace Aris
 			auto setPq(const double *pq)->void { s_pq2pm(pq, *pm()); };
 			auto setVel(const double *vel_in)->void { std::copy_n(vel_in, 6, vel()); };
 			auto setAcc(const double *acc_in)->void { std::copy_n(acc_in, 6, acc()); };
-			
+
 			auto markerPool()->ElementPool<Marker>& { return std::ref(marker_pool_); };
 			auto markerPool()const->const ElementPool<Marker>& { return std::ref(marker_pool_); };
 
 		private:
-			Part(const Part &) = default;
-			Part(Part &&) = default;
-			Part &operator=(const Part &) = default;
-			Part &operator=(Part &&) = default;
-			explicit Part(Object &father, const std::string &name, int id, const double *prt_im = nullptr
+			explicit Part(Object &father, const std::string &name, std::size_t id, const double *prt_im = nullptr
 				, const double *pm = nullptr, const double *vel = nullptr, const double *acc = nullptr, bool active = true);
-			explicit Part(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
-			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
-			virtual auto saveAdams(std::ofstream &file) const->void override;
+			explicit Part(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
+
 
 		private:
 			ElementPool<Marker> marker_pool_;
@@ -472,13 +464,9 @@ namespace Aris
 			virtual auto groupName()const->const std::string& override{ return TypeName(); };
 
 		protected:
-			Joint(const Joint &) = default;
-			Joint(Joint &&) = default;
-			Joint &operator=(const Joint &) = default;
-			Joint &operator=(Joint &&) = default;
-			explicit Joint(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ, bool active = true)
+			explicit Joint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, bool active = true)
 				: Constraint(father, name, id, makI, makJ, active) {};
-			explicit Joint(Object &father, const Aris::Core::XmlElement &xml_ele, int id)
+			explicit Joint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
 				: Constraint(father, xml_ele, id) {};
 
 			friend class ElementPool<Motion>;
@@ -489,6 +477,7 @@ namespace Aris
 		public:
 			static const std::string &TypeName() { static const std::string type{ "motion" }; return type; };
 			virtual ~Motion() = default;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
 			virtual auto groupName()const->const std::string& override{ return TypeName(); };
 			virtual auto dim() const ->std::size_t override { return 1; };
@@ -500,32 +489,27 @@ namespace Aris
 			auto setMotVel(double mot_vel)->void { mot_vel_ = mot_vel; };
 			auto motAcc() const->double { return mot_acc_; };
 			auto setMotAcc(double mot_acc)->void { this->mot_acc_ = mot_acc; };
-			auto motFce() const->double { return motFceDyn() + motFceFrc();	};
+			auto motFce() const->double { return motFceDyn() + motFceFrc(); };
 			auto setMotFce(double mot_fce)->void { this->mot_fce_ = mot_fce; };
 			auto motFceDyn() const->double { return mot_fce_dyn_; }
 			auto setMotFceDyn(double mot_dyn_fce)->void { this->mot_fce_dyn_ = mot_dyn_fce; };
 			auto motFceFrc() const->double { return s_sgn(mot_vel_)*frc_coe_[0] + mot_vel_*frc_coe_[1] + mot_acc_*frc_coe_[2]; };
-			
+
 			auto setPosAkimaCurve(const int num, const double* time, const double *pos)->void
 			{
 				this->posCurve.reset(new Akima(num, time, pos));
 			}
 			auto posAkima(double t, char derivativeOrder = '0')->double { return posCurve->operator()(t, derivativeOrder); };
-			auto posAkima(int length, const double *t, double *pos, char order = '0')->double { posCurve->operator()(length, t, pos, order); };
+			auto posAkima(int length, const double *t, double *pos, char order = '0')->void { posCurve->operator()(length, t, pos, order); };
 
 		protected:
-			Motion(const Motion &) = default;
-			Motion(Motion &&) = default;
-			Motion &operator=(const Motion &) = default;
-			Motion &operator=(Motion &&) = default;
-			explicit Motion(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ, const double *frc_coe = nullptr, bool active = true);
-			explicit Motion(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
-			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
+			explicit Motion(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, const double *frc_coe = nullptr, bool active = true);
+			explicit Motion(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			virtual auto csmI()->double* override { return csmI_; };
 			virtual auto csmJ()->double* override { return csmJ_; };
 			virtual auto csa()->double* override { return &csa_; };
 			virtual auto csf()->double* override { return &mot_fce_dyn_; };
-			
+
 			/*pos\vel\acc\fce of motion*/
 			double mot_pos_{ 0 }, mot_vel_{ 0 }, mot_acc_{ 0 }, mot_fce_dyn_{ 0 };
 			double mot_fce_{ 0 };//仅仅用于标定
@@ -557,18 +541,12 @@ namespace Aris
 			}
 			auto fceAkima(double t, char derivativeOrder = '0')->double { return fce_akima_->operator()(t, derivativeOrder); };
 			auto fceAkima(int length, const double *t, double *pos, char order = '0')->void { fce_akima_->operator()(length, t, pos, order); };
-			
+
 		protected:
-			Force(const Force &) = default;
-			Force(Force &&) = default;
-			Force &operator=(const Force &) = default;
-			Force &operator=(Force &&) = default;
-			explicit Force(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ, bool active = true)
+			explicit Force(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, bool active = true)
 				:Interaction(father, name, id, makI, makJ, active) {};
-			explicit Force(Object &father, const Aris::Core::XmlElement &xml_ele, int id)
+			explicit Force(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
 				:Interaction(father, xml_ele, id) {};
-			virtual void saveXml(Aris::Core::XmlElement &xml_ele) const {};
-			virtual void saveAdams(std::ofstream &file) const {};
 
 			double fceI_[6]{ 0 };
 			double fceJ_[6]{ 0 };
@@ -582,16 +560,25 @@ namespace Aris
 		class Model :public Object
 		{
 		public:
-			virtual auto model()->Model& { return *this; };
-			virtual auto model()const->const Model&{ return *this; };
-
 			virtual ~Model();
 			Model(const Model & other) = default;
 			Model(Model &&) = default;
 			Model &operator=(const Model &) = default;
 			Model &operator=(Model &&) = default;
 			explicit Model(const std::string & name = "Model");
-			
+
+			virtual auto loadXml(const char* filename)->void { loadXml(std::string(filename)); };
+			virtual auto loadXml(const std::string &filename)->void;
+			virtual auto loadXml(const Aris::Core::XmlDocument &xml_doc)->void;
+			virtual auto loadXml(const Aris::Core::XmlElement &xml_ele)->void;
+			virtual auto saveXml(const char *filename) const->void { saveXml(std::string(filename)); };
+			virtual auto saveXml(const std::string &filename) const->void;
+			virtual auto saveXml(Aris::Core::XmlDocument &xml_doc)const->void;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele)const->void override;
+			virtual auto saveAdams(const std::string &filename, bool using_script = false) const->void;
+			virtual auto saveAdams(std::ofstream &file, bool using_script = false) const->void;
+			virtual auto model()->Model& override { return *this; };
+			virtual auto model()const->const Model& override{ return *this; };
 			auto environment()->Aris::Dynamic::Environment& { return environment_; };
 			auto environment()const ->const Aris::Dynamic::Environment&{ return environment_; };
 			auto script()->Aris::Dynamic::Script& { return script_; };
@@ -605,19 +592,20 @@ namespace Aris
 			auto forcePool()->ElementPool<Force>& { return std::ref(force_pool_); };
 			auto forcePool()const->const ElementPool<Force>& { return std::ref(force_pool_); };
 			auto ground()->Part& { return *ground_; };
-			auto ground()const->const Part& { return *ground_; };
+			auto ground()const->const Part&{ return *ground_; };
 
 			template<typename JointType>
-			static void registerJointType() { decltype(joint_pool_)::registerType<JointType>(); };
+			static auto registerJointType()->void { decltype(joint_pool_)::registerType<JointType>(); };
 			template<typename MotionType>
-			static void registerMotionType() { decltype(motion_pool_)::registerType<MotionType>(); };
+			static auto registerMotionType()->void { decltype(motion_pool_)::registerType<MotionType>(); };
 			template<typename ForceType>
-			static void registerForceType() { decltype(force_pool_)::registerType<ForceType>(); };
+			static auto registerForceType()->void { decltype(force_pool_)::registerType<ForceType>(); };
 
 			/// 约束矩阵C为m x n维的矩阵，惯量矩阵为m x m维的矩阵
 			/// 约束力为n维的向量，约束加速度为n维向量
 			/// 部件力为m维的向量，部件加速度为m维向量
 			/// 动力学为所求的未知量为部件加速度和约束力，其他均为已知
+			virtual auto dyn()->void;
 			auto dynDimM()const->std::size_t { return dyn_prt_dim_; };
 			auto dynDimN()const->std::size_t { return dyn_cst_dim_; };
 			auto dynDim()const->std::size_t { return dynDimN() + dynDimM(); };
@@ -634,7 +622,7 @@ namespace Aris
 			auto dynSov(const double *D, const double *b, double *x) const->void;
 			auto dynUkn(double *x) const->void;
 			auto dynEnd(const double *x)->void;
-			virtual auto dyn()->void;
+			
 
 			/// 标定矩阵为m x n维的矩阵，其中m为驱动的数目，n为部件个数*10+驱动数*3
 			auto clbDimM()const->std::size_t { return clb_dim_m_; };
@@ -661,75 +649,73 @@ namespace Aris
 			/// 直接生成Adams模型，依赖SimDynAkima
 			auto simToAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt = 10, bool using_script = false)->void;
 
-			/*
-			virtual void saveState(const std::string& save_name, bool isAutoOverride = true) 
-			{
-				if (!isAutoOverride)
-				{
-					auto state = save_data_map_.find(save_name);
-					if (state != save_data_map_.end())throw std::runtime_error("failed to save state " + save_name + ", cause it already has this state");
-				}
-				
-				decltype(save_data_map_) temp_map;
-				std::swap(save_data_map_, temp_map);
-				temp_map.insert(std::make_pair(save_name, *this));
-				std::swap(save_data_map_, temp_map);
-			};
-			virtual void loadState(const std::string& save_name) 
-			{
-				auto state = save_data_map_.find(save_name);
-				if (state == save_data_map_.end())throw std::runtime_error("failed to load state " + save_name + ", cause it doesn't has this state");
-
-				std::swap(*this, state->second);
-				std::swap(this->save_data_map_, state->second.save_data_map_);
-				save_data_map_.erase(state);
-			};
-			virtual void clearState(const std::string& save_name = "") 
-			{
-				auto state = save_data_map_.find(save_name);
-				if (state == save_data_map_.end())throw std::runtime_error("failed to clear state " + save_name + ", cause it doesn't has this state");
-
-				save_data_map_.erase(state);
-			};
-			*/
-
-			virtual auto loadXml(const char* filename)->void { loadXml(std::string(filename)); };
-			virtual auto loadXml(const std::string &filename)->void;
-			virtual auto loadXml(const Aris::Core::XmlDocument &xml_doc)->void;
-			virtual auto loadXml(const Aris::Core::XmlElement &xml_ele)->void;
-			virtual auto saveXml(const char *filename) const->void { saveXml(std::string(filename)); };
-			virtual auto saveXml(const std::string &filename) const->void;
-			virtual auto saveXml(Aris::Core::XmlDocument &xml_doc)const->void;
-			virtual auto saveXml(Aris::Core::XmlElement &xml_ele)const->void;
-			auto saveAdams(const std::string &filename, bool using_script = false) const->void;
-
 			
 
 		private:
-			Aris::Dynamic::Environment environment_;
+			Aris::Core::Calculator calculator;
+			
+			Environment environment_{ *this,"Environment" };
+			ElementPool<Variable> variable_pool_{ *this,"Variable" };
+			ElementPool<Part> part_pool_{ *this,"Part" };
+			ElementPool<Joint> joint_pool_{ *this,"Joint" };
+			ElementPool<Motion> motion_pool_{ *this,"Motion" };
+			ElementPool<Force> force_pool_{ *this,"Force" };
+
+
 			Aris::Dynamic::Script script_;
 			Part* ground_;
-			ElementPool<Part> part_pool_{ *this,"Part_Pool" };
-			ElementPool<Joint> joint_pool_{ *this,"Joint_Pool" };
-			ElementPool<Motion> motion_pool_{ *this,"Motion_Pool" };
-			ElementPool<Force> force_pool_{ *this,"Force_Pool" };
 
-			Core::Calculator calculator;
-			
-			std::size_t dyn_cst_dim_,dyn_prt_dim_;
+			std::size_t dyn_cst_dim_, dyn_prt_dim_;
 			std::size_t clb_dim_m_, clb_dim_n_, clb_dim_gam_, clb_dim_frc_;
 
 			std::function<void(int dim, const double *D, const double *b, double *x)> dyn_solve_method_{ nullptr };
 			std::function<void(int n, double *A)> clb_inverse_method_{ nullptr };
 
 		protected:
-			std::map<std::string, Model> save_data_map_;
-
 			friend class Environment;
 			friend class Part;
 			friend class Motion;
 			friend class Marker;
 			friend class Force;
+			friend class MatrixVariable;
+		};
+
+		template <typename Type>
+		class VariableTemplate: public Variable
+		{
+		public:
+			virtual ~VariableTemplate() = default;
+			auto data()->Type& { return data_; };
+			auto data()const->const Type&{ return data_; };
+
+		protected:
+			explicit VariableTemplate(Aris::Dynamic::Object &father, const std::string &name, std::size_t id, const Type &data, bool active = true)
+				: Variable(father, name, id, active), data_(data) {};
+			explicit VariableTemplate(Aris::Dynamic::Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+				: Variable(father, xml_ele, id) {};
+
+			Type data_;
+		};
+
+		class MatrixVariable : VariableTemplate<Aris::Core::Matrix>
+		{
+		public:
+			static auto TypeName()->const std::string &{ static const std::string type{ "matrix" }; return type; };
+			virtual ~MatrixVariable() = default;
+			virtual auto typeName() const->const std::string& override{ return TypeName(); };
+			virtual auto toString() const->std::string override{ return data_.toString(); };
+
+		protected:
+			explicit MatrixVariable(Aris::Dynamic::Object &father, const std::string &name, std::size_t id, const Aris::Core::Matrix &data, bool active = true)
+				: VariableTemplate(father, name, id, data, active) {};
+			explicit MatrixVariable(Aris::Dynamic::Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+				: VariableTemplate(father, xml_ele, id) 
+			{
+				this->data_ = model().calculator.calculateExpression(xml_ele.GetText());
+				model().calculator.addVariable(name(), this->data_);
+			};
+		
+			friend class ElementPool<Variable>;
 		};
 
 		class FloatMarker final :public Marker
@@ -750,19 +736,15 @@ namespace Aris
 			virtual auto dim() const->std::size_t { return DIMENSION; };
 
 		protected:
-			JointBaseDim(const JointBaseDim &) = default;
-			JointBaseDim(JointBaseDim &&) = default;
-			JointBaseDim &operator=(const JointBaseDim &) = default;
-			JointBaseDim &operator=(JointBaseDim &&) = default;
-			explicit JointBaseDim(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ)
+			explicit JointBaseDim(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
 				:Joint(father, name, id, makI, makJ) {};
-			explicit JointBaseDim(Object &father, const Aris::Core::XmlElement &xml_ele, int id)
+			explicit JointBaseDim(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
 				:Joint(father, xml_ele, id) {};
 
-			virtual double* csmI() override { return *csmI_; };
-			virtual double* csmJ() override { return *csmJ_; };
-			virtual double* csf() override { return csf_; };
-			virtual double* csa() override { return csa_; };
+			virtual auto csmI()->double* override { return *csmI_; };
+			virtual auto csmJ()->double* override { return *csmJ_; };
+			virtual auto csf()->double* override { return csf_; };
+			virtual auto csa()->double* override { return csa_; };
 
 			double csmI_[6][DIMENSION]{ { 0 } };
 			double csmJ_[6][DIMENSION]{ { 0 } };
@@ -780,12 +762,11 @@ namespace Aris
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
 
 		private:
-			explicit RevoluteJoint(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ);
-			explicit RevoluteJoint(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
+			explicit RevoluteJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ);
+			explicit RevoluteJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			virtual void init() override;
 
-			template<typename Type>
-			friend class ElementPool;
+			friend class ElementPool<Joint>;
 		};
 		class TranslationalJoint final :public JointBaseDim<5>
 		{
@@ -795,29 +776,27 @@ namespace Aris
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
 
 		private:
-			explicit TranslationalJoint(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ);
-			explicit TranslationalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
+			explicit TranslationalJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ);
+			explicit TranslationalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			virtual void init() override;
 
-			template<typename Type>
-			friend class ElementPool;
+			friend class ElementPool<Joint>;
 		};
 		class UniversalJoint final :public JointBaseDim<4>
 		{
 		public:
 			static const std::string& TypeName() { static const std::string type_name("universal"); return std::ref(type_name); };
 			virtual ~UniversalJoint() = default;
+			virtual auto saveAdams(std::ofstream &file) const -> void override;
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
-			virtual void update();
+			virtual auto update()->void override;
 
 		private:
-			explicit UniversalJoint(Object &father, const std::string &name, int id, Marker &makI, Marker &makJ);
-			explicit UniversalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
-			virtual void saveAdams(std::ofstream &file) const;
+			explicit UniversalJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ);
+			explicit UniversalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			virtual void init() override;
 
-			template<typename Type>
-			friend class ElementPool;
+			friend class ElementPool<Joint>;
 		};
 		class SphericalJoint final :public JointBaseDim<3>
 		{
@@ -827,12 +806,11 @@ namespace Aris
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
 
 		private:
-			explicit SphericalJoint(Object &father, const std::string &Name, int id, Marker &makI, Marker &makJ);
-			explicit SphericalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
+			explicit SphericalJoint(Object &father, const std::string &Name, std::size_t id, Marker &makI, Marker &makJ);
+			explicit SphericalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			virtual void init() override;
 
-			template<typename Type>
-			friend class ElementPool;
+			friend class ElementPool<Joint>;
 		};
 
 		class SingleComponentMotion final :public Motion
@@ -840,21 +818,22 @@ namespace Aris
 		public:
 			static const std::string& TypeName() { static const std::string type_name("single_component_motion"); return std::ref(type_name); };
 			virtual ~SingleComponentMotion() = default;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
+			virtual auto saveAdams(std::ofstream &file) const->void override;
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
-			virtual void update() override;
+			virtual auto update()->void override;
 
 		private:
-			explicit SingleComponentMotion(Object &father, const std::string &Name, int id, Marker &makI, Marker &makJ, int componentAxis);
-			explicit SingleComponentMotion(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
-			virtual void init() override;
-			void saveAdams(std::ofstream &file) const override;
+			explicit SingleComponentMotion(Object &father, const std::string &Name, std::size_t id, Marker &makI, Marker &makJ, int componentAxis);
+			explicit SingleComponentMotion(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
+			virtual auto init()->void override;
+
 
 			int component_axis_;
 		private:
 			friend class Model;
 
-			template<typename Type>
-			friend class ElementPool;
+			friend class ElementPool<Motion>;
 		};
 
 		class SingleComponentForce final :public Force
@@ -862,18 +841,19 @@ namespace Aris
 		public:
 			static const std::string& TypeName() { static const std::string name("single_component_force"); return std::ref(name); };
 			virtual ~SingleComponentForce() = default;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
 			virtual auto typeName() const->const std::string& override{ return TypeName(); };
 			virtual auto groupName()const->const std::string& override{ static const std::string name("sforce"); return std::ref(name); };
-			virtual void update();
+			virtual auto update()->void override;
 
-			void setComponentID(int id) { component_axis_ = id; };
+			void setComponentID(std::size_t id) { component_axis_ = id; };
 			void setFce(double value) { std::fill_n(fce_value_, 6, 0); fce_value_[component_axis_] = value; };
 			void setFce(double value, int componentID) { this->component_axis_ = componentID; setFce(value); };
 			double fce()const { return fce_value_[component_axis_]; };
 
 		private:
-			explicit SingleComponentForce(Object &father, const std::string &name, int id, Marker& makI, Marker& makJ, int componentID);
-			explicit SingleComponentForce(Object &father, const Aris::Core::XmlElement &xml_ele, int id);
+			explicit SingleComponentForce(Object &father, const std::string &name, std::size_t id, Marker& makI, Marker& makJ, int componentID);
+			explicit SingleComponentForce(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			virtual void saveAdams(std::ofstream &file) const;
 
 			int component_axis_;
@@ -881,8 +861,7 @@ namespace Aris
 
 			friend class Model;
 
-			template<typename Type>
-			friend class ElementPool;
+			friend class ElementPool<Force>;
 		};
 	}
 }
