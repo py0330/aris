@@ -302,6 +302,126 @@ namespace Aris
 				<< "!\r\n";
 		}
 
+		Akima::Akima(Object &father, const std::string &name, std::size_t id, int num, const double *x_in, const double *y_in, bool active)
+			: Element(father, name, id, active)
+		{
+			std::list<std::pair<double, double> > data_list;
+
+			for (int i = 0; i < num; ++i)
+			{
+				data_list.push_back(std::make_pair(x_in[i], y_in[i]));
+			}
+
+			init(data_list);
+		}
+		auto Akima::saveAdams(std::ofstream &file) const->void
+		{
+			file << "data_element create spline &\r\n"
+				<< "    spline_name = ." << model().name() + "." + name() + " &\r\n"
+				<< "    adams_id = " << adamsID() << "  &\r\n"
+				<< "    units = m &\r\n"
+				<< "    x = " << x().at(0);
+			for (auto p = x().begin() + 1; p < x().end(); ++p)
+			{
+				file << "," << *p;
+			}
+			file << "    y = " << y().at(0);
+			for (auto p = y().begin() + 1; p < y().end(); ++p)
+			{
+				file << "," << *p;
+			}
+			file << " \r\n!\r\n";
+		}
+		auto Akima::init(std::list<std::pair<double, double> > &data_list)->void
+		{
+			if (data_list.size() < 4)throw std::runtime_error("Akima must be inited with data size more than 4");
+
+			/*对数据进行排序,并保存*/
+			data_list.sort([](std::pair<double, double> a, std::pair<double, double> b)
+			{
+				return a.first < b.first;
+			});
+
+			for (auto &p : data_list)
+			{
+				x_.push_back(p.first);
+				y_.push_back(p.second);
+			}
+
+			/*开始计算*/
+			std::vector<double> s(data_list.size() + 3), ds(data_list.size() + 2), t(data_list.size());
+
+			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
+			{
+				s[i + 2] = (y_[i + 1] - y_[i]) / (x_[i + 1] - x_[i]);
+			}
+
+			s[1] = 2 * s[2] - s[3];
+			s[0] = 2 * s[1] - s[2];
+			s[data_list.size() + 1] = 2 * s[data_list.size()] - s[data_list.size() - 1];
+			s[data_list.size() + 2] = 2 * s[data_list.size() + 1] - s[data_list.size()];
+
+			for (std::size_t i = 0; i < data_list.size() + 2; ++i)
+			{
+				ds[i] = std::abs(s[i + 1] - s[i]);
+			}
+
+			for (std::size_t i = 0; i < data_list.size(); ++i)
+			{
+				if (ds[i] + ds[i + 2]<1e-12)/*前后两段的斜斜率都为0*/
+				{
+					t[i] = (s[i + 1] + s[i + 2]) / 2;
+				}
+				else
+				{
+					t[i] = (ds[i + 2] * s[i + 1] + ds[i] * s[i + 2]) / (ds[i] + ds[i + 2]);
+				}
+
+			}
+
+			/*所需储存的变量*/
+			_p0.resize(data_list.size() - 1);
+			_p1.resize(data_list.size() - 1);
+			_p2.resize(data_list.size() - 1);
+			_p3.resize(data_list.size() - 1);
+
+			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
+			{
+				_p0[i] = y_[i];
+				_p1[i] = t[i];
+				_p2[i] = (3 * s[i + 2] - 2 * t[i] - t[i + 1]) / (x_[i + 1] - x_[i]);
+				_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (x_[i + 1] - x_[i]) / (x_[i + 1] - x_[i]);
+			}
+		}
+
+		auto Akima::operator()(double x, char order) const->double
+		{
+			/*寻找第一个大于x的位置*/
+			auto bIn = std::upper_bound(x_.begin(), x_.end() - 1, x);
+
+			int id = std::max<int>(bIn - x_.begin() - 1, 0);
+
+			double w = x - x_[id];
+
+			switch (order)
+			{
+			case '1':
+				return (3 * w*_p3[id] + 2 * _p2[id])*w + _p1[id];
+			case '2':
+				return (6 * w*_p3[id] + 2 * _p2[id]);
+			case '0':
+			default:
+				return ((w*_p3[id] + _p2[id])*w + _p1[id])*w + _p0[id];
+			}
+		}
+		auto Akima::operator()(int length, const double *x_in, double *y_out, char order)const->void
+		{
+			for (int i = 0; i < length; ++i)
+			{
+				y_out[i] = this->operator()(x_in[i], order);
+			}
+		}
+
 		Marker::Marker(Object &father, const std::string &name, std::size_t id, const double *prt_pm, Marker *relative_mak, bool active)
 			: Element(father, name, id, active)
 		{
@@ -642,9 +762,7 @@ namespace Aris
 			xml_ele.SetAttribute("frc_coe", Core::Matrix(1, 3, this->frcCoe()).toString().c_str());
 		}
 
-		Model::Model(const std::string & name)
-			: Object(*this, name)
-			, ground_(nullptr)
+		Model::Model(const std::string & name): Object(*this, name), ground_(nullptr)
 		{
 			partPool().add<Part>("Ground");
 			ground_ = partPool().find("Ground");
@@ -652,12 +770,24 @@ namespace Aris
 		Model::~Model()
 		{
 		}
-
-		void Model::dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)
+		Model::Model(const Model & other):Object(*this, other.name())
+		{
+			Aris::Core::XmlDocument doc;
+			other.saveXml(doc);
+			this->loadXml(doc);
+		}
+		Model &Model::operator=(const Model &other)
+		{
+			Aris::Core::XmlDocument doc;
+			other.saveXml(doc);
+			this->loadXml(doc);
+			return *this;
+		}
+		auto Model::dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void
 		{
 			this->dyn_solve_method_ = solve_method;
 		}
-		void Model::dynCstMtx(double *cst_mtx) const
+		auto Model::dynCstMtx(double *cst_mtx) const->void
 		{
 			std::fill_n(cst_mtx, dynDimN()*dynDimM(), 0);
 
@@ -683,7 +813,7 @@ namespace Aris
 				}
 			}
 		}
-		void Model::dynIneMtx(double *ine_mtx) const
+		auto Model::dynIneMtx(double *ine_mtx) const->void
 		{
 			std::fill_n(ine_mtx, dynDimM()*dynDimM(), 0);
 
@@ -700,7 +830,7 @@ namespace Aris
 				}
 			}
 		}
-		void Model::dynCstAcc(double *cst_acc) const
+		auto Model::dynCstAcc(double *cst_acc) const->void
 		{
 			std::fill_n(cst_acc, dynDimN(), 0);
 
@@ -719,7 +849,7 @@ namespace Aris
 				}
 			}
 		}
-		void Model::dynPrtFce(double *prt_fce) const
+		auto Model::dynPrtFce(double *prt_fce) const->void
 		{
 			std::fill_n(prt_fce, dynDimM(), 0);
 
@@ -741,7 +871,7 @@ namespace Aris
 				}
 			}
 		}
-		void Model::dynCstFce(double *cst_fce) const
+		auto Model::dynCstFce(double *cst_fce) const->void
 		{
 			for (auto &jnt : joint_pool_)
 			{
@@ -759,7 +889,7 @@ namespace Aris
 			}
 
 		}
-		void Model::dynPrtAcc(double *cst_acc) const
+		auto Model::dynPrtAcc(double *cst_acc) const->void
 		{
 			for (auto &prt : part_pool_)
 			{
@@ -769,7 +899,7 @@ namespace Aris
 				}
 			}
 		}
-		void Model::dynPre()
+		auto Model::dynPre()->void
 		{
 			int pid = 0;//part id
 			int cid = 6;//Joint id
@@ -803,9 +933,9 @@ namespace Aris
 			{
 				if (motion->isActive())
 				{
+					motion->init();
 					motion->col_id_ = cid;
 					cid++;
-					motion->init();
 				}
 				else
 				{
@@ -817,7 +947,7 @@ namespace Aris
 			dyn_prt_dim_ = pid;
 			dyn_cst_dim_ = cid;
 		}
-		void Model::dynUpd()
+		auto Model::dynUpd()->void
 		{
 			for (auto &prt : part_pool_)
 			{
@@ -837,7 +967,7 @@ namespace Aris
 				if (fce->isActive())fce->update();
 			}
 		}
-		void Model::dynMtx(double *D, double *b) const
+		auto Model::dynMtx(double *D, double *b) const->void
 		{
 			dynCstMtx(&D[(dynDim())*dynDimM()]);
 			s_block_cpy(dynDimM(), dynDimN(), &D[(dynDim())*dynDimM()], 0, 0, dynDimN(), D, 0, dynDimM(), dynDim());
@@ -851,7 +981,7 @@ namespace Aris
 			dynPrtFce(b);
 			dynCstAcc(b + dynDimM());
 		}
-		void Model::dynSov(const double *D, const double *b, double *x) const
+		auto Model::dynSov(const double *D, const double *b, double *x) const->void
 		{
 			if (dyn_solve_method_)
 			{
@@ -862,7 +992,7 @@ namespace Aris
 				throw std::runtime_error("please set solve_method before use DynSov");
 			}
 		}
-		void Model::dynEnd(const double *x)
+		auto Model::dynEnd(const double *x)->void
 		{
 			for (auto &prt : part_pool_)
 			{
@@ -886,30 +1016,13 @@ namespace Aris
 				}
 			}
 		}
-		void Model::dynUkn(double *x) const
+		auto Model::dynUkn(double *x) const->void
 		{
 			this->dynPrtAcc(x);
 			this->dynCstFce(x + dynDimM());
 		}
-		void Model::dyn()
+		auto Model::dyn()->void
 		{
-			/*
-			DynPre();
-			
-			std::vector<double> C(dynDimM() * dynDimN());
-			std::vector<double> a_c(dynDimN());
-			std::vector<double> I_mat(dynDimM() * dynDimM());
-			std::vector<double> f(dynDimM());
-			std::vector<double> D((dynDim()) * (dynDim()));
-			std::vector<double> b(dynDim());
-
-			DynMtx(C.data(), a_c.data(), I_mat.data(), f.data(), D.data(), b.data());
-
-			std::vector<double> x(dynDim());
-			solveMethod(dynDim(), D.data(), b.data(), x.data());
-
-			DynEnd(x.data());
-			*/
 			dynPre();
 			std::vector<double> D(dynDim() * dynDim());
 			std::vector<double> b(dynDim());
@@ -920,11 +1033,11 @@ namespace Aris
 			dynEnd(x.data());
 		}
 
-		void Model::clbSetInverseMethod(std::function<void(int n, double *A)> inverse_method)
+		auto Model::clbSetInverseMethod(std::function<void(int n, double *A)> inverse_method)->void
 		{
 			this->clb_inverse_method_ = inverse_method;
 		}
-		void Model::clbPre()
+		auto Model::clbPre()->void
 		{
 			dynPre();
 
@@ -957,11 +1070,11 @@ namespace Aris
 			}
 
 		}
-		void Model::clbUpd()
+		auto Model::clbUpd()->void
 		{
 			dynUpd();
 		}
-		void Model::clbMtx(double *clb_D, double *clb_b)const
+		auto Model::clbMtx(double *clb_D, double *clb_b)const->void
 		{
 			if (!clb_inverse_method_)throw std::runtime_error("please set inverse method before calibrate");
 			if (dynDimN() != dynDimM()) throw std::logic_error("must calibrate square matrix");
@@ -1074,7 +1187,7 @@ namespace Aris
 			std::copy_n(clb_d_m.data(), clb_d_m.size(), clb_D);
 			std::copy_n(clb_b_m.data(), clb_b_m.size(), clb_b);
 		}
-		void Model::clbUkn(double *clb_x)const
+		auto Model::clbUkn(double *clb_x)const->void
 		{
 			int row = 0;
 			for (auto &prt : part_pool_)
@@ -1096,20 +1209,15 @@ namespace Aris
 			}
 		}
 		
-		void Model::simKin(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script)
+		auto Model::simKin(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval, bool using_script)->SimResult
 		{
-			//储存起始的每个杆件的位置
-			result.begin_prt_pe_.clear();
-			for (std::size_t i = 0; i < partPool().size(); ++i)
-			{
-				std::array<double, 6>pe;
-				partPool().at(i).getPe(pe.data());
-				result.begin_prt_pe_.push_back(pe);
-			}
+			//储存起始的状态
 
 			//初始化变量
-			result.Pin_.clear();
-			result.Pin_.resize(motionPool().size());
+			SimResult result;
+			result.resize(motionPool().size());
+			std::list<double> time_akima_data;
+			std::vector<std::list<double> > pos_akima_data(motionPool().size());
 
 			//起始位置
 			result.time_.push_back(0);
@@ -1119,10 +1227,16 @@ namespace Aris
 				result.Pin_.at(i).push_back(motionPool().at(i).motPos());
 			}
 
+			time_akima_data.push_back(0);
+			for (std::size_t j = 0; j < motionPool().size(); ++j)
+			{
+				pos_akima_data.at(j).push_back(motionPool().at(j).motPos());
+			}
+
 			if (using_script)
 			{
-				this->script().updateAt(0);
-				this->script().setTopologyAt(0);
+				script().updateAt(0);
+				script().setTopologyAt(0);
 			}
 
 			//其他位置
@@ -1136,100 +1250,62 @@ namespace Aris
 					result.Pin_.at(i).push_back(motionPool().at(i).motPos());
 				}
 
+				if ((!is_sim) || ((param.count + 1) % akima_interval == 0))
+				{
+					time_akima_data.push_back((param.count + 1) / 1000.0);
+
+					for (std::size_t j = 0; j < motionPool().size(); ++j)
+					{
+						pos_akima_data.at(j).push_back(motionPool().at(j).motPos());
+					}
+				}
+
 				if (using_script)
 				{
-					this->script().updateAt(param.count + 1);
-					this->script().setTopologyAt(param.count + 1);
+					script().updateAt(param.count + 1);
+					script().setTopologyAt(param.count + 1);
 				}
 
 				if (!is_sim)break;
 			}
 
-			//恢复起始位置
-			auto pe = result.begin_prt_pe_.begin();
-			for (std::size_t i = 0; i < partPool().size(); ++i)
-			{
-				partPool().at(i).setPe(pe->data());
-				++pe;
-			}
-		}
-		void Model::simDyn(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script)
-		{
-			
-		}
-		void Model::simKinAkima(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval, bool using_script)
-		{
-			simKin(func, param, result, using_script);
-			
-			//生成Akima
-			std::list<double> time_akima_data;
-			std::vector<std::list<double> > pos_akima_data(motionPool().size());
-
-			//初始化迭代器
-			auto p_time = result.time_.begin();
-			std::vector<std::list<double>::iterator> p_Pin(motionPool().size());
-			for (std::size_t i = 0; i < motionPool().size(); ++i)
-				p_Pin.at(i) = result.Pin_.at(i).begin();
-
-			//生成Akima
-			for (std::size_t i = 0; i < result.time_.size(); ++i)
-			{
-				if ((i == (result.time_.size() - 1)) || (i%akima_interval == 0))
-				{
-					time_akima_data.push_back(*p_time / 1000.0);
-
-					for (std::size_t j = 0; j < motionPool().size(); ++j)
-					{
-						pos_akima_data.at(j).push_back(*p_Pin.at(j));
-					}
-				}
-
-				++p_time;
-				for (auto &j : p_Pin)++j;
-			}
-
-			//设置Akima
+			akimaPool().clear();
 			for (std::size_t i = 0; i < motionPool().size(); ++i)
 			{
-				motionPool().at(i).posCurve.reset(new Akima(time_akima_data, pos_akima_data.at(i)));
+				akimaPool().add<Akima>(motionPool().at(i).name() + "_akima", time_akima_data, pos_akima_data.at(i));
 			}
-		}
-		void Model::simDynAkima(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval, bool using_script)
-		{
-			simKinAkima(func, param, result, akima_interval, using_script);
-			
-			result.Pin_.clear();
-			result.Fin_.clear();
-			result.Ain_.clear();
-			result.Vin_.clear();
 
-			result.Pin_.resize(motionPool().size());
-			result.Fin_.resize(motionPool().size());
-			result.Vin_.resize(motionPool().size());
-			result.Ain_.resize(motionPool().size());
+			//*this = tem_model;
+		}
+		auto Model::simDyn(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval, bool using_script)->SimResult
+		{
+			simKin(func, param, akima_interval, using_script);
+
+			SimResult result;
+			result.resize(motionPool().size());
 
 			//仿真计算
-			for (std::size_t t = 0; t < result.time_.size();++t)
+			for (std::size_t t = 0; t < result.time_.size(); ++t)
 			{
 				std::cout << t << std::endl;
-				
+
 				if (using_script)
 				{
-					this->script().setTopologyAt(t);
+					script().setTopologyAt(t);
 				}
 				for (std::size_t j = 0; j < motionPool().size(); ++j)
 				{
-					motionPool().at(j).mot_pos_ = motionPool().at(j).posAkima(t / 1000.0, '0');
+					motionPool().at(j).mot_pos_ = akimaPool().at(j).operator()(t / 1000.0, '0');
 				}
 				kinFromPin();
 				for (std::size_t j = 0; j < motionPool().size(); ++j)
 				{
-					motionPool().at(j).mot_vel_ = motionPool().at(j).posAkima(t / 1000.0, '1');
+					motionPool().at(j).mot_vel_ = akimaPool().at(j).operator()(t / 1000.0, '1');
 				}
 				kinFromVin();
 				for (std::size_t j = 0; j < motionPool().size(); ++j)
 				{
-					motionPool().at(j).mot_acc_ = motionPool().at(j).posAkima(t / 1000.0, '2');
+					motionPool().at(j).mot_acc_ = akimaPool().at(j).operator()(t / 1000.0, '2');
 				}
 				dyn();
 				for (std::size_t j = 0; j < motionPool().size(); ++j)
@@ -1240,77 +1316,68 @@ namespace Aris
 					result.Ain_.at(j).push_back(motionPool().at(j).motAcc());
 				}
 			}
-
-			//恢复起始位置
-			auto pe = result.begin_prt_pe_.begin();
-			for (std::size_t i = 0; i < partPool().size(); ++i)
-			{
-				partPool().at(i).setPe(pe->data());
-				++pe;
-			}
 		}
-		void Model::simToAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt, bool using_script)
+		auto Model::simToAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt, bool using_script)->void
 		{
-			SimResult result;
-			simKinAkima(fun, param, result, ms_dt, using_script);
+			auto result = simDyn(fun, param, ms_dt, using_script);
 			this->saveAdams(adams_file, using_script);
 		}
 
-		void Model::loadXml(const std::string &filename)
+		auto Model::loadXml(const std::string &filename)->void
 		{
 			Aris::Core::XmlDocument xmlDoc;
 			
 			if (xmlDoc.LoadFile(filename.c_str()) != 0)
 			{
-				throw std::logic_error((std::string("could not open file:") + std::string(filename)));
+				throw std::runtime_error((std::string("could not open file:") + std::string(filename)));
 			}
 
 			loadXml(xmlDoc);
 		}
-		void Model::loadXml(const Aris::Core::XmlDocument &xml_doc)
+		auto Model::loadXml(const Aris::Core::XmlDocument &xml_doc)->void
 		{
 			auto pModel = xml_doc.RootElement()->FirstChildElement("Model");
 
-			if (!pModel)throw std::logic_error("can't find Model element in xml file");
+			if (!pModel)throw std::runtime_error("can't find Model element in xml file");
 
 			loadXml(*pModel);
 		}
-		void Model::loadXml(const Aris::Core::XmlElement &xml_ele)
+		auto Model::loadXml(const Aris::Core::XmlElement &xml_ele)->void
 		{
 			calculator.clearVariables();
 			
 			auto env_xml_ele = xml_ele.FirstChildElement("Environment");
-			if (!env_xml_ele)throw(std::logic_error("Model must have environment element"));
+			if (!env_xml_ele)throw(std::runtime_error("Model must have environment element"));
 			environment_ = std::move(Environment(model(), *env_xml_ele));
 
 			auto var_xml_ele = xml_ele.FirstChildElement("Variable");
-			if (!var_xml_ele)throw(std::logic_error("Model must have variable element"));
+			if (!var_xml_ele)throw(std::runtime_error("Model must have variable element"));
 			variable_pool_.clear();
 			variable_pool_ = std::move(ElementPool<Variable>(*this, *var_xml_ele));
 
 			auto prt_xml_ele = xml_ele.FirstChildElement("Part");
-			if (!prt_xml_ele)throw(std::logic_error("Model must have part element"));
+			if (!prt_xml_ele)throw(std::runtime_error("Model must have part element"));
 			part_pool_.clear();
 			part_pool_ = std::move(ElementPool<Part>(*this, *prt_xml_ele));
 
 			auto jnt_xml_ele = xml_ele.FirstChildElement("Joint");
-			if (!jnt_xml_ele)throw(std::logic_error("Model must have joint element"));
+			if (!jnt_xml_ele)throw(std::runtime_error("Model must have joint element"));
 			joint_pool_.clear();
 			joint_pool_ = std::move(ElementPool<Joint>(*this, *jnt_xml_ele));
 
 			auto mot_xml_ele = xml_ele.FirstChildElement("Motion");
-			if (!mot_xml_ele)throw(std::logic_error("Model must have motion element"));
+			if (!mot_xml_ele)throw(std::runtime_error("Model must have motion element"));
 			motion_pool_.clear();
 			motion_pool_ = std::move(ElementPool<Motion>(*this, *mot_xml_ele));
 			
 			auto fce_xml_ele = xml_ele.FirstChildElement("Force");
-			if (!fce_xml_ele)throw(std::logic_error("Model must have force element"));
+			if (!fce_xml_ele)throw(std::runtime_error("Model must have force element"));
 			force_pool_.clear();
 			force_pool_ = std::move(ElementPool<Force>(*this, *fce_xml_ele));
 
 			if(!(ground_ = part_pool_.find("Ground")))throw std::runtime_error("model must has a part named \"Ground\"");
 		}
-		void Model::saveXml(const std::string &filename) const
+		auto Model::saveXml(const std::string &filename) const->void
 		{
 			Aris::Core::XmlDocument doc;
 
@@ -1318,7 +1385,7 @@ namespace Aris
 
 			doc.SaveFile(filename.c_str());
 		}
-		void Model::saveXml(Aris::Core::XmlDocument &xml_doc)const
+		auto Model::saveXml(Aris::Core::XmlDocument &xml_doc)const->void
 		{
 			xml_doc.DeleteChildren();
 			
@@ -1332,7 +1399,7 @@ namespace Aris
 			root_xml_ele->InsertEndChild(model_xml_ele);
 			saveXml(*model_xml_ele);
 		}
-		void Model::saveXml(Aris::Core::XmlElement &xml_ele)const
+		auto Model::saveXml(Aris::Core::XmlElement &xml_ele)const->void
 		{
 			xml_ele.SetName(this->name().c_str());
 			xml_ele.DeleteChildren();
@@ -1361,7 +1428,7 @@ namespace Aris
 			xml_ele.InsertEndChild(fce_xml_ele);
 			force_pool_.saveXml(*fce_xml_ele);
 		}
-		void Model::saveAdams(const std::string &filename, bool using_script) const
+		auto Model::saveAdams(const std::string &filename, bool using_script) const->void
 		{
 			std::string filename_ = filename;
 			if (filename_.size() < 4 || filename_.substr(filename.size() - 4, 4) != ".cmd")
@@ -1383,29 +1450,22 @@ namespace Aris
 			file << "!----------------------------------- Environment -------------------------------!\r\n!\r\n!\r\n";
 			environment().saveAdams(file);
 
+			file << "!----------------------------------- Akimas -------------------------------------!\r\n!\r\n!\r\n";
+			for (auto &aki : akima_pool_)aki->saveAdams(file);
+
 			file << "!----------------------------------- Parts -------------------------------------!\r\n!\r\n!\r\n";
-			for (auto &prt : part_pool_)
-			{
-				prt->saveAdams(file);
-			}
+			for (auto &prt : part_pool_)prt->saveAdams(file);
 
 			file << "!----------------------------------- Joints ------------------------------------!\r\n!\r\n!\r\n";
-			for (auto &jnt : joint_pool_)
-			{
-				jnt->saveAdams(file);
-			}
+			for (auto &jnt : joint_pool_)jnt->saveAdams(file);
 
 			file << "!----------------------------------- Motions -----------------------------------!\r\n!\r\n!\r\n";
-			for (auto &mot : motion_pool_)
-			{
-				mot->saveAdams(file);
-			}
+			for (auto &mot : motion_pool_)mot->saveAdams(file);
 
 			file << "!----------------------------------- Forces ------------------------------------!\r\n!\r\n!\r\n";
-			for (auto &fce : force_pool_)
-			{
-				fce->saveAdams(file);
-			}
+			for (auto &fce : force_pool_)fce->saveAdams(file);
+
+
 
 			if (using_script)
 			{
@@ -1457,11 +1517,11 @@ namespace Aris
 		}
 
 		RevoluteJoint::RevoluteJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
-			: JointBaseDim(father, name, id, makI, makJ)
+			: JointTemplate(father, name, id, makI, makJ)
 		{
 		}
 		RevoluteJoint::RevoluteJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
-			: JointBaseDim(father, xml_ele, id)
+			: JointTemplate(father, xml_ele, id)
 		{
 		}
 		auto RevoluteJoint::init()->void
@@ -1479,11 +1539,11 @@ namespace Aris
 		}
 
 		TranslationalJoint::TranslationalJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
-			: JointBaseDim(father, name, id, makI, makJ)
+			: JointTemplate(father, name, id, makI, makJ)
 		{
 		}
 		TranslationalJoint::TranslationalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
-			: JointBaseDim(father, xml_ele, id)
+			: JointTemplate(father, xml_ele, id)
 		{
 		}
 		auto TranslationalJoint::init()->void
@@ -1501,11 +1561,11 @@ namespace Aris
 		};
 
 		UniversalJoint::UniversalJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
-			: JointBaseDim(father, name, id, makI, makJ)
+			: JointTemplate(father, name, id, makI, makJ)
 		{
 		}
 		UniversalJoint::UniversalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
-			: JointBaseDim(father, xml_ele, id)
+			: JointTemplate(father, xml_ele, id)
 		{
 		}
 		auto UniversalJoint::saveAdams(std::ofstream &file) const->void
@@ -1601,11 +1661,11 @@ namespace Aris
 		};
 
 		SphericalJoint::SphericalJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
-			: JointBaseDim(father, name, id, makI, makJ)
+			: JointTemplate(father, name, id, makI, makJ)
 		{
 		}
 		SphericalJoint::SphericalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
-			: JointBaseDim(father, xml_ele, id)
+			: JointTemplate(father, xml_ele, id)
 		{
 		}
 		auto SphericalJoint::init()->void
@@ -1660,7 +1720,7 @@ namespace Aris
 				break;
 			}
 
-			if (this->posCurve == nullptr)
+			if (false)
 			{
 				file << "constraint create motion_generator &\r\n"
 					<< "    motion_name = ." << model().name() << "." << this->name() << "  &\r\n"
@@ -1673,29 +1733,13 @@ namespace Aris
 			}
 			else
 			{
-				file << "data_element create spline &\r\n"
-					<< "    spline_name = ." << model().name() << "." << this->name() << "_pos_spl  &\r\n"
-					<< "    adams_id = " << adamsID() * 2 - 1 << "  &\r\n"
-					<< "    units = m &\r\n"
-					<< "    x = " << this->posCurve->x().at(0);
-				for (auto p = this->posCurve->x().begin() + 1; p < this->posCurve->x().end(); ++p)
-				{
-					file << "," << *p;
-				}
-				file << "    y = " << this->posCurve->y().at(0);
-				for (auto p = this->posCurve->y().begin() + 1; p < this->posCurve->y().end(); ++p)
-				{
-					file << "," << *p;
-				}
-				file << " \r\n!\r\n";
-
 				file << "constraint create motion_generator &\r\n"
 					<< "    motion_name = ." << model().name() << "." << this->name() << "  &\r\n"
 					<< "    adams_id = " << adamsID() << "  &\r\n"
 					<< "    i_marker_name = ." << model().name() << "." << this->makI().fatherPart().name() << "." << this->makI().name() << "  &\r\n"
 					<< "    j_marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << "  &\r\n"
 					<< "    axis = " << s << "  &\r\n"
-					<< "    function = \"AKISPL(time,0," << this->name() << "_pos_spl)\"  \r\n"
+					<< "    function = \"AKISPL(time,0," << this->name() << "_akima)\"  \r\n"
 					<< "!\r\n";
 			}
 		}
@@ -1760,7 +1804,7 @@ namespace Aris
 		}
 		auto SingleComponentForce::saveAdams(std::ofstream &file) const->void
 		{
-			if (fce_akima_ == nullptr)
+			if (true)
 			{
 				std::string type = "translational";
 
@@ -1778,21 +1822,7 @@ namespace Aris
 			{
 				std::string type = "translational";
 
-				file << "data_element create spline &\r\n"
-					<< "    spline_name = ." << model().name() << "." << name() << "_fce_spl  &\r\n"
-					<< "    adams_id = " << adamsID() * 2 << "  &\r\n"
-					<< "    units = N &\r\n"
-					<< "    x = " << fce_akima_->x().at(0);
-				for (auto p = fce_akima_->x().begin() + 1; p < fce_akima_->x().end(); ++p)
-				{
-					file << "," << *p;
-				}
-				file << "    y = " << fce_akima_->y().at(0);
-				for (auto p = fce_akima_->y().begin() + 1; p < fce_akima_->y().end(); ++p)
-				{
-					file << "," << *p;
-				}
-				file << " \r\n!\r\n";
+				
 
 				file << "force create direct single_component_force  &\r\n"
 					<< "    single_component_force_name = ." << model().name() << "." << name() << "  &\r\n"

@@ -22,6 +22,7 @@ namespace Aris
 		typedef double double6[6];
 
 		class Element;
+		class Akima;
 		class Part;
 		class Marker;
 		class Joint;
@@ -39,12 +40,27 @@ namespace Aris
 		typedef std::function<int(Model &, const PlanParamBase &)> PlanFunc;
 		struct SimResult
 		{
-			std::list<std::array<double, 6> > begin_prt_pe_;
-
 			std::list<double> time_;
-			std::vector<std::list<double> > Pin_, Fin_, Vin_, Ain_;//vector18维，但list维数为时间的维数
+			std::vector<std::list<double> > Pin_, Fin_, Vin_, Ain_;//vector的维数为电机个数，但list维数为时间的维数
 
-			void saveToTxt(const std::string &filename)
+			auto clear()->void
+			{
+				time_.clear();
+				Pin_.clear();
+				Fin_.clear();
+				Vin_.clear();
+				Ain_.clear();
+			};
+			auto resize(std::size_t size)->void 
+			{
+				clear();
+				
+				Pin_.resize(size);
+				Fin_.resize(size);
+				Vin_.resize(size);
+				Ain_.resize(size);
+			};
+			auto saveToTxt(const std::string &filename)const->void
 			{
 				auto f_name = filename + "_Fin.txt";
 				auto p_name = filename + "_Pin.txt";
@@ -125,6 +141,9 @@ namespace Aris
 		private:
 			explicit Script();
 			~Script();
+
+
+
 			friend class Model;
 		};
 
@@ -150,6 +169,9 @@ namespace Aris
 			explicit Element(Object &father, const std::string &name, std::size_t id, bool active = true) : Object(father, name), id_(id), is_active_(active) {};
 			explicit Element(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			virtual auto init()->void {};
+
+		private:
+
 
 
 		private:
@@ -187,7 +209,7 @@ namespace Aris
 			template<typename ChildType, typename ...Args>
 			auto add(const std::string & name, Args ...args)->ElementType&
 			{
-				if (find(name))throw std::runtime_error("joint \"" + name + "\" already exists, can't addJoint()");
+				if (find(name))throw std::runtime_error("element \"" + name + "\" already exists, can't addJoint()");
 				auto ret = new ChildType(this->father(), name, element_vec_.size(), args...);
 				element_vec_.push_back(std::unique_ptr<ElementType>(ret));
 				return std::ref(*ret);
@@ -329,6 +351,59 @@ namespace Aris
 			friend class Model;
 		};
 
+		class Akima:public Element
+		{
+		public:
+			static auto TypeName()->const std::string &{ static const std::string type{ "akima" }; return type; };
+			virtual ~Akima() = default;
+			Akima(const Akima &) = default;
+			Akima(Akima &&) = default;
+			Akima &operator =(const Akima &) = default;
+			Akima &operator =(Akima &&) = default;
+			template<typename Container1, typename Container2>
+			explicit Akima(Object &father, const std::string &name, std::size_t id, const Container1 &x_in, const Container2 &y_in, bool active = true) : Element(father, name, id, active)
+			{
+				if (x_in.size() != y_in.size())throw std::runtime_error("input x and y must have same length");
+
+				std::list<std::pair<double, double> > data_list;
+
+				auto pX = x_in.begin();
+				auto pY = y_in.begin();
+
+				for (std::size_t i = 0; i < x_in.size(); ++i)
+				{
+					data_list.push_back(std::make_pair(*pX, *pY));
+					++pX;
+					++pY;
+				}
+
+				init(data_list);
+			};
+			explicit Akima(Object &father, const std::string &name, std::size_t id, int num, const double *x_in, const double *y_in, bool active = true);
+			explicit Akima(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id) : Element(father, xml_ele, id) {};
+
+			virtual auto saveAdams(std::ofstream &file) const->void override;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override
+			{
+				Element::saveXml(xml_ele);
+			}
+			virtual auto typeName() const->const std::string& override{ return TypeName(); };
+			virtual auto groupName()const->const std::string& override{ return TypeName(); };
+
+			auto x() const->const std::vector<double> & { return x_; };
+			auto y() const->const std::vector<double> & { return y_; };
+			auto operator()(double x, char derivativeOrder = '0') const ->double;
+			auto operator()(int length, const double *x_in, double *y_out, char derivativeOrder = '0') const->void;
+			
+		private:
+			void init(std::list<std::pair<double, double> > &data_list);
+
+			std::vector<double> x_, y_;
+			std::vector<double> _p0;
+			std::vector<double> _p1;
+			std::vector<double> _p2;
+			std::vector<double> _p3;
+		};
 		class Variable:public Element
 		{
 		public:
@@ -419,7 +494,6 @@ namespace Aris
 			auto setPq(const double *pq)->void { s_pq2pm(pq, *pm()); };
 			auto setVel(const double *vel_in)->void { std::copy_n(vel_in, 6, vel()); };
 			auto setAcc(const double *acc_in)->void { std::copy_n(acc_in, 6, acc()); };
-
 			auto markerPool()->ElementPool<Marker>& { return std::ref(marker_pool_); };
 			auto markerPool()const->const ElementPool<Marker>& { return std::ref(marker_pool_); };
 
@@ -495,13 +569,6 @@ namespace Aris
 			auto setMotFceDyn(double mot_dyn_fce)->void { this->mot_fce_dyn_ = mot_dyn_fce; };
 			auto motFceFrc() const->double { return s_sgn(mot_vel_)*frc_coe_[0] + mot_vel_*frc_coe_[1] + mot_acc_*frc_coe_[2]; };
 
-			auto setPosAkimaCurve(const int num, const double* time, const double *pos)->void
-			{
-				this->posCurve.reset(new Akima(num, time, pos));
-			}
-			auto posAkima(double t, char derivativeOrder = '0')->double { return posCurve->operator()(t, derivativeOrder); };
-			auto posAkima(int length, const double *t, double *pos, char order = '0')->void { posCurve->operator()(length, t, pos, order); };
-
 		protected:
 			explicit Motion(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, const double *frc_coe = nullptr, bool active = true);
 			explicit Motion(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
@@ -519,9 +586,6 @@ namespace Aris
 			double csmJ_[6]{ 0 };
 			double csa_{ 0 };
 
-			/*for adams*/
-			std::unique_ptr<Akima> posCurve;
-
 			friend class ElementPool<Motion>;
 			friend class Model;
 		};
@@ -535,12 +599,6 @@ namespace Aris
 			virtual auto update()->void = 0;
 			auto fceI() const->const double* { return fceI_; };
 			auto fceJ() const->const double* { return fceJ_; };
-			auto setFceAkimaCurve(const int num, const double* time, const double *fce)->void
-			{
-				this->fce_akima_.reset(new Akima(num, time, fce));
-			}
-			auto fceAkima(double t, char derivativeOrder = '0')->double { return fce_akima_->operator()(t, derivativeOrder); };
-			auto fceAkima(int length, const double *t, double *pos, char order = '0')->void { fce_akima_->operator()(length, t, pos, order); };
 
 		protected:
 			explicit Force(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, bool active = true)
@@ -551,9 +609,25 @@ namespace Aris
 			double fceI_[6]{ 0 };
 			double fceJ_[6]{ 0 };
 
-			std::unique_ptr<Akima> fce_akima_;
-
 			friend class ElementPool<Force>;
+			friend class Model;
+		};
+		class Script2 :public Element
+		{
+		public:
+			static auto TypeName()->const std::string &{ static const std::string type{ "script" }; return type; };
+			virtual ~Script2() = default;
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override;
+			virtual auto saveAdams(std::ofstream &file) const->void override;
+			virtual auto typeName() const->const std::string& override{ return TypeName(); };
+			virtual auto groupName()const->const std::string& override{ return TypeName(); };
+
+		protected:
+			explicit Script2(Object &father, const std::string &name, std::size_t id) :Element(father, name, id) {};
+			explicit Script2(Object &father, const Aris::Core::XmlElement &ele, std::size_t id) :Element(father, ele, id) {};
+
+		private:
+			friend class ElementPool<Script2>;
 			friend class Model;
 		};
 
@@ -561,12 +635,14 @@ namespace Aris
 		{
 		public:
 			virtual ~Model();
-			Model(const Model & other) = default;
+			Model(const Model & other);
 			Model(Model &&) = default;
-			Model &operator=(const Model &) = default;
+			Model &operator=(const Model &);
 			Model &operator=(Model &&) = default;
 			explicit Model(const std::string & name = "Model");
 
+			virtual auto model()->Model& override { return *this; };
+			virtual auto model()const->const Model& override{ return *this; };
 			virtual auto loadXml(const char* filename)->void { loadXml(std::string(filename)); };
 			virtual auto loadXml(const std::string &filename)->void;
 			virtual auto loadXml(const Aris::Core::XmlDocument &xml_doc)->void;
@@ -577,12 +653,12 @@ namespace Aris
 			virtual auto saveXml(Aris::Core::XmlElement &xml_ele)const->void override;
 			virtual auto saveAdams(const std::string &filename, bool using_script = false) const->void;
 			virtual auto saveAdams(std::ofstream &file, bool using_script = false) const->void;
-			virtual auto model()->Model& override { return *this; };
-			virtual auto model()const->const Model& override{ return *this; };
 			auto environment()->Aris::Dynamic::Environment& { return environment_; };
 			auto environment()const ->const Aris::Dynamic::Environment&{ return environment_; };
 			auto script()->Aris::Dynamic::Script& { return script_; };
 			auto script()const->const Aris::Dynamic::Script&{ return script_; };
+			auto akimaPool()->ElementPool<Akima>& { return std::ref(akima_pool_); };
+			auto akimaPool()const->const ElementPool<Akima>& { return std::ref(akima_pool_); };
 			auto partPool()->ElementPool<Part>& { return std::ref(part_pool_); };
 			auto partPool()const->const ElementPool<Part>& { return std::ref(part_pool_); };
 			auto jointPool()->ElementPool<Joint>& { return std::ref(joint_pool_); };
@@ -639,13 +715,9 @@ namespace Aris
 			virtual auto kinFromPin()->void {};
 			virtual auto kinFromVin()->void {};
 			/// 静态仿真，结果仅仅返回驱动的位置
-			auto simKin(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script = false)->void;
+			auto simKin(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1, bool using_script = false)->SimResult;
 			/// 动态仿真，待完善
-			auto simDyn(const PlanFunc &func, const PlanParamBase &param, SimResult &result, bool using_script = false)->void;
-			/// 静态仿真，并将结果设置到驱动的Akima函数中
-			auto simKinAkima(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval = 1, bool using_script = false)->void;
-			/// 动态仿真，根据静态得到的Akima插值，计算驱动的速度和加速度，并且计算动力学。依赖KinFrom系列函数
-			auto simDynAkima(const PlanFunc &func, const PlanParamBase &param, SimResult &result, int akima_interval = 1, bool using_script = false)->void;
+			auto simDyn(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1, bool using_script = false)->SimResult;
 			/// 直接生成Adams模型，依赖SimDynAkima
 			auto simToAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt = 10, bool using_script = false)->void;
 
@@ -656,6 +728,7 @@ namespace Aris
 			
 			Environment environment_{ *this,"Environment" };
 			ElementPool<Variable> variable_pool_{ *this,"Variable" };
+			ElementPool<Akima> akima_pool_{ *this,"Akima" };
 			ElementPool<Part> part_pool_{ *this,"Part" };
 			ElementPool<Joint> joint_pool_{ *this,"Joint" };
 			ElementPool<Motion> motion_pool_{ *this,"Motion" };
@@ -696,7 +769,6 @@ namespace Aris
 
 			Type data_;
 		};
-
 		class MatrixVariable : VariableTemplate<Aris::Core::Matrix>
 		{
 		public:
@@ -729,16 +801,17 @@ namespace Aris
 				:Marker(prt, prt_pe, eulType) {};
 		};
 
-		template<int DIMENSION>class JointBaseDim :public Joint
+		template<std::size_t DIMENSION>
+		class JointTemplate :public Joint
 		{
 		public:
 			static constexpr int Dim() { return DIMENSION; };
 			virtual auto dim() const->std::size_t { return DIMENSION; };
 
 		protected:
-			explicit JointBaseDim(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
+			explicit JointTemplate(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
 				:Joint(father, name, id, makI, makJ) {};
-			explicit JointBaseDim(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+			explicit JointTemplate(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
 				:Joint(father, xml_ele, id) {};
 
 			virtual auto csmI()->double* override { return *csmI_; };
@@ -754,7 +827,7 @@ namespace Aris
 		private:
 			friend class Model;
 		};
-		class RevoluteJoint final :public JointBaseDim<5>
+		class RevoluteJoint final :public JointTemplate<5>
 		{
 		public:
 			static const std::string& TypeName() { static const std::string type_name("revolute"); return std::ref(type_name); };
@@ -768,7 +841,7 @@ namespace Aris
 
 			friend class ElementPool<Joint>;
 		};
-		class TranslationalJoint final :public JointBaseDim<5>
+		class TranslationalJoint final :public JointTemplate<5>
 		{
 		public:
 			static const std::string& TypeName() { static const std::string type_name("translational"); return std::ref(type_name); };
@@ -782,7 +855,7 @@ namespace Aris
 
 			friend class ElementPool<Joint>;
 		};
-		class UniversalJoint final :public JointBaseDim<4>
+		class UniversalJoint final :public JointTemplate<4>
 		{
 		public:
 			static const std::string& TypeName() { static const std::string type_name("universal"); return std::ref(type_name); };
@@ -798,7 +871,7 @@ namespace Aris
 
 			friend class ElementPool<Joint>;
 		};
-		class SphericalJoint final :public JointBaseDim<3>
+		class SphericalJoint final :public JointTemplate<3>
 		{
 		public:
 			static const std::string& TypeName() { static const std::string type_name("spherical"); return std::ref(type_name); };

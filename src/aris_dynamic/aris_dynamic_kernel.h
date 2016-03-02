@@ -447,47 +447,7 @@ namespace Aris
 		///
 		void s_sov_theta(double k1, double k2, double b, double *theta_out);
 
-		class Akima
-		{
-		public:
-			template<typename Container1, typename Container2>
-			Akima(const Container1 &x_in, const Container2 &y_in)
-			{
-				if (x_in.size() != y_in.size())throw std::runtime_error("input x and y must have same length");
-				
-				std::list<std::pair<double, double> > data_list;
-
-				auto pX = x_in.begin();
-				auto pY = y_in.begin();
-
-				for (std::size_t i = 0; i < x_in.size(); ++i)
-				{
-					data_list.push_back(std::make_pair(*pX, *pY));
-					++pX;
-					++pY;
-				}
-
-				init(data_list);
-			}
-			Akima(int num, const double *x_in, const double *y_in);
-			Akima(const Akima &) = default;
-			~Akima() = default;
-			Akima &operator =(const Akima &) = default;
-
-			double operator()(double x, char derivativeOrder = '0') const;
-			void operator()(int length, const double *x_in, double *y_out, char derivativeOrder = '0') const;
-
-			const std::vector<double> &x() const { return x_; };
-			const std::vector<double> &y() const { return y_; };
-		private:
-			void init(std::list<std::pair<double, double> > &data_list);
-
-			std::vector<double> x_, y_;
-			std::vector<double> _p0;
-			std::vector<double> _p1;
-			std::vector<double> _p2;
-			std::vector<double> _p3;
-		};
+		
 	}
 }
 
