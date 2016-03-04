@@ -36,9 +36,9 @@ namespace Aris
 					return std::move(ss.str());
 				};
 
-				explicit ActivateNode(Element &ele, bool isActive) :pEle(&ele), isActive(isActive) {};
+				explicit ActivateNode(DynEle &ele, bool isActive) :pEle(&ele), isActive(isActive) {};
 				bool isActive;
-				Element *pEle;
+				DynEle *pEle;
 			};
 			struct MoveMarkerNode final :public Node
 			{
@@ -83,7 +83,7 @@ namespace Aris
 				std::uint32_t ms_dt_;
 			};
 
-			void activate(Element &ele, bool isActive)
+			void activate(DynEle &ele, bool isActive)
 			{
 				node_list_.push_back(std::unique_ptr<Node>(new ActivateNode(ele, isActive)));
 			}
@@ -132,7 +132,7 @@ namespace Aris
 		};
 		Script::Script() :pImp(new Imp) {};
 		Script::~Script() {};
-		void Script::activate(Element &ele, bool isActive) { pImp->activate(ele, isActive); };
+		void Script::activate(DynEle &ele, bool isActive) { pImp->activate(ele, isActive); };
 		void Script::alignMarker(Marker &mak, const Marker& mak_target) { pImp->alignMarker(mak, mak_target); };
 		void Script::simulate(std::uint32_t ms_dur, std::uint32_t ms_dt) { pImp->simulate(ms_dur, ms_dt); };
 		void Script::saveAdams(std::ofstream &file) const
@@ -162,25 +162,38 @@ namespace Aris
 			xml_ele.SetName(name().c_str());
 		}
 		
-		Element::Element(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id) :Object(father, xml_ele), id_(id)
+		auto Element::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		{
+			Object::saveXml(xml_ele);
+			xml_ele.SetAttribute("type", this->typeName().c_str());
+		}
+		auto Element::save(const std::string &name)->void
+		{
+			std::map<std::string, std::shared_ptr<Element> > tem = std::move(save_data_map_);
+			auto save_content = std::shared_ptr<Element>(model().typeInfoMap().find(this->typeName())->second.newFromElement(*this));
+			tem.insert(std::make_pair(name, save_content));
+			save_data_map_ = std::move(tem);
+		}
+		auto Element::load(const std::string &name)->void
+		{
+			std::map<std::string, std::shared_ptr<Element> > tem = std::move(save_data_map_);
+			model().typeInfoMap().find(this->typeName())->second.assignOperator(*this, *tem.at(name));
+			tem.erase(name);
+			save_data_map_ = std::move(tem);
+		}
+
+		DynEle::DynEle(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id):Element(father, xml_ele, id)
 		{
 			if (xml_ele.Attribute("active"))
 			{
-				if (xml_ele.Attribute("active", "true"))is_active_ = true;
-				else if (xml_ele.Attribute("active", "false"))is_active_ = false;
+				if (xml_ele.Attribute("active", "true"))active_ = true;
+				else if (xml_ele.Attribute("active", "false"))active_ = false;
 				else throw std::runtime_error(std::string("Element \"") + xml_ele.name() + "\" must have valid attibute of Active");
 			}
 			else
 			{
-				is_active_ = true;
+				active_ = true;
 			}
-		};
-		auto Element::saveXml(Aris::Core::XmlElement &xml_ele) const->void
-		{
-			Object::saveXml(xml_ele);
-			std::string value = isActive() ? "true" : "false";
-			xml_ele.SetAttribute("active", value.c_str());
-			xml_ele.SetAttribute("type", this->typeName().c_str());
 		}
 
 		Environment::Environment(Object &father, const Aris::Core::XmlElement &xml_ele)
@@ -246,7 +259,7 @@ namespace Aris
 		};
 
 		Interaction::Interaction(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
-			: Element(father, xml_ele, id)
+			: DynEle(father, xml_ele, id)
 		{
 			if (!xml_ele.Attribute("prt_m"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"prt_m\"");
 			if (!model().partPool().find(xml_ele.Attribute("prt_m")))
@@ -303,7 +316,7 @@ namespace Aris
 		}
 
 		Akima::Akima(Object &father, const std::string &name, std::size_t id, int num, const double *x_in, const double *y_in, bool active)
-			: Element(father, name, id, active)
+			: Element(father, name, id)
 		{
 			std::list<std::pair<double, double> > data_list;
 
@@ -393,7 +406,6 @@ namespace Aris
 				_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (x_[i + 1] - x_[i]) / (x_[i + 1] - x_[i]);
 			}
 		}
-
 		auto Akima::operator()(double x, char order) const->double
 		{
 			/*寻找第一个大于x的位置*/
@@ -423,7 +435,7 @@ namespace Aris
 		}
 
 		Marker::Marker(Object &father, const std::string &name, std::size_t id, const double *prt_pm, Marker *relative_mak, bool active)
-			: Element(father, name, id, active)
+			: DynEle(father, name, id, active)
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			prt_pm = prt_pm ? prt_pm : default_pm_in;
@@ -441,7 +453,7 @@ namespace Aris
 			}
 		}
 		Marker::Marker(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
-			: Element(father, xml_ele, id)
+			: DynEle(father, xml_ele, id)
 		{
 			double pm[16];
 
@@ -487,21 +499,11 @@ namespace Aris
 
 			file << "marker create  &\r\n"
 				<< "marker_name = ." << model().name() << "." << father().name() << "." << this->name() << "  &\r\n"
-				<< "adams_id = " << adamsID() << "  &\r\n"
+				<< "adams_id = " << adamsID()<< "  &\r\n"
 				<< "location = (" << loc.toString() << ")  &\r\n"
 				<< "orientation = (" << ori.toString() << ")\r\n"
 				<< "!\r\n";
 		}
-		auto Marker::adamsID()const->std::size_t
-		{
-			std::size_t id{ model().partPool().size() + this->id() + 1 };
-			for (std::size_t i = 0; i < fatherPart().id(); ++i)
-			{
-				id += model().partPool().at(i).markerPool().size();
-			}
-
-			return id;
-		};
 		auto Marker::fatherPart() const->const Part&{ return static_cast<const Part &>(this->father()); };
 		auto Marker::fatherPart()->Part&{ return static_cast<Part &>(this->father()); };
 		auto Marker::vel() const->const double6&{ return fatherPart().vel(); };
@@ -511,7 +513,33 @@ namespace Aris
 			s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *pm_);
 		}
 		
-		
+		ElementPool<Marker>::ElementPool(Object &father, const Aris::Core::XmlElement &xml_ele) :Object(father, xml_ele)
+		{
+			for (auto ele = xml_ele.FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())
+			{
+				add(*ele).init();
+			}
+		};
+		auto ElementPool<Marker>::add(const Aris::Core::XmlElement &xml_ele)->Marker&
+		{
+			if (&father() == &model()) throw std::runtime_error("you can only add marker on part");
+			if (find(xml_ele.name()))throw std::runtime_error(Marker::TypeName() + " \"" + xml_ele.name() + "\" already exists, can't add element");
+			std::string type = xml_ele.Attribute("type") ? xml_ele.Attribute("type") : Marker::TypeName();
+			if (model().typeInfoMap().find(type) == model().typeInfoMap().end())
+				throw std::runtime_error(std::string("can't find type ") + type);
+
+			auto new_ele = model().typeInfoMap().at(type).newFromXml(this->father(), xml_ele, model().markerPool().size());
+			if (!dynamic_cast<Marker*>(new_ele))
+			{
+				delete new_ele;
+				throw std::runtime_error("can't add \"" + type + "\" element to " + Marker::TypeName() + " group");
+			}
+			element_vec_.push_back(std::shared_ptr<Marker>(dynamic_cast<Marker*>(new_ele)));
+			model().markerPool().element_vec_.push_back(element_vec_.back());
+
+			return std::ref(*element_vec_.back().get());
+		};
+
 		Part::Part(Object &father, const std::string &name, std::size_t id, const double *im, const double *pm_in, const double *vel_in, const double *acc_in, bool active)
 			: Marker(father, name, id, nullptr, nullptr, active), marker_pool_{ *this,"ChildMarker" }
 		{
@@ -674,7 +702,7 @@ namespace Aris
 				file << "! ****** cm and mass for current part ******\r\n"
 					<< "marker create  &\r\n"
 					<< "    marker_name = ." << model().name() << "." << this->name() << ".cm  &\r\n"
-					<< "    adams_id = " << this->adamsID() << "  &\r\n"
+					<< "    adams_id = " << id() + model().markerPool().size() << "  &\r\n"
 					<< "    location = ({" << pe[0] << "," << pe[1] << "," << pe[2] << "})  &\r\n"
 					<< "    orientation = (" << "{0,0,0}" << ")\r\n"
 					<< "!\r\n";
@@ -689,7 +717,7 @@ namespace Aris
 				s_pe2pm(pe, pm);
 				s_i2i(pm, *this->prtIm(), *im);
 
-				/*！注意！*/
+				///！注意！///
 				//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy，Ixz，Iyz上互为相反数。别问我为什么，我也不知道。
 				file << "part create rigid_body mass_properties  &\r\n"
 					<< "    part_name = ." << model().name() << "." << this->name() << "  &\r\n"
@@ -766,567 +794,48 @@ namespace Aris
 		{
 			partPool().add<Part>("Ground");
 			ground_ = partPool().find("Ground");
+
+			type_info_map_ = decltype(type_info_map_)
+			{
+				std::make_pair(MatrixVariable::TypeName(), TypeInfo::create<MatrixVariable>()),
+				std::make_pair(Akima::TypeName(), TypeInfo::create<Akima>()),
+				std::make_pair(Marker::TypeName(), TypeInfo::create<Marker>()),
+				std::make_pair(Part::TypeName(), TypeInfo::create<Part>()),
+				std::make_pair(RevoluteJoint::TypeName(), TypeInfo::create<RevoluteJoint>()),
+				std::make_pair(TranslationalJoint::TypeName(), TypeInfo::create<TranslationalJoint>()),
+				std::make_pair(UniversalJoint::TypeName(), TypeInfo::create<UniversalJoint>()),
+				std::make_pair(SphericalJoint::TypeName(), TypeInfo::create<SphericalJoint>()),
+				std::make_pair(SingleComponentMotion::TypeName(), TypeInfo::create<SingleComponentMotion>()),
+				std::make_pair(SingleComponentForce::TypeName(), TypeInfo::create<SingleComponentForce>()),
+			};
 		}
 		Model::~Model()
 		{
 		}
-		Model::Model(const Model & other):Object(*this, other.name())
+		auto Model::load(const std::string &name)->void
 		{
-			Aris::Core::XmlDocument doc;
-			other.saveXml(doc);
-			this->loadXml(doc);
+			variable_pool_.load(name);
+			akima_pool_.load(name);
+			marker_pool_.load(name);
+			part_pool_.load(name);
+			joint_pool_.load(name);
+			motion_pool_.load(name);
+			force_pool_.load(name);
 		}
-		Model &Model::operator=(const Model &other)
+		auto Model::save(const std::string &name)->void
 		{
-			Aris::Core::XmlDocument doc;
-			other.saveXml(doc);
-			this->loadXml(doc);
-			return *this;
+			variable_pool_.save(name);
+			akima_pool_.save(name);
+			marker_pool_.save(name);
+			part_pool_.save(name);
+			joint_pool_.save(name);
+			motion_pool_.save(name);
+			force_pool_.save(name);
 		}
-		auto Model::dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void
-		{
-			this->dyn_solve_method_ = solve_method;
-		}
-		auto Model::dynCstMtx(double *cst_mtx) const->void
-		{
-			std::fill_n(cst_mtx, dynDimN()*dynDimM(), 0);
-
-			for (int i = 0; i < 6; ++i)
-			{
-				cst_mtx[dynDimN()*(ground_->row_id_ + i) + i] = 1;
-			}
-
-			for (auto &jnt : joint_pool_)
-			{
-				if (jnt->isActive())
-				{
-					s_block_cpy(6, jnt->dim(), jnt->csmI(), 0, 0, jnt->dim(), cst_mtx, jnt->makI().fatherPart().row_id_, jnt->col_id_, dynDimN());
-					s_block_cpy(6, jnt->dim(), jnt->csmJ(), 0, 0, jnt->dim(), cst_mtx, jnt->makJ().fatherPart().row_id_, jnt->col_id_, dynDimN());
-				}
-			}
-			for (auto &mot : motion_pool_)
-			{
-				if (mot->isActive())
-				{
-					s_block_cpy(6, 1, mot->csmI(), 0, 0, 1, cst_mtx, mot->makI().fatherPart().row_id_, mot->col_id_, dynDimN());
-					s_block_cpy(6, 1, mot->csmJ(), 0, 0, 1, cst_mtx, mot->makJ().fatherPart().row_id_, mot->col_id_, dynDimN());
-				}
-			}
-		}
-		auto Model::dynIneMtx(double *ine_mtx) const->void
-		{
-			std::fill_n(ine_mtx, dynDimM()*dynDimM(), 0);
-
-			for (int i = 0; i < 6; ++i)
-			{
-				ine_mtx[dynDimM()*(ground_->row_id_ + i) + ground_->row_id_ + i] = 1;
-			}
-
-			for (auto &prt : part_pool_)
-			{
-				if (prt->isActive())
-				{
-					s_block_cpy(6, 6, *(prt->prt_im_), 0, 0, 6, ine_mtx, prt->row_id_, prt->row_id_, dynDimM());
-				}
-			}
-		}
-		auto Model::dynCstAcc(double *cst_acc) const->void
-		{
-			std::fill_n(cst_acc, dynDimN(), 0);
-
-			for (auto &jnt : joint_pool_)
-			{
-				if (jnt->isActive())
-				{
-					std::copy_n(jnt->csa(), jnt->dim(), &cst_acc[jnt->col_id_]);
-				}
-			}
-			for (auto &mot : motion_pool_)
-			{
-				if (mot->isActive())
-				{
-					cst_acc[mot->col_id_] = *mot->csa();
-				}
-			}
-		}
-		auto Model::dynPrtFce(double *prt_fce) const->void
-		{
-			std::fill_n(prt_fce, dynDimM(), 0);
-
-			for (auto &prt : part_pool_)
-			{
-				if (prt->isActive())
-				{
-					s_daxpy(6, -1, prt->prt_fg_, 1, &prt_fce[prt->row_id_], 1);
-					s_daxpy(6, 1, prt->prt_fv_, 1, &prt_fce[prt->row_id_], 1);
-				}
-			}
-
-			for (auto &fce : force_pool_)
-			{
-				if (fce->isActive())
-				{
-					s_daxpy(6, -1, fce->fceI(), 1, &prt_fce[fce->makI().fatherPart().row_id_], 1);
-					s_daxpy(6, -1, fce->fceJ(), 1, &prt_fce[fce->makJ().fatherPart().row_id_], 1);
-				}
-			}
-		}
-		auto Model::dynCstFce(double *cst_fce) const->void
-		{
-			for (auto &jnt : joint_pool_)
-			{
-				if (jnt->isActive())
-				{
-					std::copy_n(jnt->csf(), jnt->dim(), &cst_fce[jnt->col_id_]);
-				}
-			}
-			for (auto &mot : motion_pool_)
-			{
-				if (mot->isActive())
-				{
-					cst_fce[mot->col_id_] = mot->motFceDyn();
-				}
-			}
-
-		}
-		auto Model::dynPrtAcc(double *cst_acc) const->void
-		{
-			for (auto &prt : part_pool_)
-			{
-				if (prt->isActive())
-				{
-					std::copy_n(prt->prtAcc(), 6, &cst_acc[prt->row_id_]);
-				}
-			}
-		}
-		auto Model::dynPre()->void
-		{
-			int pid = 0;//part id
-			int cid = 6;//Joint id
-
-			for (auto &part:part_pool_)
-			{
-				if (part->isActive())
-				{
-					part->row_id_ = pid;
-					pid += 6;
-				}
-				else
-				{
-					part->row_id_ = 0;
-				}
-			}
-			for (auto &joint:joint_pool_)
-			{
-				if (joint->isActive())
-				{
-					joint->init();
-					joint->col_id_ = cid;
-					cid += joint->dim();
-				}
-				else
-				{
-					joint->col_id_ = 0;
-				}
-			}
-			for (auto &motion:motion_pool_)
-			{
-				if (motion->isActive())
-				{
-					motion->init();
-					motion->col_id_ = cid;
-					cid++;
-				}
-				else
-				{
-					motion->col_id_ = 0;
-					motion->init();
-				}
-			}
-
-			dyn_prt_dim_ = pid;
-			dyn_cst_dim_ = cid;
-		}
-		auto Model::dynUpd()->void
-		{
-			for (auto &prt : part_pool_)
-			{
-				if (prt->isActive())prt->update();
-			}
-			for (auto &jnt : joint_pool_)
-			{
-				if (jnt->isActive())jnt->update();
-			}
-			for (auto &mot : motion_pool_)
-			{
-				if (mot->isActive())mot->update();
-				//std::cout << *mot->csa() << std::endl;
-			}
-			for (auto &fce : force_pool_)
-			{
-				if (fce->isActive())fce->update();
-			}
-		}
-		auto Model::dynMtx(double *D, double *b) const->void
-		{
-			dynCstMtx(&D[(dynDim())*dynDimM()]);
-			s_block_cpy(dynDimM(), dynDimN(), &D[(dynDim())*dynDimM()], 0, 0, dynDimN(), D, 0, dynDimM(), dynDim());
-			
-			dynIneMtx(&D[(dynDim())*dynDimM()]);
-			s_block_cpy(dynDimM(), dynDimM(), -1, &D[(dynDim())*dynDimM()], 0, 0, dynDimM(), 0, D, 0, 0, dynDim());
-
-			std::fill_n(&D[(dynDim())*dynDimM()], dynDimN()*(dynDim()), 0);
-			s_block_cpyT(dynDimM(), dynDimN(), D, 0, dynDimM(), dynDim(), D, dynDimM(), 0, dynDim());
-
-			dynPrtFce(b);
-			dynCstAcc(b + dynDimM());
-		}
-		auto Model::dynSov(const double *D, const double *b, double *x) const->void
-		{
-			if (dyn_solve_method_)
-			{
-				dyn_solve_method_(dynDim(), D, b, x);
-			}
-			else
-			{
-				throw std::runtime_error("please set solve_method before use DynSov");
-			}
-		}
-		auto Model::dynEnd(const double *x)->void
-		{
-			for (auto &prt : part_pool_)
-			{
-				if (prt->isActive())
-				{
-					std::copy_n(&x[prt->row_id_], 6, prt->prt_acc_);
-				}
-			}
-			for (auto &jnt : joint_pool_)
-			{
-				if (jnt->isActive())
-				{
-					std::copy_n(&x[jnt->col_id_ + dynDimM()], jnt->dim(), jnt->csf());
-				}
-			}
-			for (auto &mot : motion_pool_)
-			{
-				if (mot->isActive())
-				{
-					mot->mot_fce_dyn_ = x[mot->col_id_ + dynDimM()];
-				}
-			}
-		}
-		auto Model::dynUkn(double *x) const->void
-		{
-			this->dynPrtAcc(x);
-			this->dynCstFce(x + dynDimM());
-		}
-		auto Model::dyn()->void
-		{
-			dynPre();
-			std::vector<double> D(dynDim() * dynDim());
-			std::vector<double> b(dynDim());
-			std::vector<double> x(dynDim());
-			dynUpd();
-			dynMtx(D.data(), b.data());
-			dynSov(D.data(), b.data(), x.data());
-			dynEnd(x.data());
-		}
-
-		auto Model::clbSetInverseMethod(std::function<void(int n, double *A)> inverse_method)->void
-		{
-			this->clb_inverse_method_ = inverse_method;
-		}
-		auto Model::clbPre()->void
-		{
-			dynPre();
-
-			if (dynDimN() != dynDimM())
-			{
-				throw std::logic_error("must calibrate square matrix");
-			}
-
-			clb_dim_m_ = 0;
-			clb_dim_n_ = 0;
-			clb_dim_gam_ = 0;
-			clb_dim_frc_ = 0;
-
-			for (auto &i : motion_pool_)
-			{
-				if (i->isActive())
-				{
-					clb_dim_m_++;
-					clb_dim_frc_ += 3;
-					clb_dim_n_ += 3;
-				}
-			}
-			for (auto &i : part_pool_)
-			{
-				if (i->isActive())
-				{
-					clb_dim_n_ += 10;
-					clb_dim_gam_ += 10;
-				}
-			}
-
-		}
-		auto Model::clbUpd()->void
-		{
-			dynUpd();
-		}
-		auto Model::clbMtx(double *clb_D, double *clb_b)const->void
-		{
-			if (!clb_inverse_method_)throw std::runtime_error("please set inverse method before calibrate");
-			if (dynDimN() != dynDimM()) throw std::logic_error("must calibrate square matrix");
-
-			/*初始化*/
-			Core::Matrix clb_d_m(clbDimM(), clbDimN());
-			Core::Matrix clb_b_m(clbDimM(), 1);
-
-			/*求A，即C的逆*/
-			Core::Matrix A(dynDimM(), dynDimM()), B(dynDimM(), dynDimM());
-
-			std::vector<double> C(dynDimM() * dynDimM());
-			std::vector<double> f(dynDimM());
-
-			dynCstMtx(C.data());
-			std::copy(C.begin(), C.end(), A.data());
-			clb_inverse_method_(dynDimM(), A.data());
-
-			/*求B*/
-			const int beginRow = dynDimM() - clbDimM();
-
-			for (auto &i:part_pool_)
-			{
-				if (i->isActive())
-				{
-					double cm[6][6];
-					s_cmf(i->prtVel(), *cm);
-					s_dgemm(clbDimM(), 6, 6, 1, &A(beginRow,i->row_id_), dynDimM(), *cm, 6, 0, &B(beginRow, i->row_id_), dynDimM());
-				}
-			}
-
-			/*求解clb_d*/
-			int col1 = 0, col2 = 0;
-
-			for (auto &i:part_pool_)
-			{
-				if (i->isActive())
-				{
-					double q[6]{0};
-					std::copy_n(i->prtAcc(), 6, q);
-					s_daxpy(6, -1, i->prtGravity(), 1, q, 1);
-					
-					double v[6];
-					std::copy_n(i->prtVel(), 6, v);
-
-					for (std::size_t j = 0; j < clbDimM(); ++j)
-					{
-						clb_d_m(j, col1) = A(beginRow + j, col2 + 0) * q[0] + A(beginRow + j, col2 + 1) * q[1] + A(beginRow + j, col2 + 2) * q[2];
-						clb_d_m(j, col1 + 1) = A(beginRow + j, col2 + 1) * q[5] + A(beginRow + j, col2 + 5) * q[1] - A(beginRow + j, col2 + 2) * q[4] - A(beginRow + j, col2 + 4) * q[2];
-						clb_d_m(j, col1 + 2) = A(beginRow + j, col2 + 2) * q[3] + A(beginRow + j, col2 + 3) * q[2] - A(beginRow + j, col2 + 0) * q[5] - A(beginRow + j, col2 + 5) * q[0];
-						clb_d_m(j, col1 + 3) = A(beginRow + j, col2 + 0) * q[4] + A(beginRow + j, col2 + 4) * q[0] - A(beginRow + j, col2 + 1) * q[3] - A(beginRow + j, col2 + 3) * q[1];
-						clb_d_m(j, col1 + 4) = A(beginRow + j, col2 + 3) * q[3];
-						clb_d_m(j, col1 + 5) = A(beginRow + j, col2 + 4) * q[4];
-						clb_d_m(j, col1 + 6) = A(beginRow + j, col2 + 5) * q[5];
-						clb_d_m(j, col1 + 7) = A(beginRow + j, col2 + 3) * q[4] + A(beginRow + j, col2 + 4) * q[3];
-						clb_d_m(j, col1 + 8) = A(beginRow + j, col2 + 3) * q[5] + A(beginRow + j, col2 + 5) * q[3];
-						clb_d_m(j, col1 + 9) = A(beginRow + j, col2 + 4) * q[5] + A(beginRow + j, col2 + 5) * q[4];
-
-						clb_d_m(j, col1) += B(beginRow + j, col2 + 0) * v[0] + B(beginRow + j, col2 + 1) * v[1] + B(beginRow + j, col2 + 2) * v[2];
-						clb_d_m(j, col1 + 1) += B(beginRow + j, col2 + 1) * v[5] + B(beginRow + j, col2 + 5) * v[1] - B(beginRow + j, col2 + 2) * v[4] - B(beginRow + j, col2 + 4) * v[2];
-						clb_d_m(j, col1 + 2) += B(beginRow + j, col2 + 2) * v[3] + B(beginRow + j, col2 + 3) * v[2] - B(beginRow + j, col2 + 0) * v[5] - B(beginRow + j, col2 + 5) * v[0];
-						clb_d_m(j, col1 + 3) += B(beginRow + j, col2 + 0) * v[4] + B(beginRow + j, col2 + 4) * v[0] - B(beginRow + j, col2 + 1) * v[3] - B(beginRow + j, col2 + 3) * v[1];
-						clb_d_m(j, col1 + 4) += B(beginRow + j, col2 + 3) * v[3];
-						clb_d_m(j, col1 + 5) += B(beginRow + j, col2 + 4) * v[4];
-						clb_d_m(j, col1 + 6) += B(beginRow + j, col2 + 5) * v[5];
-						clb_d_m(j, col1 + 7) += B(beginRow + j, col2 + 3) * v[4] + B(beginRow + j, col2 + 4) * v[3];
-						clb_d_m(j, col1 + 8) += B(beginRow + j, col2 + 3) * v[5] + B(beginRow + j, col2 + 5) * v[3];
-						clb_d_m(j, col1 + 9) += B(beginRow + j, col2 + 4) * v[5] + B(beginRow + j, col2 + 5) * v[4];
-					}
-					col1 += 10;
-					col2 += 6;
-				}
-			}
-
-			/*求解clb_b*/
-			std::fill(f.begin(), f.end(), 0);
-			int row = 0;
-			for (auto &mot : motion_pool_)
-			{
-				if (mot->isActive())
-				{
-					clb_b_m(row, 0) = mot->mot_fce_;
-					++row;
-				}
-			}
-			for (auto &fce : force_pool_)
-			{
-				if (fce->isActive())
-				{
-					s_daxpy(6, 1, fce->fceI(), 1, &f[fce->makI().fatherPart().row_id_], 1);
-					s_daxpy(6, 1, fce->fceJ(), 1, &f[fce->makJ().fatherPart().row_id_], 1);
-				}
-			}
-			s_dgemm(clbDimM(), 1, dynDimM(), 1, &A(beginRow,0), dynDimM(), f.data(), 1, 1, clb_b_m.data(), 1);
-
-			/*以下添加驱动摩擦系数*/
-			row = 0;
-			for (auto &mot : motion_pool_)
-			{
-				//默认未激活的motion处于力控模式
-				if (mot->isActive())
-				{
-					clb_d_m(row, clbDimGam() + row * 3) += s_sgn(mot->motVel());
-					clb_d_m(row, clbDimGam() + row * 3 + 1) += mot->motVel();
-					clb_d_m(row, clbDimGam() + row * 3 + 2) += mot->motAcc();
-					++row;
-				}
-			}
-
-			std::copy_n(clb_d_m.data(), clb_d_m.size(), clb_D);
-			std::copy_n(clb_b_m.data(), clb_b_m.size(), clb_b);
-		}
-		auto Model::clbUkn(double *clb_x)const->void
-		{
-			int row = 0;
-			for (auto &prt : part_pool_)
-			{
-				if (prt->isActive())
-				{
-					s_im2gamma(*prt->prtIm(), clb_x + row);
-					row += 10;
-				}
-			}
-
-			for (auto &mot : motion_pool_)
-			{
-				if (mot->isActive())
-				{
-					std::copy_n(mot->frcCoe(), 3, clb_x + row);
-					row += 3;
-				}
-			}
-		}
-		
-		auto Model::simKin(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval, bool using_script)->SimResult
-		{
-			//储存起始的状态
-
-			//初始化变量
-			SimResult result;
-			result.resize(motionPool().size());
-			std::list<double> time_akima_data;
-			std::vector<std::list<double> > pos_akima_data(motionPool().size());
-
-			//起始位置
-			result.time_.push_back(0);
-			for (std::size_t i = 0; i < motionPool().size(); ++i)
-			{
-				motionPool().at(i).update();
-				result.Pin_.at(i).push_back(motionPool().at(i).motPos());
-			}
-
-			time_akima_data.push_back(0);
-			for (std::size_t j = 0; j < motionPool().size(); ++j)
-			{
-				pos_akima_data.at(j).push_back(motionPool().at(j).motPos());
-			}
-
-			if (using_script)
-			{
-				script().updateAt(0);
-				script().setTopologyAt(0);
-			}
-
-			//其他位置
-			for (param.count = 0; true; ++param.count)
-			{
-				auto is_sim = func(*this, param);
-
-				result.time_.push_back(param.count + 1);
-				for (std::size_t i = 0; i < motionPool().size(); ++i)
-				{
-					result.Pin_.at(i).push_back(motionPool().at(i).motPos());
-				}
-
-				if ((!is_sim) || ((param.count + 1) % akima_interval == 0))
-				{
-					time_akima_data.push_back((param.count + 1) / 1000.0);
-
-					for (std::size_t j = 0; j < motionPool().size(); ++j)
-					{
-						pos_akima_data.at(j).push_back(motionPool().at(j).motPos());
-					}
-				}
-
-				if (using_script)
-				{
-					script().updateAt(param.count + 1);
-					script().setTopologyAt(param.count + 1);
-				}
-
-				if (!is_sim)break;
-			}
-
-			akimaPool().clear();
-			for (std::size_t i = 0; i < motionPool().size(); ++i)
-			{
-				akimaPool().add<Akima>(motionPool().at(i).name() + "_akima", time_akima_data, pos_akima_data.at(i));
-			}
-
-			//*this = tem_model;
-		}
-		auto Model::simDyn(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval, bool using_script)->SimResult
-		{
-			simKin(func, param, akima_interval, using_script);
-
-			SimResult result;
-			result.resize(motionPool().size());
-
-			//仿真计算
-			for (std::size_t t = 0; t < result.time_.size(); ++t)
-			{
-				std::cout << t << std::endl;
-
-				if (using_script)
-				{
-					script().setTopologyAt(t);
-				}
-				for (std::size_t j = 0; j < motionPool().size(); ++j)
-				{
-					motionPool().at(j).mot_pos_ = akimaPool().at(j).operator()(t / 1000.0, '0');
-				}
-				kinFromPin();
-				for (std::size_t j = 0; j < motionPool().size(); ++j)
-				{
-					motionPool().at(j).mot_vel_ = akimaPool().at(j).operator()(t / 1000.0, '1');
-				}
-				kinFromVin();
-				for (std::size_t j = 0; j < motionPool().size(); ++j)
-				{
-					motionPool().at(j).mot_acc_ = akimaPool().at(j).operator()(t / 1000.0, '2');
-				}
-				dyn();
-				for (std::size_t j = 0; j < motionPool().size(); ++j)
-				{
-					result.Fin_.at(j).push_back(motionPool().at(j).mot_fce_dyn_);
-					result.Pin_.at(j).push_back(motionPool().at(j).motPos());
-					result.Vin_.at(j).push_back(motionPool().at(j).motVel());
-					result.Ain_.at(j).push_back(motionPool().at(j).motAcc());
-				}
-			}
-		}
-		auto Model::simToAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt, bool using_script)->void
-		{
-			auto result = simDyn(fun, param, ms_dt, using_script);
-			this->saveAdams(adams_file, using_script);
-		}
-
 		auto Model::loadXml(const std::string &filename)->void
 		{
 			Aris::Core::XmlDocument xmlDoc;
-			
+
 			if (xmlDoc.LoadFile(filename.c_str()) != 0)
 			{
 				throw std::runtime_error((std::string("could not open file:") + std::string(filename)));
@@ -1344,38 +853,33 @@ namespace Aris
 		}
 		auto Model::loadXml(const Aris::Core::XmlElement &xml_ele)->void
 		{
-			calculator.clearVariables();
-			
+			clear();
+
 			auto env_xml_ele = xml_ele.FirstChildElement("Environment");
 			if (!env_xml_ele)throw(std::runtime_error("Model must have environment element"));
 			environment_ = std::move(Environment(model(), *env_xml_ele));
 
 			auto var_xml_ele = xml_ele.FirstChildElement("Variable");
 			if (!var_xml_ele)throw(std::runtime_error("Model must have variable element"));
-			variable_pool_.clear();
 			variable_pool_ = std::move(ElementPool<Variable>(*this, *var_xml_ele));
 
 			auto prt_xml_ele = xml_ele.FirstChildElement("Part");
 			if (!prt_xml_ele)throw(std::runtime_error("Model must have part element"));
-			part_pool_.clear();
 			part_pool_ = std::move(ElementPool<Part>(*this, *prt_xml_ele));
 
 			auto jnt_xml_ele = xml_ele.FirstChildElement("Joint");
 			if (!jnt_xml_ele)throw(std::runtime_error("Model must have joint element"));
-			joint_pool_.clear();
 			joint_pool_ = std::move(ElementPool<Joint>(*this, *jnt_xml_ele));
 
 			auto mot_xml_ele = xml_ele.FirstChildElement("Motion");
 			if (!mot_xml_ele)throw(std::runtime_error("Model must have motion element"));
-			motion_pool_.clear();
 			motion_pool_ = std::move(ElementPool<Motion>(*this, *mot_xml_ele));
-			
+
 			auto fce_xml_ele = xml_ele.FirstChildElement("Force");
 			if (!fce_xml_ele)throw(std::runtime_error("Model must have force element"));
-			force_pool_.clear();
 			force_pool_ = std::move(ElementPool<Force>(*this, *fce_xml_ele));
 
-			if(!(ground_ = part_pool_.find("Ground")))throw std::runtime_error("model must has a part named \"Ground\"");
+			if (!(ground_ = part_pool_.find("Ground")))throw std::runtime_error("model must has a part named \"Ground\"");
 		}
 		auto Model::saveXml(const std::string &filename) const->void
 		{
@@ -1388,7 +892,7 @@ namespace Aris
 		auto Model::saveXml(Aris::Core::XmlDocument &xml_doc)const->void
 		{
 			xml_doc.DeleteChildren();
-			
+
 			auto header_xml_ele = xml_doc.NewDeclaration("xml version=\"1.0\" encoding=\"UTF-8\" ");
 			xml_doc.InsertEndChild(header_xml_ele);
 
@@ -1407,7 +911,7 @@ namespace Aris
 			auto env_xml_ele = xml_ele.GetDocument()->NewElement("");
 			xml_ele.InsertEndChild(env_xml_ele);
 			environment().saveXml(*env_xml_ele);
-			
+
 			auto var_xml_ele = xml_ele.GetDocument()->NewElement("Variable");
 			xml_ele.InsertEndChild(var_xml_ele);
 			variable_pool_.saveXml(*var_xml_ele);
@@ -1477,7 +981,7 @@ namespace Aris
 				file << "!----------------------------------- Motify Active -------------------------------------!\r\n!\r\n!\r\n";
 				for (auto &prt : part_pool_)
 				{
-					if ((prt.get() != ground_) && (!prt->isActive()))
+					if ((prt.get() != ground_) && (!prt->active()))
 					{
 						file << "part attributes  &\r\n"
 							<< "    part_name = ." << name() << "." << prt->name() << "  &\r\n"
@@ -1486,27 +990,27 @@ namespace Aris
 				}
 				for (auto &jnt : joint_pool_)
 				{
-					if (!jnt->isActive())
+					if (!jnt->active())
 					{
 						file << "constraint attributes  &\r\n"
 							<< "    constraint_name = ." << name() << "." << jnt->name() << "  &\r\n"
 							<< "    active = off \r\n!\r\n";
 					}
-					
+
 				}
 				for (auto &mot : motion_pool_)
 				{
-					if (!mot->isActive())
+					if (!mot->active())
 					{
 						file << "constraint attributes  &\r\n"
 							<< "    constraint_name = ." << name() << "." << mot->name() << "  &\r\n"
 							<< "    active = off \r\n!\r\n";
 					}
-					
+
 				}
 				for (auto &fce : force_pool_)
 				{
-					if (!fce->isActive())
+					if (!fce->active())
 					{
 						file << "force attributes  &\r\n"
 							<< "    force_name = ." << name() << "." << fce->name() << "  &\r\n"
@@ -1514,6 +1018,578 @@ namespace Aris
 					}
 				}
 			}
+		}
+		auto Model::clear()->void
+		{
+			calculator.clearVariables();
+			variable_pool_.clear();
+			akima_pool_.clear();
+			marker_pool_.clear();
+			part_pool_.clear();
+			joint_pool_.clear();
+			motion_pool_.clear();
+			force_pool_.clear();
+		}
+		auto Model::dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void
+		{
+			this->dyn_solve_method_ = solve_method;
+		}
+		auto Model::dynCstMtx(double *cst_mtx) const->void
+		{
+			std::fill_n(cst_mtx, dynDimN()*dynDimM(), 0);
+
+			for (int i = 0; i < 6; ++i)
+			{
+				cst_mtx[dynDimN()*(ground_->row_id_ + i) + i] = 1;
+			}
+
+			for (auto &jnt : joint_pool_)
+			{
+				if (jnt->active())
+				{
+					s_block_cpy(6, jnt->dim(), jnt->csmI(), 0, 0, jnt->dim(), cst_mtx, jnt->makI().fatherPart().row_id_, jnt->col_id_, dynDimN());
+					s_block_cpy(6, jnt->dim(), jnt->csmJ(), 0, 0, jnt->dim(), cst_mtx, jnt->makJ().fatherPart().row_id_, jnt->col_id_, dynDimN());
+				}
+			}
+			for (auto &mot : motion_pool_)
+			{
+				if (mot->active())
+				{
+					s_block_cpy(6, 1, mot->csmI(), 0, 0, 1, cst_mtx, mot->makI().fatherPart().row_id_, mot->col_id_, dynDimN());
+					s_block_cpy(6, 1, mot->csmJ(), 0, 0, 1, cst_mtx, mot->makJ().fatherPart().row_id_, mot->col_id_, dynDimN());
+				}
+			}
+		}
+		auto Model::dynIneMtx(double *ine_mtx) const->void
+		{
+			std::fill_n(ine_mtx, dynDimM()*dynDimM(), 0);
+
+			for (int i = 0; i < 6; ++i)
+			{
+				ine_mtx[dynDimM()*(ground_->row_id_ + i) + ground_->row_id_ + i] = 1;
+			}
+
+			for (auto &prt : part_pool_)
+			{
+				if (prt->active())
+				{
+					s_block_cpy(6, 6, *(prt->prt_im_), 0, 0, 6, ine_mtx, prt->row_id_, prt->row_id_, dynDimM());
+				}
+			}
+		}
+		auto Model::dynCstAcc(double *cst_acc) const->void
+		{
+			std::fill_n(cst_acc, dynDimN(), 0);
+
+			for (auto &jnt : joint_pool_)
+			{
+				if (jnt->active())
+				{
+					std::copy_n(jnt->csa(), jnt->dim(), &cst_acc[jnt->col_id_]);
+				}
+			}
+			for (auto &mot : motion_pool_)
+			{
+				if (mot->active())
+				{
+					cst_acc[mot->col_id_] = *mot->csa();
+				}
+			}
+		}
+		auto Model::dynPrtFce(double *prt_fce) const->void
+		{
+			std::fill_n(prt_fce, dynDimM(), 0);
+
+			for (auto &prt : part_pool_)
+			{
+				if (prt->active())
+				{
+					s_daxpy(6, -1, prt->prt_fg_, 1, &prt_fce[prt->row_id_], 1);
+					s_daxpy(6, 1, prt->prt_fv_, 1, &prt_fce[prt->row_id_], 1);
+				}
+			}
+
+			for (auto &fce : force_pool_)
+			{
+				if (fce->active())
+				{
+					s_daxpy(6, -1, fce->fceI(), 1, &prt_fce[fce->makI().fatherPart().row_id_], 1);
+					s_daxpy(6, -1, fce->fceJ(), 1, &prt_fce[fce->makJ().fatherPart().row_id_], 1);
+				}
+			}
+		}
+		auto Model::dynCstFce(double *cst_fce) const->void
+		{
+			for (auto &jnt : joint_pool_)
+			{
+				if (jnt->active())
+				{
+					std::copy_n(jnt->csf(), jnt->dim(), &cst_fce[jnt->col_id_]);
+				}
+			}
+			for (auto &mot : motion_pool_)
+			{
+				if (mot->active())
+				{
+					cst_fce[mot->col_id_] = mot->motFceDyn();
+				}
+			}
+
+		}
+		auto Model::dynPrtAcc(double *cst_acc) const->void
+		{
+			for (auto &prt : part_pool_)
+			{
+				if (prt->active())
+				{
+					std::copy_n(prt->prtAcc(), 6, &cst_acc[prt->row_id_]);
+				}
+			}
+		}
+		auto Model::dynPre()->void
+		{
+			int pid = 0;//part id
+			int cid = 6;//Joint id
+
+			for (auto &part:part_pool_)
+			{
+				if (part->active())
+				{
+					part->row_id_ = pid;
+					pid += 6;
+				}
+				else
+				{
+					part->row_id_ = 0;
+				}
+			}
+			for (auto &joint:joint_pool_)
+			{
+				if (joint->active())
+				{
+					joint->init();
+					joint->col_id_ = cid;
+					cid += joint->dim();
+				}
+				else
+				{
+					joint->col_id_ = 0;
+				}
+			}
+			for (auto &motion:motion_pool_)
+			{
+				if (motion->active())
+				{
+					motion->init();
+					motion->col_id_ = cid;
+					cid++;
+				}
+				else
+				{
+					motion->col_id_ = 0;
+					motion->init();
+				}
+			}
+
+			dyn_prt_dim_ = pid;
+			dyn_cst_dim_ = cid;
+		}
+		auto Model::dynUpd()->void
+		{
+			for (auto &prt : part_pool_)
+			{
+				if (prt->active())prt->update();
+			}
+			for (auto &jnt : joint_pool_)
+			{
+				if (jnt->active())jnt->update();
+			}
+			for (auto &mot : motion_pool_)
+			{
+				if (mot->active())mot->update();
+				//std::cout << *mot->csa() << std::endl;
+			}
+			for (auto &fce : force_pool_)
+			{
+				if (fce->active())fce->update();
+			}
+		}
+		auto Model::dynMtx(double *D, double *b) const->void
+		{
+			dynCstMtx(&D[(dynDim())*dynDimM()]);
+			s_block_cpy(dynDimM(), dynDimN(), &D[(dynDim())*dynDimM()], 0, 0, dynDimN(), D, 0, dynDimM(), dynDim());
+			
+			dynIneMtx(&D[(dynDim())*dynDimM()]);
+			s_block_cpy(dynDimM(), dynDimM(), -1, &D[(dynDim())*dynDimM()], 0, 0, dynDimM(), 0, D, 0, 0, dynDim());
+
+			std::fill_n(&D[(dynDim())*dynDimM()], dynDimN()*(dynDim()), 0);
+			s_block_cpyT(dynDimM(), dynDimN(), D, 0, dynDimM(), dynDim(), D, dynDimM(), 0, dynDim());
+
+			dynPrtFce(b);
+			dynCstAcc(b + dynDimM());
+		}
+		auto Model::dynSov(const double *D, const double *b, double *x) const->void
+		{
+			if (dyn_solve_method_)
+			{
+				dyn_solve_method_(dynDim(), D, b, x);
+			}
+			else
+			{
+				throw std::runtime_error("please set solve_method before use DynSov");
+			}
+		}
+		auto Model::dynEnd(const double *x)->void
+		{
+			for (auto &prt : part_pool_)
+			{
+				if (prt->active())
+				{
+					std::copy_n(&x[prt->row_id_], 6, prt->prt_acc_);
+				}
+			}
+			for (auto &jnt : joint_pool_)
+			{
+				if (jnt->active())
+				{
+					std::copy_n(&x[jnt->col_id_ + dynDimM()], jnt->dim(), jnt->csf());
+				}
+			}
+			for (auto &mot : motion_pool_)
+			{
+				if (mot->active())
+				{
+					mot->mot_fce_dyn_ = x[mot->col_id_ + dynDimM()];
+				}
+			}
+		}
+		auto Model::dynUkn(double *x) const->void
+		{
+			this->dynPrtAcc(x);
+			this->dynCstFce(x + dynDimM());
+		}
+		auto Model::dyn()->void
+		{
+			dynPre();
+			std::vector<double> D(dynDim() * dynDim());
+			std::vector<double> b(dynDim());
+			std::vector<double> x(dynDim());
+			dynUpd();
+			dynMtx(D.data(), b.data());
+			dynSov(D.data(), b.data(), x.data());
+			dynEnd(x.data());
+		}
+		auto Model::clbSetInverseMethod(std::function<void(int n, double *A)> inverse_method)->void
+		{
+			this->clb_inverse_method_ = inverse_method;
+		}
+		auto Model::clbPre()->void
+		{
+			dynPre();
+
+			if (dynDimN() != dynDimM())
+			{
+				throw std::runtime_error("must calibrate square matrix");
+			}
+
+			clb_dim_m_ = 0;
+			clb_dim_n_ = 0;
+			clb_dim_gam_ = 0;
+			clb_dim_frc_ = 0;
+
+			for (auto &i : motion_pool_)
+			{
+				if (i->active())
+				{
+					clb_dim_m_++;
+					clb_dim_frc_ += 3;
+					clb_dim_n_ += 3;
+				}
+			}
+			for (auto &i : part_pool_)
+			{
+				if (i->active())
+				{
+					clb_dim_n_ += 10;
+					clb_dim_gam_ += 10;
+				}
+			}
+
+		}
+		auto Model::clbUpd()->void
+		{
+			dynUpd();
+		}
+		auto Model::clbMtx(double *clb_D, double *clb_b)const->void
+		{
+			if (!clb_inverse_method_)throw std::runtime_error("please set inverse method before calibrate");
+			if (dynDimN() != dynDimM()) throw std::logic_error("must calibrate square matrix");
+
+			/*初始化*/
+			Core::Matrix clb_d_m(clbDimM(), clbDimN());
+			Core::Matrix clb_b_m(clbDimM(), 1);
+
+			/*求A，即C的逆*/
+			Core::Matrix A(dynDimM(), dynDimM()), B(dynDimM(), dynDimM());
+
+			std::vector<double> C(dynDimM() * dynDimM());
+			std::vector<double> f(dynDimM());
+
+			dynCstMtx(C.data());
+			std::copy(C.begin(), C.end(), A.data());
+			clb_inverse_method_(dynDimM(), A.data());
+
+			/*求B*/
+			const int beginRow = dynDimM() - clbDimM();
+
+			for (auto &i:part_pool_)
+			{
+				if (i->active())
+				{
+					double cm[6][6];
+					s_cmf(i->prtVel(), *cm);
+					s_dgemm(clbDimM(), 6, 6, 1, &A(beginRow,i->row_id_), dynDimM(), *cm, 6, 0, &B(beginRow, i->row_id_), dynDimM());
+				}
+			}
+
+			/*求解clb_d*/
+			int col1 = 0, col2 = 0;
+
+			for (auto &i:part_pool_)
+			{
+				if (i->active())
+				{
+					double q[6]{0};
+					std::copy_n(i->prtAcc(), 6, q);
+					s_daxpy(6, -1, i->prtGravity(), 1, q, 1);
+					
+					double v[6];
+					std::copy_n(i->prtVel(), 6, v);
+
+					for (std::size_t j = 0; j < clbDimM(); ++j)
+					{
+						clb_d_m(j, col1) = A(beginRow + j, col2 + 0) * q[0] + A(beginRow + j, col2 + 1) * q[1] + A(beginRow + j, col2 + 2) * q[2];
+						clb_d_m(j, col1 + 1) = A(beginRow + j, col2 + 1) * q[5] + A(beginRow + j, col2 + 5) * q[1] - A(beginRow + j, col2 + 2) * q[4] - A(beginRow + j, col2 + 4) * q[2];
+						clb_d_m(j, col1 + 2) = A(beginRow + j, col2 + 2) * q[3] + A(beginRow + j, col2 + 3) * q[2] - A(beginRow + j, col2 + 0) * q[5] - A(beginRow + j, col2 + 5) * q[0];
+						clb_d_m(j, col1 + 3) = A(beginRow + j, col2 + 0) * q[4] + A(beginRow + j, col2 + 4) * q[0] - A(beginRow + j, col2 + 1) * q[3] - A(beginRow + j, col2 + 3) * q[1];
+						clb_d_m(j, col1 + 4) = A(beginRow + j, col2 + 3) * q[3];
+						clb_d_m(j, col1 + 5) = A(beginRow + j, col2 + 4) * q[4];
+						clb_d_m(j, col1 + 6) = A(beginRow + j, col2 + 5) * q[5];
+						clb_d_m(j, col1 + 7) = A(beginRow + j, col2 + 3) * q[4] + A(beginRow + j, col2 + 4) * q[3];
+						clb_d_m(j, col1 + 8) = A(beginRow + j, col2 + 3) * q[5] + A(beginRow + j, col2 + 5) * q[3];
+						clb_d_m(j, col1 + 9) = A(beginRow + j, col2 + 4) * q[5] + A(beginRow + j, col2 + 5) * q[4];
+
+						clb_d_m(j, col1) += B(beginRow + j, col2 + 0) * v[0] + B(beginRow + j, col2 + 1) * v[1] + B(beginRow + j, col2 + 2) * v[2];
+						clb_d_m(j, col1 + 1) += B(beginRow + j, col2 + 1) * v[5] + B(beginRow + j, col2 + 5) * v[1] - B(beginRow + j, col2 + 2) * v[4] - B(beginRow + j, col2 + 4) * v[2];
+						clb_d_m(j, col1 + 2) += B(beginRow + j, col2 + 2) * v[3] + B(beginRow + j, col2 + 3) * v[2] - B(beginRow + j, col2 + 0) * v[5] - B(beginRow + j, col2 + 5) * v[0];
+						clb_d_m(j, col1 + 3) += B(beginRow + j, col2 + 0) * v[4] + B(beginRow + j, col2 + 4) * v[0] - B(beginRow + j, col2 + 1) * v[3] - B(beginRow + j, col2 + 3) * v[1];
+						clb_d_m(j, col1 + 4) += B(beginRow + j, col2 + 3) * v[3];
+						clb_d_m(j, col1 + 5) += B(beginRow + j, col2 + 4) * v[4];
+						clb_d_m(j, col1 + 6) += B(beginRow + j, col2 + 5) * v[5];
+						clb_d_m(j, col1 + 7) += B(beginRow + j, col2 + 3) * v[4] + B(beginRow + j, col2 + 4) * v[3];
+						clb_d_m(j, col1 + 8) += B(beginRow + j, col2 + 3) * v[5] + B(beginRow + j, col2 + 5) * v[3];
+						clb_d_m(j, col1 + 9) += B(beginRow + j, col2 + 4) * v[5] + B(beginRow + j, col2 + 5) * v[4];
+					}
+					col1 += 10;
+					col2 += 6;
+				}
+			}
+
+			/*求解clb_b*/
+			std::fill(f.begin(), f.end(), 0);
+			int row = 0;
+			for (auto &mot : motion_pool_)
+			{
+				if (mot->active())
+				{
+					clb_b_m(row, 0) = mot->mot_fce_;
+					++row;
+				}
+			}
+			for (auto &fce : force_pool_)
+			{
+				if (fce->active())
+				{
+					s_daxpy(6, 1, fce->fceI(), 1, &f[fce->makI().fatherPart().row_id_], 1);
+					s_daxpy(6, 1, fce->fceJ(), 1, &f[fce->makJ().fatherPart().row_id_], 1);
+				}
+			}
+			s_dgemm(clbDimM(), 1, dynDimM(), 1, &A(beginRow,0), dynDimM(), f.data(), 1, 1, clb_b_m.data(), 1);
+
+			/*以下添加驱动摩擦系数*/
+			row = 0;
+			for (auto &mot : motion_pool_)
+			{
+				//默认未激活的motion处于力控模式
+				if (mot->active())
+				{
+					clb_d_m(row, clbDimGam() + row * 3) += s_sgn(mot->motVel());
+					clb_d_m(row, clbDimGam() + row * 3 + 1) += mot->motVel();
+					clb_d_m(row, clbDimGam() + row * 3 + 2) += mot->motAcc();
+					++row;
+				}
+			}
+
+			std::copy_n(clb_d_m.data(), clb_d_m.size(), clb_D);
+			std::copy_n(clb_b_m.data(), clb_b_m.size(), clb_b);
+		}
+		auto Model::clbUkn(double *clb_x)const->void
+		{
+			int row = 0;
+			for (auto &prt : part_pool_)
+			{
+				if (prt->active())
+				{
+					s_im2gamma(*prt->prtIm(), clb_x + row);
+					row += 10;
+				}
+			}
+
+			for (auto &mot : motion_pool_)
+			{
+				if (mot->active())
+				{
+					std::copy_n(mot->frcCoe(), 3, clb_x + row);
+					row += 3;
+				}
+			}
+		}
+		auto Model::simKin(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval, bool using_script)->SimResult
+		{
+			//初始化变量
+			SimResult result;
+			result.resize(motionPool().size());
+			std::list<double> time_akima_data;
+			std::vector<std::list<double> > pos_akima_data(motionPool().size());
+
+			//起始位置
+			result.time_.push_back(0);
+			time_akima_data.push_back(0);
+			for (std::size_t i = 0; i < motionPool().size(); ++i)
+			{
+				motionPool().at(i).update();
+				result.Pin_.at(i).push_back(motionPool().at(i).motPos());
+				pos_akima_data.at(i).push_back(motionPool().at(i).motPos());
+			}
+
+			if (using_script)
+			{
+				script().updateAt(0);
+				script().setTopologyAt(0);
+			}
+
+			//其他位置
+			for (param.count = 0; true; ++param.count)
+			{
+				auto is_sim = func(*this, param);
+
+				result.time_.push_back(param.count + 1);
+				for (std::size_t i = 0; i < motionPool().size(); ++i)
+				{
+					result.Pin_.at(i).push_back(motionPool().at(i).motPos());
+				}
+
+				if ((!is_sim) || ((param.count + 1) % akima_interval == 0))
+				{
+					time_akima_data.push_back((param.count + 1) / 1000.0);
+
+					for (std::size_t j = 0; j < motionPool().size(); ++j)
+					{
+						pos_akima_data.at(j).push_back(motionPool().at(j).motPos());
+					}
+				}
+
+				if (using_script)
+				{
+					script().updateAt(param.count + 1);
+					script().setTopologyAt(param.count + 1);
+				}
+
+				if (!is_sim)break;
+			}
+
+			//创建Akima储存电机位置数据
+			akimaPool().clear();
+			for (std::size_t i = 0; i < motionPool().size(); ++i)
+			{
+				akimaPool().add<Akima>(motionPool().at(i).name() + "_akima", time_akima_data, pos_akima_data.at(i));
+			}
+
+			return result;
+		}
+		auto Model::simDyn(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval, bool using_script)->SimResult
+		{
+			partPool().save("before_simDyn_state");
+			markerPool().save("before_simDyn_state");
+			jointPool().save("before_simDyn_state");
+			motionPool().save("before_simDyn_state");
+			forcePool().save("before_simDyn_state");
+			auto result = simKin(func, param, akima_interval, using_script);
+			partPool().load("before_simDyn_state");
+			markerPool().load("before_simDyn_state");
+			jointPool().load("before_simDyn_state");
+			motionPool().load("before_simDyn_state");
+			forcePool().load("before_simDyn_state");
+
+			result.Pin_.clear();
+			result.Vin_.clear();
+			result.Ain_.clear();
+			result.Fin_.clear();
+
+			result.Pin_.resize(motionPool().size());
+			result.Vin_.resize(motionPool().size());
+			result.Ain_.resize(motionPool().size());
+			result.Fin_.resize(motionPool().size());
+
+			//仿真计算
+			for (std::size_t t = 0; t < result.time_.size(); ++t)
+			{
+				std::cout << t << std::endl;
+
+				if (using_script)
+				{
+					script().setTopologyAt(t);
+				}
+				for (std::size_t j = 0; j < motionPool().size(); ++j)
+				{
+					motionPool().at(j).mot_pos_ = akimaPool().at(j).operator()(t / 1000.0, '0');
+				}
+				kinFromPin();
+				for (std::size_t j = 0; j < motionPool().size(); ++j)
+				{
+					motionPool().at(j).mot_vel_ = akimaPool().at(j).operator()(t / 1000.0, '1');
+				}
+				kinFromVin();
+				for (std::size_t j = 0; j < motionPool().size(); ++j)
+				{
+					motionPool().at(j).mot_acc_ = akimaPool().at(j).operator()(t / 1000.0, '2');
+				}
+				dyn();
+				for (std::size_t j = 0; j < motionPool().size(); ++j)
+				{
+					result.Fin_.at(j).push_back(motionPool().at(j).mot_fce_dyn_);
+					result.Pin_.at(j).push_back(motionPool().at(j).motPos());
+					result.Vin_.at(j).push_back(motionPool().at(j).motVel());
+					result.Ain_.at(j).push_back(motionPool().at(j).motAcc());
+				}
+			}
+
+			return result;
+		}
+		auto Model::simToAdams(const std::string &adams_file, const PlanFunc &fun, const PlanParamBase &param, int ms_dt, bool using_script)->void
+		{
+			partPool().save("before_simToAdams_state");
+			markerPool().save("before_simToAdams_state");
+			jointPool().save("before_simToAdams_state");
+			motionPool().save("before_simToAdams_state");
+			forcePool().save("before_simToAdams_state");
+			auto result = simDyn(fun, param, ms_dt, using_script);
+			partPool().load("before_simToAdams_state");
+			markerPool().load("before_simToAdams_state");
+			jointPool().load("before_simToAdams_state");
+			motionPool().load("before_simToAdams_state");
+			forcePool().load("before_simToAdams_state");
+			this->saveAdams(adams_file, using_script);
 		}
 
 		RevoluteJoint::RevoluteJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
@@ -1843,56 +1919,5 @@ namespace Aris
 			s_tf(-1, pm_M2N, fceI_, 0, fceJ_);
 		}
 
-		template<> auto ElementPool<Variable>::typeInfoMap()->std::map<std::string, ElementPool<Variable>::TypeInfo>&
-		{
-			static std::map<std::string, ElementPool<Variable>::TypeInfo> info_map
-			{
-				std::make_pair(MatrixVariable::TypeName(), TypeInfo::create<MatrixVariable>()),
-			};
-			return std::ref(info_map);
-		};
-		template<> auto ElementPool<Marker>::typeInfoMap()->std::map<std::string, ElementPool<Marker>::TypeInfo>&
-		{
-			static std::map<std::string, ElementPool<Marker>::TypeInfo> info_map
-			{
-				std::make_pair(Marker::TypeName(), TypeInfo::create<Marker>()),
-			};
-			return std::ref(info_map);
-		};
-		template<> auto ElementPool<Part>::typeInfoMap()->std::map<std::string, ElementPool<Part>::TypeInfo>&
-		{
-			static std::map<std::string, ElementPool<Part>::TypeInfo> info_map
-			{
-				std::make_pair(Part::TypeName(), TypeInfo::create<Part>()),
-			};
-			return std::ref(info_map);
-		};
-		template<> auto ElementPool<Joint>::typeInfoMap()->std::map<std::string, ElementPool<Joint>::TypeInfo>&
-		{
-			static std::map<std::string, ElementPool<Joint>::TypeInfo> info_map
-			{
-				std::make_pair(RevoluteJoint::TypeName(), TypeInfo::create<RevoluteJoint>()),
-				std::make_pair(TranslationalJoint::TypeName(), TypeInfo::create<TranslationalJoint>()),
-				std::make_pair(UniversalJoint::TypeName(), TypeInfo::create<UniversalJoint>()),
-				std::make_pair(SphericalJoint::TypeName(), TypeInfo::create<SphericalJoint>()),
-			};
-			return std::ref(info_map);
-		};
-		template<> auto ElementPool<Motion>::typeInfoMap()->std::map<std::string, ElementPool<Motion>::TypeInfo>&
-		{
-			static std::map<std::string, ElementPool<Motion>::TypeInfo> info_map
-			{
-				std::make_pair(SingleComponentMotion::TypeName(), TypeInfo::create<SingleComponentMotion>()),
-			};
-			return std::ref(info_map);
-		};
-		template<> auto ElementPool<Force>::typeInfoMap()->std::map<std::string, ElementPool<Force>::TypeInfo>&
-		{
-			static std::map<std::string, ElementPool<Force>::TypeInfo> info_map
-			{
-				std::make_pair(SingleComponentForce::TypeName(), TypeInfo::create<SingleComponentForce>()),
-			};
-			return std::ref(info_map);
-		};
 	}
 }
