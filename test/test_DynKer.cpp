@@ -13,12 +13,12 @@ int main(int argc, char *argv[])
 		double b[] = { 0.1,0.2,0.3 };
 		double c[] = { 0.1,0.2,0.35 };
 
-		if (!isEqual(3, a, b, error))
+		if (!s_is_equal(3, a, b, error))
 		{
 			std::cout << "\"isEqual\" failed" << std::endl;
 		}
 
-		if (isEqual(3, a, c, error))
+		if (s_is_equal(3, a, c, error))
 		{
 			std::cout << "\"isEqual\" failed" << std::endl;
 		}
@@ -34,14 +34,14 @@ int main(int argc, char *argv[])
 
 		s_cro3(0.25, a, b, 0.13, c);
 
-		if (!isEqual(3, c, answer1, error))
+		if (!s_is_equal(3, c, answer1, error))
 		{
 			std::cout << "\"s_cro3\" failed" << std::endl;
 		}
 
 		s_cro3(a, b, c);
 
-		if (!isEqual(3, c, answer2, error))
+		if (!s_is_equal(3, c, answer2, error))
 		{
 			std::cout << "\"s_cro3\" failed" << std::endl;
 		}
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
 		s_cm3(a, result);
 
-		if (!isEqual(9, result, answer, error))
+		if (!s_is_equal(9, result, answer, error))
 		{
 			std::cout << "\"s_cro3\" failed" << std::endl;
 		}
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 
 		s_pe2pm(pe, result, "321");
 
-		if (!isEqual(16, result, answer, error))
+		if (!s_is_equal(16, result, answer, error))
 		{
 			std::cout << "\"s_pe2pm\" failed" << std::endl;
 		}
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 			0,0,0,1
 		};
 
-		if (!isEqual(16, result, answer2, error))
+		if (!s_is_equal(16, result, answer2, error))
 		{
 			std::cout << "\"s_pe2pm\" failed" << std::endl;
 		}
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 			s_pm2pe(pm, pe2);
 			s_pe2pm(pe2, result);
 
-			if (!isEqual(16, result, pm, error))
+			if (!s_is_equal(16, result, pm, error))
 			{
 				std::cout << "\"s_pm2pe\" failed" << std::endl;
 			}
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 			s_pm2pe(pm, pe2, "321");
 			s_pe2pm(pe2, result, "321");
 
-			if (!isEqual(16, result, pm, error))
+			if (!s_is_equal(16, result, pm, error))
 			{
 				std::cout << "\"s_pm2pe\" failed" << std::endl;
 			}

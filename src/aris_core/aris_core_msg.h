@@ -225,11 +225,11 @@ namespace Aris
 		};
 
 
-		const std::string& logFileName();
-		const char * log(const char *data);
-		const std::string& log(const std::string& data);
+		auto logFileName()->const std::string&;
+		auto log(const char *data)->const char *;
+		auto log(const std::string& data)->const std::string&;
 
-		void msSleep(int miliseconds);
+		auto msSleep(int miliseconds)->void;
 
 	}
 }

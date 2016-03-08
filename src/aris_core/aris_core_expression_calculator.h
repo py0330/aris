@@ -179,9 +179,11 @@ namespace Aris
 			}
 
 			auto calculateExpression(const std::string &expression) const->Matrix;
+			auto evaluateExpression(const std::string &expression)const->std::string;
 			auto addVariable(const std::string &name, const Matrix &value)->void;
+			auto addVariable(const std::string &name, const std::string &value)->void;
 			auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, int n)->void;
-			auto clearVariables()->void { variable_map_.clear(); };
+			auto clearVariables()->void { variable_map_.clear(); string_map_.clear(); };
 
 		private:
 			class Operator;
@@ -264,6 +266,7 @@ namespace Aris
 			std::map<std::string, Operator> operator_map_;
 			std::map<std::string, Function> function_map_;
 			std::map<std::string, Matrix> variable_map_;
+			std::map<std::string, std::string> string_map_;//string variable
 		};
 	}
 }

@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <algorithm>
+#include <regex>
 
 #include <Eigen/Eigen>
 
@@ -604,6 +605,21 @@ namespace Aris
 			auto tokens=Expression2Tokens(expression);
 			return CaculateTokens(tokens.begin(), tokens.end());
 		}
+		auto Calculator::evaluateExpression(const std::string &expression)const->std::string
+		{
+			auto ret = expression;
+			
+			for (auto &var : string_map_)
+			{
+				std::string exp{ "\\$\\{" + var.first + "\\}" };
+				
+				std::regex var_rex{ exp};
+				ret = std::regex_replace(ret, var_rex, var.second);
+			}
+			
+			
+			return ret;
+		}
 		auto Calculator::addVariable(const std::string &name, const Matrix &value)->void
 		{
 			if (function_map_.find(name) != function_map_.end())
@@ -616,6 +632,14 @@ namespace Aris
 				throw std::runtime_error("variable \"" + name + "already exists, can't add variable");
 			}
 			variable_map_.insert(make_pair(name, value));
+		}
+		auto Calculator::addVariable(const std::string &name, const std::string &value)->void
+		{
+			if (string_map_.find(name) != string_map_.end())
+			{
+				throw std::runtime_error("variable \"" + name + "already exists, can't add string variable");
+			}
+			string_map_.insert(make_pair(name, value));
 		}
 		auto Calculator::addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, int n)->void
 		{
