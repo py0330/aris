@@ -847,14 +847,17 @@ namespace Aris
 			}
 			else
 			{
+				std::cout << "before branch" << std::endl;
 				auto cmdPair = this->map_cmd2id_.find(cmd);
 
 				if (cmdPair == this->map_cmd2id_.end())
 				{
+					std::cout << "if branch" << std::endl;
 					throw std::logic_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddCmd() first");
 				}
 				else
 				{
+					std::cout << "else branch" << std::endl;
 					std::cout << "find cmd:" << cmdPair->first << std::endl;
 				}
 
