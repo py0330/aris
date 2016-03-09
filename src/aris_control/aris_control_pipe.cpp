@@ -27,10 +27,12 @@ namespace Aris
 		class PipeBase::Imp
 		{
 		public:
-			Imp(int port, bool isBlock)
+			Imp(bool isBlock)
 			{
+				static int port = 0;
 				InitRT(port);
 				InitNRT(port, isBlock);
+				++port;
 			}
 			
 		private:
@@ -113,7 +115,7 @@ namespace Aris
 			friend class PipeBase;
 		};
 
-		PipeBase::PipeBase(int port, bool isBlock):pImp(new PipeBase::Imp(port, isBlock)){}
+		PipeBase::PipeBase(bool isBlock):pImp(new PipeBase::Imp(isBlock)){}
 		PipeBase::~PipeBase(){}
 		int PipeBase::sendToRTRawData(const void *pData, int size)
 		{
@@ -150,7 +152,7 @@ namespace Aris
 			return read(pImp->FD_NRT, pData, size);
 		}
 		
-		Pipe<Aris::Core::Msg>::Pipe(int port, bool isBlock) :PipeBase(port, isBlock)
+		Pipe<Aris::Core::Msg>::Pipe(bool isBlock) :PipeBase(isBlock)
 		{
 		}
 		int Pipe<Aris::Core::Msg>::sendToRT(const Aris::Core::Msg &msg)

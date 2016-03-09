@@ -14,9 +14,8 @@ namespace Aris
 		class PipeBase
 		{
 		protected:
-			PipeBase(int port, bool is_block);
-			~PipeBase();
-
+			virtual ~PipeBase();
+			PipeBase(bool is_block);
 			int sendToRTRawData(const void *data, int size);
 			int sendToNrtRawData(const void* data, int size);
 			int recvInRTRawData(void* data, int size);
@@ -33,7 +32,7 @@ namespace Aris
 		class Pipe:private PipeBase
 		{
 		public:
-			Pipe(int port, bool isBlock) :PipeBase(port, isBlock) {};
+			Pipe(bool isBlock = true) :PipeBase(isBlock) {};
 			int sendToRT(const StandardLayoutStruct &data)
 			{
 				return sendToRTRawData(static_cast<const void*>(&data), sizeof(data));
@@ -56,7 +55,7 @@ namespace Aris
 		class Pipe<std::vector<T> > :public PipeBase
 		{
 		public:
-			Pipe(int port, bool is_block, int size):PipeBase(port, is_block), size(size) {};
+			Pipe(bool is_block, int size):PipeBase(is_block), size(size) {};
 			int sendToRT(const std::vector<T> &vec)
 			{
 				if (vec.size() != this->size)throw std::runtime_error("this pipe can only send fixed size vector");
@@ -86,7 +85,7 @@ namespace Aris
 		class Pipe<Aris::Core::Msg>:public PipeBase
 		{
 		public:
-			Pipe(int port, bool is_block);
+			Pipe(bool is_block = true);
 			int sendToRT(const Aris::Core::Msg &msg);
 			int sendToNrt(const Aris::Core::MsgRT &msg);
 			int recvInRT(Aris::Core::MsgRT &msg);

@@ -380,7 +380,7 @@ namespace Aris
 
 
 			std::function<int(Data&)> strategy_;
-			Pipe<Aris::Core::Msg> msg_pipe_{0, true};
+			Pipe<Aris::Core::Msg> msg_pipe_;
 			std::atomic_bool is_stopping_;
 
 			std::vector<EthercatMotion *> motion_vec_;
@@ -448,7 +448,7 @@ namespace Aris
 			imp->force_sensor_data_.resize(imp->force_sensor_vec_.size());
 
 
-			imp->record_pipe_.reset(new Pipe<std::vector<EthercatMotion::RawData> >(1, true, imp->motion_vec_.size()));
+			imp->record_pipe_.reset(new Pipe<std::vector<EthercatMotion::RawData> >(true, imp->motion_vec_.size()));
 		}
 		auto EthercatController::setControlStrategy(std::function<int(Data&)> strategy)->void
 		{
