@@ -287,7 +287,7 @@ namespace Aris
 			{
 				throw std::runtime_error("failed to find motion attribute \"home_pos\"");
 			}
-			imp->home_count_ = static_cast<std::int32_t>(xml_ele.DoubleAttribute("homePos") * imp->input2count_);
+			imp->home_count_ = static_cast<std::int32_t>(value * imp->input2count_);
 
 			if (xml_ele.QueryIntAttribute("abs_id", &imp->abs_id_) != tinyxml2::XML_NO_ERROR)
 			{
