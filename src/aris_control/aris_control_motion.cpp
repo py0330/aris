@@ -268,8 +268,33 @@ namespace Aris
 			std::uint8_t running_mode{ 9 };
 		};
 		EthercatMotion::~EthercatMotion() {}
-		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement &xml_ele) :EthercatSlave(xml_ele), imp(new EthercatMotion::Imp(this))
+		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement &xml_ele, const Aris::Core::XmlElement &type_xml_ele) 
+			:EthercatSlave(type_xml_ele), imp(new EthercatMotion::Imp(this))
 		{
+			if (xml_ele.QueryIntAttribute("input2count", &imp->input2count_) != tinyxml2::XML_NO_ERROR)
+			{
+				throw std::runtime_error("failed to find motion attribute \"input2count\"");
+			}
+
+			double value;
+			if (xml_ele.QueryDoubleAttribute("maxVel", &value) != tinyxml2::XML_NO_ERROR)
+			{
+				throw std::runtime_error("failed to find motion attribute \"maxVel\"");
+			}
+			imp->max_vel_count_ = static_cast<std::int32_t>(value * imp->input2count_);
+
+			if (xml_ele.QueryDoubleAttribute("homePos", &value) != tinyxml2::XML_NO_ERROR)
+			{
+				throw std::runtime_error("failed to find motion attribute \"homePos\"");
+			}
+			imp->home_count_ = static_cast<std::int32_t>(xml_ele.DoubleAttribute("homePos") * imp->input2count_);
+
+			if (xml_ele.QueryIntAttribute("absID", &imp->abs_id_) != tinyxml2::XML_NO_ERROR)
+			{
+				throw std::runtime_error("failed to find motion attribute \"input2count\"");
+			}
+
+			writeSdo(9, static_cast<std::int32_t>(-imp->home_count_));
 		};
 		auto EthercatMotion::writeCommand(const RawData &data)->void
 		{		
@@ -325,7 +350,7 @@ namespace Aris
 		auto EthercatMotion::maxVelCount()->std::int32_t { return imp->max_vel_count_; };
 		auto EthercatMotion::pos2countRatio()->std::int32_t { return imp->input2count_; };
 
-		void EthercatForceSensor::readData(Data &data)
+		auto EthercatForceSensor::readData(Data &data)->void
 		{
 			std::int32_t value;
 
@@ -363,38 +388,13 @@ namespace Aris
 			motion_vec_.clear();
 			force_sensor_vec_.clear();
 
-			auto pSlaves = xml_ele.FirstChildElement("Slave");
-			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
+			auto slave_xml = xml_ele.FirstChildElement("Slave");
+			for (auto sla = slave_xml->FirstChildElement(); sla; sla = sla->NextSiblingElement())
 			{
-				std::string type{ pSla->Attribute("type") };
+				std::string type{ sla->Attribute("type") };
 				if (type == "ElmoSoloWhistle")
 				{
-					motion_vec_.push_back(addSlave<EthercatMotion>(std::ref(*slaveTypeMap.at(type))));
-					
-					if (pSla->QueryIntAttribute("input2count", &motion_vec_.back()->imp->input2count_) != tinyxml2::XML_NO_ERROR)
-					{
-						throw std::runtime_error("failed to find motion attribute \"input2count\"");
-					}
-
-					double value;
-					if (pSla->QueryDoubleAttribute("maxVel", &value) != tinyxml2::XML_NO_ERROR)
-					{
-						throw std::runtime_error("failed to find motion attribute \"maxVel\"");
-					}
-					motion_vec_.back()->imp->max_vel_count_ = static_cast<std::int32_t>(value * motion_vec_.back()->imp->input2count_);
-
-					if (pSla->QueryDoubleAttribute("homePos", &value) != tinyxml2::XML_NO_ERROR)
-					{
-						throw std::runtime_error("failed to find motion attribute \"homePos\"");
-					}
-					motion_vec_.back()->imp->home_count_ = static_cast<std::int32_t>(pSla->DoubleAttribute("homePos")*motion_vec_.back()->imp->input2count_);
-
-					if (pSla->QueryIntAttribute("absID", &motion_vec_.back()->imp->abs_id_) != tinyxml2::XML_NO_ERROR)
-					{
-						throw std::runtime_error("failed to find motion attribute \"input2count\"");
-					}
-
-					motion_vec_.back()->writeSdo(9, static_cast<std::int32_t>(-motion_vec_.back()->imp->home_count_));
+					motion_vec_.push_back(addSlave<EthercatMotion>(std::ref(*sla), std::ref(*slaveTypeMap.at(type))));
 				}
 				else if (type == "AtiForceSensor")
 				{

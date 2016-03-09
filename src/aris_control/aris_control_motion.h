@@ -40,7 +40,7 @@ namespace Aris
 			};
 
 			virtual ~EthercatMotion();
-			EthercatMotion(const Aris::Core::XmlElement &xml_ele);
+			EthercatMotion(const Aris::Core::XmlElement &xml_ele, const Aris::Core::XmlElement &type_xml_ele);
 			auto hasFault()->bool;
 			auto readFeedback(RawData &data)->void;
 			auto writeCommand(const RawData &data)->void;
