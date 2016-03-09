@@ -54,22 +54,25 @@ namespace Aris
 		class EthercatMaster
 		{
 		public:
-			static EthercatMaster &instance();
-			virtual ~EthercatMaster();
-			virtual void loadXml(const Aris::Core::XmlElement &xml_ele);
-			virtual void start();
-			virtual void stop();
-			template <class EthercatController>	static EthercatController* createInstance()
+			template <class EthercatController>
+			static auto createInstance()->EthercatController*
 			{
-				if (pInstance)
+				if (instancePtr())
 				{
 					throw std::runtime_error("EthercatMaster can not create a controller, because it already has one");
 				}
 
-				pInstance.reset(new EthercatController);
-				return static_cast<EthercatController*>(pInstance.get());
+				const_cast<std::unique_ptr<EthercatMaster> &>(instancePtr()).reset(new EthercatController);
+				return static_cast<EthercatController*>(instancePtr().get());
 			}
-			template <class Slave, typename ...Args> Slave* addSlave(Args ...args)
+			static auto instance()->EthercatMaster &;
+			static auto instancePtr()->const std::unique_ptr<EthercatMaster> &;
+			virtual ~EthercatMaster();
+			virtual auto loadXml(const Aris::Core::XmlElement &xml_ele)->void;
+			virtual auto start()->void;
+			virtual auto stop()->void;
+			template <class Slave, typename ...Args> 
+			auto addSlave(Args ...args)->Slave*
 			{
 				auto pSla = new Slave(args...);
 				this->addSlavePtr(pSla);
@@ -85,10 +88,9 @@ namespace Aris
 			EthercatMaster(EthercatMaster &&other) = delete;
 			EthercatMaster & operator=(const EthercatMaster &other) = delete;
 			EthercatMaster & operator=(EthercatMaster &&other) = delete;
-			void addSlavePtr(EthercatSlave *pSla);
+			auto addSlavePtr(EthercatSlave *pSla)->void;
 			
 		private:
-			static std::unique_ptr<EthercatMaster> pInstance;
 			class Imp;
 			std::unique_ptr<Imp> imp;
 
