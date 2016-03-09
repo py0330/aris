@@ -685,7 +685,7 @@ namespace Aris
 
 				if (!(inputStream >> cmd))
 				{
-					throw std::logic_error(Aris::Core::log("invalid message from client, please at least contain a word"));
+					throw std::runtime_error(Aris::Core::log("invalid message from client, please at least contain a word"));
 				};
 				Aris::Core::log(std::string("received command string:") + msg.data());
 
@@ -697,7 +697,7 @@ namespace Aris
 			}
 			else
 			{
-				throw std::logic_error(Aris::Core::log("invalid message from client, please be sure that the command message end with char \'\\0\'"));
+				throw std::runtime_error(Aris::Core::log("invalid message from client, please be sure that the command message end with char \'\\0\'"));
 			}
 
 			if (mapCmd.find(cmd) != mapCmd.end())
@@ -706,7 +706,7 @@ namespace Aris
 			}
 			else
 			{
-				throw std::logic_error(Aris::Core::log(std::string("invalid command name, server does not have command \"") + cmd + "\""));
+				throw std::runtime_error(Aris::Core::log(std::string("invalid command name, server does not have command \"") + cmd + "\""));
 			}
 
 			for (int i = 0; i<paramNum; ++i)
@@ -725,14 +725,14 @@ namespace Aris
 				}
 
 				if (paramName.size() == 0)
-					throw std::logic_error("invalid param: what the hell, param should not start with '='");
+					throw std::runtime_error("invalid param: what the hell, param should not start with '='");
 
 				/*not start with '-'*/
 				if (paramName.data()[0] != '-')
 				{
 					if (paramValue != "")
 					{
-						throw std::logic_error("invalid param: only param start with - or -- can be assigned a value");
+						throw std::runtime_error("invalid param: only param start with - or -- can be assigned a value");
 					}
 
 					for (auto c : paramName)
@@ -744,7 +744,7 @@ namespace Aris
 						}
 						else
 						{
-							throw std::logic_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
+							throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
 						}
 					}
 
@@ -754,7 +754,7 @@ namespace Aris
 				/*all following part start with at least one '-'*/
 				if (paramName.size() == 1)
 				{
-					throw std::logic_error("invalid param: symbol \"-\" must be followed by an abbreviation of param");
+					throw std::runtime_error("invalid param: symbol \"-\" must be followed by an abbreviation of param");
 				}
 
 				/*start with '-', but only one '-'*/
@@ -762,7 +762,7 @@ namespace Aris
 				{
 					if (paramName.size() != 2)
 					{
-						throw std::logic_error("invalid param: param start with single '-' must be an abbreviation");
+						throw std::runtime_error("invalid param: param start with single '-' must be an abbreviation");
 					}
 
 					char c = paramName.data()[1];
@@ -774,7 +774,7 @@ namespace Aris
 					}
 					else
 					{
-						throw std::logic_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
+						throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
 					}
 
 					continue;
@@ -784,7 +784,7 @@ namespace Aris
 					/*start with '--'*/
 					if (paramName.size()<3)
 					{
-						throw std::logic_error("invalid param: symbol \"--\" must be followed by a full name of param");
+						throw std::runtime_error("invalid param: symbol \"--\" must be followed by a full name of param");
 					}
 
 					std::string str = paramName;
@@ -797,7 +797,7 @@ namespace Aris
 					}
 					else
 					{
-						throw std::logic_error(std::string("invalid param: param \"") + paramName + "\" is not a valid param");
+						throw std::runtime_error(std::string("invalid param: param \"") + paramName + "\" is not a valid param");
 					}
 
 
@@ -853,18 +853,11 @@ namespace Aris
 			}
 			else
 			{
-				std::cout << "before branch" << std::endl;
 				auto cmdPair = this->map_cmd2id_.find(cmd);
 
 				if (cmdPair == this->map_cmd2id_.end())
 				{
-					std::cout << "if branch" << std::endl;
-					throw std::runtime_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddCmd() first");
-				}
-				else
-				{
-					std::cout << "else branch" << std::endl;
-					std::cout << "find cmd:" << cmdPair->first << std::endl;
+					throw std::runtime_error(std::string("command \"") + cmd + "\" does not have gait function, please AddCmd() first");
 				}
 
 				this->parser_vec_.at(cmdPair->second).operator()(cmd, params, cmd_msg);
