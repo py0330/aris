@@ -665,6 +665,11 @@ namespace Aris
 				std::cout << e.what() << std::endl;
 				retError.copy(e.what());
 			}
+			catch (...)
+			{
+				std::cout << "unknown exception" << std::endl;
+				retError.copy("unknown exception");
+			}
 		}
 		void ControlServer::Imp::DecodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)
 		{
