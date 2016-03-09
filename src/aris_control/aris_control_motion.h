@@ -45,6 +45,7 @@ namespace Aris
 			auto readFeedback(RawData &data)->void;
 			auto writeCommand(const RawData &data)->void;
 			auto absID()->std::int32_t;
+			auto phyID()->std::int32_t;
 			auto maxVelCount()->std::int32_t;
 			auto pos2countRatio()->std::int32_t;
 
@@ -83,44 +84,25 @@ namespace Aris
 				Aris::Core::MsgRT *pMsgSend;
 			};
 
-			virtual ~EthercatController(){};
-			virtual void loadXml(const Aris::Core::XmlElement &xml_ele) override;
-			virtual void start();
-			virtual void stop();
-			void setControlStrategy(std::function<int(Data&)>);
-			
-			std::size_t motionNum() { return motion_vec_.size(); };
-			EthercatMotion &motionAtAbs(int i) { return *motion_vec_.at(a2p(i)); };
-			EthercatMotion &motionAtPhy(int i) { return *motion_vec_.at(i); };
-			std::size_t forceSensorNum() { return force_sensor_vec_.size(); };
-			EthercatForceSensor &forceSensorAt(int i) { return *force_sensor_vec_.at(i); };
-			Pipe<Aris::Core::Msg>& msgPipe(){return msg_pipe_;};
-			
-			inline int p2a(const int phy){	return map_phy2abs_[phy];}
-			inline int a2p(const int abs){	return map_abs2phy_[abs];}
-			inline void p2a(const int *phy, int *abs, int num) { for (int i = 0; i < num; ++i)abs[i] = p2a(phy[i]); }
-			inline void a2p(const int *abs, int *phy, int num) { for (int i = 0; i < num; ++i)phy[i] = a2p(abs[i]); }
+			virtual ~EthercatController();
+			virtual auto loadXml(const Aris::Core::XmlElement &xml_ele)->void override;
+			virtual auto start()->void;
+			virtual auto stop()->void;
+			auto setControlStrategy(std::function<int(Data&)>)->void;
+			auto motionNum()->std::size_t;
+			auto motionAtAbs(int i)->EthercatMotion &;
+			auto motionAtPhy(int i)->EthercatMotion &;
+			auto forceSensorNum()->std::size_t;
+			auto forceSensorAt(int i)->EthercatForceSensor &;
+			auto msgPipe()->Pipe<Aris::Core::Msg>&;
 
 		protected:
-			EthercatController() :EthercatMaster(), msg_pipe_(0, true) {};
-			virtual void controlStrategy() override;
+			EthercatController();
+			virtual auto controlStrategy()->void override final;
 
 		private:
-			std::vector<int> map_phy2abs_, map_abs2phy_;
-
-
-			std::function<int(Data&)> strategy_;
-			Pipe<Aris::Core::Msg> msg_pipe_;
-			std::atomic_bool is_stopping_;
-
-			std::vector<EthercatMotion *> motion_vec_;
-			std::vector<EthercatMotion::RawData> motion_rawdata_, last_motion_rawdata_;
-
-			std::vector<EthercatForceSensor *> force_sensor_vec_;
-			std::vector<EthercatForceSensor::Data> force_sensor_data_;
-
-			std::unique_ptr<Pipe<std::vector<EthercatMotion::RawData> > > record_pipe_;
-			std::thread record_thread_;
+			struct Imp;
+			std::unique_ptr<Imp> imp;
 
 			friend class EthercatMaster;
 		};

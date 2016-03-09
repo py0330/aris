@@ -253,11 +253,11 @@ namespace Aris
 			std::int32_t vel() { std::int32_t vel; pFather->readPdo(1, 2, vel); return vel; };
 			std::int32_t cur() { std::int16_t cur; pFather->readPdo(2, 0, cur); return cur; };
 		
-
 			std::int32_t input2count_;
 			std::int32_t home_count_;
 			std::int32_t max_vel_count_;
 			std::int32_t abs_id_;
+			std::int32_t phy_id_;
 			
 			EthercatMotion *pFather;
 			
@@ -277,21 +277,21 @@ namespace Aris
 			}
 
 			double value;
-			if (xml_ele.QueryDoubleAttribute("maxVel", &value) != tinyxml2::XML_NO_ERROR)
+			if (xml_ele.QueryDoubleAttribute("max_vel", &value) != tinyxml2::XML_NO_ERROR)
 			{
-				throw std::runtime_error("failed to find motion attribute \"maxVel\"");
+				throw std::runtime_error("failed to find motion attribute \"max_vel\"");
 			}
 			imp->max_vel_count_ = static_cast<std::int32_t>(value * imp->input2count_);
 
-			if (xml_ele.QueryDoubleAttribute("homePos", &value) != tinyxml2::XML_NO_ERROR)
+			if (xml_ele.QueryDoubleAttribute("home_pos", &value) != tinyxml2::XML_NO_ERROR)
 			{
-				throw std::runtime_error("failed to find motion attribute \"homePos\"");
+				throw std::runtime_error("failed to find motion attribute \"home_pos\"");
 			}
 			imp->home_count_ = static_cast<std::int32_t>(xml_ele.DoubleAttribute("homePos") * imp->input2count_);
 
-			if (xml_ele.QueryIntAttribute("absID", &imp->abs_id_) != tinyxml2::XML_NO_ERROR)
+			if (xml_ele.QueryIntAttribute("abs_id", &imp->abs_id_) != tinyxml2::XML_NO_ERROR)
 			{
-				throw std::runtime_error("failed to find motion attribute \"input2count\"");
+				throw std::runtime_error("failed to find motion attribute \"abs_id\"");
 			}
 
 			writeSdo(9, static_cast<std::int32_t>(-imp->home_count_));
@@ -347,6 +347,7 @@ namespace Aris
 			return (motorState != 0x0003 && motorState != 0x0007 && motorState != 0x0001 && motorState != 0x0000) ? true : false;
 		}
 		auto EthercatMotion::absID()->std::int32_t { return imp->abs_id_; };
+		auto EthercatMotion::phyID()->std::int32_t { return imp->phy_id_; };
 		auto EthercatMotion::maxVelCount()->std::int32_t { return imp->max_vel_count_; };
 		auto EthercatMotion::pos2countRatio()->std::int32_t { return imp->input2count_; };
 
@@ -373,7 +374,27 @@ namespace Aris
 			data.Mz = value / 1000.0;
 		}
 
-		void EthercatController::loadXml(const Aris::Core::XmlElement &xml_ele)
+		struct EthercatController::Imp
+		{
+			std::vector<int> map_phy2abs_, map_abs2phy_;
+
+
+			std::function<int(Data&)> strategy_;
+			Pipe<Aris::Core::Msg> msg_pipe_{0, true};
+			std::atomic_bool is_stopping_;
+
+			std::vector<EthercatMotion *> motion_vec_;
+			std::vector<EthercatMotion::RawData> motion_rawdata_, last_motion_rawdata_;
+
+			std::vector<EthercatForceSensor *> force_sensor_vec_;
+			std::vector<EthercatForceSensor::Data> force_sensor_data_;
+
+			std::unique_ptr<Pipe<std::vector<EthercatMotion::RawData> > > record_pipe_;
+			std::thread record_thread_;
+		};
+		EthercatController::~EthercatController() {};
+		EthercatController::EthercatController() :EthercatMaster(),imp(new Imp) {};
+		auto EthercatController::loadXml(const Aris::Core::XmlElement &xml_ele)->void
 		{
 			/*Load EtherCat slave types*/
 			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
@@ -385,8 +406,8 @@ namespace Aris
 			}
 
 			/*Load all slaves*/
-			motion_vec_.clear();
-			force_sensor_vec_.clear();
+			imp->motion_vec_.clear();
+			imp->force_sensor_vec_.clear();
 
 			auto slave_xml = xml_ele.FirstChildElement("Slave");
 			for (auto sla = slave_xml->FirstChildElement(); sla; sla = sla->NextSiblingElement())
@@ -394,11 +415,11 @@ namespace Aris
 				std::string type{ sla->Attribute("type") };
 				if (type == "ElmoSoloWhistle")
 				{
-					motion_vec_.push_back(addSlave<EthercatMotion>(std::ref(*sla), std::ref(*slaveTypeMap.at(type))));
+					imp->motion_vec_.push_back(addSlave<EthercatMotion>(std::ref(*sla), std::ref(*slaveTypeMap.at(type))));
 				}
 				else if (type == "AtiForceSensor")
 				{
-					force_sensor_vec_.push_back(addSlave<EthercatForceSensor>(std::ref(*slaveTypeMap.at(type))));
+					imp->force_sensor_vec_.push_back(addSlave<EthercatForceSensor>(std::ref(*slaveTypeMap.at(type))));
 				}
 				else
 				{
@@ -407,43 +428,44 @@ namespace Aris
 			}
 
 			/*update map*/
-			map_phy2abs_.resize(motion_vec_.size());
-			map_abs2phy_.resize(motion_vec_.size());
+			imp->map_phy2abs_.resize(imp->motion_vec_.size());
+			imp->map_abs2phy_.resize(imp->motion_vec_.size());
 
-			for (std::size_t i = 0; i < motion_vec_.size(); ++i)
+			for (std::size_t i = 0; i < imp->motion_vec_.size(); ++i)
 			{
-				map_phy2abs_[i] = motion_vec_[i]->absID();
+				imp->map_phy2abs_[i] = imp->motion_vec_[i]->absID();
+				motionAtPhy(i).imp->phy_id_ = i;
 			}
 
-			for (std::size_t i = 0; i < motion_vec_.size(); ++i)
+			for (std::size_t i = 0; i < imp->motion_vec_.size(); ++i)
 			{
-				map_abs2phy_[i] = std::find(map_phy2abs_.begin(), map_phy2abs_.end(), i) - map_phy2abs_.begin();
+				imp->map_abs2phy_[i] = std::find(imp->map_phy2abs_.begin(), imp->map_phy2abs_.end(), i) - imp->map_phy2abs_.begin();
 			}
 
 			/*resize other var*/
-			this->motion_rawdata_.resize(this->motion_vec_.size());
-			this->last_motion_rawdata_.resize(this->motion_vec_.size());
-			this->force_sensor_data_.resize(this->force_sensor_vec_.size());
+			imp->motion_rawdata_.resize(imp->motion_vec_.size());
+			imp->last_motion_rawdata_.resize(imp->motion_vec_.size());
+			imp->force_sensor_data_.resize(imp->force_sensor_vec_.size());
 
 
-			record_pipe_.reset(new Pipe<std::vector<EthercatMotion::RawData> >(1, true, motion_vec_.size()));
+			imp->record_pipe_.reset(new Pipe<std::vector<EthercatMotion::RawData> >(1, true, imp->motion_vec_.size()));
 		}
-		void EthercatController::setControlStrategy(std::function<int(Data&)> strategy)
+		auto EthercatController::setControlStrategy(std::function<int(Data&)> strategy)->void
 		{
-			if (this->strategy_)
+			if (imp->strategy_)
 			{
 				throw std::runtime_error("failed to set control strategy, because it alReady has one");
 			}
 
 
-			this->strategy_ = strategy;
+			imp->strategy_ = strategy;
 		}
-		void EthercatController::start()
+		auto EthercatController::start()->void
 		{
-			is_stopping_ = false;
+			imp->is_stopping_ = false;
 
 			/*begin thread which will save data*/
-			record_thread_ = std::thread([this]()
+			imp->record_thread_ = std::thread([this]()
 			{
 				static std::fstream file;
 				std::string name = Aris::Core::logFileName();
@@ -451,13 +473,13 @@ namespace Aris
 				file.open(name.c_str(), std::ios::out | std::ios::trunc);
 				
 				std::vector<EthercatMotion::RawData> data;
-				data.resize(this->motion_vec_.size());
+				data.resize(imp->motion_vec_.size());
 
 				
 				long long count = -1;
-				while (!is_stopping_)
+				while (!imp->is_stopping_)
 				{
-					this->record_pipe_->recvInNrt(data);
+					imp->record_pipe_->recvInNrt(data);
 
 					file << ++count << " ";
 
@@ -475,17 +497,23 @@ namespace Aris
 			
 			this->EthercatMaster::start();
 		}
-		void EthercatController::stop()
+		auto EthercatController::stop()->void
 		{
 			this->EthercatMaster::stop();
 
-			this->is_stopping_ = true;
-			this->record_thread_.join();
+			imp->is_stopping_ = true;
+			imp->record_thread_.join();
 		}
-		void EthercatController::controlStrategy()
+		auto EthercatController::motionNum()->std::size_t { return imp->motion_vec_.size(); };
+		auto EthercatController::motionAtAbs(int i)->EthercatMotion & { return *imp->motion_vec_.at(imp->map_abs2phy_[i]); };
+		auto EthercatController::motionAtPhy(int i)->EthercatMotion & { return *imp->motion_vec_.at(i); };
+		auto EthercatController::forceSensorNum()->std::size_t { return imp->force_sensor_vec_.size(); };
+		auto EthercatController::forceSensorAt(int i)->EthercatForceSensor & { return *imp->force_sensor_vec_.at(i); };
+		auto EthercatController::msgPipe()->Pipe<Aris::Core::Msg>& { return imp->msg_pipe_; };
+		auto EthercatController::controlStrategy()->void
 		{
 			/*构造传入strategy的参数*/
-			Data data{ &last_motion_rawdata_, &motion_rawdata_, &force_sensor_data_, nullptr, nullptr };
+			Data data{ &imp->last_motion_rawdata_, &imp->motion_rawdata_, &imp->force_sensor_data_, nullptr, nullptr };
 			
 			/*收取消息*/
 			if (this->msgPipe().recvInRT(Aris::Core::MsgRT::instance[0]) > 0)
@@ -494,31 +522,31 @@ namespace Aris
 			};
 			
 			/*读取反馈*/
-			for (std::size_t i = 0; i < motion_vec_.size(); ++i)
+			for (std::size_t i = 0; i < imp->motion_vec_.size(); ++i)
 			{
-				motionAtAbs(i).readFeedback(motion_rawdata_[i]);
+				motionAtAbs(i).readFeedback(imp->motion_rawdata_[i]);
 			}
-			for (std::size_t i = 0; i < force_sensor_vec_.size(); ++i)
+			for (std::size_t i = 0; i < imp->force_sensor_vec_.size(); ++i)
 			{
-				force_sensor_vec_.at(i)->readData(force_sensor_data_[i]);
+				imp->force_sensor_vec_.at(i)->readData(imp->force_sensor_data_[i]);
 			}
 			
 			/*执行自定义的控制策略*/
-			if (strategy_)
+			if (imp->strategy_)
 			{
-				strategy_(data);
+				imp->strategy_(data);
 			}
 
 			/*重新读取反馈信息，因为strategy可能修改已做好的反馈信息，之后写入PDO，之后放进lastMotionData中*/
-			for (std::size_t i = 0; i < motion_rawdata_.size(); ++i)
+			for (std::size_t i = 0; i < imp->motion_rawdata_.size(); ++i)
 			{
-				motionAtAbs(i).readFeedback(motion_rawdata_[i]);
-				motionAtAbs(i).writeCommand(motion_rawdata_[i]);
-				last_motion_rawdata_[i] = motion_rawdata_[i];
+				motionAtAbs(i).readFeedback(imp->motion_rawdata_[i]);
+				motionAtAbs(i).writeCommand(imp->motion_rawdata_[i]);
+				imp->last_motion_rawdata_[i] = imp->motion_rawdata_[i];
 			}
 
 			/*发送数据到记录的线程*/
-			record_pipe_->sendToNrt(motion_rawdata_);
+			imp->record_pipe_->sendToNrt(imp->motion_rawdata_);
 
 			/*向外发送消息*/
 			if (data.pMsgSend)

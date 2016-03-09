@@ -906,7 +906,7 @@ namespace Aris
 
 						if (param.count % 1000 == 0)
 						{
-							rt_printf("Unhomed motor, physical id: %d, absolute id: %d\n", this->pController->a2p(i), i);
+							rt_printf("Unhomed motor, physical id: %d, absolute id: %d\n", this->pController->motionAtAbs(i).phyID(), i);
 						}
 					}
 				}
@@ -943,7 +943,7 @@ namespace Aris
 
 						if (param.count % 1000 == 0)
 						{
-							rt_printf("Unenabled motor, physical id: %d, absolute id: %d\n", this->pController->a2p(i), i);
+							rt_printf("Unenabled motor, physical id: %d, absolute id: %d\n", this->pController->motionAtAbs(i).phyID(), i);
 						}
 					}
 				}
@@ -972,7 +972,7 @@ namespace Aris
 
 						if (param.count % 1000 == 0)
 						{
-							rt_printf("Undisabled motor, physical id: %d, absolute id: %d\n", this->pController->a2p(i), i);
+							rt_printf("Undisabled motor, physical id: %d, absolute id: %d\n", this->pController->motionAtAbs(i).phyID(), i);
 						}
 					}
 				}
