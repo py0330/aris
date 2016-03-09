@@ -48,14 +48,14 @@ namespace Aris
 				};
 			};
 
-			void toPmBody2Ground(double *pm) const;
-			void toPmBody2Ground(double *pm, double yawValue) const;
-			void toEulBody2Ground(double *eul, const char *eulType="313") const;
-			void toEulBody2Ground(double *eul, double yawValue, const char *eulType="313") const;
-			void toOmegaBody2Ground(double *omega) const;
-			void toOmegaBody2Ground(double *omega, double yawValue) const;
-			void toPntAccBody2Ground(double *acc) const;
-			void toPntAccBody2Ground(double *acc, double yawValue) const;
+			auto toPmBody2Ground(double *pm) const->void;
+			auto toPmBody2Ground(double *pm, double yawValue) const->void;
+			auto toEulBody2Ground(double *eul, const char *eulType="313") const->void;
+			auto toEulBody2Ground(double *eul, double yawValue, const char *eulType="313") const->void;
+			auto toOmegaBody2Ground(double *omega) const->void;
+			auto toOmegaBody2Ground(double *omega, double yawValue) const->void;
+			auto toPntAccBody2Ground(double *acc) const->void;
+			auto toPntAccBody2Ground(double *acc, double yawValue) const->void;
 
 		private:
 			const double * pmLhs;
@@ -67,14 +67,15 @@ namespace Aris
 		class IMU :public SensorBase<ImuData>
 		{
 		public:
+			~IMU();
 			IMU();
 			IMU(const Aris::Core::XmlElement *xmlEle);
-			~IMU();
+			
 		
 		private:
-			virtual void init();
-			virtual void release();
-			virtual void updateData(ImuData &data);
+			virtual auto init()->void;
+			virtual auto release()->void;
+			virtual auto updateData(ImuData &data)->void;
 
 		private:
 			class Imp;

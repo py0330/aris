@@ -467,6 +467,7 @@ namespace Aris
 						if (type == "joint")return new ActNode(model->jointPool().at(id - 1), true);
 						else if (type == "sforce")return new ActNode(model->forcePool().at(id - 1), true);
 						else if (type == "motion")return new ActNode(model->motionPool().at(id - 1), true);
+						else throw std::runtime_error("unrecognized deactivate element type");
 					}
 					else if (word == "deactivate")
 					{
@@ -480,6 +481,7 @@ namespace Aris
 						if (type == "joint")return new ActNode(model->jointPool().at(id - 1), false);
 						else if (type == "sforce")return new ActNode(model->forcePool().at(id - 1), false);
 						else if (type == "motion")return new ActNode(model->motionPool().at(id - 1), false);
+						else throw std::runtime_error("unrecognized deactivate element type");
 					}
 					else if (word == "marker")
 					{
@@ -519,7 +521,7 @@ namespace Aris
 						stream >> word;
 						stream >> dt;
 
-						return new SimNode(dur*1000, dt*1000);
+						return new SimNode(static_cast<std::uint32_t>(dur * 1000), static_cast<std::uint32_t>(dt * 1000));
 					}
 					else
 					{

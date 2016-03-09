@@ -16,10 +16,10 @@ namespace Aris
 		protected:
 			virtual ~PipeBase();
 			PipeBase(bool is_block);
-			int sendToRTRawData(const void *data, int size);
-			int sendToNrtRawData(const void* data, int size);
-			int recvInRTRawData(void* data, int size);
-			int recvInNrtRawData(void *data, int size);
+			auto sendToRTRawData(const void *data, int size)->int;
+			auto sendToNrtRawData(const void* data, int size)->int;
+			auto recvInRTRawData(void* data, int size)->int;
+			auto recvInNrtRawData(void *data, int size)->int;
 
 			PipeBase(const PipeBase&) = delete;
 			PipeBase(PipeBase&&) = delete;
@@ -33,19 +33,19 @@ namespace Aris
 		{
 		public:
 			Pipe(bool isBlock = true) :PipeBase(isBlock) {};
-			int sendToRT(const StandardLayoutStruct &data)
+			auto sendToRT(const StandardLayoutStruct &data)->int
 			{
 				return sendToRTRawData(static_cast<const void*>(&data), sizeof(data));
 			};
-			int sendToNrt(const StandardLayoutStruct &data)
+			auto sendToNrt(const StandardLayoutStruct &data)->int
 			{
 				return sendToNrtRawData(static_cast<const void*>(&data), sizeof(data));
 			};
-			int recvInRT(StandardLayoutStruct &data)
+			auto recvInRT(StandardLayoutStruct &data)->int
 			{
 				return recvInRTRawData(static_cast<void*>(&data), sizeof(data));
 			};
-			int recvInNrt(StandardLayoutStruct &data)
+			auto recvInNrt(StandardLayoutStruct &data)->int
 			{
 				return recvInNrtRawData(static_cast<void*>(&data), sizeof(data));
 			};
@@ -56,22 +56,22 @@ namespace Aris
 		{
 		public:
 			Pipe(bool is_block, int size):PipeBase(is_block), size(size) {};
-			int sendToRT(const std::vector<T> &vec)
+			auto sendToRT(const std::vector<T> &vec)->int
 			{
 				if (vec.size() != this->size)throw std::runtime_error("this pipe can only send fixed size vector");
 				return sendToRTRawData(vec.data(), sizeof(T)*size);
 			}
-			int sendToNrt(const std::vector<T> &vec)
+			auto sendToNrt(const std::vector<T> &vec)->int
 			{
 				if (vec.size() != this->size)throw std::runtime_error("this pipe can only send fixed size vector");
 				return sendToNrtRawData(vec.data(), sizeof(T)*size);
 			}
-			int recvInRT(std::vector<T> &vec)
+			auto recvInRT(std::vector<T> &vec)->int
 			{
 				if (vec.size() != this->size)throw std::runtime_error("this pipe can only recv fixed size vector");
 				return recvInRTRawData(vec.data(), sizeof(T)*size);
 			}
-			int recvInNrt(std::vector<T> &vec)
+			auto recvInNrt(std::vector<T> &vec)->int
 			{
 				if (vec.size() != this->size)throw std::runtime_error("this pipe can only recv fixed size vector");
 				return recvInNrtRawData(vec.data(), sizeof(T)*size);
@@ -86,10 +86,10 @@ namespace Aris
 		{
 		public:
 			Pipe(bool is_block = true);
-			int sendToRT(const Aris::Core::Msg &msg);
-			int sendToNrt(const Aris::Core::MsgRT &msg);
-			int recvInRT(Aris::Core::MsgRT &msg);
-			int recvInNrt(Aris::Core::Msg &msg);
+			auto sendToRT(const Aris::Core::Msg &msg)->int;
+			auto sendToNrt(const Aris::Core::MsgRT &msg)->int;
+			auto recvInRT(Aris::Core::MsgRT &msg)->int;
+			auto recvInNrt(Aris::Core::Msg &msg)->int;
 		};
 	}
 }

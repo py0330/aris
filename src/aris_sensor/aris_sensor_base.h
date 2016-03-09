@@ -45,13 +45,13 @@ namespace Aris
 			};
 			SensorData(SensorData<DataType> && other) { this->swap(other); };
 			SensorData & operator=(SensorData<DataType> && other) { this->swap(other); return *this; };
-			void swap(SensorData<DataType> &other)
+			auto swap(SensorData<DataType> &other)->void
 			{
 				std::swap(this->pSensor, other.pSensor);
 				std::swap(this->pData, other.pData);
 				std::swap(this->lock, other.lock);
 			}
-			const DataType &get() const { return *pData; };
+			auto get() const->const DataType &{ return *pData; };
 
 		private:
 			SensorData(const SensorData<DataType>&) = delete;
@@ -66,7 +66,9 @@ namespace Aris
 		class SensorBase
 		{
 		public:
-			void start()
+			virtual ~SensorBase() { stop(); };
+			SensorBase() = default;
+			auto start()->void
 			{
 				if (!sensor_thread.joinable())
 				{
@@ -89,7 +91,7 @@ namespace Aris
 					this->sensor_thread = std::thread(SensorBase::update_thread, this);
 				}
 			};
-			void stop()
+			auto stop()->void
 			{
 				if (sensor_thread.joinable())
 				{
@@ -98,22 +100,14 @@ namespace Aris
 					this->release();
 				}
 			};
-			SensorData<DataType> getSensorData()
-			{
-				return std::move(SensorData<DataType>(this));
-			};
-
-			SensorBase() = default;
-			virtual ~SensorBase() { stop(); };
+			auto getSensorData()->SensorData<DataType> { return std::move(SensorData<DataType>(this)); };
 
 		private:
-			virtual void init() {};
-			virtual void release() {};
-			virtual void updateData(DataType &data) = 0;
-
 			SensorBase(const SensorBase&) = delete;
 			SensorBase & operator=(const SensorBase&) = delete;
-
+			virtual auto init()->void {};
+			virtual auto release()->void {};
+			virtual auto updateData(DataType &data)->void = 0;
 			static void update_thread(SensorBase *pSensor)
 			{
 				std::unique_lock<std::recursive_mutex> lock(pSensor->dataMutex[0]);
@@ -129,6 +123,7 @@ namespace Aris
 					}
 				}
 			};
+
 		private:
 			std::atomic_bool isStoping;
 			std::thread sensor_thread;

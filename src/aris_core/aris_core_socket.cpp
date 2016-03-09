@@ -194,7 +194,7 @@ namespace Aris
 
 				/*接收消息本体*/
 				receivedData.resize(head.msgHeader.msg_size);
-				memcpy(receivedData._pData, head.header, sizeof(MsgHeader));
+				memcpy(receivedData.data_, head.header, sizeof(MsgHeader));
 
 				if (receivedData.size()>0)
 					res = recv(connSocket, receivedData.data(), receivedData.size(), 0);
@@ -227,7 +227,7 @@ namespace Aris
 					}
 					m.setType(SOCKET_REPLY);
 
-					if (send(pConnS->_ConnSocket, m._pData, m.size() + sizeof(MsgHeader), 0) == -1)
+					if (send(pConnS->_ConnSocket, m.data_, m.size() + sizeof(MsgHeader), 0) == -1)
 					{
 						pConnS->pConn->stop();
 						if (pConnS->onLoseConnection != nullptr)
@@ -459,7 +459,7 @@ namespace Aris
 			{
 			case WORKING:
 			case WAITING_FOR_REPLY:
-				if (send(pImp->_ConnSocket, data._pData, data.size() + sizeof(MsgHeader), 0) == -1)
+				if (send(pImp->_ConnSocket, data.data_, data.size() + sizeof(MsgHeader), 0) == -1)
 					throw SendDataError("Socket failed sending data, because network failed\n", this, 0);
 				else
 					return;

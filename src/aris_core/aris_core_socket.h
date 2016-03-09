@@ -31,60 +31,60 @@ namespace Aris
 			*
 			*
 			*/
-			bool isConnected();
+			auto isConnected()->bool;
 			/** \brief 本Socket作为服务器来使用，并打开相应端口
 			*
 			*\param port 为服务器打开的端口号，例如"1234"
 			*/
-			void startServer(const char *port);
+			auto startServer(const char *port)->void;
 			/** \brief 当Socket作为服务器端使用时，关闭服务器端
 			*
 			*/
-			void connect(const char *address, const char *port);
+			auto connect(const char *address, const char *port)->void;
 			/** \brief 关闭客户端
 			*
 			*/
-			void stop();
+			auto stop()->void;
 			/** \brief 使用Socket发送数据
 			*
 			* \param data 待发送的数据。
 			*/
-			void sendMsg(const Aris::Core::Msg &data);
+			auto sendMsg(const Aris::Core::Msg &data)->void;
 			/** \brief 使用Socket发送问讯，此后函数阻塞，直到对面应答
 			*
 			* \param data 待发送的数据。
 			*/
-			Msg sendRequest(const Aris::Core::Msg &request);
+			auto sendRequest(const Aris::Core::Msg &request)->Msg;
 			/** \brief 设置收到数据时，Socket所需要执行的函数
 			*
 			* \param OnReceivedData 为形如int(Socket*, Aris::Core::Msg &)的函数。每当Socket收到数据后在Socket自己的内部线程中执行。
 			*/
-			void setOnReceivedMsg(std::function<int(Socket*, Aris::Core::Msg &)> = nullptr);
+			auto setOnReceivedMsg(std::function<int(Socket*, Aris::Core::Msg &)> = nullptr)->void;
 			/** \brief 设置服务器端收到连接后所执行的函数
 			*
 			* \param OnReceivedConnection 为形如int(Socket*, const char* pRemoteIP, int remotePort)的函数。每当Socket收到连接后在Socket自己的内部线程中执行。
 			*/
-			void setOnReceivedConnection(std::function<int(Socket*, const char* remote_ip, int remote_port)> = nullptr);
+			auto setOnReceivedConnection(std::function<int(Socket*, const char* remote_ip, int remote_port)> = nullptr)->void;
 			/** \brief 设置服务器端收到连接后所执行的函数
 			*
 			* \param OnLoseConnection 为形如int(Socket*)的函数。每当Socket失去连接后在Socket自己的内部线程中执行。
 			*/
-			void setOnLoseConnection(std::function<int(Socket*)> = nullptr);
+			auto setOnLoseConnection(std::function<int(Socket*)> = nullptr)->void;
 			/** \brief 设置收到讯问时，Socket所需要回答的函数
 			*
 			* \param 为形如Aris::Core::Msg(Socket*, Aris::Core::Msg &)的函数。每当Socket收到问讯后在Socket自己的内部线程中执行。
 			*/
-			void setOnReceivedRequest(std::function<Aris::Core::Msg(Socket*, Aris::Core::Msg &)> = nullptr);
+			auto setOnReceivedRequest(std::function<Aris::Core::Msg(Socket*, Aris::Core::Msg &)> = nullptr)->void;
 			/** \brief 设置出现监听错误时，Socket所需要执行的函数
 			*
 			* \param 为形如void(Socket*)的函数。在Socket自己的内部线程中执行。
 			*/
-			void setOnAcceptError(std::function<void(Socket*)> = nullptr);
+			auto setOnAcceptError(std::function<void(Socket*)> = nullptr)->void;
 			/** \brief 设置出现接收数据错误时，Socket所需要执行的函数
 			*
 			* \param 为形如void(Socket*)的函数。在Socket自己的内部线程中执行。
 			*/
-			void setOnReceiveError(std::function<void(Socket*)> = nullptr);
+			auto setOnReceiveError(std::function<void(Socket*)> = nullptr)->void;
 
 		public:
 			enum State
@@ -100,7 +100,6 @@ namespace Aris
 			public:
 				Socket *socket;
 				int id;
-
 			private:
 				StartServerError(const char* what, Socket *socket_in, int id) : runtime_error(what), socket(socket_in), id(id) {};
 				friend class Socket;
@@ -110,7 +109,6 @@ namespace Aris
 			public:
 				Socket *socket_;
 				int id_;
-
 			private:
 				ConnectError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
 				friend class Socket;
@@ -120,7 +118,6 @@ namespace Aris
 			public:
 				Socket *socket_;
 				int id_;
-
 			private:
 				SendDataError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
 				friend class Socket;
@@ -130,7 +127,6 @@ namespace Aris
 			public:
 				Socket *socket_;
 				int id_;
-
 			private:
 				SendRequestError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
 				friend class Socket;

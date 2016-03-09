@@ -172,23 +172,23 @@ namespace Aris
 
 		std::int32_t MsgBase::size()  const
 		{
-			return reinterpret_cast<MsgHeader *>(_pData)->msg_size;
+			return reinterpret_cast<MsgHeader *>(data_)->msg_size;
 		}
 		void MsgBase::setMsgID(std::int32_t msg_id)
 		{
-			reinterpret_cast<MsgHeader *>(_pData)->msg_id = msg_id;
+			reinterpret_cast<MsgHeader *>(data_)->msg_id = msg_id;
 		}
 		std::int32_t MsgBase::msgID() const
 		{
-			return reinterpret_cast<MsgHeader *>(_pData)->msg_id;
+			return reinterpret_cast<MsgHeader *>(data_)->msg_id;
 		}
 		const char* MsgBase::data() const
 		{
-			return size() > 0 ? &_pData[sizeof(MsgHeader)] : nullptr;
+			return size() > 0 ? &data_[sizeof(MsgHeader)] : nullptr;
 		}
 		char* MsgBase::data()
 		{
-			return size() > 0 ? &_pData[sizeof(MsgHeader)] : nullptr;
+			return size() > 0 ? &data_[sizeof(MsgHeader)] : nullptr;
 		}
 		void MsgBase::copy(const char * fromThisMemory)
 		{
@@ -197,7 +197,7 @@ namespace Aris
 		void MsgBase::copy(const void * fromThisMemory, std::int32_t dataLength)
 		{
 			resize(dataLength);
-			memcpy(data(), fromThisMemory, size());//no need to check if length is 0
+			memcpy(data(), fromThisMemory, size());//no need to check if size() is 0
 		}
 		void MsgBase::copy(const void * fromThisMemory)
 		{
@@ -205,11 +205,7 @@ namespace Aris
 		}
 		void MsgBase::copyAt(const void * fromThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg)
 		{
-			if ((dataLength + atThisPositionInMsg) > size())
-			{
-				resize(dataLength + atThisPositionInMsg);
-			}
-
+			if ((dataLength + atThisPositionInMsg) > size())resize(dataLength + atThisPositionInMsg);
 			//no need to check if length is 0
 			memcpy(&data()[atThisPositionInMsg], fromThisMemory, dataLength);
 
@@ -241,11 +237,11 @@ namespace Aris
 		}
 		void MsgBase::setType(std::int64_t type)
 		{
-			reinterpret_cast<MsgHeader*>(_pData)->msg_type = type;
+			reinterpret_cast<MsgHeader*>(data_)->msg_type = type;
 		}
-		std::int64_t MsgBase::GetType() const
+		std::int64_t MsgBase::getType() const
 		{
-			return reinterpret_cast<MsgHeader*>(_pData)->msg_type;
+			return reinterpret_cast<MsgHeader*>(data_)->msg_type;
 		}
 
 		MsgRT MsgRT::instance[2];
@@ -267,31 +263,31 @@ namespace Aris
 				std::abort();
 			}
 
-			_pData = new char[RT_MSG_LENGTH + sizeof(MsgHeader)];
-			memset(_pData, 0, RT_MSG_LENGTH + sizeof(MsgHeader));
+			data_ = new char[RT_MSG_LENGTH + sizeof(MsgHeader)];
+			memset(data_, 0, RT_MSG_LENGTH + sizeof(MsgHeader));
 			resize(0);
 		}
 		MsgRT::~MsgRT()
 		{
-			delete[] _pData;
+			delete[] data_;
 		}
 		void MsgRT::resize(std::int32_t dataLength)
 		{
-			reinterpret_cast<MsgHeader *>(_pData)->msg_size = dataLength;
+			reinterpret_cast<MsgHeader *>(data_)->msg_size = dataLength;
 		}
 
 		Msg::Msg(std::int32_t msgID, std::int32_t dataLength)
 		{
-			_pData = new char[sizeof(MsgHeader) + dataLength];
-			memset(_pData, 0, sizeof(MsgHeader) + dataLength);
+			data_ = new char[sizeof(MsgHeader) + dataLength];
+			memset(data_, 0, sizeof(MsgHeader) + dataLength);
 			
-			reinterpret_cast<MsgHeader *>(_pData)->msg_size = dataLength;
-			reinterpret_cast<MsgHeader *>(_pData)->msg_id = msgID;
+			reinterpret_cast<MsgHeader *>(data_)->msg_size = dataLength;
+			reinterpret_cast<MsgHeader *>(data_)->msg_id = msgID;
 		}
 		Msg::Msg(const Msg& other)
 		{
-			_pData = new char[sizeof(MsgHeader) + other.size()];
-			memcpy(_pData, other._pData, sizeof(MsgHeader) + other.size());
+			data_ = new char[sizeof(MsgHeader) + other.size()];
+			memcpy(data_, other.data_, sizeof(MsgHeader) + other.size());
 		}
 		Msg::Msg(Msg&& other)
 		{
@@ -299,7 +295,7 @@ namespace Aris
 		}
 		Msg::~Msg()
 		{
-			delete [] _pData;
+			delete [] data_;
 		}
 		Msg &Msg::operator=(Msg other)
 		{
@@ -308,15 +304,15 @@ namespace Aris
 		}
 		void Msg::swap(Msg &other)
 		{
-			std::swap(this->_pData, other._pData);
+			std::swap(this->data_, other.data_);
 		}
 		void Msg::resize(std::int32_t dataLength)
 		{
 			Msg otherMsg(0, dataLength);
 
-			std::copy_n(this->_pData, sizeof(MsgHeader) + std::min(size(), dataLength), otherMsg._pData);
+			std::copy_n(this->data_, sizeof(MsgHeader) + std::min(size(), dataLength), otherMsg.data_);
 			
-			reinterpret_cast<MsgHeader*>(otherMsg._pData)->msg_size = dataLength;
+			reinterpret_cast<MsgHeader*>(otherMsg.data_)->msg_size = dataLength;
 
 			this->swap(otherMsg);
 		}

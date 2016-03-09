@@ -157,23 +157,22 @@ namespace Aris
 		}
 		int Pipe<Aris::Core::Msg>::sendToRT(const Aris::Core::Msg &msg)
 		{
-			sendToRTRawData(msg._pData, msg.size() + sizeof(Aris::Core::MsgHeader));
+			sendToRTRawData(msg.data_, msg.size() + sizeof(Aris::Core::MsgHeader));
 			return msg.size() + sizeof(Aris::Core::MsgHeader);
 		}
 		int Pipe<Aris::Core::Msg>::sendToNrt(const Aris::Core::MsgRT &msg)
 		{
-			sendToNrtRawData(msg._pData, msg.size() + sizeof(Aris::Core::MsgHeader));
+			sendToNrtRawData(msg.data_, msg.size() + sizeof(Aris::Core::MsgHeader));
 			return msg.size() + sizeof(Aris::Core::MsgHeader);
 		}
 		int Pipe<Aris::Core::Msg>::recvInRT(Aris::Core::MsgRT &msg)
 		{
-			int length = recvInRTRawData(msg._pData, sizeof(Aris::Core::MsgHeader)+Aris::Core::MsgRT::RT_MSG_LENGTH);		
+			int length = recvInRTRawData(msg.data_, sizeof(Aris::Core::MsgHeader)+Aris::Core::MsgRT::RT_MSG_LENGTH);		
 			return length<=0?0:length;			
 		}
 		int Pipe<Aris::Core::Msg>::recvInNrt(Aris::Core::Msg &msg)
 		{
-						
-			int err = recvInNrtRawData(msg._pData, sizeof(Aris::Core::MsgHeader));
+			int err = recvInNrtRawData(msg.data_, sizeof(Aris::Core::MsgHeader));
 			msg.resize(msg.size());
 			recvInNrtRawData(msg.data(), msg.size());
 			return msg.size() + sizeof(Aris::Core::MsgHeader);
