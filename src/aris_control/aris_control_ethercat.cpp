@@ -34,73 +34,72 @@ namespace Aris
 		{
 		public:
 			Imp(const Aris::Core::XmlElement &xml_ele);
-			void init();
-			void read();
-			void write();
+			void read() { ecrt_domain_process(domain); };
+			void write() { ecrt_domain_queue(domain); };
 
 		private:
 			/*data object, can be PDO or SDO*/
-			class DO
+			class DataObject
 			{
 			public:
-				Imp *pImp;
+				virtual ~DataObject() = default;
+				virtual auto readValue(std::int8_t &value) const->void { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
+				virtual auto readValue(std::int16_t &value) const->void { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type");};
+				virtual auto readValue(std::int32_t &value) const->void { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
+				virtual auto readValue(std::uint8_t &value) const->void { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
+				virtual auto readValue(std::uint16_t &value) const->void { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
+				virtual auto readValue(std::uint32_t &value) const->void { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
+				virtual auto writeValue(std::int8_t value)->void { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
+				virtual auto writeValue(std::int16_t value)->void { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
+				virtual auto writeValue(std::int32_t value)->void { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
+				virtual auto writeValue(std::uint8_t value)->void { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
+				virtual auto writeValue(std::uint16_t value)->void { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
+				virtual auto writeValue(std::uint32_t value)->void { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
+
+				Imp *imp;
 				std::uint16_t index;
-				std::uint8_t subIndex;
+				std::uint8_t subindex;
 				std::uint8_t size;
 				std::uint32_t offset;
 
 				std::int32_t value;//only for sdo
-				
-				virtual ~DO() = default;
-				virtual void readValue(std::int8_t &value) const { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
-				virtual void readValue(std::int16_t &value) const { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type");};
-				virtual void readValue(std::int32_t &value) const { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
-				virtual void readValue(std::uint8_t &value) const { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
-				virtual void readValue(std::uint16_t &value) const { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
-				virtual void readValue(std::uint32_t &value) const { throw std::runtime_error("Param type of ReadValue is not the same with pdo data type"); };
-				virtual void writeValue(std::int8_t value) { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
-				virtual void writeValue(std::int16_t value) { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
-				virtual void writeValue(std::int32_t value) { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
-				virtual void writeValue(std::uint8_t value) { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
-				virtual void writeValue(std::uint16_t value) { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
-				virtual void writeValue(std::uint32_t value) { throw std::runtime_error("Param type of WriteValue is not the same with pdo data type"); };
 			};
-			template<typename TYPE>
-			class PDO_TYPE_TX :public DO
+			template<typename Type>
+			class PdoTx :public DataObject
 			{
 			public:
-				virtual ~PDO_TYPE_TX() = default;
-				virtual void readValue(TYPE &value) const override { value = *reinterpret_cast<const TYPE*>(pImp->pDomainPd + offset); };
+				virtual ~PdoTx() = default;
+				virtual auto readValue(Type &value) const->void override { value = *reinterpret_cast<const Type*>(imp->domain_pd + offset); };
 			};
-			template<typename TYPE>
-			class PDO_TYPE_RX :public DO
+			template<typename Type>
+			class PdoRx :public DataObject
 			{
 			public:
-				virtual ~PDO_TYPE_RX() = default;
-				virtual void writeValue(TYPE value) override { *reinterpret_cast<TYPE*>(pImp->pDomainPd + offset) = value; };
+				virtual ~PdoRx() = default;
+				virtual auto writeValue(Type value)->void override { *reinterpret_cast<Type*>(imp->domain_pd + offset) = value; };
 			};
 
-			class PDO_GROUP
+			class PdoGroup
 			{
 			public:
-				bool isTx;
+				bool is_tx;
 				uint16_t index;
-				std::vector<std::unique_ptr<DO> > pdos;
+				std::vector<std::unique_ptr<DataObject> > pdo_vec;
 				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
 			};
-			std::vector<PDO_GROUP> pdoGroups;
-			std::vector<std::unique_ptr<DO> > sdos;
-			std::uint32_t productCode, venderID;
+			std::vector<PdoGroup> pdo_group_vec;
+			std::vector<std::unique_ptr<DataObject> > sdo_vec;
+			std::uint32_t product_code, vender_id;
 			std::uint16_t position, alias;
-			std::unique_ptr<int> distributedClock;
+			std::unique_ptr<int> distributed_clock;
 
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
 			std::vector<ec_pdo_info_t> ec_pdo_info_vec_Tx, ec_pdo_info_vec_Rx;
 			ec_sync_info_t ec_sync_info[5];
 			ec_slave_config_t* ec_slave_config;
 			
-			ec_domain_t* pDomain;
-			std::uint8_t* pDomainPd;
+			ec_domain_t* domain;
+			std::uint8_t* domain_pd;
 
 			friend class EthercatMaster::Imp;
 			friend class EthercatSlave;
@@ -129,6 +128,7 @@ namespace Aris
 			static RT_TASK realtimeCore;
 #endif
 			friend class EthercatSlave::Imp;
+			friend class EthercatSlave;
 			friend class EthercatMaster;
 		};
 
@@ -139,71 +139,71 @@ namespace Aris
 		EthercatSlave::Imp::Imp(const Aris::Core::XmlElement &xml_ele)
 		{
 			/*load product id...*/
-			this->productCode = std::stoi(xml_ele.Attribute("productCode"), nullptr, 0);
-			this->venderID = std::stoi(xml_ele.Attribute("venderID"), nullptr, 0);
+			this->product_code = std::stoi(xml_ele.Attribute("product_code"), nullptr, 0);
+			this->vender_id = std::stoi(xml_ele.Attribute("vender_id"), nullptr, 0);
 			this->alias = std::stoi(xml_ele.Attribute("alias"), nullptr, 0);
-			this->distributedClock.reset(new std::int32_t);
+			this->distributed_clock.reset(new std::int32_t);
 						
-			if (xml_ele.Attribute("distributedClock"))
+			if (xml_ele.Attribute("distributed_clock"))
 			{						
-				*distributedClock.get() = std::stoi(xml_ele.Attribute("distributedClock"),nullptr,0);				
+				*distributed_clock.get() = std::stoi(xml_ele.Attribute("distributed_clock"), nullptr, 0);
 			}
 			else
 			{
-				distributedClock.reset();
+				distributed_clock.reset();
 			}
 
 
 			/*load PDO*/
-			auto AddDoType = [](const Aris::Core::XmlElement &ele, bool isTx)-> DO*
+			auto AddDoType = [](const Aris::Core::XmlElement &ele, bool is_tx)-> DataObject*
 			{
-				DO* ret;
+				DataObject* ret;
 				if (ele.Attribute("type", "int8"))
 				{
-					if(isTx)
-						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int8_t>();
+					if(is_tx)
+						ret = new EthercatSlave::Imp::PdoTx<std::int8_t>();
 					else
-						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int8_t>();
+						ret = new EthercatSlave::Imp::PdoRx<std::int8_t>();
 					ret->size = 8;
 				}
 				else if (ele.Attribute("type", "uint8"))
 				{
-					if (isTx)
-						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint8_t>();
+					if (is_tx)
+						ret = new EthercatSlave::Imp::PdoTx<std::uint8_t>();
 					else
-						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::uint8_t>();
+						ret = new EthercatSlave::Imp::PdoRx<std::uint8_t>();
 					ret->size = 8;
 				}
 				else if (ele.Attribute("type", "int16"))
 				{
-					if (isTx)
-						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int16_t>();
+					if (is_tx)
+						ret = new EthercatSlave::Imp::PdoTx<std::int16_t>();
 					else
-						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int16_t>();
+						ret = new EthercatSlave::Imp::PdoRx<std::int16_t>();
 					ret->size = 16;
 				}
 				else if (ele.Attribute("type", "uint16"))
 				{
-					if (isTx)
-						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint16_t>();
+					if (is_tx)
+						ret = new EthercatSlave::Imp::PdoTx<std::uint16_t>();
 					else
-						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::uint16_t>();
+						ret = new EthercatSlave::Imp::PdoRx<std::uint16_t>();
 					ret->size = 16;
 				}
 				else if (ele.Attribute("type", "int32"))
 				{
-					if (isTx)
-						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::int32_t>();
+					if (is_tx)
+						ret = new EthercatSlave::Imp::PdoTx<std::int32_t>();
 					else
-						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::int32_t>();
+						ret = new EthercatSlave::Imp::PdoRx<std::int32_t>();
 					ret->size = 32;
 				}
 				else if (ele.Attribute("type", "uint32"))
 				{
-					if (isTx)
-						ret = new EthercatSlave::Imp::PDO_TYPE_TX<std::uint32_t>();
+					if (is_tx)
+						ret = new EthercatSlave::Imp::PdoTx<std::uint32_t>();
 					else
-						ret = new EthercatSlave::Imp::PDO_TYPE_RX<std::uint32_t>();
+						ret = new EthercatSlave::Imp::PdoRx<std::uint32_t>();
 					ret->size = 32;
 				}
 				else
@@ -216,17 +216,17 @@ namespace Aris
 			auto PDO = xml_ele.FirstChildElement("PDO");
 			for (auto p_g = PDO->FirstChildElement(); p_g != nullptr; p_g = p_g->NextSiblingElement())
 			{
-				PDO_GROUP pdo_group;
+				PdoGroup pdo_group;
 				pdo_group.index = std::stoi(p_g->Attribute("index"), nullptr, 0);
-				pdo_group.isTx = p_g->Attribute("isTx", "true") ? true : false;
+				pdo_group.is_tx = p_g->Attribute("is_tx", "true") ? true : false;
 				for (auto p = p_g->FirstChildElement(); p != nullptr; p = p->NextSiblingElement())
 				{
-					pdo_group.pdos.push_back(std::unique_ptr<DO>(AddDoType(*p,pdo_group.isTx)));				
-					pdo_group.pdos.back()->index = std::stoi(p->Attribute("index"), nullptr, 0);
-					pdo_group.pdos.back()->subIndex = std::stoi(p->Attribute("subIndex"), nullptr, 0);
-					pdo_group.pdos.back()->pImp = this;
+					pdo_group.pdo_vec.push_back(std::unique_ptr<DataObject>(AddDoType(*p,pdo_group.is_tx)));
+					pdo_group.pdo_vec.back()->index = std::stoi(p->Attribute("index"), nullptr, 0);
+					pdo_group.pdo_vec.back()->subindex = std::stoi(p->Attribute("subindex"), nullptr, 0);
+					pdo_group.pdo_vec.back()->imp = this;
 				}
-				pdoGroups.push_back(std::move(pdo_group));
+				pdo_group_vec.push_back(std::move(pdo_group));
 			}
 
 
@@ -234,30 +234,30 @@ namespace Aris
 			auto SDO = xml_ele.FirstChildElement("SDO");
 			for (auto s = SDO->FirstChildElement(); s != nullptr; s = s->NextSiblingElement())
 			{			
-				sdos.push_back(std::unique_ptr<DO>(new DO));
-				sdos.back()->size = 32;
-				sdos.back()->index = std::stoi(s->Attribute("index"), nullptr, 0);
-				sdos.back()->subIndex = std::stoi(s->Attribute("subIndex"), nullptr, 0);
-				sdos.back()->pImp = this;
-				sdos.back()->value = std::stoi(s->Attribute("value"), nullptr, 0);
+				sdo_vec.push_back(std::unique_ptr<DataObject>(new DataObject));
+				sdo_vec.back()->size = 32;
+				sdo_vec.back()->index = std::stoi(s->Attribute("index"), nullptr, 0);
+				sdo_vec.back()->subindex = std::stoi(s->Attribute("subindex"), nullptr, 0);
+				sdo_vec.back()->imp = this;
+				sdo_vec.back()->value = std::stoi(s->Attribute("value"), nullptr, 0);
 			}
 
 			/*create ecrt structs*/
-			for (auto &p_g : pdoGroups)
+			for (auto &p_g : pdo_group_vec)
 			{
-				for (auto &p : p_g.pdos)
+				for (auto &p : p_g.pdo_vec)
 				{
-					ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ alias,position,venderID,productCode,p->index,p->subIndex,&p->offset });
-					p_g.ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ p->index,p->subIndex,p->size });
+					ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ alias, position,vender_id, product_code, p->index, p->subindex, &p->offset });
+					p_g.ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ p->index, p->subindex, p->size });
 				}
 
-				if (p_g.isTx)
+				if (p_g.is_tx)
 				{
-					ec_pdo_info_vec_Tx.push_back(ec_pdo_info_t{ p_g.index, static_cast<std::uint8_t>(p_g.pdos.size()), p_g.ec_pdo_entry_info_vec.data() });
+					ec_pdo_info_vec_Tx.push_back(ec_pdo_info_t{ p_g.index, static_cast<std::uint8_t>(p_g.pdo_vec.size()), p_g.ec_pdo_entry_info_vec.data() });
 				}
 				else
 				{
-					ec_pdo_info_vec_Rx.push_back(ec_pdo_info_t{ p_g.index, static_cast<std::uint8_t>(p_g.pdos.size()), p_g.ec_pdo_entry_info_vec.data() });
+					ec_pdo_info_vec_Rx.push_back(ec_pdo_info_t{ p_g.index, static_cast<std::uint8_t>(p_g.pdo_vec.size()), p_g.ec_pdo_entry_info_vec.data() });
 				}
 			}
 			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ });
@@ -268,103 +268,90 @@ namespace Aris
 			ec_sync_info[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, static_cast<unsigned int>(ec_pdo_info_vec_Tx.size()), ec_pdo_info_vec_Tx.data(), EC_WD_ENABLE };
 			ec_sync_info[4] = ec_sync_info_t{ 0xff };
 		};
-		void EthercatSlave::Imp::init()
-		{		
-			auto pEcMaster = EthercatMaster::instance().pImp->pEcMaster;
 
-			for (auto &reg : ec_pdo_entry_reg_vec)	reg.position = this->position;
+		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement &xml_ele) :imp(new Imp{ xml_ele }) {}
+		EthercatSlave::~EthercatSlave() {};
+		void EthercatSlave::init()
+		{
+			auto master = EthercatMaster::instance().imp->pEcMaster;
+
+			for (auto &reg : imp->ec_pdo_entry_reg_vec)	reg.position = imp->position;
 
 			// Create domain
-			if (!(pDomain = ecrt_master_create_domain(pEcMaster)))throw std::runtime_error("failed to create domain");
+			if (!(imp->domain = ecrt_master_create_domain(master)))throw std::runtime_error("failed to create domain");
 
 			// Get the slave configuration 
-			if (!(ec_slave_config = ecrt_master_slave_config(pEcMaster, alias, position, venderID, productCode)))
+			if (!(imp->ec_slave_config = ecrt_master_slave_config(master, imp->alias, imp->position, imp->vender_id, imp->product_code)))
 			{
 				throw std::runtime_error("failed to slave config");
 			}
 			// Set Sdo
-			for (auto &sdo : sdos)ecrt_slave_config_sdo32(ec_slave_config, sdo->index, sdo->subIndex, sdo->value);
+			for (auto &sdo : imp->sdo_vec)ecrt_slave_config_sdo32(imp->ec_slave_config, sdo->index, sdo->subindex, sdo->value);
 
 			// Configure the slave's PDOs and sync masters
-			if (ecrt_slave_config_pdos(ec_slave_config, 4, ec_sync_info))throw std::runtime_error("failed to slave config pdos");
+			if (ecrt_slave_config_pdos(imp->ec_slave_config, 4, imp->ec_sync_info))throw std::runtime_error("failed to slave config pdos");
 
 			// Configure the slave's domain
-			if (ecrt_domain_reg_pdo_entry_list(pDomain, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
+			if (ecrt_domain_reg_pdo_entry_list(imp->domain, imp->ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
 			// Configure the slave's discrete clock			
-			if (this->distributedClock)ecrt_slave_config_dc(ec_slave_config, *distributedClock.get(), 1000000, 4400000, 0, 0);
-			
-		}
-		void EthercatSlave::Imp::read()
-		{
-			ecrt_domain_process(pDomain);
-		}
-		void EthercatSlave::Imp::write()
-		{
-			ecrt_domain_queue(pDomain);
-		}
-
-		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement &xml_ele) :pImp(new Imp{ xml_ele }) {}
-		EthercatSlave::~EthercatSlave() {};
-		void EthercatSlave::init()
-		{
-			this->pImp->init();
+			if (imp->distributed_clock)ecrt_slave_config_dc(imp->ec_slave_config, *imp->distributed_clock.get(), 1000000, 4400000, 0, 0);
 		}
 		void EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int8_t &value) const
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
 		}
 		void EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int16_t &value) const
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
 		}
 		void EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int32_t &value) const
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
 		}
 		void EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
 		}
 		void EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
 		}
 		void EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint32_t &value) const
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
 		}
 		void EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int8_t value)
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
 		}
 		void EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int16_t value)
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
 		}
 		void EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int32_t value)
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
 		}
 		void EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint8_t value)
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
 		}
 		void EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint16_t value)
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
 		}
 		void EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint32_t value)
 		{
-			pImp->pdoGroups[pdoGroupID].pdos[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
 		}
 		void EthercatSlave::readSdo(int sdoID, std::int32_t &value) const
 		{
-			value = this->pImp->sdos[sdoID]->value;
+			value = this->imp->sdo_vec[sdoID]->value;
 		}
 		void EthercatSlave::writeSdo(int sdoID, std::int32_t value)
 		{
-			this->pImp->sdos[sdoID]->value = value;
+			this->imp->sdo_vec[sdoID]->value = value;
 		}
 
 		
@@ -374,7 +361,7 @@ namespace Aris
 			ecrt_master_receive(pEcMaster);
 			for (auto &pSla : slaves)
 			{
-				pSla->pImp->read();
+				pSla->imp->read();
 			}
 		}
 		void EthercatMaster::Imp::write()
@@ -382,7 +369,7 @@ namespace Aris
 
 			for (auto &pSla : slaves)
 			{
-				pSla->pImp->write();
+				pSla->imp->write();
 			}
 
 
@@ -433,7 +420,7 @@ namespace Aris
 			{				
 
 
-				slaves[i]->pImp->position = static_cast<std::uint16_t>(i);
+				slaves[i]->imp->position = static_cast<std::uint16_t>(i);
 				slaves[i]->init();
 
 			}
@@ -442,7 +429,7 @@ namespace Aris
 
 			for (auto &pSla : slaves)
 			{
-				pSla->pImp->pDomainPd = ecrt_domain_data(pSla->pImp->pDomain);
+				pSla->imp->domain_pd = ecrt_domain_data(pSla->imp->domain);
 			}
 		}
 		void EthercatMaster::Imp::sync(uint64_t nanoSecond)
@@ -460,14 +447,14 @@ namespace Aris
 			{
 				rt_task_wait_period(NULL);
 
-				EthercatMaster::instance().pImp->read();//motors and sensors get data
+				EthercatMaster::instance().imp->read();//motors and sensors get data
 				
 				/*Here is tg*/
 				EthercatMaster::instance().controlStrategy();
 				/*tg finished*/
 
-				EthercatMaster::instance().pImp->sync(rt_timer_read());
-				EthercatMaster::instance().pImp->write();//motor data write and state machine/mode transition
+				EthercatMaster::instance().imp->sync(rt_timer_read());
+				EthercatMaster::instance().imp->write();//motor data write and state machine/mode transition
 			}
 #endif
 		};
@@ -482,7 +469,7 @@ namespace Aris
 			
 			return *pInstance.get();
 		}
-		EthercatMaster::EthercatMaster():pImp(new Imp){}
+		EthercatMaster::EthercatMaster():imp(new Imp){}
 		EthercatMaster::~EthercatMaster()	{}
 		void EthercatMaster::loadXml(const Aris::Core::XmlElement &xml_ele)
 		{
@@ -504,15 +491,15 @@ namespace Aris
 		}
 		void EthercatMaster::start()
 		{
-			this->pImp->start();
+			this->imp->start();
 		}
 		void EthercatMaster::stop()
 		{
-			this->pImp->stop();
+			this->imp->stop();
 		}
 		void EthercatMaster::addSlavePtr(EthercatSlave *pSla)
 		{
-			pImp->slaves.push_back(std::unique_ptr<EthercatSlave>(pSla));
+			imp->slaves.push_back(std::unique_ptr<EthercatSlave>(pSla));
 		}
 	}
 }
