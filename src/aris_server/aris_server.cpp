@@ -700,7 +700,7 @@ namespace Aris
 			}
 			else
 			{
-				throw std::logic_error(Aris::Core::log(std::string("invalid command name, server_socket_ does not have command \"") + cmd + "\""));
+				throw std::logic_error(Aris::Core::log(std::string("invalid command name, server does not have command \"") + cmd + "\""));
 			}
 
 			for (int i = 0; i<paramNum; ++i)
@@ -852,6 +852,10 @@ namespace Aris
 				if (cmdPair == this->map_cmd2id_.end())
 				{
 					throw std::logic_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddCmd() first");
+				}
+				else
+				{
+					std::cout << "find cmd:" << cmdPair->first << std::endl;
 				}
 
 				this->parser_vec_.at(cmdPair->second).operator()(cmd, params, cmd_msg);
