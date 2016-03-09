@@ -104,6 +104,7 @@ namespace Aris
 
 			friend class EthercatMaster::Imp;
 			friend class EthercatSlave;
+			friend class EthercatMaster;
 		};
 		class EthercatMaster::Imp
 		{
@@ -125,19 +126,18 @@ namespace Aris
 			std::vector<std::unique_ptr<EthercatSlave> > slaves;
 			ec_master_t* ec_master;
 
-			static const int samplePeriodNs;
-			static std::atomic_bool isStopping;
+			const int samplePeriodNs = 1000000;
+			std::atomic_bool isStopping;
 
 #ifdef UNIX
-			static RT_TASK realtimeCore;
+			RT_TASK realtimeCore;
 #endif
 			friend class EthercatSlave;
 			friend class EthercatMaster;
 		};
 
 #ifdef UNIX
-		RT_TASK EthercatMaster::Imp::realtimeCore;
-		const int EthercatMaster::Imp::samplePeriodNs = 1000000;
+		//RT_TASK EthercatMaster::Imp::realtimeCore;
 #endif
 
 		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement &xml_ele):imp(new Imp)
@@ -355,53 +355,25 @@ namespace Aris
 			this->imp->sdo_vec[sdoID]->value = value;
 		}
 
-
-
-		
-		std::atomic_bool EthercatMaster::Imp::isStopping;
-		void EthercatMaster::Imp::init()
-		{
-#ifdef UNIX
-			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1)
-			{
-				throw std::runtime_error("lock failed");
-			}
-#endif
-			ec_master = ecrt_request_master(0);
-			if (!ec_master)
-			{
-				throw std::runtime_error("master request failed!");
-			}
-			for (size_t i = 0; i < slaves.size(); ++i)
-			{				
-				slaves[i]->imp->position = static_cast<std::uint16_t>(i);
-				slaves[i]->init();
-			}
-			
-			ecrt_master_activate(ec_master);
-
-			for (auto &pSla : slaves)
-			{
-				pSla->imp->domain_pd = ecrt_domain_data(pSla->imp->domain);
-			}
-		}
 		void EthercatMaster::Imp::RealTimeCore(void *)
 		{
 #ifdef UNIX
-			rt_task_set_periodic(NULL, TM_NOW, samplePeriodNs);
+			auto &mst = EthercatMaster::instance();
+			
+			rt_task_set_periodic(NULL, TM_NOW, mst.imp->samplePeriodNs);
 
-			while (!isStopping)
+			while (!mst.imp->isStopping)
 			{
 				rt_task_wait_period(NULL);
 
-				EthercatMaster::instance().imp->read();//motors and sensors get data
+				mst.imp->read();//motors and sensors get data
 				
 				/*Here is tg*/
-				EthercatMaster::instance().controlStrategy();
+				mst.controlStrategy();
 				/*tg finished*/
 
-				EthercatMaster::instance().imp->sync(rt_timer_read());
-				EthercatMaster::instance().imp->write();//motor data write and state machine/mode transition
+				mst.imp->sync(rt_timer_read());
+				mst.imp->write();//motor data write and state machine/mode transition
 			}
 #endif
 		};
@@ -445,23 +417,43 @@ namespace Aris
 			}
 			is_first_time = false;
 
-			imp->init();
+			// init
+#ifdef UNIX
+			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
+#endif
+			imp->ec_master = ecrt_request_master(0);
+			if (!imp->ec_master) { throw std::runtime_error("master request failed!"); }
+
+			for (size_t i = 0; i < imp->slaves.size(); ++i)
+			{
+				imp->slaves[i]->imp->position = static_cast<std::uint16_t>(i);
+				imp->slaves[i]->init();
+			}
+
+			ecrt_master_activate(imp->ec_master);
+
+			for (auto &sla : imp->slaves)
+			{
+				sla->imp->domain_pd = ecrt_domain_data(sla->imp->domain);
+			}
+			//init finished
+
 #ifdef UNIX
 			rt_print_auto_init(1);
 
 			const int priority = 99;
 
-			Imp::isStopping = false;
+			imp->isStopping = false;
 
-			rt_task_create(&EthercatMaster::Imp::realtimeCore, "realtime core", 0, priority, T_FPU);
-			rt_task_start(&EthercatMaster::Imp::realtimeCore, &EthercatMaster::Imp::RealTimeCore, NULL);
+			rt_task_create(&imp->realtimeCore, "realtime core", 0, priority, T_FPU);
+			rt_task_start(&imp->realtimeCore, &EthercatMaster::Imp::RealTimeCore, NULL);
 #endif
 		};
 		void EthercatMaster::stop()
 		{
-			EthercatMaster::Imp::isStopping = true;
+			imp->isStopping = true;
 #ifdef UNIX
-			rt_task_join(&EthercatMaster::Imp::realtimeCore);
+			rt_task_join(&imp->realtimeCore);
 #endif
 		}
 		void EthercatMaster::addSlavePtr(EthercatSlave *pSla)
