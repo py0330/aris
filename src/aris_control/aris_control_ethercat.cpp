@@ -138,7 +138,7 @@ namespace Aris
 		const int EthercatMaster::Imp::samplePeriodNs = 1000000;
 #endif
 
-		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement &xml_ele)
+		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement &xml_ele):imp(new Imp)
 		{
 			//load product id...
 			imp->product_code = std::stoi(xml_ele.Attribute("product_code"), nullptr, 0);
