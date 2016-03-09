@@ -41,26 +41,16 @@ namespace Aris
 
 			virtual ~EthercatMotion();
 			EthercatMotion(const Aris::Core::XmlElement &xml_ele);
-			
-			bool hasFault();
-			void readFeedback(RawData &data);
-			void doCommand(const RawData &data);
-			std::int32_t absID() { return abs_id_; };
-			std::int32_t maxVelCount() { return max_vel_count_; };
-			std::int32_t pos2countRatio() { return input2count_; };
-
-		protected:
-			virtual void init() override;
+			auto hasFault()->bool;
+			auto readFeedback(RawData &data)->void;
+			auto writeCommand(const RawData &data)->void;
+			auto absID()->std::int32_t;
+			auto maxVelCount()->std::int32_t;
+			auto pos2countRatio()->std::int32_t;
 
 		private:
-			std::int32_t input2count_;
-			std::int32_t home_count_;
-			std::int32_t max_vel_count_;
-			std::int32_t abs_id_;
-			
-
 			class Imp;
-			std::unique_ptr<Imp> pImp;
+			std::unique_ptr<Imp> imp;
 
 			friend class EthercatController;
 		};
@@ -78,7 +68,7 @@ namespace Aris
 			};
 
 			EthercatForceSensor(const Aris::Core::XmlElement &xml_ele): EthercatSlave(xml_ele){};
-			void readData(Data &data);
+			auto readData(Data &data)->void;
 		};
 
 		class EthercatController :public EthercatMaster
@@ -117,7 +107,6 @@ namespace Aris
 
 		private:
 			std::vector<int> map_phy2abs_, map_abs2phy_;
-
 
 
 			std::function<int(Data&)> strategy_;

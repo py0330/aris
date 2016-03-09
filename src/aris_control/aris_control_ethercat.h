@@ -74,14 +74,14 @@ namespace Aris
 			template <class Slave, typename ...Args> 
 			auto addSlave(Args ...args)->Slave*
 			{
-				auto pSla = new Slave(args...);
-				this->addSlavePtr(pSla);
-				return pSla;
+				auto sla = new Slave(args...);
+				this->addSlavePtr(sla);
+				return sla;
 			}
 			
 		protected:
 			EthercatMaster();
-			virtual void controlStrategy() {};
+			virtual auto controlStrategy()->void {};
 			
 		private:
 			EthercatMaster(const EthercatMaster &other) = delete;

@@ -366,19 +366,18 @@ namespace Aris
 			this->imp->sdo_vec[sdoID]->value = value;
 		}
 
-		
+		EthercatMaster::EthercatMaster():imp(new Imp){}
+		EthercatMaster::~EthercatMaster(){}
 		auto EthercatMaster::instance()->EthercatMaster&
 		{
 			if (!instancePtr())throw std::runtime_error("please first create an instance fo EthercatMaster");
 			return *instancePtr().get();
-		}
+		};
 		auto EthercatMaster::instancePtr()->const std::unique_ptr<EthercatMaster> &
 		{
 			static std::unique_ptr<EthercatMaster> instance_ptr;
 			return std::ref(instance_ptr);
 		}
-		EthercatMaster::EthercatMaster():imp(new Imp){}
-		EthercatMaster::~EthercatMaster(){}
 		auto EthercatMaster::loadXml(const Aris::Core::XmlElement &xml_ele)->void
 		{
 			/*Load EtherCat slave types*/

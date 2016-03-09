@@ -29,9 +29,9 @@ namespace Aris
 			Imp(EthercatMotion *mot) :pFather(mot) {};
 			~Imp() = default;
 
-			std::int16_t Enable(const std::uint8_t mode)
+			std::int16_t enable(const std::uint8_t mode)
 			{
-				isFake = false;				
+				is_fake = false;				
 
 				std::uint16_t statusWord;
 				pFather->readPdo(1, 3, statusWord);
@@ -88,10 +88,10 @@ namespace Aris
 						break;
 					}
 
-					if (++enablePeriod >= 10)
+					if (++enable_period >= 10)
 					{	
-						runningMode = mode;
-						enablePeriod = 0;
+						running_mode = mode;
+						enable_period = 0;
 						return 0;
 					}
 					else
@@ -106,9 +106,9 @@ namespace Aris
 					return 1;
 				}
 			}
-			std::int16_t Disable()
+			std::int16_t disable()
 			{
-				isFake = false;					
+				is_fake = false;					
 
 				std::uint16_t statusWord;
 				pFather->readPdo(1, 3, statusWord);
@@ -133,14 +133,14 @@ namespace Aris
 				}
 
 			}
-			std::int16_t Home()
+			std::int16_t home()
 			{
-				isFake = false;					
+				is_fake = false;					
 
-				if(isWaitingMode)
+				if(is_waiting_mode)
 				{
-					auto ret = this->Enable(runningMode);	
-					isWaitingMode = (ret==0?false:true);
+					auto ret = this->enable(running_mode);
+					is_waiting_mode = (ret == 0 ? false : true);
 					return ret;
 				}
 				
@@ -168,8 +168,8 @@ namespace Aris
 						{
 							/*home finished, set mode to running mode, whose value is decided by 
 							enable function, also write velocity to 0*/
-							pFather->writePdo(0, 5, static_cast<uint8_t>(runningMode));
-							isWaitingMode = true;
+							pFather->writePdo(0, 5, static_cast<uint8_t>(running_mode));
+							is_waiting_mode = true;
 							return 1;
 						}
 						else
@@ -181,9 +181,9 @@ namespace Aris
 					}
 				}
 			}
-			std::int16_t RunPos(const std::int32_t pos)
+			std::int16_t runPos(const std::int32_t pos)
 			{
-				if (isFake)return 0;
+				if (is_fake)return 0;
 
 				std::uint16_t statusword;
 				pFather->readPdo(1, 3, statusword);
@@ -202,16 +202,16 @@ namespace Aris
 					std::int32_t desired_vel = static_cast<std::int32_t>(Kp*(pos - current_pos));
 					
 					/*保护上下限*/
-					desired_vel = std::max(desired_vel, -pFather->max_vel_count_);
-					desired_vel = std::min(desired_vel, pFather->max_vel_count_);
+					desired_vel = std::max(desired_vel, -max_vel_count_);
+					desired_vel = std::min(desired_vel, max_vel_count_);
 					
 					pFather->writePdo(0, 1, desired_vel);
 					return 0;
 				}
 			}
-			std::int16_t RunVel(const std::int32_t vel)
+			std::int16_t runVel(const std::int32_t vel)
 			{
-				if (isFake)return 0;
+				if (is_fake)return 0;
 
 				std::uint16_t statusword;
 				pFather->readPdo(1, 3, statusword);
@@ -229,9 +229,9 @@ namespace Aris
 					return 0;
 				}
 			}
-			std::int16_t RunCur(const std::int16_t cur)
+			std::int16_t runCur(const std::int16_t cur)
 			{
-				if (isFake)return 0;
+				if (is_fake)return 0;
 								
 				std::uint16_t statusword;
 				pFather->readPdo(1, 3, statusword);
@@ -251,24 +251,27 @@ namespace Aris
 			}
 			std::int32_t pos() { std::int32_t pos; pFather->readPdo(1, 0, pos); return pos; };
 			std::int32_t vel() { std::int32_t vel; pFather->readPdo(1, 2, vel); return vel; };
-			std::int32_t Cur() { std::int16_t cur; pFather->readPdo(2, 0, cur); return cur; };
-		private:
+			std::int32_t cur() { std::int16_t cur; pFather->readPdo(2, 0, cur); return cur; };
+		
+
+			std::int32_t input2count_;
+			std::int32_t home_count_;
+			std::int32_t max_vel_count_;
+			std::int32_t abs_id_;
+			
 			EthercatMotion *pFather;
 			
-			bool isWaitingMode{ false };
-			bool isFake{ true };
-			int enablePeriod{ 0 };
-			std::uint8_t runningMode{ 9 };
+			bool is_fake{ true };
+			bool is_waiting_mode{ false };
+			
+			int enable_period{ 0 };
+			std::uint8_t running_mode{ 9 };
 		};
 		EthercatMotion::~EthercatMotion() {}
-		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement &xml_ele) :EthercatSlave(xml_ele), pImp(new EthercatMotion::Imp(this))
+		EthercatMotion::EthercatMotion(const Aris::Core::XmlElement &xml_ele) :EthercatSlave(xml_ele), imp(new EthercatMotion::Imp(this))
 		{
 		};
-		void EthercatMotion::init()
-		{
-			this->EthercatSlave::init();
-		}
-		void EthercatMotion::doCommand(const RawData &data)
+		auto EthercatMotion::writeCommand(const RawData &data)->void
 		{		
 			switch (data.cmd)
 			{
@@ -276,25 +279,25 @@ namespace Aris
 				data.ret = 0;
 				return;
 			case ENABLE:
-				data.ret = pImp->Enable(data.mode);
+				data.ret = imp->enable(data.mode);
 				return;
 			case DISABLE:
-				data.ret = pImp->Disable();
+				data.ret = imp->disable();
 				return;
 			case HOME:
-				data.ret = pImp->Home();
+				data.ret = imp->home();
 				return;
 			case RUN:
 				switch (data.mode)
 				{
 				case POSITION:
-					data.ret = pImp->RunPos(data.target_pos);
+					data.ret = imp->runPos(data.target_pos);
 					return;
 				case VELOCITY:
-					data.ret = pImp->RunVel(data.target_vel);
+					data.ret = imp->runVel(data.target_vel);
 					return;
 				case CURRENT:
-					data.ret = pImp->RunCur(data.target_cur);
+					data.ret = imp->runCur(data.target_cur);
 					return;
 				default:
 					data.ret = -1;
@@ -305,22 +308,22 @@ namespace Aris
 				return;
 			}
 		}
-		void EthercatMotion::readFeedback(RawData &data)
+		auto EthercatMotion::readFeedback(RawData &data)->void
 		{
-			data.feedback_cur = pImp->Cur();
-			data.feedback_pos = pImp->pos();
-			data.feedback_vel = pImp->vel();
+			data.feedback_cur = imp->cur();
+			data.feedback_pos = imp->pos();
+			data.feedback_vel = imp->vel();
 		}
-		bool EthercatMotion::hasFault()
+		auto EthercatMotion::hasFault()->bool
 		{
 			std::uint16_t statusword;
 			this->readPdo(1, 3, statusword);
 			int motorState = (statusword & 0x000F);
-			if (motorState != 0x0003 && motorState != 0x0007 && motorState != 0x0001 && motorState != 0x0000)
-				return true;
-			else
-				return false;
+			return (motorState != 0x0003 && motorState != 0x0007 && motorState != 0x0001 && motorState != 0x0000) ? true : false;
 		}
+		auto EthercatMotion::absID()->std::int32_t { return imp->abs_id_; };
+		auto EthercatMotion::maxVelCount()->std::int32_t { return imp->max_vel_count_; };
+		auto EthercatMotion::pos2countRatio()->std::int32_t { return imp->input2count_; };
 
 		void EthercatForceSensor::readData(Data &data)
 		{
@@ -351,9 +354,9 @@ namespace Aris
 			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
 
 			auto pSlaveTypes = xml_ele.FirstChildElement("SlaveType");
-			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
+			for (auto type_xml_ele = pSlaveTypes->FirstChildElement(); type_xml_ele; type_xml_ele = type_xml_ele->NextSiblingElement())
 			{
-				slaveTypeMap.insert(std::make_pair(std::string(pType->name()), pType));
+				slaveTypeMap.insert(std::make_pair(std::string(type_xml_ele->name()), type_xml_ele));
 			}
 
 			/*Load all slaves*/
@@ -368,7 +371,7 @@ namespace Aris
 				{
 					motion_vec_.push_back(addSlave<EthercatMotion>(std::ref(*slaveTypeMap.at(type))));
 					
-					if (pSla->QueryIntAttribute("input2count", &motion_vec_.back()->input2count_) != tinyxml2::XML_NO_ERROR)
+					if (pSla->QueryIntAttribute("input2count", &motion_vec_.back()->imp->input2count_) != tinyxml2::XML_NO_ERROR)
 					{
 						throw std::runtime_error("failed to find motion attribute \"input2count\"");
 					}
@@ -378,21 +381,20 @@ namespace Aris
 					{
 						throw std::runtime_error("failed to find motion attribute \"maxVel\"");
 					}
-					motion_vec_.back()->max_vel_count_ = static_cast<std::int32_t>(value * motion_vec_.back()->input2count_);
+					motion_vec_.back()->imp->max_vel_count_ = static_cast<std::int32_t>(value * motion_vec_.back()->imp->input2count_);
 
 					if (pSla->QueryDoubleAttribute("homePos", &value) != tinyxml2::XML_NO_ERROR)
 					{
 						throw std::runtime_error("failed to find motion attribute \"homePos\"");
 					}
-					motion_vec_.back()->home_count_ = static_cast<std::int32_t>(pSla->DoubleAttribute("homePos")*motion_vec_.back()->input2count_);
+					motion_vec_.back()->imp->home_count_ = static_cast<std::int32_t>(pSla->DoubleAttribute("homePos")*motion_vec_.back()->imp->input2count_);
 
-					if (pSla->QueryIntAttribute("absID", &motion_vec_.back()->abs_id_) != tinyxml2::XML_NO_ERROR)
+					if (pSla->QueryIntAttribute("absID", &motion_vec_.back()->imp->abs_id_) != tinyxml2::XML_NO_ERROR)
 					{
 						throw std::runtime_error("failed to find motion attribute \"input2count\"");
 					}
 
-					motion_vec_.back()->writeSdo(9, static_cast<std::int32_t>(-motion_vec_.back()->home_count_));
-
+					motion_vec_.back()->writeSdo(9, static_cast<std::int32_t>(-motion_vec_.back()->imp->home_count_));
 				}
 				else if (type == "AtiForceSensor")
 				{
@@ -511,7 +513,7 @@ namespace Aris
 			for (std::size_t i = 0; i < motion_rawdata_.size(); ++i)
 			{
 				motionAtAbs(i).readFeedback(motion_rawdata_[i]);
-				motionAtAbs(i).doCommand(motion_rawdata_[i]);
+				motionAtAbs(i).writeCommand(motion_rawdata_[i]);
 				last_motion_rawdata_[i] = motion_rawdata_[i];
 			}
 
