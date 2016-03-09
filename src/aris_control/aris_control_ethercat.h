@@ -46,7 +46,7 @@ namespace Aris
 			EthercatSlave & operator=(const EthercatSlave &other) = delete;
 			EthercatSlave & operator=(EthercatSlave &&other) = delete;
 
-			class Imp;
+			struct Imp;
 			std::unique_ptr<Imp> imp;
 
 			friend class EthercatMaster;
@@ -92,7 +92,6 @@ namespace Aris
 			class Imp;
 			std::unique_ptr<Imp> imp;
 
-			friend class EthercatSlave::Imp;
 			friend class EthercatSlave;
 		};
 	}

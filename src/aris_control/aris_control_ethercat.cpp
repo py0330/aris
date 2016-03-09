@@ -30,7 +30,7 @@ namespace Aris
 {
 	namespace Control
 	{
-		class EthercatSlave::Imp 
+		struct EthercatSlave::Imp
 		{
 		public:
 			Imp() = default;
@@ -108,19 +108,22 @@ namespace Aris
 		class EthercatMaster::Imp
 		{
 		public:
-			void read();
-			void write();
-			void start();
-			void stop();
-			
+			auto read()->void { ecrt_master_receive(ec_master);	for (auto &pSla : slaves)pSla->imp->read(); };
+			auto write()->void { for (auto &pSla : slaves)pSla->imp->write();	ecrt_master_send(ec_master); };
+
 		private:
 			void init();
-			void sync(uint64_t nanoSecond);
+			void sync(uint64_t ns)
+			{
+				ecrt_master_application_time(ec_master, ns);
+				ecrt_master_sync_reference_clock(ec_master);
+				ecrt_master_sync_slave_clocks(ec_master);
+			};
 			static void RealTimeCore(void *);
 
 		private:
 			std::vector<std::unique_ptr<EthercatSlave> > slaves;
-			ec_master_t* pEcMaster;
+			ec_master_t* ec_master;
 
 			static const int samplePeriodNs;
 			static std::atomic_bool isStopping;
@@ -128,7 +131,6 @@ namespace Aris
 #ifdef UNIX
 			static RT_TASK realtimeCore;
 #endif
-			friend class EthercatSlave::Imp;
 			friend class EthercatSlave;
 			friend class EthercatMaster;
 		};
@@ -272,15 +274,15 @@ namespace Aris
 		EthercatSlave::~EthercatSlave() {};
 		auto EthercatSlave::init()->void
 		{
-			auto master = EthercatMaster::instance().imp->pEcMaster;
+			auto mst = EthercatMaster::instance().imp->ec_master;
 
 			for (auto &reg : imp->ec_pdo_entry_reg_vec)	reg.position = imp->position;
 
 			// Create domain
-			if (!(imp->domain = ecrt_master_create_domain(master)))throw std::runtime_error("failed to create domain");
+			if (!(imp->domain = ecrt_master_create_domain(mst)))throw std::runtime_error("failed to create domain");
 
 			// Get the slave configuration 
-			if (!(imp->ec_slave_config = ecrt_master_slave_config(master, imp->alias, imp->position, imp->vender_id, imp->product_code)))
+			if (!(imp->ec_slave_config = ecrt_master_slave_config(mst, imp->alias, imp->position, imp->vender_id, imp->product_code)))
 			{
 				throw std::runtime_error("failed to slave config");
 			}
@@ -353,55 +355,10 @@ namespace Aris
 			this->imp->sdo_vec[sdoID]->value = value;
 		}
 
+
+
 		
 		std::atomic_bool EthercatMaster::Imp::isStopping;
-		void EthercatMaster::Imp::read()
-		{
-			ecrt_master_receive(pEcMaster);
-			for (auto &pSla : slaves)
-			{
-				pSla->imp->read();
-			}
-		}
-		void EthercatMaster::Imp::write()
-		{
-
-			for (auto &pSla : slaves)
-			{
-				pSla->imp->write();
-			}
-
-
-			ecrt_master_send(pEcMaster);
-		}
-		void EthercatMaster::Imp::start()
-		{
-			static bool isFirstTime{ true };
-			if (!isFirstTime)
-			{
-				throw std::runtime_error("master already running");
-			}
-			isFirstTime = false;
-			
-			this->init();
-#ifdef UNIX
-			rt_print_auto_init(1);		
-
-			const int priority = 99;
-			
-			isStopping = false;
-
-			rt_task_create(&EthercatMaster::Imp::realtimeCore, "realtime core", 0, priority, T_FPU);
-			rt_task_start(&EthercatMaster::Imp::realtimeCore, &EthercatMaster::Imp::RealTimeCore, NULL);
-#endif
-		};
-		void EthercatMaster::Imp::stop()
-		{
-			isStopping = true;
-#ifdef UNIX
-			rt_task_join(&EthercatMaster::Imp::realtimeCore);
-#endif
-		}
 		void EthercatMaster::Imp::init()
 		{
 #ifdef UNIX
@@ -410,32 +367,23 @@ namespace Aris
 				throw std::runtime_error("lock failed");
 			}
 #endif
-			pEcMaster = ecrt_request_master(0);
-			if (!pEcMaster)
+			ec_master = ecrt_request_master(0);
+			if (!ec_master)
 			{
 				throw std::runtime_error("master request failed!");
 			}
 			for (size_t i = 0; i < slaves.size(); ++i)
 			{				
-
-
 				slaves[i]->imp->position = static_cast<std::uint16_t>(i);
 				slaves[i]->init();
-
 			}
 			
-			ecrt_master_activate(pEcMaster);
+			ecrt_master_activate(ec_master);
 
 			for (auto &pSla : slaves)
 			{
 				pSla->imp->domain_pd = ecrt_domain_data(pSla->imp->domain);
 			}
-		}
-		void EthercatMaster::Imp::sync(uint64_t nanoSecond)
-		{
-			ecrt_master_application_time(pEcMaster, nanoSecond);
-			ecrt_master_sync_reference_clock(pEcMaster);
-			ecrt_master_sync_slave_clocks(pEcMaster);
 		}
 		void EthercatMaster::Imp::RealTimeCore(void *)
 		{
@@ -488,13 +436,33 @@ namespace Aris
 				this->addSlave<EthercatSlave>(std::ref(*slaveTypeMap.at(std::string(pSla->Attribute("type")))));
 			}
 		}
-		void EthercatMaster::start()
+		void EthercatMaster::start() 
 		{
-			this->imp->start();
-		}
+			static bool isFirstTime{ true };
+			if (!isFirstTime)
+			{
+				throw std::runtime_error("master already running");
+			}
+			isFirstTime = false;
+
+			imp->init();
+#ifdef UNIX
+			rt_print_auto_init(1);
+
+			const int priority = 99;
+
+			isStopping = false;
+
+			rt_task_create(&EthercatMaster::Imp::realtimeCore, "realtime core", 0, priority, T_FPU);
+			rt_task_start(&EthercatMaster::Imp::realtimeCore, &EthercatMaster::Imp::RealTimeCore, NULL);
+#endif
+		};
 		void EthercatMaster::stop()
 		{
-			this->imp->stop();
+			EthercatMaster::Imp::isStopping = true;
+#ifdef UNIX
+			rt_task_join(&EthercatMaster::Imp::realtimeCore);
+#endif
 		}
 		void EthercatMaster::addSlavePtr(EthercatSlave *pSla)
 		{
