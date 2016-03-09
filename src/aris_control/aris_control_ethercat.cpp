@@ -438,12 +438,12 @@ namespace Aris
 		}
 		void EthercatMaster::start() 
 		{
-			static bool isFirstTime{ true };
-			if (!isFirstTime)
+			static bool is_first_time{ true };
+			if (!is_first_time)
 			{
 				throw std::runtime_error("master already running");
 			}
-			isFirstTime = false;
+			is_first_time = false;
 
 			imp->init();
 #ifdef UNIX
@@ -451,7 +451,7 @@ namespace Aris
 
 			const int priority = 99;
 
-			isStopping = false;
+			Imp::isStopping = false;
 
 			rt_task_create(&EthercatMaster::Imp::realtimeCore, "realtime core", 0, priority, T_FPU);
 			rt_task_start(&EthercatMaster::Imp::realtimeCore, &EthercatMaster::Imp::RealTimeCore, NULL);
