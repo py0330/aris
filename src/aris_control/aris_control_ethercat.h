@@ -21,24 +21,24 @@ namespace Aris
 		{
 		public:
 			virtual ~EthercatSlave();
-			void readPdo(int pdoGroupID, int pdoID, std::int8_t &value) const;
-			void readPdo(int pdoGroupID, int pdoID, std::int16_t &value) const;
-			void readPdo(int pdoGroupID, int pdoID, std::int32_t &value) const;
-			void readPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const;
-			void readPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const;
-			void readPdo(int pdoGroupID, int pdoID, std::uint32_t &value) const;
-			void writePdo(int pdoGroupID, int pdoID, std::int8_t value);
-			void writePdo(int pdoGroupID, int pdoID, std::int16_t value);
-			void writePdo(int pdoGroupID, int pdoID, std::int32_t value);
-			void writePdo(int pdoGroupID, int pdoID, std::uint8_t value);
-			void writePdo(int pdoGroupID, int pdoID, std::uint16_t value);
-			void writePdo(int pdoGroupID, int pdoID, std::uint32_t value);
-			void readSdo(int sdoID, std::int32_t &value) const;
-			void writeSdo(int sdoID, std::int32_t value);
+			auto readPdo(int pdo_group_id, int pdo_id, std::int8_t &value)const->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::int16_t &value)const->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::int32_t &value)const->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::uint8_t &value)const->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::uint16_t &value)const->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::uint32_t &value)const->void;
+			auto writePdo(int pdo_group_id, int pdo_id, std::int8_t value)->void;
+			auto writePdo(int pdo_group_id, int pdo_id, std::int16_t value)->void;
+			auto writePdo(int pdo_group_id, int pdo_id, std::int32_t value)->void;
+			auto writePdo(int pdo_group_id, int pdo_id, std::uint8_t value)->void;
+			auto writePdo(int pdo_group_id, int pdo_id, std::uint16_t value)->void;
+			auto writePdo(int pdo_group_id, int pdo_id, std::uint32_t value)->void;
+			auto readSdo(int sdo_id, std::int32_t &value) const->void;
+			auto writeSdo(int sdo_id, std::int32_t value)->void;
 
 		protected:
             EthercatSlave(const Aris::Core::XmlElement &xml_ele);
-			virtual void init();
+			virtual auto init() ->void;
 
 		private:
 			EthercatSlave(const EthercatSlave &other) = delete;
