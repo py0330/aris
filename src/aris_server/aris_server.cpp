@@ -662,6 +662,7 @@ namespace Aris
 			}
 			catch (std::exception &e)
 			{
+				std::cout << e.what() << std::endl;
 				retError.copy(e.what());
 			}
 		}
@@ -853,7 +854,7 @@ namespace Aris
 				if (cmdPair == this->map_cmd2id_.end())
 				{
 					std::cout << "if branch" << std::endl;
-					throw std::logic_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddCmd() first");
+					throw std::runtime_error(std::string("command \"") + cmdPair->first + "\" does not have gait function, please AddCmd() first");
 				}
 				else
 				{
@@ -865,7 +866,7 @@ namespace Aris
 
 				if (cmd_msg.size() < sizeof(GaitParamBase))
 				{
-					throw std::logic_error(std::string("parse function of command \"") + cmdPair->first + "\" failed: because it returned invalid cmd_msg");
+					throw std::runtime_error(std::string("parse function of command \"") + cmdPair->first + "\" failed: because it returned invalid cmd_msg");
 				}
 
 				reinterpret_cast<GaitParamBase *>(cmd_msg.data())->cmd_type = RUN_GAIT;
