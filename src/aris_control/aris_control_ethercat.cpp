@@ -450,6 +450,7 @@ namespace Aris
 
 			imp->is_stopping_ = false;
 			imp->is_running_ = false;
+			std::cout << "finish stop" << std::endl;
 		}
 		auto EthercatMaster::addSlavePtr(EthercatSlave *pSla)->void
 		{

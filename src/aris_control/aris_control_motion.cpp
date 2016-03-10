@@ -501,6 +501,8 @@ namespace Aris
 		{
 			this->EthercatMaster::stop();
 
+			std::cout << "master stopped" << std::endl;
+
 			imp->is_stopping_ = true;
 			imp->record_thread_.join();
 		}

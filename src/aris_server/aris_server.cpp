@@ -540,14 +540,14 @@ namespace Aris
 			{
 				return onReceiveMsg(msg);
 			});
-			server_socket_.setOnLoseConnection([this](Aris::Core::Socket *pConn)
+			server_socket_.setOnLoseConnection([this](Aris::Core::Socket *socket)
 			{
 				Aris::Core::log("lost connection");
 				while (true)
 				{
 					try
 					{
-						pConn->startServer(this->server_socket_port_.c_str());
+						socket->startServer(this->server_socket_port_.c_str());
 						break;
 					}
 					catch (Aris::Core::Socket::StartServerError &e)
@@ -611,10 +611,12 @@ namespace Aris
 		{
 			if (is_running_)
 			{
-#ifdef UNIX
 				controller_->stop();
-#endif
+				std::cout << "controller stopped" << std::endl;
+				
 				if (imu_)imu_->stop();
+
+				std::cout << "IMU stopped" << std::endl;
 				is_running_ = false;
 			}
 
