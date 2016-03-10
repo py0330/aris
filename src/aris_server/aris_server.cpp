@@ -411,9 +411,7 @@ namespace Aris
 			Imp(ControlServer *server)
 			{
 				this->server_ = server;
-#ifdef UNIX
 				this->controller_ = Aris::Control::EthercatController::createInstance<Aris::Control::EthercatController>();
-#endif
 			};
 		private:
 			Imp(const Imp&) = delete;
@@ -508,10 +506,8 @@ namespace Aris
 			}
 
 			/*begin to load controller_*/
-#ifdef UNIX
 			controller_->loadXml(std::ref(*doc.RootElement()->FirstChildElement("Controller")->FirstChildElement("EtherCat")));
 			controller_->setControlStrategy(tg);
-#endif
 
 			/*load connection param*/
 			auto pConnEle = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Connection");
@@ -604,9 +600,7 @@ namespace Aris
 				is_running_ = true;
 				motion_pos_.resize(controller_->motionNum());
 				if (imu_)imu_->start();
-#ifdef UNIX
 				controller_->start();
-#endif
 			}
 		}
 		auto ControlServer::Imp::stop()->void
@@ -885,9 +879,7 @@ namespace Aris
 			}
 
 			cmd_msg.setMsgID(0);
-#ifdef UNIX
 			this->controller_->msgPipe().sendToRT(cmd_msg);
-#endif
 		}
 		auto ControlServer::Imp::home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int
 		{
