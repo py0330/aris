@@ -112,7 +112,7 @@ namespace Aris
 #ifdef UNIX
 				auto &mst = EthercatMaster::instance();
 
-				rt_task_set_periodic(NULL, TM_NOW, mst.imp->sample_period_ns);
+				rt_task_set_periodic(NULL, TM_NOW, mst.imp->sample_period_ns_);
 
 				while (!mst.imp->is_stopping_)
 				{
@@ -141,7 +141,7 @@ namespace Aris
 			std::vector<std::unique_ptr<EthercatSlave> > slave_vec;
 			ec_master_t* ec_master;
 
-			const int sample_period_ns = 1000000;
+			const int sample_period_ns_ = 1000000;
 			
 			
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
@@ -439,9 +439,27 @@ namespace Aris
 
 			imp->is_stopping_ = true;
 #ifdef UNIX
-			rt_task_join(&imp->rt_task);
+			auto ret = rt_task_join(&imp->rt_task);
+
+			switch (ret)
+			{
+			case 0:
+				std::cout << "successfull" << std::cout << std::endl;
+				break;
+			case EINVAL:
+				std::cout << "invalid 1" << std::cout << std::endl;
+				break;
+			case EDEADLK:
+				std::cout << "invalid 2" << std::cout << std::endl;
+				break;
+			case ESRCH:
+				std::cout << "invalid 3" << std::cout << std::endl;
+				break;
+			default:
+				break;
+			}
 #endif
-			ecrt_master_deactivate(imp->ec_master);
+			//ecrt_master_deactivate(imp->ec_master);
 			//ecrt_release_master(imp->ec_master);
 
 			imp->is_stopping_ = false;
