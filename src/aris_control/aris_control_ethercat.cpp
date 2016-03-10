@@ -456,6 +456,7 @@ namespace Aris
 				std::cout << "invalid 3" << std::endl;
 				break;
 			default:
+				std::cout << "default" << std::endl;
 				break;
 			}
 #endif
