@@ -19,13 +19,13 @@ namespace Aris
 	{
 		enum { MAX_MOTOR_NUM = 100 };
 
-		/*for enable, disable, and home*/
+		//for enable, disable, and home
 		struct BasicFunctionParam final :Aris::Dynamic::PlanParamBase
 		{
 			bool active_motor[MAX_MOTOR_NUM]{ false };
 		};
 
-		/*for all ordinary gaits*/
+		//for all ordinary gaits
 		struct GaitParamBase :Dynamic::PlanParamBase
 		{
 			std::int32_t gait_id;
@@ -43,24 +43,24 @@ namespace Aris
 			static ControlServer &instance();
 
 			template<typename T>
-			void createModel() { this->createModel(new T); };
-			void createModel(Dynamic::Model *pModel);
+			auto createModel()->void { this->createModel(new T); };
+			auto createModel(Dynamic::Model *model)->void;
 
-			void loadXml(const char *fileName);
-			void loadXml(const Aris::Core::XmlDocument &xmlDoc);
-			void addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func);
-			void start();
-			void stop();
+			auto loadXml(const char *fileName)->void;
+			auto loadXml(const Aris::Core::XmlDocument &xmlDoc)->void;
+			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)->void;
+			auto open()->void;
+			auto close()->void;
 
 		private:
-			ControlServer();
 			~ControlServer();
+			ControlServer();
 			ControlServer(const ControlServer &) = delete;
 			ControlServer &operator=(const ControlServer &) = delete;
 
 		private:
 			class Imp;
-			std::unique_ptr<Imp> pImp;
+			std::unique_ptr<Imp> imp;
 		};
 	}
 }
