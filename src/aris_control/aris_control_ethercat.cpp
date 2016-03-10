@@ -440,8 +440,8 @@ namespace Aris
 #ifdef UNIX
 			rt_task_join(&imp->rt_task);
 #endif
-			ecrt_master_deactivate(imp->ec_master);
-			ecrt_release_master(imp->ec_master);
+			//ecrt_master_deactivate(imp->ec_master);
+			//ecrt_release_master(imp->ec_master);
 			imp->is_stopping_ = false;
 
 			imp->is_running_ = false;
