@@ -1112,7 +1112,7 @@ namespace Aris
 			{
 				if ((data.last_motion_rawdata->at(i).cmd == Aris::Control::EthercatMotion::RUN)
 					&& (data.motion_rawdata->at(i).cmd == Aris::Control::EthercatMotion::RUN)
-					&& (std::abs(data.last_motion_rawdata->at(i).target_pos - data.motion_rawdata->at(i).target_pos)>1.2*imp->controller_->motionAtAbs(i).maxVelCount()))
+					&& (std::abs(data.last_motion_rawdata->at(i).target_pos - data.motion_rawdata->at(i).target_pos)>0.0012*imp->controller_->motionAtAbs(i).maxVelCount()))
 				{
 					rt_printf("Data not continuous in count:%d\n", count);
 
