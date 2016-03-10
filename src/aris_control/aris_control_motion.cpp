@@ -378,7 +378,6 @@ namespace Aris
 		{
 			std::vector<int> map_phy2abs_, map_abs2phy_;
 
-
 			std::function<int(Data&)> strategy_;
 			Pipe<Aris::Core::Msg> msg_pipe_;
 			std::atomic_bool is_stopping_;
@@ -503,7 +502,6 @@ namespace Aris
 		auto EthercatController::stop()->void
 		{
 			this->EthercatMaster::stop();
-			std::cout << "master stopped" << std::endl;
 		}
 		auto EthercatController::motionNum()->std::size_t { return imp->motion_vec_.size(); };
 		auto EthercatController::motionAtAbs(int i)->EthercatMotion & { return *imp->motion_vec_.at(imp->map_abs2phy_[i]); };

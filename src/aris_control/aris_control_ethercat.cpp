@@ -444,9 +444,10 @@ namespace Aris
 			imp->is_stopping_ = true;
 #ifdef UNIX
 			rt_task_delete(&imp->rt_task);
-#endif
+
 			ecrt_master_deactivate(imp->ec_master);
 			ecrt_release_master(imp->ec_master);
+#endif
 
 			imp->is_stopping_ = false;
 			imp->is_running_ = false;
