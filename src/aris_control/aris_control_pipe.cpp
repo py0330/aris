@@ -44,7 +44,7 @@ namespace Aris
 				}
 
 				struct timeval tv;
-				tv.tv_sec = 0;  /* 30 Secs Timeout */
+				tv.tv_sec = 1;  /* 30 Secs Timeout */
 				tv.tv_usec = 0;  // Not Init'ing this can cause strange errors
 				if (rt_dev_setsockopt(FD_RT, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)))
 				{

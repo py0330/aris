@@ -465,6 +465,7 @@ namespace Aris
 			imp->is_stopping_ = false;
 
 			/*begin thread which will save data*/
+			if(!imp->record_thread_.joinable())
 			imp->record_thread_ = std::thread([this]()
 			{
 				static std::fstream file;
@@ -479,6 +480,8 @@ namespace Aris
 				long long count = -1;
 				while (!imp->is_stopping_)
 				{
+					if (count % 1000 == 0)std::cout << "recording" << std::endl;
+					
 					imp->record_pipe_->recvInNrt(data);
 
 					file << ++count << " ";
@@ -500,11 +503,11 @@ namespace Aris
 		auto EthercatController::stop()->void
 		{
 			this->EthercatMaster::stop();
-
 			std::cout << "master stopped" << std::endl;
 
-			imp->is_stopping_ = true;
-			imp->record_thread_.join();
+			//imp->is_stopping_ = true;
+			//imp->record_thread_.join();
+			//std::cout << "recorder stopped" << std::endl;
 		}
 		auto EthercatController::motionNum()->std::size_t { return imp->motion_vec_.size(); };
 		auto EthercatController::motionAtAbs(int i)->EthercatMotion & { return *imp->motion_vec_.at(imp->map_abs2phy_[i]); };
