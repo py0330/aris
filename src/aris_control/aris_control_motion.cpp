@@ -479,8 +479,6 @@ namespace Aris
 				long long count = -1;
 				while (!imp->is_stopping_)
 				{
-					if (count % 1000 == 0)std::cout << "recording" << std::endl;
-					
 					imp->record_pipe_->recvInNrt(data);
 
 					file << ++count << " ";

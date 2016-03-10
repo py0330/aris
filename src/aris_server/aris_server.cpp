@@ -608,11 +608,7 @@ namespace Aris
 			if (is_running_)
 			{
 				controller_->stop();
-				std::cout << "controller stopped" << std::endl;
-				
 				if (imu_)imu_->stop();
-
-				std::cout << "IMU stopped" << std::endl;
 				is_running_ = false;
 			}
 
@@ -630,14 +626,12 @@ namespace Aris
 				{
 					if (is_running_)throw std::runtime_error("server already started, thus ignore command \"start\"");
 					start();
-					std::cout << "server started" << std::endl;
 					return Aris::Core::Msg();
 				}
 				if (cmd == "stop")
 				{
 					if (!is_running_)throw std::runtime_error("server already stopped, thus ignore command \"stop\"");
 					stop();
-					std::cout << "server stopped" << std::endl;
 					return Aris::Core::Msg();
 				}
 				if (cmd == "exit")
@@ -655,8 +649,8 @@ namespace Aris
 					return Aris::Core::Msg();
 				}
 				
-
-				if (is_running_)sendParam(cmd, params);
+				if (!is_running_)throw std::runtime_error("can't execute command, because the server is not STARTED, please start it first");
+				sendParam(cmd, params);
 
 				return Aris::Core::Msg();
 			}

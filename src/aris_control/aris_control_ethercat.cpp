@@ -118,11 +118,6 @@ namespace Aris
 				{
 					rt_task_wait_period(NULL);
 
-					static int count = 0;
-
-					if ((++count) % 1000 == 0)rt_printf("rt\n");
-
-
 					mst.imp->read();//motors and sensors get data
 
 					//tg begin
@@ -450,7 +445,6 @@ namespace Aris
 
 			imp->is_stopping_ = false;
 			imp->is_running_ = false;
-			std::cout << "finish stop" << std::endl;
 		}
 		auto EthercatMaster::addSlavePtr(EthercatSlave *pSla)->void
 		{
