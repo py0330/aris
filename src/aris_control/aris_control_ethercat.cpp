@@ -118,6 +118,11 @@ namespace Aris
 				{
 					rt_task_wait_period(NULL);
 
+					static int count = 0;
+
+					if ((++count) % 1000 == 0)rt_printf("rt\n");
+
+
 					mst.imp->read();//motors and sensors get data
 
 					//tg begin
@@ -439,7 +444,31 @@ namespace Aris
 
 			imp->is_stopping_ = true;
 #ifdef UNIX
-			auto ret = rt_task_join(&imp->rt_task);
+			auto ret = rt_task_delete(&imp->rt_task);
+
+			switch (ret)
+			{
+			case 0:
+				std::cout << "successfull" << std::endl;
+				break;
+			case EINVAL:
+				std::cout << "invalid 1" << std::endl;
+				break;
+			case EPERM:
+				std::cout << "invalid 2" << std::endl;
+				break;
+			case EINTR:
+				std::cout << "invalid 3" << std::endl;
+				break;
+			case EIDRM:
+				std::cout << "invalid 4" << std::endl;
+				break;
+			default:
+				std::cout << "default" << ret << std::endl;
+				break;
+			}
+
+			ret = rt_task_join(&imp->rt_task);
 
 			switch (ret)
 			{
@@ -456,14 +485,14 @@ namespace Aris
 				std::cout << "invalid 3" << std::endl;
 				break;
 			default:
-				std::cout << "default" << std::endl;
+				std::cout << "default" << ret << std::endl;
 				break;
 			}
 #endif
 			//ecrt_master_deactivate(imp->ec_master);
 			//ecrt_release_master(imp->ec_master);
 
-			imp->is_stopping_ = false;
+			//imp->is_stopping_ = false;
 			imp->is_running_ = false;
 		}
 		auto EthercatMaster::addSlavePtr(EthercatSlave *pSla)->void
