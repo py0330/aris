@@ -368,6 +368,7 @@ namespace Aris
 			this->imp->sdo_vec[sdoID]->value = value;
 		}
 
+		
 		EthercatMaster::EthercatMaster():imp(new Imp){}
 		EthercatMaster::~EthercatMaster(){}
 		auto EthercatMaster::instance()->EthercatMaster&
@@ -379,7 +380,7 @@ namespace Aris
 		{
 			static std::unique_ptr<EthercatMaster> instance_ptr;
 			return std::ref(instance_ptr);
-		}
+		};
 		auto EthercatMaster::loadXml(const Aris::Core::XmlElement &xml_ele)->void
 		{
 			/*Load EtherCat slave types*/
@@ -436,14 +437,14 @@ namespace Aris
 		{
 			if (!imp->is_running_)throw std::runtime_error("master is not running, so can't stop");
 			
+			ecrt_master_deactivate(imp->ec_master);
+			ecrt_release_master(imp->ec_master);
+
 			imp->is_stopping_ = true;
 #ifdef UNIX
 			rt_task_join(&imp->rt_task);
 #endif
-			//ecrt_master_deactivate(imp->ec_master);
-			//ecrt_release_master(imp->ec_master);
 			imp->is_stopping_ = false;
-
 			imp->is_running_ = false;
 		}
 		auto EthercatMaster::addSlavePtr(EthercatSlave *pSla)->void
