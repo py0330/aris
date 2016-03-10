@@ -134,8 +134,8 @@ namespace Aris
 				}
 #endif
 			};
-			auto read()->void { ecrt_master_receive(ec_master);	for (auto &pSla : slave_vec)pSla->imp->read(); };
-			auto write()->void { for (auto &pSla : slave_vec)pSla->imp->write();	ecrt_master_send(ec_master); };
+			auto read()->void { ecrt_master_receive(ec_master);	for (auto &sla : slave_vec)sla->imp->read(); };
+			auto write()->void { for (auto &sla : slave_vec)sla->imp->write(); ecrt_master_send(ec_master); };
 			auto sync(uint64_t ns)->void
 			{
 				ecrt_master_application_time(ec_master, ns);
@@ -147,8 +147,7 @@ namespace Aris
 			ec_master_t* ec_master;
 
 			const int sample_period_ns_ = 1000000;
-			
-			
+
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
 #ifdef UNIX
@@ -444,55 +443,12 @@ namespace Aris
 
 			imp->is_stopping_ = true;
 #ifdef UNIX
-			auto ret = rt_task_delete(&imp->rt_task);
-
-			switch (ret)
-			{
-			case 0:
-				std::cout << "successfull" << std::endl;
-				break;
-			case EINVAL:
-				std::cout << "invalid 1" << std::endl;
-				break;
-			case EPERM:
-				std::cout << "invalid 2" << std::endl;
-				break;
-			case EINTR:
-				std::cout << "invalid 3" << std::endl;
-				break;
-			case EIDRM:
-				std::cout << "invalid 4" << std::endl;
-				break;
-			default:
-				std::cout << "default" << ret << std::endl;
-				break;
-			}
-
-			ret = rt_task_join(&imp->rt_task);
-
-			switch (ret)
-			{
-			case 0:
-				std::cout << "successfull" << std::endl;
-				break;
-			case EINVAL:
-				std::cout << "invalid 1" << std::endl;
-				break;
-			case EDEADLK:
-				std::cout << "invalid 2" << std::endl;
-				break;
-			case ESRCH:
-				std::cout << "invalid 3" << std::endl;
-				break;
-			default:
-				std::cout << "default" << ret << std::endl;
-				break;
-			}
+			rt_task_delete(&imp->rt_task);
 #endif
-			//ecrt_master_deactivate(imp->ec_master);
-			//ecrt_release_master(imp->ec_master);
+			ecrt_master_deactivate(imp->ec_master);
+			ecrt_release_master(imp->ec_master);
 
-			//imp->is_stopping_ = false;
+			imp->is_stopping_ = false;
 			imp->is_running_ = false;
 		}
 		auto EthercatMaster::addSlavePtr(EthercatSlave *pSla)->void
