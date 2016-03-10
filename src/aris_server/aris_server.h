@@ -51,6 +51,7 @@ namespace Aris
 			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)->void;
 			auto open()->void;
 			auto close()->void;
+			auto setOnExit(std::function<void(void)> callback_func)->void;
 
 		private:
 			~ControlServer();

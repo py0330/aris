@@ -484,6 +484,8 @@ namespace Aris
 			std::unique_ptr<Aris::Dynamic::Model> model_;
 			std::unique_ptr<Aris::Sensor::IMU> imu_;
 
+			//结束时的callback
+			std::function<void(void)> on_exit_callback_{nullptr};
 
 			std::vector<double> motion_pos_;
 			friend class ControlServer;
@@ -639,16 +641,23 @@ namespace Aris
 				}
 				if (cmd == "stop")
 				{
-					if (!is_running_)throw std::runtime_error("server already stopped, thus ignore command \"start\"");
+					if (!is_running_)throw std::runtime_error("server already stopped, thus ignore command \"stop\"");
 					stop();
 					std::cout << "server stopped" << std::endl;
 					return Aris::Core::Msg();
 				}
 				if (cmd == "exit")
 				{
-					stop();
-					server_socket_.stop();
-					std::cout << "server exited" << std::endl;
+					if (is_running_)stop();
+
+					std::thread exit_callback([this]() 
+					{
+						Aris::Core::msSleep(1000);
+						if (on_exit_callback_)on_exit_callback_();
+					});
+
+					exit_callback.detach();
+
 					return Aris::Core::Msg();
 				}
 				
@@ -1108,11 +1117,7 @@ namespace Aris
 				}
 				else
 				{
-					++count;
-					if (count % 1000 == 0)
-					{
-						rt_printf("execute cmd in count: %d\n", count);
-					}
+					if (++count % 1000 == 0)rt_printf("execute cmd in count: %d\n", count);
 				}
 			}
 
@@ -1199,6 +1204,10 @@ namespace Aris
 		{
 			imp->server_socket_.stop();
 		};
+		auto ControlServer::setOnExit(std::function<void(void)> callback_func)->void
+		{
+			this->imp->on_exit_callback_ = callback_func;
+		}
 
 		
 	}

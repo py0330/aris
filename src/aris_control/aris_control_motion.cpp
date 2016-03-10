@@ -504,10 +504,6 @@ namespace Aris
 		{
 			this->EthercatMaster::stop();
 			std::cout << "master stopped" << std::endl;
-
-			//imp->is_stopping_ = true;
-			//imp->record_thread_.join();
-			//std::cout << "recorder stopped" << std::endl;
 		}
 		auto EthercatController::motionNum()->std::size_t { return imp->motion_vec_.size(); };
 		auto EthercatController::motionAtAbs(int i)->EthercatMotion & { return *imp->motion_vec_.at(imp->map_abs2phy_[i]); };

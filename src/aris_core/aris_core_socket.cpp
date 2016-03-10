@@ -58,17 +58,8 @@ namespace Aris
 #ifdef WIN32
 			WSADATA _WsaData;              //windows下才用，linux下无该项
 #endif
-			Imp()
-				: _LisnSocket(0)
-				, _ConnSocket(0)
-				, _SinSize(sizeof(struct sockaddr_in))
-				, _ConnState(Socket::IDLE)
-				, onReceivedRequest(nullptr)
-				, onReceivedData(nullptr)
-				, onReceivedConnection(nullptr)
-				, onLoseConnection(nullptr)
-			{
-			};
+			Imp() : _LisnSocket(0), _ConnSocket(0), _SinSize(sizeof(struct sockaddr_in)), _ConnState(Socket::IDLE)
+				, onReceivedRequest(nullptr), onReceivedData(nullptr), onReceivedConnection(nullptr), onLoseConnection(nullptr) {};
 
 			~Imp() = default;
 
@@ -165,7 +156,7 @@ namespace Aris
 			cv_lck.release();
 
 			/*开启接受数据的循环*/
-			while (1)
+			for (;;)
 			{
 				int res = recv(connSocket, head.header, sizeof(MsgHeader), 0);
 
@@ -213,36 +204,27 @@ namespace Aris
 				switch (head.msgHeader.msg_type)
 				{
 				case SOCKET_GENERAL_DATA:
-				{
-					if (pConnS->onReceivedData != nullptr)
-						pConnS->onReceivedData(pConnS->pConn, receivedData);
+					if (pConnS->onReceivedData )pConnS->onReceivedData(pConnS->pConn, receivedData);
 					break;
-				}
 				case SOCKET_REQUEST:
 				{
 					Aris::Core::Msg m;
-					if (pConnS->onReceivedRequest != nullptr)
-					{
-						m = pConnS->onReceivedRequest(pConnS->pConn, receivedData);
-					}
+					if (pConnS->onReceivedRequest)m = pConnS->onReceivedRequest(pConnS->pConn, receivedData);
+
 					m.setType(SOCKET_REPLY);
 
 					if (send(pConnS->_ConnSocket, m.data_, m.size() + sizeof(MsgHeader), 0) == -1)
 					{
 						pConnS->pConn->stop();
-						if (pConnS->onLoseConnection != nullptr)
-							pConnS->onLoseConnection(pConnS->pConn);
+						if (pConnS->onLoseConnection != nullptr)pConnS->onLoseConnection(pConnS->pConn);
 						return;
 					}
 					break;
 				}
 				case SOCKET_REPLY:
-				{
 					if (pConnS->_ConnState != WAITING_FOR_REPLY)
 					{
-						if (pConnS->onReceiveError != nullptr)
-							pConnS->onReceiveError(pConnS->pConn);
-
+						if (pConnS->onReceiveError)pConnS->onReceiveError(pConnS->pConn);
 						return;
 					}
 					else
@@ -252,7 +234,6 @@ namespace Aris
 					}
 
 					break;
-				}
 				}
 			}		
 		}
