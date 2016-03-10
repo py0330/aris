@@ -114,7 +114,7 @@ namespace Aris
 
 				rt_task_set_periodic(NULL, TM_NOW, mst.imp->sample_period_ns);
 
-				while (!mst.imp->is_stopping)
+				while (!mst.imp->is_stopping_)
 				{
 					rt_task_wait_period(NULL);
 
@@ -142,7 +142,9 @@ namespace Aris
 			ec_master_t* ec_master;
 
 			const int sample_period_ns = 1000000;
-			std::atomic_bool is_stopping;
+			
+			
+			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
 #ifdef UNIX
 			RT_TASK rt_task;
@@ -398,12 +400,8 @@ namespace Aris
 		}
 		auto EthercatMaster::start()->void
 		{
-			static bool is_first_time{ true };
-			if (!is_first_time)
-			{
-				throw std::runtime_error("master already running");
-			}
-			is_first_time = false;
+			if (imp->is_running_)throw std::runtime_error("master already running");
+			imp->is_running_ = true;
 
 			// init begin
 #ifdef UNIX
@@ -428,10 +426,7 @@ namespace Aris
 
 #ifdef UNIX
 			rt_print_auto_init(1);
-
 			const int priority = 99;
-
-			imp->is_stopping = false;
 
 			rt_task_create(&imp->rt_task, "realtime core", 0, priority, T_FPU);
 			rt_task_start(&imp->rt_task, &EthercatMaster::Imp::rt_task_func, NULL);
@@ -439,10 +434,17 @@ namespace Aris
 		};
 		auto EthercatMaster::stop()->void
 		{
-			imp->is_stopping = true;
+			if (!imp->is_running_)throw std::runtime_error("master is not running, so can't stop");
+			
+			imp->is_stopping_ = true;
 #ifdef UNIX
 			rt_task_join(&imp->rt_task);
 #endif
+			ecrt_master_deactivate(imp->ec_master);
+			ecrt_release_master(imp->ec_master);
+			imp->is_stopping_ = false;
+
+			imp->is_running_ = false;
 		}
 		auto EthercatMaster::addSlavePtr(EthercatSlave *pSla)->void
 		{

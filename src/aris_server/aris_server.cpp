@@ -418,9 +418,9 @@ namespace Aris
 		private:
 			Imp(const Imp&) = delete;
 
-			auto OnReceiveMsg(const Aris::Core::Msg &msg)->Aris::Core::Msg;
-			auto DecodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void;
-			auto SendParam2RT(const std::string &cmd, const std::map<std::string, std::string> &params)->void;
+			auto onReceiveMsg(const Aris::Core::Msg &msg)->Aris::Core::Msg;
+			auto decodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void;
+			auto sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void;
 
 			auto home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int;
 			auto enable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int;
@@ -538,11 +538,11 @@ namespace Aris
 			});
 			server_socket_.setOnReceivedRequest([this](Aris::Core::Socket *pConn, Aris::Core::Msg &msg)
 			{
-				return OnReceiveMsg(msg);
+				return onReceiveMsg(msg);
 			});
 			server_socket_.setOnLoseConnection([this](Aris::Core::Socket *pConn)
 			{
-				std::cout << Aris::Core::log("lost connection") << std::endl;
+				Aris::Core::log("lost connection");
 				while (true)
 				{
 					try
@@ -556,7 +556,7 @@ namespace Aris
 						Aris::Core::msSleep(1000);
 					}
 				}
-				std::cout << Aris::Core::log("restart server socket successful") << std::endl;
+				Aris::Core::log("restart server socket successful");
 
 				return 0;
 			});
@@ -619,14 +619,14 @@ namespace Aris
 			}
 
 		}
-		auto ControlServer::Imp::OnReceiveMsg(const Aris::Core::Msg &msg)->Aris::Core::Msg
+		auto ControlServer::Imp::onReceiveMsg(const Aris::Core::Msg &msg)->Aris::Core::Msg
 		{
 			try
 			{
 				std::string cmd;
 				std::map<std::string, std::string> params;
 
-				DecodeMsg2Param(msg, cmd, params);
+				decodeMsg2Param(msg, cmd, params);
 				
 				if (cmd == "start")
 				{
@@ -651,7 +651,7 @@ namespace Aris
 				}
 				
 
-				if (is_running_)SendParam2RT(cmd, params);
+				if (is_running_)sendParam(cmd, params);
 
 				return Aris::Core::Msg();
 			}
@@ -671,7 +671,7 @@ namespace Aris
 				return error_msg;
 			}
 		}
-		auto ControlServer::Imp::DecodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void
+		auto ControlServer::Imp::decodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void
 		{
 			std::vector<std::string> paramVector;
 			int paramNum{ 0 };
@@ -829,7 +829,7 @@ namespace Aris
 				std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
 			}
 		}
-		auto ControlServer::Imp::SendParam2RT(const std::string &cmd, const std::map<std::string, std::string> &params)->void
+		auto ControlServer::Imp::sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void
 		{
 			Aris::Core::Msg cmd_msg;
 
@@ -1008,10 +1008,10 @@ namespace Aris
 
 			return ret;
 		}
-		auto ControlServer::Imp::execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::execute_cmd(int count, char *cmd_param, Aris::Control::EthercatController::Data &data)->int
 		{
 			int ret;
-			Aris::Dynamic::PlanParamBase *param = reinterpret_cast<Aris::Dynamic::PlanParamBase *>(cmd);
+			Aris::Dynamic::PlanParamBase *param = reinterpret_cast<Aris::Dynamic::PlanParamBase *>(cmd_param);
 			param->count = count;
 
 			switch (param->cmd_type)
@@ -1191,7 +1191,7 @@ namespace Aris
 					Aris::Core::msSleep(1000);
 				}
 			}
-			std::cout << Aris::Core::log("restart server socket successful") << std::endl;
+			std::cout << Aris::Core::log("server open successful") << std::endl;
 		};
 		auto ControlServer::close()->void 
 		{
