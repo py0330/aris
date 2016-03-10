@@ -444,16 +444,16 @@ namespace Aris
 			switch (ret)
 			{
 			case 0:
-				std::cout << "successfull" << std::cout << std::endl;
+				std::cout << "successfull" << std::endl;
 				break;
 			case EINVAL:
-				std::cout << "invalid 1" << std::cout << std::endl;
+				std::cout << "invalid 1" << std::endl;
 				break;
 			case EDEADLK:
-				std::cout << "invalid 2" << std::cout << std::endl;
+				std::cout << "invalid 2" << std::endl;
 				break;
 			case ESRCH:
-				std::cout << "invalid 3" << std::cout << std::endl;
+				std::cout << "invalid 3" << std::endl;
 				break;
 			default:
 				break;
