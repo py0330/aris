@@ -1194,8 +1194,6 @@ namespace Aris
 		{
 			this->imp->on_exit_callback_ = callback_func;
 		}
-
-		
 	}
 	
 }

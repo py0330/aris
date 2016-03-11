@@ -560,7 +560,7 @@ namespace Aris
 				virtual auto adamsScript()const->std::string override final
 				{
 					std::stringstream ss;
-					ss << "marker/" << mak_move_->adamsID()
+					ss << std::setprecision(15) << "marker/" << mak_move_->adamsID()
 						<< " , QP = " << prt_pe_[0] << "," << prt_pe_[1] << "," << prt_pe_[2]
 						<< " , REULER =" << prt_pe_[3] << "," << prt_pe_[4] << "," << prt_pe_[5];
 					return std::move(ss.str());
