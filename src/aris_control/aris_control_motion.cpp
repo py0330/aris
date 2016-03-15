@@ -356,6 +356,10 @@ namespace Aris
 		{
 			imp->pos_offset_ = offset;
 		};
+		auto EthercatMotion::posOffset()const->std::int32_t
+		{
+			return imp->pos_offset_;
+		}
 
 		auto EthercatForceSensor::readData(Data &data)->void
 		{

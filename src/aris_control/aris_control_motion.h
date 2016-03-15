@@ -49,6 +49,7 @@ namespace Aris
 			auto maxVelCount()->std::int32_t;
 			auto pos2countRatio()->std::int32_t;
 			auto setPosOffset(std::int32_t offset)->void;
+			auto posOffset()const->std::int32_t;
 
 		private:
 			class Imp;
