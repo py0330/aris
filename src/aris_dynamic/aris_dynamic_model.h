@@ -386,7 +386,8 @@ namespace Aris
 			explicit Akima(Object &father, const std::string &name, std::size_t id, int num, const double *x_in, const double *y_in);
 			explicit Akima(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id);
 			explicit Akima(Object &father, const std::string &name, std::size_t id, const std::list<double> &x_in, const std::list<double> &y_in);
-			explicit Akima(Object &father, const std::string &name, std::size_t id, const std::list<std::pair<double,double> > &data_in);
+			explicit Akima(Object &father, const std::string &name, std::size_t id, const std::list<std::pair<double, double> > &data_in);
+			explicit Akima(Object &father, const std::string &name, std::size_t id, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope);
 
 		private:
 			struct Imp;

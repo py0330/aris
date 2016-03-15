@@ -354,7 +354,69 @@ namespace Aris
 				{
 					t[i] = (ds[i + 2] * s[i + 1] + ds[i] * s[i + 2]) / (ds[i] + ds[i + 2]);
 				}
+			}
 
+			/*所需储存的变量*/
+			imp->_p0.resize(data_list.size() - 1);
+			imp->_p1.resize(data_list.size() - 1);
+			imp->_p2.resize(data_list.size() - 1);
+			imp->_p3.resize(data_list.size() - 1);
+
+			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
+			{
+				imp->_p0[i] = imp->y_[i];
+				imp->_p1[i] = t[i];
+				imp->_p2[i] = (3 * s[i + 2] - 2 * t[i] - t[i + 1]) / (imp->x_[i + 1] - imp->x_[i]);
+				imp->_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (imp->x_[i + 1] - imp->x_[i]) / (imp->x_[i + 1] - imp->x_[i]);
+			}
+		}
+		Akima::Akima(Object &father, const std::string &name, std::size_t id, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope)
+			: Element(father, name, id)
+		{
+			auto data_list = data_in;
+
+			if (data_list.size() < 4)throw std::runtime_error("Akima must be inited with data size more than 4");
+
+			/*对数据进行排序,并保存*/
+			data_list.sort([](const std::pair<double, double> &a, const std::pair<double, double> &b)
+			{
+				return a.first < b.first;
+			});
+
+			for (auto &p : data_list)
+			{
+				imp->x_.push_back(p.first);
+				imp->y_.push_back(p.second);
+			}
+
+			/*开始计算*/
+			std::vector<double> s(data_list.size() + 3), ds(data_list.size() + 2), t(data_list.size());
+
+			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
+			{
+				s[i + 2] = (imp->y_[i + 1] - imp->y_[i]) / (imp->x_[i + 1] - imp->x_[i]);
+			}
+			///////// this part is different
+			s[1] = begin_slope;
+			s[0] = begin_slope;
+			s[data_list.size() + 1] = end_slope;
+			s[data_list.size() + 2] = end_slope;
+			///////// this part is different end
+			for (std::size_t i = 0; i < data_list.size() + 2; ++i)
+			{
+				ds[i] = std::abs(s[i + 1] - s[i]);
+			}
+
+			for (std::size_t i = 0; i < data_list.size(); ++i)
+			{
+				if (ds[i] + ds[i + 2]<1e-12)/*前后两段的斜斜率都为0*/
+				{
+					t[i] = (s[i + 1] + s[i + 2]) / 2;
+				}
+				else
+				{
+					t[i] = (ds[i + 2] * s[i + 1] + ds[i] * s[i + 2]) / (ds[i] + ds[i + 2]);
+				}
 			}
 
 			/*所需储存的变量*/
@@ -1148,7 +1210,7 @@ namespace Aris
 			imp->variable_pool_ = std::move(ElementPool<Variable>(*this, *var_xml_ele));
 
 			auto aki_xml_ele = xml_ele.FirstChildElement("Akima");
-			if (!aki_xml_ele)throw(std::runtime_error("Model must have Akima element"));
+			if (!aki_xml_ele)throw(std::runtime_error("Model must have akima element"));
 			imp->akima_pool_ = std::move(ElementPool<Akima>(*this, *aki_xml_ele));
 
 			auto prt_xml_ele = xml_ele.FirstChildElement("Part");
