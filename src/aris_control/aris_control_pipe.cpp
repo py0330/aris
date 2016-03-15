@@ -23,7 +23,7 @@ namespace Aris
 {
 	namespace Control
 	{
-#ifdef UNIX
+
 		class PipeBase::Imp
 		{
 		public:
@@ -38,6 +38,7 @@ namespace Aris
 		private:
 			void InitRT(int port)
 			{
+#ifdef UNIX
 				if ((FD_RT = rt_dev_socket(AF_RTIPC, SOCK_DGRAM, IPCPROTO_XDDP)) < 0)
 				{
 					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
@@ -76,9 +77,11 @@ namespace Aris
 				{
 					throw std::runtime_error(std::string("RT pipe Init failed! Port:") + std::to_string(port));
 				}
+#endif
 			}
 			void InitNRT(int port, bool isBlock)
 			{
+#ifdef UNIX
 				if (asprintf(&FD_NRT_DEVNAME, "/dev/rtp%d", port) < 0)
 				{
 					throw std::runtime_error("Error in asprintf");
@@ -104,6 +107,7 @@ namespace Aris
 					int flags = fcntl(FD_NRT, F_GETFL, 0);
 					fcntl(FD_NRT, F_SETFL, flags | O_NONBLOCK);
 				}
+#endif
 			}
 
 			int FD_RT;
@@ -113,43 +117,64 @@ namespace Aris
 			std::recursive_mutex mutexInNRT;
 
 			friend class PipeBase;
+
 		};
 
 		PipeBase::PipeBase(bool isBlock):pImp(new PipeBase::Imp(isBlock)){}
 		PipeBase::~PipeBase(){}
 		int PipeBase::sendToRTRawData(const void *pData, int size)
 		{
+#ifdef UNIX
 			if (pData == nullptr)
 			{
 				throw std::runtime_error("SendNRTtoRT:Invalid pointer");
 			}
 			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
 			return write(pImp->FD_NRT, pData, size);
+#endif
+#ifdef WIN32
+			return 0;
+#endif
 		}
 		int PipeBase::sendToNrtRawData(const void* pData, int size)
 		{
+#ifdef UNIX
 			if (pData == nullptr)
 			{
 				throw std::runtime_error("SendRTtoNRT:Invalid pointer");
 			}
-			return rt_dev_sendto(pImp->FD_RT, pData, size, 0, NULL, 0);;
+			return rt_dev_sendto(pImp->FD_RT, pData, size, 0, NULL, 0);
+#endif
+#ifdef WIN32
+			return 0;
+#endif
 		}
 		int PipeBase::recvInRTRawData(void* pData, int size)
 		{
+#ifdef UNIX
 			if (pData == nullptr)
 			{
 				throw std::runtime_error("RecvRTfromNRT:Invalid pointer");
 			}
 			return rt_dev_recvfrom(pImp->FD_RT, pData, size, MSG_DONTWAIT, NULL, 0);
+#endif
+#ifdef WIN32
+			return 0;
+#endif
 		}
 		int PipeBase::recvInNrtRawData(void *pData, int size)
 		{
+#ifdef UNIX
 			if (pData == nullptr)
 			{
 				throw std::runtime_error("RecvNRTfromRT:Invalid pointer");
 			}
 			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
 			return read(pImp->FD_NRT, pData, size);
+#endif
+#ifdef WIN32
+			return 0;
+#endif
 		}
 		
 		Pipe<Aris::Core::Msg>::Pipe(bool isBlock) :PipeBase(isBlock)
@@ -177,7 +202,5 @@ namespace Aris
 			recvInNrtRawData(msg.data(), msg.size());
 			return msg.size() + sizeof(Aris::Core::MsgHeader);
 		}
-#endif
-		
 	}
 }

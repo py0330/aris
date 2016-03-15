@@ -1165,6 +1165,14 @@ namespace Aris
 			loadXml(doc);
 		}
 		auto ControlServer::loadXml(const Aris::Core::XmlDocument &xmlDoc)->void {	imp->loadXml(xmlDoc);}
+		auto ControlServer::model()->Dynamic::Model&
+		{
+			return std::ref(*imp->model_.get());
+		};
+		auto ControlServer::controller()->Control::EthercatController&
+		{
+			return std::ref(*imp->controller_);
+		}
 		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)->void
 		{
 			imp->addCmd(cmd_name, parse_func, gait_func);

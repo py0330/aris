@@ -288,6 +288,7 @@ namespace Aris
 		{
 			auto mst = EthercatMaster::instance().imp->ec_master;
 
+#ifdef UNIX
 			for (auto &reg : imp->ec_pdo_entry_reg_vec)	reg.position = imp->position;
 
 			// Create domain
@@ -309,6 +310,7 @@ namespace Aris
 
 			// Configure the slave's discrete clock			
 			if (imp->distributed_clock)ecrt_slave_config_dc(imp->ec_slave_config, *imp->distributed_clock.get(), 1000000, 4400000, 0, 0);
+#endif
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int8_t &value) const->void
 		{
@@ -406,7 +408,7 @@ namespace Aris
 			// init begin
 #ifdef UNIX
 			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
-#endif
+
 			imp->ec_master = ecrt_request_master(0);
 			if (!imp->ec_master) { throw std::runtime_error("master request failed!"); }
 
@@ -424,7 +426,6 @@ namespace Aris
 			}
 			//init end
 
-#ifdef UNIX
 			rt_print_auto_init(1);
 			const int priority = 99;
 
@@ -439,10 +440,10 @@ namespace Aris
 			imp->is_stopping_ = true;
 #ifdef UNIX
 			rt_task_delete(&imp->rt_task);
-#endif
+
 			ecrt_master_deactivate(imp->ec_master);
 			ecrt_release_master(imp->ec_master);
-
+#endif
 			imp->is_stopping_ = false;
 			imp->is_running_ = false;
 		}

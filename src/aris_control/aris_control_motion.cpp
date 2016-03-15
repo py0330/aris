@@ -249,7 +249,7 @@ namespace Aris
 					return 0;
 				}
 			}
-			std::int32_t pos() { std::int32_t pos; pFather->readPdo(1, 0, pos); return pos; };
+			std::int32_t pos() { std::int32_t pos; pFather->readPdo(1, 0, pos); return pos + pos_offset_; };
 			std::int32_t vel() { std::int32_t vel; pFather->readPdo(1, 2, vel); return vel; };
 			std::int32_t cur() { std::int16_t cur; pFather->readPdo(2, 0, cur); return cur; };
 		
@@ -261,6 +261,8 @@ namespace Aris
 			
 			EthercatMotion *pFather;
 			
+			std::int32_t pos_offset_{0};
+
 			bool is_fake{ true };
 			bool is_waiting_mode{ false };
 			
@@ -350,6 +352,10 @@ namespace Aris
 		auto EthercatMotion::phyID()->std::int32_t { return imp->phy_id_; };
 		auto EthercatMotion::maxVelCount()->std::int32_t { return imp->max_vel_count_; };
 		auto EthercatMotion::pos2countRatio()->std::int32_t { return imp->input2count_; };
+		auto EthercatMotion::setPosOffset(std::int32_t offset)->void
+		{
+			imp->pos_offset_ = offset;
+		};
 
 		auto EthercatForceSensor::readData(Data &data)->void
 		{

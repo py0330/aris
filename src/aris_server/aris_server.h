@@ -48,6 +48,8 @@ namespace Aris
 
 			auto loadXml(const char *fileName)->void;
 			auto loadXml(const Aris::Core::XmlDocument &xmlDoc)->void;
+			auto model()->Dynamic::Model&;
+			auto controller()->Control::EthercatController&;
 			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)->void;
 			auto open()->void;
 			auto close()->void;

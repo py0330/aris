@@ -1191,11 +1191,11 @@ namespace Aris
 		}
 		auto Model::loadXml(const Aris::Core::XmlDocument &xml_doc)->void
 		{
-			auto pModel = xml_doc.RootElement()->FirstChildElement("Model");
+			auto model_xml_ele = xml_doc.RootElement()->FirstChildElement("Model");
 
-			if (!pModel)throw std::runtime_error("can't find Model element in xml file");
+			if (!model_xml_ele)throw std::runtime_error("can't find Model element in xml file");
 
-			loadXml(*pModel);
+			loadXml(*model_xml_ele);
 		}
 		auto Model::loadXml(const Aris::Core::XmlElement &xml_ele)->void
 		{
