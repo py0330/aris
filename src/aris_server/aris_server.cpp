@@ -571,22 +571,22 @@ namespace Aris
 		{
 			if (cmd_name == "en")
 			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for enable command");
+				if (gait_func)throw std::runtime_error("you can not set plan_func for \"en\" command");
 				this->parse_enable_func_ = parse_func;
 			}
 			else if (cmd_name == "ds")
 			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for disable command");
+				if (gait_func)throw std::runtime_error("you can not set plan_func for \"ds\" command");
 				this->parse_disable_func_ = parse_func;
 			}
 			else if (cmd_name == "hm")
 			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for home command");
+				if (gait_func)throw std::runtime_error("you can not set plan_func for \"hm\" command");
 				this->parse_home_func_ = parse_func;
 			}
 			else if (cmd_name == "fake_home")
 			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for home command");
+				if (gait_func)throw std::runtime_error("you can not set plan_func for \"fake_home\" command");
 				this->parse_home_func_ = parse_func;
 			}
 			else
