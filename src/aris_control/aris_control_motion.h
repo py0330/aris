@@ -79,11 +79,11 @@ namespace Aris
 		public:
 			struct Data
 			{
-				const std::vector<EthercatMotion::RawData> *last_motion_rawdata;
-				std::vector<EthercatMotion::RawData> *motion_rawdata;
+				const std::vector<EthercatMotion::RawData> *last_motion_raw_data;
+				std::vector<EthercatMotion::RawData> *motion_raw_data;
 				std::vector<EthercatForceSensor::Data> *force_sensor_data;
 				const Aris::Core::MsgRT *msg_recv;
-				Aris::Core::MsgRT *pMsgSend;
+				Aris::Core::MsgRT *msg_send;
 			};
 
 			virtual ~EthercatController();

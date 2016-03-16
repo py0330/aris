@@ -556,9 +556,9 @@ namespace Aris
 			imp->record_pipe_->sendToNrt(imp->motion_rawdata_);
 
 			/*向外发送消息*/
-			if (data.pMsgSend)
+			if (data.msg_send)
 			{
-				this->msgPipe().sendToNrt(*data.pMsgSend);
+				this->msgPipe().sendToNrt(*data.msg_send);
 			}
 		}
 	}
