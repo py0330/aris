@@ -165,16 +165,16 @@ namespace Aris
 
 		void AddAllParams(const Aris::Core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames)
 		{
-			/*add all children*/
+			//add all children//
 			for (auto pChild = pEle->FirstChildElement(); pChild != nullptr; pChild = pChild->NextSiblingElement())
 			{
-				/*check if children already has this value*/
+				//check if children already has this value//
 				if (pNode->FindChild(pChild->name()))
 				{
-					throw std::logic_error(std::string("XML file has error: node \"") + pChild->name() + "\" already exist");
+					throw std::runtime_error(std::string("XML file has error: node \"") + pChild->name() + "\" already exist");
 				}
 
-				/*set all children*/
+				//set all children//
 				if (pChild->Attribute("type", "group"))
 				{
 					AddAllParams(pChild, pNode->AddChildGroup(pChild->name()), allParams, shortNames);
@@ -185,12 +185,12 @@ namespace Aris
 				}
 				else
 				{
-					/*now the pChild is a param_node*/
+					//now the pChild is a param_node//
 					Node * insertNode;
 
 					if (allParams.find(std::string(pChild->name())) != allParams.end())
 					{
-						throw std::logic_error(std::string("XML file has error: node \"") + pChild->name() + "\" already exist");
+						throw std::runtime_error(std::string("XML file has error: node \"") + pChild->name() + "\" already exist");
 					}
 					else
 					{
@@ -203,7 +203,7 @@ namespace Aris
 					{
 						if (shortNames.find(*pChild->Attribute("abbreviation")) != shortNames.end())
 						{
-							throw std::logic_error(std::string("XML file has error: abbreviations \"") + pChild->Attribute("abbreviation") + "\" already exist");
+							throw std::runtime_error(std::string("XML file has error: abbreviation \"") + pChild->Attribute("abbreviation") + "\" already exist");
 						}
 						else
 						{
@@ -323,16 +323,13 @@ namespace Aris
 
 				if (dynamic_cast<GroupNode*>(pNode))
 				{
-					for (auto &i : pNode->children)
-						AddAllDefault(i.get(), params);
+					for (auto &i : pNode->children)	AddAllDefault(i.get(), params);
 				}
 
 				if (dynamic_cast<ParamNode*>(pNode))
 				{
-					if (params.at(pNode->name) == "")
-					{
-						params.at(pNode->name) = dynamic_cast<ParamNode*>(pNode)->defaultValue;
-					}
+					if (params.at(pNode->name) == "")params.at(pNode->name) = dynamic_cast<ParamNode*>(pNode)->defaultValue;
+
 					return;
 				}
 			}

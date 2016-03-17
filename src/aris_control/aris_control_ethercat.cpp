@@ -36,6 +36,109 @@ namespace Aris
 			auto read()->void { ecrt_domain_process(domain); };
 			auto write()->void { ecrt_domain_queue(domain); };
 
+			template<typename DataType> class PdoTx1;
+			template<typename DataType> class PdoRx1;
+			template<typename DataType> class Sdo1;
+
+			class DataObject1
+			{
+			public:
+				virtual ~DataObject1() = default;
+
+				Imp *imp_;
+				std::uint16_t index_;
+				std::uint8_t subindex_;
+				std::uint8_t size_;
+				std::uint32_t offset_;
+
+				template<typename DataType>auto readPdo(DataType&data)->void
+				{
+					if (!dynamic_cast<PdoTx1<DataType> *>(this)) throw std::runtime_error("invalid pdo Tx type");
+					dynamic_cast<PdoTx1<DataType> *>(this)->read(data);
+				};
+				template<typename DataType>auto writePdo(DataType data)->void
+				{
+					if (!dynamic_cast<PdoRx1<DataType> *>(this)) throw std::runtime_error("invalid pdo Rx type");
+					dynamic_cast<PdoRx1<DataType> *>(this)->write(data);
+				};
+				template<typename DataType>auto readSdo(DataType&data)->void
+				{
+					if (!dynamic_cast<Sdo1<DataType> *>(this)) throw std::runtime_error("invalid sdo type");
+					dynamic_cast<Sdo1<DataType> *>(this)->read(data);
+				};
+				template<typename DataType>auto writeSdo(DataType data)->void
+				{
+					if (!dynamic_cast<Sdo1<DataType> *>(this)) throw std::runtime_error("invalid sdo type");
+					dynamic_cast<Sdo1<DataType> *>(this)->write(data);
+				};
+
+				class TypeInfo
+				{
+				public:
+					std::function<DataObject1*()> newPdoTx;
+					std::function<DataObject1*()> newPdoRx;
+					std::function<DataObject1*()> newSdo;
+
+					template<typename DataType> static auto createTypeInfo()->TypeInfo
+					{
+						TypeInfo info;
+
+						info.newPdoTx = []() {return new PdoTx1<DataType>; };
+						info.newPdoRx = []() {return new PdoRx1<DataType>; };
+						info.newSdo = []() {return new Sdo1<DataType>; };
+
+						return info;
+					}
+				};
+
+				static auto typeInfoMap()->const std::map<std::string, TypeInfo> &
+				{
+					const static std::map<std::string, TypeInfo> info_map
+					{
+						std::make_pair(std::string("int8"), TypeInfo::createTypeInfo<std::int8_t>()),
+						std::make_pair(std::string("uint8"), TypeInfo::createTypeInfo<std::uint8_t>()),
+						std::make_pair(std::string("int16"), TypeInfo::createTypeInfo<std::int16_t>()),
+						std::make_pair(std::string("uint16"), TypeInfo::createTypeInfo<std::uint16_t>()),
+						std::make_pair(std::string("int32"), TypeInfo::createTypeInfo<std::int32_t>()),
+						std::make_pair(std::string("uint32"), TypeInfo::createTypeInfo<std::uint32_t>()),
+					};
+
+					return std::ref(info_map);
+				}
+				
+			};
+			template<typename DataType> class PdoTx1 :public DataObject1
+			{
+			public:
+				virtual ~PdoTx1() = default;
+				auto read(DataType &data)->void { data = *reinterpret_cast<const DataType*>(imp_->domain_pd + offset_); };
+			};
+			template<typename DataType> class PdoRx1 :public DataObject1
+			{
+			public:
+				virtual ~PdoRx1() = default;
+				auto write(DataType data)->void { *reinterpret_cast<DataType*>(imp_->domain_pd + offset_) = data; };
+			};
+			template<typename DataType> class Sdo1 :public DataObject1
+			{
+			public:
+				virtual ~Sdo1() = default;
+				auto read(DataType &data)->void { data = data_; };
+				auto write(DataType data)->void { data_ = data; };
+				
+				DataType data_;
+			};
+			class PdoGroup1
+			{
+			public:
+				bool is_tx;
+				uint16_t index;
+				std::vector<std::unique_ptr<DataObject1> > pdo_vec;
+				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
+			};
+
+
+
 			/*data object, can be PDO or SDO*/
 			class DataObject
 			{
@@ -85,7 +188,7 @@ namespace Aris
 				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
 			};
 
-			std::vector<PdoGroup> pdo_group_vec;
+			std::vector<PdoGroup1> pdo_group_vec;
 			std::vector<std::unique_ptr<DataObject> > sdo_vec;
 
 			std::uint32_t product_code, vender_id;
@@ -232,15 +335,28 @@ namespace Aris
 			auto PDO = xml_ele.FirstChildElement("PDO");
 			for (auto p_g = PDO->FirstChildElement(); p_g != nullptr; p_g = p_g->NextSiblingElement())
 			{
-				Imp::PdoGroup pdo_group;
+				Imp::PdoGroup1 pdo_group;
 				pdo_group.index = std::stoi(p_g->Attribute("index"), nullptr, 0);
 				pdo_group.is_tx = p_g->Attribute("is_tx", "true") ? true : false;
 				for (auto p = p_g->FirstChildElement(); p != nullptr; p = p->NextSiblingElement())
 				{
-					pdo_group.pdo_vec.push_back(std::unique_ptr<Imp::DataObject>(addDoType(*p, pdo_group.is_tx)));
-					pdo_group.pdo_vec.back()->index = std::stoi(p->Attribute("index"), nullptr, 0);
-					pdo_group.pdo_vec.back()->subindex = std::stoi(p->Attribute("subindex"), nullptr, 0);
-					pdo_group.pdo_vec.back()->imp = imp.get();
+					if (pdo_group.is_tx)
+					{
+						pdo_group.pdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(
+							Imp::DataObject1::typeInfoMap().at(p->Attribute("type")).newPdoTx()
+							));
+					}
+					else
+					{
+						pdo_group.pdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(
+							Imp::DataObject1::typeInfoMap().at(p->Attribute("type")).newPdoRx()
+							));
+					}
+					
+					
+					pdo_group.pdo_vec.back()->index_ = std::stoi(p->Attribute("index"), nullptr, 0);
+					pdo_group.pdo_vec.back()->subindex_ = std::stoi(p->Attribute("subindex"), nullptr, 0);
+					pdo_group.pdo_vec.back()->imp_ = imp.get();
 				}
 				imp->pdo_group_vec.push_back(std::move(pdo_group));
 			}
@@ -262,8 +378,8 @@ namespace Aris
 			{
 				for (auto &p : p_g.pdo_vec)
 				{
-					imp->ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ imp->alias, imp->position, imp->vender_id, imp->product_code, p->index, p->subindex, &p->offset });
-					p_g.ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ p->index, p->subindex, p->size });
+					imp->ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ imp->alias, imp->position, imp->vender_id, imp->product_code, p->index_, p->subindex_, &p->offset_ });
+					p_g.ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ p->index_, p->subindex_, p->size_ });
 				}
 
 				if (p_g.is_tx)
@@ -314,51 +430,51 @@ namespace Aris
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int8_t &value) const->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int16_t &value) const->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int32_t &value) const->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint32_t &value) const->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int8_t value)->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int16_t value)->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int32_t value)->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint8_t value)->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint16_t value)->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint32_t value)->void
 		{
-			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writeValue(value);
+			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::readSdo(int sdoID, std::int32_t &value) const->void
 		{
