@@ -83,9 +83,9 @@ namespace Aris
 					{
 						TypeInfo info;
 
-						info.newPdoTx = []() {return new PdoTx1<DataType>; };
-						info.newPdoRx = []() {return new PdoRx1<DataType>; };
-						info.newSdo = []() {return new Sdo1<DataType>; };
+						info.newPdoTx = []() {auto ret = new PdoTx1<DataType>; ret->size_ = sizeof(DataType); return ret; };
+						info.newPdoRx = []() {auto ret = new PdoRx1<DataType>; ret->size_ = sizeof(DataType); return ret; };
+						info.newSdo = []() {auto ret = new Sdo1<DataType>; ret->size_ = sizeof(DataType); return ret; };
 
 						return info;
 					}
