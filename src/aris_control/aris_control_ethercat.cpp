@@ -319,7 +319,7 @@ namespace Aris
 			// Set Sdo
 			for (auto &sdo : imp->sdo_vec)
 			{
-				std::cout << "sdo:" << sdo->index_ << "  " << sdo->subindex_ << "  " << sdo->sdo_data_uint8_ << "  " << sdo->sdo_data_uint16_ << "  " << sdo->sdo_data_uint32_ << "  " << std::endl;
+				std::cout << "sdo:" << sdo->index_ << "  " << unsigned(sdo->subindex_) << "  " << unsigned(sdo->sdo_data_uint8_) << "  " << sdo->sdo_data_uint16_ << "  " << sdo->sdo_data_uint32_ << "  " << std::endl;
 
 				
 				switch (sdo->size_)
