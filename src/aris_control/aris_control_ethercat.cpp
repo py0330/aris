@@ -376,26 +376,32 @@ namespace Aris
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int8_t value)->void
 		{
+			if (imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't write pdo in tx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int16_t value)->void
 		{
+			if (imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't write pdo in tx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int32_t value)->void
 		{
+			if (imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't write pdo in tx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint8_t value)->void
 		{
+			if (imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't write pdo in tx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint16_t value)->void
 		{
+			if (imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't write pdo in tx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::uint32_t value)->void
 		{
+			if (imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't write pdo in tx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
 		}
 		auto EthercatSlave::readSdo(int sdoID, std::int8_t &value) const->void { imp->sdo_vec[sdoID]->readSdo(value); }
