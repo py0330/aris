@@ -326,10 +326,10 @@ namespace Aris
 				{
 				case 8:		
 					ecrt_slave_config_sdo8(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint8_); 
-					std::cout"config 8" << std::endl;
+					std::cout<<"config 8" << std::endl;
 					break;
-				case 16:	ecrt_slave_config_sdo16(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint16_);	std::cout"config 16" << std::endl; break;
-				case 32:	ecrt_slave_config_sdo32(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint32_);	std::cout"config 32" << std::endl; break;
+				case 16:	ecrt_slave_config_sdo16(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint16_);	std::cout<<"config 16" << std::endl; break;
+				case 32:	ecrt_slave_config_sdo32(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint32_);	std::cout<<"config 32" << std::endl; break;
 				}
 			}
 
