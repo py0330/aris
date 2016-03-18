@@ -38,11 +38,9 @@ namespace Aris
 			auto read()->void { ecrt_domain_process(domain); };
 			auto write()->void { ecrt_domain_queue(domain); };
 
-			class DataObject1
+			class DataObject
 			{
 			public:
-				virtual ~DataObject1() = default;
-
 				// common data
 				Imp *imp_;
 				std::string type_name_;
@@ -89,11 +87,8 @@ namespace Aris
 				public:
 					const std::type_info *type_info_;
 					std::function<void(const std::string &, void *)> queryFunc;
-
-					std::function<DataObject1*(const Aris::Core::XmlElement &xml_ele, Imp *imp)> newPdo;
-					std::function<DataObject1*(const Aris::Core::XmlElement &xml_ele, Imp *imp)> newSdo;
-					
-
+					std::function<DataObject*(const Aris::Core::XmlElement &xml_ele, Imp *imp)> newPdo;
+					std::function<DataObject*(const Aris::Core::XmlElement &xml_ele, Imp *imp)> newSdo;
 
 					template<typename DataType> static auto createTypeInfo()->TypeInfo
 					{
@@ -117,9 +112,9 @@ namespace Aris
 
 						
 
-						info.newPdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp)
+						info.newPdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp) -> DataObject*
 						{
-							auto ret = new DataObject1;
+							auto ret = new DataObject;
 							ret->type_name_ = xml_ele.Attribute("type");
 							ret->index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
 							ret->subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
@@ -128,15 +123,15 @@ namespace Aris
 							return ret; 
 						};
 
-						info.newSdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp) -> DataObject1*
+						info.newSdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp) -> DataObject*
 						{
-							auto ret = new DataObject1;
+							auto ret = new DataObject;
 							ret->type_name_ = xml_ele.Attribute("type");
 							ret->index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
 							ret->subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
 							ret->imp_ = imp;
 							ret->size_ = sizeof(DataType) * 8;
-							DataObject1::typeInfoMap().at(xml_ele.Attribute("type")).queryFunc(xml_ele.Attribute("value"), ret->sdo_data_);
+							DataObject::typeInfoMap().at(xml_ele.Attribute("type")).queryFunc(xml_ele.Attribute("value"), ret->sdo_data_);
 							return ret;
 						};
 
@@ -144,7 +139,7 @@ namespace Aris
 					}
 				};
 
-				static auto typeInfoMap()->const std::map<std::string, TypeInfo> &
+				static auto typeInfoMap()->const std::map<std::string, TypeInfo>&
 				{
 					const static std::map<std::string, TypeInfo> info_map
 					{
@@ -160,20 +155,18 @@ namespace Aris
 				}
 				
 			};
-			class PdoGroup1
+			class PdoGroup
 			{
 			public:
 				bool is_tx;
 				uint16_t index;
-				std::vector<std::unique_ptr<DataObject1> > pdo_vec;
+				std::vector<std::unique_ptr<DataObject> > pdo_vec;
 				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
 			};
 
-
-
 			/*data object, can be PDO or SDO*/
-			std::vector<PdoGroup1> pdo_group_vec;
-			std::vector<std::unique_ptr<DataObject1> > sdo_vec;
+			std::vector<PdoGroup> pdo_group_vec;
+			std::vector<std::unique_ptr<DataObject> > sdo_vec;
 
 			std::uint32_t product_code, vender_id;
 			std::uint16_t position, alias;
@@ -261,13 +254,13 @@ namespace Aris
 			auto pdo_xml_ele = xml_ele.FirstChildElement("PDO");
 			for (auto p_g = pdo_xml_ele->FirstChildElement(); p_g; p_g = p_g->NextSiblingElement())
 			{
-				Imp::PdoGroup1 pdo_group;
+				Imp::PdoGroup pdo_group;
 				pdo_group.index = std::stoi(p_g->Attribute("index"), nullptr, 0);
 				pdo_group.is_tx = p_g->Attribute("is_tx", "true") ? true : false;
 				for (auto p = p_g->FirstChildElement(); p; p = p->NextSiblingElement())
 				{
-					pdo_group.pdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(
-						Imp::DataObject1::typeInfoMap().at(p->Attribute("type")).newPdo(*p, this->imp.get()))
+					pdo_group.pdo_vec.push_back(std::unique_ptr<Imp::DataObject>(
+						Imp::DataObject::typeInfoMap().at(p->Attribute("type")).newPdo(*p, this->imp.get()))
 						);
 				}
 				imp->pdo_group_vec.push_back(std::move(pdo_group));
@@ -277,7 +270,7 @@ namespace Aris
 			auto sdo_xml_ele = xml_ele.FirstChildElement("SDO");
 			for (auto s = sdo_xml_ele->FirstChildElement(); s; s = s->NextSiblingElement())
 			{
-				imp->sdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(Imp::DataObject1::typeInfoMap().at(s->Attribute("type")).newSdo(*s, this->imp.get())));
+				imp->sdo_vec.push_back(std::unique_ptr<Imp::DataObject>(Imp::DataObject::typeInfoMap().at(s->Attribute("type")).newSdo(*s, this->imp.get())));
 			}
 
 			//create ecrt structs
