@@ -91,6 +91,7 @@ namespace Aris
 				public:
 					std::function<DataObject1*()> newPdoTx;
 					std::function<DataObject1*()> newPdoRx;
+					std::function<DataObject1*(const Aris::Core::XmlElement &xml_ele, Imp *imp)> newSdo;
 					const std::type_info *type_info_;
 					std::function<void(const std::string &, void *)> queryFunc;
 
@@ -101,6 +102,19 @@ namespace Aris
 
 						info.newPdoTx = []() {auto ret = new PdoTx1<DataType>; ret->size_ = sizeof(DataType) * 8; return ret; };
 						info.newPdoRx = []() {auto ret = new PdoRx1<DataType>; ret->size_ = sizeof(DataType) * 8; return ret; };
+
+						info.newSdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp) -> DataObject1*
+						{
+							auto ret = new DataObject1;
+							ret->type_name_ = xml_ele.Attribute("type");
+							ret->index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
+							ret->subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
+							ret->imp_ = imp;
+							ret->size_ = sizeof(DataType) * 8;
+							DataObject1::typeInfoMap().at(xml_ele.Attribute("type")).queryFunc(xml_ele.Attribute("value"), ret->sdo_data_);
+							return ret;
+						};
+
 						info.type_info_ = &typeid(DataType);
 						info.queryFunc = [](const std::string &str, void *value) {std::stringstream(str) >> (*reinterpret_cast<DataType*>(value)); };
 
@@ -266,12 +280,7 @@ namespace Aris
 			auto sdo_xml_ele = xml_ele.FirstChildElement("SDO");
 			for (auto s = sdo_xml_ele->FirstChildElement(); s; s = s->NextSiblingElement())
 			{
-				imp->sdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(new Imp::DataObject1));
-				imp->sdo_vec.back()->type_name_ = s->Attribute("type");
-				imp->sdo_vec.back()->index_ = std::stoi(s->Attribute("index"), nullptr, 0);
-				imp->sdo_vec.back()->subindex_ = std::stoi(s->Attribute("subindex"), nullptr, 0);
-				imp->sdo_vec.back()->imp_ = imp.get();
-				Imp::DataObject1::typeInfoMap().at(s->Attribute("type")).queryFunc(s->Attribute("value"), imp->sdo_vec.back()->sdo_data_);
+				imp->sdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(Imp::DataObject1::typeInfoMap().at(s->Attribute("type")).newSdo(*s, this->imp.get())));
 			}
 
 			//create ecrt structs
