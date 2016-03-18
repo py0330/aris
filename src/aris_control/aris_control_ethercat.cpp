@@ -51,9 +51,6 @@ namespace Aris
 				std::uint8_t size_;
 				std::uint32_t offset_;
 
-				// for pdo
-				bool is_tx_;
-
 				// for sdo
 				union
 				{
@@ -68,12 +65,12 @@ namespace Aris
 
 				template<typename DataType>auto readPdo(DataType&data)->void
 				{
-					if ((!is_tx_) || typeid(DataType) != *typeInfoMap().at(type_name_).type_info_) throw std::runtime_error("invalid pdo Tx type");
+					if (typeid(DataType) != *typeInfoMap().at(type_name_).type_info_) throw std::runtime_error("invalid pdo Tx type");
 					data = *reinterpret_cast<const DataType*>(imp_->domain_pd + offset_);
 				};
 				template<typename DataType>auto writePdo(DataType data)->void
 				{
-					if (is_tx_ || typeid(DataType) != *typeInfoMap().at(type_name_).type_info_) throw std::runtime_error("invalid pdo Rx type");
+					if (typeid(DataType) != *typeInfoMap().at(type_name_).type_info_) throw std::runtime_error("invalid pdo Rx type");
 					*reinterpret_cast<DataType*>(imp_->domain_pd + offset_) = data;
 				};
 				template<typename DataType>auto readSdo(DataType&data)->void
@@ -128,7 +125,6 @@ namespace Aris
 							ret->subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
 							ret->imp_ = imp;
 							ret->size_ = sizeof(DataType) * 8;
-							ret->is_tx_ = xml_ele.Attribute("is_tx", "true") ? true : false;
 							return ret; 
 						};
 
@@ -350,26 +346,32 @@ namespace Aris
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int8_t &value) const->void
 		{
+			if (!imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't read pdo in rx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int16_t &value) const->void
 		{
+			if (!imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't read pdo in rx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::int32_t &value) const->void
 		{
+			if (!imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't read pdo in rx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint8_t &value) const->void
 		{
+			if (!imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't read pdo in rx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint16_t &value) const->void
 		{
+			if (!imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't read pdo in rx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::readPdo(int pdoGroupID, int pdoID, std::uint32_t &value) const->void
 		{
+			if (!imp->pdo_group_vec[pdoGroupID].is_tx) throw std::runtime_error("you can't read pdo in rx pdo");
 			imp->pdo_group_vec[pdoGroupID].pdo_vec[pdoID]->readPdo(value);
 		}
 		auto EthercatSlave::writePdo(int pdoGroupID, int pdoID, std::int8_t value)->void
