@@ -417,7 +417,7 @@ namespace Aris
 			if (!instancePtr())throw std::runtime_error("please first create an instance fo EthercatMaster");
 			return *instancePtr().get();
 		};
-		auto EthercatMaster::instancePtr()->const std::unique_ptr<EthercatMaster> &
+		auto EthercatMaster::instancePtr()->const std::unique_ptr<EthercatMaster>&
 		{
 			static std::unique_ptr<EthercatMaster> instance_ptr;
 			return std::ref(instance_ptr);
