@@ -38,22 +38,23 @@ namespace Aris
 			auto read()->void { ecrt_domain_process(domain); };
 			auto write()->void { ecrt_domain_queue(domain); };
 
-			template<typename DataType> class PdoTx1;
-			template<typename DataType> class PdoRx1;
-			template<typename DataType> class Sdo1;
 			class DataObject1
 			{
 			public:
 				virtual ~DataObject1() = default;
 
+				// common data
 				Imp *imp_;
+				std::string type_name_;
 				std::uint16_t index_;
 				std::uint8_t subindex_;
 				std::uint8_t size_;
 				std::uint32_t offset_;
 
-				std::string type_name_;
+				// for pdo
+				bool is_tx_;
 
+				// for sdo
 				union
 				{
 					char sdo_data_[8];
@@ -67,13 +68,13 @@ namespace Aris
 
 				template<typename DataType>auto readPdo(DataType&data)->void
 				{
-					if (!dynamic_cast<PdoTx1<DataType> *>(this)) throw std::runtime_error("invalid pdo Tx type");
-					dynamic_cast<PdoTx1<DataType> *>(this)->read(data);
+					if ((!is_tx_) || typeid(DataType) != *typeInfoMap().at(type_name_).type_info_) throw std::runtime_error("invalid pdo Tx type");
+					data = *reinterpret_cast<const DataType*>(imp_->domain_pd + offset_);
 				};
 				template<typename DataType>auto writePdo(DataType data)->void
 				{
-					if (!dynamic_cast<PdoRx1<DataType> *>(this)) throw std::runtime_error("invalid pdo Rx type");
-					dynamic_cast<PdoRx1<DataType> *>(this)->write(data);
+					if (is_tx_ || typeid(DataType) != *typeInfoMap().at(type_name_).type_info_) throw std::runtime_error("invalid pdo Rx type");
+					*reinterpret_cast<DataType*>(imp_->domain_pd + offset_) = data;
 				};
 				template<typename DataType>auto readSdo(DataType&data)->void
 				{
@@ -92,8 +93,7 @@ namespace Aris
 					const std::type_info *type_info_;
 					std::function<void(const std::string &, void *)> queryFunc;
 
-					std::function<DataObject1*()> newPdoTx;
-					std::function<DataObject1*()> newPdoRx;
+					std::function<DataObject1*(const Aris::Core::XmlElement &xml_ele, Imp *imp)> newPdo;
 					std::function<DataObject1*(const Aris::Core::XmlElement &xml_ele, Imp *imp)> newSdo;
 					
 
@@ -120,8 +120,18 @@ namespace Aris
 
 						
 
-						info.newPdoTx = []() {auto ret = new PdoTx1<DataType>; ret->size_ = sizeof(DataType) * 8; return ret; };
-						info.newPdoRx = []() {auto ret = new PdoRx1<DataType>; ret->size_ = sizeof(DataType) * 8; return ret; };
+						info.newPdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp)
+						{
+							auto ret = new DataObject1;
+							ret->type_name_ = xml_ele.Attribute("type");
+							ret->index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
+							ret->subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
+							ret->imp_ = imp;
+							ret->size_ = sizeof(DataType) * 8;
+							ret->is_tx_ = xml_ele.Attribute("is_tx", "true") ? true : false;
+							return ret; 
+						};
+
 						info.newSdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp) -> DataObject1*
 						{
 							auto ret = new DataObject1;
@@ -150,22 +160,9 @@ namespace Aris
 						std::make_pair(std::string("uint32"), TypeInfo::createTypeInfo<std::uint32_t>()),
 					};
 
-
 					return std::ref(info_map);
 				}
 				
-			};
-			template<typename DataType> class PdoTx1 :public DataObject1
-			{
-			public:
-				virtual ~PdoTx1() = default;
-				auto read(DataType &data)->void { data = *reinterpret_cast<const DataType*>(imp_->domain_pd + offset_); };
-			};
-			template<typename DataType> class PdoRx1 :public DataObject1
-			{
-			public:
-				virtual ~PdoRx1() = default;
-				auto write(DataType data)->void { *reinterpret_cast<DataType*>(imp_->domain_pd + offset_) = data; };
 			};
 			class PdoGroup1
 			{
@@ -271,24 +268,11 @@ namespace Aris
 				Imp::PdoGroup1 pdo_group;
 				pdo_group.index = std::stoi(p_g->Attribute("index"), nullptr, 0);
 				pdo_group.is_tx = p_g->Attribute("is_tx", "true") ? true : false;
-				for (auto p = p_g->FirstChildElement(); p != nullptr; p = p->NextSiblingElement())
+				for (auto p = p_g->FirstChildElement(); p; p = p->NextSiblingElement())
 				{
-					if (pdo_group.is_tx)
-					{
-						pdo_group.pdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(
-							Imp::DataObject1::typeInfoMap().at(p->Attribute("type")).newPdoTx()
-							));
-					}
-					else
-					{
-						pdo_group.pdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(
-							Imp::DataObject1::typeInfoMap().at(p->Attribute("type")).newPdoRx()
-							));
-					}
-					pdo_group.pdo_vec.back()->type_name_ = p->Attribute("type");
-					pdo_group.pdo_vec.back()->index_ = std::stoi(p->Attribute("index"), nullptr, 0);
-					pdo_group.pdo_vec.back()->subindex_ = std::stoi(p->Attribute("subindex"), nullptr, 0);
-					pdo_group.pdo_vec.back()->imp_ = imp.get();
+					pdo_group.pdo_vec.push_back(std::unique_ptr<Imp::DataObject1>(
+						Imp::DataObject1::typeInfoMap().at(p->Attribute("type")).newPdo(*p, this->imp.get()))
+						);
 				}
 				imp->pdo_group_vec.push_back(std::move(pdo_group));
 			}
@@ -345,17 +329,12 @@ namespace Aris
 			// Set Sdo
 			for (auto &sdo : imp->sdo_vec)
 			{
-				std::cout << "sdo:" << sdo->index_ << "  " << unsigned(sdo->subindex_) << "  " << unsigned(sdo->sdo_data_uint8_) << "  " << sdo->sdo_data_uint16_ << "  " << sdo->sdo_data_uint32_ << "  " << std::endl;
-
-				
 				switch (sdo->size_)
 				{
-				case 8:		
-					ecrt_slave_config_sdo8(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint8_); 
-					std::cout<<"config 8" << std::endl;
-					break;
-				case 16:	ecrt_slave_config_sdo16(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint16_);	std::cout<<"config 16" << std::endl; break;
-				case 32:	ecrt_slave_config_sdo32(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint32_);	std::cout<<"config 32" << std::endl; break;
+				case 8:		ecrt_slave_config_sdo8(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint8_); break;
+				case 16:	ecrt_slave_config_sdo16(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint16_); break;
+				case 32:	ecrt_slave_config_sdo32(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint32_); break;
+				default:    throw std::runtime_error("invalid size of sdo, it must be 8, 16 or 32");
 				}
 			}
 
