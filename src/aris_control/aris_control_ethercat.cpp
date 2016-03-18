@@ -89,20 +89,39 @@ namespace Aris
 				class TypeInfo
 				{
 				public:
+					const std::type_info *type_info_;
+					std::function<void(const std::string &, void *)> queryFunc;
+
 					std::function<DataObject1*()> newPdoTx;
 					std::function<DataObject1*()> newPdoRx;
 					std::function<DataObject1*(const Aris::Core::XmlElement &xml_ele, Imp *imp)> newSdo;
-					const std::type_info *type_info_;
-					std::function<void(const std::string &, void *)> queryFunc;
+					
 
 
 					template<typename DataType> static auto createTypeInfo()->TypeInfo
 					{
 						TypeInfo info;
 
+						info.type_info_ = &typeid(DataType);
+
+						if (typeid(DataType) == typeid(std::int8_t) || typeid(DataType) == typeid(std::int8_t))
+						{
+							info.queryFunc = [](const std::string &str, void *value) 
+							{
+								std::int16_t loc_value;
+								std::stringstream(str) >> loc_value;
+								(*reinterpret_cast<DataType*>(value)) = DataType(loc_value);
+							};
+						}
+						else
+						{
+							info.queryFunc = [](const std::string &str, void *value) {std::stringstream(str) >> (*reinterpret_cast<DataType*>(value)); };
+						}
+
+						
+
 						info.newPdoTx = []() {auto ret = new PdoTx1<DataType>; ret->size_ = sizeof(DataType) * 8; return ret; };
 						info.newPdoRx = []() {auto ret = new PdoRx1<DataType>; ret->size_ = sizeof(DataType) * 8; return ret; };
-
 						info.newSdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp) -> DataObject1*
 						{
 							auto ret = new DataObject1;
@@ -114,9 +133,6 @@ namespace Aris
 							DataObject1::typeInfoMap().at(xml_ele.Attribute("type")).queryFunc(xml_ele.Attribute("value"), ret->sdo_data_);
 							return ret;
 						};
-
-						info.type_info_ = &typeid(DataType);
-						info.queryFunc = [](const std::string &str, void *value) {std::stringstream(str) >> (*reinterpret_cast<DataType*>(value)); };
 
 						return info;
 					}
@@ -133,6 +149,7 @@ namespace Aris
 						std::make_pair(std::string("int32"), TypeInfo::createTypeInfo<std::int32_t>()),
 						std::make_pair(std::string("uint32"), TypeInfo::createTypeInfo<std::uint32_t>()),
 					};
+
 
 					return std::ref(info_map);
 				}
