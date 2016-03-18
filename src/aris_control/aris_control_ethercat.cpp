@@ -319,9 +319,12 @@ namespace Aris
 			// Set Sdo
 			for (auto &sdo : imp->sdo_vec)
 			{
+				std::cout << "sdo:" << sdo->index_ << "  " << sdo->subindex_ << "  " << sdo->sdo_data_uint8_ << "  " << sdo->sdo_data_uint16_ << "  " << sdo->sdo_data_uint32_ << "  " << std::endl;
+
+				
 				switch (sdo->size_)
 				{
-				case 8:		ecrt_slave_config_sdo8(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint8_);	break;
+				case 8:		ecrt_slave_config_sdo8(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint8_); break;
 				case 16:	ecrt_slave_config_sdo16(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint16_);	break;
 				case 32:	ecrt_slave_config_sdo32(imp->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint32_);	break;
 				}
