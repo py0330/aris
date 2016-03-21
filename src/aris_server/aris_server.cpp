@@ -500,7 +500,7 @@ namespace Aris
 			model_->loadXml(doc);
 
 			/*begin to create imu*/
-			if (doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU")->Attribute("active", "true"))
+			if (doc.RootElement()->FirstChildElement("Sensors")->FirstChildElement("IMU")->Attribute("active", "true"))
 			{
 				std::cout << "imu found" << std::endl;
 				imu_.reset(new Aris::Sensor::IMU(doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU")));
@@ -515,9 +515,8 @@ namespace Aris
 			controller_->setControlStrategy(tg);
 
 			/*load connection param*/
-			auto pConnEle = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Connection");
-			server_socket_ip_ = pConnEle->Attribute("IP");
-			server_socket_port_ = pConnEle->Attribute("Port");
+			server_socket_ip_ = doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
+			server_socket_port_ = doc.RootElement()->FirstChildElement("Server")->Attribute("port");
 
 			/*begin to insert cmd nodes*/
 			auto pCmds = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Commands");
@@ -898,13 +897,7 @@ namespace Aris
 			static int current_cmd{ 0 }, cmd_num{ 0 }, count{ 0 };
 			static ControlServer::Imp *imp = ControlServer::instance().imp.get();
 
-			/*static int dspNum = 0;
-			if (++dspNum % 1000 == 0)
-			{
-			rt_printf("pos is:%d \n",data.pMotionData->at(0).feedbackPos);
-			}*/
-
-			//检查是否出错//
+			// 检查是否出错 //
 			static int fault_count = 0;
 			bool is_all_normal = data.motion_raw_data->end() == std::find_if(data.motion_raw_data->begin(), data.motion_raw_data->end(), [](const Aris::Control::EthercatMotion::RawData &data) {return data.ret < 0; });
 			if (!is_all_normal)
@@ -932,7 +925,7 @@ namespace Aris
 				fault_count = 0;
 			}
 
-			//查看是否有新cmd//
+			// 查看是否有新cmd //
 			if (data.msg_recv)
 			{
 				if (cmd_num >= CMD_POOL_SIZE)
@@ -946,7 +939,7 @@ namespace Aris
 				}
 			}
 
-			//执行cmd queue中的cmd//
+			// 执行cmd queue中的cmd //
 			if (cmd_num>0)
 			{
 				if (imp->execute_cmd(count, cmd_queue[current_cmd], data) == 0)
@@ -962,14 +955,34 @@ namespace Aris
 				}
 			}
 
-			//检查连续//
+			// 检查连续 //
 			for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
 			{
 				if ((data.last_motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
 					&& (data.motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
+					&& (data.motion_raw_data->at(i).target_pos < imp->controller_->motionAtAbs(i).minPosCount() || data.motion_raw_data->at(i).target_pos > imp->controller_->motionAtAbs(i).maxPosCount()))
+				{
+					rt_printf("Motor %i is not in permitted range in count:%d\n", i, count);
+
+					rt_printf("The min, max and current count are:\n");
+					for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
+					{
+						rt_printf("%d   %d   %d\n", imp->controller_->motionAtAbs(i).minPosCount(), imp->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
+					}
+
+					rt_printf("All commands in command queue are discarded\n");
+					cmd_num = 0;
+					count = 0;
+
+					// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+					for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+				}
+				
+				if ((data.last_motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
+					&& (data.motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
 					&& (std::abs(data.last_motion_raw_data->at(i).target_pos - data.motion_raw_data->at(i).target_pos)>0.0012*imp->controller_->motionAtAbs(i).maxVelCount()))
 				{
-					rt_printf("Data not continuous in count:%d\n", count);
+					rt_printf("Motor %i is not continuous in count:%d\n", i, count);
 
 					rt_printf("The input of last and this count are:\n");
 					for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
@@ -981,11 +994,8 @@ namespace Aris
 					cmd_num = 0;
 					count = 0;
 
-					/*发现不连续，那么使用上一个成功的cmd，以便等待修复*/
-					for (int i = 0; i < 18; ++i)
-					{
-						data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-					}
+					// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+					for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
 
 
 					return 0;
@@ -1181,12 +1191,12 @@ namespace Aris
 		};
 		auto ControlServer::Imp::run(GaitParamBase &param, Aris::Control::EthercatController::Data &data)->int
 		{
-			//获取陀螺仪传感器数据
+			// 获取陀螺仪传感器数据 //
 			Aris::Sensor::SensorData<Aris::Sensor::ImuData> imuDataProtected;
 			if (imu_) imuDataProtected = imu_->getSensorData();
 			param.imu_data = &imuDataProtected.get();
 
-			//获取力传感器数据与电机数据
+			// 获取力传感器数据与电机数据 //
 			param.force_data = data.force_sensor_data;
 			param.motion_raw_data = data.motion_raw_data;
 			param.motion_feedback_pos = &this->motion_pos_;
@@ -1196,10 +1206,10 @@ namespace Aris
 				this->motion_pos_[i] = static_cast<double>(data.motion_raw_data->at(i).feedback_pos) / controller_->motionAtAbs(i).pos2countRatio();
 			}
 
-			//执行gait函数
+			// 执行gait函数 //
 			int ret = this->plan_vec_.at(param.gait_id).operator()(*model_.get(), param);
 
-			//向下写入输入位置
+			// 向下写入输入位置 //
 			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
 			{
 				if (param.active_motor[i])
@@ -1211,7 +1221,6 @@ namespace Aris
 
 			return ret;
 		}
-		
 
 		ControlServer &ControlServer::instance()
 		{

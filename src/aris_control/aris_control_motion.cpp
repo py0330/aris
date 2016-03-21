@@ -255,6 +255,8 @@ namespace Aris
 		
 			std::int32_t input2count_;
 			std::int32_t home_count_;
+			std::int32_t max_pos_count_;
+			std::int32_t min_pos_count_;
 			std::int32_t max_vel_count_;
 			std::int32_t abs_id_;
 			std::int32_t phy_id_;
@@ -279,6 +281,16 @@ namespace Aris
 			}
 
 			double value;
+			if (xml_ele.QueryDoubleAttribute("max_pos", &value) != tinyxml2::XML_NO_ERROR)
+			{
+				throw std::runtime_error("failed to find motion attribute \"max_pos\"");
+			}
+			imp_->max_pos_count_ = static_cast<std::int32_t>(value * imp_->input2count_);
+			if (xml_ele.QueryDoubleAttribute("min_pos", &value) != tinyxml2::XML_NO_ERROR)
+			{
+				throw std::runtime_error("failed to find motion attribute \"min_pos\"");
+			}
+			imp_->min_pos_count_ = static_cast<std::int32_t>(value * imp_->input2count_);
 			if (xml_ele.QueryDoubleAttribute("max_vel", &value) != tinyxml2::XML_NO_ERROR)
 			{
 				throw std::runtime_error("failed to find motion attribute \"max_vel\"");
@@ -350,6 +362,8 @@ namespace Aris
 		}
 		auto EthercatMotion::absID()->std::int32_t { return imp_->abs_id_; };
 		auto EthercatMotion::phyID()->std::int32_t { return imp_->phy_id_; };
+		auto EthercatMotion::maxPosCount()->std::int32_t { return imp_->max_pos_count_; };
+		auto EthercatMotion::minPosCount()->std::int32_t { return imp_->min_pos_count_; };
 		auto EthercatMotion::maxVelCount()->std::int32_t { return imp_->max_vel_count_; };
 		auto EthercatMotion::pos2countRatio()->std::int32_t { return imp_->input2count_; };
 		auto EthercatMotion::setPosOffset(std::int32_t offset)->void
@@ -485,7 +499,6 @@ namespace Aris
 				std::vector<EthercatMotion::RawData> data;
 				data.resize(imp_->motion_vec_.size());
 
-				
 				long long count = -1;
 				while (!imp_->is_stopping_)
 				{

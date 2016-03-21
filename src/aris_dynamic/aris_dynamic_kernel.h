@@ -168,7 +168,7 @@ namespace Aris
 		*/
 		auto s_ap(const double *pnt_in, const double *vel_in, const double *acc_in, double *pnt_acc_out) noexcept->void;
 
-
+		auto s_f2f(const double *relative_pm_in, const double *from_fce_in, double *to_fce_out) noexcept->void;
 		/** \brief 将6维空间速度移动坐标系
 		*
 		* 用来将6维空间速度从一个坐标系中转化到另一个坐标系中。例如将B坐标系中的速度转换到A坐标系中。

@@ -393,6 +393,18 @@ namespace Aris
 			pnt_acc_out[2] = acc_in[2] + tem1[2] + tem2[2] + tem3[2];
 		}
 
+		auto s_f2f(const double *relative_pm_in, const double *from_fce_in, double *to_fce_out) noexcept->void
+		{
+			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			static const double default_from_fce_in[6]{ 0,0,0,0,0,0 };
+			double to_fce[6]{ 0,0,0,0,0,0 };
+
+			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
+			from_fce_in = from_fce_in ? from_fce_in : default_from_fce_in;
+			to_fce_out = to_fce_out ? to_fce_out : to_fce;
+
+			s_tf(relative_pm_in, from_fce_in, to_fce_out);
+		}
 		auto s_v2v(const double *relative_pm_in, const double *relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept->void
 		{
 			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };

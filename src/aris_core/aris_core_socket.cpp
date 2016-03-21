@@ -74,7 +74,7 @@ namespace Aris
 			static void acceptThread(Socket::Imp* pCONN_STRUCT);
 		};
 		
-		void Socket::Imp::acceptThread(Socket::Imp* pConnS)
+		auto Socket::Imp::acceptThread(Socket::Imp* pConnS)->void
 		{
 			int lisnSock,connSock;
 			struct sockaddr_in clientAddr;
@@ -138,7 +138,7 @@ namespace Aris
 
 			return;
 		}
-		void Socket::Imp::receiveThread(Socket::Imp* pConnS)
+		auto Socket::Imp::receiveThread(Socket::Imp* pConnS)->void
 		{
 			union HEAD
 			{
@@ -247,7 +247,7 @@ namespace Aris
 			stop();
 		}
 
-		void Socket::stop()
+		auto Socket::stop()->void
 		{
 			std::lock(pImp->_state_mutex, pImp->_close_mutex);
 			std::unique_lock<std::recursive_mutex> lck1(pImp->_state_mutex, std::adopt_lock);
@@ -321,7 +321,7 @@ namespace Aris
 
 			pImp->_ConnState = Socket::IDLE;
 		}
-		bool Socket::isConnected()
+		auto Socket::isConnected()->bool
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 
@@ -334,7 +334,7 @@ namespace Aris
 				return false;
 			}
 		}
-		void Socket::startServer(const char *port)
+		auto Socket::startServer(const char *port)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			
@@ -388,7 +388,7 @@ namespace Aris
 			
 			return;
 		}
-		void Socket::connect(const char *address, const char *port)
+		auto Socket::connect(const char *address, const char *port)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			
@@ -432,7 +432,7 @@ namespace Aris
 
 			return;
 		}
-		void Socket::sendMsg(const Aris::Core::Msg &data)
+		auto Socket::sendMsg(const Aris::Core::Msg &data)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 
@@ -448,7 +448,7 @@ namespace Aris
 				throw SendDataError("Socket failed sending data, because Socket is not at right state\n", this, 0);
 			}
 		}
-		Aris::Core::Msg  Socket::sendRequest(const Aris::Core::Msg &request)
+		auto Socket::sendRequest(const Aris::Core::Msg &request)->Aris::Core::Msg
 		{
 			std::unique_lock<std::recursive_mutex> state_lck(pImp->_state_mutex);
 
@@ -486,32 +486,34 @@ namespace Aris
 				return reply;
 			}
 		}
-		void Socket::setOnReceivedMsg(std::function<int(Socket*, Aris::Core::Msg &)> OnReceivedData)
+		auto Socket::setOnReceivedMsg(std::function<int(Socket*, Aris::Core::Msg &)> OnReceivedData)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			pImp->onReceivedData = OnReceivedData;
 		}
-		void Socket::setOnReceivedRequest(std::function<Aris::Core::Msg(Socket*, Aris::Core::Msg &)> OnReceivedRequest)
+		auto Socket::setOnReceivedRequest(std::function<Aris::Core::Msg(Socket*, Aris::Core::Msg &)> OnReceivedRequest)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			pImp->onReceivedRequest = OnReceivedRequest;
 		}
-		void Socket::setOnReceivedConnection(std::function<int(Socket*, const char*, int)> OnReceivedConnection)
+		auto Socket::setOnReceivedConnection(std::function<int(Socket*, const char*, int)> OnReceivedConnection)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			pImp->onReceivedConnection = OnReceivedConnection;
 		}
-		void Socket::setOnLoseConnection(std::function<int(Socket*)> OnLoseConnection)
+		auto Socket::setOnLoseConnection(std::function<int(Socket*)> OnLoseConnection)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			pImp->onLoseConnection = OnLoseConnection;
 		}
-		void Socket::setOnAcceptError(std::function<void(Socket*)> onAcceptError)
+		auto Socket::setOnAcceptError(std::function<void(Socket*)> onAcceptError)->void
 		{
+			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			pImp->onAcceptError = onAcceptError;
 		}
-		void Socket::setOnReceiveError(std::function<void(Socket*)> onReceiveError)
+		auto Socket::setOnReceiveError(std::function<void(Socket*)> onReceiveError)->void
 		{
+			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			pImp->onReceiveError = onReceiveError;
 		}
 	}

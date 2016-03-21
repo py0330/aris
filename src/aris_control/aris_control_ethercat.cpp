@@ -425,7 +425,7 @@ namespace Aris
 		};
 		auto EthercatMaster::loadXml(const Aris::Core::XmlElement &xml_ele)->void
 		{
-			/*Load EtherCat slave types*/
+			// Load EtherCat slave types //
 			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
 			
 			auto pSlaveTypes = xml_ele.FirstChildElement("SlaveType");
@@ -434,7 +434,7 @@ namespace Aris
 				slaveTypeMap.insert(std::make_pair(std::string(pType->name()), pType));
 			}
 			
-			/*Load all slaves*/
+			// Load all slaves //
 			auto pSlaves = xml_ele.FirstChildElement("Slave");
 			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
 			{
@@ -446,7 +446,7 @@ namespace Aris
 			if (imp_->is_running_)throw std::runtime_error("master already running");
 			imp_->is_running_ = true;
 
-			// init begin
+			// init begin //
 #ifdef UNIX
 			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
 

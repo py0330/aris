@@ -48,7 +48,6 @@ namespace Aris
 
 		protected:
             EthercatSlave(const Aris::Core::XmlElement &xml_ele);
-			//virtual auto init() ->void;
 
 		private:
 			EthercatSlave(const EthercatSlave &other) = delete;

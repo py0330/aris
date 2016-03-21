@@ -46,6 +46,8 @@ namespace Aris
 			auto writeCommand(const RawData &data)->void;
 			auto absID()->std::int32_t;
 			auto phyID()->std::int32_t;
+			auto maxPosCount()->std::int32_t;
+			auto minPosCount()->std::int32_t;
 			auto maxVelCount()->std::int32_t;
 			auto pos2countRatio()->std::int32_t;
 			auto setPosOffset(std::int32_t offset)->void;
@@ -67,7 +69,6 @@ namespace Aris
 					struct { double Fx, Fy, Fz, Mx, My, Mz; };
 					double fce[6];
 				};
-				
 			};
 
 			EthercatForceSensor(const Aris::Core::XmlElement &xml_ele): EthercatSlave(xml_ele){};
