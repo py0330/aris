@@ -960,6 +960,7 @@ namespace Aris
 			{
 				if ((data.last_motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
 					&& (data.motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
+					&& (data.motion_raw_data->at(i).target_pos != data.last_motion_raw_data->at(i).target_pos)
 					&& (data.motion_raw_data->at(i).target_pos < imp->controller_->motionAtAbs(i).minPosCount() || data.motion_raw_data->at(i).target_pos > imp->controller_->motionAtAbs(i).maxPosCount()))
 				{
 					rt_printf("Motor %i is not in permitted range in count:%d\n", i, count);
