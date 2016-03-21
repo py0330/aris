@@ -1200,10 +1200,13 @@ namespace Aris
 			int ret = this->plan_vec_.at(param.gait_id).operator()(*model_.get(), param);
 
 			//向下写入输入位置
-			for (std::size_t i = 0; i<controller_->motionNum(); ++i)
+			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
 			{
-				data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::RUN;
-				data.motion_raw_data->operator[](i).target_pos = static_cast<std::int32_t>(model_->motionPool().at(i).motPos() * controller_->motionAtAbs(i).pos2countRatio());
+				if (param.active_motor[i])
+				{
+					data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::RUN;
+					data.motion_raw_data->operator[](i).target_pos = static_cast<std::int32_t>(model_->motionPool().at(i).motPos() * controller_->motionAtAbs(i).pos2countRatio());
+				}
 			}
 
 			return ret;

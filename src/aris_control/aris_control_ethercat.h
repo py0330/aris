@@ -48,7 +48,7 @@ namespace Aris
 
 		protected:
             EthercatSlave(const Aris::Core::XmlElement &xml_ele);
-			virtual auto init() ->void;
+			//virtual auto init() ->void;
 
 		private:
 			EthercatSlave(const EthercatSlave &other) = delete;
@@ -57,7 +57,7 @@ namespace Aris
 			EthercatSlave & operator=(EthercatSlave &&other) = delete;
 
 			struct Imp;
-			std::unique_ptr<Imp> imp;
+			std::unique_ptr<Imp> imp_;
 
 			friend class EthercatMaster;
 		};
@@ -102,7 +102,7 @@ namespace Aris
 			
 		private:
 			class Imp;
-			std::unique_ptr<Imp> imp;
+			std::unique_ptr<Imp> imp_;
 
 			friend class EthercatSlave;
 		};

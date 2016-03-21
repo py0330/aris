@@ -396,27 +396,7 @@ namespace Aris
 			friend class ElementPool<Akima>;
 			friend class Model;
 		};
-		class Variable :public Element
-		{
-		public:
-			static auto TypeName()->const std::string &{ static const std::string type{ "variable" }; return type; };
-			virtual ~Variable() = default;
-			virtual auto groupName()const->const std::string& override final{ return TypeName(); };
-			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override
-			{
-				Element::saveXml(xml_ele);
-				xml_ele.SetText(this->toString().c_str());
-			}
-			virtual auto toString() const->std::string { return ""; };
-
-		protected:
-			explicit Variable(Object &father, const std::string &name, std::size_t id) : Element(father, name, id) {};
-			explicit Variable(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id) : Element(father, xml_ele, id) {};
-
-		private:
-			friend class ElementPool<Variable>;
-		};
-		class Script :public Element
+		class Script final :public Element
 		{
 		public:
 			static auto TypeName()->const std::string &{ static const std::string type{ "script" }; return type; };
@@ -443,6 +423,26 @@ namespace Aris
 
 			friend class ElementPool<Script>;
 			friend class Model;
+		};
+		class Variable :public Element
+		{
+		public:
+			static auto TypeName()->const std::string &{ static const std::string type{ "variable" }; return type; };
+			virtual ~Variable() = default;
+			virtual auto groupName()const->const std::string& override final{ return TypeName(); };
+			virtual auto saveXml(Aris::Core::XmlElement &xml_ele) const->void override
+			{
+				Element::saveXml(xml_ele);
+				xml_ele.SetText(this->toString().c_str());
+			}
+			virtual auto toString() const->std::string { return ""; };
+
+		protected:
+			explicit Variable(Object &father, const std::string &name, std::size_t id) : Element(father, name, id) {};
+			explicit Variable(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id) : Element(father, xml_ele, id) {};
+
+		private:
+			friend class ElementPool<Variable>;
 		};
 		class Marker :public Coordinate
 		{

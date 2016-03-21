@@ -53,7 +53,7 @@ namespace Aris
 
 		private:
 			class Imp;
-			std::unique_ptr<Imp> imp;
+			std::unique_ptr<Imp> imp_;
 
 			friend class EthercatController;
 		};
@@ -104,7 +104,7 @@ namespace Aris
 
 		private:
 			struct Imp;
-			std::unique_ptr<Imp> imp;
+			std::unique_ptr<Imp> imp_;
 
 			friend class EthercatMaster;
 		};

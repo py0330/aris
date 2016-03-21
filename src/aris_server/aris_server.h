@@ -20,13 +20,15 @@ namespace Aris
 		enum { MAX_MOTOR_NUM = 100 };
 
 		//for enable, disable, and home
-		struct BasicFunctionParam final :Aris::Dynamic::PlanParamBase
+		struct BasicFunctionParam :Aris::Dynamic::PlanParamBase
 		{
-			bool active_motor[MAX_MOTOR_NUM]{ false };
+			bool active_motor[MAX_MOTOR_NUM];
+
+			BasicFunctionParam() { std::fill(active_motor, active_motor + MAX_MOTOR_NUM, true); };
 		};
 
 		//for all ordinary gaits
-		struct GaitParamBase :Dynamic::PlanParamBase
+		struct GaitParamBase :BasicFunctionParam
 		{
 			std::int32_t gait_id;
 			const Aris::Sensor::ImuData *imu_data;
