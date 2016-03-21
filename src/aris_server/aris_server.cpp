@@ -503,7 +503,7 @@ namespace Aris
 			if (doc.RootElement()->FirstChildElement("Sensors")->FirstChildElement("IMU")->Attribute("active", "true"))
 			{
 				std::cout << "imu found" << std::endl;
-				imu_.reset(new Aris::Sensor::IMU(doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU")));
+				imu_.reset(new Aris::Sensor::IMU(doc.RootElement()->FirstChildElement("Sensors")->FirstChildElement("IMU")));
 			}
 			else
 			{
