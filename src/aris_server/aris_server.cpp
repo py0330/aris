@@ -1197,7 +1197,7 @@ namespace Aris
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+						for (int i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
 						
 						return 0;
 					}
@@ -1215,7 +1215,7 @@ namespace Aris
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+						for (int i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
 
 						return 0;
 					}
@@ -1230,12 +1230,12 @@ namespace Aris
 							rt_printf("%d   %d\n", data.last_motion_raw_data->at(i).target_pos, data.motion_raw_data->at(i).target_pos);
 						}
 
-						rt_printf("All commands in command queue are discarded\n");
+						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
 						imp->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+						for (int i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
 
 
 						return 0;
