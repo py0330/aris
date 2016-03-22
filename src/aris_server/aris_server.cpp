@@ -1193,7 +1193,7 @@ namespace Aris
 							rt_printf("%d   %d   %d\n", imp->controller_->motionAtAbs(i).minPosCount(), imp->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
 						}
 						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-						imp->cmd_num_ = 0;
+						imp->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
@@ -1211,7 +1211,7 @@ namespace Aris
 							rt_printf("%d   %d   %d\n", imp->controller_->motionAtAbs(i).minPosCount(), imp->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
 						}
 						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-						imp->cmd_num_ = 0;
+						imp->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
@@ -1231,7 +1231,7 @@ namespace Aris
 						}
 
 						rt_printf("All commands in command queue are discarded\n");
-						imp->cmd_num_ = 0;
+						imp->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
