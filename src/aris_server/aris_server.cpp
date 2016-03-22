@@ -1159,6 +1159,7 @@ namespace Aris
 			// 获取力传感器数据与电机数据 //
 			param.force_data = data.force_sensor_data;
 			param.motion_raw_data = data.motion_raw_data;
+			param.last_motion_raw_data = data.last_motion_raw_data;
 			param.motion_feedback_pos = &this->motion_pos_;
 
 			for (std::size_t i = 0; i < data.motion_raw_data->size(); ++i)
@@ -1197,7 +1198,7 @@ namespace Aris
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (int i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+						for (std::size_t i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
 						
 						return 0;
 					}
@@ -1215,7 +1216,7 @@ namespace Aris
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (int i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+						for (std::size_t i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
 
 						return 0;
 					}
@@ -1235,8 +1236,7 @@ namespace Aris
 						imp->count_ = 0;
 
 						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (int i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-
+						for (std::size_t i = 0; i < imp->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
 
 						return 0;
 					}

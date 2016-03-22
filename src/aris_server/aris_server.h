@@ -37,6 +37,7 @@ namespace Aris
 			const Aris::Sensor::ImuData *imu_data;
 			const std::vector<Aris::Control::EthercatForceSensor::Data> *force_data;
 			const std::vector<Aris::Control::EthercatMotion::RawData> *motion_raw_data;
+			const std::vector<Aris::Control::EthercatMotion::RawData> *last_motion_raw_data;
 			const std::vector<double> *motion_feedback_pos;
 		};
 
