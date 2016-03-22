@@ -123,7 +123,7 @@ namespace Aris
 			this->children.push_back(std::unique_ptr<Node>(new ParamNode(this, Name)));
 			return children.back().get();
 		}
-		void Node::Take()
+		auto Node::Take()->void
 		{
 			if (dynamic_cast<RootNode*>(this))
 			{
@@ -163,7 +163,7 @@ namespace Aris
 			}
 		}
 
-		void AddAllParams(const Aris::Core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames)
+		auto AddAllParams(const Aris::Core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames)->void
 		{
 			//add all children//
 			for (auto pChild = pEle->FirstChildElement(); pChild != nullptr; pChild = pChild->NextSiblingElement())
@@ -297,7 +297,7 @@ namespace Aris
 				}
 			}
 		}
-		void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params)
+		auto AddAllDefault(Node *pNode, std::map<std::string, std::string> &params)->void
 		{
 			if (pNode->isTaken)
 			{
@@ -957,9 +957,6 @@ namespace Aris
 				}
 			}
 
-			// 检查连续 //
-			
-
 			return 0;
 		}
 		auto ControlServer::Imp::execute_cmd(int count, char *cmd_param, Aris::Control::EthercatController::Data &data)->int
@@ -1255,7 +1252,7 @@ namespace Aris
 		ControlServer::~ControlServer() {}
 		auto ControlServer::createModel(Dynamic::Model *model_)->void
 		{
-			if (imp->model_)throw std::runtime_error("control sever can't create model_ because it already has one");
+			if (imp->model_)throw std::runtime_error("control sever can't create model because it already has one");
 
 			imp->model_.reset(model_);
 		}
@@ -1309,7 +1306,6 @@ namespace Aris
 			this->imp->on_exit_callback_ = callback_func;
 		}
 	}
-	
 }
 
 
