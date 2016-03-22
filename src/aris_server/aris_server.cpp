@@ -442,13 +442,18 @@ namespace Aris
 			
 			ControlServer *server_;
 
-			//以下储存所有的命令//
-			std::map<std::string, int> map_cmd2id_;//store gait id in follow vector
-			std::vector<Dynamic::PlanFunc> plan_vec_;
-			std::vector<ParseFunc> parser_vec_;
-			std::map<std::string, std::unique_ptr<CommandStruct> > mapCmd;//store Node of command
+			// 实时循环中的步态参数 //
+			enum { CMD_POOL_SIZE = 50 };
+			char cmd_queue_[CMD_POOL_SIZE][Aris::Core::MsgRT::RT_MSG_LENGTH];
+			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 0 };
 
-			//储存特殊命令的parse_func//
+			// 以下储存所有的命令 //
+			std::map<std::string, int> cmd_id_map_;//store gait id in follow vector
+			std::vector<Dynamic::PlanFunc> plan_vec_;// store plan func
+			std::vector<ParseFunc> parser_vec_; // store parse func
+			std::map<std::string, std::unique_ptr<CommandStruct> > cmd_struct_map_;//store Node of command
+
+			// 储存特殊命令的parse_func //
 			ParseFunc parse_enable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
 			{
 				BasicFunctionParam param;
@@ -478,16 +483,16 @@ namespace Aris
 				msg.copyStruct(param);
 			} };
 
-			//socket//
+			// socket //
 			Aris::Core::Socket server_socket_;
 			std::string server_socket_ip_, server_socket_port_;
 
-			//储存控制器等//
+			// 储存控制器等 //
 			Aris::Control::EthercatController *controller_;
 			std::unique_ptr<Aris::Dynamic::Model> model_;
 			std::unique_ptr<Aris::Sensor::IMU> imu_;
 
-			//结束时的callback
+			// 结束时的callback //
 			std::function<void(void)> on_exit_callback_{nullptr};
 
 			std::vector<double> motion_pos_;
@@ -522,14 +527,14 @@ namespace Aris
 			auto pCmds = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Commands");
 
 			if (pCmds == nullptr) throw std::runtime_error("invalid xml file, because it contains no commands information");
-			mapCmd.clear();
+			cmd_struct_map_.clear();
 			for (auto pChild = pCmds->FirstChildElement(); pChild != nullptr; pChild = pChild->NextSiblingElement())
 			{
-				if (mapCmd.find(pChild->name()) != mapCmd.end())
+				if (cmd_struct_map_.find(pChild->name()) != cmd_struct_map_.end())
 					throw std::logic_error(std::string("command ") + pChild->name() + " is already existed, please rename it");
 
-				mapCmd.insert(std::make_pair(std::string(pChild->name()), std::unique_ptr<CommandStruct>(new CommandStruct(pChild->name()))));
-				AddAllParams(pChild, mapCmd.at(pChild->name())->root.get(), mapCmd.at(pChild->name())->allParams, mapCmd.at(pChild->name())->shortNames);
+				cmd_struct_map_.insert(std::make_pair(std::string(pChild->name()), std::unique_ptr<CommandStruct>(new CommandStruct(pChild->name()))));
+				AddAllParams(pChild, cmd_struct_map_.at(pChild->name())->root.get(), cmd_struct_map_.at(pChild->name())->allParams, cmd_struct_map_.at(pChild->name())->shortNames);
 			}
 
 			/*Set socket connection callback function*/
@@ -587,7 +592,7 @@ namespace Aris
 			}
 			else
 			{
-				if (map_cmd2id_.find(cmd_name) != map_cmd2id_.end())
+				if (cmd_id_map_.find(cmd_name) != cmd_id_map_.end())
 				{
 					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
 				}
@@ -596,9 +601,9 @@ namespace Aris
 					plan_vec_.push_back(gait_func);
 					parser_vec_.push_back(parse_func);
 
-					map_cmd2id_.insert(std::make_pair(cmd_name, plan_vec_.size() - 1));
+					cmd_id_map_.insert(std::make_pair(cmd_name, plan_vec_.size() - 1));
 
-					std::cout << cmd_name << ":" << map_cmd2id_.at(cmd_name) << std::endl;
+					std::cout << cmd_name << ":" << cmd_id_map_.at(cmd_name) << std::endl;
 				}
 			}
 		};
@@ -707,9 +712,9 @@ namespace Aris
 				throw std::runtime_error(Aris::Core::log("invalid message from client, please be sure that the command message end with char \'\\0\'"));
 			}
 
-			if (mapCmd.find(cmd) != mapCmd.end())
+			if (cmd_struct_map_.find(cmd) != cmd_struct_map_.end())
 			{
-				mapCmd.at(cmd)->root->Reset();
+				cmd_struct_map_.at(cmd)->root->Reset();
 			}
 			else
 			{
@@ -744,10 +749,10 @@ namespace Aris
 
 					for (auto c : paramName)
 					{
-						if (mapCmd.at(cmd)->shortNames.find(c) != mapCmd.at(cmd)->shortNames.end())
+						if (cmd_struct_map_.at(cmd)->shortNames.find(c) != cmd_struct_map_.at(cmd)->shortNames.end())
 						{
-							params.insert(make_pair(mapCmd.at(cmd)->shortNames.at(c), paramValue));
-							mapCmd.at(cmd)->allParams.at(mapCmd.at(cmd)->shortNames.at(c))->Take();
+							params.insert(make_pair(cmd_struct_map_.at(cmd)->shortNames.at(c), paramValue));
+							cmd_struct_map_.at(cmd)->allParams.at(cmd_struct_map_.at(cmd)->shortNames.at(c))->Take();
 						}
 						else
 						{
@@ -774,10 +779,10 @@ namespace Aris
 
 					char c = paramName.data()[1];
 
-					if (mapCmd.at(cmd)->shortNames.find(c) != mapCmd.at(cmd)->shortNames.end())
+					if (cmd_struct_map_.at(cmd)->shortNames.find(c) != cmd_struct_map_.at(cmd)->shortNames.end())
 					{
-						params.insert(make_pair(mapCmd.at(cmd)->shortNames.at(c), paramValue));
-						mapCmd.at(cmd)->allParams.at(mapCmd.at(cmd)->shortNames.at(c))->Take();
+						params.insert(make_pair(cmd_struct_map_.at(cmd)->shortNames.at(c), paramValue));
+						cmd_struct_map_.at(cmd)->allParams.at(cmd_struct_map_.at(cmd)->shortNames.at(c))->Take();
 					}
 					else
 					{
@@ -797,10 +802,10 @@ namespace Aris
 					std::string str = paramName;
 					paramName.assign(str, 2, str.size() - 2);
 
-					if (mapCmd.at(cmd)->allParams.find(paramName) != mapCmd.at(cmd)->allParams.end())
+					if (cmd_struct_map_.at(cmd)->allParams.find(paramName) != cmd_struct_map_.at(cmd)->allParams.end())
 					{
 						params.insert(make_pair(paramName, paramValue));
-						mapCmd.at(cmd)->allParams.at(paramName)->Take();
+						cmd_struct_map_.at(cmd)->allParams.at(paramName)->Take();
 					}
 					else
 					{
@@ -813,7 +818,7 @@ namespace Aris
 				}
 			}
 
-			AddAllDefault(mapCmd.at(cmd)->root.get(), params);
+			AddAllDefault(cmd_struct_map_.at(cmd)->root.get(), params);
 
 			std::cout << cmd << std::endl;
 
@@ -866,9 +871,9 @@ namespace Aris
 			}
 			else
 			{
-				auto cmdPair = this->map_cmd2id_.find(cmd);
+				auto cmdPair = this->cmd_id_map_.find(cmd);
 
-				if (cmdPair == this->map_cmd2id_.end())
+				if (cmdPair == this->cmd_id_map_.end())
 				{
 					throw std::runtime_error(std::string("command \"") + cmd + "\" does not have gait function, please AddCmd() first");
 				}
@@ -892,15 +897,12 @@ namespace Aris
 		
 		auto ControlServer::Imp::tg(Aris::Control::EthercatController::Data &data)->int
 		{
-			enum { CMD_POOL_SIZE = 50 };
-			static char cmd_queue[CMD_POOL_SIZE][Aris::Core::MsgRT::RT_MSG_LENGTH];
-			static int current_cmd{ 0 }, cmd_num{ 0 }, count{ 0 };
 			static ControlServer::Imp *imp = ControlServer::instance().imp.get();
 
 			// 检查是否出错 //
 			static int fault_count = 0;
-			bool is_all_normal = data.motion_raw_data->end() == std::find_if(data.motion_raw_data->begin(), data.motion_raw_data->end(), [](const Aris::Control::EthercatMotion::RawData &data) {return data.ret < 0; });
-			if (!is_all_normal)
+			auto error_motor = std::find_if(data.motion_raw_data->begin(), data.motion_raw_data->end(), [](const Aris::Control::EthercatMotion::RawData &data) {return data.ret < 0; });
+			if (error_motor != data.motion_raw_data->end())
 			{
 				if (fault_count++ % 1000 == 0)
 				{
@@ -916,8 +918,8 @@ namespace Aris
 					mot_data.cmd = Aris::Control::EthercatMotion::DISABLE;
 				}
 
-				cmd_num = 0;
-				count = 0;
+				imp->cmd_num_ = 0;
+				imp->count_ = 0;
 				return 0;
 			}
 			else
@@ -928,80 +930,35 @@ namespace Aris
 			// 查看是否有新cmd //
 			if (data.msg_recv)
 			{
-				if (cmd_num >= CMD_POOL_SIZE)
+				if (imp->cmd_num_ >= CMD_POOL_SIZE)
 				{
 					rt_printf("cmd pool is full, thus ignore last one\n");
 				}
 				else
 				{
-					data.msg_recv->paste(cmd_queue[(current_cmd + cmd_num) % CMD_POOL_SIZE]);
-					++cmd_num;
+					data.msg_recv->paste(imp->cmd_queue_[(imp->current_cmd_ + imp->cmd_num_) % CMD_POOL_SIZE]);
+					++imp->cmd_num_;
 				}
 			}
 
 			// 执行cmd queue中的cmd //
-			if (cmd_num>0)
+			if (imp->cmd_num_ > 0)
 			{
-				if (imp->execute_cmd(count, cmd_queue[current_cmd], data) == 0)
+				if (imp->execute_cmd(imp->count_, imp->cmd_queue_[imp->current_cmd_], data) == 0)
 				{
-					rt_printf("cmd finished, spend %d counts\n\n", count + 1);
-					count = 0;
-					current_cmd = (current_cmd + 1) % CMD_POOL_SIZE;
-					--cmd_num;
+					rt_printf("cmd finished, spend %d counts\n\n", imp->count_ + 1);
+					imp->count_ = 0;
+					imp->current_cmd_ = (imp->current_cmd_ + 1) % CMD_POOL_SIZE;
+					--imp->cmd_num_;
 				}
 				else
 				{
-					if (++count % 1000 == 0)rt_printf("execute cmd in count: %d\n", count);
+					if (++imp->count_ % 1000 == 0)rt_printf("execute cmd in count: %d\n", imp->count_);
 				}
 			}
 
 			// 检查连续 //
-			for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
-			{
-				if ((data.last_motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
-					&& (data.motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
-					&& (data.motion_raw_data->at(i).target_pos != data.last_motion_raw_data->at(i).target_pos)
-					&& (data.motion_raw_data->at(i).target_pos < imp->controller_->motionAtAbs(i).minPosCount() || data.motion_raw_data->at(i).target_pos > imp->controller_->motionAtAbs(i).maxPosCount()))
-				{
-					rt_printf("Motor %i is not in permitted range in count:%d\n", i, count);
-
-					rt_printf("The min, max and current count are:\n");
-					for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
-					{
-						rt_printf("%d   %d   %d\n", imp->controller_->motionAtAbs(i).minPosCount(), imp->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
-					}
-
-					rt_printf("All commands in command queue are discarded\n");
-					cmd_num = 0;
-					count = 0;
-
-					// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-					for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-				}
-				
-				if ((data.last_motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
-					&& (data.motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
-					&& (std::abs(data.last_motion_raw_data->at(i).target_pos - data.motion_raw_data->at(i).target_pos)>0.0012*imp->controller_->motionAtAbs(i).maxVelCount()))
-				{
-					rt_printf("Motor %i is not continuous in count:%d\n", i, count);
-
-					rt_printf("The input of last and this count are:\n");
-					for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
-					{
-						rt_printf("%d   %d\n", data.last_motion_raw_data->at(i).target_pos, data.motion_raw_data->at(i).target_pos);
-					}
-
-					rt_printf("All commands in command queue are discarded\n");
-					cmd_num = 0;
-					count = 0;
-
-					// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-					for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-
-
-					return 0;
-				}
-			}
+			
 
 			return 0;
 		}
@@ -1192,6 +1149,8 @@ namespace Aris
 		};
 		auto ControlServer::Imp::run(GaitParamBase &param, Aris::Control::EthercatController::Data &data)->int
 		{
+			static ControlServer::Imp *imp = ControlServer::instance().imp.get();
+			
 			// 获取陀螺仪传感器数据 //
 			Aris::Sensor::SensorData<Aris::Sensor::ImuData> imuDataProtected;
 			if (imu_) imuDataProtected = imu_->getSensorData();
@@ -1217,6 +1176,70 @@ namespace Aris
 				{
 					data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::RUN;
 					data.motion_raw_data->operator[](i).target_pos = static_cast<std::int32_t>(model_->motionPool().at(i).motPos() * controller_->motionAtAbs(i).pos2countRatio());
+				}
+			}
+
+			// 检查位置极限和速度是否连续 //
+			for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
+			{
+				if (data.last_motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
+				{
+					if (param.if_check_pos_max && (data.motion_raw_data->at(i).target_pos > imp->controller_->motionAtAbs(i).maxPosCount()))
+					{
+						rt_printf("Motor %i's target position is bigger than its MAX permitted value in count:%d\n", i, imp->count_);
+						rt_printf("The min, max and current count are:\n");
+						for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
+						{
+							rt_printf("%d   %d   %d\n", imp->controller_->motionAtAbs(i).minPosCount(), imp->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
+						}
+						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
+						imp->cmd_num_ = 0;
+						imp->count_ = 0;
+
+						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+						for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+						
+						return 0;
+					}
+
+					if (param.if_check_pos_min && (data.motion_raw_data->at(i).target_pos < imp->controller_->motionAtAbs(i).minPosCount()))
+					{
+						rt_printf("Motor %i's target position is smaller than its MIN permitted value in count:%d\n", i, imp->count_);
+						rt_printf("The min, max and current count are:\n");
+						for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
+						{
+							rt_printf("%d   %d   %d\n", imp->controller_->motionAtAbs(i).minPosCount(), imp->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
+						}
+						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
+						imp->cmd_num_ = 0;
+						imp->count_ = 0;
+
+						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+						for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+
+						return 0;
+					}
+
+					if (param.if_check_pos_continuous && (std::abs(data.last_motion_raw_data->at(i).target_pos - data.motion_raw_data->at(i).target_pos)>0.0012*imp->controller_->motionAtAbs(i).maxVelCount()))
+					{
+						rt_printf("Motor %i's target position is not continuous in count:%d\n", i, imp->count_);
+
+						rt_printf("The input of last and this count are:\n");
+						for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
+						{
+							rt_printf("%d   %d\n", data.last_motion_raw_data->at(i).target_pos, data.motion_raw_data->at(i).target_pos);
+						}
+
+						rt_printf("All commands in command queue are discarded\n");
+						imp->cmd_num_ = 0;
+						imp->count_ = 0;
+
+						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+						for (int i = 0; i < 18; ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
+
+
+						return 0;
+					}
 				}
 			}
 
