@@ -308,7 +308,7 @@ namespace Aris
 				throw std::runtime_error("failed to find motion attribute \"abs_id\"");
 			}
 
-			writeSdo(9, static_cast<std::int32_t>(-imp_->home_count_));
+			configSdo(9, static_cast<std::int32_t>(-imp_->home_count_));
 		};
 		auto EthercatMotion::writeCommand(const RawData &data)->void
 		{		

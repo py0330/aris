@@ -33,18 +33,18 @@ namespace Aris
 			auto writePdo(int pdo_group_id, int pdo_id, std::uint8_t value)->void;
 			auto writePdo(int pdo_group_id, int pdo_id, std::uint16_t value)->void;
 			auto writePdo(int pdo_group_id, int pdo_id, std::uint32_t value)->void;
-			auto readSdo(int sdo_id, std::int8_t &value) const->void;
-			auto readSdo(int sdo_id, std::int16_t &value) const->void;
-			auto readSdo(int sdo_id, std::int32_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint8_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint16_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint32_t &value) const->void;
-			auto writeSdo(int sdo_id, std::int8_t value)->void;
-			auto writeSdo(int sdo_id, std::int16_t value)->void;
-			auto writeSdo(int sdo_id, std::int32_t value)->void;
-			auto writeSdo(int sdo_id, std::uint8_t value)->void;
-			auto writeSdo(int sdo_id, std::uint16_t value)->void;
-			auto writeSdo(int sdo_id, std::uint32_t value)->void;
+			auto readSdoConfig(int sdo_id, std::int8_t &value) const->void;
+			auto readSdoConfig(int sdo_id, std::int16_t &value) const->void;
+			auto readSdoConfig(int sdo_id, std::int32_t &value) const->void;
+			auto readSdoConfig(int sdo_id, std::uint8_t &value) const->void;
+			auto readSdoConfig(int sdo_id, std::uint16_t &value) const->void;
+			auto readSdoConfig(int sdo_id, std::uint32_t &value) const->void;
+			auto configSdo(int sdo_id, std::int8_t value)->void;
+			auto configSdo(int sdo_id, std::int16_t value)->void;
+			auto configSdo(int sdo_id, std::int32_t value)->void;
+			auto configSdo(int sdo_id, std::uint8_t value)->void;
+			auto configSdo(int sdo_id, std::uint16_t value)->void;
+			auto configSdo(int sdo_id, std::uint32_t value)->void;
 
 		protected:
             EthercatSlave(const Aris::Core::XmlElement &xml_ele);
