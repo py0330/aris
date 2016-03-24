@@ -52,14 +52,21 @@ namespace Aris
 				std::uint8_t size_;
 				std::uint32_t offset_;
 
+				DataObject(const Aris::Core::XmlElement &xml_ele, Imp *imp)
+				{
+					type_name_ = xml_ele.Attribute("type");
+					index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
+					subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
+					imp_ = imp_;
+					size_ = typeInfoMap().at(xml_ele.Attribute("type")).size_;
+				}
+
 				class TypeInfo
 				{
 				public:
 					const std::type_info *type_info_;
 					std::uint8_t size_;
 					std::function<void(const std::string &, void *)> queryFunc;
-					std::function<Pdo*(const Aris::Core::XmlElement &xml_ele, Imp *imp_)> newPdo;
-					//std::function<Sdo*(const Aris::Core::XmlElement &xml_ele, Imp *imp_)> newSdo;
 
 					template<typename DataType> static auto createTypeInfo()->TypeInfo
 					{
@@ -81,31 +88,6 @@ namespace Aris
 						{
 							info.queryFunc = [](const std::string &str, void *value) {std::stringstream(str) >> (*reinterpret_cast<DataType*>(value)); };
 						}
-
-						
-
-						info.newPdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp_) -> Pdo*
-						{
-							auto ret = new Pdo;
-							ret->type_name_ = xml_ele.Attribute("type");
-							ret->index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
-							ret->subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
-							ret->imp_ = imp_;
-							ret->size_ = sizeof(DataType) * 8;
-							return ret;
-						};
-						/*
-						info.newSdo = [](const Aris::Core::XmlElement &xml_ele, Imp *imp_) -> Sdo*
-						{
-							auto ret = new Sdo;
-							ret->type_name_ = xml_ele.Attribute("type");
-							ret->index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
-							ret->subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
-							ret->imp_ = imp_;
-							ret->size_ = sizeof(DataType) * 8;
-							DataObject::typeInfoMap().at(xml_ele.Attribute("type")).queryFunc(xml_ele.Attribute("value"), ret->sdo_data_);
-							return ret;
-						};*/
 
 						return info;
 					}
@@ -140,6 +122,8 @@ namespace Aris
 					if (typeid(DataType) != *typeInfoMap().at(type_name_).type_info_) throw std::runtime_error("invalid pdo Rx type");
 					*reinterpret_cast<DataType*>(imp_->domain_pd + offset_) = data;
 				};
+
+				Pdo(const Aris::Core::XmlElement &xml_ele, Imp *imp) :DataObject(xml_ele, imp) {};
 			};
 			class Sdo :public DataObject 
 			{
@@ -166,13 +150,8 @@ namespace Aris
 					(*reinterpret_cast<DataType *>(sdo_data_)) = data;
 				};
 
-				Sdo(const Aris::Core::XmlElement &xml_ele, Imp *imp)
+				Sdo(const Aris::Core::XmlElement &xml_ele, Imp *imp):DataObject(xml_ele, imp)
 				{
-					type_name_ = xml_ele.Attribute("type");
-					index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
-					subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
-					imp_ = imp_;
-					size_ = DataObject::typeInfoMap().at(xml_ele.Attribute("type")).size_;
 					DataObject::typeInfoMap().at(xml_ele.Attribute("type")).queryFunc(xml_ele.Attribute("value"), sdo_data_);
 				};
 			};
@@ -190,9 +169,7 @@ namespace Aris
 					is_tx = xml_ele.Attribute("is_tx", "true") ? true : false;
 					for (auto p = xml_ele.FirstChildElement(); p; p = p->NextSiblingElement())
 					{
-						pdo_vec.push_back(std::unique_ptr<Imp::Pdo>(
-							Imp::DataObject::typeInfoMap().at(p->Attribute("type")).newPdo(*p, imp))
-							);
+						pdo_vec.push_back(std::unique_ptr<Imp::Pdo>(new Pdo(*p, imp)));
 					}
 				}
 			};
