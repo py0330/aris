@@ -57,7 +57,7 @@ namespace Aris
 					type_name_ = xml_ele.Attribute("type");
 					index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
 					subindex_ = std::stoi(xml_ele.Attribute("subindex"), nullptr, 0);
-					imp_ = imp_;
+					imp_ = imp;
 					size_ = typeInfoMap().at(xml_ele.Attribute("type")).size_;
 				}
 
