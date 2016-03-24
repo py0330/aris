@@ -128,6 +128,10 @@ namespace Aris
 			class Sdo :public DataObject 
 			{
 			public:
+				enum { TX, RX, CONFIG };
+				std::int32_t is_tx_;
+
+				
 				union
 				{
 					char sdo_data_[8];
@@ -153,6 +157,10 @@ namespace Aris
 				Sdo(const Aris::Core::XmlElement &xml_ele, Imp *imp):DataObject(xml_ele, imp)
 				{
 					DataObject::typeInfoMap().at(xml_ele.Attribute("type")).queryFunc(xml_ele.Attribute("value"), sdo_data_);
+					if (xml_ele.Attribute("is_tx", "true"))is_tx_ = TX;
+					else if (xml_ele.Attribute("is_tx", "false"))is_tx_ = RX;
+					else if (xml_ele.Attribute("is_tx", "config"))is_tx_ = CONFIG;
+					else throw std::runtime_error("invalid param value of is_tx in Sdo");
 				};
 			};
 			class PdoGroup
@@ -259,6 +267,8 @@ namespace Aris
 			// Config Sdo
 			for (auto &sdo : this->sdo_vec)
 			{
+				if (sdo->is_tx_ != Sdo::CONFIG) continue;
+				
 				switch (sdo->size_)
 				{
 				case 8:		ecrt_slave_config_sdo8(this->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint8_); break;
@@ -266,6 +276,27 @@ namespace Aris
 				case 32:	ecrt_slave_config_sdo32(this->ec_slave_config, sdo->index_, sdo->subindex_, sdo->sdo_data_uint32_); break;
 				default:    throw std::runtime_error("invalid size of sdo, it must be 8, 16 or 32");
 				}
+			}
+
+			for (auto &sdo : this->sdo_vec)
+			{
+				if (sdo->is_tx_ != Sdo::RX) continue;
+
+				std::uint32_t code;
+				std::size_t real_size;
+				
+				ecrt_master_sdo_upload(
+					mst, /**< EtherCAT master. */
+					1, /**< Slave position. */
+					sdo->index_, /**< Index of the SDO. */
+					sdo->subindex_, /**< Subindex of the SDO. */
+					&sdo->sdo_data_uint8_, /**< Target buffer for the upload. */
+					sdo->size_, /**< Size of the target buffer. */
+					&real_size, /**< Uploaded data size. */
+					&code /**< Abort code of the SDO upload. */
+					);
+
+				std::cout <<"sdo value:"<< static_cast<int>(sdo->sdo_data_uint8_)<<std::endl;
 			}
 
 			// Configure the slave's PDOs and sync masters
