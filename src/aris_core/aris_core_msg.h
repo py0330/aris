@@ -7,28 +7,28 @@
 #include <string>
 
 
-/// \defgroup Aris
+/// \defgroup aris
 ///
 ///
 
 /// \brief 总命名空间。
-/// \ingroup Aris
+/// \ingroup aris
 /// 
 ///
 ///
-namespace Aris
+namespace aris
 {
-	namespace Control
+	namespace control
 	{
 		template<typename T> class Pipe;
 	}
 	
-	/// \brief Aris核心命名空间
-	/// \ingroup Aris
+	/// \brief aris核心命名空间
+	/// \ingroup aris
 	/// 
 	///
 	///
-	namespace Core
+	namespace core
 	{
 		class Socket;
 		class Msg;
@@ -159,7 +159,7 @@ namespace Aris
 			friend class Msg;
 			friend class MsgRT;
 			friend class Socket;
-			template<typename T> friend class Aris::Control::Pipe;
+			template<typename T> friend class aris::control::Pipe;
 		};
 		class Msg final :public MsgBase
 		{
@@ -177,8 +177,8 @@ namespace Aris
 			*/
 			Msg(Msg&& other);
 			/** \brief Default Constructor
-			* \param length   The length of message(not count message header), the unit of which is byte.
-			* \param msgID  The ID of message
+			* \param size   The length of message(not count message header), the unit of which is byte.
+			* \param msg_id  The ID of message
 			*/
 			explicit Msg(std::int32_t msg_id = 0, std::int32_t size = 0);
 			/** \brief Assignment Operator, which is deep copy from another message

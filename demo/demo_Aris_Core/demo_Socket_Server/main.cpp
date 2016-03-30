@@ -35,7 +35,7 @@ _CrtMemState s1, s2, s3;
 /*内存检测泄露完毕*/
 
 
-Aris::Core::Socket VisualSystem, ControlSystem;
+aris::core::Socket VisualSystem, ControlSystem;
 
 int main()
 {
@@ -50,19 +50,19 @@ int main()
 	/*内存检测泄露完毕*/
 	{	
 		/*注册所有的消息函数*/
-		Aris::Core::registerMsgCallback(VisualSystemConnected, [](Aris::Core::Msg &msg)
+		aris::core::registerMsgCallback(VisualSystemConnected, [](aris::core::Msg &msg)
 		{
 			cout << "Received connection from vision system:" << endl;
 			cout << "    Remote IP is: " << msg.data() + 4 << endl;
 			cout << "    Port is     : " << *((int*)msg.data()) << endl << endl;
 
 			/*像视觉客户端发送数据，索要地图*/
-			Aris::Core::Msg data(0, 0);
+			aris::core::Msg data(0, 0);
 			VisualSystem.sendMsg(data);
 
 			return 0;
 		});
-		Aris::Core::registerMsgCallback(VisualSystemDataReceived, [](Aris::Core::Msg &msg)
+		aris::core::registerMsgCallback(VisualSystemDataReceived, [](aris::core::Msg &msg)
 		{
 			cout << "Received data from vision system:" << endl;
 
@@ -87,14 +87,14 @@ int main()
 
 				if (strcmp(answer, "yes") == 0)
 				{
-					Aris::Core::Msg data;
+					aris::core::Msg data;
 					ControlSystem.sendMsg(data);
 					cout << "command robot to walk" << endl;
 					break;
 				}
 				else if (strcmp(answer, "no") == 0)
 				{
-					Aris::Core::Msg data;
+					aris::core::Msg data;
 					VisualSystem.sendMsg(data);
 					break;
 				}
@@ -103,7 +103,7 @@ int main()
 
 			return 0;
 		});
-		Aris::Core::registerMsgCallback(ControlSystemConnected, [](Aris::Core::Msg &msg)
+		aris::core::registerMsgCallback(ControlSystemConnected, [](aris::core::Msg &msg)
 		{
 			cout << "Received connection from control system:" << endl;
 			cout << "    Remote IP is: " << msg.data() + 4 << endl;
@@ -111,11 +111,11 @@ int main()
 
 			return 0;
 		});
-		Aris::Core::registerMsgCallback(ControlTrajectoryFinished, [](Aris::Core::Msg &msg)
+		aris::core::registerMsgCallback(ControlTrajectoryFinished, [](aris::core::Msg &msg)
 		{
 			/*只要收到数据就认为控制客户端已经走完对应的轨迹*/
 			cout << "Robot walk finished, Now ask for map" << endl;
-			Aris::Core::Msg data;
+			aris::core::Msg data;
 			VisualSystem.sendMsg(data);
 
 
@@ -123,9 +123,9 @@ int main()
 		});
 
 		/*设置所有Socket类型的回调函数*/
-		VisualSystem.setOnReceivedConnection([](Aris::Core::Socket *pConn, const char *addr, int port)
+		VisualSystem.setOnReceivedConnection([](aris::core::Socket *pConn, const char *addr, int port)
 		{
-			Aris::Core::Msg msg;
+			aris::core::Msg msg;
 
 			msg.setMsgID(VisualSystemConnected);
 			msg.copy(&port, sizeof(int));
@@ -135,21 +135,21 @@ int main()
 
 			return 0;
 		});
-		VisualSystem.setOnReceivedMsg([](Aris::Core::Socket *pConn, Aris::Core::Msg &msg)
+		VisualSystem.setOnReceivedMsg([](aris::core::Socket *pConn, aris::core::Msg &msg)
 		{
 			msg.setMsgID(VisualSystemDataReceived);
-			Aris::Core::postMsg(msg);
+			aris::core::postMsg(msg);
 			return 0;
 		});
-		VisualSystem.setOnLoseConnection([](Aris::Core::Socket *pConn)
+		VisualSystem.setOnLoseConnection([](aris::core::Socket *pConn)
 		{
 			cout << "Vision system connection lost" << endl;
 			pConn->startServer("5688");
 			return 0;
 		});
-		ControlSystem.setOnReceivedConnection([](Aris::Core::Socket *pConn, const char *addr, int port)
+		ControlSystem.setOnReceivedConnection([](aris::core::Socket *pConn, const char *addr, int port)
 		{
-			Aris::Core::Msg msg;
+			aris::core::Msg msg;
 			
 			msg.setMsgID(ControlSystemConnected);
 			msg.copy(&port, sizeof(int));
@@ -159,31 +159,31 @@ int main()
 
 			return 0;
 		});
-		ControlSystem.setOnReceivedMsg([](Aris::Core::Socket *pConn, Aris::Core::Msg &msg)
+		ControlSystem.setOnReceivedMsg([](aris::core::Socket *pConn, aris::core::Msg &msg)
 		{
 			msg.setMsgID(ControlTrajectoryFinished);
-			Aris::Core::postMsg(msg);
+			aris::core::postMsg(msg);
 			return 0;
 		});
-		ControlSystem.setOnLoseConnection([](Aris::Core::Socket *pConn)
+		ControlSystem.setOnLoseConnection([](aris::core::Socket *pConn)
 		{
-			cout << "Control system connection lost" << endl;
+			cout << "control system connection lost" << endl;
 			pConn->startServer("5689");
 			return 0;
 		});
 		
-		ControlSystem.setOnReceivedRequest([](Aris::Core::Socket *pConn,Aris::Core::Msg)
+		ControlSystem.setOnReceivedRequest([](aris::core::Socket *pConn,aris::core::Msg)
 		{
 			cout << "received request" << endl;
 #ifdef UNIX  
 			usleep(1000000);
 #endif
 #ifdef WIN32  
-			Aris::Core::msSleep(1000);
+			aris::core::msSleep(1000);
 #endif
 			
 
-			Aris::Core::Msg m;
+			aris::core::Msg m;
 			m.copy("12345");
 
 			return m;
@@ -194,7 +194,7 @@ int main()
 		ControlSystem.startServer("5689");
 
 		/*开始消息循环*/
-		Aris::Core::runMsgLoop();
+		aris::core::runMsgLoop();
 	}
 
 #ifdef WIN32  

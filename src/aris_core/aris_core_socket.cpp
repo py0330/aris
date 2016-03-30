@@ -22,9 +22,9 @@
 
 #include "aris_core_socket.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Core
+	namespace core
 	{
 		struct Socket::Imp
 		{
@@ -35,8 +35,8 @@ namespace Aris
 			socklen_t _SinSize;
 			Socket::State _ConnState;
 
-			std::function<Aris::Core::Msg(Socket *, Aris::Core::Msg &)> onReceivedRequest;
-			std::function<int(Socket *, Aris::Core::Msg &)> onReceivedData;
+			std::function<aris::core::Msg(Socket *, aris::core::Msg &)> onReceivedRequest;
+			std::function<int(Socket *, aris::core::Msg &)> onReceivedData;
 			std::function<int(Socket *, const char *, int)> onReceivedConnection;
 			std::function<int(Socket *)> onLoseConnection;
 
@@ -52,7 +52,7 @@ namespace Aris
 			std::condition_variable _cv;
 
 			std::condition_variable_any _cv_reply_data_received;
-			Aris::Core::Msg _replyData;
+			aris::core::Msg _replyData;
 			
 			/* 连接的socket */
 #ifdef WIN32
@@ -145,7 +145,7 @@ namespace Aris
 				MsgHeader msgHeader;
 				char header[sizeof(MsgHeader)];
 			} head;
-			Aris::Core::Msg receivedData;
+			aris::core::Msg receivedData;
 			
 			int connSocket = pConnS->_ConnSocket;
 
@@ -208,7 +208,7 @@ namespace Aris
 					break;
 				case SOCKET_REQUEST:
 				{
-					Aris::Core::Msg m;
+					aris::core::Msg m;
 					if (pConnS->onReceivedRequest)m = pConnS->onReceivedRequest(pConnS->pConn, receivedData);
 
 					m.setType(SOCKET_REPLY);
@@ -432,7 +432,7 @@ namespace Aris
 
 			return;
 		}
-		auto Socket::sendMsg(const Aris::Core::Msg &data)->void
+		auto Socket::sendMsg(const aris::core::Msg &data)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 
@@ -448,7 +448,7 @@ namespace Aris
 				throw SendDataError("Socket failed sending data, because Socket is not at right state\n", this, 0);
 			}
 		}
-		auto Socket::sendRequest(const Aris::Core::Msg &request)->Aris::Core::Msg
+		auto Socket::sendRequest(const aris::core::Msg &request)->aris::core::Msg
 		{
 			std::unique_lock<std::recursive_mutex> state_lck(pImp->_state_mutex);
 
@@ -461,7 +461,7 @@ namespace Aris
 				throw SendRequestError("Socket failed sending request, because Socket is not at right state\n", this, 0);
 			}
 
-			Aris::Core::Msg _request = request;
+			aris::core::Msg _request = request;
 			_request.setType(Socket::Imp::SOCKET_REQUEST);
 			
 			try
@@ -486,12 +486,12 @@ namespace Aris
 				return reply;
 			}
 		}
-		auto Socket::setOnReceivedMsg(std::function<int(Socket*, Aris::Core::Msg &)> OnReceivedData)->void
+		auto Socket::setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> OnReceivedData)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			pImp->onReceivedData = OnReceivedData;
 		}
-		auto Socket::setOnReceivedRequest(std::function<Aris::Core::Msg(Socket*, Aris::Core::Msg &)> OnReceivedRequest)->void
+		auto Socket::setOnReceivedRequest(std::function<aris::core::Msg(Socket*, aris::core::Msg &)> OnReceivedRequest)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(pImp->_state_mutex);
 			pImp->onReceivedRequest = OnReceivedRequest;

@@ -151,9 +151,9 @@ private:
 };
 
 
-namespace Aris
+namespace aris
 {
-	namespace Core
+	namespace core
 	{
 		const std::string& logFileName()
 		{

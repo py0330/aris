@@ -7,9 +7,9 @@
 
 #include "aris_core.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Control
+	namespace control
 	{	
 		class PipeBase
 		{
@@ -82,14 +82,14 @@ namespace Aris
 		};
 
 		template <>
-		class Pipe<Aris::Core::Msg>:public PipeBase
+		class Pipe<aris::core::Msg>:public PipeBase
 		{
 		public:
 			Pipe(bool is_block = true);
-			auto sendToRT(const Aris::Core::Msg &msg)->int;
-			auto sendToNrt(const Aris::Core::MsgRT &msg)->int;
-			auto recvInRT(Aris::Core::MsgRT &msg)->int;
-			auto recvInNrt(Aris::Core::Msg &msg)->int;
+			auto sendToRT(const aris::core::Msg &msg)->int;
+			auto sendToNrt(const aris::core::MsgRT &msg)->int;
+			auto recvInRT(aris::core::MsgRT &msg)->int;
+			auto recvInNrt(aris::core::Msg &msg)->int;
 		};
 	}
 }

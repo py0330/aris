@@ -1,7 +1,7 @@
 #include <iostream>
 #include "aris_dynamic_kernel.h"
 
-using namespace Aris::Dynamic;
+using namespace aris::dynamic;
 
 int main(int argc, char *argv[])
 {

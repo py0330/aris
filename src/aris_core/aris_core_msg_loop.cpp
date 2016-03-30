@@ -16,9 +16,9 @@
 
 using namespace std;
 
-namespace Aris
+namespace aris
 {
-	namespace Core
+	namespace core
 	{
 		class SEM
 		{
@@ -67,24 +67,24 @@ namespace Aris
 			_sig_value--;
 		}
 		
-		std::queue<Aris::Core::Msg> msgq;
+		std::queue<aris::core::Msg> msgq;
 		
 		SEM MsgReceived;
 		std::mutex MsgMutex,MsgCallbackMutex;
 		bool ifSkipLoop = false;
 		bool isRunning = false;
 
-		map < int, vector<function<int(Aris::Core::Msg &)> > > Msg_CallBack_Map;
-		vector<function<int(Aris::Core::Msg &)> > DefaultCallBacks;
+		map < int, vector<function<int(aris::core::Msg &)> > > Msg_CallBack_Map;
+		vector<function<int(aris::core::Msg &)> > DefaultCallBacks;
 
-		void postMsg(const Aris::Core::Msg &InMsg)
+		void postMsg(const aris::core::Msg &InMsg)
 		{
 			std::lock_guard<std::mutex> lck(MsgMutex);
 			
 			msgq.push(InMsg);
 			MsgReceived.Post();
 		}
-		void GetMsg(Aris::Core::Msg &rMsg)
+		void GetMsg(aris::core::Msg &rMsg)
 		{
 			bool Flag=true;
 			while(Flag)
@@ -101,14 +101,14 @@ namespace Aris
 				}
 			}
 		}
-		void registerMsgCallback(int message, function<int(Aris::Core::Msg &)> CallBack)
+		void registerMsgCallback(int message, function<int(aris::core::Msg &)> CallBack)
 		{
 			MsgCallbackMutex.lock();
 			
 			auto found = Msg_CallBack_Map.find(message);
 			if (found == Msg_CallBack_Map.end())
 			{
-				vector<function<int(Aris::Core::Msg &)> > Msg_CallBacks;
+				vector<function<int(aris::core::Msg &)> > Msg_CallBacks;
 				if (CallBack != nullptr)
 				{
 					Msg_CallBacks.push_back(CallBack);
@@ -126,7 +126,7 @@ namespace Aris
 
 			MsgCallbackMutex.unlock();
 		}
-		void registerDefaultCallback(std::function<int(Aris::Core::Msg &)> CallBack)
+		void registerDefaultCallback(std::function<int(aris::core::Msg &)> CallBack)
 		{
 			MsgCallbackMutex.lock();
 			
@@ -146,7 +146,7 @@ namespace Aris
 			else
 				isRunning = true;
 
-			Aris::Core::Msg Msg;
+			aris::core::Msg Msg;
 			ifSkipLoop = false;
 
 			while (GetMsg(Msg),ifSkipLoop==false)
@@ -185,7 +185,7 @@ namespace Aris
 			if (isRunning)
 			{
 				ifSkipLoop = true;
-				postMsg(Core::Msg(0, 0));
+				postMsg(core::Msg(0, 0));
 			}
 			else
 			{

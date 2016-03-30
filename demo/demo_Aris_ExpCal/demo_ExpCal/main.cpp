@@ -9,12 +9,12 @@ using namespace std;
 
 int main()
 {
-	Aris::Core::Calculator c;
+	aris::core::Calculator c;
 
 
 	{
-		Aris::Core::Matrix X(0.1);
-		Aris::Core::Matrix Y = X;
+		aris::core::Matrix X(0.1);
+		aris::core::Matrix Y = X;
 	}
 	
 	
@@ -30,11 +30,11 @@ int main()
 	c.addVariable("FIVE", 5);
 	c.addVariable("TWO", 2);
 	c.addVariable("PI", 3.141592653);
-	c.addFunction("multiply", [](std::vector<Aris::Core::Matrix> matrices)
+	c.addFunction("multiply", [](std::vector<aris::core::Matrix> matrices)
 	{
 		return matrices.at(0)*matrices.at(1);
 	}, 2);
-	c.addFunction("addTwo", [](std::vector<Aris::Core::Matrix> matrices)
+	c.addFunction("addTwo", [](std::vector<aris::core::Matrix> matrices)
 	{
 		return matrices.at(0) + 2;
 	}, 1);
@@ -43,16 +43,16 @@ int main()
 
 	double x = 0.1;
 
-	Aris::Core::Matrix m = { 1, 2.2, 3,{}, 2, 3.2, 4 };
-	Aris::Core::Matrix n = { x,{}, x + 0.1 };
+	aris::core::Matrix m = { 1, 2.2, 3,{}, 2, 3.2, 4 };
+	aris::core::Matrix n = { x,{}, x + 0.1 };
 
 	//m.transpose();
 
-	Aris::Core::Matrix m2;
+	aris::core::Matrix m2;
 
 	//std::vector<Matrix> v = { m, m2 };
 
-	Aris::Core::Matrix k = { { m,{}, m },{ n,{}, n },{ 1,{},2,{},{},3,{},4 } };
+	aris::core::Matrix k = { { m,{}, m },{ n,{}, n },{ 1,{},2,{},{},3,{},4 } };
 	k.dsp();
 
 	k(1, 1) = 31.415926532345e16;

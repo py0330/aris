@@ -10,9 +10,9 @@
 
 #include "aris_core_expression_calculator.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Core
+	namespace core
 	{
 		Matrix::Matrix(std::size_t m, std::size_t n, double value) : m_(m), n_(n), is_row_major_(true), data_vec_(m*n, value)
 		{
@@ -54,7 +54,7 @@ namespace Aris
 			}
 
 
-			(*this) = Aris::Core::combineMatrices(mat_list_list);
+			(*this) = aris::core::combineMatrices(mat_list_list);
 		}
 		auto Matrix::swap(Matrix &other)->Matrix&
 		{

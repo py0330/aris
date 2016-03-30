@@ -6,9 +6,9 @@
 
 using namespace std;
 
-namespace Aris
+namespace aris
 {
-	namespace Core
+	namespace core
 	{
 	}
 }

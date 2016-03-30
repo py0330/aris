@@ -8,14 +8,14 @@
 #include <aris_core.h>
 #include <aris_control_pipe.h>
 
-namespace Aris
+namespace aris
 {
 	/// \brief 控制命名空间
-	/// \ingroup Aris
+	/// \ingroup aris
 	/// 
 	///
 	///
-	namespace Control
+	namespace control
 	{	
 		class EthercatSlave
 		{
@@ -47,7 +47,7 @@ namespace Aris
 			auto configSdo(int sdo_id, std::uint32_t value)->void;
 
 		protected:
-            EthercatSlave(const Aris::Core::XmlElement &xml_ele);
+            EthercatSlave(const aris::core::XmlElement &xml_ele);
 
 		private:
 			EthercatSlave(const EthercatSlave &other) = delete;
@@ -77,7 +77,7 @@ namespace Aris
 			static auto instance()->EthercatMaster &;
 			static auto instancePtr()->const std::unique_ptr<EthercatMaster> &;
 			virtual ~EthercatMaster();
-			virtual auto loadXml(const Aris::Core::XmlElement &xml_ele)->void;
+			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void;
 			virtual auto start()->void;
 			virtual auto stop()->void;
 			template <class Slave, typename ...Args> 

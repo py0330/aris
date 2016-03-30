@@ -12,9 +12,9 @@
 
 #include "aris_dynamic_kernel.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Dynamic
+	namespace dynamic
 	{
 		auto dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n)->void
 		{
@@ -51,8 +51,7 @@ namespace Aris
 		}
 		auto dsp(const double *p, const int m, const int n, const int begin_row, const int begin_col, int ld)->void
 		{
-			if (ld < 1)
-				ld = n;
+			if (ld < 1)	ld = n;
 		
 			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(15);
 
@@ -72,10 +71,7 @@ namespace Aris
 		{
 			double diff_square = 0;
 
-			for (int i = 0; i < n; ++i)
-			{
-				diff_square += (v1[i] - v2[i])*(v1[i] - v2[i]);
-			}
+			for (int i = 0; i < n; ++i)diff_square += (v1[i] - v2[i])*(v1[i] - v2[i]);
 
 			diff_square = std::sqrt(std::abs(diff_square));
 
@@ -121,11 +117,11 @@ namespace Aris
 			double Cbb, Cee, Cbe, Ceb;
 			double s_, c_;
 
-			int a = EurType[0] - '1';
-			int b = EurType[1] - '1';
-			int c = EurType[2] - '1';
-			int d = 3 - a - b;
-			int e = 3 - b - c;
+			const int a = EurType[0] - '1';
+			const int b = EurType[1] - '1';
+			const int c = EurType[2] - '1';
+			const int d = 3 - a - b;
+			const int e = 3 - b - c;
 
 			c_ = std::cos(pe_in[3]);
 			s_ = std::sin(pe_in[3]);
@@ -176,28 +172,27 @@ namespace Aris
 			double phi[3];
 			double s_, c_;
 
-			int a = EurType[0] - '1';
-			int b = EurType[1] - '1';
-			int c = EurType[2] - '1';
-			int d = 3 - a - b;
-			int e = 3 - b - c;
+			const int a = EurType[0] - '1';
+			const int b = EurType[1] - '1';
+			const int c = EurType[2] - '1';
+			const int d = 3 - a - b;
+			const int e = 3 - b - c;
 
-			/*计算phi2*/
+			// 计算phi2 //
 			s_ = std::sqrt((pm_in[4 * a + b] * pm_in[4 * a + b] + pm_in[4 * a + e] * pm_in[4 * a + e]
 				+ pm_in[4 * b + c] * pm_in[4 * b + c] + pm_in[4 * d + c] * pm_in[4 * d + c])/2);
 				
 			c_ = pm_in[4 * a + c];
 			phi[1] = (a == c ? std::atan2(s_,c_) : std::atan2(P[a][c]*c_,s_));
 
-			/*计算phi1和phi3*/
-
+			// 计算phi1和phi3 //
 			phi13 = std::atan2(pm_in[4 * b + e] - pm_in[4 * d + b], pm_in[4 * b + b] + pm_in[4 * d + e]);
 			phi31 = std::atan2(pm_in[4 * b + e] + pm_in[4 * d + b], pm_in[4 * b + b] - pm_in[4 * d + e]);
 
 			phi[0] = P[b][d] * (phi13 - phi31) / 2;
 			phi[2] = P[b][e] * (phi13 + phi31) / 2;
 
-			/*检查*/
+			// 检查 //
 			double sig[4];
 			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * pm_in[a * 4 + b] * std::sin(phi[2]);
 			sig[1] = (P[a][e] + Q[a][e])*pm_in[4 * a + e] * std::cos(phi[2]);
@@ -213,7 +208,7 @@ namespace Aris
 			phi[0] = (phi[0] < 0 ? phi[0] + 2 * PI : phi[0]);
 			phi[2] = (phi[2] < 0 ? phi[2] + 2 * PI : phi[2]);
 
-			/*对位置赋值*/
+			// 对位置赋值 //
 			std::copy_n(phi, 3, pe_out + 3);
 			
 			pe_out[0] = pm_in[3];
@@ -265,7 +260,7 @@ namespace Aris
 
 			double tr = pm_in[0] + pm_in[5] + pm_in[10];
 
-			/*因为无法确保在截断误差的情况下，tr+1一定为正，因此这里需要判断*/
+			// 因为无法确保在截断误差的情况下，tr+1一定为正，因此这里需要判断 //
 			q4 = tr>-1 ? std::sqrt((tr + 1) / 4) : 0;
 
 			if (q4 > 0.1)
@@ -276,14 +271,12 @@ namespace Aris
 			}
 			else
 			{
-				int id;
-
 				q1 = std::sqrt((1 + pm_in[0] - pm_in[5] - pm_in[10])) / 2;
 				q2 = std::sqrt((1 + pm_in[5] - pm_in[0] - pm_in[10])) / 2;
 				q3 = std::sqrt((1 + pm_in[10] - pm_in[0] - pm_in[5])) / 2;
 
-				/*qp_out 是通过开方计算而得，因此一定为正*/
-				id = std::max_element(q, q + 3) - q;
+				// qp_out 是通过开方计算而得，因此一定为正 //
+				int id = std::max_element(q, q + 3) - q;
 
 				q[id] *= s_sgn2(pm_in[(id + 2) % 3 * 4 + (id + 1) % 3] - pm_in[(id + 1) % 3 * 4 + (id + 2) % 3]);
 				q[(id + 1) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 1) % 3] + pm_in[((id + 1) % 3) * 4 + id]);
@@ -306,13 +299,13 @@ namespace Aris
 			s_pe2pm(pe_in, pm, EurType);
 			s_pm2pq(pm, pq_out);
 		}
-		auto s_pe2pe(const char* type1_in, const double *pe_in, const char* type2_in, double *pe_out) noexcept->void
+		auto s_pe2pe(const char* eur1_type_in, const double *pe_in, const char* eur2_type_in, double *pe_out) noexcept->void
 		{
 			double pm[16];
-			s_pe2pm(pe_in, pm, type1_in);
-			s_pm2pe(pm, pe_out, type2_in);
+			s_pe2pm(pe_in, pm, eur1_type_in);
+			s_pm2pe(pm, pe_out, eur2_type_in);
 		}
-		auto s_vq2v(const double *pq_in, const double *vq_in, double *v_out) noexcept->void
+		auto s_vq2v(const double *pq_in, const double *vq_in, double *vel_out) noexcept->void
 		{
 			const double *q = &pq_in[3];
 			const double *vq = &vq_in[3];
@@ -327,15 +320,15 @@ namespace Aris
 			double pm[4][4];
 			s_pq2pm(pq_in, *pm);
 
-			v_out[3] = 2 * (p13 - p42)*pm[1][0]                    + 2 * (p23 + p41)*pm[1][1]                   - 4 * (q[0] * vq[0] + q[1] * vq[1])*pm[1][2];
-			v_out[4] = -4 * (q[1] * vq[1] + q[2] * vq[2])*pm[2][0] + 2 * (p12 - p43)*pm[2][1]                   + 2 * (p13 + p42)*pm[2][2];
-			v_out[5] = 2 * (p12 + p43)*pm[0][0]                    - 4 * (q[0] * vq[0] + q[2] * vq[2])*pm[0][1] + 2 * (p23 - p41)*pm[0][2];
+			vel_out[3] = 2 * (p13 - p42)*pm[1][0]                    + 2 * (p23 + p41)*pm[1][1]                   - 4 * (q[0] * vq[0] + q[1] * vq[1])*pm[1][2];
+			vel_out[4] = -4 * (q[1] * vq[1] + q[2] * vq[2])*pm[2][0] + 2 * (p12 - p43)*pm[2][1]                   + 2 * (p13 + p42)*pm[2][2];
+			vel_out[5] = 2 * (p12 + p43)*pm[0][0]                    - 4 * (q[0] * vq[0] + q[2] * vq[2])*pm[0][1] + 2 * (p23 - p41)*pm[0][2];
 		
 			//note only first 3 elements
-			std::copy_n(vq_in, 3, v_out);
+			std::copy_n(vq_in, 3, vel_out);
 			
 		}
-		auto s_v2vq(const double *pm_in, const double *v_in, double *vq_out) noexcept->void
+		auto s_v2vq(const double *pm_in, const double *vel_in, double *vq_out) noexcept->void
 		{
 			double pq[7];
 			s_pm2pq(pm_in, pq);
@@ -344,10 +337,9 @@ namespace Aris
 			double *vq = &vq_out[3];
 
 			double vpm[4][4];
-			s_v_cro_pm(v_in, pm_in, *vpm);
+			s_v_cro_pm(vel_in, pm_in, *vpm);
 
-			int i;
-			i = std::max_element(q, q + 4, [](double a, double b) {return std::abs(a) < std::abs(b); }) - q;
+			int i = std::max_element(q, q + 4, [](double a, double b) {return std::abs(a) < std::abs(b); }) - q;
 
 			if (i == 3)
 			{
@@ -369,15 +361,15 @@ namespace Aris
 			}
 
 			//note that only first 3 elements
-			std::copy_n(v_in, 3, vq_out);
+			std::copy_n(vel_in, 3, vq_out);
 		}
 		
-		auto s_vp(const double *pnt_in, const double *vel_in, double *pv_out) noexcept->void
+		auto s_vp(const double *pnt_in, const double *vel_in, double *vp_out) noexcept->void
 		{
-			s_cro3(vel_in + 3, pnt_in, pv_out);
-			s_daxpy(3, 1, vel_in, 1, pv_out, 1);
+			s_cro3(vel_in + 3, pnt_in, vp_out);
+			s_daxpy(3, 1, vel_in, 1, vp_out, 1);
 		}
-		auto s_ap(const double *pnt_in, const double *vel_in, const double *acc_in, double *pnt_acc_out) noexcept->void
+		auto s_ap(const double *pnt_in, const double *vel_in, const double *acc_in, double *ap_out) noexcept->void
 		{
 			double tem1[3], tem2[3], tem3[3];
 			//omega cross omega cross r
@@ -388,9 +380,9 @@ namespace Aris
 
 			s_cro3(acc_in + 3, pnt_in, tem3);
 
-			pnt_acc_out[0] = acc_in[0] + tem1[0] + tem2[0] + tem3[0];
-			pnt_acc_out[1] = acc_in[1] + tem1[1] + tem2[1] + tem3[1];
-			pnt_acc_out[2] = acc_in[2] + tem1[2] + tem2[2] + tem3[2];
+			ap_out[0] = acc_in[0] + tem1[0] + tem2[0] + tem3[0];
+			ap_out[1] = acc_in[1] + tem1[1] + tem2[1] + tem3[1];
+			ap_out[2] = acc_in[2] + tem1[2] + tem2[2] + tem3[2];
 		}
 
 		auto s_f2f(const double *relative_pm_in, const double *from_fce_in, double *to_fce_out) noexcept->void
@@ -520,59 +512,59 @@ namespace Aris
 
 			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
 		}
-		auto s_vp2vp(const double *relative_pm_in, const double *relative_vel_in, const double *from_pnt, const double *from_pv,
-			double *to_pv_out, double *to_pnt_out) noexcept->void
+		auto s_vp2vp(const double *relative_pm_in, const double *relative_vel_in, const double *from_pnt, const double *from_vp,
+			double *to_vp_out, double *to_pnt_out) noexcept->void
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
 			static const double default_from_pnt[3] = { 0,0,0 };
 			static const double default_from_pv[3] = { 0,0,0 };
-			double default_to_pv[3];
+			double default_to_vp[3];
 			double default_to_pnt[3];
 
 			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
 			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
 			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
-			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
+			from_vp = from_vp ? from_vp : default_from_pv;
+			to_vp_out = to_vp_out ? to_vp_out : default_to_vp;
 			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
 
 			s_pp2pp(relative_pm_in, from_pnt, to_pnt_out);
-			s_cro3(relative_vel_in + 3, to_pnt_out, to_pv_out);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, to_pv_out, 1);
-			s_daxpy(3, 1, relative_vel_in, 1, to_pv_out, 1);
+			s_cro3(relative_vel_in + 3, to_pnt_out, to_vp_out);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_vp, 1, 1, to_vp_out, 1);
+			s_daxpy(3, 1, relative_vel_in, 1, to_vp_out, 1);
 		}
 		auto s_inv_vp2vp(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
-			const double *from_pnt, const double *from_pv, double *to_pv_out, double *to_pnt_out) noexcept->void
+			const double *from_pnt, const double *from_vp, double *to_vp_out, double *to_pnt_out) noexcept->void
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
 			static const double default_from_pnt[3] = { 0,0,0 };
 			static const double default_from_pv[3] = { 0,0,0 };
-			double default_to_pv[3];
+			double default_to_vp[3];
 			double default_to_pnt[3];
 
 			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
 			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
 			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
-			to_pv_out = to_pv_out ? to_pv_out : default_to_pv;
+			from_vp = from_vp ? from_vp : default_from_pv;
+			to_vp_out = to_vp_out ? to_vp_out : default_to_vp;
 			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
 
-			std::fill_n(to_pv_out, 3, 0);
+			std::fill_n(to_vp_out, 3, 0);
 
 			double tem[3];
-			std::copy_n(from_pv, 3, tem);
+			std::copy_n(from_vp, 3, tem);
 			s_cro3(-1, inv_relative_vel_in + 3, from_pnt, 1, tem);
 			s_daxpy(3, -1, inv_relative_vel_in, 1, tem, 1);
-			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pv_out, 1);
+			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_vp_out, 1);
 
 			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
 
 		}
 		auto s_ap2ap(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
-			const double *from_pnt, const double *from_pv, const double *from_pa,
-			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept->void
+			const double *from_pnt, const double *from_vp, const double *from_pa,
+			double *to_ap_out, double *to_vp_out, double *to_pnt_out) noexcept->void
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
@@ -580,33 +572,33 @@ namespace Aris
 			static const double default_from_pnt[3] = { 0,0,0 };
 			static const double default_from_pv[3] = { 0,0,0 };
 			static const double default_from_pa[3] = { 0,0,0 };
-			double default_pa_out[3]{ 0 };
-			double default_pv_out[3]{ 0 };
-			double default_pnt_out[3]{ 0 };
+			double default_to_ap[3]{ 0 };
+			double default_to_vp[3]{ 0 };
+			double default_to_pnt[3]{ 0 };
 
 			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
 			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
 			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
 			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
+			from_vp = from_vp ? from_vp : default_from_pv;
 			from_pa = from_pa ? from_pa : default_from_pa;
-			to_pa_out = to_pa_out ? to_pa_out : default_pa_out;
-			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
+			to_ap_out = to_ap_out ? to_ap_out : default_to_ap;
+			to_vp_out = to_vp_out ? to_vp_out : default_to_vp;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
 
-			double tem_pv[3];
-			s_vp2vp(relative_pm_in, relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
+			double tem_vp[3];
+			s_vp2vp(relative_pm_in, relative_vel_in, from_pnt, from_vp, to_vp_out, to_pnt_out);
 
-			s_cro3(relative_acc_in + 3, to_pnt_out, to_pa_out);
-			std::copy_n(to_pv_out, 3, tem_pv);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pv, 1, 1, tem_pv, 1);
-			s_cro3(1, relative_vel_in + 3, tem_pv, 1, to_pa_out);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pa, 1, 1, to_pa_out, 1);
-			s_daxpy(3, 1, relative_acc_in, 1, to_pa_out, 1);
+			s_cro3(relative_acc_in + 3, to_pnt_out, to_ap_out);
+			std::copy_n(to_vp_out, 3, tem_vp);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_vp, 1, 1, tem_vp, 1);
+			s_cro3(1, relative_vel_in + 3, tem_vp, 1, to_ap_out);
+			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pa, 1, 1, to_ap_out, 1);
+			s_daxpy(3, 1, relative_acc_in, 1, to_ap_out, 1);
 		}
 		auto s_inv_ap2ap(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
-			const double *from_pnt, const double *from_pv, const double *from_pa,
-			double *to_pa_out, double *to_pv_out, double *to_pnt_out) noexcept->void
+			const double *from_pnt, const double *from_vp, const double *from_pa,
+			double *to_ap_out, double *to_vp_out, double *to_pnt_out) noexcept->void
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
@@ -614,35 +606,35 @@ namespace Aris
 			static const double default_from_pnt[3] = { 0,0,0 };
 			static const double default_from_pv[3] = { 0,0,0 };
 			static const double default_from_pa[3] = { 0,0,0 };
-			double default_pa_out[3]{ 0 };
-			double default_pv_out[3]{ 0 };
-			double default_pnt_out[3]{ 0 };
+			double default_to_ap[3]{ 0 };
+			double default_to_vp[3]{ 0 };
+			double default_to_pnt[3]{ 0 };
 
 			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
 			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
 			inv_relative_acc_in = inv_relative_acc_in ? inv_relative_acc_in : default_acc_in;
 			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_pv = from_pv ? from_pv : default_from_pv;
+			from_vp = from_vp ? from_vp : default_from_pv;
 			from_pa = from_pa ? from_pa : default_from_pa;
-			to_pa_out = to_pa_out ? to_pa_out : default_pa_out;
-			to_pv_out = to_pv_out ? to_pv_out : default_pv_out;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_pnt_out;
+			to_ap_out = to_ap_out ? to_ap_out : default_to_ap;
+			to_vp_out = to_vp_out ? to_vp_out : default_to_vp;
+			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
 
-			std::fill_n(to_pa_out, 3, 0);
+			std::fill_n(to_ap_out, 3, 0);
 
 			double tem[3], tem2[3];
-			s_inv_vp2vp(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_pv, to_pv_out, to_pnt_out);
+			s_inv_vp2vp(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_vp, to_vp_out, to_pnt_out);
 
 			std::copy_n(from_pa, 3, tem);
 			s_cro3(-1, inv_relative_acc_in + 3, from_pnt, 1, tem);
 
-			std::copy_n(from_pv, 3, tem2);
-			s_dgemm(3, 1, 3, 1, inv_relative_pm_in, 4, to_pv_out, 1, 1, tem2, 1);
+			std::copy_n(from_vp, 3, tem2);
+			s_dgemm(3, 1, 3, 1, inv_relative_pm_in, 4, to_vp_out, 1, 1, tem2, 1);
 			s_cro3(-1, inv_relative_vel_in + 3, tem2, 1, tem);
 
 			s_daxpy(3, -1, inv_relative_acc_in, 1, tem, 1);
 
-			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_pa_out, 1);
+			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_ap_out, 1);
 		}
 
 		auto s_tmf(const double *pm_in, double *tmf_out) noexcept->void
@@ -1256,7 +1248,7 @@ namespace Aris
 		}
 		auto s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept->void
 		{
-			/*seemed that loop is faster than cblas*/
+			// seemed that loop is faster than cblas //
 			for (int i = 0; i < 3; ++i)
 			{
 				v3_out[i] = pm_in[i * 4] * v3_in[0] + pm_in[i * 4 + 1] * v3_in[1] + pm_in[i * 4 + 2] * v3_in[2];
@@ -1272,7 +1264,7 @@ namespace Aris
 		
 		auto s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept->void
 		{
-			/*seemed that loop is faster than cblas*/
+			// seemed that loop is faster than cblas //
 			for (int i = 0; i < 6; ++i)
 			{
 				v6_out[i] = m6_in[i * 6] * v6_in[0] + m6_in[i * 6 + 1] * v6_in[1] + m6_in[i * 6 + 2] * v6_in[2] +
@@ -1323,10 +1315,7 @@ namespace Aris
 
 		auto s_dscal(const int n, const double a, double *x, const int incx) noexcept->void
 		{
-			for (int i = 0; i < n*incx; i+=incx)
-			{
-				x[i] *= a;
-			}
+			for (int i = 0; i < n*incx; i += incx)x[i] *= a;
 		}
 		auto s_dnrm2(const int n, const double *x, const int incx) noexcept->double
 		{
@@ -1350,20 +1339,10 @@ namespace Aris
 				xIdx += incX;
 				yIdx += incY;
 			}
-			
-			//cblas_daxpy(N, alpha, X, incX, Y, incY);
 		}
 		auto s_swap(const int N, double *X, const int incX, double *Y, const int incY) noexcept->void
 		{
-			int xIdx{ 0 }, yIdx{ 0 };
-
-			for (int i = 0; i < N; ++i)
-			{
-				std::swap(X[xIdx], Y[yIdx]);
-			}
-			
-			
-			//cblas_dswap(N, X, incX, Y, incY);
+			for (int i = 0; i < N; ++i)std::swap(X[incX*i], Y[incY*i]);
 		}
 		auto s_transpose(const int m, const int n, const double *A, const int ldA, double *B_out, const int ldB) noexcept->void
 		{
@@ -1592,7 +1571,5 @@ namespace Aris
 			if (theta_out[0] < -2 * PI)theta_out[0] += 2 * PI;
 			if (theta_out[1] < -2 * PI)theta_out[1] += 2 * PI;
 		};
-
-
 	}
 }

@@ -12,10 +12,10 @@
 
 using namespace xn;
 
-namespace Aris
+namespace aris
 {
 
-	namespace Sensor
+	namespace sensor
 	{
 
 		struct Point3D

@@ -19,9 +19,9 @@
 #include "aris_control_ethercat.h"
 
 
-namespace Aris
+namespace aris
 {
-	namespace Control
+	namespace control
 	{
 
 		class PipeBase::Imp
@@ -177,30 +177,30 @@ namespace Aris
 #endif
 		}
 		
-		Pipe<Aris::Core::Msg>::Pipe(bool isBlock) :PipeBase(isBlock)
+		Pipe<aris::core::Msg>::Pipe(bool isBlock) :PipeBase(isBlock)
 		{
 		}
-		int Pipe<Aris::Core::Msg>::sendToRT(const Aris::Core::Msg &msg)
+		int Pipe<aris::core::Msg>::sendToRT(const aris::core::Msg &msg)
 		{
-			sendToRTRawData(msg.data_, msg.size() + sizeof(Aris::Core::MsgHeader));
-			return msg.size() + sizeof(Aris::Core::MsgHeader);
+			sendToRTRawData(msg.data_, msg.size() + sizeof(aris::core::MsgHeader));
+			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
-		int Pipe<Aris::Core::Msg>::sendToNrt(const Aris::Core::MsgRT &msg)
+		int Pipe<aris::core::Msg>::sendToNrt(const aris::core::MsgRT &msg)
 		{
-			sendToNrtRawData(msg.data_, msg.size() + sizeof(Aris::Core::MsgHeader));
-			return msg.size() + sizeof(Aris::Core::MsgHeader);
+			sendToNrtRawData(msg.data_, msg.size() + sizeof(aris::core::MsgHeader));
+			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
-		int Pipe<Aris::Core::Msg>::recvInRT(Aris::Core::MsgRT &msg)
+		int Pipe<aris::core::Msg>::recvInRT(aris::core::MsgRT &msg)
 		{
-			int length = recvInRTRawData(msg.data_, sizeof(Aris::Core::MsgHeader)+Aris::Core::MsgRT::RT_MSG_LENGTH);		
+			int length = recvInRTRawData(msg.data_, sizeof(aris::core::MsgHeader)+aris::core::MsgRT::RT_MSG_LENGTH);		
 			return length<=0?0:length;			
 		}
-		int Pipe<Aris::Core::Msg>::recvInNrt(Aris::Core::Msg &msg)
+		int Pipe<aris::core::Msg>::recvInNrt(aris::core::Msg &msg)
 		{
-			int err = recvInNrtRawData(msg.data_, sizeof(Aris::Core::MsgHeader));
+			int err = recvInNrtRawData(msg.data_, sizeof(aris::core::MsgHeader));
 			msg.resize(msg.size());
 			recvInNrtRawData(msg.data(), msg.size());
-			return msg.size() + sizeof(Aris::Core::MsgHeader);
+			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
 	}
 }

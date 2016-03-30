@@ -8,9 +8,9 @@
 
 using namespace std;
 
-namespace Aris
+namespace aris
 {
-	namespace Sensor
+	namespace sensor
 	{
 
 		struct VISION_DATA

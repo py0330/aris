@@ -2,9 +2,9 @@
 
 #include"aris_dynamic_plan.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Dynamic
+	namespace dynamic
 	{
 		const double dt = 0.001;
 		
@@ -18,7 +18,7 @@ namespace Aris
 			std::fill(lhs.begin(), lhs.end(), 0);
 			std::fill(rhs.begin(), rhs.end(), 0);
 
-			Aris::Dynamic::s_dgemm(data.size, 1, data.size, 1, data.Ji, data.size, data.g, 1, 0, J_dot_g.data(), 1);
+			aris::dynamic::s_dgemm(data.size, 1, data.size, 1, data.Ji, data.size, data.g, 1, 0, J_dot_g.data(), 1);
 
 			for (int i = 0; i < data.size; ++i)
 			{
@@ -50,9 +50,9 @@ namespace Aris
 			std::fill(lhs.begin(), lhs.end(), 0);
 			std::fill(rhs.begin(), rhs.end(), 0);
 
-			Aris::Dynamic::s_dgemm(locData.size, 1, locData.size, 1, locData.Ji, locData.size, locData.g, 1, 0, J_dot_g.data(), 1);
-			Aris::Dynamic::s_dgemm(locData.size, 1, locData.size, 1, locData.Ji, locData.size, locData.h, 1, 0, J_dot_h.data(), 1);
-			Aris::Dynamic::s_dgemm(locData.size, 1, locData.size, 1, locData.dJi, locData.size, locData.g, 1, 0, dJ_dot_g.data(), 1);
+			aris::dynamic::s_dgemm(locData.size, 1, locData.size, 1, locData.Ji, locData.size, locData.g, 1, 0, J_dot_g.data(), 1);
+			aris::dynamic::s_dgemm(locData.size, 1, locData.size, 1, locData.Ji, locData.size, locData.h, 1, 0, J_dot_h.data(), 1);
+			aris::dynamic::s_dgemm(locData.size, 1, locData.size, 1, locData.dJi, locData.size, locData.g, 1, 0, dJ_dot_g.data(), 1);
 
 			for (int i = 0; i < locData.size; ++i)
 			{

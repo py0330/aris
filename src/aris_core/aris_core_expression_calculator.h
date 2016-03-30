@@ -13,9 +13,9 @@
 #include<cmath>
 #include<algorithm>
 
-namespace Aris
+namespace aris
 {
-	namespace Core
+	namespace core
 	{
 		class Matrix
 		{

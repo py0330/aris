@@ -25,7 +25,7 @@ struct AAA
 };
 
 
-int show(const Aris::Core::Msg &msg)
+int show(const aris::core::Msg &msg)
 {
 	cout << "Msg Length:" << msg.size()<<endl;
 	cout << "Msg MsgID :" << msg.msgID()<<endl;
@@ -35,7 +35,7 @@ int show(const Aris::Core::Msg &msg)
 	return 0;
 }
 
-using namespace Aris::Core;
+using namespace aris::core;
 
 template<class... Args>
 void test(Args... args);
@@ -89,7 +89,7 @@ void test()
 int main()
 {
 	/*{
-		Aris::Core::Msg m1, m2;
+		aris::core::Msg m1, m2;
 
 		cout << log("first log") << endl;
 		MsgBase *p = new Msg;
@@ -110,7 +110,7 @@ int main()
 		m2 = m1;
 		show(m1);
 
-		Aris::Core::Msg m3(m1);
+		aris::core::Msg m3(m1);
 
 		show(m2);
 
@@ -118,16 +118,16 @@ int main()
 
 		show(m3);
 
-		Aris::Core::MsgRT::instance[0].copyMore("rt msg123", 10);
+		aris::core::MsgRT::instance[0].copyMore("rt msg123", 10);
 
 		cout << "1" << endl;
 
-		//Aris::Core::MsgRT::instance[0].copyMore("rt msg123", 10);
-		Aris::Core::MsgRT::instance[1].copyMore("98765", 6);
-		cout << (char *)Aris::Core::MsgRT::instance[0].data() << endl;
-		cout << (char *)Aris::Core::MsgRT::instance[1].data() << endl;
-		cout << Aris::Core::MsgRT::instance[0].GetLength() << endl;
-		cout << Aris::Core::MsgRT::instance[1].GetLength() << endl;
+		//aris::core::MsgRT::instance[0].copyMore("rt msg123", 10);
+		aris::core::MsgRT::instance[1].copyMore("98765", 6);
+		cout << (char *)aris::core::MsgRT::instance[0].data() << endl;
+		cout << (char *)aris::core::MsgRT::instance[1].data() << endl;
+		cout << aris::core::MsgRT::instance[0].GetLength() << endl;
+		cout << aris::core::MsgRT::instance[1].GetLength() << endl;
 
 
 		AAA aaa = { 0, 0, 1 };

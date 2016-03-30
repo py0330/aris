@@ -1,8 +1,8 @@
 ﻿#include"aris_sensor.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Sensor
+	namespace sensor
 	{
 		
 	}

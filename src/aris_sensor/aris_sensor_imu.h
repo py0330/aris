@@ -11,9 +11,9 @@
 #include <aris_core.h>
 #include <aris_sensor_base.h>
 
-namespace Aris
+namespace aris
 {
-	namespace Sensor
+	namespace sensor
 	{
 		struct ImuData
 		{
@@ -69,7 +69,7 @@ namespace Aris
 		public:
 			~IMU();
 			IMU();
-			IMU(const Aris::Core::XmlElement *xmlEle);
+			IMU(const aris::core::XmlElement *xmlEle);
 			
 		
 		private:

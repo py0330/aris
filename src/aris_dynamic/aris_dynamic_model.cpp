@@ -12,11 +12,11 @@
 #include "aris_dynamic_kernel.h"
 #include "aris_dynamic_model.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Dynamic
+	namespace dynamic
 	{
-		auto Element::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto Element::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Object::saveXml(xml_ele);
 			xml_ele.SetAttribute("type", this->typeName().c_str());
@@ -35,7 +35,7 @@ namespace Aris
 			tem.erase(name);
 			save_data_map_ = std::move(tem);
 		}
-		DynEle::DynEle(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id) :Element(father, xml_ele, id)
+		DynEle::DynEle(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id) :Element(father, xml_ele, id)
 		{
 			if (xml_ele.Attribute("active"))
 			{
@@ -48,7 +48,7 @@ namespace Aris
 				active_ = true;
 			}
 		}
-		auto DynEle::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto DynEle::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Element::saveXml(xml_ele);
 			xml_ele.SetAttribute("active", active() ? "true" : "false");
@@ -66,7 +66,7 @@ namespace Aris
 			pm = pm ? pm : default_pm;
 			setPm(pm);
 		}
-		Interaction::Interaction(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		Interaction::Interaction(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: DynEle(father, xml_ele, id)
 		{
 			if (!xml_ele.Attribute("prt_m"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"prt_m\"");
@@ -85,7 +85,7 @@ namespace Aris
 			if (!(makJ_ = model().partPool().find(xml_ele.Attribute("prt_n"))->markerPool().find(xml_ele.Attribute("mak_j"))))
 				throw std::runtime_error(std::string("can't find marker j for element \"") + this->name() + "\"");
 		}
-		auto Interaction::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto Interaction::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			DynEle::saveXml(xml_ele);
 
@@ -122,14 +122,14 @@ namespace Aris
 				<< "!\r\n";
 		}
 
-		ElementPool<Marker>::ElementPool(Object &father, const Aris::Core::XmlElement &xml_ele) :Object(father, xml_ele)
+		ElementPool<Marker>::ElementPool(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele)
 		{
 			for (auto ele = xml_ele.FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())
 			{
 				add(*ele);
 			}
 		};
-		auto ElementPool<Marker>::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto ElementPool<Marker>::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Object::saveXml(xml_ele);
 			for (auto &ele : element_vec_)
@@ -154,7 +154,7 @@ namespace Aris
 			model().markerPool().element_vec_.push_back(element_vec_.back());
 			return std::ref(*ret);
 		}
-		auto ElementPool<Marker>::add(const Aris::Core::XmlElement &xml_ele)->Marker&
+		auto ElementPool<Marker>::add(const aris::core::XmlElement &xml_ele)->Marker&
 		{
 			if (&father() == &model()) throw std::runtime_error("you can only add marker on part");
 			if (find(xml_ele.name()))throw std::runtime_error(Marker::TypeName() + " \"" + xml_ele.name() + "\" already exists, can't add element");
@@ -192,22 +192,22 @@ namespace Aris
 		auto ElementPool<Marker>::end() const ->std::vector<std::shared_ptr<Marker>>::const_iterator { return element_vec_.end(); };
 		auto ElementPool<Marker>::clear() -> void { element_vec_.clear(); };
 
-		Environment::Environment(Object &father, const Aris::Core::XmlElement &xml_ele)
+		Environment::Environment(Object &father, const aris::core::XmlElement &xml_ele)
 			:Object(father, xml_ele)
 		{
 			if (!xml_ele.Attribute("gravity"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must has Attribute \"gravity\"");
 			try
 			{
-				Core::Matrix m = this->model().calculator().calculateExpression(xml_ele.Attribute("gravity"));
+				core::Matrix m = this->model().calculator().calculateExpression(xml_ele.Attribute("gravity"));
 				if (m.size() != 6)throw std::runtime_error("");
 				std::copy_n(m.data(), 6, gravity_);
 			}
 			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute gravity must has valid expression"); }
 		}
-		auto Environment::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto Environment::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Object::saveXml(xml_ele);
-			xml_ele.SetAttribute("gravity", Core::Matrix(1, 6, gravity_).toString().c_str());
+			xml_ele.SetAttribute("gravity", core::Matrix(1, 6, gravity_).toString().c_str());
 		}
 		auto Environment::saveAdams(std::ofstream &file) const->void
 		{
@@ -275,10 +275,10 @@ namespace Aris
 
 			this->operator=(Akima(father, name, id, data_list));
 		}
-		Akima::Akima(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id): Element(father, xml_ele, id) 
+		Akima::Akima(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id): Element(father, xml_ele, id) 
 		{
 			if (!xml_ele.Attribute("x"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must has Attribute \"x\"");
-			Core::Matrix mat_x, mat_y;
+			core::Matrix mat_x, mat_y;
 			try
 			{
 				mat_x = this->model().calculator().calculateExpression(xml_ele.Attribute("x"));
@@ -451,12 +451,12 @@ namespace Aris
 			}
 			file << " \r\n!\r\n";
 		}
-		auto Akima::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto Akima::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Element::saveXml(xml_ele);
 
-			Aris::Core::Matrix mat_x(1, x().size(), imp->x_.data());
-			Aris::Core::Matrix mat_y(1, x().size(), imp->y_.data());
+			aris::core::Matrix mat_x(1, x().size(), imp->x_.data());
+			aris::core::Matrix mat_y(1, x().size(), imp->y_.data());
 			xml_ele.SetAttribute("x", mat_x.toString().c_str());
 			xml_ele.SetAttribute("y", mat_y.toString().c_str());
 		}
@@ -676,7 +676,7 @@ namespace Aris
 		};
 		Script::~Script() {};
 		Script::Script(Object &father, const std::string &name, std::size_t id) :Element(father, name, id), imp(&model()) {};
-		Script::Script(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id) :Element(father, xml_ele, id), imp(&model())
+		Script::Script(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id) :Element(father, xml_ele, id), imp(&model())
 		{
 			std::stringstream stream(xml_ele.GetText());
 			std::string line;
@@ -687,7 +687,7 @@ namespace Aris
 				if (line != "")imp->node_list_.push_back(std::unique_ptr<Imp::Node>(Imp::Node::create(&model(), line)));
 			}
 		};
-		auto Script::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto Script::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Element::saveXml(xml_ele);
 			
@@ -766,7 +766,7 @@ namespace Aris
 				std::copy_n(prt_pm, 16, static_cast<double *>(*imp->prt_pm_));
 			}
 		}
-		Marker::Marker(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		Marker::Marker(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: Coordinate(father, xml_ele, id)
 		{
 			double pm[16];
@@ -774,7 +774,7 @@ namespace Aris
 			if (!xml_ele.Attribute("pe"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"Pos\"");
 			try
 			{
-				Core::Matrix m = this->model().calculator().calculateExpression(xml_ele.Attribute("pe"));
+				core::Matrix m = this->model().calculator().calculateExpression(xml_ele.Attribute("pe"));
 				if (m.size() != 6)throw std::runtime_error("");
 				s_pe2pm(m.data(), pm);
 			}
@@ -790,19 +790,19 @@ namespace Aris
 				std::copy_n(pm, 16, static_cast<double*>(*imp->prt_pm_));
 			}
 		}
-		auto Marker::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto Marker::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			DynEle::saveXml(xml_ele);
 			double pe[6];
 			s_pm2pe(*prtPm(), pe);
-			xml_ele.SetAttribute("pe", Core::Matrix(1, 6, pe).toString().c_str());
+			xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
 		}
 		auto Marker::saveAdams(std::ofstream &file) const->void
 		{
 			double pe[6];
 
 			s_pm2pe(*prtPm(), pe, "313");
-			Core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
+			core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
 
 			file << "marker create  &\r\n"
 				<< "marker_name = ." << model().name() << "." << father().name() << "." << this->name() << "  &\r\n"
@@ -865,7 +865,7 @@ namespace Aris
 			setVel(vel);
 			setAcc(acc);
 		}
-		Part::Part(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		Part::Part(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: Coordinate(father, xml_ele, id), imp(std::ref(*this))
 		{
 			try
@@ -924,19 +924,19 @@ namespace Aris
 		auto Part::prtGravity() const->const double6&{ return imp->prt_gravity_; };
 		auto Part::markerPool()->ElementPool<Marker>& { return std::ref(imp->marker_pool_); };
 		auto Part::markerPool()const->const ElementPool<Marker>& { return std::ref(imp->marker_pool_); };
-		auto Part::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto Part::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			DynEle::saveXml(xml_ele);
 			
 			double pe[6];
 			s_pm2pe(*pm(), pe);
-			xml_ele.SetAttribute("pe", Core::Matrix(1, 6, pe).toString().c_str());
-			xml_ele.SetAttribute("vel", Core::Matrix(1, 6, vel()).toString().c_str());
-			xml_ele.SetAttribute("acc", Core::Matrix(1, 6, acc()).toString().c_str());
+			xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
+			xml_ele.SetAttribute("vel", core::Matrix(1, 6, vel()).toString().c_str());
+			xml_ele.SetAttribute("acc", core::Matrix(1, 6, acc()).toString().c_str());
 			
 			double gamma[10];
 			s_im2gamma(*this->prtIm(), gamma);
-			xml_ele.SetAttribute("inertia", Core::Matrix(1, 10, gamma).toString().c_str());
+			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, gamma).toString().c_str());
 			xml_ele.SetAttribute("graphic_file_path", imp->graphic_file_path_.c_str());
 
 			auto child_mak_group = xml_ele.GetDocument()->NewElement("ChildMarker");
@@ -965,7 +965,7 @@ namespace Aris
 			{
 				double pe[6];
 				s_pm2pe(*this->pm(), pe, "313");
-				Core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
+				core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
 
 				file << "!----------------------------------- " << this->name() << " -----------------------------------!\r\n"
 					<< "!\r\n"
@@ -1063,22 +1063,22 @@ namespace Aris
 
 			std::copy_n(frc_coe, 3, frc_coe_);
 		}
-		Motion::Motion(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: Constraint(father, xml_ele, id)
 		{
 			if(!xml_ele.Attribute("frc_coe"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"frc_coe\"");
 			try 
 			{ 
-				Core::Matrix m = model().calculator().calculateExpression(xml_ele.Attribute("frc_coe"));
+				core::Matrix m = model().calculator().calculateExpression(xml_ele.Attribute("frc_coe"));
 				if (m.size() != 3)throw std::runtime_error("");
 				std::copy_n(m.data(), 3, static_cast<double*>(frc_coe_));
 			}
 			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute frc_coe must be a matrix expression"); }
 		}
-		auto Motion::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto Motion::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Constraint::saveXml(xml_ele);
-			xml_ele.SetAttribute("frc_coe", Core::Matrix(1, 3, this->frcCoe()).toString().c_str());
+			xml_ele.SetAttribute("frc_coe", core::Matrix(1, 3, this->frcCoe()).toString().c_str());
 		}
 
 		struct Model::Imp
@@ -1112,7 +1112,7 @@ namespace Aris
 			};
 			
 			std::map<std::string, TypeInfo> type_info_map_;
-			Aris::Core::Calculator calculator_;
+			aris::core::Calculator calculator_;
 			Environment environment_;
 			ElementPool<Script> script_pool_;
 			ElementPool<Variable> variable_pool_;
@@ -1180,7 +1180,7 @@ namespace Aris
 		}
 		auto Model::loadXml(const std::string &filename)->void
 		{
-			Aris::Core::XmlDocument xmlDoc;
+			aris::core::XmlDocument xmlDoc;
 
 			if (xmlDoc.LoadFile(filename.c_str()) != 0)
 			{
@@ -1189,7 +1189,7 @@ namespace Aris
 
 			loadXml(xmlDoc);
 		}
-		auto Model::loadXml(const Aris::Core::XmlDocument &xml_doc)->void
+		auto Model::loadXml(const aris::core::XmlDocument &xml_doc)->void
 		{
 			auto model_xml_ele = xml_doc.RootElement()->FirstChildElement("Model");
 
@@ -1197,7 +1197,7 @@ namespace Aris
 
 			loadXml(*model_xml_ele);
 		}
-		auto Model::loadXml(const Aris::Core::XmlElement &xml_ele)->void
+		auto Model::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			clear();
 
@@ -1237,13 +1237,13 @@ namespace Aris
 		}
 		auto Model::saveXml(const std::string &filename) const->void
 		{
-			Aris::Core::XmlDocument doc;
+			aris::core::XmlDocument doc;
 
 			saveXml(doc);
 
 			doc.SaveFile(filename.c_str());
 		}
-		auto Model::saveXml(Aris::Core::XmlDocument &xml_doc)const->void
+		auto Model::saveXml(aris::core::XmlDocument &xml_doc)const->void
 		{
 			xml_doc.DeleteChildren();
 
@@ -1257,7 +1257,7 @@ namespace Aris
 			root_xml_ele->InsertEndChild(model_xml_ele);
 			saveXml(*model_xml_ele);
 		}
-		auto Model::saveXml(Aris::Core::XmlElement &xml_ele)const->void
+		auto Model::saveXml(aris::core::XmlElement &xml_ele)const->void
 		{
 			xml_ele.SetName(this->name().c_str());
 			xml_ele.DeleteChildren();
@@ -1388,10 +1388,10 @@ namespace Aris
 			motionPool().clear();
 			forcePool().clear();
 		}
-		auto Model::calculator()->Aris::Core::Calculator& { return std::ref(imp->calculator_); }
-		auto Model::calculator()const ->const Aris::Core::Calculator&{ return std::ref(imp->calculator_); }
-		auto Model::environment()->Aris::Dynamic::Environment& { return std::ref(imp->environment_); };
-		auto Model::environment()const ->const Aris::Dynamic::Environment&{ return std::ref(imp->environment_); };
+		auto Model::calculator()->aris::core::Calculator& { return std::ref(imp->calculator_); }
+		auto Model::calculator()const ->const aris::core::Calculator&{ return std::ref(imp->calculator_); }
+		auto Model::environment()->aris::dynamic::Environment& { return std::ref(imp->environment_); };
+		auto Model::environment()const ->const aris::dynamic::Environment&{ return std::ref(imp->environment_); };
 		auto Model::scriptPool()->ElementPool<Script>& { return std::ref(imp->script_pool_); };
 		auto Model::scriptPool()const->const ElementPool<Script>&{ return std::ref(imp->script_pool_); };
 		auto Model::variablePool()->ElementPool<Variable>& { return std::ref(imp->variable_pool_); };
@@ -1673,11 +1673,11 @@ namespace Aris
 			if (dynDimN() != dynDimM()) throw std::logic_error("must calibrate square matrix");
 
 			/*初始化*/
-			Core::Matrix clb_d_m(clbDimM(), clbDimN());
-			Core::Matrix clb_b_m(clbDimM(), 1);
+			core::Matrix clb_d_m(clbDimM(), clbDimN());
+			core::Matrix clb_b_m(clbDimM(), 1);
 
 			/*求A，即C的逆*/
-			Core::Matrix A(dynDimM(), dynDimM()), B(dynDimM(), dynDimM());
+			core::Matrix A(dynDimM(), dynDimM()), B(dynDimM(), dynDimM());
 
 			std::vector<double> C(dynDimM() * dynDimM());
 			std::vector<double> f(dynDimM());
@@ -1934,7 +1934,7 @@ namespace Aris
 
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
 		}
-		RevoluteJoint::RevoluteJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		RevoluteJoint::RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: JointTemplate(father, xml_ele, id) 
 		{ 
 			const static double loc_cst[6][Dim()]
@@ -1965,7 +1965,7 @@ namespace Aris
 
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
 		}
-		TranslationalJoint::TranslationalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		TranslationalJoint::TranslationalJoint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: JointTemplate(father, xml_ele, id) 
 		{ 
 			const static double loc_cst[6][Dim()]
@@ -1996,7 +1996,7 @@ namespace Aris
 
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
 		}
-		UniversalJoint::UniversalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		UniversalJoint::UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: JointTemplate(father, xml_ele, id) 
 		{
 			const static double loc_cst[6][Dim()]
@@ -2023,7 +2023,7 @@ namespace Aris
 
 			file << "marker modify &\r\n"
 				<< "    marker_name = ." << model().name() << "." << this->makI().fatherPart().name() << "." << this->makI().name() << " &\r\n"
-				<< "    orientation = (" << Core::Matrix(1, 3, &pe[3]).toString() << ") \r\n"
+				<< "    orientation = (" << core::Matrix(1, 3, &pe[3]).toString() << ") \r\n"
 				<< "!\r\n";
 
 			s_pe2pm(pe2, *pm, "123");
@@ -2032,7 +2032,7 @@ namespace Aris
 
 			file << "marker modify &\r\n"
 				<< "    marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << " &\r\n"
-				<< "    orientation = (" << Core::Matrix(1, 3, &pe[3]).toString() << ") \r\n"
+				<< "    orientation = (" << core::Matrix(1, 3, &pe[3]).toString() << ") \r\n"
 				<< "!\r\n";
 
 			Constraint::saveAdams(file);
@@ -2106,7 +2106,7 @@ namespace Aris
 
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
 		}
-		SphericalJoint::SphericalJoint(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		SphericalJoint::SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: JointTemplate(father, xml_ele, id) 
 		{
 			const static double loc_cst[6][Dim()]
@@ -2129,14 +2129,14 @@ namespace Aris
 			loc_cst[component_axis_] = 1;
 			s_tf(*this->makI().prtPm(), loc_cst, csmI());
 		}
-		SingleComponentMotion::SingleComponentMotion(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		SingleComponentMotion::SingleComponentMotion(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: Motion(father, xml_ele, id), component_axis_(std::stoi(xml_ele.Attribute("component")))
 		{
 			double loc_cst[6]{ 0,0,0,0,0,0, };
 			loc_cst[component_axis_] = 1;
 			s_tf(*this->makI().prtPm(), loc_cst, csmI());
 		}
-		auto SingleComponentMotion::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto SingleComponentMotion::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Motion::saveXml(xml_ele);
 			xml_ele.SetAttribute("component", this->component_axis_);
@@ -2229,11 +2229,11 @@ namespace Aris
 		{
 
 		}
-		SingleComponentForce::SingleComponentForce(Object &father, const Aris::Core::XmlElement &xml_ele, std::size_t id)
+		SingleComponentForce::SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: Force(father, xml_ele, id), component_axis_(std::stoi(xml_ele.Attribute("component")))
 		{
 		}
-		auto SingleComponentForce::saveXml(Aris::Core::XmlElement &xml_ele) const->void
+		auto SingleComponentForce::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Force::saveXml(xml_ele);
 			xml_ele.SetAttribute("component", this->component_axis_);

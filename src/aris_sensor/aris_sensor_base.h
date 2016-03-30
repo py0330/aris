@@ -6,14 +6,14 @@
 #include <atomic>
 #include <iostream>
 
-namespace Aris
+namespace aris
 {
 	/// \brief 传感器命名空间
-	/// \ingroup Aris
+	/// \ingroup aris
 	/// 
 	///
 	///
-	namespace Sensor
+	namespace sensor
 	{
 		template<class DataType> class SensorBase;
 		

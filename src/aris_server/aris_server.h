@@ -13,14 +13,14 @@
 
 
 
-namespace Aris
+namespace aris
 {
-	namespace Server
+	namespace server
 	{
 		enum { MAX_MOTOR_NUM = 100 };
 
 		//for enable, disable, and home
-		struct BasicFunctionParam :Aris::Dynamic::PlanParamBase
+		struct BasicFunctionParam :aris::dynamic::PlanParamBase
 		{
 			bool active_motor[MAX_MOTOR_NUM];
 
@@ -34,14 +34,14 @@ namespace Aris
 			bool if_check_pos_max{ true };
 			bool if_check_pos_continuous{ true };
 			std::int32_t gait_id;
-			const Aris::Sensor::ImuData *imu_data;
-			const std::vector<Aris::Control::EthercatForceSensor::Data> *force_data;
-			const std::vector<Aris::Control::EthercatMotion::RawData> *motion_raw_data;
-			const std::vector<Aris::Control::EthercatMotion::RawData> *last_motion_raw_data;
+			const aris::sensor::ImuData *imu_data;
+			const std::vector<aris::control::EthercatForceSensor::Data> *force_data;
+			const std::vector<aris::control::EthercatMotion::RawData> *motion_raw_data;
+			const std::vector<aris::control::EthercatMotion::RawData> *last_motion_raw_data;
 			const std::vector<double> *motion_feedback_pos;
 		};
 
-		typedef std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg_out)> ParseFunc;
+		typedef std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)> ParseFunc;
 
 		class ControlServer
 		{
@@ -50,13 +50,13 @@ namespace Aris
 
 			template<typename T>
 			auto createModel()->void { this->createModel(new T); };
-			auto createModel(Dynamic::Model *model)->void;
+			auto createModel(dynamic::Model *model)->void;
 
 			auto loadXml(const char *fileName)->void;
-			auto loadXml(const Aris::Core::XmlDocument &xmlDoc)->void;
-			auto model()->Dynamic::Model&;
-			auto controller()->Control::EthercatController&;
-			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)->void;
+			auto loadXml(const aris::core::XmlDocument &xmlDoc)->void;
+			auto model()->dynamic::Model&;
+			auto controller()->control::EthercatController&;
+			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void;
 			auto open()->void;
 			auto close()->void;
 			auto setOnExit(std::function<void(void)> callback_func)->void;

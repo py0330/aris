@@ -28,9 +28,9 @@
 
 #include "aris_control_ethercat.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Control
+	namespace control
 	{
 		struct EthercatSlave::Imp
 		{
@@ -52,7 +52,7 @@ namespace Aris
 				std::uint8_t size_;
 				std::uint32_t offset_;
 
-				DataObject(const Aris::Core::XmlElement &xml_ele, Imp *imp)
+				DataObject(const aris::core::XmlElement &xml_ele, Imp *imp)
 				{
 					type_name_ = xml_ele.Attribute("type");
 					index_ = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
@@ -123,7 +123,7 @@ namespace Aris
 					*reinterpret_cast<DataType*>(imp_->domain_pd + offset_) = data;
 				};
 
-				Pdo(const Aris::Core::XmlElement &xml_ele, Imp *imp) :DataObject(xml_ele, imp) {};
+				Pdo(const aris::core::XmlElement &xml_ele, Imp *imp) :DataObject(xml_ele, imp) {};
 			};
 			class Sdo :public DataObject 
 			{
@@ -154,7 +154,7 @@ namespace Aris
 					(*reinterpret_cast<DataType *>(sdo_data_)) = data;
 				};
 
-				Sdo(const Aris::Core::XmlElement &xml_ele, Imp *imp):DataObject(xml_ele, imp)
+				Sdo(const aris::core::XmlElement &xml_ele, Imp *imp):DataObject(xml_ele, imp)
 				{
 					DataObject::typeInfoMap().at(xml_ele.Attribute("type")).queryFunc(xml_ele.Attribute("value"), sdo_data_);
 					if (xml_ele.Attribute("is_tx", "true"))is_tx_ = TX;
@@ -171,7 +171,7 @@ namespace Aris
 				std::vector<std::unique_ptr<Pdo> > pdo_vec;
 				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
 
-				PdoGroup(const Aris::Core::XmlElement &xml_ele, Imp *imp)
+				PdoGroup(const aris::core::XmlElement &xml_ele, Imp *imp)
 				{
 					index = std::stoi(xml_ele.Attribute("index"), nullptr, 0);
 					is_tx = xml_ele.Attribute("is_tx", "true") ? true : false;
@@ -287,7 +287,7 @@ namespace Aris
 				
 				ecrt_master_sdo_upload(
 					mst, /**< EtherCAT master. */
-					1, /**< Slave position. */
+					this->position, /**< Slave position. */
 					sdo->index_, /**< Index of the SDO. */
 					sdo->subindex_, /**< Subindex of the SDO. */
 					&sdo->sdo_data_uint8_, /**< Target buffer for the upload. */
@@ -296,7 +296,7 @@ namespace Aris
 					&code /**< Abort code of the SDO upload. */
 					);
 
-				std::cout <<"sdo value:"<< static_cast<int>(sdo->sdo_data_uint8_)<<std::endl;
+				std::cout <<"sdo value:"<< static_cast<int>(sdo->sdo_data_int32_)<<std::endl;
 			}
 
 			// Configure the slave's PDOs and sync masters
@@ -310,7 +310,7 @@ namespace Aris
 #endif
 		};
 
-		EthercatSlave::EthercatSlave(const Aris::Core::XmlElement &xml_ele):imp_(new Imp)
+		EthercatSlave::EthercatSlave(const aris::core::XmlElement &xml_ele):imp_(new Imp)
 		{
 			//load product id...
 			imp_->product_code = std::stoi(xml_ele.Attribute("product_code"), nullptr, 0);
@@ -454,10 +454,10 @@ namespace Aris
 			static std::unique_ptr<EthercatMaster> instance_ptr;
 			return std::ref(instance_ptr);
 		};
-		auto EthercatMaster::loadXml(const Aris::Core::XmlElement &xml_ele)->void
+		auto EthercatMaster::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			// Load EtherCat slave types //
-			std::map<std::string, const Aris::Core::XmlElement *> slaveTypeMap;
+			std::map<std::string, const aris::core::XmlElement *> slaveTypeMap;
 			
 			auto pSlaveTypes = xml_ele.FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())

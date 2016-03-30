@@ -13,9 +13,9 @@
 
 #include "deviceclass.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Sensor
+	namespace sensor
 	{
 		void ImuData::toPmBody2Ground(double *pm) const
 		{
@@ -25,8 +25,8 @@ namespace Aris
 		{
 			double tem_pm[16];
 			double pe[6]{ 0,0,0,yawValue, pitch, roll };
-			Aris::Dynamic::s_pe2pm(pe, tem_pm, "321");
-			Aris::Dynamic::s_pm_dot_pm(pmLhs, tem_pm, pmRhs, pm);
+			aris::dynamic::s_pe2pm(pe, tem_pm, "321");
+			aris::dynamic::s_pm_dot_pm(pmLhs, tem_pm, pmRhs, pm);
 		}
 		void ImuData::toEulBody2Ground(double *eul, const char *eulType) const
 		{
@@ -36,7 +36,7 @@ namespace Aris
 		{
 			double pm[16], pe[6];
 			this->toPmBody2Ground(pm, yawValue);
-			Aris::Dynamic::s_pm2pe(pm, pe, eulType);
+			aris::dynamic::s_pm2pe(pm, pe, eulType);
 			std::copy_n(pe + 3, 3, eul);
 		}
 		void ImuData::toOmegaBody2Ground(double *omega) const
@@ -47,7 +47,7 @@ namespace Aris
 		{
 			double pm[16];
 			toPmBody2Ground(pm, yawValue);
-			Aris::Dynamic::s_pm_dot_v3(pm, this->omega, omega);
+			aris::dynamic::s_pm_dot_v3(pm, this->omega, omega);
 		}
 		void ImuData::toPntAccBody2Ground(double *acc) const
 		{
@@ -93,7 +93,7 @@ namespace Aris
 			pImp->pmBody2Imu[2][1] = -1;
 			pImp->pmBody2Imu[3][3] = 1;
 		}
-		IMU::IMU(const Aris::Core::XmlElement *xmlEle) :pImp(new Imp)
+		IMU::IMU(const aris::core::XmlElement *xmlEle) :pImp(new Imp)
 		{
 #ifdef UNIX
 			pImp->port = xmlEle->Attribute("portLinux");
@@ -101,15 +101,15 @@ namespace Aris
 			pImp->baudRate = std::stoi(xmlEle->Attribute("baudRate"));
 			pImp->sampleRate = std::stoi(xmlEle->Attribute("sampleRate"));;
 
-			Aris::Core::Calculator c;
+			aris::core::Calculator c;
 			c.addVariable("PI", PI);
 			
 			auto m = c.calculateExpression(xmlEle->Attribute("PeImuGround2BodyGound"));
-			Aris::Dynamic::s_pe2pm(m.data(), &pImp->pmImuGround2BodyGround[0][0]);
+			aris::dynamic::s_pe2pm(m.data(), &pImp->pmImuGround2BodyGround[0][0]);
 			m = c.calculateExpression(xmlEle->Attribute("PeImu2Body"));
 			double pmImu2Body[16];
-			Aris::Dynamic::s_pe2pm(m.data(), pmImu2Body);
-			Aris::Dynamic::s_inv_pm(pmImu2Body, &pImp->pmBody2Imu[0][0]);
+			aris::dynamic::s_pe2pm(m.data(), pmImu2Body);
+			aris::dynamic::s_inv_pm(pmImu2Body, &pImp->pmBody2Imu[0][0]);
 
 		}
 		IMU::~IMU()
@@ -138,7 +138,7 @@ namespace Aris
 			if (!pImp->openPort(pImp->mtPort))
 				throw std::runtime_error("IMU: could not open port.");
 			
-			Aris::Core::msSleep(10);
+			aris::core::msSleep(10);
 
 			// Put the device in configuration mode
 			if (!pImp->gotoConfig()) // Put the device into configuration mode before configuring the device
@@ -196,7 +196,7 @@ namespace Aris
 
 			while (msgs.empty())
 			{
-				Aris::Core::msSleep(1);
+				aris::core::msSleep(1);
 				pImp->readDataToBuffer(imuData);
 				pImp->processBufferedData(imuData, msgs);
 			}

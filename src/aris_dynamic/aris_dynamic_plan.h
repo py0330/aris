@@ -7,14 +7,14 @@
 
 #include"aris_dynamic_kernel.h"
 
-namespace Aris
+namespace aris
 {
 	/// \brief 轨迹规划命名空间
-	/// \ingroup Aris
+	/// \ingroup aris
 	/// 
 	///
 	///
-	namespace Dynamic
+	namespace dynamic
 	{
 		inline auto acc_up(int n, int i)noexcept->double
 		{

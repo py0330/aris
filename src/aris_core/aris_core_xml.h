@@ -4,9 +4,9 @@
 #include <tinyxml2.h>
 #include <cstring>
 
-namespace Aris
+namespace aris
 {
-	namespace Core
+	namespace core
 	{
 		typedef tinyxml2::XMLDocument XmlDocument;
 		typedef tinyxml2::XMLDeclaration XmlDeclaration;

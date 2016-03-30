@@ -16,9 +16,9 @@
 #include "aris_control.h"
 #include "aris_server.h"
 
-namespace Aris
+namespace aris
 {
-	namespace Server
+	namespace server
 	{
 		class Node
 		{
@@ -65,7 +65,7 @@ namespace Aris
 
 			bool isTaken{ false };
 
-			friend void AddAllParams(const Aris::Core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
+			friend void AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
 			friend void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params);
 		};
 		class RootNode :public Node
@@ -76,7 +76,7 @@ namespace Aris
 		private:
 			Node *pDefault;
 
-			friend void AddAllParams(const Aris::Core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
+			friend void AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
 			friend void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params);
 		};
 		class GroupNode :public Node
@@ -92,7 +92,7 @@ namespace Aris
 		private:
 			Node *pDefault;
 
-			friend void AddAllParams(const Aris::Core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
+			friend void AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
 			friend void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params);
 		};
 		class ParamNode :public Node
@@ -104,7 +104,7 @@ namespace Aris
 			std::string defaultValue;
 			std::string minValue, maxValue;
 
-			friend void AddAllParams(const Aris::Core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
+			friend void AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
 			friend void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params);
 		};
 
@@ -163,7 +163,7 @@ namespace Aris
 			}
 		}
 
-		auto AddAllParams(const Aris::Core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames)->void
+		auto AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames)->void
 		{
 			//add all children//
 			for (auto pChild = pEle->FirstChildElement(); pChild != nullptr; pChild = pChild->NextSiblingElement())
@@ -400,30 +400,30 @@ namespace Aris
 		class ControlServer::Imp
 		{
 		public:
-			auto loadXml(const Aris::Core::XmlDocument &doc)->void;
-			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)->void;
+			auto loadXml(const aris::core::XmlDocument &doc)->void;
+			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void;
 			auto start()->void;
 			auto stop()->void;
 
 			Imp(ControlServer *server)
 			{
 				this->server_ = server;
-				this->controller_ = Aris::Control::EthercatController::createInstance<Aris::Control::EthercatController>();
+				this->controller_ = aris::control::EthercatController::createInstance<aris::control::EthercatController>();
 			};
 		private:
 			Imp(const Imp&) = delete;
 
-			auto onReceiveMsg(const Aris::Core::Msg &msg)->Aris::Core::Msg;
-			auto decodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void;
+			auto onReceiveMsg(const aris::core::Msg &msg)->aris::core::Msg;
+			auto decodeMsg2Param(const aris::core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void;
 			auto sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void;
 
-			static auto tg(Aris::Control::EthercatController::Data &data)->int;
-			auto run(GaitParamBase &param, Aris::Control::EthercatController::Data &data)->int;
-			auto execute_cmd(int count, char *cmd, Aris::Control::EthercatController::Data &data)->int;
-			auto enable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int;
-			auto disable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int;
-			auto home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int;
-			auto fake_home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int;
+			static auto tg(aris::control::EthercatController::Data &data)->int;
+			auto run(GaitParamBase &param, aris::control::EthercatController::Data &data)->int;
+			auto execute_cmd(int count, char *cmd, aris::control::EthercatController::Data &data)->int;
+			auto enable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
+			auto disable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
+			auto home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
+			auto fake_home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
 
 		private:
 			enum RobotCmdID
@@ -444,38 +444,38 @@ namespace Aris
 
 			// 实时循环中的步态参数 //
 			enum { CMD_POOL_SIZE = 50 };
-			char cmd_queue_[CMD_POOL_SIZE][Aris::Core::MsgRT::RT_MSG_LENGTH];
+			char cmd_queue_[CMD_POOL_SIZE][aris::core::MsgRT::RT_MSG_LENGTH];
 			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 0 };
 
 			// 以下储存所有的命令 //
 			std::map<std::string, int> cmd_id_map_;//store gait id in follow vector
-			std::vector<Dynamic::PlanFunc> plan_vec_;// store plan func
+			std::vector<dynamic::PlanFunc> plan_vec_;// store plan func
 			std::vector<ParseFunc> parser_vec_; // store parse func
 			std::map<std::string, std::unique_ptr<CommandStruct> > cmd_struct_map_;//store Node of command
 
 			// 储存特殊命令的parse_func //
-			ParseFunc parse_enable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
+			ParseFunc parse_enable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
 			{
 				BasicFunctionParam param;
 				param.cmd_type = Imp::RobotCmdID::ENABLE;
 				std::fill_n(param.active_motor, this->model_->motionPool().size(), true);
 				msg.copyStruct(param);
 			} };
-			ParseFunc parse_disable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
+			ParseFunc parse_disable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
 			{
 				BasicFunctionParam param;
 				param.cmd_type = Imp::RobotCmdID::DISABLE;
 				std::fill_n(param.active_motor, this->model_->motionPool().size(), true);
 				msg.copyStruct(param);
 			} };
-			ParseFunc parse_home_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
+			ParseFunc parse_home_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
 			{
 				BasicFunctionParam param;
 				param.cmd_type = Imp::RobotCmdID::HOME;
 				std::fill_n(param.active_motor, this->model_->motionPool().size(), true);
 				msg.copyStruct(param);
 			} };
-			ParseFunc parse_fake_home_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)
+			ParseFunc parse_fake_home_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
 			{
 				BasicFunctionParam param;
 				param.cmd_type = Imp::RobotCmdID::FAKE_HOME;
@@ -484,13 +484,13 @@ namespace Aris
 			} };
 
 			// socket //
-			Aris::Core::Socket server_socket_;
+			aris::core::Socket server_socket_;
 			std::string server_socket_ip_, server_socket_port_;
 
 			// 储存控制器等 //
-			Aris::Control::EthercatController *controller_;
-			std::unique_ptr<Aris::Dynamic::Model> model_;
-			std::unique_ptr<Aris::Sensor::IMU> imu_;
+			aris::control::EthercatController *controller_;
+			std::unique_ptr<aris::dynamic::Model> model_;
+			std::unique_ptr<aris::sensor::IMU> imu_;
 
 			// 结束时的callback //
 			std::function<void(void)> on_exit_callback_{nullptr};
@@ -499,7 +499,7 @@ namespace Aris
 			friend class ControlServer;
 		};
 
-		auto ControlServer::Imp::loadXml(const Aris::Core::XmlDocument &doc)->void
+		auto ControlServer::Imp::loadXml(const aris::core::XmlDocument &doc)->void
 		{
 			/*load robot model_*/
 			model_->loadXml(doc);
@@ -508,7 +508,7 @@ namespace Aris
 			if (doc.RootElement()->FirstChildElement("Sensors")->FirstChildElement("IMU")->Attribute("active", "true"))
 			{
 				std::cout << "imu found" << std::endl;
-				imu_.reset(new Aris::Sensor::IMU(doc.RootElement()->FirstChildElement("Sensors")->FirstChildElement("IMU")));
+				imu_.reset(new aris::sensor::IMU(doc.RootElement()->FirstChildElement("Sensors")->FirstChildElement("IMU")));
 			}
 			else
 			{
@@ -520,11 +520,11 @@ namespace Aris
 			controller_->setControlStrategy(tg);
 
 			/*load connection param*/
-			server_socket_ip_ = doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
-			server_socket_port_ = doc.RootElement()->FirstChildElement("Server")->Attribute("port");
+			server_socket_ip_ = doc.RootElement()->FirstChildElement("server")->Attribute("ip");
+			server_socket_port_ = doc.RootElement()->FirstChildElement("server")->Attribute("port");
 
 			/*begin to insert cmd nodes*/
-			auto pCmds = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Commands");
+			auto pCmds = doc.RootElement()->FirstChildElement("server")->FirstChildElement("Commands");
 
 			if (pCmds == nullptr) throw std::runtime_error("invalid xml file, because it contains no commands information");
 			cmd_struct_map_.clear();
@@ -538,18 +538,18 @@ namespace Aris
 			}
 
 			/*Set socket connection callback function*/
-			server_socket_.setOnReceivedConnection([](Aris::Core::Socket *pConn, const char *pRemoteIP, int remotePort)
+			server_socket_.setOnReceivedConnection([](aris::core::Socket *pConn, const char *pRemoteIP, int remotePort)
 			{
-				Aris::Core::log(std::string("received connection, the server_socket_ip_ is: ") + pRemoteIP);
+				aris::core::log(std::string("received connection, the server_socket_ip_ is: ") + pRemoteIP);
 				return 0;
 			});
-			server_socket_.setOnReceivedRequest([this](Aris::Core::Socket *pConn, Aris::Core::Msg &msg)
+			server_socket_.setOnReceivedRequest([this](aris::core::Socket *pConn, aris::core::Msg &msg)
 			{
 				return onReceiveMsg(msg);
 			});
-			server_socket_.setOnLoseConnection([this](Aris::Core::Socket *socket)
+			server_socket_.setOnLoseConnection([this](aris::core::Socket *socket)
 			{
-				Aris::Core::log("lost connection");
+				aris::core::log("lost connection");
 				while (true)
 				{
 					try
@@ -557,18 +557,18 @@ namespace Aris
 						socket->startServer(this->server_socket_port_.c_str());
 						break;
 					}
-					catch (Aris::Core::Socket::StartServerError &e)
+					catch (aris::core::Socket::StartServerError &e)
 					{
 						std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-						Aris::Core::msSleep(1000);
+						aris::core::msSleep(1000);
 					}
 				}
-				Aris::Core::log("restart server socket successful");
+				aris::core::log("restart server socket successful");
 
 				return 0;
 			});
 		}
-		auto ControlServer::Imp::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)->void
+		auto ControlServer::Imp::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void
 		{
 			if (cmd_name == "en")
 			{
@@ -626,7 +626,7 @@ namespace Aris
 				is_running_ = false;
 			}
 		}
-		auto ControlServer::Imp::onReceiveMsg(const Aris::Core::Msg &msg)->Aris::Core::Msg
+		auto ControlServer::Imp::onReceiveMsg(const aris::core::Msg &msg)->aris::core::Msg
 		{
 			try
 			{
@@ -639,13 +639,13 @@ namespace Aris
 				{
 					if (is_running_)throw std::runtime_error("server already started, thus ignore command \"start\"");
 					start();
-					return Aris::Core::Msg();
+					return aris::core::Msg();
 				}
 				if (cmd == "stop")
 				{
 					if (!is_running_)throw std::runtime_error("server already stopped, thus ignore command \"stop\"");
 					stop();
-					return Aris::Core::Msg();
+					return aris::core::Msg();
 				}
 				if (cmd == "exit")
 				{
@@ -653,37 +653,37 @@ namespace Aris
 
 					std::thread exit_callback([this]() 
 					{
-						Aris::Core::msSleep(1000);
+						aris::core::msSleep(1000);
 						if (on_exit_callback_)on_exit_callback_();
 					});
 
 					exit_callback.detach();
 
-					return Aris::Core::Msg();
+					return aris::core::Msg();
 				}
 				
 				if (!is_running_)throw std::runtime_error("can't execute command, because the server is not STARTED, please start it first");
 				sendParam(cmd, params);
 
-				return Aris::Core::Msg();
+				return aris::core::Msg();
 			}
 			catch (std::exception &e)
 			{
-				std::cout << Aris::Core::log(e.what()) << std::endl;
+				std::cout << aris::core::log(e.what()) << std::endl;
 				
-				Aris::Core::Msg error_msg;
+				aris::core::Msg error_msg;
 				error_msg.copy(e.what());
 				return error_msg;
 			}
 			catch (...)
 			{
-				std::cout << Aris::Core::log("unknown exception") << std::endl;
-				Aris::Core::Msg error_msg;
+				std::cout << aris::core::log("unknown exception") << std::endl;
+				aris::core::Msg error_msg;
 				error_msg.copy("unknown exception");
 				return error_msg;
 			}
 		}
-		auto ControlServer::Imp::decodeMsg2Param(const Aris::Core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void
+		auto ControlServer::Imp::decodeMsg2Param(const aris::core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void
 		{
 			std::vector<std::string> paramVector;
 			int paramNum{ 0 };
@@ -697,9 +697,9 @@ namespace Aris
 
 				if (!(inputStream >> cmd))
 				{
-					throw std::runtime_error(Aris::Core::log("invalid message from client, please at least contain a word"));
+					throw std::runtime_error(aris::core::log("invalid message from client, please at least contain a word"));
 				};
-				Aris::Core::log(std::string("received command string:") + msg.data());
+				aris::core::log(std::string("received command string:") + msg.data());
 
 				while (inputStream >> word)
 				{
@@ -709,7 +709,7 @@ namespace Aris
 			}
 			else
 			{
-				throw std::runtime_error(Aris::Core::log("invalid message from client, please be sure that the command message end with char \'\\0\'"));
+				throw std::runtime_error(aris::core::log("invalid message from client, please be sure that the command message end with char \'\\0\'"));
 			}
 
 			if (cmd_struct_map_.find(cmd) != cmd_struct_map_.end())
@@ -718,7 +718,7 @@ namespace Aris
 			}
 			else
 			{
-				throw std::runtime_error(Aris::Core::log(std::string("invalid command name, server does not have command \"") + cmd + "\""));
+				throw std::runtime_error(aris::core::log(std::string("invalid command name, server does not have command \"") + cmd + "\""));
 			}
 
 			for (int i = 0; i<paramNum; ++i)
@@ -843,7 +843,7 @@ namespace Aris
 		}
 		auto ControlServer::Imp::sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void
 		{
-			Aris::Core::Msg cmd_msg;
+			aris::core::Msg cmd_msg;
 
 			if (cmd == "en")
 			{
@@ -895,13 +895,13 @@ namespace Aris
 			controller_->msgPipe().sendToRT(cmd_msg);
 		}
 		
-		auto ControlServer::Imp::tg(Aris::Control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::tg(aris::control::EthercatController::Data &data)->int
 		{
 			static ControlServer::Imp *imp = ControlServer::instance().imp.get();
 
 			// 检查是否出错 //
 			static int fault_count = 0;
-			auto error_motor = std::find_if(data.motion_raw_data->begin(), data.motion_raw_data->end(), [](const Aris::Control::EthercatMotion::RawData &data) {return data.ret < 0; });
+			auto error_motor = std::find_if(data.motion_raw_data->begin(), data.motion_raw_data->end(), [](const aris::control::EthercatMotion::RawData &data) {return data.ret < 0; });
 			if (error_motor != data.motion_raw_data->end())
 			{
 				if (fault_count++ % 1000 == 0)
@@ -915,7 +915,7 @@ namespace Aris
 				}
 				for (auto &mot_data : *data.motion_raw_data)
 				{
-					mot_data.cmd = Aris::Control::EthercatMotion::DISABLE;
+					mot_data.cmd = aris::control::EthercatMotion::DISABLE;
 				}
 
 				imp->cmd_num_ = 0;
@@ -959,10 +959,10 @@ namespace Aris
 
 			return 0;
 		}
-		auto ControlServer::Imp::execute_cmd(int count, char *cmd_param, Aris::Control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::execute_cmd(int count, char *cmd_param, aris::control::EthercatController::Data &data)->int
 		{
 			int ret;
-			Aris::Dynamic::PlanParamBase *param = reinterpret_cast<Aris::Dynamic::PlanParamBase *>(cmd_param);
+			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_param);
 			param->count = count;
 
 			switch (param->cmd_type)
@@ -990,7 +990,7 @@ namespace Aris
 
 			return ret;
 		}
-		auto ControlServer::Imp::enable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::enable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
 		{
 			bool is_all_enabled = true;
 
@@ -1002,10 +1002,10 @@ namespace Aris
 					if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
 					{
 						/*判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值*/
-						if (data.motion_raw_data->operator[](i).cmd == Aris::Control::EthercatMotion::ENABLE)
+						if (data.motion_raw_data->operator[](i).cmd == aris::control::EthercatMotion::ENABLE)
 						{
-							data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::RUN;
-							data.motion_raw_data->operator[](i).mode = Aris::Control::EthercatMotion::POSITION;
+							data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
+							data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
 							data.motion_raw_data->operator[](i).target_pos = data.motion_raw_data->operator[](i).feedback_pos;
 							data.motion_raw_data->operator[](i).target_vel = 0;
 							data.motion_raw_data->operator[](i).target_cur = 0;
@@ -1014,8 +1014,8 @@ namespace Aris
 					else
 					{
 						is_all_enabled = false;
-						data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::ENABLE;
-						data.motion_raw_data->operator[](i).mode = Aris::Control::EthercatMotion::POSITION;
+						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::ENABLE;
+						data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
 
 						if (param.count % 1000 == 0)
 						{
@@ -1027,7 +1027,7 @@ namespace Aris
 
 			return is_all_enabled ? 0 : 1;
 		};
-		auto ControlServer::Imp::disable(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::disable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
 		{
 			bool is_all_disabled = true;
 
@@ -1044,7 +1044,7 @@ namespace Aris
 					{
 						/*否则往下刷disable指令*/
 						is_all_disabled = false;
-						data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::DISABLE;
+						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::DISABLE;
 
 						if (param.count % 1000 == 0)
 						{
@@ -1056,7 +1056,7 @@ namespace Aris
 
 			return is_all_disabled ? 0 : 1;
 		}
-		auto ControlServer::Imp::home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
 		{
 			bool is_all_homed = true;
 
@@ -1064,13 +1064,16 @@ namespace Aris
 			{
 				if (param.active_motor[i])
 				{
-					/*根据返回值来判断是否走到home了*/
+					// 将电机的偏置置为0 //
+					controller_->motionAtAbs(i).setPosOffset(0);
+					
+					// 根据返回值来判断是否走到home了 //
 					if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
 					{
-						/*判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值*/
-						if (data.motion_raw_data->operator[](i).cmd == Aris::Control::EthercatMotion::HOME)
+						// 判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值 //
+						if (data.motion_raw_data->operator[](i).cmd == aris::control::EthercatMotion::HOME)
 						{
-							data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::RUN;
+							data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
 							data.motion_raw_data->operator[](i).target_pos = data.motion_raw_data->operator[](i).feedback_pos;
 							data.motion_raw_data->operator[](i).target_vel = 0;
 							data.motion_raw_data->operator[](i).target_cur = 0;
@@ -1079,7 +1082,7 @@ namespace Aris
 					else
 					{
 						is_all_homed = false;
-						data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::HOME;
+						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::HOME;
 
 						if (param.count % 1000 == 0)
 						{
@@ -1091,7 +1094,7 @@ namespace Aris
 
 			return is_all_homed ? 0 : 1;
 		};
-		auto ControlServer::Imp::fake_home(const BasicFunctionParam &param, Aris::Control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::fake_home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
 		{
 			for (std::size_t i = 0; i < model_->motionPool().size(); ++i)
 			{
@@ -1144,12 +1147,12 @@ namespace Aris
 
 			return 0;
 		};
-		auto ControlServer::Imp::run(GaitParamBase &param, Aris::Control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::run(GaitParamBase &param, aris::control::EthercatController::Data &data)->int
 		{
 			static ControlServer::Imp *imp = ControlServer::instance().imp.get();
 			
 			// 获取陀螺仪传感器数据 //
-			Aris::Sensor::SensorData<Aris::Sensor::ImuData> imuDataProtected;
+			aris::sensor::SensorData<aris::sensor::ImuData> imuDataProtected;
 			if (imu_) imuDataProtected = imu_->getSensorData();
 			param.imu_data = &imuDataProtected.get();
 
@@ -1172,7 +1175,7 @@ namespace Aris
 			{
 				if (param.active_motor[i])
 				{
-					data.motion_raw_data->operator[](i).cmd = Aris::Control::EthercatMotion::RUN;
+					data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
 					data.motion_raw_data->operator[](i).target_pos = static_cast<std::int32_t>(model_->motionPool().at(i).motPos() * controller_->motionAtAbs(i).pos2countRatio());
 				}
 			}
@@ -1180,7 +1183,7 @@ namespace Aris
 			// 检查位置极限和速度是否连续 //
 			for (std::size_t i = 0; i<imp->controller_->motionNum(); ++i)
 			{
-				if (data.last_motion_raw_data->at(i).cmd == Aris::Control::EthercatMotion::RUN)
+				if (data.last_motion_raw_data->at(i).cmd == aris::control::EthercatMotion::RUN)
 				{
 					if (param.if_check_pos_max && (data.motion_raw_data->at(i).target_pos > imp->controller_->motionAtAbs(i).maxPosCount()))
 					{
@@ -1250,7 +1253,7 @@ namespace Aris
 		}
 		ControlServer::ControlServer() :imp(new Imp(this)) {}
 		ControlServer::~ControlServer() {}
-		auto ControlServer::createModel(Dynamic::Model *model_)->void
+		auto ControlServer::createModel(dynamic::Model *model_)->void
 		{
 			if (imp->model_)throw std::runtime_error("control sever can't create model because it already has one");
 
@@ -1258,7 +1261,7 @@ namespace Aris
 		}
 		auto ControlServer::loadXml(const char *fileName)->void
 		{
-			Aris::Core::XmlDocument doc;
+			aris::core::XmlDocument doc;
 
 			if (doc.LoadFile(fileName) != 0)
 			{
@@ -1267,35 +1270,35 @@ namespace Aris
 
 			loadXml(doc);
 		}
-		auto ControlServer::loadXml(const Aris::Core::XmlDocument &xmlDoc)->void {	imp->loadXml(xmlDoc);}
-		auto ControlServer::model()->Dynamic::Model&
+		auto ControlServer::loadXml(const aris::core::XmlDocument &xmlDoc)->void {	imp->loadXml(xmlDoc);}
+		auto ControlServer::model()->dynamic::Model&
 		{
 			return std::ref(*imp->model_.get());
 		};
-		auto ControlServer::controller()->Control::EthercatController&
+		auto ControlServer::controller()->control::EthercatController&
 		{
 			return std::ref(*imp->controller_);
 		}
-		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const Aris::Dynamic::PlanFunc &gait_func)->void
+		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void
 		{
 			imp->addCmd(cmd_name, parse_func, gait_func);
 		}
 		auto ControlServer::open()->void 
 		{
-			while (true)
+			for (;;)
 			{
 				try
 				{
 					imp->server_socket_.startServer(imp->server_socket_port_.c_str());
 					break;
 				}
-				catch (Aris::Core::Socket::StartServerError &e)
+				catch (aris::core::Socket::StartServerError &e)
 				{
 					std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-					Aris::Core::msSleep(1000);
+					aris::core::msSleep(1000);
 				}
 			}
-			std::cout << Aris::Core::log("server open successful") << std::endl;
+			std::cout << aris::core::log("server open successful") << std::endl;
 		};
 		auto ControlServer::close()->void 
 		{

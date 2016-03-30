@@ -151,7 +151,7 @@ add_library(aris_server STATIC ${FULL_SRC} ${FULL_H})
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 
 
-################################### build tests for Aris ####################################
+################################### build tests for aris ####################################
 enable_testing()
 
 add_executable(test_DynKer test/test_DynKer.cpp)
@@ -162,7 +162,7 @@ set_tests_properties (test_DynKer PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 
 
-################################### build demos for Aris ####################################
+################################### build demos for aris ####################################
 # Make demo projects
 set(MAKE_DEMO " ")
 if(MAKE_DEMO)
@@ -216,10 +216,10 @@ endif(MAKE_DEMO)
 
 ############################################ install aris ############################################
 if(UNIX)
-	set(CMAKE_INSTALL_PREFIX "/usr/Aris")
+	set(CMAKE_INSTALL_PREFIX "/usr/aris")
 endif(UNIX)
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/Aris")
+	set(CMAKE_INSTALL_PREFIX "C:/aris")
 endif(WIN32)
 
 
@@ -230,7 +230,7 @@ install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 ############################################ uninstall aris ############################################
 if(UNIX)
-	add_custom_target(uninstall rm -r /usr/Aris)
+	add_custom_target(uninstall rm -r /usr/aris)
 endif(UNIX)
 
 

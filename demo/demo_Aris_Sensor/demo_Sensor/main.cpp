@@ -5,25 +5,25 @@
 #include "aris_sensor.h"
 #include "aris_dynamic.h"
 
-class SENSOR :public Aris::Sensor::SensorBase<double>
+class SENSOR :public aris::sensor::SensorBase<double>
 {
 	virtual void updateData(double &data)
 	{
 		static double sensorData = 0;
 		data = sensorData;
 		sensorData++;
-		Aris::Core::msSleep(10);
+		aris::core::msSleep(10);
 	}
 };
 
 
 #ifdef UNIX
-Aris::Sensor::KINECT kinect;
+aris::sensor::KINECT kinect;
 #endif
 
 int main()
 {
-	Aris::Core::XmlDocument doc;
+	aris::core::XmlDocument doc;
 #ifdef WIN32
 	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III.xml");
 #endif
@@ -39,16 +39,16 @@ int main()
 	{
 		auto data = kinect.getSensorData();
 		std::cout<<"data:"<<data.get().gridMap[100][100]<<std::endl;
-		Aris::Core::msSleep(100);
+		aris::core::msSleep(100);
 	}
 	
 	kinect.stop();
 #endif
 */
 	/*
-	auto p = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Sensors")->FirstChildElement("IMU");
+	auto p = doc.RootElement()->FirstChildElement("server")->FirstChildElement("Sensors")->FirstChildElement("IMU");
 	
-	Aris::Sensor::IMU imu(p);
+	aris::sensor::IMU imu(p);
 
 	imu.start();
 	
@@ -58,18 +58,18 @@ int main()
 
 		double eul[3];
 		//data.get().ToBodyEul(eul);
-		//Aris::Dynamic::dsp(eul, 1, 3);
+		//aris::dynamic::dsp(eul, 1, 3);
 		
 		data.get().toEulBody2Ground(eul, PI, "321");
-		Aris::Dynamic::dsp(eul, 1, 3);
+		aris::dynamic::dsp(eul, 1, 3);
 
 		//double pm[16];
 		//data.get().ToBodyPm(pm, 0.0);
-		//Aris::Dynamic::dsp(pm, 4, 4);
+		//aris::dynamic::dsp(pm, 4, 4);
 
-		//Aris::Dynamic::dsp(data.get().eul321, 1, 3);
+		//aris::dynamic::dsp(data.get().eul321, 1, 3);
 
-		Aris::Core::msSleep(1);
+		aris::core::msSleep(1);
 	}
 
 	imu.stop();
@@ -87,7 +87,7 @@ int main()
 
 	//	//std::cout << data.get()<< std::endl;
 
-	//	Aris::Core::msSleep(1);
+	//	aris::core::msSleep(1);
 	//}
 
 	//{
@@ -99,7 +99,7 @@ int main()
 
 
 
-	Aris::Core::MsgRT::instance[0].copy("123");
+	aris::core::MsgRT::instance[0].copy("123");
 
 
 	char aaa;
