@@ -520,11 +520,11 @@ namespace aris
 			controller_->setControlStrategy(tg);
 
 			/*load connection param*/
-			server_socket_ip_ = doc.RootElement()->FirstChildElement("server")->Attribute("ip");
-			server_socket_port_ = doc.RootElement()->FirstChildElement("server")->Attribute("port");
+			server_socket_ip_ = doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
+			server_socket_port_ = doc.RootElement()->FirstChildElement("Server")->Attribute("port");
 
 			/*begin to insert cmd nodes*/
-			auto pCmds = doc.RootElement()->FirstChildElement("server")->FirstChildElement("Commands");
+			auto pCmds = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Commands");
 
 			if (pCmds == nullptr) throw std::runtime_error("invalid xml file, because it contains no commands information");
 			cmd_struct_map_.clear();
