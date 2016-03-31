@@ -380,22 +380,22 @@ namespace aris
 			std::int32_t value;
 
 			this->readPdo(0, 0, value);
-			data.Fx = value / 1000.0;
+			data.Fx = static_cast<double>(value) / force_ratio_;
 
 			this->readPdo(0, 1, value);
-			data.Fy = value / 1000.0;
+			data.Fy = static_cast<double>(value) / force_ratio_;
 
 			this->readPdo(0, 2, value);
-			data.Fz = value / 1000.0;
+			data.Fz = static_cast<double>(value) / force_ratio_;
 
 			this->readPdo(0, 3, value);
-			data.Mx = value / 1000.0;
+			data.Mx = static_cast<double>(value) / torque_ratio_;
 
 			this->readPdo(0, 4, value);
-			data.My = value / 1000.0;
+			data.My = static_cast<double>(value) / torque_ratio_;
 
 			this->readPdo(0, 5, value);
-			data.Mz = value / 1000.0;
+			data.Mz = static_cast<double>(value) / torque_ratio_;
 		}
 
 		struct EthercatController::Imp

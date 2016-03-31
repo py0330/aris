@@ -77,13 +77,10 @@ namespace aris
 		protected:
 			virtual auto init()->void override
 			{
-				std::int32_t force_ratio, torque_ratio;
-				this->readSdo(0, force_ratio);
-				this->readSdo(1, torque_ratio);
-				std::cout << "force ratio:" << force_ratio << std::endl;
-				std::cout << "torque ratio:" << torque_ratio << std::endl;
+				this->readSdo(0, force_ratio_);
+				this->readSdo(1, torque_ratio_);
 			};
-
+			std::int32_t force_ratio_, torque_ratio_;
 		};
 
 		class EthercatController :public EthercatMaster
