@@ -35,8 +35,18 @@ namespace aris
 		class EthercatSlave::Imp
 		{
 		public:
-			auto read()->void { ecrt_domain_process(domain_); };
-			auto write()->void { ecrt_domain_queue(domain_); };
+			auto read()->void
+			{
+#ifdef UNIX 
+				ecrt_domain_process(domain_);
+#endif
+			};
+			auto write()->void
+			{
+#ifdef UNIX
+				ecrt_domain_queue(domain_);
+#endif
+			};
 			auto init()->void;
 
 			class DataObject
@@ -78,7 +88,7 @@ namespace aris
 
 						if (typeid(DataType) == typeid(std::int8_t) || typeid(DataType) == typeid(std::uint8_t))
 						{
-							info.queryFunc = [](const std::string &str, void *value) 
+							info.queryFunc = [](const std::string &str, void *value)
 							{
 								std::int16_t loc_value;
 								std::stringstream(str) >> loc_value;
@@ -108,7 +118,7 @@ namespace aris
 
 					return std::ref(info_map);
 				}
-				
+
 			};
 			class Pdo :public DataObject
 			{
@@ -126,10 +136,10 @@ namespace aris
 
 				Pdo(const aris::core::XmlElement &xml_ele, Imp *imp) :DataObject(xml_ele, imp) {};
 			};
-			class Sdo :public DataObject 
+			class Sdo :public DataObject
 			{
 			public:
-				enum Option 
+				enum Option
 				{
 					READ = 0x01,
 					WRITE = 0x02,
@@ -168,7 +178,7 @@ namespace aris
 					if ((!xml_ele.Attribute("read")) || xml_ele.Attribute("read", "true")) option_ |= READ;
 					else if (xml_ele.Attribute("read", "false")) option_ &= ~READ;
 					else throw std::runtime_error("invalid value of field READ in xml file for ethercat configuration \"" + std::string(xml_ele.name()) + "\"");
-					
+
 					if ((!xml_ele.Attribute("write")) || xml_ele.Attribute("write", "true")) option_ |= WRITE;
 					else if (xml_ele.Attribute("write", "false")) option_ &= ~WRITE;
 					else throw std::runtime_error("invalid value of field WRITE in xml file for ethercat configuration \"" + std::string(xml_ele.name()) + "\"");
@@ -211,7 +221,7 @@ namespace aris
 			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx_, ec_pdo_info_vec_rx_;
 			ec_sync_info_t ec_sync_info_[5];
 			ec_slave_config_t* ec_slave_config_;
-			
+
 			ec_domain_t* domain_;
 			std::uint8_t* domain_pd_;
 
@@ -235,7 +245,7 @@ namespace aris
 
 					mst.imp_->read();//motors and sensors get data
 
-					//tg begin
+									 //tg begin
 					mst.controlStrategy();
 					//tg end
 
@@ -266,7 +276,7 @@ namespace aris
 			friend class EthercatSlave;
 			friend class EthercatMaster;
 		};
-		
+
 		auto EthercatSlave::Imp::init()->void
 		{
 			auto &ec_mst = EthercatMaster::instance().imp_->ec_master_;
@@ -286,7 +296,7 @@ namespace aris
 			for (auto &sdo : this->sdo_vec_)
 			{
 				if (!(sdo->option_ & Sdo::CONFIG)) continue;
-				
+
 				switch (sdo->size_)
 				{
 				case 8:		ecrt_slave_config_sdo8(this->ec_slave_config_, sdo->index_, sdo->subindex_, sdo->config_value_uint8_); break;
@@ -333,11 +343,13 @@ namespace aris
 			if (!(option_ & READ)) throw std::runtime_error("sdo is not read-able");
 			if (typeid(DataType) != *typeInfoMap().at(type_name_).type_info_)throw std::runtime_error("invalid sdo type when read sdo");
 
+#ifdef UNIX
 			auto &ec_mst = EthercatMaster::instance().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
 
 			ecrt_master_sdo_upload(ec_mst, imp_->position_, index_, subindex_, reinterpret_cast<std::uint8_t *>(&data), size_, &real_size, &abort_code);
+#endif
 		};
 		template<typename DataType>
 		auto EthercatSlave::Imp::Sdo::writeSdo(DataType data)->void
@@ -345,14 +357,16 @@ namespace aris
 			if (!(option_ & WRITE)) throw std::runtime_error("sdo is not write-able");
 			if (typeid(DataType) != *typeInfoMap().at(type_name_).type_info_)throw std::runtime_error("invalid sdo type when read sdo");
 
+#ifdef UNIX
 			auto &ec_mst = EthercatMaster::instance().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
 
 			ecrt_master_sdo_download(ec_mst, imp_->position_, index_, subindex_, reinterpret_cast<std::uint8_t *>(&data), size_, &abort_code);
+#endif
 		}
 
-		EthercatSlave::EthercatSlave(const aris::core::XmlElement &xml_ele):imp_(new Imp)
+		EthercatSlave::EthercatSlave(const aris::core::XmlElement &xml_ele) :imp_(new Imp)
 		{
 			//load product id...
 			imp_->product_code_ = std::stoi(xml_ele.Attribute("product_code"), nullptr, 0);
@@ -477,7 +491,7 @@ namespace aris
 		auto EthercatSlave::readSdoConfig(int sdoID, std::uint8_t &value) const->void { imp_->sdo_vec_[sdoID]->readSdoConfig(value); }
 		auto EthercatSlave::readSdoConfig(int sdoID, std::uint16_t &value) const->void { imp_->sdo_vec_[sdoID]->readSdoConfig(value); }
 		auto EthercatSlave::readSdoConfig(int sdoID, std::uint32_t &value) const->void { imp_->sdo_vec_[sdoID]->readSdoConfig(value); }
-		auto EthercatSlave::configSdo(int sdoID, std::int8_t value)->void{imp_->sdo_vec_[sdoID]->configSdo(value);}
+		auto EthercatSlave::configSdo(int sdoID, std::int8_t value)->void { imp_->sdo_vec_[sdoID]->configSdo(value); }
 		auto EthercatSlave::configSdo(int sdoID, std::int16_t value)->void { imp_->sdo_vec_[sdoID]->configSdo(value); }
 		auto EthercatSlave::configSdo(int sdoID, std::int32_t value)->void { imp_->sdo_vec_[sdoID]->configSdo(value); }
 		auto EthercatSlave::configSdo(int sdoID, std::uint8_t value)->void { imp_->sdo_vec_[sdoID]->configSdo(value); }
@@ -495,9 +509,9 @@ namespace aris
 		auto EthercatSlave::writeSdo(int sdoID, std::uint8_t value)->void { imp_->sdo_vec_[sdoID]->writeSdo(value); }
 		auto EthercatSlave::writeSdo(int sdoID, std::uint16_t value)->void { imp_->sdo_vec_[sdoID]->writeSdo(value); }
 		auto EthercatSlave::writeSdo(int sdoID, std::uint32_t value)->void { imp_->sdo_vec_[sdoID]->writeSdo(value); }
-		
-		EthercatMaster::EthercatMaster():imp_(new Imp){}
-		EthercatMaster::~EthercatMaster(){}
+
+		EthercatMaster::EthercatMaster() :imp_(new Imp) {}
+		EthercatMaster::~EthercatMaster() {}
 		auto EthercatMaster::instance()->EthercatMaster&
 		{
 			if (!instancePtr())throw std::runtime_error("please first create an instance fo EthercatMaster");
@@ -512,13 +526,13 @@ namespace aris
 		{
 			// Load EtherCat slave types //
 			std::map<std::string, const aris::core::XmlElement *> slaveTypeMap;
-			
+
 			auto pSlaveTypes = xml_ele.FirstChildElement("SlaveType");
 			for (auto pType = pSlaveTypes->FirstChildElement(); pType != nullptr; pType = pType->NextSiblingElement())
 			{
 				slaveTypeMap.insert(std::make_pair(std::string(pType->name()), pType));
 			}
-			
+
 			// Load all slaves //
 			auto pSlaves = xml_ele.FirstChildElement("Slave");
 			for (auto pSla = pSlaves->FirstChildElement(); pSla != nullptr; pSla = pSla->NextSiblingElement())
