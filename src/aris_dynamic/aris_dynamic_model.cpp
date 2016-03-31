@@ -41,7 +41,7 @@ namespace aris
 			{
 				if (xml_ele.Attribute("active", "true"))active_ = true;
 				else if (xml_ele.Attribute("active", "false"))active_ = false;
-				else throw std::runtime_error(std::string("Element \"") + xml_ele.name() + "\" must have valid attibute of Active");
+				else throw std::runtime_error(std::string("Element \"") + xml_ele.name() + "\" must have valid attibute of active");
 			}
 			else
 			{

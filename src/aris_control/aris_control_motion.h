@@ -59,7 +59,7 @@ namespace aris
 
 			friend class EthercatController;
 		};
-		class EthercatForceSensor :public EthercatSlave
+		class EthercatForceSensor final:public EthercatSlave
 		{
 		public:
 			struct Data
@@ -73,6 +73,17 @@ namespace aris
 
 			EthercatForceSensor(const aris::core::XmlElement &xml_ele): EthercatSlave(xml_ele){};
 			auto readData(Data &data)->void;
+
+		protected:
+			virtual auto init()->void override
+			{
+				std::int32_t force_ratio, torque_ratio;
+				this->readSdo(0, force_ratio);
+				this->readSdo(1, torque_ratio);
+				std::cout << "force ratio:" << force_ratio << std::endl;
+				std::cout << "torque ratio:" << torque_ratio << std::endl;
+			};
+
 		};
 
 		class EthercatController :public EthercatMaster

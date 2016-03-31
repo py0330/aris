@@ -20,6 +20,37 @@
 namespace aris
 {
 	///
+	/// to do lists:
+	/// 下一版本的符号定义: \n
+	/// pp  :  3x1 点位置(position of point)  \n
+	/// eu  :  3x1 欧拉角(eula angle)         \n
+	/// qu  :  4x1 四元数(quaternions)        \n
+	/// rm  :  3x3 旋转矩阵(rotation matrix)  \n
+	/// pe  :  6x1 点位置与欧拉角(position and eula angle)\n
+	/// pq  :  7x1 点位置与四元数(position and quaternions)\n
+	/// pm  :  4x4 位姿矩阵(pose matrix)\n
+	///
+	/// vp  :  3x1 线速度(velocity of point)\n
+	/// we  :  3x1 角速度(omega)\n
+	/// wq  :  4x1 四元数导数(omega in term of quternions)\n
+	/// wm  :  3x3 旋转矩阵导数(omega in term of rotation matrix)\n
+	/// vw  :  6x1 线速度与角速度(velocity and omega)\n
+	/// vq  :  7x1 线速度与四元数导数(velocity and omega in term of quternions)\n
+	/// vm  :  4x4 位姿矩阵导数(velocity in term of pose matrix)\n
+	/// vs  :  6x1 螺旋速度(velocity of screw)\n
+	///
+	/// ap  :  3x1 线加速度(acceleration of point)\n
+	/// xe  :  3x1 角加速度(alpha, acceleration of angle)\n
+	/// xq  :  4x1 四元数导导数(alpha in term of quternions)\n
+	/// xm  :  3x3 旋转矩阵导数(alpha in term of rotation matrix)\n
+	/// ax  :  6x1 线加速度与角加速度(acceleration and alpha)\n
+	/// aq  :  7x1 线加速度与四元数导导数(acceleration and alpha in term of quternions)\n
+	/// am  :  4x4 位姿矩阵导导数(acceleration in term of pose matrix)\n
+	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
+
+
+	
+	///
 	/// 符号定义: \n
 	/// pm  :  4x4的位姿矩阵（pose matrix）\n
 	/// pe  :  6x1的位姿向量，前3个元素为位置，后三个为欧拉角（position and eula angle）\n
