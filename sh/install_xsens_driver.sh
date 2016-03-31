@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /usr/Aris/sh/xsens_driver && make
+cd /usr/aris/sh/xsens_driver && make
 modprobe usbserial
 insmod xsens_mt.ko
 cd ..
