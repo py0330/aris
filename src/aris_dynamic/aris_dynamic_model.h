@@ -490,7 +490,7 @@ namespace aris
 			auto vel()->double6&;
 			auto acc()->double6&;
 			auto invPm() const->const double4x4&;
-			auto prtIm() const->const double6x6&;
+			auto prtIs() const->const double6x6&;
 			auto prtVel() const->const double6&;
 			auto prtAcc() const->const double6&;
 			auto prtFg() const->const double6&;

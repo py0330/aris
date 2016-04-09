@@ -110,7 +110,7 @@ namespace aris
 			std::fill_n(this->csa(), this->dim(), 0);
 			s_inv_tv(-1, *pm_M2N, makJ().fatherPart().prtVel(), 0, _tem_v1);
 			s_cv(makI().fatherPart().prtVel(), _tem_v1, _tem_v2);
-			s_dgemmTN(dim(), 1, 6, 1, csmI(), dim(), _tem_v2, 1, 0, csa(), 1);
+			s_mdmTN(dim(), 1, 6, 1, csmI(), dim(), _tem_v2, 1, 0, csa(), 1);
 		}
 		auto Constraint::saveAdams(std::ofstream &file) const->void
 		{
@@ -831,7 +831,7 @@ namespace aris
 			double vel_[6]{ 0 };
 			double acc_[6]{ 0 };
 
-			double prt_im_[6][6]{ { 0 } };
+			double prt_is_[6][6]{ { 0 } };
 			double prt_gravity_[6]{ 0 };
 			double prt_acc_[6]{ 0 };
 			double prt_vel_[6]{ 0 };
@@ -861,7 +861,7 @@ namespace aris
 			vel = vel ? vel : default_vel;
 			acc = acc ? acc : default_acc;
 			
-			std::copy_n(im, 36, static_cast<double *>(*imp->prt_im_));
+			std::copy_n(im, 36, static_cast<double *>(*imp->prt_is_));
 			setVel(vel);
 			setAcc(acc);
 		}
@@ -896,7 +896,7 @@ namespace aris
 			{
 				auto m = this->model().calculator().calculateExpression(xml_ele.Attribute("inertia"));
 				if (m.size() != 10)throw std::runtime_error("");
-				s_gamma2im(m.data(), *imp->prt_im_);
+				s_iv2is(m.data(), *imp->prt_is_);
 			}
 			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute \"inertia\" must be a matrix expression"); }
 
@@ -916,7 +916,7 @@ namespace aris
 		auto Part::acc()const->const double6&{ return imp->acc_; };
 		auto Part::acc()->double6& { return imp->acc_; };
 		auto Part::invPm() const->const double4x4&{ return imp->inv_pm_; };
-		auto Part::prtIm() const->const double6x6&{ return imp->prt_im_; };
+		auto Part::prtIs() const->const double6x6&{ return imp->prt_is_; };
 		auto Part::prtVel() const->const double6&{ return imp->prt_vel_; };
 		auto Part::prtAcc() const->const double6&{ return imp->prt_acc_; };
 		auto Part::prtFg() const->const double6&{ return imp->prt_fg_; };
@@ -934,9 +934,9 @@ namespace aris
 			xml_ele.SetAttribute("vel", core::Matrix(1, 6, vel()).toString().c_str());
 			xml_ele.SetAttribute("acc", core::Matrix(1, 6, acc()).toString().c_str());
 			
-			double gamma[10];
-			s_im2gamma(*this->prtIm(), gamma);
-			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, gamma).toString().c_str());
+			double iv[10];
+			s_is2iv(*this->prtIs(), iv);
+			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, iv).toString().c_str());
 			xml_ele.SetAttribute("graphic_file_path", imp->graphic_file_path_.c_str());
 
 			auto child_mak_group = xml_ele.GetDocument()->NewElement("ChildMarker");
@@ -984,11 +984,11 @@ namespace aris
 					<< "!\r\n";
 
 				
-				double mass = this->prtIm()[0][0] == 0 ? 1 : prtIm()[0][0];
+				double mass = this->prtIs()[0][0] == 0 ? 1 : prtIs()[0][0];
 				std::fill_n(pe, 6, 0);
-				pe[0] = this->prtIm()[1][5] / mass;
-				pe[1] = -this->prtIm()[0][5] / mass;
-				pe[2] = this->prtIm()[0][4] / mass;				
+				pe[0] = this->prtIs()[1][5] / mass;
+				pe[1] = -this->prtIs()[0][5] / mass;
+				pe[2] = this->prtIs()[0][4] / mass;				
 
 				file << "! ****** cm and mass for current part ******\r\n"
 					<< "marker create  &\r\n"
@@ -1006,13 +1006,13 @@ namespace aris
 				pe[2] = -pe[2];
 
 				s_pe2pm(pe, pm);
-				s_i2i(pm, *this->prtIm(), *im);
+				s_is2is(pm, *this->prtIs(), *im);
 
 				///！注意！///
 				//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy，Ixz，Iyz上互为相反数。别问我为什么，我也不知道。
 				file << "part create rigid_body mass_properties  &\r\n"
 					<< "    part_name = ." << model().name() << "." << this->name() << "  &\r\n"
-					<< "    mass = " << this->prtIm()[0][0] << "  &\r\n"
+					<< "    mass = " << this->prtIs()[0][0] << "  &\r\n"
 					<< "    center_of_mass_marker = ." << model().name() << "." << this->name() << ".cm  &\r\n"
 					<< "    inertia_marker = ." << model().name() << "." << this->name() << ".cm  &\r\n"
 					<< "    ixx = " << im[3][3] << "  &\r\n"
@@ -1049,8 +1049,8 @@ namespace aris
 			s_tv(*invPm(), vel(), imp->prt_vel_);
 			s_tv(*invPm(), acc(), imp->prt_acc_);
 			s_tv(*invPm(), model().environment().gravity_, imp->prt_gravity_);
-			s_m6_dot_v6(*prtIm(), prtGravity(), imp->prt_fg_);
-			s_m6_dot_v6(*prtIm(), imp->prt_vel_, tem);
+			s_m6_dot_v6(*prtIs(), prtGravity(), imp->prt_fg_);
+			s_m6_dot_v6(*prtIs(), imp->prt_vel_, tem);
 			s_cf(prtVel(), tem, imp->prt_fv_);
 		}
 		
@@ -1456,7 +1456,7 @@ namespace aris
 			{
 				if (prt->active())
 				{
-					s_block_cpy(6, 6, *(prt->prtIm()), 0, 0, 6, ine_mtx, prt->rowID(), prt->rowID(), dynDimM());
+					s_block_cpy(6, 6, *(prt->prtIs()), 0, 0, 6, ine_mtx, prt->rowID(), prt->rowID(), dynDimM());
 				}
 			}
 		}
@@ -1487,8 +1487,8 @@ namespace aris
 			{
 				if (prt->active())
 				{
-					s_daxpy(6, -1, prt->prtFg(), 1, &prt_fce[prt->rowID()], 1);
-					s_daxpy(6, 1, prt->prtFv(), 1, &prt_fce[prt->rowID()], 1);
+					s_va(6, -1, prt->prtFg(), 1, &prt_fce[prt->rowID()]);
+					s_va(6, 1, prt->prtFv(), 1, &prt_fce[prt->rowID()]);
 				}
 			}
 
@@ -1496,8 +1496,8 @@ namespace aris
 			{
 				if (fce->active())
 				{
-					s_daxpy(6, -1, fce->fceI(), 1, &prt_fce[fce->makI().fatherPart().rowID()], 1);
-					s_daxpy(6, -1, fce->fceJ(), 1, &prt_fce[fce->makJ().fatherPart().rowID()], 1);
+					s_va(6, -1, fce->fceI(), 1, &prt_fce[fce->makI().fatherPart().rowID()]);
+					s_va(6, -1, fce->fceJ(), 1, &prt_fce[fce->makJ().fatherPart().rowID()]);
 				}
 			}
 		}
@@ -1695,7 +1695,7 @@ namespace aris
 				{
 					double cm[6][6];
 					s_cmf(i->prtVel(), *cm);
-					s_dgemm(clbDimM(), 6, 6, 1, &A(beginRow,i->rowID()), dynDimM(), *cm, 6, 0, &B(beginRow, i->rowID()), dynDimM());
+					s_mdm(clbDimM(), 6, 6, 1, &A(beginRow,i->rowID()), dynDimM(), *cm, 6, 0, &B(beginRow, i->rowID()), dynDimM());
 				}
 			}
 
@@ -1708,7 +1708,7 @@ namespace aris
 				{
 					double q[6]{0};
 					std::copy_n(i->prtAcc(), 6, q);
-					s_daxpy(6, -1, i->prtGravity(), 1, q, 1);
+					s_va(6, -1, i->prtGravity(), 1, q);
 					
 					double v[6];
 					std::copy_n(i->prtVel(), 6, v);
@@ -1757,11 +1757,11 @@ namespace aris
 			{
 				if (fce->active())
 				{
-					s_daxpy(6, 1, fce->fceI(), 1, &f[fce->makI().fatherPart().rowID()], 1);
-					s_daxpy(6, 1, fce->fceJ(), 1, &f[fce->makJ().fatherPart().rowID()], 1);
+					s_va(6, fce->fceI(), &f[fce->makI().fatherPart().rowID()]);
+					s_va(6, fce->fceJ(), &f[fce->makJ().fatherPart().rowID()]);
 				}
 			}
-			s_dgemm(clbDimM(), 1, dynDimM(), 1, &A(beginRow,0), dynDimM(), f.data(), 1, 1, clb_b_m.data(), 1);
+			s_mdm(clbDimM(), 1, dynDimM(), 1, &A(beginRow,0), dynDimM(), f.data(), 1, 1, clb_b_m.data(), 1);
 
 			/*以下添加驱动摩擦系数*/
 			row = 0;
@@ -1787,7 +1787,7 @@ namespace aris
 			{
 				if (prt->active())
 				{
-					s_im2gamma(*prt->prtIm(), clb_x + row);
+					s_is2iv(*prt->prtIs(), clb_x + row);
 					row += 10;
 				}
 			}
@@ -2086,7 +2086,7 @@ namespace aris
 			/*calculate part n*/
 			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVel(), tem_v1);
 			s_cv(-1, makI().fatherPart().prtVel(), tem_v1, 0, tem_v2);
-			s_dgemmTN(4, 1, 6, 1, csmI(), Dim(), tem_v2, 1, 1, &csa()[0], 1);
+			s_mdmTN(4, 1, 6, 1, csmI(), Dim(), tem_v2, 1, 1, &csa()[0], 1);
 			s_inv_tv(*makI().prtPm(), tem_v1, tem_v2);
 			csa()[3] += v[0] * tem_v2[4] + v[1] * tem_v2[5];
 		};
@@ -2203,7 +2203,7 @@ namespace aris
 
 			double velDiff[6], velDiff_in_J[6];
 			std::copy_n(makI().vel(), 6, velDiff);
-			s_daxpy(6, -1, makJ().vel(), 1, velDiff, 1);
+			s_va(6, -1, makJ().vel(), 1, velDiff);
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
 			mot_vel_ = velDiff_in_J[component_axis_];
 
@@ -2218,7 +2218,7 @@ namespace aris
 			double tem_v1[6]{ 0 }, tem_v2[6]{ 0 };
 			s_inv_tv(-1, *pm_M2N, makJ().fatherPart().prtVel(), 0, tem_v1);
 			s_cv(makI().fatherPart().prtVel(), tem_v1, tem_v2);
-			s_dgemmTN(1, 1, 6, 1, csmI(), 1, tem_v2, 1, 0, csa(), 1);
+			s_mdmTN(1, 1, 6, 1, csmI(), 1, tem_v2, 1, 0, csa(), 1);
 
 			csa()[0] += mot_acc_;
 			/*update motPos motVel motAcc*/

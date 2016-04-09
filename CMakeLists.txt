@@ -154,10 +154,10 @@ set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 ################################### build tests for aris ####################################
 enable_testing()
 
-add_executable(test_DynKer test/test_DynKer.cpp)
-target_link_libraries(test_DynKer ${ALL_LINK_LIB})
-add_test(NAME test_DynKer COMMAND test_DynKer)
-set_tests_properties (test_DynKer PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+add_executable(test_dynamic test/test_dynamic.cpp)
+target_link_libraries(test_dynamic ${ALL_LINK_LIB})
+add_test(NAME test_dynamic COMMAND test_dynamic)
+set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 
 

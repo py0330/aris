@@ -16,99 +16,45 @@ namespace aris
 {
 	namespace dynamic
 	{
-		auto dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n)->void
+		inline auto default_pp()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_re()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_rq()->const double* { static double value[4]{ 0,0,0,1 };	return value; }
+		inline auto default_rm()->const double* { static double value[9]{ 1,0,0,0,1,0,0,0,1 };	return value; }
+		inline auto default_pe()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		inline auto default_pq()->const double* { static double value[7]{ 0,0,0,0,0,0,1 };	return value; }
+		inline auto default_pm()->const double* { static double value[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 }; return value; }
+
+		inline auto default_vp()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_we()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_wq()->const double* { static double value[4]{ 0,0,0,0 };	return value; }
+		inline auto default_wm()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
+		inline auto default_ve()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		inline auto default_vq()->const double* { static double value[7]{ 0,0,0,0,0,0,0 };	return value; }
+		inline auto default_vm()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		inline auto default_vs()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+
+		inline auto default_ap()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_xe()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_xq()->const double* { static double value[4]{ 0,0,0,0 };	return value; }
+		inline auto default_xm()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
+		inline auto default_ae()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		inline auto default_aq()->const double* { static double value[7]{ 0,0,0,0,0,0,0 };	return value; }
+		inline auto default_am()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		inline auto default_as()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+
+		inline auto default_fs()->const double* { static double value[6]{ 0,0,0,0,0,0 }; return value; }
+		inline auto default_is()->const double* { static double value[36]{ 0 }; return value; }
+		inline auto default_iv()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		inline auto default_in()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
+
+		auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in, std::size_t rm_ld) noexcept->void
 		{
-			std::ofstream file;
+			// 补充默认参数 //
+			re_in = re_in ? re_in : default_re();
+			double rm_out_default[9];
+			rm_out = rm_out ? rm_out : rm_out_default;
 
-			file.open(FileName);
-
-			file << std::setprecision(15);
-			
-			for (int i = 0; i < m; i++)
-			{
-				for (int j = 0; j < n; j++)
-				{
-					file << pMatrix[n*i + j] << "   ";
-				}
-				file << std::endl;
-			}
-		}
-		auto dlmread(const char *FileName, double *pMatrix)->void
-		{
-			std::ifstream file;
-
-			file.open(FileName);
-
-			if (!file) throw std::logic_error("file not exist");
-
-
-			int i = 0;
-			while (!file.eof())
-			{        
-				file >> *(pMatrix + i);
-				++i;
-			}
-		}
-		auto dsp(const double *p, const int m, const int n, const int begin_row, const int begin_col, int ld)->void
-		{
-			if (ld < 1)	ld = n;
-		
-			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(15);
-
-			std::cout << std::endl;
-			for (int i = 0; i < m; i++)
-			{
-				for (int j = 0; j < n; j++)
-				{
-					std::cout << p[(begin_row+i)*ld + j+begin_col] << "   ";
-				}
-				std::cout << std::endl;
-			}
-			std::cout << std::endl;
-		}
-		
-		auto s_is_equal(int n, const double *v1, const double *v2, double error) noexcept->bool
-		{
-			double diff_square = 0;
-
-			for (int i = 0; i < n; ++i)diff_square += (v1[i] - v2[i])*(v1[i] - v2[i]);
-
-			diff_square = std::sqrt(std::abs(diff_square));
-
-			return diff_square > error ? false : true;
-		}
-
-		auto s_cro3(const double *cro_vec_in, const double *vec_in, double *vec_out) noexcept->void
-		{
-			vec_out[0] = -cro_vec_in[2] * vec_in[1] + cro_vec_in[1] * vec_in[2];
-			vec_out[1] = cro_vec_in[2] * vec_in[0] - cro_vec_in[0] * vec_in[2];
-			vec_out[2] = -cro_vec_in[1] * vec_in[0] + cro_vec_in[0] * vec_in[1];
-		}
-		auto s_cro3(double alpha, const double *cro_vec_in, const double *vec_in, double beta, double *vec_out) noexcept->void
-		{
-			vec_out[0] *= beta;
-			vec_out[1] *= beta;
-			vec_out[2] *= beta;
-
-			vec_out[0] += alpha*(-cro_vec_in[2] * vec_in[1] + cro_vec_in[1] * vec_in[2]);
-			vec_out[1] += alpha*(cro_vec_in[2] * vec_in[0] - cro_vec_in[0] * vec_in[2]);
-			vec_out[2] += alpha*(-cro_vec_in[1] * vec_in[0] + cro_vec_in[0] * vec_in[1]);
-		}
-		auto s_cm3(const double *cro_vec_in, double *cm_out) noexcept->void
-		{
-			cm_out[0] = 0;
-			cm_out[1] = -cro_vec_in[2];
-			cm_out[2] = cro_vec_in[1];
-			cm_out[3] = cro_vec_in[2];
-			cm_out[4] = 0;
-			cm_out[5] = -cro_vec_in[0];
-			cm_out[6] = -cro_vec_in[1];
-			cm_out[7] = cro_vec_in[0];
-			cm_out[8] = 0;
-		}
-
-		auto s_pe2pm(const double *pe_in, double *pm_out, const char *EurType) noexcept->void
-		{
+			// 正式开始计算 //
 			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
 			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
 
@@ -117,129 +63,267 @@ namespace aris
 			double Cbb, Cee, Cbe, Ceb;
 			double s_, c_;
 
-			const int a = EurType[0] - '1';
-			const int b = EurType[1] - '1';
-			const int c = EurType[2] - '1';
+			const int a = eu_type_in[0] - '1';
+			const int b = eu_type_in[1] - '1';
+			const int c = eu_type_in[2] - '1';
 			const int d = 3 - a - b;
 			const int e = 3 - b - c;
 
-			c_ = std::cos(pe_in[3]);
-			s_ = std::sin(pe_in[3]);
+			c_ = std::cos(re_in[0]);
+			s_ = std::sin(re_in[0]);
 			Abb = c_;
 			Add = Abb;
 			Abd = P[b][d] * s_;
 			Adb = -Abd;
 
-			s_ = std::sin(pe_in[4]);
-			c_ = std::cos(pe_in[4]);
+			s_ = std::sin(re_in[1]);
+			c_ = std::cos(re_in[1]);
 			Bac = P[a][c] * s_ + Q[a][c] * c_;
 			Bae = P[a][e] * s_ + Q[a][e] * c_;
 			Bdc = P[d][c] * s_ + Q[d][c] * c_;
 			Bde = P[d][e] * s_ + Q[d][e] * c_;
 
-			c_ = std::cos(pe_in[5]);
-			s_ = std::sin(pe_in[5]);
+			c_ = std::cos(re_in[2]);
+			s_ = std::sin(re_in[2]);
 			Cbb = c_;
 			Cee = Cbb;
 			Cbe = P[b][e] * s_;
 			Ceb = -Cbe;
 
-			pm_out[a * 4 + c] = Bac;
-			pm_out[a * 4 + b] = Bae * Ceb;
-			pm_out[a * 4 + e] = Bae * Cee;
-			pm_out[b * 4 + c] = Abd * Bdc;
-			pm_out[b * 4 + b] = Abb * Cbb + Abd * Bde * Ceb;
-			pm_out[b * 4 + e] = Abb * Cbe + Abd * Bde * Cee;
-			pm_out[d * 4 + c] = Add * Bdc;
-			pm_out[d * 4 + b] = Adb * Cbb + Add * Bde * Ceb;
-			pm_out[d * 4 + e] = Adb * Cbe + Add * Bde * Cee;
+			rm_out[a * rm_ld + c] = Bac;
+			rm_out[a * rm_ld + b] = Bae * Ceb;
+			rm_out[a * rm_ld + e] = Bae * Cee;
+			rm_out[b * rm_ld + c] = Abd * Bdc;
+			rm_out[b * rm_ld + b] = Abb * Cbb + Abd * Bde * Ceb;
+			rm_out[b * rm_ld + e] = Abb * Cbe + Abd * Bde * Cee;
+			rm_out[d * rm_ld + c] = Add * Bdc;
+			rm_out[d * rm_ld + b] = Adb * Cbb + Add * Bde * Ceb;
+			rm_out[d * rm_ld + e] = Adb * Cbe + Add * Bde * Cee;
+		}
+		auto s_rm2re(const double *rm_in, double *re_out, const char *eu_type_in, std::size_t rm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			rm_in = rm_in ? rm_in : default_rm();
+			double re_out_default[3];
+			re_out = re_out ? re_out : re_out_default;
 
-			pm_out[3] = pe_in[0];
-			pm_out[7] = pe_in[1];
-			pm_out[11] = pe_in[2];
+			// 正式开始计算 //
+			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
+			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
+
+			const int a = eu_type_in[0] - '1';
+			const int b = eu_type_in[1] - '1';
+			const int c = eu_type_in[2] - '1';
+			const int d = 3 - a - b;
+			const int e = 3 - b - c;
+
+			// 计算phi2 //
+			double s_ = std::sqrt((rm_in[rm_ld * a + b] * rm_in[rm_ld * a + b] + rm_in[rm_ld * a + e] * rm_in[rm_ld * a + e]
+				+ rm_in[rm_ld * b + c] * rm_in[rm_ld * b + c] + rm_in[rm_ld * d + c] * rm_in[rm_ld * d + c]) / 2);
+
+			double c_ = rm_in[rm_ld * a + c];
+			re_out[1] = (a == c ? std::atan2(s_, c_) : std::atan2(P[a][c] * c_, s_));
+
+			// 计算phi1和phi3 //
+			double phi13 = std::atan2(rm_in[rm_ld * b + e] - rm_in[rm_ld * d + b], rm_in[rm_ld * b + b] + rm_in[rm_ld * d + e]);
+			double phi31 = std::atan2(rm_in[rm_ld * b + e] + rm_in[rm_ld * d + b], rm_in[rm_ld * b + b] - rm_in[rm_ld * d + e]);
+
+			re_out[0] = P[b][d] * (phi13 - phi31) / 2;
+			re_out[2] = P[b][e] * (phi13 + phi31) / 2;
+
+			// 检查 //
+			double sig[4];
+			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * rm_in[a * rm_ld + b] * std::sin(re_out[2]);
+			sig[1] = (P[a][e] + Q[a][e])*rm_in[rm_ld * a + e] * std::cos(re_out[2]);
+			sig[2] = (P[d][c] + Q[d][c])*P[b][d] * rm_in[b * rm_ld + c] * std::sin(re_out[0]);
+			sig[3] = (P[d][c] + Q[d][c])*rm_in[rm_ld * d + c] * std::cos(re_out[0]);
+
+			if (*std::max_element(sig, sig + rm_ld, [](double d1, double d2) {return (std::abs(d1) < std::abs(d2)); })<0)
+			{
+				re_out[0] += PI;
+				re_out[2] += PI;
+			}
+
+			re_out[0] = (re_out[0] < 0 ? re_out[0] + 2 * PI : re_out[0]);
+			re_out[2] = (re_out[2] < 0 ? re_out[2] + 2 * PI : re_out[2]);
+		}
+		auto s_rq2rm(const double *rq_in, double *rm_out, std::size_t rm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			rq_in = rq_in ? rq_in : default_rq();
+			double rm_out_default[9];
+			rm_out = rm_out ? rm_out : rm_out_default;
+
+			// 正式开始计算 //
+			
+			rm_out[0 * rm_ld + 0] = 1 - 2 * rq_in[1] * rq_in[1] - 2 * rq_in[2] * rq_in[2];
+			rm_out[0 * rm_ld + 1] = 2 * rq_in[0] * rq_in[1] - 2 * rq_in[3] * rq_in[2];
+			rm_out[0 * rm_ld + 2] = 2 * rq_in[0] * rq_in[2] + 2 * rq_in[3] * rq_in[1];
+
+			rm_out[1 * rm_ld + 0] = 2 * rq_in[0] * rq_in[1] + 2 * rq_in[3] * rq_in[2];
+			rm_out[1 * rm_ld + 1] = 1 - 2 * rq_in[0] * rq_in[0] - 2 * rq_in[2] * rq_in[2];
+			rm_out[1 * rm_ld + 2] = 2 * rq_in[1] * rq_in[2] - 2 * rq_in[3] * rq_in[0];
+
+			rm_out[2 * rm_ld + 0] = 2 * rq_in[0] * rq_in[2] - 2 * rq_in[3] * rq_in[1];
+			rm_out[2 * rm_ld + 1] = 2 * rq_in[1] * rq_in[2] + 2 * rq_in[3] * rq_in[0];
+			rm_out[2 * rm_ld + 2] = 1 - 2 * rq_in[0] * rq_in[0] - 2 * rq_in[1] * rq_in[1];
+		}
+		auto s_rm2rq(const double *rm_in, double *rq_out, std::size_t rm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			rm_in = rm_in ? rm_in : default_rm();
+			double rq_out_default[4];
+			rq_out = rq_out ? rq_out : rq_out_default;
+
+			// 正式开始计算 //
+			static const double T[4][4]{ { 0,1,1,-1 },{ 1,0,1,-1 },{ 1,1,0,-1 },{ -1,-1,-1,0 } };
+			static const int P[4][4]{ { -1,0,0,2 },{ 1,-1,1,0 },{ 2,2,-1,1 },{ 2,0,1,-1 } };
+			static const int Q[4][4]{ { -1,1,2,1 },{ 0,-1,2,2 },{ 0,1,-1,0 },{ 1,2,0,-1 } };
+
+			double qt_square[4];
+
+			qt_square[0] = (1 + rm_in[0] - rm_in[rm_ld + 1] - rm_in[2 * rm_ld + 2]) / 4;
+			qt_square[1] = (1 + rm_in[rm_ld + 1] - rm_in[0] - rm_in[2 * rm_ld + 2]) / 4;
+			qt_square[2] = (1 + rm_in[2 * rm_ld + 2] - rm_in[0] - rm_in[rm_ld + 1]) / 4;
+			qt_square[3] = (1 + rm_in[0] + rm_in[rm_ld + 1] + rm_in[2 * rm_ld + 2]) / 4;
+
+			for (int i = 0; i < 4; ++i)rq_out[i] = qt_square[i] < 0 ? 0 : std::sqrt(qt_square[i]);
+
+			int i = std::max_element(rq_out, rq_out + 4) - rq_out;
+			int jkl[3]{ (i + 1) % 4 ,(i + 2) % 4 ,(i + 3) % 4 };
+			for (auto m : jkl) 
+			{
+				rq_out[m] = (rm_in[P[i][m] * rm_ld + Q[i][m]] + T[i][m] * rm_in[Q[i][m] * rm_ld + P[i][m]])<0 ? -rq_out[m] : rq_out[m];
+			}
+			
+			// 将rq_out[3]置为正
+			for (auto m = 0; m < 4;++m)rq_out[m] = rq_out[3] < 0 ? -rq_out[m] : rq_out[m];
+		}
+		auto s_pp2pm(const double *pp_in, double *pm_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pp_in = pp_in ? pp_in : default_pp();
+			double pm_out_default[16];
+			pm_out = pm_out ? pm_out : pm_out_default;
+
+			// 正式开始计算 //
+			pm_out[3] = pp_in[0];
+			pm_out[7] = pp_in[1];
+			pm_out[11] = pp_in[2];
+		}
+		auto s_pm2pp(const double *pm_in, double *pp_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			double pp_out_default[3];
+			pp_out = pp_out ? pp_out : pp_out_default;
+
+			// 正式开始计算 //
+			pp_out[0] = pm_in[3];
+			pp_out[1] = pm_in[7];
+			pp_out[2] = pm_in[11];
+		}
+		auto s_re2pm(const double *re_in, double *pm_out, const char *eu_type_in) noexcept->void 
+		{ 
+			// 补充默认参数 //
+			re_in = re_in ? re_in : default_re();
+			double pm_out_default[16];
+			pm_out = pm_out ? pm_out : pm_out_default;
+
+			// 正式开始计算 //
+			s_re2rm(re_in, pm_out, eu_type_in, 4); 
+		};
+		auto s_pm2re(const double *pm_in, double *re_out, const char *eu_type_in) noexcept->void 
+		{ 
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			double re_out_default[3];
+			re_out = re_out ? re_out : re_out_default;
+
+			// 正式开始计算 //
+			s_rm2re(pm_in, re_out, eu_type_in, 4); 
+		};
+		auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->void 
+		{ 
+			// 补充默认参数 //
+			rq_in = rq_in ? rq_in : default_rq();
+			double pm_out_default[16];
+			pm_out = pm_out ? pm_out : pm_out_default;
+
+			// 正式开始计算 //
+			s_rq2rm(rq_in, pm_out, 4); 
+		};
+		auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->void 
+		{ 
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			double rq_out_default[4];
+			rq_out = rq_out ? rq_out : rq_out_default;
+
+			// 正式开始计算 //
+			s_rm2rq(pm_in, rq_out, 4); 
+		};
+		auto s_rm2pm(const double *rm_in, double *pm_out) noexcept->void
+		{
+			// 补充默认参数 //
+			rm_in = rm_in ? rm_in : default_rm();
+			double pm_out_default[16];
+			pm_out = pm_out ? pm_out : pm_out_default;
+			
+			// 正式开始计算 //
+			std::copy(rm_in, rm_in + 3, pm_out);
+			std::copy(rm_in + 3, rm_in + 6, pm_out + 4);
+			std::copy(rm_in + 6, rm_in + 9, pm_out + 8);
+		}
+		auto s_pm2rm(const double *pm_in, double *rm_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			double rm_out_default[9];
+			rm_out = rm_out ? rm_out : rm_out_default;
+
+			// 正式开始计算 //
+			std::copy(pm_in, pm_in + 3, rm_out);
+			std::copy(pm_in + 4, pm_in + 7, rm_out + 3);
+			std::copy(pm_in + 8, pm_in + 11, rm_out + 6);
+		}
+		auto s_pe2pm(const double *pe_in, double *pm_out, const char *eu_type_in) noexcept->void
+		{
+			// 补充默认参数 //
+			pe_in = pe_in ? pe_in : default_pe();
+			double pm_out_default[16];
+			pm_out = pm_out ? pm_out : pm_out_default;
+
+			// 正式开始计算 //
+			s_pp2pm(pe_in, pm_out);
+			s_re2pm(pe_in + 3, pm_out, eu_type_in);
 
 			pm_out[12] = 0;
 			pm_out[13] = 0;
 			pm_out[14] = 0;
 			pm_out[15] = 1;
 		}
-		auto s_pm2pe(const double *pm_in, double *pe_out, const char *EurType) noexcept->void
+		auto s_pm2pe(const double *pm_in, double *pe_out, const char *eu_type_in) noexcept->void
 		{
-			static const double P[3][3] = { { 0, -1, 1 }, { 1, 0, -1 }, { -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
-
-			double phi13, phi31;
-			double phi[3];
-			double s_, c_;
-
-			const int a = EurType[0] - '1';
-			const int b = EurType[1] - '1';
-			const int c = EurType[2] - '1';
-			const int d = 3 - a - b;
-			const int e = 3 - b - c;
-
-			// 计算phi2 //
-			s_ = std::sqrt((pm_in[4 * a + b] * pm_in[4 * a + b] + pm_in[4 * a + e] * pm_in[4 * a + e]
-				+ pm_in[4 * b + c] * pm_in[4 * b + c] + pm_in[4 * d + c] * pm_in[4 * d + c])/2);
-				
-			c_ = pm_in[4 * a + c];
-			phi[1] = (a == c ? std::atan2(s_,c_) : std::atan2(P[a][c]*c_,s_));
-
-			// 计算phi1和phi3 //
-			phi13 = std::atan2(pm_in[4 * b + e] - pm_in[4 * d + b], pm_in[4 * b + b] + pm_in[4 * d + e]);
-			phi31 = std::atan2(pm_in[4 * b + e] + pm_in[4 * d + b], pm_in[4 * b + b] - pm_in[4 * d + e]);
-
-			phi[0] = P[b][d] * (phi13 - phi31) / 2;
-			phi[2] = P[b][e] * (phi13 + phi31) / 2;
-
-			// 检查 //
-			double sig[4];
-			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * pm_in[a * 4 + b] * std::sin(phi[2]);
-			sig[1] = (P[a][e] + Q[a][e])*pm_in[4 * a + e] * std::cos(phi[2]);
-			sig[2] = (P[d][c] + Q[d][c])*P[b][d] * pm_in[b * 4 + c] * std::sin(phi[0]);
-			sig[3] = (P[d][c] + Q[d][c])*pm_in[4 * d + c] * std::cos(phi[0]);
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			double pe_out_default[9];
+			pe_out = pe_out ? pe_out : pe_out_default;
 			
-			if (*std::max_element(sig, sig + 4, [](double d1, double d2) {return (std::abs(d1) < std::abs(d2)); })<0)
-			{
-				phi[0] += PI;
-				phi[2] += PI;
-			}
-
-			phi[0] = (phi[0] < 0 ? phi[0] + 2 * PI : phi[0]);
-			phi[2] = (phi[2] < 0 ? phi[2] + 2 * PI : phi[2]);
-
-			// 对位置赋值 //
-			std::copy_n(phi, 3, pe_out + 3);
-			
-			pe_out[0] = pm_in[3];
-			pe_out[1] = pm_in[7];
-			pe_out[2] = pm_in[11];
-
+			// 正式开始计算 //
+			s_pm2pp(pm_in, pe_out);
+			s_pm2re(pm_in, pe_out + 3, eu_type_in);
 		}
 		auto s_pq2pm(const double *pq_in, double *pm_out) noexcept->void
 		{
-			const double &x = pq_in[0];
-			const double &y = pq_in[1];
-			const double &z = pq_in[2];
-			const double &q1 = pq_in[3];
-			const double &q2 = pq_in[4];
-			const double &q3 = pq_in[5];
-			const double &q4 = pq_in[6];
+			// 补充默认参数 //
+			pq_in = pq_in ? pq_in : default_pq();
+			double pm_out_default[16];
+			pm_out = pm_out ? pm_out : pm_out_default;
 
-			pm_out[0] = 1 - 2 * q2 * q2 - 2 * q3 * q3;
-			pm_out[1] = 2 * q1 * q2 - 2 * q4 * q3;
-			pm_out[2] = 2 * q1 * q3 + 2 * q4 * q2;;
-			pm_out[3] = x;
-
-			pm_out[4] = 2 * q1 * q2 + 2 * q4 * q3;
-			pm_out[5] = 1 - 2 * q1 * q1 - 2 * q3 * q3;
-			pm_out[6] = 2 * q2 * q3 - 2 * q4 * q1;
-			pm_out[7] = y;
-
-			pm_out[8] = 2 * q1 * q3 - 2 * q4 * q2;
-			pm_out[9] = 2 * q2 * q3 + 2 * q4 * q1;
-			pm_out[10] = 1 - 2 * q1 * q1 - 2 * q2 * q2;
-			pm_out[11] = z;
+			// 正式开始计算 //
+			s_pp2pm(pq_in, pm_out);
+			s_rq2pm(pq_in + 3, pm_out);
 
 			pm_out[12] = 0;
 			pm_out[13] = 0;
@@ -248,393 +332,1672 @@ namespace aris
 		}
 		auto s_pm2pq(const double *pm_in, double *pq_out) noexcept->void
 		{
-			double &x = pq_out[0];
-			double &y = pq_out[1];
-			double &z = pq_out[2];
-			double &q1 = pq_out[3];
-			double &q2 = pq_out[4];
-			double &q3 = pq_out[5];
-			double &q4 = pq_out[6];
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			double pq_out_default[7];
+			pq_out = pq_out ? pq_out : pq_out_default;
 
-			double *q = &pq_out[3];
-
-			double tr = pm_in[0] + pm_in[5] + pm_in[10];
-
-			// 因为无法确保在截断误差的情况下，tr+1一定为正，因此这里需要判断 //
-			q4 = tr>-1 ? std::sqrt((tr + 1) / 4) : 0;
-
-			if (q4 > 0.1)
-			{
-				q1 = (pm_in[9] - pm_in[6]) / q4 / 4;
-				q2 = (pm_in[2] - pm_in[8]) / q4 / 4;
-				q3 = (pm_in[4] - pm_in[1]) / q4 / 4;
-			}
-			else
-			{
-				q1 = std::sqrt((1 + pm_in[0] - pm_in[5] - pm_in[10])) / 2;
-				q2 = std::sqrt((1 + pm_in[5] - pm_in[0] - pm_in[10])) / 2;
-				q3 = std::sqrt((1 + pm_in[10] - pm_in[0] - pm_in[5])) / 2;
-
-				// qp_out 是通过开方计算而得，因此一定为正 //
-				int id = std::max_element(q, q + 3) - q;
-
-				q[id] *= s_sgn2(pm_in[(id + 2) % 3 * 4 + (id + 1) % 3] - pm_in[(id + 1) % 3 * 4 + (id + 2) % 3]);
-				q[(id + 1) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 1) % 3] + pm_in[((id + 1) % 3) * 4 + id]);
-				q[(id + 2) % 3] *= s_sgn2(q[id])*s_sgn2(pm_in[id * 4 + (id + 2) % 3] + pm_in[((id + 2) % 3) * 4 + id]);
-			}
-
-			x = pm_in[3];
-			y = pm_in[7];
-			z = pm_in[11];
+			// 正式开始计算 //
+			s_pm2pp(pm_in, pq_out);
+			s_pm2rq(pm_in, pq_out + 3);
 		}
-		auto s_pq2pe(const double *pq_in, double *pe_out, const char *EurType) noexcept->void
+
+		auto s_wm2we(const double *rm_in, const double *wm_in, double *we_out, std::size_t rm_ld, std::size_t wm_ld) noexcept->void
 		{
+			// 补充默认参数 //
+			rm_in = rm_in ? rm_in : default_rm();
+			wm_in = wm_in ? wm_in : default_wm();
+			double we_out_default[3];
+			we_out = we_out ? we_out : we_out_default;
+
+			// 正式开始计算 //
+
+			// dR = w x R
+			// w x = dR * R' 
+
+			we_out[0] = wm_in[2 * wm_ld + 0] * rm_in[1 * rm_ld + 0] + wm_in[2 * wm_ld + 1] * rm_in[1 * rm_ld + 1] + wm_in[2 * wm_ld + 2] * rm_in[1 * rm_ld + 2];
+			we_out[1] = wm_in[0 * wm_ld + 0] * rm_in[2 * rm_ld + 0] + wm_in[0 * wm_ld + 1] * rm_in[2 * rm_ld + 1] + wm_in[0 * wm_ld + 2] * rm_in[2 * rm_ld + 2];
+			we_out[2] = wm_in[1 * wm_ld + 0] * rm_in[0 * rm_ld + 0] + wm_in[1 * wm_ld + 1] * rm_in[0 * rm_ld + 1] + wm_in[1 * wm_ld + 2] * rm_in[0 * rm_ld + 2];
+		}
+		auto s_we2wm(const double *we_in, const double *rm_in, double *wm_out, std::size_t rm_ld, std::size_t wm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			we_in = we_in ? we_in : default_we();
+			rm_in = rm_in ? rm_in : default_rm();
+			double wm_out_default[9];
+			wm_out = wm_out ? wm_out : wm_out_default;
+
+			// 正式开始计算 //
+			s_c3_n(3, we_in, rm_in, rm_ld, wm_out, wm_ld);
+		}
+		auto s_wq2we(const double *rq_in, const double *wq_in, double *we_out) noexcept->void
+		{
+			// 补充默认参数 //
+			rq_in = rq_in ? rq_in : default_rq();
+			wq_in = wq_in ? wq_in : default_wq();
+			double we_out_default[3];
+			we_out = we_out ? we_out : we_out_default;
+			
+			// 正式开始计算 //
+			double p11 = 2 * wq_in[0] * rq_in[0];
+			double p22 = 2 * wq_in[1] * rq_in[1];
+			double p33 = 2 * wq_in[2] * rq_in[2];
+			double p12 = wq_in[0] * rq_in[1] + rq_in[0] * wq_in[1];
+			double p13 = wq_in[0] * rq_in[2] + rq_in[0] * wq_in[2];
+			double p23 = wq_in[1] * rq_in[2] + rq_in[1] * wq_in[2];
+			double p41 = wq_in[3] * rq_in[0] + rq_in[3] * wq_in[0];
+			double p42 = wq_in[3] * rq_in[1] + rq_in[3] * wq_in[1];
+			double p43 = wq_in[3] * rq_in[2] + rq_in[3] * wq_in[2];
+
+			double rm[3][3];
+			s_rq2rm(rq_in, *rm);
+
+			we_out[0] = 2 * ((p13 - p42)*rm[1][0] + (p23 + p41)*rm[1][1] - (p11 + p22)*rm[1][2]);
+			we_out[1] = 2 * (-(p22 + p33)*rm[2][0] + (p12 - p43)*rm[2][1] + (p13 + p42)*rm[2][2]);
+			we_out[2] = 2 * ((p12 + p43)*rm[0][0] - (p11 + p33)*rm[0][1] + (p23 - p41)*rm[0][2]);
+		}
+		auto s_we2wq(const double *we_in, const double *rq_in, double *wq_out) noexcept->void
+		{
+			// 补充默认参数 //
+			we_in = we_in ? we_in : default_we();
+			rq_in = rq_in ? rq_in : default_rq();
+			double wq_out_default[3];
+			wq_out = wq_out ? wq_out : wq_out_default;
+
+			// 正式开始计算 //
+			
+			static const double S[4][3]{ { 1,-1,-1 },{ -1,1,-1 },{ -1,-1,1 },{ 1,1,1 } };
+			static const double T[4][4]{ { 0,1,1,-1 },{ 1,0,1,-1 },{ 1,1,0,-1 },{ -1,-1,-1,0 } };
+			static const int P[4][4]{ { -1,0,0,2 },{ 1,-1,1,0 },{ 2,2,-1,1 },{ 2,0,1,-1 } };
+			static const int Q[4][4]{ { -1,1,2,1 },{ 0,-1,2,2 },{ 0,1,-1,0 },{ 1,2,0,-1 } };
+			
+			double rm[3][3], wm[3][3];
+
+			s_rq2rm(rq_in, *rm);
+			s_we2wm(we_in, *rm, *wm);
+
+			int i = std::max_element(rq_in, rq_in + 4, [](double a, double b) {return std::abs(a) < std::abs(b); }) - rq_in;
+			int jkl[3]{ (i + 1) % 4 ,(i + 2) % 4 ,(i + 3) % 4 };
+			
+			wq_out[i] = (S[i][0] * wm[0][0] + S[i][1] * wm[1][1] + S[i][2] * wm[2][2]) / 8 / rq_in[i];
+
+			for (auto m : jkl) wq_out[m] = (wm[P[i][m]][Q[i][m]] + T[i][m] * wm[Q[i][m]][P[i][m]] - 4 * rq_in[m] * wq_out[i]) / 4 / rq_in[i];
+		}
+		auto s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vp_in = vp_in ? vp_in : default_vp();
+			pp_in = pp_in ? pp_in : default_pp();
+			double vs_out_default[6]{ 0,0,0,0,0,0 };
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			s_c3(pp_in, vs_out + 3, vs_out);
+			s_va(3, vp_in, vs_out);
+		}
+		auto s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			pp_in = pp_in ? pp_in : default_pp();
+			double vp_out_default[3];
+			vp_out = vp_out ? vp_out : vp_out_default;
+
+			// 正式开始计算 //
+			s_c3(vs_in + 3, pp_in, vp_out);
+			s_va(3, vs_in, vp_out);
+		}
+		auto s_we2vs(const double *we_in, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			we_in = we_in ? we_in : default_we();
+			double vs_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			std::copy(we_in, we_in + 3, vs_out + 3);
+		}
+		auto s_vs2we(const double *vs_in, double *we_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			double we_out_default[3];
+			we_out = we_out ? we_out : we_out_default;
+
+			// 正式开始计算 //
+			std::copy(vs_in + 3, vs_in + 6, we_out);
+		}
+		auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			rq_in = rq_in ? rq_in : default_rq();
+			wq_in = wq_in ? wq_in : default_wq();
+			double vs_out_default[6]{ 0,0,0,0,0,0 };
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			s_wq2we(rq_in, wq_in, vs_out + 3);
+		}
+		auto s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			rq_in = rq_in ? rq_in : default_rq();
+			double wq_out_default[4];
+			wq_out = wq_out ? wq_out : wq_out_default;
+
+			// 正式开始计算 //
+			s_we2wq(vs_in + 3, rq_in, wq_out);
+		}
+		auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out, std::size_t rm_ld, std::size_t wm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			rm_in = rm_in ? rm_in : default_rm();
+			wm_in = wm_in ? wm_in : default_wm();
+			double vs_out_default[6]{ 0,0,0,0,0,0 };
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			s_wm2we(rm_in, wm_in, vs_out + 3, rm_ld, wm_ld);
+		}
+		auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out, std::size_t rm_ld, std::size_t wm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			rm_in = rm_in ? rm_in : default_rm();
+			double wm_out_default[9];
+			wm_out = wm_out ? wm_out : wm_out_default;
+
+			// 正式开始计算 //
+			s_we2wm(vs_in + 3, rm_in, wm_out, rm_ld, wm_ld);
+		}
+		auto s_ve2vs(const double *pp_in, const double *ve_in, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pp_in = pp_in ? pp_in : default_pp();
+			ve_in = ve_in ? ve_in : default_ve();
+			double vs_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			s_we2vs(ve_in + 3, vs_out);
+			s_vp2vs(pp_in, ve_in, vs_out);
+		}
+		auto s_vs2ve(const double *vs_in, const double *pp_in, double *ve_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			pp_in = pp_in ? pp_in : default_pp();
+			double ve_out_default[6];
+			ve_out = ve_out ? ve_out : ve_out_default;
+
+			// 正式开始计算 //
+			s_vs2we(vs_in, ve_out + 3);
+			s_vs2vp(vs_in, pp_in, ve_out);
+		}
+		auto s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			vm_in = vm_in ? vm_in : default_vm();
+			double vs_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			double pp[3]{ pm_in[3],pm_in[7],pm_in[11] };
+			double vp[3]{ vm_in[3],vm_in[7],vm_in[11] };
+			s_wm2vs(pm_in, vm_in, vs_out, 4, 4);
+			s_vp2vs(pp, vp, vs_out);
+		}
+		auto s_vs2vm(const double *vs_in, const double *pm_in, double *vm_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			pm_in = pm_in ? pm_in : default_pm();
+			double vm_out_default[16];
+			vm_out = vm_out ? vm_out : vm_out_default;
+
+			// 正式开始计算 //
+			double pp[3]{ pm_in[3],pm_in[7],pm_in[11] };
+			double vp[3];
+			s_vs2wm(vs_in, pm_in, vm_out, 4, 4);
+			s_vs2vp(vs_in, pp, vp);
+			
+			vm_out[3] = vp[0];
+			vm_out[7] = vp[1];
+			vm_out[11] = vp[2];
+
+			std::fill(vm_out + 12, vm_out + 16, 0);
+		}
+		auto s_vq2vs(const double *pq_in, const double *vq_in, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pq_in = pq_in ? pq_in : default_pq();
+			vq_in = vq_in ? vq_in : default_vq();
+			double vs_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			s_wq2vs(pq_in + 3, vq_in + 3, vs_out);
+			s_vp2vs(pq_in, vq_in, vs_out);
+		}
+		auto s_vs2vq(const double *vs_in, const double *pq_in, double *vq_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			pq_in = pq_in ? pq_in : default_pq();
+			double vq_out_default[7];
+			vq_out = vq_out ? vq_out : vq_out_default;
+
+			// 正式开始计算 //
+			s_vs2wq(vs_in, pq_in + 3, vq_out + 3);
+			s_vs2vp(vs_in, pq_in, vq_out);
+		}
+
+		auto s_xm2xe(const double *rm_in, const double *wm_in, const double *xm_in, double *xe_out, double *we_out, std::size_t rm_ld, std::size_t wm_ld, std::size_t xm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			rm_in = rm_in ? rm_in : default_rm();
+			wm_in = wm_in ? wm_in : default_wm();
+			xm_in = xm_in ? xm_in : default_xm();
+			double we_out_default[3];
+			double xe_out_default[3];
+			we_out = we_out ? we_out : we_out_default;
+			xe_out = xe_out ? xe_out : xe_out_default;
+
+			// 正式开始计算 //
+
+			// ddR = x x R + w x dR
+			// x x = (ddR - w x dR) * R' 
+
+			s_wm2we(rm_in, wm_in, we_out, rm_ld, wm_ld);
+
+			double tem[9];
+			std::copy(xm_in + 0 * xm_ld, xm_in + 0 * xm_ld + 3, tem + 0);
+			std::copy(xm_in + 1 * xm_ld, xm_in + 1 * xm_ld + 3, tem + 3);
+			std::copy(xm_in + 2 * xm_ld, xm_in + 2 * xm_ld + 3, tem + 6);
+			
+			s_c3_n(3, -1, we_out, wm_in, wm_ld, 1, tem, 3);
+
+			xe_out[0] = tem[2 * 3 + 0] * rm_in[1 * rm_ld + 0] + tem[2 * 3 + 1] * rm_in[1 * rm_ld + 1] + tem[2 * 3 + 2] * rm_in[1 * rm_ld + 2];
+			xe_out[1] = tem[0 * 3 + 0] * rm_in[2 * rm_ld + 0] + tem[0 * 3 + 1] * rm_in[2 * rm_ld + 1] + tem[0 * 3 + 2] * rm_in[2 * rm_ld + 2];
+			xe_out[2] = tem[1 * 3 + 0] * rm_in[0 * rm_ld + 0] + tem[1 * 3 + 1] * rm_in[0 * rm_ld + 1] + tem[1 * 3 + 2] * rm_in[0 * rm_ld + 2];
+		}
+		auto s_xe2xm(const double *we_in, const double *xe_in, const double *rm_in, double *xm_out, double *wm_out, std::size_t rm_ld, std::size_t wm_ld, std::size_t xm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			we_in = we_in ? we_in : default_we();
+			xe_in = xe_in ? xe_in : default_xe();
+			rm_in = rm_in ? rm_in : default_rm();
+			double wm_out_default[9];
+			double xm_out_default[9];
+			wm_out = wm_out ? wm_out : wm_out_default;
+			xm_out = xm_out ? xm_out : xm_out_default;
+			
+			// 正式开始计算 //
+
+			// ddR = x x R + w x dR
+			// w x = dR * R' 
+
+			s_we2wm(we_in, rm_in, wm_out, rm_ld, wm_ld);
+			
+			s_c3_n(3, we_in, wm_out, wm_ld, xm_out, xm_ld);
+			s_c3_n(3, 1, xe_in, rm_in, rm_ld, 1, xm_out, xm_ld);
+		}
+		auto s_xq2xe(const double *rq_in, const double *wq_in, const double *xq_in, double *xe_out, double *we_out) noexcept->void
+		{
+			// 补充默认参数 //
+			rq_in = rq_in ? rq_in : default_rq();
+			wq_in = wq_in ? wq_in : default_wq();
+			xq_in = xq_in ? xq_in : default_xq();
+			double we_out_default[3];
+			double xe_out_default[3];
+			we_out = we_out ? we_out : we_out_default;
+			xe_out = xe_out ? xe_out : xe_out_default;
+
+			// 正式开始计算 //
+			double p11 = 2 * wq_in[0] * rq_in[0];
+			double p22 = 2 * wq_in[1] * rq_in[1];
+			double p33 = 2 * wq_in[2] * rq_in[2];
+			double p12 = wq_in[0] * rq_in[1] + rq_in[0] * wq_in[1];
+			double p13 = wq_in[0] * rq_in[2] + rq_in[0] * wq_in[2];
+			double p23 = wq_in[1] * rq_in[2] + rq_in[1] * wq_in[2];
+			double p41 = wq_in[3] * rq_in[0] + rq_in[3] * wq_in[0];
+			double p42 = wq_in[3] * rq_in[1] + rq_in[3] * wq_in[1];
+			double p43 = wq_in[3] * rq_in[2] + rq_in[3] * wq_in[2];
+
+			double rm[3][3], wm[3][3];
+			s_rq2rm(rq_in, *rm);
+
+			we_out[0] = 2 * ((p13 - p42)*rm[1][0] + (p23 + p41)*rm[1][1] - (p11 + p22)*rm[1][2]);
+			we_out[1] = 2 * (-(p22 + p33)*rm[2][0] + (p12 - p43)*rm[2][1] + (p13 + p42)*rm[2][2]);
+			we_out[2] = 2 * ((p12 + p43)*rm[0][0] - (p11 + p33)*rm[0][1] + (p23 - p41)*rm[0][2]);
+
+			s_we2wm(we_out, *rm, *wm);
+
+			double t11 = 2 * (xq_in[0] * rq_in[0] + wq_in[0] * wq_in[0]);
+			double t22 = 2 * (xq_in[1] * rq_in[1] + wq_in[1] * wq_in[1]);
+			double t33 = 2 * (xq_in[2] * rq_in[2] + wq_in[2] * wq_in[2]);
+			double t12 = xq_in[0] * rq_in[1] + 2 * wq_in[0] * wq_in[1] + rq_in[0] * xq_in[1];
+			double t13 = xq_in[0] * rq_in[2] + 2 * wq_in[0] * wq_in[2] + rq_in[0] * xq_in[2];
+			double t23 = xq_in[1] * rq_in[2] + 2 * wq_in[1] * wq_in[2] + rq_in[1] * xq_in[2];
+			double t41 = xq_in[3] * rq_in[0] + 2 * wq_in[3] * wq_in[0] + rq_in[3] * xq_in[0];
+			double t42 = xq_in[3] * rq_in[1] + 2 * wq_in[3] * wq_in[1] + rq_in[3] * xq_in[1];
+			double t43 = xq_in[3] * rq_in[2] + 2 * wq_in[3] * wq_in[2] + rq_in[3] * xq_in[2];
+
+			xe_out[0] = 2 * ((t13 - t42)*rm[1][0] + (t23 + t41)*rm[1][1] - (t11 + t22)*rm[1][2]) + 2 * ((p13 - p42)*wm[1][0] + (p23 + p41)*wm[1][1] - (p11 + p22)*wm[1][2]);
+			xe_out[1] = 2 * (-(t22 + t33)*rm[2][0] + (t12 - t43)*rm[2][1] + (t13 + t42)*rm[2][2]) + 2 * (-(p22 + p33)*wm[2][0] + (p12 - p43)*wm[2][1] + (p13 + p42)*wm[2][2]);
+			xe_out[2] = 2 * ((t12 + t43)*rm[0][0] - (t11 + t33)*rm[0][1] + (t23 - t41)*rm[0][2]) + 2 * ((p12 + p43)*wm[0][0] - (p11 + p33)*wm[0][1] + (p23 - p41)*wm[0][2]);
+		}
+		auto s_xe2xq(const double *we_in, const double *xe_in, const double *rq_in, double *xq_out, double *wq_out) noexcept->void
+		{
+			// 补充默认参数 //
+			we_in = we_in ? we_in : default_we();
+			xe_in = xe_in ? xe_in : default_xe();
+			rq_in = rq_in ? rq_in : default_rq();
+			double xq_out_default[4];
+			double wq_out_default[4];
+			xq_out = xq_out ? xq_out : xq_out_default;
+			wq_out = wq_out ? wq_out : wq_out_default;
+
+			// 正式开始计算 //
+			static const double S[4][3]{ { 1,-1,-1 },{ -1,1,-1 },{ -1,-1,1 },{ 1,1,1 } };
+			static const double T[4][4]{ { 0,1,1,-1 },{ 1,0,1,-1 },{ 1,1,0,-1 },{ -1,-1,-1,0 } };
+			static const int P[4][4]{ { -1,0,0,2 },{ 1,-1,1,0 },{ 2,2,-1,1 },{ 2,0,1,-1 } };
+			static const int Q[4][4]{ { -1,1,2,1 },{ 0,-1,2,2 },{ 0,1,-1,0 },{ 1,2,0,-1 } };
+
+			double rm[3][3], wm[3][3], xm[3][3];
+
+			s_rq2rm(rq_in, *rm);
+			s_xe2xm(we_in, xe_in, *rm, *xm, *wm);
+
+			int i = std::max_element(rq_in, rq_in + 4, [](double a, double b) {return std::abs(a) < std::abs(b); }) - rq_in;
+			int jkl[3]{ (i + 1) % 4 ,(i + 2) % 4 ,(i + 3) % 4 };
+
+			wq_out[i] = (S[i][0] * wm[0][0] + S[i][1] * wm[1][1] + S[i][2] * wm[2][2]) / 8 / rq_in[i];
+			xq_out[i] = (S[i][0] * xm[0][0] + S[i][1] * xm[1][1] + S[i][2] * xm[2][2] - 8 * wq_out[i] * wq_out[i]) / 8 / rq_in[i];
+
+			for (auto m : jkl)
+			{
+				wq_out[m] = (wm[P[i][m]][Q[i][m]] + T[i][m] * wm[Q[i][m]][P[i][m]] - 4 * rq_in[m] * wq_out[i]) / 4 / rq_in[i];
+				xq_out[m] = (xm[P[i][m]][Q[i][m]] + T[i][m] * xm[Q[i][m]][P[i][m]] - 8 * wq_out[m] * wq_out[i] - 4 * rq_in[m] * xq_out[i]) / 4 / rq_in[i];
+			}
+		}
+		auto s_ap2as(const double *pp_in, const double *vp_in, const double *ap_in, double *as_out, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pp_in = pp_in ? pp_in : default_pp();
+			vp_in = vp_in ? vp_in : default_vp();
+			ap_in = ap_in ? ap_in : default_ap();
+			double as_out_default[6];
+			double vs_out_default[6];
+			as_out = as_out ? as_out : as_out_default;
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			s_vp2vs(pp_in, vp_in, vs_out);
+
+			std::copy(ap_in, ap_in + 3, as_out);
+			s_c3(-1, vs_out + 3, vp_in, 1, as_out);
+			s_c3(-1, as_out + 3, pp_in, 1, as_out);
+		}
+		auto s_as2ap(const double *vs_in, const double *as_in, const double *pp_in, double *ap_out, double *vp_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			as_in = as_in ? as_in : default_as();
+			pp_in = pp_in ? pp_in : default_pp();
+			double vp_out_default[3];
+			double ap_out_default[3];
+			ap_out = ap_out ? ap_out : ap_out_default;
+			vp_out = vp_out ? vp_out : vp_out_default;
+
+			// 正式开始计算 //
+			s_vs2vp(vs_in, pp_in, vp_out);
+
+			std::copy(as_in, as_in + 3, ap_out);
+			s_c3(1, vs_in + 3, vp_out, 1, ap_out);
+			s_c3(1, as_in + 3, pp_in, 1, ap_out);
+		}
+		auto s_xe2as(const double *xe_in, double *as_out) noexcept->void
+		{
+			// 补充默认参数 //
+			xe_in = xe_in ? xe_in : default_xe();
+			double as_out_default[6];
+			as_out = as_out ? as_out : as_out_default;
+
+			// 正式开始计算 //
+			std::copy(xe_in, xe_in + 3, as_out + 3);
+		}
+		auto s_as2xe(const double *as_in, double *xe_out) noexcept->void
+		{
+			// 补充默认参数 //
+			as_in = as_in ? as_in : default_as();
+			double xe_out_default[3];
+			xe_out = xe_out ? xe_out : xe_out_default;
+
+			// 正式开始计算 //
+			std::copy(as_in + 3, as_in + 6, xe_out);
+		}
+		auto s_xq2as(const double *rq_in, const double *wq_in, const double *xq_in, double *as_out, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			rq_in = rq_in ? rq_in : default_rq();
+			wq_in = wq_in ? wq_in : default_wq();
+			xq_in = xq_in ? xq_in : default_xq();
+			double as_out_default[6];
+			double vs_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+			as_out = as_out ? as_out : as_out_default;
+
+			// 正式开始计算 //
+			s_xq2xe(rq_in, wq_in, xq_in, as_out + 3, vs_out + 3);
+		}
+		auto s_as2xq(const double *vs_in, const double *as_in, const double *rq_in, double *xq_out, double *wq_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			as_in = as_in ? as_in : default_as();
+			rq_in = rq_in ? rq_in : default_rq();
+			double wq_out_default[4];
+			double xq_out_default[4];
+			wq_out = wq_out ? wq_out : wq_out_default;
+			xq_out = xq_out ? xq_out : xq_out_default;
+
+			// 正式开始计算 //
+			s_xe2xq(vs_in + 3, as_in +3, rq_in, xq_out, wq_out);
+		}
+		auto s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out, double *vs_out, std::size_t rm_ld, std::size_t wm_ld, std::size_t xm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			rm_in = rm_in ? rm_in : default_rm();
+			wm_in = wm_in ? wm_in : default_wm();
+			xm_in = xm_in ? xm_in : default_xm();
+			double vs_out_default[6];
+			double as_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+			as_out = as_out ? as_out : as_out_default;
+
+			// 正式开始计算 //
+			s_xm2xe(rm_in, wm_in, xm_in, as_out + 3, vs_out + 3, rm_ld, wm_ld, xm_ld);
+		}
+		auto s_as2xm(const double *vs_in, const double *as_in, const double *rm_in, double *xm_out, double *wm_out, std::size_t rm_ld, std::size_t wm_ld, std::size_t xm_ld) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			as_in = as_in ? as_in : default_as();
+			rm_in = rm_in ? rm_in : default_rm();
+			double wm_out_default[9];
+			double xm_out_default[9];
+			wm_out = wm_out ? wm_out : wm_out_default;
+			xm_out = xm_out ? xm_out : xm_out_default;
+
+			// 正式开始计算 //
+			s_xe2xm(vs_in + 3, as_in + 3, rm_in, xm_out, wm_out, rm_ld, wm_ld, xm_ld);
+		}
+		auto s_ae2as(const double *pp_in, const double *ve_in, const double *ae_in, double *as_out, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pp_in = pp_in ? pp_in : default_pp();
+			ve_in = ve_in ? ve_in : default_ve();
+			ae_in = ae_in ? ae_in : default_ae();
+			double as_out_default[6];
+			double vs_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+			as_out = as_out ? as_out : as_out_default;
+
+			// 正式开始计算 //
+			s_we2vs(ve_in + 3, vs_out);
+			s_xe2as(ae_in + 3, as_out);
+			s_ap2as(pp_in, ve_in, ae_in, as_out, vs_out);
+		}
+		auto s_as2ae(const double *vs_in, const double *as_in, const double *pp_in, double *ae_out, double *ve_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			as_in = as_in ? as_in : default_as();
+			pp_in = pp_in ? pp_in : default_pp();
+			double ve_out_default[6];
+			double ae_out_default[6];
+			ve_out = ve_out ? ve_out : ve_out_default;
+			ae_out = ae_out ? ae_out : ae_out_default;
+
+			// 正式开始计算 //
+			s_vs2we(vs_in, ve_out + 3);
+			s_as2xe(as_in, ae_out + 3);
+			s_as2ap(vs_in, as_in, pp_in, ae_out, ve_out);
+		}
+		auto s_am2as(const double *pm_in, const double *vm_in, const double *am_in, double *as_out, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			vm_in = vm_in ? vm_in : default_vm();
+			am_in = am_in ? am_in : default_am();
+			double vs_out_default[6];
+			double as_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+			as_out = as_out ? as_out : as_out_default;
+
+			// 正式开始计算 //
+			double pp[3]{ pm_in[3],pm_in[7],pm_in[11] };
+			double vp[3]{ vm_in[3],vm_in[7],vm_in[11] };
+			double ap[3]{ am_in[3],am_in[7],am_in[11] };
+
+			s_xm2as(pm_in, vm_in, am_in, as_out, vs_out, 4, 4, 4);
+			s_ap2as(pp, vp, ap, as_out, vs_out);
+		}
+		auto s_as2am(const double *vs_in, const double *as_in, const double *pm_in, double *am_out, double *vm_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			as_in = as_in ? as_in : default_as();
+			pm_in = pm_in ? pm_in : default_pm();
+			double vm_out_default[16];
+			double am_out_default[16];
+			vm_out = vm_out ? vm_out : vm_out_default;
+			am_out = am_out ? am_out : am_out_default;
+
+			// 正式开始计算 //
+			double pp[3]{ pm_in[3], pm_in[7], pm_in[11] };
+			double vp[3], ap[3];
+
+			s_as2ap(vs_in, as_in, pp, ap, vp);
+			s_as2xm(vs_in, as_in, pm_in, am_out, vm_out, 4, 4, 4);
+
+			vm_out[3] = vp[0];
+			vm_out[7] = vp[1];
+			vm_out[11] = vp[2];
+			std::fill(vm_out + 12, vm_out + 16, 0);
+
+			am_out[3] = ap[0];
+			am_out[7] = ap[1];
+			am_out[11] = ap[2];
+			std::fill(am_out + 12, am_out + 16, 0);
+		}
+		auto s_aq2as(const double *pq_in, const double *vq_in, const double *aq_in, double *as_out, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pq_in = pq_in ? pq_in : default_pq();
+			vq_in = vq_in ? vq_in : default_vq();
+			aq_in = aq_in ? aq_in : default_aq();
+			double vs_out_default[6];
+			double as_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+			as_out = as_out ? as_out : as_out_default;
+
+			// 正式开始计算 //
+			s_xq2as(pq_in + 3, vq_in + 3, aq_in + 3, as_out, vs_out);
+			s_ap2as(pq_in, vq_in, aq_in, as_out, vs_out);
+
+		}
+		auto s_as2aq(const double *vs_in, const double *as_in, const double *pq_in, double *aq_out, double *vq_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			as_in = as_in ? as_in : default_as();
+			pq_in = pq_in ? pq_in : default_pq();
+			double vq_out_default[7];
+			double aq_out_default[7];
+			vq_out = vq_out ? vq_out : vq_out_default;
+			aq_out = aq_out ? aq_out : aq_out_default;
+
+			// 正式开始计算 //
+			s_as2xq(vs_in, as_in, pq_in + 3, aq_out + 3, vq_out + 3);
+			s_as2ap(vs_in, as_in, pq_in, aq_out, vq_out);
+		}
+
+		auto s_pq2pe(const double *pq_in, double *pe_out, const char *eu_type) noexcept->void
+		{
+			// 补充默认参数 //
+			pq_in = pq_in ? pq_in : default_pq();
+			double pe_out_default[6];
+			pe_out = pe_out ? pe_out : pe_out_default;
+
+			// 正式开始计算 //
+			
 			double pm[16];
 			s_pq2pm(pq_in, pm);
-			s_pm2pe(pm, pe_out, EurType);
+			s_pm2pe(pm, pe_out, eu_type);
 		}
-		auto s_pe2pq(const double *pe_in, double *pq_out, const char *EurType) noexcept->void
+		auto s_pe2pq(const double *pe_in, double *pq_out, const char *eu_type) noexcept->void
 		{
+			// 补充默认参数 //
+			pe_in = pe_in ? pe_in : default_pe();
+			double pq_out_default[6];
+			pq_out = pq_out ? pq_out : pq_out_default;
+
+			// 正式开始计算 //
 			double pm[16];
-			s_pe2pm(pe_in, pm, EurType);
+			s_pe2pm(pe_in, pm, eu_type);
 			s_pm2pq(pm, pq_out);
 		}
-		auto s_pe2pe(const char* eur1_type_in, const double *pe_in, const char* eur2_type_in, double *pe_out) noexcept->void
+		auto s_iv2is(const double * iv_in, double *is_out) noexcept->void
 		{
-			double pm[16];
-			s_pe2pm(pe_in, pm, eur1_type_in);
-			s_pm2pe(pm, pe_out, eur2_type_in);
-		}
-		auto s_vq2v(const double *pq_in, const double *vq_in, double *vel_out) noexcept->void
-		{
-			const double *q = &pq_in[3];
-			const double *vq = &vq_in[3];
+			// 补充默认参数 //
+			iv_in = iv_in ? iv_in : default_iv();
+			double is_out_default[10];
+			is_out = is_out ? is_out : is_out_default;
+
+			// 正式开始计算 //
 			
-			double p12 = q[0] * vq[1] + q[1] * vq[0];
-			double p13 = q[0] * vq[2] + q[2] * vq[0];
-			double p23 = q[1] * vq[2] + q[2] * vq[1];
-			double p41 = q[3] * vq[0] + q[0] * vq[3];
-			double p42 = q[3] * vq[1] + q[1] * vq[3];
-			double p43 = q[3] * vq[2] + q[2] * vq[3];
+			std::fill_n(is_out, 36, 0);
 
-			double pm[4][4];
-			s_pq2pm(pq_in, *pm);
+			is_out[0] = iv_in[0];
+			is_out[7] = iv_in[0];
+			is_out[14] = iv_in[0];
 
-			vel_out[3] = 2 * (p13 - p42)*pm[1][0]                    + 2 * (p23 + p41)*pm[1][1]                   - 4 * (q[0] * vq[0] + q[1] * vq[1])*pm[1][2];
-			vel_out[4] = -4 * (q[1] * vq[1] + q[2] * vq[2])*pm[2][0] + 2 * (p12 - p43)*pm[2][1]                   + 2 * (p13 + p42)*pm[2][2];
-			vel_out[5] = 2 * (p12 + p43)*pm[0][0]                    - 4 * (q[0] * vq[0] + q[2] * vq[2])*pm[0][1] + 2 * (p23 - p41)*pm[0][2];
-		
-			//note only first 3 elements
-			std::copy_n(vq_in, 3, vel_out);
-			
+			is_out[4] = iv_in[3];
+			is_out[5] = -iv_in[2];
+			is_out[9] = -iv_in[3];
+			is_out[11] = iv_in[1];
+			is_out[15] = iv_in[2];
+			is_out[16] = -iv_in[1];
+
+			is_out[19] = -iv_in[3];
+			is_out[20] = iv_in[2];
+			is_out[24] = iv_in[3];
+			is_out[26] = -iv_in[1];
+			is_out[30] = -iv_in[2];
+			is_out[31] = iv_in[1];
+
+			is_out[21] = iv_in[4];
+			is_out[22] = iv_in[7];
+			is_out[23] = iv_in[8];
+			is_out[27] = iv_in[7];
+			is_out[28] = iv_in[5];
+			is_out[29] = iv_in[9];
+			is_out[33] = iv_in[8];
+			is_out[34] = iv_in[9];
+			is_out[35] = iv_in[6];
 		}
-		auto s_v2vq(const double *pm_in, const double *vel_in, double *vq_out) noexcept->void
+		auto s_is2iv(const double * is_in, double *iv_out) noexcept->void
 		{
-			double pq[7];
-			s_pm2pq(pm_in, pq);
+			// 补充默认参数 //
+			is_in = is_in ? is_in : default_is();
+			double iv_out_default[10];
+			iv_out = iv_out ? iv_out : iv_out_default;
 
-			double *q = &pq[3];
-			double *vq = &vq_out[3];
-
-			double vpm[4][4];
-			s_v_cro_pm(vel_in, pm_in, *vpm);
-
-			int i = std::max_element(q, q + 4, [](double a, double b) {return std::abs(a) < std::abs(b); }) - q;
-
-			if (i == 3)
-			{
-				vq[3] = (vpm[0][0] + vpm[1][1] + vpm[2][2]) / 8 / q[3];
-
-				vq[0] = (vpm[2][1] - vpm[1][2] - 4 * q[0] * vq[3]) / 4 / q[3];
-				vq[1] = (vpm[0][2] - vpm[2][0] - 4 * q[1] * vq[3]) / 4 / q[3];
-				vq[2] = (vpm[1][0] - vpm[0][1] - 4 * q[2] * vq[3]) / 4 / q[3];
-			}
-			else
-			{
-				int j = (i + 1) % 3;
-				int k = (i + 2) % 3;
-				
-				vq[i] = (vpm[i][i] - vpm[j][j] - vpm[k][k]) / 8 * q[i];
-				vq[j] = (vpm[j][i] + vpm[i][j] - 4 * q[j] * vq[i]) / 4 * q[i];
-				vq[k] = (vpm[k][i] + vpm[i][k] - 4 * q[k] * vq[i]) / 4 * q[i];
-				vq[3] = (vpm[k][j] - vpm[j][k] - 4 * q[4] * vq[i]) / 4 * q[i];
-			}
-
-			//note that only first 3 elements
-			std::copy_n(vel_in, 3, vq_out);
+			// 正式开始计算 //
+			iv_out[0] = is_in[0];
+			iv_out[1] = is_in[11];
+			iv_out[2] = is_in[15];
+			iv_out[3] = is_in[4];
+			iv_out[4] = is_in[21];
+			iv_out[5] = is_in[28];
+			iv_out[6] = is_in[35];
+			iv_out[7] = is_in[22];
+			iv_out[8] = is_in[23];
+			iv_out[9] = is_in[29];
 		}
-		
-		auto s_vp(const double *pnt_in, const double *vel_in, double *vp_out) noexcept->void
+		auto s_im2is(const double mass_in, const double * in_in, const double *pm_in, double *is_out) noexcept->void
 		{
-			s_cro3(vel_in + 3, pnt_in, vp_out);
-			s_daxpy(3, 1, vel_in, 1, vp_out, 1);
-		}
-		auto s_ap(const double *pnt_in, const double *vel_in, const double *acc_in, double *ap_out) noexcept->void
-		{
-			double tem1[3], tem2[3], tem3[3];
-			//omega cross omega cross r
-			s_cro3(vel_in + 3, pnt_in, tem2);
-			s_cro3(vel_in + 3, tem2, tem1);
+			// 补充默认参数 //
+			in_in = in_in ? in_in : default_in();
+			pm_in = pm_in ? pm_in : default_pm();
+			double is_out_default[36];
+			is_out = is_out ? is_out : is_out_default;
 
-			s_cro3(vel_in + 3, vel_in, tem2);
+			// 正式开始计算 //
+			double tem[6][6], tmf[6][6];
 
-			s_cro3(acc_in + 3, pnt_in, tem3);
+			is_out[0] = mass_in;
+			is_out[7] = mass_in;
+			is_out[14] = mass_in;
 
-			ap_out[0] = acc_in[0] + tem1[0] + tem2[0] + tem3[0];
-			ap_out[1] = acc_in[1] + tem1[1] + tem2[1] + tem3[1];
-			ap_out[2] = acc_in[2] + tem1[2] + tem2[2] + tem3[2];
+			is_out[21] = in_in[0];
+			is_out[22] = in_in[1];
+			is_out[23] = in_in[2];
+			is_out[27] = in_in[3];
+			is_out[28] = in_in[4];
+			is_out[29] = in_in[5];
+			is_out[33] = in_in[6];
+			is_out[34] = in_in[7];
+			is_out[35] = in_in[8];
+
+			s_tmf(pm_in, *tmf);
+			s_mdm(6, 6, 6, *tmf, 6, is_out, 6, *tem, 6);
+			s_mdm(6, 6, 6, *tem, 6, *tmf, 6, is_out, 6);
 		}
 
-		auto s_f2f(const double *relative_pm_in, const double *from_fce_in, double *to_fce_out) noexcept->void
+		auto s_pp2pp(const double *relative_pm, const double *from_pp, double *to_pp) noexcept->void
 		{
-			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_from_fce_in[6]{ 0,0,0,0,0,0 };
-			double to_fce[6]{ 0,0,0,0,0,0 };
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_pp = from_pp ? from_pp : default_pp();
+			double default_to_pp[3];
+			to_pp = to_pp ? to_pp : default_to_pp;
 
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			from_fce_in = from_fce_in ? from_fce_in : default_from_fce_in;
-			to_fce_out = to_fce_out ? to_fce_out : to_fce;
-
-			s_tf(relative_pm_in, from_fce_in, to_fce_out);
+			// 正式开始计算 //
+			to_pp[0] = relative_pm[0] * from_pp[0] + relative_pm[1] * from_pp[1] + relative_pm[2] * from_pp[2] + relative_pm[3];
+			to_pp[1] = relative_pm[4] * from_pp[0] + relative_pm[5] * from_pp[1] + relative_pm[6] * from_pp[2] + relative_pm[7];
+			to_pp[2] = relative_pm[8] * from_pp[0] + relative_pm[9] * from_pp[1] + relative_pm[10] * from_pp[2] + relative_pm[11];
 		}
-		auto s_v2v(const double *relative_pm_in, const double *relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept->void
+		auto s_inv_pp2pp(const double *inv_relative_pm, const double *from_pp, double *to_pp) noexcept->void
 		{
-			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
-			double to_vel[6]{ 0,0,0,0,0,0 };
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_pp = from_pp ? from_pp : default_pp();
+			double default_to_pp[3];
+			to_pp = to_pp ? to_pp : default_to_pp;
 
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
-			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
-			to_vel_out = to_vel_out ? to_vel_out : to_vel;
+			// 正式开始计算 //
+			double tem[3]{ from_pp[0] - inv_relative_pm[3] ,from_pp[1] - inv_relative_pm[7] ,from_pp[2] - inv_relative_pm[11] };
 
-			s_tv(relative_pm_in, from_vel_in, to_vel_out);
-			s_vn_add_vn(6, relative_vel_in, to_vel_out, to_vel_out);
+			to_pp[0] = inv_relative_pm[0] * tem[0] + inv_relative_pm[4] * tem[1] + inv_relative_pm[8] * tem[2];
+			to_pp[1] = inv_relative_pm[1] * tem[0] + inv_relative_pm[5] * tem[1] + inv_relative_pm[9] * tem[2];
+			to_pp[2] = inv_relative_pm[2] * tem[0] + inv_relative_pm[6] * tem[1] + inv_relative_pm[10] * tem[2];
 		}
-		auto s_inv_v2v(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *from_vel_in, double *to_vel_out) noexcept->void
+		auto s_re2re(const double *relative_pm, const double *from_re, double *to_re, const char *from_eu_type, const char *to_eu_type) noexcept->void
 		{
-			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
-			double to_vel[6]{ 0,0,0,0,0,0 };
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_re = from_re ? from_re : default_re();
+			double default_to_re[3];
+			to_re = to_re ? to_re : default_to_re;
 
-			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
-			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
-			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
-			to_vel_out = to_vel_out ? to_vel_out : to_vel;
-
-			/*double relative_pm_in[16], relative_vel_in[6]{ 0 };
-			s_inv_pm(inv_relative_pm_in, relative_pm_in);
-			s_tv(-1, relative_pm_in, inv_relative_vel_in, 0, relative_vel_in);
-			s_v2v(relative_pm_in, relative_vel_in, from_vel_in, to_vel_out);*/
-
-			double tem[6];
-			std::fill_n(to_vel_out, 6, 0);
-			std::copy_n(from_vel_in, 6, tem);
-			s_daxpy(6, -1, inv_relative_vel_in, 1, tem, 1);
-			s_inv_tv(inv_relative_pm_in, tem, to_vel_out);
+			// 正式开始计算 //
+			double from_rm[3][3], to_rm[3][3];
+			s_re2rm(from_re, *from_rm, from_eu_type);
+			s_rm2rm(relative_pm, *from_rm, *to_rm);
+			s_rm2re(*to_rm, to_re, to_eu_type);
 		}
-		auto s_a2a(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
-			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out) noexcept->void
+		auto s_inv_re2re(const double *inv_relative_pm, const double *from_re, double *to_re, const char *from_eu_type, const char *to_eu_type) noexcept->void
 		{
-			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_acc_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_acc_in[6]{ 0,0,0,0,0,0 };
-			double to_vel[6]{ 0,0,0,0,0,0 };
-			double to_acc[6]{ 0,0,0,0,0,0 };
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_re = from_re ? from_re : default_re();
+			double default_to_re[3];
+			to_re = to_re ? to_re : default_to_re;
 
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
-			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
-			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
-			from_acc_in = from_acc_in ? from_acc_in : default_from_acc_in;
-			to_vel_out = to_vel_out ? to_vel_out : to_vel;
-			to_acc_out = to_acc_out ? to_acc_out : to_acc;
-
-			s_tv(relative_pm_in, from_vel_in, to_vel_out);
-			s_cv(relative_vel_in, to_vel_out, to_acc_out);
-			s_tv(1, relative_pm_in, from_acc_in, 1, to_acc_out);
-			s_daxpy(6, 1, relative_acc_in, 1, to_acc_out, 1);
-
+			// 正式开始计算 //
+			double from_rm[3][3], to_rm[3][3];
+			s_re2rm(from_re, *from_rm, from_eu_type);
+			s_inv_rm2rm(inv_relative_pm, *from_rm, *to_rm);
+			s_rm2re(*to_rm, to_re, to_eu_type);
 		}
-		auto s_inv_a2a(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
-			const double *from_vel_in, const double *from_acc_in, double *to_acc_out, double *to_vel_out) noexcept->void
+		auto s_rq2rq(const double *relative_pm, const double *from_rq, double *to_rq) noexcept->void
 		{
-			static const double default_pm_in[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_acc_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_vel_in[6]{ 0,0,0,0,0,0 };
-			static const double default_from_acc_in[6]{ 0,0,0,0,0,0 };
-			double to_vel[6]{ 0,0,0,0,0,0 };
-			double to_acc[6]{ 0,0,0,0,0,0 };
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_rq = from_rq ? from_rq : default_rq();
+			double default_to_rq[4];
+			to_rq = to_rq ? to_rq : default_to_rq;
 
-			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
-			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
-			inv_relative_acc_in = inv_relative_acc_in ? inv_relative_acc_in : default_acc_in;
-			from_vel_in = from_vel_in ? from_vel_in : default_from_vel_in;
-			from_acc_in = from_acc_in ? from_acc_in : default_from_acc_in;
-			to_vel_out = to_vel_out ? to_vel_out : to_vel;
-			to_acc_out = to_acc_out ? to_acc_out : to_acc;
-
-			
-			s_inv_v2v(inv_relative_pm_in, inv_relative_vel_in, from_vel_in, to_vel_out);
-			double tem[6];
-			std::fill_n(to_acc_out, 6, 0);
-			std::copy_n(from_acc_in, 6, tem);
-			s_daxpy(6, -1, inv_relative_acc_in, 1, tem, 1);
-			s_cv(-1, inv_relative_vel_in, from_vel_in, 1, tem);
-			s_inv_tv(inv_relative_pm_in, tem, to_acc_out);
+			// 正式开始计算 //
+			double from_rm[3][3], to_rm[3][3];
+			s_rq2rm(from_rq, *from_rm);
+			s_rm2rm(relative_pm, *from_rm, *to_rm);
+			s_rm2rq(*to_rm, to_rq);
 		}
-		auto s_pp2pp(const double *relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept->void
+		auto s_inv_rq2rq(const double *inv_relative_pm, const double *from_rq, double *to_rq) noexcept->void
 		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			double default_to_pnt[3];
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_rq = from_rq ? from_rq : default_rq();
+			double default_to_rq[4];
+			to_rq = to_rq ? to_rq : default_to_rq;
 
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
-
-			s_pm_dot_pnt(relative_pm_in, from_pnt, to_pnt_out);
+			// 正式开始计算 //
+			double from_rm[3][3], to_rm[3][3];
+			s_rq2rm(from_rq, *from_rm);
+			s_inv_rm2rm(inv_relative_pm, *from_rm, *to_rm);
+			s_rm2rq(*to_rm, to_rq);
 		}
-		auto s_inv_pp2pp(const double *inv_relative_pm_in, const double *from_pnt, double *to_pnt_out) noexcept->void
+		auto s_rm2rm(const double *relative_pm, const double *from_rm, double *to_rm, std::size_t from_rm_ld, std::size_t to_rm_ld) noexcept->void
 		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			double default_to_pnt[3];
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_rm = from_rm ? from_rm : default_rm();
+			double default_to_rm[3];
+			to_rm = to_rm ? to_rm : default_to_rm;
 
-			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
-
-			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
+			// 正式开始计算 //
+			s_mdm(3, 3, 3, relative_pm, 4, from_rm, from_rm_ld, to_rm, to_rm_ld);
 		}
-		auto s_vp2vp(const double *relative_pm_in, const double *relative_vel_in, const double *from_pnt, const double *from_vp,
-			double *to_vp_out, double *to_pnt_out) noexcept->void
+		auto s_inv_rm2rm(const double *inv_relative_pm, const double *from_rm, double *to_rm, std::size_t from_rm_ld, std::size_t to_rm_ld) noexcept->void
 		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_rm = from_rm ? from_rm : default_rm();
+			double default_to_rm[3];
+			to_rm = to_rm ? to_rm : default_to_rm;
+
+			// 正式开始计算 //
+			s_mdmTN(3, 3, 3, inv_relative_pm, 4, from_rm, from_rm_ld, to_rm, to_rm_ld);
+		}
+		auto s_pe2pe(const double *relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type, const char *to_pe_type) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_pe = from_pe ? from_pe : default_pe();
+			double default_to_pe[6];
+			to_pe = to_pe ? to_pe : default_to_pe;
+
+			// 正式开始计算 //
+			double from_pm[4][4], to_pm[4][4];
+			s_pe2pm(from_pe, *from_pm, from_pe_type);
+			s_pm2pm(relative_pm, *from_pm, *to_pm);
+			s_pm2pe(*to_pm, to_pe, to_pe_type);
+		}
+		auto s_inv_pe2pe(const double *inv_relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type, const char *to_pe_type) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_pe = from_pe ? from_pe : default_pe();
+			double default_to_pe[6];
+			to_pe = to_pe ? to_pe : default_to_pe;
+
+			// 正式开始计算 //
+			double from_pm[4][4], to_pm[4][4];
+			s_pe2pm(from_pe, *from_pm, from_pe_type);
+			s_inv_pm2pm(inv_relative_pm, *from_pm, *to_pm);
+			s_pm2pe(*to_pm, to_pe, to_pe_type);
+		}
+		auto s_pq2pq(const double *relative_pm, const double *from_pq, double *to_pq) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_pq = from_pq ? from_pq : default_pq();
+			double default_to_pq[7];
+			to_pq = to_pq ? to_pq : default_to_pq;
+
+			// 正式开始计算 //
+			double from_pm[4][4], to_pm[4][4];
+			s_pq2pm(from_pq, *from_pm);
+			s_pm2pm(relative_pm, *from_pm, *to_pm);
+			s_pm2pq(*to_pm, to_pq);
+		}
+		auto s_inv_pq2pq(const double *inv_relative_pm, const double *from_pq, double *to_pq) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_pq = from_pq ? from_pq : default_pq();
+			double default_to_pq[7];
+			to_pq = to_pq ? to_pq : default_to_pq;
+
+			// 正式开始计算 //
+			double from_pm[4][4], to_pm[4][4];
+			s_pq2pm(from_pq, *from_pm);
+			s_inv_pm2pm(inv_relative_pm, *from_pm, *to_pm);
+			s_pm2pq(*to_pm, to_pq);
+		}
+		auto s_pm2pm(const double *relative_pm, const double *from_pm, double *to_pm) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_pm = from_pm ? from_pm : default_pm();
+			double default_to_pm[16];
+			to_pm = to_pm ? to_pm : default_to_pm;
+
+			// 正式开始计算 //
+			s_mdm(3, 4, 3, relative_pm, 4, from_pm, 4, to_pm, 4);
+
+			to_pm[3] += relative_pm[3];
+			to_pm[7] += relative_pm[7];
+			to_pm[11] += relative_pm[11];
+
+			to_pm[12] = 0;
+			to_pm[13] = 0;
+			to_pm[14] = 0;
+			to_pm[15] = 1;
+		}
+		auto s_inv_pm2pm(const double *inv_relative_pm, const double *from_pm, double *to_pm) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_pm = from_pm ? from_pm : default_pm();
+			double default_to_pm[16];
+			to_pm = to_pm ? to_pm : default_to_pm;
+
+			// 正式开始计算 //
+			s_mdmTN(3, 4, 3, inv_relative_pm, 4, from_pm, 4, to_pm, 4);
+
+			to_pm[3] += -inv_relative_pm[0] * inv_relative_pm[3] - inv_relative_pm[4] * inv_relative_pm[7] - inv_relative_pm[8] * inv_relative_pm[11];
+			to_pm[7] += -inv_relative_pm[1] * inv_relative_pm[3] - inv_relative_pm[5] * inv_relative_pm[7] - inv_relative_pm[9] * inv_relative_pm[11];
+			to_pm[11] += -inv_relative_pm[2] * inv_relative_pm[3] - inv_relative_pm[6] * inv_relative_pm[7] - inv_relative_pm[10] * inv_relative_pm[11];
+
+			to_pm[12] = 0;
+			to_pm[13] = 0;
+			to_pm[14] = 0;
+			to_pm[15] = 1;
+		}
+
+		auto s_vp2vp(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_vp,double *to_vp, double *to_pp) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			from_pp = from_pp ? from_pp : default_pp();
+			from_vp = from_vp ? from_vp : default_pp();
 			double default_to_vp[3];
-			double default_to_pnt[3];
+			double default_to_pp[3];
+			to_vp = to_vp ? to_vp : default_to_vp;
+			to_pp = to_pp ? to_pp : default_to_pp;
 
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_vp = from_vp ? from_vp : default_from_pv;
-			to_vp_out = to_vp_out ? to_vp_out : default_to_vp;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
-
-			s_pp2pp(relative_pm_in, from_pnt, to_pnt_out);
-			s_cro3(relative_vel_in + 3, to_pnt_out, to_vp_out);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_vp, 1, 1, to_vp_out, 1);
-			s_daxpy(3, 1, relative_vel_in, 1, to_vp_out, 1);
+			// 正式开始计算 //
+			s_pp2pp(relative_pm, from_pp, to_pp);
+			s_c3(relative_vs + 3, to_pp, to_vp);
+			s_mdm(3, 1, 3, 1, relative_pm, 4, from_vp, 1, 1, to_vp, 1);
+			s_va(3, relative_vs, to_vp);
 		}
-		auto s_inv_vp2vp(const double *inv_relative_pm_in, const double *inv_relative_vel_in,
-			const double *from_pnt, const double *from_vp, double *to_vp_out, double *to_pnt_out) noexcept->void
+		auto s_inv_vp2vp(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp) noexcept->void
 		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			from_pp = from_pp ? from_pp : default_pp();
+			from_vp = from_vp ? from_vp : default_vp();
 			double default_to_vp[3];
-			double default_to_pnt[3];
+			double default_to_pp[3];
+			to_vp = to_vp ? to_vp : default_to_vp;
+			to_pp = to_pp ? to_pp : default_to_pp;
 
-			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
-			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_vp = from_vp ? from_vp : default_from_pv;
-			to_vp_out = to_vp_out ? to_vp_out : default_to_vp;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
-
-			std::fill_n(to_vp_out, 3, 0);
+			// 正式计算开始 //
+			s_inv_pp2pp(inv_relative_pm, from_pp, to_pp);
 
 			double tem[3];
 			std::copy_n(from_vp, 3, tem);
-			s_cro3(-1, inv_relative_vel_in + 3, from_pnt, 1, tem);
-			s_daxpy(3, -1, inv_relative_vel_in, 1, tem, 1);
-			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_vp_out, 1);
-
-			s_inv_pm_dot_pnt(inv_relative_pm_in, from_pnt, to_pnt_out);
-
+			s_c3(-1, inv_relative_vs + 3, from_pp, 1, tem);
+			s_va(3, -1, inv_relative_vs, 1, tem);
+			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_vp, 1);
 		}
-		auto s_ap2ap(const double *relative_pm_in, const double *relative_vel_in, const double *relative_acc_in,
-			const double *from_pnt, const double *from_vp, const double *from_pa,
-			double *to_ap_out, double *to_vp_out, double *to_pnt_out) noexcept->void
+		auto s_we2we(const double *relative_pm, const double *relative_vs, const double *from_we, double *to_we) noexcept->void
 		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_acc_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
-			static const double default_from_pa[3] = { 0,0,0 };
-			double default_to_ap[3]{ 0 };
-			double default_to_vp[3]{ 0 };
-			double default_to_pnt[3]{ 0 };
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			from_we = from_we ? from_we : default_we();
+			double default_to_we[3];
+			to_we = to_we ? to_we : default_to_we;
 
-			relative_pm_in = relative_pm_in ? relative_pm_in : default_pm_in;
-			relative_vel_in = relative_vel_in ? relative_vel_in : default_vel_in;
-			relative_acc_in = relative_acc_in ? relative_acc_in : default_acc_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_vp = from_vp ? from_vp : default_from_pv;
-			from_pa = from_pa ? from_pa : default_from_pa;
-			to_ap_out = to_ap_out ? to_ap_out : default_to_ap;
-			to_vp_out = to_vp_out ? to_vp_out : default_to_vp;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+			// 正式开始计算 //
+			s_mdm(3, 1, 3, relative_pm, 4, from_we, 1, to_we, 1);
+			s_va(3, relative_vs + 3, to_we);
+		}
+		auto s_inv_we2we(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_we, double *to_we) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_pm();
+			from_we = from_we ? from_we : default_we();
+			double default_to_we[3];
+			to_we = to_we ? to_we : default_to_we;
 
+			// 正式计算开始 //
+			double tem[3]{ -inv_relative_vs[3],-inv_relative_vs[4],-inv_relative_vs[5] };
+			s_va(3, from_we, tem);
+			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_we, 1);
+		}
+		auto s_wq2wq(const double *relative_pm, const double *relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			from_rq = from_rq ? from_rq : default_rq();
+			from_wq = from_wq ? from_wq : default_wq();
+			double default_to_wq[4];
+			double default_to_qt[4];
+			to_wq = to_wq ? to_wq : default_to_wq;
+			to_rq = to_rq ? to_rq : default_to_qt;
+
+			// 正式开始计算 //
+			s_rq2rq(relative_pm, from_rq, to_rq);
+
+			double from_we[3], to_we[3];
+			s_wq2we(from_rq, from_wq, from_we);
+			s_we2we(relative_pm, relative_vs, from_we, to_we);
+			s_we2wq(to_we, to_rq, to_wq);
+		}
+		auto s_inv_wq2wq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			from_rq = from_rq ? from_rq : default_rq();
+			from_wq = from_wq ? from_wq : default_wq();
+			double default_to_wq[4];
+			double default_to_qt[4];
+			to_wq = to_wq ? to_wq : default_to_wq;
+			to_rq = to_rq ? to_rq : default_to_qt;
+
+			// 正式开始计算 //
+			s_inv_rq2rq(inv_relative_pm, from_rq, to_rq);
+
+			double from_we[3], to_we[3];
+			s_wq2we(from_rq, from_wq, from_we);
+			s_inv_we2we(inv_relative_pm, inv_relative_vs, from_we, to_we);
+			s_we2wq(to_we, to_rq, to_wq);
+		}
+		auto s_wm2wm(const double *relative_pm, const double *relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			from_rm = from_rm ? from_rm : default_rm();
+			from_wm = from_wm ? from_wm : default_wm();
+			double default_to_rm[9];
+			double default_to_wm[9];
+			to_wm = to_wm ? to_wm : default_to_wm;
+			to_rm = to_rm ? to_rm : default_to_rm;
+
+			// 正式开始计算 //
+			s_rm2rm(relative_pm, from_rm, to_rm);
+
+			double from_we[3], to_we[3];
+			s_wm2we(from_rm, from_wm, from_we);
+			s_we2we(relative_pm, relative_vs, from_we, to_we);
+			s_we2wm(to_we, to_rm, to_wm);
+		}
+		auto s_inv_wm2wm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			from_rm = from_rm ? from_rm : default_rm();
+			from_wm = from_wm ? from_wm : default_wm();
+			double default_to_rm[9];
+			double default_to_wm[9];
+			to_wm = to_wm ? to_wm : default_to_wm;
+			to_rm = to_rm ? to_rm : default_to_rm;
+
+			// 正式开始计算 //
+			s_inv_rm2rm(inv_relative_pm, from_rm, to_rm);
+
+			double from_we[3], to_we[3];
+			s_wm2we(from_rm, from_wm, from_we);
+			s_inv_we2we(inv_relative_pm, inv_relative_vs, from_we, to_we);
+			s_we2wm(to_we, to_rm, to_wm);
+		}
+		auto s_ve2ve(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_ve, double *to_ve, double *to_pp) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			from_pp = from_pp ? from_pp : default_pp();
+			from_ve = from_ve ? from_ve : default_ve();
+			double default_to_pp[3];
+			double default_to_vw[6];
+			to_pp = to_pp ? to_pp : default_to_pp;
+			to_ve = to_ve ? to_ve : default_to_vw;
+
+			// 正式开始计算 //
+			s_pp2pp(relative_pm, from_pp, to_pp);
+
+			double from_vs[6], to_vs[6];
+			s_ve2vs(from_pp, from_ve, from_vs);
+			s_vs2vs(relative_pm, relative_vs, from_vs, to_vs);
+			s_vs2ve(to_vs, to_pp, to_ve);
+		}
+		auto s_inv_ve2ve(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_ve, double *to_ve, double *to_pp) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			from_pp = from_pp ? from_pp : default_pp();
+			from_ve = from_ve ? from_ve : default_ve();
+			double default_to_pp[3];
+			double default_to_vw[6];
+			to_pp = to_pp ? to_pp : default_to_pp;
+			to_ve = to_ve ? to_ve : default_to_vw;
+
+			// 正式开始计算 //
+			s_inv_pp2pp(inv_relative_pm, from_pp, to_pp);
+
+			double from_vs[6], to_vs[6];
+			s_ve2vs(from_pp, from_ve, from_vs);
+			s_inv_vs2vs(inv_relative_pm, inv_relative_vs, from_vs, to_vs);
+			s_vs2ve(to_vs, to_pp, to_ve);
+		}
+		auto s_vq2vq(const double *relative_pm, const double *relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			from_pq = from_pq ? from_pq : default_pq();
+			from_vq = from_vq ? from_vq : default_vq();
+			double default_to_pq[7];
+			double default_to_vq[7];
+			to_vq = to_vq ? to_vq : default_to_vq;
+			to_pq = to_pq ? to_pq : default_to_pq;
+
+			// 正式开始计算 //
+			s_pq2pq(relative_pm, from_pq, to_pq);
+
+			double from_vs[6], to_vs[6];
+			s_vq2vs(from_pq, from_vq, from_vs);
+			s_vs2vs(relative_pm, relative_vs, from_vs, to_vs);
+			s_vs2vq(to_vs, to_pq, to_vq);
+		}
+		auto s_inv_vq2vq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			from_pq = from_pq ? from_pq : default_pq();
+			from_vq = from_vq ? from_vq : default_vq();
+			double default_to_pq[7];
+			double default_to_vq[7];
+			to_vq = to_vq ? to_vq : default_to_vq;
+			to_pq = to_pq ? to_pq : default_to_pq;
+
+			// 正式开始计算 //
+			s_inv_pq2pq(inv_relative_pm, from_pq, to_pq);
+
+			double from_vs[6], to_vs[6];
+			s_vq2vs(from_pq, from_vq, from_vs);
+			s_inv_vs2vs(inv_relative_pm, inv_relative_vs, from_vs, to_vs);
+			s_vs2vq(to_vs, to_pq, to_vq);
+		}
+		auto s_vm2vm(const double *relative_pm, const double *relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			from_pm = from_pm ? from_pm : default_pm();
+			from_vm = from_vm ? from_vm : default_vm();
+			double default_to_pm[16];
+			double default_to_vm[16];
+			to_vm = to_vm ? to_vm : default_to_vm;
+			to_pm = to_pm ? to_pm : default_to_pm;
+
+			// 正式开始计算 //
+			s_pm2pm(relative_pm, from_pm, to_pm);
+
+			double from_vs[6], to_vs[6];
+			s_vm2vs(from_pm, from_vm, from_vs);
+			s_vs2vs(relative_pm, relative_vs, from_vs, to_vs);
+			s_vs2vm(to_vs, to_pm, to_vm);
+		}
+		auto s_inv_vm2vm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			from_pm = from_pm ? from_pm : default_pm();
+			from_vm = from_vm ? from_vm : default_vm();
+			double default_to_pm[16];
+			double default_to_vm[16];
+			to_vm = to_vm ? to_vm : default_to_vm;
+			to_pm = to_pm ? to_pm : default_to_pm;
+
+			// 正式开始计算 //
+			s_inv_pm2pm(inv_relative_pm, from_pm, to_pm);
+
+			double from_vs[6], to_vs[6];
+			s_vm2vs(from_pm, from_vm, from_vs);
+			s_inv_vs2vs(inv_relative_pm, inv_relative_vs, from_vs, to_vs);
+			s_vs2vm(to_vs, to_pm, to_vm);
+		}
+		auto s_vs2vs(const double *relative_pm, const double *relative_vs, const double *from_vs, double *to_vs) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			from_vs = from_vs ? from_vs : default_vs();
+			double default_to_vs[6]{ 0,0,0,0,0,0 };
+			to_vs = to_vs ? to_vs : default_to_vs;
+
+			// 正式开始计算 //
+			s_tv(relative_pm, from_vs, to_vs);
+			s_va(6, relative_vs, to_vs);
+		}
+		auto s_inv_vs2vs(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_vs, double *to_vs) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			from_vs = from_vs ? from_vs : default_vs();
+			double default_to_vs[6];
+			to_vs = to_vs ? to_vs : default_to_vs;
+			
+			
+			// 正式开始计算 //
+			double tem[6];
+			std::copy_n(from_vs, 6, tem);
+			s_va(6, -1, inv_relative_vs, 1, tem);
+			s_inv_tv(inv_relative_pm, tem, to_vs);
+		}
+
+		auto s_ap2ap(const double *relative_pm, const double *relative_vs, const double *relative_as, 
+			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp, double *to_pp) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			relative_as = relative_as ? relative_as : default_as();
+			from_pp = from_pp ? from_pp : default_pp();
+			from_vp = from_vp ? from_vp : default_vp();
+			from_ap = from_ap ? from_ap : default_ap();
+			double default_to_ap[3];
+			double default_to_vp[3];
+			double default_to_pp[3];
+			to_ap = to_ap ? to_ap : default_to_ap;
+			to_vp = to_vp ? to_vp : default_to_vp;
+			to_pp = to_pp ? to_pp : default_to_pp;
+
+			// 正式开始计算 //
 			double tem_vp[3];
-			s_vp2vp(relative_pm_in, relative_vel_in, from_pnt, from_vp, to_vp_out, to_pnt_out);
+			s_vp2vp(relative_pm, relative_vs, from_pp, from_vp, to_vp, to_pp);
 
-			s_cro3(relative_acc_in + 3, to_pnt_out, to_ap_out);
-			std::copy_n(to_vp_out, 3, tem_vp);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_vp, 1, 1, tem_vp, 1);
-			s_cro3(1, relative_vel_in + 3, tem_vp, 1, to_ap_out);
-			s_dgemm(3, 1, 3, 1, relative_pm_in, 4, from_pa, 1, 1, to_ap_out, 1);
-			s_daxpy(3, 1, relative_acc_in, 1, to_ap_out, 1);
+			s_c3(relative_as + 3, to_pp, to_ap);
+			std::copy_n(to_vp, 3, tem_vp);
+			s_mdm(3, 1, 3, 1, relative_pm, 4, from_vp, 1, 1, tem_vp, 1);
+			s_c3(1, relative_vs + 3, tem_vp, 1, to_ap);
+			s_mdm(3, 1, 3, 1, relative_pm, 4, from_ap, 1, 1, to_ap, 1);
+			s_va(3, relative_as, to_ap);
 		}
-		auto s_inv_ap2ap(const double *inv_relative_pm_in, const double *inv_relative_vel_in, const double *inv_relative_acc_in,
-			const double *from_pnt, const double *from_vp, const double *from_pa,
-			double *to_ap_out, double *to_vp_out, double *to_pnt_out) noexcept->void
+		auto s_inv_ap2ap(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp, double *to_pp) noexcept->void
 		{
-			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			static const double default_vel_in[6] = { 0,0,0,0,0,0 };
-			static const double default_acc_in[6] = { 0,0,0,0,0,0 };
-			static const double default_from_pnt[3] = { 0,0,0 };
-			static const double default_from_pv[3] = { 0,0,0 };
-			static const double default_from_pa[3] = { 0,0,0 };
-			double default_to_ap[3]{ 0 };
-			double default_to_vp[3]{ 0 };
-			double default_to_pnt[3]{ 0 };
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_pp = from_pp ? from_pp : default_pp();
+			from_vp = from_vp ? from_vp : default_vp();
+			from_ap = from_ap ? from_ap : default_ap();
+			double default_to_ap[3];
+			double default_to_vp[3];
+			double default_to_pp[3];
+			to_ap = to_ap ? to_ap : default_to_ap;
+			to_vp = to_vp ? to_vp : default_to_vp;
+			to_pp = to_pp ? to_pp : default_to_pp;
 
-			inv_relative_pm_in = inv_relative_pm_in ? inv_relative_pm_in : default_pm_in;
-			inv_relative_vel_in = inv_relative_vel_in ? inv_relative_vel_in : default_vel_in;
-			inv_relative_acc_in = inv_relative_acc_in ? inv_relative_acc_in : default_acc_in;
-			from_pnt = from_pnt ? from_pnt : default_from_pnt;
-			from_vp = from_vp ? from_vp : default_from_pv;
-			from_pa = from_pa ? from_pa : default_from_pa;
-			to_ap_out = to_ap_out ? to_ap_out : default_to_ap;
-			to_vp_out = to_vp_out ? to_vp_out : default_to_vp;
-			to_pnt_out = to_pnt_out ? to_pnt_out : default_to_pnt;
+			// 正式开始计算 //
+			s_inv_vp2vp(inv_relative_pm, inv_relative_vs, from_pp, from_vp, to_vp, to_pp);
 
-			std::fill_n(to_ap_out, 3, 0);
+			std::fill_n(to_ap, 3, 0);
 
 			double tem[3], tem2[3];
-			s_inv_vp2vp(inv_relative_pm_in, inv_relative_vel_in, from_pnt, from_vp, to_vp_out, to_pnt_out);
 
-			std::copy_n(from_pa, 3, tem);
-			s_cro3(-1, inv_relative_acc_in + 3, from_pnt, 1, tem);
+			std::copy_n(from_ap, 3, tem);
+			s_c3(-1, inv_relative_as + 3, from_pp, 1, tem);
 
 			std::copy_n(from_vp, 3, tem2);
-			s_dgemm(3, 1, 3, 1, inv_relative_pm_in, 4, to_vp_out, 1, 1, tem2, 1);
-			s_cro3(-1, inv_relative_vel_in + 3, tem2, 1, tem);
+			s_mdm(3, 1, 3, 1, inv_relative_pm, 4, to_vp, 1, 1, tem2, 1);
+			s_c3(-1, inv_relative_vs + 3, tem2, 1, tem);
 
-			s_daxpy(3, -1, inv_relative_acc_in, 1, tem, 1);
+			s_va(3, -1, inv_relative_as, 1, tem);
 
-			s_dgemmTN(3, 1, 3, 1, inv_relative_pm_in, 4, tem, 1, 0, to_ap_out, 1);
+			s_mdmTN(3, 1, 3, 1, inv_relative_pm, 4, tem, 1, 0, to_ap, 1);
+		}
+		auto s_xe2xe(const double *relative_pm, const double *relative_as,const double *from_xe, double *to_xe) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_as = relative_as ? relative_as : default_as();
+			from_xe = from_xe ? from_xe : default_xe();
+			double default_to_xe[3];
+			to_xe = to_xe ? to_xe : default_to_xe;
+
+			// 正式开始计算 //
+			s_mdm(3, 1, 3, relative_pm, 4, from_xe, 1, to_xe, 1);
+			s_va(3, relative_as + 3, to_xe);
+		}
+		auto s_inv_xe2xe(const double *inv_relative_pm, const double *inv_relative_as, const double *from_xe, double *to_xe) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_xe = from_xe ? from_xe : default_xe();
+			double default_to_xe[3];
+			to_xe = to_xe ? to_xe : default_to_xe;
+
+			// 正式开始计算 //
+			double tem[3]{ -inv_relative_as[3],-inv_relative_as[4],-inv_relative_as[5] };
+			s_va(3, from_xe, tem);
+			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_xe, 1);
+		}
+		auto s_xq2xq(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq, double *to_rq) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			relative_as = relative_as ? relative_as : default_as();
+			from_rq = from_rq ? from_rq : default_rq();
+			from_wq = from_wq ? from_wq : default_wq();
+			from_xq = from_xq ? from_xq : default_xq();
+			double default_to_xq[4];
+			double default_to_wq[4];
+			double default_to_rq[4];
+			to_xq = to_xq ? to_xq : default_to_xq;
+			to_wq = to_wq ? to_wq : default_to_wq;
+			to_rq = to_rq ? to_rq : default_to_rq;
+
+			// 正式开始计算 //
+			s_rq2rq(relative_pm, from_rq, to_rq);
+
+			double from_xe[3], to_xe[3], from_we[3], to_we[3];
+			s_xq2xe(from_rq, from_wq, from_xq, from_xe, from_we);
+			s_we2we(relative_pm, relative_vs, from_we, to_we);
+			s_xe2xe(relative_pm, relative_as, from_xe, to_xe);
+			s_xe2xq(to_we, to_xe, to_rq, to_xq, to_wq);
+		}
+		auto s_inv_xq2xq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq, double *to_rq) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_rq = from_rq ? from_rq : default_rq();
+			from_wq = from_wq ? from_wq : default_wq();
+			from_xq = from_xq ? from_xq : default_xq();
+			double default_to_xq[4];
+			double default_to_wq[4];
+			double default_to_rq[4];
+			to_xq = to_xq ? to_xq : default_to_xq;
+			to_wq = to_wq ? to_wq : default_to_wq;
+			to_rq = to_rq ? to_rq : default_to_rq;
+
+			// 正式开始计算 //
+			s_inv_rq2rq(inv_relative_pm, from_rq, to_rq);
+
+			double from_xe[3], to_xe[3], from_we[3], to_we[3];
+			s_xq2xe(from_rq, from_wq, from_xq, from_xe, from_we);
+			s_inv_we2we(inv_relative_pm, inv_relative_vs, from_we, to_we);
+			s_inv_xe2xe(inv_relative_pm, inv_relative_as, from_xe, to_xe);
+			s_xe2xq(to_we, to_xe, to_rq, to_xq, to_wq);
+		}
+		auto s_xm2xm(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm, double *to_rm) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			relative_as = relative_as ? relative_as : default_as();
+			from_rm = from_rm ? from_rm : default_rm();
+			from_wm = from_wm ? from_wm : default_wm();
+			from_xm = from_xm ? from_xm : default_xm();
+			double default_to_rm[9];
+			double default_to_wm[9];
+			double default_to_xm[9];
+			to_rm = to_rm ? to_rm : default_to_rm;
+			to_wm = to_wm ? to_wm : default_to_wm;
+			to_xm = to_xm ? to_xm : default_to_xm;
+
+			// 正式开始计算 //
+			s_rm2rm(relative_pm, from_rm, to_rm);
+
+			double from_xe[3], to_xe[3], from_we[3], to_we[3];
+			s_xm2xe(from_rm, from_wm, from_xm, from_xe, from_we);
+			s_we2we(relative_pm, relative_vs, from_we, to_we);
+			s_xe2xe(relative_pm, relative_as, from_xe, to_xe);
+			s_xe2xm(to_we, to_xe, to_rm, to_xm, to_wm);
+		}
+		auto s_inv_xm2xm(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm, double *to_rm) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_rm = from_rm ? from_rm : default_rm();
+			from_wm = from_wm ? from_wm : default_wm();
+			from_xm = from_xm ? from_xm : default_xm();
+			double default_to_rm[9];
+			double default_to_wm[9];
+			double default_to_xm[9];
+			to_rm = to_rm ? to_rm : default_to_rm;
+			to_wm = to_wm ? to_wm : default_to_wm;
+			to_xm = to_xm ? to_xm : default_to_xm;
+
+			// 正式开始计算 //
+			s_inv_rm2rm(inv_relative_pm, from_rm, to_rm);
+
+			double from_xe[3], to_xe[3], from_we[3], to_we[3];
+			s_xm2xe(from_rm, from_wm, from_xm, from_xe, from_we);
+			s_inv_we2we(inv_relative_pm, inv_relative_vs, from_we, to_we);
+			s_inv_xe2xe(inv_relative_pm, inv_relative_as, from_xe, to_xe);
+			s_xe2xm(to_we, to_xe, to_rm, to_xm, to_wm);
+		}
+		auto s_ae2ae(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_pp, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve, double *to_pp) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			relative_as = relative_as ? relative_as : default_as();
+			from_pp = from_pp ? from_pp : default_pp();
+			from_ve = from_ve ? from_ve : default_ve();
+			from_ae = from_ae ? from_ae : default_ae();
+			double default_to_pp[3];
+			double default_to_ve[6];
+			double default_to_ae[6];
+			to_ae = to_ae ? to_ae : default_to_ae;
+			to_ve = to_ve ? to_ve : default_to_ve;
+			to_pp = to_pp ? to_pp : default_to_pp;
+
+			// 正式开始计算 //
+			s_pp2pp(relative_pm, from_pp, to_pp);
+
+			double from_vs[6], from_as[6], to_vs[6], to_as[6];
+			s_ae2as(from_pp, from_ve, from_ae, from_as, from_vs);
+			s_as2as(relative_pm, relative_vs, relative_as, from_vs, from_as, to_as, to_vs);
+			s_as2ae(to_vs, to_as, to_pp, to_ae, to_ve);
+		}
+		auto s_inv_ae2ae(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_pp, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve, double *to_pp) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_pp = from_pp ? from_pp : default_pp();
+			from_ve = from_ve ? from_ve : default_ve();
+			from_ae = from_ae ? from_ae : default_ae();
+			double default_to_pp[3];
+			double default_to_ve[6];
+			double default_to_ae[6];
+			to_ae = to_ae ? to_ae : default_to_ae;
+			to_ve = to_ve ? to_ve : default_to_ve;
+			to_pp = to_pp ? to_pp : default_to_pp;
+
+			// 正式开始计算 //
+			s_inv_pp2pp(inv_relative_pm, from_pp, to_pp);
+
+			double from_vs[6], from_as[6], to_vs[6], to_as[6];
+			s_ae2as(from_pp, from_ve, from_ae, from_as, from_vs);
+			s_inv_as2as(inv_relative_pm, inv_relative_vs, inv_relative_as, from_vs, from_as, to_as, to_vs);
+			s_as2ae(to_vs, to_as, to_pp, to_ae, to_ve);
+		}
+		auto s_aq2aq(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq, double *to_pq) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			relative_as = relative_as ? relative_as : default_as();
+			from_pq = from_pq ? from_pq : default_pq();
+			from_vq = from_vq ? from_vq : default_vq();
+			from_aq = from_aq ? from_aq : default_aq();
+			double default_to_aq[7];
+			double default_to_vq[7];
+			double default_to_pq[7];
+			to_aq = to_aq ? to_aq : default_to_aq;
+			to_vq = to_vq ? to_vq : default_to_vq;
+			to_pq = to_pq ? to_pq : default_to_pq;
+
+			// 正式开始计算 //
+			s_pq2pq(relative_pm, from_pq, to_pq);
+
+			double from_vs[6], from_as[6], to_vs[6], to_as[6];
+			s_aq2as(from_pq, from_vq, from_aq, from_as, from_vs);
+			s_as2as(relative_pm, relative_vs, relative_as, from_vs, from_as, to_as, to_vs);
+			s_as2aq(to_vs, to_as, to_pq, to_aq, to_vq);
+		}
+		auto s_inv_aq2aq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq, double *to_pq) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_pq = from_pq ? from_pq : default_pq();
+			from_vq = from_vq ? from_vq : default_vq();
+			from_aq = from_aq ? from_aq : default_aq();
+			double default_to_aq[7];
+			double default_to_vq[7];
+			double default_to_pq[7];
+			to_aq = to_aq ? to_aq : default_to_aq;
+			to_vq = to_vq ? to_vq : default_to_vq;
+			to_pq = to_pq ? to_pq : default_to_pq;
+
+			// 正式开始计算 //
+			s_inv_pq2pq(inv_relative_pm, from_pq, to_pq);
+
+			double from_vs[6], from_as[6], to_vs[6], to_as[6];
+			s_aq2as(from_pq, from_vq, from_aq, from_as, from_vs);
+			s_inv_as2as(inv_relative_pm, inv_relative_vs, inv_relative_as, from_vs, from_as, to_as, to_vs);
+			s_as2aq(to_vs, to_as, to_pq, to_aq, to_vq);
+		}
+		auto s_am2am(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_pm, const double *from_vm, const double *from_am, double *to_am, double *to_vm, double *to_pm) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			relative_as = relative_as ? relative_as : default_as();
+			from_pm = from_pm ? from_pm : default_pm();
+			from_vm = from_vm ? from_vm : default_vm();
+			from_am = from_am ? from_am : default_am();
+			double default_to_pm[16];
+			double default_to_vm[16];
+			double default_to_am[16];
+			to_am = to_am ? to_am : default_to_am;
+			to_vm = to_vm ? to_vm : default_to_vm;
+			to_pm = to_pm ? to_pm : default_to_pm;
+
+			// 正式开始计算 //
+			s_pm2pm(relative_pm, from_pm, to_pm);
+
+			double from_vs[6], from_as[6], to_vs[6], to_as[6];
+			s_am2as(from_pm, from_vm, from_am, from_as, from_vs);
+			s_as2as(relative_pm, relative_vs, relative_as, from_vs, from_as, to_as, to_vs);
+			s_as2am(to_vs, to_as, to_pm, to_am, to_vm);
+		}
+		auto s_inv_am2am(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_pm, const double *from_vm, const double *from_am, double *to_am, double *to_vm, double *to_pm) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_pm = from_pm ? from_pm : default_pm();
+			from_vm = from_vm ? from_vm : default_vm();
+			from_am = from_am ? from_am : default_am();
+			double default_to_pm[16];
+			double default_to_vm[16];
+			double default_to_am[16];
+			to_am = to_am ? to_am : default_to_am;
+			to_vm = to_vm ? to_vm : default_to_vm;
+			to_pm = to_pm ? to_pm : default_to_pm;
+
+			// 正式开始计算 //
+			s_inv_pm2pm(inv_relative_pm, from_pm, to_pm);
+
+			double from_vs[6], from_as[6], to_vs[6], to_as[6];
+			s_am2as(from_pm, from_vm, from_am, from_as, from_vs);
+			s_inv_as2as(inv_relative_pm, inv_relative_vs, inv_relative_as, from_vs, from_as, to_as, to_vs);
+			s_as2am(to_vs, to_as, to_pm, to_am, to_vm);
+		}
+		auto s_as2as(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_vs, const double *from_as, double *to_as, double *to_vs) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			relative_as = relative_as ? relative_as : default_as();
+			from_vs = from_vs ? from_vs : default_vs();
+			from_as = from_as ? from_as : default_as();
+			double default_to_vs[6]{ 0,0,0,0,0,0 };
+			double default_to_as[6]{ 0,0,0,0,0,0 };
+			to_vs = to_vs ? to_vs : default_to_vs;
+			to_as = to_as ? to_as : default_to_as;
+
+			// 正式开始计算 //
+			s_vs2vs(relative_pm, relative_vs, from_vs, to_vs);
+			s_cv(relative_vs, to_vs, to_as);
+			s_tv(1, relative_pm, from_as, 1, to_as);
+			s_va(6, 1, relative_as, 1, to_as);
+		}
+		auto s_inv_as2as(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_vs, const double *from_as, double *to_as, double *to_vs) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_vs = from_vs ? from_vs : default_vs();
+			from_as = from_as ? from_as : default_as();
+			double default_to_vs[6]{ 0,0,0,0,0,0 };
+			double default_to_as[6]{ 0,0,0,0,0,0 };
+			to_vs = to_vs ? to_vs : default_to_vs;
+			to_as = to_as ? to_as : default_to_as;
+
+			// 正式开始计算 //
+			s_inv_vs2vs(inv_relative_pm, inv_relative_vs, from_vs, to_vs);
+			double tem[6];
+			std::fill_n(to_as, 6, 0);
+			std::copy_n(from_as, 6, tem);
+			s_va(6, -1, inv_relative_as, 1, tem);
+			s_cv(-1, inv_relative_vs, from_vs, 1, tem);
+			s_inv_tv(inv_relative_pm, tem, to_as);
+		}
+
+		auto s_fs2fs(const double *relative_pm, const double *from_fs, double *to_fs) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_fs = from_fs ? from_fs : default_fs();
+			double default_to_fs[6];
+			to_fs = to_fs ? to_fs : default_to_fs;
+
+			// 正式开始计算 //
+			s_tf(relative_pm, from_fs, to_fs);
+		}
+		auto s_inv_fs2fs(const double *inv_relative_pm, const double *from_fs, double *to_fs) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_fs = from_fs ? from_fs : default_fs();
+			double default_to_fs[6];
+			to_fs = to_fs ? to_fs : default_to_fs;
+
+			// 正式开始计算 //
+			s_inv_tf(inv_relative_pm, from_fs, to_fs);
+		}
+		auto s_is2is(const double *relative_pm, const double *from_is, double *to_is) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_is = from_is ? from_is : default_is();
+			double default_to_is[36];
+			to_is = to_is ? to_is : default_to_is;
+			
+			/*以下为慢速但准确的算法*/
+			std::fill_n(to_is, 36, 0);
+			double tem[6][6], tmf[6][6];
+			s_tmf(relative_pm, *tmf);
+			s_mdm(6, 6, 6, *tmf, 6, from_is, 6, *tem, 6);
+			s_mdmNT(6, 6, 6, 1, *tem, 6, *tmf, 6, 0, to_is, 6);
+		}
+		auto s_inv_is2is(const double *inv_relative_pm, const double *from_is, double *to_is) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_is = from_is ? from_is : default_is();
+			double default_to_is[36];
+			to_is = to_is ? to_is : default_to_is;
+
+			/*以下为慢速但准确的算法*/
+			std::fill_n(to_is, 36, 0);
+			double tem[6][6], tmf[6][6], pm[4][4];
+			s_inv_pm(inv_relative_pm, *pm);
+			s_tmf(*pm, *tmf);
+			s_mdm(6, 6, 6, *tmf, 6, from_is, 6, *tem, 6);
+			s_mdmNT(6, 6, 6, 1, *tem, 6, *tmf, 6, 0, to_is, 6);
 		}
 
 		auto s_tmf(const double *pm_in, double *tmf_out) noexcept->void
@@ -707,8 +2070,8 @@ namespace aris
 		{
 			std::fill_n(m_out, 6 * n, 0);
 			
-			s_dgemm(3, n, 3, 1, pm_in, 4, fces_in, n, 0, m_out, n);
-			s_dgemm(3, n, 3, 1, pm_in, 4, fces_in + 3 * n, n, 0, m_out + 3 * n, n);
+			s_mdm(3, n, 3, 1, pm_in, 4, fces_in, n, 0, m_out, n);
+			s_mdm(3, n, 3, 1, pm_in, 4, fces_in + 3 * n, n, 0, m_out + 3 * n, n);
 
 			for (int i = 0; i < n; ++i)
 			{
@@ -728,9 +2091,9 @@ namespace aris
 				vRm[2][i] = -pm_in[7] * pm_in[i] + pm_in[3] * pm_in[4 + i];
 			}
 
-			s_dgemm(3, n, 3, alpha, pm_in, 4, fces_in, n, beta, m_out, n);
-			s_dgemm(3, n, 3, alpha, pm_in, 4, fces_in + 3 * n, n, beta, m_out + 3 * n, n);
-			s_dgemm(3, n, 3, alpha, *vRm, 3, fces_in, n, 1, m_out + 3 * n, n);
+			s_mdm(3, n, 3, alpha, pm_in, 4, fces_in, n, beta, m_out, n);
+			s_mdm(3, n, 3, alpha, pm_in, 4, fces_in + 3 * n, n, beta, m_out + 3 * n, n);
+			s_mdm(3, n, 3, alpha, *vRm, 3, fces_in, n, 1, m_out + 3 * n, n);
 		}
 		auto s_inv_tf(const double *inv_pm_in, const double *fce_in, double *vec_out) noexcept->void
 		{
@@ -738,26 +2101,26 @@ namespace aris
 			s_inv_pm(inv_pm_in, pm_in);
 			s_tf(pm_in, fce_in, vec_out);
 		}
-		auto s_inv_tf(double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept->void
+		auto s_inv_tf(double alpha, const double *inv_pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void
 		{
 			double pm_in[16];
 			s_inv_pm(inv_pm_in, pm_in);
-			s_tf(alpha, pm_in, vel_in, beta, vec_out);
+			s_tf(alpha, pm_in, vs_in, beta, vec_out);
 		}
-		auto s_tv(const double *pm_in, const double *vel_in, double *vec_out) noexcept->void
+		auto s_tv(const double *pm_in, const double *vs_in, double *vec_out) noexcept->void
 		{
-			s_pm_dot_v3(pm_in, vel_in, vec_out);
-			s_pm_dot_v3(pm_in, vel_in + 3, vec_out + 3);
+			s_pm_dot_v3(pm_in, vs_in, vec_out);
+			s_pm_dot_v3(pm_in, vs_in + 3, vec_out + 3);
 
 			vec_out[0] += -pm_in[11] * vec_out[4] + pm_in[7] * vec_out[5];
 			vec_out[1] += pm_in[11] * vec_out[3] - pm_in[3] * vec_out[5];
 			vec_out[2] += -pm_in[7] * vec_out[3] + pm_in[3] * vec_out[4];
 		}
-		auto s_tv(double alpha, const double *pm_in, const double *vel_in, double beta, double *vec_out) noexcept->void
+		auto s_tv(double alpha, const double *pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void
 		{
 			double tem[6];
 			
-			s_tv(pm_in, vel_in, tem);
+			s_tv(pm_in, vs_in, tem);
 
 			for (int i = 0; i < 6; ++i)
 			{
@@ -768,8 +2131,8 @@ namespace aris
 		{
 			std::fill_n(m_out, 6 * n, 0);
 			
-			s_dgemm(3, n, 3, 1, pm_in, 4, vels_in, n, 0, m_out, n);
-			s_dgemm(3, n, 3, 1, pm_in, 4, vels_in + 3 * n, n, 0, m_out + 3 * n, n);
+			s_mdm(3, n, 3, 1, pm_in, 4, vels_in, n, 0, m_out, n);
+			s_mdm(3, n, 3, 1, pm_in, 4, vels_in + 3 * n, n, 0, m_out + 3 * n, n);
 
 			for (int i = 0; i < n; ++i)
 			{
@@ -789,88 +2152,116 @@ namespace aris
 				vRm[2][i] = -pm_in[7] * pm_in[i] + pm_in[3] * pm_in[4 + i];
 			}
 
-			s_dgemm(3, n, 3, alpha, pm_in, 4, vels_in, n, beta, m_out, n);
-			s_dgemm(3, n, 3, alpha, pm_in, 4, vels_in + 3 * n, n, beta, m_out + 3 * n, n);
-			s_dgemm(3, n, 3, alpha, *vRm, 3, vels_in + 3 * n, n, 1, m_out, n);
+			s_mdm(3, n, 3, alpha, pm_in, 4, vels_in, n, beta, m_out, n);
+			s_mdm(3, n, 3, alpha, pm_in, 4, vels_in + 3 * n, n, beta, m_out + 3 * n, n);
+			s_mdm(3, n, 3, alpha, *vRm, 3, vels_in + 3 * n, n, 1, m_out, n);
 		}
-		auto s_inv_tv(const double *inv_pm_in, const double *vel_in, double *vec_out) noexcept->void
+		auto s_inv_tv(const double *inv_pm_in, const double *vs_in, double *vec_out) noexcept->void
 		{
 			double pm_in[16];
 			s_inv_pm(inv_pm_in, pm_in);
-			s_tv(pm_in, vel_in, vec_out);
+			s_tv(pm_in, vs_in, vec_out);
 		}
-		auto s_inv_tv(double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept->void
+		auto s_inv_tv(double alpha, const double *inv_pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void
 		{
 			double pm_in[16];
 			s_inv_pm(inv_pm_in, pm_in);
-			s_tv(alpha, pm_in, vel_in, beta, vec_out);
+			s_tv(alpha, pm_in, vs_in, beta, vec_out);
 		}
-		auto s_inv_tv_n(int n, const double *inv_pm_in, const double *vel_in, double *vec_out) noexcept->void
+		auto s_inv_tv_n(int n, const double *inv_pm_in, const double *vs_in, double *vec_out) noexcept->void
 		{
 			double pm_in[16];
 			s_inv_pm(inv_pm_in, pm_in);
-			s_tv_n(n, pm_in, vel_in, vec_out);
+			s_tv_n(n, pm_in, vs_in, vec_out);
 		}
-		auto s_inv_tv_n(int n, double alpha, const double *inv_pm_in, const double *vel_in, double beta, double *vec_out) noexcept->void
+		auto s_inv_tv_n(int n, double alpha, const double *inv_pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void
 		{
 			double pm_in[16];
 			s_inv_pm(inv_pm_in, pm_in);
-			s_tv_n(n, alpha, pm_in, vel_in, beta, vec_out);
+			s_tv_n(n, alpha, pm_in, vs_in, beta, vec_out);
 		}
-		auto s_cmf(const double *vel_in, double *cmf_out) noexcept->void
+		
+		auto s_cm3(const double *cro_vec_in, double *cm_out) noexcept->void
+		{
+			cm_out[0] = 0;
+			cm_out[1] = -cro_vec_in[2];
+			cm_out[2] = cro_vec_in[1];
+			cm_out[3] = cro_vec_in[2];
+			cm_out[4] = 0;
+			cm_out[5] = -cro_vec_in[0];
+			cm_out[6] = -cro_vec_in[1];
+			cm_out[7] = cro_vec_in[0];
+			cm_out[8] = 0;
+		}
+		auto s_c3(const double *cro_vec_in, const double *vec_in, double *vec_out) noexcept->void
+		{
+			vec_out[0] = -cro_vec_in[2] * vec_in[1] + cro_vec_in[1] * vec_in[2];
+			vec_out[1] = cro_vec_in[2] * vec_in[0] - cro_vec_in[0] * vec_in[2];
+			vec_out[2] = -cro_vec_in[1] * vec_in[0] + cro_vec_in[0] * vec_in[1];
+		}
+		auto s_c3(const double *cro_vec_in, const double *vec_in, std::size_t vec_in_ld, double *vec_out, std::size_t vec_out_ld) noexcept->void
+		{
+			vec_out[0] = -cro_vec_in[2] * vec_in[vec_in_ld] + cro_vec_in[1] * vec_in[2 * vec_in_ld];
+			vec_out[vec_out_ld] = cro_vec_in[2] * vec_in[0] - cro_vec_in[0] * vec_in[2 * vec_in_ld];
+			vec_out[2 * vec_out_ld] = -cro_vec_in[1] * vec_in[0] + cro_vec_in[0] * vec_in[vec_in_ld];
+		}
+		auto s_c3(double alpha, const double *cro_vec_in, const double *vec_in, double beta, double *vec_out) noexcept->void
+		{
+			vec_out[0] *= beta;
+			vec_out[1] *= beta;
+			vec_out[2] *= beta;
+
+			vec_out[0] += alpha*(-cro_vec_in[2] * vec_in[1] + cro_vec_in[1] * vec_in[2]);
+			vec_out[1] += alpha*(cro_vec_in[2] * vec_in[0] - cro_vec_in[0] * vec_in[2]);
+			vec_out[2] += alpha*(-cro_vec_in[1] * vec_in[0] + cro_vec_in[0] * vec_in[1]);
+		}
+		auto s_c3(double alpha, const double *cro_vec_in, const double *vec_in, std::size_t vec_in_ld, double beta, double *vec_out, std::size_t vec_out_ld) noexcept->void
+		{
+			vec_out[0] *= beta;
+			vec_out[vec_out_ld] *= beta;
+			vec_out[2 * vec_out_ld] *= beta;
+
+			vec_out[0] += alpha*(-cro_vec_in[2] * vec_in[vec_in_ld] + cro_vec_in[1] * vec_in[2 * vec_in_ld]);
+			vec_out[vec_out_ld] += alpha*(cro_vec_in[2] * vec_in[0] - cro_vec_in[0] * vec_in[2 * vec_in_ld]);
+			vec_out[2 * vec_out_ld] += alpha*(-cro_vec_in[1] * vec_in[0] + cro_vec_in[0] * vec_in[vec_in_ld]);
+		}
+		auto s_c3_n(std::size_t n, const double *cro_vec_in, const double *mat_in, std::size_t mat_in_ld, double *mat_out, std::size_t mat_out_ld) noexcept->void
+		{
+			for (std::size_t i = 0; i < n; ++i)s_c3(cro_vec_in, mat_in + i, mat_in_ld, mat_out + i, mat_out_ld);
+		}
+		auto s_c3_n(std::size_t n, double alpha, const double *cro_vec_in, const double *mat_in, std::size_t mat_in_ld, double beta, double *mat_out, std::size_t mat_out_ld) noexcept->void
+		{
+			for (std::size_t i = 0; i < n; ++i)s_c3(alpha, cro_vec_in, mat_in + i, mat_in_ld, beta, mat_out + i, mat_out_ld);
+		}
+		auto s_cmf(const double *vs_in, double *cmf_out) noexcept->void
 		{
 			std::fill_n(cmf_out, 36, 0);
 
-			cmf_out[6] = vel_in[5];
-			cmf_out[12] = -vel_in[4];
-			cmf_out[1] = -vel_in[5];
-			cmf_out[13] = vel_in[3];
-			cmf_out[2] = vel_in[4];
-			cmf_out[8] = -vel_in[3];
+			cmf_out[6] = vs_in[5];
+			cmf_out[12] = -vs_in[4];
+			cmf_out[1] = -vs_in[5];
+			cmf_out[13] = vs_in[3];
+			cmf_out[2] = vs_in[4];
+			cmf_out[8] = -vs_in[3];
 
-			cmf_out[27] = vel_in[5];
-			cmf_out[33] = -vel_in[4];
-			cmf_out[22] = -vel_in[5];
-			cmf_out[34] = vel_in[3];
-			cmf_out[23] = vel_in[4];
-			cmf_out[29] = -vel_in[3];
+			cmf_out[27] = vs_in[5];
+			cmf_out[33] = -vs_in[4];
+			cmf_out[22] = -vs_in[5];
+			cmf_out[34] = vs_in[3];
+			cmf_out[23] = vs_in[4];
+			cmf_out[29] = -vs_in[3];
 
-			cmf_out[24] = vel_in[2];
-			cmf_out[30] = -vel_in[1];
-			cmf_out[19] = -vel_in[2];
-			cmf_out[31] = vel_in[0];
-			cmf_out[20] = vel_in[1];
-			cmf_out[26] = -vel_in[0];
-		}
-		auto s_cmv(const double *vel_in, double *cmv_out) noexcept->void
-		{
-			std::fill_n(cmv_out, 36, 0);
-
-			cmv_out[6] = vel_in[5];
-			cmv_out[12] = -vel_in[4];
-			cmv_out[1] = -vel_in[5];
-			cmv_out[13] = vel_in[3];
-			cmv_out[2] = vel_in[4];
-			cmv_out[8] = -vel_in[3];
-
-			cmv_out[27] = vel_in[5];
-			cmv_out[33] = -vel_in[4];
-			cmv_out[22] = -vel_in[5];
-			cmv_out[34] = vel_in[3];
-			cmv_out[23] = vel_in[4];
-			cmv_out[29] = -vel_in[3];
-
-			cmv_out[9] = vel_in[2];
-			cmv_out[15] = -vel_in[1];
-			cmv_out[4] = -vel_in[2];
-			cmv_out[16] = vel_in[0];
-			cmv_out[5] = vel_in[1];
-			cmv_out[11] = -vel_in[0];
+			cmf_out[24] = vs_in[2];
+			cmf_out[30] = -vs_in[1];
+			cmf_out[19] = -vs_in[2];
+			cmf_out[31] = vs_in[0];
+			cmf_out[20] = vs_in[1];
+			cmf_out[26] = -vs_in[0];
 		}
 		auto s_cf(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept->void
 		{
-			s_cro3(cro_vel_in + 3, vec_in, vec_out);
-			s_cro3(cro_vel_in + 3, vec_in + 3, vec_out + 3);
+			s_c3(cro_vel_in + 3, vec_in, vec_out);
+			s_c3(cro_vel_in + 3, vec_in + 3, vec_out + 3);
 
 			vec_out[3] += -cro_vel_in[2] * vec_in[1] + cro_vel_in[1] * vec_in[2];
 			vec_out[4] += cro_vel_in[2] * vec_in[0] - cro_vel_in[0] * vec_in[2];
@@ -878,17 +2269,42 @@ namespace aris
 		}
 		auto s_cf(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept->void
 		{
-			s_cro3(alpha, cro_vel_in + 3, vec_in, beta, vec_out);
-			s_cro3(alpha, cro_vel_in + 3, vec_in + 3, beta, vec_out + 3);
+			s_c3(alpha, cro_vel_in + 3, vec_in, beta, vec_out);
+			s_c3(alpha, cro_vel_in + 3, vec_in + 3, beta, vec_out + 3);
 
 			vec_out[3] += alpha*(-cro_vel_in[2] * vec_in[1] + cro_vel_in[1] * vec_in[2]);
 			vec_out[4] += alpha*(cro_vel_in[2] * vec_in[0] - cro_vel_in[0] * vec_in[2]);
 			vec_out[5] += alpha*(-cro_vel_in[1] * vec_in[0] + cro_vel_in[0] * vec_in[1]);
 		}
+		auto s_cmv(const double *vs_in, double *cmv_out) noexcept->void
+		{
+			std::fill_n(cmv_out, 36, 0);
+
+			cmv_out[6] = vs_in[5];
+			cmv_out[12] = -vs_in[4];
+			cmv_out[1] = -vs_in[5];
+			cmv_out[13] = vs_in[3];
+			cmv_out[2] = vs_in[4];
+			cmv_out[8] = -vs_in[3];
+
+			cmv_out[27] = vs_in[5];
+			cmv_out[33] = -vs_in[4];
+			cmv_out[22] = -vs_in[5];
+			cmv_out[34] = vs_in[3];
+			cmv_out[23] = vs_in[4];
+			cmv_out[29] = -vs_in[3];
+
+			cmv_out[9] = vs_in[2];
+			cmv_out[15] = -vs_in[1];
+			cmv_out[4] = -vs_in[2];
+			cmv_out[16] = vs_in[0];
+			cmv_out[5] = vs_in[1];
+			cmv_out[11] = -vs_in[0];
+		}
 		auto s_cv(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept->void
 		{
-			s_cro3(cro_vel_in + 3, vec_in, vec_out);
-			s_cro3(cro_vel_in + 3, vec_in+3, vec_out+3);
+			s_c3(cro_vel_in + 3, vec_in, vec_out);
+			s_c3(cro_vel_in + 3, vec_in+3, vec_out+3);
 			
 			vec_out[0] += -cro_vel_in[2] * vec_in[4] + cro_vel_in[1] * vec_in[5];
 			vec_out[1] += cro_vel_in[2] * vec_in[3] - cro_vel_in[0] * vec_in[5];
@@ -896,168 +2312,14 @@ namespace aris
 		}
 		auto s_cv(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept->void
 		{
-			s_cro3(alpha, cro_vel_in + 3, vec_in, beta, vec_out);
-			s_cro3(alpha, cro_vel_in + 3, vec_in + 3, beta, vec_out + 3);
+			s_c3(alpha, cro_vel_in + 3, vec_in, beta, vec_out);
+			s_c3(alpha, cro_vel_in + 3, vec_in + 3, beta, vec_out + 3);
 
 			vec_out[0] += alpha*(-cro_vel_in[2] * vec_in[4] + cro_vel_in[1] * vec_in[5]);
 			vec_out[1] += alpha*(cro_vel_in[2] * vec_in[3] - cro_vel_in[0] * vec_in[5]);
 			vec_out[2] += alpha*(-cro_vel_in[1] * vec_in[3] + cro_vel_in[0] * vec_in[4]);
 		}
-		auto s_i2i(const double *from_pm_in, const double *from_im_in, double *to_im_out) noexcept->void
-		{
-			//double x, y, z, old_x, old_y, old_z, new_x, new_y, new_z, m;
 
-			//m = from_im_in[0];
-
-			//x = from_pm_in[3];
-			//y = from_pm_in[7];
-			//z = from_pm_in[11];
-
-			//old_x = from_im_in[11];
-			//old_y = from_im_in[15];
-			//old_z = from_im_in[4];
-
-			//new_x = from_pm_in[0] * old_x + from_pm_in[1] * old_y + from_pm_in[2] * old_z;
-			//new_y = from_pm_in[4] * old_x + from_pm_in[5] * old_y + from_pm_in[6] * old_z;
-			//new_z = from_pm_in[8] * old_x + from_pm_in[9] * old_y + from_pm_in[10] * old_z;
-
-			////memset(to_im_out, 0, sizeof(double)* 36);
-			//std::fill_n(to_im_out, 36, 0);
-			///* 设置左上角的3*3的矩阵 */
-			//to_im_out[0] = from_im_in[0];
-			//to_im_out[7] = from_im_in[7];
-			//to_im_out[14] = from_im_in[14];
-			///* 设置右上角的3*3的矩阵 */
-			//to_im_out[4] = m*z + new_z;
-			//to_im_out[5] = -m*y - new_y;
-			//to_im_out[11] = m*x + new_x;
-			//to_im_out[9] = -to_im_out[4];
-			//to_im_out[15] = -to_im_out[5];
-			//to_im_out[16] = -to_im_out[11];
-			///* 设置左下角的3*3的矩阵 */
-			//to_im_out[24] = to_im_out[4];
-			//to_im_out[30] = to_im_out[5];
-			//to_im_out[19] = to_im_out[9];
-			//to_im_out[31] = to_im_out[11];
-			//to_im_out[20] = to_im_out[15];
-			//to_im_out[26] = to_im_out[16];
-			///* 设置右下角的3*3的矩阵 */
-			//for (int i = 0; i < 3; ++i)
-			//{
-			//	for (int j = 0; j < 3; ++j)
-			//	{
-			//		to_im_out[21] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 0];
-			//		to_im_out[22] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 4];
-			//		to_im_out[23] += from_pm_in[0 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
-			//		to_im_out[28] += from_pm_in[4 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 4];
-			//		to_im_out[29] += from_pm_in[4 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
-			//		to_im_out[35] += from_pm_in[8 + i] * from_im_in[i * 6 + j + 21] * from_pm_in[j + 8];
-			//	}
-			//}
-
-			//to_im_out[21] += m*(y*y + z*z) + 2 * (new_y*y + new_z*z);
-			//to_im_out[22] += -m*x*y - new_x*y - x*new_y;
-			//to_im_out[23] += -m*x*z - new_x*z - x*new_z;
-			//to_im_out[28] += m*(x*x + z*z) + 2 * (new_x*x + new_z*z);
-			//to_im_out[29] += -m*y*z - new_y*z - y*new_z;
-			//to_im_out[35] += m*(x*x + y*y) + 2 * (new_x*x + new_y*y);
-
-			//to_im_out[27] = to_im_out[22];
-			//to_im_out[33] = to_im_out[23];
-			//to_im_out[34] = to_im_out[29];
-
-
-
-
-
-			/*以下为慢速但准确的算法*/
-			std::fill_n(to_im_out, 36, 0);
-			double tem[6][6]{ {0} }, tmf[6][6]{ {0} };
-			s_tmf(from_pm_in, *tmf);
-			s_dgemm(6, 6, 6, 1, *tmf, 6, from_im_in, 6, 0, *tem, 6);
-			s_dgemmNT(6, 6, 6, 1, *tem, 6, *tmf, 6, 0, to_im_out, 6);
-
-		}
-		
-		auto s_mass2im(const double mass_in, const double * inertia_in, const double *pm_in, double *im_out) noexcept->void
-		{
-			double loc_im[6][6]{ {0} }, loc_tm[6][6];
-		
-			//memset(im_out, 0, sizeof(double)* 36);
-			std::fill_n(im_out, 36, 0);
-
-			im_out[0] = mass_in;
-			im_out[7] = mass_in;
-			im_out[14] = mass_in;
-
-			if (inertia_in != nullptr)
-			{
-				im_out[21] = inertia_in[0];
-				im_out[22] = inertia_in[1];
-				im_out[23] = inertia_in[2];
-				im_out[27] = inertia_in[3];
-				im_out[28] = inertia_in[4];
-				im_out[29] = inertia_in[5];
-				im_out[33] = inertia_in[6];
-				im_out[34] = inertia_in[7];
-				im_out[35] = inertia_in[8];
-			}
-
-			if (pm_in != nullptr)
-			{
-				s_tmf(pm_in, *loc_tm);
-				s_dgemm(6, 6, 6, 1, *loc_tm, 6, im_out, 6, 0, *loc_im, 6);
-				s_dgemm(6, 6, 6, 1, *loc_im, 6, *loc_tm, 6, 0, im_out, 6);
-			}
-		
-		}
-		auto s_gamma2im(const double * gamma_in, double *im_out) noexcept->void
-		{
-			//memset(im_out, 0, sizeof(double)* 36);
-			std::fill_n(im_out, 36, 0);
-
-			im_out[0] = gamma_in[0];
-			im_out[7] = gamma_in[0];
-			im_out[14] = gamma_in[0];
-
-			im_out[4] = gamma_in[3];
-			im_out[5] = -gamma_in[2];
-			im_out[9] = -gamma_in[3];
-			im_out[11] = gamma_in[1];
-			im_out[15] = gamma_in[2];
-			im_out[16] = -gamma_in[1];
-
-			im_out[19] = -gamma_in[3];
-			im_out[20] = gamma_in[2];
-			im_out[24] = gamma_in[3];
-			im_out[26] = -gamma_in[1];
-			im_out[30] = -gamma_in[2];
-			im_out[31] = gamma_in[1];
-
-			im_out[21] = gamma_in[4];
-			im_out[22] = gamma_in[7];
-			im_out[23] = gamma_in[8];
-			im_out[27] = gamma_in[7];
-			im_out[28] = gamma_in[5];
-			im_out[29] = gamma_in[9];
-			im_out[33] = gamma_in[8];
-			im_out[34] = gamma_in[9];
-			im_out[35] = gamma_in[6];
-		}
-		auto s_im2gamma(const double * im_in, double *gamma_out) noexcept->void
-		{
-			gamma_out[0] = im_in[0];
-			gamma_out[1] = im_in[11];
-			gamma_out[2] = im_in[15];
-			gamma_out[3] = im_in[4];
-			gamma_out[4] = im_in[21];
-			gamma_out[5] = im_in[28];
-			gamma_out[6] = im_in[35];
-			gamma_out[7] = im_in[22];
-			gamma_out[8] = im_in[23];
-			gamma_out[9] = im_in[29];
-		}
-	
 		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
 			const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
 			double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void
@@ -1143,15 +2405,330 @@ namespace aris
 			}
 
 		}
-		auto s_dlt_col(const int &dlt_col_num,const int *col_index, const int &m, const int &n, double *A, const int &ldA) noexcept->void
+
+		auto s_nd(int n, double a, double *x, int incx) noexcept->void
+		{
+			int final_idx = n*incx;
+			for (int i = 0; i < final_idx; i += incx)x[i] *= a;
+		}
+		auto s_ndv(int n, double a, const double *x, int incx, double *y, int incy) noexcept->void
+		{
+			int x_idx{ 0 }, y_idx{ 0 };
+			for (int i = 0; i < n; ++i) 
+			{
+				y[y_idx] = a*x[x_idx];
+				x_idx += incx;
+				y_idx += incy;
+			}
+		}
+		auto s_vnm(int n, const double *x, int incx) noexcept->double
+		{
+			double norm = 0;
+			int final_idx = n*incx;
+			for (int i = 0; i < final_idx; i += incx)norm += x[i] * x[i];
+			return std::sqrt(norm);
+		}
+		auto s_vsw(int n, double *x, int incx, double *y, int incy) noexcept->void
+		{
+			int x_idx{ 0 }, y_idx{ 0 };
+			for (int i = 0; i < n; ++i)
+			{
+				std::swap(x[x_idx], y[y_idx]);
+				x_idx += incx;
+				y_idx += incy;
+			}
+		}
+		auto s_vdv(int n, const double *x, const double *y) noexcept->double
+		{
+			double ret{ 0 };
+
+			for (int i = 0; i < n; ++i)ret += x[i] * y[i];
+
+			return ret;
+		}
+		auto s_vdv(int n, const double *x, int incx, const double *y, int incy) noexcept->double
+		{
+			double ret{ 0 };
+			int x_idx{ 0 }, y_idx{ 0 };
+
+			for (int i = 0; i < n; ++i) 
+			{
+				x_idx += incx;
+				y_idx += incy;
+				
+				ret += x[x_idx] * y[y_idx];
+			}
+			
+			return ret;
+		}
+		auto s_va(int n, const double* x, double* y) noexcept->void
+		{
+			for (auto i = 0; i < n; ++i)y[i] += x[i];
+		}
+		auto s_va(int n, double alpha, const double* x, double beta, double* y) noexcept->void
+		{
+			for (auto i = 0; i < n; ++i) 
+			{
+				y[i] *= beta;
+				y[i] += alpha * x[i];
+			}
+		}
+		auto s_va(int n, const double* x, int incx, double* y, int incy) noexcept->void
+		{
+			int x_idx{ 0 }, y_idx{ 0 };
+
+			for (int i = 0; i < n; ++i)
+			{
+				y[y_idx] += x[x_idx];
+				x_idx += incx;
+				y_idx += incy;
+			}
+		}
+		auto s_va(int n, double alpha, const double* x, int incx, double beta, double* y, int incy) noexcept->void
+		{
+			int x_idx{ 0 }, y_idx{ 0 };
+
+			for (int i = 0; i < n; ++i)
+			{
+				y[y_idx] *= beta;
+				y[y_idx] += alpha * x[x_idx];
+				x_idx += incx;
+				y_idx += incy;
+			}
+		}
+		auto s_vav(int n, const double* x, const double* y, double* z) noexcept->void
+		{
+			for (auto i = 0; i < n; ++i)z[i] = x[i] + y[i];
+		}
+		auto s_vav(int n, double alpha, const double* x, double beta, const double* y, double gamma, double* z) noexcept->void
+		{
+			for (auto i = 0; i < n; ++i)
+			{
+				z[i] *= gamma;
+				z[i] += alpha * x[i] + beta * y[i];
+			}
+		}
+		auto s_vav(int n, const double* x, int incx, const double* y, int incy, double* z, int incz) noexcept->void
+		{
+			int x_idx{ 0 }, y_idx{ 0 }, z_idx{ 0 };
+
+			for (int i = 0; i < n; ++i)
+			{
+				z[z_idx] = x[x_idx] + y[y_idx];
+				x_idx += incx;
+				y_idx += incy;
+				z_idx += incz;
+			}
+		}
+		auto s_vav(int n, double alpha, const double* x, int incx, double beta, const double* y, int incy, double gamma, double* z, int incz) noexcept->void
+		{
+			int x_idx{ 0 }, y_idx{ 0 }, z_idx{ 0 };
+
+			for (int i = 0; i < n; ++i)
+			{
+				z[z_idx] *= gamma;
+				z[z_idx] = alpha * x[x_idx] + beta * y[y_idx];
+				x_idx += incx;
+				y_idx += incy;
+				z_idx += incz;
+			}
+		}
+		auto s_mt(int m, int n, double *A) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					std::swap(A[i*n + j], A[j*n + i]);
+				}
+			}
+		}
+		auto s_mtm(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx = i*lda;
+				int B_idx{ i };
+
+				for (int j = 0; j < n; ++j)
+				{
+					B[B_idx] = A[row_idx + j];
+					B_idx += ldb;
+				}
+			}
+		}
+		auto s_ma(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx_a = i*lda;
+				int row_idx_b = i*ldb;
+
+				for (int j = 0; j < n; ++j)B[row_idx_b + j] += A[row_idx_a + j];
+			}
+		}
+		auto s_ma(int m, int n, double alpha, const double* A, int lda, double beta, double* B, int ldb) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx_a = i*lda;
+				int row_idx_b = i*ldb;
+
+				for (int j = 0; j < n; ++j) 
+				{
+					B[row_idx_b + j] *= beta;
+					B[row_idx_b + j] += alpha * A[row_idx_a + j];
+				}
+			}
+		}
+		auto s_mam(int m, int n, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx_a = i*lda;
+				int row_idx_b = i*ldb;
+				int row_idx_c = i*ldc;
+
+				for (int j = 0; j < n; ++j)C[row_idx_c + j] = A[row_idx_a + j] + B[row_idx_b + j];
+			}
+		}
+		auto s_mam(int m, int n, double alpha, const double* A, int lda, double beta, const double* B, int ldb, double gamma, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx_a = i*lda;
+				int row_idx_b = i*ldb;
+				int row_idx_c = i*ldc;
+
+				for (int j = 0; j < n; ++j) 
+				{
+					C[row_idx_c + j] = alpha*A[row_idx_a + j] + beta*B[row_idx_b + j];
+				}
+			}
+		}
+		auto s_mdm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx = i*lda;
+				for (int j = 0; j < n; ++j)
+				{
+					int idx = i*ldc + j;
+
+					C[idx] = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						C[idx] += A[row_idx + u] * B[j + u*ldb];
+					}
+				}
+			}
+		}
+		auto s_mdm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx = i*lda;
+				for (int j = 0; j < n; ++j)
+				{
+					int idx = i*ldc + j;
+					C[idx] *= beta;
+
+					double addFactor = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						addFactor +=  A[row_idx + u] * B[j + u*ldb];
+					}
+					
+					C[idx] += alpha *addFactor;
+				}
+			}
+		}
+		auto s_mdmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					int idx = i*ldc + j;
+					
+					C[idx] = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						C[idx] += A[i + u*lda] * B[j + u*ldb];
+					}
+				}
+			}
+		}
+		auto s_mdmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					int idx = i*ldc + j;
+					C[idx] *= beta;
+
+					double addFactor = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						addFactor += A[i + u*lda] * B[j + u*ldb];
+					}
+
+					C[idx] += alpha *addFactor;
+				}
+			}
+		}
+		auto s_mdmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx = i*lda;
+				for (int j = 0; j < n; ++j)
+				{
+					int colIndex = j*ldb;
+
+					int idx = i*ldc + j;
+					
+					C[idx] = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						C[idx] += A[row_idx + u] * B[colIndex + u];
+					}
+				}
+			}
+		}
+		auto s_mdmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx = i*lda;
+				for (int j = 0; j < n; ++j)
+				{
+					int colIndex = j*ldb;
+					
+					int idx = i*ldc + j;
+					C[idx] *= beta;
+
+					double addFactor = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						addFactor += A[row_idx + u] * B[colIndex + u];
+					}
+
+					C[idx] += alpha *addFactor;
+				}
+			}
+		}
+
+		auto s_dlt_col(const int &dlt_col_num, const int *col_index, const int &m, const int &n, double *A, const int &ldA) noexcept->void
 		{
 			for (int i = 0; i < dlt_col_num; ++i)
 			{
-				for (int k = col_index[i]; k < ((i == dlt_col_num - 1) ? (n) : (col_index[i+1])); ++k)
+				for (int k = col_index[i]; k < ((i == dlt_col_num - 1) ? (n) : (col_index[i + 1])); ++k)
 				{
 					for (int j = 0; j < m; ++j)
 					{
-						A[j*ldA + k-i] = A[j*ldA + k + 1];
+						A[j*ldA + k - i] = A[j*ldA + k + 1];
 					}
 				}
 			}
@@ -1208,7 +2785,7 @@ namespace aris
 			{
 				for (int j = 0; j < 4; ++j)
 				{
-					pm_out[i * 4 + j] = inv_pm1_in[i] * pm2_in[j] + inv_pm1_in[i + 4] * pm2_in[j + 4] + inv_pm1_in[i +8] * pm2_in[j + 8];
+					pm_out[i * 4 + j] = inv_pm1_in[i] * pm2_in[j] + inv_pm1_in[i + 4] * pm2_in[j + 4] + inv_pm1_in[i + 8] * pm2_in[j + 8];
 				}
 			}
 
@@ -1227,25 +2804,6 @@ namespace aris
 			s_inv_pm(inv_pm2_in, tem);
 			s_pm_dot_pm(pm1_in, tem, pm_out);
 		}
-		auto s_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept->void
-		{
-			s_pm_dot_v3(pm_in, pos_in, pos_out);
-			
-			pos_out[0] += pm_in[3];
-			pos_out[1] += pm_in[7];
-			pos_out[2] += pm_in[11];
-		}
-		auto s_inv_pm_dot_pnt(const double *pm_in, const double *pos_in, double *pos_out) noexcept->void
-		{
-			std::fill_n(pos_out, 3, 0);
-
-
-			double tem[3];
-			std::copy_n(pos_in, 3, tem);
-
-			s_daxpy(3, -1, &pm_in[3], 4, tem, 1);
-			s_dgemmTN(3, 1, 3, 1, pm_in, 4, tem, 1, 0, pos_out, 1);
-		}
 		auto s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept->void
 		{
 			// seemed that loop is faster than cblas //
@@ -1261,7 +2819,6 @@ namespace aris
 				v3_out[i] = inv_pm_in[i] * v3_in[0] + inv_pm_in[i + 4] * v3_in[1] + inv_pm_in[i + 8] * v3_in[2];
 			}
 		}
-		
 		auto s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept->void
 		{
 			// seemed that loop is faster than cblas //
@@ -1269,151 +2826,6 @@ namespace aris
 			{
 				v6_out[i] = m6_in[i * 6] * v6_in[0] + m6_in[i * 6 + 1] * v6_in[1] + m6_in[i * 6 + 2] * v6_in[2] +
 					m6_in[i * 6 + 3] * v6_in[3] + m6_in[i * 6 + 4] * v6_in[4] + m6_in[i * 6 + 5] * v6_in[5];
-			}
-		}
-		auto s_vn_add_vn(int N, const double *v1_in, const double *v2_in, double *v_out) noexcept->void
-		{
-			for (int i = 0; i < N; ++i)
-			{
-				v_out[i] = v1_in[i] + v2_in[i];
-			}
-		}
-		auto s_vn_dot_vn(int N, const double *v1_in, const double *v2_in) noexcept->double
-		{
-			double ret{0};
-
-			for (int i = 0; i < N; ++i)
-			{
-				ret += v1_in[i] * v2_in[i];
-			}
-
-			return ret;
-		}
-		auto s_v_cro_pm(const double *v_in, const double *pm_in, double *vpm_out) noexcept->void
-		{
-			vpm_out[0] = -v_in[5] * pm_in[4] + v_in[4] * pm_in[8];
-			vpm_out[4] = v_in[5] * pm_in[0] - v_in[3] * pm_in[8];
-			vpm_out[8] = -v_in[4] * pm_in[0] + v_in[3] * pm_in[4];
-
-			vpm_out[1] = -v_in[5] * pm_in[5] + v_in[4] * pm_in[9];
-			vpm_out[5] = v_in[5] * pm_in[1] - v_in[3] * pm_in[9];
-			vpm_out[9] = -v_in[4] * pm_in[1] + v_in[3] * pm_in[5];
-
-			vpm_out[2] = -v_in[5] * pm_in[6] + v_in[4] * pm_in[10];
-			vpm_out[6] = v_in[5] * pm_in[2] - v_in[3] * pm_in[10];
-			vpm_out[10] = -v_in[4] * pm_in[2] + v_in[3] * pm_in[6];
-
-			vpm_out[3] = -v_in[5] * pm_in[7] + v_in[4] * pm_in[11] + v_in[0];
-			vpm_out[7] = v_in[5] * pm_in[3] - v_in[3] * pm_in[11] + v_in[1];
-			vpm_out[11] = -v_in[4] * pm_in[3] + v_in[3] * pm_in[7] + v_in[2];
-
-			vpm_out[12] = 0;
-			vpm_out[13] = 0;
-			vpm_out[14] = 0;
-			vpm_out[15] = 0;
-		}
-
-		auto s_dscal(const int n, const double a, double *x, const int incx) noexcept->void
-		{
-			for (int i = 0; i < n*incx; i += incx)x[i] *= a;
-		}
-		auto s_dnrm2(const int n, const double *x, const int incx) noexcept->double
-		{
-			double nrm=0;
-
-			int finalIdx = n*incx;
-
-			for (int i = 0; i < finalIdx; i+=incx)
-			{
-				nrm += x[i] * x[i];
-			}
-			return std::sqrt(nrm);
-		}
-		auto s_daxpy(const int N, const double alpha, const double *X, const int incX, double *Y, const int incY) noexcept->void
-		{
-			int xIdx{ 0 }, yIdx{ 0 };
-			
-			for (int i = 0; i < N; ++i)
-			{
-				Y[yIdx] += alpha*X[xIdx];
-				xIdx += incX;
-				yIdx += incY;
-			}
-		}
-		auto s_swap(const int N, double *X, const int incX, double *Y, const int incY) noexcept->void
-		{
-			for (int i = 0; i < N; ++i)std::swap(X[incX*i], Y[incY*i]);
-		}
-		auto s_transpose(const int m, const int n, const double *A, const int ldA, double *B_out, const int ldB) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				for (int j = 0; j < n; ++j)
-				{
-					B_out[j*ldB + i] = A[i*ldA + j];
-				}
-			}
-		}
-
-		auto s_dgemm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				int rowIndex = i*lda;
-				for (int j = 0; j < n; ++j)
-				{
-					int idx = i*ldc + j;
-					C[idx] *= beta;
-
-					double addFactor = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						addFactor +=  A[rowIndex + u] * B[j + u*ldb];
-					}
-					
-					C[idx] += alpha *addFactor;
-				}
-			}
-		}
-		auto s_dgemmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				for (int j = 0; j < n; ++j)
-				{
-					int idx = i*ldc + j;
-					C[idx] *= beta;
-
-					double addFactor = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						addFactor += A[i + u*lda] * B[j + u*ldb];
-					}
-
-					C[idx] += alpha *addFactor;
-				}
-			}
-		}
-		auto s_dgemmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				int rowIndex = i*lda;
-				for (int j = 0; j < n; ++j)
-				{
-					int colIndex = j*ldb;
-					
-					int idx = i*ldc + j;
-					C[idx] *= beta;
-
-					double addFactor = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						addFactor += A[rowIndex + u] * B[colIndex + u];
-					}
-
-					C[idx] += alpha *addFactor;
-				}
 			}
 		}
 
@@ -1430,10 +2842,10 @@ namespace aris
 			std::copy_n(firstAxisPnt, 3, Axis1);
 			std::copy_n(secondAxisPnt, 3, Axis2);
 
-			s_daxpy(3, -1, origin, 1, Axis1, 1);
-			s_daxpy(3, -1, origin, 1, Axis2, 1);
+			s_va(3, -1, origin, 1, Axis1);
+			s_va(3, -1, origin, 1, Axis2);
 
-			nrm = s_dnrm2(3, Axis1, 1);
+			nrm = s_vnm(3, Axis1, 1);
 			if (nrm != 0)
 			{
 				for (int i = 0; i < 3; ++i)
@@ -1446,7 +2858,7 @@ namespace aris
 				Axis1[Order[0]] = 1;
 			}
 
-			nrm = s_dnrm2(3, Axis2, 1);
+			nrm = s_vnm(3, Axis2, 1);
 			if (nrm != 0)
 			{
 				for (int i = 0; i < 3; ++i)
@@ -1460,9 +2872,9 @@ namespace aris
 			}
 
 			//下求差乘计算。首先要判断差乘之后的正负号。
-			s_cro3(Axis1, Axis2, Axis3);
+			s_c3(Axis1, Axis2, Axis3);
 
-			nrm = s_dnrm2(3, Axis3, 1);
+			nrm = s_vnm(3, Axis3, 1);
 			if (nrm == 0)
 			{
 				//有待补充
@@ -1483,21 +2895,21 @@ namespace aris
 				}
 				else
 				{
-					s_dscal(3, -1, Axis3, 1);
+					s_nd(3, -1, Axis3, 1);
 				}
 			}
 			else
 			{
 				if ((Order[1] - Order[0]) == -1)
 				{
-					s_dscal(3, -1, Axis3, 1);
+					s_nd(3, -1, Axis3, 1);
 				}
 				else
 				{
 				}
 			}
 
-			s_cro3(Axis3, Axis1, Axis2);
+			s_c3(Axis3, Axis1, Axis2);
 
 			if (Order[0]>Order[2])
 			{
@@ -1506,21 +2918,21 @@ namespace aris
 				}
 				else
 				{
-					s_dscal(3, -1, Axis2, 1);
+					s_nd(3, -1, Axis2, 1);
 				}
 			}
 			else
 			{
 				if ((Order[0] - Order[2]) == -1)
 				{
-					s_dscal(3, -1, Axis2, 1);
+					s_nd(3, -1, Axis2, 1);
 				}
 				else
 				{
 				}
 			}
 
-			nrm = s_dnrm2(3, Axis2, 1);
+			nrm = s_vnm(3, Axis2, 1);
 			for (int i = 0; i < 3; ++i)
 			{
 				Axis2[i] = Axis2[i] / nrm;
@@ -1571,5 +2983,67 @@ namespace aris
 			if (theta_out[0] < -2 * PI)theta_out[0] += 2 * PI;
 			if (theta_out[1] < -2 * PI)theta_out[1] += 2 * PI;
 		};
+
+		auto dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n)->void
+		{
+			std::ofstream file;
+
+			file.open(FileName);
+
+			file << std::setprecision(15);
+
+			for (int i = 0; i < m; i++)
+			{
+				for (int j = 0; j < n; j++)
+				{
+					file << pMatrix[n*i + j] << "   ";
+				}
+				file << std::endl;
+			}
+		}
+		auto dlmread(const char *FileName, double *pMatrix)->void
+		{
+			std::ifstream file;
+
+			file.open(FileName);
+
+			if (!file) throw std::logic_error("file not exist");
+
+
+			int i = 0;
+			while (!file.eof())
+			{
+				file >> *(pMatrix + i);
+				++i;
+			}
+		}
+		auto dsp(const double *p, const int m, const int n, const int begin_row, const int begin_col, int ld)->void
+		{
+			if (ld < 1)	ld = n;
+
+			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(15);
+
+			std::cout << std::endl;
+			for (int i = 0; i < m; i++)
+			{
+				for (int j = 0; j < n; j++)
+				{
+					std::cout << p[(begin_row + i)*ld + j + begin_col] << "   ";
+				}
+				std::cout << std::endl;
+			}
+			std::cout << std::endl;
+		}
+
+		auto s_is_equal(int n, const double *v1, const double *v2, double error) noexcept->bool
+		{
+			double diff_square = 0;
+
+			for (int i = 0; i < n; ++i)diff_square += (v1[i] - v2[i])*(v1[i] - v2[i]);
+
+			diff_square = std::sqrt(std::abs(diff_square));
+
+			return diff_square > error ? false : true;
+		}
 	}
 }
