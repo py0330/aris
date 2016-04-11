@@ -207,25 +207,20 @@ namespace aris
 			virtual auto saveAdams(std::ofstream &file) const->void override;
 			virtual auto update()->void override;
 			virtual auto dim() const->std::size_t = 0;
-			auto cstMtxI() const->const double* { return const_cast<Constraint*>(this)->csmI(); };
-			auto cstMtxJ() const->const double* { return const_cast<Constraint*>(this)->csmJ(); };
-			auto cstAcc() const->const double* { return const_cast<Constraint*>(this)->csa(); };
-			auto cstFce() const->const double* { return const_cast<Constraint*>(this)->csf(); };
+			auto colID()const->std::size_t;
+			auto csmPtrI() const->const double*;
+			auto csmPtrJ() const->const double*;
+			auto csaPtr() const->const double*;
+			auto csfPtr() const->const double*;
 
 		protected:
-			virtual ~Constraint() = default;
-			explicit Constraint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, bool is_active = true)
-				: Interaction(father, name, id, makI, makJ, is_active) {};
-			explicit Constraint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
-				: Interaction(father, xml_ele, id) {};
+			virtual ~Constraint();
+			explicit Constraint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, double *csmI, double *csmJ, double *csa, double *csf, bool is_active = true);
+			explicit Constraint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id, double *csmI, double *csmJ, double *csa, double *csf);
 
 		private:
-			virtual auto csmI()->double* = 0;
-			virtual auto csmJ()->double* = 0;
-			virtual auto csa()->double* = 0;
-			virtual auto csf()->double* = 0;
-
-			std::size_t col_id_;
+			struct Imp;
+			ImpPtr<Imp> imp;
 
 			friend class Model;
 		};
@@ -521,10 +516,10 @@ namespace aris
 			virtual auto groupName()const->const std::string& override final{ return TypeName(); };
 
 		protected:
-			explicit Joint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, bool active = true)
-				: Constraint(father, name, id, makI, makJ, active) {};
-			explicit Joint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
-				: Constraint(father, xml_ele, id) {};
+			explicit Joint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, double *csmI, double *csmJ, double *csa, double *csf, bool active = true)
+				: Constraint(father, name, id, makI, makJ, csmI, csmJ, csa, csf, active) {};
+			explicit Joint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id, double *csmI, double *csmJ, double *csa, double *csf)
+				: Constraint(father, xml_ele, id, csmI, csmJ, csa, csf) {};
 
 			friend class ElementPool<Joint>;
 		};
@@ -553,10 +548,10 @@ namespace aris
 		protected:
 			explicit Motion(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, const double *frc_coe = nullptr, bool active = true);
 			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id);
-			virtual auto csmI()->double* override { return csmI_; };
-			virtual auto csmJ()->double* override { return csmJ_; };
-			virtual auto csa()->double* override { return &csa_; };
-			virtual auto csf()->double* override { return &mot_fce_dyn_; };
+			virtual auto csmI()->double* { return csmI_; };
+			virtual auto csmJ()->double* { return csmJ_; };
+			virtual auto csa()->double* { return &csa_; };
+			virtual auto csf()->double* { return &mot_fce_dyn_; };
 
 			/*pos\vel\acc\fce of motion*/
 			double mot_pos_{ 0 }, mot_vel_{ 0 }, mot_acc_{ 0 }, mot_fce_dyn_{ 0 };
@@ -822,19 +817,21 @@ namespace aris
 		template<std::size_t DIMENSION>	class JointTemplate :public Joint
 		{
 		public:
+			typedef double double6xd[6][DIMENSION];
+			typedef double doubled[DIMENSION];
+			
 			static constexpr int Dim() { return DIMENSION; };
 			virtual auto dim() const->std::size_t { return DIMENSION; };
+			auto csmI() const->const double6xd &{ return csmI_; };
+			auto csmJ() const->const double6xd &{ return csmJ_; };
+			auto csa() const->const doubled &{ return csa_; };
+			auto csf() const->const doubled &{ return csf_; };
 
 		protected:
 			explicit JointTemplate(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
-				:Joint(father, name, id, makI, makJ) {};
+				:Joint(father, name, id, makI, makJ, *csmI_, *csmJ_, csa_, csf_) {};
 			explicit JointTemplate(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
-				:Joint(father, xml_ele, id) {};
-
-			virtual auto csmI()->double* override { return *csmI_; };
-			virtual auto csmJ()->double* override { return *csmJ_; };
-			virtual auto csf()->double* override { return csf_; };
-			virtual auto csa()->double* override { return csa_; };
+				:Joint(father, xml_ele, id, *csmI_, *csmJ_, csa_, csf_) {};
 
 			double csmI_[6][DIMENSION]{ { 0 } };
 			double csmJ_[6][DIMENSION]{ { 0 } };

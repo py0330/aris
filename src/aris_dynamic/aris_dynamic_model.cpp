@@ -94,6 +94,24 @@ namespace aris
 			xml_ele.SetAttribute("mak_i", this->makI().name().c_str());
 			xml_ele.SetAttribute("mak_j", this->makJ().name().c_str());
 		}
+		
+		
+		struct Constraint::Imp
+		{
+			std::size_t col_id_;
+			double *csmI_, *csmJ_, *csa_, *csf_;
+
+			Imp(double *csmI, double *csmJ, double *csa, double *csf):csmI_(csmI), csmJ_(csmJ), csa_(csa), csf_(csf) {};
+		};
+		Constraint::~Constraint() {};
+		Constraint::Constraint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, double *csmI, double *csmJ, double *csa, double *csf, bool is_active)
+			: Interaction(father, name, id, makI, makJ, is_active), imp(csmI, csmJ, csa, csf) {};
+		Constraint::Constraint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id, double *csmI, double *csmJ, double *csa, double *csf)
+			: Interaction(father, xml_ele, id), imp(csmI, csmJ, csa, csf) {};
+		auto Constraint::colID()const->std::size_t
+		{
+			return imp->col_id_;
+		}
 		auto Constraint::update()->void
 		{
 			double pm_M2N[4][4];
@@ -103,14 +121,14 @@ namespace aris
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
 
 			/*update CstMtx*/
-			std::fill_n(this->csmJ(), this->dim() * 6, 0);
-			s_tf_n(dim(), -1, *pm_M2N, this->csmI(), 0, this->csmJ());
+			std::fill_n(imp->csmJ_, dim() * 6, 0);
+			s_tf_n(dim(), -1, *pm_M2N, imp->csmI_, 0, imp->csmJ_);
 
 			/*update CstAcc*/
-			std::fill_n(this->csa(), this->dim(), 0);
+			std::fill_n(imp->csa_, this->dim(), 0);
 			s_inv_tv(-1, *pm_M2N, makJ().fatherPart().prtVel(), 0, _tem_v1);
 			s_cv(makI().fatherPart().prtVel(), _tem_v1, _tem_v2);
-			s_mdmTN(dim(), 1, 6, 1, csmI(), dim(), _tem_v2, 1, 0, csa(), 1);
+			s_mdmTN(dim(), 1, 6, 1, imp->csmI_, dim(), _tem_v2, 1, 0, imp->csa_, 1);
 		}
 		auto Constraint::saveAdams(std::ofstream &file) const->void
 		{
@@ -121,6 +139,11 @@ namespace aris
 				<< "    j_marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << "  \r\n"
 				<< "!\r\n";
 		}
+		auto Constraint::csmPtrI() const->const double* { return imp->csmI_; };
+		auto Constraint::csmPtrJ() const->const double* { return imp->csmJ_; };
+		auto Constraint::csaPtr() const->const double* { return imp->csa_; };
+		auto Constraint::csfPtr() const->const double* { return imp->csf_; };
+		
 
 		ElementPool<Marker>::ElementPool(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele)
 		{
@@ -1055,7 +1078,7 @@ namespace aris
 		}
 		
 		Motion::Motion(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, const double *frc_coe, bool active)
-			: Constraint(father, name, id, makI, makJ, active)
+			: Constraint(father, name, id, makI, makJ, csmI_, csmJ_, &csa_, &mot_fce_dyn_, active)
 		{
 			static const double default_frc_coe[3]{ 0,0,0 };
 
@@ -1064,7 +1087,7 @@ namespace aris
 			std::copy_n(frc_coe, 3, frc_coe_);
 		}
 		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
-			: Constraint(father, xml_ele, id)
+			: Constraint(father, xml_ele, id, csmI_, csmJ_, &csa_, &mot_fce_dyn_)
 		{
 			if(!xml_ele.Attribute("frc_coe"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"frc_coe\"");
 			try 
@@ -1430,16 +1453,16 @@ namespace aris
 			{
 				if (jnt->active())
 				{
-					s_block_cpy(6, jnt->dim(), jnt->csmI(), 0, 0, jnt->dim(), cst_mtx, jnt->makI().fatherPart().rowID(), jnt->col_id_, dynDimN());
-					s_block_cpy(6, jnt->dim(), jnt->csmJ(), 0, 0, jnt->dim(), cst_mtx, jnt->makJ().fatherPart().rowID(), jnt->col_id_, dynDimN());
+					s_block_cpy(6, jnt->dim(), jnt->csmPtrI(), 0, 0, jnt->dim(), cst_mtx, jnt->makI().fatherPart().rowID(), jnt->colID(), dynDimN());
+					s_block_cpy(6, jnt->dim(), jnt->csmPtrJ(), 0, 0, jnt->dim(), cst_mtx, jnt->makJ().fatherPart().rowID(), jnt->colID(), dynDimN());
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot->active())
 				{
-					s_block_cpy(6, 1, mot->csmI(), 0, 0, 1, cst_mtx, mot->makI().fatherPart().rowID(), mot->col_id_, dynDimN());
-					s_block_cpy(6, 1, mot->csmJ(), 0, 0, 1, cst_mtx, mot->makJ().fatherPart().rowID(), mot->col_id_, dynDimN());
+					s_block_cpy(6, 1, mot->csmI(), 0, 0, 1, cst_mtx, mot->makI().fatherPart().rowID(), mot->colID(), dynDimN());
+					s_block_cpy(6, 1, mot->csmJ(), 0, 0, 1, cst_mtx, mot->makJ().fatherPart().rowID(), mot->colID(), dynDimN());
 				}
 			}
 		}
@@ -1468,14 +1491,14 @@ namespace aris
 			{
 				if (jnt->active())
 				{
-					std::copy_n(jnt->csa(), jnt->dim(), &cst_acc[jnt->col_id_]);
+					std::copy_n(jnt->csaPtr(), jnt->dim(), &cst_acc[jnt->colID()]);
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot->active())
 				{
-					cst_acc[mot->col_id_] = *mot->csa();
+					cst_acc[mot->colID()] = *mot->csa();
 				}
 			}
 		}
@@ -1507,14 +1530,14 @@ namespace aris
 			{
 				if (jnt->active())
 				{
-					std::copy_n(jnt->csf(), jnt->dim(), &cst_fce[jnt->col_id_]);
+					std::copy_n(jnt->csfPtr(), jnt->dim(), &cst_fce[jnt->colID()]);
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot->active())
 				{
-					cst_fce[mot->col_id_] = mot->motFceDyn();
+					cst_fce[mot->colID()] = mot->motFceDyn();
 				}
 			}
 
@@ -1540,11 +1563,11 @@ namespace aris
 			}
 			for (auto &jnt:jointPool())
 			{
-				jnt->col_id_ = jnt->active() ? (cid += jnt->dim()) - jnt->dim() : 0;
+				jnt->Constraint::imp->col_id_ = jnt->active() ? (cid += jnt->dim()) - jnt->dim() : 0;
 			}
 			for (auto &mot:motionPool())
 			{
-				mot->col_id_ = mot->active() ? (cid += mot->dim()) - mot->dim() : 0;
+				mot->Constraint::imp->col_id_ = mot->active() ? (cid += mot->dim()) - mot->dim() : 0;
 			}
 
 			imp->dyn_prt_dim_ = pid;
@@ -1595,14 +1618,14 @@ namespace aris
 			{
 				if (jnt->active())
 				{
-					std::copy_n(&x[jnt->col_id_ + dynDimM()], jnt->dim(), jnt->csf());
+					std::copy_n(&x[jnt->colID() + dynDimM()], jnt->dim(), jnt->Constraint::imp->csf_);
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot->active())
 				{
-					mot->mot_fce_dyn_ = x[mot->col_id_ + dynDimM()];
+					mot->mot_fce_dyn_ = x[mot->colID() + dynDimM()];
 				}
 			}
 		}
@@ -1932,7 +1955,7 @@ namespace aris
 				0,0,0,0,0
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 		RevoluteJoint::RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: JointTemplate(father, xml_ele, id) 
@@ -1947,7 +1970,7 @@ namespace aris
 				0,0,0,0,0
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 		
 		TranslationalJoint::TranslationalJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
@@ -1963,7 +1986,7 @@ namespace aris
 				0,0,0,0,1
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 		TranslationalJoint::TranslationalJoint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: JointTemplate(father, xml_ele, id) 
@@ -1978,7 +2001,7 @@ namespace aris
 				0,0,0,0,1
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 
 		UniversalJoint::UniversalJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
@@ -1994,7 +2017,7 @@ namespace aris
 				0,0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 		UniversalJoint::UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: JointTemplate(father, xml_ele, id) 
@@ -2009,7 +2032,7 @@ namespace aris
 				0,0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 		auto UniversalJoint::saveAdams(std::ofstream &file) const->void
 		{
@@ -2057,15 +2080,15 @@ namespace aris
 			csmI_[5][3] = -(makI().prtPm()[2][1]) * s + (makI().prtPm()[2][2]) * c;
 
 			/*edit CstMtxJ*/
-			std::fill_n(static_cast<double *>(csmJ()), this->dim() * 6, 0);
+			std::fill_n(static_cast<double *>(*csmJ_), this->dim() * 6, 0);
 			double pm_M2N[4][4];
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
-			s_tf_n(Dim(), -1, *pm_M2N, csmI(), 0, csmJ());
+			s_tf_n(Dim(), -1, *pm_M2N, *csmI_, 0, *csmJ_);
 
 
 
 			/*update A_c*/
-			std::fill_n(csa(), UniversalJoint::dim(), 0);
+			std::fill_n(csa_, UniversalJoint::dim(), 0);
 
 			/*calculate a_dot*/
 			double v[3];
@@ -2081,14 +2104,14 @@ namespace aris
 
 			double tem_v1[6]{ 0 }, tem_v2[6]{ 0 };
 			s_inv_tv(*makI().prtPm(), makI().fatherPart().prtVel(), tem_v1);
-			csa()[3] -= v[0] * tem_v1[4] + v[1] * tem_v1[5];
+			csa_[3] -= v[0] * tem_v1[4] + v[1] * tem_v1[5];
 
 			/*calculate part n*/
 			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVel(), tem_v1);
 			s_cv(-1, makI().fatherPart().prtVel(), tem_v1, 0, tem_v2);
-			s_mdmTN(4, 1, 6, 1, csmI(), Dim(), tem_v2, 1, 1, &csa()[0], 1);
+			s_mdmTN(4, 1, 6, 1, *csmI_, Dim(), tem_v2, 1, 1, &csa_[0], 1);
 			s_inv_tv(*makI().prtPm(), tem_v1, tem_v2);
-			csa()[3] += v[0] * tem_v2[4] + v[1] * tem_v2[5];
+			csa_[3] += v[0] * tem_v2[4] + v[1] * tem_v2[5];
 		};
 
 		SphericalJoint::SphericalJoint(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ)
@@ -2104,7 +2127,7 @@ namespace aris
 				0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 		SphericalJoint::SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele, std::size_t id)
 			: JointTemplate(father, xml_ele, id) 
@@ -2119,7 +2142,7 @@ namespace aris
 				0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, csmI());
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 
 		SingleComponentMotion::SingleComponentMotion(Object &father, const std::string &name, std::size_t id, Marker &makI, Marker &makJ, int component_axis)
