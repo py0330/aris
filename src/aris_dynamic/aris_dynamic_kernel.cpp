@@ -2533,16 +2533,6 @@ namespace aris
 				z_idx += incz;
 			}
 		}
-		auto s_mt(int m, int n, double *A) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				for (int j = 0; j < n; ++j)
-				{
-					std::swap(A[i*n + j], A[j*n + i]);
-				}
-			}
-		}
 		auto s_mtm(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void
 		{
 			for (int i = 0; i < m; ++i)

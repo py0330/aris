@@ -82,7 +82,7 @@ set(XNNITE_LINK_LIB )
 set(OPENNI_INCL_DIR "/usr/include/ni")#open NI for kinect
 set(OPENNI_LINK_DIR "/usr/lib")
 set(OPENNI_LINK_LIB OpenNI)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 
 
@@ -96,7 +96,7 @@ set(SYSTEM_LINK_LIB ws2_32 setupapi)#ws2_32 is needed for socket setuaipi is nee
 set(XSENS_INCL_DIR "C:/Aris_Dependent/xsens/include")
 set(XSENS_LINK_DIR "C:/Aris_Dependent/xsens/lib")
 set(XSENS_LINK_LIB xdeviceclass)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 
 
@@ -154,7 +154,9 @@ set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 ################################### build tests for aris ####################################
 enable_testing()
 
-add_executable(test_dynamic test/test_dynamic.cpp)
+set(SOURCE_FILES main.cpp test_dynamic_kernel.h test_dynamic_kernel.cpp test_dynamic_model.h test_dynamic_model.cpp)
+PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
+add_executable(test_dynamic ${FULL_SRC})
 target_link_libraries(test_dynamic ${ALL_LINK_LIB})
 add_test(NAME test_dynamic COMMAND test_dynamic)
 set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")

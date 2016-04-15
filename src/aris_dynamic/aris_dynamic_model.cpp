@@ -94,12 +94,12 @@ namespace aris
 			xml_ele.SetAttribute("mak_i", this->makI().name().c_str());
 			xml_ele.SetAttribute("mak_j", this->makJ().name().c_str());
 		}
-		
-		
+
 		struct Constraint::Imp
 		{
 			std::size_t col_id_;
 			double *csmI_, *csmJ_, *csa_, *csf_;
+			double csp_[6];
 
 			Imp(double *csmI, double *csmJ, double *csa, double *csf):csmI_(csmI), csmJ_(csmJ), csa_(csa), csf_(csf) {};
 		};
@@ -117,18 +117,17 @@ namespace aris
 			double pm_M2N[4][4];
 			double _tem_v1[6]{ 0 }, _tem_v2[6]{ 0 };
 
-			/* Get pm M2N */
+			// Get pm M2N //
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
 
-			/*update CstMtx*/
+			// update CstMtx //
 			std::fill_n(imp->csmJ_, dim() * 6, 0);
 			s_tf_n(dim(), -1, *pm_M2N, imp->csmI_, 0, imp->csmJ_);
 
-			/*update CstAcc*/
-			std::fill_n(imp->csa_, this->dim(), 0);
+			// update CstAcc //
 			s_inv_tv(-1, *pm_M2N, makJ().fatherPart().prtVel(), 0, _tem_v1);
 			s_cv(makI().fatherPart().prtVel(), _tem_v1, _tem_v2);
-			s_mdmTN(dim(), 1, 6, 1, imp->csmI_, dim(), _tem_v2, 1, 0, imp->csa_, 1);
+			s_mdmTN(dim(), 1, 6, csmPtrI(), dim(), _tem_v2, 1, imp->csa_, 1);
 		}
 		auto Constraint::saveAdams(std::ofstream &file) const->void
 		{
@@ -143,7 +142,39 @@ namespace aris
 		auto Constraint::csmPtrJ() const->const double* { return imp->csmJ_; };
 		auto Constraint::csaPtr() const->const double* { return imp->csa_; };
 		auto Constraint::csfPtr() const->const double* { return imp->csf_; };
-		
+		auto Constraint::cspPtr() const->const double* 
+		{ 
+			// update constraint potential power //
+			double pmI[16], pmJ[16], pm_J2I[16];
+			
+			s_pm2pm(*makI().fatherPart().pm(), *makI().prtPm(), pmI);
+			s_pm2pm(*makJ().fatherPart().pm(), *makJ().prtPm(), pmJ);
+
+			s_inv_pm2pm(pmI, pmJ, pm_J2I);
+			double pq_J2I[7];
+			s_pm2pq(pm_J2I, pq_J2I);
+
+			double prtCsmI[36];
+			double pm[16];
+			s_inv_pm(*makI().prtPm(), pm);
+			s_tf_n(dim(), pm, imp->csmI_, prtCsmI);
+
+			double half_theta = atan2(std::sqrt(pq_J2I[3] * pq_J2I[3] + pq_J2I[4] * pq_J2I[4] + pq_J2I[5] * pq_J2I[5]), pq_J2I[6]);
+			double coe = half_theta < 1e-8 ? 2 : 2*half_theta / sin(half_theta);
+			s_nd(3, coe, pq_J2I + 3, 1);
+
+			s_mdmTN(dim(), 1, 6, prtCsmI, dim(), pq_J2I, 1, imp->csp_, 1);
+
+
+
+
+			auto motion = dynamic_cast<const Motion *>(this);
+
+			
+
+
+			return imp->csp_; 
+		};
 
 		ElementPool<Marker>::ElementPool(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele)
 		{
@@ -1158,7 +1189,7 @@ namespace aris
 		{
 			registerElementType<Script>();
 			
-			partPool().add<Part>("Ground");
+			imp->ground_ = &partPool().add<Part>("Ground");
 		}
 		Model::~Model()
 		{
@@ -1551,6 +1582,19 @@ namespace aris
 					std::copy_n(prt->prtAcc(), 6, &cst_acc[prt->rowID()]);
 				}
 			}
+		}
+		auto Model::dynCstPot(double *cst_pot) const->void
+		{
+			double pq[7];
+			s_pm2pq(*ground().pm(), pq);
+
+			double theta = atan2(std::sqrt(pq[3] * pq[3] + pq[4] * pq[4] + pq[5] * pq[5]), pq[6]);
+			double coe = theta < 1e-8 ? 2 : theta / sin(theta / 2);
+			s_nd(3, coe, pq + 3, 1);
+			std::copy_n(pq, 6, &cst_pot[0]);
+
+			for (auto &jnt : jointPool())if (jnt->active())std::copy_n(jnt->cspPtr(), jnt->dim(), &cst_pot[jnt->colID()]);
+			for (auto &mot : motionPool())if (mot->active())std::copy_n(mot->cspPtr(), mot->dim(), &cst_pot[mot->colID()]);
 		}
 		auto Model::dynPre()->void
 		{
@@ -2215,7 +2259,7 @@ namespace aris
 		}
 		auto SingleComponentMotion::update()->void
 		{
-			/*update motPos motVel,  motAcc should be given, not computed by part acc*/
+			// update motPos motVel,  motAcc should be given, not computed by part acc //
 			makI().update();
 			makJ().update();
 
@@ -2230,13 +2274,13 @@ namespace aris
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
 			mot_vel_ = velDiff_in_J[component_axis_];
 
-			/*update cst mtx*/
+			// update cst mtx //
 			std::fill_n(csmJ(), 6, 0);
 			double pm_M2N[4][4];
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
 			s_tf(-1, *pm_M2N, csmI(), 0, csmJ());
 
-			/*update a_c*/
+			// update a_c //
 			std::fill_n(csa(), 1, 0);
 			double tem_v1[6]{ 0 }, tem_v2[6]{ 0 };
 			s_inv_tv(-1, *pm_M2N, makJ().fatherPart().prtVel(), 0, tem_v1);

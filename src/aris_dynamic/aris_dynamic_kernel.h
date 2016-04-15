@@ -382,7 +382,7 @@ namespace aris
 			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
 
 		auto s_nd(int n, double a, double *x, int incx) noexcept->void;// number dot
-		auto s_ndv(int n, double a, double *x, int incx, double *y, int incy) noexcept->void;
+		auto s_ndv(int n, double a, const double *x, int incx, double *y, int incy) noexcept->void;
 		auto s_vnm(int n, const double *x, int incx) noexcept->double;// vector norm
 		auto s_vsw(int n, double *x, const int incx, double *y, const int incy) noexcept->void;// vector swap
 		auto s_vdv(int n, const double *x, const double *y) noexcept->double;
@@ -395,7 +395,6 @@ namespace aris
 		auto s_vav(int n, double alpha, const double* x, double beta, const double* y, double gamma, double* z) noexcept->void;
 		auto s_vav(int n, const double* x, int incx, const double* y, int incy, double* z, int incz) noexcept->void;
 		auto s_vav(int n, double alpha, const double* x, int incx, double beta, const double* y, int incy, double gamma, double* z, int incz) noexcept->void;
-		auto s_mt(int m, int n, double *A) noexcept->void;// matrix transpose
 		auto s_mtm(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void;// matrix transpose to matrix
 		auto s_ma(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void;
 		auto s_ma(int m, int n, double alpha, const double* A, int lda, double beta, double* B, int ldb) noexcept->void;

@@ -212,6 +212,7 @@ namespace aris
 			auto csmPtrJ() const->const double*;
 			auto csaPtr() const->const double*;
 			auto csfPtr() const->const double*;
+			auto cspPtr() const->const double*;
 
 		protected:
 			virtual ~Constraint();
@@ -688,6 +689,7 @@ namespace aris
 			auto dynPrtFce(double *prt_fce) const->void;
 			auto dynCstFce(double *cst_fce) const->void;
 			auto dynPrtAcc(double *prt_acc) const->void;
+			auto dynCstPot(double *cst_pot) const->void;
 			auto dynPre()->void;
 			auto dynUpd()->void;
 			auto dynMtx(double *D, double *b) const->void;
