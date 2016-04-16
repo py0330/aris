@@ -5,11 +5,23 @@
 
 using namespace aris::dynamic;
 
+void test_model2()
+{
+	
+	/*
+	Model model;
 
+	model.loadXml("C:\\Users\\yang\\Desktop\\Robot_III.xml");
+	model.saveXml("C:\\Users\\yang\\Desktop\\Robot_III_save.xml");
+	model.saveAdams("C:\\Users\\yang\\Desktop\\robot.cmd", true);
+	
+	std::cout << "finished" << std::endl;*/
+}
 
 
 void test_model()
 {
+	
 	double peI[6]{ 0.5,0,0,0.5,0,0 };
 	double pmI[16];
 
@@ -26,10 +38,10 @@ void test_model()
 	Model model;
 
 	auto &prt1 = model.partPool().add<Part>("part1");
-	auto &makJ = model.ground().markerPool().add("makJ",pmJ);
-	auto &makI = prt1.markerPool().add("makI", pmI);
+	auto &makJ = model.ground().markerPool().add<Marker>("makJ",pmJ);
+	auto &makI = prt1.markerPool().add<Marker>("makI", pmI);
 	auto &jnt = model.jointPool().add<aris::dynamic::RevoluteJoint>("joint1", std::ref(makI), std::ref(makJ));
-	auto &mot = model.motionPool().add<aris::dynamic::SingleComponentMotion>("motion1", std::ref(makI), std::ref(makJ), 5);
+	auto &mot = model.motionPool().add<aris::dynamic::Motion>("motion1", std::ref(makI), std::ref(makJ), 5);
 
 	mot.setMotPos(0);
 
@@ -61,5 +73,9 @@ void test_model()
 
 
 	std::cout << "finished" << std::endl;
+
+
+
+	
 }
 

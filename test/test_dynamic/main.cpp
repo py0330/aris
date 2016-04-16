@@ -5,10 +5,11 @@
 int main(int argc, char *argv[])
 {
 	test_kernel();
+	test_model2();
 	test_model();
-
-	char a;
-	std::cin >> a;
+	
+	char aaaaa;
+	std::cin >> aaaaa;
 
 	return 0;
 }

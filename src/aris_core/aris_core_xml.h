@@ -3,6 +3,11 @@
 
 #include <tinyxml2.h>
 #include <cstring>
+#include <memory>
+#include <vector>
+#include <type_traits>
+#include <functional>
+#include <map>
 
 namespace aris
 {
@@ -13,6 +18,310 @@ namespace aris
 		typedef tinyxml2::XMLNode XmlNode;
 		typedef tinyxml2::XMLElement XmlElement;
 		typedef tinyxml2::XMLAttribute XmlAttribute;
+		class Root;
+
+		template<typename Data> class ImpPtr
+		{
+		public:
+			~ImpPtr() = default;
+			ImpPtr():data_unique_ptr_(new Data) {};
+			ImpPtr(Data *data_ptr) :data_unique_ptr_(data_ptr) {};
+			ImpPtr(const ImpPtr &other) :data_unique_ptr_(new Data(*other.data_unique_ptr_)) {};
+			ImpPtr(ImpPtr &&other) :data_unique_ptr_(std::move(other.data_unique_ptr_)) {};
+			ImpPtr& operator=(const ImpPtr &other) { *data_unique_ptr_ = *other.data_unique_ptr_; return *this; };
+			ImpPtr& operator=(ImpPtr &&other) { *data_unique_ptr_ = std::move(*other.data_unique_ptr_); return *this; };
+
+			auto get()const->const Data*{ return data_unique_ptr_.get(); };
+			auto get()->Data* { return data_unique_ptr_.get(); };
+			auto operator->()const->const Data*{ return data_unique_ptr_.get(); };
+			auto operator->()->Data*{ return data_unique_ptr_.get(); };
+			auto operator*()const->const Data& { return *data_unique_ptr_; };
+			auto operator*()->Data&{ return *data_unique_ptr_; };
+
+		private:
+			std::unique_ptr<Data> data_unique_ptr_;
+		};
+		template <class T, class A = std::allocator<T> >class ImpContainer 
+		{
+		public:
+			typedef A allocator_type;
+			typedef typename A::value_type value_type;
+			typedef typename A::reference reference;
+			typedef typename A::const_reference const_reference;
+			typedef typename A::difference_type difference_type;
+			typedef typename A::size_type size_type;
+
+			class iterator
+			{
+			public:
+				typedef typename A::difference_type difference_type;
+				typedef typename A::value_type value_type;
+				typedef typename A::reference reference;
+				typedef typename A::pointer pointer;
+				typedef std::random_access_iterator_tag iterator_category; //or another tag
+
+				iterator() = default;
+				iterator(const iterator& other) = default;
+				iterator(const typename std::vector<ImpPtr<T>>::iterator iter):iter_(iter) {}; // 自己添加的
+				~iterator() = default;
+
+				auto operator=(const iterator&other)->iterator& = default;
+				auto operator==(const iterator&other) const->bool { return iter_ == other.iter_; };
+				auto operator!=(const iterator&other) const->bool { return iter_ != other.iter_; };
+				auto operator<(const iterator&other) const->bool { return iter_ < other.iter_; }; //optional
+				auto operator>(const iterator&other) const->bool { return iter_ > other.iter_; }; //optional
+				auto operator<=(const iterator&other) const->bool { return iter_ <= other.iter_; }; //optional
+				auto operator>=(const iterator&other) const->bool { return iter_ >= other.iter_; }; //optional
+
+				auto operator++()->iterator& { ++iter_; return *this; };
+				auto operator++(int)->iterator { iterator ret(*this); operator++(); return ret; }; //optional
+				auto operator--()->iterator& { --iter_; return *this; }; //optional
+				auto operator--(int)->iterator { iterator ret(*this); operator--(); return ret; }; //optional
+				auto operator+=(size_type size)->iterator& { iter_ += size; return *this; }; //optional
+				auto operator+(size_type size) const->iterator { return iterator(iter_ + size); }; //optional
+				friend auto operator+(size_type size, const iterator&)->iterator { return iterator(size + iter_); }; //optional
+				auto operator-=(size_type size)->iterator& { iter_ -= size; return *this; }; //optional
+				auto operator-(size_type size) const->iterator { return iterator(iter_ - size); }; //optional
+				auto operator-(iterator iter) const->difference_type { return iterator(iter_ - iter); }; //optional
+
+				auto operator*() const->reference { return iter_->operator*(); };
+				auto operator->() const->pointer { return iter_->operator->(); };
+				auto operator[](size_type size) const->reference { return *iter_->operator[](size); }; //optional
+
+			private:
+				typename std::vector<ImpPtr<T>>::iterator iter_;
+				friend class const_iterator;
+				friend class ImpContainer<T, A>;
+			};
+			class const_iterator 
+			{
+			public:
+				typedef typename A::difference_type difference_type;
+				typedef typename A::value_type value_type;
+				typedef typename A::const_reference const_reference;
+				typedef typename A::const_pointer const_pointer;
+				typedef std::random_access_iterator_tag iterator_category; //or another tag
+
+				const_iterator() = default;
+				const_iterator(const const_iterator&) = default;
+				const_iterator(const iterator& other):iter_(other.iter_) {};
+				const_iterator(const typename std::vector<ImpPtr<T>>::const_iterator iter) :iter_(iter) {}; // 自己添加的
+				~const_iterator() = default;
+
+				auto operator=(const const_iterator&)->const_iterator& = default;
+				auto operator==(const const_iterator& other) const->bool { return iter_ == other.iter_; };
+				auto operator!=(const const_iterator& other) const->bool { return iter_ != other.iter_; };
+				auto operator<(const const_iterator& other) const->bool { return iter_ < other.iter_; }; //optional
+				auto operator>(const const_iterator& other) const->bool { return iter_ > other.iter_; }; //optional
+				auto operator<=(const const_iterator& other) const->bool { return iter_ <= other.iter_; }; //optional
+				auto operator>=(const const_iterator& other) const->bool { return iter_ >= other.iter_; }; //optional
+
+				auto operator++()->const_iterator& { ++iter_; return *this; };
+				auto operator++(int)->const_iterator { const_iterator ret(*this); operator++(); return ret; };  //optional
+				auto operator--()->const_iterator& { --iter_; return *this; }; //optional
+				auto operator--(int)->const_iterator { const_iterator ret(*this); operator--(); return ret; }; //optional
+				auto operator+=(size_type size)->const_iterator& { iter_ += size; return *this; }; //optional
+				auto operator+(size_type size) const->const_iterator { return const_iterator(iter_ + size); }; //optional
+				friend auto operator+(size_type size, const const_iterator& iter)->const_iterator { return const_iterator(size + iter); }; //optional
+				auto operator-=(size_type size)->const_iterator& { iter_ -= size; return *this; }; //optional
+				auto operator-(size_type size) const->const_iterator { return const_iterator(iter_ - size); }; //optional
+				auto operator-(const_iterator iter) const->difference_type { return iterator(iter_ - iter); }; //optional
+
+				auto operator*() const->const_reference { return iter_->operator*(); };
+				auto operator->() const->const_pointer { return iter_->operator->(); };
+				auto operator[](size_type) const->const_reference { return *iter_->operator[](size); }; //optional
+
+			private:
+				typename std::vector<ImpPtr<T>>::const_iterator iter_;
+				friend class ImpContainer<T, A>;
+			};
+
+			typedef std::reverse_iterator<iterator> reverse_iterator; //optional
+			typedef std::reverse_iterator<const_iterator> const_reverse_iterator; //optional
+
+			ImpContainer() = default;
+			ImpContainer(const ImpContainer&) = default;
+			ImpContainer(ImpContainer&&other) = default;
+			~ImpContainer() = default;
+
+			auto operator=(const ImpContainer& other)->ImpContainer& { container_ = other.container_; };
+			auto operator=(ImpContainer&& other)->ImpContainer& { container_ = std::move(other.container_); };
+			auto operator==(const ImpContainer& other) const->bool { return container_.operator==(other.container_); };
+			auto operator!=(const ImpContainer& other) const->bool { return container_.operator!=(other.container_); };
+			auto operator<(const ImpContainer& other) const->bool { return container_.operator<(other.container_); }; //optional
+			auto operator>(const ImpContainer& other) const->bool { return container_.operator>(other.container_); }; //optional
+			auto operator<=(const ImpContainer& other) const->bool { return container_.operator<=(other.container_); }; //optional
+			auto operator>=(const ImpContainer& other) const->bool { return container_.operator>=(other.container_); }; //optional
+
+			auto begin()->iterator { return container_.begin(); };
+			auto begin() const->const_iterator { return container_.begin(); };
+			auto cbegin() const->const_iterator { return container_.cbegin(); };
+			auto end()->iterator { return container_.end(); };
+			auto end() const->const_iterator { return container_.end(); };
+			auto cend() const->const_iterator { return container_.cend(); };
+			auto rbegin()->reverse_iterator { return container_.rbegin(); }; //optional
+			auto rbegin() const->const_reverse_iterator { return container_.rbegin(); };; //optional
+			auto crbegin() const->const_reverse_iterator { return container_.crbegin(); };; //optional
+			auto rend()->reverse_iterator { return container_.rend(); }; //optional
+			auto rend() const->const_reverse_iterator { return container_.rend(); }; //optional
+			auto crend() const->const_reverse_iterator { return container_.crend(); }; //optional
+
+			auto front()->reference { return *begin(); }; //optional
+			auto front() const->const_reference { return *begin(); }; //optional
+			auto back()->reference { return *(end() - 1); }; //optional
+			auto back() const->const_reference { return *(end() - 1) }; //optional
+			//template<class ...Args>
+			//auto emplace_front(Args...)->void {}; //optional
+			template<class ...Args>
+			auto emplace_back(Args... args)->void { container_.emplace_back(ImpPtr<T>(args...)); }; //optional
+			//auto push_front(const T& value)->void { container_.push_front(ImpPtr<T>(new T(value))); }; //optional
+			//auto push_front(T&& value)->void { container_.push_front(ImpPtr<T>(new T(std::move(value)))); }; //optional
+			//auto push_back(const T& value)->void { container_.push_back(ImpPtr<T>(new T(value))); }; //optional
+			//auto push_back(T&& value)->void { container_.push_back(ImpPtr<T>(new T(std::move(value)))); }; //optional
+			auto pop_front()->void { container_.pop_front(); }; //optional
+			auto pop_back()->void { container_.pop_back(); }; //optional
+			auto operator[](size_type size)->reference { return *container_.operator[](size); }; //optional
+			auto operator[](size_type size) const->const_reference { return *container_.operator[](size); }; //optional
+			auto at(size_type size)->reference { return *container_.at(size); }; //optional
+			auto at(size_type size) const->const_reference { return *container_.at(size); }; //optional
+
+			template<class ...Args>
+			auto emplace(const_iterator iter, Args... args)->iterator { return container_.emplace(iter.iter_, args...); }; //optional
+			//auto insert(const_iterator iter, const T& value)->iterator { return container_.insert(iter.iter_, ImpPtr<T>(new T(value))); }; //optional
+			//auto insert(const_iterator iter, T&& value)->iterator { return container_.insert(iter.iter_, ImpPtr<T>(new T(std::move(value)))); }; //optional
+			//auto insert(const_iterator iter, size_type size, const T& value)->iterator { return container_.insert(iter.iter_, size, ImpPtr<T>(value)); }; //optional
+			//template<class iter>
+			//auto insert(const_iterator it, iter begin_it, iter end_it)->iterator { return container_.insert(it.iter_, begin_it, end_it); }; //optional
+			//auto insert(const_iterator iter, std::initializer_list<T> init_list)->iterator { return container_.insert(iter.iter_, init_list); }; //optional
+			auto erase(const_iterator iter)->iterator { return container_.erase(iter.iter_); }; //optional
+			auto erase(const_iterator begin_iter, const_iterator end_iter)->iterator { return container_.erase(begin_iter.iter_, end_iter.iter_); }; //optional
+			auto clear()->void { container_.clear(); }; //optional
+			//template<class iter>
+			//auto assign(iter begin_it, iter end_it)->void { container_.assign(begin_it, end_it); }; //optional
+			//auto assign(std::initializer_list<T> init_list)->void { container_.assign(begin_it, end_it); }; //optional
+			//auto assign(size_type size, const T&)->void { container_.assign(size, T); }; //optional
+
+			auto swap(ImpContainer& other)->void { return container_.swap(other.container_); };
+			auto size()const->size_type { return container_.size(); };
+			auto max_size()->size_type { return container_.max_size(); };
+			auto empty()->bool { return container_.empty(); };
+
+			//auto get_allocator()->A ; //optional
+
+		private:
+			typename std::vector<ImpPtr<T>> container_;
+			friend class ImpContainer<T, A>;
+		};
+		class Object: public ImpContainer<Object>
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("Object"); return std::ref(type); };
+			virtual auto type() const->const std::string&{ return Type(); };
+			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void;
+			auto root()->Root&;
+			auto root()const->const Root&;
+			auto name() const->const std::string&;
+			auto id()const->std::size_t;
+			auto save(const std::string &name, bool auto_override_save = true)->void;
+			auto load(const std::string &name, bool auto_delete_save = true)->void;
+			auto father()const->const Object&;
+			auto father()->Object&;
+			auto findByName(const std::string &name)const->const_iterator;
+			auto findByName(const std::string &name)->iterator;
+			auto add(const aris::core::XmlElement &xml_ele)->Object &;
+			auto add(const Object &object)->Object &;
+			auto add(Object &&object)->Object &;
+			template<typename T>
+			auto add(const aris::core::XmlElement &xml_ele)->T& { return static_cast<T&>(add(T(*this, size(), xml_ele))); };
+			template<typename T, typename ...Args>
+			auto add(const std::string &name, Args... args)->T& { return static_cast<T&>(add(T(*this, size(), name, args...))); };
+
+			virtual auto operator=(const Object &)->Object &;
+			virtual auto operator=(Object &&)->Object &;
+			virtual ~Object();
+			Object(const Object &);
+			Object(Object &&);
+			Object(Object &father, std::size_t id, const std::string &name);
+			Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			
+		private:
+			struct Imp;
+			ImpPtr<Imp> imp_;
+			friend class Root;
+		};
+		class Root :public Object
+		{
+		public:
+			struct TypeInfo
+			{
+				std::function<Object*(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)> newFromXml;
+				std::function<Object*(const Object &from_object)> newFromObject;
+				std::function<Object*(Object &&from_object)> newFromObjectR;
+				std::function<Object&(const Object &from_object, Object &to_object)> assign;
+				std::function<Object&(Object &&from_object, Object &to_object)> assignR;
+
+				auto registerTo(const std::string &type, Root &object)->void;
+				template<typename ChildType> static auto CreateTypeInfo()->TypeInfo
+				{
+					static_assert(std::is_base_of<Object, ChildType>::value, "failed to register type, because it is not inheritated from Object");
+
+					TypeInfo info;
+					info.newFromXml = [](Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)->Object*
+					{
+						return new ChildType(father, id, xml_ele);
+					};
+					info.newFromObject = [](const Object &other)->Object*
+					{
+						if (!dynamic_cast<const ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
+						return new ChildType(static_cast<const ChildType &>(other));
+					};
+					info.newFromObjectR = [](Object &&other)->Object*
+					{
+						if (!dynamic_cast<ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
+						return new ChildType(static_cast<const ChildType &>(other));
+					};
+					info.assign = [](const Object &from_object, Object &to_object)->Object&
+					{
+						if (!dynamic_cast<const ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+						if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+						return static_cast<ChildType &>(to_object) = static_cast<const ChildType &>(from_object);
+					};
+					info.assignR = [](Object &&from_object, Object &to_object)->Object&
+					{
+						if (!dynamic_cast<ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+						if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+						return static_cast<ChildType &>(to_object) = static_cast<const ChildType &>(from_object);
+					};
+
+					return info;
+				};
+
+			private:
+				static auto alignChildID(Object &father, Object &child, std::size_t id)->void;
+			};
+			using Object::saveXml;
+			template<typename ChildType> auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); };
+			static auto Type()->const std::string &{ static const std::string type("root"); return std::ref(type); };
+			virtual auto type() const->const std::string&{ return Type(); };
+			virtual auto loadXml(const char* filename)->void { loadXml(std::string(filename)); };
+			virtual auto loadXml(const std::string &filename)->void;
+			virtual auto loadXml(const aris::core::XmlDocument &xml_doc)->void;
+			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void;
+			virtual auto saveXml(const char *filename) const->void { saveXml(std::string(filename)); };
+			virtual auto saveXml(const std::string &filename) const->void;
+			virtual auto saveXml(aris::core::XmlDocument &xml_doc)const->void;
+			auto childTypeMap()const ->const std::map<std::string, TypeInfo>&;
+
+			virtual ~Root();
+			Root(const std::string &name = "Root");
+			Root(const aris::core::XmlElement &xml_ele);
+
+		private:
+			struct Imp;
+			ImpPtr<Imp> imp_;
+			
+			friend class Object;
+		};
 	}
 }
 
