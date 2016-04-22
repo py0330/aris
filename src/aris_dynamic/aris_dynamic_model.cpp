@@ -38,6 +38,51 @@ namespace aris
 			xml_ele.SetAttribute("active", active() ? "true" : "false");
 		};
 		
+		auto Coordinate::getVe(double *ve, const Coordinate &relative_to)const->void 
+		{ 
+			double pp_o[3], ve_o[6];
+			getPp(pp_o);
+			getVe(ve_o);
+			s_inv_va2va(*relative_to.pm(), relative_to.vs(), pp_o, ve_o, ve);
+		};
+		auto Coordinate::getVq(double *vq, const Coordinate &relative_to)const->void 
+		{ 
+			double pq_o[7], vq_o[7];
+			getPq(pq_o);
+			getVq(vq_o);
+			s_inv_vq2vq(*relative_to.pm(), relative_to.vs(), pq_o, vq_o, vq);
+		};
+		auto Coordinate::getVp(double *vp, const Coordinate &relative_to)const->void 
+		{
+			double pp_o[3], vp_o[3];
+			getPp(pp_o);
+			getVp(vp_o);
+			s_inv_vp2vp(*relative_to.pm(), relative_to.vs(), pp_o, vp_o, vp);
+		};
+		auto Coordinate::getAe(double *ae, const Coordinate &relative_to)const->void
+		{
+			double pp_o[3], ve_o[6], ae_o[6];
+			getPp(pp_o);
+			getVe(ve_o);
+			getAe(ae_o);
+			s_inv_aa2aa(*relative_to.pm(), relative_to.vs(), relative_to.as(), pp_o, ve_o, ae_o, ae);
+		}
+		auto Coordinate::getAq(double *aq, const Coordinate &relative_to)const->void
+		{
+			double pq_o[7], vq_o[7], aq_o[7];
+			getPq(pq_o);
+			getVq(vq_o);
+			getAq(aq_o);
+			s_inv_aq2aq(*relative_to.pm(), relative_to.vs(), relative_to.as(), pq_o, vq_o, aq_o, aq);
+		}
+		auto Coordinate::getAp(double *ap, const Coordinate &relative_to)const->void
+		{
+			double pp_o[7], vp_o[7], ap_o[7];
+			getPp(pp_o);
+			getVp(vp_o);
+			getAp(ap_o);
+			s_inv_ap2ap(*relative_to.pm(), relative_to.vs(), relative_to.as(), pp_o, vp_o, ap_o, ap);
+		}
 		Coordinate::Coordinate(Object &father, std::size_t id, const std::string &name, const double *pm, bool active)
 			:DynEle(father, id, name, active)
 		{
@@ -51,6 +96,8 @@ namespace aris
 			pm = pm ? pm : default_pm;
 			setPm(pm);
 		}
+		
+		
 		Interaction::Interaction(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
 			: DynEle(father, id, xml_ele)
 		{
@@ -1112,23 +1159,6 @@ namespace aris
 		}
 		auto Motion::update()->void
 		{
-			/*
-			// update cst mtx //
-			std::fill_n(&csmJ_[0][0], 6, 0);
-			double pm_M2N[4][4];
-			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
-			s_tf(-1, *pm_M2N, *csmI_, 0, *csmJ_);
-
-			// update a_c //
-			std::fill_n(&csa_[0], 1, 0);
-			double tem_v1[6]{ 0 }, tem_v2[6]{ 0 };
-			s_inv_tv(-1, *pm_M2N, makJ().fatherPart().prtVs(), 0, tem_v1);
-			s_cv(makI().fatherPart().prtVs(), tem_v1, tem_v2);
-			s_mdmTN(1, 1, 6, 1, *csmI_, 1, tem_v2, 1, 0, csa_, 1);
-
-			csa_[0] += motAcc();
-			// update motPos motVel motAcc //
-			*/
 			Constraint::update();
 			csa_[0] += motAcc();
 

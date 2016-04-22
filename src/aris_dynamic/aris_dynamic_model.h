@@ -74,40 +74,38 @@ namespace aris
 			virtual auto as() const->const double6& = 0;
 			auto pm() const->const double4x4&{ return pm_; };
 			auto pm()->double4x4& { return pm_; };
-			auto getPm(double *pm)const->void { std::copy_n(static_cast<const double *>(*this->pm()), 16, pm); };
+			auto getPm(double *pm)const->void { std::copy(&this->pm()[0][0], &this->pm()[0][0] + 16, pm); };
 			auto getPm(double *pm, const Coordinate &relative_to)const->void { s_inv_pm2pm(*relative_to.pm(), *this->pm(), pm); };
-			auto setPm(const double *pm)->void { std::copy_n(pm, 16, static_cast<double*>(*this->pm())); };
+			auto setPm(const double *pm)->void { std::copy(pm, pm + 16, &this->pm()[0][0]); };
 			auto setPm(const double *pm, const Coordinate &relative_to)->void { s_pm2pm(*relative_to.pm(), pm, *this->pm()); };
 			auto getPe(double *pe, const char *type = "313")const->void { s_pm2pe(*pm(), pe, type); };
-			auto getPe(double *pe, const Coordinate &relative_to, const char *type = "313")const->void 
-			{ 
-				double pm[16];
-				getPm(pm, relative_to);
-				s_pm2pe(pm, pe, type);
-			};
+			auto getPe(double *pe, const Coordinate &relative_to, const char *type = "313")const->void { double pe_o[6]; getPe(pe_o); s_inv_pe2pe(*relative_to.pm(), pe_o, pe, "313", type); };
 			auto setPe(const double *pe, const char *type = "313")->void { s_pe2pm(pe, *pm(), type); };
-			auto setPe(const double *pe, const Coordinate &relative_to, const char *type = "313")->void 
-			{ 
-				double pm[16];
-				s_pe2pm(pe, pm, type);
-				setPm(pm, relative_to);
-			};
+			auto setPe(const double *pe, const Coordinate &relative_to, const char *type = "313")->void { double pe_o[6]; s_pe2pe(*relative_to.pm(), pe, pe_o, type, "313"); setPe(pe_o); };
 			auto getPq(double *pq)const->void { s_pm2pq(*pm(), pq); };
-			auto getPq(double *pq, const Coordinate &relative_to)const->void 
-			{ 
-				double pm[16];
-				getPm(pm, relative_to);
-				s_pm2pq(pm, pq);
-			};
+			auto getPq(double *pq, const Coordinate &relative_to)const->void { double pq_o[7]; getPq(pq_o);	s_pq2pq(*relative_to.pm(), pq_o, pq); };
 			auto setPq(const double *pq)->void { s_pq2pm(pq, *pm()); };
-			auto setPq(const double *pq, const Coordinate &relative_to)->void 
-			{ 
-				double pm[16];
-				s_pq2pm(pq, pm);
-				setPm(pm, relative_to);
-			};
+			auto setPq(const double *pq, const Coordinate &relative_to)->void { double pq_o[7]; s_pq2pq(*relative_to.pm(), pq, pq_o); setPq(pq_o); };
+			auto getPp(double *pp)const->void { s_pm2pp(*pm(), pp); };
+			auto getPp(double *pp, const Coordinate &relative_to)const->void { double pp_o[3]; getPp(pp_o); s_inv_pp2pp(*relative_to.pm(), pp_o, pp); };
+			auto setPp(const double *pp)->void { s_pp2pm(pp, *pm()); };
+			auto setPp(const double *pp, const Coordinate &relative_to)->void { double pp_o[3]; s_pp2pp(*relative_to.pm(), pp, pp_o); setPp(pp_o); };
 			auto getVs(double *vs)const->void { std::copy_n(this->vs(), 6, vs); };
+			auto getVs(double *vs, const Coordinate &relative_to)const->void { s_inv_vs2vs(*relative_to.pm(), relative_to.vs(), this->vs(), vs); };
+			auto getVe(double *ve)const->void { double pp[3]; getPp(pp); s_vs2va(vs(), pp, ve); };
+			auto getVe(double *ve, const Coordinate &relative_to)const->void;
+			auto getVq(double *vq)const->void { double pq[7]; getPq(pq); s_vs2vq(vs(), pq, vq); };
+			auto getVq(double *vq, const Coordinate &relative_to)const->void;
+			auto getVp(double *vp)const->void { double pp[3]; getPp(pp); s_vs2vp(vs(), pp, vp); };
+			auto getVp(double *vp, const Coordinate &relative_to)const->void;
 			auto getAs(double *as)const->void { std::copy_n(this->as(), 6, as); };
+			auto getAs(double *as, const Coordinate &relative_to)const->void { s_inv_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), this->vs(), this->as(), as); };
+			auto getAe(double *ae)const->void { double pp[3]; getPp(pp); s_as2aa(vs(), as(), pp, ae); };
+			auto getAe(double *ae, const Coordinate &relative_to)const->void;
+			auto getAq(double *aq)const->void { double pq[7]; getPq(pq); s_as2aq(vs(), as(), pq, aq); };
+			auto getAq(double *aq, const Coordinate &relative_to)const->void;
+			auto getAp(double *ap)const->void { double pp[3]; getPp(pp); s_as2ap(vs(), as(), pp, ap); };
+			auto getAp(double *ap, const Coordinate &relative_to)const->void;
 
 		protected:
 			virtual ~Coordinate() = default;
@@ -436,7 +434,9 @@ namespace aris
 			virtual auto as()const->const double6& override final;
 			auto rowID()const->std::size_t;
 			auto vs()->double6&;
+			auto setVs(const double *vs_in)->void { std::copy_n(vs_in, 6, vs()); };
 			auto as()->double6&;
+			auto setAs(const double *as_in)->void { std::copy_n(as_in, 6, as()); };
 			auto invPm() const->const double4x4&;
 			auto prtIs() const->const double6x6&;
 			auto prtVs() const->const double6&;
@@ -444,8 +444,6 @@ namespace aris
 			auto prtFg() const->const double6&;
 			auto prtFv() const->const double6&;
 			auto prtGravity() const->const double6&;
-			auto setVs(const double *vs_in)->void { std::copy_n(vs_in, 6, vs()); };
-			auto setAs(const double *as_in)->void { std::copy_n(as_in, 6, as()); };
 			auto markerPool()->ElementPool<Marker>&;
 			auto markerPool()const->const ElementPool<Marker>&;
 

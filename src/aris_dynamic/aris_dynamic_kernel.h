@@ -31,21 +31,21 @@ namespace aris
 	/// pm  :  4x4 位姿矩阵(pose matrix)\n
 	///
 	/// vp  :  3x1 线速度(velocity of point)\n
-	/// we  :  3x1 角速度(omega)\n
 	/// wq  :  4x1 四元数导数(omega in term of quternions)\n
 	/// wm  :  3x3 旋转矩阵导数(omega in term of rotation matrix)\n
-	/// vw  :  6x1 线速度与角速度(velocity and omega)\n
 	/// vq  :  7x1 线速度与四元数导数(velocity and omega in term of quternions)\n
 	/// vm  :  4x4 位姿矩阵导数(velocity in term of pose matrix)\n
+	/// wa  :  3x1 角速度(omega)\n
+	/// va  :  6x1 线速度与角速度(velocity and omega)\n
 	/// vs  :  6x1 螺旋速度(velocity of screw)\n
 	///
 	/// ap  :  3x1 线加速度(acceleration of point)\n
-	/// xe  :  3x1 角加速度(alpha, acceleration of angle)\n
 	/// xq  :  4x1 四元数导导数(alpha in term of quternions)\n
 	/// xm  :  3x3 旋转矩阵导数(alpha in term of rotation matrix)\n
-	/// ax  :  6x1 线加速度与角加速度(acceleration and alpha)\n
 	/// aq  :  7x1 线加速度与四元数导导数(acceleration and alpha in term of quternions)\n
 	/// am  :  4x4 位姿矩阵导导数(acceleration in term of pose matrix)\n
+	/// xa  :  3x1 角加速度(alpha, acceleration of angle)\n
+	/// aa  :  6x1 线加速度与角加速度(acceleration and alpha)\n
 	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
 
 
@@ -74,39 +74,39 @@ namespace aris
 		auto s_pq2pm(const double *pq_in, double *pm_out) noexcept->void;
 		auto s_pm2pq(const double *pm_in, double *pq_out) noexcept->void;
 		
-		auto s_wm2we(const double *rm_in, const double *wm_in, double *we_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
-		auto s_we2wm(const double *we_in, const double *rm_in, double *wm_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
-		auto s_wq2we(const double *rq_in, const double *wq_in, double *we_out) noexcept->void;
-		auto s_we2wq(const double *we_in, const double *rq_in, double *wq_out) noexcept->void;
+		auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
+		auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
+		auto s_wq2wa(const double *rq_in, const double *wq_in, double *wa_out) noexcept->void;
+		auto s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out) noexcept->void;
 		auto s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out) noexcept->void;
 		auto s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out) noexcept->void;
-		auto s_we2vs(const double *we_in, double *vs_out) noexcept->void;
-		auto s_vs2we(const double *vs_in, double *we_out) noexcept->void;
+		auto s_we2vs(const double *wa_in, double *vs_out) noexcept->void;
+		auto s_vs2we(const double *vs_in, double *wa_out) noexcept->void;
 		auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out) noexcept->void;
 		auto s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out) noexcept->void;
 		auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
 		auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
-		auto s_ve2vs(const double *pp_in, const double *ve_in, double *vs_out) noexcept->void;
-		auto s_vs2ve(const double *vs_in, const double *pp_in, double *ve_out) noexcept->void;
+		auto s_va2vs(const double *pp_in, const double *va_in, double *vs_out) noexcept->void;
+		auto s_vs2va(const double *vs_in, const double *pp_in, double *va_out) noexcept->void;
 		auto s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out) noexcept->void;
 		auto s_vs2vm(const double *vs_in, const double *pm_in, double *vm_out) noexcept->void;
 		auto s_vq2vs(const double *pq_in, const double *vq_in, double *vs_out) noexcept->void;
 		auto s_vs2vq(const double *vs_in, const double *pq_in, double *vq_out) noexcept->void;
 
-		auto s_xm2xe(const double *rm_in, const double *wm_in, const double *xm_in, double *xe_out, double *we_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
-		auto s_xe2xm(const double *we_in, const double *xe_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
-		auto s_xq2xe(const double *rq_in, const double *wq_in, const double *xq_in, double *xe_out, double *we_out = nullptr) noexcept->void;
-		auto s_xe2xq(const double *we_in, const double *xe_in, const double *rq_in, double *xq_out, double *wq_out = nullptr) noexcept->void;
+		auto s_xm2xa(const double *rm_in, const double *wm_in, const double *xm_in, double *xa_out, double *wa_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
+		auto s_xa2xm(const double *wa_in, const double *xe_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
+		auto s_xq2xa(const double *rq_in, const double *wq_in, const double *xq_in, double *xa_out, double *wa_out = nullptr) noexcept->void;
+		auto s_xa2xq(const double *wa_in, const double *xe_in, const double *rq_in, double *xq_out, double *wq_out = nullptr) noexcept->void;
 		auto s_ap2as(const double *pp_in, const double *vp_in, const double *ap_in, double *as_out, double *vs_out = nullptr) noexcept->void;
 		auto s_as2ap(const double *vs_in, const double *as_in, const double *pp_in, double *ap_out, double *vp_out = nullptr) noexcept->void;
-		auto s_xe2as(const double *xe_in, double *as_out) noexcept->void;
-		auto s_as2xe(const double *as_in, double *xe_out) noexcept->void;
+		auto s_xa2as(const double *xe_in, double *as_out) noexcept->void;
+		auto s_as2xa(const double *as_in, double *xa_out) noexcept->void;
 		auto s_xq2as(const double *rq_in, const double *wq_in, const double *xq_in, double *as_out, double *vs_out = nullptr) noexcept->void;
 		auto s_as2xq(const double *vs_in, const double *as_in, const double *rq_in, double *xq_out, double *wq_out = nullptr) noexcept->void;
 		auto s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out, double *vs_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
 		auto s_as2xm(const double *vs_in, const double *as_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
-		auto s_ae2as(const double *pp_in, const double *ve_in, const double *ae_in, double *as_out, double *vs_out = nullptr) noexcept->void;
-		auto s_as2ae(const double *vs_in, const double *as_in, const double *pp_in, double *ae_out, double *ve_out = nullptr) noexcept->void;
+		auto s_aa2as(const double *pp_in, const double *va_in, const double *aa_in, double *as_out, double *vs_out = nullptr) noexcept->void;
+		auto s_as2aa(const double *vs_in, const double *as_in, const double *pp_in, double *aa_out, double *va_out = nullptr) noexcept->void;
 		auto s_am2as(const double *pm_in, const double *vm_in, const double *am_in, double *as_out, double *vs_out = nullptr) noexcept->void;
 		auto s_as2am(const double *vs_in, const double *as_in, const double *pm_in, double *am_out, double *vm_out = nullptr) noexcept->void;
 		auto s_aq2as(const double *pq_in, const double *vq_in, const double *aq_in, double *as_out, double *vs_out = nullptr) noexcept->void;
@@ -114,8 +114,8 @@ namespace aris
 
 		auto s_pq2pe(const double *pq_in, double *pe_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_pe2pq(const double *pe_in, double *pq_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_iv2is(const double * iv_in, double *is_out) noexcept->void;
-		auto s_is2iv(const double * is_in, double *iv_out) noexcept->void;
+		auto s_iv2is(const double *iv_in, double *is_out) noexcept->void;
+		auto s_is2iv(const double *is_in, double *iv_out) noexcept->void;
 		auto s_im2is(const double mass_in, const double * in_in, const double *pm_in, double *is_out) noexcept->void;
 
 		// 以下函数为同一物理量在不同坐标系之间的转换函数 //
@@ -136,14 +136,14 @@ namespace aris
 
 		auto s_vp2vp(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->void;
 		auto s_inv_vp2vp(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->void;
-		auto s_we2we(const double *relative_pm, const double *relative_vs, const double *from_we, double *to_we) noexcept->void;
-		auto s_inv_we2we(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_we, double *to_we) noexcept->void;
+		auto s_wa2wa(const double *relative_pm, const double *relative_vs, const double *from_wa, double *to_wa) noexcept->void;
+		auto s_inv_wa2wa(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_wa, double *to_wa) noexcept->void;
 		auto s_wq2wq(const double *relative_pm, const double *relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->void;
 		auto s_inv_wq2wq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->void;
 		auto s_wm2wm(const double *relative_pm, const double *relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->void;
 		auto s_inv_wm2wm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->void;
-		auto s_ve2ve(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_ve, double *to_ve, double *to_pp = nullptr) noexcept->void;
-		auto s_inv_ve2ve(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_ve, double *to_ve, double *to_pp = nullptr) noexcept->void;
+		auto s_va2va(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->void;
+		auto s_inv_va2va(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->void;
 		auto s_vq2vq(const double *relative_pm, const double *relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->void;
 		auto s_inv_vq2vq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->void;
 		auto s_vm2vm(const double *relative_pm, const double *relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->void;
@@ -155,8 +155,8 @@ namespace aris
 			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->void;
 		auto s_inv_ap2ap(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
 			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->void;
-		auto s_xe2xe(const double *relative_pm, const double *relative_as, const double *from_xe, double *to_xe) noexcept->void;
-		auto s_inv_xe2xe(const double *inv_relative_pm, const double *inv_relative_as, const double *from_xe, double *to_xe) noexcept->void;
+		auto s_xa2xa(const double *relative_pm, const double *relative_as, const double *from_xa, double *to_xa) noexcept->void;
+		auto s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_as, const double *from_xa, double *to_xa) noexcept->void;
 		auto s_xq2xq(const double *relative_pm, const double *relative_vs, const double *relative_as, 
 			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->void;
 		auto s_inv_xq2xq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
@@ -165,10 +165,10 @@ namespace aris
 			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->void;
 		auto s_inv_xm2xm(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
 			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->void;
-		auto s_ae2ae(const double *relative_pm, const double *relative_vs, const double *relative_as, 
-			const double *from_pp, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pp = nullptr) noexcept->void;
-		auto s_inv_ae2ae(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
-			const double *from_pp, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pp = nullptr) noexcept->void;
+		auto s_aa2aa(const double *relative_pm, const double *relative_vs, const double *relative_as, 
+			const double *from_pp, const double *from_va, const double *from_aa, double *to_aa, double *to_va = nullptr, double *to_pp = nullptr) noexcept->void;
+		auto s_inv_aa2aa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
+			const double *from_pp, const double *from_va, const double *from_aa, double *to_aa, double *to_va = nullptr, double *to_pp = nullptr) noexcept->void;
 		auto s_aq2aq(const double *relative_pm, const double *relative_vs, const double *relative_as, 
 			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq = nullptr, double *to_pq = nullptr) noexcept->void;
 		auto s_inv_aq2aq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 

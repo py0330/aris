@@ -5,8 +5,8 @@
 int main(int argc, char *argv[])
 {
 	test_kernel();
-	test_model2();
-	test_model();
+	//test_model2();
+	//test_model();
 	
 	char aaaaa;
 	std::cin >> aaaaa;
