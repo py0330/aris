@@ -38,12 +38,12 @@ namespace aris
 			xml_ele.SetAttribute("active", active() ? "true" : "false");
 		};
 		
-		auto Coordinate::getVe(double *ve, const Coordinate &relative_to)const->void 
+		auto Coordinate::getVe(double *va, const Coordinate &relative_to)const->void 
 		{ 
 			double pp_o[3], ve_o[6];
 			getPp(pp_o);
 			getVe(ve_o);
-			s_inv_va2va(*relative_to.pm(), relative_to.vs(), pp_o, ve_o, ve);
+			s_inv_va2va(*relative_to.pm(), relative_to.vs(), pp_o, ve_o, va);
 		};
 		auto Coordinate::getVq(double *vq, const Coordinate &relative_to)const->void 
 		{ 
@@ -59,13 +59,13 @@ namespace aris
 			getVp(vp_o);
 			s_inv_vp2vp(*relative_to.pm(), relative_to.vs(), pp_o, vp_o, vp);
 		};
-		auto Coordinate::getAe(double *ae, const Coordinate &relative_to)const->void
+		auto Coordinate::getAe(double *aa, const Coordinate &relative_to)const->void
 		{
 			double pp_o[3], ve_o[6], ae_o[6];
 			getPp(pp_o);
 			getVe(ve_o);
 			getAe(ae_o);
-			s_inv_aa2aa(*relative_to.pm(), relative_to.vs(), relative_to.as(), pp_o, ve_o, ae_o, ae);
+			s_inv_aa2aa(*relative_to.pm(), relative_to.vs(), relative_to.as(), pp_o, ve_o, ae_o, aa);
 		}
 		auto Coordinate::getAq(double *aq, const Coordinate &relative_to)const->void
 		{

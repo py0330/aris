@@ -25,21 +25,25 @@ namespace aris
 		inline auto default_pm()->const double* { static double value[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 }; return value; }
 
 		inline auto default_vp()->const double* { static double value[3]{ 0,0,0 }; return value; }
-		inline auto default_we()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_we()->const double* { static double value[3]{ 0,0,0 };	return value; }
 		inline auto default_wq()->const double* { static double value[4]{ 0,0,0,0 };	return value; }
 		inline auto default_wm()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
 		inline auto default_ve()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
 		inline auto default_vq()->const double* { static double value[7]{ 0,0,0,0,0,0,0 };	return value; }
 		inline auto default_vm()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		inline auto default_wa()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_va()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
 		inline auto default_vs()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
 
 		inline auto default_ap()->const double* { static double value[3]{ 0,0,0 }; return value; }
-		inline auto default_xe()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_xe()->const double* { static double value[3]{ 0,0,0 };	return value; }
 		inline auto default_xq()->const double* { static double value[4]{ 0,0,0,0 };	return value; }
 		inline auto default_xm()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
 		inline auto default_ae()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
 		inline auto default_aq()->const double* { static double value[7]{ 0,0,0,0,0,0,0 };	return value; }
 		inline auto default_am()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		inline auto default_xa()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		inline auto default_aa()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
 		inline auto default_as()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
 
 		inline auto default_fs()->const double* { static double value[6]{ 0,0,0,0,0,0 }; return value; }
@@ -342,7 +346,78 @@ namespace aris
 			s_pm2rq(pm_in, pq_out + 3);
 		}
 
+		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->void 
+		{
+			// 补充默认参数 //
+			re_in = re_in ? re_in : default_re();
+			we_in = we_in ? we_in : default_wa();
+			double wa_out_default[3];
+			wa_out = wa_out ? wa_out : wa_out_default;
 
+			// 正式开始计算 //
+			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
+			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
+
+			const int a = eu_type_in[0] - '1';
+			const int b = eu_type_in[1] - '1';
+			const int c = eu_type_in[2] - '1';
+			const int d = 3 - a - b;
+			const int e = 3 - b - c;
+
+			double axis[3][3];
+			std::fill(&axis[0][0], &axis[0][0] + 9, 0);
+
+			axis[a][0] = 1.0;
+			axis[b][0] = 0.0;
+			axis[d][0] = 0.0;
+
+			axis[a][1] = 0;
+			axis[b][1] = std::cos(re_in[0]);
+			axis[d][1] = P[d][b] * std::sin(re_in[0]);
+
+			axis[a][2] = c == a ? std::cos(re_in[1]) : P[a][d] * std::sin(re_in[1]);
+			axis[b][2] = c == a ? -std::sin(re_in[0])*std::sin(re_in[1]) : P[b][d] * std::sin(re_in[0])* std::cos(re_in[1]);
+			axis[d][2] = c == a ? P[d][a] * std::cos(re_in[0])* std::sin(re_in[1]) : std::cos(re_in[0])* std::cos(re_in[1]);
+
+			s_mdm(3, 1, 3, *axis, 3, we_in, 1, wa_out, 1);
+		}
+		auto s_wa2we(const double *wa_in, const double *re_in, double *we_out, const char *eu_type_in) noexcept->void
+		{
+			// 补充默认参数 //
+			wa_in = wa_in ? wa_in : default_wa();
+			re_in = re_in ? re_in : default_re();
+			double we_out_default[3];
+			we_out = we_out ? we_out : we_out_default;
+
+			// 正式开始计算 //
+			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
+			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
+
+			const int a = eu_type_in[0] - '1';
+			const int b = eu_type_in[1] - '1';
+			const int c = eu_type_in[2] - '1';
+			const int d = 3 - a - b;
+			const int e = 3 - b - c;
+
+			double axis[3][3];
+			std::fill(&axis[0][0], &axis[0][0] + 9, 0);
+
+			axis[a][0] = 1.0;
+			axis[b][0] = 0.0;
+			axis[d][0] = 0.0;
+
+			axis[a][1] = 0;
+			axis[b][1] = std::cos(re_in[0]);
+			axis[d][1] = P[d][b] * std::sin(re_in[0]);
+
+			axis[a][2] = c == a ? std::cos(re_in[1]) : P[a][d] * std::sin(re_in[1]);
+			axis[b][2] = c == a ? -std::sin(re_in[0])*std::sin(re_in[1]) : P[b][d] * std::sin(re_in[0])* std::cos(re_in[1]);
+			axis[d][2] = c == a ? P[d][a] * std::cos(re_in[0])* std::sin(re_in[1]) : std::cos(re_in[0])* std::cos(re_in[1]);
+
+			we_out[1] = (wa_in[b] * axis[d][2] - wa_in[d] * axis[b][2]) / (axis[b][1] * axis[d][2] - axis[d][1] * axis[b][2]);
+			we_out[2] = (wa_in[d] * axis[b][1] - wa_in[b] * axis[d][1]) / (axis[d][2] * axis[b][1] - axis[b][2] * axis[d][1]);
+			we_out[0] = (wa_in[a] - axis[a][2] * we_out[2]);
+		}
 		auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out, std::size_t rm_ld, std::size_t wm_ld) noexcept->void
 		{
 			// 补充默认参数 //
@@ -363,7 +438,7 @@ namespace aris
 		auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out, std::size_t rm_ld, std::size_t wm_ld) noexcept->void
 		{
 			// 补充默认参数 //
-			wa_in = wa_in ? wa_in : default_we();
+			wa_in = wa_in ? wa_in : default_wa();
 			rm_in = rm_in ? rm_in : default_rm();
 			double wm_out_default[9];
 			wm_out = wm_out ? wm_out : wm_out_default;
@@ -400,7 +475,7 @@ namespace aris
 		auto s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out) noexcept->void
 		{
 			// 补充默认参数 //
-			wa_in = wa_in ? wa_in : default_we();
+			wa_in = wa_in ? wa_in : default_wa();
 			rq_in = rq_in ? rq_in : default_rq();
 			double wq_out_default[3];
 			wq_out = wq_out ? wq_out : wq_out_default;
@@ -448,25 +523,27 @@ namespace aris
 			s_c3(vs_in + 3, pp_in, vp_out);
 			s_va(3, vs_in, vp_out);
 		}
-		auto s_we2vs(const double *wa_in, double *vs_out) noexcept->void
+		auto s_we2vs(const double *re_in, const double *we_in, double *vs_out, const char *eu_type_in) noexcept->void
 		{
 			// 补充默认参数 //
-			wa_in = wa_in ? wa_in : default_we();
-			double vs_out_default[6];
+			re_in = re_in ? re_in : default_re();
+			we_in = we_in ? we_in : default_we();
+			double vs_out_default[6]{ 0,0,0,0,0,0 };
 			vs_out = vs_out ? vs_out : vs_out_default;
 
 			// 正式开始计算 //
-			std::copy(wa_in, wa_in + 3, vs_out + 3);
+			s_we2wa(re_in, we_in, vs_out + 3, eu_type_in);
 		}
-		auto s_vs2we(const double *vs_in, double *wa_out) noexcept->void
+		auto s_vs2we(const double *vs_in, const double *re_in, double *we_out, const char *eu_type_in) noexcept->void
 		{
 			// 补充默认参数 //
 			vs_in = vs_in ? vs_in : default_vs();
+			re_in = re_in ? re_in : default_re();
 			double we_out_default[3];
-			wa_out = wa_out ? wa_out : we_out_default;
+			we_out = we_out ? we_out : we_out_default;
 
 			// 正式开始计算 //
-			std::copy(vs_in + 3, vs_in + 6, wa_out);
+			s_wa2we(vs_in + 3, re_in, we_out, eu_type_in);
 		}
 		auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out) noexcept->void
 		{
@@ -512,29 +589,29 @@ namespace aris
 			// 正式开始计算 //
 			s_wa2wm(vs_in + 3, rm_in, wm_out, rm_ld, wm_ld);
 		}
-		auto s_va2vs(const double *pp_in, const double *va_in, double *vs_out) noexcept->void
+		auto s_ve2vs(const double *pe_in, const double *ve_in, double *vs_out) noexcept->void
 		{
 			// 补充默认参数 //
-			pp_in = pp_in ? pp_in : default_pp();
-			va_in = va_in ? va_in : default_ve();
+			pe_in = pe_in ? pe_in : default_pe();
+			ve_in = ve_in ? ve_in : default_ve();
 			double vs_out_default[6];
 			vs_out = vs_out ? vs_out : vs_out_default;
 
 			// 正式开始计算 //
-			s_we2vs(va_in + 3, vs_out);
-			s_vp2vs(pp_in, va_in, vs_out);
+			s_we2vs(pe_in + 3, ve_in + 3, vs_out);
+			s_vp2vs(pe_in, ve_in, vs_out);
 		}
-		auto s_vs2va(const double *vs_in, const double *pp_in, double *va_out) noexcept->void
+		auto s_vs2ve(const double *vs_in, const double *pe_in, double *ve_out) noexcept->void
 		{
 			// 补充默认参数 //
 			vs_in = vs_in ? vs_in : default_vs();
-			pp_in = pp_in ? pp_in : default_pp();
+			pe_in = pe_in ? pe_in : default_pe();
 			double ve_out_default[6];
-			va_out = va_out ? va_out : ve_out_default;
+			ve_out = ve_out ? ve_out : ve_out_default;
 
 			// 正式开始计算 //
-			s_vs2we(vs_in, va_out + 3);
-			s_vs2vp(vs_in, pp_in, va_out);
+			s_vs2we(vs_in, pe_in + 3, ve_out + 3);
+			s_vs2vp(vs_in, pe_in, ve_out);
 		}
 		auto s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out) noexcept->void
 		{
@@ -594,6 +671,50 @@ namespace aris
 			s_vs2wq(vs_in, pq_in + 3, vq_out + 3);
 			s_vs2vp(vs_in, pq_in, vq_out);
 		}
+		auto s_wa2vs(const double *wa_in, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			wa_in = wa_in ? wa_in : default_wa();
+			double vs_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			std::copy(wa_in, wa_in + 3, vs_out + 3);
+		}
+		auto s_vs2wa(const double *vs_in, double *wa_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			double we_out_default[3];
+			wa_out = wa_out ? wa_out : we_out_default;
+
+			// 正式开始计算 //
+			std::copy(vs_in + 3, vs_in + 6, wa_out);
+		}
+		auto s_va2vs(const double *pp_in, const double *va_in, double *vs_out) noexcept->void
+		{
+			// 补充默认参数 //
+			pp_in = pp_in ? pp_in : default_pp();
+			va_in = va_in ? va_in : default_va();
+			double vs_out_default[6];
+			vs_out = vs_out ? vs_out : vs_out_default;
+
+			// 正式开始计算 //
+			s_wa2vs(va_in + 3, vs_out);
+			s_vp2vs(pp_in, va_in, vs_out);
+		}
+		auto s_vs2va(const double *vs_in, const double *pp_in, double *va_out) noexcept->void
+		{
+			// 补充默认参数 //
+			vs_in = vs_in ? vs_in : default_vs();
+			pp_in = pp_in ? pp_in : default_pp();
+			double ve_out_default[6];
+			va_out = va_out ? va_out : ve_out_default;
+
+			// 正式开始计算 //
+			s_vs2wa(vs_in, va_out + 3);
+			s_vs2vp(vs_in, pp_in, va_out);
+		}
 
 		auto s_xm2xa(const double *rm_in, const double *wm_in, const double *xm_in, double *xa_out, double *wa_out, std::size_t rm_ld, std::size_t wm_ld, std::size_t xm_ld) noexcept->void
 		{
@@ -627,8 +748,8 @@ namespace aris
 		auto s_xa2xm(const double *wa_in, const double *xe_in, const double *rm_in, double *xm_out, double *wm_out, std::size_t rm_ld, std::size_t wm_ld, std::size_t xm_ld) noexcept->void
 		{
 			// 补充默认参数 //
-			wa_in = wa_in ? wa_in : default_we();
-			xe_in = xe_in ? xe_in : default_xe();
+			wa_in = wa_in ? wa_in : default_wa();
+			xe_in = xe_in ? xe_in : default_xa();
 			rm_in = rm_in ? rm_in : default_rm();
 			double wm_out_default[9];
 			double xm_out_default[9];
@@ -693,8 +814,8 @@ namespace aris
 		auto s_xa2xq(const double *wa_in, const double *xe_in, const double *rq_in, double *xq_out, double *wq_out) noexcept->void
 		{
 			// 补充默认参数 //
-			wa_in = wa_in ? wa_in : default_we();
-			xe_in = xe_in ? xe_in : default_xe();
+			wa_in = wa_in ? wa_in : default_wa();
+			xe_in = xe_in ? xe_in : default_xa();
 			rq_in = rq_in ? rq_in : default_rq();
 			double xq_out_default[4];
 			double wq_out_default[4];
@@ -763,7 +884,7 @@ namespace aris
 		auto s_xa2as(const double *xe_in, double *as_out) noexcept->void
 		{
 			// 补充默认参数 //
-			xe_in = xe_in ? xe_in : default_xe();
+			xe_in = xe_in ? xe_in : default_xa();
 			double as_out_default[6];
 			as_out = as_out ? as_out : as_out_default;
 
@@ -840,15 +961,15 @@ namespace aris
 		{
 			// 补充默认参数 //
 			pp_in = pp_in ? pp_in : default_pp();
-			va_in = va_in ? va_in : default_ve();
-			aa_in = aa_in ? aa_in : default_ae();
+			va_in = va_in ? va_in : default_va();
+			aa_in = aa_in ? aa_in : default_aa();
 			double as_out_default[6];
 			double vs_out_default[6];
 			vs_out = vs_out ? vs_out : vs_out_default;
 			as_out = as_out ? as_out : as_out_default;
 
 			// 正式开始计算 //
-			s_we2vs(va_in + 3, vs_out);
+			s_wa2vs(va_in + 3, vs_out);
 			s_xa2as(aa_in + 3, as_out);
 			s_ap2as(pp_in, va_in, aa_in, as_out, vs_out);
 		}
@@ -864,7 +985,7 @@ namespace aris
 			aa_out = aa_out ? aa_out : ae_out_default;
 
 			// 正式开始计算 //
-			s_vs2we(vs_in, va_out + 3);
+			s_vs2wa(vs_in, va_out + 3);
 			s_as2xa(as_in, aa_out + 3);
 			s_as2ap(vs_in, as_in, pp_in, aa_out, va_out);
 		}
@@ -1307,7 +1428,7 @@ namespace aris
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
 			relative_vs = relative_vs ? relative_vs : default_vs();
-			from_wa = from_wa ? from_wa : default_we();
+			from_wa = from_wa ? from_wa : default_wa();
 			double default_to_we[3];
 			to_wa = to_wa ? to_wa : default_to_we;
 
@@ -1320,7 +1441,7 @@ namespace aris
 			// 补充默认参数 //
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
 			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_pm();
-			from_wa = from_wa ? from_wa : default_we();
+			from_wa = from_wa ? from_wa : default_wa();
 			double default_to_we[3];
 			to_wa = to_wa ? to_wa : default_to_we;
 
@@ -1415,7 +1536,7 @@ namespace aris
 			relative_pm = relative_pm ? relative_pm : default_pm();
 			relative_vs = relative_vs ? relative_vs : default_vs();
 			from_pp = from_pp ? from_pp : default_pp();
-			from_va = from_va ? from_va : default_ve();
+			from_va = from_va ? from_va : default_va();
 			double default_to_pp[3];
 			double default_to_vw[6];
 			to_pp = to_pp ? to_pp : default_to_pp;
@@ -1435,7 +1556,7 @@ namespace aris
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
 			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
 			from_pp = from_pp ? from_pp : default_pp();
-			from_va = from_va ? from_va : default_ve();
+			from_va = from_va ? from_va : default_va();
 			double default_to_pp[3];
 			double default_to_vw[6];
 			to_pp = to_pp ? to_pp : default_to_pp;
@@ -1627,7 +1748,7 @@ namespace aris
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
 			relative_as = relative_as ? relative_as : default_as();
-			from_xa = from_xa ? from_xa : default_xe();
+			from_xa = from_xa ? from_xa : default_xa();
 			double default_to_xe[3];
 			to_xa = to_xa ? to_xa : default_to_xe;
 
@@ -1640,7 +1761,7 @@ namespace aris
 			// 补充默认参数 //
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
 			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
-			from_xa = from_xa ? from_xa : default_xe();
+			from_xa = from_xa ? from_xa : default_xa();
 			double default_to_xe[3];
 			to_xa = to_xa ? to_xa : default_to_xe;
 
@@ -1761,8 +1882,8 @@ namespace aris
 			relative_vs = relative_vs ? relative_vs : default_vs();
 			relative_as = relative_as ? relative_as : default_as();
 			from_pp = from_pp ? from_pp : default_pp();
-			from_va = from_va ? from_va : default_ve();
-			from_aa = from_aa ? from_aa : default_ae();
+			from_va = from_va ? from_va : default_va();
+			from_aa = from_aa ? from_aa : default_aa();
 			double default_to_pp[3];
 			double default_to_ve[6];
 			double default_to_ae[6];
@@ -1786,8 +1907,8 @@ namespace aris
 			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
 			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
 			from_pp = from_pp ? from_pp : default_pp();
-			from_va = from_va ? from_va : default_ve();
-			from_aa = from_aa ? from_aa : default_ae();
+			from_va = from_va ? from_va : default_va();
+			from_aa = from_aa ? from_aa : default_aa();
 			double default_to_pp[3];
 			double default_to_ve[6];
 			double default_to_ae[6];

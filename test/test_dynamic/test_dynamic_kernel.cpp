@@ -75,25 +75,26 @@ void test_kernel()
 
 void test_variable_change()
 {
-	const double we[3] = { -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
-	const double xe[3] = { 0.904633672502324, -1.24440604199266,   1.45568007018557 };
-	const double rm321[9] = { -0.22, -0.975499782797526,   0.000416847668728071,
+	const double re321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
+	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };
+	const double rm[9] = { -0.22, -0.975499782797526,   0.000416847668728071,
 		0.175499782797526, -0.04, -0.983666521865018,
 		0.959583152331272, -0.216333478134982,   0.18 };
-	const double rm313[9] = { 0.567219713641686, -0.802125918959455, 0.186697098503681,
-		0.777805328452570,   0.447242474005492, -0.441580163137156,
-		0.270704021926224,   0.395686971707304,0.877582561890373 };
+	
+	
+	const double wa[3] = { -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
+	const double xa[3] = { 0.904633672502324, -1.24440604199266,   1.45568007018557 };
+	
 	const double wm[9] = { 1.36, -0.30698536874045, -0.633709981238717,
 		0.426985368740452,   0.8,   0.0436487757967661,
 		0.233709981238715,   1.23635122420323,   0.24 , };
 	const double xm[9] = { -0.782400000000002,   2.58144759895694,   1.54784395313479,
 		-2.32024759895695, -0.653600000000002,   0.450521351741563,
 		-1.92944395313478, -1.05972135174157, -0.103200000000001 };
-	const double re[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
-	const double re313[3] = { 0.4, 0.5, 0.6 };
-	const double rm[9] = { -0.22, -0.975499782797526,   0.000416847668728071,
-		0.175499782797526, -0.04, -0.983666521865018,
-		0.959583152331272, -0.216333478134982,   0.18 };
+	
+	const double we313[3] = { 2.4186366782249, -1.0260579124723, -3.75230232879985 };
+	const double we321[3] = { -4.19969388864156, - 0.83045134600268,   3.46543753721832 };
+	const double xe[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
 	const double rq[4] = { 0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
 	const double wq[4] = { 0.1, 0.2, -0.4, -(rq[0] * 0.1 + rq[1] * 0.2 - rq[2] * 0.4) / rq[3] };
 	const double xq[4] = { -0.033,   0.022, 0.011,   -(wq[0] * wq[0] + wq[1] * wq[1] + wq[2] * wq[2] + wq[3] * wq[3] + rq[0] * (-0.033) + rq[1] * (0.022) + rq[2] * (0.011)) / rq[3] };
@@ -117,8 +118,8 @@ void test_variable_change()
 	const double pe313[6] = { 0.1, 0.2, 0.3,0.4, 0.5, 0.6 };
 	const double pe321[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
 	const double pe[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
-	const double ve[6] = { 0.307558670154491,   1.2433000508379, -1.04895965543501, -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
-	const double ae[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 0.904633672502324, -1.24440604199266,   1.45568007018557 };
+	const double va[6] = { 0.307558670154491,   1.2433000508379, -1.04895965543501, -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
+	const double aa[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 0.904633672502324, -1.24440604199266,   1.45568007018557 };
 	const double vm[16] = { 1.36, -0.30698536874045, -0.633709981238717,0.307558670154491,
 		0.426985368740452,   0.8,   0.0436487757967661,1.2433000508379,
 		0.233709981238715,   1.23635122420323,   0.24 , -1.04895965543501,
@@ -145,29 +146,63 @@ void test_variable_change()
 	double result_as_for_angle[6] = { 3.15925342342501, -0.192390604845803,   0.136512424183815,   0,0,0 };
 	double result[16];
 
-	s_re2rm(re, result, "321");
-	if (!s_is_equal(9, result, rm321, error))std::cout << "\"s_re2rm 321\" failed" << std::endl;
+	s_re2rm(re321, result, "321");
+	if (!s_is_equal(9, result, rm, error))std::cout << "\"s_re2rm 321\" failed" << std::endl;
 
-	s_rm2re(rm321, result, "321");
-	if (!s_is_equal(3, result, re, error))std::cout << "\"s_rm2re 321\" failed" << std::endl;
+	s_rm2re(rm, result, "321");
+	if (!s_is_equal(3, result, re321, error))std::cout << "\"s_rm2re 321\" failed" << std::endl;
 
 	s_re2rm(re313, result);
-	if (!s_is_equal(9, result, rm313, error))std::cout << "\"s_re2rm 313\" failed" << std::endl;
+	if (!s_is_equal(9, result, rm, error))std::cout << "\"s_re2rm 313\" failed" << std::endl;
 
-	s_rm2re(rm313, result);
+	s_rm2re(rm, result);
 	if (!s_is_equal(3, result, re313, error))std::cout << "\"s_rm2re 313\" failed" << std::endl;
 
-	s_wa2wm(we, rm, result);
+	//dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", result, 1, 3);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	s_wa2we(wa, re313, result, "313");
+	if (!s_is_equal(3, result, we313, error))std::cout << "\"s_wa2we 313\" failed" << std::endl;
+	
+	dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", result, 1, 3);
+
+	s_we2wa(re313, we313, result, "313");
+	if (!s_is_equal(3, result, wa, error))std::cout << "\"s_we2wa 313\" failed" << std::endl;
+
+	s_wa2we(wa, re321, result, "321");
+	if (!s_is_equal(3, result, we321, error))std::cout << "\"s_wa2we 321\" failed" << std::endl;
+
+	s_we2wa(re321, we321, result, "321");
+	if (!s_is_equal(3, result, wa, error))std::cout << "\"s_we2wa 321\" failed" << std::endl;
+
+
+	
+
+	s_wa2wm(wa, rm, result);
 	if (!s_is_equal(9, result, wm, error))std::cout << "\"s_wa2wm\" failed" << std::endl;
 
 	s_wm2wa(rm, wm, result);
-	if (!s_is_equal(3, result, we, error))std::cout << "\"s_wm2wa\" failed" << std::endl;
+	if (!s_is_equal(3, result, wa, error))std::cout << "\"s_wm2wa\" failed" << std::endl;
 
-	s_xa2xm(we, xe, rm, result);
+	s_xa2xm(wa, xa, rm, result);
 	if (!s_is_equal(9, result, xm, error))std::cout << "\"s_xa2xm\" failed" << std::endl;
 
 	s_xm2xa(rm, wm, xm, result);
-	if (!s_is_equal(3, result, xe, error))std::cout << "\"s_xm2xa\" failed" << std::endl;
+	if (!s_is_equal(3, result, xa, error))std::cout << "\"s_xm2xa\" failed" << std::endl;
 
 	s_rq2rm(rq, result);
 	if (!s_is_equal(9, result, rm, error))std::cout << "\"s_rq2rm\" failed" << std::endl;
@@ -176,15 +211,15 @@ void test_variable_change()
 	if (!s_is_equal(4, result, rq, error))std::cout << "\"s_rm2rq\" failed" << std::endl;
 
 	s_wq2wa(rq, wq, result);
-	if (!s_is_equal(3, result, we, error))std::cout << "\"s_wq2wa\" failed" << std::endl;
+	if (!s_is_equal(3, result, wa, error))std::cout << "\"s_wq2wa\" failed" << std::endl;
 
-	s_wa2wq(we, rq, result);
+	s_wa2wq(wa, rq, result);
 	if (!s_is_equal(4, result, wq, error))std::cout << "\"s_wa2wq\" failed" << std::endl;
 
 	s_xq2xa(rq, wq, xq, result);
-	if (!s_is_equal(3, result, xe, error))std::cout << "\"s_xq2xa\" failed" << std::endl;
+	if (!s_is_equal(3, result, xa, error))std::cout << "\"s_xq2xa\" failed" << std::endl;
 
-	s_xa2xq(we, xe, rq, result);
+	s_xa2xq(wa, xa, rq, result);
 	if (!s_is_equal(4, result, xq, error))std::cout << "\"s_xa2xq\" failed" << std::endl;
 
 	s_pp2pm(pp, result_pm_for_position);
@@ -205,11 +240,11 @@ void test_variable_change()
 	s_ap2as(pp, vp, ap, result_as_for_position, result_vs_for_position);
 	if (!(s_is_equal(6, result_as_for_position, as, error) && (s_is_equal(6, result_vs_for_position, vs, error))))std::cout << "\"s_ap2as\" failed" << std::endl;
 
-	s_re2pm(re, result_pm_for_angle, "321");
+	s_re2pm(re321, result_pm_for_angle, "321");
 	if (!s_is_equal(16, result_pm_for_angle, pm321, error))std::cout << "\"s_re2pm\" failed" << std::endl;
 
 	s_pm2re(pm321, result, "321");
-	if (!s_is_equal(3, result, re, error))std::cout << "\"s_pm2re\" failed" << std::endl;
+	if (!s_is_equal(3, result, re321, error))std::cout << "\"s_pm2re\" failed" << std::endl;
 
 	s_re2pm(re313, result_pm_for_angle);
 	if (!s_is_equal(16, result_pm_for_angle, pm313, error))std::cout << "\"s_re2pm\" failed" << std::endl;
@@ -217,17 +252,17 @@ void test_variable_change()
 	s_pm2re(pm313, result);
 	if (!s_is_equal(3, result, re313, error))std::cout << "\"s_pm2re\" failed" << std::endl;
 
-	s_we2vs(we, result_vs_for_angle);
+	s_wa2vs(wa, result_vs_for_angle);
 	if (!s_is_equal(6, result_vs_for_angle, vs, error))std::cout << "\"s_wq2vs\" failed" << std::endl;
 
-	s_vs2we(vs, result);
-	if (!s_is_equal(3, result, we, error))std::cout << "\"s_vs2wq\" failed" << std::endl;
+	s_vs2wa(vs, result);
+	if (!s_is_equal(3, result, wa, error))std::cout << "\"s_vs2wq\" failed" << std::endl;
 
-	s_xa2as(xe, result_as_for_angle);
+	s_xa2as(xa, result_as_for_angle);
 	if (!s_is_equal(6, result_as_for_angle, as, error))std::cout << "\"s_xa2as\" failed" << std::endl;
 
 	s_as2xa(as, result);
-	if (!s_is_equal(3, result, xe, error))std::cout << "\"s_as2xa\" failed" << std::endl;
+	if (!s_is_equal(3, result, xa, error))std::cout << "\"s_as2xa\" failed" << std::endl;
 
 	s_rq2pm(rq, result_pm_for_angle);
 	if (!s_is_equal(16, result_pm_for_angle, pm, error))std::cout << "\"s_rq2pm\" failed" << std::endl;
@@ -278,15 +313,15 @@ void test_variable_change()
 	if (!s_is_equal(6, result, pe313, error))std::cout << "\"s_pm2pe\" failed" << std::endl;
 
 	s_vs2va(vs, pp, result);
-	if (!s_is_equal(6, result, ve, error))std::cout << "\"s_vs2va\" failed" << std::endl;
+	if (!s_is_equal(6, result, va, error))std::cout << "\"s_vs2va\" failed" << std::endl;
 
-	s_va2vs(pp, ve, result);
+	s_va2vs(pp, va, result);
 	if (!s_is_equal(6, result, vs, error))std::cout << "\"s_va2vs\" failed" << std::endl;
 
 	s_as2aa(vs, as, pp, result);
-	if (!s_is_equal(6, result, ae, error))std::cout << "\"s_as2aa\" failed" << std::endl;
+	if (!s_is_equal(6, result, aa, error))std::cout << "\"s_as2aa\" failed" << std::endl;
 
-	s_aa2as(pp, ve, ae, result);
+	s_aa2as(pp, va, aa, result);
 	if (!s_is_equal(6, result, as, error))std::cout << "\"s_aa2as\" failed" << std::endl;
 
 	s_vs2vm(vs, pm, result);
