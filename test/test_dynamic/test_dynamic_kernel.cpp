@@ -110,13 +110,13 @@ void test_variable_change()
 	
 	const double ap[3] = { 2.2628985000154, -0.843606386309081, -0.248846478459814 };
 	const double xe313[3] = { 1.51734920338156,   1.71538128045296,   1.3693196878275 };
-	const double xe321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
+	const double xe321[3] = { -15.6049676192293,   4.50445705187534,   16.9352080725126 };
 	const double xq[4] = { -0.033,   0.022, 0.011,   -(wq[0] * wq[0] + wq[1] * wq[1] + wq[2] * wq[2] + wq[3] * wq[3] + rq[0] * (-0.033) + rq[1] * (0.022) + rq[2] * (0.011)) / rq[3] };
 	const double xm[9] = { -0.782400000000002,   2.58144759895694,   1.54784395313479,
 		-2.32024759895695, -0.653600000000002,   0.450521351741563,
 		-1.92944395313478, -1.05972135174157, -0.103200000000001 };
-	const double ae313[6] = { 0.1, 0.2, 0.3,0.4, 0.5, 0.6 };
-	const double ae321[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
+	const double ae313[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 1.51734920338156,   1.71538128045296,   1.3693196878275 };
+	const double ae321[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, -15.6049676192293,   4.50445705187534,   16.9352080725126 };
 	const double aq[7] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, -0.033,   0.022, 0.011,   -(wq[0] * wq[0] + wq[1] * wq[1] + wq[2] * wq[2] + wq[3] * wq[3] + rq[0] * (-0.033) + rq[1] * (0.022) + rq[2] * (0.011)) / rq[3] };
 	const double am[16] = { -0.782400000000002,   2.58144759895694,   1.54784395313479,2.2628985000154,
 		-2.32024759895695, -0.653600000000002,   0.450521351741563,-0.843606386309081,
@@ -306,35 +306,14 @@ void test_variable_change()
 	s_xa2xe(wa, xa, re313, result, result1, "313");
 	if (!(s_is_equal(3, result, xe313, error)&&(s_is_equal(3, result1, we313, error))))std::cout << "\"s_xa2xe 313\" failed" << std::endl;
 
-	dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", result, 1, 3);
-
-
-	//dsp(xe313, 3, 1);
-	//dsp(result, 3, 1);
-
-	s_xa2xe(wa, xa, re321, nullptr, result, "321");
-	if (!s_is_equal(3, result, we321, error))std::cout << "\"s_xa2xe 321\" failed" << std::endl;
-
-	//dsp(we321, 3, 1);
-	//dsp(result, 3, 1);
+	s_xa2xe(wa, xa, re321, result, result1, "321");
+	if (!(s_is_equal(3, result, xe321, error)&&(s_is_equal(3, result1, we321, error))))std::cout << "\"s_xa2xe 321\" failed" << std::endl;
 
 	s_xe2xa(re313, we313, xe313, result, result1, "313");
 	if (!(s_is_equal(3, result, xa, error)&&(s_is_equal(3, result1, wa, error))))std::cout << "\"s_xe2xa 313\" failed" << std::endl;
 
-	dsp(xa, 3, 1);
-	dsp(result, 3, 1);
-
-	dsp(wa, 3, 1);
-	dsp(result1, 3, 1);
-
-	s_xe2xa(re321, we321, nullptr, nullptr, result, "321");
-	if (!s_is_equal(3, result, wa, error))std::cout << "\"s_xe2xa 321\" failed" << std::endl;
-
-	s_xa2xm(wa, xa, rm, result);
-	if (!s_is_equal(9, result, xm, error))std::cout << "\"s_xa2xm\" failed" << std::endl;
-
-	s_xm2xa(rm, wm, xm, result);
-	if (!s_is_equal(3, result, xa, error))std::cout << "\"s_xm2xa\" failed" << std::endl;
+	s_xe2xa(re321, we321, xe321, result, result1, "321");
+	if (!(s_is_equal(3, result, xa, error)&&(s_is_equal(3, result1, wa, error))))std::cout << "\"s_xe2xa 321\" failed" << std::endl;
 
 	s_xq2xa(rq, wq, xq, result);
 	if (!s_is_equal(3, result, xa, error))std::cout << "\"s_xq2xa\" failed" << std::endl;
@@ -342,25 +321,29 @@ void test_variable_change()
 	s_xa2xq(wa, xa, rq, result);
 	if (!s_is_equal(4, result, xq, error))std::cout << "\"s_xa2xq\" failed" << std::endl;
 
+	s_xa2xm(wa, xa, rm, result);
+	if (!s_is_equal(9, result, xm, error))std::cout << "\"s_xa2xm\" failed" << std::endl;
+
+	s_xm2xa(rm, wm, xm, result);
+	if (!s_is_equal(3, result, xa, error))std::cout << "\"s_xm2xa\" failed" << std::endl;
+
 	s_as2ap(vs, as, pp, result);
 	if (!s_is_equal(3, result, ap, error))std::cout << "\"s_as2ap\" failed" << std::endl;
 
 	s_ap2as(pp, vp, ap, result_as_for_position, result_vs_for_position);
 	if (!(s_is_equal(6, result_as_for_position, as, error) && (s_is_equal(6, result_vs_for_position, vs, error))))std::cout << "\"s_ap2as\" failed" << std::endl;
 
-	
+	s_xe2as(re313, we313, xe313, result, result1);
+	if (!(s_is_equal(3, result + 3, as + 3, error) && (s_is_equal(3, result1 + 3, vs + 3, error))))std::cout << "\"s_xe2as 313\" failed" << std::endl;
 
-	
+	s_xe2as(re321, we321, xe321, result, result1, "321");
+	if (!(s_is_equal(3, result + 3, as + 3, error) && (s_is_equal(3, result1 + 3, vs + 3, error))))std::cout << "\"s_xe2as 321\" failed" << std::endl;
 
-	s_xa2as(xa, result_as_for_angle);
-	if (!s_is_equal(6, result_as_for_angle, as, error))std::cout << "\"s_xa2as\" failed" << std::endl;
+	s_as2xe(vs, as, re313, result, result1);
+	if (!s_is_equal(3, result, xe313, error))std::cout << "\"s_as2xe 313\" failed" << std::endl;
 
-	s_as2xa(as, result);
-	if (!s_is_equal(3, result, xa, error))std::cout << "\"s_as2xa\" failed" << std::endl;
-
-
-
-	
+	s_as2xe(vs, as, re321, result, result1, "321");
+	if (!s_is_equal(3, result, xe321, error))std::cout << "\"s_as2xe 321\" failed" << std::endl;
 
 	s_xq2as(rq, wq, xq, result_as_for_angle);
 	if (!s_is_equal(6, result_as_for_angle, as, error))std::cout << "\"s_xq2as\" failed" << std::endl;
@@ -368,27 +351,35 @@ void test_variable_change()
 	s_as2xq(vs, as, rq, result);
 	if (!s_is_equal(3, result, xq, error))std::cout << "\"s_as2xq\" failed" << std::endl;
 
-
-
-	
-
 	s_xm2as(rm, wm, xm, result_as_for_angle);
 	if (!s_is_equal(6, result_as_for_angle, as, error))std::cout << "\"s_xm2as\" failed" << std::endl;
 
 	s_as2xm(vs, as, rm, result);
 	if (!s_is_equal(9, result, xm, error))std::cout << "\"s_as2xm\" failed" << std::endl;
 
+	s_xa2as(xa, result_as_for_angle);
+	if (!s_is_equal(6, result_as_for_angle, as, error))std::cout << "\"s_xa2as\" failed" << std::endl;
 
+	s_as2xa(as, result);
+	if (!s_is_equal(3, result, xa, error))std::cout << "\"s_as2xa\" failed" << std::endl;
 
-	
+	s_as2ae(vs, as, pe313, result, result1);
+	if (!(s_is_equal(6, result, ae313, error)&&s_is_equal(6, result1, ve313, error)))std::cout << "\"s_as2ae\" failed" << std::endl;
 
-	s_as2aa(vs, as, pp, result);
-	if (!s_is_equal(6, result, aa, error))std::cout << "\"s_as2aa\" failed" << std::endl;
+	s_as2ae(vs, as, pe321, result, result1, "321");
+	if (!(s_is_equal(6, result, ae321, error) && s_is_equal(6, result1, ve321, error)))std::cout << "\"s_as2ae\" failed" << std::endl;
 
-	s_aa2as(pp, va, aa, result);
-	if (!s_is_equal(6, result, as, error))std::cout << "\"s_aa2as\" failed" << std::endl;
+	s_ae2as(pe313, ve313, ae313, result, result1);
+	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result1, vs, error)))std::cout << "\"s_ae2as\" failed" << std::endl;
 
+	s_ae2as(pe321, ve321, ae321, result, result1, "321");
+	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result1, vs, error)))std::cout << "\"s_ae2as\" failed" << std::endl;
 
+	s_as2aq(vs, as, pq, result);
+	if (!s_is_equal(7, result, aq, error))std::cout << "\"s_as2aq\" failed" << std::endl;
+
+	s_aq2as(pq, vq, aq, result);
+	if (!s_is_equal(6, result, as, error))std::cout << "\"s_aq2as\" failed" << std::endl;
 
 	s_as2am(vs, as, pm, result);
 	if (!s_is_equal(16, result, am, error))std::cout << "\"s_as2am\" failed" << std::endl;
@@ -396,15 +387,11 @@ void test_variable_change()
 	s_am2as(pm, vm, am, result);
 	if (!s_is_equal(6, result, as, error))std::cout << "\"s_am2as\" failed" << std::endl;
 
+	s_as2aa(vs, as, pp, result);
+	if (!s_is_equal(6, result, aa, error))std::cout << "\"s_as2aa\" failed" << std::endl;
 
-
-
-
-	s_as2aq(vs, as, pq, result);
-	if (!s_is_equal(7, result, aq, error))std::cout << "\"s_as2aq\" failed" << std::endl;
-
-	s_aq2as(pq, vq, aq, result);
-	if (!s_is_equal(6, result, as, error))std::cout << "\"s_aq2as\" failed" << std::endl;
+	s_aa2as(pp, va, aa, result);
+	if (!s_is_equal(6, result, as, error))std::cout << "\"s_aa2as\" failed" << std::endl;
 }
 void test_coordinate_transform()
 {

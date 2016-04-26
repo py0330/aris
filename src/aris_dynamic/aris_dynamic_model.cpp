@@ -38,13 +38,20 @@ namespace aris
 			xml_ele.SetAttribute("active", active() ? "true" : "false");
 		};
 		
-		auto Coordinate::getVe(double *va, const Coordinate &relative_to)const->void 
-		{ 
-			double pp_o[3], ve_o[6];
+		auto Coordinate::getVp(double *vp, const Coordinate &relative_to)const->void
+		{
+			double pp_o[3], vp_o[3];
 			getPp(pp_o);
-			getVe(ve_o);
-			s_inv_va2va(*relative_to.pm(), relative_to.vs(), pp_o, ve_o, va);
+			getVp(vp_o);
+			s_inv_vp2vp(*relative_to.pm(), relative_to.vs(), pp_o, vp_o, vp);
 		};
+		auto Coordinate::getVe(double *ve, const Coordinate &relative_to, const char *type)const->void
+		{
+			double pe_o[6], ve_o[6];
+			getPe(pe_o, type);
+			getVe(ve_o, type);
+			s_inv_ve2ve(*relative_to.pm(), relative_to.vs(), pe_o, ve_o, ve, nullptr, type, type);
+		}
 		auto Coordinate::getVq(double *vq, const Coordinate &relative_to)const->void 
 		{ 
 			double pq_o[7], vq_o[7];
@@ -52,20 +59,35 @@ namespace aris
 			getVq(vq_o);
 			s_inv_vq2vq(*relative_to.pm(), relative_to.vs(), pq_o, vq_o, vq);
 		};
-		auto Coordinate::getVp(double *vp, const Coordinate &relative_to)const->void 
+		auto Coordinate::getVm(double *vm, const Coordinate &relative_to)const->void
 		{
-			double pp_o[3], vp_o[3];
+			double pm_o[16], vm_o[16];
+			getPq(pm_o);
+			getVq(vm_o);
+			s_inv_vm2vm(*relative_to.pm(), relative_to.vs(), pm_o, vm_o, vm);
+		}
+		auto Coordinate::getVa(double *va, const Coordinate &relative_to)const->void
+		{
+			double pp_o[3], va_o[6];
+			getPp(pp_o);
+			getVa(va_o);
+			s_inv_va2va(*relative_to.pm(), relative_to.vs(), pp_o, va_o, va);
+		};
+		auto Coordinate::getAp(double *ap, const Coordinate &relative_to)const->void
+		{
+			double pp_o[7], vp_o[7], ap_o[7];
 			getPp(pp_o);
 			getVp(vp_o);
-			s_inv_vp2vp(*relative_to.pm(), relative_to.vs(), pp_o, vp_o, vp);
-		};
-		auto Coordinate::getAe(double *aa, const Coordinate &relative_to)const->void
+			getAp(ap_o);
+			s_inv_ap2ap(*relative_to.pm(), relative_to.vs(), relative_to.as(), pp_o, vp_o, ap_o, ap);
+		}
+		auto Coordinate::getAe(double *ae, const Coordinate &relative_to, const char *type)const->void
 		{
-			double pp_o[3], ve_o[6], ae_o[6];
-			getPp(pp_o);
-			getVe(ve_o);
-			getAe(ae_o);
-			s_inv_aa2aa(*relative_to.pm(), relative_to.vs(), relative_to.as(), pp_o, ve_o, ae_o, aa);
+			double pe_o[6], ve_o[6], ae_o[6];
+			getPe(pe_o, type);
+			getVe(ve_o, type);
+			getAe(ae_o, type);
+			s_inv_ae2ae(*relative_to.pm(), relative_to.vs(), relative_to.as(), pe_o, ve_o, ae_o, ae, nullptr, nullptr, type, type);
 		}
 		auto Coordinate::getAq(double *aq, const Coordinate &relative_to)const->void
 		{
@@ -75,13 +97,21 @@ namespace aris
 			getAq(aq_o);
 			s_inv_aq2aq(*relative_to.pm(), relative_to.vs(), relative_to.as(), pq_o, vq_o, aq_o, aq);
 		}
-		auto Coordinate::getAp(double *ap, const Coordinate &relative_to)const->void
+		auto Coordinate::getAm(double *am, const Coordinate &relative_to)const->void
 		{
-			double pp_o[7], vp_o[7], ap_o[7];
+			double pm_o[16], vm_o[16], am_o[16];
+			getPm(pm_o);
+			getVm(vm_o);
+			getAm(am_o);
+			s_inv_am2am(*relative_to.pm(), relative_to.vs(), relative_to.as(), pm_o, vm_o, am_o, am);
+		}
+		auto Coordinate::getAa(double *aa, const Coordinate &relative_to)const->void
+		{
+			double pp_o[3], va_o[6], aa_o[6];
 			getPp(pp_o);
-			getVp(vp_o);
-			getAp(ap_o);
-			s_inv_ap2ap(*relative_to.pm(), relative_to.vs(), relative_to.as(), pp_o, vp_o, ap_o, ap);
+			getVa(va_o);
+			getAa(aa_o);
+			s_inv_aa2aa(*relative_to.pm(), relative_to.vs(), relative_to.as(), pp_o, va_o, aa_o, aa);
 		}
 		Coordinate::Coordinate(Object &father, std::size_t id, const std::string &name, const double *pm, bool active)
 			:DynEle(father, id, name, active)
@@ -96,7 +126,6 @@ namespace aris
 			pm = pm ? pm : default_pm;
 			setPm(pm);
 		}
-		
 		
 		Interaction::Interaction(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
 			: DynEle(father, id, xml_ele)
@@ -873,6 +902,72 @@ namespace aris
 		auto Part::prtGravity() const->const double6&{ return imp_->prt_gravity_; };
 		auto Part::markerPool()->ElementPool<Marker>& { return std::ref(*imp_->marker_pool_); };
 		auto Part::markerPool()const->const ElementPool<Marker>& { return std::ref(*imp_->marker_pool_); };
+		auto Part::setVe(const double *ve_in, const Coordinate &relative_to, const char *type)->void
+		{
+			double pe[6], ve_o[6];
+			getPe(pe, relative_to, type);
+			s_ve2ve(*relative_to.pm(), relative_to.vs(), pe, ve_in, ve_o, nullptr, type, type);
+			setVe(ve_o, type);
+		}
+		auto Part::setVq(const double *vq_in, const Coordinate &relative_to)->void
+		{
+			double pq[7], vq_o[7];
+			getPq(pq, relative_to);
+			s_ve2ve(*relative_to.pm(), relative_to.vs(), pq, vq_in, vq_o, nullptr);
+			setVq(vq_o);
+		}
+		auto Part::setVm(const double *vm_in, const Coordinate &relative_to)->void
+		{
+			double pm[16], vm_o[16];
+			getPq(pm, relative_to);
+			s_ve2ve(*relative_to.pm(), relative_to.vs(), pm, vm_in, vm_o, nullptr);
+			setVm(vm_o);
+		}
+		auto Part::setVa(const double *va_in, const Coordinate &relative_to)->void
+		{
+			double pp[3], va_o[6];
+			getPp(pp, relative_to);
+			s_ve2ve(*relative_to.pm(), relative_to.vs(), pp, va_in, va_o, nullptr);
+			setVa(va_o);
+		}
+		auto Part::setAe(const double *ae_in, const Coordinate &relative_to, const char *type)->void
+		{
+			double pe_r[6], ve_r[6], as[6];
+			getPe(pe_r, relative_to, type);
+			getVe(ve_r, relative_to, type);
+			s_ae2as(pe_r, ve_r, ae_in, as, nullptr, type);
+			setAs(as, relative_to);
+		}
+		auto Part::setAq(const double *aq_in, const Coordinate &relative_to)->void
+		{
+			double pq_r[6], vq_r[6], as[6];
+			getPq(pq_r, relative_to);
+			getVq(vq_r, relative_to);
+			s_aq2as(pq_r, vq_r, aq_in, as);
+			setAs(as, relative_to);
+		}
+		auto Part::setAm(const double *am_in, const Coordinate &relative_to)->void
+		{
+			double pm_r[6], vm_r[6], as[6];
+			getPm(pm_r, relative_to);
+			getVm(vm_r, relative_to);
+			s_am2as(pm_r, vm_r, am_in, as);
+			setAs(as, relative_to);
+		}
+		auto Part::setAa(const double *aa_in, const Coordinate &relative_to)->void
+		{
+			double pp_r[6], va_r[6], as[6];
+			getPp(pp_r, relative_to);
+			getVa(va_r, relative_to);
+			s_aa2as(pp_r, va_r, aa_in, as);
+			setAs(as, relative_to);
+		}
+		auto Part::setAs(const double *as_in, const Coordinate &relative_to)->void
+		{
+			double vs_r[6];
+			getVs(vs_r, relative_to);
+			s_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), vs_r, as_in, as());
+		}
 		auto Part::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			DynEle::saveXml(xml_ele);
