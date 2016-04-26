@@ -68,7 +68,7 @@ void test_model()
 	dsp(b, 12, 1);
 
 	//auto &prismatic1 = model.jointPool().
-	dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", *csm, 12, 12);
+	//dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", *csm, 12, 12);
 
 
 
