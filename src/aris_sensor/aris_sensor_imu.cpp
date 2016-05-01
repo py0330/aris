@@ -60,7 +60,7 @@ namespace aris
 			//toPntAccBody2Ground(acc, this->yaw);
 		}
 		
-		class IMU::Imp :public DeviceClass
+		class Imu::Imp :public DeviceClass
 		{
 		public:
 			std::string port;
@@ -75,48 +75,51 @@ namespace aris
 			XsPortInfo mtPort;
 		};
 		
-		IMU::IMU():pImp(new Imp)
+		Imu::Imu(Object &father, std::size_t id, const std::string &name)
+			: SensorTemplate(father, id, name)
+			, imp_(new Imp)
 		{
-			pImp->port = "/dev/ttyUSB0";
-			pImp->baudRate = 921600;
-			pImp->sampleRate = 400;
+			imp_->port = "/dev/ttyUSB0";
+			imp_->baudRate = 921600;
+			imp_->sampleRate = 400;
 
-			std::fill_n(&pImp->pmImuGround2BodyGround[0][0], 16, 0);
-			pImp->pmImuGround2BodyGround[0][0] = -1;
-			pImp->pmImuGround2BodyGround[1][2] = 1;
-			pImp->pmImuGround2BodyGround[2][1] = 1;
-			pImp->pmImuGround2BodyGround[3][3] = 1;
+			std::fill_n(&imp_->pmImuGround2BodyGround[0][0], 16, 0);
+			imp_->pmImuGround2BodyGround[0][0] = -1;
+			imp_->pmImuGround2BodyGround[1][2] = 1;
+			imp_->pmImuGround2BodyGround[2][1] = 1;
+			imp_->pmImuGround2BodyGround[3][3] = 1;
 
-			std::fill_n(&pImp->pmBody2Imu[0][0], 16, 0);
-			pImp->pmBody2Imu[0][0] = 1;
-			pImp->pmBody2Imu[1][2] = 1;
-			pImp->pmBody2Imu[2][1] = -1;
-			pImp->pmBody2Imu[3][3] = 1;
+			std::fill_n(&imp_->pmBody2Imu[0][0], 16, 0);
+			imp_->pmBody2Imu[0][0] = 1;
+			imp_->pmBody2Imu[1][2] = 1;
+			imp_->pmBody2Imu[2][1] = -1;
+			imp_->pmBody2Imu[3][3] = 1;
 		}
-		IMU::IMU(const aris::core::XmlElement *xmlEle) :pImp(new Imp)
+		Imu::Imu(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
+			: SensorTemplate(father, id, xml_ele)
+			, imp_(new Imp)
 		{
 #ifdef UNIX
-			pImp->port = xmlEle->Attribute("portLinux");
+			imp_->port = xml_ele.Attribute("portLinux");
 #endif
-			pImp->baudRate = std::stoi(xmlEle->Attribute("baudRate"));
-			pImp->sampleRate = std::stoi(xmlEle->Attribute("sampleRate"));;
+			imp_->baudRate = std::stoi(xml_ele.Attribute("baudRate"));
+			imp_->sampleRate = std::stoi(xml_ele.Attribute("sampleRate"));;
 
 			aris::core::Calculator c;
 			c.addVariable("PI", PI);
 			
-			auto m = c.calculateExpression(xmlEle->Attribute("PeImuGround2BodyGound"));
-			aris::dynamic::s_pe2pm(m.data(), &pImp->pmImuGround2BodyGround[0][0]);
-			m = c.calculateExpression(xmlEle->Attribute("PeImu2Body"));
+			auto m = c.calculateExpression(xml_ele.Attribute("PeImuGround2BodyGound"));
+			aris::dynamic::s_pe2pm(m.data(), &imp_->pmImuGround2BodyGround[0][0]);
+			m = c.calculateExpression(xml_ele.Attribute("PeImu2Body"));
 			double pmImu2Body[16];
 			aris::dynamic::s_pe2pm(m.data(), pmImu2Body);
-			aris::dynamic::s_inv_pm(pmImu2Body, &pImp->pmBody2Imu[0][0]);
-
+			aris::dynamic::s_inv_pm(pmImu2Body, &imp_->pmBody2Imu[0][0]);
 		}
-		IMU::~IMU()
+		Imu::~Imu()
 		{
 		}
 
-		void IMU::init()
+		void Imu::init()
 		{
 			XsPortInfoArray portInfoArray;
 			xsEnumerateUsbDevices(portInfoArray);
@@ -124,81 +127,82 @@ namespace aris
 			if (!portInfoArray.size())
 			{
 #ifdef WIN32
-				throw std::runtime_error("IMU: failed to find IMU sensor");
+				throw std::runtime_error("Imu: failed to find Imu sensor");
 #endif
 #ifdef UNIX
-				XsPortInfo portInfo(pImp->port, XsBaud::numericToRate(pImp->baudRate));
+				XsPortInfo portInfo(imp_->port, XsBaud::numericToRate(imp_->baudRate));
 				portInfoArray.push_back(portInfo);
 #endif
 			}
 			
-			pImp->mtPort = portInfoArray.at(0);
+			imp_->mtPort = portInfoArray.at(0);
 			
 			// Open the port with the detected device
-			if (!pImp->openPort(pImp->mtPort))
-				throw std::runtime_error("IMU: could not open port.");
+			if (!imp_->openPort(imp_->mtPort))
+				throw std::runtime_error("Imu: could not open port.");
 			
 			aris::core::msSleep(10);
 
 			// Put the device in configuration mode
-			if (!pImp->gotoConfig()) // Put the device into configuration mode before configuring the device
+			if (!imp_->gotoConfig()) // Put the device into configuration mode before configuring the device
 			{
-				throw std::runtime_error("IMU: could not put device into configuration mode");
+				throw std::runtime_error("Imu: could not put device into configuration mode");
 			}
 			
 			// Request the device Id to check the device type
-			pImp->mtPort.setDeviceId(pImp->getDeviceId());
+			imp_->mtPort.setDeviceId(imp_->getDeviceId());
 			
 			// Check if we have an MTi / MTx / MTmk4 device
-			if (!pImp->mtPort.deviceId().isMtMk4())
+			if (!imp_->mtPort.deviceId().isMtMk4())
 			{
-				throw std::runtime_error("IMU: No MTi / MTx / MTmk4 device found.");
+				throw std::runtime_error("Imu: No MTi / MTx / MTmk4 device found.");
 			}
 			
 			// Check device type
-			if (pImp->mtPort.deviceId().isMtMk4())
+			if (imp_->mtPort.deviceId().isMtMk4())
 			{
-				XsOutputConfiguration config0(XDI_Quaternion, pImp->sampleRate);
-				XsOutputConfiguration config1(XDI_DeltaQ, pImp->sampleRate);
-				XsOutputConfiguration config2(XDI_DeltaV, pImp->sampleRate);
-				XsOutputConfiguration config3(XDI_Acceleration, pImp->sampleRate);
+				XsOutputConfiguration config0(XDI_Quaternion, imp_->sampleRate);
+				XsOutputConfiguration config1(XDI_DeltaQ, imp_->sampleRate);
+				XsOutputConfiguration config2(XDI_DeltaV, imp_->sampleRate);
+				XsOutputConfiguration config3(XDI_Acceleration, imp_->sampleRate);
 
 				XsOutputConfigurationArray configArray;
 				configArray.push_back(config0);
 				configArray.push_back(config1);
 				configArray.push_back(config2);
 				configArray.push_back(config3);
-				if (!pImp->setOutputConfiguration(configArray))
+				if (!imp_->setOutputConfiguration(configArray))
 				{
-					throw std::runtime_error("IMU: Could not configure MTmk4 pImp-> Aborting.");
+					throw std::runtime_error("Imu: Could not configure MTmk4 imp_-> Aborting.");
 				}
 			}
 			else
 			{
-				throw std::runtime_error("IMU: Unknown device while configuring. Aborting.");
+				throw std::runtime_error("Imu: Unknown device while configuring. Aborting.");
 			}
 			
 			// Put the device in measurement mode
-			if (!pImp->gotoMeasurement())
+			if (!imp_->gotoMeasurement())
 			{
-				throw std::runtime_error("IMU: Could not put device into measurement mode. Aborting.");
+				throw std::runtime_error("Imu: Could not put device into measurement mode. Aborting.");
 			}
 		}
-		void IMU::release()
+		void Imu::release()
 		{
-			pImp->close();
+			imp_->close();
 		}
-		void IMU::updateData(ImuData &data)
+		void Imu::updateData(SensorData & data_in)
 		{
 			XsByteArray imuData;
 			XsMessageArray msgs;
 
+			auto &data = static_cast<ImuData&>(data_in);
 
 			while (msgs.empty())
 			{
 				aris::core::msSleep(1);
-				pImp->readDataToBuffer(imuData);
-				pImp->processBufferedData(imuData, msgs);
+				imp_->readDataToBuffer(imuData);
+				imp_->processBufferedData(imuData, msgs);
 			}
 
 			//std::cout << "msg num:" << msgs.size()<<std::endl;
@@ -210,7 +214,7 @@ namespace aris
 				if ((*it).getMessageId() == XMID_MtData2) 
 				{
 					packet.setMessage((*it));
-					packet.setDeviceId(pImp->mtPort.deviceId());
+					packet.setDeviceId(imp_->mtPort.deviceId());
 				}
 
 				// Get the all data
@@ -229,8 +233,8 @@ namespace aris
 				std::copy_n(acc.data(), acc.size(), data.acc);
 
 				data.time = packet.timeOfArrival().nowMs();
-				data.pmLhs = *pImp->pmImuGround2BodyGround;
-				data.pmRhs = *pImp->pmBody2Imu;
+				data.pmLhs = *imp_->pmImuGround2BodyGround;
+				data.pmRhs = *imp_->pmBody2Imu;
 			}
 
 			msgs.clear();

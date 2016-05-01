@@ -5,7 +5,7 @@
 #include "aris_sensor.h"
 #include "aris_dynamic.h"
 
-class SENSOR :public aris::sensor::SensorBase<double>
+class SENSOR :public aris::sensor::SensorTemplate<double>
 {
 	virtual void updateData(double &data)
 	{
@@ -16,16 +16,12 @@ class SENSOR :public aris::sensor::SensorBase<double>
 	}
 };
 
-
-#ifdef UNIX
-aris::sensor::KINECT kinect;
-#endif
-
 int main()
 {
 	aris::core::XmlDocument doc;
 #ifdef WIN32
-	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III.xml");
+	doc.LoadFile("C:\\Robots\\resource\\Robot_Type_I\\Robot_III\\Robot_III.xml");
+
 #endif
 #ifdef UNIX
 	doc.LoadFile("/usr/Robots/resource/Robot_Type_I/Robot_III.xml");
@@ -45,22 +41,23 @@ int main()
 	kinect.stop();
 #endif
 */
-	/*
-	auto p = doc.RootElement()->FirstChildElement("server")->FirstChildElement("Sensors")->FirstChildElement("IMU");
 	
-	aris::sensor::IMU imu(p);
+	auto p = doc.RootElement()->FirstChildElement("Sensors")->FirstChildElement("IMU");
+	
+	aris::core::Root root;
+	aris::sensor::Imu imu(root, 0, *p);
 
 	imu.start();
 	
-	for (int i = 0; i < 1000;++i)
+	for (int i = 0; i < 1000; ++i)
 	{
-		auto data = imu.getSensorData();
+		auto data = imu.dataProtector();
 
 		double eul[3];
 		//data.get().ToBodyEul(eul);
 		//aris::dynamic::dsp(eul, 1, 3);
 		
-		data.get().toEulBody2Ground(eul, PI, "321");
+		static_cast<const aris::sensor::ImuData &>(data.data()).toEulBody2Ground(eul, PI, "321");
 		aris::dynamic::dsp(eul, 1, 3);
 
 		//double pm[16];
@@ -69,34 +66,35 @@ int main()
 
 		//aris::dynamic::dsp(data.get().eul321, 1, 3);
 
+		std::cout << i << std::endl;
+
 		aris::core::msSleep(1);
 	}
 
 	imu.stop();
+	
+
+	/*
+	SENSOR sensor;
+
+	sensor.start();
+
+	for (int i = 0; i < 200;++i)
+	{
+		auto data = sensor.getSensorData();
+
+		std::cout << data.get()<< std::endl;
+
+		aris::core::msSleep(5);
+	}
+
+	{
+		auto data = sensor.getSensorData();
+
+		std::cout << data.get() << std::endl;
+	}
+	sensor.stop();
 	*/
-
-	//SENSOR sensor;
-
-	//sensor.start();
-
-	//for (int i = 0; i < 200;++i)
-	//{
-	//	
-	//	
-	//	auto data = sensor.getSensorData();
-
-	//	//std::cout << data.get()<< std::endl;
-
-	//	aris::core::msSleep(1);
-	//}
-
-	//{
-	//	auto data = sensor.getSensorData();
-
-	//	std::cout << data.get() << std::endl;
-	//}
-	//sensor.stop();
-
 
 
 	aris::core::MsgRT::instance[0].copy("123");

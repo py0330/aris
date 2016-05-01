@@ -15,12 +15,12 @@ namespace aris
 {
 	namespace sensor
 	{
-		struct ImuData
+		struct ImuData:public SensorData
 		{
-			/*时间戳*/
+			/// 时间戳 ///
 			std::int64_t time;
 			
-			/*原生数据，相对于陀螺仪自身定义的地面坐标系的321欧拉角*/
+			/// 原生数据，相对于陀螺仪自身定义的地面坐标系的321欧拉角 ///
 			union
 			{
 				double eul321[3];
@@ -29,7 +29,7 @@ namespace aris
 					double yaw, pitch, roll;
 				};
 			};
-			/*原生数据，相对于陀螺仪坐标系的角速度*/
+			/// 原生数据，相对于陀螺仪坐标系的角速度 ///
 			union
 			{
 				double omega[3];
@@ -38,7 +38,7 @@ namespace aris
 					double va, vb, vc;
 				};
 			};
-			/*原生数据，相对于陀螺仪坐标系的线加速度*/
+			/// 原生数据，相对于陀螺仪坐标系的线加速度 ///
 			union
 			{
 				double acc[3];
@@ -61,25 +61,23 @@ namespace aris
 			const double * pmLhs;
 			const double * pmRhs;
 
-			friend class IMU;
+			friend class Imu;
 		};
-
-		class IMU :public SensorBase<ImuData>
+		class Imu :public SensorTemplate<ImuData>
 		{
 		public:
-			~IMU();
-			IMU();
-			IMU(const aris::core::XmlElement *xmlEle);
+			~Imu();
+			Imu(Object &father, std::size_t id, const std::string &name);
+			Imu(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 			
-		
 		private:
-			virtual auto init()->void;
-			virtual auto release()->void;
-			virtual auto updateData(ImuData &data)->void;
+			virtual auto init()->void final override;
+			virtual auto release()->void final override;
+			virtual auto updateData(SensorData & data_in)->void final override;
 
 		private:
 			class Imp;
-			std::unique_ptr<Imp> pImp;
+			std::unique_ptr<Imp> imp_;
 		};
 	}
 }

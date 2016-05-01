@@ -191,117 +191,6 @@ namespace aris
 		private:
 			friend class Model;
 		};
-		template<typename ElementType> class ElementPool:public Element
-		{
-		public:
-			class iterator
-			{
-			public:
-				typedef typename Element::difference_type difference_type;
-				typedef typename Element::value_type value_type;
-				typedef typename ElementType& reference;
-				typedef typename ElementType* pointer;
-				typedef std::random_access_iterator_tag iterator_category; //or another tag
-
-				iterator() = default;
-				iterator(const iterator& other) = default;
-				iterator(const typename Element::iterator iter) :iter_(iter) {}; // 自己添加的
-				~iterator() = default;
-
-				auto operator=(const iterator&other)->iterator& = default;
-				auto operator==(const iterator&other) const->bool { return iter_ == other.iter_; };
-				auto operator!=(const iterator&other) const->bool { return iter_ != other.iter_; };
-				auto operator<(const iterator&other) const->bool { return iter_ < other.iter_; }; //optional
-				auto operator>(const iterator&other) const->bool { return iter_ > other.iter_; }; //optional
-				auto operator<=(const iterator&other) const->bool { return iter_ <= other.iter_; }; //optional
-				auto operator>=(const iterator&other) const->bool { return iter_ >= other.iter_; }; //optional
-
-				auto operator++()->iterator& { ++iter_; return *this; };
-				auto operator++(int)->iterator { iterator ret(*this); operator++(); return ret; }; //optional
-				auto operator--()->iterator& { --iter_; return *this; }; //optional
-				auto operator--(int)->iterator { iterator ret(*this); operator--(); return ret; }; //optional
-				auto operator+=(size_type size)->iterator& { iter_ += size; return *this; }; //optional
-				auto operator+(size_type size) const->iterator { return iterator(iter_ + size); }; //optional
-				friend auto operator+(size_type size, const iterator&)->iterator { return iterator(size + iter_); }; //optional
-				auto operator-=(size_type size)->iterator& { iter_ -= size; return *this; }; //optional
-				auto operator-(size_type size) const->iterator { return iterator(iter_ - size); }; //optional
-				auto operator-(iterator iter) const->difference_type { return iterator(iter_ - iter); }; //optional
-
-				auto operator*() const->reference { return static_cast<reference>(iter_.operator*()); };
-				auto operator->() const->pointer { return static_cast<pointer>(iter_.operator->()); };
-				auto operator[](size_type size) const->reference { return static_cast<reference>(std::ref(*iter_.operator[](size))); }; //optional
-
-			private:
-				typename Element::iterator iter_;
-				friend class const_iterator;
-			};
-			class const_iterator
-			{
-			public:
-				typedef typename Element::difference_type difference_type;
-				typedef typename Element::value_type value_type;
-				typedef typename const ElementType& const_reference;
-				typedef typename const ElementType* const_pointer;
-				typedef std::random_access_iterator_tag iterator_category; //or another tag
-
-				const_iterator() = default;
-				const_iterator(const const_iterator&) = default;
-				const_iterator(const iterator& other) :iter_(other.iter_) {};
-				const_iterator(const typename Element::const_iterator iter) :iter_(iter) {}; // 自己添加的
-				~const_iterator() = default;
-
-				auto operator=(const const_iterator&)->const_iterator& = default;
-				auto operator==(const const_iterator& other) const->bool { return iter_ == other.iter_; };
-				auto operator!=(const const_iterator& other) const->bool { return iter_ != other.iter_; };
-				auto operator<(const const_iterator& other) const->bool { return iter_ < other.iter_; }; //optional
-				auto operator>(const const_iterator& other) const->bool { return iter_ > other.iter_; }; //optional
-				auto operator<=(const const_iterator& other) const->bool { return iter_ <= other.iter_; }; //optional
-				auto operator>=(const const_iterator& other) const->bool { return iter_ >= other.iter_; }; //optional
-
-				auto operator++()->const_iterator& { ++iter_; return *this; };
-				auto operator++(int)->const_iterator { const_iterator ret(*this); operator++(); return ret; };  //optional
-				auto operator--()->const_iterator& { --iter_; return *this; }; //optional
-				auto operator--(int)->const_iterator { const_iterator ret(*this); operator--(); return ret; }; //optional
-				auto operator+=(size_type size)->const_iterator& { iter_ += size; return *this; }; //optional
-				auto operator+(size_type size) const->const_iterator { return const_iterator(iter_ + size); }; //optional
-				friend auto operator+(size_type size, const const_iterator& iter)->const_iterator { return const_iterator(size + iter); }; //optional
-				auto operator-=(size_type size)->const_iterator& { iter_ -= size; return *this; }; //optional
-				auto operator-(size_type size) const->const_iterator { return const_iterator(iter_ - size); }; //optional
-				auto operator-(const_iterator iter) const->difference_type { return iterator(iter_ - iter); }; //optional
-
-				auto operator*() const->const_reference { return static_cast<const_reference>(*iter_); };
-				auto operator->() const->const_pointer { return static_cast<const_pointer>(iter_.operator->()); };
-				auto operator[](size_type) const->const_reference { return static_cast<const_reference>(std::ref(*iter_->operator[](size))); }; //optional
-
-			private:
-				typename Element::const_iterator iter_;
-			};
-			static auto Type()->const std::string &{ static const std::string type{ ElementType::Type()+"_pool" }; return type; };
-			virtual auto type()const->const std::string & override{ return Type(); };
-			virtual auto saveAdams(std::ofstream &file) const->void 
-			{
-				file << "!----------------------------------- " << name() << " -------------------------------------!\r\n!\r\n!\r\n";
-				Element::saveAdams(file);
-			};
-			auto begin()->iterator { return Element::begin(); };
-			auto begin()const->const_iterator { return Element::begin(); };
-			auto end()->iterator { return Element::end(); };
-			auto end()const->const_iterator { return Element::end(); };
-			auto at(std::size_t id) const->const ElementType&{ return static_cast<const ElementType&>(Element::at(id)); };
-			auto at(std::size_t id)->ElementType& { return static_cast<ElementType&>(Element::at(id)); };
-			auto findByName(const std::string &name)const->const_iterator { return Element::findByName(name); };
-			auto findByName(const std::string &name)->iterator { return Element::findByName(name); };
-
-		protected:
-			~ElementPool() = default;
-			explicit ElementPool(aris::core::Object &father, std::size_t id, const std::string &name) :Element(father, id, name) {};
-			explicit ElementPool(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Element(father, id, xml_ele) {};
-
-		private:
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
 
 		class Environment final :public Element
 		{
@@ -450,8 +339,8 @@ namespace aris
 			auto prtFg() const->const double6&;
 			auto prtFv() const->const double6&;
 			auto prtGravity() const->const double6&;
-			auto markerPool()->ElementPool<Marker>&;
-			auto markerPool()const->const ElementPool<Marker>&;
+			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
+			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 
 			auto setVe(const double *ve_in, const char *type)->void { double pe[6]; getPe(pe, type);  s_ve2vs(pe, ve_in, vs(), type); };
 			auto setVe(const double *ve_in, const Coordinate &relative_to, const char *type)->void;
@@ -636,24 +525,22 @@ namespace aris
 			auto calculator()const ->const aris::core::Calculator&;
 			auto environment()->aris::dynamic::Environment&;
 			auto environment()const ->const aris::dynamic::Environment&;
-			auto scriptPool()->ElementPool<Script>&;
-			auto scriptPool()const->const ElementPool<Script>&;
-			auto variablePool()->ElementPool<Variable>&;
-			auto variablePool()const->const ElementPool<Variable>&;
-			auto akimaPool()->ElementPool<Akima>&;
-			auto akimaPool()const->const ElementPool<Akima>&;
-			auto partPool()->ElementPool<Part>&;
-			auto partPool()const->const ElementPool<Part>&;
-			auto jointPool()->ElementPool<Joint>&;
-			auto jointPool()const->const ElementPool<Joint>&;
-			auto motionPool()->ElementPool<Motion>&;
-			auto motionPool()const->const ElementPool<Motion>&;
-			auto generalMotionPool()->ElementPool<GeneralMotion>&;
-			auto generalMotionPool()const->const ElementPool<GeneralMotion>&;
-			auto forcePool()->ElementPool<Force>&;
-			auto forcePool()const->const ElementPool<Force>&;
-			auto markerAt(std::size_t id)const->const Marker&;
-			auto markerAt(std::size_t id)->Marker&;
+			auto scriptPool()->aris::core::ObjectPool<Script, Element>&;
+			auto scriptPool()const->const aris::core::ObjectPool<Script, Element>&;
+			auto variablePool()->aris::core::ObjectPool<Variable, Element>&;
+			auto variablePool()const->const aris::core::ObjectPool<Variable, Element>&;
+			auto akimaPool()->aris::core::ObjectPool<Akima, Element>&;
+			auto akimaPool()const->const aris::core::ObjectPool<Akima, Element>&;
+			auto partPool()->aris::core::ObjectPool<Part, Element>&;
+			auto partPool()const->const aris::core::ObjectPool<Part, Element>&;
+			auto jointPool()->aris::core::ObjectPool<Joint, Element>&;
+			auto jointPool()const->const aris::core::ObjectPool<Joint, Element>&;
+			auto motionPool()->aris::core::ObjectPool<Motion, Element>&;
+			auto motionPool()const->const aris::core::ObjectPool<Motion, Element>&;
+			auto generalMotionPool()->aris::core::ObjectPool<GeneralMotion, Element>&;
+			auto generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>&;
+			auto forcePool()->aris::core::ObjectPool<Force, Element>&;
+			auto forcePool()const->const aris::core::ObjectPool<Force, Element>&;
 			auto markerSize()const->std::size_t { std::size_t size{ 0 }; for (auto &prt : partPool())size += prt.markerPool().size(); return size; };
 			auto ground()->Part&;
 			auto ground()const->const Part&;
@@ -728,11 +615,11 @@ namespace aris
 		{
 		public:
 			virtual auto dim() const->std::size_t { return DIMENSION; };
-			virtual auto csmPtrI() const->const double* override { return *csmI(); };
-			virtual auto csmPtrJ() const->const double* override { return *csmJ(); };
-			virtual auto csaPtr() const->const double* override { return csa(); };
-			virtual auto csfPtr() const->const double* override { return csf(); };
-			virtual auto cspPtr() const->const double* override { return csp(); };
+			virtual auto csmPtrI() const->const double* override { return *ConstraintData<DIMENSION>::csmI(); };
+			virtual auto csmPtrJ() const->const double* override { return *ConstraintData<DIMENSION>::csmJ(); };
+			virtual auto csaPtr() const->const double* override { return ConstraintData<DIMENSION>::csa(); };
+			virtual auto csfPtr() const->const double* override { return ConstraintData<DIMENSION>::csf(); };
+			virtual auto cspPtr() const->const double* override { return ConstraintData<DIMENSION>::csp(); };
 
 		protected:
 			explicit JointTemplate(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ)

@@ -1373,7 +1373,7 @@ namespace aris
 			to_pp[1] = inv_relative_pm[1] * tem[0] + inv_relative_pm[5] * tem[1] + inv_relative_pm[9] * tem[2];
 			to_pp[2] = inv_relative_pm[2] * tem[0] + inv_relative_pm[6] * tem[1] + inv_relative_pm[10] * tem[2];
 		}
-		auto s_re2re(const double *relative_pm, const double *from_re, double *to_re, const char *from_eu_type, const char *to_eu_type) noexcept->void
+		auto s_re2re(const double *relative_pm, const double *from_re, double *to_re, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
@@ -1383,11 +1383,11 @@ namespace aris
 
 			// 正式开始计算 //
 			double from_rm[3][3], to_rm[3][3];
-			s_re2rm(from_re, *from_rm, from_eu_type);
+			s_re2rm(from_re, *from_rm, from_re_type);
 			s_rm2rm(relative_pm, *from_rm, *to_rm);
-			s_rm2re(*to_rm, to_re, to_eu_type);
+			s_rm2re(*to_rm, to_re, to_re_type);
 		}
-		auto s_inv_re2re(const double *inv_relative_pm, const double *from_re, double *to_re, const char *from_eu_type, const char *to_eu_type) noexcept->void
+		auto s_inv_re2re(const double *inv_relative_pm, const double *from_re, double *to_re, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
@@ -1397,9 +1397,9 @@ namespace aris
 
 			// 正式开始计算 //
 			double from_rm[3][3], to_rm[3][3];
-			s_re2rm(from_re, *from_rm, from_eu_type);
+			s_re2rm(from_re, *from_rm, from_re_type);
 			s_inv_rm2rm(inv_relative_pm, *from_rm, *to_rm);
-			s_rm2re(*to_rm, to_re, to_eu_type);
+			s_rm2re(*to_rm, to_re, to_re_type);
 		}
 		auto s_rq2rq(const double *relative_pm, const double *from_rq, double *to_rq) noexcept->void
 		{
@@ -1587,7 +1587,7 @@ namespace aris
 			s_va(3, -1, inv_relative_vs, 1, tem);
 			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_vp, 1);
 		}
-		auto s_we2we(const double *relative_pm, const double *relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re, const char *from_eu_type, const char *to_eu_type) noexcept->void
+		auto s_we2we(const double *relative_pm, const double *relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
@@ -1600,14 +1600,14 @@ namespace aris
 			to_re = to_re ? to_re : default_to_re;
 
 			// 正式开始计算 //
-			s_re2re(relative_pm, from_re, to_re, from_eu_type, to_eu_type);
+			s_re2re(relative_pm, from_re, to_re, from_re_type, to_re_type);
 
 			double from_wa[3], to_wa[3];
-			s_we2wa(from_re, from_we, from_wa, from_eu_type);
+			s_we2wa(from_re, from_we, from_wa, from_re_type);
 			s_wa2wa(relative_pm, relative_vs, from_wa, to_wa);
-			s_wa2we(to_wa, to_re, to_we, to_eu_type);
+			s_wa2we(to_wa, to_re, to_we, to_re_type);
 		}
-		auto s_inv_we2we(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re, const char *from_eu_type, const char *to_eu_type) noexcept->void
+		auto s_inv_we2we(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
@@ -1620,12 +1620,12 @@ namespace aris
 			to_re = to_re ? to_re : default_to_re;
 
 			// 正式开始计算 //
-			s_inv_re2re(inv_relative_pm, from_re, to_re, from_eu_type, to_eu_type);
+			s_inv_re2re(inv_relative_pm, from_re, to_re, from_re_type, to_re_type);
 
 			double from_wa[3], to_wa[3];
-			s_we2wa(from_re, from_we, from_wa, from_eu_type);
+			s_we2wa(from_re, from_we, from_wa, from_re_type);
 			s_inv_wa2wa(inv_relative_pm, inv_relative_vs, from_wa, to_wa);
-			s_wa2we(to_wa, to_re, to_we, to_eu_type);
+			s_wa2we(to_wa, to_re, to_we, to_re_type);
 		}
 		auto s_wq2wq(const double *relative_pm, const double *relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq) noexcept->void
 		{
@@ -1774,7 +1774,7 @@ namespace aris
 			s_inv_vs2vs(inv_relative_pm, inv_relative_vs, from_vs, to_vs);
 			s_vs2va(to_vs, to_pp, to_va);
 		}
-		auto s_ve2ve(const double *relative_pm, const double *relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe, const char *from_eu_type, const char *to_eu_type) noexcept->void
+		auto s_ve2ve(const double *relative_pm, const double *relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
@@ -1787,14 +1787,14 @@ namespace aris
 			to_pe = to_pe ? to_pe : default_to_pe;
 
 			// 正式开始计算 //
-			s_pe2pe(relative_pm, from_pe, to_pe, from_eu_type, to_eu_type);
+			s_pe2pe(relative_pm, from_pe, to_pe, from_re_type, to_re_type);
 
 			double from_vs[6], to_vs[6];
-			s_ve2vs(from_pe, from_ve, from_vs, from_eu_type);
+			s_ve2vs(from_pe, from_ve, from_vs, from_re_type);
 			s_vs2vs(relative_pm, relative_vs, from_vs, to_vs);
-			s_vs2ve(to_vs, to_pe, to_ve, to_eu_type);
+			s_vs2ve(to_vs, to_pe, to_ve, to_re_type);
 		}
-		auto s_inv_ve2ve(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe, const char *from_eu_type, const char *to_eu_type) noexcept->void
+		auto s_inv_ve2ve(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
@@ -1807,12 +1807,12 @@ namespace aris
 			to_pe = to_pe ? to_pe : default_to_pe;
 
 			// 正式开始计算 //
-			s_inv_pe2pe(inv_relative_pm, from_pe, to_pe, from_eu_type, to_eu_type);
+			s_inv_pe2pe(inv_relative_pm, from_pe, to_pe, from_re_type, to_re_type);
 
 			double from_vs[6], to_vs[6];
-			s_ve2vs(from_pe, from_ve, from_vs, from_eu_type);
+			s_ve2vs(from_pe, from_ve, from_vs, from_re_type);
 			s_inv_vs2vs(inv_relative_pm, inv_relative_vs, from_vs, to_vs);
-			s_vs2ve(to_vs, to_pe, to_ve, to_eu_type);
+			s_vs2ve(to_vs, to_pe, to_ve, to_re_type);
 		}
 		auto s_vq2vq(const double *relative_pm, const double *relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq) noexcept->void
 		{
@@ -1988,7 +1988,7 @@ namespace aris
 			s_mdmTN(3, 1, 3, 1, inv_relative_pm, 4, tem, 1, 0, to_ap, 1);
 		}
 		auto s_xe2xe(const double *relative_pm, const double *relative_vs, const double *relative_as,
-			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we, double *to_re, const char *from_eu_type, const char *to_eu_type) noexcept->void
+			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we, double *to_re, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
@@ -2005,16 +2005,15 @@ namespace aris
 			to_xe = to_xe ? to_xe : default_to_xe;
 
 			// 正式开始计算 //
-			s_re2re(relative_pm, from_re, to_re, from_eu_type, to_eu_type);
+			s_re2re(relative_pm, from_re, to_re, from_re_type, to_re_type);
 
 			double from_xa[3], to_xa[3], from_wa[3], to_wa[3];
-			s_xe2xa(from_re, from_we, from_xe, from_xa, from_wa, from_eu_type);
-			s_wa2wa(relative_pm, relative_vs, from_wa, to_wa);
-			s_xa2xa(relative_pm, relative_as, from_xa, to_xa);
-			s_xa2xe(to_wa, to_xa, to_re, to_xe, to_we, to_eu_type);
+			s_xe2xa(from_re, from_we, from_xe, from_xa, from_wa, from_re_type);
+			s_xa2xa(relative_pm, relative_vs, relative_as, from_wa, from_xa, to_xa, to_wa);
+			s_xa2xe(to_wa, to_xa, to_re, to_xe, to_we, to_re_type);
 		}
 		auto s_inv_xe2xe(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
-			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we, double *to_re, const char *from_eu_type, const char *to_eu_type) noexcept->void
+			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we, double *to_re, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
@@ -2031,42 +2030,12 @@ namespace aris
 			to_xe = to_xe ? to_xe : default_to_xe;
 
 			// 正式开始计算 //
-			s_inv_re2re(inv_relative_pm, from_re, to_re, from_eu_type, to_eu_type);
+			s_inv_re2re(inv_relative_pm, from_re, to_re, from_re_type, to_re_type);
 
 			double from_xa[3], to_xa[3], from_wa[3], to_wa[3];
-			s_xe2xa(from_re, from_we, from_xe, from_xa, from_wa, from_eu_type);
-			s_inv_wa2wa(inv_relative_pm, inv_relative_vs, from_wa, to_wa);
-			s_inv_xa2xa(inv_relative_pm, inv_relative_as, from_xa, to_xa);
-			s_xa2xe(to_wa, to_xa, to_re, to_xe, to_we, to_eu_type);
-		}
-		auto s_xa2xa(const double *relative_pm, const double *relative_as,
-			const double *from_xa, double *to_xa) noexcept->void
-		{
-			// 补充默认参数 //
-			relative_pm = relative_pm ? relative_pm : default_pm();
-			relative_as = relative_as ? relative_as : default_as();
-			from_xa = from_xa ? from_xa : default_xa();
-			double default_to_xe[3];
-			to_xa = to_xa ? to_xa : default_to_xe;
-
-			// 正式开始计算 //
-			s_mdm(3, 1, 3, relative_pm, 4, from_xa, 1, to_xa, 1);
-			s_va(3, relative_as + 3, to_xa);
-		}
-		auto s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_as, 
-			const double *from_xa, double *to_xa) noexcept->void
-		{
-			// 补充默认参数 //
-			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
-			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
-			from_xa = from_xa ? from_xa : default_xa();
-			double default_to_xe[3];
-			to_xa = to_xa ? to_xa : default_to_xe;
-
-			// 正式开始计算 //
-			double tem[3]{ -inv_relative_as[3],-inv_relative_as[4],-inv_relative_as[5] };
-			s_va(3, from_xa, tem);
-			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_xa, 1);
+			s_xe2xa(from_re, from_we, from_xe, from_xa, from_wa, from_re_type);
+			s_inv_xa2xa(inv_relative_pm, inv_relative_vs, inv_relative_as, from_wa, from_xa, to_xa, to_wa);
+			s_xa2xe(to_wa, to_xa, to_re, to_xe, to_we, to_re_type);
 		}
 		auto s_xq2xq(const double *relative_pm, const double *relative_vs, const double *relative_as,
 			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq, double *to_rq) noexcept->void
@@ -2090,8 +2059,8 @@ namespace aris
 
 			double from_xa[3], to_xa[3], from_wa[3], to_wa[3];
 			s_xq2xa(from_rq, from_wq, from_xq, from_xa, from_wa);
-			s_wa2wa(relative_pm, relative_vs, from_wa, to_wa);
-			s_xa2xa(relative_pm, relative_as, from_xa, to_xa);
+			//s_wa2wa(relative_pm, relative_vs, from_wa, to_wa);
+			s_xa2xa(relative_pm, relative_vs, relative_as, from_wa, from_xa, to_xa, to_wa);
 			s_xa2xq(to_wa, to_xa, to_rq, to_xq, to_wq);
 		}
 		auto s_inv_xq2xq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
@@ -2116,8 +2085,7 @@ namespace aris
 
 			double from_xa[3], to_xa[3], from_wa[3], to_wa[3];
 			s_xq2xa(from_rq, from_wq, from_xq, from_xa, from_wa);
-			s_inv_wa2wa(inv_relative_pm, inv_relative_vs, from_wa, to_wa);
-			s_inv_xa2xa(inv_relative_pm, inv_relative_as, from_xa, to_xa);
+			s_inv_xa2xa(inv_relative_pm, inv_relative_vs, inv_relative_as, from_wa, from_xa, to_xa, to_wa);
 			s_xa2xq(to_wa, to_xa, to_rq, to_xq, to_wq);
 		}
 		auto s_xm2xm(const double *relative_pm, const double *relative_vs, const double *relative_as,
@@ -2142,8 +2110,7 @@ namespace aris
 
 			double from_xa[3], to_xa[3], from_wa[3], to_wa[3];
 			s_xm2xa(from_rm, from_wm, from_xm, from_xa, from_wa);
-			s_wa2wa(relative_pm, relative_vs, from_wa, to_wa);
-			s_xa2xa(relative_pm, relative_as, from_xa, to_xa);
+			s_xa2xa(relative_pm, relative_vs, relative_as, from_wa, from_xa, to_xa, to_wa);
 			s_xa2xm(to_wa, to_xa, to_rm, to_xm, to_wm);
 		}
 		auto s_inv_xm2xm(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
@@ -2168,12 +2135,52 @@ namespace aris
 
 			double from_xa[3], to_xa[3], from_wa[3], to_wa[3];
 			s_xm2xa(from_rm, from_wm, from_xm, from_xa, from_wa);
-			s_inv_wa2wa(inv_relative_pm, inv_relative_vs, from_wa, to_wa);
-			s_inv_xa2xa(inv_relative_pm, inv_relative_as, from_xa, to_xa);
+			s_inv_xa2xa(inv_relative_pm, inv_relative_vs, inv_relative_as, from_wa, from_xa, to_xa, to_wa);
 			s_xa2xm(to_wa, to_xa, to_rm, to_xm, to_wm);
 		}
+		auto s_xa2xa(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_wa, const double *from_xa, double *to_xa, double *to_wa) noexcept->void
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			relative_vs = relative_vs ? relative_vs : default_vs();
+			relative_as = relative_as ? relative_as : default_as();
+			from_wa = from_wa ? from_wa : default_wa();
+			from_xa = from_xa ? from_xa : default_xa();
+			double default_to_xa[3], default_to_wa[3];
+			to_xa = to_xa ? to_xa : default_to_xa;
+			to_wa = to_wa ? to_wa : default_to_wa;
+
+			// 正式开始计算 //
+			s_wa2wa(relative_pm, relative_vs, from_wa, to_wa);
+			
+			s_mdm(3, 1, 3, relative_pm, 4, from_xa, 1, to_xa, 1);
+			s_c3(1, relative_vs + 3, to_wa, 1, to_xa);
+			s_va(3, relative_as + 3, to_xa);
+		}
+		auto s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_wa, const double *from_xa, double *to_xa, double *to_wa) noexcept->void
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			inv_relative_vs = inv_relative_vs ? inv_relative_vs : default_vs();
+			inv_relative_as = inv_relative_as ? inv_relative_as : default_as();
+			from_wa = from_wa ? from_wa : default_wa();
+			from_xa = from_xa ? from_xa : default_xa();
+			double default_to_xa[3], default_to_wa[3];
+			to_xa = to_xa ? to_xa : default_to_xa;
+			to_wa = to_wa ? to_wa : default_to_wa;
+
+			// 正式开始计算 //
+			s_inv_wa2wa(inv_relative_pm, inv_relative_vs, from_wa, to_wa);
+
+			double tem[3]{ -inv_relative_as[3],-inv_relative_as[4],-inv_relative_as[5] };
+			s_va(3, from_xa, tem);
+			s_c3(-1, inv_relative_vs + 3, from_wa, 1, tem);
+			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_xa, 1);
+		}
 		auto s_ae2ae(const double *relative_pm, const double *relative_vs, const double *relative_as,
-			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve, double *to_pe, const char *from_eu_type, const char *to_eu_type) noexcept->void
+			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve, double *to_pe, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
@@ -2190,15 +2197,15 @@ namespace aris
 			to_pe = to_pe ? to_pe : default_to_pe;
 
 			// 正式开始计算 //
-			s_pe2pe(relative_pm, from_pe, to_pe, from_eu_type, to_eu_type);
+			s_pe2pe(relative_pm, from_pe, to_pe, from_re_type, to_re_type);
 
 			double from_vs[6], from_as[6], to_vs[6], to_as[6];
-			s_ae2as(from_pe, from_ve, from_ae, from_as, from_vs, from_eu_type);
+			s_ae2as(from_pe, from_ve, from_ae, from_as, from_vs, from_re_type);
 			s_as2as(relative_pm, relative_vs, relative_as, from_vs, from_as, to_as, to_vs);
-			s_as2ae(to_vs, to_as, to_pe, to_ae, to_ve, to_eu_type);
+			s_as2ae(to_vs, to_as, to_pe, to_ae, to_ve, to_re_type);
 		}
 		auto s_inv_ae2ae(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
-			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve, double *to_pe, const char *from_eu_type, const char *to_eu_type) noexcept->void
+			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve, double *to_pe, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
 			// 补充默认参数 //
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
@@ -2215,12 +2222,12 @@ namespace aris
 			to_pe = to_pe ? to_pe : default_to_pe;
 
 			// 正式开始计算 //
-			s_inv_pe2pe(inv_relative_pm, from_pe, to_pe, from_eu_type, to_eu_type);
+			s_inv_pe2pe(inv_relative_pm, from_pe, to_pe, from_re_type, to_re_type);
 
 			double from_vs[6], from_as[6], to_vs[6], to_as[6];
-			s_ae2as(from_pe, from_ve, from_ae, from_as, from_vs, from_eu_type);
+			s_ae2as(from_pe, from_ve, from_ae, from_as, from_vs, from_re_type);
 			s_inv_as2as(inv_relative_pm, inv_relative_vs, inv_relative_as, from_vs, from_as, to_as, to_vs);
-			s_as2ae(to_vs, to_as, to_pe, to_ae, to_ve, to_eu_type);
+			s_as2ae(to_vs, to_as, to_pe, to_ae, to_ve, to_re_type);
 		}
 		auto s_aq2aq(const double *relative_pm, const double *relative_vs, const double *relative_as,
 			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq, double *to_pq) noexcept->void

@@ -1,7 +1,6 @@
 #include "test_dynamic_model.h"
 #include <iostream>
 #include <aris.h>
-#include <Eigen\Eigen>
 
 using namespace aris::dynamic;
 
@@ -58,11 +57,11 @@ void test_model()
 
 	dsp(*csm, 12, 12);
 
-	Eigen::Map<Eigen::Matrix<double, 12, 12, Eigen::RowMajor> > csm_mtx(*csm);
-	Eigen::Map<Eigen::Matrix<double, 12, 1> > csp_mtx(csp);
-	Eigen::Map<Eigen::Matrix<double, 12, 1> > b_mtx(b);
+	//Eigen::Map<Eigen::Matrix<double, 12, 12, Eigen::RowMajor> > csm_mtx(*csm);
+	//Eigen::Map<Eigen::Matrix<double, 12, 1> > csp_mtx(csp);
+	//Eigen::Map<Eigen::Matrix<double, 12, 1> > b_mtx(b);
 
-	b_mtx = csm_mtx.partialPivLu().solve(csp_mtx);
+	//b_mtx = csm_mtx.partialPivLu().solve(csp_mtx);
 
 	dsp(csp, 12, 1);
 	dsp(b, 12, 1);

@@ -171,26 +171,26 @@ namespace aris
 			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->void;
 		auto s_inv_ap2ap(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
 			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->void;
+		auto s_xe2xe(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->void;
+		auto s_inv_xe2xe(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->void;
 		auto s_xq2xq(const double *relative_pm, const double *relative_vs, const double *relative_as, 
 			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->void;
 		auto s_inv_xq2xq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
 			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->void;
-		auto s_xe2xe(const double *relative_pm, const double *relative_vs, const double *relative_as, 
-			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
-		auto s_inv_xe2xe(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
-			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
 		auto s_xm2xm(const double *relative_pm, const double *relative_vs, const double *relative_as, 
 			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->void;
 		auto s_inv_xm2xm(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
 			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->void;
-		auto s_xa2xa(const double *relative_pm, const double *relative_as, 
-			const double *from_xa, double *to_xa) noexcept->void;
-		auto s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_as, 
-			const double *from_xa, double *to_xa) noexcept->void;
+		auto s_xa2xa(const double *relative_pm, const double *relative_vs, const double *relative_as,
+			const double *from_wa, const double *from_xa, double *to_xa, double *to_wa = nullptr) noexcept->void;
+		auto s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+			const double *from_wa, const double *from_xa, double *to_xa, double *to_wa = nullptr) noexcept->void;
 		auto s_ae2ae(const double *relative_pm, const double *relative_vs, const double *relative_as,
-			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
+			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->void;
 		auto s_inv_ae2ae(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
-			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
+			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->void;
 		auto s_aq2aq(const double *relative_pm, const double *relative_vs, const double *relative_as, 
 			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq = nullptr, double *to_pq = nullptr) noexcept->void;
 		auto s_inv_aq2aq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 

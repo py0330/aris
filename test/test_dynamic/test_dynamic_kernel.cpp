@@ -76,8 +76,8 @@ void test_kernel()
 void test_variable_change()
 {
 	const double pp[3] = { 0.1, 0.2, 0.3 };
-	const double re321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
 	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };
+	const double re321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
 	const double rq[4] = { 0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
 	const double rm[9] = { -0.22, -0.975499782797526,   0.000416847668728071,
 		0.175499782797526, -0.04, -0.983666521865018,
@@ -125,8 +125,6 @@ void test_variable_change()
 	const double xa[3] = { 0.904633672502324, -1.24440604199266,   1.45568007018557 };
 	const double aa[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 0.904633672502324, -1.24440604199266,   1.45568007018557 };
 	const double as[6] = { 3.15925342342501, -0.192390604845803,   0.136512424183815,   0.904633672502324, -1.24440604199266,   1.45568007018557 };
-	
-	const double pe[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
 
 	double result_pm_for_position[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0,
 		0.175499782797526, -0.04, -0.983666521865018, 0,
@@ -266,10 +264,10 @@ void test_variable_change()
 	if (!s_is_equal(9, result, wm, error))std::cout << "\"s_vs2wm\" failed" << std::endl;
 
 	s_wa2vs(wa, result_vs_for_angle);
-	if (!s_is_equal(6, result_vs_for_angle, vs, error))std::cout << "\"s_wq2vs\" failed" << std::endl;
+	if (!s_is_equal(6, result_vs_for_angle, vs, error))std::cout << "\"s_wa2vs\" failed" << std::endl;
 
 	s_vs2wa(vs, result);
-	if (!s_is_equal(3, result, wa, error))std::cout << "\"s_vs2wq\" failed" << std::endl;
+	if (!s_is_equal(3, result, wa, error))std::cout << "\"s_vs2wa\" failed" << std::endl;
 
 	s_ve2vs(pe313, ve313, result, "313");
 	if (!s_is_equal(6, result, vs, error))std::cout << "\"s_ve2vs 313\" failed" << std::endl;
@@ -300,7 +298,6 @@ void test_variable_change()
 
 	s_va2vs(pp, va, result);
 	if (!s_is_equal(6, result, vs, error))std::cout << "\"s_va2vs\" failed" << std::endl;
-
 
 
 	s_xa2xe(wa, xa, re313, result, result1, "313");
@@ -401,56 +398,27 @@ void test_coordinate_transform()
 		0.175499782797526, -0.04, -0.983666521865018,   0.2,
 		0.959583152331272, -0.216333478134982,   0.18,   0.3,
 		0,   0,   0,   1 };
+
 	const double from_pp[3]{ 0.13, -0.22, 0.45 };
 	const double to_pp[3]{ 0.286197533666383, -0.21103496307558,   0.553339174992761 };
-	const double from_vp[3]{ 0.131, -0.221, 0.451 };
-	const double to_vp[3]{ 0.47766583327904, -1.12137651835541,   0.289263700919493 };
-	const double from_ap[3]{ 0.12,   0.13, -0.14 };
-	const double to_ap[3]{ -0.183017842291836,   1.44829117674852, -1.20119377113485 };
-	const double from_eu_313[3]{ 4.83, 0.76, 0.45 };
-	const double to_eu_321[3]{ 6.03703796978214, -0.696087712802565,   2.29525788843731 };
-	const double from_eu_321[3]{ 3.856, -0.696087712802565,   2.29525788843731 };
-	const double to_eu_313[3]{ 3.42785042695091,   2.77225969913703,   4.30966052384328 };
-	const double from_wa[3]{ -0.918, 0.928, 0.458 };
-	const double to_wa[3]{ -0.123112882203827, -0.288748067622307, -1.13421480154937 };
-	const double from_xa[3]{ -0.16,   0.17,   0.18 };
-	const double to_xa[3]{ -0.690559930495208, -0.551939939183307, -0.0179099956559505 };
+	const double from_re_313[3]{ 4.83, 0.76, 0.45 };
+	const double to_re_321[3]{ 6.03703796978214, -0.696087712802565,   2.29525788843731 };
+	const double from_re_321[3]{ 3.856, -0.696087712802565,   2.29525788843731 };
+	const double to_re_313[3]{ 3.42785042695091,   2.77225969913703,   4.30966052384328 };
 	const double from_rq[4]{ 0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
 	const double to_rq[4]{ -0.383666521865017,   0.479583152331272, -0.575499782797526,   0.54 };
-	const double from_wq[4]{ 0.1, 0.2, -0.4, -(from_rq[0] * 0.1 + from_rq[1] * 0.2 - from_rq[2] * 0.4) / from_rq[3] };
-	const double to_wq[4]{ -0.292793710222811,   0.286847417856529, -0.141803596258453, -0.613907911417607 };
-	const double from_xq[4]{ -0.033,   0.022, 0.011,   -(from_wq[0] * from_wq[0] + from_wq[1] * from_wq[1] + from_wq[2] * from_wq[2] + from_wq[3] * from_wq[3] + from_rq[0] * (-0.033) + from_rq[1] * (0.022) + from_rq[2] * (0.011)) / from_rq[3] };
-	const double to_xq[4]{ 0.420505003689937, -0.857290696628415,   0.550089919830468,   0.600095768217536 };
 	const double from_rm[9]{ 0.808307066774345, -0.072065911490471, 0.584333971461272,
 		0.341746746490328,   0.865601553329486, -0.365982393206091,
 		-0.479425538604203,   0.495520388354132,   0.724300143351802 };
 	const double to_rm[9]{ -0.511401279081528, -0.828333070215518,   0.228764194184996,
 		0.599782696845049, -0.534698430872375, -0.595280021996288,
 		0.615409983928647, -0.16721815933072,   0.770265304210822 };
-	const double from_wm[9] = { 0.0291954874793394, -0.182528252419306, -0.0628972223520089,
-		0.196923491067634, -0.108112316607135, -0.0718182822377014,
-		0.189595409314217,   0.162310423942327,   0.0144536170779726, };
-	const double to_wm[9]{ 0.104075460683106,   0.0133045900952464,   0.280834839144192,
-		-0.477150412775713,   0.0214429907194124, -0.500020299468546,
-		0.551519952476166, -0.134472030683956, -0.469834287697671 };
-	const double from_xm[9] = { -0.136080891292102,   0.343121545873893,   0.165312163518771,
-		-0.15936039137182, -0.0939308585319294, -0.218979365699774,
-		-0.18538516858617,   0.069996220473776, -0.256886513635231 };
-	const double to_xm[9]{ 0.0537651382559693,   0.0517963778254724, -0.0851387929663614,
-		0.124170360512967, -0.169749127986427,   1.08082317639183,
-		-0.958154993466446,   0.398159392361586,   0.147009590475247 };
 	const double from_pe_313[6]{ 0.13, -0.22, 0.45, 4.83, 0.76, 0.45 };
 	const double to_pe_321[6]{ 0.286197533666383, -0.21103496307558,   0.553339174992761,6.03703796978214, -0.696087712802565,   2.29525788843731 };
-	const double from_va[6] = { 0.089,   0.26325 ,  0.3935 ,  0.2, -0.15,   0.125 };
-	const double to_va[6] = { 0.0144960947183866, -1.09155668422567,   0.133851721734715,   0.68237707337822,   0.278141641326378,   0.111866652186502 };
-	const double from_aa[6] = { -0.28023125, -0.165775,   0.1247, -0.16,   0.17,   0.18 };
-	const double to_aa[6] = { 0.0898265507450043,   1.43483887623279, -1.10554368182179, -0.612738814129007, -0.708943502357538, -0.10224359010281 };
+	const double from_pe_321[6]{ 0.13, -0.22, 0.45, 3.856, -0.696087712802565,   2.29525788843731 };
+	const double to_pe_313[6]{ 0.286197533666383, -0.21103496307558,   0.553339174992761,3.42785042695091,   2.77225969913703,   4.30966052384328 };
 	const double from_pq[7]{ 0.13, -0.22, 0.45, 0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
 	const double to_pq[7]{ 0.286197533666383, -0.21103496307558,   0.553339174992761, -0.383666521865017,   0.479583152331272, -0.575499782797526,   0.54 };
-	const double from_vq[7] = { 0.03,   0.1525,   0.355,   0.0342083152331272, -0.0709687364248454,   0.00997394702070449, -0.115 };
-	const double to_vq[7] = { 0.135496647027967, -1.05961001031892,   0.0942652484506193,   0.0773819018788062,   0.249992427237171,   0.247189088111772,   0.0963962136185857 };
-	const double from_aq[7] = { -0.1873125, -0.14125,   0.136,   0.0498208478134983,   0.134530192948158,   0.0374437337098145,   0.0111331415560299 };
-	const double to_aq[7] = { 0.025588345140825,   1.4522998248645, -1.06971424926844,   0.11635925207608, -0.414720507129202, -0.230609572535648, -0.0519601646756437 };
 	const double from_pm[16]{ 0.808307066774345, -0.072065911490471, 0.584333971461272, 0.13,
 		0.341746746490328,   0.865601553329486, -0.365982393206091,-0.22,
 		-0.479425538604203,   0.495520388354132,   0.724300143351802,0.45,
@@ -459,6 +427,29 @@ void test_coordinate_transform()
 		0.599782696845049, -0.534698430872375, -0.595280021996288, -0.21103496307558,
 		0.615409983928647, -0.16721815933072,   0.770265304210822,   0.553339174992761,
 		0 ,  0 ,  0,   1 };
+
+	const double from_vp[3]{ 0.131, -0.221, 0.451 };
+	const double to_vp[3]{ 0.47766583327904, -1.12137651835541,   0.289263700919493 };
+	const double from_we_313[3]{ 1.03, 0.73, 0.25 };
+	const double to_we_321[3]{ -0.677310010504109, -0.42894848193491,   1.82130169173659 };
+	const double from_we_321[3]{ 2.15, 0.76, 1.25 };
+	const double to_we_313[3]{ -8.60099441931481, - 2.91077197886926, - 9.69351986665146 };
+	const double from_wq[4]{ 0.1, 0.2, -0.4, -(from_rq[0] * 0.1 + from_rq[1] * 0.2 - from_rq[2] * 0.4) / from_rq[3] };
+	const double to_wq[4]{ -0.292793710222811,   0.286847417856529, -0.141803596258453, -0.613907911417607 };
+	const double from_wm[9] = { 0.0291954874793394, -0.182528252419306, -0.0628972223520089,
+		0.196923491067634, -0.108112316607135, -0.0718182822377014,
+		0.189595409314217,   0.162310423942327,   0.0144536170779726, };
+	const double to_wm[9]{ 0.104075460683106,   0.0133045900952464,   0.280834839144192,
+		-0.477150412775713,   0.0214429907194124, -0.500020299468546,
+		0.551519952476166, -0.134472030683956, -0.469834287697671 };
+	const double from_wa[3]{ -0.918, 0.928, 0.458 };
+	const double to_wa[3]{ -0.123112882203827, -0.288748067622307, -1.13421480154937 };
+	const double from_ve_313[6]{ 0.131, -0.221, 0.451, 1.03, 0.73, 0.25 };
+	const double to_ve_321[6]{ 0.47766583327904, -1.12137651835541,   0.289263700919493, -0.677310010504109, -0.42894848193491,   1.82130169173659 };
+	const double from_ve_321[6]{ 0.131, -0.221, 0.451, 2.15, 0.76, 1.25 };
+	const double to_ve_313[6]{ 0.47766583327904, -1.12137651835541,   0.289263700919493, -8.60099441931481, -2.91077197886926, -9.69351986665146 };
+	const double from_vq[7] = { 0.03,   0.1525,   0.355,    0.1, 0.2, -0.4, -(from_rq[0] * 0.1 + from_rq[1] * 0.2 - from_rq[2] * 0.4) / from_rq[3] };
+	const double to_vq[7] = { 0.135496647027967, -1.05961001031892,   0.0942652484506193,   -0.292793710222811,   0.286847417856529, -0.141803596258453, -0.613907911417607 };
 	const double from_vm[16] = { 0.0291954874793394, -0.182528252419306, -0.0628972223520089,   0.03,
 		0.196923491067634, -0.108112316607135, -0.0718182822377014,   0.1525,
 		0.189595409314217,   0.162310423942327,   0.0144536170779726,   0.355,
@@ -467,6 +458,35 @@ void test_coordinate_transform()
 		-0.477150412775713,   0.0214429907194124, -0.500020299468546, -1.05961001031892,
 		0.551519952476166, -0.134472030683956, -0.469834287697671,   0.0942652484506192,
 		0,   0 ,  0,   0 };
+	const double from_va[6] = { 0.089,   0.26325 ,  0.3935 ,  0.2, -0.15,   0.125 };
+	const double to_va[6] = { 0.0144960947183866, -1.09155668422567,   0.133851721734715,   0.68237707337822,   0.278141641326378,   0.111866652186502 };
+	const double from_vs[6] = { -0.1873, -0.1412,   0.1365,   0.04982,   0.1345,   0.03744 };
+	const double to_vs[6] = { 0.314132747625686, -0.556683321739415,   0.160469757942957,   0.43785048599045,   0.326534924600346, -0.109551220160011 };
+	
+	const double from_ap[3]{ 0.12,   0.13, -0.14 };
+	const double to_ap[3]{ -0.183017842291836,   1.44829117674852, -1.20119377113485 };
+	const double from_xe_313[3]{ 4.83, 0.76, 0.45 };
+	const double to_xe_321[3]{ -0.916190408904469, - 4.34620837330883,   2.91658574391217 };
+	const double from_xe_321[3]{ 3.856, -0.696087712802565,   2.29525788843731 };
+	const double to_xe_313[3]{ 188.69146781591,   49.4283048797986,   191.948584567729 };
+	const double from_xq[4]{ -0.033,   0.022, 0.011,   -(from_wq[0] * from_wq[0] + from_wq[1] * from_wq[1] + from_wq[2] * from_wq[2] + from_wq[3] * from_wq[3] + from_rq[0] * (-0.033) + from_rq[1] * 0.022 + from_rq[2] * 0.011) / from_rq[3] };
+	const double to_xq[4]{ 0.0195967544652706, - 0.915878348828718,   0.85596957486878,   0.693274013402014 };
+	const double from_xm[9] = { -0.19607150371156, -0.0824023375945621,   0.195817097864919,
+		0.0345175399147836,   0.0110332817274978,   0.210315261589722,
+		-0.148327659454663, -0.175246744763661, -0.0645778320357833};
+	const double to_xm[9]{ -0.168189089112595,   0.0240777134273968, -0.681683032081897,
+		0.0646710887930607,   0.0754796609525905,   0.800601976050679,
+		-1.08460897398942, -0.248679220742461,   0.107617812109963};
+	const double from_xa[3]{ -0.16,   0.17,   0.18 };
+	const double to_xa[3]{ -1.13785824818199,   0.122524884812844, - 0.141063237283511 };
+	const double from_aa[6] = { -0.28023125, -0.165775,   0.1247, -0.16,   0.17,   0.18 };
+	const double to_aa[6] = { 0.0898265507450043,   1.43483887623279, -1.10554368182179, -0.612738814129007, -0.708943502357538, -0.10224359010281 };
+	const double from_ae_313[6]{ 0.12,   0.13, -0.14,4.83, 0.76, 0.45 };
+	const double to_ae_321[6]{ -0.183017842291836,   1.44829117674852, -1.20119377113485,-0.916190408904469, -4.34620837330883,   2.91658574391217 };
+	const double from_ae_321[6]{ 0.12,   0.13, -0.14,3.856, -0.696087712802565,   2.29525788843731 };
+	const double to_ae_313[6]{ -0.183017842291836,   1.44829117674852, -1.20119377113485,188.69146781591,   49.4283048797986,   191.948584567729 };
+	const double from_aq[7] = { -0.1873125, -0.14125,   0.136,   from_xq[0],   from_xq[1],   from_xq[2],   from_xq[3] };
+	const double to_aq[7] = { 0.025588345140825,   1.4522998248645, -1.06971424926844,   to_xq[0],   to_xq[1],   to_xq[2],   to_xq[3] };
 	const double from_am[16] = { -0.19607150371156, -0.0824023375945621,   0.195817097864919, -0.1873125,
 		0.0345175399147836,   0.0110332817274978,   0.210315261589722, -0.14125,
 		-0.148327659454663, -0.175246744763661, -0.0645778320357833,   0.136,
@@ -475,8 +495,6 @@ void test_coordinate_transform()
 		0.0646710887930607,   0.0754796609525905,   0.800601976050679,   1.4522998248645,
 		-1.08460897398942, -0.248679220742461,   0.107617812109963, -1.06971424926844,
 		0,   0,   0,   0 };
-	const double from_vs[6] = { -0.1873, -0.1412,   0.1365,   0.04982,   0.1345,   0.03744 };
-	const double to_vs[6] = { 0.314132747625686, -0.556683321739415,   0.160469757942957,   0.43785048599045,   0.326534924600346, -0.109551220160011 };
 	const double from_as[6] = { -0.1899, -0.1475,   0.3165,   0.9482,   0.3145,   0.7344 };
 	const double to_as[6] = { 0.627235974450473,   0.750818078071529, -0.640716977516731, -1.07044877319847, -0.904145907524959,   1.1457959474787 };
 
@@ -488,53 +506,17 @@ void test_coordinate_transform()
 	s_inv_pp2pp(relative_pm, to_pp, result);
 	if (!s_is_equal(3, from_pp, result, error))std::cout << "\"s_inv_pp2pp\" failed" << std::endl;
 
-	s_vp2vp(relative_pm, relative_vs, from_pp, from_vp, result, result2);
-	if (!(s_is_equal(3, to_vp, result, error) && s_is_equal(3, to_pp, result2, error)))std::cout << "\"s_vp2vp\" failed" << std::endl;
+	s_re2re(relative_pm, from_re_313, result, "313", "321");
+	if (!s_is_equal(3, to_re_321, result, error))std::cout << "\"s_re2re\" failed" << std::endl;
 
-	s_inv_vp2vp(relative_pm, relative_vs, to_pp, to_vp, result, result2);
-	if (!(s_is_equal(3, from_vp, result, error) && s_is_equal(3, from_pp, result2, error)))std::cout << "\"s_inv_vp2vp\" failed" << std::endl;
+	s_inv_re2re(relative_pm, to_re_321, result, "321", "313");
+	if (!s_is_equal(3, from_re_313, result, error))std::cout << "\"s_inv_re2re\" failed" << std::endl;
 
-	s_ap2ap(relative_pm, relative_vs, relative_as, from_pp, from_vp, from_ap, result, result2, result3);
-	if (!(s_is_equal(3, to_ap, result, error) && s_is_equal(3, to_vp, result2, error) && s_is_equal(3, to_pp, result3, error)))std::cout << "\"s_ap2ap\" failed" << std::endl;
+	s_re2re(relative_pm, from_re_321, result, "321", "313");
+	if (!s_is_equal(3, to_re_313, result, error))std::cout << "\"s_re2re\" failed" << std::endl;
 
-	s_inv_ap2ap(relative_pm, relative_vs, relative_as, to_pp, to_vp, to_ap, result, result2, result3);
-	if (!(s_is_equal(3, from_ap, result, error) && s_is_equal(3, from_vp, result2, error) && s_is_equal(3, from_pp, result3, error)))std::cout << "\"s_inv_ap2ap\" failed" << std::endl;
-
-	s_re2re(relative_pm, from_eu_313, result, "313", "321");
-	if (!s_is_equal(3, to_eu_321, result, error))std::cout << "\"s_re2re\" failed" << std::endl;
-
-	s_inv_re2re(relative_pm, to_eu_321, result, "321", "313");
-	if (!s_is_equal(3, from_eu_313, result, error))std::cout << "\"s_inv_re2re\" failed" << std::endl;
-
-	s_re2re(relative_pm, from_eu_321, result, "321", "313");
-	if (!s_is_equal(3, to_eu_313, result, error))std::cout << "\"s_re2re\" failed" << std::endl;
-
-	s_inv_re2re(relative_pm, to_eu_313, result, "313", "321");
-	if (!s_is_equal(3, from_eu_321, result, error))std::cout << "\"s_inv_re2re\" failed" << std::endl;
-
-	s_wa2wa(relative_pm, relative_vs, from_wa, result);
-	if (!s_is_equal(3, to_wa, result, error))std::cout << "\"s_wa2wa\" failed" << std::endl;
-
-	s_inv_wa2wa(relative_pm, relative_vs, to_wa, result);
-	if (!s_is_equal(3, from_wa, result, error))std::cout << "\"s_inv_wa2wa\" failed" << std::endl;
-
-	s_xa2xa(relative_pm, relative_as, from_xa, result);
-	if (!s_is_equal(3, to_xa, result, error))std::cout << "\"s_xa2xa\" failed" << std::endl;
-
-	s_inv_xa2xa(relative_pm, relative_as, to_xa, result);
-	if (!s_is_equal(3, from_xa, result, error))std::cout << "\"s_inv_xa2xa\" failed" << std::endl;
-
-	s_wq2wq(relative_pm, relative_vs, from_rq, from_wq, result, result2);
-	if (!(s_is_equal(4, to_wq, result, error) && s_is_equal(4, to_rq, result2, error)))std::cout << "\"s_wq2wq\" failed" << std::endl;
-
-	s_inv_wq2wq(relative_pm, relative_vs, to_rq, to_wq, result, result2);
-	if (!(s_is_equal(4, from_wq, result, error) && s_is_equal(4, from_rq, result2, error)))std::cout << "\"s_inv_wq2wq\" failed" << std::endl;
-
-	s_xq2xq(relative_pm, relative_vs, relative_as, from_rq, from_wq, from_xq, result, result2, result3);
-	if (!(s_is_equal(4, to_xq, result, error) && s_is_equal(4, to_wq, result2, error) && s_is_equal(4, to_rq, result3, error)))std::cout << "\"s_xq2xq\" failed" << std::endl;
-
-	s_inv_xq2xq(relative_pm, relative_vs, relative_as, to_rq, to_wq, to_xq, result, result2, result3);
-	if (!(s_is_equal(4, from_xq, result, error) && s_is_equal(4, from_wq, result2, error) && s_is_equal(4, from_rq, result3, error)))std::cout << "\"s_inv_xq2xq\" failed" << std::endl;
+	s_inv_re2re(relative_pm, to_re_313, result, "313", "321");
+	if (!s_is_equal(3, from_re_321, result, error))std::cout << "\"s_inv_re2re\" failed" << std::endl;
 
 	s_rq2rq(relative_pm, from_rq, result);
 	if (!s_is_equal(4, to_rq, result, error))std::cout << "\"s_rq2rq\" failed" << std::endl;
@@ -548,35 +530,17 @@ void test_coordinate_transform()
 	s_inv_rm2rm(relative_pm, to_rm, result);
 	if (!s_is_equal(3, from_rm, result, error))std::cout << "\"s_inv_rm2rm\" failed" << std::endl;
 
-	s_wm2wm(relative_pm, relative_vs, from_rm, from_wm, result, result2);
-	if (!(s_is_equal(9, to_wm, result, error) && s_is_equal(9, to_rm, result2, error)))std::cout << "\"s_wm2wm\" failed" << std::endl;
-
-	s_inv_wm2wm(relative_pm, relative_vs, to_rm, to_wm, result, result2);
-	if (!(s_is_equal(9, from_wm, result, error) && s_is_equal(9, from_rm, result2, error)))std::cout << "\"s_inv_wm2wm\" failed" << std::endl;
-
-	s_xm2xm(relative_pm, relative_vs, relative_as, from_rm, from_wm, from_xm, result, result2, result3);
-	if (!(s_is_equal(9, to_xm, result, error) && s_is_equal(9, to_wm, result2, error) && s_is_equal(9, to_rm, result3, error)))std::cout << "\"s_xm2xm\" failed" << std::endl;
-
-	s_inv_xm2xm(relative_pm, relative_vs, relative_as, to_rm, to_wm, to_xm, result, result2, result3);
-	if (!(s_is_equal(9, from_xm, result, error) && s_is_equal(9, from_wm, result2, error) && s_is_equal(9, from_rm, result3, error)))std::cout << "\"s_inv_xm2xm\" failed" << std::endl;
-
 	s_pe2pe(relative_pm, from_pe_313, result, "313", "321");
-	if (!s_is_equal(6, to_pe_321, result, error))std::cout << "\"s_pe2pe\" failed" << std::endl;
+	if (!s_is_equal(6, to_pe_321, result, error))std::cout << "\"s_pe2pe 313 to 321\" failed" << std::endl;
 
 	s_inv_pe2pe(relative_pm, to_pe_321, result, "321", "313");
-	if (!s_is_equal(6, from_pe_313, result, error))std::cout << "\"s_inv_pe2pe\" failed" << std::endl;
+	if (!s_is_equal(6, from_pe_313, result, error))std::cout << "\"s_inv_pe2pe 321 to 313\" failed" << std::endl;
 
-	s_va2va(relative_pm, relative_vs, from_pp, from_va, result, result2);
-	if (!(s_is_equal(6, to_va, result, error) && s_is_equal(3, to_pp, result2, error)))std::cout << "\"s_va2va\" failed" << std::endl;
+	s_pe2pe(relative_pm, from_pe_321, result, "321", "313");
+	if (!s_is_equal(6, to_pe_313, result, error))std::cout << "\"s_pe2pe 321 to 313\" failed" << std::endl;
 
-	s_inv_va2va(relative_pm, relative_vs, to_pp, to_va, result, result2);
-	if (!(s_is_equal(6, from_va, result, error) && s_is_equal(3, from_pp, result2, error)))std::cout << "\"s_inv_va2va\" failed" << std::endl;
-
-	s_aa2aa(relative_pm, relative_vs, relative_as, from_pp, from_va, from_aa, result, result2, result3);
-	if (!(s_is_equal(6, to_aa, result, error) && s_is_equal(6, to_va, result2, error) && s_is_equal(3, to_pp, result3, error)))std::cout << "\"s_aa2aa\" failed" << std::endl;
-
-	s_inv_aa2aa(relative_pm, relative_vs, relative_as, to_pp, to_va, to_aa, result, result2, result3);
-	if (!(s_is_equal(6, from_aa, result, error) && s_is_equal(6, from_va, result2, error) && s_is_equal(3, from_pp, result3, error)))std::cout << "\"s_inv_aa2aa\" failed" << std::endl;
+	s_inv_pe2pe(relative_pm, to_pe_313, result, "313", "321");
+	if (!s_is_equal(6, from_pe_321, result, error))std::cout << "\"s_inv_pe2pe 313 to 321\" failed" << std::endl;
 
 	s_pq2pq(relative_pm, from_pq, result);
 	if (!s_is_equal(7, to_pq, result, error))std::cout << "\"s_pq2pq\" failed" << std::endl;
@@ -584,23 +548,67 @@ void test_coordinate_transform()
 	s_inv_pq2pq(relative_pm, to_pq, result);
 	if (!s_is_equal(7, from_pq, result, error))std::cout << "\"s_inv_pq2pq\" failed" << std::endl;
 
-	s_vq2vq(relative_pm, relative_vs, from_pq, from_vq, result, result2);
-	if (!(s_is_equal(7, to_vq, result, error) && s_is_equal(7, to_pq, result2, error)))std::cout << "\"s_vq2vq\" failed" << std::endl;
-
-	s_inv_vq2vq(relative_pm, relative_vs, to_pq, to_vq, result, result2);
-	if (!(s_is_equal(7, from_vq, result, error) && s_is_equal(7, from_pq, result2, error)))std::cout << "\"s_inv_vq2vq\" failed" << std::endl;
-
-	s_aq2aq(relative_pm, relative_vs, relative_as, from_pq, from_vq, from_aq, result, result2, result3);
-	if (!(s_is_equal(7, to_aq, result, error) && s_is_equal(7, to_vq, result2, error) && s_is_equal(7, to_pq, result3, error)))std::cout << "\"s_aq2aq\" failed" << std::endl;
-
-	s_inv_aq2aq(relative_pm, relative_vs, relative_as, to_pq, to_vq, to_aq, result, result2, result3);
-	if (!(s_is_equal(7, from_aq, result, error) && s_is_equal(7, from_vq, result2, error) && s_is_equal(7, from_pq, result3, error)))std::cout << "\"s_inv_aq2aq\" failed" << std::endl;
-
 	s_pm2pm(relative_pm, from_pm, result);
 	if (!s_is_equal(16, to_pm, result, error))std::cout << "\"s_pm2pm\" failed" << std::endl;
 
 	s_inv_pm2pm(relative_pm, to_pm, result);
 	if (!s_is_equal(16, from_pm, result, error))std::cout << "\"s_inv_pm2pm\" failed" << std::endl;
+
+
+
+	s_vp2vp(relative_pm, relative_vs, from_pp, from_vp, result, result2);
+	if (!(s_is_equal(3, to_vp, result, error) && s_is_equal(3, to_pp, result2, error)))std::cout << "\"s_vp2vp\" failed" << std::endl;
+
+	s_inv_vp2vp(relative_pm, relative_vs, to_pp, to_vp, result, result2);
+	if (!(s_is_equal(3, from_vp, result, error) && s_is_equal(3, from_pp, result2, error)))std::cout << "\"s_inv_vp2vp\" failed" << std::endl;
+
+	s_we2we(relative_pm, relative_vs, from_re_313, from_we_313, result, result2, "313", "321");
+	if (!(s_is_equal(3, to_we_321, result, error) && s_is_equal(3, to_re_321, result2, error)))std::cout << "\"s_we2we 313 to 321\" failed" << std::endl;
+
+	s_inv_we2we(relative_pm, relative_vs, to_re_321, to_we_321, result, result2, "321", "313");
+	if (!(s_is_equal(3, from_we_313, result, error) && s_is_equal(3, from_re_313, result2, error)))std::cout << "\"s_inv_we2we 313\" failed" << std::endl;
+
+	s_we2we(relative_pm, relative_vs, from_re_321, from_we_321, result, result2, "321", "313");
+	if (!(s_is_equal(3, to_we_313, result, error) && s_is_equal(3, to_re_313, result2, error)))std::cout << "\"s_we2we 313 to 321\" failed" << std::endl;
+
+	s_inv_we2we(relative_pm, relative_vs, to_re_313, to_we_313, result, result2, "313", "321");
+	if (!(s_is_equal(3, from_we_321, result, error) && s_is_equal(3, from_re_321, result2, error)))std::cout << "\"s_inv_we2we 313\" failed" << std::endl;
+
+	s_wq2wq(relative_pm, relative_vs, from_rq, from_wq, result, result2);
+	if (!(s_is_equal(4, to_wq, result, error) && s_is_equal(4, to_rq, result2, error)))std::cout << "\"s_wq2wq\" failed" << std::endl;
+
+	s_inv_wq2wq(relative_pm, relative_vs, to_rq, to_wq, result, result2);
+	if (!(s_is_equal(4, from_wq, result, error) && s_is_equal(4, from_rq, result2, error)))std::cout << "\"s_inv_wq2wq\" failed" << std::endl;
+
+	s_wm2wm(relative_pm, relative_vs, from_rm, from_wm, result, result2);
+	if (!(s_is_equal(9, to_wm, result, error) && s_is_equal(9, to_rm, result2, error)))std::cout << "\"s_wm2wm\" failed" << std::endl;
+
+	s_inv_wm2wm(relative_pm, relative_vs, to_rm, to_wm, result, result2);
+	if (!(s_is_equal(9, from_wm, result, error) && s_is_equal(9, from_rm, result2, error)))std::cout << "\"s_inv_wm2wm\" failed" << std::endl;
+
+	s_wa2wa(relative_pm, relative_vs, from_wa, result);
+	if (!s_is_equal(3, to_wa, result, error))std::cout << "\"s_wa2wa\" failed" << std::endl;
+
+	s_inv_wa2wa(relative_pm, relative_vs, to_wa, result);
+	if (!s_is_equal(3, from_wa, result, error))std::cout << "\"s_inv_wa2wa\" failed" << std::endl;
+
+	s_ve2ve(relative_pm, relative_vs, from_pe_313, from_ve_313, result, result2, "313", "321");
+	if (!(s_is_equal(6, to_ve_321, result, error) && s_is_equal(3, to_pe_321, result2, error)))std::cout << "\"s_ve2ve 313 to 321\" failed" << std::endl;
+
+	s_inv_ve2ve(relative_pm, relative_vs, to_pe_321, to_ve_321, result, result2, "321", "313");
+	if (!(s_is_equal(6, from_ve_313, result, error) && s_is_equal(3, from_pe_313, result2, error)))std::cout << "\"s_inv_ve2ve 313\" failed" << std::endl;
+
+	s_ve2ve(relative_pm, relative_vs, from_pe_321, from_ve_321, result, result2, "321", "313");
+	if (!(s_is_equal(6, to_ve_313, result, error) && s_is_equal(3, to_pe_313, result2, error)))std::cout << "\"s_ve2ve 313 to 321\" failed" << std::endl;
+
+	s_inv_ve2ve(relative_pm, relative_vs, to_pe_313, to_ve_313, result, result2, "313", "321");
+	if (!(s_is_equal(6, from_ve_321, result, error) && s_is_equal(3, from_pe_321, result2, error)))std::cout << "\"s_inv_ve2ve 313\" failed" << std::endl;
+
+	s_vq2vq(relative_pm, relative_vs, from_pq, from_vq, result, result2);
+	if (!(s_is_equal(7, to_vq, result, error) && s_is_equal(7, to_pq, result2, error)))std::cout << "\"s_vq2vq\" failed" << std::endl;
+
+	s_inv_vq2vq(relative_pm, relative_vs, to_pq, to_vq, result, result2);
+	if (!(s_is_equal(7, from_vq, result, error) && s_is_equal(7, from_pq, result2, error)))std::cout << "\"s_inv_vq2vq\" failed" << std::endl;
 
 	s_vm2vm(relative_pm, relative_vs, from_pm, from_vm, result, result2);
 	if (!(s_is_equal(16, to_vm, result, error) && s_is_equal(16, to_pm, result2, error)))std::cout << "\"s_vm2vm\" failed" << std::endl;
@@ -608,17 +616,87 @@ void test_coordinate_transform()
 	s_inv_vm2vm(relative_pm, relative_vs, to_pm, to_vm, result, result2);
 	if (!(s_is_equal(16, from_vm, result, error) && s_is_equal(16, from_pm, result2, error)))std::cout << "\"s_inv_vm2vm\" failed" << std::endl;
 
-	s_am2am(relative_pm, relative_vs, relative_as, from_pm, from_vm, from_am, result, result2, result3);
-	if (!(s_is_equal(16, to_am, result, error) && s_is_equal(16, to_vm, result2, error) && s_is_equal(16, to_pm, result3, error)))std::cout << "\"s_am2am\" failed" << std::endl;
+	s_va2va(relative_pm, relative_vs, from_pp, from_va, result, result2);
+	if (!(s_is_equal(6, to_va, result, error) && s_is_equal(3, to_pp, result2, error)))std::cout << "\"s_va2va\" failed" << std::endl;
 
-	s_inv_am2am(relative_pm, relative_vs, relative_as, to_pm, to_vm, to_am, result, result2, result3);
-	if (!(s_is_equal(16, from_am, result, error) && s_is_equal(16, from_vm, result2, error) && s_is_equal(16, from_pm, result3, error)))std::cout << "\"s_inv_am2am\" failed" << std::endl;
+	s_inv_va2va(relative_pm, relative_vs, to_pp, to_va, result, result2);
+	if (!(s_is_equal(6, from_va, result, error) && s_is_equal(3, from_pp, result2, error)))std::cout << "\"s_inv_va2va\" failed" << std::endl;
 
 	s_vs2vs(relative_pm, relative_vs, from_vs, result);
 	if (!s_is_equal(6, to_vs, result, error))std::cout << "\"s_vs2vs\" failed" << std::endl;
 
 	s_inv_vs2vs(relative_pm, relative_vs, to_vs, result);
 	if (!s_is_equal(6, from_vs, result, error))std::cout << "\"s_inv_vs2vs\" failed" << std::endl;
+
+
+
+	s_ap2ap(relative_pm, relative_vs, relative_as, from_pp, from_vp, from_ap, result, result2, result3);
+	if (!(s_is_equal(3, to_ap, result, error) && s_is_equal(3, to_vp, result2, error) && s_is_equal(3, to_pp, result3, error)))std::cout << "\"s_ap2ap\" failed" << std::endl;
+
+	s_inv_ap2ap(relative_pm, relative_vs, relative_as, to_pp, to_vp, to_ap, result, result2, result3);
+	if (!(s_is_equal(3, from_ap, result, error) && s_is_equal(3, from_vp, result2, error) && s_is_equal(3, from_pp, result3, error)))std::cout << "\"s_inv_ap2ap\" failed" << std::endl;
+
+	s_xe2xe(relative_pm, relative_vs, relative_as, from_re_313, from_we_313, from_xe_313, result, result2, result3, "313", "321");
+	if (!(s_is_equal(3, to_xe_321, result, error) && s_is_equal(3, to_we_321, result2, error) && s_is_equal(3, to_re_321, result3, error)))std::cout << "\"s_xe2xe 313 to 321\" failed" << std::endl;
+
+	s_inv_xe2xe(relative_pm, relative_vs, relative_as, to_re_321, to_we_321, to_xe_321, result, result2, result3, "321", "313");
+	if (!(s_is_equal(3, from_xe_313, result, error) && s_is_equal(3, from_we_313, result2, error) && s_is_equal(3, from_re_313, result3, error)))std::cout << "\"s_inv_xe2xe 321 to 313\" failed" << std::endl;
+	
+	s_xe2xe(relative_pm, relative_vs, relative_as, from_re_321, from_we_321, from_xe_321, result, result2, result3, "321", "313");
+	if (!(s_is_equal(3, to_xe_313, result, error) && s_is_equal(3, to_we_313, result2, error) && s_is_equal(3, to_re_313, result3, error)))std::cout << "\"s_xe2xe 321 to 313\" failed" << std::endl;
+
+	s_inv_xe2xe(relative_pm, relative_vs, relative_as, to_re_313, to_we_313, to_xe_313, result, result2, result3, "313", "321");
+	if (!(s_is_equal(3, from_xe_321, result, error) && s_is_equal(3, from_we_321, result2, error) && s_is_equal(3, from_re_321, result3, error)))std::cout << "\"s_inv_xe2xe 313 to 321\" failed" << std::endl;
+
+	s_xq2xq(relative_pm, relative_vs, relative_as, from_rq, from_wq, from_xq, result, result2, result3);
+	if (!(s_is_equal(4, to_xq, result, error) && s_is_equal(4, to_wq, result2, error) && s_is_equal(4, to_rq, result3, error)))std::cout << "\"s_xq2xq\" failed" << std::endl;
+
+	s_inv_xq2xq(relative_pm, relative_vs, relative_as, to_rq, to_wq, to_xq, result, result2, result3);
+	if (!(s_is_equal(4, from_xq, result, error) && s_is_equal(4, from_wq, result2, error) && s_is_equal(4, from_rq, result3, error)))std::cout << "\"s_inv_xq2xq\" failed" << std::endl;
+
+	s_xm2xm(relative_pm, relative_vs, relative_as, from_rm, from_wm, from_xm, result, result2, result3);
+	if (!(s_is_equal(9, to_xm, result, error) && s_is_equal(9, to_wm, result2, error) && s_is_equal(9, to_rm, result3, error)))std::cout << "\"s_xm2xm\" failed" << std::endl;
+
+	s_inv_xm2xm(relative_pm, relative_vs, relative_as, to_rm, to_wm, to_xm, result, result2, result3);
+	if (!(s_is_equal(9, from_xm, result, error) && s_is_equal(9, from_wm, result2, error) && s_is_equal(9, from_rm, result3, error)))std::cout << "\"s_inv_xm2xm\" failed" << std::endl;
+
+	s_xa2xa(relative_pm, relative_vs, relative_as, from_wa, from_xa, result, result2);
+	if (!s_is_equal(3, to_xa, result, error))std::cout << "\"s_xa2xa\" failed" << std::endl;
+
+	dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", result, 1, 4);
+
+	s_inv_xa2xa(relative_pm, relative_vs, relative_as, to_wa, to_xa, result, result2);
+	if (!s_is_equal(3, from_xa, result, error))std::cout << "\"s_inv_xa2xa\" failed" << std::endl;
+	
+	s_ae2ae(relative_pm, relative_vs, relative_as, from_pe_313, from_ve_313, from_ae_313, result, result2, result3, "313", "321");
+	if (!(s_is_equal(6, to_ae_321, result, error) && s_is_equal(6, to_ve_321, result2, error) && s_is_equal(6, to_pe_321, result3, error)))std::cout << "\"s_ae2ae 313 to 321\" failed" << std::endl;
+
+	s_inv_ae2ae(relative_pm, relative_vs, relative_as, to_pe_321, to_ve_321, to_ae_321, result, result2, result3, "321", "313");
+	if (!(s_is_equal(6, from_ae_313, result, error) && s_is_equal(6, from_ve_313, result2, error) && s_is_equal(6, from_pe_313, result3, error)))std::cout << "\"s_inv_ae2ae 321 to 313\" failed" << std::endl;
+	
+	s_ae2ae(relative_pm, relative_vs, relative_as, from_pe_321, from_ve_321, from_ae_321, result, result2, result3, "321", "313");
+	if (!(s_is_equal(6, to_ae_313, result, error) && s_is_equal(6, to_ve_313, result2, error) && s_is_equal(6, to_pe_313, result3, error)))std::cout << "\"s_ae2ae 321 to 313\" failed" << std::endl;
+
+	s_inv_ae2ae(relative_pm, relative_vs, relative_as, to_pe_313, to_ve_313, to_ae_313, result, result2, result3, "313", "321");
+	if (!(s_is_equal(6, from_ae_321, result, error) && s_is_equal(6, from_ve_321, result2, error) && s_is_equal(6, from_pe_321, result3, error)))std::cout << "\"s_inv_ae2ae 313 to 321\" failed" << std::endl;
+
+	s_aq2aq(relative_pm, relative_vs, relative_as, from_pq, from_vq, from_aq, result, result2, result3);
+	if (!(s_is_equal(7, to_aq, result, error) && s_is_equal(7, to_vq, result2, error) && s_is_equal(7, to_pq, result3, error)))std::cout << "\"s_aq2aq\" failed" << std::endl;
+
+	s_inv_aq2aq(relative_pm, relative_vs, relative_as, to_pq, to_vq, to_aq, result, result2, result3);
+	if (!(s_is_equal(7, from_aq, result, error) && s_is_equal(7, from_vq, result2, error) && s_is_equal(7, from_pq, result3, error)))std::cout << "\"s_inv_aq2aq\" failed" << std::endl;
+
+	s_am2am(relative_pm, relative_vs, relative_as, from_pm, from_vm, from_am, result, result2, result3);
+	if (!(s_is_equal(16, to_am, result, error) && s_is_equal(16, to_vm, result2, error) && s_is_equal(16, to_pm, result3, error)))std::cout << "\"s_am2am\" failed" << std::endl;
+
+	s_inv_am2am(relative_pm, relative_vs, relative_as, to_pm, to_vm, to_am, result, result2, result3);
+	if (!(s_is_equal(16, from_am, result, error) && s_is_equal(16, from_vm, result2, error) && s_is_equal(16, from_pm, result3, error)))std::cout << "\"s_inv_am2am\" failed" << std::endl;
+
+	s_aa2aa(relative_pm, relative_vs, relative_as, from_pp, from_va, from_aa, result, result2, result3);
+	if (!(s_is_equal(6, to_aa, result, error) && s_is_equal(6, to_va, result2, error) && s_is_equal(3, to_pp, result3, error)))std::cout << "\"s_aa2aa\" failed" << std::endl;
+
+	s_inv_aa2aa(relative_pm, relative_vs, relative_as, to_pp, to_va, to_aa, result, result2, result3);
+	if (!(s_is_equal(6, from_aa, result, error) && s_is_equal(6, from_va, result2, error) && s_is_equal(3, from_pp, result3, error)))std::cout << "\"s_inv_aa2aa\" failed" << std::endl;
 
 	s_as2as(relative_pm, relative_vs, relative_as, from_vs, from_as, result, result2);
 	if (!(s_is_equal(6, to_as, result, error) && s_is_equal(6, to_vs, result2, error)))std::cout << "\"s_as2as\" failed" << std::endl;

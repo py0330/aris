@@ -172,25 +172,25 @@ namespace aris
 		auto swap(X<T, A>&, X<T, A>&)->void; //optional
 		*/
 		
-		ImpPtr<Object>::ImpPtr(const ImpPtr &other) :data_unique_ptr_(other->root().childTypeMap().at(other->type()).newFromObject(*other)) {};
-		auto ImpPtr<Object>::operator=(const ImpPtr &other)->ImpPtr<Object>&
+		template<> ImpPtr<Object>::ImpPtr(const ImpPtr &other) :data_unique_ptr_(other->root().childTypeMap().at(other->type()).newFromObject(*other)) {};
+		template<> auto ImpPtr<Object>::operator=(const ImpPtr &other)->ImpPtr<Object>&
 		{ 
 			other->root().childTypeMap().at(other->type()).assign(*other, **this); 
 			return *this;
 		};
-		auto ImpPtr<Object>::operator=(ImpPtr &&other) ->ImpPtr<Object>&
+		template<> auto ImpPtr<Object>::operator=(ImpPtr &&other) ->ImpPtr<Object>&
 		{ 
 			other->root().childTypeMap().at(other->type()).assignR(std::move(*other), **this);
 			return *this;
 		};
 
-		auto ImpContainer<Object>::operator=(const ImpContainer& other)->ImpContainer<Object>&
+		template<> auto ImpContainer<Object>::operator=(const ImpContainer& other)->ImpContainer<Object>&
 		{
 			if (size() != other.size())throw std::runtime_error("you must assign Object with same size");
 			for (std::size_t i = 0; i < size(); ++i)other.at(i).root().childTypeMap().at(other.at(i).type()).assign(other.at(i), at(i));
 			return *this;
 		}
-		auto ImpContainer<Object>::operator=(ImpContainer&&other)->ImpContainer<Object>&
+		template<> auto ImpContainer<Object>::operator=(ImpContainer&&other)->ImpContainer<Object>&
 		{
 			if (size() != other.size())throw std::runtime_error("you must assignR Object with same size");
 			for (std::size_t i = 0; i < size(); ++i)other.at(i).root().childTypeMap().at(other.at(i).type()).assignR(std::move(other.at(i)), at(i));
@@ -284,7 +284,7 @@ namespace aris
 			}
 			else
 			{
-				emplace_back(root().imp_->type_map_.find(type)->second.newFromXml(*this, size(), xml_ele));
+				push_back_ptr(root().imp_->type_map_.find(type)->second.newFromXml(*this, size(), xml_ele));
 				return back();
 			}
 		}
@@ -296,7 +296,7 @@ namespace aris
 			}
 			else
 			{
-				emplace_back(root().imp_->type_map_.find(object.type())->second.newFromObject(object));
+				push_back_ptr(root().imp_->type_map_.find(object.type())->second.newFromObject(object));
 				back().imp_->id_ = size() - 1;
 				back().imp_->name_ = object.name();
 				back().imp_->father_ = this;
@@ -312,7 +312,7 @@ namespace aris
 			}
 			else
 			{
-				emplace_back(root().imp_->type_map_.find(object.type())->second.newFromObjectR(std::move(object)));
+				push_back_ptr(root().imp_->type_map_.find(object.type())->second.newFromObjectR(std::move(object)));
 				back().imp_->id_ = size() - 1;
 				back().imp_->name_ = object.name();
 				back().imp_->father_ = this;
