@@ -35,6 +35,8 @@ namespace aris
 		class Element :public aris::core::Object
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type("element"); return std::ref(type); };
+			virtual auto type() const->const std::string&{ return Type(); };
 			virtual auto saveAdams(std::ofstream &file) const->void { for (auto &ele : *this)static_cast<const Element &>(ele).saveAdams(file); };
 			virtual auto adamsID()const->std::size_t { return id() + 1; };
 			virtual auto adamsType()const->const std::string &{ return type(); };
@@ -72,55 +74,46 @@ namespace aris
 		public:
 			virtual auto vs() const->const double6& = 0;
 			virtual auto as() const->const double6& = 0;
-			auto pm() const->const double4x4&{ return pm_; };
-			auto pm()->double4x4& { return pm_; };
-			auto getPp(double *pp)const->void { s_pm2pp(*pm(), pp); };
-			auto getPp(double *pp, const Coordinate &relative_to)const->void { double pp_o[3]; getPp(pp_o); s_inv_pp2pp(*relative_to.pm(), pp_o, pp); };
-			auto setPp(const double *pp)->void { s_pp2pm(pp, *pm()); };
-			auto setPp(const double *pp, const Coordinate &relative_to)->void { double pp_o[3]; s_pp2pp(*relative_to.pm(), pp, pp_o); setPp(pp_o); };
-			auto getPe(double *pe, const char *type = "313")const->void { s_pm2pe(*pm(), pe, type); };
-			auto getPe(double *pe, const Coordinate &relative_to, const char *type = "313")const->void { double pe_o[6]; getPe(pe_o, type); s_inv_pe2pe(*relative_to.pm(), pe_o, pe, type, type); };
-			auto setPe(const double *pe, const char *type = "313")->void { s_pe2pm(pe, *pm(), type); };
-			auto setPe(const double *pe, const Coordinate &relative_to, const char *type = "313")->void { double pe_o[6]; s_pe2pe(*relative_to.pm(), pe, pe_o, type, type); setPe(pe_o, type); };
-			auto getPq(double *pq)const->void { s_pm2pq(*pm(), pq); };
-			auto getPq(double *pq, const Coordinate &relative_to)const->void { double pq_o[7]; getPq(pq_o);	s_pq2pq(*relative_to.pm(), pq_o, pq); };
-			auto setPq(const double *pq)->void { s_pq2pm(pq, *pm()); };
-			auto setPq(const double *pq, const Coordinate &relative_to)->void { double pq_o[7]; s_pq2pq(*relative_to.pm(), pq, pq_o); setPq(pq_o); };
-			auto getPm(double *pm)const->void { std::copy(&this->pm()[0][0], &this->pm()[0][0] + 16, pm); };
-			auto getPm(double *pm, const Coordinate &relative_to)const->void { s_inv_pm2pm(*relative_to.pm(), *this->pm(), pm); };
-			auto setPm(const double *pm)->void { std::copy(pm, pm + 16, &this->pm()[0][0]); };
-			auto setPm(const double *pm, const Coordinate &relative_to)->void { s_pm2pm(*relative_to.pm(), pm, *this->pm()); };
-			auto getVp(double *vp)const->void { double pp[3]; getPp(pp); s_vs2vp(vs(), pp, vp); };
-			auto getVp(double *vp, const Coordinate &relative_to)const->void;
-			auto getVe(double *ve, const char *type = "313")const->void { double pe[6]; getPe(pe, type); s_vs2ve(vs(), pe, ve, type); };
-			auto getVe(double *ve, const Coordinate &relative_to, const char *type = "313")const->void;
-			auto getVq(double *vq)const->void { double pq[7]; getPq(pq); s_vs2vq(vs(), pq, vq); };
-			auto getVq(double *vq, const Coordinate &relative_to)const->void;
-			auto getVm(double *vm)const->void { double pm[16]; getPm(pm); s_vs2vm(vs(), pm, vm); };
-			auto getVm(double *vm, const Coordinate &relative_to)const->void;
-			auto getVa(double *va)const->void { double pp[3]; getPp(pp); s_vs2va(vs(), pp, va); };
-			auto getVa(double *va, const Coordinate &relative_to)const->void;
-			auto getVs(double *vs)const->void { std::copy_n(this->vs(), 6, vs); };
-			auto getVs(double *vs, const Coordinate &relative_to)const->void { s_inv_vs2vs(*relative_to.pm(), relative_to.vs(), this->vs(), vs); };
-			auto getAp(double *ap)const->void { double pp[3]; getPp(pp); s_as2ap(vs(), as(), pp, ap); };
-			auto getAp(double *ap, const Coordinate &relative_to)const->void;
-			auto getAe(double *ae, const char *type = "313")const->void { double pe[6]; getPe(pe); s_as2ae(vs(), as(), pe, ae, nullptr, type); };
-			auto getAe(double *ae, const Coordinate &relative_to, const char *type = "313")const->void;
-			auto getAq(double *aq)const->void { double pq[7]; getPq(pq); s_as2aq(vs(), as(), pq, aq); };
-			auto getAq(double *aq, const Coordinate &relative_to)const->void;
-			auto getAm(double *am)const->void { double pm[16]; getPm(pm); s_as2am(vs(), as(), pm, am); };
-			auto getAm(double *am, const Coordinate &relative_to)const->void;
-			auto getAa(double *aa)const->void { double pp[3]; getPp(pp); s_as2aa(vs(), as(), pp, aa); };
-			auto getAa(double *aa, const Coordinate &relative_to)const->void;
-			auto getAs(double *as)const->void { std::copy_n(this->as(), 6, as); };
-			auto getAs(double *as, const Coordinate &relative_to)const->void { s_inv_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), vs(), this->as(), as); };
+			virtual auto pm() const->const double4x4&{ return pm_; };
+			
+			auto getPp(double *pp)const->void;
+			auto getPp(const Coordinate &relative_to, double *pp)const->void;
+			auto getPe(double *pe, const char *type = "313")const->void;
+			auto getPe(const Coordinate &relative_to, double *pe, const char *type = "313")const->void;
+			auto getPq(double *pq)const->void;
+			auto getPq(const Coordinate &relative_to, double *pq)const->void;
+			auto getPm(double *pm)const->void;
+			auto getPm(const Coordinate &relative_to, double *pm)const->void;
+			auto getVp(double *vp, double *pp = nullptr)const->void;
+			auto getVp(const Coordinate &relative_to, double *vp, double *pp = nullptr)const->void;
+			auto getVe(double *ve, double *pe = nullptr, const char *type = "313")const->void;
+			auto getVe(const Coordinate &relative_to, double *ve, double *pe = nullptr, const char *type = "313")const->void;
+			auto getVq(double *vq, double *pq = nullptr)const->void;
+			auto getVq(const Coordinate &relative_to, double *vq, double *pq = nullptr)const->void;
+			auto getVm(double *vm, double *pm = nullptr)const->void;
+			auto getVm(const Coordinate &relative_to, double *vm, double *pm = nullptr)const->void;
+			auto getVa(double *va, double *pp = nullptr)const->void;
+			auto getVa(const Coordinate &relative_to, double *va, double *pp = nullptr)const->void;
+			auto getVs(double *vs)const->void;
+			auto getVs(const Coordinate &relative_to, double *vs)const->void;
+			auto getAp(double *ap, double *vp = nullptr, double *pp = nullptr)const->void;
+			auto getAp(const Coordinate &relative_to, double *ap, double *vp = nullptr, double *pp = nullptr)const->void;
+			auto getAe(double *ae, double *ve = nullptr, double *pe = nullptr, const char *type = "313")const->void;
+			auto getAe(const Coordinate &relative_to, double *ae, double *ve = nullptr, double *pe = nullptr, const char *type = "313")const->void;
+			auto getAq(double *aq, double *vq = nullptr, double *pq = nullptr)const->void;
+			auto getAq(const Coordinate &relative_to, double *aq, double *vq = nullptr, double *pq = nullptr)const->void;
+			auto getAm(double *am, double *vm = nullptr, double *pm = nullptr)const->void;
+			auto getAm(const Coordinate &relative_to, double *am, double *vm = nullptr, double *pm = nullptr)const->void;
+			auto getAa(double *aa, double *va = nullptr, double *pp = nullptr)const->void;
+			auto getAa(const Coordinate &relative_to, double *aa, double *va = nullptr, double *pp = nullptr)const->void;
+			auto getAs(double *as, double *vs = nullptr)const->void;
+			auto getAs(const Coordinate &relative_to, double *as, double *vs = nullptr)const->void;
 
 		protected:
 			virtual ~Coordinate() = default;
 			explicit Coordinate(Object &father, std::size_t id, const std::string &name, const double *pm = nullptr, bool active = true);
 			explicit Coordinate(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :DynEle(father, id, xml_ele) {};
 
-		private:
 			double pm_[4][4];
 		};
 		class Interaction :public DynEle
@@ -327,9 +320,10 @@ namespace aris
 			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			virtual auto saveAdams(std::ofstream &file) const->void override;
 			virtual auto update()->void override;
+			virtual auto pm()const->const double4x4& override final{ return Coordinate::pm(); };
 			virtual auto vs()const->const double6& override final;
 			virtual auto as()const->const double6& override final;
-			auto rowID()const->std::size_t;
+			auto pm()->double4x4& { return const_cast<double4x4&>(Coordinate::pm()); };
 			auto vs()->double6&;
 			auto as()->double6&;
 			auto invPm() const->const double4x4&;
@@ -341,29 +335,36 @@ namespace aris
 			auto prtGravity() const->const double6&;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
+			auto rowID()const->std::size_t;
 
-			auto setVe(const double *ve_in, const char *type)->void { double pe[6]; getPe(pe, type);  s_ve2vs(pe, ve_in, vs(), type); };
-			auto setVe(const double *ve_in, const Coordinate &relative_to, const char *type)->void;
-			auto setVq(const double *vq_in)->void { double pq[6]; getPq(pq);  s_ve2vs(pq, vq_in, vs()); };
-			auto setVq(const double *vq_in, const Coordinate &relative_to)->void;
+			auto setPp(const double *pp)->void { s_pp2pm(pp, *pm()); };
+			auto setPp(const Coordinate &relative_to, const double *pp)->void { double pp_o[3]; s_pp2pp(*relative_to.pm(), pp, pp_o); setPp(pp_o); };
+			auto setPe(const double *pe, const char *type = "313")->void { s_pe2pm(pe, *pm(), type); };
+			auto setPe(const Coordinate &relative_to, const double *pe, const char *type = "313")->void { double pe_o[6]; s_pe2pe(*relative_to.pm(), pe, pe_o, type, type); setPe(pe_o, type); };
+			auto setPq(const double *pq)->void { s_pq2pm(pq, *pm()); };
+			auto setPq(const Coordinate &relative_to, const double *pq)->void { double pq_o[7]; s_pq2pq(*relative_to.pm(), pq, pq_o); setPq(pq_o); };
+			auto setPm(const double *pm)->void { std::copy(pm, pm + 16, &this->pm()[0][0]); };
+			auto setPm(const Coordinate &relative_to, const double *pm)->void { s_pm2pm(*relative_to.pm(), pm, *this->pm()); };
+			auto setVe(const double *ve_in, const char *type = "313")->void { double pe[6]; getPe(pe, type);  s_ve2vs(pe, ve_in, vs(), type); };
+			auto setVe(const Coordinate &relative_to, const double *ve_in, const char *type = "313")->void;
+			auto setVq(const double *vq_in)->void { double pq[7]; getPq(pq);  s_vq2vs(pq, vq_in, vs()); };
+			auto setVq(const Coordinate &relative_to, const double *vq_in)->void;
 			auto setVm(const double *vm_in)->void { s_vm2vs(*pm(), vm_in, vs()); };
-			auto setVm(const double *vm_in, const Coordinate &relative_to)->void;
+			auto setVm(const Coordinate &relative_to, const double *vm_in)->void;
 			auto setVa(const double *va_in)->void { double pp[3]; getPp(pp); s_va2vs(pp, va_in, vs()); };
-			auto setVa(const double *va_in, const Coordinate &relative_to)->void;
+			auto setVa(const Coordinate &relative_to, const double *va_in)->void;
 			auto setVs(const double *vs_in)->void { std::copy_n(vs_in, 6, vs()); };
-			auto setVs(const double *vs_in, const Coordinate &relative_to)->void { s_vs2vs(*relative_to.pm(), relative_to.vs(), vs_in, vs()); };
-
-			auto setAe(const double *ae_in, const char *type)->void { double pe[6], ve[6]; getPe(pe, type); getVe(ve, type);  s_ae2as(pe, ve, ae_in, as(), nullptr, type); };
-			auto setAe(const double *ae_in, const Coordinate &relative_to, const char *type)->void;
-			auto setAq(const double *aq_in)->void { double pq[6], vq[6]; getPq(pq); getVq(vq);  s_aq2as(pq, vq, aq_in, as()); };
-			auto setAq(const double *aq_in, const Coordinate &relative_to)->void;
-			auto setAm(const double *am_in)->void { double pm[6], vm[6]; getPm(pm); getVm(vm);  s_am2as(pm, vm, am_in, as()); };
-			auto setAm(const double *am_in, const Coordinate &relative_to)->void;
+			auto setVs(const Coordinate &relative_to, const double *vs_in)->void { s_vs2vs(*relative_to.pm(), relative_to.vs(), vs_in, vs()); };
+			auto setAe(const double *ae_in, const char *type = "313")->void { double pe[6], ve[6]; getVe(ve, pe, type);  s_ae2as(pe, ve, ae_in, as(), nullptr, type); };
+			auto setAe(const Coordinate &relative_to, const double *ae_in, const char *type = "313")->void;
+			auto setAq(const double *aq_in)->void { double pq[7], vq[7]; getPq(pq); getVq(vq);  s_aq2as(pq, vq, aq_in, as()); };
+			auto setAq(const Coordinate &relative_to, const double *aq_in)->void;
+			auto setAm(const double *am_in)->void { double pm[16], vm[16]; getPm(pm); getVm(vm);  s_am2as(pm, vm, am_in, as()); };
+			auto setAm(const Coordinate &relative_to, const double *am_in)->void;
 			auto setAa(const double *aa_in)->void { double pp[3], va[6]; getPp(pp); getVa(va);  s_aa2as(pp, va, aa_in, as()); };
-			auto setAa(const double *aa_in, const Coordinate &relative_to)->void;
+			auto setAa(const Coordinate &relative_to, const double *aa_in)->void;
 			auto setAs(const double *as_in)->void { std::copy_n(as_in, 6, as()); };
-			auto setAs(const double *as_in, const Coordinate &relative_to)->void;
-
+			auto setAs(const Coordinate &relative_to, const double *as_in)->void;
 
 		private:
 			virtual ~Part();
@@ -590,7 +591,7 @@ namespace aris
 			auto simToAdams(const std::string &filename, const PlanFunc &func, const PlanParamBase &param, int ms_dt = 10, Script *script = nullptr)->SimResult;
 
 			virtual ~Model();
-			Model();
+			Model(const std::string &name = "Root");
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;

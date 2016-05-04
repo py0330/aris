@@ -70,7 +70,6 @@ namespace aris
 			double pmImuGround2BodyGround[4][4];
 			double pmBody2Imu[4][4];
 
-
 		public:
 			XsPortInfo mtPort;
 		};

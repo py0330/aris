@@ -7,6 +7,7 @@
 #include <vector>
 #include <type_traits>
 #include <functional>
+#include <algorithm>
 #include <map>
 
 namespace aris
@@ -163,8 +164,8 @@ namespace aris
 			auto operator[](size_type size) const->const_reference { return *container_.operator[](size); }; //optional
 
 			auto pop_back()->void { container_.pop_back(); }; //optional
-			auto erase(const_iterator iter)->iterator { return container_.erase(iter.iter_); }; //optional
-			auto erase(const_iterator begin_iter, const_iterator end_iter)->iterator { return container_.erase(begin_iter.iter_, end_iter.iter_); }; //optional
+			auto erase(iterator iter)->iterator { return container_.erase(iter.iter_); }; //optional
+			auto erase(iterator begin_iter, iterator end_iter)->iterator { return container_.erase(begin_iter.iter_, end_iter.iter_); }; //optional
 			auto clear()->void { container_.clear(); }; //optional
 			
 			auto push_back_ptr(T*ptr)->void { container_.push_back(ImpPtr<T>(ptr)); };
@@ -176,6 +177,7 @@ namespace aris
 			ImpContainer() = default;
 			ImpContainer(const ImpContainer&) = default;
 			ImpContainer(ImpContainer&&other) = default;
+
 		private:
 			typename std::vector<ImpPtr<T>> container_;
 		};
@@ -183,7 +185,7 @@ namespace aris
 		class Object: public ImpContainer<Object>
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("Object"); return std::ref(type); };
+			static auto Type()->const std::string &{ static const std::string type("object"); return std::ref(type); };
 			virtual auto type() const->const std::string&{ return Type(); };
 			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void;
 			auto name() const->const std::string&;
@@ -231,7 +233,7 @@ namespace aris
 				std::function<Object&(Object &&from_object, Object &to_object)> assignR;
 
 				auto registerTo(const std::string &type, Root &object)->void;
-				template<typename ChildType> static auto CreateTypeInfo()->TypeInfo
+				template<typename ChildType, bool is_copyable = true, bool is_moveable = true, bool is_assignable = true, bool is_move_assignable = true> static auto CreateTypeInfo()->TypeInfo
 				{
 					static_assert(std::is_base_of<Object, ChildType>::value, "failed to register type, because it is not inheritated from Object");
 
@@ -240,37 +242,110 @@ namespace aris
 					{
 						return new ChildType(father, id, xml_ele);
 					};
-					info.newFromObject = [](const Object &other)->Object*
-					{
-						if (!dynamic_cast<const ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
-						return new ChildType(static_cast<const ChildType &>(other));
-					};
-					info.newFromObjectR = [](Object &&other)->Object*
-					{
-						if (!dynamic_cast<ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
-						return new ChildType(static_cast<const ChildType &>(other));
-					};
-					info.assign = [](const Object &from_object, Object &to_object)->Object&
-					{
-						if (!dynamic_cast<const ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
-						if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
-						return static_cast<ChildType &>(to_object) = static_cast<const ChildType &>(from_object);
-					};
-					info.assignR = [](Object &&from_object, Object &to_object)->Object&
-					{
-						if (!dynamic_cast<ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
-						if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
-						return static_cast<ChildType &>(to_object) = static_cast<const ChildType &>(from_object);
-					};
+					info.newFromObject = newFromObjectStruct<ChildType, is_copyable>::func();
+					info.newFromObjectR = newFromObjectRStruct<ChildType, is_copyable, is_moveable>::func();
+					info.assign = assignStruct<ChildType, is_assignable>::func();
+					info.assignR = assignRStruct<ChildType, is_assignable, is_move_assignable>::func();
 
 					return info;
 				};
 
 			private:
 				static auto alignChildID(Object &father, Object &child, std::size_t id)->void;
+
+				template<typename ChildType, bool> struct newFromObjectStruct
+				{
+					static auto func()->decltype(newFromObject) 
+					{
+						return[](const Object &other)->Object*
+						{
+							if (!dynamic_cast<const ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
+							return new ChildType(static_cast<const ChildType &>(other));
+						};
+					}
+				};
+				template<typename ChildType> struct newFromObjectStruct<ChildType, false>
+				{
+					static auto func()->decltype(newFromObject) { return nullptr; };
+				};
+
+				template<typename ChildType, bool is_copyable, bool is_moveable> struct newFromObjectRStruct
+				{
+					static auto func()->decltype(newFromObjectR)
+					{
+						return[](Object &&other)->Object*
+						{
+							if (!dynamic_cast<ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
+							return new ChildType(static_cast<ChildType &&>(other));
+						};
+					}
+				};
+				template<typename ChildType, bool is_copyable> struct newFromObjectRStruct<ChildType, is_copyable, false>
+				{
+					static auto func()->decltype(newFromObjectR)
+					{
+						return[](Object &&other)->Object*
+						{
+							if (!dynamic_cast<ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
+							return new ChildType(static_cast<const ChildType &>(other));
+						};
+					}
+				};
+				template<typename ChildType> struct newFromObjectRStruct<ChildType, false, false>
+				{
+					static auto func()->decltype(newFromObjectR) { return nullptr; };
+				};
+
+				template<typename ChildType, bool> struct assignStruct
+				{
+					static auto func()->decltype(assign)
+					{
+						return[](const Object &from_object, Object &to_object)->Object&
+						{
+							if (!dynamic_cast<const ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+							if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+							return static_cast<ChildType &>(to_object) = static_cast<const ChildType &>(from_object);
+						};
+					}
+				};
+				template<typename ChildType> struct assignStruct<ChildType, false>
+				{
+					static auto func()->decltype(assign) { return nullptr; };
+				};
+
+				template<typename ChildType, bool is_assignable, bool is_move_assignable> struct assignRStruct
+				{
+					static auto func()->decltype(assignR)
+					{
+						return[](Object &&from_object, Object &to_object)->Object&
+						{
+							if (!dynamic_cast<ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+							if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+							return static_cast<ChildType &>(to_object) = static_cast<ChildType &&>(from_object);
+						};
+					}
+				};
+				template<typename ChildType, bool is_assignable> struct assignRStruct<ChildType, is_assignable, false>
+				{
+					static auto func()->decltype(assignR)
+					{
+						return[](Object &&from_object, Object &to_object)->Object&
+						{
+							if (!dynamic_cast<ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+							if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+							return static_cast<ChildType &>(to_object) = static_cast<const ChildType &>(from_object);
+						};
+					}
+				};
+				template<typename ChildType> struct assignRStruct<ChildType, false, false>
+				{
+					static auto func()->decltype(assignR) { return nullptr; };
+				};
+
 			};
 			using Object::saveXml;
-			template<typename ChildType> auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); };
+			template<typename ChildType, bool is_copyable = true, bool is_moveable = true, bool is_assignable = true, bool is_move_assignable = true> 
+			auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType, is_copyable, is_moveable, is_assignable, is_move_assignable>().registerTo(ChildType::Type(), *this); };
 			static auto Type()->const std::string &{ static const std::string type("root"); return std::ref(type); };
 			virtual auto type() const->const std::string&{ return Type(); };
 			virtual auto loadXml(const char* filename)->void { loadXml(std::string(filename)); };
@@ -285,7 +360,6 @@ namespace aris
 			virtual ~Root();
 			Root(const std::string &name = "Root");
 			Root(const aris::core::XmlElement &xml_ele);
-
 		private:
 			struct Imp;
 			ImpPtr<Imp> imp_;
@@ -409,7 +483,7 @@ namespace aris
 			auto operator[](size_type size)->reference { return static_cast<reference>(Base::operator[](size)); }; //optional
 			auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(Base::operator[](size)); }; //optional
 
-			static auto Type()->const std::string &{ static const std::string type{ T::Type() + "_pool" }; return type; };
+			static auto Type()->const std::string &{ static const std::string type{ T::Type() + "_pool_" + Base::Type() }; return type; };
 			virtual auto type()const->const std::string & override{ return Type(); };
 			auto findByName(const std::string &name)const->const_iterator { return Base::findByName(name); };
 			auto findByName(const std::string &name)->iterator { return Base::findByName(name);};
@@ -508,7 +582,7 @@ namespace aris
 				auto operator-(size_type size) const->const_iterator { return const_iterator(iter_ - size); }; //optional
 				auto operator-(const_iterator iter) const->difference_type { return iter_ - iter.iter_; }; //optional
 
-				auto operator*() const->const_reference { return std::ref(**iter); };
+				auto operator*() const->const_reference { return **iter_; };
 				auto operator->() const->const_pointer { return *iter_; };
 				auto operator[](size_type size) const->const_reference { return *iter_->operator[](size); }; //optional
 
@@ -547,16 +621,6 @@ namespace aris
 		private:
 			std::vector<T*> container_;
 		};
-
-		inline void f() 
-		{
-			Root r;
-			r.add<ObjectPool<Object> >("123");
-			r.erase(r.begin());
-			//r.
-			//ObjectPool<Object> o(r, 0,"123");
-
-		}
 	}
 }
 

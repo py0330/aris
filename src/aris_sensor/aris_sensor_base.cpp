@@ -91,5 +91,34 @@ namespace aris
 			
 			data_ = sensor_->imp_->data_[sensor_->imp_->data_to_read_].get();
 		};
+
+		struct SensorRoot::Imp
+		{
+			aris::core::ObjectPool<Sensor>* sensor_pool_;
+		};
+		auto SensorRoot::loadXml(const aris::core::XmlDocument &xml_doc)->void
+		{
+			auto sensor_root_xml_ele = xml_doc.RootElement()->FirstChildElement("Sensor");
+
+			if (!sensor_root_xml_ele)throw std::runtime_error("can't find SensorRoot element in xml file");
+
+			loadXml(*sensor_root_xml_ele);
+		}
+		auto SensorRoot::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			Root::loadXml(xml_ele);
+
+			imp_->sensor_pool_ = findByName("SensorPool") == end() ? &add<aris::core::ObjectPool<Sensor> >("SensorPool") : static_cast<aris::core::ObjectPool<Sensor> *>(&(*findByName("SensorPool")));
+
+		}
+		auto SensorRoot::sensorPool()->aris::core::ObjectPool<Sensor>&{	return *imp_->sensor_pool_;}
+		auto SensorRoot::sensorPool()const->const aris::core::ObjectPool<Sensor> &{	return *imp_->sensor_pool_; }
+		SensorRoot::~SensorRoot() {};
+		SensorRoot::SensorRoot(const std::string &name):Root(name)
+		{
+			registerChildType<aris::core::ObjectPool<Sensor> >();
+			
+			imp_->sensor_pool_ = &add<aris::core::ObjectPool<Sensor> >("SensorPool");
+		}
 	}
 }

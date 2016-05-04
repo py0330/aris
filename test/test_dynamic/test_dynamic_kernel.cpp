@@ -69,7 +69,7 @@ void test_kernel()
 	test_variable_change();
 	test_coordinate_transform();
 
-	
+	std::cout << "test kernel finished" << std::endl;
 	//dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", result, 1, 3);
 }
 
@@ -87,7 +87,7 @@ void test_variable_change()
 	const double pq[7] = { 0.1, 0.2, 0.3,0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
 	const double pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
 		0.175499782797526, -0.04, -0.983666521865018, 0.2,
-		0.959583152331272, -0.216333478134982,   0.18,0.3,
+		0.959583152331272, -0.216333478134982,   0.18, 0.3,
 		0,0,0,1 };
 
 	const double vp[3] = { 0.307558670154491,   1.2433000508379, -1.04895965543501 };

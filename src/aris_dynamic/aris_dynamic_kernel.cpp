@@ -3502,11 +3502,18 @@ namespace aris
 			std::cout << std::endl;
 		}
 
-		auto s_is_equal(int n, const double *v1, const double *v2, double error) noexcept->bool
+		auto s_is_equal(int n, const double *v1, const double *v2, double error, int ld_v1, int ld_v2) noexcept->bool
 		{
 			double diff_square = 0;
 
-			for (int i = 0; i < n; ++i)diff_square += (v1[i] - v2[i])*(v1[i] - v2[i]);
+			int id_v1{ 0 }, id_v2{ 0 };
+			for (int i = 0; i < n; ++i) 
+			{
+				diff_square += (v1[id_v1] - v2[id_v2])*(v1[id_v1] - v2[id_v2]);
+
+				id_v1 += ld_v1;
+				id_v2 += ld_v2;
+			}
 
 			diff_square = std::sqrt(std::abs(diff_square));
 

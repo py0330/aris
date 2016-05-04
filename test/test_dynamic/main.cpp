@@ -7,8 +7,9 @@
 int main(int argc, char *argv[])
 {
 	test_kernel();
+	test_model();
 	//test_model2();
-	//test_model();
+	
 
 	std::cout << "finished" << std::endl;
 

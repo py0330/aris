@@ -460,7 +460,7 @@ namespace aris
 		///
 		///
 		auto s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void;
-		auto s_is_equal(int n, const double *v1, const double *v2, double error) noexcept->bool;
+		auto s_is_equal(int n, const double *v1, const double *v2, double error, int ld_v1 = 1, int ld_v2 = 1) noexcept->bool;
 
 		template <typename T>
 		inline auto s_sgn(T val)->int { return (T(0) < val) - (val < T(0)); }

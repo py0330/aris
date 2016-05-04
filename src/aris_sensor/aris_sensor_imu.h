@@ -7,6 +7,7 @@
 #include <atomic>
 #include <iostream>
 #include <cstdint>
+#include <type_traits>
 
 #include <aris_core.h>
 #include <aris_sensor_base.h>
@@ -66,18 +67,26 @@ namespace aris
 		class Imu :public SensorTemplate<ImuData>
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type("xsens_imu"); return std::ref(type); };
+			virtual auto type() const->const std::string&{ return Type(); };
+
 			~Imu();
 			Imu(Object &father, std::size_t id, const std::string &name);
 			Imu(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 			
+			Imu(const Imu &) = delete;
+			Imu& operator=(const Imu &) = delete;
+
 		private:
 			virtual auto init()->void final override;
 			virtual auto release()->void final override;
 			virtual auto updateData(SensorData & data_in)->void final override;
 
+			
+
 		private:
 			class Imp;
-			std::unique_ptr<Imp> imp_;
+			aris::core::ImpPtr<Imp> imp_;
 		};
 	}
 }
