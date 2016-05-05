@@ -178,7 +178,7 @@ namespace aris
 			other->root().childTypeMap().at(other->type()).assign(*other, **this); 
 			return *this;
 		};
-		template<> auto ImpPtr<Object>::operator=(ImpPtr &&other) ->ImpPtr<Object>&
+		template<> auto ImpPtr<Object>::operator=(ImpPtr &&other)noexcept ->ImpPtr<Object>&
 		{ 
 			other->root().childTypeMap().at(other->type()).assignR(std::move(*other), **this);
 			return *this;

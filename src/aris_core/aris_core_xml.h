@@ -28,9 +28,9 @@ namespace aris
 			ImpPtr():data_unique_ptr_(new Data) {};
 			ImpPtr(Data *data_ptr) :data_unique_ptr_(data_ptr) {};
 			ImpPtr(const ImpPtr &other) :data_unique_ptr_(new Data(*other.data_unique_ptr_)) {};
-			ImpPtr(ImpPtr &&other) :data_unique_ptr_(std::move(other.data_unique_ptr_)) {};
+			ImpPtr(ImpPtr &&other)noexcept :data_unique_ptr_(std::move(other.data_unique_ptr_)) {};
 			ImpPtr& operator=(const ImpPtr &other) { *data_unique_ptr_ = *other.data_unique_ptr_; return *this; };
-			ImpPtr& operator=(ImpPtr &&other) { *data_unique_ptr_ = std::move(*other.data_unique_ptr_); return *this; };
+			ImpPtr& operator=(ImpPtr &&other)noexcept { *data_unique_ptr_ = std::move(*other.data_unique_ptr_); return *this; };
 
 			auto get()const->const Data*{ return data_unique_ptr_.get(); };
 			auto get()->Data* { return data_unique_ptr_.get(); };
