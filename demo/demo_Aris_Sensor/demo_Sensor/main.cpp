@@ -24,16 +24,19 @@ int main()
 		auto &sensor = sensor_root.sensorPool().front();
 		for (int i = 0; i < 1000; ++i)
 		{
+			aris::core::msSleep(100);
+			
 			auto data_protector = sensor_root.sensorPool().front().dataProtector();
 
 			double eul[3];
 
-			static_cast<const aris::sensor::ImuData &>(data_protector.data()).toEulBody2Ground(eul, PI, "321");
-			aris::dynamic::dsp(eul, 1, 3);
+			auto imu = static_cast<const aris::sensor::ImuData &>(data_protector.data());
 
-			std::cout << i << std::endl;
+			aris::dynamic::dsp(imu.acc, 1, 3);
 
-			aris::core::msSleep(1);
+			//std::cout << i << std::endl;
+
+			
 		}
 
 		sensor_root.stop();
