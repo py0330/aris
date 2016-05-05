@@ -148,7 +148,7 @@ namespace aris
 		{ 
 			if (vq)
 			{
-				double pq_default[6];
+				double pq_default[7];
 				pq = pq ? pq : pq_default;
 				getPq(pq);
 				s_vs2vq(vs(), pq, vq);
