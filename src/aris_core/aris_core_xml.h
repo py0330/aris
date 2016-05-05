@@ -24,21 +24,20 @@ namespace aris
 		template<typename Data> class ImpPtr
 		{
 		public:
-			~ImpPtr() = default;
-			ImpPtr():data_unique_ptr_(new Data) {};
-			ImpPtr(Data *data_ptr) :data_unique_ptr_(data_ptr) {};
-			ImpPtr(const ImpPtr &other) :data_unique_ptr_(new Data(*other.data_unique_ptr_)) {};
-			ImpPtr(ImpPtr &&other)noexcept :data_unique_ptr_(std::move(other.data_unique_ptr_)) {};
-			ImpPtr& operator=(const ImpPtr &other) { *data_unique_ptr_ = *other.data_unique_ptr_; return *this; };
-			ImpPtr& operator=(ImpPtr &&other)noexcept { *data_unique_ptr_ = std::move(*other.data_unique_ptr_); return *this; };
-
 			auto get()const->const Data*{ return data_unique_ptr_.get(); };
 			auto get()->Data* { return data_unique_ptr_.get(); };
 			auto operator->()const->const Data*{ return data_unique_ptr_.get(); };
 			auto operator->()->Data*{ return data_unique_ptr_.get(); };
 			auto operator*()const->const Data& { return *data_unique_ptr_; };
 			auto operator*()->Data&{ return *data_unique_ptr_; };
-
+			auto operator=(const ImpPtr &other)->ImpPtr& { *data_unique_ptr_ = *other.data_unique_ptr_; return *this; };
+			auto operator=(ImpPtr &&other)noexcept->ImpPtr& { *data_unique_ptr_ = std::move(*other.data_unique_ptr_); return *this; };
+			~ImpPtr() = default;
+			ImpPtr() :data_unique_ptr_(new Data) {};
+			ImpPtr(Data *data_ptr) :data_unique_ptr_(data_ptr) {};
+			ImpPtr(const ImpPtr &other) :data_unique_ptr_(new Data(*other.data_unique_ptr_)) {};
+			ImpPtr(ImpPtr &&other)noexcept :data_unique_ptr_(std::move(other.data_unique_ptr_)) {};
+			
 		private:
 			std::unique_ptr<Data> data_unique_ptr_;
 		};

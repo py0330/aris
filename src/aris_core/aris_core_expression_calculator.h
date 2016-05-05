@@ -21,23 +21,23 @@ namespace aris
 		{
 		public:
 			~Matrix() {};
-			Matrix() :m_(0), n_(0), is_row_major_(true) {};
+            Matrix() :m_(0), n_(0), is_row_major_(true) {}
 			Matrix(const Matrix &other) = default;
-			Matrix(Matrix &&other) { this->swap(other); };
-			Matrix &operator=(Matrix other) { this->swap(other); return *this; };
+            Matrix(Matrix &&other) { this->swap(other); }
+            Matrix &operator=(Matrix other) { this->swap(other); return *this; }
 			Matrix(double value);
 			Matrix(std::size_t m, std::size_t n, double value = 0);
 			Matrix(std::size_t m, std::size_t n, const double *data);
 			Matrix(const std::initializer_list<Matrix> &data);
 			auto swap(Matrix &other)->Matrix&;
-			auto empty() const->bool { return data_vec_.empty(); };
-			auto size() const->std::size_t { return m()*n(); };
-			auto data()->double * { return data_vec_.data(); };
-			auto data() const->const double * { return data_vec_.data(); };
-			auto begin() ->double * { return data(); };
-			auto begin() const ->const double * { return data(); };
+            auto empty() const->bool { return data_vec_.empty(); }
+            auto size() const->std::size_t { return m()*n(); }
+            auto data()->double * { return data_vec_.data(); }
+            auto data() const->const double * { return data_vec_.data(); }
+            auto begin() ->double * { return data(); }
+            auto begin() const ->const double * { return data(); }
 			auto end() ->double * { return data() + size(); };
-			auto end()  const ->const double * { return data() + size(); };
+            auto end()  const ->const double * { return data() + size(); }
 			auto m() const->std::size_t { return m_; };
 			auto n() const->std::size_t { return n_; };
 			auto resize(std::size_t m, std::size_t n)->Matrix &;

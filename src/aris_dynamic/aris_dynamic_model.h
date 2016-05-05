@@ -58,11 +58,11 @@ namespace aris
 			auto activate(bool active = true)->void { active_ = active; };
 
 		protected:
+			auto operator=(const DynEle &)->DynEle & = default;
+			auto operator=(DynEle &&)->DynEle & = default;
 			virtual ~DynEle() = default;
 			DynEle(const DynEle &) = default;
 			DynEle(DynEle &&) = default;
-			DynEle &operator=(const DynEle &) = default;
-			DynEle &operator=(DynEle &&) = default;
 			explicit DynEle(aris::core::Object &father, std::size_t id, const std::string &name, bool active = true): Element(father,id, name), active_(active) {};
 			explicit DynEle(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
@@ -72,9 +72,9 @@ namespace aris
 		class Coordinate :public DynEle
 		{
 		public:
+			virtual auto pm() const->const double4x4& = 0;
 			virtual auto vs() const->const double6& = 0;
 			virtual auto as() const->const double6& = 0;
-			virtual auto pm() const->const double4x4&{ return pm_; };
 			
 			auto getPp(double *pp)const->void;
 			auto getPp(const Coordinate &relative_to, double *pp)const->void;
@@ -106,15 +106,13 @@ namespace aris
 			auto getAm(const Coordinate &relative_to, double *am, double *vm = nullptr, double *pm = nullptr)const->void;
 			auto getAa(double *aa, double *va = nullptr, double *pp = nullptr)const->void;
 			auto getAa(const Coordinate &relative_to, double *aa, double *va = nullptr, double *pp = nullptr)const->void;
-			auto getAs(double *as, double *vs = nullptr)const->void;
-			auto getAs(const Coordinate &relative_to, double *as, double *vs = nullptr)const->void;
+			auto getAs(double *as, double *vs = nullptr, double *pm = nullptr)const->void;
+			auto getAs(const Coordinate &relative_to, double *as, double *vs = nullptr, double *pm = nullptr)const->void;
 
 		protected:
 			virtual ~Coordinate() = default;
-			explicit Coordinate(Object &father, std::size_t id, const std::string &name, const double *pm = nullptr, bool active = true);
+			explicit Coordinate(Object &father, std::size_t id, const std::string &name, bool active = true);
 			explicit Coordinate(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :DynEle(father, id, xml_ele) {};
-
-			double pm_[4][4];
 		};
 		class Interaction :public DynEle
 		{
@@ -158,13 +156,13 @@ namespace aris
 
 			friend class Model;
 		};
-		template<std::size_t DIMENSION>	class ConstraintData
+		template<std::size_t DIM>	class ConstraintData
 		{
 		public:
-			typedef double double6xd[6][DIMENSION];
-			typedef double doubled[DIMENSION];
+			typedef double double6xd[6][DIM];
+			typedef double doubled[DIM];
 
-			static constexpr int Dim() { return DIMENSION; };
+			static constexpr int Dim() { return DIM; };
 			auto csmI() const->const double6xd &{ return csmI_; };
 			auto csmJ() const->const double6xd &{ return csmJ_; };
 			auto csa() const->const doubled &{ return csa_; };
@@ -175,11 +173,11 @@ namespace aris
 			~ConstraintData() = default;
 			ConstraintData() = default;
 
-			double csmI_[6][DIMENSION]{ { 0 } };
-			double csmJ_[6][DIMENSION]{ { 0 } };
-			double csf_[DIMENSION]{ 0 };
-			double csa_[DIMENSION]{ 0 };
-			double csp_[DIMENSION]{ 0 };
+			double csmI_[6][DIM]{ { 0 } };
+			double csmJ_[6][DIM]{ { 0 } };
+			double csf_[DIM]{ 0 };
+			double csa_[DIM]{ 0 };
+			double csp_[DIM]{ 0 };
 
 		private:
 			friend class Model;
@@ -234,7 +232,7 @@ namespace aris
 
 		private:
 			struct Imp;
-			aris::core::ImpPtr<Imp> imp;
+			aris::core::ImpPtr<Imp> imp_;
 
 			friend class Model;
 			friend class aris::core::Root;
@@ -293,6 +291,7 @@ namespace aris
 			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			virtual auto saveAdams(std::ofstream &file) const->void override;
 			virtual auto update()->void override;
+			virtual auto pm() const->const double4x4& override final;
 			virtual auto vs() const->const double6& override final;
 			virtual auto as() const->const double6& override final;
 			auto prtPm() const->const double4x4&;
@@ -306,7 +305,7 @@ namespace aris
 
 		private:
 			struct Imp;
-			aris::core::ImpPtr<Imp> imp;
+			aris::core::ImpPtr<Imp> imp_;
 
 			friend class Model;
 			friend class aris::core::Root;
@@ -320,10 +319,10 @@ namespace aris
 			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			virtual auto saveAdams(std::ofstream &file) const->void override;
 			virtual auto update()->void override;
-			virtual auto pm()const->const double4x4& override final{ return Coordinate::pm(); };
+			virtual auto pm()const->const double4x4& override final;
 			virtual auto vs()const->const double6& override final;
 			virtual auto as()const->const double6& override final;
-			auto pm()->double4x4& { return const_cast<double4x4&>(Coordinate::pm()); };
+			auto pm()->double4x4&;
 			auto vs()->double6&;
 			auto as()->double6&;
 			auto invPm() const->const double4x4&;
@@ -336,7 +335,6 @@ namespace aris
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto rowID()const->std::size_t;
-
 			auto setPp(const double *pp)->void;
 			auto setPp(const Coordinate &relative_to, const double *pp)->void;
 			auto setPe(const double *pe, const char *type = "313")->void;

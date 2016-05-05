@@ -133,9 +133,9 @@ namespace aris
 		{
 			if (ve)
 			{
-				double vs[6], pe_default[3];
+				double vs[6], pe_default[6];
 				pe = pe ? pe : pe_default;
-				getPp(relative_to, pe);
+				getPe(relative_to, pe, type);
 				getVs(relative_to, vs);
 				s_vs2ve(vs, pe, ve, type);
 			}
@@ -175,8 +175,6 @@ namespace aris
 		};
 		auto Coordinate::getVm(double *vm, double *pm)const->void
 		{ 
-			
-
 			if (vm)
 			{
 				double pm_default[16];
@@ -191,50 +189,57 @@ namespace aris
 		};
 		auto Coordinate::getVm(const Coordinate &relative_to, double *vm, double *pm)const->void
 		{
-			getPm(relative_to, pm);
-
 			if (vm)
 			{
-				double vs[6], pm_r[16];
-				if (pm)std::copy(pm, pm + 16, pm_r); else getPm(relative_to, pm_r);
+				double vs[6], pm_default[16];
+				pm = pm ? pm : pm_default;
+				getPm(relative_to, pm);
 				getVs(relative_to, vs);
-				s_vs2vm(vs, pm_r, vm);
+				s_vs2vm(vs, pm, vm);
+			}
+			else
+			{
+				getPm(relative_to, pm);
 			}
 		}
 		auto Coordinate::getVa(double *va, double *pp)const->void 
 		{ 
-			getPp(pp);
-
 			if (va)
 			{
-				double pp_r[3];
-				if (pp)std::copy(pp, pp + 3, pp_r); else getPp(pp_r);
-				s_vs2va(vs(), pp_r, va);
+				double pp_default[3];
+				pp = pp ? pp : pp_default;
+				getPp(pp);
+				s_vs2va(vs(), pp, va);
+			}
+			else
+			{
+				getPp(pp);
 			}
 		};
 		auto Coordinate::getVa(const Coordinate &relative_to, double *va, double *pp)const->void
 		{
-			getPp(relative_to, pp);
-
 			if (va)
 			{
-				double vs[6], pp_r[3];
-				if (pp)std::copy(pp, pp + 3, pp_r); else getPp(relative_to, pp_r);
+				double vs[6], pp_default[3];
+				pp = pp ? pp : pp_default;
+				getPp(relative_to, pp);
 				getVs(relative_to, vs);
-				s_vs2va(vs, pp_r, va);
+				s_vs2va(vs, pp, va);
 			}
-			
-			
+			else
+			{
+				getPp(relative_to, pp);
+			}
 		};
 		auto Coordinate::getVs(double *vs, double *pm)const->void 
 		{ 
-			getPm(pm);
 			if (vs)std::copy(&this->vs()[0], &this->vs()[6], vs);
+			getPm(pm);
 		};
 		auto Coordinate::getVs(const Coordinate &relative_to, double *vs, double *pm)const->void
 		{ 
-			getPm(relative_to, pm);
 			if (vs)s_inv_vs2vs(*relative_to.pm(), relative_to.vs(), this->vs(), vs);
+			getPm(relative_to, pm);
 		};
 		auto Coordinate::getAp(double *ap, double *vp, double *pp)const->void
 		{ 
@@ -258,7 +263,7 @@ namespace aris
 				double vs[6], as[6], pp_default[3];
 				pp = pp ? pp : pp_default;
 				getPp(relative_to, pp);
-				getAs(relative_to, vs, as);
+				getAs(relative_to, as, vs);
 				s_as2ap(vs, as, pp, ap, vp);
 			}
 			else
@@ -274,7 +279,7 @@ namespace aris
 				pe = pe ? pe : pe_default;
 				ve = ve ? ve : ve_default;
 				getPe(pe, type);
-				s_as2ae(vs(), as(), pe, ae, ve);
+				s_as2ae(vs(), as(), pe, ae, ve, type);
 			}
 			else
 			{
@@ -289,7 +294,7 @@ namespace aris
 				pe = pe ? pe : pe_default;
 				ve = ve ? ve : ve_default;
 				getPe(relative_to, pe, type);
-				getAs(relative_to, vs, as);
+				getAs(relative_to, as, vs);
 				s_as2ae(vs, as, pe, ae, ve, type);
 			}
 			else
@@ -320,7 +325,7 @@ namespace aris
 				pq = pq ? pq : pq_default;
 				vq = vq ? vq : vq_default;
 				getPq(relative_to, pq);
-				getAs(relative_to, vs, as);
+				getAs(relative_to, as, vs);
 				s_as2aq(vs, as, pq, aq, vq);
 			}
 			else
@@ -352,7 +357,7 @@ namespace aris
 				pm = pm ? pm : pm_default;
 				vm = vm ? vm : vm_default;
 				getPm(relative_to, pm);
-				getAs(relative_to, vs, as);
+				getAs(relative_to, as, vs);
 				s_as2am(vs, as, pm, am, vm);
 			}
 			else
@@ -385,8 +390,8 @@ namespace aris
 				pp = pp ? pp : pp_default;
 				va = va ? va : va_default;
 				getPp(relative_to, pp);
-				getAs(relative_to, vs, as);
-				s_as2am(vs, as, pp, aa, va);
+				getAs(relative_to, as, vs);
+				s_as2aa(vs, as, pp, aa, va);
 			}
 			else
 			{
@@ -394,31 +399,19 @@ namespace aris
 			}
 			
 		}
-		auto Coordinate::getAs(double *as, double *vs)const->void 
+		auto Coordinate::getAs(double *as, double *vs, double *pm)const->void
 		{ 
-			if (as)std::copy_n(this->as(), 6, as);
-			if (vs)std::copy_n(this->vs(), 6, vs);
+			if (as)std::copy(&this->as()[0], &this->as()[6], as);
+			getVs(vs, pm);
 		};
-		auto Coordinate::getAs(const Coordinate &relative_to, double *as, double *vs)const->void
+		auto Coordinate::getAs(const Coordinate &relative_to, double *as, double *vs, double *pm)const->void
 		{ 
 			if (as)s_inv_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), this->vs(), this->as(), as, vs);
-			getVs(relative_to, vs);
+			getVs(relative_to, vs, pm);
 		};
 		
-		Coordinate::Coordinate(Object &father, std::size_t id, const std::string &name, const double *pm, bool active)
-			:DynEle(father, id, name, active)
-		{
-			static const double default_pm[16]{
-				1,0,0,0,
-				0,1,0,0,
-				0,0,1,0,
-				0,0,0,1
-			};
+		Coordinate::Coordinate(Object &father, std::size_t id, const std::string &name, bool active):DynEle(father, id, name, active){}
 
-			pm = pm ? pm : default_pm;
-			std::copy(pm, pm + 16, &pm_[0][0]);
-		}
-		
 		auto Interaction::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			DynEle::saveXml(xml_ele);
@@ -577,31 +570,31 @@ namespace aris
 		{
 			Element::saveXml(xml_ele);
 
-			aris::core::Matrix mat_x(1, x().size(), imp->x_.data());
-			aris::core::Matrix mat_y(1, x().size(), imp->y_.data());
+			aris::core::Matrix mat_x(1, x().size(), imp_->x_.data());
+			aris::core::Matrix mat_y(1, x().size(), imp_->y_.data());
 			xml_ele.SetAttribute("x", mat_x.toString().c_str());
 			xml_ele.SetAttribute("y", mat_y.toString().c_str());
 		}
-		auto Akima::x() const->const std::vector<double> & { return imp->x_; };
-		auto Akima::y() const->const std::vector<double> & { return imp->y_; };
+		auto Akima::x() const->const std::vector<double> & { return imp_->x_; };
+		auto Akima::y() const->const std::vector<double> & { return imp_->y_; };
 		auto Akima::operator()(double x, char order) const->double
 		{
 			// 寻找第一个大于x的位置 //
-			auto bIn = std::upper_bound(imp->x_.begin(), imp->x_.end() - 1, x);
+			auto bIn = std::upper_bound(imp_->x_.begin(), imp_->x_.end() - 1, x);
 
-			int id = std::max<int>(bIn - imp->x_.begin() - 1, 0);
+			int id = std::max<int>(bIn - imp_->x_.begin() - 1, 0);
 
-			double w = x - imp->x_[id];
+			double w = x - imp_->x_[id];
 
 			switch (order)
 			{
 			case '1':
-				return (3 * w*imp->_p3[id] + 2 * imp->_p2[id])*w + imp->_p1[id];
+				return (3 * w*imp_->_p3[id] + 2 * imp_->_p2[id])*w + imp_->_p1[id];
 			case '2':
-				return (6 * w*imp->_p3[id] + 2 * imp->_p2[id]);
+				return (6 * w*imp_->_p3[id] + 2 * imp_->_p2[id]);
 			case '0':
 			default:
-				return ((w*imp->_p3[id] + imp->_p2[id])*w + imp->_p1[id])*w + imp->_p0[id];
+				return ((w*imp_->_p3[id] + imp_->_p2[id])*w + imp_->_p1[id])*w + imp_->_p0[id];
 			}
 		}
 		auto Akima::operator()(int length, const double *x_in, double *y_out, char order)const->void
@@ -671,8 +664,8 @@ namespace aris
 
 			for (auto &p : data_list)
 			{
-				imp->x_.push_back(p.first);
-				imp->y_.push_back(p.second);
+				imp_->x_.push_back(p.first);
+				imp_->y_.push_back(p.second);
 			}
 
 			// 开始计算 //
@@ -680,7 +673,7 @@ namespace aris
 
 			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
 			{
-				s[i + 2] = (imp->y_[i + 1] - imp->y_[i]) / (imp->x_[i + 1] - imp->x_[i]);
+				s[i + 2] = (imp_->y_[i + 1] - imp_->y_[i]) / (imp_->x_[i + 1] - imp_->x_[i]);
 			}
 
 			s[1] = 2 * s[2] - s[3];
@@ -706,17 +699,17 @@ namespace aris
 			}
 
 			// 所需储存的变量 //
-			imp->_p0.resize(data_list.size() - 1);
-			imp->_p1.resize(data_list.size() - 1);
-			imp->_p2.resize(data_list.size() - 1);
-			imp->_p3.resize(data_list.size() - 1);
+			imp_->_p0.resize(data_list.size() - 1);
+			imp_->_p1.resize(data_list.size() - 1);
+			imp_->_p2.resize(data_list.size() - 1);
+			imp_->_p3.resize(data_list.size() - 1);
 
 			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
 			{
-				imp->_p0[i] = imp->y_[i];
-				imp->_p1[i] = t[i];
-				imp->_p2[i] = (3 * s[i + 2] - 2 * t[i] - t[i + 1]) / (imp->x_[i + 1] - imp->x_[i]);
-				imp->_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (imp->x_[i + 1] - imp->x_[i]) / (imp->x_[i + 1] - imp->x_[i]);
+				imp_->_p0[i] = imp_->y_[i];
+				imp_->_p1[i] = t[i];
+				imp_->_p2[i] = (3 * s[i + 2] - 2 * t[i] - t[i + 1]) / (imp_->x_[i + 1] - imp_->x_[i]);
+				imp_->_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (imp_->x_[i + 1] - imp_->x_[i]) / (imp_->x_[i + 1] - imp_->x_[i]);
 			}
 		}
 		Akima::Akima(Object &father, std::size_t id, const std::string &name, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope)
@@ -734,8 +727,8 @@ namespace aris
 
 			for (auto &p : data_list)
 			{
-				imp->x_.push_back(p.first);
-				imp->y_.push_back(p.second);
+				imp_->x_.push_back(p.first);
+				imp_->y_.push_back(p.second);
 			}
 
 			// 开始计算 //
@@ -743,7 +736,7 @@ namespace aris
 
 			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
 			{
-				s[i + 2] = (imp->y_[i + 1] - imp->y_[i]) / (imp->x_[i + 1] - imp->x_[i]);
+				s[i + 2] = (imp_->y_[i + 1] - imp_->y_[i]) / (imp_->x_[i + 1] - imp_->x_[i]);
 			}
 			///////// this part is different
 			s[1] = begin_slope;
@@ -769,17 +762,17 @@ namespace aris
 			}
 
 			// 所需储存的变量 //
-			imp->_p0.resize(data_list.size() - 1);
-			imp->_p1.resize(data_list.size() - 1);
-			imp->_p2.resize(data_list.size() - 1);
-			imp->_p3.resize(data_list.size() - 1);
+			imp_->_p0.resize(data_list.size() - 1);
+			imp_->_p1.resize(data_list.size() - 1);
+			imp_->_p2.resize(data_list.size() - 1);
+			imp_->_p3.resize(data_list.size() - 1);
 
 			for (std::size_t i = 0; i < data_list.size() - 1; ++i)
 			{
-				imp->_p0[i] = imp->y_[i];
-				imp->_p1[i] = t[i];
-				imp->_p2[i] = (3 * s[i + 2] - 2 * t[i] - t[i + 1]) / (imp->x_[i + 1] - imp->x_[i]);
-				imp->_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (imp->x_[i + 1] - imp->x_[i]) / (imp->x_[i + 1] - imp->x_[i]);
+				imp_->_p0[i] = imp_->y_[i];
+				imp_->_p1[i] = t[i];
+				imp_->_p2[i] = (3 * s[i + 2] - 2 * t[i] - t[i + 1]) / (imp_->x_[i + 1] - imp_->x_[i]);
+				imp_->_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (imp_->x_[i + 1] - imp_->x_[i]) / (imp_->x_[i + 1] - imp_->x_[i]);
 			}
 		}
 
@@ -1061,7 +1054,8 @@ namespace aris
 
 		struct Marker::Imp
 		{
-			double prt_pm_[4][4];
+			double prt_pm_[4][4]{ 0 };
+			double pm_[4][4]{ 0 };
 		};
 		auto Marker::adamsID()const->std::size_t 
 		{
@@ -1100,30 +1094,29 @@ namespace aris
 		}
 		auto Marker::fatherPart() const->const Part&{ return static_cast<const Part &>(this->father().father()); };
 		auto Marker::fatherPart()->Part& { return static_cast<Part &>(this->father().father()); };
+		auto Marker::pm()const->const double4x4&{ return imp_->pm_; };
 		auto Marker::vs() const->const double6&{ return fatherPart().vs(); };
 		auto Marker::as() const->const double6&{ return fatherPart().as(); };
-		auto Marker::prtPm() const->const double4x4&{ return imp->prt_pm_; };
+		auto Marker::prtPm() const->const double4x4&{ return imp_->prt_pm_; };
 		auto Marker::update()->void
 		{
-			s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *pm_);
+			s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *imp_->pm_);
 		}
 		Marker::~Marker() {};
 		Marker::Marker(Object &father, std::size_t id, const std::string &name, const double *prt_pm, Marker *relative_mak, bool active)
-			: Coordinate(father, id, name, nullptr, active)
+			: Coordinate(father, id, name, active)
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			prt_pm = prt_pm ? prt_pm : default_pm_in;
 
 			if (relative_mak)
 			{
-				if (&relative_mak->fatherPart() != &fatherPart())
-					throw std::logic_error("relative marker must has same father part with this marker");
-
-				s_pm_dot_pm(*relative_mak->prtPm(), prt_pm, *imp->prt_pm_);
+				if (&relative_mak->fatherPart() != &fatherPart())throw std::logic_error("relative marker must has same father part with this marker");
+				s_pm_dot_pm(*relative_mak->prtPm(), prt_pm, *imp_->prt_pm_);
 			}
 			else
 			{
-				std::copy_n(prt_pm, 16, static_cast<double *>(*imp->prt_pm_));
+				std::copy_n(prt_pm, 16, static_cast<double *>(*imp_->prt_pm_));
 			}
 		}
 		Marker::Marker(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
@@ -1142,15 +1135,13 @@ namespace aris
 
 			if (xml_ele.Attribute("relative_to"))
 			{
-				try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>&>(this->father()).findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp->prt_pm_); }
+				try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>&>(this->father()).findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
 				catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 			}
 			else
 			{
-				std::copy_n(pm, 16, static_cast<double*>(*imp->prt_pm_));
+				std::copy_n(pm, 16, static_cast<double*>(*imp_->prt_pm_));
 			}
-
-			
 		}
 
 		struct Part::Imp
@@ -1158,8 +1149,9 @@ namespace aris
 			aris::core::ObjectPool<Marker, Element> *marker_pool_;
 			
 			double inv_pm_[4][4]{ { 0 } };
-			double vel_[6]{ 0 };
-			double acc_[6]{ 0 };
+			double pm_[4][4]{0};
+			double vs_[6]{ 0 };
+			double as_[6]{ 0 };
 			double prt_is_[6][6]{ { 0 } };
 			double prt_gravity_[6]{ 0 };
 			double prt_acc_[6]{ 0 };
@@ -1170,10 +1162,12 @@ namespace aris
 			std::string graphic_file_path_;
 		};
 		auto Part::rowID()const->std::size_t { return imp_->row_id_; };
-		auto Part::vs()const->const double6&{ return imp_->vel_; };
-		auto Part::vs()->double6& { return imp_->vel_; };
-		auto Part::as()const->const double6&{ return imp_->acc_; };
-		auto Part::as()->double6& { return imp_->acc_; };
+		auto Part::pm()const->const double4x4& { return imp_->pm_; };
+		auto Part::pm()->double4x4&{ return imp_->pm_; };
+		auto Part::vs()const->const double6&{ return imp_->vs_; };
+		auto Part::vs()->double6& { return imp_->vs_; };
+		auto Part::as()const->const double6&{ return imp_->as_; };
+		auto Part::as()->double6& { return imp_->as_; };
 		auto Part::invPm() const->const double4x4&{ return imp_->inv_pm_; };
 		auto Part::prtIs() const->const double6x6&{ return imp_->prt_is_; };
 		auto Part::prtVs() const->const double6&{ return imp_->prt_vel_; };
@@ -1183,7 +1177,6 @@ namespace aris
 		auto Part::prtGravity() const->const double6&{ return imp_->prt_gravity_; };
 		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); };
 		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); };
-		
 		auto Part::setPp(const double *pp)->void 
 		{ 
 			if(pp)s_pp2pm(pp, *pm());
@@ -1547,8 +1540,8 @@ namespace aris
 			return *this;
 		}
 		Part::~Part() {};
-		Part::Part(Object &father, std::size_t id, const std::string &name, const double *im, const double *pm, const double *vel, const double *acc, bool active)
-			: Coordinate(father, id, name, nullptr, active)
+		Part::Part(Object &father, std::size_t id, const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active)
+			: Coordinate(father, id, name, active)
 		{
 			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element>>("ChildMarker");
 
@@ -1560,17 +1553,24 @@ namespace aris
 				0,0,0,0,1,0,
 				0,0,0,0,0,1,
 			};
-
-			static const double default_vel[6]{ 0,0,0,0,0,0 };
-			static const double default_acc[6]{ 0,0,0,0,0,0 };
+			static const double default_pm[16]{
+				1,0,0,0,
+				0,1,0,0,
+				0,0,1,0,
+				0,0,0,1
+			};
+			static const double default_vs[6]{ 0,0,0,0,0,0 };
+			static const double default_as[6]{ 0,0,0,0,0,0 };
 
 			im = im ? im : default_im;
-			vel = vel ? vel : default_vel;
-			acc = acc ? acc : default_acc;
+			pm = pm ? pm : default_pm;
+			vs = vs ? vs : default_vs;
+			as = as ? as : default_as;
 
 			std::copy_n(im, 36, static_cast<double *>(*imp_->prt_is_));
-			setVs(vel);
-			setAs(acc);
+			setPm(pm);
+			setVs(vs);
+			setAs(as);
 		}
 		Part::Part(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
 			: Coordinate(father, id, xml_ele)

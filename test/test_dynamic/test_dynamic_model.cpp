@@ -62,8 +62,6 @@ void test_coordinate()
 	const double aa[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 0.904633672502324, -1.24440604199266,   1.45568007018557 };
 	const double as[6] = { 3.15925342342501, -0.192390604845803,   0.136512424183815,   0.904633672502324, -1.24440604199266,   1.45568007018557 };
 
-
-
 	const double relative_vs[16] = { 0.12, -0.35, 0.26, 0.58, 0.36, -0.135 };
 	const double relative_as[16] = { 0.14, 1.35, -0.35, -0.56, -0.34, 0.14 };
 	const double relative_pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071,   0.1,
@@ -125,6 +123,88 @@ void test_coordinate()
 
 	p.getVs(result, result2);
 	if (!(s_is_equal(6, result, vs, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVs\" failed" << std::endl;
+
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, result, ap, error) && s_is_equal(3, result2, vp, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAp\" failed" << std::endl;
+
+	p.getAe(result, result2, result3);
+	if (!(s_is_equal(6, result, ae313, error) && s_is_equal(6, result2, ve313, error) && s_is_equal(6, result3, pe313, error)))std::cout << "\"coordinate:getAe 313\" failed" << std::endl;
+
+	p.getAe(result, result2, result3, "321");
+	if (!(s_is_equal(6, result, ae321, error) && s_is_equal(6, result2, ve321, error) && s_is_equal(6, result3, pe321, error)))std::cout << "\"coordinate:getAe 321\" failed" << std::endl;
+
+	p.getAq(result, result2, result3);
+	if (!(s_is_equal(7, result, aq, error) && s_is_equal(7, result2, vq, error) && s_is_equal(7, result3, pq, error)))std::cout << "\"coordinate:getAq\" failed" << std::endl;
+
+	p.getAm(result, result2, result3);
+	if (!(s_is_equal(16, result, am, error) && s_is_equal(16, result2, vm, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAm\" failed" << std::endl;
+
+	p.getAa(result, result2, result3);
+	if (!(s_is_equal(6, result, aa, error) && s_is_equal(3, result2, va, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAa\" failed" << std::endl;
+
+	p.getAs(result, result2, result3);
+	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result2, vs, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAs\" failed" << std::endl;
+
+	p.setPm(r, pm);
+	p.setVs(r, vs);
+	p.setAs(r, as);
+
+	p.getPp(r, result);
+	if (!(s_is_equal(3, result, pp, error)))std::cout << "\"coordinate:getPp\" failed" << std::endl;
+
+	p.getPe(r, result);
+	if (!(s_is_equal(6, result, pe313, error)))std::cout << "\"coordinate:getPe\" failed" << std::endl;
+
+	p.getPe(r, result, "321");
+	if (!(s_is_equal(6, result, pe321, error)))std::cout << "\"coordinate:getPe 321\" failed" << std::endl;
+
+	p.getPq(r, result);
+	if (!(s_is_equal(7, result, pq, error)))std::cout << "\"coordinate:getPq\" failed" << std::endl;
+
+	p.getPm(r, result);
+	if (!(s_is_equal(16, result, pm, error)))std::cout << "\"coordinate:getPm\" failed" << std::endl;
+
+	p.getVp(r, result, result2);
+	if (!(s_is_equal(3, result, vp, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVp\" failed" << std::endl;
+
+	p.getVe(r, result, result2);
+	if (!(s_is_equal(6, result, ve313, error) && s_is_equal(6, result2, pe313, error)))std::cout << "\"coordinate:getVe 313\" failed" << std::endl;
+
+	p.getVe(r, result, result2, "321");
+	if (!(s_is_equal(6, result, ve321, error) && s_is_equal(6, result2, pe321, error)))std::cout << "\"coordinate:getVe 321\" failed" << std::endl;
+
+	p.getVq(r, result, result2);
+	if (!(s_is_equal(7, result, vq, error) && s_is_equal(7, result2, pq, error)))std::cout << "\"coordinate:getVq\" failed" << std::endl;
+
+	p.getVm(r, result, result2);
+	if (!(s_is_equal(16, result, vm, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVm\" failed" << std::endl;
+
+	p.getVa(r, result, result2);
+	if (!(s_is_equal(6, result, va, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVa\" failed" << std::endl;
+
+	p.getVs(r, result, result2);
+	if (!(s_is_equal(6, result, vs, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVs\" failed" << std::endl;
+
+	p.getAp(r, result, result2, result3);
+	if (!(s_is_equal(3, result, ap, error) && s_is_equal(3, result2, vp, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAp\" failed" << std::endl;
+
+	p.getAe(r, result, result2, result3);
+	if (!(s_is_equal(6, result, ae313, error) && s_is_equal(6, result2, ve313, error) && s_is_equal(6, result3, pe313, error)))std::cout << "\"coordinate:getAe 313\" failed" << std::endl;
+
+	p.getAe(r, result, result2, result3, "321");
+	if (!(s_is_equal(6, result, ae321, error) && s_is_equal(6, result2, ve321, error) && s_is_equal(6, result3, pe321, error)))std::cout << "\"coordinate:getAe 321\" failed" << std::endl;
+
+	p.getAq(r, result, result2, result3);
+	if (!(s_is_equal(7, result, aq, error) && s_is_equal(7, result2, vq, error) && s_is_equal(7, result3, pq, error)))std::cout << "\"coordinate:getAq\" failed" << std::endl;
+
+	p.getAm(r, result, result2, result3);
+	if (!(s_is_equal(16, result, am, error) && s_is_equal(16, result2, vm, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAm\" failed" << std::endl;
+
+	p.getAa(r, result, result2, result3);
+	if (!(s_is_equal(6, result, aa, error) && s_is_equal(3, result2, va, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAa\" failed" << std::endl;
+
+	p.getAs(r, result, result2, result3);
+	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result2, vs, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAs\" failed" << std::endl;
 
 	std::cout << "test coordinate finished" << std::endl;
 }
@@ -415,8 +495,6 @@ void test_part()
 
 void test_auto_kinematic()
 {
-
-
 	double peI[6]{ 0.5,0,0,0.5,0,0 };
 	double pmI[16];
 
