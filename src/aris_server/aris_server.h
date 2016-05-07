@@ -49,21 +49,21 @@ namespace aris
 			static ControlServer &instance();
 
 			template<typename T>
-			auto createModel()->void { this->createModel(new T); };
+			auto createModel()->void { this->createModel(new T); }
 			auto createModel(dynamic::Model *model)->void;
 			template<typename T>
-			auto createController()->void { this->createController(new T); };
+			auto createController()->void { this->createController(new T); }
 			auto createController(control::EthercatController *controller)->void;
 			template<typename T>
-			auto createSensorRoot()->void { this->createSensorRoot(new T); };
+			auto createSensorRoot()->void { this->createSensorRoot(new T); }
 			auto createSensorRoot(sensor::SensorRoot *sensor_root)->void;
 			
 			auto model()->dynamic::Model&;
-			auto model()const->const dynamic::Model&{ return const_cast<ControlServer *>(this)->model(); };
+			auto model()const->const dynamic::Model&{ return const_cast<ControlServer *>(this)->model(); }
 			auto controller()->control::EthercatController&;
-			auto controller()const->const control::EthercatController&{ return const_cast<ControlServer *>(this)->controller(); };
+			auto controller()const->const control::EthercatController&{ return const_cast<ControlServer *>(this)->controller(); }
 			auto sensorRoot()->sensor::SensorRoot&;
-			auto sensorRoot()const->const sensor::SensorRoot&{ return const_cast<ControlServer *>(this)->sensorRoot(); };
+			auto sensorRoot()const->const sensor::SensorRoot&{ return const_cast<ControlServer *>(this)->sensorRoot(); }
 
 			auto loadXml(const char *fileName)->void;
 			auto loadXml(const aris::core::XmlDocument &xmlDoc)->void;

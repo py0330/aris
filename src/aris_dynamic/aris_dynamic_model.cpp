@@ -16,14 +16,14 @@ namespace aris
 {
 	namespace dynamic
 	{
-		auto Element::model()->Model& { return dynamic_cast<Model&>(root()); };
-		auto Element::model()const->const Model&{ return dynamic_cast<const Model&>(root()); };
+		auto Element::model()->Model& { return dynamic_cast<Model&>(root()); }
+		auto Element::model()const->const Model&{ return dynamic_cast<const Model&>(root()); }
 
 		auto DynEle::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Element::saveXml(xml_ele);
 			xml_ele.SetAttribute("active", active() ? "true" : "false");
-		};
+		}
 		DynEle::DynEle(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele)
 		{
 			if (xml_ele.Attribute("active"))
@@ -51,6 +51,45 @@ namespace aris
 				s_pm2pp(*pm, pp);
 			}
 		}
+		auto Coordinate::getRe(double *re, const char *type)const->void
+		{
+			if (re)s_pm2re(*pm(), re, type);
+		}
+		auto Coordinate::getRe(const Coordinate &relative_to, double *re, const char *type)const->void
+		{
+			if (re)
+			{
+				double pm[4][4];
+				getPm(relative_to, *pm);
+				s_pm2re(*pm, re, type);
+			}
+		}
+		auto Coordinate::getRq(double *rq)const->void
+		{
+			if (rq)s_pm2rq(*pm(), rq);
+		}
+		auto Coordinate::getRq(const Coordinate &relative_to, double *rq)const->void
+		{
+			if (rq)
+			{
+				double pm[4][4];
+				getPm(relative_to, *pm);
+				s_pm2rq(*pm, rq);
+			}
+		}
+		auto Coordinate::getRm(double *rm, std::size_t rm_ld)const->void
+		{
+			if (rm)s_pm2rm(*pm(), rm, rm_ld);
+		}
+		auto Coordinate::getRm(const Coordinate &relative_to, double *rm, std::size_t rm_ld)const->void
+		{
+			if (rm) 
+			{
+				double pm[4][4];
+				getPm(relative_to, *pm);
+				s_pm2rm(*pm, rm, rm_ld);
+			}
+		}
 		auto Coordinate::getPe(double *pe, const char *type)const->void 
 		{ 
 			if (pe)s_pm2pe(*pm(), pe, type);
@@ -63,11 +102,11 @@ namespace aris
 				getPm(relative_to, *pm);
 				s_pm2pe(*pm, pe, type);
 			}
-		};
+		}
 		auto Coordinate::getPq(double *pq)const->void 
 		{ 
 			if(pq)s_pm2pq(*pm(), pq);
-		};
+		}
 		auto Coordinate::getPq(const Coordinate &relative_to, double *pq)const->void
 		{ 
 			if (pq)
@@ -76,15 +115,15 @@ namespace aris
 				getPm(relative_to, *pm);
 				s_pm2pq(*pm, pq);
 			}
-		};
+		}
 		auto Coordinate::getPm(double *pm)const->void 
 		{ 
 			if(pm)std::copy(&this->pm()[0][0], &this->pm()[0][0] + 16, pm);
-		};
+		}
 		auto Coordinate::getPm(const Coordinate &relative_to, double *pm)const->void 
 		{ 
 			if(pm)s_inv_pm2pm(*relative_to.pm(), *this->pm(), pm);
-		};
+		}
 		auto Coordinate::getVp(double *vp, double *pp)const->void 
 		{ 
 			if (vp)
@@ -98,7 +137,7 @@ namespace aris
 			{
 				getPp(pp);
 			}
-		};
+		}
 		auto Coordinate::getVp(const Coordinate &relative_to, double *vp, double *pp)const->void
 		{
 			if (vp)
@@ -113,8 +152,114 @@ namespace aris
 			{
 				getPp(relative_to, pp);
 			}
+		}
+		auto Coordinate::getWe(double *we, double *re, const char *type)const->void
+		{
+			if (we)
+			{
+				double re_default[3];
+				re = re ? re : re_default;
+				getRe(re, type);
+				s_vs2we(vs(), re, we, type);
+			}
+			else
+			{
+				getRe(re, type);
+			}
+		}
+		auto Coordinate::getWe(const Coordinate &relative_to, double *we, double *re, const char *type)const->void
+		{
+			if (we)
+			{
+				double vs[6], re_default[3];
+				re = re ? re : re_default;
+				getRe(relative_to, re, type);
+				getVs(relative_to, vs);
+				s_vs2we(vs, re, we, type);
+			}
+			else
+			{
+				getRe(relative_to, re);
+			}
+		}
+		auto Coordinate::getWq(double *wq, double *rq)const->void
+		{
+			if (wq)
+			{
+				double rq_default[4];
+				rq = rq ? rq : rq_default;
+				getRq(rq);
+				s_vs2wq(vs(), rq, wq);
+			}
+			else
+			{
+				getRq(rq);
+			}
+		}
+		auto Coordinate::getWq(const Coordinate &relative_to, double *wq, double *rq)const->void
+		{
+			if (wq)
+			{
+				double vs[6], rq_default[4];
+				rq = rq ? rq : rq_default;
+				getRq(relative_to, rq);
+				getVs(relative_to, vs);
+				s_vs2wq(vs, rq, wq);
+			}
+			else
+			{
+				getRq(relative_to, rq);
+			}
+		}
+		auto Coordinate::getWm(double *wm, double *rm, std::size_t wm_ld, std::size_t rm_ld)const->void
+		{
+			if (wm)
+			{
+				double rm_default[9];
+				rm = rm ? rm : rm_default;
+				getRm(rm, rm_ld);
+				s_vs2wm(vs(), rm, wm, rm_ld, wm_ld);
+			}
+			else
+			{
+				getRm(rm, rm_ld);
+			}
+		}
+		auto Coordinate::getWm(const Coordinate &relative_to, double *wm, double *rm, std::size_t wm_ld, std::size_t rm_ld)const->void
+		{
+			if (wm)
+			{
+				double vs[6], rm_default[9];
+				rm = rm ? rm : rm_default;
+				getRm(relative_to, rm, rm_ld);
+				getVs(relative_to, vs);
+				s_vs2wm(vs, rm, wm, rm_ld, wm_ld);
+			}
+			else
+			{
+				getRm(relative_to, rm, rm_ld);
+			}
+		}
+		auto Coordinate::getWa(double *wa, double *rm, std::size_t rm_ld)const->void
+		{
+			if (wa)	{ s_vs2wa(vs(), wa);}
+			getRm(rm, rm_ld);
+		}
+		auto Coordinate::getWa(const Coordinate &relative_to, double *wa, double *rm, std::size_t rm_ld)const->void
+		{
+			if (wa) 
+			{ 
+				double vs[6], pm[16];
+				getVs(vs, pm);
+				s_vs2wa(vs, wa);
+				s_pm2rm(pm, rm, rm_ld);
+			}
+			else
+			{
+				getRm(rm, rm_ld);
+			}
 			
-		};
+		}
 		auto Coordinate::getVe(double *ve, double *pe, const char *type)const->void
 		{ 
 			if (ve)
@@ -128,7 +273,7 @@ namespace aris
 			{
 				getPe(pe, type);
 			}
-		};
+		}
 		auto Coordinate::getVe(const Coordinate &relative_to, double *ve, double *pe, const char *type)const->void
 		{
 			if (ve)
@@ -157,7 +302,7 @@ namespace aris
 			{
 				getPq(pq);
 			}
-		};
+		}
 		auto Coordinate::getVq(const Coordinate &relative_to, double *vq, double *pq)const->void
 		{ 
 			if (vq)
@@ -172,7 +317,7 @@ namespace aris
 			{
 				getPq(relative_to, pq);
 			}
-		};
+		}
 		auto Coordinate::getVm(double *vm, double *pm)const->void
 		{ 
 			if (vm)
@@ -186,7 +331,7 @@ namespace aris
 			{
 				getPm(pm);
 			}
-		};
+		}
 		auto Coordinate::getVm(const Coordinate &relative_to, double *vm, double *pm)const->void
 		{
 			if (vm)
@@ -215,7 +360,7 @@ namespace aris
 			{
 				getPp(pp);
 			}
-		};
+		}
 		auto Coordinate::getVa(const Coordinate &relative_to, double *va, double *pp)const->void
 		{
 			if (va)
@@ -230,17 +375,17 @@ namespace aris
 			{
 				getPp(relative_to, pp);
 			}
-		};
+		}
 		auto Coordinate::getVs(double *vs, double *pm)const->void 
 		{ 
 			if (vs)std::copy(&this->vs()[0], &this->vs()[6], vs);
 			getPm(pm);
-		};
+		}
 		auto Coordinate::getVs(const Coordinate &relative_to, double *vs, double *pm)const->void
 		{ 
 			if (vs)s_inv_vs2vs(*relative_to.pm(), relative_to.vs(), this->vs(), vs);
 			getPm(relative_to, pm);
-		};
+		}
 		auto Coordinate::getAp(double *ap, double *vp, double *pp)const->void
 		{ 
 			if (ap)
@@ -255,7 +400,7 @@ namespace aris
 			{
 				getVp(vp, pp);
 			}
-		};
+		}
 		auto Coordinate::getAp(const Coordinate &relative_to, double *ap, double *vp, double *pp)const->void
 		{
 			if (ap)
@@ -271,6 +416,113 @@ namespace aris
 				getVp(relative_to, vp, pp);
 			}
 		}
+		auto Coordinate::getXe(double *xe, double *we, double *re, const char *type)const->void
+		{
+			if (xe)
+			{
+				double re_default[3], we_default[3];
+				re = re ? re : re_default;
+				we = we ? we : we_default;
+				getRe(re, type);
+				s_as2xe(vs(), as(), re, xe, we, type);
+			}
+			else
+			{
+				getVe(we, re, type);
+			}
+		}
+		auto Coordinate::getXe(const Coordinate &relative_to, double *xe, double *we, double *re, const char *type)const->void
+		{
+			if (xe)
+			{
+				double vs[6], as[6], re_default[3];
+				re = re ? re : re_default;
+				getRe(relative_to, re, type);
+				getAs(relative_to, as, vs);
+				s_as2xe(vs, as, re, xe, we, type);
+			}
+			else
+			{
+				getVe(relative_to, we, re, type);
+			}
+		}
+		auto Coordinate::getXq(double *xq, double *wq, double *rq)const->void
+		{
+			if (xq)
+			{
+				double rq_default[4], wq_default[4];
+				rq = rq ? rq : rq_default;
+				wq = wq ? wq : wq_default;
+				getRq(rq);
+				s_as2xq(vs(), as(), rq, xq, wq);
+			}
+			else
+			{
+				getWq(wq, rq);
+			}
+		}
+		auto Coordinate::getXq(const Coordinate &relative_to, double *xq, double *wq, double *rq)const->void
+		{
+			if (xq)
+			{
+				double vs[6], as[6], rq_default[4];
+				rq = rq ? rq : rq_default;
+				getRq(relative_to, rq);
+				getAs(relative_to, as, vs);
+				s_as2xq(vs, as, rq, xq, wq);
+			}
+			else
+			{
+				getWq(relative_to, wq, rq);
+			}
+		}
+		auto Coordinate::getXm(double *xm, double *wm, double *rm, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)const->void
+		{
+			if (xm)
+			{
+				double rm_default[9], wm_default[9];
+				rm = rm ? rm : rm_default;
+				wm = wm ? wm : wm_default;
+				getRm(rm, rm_ld);
+				s_as2xm(vs(), as(), rm, xm, wm, rm_ld, wm_ld, xm_ld);
+			}
+			else
+			{
+				getWm(wm, rm, wm_ld, rm_ld);
+			}
+		}
+		auto Coordinate::getXm(const Coordinate &relative_to, double *xm, double *wm, double *rm, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)const->void
+		{
+			if (xm)
+			{
+				double vs[6], as[6], rm_default[9];
+				rm = rm ? rm : rm_default;
+				getRm(relative_to, rm, rm_ld);
+				getAs(relative_to, as, vs);
+				s_as2xm(vs, as, rm, xm, wm, rm_ld, wm_ld, xm_ld);
+			}
+			else
+			{
+				getWm(relative_to, wm, rm, wm_ld, rm_ld);
+			}
+		}
+		auto Coordinate::getXa(double *xa, double *wa, double *rm, std::size_t rm_ld)const->void
+		{
+			if (xa)s_as2xa(as(), xa);
+			getWa(wa, rm, rm_ld);
+		}
+		auto Coordinate::getXa(const Coordinate &relative_to, double *xa, double *wa, double *rm, std::size_t rm_ld)const->void
+		{
+			if (xa) 
+			{
+				double vs[6], as[6], pm[16];
+				getAs(relative_to, as, vs, pm);
+				s_as2xa(as, xa);
+				s_vs2wa(vs, wa);
+				s_pm2rm(pm, rm, rm_ld);
+			}
+			getWa(wa, rm, rm_ld);
+		}
 		auto Coordinate::getAe(double *ae, double *ve, double *pe, const char *type)const->void
 		{
 			if (ae)
@@ -285,7 +537,7 @@ namespace aris
 			{
 				getVe(ve, pe, type);
 			}
-		};
+		}
 		auto Coordinate::getAe(const Coordinate &relative_to, double *ae, double *ve, double *pe, const char *type)const->void
 		{
 			if (ae)
@@ -381,7 +633,7 @@ namespace aris
 				getVa(va, pp);
 			}
 			
-		};
+		}
 		auto Coordinate::getAa(const Coordinate &relative_to, double *aa, double *va, double *pp)const->void
 		{
 			if (aa)
@@ -403,13 +655,12 @@ namespace aris
 		{ 
 			if (as)std::copy(&this->as()[0], &this->as()[6], as);
 			getVs(vs, pm);
-		};
+		}
 		auto Coordinate::getAs(const Coordinate &relative_to, double *as, double *vs, double *pm)const->void
 		{ 
 			if (as)s_inv_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), this->vs(), this->as(), as, vs);
 			getVs(relative_to, vs, pm);
-		};
-		
+		}
 		Coordinate::Coordinate(Object &father, std::size_t id, const std::string &name, bool active):DynEle(father, id, name, active){}
 
 		auto Interaction::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -471,11 +722,11 @@ namespace aris
 			s_cv(makI().fatherPart().prtVs(), _tem_v1, _tem_v2);
 			s_mdmTN(dim(), 1, 6, csmPtrI(), dim(), _tem_v2, 1, const_cast<double*>(csaPtr()), 1);
 		}
-		Constraint::~Constraint() {};
+		Constraint::~Constraint() {}
 		Constraint::Constraint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, bool is_active)
-			: Interaction(father, id, name, makI, makJ, is_active) {};
+			: Interaction(father, id, name, makI, makJ, is_active) {}
 		Constraint::Constraint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: Interaction(father, id, xml_ele) {};
+			: Interaction(father, id, xml_ele) {}
 		
 		auto Environment::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -526,7 +777,7 @@ namespace aris
 				<< "    y_component_gravity = " << this->gravity_[1] << "  &\r\n"
 				<< "    z_component_gravity = " << this->gravity_[2] << "\r\n"
 				<< "!\r\n";
-		};
+		}
 		Environment::Environment(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
 			:Element(father, id, xml_ele)
 		{
@@ -575,8 +826,8 @@ namespace aris
 			xml_ele.SetAttribute("x", mat_x.toString().c_str());
 			xml_ele.SetAttribute("y", mat_y.toString().c_str());
 		}
-		auto Akima::x() const->const std::vector<double> & { return imp_->x_; };
-		auto Akima::y() const->const std::vector<double> & { return imp_->y_; };
+		auto Akima::x() const->const std::vector<double> & { return imp_->x_; }
+		auto Akima::y() const->const std::vector<double> & { return imp_->y_; }
 		auto Akima::operator()(double x, char order) const->double
 		{
 			// 寻找第一个大于x的位置 //
@@ -604,7 +855,7 @@ namespace aris
 				y_out[i] = this->operator()(x_in[i], order);
 			}
 		}
-		Akima::~Akima() {};
+		Akima::~Akima() {}
 		Akima::Akima(Object &father, std::size_t id, const std::string &name, int num, const double *x_in, const double *y_in)
 			: Element(father, id, name)
 		{
@@ -629,7 +880,7 @@ namespace aris
 			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute x,y must has valid expression"); }
 
 			*this = Akima(father, id, xml_ele.name(), std::list<double>(mat_x.begin(), mat_x.end()), std::list<double>(mat_y.begin(), mat_y.end()));
-		};
+		}
 		Akima::Akima(Object &father, std::size_t id, const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in)
 			: Element(father, id, name)
 		{
@@ -781,9 +1032,9 @@ namespace aris
 			struct Node
 			{
 				virtual ~Node() = default;
-				virtual auto doNode()->void {};
+				virtual auto doNode()->void {}
 				virtual auto adamsScript()const->std::string = 0;
-				virtual auto msConsumed()const->std::uint32_t { return 0; };
+				virtual auto msConsumed()const->std::uint32_t { return 0; }
 
 				static auto create(Model *model, const std::string &expression)->Node*
 				{
@@ -896,15 +1147,15 @@ namespace aris
 			};
 			struct ActNode final :public Node
 			{
-				virtual auto doNode()->void override final { dyn_ele_->activate(isActive); };
+				virtual auto doNode()->void override final { dyn_ele_->activate(isActive); }
 				virtual auto adamsScript()const->std::string override final
 				{
 					std::stringstream ss;
 					std::string cmd = isActive ? "activate/" : "deactivate/";
 					ss << cmd << dyn_ele_->adamsScriptType() << ", id=" << dyn_ele_->adamsID();
 					return std::move(ss.str());
-				};
-				explicit ActNode(DynEle &ele, bool isActive) :dyn_ele_(&ele), isActive(isActive) {};
+				}
+				explicit ActNode(DynEle &ele, bool isActive) :dyn_ele_(&ele), isActive(isActive) {}
 
 				bool isActive;
 				DynEle *dyn_ele_;
@@ -921,7 +1172,7 @@ namespace aris
 						s_inv_pm_dot_pm(*mak_move_->fatherPart().pm(), pm_target_g, const_cast<double *>(&mak_move_->prtPm()[0][0]));
 						s_pm2pe(*mak_move_->prtPm(), prt_pe_);
 					}
-				};
+				}
 				virtual auto adamsScript()const->std::string override final
 				{
 					std::stringstream ss;
@@ -929,12 +1180,12 @@ namespace aris
 						<< " , QP = " << prt_pe_[0] << "," << prt_pe_[1] << "," << prt_pe_[2]
 						<< " , REULER =" << prt_pe_[3] << "," << prt_pe_[4] << "," << prt_pe_[5];
 					return std::move(ss.str());
-				};
-				explicit AlnNode(Marker &mak_move, const Marker &mak_target) :mak_move_(&mak_move), mak_target_(&mak_target) {};
+				}
+				explicit AlnNode(Marker &mak_move, const Marker &mak_target) :mak_move_(&mak_move), mak_target_(&mak_target) {}
 				explicit AlnNode(Marker &mak_move, const double *prt_pe) :mak_move_(&mak_move), mak_target_(nullptr)
 				{
 					std::copy_n(prt_pe, 6, prt_pe_);
-				};
+				}
 
 				Marker *mak_move_;
 				const Marker *mak_target_;
@@ -942,27 +1193,27 @@ namespace aris
 			};
 			struct SimNode final :public Node
 			{
-				virtual auto msConsumed()const->std::uint32_t override final { return ms_dur_; };
+				virtual auto msConsumed()const->std::uint32_t override final { return ms_dur_; }
 				virtual auto adamsScript()const->std::string override final
 				{
 					std::stringstream ss;
 					ss << "simulate/transient, dur=" << double(ms_dur_) / 1000.0 << ", dtout=" << double(ms_dt_) / 1000.0;
 					return std::move(ss.str());
-				};
+				}
 
-				explicit SimNode(std::uint32_t ms_dur, std::uint32_t ms_dt) :ms_dur_(ms_dur), ms_dt_(ms_dt) { };
+				explicit SimNode(std::uint32_t ms_dur, std::uint32_t ms_dt) :ms_dur_(ms_dur), ms_dt_(ms_dt) { }
 				std::uint32_t ms_dur_;
 				std::uint32_t ms_dt_;
 			};
 
-			Imp(Model *model) :model_(model) {};
+			Imp(Model *model) :model_(model) {}
 			Imp(const Imp &other) :model_(other.model_)
 			{
 				for (auto &node : other.node_list_)
 				{
 					this->node_list_.push_back(std::unique_ptr<Node>(Node::create(model_, node->adamsScript())));
 				}
-			};
+			}
 			auto operator=(const Imp& other)->Imp&
 			{
 				this->node_list_.clear();
@@ -989,7 +1240,7 @@ namespace aris
 			}
 
 			xml_ele.SetText(stream.str().c_str());
-		};
+		}
 		auto Script::saveAdams(std::ofstream &file) const->void
 		{
 			file << "simulation script create &\r\n"
@@ -1006,22 +1257,22 @@ namespace aris
 		auto Script::act(DynEle &ele, bool active)->void
 		{
 			imp_->node_list_.push_back(std::unique_ptr<Imp::Node>(new Imp::ActNode(ele, active)));
-		};
+		}
 		auto Script::aln(Marker &mak_move, const Marker& mak_target)->void
 		{
 			imp_->node_list_.push_back(std::unique_ptr<Imp::Node>(new Imp::AlnNode(mak_move, mak_target)));
-		};
+		}
 		auto Script::sim(std::uint32_t ms_dur, std::uint32_t ms_dt)->void
 		{
 			imp_->node_list_.push_back(std::unique_ptr<Imp::Node>(new Imp::SimNode(ms_dur, ms_dt)));
-		};
-		auto Script::empty() const->bool { return imp_->node_list_.empty(); };
+		}
+		auto Script::empty() const->bool { return imp_->node_list_.empty(); }
 		auto Script::endTime()const->std::uint32_t
 		{
 			std::uint32_t end_time{ 0 };
 			for (auto& node : imp_->node_list_)end_time += node->msConsumed();
 			return end_time;
-		};
+		}
 		auto Script::doScript(std::uint32_t ms_begin, std::uint32_t ms_end)->void
 		{
 			std::uint32_t now{ 0 };
@@ -1031,9 +1282,9 @@ namespace aris
 				if ((now += node->msConsumed()) >= ms_end)break;
 			}
 		}
-		auto Script::clear()->void { return imp_->node_list_.clear(); };
-		Script::~Script() {};
-		Script::Script(Object &father, std::size_t id, const std::string &name) :Element(father, id, name), imp_(new Imp(&model())) {};
+		auto Script::clear()->void { return imp_->node_list_.clear(); }
+		Script::~Script() {}
+		Script::Script(Object &father, std::size_t id, const std::string &name) :Element(father, id, name), imp_(new Imp(&model())) {}
 		Script::Script(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(&model()))
 		{
 			std::stringstream stream(xml_ele.GetText());
@@ -1044,7 +1295,7 @@ namespace aris
 				line.erase(line.find_last_not_of(" ") + 1);
 				if (line != "")imp_->node_list_.push_back(std::unique_ptr<Imp::Node>(Imp::Node::create(&model(), line)));
 			}
-		};
+		}
 
 		auto Variable::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -1054,8 +1305,8 @@ namespace aris
 
 		struct Marker::Imp
 		{
-			double prt_pm_[4][4]{ 0 };
-			double pm_[4][4]{ 0 };
+			double prt_pm_[4][4]{ { 0 } };
+			double pm_[4][4]{ { 0 } };
 		};
 		auto Marker::adamsID()const->std::size_t 
 		{
@@ -1070,7 +1321,7 @@ namespace aris
 			size += id() + 1;
 
 			return size;
-		};
+		}
 		auto Marker::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			DynEle::saveXml(xml_ele);
@@ -1092,17 +1343,17 @@ namespace aris
 				<< "orientation = (" << ori.toString() << ")\r\n"
 				<< "!\r\n";
 		}
-		auto Marker::fatherPart() const->const Part&{ return static_cast<const Part &>(this->father().father()); };
-		auto Marker::fatherPart()->Part& { return static_cast<Part &>(this->father().father()); };
-		auto Marker::pm()const->const double4x4&{ return imp_->pm_; };
-		auto Marker::vs() const->const double6&{ return fatherPart().vs(); };
-		auto Marker::as() const->const double6&{ return fatherPart().as(); };
-		auto Marker::prtPm() const->const double4x4&{ return imp_->prt_pm_; };
+		auto Marker::fatherPart() const->const Part&{ return static_cast<const Part &>(this->father().father()); }
+		auto Marker::fatherPart()->Part& { return static_cast<Part &>(this->father().father()); }
+		auto Marker::pm()const->const double4x4&{ return imp_->pm_; }
+		auto Marker::vs() const->const double6&{ return fatherPart().vs(); }
+		auto Marker::as() const->const double6&{ return fatherPart().as(); }
+		auto Marker::prtPm() const->const double4x4&{ return imp_->prt_pm_; }
 		auto Marker::update()->void
 		{
 			s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *imp_->pm_);
 		}
-		Marker::~Marker() {};
+		Marker::~Marker() {}
 		Marker::Marker(Object &father, std::size_t id, const std::string &name, const double *prt_pm, Marker *relative_mak, bool active)
 			: Coordinate(father, id, name, active)
 		{
@@ -1149,7 +1400,7 @@ namespace aris
 			aris::core::ObjectPool<Marker, Element> *marker_pool_;
 			
 			double inv_pm_[4][4]{ { 0 } };
-			double pm_[4][4]{0};
+			double pm_[4][4]{ { 0 } };
 			double vs_[6]{ 0 };
 			double as_[6]{ 0 };
 			double prt_is_[6][6]{ { 0 } };
@@ -1161,26 +1412,26 @@ namespace aris
 			int row_id_;
 			std::string graphic_file_path_;
 		};
-		auto Part::rowID()const->std::size_t { return imp_->row_id_; };
-		auto Part::pm()const->const double4x4& { return imp_->pm_; };
-		auto Part::pm()->double4x4&{ return imp_->pm_; };
-		auto Part::vs()const->const double6&{ return imp_->vs_; };
-		auto Part::vs()->double6& { return imp_->vs_; };
-		auto Part::as()const->const double6&{ return imp_->as_; };
-		auto Part::as()->double6& { return imp_->as_; };
-		auto Part::invPm() const->const double4x4&{ return imp_->inv_pm_; };
-		auto Part::prtIs() const->const double6x6&{ return imp_->prt_is_; };
-		auto Part::prtVs() const->const double6&{ return imp_->prt_vel_; };
-		auto Part::prtAs() const->const double6&{ return imp_->prt_acc_; };
-		auto Part::prtFg() const->const double6&{ return imp_->prt_fg_; };
-		auto Part::prtFv() const->const double6&{ return imp_->prt_fv_; };
-		auto Part::prtGravity() const->const double6&{ return imp_->prt_gravity_; };
-		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); };
-		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); };
+		auto Part::rowID()const->std::size_t { return imp_->row_id_; }
+		auto Part::pm()const->const double4x4& { return imp_->pm_; }
+		auto Part::pm()->double4x4&{ return imp_->pm_; }
+		auto Part::vs()const->const double6&{ return imp_->vs_; }
+		auto Part::vs()->double6& { return imp_->vs_; }
+		auto Part::as()const->const double6&{ return imp_->as_; }
+		auto Part::as()->double6& { return imp_->as_; }
+		auto Part::invPm() const->const double4x4&{ return imp_->inv_pm_; }
+		auto Part::prtIs() const->const double6x6&{ return imp_->prt_is_; }
+		auto Part::prtVs() const->const double6&{ return imp_->prt_vel_; }
+		auto Part::prtAs() const->const double6&{ return imp_->prt_acc_; }
+		auto Part::prtFg() const->const double6&{ return imp_->prt_fg_; }
+		auto Part::prtFv() const->const double6&{ return imp_->prt_fv_; }
+		auto Part::prtGravity() const->const double6&{ return imp_->prt_gravity_; }
+		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
+		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
 		auto Part::setPp(const double *pp)->void 
 		{ 
 			if(pp)s_pp2pm(pp, *pm());
-		};
+		}
 		auto Part::setPp(const Coordinate &relative_to, const double *pp)->void 
 		{ 
 			if (pp)
@@ -1189,58 +1440,178 @@ namespace aris
 				s_pp2pp(*relative_to.pm(), pp, pp_o);
 				setPp(pp_o);
 			}
-		};
+		}
+		auto Part::setRe(const double *re, const char *type)->void
+		{
+			if (re)s_re2pm(re, *pm(), type);
+		}
+		auto Part::setRe(const Coordinate &relative_to, const double *re, const char *type)->void
+		{
+			if (re)
+			{
+				double rm[9];
+				s_re2rm(re, rm, type);
+				setRm(relative_to, rm);
+			}
+		}
+		auto Part::setRq(const double *rq)->void
+		{
+			if (rq)s_rq2pm(rq, *pm());
+		}
+		auto Part::setRq(const Coordinate &relative_to, const double *rq)->void
+		{
+			if (rq)
+			{
+				double rm[9];
+				s_rq2rm(rq, rm);
+				setRm(relative_to, rm);
+			}
+		}
+		auto Part::setRm(const double *rm, std::size_t rm_ld)->void
+		{
+			if (rm)s_rm2pm(rm, *pm(), rm_ld);
+		}
+		auto Part::setRm(const Coordinate &relative_to, const double *rm, std::size_t rm_ld)->void
+		{
+			if (rm) { s_rm2rm(*relative_to.pm(), rm, *pm(), rm_ld, 4); }
+		}
 		auto Part::setPe(const double *pe, const char *type)->void 
 		{ 
 			if (pe)s_pe2pm(pe, *pm(), type); 
-		};
+		}
 		auto Part::setPe(const Coordinate &relative_to, const double *pe, const char *type)->void 
 		{ 
 			if (pe)
 			{
-				double pe_o[6];
-				s_pe2pe(*relative_to.pm(), pe, pe_o, type, type);
-				setPe(pe_o, type);
+				double pm[16];
+				s_pe2pm(pe, pm, type);
+				setPm(relative_to, pm);
 			}
-		};
+		}
 		auto Part::setPq(const double *pq)->void 
 		{ 
 			if(pq)s_pq2pm(pq, *pm()); 
-		};
+		}
 		auto Part::setPq(const Coordinate &relative_to, const double *pq)->void 
 		{ 
 			if (pq)
 			{
-				double pq_o[7];
-				s_pq2pq(*relative_to.pm(), pq, pq_o);
-				setPq(pq_o);
+				double pm[16];
+				s_pq2pm(pq, pm);
+				setPm(relative_to, pm);
 			}
-		};
+		}
 		auto Part::setPm(const double *pm)->void 
 		{ 
 			if(pm)std::copy(pm, pm + 16, &this->pm()[0][0]); 
-		};
+		}
 		auto Part::setPm(const Coordinate &relative_to, const double *pm)->void 
 		{ 
 			if(pm)s_pm2pm(*relative_to.pm(), pm, *this->pm());
-		};
+		}
+		auto Part::setVp(const double *vp_in, const double *pp_in)->void
+		{
+			setPp(pp_in);
+			double pp[3];
+			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(pp);
+			if (vp_in) s_vp2vs(pp, vp_in, vs());
+		}
+		auto Part::setVp(const Coordinate &relative_to, const double *vp_in, const double *pp_in)->void
+		{
+			setPp(relative_to, pp_in);
+			double pp[3], vp_o[3], pp_o[3];
+			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(relative_to, pp);
+			if (vp_in)
+			{
+				s_vp2vp(*relative_to.pm(), relative_to.vs(), pp, vp_in, vp_o, pp_o);
+				s_vp2vs(pp_o, vp_o, vs());
+			}
+		}
+		auto Part::setWe(const double *we_in, const double *re_in, const char *type)->void
+		{
+			setRe(re_in, type);
+			double re[3];
+			if (re_in) std::copy(re_in, re_in + 3, re); else getRe(re, type);
+			if (we_in) s_we2vs(re, we_in, vs(), type);
+		}
+		auto Part::setWe(const Coordinate &relative_to, const double *we_in, const double *re_in, const char *type)->void 
+		{
+			setRe(relative_to, re_in, type);
+			double re[3], wa[3];
+			if (re_in) std::copy(re_in, re_in + 3, re); else getRe(relative_to, re, type);
+			if (we_in)
+			{
+				s_we2wa(re, we_in, wa, type);
+				setWa(relative_to, wa);
+			}
+		}
+		auto Part::setWq(const double *wq_in, const double *rq_in)->void
+		{
+			setRq(rq_in);
+			double rq[4];
+			if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(rq);
+			if (wq_in) s_wq2vs(rq, wq_in, vs());
+		}
+		auto Part::setWq(const Coordinate &relative_to, const double *wq_in, const double *rq_in)->void
+		{
+			setRq(relative_to, rq_in);
+			double rq[4], wa[3];
+			if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(relative_to, rq);
+			if (wq_in)
+			{
+				s_wq2wa(rq, wq_in, wa);
+				setWa(relative_to, wa);
+			}
+		}
+		auto Part::setWm(const double *wm_in, const double *rm_in, std::size_t wm_ld, std::size_t rm_ld)->void
+		{
+			setRm(rm_in, rm_ld);
+			double rm[9];
+			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(rm);
+			if (wm_in) s_wm2wa(rm, wm_in, vs()+3, 3, wm_ld);
+		}
+		auto Part::setWm(const Coordinate &relative_to, const double *wm_in, const double *rm_in, std::size_t wm_ld, std::size_t rm_ld)->void
+		{
+			setRm(relative_to, rm_in, rm_ld);
+			double rm[9], wa[3];
+			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(relative_to, rm);
+			if (wm_in)
+			{
+				s_wm2wa(rm, wm_in, wa, 3, wm_ld);
+				setWa(relative_to, wa);
+			}
+		}
+		auto Part::setWa(const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
+		{
+			setRm(rm_in, rm_ld);
+			double rm[9];
+			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3);
+			if (wa_in) std::copy(wa_in, wa_in + 3, vs() + 3);
+		}
+		auto Part::setWa(const Coordinate &relative_to, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
+		{
+			setRm(relative_to, rm_in, rm_ld);
+			double rm[9];
+			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3);
+			if (wa_in) s_wa2wa(*relative_to.pm(), relative_to.vs(), wa_in, vs() + 3);
+		}
 		auto Part::setVe(const double *ve_in, const double *pe_in, const char *type)->void 
 		{ 
 			setPe(pe_in, type);
 			double pe[6];
 			if (pe_in) std::copy(pe_in, pe_in + 6, pe); else getPe(pe, type);
-			if (ve_in)s_ve2vs(pe, ve_in, vs(), type);
-		};
+			if (ve_in) s_ve2vs(pe, ve_in, vs(), type);
+		}
 		auto Part::setVe(const Coordinate &relative_to, const double *ve_in, const double *pe_in, const char *type)->void
 		{
 			setPe(relative_to, pe_in, type);
 			
-			double pe[6], ve_o[6];
+			double pe[6], vs[6];
 			if (pe_in) std::copy(pe_in, pe_in + 6, pe); else getPe(relative_to, pe, type);
 			if (ve_in) 
 			{
-				s_ve2ve(*relative_to.pm(), relative_to.vs(), pe, ve_in, ve_o, nullptr, type, type);
-				setVe(ve_o, nullptr, type);
+				s_ve2vs(pe, ve_in, vs, type);
+				setVs(relative_to, vs);
 			}
 		}
 		auto Part::setVq(const double *vq_in, const double *pq_in)->void 
@@ -1249,32 +1620,32 @@ namespace aris
 			double pq[7]; 
 			if (pq_in) std::copy(pq_in, pq_in + 7, pq); else getPq(pq);
 			if (vq_in) s_vq2vs(pq, vq_in, vs());
-		};
+		}
 		auto Part::setVq(const Coordinate &relative_to, const double *vq_in, const double *pq_in)->void
 		{
 			setPq(relative_to, pq_in);
-			double pq[7], vq_o[7];
+			double pq[7], vs[6];
 			if (pq_in) std::copy(pq_in, pq_in + 7, pq);else getPq(relative_to, pq);
 			if (vq_in)
 			{
-				s_vq2vq(*relative_to.pm(), relative_to.vs(), pq, vq_in, vq_o, nullptr);
-				setVq(vq_o);
+				s_vq2vs(pq, vq_in, vs);
+				setVs(relative_to, vs);
 			}
 		}
 		auto Part::setVm(const double *vm_in, const double *pm_in)->void 
 		{ 
 			if (pm_in) setPm(pm_in);
 			if (vm_in) s_vm2vs(*pm(), vm_in, vs());
-		};
+		}
 		auto Part::setVm(const Coordinate &relative_to, const double *vm_in, const double *pm_in)->void
 		{
 			setPm(relative_to, pm_in);
-			double pm[16], vm_o[16];
+			double pm[16], vs[6];
 			if (pm_in) std::copy(pm_in, pm_in + 16, pm); else getPm(relative_to, pm);
 			if (vm_in)
 			{
-				s_vm2vm(*relative_to.pm(), relative_to.vs(), pm, vm_in, vm_o, nullptr);
-				setVm(vm_o);
+				s_vm2vs(pm, vm_in, vs);
+				setVs(relative_to, vs);
 			}
 		}
 		auto Part::setVa(const double *va_in, const double *pp_in)->void 
@@ -1283,28 +1654,124 @@ namespace aris
 			double pp[3];
 			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(pp);
 			if (va_in)s_va2vs(pp, va_in, vs());
-		};
+		}
 		auto Part::setVa(const Coordinate &relative_to, const double *va_in, const double *pp_in)->void
 		{
 			setPp(relative_to, pp_in);
-			double pp[3], va_o[6];
+			double pp[3], vs[6];
 			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(relative_to, pp);
 			if (va_in)
 			{
-				s_va2va(*relative_to.pm(), relative_to.vs(), pp, va_in, va_o, nullptr);
-				setVa(va_o);
+				s_va2vs(pp, va_in, vs);
+				setVs(relative_to, vs);
 			}
 		}
 		auto Part::setVs(const double *vs_in, const double *pm_in)->void 
 		{ 
 			if (pm_in)setPm(pm_in);
 			if (vs_in)std::copy_n(vs_in, 6, vs());
-		};
+		}
 		auto Part::setVs(const Coordinate &relative_to, const double *vs_in, const double *pm_in)->void 
 		{ 
 			if (pm_in)setPm(relative_to, pm_in);
 			if (vs_in)s_vs2vs(*relative_to.pm(), relative_to.vs(), vs_in, vs());
-		};
+		}
+		auto Part::setAp(const double *ap_in, const double *vp_in, const double *pp_in)->void
+		{
+			setAp(vp_in, pp_in);
+			double pp[3], vp[3];
+			if (pp_in) std::copy(pp_in, pp_in + 4, pp); else getPq(pp);
+			if (vp_in) std::copy(vp_in, vp_in + 4, vp); else getVq(vp);
+			if (ap_in) s_ap2as(pp, vp, ap_in, as(), nullptr);
+		}
+		auto Part::setAp(const Coordinate &relative_to, const double *ap_in, const double *vp_in, const double *pp_in)->void
+		{
+			setVp(relative_to, vp_in, pp_in);
+			double pp[3], vp[3], as[6];
+			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(relative_to, pp);
+			if (vp_in) std::copy(vp_in, vp_in + 3, vp); else getVp(relative_to, vp);
+			if (ap_in)
+			{
+				s_ap2as(pp, vp, ap_in, as);
+				setAs(relative_to, as);
+			}
+		}
+		auto Part::setXe(const double *xe_in, const double *we_in, const double *re_in, const char *type)->void
+		{
+			setWe(we_in, re_in, type);
+			double re[3], we[3];
+			if (re_in) std::copy(re_in, re_in + 3, re); else getRe(re, type);
+			if (we_in) std::copy(we_in, we_in + 3, we); else getWe(we, nullptr, type);
+			if (xe_in) s_xe2as(re, we, xe_in, as(), nullptr, type);
+		}
+		auto Part::setXe(const Coordinate &relative_to, const double *xe_in, const double *we_in, const double *re_in, const char *type)->void
+		{
+			setWe(relative_to, we_in, re_in, type);
+			double re[6], we[6], xa[3];
+			if (re_in) std::copy(re_in, re_in + 3, re); else getRe(relative_to, re, type);
+			if (we_in) std::copy(we_in, we_in + 3, we); else getWe(relative_to, we, nullptr, type);
+			if (xe_in)
+			{
+				s_xe2xa(re, we, xe_in, xa, nullptr, type);
+				setXa(relative_to, xa);
+			}
+		}
+		auto Part::setXq(const double *xq_in, const double *wq_in, const double *rq_in)->void
+		{
+			setWq(wq_in, rq_in);
+			double rq[4], wq[4];
+			if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(rq);
+			if (wq_in) std::copy(wq_in, wq_in + 4, wq); else getWq(wq);
+			if (xq_in) s_xq2as(rq, wq, rq_in, as(), nullptr);
+		}
+		auto Part::setXq(const Coordinate &relative_to, const double *xq_in, const double *wq_in, const double *rq_in)->void
+		{
+			setWq(relative_to, wq_in, rq_in);
+			double rq[4], wq[4], xa[6];
+			if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(relative_to, rq);
+			if (wq_in) std::copy(wq_in, wq_in + 4, wq); else getWq(relative_to, wq);
+			if (xq_in)
+			{
+				s_xq2xa(rq, wq, xq_in, xa);
+				setXa(relative_to, xa);
+			}
+		}
+		auto Part::setXm(const double *xm_in, const double *wm_in, const double *rm_in, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)->void
+		{
+			setWm(wm_in, rm_in);
+			double rm[9], wm[9];
+			if (rm_in) std::copy(rm_in, rm_in + 9, rm); else getRm(rm);
+			if (wm_in) std::copy(wm_in, wm_in + 9, wm); else getWm(wm);
+			if (xm_in) s_xm2as(rm, wm, xm_in, as());
+		}
+		auto Part::setXm(const Coordinate &relative_to, const double *xm_in, const double *wm_in, const double *rm_in, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)->void
+		{
+			setWm(relative_to, wm_in, rm_in);
+			double rm[9], wm[9], xa[3];
+			if (rm_in) std::copy(rm_in, rm_in + 9, rm); else getRm(relative_to, rm);
+			if (wm_in) std::copy(wm_in, wm_in + 9, wm); else getWm(relative_to, wm);
+			if (xm_in)
+			{
+				s_xm2xa(rm, wm, xm_in, xa);
+				setXa(relative_to, xa);
+			}
+		}
+		auto Part::setXa(const double *xa_in, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
+		{
+			setWa(wa_in, rm_in, rm_ld);
+			double rm[9], wa[3];
+			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(rm);
+			if (wa_in) std::copy(wa_in, wa_in + 3, wa); else getWa(wa);
+			if (xa_in) s_xa2as(xa_in, as());
+		}
+		auto Part::setXa(const Coordinate &relative_to, const double *xa_in, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
+		{
+			setWa(relative_to, wa_in, rm_in, rm_ld);
+			double rm[9], wa[3];
+			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(relative_to, rm);
+			if (wa_in) std::copy(wa_in, wa_in + 3, wa); else getWa(relative_to, wa);
+			if (xa_in)s_xa2xa(*relative_to.pm(), relative_to.vs(), relative_to.as(), wa, xa_in, as() + 3, nullptr);
+		}
 		auto Part::setAe(const double *ae_in, const double *ve_in, const double *pe_in, const char *type)->void 
 		{ 
 			setVe(ve_in, pe_in, type);
@@ -1312,7 +1779,7 @@ namespace aris
 			if (pe_in) std::copy(pe_in, pe_in + 6, pe); else getPe(pe, type);
 			if (ve_in) std::copy(ve_in, ve_in + 6, ve); else getVe(ve, nullptr, type);
 			if (ae_in) s_ae2as(pe, ve, ae_in, as(), nullptr, type);
-		};
+		}
 		auto Part::setAe(const Coordinate &relative_to, const double *ae_in, const double *ve_in, const double *pe_in, const char *type)->void
 		{
 			setVe(relative_to, ve_in, pe_in, type);
@@ -1332,7 +1799,7 @@ namespace aris
 			if (pq_in) std::copy(pq_in, pq_in + 7, pq); else getPq(pq);
 			if (vq_in) std::copy(vq_in, vq_in + 7, vq); else getVq(vq);
 			if (aq_in) s_aq2as(pq, vq, aq_in, as(), nullptr);
-		};
+		}
 		auto Part::setAq(const Coordinate &relative_to, const double *aq_in, const double *vq_in, const double *pq_in)->void
 		{
 			setVq(relative_to, vq_in, pq_in);
@@ -1352,7 +1819,7 @@ namespace aris
 			if (pm_in) std::copy(pm_in, pm_in + 16, pm); else getPm(pm);
 			if (vm_in) std::copy(vm_in, vm_in + 16, vm); else getVm(vm);
 			if (am_in) s_am2as(pm, vm, am_in, as());
-		};
+		}
 		auto Part::setAm(const Coordinate &relative_to, const double *am_in, const double *vm_in, const double *pm_in)->void
 		{
 			setVm(relative_to, vm_in, pm_in);
@@ -1373,7 +1840,7 @@ namespace aris
 			if (va_in) std::copy(va_in, va_in + 6, va); else getVa(va);
 			if (aa_in)s_aa2as(pp, va, aa_in, as());
 			
-		};
+		}
 		auto Part::setAa(const Coordinate &relative_to, const double *aa_in, const double *va_in, const double *pp_in)->void
 		{
 			setVa(relative_to, va_in, pp_in);
@@ -1390,7 +1857,7 @@ namespace aris
 		{ 
 			setVs(vs_in, pm_in);
 			if (as_in)std::copy_n(as_in, 6, as());
-		};
+		}
 		auto Part::setAs(const Coordinate &relative_to, const double *as_in, const double *vs_in, const double *pm_in)->void
 		{
 			setVs(relative_to, vs_in, pm_in);
@@ -1539,7 +2006,7 @@ namespace aris
 			imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("ChildMarker"));
 			return *this;
 		}
-		Part::~Part() {};
+		Part::~Part() {}
 		Part::Part(Object &father, std::size_t id, const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active)
 			: Coordinate(father, id, name, active)
 		{
@@ -1709,21 +2176,21 @@ namespace aris
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
 			setMotVel(velDiff_in_J[axis()]);
 		}
-		auto Motion::axis()const->int { return imp_->component_axis_; };
-		auto Motion::frcCoe()const->const double3& { return imp_->frc_coe_; };
-		auto Motion::setFrcCoe(const double *frc_coe)->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); };
-		auto Motion::motPos() const->double { return imp_->mot_pos_; };
-		auto Motion::setMotPos(double mot_pos)->void { imp_->mot_pos_ = mot_pos; };
-		auto Motion::motVel() const->double { return imp_->mot_vel_; };
-		auto Motion::setMotVel(double mot_vel)->void { imp_->mot_vel_ = mot_vel; };
-		auto Motion::motAcc() const->double { return imp_->mot_acc_; };
-		auto Motion::setMotAcc(double mot_acc)->void { imp_->mot_acc_ = mot_acc; };
-		auto Motion::motFce() const->double { return motFceDyn() + motFceFrc(); };
-		auto Motion::setMotFce(double mot_fce)->void { imp_->mot_fce_ = mot_fce; };
+		auto Motion::axis()const->int { return imp_->component_axis_; }
+		auto Motion::frcCoe()const->const double3& { return imp_->frc_coe_; }
+		auto Motion::setFrcCoe(const double *frc_coe)->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
+		auto Motion::motPos() const->double { return imp_->mot_pos_; }
+		auto Motion::setMotPos(double mot_pos)->void { imp_->mot_pos_ = mot_pos; }
+		auto Motion::motVel() const->double { return imp_->mot_vel_; }
+		auto Motion::setMotVel(double mot_vel)->void { imp_->mot_vel_ = mot_vel; }
+		auto Motion::motAcc() const->double { return imp_->mot_acc_; }
+		auto Motion::setMotAcc(double mot_acc)->void { imp_->mot_acc_ = mot_acc; }
+		auto Motion::motFce() const->double { return motFceDyn() + motFceFrc(); }
+		auto Motion::setMotFce(double mot_fce)->void { imp_->mot_fce_ = mot_fce; }
 		auto Motion::motFceDyn() const->double { return imp_->mot_fce_dyn_; }
-		auto Motion::setMotFceDyn(double mot_dyn_fce)->void { imp_->mot_fce_dyn_ = mot_dyn_fce; };
-		auto Motion::motFceFrc() const->double { return s_sgn(imp_->mot_vel_)*frcCoe()[0] + imp_->mot_vel_*frcCoe()[1] + imp_->mot_acc_*frcCoe()[2]; };
-		Motion::~Motion() {};
+		auto Motion::setMotFceDyn(double mot_dyn_fce)->void { imp_->mot_fce_dyn_ = mot_dyn_fce; }
+		auto Motion::motFceFrc() const->double { return s_sgn(imp_->mot_vel_)*frcCoe()[0] + imp_->mot_vel_*frcCoe()[1] + imp_->mot_acc_*frcCoe()[2]; }
+		Motion::~Motion() {}
 		Motion::Motion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, int component_axis, const double *frc_coe, bool active)
 			: Constraint(father, id, name, makI, makJ, active)
 		{
@@ -1831,16 +2298,16 @@ namespace aris
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
 			setMotVel(velDiff_in_J);
 		}
-		auto GeneralMotion::motPos() const->const double6&{ return imp_->mot_pos_; };
-		auto GeneralMotion::setMotPos(const double *mot_pos)->void { std::copy(mot_pos, mot_pos + 6, imp_->mot_pos_); };
-		auto GeneralMotion::motVel() const->const double6&{ return imp_->mot_vel_; };
-		auto GeneralMotion::setMotVel(const double * mot_vel)->void { std::copy(mot_vel, mot_vel + 6, imp_->mot_vel_); };
-		auto GeneralMotion::motAcc() const->const double6&{ return imp_->mot_acc_; };
-		auto GeneralMotion::setMotAcc(const double * mot_acc)->void { std::copy(mot_acc, mot_acc + 6, imp_->mot_acc_); };
-		auto GeneralMotion::motFce() const->const double6&{ return imp_->mot_fce_; };
-		auto GeneralMotion::setMotFce(const double * mot_fce)->void { std::copy(mot_fce, mot_fce + 6, imp_->mot_fce_); };
-		GeneralMotion::~GeneralMotion() {};
-		GeneralMotion::GeneralMotion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active):Constraint(father, id, name, makI, makJ, active){	}
+		auto GeneralMotion::motPos() const->const double6&{ return imp_->mot_pos_; }
+		auto GeneralMotion::setMotPos(const double *mot_pos)->void { std::copy(mot_pos, mot_pos + 6, imp_->mot_pos_); }
+		auto GeneralMotion::motVel() const->const double6&{ return imp_->mot_vel_; }
+		auto GeneralMotion::setMotVel(const double * mot_vel)->void { std::copy(mot_vel, mot_vel + 6, imp_->mot_vel_); }
+		auto GeneralMotion::motAcc() const->const double6&{ return imp_->mot_acc_; }
+		auto GeneralMotion::setMotAcc(const double * mot_acc)->void { std::copy(mot_acc, mot_acc + 6, imp_->mot_acc_); }
+		auto GeneralMotion::motFce() const->const double6&{ return imp_->mot_fce_; }
+		auto GeneralMotion::setMotFce(const double * mot_fce)->void { std::copy(mot_fce, mot_fce + 6, imp_->mot_fce_); }
+		GeneralMotion::~GeneralMotion() {}
+		GeneralMotion::GeneralMotion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active):Constraint(father, id, name, makI, makJ, active){}
 		GeneralMotion::GeneralMotion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele):Constraint(father, id, xml_ele){}
 
 		struct Model::Imp
@@ -1870,7 +2337,7 @@ namespace aris
 			Fin_.clear();
 			Vin_.clear();
 			Ain_.clear();
-		};
+		}
 		auto Model::SimResult::resize(std::size_t size)->void
 		{
 			clear();
@@ -1879,7 +2346,7 @@ namespace aris
 			Fin_.resize(size);
 			Vin_.resize(size);
 			Ain_.resize(size);
-		};
+		}
 		auto Model::SimResult::saveToTxt(const std::string &filename)const->void
 		{
 			auto f_name = filename + "_Fin.txt";
@@ -1891,7 +2358,7 @@ namespace aris
 			dlmwrite(p_name.c_str(), Pin_);
 			dlmwrite(v_name.c_str(), Vin_);
 			dlmwrite(a_name.c_str(), Ain_);
-		};
+		}
 		auto Model::loadDynEle(const std::string &name)->void
 		{
 			partPool().load(name);
@@ -2006,28 +2473,28 @@ namespace aris
 		}
 		auto Model::calculator()->aris::core::Calculator& { return std::ref(imp_->calculator_); }
 		auto Model::calculator()const ->const aris::core::Calculator&{ return std::ref(imp_->calculator_); }
-		auto Model::environment()->aris::dynamic::Environment& { return std::ref(*imp_->environment_); };
-		auto Model::environment()const ->const aris::dynamic::Environment&{ return std::ref(*imp_->environment_); };
-		auto Model::scriptPool()->aris::core::ObjectPool<Script, Element>& { return std::ref(*imp_->script_pool_); };
-		auto Model::scriptPool()const->const aris::core::ObjectPool<Script, Element>&{ return std::ref(*imp_->script_pool_); };
-		auto Model::variablePool()->aris::core::ObjectPool<Variable, Element>& { return std::ref(*imp_->variable_pool_); };
-		auto Model::variablePool()const->const aris::core::ObjectPool<Variable, Element>& { return std::ref(*imp_->variable_pool_); };
-		auto Model::akimaPool()->aris::core::ObjectPool<Akima, Element>& { return std::ref(*imp_->akima_pool_); };
-		auto Model::akimaPool()const->const aris::core::ObjectPool<Akima, Element>& { return std::ref(*imp_->akima_pool_); };
-		auto Model::partPool()->aris::core::ObjectPool<Part, Element>& { return std::ref(*imp_->part_pool_); };
-		auto Model::partPool()const->const aris::core::ObjectPool<Part, Element>& { return std::ref(*imp_->part_pool_); };
-		auto Model::jointPool()->aris::core::ObjectPool<Joint, Element>& { return std::ref(*imp_->joint_pool_); };
-		auto Model::jointPool()const->const aris::core::ObjectPool<Joint, Element>& { return std::ref(*imp_->joint_pool_); };
-		auto Model::motionPool()->aris::core::ObjectPool<Motion, Element>& { return std::ref(*imp_->motion_pool_); };
-		auto Model::motionPool()const->const aris::core::ObjectPool<Motion, Element>& { return std::ref(*imp_->motion_pool_); };
-		auto Model::generalMotionPool()->aris::core::ObjectPool<GeneralMotion, Element>& { return std::ref(*imp_->general_motion_pool_); };
-		auto Model::generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>& { return std::ref(*imp_->general_motion_pool_); };
-		auto Model::forcePool()->aris::core::ObjectPool<Force, Element>& { return std::ref(*imp_->force_pool_); };
-		auto Model::forcePool()const->const aris::core::ObjectPool<Force, Element>& { return std::ref(*imp_->force_pool_); };
-		auto Model::ground()->Part& { return std::ref(*imp_->ground_); };
-		auto Model::ground()const->const Part&{ return std::ref(*imp_->ground_); };
-		auto Model::dynDimM()const->std::size_t { return imp_->dyn_prt_dim_; };
-		auto Model::dynDimN()const->std::size_t { return imp_->dyn_cst_dim_; };
+		auto Model::environment()->aris::dynamic::Environment& { return std::ref(*imp_->environment_); }
+		auto Model::environment()const ->const aris::dynamic::Environment&{ return std::ref(*imp_->environment_); }
+		auto Model::scriptPool()->aris::core::ObjectPool<Script, Element>& { return std::ref(*imp_->script_pool_); }
+		auto Model::scriptPool()const->const aris::core::ObjectPool<Script, Element>&{ return std::ref(*imp_->script_pool_); }
+		auto Model::variablePool()->aris::core::ObjectPool<Variable, Element>& { return std::ref(*imp_->variable_pool_); }
+		auto Model::variablePool()const->const aris::core::ObjectPool<Variable, Element>& { return std::ref(*imp_->variable_pool_); }
+		auto Model::akimaPool()->aris::core::ObjectPool<Akima, Element>& { return std::ref(*imp_->akima_pool_); }
+		auto Model::akimaPool()const->const aris::core::ObjectPool<Akima, Element>& { return std::ref(*imp_->akima_pool_); }
+		auto Model::partPool()->aris::core::ObjectPool<Part, Element>& { return std::ref(*imp_->part_pool_); }
+		auto Model::partPool()const->const aris::core::ObjectPool<Part, Element>& { return std::ref(*imp_->part_pool_); }
+		auto Model::jointPool()->aris::core::ObjectPool<Joint, Element>& { return std::ref(*imp_->joint_pool_); }
+		auto Model::jointPool()const->const aris::core::ObjectPool<Joint, Element>& { return std::ref(*imp_->joint_pool_); }
+		auto Model::motionPool()->aris::core::ObjectPool<Motion, Element>& { return std::ref(*imp_->motion_pool_); }
+		auto Model::motionPool()const->const aris::core::ObjectPool<Motion, Element>& { return std::ref(*imp_->motion_pool_); }
+		auto Model::generalMotionPool()->aris::core::ObjectPool<GeneralMotion, Element>& { return std::ref(*imp_->general_motion_pool_); }
+		auto Model::generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>& { return std::ref(*imp_->general_motion_pool_); }
+		auto Model::forcePool()->aris::core::ObjectPool<Force, Element>& { return std::ref(*imp_->force_pool_); }
+		auto Model::forcePool()const->const aris::core::ObjectPool<Force, Element>& { return std::ref(*imp_->force_pool_); }
+		auto Model::ground()->Part& { return std::ref(*imp_->ground_); }
+		auto Model::ground()const->const Part&{ return std::ref(*imp_->ground_); }
+		auto Model::dynDimM()const->std::size_t { return imp_->dyn_prt_dim_; }
+		auto Model::dynDimN()const->std::size_t { return imp_->dyn_cst_dim_; }
 		auto Model::dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void
 		{
 			imp_->dyn_solve_method_ = solve_method;
@@ -2254,10 +2721,10 @@ namespace aris
 		{
 			imp_->clb_inverse_method_ = inverse_method;
 		}
-		auto Model::clbDimM()const->std::size_t { return imp_->clb_dim_m_; };
-		auto Model::clbDimN()const->std::size_t { return imp_->clb_dim_n_; };
-		auto Model::clbDimGam()const->std::size_t { return imp_->clb_dim_gam_; };
-		auto Model::clbDimFrc()const->std::size_t { return imp_->clb_dim_frc_; };
+		auto Model::clbDimM()const->std::size_t { return imp_->clb_dim_m_; }
+		auto Model::clbDimN()const->std::size_t { return imp_->clb_dim_n_; }
+		auto Model::clbDimGam()const->std::size_t { return imp_->clb_dim_gam_; }
+		auto Model::clbDimFrc()const->std::size_t { return imp_->clb_dim_frc_; }
 		auto Model::clbPre()->void
 		{
 			dynPre();
@@ -2583,7 +3050,7 @@ namespace aris
 			this->saveAdams(filename, true);
 			return std::move(result);
 		}
-		Model::~Model() {};
+		Model::~Model() {}
 		Model::Model(const std::string &name):Root(name)
 		{
 			registerChildType<Environment>();
@@ -2772,7 +3239,7 @@ namespace aris
 			s_mdmTN(4, 1, 6, 1, *csmI_, Dim(), tem_v2, 1, 1, &csa_[0], 1);
 			s_inv_tv(*makI().prtPm(), tem_v1, tem_v2);
 			csa_[3] += v[0] * tem_v2[4] + v[1] * tem_v2[5];
-		};
+		}
 		UniversalJoint::UniversalJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ)
 			: JointTemplate(father, id, name, makI, makJ)
 		{
@@ -2889,6 +3356,5 @@ namespace aris
 			: Force(father, id, xml_ele), component_axis_(std::stoi(xml_ele.Attribute("component")))
 		{
 		}
-
 	}
 }

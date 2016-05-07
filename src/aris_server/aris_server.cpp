@@ -41,7 +41,7 @@ namespace aris
 				{
 					return nullptr;
 				}
-			};
+			}
 
 			bool IsTaken() { return isTaken; };
 			void Take();
@@ -52,11 +52,11 @@ namespace aris
 				{
 					child->Reset();
 				}
-			};
+			}
 
 		public:
-			Node(Node*father, const char *Name) :name(Name) { this->father = father; };
-			virtual ~Node() {};
+			Node(Node*father, const char *Name) :name(Name) { this->father = father; }
+			virtual ~Node() {}
 
 		private:
 			std::string name;
@@ -71,7 +71,7 @@ namespace aris
 		class RootNode :public Node
 		{
 		public:
-			RootNode(const char *Name) :Node(nullptr, Name) {};
+			RootNode(const char *Name) :Node(nullptr, Name) {}
 
 		private:
 			Node *pDefault;
@@ -82,7 +82,7 @@ namespace aris
 		class GroupNode :public Node
 		{
 		public:
-			GroupNode(Node*father, const char *Name) :Node(father, Name) {};
+			GroupNode(Node*father, const char *Name) :Node(father, Name) {}
 		};
 		class UniqueNode :public Node
 		{
@@ -394,7 +394,7 @@ namespace aris
 			std::map<std::string, Node *> allParams{};
 			std::map<char, std::string> shortNames{};
 
-			CommandStruct(const std::string &name) :root(new RootNode(name.c_str())) {};
+			CommandStruct(const std::string &name) :root(new RootNode(name.c_str())) {}
 		};
 
 		class ControlServer::Imp
@@ -409,7 +409,7 @@ namespace aris
 			{
 				this->server_ = server;
 				this->controller_ = aris::control::EthercatController::createInstance<aris::control::EthercatController>();
-			};
+			}
 		private:
 			Imp(const Imp&) = delete;
 
@@ -607,7 +607,7 @@ namespace aris
 					std::cout << cmd_name << ":" << cmd_id_map_.at(cmd_name) << std::endl;
 				}
 			}
-		};
+		}
 		auto ControlServer::Imp::start()->void
 		{
 			if (!is_running_)
@@ -1025,7 +1025,7 @@ namespace aris
 			}
 
 			return is_all_enabled ? 0 : 1;
-		};
+		}
 		auto ControlServer::Imp::disable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
 		{
 			bool is_all_disabled = true;
@@ -1092,7 +1092,7 @@ namespace aris
 			}
 
 			return is_all_homed ? 0 : 1;
-		};
+		}
 		auto ControlServer::Imp::fake_home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
 		{
 			for (std::size_t i = 0; i < model_->motionPool().size(); ++i)
@@ -1145,7 +1145,7 @@ namespace aris
 				, controller_->motionAtAbs(17).posOffset());
 
 			return 0;
-		};
+		}
 		auto ControlServer::Imp::run(GaitParamBase &param, aris::control::EthercatController::Data &data)->int
 		{
 			static ControlServer::Imp *imp_ = ControlServer::instance().imp_.get();
@@ -1272,7 +1272,7 @@ namespace aris
 		auto ControlServer::model()->dynamic::Model&
 		{
 			return std::ref(*imp_->model_.get());
-		};
+		}
 		auto ControlServer::controller()->control::EthercatController&
 		{
 			return std::ref(*imp_->controller_);
@@ -1301,11 +1301,11 @@ namespace aris
 				}
 			}
 			std::cout << aris::core::log("server open successful") << std::endl;
-		};
+		}
 		auto ControlServer::close()->void 
 		{
 			imp_->server_socket_.stop();
-		};
+		}
 		auto ControlServer::setOnExit(std::function<void(void)> callback_func)->void
 		{
 			this->imp_->on_exit_callback_ = callback_func;

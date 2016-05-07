@@ -110,7 +110,7 @@ namespace aris
 				Socket *socket_;
 				int id_;
 			private:
-				ConnectError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
+				ConnectError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {}
 				friend class Socket;
 			};
 			class SendDataError :public std::runtime_error
@@ -119,7 +119,7 @@ namespace aris
 				Socket *socket_;
 				int id_;
 			private:
-				SendDataError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
+				SendDataError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {}
 				friend class Socket;
 			};
 			class SendRequestError :public std::runtime_error
@@ -128,7 +128,7 @@ namespace aris
 				Socket *socket_;
 				int id_;
 			private:
-				SendRequestError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
+				SendRequestError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {}
 				friend class Socket;
 			};
 

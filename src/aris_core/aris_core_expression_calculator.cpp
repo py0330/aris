@@ -77,7 +77,7 @@ namespace aris
 			is_row_major_ = !is_row_major_;
 			std::swap(m_, n_);
 			return *this;
-		};
+		}
 		auto Matrix::copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol, std::size_t rowNum, std::size_t colNum)->void
 		{
 			if ((beginRow + subMat.m() > m()) || (beginCol + subMat.n() > n()))
@@ -113,7 +113,7 @@ namespace aris
 			stream << "}";
 
 			return stream.str();
-		};
+		}
 		
 		Matrix operator + (const Matrix &m1, const Matrix &m2)
 		{
@@ -346,7 +346,7 @@ namespace aris
 				}
 			}
 			return ret;
-		};
+		}
 		
 		Calculator::TokenVec Calculator::Expression2Tokens(const std::string &expression)const
 		{
@@ -613,7 +613,7 @@ namespace aris
 			{
 				std::string exp{ "\\$\\{" + var.first + "\\}" };
 				
-				std::regex var_rex{ exp};
+				std::regex var_rex{ exp };
 				ret = std::regex_replace(ret, var_rex, var.second);
 			}
 			
@@ -649,7 +649,7 @@ namespace aris
 			}
 			
 			function_map_[name].AddOverloadFun(n, f);
-		};
+		}
 
 	}
 

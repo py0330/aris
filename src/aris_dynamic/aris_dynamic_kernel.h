@@ -67,8 +67,8 @@ namespace aris
 		auto s_pm2re(const double *pm_in, double *re_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->void;
 		auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->void;
-		auto s_rm2pm(const double *rm_in, double *pm_out) noexcept->void;
-		auto s_pm2rm(const double *pm_in, double *rm_out) noexcept->void;
+		auto s_rm2pm(const double *rm_in, double *pm_out, std::size_t rm_ld = 3) noexcept->void;
+		auto s_pm2rm(const double *pm_in, double *rm_out, std::size_t rm_ld = 3) noexcept->void;
 		auto s_pe2pm(const double *pe_in, double *pm_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_pm2pe(const double *pm_in, double *pe_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_pq2pm(const double *pq_in, double *pm_out) noexcept->void;
@@ -461,6 +461,7 @@ namespace aris
 		///
 		auto s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void;
 		auto s_is_equal(int n, const double *v1, const double *v2, double error, int ld_v1 = 1, int ld_v2 = 1) noexcept->bool;
+		auto s_is_equal(int m, int n, const double *m1, int ld_m1, const double *m2, int ld_m2, double error) noexcept->bool;
 
 		template <typename T>
 		inline auto s_sgn(T val)->int { return (T(0) < val) - (val < T(0)); }

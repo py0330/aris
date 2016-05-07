@@ -67,8 +67,8 @@ namespace aris
 		class Imu :public SensorTemplate<ImuData>
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("xsens_imu"); return std::ref(type); };
-			virtual auto type() const->const std::string&{ return Type(); };
+			static auto Type()->const std::string &{ static const std::string type("xsens_imu"); return std::ref(type); }
+			virtual auto type() const->const std::string&{ return Type(); }
 
 			~Imu();
 			Imu(Object &father, std::size_t id, const std::string &name);

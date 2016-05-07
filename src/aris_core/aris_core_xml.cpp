@@ -205,8 +205,8 @@ namespace aris
 			std::string default_type_{ Object::Type() };
 			std::map<std::string, std::shared_ptr<Object> > save_data_map_;
 
-			Imp(Object *father, std::size_t id, const std::string &name) :father_(father), name_(name), id_(id), default_type_(Object::Type()) {};
-			Imp(Object *father, std::size_t id, const aris::core::XmlElement &xml_ele) :father_(father), name_(xml_ele.name()), id_(id), default_type_(xml_ele.Attribute("default_child_type")? xml_ele.Attribute("default_child_type"): Object::Type()){};
+			Imp(Object *father, std::size_t id, const std::string &name) :father_(father), name_(name), id_(id), default_type_(Object::Type()) {}
+			Imp(Object *father, std::size_t id, const aris::core::XmlElement &xml_ele) :father_(father), name_(xml_ele.name()), id_(id), default_type_(xml_ele.Attribute("default_child_type")? xml_ele.Attribute("default_child_type"): Object::Type()){}
 			Imp(const Imp &other) = default;
 			Imp(Imp &&other) = default;
 			Imp &operator=(const Imp &) = default;
@@ -216,14 +216,14 @@ namespace aris
 		{
 			std::map<std::string, TypeInfo> type_map_{ std::make_pair(Object::Type(),TypeInfo::CreateTypeInfo<Object>()) };
 
-			Imp() {};
-			Imp(const Imp &other) {};
-			Imp(Imp &&other) {};
-			Imp &operator=(const Imp &) { return *this; };
-			Imp &operator=(Imp &&) { return *this; };
+			Imp() {}
+			Imp(const Imp &other) {}
+			Imp(Imp &&other) {}
+			Imp &operator=(const Imp &) { return *this; }
+			Imp &operator=(Imp &&) { return *this; }
 		};
 
-		auto Object::root()->Root& { return dynamic_cast<Root *>(this) ? dynamic_cast<Root &>(*this) : father().root(); };
+		auto Object::root()->Root& { return dynamic_cast<Root *>(this) ? dynamic_cast<Root &>(*this) : father().root(); }
 		auto Object::root()const->const Root&{ return dynamic_cast<const Root *>(this) ? dynamic_cast<const Root &>(*this) : father().root(); }
 		auto Object::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{ 
@@ -237,11 +237,11 @@ namespace aris
 				ele.saveXml(*new_ele);
 				xml_ele.InsertEndChild(new_ele);
 			}
-		};
-		auto Object::id()const->std::size_t { return imp_->id_; };
-		auto Object::name() const->const std::string&{ return imp_->name_; };
-		auto Object::father()->Object& { return *imp_->father_; };
-		auto Object::father()const->const Object&{ return *imp_->father_; };
+		}
+		auto Object::id()const->std::size_t { return imp_->id_; }
+		auto Object::name() const->const std::string&{ return imp_->name_; }
+		auto Object::father()->Object& { return *imp_->father_; }
+		auto Object::father()const->const Object&{ return *imp_->father_; }
 		auto Object::save(const std::string &name, bool auto_override_save)->void
 		{
 			decltype(imp_->save_data_map_) tem = std::move(imp_->save_data_map_);
@@ -268,11 +268,11 @@ namespace aris
 		auto Object::findByName(const std::string &name)->iterator
 		{
 			return std::find_if(this->begin(), this->end(), [&name, this](Object & p) {return (p.name() == name); });
-		};
+		}
 		auto Object::findByName(const std::string &name) const->const_iterator
 		{
 			return const_cast<Object *>(this)->findByName(name);
-		};
+		}
 		auto Object::add(const aris::core::XmlElement &xml_ele)->Object &
 		{
 			std::string type = xml_ele.Attribute("type") ? xml_ele.Attribute("type"): imp_->default_type_;
@@ -358,14 +358,14 @@ namespace aris
 
 			return *this;
 		}
-		Object::~Object() {};
+		Object::~Object() {}
 		Object::Object(const Object &other) :ImpContainer(other), imp_(other.imp_) { for (auto &child : *this)child.imp_->father_ = this; }
 		Object::Object(Object &&other) : ImpContainer(std::move(other)), imp_(std::move(other.imp_)) { for (auto &child : *this)child.imp_->father_ = this; }
-		Object::Object(Object &father, std::size_t id, const std::string &name) : imp_(new Imp(&father, id, name)) {};
+		Object::Object(Object &father, std::size_t id, const std::string &name) : imp_(new Imp(&father, id, name)) {}
 		Object::Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :imp_(new Imp(&father, id, xml_ele))
 		{
-			for (auto ele = xml_ele.FirstChildElement(); ele != nullptr; ele = ele->NextSiblingElement())add(*ele);
-		};
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
+		}
 
 		auto Root::TypeInfo::alignChildID(Object &father, Object &child, std::size_t id)->void
 		{
@@ -417,9 +417,9 @@ namespace aris
 
 			saveXml(*root_xml_ele);
 		}
-		Root::~Root() {};
-		Root::Root(const std::string &name) :Object(*this, 0, name) {};
-		Root::Root(const aris::core::XmlElement &xml_ele) :Object(*this, 0, xml_ele) {};
+		Root::~Root() {}
+		Root::Root(const std::string &name) :Object(*this, 0, name) {}
+		Root::Root(const aris::core::XmlElement &xml_ele) :Object(*this, 0, xml_ele) {}
 
 	}
 }

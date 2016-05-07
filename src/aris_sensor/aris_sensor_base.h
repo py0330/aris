@@ -24,14 +24,14 @@ namespace aris
 		class SensorDataProtector 
 		{
 		public:
-			auto get() const->const SensorData *{ return data_; };
-			auto data() const->const SensorData &{ return *data_; };
-			auto operator->()const -> const SensorData *{ return data_; };
-			auto operator*()const -> const SensorData &{ return std::ref(*data_); };
-			auto operator=(SensorDataProtector && other)->SensorDataProtector & { std::swap(*this, other); return *this; };
+			auto get() const->const SensorData *{ return data_; }
+			auto data() const->const SensorData &{ return *data_; }
+			auto operator->()const -> const SensorData *{ return data_; }
+			auto operator*()const -> const SensorData &{ return std::ref(*data_); }
+			auto operator=(SensorDataProtector && other)->SensorDataProtector & { std::swap(*this, other); return *this; }
 
 			~SensorDataProtector() = default;
-			SensorDataProtector() : sensor_(nullptr), data_(nullptr) {};
+			SensorDataProtector() : sensor_(nullptr), data_(nullptr) {}
 			SensorDataProtector(SensorDataProtector && other) = default;
 
 		private:
@@ -48,8 +48,8 @@ namespace aris
 		class Sensor :public aris::core::Object
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("sensor"); return std::ref(type); };
-			virtual auto type() const->const std::string&{ return Type(); };
+			static auto Type()->const std::string &{ static const std::string type("sensor"); return std::ref(type); }
+			virtual auto type() const->const std::string&{ return Type(); }
 			auto start()->void;
 			auto stop()->void;
 			auto dataProtector()->SensorDataProtector;
@@ -59,9 +59,9 @@ namespace aris
 			Sensor(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele, std::function<SensorData*()> new_func);
 
 		protected:
-			virtual auto init()->void {};
-			virtual auto release()->void {};
-			virtual auto updateData(SensorData & data)->void {};
+			virtual auto init()->void {}
+			virtual auto release()->void {}
+			virtual auto updateData(SensorData & data)->void {}
 
 		private:
 			auto operator=(const Sensor &)->Sensor& = default;
@@ -78,8 +78,8 @@ namespace aris
 		template<class DataType> class SensorTemplate :public Sensor
 		{
 		public:
-			SensorTemplate(Object &father, std::size_t id, const std::string &name) :Sensor(father, id, name, []()->SensorData* {return new DataType; }) {};
-			SensorTemplate(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Sensor(father, id, xml_ele, []()->SensorData* {return new DataType; }) {};
+			SensorTemplate(Object &father, std::size_t id, const std::string &name) :Sensor(father, id, name, []()->SensorData* {return new DataType; }) {}
+			SensorTemplate(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Sensor(father, id, xml_ele, []()->SensorData* {return new DataType; }) {}
 		};
 
 		class SensorRoot:public aris::core::Root
@@ -90,8 +90,8 @@ namespace aris
 			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto sensorPool()->aris::core::ObjectPool<Sensor> &;
 			auto sensorPool()const->const aris::core::ObjectPool<Sensor> &;
-			auto start()->void { for (auto &sensor : sensorPool())sensor.start(); };
-			auto stop()->void { for (auto &sensor : sensorPool())sensor.stop(); };
+			auto start()->void { for (auto &sensor : sensorPool())sensor.start(); }
+			auto stop()->void { for (auto &sensor : sensorPool())sensor.stop(); }
 
 			virtual ~SensorRoot();
 			SensorRoot(const std::string &name = "SensorRoot");

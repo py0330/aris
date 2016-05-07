@@ -195,7 +195,7 @@ namespace aris
 			{
 			public:
 				bool is_tx;
-				uint16_t index;
+				std::uint16_t index;
 				std::vector<std::unique_ptr<Pdo> > pdo_vec;
 				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
 
@@ -210,6 +210,7 @@ namespace aris
 				}
 			};
 
+			std::map<std::uint16_t, std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > > pdo_map_;
 			std::vector<PdoGroup> pdo_group_vec_;
 			std::vector<std::unique_ptr<Sdo> > sdo_vec_;
 
@@ -390,6 +391,38 @@ namespace aris
 			{
 				imp_->pdo_group_vec_.push_back(Imp::PdoGroup(*p, imp_.get()));
 			}
+			for (auto &group : imp_->pdo_group_vec_)
+			{
+				std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > group_map;
+				for (auto &pdo : group.pdo_vec)
+				{
+					auto pair = std::make_pair(static_cast<int>(imp_->pdo_map_.size()), static_cast<int>(group_map.size()));
+					
+					if (group_map.find(pdo->index_) != group_map.end())
+					{
+						group_map.at(pdo->index_).insert(std::make_pair(pdo->subindex_, pair));
+					}
+					else
+					{
+						std::map<std::uint8_t, std::pair<int, int> > subindex_map;
+						subindex_map.insert(std::make_pair(pdo->subindex_, pair));
+						group_map.insert(std::make_pair(pdo->index_, subindex_map));
+					}
+				}
+				imp_->pdo_map_.insert(std::make_pair(group.index, group_map));
+			}
+			for (auto &group_pair : imp_->pdo_map_)
+			{
+				std::cout << "group " << std::hex << group_pair.first << ":" << std::endl;
+				for (auto &index : group_pair.second)
+				{
+					std::cout << "  index " << std::hex << index.first << ":" << std::endl;
+					for (auto &subindex : index.second)
+						std::cout << "    subindex " << std::hex << subindex.first << ":" << std::dec << subindex.second.first<<subindex.second.second << std::endl;
+				}
+			}
+
+
 
 			// load SDO
 			auto sdo_xml_ele = xml_ele.FirstChildElement("SDO");

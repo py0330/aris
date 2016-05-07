@@ -20,7 +20,7 @@ namespace aris
 		class Matrix
 		{
 		public:
-			~Matrix() {};
+			~Matrix() {}
             Matrix() :m_(0), n_(0), is_row_major_(true) {}
 			Matrix(const Matrix &other) = default;
             Matrix(Matrix &&other) { this->swap(other); }
@@ -36,18 +36,18 @@ namespace aris
             auto data() const->const double * { return data_vec_.data(); }
             auto begin() ->double * { return data(); }
             auto begin() const ->const double * { return data(); }
-			auto end() ->double * { return data() + size(); };
+			auto end() ->double * { return data() + size(); }
             auto end()  const ->const double * { return data() + size(); }
-			auto m() const->std::size_t { return m_; };
-			auto n() const->std::size_t { return n_; };
+			auto m() const->std::size_t { return m_; }
+			auto n() const->std::size_t { return n_; }
 			auto resize(std::size_t m, std::size_t n)->Matrix &;
 			auto transpose()->Matrix &;
 			
 			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol, std::size_t rowNum, std::size_t colNum)->void;
-			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol)->void { copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); };
+			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol)->void { copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); }
 
 			auto toString() const->std::string;
-			auto toDouble() const->double { return data()[0]; };
+			auto toDouble() const->double { return data()[0]; }
 			auto dsp() const ->void
 			{
 				std::cout << this->toString();
@@ -56,11 +56,11 @@ namespace aris
 			auto operator()(std::size_t i, std::size_t j)->double &
 			{
 				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
-			};
+			}
 			auto operator()(std::size_t i, std::size_t j) const->const double &
 			{
 				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
-			};
+			}
 			
 			friend Matrix operator + (const Matrix &m1, const Matrix &m2);
 			friend Matrix operator - (const Matrix &m1, const Matrix &m2);
@@ -114,7 +114,7 @@ namespace aris
 			}
 
 			return ret;
-		};
+		}
 		template <typename MATRIX_LIST>
 		Matrix combineRowMatrices(const MATRIX_LIST &matrices)
 		{
@@ -147,14 +147,14 @@ namespace aris
 			}
 
 			return ret;
-		};
+		}
 		template <typename MATRIX_LISTLIST>
 		Matrix combineMatrices(const MATRIX_LISTLIST &matrices)
 		{
 			std::list<Matrix> mat_col_list;
 			for (const auto &mat_list : matrices)mat_col_list.push_back(combineRowMatrices(mat_list));
 			return combineColMatrices(mat_col_list);
-		};
+		}
 
 		class Calculator
 		{
@@ -183,7 +183,7 @@ namespace aris
 			auto addVariable(const std::string &name, const Matrix &value)->void;
 			auto addVariable(const std::string &name, const std::string &value)->void;
 			auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, int n)->void;
-			auto clearVariables()->void { variable_map_.clear(); string_map_.clear(); };
+			auto clearVariables()->void { variable_map_.clear(); string_map_.clear(); }
 
 		private:
 			class Operator;
@@ -233,11 +233,11 @@ namespace aris
 				U_FUN fun_ur;
 				B_FUN fun_b;
 
-				Operator() :priority_ul(0), priority_ur(0), priority_b(0){};
+				Operator() :priority_ul(0), priority_ur(0), priority_b(0){}
 
-				void SetUnaryLeftOpr(int priority, U_FUN fun){ priority_ul = priority; this->fun_ul = fun; };
-				void SetUnaryRightOpr(int priority, U_FUN fun){ priority_ur = priority; this->fun_ur = fun; };
-				void SetBinaryOpr(int priority, B_FUN fun){ priority_b = priority; this->fun_b = fun; };
+				void SetUnaryLeftOpr(int priority, U_FUN fun){ priority_ul = priority; this->fun_ul = fun; }
+				void SetUnaryRightOpr(int priority, U_FUN fun){ priority_ur = priority; this->fun_ur = fun; }
+				void SetBinaryOpr(int priority, B_FUN fun){ priority_b = priority; this->fun_b = fun; }
 			};
 			class Function
 			{
@@ -246,7 +246,7 @@ namespace aris
 				std::string name;
 				std::map<int, FUN> funs;
 
-				void AddOverloadFun(int n, FUN fun){ funs.insert(make_pair(n, fun)); };
+				void AddOverloadFun(int n, FUN fun){ funs.insert(make_pair(n, fun)); }
 			};
 
 			typedef std::vector<Token> TokenVec;

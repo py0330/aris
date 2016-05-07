@@ -267,7 +267,7 @@ namespace aris
 			// 正式开始计算 //
 			s_rm2rq(pm_in, rq_out, 4); 
 		};
-		auto s_rm2pm(const double *rm_in, double *pm_out) noexcept->void
+		auto s_rm2pm(const double *rm_in, double *pm_out, std::size_t rm_ld) noexcept->void
 		{
 			// 补充默认参数 //
 			rm_in = rm_in ? rm_in : default_rm();
@@ -276,10 +276,10 @@ namespace aris
 			
 			// 正式开始计算 //
 			std::copy(rm_in, rm_in + 3, pm_out);
-			std::copy(rm_in + 3, rm_in + 6, pm_out + 4);
-			std::copy(rm_in + 6, rm_in + 9, pm_out + 8);
+			std::copy(rm_in + rm_ld, rm_in + rm_ld + 3, pm_out + 4);
+			std::copy(rm_in + rm_ld * 2, rm_in + rm_ld * 2 + 3, pm_out + 8);
 		}
-		auto s_pm2rm(const double *pm_in, double *rm_out) noexcept->void
+		auto s_pm2rm(const double *pm_in, double *rm_out, std::size_t rm_ld) noexcept->void
 		{
 			// 补充默认参数 //
 			pm_in = pm_in ? pm_in : default_pm();
@@ -288,8 +288,8 @@ namespace aris
 
 			// 正式开始计算 //
 			std::copy(pm_in, pm_in + 3, rm_out);
-			std::copy(pm_in + 4, pm_in + 7, rm_out + 3);
-			std::copy(pm_in + 8, pm_in + 11, rm_out + 6);
+			std::copy(pm_in + 4, pm_in + 7, rm_out + rm_ld);
+			std::copy(pm_in + 8, pm_in + 11, rm_out + rm_ld * 2);
 		}
 		auto s_pe2pm(const double *pe_in, double *pm_out, const char *eu_type_in) noexcept->void
 		{
@@ -3513,6 +3513,26 @@ namespace aris
 
 				id_v1 += ld_v1;
 				id_v2 += ld_v2;
+			}
+
+			diff_square = std::sqrt(std::abs(diff_square));
+
+			return diff_square > error ? false : true;
+		}
+		auto s_is_equal(int m, int n, const double *m1, int ld_m1, const double *m2, int ld_m2, double error) noexcept->bool
+		{
+			double diff_square = 0;
+
+			int row1{ 0 }, row2{ 0 };
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					diff_square += (m1[row1 + j] - m2[row2 + j])*(m1[row1 + j] - m2[row2 + j]);
+				}
+
+				row1 += ld_m1;
+				row2 += ld_m2;
 			}
 
 			diff_square = std::sqrt(std::abs(diff_square));
