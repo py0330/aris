@@ -33,6 +33,18 @@ namespace aris
 			auto writePdo(int pdo_group_id, int pdo_id, std::uint8_t value)->void;
 			auto writePdo(int pdo_group_id, int pdo_id, std::uint16_t value)->void;
 			auto writePdo(int pdo_group_id, int pdo_id, std::uint32_t value)->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void;
+			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void;
+			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void;
+			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void;
+			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t value)->void;
+			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void;
+			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void;
 			auto readSdo(int sdo_id, std::int8_t &value) const->void;
 			auto readSdo(int sdo_id, std::int16_t &value) const->void;
 			auto readSdo(int sdo_id, std::int32_t &value) const->void;

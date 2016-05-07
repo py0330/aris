@@ -210,7 +210,7 @@ namespace aris
 				}
 			};
 
-			std::map<std::uint16_t, std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > > pdo_map_;
+			std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
 			std::vector<PdoGroup> pdo_group_vec_;
 			std::vector<std::unique_ptr<Sdo> > sdo_vec_;
 
@@ -370,8 +370,8 @@ namespace aris
 		EthercatSlave::EthercatSlave(const aris::core::XmlElement &xml_ele) :imp_(new Imp)
 		{
 			//load product id...
-			imp_->product_code_ = std::stoi(xml_ele.Attribute("product_code"), nullptr, 0);
-			imp_->vender_id_ = std::stoi(xml_ele.Attribute("vender_id"), nullptr, 0);
+			imp_->product_code_ = std::stoul(xml_ele.Attribute("product_code"), nullptr, 0);
+			imp_->vender_id_ = std::stoul(xml_ele.Attribute("vender_id"), nullptr, 0);
 			imp_->alias_ = std::stoi(xml_ele.Attribute("alias"), nullptr, 0);
 			imp_->distributed_clock_.reset(new std::int32_t);
 
@@ -384,45 +384,34 @@ namespace aris
 				imp_->distributed_clock_.reset();
 			}
 
-
 			// load PDO
 			auto pdo_xml_ele = xml_ele.FirstChildElement("PDO");
 			for (auto p = pdo_xml_ele->FirstChildElement(); p; p = p->NextSiblingElement())
 			{
 				imp_->pdo_group_vec_.push_back(Imp::PdoGroup(*p, imp_.get()));
 			}
-			for (auto &group : imp_->pdo_group_vec_)
+			
+			int id{ 0 };
+			for (int i = 0; i < static_cast<int>(imp_->pdo_group_vec_.size()); ++i)
 			{
-				std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > group_map;
-				for (auto &pdo : group.pdo_vec)
+				auto &group = imp_->pdo_group_vec_.at(i);
+				for (int j = 0; j < static_cast<int>(group.pdo_vec.size()); ++j)
 				{
-					auto pair = std::make_pair(static_cast<int>(imp_->pdo_map_.size()), static_cast<int>(group_map.size()));
-					
-					if (group_map.find(pdo->index_) != group_map.end())
+					auto &pdo = group.pdo_vec.at(j);
+
+					if (imp_->pdo_map_.find(pdo->index_) != imp_->pdo_map_.end())
 					{
-						group_map.at(pdo->index_).insert(std::make_pair(pdo->subindex_, pair));
+						imp_->pdo_map_.at(pdo->index_).insert(std::make_pair(pdo->subindex_, std::make_pair(i, j)));
 					}
 					else
 					{
 						std::map<std::uint8_t, std::pair<int, int> > subindex_map;
-						subindex_map.insert(std::make_pair(pdo->subindex_, pair));
-						group_map.insert(std::make_pair(pdo->index_, subindex_map));
+						subindex_map.insert(std::make_pair(pdo->subindex_, std::make_pair(i, j)));
+						imp_->pdo_map_.insert(std::make_pair(pdo->index_, subindex_map));
 					}
 				}
-				imp_->pdo_map_.insert(std::make_pair(group.index, group_map));
+				
 			}
-			for (auto &group_pair : imp_->pdo_map_)
-			{
-				std::cout << "group " << std::hex << group_pair.first << ":" << std::endl;
-				for (auto &index : group_pair.second)
-				{
-					std::cout << "  index " << std::hex << index.first << ":" << std::endl;
-					for (auto &subindex : index.second)
-						std::cout << "    subindex " << std::hex << subindex.first << ":" << std::dec << subindex.second.first<<subindex.second.second << std::endl;
-				}
-			}
-
-
 
 			// load SDO
 			auto sdo_xml_ele = xml_ele.FirstChildElement("SDO");
@@ -517,6 +506,66 @@ namespace aris
 		{
 			if (imp_->pdo_group_vec_[pdoGroupID].is_tx) throw std::runtime_error("you can't write pdo in tx pdo");
 			imp_->pdo_group_vec_[pdoGroupID].pdo_vec[pdoID]->writePdo(value);
+		}
+		auto EthercatSlave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			readPdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			readPdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			readPdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			readPdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			readPdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			readPdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			writePdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			writePdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			writePdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t value)->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			writePdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			writePdo(id_pair.first, id_pair.second, value);
+		}
+		auto EthercatSlave::writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			writePdo(id_pair.first, id_pair.second, value);
 		}
 		auto EthercatSlave::readSdoConfig(int sdoID, std::int8_t &value) const->void { imp_->sdo_vec_[sdoID]->readSdoConfig(value); }
 		auto EthercatSlave::readSdoConfig(int sdoID, std::int16_t &value) const->void { imp_->sdo_vec_[sdoID]->readSdoConfig(value); }
