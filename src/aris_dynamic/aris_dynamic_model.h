@@ -44,6 +44,11 @@ namespace aris
 			auto model()->Model&;
 			auto model()const->const Model&;
 			
+			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix;
+			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const aris::core::Matrix& default_value)const->aris::core::Matrix;
+			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::size_t m, std::size_t n)const->aris::core::Matrix;
+			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::size_t m, std::size_t n, const aris::core::Matrix& default_value)const->aris::core::Matrix;
+
 		protected:
 			~Element() = default;
 			explicit Element(aris::core::Object &father, std::size_t id, const std::string &name) :Object(father, id, name) {}

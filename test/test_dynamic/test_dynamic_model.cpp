@@ -194,6 +194,21 @@ void test_coordinate()
 	p.getPp(r, result);
 	if (!(s_is_equal(3, result, pp, error)))std::cout << "\"coordinate:getPp\" failed" << std::endl;
 
+	p.getRe(r, result);
+	if (!(s_is_equal(3, result, re313, error)))std::cout << "\"coordinate:getRe\" failed" << std::endl;
+
+	p.getRe(r, result, "321");
+	if (!(s_is_equal(3, result, re321, error)))std::cout << "\"coordinate:getRe 321\" failed" << std::endl;
+
+	p.getRq(r, result);
+	if (!(s_is_equal(4, result, rq, error)))std::cout << "\"coordinate:getRq\" failed" << std::endl;
+
+	p.getRm(r, result);
+	if (!(s_is_equal(9, result, rm, error)))std::cout << "\"coordinate:getRm\" failed" << std::endl;
+
+	p.getRm(r, result, 4);
+	if (!(s_is_equal(3, 3, result, 4, rm, 3, error)))std::cout << "\"coordinate:getRm\" failed" << std::endl;
+
 	p.getPe(r, result);
 	if (!(s_is_equal(6, result, pe313, error)))std::cout << "\"coordinate:getPe\" failed" << std::endl;
 
@@ -208,6 +223,27 @@ void test_coordinate()
 
 	p.getVp(r, result, result2);
 	if (!(s_is_equal(3, result, vp, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVp\" failed" << std::endl;
+
+	p.getWe(r, result, result2);
+	if (!(s_is_equal(3, result, we313, error) && s_is_equal(3, result2, re313, error)))std::cout << "\"coordinate:getWe 313\" failed" << std::endl;
+
+	p.getWe(r, result, result2, "321");
+	if (!(s_is_equal(3, result, we321, error) && s_is_equal(3, result2, re321, error)))std::cout << "\"coordinate:getWe 321\" failed" << std::endl;
+
+	p.getWq(r, result, result2);
+	if (!(s_is_equal(4, result, wq, error) && s_is_equal(4, result2, rq, error)))std::cout << "\"coordinate:getWq\" failed" << std::endl;
+
+	p.getWm(r, result, result2);
+	if (!(s_is_equal(9, result, wm, error) && s_is_equal(9, result2, rm, error)))std::cout << "\"coordinate:getWm\" failed" << std::endl;
+
+	p.getWm(r, result, result2, 4, 4);
+	if (!(s_is_equal(3, 3, result, 4, wm, 3, error) && s_is_equal(3, 3, result2, 4, rm, 3, error)))std::cout << "\"coordinate:getWm\" failed" << std::endl;
+
+	p.getWa(r, result, result2);
+	if (!(s_is_equal(3, result, wa, error) && s_is_equal(9, result2, rm, error)))std::cout << "\"coordinate:getWa\" failed" << std::endl;
+
+	p.getWa(r, result, result2, 4);
+	if (!(s_is_equal(3, result, wa, error) && s_is_equal(3, 3, result2, 4, rm, 3, error)))std::cout << "\"coordinate:getWa\" failed" << std::endl;
 
 	p.getVe(r, result, result2);
 	if (!(s_is_equal(6, result, ve313, error) && s_is_equal(6, result2, pe313, error)))std::cout << "\"coordinate:getVe 313\" failed" << std::endl;
@@ -230,6 +266,21 @@ void test_coordinate()
 	p.getAp(r, result, result2, result3);
 	if (!(s_is_equal(3, result, ap, error) && s_is_equal(3, result2, vp, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAp\" failed" << std::endl;
 
+	p.getXe(r, result, result2, result3);
+	if (!(s_is_equal(3, result, xe313, error) && s_is_equal(3, result2, we313, error) && s_is_equal(3, result3, re313, error)))std::cout << "\"coordinate:getXe 313\" failed" << std::endl;
+
+	p.getXe(r, result, result2, result3, "321");
+	if (!(s_is_equal(3, result, xe321, error) && s_is_equal(3, result2, we321, error) && s_is_equal(3, result3, re321, error)))std::cout << "\"coordinate:getXe 321\" failed" << std::endl;
+
+	p.getXq(r, result, result2, result3);
+	if (!(s_is_equal(4, result, xq, error) && s_is_equal(4, result2, wq, error) && s_is_equal(4, result3, rq, error)))std::cout << "\"coordinate:getXq\" failed" << std::endl;
+
+	p.getXm(r, result, result2, result3);
+	if (!(s_is_equal(9, result, xm, error) && s_is_equal(9, result2, wm, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXm\" failed" << std::endl;
+
+	p.getXa(r, result, result2, result3);
+	if (!(s_is_equal(3, result, xa, error) && s_is_equal(3, result2, wa, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXa\" failed" << std::endl;
+
 	p.getAe(r, result, result2, result3);
 	if (!(s_is_equal(6, result, ae313, error) && s_is_equal(6, result2, ve313, error) && s_is_equal(6, result3, pe313, error)))std::cout << "\"coordinate:getAe 313\" failed" << std::endl;
 
@@ -243,7 +294,7 @@ void test_coordinate()
 	if (!(s_is_equal(16, result, am, error) && s_is_equal(16, result2, vm, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAm\" failed" << std::endl;
 
 	p.getAa(r, result, result2, result3);
-	if (!(s_is_equal(6, result, aa, error) && s_is_equal(3, result2, va, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAa\" failed" << std::endl;
+	if (!(s_is_equal(6, result, aa, error) && s_is_equal(6, result2, va, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAa\" failed" << std::endl;
 
 	p.getAs(r, result, result2, result3);
 	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result2, vs, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAs\" failed" << std::endl;
@@ -326,7 +377,7 @@ void test_part()
 
 	const double error = 1e-10;
 
-	double result[16];
+	double result[16], result2[16], result3[16];
 
 	r.setPm(relative_pm);
 	r.setVs(relative_vs);
@@ -393,123 +444,150 @@ void test_part()
 	p.setPm(r, pm);
 	if (!(s_is_equal(16, &to_pm[0][0], &p.pm()[0][0], error)))std::cout << "\"part:setPm relative\" failed" << std::endl;
 
-	p.setVs(vs, pm);
+	p.setWa(wa, rm);
 	p.setVp(vp, pp);
-	if (!(s_is_equal(3, vs, p.vs(), error) && s_is_equal(3, pp, &p.pm()[0][3], error, 1, 4)))std::cout << "\"part:setVp\" failed" << std::endl;
+	if (!(s_is_equal(6, vs, p.vs(), error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setVp\" failed" << std::endl;
 
-	p.setVs(r, vs, pm);
+	p.setWa(r, wa, rm);
 	p.setVp(r, vp, pp);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setVp relative\" failed" << std::endl;
+	if (!(s_is_equal(6, to_vs, p.vs(), error) && s_is_equal(16, *to_pm, *p.pm(), error)))std::cout << "\"part:setVp relative\" failed" << std::endl;
 
-	p.setVs(vs, pm);
+	p.setWa(wa, rm);
 	p.setPp(pp);
 	p.setVp(vp);
-	if (!(s_is_equal(3, vs, p.vs(), error) && s_is_equal(3, pp, &p.pm()[0][3], error, 1, 4)))std::cout << "\"part:setVp\" failed" << std::endl;
+	if (!(s_is_equal(6, vs, p.vs(), error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setVp\" failed" << std::endl;
 
-	p.setVs(r, vs, pm);
+	p.setWa(r, wa, rm);
 	p.setPp(r, pp);
 	p.setVp(r, vp);
-	if (!(s_is_equal(6, to_vs, p.vs(), error) && s_is_equal(4, 4, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setVp relative\" failed" << std::endl;
+	if (!(s_is_equal(6, to_vs, p.vs(), error) && s_is_equal(16, *to_pm, *p.pm(), error)))std::cout << "\"part:setVp relative\" failed" << std::endl;
 
-	double pp_tem1[3]{ 1,2,3 }; double vp_tem1[3]{ 10,20,30 }; p.setVp(vp_tem1, pp_tem1);
+	p.setVp(vp, pp);
 	p.setWe(we313, re313);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWe\" failed" << std::endl;
+	p.getVp(result);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error)&& s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWe\" failed" << std::endl;
 
 	p.setWe(r, we313, re313);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWe relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWe relative\" failed" << std::endl;
 
 	p.setRe(re313);
 	p.setWe(we313);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWe\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWe\" failed" << std::endl;
 
 	p.setRe(r, re313);
 	p.setWe(r, we313);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWe relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWe relative\" failed" << std::endl;
 
 	p.setWe(we321, re321, "321");
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWe 321\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWe 321\" failed" << std::endl;
 
 	p.setWe(r, we321, re321, "321");
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWe 321 relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWe 321 relative\" failed" << std::endl;
 
 	p.setRe(re321, "321");
 	p.setWe(we321, nullptr, "321");
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWe 321\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWe 321\" failed" << std::endl;
 
 	p.setRe(r, re321, "321");
 	p.setWe(r, we321, nullptr, "321");
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWe 321 relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWe 321 relative\" failed" << std::endl;
 
 	p.setWq(wq, rq);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWq\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWq\" failed" << std::endl;
 
 	p.setWq(r, wq, rq);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWq relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWq relative\" failed" << std::endl;
 
 	p.setRq(rq);
 	p.setWq(wq);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWq\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWq\" failed" << std::endl;
 
 	p.setRq(r, rq);
 	p.setWq(r, wq);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWq relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWq relative\" failed" << std::endl;
 
 	p.setWm(wm, rm);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWm\" failed" << std::endl;
 
 	p.setWm(r, wm, rm);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWm relative\" failed" << std::endl;
 
 	p.setRm(rm);
 	p.setWm(wm);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWm\" failed" << std::endl;
 
 	p.setRm(r, rm);
 	p.setWm(r, wm);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWm relative\" failed" << std::endl;
 
 	p.setWm(vm, pm, 4, 4);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm with ld\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWm with ld\" failed" << std::endl;
 
 	p.setWm(r, vm, pm, 4, 4);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm with ld relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWm with ld relative\" failed" << std::endl;
 
 	p.setRm(pm, 4);
 	p.setWm(vm, nullptr, 4);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm with ld\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWm with ld\" failed" << std::endl;
 
 	p.setRm(r, pm, 4);
 	p.setWm(r, vm, nullptr, 4);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm with ld relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWm with ld relative\" failed" << std::endl;
 
 	p.setWa(wa, rm);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWm\" failed" << std::endl;
 
 	p.setWa(r, wa, rm);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWm relative\" failed" << std::endl;
 
 	p.setRm(rm);
 	p.setWa(wa);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWm\" failed" << std::endl;
 
 	p.setRm(r, rm);
 	p.setWa(r, wa);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWm relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWm relative\" failed" << std::endl;
 
 	p.setWa(wa, pm, 4);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWa with ld\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWa with ld\" failed" << std::endl;
 
 	p.setWa(r, wa, pm, 4);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWa with ld relative\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWa with ld relative\" failed" << std::endl;
 
 	p.setRm(pm, 4);
 	p.setWa(wa);
-	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWa with ld\" failed" << std::endl;
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setWa with ld\" failed" << std::endl;
 
 	p.setRm(r, pm, 4);
 	p.setWa(r, wa);
-	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error)))std::cout << "\"part:setWa with ld relative\" failed" << std::endl;
-
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, vp, result, error) && s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, pp, result2, error)))std::cout << "\"part:setWa with ld relative\" failed" << std::endl;
 
 	p.setVe(ve313, pe313);
 	if (!(s_is_equal(6, vs, p.vs(), error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setVe\" failed" << std::endl;
@@ -596,24 +674,135 @@ void test_part()
 	if (!(s_is_equal(6, to_vs, p.vs(), error) && s_is_equal(16, *to_pm, *p.pm(), error)))std::cout << "\"part:setVs relative\" failed" << std::endl;
 
 
+	p.setXa(xa, wa, rm);
+	p.setAp(ap, vp, pp);
+	if (!(s_is_equal(6, as, p.as(), error) && s_is_equal(6, vs, p.vs(), error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setAp\" failed" << std::endl;
 
+	p.setXa(r, xa, wa, rm);
+	p.setAp(r, ap, vp, pp);
+	if (!(s_is_equal(6, to_as, p.as(), error) && s_is_equal(6, to_vs, p.vs(), error) && s_is_equal(16, *to_pm, *p.pm(), error)))std::cout << "\"part:setAp relative\" failed" << std::endl;
 
+	p.setXa(xa, wa, rm);
+	p.setVp(vp, pp);
+	p.setAp(ap);
+	if (!(s_is_equal(6, as, p.as(), error) && s_is_equal(6, vs, p.vs(), error) && s_is_equal(16, pm, *p.pm(), error)))std::cout << "\"part:setAp\" failed" << std::endl;
+
+	p.setXa(r, xa, wa, rm);
+	p.setVp(r, vp, pp);
+	p.setAp(r, ap);
+	if (!(s_is_equal(6, to_as, p.as(), error) && s_is_equal(6, to_vs, p.vs(), error) && s_is_equal(16, *to_pm, *p.pm(), error)))std::cout << "\"part:setAp relative\" failed" << std::endl;
+
+	p.setAp(ap, vp, pp);
+
+	p.setXe(xe313, we313, re313);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXe 313\" failed" << std::endl;
+
+	p.setXe(r, xe313, we313, re313);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXe 313 relative\" failed" << std::endl;
+
+	p.setWe(we313, re313);
+	p.setXe(xe313, nullptr, nullptr);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXe 313\" failed" << std::endl;
+
+	p.setWe(r, we313, re313);
+	p.setXe(r, xe313, nullptr, nullptr);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXe 313 relative\" failed" << std::endl;
 
 	p.setXe(xe321, we321, re321, "321");
-	if (!(s_is_equal(6, as, p.as(), error)))std::cout << "\"part:setXe 321\" failed" << std::endl;
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXe 321\" failed" << std::endl;
 
 	p.setXe(r, xe321, we321, re321, "321");
-	if (!(s_is_equal(6, to_as, p.as(), error)))std::cout << "\"part:setXe 321 relative\" failed" << std::endl;
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXe 321 relative\" failed" << std::endl;
 
 	p.setWe(we321, re321, "321");
 	p.setXe(xe321, nullptr, nullptr, "321");
-	if (!(s_is_equal(6, as, p.as(), error)))std::cout << "\"part:setXe 321\" failed" << std::endl;
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXe 321\" failed" << std::endl;
 
 	p.setWe(r, we321, re321, "321");
 	p.setXe(r, xe321, nullptr, nullptr, "321");
-	if (!(s_is_equal(6, to_as, p.as(), error)))std::cout << "\"part:setXe 321 relative\" failed" << std::endl;
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXe 321 relative\" failed" << std::endl;
 
+	p.setXq(xq, wq, rq);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXq\" failed" << std::endl;
 
+	p.setXq(r, xq, wq, rq);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXq relative\" failed" << std::endl;
+
+	p.setWq(wq, rq);
+	p.setXq(xq);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXq\" failed" << std::endl;
+
+	p.setWq(r, wq, rq);
+	p.setXq(r, xq);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXq relative\" failed" << std::endl;
+
+	p.setXm(xm, wm, rm);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXm\" failed" << std::endl;
+
+	p.setXm(r, xm, wm, rm);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXm relative\" failed" << std::endl;
+
+	p.setWm(wm, rm);
+	p.setXm(xm);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXm\" failed" << std::endl;
+
+	p.setWm(r, wm, rm);
+	p.setXm(r, xm);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXm relative\" failed" << std::endl;
+
+	p.setXa(xa, wa, rm);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXa\" failed" << std::endl;
+
+	p.setXa(r, xa, wa, rm);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, result, ap, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXa relative\" failed" << std::endl;
+
+	p.setWa(wa, rm);
+	p.setXa(xa);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, as + 3, p.as() + 3, error) && s_is_equal(3, vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, rm, 3, *p.pm(), 4, error) && s_is_equal(3, pp, result3, error)))std::cout << "\"part:setXa\" failed" << std::endl;
+
+	p.setWa(r, wa, rm);
+	p.setXa(r, xa);
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, to_as + 3, p.as() + 3, error) && s_is_equal(3, to_vs + 3, p.vs() + 3, error) && s_is_equal(3, result2, vp, error)
+		&& s_is_equal(3, 3, *to_pm, 4, *p.pm(), 4, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"part:setXa relative\" failed" << std::endl;
 
 
 

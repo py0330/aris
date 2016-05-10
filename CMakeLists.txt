@@ -156,6 +156,20 @@ target_link_libraries(test_dynamic ${ALL_LINK_LIB})
 add_test(NAME test_dynamic COMMAND test_dynamic)
 set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
+set(SOURCE_FILES main.cpp test_core_xml.h test_core_xml.cpp)
+PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
+add_executable(test_core ${FULL_SRC})
+target_link_libraries(test_core ${ALL_LINK_LIB})
+add_test(NAME test_core COMMAND test_core)
+set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+
+set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp)
+PREPEND(FULL_SRC test/test_control ${SOURCE_FILES})
+add_executable(test_control ${FULL_SRC})
+target_link_libraries(test_control ${ALL_LINK_LIB})
+add_test(NAME test_control COMMAND test_control)
+set_tests_properties (test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+
 
 
 

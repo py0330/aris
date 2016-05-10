@@ -62,24 +62,24 @@ namespace aris
 				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
 			}
 			
-			friend Matrix operator + (const Matrix &m1, const Matrix &m2);
-			friend Matrix operator - (const Matrix &m1, const Matrix &m2);
-			friend Matrix operator * (const Matrix &m1, const Matrix &m2);
-			friend Matrix operator / (const Matrix &m1, const Matrix &m2);
-			friend Matrix operator - (const Matrix &m1);
-			friend Matrix operator + (const Matrix &m1);
+			friend auto operator + (const Matrix &m1, const Matrix &m2)->Matrix;
+			friend auto operator - (const Matrix &m1, const Matrix &m2)->Matrix;
+			friend auto operator * (const Matrix &m1, const Matrix &m2)->Matrix;
+			friend auto operator / (const Matrix &m1, const Matrix &m2)->Matrix;
+			friend auto operator - (const Matrix &m1)->Matrix;
+			friend auto operator + (const Matrix &m1)->Matrix;
 
 			template <typename MATRIX_LIST>
-			friend Matrix combineColMatrices(const MATRIX_LIST &matrices);
+			friend auto combineColMatrices(const MATRIX_LIST &matrices)->Matrix;
 			template <typename MATRIX_LIST>
-			friend Matrix combineRowMatrices(const MATRIX_LIST &matrices);
+			friend auto combineRowMatrices(const MATRIX_LIST &matrices)->Matrix;
 			template <typename MATRIX_LISTLIST>
-			friend Matrix combineMatrices(const MATRIX_LISTLIST &matrices);
+			friend auto combineMatrices(const MATRIX_LISTLIST &matrices)->Matrix;
 
-			private:
-				int m_, n_;
-				bool is_row_major_;
-				std::vector<double> data_vec_;
+		private:
+			int m_, n_;
+			bool is_row_major_;
+			std::vector<double> data_vec_;
 		};
 
 		template <typename MATRIX_LIST>

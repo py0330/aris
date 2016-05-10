@@ -18,6 +18,44 @@ namespace aris
 	{
 		auto Element::model()->Model& { return dynamic_cast<Model&>(root()); }
 		auto Element::model()const->const Model&{ return dynamic_cast<const Model&>(root()); }
+		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix
+		{
+			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			aris::core::Matrix mat;
+			try
+			{
+				mat = this->model().calculator().calculateExpression(xml_ele.Attribute(attribute_name.c_str()));
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "failed to evaluate matrix:" + e.what());
+			}
+
+			return mat;
+		}
+		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const aris::core::Matrix& default_value)const->aris::core::Matrix
+		{
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeMatrix(xml_ele, attribute_name) : default_value;
+		}
+		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::size_t m, std::size_t n)const->aris::core::Matrix
+		{
+			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+			
+			aris::core::Matrix mat = attributeMatrix(xml_ele, attribute_name);
+
+			if (mat.m() != m || mat.n() != n)
+			{
+				throw std::runtime_error(error + "matrix has wrong dimensions, it's dimentsion should be \"" +std::to_string(m)+","+ std::to_string(n)
+					+"\", while the real value is \"" + std::to_string(mat.m()) + "," + std::to_string(mat.n())+"\"");
+			}
+
+			return mat;
+		}
+		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::size_t m, std::size_t n, const aris::core::Matrix& default_value)const->aris::core::Matrix
+		{
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeMatrix(xml_ele, attribute_name, m, n) : default_value;
+		}
 
 		auto DynEle::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -26,16 +64,7 @@ namespace aris
 		}
 		DynEle::DynEle(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele)
 		{
-			if (xml_ele.Attribute("active"))
-			{
-				if (xml_ele.Attribute("active", "true"))active_ = true;
-				else if (xml_ele.Attribute("active", "false"))active_ = false;
-				else throw std::runtime_error(std::string("Element \"") + xml_ele.name() + "\" must have valid attibute of active");
-			}
-			else
-			{
-				active_ = true;
-			}
+			active_ = attributeBool(xml_ele, "active");
 		}
 		
 		auto Coordinate::getPp(double *pp)const->void 
@@ -250,7 +279,7 @@ namespace aris
 			if (wa) 
 			{ 
 				double vs[6], pm[16];
-				getVs(vs, pm);
+				getVs(relative_to, vs, pm);
 				s_vs2wa(vs, wa);
 				s_pm2rm(pm, rm, rm_ld);
 			}
@@ -521,7 +550,11 @@ namespace aris
 				s_vs2wa(vs, wa);
 				s_pm2rm(pm, rm, rm_ld);
 			}
-			getWa(wa, rm, rm_ld);
+			else
+			{
+				getWa(relative_to, wa, rm, rm_ld);
+			}
+			
 		}
 		auto Coordinate::getAe(double *ae, double *ve, double *pe, const char *type)const->void
 		{
@@ -781,14 +814,7 @@ namespace aris
 		Environment::Environment(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
 			:Element(father, id, xml_ele)
 		{
-			if (!xml_ele.Attribute("gravity"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must has Attribute \"gravity\"");
-			try
-			{
-				core::Matrix m = this->model().calculator().calculateExpression(xml_ele.Attribute("gravity"));
-				if (m.size() != 6)throw std::runtime_error("");
-				std::copy_n(m.data(), 6, gravity_);
-			}
-			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute gravity must has valid expression"); }
+			std::copy_n(attributeMatrix(xml_ele, "gravity", 1, 6).data(), 6, gravity_);
 		}
 		
 		struct Akima::Imp
@@ -870,15 +896,8 @@ namespace aris
 		}
 		Akima::Akima(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Element(father, id, xml_ele)
 		{
-			if (!xml_ele.Attribute("x"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must has Attribute \"x\"");
-			core::Matrix mat_x, mat_y;
-			try
-			{
-				mat_x = this->model().calculator().calculateExpression(xml_ele.Attribute("x"));
-				mat_y = this->model().calculator().calculateExpression(xml_ele.Attribute("y"));
-			}
-			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute x,y must has valid expression"); }
-
+			auto mat_x = attributeMatrix(xml_ele, "x");
+			auto mat_y = attributeMatrix(xml_ele, "y");
 			*this = Akima(father, id, xml_ele.name(), std::list<double>(mat_x.begin(), mat_x.end()), std::list<double>(mat_y.begin(), mat_y.end()));
 		}
 		Akima::Akima(Object &father, std::size_t id, const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in)
@@ -1375,14 +1394,7 @@ namespace aris
 		{
 			double pm[16];
 
-			if (!xml_ele.Attribute("pe"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"Pos\"");
-			try
-			{
-				core::Matrix m = this->model().calculator().calculateExpression(xml_ele.Attribute("pe"));
-				if (m.size() != 6)throw std::runtime_error("");
-				s_pe2pm(m.data(), pm);
-			}
-			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute \"pe\" must be a matrix expression"); }
+			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), pm);
 
 			if (xml_ele.Attribute("relative_to"))
 			{
@@ -1530,9 +1542,13 @@ namespace aris
 		auto Part::setWe(const double *we_in, const double *re_in, const char *type)->void
 		{
 			setRe(re_in, type);
-			double re[3];
+			double re[3], wa[3];
 			if (re_in) std::copy(re_in, re_in + 3, re); else getRe(re, type);
-			if (we_in) s_we2vs(re, we_in, vs(), type);
+			if (we_in) 
+			{
+				s_we2wa(re, we_in, wa, type);
+				setWa(wa);
+			} 
 		}
 		auto Part::setWe(const Coordinate &relative_to, const double *we_in, const double *re_in, const char *type)->void 
 		{
@@ -1548,9 +1564,13 @@ namespace aris
 		auto Part::setWq(const double *wq_in, const double *rq_in)->void
 		{
 			setRq(rq_in);
-			double rq[4];
+			double rq[4], wa[3];
 			if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(rq);
-			if (wq_in) s_wq2vs(rq, wq_in, vs());
+			if (wq_in)
+			{
+				s_wq2wa(rq, wq_in, wa);
+				setWa(wa);
+			}
 		}
 		auto Part::setWq(const Coordinate &relative_to, const double *wq_in, const double *rq_in)->void
 		{
@@ -1566,9 +1586,13 @@ namespace aris
 		auto Part::setWm(const double *wm_in, const double *rm_in, std::size_t wm_ld, std::size_t rm_ld)->void
 		{
 			setRm(rm_in, rm_ld);
-			double rm[9];
+			double rm[9], wa[3];
 			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(rm);
-			if (wm_in) s_wm2wa(rm, wm_in, vs()+3, 3, wm_ld);
+			if (wm_in) 
+			{
+				s_wm2wa(rm, wm_in, wa, 3, wm_ld);
+				setWa(wa);
+			}
 		}
 		auto Part::setWm(const Coordinate &relative_to, const double *wm_in, const double *rm_in, std::size_t wm_ld, std::size_t rm_ld)->void
 		{
@@ -1584,16 +1608,24 @@ namespace aris
 		auto Part::setWa(const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
 		{
 			setRm(rm_in, rm_ld);
-			double rm[9];
-			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3);
-			if (wa_in) std::copy(wa_in, wa_in + 3, vs() + 3);
+			if (wa_in) 
+			{
+				double vp[3], pp[3];
+				getVp(vp, pp);
+				std::copy(wa_in, wa_in + 3, vs() + 3);
+				setVp(vp, pp);
+			}
 		}
 		auto Part::setWa(const Coordinate &relative_to, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
 		{
 			setRm(relative_to, rm_in, rm_ld);
-			double rm[9];
-			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3);
-			if (wa_in) s_wa2wa(*relative_to.pm(), relative_to.vs(), wa_in, vs() + 3);
+			if (wa_in) 
+			{
+				double vp[3], pp[3];
+				getVp(vp, pp);
+				s_wa2wa(*relative_to.pm(), relative_to.vs(), wa_in, vs() + 3);
+				setVp(vp, pp);
+			}
 		}
 		auto Part::setVe(const double *ve_in, const double *pe_in, const char *type)->void 
 		{ 
@@ -1678,99 +1710,154 @@ namespace aris
 		}
 		auto Part::setAp(const double *ap_in, const double *vp_in, const double *pp_in)->void
 		{
-			setAp(vp_in, pp_in);
+			setVp(vp_in, pp_in);
 			double pp[3], vp[3];
-			if (pp_in) std::copy(pp_in, pp_in + 4, pp); else getPq(pp);
-			if (vp_in) std::copy(vp_in, vp_in + 4, vp); else getVq(vp);
-			if (ap_in) s_ap2as(pp, vp, ap_in, as(), nullptr);
+			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(pp);
+			if (vp_in) std::copy(vp_in, vp_in + 3, vp); else getVp(vp);
+			if (ap_in) s_ap2as(pp, vp, ap_in, as(), vs());
 		}
 		auto Part::setAp(const Coordinate &relative_to, const double *ap_in, const double *vp_in, const double *pp_in)->void
 		{
 			setVp(relative_to, vp_in, pp_in);
-			double pp[3], vp[3], as[6];
+			double pp[3], vp[3], as[6], vs[6];
 			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(relative_to, pp);
 			if (vp_in) std::copy(vp_in, vp_in + 3, vp); else getVp(relative_to, vp);
 			if (ap_in)
 			{
-				s_ap2as(pp, vp, ap_in, as);
-				setAs(relative_to, as);
+				getXa(relative_to, as + 3, vs + 3);
+				s_ap2as(pp, vp, ap_in, as, vs);
+				setAs(relative_to, as, vs);
 			}
 		}
 		auto Part::setXe(const double *xe_in, const double *we_in, const double *re_in, const char *type)->void
 		{
-			setWe(we_in, re_in, type);
-			double re[3], we[3];
-			if (re_in) std::copy(re_in, re_in + 3, re); else getRe(re, type);
-			if (we_in) std::copy(we_in, we_in + 3, we); else getWe(we, nullptr, type);
-			if (xe_in) s_xe2as(re, we, xe_in, as(), nullptr, type);
+			if (xe_in)
+			{
+				double re[3], we[3], xa[3], wa[3], rm[9];
+				if (re_in) std::copy(re_in, re_in + 3, re); else getRe(re, type);
+				if (we_in) std::copy(we_in, we_in + 3, we); else getWe(we, nullptr, type);
+				s_re2rm(re, rm, type);
+				s_xe2xa(re, we, xe_in, xa, wa, type);
+				setXa(xa, wa, rm);
+			}
+			else
+			{
+				setWe(we_in, re_in, type);
+			}
 		}
 		auto Part::setXe(const Coordinate &relative_to, const double *xe_in, const double *we_in, const double *re_in, const char *type)->void
 		{
-			setWe(relative_to, we_in, re_in, type);
-			double re[6], we[6], xa[3];
-			if (re_in) std::copy(re_in, re_in + 3, re); else getRe(relative_to, re, type);
-			if (we_in) std::copy(we_in, we_in + 3, we); else getWe(relative_to, we, nullptr, type);
 			if (xe_in)
 			{
-				s_xe2xa(re, we, xe_in, xa, nullptr, type);
-				setXa(relative_to, xa);
+				double re[3], we[3], xa[3], wa[3], rm[9];
+				if (re_in) std::copy(re_in, re_in + 3, re); else getRe(relative_to, re, type);
+				if (we_in) std::copy(we_in, we_in + 3, we); else getWe(relative_to, we, nullptr, type);
+				s_re2rm(re, rm, type);
+				s_xe2xa(re, we, xe_in, xa, wa, type);
+				setXa(relative_to, xa, wa, rm);
+			}
+			else
+			{
+				setWe(relative_to, we_in, re_in, type);
 			}
 		}
 		auto Part::setXq(const double *xq_in, const double *wq_in, const double *rq_in)->void
 		{
-			setWq(wq_in, rq_in);
-			double rq[4], wq[4];
-			if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(rq);
-			if (wq_in) std::copy(wq_in, wq_in + 4, wq); else getWq(wq);
-			if (xq_in) s_xq2as(rq, wq, rq_in, as(), nullptr);
+			if (xq_in)
+			{
+				double rq[4], wq[4], xa[3], wa[3], rm[9];
+				if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(rq);
+				if (wq_in) std::copy(wq_in, wq_in + 4, wq); else getWq(wq);
+				s_rq2rm(rq, rm);
+				s_xq2xa(rq, wq, xq_in, xa, wa);
+				setXa(xa, wa, rm);
+			}
+			else
+			{
+				setWq(wq_in, rq_in);
+			}
 		}
 		auto Part::setXq(const Coordinate &relative_to, const double *xq_in, const double *wq_in, const double *rq_in)->void
 		{
-			setWq(relative_to, wq_in, rq_in);
-			double rq[4], wq[4], xa[6];
-			if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(relative_to, rq);
-			if (wq_in) std::copy(wq_in, wq_in + 4, wq); else getWq(relative_to, wq);
 			if (xq_in)
 			{
-				s_xq2xa(rq, wq, xq_in, xa);
-				setXa(relative_to, xa);
+				double rq[4], wq[4], xa[3], wa[3], rm[9];
+				if (rq_in) std::copy(rq_in, rq_in + 4, rq); else getRq(relative_to, rq);
+				if (wq_in) std::copy(wq_in, wq_in + 4, wq); else getWq(relative_to, wq);
+				s_rq2rm(rq, rm);
+				s_xq2xa(rq, wq, xq_in, xa, wa);
+				setXa(relative_to, xa, wa, rm);
+			}
+			else
+			{
+				setWq(relative_to, wq_in, rq_in);
 			}
 		}
 		auto Part::setXm(const double *xm_in, const double *wm_in, const double *rm_in, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)->void
 		{
-			setWm(wm_in, rm_in);
-			double rm[9], wm[9];
-			if (rm_in) std::copy(rm_in, rm_in + 9, rm); else getRm(rm);
-			if (wm_in) std::copy(wm_in, wm_in + 9, wm); else getWm(wm);
-			if (xm_in) s_xm2as(rm, wm, xm_in, as());
+			if (xm_in)
+			{
+				double rm[9], wm[9], xa[3], wa[3];
+				if (rm_in) std::copy(rm_in, rm_in + 9, rm); else getRm(rm);
+				if (wm_in) std::copy(wm_in, wm_in + 9, wm); else getWm(wm);
+				s_xm2xa(rm, wm, xm_in, xa, wa);
+				setXa(xa, wa, rm);
+			}
+			else
+			{
+				setWm(wm_in, rm_in);
+			}
 		}
 		auto Part::setXm(const Coordinate &relative_to, const double *xm_in, const double *wm_in, const double *rm_in, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)->void
 		{
-			setWm(relative_to, wm_in, rm_in);
-			double rm[9], wm[9], xa[3];
-			if (rm_in) std::copy(rm_in, rm_in + 9, rm); else getRm(relative_to, rm);
-			if (wm_in) std::copy(wm_in, wm_in + 9, wm); else getWm(relative_to, wm);
 			if (xm_in)
 			{
-				s_xm2xa(rm, wm, xm_in, xa);
-				setXa(relative_to, xa);
+				double rm[9], wm[9], xa[3], wa[3];
+				if (rm_in) std::copy(rm_in, rm_in + 9, rm); else getRm(relative_to, rm);
+				if (wm_in) std::copy(wm_in, wm_in + 9, wm); else getWm(relative_to, wm);
+				s_xm2xa(rm, wm, xm_in, xa, wa);
+				setXa(relative_to, xa, wa, rm);
+			}
+			else
+			{
+				setWm(relative_to, wm_in, rm_in);
 			}
 		}
 		auto Part::setXa(const double *xa_in, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
 		{
-			setWa(wa_in, rm_in, rm_ld);
-			double rm[9], wa[3];
-			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(rm);
-			if (wa_in) std::copy(wa_in, wa_in + 3, wa); else getWa(wa);
-			if (xa_in) s_xa2as(xa_in, as());
+			if (xa_in) 
+			{
+				double pp[3], vp[3], ap[3], rm[9], wa[3];
+				getAp(ap, vp, pp);
+				setWa(wa_in, rm_in, rm_ld);
+				if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(rm);
+				if (wa_in) std::copy(wa_in, wa_in + 3, wa); else getWa(wa);
+				s_xa2as(xa_in, as());
+				s_ap2as(pp, vp, ap, as(), vs());
+			}
+			else
+			{
+				setWa(wa_in, rm_in, rm_ld);
+			}
 		}
 		auto Part::setXa(const Coordinate &relative_to, const double *xa_in, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
 		{
-			setWa(relative_to, wa_in, rm_in, rm_ld);
-			double rm[9], wa[3];
-			if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(relative_to, rm);
-			if (wa_in) std::copy(wa_in, wa_in + 3, wa); else getWa(relative_to, wa);
-			if (xa_in)s_xa2xa(*relative_to.pm(), relative_to.vs(), relative_to.as(), wa, xa_in, as() + 3, nullptr);
+			if (xa_in)
+			{
+				double pp[3], vp[3], ap[3], rm[9], wa[3];
+				getAp(ap, vp, pp);
+				
+				setWa(relative_to, wa_in, rm_in, rm_ld);
+				if (rm_in) aris::dynamic::s_block_cpy(3, 3, rm_in, 0, 0, rm_ld, rm, 0, 0, 3); else getRm(relative_to, rm);
+				if (wa_in) std::copy(wa_in, wa_in + 3, wa); else getWa(relative_to, wa);
+				s_xa2xa(*relative_to.pm(), relative_to.vs(), relative_to.as(), wa, xa_in, as() + 3, vs() + 3);
+				
+				s_ap2as(pp, vp, ap, as(), vs());
+			}
+			else
+			{
+				setWa(relative_to, wa_in, rm_in, rm_ld);
+			}
 		}
 		auto Part::setAe(const double *ae_in, const double *ve_in, const double *pe_in, const char *type)->void 
 		{ 
@@ -2042,39 +2129,11 @@ namespace aris
 		Part::Part(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
 			: Coordinate(father, id, xml_ele)
 		{
-			try
-			{
-				auto m = this->model().calculator().calculateExpression(xml_ele.Attribute("pe"));
-				if (m.size() != 6)throw std::runtime_error("");
-				s_pe2pm(m.data(), *pm());
-			}
-			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute \"inertia\" must be a matrix expression"); }
-
-			try
-			{
-				auto m = this->model().calculator().calculateExpression(xml_ele.Attribute("vel"));
-				if (m.size() != 6)throw std::runtime_error("");
-				std::copy_n(m.data(), 6, vs());
-			}
-			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute \"vel\" must be a matrix expression"); }
-
-			try
-			{
-				auto m = this->model().calculator().calculateExpression(xml_ele.Attribute("acc"));
-				if (m.size() != 6)throw std::runtime_error("");
-				std::copy_n(m.data(), 6, as());
-			}
-			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute \"acc\" must be a matrix expression"); }
-
-			try
-			{
-				auto m = this->model().calculator().calculateExpression(xml_ele.Attribute("inertia"));
-				if (m.size() != 10)throw std::runtime_error("");
-				s_iv2is(m.data(), *imp_->prt_is_);
-			}
-			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute \"inertia\" must be a matrix expression"); }
-
-
+			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), *pm());
+			std::copy_n(attributeMatrix(xml_ele, "vel", 1, 6).data(), 6, vs());
+			std::copy_n(attributeMatrix(xml_ele, "acc", 1, 6).data(), 6, as());
+			s_iv2is(attributeMatrix(xml_ele, "inertia", 1, 10).data(), *imp_->prt_is_);
+			
 			if (xml_ele.Attribute("graphic_file_path"))
 				imp_->graphic_file_path_ = model().calculator().evaluateExpression(xml_ele.Attribute("graphic_file_path"));
 
@@ -2207,16 +2266,8 @@ namespace aris
 		Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
 			: Constraint(father, id, xml_ele)
 		{
-			if (!xml_ele.Attribute("frc_coe"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"frc_coe\"");
-			try
-			{
-				core::Matrix m = model().calculator().calculateExpression(xml_ele.Attribute("frc_coe"));
-				if (m.size() != 3)throw std::runtime_error("");
-				setFrcCoe(m.data());
-			}
-			catch (std::exception &) { throw std::runtime_error(std::string("xml element \"") + this->name() + "\" attribute frc_coe must be a matrix expression"); }
-		
-			imp_->component_axis_ = std::stoi(xml_ele.Attribute("component"));
+			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
+			imp_->component_axis_ = attributeInt32(xml_ele, "component");
 
 			double loc_cst[6]{ 0,0,0,0,0,0, };
 			loc_cst[axis()] = 1;
@@ -3353,7 +3404,7 @@ namespace aris
 
 		}
 		SingleComponentForce::SingleComponentForce(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: Force(father, id, xml_ele), component_axis_(std::stoi(xml_ele.Attribute("component")))
+			: Force(father, id, xml_ele), component_axis_(attributeInt32(xml_ele,"component"))
 		{
 		}
 	}

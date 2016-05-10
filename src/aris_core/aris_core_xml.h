@@ -205,10 +205,34 @@ namespace aris
 			template<typename T, typename ...Args>
 			auto add(const std::string &name, Args... args)->T& { return static_cast<T&>(add(T(*this, size(), name, args...))); }
 
+			auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->bool;
+			auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, bool default_value)const->bool;
+			auto attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int64_t;
+			auto attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int64_t default_value)const->std::int64_t;
+			auto attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int32_t;
+			auto attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int32_t default_value)const->std::int32_t;
+			auto attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int16_t;
+			auto attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int16_t default_value)const->std::int16_t;
+			auto attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int8_t;
+			auto attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int8_t default_value)const->std::int8_t;
+			auto attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint64_t;
+			auto attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint64_t default_value)const->std::uint64_t;
+			auto attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint32_t;
+			auto attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint32_t default_value)const->std::uint32_t;
+			auto attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint16_t;
+			auto attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint16_t default_value)const->std::uint16_t;
+			auto attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint8_t;
+			auto attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint8_t default_value)const->std::uint8_t;
+			auto attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->float;
+			auto attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, float default_value)const->float;
+			auto attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->double;
+			auto attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, double default_value)const->double;
+			auto attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::string;
+			auto attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const std::string &default_value)const->std::string;
+
 			auto operator=(const Object &)->Object &;
 			auto operator=(Object &&)->Object &;
 			virtual ~Object();
-			
 		protected:
 			Object(const Object &);
 			Object(Object &&);

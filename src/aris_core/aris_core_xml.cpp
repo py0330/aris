@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include <limits>
 
 #include "aris_core_xml.h"
 
@@ -319,6 +320,284 @@ namespace aris
 
 				return back();
 			}
+		}
+		auto Object::attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->bool
+		{
+			std::string error = "failed to get bool attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+			
+			if (!xml_ele.Attribute(attribute_name.c_str()))
+				throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			if (xml_ele.Attribute(attribute_name.c_str(), "true"))
+			{
+				return true;
+			}
+			else if (xml_ele.Attribute(attribute_name.c_str(), "false"))
+			{
+				return false;
+			}
+			else
+			{
+				throw std::runtime_error(error + "bool attribute must be \"true\" or \"false\", but the attribute text is \"" + xml_ele.Attribute(attribute_name.c_str()) + "\"");
+			}
+		}
+		auto Object::attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, bool default_value)const->bool
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeBool(xml_ele, attribute_name);
+		}
+		auto Object::attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int64_t
+		{
+			std::string error = "failed to get int64 attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+			
+			if (!xml_ele.Attribute(attribute_name.c_str()))
+				throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			try
+			{
+				return std::stoll(xml_ele.Attribute(attribute_name.c_str()), nullptr, 0);
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+		}
+		auto Object::attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int64_t default_value)const->std::int64_t
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeInt64(xml_ele, attribute_name);
+		}
+		auto Object::attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int32_t
+		{
+			std::string error = "failed to get int32 attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			long long value_ll;
+			try
+			{
+				value_ll = std::stoll(xml_ele.Attribute(attribute_name.c_str()), nullptr, 0);
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+
+			if (value_ll > std::numeric_limits<std::int32_t>::max() || value_ll < std::numeric_limits<std::int32_t>::min())
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+
+			return static_cast<std::int32_t>(value_ll);
+		}
+		auto Object::attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int32_t default_value)const->std::int32_t
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeInt32(xml_ele, attribute_name);
+		}
+		auto Object::attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int16_t
+		{
+			std::string error = "failed to get int16 attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			long long value_ll;
+			try
+			{
+				value_ll = std::stoll(xml_ele.Attribute(attribute_name.c_str()), nullptr, 0);
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+
+			if (value_ll > std::numeric_limits<std::int16_t>::max() || value_ll < std::numeric_limits<std::int16_t>::min())
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+
+			return static_cast<std::int16_t>(value_ll);
+		}
+		auto Object::attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int16_t default_value)const->std::int16_t
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeInt16(xml_ele, attribute_name);
+		}
+		auto Object::attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int8_t
+		{
+			std::string error = "failed to get int16 attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			long long value_ll;
+			try
+			{
+				value_ll = std::stoll(xml_ele.Attribute(attribute_name.c_str()), nullptr, 0);
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+
+			if (value_ll > std::numeric_limits<std::int8_t>::max() || value_ll < std::numeric_limits<std::int8_t>::min())
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+
+			return static_cast<std::int8_t>(value_ll);
+		}
+		auto Object::attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int8_t default_value)const->std::int8_t
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeInt8(xml_ele, attribute_name);
+		}
+		auto Object::attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint64_t
+		{
+			std::string error = "failed to get uint64 attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))
+				throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			try
+			{
+				return std::stoull(xml_ele.Attribute(attribute_name.c_str()), nullptr, 0);
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+		}
+		auto Object::attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint64_t default_value)const->std::uint64_t
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeUint64(xml_ele, attribute_name);
+		}
+		auto Object::attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint32_t
+		{
+			std::string error = "failed to get uint32 attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			unsigned long long value_ull;
+			try
+			{
+				value_ull = std::stoll(xml_ele.Attribute(attribute_name.c_str()), nullptr, 0);
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+
+			if (value_ull > std::numeric_limits<std::uint32_t>::max())
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+
+			return static_cast<std::uint32_t>(value_ull);
+		}
+		auto Object::attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint32_t default_value)const->std::uint32_t
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeUint32(xml_ele, attribute_name);
+		}
+		auto Object::attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint16_t
+		{
+			std::string error = "failed to get uint16 attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			unsigned long long value_ull;
+			try
+			{
+				value_ull = std::stoll(xml_ele.Attribute(attribute_name.c_str()), nullptr, 0);
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+
+			if (value_ull > std::numeric_limits<std::uint16_t>::max())
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+
+			return static_cast<std::uint16_t>(value_ull);
+		}
+		auto Object::attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint16_t default_value)const->std::uint16_t
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeUint16(xml_ele, attribute_name);
+		}
+		auto Object::attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint8_t
+		{
+			std::string error = "failed to get uint8 attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			unsigned long long value_ull;
+			try
+			{
+				value_ull = std::stoll(xml_ele.Attribute(attribute_name.c_str()), nullptr, 0);
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+
+			if (value_ull > std::numeric_limits<std::uint8_t>::max())
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+
+			return static_cast<std::uint8_t>(value_ull);
+		}
+		auto Object::attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint8_t default_value)const->std::uint8_t
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeUint8(xml_ele, attribute_name);
+		}
+		auto Object::attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->float
+		{
+			std::string error = "failed to get double attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))
+				throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			try
+			{
+				return std::stof(xml_ele.Attribute(attribute_name.c_str()));
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+		}
+		auto Object::attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, float default_value)const->float
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeFloat(xml_ele, attribute_name);
+		}
+		auto Object::attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->double
+		{
+			std::string error = "failed to get double attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))
+				throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			try
+			{
+				return std::stod(xml_ele.Attribute(attribute_name.c_str()));
+			}
+			catch (std::exception &e)
+			{
+				throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			}
+		}
+		auto Object::attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, double default_value)const->double
+		{
+			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
+			else return attributeDouble(xml_ele, attribute_name);
+		}
+		auto Object::attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::string
+		{
+			std::string error = "failed to get double attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))
+				throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			return xml_ele.Attribute(attribute_name.c_str());
+		}
+		auto Object::attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const std::string &default_value)const->std::string
+		{
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeString(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::operator=(const Object &other)->Object &
 		{

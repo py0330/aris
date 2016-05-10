@@ -957,8 +957,8 @@ namespace aris
 			pp_in = pp_in ? pp_in : default_pp();
 			vp_in = vp_in ? vp_in : default_vp();
 			ap_in = ap_in ? ap_in : default_ap();
-			double as_out_default[6];
-			double vs_out_default[6];
+			double as_out_default[6]{ 0,0,0,0,0,0 };
+			double vs_out_default[6]{ 0,0,0,0,0,0 };
 			as_out = as_out ? as_out : as_out_default;
 			vs_out = vs_out ? vs_out : vs_out_default;
 
