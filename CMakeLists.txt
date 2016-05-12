@@ -163,7 +163,7 @@ target_link_libraries(test_core ${ALL_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
 set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp)
+set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp test_control_motion.h test_control_motion.cpp)
 PREPEND(FULL_SRC test/test_control ${SOURCE_FILES})
 add_executable(test_control ${FULL_SRC})
 target_link_libraries(test_control ${ALL_LINK_LIB})

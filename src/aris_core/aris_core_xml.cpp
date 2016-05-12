@@ -674,7 +674,11 @@ namespace aris
 		auto Root::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			clear();
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement()) add(*ele);
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())
+			{
+				std::cout << ele->name() << std::endl;
+				add(*ele);
+			}
 		}
 		auto Root::saveXml(const std::string &filename) const->void
 		{

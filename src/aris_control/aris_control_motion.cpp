@@ -574,5 +574,25 @@ namespace aris
 				this->msgPipe().sendToNrt(*data.msg_send);
 			}
 		}
+
+
+		class Motion::Imp
+		{
+		public:
+			std::int32_t input2count_;
+			std::int32_t home_count_;
+			std::int32_t max_pos_count_;
+			std::int32_t min_pos_count_;
+			std::int32_t max_vel_count_;
+		};
+		Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele):Slave(father, id, xml_ele)
+		{
+			imp_->input2count_ = attributeInt32(xml_ele, "input2count");
+			imp_->max_pos_count_ = static_cast<std::int32_t>(attributeDouble(xml_ele, "max_pos") * imp_->input2count_);
+			imp_->min_pos_count_ = static_cast<std::int32_t>(attributeDouble(xml_ele, "min_pos") * imp_->input2count_);
+			imp_->max_vel_count_ = static_cast<std::int32_t>(attributeDouble(xml_ele, "max_vel") * imp_->input2count_);
+			imp_->home_count_ = static_cast<std::int32_t>(attributeDouble(xml_ele, "home_pos") * imp_->input2count_);
+			configSdo(9, static_cast<std::int32_t>(-imp_->home_count_));
+		}
 	}
 }

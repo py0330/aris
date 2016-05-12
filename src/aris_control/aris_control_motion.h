@@ -117,6 +117,24 @@ namespace aris
 
 			friend class EthercatMaster;
 		};
+
+
+		class Motion :public Slave
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("motion"); return std::ref(type); }
+			virtual auto type() const->const std::string&{ return Type(); }
+			
+			Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+
+		private:
+			class Imp;
+			std::unique_ptr<Imp> imp_;
+		};
+		class Controller :public Master
+		{
+
+		};
 	}
 }
 
