@@ -614,6 +614,10 @@ namespace aris
 			typedef std::reverse_iterator<iterator> reverse_iterator; //optional
 			typedef std::reverse_iterator<const_iterator> const_reverse_iterator; //optional
 
+			auto swap(RefPool& other)->void { return container_.swap(other.container_); }
+			auto size()const->size_type { return container_.size(); }
+			auto max_size()->size_type { return container_.max_size(); }
+			auto empty()->bool { return container_.empty(); }
 			auto begin()->iterator { return container_.begin(); }
 			auto begin()const->const_iterator { return container_.begin(); }
 			auto cbegin() const->const_iterator { return container_.cbegin(); }
@@ -634,6 +638,10 @@ namespace aris
 			auto at(std::size_t id)->reference { return static_cast<reference>(container_.at(id)); }
 			auto operator[](size_type size)->reference { return static_cast<reference>(container_.operator[](size)); } //optional
 			auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(container_.operator[](size)); } //optional
+			auto pop_back()->void { container_.pop_back(); } //optional
+			auto erase(iterator iter)->iterator { return container_.erase(iter.iter_); } //optional
+			auto erase(iterator begin_iter, iterator end_iter)->iterator { return container_.erase(begin_iter.iter_, end_iter.iter_); } //optional
+			auto clear()->void { container_.clear(); } //optional
 			auto findByName(const std::string &name)const->const_iterator { return std::find_if(begin(), end(), [&name, this](T &p) {return (p.name() == name); }); }
 			auto findByName(const std::string &name)->iterator { return std::find_if(begin(), end(), [&name, this](T &p) {return (p.name() == name); }); }
 

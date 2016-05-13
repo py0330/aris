@@ -119,21 +119,29 @@ namespace aris
 		};
 
 
-		class Motion :public Slave
+
+		
+		
+		struct TxMotionData :public Slave::TxType
+		{
+			double target_pos;
+		};
+		struct RxMotionData :public Slave::RxType
+		{
+			double pos, vel, acc, cur;
+		};
+		class Motion :public SlaveTemplate<TxMotionData, RxMotionData>
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("motion"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			virtual auto readData(RxType &rx_data)->void override;
+			virtual auto writeData(const TxType& tx_data)->void override;
 			
 			Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
-
 		private:
 			class Imp;
 			std::unique_ptr<Imp> imp_;
-		};
-		class Controller :public Master
-		{
-
 		};
 	}
 }

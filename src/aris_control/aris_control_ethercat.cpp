@@ -702,11 +702,14 @@ namespace aris
 			std::uint8_t* domain_pd_;
 
 			SlaveType *slave_type_;
+
 			aris::core::ObjectPool<PdoGroup, Element> *pdo_group_pool_;
 			aris::core::ObjectPool<Sdo, Element> *sdo_pool_;
 			std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
 
 			Slave *slave_;
+			std::unique_ptr<RxType> rx_data_;
+			std::unique_ptr<TxType> tx_data_;
 
 			friend class Master::Imp;
 			friend class Slave;
@@ -744,11 +747,19 @@ namespace aris
 			auto read()->void 
 			{ 
 				ecrt_master_receive(ec_master_);
-				for (auto &sla : *slave_pool_)sla.imp_->read();
+				for (auto &sla : *slave_pool_) 
+				{
+					sla.readUpdate();
+					sla.imp_->read();
+				}
 			};
 			auto write()->void 
 			{ 
-				for (auto &sla : *slave_pool_)sla.imp_->write(); 
+				for (auto &sla : *slave_pool_) 
+				{
+					sla.writeUpdate();
+					sla.imp_->write();
+				}
 				ecrt_master_send(ec_master_); 
 			};
 			auto sync(uint64_t ns)->void
@@ -762,6 +773,8 @@ namespace aris
 
 			aris::core::ObjectPool<SlaveType, Element> *slave_type_pool_;
 			aris::core::ObjectPool<Slave, Element> *slave_pool_;
+			aris::core::RefPool<Slave::TxType> tx_data_pool_;
+			aris::core::RefPool<Slave::RxType> rx_data_pool_;
 
 			ec_master_t* ec_master_;
 			const int sample_period_ns_ = 1000000;
@@ -1162,6 +1175,9 @@ namespace aris
 		{
 			auto &ec_mst =	slave_->master().imp_->ec_master_;
 
+			/// be careful that this function here will not use derived version, because this is a CTOR!!! ///
+			tx_data_.reset(slave_->createTxData());
+			rx_data_.reset(slave_->createRxData());
 #ifdef UNIX
 			for (auto &reg : this->ec_pdo_entry_reg_vec_)	reg.position = slave_->position();
 
@@ -1203,6 +1219,10 @@ namespace aris
 		auto Slave::pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&{return *imp_->pdo_group_pool_; }
 		auto Slave::sdoPool()->aris::core::ObjectPool<Sdo, Element>& { return *imp_->sdo_pool_; }
 		auto Slave::sdoPool()const->const aris::core::ObjectPool<Sdo, Element>&{return *imp_->sdo_pool_; }
+		auto Slave::txData()->TxType&{return std::ref(*imp_->tx_data_);	}
+		auto Slave::txData()const->const TxType&{ return std::ref(*imp_->tx_data_); }
+		auto Slave::rxData()->RxType& { return std::ref(*imp_->rx_data_); }
+		auto Slave::rxData()const->const RxType&{ return std::ref(*imp_->rx_data_); }
 		auto Slave::readPdo(int pdo_group_id, int pdo_id, std::int8_t &value) const->void
 		{
 			pdoGroupPool().at(pdo_group_id).at(pdo_id).read(value);
@@ -1335,6 +1355,8 @@ namespace aris
 		auto Slave::writeSdo(int sdoID, std::uint8_t value)->void { sdoPool().at(sdoID).write(value); }
 		auto Slave::writeSdo(int sdoID, std::uint16_t value)->void { sdoPool().at(sdoID).write(value); }
 		auto Slave::writeSdo(int sdoID, std::uint32_t value)->void { sdoPool().at(sdoID).write(value); }
+		auto Slave::createTxData()->TxType* { return new TxType; }
+		auto Slave::createRxData()->RxType* { return new RxType; }
 		Slave::~Slave() {}
 		Slave::Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(this))
 		{
@@ -1347,6 +1369,7 @@ namespace aris
 			imp_->slave_type_ = static_cast<SlaveType*>(&add(std::ref(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type")))));
 			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("PDO"));
 			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("SDO"));
+			
 
 			for (auto &group : pdoGroupPool())
 			{
@@ -1360,7 +1383,7 @@ namespace aris
 				sdo.slave_ = this;
 			}
 
-			// make PDO map
+			/// make PDO map ///
 			for (int i = 0; i < static_cast<int>(pdoGroupPool().size()); ++i)
 			{
 				auto &group = pdoGroupPool().at(i);
@@ -1381,7 +1404,7 @@ namespace aris
 				}
 			}
 
-			//create ecrt structs
+			/// create ecrt structs  ///
 			for (auto &pdo_group : pdoGroupPool())
 			{
 				for (auto &pdo : pdo_group)
@@ -1429,17 +1452,22 @@ namespace aris
 			imp_->is_running_ = true;
 			imp_->setInstance(this);
 
-			// init begin //
+			/// init begin ///
 #ifdef UNIX
 			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
 
 			imp_->ec_master_ = ecrt_request_master(0);
 			if (!imp_->ec_master_) { throw std::runtime_error("master request failed!"); }
 
+			/// init each slave and update tx & rx data pool ///
+			txDataPool().clear();
+			rxDataPool().clear();
 			for (auto &slave : slavePool())
 			{
 				slave.imp_->init();
 				slave.init();
+				txDataPool().push_back_ptr(&slave.txData());
+				rxDataPool().push_back_ptr(&slave.rxData());
 			}
 
 			ecrt_master_activate(imp_->ec_master_);
@@ -1449,7 +1477,7 @@ namespace aris
 				slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
 			}
 
-			/// init end
+			/// init end ///
 			rt_print_auto_init(1);
 			const int priority = 99;
 
@@ -1475,6 +1503,10 @@ namespace aris
 		auto Master::slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&{ return *imp_->slave_type_pool_; }
 		auto Master::slavePool()->aris::core::ObjectPool<Slave, Element>& { return *imp_->slave_pool_; }
 		auto Master::slavePool()const->const aris::core::ObjectPool<Slave, Element>&{ return *imp_->slave_pool_; }
+		auto Master::txDataPool()->aris::core::RefPool<Slave::TxType> &{return imp_->tx_data_pool_;}
+		auto Master::txDataPool()const->const aris::core::RefPool<Slave::TxType> &{return imp_->tx_data_pool_; }
+		auto Master::rxDataPool()->aris::core::RefPool<Slave::RxType> & { return imp_->rx_data_pool_; }
+		auto Master::rxDataPool()const->const aris::core::RefPool<Slave::RxType> &{return imp_->rx_data_pool_; }
 		Master::~Master() {}
 		Master::Master() :imp_(new Imp)
 		{

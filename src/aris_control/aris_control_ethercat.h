@@ -317,6 +317,8 @@ namespace aris
 		class Slave: public Element
 		{
 		public:
+			struct TxType {};
+			struct RxType {};
 			static auto Type()->const std::string &{ static const std::string type("slave"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
@@ -324,6 +326,10 @@ namespace aris
 			auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&;
 			auto sdoPool()->aris::core::ObjectPool<Sdo, Element>&;
 			auto sdoPool()const->const aris::core::ObjectPool<Sdo, Element>&;
+			auto txData()->TxType&;
+			auto txData()const->const TxType&;
+			auto rxData()->RxType&;
+			auto rxData()const->const RxType&;
 			auto readPdo(int pdo_group_id, int pdo_id, std::int8_t &value)const->void;
 			auto readPdo(int pdo_group_id, int pdo_id, std::int16_t &value)const->void;
 			auto readPdo(int pdo_group_id, int pdo_id, std::int32_t &value)const->void;
@@ -377,13 +383,17 @@ namespace aris
 		
 		protected:
 			virtual auto init()->void {};
+			virtual auto readUpdate()->void {};
+			virtual auto writeUpdate()->void {};
+			virtual auto createTxData()->TxType*;
+			virtual auto createRxData()->RxType*;
 
 		private:
-			Slave(const Slave &other) = delete;
-			Slave(Slave &&other) = delete;
 			auto operator=(const Slave &other)->Slave & = delete;
 			auto operator=(Slave &&other)->Slave & = delete;
-
+			Slave(const Slave &other) = delete;
+			Slave(Slave &&other) = delete;
+			
 			struct Imp;
 			std::unique_ptr<Imp> imp_;
 
@@ -402,7 +412,10 @@ namespace aris
 			auto slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&;
 			auto slavePool()->aris::core::ObjectPool<Slave, Element>&;
 			auto slavePool()const->const aris::core::ObjectPool<Slave, Element>&;
-
+			auto txDataPool()->aris::core::RefPool<Slave::TxType> &;
+			auto txDataPool()const->const aris::core::RefPool<Slave::TxType> &;
+			auto rxDataPool()->aris::core::RefPool<Slave::RxType> &;
+			auto rxDataPool()const->const aris::core::RefPool<Slave::RxType> &;
 			virtual ~Master();
 			Master();
 		protected:
@@ -420,6 +433,31 @@ namespace aris
 			friend class Slave;
 			friend class Sdo;
 			friend class Pdo;
+		};
+
+		template<typename Tx, typename Rx>
+		class SlaveTemplate :public Slave
+		{
+		public:
+			typedef Tx TxType;
+			typedef Rx RxType;
+			virtual auto readData(RxType &rx_data)->void {}
+			virtual auto writeData(const TxType& tx_data)->void {}
+			auto txData()->TxType & { return static_cast<TxType&>(Slave::txData()); }
+			auto txData()const->const TxType &{ return static_cast<const TxType&>(Slave::txData()); }
+			auto rxData()->RxType &{ return static_cast<RxType&>(Slave::rxData()); }
+			auto rxData()const->const RxType &{ return static_cast<const RxType&>(Slave::rxData()); }
+			
+			SlaveTemplate(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Slave(father, id, xml_ele)
+			{
+				static_assert(std::is_base_of<Slave::TxType, TxType>(), "\"TxDataType\" must be derived from \"TxData\"");
+				static_assert(std::is_base_of<Slave::RxType, RxType>(), "\"RxDataType\" must be derived from \"RxData\"");
+			}
+		private:
+			virtual auto readUpdate()->void override final { readData(rxData()); }
+			virtual auto writeUpdate()->void override final { writeData(txData()); }
+			virtual auto createTxData()->Slave::TxType* override final { return new TxType; };
+			virtual auto createRxData()->Slave::RxType* override final { return new RxType; };
 		};
 	}
 }
