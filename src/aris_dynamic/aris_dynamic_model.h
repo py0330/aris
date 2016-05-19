@@ -483,6 +483,8 @@ namespace aris
 			auto motFceDyn() const->double;
 			auto setMotFceDyn(double mot_dyn_fce)->void;
 			auto motFceFrc() const->double;
+			auto slaveID()const->std::size_t;
+
 
 		protected:
 			virtual ~Motion();

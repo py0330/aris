@@ -34,11 +34,9 @@ namespace aris
 			bool if_check_pos_max{ true };
 			bool if_check_pos_continuous{ true };
 			std::int32_t gait_id;
-			const aris::sensor::ImuData *imu_data;
-			const std::vector<aris::control::EthercatForceSensor::Data> *force_data;
-			const std::vector<aris::control::EthercatMotion::RawData> *motion_raw_data;
-			const std::vector<aris::control::EthercatMotion::RawData> *last_motion_raw_data;
-			const std::vector<double> *motion_feedback_pos;
+			
+			aris::sensor::SensorRoot* sensor_root;
+			aris::control::Controller* controller;
 		};
 
 		typedef std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)> ParseFunc;
@@ -53,15 +51,15 @@ namespace aris
 			auto createModel(dynamic::Model *model)->void;
 			template<typename T>
 			auto createController()->void { this->createController(new T); }
-			auto createController(control::EthercatController *controller)->void;
+			auto createController(control::Controller *controller)->void;
 			template<typename T>
 			auto createSensorRoot()->void { this->createSensorRoot(new T); }
 			auto createSensorRoot(sensor::SensorRoot *sensor_root)->void;
 			
 			auto model()->dynamic::Model&;
 			auto model()const->const dynamic::Model&{ return const_cast<ControlServer *>(this)->model(); }
-			auto controller()->control::EthercatController&;
-			auto controller()const->const control::EthercatController&{ return const_cast<ControlServer *>(this)->controller(); }
+			auto controller()->control::Controller&;
+			auto controller()const->const control::Controller&{ return const_cast<ControlServer *>(this)->controller(); }
 			auto sensorRoot()->sensor::SensorRoot&;
 			auto sensorRoot()const->const sensor::SensorRoot&{ return const_cast<ControlServer *>(this)->sensorRoot(); }
 

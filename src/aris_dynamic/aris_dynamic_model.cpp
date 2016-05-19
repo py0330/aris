@@ -2158,6 +2158,7 @@ namespace aris
 			double mot_fce_{ 0 };//仅仅用于标定
 			double frc_coe_[3]{ 0 };
 			double mot_pos_{ 0 }, mot_vel_{ 0 }, mot_acc_{ 0 }, mot_fce_dyn_{ 0 };
+			std::size_t slave_id_{0};
 		};
 		auto Motion::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -2249,6 +2250,7 @@ namespace aris
 		auto Motion::motFceDyn() const->double { return imp_->mot_fce_dyn_; }
 		auto Motion::setMotFceDyn(double mot_dyn_fce)->void { imp_->mot_fce_dyn_ = mot_dyn_fce; }
 		auto Motion::motFceFrc() const->double { return s_sgn(imp_->mot_vel_)*frcCoe()[0] + imp_->mot_vel_*frcCoe()[1] + imp_->mot_acc_*frcCoe()[2]; }
+		auto Motion::slaveID()const->std::size_t { return imp_->slave_id_; }
 		Motion::~Motion() {}
 		Motion::Motion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, int component_axis, const double *frc_coe, bool active)
 			: Constraint(father, id, name, makI, makJ, active)
@@ -2263,8 +2265,7 @@ namespace aris
 			loc_cst[axis()] = 1;
 			s_tf(*this->makI().prtPm(), loc_cst, *csmI_);
 		}
-		Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: Constraint(father, id, xml_ele)
+		Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele): Constraint(father, id, xml_ele)
 		{
 			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
 			imp_->component_axis_ = attributeInt32(xml_ele, "component");
@@ -2272,6 +2273,8 @@ namespace aris
 			double loc_cst[6]{ 0,0,0,0,0,0, };
 			loc_cst[axis()] = 1;
 			s_tf(*this->makI().prtPm(), loc_cst, *csmI_);
+
+			imp_->slave_id_ = attributeInt32(xml_ele, "slave_id");
 		}
 
 		struct GeneralMotion::Imp

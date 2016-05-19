@@ -17,120 +17,6 @@ namespace aris
 	///
 	namespace control
 	{	
-		class EthercatSlave
-		{
-		public:
-			auto readPdo(int pdo_group_id, int pdo_id, std::int8_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::int16_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::int32_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::uint8_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::uint16_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::uint32_t &value)const->void;
-			auto writePdo(int pdo_group_id, int pdo_id, std::int8_t value)->void;
-			auto writePdo(int pdo_group_id, int pdo_id, std::int16_t value)->void;
-			auto writePdo(int pdo_group_id, int pdo_id, std::int32_t value)->void;
-			auto writePdo(int pdo_group_id, int pdo_id, std::uint8_t value)->void;
-			auto writePdo(int pdo_group_id, int pdo_id, std::uint16_t value)->void;
-			auto writePdo(int pdo_group_id, int pdo_id, std::uint32_t value)->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void;
-			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void;
-			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void;
-			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void;
-			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t value)->void;
-			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void;
-			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void;
-			auto readSdo(int sdo_id, std::int8_t &value) const->void;
-			auto readSdo(int sdo_id, std::int16_t &value) const->void;
-			auto readSdo(int sdo_id, std::int32_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint8_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint16_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint32_t &value) const->void;
-			auto writeSdo(int sdo_id, std::int8_t value)->void;
-			auto writeSdo(int sdo_id, std::int16_t value)->void;
-			auto writeSdo(int sdo_id, std::int32_t value)->void;
-			auto writeSdo(int sdo_id, std::uint8_t value)->void;
-			auto writeSdo(int sdo_id, std::uint16_t value)->void;
-			auto writeSdo(int sdo_id, std::uint32_t value)->void;
-			auto readSdoConfig(int sdo_id, std::int8_t &value) const->void;
-			auto readSdoConfig(int sdo_id, std::int16_t &value) const->void;
-			auto readSdoConfig(int sdo_id, std::int32_t &value) const->void;
-			auto readSdoConfig(int sdo_id, std::uint8_t &value) const->void;
-			auto readSdoConfig(int sdo_id, std::uint16_t &value) const->void;
-			auto readSdoConfig(int sdo_id, std::uint32_t &value) const->void;
-			auto configSdo(int sdo_id, std::int8_t value)->void;
-			auto configSdo(int sdo_id, std::int16_t value)->void;
-			auto configSdo(int sdo_id, std::int32_t value)->void;
-			auto configSdo(int sdo_id, std::uint8_t value)->void;
-			auto configSdo(int sdo_id, std::uint16_t value)->void;
-			auto configSdo(int sdo_id, std::uint32_t value)->void;
-			virtual ~EthercatSlave();
-
-		protected:
-            EthercatSlave(const aris::core::XmlElement &xml_ele);
-			virtual auto init()->void {};
-
-		private:
-			EthercatSlave(const EthercatSlave &other) = delete;
-			EthercatSlave(EthercatSlave &&other) = delete;
-			EthercatSlave & operator=(const EthercatSlave &other) = delete;
-			EthercatSlave & operator=(EthercatSlave &&other) = delete;
-
-			class Imp;
-			std::unique_ptr<Imp> imp_;
-
-			friend class EthercatMaster;
-		};
-		class EthercatMaster
-		{
-		public:
-			template <class EthercatController>
-			static auto createInstance()->EthercatController*
-			{
-				if (instancePtr())
-				{
-					throw std::runtime_error("EthercatMaster can not create a controller, because it already has one");
-				}
-
-				const_cast<std::unique_ptr<EthercatMaster> &>(instancePtr()).reset(new EthercatController);
-				return static_cast<EthercatController*>(instancePtr().get());
-			}
-			static auto instance()->EthercatMaster &;
-			static auto instancePtr()->const std::unique_ptr<EthercatMaster> &;
-			virtual ~EthercatMaster();
-			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void;
-			virtual auto start()->void;
-			virtual auto stop()->void;
-			template <class Slave, typename ...Args> 
-			auto addSlave(Args ...args)->Slave*
-			{
-				auto sla = new Slave(args...);
-				this->addSlavePtr(sla);
-				return sla;
-			}
-			
-		protected:
-			EthercatMaster();
-			virtual auto controlStrategy()->void {};
-			
-		private:
-			EthercatMaster(const EthercatMaster &other) = delete;
-			EthercatMaster(EthercatMaster &&other) = delete;
-			EthercatMaster & operator=(const EthercatMaster &other) = delete;
-			EthercatMaster & operator=(EthercatMaster &&other) = delete;
-			auto addSlavePtr(EthercatSlave *pSla)->void;
-			
-		private:
-			class Imp;
-			std::unique_ptr<Imp> imp_;
-
-			friend class EthercatSlave;
-		};
-
 		class Master;
 		class Slave;
 
@@ -318,18 +204,18 @@ namespace aris
 		{
 		public:
 			struct TxType {};
-			struct RxType {};
+			struct RxType { std::int32_t ret{ 0 }; };
 			static auto Type()->const std::string &{ static const std::string type("slave"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			virtual auto txData()->TxType&;
+			virtual auto txData()const->const TxType&;
+			virtual auto rxData()->RxType&;
+			virtual auto rxData()const->const RxType&;
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 			auto pdoGroupPool()->aris::core::ObjectPool<PdoGroup, Element>&;
 			auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&;
 			auto sdoPool()->aris::core::ObjectPool<Sdo, Element>&;
 			auto sdoPool()const->const aris::core::ObjectPool<Sdo, Element>&;
-			auto txData()->TxType&;
-			auto txData()const->const TxType&;
-			auto rxData()->RxType&;
-			auto rxData()const->const RxType&;
 			auto readPdo(int pdo_group_id, int pdo_id, std::int8_t &value)const->void;
 			auto readPdo(int pdo_group_id, int pdo_id, std::int16_t &value)const->void;
 			auto readPdo(int pdo_group_id, int pdo_id, std::int32_t &value)const->void;
@@ -385,8 +271,6 @@ namespace aris
 			virtual auto init()->void {};
 			virtual auto readUpdate()->void {};
 			virtual auto writeUpdate()->void {};
-			virtual auto createTxData()->TxType*;
-			virtual auto createRxData()->RxType*;
 
 		private:
 			auto operator=(const Slave &other)->Slave & = delete;
@@ -441,12 +325,10 @@ namespace aris
 		public:
 			typedef Tx TxType;
 			typedef Rx RxType;
-			virtual auto readData(RxType &rx_data)->void {}
-			virtual auto writeData(const TxType& tx_data)->void {}
-			auto txData()->TxType & { return static_cast<TxType&>(Slave::txData()); }
-			auto txData()const->const TxType &{ return static_cast<const TxType&>(Slave::txData()); }
-			auto rxData()->RxType &{ return static_cast<RxType&>(Slave::rxData()); }
-			auto rxData()const->const RxType &{ return static_cast<const RxType&>(Slave::rxData()); }
+			virtual auto txData()->TxType & override { return tx_data_; }
+			virtual auto txData()const->const TxType & override{ return tx_data_; }
+			virtual auto rxData()->RxType & override { return rx_data_; }
+			virtual auto rxData()const->const RxType & override{ return rx_data_; }
 			
 			SlaveTemplate(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Slave(father, id, xml_ele)
 			{
@@ -454,10 +336,8 @@ namespace aris
 				static_assert(std::is_base_of<Slave::RxType, RxType>(), "\"RxDataType\" must be derived from \"RxData\"");
 			}
 		private:
-			virtual auto readUpdate()->void override final { readData(rxData()); }
-			virtual auto writeUpdate()->void override final { writeData(txData()); }
-			virtual auto createTxData()->Slave::TxType* override final { return new TxType; };
-			virtual auto createRxData()->Slave::RxType* override final { return new RxType; };
+			TxType tx_data_;
+			RxType rx_data_;
 		};
 	}
 }

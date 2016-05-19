@@ -170,7 +170,12 @@ target_link_libraries(test_control ${ALL_LINK_LIB})
 add_test(NAME test_control COMMAND test_control)
 set_tests_properties (test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-
+set(SOURCE_FILES main.cpp test_control_server.h test_control_server.cpp)
+PREPEND(FULL_SRC test/test_control_server ${SOURCE_FILES})
+add_executable(test_control_server ${FULL_SRC})
+target_link_libraries(test_control_server ${ALL_LINK_LIB})
+add_test(NAME test_control_server COMMAND test_control_server)
+set_tests_properties (test_control_server PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 
 ################################### build demos for aris ####################################
