@@ -7,6 +7,7 @@
 #include <limits>
 #include <sstream>
 #include <regex>
+#include <limits>
 
 #include "aris_core.h"
 #include "aris_dynamic_kernel.h"
@@ -2158,7 +2159,7 @@ namespace aris
 			double mot_fce_{ 0 };//仅仅用于标定
 			double frc_coe_[3]{ 0 };
 			double mot_pos_{ 0 }, mot_vel_{ 0 }, mot_acc_{ 0 }, mot_fce_dyn_{ 0 };
-			std::size_t slave_id_{0};
+			std::size_t sla_id_{ 0 }, phy_id_{0};
 		};
 		auto Motion::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -2250,7 +2251,9 @@ namespace aris
 		auto Motion::motFceDyn() const->double { return imp_->mot_fce_dyn_; }
 		auto Motion::setMotFceDyn(double mot_dyn_fce)->void { imp_->mot_fce_dyn_ = mot_dyn_fce; }
 		auto Motion::motFceFrc() const->double { return s_sgn(imp_->mot_vel_)*frcCoe()[0] + imp_->mot_vel_*frcCoe()[1] + imp_->mot_acc_*frcCoe()[2]; }
-		auto Motion::slaveID()const->std::size_t { return imp_->slave_id_; }
+		auto Motion::absID()const->std::size_t { return id(); }
+		auto Motion::slaID()const->std::size_t { return imp_->sla_id_;}
+		auto Motion::phyID()const->std::size_t { return imp_->phy_id_;}
 		Motion::~Motion() {}
 		Motion::Motion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, int component_axis, const double *frc_coe, bool active)
 			: Constraint(father, id, name, makI, makJ, active)
@@ -2265,18 +2268,7 @@ namespace aris
 			loc_cst[axis()] = 1;
 			s_tf(*this->makI().prtPm(), loc_cst, *csmI_);
 		}
-		Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele): Constraint(father, id, xml_ele)
-		{
-			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
-			imp_->component_axis_ = attributeInt32(xml_ele, "component");
-
-			double loc_cst[6]{ 0,0,0,0,0,0, };
-			loc_cst[axis()] = 1;
-			s_tf(*this->makI().prtPm(), loc_cst, *csmI_);
-
-			imp_->slave_id_ = attributeInt32(xml_ele, "slave_id");
-		}
-
+		
 		struct GeneralMotion::Imp
 		{
 			double mot_pos_[6], mot_vel_[6], mot_acc_[6], mot_fce_[6];
@@ -2377,6 +2369,8 @@ namespace aris
 			aris::core::ObjectPool<GeneralMotion, Element> *general_motion_pool_;
 			aris::core::ObjectPool<Force, Element> *force_pool_;
 			Part* ground_;
+
+			std::vector<std::size_t> mot_vec_phy2abs_, mot_vec_sla2abs_;
 
 			std::size_t dyn_cst_dim_, dyn_prt_dim_;
 			std::size_t clb_dim_m_, clb_dim_n_, clb_dim_gam_, clb_dim_frc_;
@@ -2545,6 +2539,12 @@ namespace aris
 		auto Model::generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>& { return std::ref(*imp_->general_motion_pool_); }
 		auto Model::forcePool()->aris::core::ObjectPool<Force, Element>& { return std::ref(*imp_->force_pool_); }
 		auto Model::forcePool()const->const aris::core::ObjectPool<Force, Element>& { return std::ref(*imp_->force_pool_); }
+		auto Model::motionAtAbs(std::size_t abs_id)->Motion& { return motionPool().at(abs_id); }
+		auto Model::motionAtAbs(std::size_t abs_id)const->const Motion&{ return motionPool().at(abs_id); }
+		auto Model::motionAtPhy(std::size_t phy_id)->Motion& { return motionPool().at(imp_->mot_vec_phy2abs_.at(phy_id));}
+		auto Model::motionAtPhy(std::size_t phy_id)const->const Motion&{ return motionPool().at(imp_->mot_vec_phy2abs_.at(phy_id)); }
+		auto Model::motionAtSla(std::size_t sla_id)->Motion& { return motionPool().at(imp_->mot_vec_sla2abs_.at(sla_id)); }
+		auto Model::motionAtSla(std::size_t sla_id)const->const Motion&{ return motionPool().at(imp_->mot_vec_sla2abs_.at(sla_id)); }
 		auto Model::ground()->Part& { return std::ref(*imp_->ground_); }
 		auto Model::ground()const->const Part&{ return std::ref(*imp_->ground_); }
 		auto Model::dynDimM()const->std::size_t { return imp_->dyn_prt_dim_; }
@@ -3153,6 +3153,33 @@ namespace aris
 			imp_->ground_ = &imp_->part_pool_->add<Part>("Ground");
 		}
 		
+		Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Constraint(father, id, xml_ele)
+		{
+			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
+			imp_->component_axis_ = attributeInt32(xml_ele, "component");
+
+			double loc_cst[6]{ 0,0,0,0,0,0, };
+			loc_cst[axis()] = 1;
+			s_tf(*this->makI().prtPm(), loc_cst, *csmI_);
+
+			/// make map for abs, phy and sla id ///
+			imp_->sla_id_ = attributeInt32(xml_ele, "slave_id");
+			model().imp_->mot_vec_sla2abs_.resize(std::max(imp_->sla_id_ + 1, model().imp_->mot_vec_sla2abs_.size()), std::numeric_limits<std::size_t>::max());
+			if (model().imp_->mot_vec_sla2abs_.at(imp_->sla_id_) != std::numeric_limits<std::size_t>::max()) throw std::runtime_error("invalid model xml:\"slave_id\" of motion \"" + name() + "\" already exists");
+			model().imp_->mot_vec_sla2abs_.at(imp_->sla_id_) = this->id();
+			model().imp_->mot_vec_phy2abs_.clear();
+			model().imp_->mot_vec_phy2abs_.reserve(this->id());
+			for (auto id : model().imp_->mot_vec_sla2abs_)if (id != std::numeric_limits<std::size_t>::max())model().imp_->mot_vec_phy2abs_.push_back(id);
+			
+			auto &motion_pool = static_cast<aris::core::ObjectPool<Motion, Element>&>(this->father());
+			for (std::size_t phy_id = 0; phy_id < this->id() + 1; ++phy_id)
+			{
+				std::size_t abs_id = model().imp_->mot_vec_phy2abs_.at(phy_id);
+				abs_id == this->id() ? this->imp_->phy_id_ = phy_id: motion_pool.at(abs_id).imp_->phy_id_ = phy_id;
+			}
+				
+		}
+
 		RevoluteJoint::RevoluteJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ)
 			: JointTemplate(father, id, name, makI, makJ)
 		{
