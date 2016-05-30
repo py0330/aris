@@ -1,5 +1,5 @@
-#ifndef TEST_CORE_XML_
-#define TEST_DYNAMIC_KERNEL_
+#ifndef TEST_CORE_XML_H_
+#define TEST_CORE_XML_H_
 
 void test_xml();
 

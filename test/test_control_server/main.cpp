@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 {
 	test_control_server();
 
-	std::cout << "finished" << std::endl;
+	std::cout << "test control server finished" << std::endl;
 
 	char aaaaa;
 	std::cin >> aaaaa;

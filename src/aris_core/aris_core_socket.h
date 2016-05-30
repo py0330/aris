@@ -17,16 +17,6 @@ namespace aris
 		class Socket final
 		{
 		public:
-			/** \brief 构造函数
-			*
-			*
-			*/
-			Socket();
-			/** \brief 析构函数
-			*
-			*
-			*/
-			~Socket();
 			/** \brief 查看Socket是否处于连接状态
 			*
 			*
@@ -85,7 +75,16 @@ namespace aris
 			* \param 为形如void(Socket*)的函数。在Socket自己的内部线程中执行。
 			*/
 			auto setOnReceiveError(std::function<void(Socket*)> = nullptr)->void;
-
+			/** \brief 构造函数
+			*
+			*
+			*/
+			Socket();
+			/** \brief 析构函数
+			*
+			*
+			*/
+			~Socket();
 		public:
 			enum State
 			{

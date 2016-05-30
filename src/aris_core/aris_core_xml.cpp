@@ -280,7 +280,7 @@ namespace aris
 
 			if (root().imp_->type_map_.find(type) == root().imp_->type_map_.end())
 			{
-				throw std::runtime_error("unrecognized type \"" + std::string(xml_ele.Attribute("type"))
+				throw std::runtime_error("unrecognized type \"" + type
 					+ "\" when add xml element \"" + xml_ele.name() + "\" to \"" + name() + "\"");
 			}
 			else
@@ -588,7 +588,7 @@ namespace aris
 		}
 		auto Object::attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::string
 		{
-			std::string error = "failed to get double attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+			std::string error = "failed to get string attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))
 				throw std::runtime_error(error + "this attribute is not found in xml file");
@@ -598,6 +598,22 @@ namespace aris
 		auto Object::attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const std::string &default_value)const->std::string
 		{
 			return xml_ele.Attribute(attribute_name.c_str()) ? attributeString(xml_ele, attribute_name) : default_value;
+		}
+		auto Object::attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->char
+		{
+			std::string error = "failed to get char attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+
+			if (!xml_ele.Attribute(attribute_name.c_str()))
+				throw std::runtime_error(error + "this attribute is not found in xml file");
+
+			if (xml_ele.Attribute(attribute_name.c_str())[1]!=0)
+				throw std::runtime_error(error + "this attribute string length is not 1");
+
+			return xml_ele.Attribute(attribute_name.c_str())[0];
+		}
+		auto Object::attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, char default_value)const->char
+		{
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeChar(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::operator=(const Object &other)->Object &
 		{
@@ -674,11 +690,7 @@ namespace aris
 		auto Root::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			clear();
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())
-			{
-				std::cout << ele->name() << std::endl;
-				add(*ele);
-			}
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
 		}
 		auto Root::saveXml(const std::string &filename) const->void
 		{

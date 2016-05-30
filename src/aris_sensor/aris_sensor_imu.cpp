@@ -94,9 +94,7 @@ namespace aris
 			imp_->pmBody2Imu[2][1] = -1;
 			imp_->pmBody2Imu[3][3] = 1;
 		}
-		Imu::Imu(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: SensorTemplate(father, id, xml_ele)
-			, imp_(new Imp)
+		Imu::Imu(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele): SensorTemplate(father, id, xml_ele), imp_(new Imp)
 		{
 #ifdef UNIX
 			imp_->port = xml_ele.Attribute("portLinux");

@@ -25,9 +25,4 @@ void test_control_server()
 	{
 		std::cout << e.what()<<std::endl;
 	}
-	
-	
-
-	int a;
-	std::cin >> a;
 }

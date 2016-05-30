@@ -229,6 +229,9 @@ namespace aris
 			auto attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, double default_value)const->double;
 			auto attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::string;
 			auto attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const std::string &default_value)const->std::string;
+			auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->char;
+			auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, char default_value)const->char;
+
 
 			auto operator=(const Object &)->Object &;
 			auto operator=(Object &&)->Object &;
@@ -634,8 +637,8 @@ namespace aris
 			auto front() const->const_reference { return *begin(); } //optional
 			auto back()->reference { return *(end() - 1); } //optional
 			auto back() const->const_reference { return *(end() - 1); } //optional
-			auto at(std::size_t id) const->const_reference { return static_cast<const_reference>(container_.at(id)); }
-			auto at(std::size_t id)->reference { return static_cast<reference>(container_.at(id)); }
+			auto at(std::size_t id) const->const_reference { return static_cast<const_reference>(*container_.at(id)); }
+			auto at(std::size_t id)->reference { return static_cast<reference>(*container_.at(id)); }
 			auto operator[](size_type size)->reference { return static_cast<reference>(container_.operator[](size)); } //optional
 			auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(container_.operator[](size)); } //optional
 			auto pop_back()->void { container_.pop_back(); } //optional
