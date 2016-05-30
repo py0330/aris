@@ -1,5 +1,5 @@
 #for qt
-CMakeList.txt.user
+CMakeLists.txt.user
 # for cmake
 CMakeCache.txt
 CMakeFiles
