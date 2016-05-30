@@ -39,7 +39,7 @@ namespace aris
 		class Controller:public Master
 		{
 		public:
-			auto setControlStrategy(std::function<void(Controller*)> strategy) { strategy_ = strategy; };
+			auto setControlStrategy(std::function<void(Controller*)> strategy)->void { strategy_ = strategy; };
 			Controller() { registerChildType<Motion, false, false, false, false>(); }
 
 		protected:
