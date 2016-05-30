@@ -242,7 +242,9 @@ endif(WIN32)
 install(DIRECTORY sh DESTINATION .)
 install(TARGETS aris_core aris_dynamic aris_sensor aris_control aris_server ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} src/aris.h DESTINATION include)
+install(FILES doc/Robot_III.xml DESTINATION resource/)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
+
 
 ############################################ uninstall aris ############################################
 if(UNIX)

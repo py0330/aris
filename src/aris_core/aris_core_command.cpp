@@ -25,7 +25,7 @@ namespace aris
 				if (is_taken_) throw std::runtime_error("wrong command param setting: some params of command \"" + name() +"\" has been set more than once");
 				is_taken_ = true;
 			};
-			auto addDefaultParam(std::map<std::string, std::string> &param_map_out);
+            auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void;
 
 		private:
 			bool is_taken_;
@@ -145,7 +145,7 @@ namespace aris
 			is_taken_ = false;
 			for (auto &child : *this)dynamic_cast<ParamBase&>(child).reset();
 		}
-		auto Command::addDefaultParam(std::map<std::string, std::string> &param_map_out)
+        auto Command::addDefaultParam(std::map<std::string, std::string> &param_map_out)->void
 		{
 			auto default_param_iter = std::find_if(begin(), end(), [](ParamBase &param)->bool{ return param.isTaken(); });
 			auto default_param_ptr = default_value_ == "" ? nullptr : &*findByName(default_value_);
