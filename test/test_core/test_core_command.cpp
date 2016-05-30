@@ -68,7 +68,8 @@ void test_command()
 	try
 	{
 		XmlDocument doc;
-		doc.Parse(xml_data);
+        //doc.Parse(xml_data);
+        doc.LoadFile("/usr/aris/resource/Robot_III.xml");
 
 		CommandParser parser;
 		parser.loadXml(doc);
@@ -115,3 +116,4 @@ void test_command()
 		std::cout << e.what();
 	}
 }
+
