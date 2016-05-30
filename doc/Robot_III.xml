@@ -483,60 +483,62 @@
         </Script>
     </Model>
     <Server ip="127.0.0.1" port="5866">
-        <Commands>
-            <start/>
+        <Commands type="command_pool_object" default_child_type="command">
+            <start default_child_type="param"/>
             <stop/>
             <exit/>
-            <en default="all">
+            <en default_child_type="param" default = "all">
                 <all abbreviation="a"/>
                 <first abbreviation="f"/>
                 <second abbreviation="s"/>
-                <motor abbreviation="m" type="intArray" default="0"/>
-                <physical_motor abbreviation="p" type="intArray" default="0"/>
-                <leg abbreviation="l" type="intArray" default="0"/>
+                <motor abbreviation="m" default="0"/>
+                <physical_motor abbreviation="p" default="0"/>
+                <leg abbreviation="l" default="0"/>
             </en>
-            <ds default="all">
+            <ds default_child_type="param" default="all">
                 <all abbreviation="a"/>
                 <first abbreviation="f"/>
                 <second abbreviation="s"/>
-                <motor abbreviation="m" type="intArray" default="0"/>
-                <physical_motor abbreviation="p" type="intArray" default="0"/>
-                <leg abbreviation="l" type="intArray" default="0"/>
+                <motor abbreviation="m" default="0"/>
+                <physical_motor abbreviation="p" default="0"/>
+                <leg abbreviation="l" default="0"/>
             </ds>
-            <hm default="all">
+            <hm default_child_type="param" default="all">
                 <all abbreviation="a"/>
                 <first abbreviation="f"/>
                 <second abbreviation="s"/>
-                <motor abbreviation="m" type="intArray" default="0"/>
-                <physical_motor abbreviation="p" type="intArray" default="0"/>
-                <leg abbreviation="l" type="intArray" default="0"/>
+                <motor abbreviation="m" default="0"/>
+                <physical_motor abbreviation="p" default="0"/>
+                <leg abbreviation="l" default="0"/>
             </hm>
-            <fake_home/>
             <rc default="rc_param">
-                <rc_param type="group">
-                    <leg_param type="unique" default="all">
+                <rc_param type="group" default_child_type="param">
+                    <leg_param type="unique" default_child_type="param" default="all">
                         <all abbreviation="a"/>
                         <first abbreviation="f"/>
                         <second abbreviation="s"/>
-                        <leg abbreviation="l" type="intArray" default="0"/>
+                        <leg abbreviation="l" default="0"/>
                     </leg_param>
-                    <t1 abbreviation="t" type="intArray" default="3000"/>
-                    <t2 type="intArray" default="3000"/>
-                    <margin_offset abbreviation="m" type="double" default="0.01"/>
+                    <t1 abbreviation="t" default="3000"/>
+                    <t2 default="3000"/>
+                    <margin_offset abbreviation="m" default="0.01"/>
                 </rc_param>
             </rc>
-            <wk default="wk_param">
-                <wk_param type="group">
-                    <totalCount abbreviation="t" type="int" default="3000"/>
-                    <n abbreviation="n" type="int" default="1"/>
-                    <distance abbreviation="d" type="double" default="0.5"/>
-                    <height abbreviation="h" type="double" default="0.05"/>
-                    <alpha abbreviation="a" type="double" default="0"/>
-                    <beta abbreviation="b" type="double" default="0"/>
+            <wk default_child_type="param" default="wk_param">
+                <wk_param type="group" default_child_type="param">
+                    <totalCount abbreviation="t" default="3000"/>
+                    <n abbreviation="n" default="1"/>
+                    <distance abbreviation="d" default="0.5"/>
+                    <height abbreviation="h" default="0.05"/>
+                    <alpha abbreviation="a" default="0"/>
+                    <beta abbreviation="b" default="0"/>
                 </wk_param>
             </wk>
-            <ro/>
-	<test/>
+	    <test default_child_type="param" default="all">
+                <all abbreviation="a"/>
+                <motor abbreviation="m" default="0"/>
+                <physical_motor abbreviation="p" default="0"/>
+            </test>
         </Commands>
     </Server>
     <Controller>

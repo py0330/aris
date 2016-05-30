@@ -218,6 +218,16 @@ PREPEND(FULL_SRC demo/demo_Aris_Sensor/demo_Sensor ${SOURCE_FILES})
 add_executable(demo_Sensor ${FULL_SRC})
 target_link_libraries(demo_Sensor ${ALL_LINK_LIB})
 
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Server ${SOURCE_FILES})
+add_executable(demo_Server ${FULL_SRC})
+target_link_libraries(demo_Server ${ALL_LINK_LIB})
+
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Client ${SOURCE_FILES})
+add_executable(demo_Client ${FULL_SRC})
+target_link_libraries(demo_Client ${ALL_LINK_LIB})
+
 endif(MAKE_DEMO)
 
 
