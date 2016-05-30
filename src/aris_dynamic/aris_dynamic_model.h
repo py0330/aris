@@ -483,8 +483,9 @@ namespace aris
 			auto motFceDyn() const->double;
 			auto setMotFceDyn(double mot_dyn_fce)->void;
 			auto motFceFrc() const->double;
-			auto slaveID()const->std::size_t;
-
+			auto absID()const->std::size_t;
+			auto slaID()const->std::size_t;
+			auto phyID()const->std::size_t;
 
 		protected:
 			virtual ~Motion();
@@ -596,6 +597,12 @@ namespace aris
 			auto forcePool()->aris::core::ObjectPool<Force, Element>&;
 			auto forcePool()const->const aris::core::ObjectPool<Force, Element>&;
 			auto markerSize()const->std::size_t { std::size_t size{ 0 }; for (auto &prt : partPool())size += prt.markerPool().size(); return size; }
+			auto motionAtAbs(std::size_t abs_id)->Motion&;
+			auto motionAtAbs(std::size_t abs_id)const->const Motion&;
+			auto motionAtPhy(std::size_t phy_id)->Motion&;
+			auto motionAtPhy(std::size_t phy_id)const->const Motion&;
+			auto motionAtSla(std::size_t sla_id)->Motion&;
+			auto motionAtSla(std::size_t sla_id)const->const Motion&;
 			auto ground()->Part&;
 			auto ground()const->const Part&;
 
@@ -648,6 +655,7 @@ namespace aris
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
+			friend class Motion;
 		};
 
 		template<typename VariableType> class VariableTemplate : public Variable

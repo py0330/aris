@@ -1283,9 +1283,9 @@ namespace aris
 
 			/// make phy to abs map ///
 			imp_->map_abs2phy_.clear();
-			for (auto &m : imp_->model_->motionPool())imp_->map_abs2phy_.push_back(m.slaveID());
+			for (auto &m : imp_->model_->motionPool())imp_->map_abs2phy_.push_back(m.slaID());
 			imp_->map_phy2abs_.resize(imp_->controller_->slavePool().size());
-			for (std::size_t i = 0; i < imp_->map_abs2phy_.size(); ++i)imp_->map_phy2abs_.at(imp_->model_->motionPool().at(i).slaveID()) = i;
+			for (std::size_t i = 0; i < imp_->map_abs2phy_.size(); ++i)imp_->map_phy2abs_.at(imp_->model_->motionPool().at(i).slaID()) = i;
 
 			/// load connection param ///
 			imp_->server_socket_ip_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
@@ -1296,13 +1296,13 @@ namespace aris
 
 			if (pCmds == nullptr) throw std::runtime_error("invalid xml file, because it contains no commands information");
 			imp_->cmd_struct_map_.clear();
-			for (auto pChild = pCmds->FirstChildElement(); pChild != nullptr; pChild = pChild->NextSiblingElement())
+			for (auto child_ele = pCmds->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
 			{
-				if (imp_->cmd_struct_map_.find(pChild->name()) != imp_->cmd_struct_map_.end())
-					throw std::logic_error(std::string("command ") + pChild->name() + " is already existed, please rename it");
+				if (imp_->cmd_struct_map_.find(child_ele->name()) != imp_->cmd_struct_map_.end())
+					throw std::logic_error(std::string("command ") + child_ele->name() + " is already existed, please rename it");
 
-				imp_->cmd_struct_map_.insert(std::make_pair(std::string(pChild->name()), std::unique_ptr<CommandStruct>(new CommandStruct(pChild->name()))));
-				AddAllParams(pChild, imp_->cmd_struct_map_.at(pChild->name())->root.get(), imp_->cmd_struct_map_.at(pChild->name())->allParams, imp_->cmd_struct_map_.at(pChild->name())->shortNames);
+				imp_->cmd_struct_map_.insert(std::make_pair(std::string(child_ele->name()), std::unique_ptr<CommandStruct>(new CommandStruct(child_ele->name()))));
+				AddAllParams(child_ele, imp_->cmd_struct_map_.at(child_ele->name())->root.get(), imp_->cmd_struct_map_.at(child_ele->name())->allParams, imp_->cmd_struct_map_.at(child_ele->name())->shortNames);
 			}
 
 			/// Set socket connection callback function ///
