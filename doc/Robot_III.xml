@@ -493,6 +493,7 @@
                 <second abbreviation="s"/>
                 <motor abbreviation="m" default="0"/>
                 <physical_motor abbreviation="p" default="0"/>
+		<slave_motor abbreviation="c" default="0"/>
                 <leg abbreviation="l" default="0"/>
             </en>
             <ds default_child_type="param" default="all">
@@ -501,6 +502,7 @@
                 <second abbreviation="s"/>
                 <motor abbreviation="m" default="0"/>
                 <physical_motor abbreviation="p" default="0"/>
+		<slave_motor abbreviation="c" default="0"/>
                 <leg abbreviation="l" default="0"/>
             </ds>
             <hm default_child_type="param" default="all">
@@ -509,6 +511,7 @@
                 <second abbreviation="s"/>
                 <motor abbreviation="m" default="0"/>
                 <physical_motor abbreviation="p" default="0"/>
+		<slave_motor abbreviation="c" default="0"/>
                 <leg abbreviation="l" default="0"/>
             </hm>
             <rc default="rc_param">
@@ -538,6 +541,7 @@
                 <all abbreviation="a"/>
                 <motor abbreviation="m" default="0"/>
                 <physical_motor abbreviation="p" default="0"/>
+		<slave_motor abbreviation="c" default="0"/>
             </test>
         </Commands>
     </Server>
@@ -635,7 +639,7 @@
     </Controller>
     <Sensor>
         <SensorPool type="sensor_pool_object">
-            <IMU active="true" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,0,-PI/2,PI}" PeImu2Body="{0,0,0,0,PI/2,0}"/>
+            <IMU active="false" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,0,-PI/2,PI}" PeImu2Body="{0,0,0,0,PI/2,0}"/>
         </SensorPool>
     </Sensor>
 </HexapodIII>
