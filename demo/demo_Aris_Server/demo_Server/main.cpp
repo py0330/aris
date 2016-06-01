@@ -125,7 +125,7 @@ auto testGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &p
     //pin[1] = 0.002*std::sin(param.count/1000.0*2*PI)+begin_pin[1];
     for(int i=0;i<Motion_Num;i++)
     {
-        pin[i] = 0.002*param.count/1000.0+begin_pin[i];
+        pin[i] = 0.02*param.count/1000.0+begin_pin[i];
         model.motionPool().at(i).setMotPos(pin[i]);
     }
 

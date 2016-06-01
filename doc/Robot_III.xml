@@ -616,24 +616,24 @@
             </AtiForceSensor>
         </SlaveType>
         <Slave type="slave_pool_element">
-            <Motion1 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id="15"/>
-            <Motion2 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id="17"/>
-            <Motion3 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id="16"/>
-            <Motion4 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id="12"/>
-            <Motion5 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id="14"/>
-            <Motion6 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id="13"/>
-            <Motion7 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 9"/>
-            <Motion8 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id="11"/>
-            <Motion9 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id="10"/>
-            <Motion10 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 2"/>
-            <Motion11 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 0"/>
-            <Motion12 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 1"/>
-            <Motion13 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 3"/>
-            <Motion14 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 5"/>
-            <Motion15 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 4"/>
-            <Motion16 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 7"/>
-            <Motion17 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 8"/>
-            <Motion18 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0" input2count="22937600" abs_id=" 6"/>
+            <Motion1 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id="15"/>
+            <Motion2 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id="17"/>
+            <Motion3 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id="16"/>
+            <Motion4 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id="12"/>
+            <Motion5 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id="14"/>
+            <Motion6 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id="13"/>
+            <Motion7 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 9"/>
+            <Motion8 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id="11"/>
+            <Motion9 type="motion" slave_type="ElmoSoloWhistle"  min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id="10"/>
+            <Motion10 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 2"/>
+            <Motion11 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 0"/>
+            <Motion12 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 1"/>
+            <Motion13 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 3"/>
+            <Motion14 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 5"/>
+            <Motion15 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 4"/>
+            <Motion16 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 7"/>
+            <Motion17 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.698" max_pos="1.112" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 8"/>
+            <Motion18 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.676" max_pos="1.091" max_vel="0.2362" home_pos="0.7" input2count="22937600" abs_id=" 6"/>
             <ForceSensor type="slave" slave_type="AtiForceSensor"/>
         </Slave>
     </Controller>

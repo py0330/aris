@@ -31,11 +31,8 @@ namespace aris
 		struct GaitParamBase :BasicFunctionParam
 		{
 			bool if_check_pos_min{ true };
-			bool if_check_pos_max{ true };
+            bool if_check_pos_max{ true };
             bool if_check_pos_continuous{ false };
-            bool check_pos_min{ true };
-            bool check_pos_max{ true };
-            bool check_pos_continuous{ true };
 			std::int32_t gait_id;
 			
 			aris::sensor::SensorRoot* sensor_root;

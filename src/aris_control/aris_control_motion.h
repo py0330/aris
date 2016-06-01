@@ -66,9 +66,9 @@ namespace aris
             virtual auto type() const->const std::string&{ return Type(); }
             Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
-            auto maxPos()->std::int32_t;
-            auto minPos()->std::int32_t;
-            auto maxVel()->std::int32_t;
+            auto maxPos()->double;
+            auto minPos()->double;
+            auto maxVel()->double;
             auto pos2countRatio()->std::int32_t;
 
         protected:

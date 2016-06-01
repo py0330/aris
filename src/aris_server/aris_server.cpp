@@ -885,6 +885,14 @@ namespace aris
             param->controller=controller_.get();
             param->sensor_root=sensor_root_.get();
 
+            std::vector<double> last_targetpos;
+            last_targetpos.resize(model_->motionPool().size());
+            //update last target position
+            for(std::size_t i=0; i<model_->motionPool().size();i++){
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                last_targetpos.push_back(txmotiondata.target_pos);
+            }
 
             // 执行gait函数 //
             int ret = this->plan_vec_.at(param->gait_id).operator()(*model_.get(), *param);
@@ -901,59 +909,77 @@ namespace aris
                 }
             }
 
+
+
             // 检查位置极限和速度是否连续 //
             for(std::size_t i=0; i<model_->motionPool().size();i++)
             {
                 std::size_t slaID=model_->motionPool().at(i).slaID();
+                std::size_t phyID=model_->motionPool().at(i).phyID();
                 auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
-                auto &rxmotiondata=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+                //auto &rxmotiondata=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
                 auto &motion=static_cast<aris::control::Motion&>(controller_->slavePool().at(slaID));
                 if (txmotiondata.cmd == aris::control::Motion::RUN && param->active_motor[slaID])
                 {
-                    /*if (param->if_check_pos_max && (txmotiondata.target_pos > motionAtAbs(i).maxPos()))
+                    if (param->if_check_pos_max && (txmotiondata.target_pos > motion.maxPos()))
                     {
-                        rt_printf("Motor %i's target position is bigger than its MAX permitted value in count:%d\n", i, count_);
+                        rt_printf("Motor %i's target position is bigger than its MAX permitted value in count:%d\n", phyID, count_);
                         rt_printf("The min, max and current are:\n");
-                        for(std::size_t i=0; i<map_abs2phy_.size();i++)
+                        for(std::size_t temp=0; temp<model_->motionPool().size();temp++)
                         {
-                            rt_printf("%lf   %lf   %lf\n", motionAtAbs(i).minPos(), motionAtAbs(i).maxPos(), txmotiondata.target_pos);
+                            std::size_t slaID_temp=model_->motionPool().at(temp).slaID();
+                            auto &motion_temp=static_cast<aris::control::Motion&>(controller_->slavePool().at(slaID_temp));
+                            auto &txmotiondata_temp=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_temp));
+                            rt_printf("%lf   %lf   %lf\n", motion_temp.minPos(), motion_temp.maxPos(), txmotiondata_temp.target_pos);
                         }
                         rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
                         cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
                         count_ = 0;
 
                         // 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-                        for(std::size_t i=0; i<map_abs2phy_.size();i++)txmotiondata.target_pos = rxmotiondata.feedback_pos;
+                        for(std::size_t rec=0; rec<model_->motionPool().size();rec++){
+                            std::size_t slaID_rec=model_->motionPool().at(rec).slaID();
+                            auto &txmotiondata_rec=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_rec));
+                            txmotiondata_rec.target_pos = last_targetpos[rec];
+                        }
 
                         return 0;
                     }
 
-                    if (param->if_check_pos_min && (txmotiondata.target_pos < motionAtAbs(i).minPos()))
+                    if (param->if_check_pos_min && (txmotiondata.target_pos < motion.minPos()))
                     {
-                        rt_printf("Motor %i's target position is smaller than its MIN permitted value in count:%d\n", i, count_);
+                        rt_printf("Motor %i's target position is smaller than its MIN permitted value in count:%d\n", phyID, count_);
                         rt_printf("The min, max and current count are:\n");
-                        for(std::size_t i=0; i<map_abs2phy_.size();i++)
+                        for(std::size_t temp=0; temp<model_->motionPool().size();temp++)
                         {
-                            rt_printf("%lf   %lf   %lf\n", motionAtAbs(i).minPos(), motionAtAbs(i).maxPos(), txmotiondata.target_pos);
+                            std::size_t slaID_temp=model_->motionPool().at(temp).slaID();
+                            auto &motion_temp=static_cast<aris::control::Motion&>(controller_->slavePool().at(slaID_temp));
+                            auto &txmotiondata_temp=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_temp));
+                            rt_printf("%lf   %lf   %lf\n", motion_temp.minPos(), motion_temp.maxPos(), txmotiondata_temp.target_pos);
                         }
                         rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
                         cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
                         count_ = 0;
 
                         // 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-                        for(std::size_t i=0; i<map_abs2phy_.size();i++)txmotiondata.target_pos = rxmotiondata.feedback_pos;
-
+                        for(std::size_t rec=0; rec<model_->motionPool().size();rec++){
+                            std::size_t slaID_rec=model_->motionPool().at(rec).slaID();
+                            auto &txmotiondata_rec=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_rec));
+                            txmotiondata_rec.target_pos = last_targetpos[rec];
+                        }
                         return 0;
-                    }*/
+                    }
 
-                    if (param->if_check_pos_continuous && (std::abs(txmotiondata.target_pos - rxmotiondata.feedback_pos)>0.0012*motion.maxVel()))
+                    if (param->if_check_pos_continuous && (std::abs(txmotiondata.target_pos - last_targetpos[i])>0.0012*motion.maxVel()))
                     {
-                        rt_printf("Motor %i's target position is not continuous in count:%d\n", i, count_);
+                        rt_printf("Motor %i's target position is not continuous in count:%d\n", phyID, count_);
 
                         rt_printf("The input of last and this count are:\n");
-                        for(std::size_t i=0; i<model_->motionPool().size();i++)
+                        for(std::size_t temp=0; temp<model_->motionPool().size();temp++)
                         {
-                            rt_printf("%d   %d\n", rxmotiondata.feedback_pos, txmotiondata.target_pos);
+                            std::size_t slaID_temp=model_->motionPool().at(temp).slaID();
+                            auto &txmotiondata_temp=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_temp));
+                            rt_printf("%lf   %lf\n",  last_targetpos[temp], txmotiondata_temp.target_pos);
                         }
 
                         rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
@@ -961,12 +987,15 @@ namespace aris
                         count_ = 0;
 
                         // 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-                        for(std::size_t i=0; i<model_->motionPool().size();i++)txmotiondata.target_pos = rxmotiondata.feedback_pos;
+                        for(std::size_t rec=0; rec<model_->motionPool().size();rec++){
+                            std::size_t slaID_rec=model_->motionPool().at(rec).slaID();
+                            auto &txmotiondata_rec=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_rec));
+                            txmotiondata_rec.target_pos = last_targetpos[rec];
+                        }
                         return 0;
                     }
                 }
             }
-
 
             return ret;
         }

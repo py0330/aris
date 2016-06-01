@@ -323,9 +323,9 @@ namespace aris
 
             std::int32_t input2count_;
             std::int32_t home_count_;
-            std::int32_t max_pos;
-            std::int32_t min_pos;
-            std::int32_t max_vel;
+            double max_pos;
+            double min_pos;
+            double max_vel;
 
             Motion *pFather;
 
@@ -341,9 +341,9 @@ namespace aris
         Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, id, xml_ele), imp_(new Motion::Imp(this))
         {
             imp_->input2count_ = attributeInt32(xml_ele, "input2count");
-            imp_->max_pos = static_cast<std::int32_t>(attributeDouble(xml_ele, "max_pos"));
-            imp_->min_pos = static_cast<std::int32_t>(attributeDouble(xml_ele, "min_pos"));
-            imp_->max_vel = static_cast<std::int32_t>(attributeDouble(xml_ele, "max_vel"));
+            imp_->max_pos = attributeDouble(xml_ele, "max_pos");
+            imp_->min_pos = attributeDouble(xml_ele, "min_pos");
+            imp_->max_vel = attributeDouble(xml_ele, "max_vel");
             imp_->home_count_ = static_cast<std::int32_t>(attributeDouble(xml_ele, "home_pos") * imp_->input2count_);
             configSdo(9, static_cast<std::int32_t>(-imp_->home_count_));
         }
@@ -392,9 +392,9 @@ namespace aris
             }
 
         }
-        auto Motion::maxPos()->std::int32_t { return imp_->max_pos; }
-        auto Motion::minPos()->std::int32_t { return imp_->min_pos; }
-        auto Motion::maxVel()->std::int32_t { return imp_->max_vel; }
+        auto Motion::maxPos()->double { return imp_->max_pos; }
+        auto Motion::minPos()->double { return imp_->min_pos; }
+        auto Motion::maxVel()->double { return imp_->max_vel; }
         auto Motion::pos2countRatio()->std::int32_t { return imp_->input2count_; }
     }
 }
