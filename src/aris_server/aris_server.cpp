@@ -19,7 +19,7 @@
 namespace aris
 {
 	namespace server
-	{
+    {
 		class Node
 		{
 		public:
@@ -198,7 +198,7 @@ namespace aris
 						allParams.insert(std::pair<std::string, Node *>(std::string(pChild->name()), insertNode));
 					}
 
-					/*set abbreviation*/
+                    /*set abbreviation*/
 					if (pChild->Attribute("abbreviation"))
 					{
 						if (shortNames.find(*pChild->Attribute("abbreviation")) != shortNames.end())
@@ -212,7 +212,7 @@ namespace aris
 						}
 					}
 
-					/*set values*/
+                    /*set values*/
 					if (pChild->Attribute("type"))
 					{
 						dynamic_cast<ParamNode*>(insertNode)->type = std::string(pChild->Attribute("type"));
@@ -251,7 +251,7 @@ namespace aris
 				}
 			}
 
-			/*set all values*/
+            /*set all values*/
 			if (dynamic_cast<RootNode*>(pNode))
 			{
 				if (pEle->Attribute("default"))
@@ -405,27 +405,17 @@ namespace aris
 			auto stop()->void;
 
 			auto onReceiveMsg(const aris::core::Msg &msg)->aris::core::Msg;
-			auto decodeMsg2Param(const aris::core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void;
 			auto sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void;
 
-			auto motionAtPhy(std::size_t id)->aris::control::Motion&;
-			auto motionAtAbs(std::size_t id)->aris::control::Motion&;
-			auto tg()->void;
-			auto checkError()->int;
+            auto tg()->void;
+            auto checkError()->int;
 			auto executeCmd()->int;
 			auto enable()->int;
 			auto disable()->int;
 			auto home()->int;
 			auto run()->int;
 
-			/*auto run(GaitParamBase &param, aris::control::EthercatController::Data &data)->int;
-			auto execute_cmd(int count, char *cmd, aris::control::EthercatController::Data &data)->int;
-			auto enable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
-			auto disable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
-			auto home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
-			auto fake_home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;*/
-
-			Imp(ControlServer *server) :server_(server) {}
+            Imp(ControlServer *server) :server_(server) {}
 			Imp(const Imp&) = delete;
 
 		private:
@@ -478,10 +468,6 @@ namespace aris
 				msg.copyStruct(param);
 			} };
 
-			std::vector<std::size_t> map_abs2phy_;
-			std::vector<std::size_t> map_phy2abs_;
-
-
 			// pipe //
 			aris::control::Pipe<aris::core::Msg> msg_pipe_;
 
@@ -489,10 +475,11 @@ namespace aris
 			aris::core::Socket server_socket_;
 			std::string server_socket_ip_, server_socket_port_;
 
-			// 储存模型、控制器和传感器 //
+            // 储存模型、控制器和传感器 command parser //
 			std::unique_ptr<aris::dynamic::Model> model_;
 			std::unique_ptr<aris::sensor::SensorRoot> sensor_root_;
 			std::unique_ptr<aris::control::Controller> controller_;
+            aris::core::CommandParser parser_;
 
 			// 结束时的callback //
 			std::function<void(void)> on_exit_callback_{nullptr};
@@ -556,11 +543,41 @@ namespace aris
 		{
 			try
 			{
-				std::string cmd;
-				std::map<std::string, std::string> params;
+                std::string cmd;
+                std::map<std::string, std::string> params;
+                if (msg.data()[msg.size() - 1] == '\0')
+                {
+                    try
+                    {
+                        std::string input{ msg.data() };
+                        parser_.parse(input, cmd, params);
 
-				decodeMsg2Param(msg, cmd, params);
-				
+                        std::cout << cmd << std::endl;
+                        int paramPrintLength;
+                        if (params.empty())
+                        {
+                            paramPrintLength = 2;
+                        }
+                        else
+                        {
+                            paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
+                            {
+                                return a.first.length() < b.first.length();
+                            })->first.length() + 2;
+                        }
+                        for (auto &i : params)
+                        {
+                            std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
+                        }
+
+                        std::cout << std::endl;
+                    }
+                    catch (std::exception &e)
+                    {
+                        std::cout << e.what() << std::endl << std::endl;
+                    }
+                }
+
 				if (cmd == "start")
 				{
 					if (is_running_)throw std::runtime_error("server already started, thus ignore command \"start\"");
@@ -607,164 +624,6 @@ namespace aris
 				aris::core::Msg error_msg;
 				error_msg.copy("unknown exception");
 				return error_msg;
-			}
-		}
-		auto ControlServer::Imp::decodeMsg2Param(const aris::core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void
-		{
-			std::vector<std::string> paramVector;
-			int paramNum{ 0 };
-
-			/// 将msg转换成cmd和一系列参数，不过这里的参数为原生字符串，既包括名称也包含值，例如“-heigt=0.5” ///
-			if (msg.data()[msg.size() - 1] == '\0')
-			{
-				std::string input{ msg.data() };
-				std::stringstream inputStream{ input };
-				std::string word;
-
-				if (!(inputStream >> cmd))
-				{
-					throw std::runtime_error(aris::core::log("invalid message from client, please at least contain a word"));
-				};
-				aris::core::log(std::string("received command string:") + msg.data());
-
-				while (inputStream >> word)
-				{
-					paramVector.push_back(word);
-					++paramNum;
-				}
-			}
-			else
-			{
-				throw std::runtime_error(aris::core::log("invalid message from client, please be sure that the command message end with char \'\\0\'"));
-			}
-
-			if (cmd_struct_map_.find(cmd) != cmd_struct_map_.end())
-			{
-				cmd_struct_map_.at(cmd)->root->Reset();
-			}
-			else
-			{
-				throw std::runtime_error(aris::core::log(std::string("invalid command name, server does not have command \"") + cmd + "\""));
-			}
-
-			for (int i = 0; i<paramNum; ++i)
-			{
-				std::string str{ paramVector[i] };
-				std::string paramName, paramValue;
-				if (str.find("=") == std::string::npos)
-				{
-					paramName = str;
-					paramValue = "";
-				}
-				else
-				{
-					paramName.assign(str, 0, str.find("="));
-					paramValue.assign(str, str.find("=") + 1, str.size() - str.find("="));
-				}
-
-				if (paramName.size() == 0)
-					throw std::runtime_error("invalid param: what the hell, param should not start with '='");
-
-				/*not start with '-'*/
-				if (paramName.data()[0] != '-')
-				{
-					if (paramValue != "")
-					{
-						throw std::runtime_error("invalid param: only param start with - or -- can be assigned a value");
-					}
-
-					for (auto c : paramName)
-					{
-						if (cmd_struct_map_.at(cmd)->shortNames.find(c) != cmd_struct_map_.at(cmd)->shortNames.end())
-						{
-							params.insert(make_pair(cmd_struct_map_.at(cmd)->shortNames.at(c), paramValue));
-							cmd_struct_map_.at(cmd)->allParams.at(cmd_struct_map_.at(cmd)->shortNames.at(c))->Take();
-						}
-						else
-						{
-							throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
-						}
-					}
-
-					continue;
-				}
-
-				/*all following part start with at least one '-'*/
-				if (paramName.size() == 1)
-				{
-					throw std::runtime_error("invalid param: symbol \"-\" must be followed by an abbreviation of param");
-				}
-
-				/*start with '-', but only one '-'*/
-				if (paramName.data()[1] != '-')
-				{
-					if (paramName.size() != 2)
-					{
-						throw std::runtime_error("invalid param: param start with single '-' must be an abbreviation");
-					}
-
-					char c = paramName.data()[1];
-
-					if (cmd_struct_map_.at(cmd)->shortNames.find(c) != cmd_struct_map_.at(cmd)->shortNames.end())
-					{
-						params.insert(make_pair(cmd_struct_map_.at(cmd)->shortNames.at(c), paramValue));
-						cmd_struct_map_.at(cmd)->allParams.at(cmd_struct_map_.at(cmd)->shortNames.at(c))->Take();
-					}
-					else
-					{
-						throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
-					}
-
-					continue;
-				}
-				else
-				{
-					/*start with '--'*/
-					if (paramName.size()<3)
-					{
-						throw std::runtime_error("invalid param: symbol \"--\" must be followed by a full name of param");
-					}
-
-					std::string str = paramName;
-					paramName.assign(str, 2, str.size() - 2);
-
-					if (cmd_struct_map_.at(cmd)->allParams.find(paramName) != cmd_struct_map_.at(cmd)->allParams.end())
-					{
-						params.insert(make_pair(paramName, paramValue));
-						cmd_struct_map_.at(cmd)->allParams.at(paramName)->Take();
-					}
-					else
-					{
-						throw std::runtime_error(std::string("invalid param: param \"") + paramName + "\" is not a valid param");
-					}
-
-
-
-					continue;
-				}
-			}
-
-			AddAllDefault(cmd_struct_map_.at(cmd)->root.get(), params);
-
-			std::cout << cmd << std::endl;
-
-			int paramPrintLength;
-			if (params.empty())
-			{
-				paramPrintLength = 2;
-			}
-			else
-			{
-				paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
-				{
-					return a.first.length() < b.first.length();
-				})->first.length() + 2;
-			}
-
-			int maxParamNameLength{ 0 };
-			for (auto &i : params)
-			{
-				std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
 			}
 		}
 		auto ControlServer::Imp::sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void
@@ -815,67 +674,61 @@ namespace aris
 			msg_pipe_.sendToRT(cmd_msg);
 		}
 		
-		auto ControlServer::Imp::motionAtPhy(std::size_t id)->aris::control::Motion&
-		{
-			return static_cast<aris::control::Motion&>(controller_->slavePool().at(id));
-		}
-		auto ControlServer::Imp::motionAtAbs(std::size_t id)->aris::control::Motion&
-		{
-			return static_cast<aris::control::Motion&>(controller_->slavePool().at(map_abs2phy_.at(id)));
-		}
-		auto ControlServer::Imp::tg()->void
-		{
+        auto ControlServer::Imp::tg()->void
+        {
 			// 检查是否出错 //
-			if (checkError())return;
+            if (checkError())return;
 
 			// 查看是否有新cmd //
-			if (msg_pipe_.recvInRT(aris::core::MsgRT::instance[0]) > 0)
+            if (msg_pipe_.recvInRT(aris::core::MsgRT::instance[0]) > 0)
 			{
-				if (cmd_num_ >= CMD_POOL_SIZE)
+                if (cmd_num_ >= CMD_POOL_SIZE)
 				{
 					rt_printf("cmd pool is full, thus ignore last command\n");
 				}
 				else
 				{
-					aris::core::MsgRT::instance[0].paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
-					++cmd_num_;
+                    aris::core::MsgRT::instance[0].paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
+                    ++cmd_num_;
 				}
 			}
 			
 			// 执行cmd queue中的cmd //
-			if (cmd_num_ > 0)
+            if (cmd_num_ > 0)
 			{
 				if (executeCmd())
 				{
-					if (++count_ % 1000 == 0)rt_printf("execute cmd in count: %d\n", count_);
+                    if (++count_ % 1000 == 0)rt_printf("execute cmd in count: %d\n", count_);
 				}
 				else
 				{
-					rt_printf("cmd finished, spend %d counts\n\n", count_ + 1);
-					count_ = 0;
-					current_cmd_ = (current_cmd_ + 1) % CMD_POOL_SIZE;
-					--cmd_num_;
+                    rt_printf("cmd finished, spend %d counts\n\n", count_ + 1);
+                    count_ = 0;
+                    current_cmd_ = (current_cmd_ + 1) % CMD_POOL_SIZE;
+                    --cmd_num_;
 				}
-			}
+            }
 		}
 		auto ControlServer::Imp::checkError()->int
 		{
 			static int fault_count = 0;
 			
-			if (fault_count || std::find_if(server_->controller().slavePool().begin(), server_->controller().slavePool().end(), [](const aris::control::Slave &slave) {return slave.rxData().ret < 0; }) != server_->controller().slavePool().end())
+            if (fault_count || std::find_if(controller_->slavePool().begin(), controller_->slavePool().end(), [](const aris::control::Slave &slave) {return slave.rxData().ret < 0; }) != controller_->slavePool().end())
 			{
 				if (fault_count++ % 1000 == 0)
 				{
-					for (auto &slave : server_->controller().slavePool())rt_printf("%d ", slave.rxData().ret);
+                    rt_printf("ret of physic ethercat ring: ");
+                    for (auto &slave : controller_->slavePool())rt_printf("%d ", slave.rxData().ret);
 					rt_printf("\n");
 					rt_printf("Some slave is in fault, now try to disable all motors\n");
 					rt_printf("All commands in command queue are discarded\n");
 				}
 
-				/*for (auto &mot_data : *data.motion_raw_data)
-				{
-				mot_data.cmd = aris::control::EthercatMotion::DISABLE;
-				}*/
+                for(std::size_t i=0; i<model_->motionPool().size();i++)
+                {
+                    std::size_t slaID=model_->motionPool().at(i).slaID();
+                    static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID)).cmd= aris::control::Motion::DISABLE;
+                }
 
 				cmd_num_ = 0;
 				count_ = 0;
@@ -891,7 +744,6 @@ namespace aris
 		{
 			int ret;
 			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_queue_[current_cmd_]);
-			param->count = count_;
 
 			switch (param->cmd_type)
 			{
@@ -914,332 +766,239 @@ namespace aris
 		{
 			bool is_all_enabled = true;
 
-			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_queue_[current_cmd_]);
+            BasicFunctionParam *param = reinterpret_cast<BasicFunctionParam *>(cmd_queue_[current_cmd_]);
+            param->count = count_;
 
-			//for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			//{
-			//	if (param.active_motor[i])
-			//	{
-			//		// 判断是否已经Enable了 //
-			//		if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
-			//		{
-			//			// 判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值 //
-			//			if (data.motion_raw_data->operator[](i).cmd == aris::control::EthercatMotion::ENABLE)
-			//			{
-			//				data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
-			//				data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
-			//				data.motion_raw_data->operator[](i).target_pos = data.motion_raw_data->operator[](i).feedback_pos;
-			//				data.motion_raw_data->operator[](i).target_vel = 0;
-			//				data.motion_raw_data->operator[](i).target_cur = 0;
-			//			}
-			//		}
-			//		else
-			//		{
-			//			is_all_enabled = false;
-			//			data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::ENABLE;
-			//			data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
+            for(std::size_t i=0; i<model_->motionPool().size();i++)
+            {
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                if(param->active_motor[slaID])
+                {
+                    auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                    auto &rxmotiondata=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+                    //判断是否已经Enable了
+                    if ((param->count != 0) && (rxmotiondata.ret == 0))
+                    {
+                        // 判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值
+                        if (txmotiondata.cmd == aris::control::Motion::ENABLE)
+                        {
+                            txmotiondata.cmd = aris::control::Motion::RUN;
+                            txmotiondata.mode = aris::control::Motion::POSITION;
+                            txmotiondata.target_pos = rxmotiondata.feedback_pos;
+                            txmotiondata.target_vel = 0;
+                            txmotiondata.target_tor = 0;
+                        }
+                    }
+                    else
+                    {
+                        is_all_enabled = false;
+                        txmotiondata.cmd = aris::control::Motion::ENABLE;
+                        txmotiondata.mode = aris::control::Motion::POSITION;
 
-			//			if (param.count % 1000 == 0)
-			//			{
-			//				rt_printf("Unenabled motor, physical id: %d, absolute id: %d\n", this->controller_->motionAtAbs(i).phyID(), i);
-			//			}
-			//		}
-			//	}
-			//}
-
+                        if (param->count % 1000 == 0)
+                        {
+                            rt_printf("Unenabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
+                        }
+                    }
+                }
+            }
 			return is_all_enabled ? 0 : 1;
-		};
-		auto ControlServer::Imp::disable()->int { return 0; };
-		auto ControlServer::Imp::home()->int { return 0; };
-		auto ControlServer::Imp::run()->int { return 0; };
-		
-		
-		/*auto ControlServer::Imp::execute_cmd(int count, char *cmd_param, aris::control::EthercatController::Data &data)->int
-		{
-			int ret;
-			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_param);
-			param->count = count;
+        }
+        auto ControlServer::Imp::disable()->int
+        {
+            bool is_all_disabled = true;
 
-			switch (param->cmd_type)
-			{
-			case ENABLE:
-				ret = enable(static_cast<BasicFunctionParam &>(*param), data);
-				break;
-			case DISABLE:
-				ret = disable(static_cast<BasicFunctionParam &>(*param), data);
-				break;
-			case HOME:
-				ret = home(static_cast<BasicFunctionParam &>(*param), data);
-				break;
-			case FAKE_HOME:
-				ret = fake_home(static_cast<BasicFunctionParam &>(*param), data);
-				break;
-			case RUN_GAIT:
-				ret = run(static_cast<GaitParamBase &>(*param), data);
-				break;
-			default:
-				rt_printf("unknown cmd type\n");
-				ret = 0;
-				break;
-			}
+            BasicFunctionParam *param = reinterpret_cast<BasicFunctionParam *>(cmd_queue_[current_cmd_]);
+            param->count = count_;
 
-			return ret;
-		}
-		auto ControlServer::Imp::enable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
-		{
-			bool is_all_enabled = true;
+            for(std::size_t i=0; i<model_->motionPool().size();i++)
+            {
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                if(param->active_motor[slaID])
+                {
+                    auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                    auto &rxmotiondata=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+                    //判断是否已经Disable了
+                    if ((param->count != 0) && (rxmotiondata.ret == 0))
+                    {
+                        // 如果已经disable了，那么什么都不做
+                    }
+                    else
+                    {
+                        // 否则往下刷disable指令
+                        is_all_disabled = false;
+                        txmotiondata.cmd = aris::control::Motion::DISABLE;
 
-			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			{
-				if (param.active_motor[i])
-				{
-					// 判断是否已经Enable了 //
-					if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
-					{
-						// 判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值 //
-						if (data.motion_raw_data->operator[](i).cmd == aris::control::EthercatMotion::ENABLE)
-						{
-							data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
-							data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
-							data.motion_raw_data->operator[](i).target_pos = data.motion_raw_data->operator[](i).feedback_pos;
-							data.motion_raw_data->operator[](i).target_vel = 0;
-							data.motion_raw_data->operator[](i).target_cur = 0;
-						}
-					}
-					else
-					{
-						is_all_enabled = false;
-						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::ENABLE;
-						data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
+                        if (param->count % 1000 == 0)
+                        {
+                            rt_printf("Undisabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
+                        }
+                    }
+                }
+            }
+            return is_all_disabled ? 0 : 1;
+        }
+        auto ControlServer::Imp::home()->int
+        {
+            bool is_all_homed = true;
 
-						if (param.count % 1000 == 0)
-						{
-							rt_printf("Unenabled motor, physical id: %d, absolute id: %d\n", this->controller_->motionAtAbs(i).phyID(), i);
-						}
-					}
-				}
-			}
+            BasicFunctionParam *param = reinterpret_cast<BasicFunctionParam *>(cmd_queue_[current_cmd_]);
+            param->count = count_;
 
-			return is_all_enabled ? 0 : 1;
-		}
-		auto ControlServer::Imp::disable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
-		{
-			bool is_all_disabled = true;
+            for(std::size_t i=0; i<model_->motionPool().size();i++)
+            {
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                if(param->active_motor[slaID])
+                {
+                    auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                    auto &rxmotiondata=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+                    // 根据返回值来判断是否走到home了
+                    if ((param->count != 0) && (rxmotiondata.ret == 0))
+                    {
+                        // 判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值
+                        if (txmotiondata.cmd == aris::control::Motion::HOME)
+                        {
+                            txmotiondata.cmd = aris::control::Motion::RUN;
+                            txmotiondata.target_pos = rxmotiondata.feedback_pos;
+                            txmotiondata.target_vel = 0;
+                            txmotiondata.target_tor = 0;
+                        }
+                    }
+                    else
+                    {
+                        is_all_homed = false;
+                        txmotiondata.cmd = aris::control::Motion::HOME;
 
-			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			{
-				if (param.active_motor[i])
-				{
-					// 判断是否已经Disabled了 //
-					if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
-					{
-						// 如果已经disable了，那么什么都不做 //
-					}
-					else
-					{
-						// 否则往下刷disable指令 //
-						is_all_disabled = false;
-						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::DISABLE;
+                        if (param->count % 1000 == 0)
+                        {
+                            rt_printf("Unenabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
+                        }
+                    }
+                }
+            }
+            return is_all_homed ? 0 : 1;
+        }
+        auto ControlServer::Imp::run()->int
+        {
+            GaitParamBase *param = reinterpret_cast<GaitParamBase  *>(cmd_queue_[current_cmd_]);
+            param->count = count_;
+            param->controller=controller_.get();
+            param->sensor_root=sensor_root_.get();
 
-						if (param.count % 1000 == 0)
-						{
-							rt_printf("Undisabled motor, physical id: %d, absolute id: %d\n", this->controller_->motionAtAbs(i).phyID(), i);
-						}
-					}
-				}
-			}
+            std::vector<double> last_targetpos;
+            last_targetpos.resize(model_->motionPool().size());
+            //update last target position
+            for(std::size_t i=0; i<model_->motionPool().size();i++){
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                last_targetpos.push_back(txmotiondata.target_pos);
+            }
 
-			return is_all_disabled ? 0 : 1;
-		}
-		auto ControlServer::Imp::home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
-		{
-			bool is_all_homed = true;
+            // 执行gait函数 //
+            int ret = this->plan_vec_.at(param->gait_id).operator()(*model_.get(), *param);
 
-			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			{
-				if (param.active_motor[i])
-				{
-					// 将电机的偏置置为0 //
-					controller_->motionAtAbs(i).setPosOffset(0);
-					
-					// 根据返回值来判断是否走到home了 //
-					if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
-					{
-						// 判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值 //
-						if (data.motion_raw_data->operator[](i).cmd == aris::control::EthercatMotion::HOME)
-						{
-							data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
-							data.motion_raw_data->operator[](i).target_pos = data.motion_raw_data->operator[](i).feedback_pos;
-							data.motion_raw_data->operator[](i).target_vel = 0;
-							data.motion_raw_data->operator[](i).target_cur = 0;
-						}
-					}
-					else
-					{
-						is_all_homed = false;
-						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::HOME;
+            // 向下写入输入位置 //
+            for(std::size_t i=0; i<model_->motionPool().size();i++)
+            {
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                if(param->active_motor[slaID])
+                {
+                    auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                    txmotiondata.cmd = aris::control::Motion::RUN;
+                    txmotiondata.target_pos = model_->motionPool().at(i).motPos();
+                }
+            }
 
-						if (param.count % 1000 == 0)
-						{
-							rt_printf("Unhomed motor, physical id: %d, absolute id: %d\n", this->controller_->motionAtAbs(i).phyID(), i);
-						}
-					}
-				}
-			}
 
-			return is_all_homed ? 0 : 1;
-		}
-		auto ControlServer::Imp::fake_home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
-		{
-			for (std::size_t i = 0; i < model_->motionPool().size(); ++i)
-			{
-				model_->motionPool().at(i).update();
-				
-				controller_->motionAtAbs(i).setPosOffset(static_cast<std::int32_t>(controller_->motionAtAbs(i).posOffset() +
-					model_->motionPool().at(i).motPos()*controller_->motionAtAbs(i).pos2countRatio() - data.motion_raw_data->at(i).feedback_pos
-					));
-			}
 
-			rt_printf("feedback:\n%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"
-				, data.motion_raw_data->at(0).feedback_pos
-				, data.motion_raw_data->at(1).feedback_pos
-				, data.motion_raw_data->at(2).feedback_pos
-				, data.motion_raw_data->at(3).feedback_pos
-				, data.motion_raw_data->at(4).feedback_pos
-				, data.motion_raw_data->at(5).feedback_pos
-				, data.motion_raw_data->at(6).feedback_pos
-				, data.motion_raw_data->at(7).feedback_pos
-				, data.motion_raw_data->at(8).feedback_pos
-				, data.motion_raw_data->at(9).feedback_pos
-				, data.motion_raw_data->at(10).feedback_pos
-				, data.motion_raw_data->at(11).feedback_pos
-				, data.motion_raw_data->at(12).feedback_pos
-				, data.motion_raw_data->at(13).feedback_pos
-				, data.motion_raw_data->at(14).feedback_pos
-				, data.motion_raw_data->at(15).feedback_pos
-				, data.motion_raw_data->at(16).feedback_pos
-				, data.motion_raw_data->at(17).feedback_pos);
+            // 检查位置极限和速度是否连续 //
+            for(std::size_t i=0; i<model_->motionPool().size();i++)
+            {
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                std::size_t phyID=model_->motionPool().at(i).phyID();
+                auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                //auto &rxmotiondata=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+                auto &motion=static_cast<aris::control::Motion&>(controller_->slavePool().at(slaID));
+                if (txmotiondata.cmd == aris::control::Motion::RUN && param->active_motor[slaID])
+                {
+                    if (param->if_check_pos_max && (txmotiondata.target_pos > motion.maxPos()))
+                    {
+                        rt_printf("Motor %i's target position is bigger than its MAX permitted value in count:%d\n", phyID, count_);
+                        rt_printf("The min, max and current are:\n");
+                        for(std::size_t temp=0; temp<model_->motionPool().size();temp++)
+                        {
+                            std::size_t slaID_temp=model_->motionPool().at(temp).slaID();
+                            auto &motion_temp=static_cast<aris::control::Motion&>(controller_->slavePool().at(slaID_temp));
+                            auto &txmotiondata_temp=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_temp));
+                            rt_printf("%lf   %lf   %lf\n", motion_temp.minPos(), motion_temp.maxPos(), txmotiondata_temp.target_pos);
+                        }
+                        rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
+                        cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
+                        count_ = 0;
 
-			rt_printf("pos_offset:\n%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"
-				, controller_->motionAtAbs(0).posOffset()
-				, controller_->motionAtAbs(1).posOffset()
-				, controller_->motionAtAbs(2).posOffset()
-				, controller_->motionAtAbs(3).posOffset()
-				, controller_->motionAtAbs(4).posOffset()
-				, controller_->motionAtAbs(5).posOffset()
-				, controller_->motionAtAbs(6).posOffset()
-				, controller_->motionAtAbs(7).posOffset()
-				, controller_->motionAtAbs(8).posOffset()
-				, controller_->motionAtAbs(9).posOffset()
-				, controller_->motionAtAbs(10).posOffset()
-				, controller_->motionAtAbs(11).posOffset()
-				, controller_->motionAtAbs(12).posOffset()
-				, controller_->motionAtAbs(13).posOffset()
-				, controller_->motionAtAbs(14).posOffset()
-				, controller_->motionAtAbs(15).posOffset()
-				, controller_->motionAtAbs(16).posOffset()
-				, controller_->motionAtAbs(17).posOffset());
+                        // 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+                        for(std::size_t rec=0; rec<model_->motionPool().size();rec++){
+                            std::size_t slaID_rec=model_->motionPool().at(rec).slaID();
+                            auto &txmotiondata_rec=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_rec));
+                            txmotiondata_rec.target_pos = last_targetpos[rec];
+                        }
 
-			return 0;
-		}
-		auto ControlServer::Imp::run(GaitParamBase &param, aris::control::EthercatController::Data &data)->int
-		{
-			static ControlServer::Imp *imp_ = ControlServer::instance().imp_.get();
-			
-			// 获取陀螺仪传感器数据 //
-			//aris::sensor::SensorData<aris::sensor::ImuData> imuDataProtected;
-			//if (imu_) imuDataProtected = imu_->getSensorData();
-			//param.imu_data = &imuDataProtected.get();
+                        return 0;
+                    }
 
-			// 获取力传感器数据与电机数据 //
-			param.force_data = data.force_sensor_data;
-			param.motion_raw_data = data.motion_raw_data;
-			param.last_motion_raw_data = data.last_motion_raw_data;
-			param.motion_feedback_pos = &this->motion_pos_;
+                    if (param->if_check_pos_min && (txmotiondata.target_pos < motion.minPos()))
+                    {
+                        rt_printf("Motor %i's target position is smaller than its MIN permitted value in count:%d\n", phyID, count_);
+                        rt_printf("The min, max and current count are:\n");
+                        for(std::size_t temp=0; temp<model_->motionPool().size();temp++)
+                        {
+                            std::size_t slaID_temp=model_->motionPool().at(temp).slaID();
+                            auto &motion_temp=static_cast<aris::control::Motion&>(controller_->slavePool().at(slaID_temp));
+                            auto &txmotiondata_temp=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_temp));
+                            rt_printf("%lf   %lf   %lf\n", motion_temp.minPos(), motion_temp.maxPos(), txmotiondata_temp.target_pos);
+                        }
+                        rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
+                        cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
+                        count_ = 0;
 
-			for (std::size_t i = 0; i < data.motion_raw_data->size(); ++i)
-			{
-				this->motion_pos_[i] = static_cast<double>(data.motion_raw_data->at(i).feedback_pos) / controller_->motionAtAbs(i).pos2countRatio();
-			}
+                        // 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+                        for(std::size_t rec=0; rec<model_->motionPool().size();rec++){
+                            std::size_t slaID_rec=model_->motionPool().at(rec).slaID();
+                            auto &txmotiondata_rec=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_rec));
+                            txmotiondata_rec.target_pos = last_targetpos[rec];
+                        }
+                        return 0;
+                    }
 
-			// 执行gait函数 //
-			int ret = this->plan_vec_.at(param.gait_id).operator()(*model_.get(), param);
+                    if (param->if_check_pos_continuous && (std::abs(txmotiondata.target_pos - last_targetpos[i])>0.0012*motion.maxVel()))
+                    {
+                        rt_printf("Motor %i's target position is not continuous in count:%d\n", phyID, count_);
 
-			// 向下写入输入位置 //
-			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			{
-				if (param.active_motor[i])
-				{
-					data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
-					data.motion_raw_data->operator[](i).target_pos = static_cast<std::int32_t>(model_->motionPool().at(i).motPos() * controller_->motionAtAbs(i).pos2countRatio());
-				}
-			}
+                        rt_printf("The input of last and this count are:\n");
+                        for(std::size_t temp=0; temp<model_->motionPool().size();temp++)
+                        {
+                            std::size_t slaID_temp=model_->motionPool().at(temp).slaID();
+                            auto &txmotiondata_temp=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_temp));
+                            rt_printf("%lf   %lf\n",  last_targetpos[temp], txmotiondata_temp.target_pos);
+                        }
 
-			// 检查位置极限和速度是否连续 //
-			for (std::size_t i = 0; i<imp_->controller_->motionNum(); ++i)
-			{
-				if (data.last_motion_raw_data->at(i).cmd == aris::control::EthercatMotion::RUN)
-				{
-					if (param.if_check_pos_max && (data.motion_raw_data->at(i).target_pos > imp_->controller_->motionAtAbs(i).maxPosCount()))
-					{
-						rt_printf("Motor %i's target position is bigger than its MAX permitted value in count:%d\n", i, imp_->count_);
-						rt_printf("The min, max and current count are:\n");
-						for (std::size_t i = 0; i<imp_->controller_->motionNum(); ++i)
-						{
-							rt_printf("%d   %d   %d\n", imp_->controller_->motionAtAbs(i).minPosCount(), imp_->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
-						}
-						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-						imp_->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
-						imp_->count_ = 0;
+                        rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
+                        cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
+                        count_ = 0;
 
-						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (std::size_t i = 0; i < imp_->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-						
-						return 0;
-					}
+                        // 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+                        for(std::size_t rec=0; rec<model_->motionPool().size();rec++){
+                            std::size_t slaID_rec=model_->motionPool().at(rec).slaID();
+                            auto &txmotiondata_rec=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID_rec));
+                            txmotiondata_rec.target_pos = last_targetpos[rec];
+                        }
+                        return 0;
+                    }
+                }
+            }
 
-					if (param.if_check_pos_min && (data.motion_raw_data->at(i).target_pos < imp_->controller_->motionAtAbs(i).minPosCount()))
-					{
-						rt_printf("Motor %i's target position is smaller than its MIN permitted value in count:%d\n", i, imp_->count_);
-						rt_printf("The min, max and current count are:\n");
-						for (std::size_t i = 0; i<imp_->controller_->motionNum(); ++i)
-						{
-							rt_printf("%d   %d   %d\n", imp_->controller_->motionAtAbs(i).minPosCount(), imp_->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
-						}
-						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-						imp_->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
-						imp_->count_ = 0;
-
-						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (std::size_t i = 0; i < imp_->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-
-						return 0;
-					}
-
-					if (param.if_check_pos_continuous && (std::abs(data.last_motion_raw_data->at(i).target_pos - data.motion_raw_data->at(i).target_pos)>0.0012*imp_->controller_->motionAtAbs(i).maxVelCount()))
-					{
-						rt_printf("Motor %i's target position is not continuous in count:%d\n", i, imp_->count_);
-
-						rt_printf("The input of last and this count are:\n");
-						for (std::size_t i = 0; i<imp_->controller_->motionNum(); ++i)
-						{
-							rt_printf("%d   %d\n", data.last_motion_raw_data->at(i).target_pos, data.motion_raw_data->at(i).target_pos);
-						}
-
-						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-						imp_->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
-						imp_->count_ = 0;
-
-						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (std::size_t i = 0; i < imp_->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-
-						return 0;
-					}
-				}
-			}
-
-			return ret;
-		}*/
+            return ret;
+        }
 
 		ControlServer &ControlServer::instance()
 		{
@@ -1280,19 +1039,14 @@ namespace aris
 			imp_->model_->loadXml(xml_doc);
 			imp_->controller_->loadXml(xml_doc);
 			imp_->sensor_root_->loadXml(xml_doc);
-
-			/// make phy to abs map ///
-			imp_->map_abs2phy_.clear();
-			for (auto &m : imp_->model_->motionPool())imp_->map_abs2phy_.push_back(m.slaID());
-			imp_->map_phy2abs_.resize(imp_->controller_->slavePool().size());
-			for (std::size_t i = 0; i < imp_->map_abs2phy_.size(); ++i)imp_->map_phy2abs_.at(imp_->model_->motionPool().at(i).slaID()) = i;
+            imp_->parser_.loadXml(xml_doc);
 
 			/// load connection param ///
 			imp_->server_socket_ip_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
 			imp_->server_socket_port_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("port");
 
 			/// begin to insert cmd nodes ///
-			auto pCmds = xml_doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Commands");
+            /*auto pCmds = xml_doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Commands");
 
 			if (pCmds == nullptr) throw std::runtime_error("invalid xml file, because it contains no commands information");
 			imp_->cmd_struct_map_.clear();
@@ -1303,7 +1057,7 @@ namespace aris
 
 				imp_->cmd_struct_map_.insert(std::make_pair(std::string(child_ele->name()), std::unique_ptr<CommandStruct>(new CommandStruct(child_ele->name()))));
 				AddAllParams(child_ele, imp_->cmd_struct_map_.at(child_ele->name())->root.get(), imp_->cmd_struct_map_.at(child_ele->name())->allParams, imp_->cmd_struct_map_.at(child_ele->name())->shortNames);
-			}
+            }*/
 
 			/// Set socket connection callback function ///
 			imp_->server_socket_.setOnReceivedConnection([](aris::core::Socket *pConn, const char *pRemoteIP, int remotePort)
@@ -1335,6 +1089,15 @@ namespace aris
 
 				return 0;
 			});
+
+            ///set the tg///
+            imp_->controller_->setControlStrategy([this]()
+            {
+                this->imp_->tg();
+            });
+
+
+
 		}
 		auto ControlServer::model()->dynamic::Model&
 		{

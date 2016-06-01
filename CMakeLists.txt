@@ -218,6 +218,16 @@ PREPEND(FULL_SRC demo/demo_Aris_Sensor/demo_Sensor ${SOURCE_FILES})
 add_executable(demo_Sensor ${FULL_SRC})
 target_link_libraries(demo_Sensor ${ALL_LINK_LIB})
 
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Server ${SOURCE_FILES})
+add_executable(demo_Server ${FULL_SRC})
+target_link_libraries(demo_Server ${ALL_LINK_LIB})
+
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Client ${SOURCE_FILES})
+add_executable(demo_Client ${FULL_SRC})
+target_link_libraries(demo_Client ${ALL_LINK_LIB})
+
 endif(MAKE_DEMO)
 
 
@@ -242,7 +252,9 @@ endif(WIN32)
 install(DIRECTORY sh DESTINATION .)
 install(TARGETS aris_core aris_dynamic aris_sensor aris_control aris_server ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} src/aris.h DESTINATION include)
+install(FILES doc/Robot_III.xml DESTINATION resource/)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
+
 
 ############################################ uninstall aris ############################################
 if(UNIX)

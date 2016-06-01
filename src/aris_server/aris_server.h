@@ -24,15 +24,15 @@ namespace aris
 		{
 			bool active_motor[MAX_MOTOR_NUM];
 
-			BasicFunctionParam() { std::fill(active_motor, active_motor + MAX_MOTOR_NUM, true); };
+            BasicFunctionParam() { std::fill(active_motor, active_motor + MAX_MOTOR_NUM, true); }
 		};
 
 		//for all ordinary gaits
 		struct GaitParamBase :BasicFunctionParam
 		{
 			bool if_check_pos_min{ true };
-			bool if_check_pos_max{ true };
-			bool if_check_pos_continuous{ true };
+            bool if_check_pos_max{ true };
+            bool if_check_pos_continuous{ false };
 			std::int32_t gait_id;
 			
 			aris::sensor::SensorRoot* sensor_root;

@@ -68,12 +68,13 @@ void test_command()
 	try
 	{
 		XmlDocument doc;
-		doc.Parse(xml_data);
+        //doc.Parse(xml_data);
+        doc.LoadFile("/usr/aris/resource/Robot_III.xml");
 
 		CommandParser parser;
 		parser.loadXml(doc);
 
-		std::vector<std::string> cmd_string_vec{"en --all", "en -m=0 --all", "en -motor=0", "en --moto=0", "rc -t=3000","ds","start" };
+        std::vector<std::string> cmd_string_vec{"en --all", "en -m=0 --all", "en -motor=0", "en --moto=0", "rc -t=3000","ds","start" };
 
 		for (auto &cmd_string : cmd_string_vec)
 		{
@@ -115,3 +116,4 @@ void test_command()
 		std::cout << e.what();
 	}
 }
+

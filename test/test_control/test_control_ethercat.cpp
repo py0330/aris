@@ -19,7 +19,7 @@ protected:
 
 		static int count{ 0 };
 #ifdef UNIX
-		if (count++ % 100 == 0)rt_printf("%d:%f\n", count, motion.rxData().pos);
+        if (count++ % 100 == 0)rt_printf("%d:%f\n", count, motion.rxData().feedback_pos);
 #endif
 	};
 };
