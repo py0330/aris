@@ -197,8 +197,11 @@ void tg()
             break;
         case aris::control::Motion::Cmd::RUN:
             txmotiondata.cmd=aris::control::Motion::Cmd::RUN;
-            txmotiondata.target_pos=0.020*std::sin(cmd_count/10000.0*2*PI);
-            //txmotiondata.target_pos=0.002*cmd_count/1000.0;
+            static double begin;
+            if(cmd_count==0)
+                begin=rxmotiondata.feedback_pos;
+            txmotiondata.target_pos=0.020*std::sin(cmd_count/10000.0*2*PI)+begin;
+            //txmotiondata.target_pos=0.002*cmd_count/1000.0+begin;
             if(cmd_count%5000==0)
                 rt_printf("executing command: %d\n", cmd_count);
             break;
