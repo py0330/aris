@@ -31,7 +31,7 @@ namespace aris
 			friend class UniqueParam;
 			friend class GroupParam;
 		};
-		class Param :public ParamBase
+		class Param final:public ParamBase
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("param"); return std::ref(type); }
@@ -51,7 +51,7 @@ namespace aris
 			friend class Command;
 			friend class CommandParser;
 		};
-		class UniqueParam :public ParamBase
+		class UniqueParam final:public ParamBase
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("unique"); return std::ref(type); }

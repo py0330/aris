@@ -1,5 +1,8 @@
 #ifdef WIN32
 #include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
+
+
+
 #endif
 #ifdef UNIX
 #include <ecrt.h>
@@ -239,9 +242,9 @@ namespace aris
 				std::int8_t config_value_int8_;
 			};
 		};
-		auto Sdo::readable()const->bool { return static_cast<bool>(imp_->option_ & READ); }
-		auto Sdo::writeable()const->bool { return static_cast<bool>(imp_->option_ & WRITE); }
-		auto Sdo::configurable()const->bool { return static_cast<bool>(imp_->option_ & CONFIG); }
+		auto Sdo::readable()const->bool { return (imp_->option_ & READ) != 0; }
+		auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
+		auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0; }
 		auto Sdo::option()const->unsigned { return imp_->option_; }
 		auto Sdo::getConfigValue(std::int32_t &value)const->void
 		{
