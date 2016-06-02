@@ -65,7 +65,7 @@ namespace aris
 		}
 		DynEle::DynEle(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele)
 		{
-			active_ = attributeBool(xml_ele, "active");
+			active_ = attributeBool(xml_ele, "active", true);
 		}
 		
 		auto Coordinate::getPp(double *pp)const->void 

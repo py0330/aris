@@ -7,9 +7,7 @@
 
 int main(int argc, char *argv[])
 {
-
 	test_command();
-
 
 	std::cout << "finished" << std::endl;
 

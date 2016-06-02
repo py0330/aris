@@ -7,6 +7,10 @@
 #include "unistd.h"
 #endif
 
+#ifdef WIN32
+#define rt_printf printf
+#endif
+
 
 #define SlaveNumber 18
 enum { MAX_MOTOR_NUM = 100 };

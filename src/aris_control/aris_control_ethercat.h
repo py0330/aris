@@ -211,6 +211,12 @@ namespace aris
 			virtual auto txData()const->const TxType&;
 			virtual auto rxData()->RxType&;
 			virtual auto rxData()const->const RxType&;
+			virtual auto getTxData(TxType& tx_data)const->void { tx_data = txData(); }
+			virtual auto setTxData(const TxType& tx_data)->void { txData() = tx_data; }
+			virtual auto getRxData(RxType& rx_data)const->void { rx_data = rxData(); }
+			virtual auto setTxData(const RxType& rx_data)->void { rxData() = rx_data; }
+			virtual auto txTypeSize()const->std::size_t { return sizeof(TxType); }
+			virtual auto rxTypeSize()const->std::size_t { return sizeof(RxType); }
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 			auto pdoGroupPool()->aris::core::ObjectPool<PdoGroup, Element>&;
 			auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&;
@@ -329,7 +335,13 @@ namespace aris
 			virtual auto txData()const->const TxType & override{ return tx_data_; }
 			virtual auto rxData()->RxType & override { return rx_data_; }
 			virtual auto rxData()const->const RxType & override{ return rx_data_; }
-			
+			virtual auto getTxData(Slave::TxType& tx_data)const->void override { static_cast<TxType &>(tx_data) = txData(); }
+			virtual auto setTxData(const Slave::TxType& tx_data)->void override { txData() = static_cast<const TxType &>(tx_data); }
+			virtual auto getRxData(Slave::RxType& rx_data)const->void override { static_cast<RxType &>(rx_data) = rxData(); }
+			virtual auto setTxData(const Slave::RxType& rx_data)->void override { rxData() = static_cast<const RxType &>(rx_data); }
+			virtual auto txTypeSize()const->std::size_t override { return sizeof(TxType); }
+			virtual auto rxTypeSize()const->std::size_t override { return sizeof(RxType); }
+
 			SlaveTemplate(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Slave(father, id, xml_ele)
 			{
 				static_assert(std::is_base_of<Slave::TxType, TxType>(), "\"TxDataType\" must be derived from \"TxData\"");
@@ -341,23 +353,5 @@ namespace aris
 		};
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif
