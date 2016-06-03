@@ -16,10 +16,14 @@ namespace aris
 {
 	namespace dynamic
 	{
-		typedef double double6x6[6][6];
-		typedef double double4x4[4][4];
-		typedef double double3[3];
-		typedef double double6[6];
+		using double6x6 = double[6][6];
+		using double4x4 = double[4][4];
+		using double3 = double[3];
+		using double6 = double[6];
+		//typedef double double6x6[6][6];
+		//typedef double double4x4[4][4];
+		//typedef double double3[3];
+		//typedef double double6[6];
 		
 		class Marker;
 		class Part;
@@ -27,10 +31,11 @@ namespace aris
 
 		struct PlanParamBase
 		{
-			std::int32_t cmd_type{ 0 };
-			mutable std::int32_t count{ 0 };
+			Model* model_;
+			std::int32_t cmd_type_{ 0 };
+			mutable std::int32_t count_{ 0 };
 		};
-		typedef std::function<int(Model &, const PlanParamBase &)> PlanFunc;
+		using PlanFunc = std::function<int(Model &, const PlanParamBase &)>;
 
 		class Element :public aris::core::Object
 		{
@@ -183,7 +188,7 @@ namespace aris
 
 			friend class Model;
 		};
-		template<std::size_t DIM>	class ConstraintData
+		template<std::size_t DIM> class ConstraintData
 		{
 		public:
 			typedef double double6xd[6][DIM];

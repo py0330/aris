@@ -102,7 +102,7 @@ namespace aris
 			friend class CommandParser;
 			friend class ParamBase;
 		};
-		
+
 		class CommandParser:public Root
 		{
 		public:
@@ -110,7 +110,6 @@ namespace aris
 			virtual auto loadXml(const XmlDocument &xml_doc)->void override;
 			virtual auto loadXml(const XmlElement &xml_ele)->void override;
 			auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
-			
 
 			~CommandParser();
 			CommandParser();
