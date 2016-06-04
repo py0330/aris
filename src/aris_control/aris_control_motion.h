@@ -14,17 +14,18 @@ namespace aris
     {
         struct TxMotionData :public Slave::TxType
         {
-            //double target_pos;
             double target_pos{ 0 };
             double target_vel{ 0 };
             double target_tor{ 0 };
+            double vel_offset{0};
+            double tor_offset{0};
+
             std::uint8_t cmd{ 0 };
             std::uint8_t mode{ 8 };
             std::int8_t home_mode{35};
         };
         struct RxMotionData :public Slave::RxType
         {
-            //double pos, vel, acc, cur;
             double feedback_pos{ 0 };
             double feedback_vel{ 0 };
             double feedback_tor{ 0 };
