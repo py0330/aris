@@ -36,8 +36,8 @@ namespace aris
 			std::int32_t gait_id_;
 
 			bool if_check_pos_min_{ true };
-            bool if_check_pos_max_{ true };
-            bool if_check_pos_continuous_{ true };
+            		bool if_check_pos_max_{ true };
+            		bool if_check_pos_continuous_{ true };
 		};
 
 		class ControlServer
