@@ -91,6 +91,16 @@ namespace aris
 			auto recvInRT(aris::core::MsgRT &msg)->int;
 			auto recvInNrt(aris::core::Msg &msg)->int;
 		};
+
+		template <>
+		class Pipe<void *>:public PipeBase
+		{
+			Pipe(bool is_block = true);
+			auto sendToRT(const void *data, std::size_t byte_size)->int { return sendToRTRawData(data, byte_size); };
+			auto sendToNrt(const void *data, std::size_t byte_size)->int { return sendToNrtRawData(data, byte_size); };
+			auto recvInRT(void *data, std::size_t byte_size)->int { return recvInRTRawData(data, byte_size); };
+			auto recvInNrt(void *data, std::size_t byte_size)->int { return recvInNrtRawData(data, byte_size); };
+		};
 	}
 }
 

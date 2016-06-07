@@ -8,7 +8,7 @@
 
 #define Motion_Num 18
 
-auto basicParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+auto basicParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
     aris::server::BasicFunctionParam param;
 
@@ -16,60 +16,60 @@ auto basicParse(const std::string &cmd, const std::map<std::string, std::string>
     {
         if (i.first == "all")
         {
-            std::fill_n(param.active_motor, 18, true);
+            std::fill_n(param.active_motor_, 18, true);
         }
         else if (i.first == "first")
         {
-            std::fill_n(param.active_motor, 18, false);
-            std::fill_n(param.active_motor + 0, 3, true);
-            std::fill_n(param.active_motor + 6, 3, true);
-            std::fill_n(param.active_motor + 12, 3, true);
+            std::fill_n(param.active_motor_, 18, false);
+            std::fill_n(param.active_motor_ + 0, 3, true);
+            std::fill_n(param.active_motor_ + 6, 3, true);
+            std::fill_n(param.active_motor_ + 12, 3, true);
         }
         else if (i.first == "second")
         {
-            std::fill_n(param.active_motor, 18, false);
-            std::fill_n(param.active_motor + 3, 3, true);
-            std::fill_n(param.active_motor + 9, 3, true);
-            std::fill_n(param.active_motor + 15, 3, true);
+            std::fill_n(param.active_motor_, 18, false);
+            std::fill_n(param.active_motor_ + 3, 3, true);
+            std::fill_n(param.active_motor_ + 9, 3, true);
+            std::fill_n(param.active_motor_ + 15, 3, true);
         }
         else if (i.first == "motor")
         {
             int id = { stoi(i.second) };
             if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
 
-            std::fill_n(param.active_motor, 18, false);
-            param.active_motor[id] = true;
+            std::fill_n(param.active_motor_, 18, false);
+            param.active_motor_[id] = true;
         }
         else if (i.first == "physical_motor")
         {
             int id = { stoi(i.second) };
             if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
 
-            std::fill_n(param.active_motor, 18, false);
-            param.active_motor[id] = true;
+            std::fill_n(param.active_motor_, 18, false);
+            param.active_motor_[id] = true;
         }
         else if (i.first == "slave_motor")
         {
             int id = { stoi(i.second) };
             if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
 
-            std::fill_n(param.active_motor, 18, false);
-            param.active_motor[id] = true;
+            std::fill_n(param.active_motor_, 18, false);
+            param.active_motor_[id] = true;
         }
         else if (i.first == "leg")
         {
             auto leg_id = std::stoi(i.second);
             if (leg_id<0 || leg_id>5)throw std::runtime_error("invalid param in parseRecover func");
 
-            std::fill_n(param.active_motor, 18, false);
-            std::fill_n(param.active_motor + leg_id * 3, 3, true);
+            std::fill_n(param.active_motor_, 18, false);
+            std::fill_n(param.active_motor_ + leg_id * 3, 3, true);
         }
     }
 
     msg_out.copyStruct(param);
 }
 
-auto testParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
+auto testParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 {
     aris::server::GaitParamBase param;
 
@@ -77,31 +77,31 @@ auto testParse(const std::string &cmd, const std::map<std::string, std::string> 
     {
         if (i.first == "all")
         {
-            std::fill_n(param.active_motor, 18, true);
+            std::fill_n(param.active_motor_, 18, true);
         }
         else if (i.first == "motor")
         {
             int id = { stoi(i.second) };
             if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
 
-            std::fill_n(param.active_motor, 18, false);
-            param.active_motor[id] = true;
+            std::fill_n(param.active_motor_, 18, false);
+            param.active_motor_[id] = true;
         }
         else if (i.first == "physical_motor")
         {
             int id = { stoi(i.second) };
             if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
 
-            std::fill_n(param.active_motor, 18, false);
-            param.active_motor[id] = true;
+            std::fill_n(param.active_motor_, 18, false);
+            param.active_motor_[id] = true;
         }
         else if (i.first == "slave_motor")
         {
             int id = { stoi(i.second) };
             if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
 
-            std::fill_n(param.active_motor, 18, false);
-            param.active_motor[id] = true;
+            std::fill_n(param.active_motor_, 18, false);
+            param.active_motor_[id] = true;
         }
     }
     msg.copyStruct(param);
@@ -111,11 +111,11 @@ auto testGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &p
     auto &param = static_cast<const aris::server::GaitParamBase&>(param_in);
 
     static double begin_pin[Motion_Num];
-    if(param.count==0)
+    if(param.count_==0)
      {
         for(int i=0;i<Motion_Num;i++){
             std::size_t slaID=model.motionPool().at(i).slaID();
-            begin_pin[i] = static_cast<aris::control::RxMotionData&>(param.controller->slavePool().at(slaID).rxData()).feedback_pos;
+            begin_pin[i] = static_cast<aris::control::RxMotionData&>(param.cs_->controller().slavePool().at(slaID).rxData()).feedback_pos;
         }
     }
 
@@ -125,18 +125,16 @@ auto testGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &p
     //pin[1] = 0.002*std::sin(param.count/1000.0*2*PI)+begin_pin[1];
     for(int i=0;i<Motion_Num;i++)
     {
-        pin[i] = 0.02*param.count/1000.0+begin_pin[i];
+        pin[i] = 0.02*param.count_/1000.0+begin_pin[i];
         model.motionPool().at(i).setMotPos(pin[i]);
     }
 
 
-    return 10000 - param.count -1;
+    return 10000 - param.count_ -1;
 }
-
 
 int main(int argc, char *argv[])
 {
-
     auto &cs = aris::server::ControlServer::instance();
 
     cs.createModel<aris::dynamic::Model>();

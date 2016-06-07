@@ -19,27 +19,26 @@ namespace aris
 	{
 		enum { MAX_MOTOR_NUM = 100 };
 
+		class ControlServer;
+		
+		using ParseFunc = std::function<void(const ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
+
 		//for enable, disable, and home
 		struct BasicFunctionParam :aris::dynamic::PlanParamBase
 		{
-			bool active_motor[MAX_MOTOR_NUM];
-
-            BasicFunctionParam() { std::fill(active_motor, active_motor + MAX_MOTOR_NUM, true); }
+			bool active_motor_[MAX_MOTOR_NUM];
+            BasicFunctionParam() { std::fill(active_motor_, active_motor_ + MAX_MOTOR_NUM, true); }
 		};
-
 		//for all ordinary gaits
 		struct GaitParamBase :BasicFunctionParam
 		{
-			bool if_check_pos_min{ true };
-            bool if_check_pos_max{ true };
-            bool if_check_pos_continuous{ true };
-			std::int32_t gait_id;
-			
-			aris::sensor::SensorRoot* sensor_root;
-			aris::control::Controller* controller;
-		};
+			ControlServer* cs_;
+			std::int32_t gait_id_;
 
-		typedef std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)> ParseFunc;
+			bool if_check_pos_min_{ true };
+            		bool if_check_pos_max_{ true };
+            		bool if_check_pos_continuous_{ true };
+		};
 
 		class ControlServer
 		{

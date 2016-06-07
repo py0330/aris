@@ -2979,19 +2979,19 @@ namespace aris
 			
 
 			//其他位置
-			for (param.count = 0; true; ++param.count)
+			for (param.count_ = 0; true; ++param.count_)
 			{
 				auto is_sim = func(*this, param);
 
-				result.time_.push_back(param.count + 1);
+				result.time_.push_back(param.count_ + 1);
 				for (std::size_t i = 0; i < motionPool().size(); ++i)
 				{
 					result.Pin_.at(i).push_back(motionPool().at(i).motPos());
 				}
 
-				if ((!is_sim) || ((param.count + 1) % akima_interval == 0))
+				if ((!is_sim) || ((param.count_ + 1) % akima_interval == 0))
 				{
-					time_akima_data.push_back((param.count + 1) / 1000.0);
+					time_akima_data.push_back((param.count_ + 1) / 1000.0);
 
 					for (std::size_t j = 0; j < motionPool().size(); ++j)
 					{
