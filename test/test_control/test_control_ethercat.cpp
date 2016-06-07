@@ -83,11 +83,6 @@ const char xml_file[] =
 "            <ForceSensor type=\"slave\" slave_type=\"AtiForceSensor\"/>"
 "        </Slave>"
 "    </Controller>"
-"    <Sensor>"
-"        <SensorPool type=\"sensor_pool_object\">"
-"            <IMU active=\"true\" type=\"xsens_imu\" portLinux=\"/dev/ttyUSB0\" baudRate=\"921600\" sampleRate=\"400\" PeImuGround2BodyGound=\"{0,0,0,0,-PI/2,PI}\" PeImu2Body=\"{0,0,0,0,PI/2,0}\"/>"
-"        </SensorPool>"
-"    </Sensor>"
 "</Root>";
 
 using namespace aris::control;
@@ -100,6 +95,7 @@ protected:
 		auto& motion = dynamic_cast<aris::control::Motion &>(slavePool().at(0));
 
 		static int count{ 0 };
+
 #ifdef UNIX
         if (count++ % 100 == 0)rt_printf("%d:%f\n", count, motion.rxData().feedback_pos);
 #endif
