@@ -478,6 +478,7 @@ namespace aris
 					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(sla_id));
 					tx_motion_data.cmd = aris::control::Motion::RUN;
 					tx_motion_data.target_pos = model_->motionPool().at(i).motPos();
+                    //tx_motion_data.vel_offset = model_->motionPool().at(i).motVel();
 				}
 			}
 
