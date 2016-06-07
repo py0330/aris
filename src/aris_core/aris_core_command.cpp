@@ -307,6 +307,8 @@ namespace aris
 				throw std::runtime_error(e.what() + std::string(", when parsing command string \"" + command_string +"\""));
 			}
 		}
+		auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; };
+		auto CommandParser::commandPool()const->const ObjectPool<Command> &{ return *imp_->command_pool_; };
 		CommandParser::~CommandParser(){}
 		CommandParser::CommandParser():imp_(new Imp)
 		{

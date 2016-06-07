@@ -717,7 +717,7 @@ namespace aris
 				{
 					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
 				}
-				else if (imp_->parser_.findByName(cmd_name) == imp_->parser_.end())
+				else if (imp_->parser_.commandPool().findByName(cmd_name) == imp_->parser_.end())
 				{
 					throw std::runtime_error(std::string("failed to add command, because xml does not have \"") + cmd_name + "\" node");
 				}
