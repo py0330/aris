@@ -392,6 +392,15 @@ namespace aris
             }
 
         }
+
+        auto Motion::logData(std::fstream &file, TxType *tx_data, RxType *rx_data)->void
+        {
+            auto rx_motiondata=static_cast<RxMotionData *>(rx_data);
+            auto tx_motiondata=static_cast<TxMotionData *>(tx_data);
+            file<<rx_motiondata->feedback_pos<<" ";
+            file<<tx_motiondata->target_pos<<" ";
+        }
+
         auto Motion::maxPos()->double { return imp_->max_pos; }
         auto Motion::minPos()->double { return imp_->min_pos; }
         auto Motion::maxVel()->double { return imp_->max_vel; }

@@ -67,6 +67,10 @@ namespace aris
             virtual auto type() const->const std::string&{ return Type(); }
             Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
+            auto txTypeSize()const->std::size_t override{ return sizeof(TxMotionData); }
+            auto rxTypeSize()const->std::size_t override{ return sizeof(RxMotionData); }
+            auto logData(std::fstream &file, TxType *tx_data, RxType *rx_data)->void;
+
             auto maxPos()->double;
             auto minPos()->double;
             auto maxVel()->double;
