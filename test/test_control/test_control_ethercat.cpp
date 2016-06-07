@@ -92,12 +92,15 @@ class MyMaster :public aris::control::Master
 protected:
 	virtual auto controlStrategy()->void override
 	{
-		auto& motion = dynamic_cast<aris::control::Motion &>(slavePool().at(0));
+        auto& slave = dynamic_cast<aris::control::Slave &>(slavePool().at(0));
 
 		static int count{ 0 };
 
+        std::int32_t feedback_pos;
+        slave.readPdoIndex(0x6064,0,feedback_pos);
+
 #ifdef UNIX
-        if (count++ % 100 == 0)rt_printf("%d:%f\n", count, motion.rxData().feedback_pos);
+        if (count++ % 100 == 0)rt_printf("%d:%d\n", count, feedback_pos);
 #endif
 	};
 };
@@ -107,11 +110,17 @@ void test_control_ethercat()
 	aris::core::XmlDocument xml_doc;
 	xml_doc.Parse(xml_file);
 	
+    std::cout<<"1"<<std::endl;
+
 	MyMaster master;
 
 	master.loadXml(xml_doc);
 
+    std::cout<<"2"<<std::endl;
+
 	master.start();
+
+    std::cout<<"3"<<std::endl;
 
 	char a;
 	std::cin >> a;

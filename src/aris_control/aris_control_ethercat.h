@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <memory>
+#include <thread>
+#include <fstream>
 #include <cstdint>
 
 #include <aris_core.h>
@@ -217,7 +219,7 @@ namespace aris
 			virtual auto setTxData(const RxType& rx_data)->void { rxData() = rx_data; }
 			virtual auto txTypeSize()const->std::size_t { return sizeof(TxType); }
 			virtual auto rxTypeSize()const->std::size_t { return sizeof(RxType); }
-			virtual auto logData(std::fstream &file, RxType &rx_data, TxType &tx_data)const->std::fstream & { return file; };
+            virtual auto logData(std::fstream &file, TxType *tx_data, RxType *rx_data)->void {}
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 			auto pdoGroupPool()->aris::core::ObjectPool<PdoGroup, Element>&;
 			auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&;

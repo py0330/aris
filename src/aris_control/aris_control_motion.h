@@ -14,17 +14,18 @@ namespace aris
     {
         struct TxMotionData :public Slave::TxType
         {
-            //double target_pos;
             double target_pos{ 0 };
             double target_vel{ 0 };
             double target_tor{ 0 };
+            double vel_offset{0};
+            double tor_offset{0};
+
             std::uint8_t cmd{ 0 };
             std::uint8_t mode{ 8 };
             std::int8_t home_mode{35};
         };
         struct RxMotionData :public Slave::RxType
         {
-            //double pos, vel, acc, cur;
             double feedback_pos{ 0 };
             double feedback_vel{ 0 };
             double feedback_tor{ 0 };
@@ -65,6 +66,10 @@ namespace aris
             static auto Type()->const std::string &{ static const std::string type("motion"); return std::ref(type); }
             virtual auto type() const->const std::string&{ return Type(); }
             Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+
+            auto txTypeSize()const->std::size_t override{ return sizeof(TxMotionData); }
+            auto rxTypeSize()const->std::size_t override{ return sizeof(RxMotionData); }
+            auto logData(std::fstream &file, TxType *tx_data, RxType *rx_data)->void;
 
             auto maxPos()->double;
             auto minPos()->double;
