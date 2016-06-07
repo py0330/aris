@@ -87,17 +87,21 @@ const char xml_file[] =
 
 using namespace aris::control;
 
-class MyMaster :public aris::control::Master
+class TestMaster :public aris::control::Master
 {
 protected:
 	virtual auto controlStrategy()->void override
 	{
-		auto& motion = dynamic_cast<aris::control::Motion &>(slavePool().at(0));
+		auto& slave = slavePool().at(0);
 
 		static int count{ 0 };
 
+		std::int32_t feedback_pos;
+
+		feedback_pos;
+
 #ifdef UNIX
-        if (count++ % 100 == 0)rt_printf("%d:%f\n", count, motion.rxData().feedback_pos);
+        if (count++ % 100 == 0)rt_printf("%d:%d\n", count, feedback_pos);
 #endif
 	};
 };
@@ -107,16 +111,16 @@ void test_control_ethercat()
 	aris::core::XmlDocument xml_doc;
 	xml_doc.Parse(xml_file);
 	
-	MyMaster master;
+	TestMaster master;
 
 	master.loadXml(xml_doc);
 
 	master.start();
 
-	char a;
-	std::cin >> a;
+	std::cout << "press any key to terminate test" << std::endl;
+	std::cin.get();
 
 	master.stop();
 
-	std::cout << "finished test aris::control::master" << std::endl;
+	std::cout << "test_control_ethercat finished" << std::endl;
 }
