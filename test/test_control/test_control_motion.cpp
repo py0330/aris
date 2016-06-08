@@ -169,6 +169,10 @@ static std::string command_in("idle");//command input from terminal
 static std::int32_t cmd_count{ 0 };
 static bool cmd_success{ false };
 
+
+aris::control::Controller controller;
+aris::core::CommandParser parser;
+
 BasicFunctionParam decode(const std::string input)
 {
 	std::string cmd;
@@ -311,9 +315,6 @@ void test_control_motion()
 	aris::core::XmlDocument xml_doc;
 	xml_doc.Parse(xml_file);
 
-	aris::control::Controller controller;
-	aris::core::CommandParser parser;
-
 	controller.loadXml(xml_doc);
 	parser.loadXml(xml_doc);
 
@@ -341,5 +342,5 @@ void test_control_motion()
 
 	controller.stop();
 
-	return 0;
+	return;
 }

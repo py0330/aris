@@ -463,7 +463,7 @@ namespace aris
         }
         auto ControlServer::Imp::run()->int
         {
-            GaitParamBase *param = reinterpret_cast<GaitParamBase  *>(cmd_queue_[current_cmd_]);
+            GaitParamBase *param = reinterpret_cast<GaitParamBase *>(cmd_queue_[current_cmd_]);
 			param->cs_ = server_;
 
             // 执行gait函数 //
