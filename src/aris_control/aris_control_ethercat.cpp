@@ -97,6 +97,8 @@ namespace aris
 			
 					mst.imp_->sync(rt_timer_read());
 					mst.imp_->write();//motor data write and state machine/mode transition
+
+                    mst.imp_->logToNrt();//sent data to nrt
 				}
 			#endif
 			};
@@ -121,8 +123,60 @@ namespace aris
 					sla.imp_->write();
 				}
 				ecrt_master_send(ec_master_); 
-			};
-			auto sync(uint64_t ns)->void
+            }
+
+            auto logToNrt()->void
+            {
+                std::size_t size_count=0;
+                for(std::size_t i=0;i<slave_pool_->size();i++)
+                {
+                    auto &sla=slave_pool_->at(i);
+                    auto tx_data=reinterpret_cast<char *>(&tx_data_pool_.at(i));
+                    auto rx_data=reinterpret_cast<char *>(&rx_data_pool_.at(i));
+                    std::copy(tx_data,tx_data+sla.txTypeSize(),sent_data_.get()+size_count);
+                    size_count=size_count+sla.txTypeSize();
+                    std::copy(rx_data,rx_data+sla.rxTypeSize(),sent_data_.get()+size_count);
+                    size_count=size_count+sla.rxTypeSize();
+                }
+                record_pipe_->sendToNrt(sent_data_.get(),data_size_);
+            }
+            auto logToFile()->void
+            {
+                if(!record_thread_.joinable())
+                record_thread_ = std::thread([this]()
+                {
+                    static std::fstream file;
+                    std::string name = aris::core::logFileName();
+                    name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
+                    file.open(name.c_str(), std::ios::out | std::ios::trunc);
+
+                    long long count = -1;
+                    std::unique_ptr<char[]> txdata;
+                    std::unique_ptr<char[]> rxdata;
+                    while (!is_stopping_)
+                    {
+                        record_pipe_->recvInNrt(recieve_data_.get(),data_size_);
+
+                        file << ++count << " ";
+
+                        std::size_t size_count=0;
+                        for (auto &sla : *slave_pool_)
+                        {
+                            txdata.reset(new char[sla.txTypeSize()]);
+                            rxdata.reset(new char[sla.rxTypeSize()]);
+                            std::copy(recieve_data_.get()+size_count,recieve_data_.get()+size_count+sla.txTypeSize(),txdata.get());
+                            size_count=size_count+sla.txTypeSize();
+                            std::copy(recieve_data_.get()+size_count,recieve_data_.get()+size_count+sla.rxTypeSize(),rxdata.get());
+                            size_count=size_count+sla.rxTypeSize();
+                            sla.logData(file,reinterpret_cast<Slave::TxType*>(txdata.get()),reinterpret_cast<Slave::RxType*>(rxdata.get()));
+                        }
+                        file << std::endl;
+                    }
+                    file.close();
+                });
+            }
+
+            auto sync(uint64_t ns)->void
 			{
 				ecrt_master_application_time(ec_master_, ns);
 				ecrt_master_sync_reference_clock(ec_master_);
@@ -139,6 +193,13 @@ namespace aris
 			ec_master_t* ec_master_;
 			const int sample_period_ns_ = 1000000;
 
+            //for log
+            std::size_t data_size_{0};
+            std::unique_ptr<char[]> sent_data_;
+            std::unique_ptr<char[]> recieve_data_;
+            std::unique_ptr<Pipe<void *>> record_pipe_;
+            std::thread record_thread_;
+
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
 #ifdef UNIX
@@ -152,8 +213,8 @@ namespace aris
 		auto Element::master()->Master &{return static_cast<Master &>(root());}
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
 
-		auto DO::slave()->Slave& { return *slave_; };
-		auto DO::slave()const->const Slave&{ return *slave_; };
+        auto DO::slave()->Slave& { return *slave_; }
+        auto DO::slave()const->const Slave&{ return *slave_; }
 
 		auto Pdo::read(std::int32_t &value)const->void
 		{
@@ -830,7 +891,12 @@ namespace aris
 				slave.init();
 				txDataPool().push_back_ptr(&slave.txData());
 				rxDataPool().push_back_ptr(&slave.rxData());
+                imp_->data_size_= imp_->data_size_+slave.txTypeSize();
+                imp_->data_size_= imp_->data_size_+slave.rxTypeSize();
 			}
+            imp_->sent_data_.reset(new char[imp_->data_size_]);
+            imp_->recieve_data_.reset(new char[imp_->data_size_]);
+            imp_->record_pipe_.reset(new Pipe<void *>());
 
 			ecrt_master_activate(imp_->ec_master_);
 
@@ -839,6 +905,7 @@ namespace aris
 				slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
 			}
 
+            imp_->logToFile();
 			/// init end ///
 			rt_print_auto_init(1);
 			const int priority = 99;

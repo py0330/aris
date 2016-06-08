@@ -92,13 +92,12 @@ class TestMaster :public aris::control::Master
 protected:
 	virtual auto controlStrategy()->void override
 	{
-		auto& slave = slavePool().at(0);
+        auto& slave = dynamic_cast<aris::control::Slave &>(slavePool().at(0));
 
 		static int count{ 0 };
 
-		std::int32_t feedback_pos;
-
-		feedback_pos;
+        std::int32_t feedback_pos;
+        slave.readPdoIndex(0x6064,0,feedback_pos);
 
 #ifdef UNIX
         if (count++ % 100 == 0)rt_printf("%d:%d\n", count, feedback_pos);
@@ -114,6 +113,8 @@ void test_control_ethercat()
 	TestMaster master;
 
 	master.loadXml(xml_doc);
+
+    std::cout<<"2"<<std::endl;
 
 	master.start();
 

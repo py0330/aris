@@ -233,7 +233,7 @@ namespace aris
                     return Motion::EXECUTING;
                 }
             }
-            std::int16_t runPos(const std::int32_t pos, const std::int32_t velocity_offset=0, const std::int16_t torque_offset=0)
+            std::int16_t runPos(const std::int32_t pos, const std::int32_t velocity_offset, const std::int16_t torque_offset)
             {
                 if (is_fake)return 0;
 
@@ -256,7 +256,7 @@ namespace aris
                     return Motion::SUCCESS;
                 }
             }
-            std::int16_t runVel(const std::int32_t vel, const std::int32_t velocity_offset=0, const std::int16_t torque_offset=0)
+            std::int16_t runVel(const std::int32_t vel, const std::int32_t velocity_offset, const std::int16_t torque_offset)
             {
                 if (is_fake)return 0;
 
@@ -278,7 +278,7 @@ namespace aris
                     return Motion::SUCCESS;
                 }
             }
-            std::int16_t runTor(const std::int16_t tor, const std::int16_t torque_offset=0)
+            std::int16_t runTor(const std::int16_t tor, const std::int16_t torque_offset)
             {
                 if (is_fake)return 0;
 
@@ -374,13 +374,13 @@ namespace aris
                 switch (txData().mode)
                 {
                 case POSITION:
-                    rxData().ret = imp_->runPos(static_cast<std::int32_t>(txData().target_pos * imp_->input2count_));
+                    rxData().ret = imp_->runPos(static_cast<std::int32_t>(txData().target_pos * imp_->input2count_), static_cast<std::int32_t>(txData().vel_offset * imp_->input2count_), static_cast<std::int16_t>(txData().tor_offset));
                     return;
                 case VELOCITY:
-                    rxData().ret = imp_->runVel(static_cast<std::int32_t>(txData().target_vel * imp_->input2count_));
+                    rxData().ret = imp_->runVel(static_cast<std::int32_t>(txData().target_vel * imp_->input2count_), static_cast<std::int32_t>(txData().vel_offset * imp_->input2count_), static_cast<std::int16_t>(txData().tor_offset));
                     return;
                 case TORQUE:
-                    rxData().ret = imp_->runTor(static_cast<std::int16_t>(txData().target_tor));
+                    rxData().ret = imp_->runTor(static_cast<std::int16_t>(txData().target_tor), static_cast<std::int16_t>(txData().tor_offset));
                     return;
                 default:
                     rxData().ret = -1;
@@ -392,6 +392,15 @@ namespace aris
             }
 
         }
+
+        auto Motion::logData(std::fstream &file, TxType *tx_data, RxType *rx_data)->void
+        {
+            auto rx_motiondata=static_cast<RxMotionData *>(rx_data);
+            auto tx_motiondata=static_cast<TxMotionData *>(tx_data);
+            file<<rx_motiondata->feedback_pos<<" ";
+            file<<tx_motiondata->target_pos<<" ";
+        }
+
         auto Motion::maxPos()->double { return imp_->max_pos; }
         auto Motion::minPos()->double { return imp_->min_pos; }
         auto Motion::maxVel()->double { return imp_->max_vel; }
