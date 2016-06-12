@@ -1,6 +1,16 @@
 #include <iostream>
 #include <aris.h>
 
+#ifdef UNIX
+#include "rtdk.h"
+#include "unistd.h"
+#endif
+
+#ifdef WIN32
+#define rt_printf printf
+#endif
+
+
 #include "test_control_motion.h"
 
 
@@ -38,6 +48,11 @@ const char xml_file[] =
 "				<physical_motor abbreviation = \"p\" default = \"0\" />"
 "				<leg abbreviation = \"l\" default = \"0\" />"
 "			</hm>"
+"			<test default_child_type=\"param\" default = \"all\" >"
+"				<all abbreviation = \"a\" />"
+"				<motor abbreviation = \"m\" default = \"0\" />"
+"				<physical_motor abbreviation = \"p\" default = \"0\" />"
+"			</test>"
 "			<rc default = \"rc_param\">"
 "				<rc_param type = \"group\" default_child_type=\"param\">"
 "					<leg_param type = \"unique\" default_child_type=\"param\" default = \"all\">"
@@ -75,6 +90,12 @@ const char xml_file[] =
 "                        <ControlWord index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
 "                        <ModeOfOperation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
 "                    </index_1605>"
+"                    <index_1617 type=\"pdo_group\" default_child_type=\"pdo\" index=\"0x1617\" is_tx=\"false\">"
+"                        <VelocityOffset index=\"0x60B1\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                    </index_1617>"
+"                    <index_1618 type=\"pdo_group\" default_child_type=\"pdo\" index=\"0x1618\" is_tx=\"false\">"
+"                        <TorqueOffset index=\"0x60B2\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1618>"
 "                    <index_1a03 type=\"pdo_group\" default_child_type=\"pdo\" index=\"0x1A03\" is_tx=\"true\">"
 "                        <PositionActualValue index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
 "                        <DigitalInputs index=\"0x60fd\" subindex=\"0x00\" datatype=\"uint32\"/>"
@@ -92,7 +113,7 @@ const char xml_file[] =
 "                    </index_1a0b>"
 "                </PDO>"
 "                <SDO type=\"sdo_pool_element\" default_child_type=\"sdo\">"
-"                    <homeMode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"-1\"/>"
+"                    <homeMode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
 "                    <homeAcc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
 "                    <homeHighSpeed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
 "                    <homeLowSpeed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
@@ -128,22 +149,16 @@ const char xml_file[] =
 "            </AtiForceSensor>"
 "        </SlaveType>"
 "        <Slave type=\"slave_pool_element\">"
-"            <Motion1 type=\"slave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
-"            <Motion2 type=\"slave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.698\" max_pos=\"1.112\" max_vel=\"0.2362\" home_pos=\"0.698\" input2count=\"22937600\"/>"
-"            <Motion3 type=\"slave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.698\" max_pos=\"1.112\" max_vel=\"0.2362\" home_pos=\"0.698\" input2count=\"22937600\"/>"
-"            <Motion4 type=\"slave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
+"            <Motion1 type=\"motion\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
+"            <Motion2 type=\"motion\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.698\" max_pos=\"1.112\" max_vel=\"0.2362\" home_pos=\"0.698\" input2count=\"22937600\"/>"
+"            <Motion3 type=\"motion\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.698\" max_pos=\"1.112\" max_vel=\"0.2362\" home_pos=\"0.698\" input2count=\"22937600\"/>"
+"            <Motion4 type=\"motion\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
 "            <ForceSensor type=\"slave\" slave_type=\"AtiForceSensor\"/>"
 "        </Slave>"
 "    </Controller>"
 "</Root>";
 
-
-#ifdef WIN32
-#define rt_printf printf
-#endif
-
-
-#define SlaveNumber 18
+#define SlaveNumber 5
 enum { MAX_MOTOR_NUM = 100 };
 //for enable, disable, and home
 struct BasicFunctionParam
@@ -234,8 +249,8 @@ BasicFunctionParam decode(const std::string input)
 
 	std::fill_n(bfParam.active_motor, SlaveNumber, false);
 	for (auto &i : params) {
-		if (i.first != "slave_motor")
-			std::cout << "the first param must be 'c', it means the slave id." << std::endl;
+        if (i.first != "physical_motor")
+            std::cout << "the first param must be 'p', it means the physic id." << std::endl;
 		else {
 			if (stoi(i.second)>SlaveNumber - 1 || stoi(i.second)<0) {
 				throw std::runtime_error("the second param is invalid");
@@ -266,6 +281,7 @@ void tg()
 				rt_printf("command finished, cmd_count: %d\n", cmd_count);
 				cmd_success = true;
 			}
+
 			if (cmd_count % 1000 == 0 && !cmd_success)
 				rt_printf("executing command: %d\n", cmd_count);
 		}
@@ -305,10 +321,6 @@ void tg()
 	}
 	cmd_count++;
 }
-
-
-
-
 
 void test_control_motion()
 {
