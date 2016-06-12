@@ -308,7 +308,7 @@ namespace aris
 			{
 				if (fault_count++ % 1000 == 0)
 				{
-                    rt_printf("ret of physic ethercat ring: ");
+                    rt_printf("ret of physic ethercat ring using SLA sequence are: ");
                     for (auto &slave : controller_->slavePool())rt_printf("%d ", slave.rxData().ret);
 					rt_printf("\n");
 					rt_printf("Some slave is in fault, now try to disable all motors\n");
@@ -463,7 +463,7 @@ namespace aris
         }
         auto ControlServer::Imp::run()->int
         {
-            GaitParamBase *param = reinterpret_cast<GaitParamBase  *>(cmd_queue_[current_cmd_]);
+            GaitParamBase *param = reinterpret_cast<GaitParamBase *>(cmd_queue_[current_cmd_]);
 			param->cs_ = server_;
 
             // 执行gait函数 //
@@ -498,7 +498,7 @@ namespace aris
 					if (param->if_check_pos_max_ && (tx_motion_data.target_pos > control_motion.maxPos()))
                     {
 						rt_printf("Motor %d %d %d (abs phy and sla id) target position is bigger than its MAX permitted value in count:%d\n", abs_id, phy_id, sla_id, count_);
-						rt_printf("The min, max and current count are:\n");
+						rt_printf("The min, max and current count using ABS sequence are:\n");
 						for (auto &motion : model_->motionPool())
 						{
 							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));
@@ -512,7 +512,7 @@ namespace aris
                     if (param->if_check_pos_min_ && (tx_motion_data.target_pos < control_motion.minPos()))
                     {
                         rt_printf("Motor %d %d %d (abs phy and sla id) target position is smaller than its MIN permitted value in count:%d\n", abs_id, phy_id, sla_id, count_);
-						rt_printf("The min, max and current count are:\n");
+						rt_printf("The min, max and current count using ABS sequence are:\n");
 						for (auto &motion : model_->motionPool())
 						{
 							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));
@@ -526,7 +526,7 @@ namespace aris
                     if (param->if_check_pos_continuous_ && (std::abs(tx_motion_data.target_pos - last_tx_motion_data.target_pos)>0.0012*control_motion.maxVel()))
                     {
                         rt_printf("Motor %d %d %d (abs phy and sla id) target position is not continuous in count:%d\n", abs_id, phy_id, sla_id, count_);
-						rt_printf("The pin of last and this count are:\n");
+						rt_printf("The pin of last and this count using ABS sequence are:\n");
 						for (auto &motion : model_->motionPool())
 						{
 							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));

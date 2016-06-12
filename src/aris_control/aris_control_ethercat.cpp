@@ -153,22 +153,22 @@ namespace aris
                     long long count = -1;
                     std::unique_ptr<char[]> txdata;
                     std::unique_ptr<char[]> rxdata;
+					std::unique_ptr<char[]> receive_data(new char [data_size_]);
                     while (!is_stopping_)
                     {
-                        record_pipe_->recvInNrt(recieve_data_.get(),data_size_);
+                        record_pipe_->recvInNrt(receive_data.get(),data_size_);
 
                         file << ++count << " ";
 
                         std::size_t size_count=0;
                         for (auto &sla : *slave_pool_)
                         {
-                            txdata.reset(new char[sla.txTypeSize()]);
-                            rxdata.reset(new char[sla.rxTypeSize()]);
-                            std::copy(recieve_data_.get()+size_count,recieve_data_.get()+size_count+sla.txTypeSize(),txdata.get());
-                            size_count=size_count+sla.txTypeSize();
-                            std::copy(recieve_data_.get()+size_count,recieve_data_.get()+size_count+sla.rxTypeSize(),rxdata.get());
-                            size_count=size_count+sla.rxTypeSize();
-                            sla.logData(file,reinterpret_cast<Slave::TxType*>(txdata.get()),reinterpret_cast<Slave::RxType*>(rxdata.get()));
+							sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
+								, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+							
+							file << " ";
+
+							size_count += sla.txTypeSize() + sla.rxTypeSize();
                         }
                         file << std::endl;
                     }
@@ -196,7 +196,6 @@ namespace aris
             //for log
             std::size_t data_size_{0};
             std::unique_ptr<char[]> sent_data_;
-            std::unique_ptr<char[]> recieve_data_;
             std::unique_ptr<Pipe<void *>> record_pipe_;
             std::thread record_thread_;
 
@@ -895,7 +894,6 @@ namespace aris
                 imp_->data_size_= imp_->data_size_+slave.rxTypeSize();
 			}
             imp_->sent_data_.reset(new char[imp_->data_size_]);
-            imp_->recieve_data_.reset(new char[imp_->data_size_]);
             imp_->record_pipe_.reset(new Pipe<void *>());
 
 			ecrt_master_activate(imp_->ec_master_);

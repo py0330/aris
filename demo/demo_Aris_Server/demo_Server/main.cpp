@@ -1,6 +1,8 @@
 ﻿#include <iostream>
 #include <aris.h>
 
+#include <algorithm>
+
 #ifdef UNIX
 #include "rtdk.h"
 #include "unistd.h"
@@ -32,30 +34,28 @@ auto basicParse(const aris::server::ControlServer &cs, const std::string &cmd, c
             std::fill_n(param.active_motor_ + 9, 3, true);
             std::fill_n(param.active_motor_ + 15, 3, true);
         }
-        else if (i.first == "motor")
-        {
-            int id = { stoi(i.second) };
-            if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
-
-            std::fill_n(param.active_motor_, 18, false);
-            param.active_motor_[id] = true;
-        }
-        else if (i.first == "physical_motor")
-        {
-            int id = { stoi(i.second) };
-            if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
-
-            std::fill_n(param.active_motor_, 18, false);
-            param.active_motor_[id] = true;
-        }
-        else if (i.first == "slave_motor")
-        {
-            int id = { stoi(i.second) };
-            if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
-
-            std::fill_n(param.active_motor_, 18, false);
-            param.active_motor_[id] = true;
-        }
+		else if (i.first == "motion_id")
+		{
+			std::size_t id{ std::stoul(i.second) };
+			if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+			std::fill(param.active_motor_, param.active_motor_ + 18, false);
+			param.active_motor_[cs.model().motionAtAbs(id).absID()] = true;
+		}
+		else if (i.first == "physical_id")
+		{
+			std::size_t id{ std::stoul(i.second) };
+			if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+			std::fill(param.active_motor_, param.active_motor_ + 18, false);
+			param.active_motor_[cs.model().motionAtPhy(id).absID()] = true;
+		}
+		else if (i.first == "slave_id")
+		{
+			std::size_t id{ std::stoul(i.second) };
+			if (id < 0 || id > cs.controller().slavePool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+			std::fill(param.active_motor_, param.active_motor_ + 18, false);
+			if (cs.model().motionAtSla(id).absID() >= cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\", this slave is not motion");
+			param.active_motor_[cs.model().motionAtSla(id).absID()] = true;
+		}
         else if (i.first == "leg")
         {
             auto leg_id = std::stoi(i.second);

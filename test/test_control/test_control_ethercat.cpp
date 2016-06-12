@@ -87,7 +87,7 @@ const char xml_file[] =
 
 using namespace aris::control;
 
-class MyMaster :public aris::control::Master
+class TestMaster :public aris::control::Master
 {
 protected:
 	virtual auto controlStrategy()->void override
@@ -110,9 +110,7 @@ void test_control_ethercat()
 	aris::core::XmlDocument xml_doc;
 	xml_doc.Parse(xml_file);
 	
-    std::cout<<"1"<<std::endl;
-
-	MyMaster master;
+	TestMaster master;
 
 	master.loadXml(xml_doc);
 
@@ -120,12 +118,10 @@ void test_control_ethercat()
 
 	master.start();
 
-    std::cout<<"3"<<std::endl;
-
-	char a;
-	std::cin >> a;
+	std::cout << "press any key to terminate test" << std::endl;
+	std::cin.get();
 
 	master.stop();
 
-	std::cout << "finished test aris::control::master" << std::endl;
+	std::cout << "test_control_ethercat finished" << std::endl;
 }
