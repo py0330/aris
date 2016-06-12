@@ -44,7 +44,6 @@ namespace aris
                 NOT_READY=4,
                 CMD_ERROR=-1,//all motor should disable when the error accure
                 EXE_ERROR=-2,//all motor should halt when the error accure during executing
-
             };
             enum Cmd
             {
@@ -69,7 +68,7 @@ namespace aris
 
             auto txTypeSize()const->std::size_t override{ return sizeof(TxMotionData); }
             auto rxTypeSize()const->std::size_t override{ return sizeof(RxMotionData); }
-            auto logData(std::fstream &file, TxType *tx_data, RxType *rx_data)->void;
+            virtual auto logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override;
 
             auto maxPos()->double;
             auto minPos()->double;

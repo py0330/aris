@@ -393,14 +393,13 @@ namespace aris
 
         }
 
-        auto Motion::logData(std::fstream &file, TxType *tx_data, RxType *rx_data)->void
+        auto Motion::logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void
         {
-            auto rx_motiondata=static_cast<RxMotionData *>(rx_data);
-            auto tx_motiondata=static_cast<TxMotionData *>(tx_data);
-            file<<rx_motiondata->feedback_pos<<" ";
-            file<<tx_motiondata->target_pos<<" ";
+            auto &rx_motiondata=static_cast<const RxType &>(rx_data);
+            auto &tx_motiondata=static_cast<const TxType &>(tx_data);
+            file<<rx_motiondata.feedback_pos<<" ";
+            file<<tx_motiondata.target_pos;
         }
-
         auto Motion::maxPos()->double { return imp_->max_pos; }
         auto Motion::minPos()->double { return imp_->min_pos; }
         auto Motion::maxVel()->double { return imp_->max_vel; }
