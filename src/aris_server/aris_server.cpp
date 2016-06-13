@@ -32,6 +32,7 @@ namespace aris
 
 			auto tg()->void;
             auto checkError()->int;
+            auto checkMotionStatus()->void;
 			auto executeCmd()->int;
 			auto enable()->int;
 			auto disable()->int;
@@ -262,6 +263,7 @@ namespace aris
         {
 			// 检查是否出错 //
             if (checkError())return;
+            //checkMotionStatus();
 
 			// 查看是否有新cmd //
             if (msg_pipe_.recvInRT(aris::core::MsgRT::instance[0]) > 0)
@@ -331,6 +333,29 @@ namespace aris
 
 			return fault_count;
 		}
+        auto ControlServer::Imp::checkMotionStatus()->void
+        {
+            for (auto &motion : model_->motionPool())
+            {
+                auto &rx_motion_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(motion.slaID()));
+                if(rx_motion_data.fault_warning==0)
+                    continue;
+                else
+                {
+                    rt_printf("Motor %d (sla id) has wrong status:%d\n", motion.slaID(), rx_motion_data.fault_warning);
+                    rt_printf("The status using ABS sequence are:\n");
+                    for (auto &motion : model_->motionPool())
+                    {
+                        auto &rx_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(motion.slaID()));
+                        rt_printf("%d\t", rx_data.fault_warning);
+                    }
+                    rt_printf("\n");
+                    return;
+                }
+            }
+
+        }
+
 		auto ControlServer::Imp::executeCmd()->int
 		{
 			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_queue_[current_cmd_]);
@@ -473,7 +498,7 @@ namespace aris
 			for (std::size_t i = 0; i<model_->motionPool().size(); ++i)
 			{
 				std::size_t sla_id = model_->motionPool().at(i).slaID();
-				if (param->active_motor_[sla_id])
+                if (param->active_motor_[i])
 				{
 					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(sla_id));
 					tx_motion_data.cmd = aris::control::Motion::RUN;
@@ -483,7 +508,7 @@ namespace aris
 			}
 
             // 检查电机命令是否超限 //
-			for (std::size_t i = 0; i<model_->motionPool().size(); ++i)
+            for (std::size_t i = 0; i<model_->motionPool().size()&&param->active_motor_[i]; ++i)
             {
 				std::size_t abs_id = model_->motionPool().at(i).absID();
 				std::size_t sla_id = model_->motionPool().at(i).slaID();

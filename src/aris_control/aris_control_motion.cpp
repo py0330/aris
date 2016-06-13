@@ -42,20 +42,13 @@ namespace aris
                 VELOCITYOFFSET=0x60B1,
                 TORQUEOFFSET=0x60B2,
                 MAXTORQUE=0x6072,
-
             };
 
             enum SDO_Entry_Index
             {
-                POSITIONLIMIT=0x607D,
                 HOMEOFFSET=0x607C,
             };
 
-            enum SDO_Entry_Subindex
-            {
-                MINPOSLIM=0x01,
-                MAXPOSLIM=0x02,
-            };
 
             Imp(Motion *mot) :pFather(mot) {}
             ~Imp() = default;
@@ -96,7 +89,7 @@ namespace aris
                 {
                      /*state is RUNNING, now change it to desired mode*/
                      pFather->writePdoIndex(MODEOPERATION, 0x00, static_cast<std::uint8_t>(mode));
-                     return Motion::EXECUTING;
+                     return Motion::MODE_CHANGE;
                 }
 
                 if (motorState == 0x0060 || motorState ==0x0040)
@@ -182,7 +175,7 @@ namespace aris
 
                 if(modeRead != Motion::HOME_MODE){
                     pFather->writePdoIndex(MODEOPERATION, 0x00, static_cast<std::uint8_t>(Motion::HOME_MODE));
-                    return Motion::NOT_READY;
+                    return Motion::MODE_CHANGE;
                 }
                 else if(motorState == 0x0400){
                     //homing procedure is interrupted or not started
@@ -217,7 +210,7 @@ namespace aris
                     pFather->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x0100));
                     rt_printf("%s\n","homing error occurred, the motor is halting!");
                     home_period=0;
-                    return Motion::EXE_ERROR;
+                    return Motion::HOME_ERROR;
                 }
                 else if(motorState == 0x1400)
                 {
@@ -243,9 +236,13 @@ namespace aris
 
                 std::uint8_t modeRead;
                 pFather->readPdoIndex(MODEOPERATIONDIS, 0x00,modeRead);
-                if (motorState != 0x0027 || modeRead != Motion::POSITION)
+                if (motorState != 0x0027 )
                 {
-                    return Motion::EXE_ERROR;
+                    return Motion::ENABLE_ERROR;
+                }
+                else if(modeRead != Motion::POSITION)
+                {
+                    return Motion::MODE_ERROR;
                 }
                 else
                 {
@@ -266,9 +263,13 @@ namespace aris
 
                 std::uint8_t modeRead;
                 pFather->readPdoIndex(MODEOPERATIONDIS, 0x00,modeRead);
-                if (motorState != 0x0027 || modeRead != Motion::VELOCITY)
+                if (motorState != 0x0027 )
                 {
-                    return Motion::EXE_ERROR;
+                    return Motion::ENABLE_ERROR;
+                }
+                else if(modeRead != Motion::VELOCITY)
+                {
+                    return Motion::MODE_ERROR;
                 }
                 else
                 {
@@ -288,9 +289,13 @@ namespace aris
 
                 std::uint8_t modeRead;
                 pFather->readPdoIndex(MODEOPERATIONDIS, 0x00,modeRead);
-                if (motorState != 0x0027 || modeRead != Motion::TORQUE) //need running and cur mode
+                if (motorState != 0x0027 )
                 {
-                    return Motion::EXE_ERROR;
+                    return Motion::ENABLE_ERROR;
+                }
+                else if(modeRead != Motion::TORQUE)
+                {
+                    return Motion::MODE_ERROR;
                 }
                 else
                 {
@@ -392,7 +397,6 @@ namespace aris
             }
 
         }
-
         auto Motion::logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void
         {
             auto &rx_motiondata=static_cast<const RxType &>(rx_data);
@@ -400,6 +404,7 @@ namespace aris
             file<<rx_motiondata.feedback_pos<<" ";
             file<<tx_motiondata.target_pos;
         }
+
         auto Motion::maxPos()->double { return imp_->max_pos; }
         auto Motion::minPos()->double { return imp_->min_pos; }
         auto Motion::maxVel()->double { return imp_->max_vel; }
