@@ -3,6 +3,7 @@
 #include <aris.h>
 #include "plan.h"
 #include "kinematic.h"
+#include "newslave.h"
 
 #ifdef UNIX
 #include "rtdk.h"
@@ -14,17 +15,19 @@ int main(int argc, char *argv[])
 {
     auto &cs = aris::server::ControlServer::instance();
 
-    //cs.createModel<robot::Robot>();
-    cs.createModel<aris::dynamic::Model>();
+    cs.createModel<robot::Robot>();
+    //cs.createModel<aris::dynamic::Model>();
     cs.createController<aris::control::Controller>();
     cs.createSensorRoot<aris::sensor::SensorRoot>();
 
+    cs.controller().registerChildType<robot::EsgImu, false, false, false, false>();
     cs.sensorRoot().registerChildType<aris::sensor::Imu,false,false,false,false>();
-std::cout<<"test1"<<std::endl;
-    //cs.loadXml("/usr/aris/demo/resource/robot_motion.xml");
-cs.loadXml("/usr/aris/resource/Robot_III.xml");
-std::cout<<"test2"<<std::endl;
+
+    cs.loadXml("/usr/aris/demo/resource/robot_motion.xml");
+    //cs.loadXml("/usr/aris/resource/Robot_III.xml");
+
     cs.addCmd("en", robot::basicParse, nullptr);
+    //cs.addCmd("en", nullptr, nullptr);
     cs.addCmd("ds", robot::basicParse, nullptr);
     cs.addCmd("hm", robot::basicParse, nullptr);
     cs.addCmd("test",robot::testParse,robot::testGait);

@@ -244,7 +244,7 @@
           <TorqueUnit index="0x2040" subindex="0x32" datatype="int32" write="false" />
         </SDO>
       </AtiForceSensor>
-      <Esg_Imu type="slave_type" product_code="0x26483052" vender_id="0xe0000005" alias="0" w_factor="0.01" ap_factor="0.00025" mag_factor="1.22" ang_factor="0.1">
+      <Esg_Imu type="slave_type" product_code="0x26483052" vender_id="0xe0000005" alias="0">
         <PDO type="pdo_group_pool_element">
           <index_1a01 type="pdo_group" default_child_type="pdo" index="0x1a01" is_tx="true">
             <wx index="0x6011" subindex="0x01" datatype="int16" />
@@ -263,7 +263,7 @@
         </PDO>
         <SDO />
       </Esg_Imu>
-      <Esg_ImuT type="slave_type" product_code="0x26483052" vender_id="0xe0000005" alias="0" w_factor="0.01" ap_factor="0.00025" mag_factor="1.22" ang_factor="0.1">
+      <Esg_ImuT type="slave_type" product_code="0x26483052" vender_id="0xe0000005" alias="0">
         <PDO type="pdo_group_pool_element">
           <index_1a01 type="pdo_group" default_child_type="pdo" index="0x1a01" is_tx="true">
             <wx index="0x6011" subindex="0x01" datatype="int16" />
@@ -348,16 +348,16 @@
     <Slave type="slave_pool_element">
       <motion1 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4587" max_pos="0.59967" max_vel="0.5" home_pos="0.50879" input2count="6553600" />
       <imu1 type="slave" slave_type="Esg_ImuT" />
-      <imu2 type="slave" slave_type="Esg_Imu" />
+      <imu2 type="esgimu" slave_type="Esg_Imu" />
       <motion2 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4587" max_pos="0.59967" max_vel="0.5" home_pos="0.50879" input2count="6553600" />
       <motion3 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4739" max_pos="0.61493" max_vel="0.5" home_pos="0.50399" input2count="6553600" />
       <op2 type="slave" slave_type="Operation_Panel_SC" />
       <motion4 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4739" max_pos="0.61035" max_vel="0.5" home_pos="0.50399" input2count="6553600" />
     </Slave>
   </Controller>
-  <Sensors>
+  <Sensor>
     <SensorPool type="sensor_pool_object">
       <IMU active="false" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,0,-PI/2,PI}" PeImu2Body="{0,0,0,0,PI/2,0}" />
     </SensorPool>
-  </Sensors>
+  </Sensor>
 </Robot>
