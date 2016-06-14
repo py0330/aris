@@ -40,11 +40,15 @@ namespace aris
                 SUCCESS=0,
                 EXECUTING=1,
                 EXE_FAULT=2,//the fault accure during executing ,can reset
-                NOT_START=3,
-                NOT_READY=4,
+                MODE_CHANGE=3,//changing mode
+                NOT_START=4,
+
                 CMD_ERROR=-1,//all motor should disable when the error accure
-                EXE_ERROR=-2,//all motor should halt when the error accure during executing
+                HOME_ERROR=-2,//all motor should halt when the error accure during executing
+                ENABLE_ERROR=-3,//motor change to disable when run
+                MODE_ERROR=-4,//motor change to wrong mode when run
             };
+
             enum Cmd
             {
                 IDLE = 0,
@@ -66,10 +70,6 @@ namespace aris
             virtual auto type() const->const std::string&{ return Type(); }
             Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
-            auto txTypeSize()const->std::size_t override{ return sizeof(TxMotionData); }
-            auto rxTypeSize()const->std::size_t override{ return sizeof(RxMotionData); }
-            virtual auto logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override;
-
             auto maxPos()->double;
             auto minPos()->double;
             auto maxVel()->double;
@@ -78,6 +78,7 @@ namespace aris
         protected:
             virtual auto readUpdate()->void override;
             virtual auto writeUpdate()->void override;
+            virtual auto logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override;
 
         private:
             class Imp;
