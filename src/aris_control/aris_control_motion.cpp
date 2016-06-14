@@ -350,7 +350,7 @@ namespace aris
             imp_->min_pos = attributeDouble(xml_ele, "min_pos");
             imp_->max_vel = attributeDouble(xml_ele, "max_vel");
             imp_->home_count_ = static_cast<std::int32_t>(attributeDouble(xml_ele, "home_pos") * imp_->input2count_);
-            configSdo(9, static_cast<std::int32_t>(-imp_->home_count_));
+            configSdoIndex(Imp::HOMEOFFSET, 0x00, static_cast<std::int32_t>(-imp_->home_count_));
         }
         auto Motion::readUpdate()->void
         {

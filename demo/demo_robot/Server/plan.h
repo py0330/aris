@@ -2,7 +2,7 @@
 #define PLAN_H
 #include <aris.h>
 
-namespace plan
+namespace robot
 {
 
     auto basicParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;

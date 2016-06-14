@@ -656,11 +656,11 @@ namespace aris
 			loadXml(doc);
 		}
 		auto ControlServer::loadXml(const aris::core::XmlDocument &xml_doc)->void 
-		{	
+        {
 			/// load robot model_ ///
-			imp_->model_->loadXml(xml_doc);
-			imp_->controller_->loadXml(xml_doc);
-			imp_->sensor_root_->loadXml(xml_doc);
+            imp_->model_->loadXml(xml_doc);
+            imp_->controller_->loadXml(xml_doc);
+            imp_->sensor_root_->loadXml(xml_doc);
             imp_->parser_.loadXml(xml_doc);
 
 			/// load connection param ///
