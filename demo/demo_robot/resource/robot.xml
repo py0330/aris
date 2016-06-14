@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Robot>
+    <Model>
+        <Environment  type="environment" gravity="{0 , -9.8 , 0 , 0 , 0 , 0}"/>
+        <Variable type="variable_pool_element" default_child_type="matrix">
+            <PI type="matrix">3.14159265358979</PI>
+            <r1j_pe type="matrix">{ 0,0,0.0435, PI/2, PI/2, -PI/2 }</r1j_pe>
+            <r1i_pe type="matrix">{ 0, 0, 0, PI/2, PI/2, -PI/2 }</r1i_pe>
+            <p1j_pe type="matrix">{ 0, 0, 0, 0, -PI/2, 0 }</p1j_pe>
+            <p1i_pe type="matrix">{ 0, 0, 0, 0, -PI/2, 0 }</p1i_pe>
+            <u1j_pe type="matrix">{ 0, 0, 0, 0, PI/2, PI/2 }</u1j_pe>
+            <u1i_pe type="matrix">{ 0,0,0.34315, 0, PI/2, PI/2 }</u1i_pe>
+            <r2j_pe type="matrix">{ 0,0,-0.0435, PI/2, PI/2, -PI/2 }</r2j_pe>
+            <r2i_pe type="matrix">{ 0, 0, 0, PI/2, PI/2, -PI/2 }</r2i_pe>
+            <p2j_pe type="matrix">{ 0, 0, 0, 0, -PI/2, 0 }</p2j_pe>
+            <p2i_pe type="matrix">{ 0, 0, 0, 0, -PI/2, 0 }</p2i_pe>
+            <u2j_pe type="matrix">{ 0, 0, 0, 0, PI/2, PI/2 }</u2j_pe>
+            <u2i_pe type="matrix">{ 0,0,-0.34315, 0, PI/2, PI/2 }</u2i_pe>
+            <u3j_pe type="matrix">{ 0.29,-0.005,-0.3225, 0, PI/2, PI/2 }</u3j_pe>
+            <u3i_pe type="matrix">{ 0, 0, 0, 0, PI/2, PI/2 }</u3i_pe>
+            <p3j_pe type="matrix">{ 0, 0, 0, 0, -PI/2, 0 }</p3j_pe>
+            <p3i_pe type="matrix">{ 0, 0, 0, 0, -PI/2, 0 }</p3i_pe>
+            <s3j_pe type="matrix">{ 0, 0, 0, 0, 0, 0 }</s3j_pe>
+            <s3i_pe type="matrix">{ 0.29,0.015,-0.025, 0, 0, 0 }</s3i_pe>
+            <u4j_pe type="matrix">{ 0.29,-0.005,0.3225, 0, PI/2, PI/2 }</u4j_pe>
+            <u4i_pe type="matrix">{ 0, 0, 0, 0, PI/2, PI/2 }</u4i_pe>
+            <p4j_pe type="matrix">{ 0, 0, 0, 0, -PI/2, 0 }</p4j_pe>
+            <p4i_pe type="matrix">{ 0, 0, 0, 0, -PI/2, 0 }</p4i_pe>
+            <s4j_pe type="matrix">{ 0, 0, 0, 0, 0, 0 }</s4j_pe>
+            <s4i_pe type="matrix">{ 0.29,0.015,0.025, 0, 0, 0 }</s4i_pe>
+            <p1a_iv type="matrix">{0,0,0,0,0,0,0,0,0,0}</p1a_iv>
+            <p1b_iv type="matrix">{0,0,0,0,0,0,0,0,0,0}</p1b_iv>
+            <p3a_iv type="matrix">{0,0,0,0,0,0,0,0,0,0}</p3a_iv>
+            <p3b_iv type="matrix">{0,0,0,0,0,0,0,0,0,0}</p3b_iv>
+            <up_iv type="matrix">{0,0,0,0,0,0,0,0,0,0}</up_iv>
+            <Mot_friction type="matrix">{20, 30, 560}</Mot_friction>
+            <p1a_graphic type="string">C:\gqy\resource\graphic_file\p1a.x_t</p1a_graphic>
+            <p1b_graphic type="string">C:\gqy\resource\graphic_file\p1b.x_t</p1b_graphic>
+            <p3a_graphic type="string">C:\gqy\resource\graphic_file\p3a.x_t</p3a_graphic>
+            <p3b_graphic type="string">C:\gqy\resource\graphic_file\p3b.x_t</p3b_graphic>
+            <up_graphic type="string">C:\gqy\resource\graphic_file\up.x_t</up_graphic>
+            <down_graphic type="string">C:\gqy\resource\graphic_file\ground.x_t</down_graphic>
+        </Variable>
+        <Akima type="akima_pool_element" default_child_type="akima">
+            <m1_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <m2_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <m3_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <m4_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <gm_t1_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <gm_t2_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <gm_t3_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <gm_r1_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <gm_r2_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+            <gm_r3_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}"/>
+        </Akima>
+        <Part type="part_pool_element" default_child_type="part">
+            <Ground active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <gmj pe="{0,0,0,0,0,0}"/>
+                </ChildMarker>
+            </Ground>
+            <down active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${down_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <gmi pe="{0,0,0,0,0,0}"/>
+                    <r1j pe="r1j_pe"/>
+                    <r2j pe="r2j_pe"/>
+                    <u3j pe="u3j_pe"/>
+                    <u4j pe="u4j_pe"/>
+                </ChildMarker>
+            </down>
+            <p1a active="true" inertia="p1a_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${p1a_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <r1i pe="r1i_pe"/>
+                    <p1j pe="p1j_pe"/>
+                </ChildMarker>
+            </p1a>
+            <p1b active="true" inertia="p1b_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${p1b_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <p1i pe="p1i_pe"/>
+                    <u1j pe="u1j_pe"/>
+                </ChildMarker>
+            </p1b>
+            <p2a active="true" inertia="p1a_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${p1a_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <r2i pe="r2i_pe"/>
+                    <p2j pe="p2j_pe"/>
+                </ChildMarker>
+            </p2a>
+            <p2b active="true" inertia="p1b_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${p1b_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <p2i pe="p2i_pe"/>
+                    <u2j pe="u2j_pe"/>
+                </ChildMarker>
+            </p2b>
+            <p3a active="true" inertia="p3a_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${p3a_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <u3i pe="u3i_pe"/>
+                    <p3j pe="p3j_pe"/>
+                </ChildMarker>
+            </p3a>
+            <p3b active="true" inertia="p3b_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${p3b_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <p3i pe="p3i_pe"/>
+                    <s3j pe="s3j_pe"/>
+                </ChildMarker>
+            </p3b>
+            <p4a active="true" inertia="p3a_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${p3a_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <u4i pe="u4i_pe"/>
+                    <p4j pe="p4j_pe"/>
+                </ChildMarker>
+            </p4a>
+            <p4b active="true" inertia="p3b_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${p3b_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <p4i pe="p4i_pe"/>
+                    <s4j pe="s4j_pe"/>
+                </ChildMarker>
+            </p4b>
+            <up active="true" inertia="up_iv" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}"
+                    graphic_file_path="${up_graphic}">
+                <ChildMarker type="marker_pool_element" default_child_type="marker">
+                    <u1i pe="u1i_pe"/>
+                    <u2i pe="u2i_pe"/>
+                    <s3i pe="s3i_pe"/>
+                    <s4i pe="s4i_pe"/>
+                </ChildMarker>
+            </up>
+        </Part>
+        <Joint type="joint_pool_element">
+            <r1 active="true" type="revolute" prt_m="p1a" prt_n="down" mak_i="r1i" mak_j="r1j"/>
+            <p1 active="true" type="translational" prt_m="p1b" prt_n="p1a" mak_i="p1i" mak_j="p1j"/>
+            <u1 active="true" type="universal" prt_m="up" prt_n="p1b" mak_i="u1i" mak_j="u1j"/>
+            <r2 active="true" type="revolute" prt_m="p2a" prt_n="down" mak_i="r2i" mak_j="r2j"/>
+            <p2 active="true" type="translational" prt_m="p2b" prt_n="p2a" mak_i="p2i" mak_j="p2j"/>
+            <u2 active="true" type="universal" prt_m="up" prt_n="p2b" mak_i="u2i" mak_j="u2j"/>
+            <u3 active="true" type="universal" prt_m="p3a" prt_n="down" mak_i="u3i" mak_j="u3j"/>
+            <p3 active="true" type="translational" prt_m="p3b" prt_n="p3a" mak_i="p3i" mak_j="p3j"/>
+            <s3 active="true" type="spherical" prt_m="up" prt_n="p3b" mak_i="s3i" mak_j="s3j"/>
+            <u4 active="true" type="universal" prt_m="p4a" prt_n="down" mak_i="u4i" mak_j="u4j"/>
+            <p4 active="true" type="translational" prt_m="p4b" prt_n="p4a" mak_i="p4i" mak_j="p4j"/>
+            <s4 active="true" type="spherical" prt_m="up" prt_n="p4b" mak_i="s4i" mak_j="s4j"/>
+        </Joint>
+        <Motion type="motion_pool_element" default_child_type="motion">
+            <m1 active="true" prt_m="p1b" prt_n="p1a" mak_i="p1i" mak_j="p1j" frc_coe="Mot_friction" component="2"/>
+            <m2 active="true" prt_m="p2b" prt_n="p2a" mak_i="p2i" mak_j="p2j" frc_coe="Mot_friction" component="2"/>
+            <m3 active="true" prt_m="p3b" prt_n="p3a" mak_i="p3i" mak_j="p3j" frc_coe="Mot_friction" component="2"/>
+            <m4 active="true" prt_m="p4b" prt_n="p4a" mak_i="p4i" mak_j="p4j" frc_coe="Mot_friction" component="2"/>
+        </Motion>
+        <General_Motion type="general_motion_pool_element" default_child_type="general_motion">
+            <gm active="true" prt_m="down" prt_n="Ground" mak_i="gmi" mak_j="gmj"/>
+        </General_Motion>
+    </Model>
+    <Server ip="127.0.0.1" port="5866">
+        <Commands>
+            <start/>
+            <stop/>
+            <exit/>
+            <en default="all">
+                <all abbreviation="a"/>
+                <first abbreviation="f"/>
+                <second abbreviation="s"/>
+                <motor abbreviation="m" type="intArray" default="0"/>
+                <physical_motor abbreviation="p" type="intArray" default="0"/>
+                <leg abbreviation="l" type="intArray" default="0"/>
+            </en>
+            <ds default="all">
+                <all abbreviation="a"/>
+                <first abbreviation="f"/>
+                <second abbreviation="s"/>
+                <motor abbreviation="m" type="intArray" default="0"/>
+                <physical_motor abbreviation="p" type="intArray" default="0"/>
+                <leg abbreviation="l" type="intArray" default="0"/>
+            </ds>
+            <hm default="all">
+                <all abbreviation="a"/>
+                <first abbreviation="f"/>
+                <second abbreviation="s"/>
+                <motor abbreviation="m" type="intArray" default="0"/>
+                <physical_motor abbreviation="p" type="intArray" default="0"/>
+                <leg abbreviation="l" type="intArray" default="0"/>
+            </hm>
+            <fake_home/>
+            <rc default="rc_param">
+                <rc_param type="group">
+                    <leg_param type="unique" default="all">
+                        <all abbreviation="a"/>
+                        <first abbreviation="f"/>
+                        <second abbreviation="s"/>
+                        <leg abbreviation="l" type="intArray" default="0"/>
+                    </leg_param>
+                    <t1 abbreviation="t" type="intArray" default="3000"/>
+                    <t2 type="intArray" default="3000"/>
+                    <margin_offset abbreviation="m" type="double" default="0.01"/>
+                </rc_param>
+            </rc>
+            <wk default="wk_param">
+                <wk_param type="group">
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <n abbreviation="n" type="int" default="1"/>
+                    <distance abbreviation="d" type="double" default="0.5"/>
+                    <height abbreviation="h" type="double" default="0.05"/>
+                    <alpha abbreviation="a" type="double" default="0"/>
+                    <beta abbreviation="b" type="double" default="0"/>
+                </wk_param>
+            </wk>
+	    <test default="all">
+                <all abbreviation="a"/>
+                <motor abbreviation="m" type="intArray" default="0"/>
+                <physical_motor abbreviation="p" type="intArray" default="0"/>
+            </test>
+	    <recover/>
+            <siny/>
+            <sinwx/>
+            <sinwz/>
+            <testsensor/>
+            <automode/>
+            <st/>
+            <ro/>
+	    <move default="move_param">
+		<move_param type="group">
+                    <totalCount abbreviation="t" type="int" default="10000"/>
+                    <y abbreviation="y" type="double" default="0.435"/>
+                    <z abbreviation="z" type="double" default="0"/>
+                    <a abbreviation="a" type="double" default="0"/>
+                    <c abbreviation="c" type="double" default="0"/>
+                </move_param>
+	    </move>
+        </Commands>
+    </Server>
+    <Controller>
+        <EtherCat>
+            <SlaveType>
+                <ElmoSoloWhistle product_code="0x00030924" vender_id="0x0000009a" alias="0" distributed_clock="0x0300">
+                    <PDO>
+                        <index_1605 index="0x1605" is_tx="false">
+                            <TargetPosition index="0x607A" subindex="0x00" type="int32"/>
+                            <TargetVelocity index="0x60FF" subindex="0x00" type="int32"/>
+                            <TargetTorque index="0x6071" subindex="0x00" type="int16"/>
+                            <MaxTorque index="0x6072" subindex="0x00" type="int16"/>
+                            <ControlWord index="0x6040" subindex="0x00" type="uint16"/>
+                            <ModeOfOperation index="0x6060" subindex="0x00" type="uint8"/>
+                        </index_1605>
+			<index_1617 index="0x1617" is_tx="false">
+                            <VelocityOffset index="0x60B1" subindex="0x00" type="int32"/>
+                        </index_1617>
+			<index_1618 index="0x1618" is_tx="false">
+                            <TorqueOffset index="0x60B2" subindex="0x00" type="int16"/>
+                        </index_1618>
+                        <index_1a03 index="0x1A03" is_tx="true">
+                            <PositionActualValue index="0x6064" subindex="0x00" type="int32"/>
+                            <DigitalInputs index="0x60fd" subindex="0x00" type="uint32"/>
+                            <VelocityActualValue index="0x606c" subindex="0x00" type="int32"/>
+                            <StatusWord index="0x6041" subindex="0x00" type="uint16"/>
+                        </index_1a03>
+                        <index_1a1f index="0x1A1F" is_tx="true">
+                            <CurrentActualValue index="0x6078" subindex="0x00" type="int16"/>
+                        </index_1a1f>
+                        <index_1a13 index="0x1A13" is_tx="true">
+                            <TorqueActualValue index="0x6077" subindex="0x00" type="int16"/>
+                        </index_1a13>
+                        <index_1a0b index="0x1A0B" is_tx="true">
+                            <ModeOfOperationDisplay index="0x6061" subindex="0x00" type="uint8"/>
+                        </index_1a0b>
+                        <index_1a0b index="0x1A1C" is_tx="true">
+                            <ModeOfOperationDisplay index="0x60FD" subindex="0x00" type="uint32"/>
+                        </index_1a0b>
+                    </PDO>
+                    <SDO>
+                        <homeMode index="0x6098" subindex="0" type="int8" config="17"/>
+                        <homeAcc index="0x609A" subindex="0" type="uint32" config="20000"/>
+                        <homeHighSpeed index="0x6099" subindex="1" type="uint32" config="25000"/>
+                        <homeLowSpeed index="0x6099" subindex="2" type="uint32" config="5000"/>
+                        <RatioOfPosDivVel_Numerator index="0x6096" subindex="1" type="uint32" config="1"/>
+                        <RatioOfPosDivVel_Divisor index="0x6096" subindex="2" type="uint32" config="1"/>
+                        <homeTorqueLimit index="0x2020" subindex="1" type="int32" config="500"/>
+                        <p2pMaxSpeed index="0x607F" subindex="0" type="uint32" config="20000"/>
+                        <p2pSpeed index="0x6081" subindex="0" type="uint32" config="1792"/>
+                        <homeOffset index="0x607C" subindex="0" type="int32" config="0"/>
+                        <MinPositionLimit index="0x607D" subindex="1" type="int32" config="0"/>
+                        <MaxPositionLimit index="0x607D" subindex="2" type="int32" config="0"/>
+                    </SDO>
+                </ElmoSoloWhistle>
+                <AtiForceSensor product_code="0x26483052" vender_id="0x00000732" alias="0">
+                    <PDO>
+                        <index_1a00 index="0x1a00" is_tx="true">
+                            <Fx index="0x6000" subindex="0x01" type="int32"/>
+                            <Fy index="0x6000" subindex="0x02" type="int32"/>
+                            <Fz index="0x6000" subindex="0x03" type="int32"/>
+                            <Mx index="0x6000" subindex="0x04" type="int32"/>
+                            <My index="0x6000" subindex="0x05" type="int32"/>
+                            <Mz index="0x6000" subindex="0x06" type="int32"/>
+                            <statusCode index="0x6010" subindex="0x00" type="int32"/>
+                            <sampleCount index="0x6020" subindex="0x00" type="int32"/>
+                        </index_1a00>
+                        <index_1601 index="0x1601" is_tx="false">
+                            <cw1 index="0x7010" subindex="0x01" type="int32"/>
+                            <cw2 index="0x7010" subindex="0x02" type="int32"/>
+                        </index_1601>
+                    </PDO>
+                    <SDO>
+                        <ForceUnit index="0x2040" subindex="0x31" type="int32" write="false"/>
+                        <TorqueUnit index="0x2040" subindex="0x32" type="int32" write="false"/>
+                    </SDO>
+                </AtiForceSensor>
+                <Esg_Imu type="esg_imu" product_code="0x26483052" vender_id="0xe0000005" alias="0" w_factor="0.01" ap_factor="0.00025" mag_factor="1.22" ang_factor="0.1">
+                    <PDO>
+                        <index_1a01 index="0x1a01" is_tx="true">
+                            <wx index="0x6011" subindex="0x01" type="int16"/>
+                            <wy index="0x6011" subindex="0x02" type="int16"/>
+                            <wz index="0x6011" subindex="0x03" type="int16"/>
+                            <apx index="0x6011" subindex="0x04" type="int16"/>
+                            <apy index="0x6011" subindex="0x05" type="int16"/>
+                            <apz index="0x6011" subindex="0x06" type="int16"/>
+                            <north_dir_x index="0x6011" subindex="0x07" type="int16"/>
+                            <north_dir_y index="0x6011" subindex="0x08" type="int16"/>
+                            <north_dir_z index="0x6011" subindex="0x09" type="int16"/>
+                            <rex index="0x6011" subindex="0x0a" type="int16"/>
+                            <rey index="0x6011" subindex="0x0b" type="int16"/>
+                            <rez index="0x6011" subindex="0x0c" type="int16"/>
+                        </index_1a01>
+                    </PDO>
+                    <SDO/>
+                </Esg_Imu>
+                 <Esg_ImuT type="esg_imuT" product_code="0x26483052" vender_id="0xe0000005" alias="0" w_factor="0.01" ap_factor="0.00025" mag_factor="1.22" ang_factor="0.1">
+                    <PDO>
+                        <index_1a01 index="0x1a01" is_tx="true">
+                            <wx index="0x6011" subindex="0x01" type="int16"/>
+                            <wy index="0x6011" subindex="0x02" type="int16"/>
+                            <wz index="0x6011" subindex="0x03" type="int16"/>
+                            <apx index="0x6011" subindex="0x04" type="int16"/>
+                            <apy index="0x6011" subindex="0x05" type="int16"/>
+                            <apz index="0x6011" subindex="0x06" type="int16"/>
+                            <north_dir_x index="0x6011" subindex="0x07" type="int16"/>
+                            <north_dir_y index="0x6011" subindex="0x08" type="int16"/>
+                            <north_dir_z index="0x6011" subindex="0x09" type="int16"/>
+                            <rex index="0x6011" subindex="0x0a" type="int16"/>
+                            <rey index="0x6011" subindex="0x0b" type="int16"/>
+                            <rez index="0x6011" subindex="0x0c" type="int16"/>
+                        </index_1a01>
+                        <index_1a08 index="0x1a08" is_tx="true">
+                            <T1 index="0x6080" subindex="0x00" type="int16"/>                           
+                        </index_1a08>
+                        <index_1601 index="0x1601" is_tx="false">
+                            <T2 index="0x7011" subindex="0x01" type="int16"/>                           
+                        </index_1601>
+                        <index_1608 index="0x1608" is_tx="false">
+                            <T3 index="0x7080" subindex="0x00" type="int16"/>                           
+                        </index_1608>
+                    </PDO>
+                    <SDO/>
+                </Esg_ImuT>
+                <Operation_Panel type="op" product_code="0x26483052" vender_id="0xe0000005" alias="0">
+                    <PDO>
+                    	 <index_1601 index="0x1601" is_tx="false">
+                            <re1 index="0x7011" subindex="0x01" type="int16"/>
+                            <re2 index="0x7011" subindex="0x02" type="int16"/>
+                            <re3 index="0x7011" subindex="0x03" type="int16"/>
+                            <re4 index="0x7011" subindex="0x04" type="int16"/>
+                            <re5 index="0x7011" subindex="0x05" type="int16"/>
+                            <re6 index="0x7011" subindex="0x06" type="int16"/>
+                            <re7 index="0x7011" subindex="0x07" type="int16"/>
+                            <re8 index="0x7011" subindex="0x08" type="int16"/>
+                            <re9 index="0x7011" subindex="0x09" type="int16"/>
+                            <rea index="0x7011" subindex="0x0a" type="int16"/>
+                            <reb index="0x7011" subindex="0x0b" type="int16"/>
+                            <rec index="0x7011" subindex="0x0c" type="int16"/>
+                            <red index="0x7011" subindex="0x0d" type="int16"/>
+                        </index_1601>
+                         <index_1608 index="0x1608" is_tx="false">
+                            <lap index="0x7080" subindex="0x00" type="uint16"/>                           
+                        </index_1608>
+                        <index_1a08 index="0x1a08" is_tx="true">
+                            <key index="0x6080" subindex="0x00" type="uint16"/>                           
+                        </index_1a08>                     	
+                    </PDO>
+                    <SDO/>
+                </Operation_Panel>
+                <Operation_Panel_SC type="op" product_code="0x26483052" vender_id="0xe0000005" alias="0">
+                    <PDO>
+                         <index_1a02 index="0x1a02" is_tx="true">
+                            <reserve index="0x6020" subindex="0x00" type="uint16"/>                           
+                        </index_1a02>               
+                    </PDO>
+                    <SDO/>
+                </Operation_Panel_SC>
+                <Monitor  type="monitor" product_code="0x26483052" vender_id="0xe0000005" alias="0">
+                    <PDO>
+                    	<index_1600 index="0x1600" is_tx="false">
+                    		<disp1 index="0x7002" subindex="0x01" type="int32"/>
+                    		<disp2 index="0x7002" subindex="0x02" type="int32"/>
+                    		<disp3 index="0x7002" subindex="0x03" type="int32"/>
+                    		<disp4 index="0x7002" subindex="0x04" type="int32"/>
+                    		<disp5 index="0x7002" subindex="0x05" type="int32"/>
+                    		<disp6 index="0x7002" subindex="0x06" type="int32"/>
+                    		<disp7 index="0x7002" subindex="0x07" type="int32"/>
+                    		<disp8 index="0x7002" subindex="0x08" type="int32"/>
+                    		<disp9 index="0x7002" subindex="0x09" type="int32"/>
+                    		<dispa index="0x7002" subindex="0x0a" type="int32"/>
+                    		<dispb index="0x7002" subindex="0x0b" type="int32"/>
+                    		<dispc index="0x7002" subindex="0x0c" type="int32"/>
+                    	</index_1600>
+                    </PDO>
+                    <SDO/>
+                </Monitor>
+		<ElmoSoloWhistle2 product_code="0x26483052" vender_id="0xe0000005" alias="0">
+                    <PDO/>
+                    <SDO/>
+                </ElmoSoloWhistle2>
+            </SlaveType>
+            <Slave>
+          	<motion1 type="ElmoSoloWhistle"  min_pos="0.4587" max_pos="0.59967" max_vel="0.6" home_pos="0.45879" input2count="6553600" abs_id="1"/>
+                <imu1 type="Esg_ImuT"/>
+                <imu2 type="Esg_Imu"/>
+                <motion2 type="ElmoSoloWhistle"  min_pos="0.4587" max_pos="0.59967" max_vel="0.6" home_pos="0.45879" input2count="6553600" abs_id="0"/>
+                <motion3 type="ElmoSoloWhistle"  min_pos="0.4739" max_pos="0.61493" max_vel="0.6" home_pos="0.47399" input2count="6553600" abs_id="3"/>
+                <op2 type="Operation_Panel_SC"/>
+                <motion4 type="ElmoSoloWhistle"  min_pos="0.4739" max_pos="0.61035" max_vel="0.6" home_pos="0.47399" input2count="6553600" abs_id="2"/>                
+                <AtiForcesensor type="AtiForceSensor"/>               
+            </Slave>
+        </EtherCat>
+    </Controller>
+    <Sensors>
+        <IMU active="true" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,0,-PI/2,PI}" PeImu2Body="{0,0,0,0,PI/2,0}"/>
+        <Vision type="kinect2.0"/>
+    </Sensors>
+</Robot>
