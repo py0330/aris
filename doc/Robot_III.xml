@@ -491,27 +491,27 @@
                 <all abbreviation="a"/>
                 <first abbreviation="f"/>
                 <second abbreviation="s"/>
-                <motor abbreviation="m" default="0"/>
-                <physical_motor abbreviation="p" default="0"/>
-		<slave_motor abbreviation="c" default="0"/>
+                <motion_id abbreviation="m" default="0"/>
+                <physical_id abbreviation="p" default="0"/>
+		<slave_id abbreviation="c" default="0"/>
                 <leg abbreviation="l" default="0"/>
             </en>
             <ds default_child_type="param" default="all">
                 <all abbreviation="a"/>
                 <first abbreviation="f"/>
                 <second abbreviation="s"/>
-                <motor abbreviation="m" default="0"/>
-                <physical_motor abbreviation="p" default="0"/>
-		<slave_motor abbreviation="c" default="0"/>
+                <motion_id abbreviation="m" default="0"/>
+                <physical_id abbreviation="p" default="0"/>
+		<slave_id abbreviation="c" default="0"/>
                 <leg abbreviation="l" default="0"/>
             </ds>
             <hm default_child_type="param" default="all">
                 <all abbreviation="a"/>
                 <first abbreviation="f"/>
                 <second abbreviation="s"/>
-                <motor abbreviation="m" default="0"/>
-                <physical_motor abbreviation="p" default="0"/>
-		<slave_motor abbreviation="c" default="0"/>
+                <motion_id abbreviation="m" default="0"/>
+                <physical_id abbreviation="p" default="0"/>
+		<slave_id abbreviation="c" default="0"/>
                 <leg abbreviation="l" default="0"/>
             </hm>
             <rc default="rc_param">
@@ -539,9 +539,9 @@
             </wk>
 	    <test default_child_type="param" default="all">
                 <all abbreviation="a"/>
-                <motor abbreviation="m" default="0"/>
-                <physical_motor abbreviation="p" default="0"/>
-		<slave_motor abbreviation="c" default="0"/>
+                <motion_id abbreviation="m" default="0"/>
+                <physical_id abbreviation="p" default="0"/>
+		<slave_id abbreviation="c" default="0"/>
             </test>
         </Commands>
     </Server>

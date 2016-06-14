@@ -35,14 +35,14 @@ auto basicParse(const aris::server::ControlServer &cs, const std::string &cmd, c
             std::fill_n(param.active_motor_ + 15, 3, true);
         }
 		else if (i.first == "motion_id")
-		{
+        {
 			std::size_t id{ std::stoul(i.second) };
 			if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
 			std::fill(param.active_motor_, param.active_motor_ + 18, false);
 			param.active_motor_[cs.model().motionAtAbs(id).absID()] = true;
 		}
 		else if (i.first == "physical_id")
-		{
+        {
 			std::size_t id{ std::stoul(i.second) };
 			if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
 			std::fill(param.active_motor_, param.active_motor_ + 18, false);
@@ -69,7 +69,7 @@ auto basicParse(const aris::server::ControlServer &cs, const std::string &cmd, c
     msg_out.copyStruct(param);
 }
 
-auto testParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
+auto testParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
     aris::server::GaitParamBase param;
 
@@ -79,32 +79,31 @@ auto testParse(const aris::server::ControlServer &cs, const std::string &cmd, co
         {
             std::fill_n(param.active_motor_, 18, true);
         }
-        else if (i.first == "motor")
+        else if (i.first == "motion_id")
         {
-            int id = { stoi(i.second) };
-            if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
-
-            std::fill_n(param.active_motor_, 18, false);
-            param.active_motor_[id] = true;
+            std::size_t id{ std::stoul(i.second) };
+            if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+            std::fill(param.active_motor_, param.active_motor_ + 18, false);
+            param.active_motor_[cs.model().motionAtAbs(id).absID()] = true;
         }
-        else if (i.first == "physical_motor")
+        else if (i.first == "physical_id")
         {
-            int id = { stoi(i.second) };
-            if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
-
-            std::fill_n(param.active_motor_, 18, false);
-            param.active_motor_[id] = true;
+            std::size_t id{ std::stoul(i.second) };
+            if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+            std::fill(param.active_motor_, param.active_motor_ + 18, false);
+            param.active_motor_[cs.model().motionAtPhy(id).absID()] = true;
         }
-        else if (i.first == "slave_motor")
+        else if (i.first == "slave_id")
         {
-            int id = { stoi(i.second) };
-            if (id<0 || id>17)throw std::runtime_error("invalid param in basicParse func");
-
-            std::fill_n(param.active_motor_, 18, false);
-            param.active_motor_[id] = true;
+            std::size_t id{ std::stoul(i.second) };
+            if (id < 0 || id > cs.controller().slavePool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+            std::fill(param.active_motor_, param.active_motor_ + 18, false);
+            if (cs.model().motionAtSla(id).absID() >= cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\", this slave is not motion");
+            param.active_motor_[cs.model().motionAtSla(id).absID()] = true;
         }
     }
-    msg.copyStruct(param);
+
+    msg_out.copyStruct(param);
 }
 auto testGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int
 {
