@@ -158,26 +158,65 @@
         <all abbreviation="a" />
         <motion_id abbreviation="m" default="0" />
         <physical_id abbreviation="p" default="0" />
-        <slave_id abbreviation="c" default="0" />
+        <slave_id abbreviation="s" default="0" />
       </en>
       <ds default_child_type="param" default="all">
         <all abbreviation="a" />
         <motion_id abbreviation="m" default="0" />
         <physical_id abbreviation="p" default="0" />
-        <slave_id abbreviation="c" default="0" />
+        <slave_id abbreviation="s" default="0" />
       </ds>
       <hm default_child_type="param" default="all">
         <all abbreviation="a" />
         <motion_id abbreviation="m" default="0" />
         <physical_id abbreviation="p" default="0" />
-        <slave_id abbreviation="c" default="0" />
+        <slave_id abbreviation="s" default="0" />
       </hm>
-      <test default_child_type="param" default="all">
-        <all abbreviation="a" />
-        <motion_id abbreviation="m" default="0" />
-        <physical_id abbreviation="p" default="0" />
-        <slave_id abbreviation="c" default="0" />
-      </test>
+      <rc />
+      <mvpee default_child_type="param" default="movepee_param">
+	<movepee_param type="group" default_child_type="param" >
+           <totalCount abbreviation="t" default="10000"/>
+           <y abbreviation="y" default="0.435"/>
+           <z abbreviation="z" default="0"/>
+           <a abbreviation="a" default="0"/>
+           <c abbreviation="c" default="0"/>
+        </movepee_param>
+      </mvpee>
+      <mvpin default="movepin_param">
+	<movepin_param type="group" default_child_type="param" >
+           <motion_param type="unique" default_child_type="param" default="all">
+	       <all abbreviation="a" />
+	       <motion_id abbreviation="m" default="0" />
+	       <physical_id abbreviation="p" default="0" />
+	       <slave_id abbreviation="s" default="0" />
+	   </motion_param>
+	   <totalCount abbreviation="t" default="10000"/>
+           <length abbreviation="l" default="0"/>
+           <velocity abbreviation="v" default="0.01"/>
+           <force abbreviation="f" default="no"/>
+        </movepin_param>
+      </mvpin>
+      <sinpee default_child_type="param" default="sinpee_param">
+	<sinpee_param type="group" default_child_type="param" >
+           <totalCount abbreviation="t" default="10000"/>
+           <active abbreviation="c" default="y"/>
+           <amplitude abbreviation="l" default="0"/>
+           <frequence abbreviation="f" default="1"/>
+        </sinpee_param>
+      </sinpee>
+      <sinpin default="sinpin_param">
+	<sinpin_param type="group" default_child_type="param" >
+           <motion_param type="unique" default_child_type="param" default="all">
+	       <all abbreviation="a" />
+	       <motion_id abbreviation="m" default="0" />
+	       <physical_id abbreviation="p" default="0" />
+	       <slave_id abbreviation="s" default="0" />
+	   </motion_param>
+	   <totalCount abbreviation="t" default="10000"/>
+           <amplitude abbreviation="l" default="0"/>
+           <frequence abbreviation="f" default="1"/>
+        </sinpin_param>
+      </sinpin>
     </Commands>
   </Server>
   <Controller>

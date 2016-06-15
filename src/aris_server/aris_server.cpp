@@ -479,7 +479,7 @@ namespace aris
 
                         if (param->count_ % 1000 == 0)
                         {
-                            rt_printf("Unenabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
+                            rt_printf("Unhomeed motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
                         }
                     }
                 }

@@ -8,10 +8,9 @@ namespace robot
 	class Robot:public aris::dynamic::Model 
 	{
 	public:
-        auto pee()const->const double * { return pee_; }
+        auto getpee()const->const double * { return pee_; }
 		auto setPee(const double *pee)->void;
-        auto pin()const->const double * { return pin_; }
-        auto getPin(double *Pin)->void {std::copy_n(this->pin_,4,Pin);}
+        auto getpin()const->const double * { return pin_; }
 		auto setPin(const double *pin)->void;
         auto setVin(const double *vin)->void;
 
@@ -96,11 +95,6 @@ namespace robot
 			struct { double l1_, l2_, l3_, l4_; };
 			double pin_[4];
 		};
-	};
-	
-	struct PlanParam :public aris::server::GaitParamBase
-	{
-		int total_count_{ 1000 };
 	};
 
 }

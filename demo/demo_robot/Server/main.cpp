@@ -16,10 +16,12 @@ int main(int argc, char *argv[])
     auto &cs = aris::server::ControlServer::instance();
 
     cs.createModel<robot::Robot>();
-    //cs.createModel<aris::dynamic::Model>();
     cs.createController<aris::control::Controller>();
     cs.createSensorRoot<aris::sensor::SensorRoot>();
+    //if no special robot model, you can use the default model
+    //cs.createModel<aris::dynamic::Model>();
 
+    //register new slave or new sensor
     cs.controller().registerChildType<robot::EsgImu, false, false, false, false>();
     cs.sensorRoot().registerChildType<aris::sensor::Imu,false,false,false,false>();
 
@@ -27,10 +29,17 @@ int main(int argc, char *argv[])
     //cs.loadXml("/usr/aris/resource/Robot_III.xml");
 
     cs.addCmd("en", robot::basicParse, nullptr);
-    //cs.addCmd("en", nullptr, nullptr);
     cs.addCmd("ds", robot::basicParse, nullptr);
     cs.addCmd("hm", robot::basicParse, nullptr);
-    cs.addCmd("test",robot::testParse,robot::testGait);
+    //if no special command parser, we can use the default parser for command 'en' , 'ds' , 'hm'
+    //cs.addCmd("en", nullptr, nullptr);
+
+    //some default command
+    cs.addCmd("rc",robot::recoverParse,robot::recoverGait);//you need to change the default pose in the RecoverParam
+    cs.addCmd("mvpee",robot::movePeeParse,robot::movePeeGait);//you should make sure the robot has always arrived to the target pose before using 'mvpee' command
+    cs.addCmd("mvpin",robot::movePinParse,robot::movePinGait);
+    cs.addCmd("sinpee",robot::sinPeeParse,robot::sinPeeGait);
+    cs.addCmd("sinpin",robot::sinPinParse,robot::sinPinGait);
 
     cs.open();
 

@@ -87,10 +87,10 @@ namespace robot
         this->m3().setMotPos(pin[2]);
         this->m4().setMotPos(pin[3]);
 
-            pin_[0] = m1().motPos();
-            pin_[1] = m2().motPos();
-            pin_[2] = m3().motPos();
-            pin_[3] = m4().motPos();
+        pin_[0] = m1().motPos();
+        pin_[1] = m2().motPos();
+        pin_[2] = m3().motPos();
+        pin_[3] = m4().motPos();
 	}
 
     auto Robot::setVin(const double *vin)->void
