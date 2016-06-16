@@ -33,7 +33,6 @@ namespace robot
     //the motions of robot can move a profile length by using 'mvpin' command
     struct MovePinParam final: public aris::server::GaitParamBase
     {
-        double length_{0};
         double velocity_{0};
         int total_count_{10000};
     };

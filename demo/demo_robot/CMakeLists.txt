@@ -109,10 +109,10 @@ target_link_libraries(rbt ${ALL_LINK_LIB})
 
 ################################### install ####################################
 if(UNIX)
-	set(CMAKE_INSTALL_PREFIX "/usr/aris/demo/")
+        set(CMAKE_INSTALL_PREFIX "/usr/aris/robot/")
 endif(UNIX)
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/aris/demo/")
+        set(CMAKE_INSTALL_PREFIX "C:/aris/robot/")
 endif(WIN32)
 
 install(TARGETS Server rbt RUNTIME DESTINATION bin)

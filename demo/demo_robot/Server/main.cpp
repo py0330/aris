@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
     cs.controller().registerChildType<robot::EsgImu, false, false, false, false>();
     cs.sensorRoot().registerChildType<aris::sensor::Imu,false,false,false,false>();
 
-    cs.loadXml("/usr/aris/demo/resource/robot_motion.xml");
-    //cs.loadXml("/usr/aris/resource/Robot_III.xml");
+    cs.loadXml("/usr/aris/robot/resource/robot.xml");
+    //cs.loadXml("/usr/aris/robot/resource/robot_motion.xml");
 
     cs.addCmd("en", robot::basicParse, nullptr);
     cs.addCmd("ds", robot::basicParse, nullptr);

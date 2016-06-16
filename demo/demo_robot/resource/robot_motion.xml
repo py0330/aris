@@ -191,8 +191,7 @@
 	       <slave_id abbreviation="s" default="0" />
 	   </motion_param>
 	   <totalCount abbreviation="t" default="10000"/>
-           <length abbreviation="l" default="0"/>
-           <velocity abbreviation="v" default="0.01"/>
+           <velocity abbreviation="v" default="0"/>
            <force abbreviation="f" default="no"/>
         </movepin_param>
       </mvpin>
@@ -255,9 +254,9 @@
         </PDO>
         <SDO type="sdo_pool_element" default_child_type="sdo">
           <homeMode index="0x6098" subindex="0" datatype="int8" config="35" />
-          <homeAcc index="0x609A" subindex="0" datatype="uint32" config="200000" />
-          <homeHighSpeed index="0x6099" subindex="1" datatype="uint32" config="200000" />
-          <homeLowSpeed index="0x6099" subindex="2" datatype="uint32" config="100000" />
+          <homeAcc index="0x609A" subindex="0" datatype="uint32" config="20000" />
+          <homeHighSpeed index="0x6099" subindex="1" datatype="uint32" config="25000" />
+          <homeLowSpeed index="0x6099" subindex="2" datatype="uint32" config="5000" />
           <homeOffset index="0x607C" subindex="0" datatype="int32" config="0" />
         </SDO>
       </ElmoSoloWhistle>
@@ -385,13 +384,13 @@
       </Monitor>
     </SlaveType>
     <Slave type="slave_pool_element">
-      <motion1 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4587" max_pos="0.59967" max_vel="0.5" home_pos="0.50879" input2count="6553600" />
+      <motion1 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4587" max_pos="0.59967" max_vel="0.5" home_pos="0.45879" input2count="6553600" />
       <imu1 type="slave" slave_type="Esg_ImuT" />
       <imu2 type="esgimu" slave_type="Esg_Imu" />
-      <motion2 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4587" max_pos="0.59967" max_vel="0.5" home_pos="0.50879" input2count="6553600" />
-      <motion3 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4739" max_pos="0.61493" max_vel="0.5" home_pos="0.50399" input2count="6553600" />
+      <motion2 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4587" max_pos="0.59967" max_vel="0.5" home_pos="0.45879" input2count="6553600" />
+      <motion3 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4739" max_pos="0.61493" max_vel="0.5" home_pos="0.47399" input2count="6553600" />
       <op2 type="slave" slave_type="Operation_Panel_SC" />
-      <motion4 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4739" max_pos="0.61035" max_vel="0.5" home_pos="0.50399" input2count="6553600" />
+      <motion4 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4739" max_pos="0.61035" max_vel="0.5" home_pos="0.47399" input2count="6553600" />
     </Slave>
   </Controller>
   <Sensor>

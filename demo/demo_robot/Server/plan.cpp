@@ -176,10 +176,6 @@ namespace robot
             {
                 param.total_count_ = std::stoi(i.second);
             }
-            else if (i.first == "length")
-            {
-                param.length_=std::stod(i.second);
-            }
             else if (i.first == "velocity")
             {
                 param.velocity_ = std::stod(i.second);
@@ -225,14 +221,7 @@ namespace robot
 
         double pin[Motion_Num];
         for(int i=0;i<Motion_Num;i++)
-        {
-            if(param.active_motor_[i]){
-                pin[i] = param.velocity_*param.count_/1000.0+begin_pin[i];
-                pin[i] =std::min(pin[i],param.length_+begin_pin[i]);
-            }
-            else
-                pin[i] = begin_pin[i];
-        }
+            pin[i] = param.velocity_*param.count_/1000.0+begin_pin[i];
 
         robot.setPin(pin);
 
