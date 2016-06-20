@@ -479,7 +479,7 @@ namespace aris
 
                         if (param->count_ % 1000 == 0)
                         {
-                            rt_printf("Unenabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
+                            rt_printf("Unhomeed motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
                         }
                     }
                 }
@@ -656,11 +656,11 @@ namespace aris
 			loadXml(doc);
 		}
 		auto ControlServer::loadXml(const aris::core::XmlDocument &xml_doc)->void 
-		{	
+        {
 			/// load robot model_ ///
-			imp_->model_->loadXml(xml_doc);
-			imp_->controller_->loadXml(xml_doc);
-			imp_->sensor_root_->loadXml(xml_doc);
+            imp_->model_->loadXml(xml_doc);
+            imp_->controller_->loadXml(xml_doc);
+            imp_->sensor_root_->loadXml(xml_doc);
             imp_->parser_.loadXml(xml_doc);
 
 			/// load connection param ///
