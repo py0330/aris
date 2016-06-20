@@ -67,6 +67,7 @@ namespace aris
 			aris::core::ObjectPool<PdoGroup, Element> *pdo_group_pool_;
 			aris::core::ObjectPool<Sdo, Element> *sdo_pool_;
 			std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
+            std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
 
 			Slave *slave_;
 			RxType rx_data_;
@@ -689,7 +690,7 @@ namespace aris
 		{
 			pdoGroupPool().at(pdo_group_id).at(pdo_id).write(value);
 		}
-		auto Slave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
+        auto Slave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
 		{
 			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
 			readPdo(id_pair.first, id_pair.second, value);
@@ -749,7 +750,7 @@ namespace aris
 			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
 			writePdo(id_pair.first, id_pair.second, value);
 		}
-		auto Slave::readSdoConfig(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value);}
+        auto Slave::readSdoConfig(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value);}
 		auto Slave::readSdoConfig(int sdoID, std::int16_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
 		auto Slave::readSdoConfig(int sdoID, std::int32_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
 		auto Slave::readSdoConfig(int sdoID, std::uint8_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
@@ -761,7 +762,67 @@ namespace aris
 		auto Slave::configSdo(int sdoID, std::uint8_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }
 		auto Slave::configSdo(int sdoID, std::uint16_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }
 		auto Slave::configSdo(int sdoID, std::uint32_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }
-		auto Slave::readSdo(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).read(value); }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::readSdo(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).read(value); }
 		auto Slave::readSdo(int sdoID, std::int16_t &value) const->void { sdoPool().at(sdoID).read(value); }
 		auto Slave::readSdo(int sdoID, std::int32_t &value) const->void { sdoPool().at(sdoID).read(value); }
 		auto Slave::readSdo(int sdoID, std::uint8_t &value) const->void { sdoPool().at(sdoID).read(value); }
@@ -773,6 +834,67 @@ namespace aris
 		auto Slave::writeSdo(int sdoID, std::uint8_t value)->void { sdoPool().at(sdoID).write(value); }
 		auto Slave::writeSdo(int sdoID, std::uint16_t value)->void { sdoPool().at(sdoID).write(value); }
 		auto Slave::writeSdo(int sdoID, std::uint32_t value)->void { sdoPool().at(sdoID).write(value); }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+
 		Slave::~Slave() {}
 		Slave::Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(this))
 		{
@@ -819,6 +941,22 @@ namespace aris
 					}
 				}
 			}
+
+            /// make SDO map ///
+            for (int i = 0; i < static_cast<int>(sdoPool().size()); ++i)
+            {
+                auto &sdo= sdoPool().at(i);
+                if (imp_->sdo_map_.find(sdo.index_) != imp_->sdo_map_.end())
+                {
+                    imp_->sdo_map_.at(sdo.index_).insert(std::make_pair(sdo.subindex_, i));
+                }
+                else
+                {
+                    std::map<std::uint8_t, int > subindex_map;
+                    subindex_map.insert(std::make_pair(sdo.subindex_, i));
+                    imp_->sdo_map_.insert(std::make_pair(sdo.index_, subindex_map));
+                }
+            }
 
 			/// create ecrt structs  ///
 			for (auto &pdo_group : pdoGroupPool())
