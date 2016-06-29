@@ -120,7 +120,7 @@ add_library(aris_dynamic STATIC ${FULL_SRC} ${FULL_H} src/aris_dynamic/aris_dyna
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H} src/aris_dynamic/aris_dynamic.h)
 
 # aris sensor project
-set(SOURCE aris_sensor_base aris_sensor_imu)
+set(SOURCE aris_sensor_base)
 PREPEND_CPP(FULL_SRC src/aris_sensor ${SOURCE})
 PREPEND_H(FULL_H src/aris_sensor ${SOURCE})
 add_library(aris_sensor STATIC ${FULL_SRC} ${FULL_H} src/aris_sensor/aris_sensor.h)
@@ -240,7 +240,6 @@ endif(WIN32)
 install(DIRECTORY sh DESTINATION .)
 install(TARGETS aris_core aris_dynamic aris_sensor aris_control aris_server ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} src/aris.h DESTINATION include)
-install(FILES doc/Robot_III.xml DESTINATION resource/)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 
