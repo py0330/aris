@@ -401,8 +401,7 @@ namespace aris
         {
             auto &rx_motiondata=static_cast<const RxType &>(rx_data);
             auto &tx_motiondata=static_cast<const TxType &>(tx_data);
-            file<<rx_motiondata.feedback_pos<<" ";
-            file<<tx_motiondata.target_pos;
+            file<<rx_motiondata.feedback_pos<<" "<< tx_motiondata.target_pos<<" "<<rx_motiondata.feedback_tor;
         }
 
         auto Motion::maxPos()->double { return imp_->max_pos; }

@@ -139,9 +139,7 @@ int main(int argc, char *argv[])
     cs.createModel<aris::dynamic::Model>();
     cs.createController<aris::control::Controller>();
     cs.createSensorRoot<aris::sensor::SensorRoot>();
-
-    cs.sensorRoot().registerChildType<aris::sensor::Imu,false,false,false,false>();
-
+	
     cs.loadXml("/usr/aris/resource/Robot_III.xml");
 
     cs.addCmd("en", basicParse, nullptr);
