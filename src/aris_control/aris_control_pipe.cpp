@@ -177,9 +177,7 @@ namespace aris
 #endif
 		}
 		
-		Pipe<aris::core::Msg>::Pipe(bool isBlock) :PipeBase(isBlock)
-		{
-		}
+		Pipe<aris::core::Msg>::Pipe(bool isBlock) :PipeBase(isBlock) {}
 		int Pipe<aris::core::Msg>::sendToRT(const aris::core::Msg &msg)
 		{
 			sendToRTRawData(msg.data_, msg.size() + sizeof(aris::core::MsgHeader));
@@ -192,8 +190,8 @@ namespace aris
 		}
 		int Pipe<aris::core::Msg>::recvInRT(aris::core::MsgRT &msg)
 		{
-			int length = recvInRTRawData(msg.data_, sizeof(aris::core::MsgHeader)+aris::core::MsgRT::RT_MSG_LENGTH);		
-			return length<=0?0:length;			
+			int length = recvInRTRawData(msg.data_, sizeof(aris::core::MsgHeader) + aris::core::MsgRT::RT_MSG_LENGTH);
+			return length <= 0 ? 0 : length;
 		}
 		int Pipe<aris::core::Msg>::recvInNrt(aris::core::Msg &msg)
 		{

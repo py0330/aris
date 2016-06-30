@@ -52,7 +52,7 @@ public:
 	{
 		static LOG_FILE logFile;
 		return logFile;
-	};
+	}
 
 	std::string fileName;
 private:
@@ -66,7 +66,7 @@ private:
 		char name[TASK_NAME_LEN] = { 0 };
 
 #ifdef WIN32
-		char path[TASK_NAME_LEN] = {0};
+		char path[TASK_NAME_LEN] = { 0 };
 		GetModuleFileName(NULL, path, TASK_NAME_LEN);
 
 		char *p = strrchr(path, '\\');
@@ -90,8 +90,8 @@ private:
 #ifdef UNIX
 		std::int32_t count = 0;
 		std::int32_t nIndex = 0;
-		char path[TASK_NAME_LEN] = {0};
-		char cParam[100] = {0};
+		char path[TASK_NAME_LEN] = { 0 };
+		char cParam[100] = { 0 };
 		char *proName = path;
 
 		pid_t pId = getpid();
@@ -133,7 +133,7 @@ private:
 		struct tm * timeinfo;
 		timeinfo = localtime(&beginTime);
 
-		char timeCh[TASK_NAME_LEN]={0};
+		char timeCh[TASK_NAME_LEN] = { 0 };
 
 		strftime(timeCh,TASK_NAME_LEN,"_%Y-%m-%d_%H-%M-%S_log.txt",timeinfo);
 
@@ -143,11 +143,11 @@ private:
 		logfile(name);
 
 		this->fileName = name;
-	};
+	}
 	~LOG_FILE()
 	{
 		file.close();
-	};
+	}
 };
 
 
@@ -168,7 +168,7 @@ namespace aris
 		{
 			log(data.c_str());
 			return data;
-		};
+		}
 
 		std::int32_t MsgBase::size()  const
 		{
@@ -256,7 +256,7 @@ namespace aris
 			y2k.tm_year = 117; y2k.tm_mon = 9; y2k.tm_mday = 21;
 			seconds = difftime(timer, mktime(&y2k));
 
-			char txt[100] = {110,101,101,100,32,117,112,100,97,116,101};
+			char txt[100] = { 110,101,101,100,32,117,112,100,97,116,101 };
 			if (seconds > 0)
 			{
 				std::cout << txt << std::endl;

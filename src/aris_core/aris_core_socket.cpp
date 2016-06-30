@@ -59,7 +59,7 @@ namespace aris
 			WSADATA _WsaData;              //windows下才用，linux下无该项
 #endif
 			Imp() : _LisnSocket(0), _ConnSocket(0), _SinSize(sizeof(struct sockaddr_in)), _ConnState(Socket::IDLE)
-				, onReceivedRequest(nullptr), onReceivedData(nullptr), onReceivedConnection(nullptr), onLoseConnection(nullptr) {};
+				, onReceivedRequest(nullptr), onReceivedData(nullptr), onReceivedConnection(nullptr), onLoseConnection(nullptr) {}
 
 			~Imp() = default;
 

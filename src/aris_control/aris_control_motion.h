@@ -10,114 +10,94 @@
 
 namespace aris
 {
-	namespace control
-	{	
-		class EthercatMotion :public EthercatSlave
-		{
-		public:
-			enum Cmd
-			{
-				IDLE = 0,
-				ENABLE,
-				DISABLE,
-				HOME,
-				RUN
-			};
-			enum Mode
-			{
-				POSITION = 0x0008,
-				VELOCITY = 0x0009,
-				CURRENT = 0x0010,
-			};
-			struct RawData
-			{
-				std::int32_t target_pos{ 0 }, feedback_pos{ 0 };
-				std::int32_t target_vel{ 0 }, feedback_vel{ 0 };
-				std::int16_t target_cur{ 0 }, feedback_cur{ 0 };
-				std::uint8_t cmd{ IDLE };
-				std::uint8_t mode{ POSITION };
-				mutable std::int16_t ret{ 0 };
-			};
+    namespace control
+    {
+        struct TxMotionData :public Slave::TxType
+        {
+            double target_pos{ 0 };
+            double target_vel{ 0 };
+            double target_tor{ 0 };
+            double vel_offset{0};
+            double tor_offset{0};
 
-			virtual ~EthercatMotion();
-			EthercatMotion(const aris::core::XmlElement &xml_ele, const aris::core::XmlElement &type_xml_ele);
-			auto hasFault()->bool;
-			auto readFeedback(RawData &data)->void;
-			auto writeCommand(const RawData &data)->void;
-			auto absID()->std::int32_t;
-			auto phyID()->std::int32_t;
-			auto maxPosCount()->std::int32_t;
-			auto minPosCount()->std::int32_t;
-			auto maxVelCount()->std::int32_t;
-			auto pos2countRatio()->std::int32_t;
-			auto setPosOffset(std::int32_t offset)->void;
-			auto posOffset()const->std::int32_t;
+            std::uint8_t cmd{ 0 };
+            std::uint8_t mode{ 8 };
+            std::int8_t home_mode{35};
+        };
+        struct RxMotionData :public Slave::RxType
+        {
+            double feedback_pos{ 0 };
+            double feedback_vel{ 0 };
+            double feedback_tor{ 0 };
+            std::uint8_t cmd{ 0 };
+            std::uint8_t mode{ 8 };
+            std::int8_t fault_warning{0};
+        };
+        class Motion :public SlaveTemplate<TxMotionData, RxMotionData>
+        {
+        public:
+            enum error{
+                SUCCESS=0,
+                EXECUTING=1,
+                EXE_FAULT=2,//the fault accure during executing ,can reset
+                MODE_CHANGE=3,//changing mode
+                NOT_START=4,
 
-		private:
-			class Imp;
-			std::unique_ptr<Imp> imp_;
+                CMD_ERROR=-1,//all motor should disable when the error accure
+                HOME_ERROR=-2,//all motor should halt when the error accure during executing
+                ENABLE_ERROR=-3,//motor change to disable when run
+                MODE_ERROR=-4,//motor change to wrong mode when run
+            };
 
-			friend class EthercatController;
-		};
-		class EthercatForceSensor final:public EthercatSlave
-		{
-		public:
-			struct Data
-			{
-				union
-				{
-					struct { double Fx, Fy, Fz, Mx, My, Mz; };
-					double fce[6];
-				};
-			};
+            enum Cmd
+            {
+                IDLE = 0,
+                ENABLE,
+                DISABLE,
+                HOME,
+                RUN
+            };
+            enum Mode
+            {
+                HOME_MODE = 0x0006,
+                POSITION = 0x0008,
+                VELOCITY = 0x0009,
+                TORQUE = 0x0010,
+            };
 
-			EthercatForceSensor(const aris::core::XmlElement &xml_ele): EthercatSlave(xml_ele){};
-			auto readData(Data &data)->void;
+            virtual ~Motion();
+            static auto Type()->const std::string &{ static const std::string type("motion"); return std::ref(type); }
+            virtual auto type() const->const std::string&{ return Type(); }
+            Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
-		protected:
-			virtual auto init()->void override
-			{
-				this->readSdo(0, force_ratio_);
-				this->readSdo(1, torque_ratio_);
-			};
-			std::int32_t force_ratio_, torque_ratio_;
-		};
+            auto maxPos()->double;
+            auto minPos()->double;
+            auto maxVel()->double;
+            auto pos2countRatio()->std::int32_t;
 
-		class EthercatController :public EthercatMaster
-		{
-		public:
-			struct Data
-			{
-				const std::vector<EthercatMotion::RawData> *last_motion_raw_data;
-				std::vector<EthercatMotion::RawData> *motion_raw_data;
-				std::vector<EthercatForceSensor::Data> *force_sensor_data;
-				const aris::core::MsgRT *msg_recv;
-				aris::core::MsgRT *msg_send;
-			};
+        protected:
+            virtual auto readUpdate()->void override;
+            virtual auto writeUpdate()->void override;
+            virtual auto logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override;
 
-			virtual ~EthercatController();
-			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			virtual auto start()->void;
-			virtual auto stop()->void;
-			auto setControlStrategy(std::function<int(Data&)>)->void;
-			auto motionNum()->std::size_t;
-			auto motionAtAbs(int i)->EthercatMotion &;
-			auto motionAtPhy(int i)->EthercatMotion &;
-			auto forceSensorNum()->std::size_t;
-			auto forceSensorAt(int i)->EthercatForceSensor &;
-			auto msgPipe()->Pipe<aris::core::Msg>&;
+        private:
+            class Imp;
+            std::unique_ptr<Imp> imp_;
+        };
 
-		protected:
-			EthercatController();
-			virtual auto controlStrategy()->void override final;
+        class Controller:public Master
+        {
+        public:
+            auto setControlStrategy(std::function<void()> strategy)->void { strategy_ = strategy; }
+            Controller() { registerChildType<Motion, false, false, false, false>(); }
 
-		private:
-			struct Imp;
-			std::unique_ptr<Imp> imp_;
+        protected:
+            auto controlStrategy()->void override final { if (strategy_)strategy_(); }
 
-			friend class EthercatMaster;
-		};
-	}
+        private:
+            std::function<void()> strategy_{nullptr};
+        };
+    }
 }
 
 #endif

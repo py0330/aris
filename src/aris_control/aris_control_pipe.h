@@ -32,7 +32,7 @@ namespace aris
 		class Pipe:private PipeBase
 		{
 		public:
-			Pipe(bool isBlock = true) :PipeBase(isBlock) {};
+            Pipe(bool isBlock = true) :PipeBase(isBlock) {}
 			auto sendToRT(const StandardLayoutStruct &data)->int
 			{
 				return sendToRTRawData(static_cast<const void*>(&data), sizeof(data));
@@ -90,6 +90,17 @@ namespace aris
 			auto sendToNrt(const aris::core::MsgRT &msg)->int;
 			auto recvInRT(aris::core::MsgRT &msg)->int;
 			auto recvInNrt(aris::core::Msg &msg)->int;
+		};
+
+		template <>
+        class Pipe<void *>:public PipeBase
+		{
+        public:
+            Pipe(bool isBlock = true) :PipeBase(isBlock) {}
+            auto sendToRT(const void *data, std::size_t byte_size)->int { return sendToRTRawData(data, byte_size); }
+            auto sendToNrt(const void *data, std::size_t byte_size)->int { return sendToNrtRawData(data, byte_size); }
+            auto recvInRT(void *data, std::size_t byte_size)->int { return recvInRTRawData(data, byte_size); }
+            auto recvInNrt(void *data, std::size_t byte_size)->int { return recvInNrtRawData(data, byte_size); }
 		};
 	}
 }

@@ -73,36 +73,24 @@ set(XENOMAI_LINK_LIB native rtdm xenomai)
 set(ETHERLAB_INCL_DIR "/opt/etherlab/include")
 set(ETHERLAB_LINK_DIR "/opt/etherlab/lib")
 set(ETHERLAB_LINK_LIB ethercat rt)
-set(XSENS_INCL_DIR "/usr/Aris_Dependent/xsens/include")
-set(XSENS_LINK_LIB xdeviceclass xcommunication xstypes)
-set(XSENS_LINK_DIR "/usr/Aris_Dependent/xsens/lib")
-set(XNNITE_INCL_DIR "/usr/include/nite")#Driver for kinect
-set(XNNITE_LINK_DIR "/usr/lib")
-set(XNNITE_LINK_LIB )
-set(OPENNI_INCL_DIR "/usr/include/ni")#open NI for kinect
-set(OPENNI_LINK_DIR "/usr/lib")
-set(OPENNI_LINK_LIB OpenNI)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 
 
-set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${OPENNI_INCL_DIR} ${XNNITE_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
-set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${OPENNI_LINK_DIR} ${XNNITE_LINK_DIR} ${XSENS_LINK_DIR} ${ETHERLAB_LINK_DIR} ${XENOMAI_LINK_DIR})
-set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${OPENNI_LINK_LIB} ${XNNITE_LINK_LIB} ${XSENS_LINK_LIB} ${ETHERLAB_LINK_LIB} ${XENOMAI_LINK_LIB} ${SYSTEM_LINK_LIB})
+set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
+set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${ETHERLAB_LINK_DIR} ${XENOMAI_LINK_DIR})
+set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${ETHERLAB_LINK_LIB} ${XENOMAI_LINK_LIB} ${SYSTEM_LINK_LIB})
 endif(UNIX)
 if(WIN32)
 set(GENERAL_INCL_DIR "C:/Aris_Dependent")
 set(SYSTEM_LINK_LIB ws2_32 setupapi)#ws2_32 is needed for socket setuaipi is needed for xsens
-set(XSENS_INCL_DIR "C:/Aris_Dependent/xsens/include")
-set(XSENS_LINK_DIR "C:/Aris_Dependent/xsens/lib")
-set(XSENS_LINK_LIB xdeviceclass)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
+set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 
 
-set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
-set(ALL_LINK_DIR ${XSENS_LINK_DIR})
-set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${XSENS_LINK_LIB} ${SYSTEM_LINK_LIB})
+set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
+set(ALL_LINK_DIR )
+set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${SYSTEM_LINK_LIB})
 endif(WIN32)
 
 
@@ -111,7 +99,7 @@ link_directories(${ALL_LINK_DIR})
 
 
 # aris core project
-set(SOURCE aris_core_msg aris_core_socket aris_core_expression_calculator aris_core_msg_loop aris_core_xml tinyxml2)
+set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_expression_calculator aris_core_msg_loop aris_core_xml tinyxml2)
 PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
 PREPEND_H(FULL_H src/aris_core ${SOURCE})
 add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h)
@@ -132,12 +120,7 @@ add_library(aris_dynamic STATIC ${FULL_SRC} ${FULL_H} src/aris_dynamic/aris_dyna
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H} src/aris_dynamic/aris_dynamic.h)
 
 # aris sensor project
-if(UNIX)
-set(SOURCE aris_sensor_base aris_sensor_imu aris_sensor_vision)
-endif(UNIX)
-if(WIN32)
-set(SOURCE aris_sensor_base aris_sensor_imu)
-endif(WIN32)
+set(SOURCE aris_sensor_base)
 PREPEND_CPP(FULL_SRC src/aris_sensor ${SOURCE})
 PREPEND_H(FULL_H src/aris_sensor ${SOURCE})
 add_library(aris_sensor STATIC ${FULL_SRC} ${FULL_H} src/aris_sensor/aris_sensor.h)
@@ -154,12 +137,33 @@ set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H})
 ################################### build tests for aris ####################################
 enable_testing()
 
-add_executable(test_DynKer test/test_DynKer.cpp)
-target_link_libraries(test_DynKer ${ALL_LINK_LIB})
-add_test(NAME test_DynKer COMMAND test_DynKer)
-set_tests_properties (test_DynKer PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+set(SOURCE_FILES main.cpp test_dynamic_kernel.h test_dynamic_kernel.cpp test_dynamic_model.h test_dynamic_model.cpp)
+PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
+add_executable(test_dynamic ${FULL_SRC})
+target_link_libraries(test_dynamic ${ALL_LINK_LIB})
+add_test(NAME test_dynamic COMMAND test_dynamic)
+set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
+set(SOURCE_FILES main.cpp test_core_xml.h test_core_xml.cpp test_core_command.h test_core_command.cpp)
+PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
+add_executable(test_core ${FULL_SRC})
+target_link_libraries(test_core ${ALL_LINK_LIB})
+add_test(NAME test_core COMMAND test_core)
+set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
+set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp test_control_motion.h test_control_motion.cpp)
+PREPEND(FULL_SRC test/test_control ${SOURCE_FILES})
+add_executable(test_control ${FULL_SRC})
+target_link_libraries(test_control ${ALL_LINK_LIB})
+add_test(NAME test_control COMMAND test_control)
+set_tests_properties (test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+
+set(SOURCE_FILES main.cpp test_control_server.h test_control_server.cpp)
+PREPEND(FULL_SRC test/test_control_server ${SOURCE_FILES})
+add_executable(test_control_server ${FULL_SRC})
+target_link_libraries(test_control_server ${ALL_LINK_LIB})
+add_test(NAME test_control_server COMMAND test_control_server)
+set_tests_properties (test_control_server PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 
 ################################### build demos for aris ####################################
@@ -202,6 +206,16 @@ PREPEND(FULL_SRC demo/demo_Aris_Sensor/demo_Sensor ${SOURCE_FILES})
 add_executable(demo_Sensor ${FULL_SRC})
 target_link_libraries(demo_Sensor ${ALL_LINK_LIB})
 
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Server ${SOURCE_FILES})
+add_executable(demo_Server ${FULL_SRC})
+target_link_libraries(demo_Server ${ALL_LINK_LIB})
+
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Client ${SOURCE_FILES})
+add_executable(demo_Client ${FULL_SRC})
+target_link_libraries(demo_Client ${ALL_LINK_LIB})
+
 endif(MAKE_DEMO)
 
 
@@ -226,7 +240,9 @@ endif(WIN32)
 install(DIRECTORY sh DESTINATION .)
 install(TARGETS aris_core aris_dynamic aris_sensor aris_control aris_server ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} src/aris.h DESTINATION include)
+install(FILES doc/Robot_III.xml DESTINATION resource/)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
+
 
 ############################################ uninstall aris ############################################
 if(UNIX)

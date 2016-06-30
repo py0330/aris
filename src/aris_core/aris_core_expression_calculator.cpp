@@ -6,14 +6,84 @@
 #include <algorithm>
 #include <regex>
 
-#include <Eigen/Eigen>
-
 #include "aris_core_expression_calculator.h"
+
+#include "aris_dynamic_kernel.h"
 
 namespace aris
 {
 	namespace core
 	{
+		auto s_mdm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx = i*lda;
+				for (int j = 0; j < n; ++j)
+				{
+					int idx = i*ldc + j;
+
+					C[idx] = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						C[idx] += A[row_idx + u] * B[j + u*ldb];
+					}
+				}
+			}
+		}
+		auto s_mdmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					int idx = i*ldc + j;
+
+					C[idx] = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						C[idx] += A[i + u*lda] * B[j + u*ldb];
+					}
+				}
+			}
+		}
+		auto s_mdmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				int row_idx = i*lda;
+				for (int j = 0; j < n; ++j)
+				{
+					int col_idx = j*ldb;
+
+					int idx = i*ldc + j;
+
+					C[idx] = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						C[idx] += A[row_idx + u] * B[col_idx + u];
+					}
+				}
+			}
+		}
+		auto s_mdmTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					int col_idx = j*ldb;
+					int idx = i*ldc + j;
+
+					C[idx] = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						C[idx] += A[i + u*lda] * B[col_idx + u];
+					}
+				}
+			}
+		}
+		
 		Matrix::Matrix(std::size_t m, std::size_t n, double value) : m_(m), n_(n), is_row_major_(true), data_vec_(m*n, value)
 		{
 		}
@@ -77,7 +147,7 @@ namespace aris
 			is_row_major_ = !is_row_major_;
 			std::swap(m_, n_);
 			return *this;
-		};
+		}
 		auto Matrix::copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol, std::size_t rowNum, std::size_t colNum)->void
 		{
 			if ((beginRow + subMat.m() > m()) || (beginCol + subMat.n() > n()))
@@ -113,7 +183,7 @@ namespace aris
 			stream << "}";
 
 			return stream.str();
-		};
+		}
 		
 		Matrix operator + (const Matrix &m1, const Matrix &m2)
 		{
@@ -226,38 +296,22 @@ namespace aris
 				{
 					if (m2.is_row_major_)
 					{
-						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m1Eigen(m1.data(), m1.m(), m1.n());
-						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m2Eigen(m2.data(), m2.m(), m2.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
-
-						retEigen = m1Eigen*m2Eigen;
+						aris::core::s_mdm(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 					}
 					else
 					{
-						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m1Eigen(m1.data(), m1.m(), m1.n());
-						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m2Eigen(m2.data(), m2.m(), m2.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
-
-						retEigen = m1Eigen*m2Eigen;
+						aris::core::s_mdmNT(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 					}
 				}
 				else
 				{
 					if (m2.is_row_major_)
 					{
-						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m1Eigen(m1.data(), m1.m(), m1.n());
-						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > m2Eigen(m2.data(), m2.m(), m2.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
-
-						retEigen = m1Eigen*m2Eigen;
+						aris::core::s_mdmTN(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 					}
 					else
 					{
-						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m1Eigen(m1.data(), m1.m(), m1.n());
-						Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > m2Eigen(m2.data(), m2.m(), m2.n());
-						Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > retEigen(ret.data(), ret.m(), ret.n());
-
-						retEigen = m1Eigen*m2Eigen;
+						aris::core::s_mdmTT(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 					}
 				}
 
@@ -346,7 +400,7 @@ namespace aris
 				}
 			}
 			return ret;
-		};
+		}
 		
 		Calculator::TokenVec Calculator::Expression2Tokens(const std::string &expression)const
 		{
@@ -613,7 +667,7 @@ namespace aris
 			{
 				std::string exp{ "\\$\\{" + var.first + "\\}" };
 				
-				std::regex var_rex{ exp};
+				std::regex var_rex{ exp };
 				ret = std::regex_replace(ret, var_rex, var.second);
 			}
 			
@@ -649,8 +703,7 @@ namespace aris
 			}
 			
 			function_map_[name].AddOverloadFun(n, f);
-		};
-
+		}
 	}
 
 }

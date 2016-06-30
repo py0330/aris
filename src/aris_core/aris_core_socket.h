@@ -17,16 +17,6 @@ namespace aris
 		class Socket final
 		{
 		public:
-			/** \brief 构造函数
-			*
-			*
-			*/
-			Socket();
-			/** \brief 析构函数
-			*
-			*
-			*/
-			~Socket();
 			/** \brief 查看Socket是否处于连接状态
 			*
 			*
@@ -85,7 +75,16 @@ namespace aris
 			* \param 为形如void(Socket*)的函数。在Socket自己的内部线程中执行。
 			*/
 			auto setOnReceiveError(std::function<void(Socket*)> = nullptr)->void;
-
+			/** \brief 构造函数
+			*
+			*
+			*/
+			Socket();
+			/** \brief 析构函数
+			*
+			*
+			*/
+			~Socket();
 		public:
 			enum State
 			{
@@ -110,7 +109,7 @@ namespace aris
 				Socket *socket_;
 				int id_;
 			private:
-				ConnectError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
+				ConnectError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {}
 				friend class Socket;
 			};
 			class SendDataError :public std::runtime_error
@@ -119,7 +118,7 @@ namespace aris
 				Socket *socket_;
 				int id_;
 			private:
-				SendDataError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
+				SendDataError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {}
 				friend class Socket;
 			};
 			class SendRequestError :public std::runtime_error
@@ -128,7 +127,7 @@ namespace aris
 				Socket *socket_;
 				int id_;
 			private:
-				SendRequestError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {};
+				SendRequestError(const char* what, Socket *socket, int id) : runtime_error(what), socket_(socket), id_(id) {}
 				friend class Socket;
 			};
 
