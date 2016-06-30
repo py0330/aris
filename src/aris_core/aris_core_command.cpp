@@ -18,9 +18,10 @@ namespace aris
 		{ 
 			bool is_taken_{ false };
 		};
-		auto ParamBase::command()const->const Command &{
+		auto ParamBase::command()const->const Command &
+		{
 			if (dynamic_cast<const Command *>(&father()))
-			return static_cast<const Command &>(father());
+				return static_cast<const Command &>(father());
 			else if (dynamic_cast<const ParamBase *>(&father()))
 				return static_cast<const ParamBase &>(father()).command();
 			else
@@ -57,6 +58,7 @@ namespace aris
 			char abbreviation_{ 0 };
 			std::string default_value_{ "" };
 		};
+		auto Param::defaultParam()const->const std::string &{ return imp_->default_value_; }
 		auto Param::take()->void {
 			if (isTaken())throw std::runtime_error("parse command error: command \"" + command().name() + "\"'s param \"" + name() + "\" has been set more than once");
 			ParamBase::take();
@@ -78,6 +80,7 @@ namespace aris
 		{
 			std::string default_value_{ "" };
 		};
+		auto UniqueParam::defaultParam()const->const std::string &{ return imp_->default_value_; }
 		auto UniqueParam::take()->void 
 		{
 			if (isTaken())throw std::runtime_error("parse command error: command \"" + command().name() + "\"'s UNIQUE param \"" + name() + "\" has been set more than once");
@@ -110,6 +113,7 @@ namespace aris
 			std::map<std::string, Param*> param_map_;
 			std::map<char, std::string> abbreviation_map_;
 		};
+		auto Command::defaultParam()const->const std::string &{ return imp_->default_value_; }
 		auto Command::reset()->void 
 		{ 
 			imp_->is_taken_ = false;
