@@ -16,6 +16,7 @@ namespace aris
 		{
 		public:
 			auto command()const->const Command &;
+			
 			ParamBase(Object &father, std::size_t id, const std::string &name);
 			ParamBase(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
@@ -37,6 +38,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("param"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto abbreviation()->char;
+			auto defaultParam()const->const std::string &;
 			Param(Object &father, std::size_t id, const std::string &name);
 			Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
@@ -56,6 +58,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("unique"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			auto defaultParam()const->const std::string &;
 			UniqueParam(Object &father, std::size_t id, const std::string &name);
 			UniqueParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 			
@@ -87,6 +90,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("command"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			auto defaultParam()const->const std::string &;
 			~Command();
 			Command(Object &father, std::size_t id, const std::string &name);
 			Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
