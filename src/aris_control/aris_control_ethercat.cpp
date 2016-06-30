@@ -1,3 +1,7 @@
+
+
+
+
 #ifdef WIN32
 #include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
 #endif
@@ -63,6 +67,7 @@ namespace aris
 			aris::core::ObjectPool<PdoGroup, Element> *pdo_group_pool_;
 			aris::core::ObjectPool<Sdo, Element> *sdo_pool_;
 			std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
+            std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
 
 			Slave *slave_;
 			RxType rx_data_;
@@ -94,6 +99,8 @@ namespace aris
 			
 					mst.imp_->sync(rt_timer_read());
 					mst.imp_->write();//motor data write and state machine/mode transition
+
+                    mst.imp_->logToNrt();//sent data to nrt
 				}
 			#endif
 			};
@@ -118,8 +125,60 @@ namespace aris
 					sla.imp_->write();
 				}
 				ecrt_master_send(ec_master_); 
-			};
-			auto sync(uint64_t ns)->void
+            }
+
+            auto logToNrt()->void
+            {
+                std::size_t size_count=0;
+                for(std::size_t i=0;i<slave_pool_->size();i++)
+                {
+                    auto &sla=slave_pool_->at(i);
+                    auto tx_data=reinterpret_cast<char *>(&tx_data_pool_.at(i));
+                    auto rx_data=reinterpret_cast<char *>(&rx_data_pool_.at(i));
+                    std::copy(tx_data,tx_data+sla.txTypeSize(),sent_data_.get()+size_count);
+                    size_count=size_count+sla.txTypeSize();
+                    std::copy(rx_data,rx_data+sla.rxTypeSize(),sent_data_.get()+size_count);
+                    size_count=size_count+sla.rxTypeSize();
+                }
+                record_pipe_->sendToNrt(sent_data_.get(),data_size_);
+            }
+            auto logToFile()->void
+            {
+                if(!record_thread_.joinable())
+                record_thread_ = std::thread([this]()
+                {
+                    static std::fstream file;
+                    std::string name = aris::core::logFileName();
+                    name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
+                    file.open(name.c_str(), std::ios::out | std::ios::trunc);
+
+                    long long count = -1;
+                    std::unique_ptr<char[]> txdata;
+                    std::unique_ptr<char[]> rxdata;
+					std::unique_ptr<char[]> receive_data(new char [data_size_]);
+                    while (!is_stopping_)
+                    {
+                        record_pipe_->recvInNrt(receive_data.get(),data_size_);
+
+                        file << ++count << " ";
+
+                        std::size_t size_count=0;
+                        for (auto &sla : *slave_pool_)
+                        {
+							sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
+								, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+							
+							file << " ";
+
+							size_count += sla.txTypeSize() + sla.rxTypeSize();
+                        }
+                        file << std::endl;
+                    }
+                    file.close();
+                });
+            }
+
+            auto sync(uint64_t ns)->void
 			{
 				ecrt_master_application_time(ec_master_, ns);
 				ecrt_master_sync_reference_clock(ec_master_);
@@ -136,6 +195,12 @@ namespace aris
 			ec_master_t* ec_master_;
 			const int sample_period_ns_ = 1000000;
 
+            //for log
+            std::size_t data_size_{0};
+            std::unique_ptr<char[]> sent_data_;
+            std::unique_ptr<Pipe<void *>> record_pipe_;
+            std::thread record_thread_;
+
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
 #ifdef UNIX
@@ -149,8 +214,8 @@ namespace aris
 		auto Element::master()->Master &{return static_cast<Master &>(root());}
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
 
-		auto DO::slave()->Slave& { return *slave_; };
-		auto DO::slave()const->const Slave&{ return *slave_; };
+        auto DO::slave()->Slave& { return *slave_; }
+        auto DO::slave()const->const Slave&{ return *slave_; }
 
 		auto Pdo::read(std::int32_t &value)const->void
 		{
@@ -239,9 +304,9 @@ namespace aris
 				std::int8_t config_value_int8_;
 			};
 		};
-		auto Sdo::readable()const->bool { return static_cast<bool>(imp_->option_ & READ); }
-		auto Sdo::writeable()const->bool { return static_cast<bool>(imp_->option_ & WRITE); }
-		auto Sdo::configurable()const->bool { return static_cast<bool>(imp_->option_ & CONFIG); }
+		auto Sdo::readable()const->bool { return (imp_->option_ & READ) != 0; }
+		auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
+		auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0; }
 		auto Sdo::option()const->unsigned { return imp_->option_; }
 		auto Sdo::getConfigValue(std::int32_t &value)const->void
 		{
@@ -625,7 +690,7 @@ namespace aris
 		{
 			pdoGroupPool().at(pdo_group_id).at(pdo_id).write(value);
 		}
-		auto Slave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
+        auto Slave::readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
 		{
 			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
 			readPdo(id_pair.first, id_pair.second, value);
@@ -685,7 +750,7 @@ namespace aris
 			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
 			writePdo(id_pair.first, id_pair.second, value);
 		}
-		auto Slave::readSdoConfig(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value);}
+        auto Slave::readSdoConfig(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value);}
 		auto Slave::readSdoConfig(int sdoID, std::int16_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
 		auto Slave::readSdoConfig(int sdoID, std::int32_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
 		auto Slave::readSdoConfig(int sdoID, std::uint8_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
@@ -697,7 +762,67 @@ namespace aris
 		auto Slave::configSdo(int sdoID, std::uint8_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }
 		auto Slave::configSdo(int sdoID, std::uint16_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }
 		auto Slave::configSdo(int sdoID, std::uint32_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }
-		auto Slave::readSdo(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).read(value); }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::readSdoConfigIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdoConfig(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            configSdo(sdo_ID, value);
+        }
+        auto Slave::readSdo(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).read(value); }
 		auto Slave::readSdo(int sdoID, std::int16_t &value) const->void { sdoPool().at(sdoID).read(value); }
 		auto Slave::readSdo(int sdoID, std::int32_t &value) const->void { sdoPool().at(sdoID).read(value); }
 		auto Slave::readSdo(int sdoID, std::uint8_t &value) const->void { sdoPool().at(sdoID).read(value); }
@@ -709,6 +834,67 @@ namespace aris
 		auto Slave::writeSdo(int sdoID, std::uint8_t value)->void { sdoPool().at(sdoID).write(value); }
 		auto Slave::writeSdo(int sdoID, std::uint16_t value)->void { sdoPool().at(sdoID).write(value); }
 		auto Slave::writeSdo(int sdoID, std::uint32_t value)->void { sdoPool().at(sdoID).write(value); }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            readSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+        auto Slave::writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void
+        {
+            int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
+            writeSdo(sdo_ID, value);
+        }
+
 		Slave::~Slave() {}
 		Slave::Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(this))
 		{
@@ -755,6 +941,22 @@ namespace aris
 					}
 				}
 			}
+
+            /// make SDO map ///
+            for (int i = 0; i < static_cast<int>(sdoPool().size()); ++i)
+            {
+                auto &sdo= sdoPool().at(i);
+                if (imp_->sdo_map_.find(sdo.index_) != imp_->sdo_map_.end())
+                {
+                    imp_->sdo_map_.at(sdo.index_).insert(std::make_pair(sdo.subindex_, i));
+                }
+                else
+                {
+                    std::map<std::uint8_t, int > subindex_map;
+                    subindex_map.insert(std::make_pair(sdo.subindex_, i));
+                    imp_->sdo_map_.insert(std::make_pair(sdo.index_, subindex_map));
+                }
+            }
 
 			/// create ecrt structs  ///
 			for (auto &pdo_group : pdoGroupPool())
@@ -827,7 +1029,11 @@ namespace aris
 				slave.init();
 				txDataPool().push_back_ptr(&slave.txData());
 				rxDataPool().push_back_ptr(&slave.rxData());
+                imp_->data_size_= imp_->data_size_+slave.txTypeSize();
+                imp_->data_size_= imp_->data_size_+slave.rxTypeSize();
 			}
+            imp_->sent_data_.reset(new char[imp_->data_size_]);
+            imp_->record_pipe_.reset(new Pipe<void *>());
 
 			ecrt_master_activate(imp_->ec_master_);
 
@@ -836,6 +1042,7 @@ namespace aris
 				slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
 			}
 
+            imp_->logToFile();
 			/// init end ///
 			rt_print_auto_init(1);
 			const int priority = 99;

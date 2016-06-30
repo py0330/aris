@@ -73,36 +73,24 @@ set(XENOMAI_LINK_LIB native rtdm xenomai)
 set(ETHERLAB_INCL_DIR "/opt/etherlab/include")
 set(ETHERLAB_LINK_DIR "/opt/etherlab/lib")
 set(ETHERLAB_LINK_LIB ethercat rt)
-set(XSENS_INCL_DIR "/usr/Aris_Dependent/xsens/include")
-set(XSENS_LINK_LIB xdeviceclass xcommunication xstypes)
-set(XSENS_LINK_DIR "/usr/Aris_Dependent/xsens/lib")
-set(XNNITE_INCL_DIR "/usr/include/nite")#Driver for kinect
-set(XNNITE_LINK_DIR "/usr/lib")
-set(XNNITE_LINK_LIB )
-set(OPENNI_INCL_DIR "/usr/include/ni")#open NI for kinect
-set(OPENNI_LINK_DIR "/usr/lib")
-set(OPENNI_LINK_LIB OpenNI)
 set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 
 
-set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${OPENNI_INCL_DIR} ${XNNITE_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
-set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${OPENNI_LINK_DIR} ${XNNITE_LINK_DIR} ${XSENS_LINK_DIR} ${ETHERLAB_LINK_DIR} ${XENOMAI_LINK_DIR})
-set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${OPENNI_LINK_LIB} ${XNNITE_LINK_LIB} ${XSENS_LINK_LIB} ${ETHERLAB_LINK_LIB} ${XENOMAI_LINK_LIB} ${SYSTEM_LINK_LIB})
+set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
+set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${ETHERLAB_LINK_DIR} ${XENOMAI_LINK_DIR})
+set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${ETHERLAB_LINK_LIB} ${XENOMAI_LINK_LIB} ${SYSTEM_LINK_LIB})
 endif(UNIX)
 if(WIN32)
 set(GENERAL_INCL_DIR "C:/Aris_Dependent")
 set(SYSTEM_LINK_LIB ws2_32 setupapi)#ws2_32 is needed for socket setuaipi is needed for xsens
-set(XSENS_INCL_DIR "C:/Aris_Dependent/xsens/include")
-set(XSENS_LINK_DIR "C:/Aris_Dependent/xsens/lib")
-set(XSENS_LINK_LIB xdeviceclass)
 set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 
 
-set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
-set(ALL_LINK_DIR ${XSENS_LINK_DIR})
-set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${XSENS_LINK_LIB} ${SYSTEM_LINK_LIB})
+set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
+set(ALL_LINK_DIR )
+set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${SYSTEM_LINK_LIB})
 endif(WIN32)
 
 
@@ -218,6 +206,16 @@ PREPEND(FULL_SRC demo/demo_Aris_Sensor/demo_Sensor ${SOURCE_FILES})
 add_executable(demo_Sensor ${FULL_SRC})
 target_link_libraries(demo_Sensor ${ALL_LINK_LIB})
 
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Server ${SOURCE_FILES})
+add_executable(demo_Server ${FULL_SRC})
+target_link_libraries(demo_Server ${ALL_LINK_LIB})
+
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Client ${SOURCE_FILES})
+add_executable(demo_Client ${FULL_SRC})
+target_link_libraries(demo_Client ${ALL_LINK_LIB})
+
 endif(MAKE_DEMO)
 
 
@@ -242,7 +240,9 @@ endif(WIN32)
 install(DIRECTORY sh DESTINATION .)
 install(TARGETS aris_core aris_dynamic aris_sensor aris_control aris_server ARCHIVE DESTINATION lib)
 install(FILES ${INCLUDE_HEADER_FILES} src/aris.h DESTINATION include)
+install(FILES doc/Robot_III.xml DESTINATION resource/)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
+
 
 ############################################ uninstall aris ############################################
 if(UNIX)

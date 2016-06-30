@@ -3098,15 +3098,15 @@ namespace aris
 				for (int j = 0; j < n; ++j)
 				{
 					int idx = i*ldc + j;
-					C[idx] *= beta;
-
-					double addFactor = 0;
+					
+					double add_factor = 0;
 					for (int u = 0; u < k; ++u)
 					{
-						addFactor +=  A[row_idx + u] * B[j + u*ldb];
+						add_factor +=  A[row_idx + u] * B[j + u*ldb];
 					}
 					
-					C[idx] += alpha *addFactor;
+					C[idx] *= beta;
+					C[idx] += alpha *add_factor;
 				}
 			}
 		}
@@ -3133,15 +3133,15 @@ namespace aris
 				for (int j = 0; j < n; ++j)
 				{
 					int idx = i*ldc + j;
-					C[idx] *= beta;
-
-					double addFactor = 0;
+	
+					double add_factor = 0;
 					for (int u = 0; u < k; ++u)
 					{
-						addFactor += A[i + u*lda] * B[j + u*ldb];
+						add_factor += A[i + u*lda] * B[j + u*ldb];
 					}
 
-					C[idx] += alpha *addFactor;
+					C[idx] *= beta;
+					C[idx] += alpha *add_factor;
 				}
 			}
 		}
@@ -3152,14 +3152,14 @@ namespace aris
 				int row_idx = i*lda;
 				for (int j = 0; j < n; ++j)
 				{
-					int colIndex = j*ldb;
+					int col_idx = j*ldb;
 
 					int idx = i*ldc + j;
 					
 					C[idx] = 0;
 					for (int u = 0; u < k; ++u)
 					{
-						C[idx] += A[row_idx + u] * B[colIndex + u];
+						C[idx] += A[row_idx + u] * B[col_idx + u];
 					}
 				}
 			}
@@ -3171,18 +3171,54 @@ namespace aris
 				int row_idx = i*lda;
 				for (int j = 0; j < n; ++j)
 				{
-					int colIndex = j*ldb;
-					
+					int col_idx = j*ldb;
 					int idx = i*ldc + j;
-					C[idx] *= beta;
-
-					double addFactor = 0;
+					
+					double add_factor{ 0 };
 					for (int u = 0; u < k; ++u)
 					{
-						addFactor += A[row_idx + u] * B[colIndex + u];
+						add_factor += A[row_idx + u] * B[col_idx + u];
 					}
 
-					C[idx] += alpha *addFactor;
+					C[idx] *= beta;
+					C[idx] += alpha * add_factor;
+				}
+			}
+		}
+		auto s_mdmTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					int col_idx = j*ldb;
+					int idx = i*ldc + j;
+
+					C[idx] = 0;
+					for (int u = 0; u < k; ++u)
+					{
+						C[idx] += A[i + u*lda] * B[col_idx + u];
+					}
+				}
+			}
+		}
+		auto s_mdmTT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
+		{
+			for (int i = 0; i < m; ++i)
+			{
+				for (int j = 0; j < n; ++j)
+				{
+					int col_idx = j*ldb;
+					int idx = i*ldc + j;
+
+					double add_factor{ 0 };
+					for (int u = 0; u < k; ++u)
+					{
+						add_factor += A[i + u*lda] * B[col_idx + u];
+					}
+
+					C[idx] *= beta;
+					C[idx] += alpha * add_factor;
 				}
 			}
 		}

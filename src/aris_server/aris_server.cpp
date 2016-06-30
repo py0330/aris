@@ -11,6 +11,8 @@
 
 #include <cstring>
 #include <thread>
+#include <algorithm>
+#include <memory>
 
 #include "aris_core.h"
 #include "aris_control.h"
@@ -19,413 +21,26 @@
 namespace aris
 {
 	namespace server
-	{
-		class Node
-		{
-		public:
-			Node* AddChildGroup(const char *Name);
-			Node* AddChildUnique(const char *Name);
-			Node* AddChildParam(const char *Name);
-			Node* FindChild(const char *Name)
-			{
-				auto result = std::find_if(children.begin(), children.end(), [Name](std::unique_ptr<Node> &node)
-				{
-					return (!std::strcmp(node->name.c_str(), Name));
-				});
-
-				if (result != children.end())
-				{
-					return result->get();
-				}
-				else
-				{
-					return nullptr;
-				}
-			}
-
-			bool IsTaken() { return isTaken; };
-			void Take();
-			void Reset()
-			{
-				this->isTaken = false;
-				for (auto &child : children)
-				{
-					child->Reset();
-				}
-			}
-
-		public:
-			Node(Node*father, const char *Name) :name(Name) { this->father = father; }
-			virtual ~Node() {}
-
-		private:
-			std::string name;
-			Node* father;
-			std::vector<std::unique_ptr<Node> > children;
-
-			bool isTaken{ false };
-
-			friend void AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
-			friend void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params);
-		};
-		class RootNode :public Node
-		{
-		public:
-			RootNode(const char *Name) :Node(nullptr, Name) {}
-
-		private:
-			Node *pDefault;
-
-			friend void AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
-			friend void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params);
-		};
-		class GroupNode :public Node
-		{
-		public:
-			GroupNode(Node*father, const char *Name) :Node(father, Name) {}
-		};
-		class UniqueNode :public Node
-		{
-		public:
-			UniqueNode(Node*father, const char *Name) :Node(father, Name) {};
-
-		private:
-			Node *pDefault;
-
-			friend void AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
-			friend void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params);
-		};
-		class ParamNode :public Node
-		{
-		public:
-			ParamNode(Node*father, const char *Name) :Node(father, Name) {};
-		private:
-			std::string type;
-			std::string defaultValue;
-			std::string minValue, maxValue;
-
-			friend void AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames);
-			friend void AddAllDefault(Node *pNode, std::map<std::string, std::string> &params);
-		};
-
-		Node* Node::AddChildGroup(const char *Name)
-		{
-			this->children.push_back(std::unique_ptr<Node>(new GroupNode(this, Name)));
-			return children.back().get();
-		};
-		Node* Node::AddChildUnique(const char *Name)
-		{
-			this->children.push_back(std::unique_ptr<Node>(new UniqueNode(this, Name)));
-			return children.back().get();
-		}
-		Node* Node::AddChildParam(const char *Name)
-		{
-			this->children.push_back(std::unique_ptr<Node>(new ParamNode(this, Name)));
-			return children.back().get();
-		}
-		auto Node::Take()->void
-		{
-			if (dynamic_cast<RootNode*>(this))
-			{
-				if (this->isTaken)
-				{
-					throw std::logic_error(std::string("Param ") + this->name + " has been inputed twice");
-				}
-				else
-				{
-					this->isTaken = true;
-					return;
-				}
-			}
-			else if (dynamic_cast<GroupNode*>(this))
-			{
-				if (this->isTaken)
-				{
-					return;
-				}
-				else
-				{
-					this->isTaken = true;
-					father->Take();
-				}
-			}
-			else
-			{
-				if (this->isTaken)
-				{
-					throw std::logic_error(std::string("Param ") + this->name + " has been inputed twice");
-				}
-				else
-				{
-					this->isTaken = true;
-					father->Take();
-				}
-			}
-		}
-
-		auto AddAllParams(const aris::core::XmlElement *pEle, Node *pNode, std::map<std::string, Node *> &allParams, std::map<char, std::string>& shortNames)->void
-		{
-			//add all children//
-			for (auto pChild = pEle->FirstChildElement(); pChild != nullptr; pChild = pChild->NextSiblingElement())
-			{
-				//check if children already has this value//
-				if (pNode->FindChild(pChild->name()))
-				{
-					throw std::runtime_error(std::string("XML file has error: node \"") + pChild->name() + "\" already exist");
-				}
-
-				//set all children//
-				if (pChild->Attribute("type", "group"))
-				{
-					AddAllParams(pChild, pNode->AddChildGroup(pChild->name()), allParams, shortNames);
-				}
-				else if (pChild->Attribute("type", "unique"))
-				{
-					AddAllParams(pChild, pNode->AddChildUnique(pChild->name()), allParams, shortNames);
-				}
-				else
-				{
-					//now the pChild is a param_node//
-					Node * insertNode;
-
-					if (allParams.find(std::string(pChild->name())) != allParams.end())
-					{
-						throw std::runtime_error(std::string("XML file has error: node \"") + pChild->name() + "\" already exist");
-					}
-					else
-					{
-						insertNode = pNode->AddChildParam(pChild->name());
-						allParams.insert(std::pair<std::string, Node *>(std::string(pChild->name()), insertNode));
-					}
-
-					/*set abbreviation*/
-					if (pChild->Attribute("abbreviation"))
-					{
-						if (shortNames.find(*pChild->Attribute("abbreviation")) != shortNames.end())
-						{
-							throw std::runtime_error(std::string("XML file has error: abbreviation \"") + pChild->Attribute("abbreviation") + "\" already exist");
-						}
-						else
-						{
-							char abbr = *pChild->Attribute("abbreviation");
-							shortNames.insert(std::pair<char, std::string>(abbr, std::string(pChild->name())));
-						}
-					}
-
-					/*set values*/
-					if (pChild->Attribute("type"))
-					{
-						dynamic_cast<ParamNode*>(insertNode)->type = std::string(pChild->Attribute("type"));
-					}
-					else
-					{
-						dynamic_cast<ParamNode*>(insertNode)->type = "";
-					}
-
-					if (pChild->Attribute("default"))
-					{
-						dynamic_cast<ParamNode*>(insertNode)->defaultValue = std::string(pChild->Attribute("default"));
-					}
-					else
-					{
-						dynamic_cast<ParamNode*>(insertNode)->defaultValue = "";
-					}
-
-					if (pChild->Attribute("maxValue"))
-					{
-						dynamic_cast<ParamNode*>(insertNode)->maxValue = std::string(pChild->Attribute("maxValue"));
-					}
-					else
-					{
-						dynamic_cast<ParamNode*>(insertNode)->maxValue = "";
-					}
-
-					if (pChild->Attribute("minValue"))
-					{
-						dynamic_cast<ParamNode*>(insertNode)->minValue = std::string(pChild->Attribute("minValue"));
-					}
-					else
-					{
-						dynamic_cast<ParamNode*>(insertNode)->minValue = "";
-					}
-				}
-			}
-
-			/*set all values*/
-			if (dynamic_cast<RootNode*>(pNode))
-			{
-				if (pEle->Attribute("default"))
-				{
-					if (pNode->FindChild(pEle->Attribute("default")))
-					{
-						dynamic_cast<RootNode*>(pNode)->pDefault = pNode->FindChild(pEle->Attribute("default"));
-					}
-					else
-					{
-						throw std::logic_error(std::string("XML file has error: \"") + pNode->name + "\" can't find default param");
-					}
-				}
-				else
-				{
-					dynamic_cast<RootNode*>(pNode)->pDefault = nullptr;
-				}
-			}
-
-			if (dynamic_cast<UniqueNode*>(pNode))
-			{
-				if (pEle->Attribute("default"))
-				{
-					if (pNode->FindChild(pEle->Attribute("default")))
-					{
-						dynamic_cast<UniqueNode*>(pNode)->pDefault = pNode->FindChild(pEle->Attribute("default"));
-					}
-					else
-					{
-						throw std::logic_error(std::string("XML file has error: \"") + pNode->name + "\" can't find default param");
-					}
-				}
-				else
-				{
-					if (pNode->children.empty())
-					{
-						throw std::logic_error(std::string("XML file has error: unique node \"") + pNode->name + "\" must have more than 1 child");
-					}
-					else
-					{
-						dynamic_cast<UniqueNode*>(pNode)->pDefault = nullptr;
-					}
-				}
-			}
-		}
-		auto AddAllDefault(Node *pNode, std::map<std::string, std::string> &params)->void
-		{
-			if (pNode->isTaken)
-			{
-				if (dynamic_cast<RootNode*>(pNode))
-				{
-					auto found = find_if(pNode->children.begin(), pNode->children.end(), [](std::unique_ptr<Node> &a)
-					{
-						return a->isTaken;
-					});
-
-					AddAllDefault(found->get(), params);
-				}
-
-				if (dynamic_cast<UniqueNode*>(pNode))
-				{
-					auto found = find_if(pNode->children.begin(), pNode->children.end(), [](std::unique_ptr<Node> &a)
-					{
-						return a->isTaken;
-					});
-
-					AddAllDefault(found->get(), params);
-				}
-
-				if (dynamic_cast<GroupNode*>(pNode))
-				{
-					for (auto &i : pNode->children)	AddAllDefault(i.get(), params);
-				}
-
-				if (dynamic_cast<ParamNode*>(pNode))
-				{
-					if (params.at(pNode->name) == "")params.at(pNode->name) = dynamic_cast<ParamNode*>(pNode)->defaultValue;
-
-					return;
-				}
-			}
-			else
-			{
-				if (dynamic_cast<RootNode*>(pNode))
-				{
-					if (!pNode->children.empty())
-					{
-						if ((dynamic_cast<RootNode*>(pNode)->pDefault))
-						{
-							AddAllDefault(dynamic_cast<RootNode*>(pNode)->pDefault, params);
-						}
-						else
-						{
-							throw std::logic_error(std::string("cmd \"") + pNode->name + "\" has no default param");
-						}
-					}
-
-					pNode->isTaken = true;
-				}
-
-				if (dynamic_cast<UniqueNode*>(pNode))
-				{
-					if (!pNode->children.empty())
-					{
-						if (dynamic_cast<UniqueNode*>(pNode)->pDefault)
-						{
-							AddAllDefault(dynamic_cast<UniqueNode*>(pNode)->pDefault, params);
-						}
-						else
-						{
-							throw std::logic_error(std::string("param \"") + pNode->name + "\" has no default sub-param");
-						}
-					}
-
-					pNode->isTaken = true;
-				}
-
-				if (dynamic_cast<GroupNode*>(pNode))
-				{
-					for (auto &i : pNode->children)
-					{
-						AddAllDefault(i.get(), params);
-					}
-
-
-					pNode->isTaken = true;
-				}
-
-				if (dynamic_cast<ParamNode*>(pNode))
-				{
-					params.insert(make_pair(pNode->name, dynamic_cast<ParamNode*>(pNode)->defaultValue));
-					pNode->isTaken = true;
-				}
-			}
-		}
-
-		struct CommandStruct
-		{
-			std::unique_ptr<RootNode> root;
-			std::map<std::string, Node *> allParams{};
-			std::map<char, std::string> shortNames{};
-
-			CommandStruct(const std::string &name) :root(new RootNode(name.c_str())) {}
-		};
-
+    {
 		class ControlServer::Imp
 		{
 		public:
-			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void;
 			auto start()->void;
 			auto stop()->void;
-
 			auto onReceiveMsg(const aris::core::Msg &msg)->aris::core::Msg;
-			auto decodeMsg2Param(const aris::core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void;
 			auto sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void;
 
-			auto motionAtPhy(std::size_t id)->aris::control::Motion&;
-			auto motionAtAbs(std::size_t id)->aris::control::Motion&;
 			auto tg()->void;
-			auto checkError()->int;
+            auto checkError()->int;
+            auto checkMotionStatus()->void;
 			auto executeCmd()->int;
 			auto enable()->int;
 			auto disable()->int;
 			auto home()->int;
 			auto run()->int;
+			auto onRunError()->int;
 
-			/*auto run(GaitParamBase &param, aris::control::EthercatController::Data &data)->int;
-			auto execute_cmd(int count, char *cmd, aris::control::EthercatController::Data &data)->int;
-			auto enable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
-			auto disable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
-			auto home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;
-			auto fake_home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int;*/
-
-			Imp(ControlServer *server) :server_(server) {}
+            Imp(ControlServer *server) :server_(server) {}
 			Imp(const Imp&) = delete;
 
 		private:
@@ -449,38 +64,20 @@ namespace aris
 			char cmd_queue_[CMD_POOL_SIZE][aris::core::MsgRT::RT_MSG_LENGTH];
 			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 0 };
 
+			// 储存上一次slave的数据 //
+			std::vector<std::unique_ptr<aris::control::Slave::TxType> > last_data_vec_tx_;
+			std::vector<std::unique_ptr<aris::control::Slave::RxType> > last_data_vec_rx_;
+
 			// 以下储存所有的命令 //
 			std::map<std::string, int> cmd_id_map_;//store gait id in follow vector
 			std::vector<dynamic::PlanFunc> plan_vec_;// store plan func
 			std::vector<ParseFunc> parser_vec_; // store parse func
-			std::map<std::string, std::unique_ptr<CommandStruct> > cmd_struct_map_;//store Node of command
 
 			// 储存特殊命令的parse_func //
-			ParseFunc parse_enable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
-			{
-				BasicFunctionParam param;
-				param.cmd_type = Imp::RobotCmdID::ENABLE;
-				std::fill_n(param.active_motor, this->model_->motionPool().size(), true);
-				msg.copyStruct(param);
-			} };
-			ParseFunc parse_disable_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
-			{
-				BasicFunctionParam param;
-				param.cmd_type = Imp::RobotCmdID::DISABLE;
-				std::fill_n(param.active_motor, this->model_->motionPool().size(), true);
-				msg.copyStruct(param);
-			} };
-			ParseFunc parse_home_func_{ [this](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
-			{
-				BasicFunctionParam param;
-				param.cmd_type = Imp::RobotCmdID::HOME;
-				std::fill_n(param.active_motor, this->model_->motionPool().size(), true);
-				msg.copyStruct(param);
-			} };
-
-			std::vector<std::size_t> map_abs2phy_;
-			std::vector<std::size_t> map_phy2abs_;
-
+			static auto defaultBasicParse(const ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
+			ParseFunc parse_enable_func_ = defaultBasicParse;
+			ParseFunc parse_disable_func_ = defaultBasicParse;
+			ParseFunc parse_home_func_ = defaultBasicParse;
 
 			// pipe //
 			aris::control::Pipe<aris::core::Msg> msg_pipe_;
@@ -489,55 +86,29 @@ namespace aris
 			aris::core::Socket server_socket_;
 			std::string server_socket_ip_, server_socket_port_;
 
-			// 储存模型、控制器和传感器 //
+            // 储存模型、控制器和传感器 command parser //
 			std::unique_ptr<aris::dynamic::Model> model_;
 			std::unique_ptr<aris::sensor::SensorRoot> sensor_root_;
 			std::unique_ptr<aris::control::Controller> controller_;
+            aris::core::CommandParser parser_;
 
 			// 结束时的callback //
 			std::function<void(void)> on_exit_callback_{nullptr};
 
 			friend class ControlServer;
 		};
-
-		auto ControlServer::Imp::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void
-		{
-			if (cmd_name == "en")
-			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for \"en\" command");
-				this->parse_enable_func_ = parse_func;
-			}
-			else if (cmd_name == "ds")
-			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for \"ds\" command");
-				this->parse_disable_func_ = parse_func;
-			}
-			else if (cmd_name == "hm")
-			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for \"hm\" command");
-				this->parse_home_func_ = parse_func;
-			}
-			else
-			{
-				if (cmd_id_map_.find(cmd_name) != cmd_id_map_.end())
-				{
-					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
-				}
-				else
-				{
-					plan_vec_.push_back(gait_func);
-					parser_vec_.push_back(parse_func);
-
-					cmd_id_map_.insert(std::make_pair(cmd_name, plan_vec_.size() - 1));
-
-					std::cout << cmd_name << ":" << cmd_id_map_.at(cmd_name) << std::endl;
-				}
-			}
-		}
 		auto ControlServer::Imp::start()->void
 		{
 			if (!is_running_)
 			{
+				last_data_vec_tx_.clear();
+				last_data_vec_rx_.clear();
+				for (auto &sla : controller_->slavePool())
+				{
+					last_data_vec_tx_.push_back(std::unique_ptr<aris::control::Slave::TxType>(reinterpret_cast<aris::control::Slave::TxType*>(new char[sla.txTypeSize()])));
+					last_data_vec_rx_.push_back(std::unique_ptr<aris::control::Slave::RxType>(reinterpret_cast<aris::control::Slave::RxType*>(new char[sla.rxTypeSize()])));
+				}
+				
 				is_running_ = true;
 				controller_->start();
 				sensor_root_->start();
@@ -556,11 +127,43 @@ namespace aris
 		{
 			try
 			{
-				std::string cmd;
-				std::map<std::string, std::string> params;
+                std::string cmd;
+                std::map<std::string, std::string> params;
+				if (msg.data()[msg.size() - 1] != '\0')
+				{
+					throw std::runtime_error(std::string("invaild command message:command message must be terminated by CHAR \"0\""));
+				}
 
-				decodeMsg2Param(msg, cmd, params);
-				
+				try
+				{
+					std::string input{ msg.data() };
+					parser_.parse(input, cmd, params);
+
+					std::cout << cmd << std::endl;
+					int paramPrintLength;
+					if (params.empty())
+					{
+						paramPrintLength = 2;
+					}
+					else
+					{
+						paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
+						{
+							return a.first.length() < b.first.length();
+						})->first.length() + 2;
+					}
+					for (auto &i : params)
+					{
+						std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
+					}
+
+					std::cout << std::endl;
+				}
+				catch (std::exception &e)
+				{
+					std::cout << e.what() << std::endl << std::endl;
+				}
+
 				if (cmd == "start")
 				{
 					if (is_running_)throw std::runtime_error("server already started, thus ignore command \"start\"");
@@ -609,185 +212,27 @@ namespace aris
 				return error_msg;
 			}
 		}
-		auto ControlServer::Imp::decodeMsg2Param(const aris::core::Msg &msg, std::string &cmd, std::map<std::string, std::string> &params)->void
-		{
-			std::vector<std::string> paramVector;
-			int paramNum{ 0 };
-
-			/// 将msg转换成cmd和一系列参数，不过这里的参数为原生字符串，既包括名称也包含值，例如“-heigt=0.5” ///
-			if (msg.data()[msg.size() - 1] == '\0')
-			{
-				std::string input{ msg.data() };
-				std::stringstream inputStream{ input };
-				std::string word;
-
-				if (!(inputStream >> cmd))
-				{
-					throw std::runtime_error(aris::core::log("invalid message from client, please at least contain a word"));
-				};
-				aris::core::log(std::string("received command string:") + msg.data());
-
-				while (inputStream >> word)
-				{
-					paramVector.push_back(word);
-					++paramNum;
-				}
-			}
-			else
-			{
-				throw std::runtime_error(aris::core::log("invalid message from client, please be sure that the command message end with char \'\\0\'"));
-			}
-
-			if (cmd_struct_map_.find(cmd) != cmd_struct_map_.end())
-			{
-				cmd_struct_map_.at(cmd)->root->Reset();
-			}
-			else
-			{
-				throw std::runtime_error(aris::core::log(std::string("invalid command name, server does not have command \"") + cmd + "\""));
-			}
-
-			for (int i = 0; i<paramNum; ++i)
-			{
-				std::string str{ paramVector[i] };
-				std::string paramName, paramValue;
-				if (str.find("=") == std::string::npos)
-				{
-					paramName = str;
-					paramValue = "";
-				}
-				else
-				{
-					paramName.assign(str, 0, str.find("="));
-					paramValue.assign(str, str.find("=") + 1, str.size() - str.find("="));
-				}
-
-				if (paramName.size() == 0)
-					throw std::runtime_error("invalid param: what the hell, param should not start with '='");
-
-				/*not start with '-'*/
-				if (paramName.data()[0] != '-')
-				{
-					if (paramValue != "")
-					{
-						throw std::runtime_error("invalid param: only param start with - or -- can be assigned a value");
-					}
-
-					for (auto c : paramName)
-					{
-						if (cmd_struct_map_.at(cmd)->shortNames.find(c) != cmd_struct_map_.at(cmd)->shortNames.end())
-						{
-							params.insert(make_pair(cmd_struct_map_.at(cmd)->shortNames.at(c), paramValue));
-							cmd_struct_map_.at(cmd)->allParams.at(cmd_struct_map_.at(cmd)->shortNames.at(c))->Take();
-						}
-						else
-						{
-							throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
-						}
-					}
-
-					continue;
-				}
-
-				/*all following part start with at least one '-'*/
-				if (paramName.size() == 1)
-				{
-					throw std::runtime_error("invalid param: symbol \"-\" must be followed by an abbreviation of param");
-				}
-
-				/*start with '-', but only one '-'*/
-				if (paramName.data()[1] != '-')
-				{
-					if (paramName.size() != 2)
-					{
-						throw std::runtime_error("invalid param: param start with single '-' must be an abbreviation");
-					}
-
-					char c = paramName.data()[1];
-
-					if (cmd_struct_map_.at(cmd)->shortNames.find(c) != cmd_struct_map_.at(cmd)->shortNames.end())
-					{
-						params.insert(make_pair(cmd_struct_map_.at(cmd)->shortNames.at(c), paramValue));
-						cmd_struct_map_.at(cmd)->allParams.at(cmd_struct_map_.at(cmd)->shortNames.at(c))->Take();
-					}
-					else
-					{
-						throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
-					}
-
-					continue;
-				}
-				else
-				{
-					/*start with '--'*/
-					if (paramName.size()<3)
-					{
-						throw std::runtime_error("invalid param: symbol \"--\" must be followed by a full name of param");
-					}
-
-					std::string str = paramName;
-					paramName.assign(str, 2, str.size() - 2);
-
-					if (cmd_struct_map_.at(cmd)->allParams.find(paramName) != cmd_struct_map_.at(cmd)->allParams.end())
-					{
-						params.insert(make_pair(paramName, paramValue));
-						cmd_struct_map_.at(cmd)->allParams.at(paramName)->Take();
-					}
-					else
-					{
-						throw std::runtime_error(std::string("invalid param: param \"") + paramName + "\" is not a valid param");
-					}
-
-
-
-					continue;
-				}
-			}
-
-			AddAllDefault(cmd_struct_map_.at(cmd)->root.get(), params);
-
-			std::cout << cmd << std::endl;
-
-			int paramPrintLength;
-			if (params.empty())
-			{
-				paramPrintLength = 2;
-			}
-			else
-			{
-				paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
-				{
-					return a.first.length() < b.first.length();
-				})->first.length() + 2;
-			}
-
-			int maxParamNameLength{ 0 };
-			for (auto &i : params)
-			{
-				std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
-			}
-		}
 		auto ControlServer::Imp::sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void
 		{
 			aris::core::Msg cmd_msg;
 
 			if (cmd == "en")
 			{
-				parse_enable_func_(cmd, params, cmd_msg);
+				parse_enable_func_(*server_, cmd, params, cmd_msg);
 				if (cmd_msg.size() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function for en");
-				reinterpret_cast<BasicFunctionParam *>(cmd_msg.data())->cmd_type = ControlServer::Imp::ENABLE;
+				reinterpret_cast<BasicFunctionParam *>(cmd_msg.data())->cmd_type_ = ControlServer::Imp::ENABLE;
 			}
 			else if (cmd == "ds")
 			{
-				parse_disable_func_(cmd, params, cmd_msg);
+				parse_disable_func_(*server_, cmd, params, cmd_msg);
 				if (cmd_msg.size() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function for ds");
-				reinterpret_cast<BasicFunctionParam *>(cmd_msg.data())->cmd_type = ControlServer::Imp::DISABLE;
+				reinterpret_cast<BasicFunctionParam *>(cmd_msg.data())->cmd_type_ = ControlServer::Imp::DISABLE;
 			}
 			else if (cmd == "hm")
 			{
-				parse_home_func_(cmd, params, cmd_msg);
+				parse_home_func_(*server_, cmd, params, cmd_msg);
 				if (cmd_msg.size() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function for hm");
-				reinterpret_cast<BasicFunctionParam *>(cmd_msg.data())->cmd_type = ControlServer::Imp::HOME;
+				reinterpret_cast<BasicFunctionParam *>(cmd_msg.data())->cmd_type_ = ControlServer::Imp::HOME;
 			}
 			else
 			{
@@ -798,15 +243,15 @@ namespace aris
 					throw std::runtime_error(std::string("command \"") + cmd + "\" does not have gait function, please AddCmd() first");
 				}
 
-				this->parser_vec_.at(cmdPair->second).operator()(cmd, params, cmd_msg);
+				this->parser_vec_.at(cmdPair->second).operator()(*server_, cmd, params, cmd_msg);
 
 				if (cmd_msg.size() < sizeof(GaitParamBase))
 				{
 					throw std::runtime_error(std::string("parse function of command \"") + cmdPair->first + "\" failed: because it returned invalid cmd_msg");
 				}
 
-				reinterpret_cast<GaitParamBase *>(cmd_msg.data())->cmd_type = RUN_GAIT;
-				reinterpret_cast<GaitParamBase *>(cmd_msg.data())->gait_id = cmdPair->second;
+				reinterpret_cast<GaitParamBase *>(cmd_msg.data())->cmd_type_ = RUN_GAIT;
+				reinterpret_cast<GaitParamBase *>(cmd_msg.data())->gait_id_ = cmdPair->second;
 
 				if (plan_vec_.at(cmdPair->second) == nullptr) return;
 			}
@@ -814,68 +259,69 @@ namespace aris
 			cmd_msg.setMsgID(0);
 			msg_pipe_.sendToRT(cmd_msg);
 		}
-		
-		auto ControlServer::Imp::motionAtPhy(std::size_t id)->aris::control::Motion&
-		{
-			return static_cast<aris::control::Motion&>(controller_->slavePool().at(id));
-		}
-		auto ControlServer::Imp::motionAtAbs(std::size_t id)->aris::control::Motion&
-		{
-			return static_cast<aris::control::Motion&>(controller_->slavePool().at(map_abs2phy_.at(id)));
-		}
 		auto ControlServer::Imp::tg()->void
-		{
+        {
 			// 检查是否出错 //
-			if (checkError())return;
+            if (checkError())return;
+            //checkMotionStatus();
 
 			// 查看是否有新cmd //
-			if (msg_pipe_.recvInRT(aris::core::MsgRT::instance[0]) > 0)
+            if (msg_pipe_.recvInRT(aris::core::MsgRT::instance[0]) > 0)
 			{
-				if (cmd_num_ >= CMD_POOL_SIZE)
+                if (cmd_num_ >= CMD_POOL_SIZE)
 				{
 					rt_printf("cmd pool is full, thus ignore last command\n");
 				}
 				else
 				{
-					aris::core::MsgRT::instance[0].paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
-					++cmd_num_;
+                    aris::core::MsgRT::instance[0].paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
+                    ++cmd_num_;
 				}
 			}
 			
 			// 执行cmd queue中的cmd //
-			if (cmd_num_ > 0)
+            if (cmd_num_ > 0)
 			{
 				if (executeCmd())
 				{
-					if (++count_ % 1000 == 0)rt_printf("execute cmd in count: %d\n", count_);
+                    if (++count_ % 1000 == 0)rt_printf("execute cmd in count: %d\n", count_);
 				}
 				else
 				{
-					rt_printf("cmd finished, spend %d counts\n\n", count_ + 1);
-					count_ = 0;
-					current_cmd_ = (current_cmd_ + 1) % CMD_POOL_SIZE;
-					--cmd_num_;
+                    rt_printf("cmd finished, spend %d counts\n\n", count_ + 1);
+                    count_ = 0;
+                    current_cmd_ = (current_cmd_ + 1) % CMD_POOL_SIZE;
+                    --cmd_num_;
 				}
+            }
+
+			// 储存上次的slave数据 //
+			for (std::size_t i = 0; i < controller_->slavePool().size(); ++i)
+			{
+				controller_->slavePool().at(i).getTxData(std::ref(*last_data_vec_tx_.at(i)));
+				controller_->slavePool().at(i).getRxData(std::ref(*last_data_vec_rx_.at(i)));
 			}
 		}
 		auto ControlServer::Imp::checkError()->int
 		{
 			static int fault_count = 0;
 			
-			if (fault_count || std::find_if(server_->controller().slavePool().begin(), server_->controller().slavePool().end(), [](const aris::control::Slave &slave) {return slave.rxData().ret < 0; }) != server_->controller().slavePool().end())
+            if (fault_count || std::find_if(controller_->slavePool().begin(), controller_->slavePool().end(), [](const aris::control::Slave &slave) {return slave.rxData().ret < 0; }) != controller_->slavePool().end())
 			{
 				if (fault_count++ % 1000 == 0)
 				{
-					for (auto &slave : server_->controller().slavePool())rt_printf("%d ", slave.rxData().ret);
+                    rt_printf("ret of physic ethercat ring using SLA sequence are: ");
+                    for (auto &slave : controller_->slavePool())rt_printf("%d ", slave.rxData().ret);
 					rt_printf("\n");
 					rt_printf("Some slave is in fault, now try to disable all motors\n");
 					rt_printf("All commands in command queue are discarded\n");
 				}
 
-				/*for (auto &mot_data : *data.motion_raw_data)
-				{
-				mot_data.cmd = aris::control::EthercatMotion::DISABLE;
-				}*/
+                for(std::size_t i=0; i<model_->motionPool().size();i++)
+                {
+                    std::size_t slaID=model_->motionPool().at(i).slaID();
+                    static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID)).cmd= aris::control::Motion::DISABLE;
+                }
 
 				cmd_num_ = 0;
 				count_ = 0;
@@ -887,13 +333,35 @@ namespace aris
 
 			return fault_count;
 		}
+        auto ControlServer::Imp::checkMotionStatus()->void
+        {
+            for (auto &motion : model_->motionPool())
+            {
+                auto &rx_motion_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(motion.slaID()));
+                if(rx_motion_data.fault_warning==0)
+                    continue;
+                else
+                {
+                    rt_printf("Motor %d (sla id) has wrong status:%d\n", motion.slaID(), rx_motion_data.fault_warning);
+                    rt_printf("The status using ABS sequence are:\n");
+                    for (auto &motion : model_->motionPool())
+                    {
+                        auto &rx_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(motion.slaID()));
+                        rt_printf("%d\t", rx_data.fault_warning);
+                    }
+                    rt_printf("\n");
+                    return;
+                }
+            }
+
+        }
+
 		auto ControlServer::Imp::executeCmd()->int
 		{
-			int ret;
 			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_queue_[current_cmd_]);
-			param->count = count_;
+			param->count_ = count_;
 
-			switch (param->cmd_type)
+			switch (param->cmd_type_)
 			{
 			case ENABLE:
 				return enable();
@@ -907,339 +375,252 @@ namespace aris
 				rt_printf("unknown cmd type\n");
 				return 0;
 			}
-
-			return ret;
 		}
 		auto ControlServer::Imp::enable()->int 
 		{
+			BasicFunctionParam *param = reinterpret_cast<BasicFunctionParam *>(cmd_queue_[current_cmd_]);
+
 			bool is_all_enabled = true;
+            for(std::size_t i=0; i<model_->motionPool().size();i++)
+            {
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                if(param->active_motor_[i])
+                {
+                    auto &tx_motion_data=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                    auto &rx_motion_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+                    //判断是否已经Enable了
+                    if ((param->count_ != 0) && (rx_motion_data.ret == 0))
+                    {
+                        // 判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值
+                        if (tx_motion_data.cmd == aris::control::Motion::ENABLE)
+                        {
+							tx_motion_data.cmd = aris::control::Motion::RUN;
+							tx_motion_data.mode = aris::control::Motion::POSITION;
+							tx_motion_data.target_pos = rx_motion_data.feedback_pos;
+							tx_motion_data.target_vel = 0;
+							tx_motion_data.target_tor = 0;
+                        }
+                    }
+                    else
+                    {
+                        is_all_enabled = false;
+						tx_motion_data.cmd = aris::control::Motion::ENABLE;
+						tx_motion_data.mode = aris::control::Motion::POSITION;
 
-			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_queue_[current_cmd_]);
-
-			//for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			//{
-			//	if (param.active_motor[i])
-			//	{
-			//		// 判断是否已经Enable了 //
-			//		if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
-			//		{
-			//			// 判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值 //
-			//			if (data.motion_raw_data->operator[](i).cmd == aris::control::EthercatMotion::ENABLE)
-			//			{
-			//				data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
-			//				data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
-			//				data.motion_raw_data->operator[](i).target_pos = data.motion_raw_data->operator[](i).feedback_pos;
-			//				data.motion_raw_data->operator[](i).target_vel = 0;
-			//				data.motion_raw_data->operator[](i).target_cur = 0;
-			//			}
-			//		}
-			//		else
-			//		{
-			//			is_all_enabled = false;
-			//			data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::ENABLE;
-			//			data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
-
-			//			if (param.count % 1000 == 0)
-			//			{
-			//				rt_printf("Unenabled motor, physical id: %d, absolute id: %d\n", this->controller_->motionAtAbs(i).phyID(), i);
-			//			}
-			//		}
-			//	}
-			//}
-
+                        if (param->count_ % 1000 == 0)
+                        {
+                            rt_printf("Unenabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i, rx_motion_data.ret);
+                        }
+                    }
+                }
+            }
 			return is_all_enabled ? 0 : 1;
-		};
-		auto ControlServer::Imp::disable()->int { return 0; };
-		auto ControlServer::Imp::home()->int { return 0; };
-		auto ControlServer::Imp::run()->int { return 0; };
-		
-		
-		/*auto ControlServer::Imp::execute_cmd(int count, char *cmd_param, aris::control::EthercatController::Data &data)->int
-		{
-			int ret;
-			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_param);
-			param->count = count;
-
-			switch (param->cmd_type)
-			{
-			case ENABLE:
-				ret = enable(static_cast<BasicFunctionParam &>(*param), data);
-				break;
-			case DISABLE:
-				ret = disable(static_cast<BasicFunctionParam &>(*param), data);
-				break;
-			case HOME:
-				ret = home(static_cast<BasicFunctionParam &>(*param), data);
-				break;
-			case FAKE_HOME:
-				ret = fake_home(static_cast<BasicFunctionParam &>(*param), data);
-				break;
-			case RUN_GAIT:
-				ret = run(static_cast<GaitParamBase &>(*param), data);
-				break;
-			default:
-				rt_printf("unknown cmd type\n");
-				ret = 0;
-				break;
-			}
-
-			return ret;
-		}
-		auto ControlServer::Imp::enable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
-		{
-			bool is_all_enabled = true;
-
-			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			{
-				if (param.active_motor[i])
-				{
-					// 判断是否已经Enable了 //
-					if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
-					{
-						// 判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值 //
-						if (data.motion_raw_data->operator[](i).cmd == aris::control::EthercatMotion::ENABLE)
-						{
-							data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
-							data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
-							data.motion_raw_data->operator[](i).target_pos = data.motion_raw_data->operator[](i).feedback_pos;
-							data.motion_raw_data->operator[](i).target_vel = 0;
-							data.motion_raw_data->operator[](i).target_cur = 0;
-						}
-					}
-					else
-					{
-						is_all_enabled = false;
-						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::ENABLE;
-						data.motion_raw_data->operator[](i).mode = aris::control::EthercatMotion::POSITION;
-
-						if (param.count % 1000 == 0)
-						{
-							rt_printf("Unenabled motor, physical id: %d, absolute id: %d\n", this->controller_->motionAtAbs(i).phyID(), i);
-						}
-					}
-				}
-			}
-
-			return is_all_enabled ? 0 : 1;
-		}
-		auto ControlServer::Imp::disable(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
-		{
+        }
+        auto ControlServer::Imp::disable()->int
+        {
+			BasicFunctionParam *param = reinterpret_cast<BasicFunctionParam *>(cmd_queue_[current_cmd_]);
+			
 			bool is_all_disabled = true;
+            for(std::size_t i=0; i<model_->motionPool().size();i++)
+            {
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                if(param->active_motor_[i])
+                {
+					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+					auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+                    //判断是否已经Disable了
+                    if ((param->count_ != 0) && (rx_motion_data.ret == 0))
+                    {
+                        // 如果已经disable了，那么什么都不做
+                    }
+                    else
+                    {
+                        // 否则往下刷disable指令
+                        is_all_disabled = false;
+						tx_motion_data.cmd = aris::control::Motion::DISABLE;
 
-			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			{
-				if (param.active_motor[i])
-				{
-					// 判断是否已经Disabled了 //
-					if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
-					{
-						// 如果已经disable了，那么什么都不做 //
-					}
-					else
-					{
-						// 否则往下刷disable指令 //
-						is_all_disabled = false;
-						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::DISABLE;
-
-						if (param.count % 1000 == 0)
-						{
-							rt_printf("Undisabled motor, physical id: %d, absolute id: %d\n", this->controller_->motionAtAbs(i).phyID(), i);
-						}
-					}
-				}
-			}
-
-			return is_all_disabled ? 0 : 1;
-		}
-		auto ControlServer::Imp::home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
-		{
+                        if (param->count_ % 1000 == 0)
+                        {
+                            rt_printf("Undisabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i, rx_motion_data.ret);
+                        }
+                    }
+                }
+            }
+            return is_all_disabled ? 0 : 1;
+        }
+        auto ControlServer::Imp::home()->int
+        {
+			BasicFunctionParam *param = reinterpret_cast<BasicFunctionParam *>(cmd_queue_[current_cmd_]);
+			
 			bool is_all_homed = true;
+            for(std::size_t i=0; i<model_->motionPool().size();i++)
+            {
+                std::size_t slaID=model_->motionPool().at(i).slaID();
+                if(param->active_motor_[i])
+                {
+                    auto &txmotiondata=static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
+                    auto &rxmotiondata=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+                    // 根据返回值来判断是否走到home了
+                    if ((param->count_ != 0) && (rxmotiondata.ret == 0))
+                    {
+                        // 判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值
+                        if (txmotiondata.cmd == aris::control::Motion::HOME)
+                        {
+                            txmotiondata.cmd = aris::control::Motion::RUN;
+                            txmotiondata.target_pos = rxmotiondata.feedback_pos;
+                            txmotiondata.target_vel = 0;
+                            txmotiondata.target_tor = 0;
+                        }
+                    }
+                    else
+                    {
+                        is_all_homed = false;
+                        txmotiondata.cmd = aris::control::Motion::HOME;
 
-			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
+                        if (param->count_ % 1000 == 0)
+                        {
+                            rt_printf("Unhomeed motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
+                        }
+                    }
+                }
+            }
+            return is_all_homed ? 0 : 1;
+        }
+        auto ControlServer::Imp::run()->int
+        {
+            GaitParamBase *param = reinterpret_cast<GaitParamBase *>(cmd_queue_[current_cmd_]);
+			param->cs_ = server_;
+
+            // 执行gait函数 //
+            int ret = this->plan_vec_.at(param->gait_id_).operator()(*model_.get(), *param);
+
+            // 向下写入输入位置 //
+			for (std::size_t i = 0; i<model_->motionPool().size(); ++i)
 			{
-				if (param.active_motor[i])
+				std::size_t sla_id = model_->motionPool().at(i).slaID();
+                if (param->active_motor_[i])
 				{
-					// 将电机的偏置置为0 //
-					controller_->motionAtAbs(i).setPosOffset(0);
-					
-					// 根据返回值来判断是否走到home了 //
-					if ((param.count != 0) && (data.motion_raw_data->operator[](i).ret == 0))
-					{
-						// 判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值 //
-						if (data.motion_raw_data->operator[](i).cmd == aris::control::EthercatMotion::HOME)
-						{
-							data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
-							data.motion_raw_data->operator[](i).target_pos = data.motion_raw_data->operator[](i).feedback_pos;
-							data.motion_raw_data->operator[](i).target_vel = 0;
-							data.motion_raw_data->operator[](i).target_cur = 0;
-						}
-					}
-					else
-					{
-						is_all_homed = false;
-						data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::HOME;
-
-						if (param.count % 1000 == 0)
-						{
-							rt_printf("Unhomed motor, physical id: %d, absolute id: %d\n", this->controller_->motionAtAbs(i).phyID(), i);
-						}
-					}
+					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(sla_id));
+					tx_motion_data.cmd = aris::control::Motion::RUN;
+					tx_motion_data.target_pos = model_->motionPool().at(i).motPos();
+                    //tx_motion_data.vel_offset = model_->motionPool().at(i).motVel();
 				}
 			}
 
-			return is_all_homed ? 0 : 1;
-		}
-		auto ControlServer::Imp::fake_home(const BasicFunctionParam &param, aris::control::EthercatController::Data &data)->int
+            // 检查电机命令是否超限 //
+            for (std::size_t i = 0; i<model_->motionPool().size()&&param->active_motor_[i]; ++i)
+            {
+				std::size_t abs_id = model_->motionPool().at(i).absID();
+				std::size_t sla_id = model_->motionPool().at(i).slaID();
+				std::size_t phy_id = model_->motionPool().at(i).phyID();
+				auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(sla_id));
+                auto &last_tx_motion_data = static_cast<aris::control::TxMotionData&>(*last_data_vec_tx_.at(sla_id));
+				auto &control_motion=static_cast<aris::control::Motion&>(controller_->slavePool().at(sla_id));
+                
+				if (tx_motion_data.cmd == aris::control::Motion::RUN && param->active_motor_[sla_id])
+                {
+                    // check max pos //
+					if (param->if_check_pos_max_ && (tx_motion_data.target_pos > control_motion.maxPos()))
+                    {
+						rt_printf("Motor %d %d %d (abs phy and sla id) target position is bigger than its MAX permitted value in count:%d\n", abs_id, phy_id, sla_id, count_);
+						rt_printf("The min, max and current count using ABS sequence are:\n");
+						for (auto &motion : model_->motionPool())
+						{
+							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));
+							rt_printf("%lf   %lf   %lf\n", control_motion.minPos(), control_motion.maxPos(), control_motion.txData().target_pos);
+						}
+						onRunError();
+						return 0;
+                    }
+
+					// check min pos //
+                    if (param->if_check_pos_min_ && (tx_motion_data.target_pos < control_motion.minPos()))
+                    {
+                        rt_printf("Motor %d %d %d (abs phy and sla id) target position is smaller than its MIN permitted value in count:%d\n", abs_id, phy_id, sla_id, count_);
+						rt_printf("The min, max and current count using ABS sequence are:\n");
+						for (auto &motion : model_->motionPool())
+						{
+							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));
+							rt_printf("%lf   %lf   %lf\n", control_motion.minPos(), control_motion.maxPos(), control_motion.txData().target_pos);
+						}
+						onRunError();
+                        return 0;
+                    }
+
+					// check pos continuous //
+                    if (param->if_check_pos_continuous_ && (std::abs(tx_motion_data.target_pos - last_tx_motion_data.target_pos)>0.0012*control_motion.maxVel()))
+                    {
+                        rt_printf("Motor %d %d %d (abs phy and sla id) target position is not continuous in count:%d\n", abs_id, phy_id, sla_id, count_);
+						rt_printf("The pin of last and this count using ABS sequence are:\n");
+						for (auto &motion : model_->motionPool())
+						{
+							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));
+							rt_printf("%lf   %lf\n", last_tx_motion_data.target_pos, tx_motion_data.target_pos);
+						}
+						onRunError();
+						return 0;
+                    }
+                }
+            }
+
+            return ret;
+        }
+		auto ControlServer::Imp::onRunError()->int
 		{
-			for (std::size_t i = 0; i < model_->motionPool().size(); ++i)
+			
+			rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
+			cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
+			count_ = 0;
+
+			// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+			for (std::size_t i = 0; i < controller_->txDataPool().size(); ++i)
 			{
-				model_->motionPool().at(i).update();
-				
-				controller_->motionAtAbs(i).setPosOffset(static_cast<std::int32_t>(controller_->motionAtAbs(i).posOffset() +
-					model_->motionPool().at(i).motPos()*controller_->motionAtAbs(i).pos2countRatio() - data.motion_raw_data->at(i).feedback_pos
-					));
+				controller_->slavePool().at(i).setTxData(*last_data_vec_tx_.at(i));
 			}
-
-			rt_printf("feedback:\n%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"
-				, data.motion_raw_data->at(0).feedback_pos
-				, data.motion_raw_data->at(1).feedback_pos
-				, data.motion_raw_data->at(2).feedback_pos
-				, data.motion_raw_data->at(3).feedback_pos
-				, data.motion_raw_data->at(4).feedback_pos
-				, data.motion_raw_data->at(5).feedback_pos
-				, data.motion_raw_data->at(6).feedback_pos
-				, data.motion_raw_data->at(7).feedback_pos
-				, data.motion_raw_data->at(8).feedback_pos
-				, data.motion_raw_data->at(9).feedback_pos
-				, data.motion_raw_data->at(10).feedback_pos
-				, data.motion_raw_data->at(11).feedback_pos
-				, data.motion_raw_data->at(12).feedback_pos
-				, data.motion_raw_data->at(13).feedback_pos
-				, data.motion_raw_data->at(14).feedback_pos
-				, data.motion_raw_data->at(15).feedback_pos
-				, data.motion_raw_data->at(16).feedback_pos
-				, data.motion_raw_data->at(17).feedback_pos);
-
-			rt_printf("pos_offset:\n%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"
-				, controller_->motionAtAbs(0).posOffset()
-				, controller_->motionAtAbs(1).posOffset()
-				, controller_->motionAtAbs(2).posOffset()
-				, controller_->motionAtAbs(3).posOffset()
-				, controller_->motionAtAbs(4).posOffset()
-				, controller_->motionAtAbs(5).posOffset()
-				, controller_->motionAtAbs(6).posOffset()
-				, controller_->motionAtAbs(7).posOffset()
-				, controller_->motionAtAbs(8).posOffset()
-				, controller_->motionAtAbs(9).posOffset()
-				, controller_->motionAtAbs(10).posOffset()
-				, controller_->motionAtAbs(11).posOffset()
-				, controller_->motionAtAbs(12).posOffset()
-				, controller_->motionAtAbs(13).posOffset()
-				, controller_->motionAtAbs(14).posOffset()
-				, controller_->motionAtAbs(15).posOffset()
-				, controller_->motionAtAbs(16).posOffset()
-				, controller_->motionAtAbs(17).posOffset());
 
 			return 0;
+
 		}
-		auto ControlServer::Imp::run(GaitParamBase &param, aris::control::EthercatController::Data &data)->int
+		auto ControlServer::Imp::defaultBasicParse(const ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 		{
-			static ControlServer::Imp *imp_ = ControlServer::instance().imp_.get();
-			
-			// 获取陀螺仪传感器数据 //
-			//aris::sensor::SensorData<aris::sensor::ImuData> imuDataProtected;
-			//if (imu_) imuDataProtected = imu_->getSensorData();
-			//param.imu_data = &imuDataProtected.get();
+			BasicFunctionParam param;
 
-			// 获取力传感器数据与电机数据 //
-			param.force_data = data.force_sensor_data;
-			param.motion_raw_data = data.motion_raw_data;
-			param.last_motion_raw_data = data.last_motion_raw_data;
-			param.motion_feedback_pos = &this->motion_pos_;
-
-			for (std::size_t i = 0; i < data.motion_raw_data->size(); ++i)
+			for (auto &i : params)
 			{
-				this->motion_pos_[i] = static_cast<double>(data.motion_raw_data->at(i).feedback_pos) / controller_->motionAtAbs(i).pos2countRatio();
-			}
-
-			// 执行gait函数 //
-			int ret = this->plan_vec_.at(param.gait_id).operator()(*model_.get(), param);
-
-			// 向下写入输入位置 //
-			for (std::size_t i = 0; i < controller_->motionNum(); ++i)
-			{
-				if (param.active_motor[i])
+				if (i.first == "all")
 				{
-					data.motion_raw_data->operator[](i).cmd = aris::control::EthercatMotion::RUN;
-					data.motion_raw_data->operator[](i).target_pos = static_cast<std::int32_t>(model_->motionPool().at(i).motPos() * controller_->motionAtAbs(i).pos2countRatio());
+					std::fill(param.active_motor_, param.active_motor_ + MAX_MOTOR_NUM, true);
+				}
+				else if (i.first == "motion_id")
+				{
+					std::size_t id{ std::stoul(i.second) };
+					if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+					std::fill(param.active_motor_, param.active_motor_ + MAX_MOTOR_NUM, false);
+					param.active_motor_[cs.model().motionAtAbs(id).absID()] = true;
+				}
+				else if (i.first == "physical_id")
+				{
+					std::size_t id{ std::stoul(i.second) };
+					if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+					std::fill(param.active_motor_, param.active_motor_ + MAX_MOTOR_NUM, false);
+					param.active_motor_[cs.model().motionAtPhy(id).absID()] = true;
+				}
+				else if (i.first == "slave_id")
+				{
+					std::size_t id{ std::stoul(i.second) };
+					if (id < 0 || id > cs.controller().slavePool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+					std::fill(param.active_motor_, param.active_motor_ + MAX_MOTOR_NUM, false);
+					if(cs.model().motionAtSla(id).absID() >= cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\", this slave is not motion");
+					param.active_motor_[cs.model().motionAtSla(id).absID()] = true;
+				}
+				else
+				{
+					throw std::runtime_error("unknown param in basic parse func in param \"" + i.first + "\"");
 				}
 			}
 
-			// 检查位置极限和速度是否连续 //
-			for (std::size_t i = 0; i<imp_->controller_->motionNum(); ++i)
-			{
-				if (data.last_motion_raw_data->at(i).cmd == aris::control::EthercatMotion::RUN)
-				{
-					if (param.if_check_pos_max && (data.motion_raw_data->at(i).target_pos > imp_->controller_->motionAtAbs(i).maxPosCount()))
-					{
-						rt_printf("Motor %i's target position is bigger than its MAX permitted value in count:%d\n", i, imp_->count_);
-						rt_printf("The min, max and current count are:\n");
-						for (std::size_t i = 0; i<imp_->controller_->motionNum(); ++i)
-						{
-							rt_printf("%d   %d   %d\n", imp_->controller_->motionAtAbs(i).minPosCount(), imp_->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
-						}
-						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-						imp_->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
-						imp_->count_ = 0;
-
-						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (std::size_t i = 0; i < imp_->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-						
-						return 0;
-					}
-
-					if (param.if_check_pos_min && (data.motion_raw_data->at(i).target_pos < imp_->controller_->motionAtAbs(i).minPosCount()))
-					{
-						rt_printf("Motor %i's target position is smaller than its MIN permitted value in count:%d\n", i, imp_->count_);
-						rt_printf("The min, max and current count are:\n");
-						for (std::size_t i = 0; i<imp_->controller_->motionNum(); ++i)
-						{
-							rt_printf("%d   %d   %d\n", imp_->controller_->motionAtAbs(i).minPosCount(), imp_->controller_->motionAtAbs(i).maxPosCount(), data.motion_raw_data->at(i).target_pos);
-						}
-						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-						imp_->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
-						imp_->count_ = 0;
-
-						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (std::size_t i = 0; i < imp_->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-
-						return 0;
-					}
-
-					if (param.if_check_pos_continuous && (std::abs(data.last_motion_raw_data->at(i).target_pos - data.motion_raw_data->at(i).target_pos)>0.0012*imp_->controller_->motionAtAbs(i).maxVelCount()))
-					{
-						rt_printf("Motor %i's target position is not continuous in count:%d\n", i, imp_->count_);
-
-						rt_printf("The input of last and this count are:\n");
-						for (std::size_t i = 0; i<imp_->controller_->motionNum(); ++i)
-						{
-							rt_printf("%d   %d\n", data.last_motion_raw_data->at(i).target_pos, data.motion_raw_data->at(i).target_pos);
-						}
-
-						rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-						imp_->cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
-						imp_->count_ = 0;
-
-						// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
-						for (std::size_t i = 0; i < imp_->controller_->motionNum(); ++i)data.motion_raw_data->operator[](i) = data.last_motion_raw_data->operator[](i);
-
-						return 0;
-					}
-				}
-			}
-
-			return ret;
-		}*/
+			msg.copyStruct(param);
+		}
 
 		ControlServer &ControlServer::instance()
 		{
@@ -1275,35 +656,16 @@ namespace aris
 			loadXml(doc);
 		}
 		auto ControlServer::loadXml(const aris::core::XmlDocument &xml_doc)->void 
-		{	
+        {
 			/// load robot model_ ///
-			imp_->model_->loadXml(xml_doc);
-			imp_->controller_->loadXml(xml_doc);
-			imp_->sensor_root_->loadXml(xml_doc);
-
-			/// make phy to abs map ///
-			imp_->map_abs2phy_.clear();
-			for (auto &m : imp_->model_->motionPool())imp_->map_abs2phy_.push_back(m.slaveID());
-			imp_->map_phy2abs_.resize(imp_->controller_->slavePool().size());
-			for (std::size_t i = 0; i < imp_->map_abs2phy_.size(); ++i)imp_->map_phy2abs_.at(imp_->model_->motionPool().at(i).slaveID()) = i;
+            imp_->model_->loadXml(xml_doc);
+            imp_->controller_->loadXml(xml_doc);
+            imp_->sensor_root_->loadXml(xml_doc);
+            imp_->parser_.loadXml(xml_doc);
 
 			/// load connection param ///
 			imp_->server_socket_ip_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
 			imp_->server_socket_port_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("port");
-
-			/// begin to insert cmd nodes ///
-			auto pCmds = xml_doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Commands");
-
-			if (pCmds == nullptr) throw std::runtime_error("invalid xml file, because it contains no commands information");
-			imp_->cmd_struct_map_.clear();
-			for (auto pChild = pCmds->FirstChildElement(); pChild != nullptr; pChild = pChild->NextSiblingElement())
-			{
-				if (imp_->cmd_struct_map_.find(pChild->name()) != imp_->cmd_struct_map_.end())
-					throw std::logic_error(std::string("command ") + pChild->name() + " is already existed, please rename it");
-
-				imp_->cmd_struct_map_.insert(std::make_pair(std::string(pChild->name()), std::unique_ptr<CommandStruct>(new CommandStruct(pChild->name()))));
-				AddAllParams(pChild, imp_->cmd_struct_map_.at(pChild->name())->root.get(), imp_->cmd_struct_map_.at(pChild->name())->allParams, imp_->cmd_struct_map_.at(pChild->name())->shortNames);
-			}
 
 			/// Set socket connection callback function ///
 			imp_->server_socket_.setOnReceivedConnection([](aris::core::Socket *pConn, const char *pRemoteIP, int remotePort)
@@ -1335,6 +697,15 @@ namespace aris
 
 				return 0;
 			});
+
+            ///set the tg///
+            imp_->controller_->setControlStrategy([this]()
+            {
+                this->imp_->tg();
+            });
+
+
+
 		}
 		auto ControlServer::model()->dynamic::Model&
 		{
@@ -1350,7 +721,40 @@ namespace aris
 		}
 		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void
 		{
-			imp_->addCmd(cmd_name, parse_func, gait_func);
+			if (cmd_name == "en")
+			{
+				if (gait_func)throw std::runtime_error("you can not set plan_func for \"en\" command");
+				imp_->parse_enable_func_ = parse_func;
+			}
+			else if (cmd_name == "ds")
+			{
+				if (gait_func)throw std::runtime_error("you can not set plan_func for \"ds\" command");
+				imp_->parse_disable_func_ = parse_func;
+			}
+			else if (cmd_name == "hm")
+			{
+				if (gait_func)throw std::runtime_error("you can not set plan_func for \"hm\" command");
+				imp_->parse_home_func_ = parse_func;
+			}
+			else
+			{
+				if (imp_->cmd_id_map_.find(cmd_name) != imp_->cmd_id_map_.end())
+				{
+					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
+				}
+				else if (imp_->parser_.commandPool().findByName(cmd_name) == imp_->parser_.end())
+				{
+					throw std::runtime_error(std::string("failed to add command, because xml does not have \"") + cmd_name + "\" node");
+				}
+				else
+				{
+					imp_->plan_vec_.push_back(gait_func);
+					imp_->parser_vec_.push_back(parse_func);
+					imp_->cmd_id_map_.insert(std::make_pair(cmd_name, imp_->plan_vec_.size() - 1));
+
+					std::cout << cmd_name << ":" << imp_->cmd_id_map_.at(cmd_name) << std::endl;
+				}
+			}
 		}
 		auto ControlServer::open()->void 
 		{

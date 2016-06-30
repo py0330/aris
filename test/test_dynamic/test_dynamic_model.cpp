@@ -948,15 +948,35 @@ void test_auto_kinematic()
 
 void test_model2()
 {
-	
-	/*
-	Model model;
+	try
+	{
+		Model model;
 
-	model.loadXml("C:\\Users\\yang\\Desktop\\Robot_III.xml");
-	model.saveXml("C:\\Users\\yang\\Desktop\\Robot_III_save.xml");
-	model.saveAdams("C:\\Users\\yang\\Desktop\\robot.cmd", true);
+		model.loadXml("C:\\Users\\yang\\Desktop\\Robot_III.xml");
+
+		for (auto &m : model.motionPool())
+			std::cout << m.absID() << "   " << m.phyID() << "   " << m.slaID() << std::endl;
+
+		for (std::size_t i = 0; i < 18; ++i)
+		{
+			std::cout << model.motionAtAbs(i).absID() << "   " << model.motionAtPhy(i).phyID() << std::endl;
+		}
+
+		std::size_t abs_id[18]{ 0,1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,22 };
+		for (auto i : abs_id)
+		{
+			std::cout << model.motionAtSla(i).slaID() << "   " << std::endl;
+		}
+
+		model.saveXml("C:\\Users\\yang\\Desktop\\Robot_III_save.xml");
+		model.saveAdams("C:\\Users\\yang\\Desktop\\robot.cmd", true);
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+	}
 	
-	std::cout << "finished" << std::endl;*/
+	std::cout << "finished" << std::endl;
 }
 
 
