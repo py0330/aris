@@ -103,8 +103,8 @@ protected:
 void test_control_ethercat()
 {
 	aris::core::XmlDocument xml_doc;
-	xml_doc.Parse(xml_file);
-	
+    xml_doc.Parse(xml_file);
+
 	TestMaster master;
 
 	master.loadXml(xml_doc);

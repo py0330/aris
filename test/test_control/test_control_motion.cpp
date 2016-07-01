@@ -28,30 +28,30 @@ const char xml_file[] =
 "				<all abbreviation = \"a\" />"
 "				<first abbreviation = \"f\" />"
 "				<second abbreviation = \"s\" />"
-"				<motor abbreviation = \"m\" default = \"0\" />"
-"				<physical_motor abbreviation = \"p\" default = \"0\" />"
+"				<motion_id abbreviation = \"m\" default = \"0\" />"
+"				<physical_id abbreviation = \"p\" default = \"0\" />"
 "				<leg abbreviation = \"l\" default = \"0\" />"
 "			</en>"
 "			<ds default_child_type=\"param\" default = \"all\">"
 "				<all abbreviation = \"a\" />"
 "				<first abbreviation = \"f\" />"
 "				<second abbreviation = \"s\" />"
-"				<motor abbreviation = \"m\" default = \"0\" />"
-"				<physical_motor abbreviation = \"p\" default = \"0\" />"
+"				<motion_id abbreviation = \"m\" default = \"0\" />"
+"				<physical_id abbreviation = \"p\" default = \"0\" />"
 "				<leg abbreviation = \"l\" default = \"0\" />"
 "			</ds>"
 "			<hm default_child_type=\"param\" default = \"all\" >"
 "				<all abbreviation = \"a\" />"
 "				<first abbreviation = \"f\" />"
 "				<second abbreviation = \"s\" />"
-"				<motor abbreviation = \"m\" default = \"0\" />"
-"				<physical_motor abbreviation = \"p\" default = \"0\" />"
+"				<motion_id abbreviation = \"m\" default = \"0\" />"
+"				<physical_id abbreviation = \"p\" default = \"0\" />"
 "				<leg abbreviation = \"l\" default = \"0\" />"
 "			</hm>"
 "			<test default_child_type=\"param\" default = \"all\" >"
 "				<all abbreviation = \"a\" />"
-"				<motor abbreviation = \"m\" default = \"0\" />"
-"				<physical_motor abbreviation = \"p\" default = \"0\" />"
+"				<motion_id abbreviation = \"m\" default = \"0\" />"
+"				<physical_id abbreviation = \"p\" default = \"0\" />"
 "			</test>"
 "			<rc default = \"rc_param\">"
 "				<rc_param type = \"group\" default_child_type=\"param\">"
@@ -244,7 +244,7 @@ BasicFunctionParam decode(const std::string input)
 
 	std::fill_n(bfParam.active_motor, SlaveNumber, false);
 	for (auto &i : params) {
-        if (i.first != "physical_motor")
+        if (i.first != "physical_id")
             std::cout << "the first param must be 'p', it means the physic id." << std::endl;
 		else {
 			if (stoi(i.second)>SlaveNumber - 1 || stoi(i.second)<0) {
@@ -320,7 +320,9 @@ void tg()
 void test_control_motion()
 {
 	aris::core::XmlDocument xml_doc;
-	xml_doc.Parse(xml_file);
+    //xml_doc.Parse(xml_file);
+    xml_doc.LoadFile("/usr/aris/robot/resource/robot_motion.xml");
+
 
 	controller.loadXml(xml_doc);
 	parser.loadXml(xml_doc);

@@ -23,7 +23,6 @@ int main(int argc, char *argv[])
 
     //register new slave or new sensor
     cs.controller().registerChildType<robot::EsgImu, false, false, false, false>();
-    cs.sensorRoot().registerChildType<aris::sensor::Imu,false,false,false,false>();
 
     cs.loadXml("/usr/aris/robot/resource/robot.xml");
     //cs.loadXml("/usr/aris/robot/resource/robot_motion.xml");

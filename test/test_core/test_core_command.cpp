@@ -93,8 +93,8 @@ void test_command()
 	try
 	{
 		XmlDocument doc;
-        doc.Parse(xml_data);
-        //doc.LoadFile("/usr/aris/robot/resource/robot_motion.xml");
+        //doc.Parse(xml_data);
+        doc.LoadFile("/usr/aris/robot/resource/robot_motion.xml");
 
 		CommandParser parser;
 		parser.loadXml(doc);
