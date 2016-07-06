@@ -22,10 +22,11 @@ int main(int argc, char *argv[])
     //cs.createModel<aris::dynamic::Model>();
 
     //register new slave or new sensor
-    cs.controller().registerChildType<robot::EsgImu, false, false, false, false>();
+    //cs.controller().registerChildType<robot::EsgImu, false, false, false, false>();
 
-    cs.loadXml("/usr/aris/robot/resource/robot.xml");
-    //cs.loadXml("/usr/aris/robot/resource/robot_motion.xml");
+    //cs.loadXml("/usr/aris/robot/resource/robot.xml");
+    cs.loadXml("/usr/aris/robot/resource/robot_motion.xml");
+
 
     cs.addCmd("en", robot::basicParse, nullptr);
     cs.addCmd("ds", robot::basicParse, nullptr);
@@ -35,8 +36,6 @@ int main(int argc, char *argv[])
 
     //some default command
     cs.addCmd("rc",robot::recoverParse,robot::recoverGait);//you need to change the default pose in the RecoverParam
-    cs.addCmd("mvpee",robot::movePeeParse,robot::movePeeGait);//you should make sure the robot has always arrived to the target pose before using 'mvpee' command
-    cs.addCmd("mvpin",robot::movePinParse,robot::movePinGait);
     cs.addCmd("sinpee",robot::sinPeeParse,robot::sinPeeGait);
     cs.addCmd("sinpin",robot::sinPinParse,robot::sinPinGait);
 

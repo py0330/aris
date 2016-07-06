@@ -575,7 +575,7 @@ namespace aris
 			using Root::loadXml;
 			using Root::saveXml;
 			virtual auto loadXml(const aris::core::XmlDocument &xml_doc)->void override;
-			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
+            virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			virtual auto saveXml(aris::core::XmlDocument &xml_doc)const->void override;
 			virtual auto loadDynEle(const std::string &name)->void;
 			virtual auto saveDynEle(const std::string &name)->void;
