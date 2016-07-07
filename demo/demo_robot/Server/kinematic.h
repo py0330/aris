@@ -12,7 +12,6 @@ namespace robot
 		auto setPee(const double *pee)->void;
         auto getpin()const->const double * { return pin_; }
 		auto setPin(const double *pin)->void;
-        //auto getVin()const->const double*{return vin_;}
         auto setVin(const double *vin)->void;
 
         //get part
@@ -44,8 +43,8 @@ namespace robot
 		virtual void kinFromPin() final override;
 		virtual void kinFromVin() final override;
 
-        aris::dynamic::Part *p1_, *p2_, *p3_;
-        aris::dynamic::Marker *r1i_, *r1j_,  *r2i_, *r2j_, *r3i_, *r3j_;
+        aris::dynamic::Part *p1_, *p2_, *p3_, ground_;
+        aris::dynamic::Marker *r1j_, *r1i_, *r2i_, *r2j_, *r3i_, *r3j_;
         aris::dynamic::RevoluteJoint *r1_, *r2_,*r3_;
         aris::dynamic::Motion *m1_, *m2_, *m3_;
 

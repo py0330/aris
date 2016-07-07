@@ -659,17 +659,14 @@ namespace aris
         {
 			/// load robot model_ ///
             imp_->model_->loadXml(xml_doc);
-            std::cout<<"test11"<<std::endl;
             imp_->controller_->loadXml(xml_doc);
-            std::cout<<"test12"<<std::endl;
             imp_->sensor_root_->loadXml(xml_doc);
-            std::cout<<"test13"<<std::endl;
             imp_->parser_.loadXml(xml_doc);
-std::cout<<"test1"<<std::endl;
+
 			/// load connection param ///
 			imp_->server_socket_ip_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
 			imp_->server_socket_port_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("port");
-std::cout<<"test1"<<std::endl;
+
 			/// Set socket connection callback function ///
 			imp_->server_socket_.setOnReceivedConnection([](aris::core::Socket *pConn, const char *pRemoteIP, int remotePort)
 			{
@@ -700,7 +697,7 @@ std::cout<<"test1"<<std::endl;
 
 				return 0;
 			});
-std::cout<<"test1"<<std::endl;
+
             ///set the tg///
             imp_->controller_->setControlStrategy([this]()
             {

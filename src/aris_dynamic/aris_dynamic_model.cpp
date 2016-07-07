@@ -2428,7 +2428,6 @@ namespace aris
             if (!model_xml_ele)throw std::runtime_error("can't find Model element in xml file");
 
             loadXml(*model_xml_ele);
-            std::cout<<"model11"<<std::endl;
 		}
         auto Model::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
@@ -2444,7 +2443,6 @@ namespace aris
             imp_->general_motion_pool_ = findByName("General_Motion") == end() ? &this->add<aris::core::ObjectPool<GeneralMotion, Element>>("General_Motion"): static_cast<aris::core::ObjectPool<GeneralMotion, Element>*>(&(*findByName("General_Motion")));
             imp_->force_pool_ = findByName("Force") == end() ? &this->add<aris::core::ObjectPool<Force, Element>>("Force") : static_cast<aris::core::ObjectPool<Force, Element>*>(&(*findByName("Force")));
             imp_->ground_ = partPool().findByName("Ground") == partPool().end() ? &partPool().add<Part>("Ground") : &*partPool().findByName("Ground");
-            std::cout<<"model"<<std::endl;
         }
 		auto Model::saveXml(aris::core::XmlDocument &xml_doc)const->void
 		{

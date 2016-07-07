@@ -15,14 +15,17 @@ int main(int argc, char *argv[])
 {
     auto &cs = aris::server::ControlServer::instance();
 
+
     cs.createModel<robot::Robot>();
     cs.createController<aris::control::Controller>();
     cs.createSensorRoot<aris::sensor::SensorRoot>();
     //if no special robot model, you can use the default model
     //cs.createModel<aris::dynamic::Model>();
 
+
     //register new slave or new sensor
-    //cs.controller().registerChildType<robot::EsgImu, false, false, false, false>();
+    cs.controller().registerChildType<robot::EsgImu, false, false, false, false>();
+
 
     //cs.loadXml("/usr/aris/robot/resource/robot.xml");
     cs.loadXml("/usr/aris/robot/resource/robot_motion.xml");
@@ -34,17 +37,17 @@ int main(int argc, char *argv[])
     //if no special command parser, we can use the default parser for command 'en' , 'ds' , 'hm'
     //cs.addCmd("en", nullptr, nullptr);
 
+
     //some default command
     cs.addCmd("rc",robot::recoverParse,robot::recoverGait);//you need to change the default pose in the RecoverParam
-    cs.addCmd("sinpee",robot::sinPeeParse,robot::sinPeeGait);
-    cs.addCmd("sinpin",robot::sinPinParse,robot::sinPinGait);
+    cs.addCmd("mv",robot::moveParse,robot::moveGait);
 
     cs.open();
 
     cs.setOnExit([&]()
     {
         aris::core::XmlDocument xml_doc;
-        xml_doc.LoadFile("/usr/aris/demo/resource/robot_motion.xml");
+        xml_doc.LoadFile("/usr/aris/robot/resource/robot.xml");
         auto model_xml_ele = xml_doc.RootElement()->FirstChildElement("Model");
         if (!model_xml_ele)throw std::runtime_error("can't find Model element in xml file");
         cs.model().saveXml(*model_xml_ele);

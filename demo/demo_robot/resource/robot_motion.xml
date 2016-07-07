@@ -88,40 +88,15 @@
         <help abbreviation="h" help="get help about command 'hm'."/>
       </hm>
       <rc help="recover the robot to specify pose."/>
-      <sinpee default_child_type="param" default="sinpee_param" help="make the robot move sine in specify dimension.">
-        <sinpee_param type="group" default_child_type="param" >
-           <totalCount abbreviation="t" default="10000" help="the total executing time(ms)."/>
-           <active abbreviation="c" default="y" help="active only one dimension."/>
-           <amplitude abbreviation="l" default="0" help="the amplitude of sine."/>
-           <frequence abbreviation="f" default="1" help="the frequence of sine."/>
-        </sinpee_param>
-        <help abbreviation="h" help="get help about command 'sinpee'."/>
-      </sinpee>
-      <sinpin default="total_param" help="make the specify axis of robot move sine.">
-        <total_param type="unique" default_child_type="param" default="sinpin_param">
-          <sinpin_param type="group" default_child_type="param">
-             <motion_param type="unique" default_child_type="param" default="all">
-               <all abbreviation="a" help="all motions."/>
-               <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-               <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-               <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-             </motion_param>
-             <totalCount abbreviation="t" default="10000" help="the total executing time(ms)."/>
-             <amplitude abbreviation="l" default="0" help="the amplitude of sine."/>
-             <frequence abbreviation="f" default="1" help="the frequence of sine."/>
-          </sinpin_param>
-          <help abbreviation="h"  help="get help about command 'sinpin'."/>
-        </total_param>
-      </sinpin>
       <mv default_child_type="param" default = "total_param" help="move the robot to specify pose after executing command 'rc' or move the specify axis of robot.">
         <total_param type="unique" default_child_type="param" default="mv_param">
           <mv_param type = "group" default_child_type="param" >
-            <totalCount abbreviation="t" default="10000" help="the total executing time(ms)."/>
+            <totalCount abbreviation="t" default="5000" help="the total executing time(ms)."/>
             <mode_param type = "unique" default_child_type="param" default = "pin_param">
               <pee_param type = "group" default_child_type="param">
                 <x abbreviation="x" default="0" help="the 'x' direction of coordinate."/>
                 <y abbreviation="y" default="0.435" help="the 'y' direction of coordinate."/>
-                <z abbreviation="z" default="0" help="the 'z' direction of coordinate."/>
+                <A abbreviation="A" default="0" help="the 'z' direction of coordinate."/>
               </pee_param>
               <pin_param type = "group" default_child_type="param">
                 <motion_param type="unique" default_child_type="param" default="all">
@@ -130,13 +105,13 @@
                   <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
                   <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
                 </motion_param>
-                <length abbreviation="l" default="0" help="the length(m)."/>
+                <angle abbreviation="j" default="0" help="the length(m)."/>
                 <force abbreviation="f" default="no" help="force to move the axis without forward and backward limit."/>
               </pin_param>
               <pins_param type = "group" default_child_type="param">
-                  <L1 abbreviation="1" default="0" help="No.1 axis in Model."/>
-                  <L2 abbreviation="2" default="0" help="No.2 axis in Model."/>
-                  <L3 abbreviation="3" default="0" help="No.3 axis in Model."/>
+                  <a1 abbreviation="1" default="0" help="No.1 axis in Model."/>
+                  <a2 abbreviation="2" default="0" help="No.2 axis in Model."/>
+                  <a3 abbreviation="3" default="0" help="No.3 axis in Model."/>
                 </pins_param>
             </mode_param>
           </mv_param>
@@ -198,9 +173,9 @@
       </ElmoSoloWhistle>
     </SlaveType>
     <Slave type="slave_pool_element">
-      <motion1 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4587" max_pos="0.59967" max_vel="0.5" home_pos="0.45879" input2count="6553600" />
-      <motion2 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4587" max_pos="0.59967" max_vel="0.5" home_pos="0.45879" input2count="6553600" />
-      <motion3 type="motion" slave_type="ElmoSoloWhistle" min_pos="0.4739" max_pos="0.61493" max_vel="0.5" home_pos="0.47399" input2count="6553600" />
+      <motion1 type="motion" slave_type="ElmoSoloWhistle" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
+      <motion2 type="motion" slave_type="ElmoSoloWhistle" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
+      <motion3 type="motion" slave_type="ElmoSoloWhistle" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
     </Slave>
   </Controller>
   <Sensor>
