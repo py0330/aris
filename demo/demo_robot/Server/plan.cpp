@@ -7,9 +7,8 @@ namespace robot
 {
     auto basicParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
-		//auto &command = const_cast<aris::core::Command &>(*cs.parser().commandPool().findByName(cmd));
-		if (params.find("help") != params.end())
-			throw std::runtime_error(const_cast<aris::core::Command &>(*cs.parser().commandPool().findByName(cmd)).getHelpStream().str());
+        if (params.find("help") != params.end())
+            throw std::runtime_error(cs.parser().commandPool().findByName(cmd)->getHelpString());
         aris::server::BasicFunctionParam param;
 
         for (auto &i : params)
@@ -46,7 +45,7 @@ namespace robot
     }
     auto basicGaitParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
-           msg_out.copyStruct(aris::server::GaitParamBase());
+        msg_out.copyStruct(aris::server::GaitParamBase());
     }
 
     auto recoverParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
@@ -86,6 +85,8 @@ namespace robot
 
     auto moveParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
+        if (params.find("help") != params.end())
+            throw std::runtime_error(cs.parser().commandPool().findByName(cmd)->getHelpString());
         robot::MoveParam param;
 
         if(params.find("x")!=params.end())

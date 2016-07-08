@@ -142,49 +142,49 @@ namespace aris
 			default_param->addDefaultParam(param_map_out);
 		}
 		auto Command::help()const->const std::string &{ return imp_->help_; }
-		auto Command::getHelpStream()->std::stringstream
+        auto Command::getHelpString()->std::string
 		{
 			int maxPrintLength = 55;
-			std::stringstream helpstream{};
+            std::string helpstring{};
 
 			int commandLength = imp_->help_.length();
 			int count = 0;
-			helpstream << name() << " : ";
+            helpstring= name() + " : ";
 			while (commandLength>maxPrintLength)
 			{
-				helpstream << imp_->help_.substr(maxPrintLength*count, maxPrintLength*(count + 1));
-				helpstream << "\n" << std::string(name().length() + 2, ' ');
+                helpstring+= imp_->help_.substr(maxPrintLength*count, maxPrintLength*(count + 1));
+                helpstring+= "\n" + std::string(name().length() + 2, ' ');
 				count += 1;
 				commandLength -= maxPrintLength;
 			}
-			helpstream << imp_->help_.substr(maxPrintLength*count, std::string::npos) << "\n";
+            helpstring+= imp_->help_.substr(maxPrintLength*count, std::string::npos) + "\n";
 
 			if (imp_->param_map_.size() != 0)
 			{
-				helpstream << "\n  usage: [command] [param1]=[value1] [param2]=[value2]....\n";
+                helpstring+= "\n  usage: [command] [param1]=[value1] [param2]=[value2]....\n";
 				int paramPrintLength = std::max_element(imp_->param_map_.begin(), imp_->param_map_.end(), [](decltype(*imp_->param_map_.begin()) a, decltype(*imp_->param_map_.begin()) b)
 				{
 					return a.second->name().length() < b.second->name().length();
 				})->second->name().length() + 6;
-				helpstream << "\n  params help: [param] : [abbr]  [help]\n";
+                helpstring+= "\n  params help: [param] : [abbr]  [help]\n";
 				for (auto &param : imp_->param_map_)
 				{
 					int helpStringLength = param.second->help().length();
 
 					int count = 0;
-					helpstream << std::string(paramPrintLength - param.second->name().length(), ' ') << param.second->name() << " : " << param.second->abbreviation() << "  ";
+                    helpstring+= std::string(paramPrintLength - param.second->name().length(), ' ') + param.second->name() + " : " + param.second->abbreviation() + "  ";
 					while (helpStringLength>maxPrintLength)
 					{
-						helpstream << param.second->help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
-						helpstream << "\n" << std::string(paramPrintLength + 6, ' ');
+                        helpstring+= param.second->help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
+                        helpstring+= "\n" + std::string(paramPrintLength + 6, ' ');
 						count += 1;
 						helpStringLength -= maxPrintLength;
 					}
-					helpstream << param.second->help().substr(maxPrintLength*count, std::string::npos) << "\n";
+                    helpstring+= param.second->help().substr(maxPrintLength*count, std::string::npos) + "\n";
 				}
 			}
 
-			return helpstream;
+            return helpstring;
 		}
 		
 		Command::~Command() {}
@@ -364,14 +364,13 @@ namespace aris
 		}
         auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; }
         auto CommandParser::commandPool()const->const ObjectPool<Command> &{ return *imp_->command_pool_; }
-        
-		auto CommandParser::getHelpStream( )->std::stringstream
+
+        auto CommandParser::getHelpString( )->std::string
         {			
 			int maxPrintLength = 55;
-			std::stringstream helpstream{};
+            std::string helpstring{};
 
-
-			helpstream << "all command: " << std::endl;
+            helpstring="all command: \n";
 			int commandPrintLength = std::max_element(imp_->command_pool_->begin(), imp_->command_pool_->end(), [](decltype(*imp_->command_pool_->begin()) a, decltype(*imp_->command_pool_->begin()) b)
 			{
 				return a.name().length() < b.name().length();
@@ -380,22 +379,21 @@ namespace aris
 			{
 				int helpStringLength = command.help().length();
 				int count = 0;
-				helpstream << std::string(commandPrintLength - command.name().length(), ' ') << command.name() << " : ";
+                helpstring+=std::string(commandPrintLength - command.name().length(), ' ') + command.name() + " : ";
 				while (helpStringLength>maxPrintLength)
 				{
-					helpstream << command.help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
-					helpstream << "\n" << std::string(commandPrintLength + 2, ' ');
+                    helpstring+=command.help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
+                    helpstring+="\n" + std::string(commandPrintLength + 2, ' ');
 					count += 1;
 					helpStringLength -= maxPrintLength;
 				}
-				helpstream << command.help().substr(maxPrintLength*count, std::string::npos) << std::endl;
+                helpstring+=command.help().substr(maxPrintLength*count, std::string::npos) + "\n";
 			}
-			helpstream << "\nAttention:" << std::endl;
-			helpstream << "the param '--help(-h)' can get more help about the specify command. etc: en -h " << std::endl;
+            helpstring+="\nAttention:\n";
+            helpstring+="the param '--help(-h)' can get more help about the specify command. etc: en -h \n";
 
-			return helpstream;
+            return helpstring;
         }
-		
 		CommandParser::~CommandParser(){}
 		CommandParser::CommandParser():imp_(new Imp)
 		{

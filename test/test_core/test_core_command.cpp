@@ -110,11 +110,11 @@ void test_command()
 		parser_->loadXml(xml_doc);
 
 		//get all command of the system  
-		std::cout << parser_->getHelpStream().str() << std::endl;
+        std::cout << parser_->getHelpString() << std::endl;
 		//display all command help information in detail
 		for (auto &command : parser_->commandPool())
 		{
-			std::cout << command.getHelpStream().str()<<std::endl;
+            std::cout << command.getHelpString()<<std::endl;
 		}
 
 		//test the command param
