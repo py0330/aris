@@ -6,10 +6,12 @@ namespace robot
 {
 	auto Robot::setPee(const double *pee)->void
 	{
+		std::copy(pee, pee + 3, pee_);
+
         double target_angle=std::atan2(pee[1],pee[0]);
         double temp_angle=std::acos(std::sqrt(pee[0]*pee[0]+pee[1]*pee[1])/2);
-        double a_1=target_angle+temp_angle;
-        double a_2=-2*temp_angle;
+        double a_1=target_angle-temp_angle;
+        double a_2=2*temp_angle;
         double a_3=pee[2]-a_1-a_2;
 
         double pe[3][6];
@@ -22,8 +24,12 @@ namespace robot
         pe[1][5]=a_2;
         pe[2][5]=a_3;
 
+
+		this->r1j().update();
         this->p1().setPe(r1j(), pe[0],"123");
+		this->r2j().update();
         this->p2().setPe(r2j(), pe[1],"123");
+		this->r3j().update();
         this->p3().setPe(r3j(), pe[2],"123");
 
         this->m1().update();
@@ -61,7 +67,7 @@ namespace robot
         this->p1_ = &*partPool().findByName("part1");
         this->p2_ = &*partPool().findByName("part2");
         this->p3_ = &*partPool().findByName("part3");
-        this->ground_=&*partPool().findByName("Ground");
+        this->ground_ = &*partPool().findByName("Ground");
 
         //marker
         this->r1j_ = &*ground_->markerPool().findByName("r1j");

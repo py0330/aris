@@ -23,19 +23,19 @@
           <r1j pe="r1j_pe" />
         </ChildMarker>
       </Ground>
-      <part1 active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}" graphic_file_path="C:\\Users\\py033\\Desktop\\part1.xmt_txt">
+      <part1 active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}" graphic_file_path="C:\\aris\\robot\\resource\\graphic_file\\part1.x_t">
         <ChildMarker type="marker_pool_element" default_child_type="marker">
           <r1i pe = "r1i_pe" />
         <r2j pe = "r2j_pe" />
         </ChildMarker>
       </part1>
-      <part2 active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{1 , 0 , 0 , PI/2 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}" graphic_file_path="C:\\Users\\py033\\Desktop\\part2.xmt_txt">
+      <part2 active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{1 , 0 , 0 , PI/2 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}" graphic_file_path="C:\\aris\\robot\\resource\\graphic_file\\part2.x_t">
         <ChildMarker type="marker_pool_element" default_child_type="marker">
           <r2i pe = "r2i_pe" />
         <r3j pe = "r3j_pe" />
         </ChildMarker>
       </part2>
-      <part3 active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{1 , 1 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}" graphic_file_path="C:\\Users\\py033\\Desktop\\part3.xmt_txt">
+      <part3 active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{1 , 1 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}" graphic_file_path="C:\\aris\\robot\\resource\\graphic_file\\part3.x_t">
         <ChildMarker type="marker_pool_element" default_child_type="marker">
           <r3i pe = "r3i_pe" />
         </ChildMarker>

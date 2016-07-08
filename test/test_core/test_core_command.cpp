@@ -330,4 +330,6 @@ std::stringstream getHelpStream(aris::core::CommandParser &parser, std::string c
 
     return helpstream;
     */
+	std::stringstream helpstream{};
+	return helpstream;
 }

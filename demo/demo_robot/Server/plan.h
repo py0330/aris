@@ -15,8 +15,8 @@ namespace robot
     struct RecoverParam final : public aris::server::GaitParamBase
     {
         int total_count_{ 10000 };//the total time(ms)
-        double target_pin_[3]{PI/4,0, 0};//the angle of axis
-        double target_pee_[3]{0.707,0.707,PI/4};//the default pose
+        double target_pin_[3]{0,PI/2, -PI/2};//the angle of axis
+        double target_pee_[3]{1,1,0};//the default pose
     };
     auto recoverParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
     auto recoverGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
@@ -33,6 +33,7 @@ namespace robot
     auto moveParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
     auto moveGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
 
+	auto testGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
     }
 
 

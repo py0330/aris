@@ -176,7 +176,8 @@ void test_control_server()
 	try 
 	{
 		aris::core::XmlDocument xml_doc;
-		xml_doc.Parse(xml_file);
+		//xml_doc.Parse(xml_file);
+		xml_doc.LoadFile("C:\\aris\\robot\\resource\\robot_motion.xml");
 		
 		auto &cs = aris::server::ControlServer::instance();
 		cs.createModel<aris::dynamic::Model>();
@@ -191,13 +192,14 @@ void test_control_server()
 
 		aris::dynamic::PlanFunc f = [](aris::dynamic::Model &m, const aris::dynamic::PlanParamBase &p)
 		{
+			
 			double pe2[6]{ 0,0,0,0,0,0 };
-			pe2[5] = p.count_*0.001 + PI / 2;
+			pe2[5] = p.count_*0.001/3*PI /3 + PI / 2;
 			auto &r2j = *m.partPool().findByName("part1")->markerPool().findByName("r2j");
 			m.partPool().findByName("part2")->setPe(r2j, pe2, "123");
 
 			double pe3[6]{ 0,0,0,0,0,0 };
-			pe3[5] = p.count_*0.001 - PI / 2;
+			pe3[5] = p.count_*0.001/3*PI /3 - PI / 2;
 			auto &r3j = *m.partPool().findByName("part2")->markerPool().findByName("r3j");
 			m.partPool().findByName("part3")->setPe(r3j, pe3, "123");
 
@@ -205,14 +207,14 @@ void test_control_server()
 			m.motionAtAbs(1).update();
 			m.motionAtAbs(2).update();
 
-			return 1000-p.count_;
+			return 3000-p.count_;
 		};
 
 
 		cs.model().saveDynEle("before");
 		cs.model().simKin(f,p);
 		cs.model().loadDynEle("before");
-		cs.model().saveAdams("C:\\Users\\py033\\Desktop\\test.cmd");
+		cs.model().saveAdams("C:\\aris\\robot\\resource\\test.cmd");
 	}
 	catch (std::exception &e)
 	{

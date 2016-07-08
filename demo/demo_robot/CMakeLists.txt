@@ -107,6 +107,12 @@ target_link_libraries(Server ${ALL_LINK_LIB})
 add_executable(rbt Client/client.cpp)
 target_link_libraries(rbt ${ALL_LINK_LIB})
 
+################################### build simulation ####################################
+set(SOURCE_FILES Simulation/main.cpp Server/kinematic.h Server/kinematic.cpp Server/plan.h Server/plan.cpp)
+#PREPEND(FULL_SRC Simulation ${SOURCE_FILES})
+add_executable(Simulation ${SOURCE_FILES})
+target_link_libraries(Simulation ${ALL_LINK_LIB})
+
 ################################### install ####################################
 if(UNIX)
         set(CMAKE_INSTALL_PREFIX "/usr/aris/robot/")

@@ -18,6 +18,7 @@ namespace robot
         auto p1()->aris::dynamic::Part& { return *p1_; }
         auto p2()->aris::dynamic::Part& { return *p2_; }
         auto p3()->aris::dynamic::Part& { return *p3_; }
+		auto ground()->aris::dynamic::Part& { return *ground_; }
 
         //get marker
         auto r1j()->aris::dynamic::Marker& { return *r1j_; }
@@ -43,7 +44,7 @@ namespace robot
 		virtual void kinFromPin() final override;
 		virtual void kinFromVin() final override;
 
-        aris::dynamic::Part *p1_, *p2_, *p3_, ground_;
+        aris::dynamic::Part *p1_, *p2_, *p3_, *ground_;
         aris::dynamic::Marker *r1j_, *r1i_, *r2i_, *r2j_, *r3i_, *r3j_;
         aris::dynamic::RevoluteJoint *r1_, *r2_,*r3_;
         aris::dynamic::Motion *m1_, *m2_, *m3_;
