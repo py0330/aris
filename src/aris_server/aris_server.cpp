@@ -190,6 +190,12 @@ namespace aris
 
 					return aris::core::Msg();
 				}
+
+				if (cmd == "help")
+				{
+					std::cout << parser_->getHelpStream().str() << std::endl;
+					return aris::core::Msg();
+				}
 				
 				if (!is_running_)throw std::runtime_error("can't execute command, because the server is not STARTED, please start it first");
 				sendParam(cmd, params);
@@ -747,7 +753,7 @@ namespace aris
 				{
 					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
 				}
-				else if (imp_->parser_.commandPool().findByName(cmd_name) == imp_->parser_.end())
+                else if (imp_->parser_->commandPool().findByName(cmd_name) == imp_->parser_->end())
 				{
 					throw std::runtime_error(std::string("failed to add command, because xml does not have \"") + cmd_name + "\" node");
 				}

@@ -7,6 +7,9 @@ namespace robot
 {
     auto basicParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
+		//auto &command = const_cast<aris::core::Command &>(*cs.parser().commandPool().findByName(cmd));
+		if (params.find("help") != params.end())
+			throw std::runtime_error(const_cast<aris::core::Command &>(*cs.parser().commandPool().findByName(cmd)).getHelpStream().str());
         aris::server::BasicFunctionParam param;
 
         for (auto &i : params)

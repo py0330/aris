@@ -57,8 +57,10 @@ namespace aris
 		{
 			char abbreviation_{ 0 };
 			std::string default_value_{ "" };
+			std::string help_{ "" };
 		};
 		auto Param::defaultParam()const->const std::string &{ return imp_->default_value_; }
+		auto Param::help()const->const std::string &{ return imp_->help_; }
 		auto Param::take()->void {
 			if (isTaken())throw std::runtime_error("parse command error: command \"" + command().name() + "\"'s param \"" + name() + "\" has been set more than once");
 			ParamBase::take();
@@ -68,12 +70,13 @@ namespace aris
 		{
 			if (!isTaken())param_map_out.insert(std::make_pair(name(), imp_->default_value_));
 		}
-		auto Param::abbreviation()->char { return imp_->abbreviation_; };
+        auto Param::abbreviation()->char { return imp_->abbreviation_; }
 		Param::Param(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
 		Param::Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele)
 		{
 			imp_->abbreviation_ = attributeChar(xml_ele, "abbreviation", imp_->abbreviation_);
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
+			imp_->help_ = attributeString(xml_ele, "help", imp_->help_);
 		}
 		
 		struct UniqueParam::Imp
@@ -86,7 +89,7 @@ namespace aris
 			if (isTaken())throw std::runtime_error("parse command error: command \"" + command().name() + "\"'s UNIQUE param \"" + name() + "\" has been set more than once");
 			ParamBase::take();
 		}
-		auto UniqueParam::reset()->void { for (auto &child : *this)dynamic_cast<ParamBase&>(child).reset(); ParamBase::reset(); };
+        auto UniqueParam::reset()->void { for (auto &child : *this)dynamic_cast<ParamBase&>(child).reset(); ParamBase::reset(); }
 		auto UniqueParam::addDefaultParam(std::map<std::string, std::string> &param_map_out)->void 
 		{
 			if (size() == 0)return;
@@ -110,6 +113,7 @@ namespace aris
 		{
 			bool is_taken_;
 			std::string default_value_{ "" };
+			std::string help_{""};
 			std::map<std::string, Param*> param_map_;
 			std::map<char, std::string> abbreviation_map_;
 		};
@@ -137,11 +141,58 @@ namespace aris
 
 			default_param->addDefaultParam(param_map_out);
 		}
-		Command::~Command() {};
-		Command::Command(Object &father, std::size_t id, const std::string &name) :ObjectPool(father, id, name) {};
+		auto Command::help()const->const std::string &{ return imp_->help_; }
+		auto Command::getHelpStream()->std::stringstream
+		{
+			int maxPrintLength = 55;
+			std::stringstream helpstream{};
+
+			int commandLength = imp_->help_.length();
+			int count = 0;
+			helpstream << name() << " : ";
+			while (commandLength>maxPrintLength)
+			{
+				helpstream << imp_->help_.substr(maxPrintLength*count, maxPrintLength*(count + 1));
+				helpstream << "\n" << std::string(name().length() + 2, ' ');
+				count += 1;
+				commandLength -= maxPrintLength;
+			}
+			helpstream << imp_->help_.substr(maxPrintLength*count, std::string::npos) << "\n";
+
+			if (imp_->param_map_.size() != 0)
+			{
+				helpstream << "\n  usage: [command] [param1]=[value1] [param2]=[value2]....\n";
+				int paramPrintLength = std::max_element(imp_->param_map_.begin(), imp_->param_map_.end(), [](decltype(*imp_->param_map_.begin()) a, decltype(*imp_->param_map_.begin()) b)
+				{
+					return a.second->name().length() < b.second->name().length();
+				})->second->name().length() + 6;
+				helpstream << "\n  params help: [param] : [abbr]  [help]\n";
+				for (auto &param : imp_->param_map_)
+				{
+					int helpStringLength = param.second->help().length();
+
+					int count = 0;
+					helpstream << std::string(paramPrintLength - param.second->name().length(), ' ') << param.second->name() << " : " << param.second->abbreviation() << "  ";
+					while (helpStringLength>maxPrintLength)
+					{
+						helpstream << param.second->help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
+						helpstream << "\n" << std::string(paramPrintLength + 6, ' ');
+						count += 1;
+						helpStringLength -= maxPrintLength;
+					}
+					helpstream << param.second->help().substr(maxPrintLength*count, std::string::npos) << "\n";
+				}
+			}
+
+			return helpstream;
+		}
+		
+		Command::~Command() {}
+        Command::Command(Object &father, std::size_t id, const std::string &name) :ObjectPool(father, id, name) {}
 		Command::Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ObjectPool(father, id, xml_ele)
 		{
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
+			imp_->help_ = attributeString(xml_ele, "help", imp_->help_);
 			
 			if(imp_->default_value_ != "" && (findByName(imp_->default_value_) == end()))
 				throw std::runtime_error("Command \"" + name() + "\" does not has valid default param name");
@@ -311,8 +362,40 @@ namespace aris
 				throw std::runtime_error(e.what() + std::string(", when parsing command string \"" + command_string +"\""));
 			}
 		}
-		auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; };
-		auto CommandParser::commandPool()const->const ObjectPool<Command> &{ return *imp_->command_pool_; };
+        auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; }
+        auto CommandParser::commandPool()const->const ObjectPool<Command> &{ return *imp_->command_pool_; }
+        
+		auto CommandParser::getHelpStream( )->std::stringstream
+        {			
+			int maxPrintLength = 55;
+			std::stringstream helpstream{};
+
+
+			helpstream << "all command: " << std::endl;
+			int commandPrintLength = std::max_element(imp_->command_pool_->begin(), imp_->command_pool_->end(), [](decltype(*imp_->command_pool_->begin()) a, decltype(*imp_->command_pool_->begin()) b)
+			{
+				return a.name().length() < b.name().length();
+			})->name().length() + 2;
+			for (auto &command : *imp_->command_pool_)
+			{
+				int helpStringLength = command.help().length();
+				int count = 0;
+				helpstream << std::string(commandPrintLength - command.name().length(), ' ') << command.name() << " : ";
+				while (helpStringLength>maxPrintLength)
+				{
+					helpstream << command.help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
+					helpstream << "\n" << std::string(commandPrintLength + 2, ' ');
+					count += 1;
+					helpStringLength -= maxPrintLength;
+				}
+				helpstream << command.help().substr(maxPrintLength*count, std::string::npos) << std::endl;
+			}
+			helpstream << "\nAttention:" << std::endl;
+			helpstream << "the param '--help(-h)' can get more help about the specify command. etc: en -h " << std::endl;
+
+			return helpstream;
+        }
+		
 		CommandParser::~CommandParser(){}
 		CommandParser::CommandParser():imp_(new Imp)
 		{

@@ -92,24 +92,32 @@ void test_command()
 {
 	try
 	{
-		XmlDocument doc;
-        //doc.Parse(xml_data);
-        doc.LoadFile("/usr/aris/robot/resource/robot_motion.xml");
+		XmlDocument xml_doc;
+        //xml_doc.Parse(xml_data);
 
-		CommandParser parser;
-		parser.loadXml(doc);
+		#ifdef UNIX
+			xml_doc.LoadFile("/usr/aris/robot/resource/robot_motion.xml");
+		#endif
 
-        /*
-        getrobothelp(parser);
-        std::cout << std::endl;
-        for (auto &command : parser.commandPool())
-        {
-            getcommandhelp(parser, command.name());
-            //std::cout << getHelpStream(parser, command.name()).str();
-            std::cout << "\n" << std::endl;
-        }
-        */
+		#ifdef WIN32
+			xml_doc.LoadFile("C:\\aris\\robot\\resource\\robot_motion.xml");
+		#endif
 
+        
+
+		std::unique_ptr<aris::core::CommandParser> parser_;
+		parser_.reset(new aris::core::CommandParser());
+		parser_->loadXml(xml_doc);
+
+		//get all command of the system  
+		std::cout << parser_->getHelpStream().str() << std::endl;
+		//display all command help information in detail
+		for (auto &command : parser_->commandPool())
+		{
+			std::cout << command.getHelpStream().str()<<std::endl;
+		}
+
+		//test the command param
         std::vector<std::string> cmd_string_vec{"en --all", "en -m=0 --all", "en -motor=0", "en --moto=0", "rc -t=3000","ds","start" };
 
 		for (auto &cmd_string : cmd_string_vec)
@@ -118,7 +126,7 @@ void test_command()
 			{
 				std::string cmd;
 				std::map<std::string, std::string> params;
-				parser.parse(cmd_string, cmd, params);
+				parser_->parse(cmd_string, cmd, params);
 
 				std::cout << cmd << std::endl;
 				int paramPrintLength;
@@ -145,6 +153,7 @@ void test_command()
 				std::cout << e.what() << std::endl << std::endl;
 			}
 		}
+	
 	}
 	catch (std::exception &e)
 	{
@@ -152,184 +161,3 @@ void test_command()
 	}
 }
 
-void getcommandhelp(aris::core::CommandParser &parser,std::string commandname)
-{
-
-    /*
-    //无换行处理
-    auto command = parser.commandPool().findByName(commandname);
-    std::map<std::string, std::string> default_params;
-    command->addDefaultParam(default_params);
-    auto param_map = parser.commandPool().findByName(commandname)->param_map();
-
-    std::cout << commandname << " : " << command->help() << std::endl;
-    if (param_map.size() != 0)
-    {
-        int paramPrintLength = std::max_element(param_map.begin(), param_map.end(), [](decltype(*param_map.begin()) a, decltype(*param_map.begin()) b)
-        {
-            return a.second->name().length() < b.second->name().length();
-        })->second->name().length() + 6;
-        std::cout << '\n' << "  usage: [command] [param1]=[value1] [param2]=[value1]...." << std::endl;
-        std::cout << '\n' << "  default param:" << std::endl;
-        for (auto &param : default_params)
-        {
-            std::cout << std::string(paramPrintLength - param.first.length(), ' ') << param.first << " : " << param.second << std::endl;
-        }
-        std::cout << '\n' << "  params note: [param] : [abbr]  [note]" << std::endl;
-        for (auto &param : param_map)
-        {
-            std::cout << std::string(paramPrintLength - param.second->name().length(), ' ') << param.second->name() << " : " << param.second->abbreviation() << "  " << param.second->help() << std::endl;
-        }
-    }
-    */
-    /*
-    int maxPrintLength = 55;
-    auto command = parser.commandPool().findByName(commandname);
-    std::map<std::string, std::string> default_params;
-    command->addDefaultParam(default_params);
-    auto param_map = parser.commandPool().findByName(commandname)->param_map();
-
-    int commandLength = command->help().length();
-    int count = 0;
-    std::cout << commandname << " : ";
-    while (commandLength>maxPrintLength)
-    {
-        std::cout << command->help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
-        std::cout << "\n" << std::string(commandname.length() + 2, ' ');
-        count += 1;
-        commandLength -= maxPrintLength;
-    }
-    std::cout << command->help().substr(maxPrintLength*count, std::string::npos) << "\n";
-
-
-    if (param_map.size() != 0)
-    {
-        std::cout << "\n  usage: [command] [param1]=[value1] [param2]=[value2]....\n";
-        int paramPrintLength = std::max_element(param_map.begin(), param_map.end(), [](decltype(*param_map.begin()) a, decltype(*param_map.begin()) b)
-        {
-            return a.second->name().length() < b.second->name().length();
-        })->second->name().length() + 6;
-        std::cout << "\n  default param:\n";
-        for (auto &param : default_params)
-        {
-            std::cout << std::string(paramPrintLength - param.first.length(), ' ') << param.first << " : " << param.second << "\n";
-        }
-        std::cout << "\n  params help: [param] : [abbr]  [help]\n";
-        for (auto &param : param_map)
-        {
-            int helpStringLength = param.second->help().length();
-            int count = 0;
-            std::cout << std::string(paramPrintLength - param.second->name().length(), ' ') << param.second->name() << " : " << param.second->abbreviation() << "  ";
-            while (helpStringLength>maxPrintLength)
-            {
-                std::cout << param.second->help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
-                std::cout << "\n" << std::string(paramPrintLength + 6, ' ');
-                count += 1;
-                helpStringLength -= maxPrintLength;
-            }
-            std::cout << param.second->help().substr(maxPrintLength*count, std::string::npos) << "\n";
-        }
-    }
-*/
-}
-
-void getrobothelp(aris::core::CommandParser &parser)
-{
-    /*
-    //无换行处理
-    std::cout << "all command: " << std::endl;
-    int commandPrintLength = std::max_element(parser.commandPool().begin(), parser.commandPool().end(), [](decltype(*parser.commandPool().begin()) a, decltype(*parser.commandPool().begin()) b)
-    {
-        return a.name().length() < b.name().length();
-    })->name().length() + 2;
-    for (auto &command : parser.commandPool())
-    {
-        std::cout << std::string(commandPrintLength - command.name().length(), ' ') << command.name() << " : " << command.help() << std::endl;
-    }
-    std::cout << "\nAttention:" << std::endl;
-    std::cout << "the param '--help(-h)' can get more help about the specify command. etc: en -h " << std::endl;
-    */
-
-    /*
-    int maxPrintLength = 55;
-    std::cout << "all command: " << std::endl;
-    int commandPrintLength = std::max_element(parser.commandPool().begin(), parser.commandPool().end(), [](decltype(*parser.commandPool().begin()) a, decltype(*parser.commandPool().begin()) b)
-    {
-        return a.name().length() < b.name().length();
-    })->name().length() + 2;
-    for (auto &command : parser.commandPool())
-    {
-        int helpStringLength = command.help().length();
-        int count = 0;
-        std::cout << std::string(commandPrintLength - command.name().length(), ' ') << command.name() << " : ";
-        while (helpStringLength>maxPrintLength)
-        {
-            std::cout << command.help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
-            std::cout << "\n" << std::string(commandPrintLength + 2, ' ');
-            count += 1;
-            helpStringLength -= maxPrintLength;
-        }
-        std::cout << command.help().substr(maxPrintLength*count, std::string::npos) << std::endl;
-    }
-    std::cout << "\nAttention:" << std::endl;
-    std::cout << "the param '--help(-h)' can get more help about the specify command. etc: en -h " << std::endl;
-    */
-}
-
-std::stringstream getHelpStream(aris::core::CommandParser &parser, std::string commandname)
-{
-    /*
-    int maxPrintLength = 55;
-    std::stringstream helpstream{};
-    auto command = parser.commandPool().findByName(commandname);
-    std::map<std::string, std::string> default_params;
-    command->addDefaultParam(default_params);
-    auto param_map = parser.commandPool().findByName(commandname)->param_map();
-
-    int commandLength = command->help().length();
-    int count = 0;
-    helpstream << commandname << " : ";
-    while (commandLength>maxPrintLength)
-    {
-        helpstream << command->help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
-        helpstream << "\n" << std::string(commandname.length() + 2, ' ');
-        count += 1;
-        commandLength -= maxPrintLength;
-    }
-    helpstream << command->help().substr(maxPrintLength*count, std::string::npos) << "\n";
-
-
-    if (param_map.size() != 0)
-    {
-        helpstream << "\n  usage: [command] [param1]=[value1] [param2]=[value2]....\n";
-        int paramPrintLength = std::max_element(param_map.begin(), param_map.end(), [](decltype(*param_map.begin()) a, decltype(*param_map.begin()) b)
-        {
-            return a.second->name().length() < b.second->name().length();
-        })->second->name().length() + 6;
-        helpstream << "\n  default param:\n";
-        for (auto &param : default_params)
-        {
-            helpstream << std::string(paramPrintLength - param.first.length(), ' ') << param.first << " : " << param.second << "\n";
-        }
-        helpstream << "\n  params help: [param] : [abbr]  [help]\n";
-        for (auto &param : param_map)
-        {
-            int helpStringLength = param.second->help().length();
-            int count = 0;
-            helpstream << std::string(paramPrintLength - param.second->name().length(), ' ') << param.second->name() << " : " << param.second->abbreviation() << "  ";
-            while (helpStringLength>maxPrintLength)
-            {
-                helpstream << param.second->help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
-                helpstream << "\n" << std::string(paramPrintLength + 6, ' ');
-                count += 1;
-                helpStringLength -= maxPrintLength;
-            }
-            helpstream << param.second->help().substr(maxPrintLength*count, std::string::npos) << "\n";
-        }
-    }
-
-    return helpstream;
-    */
-	std::stringstream helpstream{};
-	return helpstream;
-}

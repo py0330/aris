@@ -1,12 +1,18 @@
 #include <iostream>
 #include <algorithm>
 #include <aris.h>
+
+#ifdef WIN32
 #include "..\Server\plan.h"
 #include "..\Server\kinematic.h"
+#endif
+
 
 #ifdef UNIX
 #include "rtdk.h"
 #include "unistd.h"
+#include "../Server/plan.h"
+#include "../Server/kinematic.h"
 #endif
 
 
