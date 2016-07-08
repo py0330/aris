@@ -61,6 +61,8 @@ namespace aris
 			auto controller()const->const control::Controller&{ return const_cast<ControlServer *>(this)->controller(); }
 			auto sensorRoot()->sensor::SensorRoot&;
 			auto sensorRoot()const->const sensor::SensorRoot&{ return const_cast<ControlServer *>(this)->sensorRoot(); }
+			auto parser()->core::CommandParser&;
+			auto parser()const->const core::CommandParser&{ return const_cast<ControlServer *>(this)->parser(); }
 
 			auto loadXml(const char *fileName)->void;
 			auto loadXml(const aris::core::XmlDocument &xmlDoc)->void;

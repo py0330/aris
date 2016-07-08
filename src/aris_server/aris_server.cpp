@@ -90,7 +90,7 @@ namespace aris
 			std::unique_ptr<aris::dynamic::Model> model_;
 			std::unique_ptr<aris::sensor::SensorRoot> sensor_root_;
 			std::unique_ptr<aris::control::Controller> controller_;
-            aris::core::CommandParser parser_;
+			std::unique_ptr<aris::core::CommandParser> parser_;
 
 			// 结束时的callback //
 			std::function<void(void)> on_exit_callback_{nullptr};
@@ -137,7 +137,7 @@ namespace aris
 				try
 				{
 					std::string input{ msg.data() };
-					parser_.parse(input, cmd, params);
+					parser_->parse(input, cmd, params);
 
 					std::cout << cmd << std::endl;
 					int paramPrintLength;
@@ -661,7 +661,8 @@ namespace aris
             imp_->model_->loadXml(xml_doc);
             imp_->controller_->loadXml(xml_doc);
             imp_->sensor_root_->loadXml(xml_doc);
-            imp_->parser_.loadXml(xml_doc);
+			imp_->parser_.reset(new aris::core::CommandParser());
+            imp_->parser_->loadXml(xml_doc);
 
 			/// load connection param ///
 			imp_->server_socket_ip_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
@@ -718,6 +719,10 @@ namespace aris
 		auto ControlServer::sensorRoot()->sensor::SensorRoot&
 		{
 			return *imp_->sensor_root_;
+		}
+		auto ControlServer::parser()->core::CommandParser&
+		{
+			return *imp_->parser_;
 		}
 		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void
 		{
