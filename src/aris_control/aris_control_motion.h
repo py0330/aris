@@ -89,7 +89,7 @@ namespace aris
         {
         public:
             auto setControlStrategy(std::function<void()> strategy)->void { strategy_ = strategy; }
-            Controller() { registerChildType<Motion, false, false, false, false>(); }
+            Controller() { registerChildType<Motion>(); }
 
         protected:
             auto controlStrategy()->void override final { if (strategy_)strategy_(); }

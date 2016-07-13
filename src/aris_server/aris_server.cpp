@@ -147,6 +147,7 @@ namespace aris
 					}
 					else
 					{
+						//decltype(*params.begin())
 						paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
 						{
 							return a.first.length() < b.first.length();
@@ -629,10 +630,10 @@ namespace aris
 		}
 		ControlServer::ControlServer() :imp_(new Imp(this)) {}
 		ControlServer::~ControlServer() {}
-		auto ControlServer::createModel(dynamic::Model *model_)->void
+		auto ControlServer::createModel(dynamic::Model *model)->void
 		{
 			if (imp_->model_)throw std::runtime_error("control sever can't create model because it already has one");
-			imp_->model_.reset(model_);
+			imp_->model_.reset(model);
 		}
 		auto ControlServer::createController(control::Controller *controller)->void
 		{

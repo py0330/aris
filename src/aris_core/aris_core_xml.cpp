@@ -173,28 +173,28 @@ namespace aris
 		auto swap(X<T, A>&, X<T, A>&)->void; //optional
 		*/
 		
-		template<> ImpPtr<Object>::ImpPtr(const ImpPtr &other) :data_unique_ptr_(other->root().childTypeMap().at(other->type()).newFromObject(*other)) {};
+		template<> ImpPtr<Object>::ImpPtr(const ImpPtr &other) :data_unique_ptr_(other->root().childTypeMap().at(other->type()).copy_construct_func(*other)) {};
 		template<> auto ImpPtr<Object>::operator=(const ImpPtr &other)->ImpPtr<Object>&
 		{ 
-			other->root().childTypeMap().at(other->type()).assign(*other, **this); 
+			other->root().childTypeMap().at(other->type()).copy_assign_func(*other, **this);
 			return *this;
 		};
 		template<> auto ImpPtr<Object>::operator=(ImpPtr &&other)noexcept ->ImpPtr<Object>&
 		{ 
-			other->root().childTypeMap().at(other->type()).assignR(std::move(*other), **this);
+			other->root().childTypeMap().at(other->type()).move_assign_func(std::move(*other), **this);
 			return *this;
 		};
 
 		template<> auto ImpContainer<Object>::operator=(const ImpContainer& other)->ImpContainer<Object>&
 		{
-			if (size() != other.size())throw std::runtime_error("you must assign Object with same size");
-			for (std::size_t i = 0; i < size(); ++i)other.at(i).root().childTypeMap().at(other.at(i).type()).assign(other.at(i), at(i));
+			if (size() != other.size())throw std::runtime_error("you must copy assign Object with same size");
+			for (std::size_t i = 0; i < size(); ++i)other.at(i).root().childTypeMap().at(other.at(i).type()).copy_assign_func(other.at(i), at(i));
 			return *this;
 		}
 		template<> auto ImpContainer<Object>::operator=(ImpContainer&&other)->ImpContainer<Object>&
 		{
-			if (size() != other.size())throw std::runtime_error("you must assignR Object with same size");
-			for (std::size_t i = 0; i < size(); ++i)other.at(i).root().childTypeMap().at(other.at(i).type()).assignR(std::move(other.at(i)), at(i));
+			if (size() != other.size())throw std::runtime_error("you must move assign Object with same size");
+			for (std::size_t i = 0; i < size(); ++i)other.at(i).root().childTypeMap().at(other.at(i).type()).move_assign_func(std::move(other.at(i)), at(i));
 			return *this;
 		}
 
@@ -250,7 +250,7 @@ namespace aris
 			if ((!auto_override_save) && (tem.find(name) != tem.end()))
 				throw std::runtime_error("Object \"" + this->name() + "\" already has a save named \"" + name + "\", can't save");
 
-			auto save_content = std::shared_ptr<Object>(root().childTypeMap().find(this->type())->second.newFromObject(*this));
+			auto save_content = std::shared_ptr<Object>(root().childTypeMap().find(this->type())->second.copy_construct_func(*this));
 			tem.insert(std::make_pair(name, save_content));
 
 			imp_->save_data_map_ = std::move(tem);
@@ -261,7 +261,7 @@ namespace aris
 			
 			if (tem.find(name) == tem.end())
 				throw std::runtime_error("Object \"" + this->name() + "\" does not has a save named \"" + name + "\", can't load");
-			root().childTypeMap().find(this->type())->second.assign(*tem.at(name), std::ref(*this));
+			root().childTypeMap().find(this->type())->second.copy_assign_func(*tem.at(name), std::ref(*this));
 			if(auto_delete_save)tem.erase(name);
 
 			imp_->save_data_map_ = std::move(tem);
@@ -285,7 +285,7 @@ namespace aris
 			}
 			else
 			{
-				push_back_ptr(root().imp_->type_map_.find(type)->second.newFromXml(*this, size(), xml_ele));
+				push_back_ptr(root().imp_->type_map_.find(type)->second.xml_construct_func(*this, size(), xml_ele));
 				return back();
 			}
 		}
@@ -297,7 +297,7 @@ namespace aris
 			}
 			else
 			{
-				push_back_ptr(root().imp_->type_map_.find(object.type())->second.newFromObject(object));
+				push_back_ptr(root().imp_->type_map_.find(object.type())->second.copy_construct_func(object));
 				back().imp_->id_ = size() - 1;
 				back().imp_->name_ = object.name();
 				back().imp_->father_ = this;
@@ -313,7 +313,7 @@ namespace aris
 			}
 			else
 			{
-				push_back_ptr(root().imp_->type_map_.find(object.type())->second.newFromObjectR(std::move(object)));
+				push_back_ptr(root().imp_->type_map_.find(object.type())->second.move_construct_func(std::move(object)));
 				back().imp_->id_ = size() - 1;
 				back().imp_->name_ = object.name();
 				back().imp_->father_ = this;
@@ -662,11 +662,6 @@ namespace aris
 			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
 		}
 
-		auto Root::TypeInfo::alignChildID(Object &father, Object &child, std::size_t id)->void
-		{
-			child.imp_->id_ = id;
-			child.imp_->father_ = &father;
-		}
 		auto Root::TypeInfo::registerTo(const std::string &type, Root &root)->void
 		{
 			root.imp_->type_map_.insert(std::make_pair(type, *this));

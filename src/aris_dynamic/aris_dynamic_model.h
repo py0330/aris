@@ -20,10 +20,6 @@ namespace aris
 		using double4x4 = double[4][4];
 		using double3 = double[3];
 		using double6 = double[6];
-		//typedef double double6x6[6][6];
-		//typedef double double4x4[4][4];
-		//typedef double double3[3];
-		//typedef double double6[6];
 		
 		class Marker;
 		class Part;

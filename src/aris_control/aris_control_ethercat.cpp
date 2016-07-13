@@ -1084,7 +1084,7 @@ namespace aris
 			registerChildType<aris::core::ObjectPool<SlaveType, Element> >();
 
 			registerChildType<SlaveType>();
-			registerChildType<Slave, false, false, false, false>();
+			registerChildType<Slave>();
 			registerChildType<aris::core::ObjectPool<Slave, Element> >();
 		}
 	}
