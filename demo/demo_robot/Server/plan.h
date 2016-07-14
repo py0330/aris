@@ -15,51 +15,26 @@ namespace robot
     struct RecoverParam final : public aris::server::GaitParamBase
     {
         int total_count_{ 10000 };//the total time(ms)
-        double target_pin_[4]{0.52822, 0.52822, 0.543628, 0.543628};//the length of axis
-        double target_pee_[4]{0.435,0,0,0};//the default pose
+        double target_pin_[3]{0,PI/2, -PI/2};//the angle of axis
+        double target_pee_[3]{1,1,0};//the default pose
     };
     auto recoverParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
     auto recoverGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
 
-    //the robot can move to a profile pose by using 'mvpee' command
-    struct MovePeeParam final: public aris::server::GaitParamBase
+    //move the robot to specify pose or move the specify axis of robot
+    struct MoveParam final: public aris::server::GaitParamBase
     {
-        double target_y_{0.435},   target_z_{0},  target_a_{0}, target_c_{0};
         int total_count_{10000};
-    };
-    auto movePeeParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
-    auto movePeeGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
+        double target_x_{0}, target_y_{0.435},   target_A_{0};
+        double angle_{0};
+        double a1_{0},a2_{0},a3_{0};
+        int mode_{0};//1:pee, 2:pin, 3:pins
+        };
+    auto moveParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
+    auto moveGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
 
-    //the motions of robot can move a profile length by using 'mvpin' command
-    struct MovePinParam final: public aris::server::GaitParamBase
-    {
-        double velocity_{0};
-        int total_count_{10000};
-    };
-    auto movePinParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
-    auto movePinGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
-
-    //the robot can move sin in one dimention
-    struct SinPeeParam final: public aris::server::GaitParamBase
-    {
-        bool active_dimention_[4]{false,false,false,false};//y, z, a, c
-        double amplitude_{0};
-        double frequence_{0};
-        int total_count_{10000};
-    };
-    auto sinPeeParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
-    auto sinPeeGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
-
-    //the motion of robot can move sin
-    struct SinPinParam final: public aris::server::GaitParamBase
-    {
-        double amplitude_{0};
-        double frequence_{0};
-        int total_count_{10000};
-    };
-    auto sinPinParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
-    auto sinPinGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
-}
+	auto testGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
+    }
 
 
 #endif

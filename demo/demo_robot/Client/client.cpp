@@ -1,8 +1,8 @@
-#include <aris.h>
+ï»¿#include <aris.h>
 
 int sendRequest(int argc, char *argv[], const char *xmlFileName)
 {
-	// ĞèÒªÈ¥³ıÃüÁîÃûµÄÂ·¾¶ºÍÀ©Õ¹Ãû //
+	// éœ€è¦å»é™¤å‘½ä»¤åçš„è·¯å¾„å’Œæ‰©å±•å //
 	std::string cmdName(argv[0]);
 
 #ifdef WIN32
@@ -23,17 +23,17 @@ int sendRequest(int argc, char *argv[], const char *xmlFileName)
 		cmdName = cmdName.substr(0, cmdName.rfind('.'));
 	}
 
-	// Ìí¼ÓÃüÁîµÄËùÓĞ²ÎÊı //
+	// æ·»åŠ å‘½ä»¤çš„æ‰€æœ‰å‚æ•° //
 	for (int i = 1; i < argc; ++i)
 	{
 		cmdName = cmdName + " " + argv[i];
 	}
 
-	// ¹¹Ôìmsg£¬ÕâÀïĞèÒªÏÈcopyÃüÁîÃû³Æ£¬È»ºóÒÀ´Îcopy¸÷¸ö²ÎÊı //
+	// æ„é€ msgï¼Œè¿™é‡Œéœ€è¦å…ˆcopyå‘½ä»¤åç§°ï¼Œç„¶åä¾æ¬¡copyå„ä¸ªå‚æ•° //
 	aris::core::Msg msg;
 	msg.copy(cmdName.c_str());
 
-	// Á¬½Ó²¢·¢ËÍmsg //
+	// è¿æ¥å¹¶å‘é€msg //
 	aris::core::XmlDocument doc;
 
 	if (doc.LoadFile(xmlFileName) != 0)	throw std::logic_error("failed to read configuration xml file");
@@ -60,7 +60,7 @@ int sendRequest(int argc, char *argv[], const char *xmlFileName)
 
 	aris::core::Msg ret = conn.sendRequest(msg);
 
-	/*´íÎó´¦Àí*/
+	/*é”™è¯¯å¤„ç†*/
 	if (ret.size() > 0)
 	{
 		std::cout << "cmd has fault, please regard to following information:" << std::endl;
@@ -79,10 +79,10 @@ int main(int argc, char *argv[])
 	if (argc <= 1)throw std::runtime_error("please input the cmd name");
 
 #ifdef UNIX
-	sendRequest(argc - 1, argv + 1, "/usr/Robots/resource/Robot_Type_I/Robot_III/Robot_III.xml");
+    sendRequest(argc - 1, argv + 1, "/usr/aris/robot/resource/robot.xml");
 #endif
 #ifdef WIN32
-	sendRequest(argc - 1, argv + 1, "C:\\Robots\\resource\\Robot_Type_I\\Robot_III\\Robot_III.xml");
+    sendRequest(argc - 1, argv + 1, "C:\\aris\\robot\\resource\\robot.xml");
 #endif
 
 	return 0;

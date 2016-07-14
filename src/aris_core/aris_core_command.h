@@ -16,6 +16,7 @@ namespace aris
 		{
 		public:
 			auto command()const->const Command &;
+			
 			ParamBase(Object &father, std::size_t id, const std::string &name);
 			ParamBase(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
@@ -37,6 +38,8 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("param"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto abbreviation()->char;
+			auto defaultParam()const->const std::string &;
+			auto help()const->const std::string &;
 			Param(Object &father, std::size_t id, const std::string &name);
 			Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
@@ -56,6 +59,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("unique"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			auto defaultParam()const->const std::string &;
 			UniqueParam(Object &father, std::size_t id, const std::string &name);
 			UniqueParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 			
@@ -87,6 +91,10 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("command"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			auto defaultParam()const->const std::string &;
+			auto help()const->const std::string &;
+            auto getHelpString()->std::string;
+            auto getHelpString()const->std::string { return const_cast<Command *>(this)->getHelpString(); }
 			~Command();
 			Command(Object &father, std::size_t id, const std::string &name);
 			Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
@@ -110,7 +118,8 @@ namespace aris
 			virtual auto loadXml(const XmlDocument &xml_doc)->void override;
 			virtual auto loadXml(const XmlElement &xml_ele)->void override;
 			auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
-			auto commandPool()->ObjectPool<Command> &;
+            auto getHelpString()->std::string;
+            auto commandPool()->ObjectPool<Command> &;
 			auto commandPool()const->const ObjectPool<Command> &;
 
 			~CommandParser();
