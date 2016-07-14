@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <map>
 
+#include <iostream>
+
 namespace aris
 {
 	namespace core
@@ -252,36 +254,52 @@ namespace aris
 		public:
 			struct TypeInfo
 			{
-				std::function<Object*(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)> newFromXml;
-				std::function<Object*(const Object &from_object)> newFromObject;
-				std::function<Object*(Object &&from_object)> newFromObjectR;
-				std::function<Object&(const Object &from_object, Object &to_object)> assign;
-				std::function<Object&(Object &&from_object, Object &to_object)> assignR;
+				std::function<Object*(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)> xml_construct_func;
+				std::function<Object*(const Object &from_object)> copy_construct_func;
+				std::function<Object*(Object &&from_object)> move_construct_func;
+				std::function<Object&(const Object &from_object, Object &to_object)> copy_assign_func;
+				std::function<Object&(Object &&from_object, Object &to_object)> move_assign_func;
 
 				auto registerTo(const std::string &type, Root &object)->void;
-				template<typename ChildType, bool is_copyable = true, bool is_moveable = true, bool is_assignable = true, bool is_move_assignable = true> static auto CreateTypeInfo()->TypeInfo
+				template<typename ChildType> static auto CreateTypeInfo()->TypeInfo
 				{
 					static_assert(std::is_base_of<Object, ChildType>::value, "failed to register type, because it is not inheritated from Object");
 
 					TypeInfo info;
-					info.newFromXml = [](Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)->Object*
+					info.xml_construct_func = [](Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)->Object*
 					{
 						return new ChildType(father, id, xml_ele);
 					};
-					info.newFromObject = newFromObjectStruct<ChildType, is_copyable>::func();
-					info.newFromObjectR = newFromObjectRStruct<ChildType, is_copyable, is_moveable>::func();
-					info.assign = assignStruct<ChildType, is_assignable>::func();
-					info.assignR = assignRStruct<ChildType, is_assignable, is_move_assignable>::func();
+					info.copy_construct_func = newFromObjectStruct<ChildType, is_copy_constructible<ChildType>()>::func();
+					info.move_construct_func = newFromObjectRStruct<ChildType, is_copy_constructible<ChildType>(), is_move_constructible<ChildType>()>::func();
+					info.copy_assign_func = assignStruct<ChildType, is_copy_assignable<ChildType>()>::func();
+					info.move_assign_func = assignRStruct<ChildType, is_copy_assignable<ChildType>(), TypeInfo::is_move_assignable<ChildType>()>::func();
 
 					return info;
 				}
 
 			private:
-				static auto alignChildID(Object &father, Object &child, std::size_t id)->void;
+				struct general {};
+				struct special :public general {};
+				template<typename T> static constexpr auto is_copy_constructible_(general)-> bool { return false; }
+				template<typename T> static constexpr auto is_copy_constructible_(special, typename std::decay<decltype(T(*static_cast<const T*>(nullptr)))>* = nullptr)-> bool { return true; }
+				template<typename T> static constexpr auto is_copy_constructible()-> bool { return is_copy_constructible_<T>(special()); }
+				
+				template<typename T> static constexpr auto is_move_constructible_(general)-> bool { return false; }
+				template<typename T> static constexpr auto is_move_constructible_(special, typename std::decay<decltype(T(std::move(*static_cast<T*>(nullptr))))>* = nullptr)-> bool { return true; }
+				template<typename T> static constexpr auto is_move_constructible()-> bool { return is_move_constructible_<T>(special()); }
+
+				template<typename T> static constexpr auto is_copy_assignable_(general)-> bool { return false; }
+				template<typename T> static constexpr auto is_copy_assignable_(special, typename std::decay<decltype(static_cast<T*>(nullptr)->operator=(*static_cast<const T*>(nullptr)))>::type* = nullptr)-> bool { return true; }
+				template<typename T> static constexpr auto is_copy_assignable()-> bool { return is_copy_assignable_<T>(special()); }
+
+				template<typename T> static constexpr auto is_move_assignable_(general)-> bool { return false; }
+				template<typename T> static constexpr auto is_move_assignable_(special, typename std::decay<decltype(static_cast<T*>(nullptr)->operator=(std::move(*static_cast<T*>(nullptr))))>::type* = nullptr)-> bool { return true; }
+				template<typename T> static constexpr auto is_move_assignable()-> bool { return is_move_assignable_<T>(special()); }
 
 				template<typename ChildType, bool> struct newFromObjectStruct
 				{
-					static auto func()->decltype(newFromObject) 
+					static auto func()->decltype(copy_construct_func) 
 					{
 						return[](const Object &other)->Object*
 						{
@@ -292,12 +310,12 @@ namespace aris
 				};
 				template<typename ChildType> struct newFromObjectStruct<ChildType, false>
 				{
-					static auto func()->decltype(newFromObject) { return nullptr; }
+					static auto func()->decltype(copy_construct_func) { return nullptr; }
 				};
 
 				template<typename ChildType, bool is_copyable, bool is_moveable> struct newFromObjectRStruct
 				{
-					static auto func()->decltype(newFromObjectR)
+					static auto func()->decltype(move_construct_func)
 					{
 						return[](Object &&other)->Object*
 						{
@@ -308,7 +326,7 @@ namespace aris
 				};
 				template<typename ChildType, bool is_copyable> struct newFromObjectRStruct<ChildType, is_copyable, false>
 				{
-					static auto func()->decltype(newFromObjectR)
+					static auto func()->decltype(move_construct_func)
 					{
 						return[](Object &&other)->Object*
 						{
@@ -319,12 +337,12 @@ namespace aris
 				};
 				template<typename ChildType> struct newFromObjectRStruct<ChildType, false, false>
 				{
-					static auto func()->decltype(newFromObjectR) { return nullptr; }
+					static auto func()->decltype(move_construct_func) { return nullptr; }
 				};
 
 				template<typename ChildType, bool> struct assignStruct
 				{
-					static auto func()->decltype(assign)
+					static auto func()->decltype(copy_assign_func)
 					{
 						return[](const Object &from_object, Object &to_object)->Object&
 						{
@@ -336,12 +354,12 @@ namespace aris
 				};
 				template<typename ChildType> struct assignStruct<ChildType, false>
 				{
-					static auto func()->decltype(assign) { return nullptr; }
+					static auto func()->decltype(copy_assign_func) { return nullptr; }
 				};
 
 				template<typename ChildType, bool is_assignable, bool is_move_assignable> struct assignRStruct
 				{
-					static auto func()->decltype(assignR)
+					static auto func()->decltype(move_assign_func)
 					{
 						return[](Object &&from_object, Object &to_object)->Object&
 						{
@@ -353,7 +371,7 @@ namespace aris
 				};
 				template<typename ChildType, bool is_assignable> struct assignRStruct<ChildType, is_assignable, false>
 				{
-					static auto func()->decltype(assignR)
+					static auto func()->decltype(move_assign_func)
 					{
 						return[](Object &&from_object, Object &to_object)->Object&
 						{
@@ -365,13 +383,13 @@ namespace aris
 				};
 				template<typename ChildType> struct assignRStruct<ChildType, false, false>
 				{
-					static auto func()->decltype(assignR) { return nullptr; }
+					static auto func()->decltype(move_assign_func) { return nullptr; }
 				};
 
 			};
 			using Object::saveXml;
-			template<typename ChildType, bool is_copyable = true, bool is_moveable = true, bool is_assignable = true, bool is_move_assignable = true> 
-			auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType, is_copyable, is_moveable, is_assignable, is_move_assignable>().registerTo(ChildType::Type(), *this); }
+			template<typename ChildType> 
+			auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); }
 			static auto Type()->const std::string &{ static const std::string type("root"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			virtual auto loadXml(const char* filename)->void { loadXml(std::string(filename)); }
