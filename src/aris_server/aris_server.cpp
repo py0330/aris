@@ -645,13 +645,13 @@ namespace aris
 			if (imp_->sensor_root_)throw std::runtime_error("control sever can't create sensor_root because it already has one");
 			imp_->sensor_root_.reset(sensor_root);
 		}
-		auto ControlServer::loadXml(const char *fileName)->void
+		auto ControlServer::loadXml(const char *file_name)->void
 		{
 			aris::core::XmlDocument doc;
 
-			if (doc.LoadFile(fileName) != 0)
+			if (doc.LoadFile(file_name) != 0)
 			{
-				throw std::logic_error((std::string("could not open file:") + std::string(fileName)));
+				throw std::logic_error((std::string("could not open file:") + std::string(file_name)));
 			}
 
 			loadXml(doc);
@@ -704,37 +704,25 @@ namespace aris
             {
                 this->imp_->tg();
             });
-
-
-
 		}
-		auto ControlServer::model()->dynamic::Model&
-		{
-			return std::ref(*imp_->model_.get());
-		}
-		auto ControlServer::controller()->control::Controller&
-		{
-			return std::ref(*imp_->controller_);
-		}
-		auto ControlServer::sensorRoot()->sensor::SensorRoot&
-		{
-			return *imp_->sensor_root_;
-		}
-		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void
+		auto ControlServer::model()->dynamic::Model& { return std::ref(*imp_->model_.get()); }
+		auto ControlServer::controller()->control::Controller& { return std::ref(*imp_->controller_); }
+		auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
+		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &plan_func)->void
 		{
 			if (cmd_name == "en")
 			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for \"en\" command");
+				if (plan_func)throw std::runtime_error("you can not set plan_func for \"en\" command");
 				imp_->parse_enable_func_ = parse_func;
 			}
 			else if (cmd_name == "ds")
 			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for \"ds\" command");
+				if (plan_func)throw std::runtime_error("you can not set plan_func for \"ds\" command");
 				imp_->parse_disable_func_ = parse_func;
 			}
 			else if (cmd_name == "hm")
 			{
-				if (gait_func)throw std::runtime_error("you can not set plan_func for \"hm\" command");
+				if (plan_func)throw std::runtime_error("you can not set plan_func for \"hm\" command");
 				imp_->parse_home_func_ = parse_func;
 			}
 			else
@@ -749,7 +737,7 @@ namespace aris
 				}
 				else
 				{
-					imp_->plan_vec_.push_back(gait_func);
+					imp_->plan_vec_.push_back(plan_func);
 					imp_->parser_vec_.push_back(parse_func);
 					imp_->cmd_id_map_.insert(std::make_pair(cmd_name, imp_->plan_vec_.size() - 1));
 

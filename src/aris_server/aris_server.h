@@ -62,8 +62,8 @@ namespace aris
 			auto sensorRoot()->sensor::SensorRoot&;
 			auto sensorRoot()const->const sensor::SensorRoot&{ return const_cast<ControlServer *>(this)->sensorRoot(); }
 
-			auto loadXml(const char *fileName)->void;
-			auto loadXml(const aris::core::XmlDocument &xmlDoc)->void;
+			auto loadXml(const char *file_name)->void;
+			auto loadXml(const aris::core::XmlDocument &xml_doc)->void;
 			auto open()->void;
 			auto close()->void;
 			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void;

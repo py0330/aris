@@ -187,8 +187,8 @@ namespace aris
 		template<std::size_t DIM> class ConstraintData
 		{
 		public:
-			typedef double double6xd[6][DIM];
-			typedef double doubled[DIM];
+			using double6xd = double[6][DIM];
+			using doubled = double[DIM];
 
 			static constexpr int Dim() { return DIM; }
 			auto csmI() const->const double6xd &{ return csmI_; }
