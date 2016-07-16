@@ -339,10 +339,17 @@ namespace aris
 			auto txDataPool()const->const aris::core::RefPool<Slave::TxType> &;
 			auto rxDataPool()->aris::core::RefPool<Slave::RxType> &;
 			auto rxDataPool()const->const aris::core::RefPool<Slave::RxType> &;
+            auto isLoging()->bool;
+            auto isLoging() const->bool;
+            auto logOn()->void;
+            auto logOn() const->void;
+            auto logOff()->void;
+            auto logOff() const->void;
+
 			virtual ~Master();
 			Master();
 		protected:
-			virtual auto controlStrategy()->void {};
+            virtual auto controlStrategy()->void {}
 
 		private:
 			Master(const Master &other) = delete;

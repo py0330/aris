@@ -159,20 +159,23 @@ namespace aris
                     while (!is_stopping_)
                     {
                         record_pipe_->recvInNrt(receive_data.get(),data_size_);
-
-                        file << ++count << " ";
-
-                        std::size_t size_count=0;
-                        for (auto &sla : *slave_pool_)
+                        count=count+1;
+                        if(is_loging_)
                         {
-							sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
-								, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
-							
-							file << " ";
+                            file <<count << " ";
 
-							size_count += sla.txTypeSize() + sla.rxTypeSize();
+                            std::size_t size_count=0;
+                            for (auto &sla : *slave_pool_)
+                            {
+                                sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
+                                    , *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+
+                                file << " ";
+
+                                size_count += sla.txTypeSize() + sla.rxTypeSize();
+                            }
+                            file << std::endl;
                         }
-                        file << std::endl;
                     }
                     file.close();
                 });
@@ -200,6 +203,7 @@ namespace aris
             std::unique_ptr<char[]> sent_data_;
             std::unique_ptr<Pipe<void *>> record_pipe_;
             std::thread record_thread_;
+            std::atomic_bool is_loging_{ true };
 
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
@@ -1073,6 +1077,12 @@ namespace aris
 		auto Master::txDataPool()const->const aris::core::RefPool<Slave::TxType> &{return imp_->tx_data_pool_; }
 		auto Master::rxDataPool()->aris::core::RefPool<Slave::RxType> & { return imp_->rx_data_pool_; }
 		auto Master::rxDataPool()const->const aris::core::RefPool<Slave::RxType> &{return imp_->rx_data_pool_; }
+        auto Master::isLoging()->bool{return imp_->is_loging_;}
+        auto Master::isLoging() const->bool{return imp_->is_loging_;}
+        auto Master::logOn()->void{imp_->is_loging_=true;}
+        auto Master::logOn() const->void{imp_->is_loging_=true;}
+        auto Master::logOff()->void{imp_->is_loging_=false;}
+        auto Master::logOff() const->void{imp_->is_loging_=false;}
 		Master::~Master() {}
 		Master::Master() :imp_(new Imp)
 		{

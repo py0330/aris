@@ -18,9 +18,10 @@ namespace aris
 		{ 
 			bool is_taken_{ false };
 		};
-		auto ParamBase::command()const->const Command &{
+		auto ParamBase::command()const->const Command &
+		{
 			if (dynamic_cast<const Command *>(&father()))
-			return static_cast<const Command &>(father());
+				return static_cast<const Command &>(father());
 			else if (dynamic_cast<const ParamBase *>(&father()))
 				return static_cast<const ParamBase &>(father()).command();
 			else
@@ -56,7 +57,10 @@ namespace aris
 		{
 			char abbreviation_{ 0 };
 			std::string default_value_{ "" };
+			std::string help_{ "" };
 		};
+		auto Param::defaultParam()const->const std::string &{ return imp_->default_value_; }
+		auto Param::help()const->const std::string &{ return imp_->help_; }
 		auto Param::take()->void {
 			if (isTaken())throw std::runtime_error("parse command error: command \"" + command().name() + "\"'s param \"" + name() + "\" has been set more than once");
 			ParamBase::take();
@@ -66,24 +70,26 @@ namespace aris
 		{
 			if (!isTaken())param_map_out.insert(std::make_pair(name(), imp_->default_value_));
 		}
-		auto Param::abbreviation()->char { return imp_->abbreviation_; };
+        auto Param::abbreviation()->char { return imp_->abbreviation_; }
 		Param::Param(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
 		Param::Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele)
 		{
 			imp_->abbreviation_ = attributeChar(xml_ele, "abbreviation", imp_->abbreviation_);
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
+			imp_->help_ = attributeString(xml_ele, "help", imp_->help_);
 		}
 		
 		struct UniqueParam::Imp
 		{
 			std::string default_value_{ "" };
 		};
+		auto UniqueParam::defaultParam()const->const std::string &{ return imp_->default_value_; }
 		auto UniqueParam::take()->void 
 		{
 			if (isTaken())throw std::runtime_error("parse command error: command \"" + command().name() + "\"'s UNIQUE param \"" + name() + "\" has been set more than once");
 			ParamBase::take();
 		}
-		auto UniqueParam::reset()->void { for (auto &child : *this)dynamic_cast<ParamBase&>(child).reset(); ParamBase::reset(); };
+        auto UniqueParam::reset()->void { for (auto &child : *this)dynamic_cast<ParamBase&>(child).reset(); ParamBase::reset(); }
 		auto UniqueParam::addDefaultParam(std::map<std::string, std::string> &param_map_out)->void 
 		{
 			if (size() == 0)return;
@@ -107,9 +113,11 @@ namespace aris
 		{
 			bool is_taken_;
 			std::string default_value_{ "" };
+			std::string help_{""};
 			std::map<std::string, Param*> param_map_;
 			std::map<char, std::string> abbreviation_map_;
 		};
+		auto Command::defaultParam()const->const std::string &{ return imp_->default_value_; }
 		auto Command::reset()->void 
 		{ 
 			imp_->is_taken_ = false;
@@ -133,11 +141,58 @@ namespace aris
 
 			default_param->addDefaultParam(param_map_out);
 		}
-		Command::~Command() {};
-		Command::Command(Object &father, std::size_t id, const std::string &name) :ObjectPool(father, id, name) {};
+		auto Command::help()const->const std::string &{ return imp_->help_; }
+        auto Command::getHelpString()->std::string
+		{
+			int maxPrintLength = 55;
+            std::string helpstring{};
+
+			int commandLength = imp_->help_.length();
+			int count = 0;
+            helpstring= name() + " : ";
+			while (commandLength>maxPrintLength)
+			{
+                helpstring+= imp_->help_.substr(maxPrintLength*count, maxPrintLength*(count + 1));
+                helpstring+= "\n" + std::string(name().length() + 2, ' ');
+				count += 1;
+				commandLength -= maxPrintLength;
+			}
+            helpstring+= imp_->help_.substr(maxPrintLength*count, std::string::npos) + "\n";
+
+			if (imp_->param_map_.size() != 0)
+			{
+                helpstring+= "\n  usage: [command] [param1]=[value1] [param2]=[value2]....\n";
+				int paramPrintLength = std::max_element(imp_->param_map_.begin(), imp_->param_map_.end(), [](decltype(*imp_->param_map_.begin()) a, decltype(*imp_->param_map_.begin()) b)
+				{
+					return a.second->name().length() < b.second->name().length();
+				})->second->name().length() + 6;
+                helpstring+= "\n  params help: [param] : [abbr]  [help]\n";
+				for (auto &param : imp_->param_map_)
+				{
+					int helpStringLength = param.second->help().length();
+
+					int count = 0;
+                    helpstring+= std::string(paramPrintLength - param.second->name().length(), ' ') + param.second->name() + " : " + param.second->abbreviation() + "  ";
+					while (helpStringLength>maxPrintLength)
+					{
+                        helpstring+= param.second->help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
+                        helpstring+= "\n" + std::string(paramPrintLength + 6, ' ');
+						count += 1;
+						helpStringLength -= maxPrintLength;
+					}
+                    helpstring+= param.second->help().substr(maxPrintLength*count, std::string::npos) + "\n";
+				}
+			}
+
+            return helpstring;
+		}
+		
+		Command::~Command() {}
+        Command::Command(Object &father, std::size_t id, const std::string &name) :ObjectPool(father, id, name) {}
 		Command::Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ObjectPool(father, id, xml_ele)
 		{
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
+			imp_->help_ = attributeString(xml_ele, "help", imp_->help_);
 			
 			if(imp_->default_value_ != "" && (findByName(imp_->default_value_) == end()))
 				throw std::runtime_error("Command \"" + name() + "\" does not has valid default param name");
@@ -307,8 +362,38 @@ namespace aris
 				throw std::runtime_error(e.what() + std::string(", when parsing command string \"" + command_string +"\""));
 			}
 		}
-		auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; };
-		auto CommandParser::commandPool()const->const ObjectPool<Command> &{ return *imp_->command_pool_; };
+        auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; }
+        auto CommandParser::commandPool()const->const ObjectPool<Command> &{ return *imp_->command_pool_; }
+
+        auto CommandParser::getHelpString( )->std::string
+        {			
+			int maxPrintLength = 55;
+            std::string helpstring{};
+
+            helpstring="all command: \n";
+			int commandPrintLength = std::max_element(imp_->command_pool_->begin(), imp_->command_pool_->end(), [](decltype(*imp_->command_pool_->begin()) a, decltype(*imp_->command_pool_->begin()) b)
+			{
+				return a.name().length() < b.name().length();
+			})->name().length() + 2;
+			for (auto &command : *imp_->command_pool_)
+			{
+				int helpStringLength = command.help().length();
+				int count = 0;
+                helpstring+=std::string(commandPrintLength - command.name().length(), ' ') + command.name() + " : ";
+				while (helpStringLength>maxPrintLength)
+				{
+                    helpstring+=command.help().substr(maxPrintLength*count, maxPrintLength*(count + 1));
+                    helpstring+="\n" + std::string(commandPrintLength + 2, ' ');
+					count += 1;
+					helpStringLength -= maxPrintLength;
+				}
+                helpstring+=command.help().substr(maxPrintLength*count, std::string::npos) + "\n";
+			}
+            helpstring+="\nAttention:\n";
+            helpstring+="the param '--help(-h)' can get more help about the specify command. etc: en -h \n";
+
+            return helpstring;
+        }
 		CommandParser::~CommandParser(){}
 		CommandParser::CommandParser():imp_(new Imp)
 		{
