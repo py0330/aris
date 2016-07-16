@@ -16,11 +16,11 @@ namespace aris
 {
 	namespace core
 	{
-		typedef tinyxml2::XMLDocument XmlDocument;
-		typedef tinyxml2::XMLDeclaration XmlDeclaration;
-		typedef tinyxml2::XMLNode XmlNode;
-		typedef tinyxml2::XMLElement XmlElement;
-		typedef tinyxml2::XMLAttribute XmlAttribute;
+		using XmlDocument = tinyxml2::XMLDocument ;
+		using XmlDeclaration = tinyxml2::XMLDeclaration ;
+		using XmlNode = tinyxml2::XMLNode;
+		using XmlElement = tinyxml2::XMLElement;
+		using XmlAttribute = tinyxml2::XMLAttribute;
 		class Root;
 
 		template<typename Data> class ImpPtr
@@ -46,28 +46,23 @@ namespace aris
 		template <class T, class A = std::allocator<T> >class ImpContainer 
 		{
 		public:
-			typedef A allocator_type;
-			typedef typename A::value_type value_type;
-			typedef typename A::reference reference;
-			typedef typename A::const_reference const_reference;
-			typedef typename A::pointer pointer;
-			typedef typename A::const_pointer const_pointer;
-			typedef typename A::difference_type difference_type;
-			typedef typename A::size_type size_type;
+			using allocator_type = A;
+			using value_type = typename A::value_type;
+			using reference = typename A::reference;
+			using const_reference = typename A::const_reference;
+			using pointer = typename A::pointer;
+			using const_pointer = typename A::const_pointer;
+			using difference_type = typename A::difference_type;
+			using size_type = typename A::size_type;
 
 			class iterator
 			{
 			public:
-				typedef typename A::difference_type difference_type;
-				typedef typename A::value_type value_type;
-				typedef typename A::reference reference;
-				typedef typename A::pointer pointer;
-				typedef std::random_access_iterator_tag iterator_category; //or another tag
-
-				iterator() = default;
-				iterator(const iterator& other) = default;
-				iterator(const typename std::vector<ImpPtr<T>>::iterator iter):iter_(iter) {} // 自己添加的
-				~iterator() = default;
+				using difference_type = typename A::difference_type;
+				using value_type = typename A::value_type;
+				using reference = typename A::reference;
+				using pointer = typename A::pointer;
+				using iterator_category = std::random_access_iterator_tag; //or another tag
 
 				auto operator=(const iterator&other)->iterator& = default;
 				auto operator==(const iterator&other) const->bool { return iter_ == other.iter_; }
@@ -92,22 +87,23 @@ namespace aris
 				auto operator->() const->pointer { return iter_->operator->(); }
 				auto operator[](size_type size) const->reference { return *iter_->operator[](size); } //optional
 
+				~iterator() = default;
+				iterator() = default;
+				iterator(const iterator& other) = default;
+				iterator(const typename std::vector<ImpPtr<T>>::iterator iter) :iter_(iter) {} // 自己添加的
+
+			private:
+				friend class ImpContainer::const_iterator;
 				typename std::vector<ImpPtr<T>>::iterator iter_;
 			};
 			class const_iterator 
 			{
 			public:
-				typedef typename A::difference_type difference_type;
-				typedef typename A::value_type value_type;
-				typedef typename A::const_reference const_reference;
-				typedef typename A::const_pointer const_pointer;
-				typedef std::random_access_iterator_tag iterator_category; //or another tag
-
-				const_iterator() = default;
-				const_iterator(const const_iterator&) = default;
-				const_iterator(const iterator& other):iter_(other.iter_) {}
-				const_iterator(const typename std::vector<ImpPtr<T>>::const_iterator iter) :iter_(iter) {} // 自己添加的
-				~const_iterator() = default;
+				using difference_type = typename A::difference_type;
+				using value_type = typename A::value_type;
+				using const_reference = typename A::const_reference;
+				using const_pointer = typename A::const_pointer;
+				using iterator_category = std::random_access_iterator_tag; //or another tag
 
 				auto operator=(const const_iterator&)->const_iterator& = default;
 				auto operator==(const const_iterator& other) const->bool { return iter_ == other.iter_; }
@@ -132,10 +128,17 @@ namespace aris
 				auto operator->() const->const_pointer { return iter_->operator->(); }
 				auto operator[](size_type size) const->const_reference { return *iter_->operator[](size); } //optional
 
+				~const_iterator() = default;
+				const_iterator() = default;
+				const_iterator(const const_iterator&) = default;
+				const_iterator(const iterator& other) :iter_(other.iter_) {}
+				const_iterator(const typename std::vector<ImpPtr<T>>::const_iterator iter) :iter_(iter) {} // 自己添加的
+
+			private:
 				typename std::vector<ImpPtr<T>>::const_iterator iter_;
 			};
-			typedef std::reverse_iterator<iterator> reverse_iterator; //optional
-			typedef std::reverse_iterator<const_iterator> const_reverse_iterator; //optional
+			using reverse_iterator = std::reverse_iterator<iterator>; //optional
+			using const_reverse_iterator = std::reverse_iterator<const_iterator>; //optional
 			
 			auto swap(ImpContainer& other)->void { return container_.swap(other.container_); }
 			auto size()const->size_type { return container_.size(); }
@@ -270,10 +273,10 @@ namespace aris
 					{
 						return new ChildType(father, id, xml_ele);
 					};
-					info.copy_construct_func = newFromObjectStruct<ChildType, is_copy_constructible<ChildType>()>::func();
-					info.move_construct_func = newFromObjectRStruct<ChildType, is_copy_constructible<ChildType>(), is_move_constructible<ChildType>()>::func();
-					info.copy_assign_func = assignStruct<ChildType, is_copy_assignable<ChildType>()>::func();
-					info.move_assign_func = assignRStruct<ChildType, is_copy_assignable<ChildType>(), TypeInfo::is_move_assignable<ChildType>()>::func();
+					info.copy_construct_func = CopyConstruct<ChildType, is_copy_constructible<ChildType>()>::func();
+					info.move_construct_func = MoveConstruct<ChildType, is_copy_constructible<ChildType>(), is_move_constructible<ChildType>()>::func();
+					info.copy_assign_func = CopyAssign<ChildType, is_copy_assignable<ChildType>()>::func();
+					info.move_assign_func = MoveAssign<ChildType, is_copy_assignable<ChildType>(), TypeInfo::is_move_assignable<ChildType>()>::func();
 
 					return info;
 				}
@@ -297,7 +300,7 @@ namespace aris
 				template<typename T> static constexpr auto is_move_assignable_(special, typename std::decay<decltype(static_cast<T*>(nullptr)->operator=(std::move(*static_cast<T*>(nullptr))))>::type* = nullptr)-> bool { return true; }
 				template<typename T> static constexpr auto is_move_assignable()-> bool { return is_move_assignable_<T>(special()); }
 
-				template<typename ChildType, bool> struct newFromObjectStruct
+				template<typename ChildType, bool> struct CopyConstruct
 				{
 					static auto func()->decltype(copy_construct_func) 
 					{
@@ -308,12 +311,12 @@ namespace aris
 						};
 					}
 				};
-				template<typename ChildType> struct newFromObjectStruct<ChildType, false>
+				template<typename ChildType> struct CopyConstruct<ChildType, false>
 				{
 					static auto func()->decltype(copy_construct_func) { return nullptr; }
 				};
 
-				template<typename ChildType, bool is_copyable, bool is_moveable> struct newFromObjectRStruct
+				template<typename ChildType, bool is_copy_constructible, bool is_move_constructible> struct MoveConstruct
 				{
 					static auto func()->decltype(move_construct_func)
 					{
@@ -324,7 +327,7 @@ namespace aris
 						};
 					}
 				};
-				template<typename ChildType, bool is_copyable> struct newFromObjectRStruct<ChildType, is_copyable, false>
+				template<typename ChildType, bool is_copy_constructible> struct MoveConstruct<ChildType, is_copy_constructible, false>
 				{
 					static auto func()->decltype(move_construct_func)
 					{
@@ -335,12 +338,12 @@ namespace aris
 						};
 					}
 				};
-				template<typename ChildType> struct newFromObjectRStruct<ChildType, false, false>
+				template<typename ChildType> struct MoveConstruct<ChildType, false, false>
 				{
 					static auto func()->decltype(move_construct_func) { return nullptr; }
 				};
 
-				template<typename ChildType, bool> struct assignStruct
+				template<typename ChildType, bool> struct CopyAssign
 				{
 					static auto func()->decltype(copy_assign_func)
 					{
@@ -352,12 +355,12 @@ namespace aris
 						};
 					}
 				};
-				template<typename ChildType> struct assignStruct<ChildType, false>
+				template<typename ChildType> struct CopyAssign<ChildType, false>
 				{
 					static auto func()->decltype(copy_assign_func) { return nullptr; }
 				};
 
-				template<typename ChildType, bool is_assignable, bool is_move_assignable> struct assignRStruct
+				template<typename ChildType, bool is_copy_assignable, bool is_move_assignable> struct MoveAssign
 				{
 					static auto func()->decltype(move_assign_func)
 					{
@@ -369,7 +372,7 @@ namespace aris
 						};
 					}
 				};
-				template<typename ChildType, bool is_assignable> struct assignRStruct<ChildType, is_assignable, false>
+				template<typename ChildType, bool is_copy_assignable> struct MoveAssign<ChildType, is_copy_assignable, false>
 				{
 					static auto func()->decltype(move_assign_func)
 					{
@@ -381,11 +384,10 @@ namespace aris
 						};
 					}
 				};
-				template<typename ChildType> struct assignRStruct<ChildType, false, false>
+				template<typename ChildType> struct MoveAssign<ChildType, false, false>
 				{
 					static auto func()->decltype(move_assign_func) { return nullptr; }
 				};
-
 			};
 			using Object::saveXml;
 			template<typename ChildType> 
@@ -416,26 +418,21 @@ namespace aris
 		public:
 			static_assert(std::is_base_of<Object, Base>::value, "template param \"Base\" of \"ObjectPool\" must be derived class of \"Object\"");
 
-			typedef T value_type;
-			typedef T& reference;
-			typedef const T& const_reference;
-			typedef T* pointer;
-			typedef const T* const_pointer;
-			typedef typename Base::size_type size_type;
+			using value_type = T;
+			using reference = T&;
+			using const_reference = const T&;
+			using pointer = T*;
+			using const_pointer = const T*;
+			using size_type = typename Base::size_type;
 
 			class iterator
 			{
 			public:
-				typedef typename ObjectPool::difference_type difference_type;
-				typedef typename ObjectPool::value_type value_type;
-				typedef typename ObjectPool::reference reference;
-				typedef typename ObjectPool::pointer pointer;
-				typedef std::random_access_iterator_tag iterator_category; //or another tag
-
-				iterator() = default;
-				iterator(const iterator& other) = default;
-				iterator(typename Base::iterator iter) :iter_(iter) {} // 自己添加的
-				~iterator() = default;
+				using difference_type = typename ObjectPool::difference_type;
+				using value_type = typename ObjectPool::value_type;
+				using reference = typename ObjectPool::reference;
+				using pointer = typename ObjectPool::pointer;
+				using iterator_category = std::random_access_iterator_tag; //or another tag
 
 				auto operator=(const iterator&other)->iterator& = default;
 				auto operator==(const iterator&other) const->bool { return iter_ == other.iter_; }
@@ -460,22 +457,23 @@ namespace aris
 				auto operator->() const->pointer { return static_cast<pointer>(iter_.operator->());}
 				auto operator[](size_type size) const->reference { return *iter_->operator[](size); } //optional
 
+				~iterator() = default;
+				iterator() = default;
+				iterator(const iterator& other) = default;
+				iterator(typename Base::iterator iter) :iter_(iter) {} // 自己添加的
+
+			private:
 				typename Base::iterator iter_;
+				friend class ObjectPool::const_iterator;
 			};
 			class const_iterator
 			{
 			public:
-				typedef typename ObjectPool::difference_type difference_type;
-				typedef typename ObjectPool::value_type value_type;
-				typedef typename ObjectPool::const_reference const_reference;
-				typedef typename ObjectPool::const_pointer const_pointer;
-				typedef std::random_access_iterator_tag iterator_category; //or another tag
-
-				const_iterator() = default;
-				const_iterator(const const_iterator&) = default;
-				const_iterator(const iterator& other) :iter_(other.iter_) {}
-				const_iterator(typename Base::const_iterator iter) :iter_(iter) {} // 自己添加的
-				~const_iterator() = default;
+				using difference_type = typename ObjectPool::difference_type ;
+				using value_type = typename ObjectPool::value_type ;
+				using const_reference = typename ObjectPool::const_reference ;
+				using const_pointer = typename ObjectPool::const_pointer ;
+				using iterator_category = std::random_access_iterator_tag ; //or another tag
 
 				auto operator=(const const_iterator&)->const_iterator& = default;
 				auto operator==(const const_iterator& other) const->bool { return iter_ == other.iter_; }
@@ -500,10 +498,17 @@ namespace aris
 				auto operator->() const->const_pointer { return static_cast<const_pointer>(iter_.operator->()); }
 				auto operator[](size_type size) const->const_reference { return *iter_->operator[](size); } //optional
 
+				~const_iterator() = default;
+				const_iterator() = default;
+				const_iterator(const const_iterator&) = default;
+				const_iterator(const iterator& other) :iter_(other.iter_) {}
+				const_iterator(typename Base::const_iterator iter) :iter_(iter) {} // 自己添加的
+
+			private:
 				typename Base::const_iterator iter_;
 			};
-			typedef std::reverse_iterator<iterator> reverse_iterator; //optional
-			typedef std::reverse_iterator<const_iterator> const_reverse_iterator; //optional
+			using reverse_iterator = std::reverse_iterator<iterator>; //optional
+			using const_reverse_iterator = std::reverse_iterator<const_iterator>; //optional
 
 			auto begin()->iterator { return Base::begin(); }
 			auto begin()const->const_iterator { return Base::begin(); }
@@ -545,27 +550,22 @@ namespace aris
 		template <class T> class RefPool
 		{
 		public:
-			typedef T value_type;
-			typedef T& reference;
-			typedef const T& const_reference;
-			typedef T* pointer;
-			typedef const T* const_pointer;
-			typedef std::size_t difference_type;
-			typedef std::size_t size_type;
+			using value_type = T;
+			using reference = T&;
+			using const_reference = const T&;
+			using pointer = T*;
+			using const_pointer = const T*;
+			using difference_type = std::size_t;
+			using size_type = std::size_t;
 
 			class iterator
 			{
 			public:
-				typedef typename RefPool::difference_type difference_type;
-				typedef typename RefPool::value_type value_type;
-				typedef typename RefPool::reference reference;
-				typedef typename RefPool::pointer pointer;
-				typedef std::random_access_iterator_tag iterator_category; //or another tag
-
-				iterator() = default;
-				iterator(const iterator& other) = default;
-				iterator(typename std::vector<T*>::iterator iter) :iter_(iter) {} // 自己添加的
-				~iterator() = default;
+				using difference_type = typename RefPool::difference_type;
+				using value_type = typename RefPool::value_type;
+				using reference = typename RefPool::reference;
+				using pointer = typename RefPool::pointer;
+				using iterator_category = std::random_access_iterator_tag; //or another tag
 
 				auto operator=(const iterator&other)->iterator& = default;
 				auto operator==(const iterator&other) const->bool { return iter_ == other.iter_; }
@@ -590,22 +590,23 @@ namespace aris
 				auto operator->() const->pointer { return *iter_; }
 				auto operator[](size_type size) const->reference { return *iter_->operator[](size); } //optional
 
+				~iterator() = default;
+				iterator() = default;
+				iterator(const iterator& other) = default;
+				iterator(typename std::vector<T*>::iterator iter) :iter_(iter) {} // 自己添加的
+
+			private:
 				typename std::vector<T*>::iterator iter_;
+				friend class RefPool::const_iterator;
 			};
 			class const_iterator
 			{
 			public:
-				typedef typename RefPool::difference_type difference_type;
-				typedef typename RefPool::value_type value_type;
-				typedef typename RefPool::const_reference const_reference;
-				typedef typename RefPool::const_pointer const_pointer;
-				typedef std::random_access_iterator_tag iterator_category; //or another tag
-
-				const_iterator() = default;
-				const_iterator(const const_iterator&) = default;
-				const_iterator(const iterator& other) :iter_(other.iter_) {}
-				const_iterator(typename std::vector<T*>::const_iterator iter) :iter_(iter) {} // 自己添加的
-				~const_iterator() = default;
+				using difference_type = typename RefPool::difference_type;
+				using value_type = typename RefPool::value_type;
+				using const_reference = typename RefPool::const_reference;
+				using const_pointer = typename RefPool::const_pointer;
+				using iterator_category = std::random_access_iterator_tag; //or another tag
 
 				auto operator=(const const_iterator&)->const_iterator& = default;
 				auto operator==(const const_iterator& other) const->bool { return iter_ == other.iter_; }
@@ -630,10 +631,17 @@ namespace aris
 				auto operator->() const->const_pointer { return *iter_; }
 				auto operator[](size_type size) const->const_reference { return *iter_->operator[](size); } //optional
 
+				~const_iterator() = default;
+				const_iterator() = default;
+				const_iterator(const const_iterator&) = default;
+				const_iterator(const iterator& other) :iter_(other.iter_) {}
+				const_iterator(typename std::vector<T*>::const_iterator iter) :iter_(iter) {} // 自己添加的
+				
+			private:
 				typename std::vector<T*>::const_iterator iter_;
 			};
-			typedef std::reverse_iterator<iterator> reverse_iterator; //optional
-			typedef std::reverse_iterator<const_iterator> const_reverse_iterator; //optional
+			using reverse_iterator = std::reverse_iterator<iterator>; //optional
+			using const_reverse_iterator = std::reverse_iterator<const_iterator>; //optional
 
 			auto swap(RefPool& other)->void { return container_.swap(other.container_); }
 			auto size()const->size_type { return container_.size(); }
