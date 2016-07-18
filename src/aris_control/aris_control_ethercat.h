@@ -369,8 +369,8 @@ namespace aris
 		class SlaveTemplate :public Slave
 		{
 		public:
-			typedef Tx TxType;
-			typedef Rx RxType;
+			using TxType = Tx;
+			using RxType = Rx;
 			virtual auto txData()->TxType & override { return tx_data_; }
 			virtual auto txData()const->const TxType & override{ return tx_data_; }
 			virtual auto rxData()->RxType & override { return rx_data_; }
