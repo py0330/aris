@@ -173,7 +173,7 @@ struct BasicFunctionParam
 static bool is_running = true;
 
 aris::control::Pipe<aris::core::Msg> msg_pipe;
-char cmd_char[aris::core::MsgRT::RT_MSG_LENGTH];
+char cmd_char[aris::core::MsgRT::RT_MSG_SIZE];
 
 static std::string command_in("idle");//command input from terminal
 static std::int32_t cmd_count{ 0 };
@@ -259,9 +259,9 @@ BasicFunctionParam decode(const std::string input)
 void tg()
 {
 	BasicFunctionParam *param;
-	if (msg_pipe.recvInRT(aris::core::MsgRT::instance[0]) > 0)
+	if (msg_pipe.recvInRT(aris::core::MsgRT::instance()[0]) > 0)
 	{
-		aris::core::MsgRT::instance[0].paste(cmd_char);
+		aris::core::MsgRT::instance()[0].paste(cmd_char);
 		param = reinterpret_cast<BasicFunctionParam *>(cmd_char);
 		cmd_count = 0;
 		cmd_success = false;

@@ -118,16 +118,16 @@ int main()
 
 		show(m3);
 
-		aris::core::MsgRT::instance[0].copyMore("rt msg123", 10);
+		aris::core::MsgRT::instance()[0].copyMore("rt msg123", 10);
 
 		cout << "1" << endl;
 
-		//aris::core::MsgRT::instance[0].copyMore("rt msg123", 10);
-		aris::core::MsgRT::instance[1].copyMore("98765", 6);
-		cout << (char *)aris::core::MsgRT::instance[0].data() << endl;
-		cout << (char *)aris::core::MsgRT::instance[1].data() << endl;
-		cout << aris::core::MsgRT::instance[0].GetLength() << endl;
-		cout << aris::core::MsgRT::instance[1].GetLength() << endl;
+		//aris::core::MsgRT::instance()[0].copyMore("rt msg123", 10);
+		aris::core::MsgRT::instance()[1].copyMore("98765", 6);
+		cout << (char *)aris::core::MsgRT::instance()[0].data() << endl;
+		cout << (char *)aris::core::MsgRT::instance()[1].data() << endl;
+		cout << aris::core::MsgRT::instance()[0].GetLength() << endl;
+		cout << aris::core::MsgRT::instance()[1].GetLength() << endl;
 
 
 		AAA aaa = { 0, 0, 1 };

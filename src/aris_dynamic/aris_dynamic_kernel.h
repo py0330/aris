@@ -31,8 +31,10 @@ namespace aris
 	/// pm  :  4x4 位姿矩阵(pose matrix)\n
 	///
 	/// vp  :  3x1 线速度(velocity of point)\n
+	/// we  :  3x1 欧拉角导数(omega in term of eula angle)\n
 	/// wq  :  4x1 四元数导数(omega in term of quternions)\n
 	/// wm  :  3x3 旋转矩阵导数(omega in term of rotation matrix)\n
+	/// ve  :  6x1 线速度与欧拉角导数（velocity and omega in term of eula angle）\n
 	/// vq  :  7x1 线速度与四元数导数(velocity and omega in term of quternions)\n
 	/// vm  :  4x4 位姿矩阵导数(velocity in term of pose matrix)\n
 	/// wa  :  3x1 角速度(omega)\n
@@ -40,8 +42,10 @@ namespace aris
 	/// vs  :  6x1 螺旋速度(velocity of screw)\n
 	///
 	/// ap  :  3x1 线加速度(acceleration of point)\n
+	/// xe  :  3x1 欧拉角导导数(alpha in term of eula angle)\n
 	/// xq  :  4x1 四元数导导数(alpha in term of quternions)\n
-	/// xm  :  3x3 旋转矩阵导数(alpha in term of rotation matrix)\n
+	/// xm  :  3x3 旋转矩阵导导数(alpha in term of rotation matrix)\n
+	/// ae  :  6x1 线加速度与欧拉角导导数(acceleration and alpha in term of eula angle)\n
 	/// aq  :  7x1 线加速度与四元数导导数(acceleration and alpha in term of quternions)\n
 	/// am  :  4x4 位姿矩阵导导数(acceleration in term of pose matrix)\n
 	/// xa  :  3x1 角加速度(alpha, acceleration of angle)\n

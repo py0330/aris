@@ -190,7 +190,7 @@ namespace aris
 		}
 		int Pipe<aris::core::Msg>::recvInRT(aris::core::MsgRT &msg)
 		{
-			int length = recvInRTRawData(msg.data_, sizeof(aris::core::MsgHeader) + aris::core::MsgRT::RT_MSG_LENGTH);
+			int length = recvInRTRawData(msg.data_, sizeof(aris::core::MsgHeader) + aris::core::MsgRT::RT_MSG_SIZE);
 			return length <= 0 ? 0 : length;
 		}
 		int Pipe<aris::core::Msg>::recvInNrt(aris::core::Msg &msg)

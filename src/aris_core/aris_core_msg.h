@@ -36,85 +36,85 @@ namespace aris
 
 		struct MsgHeader
 		{
-			std::int32_t msg_size;
-			std::int32_t msg_id;
-			std::int64_t msg_type;
-			std::int64_t reserved1;
-			std::int64_t reserved2;
-			std::int64_t reserved3;
+			std::int32_t msg_size_;
+			std::int32_t msg_id_;
+			std::int64_t msg_type_;
+			std::int64_t reserved1_;
+			std::int64_t reserved2_;
+			std::int64_t reserved3_;
 		};
 		class MsgBase
 		{
 		public:
 			virtual ~MsgBase() = default;
-			/** \brief 设置Msg中所包含的数据的长度
-			* \param dataLength    数据长度
-			*/
+			/// \brief 设置Msg中所包含的数据的长度
+			/// \param dataLength    数据长度
+			///
 			virtual auto resize(std::int32_t size)->void = 0;
-			/** \brief 获取Msg中所包含的数据的长度
-			*
-			*/
+			/// \brief 获取Msg中所包含的数据的长度
+			///
+			///
 			auto size() const->std::int32_t;
-			/** \brief 设置Msg的ID，在消息循环中根据该ID来查找对应的消息回调函数
-			* \param msgID   Msg的ID
-			*/
+			/// \brief 设置Msg的ID，在消息循环中根据该ID来查找对应的消息回调函数
+			/// \param msgID   Msg的ID
+			///
 			auto setMsgID(std::int32_t id)->void;
-			/** \brief 获取Msg中的ID
-			*
-			*/
+			/// \brief 获取Msg中的ID
+			///
+			///
 			auto msgID() const->std::int32_t;
-			/** \brief 获取Msg中的数据地址
-			*
-			*/
+			/// \brief 获取Msg中的数据地址
+			///
+			///
 			auto data() const->const char*;
-			/** \brief 获取Msg中的数据地址
-			*
-			*/
+			/// \brief 获取Msg中的数据地址
+			///
+			///
 			auto data()->char*;
-			/** \brief 从fromThisMemory指针中拷贝字符串。
-			* \param fromThisMemory    待拷贝的内存地址。
-			* \param dataLength        数据长度
-			*
-			*/
+			/// \brief 从fromThisMemory指针中拷贝字符串。
+			/// \param fromThisMemory    待拷贝的内存地址。
+			/// \param dataLength        数据长度
+			///
+			///
 			auto copy(const char * from_this_memory)->void;
-			/** \brief 从fromThisMemory指针中拷贝dataLength长度的数据，在拷贝完之后，Msg的长度自动设置为dataLength。
-			* \param fromThisMemory    待拷贝的内存地址。
-			* \param dataLength        数据长度
-			*
-			*/
+			/// \brief 从fromThisMemory指针中拷贝dataLength长度的数据，在拷贝完之后，Msg的长度自动设置为dataLength。
+			/// \param fromThisMemory    待拷贝的内存地址。
+			/// \param dataLength        数据长度
+			///
+			///
 			auto copy(const void * from_this_memory, std::int32_t size)->void;
-			/** \brief 从fromThisMemory指针中拷贝Msg.GetLength()大小的数据。
-			* \param fromThisMemory    待拷贝的内存地址。
-			*
-			*/
+			/// \brief 从fromThisMemory指针中拷贝Msg.GetLength()大小的数据。
+			/// \param fromThisMemory    待拷贝的内存地址。
+			///
+			///
 			auto copy(const void * from_this_memory)->void;
-			/** \brief 从fromThisMemory指针中拷贝Msg.GetLength()大小的数据到Msg内存中的指定地点。
-			* \param fromThisMemory       待拷贝的内存地址。
-			* \param dataLength           数据长度
-			* \param atThisPositionInMsg  将数据拷贝到Msg.data()[atThisPositionInMsg]处。
-			*/
+			/// \brief 从fromThisMemory指针中拷贝Msg.GetLength()大小的数据到Msg内存中的指定地点。
+			/// \param fromThisMemory       待拷贝的内存地址。
+			/// \param dataLength           数据长度
+			/// \param atThisPositionInMsg  将数据拷贝到Msg.data()[atThisPositionInMsg]处。
+			///
 			auto copyAt(const void * from_this_memory, std::int32_t size, std::int32_t at_this_pos_of_msg)->void;
-			/** \brief 从fromThisMemory指针中拷贝dataLength长度的数据，这些数据添加到自身的尾部，在拷贝完之后，Msg的长度自动增加dataLength。
-			* \param fromThisMemory    目标内存地址。
-			*
-			*/
+			/// \brief 从fromThisMemory指针中拷贝dataLength长度的数据，这些数据添加到自身的尾部，在拷贝完之后，Msg的长度自动增加dataLength。
+			/// \param fromThisMemory    目标内存地址。
+			///
+			///
 			auto copyMore(const void * from_this_memory, std::int32_t size)->void;
-			/** \brief 向toThisMemory指针中粘贴dataLength长度的数据，若dataLength大于自身的数据长度，则只拷贝自身长度的内存。
-			* \param fromThisMemory    目标内存地址。
-			* \param dataLength        数据长度
-			*
-			*/
+			/// \brief 向toThisMemory指针中粘贴dataLength长度的数据，若dataLength大于自身的数据长度，则只拷贝自身长度的内存。
+			/// \param fromThisMemory    目标内存地址。
+			/// \param dataLength        数据长度
+			///
+			///
 			auto paste(void * to_this_memory, std::int32_t size) const->void;
-			/** \brief 向toThisMemory指针中粘贴Msg.GetLength()长度的数据。
-			* \param fromThisMemory    目标内存地址。
-			*
-			*/
+			/// \brief 向toThisMemory指针中粘贴Msg.GetLength()长度的数据。
+			/// \param fromThisMemory    目标内存地址。
+			///
+			///
 			auto paste(void * to_this_memory) const->void;
-			/** \brief 向toThisMemory指针中粘贴dataLength长度的数据，若dataLength大于自身的数据长度，则只拷贝自身长度的内存。
-			* \param fromThisMemory    目标内存地址。
-			* \param dataLength        数据长度
-			*
-			*/
+			/// \brief 向toThisMemory指针中粘贴dataLength长度的数据，若dataLength大于自身的数据长度，则只拷贝自身长度的内存。
+			/// \param fromThisMemory    目标内存地址。
+			/// \param dataLength        数据长度
+			///
+			///
 			auto pasteAt(void * to_this_memory, std::int32_t size, std::int32_t at_this_pos_of_msg) const->void;
 
 			template<class... Args>
@@ -143,7 +143,7 @@ namespace aris
 
 		private:
 			auto setType(std::int64_t type)->void;
-			auto getType() const->std::int64_t;
+			auto type() const->std::int64_t;
 
 		private:
 			MsgBase() = default;
@@ -164,35 +164,35 @@ namespace aris
 		class Msg final :public MsgBase
 		{
 		public:
-			/** \brief Destructor
-			*
-			*/
+			/// \brief Destructor
+			///
+			///
 			virtual ~Msg();
-			/** \brief Copy Constructor
-			* \param other    another message
-			*/
+			/// \brief Copy Constructor
+			/// \param other    another message
+			///
 			Msg(const Msg& other);
-			/** \brief Move Constructor
-			* \param other    another message
-			*/
+			/// \brief Move Constructor
+			/// \param other    another message
+			///
 			Msg(Msg&& other);
-			/** \brief Default Constructor
-			* \param size   The length of message(not count message header), the unit of which is byte.
-			* \param msg_id  The ID of message
-			*/
+			/// \brief Default Constructor
+			/// \param size   The length of message(not count message header), the unit of which is byte.
+			/// \param msg_id  The ID of message
+			///
 			explicit Msg(std::int32_t msg_id = 0, std::int32_t size = 0);
-			/** \brief Assignment Operator, which is deep copy from another message
-			* \param other    another message
-			*/
+			/// \brief Assignment Operator, which is deep copy from another message
+			/// \param other    another message
+			///
 			auto operator=(Msg other)->Msg &;
-			/** \brief 跟另外一个Msg对象交换数据。仅仅改变双方指针，因此效率高于任何一个构造函数。
-			* \param other    另外一个消息。
-			*
-			*/
+			/// \brief 跟另外一个Msg对象交换数据。仅仅改变双方指针，因此效率高于任何一个构造函数。
+			/// \param other    另外一个消息。
+			///
+			///
 			auto swap(Msg &other)->void;
-			/** \brief Set msg length
-			*
-			*/
+			/// \brief Set msg length
+			///
+			///
 			virtual auto resize(std::int32_t size)->void;
 
 		private:
@@ -201,9 +201,12 @@ namespace aris
 		class MsgRT final :public MsgBase
 		{
 		public:
-			enum { RT_MSG_LENGTH = 8192 };
-			static MsgRT instance[2];
+			enum { RT_MSG_SIZE = 8192 };
+			enum { RT_MSG_NUM = 2 };
+			using MsgRtArray = MsgRT[RT_MSG_NUM];
 
+			//static MsgRT instance[2];
+			static auto instance()->MsgRtArray&;
 			virtual auto resize(std::int32_t size)->void;
 
 		private:

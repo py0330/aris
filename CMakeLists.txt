@@ -73,7 +73,7 @@ set(XENOMAI_LINK_LIB native rtdm xenomai)
 set(ETHERLAB_INCL_DIR "/opt/etherlab/include")
 set(ETHERLAB_LINK_DIR "/opt/etherlab/lib")
 set(ETHERLAB_LINK_LIB ethercat rt)
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
+set(ARIS_INCL_DIR src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 
 
@@ -84,9 +84,8 @@ endif(UNIX)
 if(WIN32)
 set(GENERAL_INCL_DIR "C:/Aris_Dependent")
 set(SYSTEM_LINK_LIB ws2_32 setupapi)#ws2_32 is needed for socket setuaipi is needed for xsens
-set(ARIS_INCL_DIR ${PROJECT_BINARY_DIR} src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
+set(ARIS_INCL_DIR src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
-
 
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
 set(ALL_LINK_DIR )

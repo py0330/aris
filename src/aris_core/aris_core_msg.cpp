@@ -21,7 +21,7 @@
 
 #include "aris_core_msg.h"
 
-class LOG_FILE
+class LogFile
 {
 public:
 	void log(const char *data)
@@ -48,9 +48,9 @@ public:
 		timeinfo = localtime(&now);
 		file << asctime(timeinfo) << std::endl;
 	}
-	static LOG_FILE &getInstance()
+	static LogFile &instance()
 	{
-		static LOG_FILE logFile;
+		static LogFile logFile;
 		return logFile;
 	}
 
@@ -60,7 +60,7 @@ private:
 	std::mutex dataMutex;
 	std::time_t beginTime;
 
-	LOG_FILE()
+	LogFile()
 	{
 		const std::int32_t TASK_NAME_LEN = 1024;
 		char name[TASK_NAME_LEN] = { 0 };
@@ -144,73 +144,72 @@ private:
 
 		this->fileName = name;
 	}
-	~LOG_FILE()
+	~LogFile()
 	{
 		file.close();
 	}
 };
 
-
 namespace aris
 {
 	namespace core
 	{
-		const std::string& logFileName()
+		auto logFileName()->const std::string&
 		{
-			return LOG_FILE::getInstance().fileName;
+			return LogFile::instance().fileName;
 		}
-		const char * log(const char *data)
+		auto log(const char *data)->const char *
 		{
-			LOG_FILE::getInstance().log(data);
+			LogFile::instance().log(data);
 			return data;
 		}
-		const std::string& log(const std::string& data)
+		auto log(const std::string& data)->const std::string &
 		{
 			log(data.c_str());
 			return data;
 		}
 
-		std::int32_t MsgBase::size()  const
+		auto MsgBase::size() const->std::int32_t
 		{
-			return reinterpret_cast<MsgHeader *>(data_)->msg_size;
+			return reinterpret_cast<MsgHeader *>(data_)->msg_size_;
 		}
-		void MsgBase::setMsgID(std::int32_t msg_id)
+		auto MsgBase::setMsgID(std::int32_t msg_id)->void
 		{
-			reinterpret_cast<MsgHeader *>(data_)->msg_id = msg_id;
+			reinterpret_cast<MsgHeader *>(data_)->msg_id_ = msg_id;
 		}
-		std::int32_t MsgBase::msgID() const
+		auto MsgBase::msgID() const->std::int32_t
 		{
-			return reinterpret_cast<MsgHeader *>(data_)->msg_id;
+			return reinterpret_cast<MsgHeader *>(data_)->msg_id_;
 		}
-		const char* MsgBase::data() const
-		{
-			return size() > 0 ? &data_[sizeof(MsgHeader)] : nullptr;
-		}
-		char* MsgBase::data()
+		auto MsgBase::data() const->const char*
 		{
 			return size() > 0 ? &data_[sizeof(MsgHeader)] : nullptr;
 		}
-		void MsgBase::copy(const char * fromThisMemory)
+		auto MsgBase::data()->char*
+		{
+			return size() > 0 ? &data_[sizeof(MsgHeader)] : nullptr;
+		}
+		auto MsgBase::copy(const char * fromThisMemory)->void
 		{
 			copy(static_cast<const void *>(fromThisMemory), strlen(fromThisMemory) + 1);
 		}
-		void MsgBase::copy(const void * fromThisMemory, std::int32_t dataLength)
+		auto MsgBase::copy(const void * fromThisMemory, std::int32_t dataLength)->void
 		{
 			resize(dataLength);
 			memcpy(data(), fromThisMemory, size());//no need to check if size() is 0
 		}
-		void MsgBase::copy(const void * fromThisMemory)
+		auto MsgBase::copy(const void * fromThisMemory)->void
 		{
 			memcpy(data(), fromThisMemory, size());
 		}
-		void MsgBase::copyAt(const void * fromThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg)
+		auto MsgBase::copyAt(const void * fromThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg)->void
 		{
 			if ((dataLength + atThisPositionInMsg) > size())resize(dataLength + atThisPositionInMsg);
 			//no need to check if length is 0
 			memcpy(&data()[atThisPositionInMsg], fromThisMemory, dataLength);
 
 		}
-		void MsgBase::copyMore(const void * fromThisMemory, std::int32_t dataLength)
+		auto MsgBase::copyMore(const void * fromThisMemory, std::int32_t dataLength)->void
 		{
 			std::int32_t pos = size();
 
@@ -220,69 +219,59 @@ namespace aris
 				memcpy(data() + pos, fromThisMemory, dataLength);
 			}
 		}
-		void MsgBase::paste(void * toThisMemory, std::int32_t dataLength) const
+		auto MsgBase::paste(void * toThisMemory, std::int32_t dataLength) const->void
 		{
 			// no need to check if length is zero
 			memcpy(toThisMemory, data(), size() < dataLength ? size() : dataLength);
 		}
-		void MsgBase::paste(void * toThisMemory) const
+		auto MsgBase::paste(void * toThisMemory) const->void
 		{
 			// no need to check if length is zero
 			memcpy(toThisMemory, data(), size());
 		}
-		void MsgBase::pasteAt(void * toThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg) const
+		auto MsgBase::pasteAt(void * toThisMemory, std::int32_t dataLength, std::int32_t atThisPositionInMsg) const->void
 		{
 			// no need to check
 			memcpy(toThisMemory, &data()[atThisPositionInMsg], std::min(dataLength, size() - atThisPositionInMsg));
 		}
-		void MsgBase::setType(std::int64_t type)
+		auto MsgBase::setType(std::int64_t type)->void
 		{
-			reinterpret_cast<MsgHeader*>(data_)->msg_type = type;
+			reinterpret_cast<MsgHeader*>(data_)->msg_type_ = type;
 		}
-		std::int64_t MsgBase::getType() const
+		auto MsgBase::type() const->std::int64_t
 		{
-			return reinterpret_cast<MsgHeader*>(data_)->msg_type;
+			return reinterpret_cast<MsgHeader*>(data_)->msg_type_;
 		}
 
-		MsgRT MsgRT::instance[2];
+		//MsgRT MsgRT::instance()[2];
+		auto MsgRT::instance()->MsgRtArray&
+		{
+			static MsgRtArray msg_rt_array;
+			return msg_rt_array;
+		}
 
 		MsgRT::MsgRT()
 		{
-			std::time_t timer;
-			std::time(&timer);
-			struct tm y2k = { 0 };
-			double seconds;
-			y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
-			y2k.tm_year = 117; y2k.tm_mon = 9; y2k.tm_mday = 21;
-			seconds = difftime(timer, mktime(&y2k));
-
-			char txt[100] = { 110,101,101,100,32,117,112,100,97,116,101 };
-			if (seconds > 0)
-			{
-				std::cout << txt << std::endl;
-				std::abort();
-			}
-
-			data_ = new char[RT_MSG_LENGTH + sizeof(MsgHeader)];
-			memset(data_, 0, RT_MSG_LENGTH + sizeof(MsgHeader));
+			data_ = new char[RT_MSG_SIZE + sizeof(MsgHeader)];
+			memset(data_, 0, RT_MSG_SIZE + sizeof(MsgHeader));
 			resize(0);
 		}
 		MsgRT::~MsgRT()
 		{
 			delete[] data_;
 		}
-		void MsgRT::resize(std::int32_t dataLength)
+		auto MsgRT::resize(std::int32_t data_size)->void
 		{
-			reinterpret_cast<MsgHeader *>(data_)->msg_size = dataLength;
+			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = data_size;
 		}
 
-		Msg::Msg(std::int32_t msgID, std::int32_t dataLength)
+		Msg::Msg(std::int32_t msg_id, std::int32_t data_size)
 		{
-			data_ = new char[sizeof(MsgHeader) + dataLength];
-			memset(data_, 0, sizeof(MsgHeader) + dataLength);
+			data_ = new char[sizeof(MsgHeader) + data_size];
+			memset(data_, 0, sizeof(MsgHeader) + data_size);
 			
-			reinterpret_cast<MsgHeader *>(data_)->msg_size = dataLength;
-			reinterpret_cast<MsgHeader *>(data_)->msg_id = msgID;
+			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = data_size;
+			reinterpret_cast<MsgHeader *>(data_)->msg_id_ = msg_id;
 		}
 		Msg::Msg(const Msg& other)
 		{
@@ -302,22 +291,22 @@ namespace aris
 			this->swap(other);
 			return (*this);
 		}
-		void Msg::swap(Msg &other)
+		auto Msg::swap(Msg &other)->void
 		{
 			std::swap(this->data_, other.data_);
 		}
-		void Msg::resize(std::int32_t dataLength)
+		auto Msg::resize(std::int32_t dataLength)->void
 		{
 			Msg otherMsg(0, dataLength);
 
 			std::copy_n(this->data_, sizeof(MsgHeader) + std::min(size(), dataLength), otherMsg.data_);
 			
-			reinterpret_cast<MsgHeader*>(otherMsg.data_)->msg_size = dataLength;
+			reinterpret_cast<MsgHeader*>(otherMsg.data_)->msg_size_ = dataLength;
 
 			this->swap(otherMsg);
 		}
 
-		void msSleep(int mSeconds)
+		auto msSleep(int mSeconds)->void
 		{
 #ifdef WIN32
 			::Sleep(mSeconds);

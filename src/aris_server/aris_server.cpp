@@ -61,7 +61,7 @@ namespace aris
 
 			// 实时循环中的步态参数 //
 			enum { CMD_POOL_SIZE = 50 };
-			char cmd_queue_[CMD_POOL_SIZE][aris::core::MsgRT::RT_MSG_LENGTH];
+			char cmd_queue_[CMD_POOL_SIZE][aris::core::MsgRT::RT_MSG_SIZE];
 			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 0 };
 
 			// 储存上一次slave的数据 //
@@ -274,7 +274,7 @@ namespace aris
             //checkMotionStatus();
 
 			// 查看是否有新cmd //
-            if (msg_pipe_.recvInRT(aris::core::MsgRT::instance[0]) > 0)
+            if (msg_pipe_.recvInRT(aris::core::MsgRT::instance()[0]) > 0)
 			{
                 if (cmd_num_ >= CMD_POOL_SIZE)
 				{
@@ -282,7 +282,7 @@ namespace aris
 				}
 				else
 				{
-                    aris::core::MsgRT::instance[0].paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
+                    aris::core::MsgRT::instance()[0].paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
                     ++cmd_num_;
 				}
 			}
@@ -713,11 +713,8 @@ namespace aris
                 this->imp_->tg();
             });
 		}
-		auto ControlServer::parser()->core::CommandParser&
-		{
-			return std::ref(*imp_->parser_);
-		}
-		auto ControlServer::model()->dynamic::Model& { return std::ref(*imp_->model_.get()); }
+		auto ControlServer::parser()->core::CommandParser&{	return std::ref(*imp_->parser_); }
+		auto ControlServer::model()->dynamic::Model& { return std::ref(*imp_->model_); }
 		auto ControlServer::controller()->control::Controller& { return std::ref(*imp_->controller_); }
 		auto ControlServer::sensorRoot()->sensor::SensorRoot& { return std::ref(*imp_->sensor_root_); }
 		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &plan_func)->void
