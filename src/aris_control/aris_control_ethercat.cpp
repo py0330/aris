@@ -129,56 +129,59 @@ namespace aris
 
             auto logToNrt()->void
             {
-                std::size_t size_count=0;
-                for(std::size_t i=0;i<slave_pool_->size();i++)
-                {
-                    auto &sla=slave_pool_->at(i);
-                    auto tx_data=reinterpret_cast<char *>(&tx_data_pool_.at(i));
-                    auto rx_data=reinterpret_cast<char *>(&rx_data_pool_.at(i));
-                    std::copy(tx_data,tx_data+sla.txTypeSize(),sent_data_.get()+size_count);
-                    size_count=size_count+sla.txTypeSize();
-                    std::copy(rx_data,rx_data+sla.rxTypeSize(),sent_data_.get()+size_count);
-                    size_count=size_count+sla.rxTypeSize();
-                }
-                record_pipe_->sendToNrt(sent_data_.get(),data_size_);
+				std::size_t size_count = 0;
+				for (std::size_t i = 0; i<slave_pool_->size(); i++)
+				{
+					auto &sla = slave_pool_->at(i);
+					auto tx_data = reinterpret_cast<char *>(&tx_data_pool_.at(i));
+					auto rx_data = reinterpret_cast<char *>(&rx_data_pool_.at(i));
+					std::copy(tx_data, tx_data + sla.txTypeSize(), sent_data_.get() + size_count);
+					size_count += sla.txTypeSize();
+					std::copy(rx_data, rx_data + sla.rxTypeSize(), sent_data_.get() + size_count);
+					size_count += sla.rxTypeSize();
+				}
+				record_pipe_->sendToNrt(sent_data_.get(), data_size_);
             }
-            auto logToFile()->void
+            auto startLogData()->void
             {
-                if(!record_thread_.joinable())
-                record_thread_ = std::thread([this]()
-                {
-                    static std::fstream file;
-                    std::string name = aris::core::logFileName();
-                    name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
-                    file.open(name.c_str(), std::ios::out | std::ios::trunc);
+				if (!log_thread_.joinable())
+				{
+					this->sent_data_.reset(new char[this->data_size_]);
+					this->record_pipe_.reset(new Pipe<void *>());
 
-                    long long count = -1;
-                    std::unique_ptr<char[]> txdata;
-                    std::unique_ptr<char[]> rxdata;
-					std::unique_ptr<char[]> receive_data(new char [data_size_]);
-                    while (!is_stopping_)
-                    {
-                        record_pipe_->recvInNrt(receive_data.get(),data_size_);
-                        count=count+1;
-                        if(is_loging_)
-                        {
-                            file <<count << " ";
+					log_thread_ = std::thread([this]()
+					{
+						static std::fstream file;
+						std::string name = aris::core::logFileName();
+						name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
+						file.open(name.c_str(), std::ios::out | std::ios::trunc);
 
-                            std::size_t size_count=0;
-                            for (auto &sla : *slave_pool_)
-                            {
-                                sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
-                                    , *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+						long long count = -1;
+						std::unique_ptr<char[]> receive_data(new char[data_size_]);
+						while (!is_stopping_)
+						{
+							record_pipe_->recvInNrt(receive_data.get(), data_size_);
 
-                                file << " ";
+							if (is_loging_)
+							{
+								file << count++ << " ";
 
-                                size_count += sla.txTypeSize() + sla.rxTypeSize();
-                            }
-                            file << std::endl;
-                        }
-                    }
-                    file.close();
-                });
+								std::size_t size_count = 0;
+								for (auto &sla : *slave_pool_)
+								{
+									sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
+										, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+
+									file << " ";
+
+									size_count += sla.txTypeSize() + sla.rxTypeSize();
+								}
+								file << std::endl;
+							}
+						}
+						file.close();
+					});
+				}
             }
 
             auto sync(uint64_t ns)->void
@@ -202,7 +205,7 @@ namespace aris
             std::size_t data_size_{0};
             std::unique_ptr<char[]> sent_data_;
             std::unique_ptr<Pipe<void *>> record_pipe_;
-            std::thread record_thread_;
+            std::thread log_thread_;
             std::atomic_bool is_loging_{ true };
 
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
@@ -1017,13 +1020,6 @@ namespace aris
 			imp_->is_running_ = true;
 			imp_->setInstance(this);
 
-			/// init begin ///
-#ifdef UNIX
-			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
-
-			imp_->ec_master_ = ecrt_request_master(0);
-			if (!imp_->ec_master_) { throw std::runtime_error("master request failed!"); }
-
 			/// init each slave and update tx & rx data pool ///
 			txDataPool().clear();
 			rxDataPool().clear();
@@ -1033,11 +1029,15 @@ namespace aris
 				slave.init();
 				txDataPool().push_back_ptr(&slave.txData());
 				rxDataPool().push_back_ptr(&slave.rxData());
-                imp_->data_size_= imp_->data_size_+slave.txTypeSize();
-                imp_->data_size_= imp_->data_size_+slave.rxTypeSize();
+				imp_->data_size_ = imp_->data_size_ + slave.txTypeSize();
+				imp_->data_size_ = imp_->data_size_ + slave.rxTypeSize();
 			}
-            imp_->sent_data_.reset(new char[imp_->data_size_]);
-            imp_->record_pipe_.reset(new Pipe<void *>());
+
+			/// init begin ///
+#ifdef UNIX
+			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
+
+			if (!(imp_->ec_master_ = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
 
 			ecrt_master_activate(imp_->ec_master_);
 
@@ -1046,12 +1046,11 @@ namespace aris
 				slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
 			}
 
-            imp_->logToFile();
+            imp_->startLogData();
 			/// init end ///
 			rt_print_auto_init(1);
-			const int priority = 99;
 
-			rt_task_create(&imp_->rt_task_, "realtime core", 0, priority, T_FPU);
+			rt_task_create(&imp_->rt_task_, "realtime core", 0, 99, T_FPU);
 			rt_task_start(&imp_->rt_task_, &Master::Imp::rt_task_func, NULL);
 #endif
 		};

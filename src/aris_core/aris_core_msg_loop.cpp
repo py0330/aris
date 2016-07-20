@@ -24,7 +24,7 @@ namespace aris
 		{
 		private:
 			std::mutex _mutex;
-			std::condition_variable _cv;
+			std::condition_variable cv_;
 			volatile int _sig_value;
 
 		public:
@@ -54,7 +54,7 @@ namespace aris
 			_sig_value++;
 			if (_sig_value==1)
 			{
-				_cv.notify_one();
+				cv_.notify_one();
 			}
 		}
 		void SEM::Wait()
@@ -62,7 +62,7 @@ namespace aris
 			std::unique_lock<std::mutex> lck(_mutex);
 			if (_sig_value == 0)
 			{
-				_cv.wait(lck);
+				cv_.wait(lck);
 			}
 			_sig_value--;
 		}

@@ -241,6 +241,7 @@ namespace aris
 			auto operator=(const Object &)->Object &;
 			auto operator=(Object &&)->Object &;
 			virtual ~Object();
+
 		protected:
 			Object(const Object &);
 			Object(Object &&);

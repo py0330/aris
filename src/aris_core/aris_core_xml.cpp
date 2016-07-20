@@ -60,10 +60,10 @@ namespace aris
 			std::map<std::string, TypeInfo> type_map_{ std::make_pair(Object::Type(),TypeInfo::CreateTypeInfo<Object>()) };
 
 			Imp() {}
-			Imp(const Imp &other) {}
-			Imp(Imp &&other) {}
-			Imp &operator=(const Imp &) { return *this; }
-			Imp &operator=(Imp &&) { return *this; }
+			Imp(const Imp &other) = default;
+			Imp(Imp &&other) = default;
+			Imp &operator=(const Imp &) = default;
+			Imp &operator=(Imp &&) = default;
 		};
 
 		auto Object::root()->Root& { return dynamic_cast<Root *>(this) ? dynamic_cast<Root &>(*this) : father().root(); }

@@ -75,16 +75,21 @@ namespace aris
 			* \param 为形如void(Socket*)的函数。在Socket自己的内部线程中执行。
 			*/
 			auto setOnReceiveError(std::function<void(Socket*)> = nullptr)->void;
-			/** \brief 构造函数
-			*
-			*
-			*/
-			Socket();
+			
 			/** \brief 析构函数
 			*
 			*
 			*/
 			~Socket();
+			/** \brief 构造函数
+			*
+			*
+			*/
+			Socket();
+			Socket(const Socket & other) = delete;
+			Socket(Socket && other) = delete;
+			Socket &operator=(const Socket& other) = delete;
+			Socket &operator=(Socket&& other) = delete;
 		public:
 			enum State
 			{
@@ -132,14 +137,8 @@ namespace aris
 			};
 
 		private:
-			Socket(const Socket & other) = delete;
-			Socket(Socket && other) = delete;
-			Socket &operator=(const Socket& other) = delete;
-			Socket &operator=(Socket&& other) = delete;
-
-		private:
 			struct Imp;
-			const std::unique_ptr<Imp> pImp;
+			const std::unique_ptr<Imp> imp_;
 		};
 	}
 }
