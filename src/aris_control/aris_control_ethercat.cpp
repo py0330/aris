@@ -1,7 +1,3 @@
-
-
-
-
 #ifdef WIN32
 #include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
 #endif
@@ -130,24 +126,30 @@ namespace aris
             auto logToNrt()->void
             {
 				std::size_t size_count = 0;
-				for (std::size_t i = 0; i<slave_pool_->size(); i++)
+
+				for (auto &sla : *slave_pool_)
 				{
-					auto &sla = slave_pool_->at(i);
-					auto tx_data = reinterpret_cast<char *>(&tx_data_pool_.at(i));
-					auto rx_data = reinterpret_cast<char *>(&rx_data_pool_.at(i));
-					std::copy(tx_data, tx_data + sla.txTypeSize(), sent_data_.get() + size_count);
+					auto tx_data_char = reinterpret_cast<char *>(&sla.txData());
+					auto rx_data_char = reinterpret_cast<char *>(&sla.rxData());
+					
+					std::copy(tx_data_char, tx_data_char + sla.txTypeSize(), log_data_.get() + size_count);
 					size_count += sla.txTypeSize();
-					std::copy(rx_data, rx_data + sla.rxTypeSize(), sent_data_.get() + size_count);
+					std::copy(rx_data_char, rx_data_char + sla.rxTypeSize(), log_data_.get() + size_count);
 					size_count += sla.rxTypeSize();
 				}
-				record_pipe_->sendToNrt(sent_data_.get(), data_size_);
+				
+				log_pipe_->sendToNrt(log_data_.get(), log_data_size_);
             }
             auto startLogData()->void
             {
-				if (!log_thread_.joinable())
+				if (log_thread_.joinable())
 				{
-					this->sent_data_.reset(new char[this->data_size_]);
-					this->record_pipe_.reset(new Pipe<void *>());
+					throw std::runtime_error("master is already logging, can't \"startLogData\"");
+				}
+				else
+				{
+					this->log_data_.reset(new char[this->log_data_size_]);
+					this->log_pipe_.reset(new Pipe<void *>());
 
 					log_thread_ = std::thread([this]()
 					{
@@ -157,10 +159,10 @@ namespace aris
 						file.open(name.c_str(), std::ios::out | std::ios::trunc);
 
 						long long count = -1;
-						std::unique_ptr<char[]> receive_data(new char[data_size_]);
+						std::unique_ptr<char[]> receive_data(new char[log_data_size_]);
 						while (!is_stopping_)
 						{
-							record_pipe_->recvInNrt(receive_data.get(), data_size_);
+							log_pipe_->recvInNrt(receive_data.get(), log_data_size_);
 
 							if (is_loging_)
 							{
@@ -183,6 +185,17 @@ namespace aris
 					});
 				}
             }
+			auto stopLogData()->void
+			{
+				if (!log_thread_.joinable())
+				{
+					throw std::runtime_error("master is not logging, can't \"stopLogData\"");
+				}
+				else
+				{
+
+				}
+			}
 
             auto sync(uint64_t ns)->void
 			{
@@ -202,11 +215,11 @@ namespace aris
 			const int sample_period_ns_ = 1000000;
 
             //for log
-            std::size_t data_size_{0};
-            std::unique_ptr<char[]> sent_data_;
-            std::unique_ptr<Pipe<void *>> record_pipe_;
+            std::size_t log_data_size_{0};
+            std::unique_ptr<char[]> log_data_;
+            std::unique_ptr<Pipe<void *>> log_pipe_;
             std::thread log_thread_;
-            std::atomic_bool is_loging_{ true };
+            std::atomic_bool is_loging_{ false };
 
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
@@ -607,16 +620,16 @@ namespace aris
 #ifdef UNIX
 			for (auto &reg : this->ec_pdo_entry_reg_vec_)	reg.position = slave_->position();
 
-			// Create domain
+			/// Create domain
 			if (!(this->domain_ = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
 
-			// Get the slave configuration 
+			/// Get the slave configuration 
 			if (!(this->ec_slave_config_ = ecrt_master_slave_config(ec_mst, slave_type_->alias(), slave_->position(), slave_type_->venderID(), slave_type_->productCode())))
 			{
 				throw std::runtime_error("failed to slave config");
 			}
 
-			// Config Sdo
+			/// Config Sdo
 			for (auto &sdo : slave_->sdoPool())
 			{
 				if (!(sdo.option() & Sdo::CONFIG)) continue;
@@ -630,15 +643,14 @@ namespace aris
 				}
 			}
 
-			// Configure the slave's PDOs and sync masters
+			/// Configure the slave's PDOs and sync masters
 			if (ecrt_slave_config_pdos(this->ec_slave_config_, 4, this->ec_sync_info_))throw std::runtime_error("failed to slave config pdos");
 
-			// Configure the slave's domain
+			/// Configure the slave's domain
 			if (ecrt_domain_reg_pdo_entry_list(this->domain_, this->ec_pdo_entry_reg_vec_.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
-			// Configure the slave's discrete clock			
+			/// Configure the slave's discrete clock			
 			if (slave_type_->distributedClock())ecrt_slave_config_dc(this->ec_slave_config_, slave_type_->distributedClock(), 1000000, 4400000, 0, 0);
-
 #endif
 		};
 		auto Slave::txData()->TxType& { return imp_->tx_data_; }
@@ -1029,8 +1041,8 @@ namespace aris
 				slave.init();
 				txDataPool().push_back_ptr(&slave.txData());
 				rxDataPool().push_back_ptr(&slave.rxData());
-				imp_->data_size_ = imp_->data_size_ + slave.txTypeSize();
-				imp_->data_size_ = imp_->data_size_ + slave.rxTypeSize();
+				imp_->log_data_size_ += slave.txTypeSize();
+				imp_->log_data_size_ += slave.rxTypeSize();
 			}
 
 			/// init begin ///
@@ -1041,12 +1053,8 @@ namespace aris
 
 			ecrt_master_activate(imp_->ec_master_);
 
-			for (auto &slave : slavePool())
-			{
-				slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
-			}
+			for (auto &slave : slavePool())slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
 
-            imp_->startLogData();
 			/// init end ///
 			rt_print_auto_init(1);
 
@@ -1076,12 +1084,9 @@ namespace aris
 		auto Master::txDataPool()const->const aris::core::RefPool<Slave::TxType> &{return imp_->tx_data_pool_; }
 		auto Master::rxDataPool()->aris::core::RefPool<Slave::RxType> & { return imp_->rx_data_pool_; }
 		auto Master::rxDataPool()const->const aris::core::RefPool<Slave::RxType> &{return imp_->rx_data_pool_; }
-        auto Master::isLoging()->bool{return imp_->is_loging_;}
-        auto Master::isLoging() const->bool{return imp_->is_loging_;}
-        auto Master::logOn()->void{imp_->is_loging_=true;}
-        auto Master::logOn() const->void{imp_->is_loging_=true;}
-        auto Master::logOff()->void{imp_->is_loging_=false;}
-        auto Master::logOff() const->void{imp_->is_loging_=false;}
+		auto Master::isLoging() const->bool { return imp_->is_loging_; }
+		auto Master::logOn()->void { imp_->is_loging_ = true; }
+		auto Master::logOff()->void { imp_->is_loging_ = false; }
 		Master::~Master() {}
 		Master::Master() :imp_(new Imp)
 		{
