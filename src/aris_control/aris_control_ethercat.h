@@ -35,6 +35,28 @@ namespace aris
 		private:
 			friend class Master;
 		};
+		class DataLogger :public Element
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("DataLogger"); return std::ref(type); }
+			virtual auto type() const->const std::string&{ return Type(); }
+			auto start()->void;
+			auto stop()->void;
+			auto logDataRT()->void;
+
+			~DataLogger();
+			DataLogger(Object &father, std::size_t id, const std::string &name);
+			DataLogger(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+
+		protected:
+			DataLogger(const DataLogger &) = delete;
+			DataLogger(DataLogger &&) = delete;
+
+
+		private:
+			struct Imp;
+			std::unique_ptr<Imp> imp_;
+		};
 		class DO:public Element
 		{
 		public:
@@ -339,7 +361,9 @@ namespace aris
 			auto txDataPool()const->const aris::core::RefPool<Slave::TxType> &;
 			auto rxDataPool()->aris::core::RefPool<Slave::RxType> &;
 			auto rxDataPool()const->const aris::core::RefPool<Slave::RxType> &;
-            auto isLoging() const->bool;
+			auto dataLogger()->DataLogger&;
+			auto dataLogger()const->const DataLogger&;
+			auto isLoging() const->bool;
             auto logOn()->void;
             auto logOff()->void;
 

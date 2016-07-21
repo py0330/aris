@@ -12,6 +12,7 @@ const char xml_file[] =
 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
 "<Root>"
 "    <Controller>"
+"        <data_logger type=\"DataLogger\"/>"
 "        <SlaveType type=\"slave_type_pool_element\">"
 "            <ElmoSoloWhistle type=\"slave_type\" product_code=\"0x00030924\" vender_id=\"0x0000009a\" alias=\"0\" distributed_clock=\"0x0300\">"
 "                <PDO type=\"pdo_group_pool_element\">"
@@ -87,9 +88,9 @@ class TestMaster :public aris::control::Master
 protected:
 	virtual auto controlStrategy()->void override
 	{
-        auto& slave = dynamic_cast<aris::control::Slave &>(slavePool().at(0));
+        static int count{ 0 };
 
-		static int count{ 0 };
+        auto& slave = dynamic_cast<aris::control::Slave &>(slavePool().at(0));
 
         std::int32_t feedback_pos;
         slave.readPdoIndex(0x6064,0,feedback_pos);
@@ -108,15 +109,14 @@ void test_control_ethercat()
 	TestMaster master;
 
 	master.loadXml(xml_doc);
-
-    std::cout<<"2"<<std::endl;
-
 	master.start();
 
 	std::cout << "press any key to terminate test" << std::endl;
 	std::cin.get();
 
-	master.stop();
+	master.dataLogger().start();
+
+    master.stop();
 
 	std::cout << "test_control_ethercat finished" << std::endl;
 }
