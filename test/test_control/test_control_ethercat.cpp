@@ -72,7 +72,7 @@ const char xml_file[] =
 "            </AtiForceSensor>"
 "        </SlaveType>"
 "        <Slave type=\"slave_pool_element\">"
-"            <Motion1 type=\"slave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
+"            <Motion1 type=\"TestSlave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
 "            <Motion2 type=\"slave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.698\" max_pos=\"1.112\" max_vel=\"0.2362\" home_pos=\"0.698\" input2count=\"22937600\"/>"
 "            <Motion3 type=\"slave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.698\" max_pos=\"1.112\" max_vel=\"0.2362\" home_pos=\"0.698\" input2count=\"22937600\"/>"
 "            <Motion4 type=\"slave\" slave_type=\"ElmoSoloWhistle\"  min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
@@ -83,6 +83,35 @@ const char xml_file[] =
 
 using namespace aris::control;
 
+struct TxTestData :public Slave::TxType
+{
+    double target_pos{ 0 };
+};
+struct RxTestData :public Slave::RxType
+{
+    double feedback_pos{ 0 };
+};
+class TestSlave :public SlaveTemplate<TxTestData, RxTestData>
+{
+public:
+    static auto Type()->const std::string &{ static const std::string type("TestSlave"); return std::ref(type); }
+    virtual auto type() const->const std::string&{ return Type(); }
+    TestSlave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele):SlaveTemplate(father, id, xml_ele){}
+
+protected:
+    virtual auto readUpdate()->void override
+    {
+        std::int32_t feedback_pos;
+        readPdoIndex(0x6064,0,feedback_pos);
+        rxData().feedback_pos = feedback_pos;
+    };
+    virtual auto writeUpdate()->void override{}
+    virtual auto logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override
+    {
+        file << static_cast<const TxTestData&>(tx_data).target_pos << " "<< static_cast<const RxTestData&>(rx_data).feedback_pos;
+    }
+};
+
 class TestMaster :public aris::control::Master
 {
 protected:
@@ -92,11 +121,8 @@ protected:
 
         auto& slave = dynamic_cast<aris::control::Slave &>(slavePool().at(0));
 
-        std::int32_t feedback_pos;
-        slave.readPdoIndex(0x6064,0,feedback_pos);
-
 #ifdef UNIX
-        if (count++ % 100 == 0)rt_printf("%d:%d\n", count, feedback_pos);
+        if (count++ % 100 == 0)rt_printf("%d:%f\n", count, static_cast<TestSlave&>(slave).rxData().feedback_pos);
 #endif
 	};
 };
@@ -108,15 +134,24 @@ void test_control_ethercat()
 
 	TestMaster master;
 
+    master.registerChildType<TestSlave>();
 	master.loadXml(xml_doc);
 	master.start();
 
 	std::cout << "press any key to terminate test" << std::endl;
-	std::cin.get();
 
-	master.dataLogger().start();
+    master.dataLogger().start();
+    std::cin.get();
+    std::cin.get();
+
+    master.dataLogger().stop();
+    std::cin.get();
+    std::cin.get();
 
     master.stop();
+    std::cin.get();
+    std::cin.get();
+
 
 	std::cout << "test_control_ethercat finished" << std::endl;
 }

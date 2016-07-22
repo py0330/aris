@@ -150,7 +150,7 @@ namespace aris
 		class DataLogger::Imp
 		{
 		public:
-			Pipe<void *> log_pipe_;
+            Pipe<void *> log_pipe_{false};
 			std::size_t log_data_size_{ 0 };
 			std::unique_ptr<char[]> log_data_;
 			std::thread log_thread_;
@@ -159,7 +159,7 @@ namespace aris
 
 			std::mutex data_mutex_;
 		};
-		auto DataLogger::start()->void
+        auto DataLogger::start()->void
 		{
 			std::lock_guard<std::mutex> guard(imp_->data_mutex_);
 
@@ -169,11 +169,10 @@ namespace aris
 			}
 			else
 			{
-				imp_->log_data_.reset(new char[imp_->log_data_size_]);
-
 				imp_->log_thread_ = std::thread([this]()
 				{
-					static std::fstream file;
+
+                    std::fstream file;
 					std::string name = aris::core::logFileName();
 					name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
 					file.open(name.c_str(), std::ios::out | std::ios::trunc);
@@ -181,26 +180,40 @@ namespace aris
 					imp_->log_data_size_ = 0;
 					for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
 					std::unique_ptr<char[]> receive_data(new char[imp_->log_data_size_]);
+                    imp_->log_data_.reset(new char[imp_->log_data_size_]);
 
-					long long count = -1;
-					imp_->is_receiving_ = imp_->is_sending_ = true;
-					while (imp_->is_receiving_)
+                    long long count = 0;
+                    std::size_t recv_size{0};
+
+
+                    imp_->is_receiving_ = true;
+                    imp_->is_sending_ = true;
+
+                    while (imp_->is_receiving_)
 					{
-						imp_->log_pipe_.recvInNrt(receive_data.get(), imp_->log_data_size_);
+                        if(recv_size == imp_->log_data_size_)
+                        {
+                            file << count++ << " ";
 
-						file << count++ << " ";
+                            std::size_t size_count = 0;
+                            for (auto &sla : master().slavePool())
+                            {
+                                sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
+                                    , *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
 
-						std::size_t size_count = 0;
-						for (auto &sla : master().slavePool())
-						{
-							sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
-								, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+                                file << " ";
 
-							file << " ";
+                                size_count += sla.txTypeSize() + sla.rxTypeSize();
+                            }
+                            file << std::endl;
 
-							size_count += sla.txTypeSize() + sla.rxTypeSize();
-						}
-						file << std::endl;
+                            recv_size = 0;
+                        }
+                        else
+                        {
+                            auto ret = imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_ - recv_size);
+                            recv_size += ret>0 ? ret:0;
+                        }
 					}
 					file.close();
 				});
@@ -212,7 +225,7 @@ namespace aris
 
 			if (imp_->log_thread_.joinable())
 			{
-				imp_->is_sending_ = false;
+                imp_->is_sending_ = false;
 
 				aris::core::msSleep(1000);
 				imp_->is_receiving_ = false;
@@ -223,8 +236,8 @@ namespace aris
 		{
 			if (imp_->is_sending_)
 			{
-				std::size_t size_count = 0;
-
+                //std::cout<<"sending"<<imp_->log_data_size_<<std::endl;
+                std::size_t size_count = 0;
 				for (auto &sla : master().slavePool())
 				{
 					auto tx_data_char = reinterpret_cast<char *>(&sla.txData());
@@ -240,8 +253,8 @@ namespace aris
 			}
 		}
 		DataLogger::~DataLogger() = default;
-		DataLogger::DataLogger(Object &father, std::size_t id, const std::string &name) :Element(father, id, name), imp_(new Imp) {};
-		DataLogger::DataLogger(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp) {};
+        DataLogger::DataLogger(Object &father, std::size_t id, const std::string &name) :Element(father, id, name), imp_(new Imp) {}
+        DataLogger::DataLogger(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp) {}
 
 		auto Element::master()->Master &{return static_cast<Master &>(root());}
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
