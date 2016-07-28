@@ -941,17 +941,20 @@ namespace aris
 		Slave::~Slave() = default;
 		Slave::Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(this))
 		{
-			auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType, Element> &>(*master().findByName("SlaveType"));
+			if (master().findByName("slave_type_pool") == master().end())
+			{
+				throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
+			}
+			auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType, Element> &>(*master().findByName("slave_type_pool"));
 
 			if (slave_type_pool.findByName(attributeString(xml_ele, "slave_type")) == slave_type_pool.end())
 			{
 				throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
 			}
-			imp_->slave_type_ = static_cast<SlaveType*>(&add(std::ref(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type")))));
-			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("PDO"));
-			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("SDO"));
+			imp_->slave_type_ = static_cast<SlaveType*>(&add(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"))));
+			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("pdo_group_pool"));
+			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("sdo_pool"));
 			
-
 			for (auto &group : pdoGroupPool())
 			{
 				for (auto &pdo : group)
@@ -1030,19 +1033,19 @@ namespace aris
 
 		auto Master::loadXml(const aris::core::XmlDocument &xml_doc)->void
 		{
-			auto sensor_root_xml_ele = xml_doc.RootElement()->FirstChildElement("Controller");
+			auto root_xml_ele = xml_doc.RootElement()->FirstChildElement("controller");
 
-			if (!sensor_root_xml_ele)throw std::runtime_error("can't find SensorRoot element in xml file");
+			if (!root_xml_ele)throw std::runtime_error("can't find controller element in xml file");
 
-			loadXml(*sensor_root_xml_ele);
+			loadXml(*root_xml_ele);
 		}
 		auto Master::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			Root::loadXml(xml_ele);
 
 			imp_->data_logger_ = findByName("data_logger") == end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
-			imp_->slave_type_pool_ = findByName("SlaveType") == end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("SlaveType") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("SlaveType")));
-			imp_->slave_pool_ = findByName("Slave") == end() ? &add<aris::core::ObjectPool<Slave, Element> >("Slave") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("Slave")));
+			imp_->slave_type_pool_ = findByName("slave_type_pool") == end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
+			imp_->slave_pool_ = findByName("slave_pool") == end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
 			imp_->tx_data_pool_.clear();
 			imp_->rx_data_pool_.clear();
 			for (auto &slave : slavePool())

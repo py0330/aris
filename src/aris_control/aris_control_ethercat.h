@@ -25,8 +25,6 @@ namespace aris
 		class Element :public aris::core::Object
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("element"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
 			auto master()->Master &;
 			auto master()const->const Master &;
 			Element(aris::core::Object &father, std::size_t id, const std::string &name) :Object(father, id, name) {}
@@ -47,11 +45,10 @@ namespace aris
 			~DataLogger();
 			DataLogger(Object &father, std::size_t id, const std::string &name);
 			DataLogger(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
-
-		protected:
 			DataLogger(const DataLogger &) = delete;
 			DataLogger(DataLogger &&) = delete;
-
+			DataLogger& operator=(const DataLogger &) = delete;
+			DataLogger& operator=(DataLogger &&) = delete;
 
 		private:
 			struct Imp;
@@ -130,7 +127,7 @@ namespace aris
 		class Pdo :public DO
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("pdo"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Pdo"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto read(std::int32_t &value)const->void;
 			auto read(std::int16_t &value)const->void;
@@ -149,13 +146,13 @@ namespace aris
 		class Sdo :public DO
 		{
 		public:
-			enum Option
+			enum Option	
 			{
 				READ = 0x01,
 				WRITE = 0x02,
 				CONFIG = 0x04
 			};
-			static auto Type()->const std::string &{ static const std::string type("sdo"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Sdo"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto readable()const->bool;
 			auto writeable()const->bool;
@@ -195,7 +192,7 @@ namespace aris
 		class PdoGroup:public aris::core::ObjectPool<Pdo, Element>
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("pdo_group"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("PdoGroup"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto tx()const->bool;
 			auto rx()const->bool;
@@ -211,7 +208,7 @@ namespace aris
 		class SlaveType:public Element
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("slave_type"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("SlaveType"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto productCode()const->std::uint32_t;
 			auto venderID()const->std::uint32_t;
@@ -229,7 +226,7 @@ namespace aris
 		public:
 			struct TxType {};
 			struct RxType { std::int32_t ret{ 0 }; };
-			static auto Type()->const std::string &{ static const std::string type("slave"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Slave"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			virtual auto txData()->TxType&;
 			virtual auto txData()const->const TxType&;
@@ -327,18 +324,17 @@ namespace aris
             auto configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void;
 			virtual ~Slave();
 			Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
-		
+			Slave(const Slave &other) = delete;
+			Slave(Slave &&other) = delete;
+			Slave& operator=(const Slave &other) = delete;
+			Slave& operator=(Slave &&other) = delete;
+
 		protected:
             virtual auto init()->void {}
             virtual auto readUpdate()->void {}
             virtual auto writeUpdate()->void {}
 
 		private:
-			auto operator=(const Slave &other)->Slave & = delete;
-			auto operator=(Slave &&other)->Slave & = delete;
-			Slave(const Slave &other) = delete;
-			Slave(Slave &&other) = delete;
-			
 			struct Imp;
 			std::unique_ptr<Imp> imp_;
 
@@ -363,21 +359,18 @@ namespace aris
 			auto rxDataPool()const->const aris::core::RefPool<Slave::RxType> &;
 			auto dataLogger()->DataLogger&;
 			auto dataLogger()const->const DataLogger&;
-			auto isLoging() const->bool;
-            auto logOn()->void;
-            auto logOff()->void;
 
 			virtual ~Master();
 			Master();
+			Master(const Master &other) = delete;
+			Master(Master &&other) = delete;
+			Master& operator=(const Master &other) = delete;
+			Master& operator=(Master &&other) = delete;
+
 		protected:
             virtual auto controlStrategy()->void {}
 
 		private:
-			Master(const Master &other) = delete;
-			Master(Master &&other) = delete;
-			Master & operator=(const Master &other) = delete;
-			Master & operator=(Master &&other) = delete;
-
 			class Imp;
 			std::unique_ptr<Imp> imp_;
 

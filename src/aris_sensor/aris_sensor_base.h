@@ -48,7 +48,7 @@ namespace aris
 		class Sensor :public aris::core::Object
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("sensor"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Sensor"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto start()->void;
 			auto stop()->void;

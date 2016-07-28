@@ -154,10 +154,7 @@ namespace aris
 {
 	namespace core
 	{
-		auto logFileName()->const std::string&
-		{
-			return LogFile::instance().fileName;
-		}
+		auto logFileName()->const std::string&{	return LogFile::instance().fileName;}
 		auto log(const char *data)->const char *
 		{
 			LogFile::instance().log(data);
@@ -243,7 +240,6 @@ namespace aris
 			return reinterpret_cast<MsgHeader*>(data_)->msg_type_;
 		}
 
-		//MsgRT MsgRT::instance()[2];
 		auto MsgRT::instance()->MsgRtArray&
 		{
 			static MsgRtArray msg_rt_array;
@@ -253,7 +249,7 @@ namespace aris
 		MsgRT::MsgRT()
 		{
 			data_ = new char[RT_MSG_SIZE + sizeof(MsgHeader)];
-			memset(data_, 0, RT_MSG_SIZE + sizeof(MsgHeader));
+			std::fill(data_, data_ + sizeof(MsgHeader) + RT_MSG_SIZE, 0);
 			resize(0);
 		}
 		MsgRT::~MsgRT()
@@ -265,32 +261,6 @@ namespace aris
 			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = data_size;
 		}
 
-		Msg::Msg(std::int32_t msg_id, std::int32_t data_size)
-		{
-			data_ = new char[sizeof(MsgHeader) + data_size];
-			memset(data_, 0, sizeof(MsgHeader) + data_size);
-			
-			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = data_size;
-			reinterpret_cast<MsgHeader *>(data_)->msg_id_ = msg_id;
-		}
-		Msg::Msg(const Msg& other)
-		{
-			data_ = new char[sizeof(MsgHeader) + other.size()];
-			memcpy(data_, other.data_, sizeof(MsgHeader) + other.size());
-		}
-		Msg::Msg(Msg&& other)
-		{
-			this->swap(other);
-		}
-		Msg::~Msg()
-		{
-			delete [] data_;
-		}
-		Msg &Msg::operator=(Msg other)
-		{
-			this->swap(other);
-			return (*this);
-		}
 		auto Msg::swap(Msg &other)->void
 		{
 			std::swap(this->data_, other.data_);
@@ -300,11 +270,32 @@ namespace aris
 			Msg otherMsg(0, dataLength);
 
 			std::copy_n(this->data_, sizeof(MsgHeader) + std::min(size(), dataLength), otherMsg.data_);
-			
+
 			reinterpret_cast<MsgHeader*>(otherMsg.data_)->msg_size_ = dataLength;
 
 			this->swap(otherMsg);
 		}
+		Msg::Msg(std::int32_t msg_id, std::int32_t data_size)
+		{
+			data_ = new char[sizeof(MsgHeader) + data_size]();
+			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = data_size;
+			reinterpret_cast<MsgHeader *>(data_)->msg_id_ = msg_id;
+		}
+		Msg::Msg(const std::string &msg_str)
+		{
+			data_ = new char[sizeof(MsgHeader) + msg_str.size() + 1]();
+			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = msg_str.size() + 1;
+			std::copy(msg_str.data(), msg_str.data() + msg_str.size() + 1, data_ + sizeof(MsgHeader));
+		}
+		Msg::Msg(const Msg& other)
+		{
+			data_ = new char[sizeof(MsgHeader) + other.size()];
+			std::copy(other.data(), other.data() + sizeof(MsgHeader) + other.size(), data_);
+		}
+		Msg::Msg(Msg&& other) { swap(other); }
+		Msg::~Msg(){delete [] data_;}
+		Msg &Msg::operator=(Msg other) { swap(other); return (*this); }
+		
 
 		auto msSleep(int mSeconds)->void
 		{

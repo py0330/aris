@@ -25,7 +25,7 @@ namespace aris
 			PipeBase(PipeBase&&) = delete;
 
 			class Imp;
-			std::unique_ptr<Imp> pImp;
+			std::unique_ptr<Imp> imp_;
 		};
 
 		template <typename StandardLayoutStruct>
@@ -96,7 +96,7 @@ namespace aris
         class Pipe<void *>:public PipeBase
 		{
         public:
-            Pipe(bool isBlock = true) :PipeBase(isBlock) {}
+            Pipe(bool is_block = true) :PipeBase(is_block) {}
             auto sendToRT(const void *data, std::size_t byte_size)->int { return sendToRTRawData(data, byte_size); }
             auto sendToNrt(const void *data, std::size_t byte_size)->int { return sendToNrtRawData(data, byte_size); }
             auto recvInRT(void *data, std::size_t byte_size)->int { return recvInRTRawData(data, byte_size); }

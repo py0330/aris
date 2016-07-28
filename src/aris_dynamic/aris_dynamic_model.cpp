@@ -709,7 +709,9 @@ namespace aris
 		Interaction::Interaction(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
 			: DynEle(father, id, xml_ele)
 		{
-			auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model().findByName("Part"));
+			if (model().findByName("part_pool") == model().end())
+				throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"" );
+			auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model().findByName("part_pool"));
 			
 			if (!xml_ele.Attribute("prt_m"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"prt_m\"");
 			auto prt_m = part_pool.findByName(xml_ele.Attribute("prt_m"));
@@ -2084,21 +2086,21 @@ namespace aris
 		{
 			Coordinate::operator=(other);
 			imp_ = other.imp_;
-			imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("ChildMarker"));
+			imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("marker_pool"));
 			return *this;
 		}
 		auto Part::operator=(const Part &other)->Part&
 		{
 			Coordinate::operator=(other);
 			imp_ = other.imp_;
-			imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("ChildMarker"));
+			imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("marker_pool"));
 			return *this;
 		}
 		Part::~Part() {}
 		Part::Part(Object &father, std::size_t id, const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active)
 			: Coordinate(father, id, name, active)
 		{
-			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element>>("ChildMarker");
+			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element>>("marker_pool");
 
 			static const double default_im[36]{
 				1,0,0,0,0,0,
@@ -2138,10 +2140,10 @@ namespace aris
 			if (xml_ele.Attribute("graphic_file_path"))
 				imp_->graphic_file_path_ = model().calculator().evaluateExpression(xml_ele.Attribute("graphic_file_path"));
 
-			imp_->marker_pool_ = findByName("ChildMarker") == end() ? &add<aris::core::ObjectPool<Marker, Element>>("ChildMarker") : static_cast<aris::core::ObjectPool<Marker, Element> *>(&(*findByName("ChildMarker")));
+			imp_->marker_pool_ = findByName("marker_pool") == end() ? &add<aris::core::ObjectPool<Marker, Element>>("marker_pool") : static_cast<aris::core::ObjectPool<Marker, Element> *>(&(*findByName("marker_pool")));
 		}
-		Part::Part(Part &&other) :Coordinate(other), imp_(std::move(other.imp_)) { imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("ChildMarker")); };
-		Part::Part(const Part &other) :Coordinate(other), imp_(other.imp_) { imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("ChildMarker")); };
+		Part::Part(Part &&other) :Coordinate(other), imp_(std::move(other.imp_)) { imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("marker_pool")); };
+		Part::Part(const Part &other) :Coordinate(other), imp_(other.imp_) { imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("marker_pool")); };
 
 		auto Joint::saveAdams(std::ofstream &file) const->void
 		{
@@ -2354,7 +2356,11 @@ namespace aris
 		auto GeneralMotion::setMotFce(const double * mot_fce)->void { std::copy(mot_fce, mot_fce + 6, imp_->mot_fce_); }
 		GeneralMotion::~GeneralMotion() {}
 		GeneralMotion::GeneralMotion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active):Constraint(father, id, name, makI, makJ, active){}
-		GeneralMotion::GeneralMotion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele):Constraint(father, id, xml_ele){}
+		GeneralMotion::GeneralMotion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
+			:Constraint(father, id, xml_ele)
+		{
+			std::cout << xml_ele.name()<<std::endl;
+		}
 
 		struct Model::Imp
 		{
@@ -2423,9 +2429,9 @@ namespace aris
 		}
 		auto Model::loadXml(const aris::core::XmlDocument &xml_doc)->void
         {
-            auto model_xml_ele = xml_doc.RootElement()->FirstChildElement("Model");
+            auto model_xml_ele = xml_doc.RootElement()->FirstChildElement("model");
 
-            if (!model_xml_ele)throw std::runtime_error("can't find Model element in xml file");
+            if (!model_xml_ele)throw std::runtime_error("can't find \"model\" element in xml file");
 
             loadXml(*model_xml_ele);
 		}
@@ -2433,16 +2439,16 @@ namespace aris
 		{
             Root::loadXml(xml_ele);
 
-            imp_->environment_ = findByName("Environment") == end() ? &this->add<Environment>("Environment") : static_cast<Environment *>(&(*findByName("Environment")));
-            imp_->script_pool_ = findByName("Script") == end() ? &this->add<aris::core::ObjectPool<Script, Element>>("Script") : static_cast<aris::core::ObjectPool<Script, Element>*>(&(*findByName("Script")));
-            imp_->variable_pool_ = findByName("Variable") == end() ? &this->add<aris::core::ObjectPool<Variable, Element>>("Variable") : static_cast<aris::core::ObjectPool<Variable, Element>*>(&(*findByName("Variable")));
-            imp_->akima_pool_ = findByName("Akima") == end() ? &this->add<aris::core::ObjectPool<Akima, Element>>("Akima") : static_cast<aris::core::ObjectPool<Akima, Element>*>(&(*findByName("Akima")));
-            imp_->part_pool_ = findByName("Part") == end() ? &this->add<aris::core::ObjectPool<Part, Element>>("Part") : static_cast<aris::core::ObjectPool<Part, Element>*>(&(*findByName("Part")));
-            imp_->joint_pool_ = findByName("Joint") == end() ? &this->add<aris::core::ObjectPool<Joint, Element>>("Joint") : static_cast<aris::core::ObjectPool<Joint, Element>*>(&(*findByName("Joint")));
-            imp_->motion_pool_ = findByName("Motion") == end() ? &this->add<aris::core::ObjectPool<Motion, Element>>("Motion") : static_cast<aris::core::ObjectPool<Motion, Element>*>(&(*findByName("Motion")));
-            imp_->general_motion_pool_ = findByName("General_Motion") == end() ? &this->add<aris::core::ObjectPool<GeneralMotion, Element>>("General_Motion"): static_cast<aris::core::ObjectPool<GeneralMotion, Element>*>(&(*findByName("General_Motion")));
-            imp_->force_pool_ = findByName("Force") == end() ? &this->add<aris::core::ObjectPool<Force, Element>>("Force") : static_cast<aris::core::ObjectPool<Force, Element>*>(&(*findByName("Force")));
-            imp_->ground_ = partPool().findByName("Ground") == partPool().end() ? &partPool().add<Part>("Ground") : &*partPool().findByName("Ground");
+            imp_->environment_ = findByName("environment") == end() ? &this->add<Environment>("environment") : static_cast<Environment *>(&(*findByName("environment")));
+            imp_->script_pool_ = findByName("script") == end() ? &this->add<aris::core::ObjectPool<Script, Element>>("script") : static_cast<aris::core::ObjectPool<Script, Element>*>(&(*findByName("script")));
+            imp_->variable_pool_ = findByName("variable_pool") == end() ? &this->add<aris::core::ObjectPool<Variable, Element>>("variable_pool") : static_cast<aris::core::ObjectPool<Variable, Element>*>(&(*findByName("variable_pool")));
+            imp_->akima_pool_ = findByName("akima_pool") == end() ? &this->add<aris::core::ObjectPool<Akima, Element>>("akima_pool") : static_cast<aris::core::ObjectPool<Akima, Element>*>(&(*findByName("akima_pool")));
+            imp_->part_pool_ = findByName("part_pool") == end() ? &this->add<aris::core::ObjectPool<Part, Element>>("part_pool") : static_cast<aris::core::ObjectPool<Part, Element>*>(&(*findByName("part_pool")));
+            imp_->joint_pool_ = findByName("joint_pool") == end() ? &this->add<aris::core::ObjectPool<Joint, Element>>("joint_pool") : static_cast<aris::core::ObjectPool<Joint, Element>*>(&(*findByName("joint_pool")));
+            imp_->motion_pool_ = findByName("motion_pool") == end() ? &this->add<aris::core::ObjectPool<Motion, Element>>("motion_pool") : static_cast<aris::core::ObjectPool<Motion, Element>*>(&(*findByName("motion_pool")));
+            imp_->general_motion_pool_ = findByName("general_motion_pool") == end() ? &this->add<aris::core::ObjectPool<GeneralMotion, Element>>("general_motion_pool"): static_cast<aris::core::ObjectPool<GeneralMotion, Element>*>(&(*findByName("general_motion_pool")));
+            imp_->force_pool_ = findByName("force_pool") == end() ? &this->add<aris::core::ObjectPool<Force, Element>>("force_pool") : static_cast<aris::core::ObjectPool<Force, Element>*>(&(*findByName("force_pool")));
+            imp_->ground_ = partPool().findByName("ground") == partPool().end() ? &partPool().add<Part>("ground") : &*partPool().findByName("ground");
         }
 		auto Model::saveXml(aris::core::XmlDocument &xml_doc)const->void
 		{
@@ -3141,16 +3147,16 @@ namespace aris
 			registerChildType<SingleComponentForce>();
 
 
-			imp_->environment_ = &this->add<Environment>("Environment");
-			imp_->script_pool_ = &this->add<aris::core::ObjectPool<Script, Element>>("Script");
-			imp_->variable_pool_ = &this->add<aris::core::ObjectPool<Variable, Element>>("Variable");
-			imp_->akima_pool_ = &this->add<aris::core::ObjectPool<Akima, Element>>("Akima");
-			imp_->part_pool_ = &this->add<aris::core::ObjectPool<Part, Element>>("Part");
-			imp_->joint_pool_ = &this->add<aris::core::ObjectPool<Joint, Element>>("Joint");
-			imp_->motion_pool_ = &this->add<aris::core::ObjectPool<Motion, Element>>("Motion");
-			imp_->general_motion_pool_ = &this->add<aris::core::ObjectPool<GeneralMotion, Element>>("General_Motion");
-			imp_->force_pool_ = &this->add<aris::core::ObjectPool<Force, Element>>("Force");
-			imp_->ground_ = &imp_->part_pool_->add<Part>("Ground");
+			imp_->environment_ = &this->add<Environment>("environment");
+			imp_->script_pool_ = &this->add<aris::core::ObjectPool<Script, Element>>("script");
+			imp_->variable_pool_ = &this->add<aris::core::ObjectPool<Variable, Element>>("variable_pool");
+			imp_->akima_pool_ = &this->add<aris::core::ObjectPool<Akima, Element>>("akima_pool");
+			imp_->part_pool_ = &this->add<aris::core::ObjectPool<Part, Element>>("part_pool");
+			imp_->joint_pool_ = &this->add<aris::core::ObjectPool<Joint, Element>>("joint_pool");
+			imp_->motion_pool_ = &this->add<aris::core::ObjectPool<Motion, Element>>("motion_pool");
+			imp_->general_motion_pool_ = &this->add<aris::core::ObjectPool<GeneralMotion, Element>>("general_motion_pool");
+			imp_->force_pool_ = &this->add<aris::core::ObjectPool<Force, Element>>("force_pool");
+			imp_->ground_ = &imp_->part_pool_->add<Part>("ground");
 		}
 		
 		Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Constraint(father, id, xml_ele)

@@ -98,64 +98,64 @@ namespace aris
 			friend class PipeBase;
 		};
 
-		PipeBase::PipeBase(bool isBlock):pImp(new PipeBase::Imp(isBlock)){}
+		PipeBase::PipeBase(bool isBlock):imp_(new PipeBase::Imp(isBlock)){}
 		PipeBase::~PipeBase(){}
-		int PipeBase::sendToRTRawData(const void *pData, int size)
+		auto PipeBase::sendToRTRawData(const void *data, int size)->int
 		{
 #ifdef UNIX
-            std::lock_guard<std::recursive_mutex> guard(pImp->mutex_nrt_);
-            return write(pImp->fd_nrt_, pData, size);
+            std::lock_guard<std::recursive_mutex> guard(imp_->mutex_nrt_);
+            return write(imp_->fd_nrt_, data, size);
 #endif
 #ifdef WIN32
 			return 0;
 #endif
 		}
-		int PipeBase::sendToNrtRawData(const void* pData, int size)
+		auto PipeBase::sendToNrtRawData(const void* data, int size)->int
 		{
 #ifdef UNIX
-            return rt_dev_sendto(pImp->fd_rt_, pData, size, 0, NULL, 0);
+            return rt_dev_sendto(imp_->fd_rt_, data, size, 0, NULL, 0);
 #endif
 #ifdef WIN32
 			return 0;
 #endif
 		}
-		int PipeBase::recvInRTRawData(void* pData, int size)
+		auto PipeBase::recvInRTRawData(void* data, int size)->int
 		{
 #ifdef UNIX
-            return rt_dev_recvfrom(pImp->fd_rt_, pData, size, MSG_DONTWAIT, NULL, 0);
+            return rt_dev_recvfrom(imp_->fd_rt_, data, size, MSG_DONTWAIT, NULL, 0);
 #endif
 #ifdef WIN32
 			return 0;
 #endif
 		}
-		int PipeBase::recvInNrtRawData(void *pData, int size)
+		auto PipeBase::recvInNrtRawData(void *data, int size)->int
 		{
 #ifdef UNIX
-            std::lock_guard<std::recursive_mutex> guard(pImp->mutex_nrt_);
-            return read(pImp->fd_nrt_, pData, size);
+            std::lock_guard<std::recursive_mutex> guard(imp_->mutex_nrt_);
+            return read(imp_->fd_nrt_, data, size);
 #endif
 #ifdef WIN32
 			return 0;
 #endif
 		}
 		
-		Pipe<aris::core::Msg>::Pipe(bool isBlock) :PipeBase(isBlock) {}
-		int Pipe<aris::core::Msg>::sendToRT(const aris::core::Msg &msg)
+		Pipe<aris::core::Msg>::Pipe(bool is_block) :PipeBase(is_block) {}
+		auto Pipe<aris::core::Msg>::sendToRT(const aris::core::Msg &msg)->int
 		{
 			sendToRTRawData(msg.data_, msg.size() + sizeof(aris::core::MsgHeader));
 			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
-		int Pipe<aris::core::Msg>::sendToNrt(const aris::core::MsgRT &msg)
+		auto Pipe<aris::core::Msg>::sendToNrt(const aris::core::MsgRT &msg)->int
 		{
 			sendToNrtRawData(msg.data_, msg.size() + sizeof(aris::core::MsgHeader));
 			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
-		int Pipe<aris::core::Msg>::recvInRT(aris::core::MsgRT &msg)
+		auto Pipe<aris::core::Msg>::recvInRT(aris::core::MsgRT &msg)->int
 		{
 			int length = recvInRTRawData(msg.data_, sizeof(aris::core::MsgHeader) + aris::core::MsgRT::RT_MSG_SIZE);
 			return length <= 0 ? 0 : length;
 		}
-		int Pipe<aris::core::Msg>::recvInNrt(aris::core::Msg &msg)
+		auto Pipe<aris::core::Msg>::recvInNrt(aris::core::Msg &msg)->int
 		{
 			int err = recvInNrtRawData(msg.data_, sizeof(aris::core::MsgHeader));
 			msg.resize(msg.size());

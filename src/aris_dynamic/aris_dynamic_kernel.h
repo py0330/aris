@@ -20,8 +20,7 @@
 namespace aris
 {
 	///
-	/// to do lists:
-	/// 下一版本的符号定义: \n
+	/// 符号定义: \n
 	/// pp  :  3x1 点位置(position of point)  \n
 	/// re  :  3x1 欧拉角(eula angle)         \n
 	/// rq  :  4x1 四元数(quaternions)        \n

@@ -35,7 +35,7 @@ namespace aris
 		class Param final:public ParamBase
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("param"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Param"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto abbreviation()->char;
 			auto defaultParam()const->const std::string &;
@@ -57,7 +57,7 @@ namespace aris
 		class UniqueParam final:public ParamBase
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("unique"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("UniqueParam"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto defaultParam()const->const std::string &;
 			UniqueParam(Object &father, std::size_t id, const std::string &name);
@@ -76,7 +76,7 @@ namespace aris
 		class GroupParam final: public ParamBase
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("group"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("GroupParam"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			GroupParam(Object &father, std::size_t id, const std::string &name);
 			GroupParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
@@ -89,7 +89,7 @@ namespace aris
 		class Command :public ObjectPool<ParamBase>
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("command"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Command"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto defaultParam()const->const std::string &;
 			auto help()const->const std::string &;
@@ -118,7 +118,7 @@ namespace aris
 			virtual auto loadXml(const XmlDocument &xml_doc)->void override;
 			virtual auto loadXml(const XmlElement &xml_ele)->void override;
 			auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
-            auto getHelpString()->std::string;
+            auto help()const->std::string;
             auto commandPool()->ObjectPool<Command> &;
 			auto commandPool()const->const ObjectPool<Command> &;
 

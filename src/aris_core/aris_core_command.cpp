@@ -229,16 +229,16 @@ namespace aris
 		};
 		auto CommandParser::loadXml(const XmlDocument &xml_doc)->void
 		{
-			auto xml_ele = xml_doc.RootElement()->FirstChildElement("Server");
+			auto xml_ele = xml_doc.RootElement()->FirstChildElement("server");
 
-			if (!xml_ele)throw std::runtime_error("can't find SensorRoot element in xml file");
+			if (!xml_ele)throw std::runtime_error("can't find server element in xml file");
 
 			loadXml(*xml_ele);
 		}
 		auto CommandParser::loadXml(const XmlElement &xml_ele)->void
 		{
 			Root::loadXml(xml_ele);
-			imp_->command_pool_ = findByName("Commands") == end() ? &add<aris::core::ObjectPool<Command> >("Commands") : static_cast<aris::core::ObjectPool<Command> *>(&(*findByName("Commands")));
+			imp_->command_pool_ = findByName("command_pool") == end() ? &add<aris::core::ObjectPool<Command> >("command_pool") : static_cast<aris::core::ObjectPool<Command> *>(&(*findByName("command_pool")));
 		}
 		auto CommandParser::parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void
 		{
@@ -365,7 +365,7 @@ namespace aris
         auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; }
         auto CommandParser::commandPool()const->const ObjectPool<Command> &{ return *imp_->command_pool_; }
 
-        auto CommandParser::getHelpString( )->std::string
+        auto CommandParser::help()const->std::string
         {			
 			int maxPrintLength = 55;
             std::string helpstring{};

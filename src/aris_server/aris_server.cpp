@@ -90,7 +90,7 @@ namespace aris
 			std::unique_ptr<aris::dynamic::Model> model_;
 			std::unique_ptr<aris::sensor::SensorRoot> sensor_root_;
 			std::unique_ptr<aris::control::Controller> controller_;
-			std::unique_ptr<aris::core::CommandParser> parser_;
+			std::unique_ptr<aris::core::CommandParser> parser_{new aris::core::CommandParser };
 
 			// 结束时的callback //
 			std::function<void(void)> on_exit_callback_{nullptr};
@@ -195,7 +195,7 @@ namespace aris
 
 				if (cmd == "help")
 				{
-                    std::cout << parser_->getHelpString() << std::endl;
+                    std::cout << parser_->help() << std::endl;
 					return aris::core::Msg();
                 }
 				
@@ -665,35 +665,34 @@ namespace aris
 		}
 		auto ControlServer::loadXml(const aris::core::XmlDocument &xml_doc)->void 
         {
-			/// load robot model_ ///
+			// load robot model_ //
             imp_->model_->loadXml(xml_doc);
             imp_->controller_->loadXml(xml_doc);
             imp_->sensor_root_->loadXml(xml_doc);
-			imp_->parser_.reset(new aris::core::CommandParser());
             imp_->parser_->loadXml(xml_doc);
 
-			/// load connection param ///
-			imp_->server_socket_ip_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
-			imp_->server_socket_port_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("port");
+			// load connection param //
+			imp_->server_socket_ip_ = xml_doc.RootElement()->FirstChildElement("server")->Attribute("ip");
+			imp_->server_socket_port_ = xml_doc.RootElement()->FirstChildElement("server")->Attribute("port");
 
-			/// Set socket connection callback function ///
-			imp_->server_socket_.setOnReceivedConnection([](aris::core::Socket *pConn, const char *pRemoteIP, int remotePort)
+			// Set socket connection callback function //
+			imp_->server_socket_.setOnReceivedConnection([](aris::core::Socket *sock, const char *remote_ip, int remote_port)
 			{
-				aris::core::log(std::string("received connection, the server_socket_ip_ is: ") + pRemoteIP);
+				aris::core::log(std::string("received connection, the server_socket_ip_ is: ") + remote_ip);
 				return 0;
 			});
-			imp_->server_socket_.setOnReceivedRequest([this](aris::core::Socket *pConn, aris::core::Msg &msg)
+			imp_->server_socket_.setOnReceivedRequest([this](aris::core::Socket *sock, aris::core::Msg &msg)
 			{
 				return imp_->onReceiveMsg(msg);
 			});
-			imp_->server_socket_.setOnLoseConnection([this](aris::core::Socket *socket)
+			imp_->server_socket_.setOnLoseConnection([this](aris::core::Socket *sock)
 			{
 				aris::core::log("lost connection");
 				while (true)
 				{
 					try
 					{
-						socket->startServer(imp_->server_socket_port_.c_str());
+						sock->startServer(imp_->server_socket_port_.c_str());
 						break;
 					}
 					catch (aris::core::Socket::StartServerError &e)
@@ -707,7 +706,7 @@ namespace aris
 				return 0;
 			});
 
-            ///set the tg///
+            //set the tg//
             imp_->controller_->setControlStrategy([this]()
             {
                 this->imp_->tg();
