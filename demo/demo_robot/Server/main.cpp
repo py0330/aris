@@ -15,16 +15,8 @@ int main(int argc, char *argv[])
 {
     auto &cs = aris::server::ControlServer::instance();
 
-
     cs.createModel<robot::Robot>();
-    cs.createController<aris::control::Controller>();
-    cs.createSensorRoot<aris::sensor::SensorRoot>();
     //if no special robot model, you can use the default model
-    //cs.createModel<aris::dynamic::Model>();
-
-
-    //register new slave or new sensor
-    cs.controller().registerChildType<robot::EsgImu>();
 
 
     //cs.loadXml("/usr/aris/robot/resource/robot.xml");
