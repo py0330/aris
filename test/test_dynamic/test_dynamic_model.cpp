@@ -4,6 +4,10 @@
 
 using namespace aris::dynamic;
 
+
+
+
+
 void test_coordinate()
 {
 	aris::dynamic::Model model;
@@ -892,6 +896,103 @@ void test_part()
 
 	std::cout << "test part finished" << std::endl;
 }
+void test_simulation()
+{
+	const char xml_file[] =
+	"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+	"<root>"
+	"    <model>"
+	"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
+	"        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
+	"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
+	"            <Mot_friction type=\"MatrixVariable\">{20, 30, 560}</Mot_friction>"
+	"        </variable_pool>"
+	"        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
+	"            <m1_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
+	"            <m2_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
+	"            <m3_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
+	"        </akima_pool>"
+	"        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
+	"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
+	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+	"                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
+	"                </marker_pool>"
+	"            </ground>"
+	"            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
+	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+	"                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
+	"                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
+	"                </marker_pool>"
+	"            </part1>"
+	"            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
+	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+	"                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
+	"                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
+	"                </marker_pool>"
+	"            </part2>"
+	"            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part3.x_t\">"
+	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+	"                    <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
+	"                </marker_pool>"
+	"            </part3>"
+	"        </part_pool>"
+	"        <joint_pool type=\"JointPoolObject\">"
+	"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
+	"            <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
+	"            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
+	"        </joint_pool>"
+	"        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
+	"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+	"            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+	"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+	"        </motion_pool>"
+	"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
+	"    </model>"
+	"</root>";
+		
+	
+	try 
+	{
+		aris::core::XmlDocument xml_doc;
+		auto a = xml_doc.Parse(xml_file);
+
+		Model m;
+		m.loadXml(xml_doc);
+
+		aris::dynamic::PlanParamBase p;
+		aris::dynamic::PlanFunc f = [](aris::dynamic::Model &m, const aris::dynamic::PlanParamBase &p)
+		{
+			double pe2[6]{ 0,0,0,0,0,0 };
+			pe2[5] = p.count_*0.001 / 3 * PI / 3 + PI / 2;
+			auto &r2j = *m.partPool().findByName("part1")->markerPool().findByName("r2j");
+			m.partPool().findByName("part2")->setPe(r2j, pe2, "123");
+
+			double pe3[6]{ 0,0,0,0,0,0 };
+			pe3[5] = -p.count_*0.001 / 3 * PI / 3 - PI / 2;
+			auto &r3j = *m.partPool().findByName("part2")->markerPool().findByName("r3j");
+			m.partPool().findByName("part3")->setPe(r3j, pe3, "123");
+
+			m.motionAtAbs(0).update();
+			m.motionAtAbs(1).update();
+			m.motionAtAbs(2).update();
+
+			return 3000 - p.count_;
+		};
+
+		m.saveDynEle("before");
+		m.simKin(f, p);
+		m.loadDynEle("before");
+		m.saveAdams("C:\\aris\\robot\\resource\\test.cmd");
+
+		std::cout << "test simulation finished, please check \"C:\\aris\\robot\\resource\\test.cmd\"" << std::endl;
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what();
+	}
+	
+}
+
 
 void test_auto_kinematic()
 {
@@ -946,46 +1047,12 @@ void test_auto_kinematic()
 
 }
 
-void test_model2()
-{
-	try
-	{
-		Model model;
-
-		model.loadXml("C:\\Users\\yang\\Desktop\\Robot_III.xml");
-
-		for (auto &m : model.motionPool())
-			std::cout << m.absID() << "   " << m.phyID() << "   " << m.slaID() << std::endl;
-
-		for (std::size_t i = 0; i < 18; ++i)
-		{
-			std::cout << model.motionAtAbs(i).absID() << "   " << model.motionAtPhy(i).phyID() << std::endl;
-		}
-
-		std::size_t abs_id[18]{ 0,1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,22 };
-		for (auto i : abs_id)
-		{
-			std::cout << model.motionAtSla(i).slaID() << "   " << std::endl;
-		}
-
-		model.saveXml("C:\\Users\\yang\\Desktop\\Robot_III_save.xml");
-		model.saveAdams("C:\\Users\\yang\\Desktop\\robot.cmd", true);
-	}
-	catch (std::exception &e)
-	{
-		std::cout << e.what() << std::endl;
-	}
-	
-	std::cout << "finished" << std::endl;
-}
-
-
 void test_model()
 {
+	std::cout << std::endl << "-----------------test model---------------------" << std::endl;
 	test_coordinate();
 	test_part();
-
-
-	std::cout << "test model finished" << std::endl;
+	test_simulation();
+	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
 }
 

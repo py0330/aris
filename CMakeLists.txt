@@ -126,7 +126,7 @@ add_library(aris_sensor STATIC ${FULL_SRC} ${FULL_H} src/aris_sensor/aris_sensor
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H} src/aris_sensor/aris_sensor.h)
 
 # aris control server project
-set(SOURCE aris_server)
+set(SOURCE aris_server aris_server_widget)
 PREPEND_CPP(FULL_SRC src/aris_server ${SOURCE})
 PREPEND_H(FULL_H src/aris_server ${SOURCE})
 add_library(aris_server STATIC ${FULL_SRC} ${FULL_H})
@@ -143,7 +143,7 @@ target_link_libraries(test_dynamic ${ALL_LINK_LIB})
 add_test(NAME test_dynamic COMMAND test_dynamic)
 set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_core_xml.h test_core_xml.cpp test_core_command.h test_core_command.cpp)
+set(SOURCE_FILES main.cpp test_core_xml.h test_core_xml.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
 PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
 add_executable(test_core ${FULL_SRC})
 target_link_libraries(test_core ${ALL_LINK_LIB})
@@ -171,49 +171,9 @@ set(MAKE_DEMO " ")
 if(MAKE_DEMO)
 
 set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_Core/demo_Core ${SOURCE_FILES})
-add_executable(demo_Core ${FULL_SRC})
-target_link_libraries(demo_Core ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_Control/demo_Control ${SOURCE_FILES})
-add_executable(demo_Control ${FULL_SRC})
-target_link_libraries(demo_Control ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_Core/demo_Message ${SOURCE_FILES})
-add_executable(demo_Message ${FULL_SRC})
-target_link_libraries(demo_Message ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_Core/demo_Socket_Client ${SOURCE_FILES})
-add_executable(demo_Socket_Client ${FULL_SRC})
-target_link_libraries(demo_Socket_Client ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_Core/demo_Socket_Server ${SOURCE_FILES})
-add_executable(demo_Socket_Server ${FULL_SRC})
-target_link_libraries(demo_Socket_Server ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_ExpCal/demo_ExpCal ${SOURCE_FILES})
 add_executable(demo_ExpCal ${FULL_SRC})
 target_link_libraries(demo_ExpCal ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_Sensor/demo_Sensor ${SOURCE_FILES})
-add_executable(demo_Sensor ${FULL_SRC})
-target_link_libraries(demo_Sensor ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Server ${SOURCE_FILES})
-add_executable(demo_Server ${FULL_SRC})
-target_link_libraries(demo_Server ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_Server/demo_Client ${SOURCE_FILES})
-add_executable(demo_Client ${FULL_SRC})
-target_link_libraries(demo_Client ${ALL_LINK_LIB})
 
 endif(MAKE_DEMO)
 

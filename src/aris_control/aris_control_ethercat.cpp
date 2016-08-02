@@ -1,7 +1,3 @@
-
-
-
-
 #ifdef WIN32
 #include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
 #endif
@@ -18,7 +14,6 @@
 #include <fcntl.h>
 #include <rtdm/rtdm.h>
 #include <rtdm/rtipc.h>
-#include <mutex>
 #endif
 
 #include <mutex>
@@ -36,7 +31,7 @@ namespace aris
 {
 	namespace control
 	{
-		struct Slave::Imp
+        struct Slave::Imp
 		{
 		public:
 			auto read()->void
@@ -44,15 +39,15 @@ namespace aris
 #ifdef UNIX 
 				ecrt_domain_process(domain_);
 #endif
-			};
+            }
 			auto write()->void
 			{
 #ifdef UNIX
 				ecrt_domain_queue(domain_);
 #endif
-			};
+            }
 			auto init()->void;
-			Imp(Slave*slave) :slave_(slave) {};
+            Imp(Slave*slave) :slave_(slave) {}
 
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec_;
 			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx_, ec_pdo_info_vec_rx_;
@@ -82,32 +77,29 @@ namespace aris
 		public:
 			static auto rt_task_func(void *)->void
 			{
-			#ifdef UNIX
-				auto &mst = *instance;
+            #ifdef UNIX
+                auto &mst = *instance;
 			
 				rt_task_set_periodic(NULL, TM_NOW, mst.imp_->sample_period_ns_);
-			
+
 				while (!mst.imp_->is_stopping_)
 				{
-					rt_task_wait_period(NULL);
-			
+                    rt_task_wait_period(NULL);
+
 					mst.imp_->read();//motors and sensors get data
-			
-					/// tg begin
+
+                    /// tg begin
 					mst.controlStrategy();
 					/// tg end
-			
+
 					mst.imp_->sync(rt_timer_read());
 					mst.imp_->write();//motor data write and state machine/mode transition
 
-                    mst.imp_->logToNrt();//sent data to nrt
+                    mst.dataLogger().logDataRT();//sent data to nrt
 				}
 			#endif
 			};
-			static auto setInstance(Master *master)->void
-			{
-				instance = master;
-			}
+			static auto setInstance(Master *master)->void { instance = master; }
 			auto read()->void 
 			{ 
 				ecrt_master_receive(ec_master_);
@@ -126,64 +118,6 @@ namespace aris
 				}
 				ecrt_master_send(ec_master_); 
             }
-
-            auto logToNrt()->void
-            {
-				std::size_t size_count = 0;
-				for (std::size_t i = 0; i<slave_pool_->size(); i++)
-				{
-					auto &sla = slave_pool_->at(i);
-					auto tx_data = reinterpret_cast<char *>(&tx_data_pool_.at(i));
-					auto rx_data = reinterpret_cast<char *>(&rx_data_pool_.at(i));
-					std::copy(tx_data, tx_data + sla.txTypeSize(), sent_data_.get() + size_count);
-					size_count += sla.txTypeSize();
-					std::copy(rx_data, rx_data + sla.rxTypeSize(), sent_data_.get() + size_count);
-					size_count += sla.rxTypeSize();
-				}
-				record_pipe_->sendToNrt(sent_data_.get(), data_size_);
-            }
-            auto startLogData()->void
-            {
-				if (!log_thread_.joinable())
-				{
-					this->sent_data_.reset(new char[this->data_size_]);
-					this->record_pipe_.reset(new Pipe<void *>());
-
-					log_thread_ = std::thread([this]()
-					{
-						static std::fstream file;
-						std::string name = aris::core::logFileName();
-						name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
-						file.open(name.c_str(), std::ios::out | std::ios::trunc);
-
-						long long count = -1;
-						std::unique_ptr<char[]> receive_data(new char[data_size_]);
-						while (!is_stopping_)
-						{
-							record_pipe_->recvInNrt(receive_data.get(), data_size_);
-
-							if (is_loging_)
-							{
-								file << count++ << " ";
-
-								std::size_t size_count = 0;
-								for (auto &sla : *slave_pool_)
-								{
-									sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
-										, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
-
-									file << " ";
-
-									size_count += sla.txTypeSize() + sla.rxTypeSize();
-								}
-								file << std::endl;
-							}
-						}
-						file.close();
-					});
-				}
-            }
-
             auto sync(uint64_t ns)->void
 			{
 				ecrt_master_application_time(ec_master_, ns);
@@ -202,12 +136,7 @@ namespace aris
 			const int sample_period_ns_ = 1000000;
 
             //for log
-            std::size_t data_size_{0};
-            std::unique_ptr<char[]> sent_data_;
-            std::unique_ptr<Pipe<void *>> record_pipe_;
-            std::thread log_thread_;
-            std::atomic_bool is_loging_{ true };
-
+			DataLogger* data_logger_;
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
 #ifdef UNIX
@@ -217,6 +146,115 @@ namespace aris
 			friend class Master;
 		};
 		Master *Master::Imp::instance{ nullptr };
+
+		class DataLogger::Imp
+		{
+		public:
+            Pipe<void *> log_pipe_{false};
+			std::size_t log_data_size_{ 0 };
+			std::unique_ptr<char[]> log_data_;
+			std::thread log_thread_;
+			std::atomic_bool is_receiving_{ false };
+			std::atomic_bool is_sending_{ false };
+
+			std::mutex data_mutex_;
+		};
+        auto DataLogger::start()->void
+		{
+			std::lock_guard<std::mutex> guard(imp_->data_mutex_);
+
+			if (imp_->log_thread_.joinable())
+			{
+				throw std::runtime_error("master is already logging, can't start logger");
+			}
+			else
+			{
+				imp_->log_thread_ = std::thread([this]()
+				{
+
+                    std::fstream file;
+					std::string name = aris::core::logFileName();
+					name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
+					file.open(name.c_str(), std::ios::out | std::ios::trunc);
+
+					imp_->log_data_size_ = 0;
+					for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
+					std::unique_ptr<char[]> receive_data(new char[imp_->log_data_size_]);
+                    imp_->log_data_.reset(new char[imp_->log_data_size_]);
+
+                    long long count = 0;
+                    std::size_t recv_size{0};
+
+
+                    imp_->is_receiving_ = true;
+                    imp_->is_sending_ = true;
+
+                    while (imp_->is_receiving_)
+					{
+                        if(recv_size == imp_->log_data_size_)
+                        {
+                            file << count++ << " ";
+
+                            std::size_t size_count = 0;
+                            for (auto &sla : master().slavePool())
+                            {
+                                sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
+                                    , *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+
+                                file << " ";
+
+                                size_count += sla.txTypeSize() + sla.rxTypeSize();
+                            }
+                            file << std::endl;
+
+                            recv_size = 0;
+                        }
+                        else
+                        {
+                            auto ret = imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_ - recv_size);
+                            recv_size += ret>0 ? ret:0;
+                        }
+					}
+					file.close();
+				});
+			}
+		}
+		auto DataLogger::stop()->void
+		{
+			std::lock_guard<std::mutex> guard(imp_->data_mutex_);
+
+			if (imp_->log_thread_.joinable())
+			{
+                imp_->is_sending_ = false;
+
+				aris::core::msSleep(1000);
+				imp_->is_receiving_ = false;
+				imp_->log_thread_.join();
+			}
+		}
+		auto DataLogger::logDataRT()->void
+		{
+			if (imp_->is_sending_)
+			{
+                //std::cout<<"sending"<<imp_->log_data_size_<<std::endl;
+                std::size_t size_count = 0;
+				for (auto &sla : master().slavePool())
+				{
+					auto tx_data_char = reinterpret_cast<char *>(&sla.txData());
+					auto rx_data_char = reinterpret_cast<char *>(&sla.rxData());
+
+					std::copy(tx_data_char, tx_data_char + sla.txTypeSize(), imp_->log_data_.get() + size_count);
+					size_count += sla.txTypeSize();
+					std::copy(rx_data_char, rx_data_char + sla.rxTypeSize(), imp_->log_data_.get() + size_count);
+					size_count += sla.rxTypeSize();
+				}
+
+				imp_->log_pipe_.sendToNrt(imp_->log_data_.get(), imp_->log_data_size_);
+			}
+		}
+		DataLogger::~DataLogger() = default;
+        DataLogger::DataLogger(Object &father, std::size_t id, const std::string &name) :Element(father, id, name), imp_(new Imp) {}
+        DataLogger::DataLogger(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp) {}
 
 		auto Element::master()->Master &{return static_cast<Master &>(root());}
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
@@ -607,16 +645,16 @@ namespace aris
 #ifdef UNIX
 			for (auto &reg : this->ec_pdo_entry_reg_vec_)	reg.position = slave_->position();
 
-			// Create domain
+			/// Create domain
 			if (!(this->domain_ = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
 
-			// Get the slave configuration 
+			/// Get the slave configuration 
 			if (!(this->ec_slave_config_ = ecrt_master_slave_config(ec_mst, slave_type_->alias(), slave_->position(), slave_type_->venderID(), slave_type_->productCode())))
 			{
 				throw std::runtime_error("failed to slave config");
 			}
 
-			// Config Sdo
+			/// Config Sdo
 			for (auto &sdo : slave_->sdoPool())
 			{
 				if (!(sdo.option() & Sdo::CONFIG)) continue;
@@ -630,15 +668,14 @@ namespace aris
 				}
 			}
 
-			// Configure the slave's PDOs and sync masters
+			/// Configure the slave's PDOs and sync masters
 			if (ecrt_slave_config_pdos(this->ec_slave_config_, 4, this->ec_sync_info_))throw std::runtime_error("failed to slave config pdos");
 
-			// Configure the slave's domain
+			/// Configure the slave's domain
 			if (ecrt_domain_reg_pdo_entry_list(this->domain_, this->ec_pdo_entry_reg_vec_.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
-			// Configure the slave's discrete clock			
+			/// Configure the slave's discrete clock			
 			if (slave_type_->distributedClock())ecrt_slave_config_dc(this->ec_slave_config_, slave_type_->distributedClock(), 1000000, 4400000, 0, 0);
-
 #endif
 		};
 		auto Slave::txData()->TxType& { return imp_->tx_data_; }
@@ -901,21 +938,23 @@ namespace aris
             int sdo_ID = imp_->sdo_map_.at(index).at(subindex);
             writeSdo(sdo_ID, value);
         }
-
-		Slave::~Slave() {}
+		Slave::~Slave() = default;
 		Slave::Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(this))
 		{
-			auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType, Element> &>(*master().findByName("SlaveType"));
+			if (master().findByName("slave_type_pool") == master().end())
+			{
+				throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
+			}
+			auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType, Element> &>(*master().findByName("slave_type_pool"));
 
 			if (slave_type_pool.findByName(attributeString(xml_ele, "slave_type")) == slave_type_pool.end())
 			{
 				throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
 			}
-			imp_->slave_type_ = static_cast<SlaveType*>(&add(std::ref(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type")))));
-			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("PDO"));
-			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("SDO"));
+			imp_->slave_type_ = static_cast<SlaveType*>(&add(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"))));
+			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("pdo_group_pool"));
+			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("sdo_pool"));
 			
-
 			for (auto &group : pdoGroupPool())
 			{
 				for (auto &pdo : group)
@@ -994,18 +1033,19 @@ namespace aris
 
 		auto Master::loadXml(const aris::core::XmlDocument &xml_doc)->void
 		{
-			auto sensor_root_xml_ele = xml_doc.RootElement()->FirstChildElement("Controller");
+			auto root_xml_ele = xml_doc.RootElement()->FirstChildElement("controller");
 
-			if (!sensor_root_xml_ele)throw std::runtime_error("can't find SensorRoot element in xml file");
+			if (!root_xml_ele)throw std::runtime_error("can't find controller element in xml file");
 
-			loadXml(*sensor_root_xml_ele);
+			loadXml(*root_xml_ele);
 		}
 		auto Master::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			Root::loadXml(xml_ele);
 
-			imp_->slave_type_pool_ = findByName("SlaveType") == end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("SlaveType") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("SlaveType")));
-			imp_->slave_pool_ = findByName("Slave") == end() ? &add<aris::core::ObjectPool<Slave, Element> >("Slave") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("Slave")));
+			imp_->data_logger_ = findByName("data_logger") == end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
+			imp_->slave_type_pool_ = findByName("slave_type_pool") == end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
+			imp_->slave_pool_ = findByName("slave_pool") == end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
 			imp_->tx_data_pool_.clear();
 			imp_->rx_data_pool_.clear();
 			for (auto &slave : slavePool())
@@ -1020,37 +1060,32 @@ namespace aris
 			imp_->is_running_ = true;
 			imp_->setInstance(this);
 
-			/// init each slave and update tx & rx data pool ///
-			txDataPool().clear();
-			rxDataPool().clear();
-			for (auto &slave : slavePool())
-			{
-				slave.imp_->init();
-				slave.init();
-				txDataPool().push_back_ptr(&slave.txData());
-				rxDataPool().push_back_ptr(&slave.rxData());
-				imp_->data_size_ = imp_->data_size_ + slave.txTypeSize();
-				imp_->data_size_ = imp_->data_size_ + slave.rxTypeSize();
-			}
-
 			/// init begin ///
 #ifdef UNIX
 			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
 
 			if (!(imp_->ec_master_ = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
 
+            /// init each slave and update tx & rx data pool ///
+            txDataPool().clear();
+            rxDataPool().clear();
+            for (auto &slave : slavePool())
+            {
+                slave.imp_->init();
+                slave.init();
+                txDataPool().push_back_ptr(&slave.txData());
+                rxDataPool().push_back_ptr(&slave.rxData());
+            }
+
+
 			ecrt_master_activate(imp_->ec_master_);
 
-			for (auto &slave : slavePool())
-			{
-				slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
-			}
+			for (auto &slave : slavePool())slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
 
-            imp_->startLogData();
 			/// init end ///
 			rt_print_auto_init(1);
 
-			rt_task_create(&imp_->rt_task_, "realtime core", 0, 99, T_FPU);
+            rt_task_create(&imp_->rt_task_, "realtime core", 0, 99, T_FPU);
 			rt_task_start(&imp_->rt_task_, &Master::Imp::rt_task_func, NULL);
 #endif
 		};
@@ -1076,15 +1111,13 @@ namespace aris
 		auto Master::txDataPool()const->const aris::core::RefPool<Slave::TxType> &{return imp_->tx_data_pool_; }
 		auto Master::rxDataPool()->aris::core::RefPool<Slave::RxType> & { return imp_->rx_data_pool_; }
 		auto Master::rxDataPool()const->const aris::core::RefPool<Slave::RxType> &{return imp_->rx_data_pool_; }
-        auto Master::isLoging()->bool{return imp_->is_loging_;}
-        auto Master::isLoging() const->bool{return imp_->is_loging_;}
-        auto Master::logOn()->void{imp_->is_loging_=true;}
-        auto Master::logOn() const->void{imp_->is_loging_=true;}
-        auto Master::logOff()->void{imp_->is_loging_=false;}
-        auto Master::logOff() const->void{imp_->is_loging_=false;}
-		Master::~Master() {}
+		auto Master::dataLogger()->DataLogger& { return std::ref(*imp_->data_logger_); }
+		auto Master::dataLogger()const->const DataLogger&{ return std::ref(*imp_->data_logger_); }
+		Master::~Master() = default;
 		Master::Master() :imp_(new Imp)
 		{
+			registerChildType<DataLogger>();
+			
 			registerChildType<Pdo>();
 			registerChildType<Sdo>();
 			registerChildType<PdoGroup>();

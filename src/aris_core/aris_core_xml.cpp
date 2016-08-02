@@ -21,22 +21,20 @@ namespace aris
 			other->root().childTypeMap().at(other->type()).copy_assign_func(*other, **this);
 			return *this;
 		};
-		template<> auto ImpPtr<Object>::operator=(ImpPtr &&other)noexcept ->ImpPtr<Object>&
-		{ 
-			other->root().childTypeMap().at(other->type()).move_assign_func(std::move(*other), **this);
-			return *this;
-		};
-
 		template<> auto ImpContainer<Object>::operator=(const ImpContainer& other)->ImpContainer<Object>&
 		{
-			if (size() != other.size())throw std::runtime_error("you must copy assign Object with same size");
-			for (std::size_t i = 0; i < size(); ++i)other.at(i).root().childTypeMap().at(other.at(i).type()).copy_assign_func(other.at(i), at(i));
-			return *this;
-		}
-		template<> auto ImpContainer<Object>::operator=(ImpContainer&&other)->ImpContainer<Object>&
-		{
-			if (size() != other.size())throw std::runtime_error("you must move assign Object with same size");
-			for (std::size_t i = 0; i < size(); ++i)other.at(i).root().childTypeMap().at(other.at(i).type()).move_assign_func(std::move(other.at(i)), at(i));
+			if (size() > other.size())erase(begin() + other.size(), end());
+			for (std::size_t i = 0; i < size(); ++i)
+			{
+				if (at(i).type() != other.at(i).type())
+				{
+					this->container_.at(i).reset(other.at(i).root().childTypeMap().at(other.at(i).type()).copy_construct_func(other.at(i)));
+				}
+				else
+				{
+					other.at(i).root().childTypeMap().at(other.at(i).type()).copy_assign_func(other.at(i), at(i));
+				}
+			}
 			return *this;
 		}
 
@@ -116,21 +114,6 @@ namespace aris
 		{
 			return const_cast<Object *>(this)->findByName(name);
 		}
-		auto Object::add(const aris::core::XmlElement &xml_ele)->Object &
-		{
-			std::string type = xml_ele.Attribute("type") ? xml_ele.Attribute("type"): imp_->default_type_;
-
-			if (root().imp_->type_map_.find(type) == root().imp_->type_map_.end())
-			{
-				throw std::runtime_error("unrecognized type \"" + type
-					+ "\" when add xml element \"" + xml_ele.name() + "\" to \"" + name() + "\"");
-			}
-			else
-			{
-				push_back_ptr(root().imp_->type_map_.find(type)->second.xml_construct_func(*this, size(), xml_ele));
-				return back();
-			}
-		}
 		auto Object::add(const Object &object)->Object &
 		{
 			if (root().imp_->type_map_.find(object.type()) == root().imp_->type_map_.end())
@@ -160,6 +143,36 @@ namespace aris
 				back().imp_->name_ = object.name();
 				back().imp_->father_ = this;
 
+				return back();
+			}
+		}
+		auto Object::add(Object *obj)->Object &
+		{
+			if (root().imp_->type_map_.find(obj->type()) == root().imp_->type_map_.end())
+			{
+				throw std::runtime_error("unrecognized type \"" + obj->type() + "\" when add object \"" + obj->name() + "\" to \"" + name() + "\"");
+			}
+			else
+			{
+				push_back_ptr(obj);
+				back().imp_->id_ = size() - 1;
+				back().imp_->father_ = this;
+
+				return back();
+			}
+		}
+		auto Object::add(const aris::core::XmlElement &xml_ele)->Object &
+		{
+			std::string type = xml_ele.Attribute("type") ? xml_ele.Attribute("type") : imp_->default_type_;
+
+			if (root().imp_->type_map_.find(type) == root().imp_->type_map_.end())
+			{
+				throw std::runtime_error("unrecognized type \"" + type
+					+ "\" when add xml element \"" + xml_ele.name() + "\" to \"" + name() + "\"");
+			}
+			else
+			{
+				push_back_ptr(root().imp_->type_map_.find(type)->second.xml_construct_func(*this, size(), xml_ele));
 				return back();
 			}
 		}
@@ -495,7 +508,7 @@ namespace aris
 
 			return *this;
 		}
-		Object::~Object() {}
+		Object::~Object() = default;
 		Object::Object(const Object &other) :ImpContainer(other), imp_(other.imp_) { for (auto &child : *this)child.imp_->father_ = this; }
 		Object::Object(Object &&other) : ImpContainer(std::move(other)), imp_(std::move(other.imp_)) { for (auto &child : *this)child.imp_->father_ = this; }
 		Object::Object(Object &father, std::size_t id, const std::string &name) : imp_(new Imp(&father, id, name)) {}
@@ -527,7 +540,7 @@ namespace aris
 		auto Root::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			clear();
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement()) add(*ele);
 		}
 		auto Root::saveXml(const std::string &filename) const->void
 		{
@@ -552,6 +565,5 @@ namespace aris
 		Root::~Root() {}
 		Root::Root(const std::string &name) :Object(*this, 0, name) {}
 		Root::Root(const aris::core::XmlElement &xml_ele) :Object(*this, 0, xml_ele) {}
-
 	}
 }

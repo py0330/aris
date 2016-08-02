@@ -9,6 +9,7 @@
 #include <functional>
 #include <algorithm>
 #include <map>
+#include <utility>
 
 #include <iostream>
 
@@ -23,25 +24,27 @@ namespace aris
 		using XmlAttribute = tinyxml2::XMLAttribute;
 		class Root;
 
-		template<typename Data> class ImpPtr
+		template<typename T> class ImpPtr
 		{
 		public:
-			auto get()const->const Data*{ return data_unique_ptr_.get(); }
-			auto get()->Data* { return data_unique_ptr_.get(); }
-			auto operator->()const->const Data*{ return data_unique_ptr_.get(); }
-			auto operator->()->Data*{ return data_unique_ptr_.get(); }
-			auto operator*()const->const Data& { return *data_unique_ptr_; }
-			auto operator*()->Data&{ return *data_unique_ptr_; }
-			auto operator=(const ImpPtr &other)->ImpPtr& { *data_unique_ptr_ = *other.data_unique_ptr_; return *this; }
-			auto operator=(ImpPtr &&other)noexcept->ImpPtr& { *data_unique_ptr_ = std::move(*other.data_unique_ptr_); return *this; }
+			auto reset(T* p)->void { data_unique_ptr_.reset(p); }
+			auto get()const->const T*{ return data_unique_ptr_.get(); }
+			auto get()->T* { return data_unique_ptr_.get(); }
+			auto operator->()const->const T*{ return data_unique_ptr_.get(); }
+			auto operator->()->T*{ return data_unique_ptr_.get(); }
+			auto operator*()const->const T& { return *data_unique_ptr_; }
+			auto operator*()->T&{ return *data_unique_ptr_; }
+			
 			~ImpPtr() = default;
-			ImpPtr() :data_unique_ptr_(new Data) {}
-			ImpPtr(Data *data_ptr) :data_unique_ptr_(data_ptr) {}
-			ImpPtr(const ImpPtr &other) :data_unique_ptr_(new Data(*other.data_unique_ptr_)) {}
-			ImpPtr(ImpPtr &&other)noexcept :data_unique_ptr_(std::move(other.data_unique_ptr_)) {}
+			ImpPtr() :data_unique_ptr_(new T) {}
+			ImpPtr(T *data_ptr) :data_unique_ptr_(data_ptr) {}
+			ImpPtr(const ImpPtr &other) :data_unique_ptr_(new T(*other.data_unique_ptr_)) {}
+			ImpPtr(ImpPtr &&other)noexcept = default;
+			ImpPtr& operator=(const ImpPtr &other) { *data_unique_ptr_ = *other.data_unique_ptr_; return *this; }
+			ImpPtr& operator=(ImpPtr &&other)noexcept = default;
 			
 		private:
-			std::unique_ptr<Data> data_unique_ptr_;
+			std::unique_ptr<T> data_unique_ptr_;
 		};
 		template <class T, class A = std::allocator<T> >class ImpContainer 
 		{
@@ -94,6 +97,7 @@ namespace aris
 
 			private:
 				friend class ImpContainer::const_iterator;
+				friend class ImpContainer<T,A>;
 				typename std::vector<ImpPtr<T>>::iterator iter_;
 			};
 			class const_iterator 
@@ -174,13 +178,12 @@ namespace aris
 			
 			auto push_back_ptr(T*ptr)->void { container_.push_back(ImpPtr<T>(ptr)); }
 
-			auto operator=(const ImpContainer& other)->ImpContainer& { container_ = other.container_; }
-			auto operator=(ImpContainer&& other)->ImpContainer& { container_ = std::move(other.container_); }
-			
 			~ImpContainer() = default;
 			ImpContainer() = default;
 			ImpContainer(const ImpContainer&) = default;
 			ImpContainer(ImpContainer&&other) = default;
+			ImpContainer& operator=(const ImpContainer& other) { container_ = other.container_; }
+			ImpContainer& operator=(ImpContainer&& other) = default;
 
 		private:
 			typename std::vector<ImpPtr<T>> container_;
@@ -189,7 +192,7 @@ namespace aris
 		class Object: public ImpContainer<Object>
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("object"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Object"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void;
 			auto name() const->const std::string&;
@@ -202,13 +205,12 @@ namespace aris
 			auto load(const std::string &name, bool auto_delete_save = true)->void;
 			auto findByName(const std::string &name)const->const_iterator;
 			auto findByName(const std::string &name)->iterator;
-			auto add(const aris::core::XmlElement &xml_ele)->Object &;
 			auto add(const Object &object)->Object &;
 			auto add(Object &&object)->Object &;
-			template<typename T>
-			auto add(const aris::core::XmlElement &xml_ele)->T& { return static_cast<T&>(add(T(*this, size(), xml_ele))); }
+			auto add(Object *obj)->Object &;
+			auto add(const aris::core::XmlElement &xml_ele)->Object &;
 			template<typename T, typename ...Args>
-			auto add(const std::string &name, Args... args)->T& { return static_cast<T&>(add(T(*this, size(), name, args...))); }
+			auto add(const std::string &name, Args&&... args)->T& { return static_cast<T&>(add(new T(*this, size(), name, std::forward<Args>(args)...))); }
 
 			auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->bool;
 			auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, bool default_value)const->bool;
@@ -237,16 +239,13 @@ namespace aris
 			auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->char;
 			auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, char default_value)const->char;
 
-
-			auto operator=(const Object &)->Object &;
-			auto operator=(Object &&)->Object &;
 			virtual ~Object();
-
-		protected:
-			Object(const Object &);
-			Object(Object &&);
 			Object(Object &father, std::size_t id, const std::string &name);
 			Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Object(const Object &);
+			Object(Object &&);
+			Object& operator=(const Object &);
+			Object& operator=(Object &&);
 
 		private:
 			struct Imp;
@@ -533,7 +532,7 @@ namespace aris
 			auto operator[](size_type size)->reference { return static_cast<reference>(Base::operator[](size)); } //optional
 			auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(Base::operator[](size)); } //optional
 
-			static auto Type()->const std::string &{ static const std::string type{ T::Type() + "_pool_" + Base::Type() }; return type; }
+			static auto Type()->const std::string &{ static const std::string type{ T::Type() + "Pool" + Base::Type() }; return type; }
 			virtual auto type()const->const std::string & override{ return Type(); }
 			auto findByName(const std::string &name)const->const_iterator { return Base::findByName(name); }
 			auto findByName(const std::string &name)->iterator { return Base::findByName(name);}

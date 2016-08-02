@@ -82,15 +82,11 @@ namespace aris
 			// pipe //
 			aris::control::Pipe<aris::core::Msg> msg_pipe_;
 
-			// socket //
-			aris::core::Socket server_socket_;
-			std::string server_socket_ip_, server_socket_port_;
-
             // 储存模型、控制器和传感器 command parser //
 			std::unique_ptr<aris::dynamic::Model> model_;
 			std::unique_ptr<aris::sensor::SensorRoot> sensor_root_;
 			std::unique_ptr<aris::control::Controller> controller_;
-			std::unique_ptr<aris::core::CommandParser> parser_;
+			std::unique_ptr<aris::server::WidgetRoot> widget_root_;
 
 			// 结束时的callback //
 			std::function<void(void)> on_exit_callback_{nullptr};
@@ -137,7 +133,7 @@ namespace aris
 				try
 				{
 					std::string input{ msg.data() };
-					parser_->parse(input, cmd, params);
+					widget_root_->commandParser().parse(input, cmd, params);
 
 					std::cout << cmd << std::endl;
 					int paramPrintLength;
@@ -195,7 +191,7 @@ namespace aris
 
 				if (cmd == "help")
 				{
-                    std::cout << parser_->getHelpString() << std::endl;
+                    std::cout << widget_root_->commandParser().help() << std::endl;
 					return aris::core::Msg();
                 }
 				
@@ -652,6 +648,11 @@ namespace aris
 			if (imp_->sensor_root_)throw std::runtime_error("control sever can't create sensor_root because it already has one");
 			imp_->sensor_root_.reset(sensor_root);
 		}
+		auto ControlServer::createWidgetRoot(server::WidgetRoot *widget_root)->void
+		{
+			if (imp_->widget_root_)throw std::runtime_error("control sever can't create widget_root because it already has one");
+			imp_->widget_root_.reset(widget_root);
+		}
 		auto ControlServer::loadXml(const char *file_name)->void
 		{
 			aris::core::XmlDocument doc;
@@ -665,35 +666,36 @@ namespace aris
 		}
 		auto ControlServer::loadXml(const aris::core::XmlDocument &xml_doc)->void 
         {
-			/// load robot model_ ///
+			// create instance //
+			if (!imp_->model_)createModel<aris::dynamic::Model>();
+			if (!imp_->controller_)createController<aris::control::Controller>();
+			if (!imp_->sensor_root_)createSensorRoot<aris::sensor::SensorRoot>();
+			if (!imp_->widget_root_)createWidgetRoot<aris::server::WidgetRoot>();
+			
+			// load robot model_ //
             imp_->model_->loadXml(xml_doc);
             imp_->controller_->loadXml(xml_doc);
             imp_->sensor_root_->loadXml(xml_doc);
-			imp_->parser_.reset(new aris::core::CommandParser());
-            imp_->parser_->loadXml(xml_doc);
+			imp_->widget_root_->loadXml(xml_doc);
 
-			/// load connection param ///
-			imp_->server_socket_ip_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
-			imp_->server_socket_port_ = xml_doc.RootElement()->FirstChildElement("Server")->Attribute("port");
-
-			/// Set socket connection callback function ///
-			imp_->server_socket_.setOnReceivedConnection([](aris::core::Socket *pConn, const char *pRemoteIP, int remotePort)
+			// Set socket connection callback function //
+			widgetRoot().commandSocket().setOnReceivedConnection([](aris::core::Socket *sock, const char *remote_ip, int remote_port)
 			{
-				aris::core::log(std::string("received connection, the server_socket_ip_ is: ") + pRemoteIP);
+				aris::core::log(std::string("received connection, the server_socket_ip_ is: ") + remote_ip);
 				return 0;
 			});
-			imp_->server_socket_.setOnReceivedRequest([this](aris::core::Socket *pConn, aris::core::Msg &msg)
+			widgetRoot().commandSocket().setOnReceivedRequest([this](aris::core::Socket *sock, aris::core::Msg &msg)
 			{
 				return imp_->onReceiveMsg(msg);
 			});
-			imp_->server_socket_.setOnLoseConnection([this](aris::core::Socket *socket)
+			widgetRoot().commandSocket().setOnLoseConnection([this](aris::core::Socket *sock)
 			{
 				aris::core::log("lost connection");
 				while (true)
 				{
 					try
 					{
-						socket->startServer(imp_->server_socket_port_.c_str());
+						sock->startServer();
 						break;
 					}
 					catch (aris::core::Socket::StartServerError &e)
@@ -707,13 +709,13 @@ namespace aris
 				return 0;
 			});
 
-            ///set the tg///
+            //set the tg//
             imp_->controller_->setControlStrategy([this]()
             {
                 this->imp_->tg();
             });
 		}
-		auto ControlServer::parser()->core::CommandParser&{	return std::ref(*imp_->parser_); }
+		auto ControlServer::widgetRoot()->WidgetRoot&{	return std::ref(*imp_->widget_root_); }
 		auto ControlServer::model()->dynamic::Model& { return std::ref(*imp_->model_); }
 		auto ControlServer::controller()->control::Controller& { return std::ref(*imp_->controller_); }
 		auto ControlServer::sensorRoot()->sensor::SensorRoot& { return std::ref(*imp_->sensor_root_); }
@@ -740,7 +742,7 @@ namespace aris
 				{
 					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
 				}
-                else if (imp_->parser_->commandPool().findByName(cmd_name) == imp_->parser_->end())
+                else if (widgetRoot().commandParser().commandPool().findByName(cmd_name) == widgetRoot().commandParser().end())
 				{
 					throw std::runtime_error(std::string("failed to add command, because xml does not have \"") + cmd_name + "\" node");
 				}
@@ -760,7 +762,7 @@ namespace aris
 			{
 				try
 				{
-					imp_->server_socket_.startServer(imp_->server_socket_port_.c_str());
+					widgetRoot().commandSocket().startServer();
 					break;
 				}
 				catch (aris::core::Socket::StartServerError &e)
@@ -773,7 +775,7 @@ namespace aris
 		}
 		auto ControlServer::close()->void 
 		{
-			imp_->server_socket_.stop();
+			widgetRoot().commandSocket().stop();
 		}
 		auto ControlServer::setOnExit(std::function<void(void)> callback_func)->void
 		{

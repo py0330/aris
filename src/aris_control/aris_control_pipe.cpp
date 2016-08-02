@@ -31,169 +31,131 @@ namespace aris
 			{
 				static int port = 0;
 				InitRT(port);
-				InitNRT(port, isBlock);
+                InitNrt(port, isBlock);
 				++port;
 			}
 			
 		private:
-			void InitRT(int port)
+            auto InitRT(int port)->void
 			{
 #ifdef UNIX
-				if ((FD_RT = rt_dev_socket(AF_RTIPC, SOCK_DGRAM, IPCPROTO_XDDP)) < 0)
+                if ((fd_rt_ = rt_dev_socket(AF_RTIPC, SOCK_DGRAM, IPCPROTO_XDDP)) < 0)
 				{
 					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
 				}
 
 				struct timeval tv;
-				tv.tv_sec = 1;  /* 30 Secs Timeout */
-				tv.tv_usec = 0;  // Not Init'ing this can cause strange errors
-				if (rt_dev_setsockopt(FD_RT, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)))
+                tv.tv_sec = 1;  // 30 Secs Timeout //
+                tv.tv_usec = 0;
+                if (rt_dev_setsockopt(fd_rt_, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)))
 				{
 					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
 				}
 
-				/*
-				* Set a local 16k pool for the RT endpoint. Memory needed to
-				* convey datagrams will be pulled from this pool, instead of
-				* Xenomai's system pool.
-				*/
-				const std::size_t poolsz = 16384; /* bytes */
-				if (rt_dev_setsockopt(FD_RT, SOL_XDDP, XDDP_POOLSZ, &poolsz, sizeof(poolsz)))
+                //
+                // Set a local 16k pool for the RT endpoint. Memory needed to
+                // convey datagrams will be pulled from this pool, instead of
+                // Xenomai's system pool.
+                //
+                const std::size_t poolsz = 16384; // bytes //
+                if (rt_dev_setsockopt(fd_rt_, SOL_XDDP, XDDP_POOLSZ, &poolsz, sizeof(poolsz)))
 				{
 					throw std::runtime_error(std::string("RT data communication failed! Port:") + std::to_string(port));
 				}
 
-				/*
-				* Bind the socket to the port, to setup a proxy to channel
-				* traffic to/from the Linux domain.
-				*
-				* saddr.sipc_port specifies the port number to use.
-				*/
+                //
+                // Bind the socket to the port, to setup a proxy to channel
+                // traffic to/from the Linux domain.
+                //
+                // saddr.sipc_port specifies the port number to use.
+                //
 				struct sockaddr_ipc saddr;
 				memset(&saddr, 0, sizeof(saddr));
 				saddr.sipc_family = AF_RTIPC;
 				saddr.sipc_port = port;
-				if (rt_dev_bind(FD_RT, (struct sockaddr *)&saddr, sizeof(saddr)))
+                if (rt_dev_bind(fd_rt_, (struct sockaddr *)&saddr, sizeof(saddr)))
 				{
 					throw std::runtime_error(std::string("RT pipe Init failed! Port:") + std::to_string(port));
 				}
 #endif
 			}
-			void InitNRT(int port, bool isBlock)
+            auto InitNrt(int port, bool is_block)->void
 			{
 #ifdef UNIX
-				if (asprintf(&FD_NRT_DEVNAME, "/dev/rtp%d", port) < 0)
-				{
-					throw std::runtime_error("Error in asprintf");
-				}
-				FD_NRT = open(FD_NRT_DEVNAME, O_RDWR);
-				free(FD_NRT_DEVNAME);
+                if(fd_nrt_ = open(("/dev/rtp" + std::to_string(port)).c_str(), O_RDWR));
+                if (fd_nrt_ < 0)throw std::runtime_error(std::string("NRT pipe Init failed! Port:") + std::to_string(port));
 
-				if (FD_NRT < 0)
-				{
-					throw std::runtime_error(std::string("NRT pipe Init failed! Port:") + std::to_string(port));
-				}
-
-
-				if (isBlock)
-				{
-					//            set to block
-					int flags = fcntl(FD_NRT, F_GETFL, 0);
-					fcntl(FD_NRT, F_SETFL, flags &~O_NONBLOCK);
-				}
-				else
-				{
-					//            set to nonblock
-					int flags = fcntl(FD_NRT, F_GETFL, 0);
-					fcntl(FD_NRT, F_SETFL, flags | O_NONBLOCK);
-				}
+                int flags = fcntl(fd_nrt_, F_GETFL, 0);
+                fcntl(fd_nrt_, F_SETFL, is_block?flags &~O_NONBLOCK : flags | O_NONBLOCK);
 #endif
 			}
 
-			int FD_RT;
-			int FD_NRT;
-			char* FD_NRT_DEVNAME;
+            int fd_rt_;
+            int fd_nrt_;
 
-			std::recursive_mutex mutexInNRT;
+            std::recursive_mutex mutex_nrt_;
 
 			friend class PipeBase;
-
 		};
 
-		PipeBase::PipeBase(bool isBlock):pImp(new PipeBase::Imp(isBlock)){}
+		PipeBase::PipeBase(bool is_block):imp_(new PipeBase::Imp(is_block)){}
 		PipeBase::~PipeBase(){}
-		int PipeBase::sendToRTRawData(const void *pData, int size)
+		auto PipeBase::sendToRTRawData(const void *data, int size)->int
 		{
 #ifdef UNIX
-			if (pData == nullptr)
-			{
-				throw std::runtime_error("SendNRTtoRT:Invalid pointer");
-			}
-			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
-			return write(pImp->FD_NRT, pData, size);
+            std::lock_guard<std::recursive_mutex> guard(imp_->mutex_nrt_);
+            return write(imp_->fd_nrt_, data, size);
 #endif
 #ifdef WIN32
 			return 0;
 #endif
 		}
-		int PipeBase::sendToNrtRawData(const void* pData, int size)
+		auto PipeBase::sendToNrtRawData(const void* data, int size)->int
 		{
 #ifdef UNIX
-			if (pData == nullptr)
-			{
-				throw std::runtime_error("SendRTtoNRT:Invalid pointer");
-			}
-			return rt_dev_sendto(pImp->FD_RT, pData, size, 0, NULL, 0);
+            return rt_dev_sendto(imp_->fd_rt_, data, size, 0, NULL, 0);
 #endif
 #ifdef WIN32
 			return 0;
 #endif
 		}
-		int PipeBase::recvInRTRawData(void* pData, int size)
+		auto PipeBase::recvInRTRawData(void* data, int size)->int
 		{
 #ifdef UNIX
-			if (pData == nullptr)
-			{
-				throw std::runtime_error("RecvRTfromNRT:Invalid pointer");
-			}
-			return rt_dev_recvfrom(pImp->FD_RT, pData, size, MSG_DONTWAIT, NULL, 0);
+            return rt_dev_recvfrom(imp_->fd_rt_, data, size, MSG_DONTWAIT, NULL, 0);
 #endif
 #ifdef WIN32
 			return 0;
 #endif
 		}
-		int PipeBase::recvInNrtRawData(void *pData, int size)
+		auto PipeBase::recvInNrtRawData(void *data, int size)->int
 		{
 #ifdef UNIX
-			if (pData == nullptr)
-			{
-				throw std::runtime_error("RecvNRTfromRT:Invalid pointer");
-			}
-			std::lock_guard<std::recursive_mutex> guard(pImp->mutexInNRT);
-			return read(pImp->FD_NRT, pData, size);
+            std::lock_guard<std::recursive_mutex> guard(imp_->mutex_nrt_);
+            return read(imp_->fd_nrt_, data, size);
 #endif
 #ifdef WIN32
 			return 0;
 #endif
 		}
 		
-		Pipe<aris::core::Msg>::Pipe(bool isBlock) :PipeBase(isBlock) {}
-		int Pipe<aris::core::Msg>::sendToRT(const aris::core::Msg &msg)
+		Pipe<aris::core::Msg>::Pipe(bool is_block) :PipeBase(is_block) {}
+		auto Pipe<aris::core::Msg>::sendToRT(const aris::core::Msg &msg)->int
 		{
 			sendToRTRawData(msg.data_, msg.size() + sizeof(aris::core::MsgHeader));
 			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
-		int Pipe<aris::core::Msg>::sendToNrt(const aris::core::MsgRT &msg)
+		auto Pipe<aris::core::Msg>::sendToNrt(const aris::core::MsgRT &msg)->int
 		{
 			sendToNrtRawData(msg.data_, msg.size() + sizeof(aris::core::MsgHeader));
 			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
-		int Pipe<aris::core::Msg>::recvInRT(aris::core::MsgRT &msg)
+		auto Pipe<aris::core::Msg>::recvInRT(aris::core::MsgRT &msg)->int
 		{
 			int length = recvInRTRawData(msg.data_, sizeof(aris::core::MsgHeader) + aris::core::MsgRT::RT_MSG_SIZE);
 			return length <= 0 ? 0 : length;
 		}
-		int Pipe<aris::core::Msg>::recvInNrt(aris::core::Msg &msg)
+		auto Pipe<aris::core::Msg>::recvInNrt(aris::core::Msg &msg)->int
 		{
 			int err = recvInNrtRawData(msg.data_, sizeof(aris::core::MsgHeader));
 			msg.resize(msg.size());

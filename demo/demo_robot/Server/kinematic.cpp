@@ -67,7 +67,7 @@ namespace robot
         this->p1_ = &*partPool().findByName("part1");
         this->p2_ = &*partPool().findByName("part2");
         this->p3_ = &*partPool().findByName("part3");
-        this->ground_ = &*partPool().findByName("Ground");
+        this->ground_ = &*partPool().findByName("ground");
 
         //marker
         this->r1j_ = &*ground_->markerPool().findByName("r1j");

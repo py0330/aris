@@ -2,7 +2,7 @@
 <Robot>
   <Model>
     <Environment type="environment" gravity="{0 , -9.8 , 0 , 0 , 0 , 0}" />
-    <Variable type="variable_pool_element" default_child_type="matrix">
+    <Variable type="VariablePoolElement" default_child_type="matrix">
       <PI type="matrix">3.14159265358979</PI>
       <r1j_pe type="matrix">{ 0,0,0.0435, PI/2, PI/2, -PI/2 }</r1j_pe>
       <r1i_pe type="matrix">{ 0, 0, 0, PI/2, PI/2, -PI/2 }</r1i_pe>
@@ -41,7 +41,7 @@
       <up_graphic type="string">C:\gqy\resource\graphic_file\up.x_t</up_graphic>
       <down_graphic type="string">C:\gqy\resource\graphic_file\ground.x_t</down_graphic>
     </Variable>
-    <Akima type="akima_pool_element" default_child_type="akima">
+    <Akima type="AkimaPoolElement" default_child_type="akima">
       <m1_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}" />
       <m2_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}" />
       <m3_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}" />
@@ -53,7 +53,7 @@
       <gm_r2_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}" />
       <gm_r3_akima x="{0,1,2,3,4}" y="{0,1,2,3,4}" />
     </Akima>
-    <Part type="part_pool_element" default_child_type="part">
+    <Part type="PartPoolElement" default_child_type="part">
       <Ground active="true" inertia="{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}" pe="{0 , 0 , 0 , 0 , 0 , 0}" vel="{0 , 0 , 0 , 0 , 0 , 0}" acc="{0 , 0 , 0 , 0 , 0 , 0}" graphic_file_path="">
         <ChildMarker type="marker_pool_element" default_child_type="marker">
           <gmj pe="{0,0,0,0,0,0}" />
@@ -125,7 +125,7 @@
         </ChildMarker>
       </up>
     </Part>
-    <Joint type="joint_pool_element">
+    <Joint type="JointPoolElement">
       <r1 active="true" type="revolute" prt_m="p1a" prt_n="down" mak_i="r1i" mak_j="r1j" />
       <p1 active="true" type="translational" prt_m="p1b" prt_n="p1a" mak_i="p1i" mak_j="p1j" />
       <u1 active="true" type="universal" prt_m="up" prt_n="p1b" mak_i="u1i" mak_j="u1j" />

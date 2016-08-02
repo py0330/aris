@@ -36,7 +36,8 @@ namespace aris
         class Motion :public SlaveTemplate<TxMotionData, RxMotionData>
         {
         public:
-            enum error{
+            enum Error
+			{
                 SUCCESS=0,
                 EXECUTING=1,
                 EXE_FAULT=2,//the fault accure during executing ,can reset
@@ -48,7 +49,6 @@ namespace aris
                 ENABLE_ERROR=-3,//motor change to disable when run
                 MODE_ERROR=-4,//motor change to wrong mode when run
             };
-
             enum Cmd
             {
                 IDLE = 0,
@@ -65,15 +65,15 @@ namespace aris
                 TORQUE = 0x0010,
             };
 
-            virtual ~Motion();
-            static auto Type()->const std::string &{ static const std::string type("motion"); return std::ref(type); }
-            virtual auto type() const->const std::string&{ return Type(); }
-            Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
-
+			static auto Type()->const std::string &{ static const std::string type("Motion"); return std::ref(type); }
+			virtual auto type() const->const std::string&{ return Type(); }
             auto maxPos()->double;
             auto minPos()->double;
             auto maxVel()->double;
             auto pos2countRatio()->std::int32_t;
+
+			virtual ~Motion();
+			Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
         protected:
             virtual auto readUpdate()->void override;
@@ -84,7 +84,6 @@ namespace aris
             class Imp;
             std::unique_ptr<Imp> imp_;
         };
-
         class Controller:public Master
         {
         public:

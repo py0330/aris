@@ -12,6 +12,8 @@ void test_coordinate_transform();
 
 void test_kernel()
 {
+	std::cout << std::endl << "-----------------test kernel--------------------" << std::endl;
+
 	//test isEqual
 	{
 		double a[] = { 0.1,0.2,0.3 };
@@ -69,8 +71,7 @@ void test_kernel()
 	test_variable_change();
 	test_coordinate_transform();
 
-	std::cout << "test kernel finished" << std::endl;
-	//dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", result, 1, 3);
+	std::cout << "-----------------test kernel finished-----------" << std::endl << std::endl;
 }
 
 void test_variable_change()
@@ -662,8 +663,6 @@ void test_coordinate_transform()
 
 	s_xa2xa(relative_pm, relative_vs, relative_as, from_wa, from_xa, result, result2);
 	if (!s_is_equal(3, to_xa, result, error))std::cout << "\"s_xa2xa\" failed" << std::endl;
-
-	dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", result, 1, 4);
 
 	s_inv_xa2xa(relative_pm, relative_vs, relative_as, to_wa, to_xa, result, result2);
 	if (!s_is_equal(3, from_xa, result, error))std::cout << "\"s_inv_xa2xa\" failed" << std::endl;

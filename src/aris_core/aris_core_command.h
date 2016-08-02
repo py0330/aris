@@ -35,13 +35,19 @@ namespace aris
 		class Param final:public ParamBase
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("param"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Param"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto abbreviation()->char;
 			auto defaultParam()const->const std::string &;
 			auto help()const->const std::string &;
+			
+			virtual ~Param();
 			Param(Object &father, std::size_t id, const std::string &name);
 			Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Param(const Param&);
+			Param(Param&&);
+			Param& operator=(const Param&);
+			Param& operator=(Param&&);
 
 		private:
 			virtual auto take()->void override final;
@@ -57,12 +63,18 @@ namespace aris
 		class UniqueParam final:public ParamBase
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("unique"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("UniqueParam"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto defaultParam()const->const std::string &;
+			
+			virtual ~UniqueParam();
 			UniqueParam(Object &father, std::size_t id, const std::string &name);
 			UniqueParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
-			
+			UniqueParam(const UniqueParam &);
+			UniqueParam(UniqueParam &&);
+			UniqueParam& operator=(const UniqueParam &);
+			UniqueParam& operator=(UniqueParam &&);
+
 		private:
 			virtual auto take()->void override final;
 			virtual auto reset()->void override final;
@@ -76,10 +88,16 @@ namespace aris
 		class GroupParam final: public ParamBase
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("group"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("GroupParam"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			
+			virtual ~GroupParam();
 			GroupParam(Object &father, std::size_t id, const std::string &name);
 			GroupParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			GroupParam(const GroupParam &);
+			GroupParam(GroupParam &&);
+			GroupParam& operator=(const GroupParam &);
+			GroupParam& operator=(GroupParam &&);
 
 		protected:
 			virtual auto take()->void override final;
@@ -89,15 +107,17 @@ namespace aris
 		class Command :public ObjectPool<ParamBase>
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("command"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Command"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto defaultParam()const->const std::string &;
-			auto help()const->const std::string &;
-            auto getHelpString()->std::string;
-            auto getHelpString()const->std::string { return const_cast<Command *>(this)->getHelpString(); }
-			~Command();
+			auto help()const->std::string;
+			virtual ~Command();
 			Command(Object &father, std::size_t id, const std::string &name);
 			Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Command(const Command &);
+			Command(Command &&);
+			Command& operator=(const Command &);
+			Command& operator=(Command &&);
 
 		private:
 			auto reset()->void;
@@ -110,20 +130,24 @@ namespace aris
 			friend class CommandParser;
 			friend class ParamBase;
 		};
-
-		class CommandParser:public Root
+		class CommandParser:public Object
 		{
 		public:
-			using Root::loadXml;
-			virtual auto loadXml(const XmlDocument &xml_doc)->void override;
-			virtual auto loadXml(const XmlElement &xml_ele)->void override;
+			static auto Type()->const std::string &{ static const std::string type("CommandParser"); return std::ref(type); }
+			virtual auto type() const->const std::string&{ return Type(); }
 			auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
-            auto getHelpString()->std::string;
+            auto help()const->std::string;
             auto commandPool()->ObjectPool<Command> &;
 			auto commandPool()const->const ObjectPool<Command> &;
 
-			~CommandParser();
-			CommandParser();
+			virtual ~CommandParser();
+			CommandParser(Object &father, std::size_t id, const std::string &name);
+			CommandParser(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			CommandParser(const CommandParser &);
+			CommandParser(CommandParser &&);
+			CommandParser& operator=(const CommandParser &);
+			CommandParser& operator=(CommandParser &&);
+		
 		private:
 			struct Imp;
 			ImpPtr<Imp> imp_;
