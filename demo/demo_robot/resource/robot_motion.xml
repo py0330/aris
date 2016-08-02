@@ -113,7 +113,7 @@
                     </index_1a0b>
                 </pdo_group_pool>
                 <sdo_pool type="SdoPoolObject" default_child_type="Sdo">
-                    <home_mode index="0x6098" subindex="0" datatype="int8" config="-1"/>
+                    <home_mode index="0x6098" subindex="0" datatype="int8" config="35"/>
                     <home_acc index="0x609A" subindex="0" datatype="uint32" config="200000"/>
                     <home_high_speed index="0x6099" subindex="1" datatype="uint32" config="200000"/>
                     <home_low_speed index="0x6099" subindex="2" datatype="uint32" config="100000"/>

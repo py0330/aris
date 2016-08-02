@@ -48,7 +48,5 @@ int main(int argc, char *argv[])
     });
     aris::core::runMsgLoop();
 
-
-
     return 0;
 }

@@ -133,7 +133,6 @@ namespace aris
 				try
 				{
 					std::string input{ msg.data() };
-                    std::cout<<"servertest\t"<<input<<std::endl;
 					widget_root_->commandParser().parse(input, cmd, params);
 
 					std::cout << cmd << std::endl;
