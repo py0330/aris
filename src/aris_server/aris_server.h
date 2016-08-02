@@ -11,6 +11,7 @@
 #include <aris_sensor.h>
 #include <aris_dynamic.h>
 
+#include <aris_server_widget.h>
 
 
 namespace aris
@@ -54,6 +55,9 @@ namespace aris
 			template<typename T>
 			auto createSensorRoot()->void { this->createSensorRoot(new T); }
 			auto createSensorRoot(sensor::SensorRoot *sensor_root)->void;
+			template<typename T>
+			auto createWidgetRoot()->void { this->createWidgetRoot(new T); }
+			auto createWidgetRoot(server::WidgetRoot *widget_root)->void;
 			
 			auto model()->dynamic::Model&;
 			auto model()const->const dynamic::Model&{ return const_cast<ControlServer *>(this)->model(); }
@@ -61,8 +65,8 @@ namespace aris
 			auto controller()const->const control::Controller&{ return const_cast<ControlServer *>(this)->controller(); }
 			auto sensorRoot()->sensor::SensorRoot&;
 			auto sensorRoot()const->const sensor::SensorRoot&{ return const_cast<ControlServer *>(this)->sensorRoot(); }
-			auto parser()->core::CommandParser&;
-			auto parser()const->const core::CommandParser&{ return const_cast<ControlServer *>(this)->parser(); }
+			auto widgetRoot()->WidgetRoot&;
+			auto widgetRoot()const->const WidgetRoot&{ return const_cast<ControlServer *>(this)->widgetRoot(); }
 
 			auto loadXml(const char *file_name)->void;
 			auto loadXml(const aris::core::XmlDocument &xml_doc)->void;

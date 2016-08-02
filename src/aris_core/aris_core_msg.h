@@ -84,6 +84,8 @@ namespace aris
 			auto pasteStruct() const->void { paste_id_ = 0; }
 
 		private:
+			auto header()->MsgHeader&;
+			auto header()const->const MsgHeader&;
 			auto setType(std::int64_t type)->void;
 			auto type() const->std::int64_t;
 
@@ -100,6 +102,7 @@ namespace aris
 
 			friend class Msg;
 			friend class MsgRT;
+			friend class Socket;
 			friend class Socket;
 			template<typename T> friend class aris::control::Pipe;
 		};

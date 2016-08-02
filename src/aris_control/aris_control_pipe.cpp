@@ -98,7 +98,7 @@ namespace aris
 			friend class PipeBase;
 		};
 
-		PipeBase::PipeBase(bool isBlock):imp_(new PipeBase::Imp(isBlock)){}
+		PipeBase::PipeBase(bool is_block):imp_(new PipeBase::Imp(is_block)){}
 		PipeBase::~PipeBase(){}
 		auto PipeBase::sendToRTRawData(const void *data, int size)->int
 		{

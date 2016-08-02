@@ -3,16 +3,10 @@
 
 #include "test_core_command.h"
 
-
-
-
-
-
-
 using namespace aris::core;
 const char xml_data[] =
 "<root>"
-"    <server ip=\"127.0.0.1\" port=\"5866\">"
+"    <command_parser type=\"CommandParser\">"
 "        <command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
 "            <start/>"
 "            <stop/>"
@@ -70,7 +64,7 @@ const char xml_data[] =
 "                </wk_param>"
 "            </wk>"
 "        </command_pool>"
-"    </server>"
+"    </command_parser>"
 "</root>";
 
 
@@ -78,25 +72,32 @@ void test_command()
 {
 	try
 	{
-		XmlDocument xml_doc;
+		aris::core::XmlDocument xml_doc;
         xml_doc.Parse(xml_data);
 
-		xml_doc.SaveFile("C:\\Users\\py033\\Desktop\\cmd.xml");
+		aris::core::Root root;
+		root.registerChildType<aris::core::Param>();
+		root.registerChildType<aris::core::UniqueParam>();
+		root.registerChildType<aris::core::GroupParam>();
+		root.registerChildType<aris::core::Command>();
+		root.registerChildType<aris::core::ObjectPool<aris::core::Command> >();
+		root.registerChildType<aris::core::CommandParser>();
 
-		std::unique_ptr<aris::core::CommandParser> parser_;
-		parser_.reset(new aris::core::CommandParser());
-		parser_->loadXml(xml_doc);
+		root.loadXml(xml_doc);
 
+		auto& parser = static_cast<aris::core::CommandParser&>(*root.findByName("command_parser"));
+
+		
 		//get all command of the system  
-        std::cout << parser_->help() << std::endl;
+        std::cout << parser.help() << std::endl;
 		//display all command help information in detail
-		for (auto &command : parser_->commandPool())
+		for (auto &command : parser.commandPool())
 		{
-            std::cout << command.getHelpString()<<std::endl;
+            std::cout << command.help()<<std::endl;
 		}
 
 		//test the command param
-        std::vector<std::string> cmd_string_vec{"en --all", "en -m=0 --all", "en -motor=0", "en --moto=0", "rc -t=3000","ds","start" };
+		std::vector<std::string> cmd_string_vec{ "en --all", "en -m=0 --all", "en -motor=0", "en --moto=0", "rc -t=3000","ds","start" };
 
 		for (auto &cmd_string : cmd_string_vec)
 		{
@@ -104,7 +105,7 @@ void test_command()
 			{
 				std::string cmd;
 				std::map<std::string, std::string> params;
-				parser_->parse(cmd_string, cmd, params);
+				parser.parse(cmd_string, cmd, params);
 
 				std::cout << cmd << std::endl;
 				int paramPrintLength;
@@ -131,6 +132,7 @@ void test_command()
 				std::cout << e.what() << std::endl << std::endl;
 			}
 		}
+		
 	
 	}
 	catch (std::exception &e)

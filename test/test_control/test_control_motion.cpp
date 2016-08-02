@@ -16,30 +16,32 @@
 using namespace aris::control;
 
 const char xml_file[] =
-"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
+"<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
 "<root>"
-"	<server ip = \"127.0.0.1\" port = \"5866\">"
-"		<command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
-"			<exit/>"
-"			<en default_child_type=\"Param\" default = \"all\">"
-"				<all abbreviation = \"a\" />"
-"				<physical_id abbreviation = \"p\" default = \"0\" />"
-"			</en>"
-"			<ds default_child_type=\"Param\" default = \"all\">"
-"				<all abbreviation = \"a\" />"
-"				<physical_id abbreviation = \"p\" default = \"0\" />"
-"			</ds>"
-"			<hm default_child_type=\"Param\" default = \"all\" >"
-"				<all abbreviation = \"a\" />"
-"				<physical_id abbreviation = \"p\" default = \"0\" />"
-"			</hm>"
-"			<test default_child_type=\"Param\" default = \"all\" >"
-"				<all abbreviation = \"a\" />"
-"				<motion_id abbreviation = \"m\" default = \"0\" />"
-"				<physical_id abbreviation = \"p\" default = \"0\" />"
-"			</test>"
-"		</command_pool>"
-"	</server>"
+"    <widget_root>"
+"        <command_parser type=\"CommandParser\">"
+"            <command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
+"                <exit/>"
+"                <en default_child_type=\"Param\" default=\"all\">"
+"                    <all abbreviation=\"a\"/>"
+"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
+"                </en>"
+"                <ds default_child_type=\"Param\" default=\"all\">"
+"                    <all abbreviation=\"a\"/>"
+"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
+"                </ds>"
+"                <hm default_child_type=\"Param\" default=\"all\">"
+"                    <all abbreviation=\"a\"/>"
+"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
+"                </hm>"
+"                <test default_child_type=\"Param\" default=\"all\">"
+"                    <all abbreviation=\"a\"/>"
+"                    <motion_id abbreviation=\"m\" default=\"0\"/>"
+"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
+"                </test>"
+"            </command_pool>"
+"        </command_parser>"
+"    </widget_root>"
 "    <controller>"
 "        <slave_type_pool type=\"SlaveTypePoolObject\">"
 "            <elmo type=\"SlaveType\" product_code=\"0x00030924\" vender_id=\"0x0000009a\" alias=\"0\" distributed_clock=\"0x0300\">"
@@ -53,10 +55,10 @@ const char xml_file[] =
 "                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
 "                    </index_1605>"
 "                    <index_1617 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1617\" is_tx=\"false\">"
-"                        <VelocityOffset index=\"0x60B1\" subindex=\"0x00\" datatype=\"int32\" />"
+"                        <VelocityOffset index=\"0x60B1\" subindex=\"0x00\" datatype=\"int32\"/>"
 "                    </index_1617>"
 "                    <index_1618 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1618\" is_tx=\"false\">"
-"                        <TorqueOffset index=\"0x60B2\" subindex=\"0x00\" datatype=\"int16\" />"
+"                        <TorqueOffset index=\"0x60B2\" subindex=\"0x00\" datatype=\"int16\"/>"
 "                    </index_1618>"
 "                    <index_1a03 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A03\" is_tx=\"true\">"
 "                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
@@ -88,7 +90,8 @@ const char xml_file[] =
 "            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
 "        </slave_pool>"
 "    </controller>"
-"</root>";
+"</root>"
+;
 
 
 enum { MOTION_NUM = 100 };
@@ -103,18 +106,18 @@ struct BasicFunctionParam
 	}
 };
 
-static bool is_running = true;
+static aris::control::Controller controller;
+static aris::core::Root widget_root;
+static aris::core::CommandParser *parser;
 
 aris::control::Pipe<aris::core::Msg> msg_pipe;
 char cmd_char[aris::core::MsgRT::RT_MSG_SIZE];
 
+static bool is_running = true;
+
 static std::string command_in("idle");//command input from terminal
 static std::int32_t cmd_count{ 0 };
 static bool cmd_success{ false };
-
-
-aris::control::Controller controller;
-aris::core::CommandParser parser;
 
 BasicFunctionParam decode(const std::string input)
 {
@@ -122,7 +125,7 @@ BasicFunctionParam decode(const std::string input)
 	std::map<std::string, std::string> params;
 	try
 	{
-		parser.parse(input, cmd, params);
+		parser->parse(input, cmd, params);
 
 		std::cout << "\n" << cmd << std::endl;
 		int paramPrintLength;
@@ -210,8 +213,7 @@ void tg()
 				cmd_success = true;
 			}
 
-			if (cmd_count % 1000 == 0 && !cmd_success)
-				rt_printf("executing command: %d\n", cmd_count);
+			if (cmd_count % 1000 == 0 && !cmd_success)	rt_printf("executing command: %d\n", cmd_count);
 		}
 		switch (param->cmd_type)
 		{
@@ -235,12 +237,10 @@ void tg()
 		case aris::control::Motion::Cmd::RUN:
 			txmotiondata.cmd = aris::control::Motion::Cmd::RUN;
 			static double begin;
-			if (cmd_count == 0)
-				begin = rxmotiondata.feedback_pos;
+			if (cmd_count == 0)	begin = rxmotiondata.feedback_pos;
 			txmotiondata.target_pos = 0.020*std::sin(cmd_count / 10000.0 * 2 * PI) + begin;
-			//txmotiondata.target_pos=0.002*cmd_count/1000.0+begin;
-			if (cmd_count % 5000 == 0)
-				rt_printf("executing command: %d\n", cmd_count);
+
+			if (cmd_count % 5000 == 0)	rt_printf("executing command: %d\n", cmd_count);
 			break;
 		default:
 			break;
@@ -258,7 +258,14 @@ void test_control_motion()
     xml_doc.Parse(xml_file);
 
 	controller.loadXml(xml_doc);
-	parser.loadXml(xml_doc);
+	widget_root.registerChildType<aris::core::Param>();
+	widget_root.registerChildType<aris::core::UniqueParam>();
+	widget_root.registerChildType<aris::core::GroupParam>();
+	widget_root.registerChildType<aris::core::Command>();
+	widget_root.registerChildType<aris::core::ObjectPool<aris::core::Command> >();
+	widget_root.registerChildType<aris::core::CommandParser>();
+	widget_root.loadXml(*xml_doc.RootElement()->FirstChildElement("widget_root"));
+	parser = static_cast<aris::core::CommandParser*>(&*widget_root.findByName("command_parser"));
 
 	controller.setControlStrategy(tg);
 	controller.start();

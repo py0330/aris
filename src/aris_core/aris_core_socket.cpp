@@ -28,21 +28,21 @@ namespace aris
 	{
 		struct Socket::Imp
 		{
-			Socket* socket;
-			
-			int lisn_socket_, conn_socket_;  //也可以用SOCKET类型
-			struct sockaddr_in server_addr_, client_addr_;
-			socklen_t sin_size_;
+			Socket* socket_;
 			Socket::State state_;
 
 			std::function<aris::core::Msg(Socket *, aris::core::Msg &)> onReceivedRequest;
 			std::function<int(Socket *, aris::core::Msg &)> onReceivedData;
 			std::function<int(Socket *, const char *, int)> onReceivedConnection;
 			std::function<int(Socket *)> onLoseConnection;
-
 			std::function<void(Socket *)> onAcceptError;
 			std::function<void(Socket *)> onReceiveError;
-			
+
+			int lisn_socket_, conn_socket_;  //也可以用SOCKET类型
+			struct sockaddr_in server_addr_, client_addr_;
+			socklen_t sin_size_;
+
+			std::string remote_ip_, port_;
 
 			// 线程同步变量 //
 			std::recursive_mutex state_mutex_;
@@ -53,15 +53,14 @@ namespace aris
 
 			std::condition_variable_any cv_reply_data_received_;
 			aris::core::Msg reply_msg_;
-			
+
 			// 连接的socket //
 #ifdef WIN32
 			WSADATA wsa_data_;             //windows下才用，linux下无该项
 #endif
-			Imp() : lisn_socket_(0), conn_socket_(0), sin_size_(sizeof(struct sockaddr_in)), state_(Socket::IDLE)
-				, onReceivedRequest(nullptr), onReceivedData(nullptr), onReceivedConnection(nullptr), onLoseConnection(nullptr) {}
-
 			~Imp() = default;
+			Imp(Socket* sock) :socket_(sock), lisn_socket_(0), conn_socket_(0), sin_size_(sizeof(struct sockaddr_in)), state_(Socket::IDLE)
+				, onReceivedRequest(nullptr), onReceivedData(nullptr), onReceivedConnection(nullptr), onLoseConnection(nullptr) {}
 
 			enum MsgType
 			{
@@ -73,12 +72,11 @@ namespace aris
 			static void receiveThread(Socket::Imp* imp);
 			static void acceptThread(Socket::Imp* imp);
 		};
-		
 		auto Socket::Imp::acceptThread(Socket::Imp* imp)->void
 		{
-			int lisn_sock,conn_sock;
+			int lisn_sock, conn_sock;
 			struct sockaddr_in client_addr;
-			socklen_t sin_size; 
+			socklen_t sin_size;
 
 			// 以下从对象中copy内容，此时start_Server在阻塞，因此Socket内部数据安全， //
 			// 拷贝好后告诉start_Server函数已经拷贝好 //
@@ -87,7 +85,7 @@ namespace aris
 			sin_size = imp->sin_size_;
 
 			imp->state_ = WAITING_FOR_CONNECTION;
-			
+
 			// 通知主线程，accept线程已经拷贝完毕，准备监听 //
 			std::unique_lock<std::mutex> cv_lck(imp->cv_mutex_);
 			imp->cv_.notify_one();
@@ -96,7 +94,6 @@ namespace aris
 
 			// 服务器阻塞,直到客户程序建立连接 //
 			conn_sock = accept(lisn_sock, (struct sockaddr *)(&client_addr), &sin_size);
-			
 
 			// 检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源 //
 			std::unique_lock<std::mutex> cls_lck(imp->close_mutex_, std::defer_lock);
@@ -109,16 +106,24 @@ namespace aris
 			// 否则，开始开启数据线程 //
 			if (conn_sock == -1)
 			{
-				imp->socket->stop();
+				imp->socket_->stop();
 
-				if (imp->onAcceptError)	imp->onAcceptError(imp->socket);
+				if (imp->onAcceptError)	imp->onAcceptError(imp->socket_);
 
 				return;
 			}
-			
+
 
 			// 创建线程 //
 			imp->state_ = Socket::WORKING;
+#ifdef WIN32
+			shutdown(imp->lisn_socket_, 2);
+			closesocket(imp->lisn_socket_);
+#endif
+#ifdef UNIX
+			shutdown(imp->lisn_socket_, 2);
+			close(imp->lisn_socket_);
+#endif
 			imp->conn_socket_ = conn_sock;
 			imp->client_addr_ = client_addr;
 
@@ -126,10 +131,9 @@ namespace aris
 			imp->recv_data_thread_ = std::thread(receiveThread, imp);
 			imp->cv_.wait(cv_lck);
 
-
-			if (imp->onReceivedConnection != nullptr)
+			if (imp->onReceivedConnection)
 			{
-				imp->onReceivedConnection(imp->socket, inet_ntoa(imp->client_addr_.sin_addr), ntohs(imp->client_addr_.sin_port));
+				imp->onReceivedConnection(imp->socket_, inet_ntoa(imp->client_addr_.sin_addr), ntohs(imp->client_addr_.sin_port));
 			}
 
 			return;
@@ -142,10 +146,10 @@ namespace aris
 				char header[sizeof(MsgHeader)];
 			} head;
 			aris::core::Msg receivedData;
-			
-			int connSocket = imp->conn_socket_;
 
-			// 通知accept线程已经准备好，下一步开始收发数据 //
+			int conn_socket = imp->conn_socket_;
+
+			// 通知accept或connect线程已经准备好，下一步开始收发数据 //
 			std::unique_lock<std::mutex> cv_lck(imp->cv_mutex_);
 			imp->cv_.notify_one();
 			cv_lck.unlock();
@@ -154,27 +158,23 @@ namespace aris
 			// 开启接受数据的循环 //
 			for (;;)
 			{
-				int res = recv(connSocket, head.header, sizeof(MsgHeader), 0);
+				int res = recv(conn_socket, head.header, sizeof(MsgHeader), 0);
 
 				// 检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源， //
 				// 若能锁住，则开始获取Imp所有权 //
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
-				if (!close_lck.try_lock())
-				{
-					return;
-				}
+				if (!close_lck.try_lock())return;
 
 				// 证明没有在close，于是正常接收消息头 //
 				std::unique_lock<std::recursive_mutex> state_lck(imp->state_mutex_);
 				close_lck.unlock();
 				close_lck.release();
-				
+
 				if (res <= 0)
 				{
-					imp->socket->stop();
+					imp->socket_->stop();
 
-					if (imp->onLoseConnection != 0)
-						imp->onLoseConnection(imp->socket);
+					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
 
 					return;
 				}
@@ -183,15 +183,14 @@ namespace aris
 				receivedData.resize(head.msgHeader.msg_size_);
 				memcpy(receivedData.data_, head.header, sizeof(MsgHeader));
 
-				if (receivedData.size()>0)
-					res = recv(connSocket, receivedData.data(), receivedData.size(), 0);
+				if (receivedData.size() > 0)
+					res = recv(conn_socket, receivedData.data(), receivedData.size(), 0);
 
 				if (res <= 0)
 				{
-					imp->socket->stop();
+					imp->socket_->stop();
 
-					if (imp->onLoseConnection != nullptr)
-						imp->onLoseConnection(imp->socket);
+					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
 
 					return;
 				}
@@ -200,19 +199,19 @@ namespace aris
 				switch (head.msgHeader.msg_type_)
 				{
 				case SOCKET_GENERAL_DATA:
-					if (imp->onReceivedData )imp->onReceivedData(imp->socket, receivedData);
+					if (imp->onReceivedData)imp->onReceivedData(imp->socket_, receivedData);
 					break;
 				case SOCKET_REQUEST:
 				{
 					aris::core::Msg m;
-					if (imp->onReceivedRequest)m = imp->onReceivedRequest(imp->socket, receivedData);
+					if (imp->onReceivedRequest)m = imp->onReceivedRequest(imp->socket_, receivedData);
 
 					m.setType(SOCKET_REPLY);
 
 					if (send(imp->conn_socket_, m.data_, m.size() + sizeof(MsgHeader), 0) == -1)
 					{
-						imp->socket->stop();
-						if (imp->onLoseConnection != nullptr)imp->onLoseConnection(imp->socket);
+						imp->socket_->stop();
+						if (imp->onLoseConnection != nullptr)imp->onLoseConnection(imp->socket_);
 						return;
 					}
 					break;
@@ -220,7 +219,7 @@ namespace aris
 				case SOCKET_REPLY:
 					if (imp->state_ != WAITING_FOR_REPLY)
 					{
-						if (imp->onReceiveError)imp->onReceiveError(imp->socket);
+						if (imp->onReceiveError)imp->onReceiveError(imp->socket_);
 						return;
 					}
 					else
@@ -231,24 +230,14 @@ namespace aris
 
 					break;
 				}
-			}		
+			}
 		}
-
-		Socket::Socket():imp_(new Imp)
-		{
-			imp_->socket = this;
-		}
-		Socket::~Socket()
-		{
-			stop();
-		}
-
 		auto Socket::stop()->void
 		{
 			std::lock(imp_->state_mutex_, imp_->close_mutex_);
 			std::unique_lock<std::recursive_mutex> lck1(imp_->state_mutex_, std::adopt_lock);
 			std::unique_lock<std::mutex> lck2(imp_->close_mutex_, std::adopt_lock);
-			
+
 			switch (imp_->state_)
 			{
 			case IDLE:
@@ -267,16 +256,14 @@ namespace aris
 			case WORKING:
 #ifdef WIN32
 				shutdown(imp_->conn_socket_, 2);
-				shutdown(imp_->lisn_socket_, 2);
 				closesocket(imp_->conn_socket_);
-				closesocket(imp_->lisn_socket_);
-				WSACleanup();
+				WSACleanup(); 
 #endif
 #ifdef UNIX
 				shutdown(imp_->conn_socket_, 2);
-				shutdown(imp_->lisn_socket_, 2);
+				//shutdown(imp_->lisn_socket_, 2);
 				close(imp_->conn_socket_);
-				close(imp_->lisn_socket_);
+				//close(imp_->lisn_socket_);
 #endif
 				break;
 			case WAITING_FOR_REPLY:
@@ -296,21 +283,21 @@ namespace aris
 				imp_->cv_reply_data_received_.notify_one();
 				break;
 			}
-			
+
 			if (std::this_thread::get_id() == imp_->recv_data_thread_.get_id())
 			{
 				imp_->recv_data_thread_.detach();
 			}
-			else if(imp_->recv_data_thread_.joinable())
+			else if (imp_->recv_data_thread_.joinable())
 			{
 				imp_->recv_data_thread_.join();
 			}
-				
+
 			if (std::this_thread::get_id() == imp_->recv_conn_thread_.get_id())
 			{
 				imp_->recv_conn_thread_.detach();
 			}
-			else if(imp_->recv_conn_thread_.joinable())
+			else if (imp_->recv_conn_thread_.joinable())
 			{
 				imp_->recv_conn_thread_.join();
 			}
@@ -330,16 +317,24 @@ namespace aris
 				return false;
 			}
 		}
-		auto Socket::startServer(const char *port)->void
+		auto Socket::state()->State 
+		{ 
+			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+			return imp_->state_;
+		};
+		auto Socket::startServer(const std::string &port)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
-			
+
+			if (!port.empty())setPort(port);
+			if(this->port().empty())throw StartServerError("Socket can't Start as server, because it has empty port\n", this, 0);
+
 			switch (imp_->state_)
 			{
 			case IDLE:
 				break;
 			default:
-				throw(StartServerError( "Socket can't Start as server, because it is not at idle state\n",this,0 ));
+				throw(StartServerError("Socket can't Start as server, because it is not at idle state\n", this, 0));
 			}
 
 			// 启动服务器 //
@@ -356,13 +351,16 @@ namespace aris
 				throw(StartServerError("Socket can't Start as server, because it can't socket\n", this, 0));
 			}
 
-			// 服务器端填充server_addr_结构 //
+			// 设置socketopt选项，使得地址在程序结束后立即可用 //
+			int nvalue = 1;
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0)
+				throw StartServerError("Socket can't set REUSEADDR option\n", this, 0);
+
+			// 服务器端填充server_addr_结构，并且bind //
 			memset(&imp_->server_addr_, 0, sizeof(struct sockaddr_in));
 			imp_->server_addr_.sin_family = AF_INET;
 			imp_->server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
-			imp_->server_addr_.sin_port = htons(atoi(port));
-
-			// 捆绑lisn_socket_描述符 //
+			imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
 			if (::bind(imp_->lisn_socket_, (struct sockaddr *)(&imp_->server_addr_), sizeof(struct sockaddr)) == -1)
 			{
 #ifdef WIN32
@@ -381,13 +379,18 @@ namespace aris
 			std::unique_lock<std::mutex> cv_lck(imp_->cv_mutex_);
 			imp_->recv_conn_thread_ = std::thread(Socket::Imp::acceptThread, this->imp_.get());
 			imp_->cv_.wait(cv_lck);
-			
+
 			return;
 		}
-		auto Socket::connect(const char *address, const char *port)->void
+		auto Socket::connect(const std::string &remote_ip, const std::string &port)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
-			
+
+			if (!remote_ip.empty())setRemoteIP(remote_ip);
+			if (!port.empty())setPort(port);
+			if (remoteIP().empty())throw ConnectError("Socket can't connect, because it empty ip address\n", this, 0);
+			if (this->port().empty())throw ConnectError("Socket can't connect, because it empty port\n", this, 0);
+
 			switch (imp_->state_)
 			{
 			case IDLE:
@@ -412,8 +415,8 @@ namespace aris
 			// 客户端填充server_addr_结构 //
 			memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
 			imp_->server_addr_.sin_family = AF_INET;
-			imp_->server_addr_.sin_addr.s_addr = inet_addr(address); //与linux不同
-			imp_->server_addr_.sin_port = htons(atoi(port));
+			imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str()); //与linux不同
+			imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
 
 			// 连接 //
 			if (::connect(imp_->conn_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
@@ -422,9 +425,10 @@ namespace aris
 			}
 
 			// Start Thread //
-			imp_->recv_data_thread_ = std::thread(Imp::receiveThread, this->imp_.get());
-			
 			imp_->state_ = WORKING;
+			std::unique_lock<std::mutex> cv_lck(imp_->cv_mutex_);
+			imp_->recv_data_thread_ = std::thread(Imp::receiveThread, imp_.get());
+			imp_->cv_.wait(cv_lck);
 
 			return;
 		}
@@ -459,7 +463,7 @@ namespace aris
 
 			aris::core::Msg request_copy_ = request;
 			request_copy_.setType(Socket::Imp::SOCKET_REQUEST);
-			
+
 			try
 			{
 				sendMsg(request_copy_);
@@ -468,7 +472,7 @@ namespace aris
 			{
 				throw SendRequestError(error.what(), this, 0);
 			}
-			
+
 
 			imp_->cv_reply_data_received_.wait(state_lck);
 			if (imp_->state_ != WAITING_FOR_REPLY)
@@ -481,6 +485,26 @@ namespace aris
 				reply.swap(imp_->reply_msg_);
 				return reply;
 			}
+		}
+		auto Socket::remoteIP()const->const std::string &
+		{ 
+			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+			return imp_->remote_ip_; 
+		}
+		auto Socket::port()const->const std::string &
+		{ 
+			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+			return imp_->port_; 
+		}
+		auto Socket::setRemoteIP(const std::string &remote_ip)->void 
+		{ 
+			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+			imp_->remote_ip_ = remote_ip; 
+		}
+		auto Socket::setPort(const std::string &port)->void 
+		{ 
+			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+			imp_->port_ = port; 
 		}
 		auto Socket::setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> OnReceivedData)->void
 		{
@@ -511,6 +535,20 @@ namespace aris
 		{
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 			imp_->onReceiveError = onReceiveError;
+		}
+		Socket::~Socket() 
+		{ 
+			stop(); 
+		}
+		Socket::Socket(Object &father, std::size_t id, const std::string &name, const std::string& remote_ip, const std::string& port):Object(father, id, name), imp_(new Imp(this))
+		{
+			setRemoteIP(remote_ip);
+			setPort(port);
+		}
+		Socket::Socket(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Object(father, id, xml_ele), imp_(new Imp(this))
+		{
+			setRemoteIP(attributeString(xml_ele, "remote_ip", std::string()));
+			setPort(attributeString(xml_ele, "port", std::string()));
 		}
 	}
 }

@@ -917,7 +917,7 @@ void test_simulation()
 	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 	"                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
 	"                </marker_pool>"
-	"            </Ground>"
+	"            </ground>"
 	"            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
 	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 	"                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
@@ -937,12 +937,12 @@ void test_simulation()
 	"            </part3>"
 	"        </part_pool>"
 	"        <joint_pool type=\"JointPoolObject\">"
-	"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"Ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
+	"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
 	"            <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
 	"            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
 	"        </joint_pool>"
 	"        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
-	"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"Ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+	"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 	"            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 	"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 	"        </motion_pool>"
@@ -950,38 +950,47 @@ void test_simulation()
 	"    </model>"
 	"</root>";
 		
-	aris::core::XmlDocument xml_doc;
-	xml_doc.Parse(xml_file);
-
-	Model m;
-	m.loadXml(xml_doc);
-
-	aris::dynamic::PlanParamBase p;
-	aris::dynamic::PlanFunc f = [](aris::dynamic::Model &m, const aris::dynamic::PlanParamBase &p)
+	
+	try 
 	{
-		double pe2[6]{ 0,0,0,0,0,0 };
-		pe2[5] = p.count_*0.001 / 3 * PI / 3 + PI / 2;
-		auto &r2j = *m.partPool().findByName("part1")->markerPool().findByName("r2j");
-		m.partPool().findByName("part2")->setPe(r2j, pe2, "123");
+		aris::core::XmlDocument xml_doc;
+		auto a = xml_doc.Parse(xml_file);
 
-		double pe3[6]{ 0,0,0,0,0,0 };
-		pe3[5] = -p.count_*0.001 / 3 * PI / 3 - PI / 2;
-		auto &r3j = *m.partPool().findByName("part2")->markerPool().findByName("r3j");
-		m.partPool().findByName("part3")->setPe(r3j, pe3, "123");
+		Model m;
+		m.loadXml(xml_doc);
 
-		m.motionAtAbs(0).update();
-		m.motionAtAbs(1).update();
-		m.motionAtAbs(2).update();
+		aris::dynamic::PlanParamBase p;
+		aris::dynamic::PlanFunc f = [](aris::dynamic::Model &m, const aris::dynamic::PlanParamBase &p)
+		{
+			double pe2[6]{ 0,0,0,0,0,0 };
+			pe2[5] = p.count_*0.001 / 3 * PI / 3 + PI / 2;
+			auto &r2j = *m.partPool().findByName("part1")->markerPool().findByName("r2j");
+			m.partPool().findByName("part2")->setPe(r2j, pe2, "123");
 
-		return 3000 - p.count_;
-	};
+			double pe3[6]{ 0,0,0,0,0,0 };
+			pe3[5] = -p.count_*0.001 / 3 * PI / 3 - PI / 2;
+			auto &r3j = *m.partPool().findByName("part2")->markerPool().findByName("r3j");
+			m.partPool().findByName("part3")->setPe(r3j, pe3, "123");
 
-	m.saveDynEle("before");
-	m.simKin(f, p);
-	m.loadDynEle("before");
-	m.saveAdams("C:\\aris\\robot\\resource\\test.cmd");
+			m.motionAtAbs(0).update();
+			m.motionAtAbs(1).update();
+			m.motionAtAbs(2).update();
 
-	std::cout << "test simulation finished, please check \"C:\\aris\\robot\\resource\\test.cmd\"" << std::endl;
+			return 3000 - p.count_;
+		};
+
+		m.saveDynEle("before");
+		m.simKin(f, p);
+		m.loadDynEle("before");
+		m.saveAdams("C:\\aris\\robot\\resource\\test.cmd");
+
+		std::cout << "test simulation finished, please check \"C:\\aris\\robot\\resource\\test.cmd\"" << std::endl;
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what();
+	}
+	
 }
 
 

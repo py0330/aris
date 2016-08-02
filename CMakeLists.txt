@@ -126,7 +126,7 @@ add_library(aris_sensor STATIC ${FULL_SRC} ${FULL_H} src/aris_sensor/aris_sensor
 set(INCLUDE_HEADER_FILES ${INCLUDE_HEADER_FILES} ${FULL_H} src/aris_sensor/aris_sensor.h)
 
 # aris control server project
-set(SOURCE aris_server)
+set(SOURCE aris_server aris_server_widget)
 PREPEND_CPP(FULL_SRC src/aris_server ${SOURCE})
 PREPEND_H(FULL_H src/aris_server ${SOURCE})
 add_library(aris_server STATIC ${FULL_SRC} ${FULL_H})

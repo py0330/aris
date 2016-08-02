@@ -49,7 +49,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Sensor"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			virtual auto type() const->const std::string& override{ return Type(); }
 			auto start()->void;
 			auto stop()->void;
 			auto dataProtector()->SensorDataProtector;
