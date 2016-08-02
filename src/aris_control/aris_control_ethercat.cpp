@@ -171,7 +171,6 @@ namespace aris
 			{
 				imp_->log_thread_ = std::thread([this]()
 				{
-
                     std::fstream file;
 					std::string name = aris::core::logFileName();
 					name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
@@ -184,7 +183,6 @@ namespace aris
 
                     long long count = 0;
                     std::size_t recv_size{0};
-
 
                     imp_->is_receiving_ = true;
                     imp_->is_sending_ = true;
@@ -236,7 +234,6 @@ namespace aris
 		{
 			if (imp_->is_sending_)
 			{
-                //std::cout<<"sending"<<imp_->log_data_size_<<std::endl;
                 std::size_t size_count = 0;
 				for (auto &sla : master().slavePool())
 				{
