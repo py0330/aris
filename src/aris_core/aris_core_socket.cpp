@@ -52,6 +52,7 @@ namespace aris
 			std::condition_variable cv_;
 
 			std::condition_variable_any cv_reply_data_received_;
+			std::mutex mu_reply_;
 			aris::core::Msg reply_msg_;
 
 			// 连接的socket //
@@ -450,6 +451,7 @@ namespace aris
 		}
 		auto Socket::sendRequest(const aris::core::Msg &request)->aris::core::Msg
 		{
+			std::unique_lock<std::mutex> cv_lck(imp_->mu_reply_);
 			std::unique_lock<std::recursive_mutex> state_lck(imp_->state_mutex_);
 
 			switch (imp_->state_)
@@ -463,7 +465,7 @@ namespace aris
 
 			aris::core::Msg request_copy_ = request;
 			request_copy_.setType(Socket::Imp::SOCKET_REQUEST);
-
+			
 			try
 			{
 				sendMsg(request_copy_);
@@ -473,14 +475,17 @@ namespace aris
 				throw SendRequestError(error.what(), this, 0);
 			}
 
-
 			imp_->cv_reply_data_received_.wait(state_lck);
+			state_lck = std::unique_lock<std::recursive_mutex>(imp_->state_mutex_);
+
+
 			if (imp_->state_ != WAITING_FOR_REPLY)
 			{
 				throw SendRequestError("Socket failed sending request, because Socket is closed before it receive a reply\n", this, 0);
 			}
 			else
 			{
+				imp_->state_ = WORKING;
 				Msg reply;
 				reply.swap(imp_->reply_msg_);
 				return reply;
@@ -536,10 +541,7 @@ namespace aris
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 			imp_->onReceiveError = onReceiveError;
 		}
-		Socket::~Socket() 
-		{ 
-			stop(); 
-		}
+		Socket::~Socket() {	stop();	}
 		Socket::Socket(Object &father, std::size_t id, const std::string &name, const std::string& remote_ip, const std::string& port):Object(father, id, name), imp_(new Imp(this))
 		{
 			setRemoteIP(remote_ip);

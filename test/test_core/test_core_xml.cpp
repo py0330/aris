@@ -10,4 +10,9 @@ const double error = 1e-10;
 
 void test_xml()
 {
+	std::cout << aris::core::logExeName() << std::endl;
+	std::cout << aris::core::logFileName() << std::endl;
+	std::cout << aris::core::logDirPath() << std::endl;
+	std::cout << aris::core::logFileTimeFormat(std::chrono::system_clock::now())<<std::endl;
+
 }

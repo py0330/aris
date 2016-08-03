@@ -153,86 +153,83 @@ namespace aris
             Pipe<void *> log_pipe_{false};
 			std::size_t log_data_size_{ 0 };
 			std::unique_ptr<char[]> log_data_;
-			std::thread log_thread_;
-			std::atomic_bool is_receiving_{ false };
-			std::atomic_bool is_sending_{ false };
-
-			std::mutex data_mutex_;
+			std::atomic_bool is_receiving_{ false }, is_sending_{ false }, is_prepaired_{false};
+			std::mutex running_mutex_;
 		};
-        auto DataLogger::start()->void
+		auto DataLogger::prepair(const std::string &log_file_name)->void
 		{
-			std::lock_guard<std::mutex> guard(imp_->data_mutex_);
+			std::unique_lock<std::mutex> guard(imp_->running_mutex_, std::try_to_lock);
+			if (!guard.owns_lock())throw std::runtime_error("failed to prepair pipe, it's still logging");
 
-			if (imp_->log_thread_.joinable())
+            auto file_name = aris::core::logDirPath() + (log_file_name.empty() ? "logdata_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) : log_file_name);
+
+			std::thread([this, file_name]()
 			{
-				throw std::runtime_error("master is already logging, can't start logger");
-			}
-			else
-			{
-				imp_->log_thread_ = std::thread([this]()
+                std::unique_lock<std::mutex> guard(imp_->running_mutex_);
+
+                std::fstream file;
+				file.open(file_name.c_str(), std::ios::out | std::ios::trunc);
+
+				imp_->log_data_size_ = 0;
+				for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
+				std::unique_ptr<char[]> receive_data(new char[imp_->log_data_size_]);
+				imp_->log_data_.reset(new char[imp_->log_data_size_]);
+
+				long long count = 0;
+				std::size_t recv_size{ 0 };
+
+				//ÇåÀí¸É¾»pipe
+				while (imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_)>0);
+				imp_->is_receiving_ = true;
+
+				while (imp_->is_receiving_)
 				{
-                    std::fstream file;
-					std::string name = aris::core::logFileName();
-					name.replace(name.rfind("log.txt"), std::strlen("data.txt"), "data.txt");
-					file.open(name.c_str(), std::ios::out | std::ios::trunc);
-
-					imp_->log_data_size_ = 0;
-					for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
-					std::unique_ptr<char[]> receive_data(new char[imp_->log_data_size_]);
-                    imp_->log_data_.reset(new char[imp_->log_data_size_]);
-
-                    long long count = 0;
-                    std::size_t recv_size{0};
-
-                    imp_->is_receiving_ = true;
-                    imp_->is_sending_ = true;
-
-                    while (imp_->is_receiving_)
+					if (recv_size == imp_->log_data_size_)
 					{
-                        if(recv_size == imp_->log_data_size_)
-                        {
-                            file << count++ << " ";
+                        file << count++ << " ";
 
-                            std::size_t size_count = 0;
-                            for (auto &sla : master().slavePool())
-                            {
-                                sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
-                                    , *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+						std::size_t size_count = 0;
+						for (auto &sla : master().slavePool())
+						{
+							sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
+								, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
 
-                                file << " ";
+							file << " ";
 
-                                size_count += sla.txTypeSize() + sla.rxTypeSize();
-                            }
-                            file << std::endl;
+							size_count += sla.txTypeSize() + sla.rxTypeSize();
+						}
+						file << std::endl;
 
-                            recv_size = 0;
-                        }
-                        else
-                        {
-                            auto ret = imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_ - recv_size);
-                            recv_size += ret>0 ? ret:0;
-                        }
+						recv_size = 0;
 					}
-					file.close();
-				});
-			}
-		}
-		auto DataLogger::stop()->void
-		{
-			std::lock_guard<std::mutex> guard(imp_->data_mutex_);
+					else
+					{
+						auto ret = imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_ - recv_size);
+                        if(ret==0 && recv_size==0)usleep(1);
+                        recv_size += ret>0 ? ret : 0;
+					}
+				}
+				file.close();
+			}).detach();
 
-			if (imp_->log_thread_.joinable())
+            imp_->is_prepaired_ = true;
+		}
+		auto DataLogger::start()->void 
+		{ 
+			if (imp_->is_prepaired_)
 			{
-                imp_->is_sending_ = false;
-
-				aris::core::msSleep(1000);
-				imp_->is_receiving_ = false;
-				imp_->log_thread_.join();
+				imp_->is_sending_ = true;
+				imp_->is_prepaired_ = false;
 			}
 		}
+        auto DataLogger::stop()->void
+        {
+            imp_->is_sending_ = false;
+            imp_->is_receiving_ = false;
+        }
 		auto DataLogger::logDataRT()->void
 		{
-			if (imp_->is_sending_)
+            if (imp_->is_sending_)
 			{
                 std::size_t size_count = 0;
 				for (auto &sla : master().slavePool())

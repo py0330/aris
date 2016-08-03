@@ -60,7 +60,7 @@ protected:
     virtual auto writeUpdate()->void override{}
     virtual auto logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override
     {
-        file << static_cast<const TxTestData&>(tx_data).target_pos << " "<< static_cast<const RxTestData&>(rx_data).feedback_pos;
+		file << static_cast<const TxTestData&>(tx_data).target_pos << " " << static_cast<const RxTestData&>(rx_data).feedback_pos;
     }
 };
 
@@ -74,7 +74,7 @@ protected:
         auto& slave = dynamic_cast<aris::control::Slave &>(slavePool().at(0));
 
 #ifdef UNIX
-        if (count++ % 100 == 0)rt_printf("%d:%f\n", count, static_cast<TestSlave&>(slave).rxData().feedback_pos);
+        if (count++ % 1000 == 0)rt_printf("%d:%f\n", count, static_cast<TestSlave&>(slave).rxData().feedback_pos);
 #endif
 	};
 };
@@ -88,7 +88,6 @@ void test_control_ethercat()
 
 	TestMaster master;
 
-	
     master.registerChildType<TestSlave>();
 	master.loadXml(xml_doc);
 	
@@ -97,12 +96,24 @@ void test_control_ethercat()
 	std::cout << "press any key to start log" << std::endl;
 	std::cin.get();
 	std::cin.get();
+	master.dataLogger().prepair("data_log");
     master.dataLogger().start();
     
 	std::cout << "press any key to stop log" << std::endl;
 	std::cin.get();
 	std::cin.get();
     master.dataLogger().stop();
+
+	std::cout << "press any key to start log" << std::endl;
+	std::cin.get();
+	std::cin.get();
+	master.dataLogger().prepair("data_log2");
+	master.dataLogger().start();
+
+	std::cout << "press any key to stop log" << std::endl;
+	std::cin.get();
+	std::cin.get();
+	master.dataLogger().stop();
     
 	std::cout << "press any key to stop master" << std::endl;
 	std::cin.get();

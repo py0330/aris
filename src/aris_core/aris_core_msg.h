@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <chrono>
 
 
 /// \defgroup aris
@@ -141,6 +142,10 @@ namespace aris
 			MsgRT &operator=(MsgRT&& other) = delete;
 		};
 
+		auto createLogDir()->void;
+		auto logExeName()->std::string;
+		auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
+		auto logDirPath()->std::string;
 		auto logFileName()->const std::string&;
 		auto log(const char *data)->const char *;
 		auto log(const std::string& data)->const std::string&;
