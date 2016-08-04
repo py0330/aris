@@ -150,8 +150,6 @@ namespace aris
 		auto log(const char *data)->const char *;
 		auto log(const std::string& data)->const std::string&;
 
-		auto msSleep(int miliseconds)->void;
-
 	}
 }
 
