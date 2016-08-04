@@ -47,9 +47,7 @@ namespace robot
         this->m2().setMotPos(pin[1]);
         this->m3().setMotPos(pin[2]);
 
-        pin_[0] = m1().motPos();
-        pin_[1] = m2().motPos();
-        pin_[2] = m3().motPos();
+        std::copy(pin, pin + 3, pin_);
 	}
 
     auto Robot::setVin(const double *vin)->void
@@ -57,6 +55,8 @@ namespace robot
         this->m1().setMotVel(vin[0]);
         this->m2().setMotVel(vin[1]);
         this->m3().setMotVel(vin[2]);
+
+        std::copy(vin, vin + 3, vin_);
     }
 
 	auto Robot::loadXml(const aris::core::XmlElement &ele)->void

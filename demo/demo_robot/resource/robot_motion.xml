@@ -8,13 +8,16 @@
                 <stop help="stop the control system."/>
                 <exit help="exit the control system."/>
                 <help help="get help about all command."/>
-                <en default_child_type="Param" default="motion_param" help="enable the specify motions.">
-                    <motion_param type="UniqueParam" default_child_type="Param" default="all">
-                        <all abbreviation="a" help="all motions."/>
-                        <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-                        <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-                        <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-                    </motion_param>
+                <en default_child_type="Param" default="en_param" help="enable the specify motions.">
+                    <en_param type = "GroupParam" default_child_type="Param" default="motion_param">
+                        <motion_param type="UniqueParam" default_child_type="Param" default="all">
+                            <all abbreviation="a" help="all motions."/>
+                            <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
+                            <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
+                            <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
+                        </motion_param>
+                        <mode abbreviation="f" default="8" help="the mode of motion."/>
+                    </en_param>
                     <help abbreviation="h" help="get help about command 'en'."/>
                 </en>
                 <ds default_child_type="Param" default="motion_param" help="disable the specify motions.">
@@ -53,8 +56,9 @@
                                         <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
                                         <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
                                     </motion_param>
-                                    <angle abbreviation="j" default="0" help="the length(m)."/>
+                                    <round abbreviation="r" default="0" help="the round."/>
                                     <force abbreviation="f" default="no" help="force to move the axis without forward and backward limit."/>
+                                    <kp abbreviation="k" default="0" help="P of PID."/>
                                 </pin_param>
                                 <pins_param type = "GroupParam" default_child_type="Param">
                                     <a1 abbreviation="1" default="0" help="No.1 axis in Model."/>
@@ -120,11 +124,18 @@
                     <home_offset index="0x607C" subindex="0" datatype="int32" config="0"/>
                 </sdo_pool>
             </elmo>
+            <GaitRecord type="SlaveType" product_code="0x00000000" vender_id="0x00000000" alias="0">
+                <pdo_group_pool type="PdoGroupPoolObject">
+                </pdo_group_pool>
+                <sdo_pool type="SdoPoolObject" default_child_type="Sdo">
+                </sdo_pool>
+            </GaitRecord>
         </slave_type_pool>
         <slave_pool type="SlavePoolObject">
-            <m1 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
-            <m2 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
-            <m3 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
+            <m1 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <m2 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <m3 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <gaitrecord type="record" slave_type="GaitRecord" />
         </slave_pool>
     </controller>
     <model>

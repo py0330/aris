@@ -307,6 +307,7 @@ namespace aris
             std::int32_t pos() { std::int32_t pos; pFather->readPdoIndex(ACTUALPOSITION, 0x00, pos); return pos; }
             std::int32_t vel() { std::int32_t vel; pFather->readPdoIndex(ACTUALVELOCITY, 0x00, vel); return vel; }
             std::int32_t tor() { std::int16_t tor; pFather->readPdoIndex(ACTUALTORQUE, 0x00, tor); return tor; }
+            std::uint8_t modeDisplay() { std::uint8_t mode; pFather->readPdoIndex(MODEOPERATIONDIS, 0x00, mode); return mode; }
             std::int8_t hasFault()
             {
                 std::uint16_t statusWord;
@@ -358,6 +359,7 @@ namespace aris
             rxData().feedback_pos = static_cast<double>(imp_->pos()) / imp_->input2count_;
             rxData().feedback_vel = static_cast<double>(imp_->vel()) / imp_->input2count_;
             rxData().fault_warning=imp_->hasFault();
+            rxData().mode=imp_->modeDisplay();
         }
         auto Motion::writeUpdate()->void
         {
@@ -401,7 +403,9 @@ namespace aris
         {
             auto &rx_motiondata=static_cast<const RxType &>(rx_data);
             auto &tx_motiondata=static_cast<const TxType &>(tx_data);
-            file<<rx_motiondata.feedback_pos<<" "<< tx_motiondata.target_pos<<" "<<rx_motiondata.feedback_tor;
+            //file<<rx_motiondata.feedback_pos<<" "<< tx_motiondata.target_pos<<" "<<rx_motiondata.feedback_tor;
+            file<<rx_motiondata.feedback_pos<<" "<< tx_motiondata.target_pos<<" "<<rx_motiondata.feedback_vel<<" "<< tx_motiondata.target_vel<<" "<<rx_motiondata.feedback_tor;
+
         }
         auto Motion::maxPos()->double { return imp_->max_pos; }
         auto Motion::minPos()->double { return imp_->min_pos; }

@@ -74,7 +74,7 @@ namespace aris
 			std::vector<ParseFunc> parser_vec_; // store parse func
 
 			// 储存特殊命令的parse_func //
-			static auto defaultBasicParse(const ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
+            static auto defaultBasicParse(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
 			ParseFunc parse_enable_func_ = defaultBasicParse;
 			ParseFunc parse_disable_func_ = defaultBasicParse;
 			ParseFunc parse_home_func_ = defaultBasicParse;
@@ -399,7 +399,6 @@ namespace aris
                         if (tx_motion_data.cmd == aris::control::Motion::ENABLE)
                         {
 							tx_motion_data.cmd = aris::control::Motion::RUN;
-							tx_motion_data.mode = aris::control::Motion::POSITION;
 							tx_motion_data.target_pos = rx_motion_data.feedback_pos;
 							tx_motion_data.target_vel = 0;
 							tx_motion_data.target_tor = 0;
@@ -409,10 +408,10 @@ namespace aris
                     {
                         is_all_enabled = false;
 						tx_motion_data.cmd = aris::control::Motion::ENABLE;
-						tx_motion_data.mode = aris::control::Motion::POSITION;
 
                         if (param->count_ % 1000 == 0)
                         {
+
                             rt_printf("Unenabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i, rx_motion_data.ret);
                         }
                     }
@@ -498,16 +497,35 @@ namespace aris
             // 执行gait函数 //
             int ret = this->plan_vec_.at(param->gait_id_).operator()(*model_.get(), *param);
 
-            // 向下写入输入位置 //
+            // input position/velocity/torque //
 			for (std::size_t i = 0; i<model_->motionPool().size(); ++i)
 			{
 				std::size_t sla_id = model_->motionPool().at(i).slaID();
                 if (param->active_motor_[i])
 				{
 					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(sla_id));
+                    auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(sla_id));
 					tx_motion_data.cmd = aris::control::Motion::RUN;
-					tx_motion_data.target_pos = model_->motionPool().at(i).motPos();
-                    //tx_motion_data.vel_offset = model_->motionPool().at(i).motVel();
+                    if(rx_motion_data.mode==8)
+                    {
+                        //position
+                        tx_motion_data.target_pos = model_->motionPool().at(i).motPos();
+                    }
+                    else if(rx_motion_data.mode==9)
+                    {
+                        //velocity
+                        tx_motion_data.target_vel = model_->motionPool().at(i).motVel();
+                    }
+                    else if(rx_motion_data.mode==10)
+                    {
+                        //torque
+                        tx_motion_data.target_tor = model_->motionPool().at(i).motAcc();
+                    }
+                    else
+                    {
+                        rt_printf("Invalid mode.");
+                    }
+
 				}
 			}
 
@@ -585,7 +603,7 @@ namespace aris
 			return 0;
 
 		}
-		auto ControlServer::Imp::defaultBasicParse(const ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
+        auto ControlServer::Imp::defaultBasicParse(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 		{
 			BasicFunctionParam param;
 

@@ -1,11 +1,12 @@
 #include "plan.h"
 #include "kinematic.h"
+#include "newslave.h"
 #define Motion_Num 3
 #define Dimention 3
 
 namespace robot
 {
-    auto basicParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+    auto basicParse(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
         if (params.find("help") != params.end())
             throw std::runtime_error(cs.widgetRoot().commandParser().commandPool().findByName(cmd)->help());
@@ -39,16 +40,30 @@ namespace robot
                 if (cs.model().motionAtSla(id).absID() >= cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\", this slave is not motion");
                 param.active_motor_[cs.model().motionAtSla(id).absID()] = true;
             }
+            else if (cmd=="en" && i.first== "mode")
+            {
+                for(int count=0;count<Motion_Num;count++)
+                {
+                    std::size_t slaID=cs.model().motionAtAbs(count).slaID();
+                    auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(cs.controller().txDataPool().at(slaID));
+                    tx_motion_data.mode=static_cast<std::uint8_t>(std::stoul(i.second));
+                }
+            }
+            else
+            {
+                throw std::runtime_error("invalid param.");
+            }
         }
 
         msg_out.copyStruct(param);
     }
-    auto basicGaitParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+
+    auto basicGaitParse(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
         msg_out.copyStruct(aris::server::GaitParamBase());
     }
 
-    auto recoverParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+    auto recoverParse(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
         msg_out.copyStruct(robot::RecoverParam());
     }
@@ -83,7 +98,7 @@ namespace robot
        return param.total_count_- param.count_ - 1;
     }
 
-    auto moveParse(const aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+    auto moveParse(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
         if (params.find("help") != params.end())
             throw std::runtime_error(cs.widgetRoot().commandParser().commandPool().findByName(cmd)->help());
@@ -97,10 +112,11 @@ namespace robot
             param.target_A_=std::stod(params.find("a")->second);
             param.mode_=1;
         }
-        else if(params.find("angle")!=params.end())
+        else if(params.find("round")!=params.end())
         {
             param.total_count_=std::stoi(params.find("totalCount")->second);
-            param.angle_=std::stod(params.find("angle")->second);
+            param.round_=std::stod(params.find("round")->second);
+            param.kp_=std::stod(params.find("kp")->second);
             if (params.find("all")!=params.end())
             {
                 std::fill_n(param.active_motor_, Motion_Num, true);
@@ -166,6 +182,7 @@ namespace robot
         static double begin_pin[Motion_Num];
         static double begin_pee[Dimention];
         double pin[Motion_Num];
+        double vin[Motion_Num];
 
         int leftCount = 0;
         int rightCount = param.total_count_ ;
@@ -175,7 +192,7 @@ namespace robot
         case 1:
             if(param.count_==0)
              {
-                std::copy(robot.getpee(),robot.getpee()+Dimention,begin_pee);
+                std::copy(robot.getPee(),robot.getPee()+Dimention,begin_pee);
             }
 
             double pee[Dimention];
@@ -185,6 +202,7 @@ namespace robot
             robot.setPee(pee);
             break;
         case 2:
+        {
             if(param.count_==0)
              {
                 for(int i=0;i<Motion_Num;i++){
@@ -193,10 +211,37 @@ namespace robot
                 }
             }
 
+
             for(int i=0;i<Motion_Num;i++)
-                pin[i] = begin_pin[i] + param.angle_ * (1 - cos(s)) / 2;
+            {
+                //position mode
+                pin[i] = begin_pin[i] + param.round_ * (1 - cos(s)) / 2;
+
+                std::size_t slaID=model.motionAtAbs(i).slaID();
+                auto &rx_motion_data=static_cast<aris::control::RxMotionData&>(param.cs_->controller().rxDataPool().at(slaID));
+                //velocity mode
+                if(rx_motion_data.mode==9)
+                {
+                    double der_s=(PI*PI/2/(rightCount - leftCount)*1000)*std::sin(PI * (param.count_ - leftCount + 1) / (rightCount - leftCount));
+                    vin[i] = (param.round_ *std::sin(s))*der_s/2;
+
+                    //offset
+                    double vel_offset = param.kp_*(pin[i]-rx_motion_data.feedback_pos);
+                    vin[i] =vin[i]+vel_offset;
+                }
+
+            }
+
+            //record
+            auto &rx_record_data = static_cast<robot::RxRecordData&>(param.cs_->controller().rxDataPool().at(3));
+            rx_record_data.target_pos_=pin[0];
+
             robot.setPin(pin);
+            robot.setVin(vin);
+
+
             break;
+        }
         case 3:
             if(param.count_==0)
              {
