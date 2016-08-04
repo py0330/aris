@@ -157,15 +157,6 @@ namespace aris
 		auto logFileName()->const std::string&{ return LogFile::instance().file_name_; }
 		auto log(const char *data)->const char * { LogFile::instance().log(data);	return data; }
 		auto log(const std::string& data)->const std::string &{ log(data.c_str());	return data; }
-		auto msSleep(int mSeconds)->void
-		{
-#ifdef WIN32
-			::Sleep(mSeconds);
-#endif
-#ifdef UNIX
-			usleep(mSeconds * 1000);
-#endif
-		}
 
 		auto MsgBase::size() const->std::int32_t
 		{
