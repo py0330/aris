@@ -1,5 +1,7 @@
 #include <iostream>
 #include <algorithm>
+#include <condition_variable>
+
 #include <aris.h>
 #include "plan.h"
 #include "kinematic.h"
@@ -15,21 +17,14 @@ int main(int argc, char *argv[])
 {
     auto &cs = aris::server::ControlServer::instance();
 
-
     cs.createModel<robot::Robot>();
     cs.createController<aris::control::Controller>();
-    cs.createSensorRoot<aris::sensor::SensorRoot>();
     //if no special robot model, you can use the default model
-    //cs.createModel<aris::dynamic::Model>();
 
-
-    //register new slave or new sensor
-    cs.controller().registerChildType<robot::EsgImu>();
-
+    cs.controller().registerChildType<robot::Record>();
 
     //cs.loadXml("/usr/aris/robot/resource/robot.xml");
     cs.loadXml("/usr/aris/robot/resource/robot_motion.xml");
-
 
     cs.addCmd("en", robot::basicParse, nullptr);
     cs.addCmd("ds", robot::basicParse, nullptr);
@@ -43,7 +38,10 @@ int main(int argc, char *argv[])
     cs.addCmd("mv",robot::moveParse,robot::moveGait);
 
     cs.open();
+    cs.controller().dataLogger().prepair("");
+    cs.controller().dataLogger().start();
 
+    /*
     cs.setOnExit([&]()
     {
         aris::core::XmlDocument xml_doc;
@@ -55,8 +53,19 @@ int main(int argc, char *argv[])
         aris::core::stopMsgLoop();
     });
     aris::core::runMsgLoop();
+    */
 
+    std::condition_variable cv;
+    std::mutex mu;
+    std::unique_lock<std::mutex> lck(mu);
 
+    cs.setOnExit([&cv, &mu, &cs]()
+    {
+        cs.controller().dataLogger().stop();
+        std::unique_lock<std::mutex> lck(mu);
+        cv.notify_one();
+    });
+    cv.wait(lck);
 
     return 0;
 }

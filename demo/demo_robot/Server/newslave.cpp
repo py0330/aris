@@ -84,4 +84,15 @@ namespace robot
         file<<rx_esgimudata.rez;
     }
 
+
+    Record::~Record() {}
+    Record::Record(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, id, xml_ele){}
+    auto Record::logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void
+    {
+        auto &rx_recorddata=static_cast<const RxType &>(rx_data);
+        file<<rx_recorddata.target_pos_;
+    }
+
+
+
 }

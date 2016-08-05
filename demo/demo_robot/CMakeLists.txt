@@ -118,6 +118,11 @@ endif(WIN32)
 install(TARGETS Server rbt RUNTIME DESTINATION bin)
 install(DIRECTORY resource/ DESTINATION resource)
 
+############################################ uninstall aris ############################################
+if(UNIX)
+        add_custom_target(uninstall rm -r /usr/aris/robot)
+endif(UNIX)
+
 
 
 
