@@ -179,7 +179,7 @@ namespace aris
 
 					std::thread exit_callback([this]() 
 					{
-						aris::core::msSleep(1000);
+						std::this_thread::sleep_for(std::chrono::seconds(1));
 						if (on_exit_callback_)on_exit_callback_();
 					});
 
@@ -719,7 +719,7 @@ namespace aris
 					catch (aris::core::Socket::StartServerError &e)
 					{
 						std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-						aris::core::msSleep(1000);
+						std::this_thread::sleep_for(std::chrono::seconds(1));
 					}
 				}
 				aris::core::log("restart server socket successful");
@@ -786,7 +786,7 @@ namespace aris
 				catch (aris::core::Socket::StartServerError &e)
 				{
 					std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-					aris::core::msSleep(1000);
+					std::this_thread::sleep_for(std::chrono::seconds(1));
 				}
 			}
 			std::cout << aris::core::log("server open successful") << std::endl;
