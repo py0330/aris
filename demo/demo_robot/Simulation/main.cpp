@@ -25,8 +25,6 @@ int main(int argc, char *argv[])
 
 		auto &cs = aris::server::ControlServer::instance();
 		cs.createModel<robot::Robot>();
-		cs.createController<aris::control::Controller>();
-		cs.createSensorRoot<aris::sensor::SensorRoot>();
 		cs.loadXml(xml_doc);
 
 		const double begin_pee[3]{1,1,0};

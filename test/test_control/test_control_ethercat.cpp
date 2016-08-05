@@ -96,7 +96,7 @@ void test_control_ethercat()
 	std::cout << "press any key to start log" << std::endl;
 	std::cin.get();
 	std::cin.get();
-	master.dataLogger().prepair("data_log");
+    master.dataLogger().prepair("customized_data_name.txt");
     master.dataLogger().start();
     
 	std::cout << "press any key to stop log" << std::endl;
@@ -107,7 +107,7 @@ void test_control_ethercat()
 	std::cout << "press any key to start log" << std::endl;
 	std::cin.get();
 	std::cin.get();
-	master.dataLogger().prepair("data_log2");
+    master.dataLogger().prepair();
 	master.dataLogger().start();
 
 	std::cout << "press any key to stop log" << std::endl;

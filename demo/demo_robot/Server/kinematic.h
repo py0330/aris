@@ -8,11 +8,13 @@ namespace robot
 	class Robot:public aris::dynamic::Model 
 	{
 	public:
-        auto getpee()const->const double * { return pee_; }
+        auto getPee()const->const double * { return pee_; }
 		auto setPee(const double *pee)->void;
-        auto getpin()const->const double * { return pin_; }
-		auto setPin(const double *pin)->void;
+        auto getPin()const->const double * { return pin_; }
+        auto setPin(const double *pin)->void;
+        auto getVin()const->const double * { return vin_; }
         auto setVin(const double *vin)->void;
+
 
         //get part
         auto p1()->aris::dynamic::Part& { return *p1_; }
@@ -59,6 +61,11 @@ namespace robot
             struct { double a1_, a2_, a3_; };
             double pin_[3];
 		};
+        union
+        {
+            struct { double v1_, v2_, v3_; };
+            double vin_[3];
+        };
 	};
 
 }

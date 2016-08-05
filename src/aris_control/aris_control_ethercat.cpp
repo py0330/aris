@@ -169,7 +169,7 @@ namespace aris
             running_lck.unlock();
             running_lck.release();
 
-			auto file_name = aris::core::logDirPath() + (log_file_name.empty() ? "logdata_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) : log_file_name);
+			auto file_name = aris::core::logDirPath() + (log_file_name.empty() ? "logdata_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + ".txt" : log_file_name);
 
 			std::thread([this, file_name]()
 			{

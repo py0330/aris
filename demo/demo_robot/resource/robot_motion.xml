@@ -1,5 +1,143 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Robot>
+    <widget_root>
+        <command_socket type="Socket" port="5866"/>
+        <command_parser type="CommandParser">
+            <command_pool type="CommandPoolObject" default_child_type="Command">
+                <start help="start the control system."/>
+                <stop help="stop the control system."/>
+                <exit help="exit the control system."/>
+                <help help="get help about all command."/>
+                <en default_child_type="Param" default="en_param" help="enable the specify motions.">
+                    <en_param type = "GroupParam" default_child_type="Param" default="motion_param">
+                        <motion_param type="UniqueParam" default_child_type="Param" default="all">
+                            <all abbreviation="a" help="all motions."/>
+                            <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
+                            <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
+                            <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
+                        </motion_param>
+                        <mode abbreviation="f" default="8" help="the mode of motion."/>
+                    </en_param>
+                    <help abbreviation="h" help="get help about command 'en'."/>
+                </en>
+                <ds default_child_type="Param" default="motion_param" help="disable the specify motions.">
+                    <motion_param type="UniqueParam" default_child_type="Param" default="all">
+                        <all abbreviation="a" help="all motions."/>
+                        <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
+                        <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
+                        <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
+                    </motion_param>
+                    <help abbreviation="h" help="get help about command 'ds'."/>
+                </ds>
+                <hm default_child_type="Param" default="motion_param" help="home the specify motions.">
+                    <motion_param type="UniqueParam" default_child_type="Param" default="all">
+                        <all abbreviation="a" help="all motions."/>
+                        <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
+                        <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
+                        <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
+                    </motion_param>
+                    <help abbreviation="h" help="get help about command 'hm'."/>
+                </hm>
+                <rc help="recover the robot to specify pose."/>
+                <mv default_child_type="Param" default = "total_param" help="move the robot to specify pose after executing command 'rc' or move the specify axis of robot.">
+                    <total_param type="UniqueParam" default_child_type="Param" default="mv_param">
+                        <mv_param type = "GroupParam" default_child_type="Param" >
+                            <totalCount abbreviation="t" default="5000" help="the total executing time(ms)."/>
+                            <mode_param type = "UniqueParam" default_child_type="Param" default = "pin_param">
+                                <pee_param type = "GroupParam" default_child_type="Param">
+                                    <x abbreviation="x" default="0" help="the 'x' direction of coordinate."/>
+                                    <y abbreviation="y" default="0.435" help="the 'y' direction of coordinate."/>
+                                    <A abbreviation="A" default="0" help="the 'z' direction of coordinate."/>
+                                </pee_param>
+                                <pin_param type = "GroupParam" default_child_type="Param">
+                                    <motion_param type="UniqueParam" default_child_type="Param" default="all">
+                                        <all abbreviation="a" help="all motions."/>
+                                        <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
+                                        <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
+                                        <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
+                                    </motion_param>
+                                    <round abbreviation="r" default="0" help="the round."/>
+                                    <force abbreviation="f" default="no" help="force to move the axis without forward and backward limit."/>
+                                    <kp abbreviation="k" default="0" help="P of PID."/>
+                                </pin_param>
+                                <pins_param type = "GroupParam" default_child_type="Param">
+                                    <a1 abbreviation="1" default="0" help="No.1 axis in Model."/>
+                                    <a2 abbreviation="2" default="0" help="No.2 axis in Model."/>
+                                    <a3 abbreviation="3" default="0" help="No.3 axis in Model."/>
+                                </pins_param>
+                            </mode_param>
+                        </mv_param>
+                        <help abbreviation="h"  help="get help about command 'mv'."/>
+                    </total_param>
+                </mv>
+                <test default_child_type="Param" default="motion_param" help="test for a new feature.">
+                    <motion_param type="UniqueParam" default_child_type="Param" default="all">
+                        <all abbreviation="a" help="all motions."/>
+                        <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
+                        <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
+                        <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
+                    </motion_param>
+                    <help abbreviation="h" help="get help about command 'test'."/>
+                </test>
+            </command_pool>
+        </command_parser>
+    </widget_root>
+    <controller>
+        <slave_type_pool type="SlaveTypePoolObject">
+            <elmo type="SlaveType" product_code="0x00030924" vender_id="0x0000009a" alias="0" distributed_clock="0x0300">
+                <pdo_group_pool type="PdoGroupPoolObject">
+                    <index_1605 type="PdoGroup" default_child_type="Pdo" index="0x1605" is_tx="false">
+                        <target_pos index="0x607A" subindex="0x00" datatype="int32"/>
+                        <target_vel index="0x60FF" subindex="0x00" datatype="int32"/>
+                        <targer_tor index="0x6071" subindex="0x00" datatype="int16"/>
+                        <max_torque index="0x6072" subindex="0x00" datatype="int16"/>
+                        <control_word index="0x6040" subindex="0x00" datatype="uint16"/>
+                        <mode_of_operation index="0x6060" subindex="0x00" datatype="uint8"/>
+                    </index_1605>
+                    <index_1617 type="PdoGroup" default_child_type="Pdo" index="0x1617" is_tx="false">
+                        <velocity_offset index="0x60B1" subindex="0x00" datatype="int32"/>
+                    </index_1617>
+                    <index_1618 type="PdoGroup" default_child_type="Pdo" index="0x1618" is_tx="false">
+                        <torque_offset index="0x60B2" subindex="0x00" datatype="int16"/>
+                    </index_1618>
+                    <index_1a03 type="PdoGroup" default_child_type="Pdo" index="0x1A03" is_tx="true">
+                        <pos_actual_value index="0x6064" subindex="0x00" datatype="int32"/>
+                        <vel_actual_value index="0x606c" subindex="0x00" datatype="int32"/>
+                        <digital_inputs index="0x60fd" subindex="0x00" datatype="uint32"/>
+                        <status_word index="0x6041" subindex="0x00" datatype="uint16"/>
+                    </index_1a03>
+                    <index_1a1f type="PdoGroup" default_child_type="Pdo" index="0x1A1F" is_tx="true">
+                        <cur_actual_value index="0x6078" subindex="0x00" datatype="int16"/>
+                    </index_1a1f>
+                    <index_1a13 type="PdoGroup" default_child_type="Pdo" index="0x1A13" is_tx="true">
+                        <tor_actual_value index="0x6077" subindex="0x00" datatype="int16"/>
+                    </index_1a13>
+                    <index_1a0b type="PdoGroup" default_child_type="Pdo" index="0x1A0B" is_tx="true">
+                        <mode_of_operation_display index="0x6061" subindex="0x00" datatype="uint8"/>
+                    </index_1a0b>
+                </pdo_group_pool>
+                <sdo_pool type="SdoPoolObject" default_child_type="Sdo">
+                    <home_mode index="0x6098" subindex="0" datatype="int8" config="35"/>
+                    <home_acc index="0x609A" subindex="0" datatype="uint32" config="200000"/>
+                    <home_high_speed index="0x6099" subindex="1" datatype="uint32" config="200000"/>
+                    <home_low_speed index="0x6099" subindex="2" datatype="uint32" config="100000"/>
+                    <home_offset index="0x607C" subindex="0" datatype="int32" config="0"/>
+                </sdo_pool>
+            </elmo>
+            <GaitRecord type="SlaveType" product_code="0x00000000" vender_id="0x00000000" alias="0">
+                <pdo_group_pool type="PdoGroupPoolObject">
+                </pdo_group_pool>
+                <sdo_pool type="SdoPoolObject" default_child_type="Sdo">
+                </sdo_pool>
+            </GaitRecord>
+        </slave_type_pool>
+        <slave_pool type="SlavePoolObject">
+            <m1 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <m2 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <m3 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <gaitrecord type="record" slave_type="GaitRecord" />
+        </slave_pool>
+    </controller>
     <model>
         <environment type="Environment" gravity="{0 , -9.8 , 0 , 0 , 0 , 0}" />
         <variable_pool type="VariablePoolObject" default_child_type="matrix">
@@ -48,130 +186,6 @@
         <general_motion_pool type="GeneralMotionPoolObject" default_child_type="GeneralMotion">
         </general_motion_pool>
     </model>
-    <server ip="127.0.0.1" port="5866">
-        <command_pool type="CommandPoolObject" default_child_type="Command">
-            <start help="start the control system."/>
-            <stop help="stop the control system."/>
-            <exit help="exit the control system."/>
-            <help help="get help about all command."/>
-            <en default_child_type="Param" default="motion_param" help="enable the specify motions.">
-                <motion_param type="UniqueParam" default_child_type="Param" default="all">
-                    <all abbreviation="a" help="all motions."/>
-                    <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-                    <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-                    <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-                </motion_param>
-                <help abbreviation="h" help="get help about command 'en'."/>
-            </en>
-            <ds default_child_type="Param" default="motion_param" help="disable the specify motions.">
-                <motion_param type="UniqueParam" default_child_type="Param" default="all">
-                    <all abbreviation="a" help="all motions."/>
-                    <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-                    <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-                    <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-                </motion_param>
-                <help abbreviation="h" help="get help about command 'ds'."/>
-            </ds>
-            <hm default_child_type="Param" default="motion_param" help="home the specify motions.">
-                <motion_param type="UniqueParam" default_child_type="Param" default="all">
-                    <all abbreviation="a" help="all motions."/>
-                    <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-                    <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-                    <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-                </motion_param>
-                <help abbreviation="h" help="get help about command 'hm'."/>
-            </hm>
-            <rc help="recover the robot to specify pose."/>
-            <mv default_child_type="Param" default = "total_param" help="move the robot to specify pose after executing command 'rc' or move the specify axis of robot.">
-                <total_param type="UniqueParam" default_child_type="Param" default="mv_param">
-                    <mv_param type = "GroupParam" default_child_type="Param" >
-                        <totalCount abbreviation="t" default="5000" help="the total executing time(ms)."/>
-                        <mode_param type = "UniqueParam" default_child_type="Param" default = "pin_param">
-                            <pee_param type = "GroupParam" default_child_type="Param">
-                                <x abbreviation="x" default="0" help="the 'x' direction of coordinate."/>
-                                <y abbreviation="y" default="0.435" help="the 'y' direction of coordinate."/>
-                                <A abbreviation="A" default="0" help="the 'z' direction of coordinate."/>
-                            </pee_param>
-                            <pin_param type = "GroupParam" default_child_type="Param">
-                                <motion_param type="UniqueParam" default_child_type="Param" default="all">
-                                    <all abbreviation="a" help="all motions."/>
-                                    <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-                                    <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-                                    <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-                                </motion_param>
-                                <angle abbreviation="j" default="0" help="the length(m)."/>
-                                <force abbreviation="f" default="no" help="force to move the axis without forward and backward limit."/>
-                            </pin_param>
-                            <pins_param type = "GroupParam" default_child_type="Param">
-                                <a1 abbreviation="1" default="0" help="No.1 axis in Model."/>
-                                <a2 abbreviation="2" default="0" help="No.2 axis in Model."/>
-                                <a3 abbreviation="3" default="0" help="No.3 axis in Model."/>
-                            </pins_param>
-                        </mode_param>
-                    </mv_param>
-                    <help abbreviation="h"  help="get help about command 'mv'."/>
-                </total_param>
-            </mv>
-            <test default_child_type="Param" default="motion_param" help="test for a new feature.">
-                <motion_param type="UniqueParam" default_child_type="Param" default="all">
-                    <all abbreviation="a" help="all motions."/>
-                    <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-                    <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-                    <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-                </motion_param>
-                <help abbreviation="h" help="get help about command 'test'."/>
-            </test>
-        </command_pool>
-    </server>
-    <controller>
-        <slave_type_pool type="SlaveTypePoolObject">
-            <elmo type="SlaveType" product_code="0x00030924" vender_id="0x0000009a" alias="0" distributed_clock="0x0300">
-                <pdo_group_pool type="PdoGroupPoolObject">
-                    <index_1605 type="PdoGroup" default_child_type="Pdo" index="0x1605" is_tx="false">
-                        <target_pos index="0x607A" subindex="0x00" datatype="int32"/>
-                        <target_vel index="0x60FF" subindex="0x00" datatype="int32"/>
-                        <targer_tor index="0x6071" subindex="0x00" datatype="int16"/>
-                        <max_torque index="0x6072" subindex="0x00" datatype="int16"/>
-                        <control_word index="0x6040" subindex="0x00" datatype="uint16"/>
-                        <mode_of_operation index="0x6060" subindex="0x00" datatype="uint8"/>
-                    </index_1605>
-                    <index_1617 type="pdo_group" default_child_type="pdo" index="0x1617" is_tx="false">
-                        <VelocityOffset index="0x60B1" subindex="0x00" datatype="int32" />
-                    </index_1617>
-                    <index_1618 type="pdo_group" default_child_type="pdo" index="0x1618" is_tx="false">
-                        <TorqueOffset index="0x60B2" subindex="0x00" datatype="int16" />
-                    </index_1618>
-                    <index_1a03 type="PdoGroup" default_child_type="Pdo" index="0x1A03" is_tx="true">
-                        <pos_actual_value index="0x6064" subindex="0x00" datatype="int32"/>
-                        <vel_actual_value index="0x606c" subindex="0x00" datatype="int32"/>
-                        <digital_inputs index="0x60fd" subindex="0x00" datatype="uint32"/>
-                        <status_word index="0x6041" subindex="0x00" datatype="uint16"/>
-                    </index_1a03>
-                    <index_1a1f type="PdoGroup" default_child_type="Pdo" index="0x1A1F" is_tx="true">
-                        <cur_actual_value index="0x6078" subindex="0x00" datatype="int16"/>
-                    </index_1a1f>
-                    <index_1a13 type="PdoGroup" default_child_type="Pdo" index="0x1A13" is_tx="true">
-                        <tor_actual_value index="0x6077" subindex="0x00" datatype="int16"/>
-                    </index_1a13>
-                    <index_1a0b type="PdoGroup" default_child_type="Pdo" index="0x1A0B" is_tx="true">
-                        <mode_of_operation_display index="0x6061" subindex="0x00" datatype="uint8"/>
-                    </index_1a0b>
-                </pdo_group_pool>
-                <sdo_pool type="SdoPoolObject" default_child_type="Sdo">
-                    <home_mode index="0x6098" subindex="0" datatype="int8" config="-1"/>
-                    <home_acc index="0x609A" subindex="0" datatype="uint32" config="200000"/>
-                    <home_high_speed index="0x6099" subindex="1" datatype="uint32" config="200000"/>
-                    <home_low_speed index="0x6099" subindex="2" datatype="uint32" config="100000"/>
-                    <home_offset index="0x607C" subindex="0" datatype="int32" config="0"/>
-                </sdo_pool>
-            </elmo>
-        </slave_type_pool>
-        <slave_pool type="SlavePoolObject">
-            <m1 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
-            <m2 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
-            <m3 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
-        </slave_pool>
-    </controller>
     <sensor_root>
         <sensor_pool type="SensorPoolObject">
         </sensor_pool>

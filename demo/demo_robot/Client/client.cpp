@@ -1,6 +1,6 @@
 ﻿#include <aris.h>
 
-int sendRequest(int argc, char *argv[], const char *xmlFileName)
+int sendRequest(int argc, char *argv[])
 {
 	// 需要去除命令名的路径和扩展名 //
 	std::string cmdName(argv[0]);
@@ -34,31 +34,29 @@ int sendRequest(int argc, char *argv[], const char *xmlFileName)
 	msg.copy(cmdName.c_str());
 
 	// 连接并发送msg //
-	aris::core::XmlDocument doc;
-
-	if (doc.LoadFile(xmlFileName) != 0)	throw std::logic_error("failed to read configuration xml file");
-
-	std::string ip = doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
-	std::string port = doc.RootElement()->FirstChildElement("Server")->Attribute("port");
-
-	aris::core::Socket conn;
+    aris::core::Root root;
+    root.registerChildType<aris::core::Socket>();
+    auto& client = root.add<aris::core::Socket>("client");
+    client.setRemoteIP("127.0.0.1");
+    client.setPort("5866");
 
 	while (true)
 	{
 		try
 		{
-			conn.connect(ip.c_str(), port.c_str());
+            client.connect();
 			break;
 		}
 		catch (std::exception &)
 		{
 			std::cout << "failed to connect server, will retry in 1 second" << std::endl;
-			aris::core::msSleep(1000);
+            //aris::core::msSleep(1000);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 
 	}
 
-	aris::core::Msg ret = conn.sendRequest(msg);
+    aris::core::Msg ret = client.sendRequest(msg);
 
 	/*错误处理*/
 	if (ret.size() > 0)
@@ -78,12 +76,7 @@ int main(int argc, char *argv[])
 {
 	if (argc <= 1)throw std::runtime_error("please input the cmd name");
 
-#ifdef UNIX
-    sendRequest(argc - 1, argv + 1, "/usr/aris/robot/resource/robot.xml");
-#endif
-#ifdef WIN32
-    sendRequest(argc - 1, argv + 1, "C:\\aris\\robot\\resource\\robot.xml");
-#endif
+    sendRequest(argc-1, argv+1);
 
 	return 0;
 }
