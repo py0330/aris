@@ -1,4 +1,5 @@
 ﻿#include <aris.h>
+#include <unistd.h>
 
 int sendRequest(int argc, char *argv[])
 {
@@ -50,7 +51,8 @@ int sendRequest(int argc, char *argv[])
 		catch (std::exception &)
 		{
 			std::cout << "failed to connect server, will retry in 1 second" << std::endl;
-			aris::core::msSleep(1000);
+            //aris::core::msSleep(1000);
+            sleep(1000);
 		}
 
 	}

@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
     cs.addCmd("mv",robot::moveParse,robot::moveGait);
 
     cs.open();
+    cs.controller().dataLogger().prepair("");
     cs.controller().dataLogger().start();
 
     /*
@@ -58,8 +59,9 @@ int main(int argc, char *argv[])
     std::mutex mu;
     std::unique_lock<std::mutex> lck(mu);
 
-    cs.setOnExit([&cv, &mu]()
+    cs.setOnExit([&cv, &mu, &cs]()
     {
+        cs.controller().dataLogger().stop();
         std::unique_lock<std::mutex> lck(mu);
         cv.notify_one();
     });
