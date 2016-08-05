@@ -21,219 +21,142 @@
 
 #include "aris_core_msg.h"
 
-class LogFile
-{
-public:
-	auto logPath()->std::string
-	{
-		enum { TASK_NAME_LEN = 1024 };
-		
-		char name[TASK_NAME_LEN] = { 0 };
 
-#ifdef WIN32
-		char path[TASK_NAME_LEN] = { 0 };
-		GetModuleFileName(NULL, path, TASK_NAME_LEN);
-
-		char *p = strrchr(path, '\\');
-		if (p == nullptr)
-			throw std::logic_error("windows can't identify the program name");
-
-		char proName[TASK_NAME_LEN]{ 0 };
-
-		char *dot = strrchr(path, '.');
-		if ((dot != nullptr) && (dot - p > 0))
-		{
-			std::int32_t n = dot - p - 1;
-			strncpy(proName, p + 1, n);
-			proName[n] = 0;
-		}
-
-		CreateDirectory("log", NULL);
-		strcat(name, "log\\");
-#endif
-
-#ifdef UNIX
-		std::int32_t count = 0;
-		std::int32_t nIndex = 0;
-		char path[TASK_NAME_LEN] = { 0 };
-		char cParam[100] = { 0 };
-		char *proName = path;
-
-		pid_t pId = getpid();
-		sprintf(cParam, "/proc/%d/exe", pId);
-		count = readlink(cParam, path, TASK_NAME_LEN);
-
-		if (count < 0 || count >= TASK_NAME_LEN)
-		{
-			throw std::logic_error("Current System Not Surport Proc.\n");
-		}
-		else
-		{
-			nIndex = count - 1;
-
-			for (; nIndex >= 0; nIndex--)
-			{
-				if (path[nIndex] == '/')//筛选出进程名
-				{
-					nIndex++;
-					proName += nIndex;
-					break;
-				}
-			}
-		}
-
-		if (opendir("log") == nullptr)
-		{
-			umask(0);
-			if (mkdir("log", 0777) != 0)
-				throw std::logic_error("can't create log folder\n");
-		}
-
-		strcat(name, "log/");
-#endif
-	}
-	
-	
-	void log(const char *data)
-	{
-		std::lock_guard<std::mutex> lck(dataMutex);
-
-		time_t now;
-		time(&now);
-
-		file << difftime(now, beginTime) << ":";
-		file << data << std::endl;
-	}
-	void logfile(const char *address)
-	{
-		file.close();
-		file.open(address, std::ios::out | std::ios::trunc);
-		if (!file.good())
-		{
-			throw std::logic_error("can't not Start log function");
-		}
-
-		time_t now = beginTime;
-		struct tm * timeinfo;
-		timeinfo = localtime(&now);
-		file << asctime(timeinfo) << std::endl;
-	}
-	static LogFile &instance()
-	{
-		static LogFile logFile;
-		return logFile;
-	}
-
-	std::string fileName;
-private:
-	std::fstream file;
-	std::mutex dataMutex;
-	std::time_t beginTime;
-
-	LogFile()
-	{
-		const std::int32_t TASK_NAME_LEN = 1024;
-		char name[TASK_NAME_LEN] = { 0 };
-
-#ifdef WIN32
-		char path[TASK_NAME_LEN] = { 0 };
-		GetModuleFileName(NULL, path, TASK_NAME_LEN);
-
-		char *p = strrchr(path, '\\');
-		if (p == nullptr)
-			throw std::logic_error("windows can't identify the program name");
-
-		char proName[TASK_NAME_LEN]{ 0 };
-
-		char *dot = strrchr(path, '.');
-		if ((dot != nullptr) && (dot - p > 0))
-		{
-			std::int32_t n = dot - p - 1;
-			strncpy(proName, p + 1, n);
-			proName[n] = 0;
-		}
-
-		CreateDirectory("log", NULL);
-		strcat(name, "log\\");
-#endif
-
-#ifdef UNIX
-		std::int32_t count = 0;
-		std::int32_t nIndex = 0;
-		char path[TASK_NAME_LEN] = { 0 };
-		char cParam[100] = { 0 };
-		char *proName = path;
-
-		pid_t pId = getpid();
-		sprintf(cParam, "/proc/%d/exe", pId);
-		count = readlink(cParam, path, TASK_NAME_LEN);
-
-		if (count < 0 || count >= TASK_NAME_LEN)
-		{
-			throw std::logic_error("Current System Not Surport Proc.\n");
-		}
-		else
-		{
-			nIndex = count - 1;
-
-			for (; nIndex >= 0; nIndex--)
-			{
-				if (path[nIndex] == '/')//筛选出进程名
-				{
-					nIndex++;
-					proName += nIndex;
-					break;
-				}
-			}
-		}
-
-		if (opendir("log") == nullptr)
-		{
-			umask(0);
-			if (mkdir("log", 0777) != 0)
-				throw std::logic_error("can't create log folder\n");
-		}
-
-		strcat(name, "log/");
-#endif
-
-		time(&beginTime);
-		struct tm * timeinfo;
-		timeinfo = localtime(&beginTime);
-
-		char timeCh[TASK_NAME_LEN] = { 0 };
-
-		strftime(timeCh, TASK_NAME_LEN, "_%Y-%m-%d_%H-%M-%S_log.txt", timeinfo);
-
-		strcat(name,proName);
-		strcat(name,timeCh);
-
-		logfile(name);
-
-		this->fileName = name;
-	}
-	~LogFile()
-	{
-		file.close();
-	}
-};
 
 namespace aris
 {
 	namespace core
 	{
-		auto logFileName()->const std::string&{ return LogFile::instance().fileName; }
-		auto log(const char *data)->const char * { LogFile::instance().log(data);	return data; }
-		auto log(const std::string& data)->const std::string &{ log(data.c_str());	return data; }
-		auto msSleep(int mSeconds)->void
+		class LogFile
+		{
+		public:
+			void log(const char *data)
+			{
+				std::lock_guard<std::mutex> lck(file_mutex_);
+				file_ << logFileTimeFormat(std::chrono::system_clock::now()) << ":" << data << std::endl;
+			}
+			static LogFile &instance()
+			{
+				static LogFile logFile;
+				return logFile;
+			}
+
+			std::fstream file_;
+			std::string file_name_;
+			std::mutex file_mutex_;
+			std::chrono::system_clock::time_point begin_time_;
+
+		private:
+			LogFile()
+			{
+				begin_time_ = std::chrono::system_clock::now();
+				file_name_ = logDirPath() + logExeName() + "_" + logFileTimeFormat(begin_time_) + "_log.txt";
+
+				file_.close();
+				file_.open(file_name_.c_str(), std::ios::out | std::ios::trunc);
+				if (!file_.good())throw std::runtime_error("can't not Start log function");
+
+				file_ << logFileTimeFormat(begin_time_) << "program \"" << logExeName() << "\"" << " started" << std::endl;
+			}
+			~LogFile()
+			{
+				file_.close();
+			}
+		};
+		
+		auto createLogDir()->void
 		{
 #ifdef WIN32
-			::Sleep(mSeconds);
+			CreateDirectory("log", NULL);
 #endif
+
 #ifdef UNIX
-			usleep(mSeconds * 1000);
+			if (opendir("log") == nullptr)
+			{
+				umask(0);
+				if (mkdir("log", 0777) != 0)
+					throw std::logic_error("can't create log folder\n");
+			}
 #endif
 		}
+		auto logExeName()->std::string 
+		{
+			const std::int32_t TASK_NAME_LEN = 1024;
+
+#ifdef WIN32
+			char path[TASK_NAME_LEN] = { 0 };
+			GetModuleFileName(NULL, path, TASK_NAME_LEN);
+
+			char *p = strrchr(path, '\\');
+			if (p == nullptr)
+				throw std::logic_error("windows can't identify the program name");
+
+			char proName[TASK_NAME_LEN]{ 0 };
+
+			char *dot = strrchr(path, '.');
+			if ((dot != nullptr) && (dot - p > 0))
+			{
+				std::int32_t n = dot - p - 1;
+				strncpy(proName, p + 1, n);
+				proName[n] = 0;
+			}
+#endif
+
+#ifdef UNIX
+			std::int32_t count = 0;
+			std::int32_t nIndex = 0;
+			char path[TASK_NAME_LEN] = { 0 };
+			char cParam[100] = { 0 };
+			char *proName = path;
+
+			pid_t pId = getpid();
+			sprintf(cParam, "/proc/%d/exe", pId);
+			count = readlink(cParam, path, TASK_NAME_LEN);
+
+			if (count < 0 || count >= TASK_NAME_LEN)
+			{
+				throw std::logic_error("Current System Not Surport Proc.\n");
+			}
+			else
+			{
+				nIndex = count - 1;
+
+				for (; nIndex >= 0; nIndex--)
+				{
+					if (path[nIndex] == '/')//筛选出进程名
+					{
+						nIndex++;
+						proName += nIndex;
+						break;
+					}
+				}
+			}
+#endif
+			return std::string(proName);
+
+		}
+		auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string
+		{
+			auto time_t_var = std::chrono::system_clock::to_time_t(time);
+			auto timeinfo = localtime(&time_t_var);
+			char time_format[1024];
+			strftime(time_format, 1024, "%Y-%m-%d_%H-%M-%S", timeinfo);
+			return std::string(time_format);
+		}
+		auto logDirPath()->std::string
+		{
+#ifdef WIN32
+			return std::string("log\\");
+#endif
+
+#ifdef UNIX
+			return std::string("log/");
+#endif
+			
+		}
+		auto logFileName()->const std::string&{ return LogFile::instance().file_name_; }
+		auto log(const char *data)->const char * { LogFile::instance().log(data);	return data; }
+		auto log(const std::string& data)->const std::string &{ log(data.c_str());	return data; }
 
 		auto MsgBase::size() const->std::int32_t
 		{
@@ -308,7 +231,7 @@ namespace aris
 		{
 			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = data_size;
 		}
-		MsgRT::~MsgRT() { delete[] data_; }
+		MsgRT::~MsgRT() { delete [] data_; }
 		MsgRT::MsgRT()
 		{
 			data_ = new char[RT_MSG_SIZE + sizeof(MsgHeader)];

@@ -28,20 +28,20 @@ namespace aris
         public:
             enum PDO_Entry
             {
-                CONTROLWORD=0x6040,
-                STATUSWORD=0x6041,
-                TARGETPOSITION=0x607A,
-                ACTUALPOSITION=0x6064,
-                TARGETVELOCITY=0x60FF,
-                ACTUALVELOCITY=0x606C,
-                TARGETTORQUE=0x6071,
-                ACTUALTORQUE=0x6077,
-                MODEOPERATION=0x6060,
-                MODEOPERATIONDIS=0x6061,
+				CONTROLWORD = 0x6040,
+				STATUSWORD = 0x6041,
+				TARGETPOSITION = 0x607A,
+				ACTUALPOSITION = 0x6064,
+				TARGETVELOCITY = 0x60FF,
+				ACTUALVELOCITY = 0x606C,
+				TARGETTORQUE = 0x6071,
+				ACTUALTORQUE = 0x6077,
+				MODEOPERATION = 0x6060,
+				MODEOPERATIONDIS = 0x6061,
 
-                VELOCITYOFFSET=0x60B1,
-                TORQUEOFFSET=0x60B2,
-                MAXTORQUE=0x6072,
+				VELOCITYOFFSET = 0x60B1,
+				TORQUEOFFSET = 0x60B2,
+				MAXTORQUE = 0x6072,
             };
 
             enum SDO_Entry_Index

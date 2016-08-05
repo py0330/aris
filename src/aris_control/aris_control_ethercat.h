@@ -38,6 +38,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("DataLogger"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			auto prepair(const std::string &log_file_name = std::string())->void;
 			auto start()->void;
 			auto stop()->void;
 			auto logDataRT()->void;

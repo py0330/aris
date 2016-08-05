@@ -22,15 +22,14 @@ void test_socket()
 
 		server.setOnReceivedMsg([](Socket *, Msg &msg)
 		{
-			std::cout << msg.data();
+			std::cout << msg.data() << std::endl;
 
 			return 0;
 		});
 		server.setOnReceivedRequest([](Socket *, Msg &msg) 
 		{
 			std::cout << msg.data() << std::endl;
-			return Msg("msg received\n");
-		
+			return Msg(std::string(msg.data()) + " was received");
 		});
 		
 		server.setOnLoseConnection( [](Socket*)
@@ -44,42 +43,26 @@ void test_socket()
 		server.startServer("5866");
 		client.connect();
 
-		//enum { THREAD_NUM = 8 };
-		//std::future<void> ft[THREAD_NUM];
-		//for (auto i = 0; i < THREAD_NUM; ++i)
-		//{
-		//	ft[i] = std::async(std::launch::async, [&client, i]() 
-		//	{
-		//		for (auto j = 0; j<100; ++j)
-		//			client.sendMsg(Msg("thread " + std::to_string(i) + " count: " + std::to_string(j) + "\n"));
-		//	});
-		//}
-
-		//for (auto i = 0; i < THREAD_NUM; ++i)
-		//{
-		//	ft[i].wait();
-		//}
-
-
-		auto ft = std::async(std::launch::async, [&client]()
+		enum { THREAD_NUM = 8 };
+		std::future<void> ft[THREAD_NUM];
+		for (auto i = 0; i < THREAD_NUM; ++i)
 		{
-			Msg msg;
-			try 
+			ft[i] = std::async(std::launch::async, [&client, i]() 
 			{
-				client.sendMsg(Msg("123\n"));
+				for (auto j = 0; j < 100; ++j)
+				{
+					auto msg = client.sendRequest(Msg("thread " + std::to_string(i) + " count: " + std::to_string(j)));
+					std::cout << msg.data() << std::endl;
+				}
+					
+			});
+		}
 
+		for (auto i = 0; i < THREAD_NUM; ++i)
+		{
+			ft[i].wait();
+		}
 
-				msg = client.sendRequest(Msg("request\n"));
-			}
-			catch(std::exception &e)
-			{
-				std::cout << e.what()<<std::endl;
-			}
-			
-			std::cout << msg.data() << std::endl;
-		});
-
-		ft.wait();
 
 
 		client.stop();

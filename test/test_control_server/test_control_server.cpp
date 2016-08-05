@@ -176,8 +176,7 @@ const char xml_data[] =
 "    </sensor_root>"
 "</root>";
 
-std::condition_variable cv;
-std::mutex mu;
+
 
 
 void test_control_server()
@@ -187,13 +186,17 @@ void test_control_server()
 
 	auto&cs = aris::server::ControlServer::instance();
 
+
+	std::condition_variable cv;
+	std::mutex mu;
+
 	std::unique_lock<std::mutex> lck(mu);
 	
 	cs.loadXml(xml_doc);
-	cs.setOnExit([]() 
+	cs.setOnExit([&mu, &cv]() 
 	{
-		std::unique_lock<std::mutex> lck(::mu);
-		::cv.notify_one();
+		std::unique_lock<std::mutex> lck(mu);
+		cv.notify_one();
 	});
 	cs.open();
 

@@ -22,7 +22,7 @@ namespace aris
 
 		class ControlServer;
 		
-		using ParseFunc = std::function<void(const ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
+		using ParseFunc = std::function<void(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
 
 		//for enable, disable, and home
 		struct BasicFunctionParam :aris::dynamic::PlanParamBase
