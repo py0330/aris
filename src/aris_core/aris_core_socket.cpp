@@ -542,12 +542,12 @@ namespace aris
 			imp_->onReceiveError = onReceiveError;
 		}
 		Socket::~Socket() {	stop();	}
-		Socket::Socket(Object &father, std::size_t id, const std::string &name, const std::string& remote_ip, const std::string& port):Object(father, id, name), imp_(new Imp(this))
+		Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port):Object(name), imp_(new Imp(this))
 		{
 			setRemoteIP(remote_ip);
 			setPort(port);
 		}
-		Socket::Socket(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Object(father, id, xml_ele), imp_(new Imp(this))
+		Socket::Socket(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele), imp_(new Imp(this))
 		{
 			setRemoteIP(attributeString(xml_ele, "remote_ip", std::string()));
 			setPort(attributeString(xml_ele, "port", std::string()));

@@ -39,8 +39,8 @@ namespace aris
 				throw std::runtime_error("wrong command setting: unknown father type.");
 		}
 		auto ParamBase::reset()->void { imp_->is_taken_ = false; }
-		ParamBase::ParamBase(Object &father, std::size_t id, const std::string &name) :ObjectPool(father, id, name) {}
-		ParamBase::ParamBase(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ObjectPool(father, id, xml_ele) {}
+		ParamBase::ParamBase(const std::string &name) :ObjectPool(name) {}
+		ParamBase::ParamBase(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele) {}
 		
 		auto GroupParam::take()->void {
 			if (!isTaken())ParamBase::take();
@@ -51,8 +51,8 @@ namespace aris
 			for (auto &sub_param : *this) { sub_param.addDefaultParam(param_map_out); }
 		}
 		GroupParam::~GroupParam() = default;
-		GroupParam::GroupParam(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
-		GroupParam::GroupParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele) {}
+		GroupParam::GroupParam(const std::string &name) :ParamBase(name) {}
+		GroupParam::GroupParam(Object &father, const aris::core::XmlElement &xml_ele) :ParamBase(father, xml_ele) {}
 		GroupParam::GroupParam(const GroupParam &) = default;
 		GroupParam::GroupParam(GroupParam &&) = default;
 		GroupParam& GroupParam::operator=(const GroupParam &) = default;
@@ -77,8 +77,8 @@ namespace aris
 		}
         auto Param::abbreviation()->char { return imp_->abbreviation_; }
 		Param::~Param() = default;
-		Param::Param(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
-		Param::Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele)
+		Param::Param(const std::string &name) :ParamBase(name) {}
+		Param::Param(Object &father, const aris::core::XmlElement &xml_ele) :ParamBase(father, xml_ele)
 		{
 			imp_->abbreviation_ = attributeChar(xml_ele, "abbreviation", imp_->abbreviation_);
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
@@ -114,8 +114,8 @@ namespace aris
 			default_param->addDefaultParam(param_map_out);
 		}
 		UniqueParam::~UniqueParam() = default;
-		UniqueParam::UniqueParam(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
-		UniqueParam::UniqueParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele)
+		UniqueParam::UniqueParam(const std::string &name) :ParamBase(name) {}
+		UniqueParam::UniqueParam(Object &father, const aris::core::XmlElement &xml_ele) :ParamBase(father, xml_ele)
 		{
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
 		}
@@ -201,8 +201,8 @@ namespace aris
             return helpstring;
 		}
 		Command::~Command() = default;
-        Command::Command(Object &father, std::size_t id, const std::string &name) :ObjectPool(father, id, name) {}
-		Command::Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ObjectPool(father, id, xml_ele)
+        Command::Command(const std::string &name) :ObjectPool(name) {}
+		Command::Command(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele)
 		{
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
 			imp_->help_ = attributeString(xml_ele, "help", imp_->help_);
@@ -396,11 +396,11 @@ namespace aris
             return helpstring;
         }
 		CommandParser::~CommandParser() = default;
-		CommandParser::CommandParser(Object &father, std::size_t id, const std::string &name):Object(father, id, name)
+		CommandParser::CommandParser(const std::string &name):Object(name)
 		{ 
 			imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
 		}
-		CommandParser::CommandParser(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Object(father, id, xml_ele) 
+		CommandParser::CommandParser(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) 
 		{
 			imp_->command_pool_ = findByName("command_pool") == end() ? &add<aris::core::ObjectPool<Command>>("command_pool") : static_cast<aris::core::ObjectPool<Command> *>(&(*findByName("command_pool")));
 		}

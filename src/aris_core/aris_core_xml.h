@@ -205,13 +205,10 @@ namespace aris
 			auto load(const std::string &name, bool auto_delete_save = true)->void;
 			auto findByName(const std::string &name)const->const_iterator;
 			auto findByName(const std::string &name)->iterator;
-			auto add(const Object &object)->Object &;
-			auto add(Object &&object)->Object &;
 			auto add(Object *obj)->Object &;
 			auto add(const aris::core::XmlElement &xml_ele)->Object &;
 			template<typename T, typename ...Args>
-			auto add(const std::string &name, Args&&... args)->T& { return static_cast<T&>(add(new T(*this, size(), name, std::forward<Args>(args)...))); }
-
+			auto add(Args&&... args)->T& { return static_cast<T&>(add(new T(std::forward<Args>(args)...))); }
 			auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->bool;
 			auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, bool default_value)const->bool;
 			auto attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int64_t;
@@ -241,8 +238,7 @@ namespace aris
 
 			virtual ~Object();
 			Object(const std::string &name = "object");
-			Object(Object &father, std::size_t id, const std::string &name);
-			Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Object(Object &father, const aris::core::XmlElement &xml_ele);
 			Object(const Object &);
 			Object(Object &&);
 			Object& operator=(const Object &);
@@ -258,7 +254,7 @@ namespace aris
 		public:
 			struct TypeInfo
 			{
-				std::function<Object*(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)> xml_construct_func;
+				std::function<Object*(Object &father, const aris::core::XmlElement &xml_ele)> xml_construct_func;
 				std::function<Object*(const Object &from_object)> copy_construct_func;
 				std::function<Object*(Object &&from_object)> move_construct_func;
 				std::function<Object&(const Object &from_object, Object &to_object)> copy_assign_func;
@@ -270,10 +266,7 @@ namespace aris
 					static_assert(std::is_base_of<Object, ChildType>::value, "failed to register type, because it is not inheritated from Object");
 
 					TypeInfo info;
-					info.xml_construct_func = [](Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)->Object*
-					{
-						return new ChildType(father, id, xml_ele);
-					};
+					info.xml_construct_func = [](Object &father, const aris::core::XmlElement &xml_ele)->Object* {return new ChildType(father, xml_ele); };
 					info.copy_construct_func = CopyConstruct<ChildType, is_copy_constructible<ChildType>()>::func();
 					info.move_construct_func = MoveConstruct<ChildType, is_copy_constructible<ChildType>(), is_move_constructible<ChildType>()>::func();
 					info.copy_assign_func = CopyAssign<ChildType, is_copy_assignable<ChildType>()>::func();
@@ -541,8 +534,8 @@ namespace aris
 			virtual ~ObjectPool() = default;
 
 		protected:
-			ObjectPool(Object &father, std::size_t id, const std::string &name):Base(father, id, name) {}
-			ObjectPool(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Base(father, id, xml_ele) {}
+			ObjectPool(const std::string &name):Base(name) {}
+			ObjectPool(Object &father, const aris::core::XmlElement &xml_ele) :Base(father, xml_ele) {}
 		
 		private:
 			friend class Object;

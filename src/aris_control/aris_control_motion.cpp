@@ -344,7 +344,7 @@ namespace aris
         };
 
         Motion::~Motion() {}
-        Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, id, xml_ele), imp_(new Motion::Imp(this))
+        Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, xml_ele), imp_(new Motion::Imp(this))
         {
             imp_->input2count_ = attributeInt32(xml_ele, "input2count");
             imp_->max_pos = attributeDouble(xml_ele, "max_pos");

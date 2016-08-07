@@ -63,7 +63,7 @@ namespace aris
 			Element::saveXml(xml_ele);
 			xml_ele.SetAttribute("active", active() ? "true" : "false");
 		}
-		DynEle::DynEle(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele)
+		DynEle::DynEle(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
 		{
 			active_ = attributeBool(xml_ele, "active", true);
 		}
@@ -695,7 +695,7 @@ namespace aris
 			if (as)s_inv_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), this->vs(), this->as(), as, vs);
 			getVs(relative_to, vs, pm);
 		}
-		Coordinate::Coordinate(Object &father, std::size_t id, const std::string &name, bool active):DynEle(father, id, name, active){}
+		Coordinate::Coordinate(const std::string &name, bool active):DynEle(name, active){}
 
 		auto Interaction::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -706,8 +706,8 @@ namespace aris
 			xml_ele.SetAttribute("mak_i", this->makI().name().c_str());
 			xml_ele.SetAttribute("mak_j", this->makJ().name().c_str());
 		}
-		Interaction::Interaction(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: DynEle(father, id, xml_ele)
+		Interaction::Interaction(Object &father, const aris::core::XmlElement &xml_ele)
+			: DynEle(father, xml_ele)
 		{
 			if (model().findByName("part_pool") == model().end())
 				throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"" );
@@ -759,10 +759,10 @@ namespace aris
 			s_mdmTN(dim(), 1, 6, csmPtrI(), dim(), _tem_v2, 1, const_cast<double*>(csaPtr()), 1);
 		}
 		Constraint::~Constraint() {}
-		Constraint::Constraint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, bool is_active)
-			: Interaction(father, id, name, makI, makJ, is_active) {}
-		Constraint::Constraint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: Interaction(father, id, xml_ele) {}
+		Constraint::Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active)
+			: Interaction(name, makI, makJ, is_active) {}
+		Constraint::Constraint(Object &father, const aris::core::XmlElement &xml_ele)
+			: Interaction(father, xml_ele) {}
 		
 		auto Environment::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -814,8 +814,8 @@ namespace aris
 				<< "    z_component_gravity = " << this->gravity_[2] << "\r\n"
 				<< "!\r\n";
 		}
-		Environment::Environment(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			:Element(father, id, xml_ele)
+		Environment::Environment(Object &father, const aris::core::XmlElement &xml_ele)
+			:Element(father, xml_ele)
 		{
 			std::copy_n(attributeMatrix(xml_ele, "gravity", 1, 6).data(), 6, gravity_);
 		}
@@ -885,8 +885,8 @@ namespace aris
 			}
 		}
 		Akima::~Akima() {}
-		Akima::Akima(Object &father, std::size_t id, const std::string &name, int num, const double *x_in, const double *y_in)
-			: Element(father, id, name)
+		Akima::Akima(const std::string &name, int num, const double *x_in, const double *y_in)
+			: Element(name)
 		{
 			std::list<std::pair<double, double> > data_list;
 
@@ -895,16 +895,16 @@ namespace aris
 				data_list.push_back(std::make_pair(x_in[i], y_in[i]));
 			}
 
-			this->operator=(Akima(father, id, name, data_list));
+			this->operator=(Akima(name, data_list));
 		}
-		Akima::Akima(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Element(father, id, xml_ele)
+		Akima::Akima(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele)
 		{
 			auto mat_x = attributeMatrix(xml_ele, "x");
 			auto mat_y = attributeMatrix(xml_ele, "y");
-			*this = Akima(father, id, xml_ele.name(), std::list<double>(mat_x.begin(), mat_x.end()), std::list<double>(mat_y.begin(), mat_y.end()));
+			*this = Akima(xml_ele.name(), std::list<double>(mat_x.begin(), mat_x.end()), std::list<double>(mat_y.begin(), mat_y.end()));
 		}
-		Akima::Akima(Object &father, std::size_t id, const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in)
-			: Element(father, id, name)
+		Akima::Akima(const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in)
+			: Element(name)
 		{
 			if (x_in.size() != y_in.size())throw std::runtime_error("input x and y must have same length");
 
@@ -920,10 +920,10 @@ namespace aris
 				++pY;
 			}
 
-			this->operator=(Akima(father, id, name, data_list));
+			this->operator=(Akima(name, data_list));
 		}
-		Akima::Akima(Object &father, std::size_t id, const std::string &name, const std::list<std::pair<double, double> > &data_in)
-			: Element(father, id, name)
+		Akima::Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in)
+			: Element(name)
 		{
 			auto data_list = data_in;
 
@@ -985,8 +985,8 @@ namespace aris
 				imp_->_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (imp_->x_[i + 1] - imp_->x_[i]) / (imp_->x_[i + 1] - imp_->x_[i]);
 			}
 		}
-		Akima::Akima(Object &father, std::size_t id, const std::string &name, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope)
-			: Element(father, id, name)
+		Akima::Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope)
+			: Element(name)
 		{
 			auto data_list = data_in;
 
@@ -1306,8 +1306,8 @@ namespace aris
 		}
 		auto Script::clear()->void { return imp_->node_list_.clear(); }
 		Script::~Script() {}
-		Script::Script(Object &father, std::size_t id, const std::string &name) :Element(father, id, name), imp_(new Imp(&model())) {}
-		Script::Script(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(&model()))
+		Script::Script(const std::string &name) :Element(name), imp_(new Imp(&model())) {}
+		Script::Script(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele), imp_(new Imp(&model()))
 		{
 			std::stringstream stream(xml_ele.GetText());
 			std::string line;
@@ -1376,8 +1376,8 @@ namespace aris
 			s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *imp_->pm_);
 		}
 		Marker::~Marker() {}
-		Marker::Marker(Object &father, std::size_t id, const std::string &name, const double *prt_pm, Marker *relative_mak, bool active)
-			: Coordinate(father, id, name, active)
+		Marker::Marker(const std::string &name, const double *prt_pm, Marker *relative_mak, bool active)
+			: Coordinate(name, active)
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			prt_pm = prt_pm ? prt_pm : default_pm_in;
@@ -1392,8 +1392,7 @@ namespace aris
 				std::copy_n(prt_pm, 16, static_cast<double *>(*imp_->prt_pm_));
 			}
 		}
-		Marker::Marker(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: Coordinate(father, id, xml_ele)
+		Marker::Marker(Object &father, const aris::core::XmlElement &xml_ele): Coordinate(father, xml_ele)
 		{
 			double pm[16];
 
@@ -2097,10 +2096,10 @@ namespace aris
 			return *this;
 		}
 		Part::~Part() {}
-		Part::Part(Object &father, std::size_t id, const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active)
-			: Coordinate(father, id, name, active)
+		Part::Part(const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active)
+			: Coordinate(name, active)
 		{
-			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element>>("marker_pool");
+			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
 
 			static const double default_im[36]{
 				1,0,0,0,0,0,
@@ -2129,8 +2128,7 @@ namespace aris
 			setVs(vs);
 			setAs(as);
 		}
-		Part::Part(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: Coordinate(father, id, xml_ele)
+		Part::Part(Object &father, const aris::core::XmlElement &xml_ele): Coordinate(father, xml_ele)
 		{
 			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), *pm());
 			std::copy_n(attributeMatrix(xml_ele, "vel", 1, 6).data(), 6, vs());
@@ -2257,8 +2255,8 @@ namespace aris
 		auto Motion::slaID()const->std::size_t { return imp_->sla_id_;}
 		auto Motion::phyID()const->std::size_t { return imp_->phy_id_;}
 		Motion::~Motion() {}
-		Motion::Motion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, int component_axis, const double *frc_coe, bool active)
-			: Constraint(father, id, name, makI, makJ, active)
+		Motion::Motion(const std::string &name, Marker &makI, Marker &makJ, int component_axis, const double *frc_coe, bool active)
+			: Constraint(name, makI, makJ, active)
 		{
 			static const double default_frc_coe[3]{ 0,0,0 };
 			frc_coe = frc_coe ? frc_coe : default_frc_coe;
@@ -2355,12 +2353,8 @@ namespace aris
 		auto GeneralMotion::motFce() const->const double6&{ return imp_->mot_fce_; }
 		auto GeneralMotion::setMotFce(const double * mot_fce)->void { std::copy(mot_fce, mot_fce + 6, imp_->mot_fce_); }
 		GeneralMotion::~GeneralMotion() {}
-		GeneralMotion::GeneralMotion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active):Constraint(father, id, name, makI, makJ, active){}
-		GeneralMotion::GeneralMotion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			:Constraint(father, id, xml_ele)
-		{
-			std::cout << xml_ele.name()<<std::endl;
-		}
+		GeneralMotion::GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active):Constraint(name, makI, makJ, active){}
+		GeneralMotion::GeneralMotion(Object &father, const aris::core::XmlElement &xml_ele):Constraint(father, xml_ele){}
 
 		struct Model::Imp
 		{
@@ -3027,7 +3021,7 @@ namespace aris
 				}
 				else
 				{
-					aki->operator=(Akima(aki->father(), aki->id(), aki->name(), time_akima_data, pos_akima_data.at(i)));
+					aki->operator=(Akima(aki->name(), time_akima_data, pos_akima_data.at(i)));
 				}
 			}
 
@@ -3045,7 +3039,7 @@ namespace aris
 					}
 					else
 					{
-						aki->operator=(Akima(aki->father(), aki->id(), aki->name(), time_akima_data, pos_akima_data_gm.at(i * 6 + j)));
+						aki->operator=(Akima(aki->name(), time_akima_data, pos_akima_data_gm.at(i * 6 + j)));
 					}
 				}
 			}
@@ -3159,7 +3153,7 @@ namespace aris
 			imp_->ground_ = &imp_->part_pool_->add<Part>("ground");
 		}
 		
-		Motion::Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Constraint(father, id, xml_ele)
+		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) : Constraint(father, xml_ele)
 		{
 			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
 			imp_->component_axis_ = attributeInt32(xml_ele, "component");
@@ -3186,8 +3180,8 @@ namespace aris
 				
 		}
 
-		RevoluteJoint::RevoluteJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ)
-			: JointTemplate(father, id, name, makI, makJ)
+		RevoluteJoint::RevoluteJoint(const std::string &name, Marker &makI, Marker &makJ)
+			: JointTemplate(name, makI, makJ)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3201,8 +3195,8 @@ namespace aris
 
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
-		RevoluteJoint::RevoluteJoint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: JointTemplate(father, id, xml_ele)
+		RevoluteJoint::RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele)
+			: JointTemplate(father, xml_ele)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3217,8 +3211,8 @@ namespace aris
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 
-		TranslationalJoint::TranslationalJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ)
-			: JointTemplate(father, id, name, makI, makJ)
+		TranslationalJoint::TranslationalJoint(const std::string &name, Marker &makI, Marker &makJ)
+			: JointTemplate(name, makI, makJ)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3232,8 +3226,7 @@ namespace aris
 
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
-		TranslationalJoint::TranslationalJoint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: JointTemplate(father, id, xml_ele)
+		TranslationalJoint::TranslationalJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3327,8 +3320,8 @@ namespace aris
 			s_inv_tv(*makI().prtPm(), tem_v1, tem_v2);
 			csa_[3] += v[0] * tem_v2[4] + v[1] * tem_v2[5];
 		}
-		UniversalJoint::UniversalJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ)
-			: JointTemplate(father, id, name, makI, makJ)
+		UniversalJoint::UniversalJoint(const std::string &name, Marker &makI, Marker &makJ)
+			: JointTemplate(name, makI, makJ)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3342,8 +3335,8 @@ namespace aris
 
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
-		UniversalJoint::UniversalJoint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: JointTemplate(father, id, xml_ele)
+		UniversalJoint::UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele)
+			: JointTemplate(father, xml_ele)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3358,8 +3351,8 @@ namespace aris
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
 
-		SphericalJoint::SphericalJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ)
-			: JointTemplate(father, id, name, makI, makJ)
+		SphericalJoint::SphericalJoint(const std::string &name, Marker &makI, Marker &makJ)
+			: JointTemplate(name, makI, makJ)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3373,8 +3366,8 @@ namespace aris
 
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
 		}
-		SphericalJoint::SphericalJoint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: JointTemplate(father, id, xml_ele)
+		SphericalJoint::SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele)
+			: JointTemplate(father, xml_ele)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3434,13 +3427,13 @@ namespace aris
 			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), pm_M2N);
 			s_tf(-1, pm_M2N, fceI_, 0, fceJ_);
 		}
-		SingleComponentForce::SingleComponentForce(Object &father, std::size_t id, const std::string &name, Marker& makI, Marker& makJ, int componentID)
-			: Force(father, id, name, makI, makJ), component_axis_(componentID)
+		SingleComponentForce::SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, int componentID)
+			: Force(name, makI, makJ), component_axis_(componentID)
 		{
 
 		}
-		SingleComponentForce::SingleComponentForce(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-			: Force(father, id, xml_ele), component_axis_(attributeInt32(xml_ele,"component"))
+		SingleComponentForce::SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele)
+			: Force(father, xml_ele), component_axis_(attributeInt32(xml_ele,"component"))
 		{
 		}
 	}

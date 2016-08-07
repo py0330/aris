@@ -55,8 +55,8 @@ namespace aris
 			auto dataProtector()->SensorDataProtector;
 
 			virtual ~Sensor();
-			Sensor(Object &father, std::size_t id, const std::string &name, std::function<SensorData*()> new_func);
-			Sensor(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele, std::function<SensorData*()> new_func);
+			Sensor(const std::string &name, std::function<SensorData*()> new_func);
+			Sensor(Object &father, const aris::core::XmlElement &xml_ele, std::function<SensorData*()> new_func);
 
 		protected:
 			virtual auto init()->void {}
@@ -78,8 +78,8 @@ namespace aris
 		template<class DataType> class SensorTemplate :public Sensor
 		{
 		public:
-			SensorTemplate(Object &father, std::size_t id, const std::string &name) :Sensor(father, id, name, []()->SensorData* {return new DataType; }) {}
-			SensorTemplate(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Sensor(father, id, xml_ele, []()->SensorData* {return new DataType; }) {}
+			SensorTemplate(const std::string &name) :Sensor(name, []()->SensorData* {return new DataType; }) {}
+			SensorTemplate(Object &father, const aris::core::XmlElement &xml_ele) :Sensor(father, xml_ele, []()->SensorData* {return new DataType; }) {}
 		};
 
 		class SensorRoot:public aris::core::Root

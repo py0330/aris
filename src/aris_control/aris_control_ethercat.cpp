@@ -257,8 +257,8 @@ namespace aris
 			}
 		}
 		DataLogger::~DataLogger() = default;
-		DataLogger::DataLogger(Object &father, std::size_t id, const std::string &name) :Element(father, id, name), imp_(new Imp) {}
-		DataLogger::DataLogger(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Element(father, id, xml_ele), imp_(new Imp) {}
+		DataLogger::DataLogger(const std::string &name) :Element(name), imp_(new Imp) {}
+		DataLogger::DataLogger(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) {}
 
 		auto Element::master()->Master & { return static_cast<Master &>(root()); }
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
@@ -573,7 +573,7 @@ namespace aris
 			ecrt_master_sdo_download(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
 #endif
 		}
-		Sdo::Sdo(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :DO(father, id, xml_ele)
+		Sdo::Sdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele)
 		{
 			if (attributeBool(xml_ele, "read", true))imp_->option_ |= READ; else imp_->option_ &= ~READ;
 			if (attributeBool(xml_ele, "write", true))imp_->option_ |= WRITE; else imp_->option_ &= ~WRITE;
@@ -617,7 +617,7 @@ namespace aris
 		auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 		auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
-		PdoGroup::PdoGroup(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ObjectPool(father, id, xml_ele)
+		PdoGroup::PdoGroup(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele)
 		{
 			imp_->index_ = attributeUint16(xml_ele, "index");
 			imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
@@ -633,7 +633,7 @@ namespace aris
 		auto SlaveType::venderID()const->std::uint32_t { return imp_->vender_id_; }
 		auto SlaveType::alias()const->std::uint16_t { return imp_->alias_; }
 		auto SlaveType::distributedClock()const->std::uint32_t { return imp_->distributed_clock_; }
-		SlaveType::SlaveType(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele)
+		SlaveType::SlaveType(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
 		{
 			//load product id...
 			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
@@ -943,7 +943,7 @@ namespace aris
 			writeSdo(sdo_ID, value);
 		}
 		Slave::~Slave() = default;
-		Slave::Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(this))
+		Slave::Slave(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele), imp_(new Imp(this))
 		{
 			if (master().findByName("slave_type_pool") == master().end())
 			{
@@ -955,7 +955,7 @@ namespace aris
 			{
 				throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
 			}
-			imp_->slave_type_ = static_cast<SlaveType*>(&add(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"))));
+			imp_->slave_type_ = &add<SlaveType>(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type")));
 			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("pdo_group_pool"));
 			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("sdo_pool"));
 

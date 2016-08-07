@@ -14,14 +14,13 @@ namespace aris
 		class Pipe:public aris::core::Object
 		{
 		public:
-			auto sendMsg(const aris::core::MsgBase &)->void;
-			auto recvMsg(aris::core::MsgBase &)->void;
+			auto sendMsg(const aris::core::MsgBase &)->bool;
+			auto recvMsg(aris::core::MsgBase &)->bool;
 
 
 			virtual ~Pipe();
-			Pipe();
-			Pipe(Object &father, std::size_t id, const std::string &name, bool is_block = true, std::size_t pool_size = 16384);
-			Pipe(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Pipe(const std::string &name = "pipe", bool is_block = true, std::size_t pool_size = 16384);
+			Pipe(Object &father, const aris::core::XmlElement &xml_ele);
 			Pipe(const Pipe&) = delete;
 			Pipe(Pipe&&);
 			Pipe& operator=(const Pipe&) = delete;

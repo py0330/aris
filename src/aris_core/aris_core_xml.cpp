@@ -114,52 +114,13 @@ namespace aris
 		{
 			return const_cast<Object *>(this)->findByName(name);
 		}
-		auto Object::add(const Object &object)->Object &
-		{
-			if (root().imp_->type_map_.find(object.type()) == root().imp_->type_map_.end())
-			{
-				throw std::runtime_error("unrecognized type \"" + object.type()	+ "\" when add object \"" + object.name() + "\" to \"" + name() + "\"");
-			}
-			else
-			{
-				push_back_ptr(root().imp_->type_map_.find(object.type())->second.copy_construct_func(object));
-				back().imp_->id_ = size() - 1;
-				back().imp_->name_ = object.name();
-				back().imp_->father_ = this;
-
-				return back();
-			}
-		}
-		auto Object::add(Object &&object)->Object &
-		{
-			if (root().imp_->type_map_.find(object.type()) == root().imp_->type_map_.end())
-			{
-				throw std::runtime_error("unrecognized type \"" + object.type()	+ "\" when add object \"" + object.name() + "\" to \"" + name() + "\"");
-			}
-			else
-			{
-				push_back_ptr(root().imp_->type_map_.find(object.type())->second.move_construct_func(std::move(object)));
-				back().imp_->id_ = size() - 1;
-				back().imp_->name_ = object.name();
-				back().imp_->father_ = this;
-
-				return back();
-			}
-		}
 		auto Object::add(Object *obj)->Object &
 		{
-			if (root().imp_->type_map_.find(obj->type()) == root().imp_->type_map_.end())
-			{
-				throw std::runtime_error("unrecognized type \"" + obj->type() + "\" when add object \"" + obj->name() + "\" to \"" + name() + "\"");
-			}
-			else
-			{
-				push_back_ptr(obj);
-				back().imp_->id_ = size() - 1;
-				back().imp_->father_ = this;
+			push_back_ptr(obj);
+			back().imp_->id_ = size() - 1;
+			back().imp_->father_ = this;
 
-				return back();
-			}
+			return back();
 		}
 		auto Object::add(const aris::core::XmlElement &xml_ele)->Object &
 		{
@@ -172,7 +133,11 @@ namespace aris
 			}
 			else
 			{
-				push_back_ptr(root().imp_->type_map_.find(type)->second.xml_construct_func(*this, size(), xml_ele));
+				push_back_ptr(root().imp_->type_map_.find(type)->second.xml_construct_func(*this, xml_ele));
+				back().imp_->id_ = size() - 1;
+				back().imp_->father_ = this;
+				
+
 				return back();
 			}
 		}
@@ -461,10 +426,9 @@ namespace aris
 		}
 		Object::~Object() = default;
 		Object::Object(const std::string &name) : imp_(new Imp(nullptr, 0, name)) {}
-		Object::Object(Object &father, std::size_t id, const std::string &name) : imp_(new Imp(&father, id, name)) {}
-		Object::Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : imp_(new Imp(&father, id, xml_ele))
+		Object::Object(Object &father, const aris::core::XmlElement &xml_ele) : imp_(new Imp(&father, 0, xml_ele))
 		{
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement()) add(*ele);
 		}
 		Object::Object(const Object &other) :ImpContainer(other), imp_(other.imp_) { for (auto &child : *this)child.imp_->father_ = this; }
 		Object::Object(Object &&other) : ImpContainer(std::move(other)), imp_(std::move(other.imp_)) { for (auto &child : *this)child.imp_->father_ = this; }
@@ -523,14 +487,11 @@ namespace aris
 
 			loadXml(xmlDoc);
 		}
-		auto Root::loadXml(const aris::core::XmlDocument &xml_doc)->void
-		{
-			loadXml(*xml_doc.RootElement());
-		}
+		auto Root::loadXml(const aris::core::XmlDocument &xml_doc)->void{loadXml(*xml_doc.RootElement());}
 		auto Root::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			clear();
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement()) add(*ele);
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
 		}
 		auto Root::saveXml(const std::string &filename) const->void
 		{
@@ -553,7 +514,7 @@ namespace aris
 			saveXml(*root_xml_ele);
 		}
 		Root::~Root() {}
-		Root::Root(const std::string &name) :Object(*this, 0, name) {}
-		Root::Root(const aris::core::XmlElement &xml_ele) :Object(*this, 0, xml_ele) {}
+		Root::Root(const std::string &name) :Object(name) {}
+		Root::Root(const aris::core::XmlElement &xml_ele) :Object(*this, xml_ele) {}
 	}
 }

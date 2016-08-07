@@ -27,8 +27,8 @@ namespace aris
 		public:
 			auto master()->Master &;
 			auto master()const->const Master &;
-			Element(aris::core::Object &father, std::size_t id, const std::string &name) :Object(father, id, name) {}
-			Element(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Object(father, id, xml_ele){}
+			Element(const std::string &name) :Object(name) {}
+			Element(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele){}
 
 		private:
 			friend class Master;
@@ -44,8 +44,8 @@ namespace aris
 			auto logDataRT()->void;
 
 			~DataLogger();
-			DataLogger(Object &father, std::size_t id, const std::string &name);
-			DataLogger(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			DataLogger(const std::string &name);
+			DataLogger(Object &father, const aris::core::XmlElement &xml_ele);
 			DataLogger(const DataLogger &) = delete;
 			DataLogger(DataLogger &&) = delete;
 			DataLogger& operator=(const DataLogger &) = delete;
@@ -83,7 +83,7 @@ namespace aris
 			std::uint32_t offset_;
 			Slave *slave_;
 
-			DO(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele):Element(father, id, xml_ele)
+			DO(Object &father, const aris::core::XmlElement &xml_ele):Element(father, xml_ele)
 			{
 				index_ = attributeUint16(xml_ele, "index");
 				subindex_ = attributeUint8(xml_ele, "subindex");
@@ -142,7 +142,7 @@ namespace aris
 			auto write(std::uint32_t value)->void;
 			auto write(std::uint16_t value)->void;
 			auto write(std::uint8_t value)->void;
-			Pdo(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele):DO(father, id, xml_ele){}
+			Pdo(Object &father, const aris::core::XmlElement &xml_ele):DO(father, xml_ele){}
 		};
 		class Sdo :public DO
 		{
@@ -183,7 +183,7 @@ namespace aris
 			auto write(std::uint32_t value)->void;
 			auto write(std::uint16_t value)->void;
 			auto write(std::uint8_t value)->void;
-			Sdo(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Sdo(Object &father, const aris::core::XmlElement &xml_ele);
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
@@ -198,7 +198,7 @@ namespace aris
 			auto tx()const->bool;
 			auto rx()const->bool;
 			auto index()const->std::uint16_t;
-			PdoGroup(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			PdoGroup(Object &father, const aris::core::XmlElement &xml_ele);
 
 		private:
 			struct Imp;
@@ -216,7 +216,7 @@ namespace aris
 			auto alias()const->std::uint16_t;
 			auto distributedClock()const->std::uint32_t;
 
-			SlaveType(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			SlaveType(Object &father, const aris::core::XmlElement &xml_ele);
 
 		private:
 			struct Imp;
@@ -324,7 +324,7 @@ namespace aris
             auto configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void;
             auto configSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void;
 			virtual ~Slave();
-			Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Slave(Object &father, const aris::core::XmlElement &xml_ele);
 			Slave(const Slave &other) = delete;
 			Slave(Slave &&other) = delete;
 			Slave& operator=(const Slave &other) = delete;
@@ -397,7 +397,7 @@ namespace aris
 			virtual auto txTypeSize()const->std::size_t override { return sizeof(TxType); }
 			virtual auto rxTypeSize()const->std::size_t override { return sizeof(RxType); }
 
-			SlaveTemplate(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Slave(father, id, xml_ele)
+			SlaveTemplate(Object &father, const aris::core::XmlElement &xml_ele) :Slave(father, xml_ele)
 			{
 				static_assert(std::is_base_of<Slave::TxType, TxType>(), "\"TxDataType\" must be derived from \"TxData\"");
 				static_assert(std::is_base_of<Slave::RxType, RxType>(), "\"RxDataType\" must be derived from \"RxData\"");

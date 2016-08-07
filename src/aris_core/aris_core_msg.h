@@ -104,6 +104,7 @@ namespace aris
 			friend class MsgRT;
 			template<std::size_t CAPACITY> friend class MsgFix;
 			friend class Socket;
+			friend class Pipe;
 			template<typename T> friend class aris::control::Pipe;
 		};
 		class Msg final :public MsgBase

@@ -81,8 +81,8 @@ namespace aris
 			auto setOnReceiveError(std::function<void(Socket*)> = nullptr)->void;
 
 			virtual ~Socket();
-			Socket(Object &father, std::size_t id, const std::string &name, const std::string& remote_ip = std::string(), const std::string& port = std::string());
-			Socket(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Socket(const std::string &name, const std::string& remote_ip = std::string(), const std::string& port = std::string());
+			Socket(Object &father, const aris::core::XmlElement &xml_ele);
 			Socket(const Socket & other) = delete;
 			Socket(Socket && other) = delete;
 			Socket &operator=(const Socket& other) = delete;
