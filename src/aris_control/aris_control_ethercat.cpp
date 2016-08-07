@@ -150,9 +150,8 @@ namespace aris
 		};
 		Master *Master::Imp::instance{ nullptr };
 
-		class DataLogger::Imp
+		struct DataLogger::Imp
 		{
-		public:
 			Pipe<void *> log_pipe_{ false };
 			std::size_t log_data_size_{ 0 };
 			std::unique_ptr<char[]> log_data_;

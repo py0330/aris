@@ -68,7 +68,7 @@ const char xml_data[] =
 "</root>";
 
 
-void test_command()
+void test_core_command()
 {
 	try
 	{

@@ -8,7 +8,7 @@ using namespace aris::core;
 
 const double error = 1e-10;
 
-void test_xml()
+void test_core_xml()
 {
 	std::cout << aris::core::logExeName() << std::endl;
 	std::cout << aris::core::logFileName() << std::endl;

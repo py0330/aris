@@ -240,6 +240,7 @@ namespace aris
 			auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, char default_value)const->char;
 
 			virtual ~Object();
+			Object(const std::string &name = "object");
 			Object(Object &father, std::size_t id, const std::string &name);
 			Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 			Object(const Object &);

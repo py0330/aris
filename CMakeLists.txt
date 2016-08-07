@@ -46,7 +46,7 @@ set(CMAKE_BUILD_TYPE "Release")
 
 # set compile options
 if(UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread")
 endif(UNIX)
 
 # set definitions to disable some warning
@@ -98,7 +98,7 @@ link_directories(${ALL_LINK_DIR})
 
 
 # aris core project
-set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_expression_calculator aris_core_msg_loop aris_core_xml tinyxml2)
+set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_msg_loop aris_core_xml tinyxml2)
 PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
 PREPEND_H(FULL_H src/aris_core ${SOURCE})
 add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h)
@@ -143,7 +143,7 @@ target_link_libraries(test_dynamic ${ALL_LINK_LIB})
 add_test(NAME test_dynamic COMMAND test_dynamic)
 set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_core_xml.h test_core_xml.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
+set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_msg.h test_core_msg.cpp test_core_xml.h test_core_xml.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
 PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
 add_executable(test_core ${FULL_SRC})
 target_link_libraries(test_core ${ALL_LINK_LIB})

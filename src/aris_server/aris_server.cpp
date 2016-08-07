@@ -22,6 +22,8 @@ namespace aris
 {
 	namespace server
     {
+		enum { RT_MSG_SIZE = 8096};
+		
 		class ControlServer::Imp
 		{
 		public:
@@ -61,7 +63,7 @@ namespace aris
 
 			// 实时循环中的步态参数 //
 			enum { CMD_POOL_SIZE = 50 };
-			char cmd_queue_[CMD_POOL_SIZE][aris::core::MsgRT::RT_MSG_SIZE];
+			char cmd_queue_[CMD_POOL_SIZE][RT_MSG_SIZE];
 			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 0 };
 
 			// 储存上一次slave的数据 //

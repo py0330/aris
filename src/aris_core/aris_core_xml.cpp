@@ -198,8 +198,7 @@ namespace aris
 		}
 		auto Object::attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, bool default_value)const->bool
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeBool(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeBool(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int64_t
 		{
@@ -219,8 +218,7 @@ namespace aris
 		}
 		auto Object::attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int64_t default_value)const->std::int64_t
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeInt64(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeInt64(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int32_t
 		{
@@ -245,8 +243,7 @@ namespace aris
 		}
 		auto Object::attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int32_t default_value)const->std::int32_t
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeInt32(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeInt32(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int16_t
 		{
@@ -271,8 +268,7 @@ namespace aris
 		}
 		auto Object::attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int16_t default_value)const->std::int16_t
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeInt16(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeInt16(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int8_t
 		{
@@ -297,8 +293,7 @@ namespace aris
 		}
 		auto Object::attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int8_t default_value)const->std::int8_t
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeInt8(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeInt8(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint64_t
 		{
@@ -318,8 +313,7 @@ namespace aris
 		}
 		auto Object::attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint64_t default_value)const->std::uint64_t
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeUint64(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeUint64(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint32_t
 		{
@@ -344,8 +338,7 @@ namespace aris
 		}
 		auto Object::attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint32_t default_value)const->std::uint32_t
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeUint32(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeUint32(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint16_t
 		{
@@ -370,8 +363,7 @@ namespace aris
 		}
 		auto Object::attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint16_t default_value)const->std::uint16_t
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeUint16(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeUint16(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint8_t
 		{
@@ -396,8 +388,7 @@ namespace aris
 		}
 		auto Object::attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint8_t default_value)const->std::uint8_t
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeUint8(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeUint8(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->float
 		{
@@ -417,8 +408,7 @@ namespace aris
 		}
 		auto Object::attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, float default_value)const->float
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeFloat(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeFloat(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->double
 		{
@@ -438,8 +428,7 @@ namespace aris
 		}
 		auto Object::attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, double default_value)const->double
 		{
-			if (!xml_ele.Attribute(attribute_name.c_str()))return default_value;
-			else return attributeDouble(xml_ele, attribute_name);
+			return xml_ele.Attribute(attribute_name.c_str()) ? attributeDouble(xml_ele, attribute_name) : default_value;
 		}
 		auto Object::attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::string
 		{
@@ -470,7 +459,16 @@ namespace aris
 		{
 			return xml_ele.Attribute(attribute_name.c_str()) ? attributeChar(xml_ele, attribute_name) : default_value;
 		}
-		auto Object::operator=(const Object &other)->Object &
+		Object::~Object() = default;
+		Object::Object(const std::string &name) : imp_(new Imp(nullptr, 0, name)) {}
+		Object::Object(Object &father, std::size_t id, const std::string &name) : imp_(new Imp(&father, id, name)) {}
+		Object::Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : imp_(new Imp(&father, id, xml_ele))
+		{
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
+		}
+		Object::Object(const Object &other) :ImpContainer(other), imp_(other.imp_) { for (auto &child : *this)child.imp_->father_ = this; }
+		Object::Object(Object &&other) : ImpContainer(std::move(other)), imp_(std::move(other.imp_)) { for (auto &child : *this)child.imp_->father_ = this; }
+		Object& Object::operator=(const Object &other)
 		{
 			Object *father = imp_->father_;
 			std::size_t id = imp_->id_;
@@ -489,7 +487,7 @@ namespace aris
 
 			return *this;
 		}
-		auto Object::operator=(Object &&other)->Object &
+		Object& Object::operator=(Object &&other)
 		{
 			Object *father = imp_->father_;
 			std::size_t id = imp_->id_;
@@ -507,14 +505,6 @@ namespace aris
 			}
 
 			return *this;
-		}
-		Object::~Object() = default;
-		Object::Object(const Object &other) :ImpContainer(other), imp_(other.imp_) { for (auto &child : *this)child.imp_->father_ = this; }
-		Object::Object(Object &&other) : ImpContainer(std::move(other)), imp_(std::move(other.imp_)) { for (auto &child : *this)child.imp_->father_ = this; }
-		Object::Object(Object &father, std::size_t id, const std::string &name) : imp_(new Imp(&father, id, name)) {}
-		Object::Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :imp_(new Imp(&father, id, xml_ele))
-		{
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
 		}
 
 		auto Root::TypeInfo::registerTo(const std::string &type, Root &root)->void
