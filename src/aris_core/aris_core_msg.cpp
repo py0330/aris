@@ -51,6 +51,7 @@ namespace aris
 			LogFile()
 			{
 				begin_time_ = std::chrono::system_clock::now();
+				createLogDir();
 				file_name_ = logDirPath() + logExeName() + "_" + logFileTimeFormat(begin_time_) + "_log.txt";
 
 				file_.close();

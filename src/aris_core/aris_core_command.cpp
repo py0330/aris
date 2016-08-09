@@ -402,7 +402,7 @@ namespace aris
 		}
 		CommandParser::CommandParser(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) 
 		{
-			imp_->command_pool_ = findByName("command_pool") == end() ? &add<aris::core::ObjectPool<Command>>("command_pool") : static_cast<aris::core::ObjectPool<Command> *>(&(*findByName("command_pool")));
+			imp_->command_pool_ = findByName("command_pool") == children().end() ? &add<aris::core::ObjectPool<Command>>("command_pool") : static_cast<aris::core::ObjectPool<Command> *>(&(*findByName("command_pool")));
 		}
 		CommandParser::CommandParser(const CommandParser &) = default;
 		CommandParser::CommandParser(CommandParser &&) = default;

@@ -635,7 +635,6 @@ namespace aris
 		auto SlaveType::distributedClock()const->std::uint32_t { return imp_->distributed_clock_; }
 		SlaveType::SlaveType(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
 		{
-			//load product id...
 			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
 			imp_->vender_id_ = attributeUint32(xml_ele, "vender_id");
 			imp_->alias_ = attributeUint16(xml_ele, "alias");
@@ -945,7 +944,7 @@ namespace aris
 		Slave::~Slave() = default;
 		Slave::Slave(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele), imp_(new Imp(this))
 		{
-			if (master().findByName("slave_type_pool") == master().end())
+			if (master().findByName("slave_type_pool") == master().children().end())
 			{
 				throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
 			}
@@ -1047,9 +1046,9 @@ namespace aris
 		{
 			Root::loadXml(xml_ele);
 
-			imp_->data_logger_ = findByName("data_logger") == end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
-			imp_->slave_type_pool_ = findByName("slave_type_pool") == end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
-			imp_->slave_pool_ = findByName("slave_pool") == end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
+			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
+			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
+			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
 			imp_->tx_data_pool_.clear();
 			imp_->rx_data_pool_.clear();
 			for (auto &slave : slavePool())

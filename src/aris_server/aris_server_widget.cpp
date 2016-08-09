@@ -40,8 +40,8 @@ namespace aris
 		{
 			Root::loadXml(xml_ele);
 
-			imp_->command_socket_ = findByName("command_socket") == end() ? &add<aris::core::Socket>("command_socket") : static_cast<aris::core::Socket*>(&(*findByName("command_socket")));
-			imp_->command_parser_ = findByName("command_parser") == end() ? &add<aris::core::CommandParser >("command_parser") : static_cast<aris::core::CommandParser *>(&(*findByName("command_parser")));
+			imp_->command_socket_ = findByName("command_socket") == children().end() ? &add<aris::core::Socket>("command_socket") : static_cast<aris::core::Socket*>(&(*findByName("command_socket")));
+			imp_->command_parser_ = findByName("command_parser") == children().end() ? &add<aris::core::CommandParser >("command_parser") : static_cast<aris::core::CommandParser *>(&(*findByName("command_parser")));
 		}
 		auto WidgetRoot::commandSocket()->aris::core::Socket& { return *imp_->command_socket_; }
 		auto WidgetRoot::commandSocket()const->const aris::core::Socket&{ return *imp_->command_socket_; }

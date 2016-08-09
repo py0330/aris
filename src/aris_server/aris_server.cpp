@@ -22,8 +22,6 @@ namespace aris
 {
 	namespace server
     {
-		enum { RT_MSG_SIZE = 8096};
-		
 		class ControlServer::Imp
 		{
 		public:
@@ -34,7 +32,6 @@ namespace aris
 
 			auto tg()->void;
             auto checkError()->int;
-            auto checkMotionStatus()->void;
 			auto executeCmd()->int;
 			auto enable()->int;
 			auto disable()->int;
@@ -63,7 +60,7 @@ namespace aris
 
 			// 实时循环中的步态参数 //
 			enum { CMD_POOL_SIZE = 50 };
-			char cmd_queue_[CMD_POOL_SIZE][RT_MSG_SIZE];
+			char cmd_queue_[CMD_POOL_SIZE][aris::core::MsgRT::RT_MSG_SIZE];
 			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 0 };
 
 			// 储存上一次slave的数据 //
@@ -269,7 +266,6 @@ namespace aris
         {
 			// 检查是否出错 //
             if (checkError())return;
-            //checkMotionStatus();
 
 			// 查看是否有新cmd //
             if (msg_pipe_.recvInRT(aris::core::MsgRT::instance()[0]) > 0)
@@ -339,29 +335,6 @@ namespace aris
 
 			return fault_count;
 		}
-        auto ControlServer::Imp::checkMotionStatus()->void
-        {
-            for (auto &motion : model_->motionPool())
-            {
-                auto &rx_motion_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(motion.slaID()));
-                if(rx_motion_data.fault_warning==0)
-                    continue;
-                else
-                {
-                    rt_printf("Motor %d (sla id) has wrong status:%d\n", motion.slaID(), rx_motion_data.fault_warning);
-                    rt_printf("The status using ABS sequence are:\n");
-                    for (auto &motion : model_->motionPool())
-                    {
-                        auto &rx_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(motion.slaID()));
-                        rt_printf("%d\t", rx_data.fault_warning);
-                    }
-                    rt_printf("\n");
-                    return;
-                }
-            }
-
-        }
-
 		auto ControlServer::Imp::executeCmd()->int
 		{
 			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_queue_[current_cmd_]);
@@ -706,6 +679,15 @@ namespace aris
 			});
 			widgetRoot().commandSocket().setOnReceivedRequest([this](aris::core::Socket *sock, aris::core::Msg &msg)
 			{
+				if (msg.data()[msg.size()] != 0) 
+				{
+					aris::core::log(std::string("received data but it's not a string, because last char is no \\0"));
+				}
+				else
+				{
+					aris::core::log(std::string("received data : \"") + msg.data() + "\"");
+				}
+				
 				return imp_->onReceiveMsg(msg);
 			});
 			widgetRoot().commandSocket().setOnLoseConnection([this](aris::core::Socket *sock)
@@ -762,7 +744,7 @@ namespace aris
 				{
 					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
 				}
-                else if (widgetRoot().commandParser().commandPool().findByName(cmd_name) == widgetRoot().commandParser().end())
+                else if (widgetRoot().commandParser().commandPool().findByName(cmd_name) == widgetRoot().commandParser().children().end())
 				{
 					throw std::runtime_error(std::string("failed to add command, because xml does not have \"") + cmd_name + "\" node");
 				}

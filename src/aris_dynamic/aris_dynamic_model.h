@@ -36,7 +36,7 @@ namespace aris
 		class Element :public aris::core::Object
 		{
 		public:
-			virtual auto saveAdams(std::ofstream &file) const->void { for (auto &ele : *this)static_cast<const Element &>(ele).saveAdams(file); }
+			virtual auto saveAdams(std::ofstream &file) const->void { for (auto &ele : children())static_cast<const Element &>(ele).saveAdams(file); }
 			virtual auto adamsID()const->std::size_t { return id() + 1; }
 			virtual auto adamsType()const->const std::string &{ return type(); }
 			virtual auto adamsScriptType()const->const std::string &{ return adamsType(); }

@@ -107,7 +107,7 @@ namespace aris
 		auto SensorRoot::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			Root::loadXml(xml_ele);
-			imp_->sensor_pool_ = findByName("sensor_pool") == end() ? &add<aris::core::ObjectPool<Sensor> >("sensor_pool") : static_cast<aris::core::ObjectPool<Sensor> *>(&(*findByName("sensor_pool")));
+			imp_->sensor_pool_ = findByName("sensor_pool") == children().end() ? &add<aris::core::ObjectPool<Sensor> >("sensor_pool") : static_cast<aris::core::ObjectPool<Sensor> *>(&(*findByName("sensor_pool")));
 		}
 		auto SensorRoot::sensorPool()->aris::core::ObjectPool<Sensor>&{	return *imp_->sensor_pool_;}
 		auto SensorRoot::sensorPool()const->const aris::core::ObjectPool<Sensor> &{	return *imp_->sensor_pool_; }

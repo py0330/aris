@@ -4,10 +4,6 @@
 
 using namespace aris::dynamic;
 
-
-
-
-
 void test_coordinate()
 {
 	aris::dynamic::Model model;

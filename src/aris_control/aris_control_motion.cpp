@@ -342,17 +342,6 @@ namespace aris
             int home_period{0};
             std::uint8_t running_mode{ 9 };
         };
-
-        Motion::~Motion() {}
-        Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, xml_ele), imp_(new Motion::Imp(this))
-        {
-            imp_->input2count_ = attributeInt32(xml_ele, "input2count");
-            imp_->max_pos = attributeDouble(xml_ele, "max_pos");
-            imp_->min_pos = attributeDouble(xml_ele, "min_pos");
-            imp_->max_vel = attributeDouble(xml_ele, "max_vel");
-            imp_->home_count_ = static_cast<std::int32_t>(attributeDouble(xml_ele, "home_pos") * imp_->input2count_);
-            configSdoIndex(Imp::HOMEOFFSET, 0x00, static_cast<std::int32_t>(-imp_->home_count_));
-        }
         auto Motion::readUpdate()->void
         {
             rxData().feedback_tor = static_cast<double>(imp_->tor());
@@ -411,5 +400,15 @@ namespace aris
         auto Motion::minPos()->double { return imp_->min_pos; }
         auto Motion::maxVel()->double { return imp_->max_vel; }
         auto Motion::pos2countRatio()->std::int32_t { return imp_->input2count_; }
+		Motion::~Motion() = default;
+		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, xml_ele), imp_(new Motion::Imp(this))
+		{
+			imp_->input2count_ = attributeInt32(xml_ele, "input2count");
+			imp_->max_pos = attributeDouble(xml_ele, "max_pos");
+			imp_->min_pos = attributeDouble(xml_ele, "min_pos");
+			imp_->max_vel = attributeDouble(xml_ele, "max_vel");
+			imp_->home_count_ = static_cast<std::int32_t>(attributeDouble(xml_ele, "home_pos") * imp_->input2count_);
+			configSdoIndex(Imp::HOMEOFFSET, 0x00, static_cast<std::int32_t>(-imp_->home_count_));
+		}
     }
 }

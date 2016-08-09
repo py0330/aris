@@ -7,6 +7,12 @@ using namespace aris::core;
 
 void test_core_msg()
 {
+	std::cout << aris::core::logExeName() << std::endl;
+	std::cout << aris::core::logFileName() << std::endl;
+	std::cout << aris::core::logDirPath() << std::endl;
+	std::cout << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) << std::endl;
+	
+	
 	struct A
 	{
 		char str[12];
