@@ -73,8 +73,7 @@ void test_command()
 	try
 	{
 		aris::core::XmlDocument xml_doc;
-        //xml_doc.Parse(xml_data);
-		xml_doc.LoadFile("c:\\aris\\test_command.xml");
+        xml_doc.Parse(xml_data);
 
 		aris::core::Root root;
 		root.registerChildType<aris::core::Param>();

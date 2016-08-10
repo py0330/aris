@@ -15,8 +15,10 @@ namespace aris
 		class ParamBase :public ObjectPool<ParamBase>
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type("parambase"); return std::ref(type); }
+			virtual auto type() const->const std::string&{ return Type(); }
 			auto command()const->const Command &;
-			//auto help()const->const std::string &;
+			auto help()const->const std::string &;
 			ParamBase(Object &father, std::size_t id, const std::string &name);
 			ParamBase(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
@@ -41,7 +43,6 @@ namespace aris
 			auto abbreviation()->char;
 			auto abbreviation()const->char;
 			auto defaultParam()const->const std::string &;
-			auto help()const->const std::string &;
 			
 			virtual ~Param();
 			Param(Object &father, std::size_t id, const std::string &name);
