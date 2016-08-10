@@ -16,12 +16,13 @@ namespace aris
 		{
 		public:
 			auto command()const->const Command &;
-			
+			//auto help()const->const std::string &;
 			ParamBase(Object &father, std::size_t id, const std::string &name);
 			ParamBase(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 
 		protected:
 			auto isTaken()->bool;
+
 			virtual auto take()->void;
 			virtual auto reset()->void;
 			virtual auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void = 0;
@@ -38,6 +39,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("Param"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto abbreviation()->char;
+			auto abbreviation()const->char;
 			auto defaultParam()const->const std::string &;
 			auto help()const->const std::string &;
 			
@@ -110,7 +112,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("Command"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			auto defaultParam()const->const std::string &;
-			auto help()const->std::string;
+			auto help(bool isAll)const->std::string;
 			virtual ~Command();
 			Command(Object &father, std::size_t id, const std::string &name);
 			Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
