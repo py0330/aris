@@ -27,6 +27,7 @@
 #include <thread>
 #include <chrono>
 #include <condition_variable>
+#include <future>
 
 #include "aris_control_ethercat.h"
 
@@ -162,15 +163,17 @@ namespace aris
 		auto DataLogger::prepair(const std::string &log_file_name)->void
 		{
 			std::unique_lock<std::mutex> prepair_lck(imp_->mu_prepair_);
-            std::unique_lock<std::mutex> ready_lck(imp_->mu_ready_);
             std::unique_lock<std::mutex> running_lck(imp_->mu_running_, std::try_to_lock);
-            if(!running_lck.owns_lock())throw std::runtime_error("failed to prepair pipe, it's still logging");
+            if(!running_lck.owns_lock())throw std::runtime_error("failed to prepair pipe, because it's started already");
             running_lck.unlock();
             running_lck.release();
 
 			auto file_name = aris::core::logDirPath() + (log_file_name.empty() ? "logdata_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + ".txt" : log_file_name);
 
-			std::thread([this, file_name]()
+			std::promise<void> thread_ready;
+			auto fut = thread_ready.get_future();
+
+			std::thread([this, file_name](std::promise<void> thread_ready)
 			{
                 std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 
@@ -188,7 +191,7 @@ namespace aris
 				//ÇåÀí¸É¾»pipe
 				while (imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_)>0);
 				imp_->is_receiving_ = true;
-                imp_->cv_ready_.notify_one();
+				thread_ready.set_value();
 
 				while (imp_->is_receiving_)
 				{
@@ -218,9 +221,9 @@ namespace aris
 					}
 				}
 				file.close();
-			}).detach();
+			}, std::move(thread_ready)).detach();
 
-            imp_->cv_ready_.wait(ready_lck);
+            fut.wait();
 
 			imp_->is_prepaired_ = true;
 		}
