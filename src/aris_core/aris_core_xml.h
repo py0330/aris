@@ -541,7 +541,11 @@ namespace aris
 			auto operator[](size_type size)->reference { return static_cast<reference>(Base::children().operator[](size)); } //optional
 			auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(Base::children().operator[](size)); } //optional
 
-			static auto Type()->const std::string &{ static const std::string type{ T::Type() + "Pool" + Base::Type() }; return type; }
+			static auto Type()->const std::string &
+			{ 
+				static const std::string type{ (&Type == &T::Type ? std::string("Noname") : T::Type()) + "Pool" + (&Type == &Base::Type ? std::string("Noname") : Base::Type()) };
+				return type;
+			}
 			virtual auto type()const->const std::string & override{ return Type(); }
 			auto findByName(const std::string &name)const->const_iterator { return Base::findByName(name); }
 			auto findByName(const std::string &name)->iterator { return Base::findByName(name);}

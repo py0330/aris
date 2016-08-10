@@ -14,9 +14,10 @@ namespace aris
 		class Pipe:public aris::core::Object
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type("Pipe"); return std::ref(type); }
+			virtual auto type() const->const std::string& override{ return Type(); }
 			auto sendMsg(const aris::core::MsgBase &)->bool;
 			auto recvMsg(aris::core::MsgBase &)->bool;
-
 
 			virtual ~Pipe();
 			Pipe(const std::string &name = "pipe", bool is_block = true, std::size_t pool_size = 16384);
@@ -29,8 +30,6 @@ namespace aris
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-
 		};
 	}
 }

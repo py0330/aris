@@ -20,29 +20,35 @@ namespace aris
 		};
 		auto Pipe::sendMsg(const aris::core::MsgBase &msg)->bool
 		{
-			std::size_t remain_data_size = ((imp_->send_pos_ - imp_->recv_pos_) % imp_->pool_size_ + imp_->pool_size_) % imp_->pool_size_;
+			auto send_pos = imp_->send_pos_.load();
+			auto recv_pos = imp_->recv_pos_.load();
+			
+			std::size_t remain_data_size = ((send_pos - recv_pos) % imp_->pool_size_ + imp_->pool_size_) % imp_->pool_size_;
 			if (remain_data_size + sizeof(MsgHeader) + msg.size()> imp_->pool_size_) return false;
-			std::size_t send_num1 = imp_->send_pos_ + sizeof(MsgHeader) + msg.size() > imp_->pool_size_ ? imp_->pool_size_ - imp_->send_pos_ : sizeof(MsgHeader) + msg.size();
+			std::size_t send_num1 = send_pos + sizeof(MsgHeader) + msg.size() > imp_->pool_size_ ? imp_->pool_size_ - send_pos : sizeof(MsgHeader) + msg.size();
 			std::size_t send_num2 = sizeof(MsgHeader) + msg.size() - send_num1;
-			std::copy_n(reinterpret_cast<const char *>(&msg.header()), send_num1, &imp_->pool_[imp_->send_pos_]);
+			std::copy_n(reinterpret_cast<const char *>(&msg.header()), send_num1, &imp_->pool_[send_pos]);
 			std::copy_n(reinterpret_cast<const char *>(&msg.header()) + send_num1, send_num2, &imp_->pool_[0]);
-			imp_->send_pos_ = (imp_->send_pos_ + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_;
+			imp_->send_pos_.store( (send_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_);
 			return true;
 		}
 		auto Pipe::recvMsg(aris::core::MsgBase &msg)->bool
 		{
+			auto send_pos = imp_->send_pos_.load();
+			auto recv_pos = imp_->recv_pos_.load();
+			
 			MsgHeader header;
-			if (imp_->send_pos_ == imp_->recv_pos_) return false;
-			std::size_t recv_num1 = imp_->recv_pos_ + sizeof(MsgHeader) > imp_->pool_size_ ? imp_->pool_size_ - imp_->recv_pos_ : sizeof(MsgHeader);
+			if (send_pos == recv_pos) return false;
+			std::size_t recv_num1 = recv_pos + sizeof(MsgHeader) > imp_->pool_size_ ? imp_->pool_size_ - recv_pos : sizeof(MsgHeader);
 			std::size_t recv_num2 = sizeof(MsgHeader) - recv_num1;
-			std::copy_n(&imp_->pool_[imp_->recv_pos_], recv_num1, reinterpret_cast<char *>(&header));
+			std::copy_n(&imp_->pool_[recv_pos], recv_num1, reinterpret_cast<char *>(&header));
 			std::copy_n(&imp_->pool_[0], recv_num2, reinterpret_cast<char *>(&header) + recv_num1);
 			msg.resize(header.msg_size_);
-			recv_num1 = imp_->recv_pos_ + sizeof(MsgHeader) + msg.size() > imp_->pool_size_ ? imp_->pool_size_ - imp_->recv_pos_ : sizeof(MsgHeader) + msg.size();
+			recv_num1 = recv_pos + sizeof(MsgHeader) + msg.size() > imp_->pool_size_ ? imp_->pool_size_ - recv_pos : sizeof(MsgHeader) + msg.size();
 			recv_num2 = sizeof(MsgHeader) + msg.size() - recv_num1;
-			std::copy_n(&imp_->pool_[imp_->recv_pos_], recv_num1, reinterpret_cast<char *>(&msg.header()));
+			std::copy_n(&imp_->pool_[recv_pos], recv_num1, reinterpret_cast<char *>(&msg.header()));
 			std::copy_n(&imp_->pool_[0], recv_num2, reinterpret_cast<char *>(&msg.header()) + recv_num1);
-			imp_->recv_pos_ = (imp_->recv_pos_ + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_;
+			imp_->recv_pos_.store((recv_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_);
 			return true;
 		}
 		Pipe::~Pipe() = default;

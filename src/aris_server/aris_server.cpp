@@ -618,14 +618,11 @@ namespace aris
 
 			msg.copyStruct(param);
 		}
-
-		ControlServer &ControlServer::instance()
+		auto ControlServer::instance()->ControlServer &
 		{
 			static ControlServer instance;
 			return std::ref(instance);
 		}
-		ControlServer::ControlServer() :imp_(new Imp(this)) {}
-		ControlServer::~ControlServer() {}
 		auto ControlServer::createModel(dynamic::Model *model)->void
 		{
 			if (imp_->model_)throw std::runtime_error("control sever can't create model because it already has one");
@@ -783,6 +780,9 @@ namespace aris
 		{
 			this->imp_->on_exit_callback_ = callback_func;
 		}
+		ControlServer::~ControlServer() = default;
+		ControlServer::ControlServer() :imp_(new Imp(this)) {}
+		
 	}
 }
 
