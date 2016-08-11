@@ -164,6 +164,11 @@ target_link_libraries(test_control_server ${ALL_LINK_LIB})
 add_test(NAME test_control_server COMMAND test_control_server)
 set_tests_properties (test_control_server PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
+set(SOURCE_FILES client.cpp)
+PREPEND(FULL_SRC test/rbt ${SOURCE_FILES})
+add_executable(rbt ${FULL_SRC})
+target_link_libraries(rbt ${ALL_LINK_LIB})
+
 
 ################################### build demos for aris ####################################
 # Make demo projects

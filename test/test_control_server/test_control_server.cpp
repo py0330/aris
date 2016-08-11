@@ -177,9 +177,6 @@ const char xml_data[] =
 "    </sensor_root>"
 "</root>";
 
-
-
-
 void test_control_server()
 {
 	aris::core::XmlDocument xml_doc;
