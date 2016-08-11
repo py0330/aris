@@ -43,7 +43,7 @@ namespace aris
 			auto stop()->void;
 			auto logDataRT()->void;
 
-			~DataLogger();
+			virtual ~DataLogger();
 			DataLogger(const std::string &name);
 			DataLogger(Object &father, const aris::core::XmlElement &xml_ele);
 			DataLogger(const DataLogger &) = delete;

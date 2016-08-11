@@ -26,7 +26,6 @@
 #include <typeinfo>
 #include <thread>
 #include <chrono>
-#include <condition_variable>
 #include <future>
 
 #include "aris_control_ethercat.h"
@@ -153,12 +152,11 @@ namespace aris
 
 		struct DataLogger::Imp
 		{
-			Pipe<void *> log_pipe_{ false };
+			aris::core::Pipe *log_pipe_;
+			aris::core::MsgFix<8196> log_data_msg_;
 			std::size_t log_data_size_{ 0 };
-			std::unique_ptr<char[]> log_data_;
 			std::atomic_bool is_receiving_{ false }, is_sending_{ false }, is_prepaired_{ false };
-            std::mutex mu_prepair_, mu_running_, mu_ready_;
-            std::condition_variable cv_ready_;
+            std::mutex mu_prepair_, mu_running_;
 		};
 		auto DataLogger::prepair(const std::string &log_file_name)->void
 		{
@@ -182,42 +180,36 @@ namespace aris
 
 				imp_->log_data_size_ = 0;
 				for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
-				std::unique_ptr<char[]> receive_data(new char[imp_->log_data_size_]);
-				imp_->log_data_.reset(new char[imp_->log_data_size_]);
-
-				long long count = 0;
-				std::size_t recv_size{ 0 };
+				imp_->log_data_msg_.resize(imp_->log_data_size_);
 
 				//ÇåÀí¸É¾»pipe
-				while (imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_)>0);
+				aris::core::MsgFix<8196> recv_msg;
+				while (imp_->log_pipe_->recvMsg(recv_msg));
 				imp_->is_receiving_ = true;
 				thread_ready.set_value();
-
+				
+				long long count = 0;
 				while (imp_->is_receiving_)
 				{
-					if (recv_size == imp_->log_data_size_)
+					if (imp_->log_pipe_->recvMsg(recv_msg))
 					{
 						file << count++ << " ";
 
 						std::size_t size_count = 0;
 						for (auto &sla : master().slavePool())
 						{
-							sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
-								, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+							sla.logData(*reinterpret_cast<Slave::TxType *>(recv_msg.data() + size_count)
+								, *reinterpret_cast<Slave::RxType *>(recv_msg.data() + size_count + sla.txTypeSize()), file);
 
 							file << " ";
 
 							size_count += sla.txTypeSize() + sla.rxTypeSize();
 						}
 						file << std::endl;
-
-						recv_size = 0;
 					}
 					else
 					{
-						auto ret = imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_ - recv_size);
-						if (ret == 0 && recv_size == 0)std::this_thread::sleep_for(std::chrono::microseconds(10));
-						recv_size += ret>0 ? ret : 0;
+						std::this_thread::sleep_for(std::chrono::microseconds(10));
 					}
 				}
 				file.close();
@@ -250,18 +242,24 @@ namespace aris
 					auto tx_data_char = reinterpret_cast<char *>(&sla.txData());
 					auto rx_data_char = reinterpret_cast<char *>(&sla.rxData());
 
-					std::copy(tx_data_char, tx_data_char + sla.txTypeSize(), imp_->log_data_.get() + size_count);
+					std::copy(tx_data_char, tx_data_char + sla.txTypeSize(), imp_->log_data_msg_.data() + size_count);
 					size_count += sla.txTypeSize();
-					std::copy(rx_data_char, rx_data_char + sla.rxTypeSize(), imp_->log_data_.get() + size_count);
+					std::copy(rx_data_char, rx_data_char + sla.rxTypeSize(), imp_->log_data_msg_.data() + size_count);
 					size_count += sla.rxTypeSize();
 				}
 
-				imp_->log_pipe_.sendToNrt(imp_->log_data_.get(), imp_->log_data_size_);
+				imp_->log_pipe_->sendMsg(imp_->log_data_msg_);
 			}
 		}
 		DataLogger::~DataLogger() = default;
-		DataLogger::DataLogger(const std::string &name) :Element(name), imp_(new Imp) {}
-		DataLogger::DataLogger(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) {}
+		DataLogger::DataLogger(const std::string &name) :Element(name), imp_(new Imp) 
+		{
+			imp_->log_pipe_ = &add<aris::core::Pipe>("pipe", false, 16384);
+		}
+		DataLogger::DataLogger(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) 
+		{
+			imp_->log_pipe_ = findOrInsert<aris::core::Pipe>("pipe", false, 16384);
+		}
 
 		auto Element::master()->Master & { return static_cast<Master &>(root()); }
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
