@@ -78,9 +78,6 @@ namespace aris
 			ParseFunc parse_disable_func_ = defaultBasicParse;
 			ParseFunc parse_home_func_ = defaultBasicParse;
 
-			// pipe //
-			aris::control::Pipe<aris::core::Msg> msg_pipe_;
-
             // 储存模型、控制器和传感器 command parser //
 			std::unique_ptr<aris::dynamic::Model> model_;
 			std::unique_ptr<aris::sensor::SensorRoot> sensor_root_;
@@ -260,15 +257,17 @@ namespace aris
 			}
 
 			cmd_msg.setMsgID(0);
-			msg_pipe_.sendToRT(cmd_msg);
+			server_->widgetRoot().msgPipe().sendMsg(cmd_msg);
 		}
 		auto ControlServer::Imp::tg()->void
         {
+			static aris::core::MsgFix<8196> recv_msg;
+			
 			// 检查是否出错 //
             if (checkError())return;
 
 			// 查看是否有新cmd //
-            if (msg_pipe_.recvInRT(aris::core::MsgRT::instance()[0]) > 0)
+            if (server_->widgetRoot().msgPipe().recvMsg(recv_msg))
 			{
                 if (cmd_num_ >= CMD_POOL_SIZE)
 				{
@@ -276,7 +275,7 @@ namespace aris
 				}
 				else
 				{
-                    aris::core::MsgRT::instance()[0].paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
+					recv_msg.paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
                     ++cmd_num_;
 				}
 			}

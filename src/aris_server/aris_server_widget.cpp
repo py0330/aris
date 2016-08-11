@@ -25,8 +25,9 @@ namespace aris
 		class WidgetRoot::Imp
 		{
 		public:
-			aris::core::Socket *command_socket_{ nullptr };
-			aris::core::CommandParser *command_parser_{ nullptr };
+			aris::core::Socket *cmd_socket_{ nullptr };
+			aris::core::CommandParser *cmd_parser_{ nullptr };
+			aris::core::Pipe *msg_pipe_{ nullptr };
 		};
 		auto WidgetRoot::loadXml(const aris::core::XmlDocument &xml_doc)->void
 		{
@@ -40,13 +41,16 @@ namespace aris
 		{
 			Root::loadXml(xml_ele);
 
-			imp_->command_socket_ = findByName("command_socket") == children().end() ? &add<aris::core::Socket>("command_socket") : static_cast<aris::core::Socket*>(&(*findByName("command_socket")));
-			imp_->command_parser_ = findByName("command_parser") == children().end() ? &add<aris::core::CommandParser >("command_parser") : static_cast<aris::core::CommandParser *>(&(*findByName("command_parser")));
+			imp_->cmd_socket_ = findOrInsert<aris::core::Socket>("command_socket");
+			imp_->cmd_parser_ = findOrInsert<aris::core::CommandParser>("command_parser");
+			imp_->msg_pipe_ = findOrInsert<aris::core::Pipe>("msg_pipe", 16384);
 		}
-		auto WidgetRoot::commandSocket()->aris::core::Socket& { return *imp_->command_socket_; }
-		auto WidgetRoot::commandSocket()const->const aris::core::Socket&{ return *imp_->command_socket_; }
-		auto WidgetRoot::commandParser()->aris::core::CommandParser& { return *imp_->command_parser_; }
-		auto WidgetRoot::commandParser()const->const aris::core::CommandParser&{ return *imp_->command_parser_; }
+		auto WidgetRoot::commandSocket()->aris::core::Socket& { return *imp_->cmd_socket_; }
+		auto WidgetRoot::commandSocket()const->const aris::core::Socket&{ return *imp_->cmd_socket_; }
+		auto WidgetRoot::commandParser()->aris::core::CommandParser& { return *imp_->cmd_parser_; }
+		auto WidgetRoot::commandParser()const->const aris::core::CommandParser&{ return *imp_->cmd_parser_; }
+		auto WidgetRoot::msgPipe()->aris::core::Pipe & { return *imp_->msg_pipe_; }
+		auto WidgetRoot::msgPipe()const->const aris::core::Pipe &{ return *imp_->msg_pipe_; }
 		WidgetRoot::~WidgetRoot() = default;
 		WidgetRoot::WidgetRoot() :imp_{new Imp} 
 		{
@@ -58,6 +62,8 @@ namespace aris
 			registerChildType<aris::core::CommandParser>();
 
 			registerChildType<aris::core::Socket>();
+
+			registerChildType<aris::core::Pipe>();
 		};
 	}
 }

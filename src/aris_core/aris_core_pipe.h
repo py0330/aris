@@ -20,7 +20,7 @@ namespace aris
 			auto recvMsg(aris::core::MsgBase &)->bool;
 
 			virtual ~Pipe();
-			Pipe(const std::string &name = "pipe", bool is_block = true, std::size_t pool_size = 16384);
+			Pipe(const std::string &name = "pipe", std::size_t pool_size = 16384);
 			Pipe(Object &father, const aris::core::XmlElement &xml_ele);
 			Pipe(const Pipe&) = delete;
 			Pipe(Pipe&&);

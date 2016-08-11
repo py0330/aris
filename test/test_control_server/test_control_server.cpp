@@ -9,6 +9,7 @@
 #include "unistd.h"
 #endif
 
+#include <future>
 
 
 const char xml_data[] =
@@ -187,20 +188,14 @@ void test_control_server()
 	auto&cs = aris::server::ControlServer::instance();
 
 
-	std::condition_variable cv;
-	std::mutex mu;
-
-	std::unique_lock<std::mutex> lck(mu);
+	std::promise<void> exit_ready;
+	auto fut = exit_ready.get_future();
 	
 	cs.loadXml(xml_doc);
-	cs.setOnExit([&mu, &cv]() 
-	{
-		std::unique_lock<std::mutex> lck(mu);
-		cv.notify_one();
-	});
+	cs.setOnExit([&exit_ready]() { exit_ready.set_value(); });
 	cs.open();
 
-	cv.wait(lck);
+	fut.wait();
 	
 	
 

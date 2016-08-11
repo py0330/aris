@@ -254,11 +254,11 @@ namespace aris
 		DataLogger::~DataLogger() = default;
 		DataLogger::DataLogger(const std::string &name) :Element(name), imp_(new Imp) 
 		{
-			imp_->log_pipe_ = &add<aris::core::Pipe>("pipe", false, 16384);
+			imp_->log_pipe_ = &add<aris::core::Pipe>("pipe", 16384);
 		}
 		DataLogger::DataLogger(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) 
 		{
-			imp_->log_pipe_ = findOrInsert<aris::core::Pipe>("pipe", false, 16384);
+			imp_->log_pipe_ = findOrInsert<aris::core::Pipe>("pipe", 16384);
 		}
 
 		auto Element::master()->Master & { return static_cast<Master &>(root()); }
