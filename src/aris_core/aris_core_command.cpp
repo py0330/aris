@@ -29,7 +29,7 @@ namespace aris
 				throw std::runtime_error("failed to find father command, please check the command tree");
 		};
 		auto ParamBase::isTaken()->bool { return imp_->is_taken_; }
-		auto ParamBase::help()const->const std::string &{ return imp_->help_; }
+		auto ParamBase::simpleHelp()const->const std::string &{ return imp_->help_; }
 		auto ParamBase::take()->void 
 		{
 			imp_->is_taken_ = true;
@@ -80,6 +80,19 @@ namespace aris
 		}
         auto Param::abbreviation()->char { return imp_->abbreviation_; }
 		auto Param::abbreviation()const->char { return imp_->abbreviation_; }
+		auto Param::help(bool isfull, int begin)const->const std::string
+		{
+			std::string helpString = "[" + name() + "]";
+
+			if (defaultParam() != "")
+			{
+				helpString += "[" + defaultParam() + "]";
+			}
+			helpString = formatString(helpString + " " + simpleHelp(), begin+4);
+			helpString.replace(begin, 4, std::string{ '-' } +abbreviation() + ": ");
+
+			return helpString;
+		}
 		Param::~Param() = default;
 		Param::Param(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
 		Param::Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele)
@@ -91,6 +104,21 @@ namespace aris
 		Param::Param(Param&&) = default;
 		Param& Param::operator=(const Param&) = default;
 		Param& Param::operator=(Param&&) = default;
+
+
+		auto GroupParam::help(bool isfull, int begin)const->const std::string
+		{			 
+			std::string helpString = formatString("[" + name() + "] "+ simpleHelp(), begin+4);
+			if (isfull)
+			{
+				for (auto &subparam : *this)
+					helpString += subparam.help(true, begin+4);
+			}
+			helpString += std::string(begin, ' ') + "g>\n";
+			helpString.replace(begin, 4, "<g: ");
+
+			return helpString;
+		}
 
 		struct UniqueParam::Imp
 		{
@@ -116,6 +144,31 @@ namespace aris
 
 			default_param->addDefaultParam(param_map_out);
 		}
+		auto UniqueParam::help(bool isfull, int begin)const->const std::string
+		{
+			std::string helpString{};
+
+			if (defaultParam() != "")
+			{
+				helpString = formatString("[" + name() + "][" + defaultParam() + "] " + simpleHelp(), begin+4);
+			}
+			else
+			{
+				helpString = formatString("[" + name() + "] "+ simpleHelp(), begin+4);
+			}
+			if (isfull)
+			{
+				for (auto &subparam : *this) 
+				{
+					helpString += subparam.help(true, begin+4);
+				}
+			}
+			helpString += std::string(begin, ' ') + "u>\n";
+			helpString.replace(begin, 4, "<u: ");
+
+			return helpString;
+		}
+		
 		UniqueParam::~UniqueParam() = default;
 		UniqueParam::UniqueParam(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
 		UniqueParam::UniqueParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele)
@@ -158,81 +211,18 @@ namespace aris
 			if (!default_param)throw std::runtime_error("failed to find default param in command \"" + name() +"\"");
 
 			default_param->addDefaultParam(param_map_out);
-		}
-		
-		
-		auto Command::help(bool isAll)const->std::string
+		}				
+		auto Command::help(bool isfull, int begin)const->std::string
 		{
-			std::function<std::string(std::string, int, int)> helpStringFormat = [](std::string originString, int maxPrintLength, int begin)->std::string
-			{
-				std::string formatString{};
-				int count = 0;
-				int width = maxPrintLength - begin;
-				int StringLength = originString.length();
-				while (StringLength>width)
-				{
-					formatString += originString.substr(width*count, width*(count + 1));
-					formatString += "\n" + std::string(begin, ' ');
-					count += 1;
-					StringLength -= width;
-				}
-				formatString += originString.substr(width*count, std::string::npos);
-				return formatString;
-			};
+			std::string helpString = formatString( name() + ": " + imp_->help_, begin);
 
-			std::string helpString{};
-			int maxPrintLength = 55;
-
-			helpString = name() + ": ";
-			helpString += helpStringFormat(imp_->help_, maxPrintLength, name().length() + 2) + "\n";
-
-			std::function<std::string(const ParamBase &, int)> getParamHelp = [&helpStringFormat, &getParamHelp](const ParamBase &parambase, int tabCount)->std::string
-			{
-				std::string helpString{};
-				int maxPrintLength = 55;
-
-				auto param = dynamic_cast<const Param*>(&parambase);
-				if (param)
-				{
-					helpString += std::string(tabCount * 4, ' ') + '-' + param->abbreviation() + ": [" + param->name() + "] ";
-
-					if (param->defaultParam() != "")
-					{
-						helpString += "[" + param->defaultParam() + "] ";
-					}
-					helpString += helpStringFormat(param->help(), maxPrintLength, tabCount * 4 + 4) + "\n";
-				}
-				else if (dynamic_cast<const GroupParam*>(&parambase))
-				{
-					helpString = helpString + std::string(tabCount * 4, ' ') + "<g:[" + parambase.name()+ "]";
-					helpString += helpStringFormat(parambase.help(), maxPrintLength, tabCount * 4 + 3) + "\n";
-					for (auto &subparam : parambase)
-						helpString = helpString + getParamHelp(subparam, tabCount + 1);
-					helpString = helpString + std::string(tabCount * 4, ' ') + "g>\n";
-				}
-				else if (dynamic_cast<const UniqueParam*>(&parambase))
-				{
-					helpString = helpString + std::string(tabCount * 4, ' ') + "<u:[" + parambase.name() + "]";
-
-					helpString += helpStringFormat(parambase.help(), maxPrintLength, tabCount * 4 + 3) + "\n";
-					for (auto &subparam : parambase)
-						helpString = helpString + getParamHelp(subparam, tabCount + 1);
-					helpString = helpString + std::string(tabCount * 4, ' ') + "u>\n";
-				}
-				else
-				{
-					throw std::runtime_error("unknow param!");
-				}
-				return helpString;
-
-			};
-
-			if (isAll)
+			if (isfull)
 			{
 				for (auto &param : *this)
-					helpString = helpString + getParamHelp(param, 0);
+				{
+					helpString = helpString + param.help(true,0);
+				}
 			}
-		
 			return helpString;
 		}
 
@@ -407,9 +397,9 @@ namespace aris
 		{
 			std::string helpstring{};
 
-			helpstring = "All command: \n\n";
+			helpstring = "All command: \n";
 			for (auto &command : *imp_->command_pool_)
-				helpstring += command.help(false);
+				helpstring += command.help(false,4);
 			helpstring += "\nAttention:\n";
 			helpstring += "the param '--help(-h)' can get more help about the specify command. etc: en -h \n";
 
@@ -430,6 +420,26 @@ namespace aris
 		CommandParser::CommandParser(CommandParser &&) = default;
 		CommandParser& CommandParser::operator=(const CommandParser &) = default;
 		CommandParser& CommandParser::operator=(CommandParser &&) = default;
+
+		auto formatString(std::string originalString, int begin)->std::string
+		{
+			std::string formatStr{};
+			int maxPrintLength = 55;
+
+			int count = 0;
+			int width = maxPrintLength - begin;
+			int StringLength = originalString.length();
+			while (StringLength>width)
+			{
+				formatStr += std::string(begin, ' ') + originalString.substr(width*count, width*(count + 1)) + "\n";
+				count += 1;
+				StringLength -= width;
+			}
+			formatStr += std::string(begin, ' ') + originalString.substr(width*count, std::string::npos) +"\n";
+			return formatStr;
+		}
 	}
+
+	
 }
 
