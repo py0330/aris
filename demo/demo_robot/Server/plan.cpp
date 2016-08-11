@@ -8,8 +8,6 @@ namespace robot
 {
     auto basicParse(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
-        if (params.find("help") != params.end())
-            throw std::runtime_error(cs.widgetRoot().commandParser().commandPool().findByName(cmd)->help());
         aris::server::BasicFunctionParam param;
 
         for (auto &i : params)
@@ -63,6 +61,112 @@ namespace robot
         msg_out.copyStruct(aris::server::GaitParamBase());
     }
 
+    auto logParse(aris::server::ControlServer &cs,const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+    {
+        aris::server::GaitParamBase logparam;
+        for (auto &param : params)
+        {
+            if(param.first == "switch")
+            {
+                if(param.second == "on")
+                {
+                    cs.controller().dataLogger().prepair(params.find("name")->second);//must be in Nrt
+                    cs.controller().dataLogger().start();
+                }
+                else if(param.second =="off")
+                {
+                    cs.controller().dataLogger().stop();
+                }
+                else
+                    throw std::runtime_error("unknown param in log parse func");
+            }
+        }
+        msg_out.copyStruct(logparam);
+    }
+
+    auto helpParse(aris::server::ControlServer &cs,const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+    {
+        aris::server::GaitParamBase helpparam;
+
+        std::function<bool(aris::core::ParamBase &, std::string paramName, bool isfull)> findParamHelp = [&findParamHelp](aris::core::ParamBase &param, std::string paramName, bool isfull)->bool
+        {
+            static bool isExist = false;
+            if (param.name() == paramName)
+            {
+                std::cout << param.help(isfull, 0);
+                isExist = true;
+            }
+            else
+            {
+                for (auto &subparam : param)
+                {
+                    findParamHelp(subparam, paramName,isfull);
+                }
+            }
+            return isExist;
+
+        };
+
+        std::string commandName{};
+        std::string paramName={};
+        bool isfull=false;
+        for (auto &param : params)
+        {
+            if(param.first == "command")
+            {
+                commandName=param.second;
+            }
+            else if(param.first == "param")
+            {
+                paramName=param.second;
+            }
+            else if(param.first == "full")
+            {
+                if(param.second == "yes")
+                {
+                    isfull=true;
+                }
+                else if(param.second =="no")
+                {
+                    isfull=false;
+                }
+                else
+                    throw std::runtime_error("unknown param in 'full' param, it must be 'yes' or 'no'.");
+            }
+            else
+                throw std::runtime_error("unknown param in 'help' command.");
+        }
+
+        if(commandName=="")
+        {
+            if(paramName=="")
+                std::cout<<cs.widgetRoot().commandParser().help();
+            else
+                throw std::runtime_error("need a command name to look for the param.");
+        }
+        else
+        {
+            auto command = cs.widgetRoot().commandParser().commandPool().findByName(commandName);
+            if(command != cs.widgetRoot().commandParser().commandPool().end())
+            {
+                if(paramName=="")
+                    std::cout<<command->help(isfull,0);
+                else
+                {
+                    for (auto &param : *command)
+                    {
+                        if(!findParamHelp(param, paramName,isfull))
+                            throw std::runtime_error("invalid param name.");
+                    }
+                }
+
+            }
+            else
+                throw std::runtime_error("invalid command name.");
+        }
+        msg_out.copyStruct(helpparam);
+    }
+
     auto recoverParse(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
         msg_out.copyStruct(robot::RecoverParam());
@@ -100,8 +204,6 @@ namespace robot
 
     auto moveParse(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
     {
-        if (params.find("help") != params.end())
-            throw std::runtime_error(cs.widgetRoot().commandParser().commandPool().findByName(cmd)->help());
         robot::MoveParam param;
 
         if(params.find("x")!=params.end())

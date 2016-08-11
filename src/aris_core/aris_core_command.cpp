@@ -399,9 +399,7 @@ namespace aris
 
 			helpstring = "All command: \n";
 			for (auto &command : *imp_->command_pool_)
-				helpstring += command.help(false,4);
-			helpstring += "\nAttention:\n";
-			helpstring += "the param '--help(-h)' can get more help about the specify command. etc: en -h \n";
+                helpstring += command.help(false,4)+"\n";
 
 			return helpstring;
 
@@ -424,7 +422,7 @@ namespace aris
 		auto formatString(std::string originalString, int begin)->std::string
 		{
 			std::string formatStr{};
-			int maxPrintLength = 55;
+            int maxPrintLength = 70;
 
 			int count = 0;
 			int width = maxPrintLength - begin;
