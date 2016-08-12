@@ -11,6 +11,12 @@ namespace robot
     //for basic gait command parser
     auto basicGaitParse(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
 
+    //switch on or off the log function
+    auto logParse(aris::server::ControlServer &cs,const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
+
+    //get the help about command or param
+    auto helpParse(aris::server::ControlServer &cs,const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
+
     //the robot can recover to a default pose by using 'rc' command when it has found home. the pose can be changed in the RecoverParam
     struct RecoverParam final : public aris::server::GaitParamBase
     {

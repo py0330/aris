@@ -187,13 +187,6 @@ namespace aris
 
 					return aris::core::Msg();
 				}
-
-
-				if (cmd == "help")
-				{
-                    std::cout << widget_root_->commandParser().help() << std::endl;
-					return aris::core::Msg();
-                }
 				
 				if (!is_running_)throw std::runtime_error("can't execute command, because the server is not STARTED, please start it first");
 				sendParam(cmd, params);
