@@ -7,15 +7,29 @@
                 <start help="start the control system."/>
                 <stop help="stop the control system."/>
                 <exit help="exit the control system."/>
-                <help help="get help about all command."/>
-                <en default_child_type="Param" default="motion_param" help="enable the specify motions.">
-                    <motion_param type="UniqueParam" default_child_type="Param" default="all">
-                        <all abbreviation="a" help="all motions."/>
-                        <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-                        <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-                        <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-                    </motion_param>
-                    <help abbreviation="h" help="get help about command 'en'."/>
+                <help default_child_type="Param" default="help_param" help="get help about all command.">
+                    <help_param type = "GroupParam" default_child_type="Param">
+                        <command abbreviation="c" default="" help="the name of command."/>
+                        <param abbreviation="p" default="" help="the name of param."/>
+                        <full abbreviation="f" default="no" help="full or not full help about the command or params."/>
+                    </help_param>
+                </help>
+                <log default_child_type="Param" default="log_param" help="switch on or off the log funciton.">
+                    <log_param type="GroupParam" default_child_type="Param">
+                        <switch abbreviation="s" default="off" help="switch on the log funciton."/>
+                        <name abbreviation="n" default="" help="the name of log."/>
+                    </log_param>
+                </log>
+                <en default_child_type="Param" default="en_param" help="enable the specify motions.">
+                    <en_param type = "GroupParam" default_child_type="Param" default="motion_param">
+                        <motion_param type="UniqueParam" default_child_type="Param" default="all">
+                            <all abbreviation="a" help="all motions."/>
+                            <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
+                            <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
+                            <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
+                        </motion_param>
+                        <mode default="8" help="the mode of motion."/>
+                    </en_param>
                 </en>
                 <ds default_child_type="Param" default="motion_param" help="disable the specify motions.">
                     <motion_param type="UniqueParam" default_child_type="Param" default="all">
@@ -24,7 +38,6 @@
                         <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
                         <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
                     </motion_param>
-                    <help abbreviation="h" help="get help about command 'ds'."/>
                 </ds>
                 <hm default_child_type="Param" default="motion_param" help="home the specify motions.">
                     <motion_param type="UniqueParam" default_child_type="Param" default="all">
@@ -33,38 +46,35 @@
                         <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
                         <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
                     </motion_param>
-                    <help abbreviation="h" help="get help about command 'hm'."/>
                 </hm>
                 <rc help="recover the robot to specify pose."/>
-                <mv default_child_type="Param" default = "total_param" help="move the robot to specify pose after executing command 'rc' or move the specify axis of robot.">
-                    <total_param type="UniqueParam" default_child_type="Param" default="mv_param">
-                        <mv_param type = "GroupParam" default_child_type="Param" >
-                            <totalCount abbreviation="t" default="5000" help="the total executing time(ms)."/>
-                            <mode_param type = "UniqueParam" default_child_type="Param" default = "pin_param">
-                                <pee_param type = "GroupParam" default_child_type="Param">
-                                    <x abbreviation="x" default="0" help="the 'x' direction of coordinate."/>
-                                    <y abbreviation="y" default="0.435" help="the 'y' direction of coordinate."/>
-                                    <A abbreviation="A" default="0" help="the 'z' direction of coordinate."/>
-                                </pee_param>
-                                <pin_param type = "GroupParam" default_child_type="Param">
-                                    <motion_param type="UniqueParam" default_child_type="Param" default="all">
-                                        <all abbreviation="a" help="all motions."/>
-                                        <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
-                                        <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
-                                        <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
-                                    </motion_param>
-                                    <angle abbreviation="j" default="0" help="the length(m)."/>
-                                    <force abbreviation="f" default="no" help="force to move the axis without forward and backward limit."/>
-                                </pin_param>
-                                <pins_param type = "GroupParam" default_child_type="Param">
-                                    <a1 abbreviation="1" default="0" help="No.1 axis in Model."/>
-                                    <a2 abbreviation="2" default="0" help="No.2 axis in Model."/>
-                                    <a3 abbreviation="3" default="0" help="No.3 axis in Model."/>
-                                </pins_param>
-                            </mode_param>
-                        </mv_param>
-                        <help abbreviation="h"  help="get help about command 'mv'."/>
-                    </total_param>
+                <mv default_child_type="Param" default = "mv_param" help="move the robot to specify pose after executing command 'rc' or move the specify axis of robot.">
+                    <mv_param type = "GroupParam" default_child_type="Param" >
+                        <totalCount abbreviation="t" default="5000" help="the total executing time(ms)."/>
+                        <mode_param type = "UniqueParam" default_child_type="Param" default = "pin_param">
+                            <pee_param type = "GroupParam" default_child_type="Param">
+                                <x abbreviation="x" default="0" help="the 'x' direction of coordinate."/>
+                                <y abbreviation="y" default="0.435" help="the 'y' direction of coordinate."/>
+                                <A abbreviation="A" default="0" help="the 'z' direction of coordinate."/>
+                            </pee_param>
+                            <pin_param type = "GroupParam" default_child_type="Param">
+                                <motion_param type="UniqueParam" default_child_type="Param" default="all">
+                                    <all abbreviation="a" help="all motions."/>
+                                    <motion_id abbreviation="m" default="0" help="the id of motion in model."/>
+                                    <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
+                                    <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
+                                </motion_param>
+                                <round abbreviation="r" default="0" help="the round."/>
+                                <force abbreviation="f" default="no" help="force to move the axis without forward and backward limit."/>
+                                <kp abbreviation="k" default="0" help="P of PID."/>
+                            </pin_param>
+                            <pins_param type = "GroupParam" default_child_type="Param">
+                                <a1 default="0" help="No.1 axis in Model."/>
+                                <a2 default="0" help="No.2 axis in Model."/>
+                                <a3 default="0" help="No.3 axis in Model."/>
+                            </pins_param>
+                        </mode_param>
+                    </mv_param>
                 </mv>
                 <test default_child_type="Param" default="motion_param" help="test for a new feature.">
                     <motion_param type="UniqueParam" default_child_type="Param" default="all">
@@ -73,7 +83,6 @@
                         <physical_id abbreviation="p" default="0" help="the id of motion in physical ring."/>
                         <slave_id abbreviation="s" default="0" help="the id of motion in ethercat ring."/>
                     </motion_param>
-                    <help abbreviation="h" help="get help about command 'test'."/>
                 </test>
             </command_pool>
         </command_parser>
@@ -113,18 +122,25 @@
                     </index_1a0b>
                 </pdo_group_pool>
                 <sdo_pool type="SdoPoolObject" default_child_type="Sdo">
-                    <home_mode index="0x6098" subindex="0" datatype="int8" config="17"/>
+                    <home_mode index="0x6098" subindex="0" datatype="int8" config="35"/>
                     <home_acc index="0x609A" subindex="0" datatype="uint32" config="200000"/>
                     <home_high_speed index="0x6099" subindex="1" datatype="uint32" config="200000"/>
                     <home_low_speed index="0x6099" subindex="2" datatype="uint32" config="100000"/>
                     <home_offset index="0x607C" subindex="0" datatype="int32" config="0"/>
                 </sdo_pool>
             </elmo>
+            <GaitRecord type="SlaveType" product_code="0x00000000" vender_id="0x00000000" alias="0">
+                <pdo_group_pool type="PdoGroupPoolObject">
+                </pdo_group_pool>
+                <sdo_pool type="SdoPoolObject" default_child_type="Sdo">
+                </sdo_pool>
+            </GaitRecord>
         </slave_type_pool>
         <slave_pool type="SlavePoolObject">
-            <m1 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
-            <m2 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
-            <m3 type="Motion" slave_type="elmo" min_pos="0" max_pos="3.14" max_vel="9.42" home_pos="0.01" input2count="10436" />
+            <m1 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <m2 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <m3 type="Motion" slave_type="elmo" min_pos="0" max_pos="1" max_vel="3" home_pos="0.01" input2count="65536" />
+            <gaitrecord type="record" slave_type="GaitRecord" />
         </slave_pool>
     </controller>
     <model>
