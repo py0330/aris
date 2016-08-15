@@ -41,6 +41,7 @@ const char xml_file[] =
 "                </test>"
 "            </command_pool>"
 "        </command_parser>"
+"        <pipe type=\"Pipe\"/>"
 "    </widget_root>"
 "    <controller>"
 "        <slave_type_pool type=\"SlaveTypePoolObject\">"
@@ -109,8 +110,8 @@ struct BasicFunctionParam
 static aris::control::Controller controller;
 static aris::core::Root widget_root;
 static aris::core::CommandParser *parser;
+static aris::core::Pipe *msg_pipe;
 
-aris::control::Pipe<aris::core::Msg> msg_pipe;
 char cmd_char[aris::core::MsgRT::RT_MSG_SIZE];
 
 static bool is_running = true;
@@ -195,7 +196,7 @@ BasicFunctionParam decode(const std::string input)
 void tg()
 {
 	BasicFunctionParam *param;
-	if (msg_pipe.recvInRT(aris::core::MsgRT::instance()[0]) > 0)
+	if (msg_pipe->recvMsg(aris::core::MsgRT::instance()[0]))
 	{
 		aris::core::MsgRT::instance()[0].paste(cmd_char);
 		param = reinterpret_cast<BasicFunctionParam *>(cmd_char);
@@ -266,6 +267,7 @@ void test_control_motion()
 	widget_root.registerChildType<aris::core::CommandParser>();
 	widget_root.loadXml(*xml_doc.RootElement()->FirstChildElement("widget_root"));
 	parser = static_cast<aris::core::CommandParser*>(&*widget_root.findByName("command_parser"));
+	msg_pipe = static_cast<aris::core::Pipe*>(&*widget_root.findByName("pipe"));
 
 	controller.setControlStrategy(tg);
 	controller.start();
@@ -280,7 +282,7 @@ void test_control_motion()
 			cmd_msg.copyStruct(param);
 			if (cmd_msg.size() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function");
 			cmd_msg.setMsgID(0);
-			msg_pipe.sendToRT(cmd_msg);
+			msg_pipe->sendMsg(cmd_msg);
 		}
 		else if (param.cmd_type == 110) {
 			controller.stop();

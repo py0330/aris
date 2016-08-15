@@ -25,6 +25,7 @@ namespace aris
 {
 	namespace control
 	{
+		/*
 		class PipeBase::Imp
 		{
 		public:
@@ -162,5 +163,6 @@ namespace aris
 			recvInNrtRawData(msg.data(), msg.size());
 			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
+		*/
 	}
 }

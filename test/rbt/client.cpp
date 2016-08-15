@@ -18,16 +18,11 @@ int sendRequest(int argc, char *argv[])
 	}
 #endif
 
-	if (cmdName.rfind('.'))
-	{
-		cmdName = cmdName.substr(0, cmdName.rfind('.'));
-	}
+	// 去掉命令后缀，特别是在Windows系统下
+	if (cmdName.rfind('.'))cmdName = cmdName.substr(0, cmdName.rfind('.'));
 
 	// 添加命令的所有参数 //
-	for (int i = 1; i < argc; ++i)
-	{
-		cmdName = cmdName + " " + argv[i];
-	}
+	for (int i = 1; i < argc; ++i)cmdName = cmdName + " " + argv[i];
 
 	// 构造msg，这里需要先copy命令名称，然后依次copy各个参数 //
 	aris::core::Msg msg;
@@ -73,7 +68,7 @@ int main(int argc, char *argv[])
 {
 	if (argc <= 1)throw std::runtime_error("please input the cmd name");
 
-    sendRequest(argc-1, argv+1);
+	sendRequest(argc - 1, argv + 1);
 
 	return 0;
 }

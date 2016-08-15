@@ -392,7 +392,6 @@ namespace aris
         {
             auto &rx_motiondata=static_cast<const RxType &>(rx_data);
             auto &tx_motiondata=static_cast<const TxType &>(tx_data);
-            //file<<rx_motiondata.feedback_pos<<" "<< tx_motiondata.target_pos<<" "<<rx_motiondata.feedback_tor;
             file<<rx_motiondata.feedback_pos<<" "<< tx_motiondata.target_pos<<" "<<rx_motiondata.feedback_vel<<" "<< tx_motiondata.target_vel<<" "<<rx_motiondata.feedback_tor;
 
         }

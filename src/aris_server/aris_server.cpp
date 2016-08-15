@@ -563,7 +563,6 @@ namespace aris
         }
 		auto ControlServer::Imp::onRunError()->int
 		{
-			
 			rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
 			cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
 			count_ = 0;
@@ -575,7 +574,6 @@ namespace aris
 			}
 
 			return 0;
-
 		}
         auto ControlServer::Imp::defaultBasicParse(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 		{
