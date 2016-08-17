@@ -9,12 +9,14 @@
 #include "unistd.h"
 #endif
 
+#include <future>
 
 
 const char xml_data[] =
 "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
 "<root>"
 "    <widget_root>"
+"        <msg_pipe type=\"Pipe\" pool_size=\"16384\"/>"
 "        <command_socket type=\"Socket\" port=\"5866\"/>"
 "        <command_parser type=\"CommandParser\">"
 "            <command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
@@ -23,56 +25,26 @@ const char xml_data[] =
 "                <exit/>"
 "                <en default_child_type=\"Param\" default=\"all\">"
 "                    <all abbreviation=\"a\"/>"
-"                    <first abbreviation=\"f\"/>"
-"                    <second abbreviation=\"s\"/>"
 "                    <motion_id abbreviation=\"m\" default=\"0\"/>"
 "                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                    <leg abbreviation=\"l\" default=\"0\"/>"
 "                </en>"
 "                <ds default_child_type=\"Param\" default=\"all\">"
 "                    <all abbreviation=\"a\"/>"
-"                    <first abbreviation=\"f\"/>"
-"                    <second abbreviation=\"s\"/>"
 "                    <motion_id abbreviation=\"m\" default=\"0\"/>"
 "                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                    <leg abbreviation=\"l\" default=\"0\"/>"
 "                </ds>"
 "                <hm default_child_type=\"Param\" default=\"all\">"
 "                    <all abbreviation=\"a\"/>"
-"                    <first abbreviation=\"f\"/>"
-"                    <second abbreviation=\"s\"/>"
 "                    <motion_id abbreviation=\"m\" default=\"0\"/>"
 "                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                    <leg abbreviation=\"l\" default=\"0\"/>"
 "                </hm>"
-"                <test default_child_type=\"Param\" default=\"all\">"
-"                    <all abbreviation=\"a\"/>"
-"                    <motion_id abbreviation=\"m\" default=\"0\"/>"
-"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                </test>"
 "                <rc default=\"rc_param\">"
 "                    <rc_param type=\"GroupParam\" default_child_type=\"Param\">"
-"                        <leg_param type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
-"                            <all abbreviation=\"a\"/>"
-"                            <first abbreviation=\"f\"/>"
-"                            <second abbreviation=\"s\"/>"
-"                            <leg abbreviation=\"l\" default=\"0\"/>"
-"                        </leg_param>"
 "                        <t1 abbreviation=\"t\" default=\"3000\"/>"
 "                        <t2 default=\"3000\"/>"
 "                        <margin_offset abbreviation=\"m\" default=\"0.01\"/>"
 "                    </rc_param>"
 "                </rc>"
-"                <wk default_child_type=\"Param\" default=\"wk_param\">"
-"                    <wk_param type=\"GroupParam\" default_child_type=\"Param\">"
-"                        <totalCount abbreviation=\"t\" default=\"3000\"/>"
-"                        <n abbreviation=\"n\" default=\"1\"/>"
-"                        <distance abbreviation=\"d\" default=\"0.5\"/>"
-"                        <height abbreviation=\"h\" default=\"0.05\"/>"
-"                        <alpha abbreviation=\"a\" default=\"0\"/>"
-"                        <beta abbreviation=\"b\" default=\"0\"/>"
-"                    </wk_param>"
-"                </wk>"
 "            </command_pool>"
 "        </command_parser>"
 "    </widget_root>"
@@ -122,6 +94,7 @@ const char xml_data[] =
 "        <slave_pool type=\"SlavePoolObject\">"
 "            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
 "            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
+"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
 "        </slave_pool>"
 "    </controller>"
 "    <model>"
@@ -176,31 +149,34 @@ const char xml_data[] =
 "    </sensor_root>"
 "</root>";
 
-
-
-
 void test_control_server()
 {
 	aris::core::XmlDocument xml_doc;
 	xml_doc.Parse(xml_data);
 
-	auto&cs = aris::server::ControlServer::instance();
-
-
-	std::condition_variable cv;
-	std::mutex mu;
-
-	std::unique_lock<std::mutex> lck(mu);
-	
-	cs.loadXml(xml_doc);
-	cs.setOnExit([&mu, &cv]() 
+	auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)
 	{
-		std::unique_lock<std::mutex> lck(mu);
-		cv.notify_one();
-	});
+		aris::server::GaitParamBase param;
+		msg_out.copyStruct(param);
+	};
+	auto rc_plan_func = [](aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param)->int
+	{
+		
+
+
+		return 0;
+	};
+
+	std::promise<void> exit_ready;
+	auto fut = exit_ready.get_future();
+
+	auto&cs = aris::server::ControlServer::instance();
+	cs.loadXml(xml_doc);
+	cs.setOnExit([&exit_ready]() { exit_ready.set_value(); });
+	cs.addCmd("rc", rc_parse_func, rc_plan_func);
 	cs.open();
 
-	cv.wait(lck);
+	fut.wait();
 	
 	
 

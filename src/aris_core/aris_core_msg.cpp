@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 
+
 #ifdef UNIX
 #include <stdio.h>
 #include <unistd.h>
@@ -50,6 +51,7 @@ namespace aris
 			LogFile()
 			{
 				begin_time_ = std::chrono::system_clock::now();
+				createLogDir();
 				file_name_ = logDirPath() + logExeName() + "_" + logFileTimeFormat(begin_time_) + "_log.txt";
 
 				file_.close();
@@ -158,120 +160,60 @@ namespace aris
 		auto log(const char *data)->const char * { LogFile::instance().log(data);	return data; }
 		auto log(const std::string& data)->const std::string &{ log(data.c_str());	return data; }
 
-		auto MsgBase::size() const->std::int32_t
-		{
-			return reinterpret_cast<MsgHeader *>(data_)->msg_size_;
-		}
-		auto MsgBase::setMsgID(std::int32_t msg_id)->void
-		{
-			reinterpret_cast<MsgHeader *>(data_)->msg_id_ = msg_id;
-		}
-		auto MsgBase::msgID() const->std::int32_t
-		{
-			return reinterpret_cast<MsgHeader *>(data_)->msg_id_;
-		}
-		auto MsgBase::data() const->const char*
-		{
-			return size() > 0 ? &data_[sizeof(MsgHeader)] : nullptr;
-		}
-		auto MsgBase::data()->char*
-		{
-			return size() > 0 ? &data_[sizeof(MsgHeader)] : nullptr;
-		}
-		auto MsgBase::copy(const char * from_this_memory)->void { copy(static_cast<const void *>(from_this_memory), strlen(from_this_memory) + 1); }
-		auto MsgBase::copy(const void * from_this_memory, std::int32_t data_size)->void
-		{
-			resize(data_size);
-			std::copy(reinterpret_cast<const char*>(from_this_memory), reinterpret_cast<const char*>(from_this_memory) + size(), data());
-		}
-		auto MsgBase::copy(const void * from_this_memory)->void 
-		{ 
-			std::copy(reinterpret_cast<const char*>(from_this_memory), reinterpret_cast<const char*>(from_this_memory) + size(), data());
-		}
-		auto MsgBase::copyAt(const void * from_this_memory, std::int32_t data_size, std::int32_t at_this_pos_of_msg)->void
+		auto MsgBase::size() const->std::int32_t { return header().msg_size_; }
+		auto MsgBase::setMsgID(std::int32_t msg_id)->void{ header().msg_id_ = msg_id; }
+		auto MsgBase::msgID() const->std::int32_t{	return header().msg_id_;}
+		auto MsgBase::data() const->const char*	{ return size() > 0 ? reinterpret_cast<const char*>(&header()) + sizeof(MsgHeader) : nullptr; }
+		auto MsgBase::data()->char*	{ return size() > 0 ? reinterpret_cast<char*>(&header()) + sizeof(MsgHeader) : nullptr;	}
+		auto MsgBase::copy(const char *src)->void { copy(static_cast<const void *>(src), strlen(src) + 1); }
+		auto MsgBase::copy(const void *src, std::int32_t data_size)->void { resize(data_size); copy(src); }
+		auto MsgBase::copy(const void *src)->void { copyAt(src, size(), 0); }
+		auto MsgBase::copyAt(const void *src, std::int32_t data_size, std::int32_t at_this_pos_of_msg)->void
 		{
 			if ((data_size + at_this_pos_of_msg) > size())resize(data_size + at_this_pos_of_msg);
-			//no need to check if length is 0
-			memcpy(&data()[at_this_pos_of_msg], from_this_memory, data_size);
+			std::copy_n(static_cast<const char *>(src), data_size, data() + at_this_pos_of_msg);
+		}
+		auto MsgBase::copyMore(const void *src, std::int32_t data_size)->void{ copyAt(src, data_size, size()); }
+		auto MsgBase::paste(void *tar, std::int32_t data_size) const->void { std::copy_n(data(), std::min(size(), data_size), static_cast<char*>(tar)); }
+		auto MsgBase::paste(void *tar) const->void{ std::copy_n(data(), size(), static_cast<char*>(tar)); }
+		auto MsgBase::pasteAt(void *tar, std::int32_t data_size, std::int32_t at_this_pos_of_msg) const->void
+		{
+			std::copy_n(data() + at_this_pos_of_msg, std::min(data_size, size() - at_this_pos_of_msg), static_cast<char*>(tar));
+		}
+		auto MsgBase::setType(std::int64_t type)->void { header().msg_type_ = type; }
+		auto MsgBase::type() const->std::int64_t { return header().msg_type_; }
 
-		}
-		auto MsgBase::copyMore(const void * from_this_memory, std::int32_t data_size)->void
+		auto Msg::swap(Msg &other)->void { std::swap(this->data_, other.data_); }
+		auto Msg::resize(std::int32_t data_size)->void
 		{
-			std::int32_t pos = size();
+			std::unique_ptr<char[]> other(new char[sizeof(MsgHeader) + data_size]());
+			if (data_)std::copy_n(data_.get(), sizeof(MsgHeader) + std::min(size(), data_size), other.get());
+			std::swap(data_, other);
+			header().msg_size_ = data_size;
+		}
+		auto Msg::header()->MsgHeader& { return *reinterpret_cast<MsgHeader*>(data_.get()); }
+		auto Msg::header()const->const MsgHeader& { return *reinterpret_cast<const MsgHeader*>(data_.get()); }
+		Msg::~Msg() = default;
+		Msg::Msg(std::int32_t msg_id, std::int32_t size) { resize(size); setMsgID(msg_id); };
+		Msg::Msg(const std::string &msg_str) { resize(msg_str.size() + 1); std::copy(msg_str.begin(), msg_str.end(), data()); }
+		Msg::Msg(const Msg& other)
+		{
+			resize(other.size());
+			std::copy_n(other.data_.get(), sizeof(MsgHeader) + other.size(), data_.get());
+		}
+		Msg::Msg(Msg&& other) { swap(other); }
+		Msg&Msg::operator=(Msg other) { swap(other); return (*this); }
 
-			if (data_size > 0)
-			{
-				resize(size() + data_size);
-				memcpy(data() + pos, from_this_memory, data_size);
-			}
-		}
-		auto MsgBase::paste(void * to_this_memory, std::int32_t data_size) const->void
-		{
-			memcpy(to_this_memory, data(), size() < data_size ? size() : data_size);
-		}
-		auto MsgBase::paste(void * to_this_memory) const->void
-		{
-			memcpy(to_this_memory, data(), size());
-		}
-		auto MsgBase::pasteAt(void * to_this_memory, std::int32_t data_size, std::int32_t at_this_pos_of_msg) const->void
-		{
-			memcpy(to_this_memory, &data()[at_this_pos_of_msg], std::min(data_size, size() - at_this_pos_of_msg));
-		}
-		auto MsgBase::header()->MsgHeader& { return std::ref(*reinterpret_cast<MsgHeader *>(data_)); }
-		auto MsgBase::header()const->const MsgHeader&{ return std::ref(*reinterpret_cast<MsgHeader *>(data_)); }
-		auto MsgBase::setType(std::int64_t type)->void { reinterpret_cast<MsgHeader*>(data_)->msg_type_ = type; }
-		auto MsgBase::type() const->std::int64_t { return reinterpret_cast<MsgHeader*>(data_)->msg_type_; }
 
 		auto MsgRT::instance()->MsgRtArray&
 		{
 			static MsgRtArray msg_rt_array;
 			return msg_rt_array;
 		}
-		auto MsgRT::resize(std::int32_t data_size)->void
-		{
-			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = data_size;
-		}
-		MsgRT::~MsgRT() { delete [] data_; }
-		MsgRT::MsgRT()
-		{
-			data_ = new char[RT_MSG_SIZE + sizeof(MsgHeader)];
-			std::fill(data_, data_ + sizeof(MsgHeader) + RT_MSG_SIZE, 0);
-			resize(0);
-		}
-		
-		auto Msg::swap(Msg &other)->void
-		{
-			std::swap(this->data_, other.data_);
-		}
-		auto Msg::resize(std::int32_t dataLength)->void
-		{
-			Msg otherMsg(0, dataLength);
-
-			std::copy_n(this->data_, sizeof(MsgHeader) + std::min(size(), dataLength), otherMsg.data_);
-
-			reinterpret_cast<MsgHeader*>(otherMsg.data_)->msg_size_ = dataLength;
-
-			this->swap(otherMsg);
-		}
-		Msg::~Msg(){delete [] data_;}
-		Msg::Msg(std::int32_t msg_id, std::int32_t data_size)
-		{
-			data_ = new char[sizeof(MsgHeader) + data_size]();
-			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = data_size;
-			reinterpret_cast<MsgHeader *>(data_)->msg_id_ = msg_id;
-		}
-		Msg::Msg(const std::string &msg_str)
-		{
-			data_ = new char[sizeof(MsgHeader) + msg_str.size() + 1]();
-			reinterpret_cast<MsgHeader *>(data_)->msg_size_ = msg_str.size() + 1;
-			std::copy(msg_str.data(), msg_str.data() + msg_str.size() + 1, data_ + sizeof(MsgHeader));
-		}
-		Msg::Msg(const Msg& other)
-		{
-			data_ = new char[sizeof(MsgHeader) + other.size()];
-			std::copy(other.data_, other.data_ + sizeof(MsgHeader) + other.size(), data_);
-		}
-		Msg::Msg(Msg&& other) { swap(other); }
-		Msg&Msg::operator=(Msg other) { swap(other); return (*this); }
+		auto MsgRT::resize(std::int32_t data_size)->void{ header().msg_size_ = data_size; }
+		auto MsgRT::header()->MsgHeader& { return *reinterpret_cast<MsgHeader*>(data_); }
+		auto MsgRT::header()const->const MsgHeader&{ return *reinterpret_cast<const MsgHeader*>(data_); }
+		MsgRT::~MsgRT() { }
+		MsgRT::MsgRT(){	std::fill(data_, data_ + sizeof(MsgHeader) + RT_MSG_SIZE, 0); resize(0); }
 	}
 }

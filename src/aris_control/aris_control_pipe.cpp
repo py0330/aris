@@ -15,6 +15,8 @@
 #include <mutex>
 #include <string>
 #include <iostream>
+#include <memory>
+#include <atomic>
 
 #include "aris_control_ethercat.h"
 
@@ -23,7 +25,7 @@ namespace aris
 {
 	namespace control
 	{
-
+		/*
 		class PipeBase::Imp
 		{
 		public:
@@ -97,7 +99,6 @@ namespace aris
 
 			friend class PipeBase;
 		};
-
 		PipeBase::PipeBase(bool is_block):imp_(new PipeBase::Imp(is_block)){}
 		PipeBase::~PipeBase(){}
 		auto PipeBase::sendToRTRawData(const void *data, int size)->int
@@ -142,7 +143,7 @@ namespace aris
 		Pipe<aris::core::Msg>::Pipe(bool is_block) :PipeBase(is_block) {}
 		auto Pipe<aris::core::Msg>::sendToRT(const aris::core::Msg &msg)->int
 		{
-			sendToRTRawData(msg.data_, msg.size() + sizeof(aris::core::MsgHeader));
+			sendToRTRawData(msg.data_.get(), msg.size() + sizeof(aris::core::MsgHeader));
 			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
 		auto Pipe<aris::core::Msg>::sendToNrt(const aris::core::MsgRT &msg)->int
@@ -157,10 +158,11 @@ namespace aris
 		}
 		auto Pipe<aris::core::Msg>::recvInNrt(aris::core::Msg &msg)->int
 		{
-			int err = recvInNrtRawData(msg.data_, sizeof(aris::core::MsgHeader));
+			int err = recvInNrtRawData(msg.data_.get(), sizeof(aris::core::MsgHeader));
 			msg.resize(msg.size());
 			recvInNrtRawData(msg.data(), msg.size());
 			return msg.size() + sizeof(aris::core::MsgHeader);
 		}
+		*/
 	}
 }

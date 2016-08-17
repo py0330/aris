@@ -8,7 +8,7 @@ const char xml_data[] =
 "<root>"
 "    <command_parser type=\"CommandParser\">"
 "        <command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
-"            <start/>"
+"            <start help=\"start the control system.\"/>"
 "            <stop/>"
 "            <exit/>"
 "            <en default_child_type=\"Param\" default=\"all\">"
@@ -68,12 +68,13 @@ const char xml_data[] =
 "</root>";
 
 
-void test_command()
+void test_core_command()
 {
 	try
 	{
 		aris::core::XmlDocument xml_doc;
-        xml_doc.Parse(xml_data);
+        //xml_doc.Parse(xml_data);
+		xml_doc.LoadFile("c:\\aris\\test_command.xml");
 
 		aris::core::Root root;
 		root.registerChildType<aris::core::Param>();
@@ -87,14 +88,16 @@ void test_command()
 
 		auto& parser = static_cast<aris::core::CommandParser&>(*root.findByName("command_parser"));
 
+
 		
 		//get all command of the system  
         std::cout << parser.help() << std::endl;
 		//display all command help information in detail
 		for (auto &command : parser.commandPool())
 		{
-            std::cout << command.help()<<std::endl;
+            std::cout << command.help(true, 0)<<std::endl;
 		}
+
 
 		//test the command param
 		std::vector<std::string> cmd_string_vec{ "en --all", "en -m=0 --all", "en -motor=0", "en --moto=0", "rc -t=3000","ds","start" };

@@ -32,7 +32,6 @@ namespace aris
 
 			auto tg()->void;
             auto checkError()->int;
-            auto checkMotionStatus()->void;
 			auto executeCmd()->int;
 			auto enable()->int;
 			auto disable()->int;
@@ -78,9 +77,6 @@ namespace aris
 			ParseFunc parse_enable_func_ = defaultBasicParse;
 			ParseFunc parse_disable_func_ = defaultBasicParse;
 			ParseFunc parse_home_func_ = defaultBasicParse;
-
-			// pipe //
-			aris::control::Pipe<aris::core::Msg> msg_pipe_;
 
             // 储存模型、控制器和传感器 command parser //
 			std::unique_ptr<aris::dynamic::Model> model_;
@@ -143,7 +139,6 @@ namespace aris
 					}
 					else
 					{
-						//decltype(*params.begin())
 						paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
 						{
 							return a.first.length() < b.first.length();
@@ -187,13 +182,6 @@ namespace aris
 
 					return aris::core::Msg();
 				}
-
-
-				if (cmd == "help")
-				{
-                    std::cout << widget_root_->commandParser().help() << std::endl;
-					return aris::core::Msg();
-                }
 				
 				if (!is_running_)throw std::runtime_error("can't execute command, because the server is not STARTED, please start it first");
 				sendParam(cmd, params);
@@ -261,16 +249,17 @@ namespace aris
 			}
 
 			cmd_msg.setMsgID(0);
-			msg_pipe_.sendToRT(cmd_msg);
+			server_->widgetRoot().msgPipe().sendMsg(cmd_msg);
 		}
 		auto ControlServer::Imp::tg()->void
         {
+			static aris::core::MsgFix<8196> recv_msg;
+			
 			// 检查是否出错 //
             if (checkError())return;
-            //checkMotionStatus();
 
 			// 查看是否有新cmd //
-            if (msg_pipe_.recvInRT(aris::core::MsgRT::instance()[0]) > 0)
+            if (server_->widgetRoot().msgPipe().recvMsg(recv_msg))
 			{
                 if (cmd_num_ >= CMD_POOL_SIZE)
 				{
@@ -278,7 +267,7 @@ namespace aris
 				}
 				else
 				{
-                    aris::core::MsgRT::instance()[0].paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
+					recv_msg.paste(cmd_queue_[(current_cmd_ + cmd_num_) % CMD_POOL_SIZE]);
                     ++cmd_num_;
 				}
 			}
@@ -337,29 +326,6 @@ namespace aris
 
 			return fault_count;
 		}
-        auto ControlServer::Imp::checkMotionStatus()->void
-        {
-            for (auto &motion : model_->motionPool())
-            {
-                auto &rx_motion_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(motion.slaID()));
-                if(rx_motion_data.fault_warning==0)
-                    continue;
-                else
-                {
-                    rt_printf("Motor %d (sla id) has wrong status:%d\n", motion.slaID(), rx_motion_data.fault_warning);
-                    rt_printf("The status using ABS sequence are:\n");
-                    for (auto &motion : model_->motionPool())
-                    {
-                        auto &rx_data=static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(motion.slaID()));
-                        rt_printf("%d\t", rx_data.fault_warning);
-                    }
-                    rt_printf("\n");
-                    return;
-                }
-            }
-
-        }
-
 		auto ControlServer::Imp::executeCmd()->int
 		{
 			aris::dynamic::PlanParamBase *param = reinterpret_cast<aris::dynamic::PlanParamBase *>(cmd_queue_[current_cmd_]);
@@ -589,7 +555,6 @@ namespace aris
         }
 		auto ControlServer::Imp::onRunError()->int
 		{
-			
 			rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
 			cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
 			count_ = 0;
@@ -601,7 +566,6 @@ namespace aris
 			}
 
 			return 0;
-
 		}
         auto ControlServer::Imp::defaultBasicParse(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 		{
@@ -643,14 +607,11 @@ namespace aris
 
 			msg.copyStruct(param);
 		}
-
-		ControlServer &ControlServer::instance()
+		auto ControlServer::instance()->ControlServer &
 		{
 			static ControlServer instance;
 			return std::ref(instance);
 		}
-		ControlServer::ControlServer() :imp_(new Imp(this)) {}
-		ControlServer::~ControlServer() {}
 		auto ControlServer::createModel(dynamic::Model *model)->void
 		{
 			if (imp_->model_)throw std::runtime_error("control sever can't create model because it already has one");
@@ -704,6 +665,15 @@ namespace aris
 			});
 			widgetRoot().commandSocket().setOnReceivedRequest([this](aris::core::Socket *sock, aris::core::Msg &msg)
 			{
+				if (msg.data()[msg.size()] != 0) 
+				{
+					aris::core::log(std::string("received data but it's not a string, because last char is no \\0"));
+				}
+				else
+				{
+					aris::core::log(std::string("received data : \"") + msg.data() + "\"");
+				}
+				
 				return imp_->onReceiveMsg(msg);
 			});
 			widgetRoot().commandSocket().setOnLoseConnection([this](aris::core::Socket *sock)
@@ -760,7 +730,7 @@ namespace aris
 				{
 					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
 				}
-                else if (widgetRoot().commandParser().commandPool().findByName(cmd_name) == widgetRoot().commandParser().end())
+                else if (widgetRoot().commandParser().commandPool().findByName(cmd_name) == widgetRoot().commandParser().children().end())
 				{
 					throw std::runtime_error(std::string("failed to add command, because xml does not have \"") + cmd_name + "\" node");
 				}
@@ -799,6 +769,9 @@ namespace aris
 		{
 			this->imp_->on_exit_callback_ = callback_func;
 		}
+		ControlServer::~ControlServer() = default;
+		ControlServer::ControlServer() :imp_(new Imp(this)) {}
+		
 	}
 }
 

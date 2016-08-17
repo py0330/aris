@@ -11,6 +11,7 @@ namespace aris
 {
 	namespace control
 	{	
+		/*
 		class PipeBase
 		{
 		protected:
@@ -102,6 +103,7 @@ namespace aris
             auto recvInRT(void *data, std::size_t byte_size)->int { return recvInRTRawData(data, byte_size); }
             auto recvInNrt(void *data, std::size_t byte_size)->int { return recvInNrtRawData(data, byte_size); }
 		};
+		*/
 	}
 }
 

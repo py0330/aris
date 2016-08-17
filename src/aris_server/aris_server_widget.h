@@ -22,6 +22,8 @@ namespace aris
 			auto commandSocket()const->const aris::core::Socket&;
 			auto commandParser()->aris::core::CommandParser&;
 			auto commandParser()const->const aris::core::CommandParser&;
+			auto msgPipe()->aris::core::Pipe &;
+			auto msgPipe()const->const aris::core::Pipe &;
 			
 			virtual ~WidgetRoot();
 			WidgetRoot();

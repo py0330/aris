@@ -17,9 +17,9 @@ namespace aris
 		public:
 			enum State
 			{
-				IDLE = 0,/*!< \brief 空闲状态 */
-				WAITING_FOR_CONNECTION,/*!< \brief 服务器已经打开端口，等待客户端连接 */
-				WORKING,/*!< \brief Socket已经连接好，可以传输数据 */
+				IDLE = 0,
+				WAITING_FOR_CONNECTION,
+				WORKING,
 				WAITING_FOR_REPLY
 			};
 			class StartServerError :public std::runtime_error
@@ -81,8 +81,8 @@ namespace aris
 			auto setOnReceiveError(std::function<void(Socket*)> = nullptr)->void;
 
 			virtual ~Socket();
-			Socket(Object &father, std::size_t id, const std::string &name, const std::string& remote_ip = std::string(), const std::string& port = std::string());
-			Socket(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Socket(const std::string &name, const std::string& remote_ip = std::string(), const std::string& port = std::string());
+			Socket(Object &father, const aris::core::XmlElement &xml_ele);
 			Socket(const Socket & other) = delete;
 			Socket(Socket && other) = delete;
 			Socket &operator=(const Socket& other) = delete;

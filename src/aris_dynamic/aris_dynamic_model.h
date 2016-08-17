@@ -36,7 +36,7 @@ namespace aris
 		class Element :public aris::core::Object
 		{
 		public:
-			virtual auto saveAdams(std::ofstream &file) const->void { for (auto &ele : *this)static_cast<const Element &>(ele).saveAdams(file); }
+			virtual auto saveAdams(std::ofstream &file) const->void { for (auto &ele : children())static_cast<const Element &>(ele).saveAdams(file); }
 			virtual auto adamsID()const->std::size_t { return id() + 1; }
 			virtual auto adamsType()const->const std::string &{ return type(); }
 			virtual auto adamsScriptType()const->const std::string &{ return adamsType(); }
@@ -50,8 +50,8 @@ namespace aris
 
 		protected:
 			~Element() = default;
-			explicit Element(aris::core::Object &father, std::size_t id, const std::string &name) :Object(father, id, name) {}
-			explicit Element(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Object(father, id, xml_ele) {}
+			explicit Element(const std::string &name) :Object(name) {}
+			explicit Element(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) {}
 		};
 		class DynEle : public Element
 		{
@@ -63,8 +63,8 @@ namespace aris
 
 		protected:
 			virtual ~DynEle() = default;
-			explicit DynEle(aris::core::Object &father, std::size_t id, const std::string &name, bool active = true) : Element(father, id, name), active_(active) {};
-			explicit DynEle(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit DynEle(const std::string &name, bool active = true) : Element(name), active_(active) {};
+			explicit DynEle(Object &father, const aris::core::XmlElement &xml_ele);
 			DynEle(const DynEle &) = default;
 			DynEle(DynEle &&) = default;
 			DynEle& operator=(const DynEle &) = default;
@@ -137,8 +137,8 @@ namespace aris
 
 		protected:
 			virtual ~Coordinate() = default;
-			explicit Coordinate(Object &father, std::size_t id, const std::string &name, bool active = true);
-			explicit Coordinate(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :DynEle(father, id, xml_ele) {}
+			explicit Coordinate(const std::string &name, bool active = true);
+			explicit Coordinate(Object &father, const aris::core::XmlElement &xml_ele) :DynEle(father, xml_ele) {}
 		};
 		class Interaction :public DynEle
 		{
@@ -151,9 +151,9 @@ namespace aris
 
 		protected:
 			virtual ~Interaction() = default;
-			explicit Interaction(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, bool is_active = true)
-				: DynEle(father, id, name, is_active), makI_(&makI), makJ_(&makJ) {}
-			explicit Interaction(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit Interaction(const std::string &name, Marker &makI, Marker &makJ, bool is_active = true)
+				: DynEle(name, is_active), makI_(&makI), makJ_(&makJ) {}
+			explicit Interaction(Object &father, const aris::core::XmlElement &xml_ele);
 
 		private:
 			Marker *makI_;
@@ -173,8 +173,8 @@ namespace aris
 
 		protected:
 			virtual ~Constraint();
-			explicit Constraint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, bool is_active = true);
-			explicit Constraint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active = true);
+			explicit Constraint(Object &father, const aris::core::XmlElement &xml_ele);
 
 		private:
 			struct Imp;
@@ -227,8 +227,8 @@ namespace aris
 			virtual ~Environment() = default;
 			Environment(const Environment &) = default;
 			Environment(Environment &&) = default;
-			explicit Environment(Object &father, std::size_t id, const std::string &name) :Element(father, id, name) {}
-			explicit Environment(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit Environment(const std::string &name) :Element(name) {}
+			explicit Environment(Object &father, const aris::core::XmlElement &xml_ele);
 
 		private:
 			double gravity_[6]{ 0, -9.8, 0, 0, 0, 0 };
@@ -252,11 +252,11 @@ namespace aris
 
 		private:
 			virtual ~Akima();
-			explicit Akima(Object &father, std::size_t id, const std::string &name, int num, const double *x_in, const double *y_in);
-			explicit Akima(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
-			explicit Akima(Object &father, std::size_t id, const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in);
-			explicit Akima(Object &father, std::size_t id, const std::string &name, const std::list<std::pair<double, double> > &data_in);
-			explicit Akima(Object &father, std::size_t id, const std::string &name, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope);
+			explicit Akima(const std::string &name, int num, const double *x_in, const double *y_in);
+			explicit Akima(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Akima(const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in);
+			explicit Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in);
+			explicit Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope);
 
 		private:
 			struct Imp;
@@ -284,8 +284,8 @@ namespace aris
 
 		private:
 			virtual ~Script();
-			explicit Script(Object &father, std::size_t id, const std::string &name);
-			explicit Script(Object &father, std::size_t id, const aris::core::XmlElement &ele);
+			explicit Script(const std::string &name);
+			explicit Script(Object &father, const aris::core::XmlElement &ele);
 
 		private:
 			struct Imp;
@@ -306,8 +306,8 @@ namespace aris
 
 		protected:
 			virtual ~Variable() = default;
-			explicit Variable(aris::core::Object &father, std::size_t id, const std::string &name) : Element(father, id, name) {	}
-			explicit Variable(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Element(father, id, xml_ele) {}
+			explicit Variable(const std::string &name) : Element(name) {	}
+			explicit Variable(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele) {}
 		
 			friend class Model;
 			friend class aris::core::Root;
@@ -331,8 +331,8 @@ namespace aris
 
 		protected:
 			virtual ~Marker();
-			explicit Marker(Object &father, std::size_t id, const std::string &name, const double *prt_pm = nullptr, Marker *relative_mak = nullptr, bool active = true);//only for child class Part to construct
-			explicit Marker(Object &father, std::size_t id, const aris::core::XmlElement &ele);
+			explicit Marker(const std::string &name, const double *prt_pm = nullptr, Marker *relative_mak = nullptr, bool active = true);//only for child class Part to construct
+			explicit Marker(Object &father, const aris::core::XmlElement &xml_ele);
 
 		private:
 			struct Imp;
@@ -424,11 +424,10 @@ namespace aris
 
 		private:
 			virtual ~Part();
+			explicit Part(const std::string &name, const double *prt_im = nullptr, const double *pm = nullptr, const double *vel = nullptr, const double *acc = nullptr, bool active = true);
+			explicit Part(Object &father, const aris::core::XmlElement &xml_ele);
 			Part(Part &&other);
 			Part(const Part &other);
-			explicit Part(Object &father, std::size_t id, const std::string &name, const double *prt_im = nullptr
-				, const double *pm = nullptr, const double *vel = nullptr, const double *acc = nullptr, bool active = true);
-			explicit Part(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
 			Part&operator=(const Part &other);
 			Part&operator=(Part &&other);
 
@@ -450,10 +449,8 @@ namespace aris
 
 		protected:
 			virtual ~Joint() = default;
-			explicit Joint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, bool active = true)
-				: Constraint(father, id, name, makI, makJ, active) {}
-			explicit Joint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-				: Constraint(father, id, xml_ele) {}
+			explicit Joint(const std::string &name, Marker &makI, Marker &makJ, bool active = true): Constraint(name, makI, makJ, active) {}
+			explicit Joint(Object &father, const aris::core::XmlElement &xml_ele): Constraint(father, xml_ele) {}
 
 			friend class aris::core::Root;
 		};
@@ -494,8 +491,8 @@ namespace aris
 
 		protected:
 			virtual ~Motion();
-			explicit Motion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, int component_axis = 2, const double *frc_coe = nullptr, bool active = true);
-			explicit Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit Motion(const std::string &name, Marker &makI, Marker &makJ, int component_axis = 2, const double *frc_coe = nullptr, bool active = true);
+			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
 
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
@@ -530,8 +527,8 @@ namespace aris
 
 		protected:
 			virtual ~GeneralMotion();
-			explicit GeneralMotion(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom = "xyz123", bool active = true);
-			explicit GeneralMotion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom = "xyz123", bool active = true);
+			explicit GeneralMotion(Object &father, const aris::core::XmlElement &xml_ele);
 
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
@@ -550,10 +547,8 @@ namespace aris
 
 		protected:
 			virtual ~Force() = default;
-			explicit Force(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ, bool active = true)
-				:Interaction(father, id, name, makI, makJ, active) {}
-			explicit Force(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-				:Interaction(father, id, xml_ele) {}
+			explicit Force(const std::string &name, Marker &makI, Marker &makJ, bool active = true):Interaction(name, makI, makJ, active) {}
+			explicit Force(Object &father, const aris::core::XmlElement &xml_ele):Interaction(father, xml_ele) {}
 
 			double fceI_[6]{ 0 };
 			double fceJ_[6]{ 0 };
@@ -672,10 +667,8 @@ namespace aris
 			auto data()const->const VariableType&{ return data_; }
 
 		protected:
-			explicit VariableTemplate(aris::core::Object &father, std::size_t id, const std::string &name, const VariableType &data, bool active = true)
-				: Variable(father, id, name), data_(data) {}
-			explicit VariableTemplate(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-				: Variable(father, id, xml_ele) {}
+			explicit VariableTemplate(const std::string &name, const VariableType &data, bool active = true): Variable(name), data_(data) {}
+			explicit VariableTemplate(Object &father, const aris::core::XmlElement &xml_ele): Variable(father, xml_ele) {}
 
 			VariableType data_;
 			friend class Model;
@@ -691,10 +684,8 @@ namespace aris
 			virtual auto cspPtr() const->const double* override { return ConstraintData<DIM>::csp(); }
 
 		protected:
-			explicit JointTemplate(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ)
-				:Joint(father, id, name, makI, makJ) {}
-			explicit JointTemplate(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-				:Joint(father, id, xml_ele) {}
+			explicit JointTemplate(const std::string &name, Marker &makI, Marker &makJ)	:Joint(name, makI, makJ) {}
+			explicit JointTemplate(Object &father, const aris::core::XmlElement &xml_ele):Joint(father, xml_ele) {}
 
 		private:
 			friend class Model;
@@ -710,10 +701,8 @@ namespace aris
 
 		private:
 			virtual ~MatrixVariable() = default;
-			explicit MatrixVariable(aris::core::Object &father, std::size_t id, const std::string &name, const aris::core::Matrix &data)
-				: VariableTemplate(father, id, name, data) {}
-			explicit MatrixVariable(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-				: VariableTemplate(father, id, xml_ele)
+			explicit MatrixVariable(const std::string &name, const aris::core::Matrix &data): VariableTemplate(name, data) {}
+			explicit MatrixVariable(Object &father, const aris::core::XmlElement &xml_ele): VariableTemplate(father, xml_ele)
 			{
 				data_ = model().calculator().calculateExpression(xml_ele.GetText());
 				model().calculator().addVariable(name(), data_);
@@ -733,10 +722,8 @@ namespace aris
 
 		private:
 			virtual ~StringVariable() = default;
-			explicit StringVariable(aris::core::Object &father, std::size_t id, const std::string &name, const std::string &data)
-				: VariableTemplate(father, id, name, data) {}
-			explicit StringVariable(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)
-				: VariableTemplate(father, id, xml_ele)
+			explicit StringVariable(const std::string &name, const std::string &data): VariableTemplate(name, data) {}
+			explicit StringVariable(Object &father, const aris::core::XmlElement &xml_ele): VariableTemplate(father, xml_ele)
 			{
 				data_ = std::string(xml_ele.GetText());
 				model().calculator().addVariable(name(), data_);
@@ -753,7 +740,7 @@ namespace aris
 			void setPrtPe(const double *prtPe, const char *type = "313") { s_pe2pm(prtPe, const_cast<double *>(*prtPm()), type); }
 			void setPrtPq(const double *prtPq) { s_pq2pm(prtPq, const_cast<double *>(*prtPm())); }
 
-			explicit FloatMarker(Part &prt, const double *prt_pe = nullptr, const char* eu_type = "313") :Marker(prt.markerPool(), 0, "float_marker")
+			explicit FloatMarker(Part &prt, const double *prt_pe = nullptr, const char* eu_type = "313") :Marker("float_marker")
 			{
 				static const double default_prt_pe[6]{ 0,0,0,0,0,0 };
 				prt_pe = prt_pe ? prt_pe : default_prt_pe;
@@ -769,8 +756,8 @@ namespace aris
 
 		private:
 			virtual ~RevoluteJoint() = default;
-			explicit RevoluteJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ);
-			explicit RevoluteJoint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit RevoluteJoint(const std::string &name, Marker &makI, Marker &makJ);
+			explicit RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele);
 
 			friend class Model;
 			friend class aris::core::Root;
@@ -785,8 +772,8 @@ namespace aris
 
 		private:
 			virtual ~TranslationalJoint() = default;
-			explicit TranslationalJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ);
-			explicit TranslationalJoint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit TranslationalJoint(const std::string &name, Marker &makI, Marker &makJ);
+			explicit TranslationalJoint(Object &father, const aris::core::XmlElement &xml_ele);
 
 			friend class Model;
 			friend class aris::core::Root;
@@ -803,8 +790,8 @@ namespace aris
 		
 		private:
 			virtual ~UniversalJoint() = default;
-			explicit UniversalJoint(Object &father, std::size_t id, const std::string &name, Marker &makI, Marker &makJ);
-			explicit UniversalJoint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit UniversalJoint(const std::string &name, Marker &makI, Marker &makJ);
+			explicit UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele);
 
 			friend class Model;
 			friend class aris::core::Root;
@@ -819,8 +806,8 @@ namespace aris
 
 		private:
 			virtual ~SphericalJoint() = default;
-			explicit SphericalJoint(Object &father, std::size_t id, const std::string &Name, Marker &makI, Marker &makJ);
-			explicit SphericalJoint(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit SphericalJoint(const std::string &Name, Marker &makI, Marker &makJ);
+			explicit SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele);
 
 			friend class Model;
 			friend class aris::core::Root;
@@ -843,8 +830,8 @@ namespace aris
 
 		private:
 			virtual ~SingleComponentForce() = default;
-			explicit SingleComponentForce(Object &father, std::size_t id, const std::string &name, Marker& makI, Marker& makJ, int componentID);
-			explicit SingleComponentForce(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, int componentID);
+			explicit SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele);
 
 			int component_axis_;
 			double fce_value_[6]{ 0 };

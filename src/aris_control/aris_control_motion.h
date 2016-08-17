@@ -73,7 +73,7 @@ namespace aris
             auto pos2countRatio()->std::int32_t;
 
 			virtual ~Motion();
-			Motion(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Motion(Object &father, const aris::core::XmlElement &xml_ele);
 
         protected:
             virtual auto readUpdate()->void override;

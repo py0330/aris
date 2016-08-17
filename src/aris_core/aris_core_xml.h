@@ -36,8 +36,8 @@ namespace aris
 			auto operator*()->T&{ return *data_unique_ptr_; }
 			
 			~ImpPtr() = default;
-			ImpPtr() :data_unique_ptr_(new T) {}
-			ImpPtr(T *data_ptr) :data_unique_ptr_(data_ptr) {}
+			explicit ImpPtr(T *data_ptr) :data_unique_ptr_(data_ptr) {}
+			explicit ImpPtr() :data_unique_ptr_(new T) {}
 			ImpPtr(const ImpPtr &other) :data_unique_ptr_(new T(*other.data_unique_ptr_)) {}
 			ImpPtr(ImpPtr &&other)noexcept = default;
 			ImpPtr& operator=(const ImpPtr &other) { *data_unique_ptr_ = *other.data_unique_ptr_; return *this; }
@@ -144,7 +144,6 @@ namespace aris
 			using reverse_iterator = std::reverse_iterator<iterator>; //optional
 			using const_reverse_iterator = std::reverse_iterator<const_iterator>; //optional
 			
-			auto swap(ImpContainer& other)->void { return container_.swap(other.container_); }
 			auto size()const->size_type { return container_.size(); }
 			auto max_size()->size_type { return container_.max_size(); }
 			auto empty()->bool { return container_.empty(); }
@@ -177,21 +176,49 @@ namespace aris
 			auto clear()->void { container_.clear(); } //optional
 			
 			auto push_back_ptr(T*ptr)->void { container_.push_back(ImpPtr<T>(ptr)); }
+			auto swap(ImpContainer& other)->void { return container_.swap(other.container_); }
 
 			~ImpContainer() = default;
 			ImpContainer() = default;
 			ImpContainer(const ImpContainer&) = default;
 			ImpContainer(ImpContainer&&other) = default;
-			ImpContainer& operator=(const ImpContainer& other) { container_ = other.container_; }
+			ImpContainer& operator=(const ImpContainer& other) = default;
 			ImpContainer& operator=(ImpContainer&& other) = default;
 
 		private:
 			typename std::vector<ImpPtr<T>> container_;
+			friend class Object;
 		};
 
-		class Object: public ImpContainer<Object>
+		class Object
 		{
 		public:
+			static auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->bool;
+			static auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, bool default_value)->bool;
+			static auto attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::int64_t;
+			static auto attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int64_t default_value)->std::int64_t;
+			static auto attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::int32_t;
+			static auto attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int32_t default_value)->std::int32_t;
+			static auto attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::int16_t;
+			static auto attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int16_t default_value)->std::int16_t;
+			static auto attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::int8_t;
+			static auto attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int8_t default_value)->std::int8_t;
+			static auto attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::uint64_t;
+			static auto attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint64_t default_value)->std::uint64_t;
+			static auto attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::uint32_t;
+			static auto attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint32_t default_value)->std::uint32_t;
+			static auto attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::uint16_t;
+			static auto attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint16_t default_value)->std::uint16_t;
+			static auto attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::uint8_t;
+			static auto attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint8_t default_value)->std::uint8_t;
+			static auto attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->float;
+			static auto attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, float default_value)->float;
+			static auto attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->double;
+			static auto attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, double default_value)->double;
+			static auto attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::string;
+			static auto attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const std::string &default_value)->std::string;
+			static auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->char;
+			static auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, char default_value)->char;
 			static auto Type()->const std::string &{ static const std::string type("Object"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void;
@@ -201,47 +228,27 @@ namespace aris
 			auto root()const->const Root&;
 			auto father()const->const Object&;
 			auto father()->Object&;
+			auto children()const->const ImpContainer<Object>&;
+			auto children()->ImpContainer<Object>&;
 			auto save(const std::string &name, bool auto_override_save = true)->void;
 			auto load(const std::string &name, bool auto_delete_save = true)->void;
-			auto findByName(const std::string &name)const->const_iterator;
-			auto findByName(const std::string &name)->iterator;
-			auto add(const Object &object)->Object &;
-			auto add(Object &&object)->Object &;
+			auto findByName(const std::string &name)const->ImpContainer<Object>::const_iterator;
+			auto findByName(const std::string &name)->ImpContainer<Object>::iterator;
+			template<typename T = Object>
+			auto findType(const std::string &name)const->const T*{ return const_cast<Object*>(this)->findType<T>(); };
+			template<typename T = Object>
+			auto findType(const std::string &name)->T* { auto iter = findByName(name); return iter != children().end() && dynamic_cast<T*>(&*iter) ? dynamic_cast<T*>(&*iter) : nullptr; }
+			template<typename T = Object, typename ...Args>
+			auto findOrInsert(const std::string &name, Args&&... args)-> T* { auto p = findType<T>(name); return p ? p : &add<T>(name, std::forward<Args>(args)...); }
 			auto add(Object *obj)->Object &;
 			auto add(const aris::core::XmlElement &xml_ele)->Object &;
 			template<typename T, typename ...Args>
-			auto add(const std::string &name, Args&&... args)->T& { return static_cast<T&>(add(new T(*this, size(), name, std::forward<Args>(args)...))); }
-
-			auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->bool;
-			auto attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, bool default_value)const->bool;
-			auto attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int64_t;
-			auto attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int64_t default_value)const->std::int64_t;
-			auto attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int32_t;
-			auto attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int32_t default_value)const->std::int32_t;
-			auto attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int16_t;
-			auto attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int16_t default_value)const->std::int16_t;
-			auto attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::int8_t;
-			auto attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int8_t default_value)const->std::int8_t;
-			auto attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint64_t;
-			auto attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint64_t default_value)const->std::uint64_t;
-			auto attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint32_t;
-			auto attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint32_t default_value)const->std::uint32_t;
-			auto attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint16_t;
-			auto attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint16_t default_value)const->std::uint16_t;
-			auto attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::uint8_t;
-			auto attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint8_t default_value)const->std::uint8_t;
-			auto attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->float;
-			auto attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, float default_value)const->float;
-			auto attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->double;
-			auto attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, double default_value)const->double;
-			auto attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->std::string;
-			auto attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const std::string &default_value)const->std::string;
-			auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->char;
-			auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, char default_value)const->char;
+			auto add(Args&&... args)->T& { return static_cast<T&>(add(new T(std::forward<Args>(args)...))); }
+			
 
 			virtual ~Object();
-			Object(Object &father, std::size_t id, const std::string &name);
-			Object(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			explicit Object(const std::string &name = "object");
+			explicit Object(Object &father, const aris::core::XmlElement &xml_ele);
 			Object(const Object &);
 			Object(Object &&);
 			Object& operator=(const Object &);
@@ -257,7 +264,7 @@ namespace aris
 		public:
 			struct TypeInfo
 			{
-				std::function<Object*(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)> xml_construct_func;
+				std::function<Object*(Object &father, const aris::core::XmlElement &xml_ele)> xml_construct_func;
 				std::function<Object*(const Object &from_object)> copy_construct_func;
 				std::function<Object*(Object &&from_object)> move_construct_func;
 				std::function<Object&(const Object &from_object, Object &to_object)> copy_assign_func;
@@ -269,10 +276,7 @@ namespace aris
 					static_assert(std::is_base_of<Object, ChildType>::value, "failed to register type, because it is not inheritated from Object");
 
 					TypeInfo info;
-					info.xml_construct_func = [](Object &father, std::size_t id, const aris::core::XmlElement &xml_ele)->Object*
-					{
-						return new ChildType(father, id, xml_ele);
-					};
+					info.xml_construct_func = [](Object &father, const aris::core::XmlElement &xml_ele)->Object* {return new ChildType(father, xml_ele); };
 					info.copy_construct_func = CopyConstruct<ChildType, is_copy_constructible<ChildType>()>::func();
 					info.move_construct_func = MoveConstruct<ChildType, is_copy_constructible<ChildType>(), is_move_constructible<ChildType>()>::func();
 					info.copy_assign_func = CopyAssign<ChildType, is_copy_assignable<ChildType>()>::func();
@@ -404,8 +408,8 @@ namespace aris
 			auto childTypeMap()const ->const std::map<std::string, TypeInfo>&;
 
 			virtual ~Root();
-			Root(const std::string &name = "Root");
-			Root(const aris::core::XmlElement &xml_ele);
+			explicit Root(const std::string &name = "Root");
+			explicit Root(const aris::core::XmlElement &xml_ele);
 		private:
 			struct Imp;
 			ImpPtr<Imp> imp_;
@@ -423,7 +427,8 @@ namespace aris
 			using const_reference = const T&;
 			using pointer = T*;
 			using const_pointer = const T*;
-			using size_type = typename Base::size_type;
+			using difference_type = typename ImpContainer<Object>::difference_type;
+			using size_type = typename ImpContainer<Object>::size_type;
 
 			class iterator
 			{
@@ -455,15 +460,15 @@ namespace aris
 
 				auto operator*() const->reference { return static_cast<reference>(iter_.operator*());}
 				auto operator->() const->pointer { return static_cast<pointer>(iter_.operator->());}
-				auto operator[](size_type size) const->reference { return *iter_->operator[](size); } //optional
+				auto operator[](size_type size) const->reference { return *iterator(this->iter_->operator[](size)); } //optional
 
 				~iterator() = default;
 				iterator() = default;
 				iterator(const iterator& other) = default;
-				iterator(typename Base::iterator iter) :iter_(iter) {} // 自己添加的
+				iterator(typename ImpContainer<Object>::iterator iter) :iter_(iter) {} // 自己添加的
 
 			private:
-				typename Base::iterator iter_;
+				typename ImpContainer<Object>::iterator iter_;
 				friend class ObjectPool::const_iterator;
 			};
 			class const_iterator
@@ -496,43 +501,51 @@ namespace aris
 
 				auto operator*() const->const_reference { return static_cast<const_reference>(iter_.operator*()); }
 				auto operator->() const->const_pointer { return static_cast<const_pointer>(iter_.operator->()); }
-				auto operator[](size_type size) const->const_reference { return *iter_->operator[](size); } //optional
+				auto operator[](size_type size) const->const_reference { return *const_iterator(this->iter_->operator[](size)); } //optional
 
 				~const_iterator() = default;
 				const_iterator() = default;
 				const_iterator(const const_iterator&) = default;
 				const_iterator(const iterator& other) :iter_(other.iter_) {}
-				const_iterator(typename Base::const_iterator iter) :iter_(iter) {} // 自己添加的
+				const_iterator(typename ImpContainer<Object>::const_iterator iter) :iter_(iter) {} // 自己添加的
 
 			private:
-				typename Base::const_iterator iter_;
+				typename ImpContainer<Object>::const_iterator iter_;
 			};
 			using reverse_iterator = std::reverse_iterator<iterator>; //optional
 			using const_reverse_iterator = std::reverse_iterator<const_iterator>; //optional
 
-			auto begin()->iterator { return Base::begin(); }
-			auto begin()const->const_iterator { return Base::begin(); }
-			auto cbegin() const->const_iterator { return Base::cbegin(); }
-			auto end()->iterator { return Base::end(); }
-			auto end()const->const_iterator { return Base::end(); }
-			auto cend() const->const_iterator { return Base::cend(); }
-			auto rbegin()->reverse_iterator { return Base::rbegin(); } //optional
-			auto rbegin() const->const_reverse_iterator { return Base::rbegin(); }; //optional
-			auto crbegin() const->const_reverse_iterator { return Base::crbegin(); }; //optional
-			auto rend()->reverse_iterator { return Base::rend(); } //optional
-			auto rend() const->const_reverse_iterator { return Base::rend(); } //optional
-			auto crend() const->const_reverse_iterator { return Base::crend(); } //optional
+			auto size()const->size_type { return Base::children().size(); }
+			auto max_size()->size_type { return Base::children().max_size(); }
+			auto empty()->bool { return Base::children().empty(); }
+
+			auto begin()->iterator { return Base::children().begin(); }
+			auto begin()const->const_iterator { return Base::children().begin(); }
+			auto cbegin() const->const_iterator { return Base::children().cbegin(); }
+			auto end()->iterator { return Base::children().end(); }
+			auto end()const->const_iterator { return Base::children().end(); }
+			auto cend() const->const_iterator { return Base::children().cend(); }
+			auto rbegin()->reverse_iterator { return Base::children().rbegin(); } //optional
+			auto rbegin() const->const_reverse_iterator { return Base::children().rbegin(); }; //optional
+			auto crbegin() const->const_reverse_iterator { return Base::children().crbegin(); }; //optional
+			auto rend()->reverse_iterator { return Base::children().rend(); } //optional
+			auto rend() const->const_reverse_iterator { return Base::children().rend(); } //optional
+			auto crend() const->const_reverse_iterator { return Base::children().crend(); } //optional
 
 			auto front()->reference { return *begin(); } //optional
 			auto front() const->const_reference { return *begin(); } //optional
 			auto back()->reference { return *(end() - 1); } //optional
 			auto back() const->const_reference { return *(end() - 1); } //optional
-			auto at(std::size_t id) const->const_reference { return static_cast<const_reference>(Base::at(id)); }
-			auto at(std::size_t id)->reference { return static_cast<reference>(Base::at(id)); }
-			auto operator[](size_type size)->reference { return static_cast<reference>(Base::operator[](size)); } //optional
-			auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(Base::operator[](size)); } //optional
+			auto at(std::size_t id) const->const_reference { return static_cast<const_reference>(Base::children().at(id)); }
+			auto at(std::size_t id)->reference { return static_cast<reference>(Base::children().at(id)); }
+			auto operator[](size_type size)->reference { return static_cast<reference>(Base::children().operator[](size)); } //optional
+			auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(Base::children().operator[](size)); } //optional
 
-			static auto Type()->const std::string &{ static const std::string type{ T::Type() + "Pool" + Base::Type() }; return type; }
+			static auto Type()->const std::string &
+			{ 
+				static const std::string type{ (&Type == &T::Type ? std::string("Noname") : T::Type()) + "Pool" + (&Type == &Base::Type ? std::string("Noname") : Base::Type()) };
+				return type;
+			}
 			virtual auto type()const->const std::string & override{ return Type(); }
 			auto findByName(const std::string &name)const->const_iterator { return Base::findByName(name); }
 			auto findByName(const std::string &name)->iterator { return Base::findByName(name);}
@@ -540,8 +553,8 @@ namespace aris
 			virtual ~ObjectPool() = default;
 
 		protected:
-			ObjectPool(Object &father, std::size_t id, const std::string &name):Base(father, id, name) {}
-			ObjectPool(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Base(father, id, xml_ele) {}
+			explicit ObjectPool(const std::string &name):Base(name) {}
+			explicit ObjectPool(Object &father, const aris::core::XmlElement &xml_ele) :Base(father, xml_ele) {}
 		
 		private:
 			friend class Object;

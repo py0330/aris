@@ -26,7 +26,7 @@
 #include <typeinfo>
 #include <thread>
 #include <chrono>
-#include <condition_variable>
+#include <future>
 
 #include "aris_control_ethercat.h"
 
@@ -150,28 +150,28 @@ namespace aris
 		};
 		Master *Master::Imp::instance{ nullptr };
 
-		class DataLogger::Imp
+		struct DataLogger::Imp
 		{
-		public:
-			Pipe<void *> log_pipe_{ false };
+			aris::core::Pipe *log_pipe_;
+			aris::core::MsgFix<8196> log_data_msg_;
 			std::size_t log_data_size_{ 0 };
-			std::unique_ptr<char[]> log_data_;
 			std::atomic_bool is_receiving_{ false }, is_sending_{ false }, is_prepaired_{ false };
-            std::mutex mu_prepair_, mu_running_, mu_ready_;
-            std::condition_variable cv_ready_;
+            std::mutex mu_prepair_, mu_running_;
 		};
 		auto DataLogger::prepair(const std::string &log_file_name)->void
 		{
 			std::unique_lock<std::mutex> prepair_lck(imp_->mu_prepair_);
-            std::unique_lock<std::mutex> ready_lck(imp_->mu_ready_);
             std::unique_lock<std::mutex> running_lck(imp_->mu_running_, std::try_to_lock);
-            if(!running_lck.owns_lock())throw std::runtime_error("failed to prepair pipe, it's still logging");
+            if(!running_lck.owns_lock())throw std::runtime_error("failed to prepair pipe, because it's started already");
             running_lck.unlock();
             running_lck.release();
 
-            auto file_name = aris::core::logDirPath() + (log_file_name.empty() ? "logdata_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) +".txt" : log_file_name);
+			auto file_name = aris::core::logDirPath() + (log_file_name.empty() ? "logdata_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + ".txt" : log_file_name);
 
-			std::thread([this, file_name]()
+			std::promise<void> thread_ready;
+			auto fut = thread_ready.get_future();
+
+			std::thread([this, file_name](std::promise<void> thread_ready)
 			{
                 std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 
@@ -180,48 +180,42 @@ namespace aris
 
 				imp_->log_data_size_ = 0;
 				for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
-				std::unique_ptr<char[]> receive_data(new char[imp_->log_data_size_]);
-				imp_->log_data_.reset(new char[imp_->log_data_size_]);
-
-				long long count = 0;
-				std::size_t recv_size{ 0 };
+				imp_->log_data_msg_.resize(imp_->log_data_size_);
 
 				//ÇåÀí¸É¾»pipe
-				while (imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_)>0);
+				aris::core::MsgFix<8196> recv_msg;
+				while (imp_->log_pipe_->recvMsg(recv_msg));
 				imp_->is_receiving_ = true;
-                imp_->cv_ready_.notify_one();
-
+				thread_ready.set_value();
+				
+				long long count = 0;
 				while (imp_->is_receiving_)
 				{
-					if (recv_size == imp_->log_data_size_)
+					if (imp_->log_pipe_->recvMsg(recv_msg))
 					{
 						file << count++ << " ";
 
 						std::size_t size_count = 0;
 						for (auto &sla : master().slavePool())
 						{
-							sla.logData(*reinterpret_cast<Slave::TxType *>(receive_data.get() + size_count)
-								, *reinterpret_cast<Slave::RxType *>(receive_data.get() + size_count + sla.txTypeSize()), file);
+							sla.logData(*reinterpret_cast<Slave::TxType *>(recv_msg.data() + size_count)
+								, *reinterpret_cast<Slave::RxType *>(recv_msg.data() + size_count + sla.txTypeSize()), file);
 
 							file << " ";
 
 							size_count += sla.txTypeSize() + sla.rxTypeSize();
 						}
 						file << std::endl;
-
-						recv_size = 0;
 					}
 					else
 					{
-						auto ret = imp_->log_pipe_.recvInNrt(receive_data.get() + recv_size, imp_->log_data_size_ - recv_size);
-						if (ret == 0 && recv_size == 0)std::this_thread::sleep_for(std::chrono::microseconds(10));
-						recv_size += ret>0 ? ret : 0;
+						std::this_thread::sleep_for(std::chrono::microseconds(10));
 					}
 				}
 				file.close();
-			}).detach();
+			}, std::move(thread_ready)).detach();
 
-            imp_->cv_ready_.wait(ready_lck);
+            fut.wait();
 
 			imp_->is_prepaired_ = true;
 		}
@@ -248,18 +242,24 @@ namespace aris
 					auto tx_data_char = reinterpret_cast<char *>(&sla.txData());
 					auto rx_data_char = reinterpret_cast<char *>(&sla.rxData());
 
-					std::copy(tx_data_char, tx_data_char + sla.txTypeSize(), imp_->log_data_.get() + size_count);
+					std::copy(tx_data_char, tx_data_char + sla.txTypeSize(), imp_->log_data_msg_.data() + size_count);
 					size_count += sla.txTypeSize();
-					std::copy(rx_data_char, rx_data_char + sla.rxTypeSize(), imp_->log_data_.get() + size_count);
+					std::copy(rx_data_char, rx_data_char + sla.rxTypeSize(), imp_->log_data_msg_.data() + size_count);
 					size_count += sla.rxTypeSize();
 				}
 
-				imp_->log_pipe_.sendToNrt(imp_->log_data_.get(), imp_->log_data_size_);
+				imp_->log_pipe_->sendMsg(imp_->log_data_msg_);
 			}
 		}
 		DataLogger::~DataLogger() = default;
-		DataLogger::DataLogger(Object &father, std::size_t id, const std::string &name) :Element(father, id, name), imp_(new Imp) {}
-		DataLogger::DataLogger(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Element(father, id, xml_ele), imp_(new Imp) {}
+		DataLogger::DataLogger(const std::string &name) :Element(name), imp_(new Imp) 
+		{
+			imp_->log_pipe_ = &add<aris::core::Pipe>("pipe", 16384);
+		}
+		DataLogger::DataLogger(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) 
+		{
+			imp_->log_pipe_ = findOrInsert<aris::core::Pipe>("pipe", 16384);
+		}
 
 		auto Element::master()->Master & { return static_cast<Master &>(root()); }
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
@@ -574,7 +574,7 @@ namespace aris
 			ecrt_master_sdo_download(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
 #endif
 		}
-		Sdo::Sdo(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :DO(father, id, xml_ele)
+		Sdo::Sdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele)
 		{
 			if (attributeBool(xml_ele, "read", true))imp_->option_ |= READ; else imp_->option_ &= ~READ;
 			if (attributeBool(xml_ele, "write", true))imp_->option_ |= WRITE; else imp_->option_ &= ~WRITE;
@@ -618,7 +618,7 @@ namespace aris
 		auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 		auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
-		PdoGroup::PdoGroup(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ObjectPool(father, id, xml_ele)
+		PdoGroup::PdoGroup(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele)
 		{
 			imp_->index_ = attributeUint16(xml_ele, "index");
 			imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
@@ -634,9 +634,8 @@ namespace aris
 		auto SlaveType::venderID()const->std::uint32_t { return imp_->vender_id_; }
 		auto SlaveType::alias()const->std::uint16_t { return imp_->alias_; }
 		auto SlaveType::distributedClock()const->std::uint32_t { return imp_->distributed_clock_; }
-		SlaveType::SlaveType(aris::core::Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele)
+		SlaveType::SlaveType(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
 		{
-			//load product id...
 			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
 			imp_->vender_id_ = attributeUint32(xml_ele, "vender_id");
 			imp_->alias_ = attributeUint16(xml_ele, "alias");
@@ -944,9 +943,9 @@ namespace aris
 			writeSdo(sdo_ID, value);
 		}
 		Slave::~Slave() = default;
-		Slave::Slave(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Element(father, id, xml_ele), imp_(new Imp(this))
+		Slave::Slave(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele), imp_(new Imp(this))
 		{
-			if (master().findByName("slave_type_pool") == master().end())
+			if (master().findByName("slave_type_pool") == master().children().end())
 			{
 				throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
 			}
@@ -956,7 +955,7 @@ namespace aris
 			{
 				throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
 			}
-			imp_->slave_type_ = static_cast<SlaveType*>(&add(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"))));
+			imp_->slave_type_ = &add<SlaveType>(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type")));
 			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("pdo_group_pool"));
 			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("sdo_pool"));
 
@@ -1048,9 +1047,9 @@ namespace aris
 		{
 			Root::loadXml(xml_ele);
 
-			imp_->data_logger_ = findByName("data_logger") == end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
-			imp_->slave_type_pool_ = findByName("slave_type_pool") == end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
-			imp_->slave_pool_ = findByName("slave_pool") == end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
+			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
+			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
+			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
 			imp_->tx_data_pool_.clear();
 			imp_->rx_data_pool_.clear();
 			for (auto &slave : slavePool())
