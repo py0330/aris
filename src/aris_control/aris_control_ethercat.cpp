@@ -34,6 +34,25 @@ namespace aris
 {
 	namespace control
 	{
+
+
+		inline auto aris_rt_set_periodic_task(int nanoseconds)->void 
+		{
+#ifdef UNIX
+			rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
+#endif
+		};
+		inline auto aris_rt_set_periodic_task()->void {};
+
+
+		inline auto aris_ecrt_master_receive()->void {};
+		inline auto aris_ecrt_master_send()->void {};
+		inline auto aris_ecrt_slave_init()->void {};
+		inline auto aris_ecrt_slave_read_pdo()->void {};
+		inline auto aris_ecrt_slave_write_pdo()->void {};
+		inline auto aris_ecrt_slave_read_sdo()->void {};
+		inline auto aris_ecrt_slave_write_sdo()->void {};
+		
 		struct Slave::Imp
 		{
 		public:
@@ -75,14 +94,15 @@ namespace aris
 			friend class Slave;
 			friend class Master;
 		};
+
 		class Master::Imp
 		{
 		public:
-			static auto rt_task_func(void *)->void
+			static auto rt_task_func(void *master)->void
 			{
-#ifdef UNIX
-				auto &mst = *instance;
+				auto &mst = *reinterpret_cast<Master*>(master);
 
+#ifdef UNIX
 				rt_task_set_periodic(NULL, TM_NOW, mst.imp_->sample_period_ns_);
 
 				while (!mst.imp_->is_stopping_)
@@ -102,10 +122,11 @@ namespace aris
 				}
 #endif
 			};
-			static auto setInstance(Master *master)->void { instance = master; }
 			auto read()->void
 			{
+#ifdef UNIX
 				ecrt_master_receive(ec_master_);
+#endif
 				for (auto &sla : *slave_pool_)
 				{
 					sla.readUpdate();
@@ -119,36 +140,138 @@ namespace aris
 					sla.writeUpdate();
 					sla.imp_->write();
 				}
+#ifdef UNIX
 				ecrt_master_send(ec_master_);
+#endif
 			}
 			auto sync(uint64_t ns)->void
 			{
+#ifdef UNIX
 				ecrt_master_application_time(ec_master_, ns);
 				ecrt_master_sync_reference_clock(ec_master_);
 				ecrt_master_sync_slave_clocks(ec_master_);
+#endif
 			};
-
-			static Master *instance;
 
 			aris::core::ObjectPool<SlaveType, Element> *slave_type_pool_;
 			aris::core::ObjectPool<Slave, Element> *slave_pool_;
 			aris::core::RefPool<Slave::TxType> tx_data_pool_;
 			aris::core::RefPool<Slave::RxType> rx_data_pool_;
 
-			ec_master_t* ec_master_;
-			const int sample_period_ns_ = 1000000;
-
 			//for log
 			DataLogger* data_logger_;
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
+			const int sample_period_ns_ = 1000000;
+
 #ifdef UNIX
+			ec_master_t* ec_master_;
 			RT_TASK rt_task_;
 #endif
 			friend class Slave;
 			friend class Master;
 		};
-		Master *Master::Imp::instance{ nullptr };
+		auto Master::loadXml(const aris::core::XmlDocument &xml_doc)->void
+		{
+			auto root_xml_ele = xml_doc.RootElement()->FirstChildElement("controller");
+
+			if (!root_xml_ele)throw std::runtime_error("can't find controller element in xml file");
+
+			loadXml(*root_xml_ele);
+		}
+		auto Master::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			Root::loadXml(xml_ele);
+
+			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
+			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
+			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
+			imp_->tx_data_pool_.clear();
+			imp_->rx_data_pool_.clear();
+			for (auto &slave : slavePool())
+			{
+				imp_->tx_data_pool_.push_back_ptr(&slave.txData());
+				imp_->rx_data_pool_.push_back_ptr(&slave.rxData());
+			}
+		}
+		auto Master::start()->void
+		{
+			static Master *running_mst{ nullptr };
+			if (running_mst && running_mst->imp_->is_running_)throw std::runtime_error("master already running");
+			imp_->is_running_ = true;
+			running_mst = this;
+
+			/// init begin ///
+#ifdef UNIX
+			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
+
+			if (!(imp_->ec_master_ = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
+
+			/// init each slave and update tx & rx data pool ///
+			txDataPool().clear();
+			rxDataPool().clear();
+			for (auto &slave : slavePool())
+			{
+				slave.imp_->init();
+				slave.init();
+				txDataPool().push_back_ptr(&slave.txData());
+				rxDataPool().push_back_ptr(&slave.rxData());
+			}
+
+
+			ecrt_master_activate(imp_->ec_master_);
+
+			for (auto &slave : slavePool())slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
+
+			/// init end ///
+			rt_print_auto_init(1);
+
+			rt_task_create(&imp_->rt_task_, "realtime core", 0, 99, T_FPU);
+			rt_task_start(&imp_->rt_task_, &Master::Imp::rt_task_func, this);
+#endif
+		};
+		auto Master::stop()->void
+		{
+			if (!imp_->is_running_)throw std::runtime_error("master is not running, so can't stop");
+
+			imp_->is_stopping_ = true;
+#ifdef UNIX
+			rt_task_delete(&imp_->rt_task_);
+
+			ecrt_master_deactivate(imp_->ec_master_);
+			ecrt_release_master(imp_->ec_master_);
+#endif
+			imp_->is_stopping_ = false;
+			imp_->is_running_ = false;
+		}
+		auto Master::slaveTypePool()->aris::core::ObjectPool<SlaveType, Element>& { return *imp_->slave_type_pool_; }
+		auto Master::slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&{ return *imp_->slave_type_pool_; }
+		auto Master::slavePool()->aris::core::ObjectPool<Slave, Element>& { return *imp_->slave_pool_; }
+		auto Master::slavePool()const->const aris::core::ObjectPool<Slave, Element>&{ return *imp_->slave_pool_; }
+		auto Master::txDataPool()->aris::core::RefPool<Slave::TxType> & { return imp_->tx_data_pool_; }
+		auto Master::txDataPool()const->const aris::core::RefPool<Slave::TxType> &{return imp_->tx_data_pool_; }
+		auto Master::rxDataPool()->aris::core::RefPool<Slave::RxType> & { return imp_->rx_data_pool_; }
+		auto Master::rxDataPool()const->const aris::core::RefPool<Slave::RxType> &{return imp_->rx_data_pool_; }
+		auto Master::dataLogger()->DataLogger& { return std::ref(*imp_->data_logger_); }
+		auto Master::dataLogger()const->const DataLogger&{ return std::ref(*imp_->data_logger_); }
+		Master::~Master() = default;
+		Master::Master() :imp_(new Imp)
+		{
+			registerChildType<DataLogger>();
+
+			registerChildType<Pdo>();
+			registerChildType<Sdo>();
+			registerChildType<PdoGroup>();
+			registerChildType<aris::core::ObjectPool<Sdo, Element> >();
+			registerChildType<aris::core::ObjectPool<PdoGroup, Element> >();
+			registerChildType<aris::core::ObjectPool<SlaveType, Element> >();
+
+			registerChildType<SlaveType>();
+			registerChildType<Slave>();
+			registerChildType<aris::core::ObjectPool<Slave, Element> >();
+		}
+
+		inline auto aris_ecrt_read_pdo(Master &mst, Slave &sla, uint16_t)->void{}
 
 		struct DataLogger::Imp
 		{
@@ -435,10 +558,10 @@ namespace aris
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != INT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int32 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_upload(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
 #endif
 		}
@@ -447,10 +570,10 @@ namespace aris
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != INT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int16 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_upload(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
 #endif
 		}
@@ -459,10 +582,10 @@ namespace aris
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != INT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int8 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_upload(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
 #endif
 		}
@@ -471,10 +594,10 @@ namespace aris
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != UINT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint32 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_upload(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
 #endif
 		}
@@ -483,10 +606,10 @@ namespace aris
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != UINT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint16 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_upload(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
 #endif
 		}
@@ -495,10 +618,10 @@ namespace aris
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != UINT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint8 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_upload(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
 #endif
 		}
@@ -507,10 +630,10 @@ namespace aris
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != INT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int32 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_download(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
 #endif
 		}
@@ -519,10 +642,10 @@ namespace aris
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != INT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int16 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_download(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
 #endif
 		}
@@ -531,10 +654,10 @@ namespace aris
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != INT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int8 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_download(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
 #endif
 		}
@@ -543,10 +666,10 @@ namespace aris
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != UINT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint32 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_download(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
 #endif
 		}
@@ -555,10 +678,10 @@ namespace aris
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != UINT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint16 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_download(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
 #endif
 		}
@@ -567,10 +690,10 @@ namespace aris
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != UINT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint8 type");
 
+#ifdef UNIX
 			auto *ec_mst = master().imp_->ec_master_;
 			std::size_t real_size;
 			std::uint32_t abort_code;
-#ifdef UNIX
 			ecrt_master_sdo_download(ec_mst, slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
 #endif
 		}
@@ -644,9 +767,9 @@ namespace aris
 
 		auto Slave::Imp::init()->void
 		{
+#ifdef UNIX
 			auto &ec_mst = slave_->master().imp_->ec_master_;
 
-#ifdef UNIX
 			for (auto &reg : this->ec_pdo_entry_reg_vec_)	reg.position = slave_->position();
 
 			/// Create domain
@@ -959,17 +1082,8 @@ namespace aris
 			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("pdo_group_pool"));
 			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("sdo_pool"));
 
-			for (auto &group : pdoGroupPool())
-			{
-				for (auto &pdo : group)
-				{
-					pdo.slave_ = this;
-				}
-			}
-			for (auto &sdo : sdoPool())
-			{
-				sdo.slave_ = this;
-			}
+			for (auto &group : pdoGroupPool())for (auto &pdo : group)pdo.slave_ = this;
+			for (auto &sdo : sdoPool())sdo.slave_ = this;
 
 			/// make PDO map ///
 			for (int i = 0; i < static_cast<int>(pdoGroupPool().size()); ++i)
@@ -1013,7 +1127,7 @@ namespace aris
 			{
 				for (auto &pdo : pdo_group)
 				{
-					imp_->ec_pdo_entry_reg_vec_.push_back(ec_pdo_entry_reg_t{ imp_->slave_type_->alias(), static_cast<std::uint16_t>(this->id()), imp_->slave_type_->venderID(), imp_->slave_type_->productCode(), pdo.index(), pdo.subindex(), &pdo.offset_ });
+					imp_->ec_pdo_entry_reg_vec_.push_back(ec_pdo_entry_reg_t{ imp_->slave_type_->alias(), static_cast<std::uint16_t>(father.children().size()), imp_->slave_type_->venderID(), imp_->slave_type_->productCode(), pdo.index(), pdo.subindex(), &pdo.offset_ });
 					pdo_group.imp_->ec_pdo_entry_info_vec_.push_back(ec_pdo_entry_info_t{ pdo.index(), pdo.subindex(), pdo.dataSize() });
 				}
 
@@ -1033,105 +1147,6 @@ namespace aris
 			imp_->ec_sync_info_[2] = ec_sync_info_t{ 2, EC_DIR_OUTPUT, static_cast<unsigned int>(imp_->ec_pdo_info_vec_rx_.size()), imp_->ec_pdo_info_vec_rx_.data(), EC_WD_ENABLE };
 			imp_->ec_sync_info_[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, static_cast<unsigned int>(imp_->ec_pdo_info_vec_tx_.size()),imp_->ec_pdo_info_vec_tx_.data(), EC_WD_ENABLE };
 			imp_->ec_sync_info_[4] = ec_sync_info_t{ 0xff };
-		}
-
-		auto Master::loadXml(const aris::core::XmlDocument &xml_doc)->void
-		{
-			auto root_xml_ele = xml_doc.RootElement()->FirstChildElement("controller");
-
-			if (!root_xml_ele)throw std::runtime_error("can't find controller element in xml file");
-
-			loadXml(*root_xml_ele);
-		}
-		auto Master::loadXml(const aris::core::XmlElement &xml_ele)->void
-		{
-			Root::loadXml(xml_ele);
-
-			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
-			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
-			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
-			imp_->tx_data_pool_.clear();
-			imp_->rx_data_pool_.clear();
-			for (auto &slave : slavePool())
-			{
-				imp_->tx_data_pool_.push_back_ptr(&slave.txData());
-				imp_->rx_data_pool_.push_back_ptr(&slave.rxData());
-			}
-		}
-		auto Master::start()->void
-		{
-			if (imp_->is_running_)throw std::runtime_error("master already running");
-			imp_->is_running_ = true;
-			imp_->setInstance(this);
-
-			/// init begin ///
-#ifdef UNIX
-			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
-
-			if (!(imp_->ec_master_ = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
-
-			/// init each slave and update tx & rx data pool ///
-			txDataPool().clear();
-			rxDataPool().clear();
-			for (auto &slave : slavePool())
-			{
-				slave.imp_->init();
-				slave.init();
-				txDataPool().push_back_ptr(&slave.txData());
-				rxDataPool().push_back_ptr(&slave.rxData());
-			}
-
-
-			ecrt_master_activate(imp_->ec_master_);
-
-			for (auto &slave : slavePool())slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
-
-			/// init end ///
-			rt_print_auto_init(1);
-
-			rt_task_create(&imp_->rt_task_, "realtime core", 0, 99, T_FPU);
-			rt_task_start(&imp_->rt_task_, &Master::Imp::rt_task_func, NULL);
-#endif
-		};
-		auto Master::stop()->void
-		{
-			if (!imp_->is_running_)throw std::runtime_error("master is not running, so can't stop");
-
-			imp_->is_stopping_ = true;
-#ifdef UNIX
-			rt_task_delete(&imp_->rt_task_);
-
-			ecrt_master_deactivate(imp_->ec_master_);
-			ecrt_release_master(imp_->ec_master_);
-#endif
-			imp_->is_stopping_ = false;
-			imp_->is_running_ = false;
-		}
-		auto Master::slaveTypePool()->aris::core::ObjectPool<SlaveType, Element>& { return *imp_->slave_type_pool_; }
-		auto Master::slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&{ return *imp_->slave_type_pool_; }
-		auto Master::slavePool()->aris::core::ObjectPool<Slave, Element>& { return *imp_->slave_pool_; }
-		auto Master::slavePool()const->const aris::core::ObjectPool<Slave, Element>&{ return *imp_->slave_pool_; }
-		auto Master::txDataPool()->aris::core::RefPool<Slave::TxType> & { return imp_->tx_data_pool_; }
-		auto Master::txDataPool()const->const aris::core::RefPool<Slave::TxType> &{return imp_->tx_data_pool_; }
-		auto Master::rxDataPool()->aris::core::RefPool<Slave::RxType> & { return imp_->rx_data_pool_; }
-		auto Master::rxDataPool()const->const aris::core::RefPool<Slave::RxType> &{return imp_->rx_data_pool_; }
-		auto Master::dataLogger()->DataLogger& { return std::ref(*imp_->data_logger_); }
-		auto Master::dataLogger()const->const DataLogger&{ return std::ref(*imp_->data_logger_); }
-		Master::~Master() = default;
-		Master::Master() :imp_(new Imp)
-		{
-			registerChildType<DataLogger>();
-
-			registerChildType<Pdo>();
-			registerChildType<Sdo>();
-			registerChildType<PdoGroup>();
-			registerChildType<aris::core::ObjectPool<Sdo, Element> >();
-			registerChildType<aris::core::ObjectPool<PdoGroup, Element> >();
-			registerChildType<aris::core::ObjectPool<SlaveType, Element> >();
-
-			registerChildType<SlaveType>();
-			registerChildType<Slave>();
-			registerChildType<aris::core::ObjectPool<Slave, Element> >();
 		}
 	}
 }

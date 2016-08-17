@@ -138,9 +138,9 @@ const char xml_data[] =
 "            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
 "        </joint_pool>"
 "        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
-"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"            <m1 active=\"true\" slave_id=\"2\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 "            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"            <m3 active=\"true\" slave_id=\"0\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 "        </motion_pool>"
 "        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
 "    </model>"
@@ -170,12 +170,19 @@ void test_control_server()
 	std::promise<void> exit_ready;
 	auto fut = exit_ready.get_future();
 
+	
+
+
+
 	auto&cs = aris::server::ControlServer::instance();
 	cs.loadXml(xml_doc);
 	cs.setOnExit([&exit_ready]() { exit_ready.set_value(); });
 	cs.addCmd("rc", rc_parse_func, rc_plan_func);
 	cs.open();
 
+
+	
+	
 	fut.wait();
 	
 	
