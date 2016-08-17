@@ -955,6 +955,20 @@ void test_simulation()
 		Model m;
 		m.loadXml(xml_doc);
 
+
+		for (auto &mot : m.motionPool())
+		{
+			std::cout << mot.absID() << mot.phyID() << mot.slaID() << std::endl;
+
+		}
+
+
+
+
+
+
+
+
 		aris::dynamic::PlanParamBase p;
 		aris::dynamic::PlanFunc f = [](aris::dynamic::Model &m, const aris::dynamic::PlanParamBase &p)
 		{

@@ -360,15 +360,14 @@ namespace aris
 			auto dataLogger()->DataLogger&;
 			auto dataLogger()const->const DataLogger&;
 
+		protected:
+            virtual auto controlStrategy()->void {}
 			virtual ~Master();
 			Master();
 			Master(const Master &other) = delete;
 			Master(Master &&other) = delete;
 			Master& operator=(const Master &other) = delete;
 			Master& operator=(Master &&other) = delete;
-
-		protected:
-            virtual auto controlStrategy()->void {}
 
 		private:
 			class Imp;

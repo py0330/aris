@@ -8,6 +8,7 @@
 #include <sstream>
 #include <regex>
 #include <limits>
+#include <type_traits>
 
 #include "aris_core.h"
 #include "aris_dynamic_kernel.h"
@@ -21,7 +22,7 @@ namespace aris
 		auto Element::model()const->const Model&{ return dynamic_cast<const Model&>(root()); }
 		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix
 		{
-			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
 
 			aris::core::Matrix mat;
 			try
@@ -41,7 +42,7 @@ namespace aris
 		}
 		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::size_t m, std::size_t n)const->aris::core::Matrix
 		{
-			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in \"" + type() + "\" \"" + name() + "\", because ";
+			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
 			
 			aris::core::Matrix mat = attributeMatrix(xml_ele, attribute_name);
 
@@ -3099,20 +3100,21 @@ namespace aris
 			loc_cst[axis()] = 1;
 			s_tf(*this->makI().prtPm(), loc_cst, *csmI_);
 
-			/// make map for abs, phy and sla id ///
+			// make map for abs, phy and sla id //
 			imp_->sla_id_ = attributeInt32(xml_ele, "slave_id");
 			model().imp_->mot_vec_sla2abs_.resize(std::max(imp_->sla_id_ + 1, model().imp_->mot_vec_sla2abs_.size()), std::numeric_limits<std::size_t>::max());
 			if (model().imp_->mot_vec_sla2abs_.at(imp_->sla_id_) != std::numeric_limits<std::size_t>::max()) throw std::runtime_error("invalid model xml:\"slave_id\" of motion \"" + name() + "\" already exists");
-			model().imp_->mot_vec_sla2abs_.at(imp_->sla_id_) = this->id();
+			model().imp_->mot_vec_sla2abs_.at(imp_->sla_id_) = father.children().size();
 			model().imp_->mot_vec_phy2abs_.clear();
-			model().imp_->mot_vec_phy2abs_.reserve(this->id());
+			model().imp_->mot_vec_phy2abs_.reserve(father.children().size());
 			for (auto id : model().imp_->mot_vec_sla2abs_)if (id != std::numeric_limits<std::size_t>::max())model().imp_->mot_vec_phy2abs_.push_back(id);
 			
 			auto &motion_pool = static_cast<aris::core::ObjectPool<Motion, Element>&>(this->father());
-			for (std::size_t phy_id = 0; phy_id < this->id() + 1; ++phy_id)
+
+			for (std::size_t phy_id = 0; phy_id < father.children().size() + 1; ++phy_id)
 			{
 				std::size_t abs_id = model().imp_->mot_vec_phy2abs_.at(phy_id);
-				abs_id == this->id() ? this->imp_->phy_id_ = phy_id: motion_pool.at(abs_id).imp_->phy_id_ = phy_id;
+				abs_id == father.children().size() ? this->imp_->phy_id_ = phy_id: motion_pool.at(abs_id).imp_->phy_id_ = phy_id;
 			}
 		}
 
