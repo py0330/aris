@@ -8,7 +8,6 @@
 #include <cstdint>
 
 #include <aris_core.h>
-#include <aris_control_pipe.h>
 
 namespace aris
 {
