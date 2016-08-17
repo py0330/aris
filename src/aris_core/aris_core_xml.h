@@ -36,8 +36,8 @@ namespace aris
 			auto operator*()->T&{ return *data_unique_ptr_; }
 			
 			~ImpPtr() = default;
-			ImpPtr() :data_unique_ptr_(new T) {}
-			ImpPtr(T *data_ptr) :data_unique_ptr_(data_ptr) {}
+			explicit ImpPtr(T *data_ptr) :data_unique_ptr_(data_ptr) {}
+			explicit ImpPtr() :data_unique_ptr_(new T) {}
 			ImpPtr(const ImpPtr &other) :data_unique_ptr_(new T(*other.data_unique_ptr_)) {}
 			ImpPtr(ImpPtr &&other)noexcept = default;
 			ImpPtr& operator=(const ImpPtr &other) { *data_unique_ptr_ = *other.data_unique_ptr_; return *this; }
@@ -247,8 +247,8 @@ namespace aris
 			
 
 			virtual ~Object();
-			Object(const std::string &name = "object");
-			Object(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Object(const std::string &name = "object");
+			explicit Object(Object &father, const aris::core::XmlElement &xml_ele);
 			Object(const Object &);
 			Object(Object &&);
 			Object& operator=(const Object &);
@@ -408,8 +408,8 @@ namespace aris
 			auto childTypeMap()const ->const std::map<std::string, TypeInfo>&;
 
 			virtual ~Root();
-			Root(const std::string &name = "Root");
-			Root(const aris::core::XmlElement &xml_ele);
+			explicit Root(const std::string &name = "Root");
+			explicit Root(const aris::core::XmlElement &xml_ele);
 		private:
 			struct Imp;
 			ImpPtr<Imp> imp_;
@@ -553,8 +553,8 @@ namespace aris
 			virtual ~ObjectPool() = default;
 
 		protected:
-			ObjectPool(const std::string &name):Base(name) {}
-			ObjectPool(Object &father, const aris::core::XmlElement &xml_ele) :Base(father, xml_ele) {}
+			explicit ObjectPool(const std::string &name):Base(name) {}
+			explicit ObjectPool(Object &father, const aris::core::XmlElement &xml_ele) :Base(father, xml_ele) {}
 		
 		private:
 			friend class Object;

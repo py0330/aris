@@ -68,10 +68,7 @@ namespace aris
 			active_ = attributeBool(xml_ele, "active", true);
 		}
 		
-		auto Coordinate::getPp(double *pp)const->void 
-		{ 
-			if(pp)s_pm2pp(*pm(), pp); 
-		}
+		auto Coordinate::getPp(double *pp)const->void {	if(pp)s_pm2pp(*pm(), pp); }
 		auto Coordinate::getPp(const Coordinate &relative_to, double *pp)const->void
 		{ 
 			if (pp)
@@ -81,10 +78,7 @@ namespace aris
 				s_pm2pp(*pm, pp);
 			}
 		}
-		auto Coordinate::getRe(double *re, const char *type)const->void
-		{
-			if (re)s_pm2re(*pm(), re, type);
-		}
+		auto Coordinate::getRe(double *re, const char *type)const->void { if (re)s_pm2re(*pm(), re, type); }
 		auto Coordinate::getRe(const Coordinate &relative_to, double *re, const char *type)const->void
 		{
 			if (re)
@@ -94,10 +88,7 @@ namespace aris
 				s_pm2re(*pm, re, type);
 			}
 		}
-		auto Coordinate::getRq(double *rq)const->void
-		{
-			if (rq)s_pm2rq(*pm(), rq);
-		}
+		auto Coordinate::getRq(double *rq)const->void { if (rq)s_pm2rq(*pm(), rq); }
 		auto Coordinate::getRq(const Coordinate &relative_to, double *rq)const->void
 		{
 			if (rq)
@@ -107,10 +98,7 @@ namespace aris
 				s_pm2rq(*pm, rq);
 			}
 		}
-		auto Coordinate::getRm(double *rm, std::size_t rm_ld)const->void
-		{
-			if (rm)s_pm2rm(*pm(), rm, rm_ld);
-		}
+		auto Coordinate::getRm(double *rm, std::size_t rm_ld)const->void { if (rm)s_pm2rm(*pm(), rm, rm_ld); }
 		auto Coordinate::getRm(const Coordinate &relative_to, double *rm, std::size_t rm_ld)const->void
 		{
 			if (rm) 
@@ -120,10 +108,7 @@ namespace aris
 				s_pm2rm(*pm, rm, rm_ld);
 			}
 		}
-		auto Coordinate::getPe(double *pe, const char *type)const->void 
-		{ 
-			if (pe)s_pm2pe(*pm(), pe, type);
-		}
+		auto Coordinate::getPe(double *pe, const char *type)const->void { if (pe)s_pm2pe(*pm(), pe, type); }
 		auto Coordinate::getPe(const Coordinate &relative_to, double *pe, const char *type)const->void
 		{ 
 			if (pe)
@@ -133,10 +118,7 @@ namespace aris
 				s_pm2pe(*pm, pe, type);
 			}
 		}
-		auto Coordinate::getPq(double *pq)const->void 
-		{ 
-			if(pq)s_pm2pq(*pm(), pq);
-		}
+		auto Coordinate::getPq(double *pq)const->void { if (pq)s_pm2pq(*pm(), pq); }
 		auto Coordinate::getPq(const Coordinate &relative_to, double *pq)const->void
 		{ 
 			if (pq)
@@ -146,14 +128,8 @@ namespace aris
 				s_pm2pq(*pm, pq);
 			}
 		}
-		auto Coordinate::getPm(double *pm)const->void 
-		{ 
-			if(pm)std::copy(&this->pm()[0][0], &this->pm()[0][0] + 16, pm);
-		}
-		auto Coordinate::getPm(const Coordinate &relative_to, double *pm)const->void 
-		{ 
-			if(pm)s_inv_pm2pm(*relative_to.pm(), *this->pm(), pm);
-		}
+		auto Coordinate::getPm(double *pm)const->void { if (pm)std::copy(&this->pm()[0][0], &this->pm()[0][0] + 16, pm); }
+		auto Coordinate::getPm(const Coordinate &relative_to, double *pm)const->void { if (pm)s_inv_pm2pm(*relative_to.pm(), *this->pm(), pm); }
 		auto Coordinate::getVp(double *vp, double *pp)const->void 
 		{ 
 			if (vp)
@@ -737,10 +713,7 @@ namespace aris
 		{
 			std::size_t col_id_;
 		};
-		auto Constraint::colID()const->std::size_t
-		{
-			return imp_->col_id_;
-		}
+		auto Constraint::colID()const->std::size_t { return imp_->col_id_; }
 		auto Constraint::update()->void
 		{
 			double pm_M2N[4][4];
@@ -812,8 +785,7 @@ namespace aris
 				<< "    z_component_gravity = " << this->gravity_[2] << "\r\n"
 				<< "!\r\n";
 		}
-		Environment::Environment(Object &father, const aris::core::XmlElement &xml_ele)
-			:Element(father, xml_ele)
+		Environment::Environment(Object &father, const aris::core::XmlElement &xml_ele):Element(father, xml_ele)
 		{
 			std::copy_n(attributeMatrix(xml_ele, "gravity", 1, 6).data(), 6, gravity_);
 		}
@@ -1365,13 +1337,9 @@ namespace aris
 		auto Marker::vs() const->const double6&{ return fatherPart().vs(); }
 		auto Marker::as() const->const double6&{ return fatherPart().as(); }
 		auto Marker::prtPm() const->const double4x4&{ return imp_->prt_pm_; }
-		auto Marker::update()->void
-		{
-			s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *imp_->pm_);
-		}
+		auto Marker::update()->void { s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *imp_->pm_); }
 		Marker::~Marker() = default;
-		Marker::Marker(const std::string &name, const double *prt_pm, Marker *relative_mak, bool active)
-			: Coordinate(name, active)
+		Marker::Marker(const std::string &name, const double *prt_pm, Marker *relative_mak, bool active): Coordinate(name, active)
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			prt_pm = prt_pm ? prt_pm : default_pm_in;
@@ -1436,10 +1404,7 @@ namespace aris
 		auto Part::prtGravity() const->const double6&{ return imp_->prt_gravity_; }
 		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
 		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
-		auto Part::setPp(const double *pp)->void 
-		{ 
-			if(pp)s_pp2pm(pp, *pm());
-		}
+		auto Part::setPp(const double *pp)->void { if (pp)s_pp2pm(pp, *pm()); }
 		auto Part::setPp(const Coordinate &relative_to, const double *pp)->void 
 		{ 
 			if (pp)
@@ -1449,10 +1414,7 @@ namespace aris
 				setPp(pp_o);
 			}
 		}
-		auto Part::setRe(const double *re, const char *type)->void
-		{
-			if (re)s_re2pm(re, *pm(), type);
-		}
+		auto Part::setRe(const double *re, const char *type)->void { if (re)s_re2pm(re, *pm(), type); }
 		auto Part::setRe(const Coordinate &relative_to, const double *re, const char *type)->void
 		{
 			if (re)
@@ -1462,10 +1424,7 @@ namespace aris
 				setRm(relative_to, rm);
 			}
 		}
-		auto Part::setRq(const double *rq)->void
-		{
-			if (rq)s_rq2pm(rq, *pm());
-		}
+		auto Part::setRq(const double *rq)->void { if (rq)s_rq2pm(rq, *pm()); }
 		auto Part::setRq(const Coordinate &relative_to, const double *rq)->void
 		{
 			if (rq)
@@ -1475,18 +1434,9 @@ namespace aris
 				setRm(relative_to, rm);
 			}
 		}
-		auto Part::setRm(const double *rm, std::size_t rm_ld)->void
-		{
-			if (rm)s_rm2pm(rm, *pm(), rm_ld);
-		}
-		auto Part::setRm(const Coordinate &relative_to, const double *rm, std::size_t rm_ld)->void
-		{
-			if (rm) { s_rm2rm(*relative_to.pm(), rm, *pm(), rm_ld, 4); }
-		}
-		auto Part::setPe(const double *pe, const char *type)->void 
-		{ 
-			if (pe)s_pe2pm(pe, *pm(), type); 
-		}
+		auto Part::setRm(const double *rm, std::size_t rm_ld)->void { if (rm)s_rm2pm(rm, *pm(), rm_ld); }
+		auto Part::setRm(const Coordinate &relative_to, const double *rm, std::size_t rm_ld)->void{if (rm) s_rm2rm(*relative_to.pm(), rm, *pm(), rm_ld, 4);}
+		auto Part::setPe(const double *pe, const char *type)->void { if (pe)s_pe2pm(pe, *pm(), type); }
 		auto Part::setPe(const Coordinate &relative_to, const double *pe, const char *type)->void 
 		{ 
 			if (pe)
@@ -1496,10 +1446,7 @@ namespace aris
 				setPm(relative_to, pm);
 			}
 		}
-		auto Part::setPq(const double *pq)->void 
-		{ 
-			if(pq)s_pq2pm(pq, *pm()); 
-		}
+		auto Part::setPq(const double *pq)->void { if(pq)s_pq2pm(pq, *pm());}
 		auto Part::setPq(const Coordinate &relative_to, const double *pq)->void 
 		{ 
 			if (pq)
@@ -1509,14 +1456,8 @@ namespace aris
 				setPm(relative_to, pm);
 			}
 		}
-		auto Part::setPm(const double *pm)->void 
-		{ 
-			if(pm)std::copy(pm, pm + 16, &this->pm()[0][0]); 
-		}
-		auto Part::setPm(const Coordinate &relative_to, const double *pm)->void 
-		{ 
-			if(pm)s_pm2pm(*relative_to.pm(), pm, *this->pm());
-		}
+		auto Part::setPm(const double *pm)->void { if(pm)std::copy(pm, pm + 16, &this->pm()[0][0]); }
+		auto Part::setPm(const Coordinate &relative_to, const double *pm)->void { if(pm)s_pm2pm(*relative_to.pm(), pm, *this->pm());}
 		auto Part::setVp(const double *vp_in, const double *pp_in)->void
 		{
 			setPp(pp_in);
@@ -2216,7 +2157,7 @@ namespace aris
 			Constraint::update();
 			csa_[0] += motAcc();
 
-			// update motPos motVel,  motAcc should be given, not computed by part acc //
+			// only update motPos motVel here, because motAcc should be given, not computed by part acc //
 			makI().update();
 			makJ().update();
 
@@ -3173,7 +3114,6 @@ namespace aris
 				std::size_t abs_id = model().imp_->mot_vec_phy2abs_.at(phy_id);
 				abs_id == this->id() ? this->imp_->phy_id_ = phy_id: motion_pool.at(abs_id).imp_->phy_id_ = phy_id;
 			}
-				
 		}
 
 		RevoluteJoint::RevoluteJoint(const std::string &name, Marker &makI, Marker &makJ): JointTemplate(name, makI, makJ)
@@ -3262,11 +3202,11 @@ namespace aris
 		}
 		auto UniversalJoint::update()->void
 		{
-			// update PrtCstMtxI //
+			// update CstMtx //
 			makI().update();
 			makJ().update();
 
-			//get sin(a) and cos(a)
+			// // get sin(a) and cos(a) and update csmI
 			double s = makI().pm()[0][2] * makJ().pm()[0][1]
 				+ makI().pm()[1][2] * makJ().pm()[1][1]
 				+ makI().pm()[2][2] * makJ().pm()[2][1];
@@ -3279,18 +3219,16 @@ namespace aris
 			csmI_[4][3] = -(makI().prtPm()[1][1]) * s + (makI().prtPm()[1][2]) * c;
 			csmI_[5][3] = -(makI().prtPm()[2][1]) * s + (makI().prtPm()[2][2]) * c;
 
-			// edit CstMtxJ //
+			// // update csmJ //
 			std::fill_n(static_cast<double *>(*csmJ_), this->dim() * 6, 0);
 			double pm_M2N[4][4];
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
 			s_tf_n(Dim(), -1, *pm_M2N, *csmI_, 0, *csmJ_);
 
-
-
 			// update A_c //
 			std::fill_n(csa_, UniversalJoint::dim(), 0);
 
-			// calculate a_dot //
+			// // calculate a_dot //
 			double v[3];
 			v[0] = makJ().vs()[3] - makI().vs()[3];
 			v[1] = makJ().vs()[4] - makI().vs()[4];
@@ -3298,7 +3236,7 @@ namespace aris
 
 			double a_dot = makI().pm()[0][0] * v[0] + makI().pm()[1][0] * v[1] + makI().pm()[2][0] * v[2];
 
-			// calculate part m //
+			// // calculate part m //
 			v[0] = -c*a_dot;
 			v[1] = -s*a_dot;
 
@@ -3306,7 +3244,7 @@ namespace aris
 			s_inv_tv(*makI().prtPm(), makI().fatherPart().prtVs(), tem_v1);
 			csa_[3] -= v[0] * tem_v1[4] + v[1] * tem_v1[5];
 
-			// calculate part n //
+			// // calculate part n //
 			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVs(), tem_v1);
 			s_cv(-1, makI().fatherPart().prtVs(), tem_v1, 0, tem_v2);
 			s_mdmTN(4, 1, 6, 1, *csmI_, Dim(), tem_v2, 1, 1, &csa_[0], 1);

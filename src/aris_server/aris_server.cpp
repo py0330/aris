@@ -139,7 +139,6 @@ namespace aris
 					}
 					else
 					{
-						//decltype(*params.begin())
 						paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
 						{
 							return a.first.length() < b.first.length();

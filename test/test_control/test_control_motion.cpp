@@ -41,7 +41,7 @@ const char xml_file[] =
 "                </test>"
 "            </command_pool>"
 "        </command_parser>"
-"        <pipe type=\"Pipe\"/>"
+"        <msg_pipe type=\"Pipe\"/>"
 "    </widget_root>"
 "    <controller>"
 "        <slave_type_pool type=\"SlaveTypePoolObject\">"
@@ -265,9 +265,10 @@ void test_control_motion()
 	widget_root.registerChildType<aris::core::Command>();
 	widget_root.registerChildType<aris::core::ObjectPool<aris::core::Command> >();
 	widget_root.registerChildType<aris::core::CommandParser>();
+	widget_root.registerChildType<aris::core::Pipe>();
 	widget_root.loadXml(*xml_doc.RootElement()->FirstChildElement("widget_root"));
 	parser = static_cast<aris::core::CommandParser*>(&*widget_root.findByName("command_parser"));
-	msg_pipe = static_cast<aris::core::Pipe*>(&*widget_root.findByName("pipe"));
+	msg_pipe = static_cast<aris::core::Pipe*>(&*widget_root.findByName("msg_pipe"));
 
 	controller.setControlStrategy(tg);
 	controller.start();

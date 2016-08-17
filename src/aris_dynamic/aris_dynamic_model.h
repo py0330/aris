@@ -424,11 +424,10 @@ namespace aris
 
 		private:
 			virtual ~Part();
+			explicit Part(const std::string &name, const double *prt_im = nullptr, const double *pm = nullptr, const double *vel = nullptr, const double *acc = nullptr, bool active = true);
+			explicit Part(Object &father, const aris::core::XmlElement &xml_ele);
 			Part(Part &&other);
 			Part(const Part &other);
-			explicit Part(const std::string &name, const double *prt_im = nullptr
-				, const double *pm = nullptr, const double *vel = nullptr, const double *acc = nullptr, bool active = true);
-			explicit Part(Object &father, const aris::core::XmlElement &xml_ele);
 			Part&operator=(const Part &other);
 			Part&operator=(Part &&other);
 
@@ -450,8 +449,7 @@ namespace aris
 
 		protected:
 			virtual ~Joint() = default;
-			explicit Joint(const std::string &name, Marker &makI, Marker &makJ, bool active = true)
-				: Constraint(name, makI, makJ, active) {}
+			explicit Joint(const std::string &name, Marker &makI, Marker &makJ, bool active = true): Constraint(name, makI, makJ, active) {}
 			explicit Joint(Object &father, const aris::core::XmlElement &xml_ele): Constraint(father, xml_ele) {}
 
 			friend class aris::core::Root;
@@ -549,8 +547,7 @@ namespace aris
 
 		protected:
 			virtual ~Force() = default;
-			explicit Force(const std::string &name, Marker &makI, Marker &makJ, bool active = true)
-				:Interaction(name, makI, makJ, active) {}
+			explicit Force(const std::string &name, Marker &makI, Marker &makJ, bool active = true):Interaction(name, makI, makJ, active) {}
 			explicit Force(Object &father, const aris::core::XmlElement &xml_ele):Interaction(father, xml_ele) {}
 
 			double fceI_[6]{ 0 };
@@ -704,8 +701,7 @@ namespace aris
 
 		private:
 			virtual ~MatrixVariable() = default;
-			explicit MatrixVariable(const std::string &name, const aris::core::Matrix &data)
-				: VariableTemplate(name, data) {}
+			explicit MatrixVariable(const std::string &name, const aris::core::Matrix &data): VariableTemplate(name, data) {}
 			explicit MatrixVariable(Object &father, const aris::core::XmlElement &xml_ele): VariableTemplate(father, xml_ele)
 			{
 				data_ = model().calculator().calculateExpression(xml_ele.GetText());
