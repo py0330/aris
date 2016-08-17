@@ -23,15 +23,15 @@ int main(int argc, char *argv[])
 
     cs.controller().registerChildType<robot::Record>();
 
-    //cs.loadXml("/usr/aris/robot/resource/robot.xml");
-    cs.loadXml("/usr/aris/robot/resource/robot_motion.xml");
+    cs.loadXml("/usr/aris/robot/resource/robot.xml");
 
     cs.addCmd("en", robot::basicParse, nullptr);
     cs.addCmd("ds", robot::basicParse, nullptr);
     cs.addCmd("hm", robot::basicParse, nullptr);
     //if no special command parser, we can use the default parser for command 'en' , 'ds' , 'hm'
     //cs.addCmd("en", nullptr, nullptr);
-
+    cs.addCmd("log",robot::logParse,nullptr);
+    cs.addCmd("help",robot::helpParse,nullptr);
 
     //some default command
     cs.addCmd("rc",robot::recoverParse,robot::recoverGait);//you need to change the default pose in the RecoverParam
