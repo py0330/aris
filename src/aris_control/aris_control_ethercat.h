@@ -158,6 +158,12 @@ namespace aris
 			auto writeable()const->bool;
 			auto configurable()const->bool;
 			auto option()const->unsigned;
+			auto configValueInt32()const->std::int32_t;
+			auto configValueInt16()const->std::int16_t;
+			auto configValueInt8()const->std::int8_t;
+			auto configValueUint32()const->std::uint32_t;
+			auto configValueUint16()const->std::uint16_t;
+			auto configValueUint8()const->std::uint8_t;
 			auto getConfigValue(std::int32_t &value)const->void;
 			auto getConfigValue(std::int16_t &value)const->void;
 			auto getConfigValue(std::int8_t &value)const->void;
@@ -240,6 +246,10 @@ namespace aris
 			virtual auto rxTypeSize()const->std::size_t { return sizeof(RxType); }
             virtual auto logData(const TxType &tx_data, const RxType &rx_data, std::fstream &file)->void {}
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
+			auto productCode()const->std::uint32_t;
+			auto venderID()const->std::uint32_t;
+			auto alias()const->std::uint16_t;
+			auto distributedClock()const->std::uint32_t;
 			auto pdoGroupPool()->aris::core::ObjectPool<PdoGroup, Element>&;
 			auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&;
 			auto sdoPool()->aris::core::ObjectPool<Sdo, Element>&;

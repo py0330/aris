@@ -82,12 +82,94 @@ namespace aris
 		}
 #endif
 		
+		struct SlaveDomainInfo
+		{
+			ec_domain_t* domain_;
+			char* domain_pd_;
+		};
 		auto aris_ecrt_master_init()->void {};
+		auto aris_ecrt_master_sync()->void {};
 		auto aris_ecrt_master_receive()->void {};
 		auto aris_ecrt_master_send()->void {};
 		auto aris_ecrt_master_start()->void {};
 		auto aris_ecrt_master_stop()->void {};
-		auto aris_ecrt_slave_init()->void {};
+		auto aris_ecrt_slave_config(void* master_handle, Slave *sla)->void *
+		{
+			auto ec_mst = static_cast<ec_master_t*>(master_handle);
+			
+			ec_domain_t* domain_;
+			char* domain_pd_;
+			
+			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
+			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx, ec_pdo_info_vec_rx;
+			std::list<std::vector<ec_pdo_entry_info_t>> ec_pdo_entry_info_vec_list;
+			ec_sync_info_t ec_sync_info[5];
+			ec_slave_config_t* ec_slave_config_;
+
+			// create ecrt structs  //
+			for (auto &pdo_group : sla->pdoGroupPool())
+			{
+				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
+
+				for (auto &pdo : pdo_group)
+				{
+					ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ sla->alias(), static_cast<std::uint16_t>(sla->father().children().size()), sla->venderID(), sla->productCode(), pdo.index(), pdo.subindex(), &pdo.offset_ });
+					ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ pdo.index(), pdo.subindex(), pdo.dataSize() });
+				}
+
+				if (pdo_group.tx())
+				{
+					ec_pdo_info_vec_tx.push_back(ec_pdo_info_t{ pdo_group.index(), static_cast<std::uint8_t>(pdo_group.size()), ec_pdo_entry_info_vec.data() });
+				}
+				else
+				{
+					ec_pdo_info_vec_rx.push_back(ec_pdo_info_t{ pdo_group.index(), static_cast<std::uint8_t>(pdo_group.size()), ec_pdo_entry_info_vec.data() });
+				}
+			}
+			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{});
+
+			ec_sync_info[0] = ec_sync_info_t{ 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE };
+			ec_sync_info[1] = ec_sync_info_t{ 1, EC_DIR_INPUT, 0, NULL, EC_WD_DISABLE };
+			ec_sync_info[2] = ec_sync_info_t{ 2, EC_DIR_OUTPUT, static_cast<unsigned int>(ec_pdo_info_vec_rx.size()), ec_pdo_info_vec_rx.data(), EC_WD_ENABLE };
+			ec_sync_info[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, static_cast<unsigned int>(ec_pdo_info_vec_tx.size()), ec_pdo_info_vec_tx.data(), EC_WD_ENABLE };
+			ec_sync_info[4] = ec_sync_info_t{ 0xff };
+
+			for (auto &reg : ec_pdo_entry_reg_vec)	reg.position = sla->position();
+
+			// Create domain
+			if (!(domain_ = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
+
+			// Get the slave configuration 
+			if (!(ec_slave_config_ = ecrt_master_slave_config(ec_mst, sla->alias(), sla->position(), sla->venderID(), sla->productCode())))
+			{
+				throw std::runtime_error("failed to slave config");
+			}
+
+			// Config Sdo
+			for (auto &sdo : sla->sdoPool())
+			{
+				if (!(sdo.option() & Sdo::CONFIG)) continue;
+
+				switch (sdo.dataSize())
+				{
+				case 8:		ecrt_slave_config_sdo8(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.configValueUint8()); break;
+				case 16:	ecrt_slave_config_sdo16(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.configValueUint16()); break;
+				case 32:	ecrt_slave_config_sdo32(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.configValueUint32()); break;
+				default:    throw std::runtime_error("invalid size of sdo, it must be 8, 16 or 32");
+				}
+			}
+
+			// Configure the slave's PDOs and sync masters
+			if (ecrt_slave_config_pdos(ec_slave_config_, 4, ec_sync_info))throw std::runtime_error("failed to slave config pdos");
+
+			// Configure the slave's domain
+			if (ecrt_domain_reg_pdo_entry_list(domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
+
+			// Configure the slave's discrete clock
+			if (sla->distributedClock())ecrt_slave_config_dc(ec_slave_config_, sla->distributedClock(), 1000000, 4400000, 0, 0);
+
+			return new SlaveDomainInfo{ domain_ , domain_pd_ };
+		};
 		auto aris_ecrt_slave_receive()->void 
 		{
 
@@ -116,6 +198,8 @@ namespace aris
 			auto init()->void;
 			Imp(Slave*slave) :slave_(slave) {}
 
+
+			void* ec_slave_handle_{ nullptr };
 
 
 			ec_domain_t* domain_;
@@ -205,6 +289,7 @@ namespace aris
 			const int sample_period_ns_{ 1000000 };
 
 			void *rt_task_handle_{ nullptr };
+			void *ec_master_handle_{ nullptr };
 
 #ifdef UNIX
 			ec_master_t* ec_master_;
@@ -276,6 +361,8 @@ namespace aris
 #ifdef UNIX
 			ecrt_master_deactivate(imp_->ec_master_);
 			ecrt_release_master(imp_->ec_master_);
+
+			for (auto&sla : slavePool())delete reinterpret_cast<SlaveDomainInfo*>(sla.imp_->ec_slave_handle_);
 #endif
 			imp_->is_stopping_ = false;
 			imp_->is_running_ = false;
@@ -515,6 +602,12 @@ namespace aris
 		auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
 		auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0; }
 		auto Sdo::option()const->unsigned { return imp_->option_; }
+		auto Sdo::configValueInt32()const->std::int32_t { return imp_->config_value_int32_; }
+		auto Sdo::configValueInt16()const->std::int16_t { return imp_->config_value_int16_; }
+		auto Sdo::configValueInt8()const->std::int8_t { return imp_->config_value_int8_; }
+		auto Sdo::configValueUint32()const->std::uint32_t { return imp_->config_value_uint32_; }
+		auto Sdo::configValueUint16()const->std::uint16_t { return imp_->config_value_uint16_; }
+		auto Sdo::configValueUint8()const->std::uint8_t { return imp_->config_value_uint8_; }
 		auto Sdo::getConfigValue(std::int32_t &value)const->void
 		{
 			if (!configurable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not configurable");
@@ -770,7 +863,6 @@ namespace aris
 		{
 			bool is_tx_;
 			std::uint16_t index_;
-			std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec_;
 		};
 		auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
@@ -801,75 +893,14 @@ namespace aris
 
 		auto Slave::Imp::init()->void
 		{
-			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec_;
-			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx_, ec_pdo_info_vec_rx_;
-			ec_sync_info_t ec_sync_info_[5];
-			ec_slave_config_t* ec_slave_config_;
-			
-			// create ecrt structs  //
-			for (auto &pdo_group : slave_->pdoGroupPool())
-			{
-				for (auto &pdo : pdo_group)
-				{
-					ec_pdo_entry_reg_vec_.push_back(ec_pdo_entry_reg_t{ slave_type_->alias(), static_cast<std::uint16_t>(slave_->father().children().size()), slave_type_->venderID(), slave_type_->productCode(), pdo.index(), pdo.subindex(), &pdo.offset_ });
-					pdo_group.imp_->ec_pdo_entry_info_vec_.push_back(ec_pdo_entry_info_t{ pdo.index(), pdo.subindex(), pdo.dataSize() });
-				}
-
-				if (pdo_group.tx())
-				{
-					ec_pdo_info_vec_tx_.push_back(ec_pdo_info_t{ pdo_group.index(), static_cast<std::uint8_t>(pdo_group.size()), pdo_group.imp_->ec_pdo_entry_info_vec_.data() });
-				}
-				else
-				{
-					ec_pdo_info_vec_rx_.push_back(ec_pdo_info_t{ pdo_group.index(), static_cast<std::uint8_t>(pdo_group.size()), pdo_group.imp_->ec_pdo_entry_info_vec_.data() });
-				}
-			}
-			ec_pdo_entry_reg_vec_.push_back(ec_pdo_entry_reg_t{});
-
-			ec_sync_info_[0] = ec_sync_info_t{ 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE };
-			ec_sync_info_[1] = ec_sync_info_t{ 1, EC_DIR_INPUT, 0, NULL, EC_WD_DISABLE };
-			ec_sync_info_[2] = ec_sync_info_t{ 2, EC_DIR_OUTPUT, static_cast<unsigned int>(ec_pdo_info_vec_rx_.size()), ec_pdo_info_vec_rx_.data(), EC_WD_ENABLE };
-			ec_sync_info_[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, static_cast<unsigned int>(ec_pdo_info_vec_tx_.size()), ec_pdo_info_vec_tx_.data(), EC_WD_ENABLE };
-			ec_sync_info_[4] = ec_sync_info_t{ 0xff };
-
 #ifdef UNIX
-			auto &ec_mst = slave_->master().imp_->ec_master_;
-
-			for (auto &reg : ec_pdo_entry_reg_vec_)	reg.position = slave_->position();
-
-			/// Create domain
-			if (!(domain_ = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
-
-			/// Get the slave configuration 
-			if (!(ec_slave_config_ = ecrt_master_slave_config(ec_mst, slave_type_->alias(), slave_->position(), slave_type_->venderID(), slave_type_->productCode())))
-			{
-				throw std::runtime_error("failed to slave config");
-			}
-
-			/// Config Sdo
-			for (auto &sdo : slave_->sdoPool())
-			{
-				if (!(sdo.option() & Sdo::CONFIG)) continue;
-
-				switch (sdo.dataSize())
-				{
-				case 8:		ecrt_slave_config_sdo8(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint8_); break;
-				case 16:	ecrt_slave_config_sdo16(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint16_); break;
-				case 32:	ecrt_slave_config_sdo32(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint32_); break;
-				default:    throw std::runtime_error("invalid size of sdo, it must be 8, 16 or 32");
-				}
-			}
-
-			/// Configure the slave's PDOs and sync masters
-			if (ecrt_slave_config_pdos(ec_slave_config_, 4, ec_sync_info_))throw std::runtime_error("failed to slave config pdos");
-
-			/// Configure the slave's domain
-			if (ecrt_domain_reg_pdo_entry_list(domain_, ec_pdo_entry_reg_vec_.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
-
-			/// Configure the slave's discrete clock			
-			if (slave_type_->distributedClock())ecrt_slave_config_dc(ec_slave_config_, slave_type_->distributedClock(), 1000000, 4400000, 0, 0);
+			this->ec_slave_handle_ = aris_ecrt_slave_config(slave_->master().imp_->ec_master_, slave_);
 #endif
 		};
+		auto Slave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
+		auto Slave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }
+		auto Slave::alias()const->std::uint16_t { return imp_->slave_type_->alias(); }
+		auto Slave::distributedClock()const->std::uint32_t { return imp_->slave_type_->distributedClock(); }
 		auto Slave::txData()->TxType& { return imp_->tx_data_; }
 		auto Slave::txData()const->const TxType&{ return imp_->tx_data_; }
 		auto Slave::rxData()->RxType& { return imp_->rx_data_; }
