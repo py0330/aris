@@ -35,23 +35,68 @@ namespace aris
 	namespace control
 	{
 
-
-		inline auto aris_rt_set_periodic_task(int nanoseconds)->void 
+#ifdef WIN32
+		auto aris_rt_set_periodic(int nanoseconds)->void
 		{
-#ifdef UNIX
-			rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
-#endif
 		};
-		inline auto aris_rt_set_periodic_task()->void {};
+		auto aris_rt_wait_period()->void
+		{
+		};
+		auto aris_rt_timer_read()->std::int64_t
+		{
+			return 0;
+		}
+		auto aris_rt_task_start(void(*task_func)(void*), void*param)->void *
+		{
+			return nullptr;
+		}
+		auto aris_rt_task_stop(void *handle)->void
+		{
+		}
+#endif
 
+#ifdef UNIX
+		auto aris_rt_set_periodic(int nanoseconds)->void 
+		{
+			rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
+		};
+		auto aris_rt_wait_period()->void 
+		{
+			rt_task_wait_period(NULL);
+		};
+		auto aris_rt_timer_read()->std::int64_t
+		{
+			return rt_timer_read();
+		}
+		auto aris_rt_task_start(void(*task_func)(void*), void*param)->void *
+		{
+			auto handle = std::make_unique<RT_TASK>();
+			rt_print_auto_init(1);
+			rt_task_create(handle.get(), "realtime core", 0, 99, T_FPU);
+			rt_task_start(handle.get(), task_func, param);
+			return handle.release();
+		}
+		auto aris_rt_task_stop(void *handle)
+		{
+			rt_task_delete(reinterpret_cast<RT_TASK*>(handle));
+		}
+#endif
+		
+		auto aris_ecrt_master_init()->void {};
+		auto aris_ecrt_master_receive()->void {};
+		auto aris_ecrt_master_send()->void {};
+		auto aris_ecrt_master_start()->void {};
+		auto aris_ecrt_master_stop()->void {};
+		auto aris_ecrt_slave_init()->void {};
+		auto aris_ecrt_slave_receive()->void 
+		{
 
-		inline auto aris_ecrt_master_receive()->void {};
-		inline auto aris_ecrt_master_send()->void {};
-		inline auto aris_ecrt_slave_init()->void {};
-		inline auto aris_ecrt_slave_read_pdo()->void {};
-		inline auto aris_ecrt_slave_write_pdo()->void {};
-		inline auto aris_ecrt_slave_read_sdo()->void {};
-		inline auto aris_ecrt_slave_write_sdo()->void {};
+		}
+		auto aris_ecrt_slave_send()->void {};
+		auto aris_ecrt_slave_read_pdo()->void {};
+		auto aris_ecrt_slave_write_pdo()->void {};
+		auto aris_ecrt_slave_read_sdo()->void {};
+		auto aris_ecrt_slave_write_sdo()->void {};
 		
 		struct Slave::Imp
 		{
@@ -71,10 +116,7 @@ namespace aris
 			auto init()->void;
 			Imp(Slave*slave) :slave_(slave) {}
 
-			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec_;
-			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx_, ec_pdo_info_vec_rx_;
-			ec_sync_info_t ec_sync_info_[5];
-			ec_slave_config_t* ec_slave_config_;
+
 
 			ec_domain_t* domain_;
 			std::uint8_t* domain_pd_;
@@ -102,25 +144,23 @@ namespace aris
 			{
 				auto &mst = *reinterpret_cast<Master*>(master);
 
-#ifdef UNIX
-				rt_task_set_periodic(NULL, TM_NOW, mst.imp_->sample_period_ns_);
+				aris_rt_set_periodic(mst.imp_->sample_period_ns_);
 
 				while (!mst.imp_->is_stopping_)
 				{
-					rt_task_wait_period(NULL);
+					aris_rt_wait_period();
 
 					mst.imp_->read();//motors and sensors get data
 
-									 /// tg begin
+					/// tg begin
 					mst.controlStrategy();
 					/// tg end
 
-					mst.imp_->sync(rt_timer_read());
+					mst.imp_->sync(aris_rt_timer_read());
 					mst.imp_->write();//motor data write and state machine/mode transition
 
 					mst.dataLogger().logDataRT();//sent data to nrt
 				}
-#endif
 			};
 			auto read()->void
 			{
@@ -162,11 +202,12 @@ namespace aris
 			DataLogger* data_logger_;
 			std::atomic_bool is_running_{ false }, is_stopping_{ false };
 
-			const int sample_period_ns_ = 1000000;
+			const int sample_period_ns_{ 1000000 };
+
+			void *rt_task_handle_{ nullptr };
 
 #ifdef UNIX
 			ec_master_t* ec_master_;
-			RT_TASK rt_task_;
 #endif
 			friend class Slave;
 			friend class Master;
@@ -196,18 +237,16 @@ namespace aris
 		}
 		auto Master::start()->void
 		{
-			static Master *running_mst{ nullptr };
-			if (running_mst && running_mst->imp_->is_running_)throw std::runtime_error("master already running");
+			if (imp_->is_running_)throw std::runtime_error("master already running");
 			imp_->is_running_ = true;
-			running_mst = this;
 
-			/// init begin ///
+			// init begin //
 #ifdef UNIX
 			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
 
 			if (!(imp_->ec_master_ = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
 
-			/// init each slave and update tx & rx data pool ///
+			// init each slave and update tx & rx data pool //
 			txDataPool().clear();
 			rxDataPool().clear();
 			for (auto &slave : slavePool())
@@ -222,22 +261,19 @@ namespace aris
 			ecrt_master_activate(imp_->ec_master_);
 
 			for (auto &slave : slavePool())slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
-
-			/// init end ///
-			rt_print_auto_init(1);
-
-			rt_task_create(&imp_->rt_task_, "realtime core", 0, 99, T_FPU);
-			rt_task_start(&imp_->rt_task_, &Master::Imp::rt_task_func, this);
 #endif
+
+			imp_->rt_task_handle_ = aris_rt_task_start(&Imp::rt_task_func, this);
 		};
 		auto Master::stop()->void
 		{
 			if (!imp_->is_running_)throw std::runtime_error("master is not running, so can't stop");
 
 			imp_->is_stopping_ = true;
-#ifdef UNIX
-			rt_task_delete(&imp_->rt_task_);
 
+			aris_rt_task_stop(imp_->rt_task_handle_);
+
+#ifdef UNIX
 			ecrt_master_deactivate(imp_->ec_master_);
 			ecrt_release_master(imp_->ec_master_);
 #endif
@@ -270,8 +306,6 @@ namespace aris
 			registerChildType<Slave>();
 			registerChildType<aris::core::ObjectPool<Slave, Element> >();
 		}
-
-		inline auto aris_ecrt_read_pdo(Master &mst, Slave &sla, uint16_t)->void{}
 
 		struct DataLogger::Imp
 		{
@@ -767,16 +801,47 @@ namespace aris
 
 		auto Slave::Imp::init()->void
 		{
+			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec_;
+			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx_, ec_pdo_info_vec_rx_;
+			ec_sync_info_t ec_sync_info_[5];
+			ec_slave_config_t* ec_slave_config_;
+			
+			// create ecrt structs  //
+			for (auto &pdo_group : slave_->pdoGroupPool())
+			{
+				for (auto &pdo : pdo_group)
+				{
+					ec_pdo_entry_reg_vec_.push_back(ec_pdo_entry_reg_t{ slave_type_->alias(), static_cast<std::uint16_t>(slave_->father().children().size()), slave_type_->venderID(), slave_type_->productCode(), pdo.index(), pdo.subindex(), &pdo.offset_ });
+					pdo_group.imp_->ec_pdo_entry_info_vec_.push_back(ec_pdo_entry_info_t{ pdo.index(), pdo.subindex(), pdo.dataSize() });
+				}
+
+				if (pdo_group.tx())
+				{
+					ec_pdo_info_vec_tx_.push_back(ec_pdo_info_t{ pdo_group.index(), static_cast<std::uint8_t>(pdo_group.size()), pdo_group.imp_->ec_pdo_entry_info_vec_.data() });
+				}
+				else
+				{
+					ec_pdo_info_vec_rx_.push_back(ec_pdo_info_t{ pdo_group.index(), static_cast<std::uint8_t>(pdo_group.size()), pdo_group.imp_->ec_pdo_entry_info_vec_.data() });
+				}
+			}
+			ec_pdo_entry_reg_vec_.push_back(ec_pdo_entry_reg_t{});
+
+			ec_sync_info_[0] = ec_sync_info_t{ 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE };
+			ec_sync_info_[1] = ec_sync_info_t{ 1, EC_DIR_INPUT, 0, NULL, EC_WD_DISABLE };
+			ec_sync_info_[2] = ec_sync_info_t{ 2, EC_DIR_OUTPUT, static_cast<unsigned int>(ec_pdo_info_vec_rx_.size()), ec_pdo_info_vec_rx_.data(), EC_WD_ENABLE };
+			ec_sync_info_[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, static_cast<unsigned int>(ec_pdo_info_vec_tx_.size()), ec_pdo_info_vec_tx_.data(), EC_WD_ENABLE };
+			ec_sync_info_[4] = ec_sync_info_t{ 0xff };
+
 #ifdef UNIX
 			auto &ec_mst = slave_->master().imp_->ec_master_;
 
-			for (auto &reg : this->ec_pdo_entry_reg_vec_)	reg.position = slave_->position();
+			for (auto &reg : ec_pdo_entry_reg_vec_)	reg.position = slave_->position();
 
 			/// Create domain
-			if (!(this->domain_ = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
+			if (!(domain_ = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
 
 			/// Get the slave configuration 
-			if (!(this->ec_slave_config_ = ecrt_master_slave_config(ec_mst, slave_type_->alias(), slave_->position(), slave_type_->venderID(), slave_type_->productCode())))
+			if (!(ec_slave_config_ = ecrt_master_slave_config(ec_mst, slave_type_->alias(), slave_->position(), slave_type_->venderID(), slave_type_->productCode())))
 			{
 				throw std::runtime_error("failed to slave config");
 			}
@@ -788,21 +853,21 @@ namespace aris
 
 				switch (sdo.dataSize())
 				{
-				case 8:		ecrt_slave_config_sdo8(this->ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint8_); break;
-				case 16:	ecrt_slave_config_sdo16(this->ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint16_); break;
-				case 32:	ecrt_slave_config_sdo32(this->ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint32_); break;
+				case 8:		ecrt_slave_config_sdo8(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint8_); break;
+				case 16:	ecrt_slave_config_sdo16(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint16_); break;
+				case 32:	ecrt_slave_config_sdo32(ec_slave_config_, sdo.index(), sdo.subindex(), sdo.imp_->config_value_uint32_); break;
 				default:    throw std::runtime_error("invalid size of sdo, it must be 8, 16 or 32");
 				}
 			}
 
 			/// Configure the slave's PDOs and sync masters
-			if (ecrt_slave_config_pdos(this->ec_slave_config_, 4, this->ec_sync_info_))throw std::runtime_error("failed to slave config pdos");
+			if (ecrt_slave_config_pdos(ec_slave_config_, 4, ec_sync_info_))throw std::runtime_error("failed to slave config pdos");
 
 			/// Configure the slave's domain
-			if (ecrt_domain_reg_pdo_entry_list(this->domain_, this->ec_pdo_entry_reg_vec_.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
+			if (ecrt_domain_reg_pdo_entry_list(domain_, ec_pdo_entry_reg_vec_.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
 			/// Configure the slave's discrete clock			
-			if (slave_type_->distributedClock())ecrt_slave_config_dc(this->ec_slave_config_, slave_type_->distributedClock(), 1000000, 4400000, 0, 0);
+			if (slave_type_->distributedClock())ecrt_slave_config_dc(ec_slave_config_, slave_type_->distributedClock(), 1000000, 4400000, 0, 0);
 #endif
 		};
 		auto Slave::txData()->TxType& { return imp_->tx_data_; }
@@ -1085,7 +1150,7 @@ namespace aris
 			for (auto &group : pdoGroupPool())for (auto &pdo : group)pdo.slave_ = this;
 			for (auto &sdo : sdoPool())sdo.slave_ = this;
 
-			/// make PDO map ///
+			// make PDO map //
 			for (int i = 0; i < static_cast<int>(pdoGroupPool().size()); ++i)
 			{
 				auto &group = pdoGroupPool().at(i);
@@ -1106,7 +1171,7 @@ namespace aris
 				}
 			}
 
-			/// make SDO map ///
+			// make SDO map //
 			for (int i = 0; i < static_cast<int>(sdoPool().size()); ++i)
 			{
 				auto &sdo = sdoPool().at(i);
@@ -1121,32 +1186,6 @@ namespace aris
 					imp_->sdo_map_.insert(std::make_pair(sdo.index_, subindex_map));
 				}
 			}
-
-			/// create ecrt structs  ///
-			for (auto &pdo_group : pdoGroupPool())
-			{
-				for (auto &pdo : pdo_group)
-				{
-					imp_->ec_pdo_entry_reg_vec_.push_back(ec_pdo_entry_reg_t{ imp_->slave_type_->alias(), static_cast<std::uint16_t>(father.children().size()), imp_->slave_type_->venderID(), imp_->slave_type_->productCode(), pdo.index(), pdo.subindex(), &pdo.offset_ });
-					pdo_group.imp_->ec_pdo_entry_info_vec_.push_back(ec_pdo_entry_info_t{ pdo.index(), pdo.subindex(), pdo.dataSize() });
-				}
-
-				if (pdo_group.tx())
-				{
-					imp_->ec_pdo_info_vec_tx_.push_back(ec_pdo_info_t{ pdo_group.index(), static_cast<std::uint8_t>(pdo_group.size()), pdo_group.imp_->ec_pdo_entry_info_vec_.data() });
-				}
-				else
-				{
-					imp_->ec_pdo_info_vec_rx_.push_back(ec_pdo_info_t{ pdo_group.index(), static_cast<std::uint8_t>(pdo_group.size()), pdo_group.imp_->ec_pdo_entry_info_vec_.data() });
-				}
-			}
-			imp_->ec_pdo_entry_reg_vec_.push_back(ec_pdo_entry_reg_t{});
-
-			imp_->ec_sync_info_[0] = ec_sync_info_t{ 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE };
-			imp_->ec_sync_info_[1] = ec_sync_info_t{ 1, EC_DIR_INPUT, 0, NULL, EC_WD_DISABLE };
-			imp_->ec_sync_info_[2] = ec_sync_info_t{ 2, EC_DIR_OUTPUT, static_cast<unsigned int>(imp_->ec_pdo_info_vec_rx_.size()), imp_->ec_pdo_info_vec_rx_.data(), EC_WD_ENABLE };
-			imp_->ec_sync_info_[3] = ec_sync_info_t{ 3, EC_DIR_INPUT, static_cast<unsigned int>(imp_->ec_pdo_info_vec_tx_.size()),imp_->ec_pdo_info_vec_tx_.data(), EC_WD_ENABLE };
-			imp_->ec_sync_info_[4] = ec_sync_info_t{ 0xff };
 		}
 	}
 }

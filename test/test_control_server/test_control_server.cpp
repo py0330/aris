@@ -154,7 +154,7 @@ void test_control_server()
 	aris::core::XmlDocument xml_doc;
 	xml_doc.Parse(xml_data);
 
-	auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)
+	auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 	{
 		aris::server::GaitParamBase param;
 		msg_out.copyStruct(param);
@@ -177,7 +177,7 @@ void test_control_server()
 	auto&cs = aris::server::ControlServer::instance();
 	cs.loadXml(xml_doc);
 	cs.setOnExit([&exit_ready]() { exit_ready.set_value(); });
-	cs.addCmd("rc", rc_parse_func, rc_plan_func);
+	cs.addCmd("rc", rc_parse_func, nullptr);
 	cs.open();
 
 
