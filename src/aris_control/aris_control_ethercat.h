@@ -69,60 +69,17 @@ namespace aris
 
 			auto slave()->Slave&;
 			auto slave()const->const Slave&;
-			auto index()const->std::uint16_t { return index_; }
-			auto subindex()const->std::uint8_t { return subindex_; }
-			auto offset()const->std::uint32_t { return offset_; }
-			auto dataSize()const->std::uint8_t { return data_size_; }
-			auto dataType()const->DataType { return data_type_; }
-			
-			DataType data_type_;
-			std::uint16_t index_;
-			std::uint8_t subindex_;
-			std::uint8_t data_size_;
-			std::uint32_t offset_;
-			Slave *slave_;
+			auto index()const->std::uint16_t;
+			auto subindex()const->std::uint8_t;
+			auto dataSize()const->std::uint8_t;
+			auto dataType()const->DataType;
+			virtual ~DO();
+			DO(Object &father, const aris::core::XmlElement &xml_ele);
 
-			DO(Object &father, const aris::core::XmlElement &xml_ele):Element(father, xml_ele)
-			{
-				index_ = attributeUint16(xml_ele, "index");
-				subindex_ = attributeUint8(xml_ele, "subindex");
-
-				if (!xml_ele.Attribute("datatype"))throw std::runtime_error("Data Object in slave must have \"datatype\" attribute");
-				else if (xml_ele.Attribute("datatype", "int32"))
-				{
-					data_type_ = INT32;
-					data_size_ = 32;
-				}
-				else if (xml_ele.Attribute("datatype", "int16"))
-				{
-					data_type_ = INT16;
-					data_size_ = 16;
-				}
-				else if (xml_ele.Attribute("datatype", "int8"))
-				{
-					data_type_ = INT8;
-					data_size_ = 8;
-				}
-				else if (xml_ele.Attribute("datatype", "uint32"))
-				{
-					data_type_ = UINT32;
-					data_size_ = 32;
-				}
-				else if (xml_ele.Attribute("datatype", "uint16"))
-				{
-					data_type_ = UINT16;
-					data_size_ = 16;
-				}
-				else if (xml_ele.Attribute("datatype", "uint8"))
-				{
-					data_type_ = UINT8;
-					data_size_ = 8;
-				}
-				else
-				{
-					throw std::runtime_error("Data Object in slave has invalid \"datatype\" attribute");
-				}
-			}
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+			friend class Slave;
 		};
 		class Pdo :public DO
 		{
@@ -141,7 +98,14 @@ namespace aris
 			auto write(std::uint32_t value)->void;
 			auto write(std::uint16_t value)->void;
 			auto write(std::uint8_t value)->void;
-			Pdo(Object &father, const aris::core::XmlElement &xml_ele):DO(father, xml_ele){}
+			auto offset()->std::uint32_t&;
+			auto offset()const->std::uint32_t;
+			virtual ~Pdo();
+			Pdo(Object &father, const aris::core::XmlElement &xml_ele);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
 		};
 		class Sdo :public DO
 		{

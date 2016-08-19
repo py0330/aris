@@ -85,7 +85,7 @@ namespace aris
 		struct SlaveDomainInfo
 		{
 			ec_domain_t* domain_;
-			char* domain_pd_;
+			std::uint8_t* domain_pd_;
 		};
 		auto aris_ecrt_master_init()->void {};
 		auto aris_ecrt_master_sync()->void {};
@@ -98,7 +98,7 @@ namespace aris
 			auto ec_mst = static_cast<ec_master_t*>(master_handle);
 			
 			ec_domain_t* domain_;
-			char* domain_pd_;
+			std::uint8_t* domain_pd_;
 			
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
 			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx, ec_pdo_info_vec_rx;
@@ -109,11 +109,12 @@ namespace aris
 			// create ecrt structs  //
 			for (auto &pdo_group : sla->pdoGroupPool())
 			{
-				std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
+				ec_pdo_entry_info_vec_list.push_back(std::vector<ec_pdo_entry_info_t>());
+				auto &ec_pdo_entry_info_vec = ec_pdo_entry_info_vec_list.back();
 
 				for (auto &pdo : pdo_group)
 				{
-					ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ sla->alias(), static_cast<std::uint16_t>(sla->father().children().size()), sla->venderID(), sla->productCode(), pdo.index(), pdo.subindex(), &pdo.offset_ });
+					ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ sla->alias(), static_cast<std::uint16_t>(sla->father().children().size()), sla->venderID(), sla->productCode(), pdo.index(), pdo.subindex(), &pdo.offset() });
 					ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ pdo.index(), pdo.subindex(), pdo.dataSize() });
 				}
 
@@ -508,81 +509,143 @@ namespace aris
 		auto Element::master()->Master & { return static_cast<Master &>(root()); }
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
 
-		auto DO::slave()->Slave& { return *slave_; }
-		auto DO::slave()const->const Slave&{ return *slave_; }
+		struct DO::Imp
+		{
+			DataType data_type_;
+			std::uint16_t index_;
+			std::uint8_t subindex_;
+			std::uint8_t data_size_;
+			Slave *slave_;
+		};
+		auto DO::slave()->Slave& { return *imp_->slave_; }
+		auto DO::slave()const->const Slave&{ return *imp_->slave_; }
+		auto DO::index()const->std::uint16_t { return imp_->index_; }
+		auto DO::subindex()const->std::uint8_t { return imp_->subindex_; }
+		auto DO::dataSize()const->std::uint8_t { return imp_->data_size_; }
+		auto DO::dataType()const->DataType { return imp_->data_type_; }
+		DO::~DO() = default;
+		DO::DO(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
+		{
+			imp_->index_ = attributeUint16(xml_ele, "index");
+			imp_->subindex_ = attributeUint8(xml_ele, "subindex");
 
+			if (!xml_ele.Attribute("datatype"))throw std::runtime_error("Data Object in slave must have \"datatype\" attribute");
+			else if (xml_ele.Attribute("datatype", "int32"))
+			{
+				imp_->data_type_ = INT32;
+				imp_->data_size_ = 32;
+			}
+			else if (xml_ele.Attribute("datatype", "int16"))
+			{
+				imp_->data_type_ = INT16;
+				imp_->data_size_ = 16;
+			}
+			else if (xml_ele.Attribute("datatype", "int8"))
+			{
+				imp_->data_type_ = INT8;
+				imp_->data_size_ = 8;
+			}
+			else if (xml_ele.Attribute("datatype", "uint32"))
+			{
+				imp_->data_type_ = UINT32;
+				imp_->data_size_ = 32;
+			}
+			else if (xml_ele.Attribute("datatype", "uint16"))
+			{
+				imp_->data_type_ = UINT16;
+				imp_->data_size_ = 16;
+			}
+			else if (xml_ele.Attribute("datatype", "uint8"))
+			{
+				imp_->data_type_ = UINT8;
+				imp_->data_size_ = 8;
+			}
+			else
+			{
+				throw std::runtime_error("Data Object in slave has invalid \"datatype\" attribute");
+			}
+		}
+
+		struct Pdo::Imp
+		{
+			std::uint32_t offset_;
+		};
 		auto Pdo::read(std::int32_t &value)const->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != INT32) throw std::runtime_error("can not read pdo with wrong data type");
-			value = *reinterpret_cast<const std::int32_t*>(slave().imp_->domain_pd_ + offset_);
+			value = *reinterpret_cast<const std::int32_t*>(slave().imp_->domain_pd_ + offset());
 		}
 		auto Pdo::read(std::int16_t &value)const->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != INT16) throw std::runtime_error("can not read pdo with wrong data type");
-			value = *reinterpret_cast<const std::int16_t*>(slave().imp_->domain_pd_ + offset_);
+			value = *reinterpret_cast<const std::int16_t*>(slave().imp_->domain_pd_ + offset());
 		}
 		auto Pdo::read(std::int8_t &value)const->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != INT8) throw std::runtime_error("can not read pdo with wrong data type");
-			value = *reinterpret_cast<const std::int8_t*>(slave().imp_->domain_pd_ + offset_);
+			value = *reinterpret_cast<const std::int8_t*>(slave().imp_->domain_pd_ + offset());
 		}
 		auto Pdo::read(std::uint32_t &value)const->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != UINT32) throw std::runtime_error("can not read pdo with wrong data type");
-			value = *reinterpret_cast<const std::uint32_t*>(slave().imp_->domain_pd_ + offset_);
+			value = *reinterpret_cast<const std::uint32_t*>(slave().imp_->domain_pd_ + offset());
 		}
 		auto Pdo::read(std::uint16_t &value)const->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != UINT16) throw std::runtime_error("can not read pdo with wrong data type");
-			value = *reinterpret_cast<const std::uint16_t*>(slave().imp_->domain_pd_ + offset_);
+			value = *reinterpret_cast<const std::uint16_t*>(slave().imp_->domain_pd_ + offset());
 		}
 		auto Pdo::read(std::uint8_t &value)const->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != UINT8) throw std::runtime_error("can not read pdo with wrong data type");
-			value = *reinterpret_cast<const std::uint8_t*>(slave().imp_->domain_pd_ + offset_);
+			value = *reinterpret_cast<const std::uint8_t*>(slave().imp_->domain_pd_ + offset());
 		}
 		auto Pdo::write(std::int32_t value)->void
 		{
 			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != INT32) throw std::runtime_error("can not read pdo with wrong data type");
-			*reinterpret_cast<std::int32_t*>(slave().imp_->domain_pd_ + offset_) = value;
+			*reinterpret_cast<std::int32_t*>(slave().imp_->domain_pd_ + offset()) = value;
 		}
 		auto Pdo::write(std::int16_t value)->void
 		{
 			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != INT16) throw std::runtime_error("can not read pdo with wrong data type");
-			*reinterpret_cast<std::int16_t*>(slave().imp_->domain_pd_ + offset_) = value;
+			*reinterpret_cast<std::int16_t*>(slave().imp_->domain_pd_ + offset()) = value;
 		}
 		auto Pdo::write(std::int8_t value)->void
 		{
 			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != INT8) throw std::runtime_error("can not read pdo with wrong data type");
-			*reinterpret_cast<std::int8_t*>(slave().imp_->domain_pd_ + offset_) = value;
+			*reinterpret_cast<std::int8_t*>(slave().imp_->domain_pd_ + offset()) = value;
 		}
 		auto Pdo::write(std::uint32_t value)->void
 		{
 			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != UINT32) throw std::runtime_error("can not read pdo with wrong data type");
-			*reinterpret_cast<std::uint32_t*>(slave().imp_->domain_pd_ + offset_) = value;
+			*reinterpret_cast<std::uint32_t*>(slave().imp_->domain_pd_ + offset()) = value;
 		}
 		auto Pdo::write(std::uint16_t value)->void
 		{
 			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != UINT16) throw std::runtime_error("can not read pdo with wrong data type");
-			*reinterpret_cast<std::uint16_t*>(slave().imp_->domain_pd_ + offset_) = value;
+			*reinterpret_cast<std::uint16_t*>(slave().imp_->domain_pd_ + offset()) = value;
 		}
 		auto Pdo::write(std::uint8_t value)->void
 		{
 			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
 			if (dataType() != UINT8) throw std::runtime_error("can not read pdo with wrong data type");
-			*reinterpret_cast<std::uint8_t*>(slave().imp_->domain_pd_ + offset_) = value;
+			*reinterpret_cast<std::uint8_t*>(slave().imp_->domain_pd_ + offset()) = value;
 		}
+		auto Pdo::offset()->std::uint32_t& { return imp_->offset_; }
+		auto Pdo::offset()const->std::uint32_t { return imp_->offset_; }
+		Pdo::~Pdo() = default;
+		Pdo::Pdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele) {}
 
 		struct Sdo::Imp
 		{
@@ -832,7 +895,7 @@ namespace aris
 			{
 				if (!writeable())throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + std::string(xml_ele.name()) + "\" sdo");
 				imp_->option_ |= CONFIG;
-				switch (data_type_)
+				switch (dataType())
 				{
 				case aris::control::DO::INT32:
 					imp_->config_value_int32_ = attributeInt32(xml_ele, "config");
@@ -896,6 +959,8 @@ namespace aris
 #ifdef UNIX
 			this->ec_slave_handle_ = aris_ecrt_slave_config(slave_->master().imp_->ec_master_, slave_);
 #endif
+			domain_ = static_cast<SlaveDomainInfo*>(ec_slave_handle_)->domain_;
+			domain_pd_ = static_cast<SlaveDomainInfo*>(ec_slave_handle_)->domain_pd_;
 		};
 		auto Slave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
 		auto Slave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }
@@ -1178,8 +1243,8 @@ namespace aris
 			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("pdo_group_pool"));
 			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("sdo_pool"));
 
-			for (auto &group : pdoGroupPool())for (auto &pdo : group)pdo.slave_ = this;
-			for (auto &sdo : sdoPool())sdo.slave_ = this;
+			for (auto &group : pdoGroupPool())for (auto &pdo : group)pdo.DO::imp_->slave_ = this;
+			for (auto &sdo : sdoPool())sdo.DO::imp_->slave_ = this;
 
 			// make PDO map //
 			for (int i = 0; i < static_cast<int>(pdoGroupPool().size()); ++i)
@@ -1189,15 +1254,15 @@ namespace aris
 				{
 					auto &pdo = group.at(j);
 
-					if (imp_->pdo_map_.find(pdo.index_) != imp_->pdo_map_.end())
+					if (imp_->pdo_map_.find(pdo.index()) != imp_->pdo_map_.end())
 					{
-						imp_->pdo_map_.at(pdo.index_).insert(std::make_pair(pdo.subindex_, std::make_pair(i, j)));
+						imp_->pdo_map_.at(pdo.index()).insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
 					}
 					else
 					{
 						std::map<std::uint8_t, std::pair<int, int> > subindex_map;
-						subindex_map.insert(std::make_pair(pdo.subindex_, std::make_pair(i, j)));
-						imp_->pdo_map_.insert(std::make_pair(pdo.index_, subindex_map));
+						subindex_map.insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+						imp_->pdo_map_.insert(std::make_pair(pdo.index(), subindex_map));
 					}
 				}
 			}
@@ -1206,15 +1271,15 @@ namespace aris
 			for (int i = 0; i < static_cast<int>(sdoPool().size()); ++i)
 			{
 				auto &sdo = sdoPool().at(i);
-				if (imp_->sdo_map_.find(sdo.index_) != imp_->sdo_map_.end())
+				if (imp_->sdo_map_.find(sdo.index()) != imp_->sdo_map_.end())
 				{
-					imp_->sdo_map_.at(sdo.index_).insert(std::make_pair(sdo.subindex_, i));
+					imp_->sdo_map_.at(sdo.index()).insert(std::make_pair(sdo.subindex(), i));
 				}
 				else
 				{
 					std::map<std::uint8_t, int > subindex_map;
-					subindex_map.insert(std::make_pair(sdo.subindex_, i));
-					imp_->sdo_map_.insert(std::make_pair(sdo.index_, subindex_map));
+					subindex_map.insert(std::make_pair(sdo.subindex(), i));
+					imp_->sdo_map_.insert(std::make_pair(sdo.index(), subindex_map));
 				}
 			}
 		}
