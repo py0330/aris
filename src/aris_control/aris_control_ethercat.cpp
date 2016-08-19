@@ -99,6 +99,7 @@ namespace aris
 			std::unique_ptr<Handle> master_handle(new EcMasterHandle);
 			auto &ec_mst = static_cast<EcMasterHandle*>(master_handle.get())->ec_master_;
 			if (!(ec_mst = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
+            return master_handle;
 		};
 		auto aris_ecrt_master_sync()->void {};
 		auto aris_ecrt_master_receive()->void {};
@@ -116,11 +117,11 @@ namespace aris
 		auto aris_ecrt_slave_config(std::unique_ptr<Handle> &master_handle, Slave *sla)->std::unique_ptr<Handle>
 		{
 			std::unique_ptr<Handle> slave_handle(new EcSlaveHandle);
-			
+
 			auto &ec_mst = static_cast<EcMasterHandle*>(master_handle.get())->ec_master_;
 			auto &domain = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_;
 			auto &domain_pd = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_pd_;
-			
+
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
 			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx, ec_pdo_info_vec_rx;
 			std::list<std::vector<ec_pdo_entry_info_t>> ec_pdo_entry_info_vec_list;
@@ -350,12 +351,12 @@ namespace aris
 
 			// config
 			imp_->ec_master_handle_ = aris_ecrt_master_config();
+
 			for (auto &sla : slavePool())
 				sla.imp_->ec_slave_handle_ = aris_ecrt_slave_config(imp_->ec_master_handle_, &sla);
-			
+
 			imp_->ec_master_ = static_cast<EcMasterHandle*>(imp_->ec_master_handle_.get())->ec_master_;
-			for (auto &sla : slavePool())
-				sla.imp_->ec_slave_handle_ = aris_ecrt_slave_config(imp_->ec_master_handle_, &sla);
+
 
 
 			// init each slave and update tx & rx data pool //
@@ -372,6 +373,13 @@ namespace aris
 			aris_ecrt_master_start(imp_->ec_master_handle_);
 			for (auto &sla : slavePool())
 				aris_ecrt_slave_start(sla.imp_->ec_slave_handle_);
+
+            for (auto &sla : slavePool())
+            {
+                sla.imp_->domain_ = static_cast<EcSlaveHandle*>(sla.imp_->ec_slave_handle_.get())->domain_;
+                sla.imp_->domain_pd_ = static_cast<EcSlaveHandle*>(sla.imp_->ec_slave_handle_.get())->domain_pd_;
+            }
+
 
 			imp_->rt_task_handle_ = aris_rt_task_start(&Imp::rt_task_func, this);
 		};
