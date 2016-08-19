@@ -46,16 +46,19 @@ namespace aris
 		{
 			return 0;
 		}
-		auto aris_rt_task_start(void(*task_func)(void*), void*param)->void *
+		auto aris_rt_task_start(void(*task_func)(void*), void*param)->std::unique_ptr<Handle>
 		{
-			return nullptr;
+			return std::unique_ptr<Handle>();
 		}
-		auto aris_rt_task_stop(void *handle)->void
+		auto aris_rt_task_stop(std::unique_ptr<Handle> &handle)->void
 		{
+
 		}
 #endif
 
 #ifdef UNIX
+		struct RtTaskHandle :public Handle { RT_TASK task; };
+
 		auto aris_rt_set_periodic(int nanoseconds)->void 
 		{
 			rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
@@ -68,21 +71,25 @@ namespace aris
 		{
 			return rt_timer_read();
 		}
-		auto aris_rt_task_start(void(*task_func)(void*), void*param)->void *
+		auto aris_rt_task_start(void(*task_func)(void*), void*param)->std::unique_ptr<Handle>
 		{
-			auto handle = std::make_unique<RT_TASK>();
+			std::unique_ptr<Handle> handle(new RtTaskHandle);
 			rt_print_auto_init(1);
-			rt_task_create(handle.get(), "realtime core", 0, 99, T_FPU);
-			rt_task_start(handle.get(), task_func, param);
-			return handle.release();
+			rt_task_create(&static_cast<RtTaskHandle*>(handle.get())->task, "realtime core", 0, 99, T_FPU);
+			rt_task_start(&static_cast<RtTaskHandle*>(handle.get())->task, task_func, param);
+			return handle;
 		}
-		auto aris_rt_task_stop(void *handle)
+		auto aris_rt_task_stop(std::unique_ptr<Handle> &handle)->void
 		{
-			rt_task_delete(reinterpret_cast<RT_TASK*>(handle));
+			rt_task_delete(&static_cast<RtTaskHandle*>(handle.get())->task);
 		}
 #endif
 		
-		struct SlaveDomainInfo
+		struct EcMasterHandle:public Handle
+		{
+			ec_master_t* ec_master;
+		};
+		struct EcSlaveHandle:public Handle
 		{
 			ec_domain_t* domain_;
 			std::uint8_t* domain_pd_;
@@ -93,12 +100,13 @@ namespace aris
 		auto aris_ecrt_master_send()->void {};
 		auto aris_ecrt_master_start()->void {};
 		auto aris_ecrt_master_stop()->void {};
-		auto aris_ecrt_slave_config(void* master_handle, Slave *sla)->void *
+		auto aris_ecrt_slave_config(std::unique_ptr<Handle> &master_handle, Slave *sla)->std::unique_ptr<Handle>
 		{
-			auto ec_mst = static_cast<ec_master_t*>(master_handle);
+			std::unique_ptr<Handle> slave_handle(new EcSlaveHandle);
 			
-			ec_domain_t* domain_;
-			std::uint8_t* domain_pd_;
+			auto ec_mst = static_cast<EcMasterHandle*>(master_handle.get())->ec_master;
+			auto domain = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_;
+			auto domain_pd = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_pd_;
 			
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
 			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx, ec_pdo_info_vec_rx;
@@ -138,7 +146,7 @@ namespace aris
 			for (auto &reg : ec_pdo_entry_reg_vec)	reg.position = sla->position();
 
 			// Create domain
-			if (!(domain_ = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
+			if (!(domain = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
 
 			// Get the slave configuration 
 			if (!(ec_slave_config_ = ecrt_master_slave_config(ec_mst, sla->alias(), sla->position(), sla->venderID(), sla->productCode())))
@@ -164,12 +172,12 @@ namespace aris
 			if (ecrt_slave_config_pdos(ec_slave_config_, 4, ec_sync_info))throw std::runtime_error("failed to slave config pdos");
 
 			// Configure the slave's domain
-			if (ecrt_domain_reg_pdo_entry_list(domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
+			if (ecrt_domain_reg_pdo_entry_list(domain, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
 			// Configure the slave's discrete clock
 			if (sla->distributedClock())ecrt_slave_config_dc(ec_slave_config_, sla->distributedClock(), 1000000, 4400000, 0, 0);
 
-			return new SlaveDomainInfo{ domain_ , domain_pd_ };
+			return slave_handle;
 		};
 		auto aris_ecrt_slave_receive()->void 
 		{
@@ -200,8 +208,7 @@ namespace aris
 			Imp(Slave*slave) :slave_(slave) {}
 
 
-			void* ec_slave_handle_{ nullptr };
-
+			std::unique_ptr<Handle> ec_slave_handle_;
 
 			ec_domain_t* domain_;
 			std::uint8_t* domain_pd_;
@@ -289,8 +296,8 @@ namespace aris
 
 			const int sample_period_ns_{ 1000000 };
 
-			void *rt_task_handle_{ nullptr };
-			void *ec_master_handle_{ nullptr };
+			std::unique_ptr<Handle> rt_task_handle_;
+			std::unique_ptr<Handle> ec_master_handle_;
 
 #ifdef UNIX
 			ec_master_t* ec_master_;
@@ -362,8 +369,6 @@ namespace aris
 #ifdef UNIX
 			ecrt_master_deactivate(imp_->ec_master_);
 			ecrt_release_master(imp_->ec_master_);
-
-			for (auto&sla : slavePool())delete reinterpret_cast<SlaveDomainInfo*>(sla.imp_->ec_slave_handle_);
 #endif
 			imp_->is_stopping_ = false;
 			imp_->is_running_ = false;
@@ -957,10 +962,10 @@ namespace aris
 		auto Slave::Imp::init()->void
 		{
 #ifdef UNIX
-			this->ec_slave_handle_ = aris_ecrt_slave_config(slave_->master().imp_->ec_master_, slave_);
+			this->ec_slave_handle_ = aris_ecrt_slave_config(slave_->master().imp_->ec_master_handle_, slave_);
 #endif
-			domain_ = static_cast<SlaveDomainInfo*>(ec_slave_handle_)->domain_;
-			domain_pd_ = static_cast<SlaveDomainInfo*>(ec_slave_handle_)->domain_pd_;
+			domain_ = static_cast<EcSlaveHandle*>(ec_slave_handle_.get())->domain_;
+			domain_pd_ = static_cast<EcSlaveHandle*>(ec_slave_handle_.get())->domain_pd_;
 		};
 		auto Slave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
 		auto Slave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }

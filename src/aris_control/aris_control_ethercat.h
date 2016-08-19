@@ -18,6 +18,8 @@ namespace aris
 	///
 	namespace control
 	{	
+		struct Handle { virtual ~Handle() = default; };
+
 		class Master;
 		class Slave;
 
