@@ -87,26 +87,39 @@ namespace aris
 		
 		struct EcMasterHandle:public Handle
 		{
-			ec_master_t* ec_master;
+			ec_master_t* ec_master_;
 		};
 		struct EcSlaveHandle:public Handle
 		{
 			ec_domain_t* domain_;
 			std::uint8_t* domain_pd_;
 		};
-		auto aris_ecrt_master_init()->void {};
+		auto aris_ecrt_master_config()->std::unique_ptr<Handle>
+		{
+			std::unique_ptr<Handle> master_handle(new EcMasterHandle);
+			auto &ec_mst = static_cast<EcMasterHandle*>(master_handle.get())->ec_master_;
+			if (!(ec_mst = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
+		};
 		auto aris_ecrt_master_sync()->void {};
 		auto aris_ecrt_master_receive()->void {};
 		auto aris_ecrt_master_send()->void {};
-		auto aris_ecrt_master_start()->void {};
+		auto aris_ecrt_master_start(std::unique_ptr<Handle> &master_handle)->void 
+		{
+#ifdef UNIX
+			// init begin //
+			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
+#endif
+			auto &ec_mst = static_cast<EcMasterHandle*>(master_handle.get())->ec_master_;
+			ecrt_master_activate(ec_mst);
+		};
 		auto aris_ecrt_master_stop()->void {};
 		auto aris_ecrt_slave_config(std::unique_ptr<Handle> &master_handle, Slave *sla)->std::unique_ptr<Handle>
 		{
 			std::unique_ptr<Handle> slave_handle(new EcSlaveHandle);
 			
-			auto ec_mst = static_cast<EcMasterHandle*>(master_handle.get())->ec_master;
-			auto domain = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_;
-			auto domain_pd = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_pd_;
+			auto &ec_mst = static_cast<EcMasterHandle*>(master_handle.get())->ec_master_;
+			auto &domain = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_;
+			auto &domain_pd = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_pd_;
 			
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
 			std::vector<ec_pdo_info_t> ec_pdo_info_vec_tx, ec_pdo_info_vec_rx;
@@ -179,9 +192,12 @@ namespace aris
 
 			return slave_handle;
 		};
-		auto aris_ecrt_slave_receive()->void 
+		auto aris_ecrt_slave_start(std::unique_ptr<Handle> &slave_handle)->void
 		{
-
+			auto &domain = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_;
+			auto &domain_pd = static_cast<EcSlaveHandle*>(slave_handle.get())->domain_pd_;
+			
+			domain_pd = ecrt_domain_data(domain);
 		}
 		auto aris_ecrt_slave_send()->void {};
 		auto aris_ecrt_slave_read_pdo()->void {};
@@ -204,7 +220,6 @@ namespace aris
 				ecrt_domain_queue(domain_);
 #endif
 			}
-			auto init()->void;
 			Imp(Slave*slave) :slave_(slave) {}
 
 
@@ -299,9 +314,9 @@ namespace aris
 			std::unique_ptr<Handle> rt_task_handle_;
 			std::unique_ptr<Handle> ec_master_handle_;
 
-#ifdef UNIX
 			ec_master_t* ec_master_;
-#endif
+
+
 			friend class Slave;
 			friend class Master;
 		};
@@ -333,28 +348,30 @@ namespace aris
 			if (imp_->is_running_)throw std::runtime_error("master already running");
 			imp_->is_running_ = true;
 
-			// init begin //
-#ifdef UNIX
-			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
+			// config
+			imp_->ec_master_handle_ = aris_ecrt_master_config();
+			for (auto &sla : slavePool())
+				sla.imp_->ec_slave_handle_ = aris_ecrt_slave_config(imp_->ec_master_handle_, &sla);
+			
+			imp_->ec_master_ = static_cast<EcMasterHandle*>(imp_->ec_master_handle_.get())->ec_master_;
+			for (auto &sla : slavePool())
+				sla.imp_->ec_slave_handle_ = aris_ecrt_slave_config(imp_->ec_master_handle_, &sla);
 
-			if (!(imp_->ec_master_ = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
 
 			// init each slave and update tx & rx data pool //
 			txDataPool().clear();
 			rxDataPool().clear();
 			for (auto &slave : slavePool())
 			{
-				slave.imp_->init();
 				slave.init();
 				txDataPool().push_back_ptr(&slave.txData());
 				rxDataPool().push_back_ptr(&slave.rxData());
 			}
 
-
-			ecrt_master_activate(imp_->ec_master_);
-
-			for (auto &slave : slavePool())slave.imp_->domain_pd_ = ecrt_domain_data(slave.imp_->domain_);
-#endif
+			// start
+			aris_ecrt_master_start(imp_->ec_master_handle_);
+			for (auto &sla : slavePool())
+				aris_ecrt_slave_start(sla.imp_->ec_slave_handle_);
 
 			imp_->rt_task_handle_ = aris_rt_task_start(&Imp::rt_task_func, this);
 		};
@@ -959,14 +976,6 @@ namespace aris
 			imp_->distributed_clock_ = attributeUint32(xml_ele, "distributed_clock", 0);
 		}
 
-		auto Slave::Imp::init()->void
-		{
-#ifdef UNIX
-			this->ec_slave_handle_ = aris_ecrt_slave_config(slave_->master().imp_->ec_master_handle_, slave_);
-#endif
-			domain_ = static_cast<EcSlaveHandle*>(ec_slave_handle_.get())->domain_;
-			domain_pd_ = static_cast<EcSlaveHandle*>(ec_slave_handle_.get())->domain_pd_;
-		};
 		auto Slave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
 		auto Slave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }
 		auto Slave::alias()const->std::uint16_t { return imp_->slave_type_->alias(); }
