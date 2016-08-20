@@ -25,10 +25,6 @@ const char xml_file[] =
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
 "                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"-1\" read=\"true\" write=\"true\"/>"
-"                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
-"                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
-"                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
-"                    <home_offset index=\"0x607C\" subindex=\"0\" datatype=\"int32\" config=\"0\"/>"
 "                </sdo_pool>"
 "            </elmo>"
 "        </slave_type_pool>"
@@ -96,15 +92,15 @@ void test_control_ethercat()
     master.registerChildType<TestSlave>();
 	master.loadXml(xml_doc);
 	
-	std::uint8_t mode = 0;
-
-	master.slavePool().front().sdoPool().front().write(35);
-	master.slavePool().front().sdoPool().front().read(mode);
-	std::cout << "home mode:" << static_cast<int>(mode) << std::endl;
-
+	
 	master.start();
 
-	master.slavePool().front().sdoPool().front().write(35);
+	// test sdo read and write
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	std::int8_t mode = 0;
+	master.slavePool().front().sdoPool().front().read(mode);
+	std::cout << "home mode:" << static_cast<int>(mode) << std::endl;
+	master.slavePool().front().sdoPool().front().write(static_cast<std::int8_t>(35));
 	master.slavePool().front().sdoPool().front().read(mode);
 	std::cout << "home mode:" << static_cast<int>(mode) << std::endl;
 
