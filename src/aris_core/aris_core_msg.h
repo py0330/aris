@@ -1,4 +1,4 @@
-﻿#ifndef ARIS_CORE_MSG_H_
+#ifndef ARIS_CORE_MSG_H_
 #define ARIS_CORE_MSG_H_
 
 #include <cstring>

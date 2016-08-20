@@ -1,4 +1,4 @@
-﻿#ifndef ARIS_DYNAMIC_MODEL_
+#ifndef ARIS_DYNAMIC_MODEL_
 #define ARIS_DYNAMIC_MODEL_
 
 #include <vector>

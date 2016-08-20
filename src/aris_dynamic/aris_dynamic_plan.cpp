@@ -1,4 +1,4 @@
-﻿#include <algorithm>
+#include <algorithm>
 
 #include"aris_dynamic_plan.h"
 

@@ -1,4 +1,4 @@
-﻿#include <cstring>
+#include <cstring>
 #include <fstream>
 #include <ctime>
 #include <mutex>

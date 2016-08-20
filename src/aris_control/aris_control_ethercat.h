@@ -1,4 +1,4 @@
-﻿#ifndef ARIS_CONTROL_ETHERCAT_H
+#ifndef ARIS_CONTROL_ETHERCAT_H
 #define ARIS_CONTROL_ETHERCAT_H
 
 #include <vector>
@@ -100,12 +100,10 @@ namespace aris
 			auto write(std::uint32_t value)->void;
 			auto write(std::uint16_t value)->void;
 			auto write(std::uint8_t value)->void;
-			auto offset()->std::uint32_t&;
-			auto offset()const->std::uint32_t;
 			virtual ~Pdo();
 			Pdo(Object &father, const aris::core::XmlElement &xml_ele);
 
-		private:
+		public:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
@@ -171,7 +169,7 @@ namespace aris
 			auto index()const->std::uint16_t;
 			PdoGroup(Object &father, const aris::core::XmlElement &xml_ele);
 
-		private:
+		public:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 

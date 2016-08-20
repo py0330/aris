@@ -1,4 +1,4 @@
-﻿#ifndef ARIS_DYNAMIC_KERNEL_
+#ifndef ARIS_DYNAMIC_KERNEL_
 #define ARIS_DYNAMIC_KERNEL_
 
 #ifndef PI

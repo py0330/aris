@@ -1,4 +1,4 @@
-﻿#ifdef WIN32
+#ifdef WIN32
 #define rt_printf printf
 #include <windows.h>
 #undef CM_NONE

@@ -1,4 +1,4 @@
-﻿#include <cmath>
+#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iomanip>

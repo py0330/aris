@@ -1,4 +1,4 @@
-﻿#include "aris_core_command.h"
+#include "aris_core_command.h"
 
 #include <map>
 #include <string>

@@ -1,4 +1,4 @@
-﻿#ifndef ARIS_SERVER_WIDGET_H
+#ifndef ARIS_SERVER_WIDGET_H
 #define ARIS_SERVER_WIDGET_H
 
 #include <aris_core.h>
