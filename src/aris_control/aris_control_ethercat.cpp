@@ -85,18 +85,28 @@ namespace aris
 		}
 #endif
 
-		// Ecrt 的配置流程为
-		// init master, slave, pdo_group, pdo
-		// config pdo, pdo_group, slave, master
-		// start master slave
+		////////////////////// Ecrt 的配置流程 //////////////////////
+		// 1. init master
+		// 2. init slave
+		// 3. init pdo_group
+		// 4. init pdo
+		// 5. config pdo
+		// 6. config pdo_group
+		// 7. config slave
+		// 8. config master
+		// 9. start master
+		// 10.start slave
 
-		// Ecrt 的通讯流程为
-		// master receive
-		// slave receive
-		// pdo 读写
-		// master sync
-		// slave send
-		// master send
+		////////////////////// Ecrt 的通讯流程 //////////////////////
+		// 1. master receive
+		// 2. slave receive
+		// 3. pdo read update
+		// 4. control strategy
+		// 5. pdo write update
+		// 6. master sync
+		// 7. slave send
+		// 8. master send
+		// 9. log data
 
 		struct EcMasterHandle :public Handle
 		{
@@ -122,10 +132,9 @@ namespace aris
 		};
 		auto aris_ecrt_master_init()->Handle *
 		{
-			std::unique_ptr<Handle> master_handle(new EcMasterHandle);
-			auto &ec_mst = static_cast<EcMasterHandle*>(master_handle.get())->ec_master_;
-			if (!(ec_mst = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
-			return master_handle.release();
+			std::unique_ptr<Handle> handle(new EcMasterHandle);
+			if (!(static_cast<EcMasterHandle*>(handle.get())->ec_master_ = ecrt_request_master(0))) { throw std::runtime_error("master request failed!"); }
+			return handle.release();
 		}
 		auto aris_ecrt_master_config(Handle* master_handle)->void
 		{
@@ -159,8 +168,8 @@ namespace aris
 		};
 		auto aris_ecrt_slave_init()->Handle*
 		{
-			std::unique_ptr<Handle> slave_handle(new EcSlaveHandle);
-			return slave_handle.release();
+			std::unique_ptr<Handle> handle(new EcSlaveHandle);
+			return handle.release();
 		}
 		auto aris_ecrt_slave_config(Handle* master_handle, Handle* slave_handle, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t distribute_clock)->void
 		{
@@ -220,8 +229,8 @@ namespace aris
 		};
 		auto aris_ecrt_pdo_group_init()->Handle*
 		{
-			std::unique_ptr<Handle> pdo_handle(new EcSlaveHandle);
-			return pdo_handle.release();
+			std::unique_ptr<Handle> handle(new EcPdoGroupHandle);
+			return handle.release();
 		}
 		auto aris_ecrt_pdo_group_config(Handle* slave_handle, Handle* pdo_group_handle, std::uint16_t index, bool is_tx)->void
 		{
@@ -241,8 +250,8 @@ namespace aris
 		}
 		auto aris_ecrt_pdo_init()->Handle*
 		{
-			std::unique_ptr<Handle> pdo_handle(new EcSlaveHandle);
-			return pdo_handle.release();
+			std::unique_ptr<Handle> handle(new EcPdoHandle);
+			return handle.release();
 		}
 		auto aris_ecrt_pdo_config(Handle* slave_handle, Handle* pdo_group_handle, Handle* pdo_handle, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void
 		{
@@ -899,6 +908,7 @@ namespace aris
 		auto SlaveType::venderID()const->std::uint32_t { return imp_->vender_id_; }
 		auto SlaveType::alias()const->std::uint16_t { return imp_->alias_; }
 		auto SlaveType::distributedClock()const->std::uint32_t { return imp_->distributed_clock_; }
+		SlaveType::~SlaveType() = default;
 		SlaveType::SlaveType(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
 		{
 			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
@@ -906,6 +916,10 @@ namespace aris
 			imp_->alias_ = attributeUint16(xml_ele, "alias");
 			imp_->distributed_clock_ = attributeUint32(xml_ele, "distributed_clock", 0);
 		}
+		SlaveType::SlaveType(const SlaveType &) = default;
+		SlaveType::SlaveType(SlaveType &&) = default;
+		SlaveType& SlaveType::operator=(const SlaveType &) = default;
+		SlaveType& SlaveType::operator=(SlaveType &&) = default;
 
 		class Master::Imp
 		{

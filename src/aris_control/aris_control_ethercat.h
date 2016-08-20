@@ -205,7 +205,13 @@ namespace aris
 			auto alias()const->std::uint16_t;
 			auto distributedClock()const->std::uint32_t;
 
-			SlaveType(Object &father, const aris::core::XmlElement &xml_ele);
+			virtual ~SlaveType();
+			explicit SlaveType(Object &father, const aris::core::XmlElement &xml_ele);
+			SlaveType(const SlaveType &);
+			SlaveType(SlaveType &&);
+			SlaveType& operator=(const SlaveType &);
+			SlaveType& operator=(SlaveType &&);
+
 
 		private:
 			struct Imp;
