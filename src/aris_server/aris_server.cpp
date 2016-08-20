@@ -1,4 +1,4 @@
-#ifdef WIN32
+﻿#ifdef WIN32
 #define rt_printf printf
 #include <windows.h>
 #undef CM_NONE
@@ -361,7 +361,7 @@ namespace aris
                     //判断是否已经Enable了
                     if ((param->count_ != 0) && (rx_motion_data.ret == 0))
                     {
-                        // 判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值
+                        // 判断是否为第一次走到enable,否则什么也不做,这样就会继续刷上次的值
                         if (tx_motion_data.cmd == aris::control::Motion::ENABLE)
                         {
 							tx_motion_data.cmd = aris::control::Motion::RUN;
@@ -400,7 +400,7 @@ namespace aris
                     //判断是否已经Disable了
                     if ((param->count_ != 0) && (rx_motion_data.ret == 0))
                     {
-                        // 如果已经disable了，那么什么都不做
+                        // 如果已经disable了,那么什么都不做
                     }
                     else
                     {
@@ -432,7 +432,7 @@ namespace aris
                     // 根据返回值来判断是否走到home了
                     if ((param->count_ != 0) && (rxmotiondata.ret == 0))
                     {
-                        // 判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值
+                        // 判断是否为第一次走到home,否则什么也不做,这样就会继续刷上次的值
                         if (txmotiondata.cmd == aris::control::Motion::HOME)
                         {
                             txmotiondata.cmd = aris::control::Motion::RUN;
@@ -556,10 +556,10 @@ namespace aris
 		auto ControlServer::Imp::onRunError()->int
 		{
 			rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-			cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
+			cmd_num_ = 1;//因为这里为0退出,因此之后在tg中回递减cmd_num_,所以这里必须为1
 			count_ = 0;
 
-			// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+			// 发现不连续,那么使用上一个成功的cmd,以便等待修复 //
 			for (std::size_t i = 0; i < controller_->txDataPool().size(); ++i)
 			{
 				controller_->slavePool().at(i).setTxData(*last_data_vec_tx_.at(i));

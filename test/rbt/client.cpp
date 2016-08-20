@@ -18,13 +18,13 @@ int sendRequest(int argc, char *argv[])
 	}
 #endif
 
-	// 去掉命令后缀，特别是在Windows系统下
+	// 去掉命令后缀,特别是在Windows系统下
 	if (cmdName.rfind('.'))cmdName = cmdName.substr(0, cmdName.rfind('.'));
 
 	// 添加命令的所有参数 //
 	for (int i = 1; i < argc; ++i)cmdName = cmdName + " " + argv[i];
 
-	// 构造msg，这里需要先copy命令名称，然后依次copy各个参数 //
+	// 构造msg,这里需要先copy命令名称,然后依次copy各个参数 //
 	aris::core::Msg msg;
 	msg.copy(cmdName.c_str());
 

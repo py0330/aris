@@ -1,4 +1,4 @@
-#include <cstring>
+﻿#include <cstring>
 #include <fstream>
 #include <ctime>
 #include <mutex>
@@ -125,7 +125,7 @@ namespace aris
 
 				for (; nIndex >= 0; nIndex--)
 				{
-					if (path[nIndex] == '/')//筛选出进程名
+					if (path[nIndex] == '/')
 					{
 						nIndex++;
 						proName += nIndex;

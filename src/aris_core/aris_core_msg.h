@@ -1,4 +1,4 @@
-#ifndef ARIS_CORE_MSG_H_
+﻿#ifndef ARIS_CORE_MSG_H_
 #define ARIS_CORE_MSG_H_
 
 #include <cstring>
@@ -12,11 +12,6 @@
 ///
 ///
 
-/// \brief 总命名空间。
-/// \ingroup aris
-/// 
-///
-///
 namespace aris
 {
 	namespace control
@@ -24,11 +19,6 @@ namespace aris
 		template<typename T> class Pipe;
 	}
 	
-	/// \brief aris核心命名空间
-	/// \ingroup aris
-	/// 
-	///
-	///
 	namespace core
 	{
 		class Socket;

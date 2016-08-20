@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 
 #include"aris_dynamic_plan.h"
 
@@ -8,7 +8,7 @@ namespace aris
 	{
 		const double dt = 0.001;
 		
-		/*只根据电机最大速度和最小速度来计算ds的最大和最小值*/
+		// 只根据电机最大速度和最小速度来计算ds的最大和最小值 //
 		bool FastPath::computeDsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			static std::vector<double> J_dot_g(data.size);
@@ -36,7 +36,7 @@ namespace aris
 
 			return (data.dsLhs < data.dsRhs);
 		}
-		/*只根据电机的最大最小加速度和当前ds来计算dds的最大和最小值*/
+		// 只根据电机的最大最小加速度和当前ds来计算dds的最大和最小值 //
 		bool FastPath::computeDdsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			auto locData = data;
@@ -70,7 +70,7 @@ namespace aris
 
 			return ((data.ddsLhs < 0) && (data.ddsRhs > 0));
 		}
-		/*考虑dds是否有合法取值的情况下，来计算ds的取值范围*/
+		/*考虑dds是否有合法取值的情况下,来计算ds的取值范围*/
 		bool FastPath::computeDsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			const double errorBund = 1e-7;
@@ -81,7 +81,7 @@ namespace aris
 
 			/*迭代计算下限*/
 			locData.ds = locData.dsLhs;
-			//如果不成功，那么2分法求解
+			//如果不成功,那么2分法求解
 			if (!computeDdsBundPure(locData, limits))
 			{
 				double upper = 0;
@@ -107,7 +107,7 @@ namespace aris
 
 			/*迭代计算上限*/
 			locData.ds = locData.dsRhs;
-			//如果不成功，那么2分法求解
+			//如果不成功,那么2分法求解
 			if (!computeDdsBundPure(locData, limits))
 			{
 				double upper = locData.dsRhs;
@@ -239,7 +239,7 @@ namespace aris
 		}
 		bool FastPath::compute(std::list<Node>::iterator iter, FastPath::Data &data)
 		{
-			/*获取反向迭代器的位置，即为正向迭代器的下一个位置*/
+			/*获取反向迭代器的位置,即为正向迭代器的下一个位置*/
 			auto r_iter = std::next(iter);
 
 			/*迭代终止条件*/

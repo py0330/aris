@@ -1,4 +1,4 @@
-#ifndef ARIS_SENSOR_BASE_H_
+﻿#ifndef ARIS_SENSOR_BASE_H_
 #define ARIS_SENSOR_BASE_H_
 
 #include <thread>
@@ -11,11 +11,6 @@
 
 namespace aris
 {
-	/// \brief 传感器命名空间
-	/// \ingroup aris
-	/// 
-	///
-	///
 	namespace sensor
 	{
 		class Sensor;

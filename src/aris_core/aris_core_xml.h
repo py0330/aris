@@ -1,4 +1,4 @@
-#ifndef ARIS_CORE_XML_H_
+﻿#ifndef ARIS_CORE_XML_H_
 #define ARIS_CORE_XML_H_
 
 #include <tinyxml2.h>
@@ -17,7 +17,7 @@ namespace aris
 {
 	namespace core
 	{
-		using XmlDocument = tinyxml2::XMLDocument ;
+		using XmlDocument = tinyxml2::XMLDocument;
 		using XmlDeclaration = tinyxml2::XMLDeclaration ;
 		using XmlNode = tinyxml2::XMLNode;
 		using XmlElement = tinyxml2::XMLElement;
@@ -93,7 +93,7 @@ namespace aris
 				~iterator() = default;
 				iterator() = default;
 				iterator(const iterator& other) = default;
-				iterator(const typename std::vector<ImpPtr<T>>::iterator iter) :iter_(iter) {} // 自己添加的
+				iterator(const typename std::vector<ImpPtr<T>>::iterator iter) :iter_(iter) {} //
 
 			private:
 				friend class ImpContainer::const_iterator;
@@ -136,7 +136,7 @@ namespace aris
 				const_iterator() = default;
 				const_iterator(const const_iterator&) = default;
 				const_iterator(const iterator& other) :iter_(other.iter_) {}
-				const_iterator(const typename std::vector<ImpPtr<T>>::const_iterator iter) :iter_(iter) {} // 自己添加的
+				const_iterator(const typename std::vector<ImpPtr<T>>::const_iterator iter) :iter_(iter) {} //
 
 			private:
 				typename std::vector<ImpPtr<T>>::const_iterator iter_;

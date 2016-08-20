@@ -1,4 +1,4 @@
-#ifndef ARIS_CORE_EXPRESSION_CALCULATOR_H_
+﻿#ifndef ARIS_CORE_EXPRESSION_CALCULATOR_H_
 #define ARIS_CORE_EXPRESSION_CALCULATOR_H_
 
 #include<vector>
@@ -21,28 +21,28 @@ namespace aris
 		{
 		public:
 			~Matrix() {}
-            Matrix() :m_(0), n_(0), is_row_major_(true) {}
+			Matrix() :m_(0), n_(0), is_row_major_(true) {}
 			Matrix(const Matrix &other) = default;
-            Matrix(Matrix &&other) { this->swap(other); }
-            Matrix &operator=(Matrix other) { this->swap(other); return *this; }
+			Matrix(Matrix &&other) { this->swap(other); }
+			Matrix &operator=(Matrix other) { this->swap(other); return *this; }
 			Matrix(double value);
 			Matrix(std::size_t m, std::size_t n, double value = 0);
 			Matrix(std::size_t m, std::size_t n, const double *data);
 			Matrix(const std::initializer_list<Matrix> &data);
 			auto swap(Matrix &other)->Matrix&;
-            auto empty() const->bool { return data_vec_.empty(); }
-            auto size() const->std::size_t { return m()*n(); }
-            auto data()->double * { return data_vec_.data(); }
-            auto data() const->const double * { return data_vec_.data(); }
-            auto begin() ->double * { return data(); }
-            auto begin() const ->const double * { return data(); }
+			auto empty() const->bool { return data_vec_.empty(); }
+			auto size() const->std::size_t { return m()*n(); }
+			auto data()->double * { return data_vec_.data(); }
+			auto data() const->const double * { return data_vec_.data(); }
+			auto begin() ->double * { return data(); }
+			auto begin() const ->const double * { return data(); }
 			auto end() ->double * { return data() + size(); }
-            auto end()  const ->const double * { return data() + size(); }
+			auto end()  const ->const double * { return data() + size(); }
 			auto m() const->std::size_t { return m_; }
 			auto n() const->std::size_t { return n_; }
 			auto resize(std::size_t m, std::size_t n)->Matrix &;
 			auto transpose()->Matrix &;
-			
+
 			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol, std::size_t rowNum, std::size_t colNum)->void;
 			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol)->void { copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); }
 
@@ -61,7 +61,7 @@ namespace aris
 			{
 				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
 			}
-			
+
 			friend auto operator + (const Matrix &m1, const Matrix &m2)->Matrix;
 			friend auto operator - (const Matrix &m1, const Matrix &m2)->Matrix;
 			friend auto operator * (const Matrix &m1, const Matrix &m2)->Matrix;
@@ -87,7 +87,7 @@ namespace aris
 		{
 			Matrix ret;
 
-			/*获取全部矩阵的行数和列数*/
+			// 获取全部矩阵的行数和列数 //
 			for (const auto &mat : matrices)
 			{
 				if (mat.size() == 0)continue;
@@ -99,7 +99,7 @@ namespace aris
 
 			ret.resize(ret.m(), ret.n());
 
-			/*赋值*/
+			// 赋值 //
 			std::size_t beginRow = 0;
 			for (const auto &mat : matrices)
 			{
@@ -120,7 +120,7 @@ namespace aris
 		{
 			Matrix ret;
 
-			/*获取全部矩阵的行数和列数*/
+			// 获取全部矩阵的行数和列数 //
 			for (const auto &mat : matrices)
 			{
 				if (mat.size() == 0)continue;
@@ -132,7 +132,7 @@ namespace aris
 
 			ret.resize(ret.m(), ret.n());
 
-			/*赋值*/
+			// 赋值 //
 			int beginCol = 0;
 			for (const auto &mat : matrices)
 			{
@@ -222,9 +222,9 @@ namespace aris
 			public:
 				std::string name;
 
-				int priority_ul;///unary left
-				int priority_ur;///unary right
-				int priority_b;///binary
+				int priority_ul;//unary left
+				int priority_ur;//unary right
+				int priority_b;//binary
 
 				typedef std::function<Matrix(Matrix)> U_FUN;
 				typedef std::function<Matrix(Matrix, Matrix)> B_FUN;
@@ -233,11 +233,11 @@ namespace aris
 				U_FUN fun_ur;
 				B_FUN fun_b;
 
-				Operator() :priority_ul(0), priority_ur(0), priority_b(0){}
+				Operator() :priority_ul(0), priority_ur(0), priority_b(0) {}
 
-				void SetUnaryLeftOpr(int priority, U_FUN fun){ priority_ul = priority; this->fun_ul = fun; }
-				void SetUnaryRightOpr(int priority, U_FUN fun){ priority_ur = priority; this->fun_ur = fun; }
-				void SetBinaryOpr(int priority, B_FUN fun){ priority_b = priority; this->fun_b = fun; }
+				void SetUnaryLeftOpr(int priority, U_FUN fun) { priority_ul = priority; this->fun_ul = fun; }
+				void SetUnaryRightOpr(int priority, U_FUN fun) { priority_ur = priority; this->fun_ur = fun; }
+				void SetBinaryOpr(int priority, B_FUN fun) { priority_b = priority; this->fun_b = fun; }
 			};
 			class Function
 			{
@@ -246,7 +246,7 @@ namespace aris
 				std::string name;
 				std::map<int, FUN> funs;
 
-				void AddOverloadFun(int n, FUN fun){ funs.insert(make_pair(n, fun)); }
+				void AddOverloadFun(int n, FUN fun) { funs.insert(make_pair(n, fun)); }
 			};
 
 			typedef std::vector<Token> TokenVec;
@@ -261,7 +261,7 @@ namespace aris
 			TokenVec::iterator FindNextOutsideToken(TokenVec::iterator leftPar, TokenVec::iterator endToken, Token::Type type) const;
 			TokenVec::iterator FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, int precedence)const;
 			std::vector<std::vector<Matrix> > GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const;
-		
+
 		private:
 			std::map<std::string, Operator> operator_map_;
 			std::map<std::string, Function> function_map_;
@@ -270,10 +270,6 @@ namespace aris
 		};
 	}
 }
-
-
-
-
 
 
 #endif

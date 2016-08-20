@@ -1,4 +1,4 @@
-#ifndef ARIS_CORE_COMMAND_H_
+﻿#ifndef ARIS_CORE_COMMAND_H_
 #define ARIS_CORE_COMMAND_H_
 
 #include <map>
@@ -164,10 +164,6 @@ namespace aris
 
 	}
 }
-
-
-
-
 
 
 #endif

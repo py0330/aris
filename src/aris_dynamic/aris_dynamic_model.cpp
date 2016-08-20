@@ -1,4 +1,4 @@
-#include <cmath>
+﻿#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -1975,7 +1975,7 @@ namespace aris
 				s_is2is(pm, *this->prtIs(), *im);
 
 				///！注意！///
-				//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy，Ixz，Iyz上互为相反数。别问我为什么，我也不知道。
+				//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy,Ixz,Iyz上互为相反数。别问我为什么,我也不知道。
 				file << "part create rigid_body mass_properties  &\r\n"
 					<< "    part_name = ." << model().name() << "." << this->name() << "  &\r\n"
 					<< "    mass = " << this->prtIs()[0][0] << "  &\r\n"
@@ -2763,7 +2763,7 @@ namespace aris
 			core::Matrix clb_d_m(clbDimM(), clbDimN());
 			core::Matrix clb_b_m(clbDimM(), 1);
 
-			// 求A，即C的逆 //
+			// 求A,即C的逆 //
 			core::Matrix A(dynDimM(), dynDimM()), B(dynDimM(), dynDimM());
 
 			std::vector<double> C(dynDimM() * dynDimM());

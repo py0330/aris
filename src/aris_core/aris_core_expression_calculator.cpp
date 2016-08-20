@@ -1,4 +1,4 @@
-#include <sstream>
+﻿#include <sstream>
 #include <iostream>
 #include <exception>
 #include <stdexcept>
@@ -83,15 +83,15 @@ namespace aris
 				}
 			}
 		}
-		
+
 		Matrix::Matrix(std::size_t m, std::size_t n, double value) : m_(m), n_(n), is_row_major_(true), data_vec_(m*n, value)
 		{
 		}
 		Matrix::Matrix(std::size_t m, std::size_t n, const double *Data)
-			: Matrix(m,n)
+			: Matrix(m, n)
 		{
 			if ((m*n>0) && (Data != nullptr))
-				memcpy(data(), Data, m*n*sizeof(double));
+				memcpy(data(), Data, m*n * sizeof(double));
 		}
 		Matrix::Matrix(double value)
 			: m_(1)
@@ -159,7 +159,7 @@ namespace aris
 			{
 				for (std::size_t j = 0; j < subMat.n(); ++j)
 				{
-					this->operator()(i + beginRow, j + beginCol)=subMat(i,j);
+					this->operator()(i + beginRow, j + beginCol) = subMat(i, j);
 				}
 			}
 
@@ -167,7 +167,7 @@ namespace aris
 		auto Matrix::toString() const->std::string
 		{
 			std::stringstream stream;
-			
+
 			stream.precision(15);
 			stream << "{";
 			for (std::size_t i = 0; i < m(); ++i)
@@ -177,14 +177,14 @@ namespace aris
 					stream << this->operator()(i, j);
 					if (j<n() - 1)stream << " , ";
 				}
-				if (i<m() -1)
+				if (i<m() - 1)
 					stream << " ;\n";
 			}
 			stream << "}";
 
 			return stream.str();
 		}
-		
+
 		Matrix operator + (const Matrix &m1, const Matrix &m2)
 		{
 			Matrix ret;
@@ -371,13 +371,13 @@ namespace aris
 			std::string ret;
 
 			for (const char &key : s)
-			{	
-				/*判断是否为科学计数法的数字*/
-				if ((&key > s.data() + 1) && (&key<s.data() +s.size() - 2))
+			{
+				// 判断是否为科学计数法的数字 //
+				if ((&key > s.data() + 1) && (&key<s.data() + s.size() - 2))
 				{
 					if ((key == '+') || (key == '-'))
 					{
-						if ((*(&key - 1) == 'e') 
+						if ((*(&key - 1) == 'e')
 							&& (*(&key - 2) <= '9')
 							&& (*(&key - 2) >= '0')
 							&& (*(&key + 1) <= '9')
@@ -389,7 +389,7 @@ namespace aris
 					}
 				}
 
-				
+
 				if (seperateOpr.find(key) != seperateOpr.npos)
 				{
 					ret = ret + " " + key + " ";
@@ -401,18 +401,18 @@ namespace aris
 			}
 			return ret;
 		}
-		
+
 		Calculator::TokenVec Calculator::Expression2Tokens(const std::string &expression)const
 		{
 			std::stringstream stream(SeperateString(expression));
 
 			TokenVec tokens;
 			Token token;
-			
+
 			while (stream >> token.word)
 			{
 				token.type = Token::NO;
-				
+
 				switch (*token.word.c_str())
 				{
 				case ',':token.type = Token::COMMA; break;
@@ -424,34 +424,34 @@ namespace aris
 				case '{':token.type = Token::BRACE_L; break;
 				case '}':token.type = Token::BRACE_R; break;
 				default:
-					///数字
+					// 数字
 					if (std::stringstream(token.word) >> token.num)
 					{
 						token.type = Token::NUMBER;
 						break;
 					}
-					///操作符
+					// 操作符
 					if (operator_map_.find(token.word) != operator_map_.end())
 					{
 						token.type = Token::OPERATOR;
 						token.opr = &operator_map_.find(token.word)->second;
 						break;
 					}
-					///变量
+					// 变量
 					if (variable_map_.find(token.word) != variable_map_.end())
 					{
 						token.type = Token::VARIABLE;
 						token.var = &variable_map_.find(token.word)->second;
 						break;
 					}
-					///函数
+					// 函数
 					if (function_map_.find(token.word) != function_map_.end())
 					{
 						token.type = Token::Function;
 						token.fun = &function_map_.find(token.word)->second;
 						break;
 					}
-				
+
 				}
 				if (token.type == Token::NO) throw std::runtime_error("unrecognized symbol \"" + token.word + "\"");
 				tokens.push_back(token);
@@ -466,7 +466,7 @@ namespace aris
 			{
 				throw std::runtime_error("invalid expression");
 			}
-			
+
 			auto i = beginToken;
 
 			Matrix value;
@@ -475,7 +475,7 @@ namespace aris
 
 			while (i < endToken)
 			{
-				/*如果没有当前值，证明刚刚开始计算*/
+				// 如果没有当前值,证明刚刚开始计算 //
 				if (isBegin)
 				{
 					isBegin = false;
@@ -505,8 +505,8 @@ namespace aris
 						throw std::runtime_error("expression not valid");
 					}
 				}
-				else//如果有当前值，但没有操作符
-				{				
+				else//如果有当前值,但没有操作符
+				{
 					if (i->type == Token::OPERATOR)
 					{
 						if (i->opr->priority_ur)
@@ -559,12 +559,12 @@ namespace aris
 
 			auto endPar = FindNextOutsideToken(beginPar + 1, maxEndToken, Token::PARENTHESIS_R);
 			auto matrices = GetMatrices(beginPar + 1, endPar);
-			
+
 			if (matrices.size() != 1)throw std::runtime_error("function \"" + i->word + "\" + do not has invalid param type");
 
 			auto params = matrices.front();
-			auto f=i->fun->funs.find(params.size());
-			if(f == i->fun->funs.end())throw std::runtime_error("function \"" + i->word + "\" + do not has invalid param num");
+			auto f = i->fun->funs.find(params.size());
+			if (f == i->fun->funs.end())throw std::runtime_error("function \"" + i->word + "\" + do not has invalid param num");
 
 			i = endPar + 1;
 			return f->second(params);
@@ -575,7 +575,7 @@ namespace aris
 			i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, maxEndToken, opr->opr->priority_ul);
 			return opr->opr->fun_ul(CaculateTokens(opr + 1, i));
 		}
-		
+
 		auto Calculator::FindNextOutsideToken(TokenVec::iterator beginToken, TokenVec::iterator endToken, Token::Type type)const->Calculator::TokenVec::iterator
 		{
 			int parNum = 0, braNum = 0, bceNum = 0;
@@ -601,13 +601,13 @@ namespace aris
 		}
 		auto Calculator::FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, int precedence)const->Calculator::TokenVec::iterator
 		{
-			auto nextOpr= beginToken;
+			auto nextOpr = beginToken;
 
 			while (nextOpr < endToken)
 			{
 				nextOpr = FindNextOutsideToken(nextOpr, endToken, Token::OPERATOR);
 
-				if ((nextOpr==endToken) || (nextOpr->opr->priority_b <= precedence))
+				if ((nextOpr == endToken) || (nextOpr->opr->priority_b <= precedence))
 				{
 					break;
 				}
@@ -622,7 +622,7 @@ namespace aris
 		auto Calculator::GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const->std::vector<std::vector<Matrix> >
 		{
 			std::vector<std::vector<Matrix> > ret;
-			
+
 			auto rowBegin = beginToken;
 			while (rowBegin < endToken)
 			{
@@ -647,7 +647,7 @@ namespace aris
 				if (rowEnd == endToken)
 					rowBegin = rowEnd;
 				else
-					rowBegin = rowEnd+1;
+					rowBegin = rowEnd + 1;
 			}
 
 
@@ -656,22 +656,22 @@ namespace aris
 
 		auto Calculator::calculateExpression(const std::string &expression) const->Matrix
 		{
-			auto tokens=Expression2Tokens(expression);
+			auto tokens = Expression2Tokens(expression);
 			return CaculateTokens(tokens.begin(), tokens.end());
 		}
 		auto Calculator::evaluateExpression(const std::string &expression)const->std::string
 		{
 			auto ret = expression;
-			
+
 			for (auto &var : string_map_)
 			{
 				std::string exp{ "\\$\\{" + var.first + "\\}" };
-				
+
 				std::regex var_rex{ exp };
 				ret = std::regex_replace(ret, var_rex, var.second);
 			}
-			
-			
+
+
 			return ret;
 		}
 		auto Calculator::addVariable(const std::string &name, const Matrix &value)->void
@@ -680,7 +680,7 @@ namespace aris
 			{
 				throw std::runtime_error("function \"" + name + "already exists, can't add variable");
 			}
-			
+
 			if (variable_map_.find(name) != variable_map_.end())
 			{
 				throw std::runtime_error("variable \"" + name + "already exists, can't add variable");
@@ -701,7 +701,7 @@ namespace aris
 			{
 				throw std::runtime_error("variable \"" + name + "already exists, can't add function");
 			}
-			
+
 			function_map_[name].AddOverloadFun(n, f);
 		}
 	}

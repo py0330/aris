@@ -1,4 +1,4 @@
-#ifndef ARIS_CORE_SOCKET_H_
+﻿#ifndef ARIS_CORE_SOCKET_H_
 #define ARIS_CORE_SOCKET_H_
 
 #include <functional>

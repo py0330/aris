@@ -1,4 +1,4 @@
-#ifndef ARIS_DYNAMIC_KERNEL_
+﻿#ifndef ARIS_DYNAMIC_KERNEL_
 #define ARIS_DYNAMIC_KERNEL_
 
 #ifndef PI
@@ -218,13 +218,13 @@ namespace aris
 
 		/// \brief 构造6x6的力转换矩阵
 		///
-		///  其中，tmf = [rm (3x3),  pp x rm (3x3); O (3x3), rm (3x3)]
+		///  其中,tmf = [rm (3x3),  pp x rm (3x3); O (3x3), rm (3x3)]
 		///
 		///
 		auto s_tmf(const double *pm_in, double *tmf_out) noexcept->void;
 		/// \brief 构造6x6的速度转换矩阵
 		///
-		///  其中，tmv = [rm (3x3),  O (3x3); pp x rm (3x3), rm (3x3)]
+		///  其中,tmv = [rm (3x3),  O (3x3); pp x rm (3x3), rm (3x3)]
 		///
 		///
 		auto s_tmv(const double *pm_in, double *tmv_out) noexcept->void;
@@ -360,7 +360,7 @@ namespace aris
 		auto s_c3_n(std::size_t n, double alpha, const double *cro_vec_in, const double *mat_in, std::size_t mat_in_ld, double beta, double *mat_out, std::size_t mat_out_ld) noexcept->void;
 		/// \brief 构造6x6的力叉乘矩阵
 		///
-		///  其中，cmf = [w x,  O; v x, w x]
+		///  其中,cmf = [w x,  O; v x, w x]
 		///
 		///
 		auto s_cmf(const double *vs_in, double *cmf_out) noexcept->void;
@@ -378,7 +378,7 @@ namespace aris
 		auto s_cf(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept->void;
 		/// \brief 构造6x6的速度叉乘矩阵
 		///
-		///  其中，cmv = \n
+		///  其中,cmv = \n
 		///  [w x,  v x \n
 		///   O  ,  w x] \n
 		///
@@ -455,11 +455,11 @@ namespace aris
 
 		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		///
-		/// 这里原点origin为位姿矩阵pm_out的点，firstAxisPnt位于第一根坐标轴，secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
+		/// 这里原点origin为位姿矩阵pm_out的点,firstAxisPnt位于第一根坐标轴,secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
 		///
 		///
 		auto s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder = "xy") noexcept->void;
-		/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程，该方程有2个根
+		/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程,该方程有2个根
 		///
 		///
 		auto s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void;

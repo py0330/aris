@@ -1,4 +1,4 @@
-#ifdef WIN32
+﻿#ifdef WIN32
 #include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
 #endif
 #ifdef UNIX
@@ -108,6 +108,44 @@ namespace aris
 		// 8. master send
 		// 9. log data
 
+#ifdef WIN32
+		auto aris_ecrt_master_init()->Handle* { return nullptr; }
+		auto aris_ecrt_master_config(Handle* master_handle)->void {}
+		auto aris_ecrt_master_start(Handle* master_handle)->void {}
+		auto aris_ecrt_master_stop(Handle* master_handle)->void {}
+		auto aris_ecrt_master_sync(Handle* master_handle, std::uint64_t ns)->void {}
+		auto aris_ecrt_master_receive(Handle* master_handle)->void {}
+		auto aris_ecrt_master_send(Handle* master_handle)->void {}
+		auto aris_ecrt_slave_init()->Handle* { return nullptr; }
+		auto aris_ecrt_slave_config(Handle* master_handle, Handle* slave_handle, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t distribute_clock)->void {}
+		auto aris_ecrt_slave_start(Handle* slave_handle)->void {}
+		auto aris_ecrt_slave_send(Handle* slave_handle)->void {}
+		auto aris_ecrt_slave_receive(Handle* slave_handle)->void {}
+		auto aris_ecrt_pdo_group_init()->Handle* { return nullptr; }
+		auto aris_ecrt_pdo_group_config(Handle* slave_handle, Handle* pdo_group_handle, std::uint16_t index, bool is_tx)->void {}
+		auto aris_ecrt_pdo_init()->Handle*{ return nullptr; }
+		auto aris_ecrt_pdo_config(Handle* slave_handle, Handle* pdo_group_handle, Handle* pdo_handle, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void{}
+		auto aris_ecrt_pdo_read_uint8(Handle* slave_handle, Handle* pdo_handle)->std::uint8_t { return 0; }
+		auto aris_ecrt_pdo_read_uint16(Handle* slave_handle, Handle* pdo_handle)->std::uint16_t { return 0; }
+		auto aris_ecrt_pdo_read_uint32(Handle* slave_handle, Handle* pdo_handle)->std::uint32_t { return 0; }
+		auto aris_ecrt_pdo_read_int8(Handle* slave_handle, Handle* pdo_handle)->std::int8_t { return 0; }
+		auto aris_ecrt_pdo_read_int16(Handle* slave_handle, Handle* pdo_handle)->std::int16_t { return 0; }
+		auto aris_ecrt_pdo_read_int32(Handle* slave_handle, Handle* pdo_handle)->std::int32_t { return 0; }
+		auto aris_ecrt_pdo_write_uint8(Handle* slave_handle, Handle* pdo_handle, std::uint8_t value)->void {}
+		auto aris_ecrt_pdo_write_uint16(Handle* slave_handle, Handle* pdo_handle, std::uint16_t value)->void {}
+		auto aris_ecrt_pdo_write_uint32(Handle* slave_handle, Handle* pdo_handle, std::uint32_t value)->void {}
+		auto aris_ecrt_pdo_write_int8(Handle* slave_handle, Handle* pdo_handle, std::int8_t value)->void {}
+		auto aris_ecrt_pdo_write_int16(Handle* slave_handle, Handle* pdo_handle, std::int16_t value)->void {}
+		auto aris_ecrt_pdo_write_int32(Handle* slave_handle, Handle* pdo_handle, std::int32_t value)->void {}
+		auto aris_ecrt_sdo_read(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
+			std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code) ->int{return 0;}
+		auto aris_ecrt_sdo_write(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
+			std::uint8_t *to_buffer, std::size_t buffer_size, std::uint32_t *abort_code) ->int{	return 0;}
+		auto aris_ecrt_sdo_config(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
+			std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code)->int {return 0;}
+#endif
+
+#ifdef UNIX
 		struct EcMasterHandle :public Handle
 		{
 			ec_master_t* ec_master_;
@@ -141,28 +179,26 @@ namespace aris
 		};
 		auto aris_ecrt_master_start(Handle* master_handle)->void
 		{
-#ifdef UNIX
 			// init begin //
 			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
-#endif
 			ecrt_master_activate(static_cast<EcMasterHandle*>(master_handle)->ec_master_);
 		};
-		auto aris_ecrt_master_stop(Handle* master_handle)->void 
+		auto aris_ecrt_master_stop(Handle* master_handle)->void
 		{
 			ecrt_master_deactivate(static_cast<EcMasterHandle*>(master_handle)->ec_master_);
 			ecrt_release_master(static_cast<EcMasterHandle*>(master_handle)->ec_master_);
 		};
-		auto aris_ecrt_master_sync(Handle* master_handle, std::uint64_t ns)->void 
+		auto aris_ecrt_master_sync(Handle* master_handle, std::uint64_t ns)->void
 		{
 			ecrt_master_application_time(static_cast<EcMasterHandle*>(master_handle)->ec_master_, ns);
 			ecrt_master_sync_reference_clock(static_cast<EcMasterHandle*>(master_handle)->ec_master_);
 			ecrt_master_sync_slave_clocks(static_cast<EcMasterHandle*>(master_handle)->ec_master_);
 		};
-		auto aris_ecrt_master_receive(Handle* master_handle)->void 
+		auto aris_ecrt_master_receive(Handle* master_handle)->void
 		{
 			ecrt_master_receive(static_cast<EcMasterHandle*>(master_handle)->ec_master_);
 		};
-		auto aris_ecrt_master_send(Handle* master_handle)->void 
+		auto aris_ecrt_master_send(Handle* master_handle)->void
 		{
 			ecrt_master_send(static_cast<EcMasterHandle*>(master_handle)->ec_master_);
 		};
@@ -186,12 +222,12 @@ namespace aris
 			// set pdo position
 			for (auto &reg : ec_pdo_entry_reg_vec)
 			{
-				reg.alias = alias;				
+				reg.alias = alias;
 				reg.position = position;
 				reg.product_code = product_code;
 				reg.vendor_id = vendor_id;
 			}
-			
+
 			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{});
 
 			ec_sync_info[0] = ec_sync_info_t{ 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE };
@@ -204,7 +240,7 @@ namespace aris
 			if (!(domain = ecrt_master_create_domain(ec_mst)))throw std::runtime_error("failed to create domain");
 
 			// Get the slave configuration 
-			if (!(ec_slave_config = ecrt_master_slave_config(ec_mst, alias, position, vendor_id, product_code))){ throw std::runtime_error("failed to slave config");}
+			if (!(ec_slave_config = ecrt_master_slave_config(ec_mst, alias, position, vendor_id, product_code))) { throw std::runtime_error("failed to slave config"); }
 
 			// Configure the slave's PDOs and sync masters
 			if (ecrt_slave_config_pdos(ec_slave_config, 4, ec_sync_info))throw std::runtime_error("failed to slave config pdos");
@@ -219,11 +255,11 @@ namespace aris
 		{
 			static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_ = ecrt_domain_data(static_cast<EcSlaveHandle*>(slave_handle)->domain_);
 		}
-		auto aris_ecrt_slave_send(Handle* slave_handle)->void 
+		auto aris_ecrt_slave_send(Handle* slave_handle)->void
 		{
 			ecrt_domain_queue(static_cast<EcSlaveHandle*>(slave_handle)->domain_);
 		};
-		auto aris_ecrt_slave_receive(Handle* slave_handle)->void 
+		auto aris_ecrt_slave_receive(Handle* slave_handle)->void
 		{
 			ecrt_domain_process(static_cast<EcSlaveHandle*>(slave_handle)->domain_);
 		};
@@ -258,18 +294,18 @@ namespace aris
 			auto &ec_pdo_entry_reg_vec = static_cast<EcSlaveHandle*>(slave_handle)->ec_pdo_entry_reg_vec_;
 			auto &ec_pdo_entry_info_vec = static_cast<EcPdoGroupHandle*>(pdo_group_handle)->ec_pdo_entry_info_vec_;
 
-			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0, 0, 0, 0, index, subindex, &(static_cast<EcPdoHandle*>(pdo_handle)->offset_ )});
+			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0, 0, 0, 0, index, subindex, &(static_cast<EcPdoHandle*>(pdo_handle)->offset_) });
 			ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ index, subindex, bit_length });
 		}
 		auto aris_ecrt_pdo_read_uint8(Handle* slave_handle, Handle* pdo_handle)->std::uint8_t
 		{
 			return *reinterpret_cast<const std::uint8_t*>(static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_ + static_cast<EcPdoHandle*>(pdo_handle)->offset_);
 		};
-		auto aris_ecrt_pdo_read_uint16(Handle* slave_handle, Handle* pdo_handle)->std::uint16_t 
+		auto aris_ecrt_pdo_read_uint16(Handle* slave_handle, Handle* pdo_handle)->std::uint16_t
 		{
 			return *reinterpret_cast<const std::uint16_t*>(static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_ + static_cast<EcPdoHandle*>(pdo_handle)->offset_);
 		};
-		auto aris_ecrt_pdo_read_uint32(Handle* slave_handle, Handle* pdo_handle)->std::uint32_t 
+		auto aris_ecrt_pdo_read_uint32(Handle* slave_handle, Handle* pdo_handle)->std::uint32_t
 		{
 			return *reinterpret_cast<const std::uint32_t*>(static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_ + static_cast<EcPdoHandle*>(pdo_handle)->offset_);
 		};
@@ -309,17 +345,30 @@ namespace aris
 		{
 			*reinterpret_cast<std::int32_t*>(static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_ + static_cast<EcPdoHandle*>(pdo_handle)->offset_) = value;
 		};
-		auto aris_ecrt_sdo_read(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex, 
-			std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code)->void
+		auto aris_ecrt_sdo_read(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
+			std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code)->int
 		{
-			ecrt_master_sdo_upload(static_cast<EcMasterHandle*>(master_handle)->ec_master_, slave_position, index, subindex, to_buffer, buffer_size, result_size, abort_code);
+			return ecrt_master_sdo_upload(static_cast<EcMasterHandle*>(master_handle)->ec_master_, slave_position, index, subindex, to_buffer, buffer_size, result_size, abort_code);
 		};
 		auto aris_ecrt_sdo_write(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
-			std::uint8_t *to_buffer, std::size_t buffer_size, std::uint32_t *abort_code)->void
+			std::uint8_t *to_buffer, std::size_t buffer_size, std::uint32_t *abort_code)->int
 		{
-			ecrt_master_sdo_download(static_cast<EcMasterHandle*>(master_handle)->ec_master_, slave_position, index, subindex, to_buffer, buffer_size, abort_code);
+			return ecrt_master_sdo_download(static_cast<EcMasterHandle*>(master_handle)->ec_master_, slave_position, index, subindex, to_buffer, buffer_size, abort_code);
 		};
-		auto aris_ecrt_sdo_config();
+		auto aris_ecrt_sdo_config(Handle* master_handle, Handle* slave_handle, std::uint16_t index, std::uint8_t subindex,
+			char *buffer, std::size_t bit_size)
+		{
+			auto &ec_slave_config = static_cast<EcSlaveHandle*>(slave_handle)->ec_slave_config_;
+			
+			switch (bit_size)
+			{
+			case 8:		ecrt_slave_config_sdo8(ec_slave_config, index, subindex, *reinterpret_cast<std::uint8_t*>(buffer)); break;
+			case 16:	ecrt_slave_config_sdo16(ec_slave_config, index, subindex, *reinterpret_cast<std::uint16_t*>(buffer)); break;
+			case 32:	ecrt_slave_config_sdo32(ec_slave_config, index, subindex, *reinterpret_cast<std::uint32_t*>(buffer)); break;
+			}
+		}
+#endif
+
 
 		struct Slave::Imp
 		{
@@ -463,14 +512,14 @@ namespace aris
 			DataType data_type_;
 			std::uint16_t index_;
 			std::uint8_t subindex_;
-			std::uint8_t data_size_;
+			std::uint8_t data_bit_size_;
 			Slave *slave_;
 		};
 		auto DO::slave()->Slave& { return *imp_->slave_; }
 		auto DO::slave()const->const Slave&{ return *imp_->slave_; }
 		auto DO::index()const->std::uint16_t { return imp_->index_; }
 		auto DO::subindex()const->std::uint8_t { return imp_->subindex_; }
-		auto DO::dataSize()const->std::uint8_t { return imp_->data_size_; }
+		auto DO::dataBit()const->std::uint8_t { return imp_->data_bit_size_; }
 		auto DO::dataType()const->DataType { return imp_->data_type_; }
 		DO::~DO() = default;
 		DO::DO(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
@@ -482,32 +531,32 @@ namespace aris
 			else if (xml_ele.Attribute("datatype", "int32"))
 			{
 				imp_->data_type_ = INT32;
-				imp_->data_size_ = 32;
+				imp_->data_bit_size_ = 32;
 			}
 			else if (xml_ele.Attribute("datatype", "int16"))
 			{
 				imp_->data_type_ = INT16;
-				imp_->data_size_ = 16;
+				imp_->data_bit_size_ = 16;
 			}
 			else if (xml_ele.Attribute("datatype", "int8"))
 			{
 				imp_->data_type_ = INT8;
-				imp_->data_size_ = 8;
+				imp_->data_bit_size_ = 8;
 			}
 			else if (xml_ele.Attribute("datatype", "uint32"))
 			{
 				imp_->data_type_ = UINT32;
-				imp_->data_size_ = 32;
+				imp_->data_bit_size_ = 32;
 			}
 			else if (xml_ele.Attribute("datatype", "uint16"))
 			{
 				imp_->data_type_ = UINT16;
-				imp_->data_size_ = 16;
+				imp_->data_bit_size_ = 16;
 			}
 			else if (xml_ele.Attribute("datatype", "uint8"))
 			{
 				imp_->data_type_ = UINT8;
-				imp_->data_size_ = 8;
+				imp_->data_bit_size_ = 8;
 			}
 			else
 			{
@@ -523,6 +572,8 @@ namespace aris
 		{
 			aris::core::ImpPtr<Handle> pdo_handle_;
 		};
+		auto Pdo::ecHandle()->Handle* { return imp_->pdo_handle_.get(); };
+		auto Pdo::ecHandle()const->const Handle*{ return imp_->pdo_handle_.get(); };
 		auto Pdo::read(std::int32_t &value)->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
@@ -620,48 +671,13 @@ namespace aris
 		auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
 		auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0; }
 		auto Sdo::option()const->unsigned { return imp_->option_; }
+		auto Sdo::configBuffer()->char* { return imp_->config_value_; };
 		auto Sdo::configValueInt32()const->std::int32_t { return imp_->config_value_int32_; }
 		auto Sdo::configValueInt16()const->std::int16_t { return imp_->config_value_int16_; }
 		auto Sdo::configValueInt8()const->std::int8_t { return imp_->config_value_int8_; }
 		auto Sdo::configValueUint32()const->std::uint32_t { return imp_->config_value_uint32_; }
 		auto Sdo::configValueUint16()const->std::uint16_t { return imp_->config_value_uint16_; }
 		auto Sdo::configValueUint8()const->std::uint8_t { return imp_->config_value_uint8_; }
-		auto Sdo::getConfigValue(std::int32_t &value)const->void
-		{
-			if (!configurable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not configurable");
-			if (dataType() != INT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int32 type");
-			value = imp_->config_value_int32_;
-		}
-		auto Sdo::getConfigValue(std::int16_t &value)const->void
-		{
-			if (!configurable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not configurable");
-			if (dataType() != INT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int16 type");
-			value = imp_->config_value_int16_;
-		}
-		auto Sdo::getConfigValue(std::int8_t &value)const->void
-		{
-			if (!configurable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not configurable");
-			if (dataType() != INT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int8 type");
-			value = imp_->config_value_int8_;
-		}
-		auto Sdo::getConfigValue(std::uint32_t &value)const->void
-		{
-			if (!configurable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not configurable");
-			if (dataType() != UINT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint32 type");
-			value = imp_->config_value_uint32_;
-		}
-		auto Sdo::getConfigValue(std::uint16_t &value)const->void
-		{
-			if (!configurable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not configurable");
-			if (dataType() != UINT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint16 type");
-			value = imp_->config_value_uint32_;
-		}
-		auto Sdo::getConfigValue(std::uint8_t &value)const->void
-		{
-			if (!configurable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not configurable");
-			if (dataType() != UINT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint8 type");
-			value = imp_->config_value_uint32_;
-		}
 		auto Sdo::setConfigValue(std::int32_t value)->void
 		{
 			if (!configurable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not configurable");
@@ -703,141 +719,102 @@ namespace aris
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != INT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int32 type");
 
-#ifdef UNIX
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
-#endif
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::int16_t &value)->void
 		{
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != INT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int16 type");
 
-#ifdef UNIX
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
-#endif
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::int8_t &value)->void
 		{
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != INT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int8 type");
 
-#ifdef UNIX
-
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
-#endif
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::uint32_t &value)->void
 		{
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != UINT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint32 type");
 
-#ifdef UNIX
-
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
-#endif
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::uint16_t &value)->void
 		{
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != UINT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint16 type");
 
-#ifdef UNIX
-
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
-#endif
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::uint8_t &value)->void
 		{
 			if (!readable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not readable");
 			if (dataType() != UINT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint8 type");
 
-#ifdef UNIX
-
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &real_size, &abort_code);
-#endif
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
 		}
 		auto Sdo::write(std::int32_t value)->void
 		{
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != INT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int32 type");
 
-#ifdef UNIX
-			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
-#endif
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
 		}
 		auto Sdo::write(std::int16_t value)->void
 		{
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != INT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int16 type");
 
-#ifdef UNIX
-
-			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
-#endif
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
 		}
 		auto Sdo::write(std::int8_t value)->void
 		{
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != INT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int8 type");
 
-#ifdef UNIX
-
-			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
-#endif
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
 		}
 		auto Sdo::write(std::uint32_t value)->void
 		{
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != UINT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint32 type");
 
-#ifdef UNIX
-
-			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
-#endif
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
 		}
 		auto Sdo::write(std::uint16_t value)->void
 		{
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != UINT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint16 type");
 
-#ifdef UNIX
-
-			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
-#endif
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
 		}
 		auto Sdo::write(std::uint8_t value)->void
 		{
 			if (!writeable())throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not writeable");
 			if (dataType() != UINT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint8 type");
 
-#ifdef UNIX
-
-			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataSize(), &abort_code);
-#endif
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
 		}
 		Sdo::~Sdo() = default;
 		Sdo::Sdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele)
@@ -885,6 +862,8 @@ namespace aris
 			bool is_tx_;
 			std::uint16_t index_;
 		};
+		auto PdoGroup::ecHandle()->Handle* { return imp_->handle_.get(); };
+		auto PdoGroup::ecHandle()const->const Handle*{ return imp_->handle_.get(); };
 		auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 		auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
@@ -1044,28 +1023,18 @@ namespace aris
 					for (auto &pdo : pdo_group)
 					{
 						aris_ecrt_pdo_config(sla.imp_->ec_slave_handle_.get(), pdo_group.imp_->handle_.get(), pdo.imp_->pdo_handle_.get(),
-							pdo.index(), pdo.subindex(), pdo.dataSize());
+							pdo.index(), pdo.subindex(), pdo.dataBit());
 					}
 					aris_ecrt_pdo_group_config(sla.imp_->ec_slave_handle_.get(), pdo_group.imp_->handle_.get(), pdo_group.index(), pdo_group.tx());
 				}
 				aris_ecrt_slave_config(imp_->ec_master_handle_.get(), sla.imp_->ec_slave_handle_.get()
 					, sla.alias(), sla.position(), sla.venderID(), sla.productCode(), sla.distributedClock());
 
-				// Config Sdo
-				auto &ec_slave_config = static_cast<EcSlaveHandle*>(sla.imp_->ec_slave_handle_.get())->ec_slave_config_;
-
 				for (auto &sdo : sla.sdoPool())
 				{
-					if (!(sdo.option() & Sdo::CONFIG)) continue;
-
-					switch (sdo.dataSize())
-					{
-					case 8:		ecrt_slave_config_sdo8(ec_slave_config, sdo.index(), sdo.subindex(), sdo.configValueUint8()); break;
-					case 16:	ecrt_slave_config_sdo16(ec_slave_config, sdo.index(), sdo.subindex(), sdo.configValueUint16()); break;
-					case 32:	ecrt_slave_config_sdo32(ec_slave_config, sdo.index(), sdo.subindex(), sdo.configValueUint32()); break;
-					default:    throw std::runtime_error("invalid size of sdo, it must be 8, 16 or 32");
-					}
+					aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), sdo.configBuffer(), sdo.dataBit());
 				}
+
 			}
 			aris_ecrt_master_config(imp_->ec_master_handle_.get());
 
@@ -1116,6 +1085,8 @@ namespace aris
 			registerChildType<aris::core::ObjectPool<Slave, Element> >();
 		}
 
+		auto Slave::ecHandle()->Handle* { return imp_->ec_slave_handle_.get(); }
+		auto Slave::ecHandle()const->const Handle*{ return imp_->ec_slave_handle_.get(); }
 		auto Slave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
 		auto Slave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }
 		auto Slave::alias()const->std::uint16_t { return imp_->slave_type_->alias(); }
@@ -1236,12 +1207,12 @@ namespace aris
 			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
 			writePdo(id_pair.first, id_pair.second, value);
 		}
-		auto Slave::readSdoConfig(int sdoID, std::int8_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
-		auto Slave::readSdoConfig(int sdoID, std::int16_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
-		auto Slave::readSdoConfig(int sdoID, std::int32_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
-		auto Slave::readSdoConfig(int sdoID, std::uint8_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
-		auto Slave::readSdoConfig(int sdoID, std::uint16_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
-		auto Slave::readSdoConfig(int sdoID, std::uint32_t &value) const->void { sdoPool().at(sdoID).getConfigValue(value); }
+		auto Slave::readSdoConfig(int sdoID, std::int8_t &value) const->void { value = sdoPool().at(sdoID).configValueInt8(); }
+		auto Slave::readSdoConfig(int sdoID, std::int16_t &value) const->void { value = sdoPool().at(sdoID).configValueInt16(); }
+		auto Slave::readSdoConfig(int sdoID, std::int32_t &value) const->void { value = sdoPool().at(sdoID).configValueInt32(); }
+		auto Slave::readSdoConfig(int sdoID, std::uint8_t &value) const->void { value = sdoPool().at(sdoID).configValueUint8(); }
+		auto Slave::readSdoConfig(int sdoID, std::uint16_t &value) const->void { value = sdoPool().at(sdoID).configValueUint16(); }
+		auto Slave::readSdoConfig(int sdoID, std::uint32_t &value) const->void { value = sdoPool().at(sdoID).configValueUint32(); }
 		auto Slave::configSdo(int sdoID, std::int8_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }
 		auto Slave::configSdo(int sdoID, std::int16_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }
 		auto Slave::configSdo(int sdoID, std::int32_t value)->void { sdoPool().at(sdoID).setConfigValue(value); }

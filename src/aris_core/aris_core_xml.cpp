@@ -1,4 +1,4 @@
-#include <string>
+﻿#include <string>
 #include <iostream>
 #include <functional>
 #include <vector>
@@ -17,7 +17,7 @@ namespace aris
 	{
 		struct Object::Imp 
 		{
-			// 这里添加的任何内容请在Object的赋值函数中手动赋值和构造
+			// 这里添加的任何内容请在Object里手动构造
 			Object *father_{nullptr};
 			std::size_t id_{0};
 			std::string name_{"object"};

@@ -1,4 +1,4 @@
-#ifndef ARIS_CONTROL_ETHERCAT_H
+﻿#ifndef ARIS_CONTROL_ETHERCAT_H
 #define ARIS_CONTROL_ETHERCAT_H
 
 #include <vector>
@@ -73,7 +73,7 @@ namespace aris
 			auto slave()const->const Slave&;
 			auto index()const->std::uint16_t;
 			auto subindex()const->std::uint8_t;
-			auto dataSize()const->std::uint8_t;
+			auto dataBit()const->std::uint8_t;
 			auto dataType()const->DataType;
 			virtual ~DO();
 			explicit DO(Object &father, const aris::core::XmlElement &xml_ele);
@@ -92,6 +92,8 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Pdo"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*;
 			auto read(std::int32_t &value)->void;
 			auto read(std::int16_t &value)->void;
 			auto read(std::int8_t &value)->void;
@@ -130,18 +132,13 @@ namespace aris
 			auto writeable()const->bool;
 			auto configurable()const->bool;
 			auto option()const->unsigned;
+			auto configBuffer()->char*;
 			auto configValueInt32()const->std::int32_t;
 			auto configValueInt16()const->std::int16_t;
 			auto configValueInt8()const->std::int8_t;
 			auto configValueUint32()const->std::uint32_t;
 			auto configValueUint16()const->std::uint16_t;
 			auto configValueUint8()const->std::uint8_t;
-			auto getConfigValue(std::int32_t &value)const->void;
-			auto getConfigValue(std::int16_t &value)const->void;
-			auto getConfigValue(std::int8_t &value)const->void;
-			auto getConfigValue(std::uint32_t &value)const->void;
-			auto getConfigValue(std::uint16_t &value)const->void;
-			auto getConfigValue(std::uint8_t &value)const->void;
 			auto setConfigValue(std::int32_t value)->void;
 			auto setConfigValue(std::int16_t value)->void;
 			auto setConfigValue(std::int8_t value)->void;
@@ -178,6 +175,8 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("PdoGroup"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*;
 			auto tx()const->bool;
 			auto rx()const->bool;
 			auto index()const->std::uint16_t;
@@ -234,6 +233,8 @@ namespace aris
 			virtual auto txTypeSize()const->std::size_t { return sizeof(TxType); }
 			virtual auto rxTypeSize()const->std::size_t { return sizeof(RxType); }
             virtual auto logData(const TxType &tx_data, const RxType &rx_data, std::fstream &file)->void {}
+			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*;
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 			auto productCode()const->std::uint32_t;
 			auto venderID()const->std::uint32_t;
