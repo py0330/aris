@@ -12,11 +12,6 @@
 
 namespace aris
 {
-	/// \brief 控制命名空间
-	/// \ingroup aris
-	/// 
-	///
-	///
 	namespace control
 	{	
 		class Master;

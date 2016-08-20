@@ -8,10 +8,6 @@
 #include <chrono>
 #include <memory>
 
-/// \defgroup aris
-///
-///
-
 namespace aris
 {
 	namespace control
@@ -115,34 +111,6 @@ namespace aris
 			virtual auto header()const->const MsgHeader& override;
 
 			std::unique_ptr<char[]> data_;
-
-			friend class Socket;
-			template<typename T> friend class aris::control::Pipe;
-		};
-
-		class MsgRT final :public MsgBase
-		{
-		public:
-			enum { RT_MSG_SIZE = 8192 };
-			enum { RT_MSG_NUM = 2 };
-			using MsgRtArray = MsgRT[RT_MSG_NUM];
-
-			static auto instance()->MsgRtArray&;
-			virtual auto resize(std::int32_t size)->void override;
-
-		private:
-
-			virtual ~MsgRT();
-			MsgRT();
-			MsgRT(const MsgRT &other) = delete;
-			MsgRT(MsgRT &&other) = delete;
-			MsgRT &operator=(const MsgRT& other) = delete;
-			MsgRT &operator=(MsgRT&& other) = delete;
-
-			virtual auto header()->MsgHeader& override;
-			virtual auto header()const->const MsgHeader& override;
-
-			char data_[RT_MSG_SIZE];
 
 			friend class Socket;
 			template<typename T> friend class aris::control::Pipe;

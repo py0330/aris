@@ -51,12 +51,6 @@ namespace aris
 	/// aa  :  6x1 线加速度与角加速度(acceleration and alpha)\n
 	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
 
-
-	/// \brief 动力学命名空间
-	/// \ingroup aris
-	/// 
-	///
-	///
 	namespace dynamic
 	{
 		// 以下函数为物理量之间的转换函数 //

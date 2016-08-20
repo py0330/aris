@@ -17,8 +17,9 @@ namespace aris
 		// 6. config pdo_group
 		// 7. config slave
 		// 8. config master
-		// 9. start master
-		// 10.start slave
+		// 9. config sdo
+		// 10.start master
+		// 11.start slave
 
 		////////////////////// Ecrt 的通讯流程 //////////////////////
 		// 1. master receive

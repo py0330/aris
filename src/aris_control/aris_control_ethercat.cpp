@@ -929,15 +929,14 @@ namespace aris
 					}
 					aris_ecrt_pdo_group_config(sla.ecHandle(), pdo_group.ecHandle(), pdo_group.index(), pdo_group.tx());
 				}
-
-				for (auto &sdo : sla.sdoPool())
-				{
-					aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), sdo.configBuffer(), sdo.dataBit());
-				}
-
 				aris_ecrt_slave_config(ecHandle(), sla.ecHandle(), sla.alias(), sla.position(), sla.venderID(), sla.productCode(), sla.distributedClock());
 			}
 			aris_ecrt_master_config(ecHandle());
+
+			//config ethercat sdo
+			for (auto &sla : slavePool())for (auto &sdo : sla.sdoPool())
+				aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), sdo.configBuffer(), sdo.dataBit());
+
 
 			// start ethercat master and slave
 			aris_ecrt_master_start(ecHandle());
