@@ -76,7 +76,11 @@ namespace aris
 			auto dataSize()const->std::uint8_t;
 			auto dataType()const->DataType;
 			virtual ~DO();
-			DO(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit DO(Object &father, const aris::core::XmlElement &xml_ele);
+			DO(const DO &);
+			DO(DO &&);
+			DO& operator=(const DO &);
+			DO& operator=(DO &&);
 
 		private:
 			struct Imp;
@@ -88,12 +92,12 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Pdo"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
-			auto read(std::int32_t &value)const->void;
-			auto read(std::int16_t &value)const->void;
-			auto read(std::int8_t &value)const->void;
-			auto read(std::uint32_t &value)const->void;
-			auto read(std::uint16_t &value)const->void;
-			auto read(std::uint8_t &value)const->void;
+			auto read(std::int32_t &value)->void;
+			auto read(std::int16_t &value)->void;
+			auto read(std::int8_t &value)->void;
+			auto read(std::uint32_t &value)->void;
+			auto read(std::uint16_t &value)->void;
+			auto read(std::uint8_t &value)->void;
 			auto write(std::int32_t value)->void;
 			auto write(std::int16_t value)->void;
 			auto write(std::int8_t value)->void;
@@ -101,7 +105,11 @@ namespace aris
 			auto write(std::uint16_t value)->void;
 			auto write(std::uint8_t value)->void;
 			virtual ~Pdo();
-			Pdo(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Pdo(Object &father, const aris::core::XmlElement &xml_ele);
+			Pdo(const Pdo &);
+			Pdo(Pdo &&);
+			Pdo& operator=(const Pdo &);
+			Pdo& operator=(Pdo &&);
 
 		public:
 			struct Imp;
@@ -140,19 +148,25 @@ namespace aris
 			auto setConfigValue(std::uint32_t value)->void;
 			auto setConfigValue(std::uint16_t value)->void;
 			auto setConfigValue(std::uint8_t value)->void;
-			auto read(std::int32_t &value)const->void;
-			auto read(std::int16_t &value)const->void;
-			auto read(std::int8_t &value)const->void;
-			auto read(std::uint32_t &value)const->void;
-			auto read(std::uint16_t &value)const->void;
-			auto read(std::uint8_t &value)const->void;
+			auto read(std::int32_t &value)->void;
+			auto read(std::int16_t &value)->void;
+			auto read(std::int8_t &value)->void;
+			auto read(std::uint32_t &value)->void;
+			auto read(std::uint16_t &value)->void;
+			auto read(std::uint8_t &value)->void;
 			auto write(std::int32_t value)->void;
 			auto write(std::int16_t value)->void;
 			auto write(std::int8_t value)->void;
 			auto write(std::uint32_t value)->void;
 			auto write(std::uint16_t value)->void;
 			auto write(std::uint8_t value)->void;
-			Sdo(Object &father, const aris::core::XmlElement &xml_ele);
+			virtual ~Sdo();
+			explicit Sdo(Object &father, const aris::core::XmlElement &xml_ele);
+			Sdo(const Sdo &);
+			Sdo(Sdo &&);
+			Sdo& operator=(const Sdo &);
+			Sdo& operator=(Sdo &&);
+
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
@@ -167,7 +181,13 @@ namespace aris
 			auto tx()const->bool;
 			auto rx()const->bool;
 			auto index()const->std::uint16_t;
-			PdoGroup(Object &father, const aris::core::XmlElement &xml_ele);
+
+			virtual ~PdoGroup();
+			explicit PdoGroup(Object &father, const aris::core::XmlElement &xml_ele);
+			PdoGroup(const PdoGroup &);
+			PdoGroup(PdoGroup &&);
+			PdoGroup& operator=(const PdoGroup &);
+			PdoGroup& operator=(PdoGroup &&);
 
 		public:
 			struct Imp;
@@ -219,12 +239,12 @@ namespace aris
 			auto sdoPool()->aris::core::ObjectPool<Sdo, Element>&;
 			auto sdoPool()const->const aris::core::ObjectPool<Sdo, Element>&;
 
-            auto readPdo(int pdo_group_id, int pdo_id, std::int8_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::int16_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::int32_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::uint8_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::uint16_t &value)const->void;
-			auto readPdo(int pdo_group_id, int pdo_id, std::uint32_t &value)const->void;
+            auto readPdo(int pdo_group_id, int pdo_id, std::int8_t &value)->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::int16_t &value)->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::int32_t &value)->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::uint8_t &value)->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::uint16_t &value)->void;
+			auto readPdo(int pdo_group_id, int pdo_id, std::uint32_t &value)->void;
 			auto writePdo(int pdo_group_id, int pdo_id, std::int8_t value)->void;
 			auto writePdo(int pdo_group_id, int pdo_id, std::int16_t value)->void;
 			auto writePdo(int pdo_group_id, int pdo_id, std::int32_t value)->void;
@@ -232,12 +252,12 @@ namespace aris
 			auto writePdo(int pdo_group_id, int pdo_id, std::uint16_t value)->void;
 			auto writePdo(int pdo_group_id, int pdo_id, std::uint32_t value)->void;
 
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void;
-			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)->void;
+			auto readPdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)->void;
 			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void;
 			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void;
 			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void;
@@ -245,12 +265,12 @@ namespace aris
 			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t value)->void;
 			auto writePdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t value)->void;
 
-			auto readSdo(int sdo_id, std::int8_t &value) const->void;
-			auto readSdo(int sdo_id, std::int16_t &value) const->void;
-			auto readSdo(int sdo_id, std::int32_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint8_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint16_t &value) const->void;
-			auto readSdo(int sdo_id, std::uint32_t &value) const->void;
+			auto readSdo(int sdo_id, std::int8_t &value)->void;
+			auto readSdo(int sdo_id, std::int16_t &value)->void;
+			auto readSdo(int sdo_id, std::int32_t &value)->void;
+			auto readSdo(int sdo_id, std::uint8_t &value)->void;
+			auto readSdo(int sdo_id, std::uint16_t &value)->void;
+			auto readSdo(int sdo_id, std::uint32_t &value)->void;
 			auto writeSdo(int sdo_id, std::int8_t value)->void;
 			auto writeSdo(int sdo_id, std::int16_t value)->void;
 			auto writeSdo(int sdo_id, std::int32_t value)->void;
@@ -258,12 +278,12 @@ namespace aris
 			auto writeSdo(int sdo_id, std::uint16_t value)->void;
 			auto writeSdo(int sdo_id, std::uint32_t value)->void;
 
-            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)const->void;
-            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)const->void;
-            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)const->void;
-            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)const->void;
-            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)const->void;
-            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)const->void;
+            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t &value)->void;
+            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t &value)->void;
+            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t &value)->void;
+            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint8_t &value)->void;
+            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint16_t &value)->void;
+            auto readSdoIndex(std::uint16_t index, std::uint8_t subindex, std::uint32_t &value)->void;
             auto writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int8_t value)->void;
             auto writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int16_t value)->void;
             auto writeSdoIndex(std::uint16_t index, std::uint8_t subindex, std::int32_t value)->void;
@@ -323,6 +343,8 @@ namespace aris
 			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			virtual auto start()->void;
 			virtual auto stop()->void;
+			auto ecHandle()const->const Handle*;
+			auto ecHandle()->Handle*;
 			auto slaveTypePool()->aris::core::ObjectPool<SlaveType, Element>&;
 			auto slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&;
 			auto slavePool()->aris::core::ObjectPool<Slave, Element>&;
