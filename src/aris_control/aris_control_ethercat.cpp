@@ -319,6 +319,7 @@ namespace aris
 		{
 			ecrt_master_sdo_download(static_cast<EcMasterHandle*>(master_handle)->ec_master_, slave_position, index, subindex, to_buffer, buffer_size, abort_code);
 		};
+		auto aris_ecrt_sdo_config();
 
 		struct Slave::Imp
 		{
@@ -1017,7 +1018,6 @@ namespace aris
 				txDataPool().push_back_ptr(&slave.txData());
 				rxDataPool().push_back_ptr(&slave.rxData());
 			}
-
 
 			// init ethercat master, slave, pdo group, and pdo
 			imp_->ec_master_handle_.reset(aris_ecrt_master_init());

@@ -212,7 +212,6 @@ namespace aris
 			SlaveType& operator=(const SlaveType &);
 			SlaveType& operator=(SlaveType &&);
 
-
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
