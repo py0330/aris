@@ -563,7 +563,7 @@ namespace aris
 			struct SimResult
 			{
 				std::list<double> time_;
-				std::vector<std::list<double> > Pin_, Fin_, Vin_, Ain_;//vector的维数为电机个数，但list维数为时间的维数
+				std::vector<std::list<double> > Pin_, Fin_, Vin_, Ain_;//vector的维数为电机个数,但list维数为时间的维数
 
 				auto clear()->void;
 				auto resize(std::size_t size)->void;
@@ -608,10 +608,10 @@ namespace aris
 			auto ground()->Part&;
 			auto ground()const->const Part&;
 
-			/// 约束矩阵C为m x n维的矩阵，惯量矩阵为m x m维的矩阵
-			/// 约束力为n维的向量，约束加速度为n维向量
-			/// 部件力为m维的向量，部件加速度为m维向量
-			/// 动力学为所求的未知量为部件加速度和约束力，其他均为已知
+			/// 约束矩阵C为m x n维的矩阵,惯量矩阵为m x m维的矩阵
+			/// 约束力为n维的向量,约束加速度为n维向量
+			/// 部件力为m维的向量,部件加速度为m维向量
+			/// 动力学为所求的未知量为部件加速度和约束力,其他均为已知
 			virtual auto dyn()->void;
 			auto dynDimM()const->std::size_t;
 			auto dynDimN()const->std::size_t;
@@ -631,7 +631,7 @@ namespace aris
 			auto dynUkn(double *x) const->void;
 			auto dynEnd(const double *x)->void;
 
-			/// 标定矩阵为m x n维的矩阵，其中m为驱动的数目，n为部件个数*10+驱动数*3
+			/// 标定矩阵为m x n维的矩阵,其中m为驱动的数目,n为部件个数*10+驱动数*3
 			auto clbDimM()const->std::size_t;
 			auto clbDimN()const->std::size_t;
 			auto clbDimGam()const->std::size_t;
@@ -649,7 +649,7 @@ namespace aris
 			auto simKin(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1)->SimResult;
 			/// 动态仿真
 			auto simDyn(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1, Script *script = nullptr)->SimResult;
-			/// 直接生成Adams模型，依赖SimDynAkima
+			/// 直接生成Adams模型,依赖SimDynAkima
 			auto simToAdams(const std::string &filename, const PlanFunc &func, const PlanParamBase &param, int ms_dt = 10, Script *script = nullptr)->SimResult;
 
 			virtual ~Model();

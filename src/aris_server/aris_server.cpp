@@ -22,6 +22,8 @@ namespace aris
 {
 	namespace server
     {
+		enum {RT_MSG_SIZE = 8192};
+		
 		class ControlServer::Imp
 		{
 		public:
@@ -60,7 +62,7 @@ namespace aris
 
 			// 实时循环中的步态参数 //
 			enum { CMD_POOL_SIZE = 50 };
-			char cmd_queue_[CMD_POOL_SIZE][aris::core::MsgRT::RT_MSG_SIZE];
+			char cmd_queue_[CMD_POOL_SIZE][RT_MSG_SIZE];
 			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 0 };
 
 			// 储存上一次slave的数据 //
@@ -113,95 +115,6 @@ namespace aris
 				controller_->stop();
 				sensor_root_->stop();
 				is_running_ = false;
-			}
-		}
-		auto ControlServer::Imp::onReceiveMsg(const aris::core::Msg &msg)->aris::core::Msg
-		{
-			try
-			{
-                std::string cmd;
-                std::map<std::string, std::string> params;
-				if (msg.data()[msg.size() - 1] != '\0')
-				{
-					throw std::runtime_error(std::string("invaild command message:command message must be terminated by CHAR \"0\""));
-				}
-
-				try
-				{
-					std::string input{ msg.data() };
-					widget_root_->commandParser().parse(input, cmd, params);
-
-					std::cout << cmd << std::endl;
-					int paramPrintLength;
-					if (params.empty())
-					{
-						paramPrintLength = 2;
-					}
-					else
-					{
-						paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
-						{
-							return a.first.length() < b.first.length();
-						})->first.length() + 2;
-					}
-					for (auto &i : params)
-					{
-						std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
-					}
-
-					std::cout << std::endl;
-				}
-				catch (std::exception &e)
-				{
-					std::cout << e.what() << std::endl << std::endl;
-				}
-
-				if (cmd == "start")
-				{
-					if (is_running_)throw std::runtime_error("server already started, thus ignore command \"start\"");
-					start();
-					return aris::core::Msg();
-				}
-				if (cmd == "stop")
-				{
-					if (!is_running_)throw std::runtime_error("server already stopped, thus ignore command \"stop\"");
-					stop();
-					return aris::core::Msg();
-				}
-				if (cmd == "exit")
-				{
-					if (is_running_)stop();
-
-					std::thread exit_callback([this]() 
-					{
-						std::this_thread::sleep_for(std::chrono::seconds(1));
-						if (on_exit_callback_)on_exit_callback_();
-					});
-
-					exit_callback.detach();
-
-					return aris::core::Msg();
-				}
-				
-				if (!is_running_)throw std::runtime_error("can't execute command, because the server is not STARTED, please start it first");
-				sendParam(cmd, params);
-
-				return aris::core::Msg();
-			}
-			catch (std::exception &e)
-			{
-				std::cout << aris::core::log(e.what()) << std::endl;
-				
-				aris::core::Msg error_msg;
-				error_msg.copy(e.what());
-				return error_msg;
-			}
-			catch (...)
-			{
-				std::cout << aris::core::log("unknown exception") << std::endl;
-				aris::core::Msg error_msg;
-				error_msg.copy("unknown exception");
-				return error_msg;
 			}
 		}
 		auto ControlServer::Imp::sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void
@@ -361,7 +274,7 @@ namespace aris
                     //判断是否已经Enable了
                     if ((param->count_ != 0) && (rx_motion_data.ret == 0))
                     {
-                        // 判断是否为第一次走到enable,否则什么也不做，这样就会继续刷上次的值
+                        // 判断是否为第一次走到enable,否则什么也不做,这样就会继续刷上次的值
                         if (tx_motion_data.cmd == aris::control::Motion::ENABLE)
                         {
 							tx_motion_data.cmd = aris::control::Motion::RUN;
@@ -400,7 +313,7 @@ namespace aris
                     //判断是否已经Disable了
                     if ((param->count_ != 0) && (rx_motion_data.ret == 0))
                     {
-                        // 如果已经disable了，那么什么都不做
+                        // 如果已经disable了,那么什么都不做
                     }
                     else
                     {
@@ -432,7 +345,7 @@ namespace aris
                     // 根据返回值来判断是否走到home了
                     if ((param->count_ != 0) && (rxmotiondata.ret == 0))
                     {
-                        // 判断是否为第一次走到home,否则什么也不做，这样就会继续刷上次的值
+                        // 判断是否为第一次走到home,否则什么也不做,这样就会继续刷上次的值
                         if (txmotiondata.cmd == aris::control::Motion::HOME)
                         {
                             txmotiondata.cmd = aris::control::Motion::RUN;
@@ -489,7 +402,7 @@ namespace aris
                     }
                     else
                     {
-                        rt_printf("Invalid mode.");
+                        rt_printf("Invalid mode.\n");
                     }
 
 				}
@@ -556,10 +469,10 @@ namespace aris
 		auto ControlServer::Imp::onRunError()->int
 		{
 			rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
-			cmd_num_ = 1;//因为这里为0退出，因此之后在tg中回递减cmd_num_,所以这里必须为1
+			cmd_num_ = 1;//因为这里为0退出,因此之后在tg中回递减cmd_num_,所以这里必须为1
 			count_ = 0;
 
-			// 发现不连续，那么使用上一个成功的cmd，以便等待修复 //
+			// 发现不连续,那么使用上一个成功的cmd,以便等待修复 //
 			for (std::size_t i = 0; i < controller_->txDataPool().size(); ++i)
 			{
 				controller_->slavePool().at(i).setTxData(*last_data_vec_tx_.at(i));
@@ -657,51 +570,8 @@ namespace aris
             imp_->sensor_root_->loadXml(xml_doc);
 			imp_->widget_root_->loadXml(xml_doc);
 
-			// Set socket connection callback function //
-			widgetRoot().commandSocket().setOnReceivedConnection([](aris::core::Socket *sock, const char *remote_ip, int remote_port)
-			{
-				aris::core::log(std::string("received connection, the server_socket_ip_ is: ") + remote_ip);
-				return 0;
-			});
-			widgetRoot().commandSocket().setOnReceivedRequest([this](aris::core::Socket *sock, aris::core::Msg &msg)
-			{
-				if (msg.data()[msg.size()] != 0) 
-				{
-					aris::core::log(std::string("received data but it's not a string, because last char is no \\0"));
-				}
-				else
-				{
-					aris::core::log(std::string("received data : \"") + msg.data() + "\"");
-				}
-				
-				return imp_->onReceiveMsg(msg);
-			});
-			widgetRoot().commandSocket().setOnLoseConnection([this](aris::core::Socket *sock)
-			{
-				aris::core::log("lost connection");
-				while (true)
-				{
-					try
-					{
-						sock->startServer();
-						break;
-					}
-					catch (aris::core::Socket::StartServerError &e)
-					{
-						std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-						std::this_thread::sleep_for(std::chrono::seconds(1));
-					}
-				}
-				aris::core::log("restart server socket successful");
-
-				return 0;
-			});
-
-            //set the tg//
-            imp_->controller_->setControlStrategy([this]()
-            {
-                this->imp_->tg();
-            });
+            // set the tg //
+			imp_->controller_->setControlStrategy([this]() {this->imp_->tg(); });
 		}
 		auto ControlServer::widgetRoot()->WidgetRoot&{	return std::ref(*imp_->widget_root_); }
 		auto ControlServer::model()->dynamic::Model& { return std::ref(*imp_->model_); }
@@ -730,7 +600,7 @@ namespace aris
 				{
 					throw std::runtime_error(std::string("failed to add command, because \"") + cmd_name + "\" already exists");
 				}
-                else if (widgetRoot().commandParser().commandPool().findByName(cmd_name) == widgetRoot().commandParser().children().end())
+                else if (widgetRoot().cmdParser().commandPool().findByName(cmd_name) == widgetRoot().cmdParser().commandPool().end())
 				{
 					throw std::runtime_error(std::string("failed to add command, because xml does not have \"") + cmd_name + "\" node");
 				}
@@ -744,26 +614,57 @@ namespace aris
 				}
 			}
 		}
-		auto ControlServer::open()->void 
+		auto ControlServer::executeCmd(const std::string &cmd_string)->void
 		{
-			for (;;)
+			std::string cmd;
+			std::map<std::string, std::string> params;
+
+			aris::core::log(cmd_string);
+
+			widgetRoot().cmdParser().parse(cmd_string, cmd, params);
+
+			// print cmd and params //
+			auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)
 			{
-				try
-				{
-					widgetRoot().commandSocket().startServer();
-					break;
-				}
-				catch (aris::core::Socket::StartServerError &e)
-				{
-					std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-					std::this_thread::sleep_for(std::chrono::seconds(1));
-				}
+				return a.first.length() < b.first.length();
+			})->first.length();
+			std::cout << cmd << std::endl;
+			for (auto &p : params)
+			{
+				std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
 			}
-			std::cout << aris::core::log("server open successful") << std::endl;
-		}
-		auto ControlServer::close()->void 
-		{
-			widgetRoot().commandSocket().stop();
+			std::cout << std::endl;
+			// print over //
+
+
+			if (cmd == "start")
+			{
+				if (imp_->is_running_)throw std::runtime_error("server already started, thus ignore command \"start\"");
+				imp_->start();
+				return;
+			}
+			else if (cmd == "stop")
+			{
+				if (!imp_->is_running_)throw std::runtime_error("server already stopped, thus ignore command \"stop\"");
+				imp_->stop();
+				return;
+			}
+			else if (cmd == "exit")
+			{
+				if (imp_->is_running_)imp_->stop();
+
+				std::thread exit_callback([this]()
+				{
+					std::this_thread::sleep_for(std::chrono::seconds(1));
+					if (imp_->on_exit_callback_)imp_->on_exit_callback_();
+				});
+
+				exit_callback.detach();
+				return;
+			}
+
+			if (!imp_->is_running_)throw std::runtime_error("can't execute command, because the server is not STARTED, please start it first");
+			imp_->sendParam(cmd, params);
 		}
 		auto ControlServer::setOnExit(std::function<void(void)> callback_func)->void
 		{
@@ -771,7 +672,6 @@ namespace aris
 		}
 		ControlServer::~ControlServer() = default;
 		ControlServer::ControlServer() :imp_(new Imp(this)) {}
-		
 	}
 }
 

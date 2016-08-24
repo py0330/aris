@@ -1,4 +1,4 @@
-#include <string>
+ï»¿#include <string>
 #include <iostream>
 #include <functional>
 #include <vector>
@@ -17,7 +17,7 @@ namespace aris
 	{
 		struct Object::Imp 
 		{
-			// ÕâÀïÌí¼ÓµÄÈÎºÎÄÚÈİÇëÔÚObjectµÄ¸³Öµº¯ÊıÖĞÊÖ¶¯¸³ÖµºÍ¹¹Ôì
+			// è¿™é‡Œæ·»åŠ çš„ä»»ä½•å†…å®¹è¯·åœ¨Objecté‡Œæ‰‹åŠ¨æ„é€ 
 			Object *father_{nullptr};
 			std::size_t id_{0};
 			std::string name_{"object"};

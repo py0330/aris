@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <aris.h>
 
 #include "test_control_ethercat.h"
@@ -24,6 +24,7 @@ const char xml_file[] =
 "                    </index_1a03>"
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
+"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"-1\" read=\"true\" write=\"true\"/>"
 "                </sdo_pool>"
 "            </elmo>"
 "        </slave_type_pool>"
@@ -91,7 +92,18 @@ void test_control_ethercat()
     master.registerChildType<TestSlave>();
 	master.loadXml(xml_doc);
 	
+	
 	master.start();
+
+	// test sdo read and write
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	std::int8_t mode = 0;
+	master.slavePool().front().sdoPool().front().read(mode);
+	std::cout << "home mode:" << static_cast<int>(mode) << std::endl;
+	master.slavePool().front().sdoPool().front().write(static_cast<std::int8_t>(35));
+	master.slavePool().front().sdoPool().front().read(mode);
+	std::cout << "home mode:" << static_cast<int>(mode) << std::endl;
+
 
 	std::cout << "press any key to start log" << std::endl;
 	std::cin.get();

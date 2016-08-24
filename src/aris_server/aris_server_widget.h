@@ -18,10 +18,8 @@ namespace aris
 			using Root::loadXml;
 			virtual auto loadXml(const aris::core::XmlDocument &xml_doc)->void override;
 			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto commandSocket()->aris::core::Socket&;
-			auto commandSocket()const->const aris::core::Socket&;
-			auto commandParser()->aris::core::CommandParser&;
-			auto commandParser()const->const aris::core::CommandParser&;
+			auto cmdParser()->aris::core::CommandParser&;
+			auto cmdParser()const->const aris::core::CommandParser&;
 			auto msgPipe()->aris::core::Pipe &;
 			auto msgPipe()const->const aris::core::Pipe &;
 			

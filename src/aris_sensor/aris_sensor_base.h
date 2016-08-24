@@ -11,11 +11,6 @@
 
 namespace aris
 {
-	/// \brief 传感器命名空间
-	/// \ingroup aris
-	/// 
-	///
-	///
 	namespace sensor
 	{
 		class Sensor;

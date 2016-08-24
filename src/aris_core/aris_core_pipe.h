@@ -1,4 +1,4 @@
-#ifndef ARIS_CORE_PIPE_H
+﻿#ifndef ARIS_CORE_PIPE_H
 #define ARIS_CORE_PIPE_H
 
 #include <memory>

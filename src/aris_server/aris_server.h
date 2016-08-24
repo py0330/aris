@@ -24,13 +24,13 @@ namespace aris
 		
 		using ParseFunc = std::function<void(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
 
-		//for enable, disable, and home
+		// for enable, disable, and home //
 		struct BasicFunctionParam :aris::dynamic::PlanParamBase
 		{
 			bool active_motor_[MAX_MOTOR_NUM];
             BasicFunctionParam() { std::fill(active_motor_, active_motor_ + MAX_MOTOR_NUM, true); }
 		};
-		//for all ordinary gaits
+		// for all ordinary gaits //
 		struct GaitParamBase :BasicFunctionParam
 		{
 			ControlServer* cs_;
@@ -70,9 +70,8 @@ namespace aris
 
 			auto loadXml(const char *file_name)->void;
 			auto loadXml(const aris::core::XmlDocument &xml_doc)->void;
-			auto open()->void;
-			auto close()->void;
 			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void;
+			auto executeCmd(const std::string &cmd_string)->void;
 			auto setOnExit(std::function<void(void)> callback_func)->void;
 
 		private:

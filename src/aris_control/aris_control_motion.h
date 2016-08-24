@@ -1,4 +1,4 @@
-#ifndef ARIS_CONTROL_MOTION_H
+﻿#ifndef ARIS_CONTROL_MOTION_H
 #define ARIS_CONTROL_MOTION_H
 
 #include <functional>

@@ -76,14 +76,14 @@ namespace aris
 
 		SensorDataProtector::SensorDataProtector(Sensor *sensor) : sensor_(sensor), data_(nullptr)
 		{
-			//这里data_to_read_指向最新的内存，例如如果data_to_read_为2，那么有两种情况：
-			//1.此时正在写内存0，内存1空闲。
-			//2.在某些极端特殊时刻下，sensor正好刚刚写到内存1，正准备释放dataMutex0，并且之后准备将data_to_read_置为0。
-			//无论以上哪种情况，dataMutex2都会被锁住。
-			//紧接着以上两种情况，继而会发生以下情况：
-			//1.正在写内存0，内存1空闲，dataMutex2都会被锁住后data_to_read_依然为2，那么此后数据一直在操作内存2，安全。
-			//2.dataMutex2被锁住的同时，data_to_read_被更新到0，此时传感器开始写内存1，由于dataMutex2被锁，因此传感器一直无法
-			//更新到内存2；但是数据读取的是内存0，安全。
+			//这里data_to_read_指向最新的内存,例如如果data_to_read_为2,那么有两种情况：
+			//1.此时正在写内存0,内存1空闲。
+			//2.在某些极端特殊时刻下,sensor正好刚刚写到内存1,正准备释放dataMutex0,并且之后准备将data_to_read_置为0。
+			//无论以上哪种情况,dataMutex2都会被锁住。
+			//紧接着以上两种情况,继而会发生以下情况：
+			//1.正在写内存0,内存1空闲,dataMutex2都会被锁住后data_to_read_依然为2,那么此后数据一直在操作内存2,安全。
+			//2.dataMutex2被锁住的同时,data_to_read_被更新到0,此时传感器开始写内存1,由于dataMutex2被锁,因此传感器一直无法
+			//更新到内存2；但是数据读取的是内存0,安全。
 			
 			do {
 				lock_ = std::unique_lock<std::recursive_mutex>(sensor_->imp_->data_mutex_[sensor_->imp_->data_to_read_], std::try_to_lock);

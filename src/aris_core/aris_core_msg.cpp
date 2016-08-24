@@ -125,7 +125,7 @@ namespace aris
 
 				for (; nIndex >= 0; nIndex--)
 				{
-					if (path[nIndex] == '/')//筛选出进程名
+					if (path[nIndex] == '/')
 					{
 						nIndex++;
 						proName += nIndex;
@@ -203,17 +203,5 @@ namespace aris
 		}
 		Msg::Msg(Msg&& other) { swap(other); }
 		Msg&Msg::operator=(Msg other) { swap(other); return (*this); }
-
-
-		auto MsgRT::instance()->MsgRtArray&
-		{
-			static MsgRtArray msg_rt_array;
-			return msg_rt_array;
-		}
-		auto MsgRT::resize(std::int32_t data_size)->void{ header().msg_size_ = data_size; }
-		auto MsgRT::header()->MsgHeader& { return *reinterpret_cast<MsgHeader*>(data_); }
-		auto MsgRT::header()const->const MsgHeader&{ return *reinterpret_cast<const MsgHeader*>(data_); }
-		MsgRT::~MsgRT() { }
-		MsgRT::MsgRT(){	std::fill(data_, data_ + sizeof(MsgHeader) + RT_MSG_SIZE, 0); resize(0); }
 	}
 }

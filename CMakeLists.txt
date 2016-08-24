@@ -104,7 +104,7 @@ install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
 # aris core project
-set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_msg_loop aris_core_xml tinyxml2)
+set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_xml tinyxml2)
 PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
 PREPEND_H(FULL_H src/aris_core ${SOURCE})
 add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h)
@@ -112,7 +112,7 @@ install(TARGETS aris_core ARCHIVE DESTINATION lib)
 install(FILES ${FULL_H} src/aris_core/aris_core.h DESTINATION include)
 
 # aris control project
-set(SOURCE aris_control_motion aris_control_ethercat)
+set(SOURCE aris_control_motion aris_control_ethercat aris_control_kernel)
 PREPEND_CPP(FULL_SRC src/aris_control ${SOURCE})
 PREPEND_H(FULL_H src/aris_control ${SOURCE})
 add_library(aris_control STATIC ${FULL_SRC} ${FULL_H} src/aris_control/aris_control.h)

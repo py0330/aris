@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <aris.h>
 
 #ifdef UNIX
@@ -112,7 +112,7 @@ static aris::core::Root widget_root;
 static aris::core::CommandParser *parser;
 static aris::core::Pipe *msg_pipe;
 
-char cmd_char[aris::core::MsgRT::RT_MSG_SIZE];
+char cmd_char[8192];
 
 static bool is_running = true;
 
@@ -196,9 +196,11 @@ BasicFunctionParam decode(const std::string input)
 void tg()
 {
 	BasicFunctionParam *param;
-	if (msg_pipe->recvMsg(aris::core::MsgRT::instance()[0]))
+	aris::core::MsgFix<8192> recv_msg;
+
+	if (msg_pipe->recvMsg(recv_msg))
 	{
-		aris::core::MsgRT::instance()[0].paste(cmd_char);
+		recv_msg.paste(cmd_char);
 		param = reinterpret_cast<BasicFunctionParam *>(cmd_char);
 		cmd_count = 0;
 		cmd_success = false;

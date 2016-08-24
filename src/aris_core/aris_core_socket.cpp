@@ -57,7 +57,7 @@ namespace aris
 
 			// 连接的socket //
 #ifdef WIN32
-			WSADATA wsa_data_;             //windows下才用，linux下无该项
+			WSADATA wsa_data_;             //windows下才用,linux下无该项
 #endif
 			~Imp() = default;
 			Imp(Socket* sock) :socket_(sock), lisn_socket_(0), conn_socket_(0), sin_size_(sizeof(struct sockaddr_in)), state_(Socket::IDLE)
@@ -79,7 +79,7 @@ namespace aris
 			struct sockaddr_in client_addr;
 			socklen_t sin_size;
 
-			// 以下从对象中copy内容，此时start_Server在阻塞，因此Socket内部数据安全， //
+			// 以下从对象中copy内容,此时start_Server在阻塞,因此Socket内部数据安全 //
 			// 拷贝好后告诉start_Server函数已经拷贝好 //
 			lisn_sock = imp->lisn_socket_;
 			client_addr = imp->client_addr_;
@@ -87,13 +87,13 @@ namespace aris
 
 			imp->state_ = WAITING_FOR_CONNECTION;
 
-			// 通知主线程，accept线程已经拷贝完毕，准备监听 //
+			// 通知主线程,accept线程已经拷贝完毕,准备监听 //
 			accept_thread_ready.set_value();
 
 			// 服务器阻塞,直到客户程序建立连接 //
 			conn_sock = accept(lisn_sock, (struct sockaddr *)(&client_addr), &sin_size);
 
-			// 检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源 //
+			// 检查是否正在Close,如果不能锁住,则证明正在close,于是结束线程释放资源 //
 			std::unique_lock<std::mutex> cls_lck(imp->close_mutex_, std::defer_lock);
 			if (!cls_lck.try_lock())return;
 
@@ -101,7 +101,7 @@ namespace aris
 			cls_lck.unlock();
 			cls_lck.release();
 
-			// 否则，开始开启数据线程 //
+			// 否则,开始开启数据线程 //
 			if (conn_sock == -1)
 			{
 				imp->socket_->stop();
@@ -145,7 +145,7 @@ namespace aris
 
 			int conn_socket = imp->conn_socket_;
 
-			// 通知accept或connect线程已经准备好，下一步开始收发数据 //
+			// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 			receive_thread_ready.set_value();
 
 			// 开启接受数据的循环 //
@@ -153,12 +153,12 @@ namespace aris
 			{
 				int res = recv(conn_socket, head.header, sizeof(MsgHeader), 0);
 
-				// 检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源， //
-				// 若能锁住，则开始获取Imp所有权 //
+				// 检查是否正在Close,如果不能锁住,则证明正在close,于是结束线程释放资源, //
+				// 若能锁住,则开始获取Imp所有权 //
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (!close_lck.try_lock())return;
 
-				// 证明没有在close，于是正常接收消息头 //
+				// 证明没有在close,于是正常接收消息头 //
 				std::unique_lock<std::recursive_mutex> state_lck(imp->state_mutex_);
 				close_lck.unlock();
 				close_lck.release();
@@ -254,24 +254,18 @@ namespace aris
 #endif
 #ifdef UNIX
 				shutdown(imp_->conn_socket_, 2);
-				//shutdown(imp_->lisn_socket_, 2);
 				close(imp_->conn_socket_);
-				//close(imp_->lisn_socket_);
 #endif
 				break;
 			case WAITING_FOR_REPLY:
 #ifdef WIN32
 				shutdown(imp_->conn_socket_, 2);
-				shutdown(imp_->lisn_socket_, 2);
 				closesocket(imp_->conn_socket_);
-				closesocket(imp_->lisn_socket_);
 				WSACleanup();
 #endif
 #ifdef UNIX
 				shutdown(imp_->conn_socket_, 2);
-				shutdown(imp_->lisn_socket_, 2);
 				close(imp_->conn_socket_);
-				close(imp_->lisn_socket_);
 #endif
 				imp_->cv_reply_data_received_.notify_one();
 				break;
@@ -338,12 +332,12 @@ namespace aris
 			// 服务器端开始建立socket描述符 //
 			if ((imp_->lisn_socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1)throw(StartServerError("Socket can't Start as server, because it can't socket\n", this, 0));
 
-			// 设置socketopt选项，使得地址在程序结束后立即可用 //
+			// 设置socketopt选项,使得地址在程序结束后立即可用 //
 			int nvalue = 1;
 			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0)
 				throw StartServerError("Socket can't set REUSEADDR option\n", this, 0);
 
-			// 服务器端填充server_addr_结构，并且bind //
+			// 服务器端填充server_addr_结构,并且bind //
 			memset(&imp_->server_addr_, 0, sizeof(struct sockaddr_in));
 			imp_->server_addr_.sin_family = AF_INET;
 			imp_->server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);

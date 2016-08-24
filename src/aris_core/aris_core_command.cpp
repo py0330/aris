@@ -13,7 +13,6 @@ namespace aris
 		class ParamBase;
 		class Param;
 		
-		
 		struct ParamBase::Imp 
 		{ 
 			bool is_taken_{ false };
@@ -272,7 +271,7 @@ namespace aris
 		{
 			try
 			{
-				/// 将msg转换成cmd和一系列参数，不过这里的参数为原生字符串，既包括名称也包含值，例如“-heigt=0.5” ///
+				// 将msg转换成cmd和一系列参数,不过这里的参数为原生字符串,既包括名称也包括值,例如-height=0.5 //
 				std::stringstream input_stream{ command_string };
 				std::string word;
 				std::vector<std::string> param_vec;
