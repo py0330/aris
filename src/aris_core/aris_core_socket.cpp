@@ -254,24 +254,18 @@ namespace aris
 #endif
 #ifdef UNIX
 				shutdown(imp_->conn_socket_, 2);
-				//shutdown(imp_->lisn_socket_, 2);
 				close(imp_->conn_socket_);
-				//close(imp_->lisn_socket_);
 #endif
 				break;
 			case WAITING_FOR_REPLY:
 #ifdef WIN32
 				shutdown(imp_->conn_socket_, 2);
-				shutdown(imp_->lisn_socket_, 2);
 				closesocket(imp_->conn_socket_);
-				closesocket(imp_->lisn_socket_);
 				WSACleanup();
 #endif
 #ifdef UNIX
 				shutdown(imp_->conn_socket_, 2);
-				shutdown(imp_->lisn_socket_, 2);
 				close(imp_->conn_socket_);
-				close(imp_->lisn_socket_);
 #endif
 				imp_->cv_reply_data_received_.notify_one();
 				break;

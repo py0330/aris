@@ -52,8 +52,7 @@ namespace aris
 				for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
 				imp_->log_data_msg_.resize(imp_->log_data_size_);
 
-				//娓呯悊骞插噣pipe
-				aris::core::MsgFix<8196> recv_msg;
+				aris::core::MsgFix<8192> recv_msg;
 				while (imp_->log_pipe_->recvMsg(recv_msg));
 				imp_->is_receiving_ = true;
 				thread_ready.set_value();

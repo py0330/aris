@@ -16,8 +16,9 @@
 #include <rtdm/rtipc.h>
 #endif
 
-#include<memory>
-#include<vector>
+#include <cstdarg>
+#include <memory>
+#include <vector>
 
 #include "aris_control_kernel.h"
 
@@ -25,8 +26,15 @@ namespace aris
 {
 	namespace control
 	{
-
 #ifdef WIN32
+		auto aris_rt_printf(const char * format, ...)
+		{
+			va_list args;
+			va_start(args, format);
+			vprintf(format, args);
+			va_end(args);
+		}
+
 		auto aris_rt_set_periodic(int nanoseconds)->void
 		{
 		};
@@ -47,8 +55,6 @@ namespace aris
 
 		}
 #endif
-
-
 
 #ifdef WIN32
 		auto aris_ecrt_master_init()->Handle* { return nullptr; }
@@ -90,6 +96,13 @@ namespace aris
 #ifdef UNIX
 		struct RtTaskHandle :public Handle { RT_TASK task; };
 
+		auto aris_rt_printf(const char * format, ...)
+		{
+			va_list args;
+			va_start(args, format);
+			rt_vprintf(format, args);
+			va_end(args);
+		}
 		auto aris_rt_set_periodic(int nanoseconds)->void
 		{
 			rt_task_set_periodic(NULL, TM_NOW, nanoseconds);

@@ -34,6 +34,8 @@ namespace aris
 		
 		struct Handle { virtual ~Handle() = default; };
 
+		auto aris_rt_printf(const char * format, ...);
+
 		auto aris_rt_set_periodic(int nanoseconds)->void;
 		auto aris_rt_wait_period()->void;
 		auto aris_rt_timer_read()->std::int64_t;
@@ -69,9 +71,9 @@ namespace aris
 		auto aris_ecrt_pdo_write_int16(Handle* slave_handle, Handle* pdo_handle, std::int16_t value)->void;
 		auto aris_ecrt_pdo_write_int32(Handle* slave_handle, Handle* pdo_handle, std::int32_t value)->void;
 		auto aris_ecrt_sdo_read(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
-			std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code)->int;
+			std::uint8_t *to_buffer, std::size_t bit_size, std::size_t *result_size, std::uint32_t *abort_code)->int;
 		auto aris_ecrt_sdo_write(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
-			std::uint8_t *to_buffer, std::size_t buffer_size, std::uint32_t *abort_code) ->int;
+			std::uint8_t *to_buffer, std::size_t bit_size, std::uint32_t *abort_code) ->int;
 		auto aris_ecrt_sdo_config(Handle* master_handle, Handle* slave_handle, std::uint16_t index, std::uint8_t subindex,
 			char *buffer, std::size_t bit_size)->void;
 	}

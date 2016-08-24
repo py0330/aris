@@ -1,16 +1,4 @@
-﻿#ifdef UNIX
-#include <ecrt.h>
-#include <native/task.h>
-#include <native/timer.h>
-#include <rtdk.h>
-#include <sys/mman.h>
-#endif
-#ifdef WIN32
-#define rt_printf printf
-#endif
-
-
-#include <string>
+﻿#include <string>
 #include <iostream>
 #include <map>
 #include <fstream>
@@ -178,9 +166,9 @@ namespace aris
                     return Motion::MODE_CHANGE;
                 }
                 else if(motorState == 0x0400){
-                    //homing procedure is interrupted or not started
+                    // homing procedure is interrupted or not started
                     if(home_period<10){
-                        //write 15 to controlword, make the bit4 equal to 0, 10 times
+                        // write 15 to controlword, make the bit4 equal to 0, 10 times
                         pFather->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x1F));
                         home_period++;
                         return Motion::NOT_START;
@@ -208,7 +196,6 @@ namespace aris
                 {
                     //homing error occurred, velocity is not 0 , or homing error occurred, velocity is 0, should halt
                     pFather->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x0100));
-                    rt_printf("%s\n","homing error occurred, the motor is halting!");
                     home_period=0;
                     return Motion::HOME_ERROR;
                 }

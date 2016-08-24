@@ -104,7 +104,7 @@ install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
 # aris core project
-set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_msg_loop aris_core_xml tinyxml2)
+set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_xml tinyxml2)
 PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
 PREPEND_H(FULL_H src/aris_core ${SOURCE})
 add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h)
