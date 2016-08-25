@@ -27,7 +27,7 @@ namespace aris
 	namespace control
 	{
 #ifdef WIN32
-		auto aris_rt_printf(const char * format, ...)
+        auto aris_rt_printf(const char * format, ...)->void
 		{
 			va_list args;
 			va_start(args, format);
@@ -96,7 +96,7 @@ namespace aris
 #ifdef UNIX
 		struct RtTaskHandle :public Handle { RT_TASK task; };
 
-		auto aris_rt_printf(const char * format, ...)
+        auto aris_rt_printf(const char * format, ...)->void
 		{
 			va_list args;
 			va_start(args, format);
