@@ -159,7 +159,7 @@ namespace aris
 			rm_out = rm_out ? rm_out : rm_out_default;
 
 			// 正式开始计算 //
-			
+
 			rm_out[0 * rm_ld + 0] = 1 - 2 * rq_in[1] * rq_in[1] - 2 * rq_in[2] * rq_in[2];
 			rm_out[0 * rm_ld + 1] = 2 * rq_in[0] * rq_in[1] - 2 * rq_in[3] * rq_in[2];
 			rm_out[0 * rm_ld + 2] = 2 * rq_in[0] * rq_in[2] + 2 * rq_in[3] * rq_in[1];
@@ -195,13 +195,13 @@ namespace aris
 
 			int i = std::max_element(rq_out, rq_out + 4) - rq_out;
 			int jkl[3]{ (i + 1) % 4 ,(i + 2) % 4 ,(i + 3) % 4 };
-			for (auto m : jkl) 
+			for (auto m : jkl)
 			{
 				rq_out[m] = (rm_in[P[i][m] * rm_ld + Q[i][m]] + T[i][m] * rm_in[Q[i][m] * rm_ld + P[i][m]])<0 ? -rq_out[m] : rq_out[m];
 			}
-			
+
 			// 将rq_out[3]置为正
-			for (auto m = 0; m < 4;++m)rq_out[m] = rq_out[3] < 0 ? -rq_out[m] : rq_out[m];
+			for (auto m = 0; m < 4; ++m)rq_out[m] = rq_out[3] < 0 ? -rq_out[m] : rq_out[m];
 		}
 		auto s_pp2pm(const double *pp_in, double *pm_out) noexcept->void
 		{
@@ -227,45 +227,45 @@ namespace aris
 			pp_out[1] = pm_in[7];
 			pp_out[2] = pm_in[11];
 		}
-		auto s_re2pm(const double *re_in, double *pm_out, const char *eu_type_in) noexcept->void 
-		{ 
+		auto s_re2pm(const double *re_in, double *pm_out, const char *eu_type_in) noexcept->void
+		{
 			// 补充默认参数 //
 			re_in = re_in ? re_in : default_re();
-			double pm_out_default[16]{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+			double pm_out_default[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			pm_out = pm_out ? pm_out : pm_out_default;
 
 			// 正式开始计算 //
-			s_re2rm(re_in, pm_out, eu_type_in, 4); 
+			s_re2rm(re_in, pm_out, eu_type_in, 4);
 		};
-		auto s_pm2re(const double *pm_in, double *re_out, const char *eu_type_in) noexcept->void 
-		{ 
+		auto s_pm2re(const double *pm_in, double *re_out, const char *eu_type_in) noexcept->void
+		{
 			// 补充默认参数 //
 			pm_in = pm_in ? pm_in : default_pm();
 			double re_out_default[3];
 			re_out = re_out ? re_out : re_out_default;
 
 			// 正式开始计算 //
-			s_rm2re(pm_in, re_out, eu_type_in, 4); 
+			s_rm2re(pm_in, re_out, eu_type_in, 4);
 		};
-		auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->void 
-		{ 
+		auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->void
+		{
 			// 补充默认参数 //
 			rq_in = rq_in ? rq_in : default_rq();
 			double pm_out_default[16];
 			pm_out = pm_out ? pm_out : pm_out_default;
 
 			// 正式开始计算 //
-			s_rq2rm(rq_in, pm_out, 4); 
+			s_rq2rm(rq_in, pm_out, 4);
 		};
-		auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->void 
-		{ 
+		auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->void
+		{
 			// 补充默认参数 //
 			pm_in = pm_in ? pm_in : default_pm();
 			double rq_out_default[4];
 			rq_out = rq_out ? rq_out : rq_out_default;
 
 			// 正式开始计算 //
-			s_rm2rq(pm_in, rq_out, 4); 
+			s_rm2rq(pm_in, rq_out, 4);
 		};
 		auto s_rm2pm(const double *rm_in, double *pm_out, std::size_t rm_ld) noexcept->void
 		{
@@ -273,7 +273,7 @@ namespace aris
 			rm_in = rm_in ? rm_in : default_rm();
 			double pm_out_default[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			pm_out = pm_out ? pm_out : pm_out_default;
-			
+
 			// 正式开始计算 //
 			std::copy(rm_in, rm_in + 3, pm_out);
 			std::copy(rm_in + rm_ld, rm_in + rm_ld + 3, pm_out + 4);
@@ -313,7 +313,7 @@ namespace aris
 			pm_in = pm_in ? pm_in : default_pm();
 			double pe_out_default[9];
 			pe_out = pe_out ? pe_out : pe_out_default;
-			
+
 			// 正式开始计算 //
 			s_pm2pp(pm_in, pe_out);
 			s_pm2re(pm_in, pe_out + 3, eu_type_in);
@@ -346,7 +346,7 @@ namespace aris
 			s_pm2rq(pm_in, pq_out + 3);
 		}
 
-		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->void 
+		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->void
 		{
 			// 补充默认参数 //
 			re_in = re_in ? re_in : default_re();
@@ -682,7 +682,7 @@ namespace aris
 			double vp[3];
 			s_vs2wm(vs_in, pm_in, vm_out, 4, 4);
 			s_vs2vp(vs_in, pp, vp);
-			
+
 			vm_out[3] = vp[0];
 			vm_out[7] = vp[1];
 			vm_out[11] = vp[2];
@@ -743,11 +743,11 @@ namespace aris
 			const double dc1 = -s1*we_in[0];
 			const double ds2 = c2*we_in[1];
 			const double dc2 = -s2*we_in[1];
-			
+
 			const double Ab1 = c1;
 			const double Ad1 = P[d][b] * s1;
 			const double Aa2 = c == a ? c2 : P[a][d] * s2;
-			const double Ab2 = c == a ? -s1*s2 : P[b][d]*s1*c2;
+			const double Ab2 = c == a ? -s1*s2 : P[b][d] * s1*c2;
 			const double Ad2 = c == a ? P[d][a] * c1* s2 : c1* c2;
 
 			const double dAb1 = dc1;
@@ -770,7 +770,7 @@ namespace aris
 			wa_in = wa_in ? wa_in : default_wa();
 			xa_in = xa_in ? xa_in : default_xa();
 			re_in = re_in ? re_in : default_re();
-			
+
 			double we_out_default[3], xe_out_default[3];
 			we_out = we_out ? we_out : we_out_default;
 			xe_out = xe_out ? xe_out : xe_out_default;
@@ -923,7 +923,7 @@ namespace aris
 			std::copy(xm_in + 0 * xm_ld, xm_in + 0 * xm_ld + 3, tem + 0);
 			std::copy(xm_in + 1 * xm_ld, xm_in + 1 * xm_ld + 3, tem + 3);
 			std::copy(xm_in + 2 * xm_ld, xm_in + 2 * xm_ld + 3, tem + 6);
-			
+
 			s_c3_n(3, -1, wa_out, wm_in, wm_ld, 1, tem, 3);
 
 			xa_out[0] = tem[2 * 3 + 0] * rm_in[1 * rm_ld + 0] + tem[2 * 3 + 1] * rm_in[1 * rm_ld + 1] + tem[2 * 3 + 2] * rm_in[1 * rm_ld + 2];
@@ -940,14 +940,14 @@ namespace aris
 			double xm_out_default[9];
 			wm_out = wm_out ? wm_out : wm_out_default;
 			xm_out = xm_out ? xm_out : xm_out_default;
-			
+
 			// 正式开始计算 //
 
 			// ddR = x x R + w x dR
 			// w x = dR * R' 
 
 			s_wa2wm(wa_in, rm_in, wm_out, rm_ld, wm_ld);
-			
+
 			s_c3_n(3, wa_in, wm_out, wm_ld, xm_out, xm_ld);
 			s_c3_n(3, 1, xa_in, rm_in, rm_ld, 1, xm_out, xm_ld);
 		}
@@ -1041,7 +1041,7 @@ namespace aris
 			xq_out = xq_out ? xq_out : xq_out_default;
 
 			// 正式开始计算 //
-			s_xa2xq(vs_in + 3, as_in +3, rq_in, xq_out, wq_out);
+			s_xa2xq(vs_in + 3, as_in + 3, rq_in, xq_out, wq_out);
 		}
 		auto s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out, double *vs_out, std::size_t rm_ld, std::size_t wm_ld, std::size_t xm_ld) noexcept->void
 		{
@@ -1231,7 +1231,7 @@ namespace aris
 			s_as2xa(as_in, aa_out + 3);
 			s_as2ap(vs_in, as_in, pp_in, aa_out, va_out);
 		}
-				
+
 		auto s_pq2pe(const double *pq_in, double *pe_out, const char *eu_type) noexcept->void
 		{
 			// 补充默认参数 //
@@ -1240,7 +1240,7 @@ namespace aris
 			pe_out = pe_out ? pe_out : pe_out_default;
 
 			// 正式开始计算 //
-			
+
 			double pm[16];
 			s_pq2pm(pq_in, pm);
 			s_pm2pe(pm, pe_out, eu_type);
@@ -1265,7 +1265,7 @@ namespace aris
 			is_out = is_out ? is_out : is_out_default;
 
 			// 正式开始计算 //
-			
+
 			std::fill_n(is_out, 36, 0);
 
 			is_out[0] = iv_in[0];
@@ -1548,7 +1548,7 @@ namespace aris
 			to_pm[15] = 1;
 		}
 
-		auto s_vp2vp(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_vp,double *to_vp, double *to_pp) noexcept->void
+		auto s_vp2vp(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp) noexcept->void
 		{
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
@@ -1915,8 +1915,8 @@ namespace aris
 			from_vs = from_vs ? from_vs : default_vs();
 			double default_to_vs[6];
 			to_vs = to_vs ? to_vs : default_to_vs;
-			
-			
+
+
 			// 正式开始计算 //
 			double tem[6];
 			std::copy_n(from_vs, 6, tem);
@@ -1924,7 +1924,7 @@ namespace aris
 			s_inv_tv(inv_relative_pm, tem, to_vs);
 		}
 
-		auto s_ap2ap(const double *relative_pm, const double *relative_vs, const double *relative_as, 
+		auto s_ap2ap(const double *relative_pm, const double *relative_vs, const double *relative_as,
 			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp, double *to_pp) noexcept->void
 		{
 			// 补充默认参数 //
@@ -2153,7 +2153,7 @@ namespace aris
 
 			// 正式开始计算 //
 			s_wa2wa(relative_pm, relative_vs, from_wa, to_wa);
-			
+
 			s_mdm(3, 1, 3, relative_pm, 4, from_xa, 1, to_xa, 1);
 			s_c3(1, relative_vs + 3, to_wa, 1, to_xa);
 			s_va(3, relative_as + 3, to_xa);
@@ -2452,7 +2452,7 @@ namespace aris
 			from_is = from_is ? from_is : default_is();
 			double default_to_is[36];
 			to_is = to_is ? to_is : default_to_is;
-			
+
 			/*以下为慢速但准确的算法*/
 			std::fill_n(to_is, 36, 0);
 			double tem[6][6], tmf[6][6];
@@ -2546,7 +2546,7 @@ namespace aris
 		auto s_tf_n(int n, const double *pm_in, const double *fces_in, double *m_out) noexcept->void
 		{
 			std::fill_n(m_out, 6 * n, 0);
-			
+
 			s_mdm(3, n, 3, 1, pm_in, 4, fces_in, n, 0, m_out, n);
 			s_mdm(3, n, 3, 1, pm_in, 4, fces_in + 3 * n, n, 0, m_out + 3 * n, n);
 
@@ -2596,7 +2596,7 @@ namespace aris
 		auto s_tv(double alpha, const double *pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void
 		{
 			double tem[6];
-			
+
 			s_tv(pm_in, vs_in, tem);
 
 			for (int i = 0; i < 6; ++i)
@@ -2607,7 +2607,7 @@ namespace aris
 		auto s_tv_n(int n, const double *pm_in, const double *vels_in, double *m_out) noexcept->void
 		{
 			std::fill_n(m_out, 6 * n, 0);
-			
+
 			s_mdm(3, n, 3, 1, pm_in, 4, vels_in, n, 0, m_out, n);
 			s_mdm(3, n, 3, 1, pm_in, 4, vels_in + 3 * n, n, 0, m_out + 3 * n, n);
 
@@ -2657,7 +2657,7 @@ namespace aris
 			s_inv_pm(inv_pm_in, pm_in);
 			s_tv_n(n, alpha, pm_in, vs_in, beta, vec_out);
 		}
-		
+
 		auto s_cm3(const double *cro_vec_in, double *cm_out) noexcept->void
 		{
 			cm_out[0] = 0;
@@ -2781,8 +2781,8 @@ namespace aris
 		auto s_cv(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept->void
 		{
 			s_c3(cro_vel_in + 3, vec_in, vec_out);
-			s_c3(cro_vel_in + 3, vec_in+3, vec_out+3);
-			
+			s_c3(cro_vel_in + 3, vec_in + 3, vec_out + 3);
+
 			vec_out[0] += -cro_vel_in[2] * vec_in[4] + cro_vel_in[1] * vec_in[5];
 			vec_out[1] += cro_vel_in[2] * vec_in[3] - cro_vel_in[0] * vec_in[5];
 			vec_out[2] += -cro_vel_in[1] * vec_in[3] + cro_vel_in[0] * vec_in[4];
@@ -2801,9 +2801,9 @@ namespace aris
 			const double *from_mtrx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
 			double *to_mtrx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void
 		{
-			int fm_place ;
-			int tm_place ;
-		
+			int fm_place;
+			int tm_place;
+
 			fm_place = fm_begin_row*fm_ld + fm_begin_col;
 			tm_place = tm_begin_row*tm_ld + tm_begin_col;
 
@@ -2891,7 +2891,7 @@ namespace aris
 		auto s_ndv(int n, double a, const double *x, int incx, double *y, int incy) noexcept->void
 		{
 			int x_idx{ 0 }, y_idx{ 0 };
-			for (int i = 0; i < n; ++i) 
+			for (int i = 0; i < n; ++i)
 			{
 				y[y_idx] = a*x[x_idx];
 				x_idx += incx;
@@ -2928,14 +2928,14 @@ namespace aris
 			double ret{ 0 };
 			int x_idx{ 0 }, y_idx{ 0 };
 
-			for (int i = 0; i < n; ++i) 
+			for (int i = 0; i < n; ++i)
 			{
 				x_idx += incx;
 				y_idx += incy;
-				
+
 				ret += x[x_idx] * y[y_idx];
 			}
-			
+
 			return ret;
 		}
 		auto s_va(int n, const double* x, double* y) noexcept->void
@@ -2944,7 +2944,7 @@ namespace aris
 		}
 		auto s_va(int n, double alpha, const double* x, double beta, double* y) noexcept->void
 		{
-			for (auto i = 0; i < n; ++i) 
+			for (auto i = 0; i < n; ++i)
 			{
 				y[i] *= beta;
 				y[i] += alpha * x[i];
@@ -3041,7 +3041,7 @@ namespace aris
 				int row_idx_a = i*lda;
 				int row_idx_b = i*ldb;
 
-				for (int j = 0; j < n; ++j) 
+				for (int j = 0; j < n; ++j)
 				{
 					B[row_idx_b + j] *= beta;
 					B[row_idx_b + j] += alpha * A[row_idx_a + j];
@@ -3067,7 +3067,7 @@ namespace aris
 				int row_idx_b = i*ldb;
 				int row_idx_c = i*ldc;
 
-				for (int j = 0; j < n; ++j) 
+				for (int j = 0; j < n; ++j)
 				{
 					C[row_idx_c + j] = alpha*A[row_idx_a + j] + beta*B[row_idx_b + j];
 				}
@@ -3098,13 +3098,13 @@ namespace aris
 				for (int j = 0; j < n; ++j)
 				{
 					int idx = i*ldc + j;
-					
+
 					double add_factor = 0;
 					for (int u = 0; u < k; ++u)
 					{
-						add_factor +=  A[row_idx + u] * B[j + u*ldb];
+						add_factor += A[row_idx + u] * B[j + u*ldb];
 					}
-					
+
 					C[idx] *= beta;
 					C[idx] += alpha *add_factor;
 				}
@@ -3117,7 +3117,7 @@ namespace aris
 				for (int j = 0; j < n; ++j)
 				{
 					int idx = i*ldc + j;
-					
+
 					C[idx] = 0;
 					for (int u = 0; u < k; ++u)
 					{
@@ -3133,7 +3133,7 @@ namespace aris
 				for (int j = 0; j < n; ++j)
 				{
 					int idx = i*ldc + j;
-	
+
 					double add_factor = 0;
 					for (int u = 0; u < k; ++u)
 					{
@@ -3155,7 +3155,7 @@ namespace aris
 					int col_idx = j*ldb;
 
 					int idx = i*ldc + j;
-					
+
 					C[idx] = 0;
 					for (int u = 0; u < k; ++u)
 					{
@@ -3173,7 +3173,7 @@ namespace aris
 				{
 					int col_idx = j*ldb;
 					int idx = i*ldc + j;
-					
+
 					double add_factor{ 0 };
 					for (int u = 0; u < k; ++u)
 					{
@@ -3263,7 +3263,6 @@ namespace aris
 		}
 		auto s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept->void
 		{
-			/*seemed that loop is faster than cblas*/
 			for (int i = 0; i < 3; ++i)
 			{
 				for (int j = 0; j < 4; ++j)
@@ -3283,7 +3282,6 @@ namespace aris
 		}
 		auto s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept->void
 		{
-			/*seemed that loop is faster than cblas*/
 			for (int i = 0; i < 3; ++i)
 			{
 				for (int j = 0; j < 4; ++j)
@@ -3309,7 +3307,6 @@ namespace aris
 		}
 		auto s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept->void
 		{
-			// seemed that loop is faster than cblas //
 			for (int i = 0; i < 3; ++i)
 			{
 				v3_out[i] = pm_in[i * 4] * v3_in[0] + pm_in[i * 4 + 1] * v3_in[1] + pm_in[i * 4 + 2] * v3_in[2];
@@ -3338,8 +3335,8 @@ namespace aris
 			double Axis1[3], Axis2[3], Axis3[3];
 			double nrm;
 
-			Order[0] = axesOrder[0] - 'w';//asc玛顺序 uvw  xyz……
-			Order[1] = axesOrder[1] - 'w';//asc玛顺序 uvw  xyz……
+			Order[0] = axesOrder[0] - 'w';//asc玛顺序 uvw  xyz...
+			Order[1] = axesOrder[1] - 'w';
 			Order[2] = 6 - Order[1] - Order[0];
 
 			std::copy_n(firstAxisPnt, 3, Axis1);
@@ -3543,7 +3540,7 @@ namespace aris
 			double diff_square = 0;
 
 			int id_v1{ 0 }, id_v2{ 0 };
-			for (int i = 0; i < n; ++i) 
+			for (int i = 0; i < n; ++i)
 			{
 				diff_square += (v1[id_v1] - v2[id_v2])*(v1[id_v1] - v2[id_v2]);
 

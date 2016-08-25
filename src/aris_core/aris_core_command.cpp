@@ -13,7 +13,6 @@ namespace aris
 		class ParamBase;
 		class Param;
 		
-		
 		struct ParamBase::Imp 
 		{ 
 			bool is_taken_{ false };
@@ -41,23 +40,21 @@ namespace aris
 				throw std::runtime_error("wrong command setting: unknown father type.");
 		}
 		auto ParamBase::reset()->void { imp_->is_taken_ = false; }
-		ParamBase::ParamBase(Object &father, std::size_t id, const std::string &name) :ObjectPool(father, id, name) {}
-		ParamBase::ParamBase(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ObjectPool(father, id, xml_ele) 
+		ParamBase::ParamBase(const std::string &name) :ObjectPool(name) {}
+		ParamBase::ParamBase(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele)
 		{
 			imp_->help_ = attributeString(xml_ele, "help", imp_->help_);
 		}
 		
-		auto GroupParam::take()->void {
-			if (!isTaken())ParamBase::take();
-		}
+		auto GroupParam::take()->void { if (!isTaken())ParamBase::take(); }
 		auto GroupParam::reset()->void { for (auto &child : *this)dynamic_cast<ParamBase&>(child).reset(); ParamBase::reset(); };
 		auto GroupParam::addDefaultParam(std::map<std::string, std::string> &param_map_out)->void 
 		{
 			for (auto &sub_param : *this) { sub_param.addDefaultParam(param_map_out); }
 		}
 		GroupParam::~GroupParam() = default;
-		GroupParam::GroupParam(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
-		GroupParam::GroupParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele) {}
+		GroupParam::GroupParam(const std::string &name) :ParamBase(name) {}
+		GroupParam::GroupParam(Object &father, const aris::core::XmlElement &xml_ele) :ParamBase(father, xml_ele) {}
 		GroupParam::GroupParam(const GroupParam &) = default;
 		GroupParam::GroupParam(GroupParam &&) = default;
 		GroupParam& GroupParam::operator=(const GroupParam &) = default;
@@ -69,7 +66,8 @@ namespace aris
 			std::string default_value_{ "" };
 		};
 		auto Param::defaultParam()const->const std::string &{ return imp_->default_value_; }
-		auto Param::take()->void {
+		auto Param::take()->void 
+		{
 			if (isTaken())throw std::runtime_error("parse command error: command \"" + command().name() + "\"'s param \"" + name() + "\" has been set more than once");
 			ParamBase::take();
 		};
@@ -94,8 +92,8 @@ namespace aris
 			return helpString;
 		}
 		Param::~Param() = default;
-		Param::Param(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
-		Param::Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele)
+		Param::Param(const std::string &name) :ParamBase(name) {}
+		Param::Param(Object &father, const aris::core::XmlElement &xml_ele) :ParamBase(father, xml_ele)
 		{
 			imp_->abbreviation_ = attributeChar(xml_ele, "abbreviation", imp_->abbreviation_);
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
@@ -170,8 +168,8 @@ namespace aris
 		}
 		
 		UniqueParam::~UniqueParam() = default;
-		UniqueParam::UniqueParam(Object &father, std::size_t id, const std::string &name) :ParamBase(father, id, name) {}
-		UniqueParam::UniqueParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ParamBase(father, id, xml_ele)
+		UniqueParam::UniqueParam(const std::string &name) :ParamBase(name) {}
+		UniqueParam::UniqueParam(Object &father, const aris::core::XmlElement &xml_ele) :ParamBase(father, xml_ele)
 		{
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
 		}
@@ -228,8 +226,8 @@ namespace aris
 
 
 		Command::~Command() = default;
-        Command::Command(Object &father, std::size_t id, const std::string &name) :ObjectPool(father, id, name) {}
-		Command::Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :ObjectPool(father, id, xml_ele)
+        Command::Command(const std::string &name) :ObjectPool(name) {}
+		Command::Command(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele)
 		{
 			imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
 			imp_->help_ = attributeString(xml_ele, "help", imp_->help_);
@@ -273,7 +271,7 @@ namespace aris
 		{
 			try
 			{
-				/// 将msg转换成cmd和一系列参数，不过这里的参数为原生字符串，既包括名称也包含值，例如“-heigt=0.5” ///
+				// 将msg转换成cmd和一系列参数,不过这里的参数为原生字符串,既包括名称也包括值,例如-height=0.5 //
 				std::stringstream input_stream{ command_string };
 				std::string word;
 				std::vector<std::string> param_vec;
@@ -406,13 +404,13 @@ namespace aris
 		}
 
 		CommandParser::~CommandParser() = default;
-		CommandParser::CommandParser(Object &father, std::size_t id, const std::string &name):Object(father, id, name)
+		CommandParser::CommandParser(const std::string &name):Object(name)
 		{ 
 			imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
 		}
-		CommandParser::CommandParser(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :Object(father, id, xml_ele) 
+		CommandParser::CommandParser(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) 
 		{
-			imp_->command_pool_ = findByName("command_pool") == end() ? &add<aris::core::ObjectPool<Command>>("command_pool") : static_cast<aris::core::ObjectPool<Command> *>(&(*findByName("command_pool")));
+			imp_->command_pool_ = findByName("command_pool") == children().end() ? &add<aris::core::ObjectPool<Command>>("command_pool") : static_cast<aris::core::ObjectPool<Command> *>(&(*findByName("command_pool")));
 		}
 		CommandParser::CommandParser(const CommandParser &) = default;
 		CommandParser::CommandParser(CommandParser &&) = default;

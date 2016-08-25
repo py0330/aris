@@ -17,11 +17,11 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("parambase"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
-			auto command()const->const Command &;
-			auto simpleHelp()const->const std::string &;
 			virtual auto help(bool isfull, int begin)const->const std::string{ return std::string{}; };
-			ParamBase(Object &father, std::size_t id, const std::string &name);
-			ParamBase(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			auto simpleHelp()const->const std::string &;
+			auto command()const->const Command &;
+			ParamBase(const std::string &name);
+			ParamBase(Object &father, const aris::core::XmlElement &xml_ele);
 
 		protected:
 			auto isTaken()->bool;
@@ -47,8 +47,8 @@ namespace aris
 			auto defaultParam()const->const std::string &;
 			
 			virtual ~Param();
-			Param(Object &father, std::size_t id, const std::string &name);
-			Param(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Param(const std::string &name);
+			Param(Object &father, const aris::core::XmlElement &xml_ele);
 			Param(const Param&);
 			Param(Param&&);
 			Param& operator=(const Param&);
@@ -74,8 +74,8 @@ namespace aris
 			auto defaultParam()const->const std::string &;
 			
 			virtual ~UniqueParam();
-			UniqueParam(Object &father, std::size_t id, const std::string &name);
-			UniqueParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			UniqueParam(const std::string &name);
+			UniqueParam(Object &father, const aris::core::XmlElement &xml_ele);
 			UniqueParam(const UniqueParam &);
 			UniqueParam(UniqueParam &&);
 			UniqueParam& operator=(const UniqueParam &);
@@ -99,8 +99,8 @@ namespace aris
 			virtual auto help(bool isfull, int begin)const->const std::string override;
 			
 			virtual ~GroupParam();
-			GroupParam(Object &father, std::size_t id, const std::string &name);
-			GroupParam(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			GroupParam(const std::string &name);
+			GroupParam(Object &father, const aris::core::XmlElement &xml_ele);
 			GroupParam(const GroupParam &);
 			GroupParam(GroupParam &&);
 			GroupParam& operator=(const GroupParam &);
@@ -119,8 +119,8 @@ namespace aris
 			auto defaultParam()const->const std::string &;
 			auto help(bool isfull, int begin)const->std::string;
 			virtual ~Command();
-			Command(Object &father, std::size_t id, const std::string &name);
-			Command(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			Command(const std::string &name);
+			Command(Object &father, const aris::core::XmlElement &xml_ele);
 			Command(const Command &);
 			Command(Command &&);
 			Command& operator=(const Command &);
@@ -148,8 +148,8 @@ namespace aris
 			auto commandPool()const->const ObjectPool<Command> &;
 
 			virtual ~CommandParser();
-			CommandParser(Object &father, std::size_t id, const std::string &name);
-			CommandParser(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+			CommandParser(const std::string &name);
+			CommandParser(Object &father, const aris::core::XmlElement &xml_ele);
 			CommandParser(const CommandParser &);
 			CommandParser(CommandParser &&);
 			CommandParser& operator=(const CommandParser &);
@@ -164,10 +164,6 @@ namespace aris
 
 	}
 }
-
-
-
-
 
 
 #endif

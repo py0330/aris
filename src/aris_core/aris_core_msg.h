@@ -6,17 +6,8 @@
 #include <cstdio>
 #include <string>
 #include <chrono>
+#include <memory>
 
-
-/// \defgroup aris
-///
-///
-
-/// \brief 总命名空间。
-/// \ingroup aris
-/// 
-///
-///
 namespace aris
 {
 	namespace control
@@ -24,11 +15,6 @@ namespace aris
 		template<typename T> class Pipe;
 	}
 	
-	/// \brief aris核心命名空间
-	/// \ingroup aris
-	/// 
-	///
-	///
 	namespace core
 	{
 		class Socket;
@@ -54,11 +40,11 @@ namespace aris
 			auto msgID() const->std::int32_t;
 			auto data() const->const char*;
 			auto data()->char*;
-			auto copy(const char * from_this_memory)->void;
-			auto copy(const void * from_this_memory, std::int32_t size)->void;
-			auto copy(const void * from_this_memory)->void;
-			auto copyAt(const void * from_this_memory, std::int32_t size, std::int32_t at_this_pos_of_msg)->void;
-			auto copyMore(const void * from_this_memory, std::int32_t size)->void;
+			auto copy(const char *src)->void;
+			auto copy(const void *src, std::int32_t size)->void;
+			auto copy(const void *src)->void;
+			auto copyAt(const void *src, std::int32_t size, std::int32_t at_this_pos_of_msg)->void;
+			auto copyMore(const void *src, std::int32_t size)->void;
 			template<class... Args>
 			auto copyStruct(const Args&... args)->void
 			{
@@ -72,9 +58,9 @@ namespace aris
 				copyStructMore(args...);
 			}
 			auto copyStructMore()->void {};
-			auto paste(void * to_this_memory, std::int32_t size) const->void;
-			auto paste(void * to_this_memory) const->void;
-			auto pasteAt(void * to_this_memory, std::int32_t size, std::int32_t at_this_pos_of_msg) const->void;
+			auto paste(void *tar, std::int32_t size) const->void;
+			auto paste(void *tar) const->void;
+			auto pasteAt(void *tar, std::int32_t size, std::int32_t at_this_pos_of_msg) const->void;
 			template<class FirstArg, class... Args>
 			auto pasteStruct(FirstArg& first_arg, Args&... args) const->void
 			{
@@ -85,32 +71,32 @@ namespace aris
 			auto pasteStruct() const->void { paste_id_ = 0; }
 
 		private:
-			auto header()->MsgHeader&;
-			auto header()const->const MsgHeader&;
 			auto setType(std::int64_t type)->void;
 			auto type() const->std::int64_t;
+			virtual auto header()->MsgHeader& = 0;
+			virtual auto header()const->const MsgHeader& = 0;
 
 		private:
 			MsgBase() = default;
-			MsgBase(const MsgBase &other) = delete;
-			MsgBase(MsgBase &&other) = delete;
-			MsgBase &operator=(const MsgBase& other) = delete;
-			MsgBase &operator=(MsgBase&& other) = delete;
+			MsgBase(const MsgBase &other) = default;
+			MsgBase(MsgBase &&other) = default;
+			MsgBase &operator=(const MsgBase& other) = default;
+			MsgBase &operator=(MsgBase&& other) = default;
 
 		private:
 			mutable std::int32_t paste_id_{ 0 };
-			char *data_{ nullptr };
 
 			friend class Msg;
 			friend class MsgRT;
+			template<std::size_t CAPACITY> friend class MsgFix;
 			friend class Socket;
-			friend class Socket;
+			friend class Pipe;
 			template<typename T> friend class aris::control::Pipe;
 		};
 		class Msg final :public MsgBase
 		{
 		public:
-			virtual auto resize(std::int32_t size)->void;
+			virtual auto resize(std::int32_t size)->void override;
 			auto swap(Msg &other)->void;
 			
 			virtual ~Msg();
@@ -121,25 +107,37 @@ namespace aris
 			Msg& operator=(Msg other);
 
 		private:
+			virtual auto header()->MsgHeader& override;
+			virtual auto header()const->const MsgHeader& override;
+
+			std::unique_ptr<char[]> data_;
+
 			friend class Socket;
+			template<typename T> friend class aris::control::Pipe;
 		};
-		class MsgRT final :public MsgBase
+
+		template<std::size_t CAPACITY>
+		class MsgFix final :public MsgBase
 		{
 		public:
-			enum { RT_MSG_SIZE = 8192 };
-			enum { RT_MSG_NUM = 2 };
-			using MsgRtArray = MsgRT[RT_MSG_NUM];
+			virtual auto resize(std::int32_t size)->void override { header().msg_size_ = size; };
 
-			static auto instance()->MsgRtArray&;
-			virtual auto resize(std::int32_t size)->void;
+			virtual ~MsgFix() = default;
+			explicit MsgFix(std::int32_t msg_id = 0, std::int32_t size = 0) :MsgBase() {}
+			explicit MsgFix(const std::string &msg_str) :MsgBase(msg_str) {}
+			MsgFix(const MsgFix &other) = default;
+			MsgFix(MsgFix &&other) = default;
+			MsgFix &operator=(const MsgFix& other) = default;
+			MsgFix &operator=(MsgFix&& other) = default;
 
 		private:
-			virtual ~MsgRT();
-			MsgRT();
-			MsgRT(const MsgRT &other) = delete;
-			MsgRT(MsgRT &&other) = delete;
-			MsgRT &operator=(const MsgRT& other) = delete;
-			MsgRT &operator=(MsgRT&& other) = delete;
+			virtual auto header()->MsgHeader& override { return *reinterpret_cast<MsgHeader*>(data_); };
+			virtual auto header()const->const MsgHeader& override{ return *reinterpret_cast<const MsgHeader*>(data_); };
+
+			char data_[CAPACITY + sizeof(MsgHeader)];
+
+			friend class Socket;
+			template<typename T> friend class aris::control::Pipe;
 		};
 
 		auto createLogDir()->void;

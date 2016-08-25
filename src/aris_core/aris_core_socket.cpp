@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <stdint.h>
 #include <new>
+#include <future>
 
 #ifdef WIN32
 #include <ws2tcpip.h>
@@ -48,8 +49,7 @@ namespace aris
 			std::recursive_mutex state_mutex_;
 
 			std::thread recv_data_thread_, recv_conn_thread_;
-			std::mutex close_mutex_, cv_mutex_;
-			std::condition_variable cv_;
+			std::mutex close_mutex_;
 
 			std::condition_variable_any cv_reply_data_received_;
 			std::mutex mu_reply_;
@@ -57,7 +57,7 @@ namespace aris
 
 			// 连接的socket //
 #ifdef WIN32
-			WSADATA wsa_data_;             //windows下才用，linux下无该项
+			WSADATA wsa_data_;             //windows下才用,linux下无该项
 #endif
 			~Imp() = default;
 			Imp(Socket* sock) :socket_(sock), lisn_socket_(0), conn_socket_(0), sin_size_(sizeof(struct sockaddr_in)), state_(Socket::IDLE)
@@ -70,16 +70,16 @@ namespace aris
 				SOCKET_REPLY
 			};
 
-			static void receiveThread(Socket::Imp* imp);
-			static void acceptThread(Socket::Imp* imp);
+			static void receiveThread(Socket::Imp* imp, std::promise<void> receive_thread_ready);
+			static void acceptThread(Socket::Imp* imp, std::promise<void> accept_thread_ready);
 		};
-		auto Socket::Imp::acceptThread(Socket::Imp* imp)->void
+		auto Socket::Imp::acceptThread(Socket::Imp* imp, std::promise<void> accept_thread_ready)->void
 		{
 			int lisn_sock, conn_sock;
 			struct sockaddr_in client_addr;
 			socklen_t sin_size;
 
-			// 以下从对象中copy内容，此时start_Server在阻塞，因此Socket内部数据安全， //
+			// 以下从对象中copy内容,此时start_Server在阻塞,因此Socket内部数据安全 //
 			// 拷贝好后告诉start_Server函数已经拷贝好 //
 			lisn_sock = imp->lisn_socket_;
 			client_addr = imp->client_addr_;
@@ -87,16 +87,13 @@ namespace aris
 
 			imp->state_ = WAITING_FOR_CONNECTION;
 
-			// 通知主线程，accept线程已经拷贝完毕，准备监听 //
-			std::unique_lock<std::mutex> cv_lck(imp->cv_mutex_);
-			imp->cv_.notify_one();
-			cv_lck.unlock();
-			cv_lck.release();
+			// 通知主线程,accept线程已经拷贝完毕,准备监听 //
+			accept_thread_ready.set_value();
 
 			// 服务器阻塞,直到客户程序建立连接 //
 			conn_sock = accept(lisn_sock, (struct sockaddr *)(&client_addr), &sin_size);
 
-			// 检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源 //
+			// 检查是否正在Close,如果不能锁住,则证明正在close,于是结束线程释放资源 //
 			std::unique_lock<std::mutex> cls_lck(imp->close_mutex_, std::defer_lock);
 			if (!cls_lck.try_lock())return;
 
@@ -104,7 +101,7 @@ namespace aris
 			cls_lck.unlock();
 			cls_lck.release();
 
-			// 否则，开始开启数据线程 //
+			// 否则,开始开启数据线程 //
 			if (conn_sock == -1)
 			{
 				imp->socket_->stop();
@@ -114,9 +111,9 @@ namespace aris
 				return;
 			}
 
-
 			// 创建线程 //
 			imp->state_ = Socket::WORKING;
+
 #ifdef WIN32
 			shutdown(imp->lisn_socket_, 2);
 			closesocket(imp->lisn_socket_);
@@ -128,18 +125,16 @@ namespace aris
 			imp->conn_socket_ = conn_sock;
 			imp->client_addr_ = client_addr;
 
-			cv_lck = std::unique_lock<std::mutex>(imp->cv_mutex_);
-			imp->recv_data_thread_ = std::thread(receiveThread, imp);
-			imp->cv_.wait(cv_lck);
+			if (imp->onReceivedConnection)imp->onReceivedConnection(imp->socket_, inet_ntoa(imp->client_addr_.sin_addr), ntohs(imp->client_addr_.sin_port));
 
-			if (imp->onReceivedConnection)
-			{
-				imp->onReceivedConnection(imp->socket_, inet_ntoa(imp->client_addr_.sin_addr), ntohs(imp->client_addr_.sin_port));
-			}
+			std::promise<void> receive_thread_ready;
+			auto fut = receive_thread_ready.get_future();
+			imp->recv_data_thread_ = std::thread(receiveThread, imp, std::move(receive_thread_ready));
+			fut.wait();
 
 			return;
 		}
-		auto Socket::Imp::receiveThread(Socket::Imp* imp)->void
+		auto Socket::Imp::receiveThread(Socket::Imp* imp, std::promise<void> receive_thread_ready)->void
 		{
 			union Head
 			{
@@ -150,23 +145,20 @@ namespace aris
 
 			int conn_socket = imp->conn_socket_;
 
-			// 通知accept或connect线程已经准备好，下一步开始收发数据 //
-			std::unique_lock<std::mutex> cv_lck(imp->cv_mutex_);
-			imp->cv_.notify_one();
-			cv_lck.unlock();
-			cv_lck.release();
+			// 通知accept或connect线程已经准备好,下一步开始收发数据 //
+			receive_thread_ready.set_value();
 
 			// 开启接受数据的循环 //
 			for (;;)
 			{
 				int res = recv(conn_socket, head.header, sizeof(MsgHeader), 0);
 
-				// 检查是否正在Close，如果不能锁住，则证明正在close，于是结束线程释放资源， //
-				// 若能锁住，则开始获取Imp所有权 //
+				// 检查是否正在Close,如果不能锁住,则证明正在close,于是结束线程释放资源, //
+				// 若能锁住,则开始获取Imp所有权 //
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
 				if (!close_lck.try_lock())return;
 
-				// 证明没有在close，于是正常接收消息头 //
+				// 证明没有在close,于是正常接收消息头 //
 				std::unique_lock<std::recursive_mutex> state_lck(imp->state_mutex_);
 				close_lck.unlock();
 				close_lck.release();
@@ -182,7 +174,7 @@ namespace aris
 
 				// 接收消息本体 //
 				receivedData.resize(head.msgHeader.msg_size_);
-				memcpy(receivedData.data_, head.header, sizeof(MsgHeader));
+				memcpy(receivedData.data_.get(), head.header, sizeof(MsgHeader));
 
 				if (receivedData.size() > 0)
 					res = recv(conn_socket, receivedData.data(), receivedData.size(), 0);
@@ -209,7 +201,7 @@ namespace aris
 
 					m.setType(SOCKET_REPLY);
 
-					if (send(imp->conn_socket_, m.data_, m.size() + sizeof(MsgHeader), 0) == -1)
+					if (send(imp->conn_socket_, m.data_.get(), m.size() + sizeof(MsgHeader), 0) == -1)
 					{
 						imp->socket_->stop();
 						if (imp->onLoseConnection != nullptr)imp->onLoseConnection(imp->socket_);
@@ -262,24 +254,18 @@ namespace aris
 #endif
 #ifdef UNIX
 				shutdown(imp_->conn_socket_, 2);
-				//shutdown(imp_->lisn_socket_, 2);
 				close(imp_->conn_socket_);
-				//close(imp_->lisn_socket_);
 #endif
 				break;
 			case WAITING_FOR_REPLY:
 #ifdef WIN32
 				shutdown(imp_->conn_socket_, 2);
-				shutdown(imp_->lisn_socket_, 2);
 				closesocket(imp_->conn_socket_);
-				closesocket(imp_->lisn_socket_);
 				WSACleanup();
 #endif
 #ifdef UNIX
 				shutdown(imp_->conn_socket_, 2);
-				shutdown(imp_->lisn_socket_, 2);
 				close(imp_->conn_socket_);
-				close(imp_->lisn_socket_);
 #endif
 				imp_->cv_reply_data_received_.notify_one();
 				break;
@@ -340,24 +326,18 @@ namespace aris
 
 			// 启动服务器 //
 #ifdef WIN32 
-			if (WSAStartup(0x0101, &imp_->wsa_data_) != 0)
-			{
-				throw(StartServerError("Socket can't Start as server, because it can't WSAstartup\n", this, 0));
-			}
+			if (WSAStartup(0x0101, &imp_->wsa_data_) != 0)throw(StartServerError("Socket can't Start as server, because it can't WSAstartup\n", this, 0));
 #endif
 
 			// 服务器端开始建立socket描述符 //
-			if ((imp_->lisn_socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-			{
-				throw(StartServerError("Socket can't Start as server, because it can't socket\n", this, 0));
-			}
+			if ((imp_->lisn_socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1)throw(StartServerError("Socket can't Start as server, because it can't socket\n", this, 0));
 
-			// 设置socketopt选项，使得地址在程序结束后立即可用 //
+			// 设置socketopt选项,使得地址在程序结束后立即可用 //
 			int nvalue = 1;
 			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0)
 				throw StartServerError("Socket can't set REUSEADDR option\n", this, 0);
 
-			// 服务器端填充server_addr_结构，并且bind //
+			// 服务器端填充server_addr_结构,并且bind //
 			memset(&imp_->server_addr_, 0, sizeof(struct sockaddr_in));
 			imp_->server_addr_.sin_family = AF_INET;
 			imp_->server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -371,15 +351,13 @@ namespace aris
 			}
 
 			// 监听lisn_socket_描述符 //
-			if (listen(imp_->lisn_socket_, 5) == -1)
-			{
-				throw(StartServerError("Socket can't Start as server, because it can't listen\n", this, 0));
-			}
+			if (listen(imp_->lisn_socket_, 5) == -1)throw(StartServerError("Socket can't Start as server, because it can't listen\n", this, 0));
 
 			// 启动等待连接的线程 //
-			std::unique_lock<std::mutex> cv_lck(imp_->cv_mutex_);
-			imp_->recv_conn_thread_ = std::thread(Socket::Imp::acceptThread, this->imp_.get());
-			imp_->cv_.wait(cv_lck);
+			std::promise<void> accept_thread_ready;
+			auto ready = accept_thread_ready.get_future();
+			imp_->recv_conn_thread_ = std::thread(Socket::Imp::acceptThread, this->imp_.get(), std::move(accept_thread_ready));
+			ready.wait();
 
 			return;
 		}
@@ -402,16 +380,10 @@ namespace aris
 
 			// 启动服务器 //
 #ifdef WIN32
-			if (WSAStartup(0x0101, &imp_->wsa_data_) != 0)
-			{
-				throw ConnectError("Socket can't connect, because can't WSAstartup\n", this, 0);
-			}
+			if (WSAStartup(0x0101, &imp_->wsa_data_) != 0)throw ConnectError("Socket can't connect, because can't WSAstartup\n", this, 0);
 #endif
 			// 服务器端开始建立socket描述符 //
-			if ((imp_->conn_socket_ = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-			{
-				throw ConnectError("Socket can't connect, because can't socket\n", this, 0);
-			}
+			if ((imp_->conn_socket_ = socket(AF_INET, SOCK_STREAM, 0)) < 0)throw ConnectError("Socket can't connect, because can't socket\n", this, 0);
 
 			// 客户端填充server_addr_结构 //
 			memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
@@ -421,15 +393,15 @@ namespace aris
 
 			// 连接 //
 			if (::connect(imp_->conn_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
-			{
 				throw ConnectError("Socket can't connect, because can't connect\n", this, 0);
-			}
+
+			imp_->state_ = Socket::WORKING;
 
 			// Start Thread //
-			imp_->state_ = WORKING;
-			std::unique_lock<std::mutex> cv_lck(imp_->cv_mutex_);
-			imp_->recv_data_thread_ = std::thread(Imp::receiveThread, imp_.get());
-			imp_->cv_.wait(cv_lck);
+			std::promise<void> receive_thread_ready;
+			auto fut = receive_thread_ready.get_future();
+			imp_->recv_data_thread_ = std::thread(Imp::receiveThread, imp_.get(), std::move(receive_thread_ready));
+			fut.wait();
 
 			return;
 		}
@@ -441,7 +413,7 @@ namespace aris
 			{
 			case WORKING:
 			case WAITING_FOR_REPLY:
-				if (send(imp_->conn_socket_, data.data_, data.size() + sizeof(MsgHeader), 0) == -1)
+				if (send(imp_->conn_socket_, data.data_.get(), data.size() + sizeof(MsgHeader), 0) == -1)
 					throw SendDataError("Socket failed sending data, because network failed\n", this, 0);
 				else
 					return;
@@ -542,12 +514,12 @@ namespace aris
 			imp_->onReceiveError = onReceiveError;
 		}
 		Socket::~Socket() {	stop();	}
-		Socket::Socket(Object &father, std::size_t id, const std::string &name, const std::string& remote_ip, const std::string& port):Object(father, id, name), imp_(new Imp(this))
+		Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port):Object(name), imp_(new Imp(this))
 		{
 			setRemoteIP(remote_ip);
 			setPort(port);
 		}
-		Socket::Socket(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) : Object(father, id, xml_ele), imp_(new Imp(this))
+		Socket::Socket(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele), imp_(new Imp(this))
 		{
 			setRemoteIP(attributeString(xml_ele, "remote_ip", std::string()));
 			setPort(attributeString(xml_ele, "port", std::string()));

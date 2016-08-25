@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <condition_variable>
 #include <aris.h>
 
@@ -9,12 +9,14 @@
 #include "unistd.h"
 #endif
 
+#include <future>
 
 
 const char xml_data[] =
 "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
 "<root>"
 "    <widget_root>"
+"        <msg_pipe type=\"Pipe\" pool_size=\"16384\"/>"
 "        <command_socket type=\"Socket\" port=\"5866\"/>"
 "        <command_parser type=\"CommandParser\">"
 "            <command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
@@ -23,56 +25,26 @@ const char xml_data[] =
 "                <exit/>"
 "                <en default_child_type=\"Param\" default=\"all\">"
 "                    <all abbreviation=\"a\"/>"
-"                    <first abbreviation=\"f\"/>"
-"                    <second abbreviation=\"s\"/>"
 "                    <motion_id abbreviation=\"m\" default=\"0\"/>"
 "                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                    <leg abbreviation=\"l\" default=\"0\"/>"
 "                </en>"
 "                <ds default_child_type=\"Param\" default=\"all\">"
 "                    <all abbreviation=\"a\"/>"
-"                    <first abbreviation=\"f\"/>"
-"                    <second abbreviation=\"s\"/>"
 "                    <motion_id abbreviation=\"m\" default=\"0\"/>"
 "                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                    <leg abbreviation=\"l\" default=\"0\"/>"
 "                </ds>"
 "                <hm default_child_type=\"Param\" default=\"all\">"
 "                    <all abbreviation=\"a\"/>"
-"                    <first abbreviation=\"f\"/>"
-"                    <second abbreviation=\"s\"/>"
 "                    <motion_id abbreviation=\"m\" default=\"0\"/>"
 "                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                    <leg abbreviation=\"l\" default=\"0\"/>"
 "                </hm>"
-"                <test default_child_type=\"Param\" default=\"all\">"
-"                    <all abbreviation=\"a\"/>"
-"                    <motion_id abbreviation=\"m\" default=\"0\"/>"
-"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                </test>"
 "                <rc default=\"rc_param\">"
 "                    <rc_param type=\"GroupParam\" default_child_type=\"Param\">"
-"                        <leg_param type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
-"                            <all abbreviation=\"a\"/>"
-"                            <first abbreviation=\"f\"/>"
-"                            <second abbreviation=\"s\"/>"
-"                            <leg abbreviation=\"l\" default=\"0\"/>"
-"                        </leg_param>"
 "                        <t1 abbreviation=\"t\" default=\"3000\"/>"
 "                        <t2 default=\"3000\"/>"
 "                        <margin_offset abbreviation=\"m\" default=\"0.01\"/>"
 "                    </rc_param>"
 "                </rc>"
-"                <wk default_child_type=\"Param\" default=\"wk_param\">"
-"                    <wk_param type=\"GroupParam\" default_child_type=\"Param\">"
-"                        <totalCount abbreviation=\"t\" default=\"3000\"/>"
-"                        <n abbreviation=\"n\" default=\"1\"/>"
-"                        <distance abbreviation=\"d\" default=\"0.5\"/>"
-"                        <height abbreviation=\"h\" default=\"0.05\"/>"
-"                        <alpha abbreviation=\"a\" default=\"0\"/>"
-"                        <beta abbreviation=\"b\" default=\"0\"/>"
-"                    </wk_param>"
-"                </wk>"
 "            </command_pool>"
 "        </command_parser>"
 "    </widget_root>"
@@ -111,7 +83,7 @@ const char xml_data[] =
 "                    </index_1a0b>"
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
-"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"-1\"/>"
+"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
 "                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
 "                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
 "                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
@@ -120,8 +92,9 @@ const char xml_data[] =
 "            </elmo>"
 "        </slave_type_pool>"
 "        <slave_pool type=\"SlavePoolObject\">"
-"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
-"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
+"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-1.0\" max_pos=\"1.0\" max_vel=\"0.2\" home_pos=\"0\" input2count=\"22937600\"/>"
+"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-1.0\" max_pos=\"1.0\" max_vel=\"0.2\" home_pos=\"0\" input2count=\"22937600\"/>"
+"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-1.0\" max_pos=\"1.0\" max_vel=\"0.2\" home_pos=\"0\" input2count=\"22937600\"/>"
 "        </slave_pool>"
 "    </controller>"
 "    <model>"
@@ -165,9 +138,9 @@ const char xml_data[] =
 "            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
 "        </joint_pool>"
 "        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
-"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"            <m1 active=\"true\" slave_id=\"2\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 "            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"            <m3 active=\"true\" slave_id=\"0\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 "        </motion_pool>"
 "        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
 "    </model>"
@@ -176,33 +149,96 @@ const char xml_data[] =
 "    </sensor_root>"
 "</root>";
 
-
-
-
 void test_control_server()
 {
 	aris::core::XmlDocument xml_doc;
 	xml_doc.Parse(xml_data);
 
-	auto&cs = aris::server::ControlServer::instance();
-
-
-	std::condition_variable cv;
-	std::mutex mu;
-
-	std::unique_lock<std::mutex> lck(mu);
-	
-	cs.loadXml(xml_doc);
-	cs.setOnExit([&mu, &cv]() 
+	auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 	{
-		std::unique_lock<std::mutex> lck(mu);
-		cv.notify_one();
+		aris::server::GaitParamBase param;
+		param.active_motor_[cs.model().motionAtPhy(1).absID()] = false;
+		param.active_motor_[cs.model().motionAtPhy(2).absID()] = false;
+		msg_out.copyStruct(param);
+	};
+	auto rc_plan_func = [](aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param)->int
+	{
+		static double begin_pos;
+
+		if (param.count_ == 0)
+		{
+			begin_pos = model.motionAtPhy(0).motPos();
+		}
+
+		int total_count{ 5000 };
+
+		model.motionAtPhy(0).setMotPos(begin_pos + 0.01 * std::sin(2 * PI * (param.count_ + 1) / total_count));
+
+
+		return total_count - param.count_ - 1;
+	};
+
+	std::promise<void> exit_ready;
+	auto fut = exit_ready.get_future();
+
+	auto&cs = aris::server::ControlServer::instance();
+	cs.loadXml(xml_doc);
+	cs.setOnExit([&exit_ready]() { exit_ready.set_value(); });
+	cs.addCmd("rc", rc_parse_func, rc_plan_func);
+
+	// Set socket connection callback function //
+	auto &cmdSock = *cs.widgetRoot().findType<aris::core::Socket>("command_socket");
+	cmdSock.setOnReceivedConnection([](aris::core::Socket *sock, const char *remote_ip, int remote_port)
+	{
+		aris::core::log(std::string("received connection, the server_socket_ip_ is: ") + remote_ip);
+		return 0;
 	});
-	cs.open();
+	cmdSock.setOnReceivedRequest([&cs](aris::core::Socket *sock, aris::core::Msg &msg)
+	{
+		try
+		{
+			if (msg.size() == 0)
+			{
+				throw std::runtime_error("received data but it's an empty message \\0");
+			}
+			else if (msg.data()[msg.size() - 1] != 0)
+			{
+				throw std::runtime_error("received data but it's not a string, because last char is nots \\0");
+			}
+			else
+			{
+				cs.executeCmd(msg.data());
+			}
+		}
+		catch (std::exception &e)
+		{
+			return aris::core::Msg(e.what());
+		}
 
-	cv.wait(lck);
-	
-	
+		return aris::core::Msg();
 
+	});
+	cmdSock.setOnLoseConnection([&cs](aris::core::Socket *sock)
+	{
+		aris::core::log("lost connection");
+		while (true)
+		{
+			try
+			{
+				sock->startServer();
+				break;
+			}
+			catch (aris::core::Socket::StartServerError &e)
+			{
+				std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+		}
+		aris::core::log("restart server socket successful");
 
+		return 0;
+	});
+	cmdSock.startServer();
+
+	fut.wait();
 }

@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include "test_dynamic_kernel.h"
 #include "test_dynamic_model.h"
 
@@ -8,7 +8,7 @@
 
 int main(int argc, char *argv[])
 {
-	test_kernel();
+	//test_kernel();
 	test_model();
 
 	std::cout << "test_dynamic finished, press any key to continue" << std::endl;

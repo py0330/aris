@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <aris.h>
 
 #include "test_core_command.h"
@@ -68,7 +68,7 @@ const char xml_data[] =
 "</root>";
 
 
-void test_command()
+void test_core_command()
 {
 	try
 	{

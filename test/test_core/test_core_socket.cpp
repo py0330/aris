@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <future>
 #include <aris.h>
 #include "test_core_socket.h"
@@ -11,7 +11,7 @@ const char xml_data[] =
 "</root>";
 
 
-void test_socket()
+void test_core_socket()
 {
 	try
 	{
@@ -62,8 +62,6 @@ void test_socket()
 		{
 			ft[i].wait();
 		}
-
-
 
 		client.stop();
 
