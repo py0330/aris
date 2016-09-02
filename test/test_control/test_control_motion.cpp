@@ -41,7 +41,8 @@ const char xml_file[] =
 "                </test>"
 "            </command_pool>"
 "        </command_parser>"
-"        <msg_pipe type=\"Pipe\"/>"
+"        <command_pipe type=\"Pipe\"/>"
+"        <message_pipe type=\"Pipe\"/>"
 "    </widget_root>"
 "    <controller>"
 "        <slave_type_pool type=\"SlaveTypePoolObject\">"
@@ -252,7 +253,6 @@ void tg()
 	}
 	cmd_count++;
 }
-
 void test_control_motion()
 {
 	std::cout << std::endl << "-----------------test motion---------------------" << std::endl;

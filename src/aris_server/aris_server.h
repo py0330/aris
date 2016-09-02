@@ -44,21 +44,21 @@ namespace aris
 		class ControlServer
 		{
 		public:
-			static ControlServer &instance();
-
-			template<typename T>
-			auto createModel()->void { this->createModel(new T); }
-			auto createModel(dynamic::Model *model)->void;
-			template<typename T>
-			auto createController()->void { this->createController(new T); }
-			auto createController(control::Controller *controller)->void;
-			template<typename T>
-			auto createSensorRoot()->void { this->createSensorRoot(new T); }
-			auto createSensorRoot(sensor::SensorRoot *sensor_root)->void;
-			template<typename T>
-			auto createWidgetRoot()->void { this->createWidgetRoot(new T); }
-			auto createWidgetRoot(server::WidgetRoot *widget_root)->void;
-			
+			enum { MAX_PLAN_PARAM_SIZE = 8192 };
+			enum { MAX_RTOUT_MSG_SIZE = 8192 };
+			static auto instance()->ControlServer &;
+			template<typename T = aris::dynamic::Model, typename... Args>
+			auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
+			template<typename T = aris::control::Controller, typename... Args>
+			auto makeController(Args&&... args)->void { this->resetController(new T(std::forward<Args>(args)...)); }
+			template<typename T = aris::sensor::SensorRoot, typename... Args>
+			auto makeSensorRoot(Args&&... args)->void { this->resetSensorRoot(new T(std::forward<Args>(args)...)); }
+			template<typename T = aris::server::WidgetRoot, typename... Args>
+			auto makeWidgetRoot(Args&&... args)->void { this->resetWidgetRoot(new T(std::forward<Args>(args)...)); }
+			auto resetModel(dynamic::Model *model)->void;
+			auto resetController(control::Controller *controller)->void;
+			auto resetSensorRoot(sensor::SensorRoot *sensor_root)->void;
+			auto resetWidgetRoot(server::WidgetRoot *widget_root)->void;
 			auto model()->dynamic::Model&;
 			auto model()const->const dynamic::Model&{ return const_cast<ControlServer *>(this)->model(); }
 			auto controller()->control::Controller&;
@@ -67,7 +67,6 @@ namespace aris
 			auto sensorRoot()const->const sensor::SensorRoot&{ return const_cast<ControlServer *>(this)->sensorRoot(); }
 			auto widgetRoot()->WidgetRoot&;
 			auto widgetRoot()const->const WidgetRoot&{ return const_cast<ControlServer *>(this)->widgetRoot(); }
-
 			auto loadXml(const char *file_name)->void;
 			auto loadXml(const aris::core::XmlDocument &xml_doc)->void;
 			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void;

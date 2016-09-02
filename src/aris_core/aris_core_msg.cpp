@@ -183,18 +183,32 @@ namespace aris
 		auto MsgBase::setType(std::int64_t type)->void { header().msg_type_ = type; }
 		auto MsgBase::type() const->std::int64_t { return header().msg_type_; }
 
-		auto Msg::swap(Msg &other)->void { std::swap(this->data_, other.data_); }
+		auto Msg::swap(Msg &other)->void { std::swap(data_, other.data_); std::swap(capacity_, other.capacity_); }
 		auto Msg::resize(std::int32_t data_size)->void
 		{
-			std::unique_ptr<char[]> other(new char[sizeof(MsgHeader) + data_size]());
-			if (data_)std::copy_n(data_.get(), sizeof(MsgHeader) + std::min(size(), data_size), other.get());
-			std::swap(data_, other);
+			if (!data_)
+			{
+				data_.reset(new char[sizeof(MsgHeader) + data_size]());
+			}
+			else if (capacity_ < data_size)
+			{
+				capacity_ = std::max(data_size, 2 * capacity_);
+				std::unique_ptr<char[]> other(new char[sizeof(MsgHeader) + capacity_]());
+				std::copy_n(data_.get(), sizeof(MsgHeader) + size(), other.get());
+				std::swap(data_, other);
+			}
+
 			header().msg_size_ = data_size;
 		}
 		auto Msg::header()->MsgHeader& { return *reinterpret_cast<MsgHeader*>(data_.get()); }
 		auto Msg::header()const->const MsgHeader& { return *reinterpret_cast<const MsgHeader*>(data_.get()); }
 		Msg::~Msg() = default;
 		Msg::Msg(std::int32_t msg_id, std::int32_t size) { resize(size); setMsgID(msg_id); };
+		Msg::Msg(const MsgBase &other)
+		{
+			resize(other.size());
+			std::copy_n(reinterpret_cast<const char*>(&other.header()), other.size() + sizeof(MsgHeader), reinterpret_cast<char*>(&header()));
+		}
 		Msg::Msg(const std::string &msg_str) { resize(msg_str.size() + 1); std::copy(msg_str.begin(), msg_str.end(), data()); }
 		Msg::Msg(const Msg& other)
 		{
@@ -202,6 +216,46 @@ namespace aris
 			std::copy_n(other.data_.get(), sizeof(MsgHeader) + other.size(), data_.get());
 		}
 		Msg::Msg(Msg&& other) { swap(other); }
-		Msg&Msg::operator=(Msg other) { swap(other); return (*this); }
+		Msg& Msg::operator=(Msg other) { swap(other); return (*this); }
+
+		auto MsgStreamBuf::overflow(int_type c)->int_type
+		{
+			update();
+
+			msg_->resize(msg_->size() + 1);
+			if (msg_->capacity() < msg_->size())
+			{
+				return traits_type::eof();
+			}
+			else
+			{
+				resetBuf();
+				*(pptr() - 1) = c;
+				return c;
+			}
+		}
+		auto MsgStreamBuf::underflow()->int_type
+		{
+			update();
+			
+			if (gptr() == pptr()) return traits_type::eof();
+			else return msg_->data()[0];
+		}
+		auto MsgStreamBuf::update()->void
+		{
+			auto move_pos = gptr() - msg_->data();
+			if (move_pos)
+			{
+				std::copy(gptr(), msg_->data() + msg_->size(), msg_->data());
+				msg_->resize(msg_->size() - move_pos);
+				resetBuf();
+			}
+		}
+		auto MsgStreamBuf::resetBuf()->void
+		{
+			setp(msg_->data() + msg_->size(), msg_->data() + msg_->size());
+			setg(msg_->data(), msg_->data(), msg_->data() + msg_->size());
+		}
+		MsgStreamBuf::MsgStreamBuf(MsgBase& msg) :msg_(&msg), std::streambuf(){ resetBuf();	};
 	}
 }

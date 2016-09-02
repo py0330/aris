@@ -1,22 +1,16 @@
 ﻿#include <iostream>
 #include <condition_variable>
+#include <future>
 #include <aris.h>
 
 #include "test_control_server.h"
-
-#ifdef UNIX
-#include "rtdk.h"
-#include "unistd.h"
-#endif
-
-#include <future>
-
 
 const char xml_data[] =
 "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
 "<root>"
 "    <widget_root>"
-"        <msg_pipe type=\"Pipe\" pool_size=\"16384\"/>"
+"        <message_pipe type=\"Pipe\" pool_size=\"16384\"/>"
+"        <command_pipe type=\"Pipe\" pool_size=\"16384\"/>"
 "        <command_socket type=\"Socket\" port=\"5866\"/>"
 "        <command_parser type=\"CommandParser\">"
 "            <command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
@@ -163,6 +157,11 @@ void test_control_server()
 	};
 	auto rc_plan_func = [](aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param)->int
 	{
+		auto &cs = aris::server::ControlServer::instance();
+		
+		cs.widgetRoot().msgOut().resize(0);
+		cs.widgetRoot().mout().resetBuf();
+
 		static double begin_pos;
 
 		if (param.count_ == 0)
@@ -174,6 +173,8 @@ void test_control_server()
 
 		model.motionAtPhy(0).setMotPos(begin_pos + 0.01 * std::sin(2 * PI * (param.count_ + 1) / total_count));
 
+		if (param.count_ % 100 == 0)cs.widgetRoot().mout() << "mout: rc in count " << param.count_ << '\0';
+		cs.widgetRoot().msgPipe().sendMsg(cs.widgetRoot().msgOut());
 
 		return total_count - param.count_ - 1;
 	};
@@ -240,5 +241,19 @@ void test_control_server()
 	});
 	cmdSock.startServer();
 
-	fut.wait();
+	while (fut.wait_for(std::chrono::microseconds(10)) == std::future_status::timeout)
+	{
+		aris::core::Msg msg;
+		cs.widgetRoot().msgPipe().recvMsg(msg);
+
+		if (!msg.empty())
+		{
+			aris::core::MsgStream ms(msg);
+			std::string str;
+			while (ms >> str) 
+			{
+				std::cout << "msg1:" << str << std::endl;
+			}
+		}
+	}
 }
