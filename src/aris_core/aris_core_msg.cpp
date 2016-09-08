@@ -223,13 +223,13 @@ namespace aris
 			update();
 
 			msg_->resize(msg_->size() + 1);
+			resetBuf();
 			if (msg_->capacity() < msg_->size())
 			{
 				return traits_type::eof();
 			}
 			else
 			{
-				resetBuf();
 				*(pptr() - 1) = c;
 				return c;
 			}
@@ -239,22 +239,20 @@ namespace aris
 			update();
 			
 			if (gptr() == pptr()) return traits_type::eof();
-			else return msg_->data()[0];
+			else return *(reinterpret_cast<char*>(&msg_->header()) + sizeof(MsgHeader));
 		}
 		auto MsgStreamBuf::update()->void
 		{
-			auto move_pos = gptr() - msg_->data();
-			if (move_pos)
-			{
-				std::copy(gptr(), msg_->data() + msg_->size(), msg_->data());
-				msg_->resize(msg_->size() - move_pos);
-				resetBuf();
-			}
+			auto msg_buf = reinterpret_cast<char*>(&msg_->header()) + sizeof(MsgHeader);
+			if (gptr() != msg_buf)std::copy(gptr(), pptr(), msg_buf);
+			msg_->resize(pptr() - gptr());
+			resetBuf();
 		}
 		auto MsgStreamBuf::resetBuf()->void
 		{
-			setp(msg_->data() + msg_->size(), msg_->data() + msg_->size());
-			setg(msg_->data(), msg_->data(), msg_->data() + msg_->size());
+			auto msg_buf = reinterpret_cast<char*>(&msg_->header()) + sizeof(MsgHeader);
+			setp(msg_buf + msg_->size(), msg_buf + msg_->capacity());
+			setg(msg_buf, msg_buf, msg_buf + msg_->size());
 		}
 		MsgStreamBuf::MsgStreamBuf(MsgBase& msg) :msg_(&msg), std::streambuf(){ resetBuf();	};
 	}

@@ -143,6 +143,7 @@ namespace aris
 		{
 		public:
 			auto resetBuf()->void { buf.resetBuf(); };
+			auto update()->void { buf.update(); }
 			explicit MsgStream(MsgBase& msg): buf(msg), std::iostream(&buf)	{ }
 
 		private:

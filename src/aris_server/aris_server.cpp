@@ -204,6 +204,15 @@ namespace aris
 				controller_->slavePool().at(i).getTxData(std::ref(*last_data_vec_tx_.at(i)));
 				controller_->slavePool().at(i).getRxData(std::ref(*last_data_vec_rx_.at(i)));
 			}
+
+			// 向外发送msg //
+			server_->widgetRoot().mout().update();
+			if (!server_->widgetRoot().msgOut().empty())
+			{
+				server_->widgetRoot().msgPipe().sendMsg(server_->widgetRoot().msgOut());
+				server_->widgetRoot().msgOut().resize(0);
+				server_->widgetRoot().mout().resetBuf();
+			}
 		}
 		auto ControlServer::Imp::checkError()->int
 		{

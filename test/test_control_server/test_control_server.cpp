@@ -159,9 +159,6 @@ void test_control_server()
 	{
 		auto &cs = aris::server::ControlServer::instance();
 		
-		cs.widgetRoot().msgOut().resize(0);
-		cs.widgetRoot().mout().resetBuf();
-
 		static double begin_pos;
 
 		if (param.count_ == 0)
@@ -174,8 +171,7 @@ void test_control_server()
 		model.motionAtPhy(0).setMotPos(begin_pos + 0.01 * std::sin(2 * PI * (param.count_ + 1) / total_count));
 
 		if (param.count_ % 100 == 0)cs.widgetRoot().mout() << "mout: rc in count " << param.count_ << '\0';
-		cs.widgetRoot().msgPipe().sendMsg(cs.widgetRoot().msgOut());
-
+		
 		return total_count - param.count_ - 1;
 	};
 
