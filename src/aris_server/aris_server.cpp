@@ -1,7 +1,7 @@
 ﻿#ifdef WIN32
 #define rt_printf printf
-#include <windows.h>
-#undef CM_NONE
+//#include <windows.h>
+//#undef CM_NONE
 #endif
 #ifdef UNIX
 #include "rtdk.h"
@@ -22,14 +22,11 @@ namespace aris
 {
 	namespace server
     {
-		enum {RT_MSG_SIZE = 8192};
-		
 		class ControlServer::Imp
 		{
 		public:
 			auto start()->void;
 			auto stop()->void;
-			auto onReceiveMsg(const aris::core::Msg &msg)->aris::core::Msg;
 			auto sendParam(const std::string &cmd, const std::map<std::string, std::string> &params)->void;
 
 			auto tg()->void;
@@ -62,14 +59,14 @@ namespace aris
 
 			// 实时循环中的步态参数 //
 			enum { CMD_POOL_SIZE = 50 };
-			char cmd_queue_[CMD_POOL_SIZE][RT_MSG_SIZE];
+			char cmd_queue_[CMD_POOL_SIZE][MAX_PLAN_PARAM_SIZE];
 			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 0 };
 
 			// 储存上一次slave的数据 //
 			std::vector<std::unique_ptr<aris::control::Slave::TxType> > last_data_vec_tx_;
 			std::vector<std::unique_ptr<aris::control::Slave::RxType> > last_data_vec_rx_;
 
-			// 以下储存所有的命令 //
+			// 以下储存所有的命令的parse和plan函数 //
 			std::map<std::string, int> cmd_id_map_;//store gait id in follow vector
 			std::vector<dynamic::PlanFunc> plan_vec_;// store plan func
 			std::vector<ParseFunc> parser_vec_; // store parse func
@@ -80,7 +77,7 @@ namespace aris
 			ParseFunc parse_disable_func_ = defaultBasicParse;
 			ParseFunc parse_home_func_ = defaultBasicParse;
 
-            // 储存模型、控制器和传感器 command parser //
+            // 储存Model, Controller, SensorRoot, WidgetRoot //
 			std::unique_ptr<aris::dynamic::Model> model_;
 			std::unique_ptr<aris::sensor::SensorRoot> sensor_root_;
 			std::unique_ptr<aris::control::Controller> controller_;
@@ -162,17 +159,17 @@ namespace aris
 			}
 
 			cmd_msg.setMsgID(0);
-			server_->widgetRoot().msgPipe().sendMsg(cmd_msg);
+			server_->widgetRoot().cmdPipe().sendMsg(cmd_msg);
 		}
 		auto ControlServer::Imp::tg()->void
         {
-			static aris::core::MsgFix<8196> recv_msg;
-			
+			static aris::core::MsgFix<MAX_PLAN_PARAM_SIZE> recv_msg;
+
 			// 检查是否出错 //
             if (checkError())return;
 
 			// 查看是否有新cmd //
-            if (server_->widgetRoot().msgPipe().recvMsg(recv_msg))
+            if (server_->widgetRoot().cmdPipe().recvMsg(recv_msg))
 			{
                 if (cmd_num_ >= CMD_POOL_SIZE)
 				{
@@ -206,6 +203,15 @@ namespace aris
 			{
 				controller_->slavePool().at(i).getTxData(std::ref(*last_data_vec_tx_.at(i)));
 				controller_->slavePool().at(i).getRxData(std::ref(*last_data_vec_rx_.at(i)));
+			}
+
+			// 向外发送msg //
+			server_->widgetRoot().mout().update();
+			if (!server_->widgetRoot().msgOut().empty())
+			{
+				server_->widgetRoot().msgPipe().sendMsg(server_->widgetRoot().msgOut());
+				server_->widgetRoot().msgOut().resize(0);
+				server_->widgetRoot().mout().resetBuf();
 			}
 		}
 		auto ControlServer::Imp::checkError()->int
@@ -520,31 +526,15 @@ namespace aris
 
 			msg.copyStruct(param);
 		}
-		auto ControlServer::instance()->ControlServer &
-		{
-			static ControlServer instance;
-			return std::ref(instance);
-		}
-		auto ControlServer::createModel(dynamic::Model *model)->void
-		{
-			if (imp_->model_)throw std::runtime_error("control sever can't create model because it already has one");
-			imp_->model_.reset(model);
-		}
-		auto ControlServer::createController(control::Controller *controller)->void
-		{
-			if (imp_->controller_)throw std::runtime_error("control sever can't create controller because it already has one");
-			imp_->controller_.reset(controller);
-		}
-		auto ControlServer::createSensorRoot(sensor::SensorRoot *sensor_root)->void
-		{
-			if (imp_->sensor_root_)throw std::runtime_error("control sever can't create sensor_root because it already has one");
-			imp_->sensor_root_.reset(sensor_root);
-		}
-		auto ControlServer::createWidgetRoot(server::WidgetRoot *widget_root)->void
-		{
-			if (imp_->widget_root_)throw std::runtime_error("control sever can't create widget_root because it already has one");
-			imp_->widget_root_.reset(widget_root);
-		}
+		auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
+		auto ControlServer::resetModel(dynamic::Model *model)->void{ imp_->model_.reset(model);}
+		auto ControlServer::resetController(control::Controller *controller)->void{ imp_->controller_.reset(controller); }
+		auto ControlServer::resetSensorRoot(sensor::SensorRoot *sensor_root)->void{ imp_->sensor_root_.reset(sensor_root); }
+		auto ControlServer::resetWidgetRoot(server::WidgetRoot *widget_root)->void{	imp_->widget_root_.reset(widget_root); }
+		auto ControlServer::widgetRoot()->WidgetRoot&{	return std::ref(*imp_->widget_root_); }
+		auto ControlServer::model()->dynamic::Model& { return std::ref(*imp_->model_); }
+		auto ControlServer::controller()->control::Controller& { return std::ref(*imp_->controller_); }
+		auto ControlServer::sensorRoot()->sensor::SensorRoot& { return std::ref(*imp_->sensor_root_); }
 		auto ControlServer::loadXml(const char *file_name)->void
 		{
 			aris::core::XmlDocument doc;
@@ -556,27 +546,17 @@ namespace aris
 
 			loadXml(doc);
 		}
-		auto ControlServer::loadXml(const aris::core::XmlDocument &xml_doc)->void 
-        {
-			// create instance //
-			if (!imp_->model_)createModel<aris::dynamic::Model>();
-			if (!imp_->controller_)createController<aris::control::Controller>();
-			if (!imp_->sensor_root_)createSensorRoot<aris::sensor::SensorRoot>();
-			if (!imp_->widget_root_)createWidgetRoot<aris::server::WidgetRoot>();
-			
+		auto ControlServer::loadXml(const aris::core::XmlDocument &xml_doc)->void
+		{
 			// load robot model_ //
-            imp_->model_->loadXml(xml_doc);
-            imp_->controller_->loadXml(xml_doc);
-            imp_->sensor_root_->loadXml(xml_doc);
+			imp_->model_->loadXml(xml_doc);
+			imp_->controller_->loadXml(xml_doc);
+			imp_->sensor_root_->loadXml(xml_doc);
 			imp_->widget_root_->loadXml(xml_doc);
 
-            // set the tg //
+			// set the tg //
 			imp_->controller_->setControlStrategy([this]() {this->imp_->tg(); });
 		}
-		auto ControlServer::widgetRoot()->WidgetRoot&{	return std::ref(*imp_->widget_root_); }
-		auto ControlServer::model()->dynamic::Model& { return std::ref(*imp_->model_); }
-		auto ControlServer::controller()->control::Controller& { return std::ref(*imp_->controller_); }
-		auto ControlServer::sensorRoot()->sensor::SensorRoot& { return std::ref(*imp_->sensor_root_); }
 		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &plan_func)->void
 		{
 			if (cmd_name == "en")
@@ -636,7 +616,6 @@ namespace aris
 			std::cout << std::endl;
 			// print over //
 
-
 			if (cmd == "start")
 			{
 				if (imp_->is_running_)throw std::runtime_error("server already started, thus ignore command \"start\"");
@@ -666,12 +645,16 @@ namespace aris
 			if (!imp_->is_running_)throw std::runtime_error("can't execute command, because the server is not STARTED, please start it first");
 			imp_->sendParam(cmd, params);
 		}
-		auto ControlServer::setOnExit(std::function<void(void)> callback_func)->void
-		{
-			this->imp_->on_exit_callback_ = callback_func;
-		}
+		auto ControlServer::setOnExit(std::function<void(void)> callback_func)->void{ imp_->on_exit_callback_ = callback_func;}
 		ControlServer::~ControlServer() = default;
-		ControlServer::ControlServer() :imp_(new Imp(this)) {}
+		ControlServer::ControlServer() :imp_(new Imp(this)) 
+		{
+			// create instance //
+			makeModel<aris::dynamic::Model>();
+			makeController<aris::control::Controller>();
+			makeSensorRoot<aris::sensor::SensorRoot>();
+			makeWidgetRoot<aris::server::WidgetRoot>();
+		}
 	}
 }
 

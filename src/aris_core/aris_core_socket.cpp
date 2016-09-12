@@ -11,6 +11,9 @@
 
 #ifdef WIN32
 #include <ws2tcpip.h>
+#ifdef max
+#undef max
+#endif
 #endif
 
 #ifdef UNIX
@@ -174,7 +177,7 @@ namespace aris
 
 				// 接收消息本体 //
 				receivedData.resize(head.msgHeader.msg_size_);
-				memcpy(receivedData.data_.get(), head.header, sizeof(MsgHeader));
+				receivedData.header() = *reinterpret_cast<MsgHeader*>(head.header);
 
 				if (receivedData.size() > 0)
 					res = recv(conn_socket, receivedData.data(), receivedData.size(), 0);
@@ -201,7 +204,7 @@ namespace aris
 
 					m.setType(SOCKET_REPLY);
 
-					if (send(imp->conn_socket_, m.data_.get(), m.size() + sizeof(MsgHeader), 0) == -1)
+					if (send(imp->conn_socket_, reinterpret_cast<const char*>(&m.header()), m.size() + sizeof(MsgHeader), 0) == -1)
 					{
 						imp->socket_->stop();
 						if (imp->onLoseConnection != nullptr)imp->onLoseConnection(imp->socket_);
@@ -405,7 +408,7 @@ namespace aris
 
 			return;
 		}
-		auto Socket::sendMsg(const aris::core::Msg &data)->void
+		auto Socket::sendMsg(const aris::core::MsgBase &data)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
@@ -413,7 +416,7 @@ namespace aris
 			{
 			case WORKING:
 			case WAITING_FOR_REPLY:
-				if (send(imp_->conn_socket_, data.data_.get(), data.size() + sizeof(MsgHeader), 0) == -1)
+				if (send(imp_->conn_socket_, reinterpret_cast<const char *>(&data.header()), data.size() + sizeof(MsgHeader), 0) == -1)
 					throw SendDataError("Socket failed sending data, because network failed\n", this, 0);
 				else
 					return;
@@ -421,7 +424,7 @@ namespace aris
 				throw SendDataError("Socket failed sending data, because Socket is not at right state\n", this, 0);
 			}
 		}
-		auto Socket::sendRequest(const aris::core::Msg &request)->aris::core::Msg
+		auto Socket::sendRequest(const aris::core::MsgBase &request)->aris::core::Msg
 		{
 			std::unique_lock<std::mutex> cv_lck(imp_->mu_reply_);
 			std::unique_lock<std::recursive_mutex> state_lck(imp_->state_mutex_);
@@ -466,7 +469,7 @@ namespace aris
 		auto Socket::remoteIP()const->const std::string &
 		{ 
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
-			return imp_->remote_ip_; 
+			return imp_->remote_ip_;
 		}
 		auto Socket::port()const->const std::string &
 		{ 

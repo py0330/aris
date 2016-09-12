@@ -23,7 +23,6 @@ void test_core_socket()
 		server.setOnReceivedMsg([](Socket *, Msg &msg)
 		{
 			std::cout << msg.data() << std::endl;
-
 			return 0;
 		});
 		server.setOnReceivedRequest([](Socket *, Msg &msg) 
@@ -31,7 +30,6 @@ void test_core_socket()
 			std::cout << msg.data() << std::endl;
 			return Msg(std::string(msg.data()) + " was received");
 		});
-		
 		server.setOnLoseConnection( [](Socket*)
 		{
 			std::cout << "connection lost" << std::endl;
@@ -54,14 +52,10 @@ void test_core_socket()
 					auto msg = client.sendRequest(Msg("thread " + std::to_string(i) + " count: " + std::to_string(j)));
 					std::cout << msg.data() << std::endl;
 				}
-					
 			});
 		}
 
-		for (auto i = 0; i < THREAD_NUM; ++i)
-		{
-			ft[i].wait();
-		}
+		for (auto i = 0; i < THREAD_NUM; ++i) ft[i].wait();
 
 		client.stop();
 
