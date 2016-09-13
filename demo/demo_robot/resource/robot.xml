@@ -1,6 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Robot>
     <widget_root>
+        <message_pipe type="Pipe" pool_size="16384"/>
+        <command_pipe type="Pipe" pool_size="16384"/>
         <command_socket type="Socket" port="5866"/>
         <command_parser type="CommandParser">
             <command_pool type="CommandPoolObject" default_child_type="Command">
