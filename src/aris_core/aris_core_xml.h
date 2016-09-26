@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <map>
 #include <utility>
+#include <sstream>
 
 #include <iostream>
 
@@ -394,9 +395,7 @@ namespace aris
 				};
 			};
 			using Object::saveXml;
-			template<typename ChildType> 
-			auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); }
-			static auto Type()->const std::string &{ static const std::string type("root"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Root"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
 			virtual auto loadXml(const char* filename)->void { loadXml(std::string(filename)); }
 			virtual auto loadXml(const std::string &filename)->void;
@@ -405,11 +404,22 @@ namespace aris
 			virtual auto saveXml(const char *filename) const->void { saveXml(std::string(filename)); }
 			virtual auto saveXml(const std::string &filename) const->void;
 			virtual auto saveXml(aris::core::XmlDocument &xml_doc)const->void;
+			template<typename ChildType>
+			auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); }
 			auto childTypeMap()const ->const std::map<std::string, TypeInfo>&;
+			auto loadString(const std::string &xml_src)->void { aris::core::XmlDocument xml_doc; xml_doc.Parse(xml_src.c_str()); loadXml(xml_doc); };
+			auto saveString(std::string &xml_src)const->void;
+			auto save(const std::string &name, bool auto_override_save = true)->void;
+			auto load(const std::string &name, bool auto_delete_save = true)->void;
 
 			virtual ~Root();
 			explicit Root(const std::string &name = "Root");
 			explicit Root(const aris::core::XmlElement &xml_ele);
+			Root(const Root&);
+			Root(Root&&);
+			Root& operator=(const Root&);
+			Root& operator=(Root&&);
+
 		private:
 			struct Imp;
 			ImpPtr<Imp> imp_;

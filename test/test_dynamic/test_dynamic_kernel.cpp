@@ -8,6 +8,7 @@ const double error = 1e-10;
 
 void test_variable_change();
 void test_coordinate_transform();
+void test_other();
 
 
 void test_kernel()
@@ -70,6 +71,7 @@ void test_kernel()
 
 	test_variable_change();
 	test_coordinate_transform();
+	test_other();
 
 	std::cout << "-----------------test kernel finished-----------" << std::endl << std::endl;
 }
@@ -702,5 +704,27 @@ void test_coordinate_transform()
 
 	s_inv_as2as(relative_pm, relative_vs, relative_as, to_vs, to_as, result, result2);
 	if (!(s_is_equal(6, from_as, result, error) && s_is_equal(6, from_vs, result2, error)))std::cout << "\"s_inv_as2as\" failed" << std::endl;
+
+}
+void test_other()
+{
+	const double ab[2] = { 2.46823966120654, -1.28551725555848 };
+	const double vab[2] = { 5.886, -2.65 };
+	const double aab[2] = { -1.234, 3.875 };
+	const double pp31[3]{ -0.175499782797524,-0.220000000000002, -0.959583152331272 };
+	const double vp31[3]{ 2.88069659757518,   0.954878838208465, - 0.745776923914583 };
+	const double ap31[3]{ -18.6788800017547,   25.144386102382,   7.82919554768749 };
+	double result[2], result2[2], result3[2];
+
+	s_sov_ab(pp31, result, "31");
+	if (!s_is_equal(2, ab, result, error))std::cout << "\"s_sov_ab\" failed" << std::endl;
+
+	s_sov_vab(pp31, vp31, result, result2, "31");
+	if (!(s_is_equal(2, vab, result, error)&& s_is_equal(2, ab, result2, error)))std::cout << "\"s_sov_vab\" failed" << std::endl;
+
+	s_sov_aab(pp31, vp31, ap31, result, result2, result3, "31");
+	if (!(s_is_equal(2, aab, result, error) && s_is_equal(2, vab, result2, error) && s_is_equal(2, ab, result3, error)))std::cout << "\"s_sov_aab\" failed" << std::endl;
+
+	//dlmwrite("C:\\Users\\py033\\Desktop\\ap.txt", ap, 1, 3);
 
 }

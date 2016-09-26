@@ -148,7 +148,7 @@ install(FILES ${FULL_H} DESTINATION include)
 ################################### build tests for aris ####################################
 enable_testing()
 
-set(SOURCE_FILES main.cpp test_dynamic_kernel.h test_dynamic_kernel.cpp test_dynamic_model.h test_dynamic_model.cpp)
+set(SOURCE_FILES main.cpp test_dynamic_kernel.h test_dynamic_kernel.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_model_stewart.h test_dynamic_model_stewart.cpp)
 PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
 add_executable(test_dynamic ${FULL_SRC})
 target_link_libraries(test_dynamic ${ALL_LINK_LIB})

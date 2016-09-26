@@ -40,17 +40,22 @@ namespace aris
 				throw std::runtime_error("wrong command setting: unknown father type.");
 		}
 		auto ParamBase::reset()->void { imp_->is_taken_ = false; }
+		ParamBase::~ParamBase() = default;
 		ParamBase::ParamBase(const std::string &name) :ObjectPool(name) {}
 		ParamBase::ParamBase(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele)
 		{
 			imp_->help_ = attributeString(xml_ele, "help", imp_->help_);
 		}
-		
+		ParamBase::ParamBase(const ParamBase&) = default;
+		ParamBase::ParamBase(ParamBase&&) = default;
+		ParamBase& ParamBase::operator=(const ParamBase&) = default;
+		ParamBase& ParamBase::operator=(ParamBase&&) = default;
+
 		auto GroupParam::take()->void { if (!isTaken())ParamBase::take(); }
-		auto GroupParam::reset()->void { for (auto &child : *this)dynamic_cast<ParamBase&>(child).reset(); ParamBase::reset(); };
+		auto GroupParam::reset()->void { for (auto &child : *this)dynamic_cast<ParamBase&>(child).ParamBase::reset(); ParamBase::reset(); };
 		auto GroupParam::addDefaultParam(std::map<std::string, std::string> &param_map_out)->void 
 		{
-			for (auto &sub_param : *this) { sub_param.addDefaultParam(param_map_out); }
+			for (auto &child : *this) { child.addDefaultParam(param_map_out); }
 		}
 		GroupParam::~GroupParam() = default;
 		GroupParam::GroupParam(const std::string &name) :ParamBase(name) {}

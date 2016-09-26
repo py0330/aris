@@ -16,6 +16,8 @@ namespace aris
 {
 	namespace dynamic
 	{
+		using double3x3 = double[3][3];
+		
 		inline auto default_pp()->const double* { static double value[3]{ 0,0,0 }; return value; }
 		inline auto default_re()->const double* { static double value[3]{ 0,0,0 }; return value; }
 		inline auto default_rq()->const double* { static double value[4]{ 0,0,0,1 };	return value; }
@@ -51,6 +53,17 @@ namespace aris
 		inline auto default_iv()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
 		inline auto default_in()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
 
+		inline auto P()noexcept->const double3x3&
+		{
+			static const double p[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
+			return p;
+		}
+		inline auto Q()noexcept->const double3x3&
+		{
+			static const double q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
+			return q;
+		}
+
 		auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in, std::size_t rm_ld) noexcept->void
 		{
 			// 补充默认参数 //
@@ -59,9 +72,6 @@ namespace aris
 			rm_out = rm_out ? rm_out : rm_out_default;
 
 			// 正式开始计算 //
-			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
-
 			double Abb, Add, Abd, Adb;
 			double Bac, Bae, Bdc, Bde;
 			double Cbb, Cee, Cbe, Ceb;
@@ -77,21 +87,21 @@ namespace aris
 			s_ = std::sin(re_in[0]);
 			Abb = c_;
 			Add = Abb;
-			Abd = P[b][d] * s_;
+			Abd = P()[b][d] * s_;
 			Adb = -Abd;
 
 			s_ = std::sin(re_in[1]);
 			c_ = std::cos(re_in[1]);
-			Bac = P[a][c] * s_ + Q[a][c] * c_;
-			Bae = P[a][e] * s_ + Q[a][e] * c_;
-			Bdc = P[d][c] * s_ + Q[d][c] * c_;
-			Bde = P[d][e] * s_ + Q[d][e] * c_;
+			Bac = P()[a][c] * s_ + Q()[a][c] * c_;
+			Bae = P()[a][e] * s_ + Q()[a][e] * c_;
+			Bdc = P()[d][c] * s_ + Q()[d][c] * c_;
+			Bde = P()[d][e] * s_ + Q()[d][e] * c_;
 
 			c_ = std::cos(re_in[2]);
 			s_ = std::sin(re_in[2]);
 			Cbb = c_;
 			Cee = Cbb;
-			Cbe = P[b][e] * s_;
+			Cbe = P()[b][e] * s_;
 			Ceb = -Cbe;
 
 			rm_out[a * rm_ld + c] = Bac;
@@ -112,9 +122,6 @@ namespace aris
 			re_out = re_out ? re_out : re_out_default;
 
 			// 正式开始计算 //
-			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
-
 			const int a = eu_type_in[0] - '1';
 			const int b = eu_type_in[1] - '1';
 			const int c = eu_type_in[2] - '1';
@@ -126,21 +133,21 @@ namespace aris
 				+ rm_in[rm_ld * b + c] * rm_in[rm_ld * b + c] + rm_in[rm_ld * d + c] * rm_in[rm_ld * d + c]) / 2);
 
 			double c_ = rm_in[rm_ld * a + c];
-			re_out[1] = (a == c ? std::atan2(s_, c_) : std::atan2(P[a][c] * c_, s_));
+			re_out[1] = (a == c ? std::atan2(s_, c_) : std::atan2(P()[a][c] * c_, s_));
 
 			// 计算phi1和phi3 //
 			double phi13 = std::atan2(rm_in[rm_ld * b + e] - rm_in[rm_ld * d + b], rm_in[rm_ld * b + b] + rm_in[rm_ld * d + e]);
 			double phi31 = std::atan2(rm_in[rm_ld * b + e] + rm_in[rm_ld * d + b], rm_in[rm_ld * b + b] - rm_in[rm_ld * d + e]);
 
-			re_out[0] = P[b][d] * (phi13 - phi31) / 2;
-			re_out[2] = P[b][e] * (phi13 + phi31) / 2;
+			re_out[0] = P()[b][d] * (phi13 - phi31) / 2;
+			re_out[2] = P()[b][e] * (phi13 + phi31) / 2;
 
 			// 检查 //
 			double sig[4];
-			sig[0] = (P[a][e] + Q[a][e])*P[e][b] * rm_in[a * rm_ld + b] * std::sin(re_out[2]);
-			sig[1] = (P[a][e] + Q[a][e])*rm_in[rm_ld * a + e] * std::cos(re_out[2]);
-			sig[2] = (P[d][c] + Q[d][c])*P[b][d] * rm_in[b * rm_ld + c] * std::sin(re_out[0]);
-			sig[3] = (P[d][c] + Q[d][c])*rm_in[rm_ld * d + c] * std::cos(re_out[0]);
+			sig[0] = (P()[a][e] + Q()[a][e])*P()[e][b] * rm_in[a * rm_ld + b] * std::sin(re_out[2]);
+			sig[1] = (P()[a][e] + Q()[a][e])*rm_in[rm_ld * a + e] * std::cos(re_out[2]);
+			sig[2] = (P()[d][c] + Q()[d][c])*P()[b][d] * rm_in[b * rm_ld + c] * std::sin(re_out[0]);
+			sig[3] = (P()[d][c] + Q()[d][c])*rm_in[rm_ld * d + c] * std::cos(re_out[0]);
 
 			if (*std::max_element(sig, sig + rm_ld, [](double d1, double d2) {return (std::abs(d1) < std::abs(d2)); })<0)
 			{
@@ -355,9 +362,6 @@ namespace aris
 			wa_out = wa_out ? wa_out : wa_out_default;
 
 			// 正式开始计算 //
-			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
-
 			const int a = eu_type_in[0] - '1';
 			const int b = eu_type_in[1] - '1';
 			const int c = eu_type_in[2] - '1';
@@ -372,11 +376,11 @@ namespace aris
 
 			axis[a][1] = 0;
 			axis[b][1] = std::cos(re_in[0]);
-			axis[d][1] = P[d][b] * std::sin(re_in[0]);
+			axis[d][1] = P()[d][b] * std::sin(re_in[0]);
 
-			axis[a][2] = c == a ? std::cos(re_in[1]) : P[a][d] * std::sin(re_in[1]);
-			axis[b][2] = c == a ? -std::sin(re_in[0])*std::sin(re_in[1]) : P[b][d] * std::sin(re_in[0])* std::cos(re_in[1]);
-			axis[d][2] = c == a ? P[d][a] * std::cos(re_in[0])* std::sin(re_in[1]) : std::cos(re_in[0])* std::cos(re_in[1]);
+			axis[a][2] = c == a ? std::cos(re_in[1]) : P()[a][d] * std::sin(re_in[1]);
+			axis[b][2] = c == a ? -std::sin(re_in[0])*std::sin(re_in[1]) : P()[b][d] * std::sin(re_in[0])* std::cos(re_in[1]);
+			axis[d][2] = c == a ? P()[d][a] * std::cos(re_in[0])* std::sin(re_in[1]) : std::cos(re_in[0])* std::cos(re_in[1]);
 
 			s_mdm(3, 1, 3, *axis, 3, we_in, 1, wa_out, 1);
 		}
@@ -389,9 +393,6 @@ namespace aris
 			we_out = we_out ? we_out : we_out_default;
 
 			// 正式开始计算 //
-			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
-
 			const int a = eu_type_in[0] - '1';
 			const int b = eu_type_in[1] - '1';
 			const int c = eu_type_in[2] - '1';
@@ -406,11 +407,11 @@ namespace aris
 
 			axis[a][1] = 0;
 			axis[b][1] = std::cos(re_in[0]);
-			axis[d][1] = P[d][b] * std::sin(re_in[0]);
+			axis[d][1] = P()[d][b] * std::sin(re_in[0]);
 
-			axis[a][2] = c == a ? std::cos(re_in[1]) : P[a][d] * std::sin(re_in[1]);
-			axis[b][2] = c == a ? -std::sin(re_in[0])*std::sin(re_in[1]) : P[b][d] * std::sin(re_in[0])* std::cos(re_in[1]);
-			axis[d][2] = c == a ? P[d][a] * std::cos(re_in[0])* std::sin(re_in[1]) : std::cos(re_in[0])* std::cos(re_in[1]);
+			axis[a][2] = c == a ? std::cos(re_in[1]) : P()[a][d] * std::sin(re_in[1]);
+			axis[b][2] = c == a ? -std::sin(re_in[0])*std::sin(re_in[1]) : P()[b][d] * std::sin(re_in[0])* std::cos(re_in[1]);
+			axis[d][2] = c == a ? P()[d][a] * std::cos(re_in[0])* std::sin(re_in[1]) : std::cos(re_in[0])* std::cos(re_in[1]);
 
 			we_out[1] = (wa_in[b] * axis[d][2] - wa_in[d] * axis[b][2]) / (axis[b][1] * axis[d][2] - axis[d][1] * axis[b][2]);
 			we_out[2] = (wa_in[d] * axis[b][1] - wa_in[b] * axis[d][1]) / (axis[d][2] * axis[b][1] - axis[b][2] * axis[d][1]);
@@ -451,7 +452,6 @@ namespace aris
 			wq_out = wq_out ? wq_out : wq_out_default;
 
 			// 正式开始计算 //
-
 			static const double S[4][3]{ { 1,-1,-1 },{ -1,1,-1 },{ -1,-1,1 },{ 1,1,1 } };
 			static const double T[4][4]{ { 0,1,1,-1 },{ 1,0,1,-1 },{ 1,1,0,-1 },{ -1,-1,-1,0 } };
 			static const int P[4][4]{ { -1,0,0,2 },{ 1,-1,1,0 },{ 2,2,-1,1 },{ 2,0,1,-1 } };
@@ -725,9 +725,6 @@ namespace aris
 			xa_out = xa_out ? xa_out : xa_out_default;
 
 			// 正式开始计算 //
-			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
-
 			const int a = eu_type_in[0] - '1';
 			const int b = eu_type_in[1] - '1';
 			const int c = eu_type_in[2] - '1';
@@ -745,16 +742,16 @@ namespace aris
 			const double dc2 = -s2*we_in[1];
 
 			const double Ab1 = c1;
-			const double Ad1 = P[d][b] * s1;
-			const double Aa2 = c == a ? c2 : P[a][d] * s2;
-			const double Ab2 = c == a ? -s1*s2 : P[b][d] * s1*c2;
-			const double Ad2 = c == a ? P[d][a] * c1* s2 : c1* c2;
+			const double Ad1 = P()[d][b] * s1;
+			const double Aa2 = c == a ? c2 : P()[a][d] * s2;
+			const double Ab2 = c == a ? -s1*s2 : P()[b][d] * s1*c2;
+			const double Ad2 = c == a ? P()[d][a] * c1* s2 : c1* c2;
 
 			const double dAb1 = dc1;
-			const double dAd1 = P[d][b] * ds1;
-			const double dAa2 = c == a ? dc2 : P[a][d] * ds2;
-			const double dAb2 = c == a ? -ds1*s2 - s1*ds2 : P[b][d] * (ds1*c2 + s1*dc2);
-			const double dAd2 = c == a ? P[d][a] * (dc1* s2 + c1*ds2) : dc1*c2 + c1*dc2;
+			const double dAd1 = P()[d][b] * ds1;
+			const double dAa2 = c == a ? dc2 : P()[a][d] * ds2;
+			const double dAb2 = c == a ? -ds1*s2 - s1*ds2 : P()[b][d] * (ds1*c2 + s1*dc2);
+			const double dAd2 = c == a ? P()[d][a] * (dc1* s2 + c1*ds2) : dc1*c2 + c1*dc2;
 
 			wa_out[a] = we_in[0] + Aa2*we_in[2];
 			wa_out[b] = Ab1*we_in[1] + Ab2*we_in[2];
@@ -776,9 +773,6 @@ namespace aris
 			xe_out = xe_out ? xe_out : xe_out_default;
 
 			// 正式开始计算 //
-			static const double P[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
-			static const double Q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
-
 			const int a = eu_type_in[0] - '1';
 			const int b = eu_type_in[1] - '1';
 			const int c = eu_type_in[2] - '1';
@@ -791,10 +785,10 @@ namespace aris
 			const double c2 = std::cos(re_in[1]);
 
 			const double Ab1 = c1;
-			const double Ad1 = P[d][b] * s1;
-			const double Aa2 = c == a ? c2 : P[a][d] * s2;
-			const double Ab2 = c == a ? -s1*s2 : P[b][d] * s1*c2;
-			const double Ad2 = c == a ? P[d][a] * c1* s2 : c1* c2;
+			const double Ad1 = P()[d][b] * s1;
+			const double Aa2 = c == a ? c2 : P()[a][d] * s2;
+			const double Ab2 = c == a ? -s1*s2 : P()[b][d] * s1*c2;
+			const double Ad2 = c == a ? P()[d][a] * c1* s2 : c1* c2;
 
 			const double M = (Ab1 * Ad2 - Ad1 * Ab2);
 			const double N = (Ad2 * Ab1 - Ab2 * Ad1);
@@ -809,10 +803,10 @@ namespace aris
 			const double dc2 = -s2*we_out[1];
 
 			const double dAb1 = dc1;
-			const double dAd1 = P[d][b] * ds1;
-			const double dAa2 = c == a ? dc2 : P[a][d] * ds2;
-			const double dAb2 = c == a ? -ds1*s2 - s1*ds2 : P[b][d] * (ds1*c2 + s1*dc2);
-			const double dAd2 = c == a ? P[d][a] * (dc1* s2 + c1*ds2) : dc1*c2 + c1*dc2;
+			const double dAd1 = P()[d][b] * ds1;
+			const double dAa2 = c == a ? dc2 : P()[a][d] * ds2;
+			const double dAb2 = c == a ? -ds1*s2 - s1*ds2 : P()[b][d] * (ds1*c2 + s1*dc2);
+			const double dAd2 = c == a ? P()[d][a] * (dc1* s2 + c1*ds2) : dc1*c2 + c1*dc2;
 
 			const double ba = xa_in[a] - dAa2* we_out[2];
 			const double bb = xa_in[b] - dAb1* we_out[1] - dAb2* we_out[2];
@@ -3483,6 +3477,118 @@ namespace aris
 			if (theta_out[0] < -2 * PI)theta_out[0] += 2 * PI;
 			if (theta_out[1] < -2 * PI)theta_out[1] += 2 * PI;
 		};
+		auto s_sov_ab(const double*pp, double *ab, const char*order)noexcept->void
+		{
+			// 补充默认参数 //
+			static const double default_pp[3]{ 1,0,0 };
+			double default_ab[3];
+			pp = pp ? pp : default_pp;
+			ab = ab ? ab : default_ab;
+
+			// 正式开始计算 //
+			const int a = order[0] - '1';
+			const int b = order[1] - '1';
+			const int c = 3 - a - b;
+			const double pa = pp[a];
+			const double pb = pp[b];
+			const double pc = pp[c];
+			const double Pbc = P()[b][c];
+			const double Pac = P()[a][c];
+
+			const double k = std::sqrt(pb * pb + pc * pc);
+
+			ab[0] = std::atan2(Pbc * pb, pc);
+			ab[1] = std::atan2(Pac * pa, k);
+		}
+		auto s_sov_vab(const double*pp, const double*vp, double *vab, double *ab, const char*order)noexcept->void
+		{
+			// 补充默认参数 //
+			static const double default_pp[3]{ 1,0,0 };
+			static const double default_vp[3]{ 0,0,0 };
+			double default_vab[3], default_ab[3];
+			pp = pp ? pp : default_pp;
+			vp = vp ? vp : default_vp;
+			vab = vab ? vab : default_vab;
+			ab = ab ? ab : default_ab;
+
+			// 正式开始计算 //
+			const int a = order[0] - '1';
+			const int b = order[1] - '1';
+			const int c = 3 - a - b;
+			const double pa = pp[a];
+			const double pb = pp[b];
+			const double pc = pp[c];
+			const double Pbc = P()[b][c];
+			const double Pac = P()[a][c];
+
+			const double k = std::sqrt(pb * pb + pc * pc);
+			ab[0] = std::atan2(Pbc * pb, pc);
+			ab[1] = std::atan2(Pac * pa, k);
+
+			const double c1 = std::cos(ab[0]);
+			const double c2 = std::cos(ab[1]);
+			const double vpa = vp[a];
+			const double vpb = vp[b];
+			const double vpc = vp[c];
+
+			const double vk = (pb*vpb + pc*vpc) / k;
+			const double q1 = vpb*pc - vpc*pb;
+			const double q2 = vpa*k - vk*pa;
+			vab[0] = Pbc*q1*c1*c1 / (pc*pc);
+			vab[1] = Pac*q2*c2*c2 / (k*k);
+		}
+		auto s_sov_aab(const double*pp, const double*vp, const double*ap, double *aab, double *vab, double *ab, const char*order)noexcept->void
+		{
+			// 补充默认参数 //
+			static const double default_pp[3]{ 1,0,0 };
+			static const double default_vp[3]{ 0,0,0 };
+			static const double default_ap[3]{ 0,0,0 };
+			double default_aab[3], default_vab[3], default_ab[3];
+			pp = pp ? pp : default_pp;
+			vp = vp ? vp : default_vp;
+			ap = ap ? ap : default_ap;
+			aab = vab ? aab : default_aab;
+			vab = vab ? vab : default_vab;
+			ab = ab ? ab : default_ab;
+
+			// 正式开始计算 //
+			const int a = order[0] - '1';
+			const int b = order[1] - '1';
+			const int c = 3 - a - b;
+			const double pa = pp[a];
+			const double pb = pp[b];
+			const double pc = pp[c];
+			const double Pbc = P()[b][c];
+			const double Pac = P()[a][c];
+
+			const double k = std::sqrt(pb * pb + pc * pc);
+			ab[0] = std::atan2(Pbc * pb, pc);
+			ab[1] = std::atan2(Pac * pa, k);
+
+			const double c1 = std::cos(ab[0]);
+			const double c2 = std::cos(ab[1]);
+			const double vpa = vp[a];
+			const double vpb = vp[b];
+			const double vpc = vp[c];
+
+			const double vk = (pb*vpb + pc*vpc) / k;
+			const double q1 = vpb*pc - vpc*pb;
+			const double q2 = vpa*k - vk*pa;
+			vab[0] = Pbc*q1*c1*c1 / (pc*pc);
+			vab[1] = Pac*q2*c2*c2 / (k*k);
+
+			const double s1 = std::sin(ab[0]);
+			const double s2 = std::sin(ab[1]);
+			const double apa = ap[a];
+			const double apb = ap[b];
+			const double apc = ap[c];
+			const double ak = (pb*apb + vpb*vpb + pc*apc + vpc*vpc - vk*vk) / k;
+			const double vq1 = apb*pc - apc*pb;
+			const double vq2 = apa*k - ak*pa;
+
+			aab[0] = Pbc*((vq1*c1*c1 - 2 * q1*c1*s1*vab[0])*pc - 2 * vpc*q1*c1*c1) / (pc*pc*pc);
+			aab[1] = Pac*((vq2*c2*c2 - 2 * q2*c2*s2*vab[1])*k - 2 * vk*q2*c2*c2) / (k*k*k);
+		}
 
 		auto dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n)->void
 		{

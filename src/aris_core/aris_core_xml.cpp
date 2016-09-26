@@ -27,7 +27,7 @@ namespace aris
 
 			Imp() = default;
 			Imp(const std::string &name) :name_(name) {}
-			Imp(Object *father, const aris::core::XmlElement &xml_ele) :father_(father), name_(xml_ele.name()), default_type_(xml_ele.Attribute("default_child_type")? xml_ele.Attribute("default_child_type"): Object::Type()){}
+			Imp(Object *father, const aris::core::XmlElement &xml_ele) :father_(father), name_(xml_ele.Name()), default_type_(xml_ele.Attribute("default_child_type")? xml_ele.Attribute("default_child_type"): Object::Type()){}
 			Imp(const Imp &other) = delete;
 			Imp(Imp &&other) = default;
 			Imp &operator=(const Imp &) = delete;
@@ -35,7 +35,7 @@ namespace aris
 		};
 		auto Object::attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->bool
 		{
-			std::string error = "failed to get bool attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get bool attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))
 				throw std::runtime_error(error + "this attribute is not found in xml file");
@@ -59,7 +59,7 @@ namespace aris
 		}
 		auto Object::attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::int64_t
 		{
-			std::string error = "failed to get int64 attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get int64 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))
 				throw std::runtime_error(error + "this attribute is not found in xml file");
@@ -79,7 +79,7 @@ namespace aris
 		}
 		auto Object::attributeInt32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::int32_t
 		{
-			std::string error = "failed to get int32 attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get int32 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
 
@@ -104,7 +104,7 @@ namespace aris
 		}
 		auto Object::attributeInt16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::int16_t
 		{
-			std::string error = "failed to get int16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get int16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
 
@@ -129,7 +129,7 @@ namespace aris
 		}
 		auto Object::attributeInt8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::int8_t
 		{
-			std::string error = "failed to get int16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get int16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
 
@@ -154,7 +154,7 @@ namespace aris
 		}
 		auto Object::attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::uint64_t
 		{
-			std::string error = "failed to get uint64 attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get uint64 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))
 				throw std::runtime_error(error + "this attribute is not found in xml file");
@@ -174,7 +174,7 @@ namespace aris
 		}
 		auto Object::attributeUint32(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::uint32_t
 		{
-			std::string error = "failed to get uint32 attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get uint32 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
 
@@ -199,7 +199,7 @@ namespace aris
 		}
 		auto Object::attributeUint16(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::uint16_t
 		{
-			std::string error = "failed to get uint16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get uint16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
 
@@ -224,7 +224,7 @@ namespace aris
 		}
 		auto Object::attributeUint8(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::uint8_t
 		{
-			std::string error = "failed to get uint8 attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get uint8 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
 
@@ -249,7 +249,7 @@ namespace aris
 		}
 		auto Object::attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->float
 		{
-			std::string error = "failed to get double attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get double attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))
 				throw std::runtime_error(error + "this attribute is not found in xml file");
@@ -269,7 +269,7 @@ namespace aris
 		}
 		auto Object::attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->double
 		{
-			std::string error = "failed to get double attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get double attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))
 				throw std::runtime_error(error + "this attribute is not found in xml file");
@@ -289,7 +289,7 @@ namespace aris
 		}
 		auto Object::attributeString(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->std::string
 		{
-			std::string error = "failed to get string attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get string attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))
 				throw std::runtime_error(error + "this attribute is not found in xml file");
@@ -302,7 +302,7 @@ namespace aris
 		}
 		auto Object::attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->char
 		{
-			std::string error = "failed to get char attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get char attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			if (!xml_ele.Attribute(attribute_name.c_str()))
 				throw std::runtime_error(error + "this attribute is not found in xml file");
@@ -383,14 +383,13 @@ namespace aris
 			if (root().childTypeMap().find(type) == root().childTypeMap().end())
 			{
 				throw std::runtime_error("unrecognized type \"" + type
-					+ "\" when add xml element \"" + xml_ele.name() + "\" to \"" + name() + "\"");
+					+ "\" when add xml element \"" + xml_ele.Name() + "\" to \"" + name() + "\"");
 			}
 			else
 			{
 				children().push_back_ptr(root().childTypeMap().find(type)->second.xml_construct_func(*this, xml_ele));
 				children().back().imp_->id_ = children().size() - 1;
 				children().back().imp_->father_ = this;
-				
 
 				return children().back();
 			}
@@ -529,8 +528,43 @@ namespace aris
 
 			saveXml(*root_xml_ele);
 		}
+		auto Root::saveString(std::string &xml_src) const->void
+		{
+			aris::core::XmlDocument xml_doc;
+			saveXml(xml_doc); 
+			tinyxml2::XMLPrinter streamer(0, true);
+			xml_doc.Print(&streamer);
+			xml_src = streamer.CStr();
+		};
+		auto Root::save(const std::string &name, bool auto_override_save)->void
+		{
+			decltype(Object::imp_->save_data_map_) tem = std::move(Object::imp_->save_data_map_);
+
+			if ((!auto_override_save) && (tem.find(name) != tem.end()))
+				throw std::runtime_error("Root \"" + this->name() + "\" already has a save named \"" + name + "\", can't save");
+
+			auto save_content = std::shared_ptr<Object>(new Root(*this));
+			tem.insert(std::make_pair(name, save_content));
+
+			Object::imp_->save_data_map_ = std::move(tem);
+		}
+		auto Root::load(const std::string &name, bool auto_delete_save)->void
+		{
+			decltype(Object::imp_->save_data_map_) tem = std::move(Object::imp_->save_data_map_);
+
+			if (tem.find(name) == tem.end())
+				throw std::runtime_error("Object \"" + this->name() + "\" does not has a save named \"" + name + "\", can't load");
+			*this = static_cast<Root&>(*tem.at(name));
+			if (auto_delete_save)tem.erase(name);
+
+			Object::imp_->save_data_map_ = std::move(tem);
+		}
 		Root::~Root() = default;
-		Root::Root(const std::string &name) :Object(name) {}
-		Root::Root(const aris::core::XmlElement &xml_ele) :Object(*this, xml_ele) {}
+		Root::Root(const std::string &name) :Object(name) { registerChildType<Object>(); }
+		Root::Root(const aris::core::XmlElement &xml_ele) :Object(*this, xml_ele) { registerChildType<Object>(); }
+		Root::Root(const Root&) = default;
+		Root::Root(Root&&) = default;
+		Root& Root::operator=(const Root&) = default;
+		Root& Root::operator=(Root&&) = default;
 	}
 }

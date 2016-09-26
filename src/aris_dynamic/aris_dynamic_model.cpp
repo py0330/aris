@@ -22,7 +22,7 @@ namespace aris
 		auto Element::model()const->const Model&{ return dynamic_cast<const Model&>(root()); }
 		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix
 		{
-			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 			aris::core::Matrix mat;
 			try
@@ -42,7 +42,7 @@ namespace aris
 		}
 		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::size_t m, std::size_t n)const->aris::core::Matrix
 		{
-			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.name() + "\", because ";
+			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 			
 			aris::core::Matrix mat = attributeMatrix(xml_ele, attribute_name);
 
@@ -690,21 +690,21 @@ namespace aris
 				throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"" );
 			auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model().findByName("part_pool"));
 			
-			if (!xml_ele.Attribute("prt_m"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"prt_m\"");
+			if (!xml_ele.Attribute("prt_m"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"prt_m\"");
 			auto prt_m = part_pool.findByName(xml_ele.Attribute("prt_m"));
 			if (prt_m == part_pool.end())	throw std::runtime_error(std::string("can't find part m for element \"") + this->name() + "\"");
 
-			if (!xml_ele.Attribute("mak_i"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"mak_i\"");
+			if (!xml_ele.Attribute("mak_i"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"mak_i\"");
 			auto mak_i = prt_m->markerPool().findByName(xml_ele.Attribute("mak_i")); 
 			if (mak_i == prt_m->markerPool().end()) 
 				throw std::runtime_error(std::string("can't find marker i for element \"") + this->name() + "\"");
 			makI_ = &(*mak_i);
 
-			if (!xml_ele.Attribute("prt_n"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"prt_n\"");
+			if (!xml_ele.Attribute("prt_n"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"prt_n\"");
 			auto prt_n = part_pool.findByName(xml_ele.Attribute("prt_n"));
 			if (prt_n == part_pool.end())throw std::runtime_error(std::string("can't find part n for element \"") + this->name() + "\"");
 
-			if (!xml_ele.Attribute("mak_j"))throw std::runtime_error(std::string("xml element \"") + xml_ele.name() + "\" must have Attribute \"mak_j\"");
+			if (!xml_ele.Attribute("mak_j"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"mak_j\"");
 			auto mak_j = prt_n->markerPool().findByName(xml_ele.Attribute("mak_j"));
 			if (mak_j == prt_n->markerPool().end())throw std::runtime_error(std::string("can't find marker j for element \"") + this->name() + "\"");
 			makJ_ = &(*mak_j);
@@ -718,24 +718,29 @@ namespace aris
 		auto Constraint::update()->void
 		{
 			double pm_M2N[4][4];
-			double _tem_v1[6]{ 0 }, _tem_v2[6]{ 0 };
 
 			// Get pm M2N //
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
 
 			// update CstMtx //
-			std::fill_n(const_cast<double*>(csmPtrJ()), dim() * 6, 0);
-			s_tf_n(dim(), -1, *pm_M2N, csmPtrI(), 0, const_cast<double*>(csmPtrJ()));
+			std::fill(const_cast<double*>(cmPtrJ()), const_cast<double*>(cmPtrJ()) + dim() * 6, 0);
+			s_tf_n(dim(), -1, *pm_M2N, cmPtrI(), 0, const_cast<double*>(cmPtrJ()));
 
 			// update CstAcc //
-			s_inv_tv(-1, *pm_M2N, makJ().fatherPart().prtVs(), 0, _tem_v1);
-			s_cv(makI().fatherPart().prtVs(), _tem_v1, _tem_v2);
-			s_mdmTN(dim(), 1, 6, csmPtrI(), dim(), _tem_v2, 1, const_cast<double*>(csaPtr()), 1);
+			std::fill(const_cast<double*>(caPtr()), const_cast<double*>(caPtr()) + dim(), 0);
+			double vn_in_m[6]{ 0 }, tem[6]{ 0 };
+			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVs(), vn_in_m);
+			s_cv(makI().fatherPart().prtVs(), vn_in_m, tem);
+			s_mdmTN(dim(), 1, 6, -1.0, cmPtrI(), dim(), tem, 1, 0.0, const_cast<double*>(caPtr()), 1);
 		}
 		Constraint::~Constraint() = default;
 		Constraint::Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active): Interaction(name, makI, makJ, is_active) {}
 		Constraint::Constraint(Object &father, const aris::core::XmlElement &xml_ele): Interaction(father, xml_ele) {}
-		
+		Constraint::Constraint(const Constraint&) = default;
+		Constraint::Constraint(Constraint&&) = default;
+		Constraint& Constraint::operator=(const Constraint&) = default;
+		Constraint& Constraint::operator=(Constraint&&) = default;
+
 		auto Environment::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Object::saveXml(xml_ele);
@@ -871,7 +876,7 @@ namespace aris
 		{
 			auto mat_x = attributeMatrix(xml_ele, "x");
 			auto mat_y = attributeMatrix(xml_ele, "y");
-			*this = Akima(xml_ele.name(), std::list<double>(mat_x.begin(), mat_x.end()), std::list<double>(mat_y.begin(), mat_y.end()));
+			*this = Akima(name(), std::list<double>(mat_x.begin(), mat_x.end()), std::list<double>(mat_y.begin(), mat_y.end()));
 		}
 		Akima::Akima(const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in): Element(name)
 		{
@@ -1015,6 +1020,10 @@ namespace aris
 				imp_->_p3[i] = (t[i] + t[i + 1] - 2 * s[i + 2]) / (imp_->x_[i + 1] - imp_->x_[i]) / (imp_->x_[i + 1] - imp_->x_[i]);
 			}
 		}
+		Akima::Akima(const Akima&) = default;
+		Akima::Akima(Akima&&) = default;
+		Akima& Akima::operator=(const Akima&) = default;
+		Akima& Akima::operator=(Akima&&) = default;
 
 		struct Script::Imp
 		{
@@ -1285,6 +1294,10 @@ namespace aris
 				if (line != "")imp_->node_list_.push_back(std::unique_ptr<Imp::Node>(Imp::Node::create(&model(), line)));
 			}
 		}
+		Script::Script(const Script&) = default;
+		Script::Script(Script&&) = default;
+		Script& Script::operator=(const Script&) = default;
+		Script& Script::operator=(Script&&) = default;
 
 		auto Variable::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -1371,6 +1384,10 @@ namespace aris
 				std::copy_n(pm, 16, static_cast<double*>(*imp_->prt_pm_));
 			}
 		}
+		Marker::Marker(const Marker&) = default;
+		Marker::Marker(Marker&&) = default;
+		Marker& Marker::operator=(const Marker&) = default;
+		Marker& Marker::operator=(Marker&&) = default;
 
 		struct Part::Imp
 		{
@@ -1380,10 +1397,10 @@ namespace aris
 			double pm_[4][4]{ { 0 } };
 			double vs_[6]{ 0 };
 			double as_[6]{ 0 };
-			double prt_is_[6][6]{ { 0 } };
 			double prt_gravity_[6]{ 0 };
-			double prt_acc_[6]{ 0 };
-			double prt_vel_[6]{ 0 };
+			double prt_is_[6][6]{ { 0 } };
+			double prt_as_[6]{ 0 };
+			double prt_vs_[6]{ 0 };
 			double prt_fg_[6]{ 0 };
 			double prt_fv_[6]{ 0 };
 			int row_id_;
@@ -1397,12 +1414,12 @@ namespace aris
 		auto Part::as()const->const double6&{ return imp_->as_; }
 		auto Part::as()->double6& { return imp_->as_; }
 		auto Part::invPm() const->const double4x4&{ return imp_->inv_pm_; }
+		auto Part::prtGravity() const->const double6&{ return imp_->prt_gravity_; }
 		auto Part::prtIs() const->const double6x6&{ return imp_->prt_is_; }
-		auto Part::prtVs() const->const double6&{ return imp_->prt_vel_; }
-		auto Part::prtAs() const->const double6&{ return imp_->prt_acc_; }
+		auto Part::prtVs() const->const double6&{ return imp_->prt_vs_; }
+		auto Part::prtAs() const->const double6&{ return imp_->prt_as_; }
 		auto Part::prtFg() const->const double6&{ return imp_->prt_fg_; }
 		auto Part::prtFv() const->const double6&{ return imp_->prt_fv_; }
-		auto Part::prtGravity() const->const double6&{ return imp_->prt_gravity_; }
 		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
 		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
 		auto Part::setPp(const double *pp)->void { if (pp)s_pp2pm(pp, *pm()); }
@@ -2009,12 +2026,13 @@ namespace aris
 		{
 			double tem[6];
 
+			// update inv_pm, prt_vs, prt_as, prt_gravity, prt_fg, prt_fv.
 			s_inv_pm(*pm(), *imp_->inv_pm_);
-			s_tv(*invPm(), vs(), imp_->prt_vel_);
-			s_tv(*invPm(), as(), imp_->prt_acc_);
+			s_tv(*invPm(), vs(), imp_->prt_vs_);
+			s_tv(*invPm(), as(), imp_->prt_as_);
 			s_tv(*invPm(), model().environment().gravity(), imp_->prt_gravity_);
 			s_m6_dot_v6(*prtIs(), prtGravity(), imp_->prt_fg_);
-			s_m6_dot_v6(*prtIs(), imp_->prt_vel_, tem);
+			s_m6_dot_v6(*prtIs(), imp_->prt_vs_, tem);
 			s_cf(prtVs(), tem, imp_->prt_fv_);
 		}
 		auto Part::operator=(Part &&other)->Part&
@@ -2088,6 +2106,10 @@ namespace aris
 				<< "    j_marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << "  \r\n"
 				<< "!\r\n";
 		}
+		Joint::Joint(Joint &&other) = default;
+		Joint::Joint(const Joint &other) = default;
+		Joint& Joint::operator=(const Joint &other) = default;
+		Joint& Joint::operator=(Joint &&other) = default;
 
 		struct Motion::Imp
 		{
@@ -2138,7 +2160,7 @@ namespace aris
 					<< "    i_marker_name = ." << model().name() << "." << this->makI().fatherPart().name() << "." << this->makI().name() << "  &\r\n"
 					<< "    j_marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << "  &\r\n"
 					<< "    axis = " << s << "  &\r\n"
-					<< "    function = \"" << this->motPos() << "\"  \r\n"
+					<< "    function = \"" << this->mp() << "\"  \r\n"
 					<< "!\r\n";
 			}
 			else
@@ -2156,7 +2178,7 @@ namespace aris
 		auto Motion::update()->void
 		{
 			Constraint::update();
-			csa_[0] += motAcc();
+			ca_[0] += ma();
 
 			// only update motPos motVel here, because motAcc should be given, not computed by part acc //
 			makI().update();
@@ -2165,28 +2187,28 @@ namespace aris
 			double pm_I2J[4][4], pe[6];
 			s_inv_pm_dot_pm(*makJ().pm(), *makI().pm(), *pm_I2J);
 			s_pm2pe(&pm_I2J[0][0], pe, "123");
-			setMotPos(pe[axis()]);
+			setMp(pe[axis()]);
 
 			double velDiff[6], velDiff_in_J[6];
 			std::copy_n(makI().vs(), 6, velDiff);
 			s_va(6, -1, makJ().vs(), 1, velDiff);
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
-			setMotVel(velDiff_in_J[axis()]);
+			setMv(velDiff_in_J[axis()]);
 		}
 		auto Motion::axis()const->int { return imp_->component_axis_; }
 		auto Motion::frcCoe()const->const double3& { return imp_->frc_coe_; }
 		auto Motion::setFrcCoe(const double *frc_coe)->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
-		auto Motion::motPos() const->double { return imp_->mot_pos_; }
-		auto Motion::setMotPos(double mot_pos)->void { imp_->mot_pos_ = mot_pos; }
-		auto Motion::motVel() const->double { return imp_->mot_vel_; }
-		auto Motion::setMotVel(double mot_vel)->void { imp_->mot_vel_ = mot_vel; }
-		auto Motion::motAcc() const->double { return imp_->mot_acc_; }
-		auto Motion::setMotAcc(double mot_acc)->void { imp_->mot_acc_ = mot_acc; }
-		auto Motion::motFce() const->double { return motFceDyn() + motFceFrc(); }
-		auto Motion::setMotFce(double mot_fce)->void { imp_->mot_fce_ = mot_fce; }
-		auto Motion::motFceDyn() const->double { return imp_->mot_fce_dyn_; }
-		auto Motion::setMotFceDyn(double mot_dyn_fce)->void { imp_->mot_fce_dyn_ = mot_dyn_fce; }
-		auto Motion::motFceFrc() const->double { return s_sgn(imp_->mot_vel_)*frcCoe()[0] + imp_->mot_vel_*frcCoe()[1] + imp_->mot_acc_*frcCoe()[2]; }
+		auto Motion::mp() const->double { return imp_->mot_pos_; }
+		auto Motion::setMp(double mot_pos)->void { imp_->mot_pos_ = mot_pos; }
+		auto Motion::mv() const->double { return imp_->mot_vel_; }
+		auto Motion::setMv(double mot_vel)->void { imp_->mot_vel_ = mot_vel; }
+		auto Motion::ma() const->double { return imp_->mot_acc_; }
+		auto Motion::setMa(double mot_acc)->void { imp_->mot_acc_ = mot_acc; }
+		auto Motion::mf() const->double { return mfDyn() + mfFrc(); }
+		auto Motion::setMf(double mot_fce)->void { imp_->mot_fce_ = mot_fce; }
+		auto Motion::mfDyn() const->double { return imp_->mot_fce_dyn_; }
+		auto Motion::setMfDyn(double mot_dyn_fce)->void { imp_->mot_fce_dyn_ = mot_dyn_fce; }
+		auto Motion::mfFrc() const->double { return s_sgn(imp_->mot_vel_)*frcCoe()[0] + imp_->mot_vel_*frcCoe()[1] + imp_->mot_acc_*frcCoe()[2]; }
 		auto Motion::absID()const->std::size_t { return id(); }
 		auto Motion::slaID()const->std::size_t { return imp_->sla_id_;}
 		auto Motion::phyID()const->std::size_t { return imp_->phy_id_;}
@@ -2201,9 +2223,24 @@ namespace aris
 
 			double loc_cst[6]{ 0,0,0,0,0,0, };
 			loc_cst[axis()] = 1;
-			s_tf(*this->makI().prtPm(), loc_cst, *csmI_);
+			s_tf(*this->makI().prtPm(), loc_cst, *cmI_);
 		}
-		
+		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) : Constraint(father, xml_ele)
+		{
+			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
+			imp_->component_axis_ = attributeInt32(xml_ele, "component");
+
+			double loc_cst[6]{ 0,0,0,0,0,0, };
+			loc_cst[axis()] = 1;
+			s_tf(*this->makI().prtPm(), loc_cst, *cmI_);
+
+			imp_->sla_id_ = attributeInt32(xml_ele, "slave_id");
+		}
+		Motion::Motion(const Motion &other) = default;
+		Motion::Motion(Motion &&other) = default;
+		Motion& Motion::operator=(const Motion &other) = default;
+		Motion& Motion::operator=(Motion &&other) = default;
+
 		struct GeneralMotion::Imp
 		{
 			double mot_pos_[6], mot_vel_[6], mot_acc_[6], mot_fce_[6];
@@ -2262,7 +2299,7 @@ namespace aris
 		auto GeneralMotion::update()->void
 		{
 			Constraint::update();
-			s_va(dim(), motAcc(), csa_);
+			s_va(dim(), ma(), ca_);
 			
 			// update motPos motVel,  motAcc should be given, not computed by part acc //
 			makI().update();
@@ -2271,25 +2308,29 @@ namespace aris
 			double pm_I2J[4][4], pe[6];
 			s_inv_pm_dot_pm(*makJ().pm(), *makI().pm(), *pm_I2J);
 			s_pm2pe(&pm_I2J[0][0], pe, "123");
-			setMotPos(pe);
+			setMp(pe);
 
 			double velDiff[6], velDiff_in_J[6];
 			std::copy_n(makI().vs(), 6, velDiff);
 			s_va(6, -1, makJ().vs(), 1, velDiff);
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
-			setMotVel(velDiff_in_J);
+			setMv(velDiff_in_J);
 		}
-		auto GeneralMotion::motPos() const->const double6&{ return imp_->mot_pos_; }
-		auto GeneralMotion::setMotPos(const double *mot_pos)->void { std::copy(mot_pos, mot_pos + 6, imp_->mot_pos_); }
-		auto GeneralMotion::motVel() const->const double6&{ return imp_->mot_vel_; }
-		auto GeneralMotion::setMotVel(const double * mot_vel)->void { std::copy(mot_vel, mot_vel + 6, imp_->mot_vel_); }
-		auto GeneralMotion::motAcc() const->const double6&{ return imp_->mot_acc_; }
-		auto GeneralMotion::setMotAcc(const double * mot_acc)->void { std::copy(mot_acc, mot_acc + 6, imp_->mot_acc_); }
-		auto GeneralMotion::motFce() const->const double6&{ return imp_->mot_fce_; }
-		auto GeneralMotion::setMotFce(const double * mot_fce)->void { std::copy(mot_fce, mot_fce + 6, imp_->mot_fce_); }
+		auto GeneralMotion::mp() const->const double6&{ return imp_->mot_pos_; }
+		auto GeneralMotion::setMp(const double *mot_pos)->void { std::copy(mot_pos, mot_pos + 6, imp_->mot_pos_); }
+		auto GeneralMotion::mv() const->const double6&{ return imp_->mot_vel_; }
+		auto GeneralMotion::setMv(const double * mot_vel)->void { std::copy(mot_vel, mot_vel + 6, imp_->mot_vel_); }
+		auto GeneralMotion::ma() const->const double6&{ return imp_->mot_acc_; }
+		auto GeneralMotion::setMa(const double * mot_acc)->void { std::copy(mot_acc, mot_acc + 6, imp_->mot_acc_); }
+		auto GeneralMotion::mf() const->const double6&{ return imp_->mot_fce_; }
+		auto GeneralMotion::setMf(const double * mot_fce)->void { std::copy(mot_fce, mot_fce + 6, imp_->mot_fce_); }
 		GeneralMotion::~GeneralMotion() = default;
 		GeneralMotion::GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active):Constraint(name, makI, makJ, active){}
 		GeneralMotion::GeneralMotion(Object &father, const aris::core::XmlElement &xml_ele):Constraint(father, xml_ele){}
+		GeneralMotion::GeneralMotion(const GeneralMotion &other) = default;
+		GeneralMotion::GeneralMotion(GeneralMotion &&other) = default;
+		GeneralMotion& GeneralMotion::operator=(const GeneralMotion &other) = default;
+		GeneralMotion& GeneralMotion::operator=(GeneralMotion &&other) = default;
 
 		struct Model::Imp
 		{
@@ -2378,6 +2419,8 @@ namespace aris
 			imp_->general_motion_pool_ = findOrInsert<aris::core::ObjectPool<GeneralMotion, Element>>("general_motion_pool");
 			imp_->force_pool_ = findOrInsert<aris::core::ObjectPool<Force, Element>>("force_pool");
 			imp_->ground_ = partPool().findOrInsert<Part>("ground");
+
+			updMotionID();
         }
 		auto Model::saveXml(aris::core::XmlDocument &xml_doc)const->void
 		{
@@ -2477,6 +2520,31 @@ namespace aris
 		auto Model::generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>& { return std::ref(*imp_->general_motion_pool_); }
 		auto Model::forcePool()->aris::core::ObjectPool<Force, Element>& { return std::ref(*imp_->force_pool_); }
 		auto Model::forcePool()const->const aris::core::ObjectPool<Force, Element>& { return std::ref(*imp_->force_pool_); }
+		auto Model::updMotionID()->void
+		{
+			// 更新 mot_vec_sla2abs_
+			for (auto &mot : motionPool())
+			{
+				imp_->mot_vec_sla2abs_.resize(std::max(mot.slaID() + 1, imp_->mot_vec_sla2abs_.size()), std::numeric_limits<std::size_t>::max());
+				if (imp_->mot_vec_sla2abs_.at(mot.slaID()) != std::numeric_limits<std::size_t>::max()) throw std::runtime_error("invalid model xml:\"slave_id\" of motion \"" + name() + "\" already exists");
+				imp_->mot_vec_sla2abs_.at(mot.slaID()) = mot.id();
+			}
+			
+			auto &debug1 = imp_->mot_vec_sla2abs_;
+
+			// 更新 mot_vec_phy2abs_
+			imp_->mot_vec_phy2abs_.clear();
+			for (auto id : imp_->mot_vec_sla2abs_)if (id != std::numeric_limits<std::size_t>::max())imp_->mot_vec_phy2abs_.push_back(id);
+			
+			auto &debug2 = imp_->mot_vec_phy2abs_;
+
+			// 更新 motion的phy_id
+			for (std::size_t phy_id = 0; phy_id < imp_->mot_vec_phy2abs_.size(); ++phy_id)
+			{
+				std::size_t abs_id = imp_->mot_vec_phy2abs_.at(phy_id);
+				motionPool().at(abs_id).imp_->phy_id_ = phy_id;
+			}
+		}
 		auto Model::motionAtAbs(std::size_t abs_id)->Motion& { return motionPool().at(abs_id); }
 		auto Model::motionAtAbs(std::size_t abs_id)const->const Motion&{ return motionPool().at(abs_id); }
 		auto Model::motionAtPhy(std::size_t phy_id)->Motion& { return motionPool().at(imp_->mot_vec_phy2abs_.at(phy_id));}
@@ -2504,16 +2572,16 @@ namespace aris
 			{
 				if (jnt.active())
 				{
-					s_block_cpy(6, jnt.dim(), jnt.csmPtrI(), 0, 0, jnt.dim(), cst_mtx, jnt.makI().fatherPart().rowID(), jnt.colID(), dynDimN());
-					s_block_cpy(6, jnt.dim(), jnt.csmPtrJ(), 0, 0, jnt.dim(), cst_mtx, jnt.makJ().fatherPart().rowID(), jnt.colID(), dynDimN());
+					s_block_cpy(6, jnt.dim(), jnt.cmPtrI(), 0, 0, jnt.dim(), cst_mtx, jnt.makI().fatherPart().rowID(), jnt.colID(), dynDimN());
+					s_block_cpy(6, jnt.dim(), jnt.cmPtrJ(), 0, 0, jnt.dim(), cst_mtx, jnt.makJ().fatherPart().rowID(), jnt.colID(), dynDimN());
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot.active())
 				{
-					s_block_cpy(6, 1, *mot.csmI(), 0, 0, 1, cst_mtx, mot.makI().fatherPart().rowID(), mot.colID(), dynDimN());
-					s_block_cpy(6, 1, *mot.csmJ(), 0, 0, 1, cst_mtx, mot.makJ().fatherPart().rowID(), mot.colID(), dynDimN());
+					s_block_cpy(6, 1, *mot.cmI(), 0, 0, 1, cst_mtx, mot.makI().fatherPart().rowID(), mot.colID(), dynDimN());
+					s_block_cpy(6, 1, *mot.cmJ(), 0, 0, 1, cst_mtx, mot.makJ().fatherPart().rowID(), mot.colID(), dynDimN());
 				}
 			}
 		}
@@ -2542,14 +2610,14 @@ namespace aris
 			{
 				if (jnt.active())
 				{
-					std::copy_n(jnt.csaPtr(), jnt.dim(), &cst_acc[jnt.colID()]);
+					std::copy_n(jnt.caPtr(), jnt.dim(), &cst_acc[jnt.colID()]);
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot.active())
 				{
-					cst_acc[mot.colID()] = *mot.csa();
+					cst_acc[mot.colID()] = *mot.ca();
 				}
 			}
 		}
@@ -2570,8 +2638,8 @@ namespace aris
 			{
 				if (fce.active())
 				{
-					s_va(6, -1, fce.fceI(), 1, &prt_fce[fce.makI().fatherPart().rowID()]);
-					s_va(6, -1, fce.fceJ(), 1, &prt_fce[fce.makJ().fatherPart().rowID()]);
+					s_va(6, -1, fce.fsI(), 1, &prt_fce[fce.makI().fatherPart().rowID()]);
+					s_va(6, -1, fce.fsJ(), 1, &prt_fce[fce.makJ().fatherPart().rowID()]);
 				}
 			}
 		}
@@ -2581,14 +2649,14 @@ namespace aris
 			{
 				if (jnt.active())
 				{
-					std::copy_n(jnt.csfPtr(), jnt.dim(), &cst_fce[jnt.colID()]);
+					std::copy_n(jnt.cfPtr(), jnt.dim(), &cst_fce[jnt.colID()]);
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot.active())
 				{
-					cst_fce[mot.colID()] = mot.motFceDyn();
+					cst_fce[mot.colID()] = mot.mfDyn();
 				}
 			}
 
@@ -2602,19 +2670,6 @@ namespace aris
 					std::copy_n(prt.prtAs(), 6, &cst_acc[prt.rowID()]);
 				}
 			}
-		}
-		auto Model::dynCstPot(double *cst_pot) const->void
-		{
-			double pq[7];
-			s_pm2pq(*ground().pm(), pq);
-
-			double theta = atan2(std::sqrt(pq[3] * pq[3] + pq[4] * pq[4] + pq[5] * pq[5]), pq[6]);
-			double coe = theta < 1e-8 ? 2 : theta / sin(theta / 2);
-			s_nd(3, coe, pq + 3, 1);
-			std::copy_n(pq, 6, &cst_pot[0]);
-
-			for (auto &jnt : jointPool())if (jnt.active())std::copy_n(jnt.cspPtr(), jnt.dim(), &cst_pot[jnt.colID()]);
-			for (auto &mot : motionPool())if (mot.active())std::copy_n(mot.cspPtr(), mot.dim(), &cst_pot[mot.colID()]);
 		}
 		auto Model::dynPre()->void
 		{
@@ -2675,21 +2730,22 @@ namespace aris
 			{
 				if (prt.active())
 				{
-					std::copy_n(&x[prt.rowID()], 6, prt.imp_->prt_acc_);
+					std::copy_n(&x[prt.rowID()], 6, prt.imp_->prt_as_);
+					s_tv(*prt.pm(), prt.imp_->prt_as_, prt.imp_->as_);
 				}
 			}
 			for (auto &jnt : jointPool())
 			{
 				if (jnt.active())
 				{
-					std::copy_n(&x[jnt.colID() + dynDimM()], jnt.dim(), const_cast<double*>(jnt.csfPtr()));
+					std::copy_n(&x[jnt.colID() + dynDimM()], jnt.dim(), const_cast<double*>(jnt.cfPtr()));
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot.active())
 				{
-					mot.setMotFceDyn(x[mot.colID() + dynDimM()]);
+					mot.setMfDyn(x[mot.colID() + dynDimM()]);
 				}
 			}
 		}
@@ -2836,7 +2892,7 @@ namespace aris
 			{
 				if (mot.active())
 				{
-					clb_b_m(row, 0) = mot.motFce();
+					clb_b_m(row, 0) = mot.mf();
 					++row;
 				}
 			}
@@ -2844,8 +2900,8 @@ namespace aris
 			{
 				if (fce.active())
 				{
-					s_va(6, fce.fceI(), &f[fce.makI().fatherPart().rowID()]);
-					s_va(6, fce.fceJ(), &f[fce.makJ().fatherPart().rowID()]);
+					s_va(6, fce.fsI(), &f[fce.makI().fatherPart().rowID()]);
+					s_va(6, fce.fsJ(), &f[fce.makJ().fatherPart().rowID()]);
 				}
 			}
 			s_mdm(clbDimM(), 1, dynDimM(), 1, &A(beginRow, 0), dynDimM(), f.data(), 1, 1, clb_b_m.data(), 1);
@@ -2857,9 +2913,9 @@ namespace aris
 				//默认未激活的motion处于力控模式
 				if (mot.active())
 				{
-					clb_d_m(row, clbDimGam() + row * 3) += s_sgn(mot.motVel());
-					clb_d_m(row, clbDimGam() + row * 3 + 1) += mot.motVel();
-					clb_d_m(row, clbDimGam() + row * 3 + 2) += mot.motAcc();
+					clb_d_m(row, clbDimGam() + row * 3) += s_sgn(mot.mv());
+					clb_d_m(row, clbDimGam() + row * 3 + 1) += mot.mv();
+					clb_d_m(row, clbDimGam() + row * 3 + 2) += mot.ma();
 					++row;
 				}
 			}
@@ -2903,15 +2959,15 @@ namespace aris
 			for (std::size_t i = 0; i < motionPool().size(); ++i)
 			{
 				motionPool().at(i).update();
-				result.Pin_.at(i).push_back(motionPool().at(i).motPos());
-				pos_akima_data.at(i).push_back(motionPool().at(i).motPos());
+				result.Pin_.at(i).push_back(motionPool().at(i).mp());
+				pos_akima_data.at(i).push_back(motionPool().at(i).mp());
 			}
 
 			for (std::size_t i = 0; i < generalMotionPool().size(); ++i)
 			{
 				for (std::size_t j = 0; j < generalMotionPool().at(i).dim(); ++j)
 				{
-					pos_akima_data_gm.at(i * 6 + j).push_back(generalMotionPool().at(i).motPos()[j]);
+					pos_akima_data_gm.at(i * 6 + j).push_back(generalMotionPool().at(i).mp()[j]);
 				}
 			}
 			
@@ -2924,7 +2980,7 @@ namespace aris
 				result.time_.push_back(param.count_ + 1);
 				for (std::size_t i = 0; i < motionPool().size(); ++i)
 				{
-					result.Pin_.at(i).push_back(motionPool().at(i).motPos());
+					result.Pin_.at(i).push_back(motionPool().at(i).mp());
 				}
 
 				if ((!is_sim) || ((param.count_ + 1) % akima_interval == 0))
@@ -2933,14 +2989,14 @@ namespace aris
 
 					for (std::size_t j = 0; j < motionPool().size(); ++j)
 					{
-						pos_akima_data.at(j).push_back(motionPool().at(j).motPos());
+						pos_akima_data.at(j).push_back(motionPool().at(j).mp());
 					}
 
 					for (std::size_t i = 0; i < generalMotionPool().size(); ++i)
 					{
 						for (std::size_t j = 0; j < generalMotionPool().at(i).dim(); ++j)
 						{
-							pos_akima_data_gm.at(i * 6 + j).push_back(generalMotionPool().at(i).motPos()[j]);
+							pos_akima_data_gm.at(i * 6 + j).push_back(generalMotionPool().at(i).mp()[j]);
 						}
 					}
 				}
@@ -3009,25 +3065,25 @@ namespace aris
 
 				for (std::size_t j = 0; j < motionPool().size(); ++j)
 				{
-					motionPool().at(j).setMotPos(akimaPool().at(j).operator()(t / 1000.0, '0'));
+					motionPool().at(j).setMp(akimaPool().at(j).operator()(t / 1000.0, '0'));
 				}
 				kinFromPin();
 				for (std::size_t j = 0; j < motionPool().size(); ++j)
 				{
-					motionPool().at(j).setMotVel(akimaPool().at(j).operator()(t / 1000.0, '1'));
+					motionPool().at(j).setMv(akimaPool().at(j).operator()(t / 1000.0, '1'));
 				}
 				kinFromVin();
 				for (std::size_t j = 0; j < motionPool().size(); ++j)
 				{
-					motionPool().at(j).setMotAcc(akimaPool().at(j).operator()(t / 1000.0, '2'));
+					motionPool().at(j).setMa(akimaPool().at(j).operator()(t / 1000.0, '2'));
 				}
 				dyn();
 				for (std::size_t j = 0; j < motionPool().size(); ++j)
 				{
-					result.Fin_.at(j).push_back(motionPool().at(j).motFceDyn());
-					result.Pin_.at(j).push_back(motionPool().at(j).motPos());
-					result.Vin_.at(j).push_back(motionPool().at(j).motVel());
-					result.Ain_.at(j).push_back(motionPool().at(j).motAcc());
+					result.Fin_.at(j).push_back(motionPool().at(j).mfDyn());
+					result.Pin_.at(j).push_back(motionPool().at(j).mp());
+					result.Vin_.at(j).push_back(motionPool().at(j).mv());
+					result.Ain_.at(j).push_back(motionPool().at(j).ma());
 				}
 			}
 
@@ -3065,7 +3121,7 @@ namespace aris
 
 			registerChildType<aris::core::ObjectPool<Joint, Element>>();
 			registerChildType<RevoluteJoint>();
-			registerChildType<TranslationalJoint>();
+			registerChildType<PrismaticJoint>();
 			registerChildType<UniversalJoint>();
 			registerChildType<SphericalJoint>();
 
@@ -3091,33 +3147,6 @@ namespace aris
 			imp_->ground_ = &imp_->part_pool_->add<Part>("ground");
 		}
 		
-		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) : Constraint(father, xml_ele)
-		{
-			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
-			imp_->component_axis_ = attributeInt32(xml_ele, "component");
-
-			double loc_cst[6]{ 0,0,0,0,0,0, };
-			loc_cst[axis()] = 1;
-			s_tf(*this->makI().prtPm(), loc_cst, *csmI_);
-
-			// make map for abs, phy and sla id //
-			imp_->sla_id_ = attributeInt32(xml_ele, "slave_id");
-			model().imp_->mot_vec_sla2abs_.resize(std::max(imp_->sla_id_ + 1, model().imp_->mot_vec_sla2abs_.size()), std::numeric_limits<std::size_t>::max());
-			if (model().imp_->mot_vec_sla2abs_.at(imp_->sla_id_) != std::numeric_limits<std::size_t>::max()) throw std::runtime_error("invalid model xml:\"slave_id\" of motion \"" + name() + "\" already exists");
-			model().imp_->mot_vec_sla2abs_.at(imp_->sla_id_) = father.children().size();
-			model().imp_->mot_vec_phy2abs_.clear();
-			model().imp_->mot_vec_phy2abs_.reserve(father.children().size());
-			for (auto id : model().imp_->mot_vec_sla2abs_)if (id != std::numeric_limits<std::size_t>::max())model().imp_->mot_vec_phy2abs_.push_back(id);
-			
-			auto &motion_pool = static_cast<aris::core::ObjectPool<Motion, Element>&>(this->father());
-
-			for (std::size_t phy_id = 0; phy_id < father.children().size() + 1; ++phy_id)
-			{
-				std::size_t abs_id = model().imp_->mot_vec_phy2abs_.at(phy_id);
-				abs_id == father.children().size() ? this->imp_->phy_id_ = phy_id: motion_pool.at(abs_id).imp_->phy_id_ = phy_id;
-			}
-		}
-
 		RevoluteJoint::RevoluteJoint(const std::string &name, Marker &makI, Marker &makJ): JointTemplate(name, makI, makJ)
 		{
 			const static double loc_cst[6][Dim()]
@@ -3130,7 +3159,7 @@ namespace aris
 				0,0,0,0,0
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
 		}
 		RevoluteJoint::RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
 		{
@@ -3144,10 +3173,10 @@ namespace aris
 				0,0,0,0,0
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
 		}
 
-		TranslationalJoint::TranslationalJoint(const std::string &name, Marker &makI, Marker &makJ): JointTemplate(name, makI, makJ)
+		PrismaticJoint::PrismaticJoint(const std::string &name, Marker &makI, Marker &makJ): JointTemplate(name, makI, makJ)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3159,9 +3188,9 @@ namespace aris
 				0,0,0,0,1
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
 		}
-		TranslationalJoint::TranslationalJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
+		PrismaticJoint::PrismaticJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3173,87 +3202,58 @@ namespace aris
 				0,0,0,0,1
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
 		}
 
-		auto UniversalJoint::saveAdams(std::ofstream &file) const->void
-		{
-			double pe[6] = { 0, 0, 0, PI / 2, 0, 0 };
-			double pe2[6] = { 0, 0, 0, -PI / 2, 0, 0 };
-			double pm[4][4], pm2[4][4];
-
-			s_pe2pm(pe, *pm, "213");
-			s_pm_dot_pm(*this->makI().prtPm(), *pm, *pm2);
-			s_pm2pe(*pm2, pe, "313");
-
-			file << "marker modify &\r\n"
-				<< "    marker_name = ." << model().name() << "." << this->makI().fatherPart().name() << "." << this->makI().name() << " &\r\n"
-				<< "    orientation = (" << core::Matrix(1, 3, &pe[3]).toString() << ") \r\n"
-				<< "!\r\n";
-
-			s_pe2pm(pe2, *pm, "123");
-			s_pm_dot_pm(*this->makJ().prtPm(), *pm, *pm2);
-			s_pm2pe(*pm2, pe, "313");
-
-			file << "marker modify &\r\n"
-				<< "    marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << " &\r\n"
-				<< "    orientation = (" << core::Matrix(1, 3, &pe[3]).toString() << ") \r\n"
-				<< "!\r\n";
-
-			JointTemplate::saveAdams(file);
-		}
 		auto UniversalJoint::update()->void
 		{
-			// update CstMtx //
+			// 在零位时，makI的x、y、z轴分别对应makJ的z，x，y轴。转轴分别为makI的z轴和makJ的z轴
+
+			// // update CstMtx // //
 			makI().update();
 			makJ().update();
 
-			// // get sin(a) and cos(a) and update csmI
-			double s = makI().pm()[0][2] * makJ().pm()[0][1]
-				+ makI().pm()[1][2] * makJ().pm()[1][1]
-				+ makI().pm()[2][2] * makJ().pm()[2][1];
+			// update csmI
+			// makI的z轴 和 makJ的z轴
+			const double axis_i_m[3]{ makI().prtPm()[0][2] ,makI().prtPm()[1][2] ,makI().prtPm()[2][2] };
+			const double axis_j_g[3]{ makJ().pm()[0][2] ,makJ().pm()[1][2] ,makJ().pm()[2][2] };
+			double axis_j_m[3];
+			s_inv_pm_dot_v3(*makI().fatherPart().pm(), axis_j_g, axis_j_m);
 
-			double c = makI().pm()[0][1] * makJ().pm()[0][1]
-				+ makI().pm()[1][1] * makJ().pm()[1][1]
-				+ makI().pm()[2][1] * makJ().pm()[2][1];
+			double c_in_m[3];
+			s_c3(axis_i_m, axis_j_m, c_in_m);
 
-			csmI_[3][3] = -(makI().prtPm()[0][1]) * s + (makI().prtPm()[0][2]) * c;
-			csmI_[4][3] = -(makI().prtPm()[1][1]) * s + (makI().prtPm()[1][2]) * c;
-			csmI_[5][3] = -(makI().prtPm()[2][1]) * s + (makI().prtPm()[2][2]) * c;
-
+			cmI_[3][3] = c_in_m[0];
+			cmI_[4][3] = c_in_m[1];
+			cmI_[5][3] = c_in_m[2];
+			
+			
 			// // update csmJ //
-			std::fill_n(static_cast<double *>(*csmJ_), this->dim() * 6, 0);
+			std::fill_n(static_cast<double *>(*cmJ_), this->dim() * 6, 0);
 			double pm_M2N[4][4];
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
-			s_tf_n(Dim(), -1, *pm_M2N, *csmI_, 0, *csmJ_);
+			s_tf_n(Dim(), -1, *pm_M2N, *cmI_, 0, *cmJ_);
 
-			// update A_c //
-			std::fill_n(csa_, UniversalJoint::dim(), 0);
+			// // update A_c // //
+			std::fill(const_cast<double*>(caPtr()), const_cast<double*>(caPtr()) + dim(), 0);
+			double vn_in_m[6]{ 0 }, tem[6]{ 0 };
+			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVs(), vn_in_m);
+			s_cv(makI().fatherPart().prtVs(), vn_in_m, tem);
+			s_mdmTN(dim(), 1, 6, -1.0, cmPtrI(), dim(), tem, 1, 0.0, const_cast<double*>(caPtr()), 1);
 
-			// // calculate a_dot //
-			double v[3];
-			v[0] = makJ().vs()[3] - makI().vs()[3];
-			v[1] = makJ().vs()[4] - makI().vs()[4];
-			v[2] = makJ().vs()[5] - makI().vs()[5];
-
-			double a_dot = makI().pm()[0][0] * v[0] + makI().pm()[1][0] * v[1] + makI().pm()[2][0] * v[2];
-
-			// // calculate part m //
-			v[0] = -c*a_dot;
-			v[1] = -s*a_dot;
-
-			double tem_v1[6]{ 0 }, tem_v2[6]{ 0 };
-			s_inv_tv(*makI().prtPm(), makI().fatherPart().prtVs(), tem_v1);
-			csa_[3] -= v[0] * tem_v1[4] + v[1] * tem_v1[5];
-
-			// // calculate part n //
-			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVs(), tem_v1);
-			s_cv(-1, makI().fatherPart().prtVs(), tem_v1, 0, tem_v2);
-			s_mdmTN(4, 1, 6, 1, *csmI_, Dim(), tem_v2, 1, 1, &csa_[0], 1);
-			s_inv_tv(*makI().prtPm(), tem_v1, tem_v2);
-			csa_[3] += v[0] * tem_v2[4] + v[1] * tem_v2[5];
+			// compute c_dot //
+			// c_dot = i_dot x j + i x j_dot
+			const double *vm_in_m = makI().fatherPart().prtVs();
+			double axis_i_dot_m[3], axis_j_dot_m[3], cdot_in_m[3];
+			s_c3(vm_in_m + 3, axis_i_m, axis_i_dot_m);
+			s_c3(vn_in_m + 3, axis_j_m, axis_j_dot_m);
+			s_c3(axis_i_dot_m, axis_j_m, cdot_in_m);
+			s_c3(1.0, axis_i_m, axis_j_dot_m, 1.0, cdot_in_m);
+			
+			double v_diff_m[3]{ vn_in_m[3] - vm_in_m[3],vn_in_m[4] - vm_in_m[4] ,vn_in_m[5] - vm_in_m[5] };
+			ca_[3] += s_vdv(3, cdot_in_m, v_diff_m);
 		}
-		UniversalJoint::UniversalJoint(const std::string &name, Marker &makI, Marker &makJ): JointTemplate(name, makI, makJ)
+		UniversalJoint::UniversalJoint(const std::string &name, Marker &makI, Marker &makJ) : JointTemplate(name, makI, makJ)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3265,9 +3265,9 @@ namespace aris
 				0,0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
 		}
-		UniversalJoint::UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
+		UniversalJoint::UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele) : JointTemplate(father, xml_ele)
 		{
 			const static double loc_cst[6][Dim()]
 			{
@@ -3279,7 +3279,7 @@ namespace aris
 				0,0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
 		}
 
 		SphericalJoint::SphericalJoint(const std::string &name, Marker &makI, Marker &makJ): JointTemplate(name, makI, makJ)
@@ -3294,7 +3294,7 @@ namespace aris
 				0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
 		}
 		SphericalJoint::SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
 		{
@@ -3308,7 +3308,7 @@ namespace aris
 				0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *csmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
 		}
 
 		auto SingleComponentForce::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -3351,10 +3351,10 @@ namespace aris
 		}
 		auto SingleComponentForce::update()->void
 		{
-			s_tf(*makI().prtPm(), fce_value_, fceI_);
+			s_tf(*makI().prtPm(), fce_value_, fsI_);
 			double pm_M2N[16];
 			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), pm_M2N);
-			s_tf(-1, pm_M2N, fceI_, 0, fceJ_);
+			s_tf(-1, pm_M2N, fsI_, 0, fsJ_);
 		}
 		SingleComponentForce::SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, int componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
 		SingleComponentForce::SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele) : Force(father, xml_ele), component_axis_(attributeInt32(xml_ele, "component")) {}

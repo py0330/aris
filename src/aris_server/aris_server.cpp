@@ -394,17 +394,17 @@ namespace aris
                     if(rx_motion_data.mode==8)
                     {
                         //position
-                        tx_motion_data.target_pos = model_->motionPool().at(i).motPos();
+                        tx_motion_data.target_pos = model_->motionPool().at(i).mp();
                     }
                     else if(rx_motion_data.mode==9)
                     {
                         //velocity
-                        tx_motion_data.target_vel = model_->motionPool().at(i).motVel();
+                        tx_motion_data.target_vel = model_->motionPool().at(i).mv();
                     }
                     else if(rx_motion_data.mode==10)
                     {
                         //torque
-                        tx_motion_data.target_tor = model_->motionPool().at(i).motAcc();
+                        tx_motion_data.target_tor = model_->motionPool().at(i).ma();
                     }
                     else
                     {

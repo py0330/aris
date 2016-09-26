@@ -457,6 +457,18 @@ namespace aris
 		///
 		///
 		auto s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void;
+		/// \brief 求解alpha 和 beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
+		///
+		///
+		auto s_sov_ab(const double*pp, double *ab, const char*order = "321")noexcept->void;
+		/// \brief 求解v_alpha 和 v_beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
+		///
+		///
+		auto s_sov_vab(const double*pp, const double*vp, double *vab, double *ab, const char*order = "321")noexcept->void;
+		/// \brief 求解a_alpha 和 a_beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
+		///
+		///
+		auto s_sov_aab(const double*pp, const double*vp, const double*ap, double *aab, double *vab, double *ab, const char*order = "321")noexcept->void;
 		auto s_is_equal(int n, const double *v1, const double *v2, double error, int ld_v1 = 1, int ld_v2 = 1) noexcept->bool;
 		auto s_is_equal(int m, int n, const double *m1, int ld_m1, const double *m2, int ld_m2, double error) noexcept->bool;
 

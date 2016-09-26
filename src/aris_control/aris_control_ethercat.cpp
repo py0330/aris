@@ -367,7 +367,7 @@ namespace aris
 			if (attributeBool(xml_ele, "write", true))imp_->option_ |= WRITE; else imp_->option_ &= ~WRITE;
 			if (xml_ele.Attribute("config"))
 			{
-				if (!writeable())throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + std::string(xml_ele.name()) + "\" sdo");
+				if (!writeable())throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + std::string(xml_ele.Name()) + "\" sdo");
 				imp_->option_ |= CONFIG;
 				switch (dataType())
 				{

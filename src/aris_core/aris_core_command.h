@@ -20,41 +20,45 @@ namespace aris
 			virtual auto help(bool isfull, int begin)const->const std::string{ return std::string{}; };
 			auto simpleHelp()const->const std::string &;
 			auto command()const->const Command &;
-			ParamBase(const std::string &name);
-			ParamBase(Object &father, const aris::core::XmlElement &xml_ele);
+			virtual ~ParamBase();
+			explicit ParamBase(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit ParamBase(const std::string &name);
+			ParamBase(const ParamBase&);
+			ParamBase(ParamBase&&);
+			ParamBase& operator=(const ParamBase&);
+			ParamBase& operator=(ParamBase&&);
 
 		protected:
-			auto isTaken()->bool;
-
 			virtual auto take()->void;
 			virtual auto reset()->void;
 			virtual auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void = 0;
-		
+			auto isTaken()->bool;
+
 			struct Imp;
 			ImpPtr<Imp> imp_;
 			friend class Command;
-			friend class UniqueParam;
 			friend class GroupParam;
+			friend class UniqueParam;
 		};
 		class Param final:public ParamBase
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Param"); return std::ref(type); }
 			virtual auto type() const->const std::string&{ return Type(); }
+			virtual auto help(bool isfull, int begin)const->const std::string override;
 			auto abbreviation()->char;
 			auto abbreviation()const->char;
-			virtual auto help(bool isfull, int begin)const->const std::string override;
 			auto defaultParam()const->const std::string &;
 			
 			virtual ~Param();
-			Param(const std::string &name);
-			Param(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Param(const std::string &name);
+			explicit Param(Object &father, const aris::core::XmlElement &xml_ele);
 			Param(const Param&);
 			Param(Param&&);
 			Param& operator=(const Param&);
 			Param& operator=(Param&&);
 
-		private:
+		protected:
 			virtual auto take()->void override final;
 			virtual auto reset()->void override final;
 			virtual auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void final override;
@@ -74,14 +78,14 @@ namespace aris
 			auto defaultParam()const->const std::string &;
 			
 			virtual ~UniqueParam();
-			UniqueParam(const std::string &name);
-			UniqueParam(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit UniqueParam(const std::string &name);
+			explicit UniqueParam(Object &father, const aris::core::XmlElement &xml_ele);
 			UniqueParam(const UniqueParam &);
 			UniqueParam(UniqueParam &&);
 			UniqueParam& operator=(const UniqueParam &);
 			UniqueParam& operator=(UniqueParam &&);
 
-		private:
+		protected:
 			virtual auto take()->void override final;
 			virtual auto reset()->void override final;
 			virtual auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void final override;
@@ -99,8 +103,8 @@ namespace aris
 			virtual auto help(bool isfull, int begin)const->const std::string override;
 			
 			virtual ~GroupParam();
-			GroupParam(const std::string &name);
-			GroupParam(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit GroupParam(const std::string &name);
+			explicit GroupParam(Object &father, const aris::core::XmlElement &xml_ele);
 			GroupParam(const GroupParam &);
 			GroupParam(GroupParam &&);
 			GroupParam& operator=(const GroupParam &);
@@ -119,8 +123,8 @@ namespace aris
 			auto defaultParam()const->const std::string &;
 			auto help(bool isfull, int begin)const->std::string;
 			virtual ~Command();
-			Command(const std::string &name);
-			Command(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Command(const std::string &name);
+			explicit Command(Object &father, const aris::core::XmlElement &xml_ele);
 			Command(const Command &);
 			Command(Command &&);
 			Command& operator=(const Command &);
@@ -148,8 +152,8 @@ namespace aris
 			auto commandPool()const->const ObjectPool<Command> &;
 
 			virtual ~CommandParser();
-			CommandParser(const std::string &name);
-			CommandParser(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit CommandParser(const std::string &name);
+			explicit CommandParser(Object &father, const aris::core::XmlElement &xml_ele);
 			CommandParser(const CommandParser &);
 			CommandParser(CommandParser &&);
 			CommandParser& operator=(const CommandParser &);

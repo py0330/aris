@@ -163,12 +163,12 @@ void test_control_server()
 
 		if (param.count_ == 0)
 		{
-			begin_pos = model.motionAtPhy(0).motPos();
+			begin_pos = model.motionAtPhy(0).mp();
 		}
 
 		int total_count{ 5000 };
 
-		model.motionAtPhy(0).setMotPos(begin_pos + 0.01 * std::sin(2 * PI * (param.count_ + 1) / total_count));
+		model.motionAtPhy(0).setMp(begin_pos + 0.01 * std::sin(2 * PI * (param.count_ + 1) / total_count));
 
 		if (param.count_ % 100 == 0)cs.widgetRoot().mout() << "mout: rc in count " << param.count_ << '\0';
 		

@@ -955,20 +955,6 @@ void test_simulation()
 		Model m;
 		m.loadXml(xml_doc);
 
-
-		for (auto &mot : m.motionPool())
-		{
-			std::cout << mot.absID() << mot.phyID() << mot.slaID() << std::endl;
-
-		}
-
-
-
-
-
-
-
-
 		aris::dynamic::PlanParamBase p;
 		aris::dynamic::PlanFunc f = [](aris::dynamic::Model &m, const aris::dynamic::PlanParamBase &p)
 		{
@@ -1003,66 +989,108 @@ void test_simulation()
 	
 }
 
-
 void test_auto_kinematic()
 {
-	double peI[6]{ 0.5,0,0,0.5,0,0 };
-	double pmI[16];
+	const char xml_file[] =
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+		"<root>"
+		"    <model>"
+		"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
+		"        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
+		"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
+		"            <Mot_friction type=\"MatrixVariable\">{20, 30, 560}</Mot_friction>"
+		"        </variable_pool>"
+		"        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
+		"            <m1_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
+		"            <m2_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
+		"            <m3_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
+		"        </akima_pool>"
+		"        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
+		"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
+		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+		"                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
+		"                </marker_pool>"
+		"            </ground>"
+		"            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
+		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+		"                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
+		"                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
+		"                </marker_pool>"
+		"            </part1>"
+		"            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
+		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+		"                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
+		"                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
+		"                </marker_pool>"
+		"            </part2>"
+		"            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part3.x_t\">"
+		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+		"                    <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
+		"                </marker_pool>"
+		"            </part3>"
+		"        </part_pool>"
+		"        <joint_pool type=\"JointPoolObject\">"
+		"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
+		"            <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
+		"            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
+		"        </joint_pool>"
+		"        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
+		"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+		"            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+		"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+		"        </motion_pool>"
+		"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
+		"    </model>"
+		"</root>";
 
-	double peJ[6]{ 0,0,0,0.2,0,0 };
-	double pmJ[16];
+	try
+	{
+		aris::core::XmlDocument xml_doc;
+		auto a = xml_doc.Parse(xml_file);
 
-	s_pe2pm(peI, pmI);
-	s_pe2pm(peJ, pmJ);
+		Model m;
+		m.loadXml(xml_doc);
 
-	double b[12];
-	double csp[12];
-	double csm[12][12];
-	double csm2[12][12];
-	Model model;
+		aris::dynamic::PlanParamBase p;
+		aris::dynamic::PlanFunc f = [](aris::dynamic::Model &m, const aris::dynamic::PlanParamBase &p)
+		{
+			double pe2[6]{ 0,0,0,0,0,0 };
+			pe2[5] = p.count_*0.001 / 3 * PI / 3 + PI / 2;
+			auto &r2j = *m.partPool().findByName("part1")->markerPool().findByName("r2j");
+			m.partPool().findByName("part2")->setPe(r2j, pe2, "123");
 
-	auto &prt1 = model.partPool().add<Part>("part1");
-	auto &makJ = model.ground().markerPool().add<Marker>("makJ", pmJ);
-	auto &makI = prt1.markerPool().add<Marker>("makI", pmI);
-	auto &jnt = model.jointPool().add<aris::dynamic::RevoluteJoint>("joint1", std::ref(makI), std::ref(makJ));
-	auto &mot = model.motionPool().add<aris::dynamic::Motion>("motion1", std::ref(makI), std::ref(makJ), 5);
+			double pe3[6]{ 0,0,0,0,0,0 };
+			pe3[5] = -p.count_*0.001 / 3 * PI / 3 - PI / 2;
+			auto &r3j = *m.partPool().findByName("part2")->markerPool().findByName("r3j");
+			m.partPool().findByName("part3")->setPe(r3j, pe3, "123");
 
-	mot.setMotPos(0);
+			m.motionAtAbs(0).update();
+			m.motionAtAbs(1).update();
+			m.motionAtAbs(2).update();
 
-	model.dynPre();
-	model.dynUpd();
-	model.dynCstPot(csp);
+			return 3000 - p.count_;
+		};
 
-	//dsp(csp, 12, 1);
-	model.dynCstMtx(*csm2);
+		m.saveDynEle("before");
+		m.simKin(f, p);
+		m.loadDynEle("before");
+		m.saveAdams("C:\\aris\\robot\\resource\\test.cmd");
 
-	dsp(*csm2, 12, 12);
-
-	s_mtm(12, 12, *csm2, 12, *csm, 12);
-
-	dsp(*csm, 12, 12);
-
-	//Eigen::Map<Eigen::Matrix<double, 12, 12, Eigen::RowMajor> > csm_mtx(*csm);
-	//Eigen::Map<Eigen::Matrix<double, 12, 1> > csp_mtx(csp);
-	//Eigen::Map<Eigen::Matrix<double, 12, 1> > b_mtx(b);
-
-	//b_mtx = csm_mtx.partialPivLu().solve(csp_mtx);
-
-	dsp(csp, 12, 1);
-	dsp(b, 12, 1);
-
-	//auto &prismatic1 = model.jointPool().
-	//dlmwrite("C:\\Users\\yang\\Desktop\\test.txt", *csm, 12, 12);
-
-
+		std::cout << "test simulation finished, please check \"C:\\aris\\robot\\resource\\test.cmd\"" << std::endl;
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what();
+	}
 }
 
 void test_model()
 {
 	std::cout << std::endl << "-----------------test model---------------------" << std::endl;
-	test_coordinate();
-	test_part();
-	test_simulation();
+	//test_coordinate();
+	//test_part();
+	//test_simulation();
+	test_auto_kinematic();
 	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
 }
 
