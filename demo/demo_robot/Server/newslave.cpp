@@ -46,7 +46,7 @@ namespace robot
         EsgImu *pFather;
     };
     EsgImu::~EsgImu() {}
-    EsgImu::EsgImu(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, id, xml_ele), imp_(new EsgImu::Imp(this)){}
+    EsgImu::EsgImu(Object &father, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, xml_ele), imp_(new EsgImu::Imp(this)){}
     auto EsgImu::readUpdate()->void
     {
         rxData().wx=static_cast<double>(imp_->wx())*imp_->w_factor;
@@ -86,7 +86,7 @@ namespace robot
 
 
     Record::~Record() {}
-    Record::Record(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, id, xml_ele){}
+    Record::Record(Object &father, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, xml_ele){}
     auto Record::logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void
     {
         auto &rx_recorddata=static_cast<const RxType &>(rx_data);

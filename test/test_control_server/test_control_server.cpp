@@ -244,12 +244,15 @@ void test_control_server()
 
 		if (!msg.empty())
 		{
+            std::cout << msg.data() <<std::endl;
+            /*
 			aris::core::MsgStream ms(msg);
 			std::string str;
 			while (ms >> str) 
 			{
 				std::cout << "msg1:" << str << std::endl;
 			}
+            */
 		}
 	}
 }

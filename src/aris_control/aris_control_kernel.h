@@ -34,7 +34,7 @@ namespace aris
 		
 		struct Handle { virtual ~Handle() = default; };
 
-		auto aris_rt_printf(const char * format, ...);
+        auto aris_rt_printf(const char * format, ...)->void;
 
 		auto aris_rt_set_periodic(int nanoseconds)->void;
 		auto aris_rt_wait_period()->void;

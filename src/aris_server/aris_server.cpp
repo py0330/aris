@@ -173,7 +173,7 @@ namespace aris
 			{
                 if (cmd_num_ >= CMD_POOL_SIZE)
 				{
-					rt_printf("cmd pool is full, thus ignore last command\n");
+                    server_->widgetRoot().mout() << "cmd pool is full, thus ignore last command\n";
 				}
 				else
 				{
@@ -187,11 +187,12 @@ namespace aris
 			{
 				if (executeCmd())
 				{
-                    if (++count_ % 1000 == 0)rt_printf("execute cmd in count: %d\n", count_);
+                    if (++count_ % 1000 == 0)
+                        server_->widgetRoot().mout() << "execute cmd in count: " << count_;
 				}
 				else
 				{
-                    rt_printf("cmd finished, spend %d counts\n\n", count_ + 1);
+                    server_->widgetRoot().mout() << "cmd finished, spend " << count_ + 1 <<" counts\n\n";
                     count_ = 0;
                     current_cmd_ = (current_cmd_ + 1) % CMD_POOL_SIZE;
                     --cmd_num_;
@@ -209,6 +210,8 @@ namespace aris
 			server_->widgetRoot().mout().update();
 			if (!server_->widgetRoot().msgOut().empty())
 			{
+                server_->widgetRoot().mout() << '\0';
+                server_->widgetRoot().mout().update();
 				server_->widgetRoot().msgPipe().sendMsg(server_->widgetRoot().msgOut());
 				server_->widgetRoot().msgOut().resize(0);
 				server_->widgetRoot().mout().resetBuf();
@@ -222,11 +225,12 @@ namespace aris
 			{
 				if (fault_count++ % 1000 == 0)
 				{
-                    rt_printf("ret of physic ethercat ring using SLA sequence are: ");
-                    for (auto &slave : controller_->slavePool())rt_printf("%d ", slave.rxData().ret);
-					rt_printf("\n");
-					rt_printf("Some slave is in fault, now try to disable all motors\n");
-					rt_printf("All commands in command queue are discarded\n");
+                    server_->widgetRoot().mout() << "ret of physic ethercat ring using SLA sequence are: ";
+                    for (auto &slave : controller_->slavePool())
+                        server_->widgetRoot().mout() << slave.rxData().ret;
+                    server_->widgetRoot().mout() << "\n";
+                    server_->widgetRoot().mout() << "Some slave is in fault, now try to disable all motors\n";
+                    server_->widgetRoot().mout() << "All commands in command queue are discarded\n";
 				}
 
                 for(std::size_t i=0; i<model_->motionPool().size();i++)
@@ -261,7 +265,7 @@ namespace aris
 			case RUN_GAIT:
 				return run();
 			default:
-				rt_printf("unknown cmd type\n");
+                server_->widgetRoot().mout() << "unknown cmd type\n";
 				return 0;
 			}
 		}
@@ -297,7 +301,7 @@ namespace aris
                         if (param->count_ % 1000 == 0)
                         {
 
-                            rt_printf("Unenabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i, rx_motion_data.ret);
+                            server_->widgetRoot().mout() << "Unenabled motor, slave id: " << slaID << ", absolute id: " << i << ", ret: " << rx_motion_data.ret << "\n";
                         }
                     }
                 }
@@ -329,7 +333,7 @@ namespace aris
 
                         if (param->count_ % 1000 == 0)
                         {
-                            rt_printf("Undisabled motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i, rx_motion_data.ret);
+                            server_->widgetRoot().mout() << "Undisabled motor, slave id: " << slaID << ", absolute id: " << i << ", ret: " << rx_motion_data.ret << "\n";
                         }
                     }
                 }
@@ -367,7 +371,7 @@ namespace aris
 
                         if (param->count_ % 1000 == 0)
                         {
-                            rt_printf("Unhomeed motor, slave id: %d, absolute id: %d, ret: %d\n", slaID, i,rxmotiondata.ret);
+                            server_->widgetRoot().mout() << "Unhomeed motor, slave id: " << slaID << ", absolute id: " << i << ", ret: " << rxmotiondata.ret << "\n";
                         }
                     }
                 }
@@ -408,7 +412,7 @@ namespace aris
                     }
                     else
                     {
-                        rt_printf("Invalid mode.\n");
+                        server_->widgetRoot().mout() << "Invalid mode.\n";
                     }
 
 				}
@@ -429,12 +433,12 @@ namespace aris
                     // check max pos //
 					if (param->if_check_pos_max_ && (tx_motion_data.target_pos > control_motion.maxPos()))
                     {
-						rt_printf("Motor %d %d %d (abs phy and sla id) target position is bigger than its MAX permitted value in count:%d\n", abs_id, phy_id, sla_id, count_);
-						rt_printf("The min, max and current count using ABS sequence are:\n");
+                        server_->widgetRoot().mout() << "Motor " << abs_id <<" " << phy_id << " " << sla_id << " (abs phy and sla id) target position is bigger than its MAX permitted value in count: " << count_ << "\n";
+                        server_->widgetRoot().mout() << "The min, max and current count using ABS sequence are:\n";
 						for (auto &motion : model_->motionPool())
 						{
 							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));
-							rt_printf("%lf   %lf   %lf\n", control_motion.minPos(), control_motion.maxPos(), control_motion.txData().target_pos);
+                            server_->widgetRoot().mout() << control_motion.minPos() << "\t" << control_motion.maxPos() << "\t" << control_motion.txData().target_pos << "\n";
 						}
 						onRunError();
 						return 0;
@@ -443,13 +447,13 @@ namespace aris
 					// check min pos //
                     if (param->if_check_pos_min_ && (tx_motion_data.target_pos < control_motion.minPos()))
                     {
-                        rt_printf("Motor %d %d %d (abs phy and sla id) target position is smaller than its MIN permitted value in count:%d\n", abs_id, phy_id, sla_id, count_);
-						rt_printf("The min, max and current count using ABS sequence are:\n");
+                        server_->widgetRoot().mout() << "Motor " << abs_id <<" " << phy_id << " " << sla_id << " (abs phy and sla id) target position is smaller than its MIN permitted value in count: " << count_ << "\n";
+                        server_->widgetRoot().mout() << "The min, max and current count using ABS sequence are:\n";
 						for (auto &motion : model_->motionPool())
 						{
 							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));
-							rt_printf("%lf   %lf   %lf\n", control_motion.minPos(), control_motion.maxPos(), control_motion.txData().target_pos);
-						}
+                            server_->widgetRoot().mout() << control_motion.minPos() << "\t" << control_motion.maxPos() << "\t" << control_motion.txData().target_pos << "\n";
+                        }
 						onRunError();
                         return 0;
                     }
@@ -457,12 +461,12 @@ namespace aris
 					// check pos continuous //
                     if (param->if_check_pos_continuous_ && (std::abs(tx_motion_data.target_pos - last_tx_motion_data.target_pos)>0.0012*control_motion.maxVel()))
                     {
-                        rt_printf("Motor %d %d %d (abs phy and sla id) target position is not continuous in count:%d\n", abs_id, phy_id, sla_id, count_);
-						rt_printf("The pin of last and this count using ABS sequence are:\n");
+                        server_->widgetRoot().mout() << "Motor " << abs_id <<" " << phy_id << " " << sla_id << " (abs phy and sla id) target position is not continuous in count: " << count_ << "\n";
+                        server_->widgetRoot().mout() << "The pin of last and this count using ABS sequence are:\n";
 						for (auto &motion : model_->motionPool())
 						{
 							auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(motion.slaID()));
-							rt_printf("%lf   %lf\n", last_tx_motion_data.target_pos, tx_motion_data.target_pos);
+                            server_->widgetRoot().mout() << last_tx_motion_data.target_pos << "\t" << tx_motion_data.target_pos << "\n";
 						}
 						onRunError();
 						return 0;
@@ -474,7 +478,7 @@ namespace aris
         }
 		auto ControlServer::Imp::onRunError()->int
 		{
-			rt_printf("All commands in command queue are discarded, please try to RECOVER\n");
+            server_->widgetRoot().mout() << "All commands in command queue are discarded, please try to RECOVER\n";
 			cmd_num_ = 1;//因为这里为0退出,因此之后在tg中回递减cmd_num_,所以这里必须为1
 			count_ = 0;
 

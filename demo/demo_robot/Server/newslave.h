@@ -17,7 +17,7 @@ namespace robot
     public:
         static auto Type()->const std::string &{ static const std::string type("esgimu"); return std::ref(type); }
         virtual auto type() const->const std::string&{ return Type(); }
-        EsgImu(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+        EsgImu(Object &father, const aris::core::XmlElement &xml_ele);
 
         virtual ~EsgImu();
     protected:
@@ -43,7 +43,7 @@ namespace robot
     public:
         static auto Type()->const std::string &{ static const std::string type("record"); return std::ref(type); }
         virtual auto type() const->const std::string&{ return Type(); }
-        Record(Object &father, std::size_t id, const aris::core::XmlElement &xml_ele);
+        Record(Object &father, const aris::core::XmlElement &xml_ele);
 
         virtual ~Record();
     protected:
