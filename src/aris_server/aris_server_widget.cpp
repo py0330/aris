@@ -1,7 +1,5 @@
 ﻿#ifdef WIN32
 #define rt_printf printf
-#include <windows.h>
-#undef CM_NONE
 #endif
 #ifdef UNIX
 #include "rtdk.h"
@@ -26,6 +24,7 @@ namespace aris
 		{
 		public:
 			aris::core::CommandParser *cmd_parser_{ nullptr };
+			aris::core::Pipe *cmd_pipe_{ nullptr };
 			aris::core::Pipe *msg_pipe_{ nullptr };
 		};
 		auto WidgetRoot::loadXml(const aris::core::XmlDocument &xml_doc)->void
@@ -41,14 +40,18 @@ namespace aris
 			Root::loadXml(xml_ele);
 
 			imp_->cmd_parser_ = findOrInsert<aris::core::CommandParser>("command_parser");
-			imp_->msg_pipe_ = findOrInsert<aris::core::Pipe>("msg_pipe", 16384);
+			imp_->cmd_pipe_ = findOrInsert<aris::core::Pipe>("command_pipe", 16384);
+			imp_->msg_pipe_ = findOrInsert<aris::core::Pipe>("message_pipe", 16384);
 		}
 		auto WidgetRoot::cmdParser()->aris::core::CommandParser& { return *imp_->cmd_parser_; }
 		auto WidgetRoot::cmdParser()const->const aris::core::CommandParser&{ return *imp_->cmd_parser_; }
+		auto WidgetRoot::cmdPipe()->aris::core::Pipe & { return *imp_->cmd_pipe_; }
+		auto WidgetRoot::cmdPipe()const->const aris::core::Pipe &{ return *imp_->cmd_pipe_; }
 		auto WidgetRoot::msgPipe()->aris::core::Pipe & { return *imp_->msg_pipe_; }
 		auto WidgetRoot::msgPipe()const->const aris::core::Pipe &{ return *imp_->msg_pipe_; }
+		
 		WidgetRoot::~WidgetRoot() = default;
-		WidgetRoot::WidgetRoot() :imp_{new Imp} 
+		WidgetRoot::WidgetRoot() :imp_{ new Imp }
 		{
 			registerChildType<aris::core::Param>();
 			registerChildType<aris::core::UniqueParam>();

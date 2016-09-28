@@ -23,7 +23,7 @@ namespace aris
 		struct DataLogger::Imp
 		{
 			aris::core::Pipe *log_pipe_;
-			aris::core::MsgFix<8196> log_data_msg_;
+			aris::core::MsgFix<MAX_LOG_DATA_SIZE> log_data_msg_;
 			std::size_t log_data_size_{ 0 };
 			std::atomic_bool is_receiving_{ false }, is_sending_{ false }, is_prepaired_{ false };
 			std::mutex mu_prepair_, mu_running_;
@@ -52,7 +52,7 @@ namespace aris
 				for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
 				imp_->log_data_msg_.resize(imp_->log_data_size_);
 
-				aris::core::MsgFix<8192> recv_msg;
+				aris::core::MsgFix<MAX_LOG_DATA_SIZE> recv_msg;
 				while (imp_->log_pipe_->recvMsg(recv_msg));
 				imp_->is_receiving_ = true;
 				thread_ready.set_value();
@@ -402,10 +402,10 @@ namespace aris
 
 		struct Pdo::Imp
 		{
-			aris::core::ImpPtr<Handle> pdo_handle_;
+			aris::core::ImpPtr<Handle> ec_handle_;
 		};
-		auto Pdo::ecHandle()->Handle* { return imp_->pdo_handle_.get(); };
-		auto Pdo::ecHandle()const->const Handle*{ return imp_->pdo_handle_.get(); };
+		auto Pdo::ecHandle()->Handle* { return imp_->ec_handle_.get(); };
+		auto Pdo::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); };
 		auto Pdo::read(std::int32_t &value)->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
@@ -535,7 +535,7 @@ namespace aris
 		public:
 			Imp(Slave*slave) :slave_(slave) {}
 
-			aris::core::ImpPtr<Handle> ec_slave_handle_;
+			aris::core::ImpPtr<Handle> ec_handle_;
 
 			SlaveType *slave_type_;
 
@@ -552,8 +552,8 @@ namespace aris
 			friend class Slave;
 			friend class Master;
 		};
-		auto Slave::ecHandle()->Handle* { return imp_->ec_slave_handle_.get(); }
-		auto Slave::ecHandle()const->const Handle*{ return imp_->ec_slave_handle_.get(); }
+		auto Slave::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
+		auto Slave::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); }
 		auto Slave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
 		auto Slave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }
 		auto Slave::alias()const->std::uint16_t { return imp_->slave_type_->alias(); }
@@ -857,7 +857,7 @@ namespace aris
 			const int sample_period_ns_{ 1000000 };
 
 			aris::core::ImpPtr<Handle> rt_task_handle_;
-			aris::core::ImpPtr<Handle> ec_master_handle_;
+			aris::core::ImpPtr<Handle> ec_handle_;
 
 
 			friend class Slave;
@@ -902,17 +902,17 @@ namespace aris
 			}
 
 			// init ethercat master, slave, pdo group, and pdo
-			imp_->ec_master_handle_.reset(aris_ecrt_master_init());
+			imp_->ec_handle_.reset(aris_ecrt_master_init());
 			for (auto &sla : slavePool())
 			{
-				sla.imp_->ec_slave_handle_.reset(aris_ecrt_slave_init());
+				sla.imp_->ec_handle_.reset(aris_ecrt_slave_init());
 
 				for (auto &pdo_group : sla.pdoGroupPool())
 				{
 					pdo_group.imp_->handle_.reset(aris_ecrt_pdo_group_init());
 					for (auto &pdo : pdo_group)
 					{
-						pdo.imp_->pdo_handle_.reset(aris_ecrt_pdo_init());
+						pdo.imp_->ec_handle_.reset(aris_ecrt_pdo_init());
 					}
 				}
 			}
@@ -955,8 +955,8 @@ namespace aris
 			imp_->is_stopping_ = false;
 			imp_->is_running_ = false;
 		}
-		auto Master::ecHandle()const->const Handle*{ return imp_->ec_master_handle_.get(); };
-		auto Master::ecHandle()->Handle* { return imp_->ec_master_handle_.get(); };
+		auto Master::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); };
+		auto Master::ecHandle()->Handle* { return imp_->ec_handle_.get(); };
 		auto Master::rtHandle()const->const Handle*{ return imp_->rt_task_handle_.get(); };
 		auto Master::rtHandle()->Handle* { return imp_->rt_task_handle_.get(); };
 		auto Master::slaveTypePool()->aris::core::ObjectPool<SlaveType, Element>& { return *imp_->slave_type_pool_; }

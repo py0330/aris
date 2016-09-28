@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 		xml_doc.LoadFile("C:\\aris\\robot\\resource\\robot_motion.xml");
 
 		auto &cs = aris::server::ControlServer::instance();
-		cs.createModel<robot::Robot>();
+        cs.resetModel(new robot::Robot);
 		cs.loadXml(xml_doc);
 
 		const double begin_pee[3]{1,1,0};

@@ -7,20 +7,13 @@
 #include <string>
 #include <chrono>
 #include <memory>
+#include <algorithm>
+#include <iostream>
 
 namespace aris
 {
-	namespace control
-	{
-		template<typename T> class Pipe;
-	}
-	
 	namespace core
 	{
-		class Socket;
-		class Msg;
-		class MsgRT;
-
 		struct MsgHeader
 		{
 			std::int32_t msg_size_;
@@ -33,9 +26,14 @@ namespace aris
 		class MsgBase
 		{
 		public:
-			virtual ~MsgBase() = default;
 			virtual auto resize(std::int32_t size)->void = 0;
+			virtual auto header()->MsgHeader& = 0;
+			virtual auto header()const->const MsgHeader& = 0;
+			virtual auto capacity()const->std::int32_t = 0;
+			auto empty()const->bool { return size() == 0; }
 			auto size() const->std::int32_t;
+			auto setType(std::int64_t type)->void;
+			auto type() const->std::int64_t;
 			auto setMsgID(std::int32_t id)->void;
 			auto msgID() const->std::int32_t;
 			auto data() const->const char*;
@@ -70,13 +68,8 @@ namespace aris
 			}
 			auto pasteStruct() const->void { paste_id_ = 0; }
 
-		private:
-			auto setType(std::int64_t type)->void;
-			auto type() const->std::int64_t;
-			virtual auto header()->MsgHeader& = 0;
-			virtual auto header()const->const MsgHeader& = 0;
-
-		private:
+		protected:
+			virtual ~MsgBase() = default;
 			MsgBase() = default;
 			MsgBase(const MsgBase &other) = default;
 			MsgBase(MsgBase &&other) = default;
@@ -85,59 +78,76 @@ namespace aris
 
 		private:
 			mutable std::int32_t paste_id_{ 0 };
-
-			friend class Msg;
-			friend class MsgRT;
-			template<std::size_t CAPACITY> friend class MsgFix;
-			friend class Socket;
-			friend class Pipe;
-			template<typename T> friend class aris::control::Pipe;
 		};
 		class Msg final :public MsgBase
 		{
 		public:
 			virtual auto resize(std::int32_t size)->void override;
+			virtual auto header()->MsgHeader& override;
+			virtual auto header()const->const MsgHeader& override;
+			virtual auto capacity()const->std::int32_t override { return capacity_; }
 			auto swap(Msg &other)->void;
 			
 			virtual ~Msg();
 			explicit Msg(std::int32_t msg_id = 0, std::int32_t size = 0);
 			explicit Msg(const std::string &msg_str);
+			Msg(const MsgBase &other);
 			Msg(const Msg& other);
 			Msg(Msg&& other);
 			Msg& operator=(Msg other);
 
 		private:
-			virtual auto header()->MsgHeader& override;
-			virtual auto header()const->const MsgHeader& override;
-
 			std::unique_ptr<char[]> data_;
-
-			friend class Socket;
-			template<typename T> friend class aris::control::Pipe;
+			std::int32_t capacity_{ 0 };
 		};
-
 		template<std::size_t CAPACITY>
 		class MsgFix final :public MsgBase
 		{
 		public:
 			virtual auto resize(std::int32_t size)->void override { header().msg_size_ = size; };
+			virtual auto header()->MsgHeader& override { return *reinterpret_cast<MsgHeader*>(data_); };
+			virtual auto header()const->const MsgHeader& override{ return *reinterpret_cast<const MsgHeader*>(data_); };
+			virtual auto capacity()const->std::int32_t override { return CAPACITY; }
 
 			virtual ~MsgFix() = default;
 			explicit MsgFix(std::int32_t msg_id = 0, std::int32_t size = 0) :MsgBase() {}
 			explicit MsgFix(const std::string &msg_str) :MsgBase(msg_str) {}
+			MsgFix(const MsgBase &other) 
+			{ 
+				resize(other.size()); 
+				std::copy_n(reinterpret_cast<const char*>(&other.header()), other.size() + sizeof(MsgHeader), reinterpret_cast<char*>(&header()));
+			}
 			MsgFix(const MsgFix &other) = default;
 			MsgFix(MsgFix &&other) = default;
 			MsgFix &operator=(const MsgFix& other) = default;
 			MsgFix &operator=(MsgFix&& other) = default;
 
 		private:
-			virtual auto header()->MsgHeader& override { return *reinterpret_cast<MsgHeader*>(data_); };
-			virtual auto header()const->const MsgHeader& override{ return *reinterpret_cast<const MsgHeader*>(data_); };
-
 			char data_[CAPACITY + sizeof(MsgHeader)];
+		};
+		class MsgStreamBuf :public std::streambuf
+		{
+		public:
+			auto resetBuf()->void;
+			auto update()->void;
+			explicit MsgStreamBuf(MsgBase& msg);
 
-			friend class Socket;
-			template<typename T> friend class aris::control::Pipe;
+		protected:
+			auto overflow(int_type c)->int_type override;
+			auto underflow()->int_type override;
+
+		private:
+			MsgBase *msg_;
+		};
+		class MsgStream : public std::iostream
+		{
+		public:
+			auto resetBuf()->void { buf.resetBuf(); };
+			auto update()->void { buf.update(); }
+			explicit MsgStream(MsgBase& msg): buf(msg), std::iostream(&buf)	{ }
+
+		private:
+			MsgStreamBuf buf;
 		};
 
 		auto createLogDir()->void;
@@ -147,7 +157,6 @@ namespace aris
 		auto logFileName()->const std::string&;
 		auto log(const char *data)->const char *;
 		auto log(const std::string& data)->const std::string&;
-
 	}
 }
 

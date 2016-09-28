@@ -67,8 +67,8 @@ namespace aris
 			auto startServer(const std::string &port = std::string())->void;
 			auto connect(const std::string &remote_ip = std::string(), const std::string &port = std::string())->void;
 			auto stop()->void;
-			auto sendMsg(const aris::core::Msg &data)->void;
-			auto sendRequest(const aris::core::Msg &request)->Msg;
+			auto sendMsg(const aris::core::MsgBase &data)->void;
+			auto sendRequest(const aris::core::MsgBase &request)->Msg;
 			auto remoteIP()const->const std::string &;
 			auto port()const->const std::string &;
 			auto setRemoteIP(const std::string &remote_ip)->void;
@@ -84,9 +84,9 @@ namespace aris
 			Socket(const std::string &name, const std::string& remote_ip = std::string(), const std::string& port = std::string());
 			Socket(Object &father, const aris::core::XmlElement &xml_ele);
 			Socket(const Socket & other) = delete;
-			Socket(Socket && other) = delete;
+			Socket(Socket && other) = default;
 			Socket &operator=(const Socket& other) = delete;
-			Socket &operator=(Socket&& other) = delete;
+			Socket &operator=(Socket&& other) = default;
 		
 		private:
 			struct Imp;

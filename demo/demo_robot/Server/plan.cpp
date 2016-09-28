@@ -140,14 +140,14 @@ namespace robot
         if(commandName=="")
         {
             if(paramName=="")
-                std::cout<<cs.widgetRoot().commandParser().help();
+                std::cout<<cs.widgetRoot().cmdParser().help();
             else
                 throw std::runtime_error("need a command name to look for the param.");
         }
         else
         {
-            auto command = cs.widgetRoot().commandParser().commandPool().findByName(commandName);
-            if(command != cs.widgetRoot().commandParser().commandPool().end())
+            auto command = cs.widgetRoot().cmdParser().commandPool().findByName(commandName);
+            if(command != cs.widgetRoot().cmdParser().commandPool().end())
             {
                 if(paramName=="")
                     std::cout<<command->help(isfull,0);
