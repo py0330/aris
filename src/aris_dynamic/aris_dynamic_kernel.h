@@ -50,22 +50,790 @@ namespace aris
 	/// xa  :  3x1 角加速度(alpha, acceleration of angle)\n
 	/// aa  :  6x1 线加速度与角加速度(acceleration and alpha)\n
 	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
-
 	namespace dynamic
 	{
+		auto s_vnm(int n, const double *x, int x_ld) noexcept->double;// vector norm
+		auto s_vsw(int n, double *x, const int x_ld, double *y, const int y_ld) noexcept->void;// vector swap
+
+		auto s_nd(int n, double a, double *x) noexcept->void;
+		auto s_nd(int n, double a, double *x, int x_ld) noexcept->void;// number dot
+		auto s_vc(int n, const double *x, const double *y) noexcept->void;
+		auto s_vc(int n, const double *x, int x_ld, const double *y, int y_ld) noexcept->void;
+
+
+
+		auto s_ndv(int n, double a, const double *x, double *y) noexcept->void;
+		auto s_ndv(int n, double a, const double *x, int x_ld, double *y, int y_ld) noexcept->void;
+		auto s_vdv(int n, const double *x, const double *y) noexcept->double;
+		auto s_vdv(int n, const double *x, int x_ld, const double *y, int y_ld) noexcept->double;
+		auto s_va(int n, const double* x, double* y) noexcept->void;
+		auto s_va(int n, const double* x, int x_ld, double* y, int y_ld) noexcept->void;
+		auto s_va(int n, double alpha, const double* x, double beta, double* y) noexcept->void;
+		auto s_va(int n, double alpha, const double* x, int x_ld, double beta, double* y, int y_ld) noexcept->void;
+		auto s_mtm(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void;// matrix transpose to matrix
+		auto s_ma(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void;
+		auto s_ma(int m, int n, double alpha, const double* A, int lda, double beta, double* B, int ldb) noexcept->void;
+		auto s_mam(int m, int n, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
+		auto s_mam(int m, int n, double alpha, const double* A, int lda, double beta, const double* B, int ldb, double gamma, double *C, int ldc) noexcept->void;
+		auto s_mdm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
+		auto s_mdm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void;
+		auto s_mdmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
+		auto s_mdmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void;
+		auto s_mdmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
+		auto s_mdmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void;
+
+		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
+			const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
+		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
+			double alpha, const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
+		auto s_block_cpyT(const int &block_size_m, const int &block_size_n,
+			const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
+		auto s_block_cpyT(const int &block_size_m, const int &block_size_n,
+			double alpha, const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
+			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
+		
+		auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
+		auto s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept->void;
+		template <typename ...Args>
+		auto s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept->void
+		{
+			double pm[16];
+			s_pm_dot_pm(pm1, pm2, pm);
+			s_pm_dot_pm(pm, args...);
+		}
+		auto s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept->void;
+		auto s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out) noexcept->void;
+		auto s_pm_dot_v3(const double *pm, const double *v3_in, double *v3_out) noexcept->void;
+		auto s_pm_dot_v3(const double *pm, const double *v3_in, int v3_ld, double *v3_out, int v3_out_ld) noexcept->void;
+		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out) noexcept->void;
+		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, int v3_ld, double *v3_out, int v3_out_ld) noexcept->void;
+		auto s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept->void;
+
+		/// \brief 计算三维向量叉乘矩阵
+		///
+		/// 用来计算：cm_out = \n
+		/// [ 0  -z   y \n
+		///   z   0  -x \n
+		///  -y   x   0 ]
+		/// 
+		///
+		auto s_cm3(const double *a, double *cm_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c = a x b
+		///
+		///
+		auto s_c3(const double *a, const double *b, double *c_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c = a x b
+		///
+		///
+		auto s_c3(const double *a, int a_ld, const double *b, int b_ld, double *c_out, int c_ld) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c = alpha * a x b
+		///
+		///
+		auto s_c3(double alpha, const double *a, const double *b, double *c_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c = alpha * a x b
+		///
+		///
+		auto s_c3(double alpha, const double *a, int a_ld, const double *b, int b_ld, double *c_out, int c_ld) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c_mtx_out = a x b_mtx
+		///
+		///
+		auto s_c3_n(int n, const double *a, const double *b_mtx, double *c_mtx_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c_mtx_out = a x b_mtx
+		///
+		///
+		auto s_c3_n(int n, const double *a, int a_ld, const double *b_mtx, int b_mtx_ld, double *c_mtx_out, int c_mtx_ld) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c_mtx_out = alpha * a x b_mtx
+		///
+		///
+		auto s_c3_n(int n, double alpha, const double *a, const double *b_mtx, double *c_mtx_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c_mtx_out = alpha * a x b_mtx
+		///
+		///
+		auto s_c3_n(int n, double alpha, const double *a, int a_ld, const double *b_mtx, int b_mtx_ld, double *c_mtx_out, int c_mtx_ld) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c = a x b + c
+		///
+		///
+		auto s_c3a(const double *a, const double *b, double *c_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c = a x b + c
+		///
+		///
+		auto s_c3a(const double *a, int a_ld, const double *b, int b_ld, double *c_out, int c_ld) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c = alpha * a x b + beta * c
+		///
+		///
+		auto s_c3a(double alpha, const double *a, const double *b, double beta, double *c_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c = alpha * a x b + beta * c
+		///
+		///
+		auto s_c3a(double alpha, const double *a, int a_ld, const double *b, int b_ld, double beta, double *c_out, int c_ld) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c_mtx_out = alpha * a x b_mtx + beta * c_mtx_out
+		///
+		///
+		auto s_c3a_n(int n, const double *a, const double *b_mtx, double *c_mtx_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c_mtx_out = alpha * a x b_mtx + beta * c_mtx_out
+		///
+		///
+		auto s_c3a_n(int n, const double *a, int a_ld, const double *b_mtx, int b_mtx_ld, double *c_mtx_out, int c_mtx_ld) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c_mtx_out = alpha * a x b_mtx + beta * c_mtx_out
+		///
+		///
+		auto s_c3a_n(int n, double alpha, const double *a, const double *b_mtx, double beta, double *c_mtx_out) noexcept->void;
+		/// \brief 计算三维向量叉乘
+		///
+		/// 用来计算：c_mtx_out = alpha * a x b_mtx + beta * c_mtx_out
+		///
+		///
+		auto s_c3a_n(int n, double alpha, const double *a, int a_ld, const double *b_mtx, int b_mtx_ld, double beta, double *c_mtx_out, int c_mtx_ld) noexcept->void;
+		/// \brief 构造6x6的力叉乘矩阵
+		///
+		///  其中,cmf = [w x,  O; v x, w x]
+		///
+		///
+		auto s_cmf(const double *vs, double *cmf_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = vs xf fs
+		///
+		///
+		auto s_cf(const double *vs, const double *fs, double* vfs_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = vs xf fs
+		///
+		///
+		auto s_cf(const double *vs, int vs_ld, const double *fs, int fs_ld, double* vfs_out, int vfs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = alpha * vs xf fs
+		///
+		///
+		auto s_cf(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = alpha * vs xf fs
+		///
+		///
+		auto s_cf(double alpha, const double *vs, int vs_ld, const double *fs, int fs_ld, double* vfs_out, int vfs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = vs xf fs
+		///
+		///
+		auto s_cf_n(int n, const double *vs, const double *fs_mtx, double* vfs_mtx_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = vs xf fs
+		///
+		///
+		auto s_cf_n(int n, const double *vs, int vs_ld, const double *fs_mtx, int fs_ld, double* vfs_mtx_out, int vfs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = alpha * vs xf fs
+		///
+		///
+		auto s_cf_n(int n, double alpha, const double *vs, const double *fs_mtx, double* vfs_mtx_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = alpha * vs xf fs
+		///
+		///
+		auto s_cf_n(int n, double alpha, const double *vs, int vs_ld, const double *fs_mtx, int fs_ld, double* vfs_mtx_out, int vfs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = vs xf fs
+		///
+		///
+		auto s_cfa(const double *vs, const double *fs, double* vfs_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = vs xf fs
+		///
+		///
+		auto s_cfa(const double *vs, int vs_ld, const double *fs, int fs_ld, double* vfs_out, int vfs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = alpha * vs xf fs + beta * vfs
+		///
+		///
+		auto s_cfa(double alpha, const double *vs, const double *fs, double beta, double* vfs_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = alpha * vs xf fs + beta * vfs
+		///
+		///
+		auto s_cfa(double alpha, const double *vs, int vs_ld, const double *fs, int fs_ld, double beta, double* vfs_out, int vfs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = vs xf fs
+		///
+		///
+		auto s_cfa_n(int n, const double *vs, const double *fs_mtx, double* vfs_mtx_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = vs xf fs
+		///
+		///
+		auto s_cfa_n(int n, const double *vs, int vs_ld, const double *fs_mtx, int fs_ld, double* vfs_mtx_out, int vfs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = alpha * vs xf fs + beta * vfs
+		///
+		///
+		auto s_cfa_n(int n, double alpha, const double *vs, const double *fs_mtx, double beta, double* vfs_mtx_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vfs = alpha * vs xf fs + beta * vfs
+		///
+		///
+		auto s_cfa_n(int n, double alpha, const double *vs, int vs_ld, const double *fs_mtx, int fs_ld, double beta, double* vfs_mtx_out, int vfs_ld) noexcept->void;
+		/// \brief 构造6x6的速度叉乘矩阵
+		///
+		///  其中,cmv = \n
+		///  [w x,  v x \n
+		///   O  ,  w x] \n
+		///
+		///
+		auto s_cmv(const double *vs, double *cmv_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = vs xv vs2
+		///
+		///
+		auto s_cv(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = vs xv vs2
+		///
+		///
+		auto s_cv(const double *vs, int vs_ld, const double *vs2, int vs2_ld, double* vvs_out, int vvs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = alpha * vs xv vs2
+		///
+		///
+		auto s_cv(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = alpha * vs xv vs2
+		///
+		///
+		auto s_cv(double alpha, const double *vs, int vs_ld, const double *vs2, int vs2_ld, double* vvs_out, int vvs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = vs xv vs2
+		///
+		///
+		auto s_cv_n(int n, const double *vs, const double *vs_mtx, double* vvs_mtx_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = vs xv vs2
+		///
+		///
+		auto s_cv_n(int n, const double *vs, int vs_ld, const double *vs_mtx, int vs2_ld, double* vvs_mtx_out, int vvs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = alpha * vs xv vs2
+		///
+		///
+		auto s_cv_n(int n, double alpha, const double *vs, const double *vs_mtx, double* vvs_mtx_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = alpha * vs xv vs2
+		///
+		///
+		auto s_cv_n(int n, double alpha, const double *vs, int vs_ld, const double *vs_mtx, int vs2_ld, double* vvs_mtx_out, int vvs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = vs xv vs2 + vvs
+		///
+		///
+		auto s_cva(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = vs xv vs2 + vvs
+		///
+		///
+		auto s_cva(const double *vs, int vs_ld, const double *vs2, int vs2_ld, double* vvs_out, int vvs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = alpha * vs xv vs2 + beta * vvs
+		///
+		///
+		auto s_cva(double alpha, const double *vs, const double *vs2, double beta, double* vvs_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = alpha * vs xv vs2 + beta * vvs
+		///
+		///
+		auto s_cva(double alpha, const double *vs, int vs_ld, const double *vs2, int vs2_ld, double beta, double* vvs_out, int vvs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = vs xv vs2 + vvs
+		///
+		///
+		auto s_cva_n(int n, const double *vs, const double *vs_mtx, double* vvs_mtx_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = vs xv vs2 + vvs
+		///
+		///
+		auto s_cva_n(int n, const double *vs, int vs_ld, const double *vs_mtx, int vs2_ld, double* vvs_mtx_out, int vvs_ld) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = alpha * vs xv vs2 + beta * vvs
+		///
+		///
+		auto s_cva_n(int n, double alpha, const double *vs, const double *vs_mtx, double beta, double* vvs_mtx_out) noexcept->void;
+		/// \brief 计算六维向量叉乘
+		///
+		/// 用来计算：vvs = alpha * vs xv vs2 + beta * vvs
+		///
+		///
+		auto s_cva_n(int n, double alpha, const double *vs, int vs_ld, const double *vs_mtx, int vs2_ld, double beta, double* vvs_mtx_out, int vvs_ld) noexcept->void;
+
+		/// \brief 构造6x6的力转换矩阵
+		///
+		///  其中,tmf = [rm (3x3),  pp x rm (3x3); O (3x3), rm (3x3)]
+		///
+		///
+		auto s_tmf(const double *pm, double *tmf_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = tmf(pm) * fs
+		///
+		///
+		auto s_tf(const double *pm, const double *fs, double *fs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = tmf(pm) * fs
+		///
+		///
+		auto s_tf(const double *pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = alpha * tmf(pm) * fs
+		///
+		///
+		auto s_tf(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = alpha * tmf(pm) * fs
+		///
+		///
+		auto s_tf(double alpha, const double *pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = tmf(pm) * fs_mtx
+		///
+		///
+		auto s_tf_n(int n, const double *pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = tmf(pm) * fs_mtx
+		///
+		///
+		auto s_tf_n(int n, const double *pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = alpha * tmf(pm) * fs_mtx
+		///
+		///
+		auto s_tf_n(int n, double alpha, const double *pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = alpha * tmf(pm) * fs_mtx
+		///
+		///
+		auto s_tf_n(int n, double alpha, const double *pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = tmf(pm) * fs + fs_out
+		///
+		///
+		auto s_tfa(const double *pm, const double *fs, double *fs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = tmf(pm) * fs + fs_out
+		///
+		///
+		auto s_tfa(const double *pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = alpha * tmf(pm) * fs + beta * fs_out
+		///
+		///
+		auto s_tfa(double alpha, const double *pm, const double *fs, double beta, double *fs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = alpha * tmf(pm) * fs + beta * fs_out
+		///
+		///
+		auto s_tfa(double alpha, const double *pm, const double *fs, int fs_ld, double beta, double *fs_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = tmf(pm) * fs_mtx + fs_mtx_out
+		///
+		///
+		auto s_tfa_n(int n, const double *pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = tmf(pm) * fs_mtx + fs_mtx_out
+		///
+		///
+		auto s_tfa_n(int n, const double *pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = alpha * tmf(pm) * fs_mtx + beta * fs_mtx_out
+		///
+		///
+		auto s_tfa_n(int n, double alpha, const double *pm, const double *fs_mtx, double beta, double *fs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = alpha * tmf(pm) * fs_mtx + beta * fs_mtx_out
+		///
+		///
+		auto s_tfa_n(int n, double alpha, const double *pm, const double *fs_mtx, int fs_ld, double beta, double *fs_mtx_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵的逆矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = tmv(pm^-1) * fs
+		///
+		///
+		auto s_inv_tf(const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
+		/// \brief 根据位姿矩阵的逆矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = tmv(pm^-1) * fs
+		///
+		///
+		auto s_inv_tf(const double *inv_pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵的逆矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = alpha * tmv(pm^-1) * fs
+		///
+		///
+		auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
+		/// \brief 根据位姿矩阵的逆矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = alpha * tmv(pm^-1) * fs
+		///
+		///
+		auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = tmf(inv_pm^-1) * fs_mtx
+		///
+		///
+		auto s_inv_tf_n(int n, const double *inv_pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = tmf(inv_pm^-1) * fs_mtx
+		///
+		///
+		auto s_inv_tf_n(int n, const double *inv_pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = alpha * tmf(inv_pm^-1) * fs_mtx
+		///
+		///
+		auto s_inv_tf_n(int n, double alpha, const double *inv_pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = alpha * tmf(inv_pm^-1) * fs_mtx
+		///
+		///
+		auto s_inv_tf_n(int n, double alpha, const double *inv_pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = tmf(pm^-1) * fs + fs_out
+		///
+		///
+		auto s_inv_tfa(const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = tmf(pm^-1) * fs + fs_out
+		///
+		///
+		auto s_inv_tfa(const double *inv_pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = alpha * tmf(pm^-1) * fs + beta * fs_out
+		///
+		///
+		auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, double beta, double *fs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力向量
+		///
+		/// 等同于： fs_out = alpha * tmf(pm^-1) * fs + beta * fs_out
+		///
+		///
+		auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, int fs_ld, double beta, double *fs_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = tmf(pm^-1) * fs_mtx + fs_mtx_out
+		///
+		///
+		auto s_inv_tfa_n(int n, const double *pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = tmf(pm^-1) * fs_mtx + fs_mtx_out
+		///
+		///
+		auto s_inv_tfa_n(int n, const double *pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = alpha * tmf(pm^-1) * fs_mtx + beta * fs_mtx_out
+		///
+		///
+		auto s_inv_tfa_n(int n, double alpha, const double *pm, const double *fs_mtx, double beta, double *fs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： fs_mtx_out = alpha * tmf(pm^-1) * fs_mtx + beta * fs_mtx_out
+		///
+		///
+		auto s_inv_tfa_n(int n, double alpha, const double *pm, const double *fs_mtx, int fs_ld, double beta, double *fs_mtx_out, int fs_out_ld) noexcept->void;
+		/// \brief 构造6x6的速度转换矩阵
+		///
+		///  其中,tmv = [rm (3x3),  O (3x3); pp x rm (3x3), rm (3x3)]
+		///
+		///
+		auto s_tmv(const double *pm, double *tmv_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vec_out = tmv(pm_in) * vs_in
+		///
+		///
+		auto s_tv(const double *pm, const double *vs, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = tmv(pm) * vs
+		///
+		///
+		auto s_tv(const double *pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm) * vs
+		///
+		///
+		auto s_tv(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm) * vs
+		///
+		///
+		auto s_tv(double alpha, const double *pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： m_out = tmv(pm) * fces_in
+		///
+		///
+		auto s_tv_n(int n, const double *pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = tmv(pm) * vs
+		///
+		///
+		auto s_tv_n(int n, const double *pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm) * vs
+		///
+		///
+		auto s_tv_n(int n, double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm) * vs
+		///
+		///
+		auto s_tv_n(int n, double alpha, const double *pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = tmv(pm) * vs + vs_out
+		///
+		///
+		auto s_tva(const double *pm, const double *vs, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = tmv(pm) * vs + vs_out
+		///
+		///
+		auto s_tva(const double *pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm) * vs + beta * vs_out
+		///
+		///
+		auto s_tva(double alpha, const double *pm, const double *vs, double beta, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm) * vs + beta * vs_out
+		///
+		///
+		auto s_tva(double alpha, const double *pm, const double *vs, int vs_ld, double beta, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： m_out = alpha * tmv(pm) * fces_in + beta * m_out
+		///
+		///
+		auto s_tva_n(int n, const double *pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： m_out = alpha * tmv(pm) * fces_in + beta * m_out
+		///
+		///
+		auto s_tva_n(int n, const double *pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： m_out = alpha * tmv(pm) * fces_in + beta * m_out
+		///
+		///
+		auto s_tva_n(int n, double alpha, const double *pm, const double *vs_mtx, double beta, double *vs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维力矩阵
+		///
+		/// 等同于： m_out = alpha * tmv(pm) * fces_in + beta * m_out
+		///
+		///
+		auto s_tva_n(int n, double alpha, const double *pm, const double *vs_mtx, int vs_ld, double beta, double *vs_mtx_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = tmv(pm^-1) * vs
+		///
+		///
+		auto s_inv_tv(const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = tmv(pm^-1) * vs
+		///
+		///
+		auto s_inv_tv(const double *inv_pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm^-1) * vs
+		///
+		///
+		auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm^-1) * vs
+		///
+		///
+		auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度矩阵
+		///
+		/// 等同于： vs_mtx_out = tmv(inv_pm^-1) * vs_mtx
+		///
+		///
+		auto s_inv_tv_n(int n, const double *inv_pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度矩阵
+		///
+		/// 等同于： vs_mtx_out = tmv(inv_pm^-1) * vs_mtx
+		///
+		///
+		auto s_inv_tv_n(int n, const double *inv_pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度矩阵
+		///
+		/// 等同于： vs_mtx_out = alpha * tmv(inv_pm^-1) * vs_mtx
+		///
+		///
+		auto s_inv_tv_n(int n, double alpha, const double *inv_pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度矩阵
+		///
+		/// 等同于： vs_mtx_out = alpha * tmv(inv_pm^-1) * vs_mtx
+		///
+		///
+		auto s_inv_tv_n(int n, double alpha, const double *inv_pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = tmv(pm^-1) * vs + vs_out
+		///
+		///
+		auto s_inv_tva(const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = tmv(pm^-1) * vs + vs_out
+		///
+		///
+		auto s_inv_tva(const double *inv_pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm^-1) * vs + beta * vs_out
+		///
+		///
+		auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, double beta, double *vs_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度向量
+		///
+		/// 等同于： vs_out = alpha * tmv(pm^-1) * vs + beta * vs_out
+		///
+		///
+		auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, int vs_ld, double beta, double *vs_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度矩阵
+		///
+		/// 等同于： vs_mtx_out = tmv(pm^-1) * vs_mtx + vs_mtx_out
+		///
+		///
+		auto s_inv_tva_n(int n, const double *pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度矩阵
+		///
+		/// 等同于： vs_mtx_out = tmv(pm^-1) * vs_mtx + vs_mtx_out
+		///
+		///
+		auto s_inv_tva_n(int n, const double *pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度矩阵
+		///
+		/// 等同于： vs_mtx_out = alpha * tmv(pm^-1) * vs_mtx + beta * vs_mtx_out
+		///
+		///
+		auto s_inv_tva_n(int n, double alpha, const double *pm, const double *vs_mtx, double beta, double *vs_mtx_out) noexcept->void;
+		/// \brief 根据位姿矩阵转换六维速度矩阵
+		///
+		/// 等同于： vs_mtx_out = alpha * tmv(pm^-1) * vs_mtx + beta * vs_mtx_out
+		///
+		///
+		auto s_inv_tva_n(int n, double alpha, const double *pm, const double *vs_mtx, int vs_ld, double beta, double *vs_mtx_out, int vs_out_ld) noexcept->void;
+		
 		// 以下函数为物理量之间的转换函数 //
-		auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in = "313", std::size_t rm_ld = 3) noexcept->void;
-		auto s_rm2re(const double *rm_in, double *re_out, const char *eu_type_in = "313", std::size_t rm_ld = 3) noexcept->void;
-		auto s_rq2rm(const double *rq_in, double *rm_out, std::size_t rm_ld = 3) noexcept->void;
-		auto s_rm2rq(const double *rm_in, double *rq_out, std::size_t rm_ld = 3) noexcept->void;
+		auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in = "313", int rm_ld = 3) noexcept->void;
+		auto s_rm2re(const double *rm_in, double *re_out, const char *eu_type_in = "313", int rm_ld = 3) noexcept->void;
+		auto s_rq2rm(const double *rq_in, double *rm_out, int rm_ld = 3) noexcept->void;
+		auto s_rm2rq(const double *rm_in, double *rq_out, int rm_ld = 3) noexcept->void;
 		auto s_pp2pm(const double *pp_in, double *pm_out) noexcept->void;
 		auto s_pm2pp(const double *pm_in, double *pp_out) noexcept->void;
 		auto s_re2pm(const double *re_in, double *pm_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_pm2re(const double *pm_in, double *re_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->void;
 		auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->void;
-		auto s_rm2pm(const double *rm_in, double *pm_out, std::size_t rm_ld = 3) noexcept->void;
-		auto s_pm2rm(const double *pm_in, double *rm_out, std::size_t rm_ld = 3) noexcept->void;
+		auto s_rm2pm(const double *rm_in, double *pm_out, int rm_ld = 3) noexcept->void;
+		auto s_pm2rm(const double *pm_in, double *rm_out, int rm_ld = 3) noexcept->void;
 		auto s_pe2pm(const double *pe_in, double *pm_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_pm2pe(const double *pm_in, double *pe_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_pq2pm(const double *pq_in, double *pm_out) noexcept->void;
@@ -75,16 +843,16 @@ namespace aris
 		auto s_wa2we(const double *wa_in, const double *re_in, double *we_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_wq2wa(const double *rq_in, const double *wq_in, double *wa_out) noexcept->void;
 		auto s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out) noexcept->void;
-		auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
-		auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
+		auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out, int rm_ld = 3, int wm_ld = 3) noexcept->void;
+		auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out, int rm_ld = 3, int wm_ld = 3) noexcept->void;
 		auto s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out) noexcept->void;
 		auto s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out) noexcept->void;
 		auto s_we2vs(const double *re_in, const double *we_in, double *vs_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_vs2we(const double *vs_in, const double *re_in, double *we_out, const char *eu_type_in = "313") noexcept->void;
 		auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out) noexcept->void;
 		auto s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out) noexcept->void;
-		auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
-		auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out, std::size_t rm_ld = 3, std::size_t wm_ld = 3) noexcept->void;
+		auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out, int rm_ld = 3, int wm_ld = 3) noexcept->void;
+		auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out, int rm_ld = 3, int wm_ld = 3) noexcept->void;
 		auto s_wa2vs(const double *wa_in, double *vs_out) noexcept->void;
 		auto s_vs2wa(const double *vs_in, double *wa_out) noexcept->void;
 		auto s_ve2vs(const double *pe_in, const double *ve_in, double *vs_out, const char *eu_type_in = "313") noexcept->void;
@@ -100,16 +868,16 @@ namespace aris
 		auto s_xa2xe(const double *wa_in, const double *xa_in, const double *re_in, double *xe_out, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->void;
 		auto s_xq2xa(const double *rq_in, const double *wq_in, const double *xq_in, double *xa_out, double *wa_out = nullptr) noexcept->void;
 		auto s_xa2xq(const double *wa_in, const double *xa_in, const double *rq_in, double *xq_out, double *wq_out = nullptr) noexcept->void;
-		auto s_xm2xa(const double *rm_in, const double *wm_in, const double *xm_in, double *xa_out, double *wa_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
-		auto s_xa2xm(const double *wa_in, const double *xa_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
+		auto s_xm2xa(const double *rm_in, const double *wm_in, const double *xm_in, double *xa_out, double *wa_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->void;
+		auto s_xa2xm(const double *wa_in, const double *xa_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->void;
 		auto s_ap2as(const double *pp_in, const double *vp_in, const double *ap_in, double *as_out, double *vs_out = nullptr) noexcept->void;
 		auto s_as2ap(const double *vs_in, const double *as_in, const double *pp_in, double *ap_out, double *vp_out = nullptr) noexcept->void;
 		auto s_xe2as(const double *re_in, const double *we_in, const double *xe_in, double *as_out, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->void;
 		auto s_as2xe(const double *vs_in, const double *as_in, const double *re_in, double *xe_out, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->void;
 		auto s_xq2as(const double *rq_in, const double *wq_in, const double *xq_in, double *as_out, double *vs_out = nullptr) noexcept->void;
 		auto s_as2xq(const double *vs_in, const double *as_in, const double *rq_in, double *xq_out, double *wq_out = nullptr) noexcept->void;
-		auto s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out, double *vs_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
-		auto s_as2xm(const double *vs_in, const double *as_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, std::size_t rm_ld = 3, std::size_t wm_ld = 3, std::size_t xm_ld = 3) noexcept->void;
+		auto s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out, double *vs_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->void;
+		auto s_as2xm(const double *vs_in, const double *as_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->void;
 		auto s_xa2as(const double *xa_in, double *as_out) noexcept->void;
 		auto s_as2xa(const double *as_in, double *xa_out) noexcept->void;
 		auto s_ae2as(const double *pe_in, const double *ve_in, const double *ae_in, double *as_out, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->void;
@@ -134,8 +902,8 @@ namespace aris
 		auto s_inv_re2re(const double *inv_relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
 		auto s_rq2rq(const double *relative_pm, const double *from_rq, double *to_rq) noexcept->void;
 		auto s_inv_rq2rq(const double *inv_relative_pm, const double *from_rq, double *to_rq) noexcept->void;
-		auto s_rm2rm(const double *relative_pm, const double *from_rm, double *to_rm, std::size_t from_rm_ld = 3, std::size_t to_rm_ld = 3) noexcept->void;
-		auto s_inv_rm2rm(const double *inv_relative_pm, const double *from_rm, double *to_rm, std::size_t from_rm_ld = 3, std::size_t to_rm_ld = 3) noexcept->void;
+		auto s_rm2rm(const double *relative_pm, const double *from_rm, double *to_rm, int from_rm_ld = 3, int to_rm_ld = 3) noexcept->void;
+		auto s_inv_rm2rm(const double *inv_relative_pm, const double *from_rm, double *to_rm, int from_rm_ld = 3, int to_rm_ld = 3) noexcept->void;
 		auto s_pe2pe(const double *relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->void;
 		auto s_inv_pe2pe(const double *inv_relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->void;
 		auto s_pq2pq(const double *relative_pm, const double *from_pq, double *to_pq) noexcept->void;
@@ -209,244 +977,7 @@ namespace aris
 		auto s_inv_fs2fs(const double *inv_relative_pm, const double *from_fs, double *to_fs) noexcept->void;
 		auto s_is2is(const double *relative_pm, const double *from_is, double *to_is) noexcept->void;
 		auto s_inv_is2is(const double *inv_relative_pm, const double *from_is, double *to_is) noexcept->void;
-
-		/// \brief 构造6x6的力转换矩阵
-		///
-		///  其中,tmf = [rm (3x3),  pp x rm (3x3); O (3x3), rm (3x3)]
-		///
-		///
-		auto s_tmf(const double *pm_in, double *tmf_out) noexcept->void;
-		/// \brief 构造6x6的速度转换矩阵
-		///
-		///  其中,tmv = [rm (3x3),  O (3x3); pp x rm (3x3), rm (3x3)]
-		///
-		///
-		auto s_tmv(const double *pm_in, double *tmv_out) noexcept->void;
-		/// \brief 根据位姿矩阵转换六维力向量
-		///
-		/// 等同于： vec_out = tmf(pm_in) * fce_in
-		///
-		///
-		auto s_tf(const double *pm_in, const double *fce_in, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵转换六维力向量
-		///
-		/// 等同于： vec_out = alpha * tmf(pm_in) * fce_in + beta * vec_out
-		///
-		///
-		auto s_tf(double alpha, const double *pm_in, const double *fce_in, double beta, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵转换六维力矩阵
-		///
-		/// 等同于： m_out = tmf(pm_in) * fces_in
-		///
-		///
-		auto s_tf_n(int n, const double *pm_in, const double *fces_in, double *m_out) noexcept->void;
-		/// \brief 根据位姿矩阵转换六维力矩阵
-		///
-		/// 等同于： m_out = alpha * tmf(pm_in) * fces_in + beta * m_out
-		///
-		///
-		auto s_tf_n(int n, double alpha, const double *pm_in, const double *fces_in, double beta, double *m_out) noexcept->void;
-		/// \brief 根据位姿矩阵的逆矩阵转换六维力向量
-		///
-		/// 等同于： vec_out = tmv(pm_in^-1) * fce_in
-		///
-		///
-		auto s_inv_tf(const double *inv_pm_in, const double *fce_in, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
-		///
-		/// 等同于： vec_out = alpha * tmf(pm_in^-1) * vs_in + beta * vec_out
-		///
-		///
-		auto s_inv_tf(double alpha, const double *inv_pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵转换六维速度向量
-		///
-		/// 等同于： vec_out = tmv(pm_in) * vs_in
-		///
-		///
-		auto s_tv(const double *pm_in, const double *vs_in, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵转换六维速度向量
-		///
-		/// 等同于： vec_out = alpha * tmv(pm_in) * vs_in + beta * vec_out
-		///
-		///
-		auto s_tv(double alpha, const double *pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵转换六维力矩阵
-		///
-		/// 等同于： m_out = tmv(pm_in) * fces_in
-		///
-		///
-		auto s_tv_n(int n, const double *pm_in, const double *vels_in, double *m_out) noexcept->void;
-		/// \brief 根据位姿矩阵转换六维力矩阵
-		///
-		/// 等同于： m_out = alpha * tmv(pm_in) * fces_in + beta * m_out
-		///
-		///
-		auto s_tv_n(int n, double alpha, const double *pm_in, const double *vels_in, double beta, double *m_out) noexcept->void;
-		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
-		///
-		/// 等同于： vec_out = tmv(pm_in^-1) * vs_in
-		///
-		///
-		auto s_inv_tv(const double *inv_pm_in, const double *vs_in, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
-		///
-		/// 等同于： vec_out = alpha * tmv(pm_in^-1) * vs_in + beta * vec_out
-		///
-		///
-		auto s_inv_tv(double alpha, const double *inv_pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
-		///
-		/// 等同于： vec_out = tmv(pm_in^-1) * vs_in
-		///
-		///
-		auto s_inv_tv_n(int n, const double *inv_pm_in, const double *vs_in, double *vec_out) noexcept->void;
-		/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
-		///
-		/// 等同于： vec_out = alpha * tmv(pm_in^-1) * vs_in + beta * vec_out
-		///
-		///
-		auto s_inv_tv_n(int n, double alpha, const double *inv_pm_in, const double *vs_in, double beta, double *vec_out) noexcept->void;
-
-		/// \brief 计算三维向量叉乘矩阵
-		///
-		/// 用来计算：cm_out = \n
-		/// [ 0  -z   y \n
-		///   z   0  -x \n
-		///  -y   x   0 ]
-		/// 
-		///
-		auto s_cm3(const double *cro_vec_in, double *cm_out) noexcept->void;
-		/// \brief 计算三维向量叉乘
-		///
-		/// 用来计算：vec_out = cro_vec_in x vec_in
-		///
-		///
-		auto s_c3(const double *cro_vec_in, const double *vec_in, double *vec_out) noexcept->void;
-		/// \brief 计算三维向量叉乘
-		///
-		/// 用来计算：vec_out = cro_vec_in x vec_in
-		///
-		///
-		auto s_c3(const double *cro_vec_in, const double *vec_in, std::size_t vec_in_ld, double *vec_out, std::size_t vec_out_ld) noexcept->void;
-		/// \brief 计算三维向量叉乘
-		///
-		/// 用来计算：vec_out = alpha * cro_vec_in x vec_in + beta * vec_out
-		///
-		///
-		auto s_c3(double alpha, const double *cro_vec_in, const double *vec_in, double beta, double *vec_out) noexcept->void;
-		/// \brief 计算三维向量叉乘
-		///
-		/// 用来计算：vec_out = alpha * cro_vec_in x vec_in + beta * vec_out
-		///
-		///
-		auto s_c3(double alpha, const double *cro_vec_in, const double *vec_in, std::size_t vec_in_ld, double beta, double *vec_out, std::size_t vec_out_ld) noexcept->void;
-		/// \brief 计算三维向量叉乘
-		///
-		/// 用来计算：vec_out = alpha * cro_vec_in x mat_in + beta * mat_out
-		///
-		///
-		auto s_c3_n(std::size_t n, const double *cro_vec_in, const double *mat_in, std::size_t mat_in_ld, double *mat_out, std::size_t mat_out_ld) noexcept->void;
-		/// \brief 计算三维向量叉乘
-		///
-		/// 用来计算：vec_out = alpha * cro_vec_in x mat_in + beta * mat_out
-		///
-		///
-		auto s_c3_n(std::size_t n, double alpha, const double *cro_vec_in, const double *mat_in, std::size_t mat_in_ld, double beta, double *mat_out, std::size_t mat_out_ld) noexcept->void;
-		/// \brief 构造6x6的力叉乘矩阵
-		///
-		///  其中,cmf = [w x,  O; v x, w x]
-		///
-		///
-		auto s_cmf(const double *vs_in, double *cmf_out) noexcept->void;
-		/// \brief 计算六维向量叉乘
-		///
-		/// 用来计算：vec_out = cro_vec_in xf vec_in
-		///
-		///
-		auto s_cf(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept->void;
-		/// \brief 计算六维向量叉乘
-		///
-		/// 用来计算：vec_out = alpha * cro_vec_in xf vec_in + beta * vec_out
-		///
-		///
-		auto s_cf(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept->void;
-		/// \brief 构造6x6的速度叉乘矩阵
-		///
-		///  其中,cmv = \n
-		///  [w x,  v x \n
-		///   O  ,  w x] \n
-		///
-		///
-		auto s_cmv(const double *vs_in, double *cmv_out) noexcept->void;
-		/// \brief 计算六维向量叉乘
-		///
-		/// 用来计算：vec_out = cro_vec_in xv vec_in
-		///
-		///
-		auto s_cv(const double *cro_vel_in, const double *vec_in, double* vec_out) noexcept->void;
-		/// \brief 计算六维向量叉乘
-		///
-		/// 用来计算：vec_out = alpha * cro_vec_in xv vec_in + beta * vec_out
-		///
-		///
-		auto s_cv(double alpha, const double *cro_vel_in, const double *vec_in, double beta, double* vec_out) noexcept->void;
-
-		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
-			const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
-		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
-			double alpha, const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
-		auto s_block_cpyT(const int &block_size_m, const int &block_size_n,
-			const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
-		auto s_block_cpyT(const int &block_size_m, const int &block_size_n,
-			double alpha, const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
-
-		auto s_nd(int n, double a, double *x, int incx) noexcept->void;// number dot
-		auto s_ndv(int n, double a, const double *x, int incx, double *y, int incy) noexcept->void;
-		auto s_vnm(int n, const double *x, int incx) noexcept->double;// vector norm
-		auto s_vsw(int n, double *x, const int incx, double *y, const int incy) noexcept->void;// vector swap
-		auto s_vdv(int n, const double *x, const double *y) noexcept->double;
-		auto s_vdv(int n, const double *x, int incx, const double *y, int incy) noexcept->double;
-		auto s_va(int n, const double* x, double* y) noexcept->void;
-		auto s_va(int n, double alpha, const double* x, double beta, double* y) noexcept->void;
-		auto s_va(int n, const double* x, int incx, double* y, int incy) noexcept->void;
-		auto s_va(int n, double alpha, const double* x, int incx, double beta, double* y, int incy) noexcept->void;
-		auto s_vav(int n, const double* x, const double* y, double* z) noexcept->void;
-		auto s_vav(int n, double alpha, const double* x, double beta, const double* y, double gamma, double* z) noexcept->void;
-		auto s_vav(int n, const double* x, int incx, const double* y, int incy, double* z, int incz) noexcept->void;
-		auto s_vav(int n, double alpha, const double* x, int incx, double beta, const double* y, int incy, double gamma, double* z, int incz) noexcept->void;
-		auto s_mtm(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void;// matrix transpose to matrix
-		auto s_ma(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void;
-		auto s_ma(int m, int n, double alpha, const double* A, int lda, double beta, double* B, int ldb) noexcept->void;
-		auto s_mam(int m, int n, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto s_mam(int m, int n, double alpha, const double* A, int lda, double beta, const double* B, int ldb, double gamma, double *C, int ldc) noexcept->void;
-		auto s_mdm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto s_mdm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void;
-		auto s_mdmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto s_mdmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void;
-		auto s_mdmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto s_mdmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void;
-
-		auto s_dlt_col(const int &dlt_col_num, const int *col_index, const int &m, const int &n, double *A, const int &ldA) noexcept->void;
-
-		auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
-		auto s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept->void;
-		template <typename ...Args>
-		auto s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept->void
-		{
-			double pm[16];
-			s_pm_dot_pm(pm1, pm2, pm);
-			s_pm_dot_pm(pm, args...);
-		}
-		auto s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept->void;
-		auto s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out) noexcept->void;
-		auto s_pm_dot_v3(const double *pm_in, const double *v3_in, double *v3_out) noexcept->void;
-		auto s_inv_pm_dot_v3(const double *inv_pm_in, const double *v3_in, double *v3_out) noexcept->void;
-		auto s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept->void;
-
+		
 		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		///
 		/// 这里原点origin为位姿矩阵pm_out的点,firstAxisPnt位于第一根坐标轴,secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
@@ -469,9 +1000,7 @@ namespace aris
 		///
 		///
 		auto s_sov_aab(const double*pp, const double*vp, const double*ap, double *aab, double *vab, double *ab, const char*order = "321")noexcept->void;
-		auto s_is_equal(int n, const double *v1, const double *v2, double error, int ld_v1 = 1, int ld_v2 = 1) noexcept->bool;
-		auto s_is_equal(int m, int n, const double *m1, int ld_m1, const double *m2, int ld_m2, double error) noexcept->bool;
-
+		
 		template <typename T>
 		inline auto s_sgn(T val)->int { return (T(0) < val) - (val < T(0)); }
 		template <typename T>
@@ -495,7 +1024,10 @@ namespace aris
 		}
 		auto dlmwrite(const char *filename, const double *mtx, const int m, const int n)->void;
 		auto dlmread(const char *filename, double *mtx)->void;
-		
+
+		auto s_is_equal(int n, const double *v1, const double *v2, double error, int ld_v1 = 1, int ld_v2 = 1) noexcept->bool;
+		auto s_is_equal(int m, int n, const double *m1, int ld_m1, const double *m2, int ld_m2, double error) noexcept->bool;
+		auto s_dlt_col(const int &dlt_col_num, const int *col_index, const int &m, const int &n, double *A, const int &ldA) noexcept->void;
 	}
 }
 

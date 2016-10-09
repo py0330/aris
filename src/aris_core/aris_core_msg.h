@@ -9,6 +9,7 @@
 #include <memory>
 #include <algorithm>
 #include <iostream>
+#include <functional>
 
 namespace aris
 {
@@ -87,7 +88,7 @@ namespace aris
 			virtual auto header()const->const MsgHeader& override;
 			virtual auto capacity()const->std::int32_t override { return capacity_; }
 			auto swap(Msg &other)->void;
-			
+
 			virtual ~Msg();
 			explicit Msg(std::int32_t msg_id = 0, std::int32_t size = 0);
 			explicit Msg(const std::string &msg_str);
@@ -112,9 +113,9 @@ namespace aris
 			virtual ~MsgFix() = default;
 			explicit MsgFix(std::int32_t msg_id = 0, std::int32_t size = 0) :MsgBase() {}
 			explicit MsgFix(const std::string &msg_str) :MsgBase(msg_str) {}
-			MsgFix(const MsgBase &other) 
-			{ 
-				resize(other.size()); 
+			MsgFix(const MsgBase &other)
+			{
+				resize(other.size());
 				std::copy_n(reinterpret_cast<const char*>(&other.header()), other.size() + sizeof(MsgHeader), reinterpret_cast<char*>(&header()));
 			}
 			MsgFix(const MsgFix &other) = default;
@@ -144,7 +145,7 @@ namespace aris
 		public:
 			auto resetBuf()->void { buf.resetBuf(); };
 			auto update()->void { buf.update(); }
-			explicit MsgStream(MsgBase& msg): buf(msg), std::iostream(&buf)	{ }
+			explicit MsgStream(MsgBase& msg) : buf(msg), std::iostream(&buf) { }
 
 		private:
 			MsgStreamBuf buf;
@@ -157,6 +158,17 @@ namespace aris
 		auto logFileName()->const std::string&;
 		auto log(const char *data)->const char *;
 		auto log(const std::string& data)->const std::string&;
+
+		template<typename Function, typename ...Args>
+		auto benchmark(std::size_t count, Function func, Args&&... args)->double
+		{
+			auto begin_time = std::chrono::high_resolution_clock::now();
+			// for (std::size_t i = 0; i < count; ++i)std::invoke(func, std::forward<Args>(args)...);//
+			for (std::size_t i = 0; i < count; ++i)func(std::forward<Args>(args)...);
+			auto end_time = std::chrono::high_resolution_clock::now();
+
+			return double((end_time - begin_time).count())/1e9/count;
+		};
 	}
 }
 

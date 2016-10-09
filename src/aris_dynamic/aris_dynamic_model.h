@@ -90,8 +90,8 @@ namespace aris
 			auto getRe(const Coordinate &relative_to, double *re, const char *type = "313")const->void;
 			auto getRq(double *rq)const->void;
 			auto getRq(const Coordinate &relative_to, double *rq)const->void;
-			auto getRm(double *rm, std::size_t rm_ld = 3)const->void;
-			auto getRm(const Coordinate &relative_to, double *rm, std::size_t rm_ld = 3)const->void;
+			auto getRm(double *rm, int rm_ld = 3)const->void;
+			auto getRm(const Coordinate &relative_to, double *rm, int rm_ld = 3)const->void;
 			auto getPe(double *pe, const char *type = "313")const->void;
 			auto getPe(const Coordinate &relative_to, double *pe, const char *type = "313")const->void;
 			auto getPq(double *pq)const->void;
@@ -104,10 +104,10 @@ namespace aris
 			auto getWe(const Coordinate &relative_to, double *we, double *re = nullptr, const char *type = "313")const->void;
 			auto getWq(double *wq, double *rq = nullptr)const->void;
 			auto getWq(const Coordinate &relative_to, double *wq, double *rq = nullptr)const->void;
-			auto getWm(double *wm, double *rm = nullptr, std::size_t wm_ld = 3, std::size_t rm_ld = 3)const->void;
-			auto getWm(const Coordinate &relative_to, double *wm, double *rm = nullptr, std::size_t wm_ld = 3, std::size_t rm_ld = 3)const->void;
-			auto getWa(double *wa, double *rm = nullptr, std::size_t rm_ld = 3)const->void;
-			auto getWa(const Coordinate &relative_to, double *wa, double *rm = nullptr, std::size_t rm_ld = 3)const->void;
+			auto getWm(double *wm, double *rm = nullptr, int wm_ld = 3, int rm_ld = 3)const->void;
+			auto getWm(const Coordinate &relative_to, double *wm, double *rm = nullptr, int wm_ld = 3, int rm_ld = 3)const->void;
+			auto getWa(double *wa, double *rm = nullptr, int rm_ld = 3)const->void;
+			auto getWa(const Coordinate &relative_to, double *wa, double *rm = nullptr, int rm_ld = 3)const->void;
 			auto getVe(double *ve, double *pe = nullptr, const char *type = "313")const->void;
 			auto getVe(const Coordinate &relative_to, double *ve, double *pe = nullptr, const char *type = "313")const->void;
 			auto getVq(double *vq, double *pq = nullptr)const->void;
@@ -124,10 +124,10 @@ namespace aris
 			auto getXe(const Coordinate &relative_to, double *xe, double *we = nullptr, double *re = nullptr, const char *type = "313")const->void;
 			auto getXq(double *xq, double *wq = nullptr, double *rq = nullptr)const->void;
 			auto getXq(const Coordinate &relative_to, double *xq, double *wq = nullptr, double *rq = nullptr)const->void;
-			auto getXm(double *xm, double *wm = nullptr, double *rm = nullptr, std::size_t xm_ld = 3, std::size_t wm_ld = 3, std::size_t rm_ld = 3)const->void;
-			auto getXm(const Coordinate &relative_to, double *xm, double *wm = nullptr, double *rm = nullptr, std::size_t xm_ld = 3, std::size_t wm_ld = 3, std::size_t rm_ld = 3)const->void;
-			auto getXa(double *xa, double *wa = nullptr, double *rm = nullptr, std::size_t rm_ld = 3)const->void;
-			auto getXa(const Coordinate &relative_to, double *xa, double *wa = nullptr, double *rm = nullptr, std::size_t rm_ld = 3)const->void;
+			auto getXm(double *xm, double *wm = nullptr, double *rm = nullptr, int xm_ld = 3, int wm_ld = 3, int rm_ld = 3)const->void;
+			auto getXm(const Coordinate &relative_to, double *xm, double *wm = nullptr, double *rm = nullptr, int xm_ld = 3, int wm_ld = 3, int rm_ld = 3)const->void;
+			auto getXa(double *xa, double *wa = nullptr, double *rm = nullptr, int rm_ld = 3)const->void;
+			auto getXa(const Coordinate &relative_to, double *xa, double *wa = nullptr, double *rm = nullptr, int rm_ld = 3)const->void;
 			auto getAe(double *ae, double *ve = nullptr, double *pe = nullptr, const char *type = "313")const->void;
 			auto getAe(const Coordinate &relative_to, double *ae, double *ve = nullptr, double *pe = nullptr, const char *type = "313")const->void;
 			auto getAq(double *aq, double *vq = nullptr, double *pq = nullptr)const->void;
@@ -176,13 +176,14 @@ namespace aris
 		public:
 			virtual auto update()->void override;
 			virtual auto dim() const->std::size_t = 0;
-			virtual auto cmPtrI() const->const double* = 0;
-			virtual auto cmPtrJ() const->const double* = 0;
 			virtual auto caPtr() const->const double* = 0;
 			virtual auto cfPtr() const->const double* = 0;
-			virtual auto computeVaError()->void {}
-			auto vaError()const->const double6&{ return va_error_; }
+			virtual auto prtCmPtrI() const->const double* = 0;
+			virtual auto prtCmPtrJ() const->const double* = 0;
 			auto colID()const->std::size_t;
+
+			virtual auto kinUpd()->void {};
+			auto vaError()const->const double6&{ return va_error_; }
 
 		protected:
 			virtual ~Constraint();
@@ -208,19 +209,20 @@ namespace aris
 			using doubled = double[DIM];
 
 			static constexpr int Dim() { return DIM; }
-			auto cmI() const->const double6xd &{ return cmI_; }
-			auto cmJ() const->const double6xd &{ return cmJ_; }
 			auto ca() const->const doubled &{ return ca_; }
 			auto cf() const->const doubled &{ return cf_; }
+			auto prtCmI() const->const double6xd &{ return prtCmI_; }
+			auto prtCmJ() const->const double6xd &{ return prtCmJ_; }
 
 		protected:
 			~ConstraintData() = default;
 			ConstraintData() = default;
 
-			double cmI_[6][DIM]{ { 0 } };
-			double cmJ_[6][DIM]{ { 0 } };
 			double cf_[DIM]{ 0 };
 			double ca_[DIM]{ 0 };
+			double prtCmI_[6][DIM]{ { 0 } };
+			double prtCmJ_[6][DIM]{ { 0 } };
+
 
 		private:
 			friend class Model;
@@ -388,6 +390,9 @@ namespace aris
 			virtual auto pm()const->const double4x4& override final;
 			virtual auto vs()const->const double6& override final;
 			virtual auto as()const->const double6& override final;
+			auto rowID()const->std::size_t;
+			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
+			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto pm()->double4x4&;
 			auto vs()->double6&;
 			auto as()->double6&;
@@ -398,17 +403,14 @@ namespace aris
 			auto prtAs() const->const double6&;
 			auto prtFg() const->const double6&;
 			auto prtFv() const->const double6&;
-			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
-			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
-			auto rowID()const->std::size_t;
 			auto setPp(const double *pp)->void;
 			auto setPp(const Coordinate &relative_to, const double *pp)->void;
 			auto setRe(const double *re, const char *type = "313")->void;
 			auto setRe(const Coordinate &relative_to, const double *re, const char *type = "313")->void;
 			auto setRq(const double *rq)->void;
 			auto setRq(const Coordinate &relative_to, const double *rq)->void;
-			auto setRm(const double *rm, std::size_t rm_ld = 3)->void;
-			auto setRm(const Coordinate &relative_to, const double *rm, std::size_t rm_ld = 3)->void;
+			auto setRm(const double *rm, int rm_ld = 3)->void;
+			auto setRm(const Coordinate &relative_to, const double *rm, int rm_ld = 3)->void;
 			auto setPe(const double *pe, const char *type = "313")->void;
 			auto setPe(const Coordinate &relative_to, const double *pe, const char *type = "313")->void;
 			auto setPq(const double *pq)->void;
@@ -421,10 +423,10 @@ namespace aris
 			auto setWe(const Coordinate &relative_to, const double *we, const double *re = nullptr, const char *type = "313")->void;
 			auto setWq(const double *wq, const double *rq = nullptr)->void;
 			auto setWq(const Coordinate &relative_to, const double *wq, const double *rq = nullptr)->void;
-			auto setWm(const double *wm, const double *rm = nullptr, std::size_t wm_ld = 3, std::size_t rm_ld = 3)->void;
-			auto setWm(const Coordinate &relative_to, const double *wm, const double *rm = nullptr, std::size_t wm_ld = 3, std::size_t rm_ld = 3)->void;
-			auto setWa(const double *wa, const double *rm = nullptr, std::size_t rm_ld = 3)->void;
-			auto setWa(const Coordinate &relative_to, const double *wa, const double *rm = nullptr, std::size_t rm_ld = 3)->void;
+			auto setWm(const double *wm, const double *rm = nullptr, int wm_ld = 3, int rm_ld = 3)->void;
+			auto setWm(const Coordinate &relative_to, const double *wm, const double *rm = nullptr, int wm_ld = 3, int rm_ld = 3)->void;
+			auto setWa(const double *wa, const double *rm = nullptr, int rm_ld = 3)->void;
+			auto setWa(const Coordinate &relative_to, const double *wa, const double *rm = nullptr, int rm_ld = 3)->void;
 			auto setVe(const double *ve, const double *pe = nullptr, const char *type = "313")->void;
 			auto setVe(const Coordinate &relative_to, const double *ve, const double *pe = nullptr, const char *type = "313")->void;
 			auto setVq(const double *vq, const double *pq = nullptr)->void;
@@ -441,10 +443,10 @@ namespace aris
 			auto setXe(const Coordinate &relative_to, const double *xe, const double *we = nullptr, const double *re = nullptr, const char *type = "313")->void;
 			auto setXq(const double *xq, const double *wq = nullptr, const double *rq = nullptr)->void;
 			auto setXq(const Coordinate &relative_to, const double *xq, const double *wq = nullptr, const double *rq = nullptr)->void;
-			auto setXm(const double *xm, const double *wm = nullptr, const double *rm = nullptr, std::size_t xm_ld = 3, std::size_t wm_ld = 3, std::size_t rm_ld = 3)->void;
-			auto setXm(const Coordinate &relative_to, const double *xm, const double *vm = nullptr, const double *rm = nullptr, std::size_t xm_ld = 3, std::size_t wm_ld = 3, std::size_t rm_ld = 3)->void;
-			auto setXa(const double *xa, const double *wa = nullptr, const double *rm = nullptr, std::size_t rm_ld = 3)->void;
-			auto setXa(const Coordinate &relative_to, const double *xa, const double *wa = nullptr, const double *rm = nullptr, std::size_t rm_ld = 3)->void;
+			auto setXm(const double *xm, const double *wm = nullptr, const double *rm = nullptr, int xm_ld = 3, int wm_ld = 3, int rm_ld = 3)->void;
+			auto setXm(const Coordinate &relative_to, const double *xm, const double *vm = nullptr, const double *rm = nullptr, int xm_ld = 3, int wm_ld = 3, int rm_ld = 3)->void;
+			auto setXa(const double *xa, const double *wa = nullptr, const double *rm = nullptr, int rm_ld = 3)->void;
+			auto setXa(const Coordinate &relative_to, const double *xa, const double *wa = nullptr, const double *rm = nullptr, int rm_ld = 3)->void;
 			auto setAe(const double *ae, const double *ve = nullptr, const double *pe = nullptr, const char *type = "313")->void;
 			auto setAe(const Coordinate &relative_to, const double *ae, const double *ve = nullptr, const double *pe = nullptr, const char *type = "313")->void;
 			auto setAq(const double *aq, const double *vq = nullptr, const double *pq = nullptr)->void;
@@ -514,10 +516,10 @@ namespace aris
 				s_pm2pq(*pmI2J, pqI2J);
 			}
 			virtual auto dim() const ->std::size_t override { return 1; }
-			virtual auto cmPtrI() const->const double* override { return *cmI(); }
-			virtual auto cmPtrJ() const->const double* override { return *cmJ(); }
 			virtual auto caPtr() const->const double* override { return ca(); }
 			virtual auto cfPtr() const->const double* override { return cf(); }
+			virtual auto prtCmPtrI() const->const double* override { return *prtCmI(); }
+			virtual auto prtCmPtrJ() const->const double* override { return *prtCmJ(); }
 			auto axis()const->int;
 			auto mp() const->double;
 			auto mv() const->double;
@@ -562,8 +564,8 @@ namespace aris
 			virtual auto saveAdams(std::ofstream &file) const->void override;
 			virtual auto update()->void override;
 			virtual auto dim() const ->std::size_t override { return Dim(); }
-			virtual auto cmPtrI() const->const double* override { return *cmI(); }
-			virtual auto cmPtrJ() const->const double* override { return *cmJ(); }
+			virtual auto prtCmPtrI() const->const double* override { return *prtCmI(); }
+			virtual auto prtCmPtrJ() const->const double* override { return *prtCmJ(); }
 			virtual auto caPtr() const->const double* override { return ca(); }
 			virtual auto cfPtr() const->const double* override { return cf(); }
 			auto mp() const->const double6&;
@@ -667,15 +669,15 @@ namespace aris
 			auto ground()->Part&;
 			auto ground()const->const Part&;
 
-			/// 约束矩阵C为m x n维的矩阵,惯量矩阵为m x m维的矩阵
-			/// 约束力为n维的向量,约束加速度为n维向量
-			/// 部件力为m维的向量,部件加速度为m维向量
-			/// 动力学为所求的未知量为部件加速度和约束力,其他均为已知
+			// 约束矩阵C为m x n维的矩阵,惯量矩阵为m x m维的矩阵
+			// 约束力为n维的向量,约束加速度为n维向量
+			// 部件力为m维的向量,部件加速度为m维向量
+			// 动力学为所求的未知量为部件加速度和约束力,其他均为已知
 			virtual auto dyn()->void;
+			auto dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void;
 			auto dynDimM()const->std::size_t;
 			auto dynDimN()const->std::size_t;
 			auto dynDim()const->std::size_t { return dynDimN() + dynDimM(); }
-			auto dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void;
 			auto dynCstMtx(double *cst_mtx) const->void;
 			auto dynIneMtx(double *ine_mtx) const->void;
 			auto dynCstAcc(double *cst_acc) const->void;
@@ -689,25 +691,25 @@ namespace aris
 			auto dynUkn(double *x) const->void;
 			auto dynEnd(const double *x)->void;
 
-			/// 标定矩阵为m x n维的矩阵,其中m为驱动的数目,n为部件个数*10+驱动数*3
+			// 标定矩阵为m x n维的矩阵,其中m为驱动的数目,n为部件个数*10+驱动数*3
+			auto clbSetInverseMethod(std::function<void(int n, double *A)> inverse_method)->void;
 			auto clbDimM()const->std::size_t;
 			auto clbDimN()const->std::size_t;
 			auto clbDimGam()const->std::size_t;
 			auto clbDimFrc()const->std::size_t;
-			auto clbSetInverseMethod(std::function<void(int n, double *A)> inverse_method)->void;
 			auto clbPre()->void;
 			auto clbUpd()->void;
 			auto clbMtx(double *clb_D, double *clb_b) const->void;
 			auto clbUkn(double *clb_x) const->void;
 
-			/// 仿真函数
+			// 仿真函数
 			virtual auto kinFromPin()->void {}
 			virtual auto kinFromVin()->void {}
-			/// 静态仿真
+			// 静态仿真
 			auto simKin(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1)->SimResult;
-			/// 动态仿真
+			// 动态仿真
 			auto simDyn(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1, Script *script = nullptr)->SimResult;
-			/// 直接生成Adams模型,依赖SimDynAkima
+			// 直接生成Adams模型,依赖SimDynAkima
 			auto simToAdams(const std::string &filename, const PlanFunc &func, const PlanParamBase &param, int ms_dt = 10, Script *script = nullptr)->SimResult;
 
 			virtual ~Model();
@@ -739,8 +741,8 @@ namespace aris
 		{
 		public:
 			virtual auto dim() const->std::size_t { return DIM; }
-			virtual auto cmPtrI() const->const double* override { return *ConstraintData<DIM>::cmI(); }
-			virtual auto cmPtrJ() const->const double* override { return *ConstraintData<DIM>::cmJ(); }
+			virtual auto prtCmPtrI() const->const double* override { return *ConstraintData<DIM>::prtCmI(); }
+			virtual auto prtCmPtrJ() const->const double* override { return *ConstraintData<DIM>::prtCmJ(); }
 			virtual auto caPtr() const->const double* override { return ConstraintData<DIM>::ca(); }
 			virtual auto cfPtr() const->const double* override { return ConstraintData<DIM>::cf(); }
 

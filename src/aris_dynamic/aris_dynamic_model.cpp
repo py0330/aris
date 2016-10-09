@@ -99,8 +99,8 @@ namespace aris
 				s_pm2rq(*pm, rq);
 			}
 		}
-		auto Coordinate::getRm(double *rm, std::size_t rm_ld)const->void { if (rm)s_pm2rm(*pm(), rm, rm_ld); }
-		auto Coordinate::getRm(const Coordinate &relative_to, double *rm, std::size_t rm_ld)const->void
+		auto Coordinate::getRm(double *rm, int rm_ld)const->void { if (rm)s_pm2rm(*pm(), rm, rm_ld); }
+		auto Coordinate::getRm(const Coordinate &relative_to, double *rm, int rm_ld)const->void
 		{
 			if (rm) 
 			{
@@ -218,7 +218,7 @@ namespace aris
 				getRq(relative_to, rq);
 			}
 		}
-		auto Coordinate::getWm(double *wm, double *rm, std::size_t wm_ld, std::size_t rm_ld)const->void
+		auto Coordinate::getWm(double *wm, double *rm, int wm_ld, int rm_ld)const->void
 		{
 			if (wm)
 			{
@@ -232,7 +232,7 @@ namespace aris
 				getRm(rm, rm_ld);
 			}
 		}
-		auto Coordinate::getWm(const Coordinate &relative_to, double *wm, double *rm, std::size_t wm_ld, std::size_t rm_ld)const->void
+		auto Coordinate::getWm(const Coordinate &relative_to, double *wm, double *rm, int wm_ld, int rm_ld)const->void
 		{
 			if (wm)
 			{
@@ -247,12 +247,12 @@ namespace aris
 				getRm(relative_to, rm, rm_ld);
 			}
 		}
-		auto Coordinate::getWa(double *wa, double *rm, std::size_t rm_ld)const->void
+		auto Coordinate::getWa(double *wa, double *rm, int rm_ld)const->void
 		{
 			if (wa)	{ s_vs2wa(vs(), wa);}
 			getRm(rm, rm_ld);
 		}
-		auto Coordinate::getWa(const Coordinate &relative_to, double *wa, double *rm, std::size_t rm_ld)const->void
+		auto Coordinate::getWa(const Coordinate &relative_to, double *wa, double *rm, int rm_ld)const->void
 		{
 			if (wa) 
 			{ 
@@ -483,7 +483,7 @@ namespace aris
 				getWq(relative_to, wq, rq);
 			}
 		}
-		auto Coordinate::getXm(double *xm, double *wm, double *rm, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)const->void
+		auto Coordinate::getXm(double *xm, double *wm, double *rm, int xm_ld, int wm_ld, int rm_ld)const->void
 		{
 			if (xm)
 			{
@@ -498,7 +498,7 @@ namespace aris
 				getWm(wm, rm, wm_ld, rm_ld);
 			}
 		}
-		auto Coordinate::getXm(const Coordinate &relative_to, double *xm, double *wm, double *rm, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)const->void
+		auto Coordinate::getXm(const Coordinate &relative_to, double *xm, double *wm, double *rm, int xm_ld, int wm_ld, int rm_ld)const->void
 		{
 			if (xm)
 			{
@@ -513,12 +513,12 @@ namespace aris
 				getWm(relative_to, wm, rm, wm_ld, rm_ld);
 			}
 		}
-		auto Coordinate::getXa(double *xa, double *wa, double *rm, std::size_t rm_ld)const->void
+		auto Coordinate::getXa(double *xa, double *wa, double *rm, int rm_ld)const->void
 		{
 			if (xa)s_as2xa(as(), xa);
 			getWa(wa, rm, rm_ld);
 		}
-		auto Coordinate::getXa(const Coordinate &relative_to, double *xa, double *wa, double *rm, std::size_t rm_ld)const->void
+		auto Coordinate::getXa(const Coordinate &relative_to, double *xa, double *wa, double *rm, int rm_ld)const->void
 		{
 			if (xa) 
 			{
@@ -723,15 +723,14 @@ namespace aris
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
 
 			// update CstMtx //
-			std::fill(const_cast<double*>(cmPtrJ()), const_cast<double*>(cmPtrJ()) + dim() * 6, 0);
-			s_tf_n(dim(), -1, *pm_M2N, cmPtrI(), 0, const_cast<double*>(cmPtrJ()));
+			s_tf_n(dim(), -1.0, *pm_M2N, prtCmPtrI(), const_cast<double*>(prtCmPtrJ()));
 
 			// update CstAcc //
 			std::fill(const_cast<double*>(caPtr()), const_cast<double*>(caPtr()) + dim(), 0);
 			double vn_in_m[6]{ 0 }, tem[6]{ 0 };
 			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVs(), vn_in_m);
 			s_cv(makI().fatherPart().prtVs(), vn_in_m, tem);
-			s_mdmTN(dim(), 1, 6, -1.0, cmPtrI(), dim(), tem, 1, 0.0, const_cast<double*>(caPtr()), 1);
+			s_mdmTN(dim(), 1, 6, -1.0, prtCmPtrI(), dim(), tem, 1, 0.0, const_cast<double*>(caPtr()), 1);
 		}
 		Constraint::~Constraint() = default;
 		Constraint::Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active): Interaction(name, makI, makJ, is_active) {}
@@ -1345,13 +1344,13 @@ namespace aris
 				<< "orientation = (" << ori.toString() << ")\r\n"
 				<< "!\r\n";
 		}
+		auto Marker::update()->void { s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *imp_->pm_); }
 		auto Marker::fatherPart() const->const Part&{ return static_cast<const Part &>(this->father().father()); }
 		auto Marker::fatherPart()->Part& { return static_cast<Part &>(this->father().father()); }
 		auto Marker::pm()const->const double4x4&{ return imp_->pm_; }
 		auto Marker::vs() const->const double6&{ return fatherPart().vs(); }
 		auto Marker::as() const->const double6&{ return fatherPart().as(); }
 		auto Marker::prtPm() const->const double4x4&{ return imp_->prt_pm_; }
-		auto Marker::update()->void { s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *imp_->pm_); }
 		Marker::~Marker() = default;
 		Marker::Marker(const std::string &name, const double *prt_pm, Marker *relative_mak, bool active): Coordinate(name, active)
 		{
@@ -1406,7 +1405,137 @@ namespace aris
 			int row_id_;
 			std::string graphic_file_path_;
 		};
+		auto Part::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			DynEle::saveXml(xml_ele);
+
+			double pe[6];
+			s_pm2pe(*pm(), pe);
+			xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
+			xml_ele.SetAttribute("vel", core::Matrix(1, 6, vs()).toString().c_str());
+			xml_ele.SetAttribute("acc", core::Matrix(1, 6, as()).toString().c_str());
+
+			double iv[10];
+			s_is2iv(*this->prtIs(), iv);
+			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, iv).toString().c_str());
+			xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path_.c_str());
+
+			auto child_mak_group = xml_ele.GetDocument()->NewElement("ChildMarker");
+			xml_ele.InsertEndChild(child_mak_group);
+			markerPool().saveXml(*child_mak_group);
+		}
+		auto Part::saveAdams(std::ofstream &file) const->void
+		{
+			if (this == &model().ground())
+			{
+				file << "!----------------------------------- ground -----------------------------------!\r\n"
+					<< "!\r\n"
+					<< "!\r\n"
+					<< "! ****** Ground Part ******\r\n"
+					<< "!\r\n"
+					<< "defaults model  &\r\n"
+					<< "    part_name = ground\r\n"
+					<< "!\r\n"
+					<< "defaults coordinate_system  &\r\n"
+					<< "    default_coordinate_system = ." << model().name() << ".ground\r\n"
+					<< "!\r\n"
+					<< "! ****** Markers for current part ******\r\n"
+					<< "!\r\n";
+			}
+			else
+			{
+				double pe[6];
+				s_pm2pe(*this->pm(), pe, "313");
+				core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
+
+				file << "!----------------------------------- " << this->name() << " -----------------------------------!\r\n"
+					<< "!\r\n"
+					<< "!\r\n"
+					<< "defaults coordinate_system  &\r\n"
+					<< "    default_coordinate_system = ." << model().name() << ".ground\r\n"
+					<< "!\r\n"
+					<< "part create rigid_body name_and_position  &\r\n"
+					<< "    part_name = ." << model().name() << "." << this->name() << "  &\r\n"
+					<< "    adams_id = " << this->adamsID() << "  &\r\n"
+					<< "    location = (" << loc.toString() << ")  &\r\n"
+					<< "    orientation = (" << ori.toString() << ")\r\n"
+					<< "!\r\n"
+					<< "defaults coordinate_system  &\r\n"
+					<< "    default_coordinate_system = ." << model().name() << "." << this->name() << " \r\n"
+					<< "!\r\n";
+
+
+				double mass = this->prtIs()[0][0] == 0 ? 1 : prtIs()[0][0];
+				std::fill_n(pe, 6, 0);
+				pe[0] = this->prtIs()[1][5] / mass;
+				pe[1] = -this->prtIs()[0][5] / mass;
+				pe[2] = this->prtIs()[0][4] / mass;
+
+				file << "! ****** cm and mass for current part ******\r\n"
+					<< "marker create  &\r\n"
+					<< "    marker_name = ." << model().name() << "." << this->name() << ".cm  &\r\n"
+					<< "    adams_id = " << id() + model().markerSize() << "  &\r\n"
+					<< "    location = ({" << pe[0] << "," << pe[1] << "," << pe[2] << "})  &\r\n"
+					<< "    orientation = (" << "{0,0,0}" << ")\r\n"
+					<< "!\r\n";
+
+				double pm[16];
+				double im[6][6];
+
+				pe[0] = -pe[0];
+				pe[1] = -pe[1];
+				pe[2] = -pe[2];
+
+				s_pe2pm(pe, pm);
+				s_is2is(pm, *this->prtIs(), *im);
+
+				//！注意！//
+				//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy,Ixz,Iyz上互为相反数。别问我为什么,我也不知道。
+				file << "part create rigid_body mass_properties  &\r\n"
+					<< "    part_name = ." << model().name() << "." << this->name() << "  &\r\n"
+					<< "    mass = " << this->prtIs()[0][0] << "  &\r\n"
+					<< "    center_of_mass_marker = ." << model().name() << "." << this->name() << ".cm  &\r\n"
+					<< "    inertia_marker = ." << model().name() << "." << this->name() << ".cm  &\r\n"
+					<< "    ixx = " << im[3][3] << "  &\r\n"
+					<< "    iyy = " << im[4][4] << "  &\r\n"
+					<< "    izz = " << im[5][5] << "  &\r\n"
+					<< "    ixy = " << -im[4][3] << "  &\r\n"
+					<< "    izx = " << -im[5][3] << "  &\r\n"
+					<< "    iyz = " << -im[5][4] << "\r\n"
+					<< "!\r\n";
+			}
+
+			//导入marker
+			this->markerPool().saveAdams(file);
+
+			//导入parasolid
+			std::stringstream stream(imp_->graphic_file_path_);
+			std::string path;
+			while (stream >> path)
+			{
+				file << "file parasolid read &\r\n"
+					<< "file_name = \"" << path << "\" &\r\n"
+					<< "type = ASCII" << " &\r\n"
+					<< "part_name = " << this->name() << " \r\n"
+					<< "\r\n";
+			}
+		}
+		auto Part::update()->void
+		{
+			double tem[6];
+
+			// update inv_pm, prt_vs, prt_as, prt_gravity, prt_fg, prt_fv.
+			s_inv_pm(*pm(), *imp_->inv_pm_);
+			s_tv(*invPm(), vs(), imp_->prt_vs_);
+			s_tv(*invPm(), as(), imp_->prt_as_);
+			s_tv(*invPm(), model().environment().gravity(), imp_->prt_gravity_);
+			s_m6_dot_v6(*prtIs(), prtGravity(), imp_->prt_fg_);
+			s_m6_dot_v6(*prtIs(), imp_->prt_vs_, tem);
+			s_cf(prtVs(), tem, imp_->prt_fv_);
+		}
 		auto Part::rowID()const->std::size_t { return imp_->row_id_; }
+		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
+		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
 		auto Part::pm()const->const double4x4& { return imp_->pm_; }
 		auto Part::pm()->double4x4&{ return imp_->pm_; }
 		auto Part::vs()const->const double6&{ return imp_->vs_; }
@@ -1420,8 +1549,6 @@ namespace aris
 		auto Part::prtAs() const->const double6&{ return imp_->prt_as_; }
 		auto Part::prtFg() const->const double6&{ return imp_->prt_fg_; }
 		auto Part::prtFv() const->const double6&{ return imp_->prt_fv_; }
-		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
-		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
 		auto Part::setPp(const double *pp)->void { if (pp)s_pp2pm(pp, *pm()); }
 		auto Part::setPp(const Coordinate &relative_to, const double *pp)->void 
 		{ 
@@ -1452,8 +1579,8 @@ namespace aris
 				setRm(relative_to, rm);
 			}
 		}
-		auto Part::setRm(const double *rm, std::size_t rm_ld)->void { if (rm)s_rm2pm(rm, *pm(), rm_ld); }
-		auto Part::setRm(const Coordinate &relative_to, const double *rm, std::size_t rm_ld)->void{if (rm) s_rm2rm(*relative_to.pm(), rm, *pm(), rm_ld, 4);}
+		auto Part::setRm(const double *rm, int rm_ld)->void { if (rm)s_rm2pm(rm, *pm(), rm_ld); }
+		auto Part::setRm(const Coordinate &relative_to, const double *rm, int rm_ld)->void{if (rm) s_rm2rm(*relative_to.pm(), rm, *pm(), rm_ld, 4);}
 		auto Part::setPe(const double *pe, const char *type)->void { if (pe)s_pe2pm(pe, *pm(), type); }
 		auto Part::setPe(const Coordinate &relative_to, const double *pe, const char *type)->void 
 		{ 
@@ -1538,7 +1665,7 @@ namespace aris
 				setWa(relative_to, wa);
 			}
 		}
-		auto Part::setWm(const double *wm_in, const double *rm_in, std::size_t wm_ld, std::size_t rm_ld)->void
+		auto Part::setWm(const double *wm_in, const double *rm_in, int wm_ld, int rm_ld)->void
 		{
 			setRm(rm_in, rm_ld);
 			double rm[9], wa[3];
@@ -1549,7 +1676,7 @@ namespace aris
 				setWa(wa);
 			}
 		}
-		auto Part::setWm(const Coordinate &relative_to, const double *wm_in, const double *rm_in, std::size_t wm_ld, std::size_t rm_ld)->void
+		auto Part::setWm(const Coordinate &relative_to, const double *wm_in, const double *rm_in, int wm_ld, int rm_ld)->void
 		{
 			setRm(relative_to, rm_in, rm_ld);
 			double rm[9], wa[3];
@@ -1560,7 +1687,7 @@ namespace aris
 				setWa(relative_to, wa);
 			}
 		}
-		auto Part::setWa(const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
+		auto Part::setWa(const double *wa_in, const double *rm_in, int rm_ld)->void
 		{
 			setRm(rm_in, rm_ld);
 			if (wa_in) 
@@ -1571,7 +1698,7 @@ namespace aris
 				setVp(vp, pp);
 			}
 		}
-		auto Part::setWa(const Coordinate &relative_to, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
+		auto Part::setWa(const Coordinate &relative_to, const double *wa_in, const double *rm_in, int rm_ld)->void
 		{
 			setRm(relative_to, rm_in, rm_ld);
 			if (wa_in) 
@@ -1748,7 +1875,7 @@ namespace aris
 				setWq(relative_to, wq_in, rq_in);
 			}
 		}
-		auto Part::setXm(const double *xm_in, const double *wm_in, const double *rm_in, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)->void
+		auto Part::setXm(const double *xm_in, const double *wm_in, const double *rm_in, int xm_ld, int wm_ld, int rm_ld)->void
 		{
 			if (xm_in)
 			{
@@ -1763,7 +1890,7 @@ namespace aris
 				setWm(wm_in, rm_in);
 			}
 		}
-		auto Part::setXm(const Coordinate &relative_to, const double *xm_in, const double *wm_in, const double *rm_in, std::size_t xm_ld, std::size_t wm_ld, std::size_t rm_ld)->void
+		auto Part::setXm(const Coordinate &relative_to, const double *xm_in, const double *wm_in, const double *rm_in, int xm_ld, int wm_ld, int rm_ld)->void
 		{
 			if (xm_in)
 			{
@@ -1778,7 +1905,7 @@ namespace aris
 				setWm(relative_to, wm_in, rm_in);
 			}
 		}
-		auto Part::setXa(const double *xa_in, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
+		auto Part::setXa(const double *xa_in, const double *wa_in, const double *rm_in, int rm_ld)->void
 		{
 			if (xa_in) 
 			{
@@ -1795,7 +1922,7 @@ namespace aris
 				setWa(wa_in, rm_in, rm_ld);
 			}
 		}
-		auto Part::setXa(const Coordinate &relative_to, const double *xa_in, const double *wa_in, const double *rm_in, std::size_t rm_ld)->void
+		auto Part::setXa(const Coordinate &relative_to, const double *xa_in, const double *wa_in, const double *rm_in, int rm_ld)->void
 		{
 			if (xa_in)
 			{
@@ -1906,134 +2033,6 @@ namespace aris
 			double vs[6];
 			if (vs_in) std::copy(vs_in, vs_in + 6, vs); else getVs(relative_to, vs);
 			if (as_in) s_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), vs, as_in, as());
-		}
-		auto Part::saveXml(aris::core::XmlElement &xml_ele) const->void
-		{
-			DynEle::saveXml(xml_ele);
-
-			double pe[6];
-			s_pm2pe(*pm(), pe);
-			xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
-			xml_ele.SetAttribute("vel", core::Matrix(1, 6, vs()).toString().c_str());
-			xml_ele.SetAttribute("acc", core::Matrix(1, 6, as()).toString().c_str());
-
-			double iv[10];
-			s_is2iv(*this->prtIs(), iv);
-			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, iv).toString().c_str());
-			xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path_.c_str());
-
-			auto child_mak_group = xml_ele.GetDocument()->NewElement("ChildMarker");
-			xml_ele.InsertEndChild(child_mak_group);
-			markerPool().saveXml(*child_mak_group);
-		}
-		auto Part::saveAdams(std::ofstream &file) const->void
-		{
-			if (this == &model().ground())
-			{
-				file << "!----------------------------------- ground -----------------------------------!\r\n"
-					<< "!\r\n"
-					<< "!\r\n"
-					<< "! ****** Ground Part ******\r\n"
-					<< "!\r\n"
-					<< "defaults model  &\r\n"
-					<< "    part_name = ground\r\n"
-					<< "!\r\n"
-					<< "defaults coordinate_system  &\r\n"
-					<< "    default_coordinate_system = ." << model().name() << ".ground\r\n"
-					<< "!\r\n"
-					<< "! ****** Markers for current part ******\r\n"
-					<< "!\r\n";
-			}
-			else
-			{
-				double pe[6];
-				s_pm2pe(*this->pm(), pe, "313");
-				core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
-
-				file << "!----------------------------------- " << this->name() << " -----------------------------------!\r\n"
-					<< "!\r\n"
-					<< "!\r\n"
-					<< "defaults coordinate_system  &\r\n"
-					<< "    default_coordinate_system = ." << model().name() << ".ground\r\n"
-					<< "!\r\n"
-					<< "part create rigid_body name_and_position  &\r\n"
-					<< "    part_name = ." << model().name() << "." << this->name() << "  &\r\n"
-					<< "    adams_id = " << this->adamsID() << "  &\r\n"
-					<< "    location = (" << loc.toString() << ")  &\r\n"
-					<< "    orientation = (" << ori.toString() << ")\r\n"
-					<< "!\r\n"
-					<< "defaults coordinate_system  &\r\n"
-					<< "    default_coordinate_system = ." << model().name() << "." << this->name() << " \r\n"
-					<< "!\r\n";
-
-
-				double mass = this->prtIs()[0][0] == 0 ? 1 : prtIs()[0][0];
-				std::fill_n(pe, 6, 0);
-				pe[0] = this->prtIs()[1][5] / mass;
-				pe[1] = -this->prtIs()[0][5] / mass;
-				pe[2] = this->prtIs()[0][4] / mass;
-
-				file << "! ****** cm and mass for current part ******\r\n"
-					<< "marker create  &\r\n"
-					<< "    marker_name = ." << model().name() << "." << this->name() << ".cm  &\r\n"
-					<< "    adams_id = " << id() + model().markerSize() << "  &\r\n"
-					<< "    location = ({" << pe[0] << "," << pe[1] << "," << pe[2] << "})  &\r\n"
-					<< "    orientation = (" << "{0,0,0}" << ")\r\n"
-					<< "!\r\n";
-
-				double pm[16];
-				double im[6][6];
-
-				pe[0] = -pe[0];
-				pe[1] = -pe[1];
-				pe[2] = -pe[2];
-
-				s_pe2pm(pe, pm);
-				s_is2is(pm, *this->prtIs(), *im);
-
-				///！注意！///
-				//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy,Ixz,Iyz上互为相反数。别问我为什么,我也不知道。
-				file << "part create rigid_body mass_properties  &\r\n"
-					<< "    part_name = ." << model().name() << "." << this->name() << "  &\r\n"
-					<< "    mass = " << this->prtIs()[0][0] << "  &\r\n"
-					<< "    center_of_mass_marker = ." << model().name() << "." << this->name() << ".cm  &\r\n"
-					<< "    inertia_marker = ." << model().name() << "." << this->name() << ".cm  &\r\n"
-					<< "    ixx = " << im[3][3] << "  &\r\n"
-					<< "    iyy = " << im[4][4] << "  &\r\n"
-					<< "    izz = " << im[5][5] << "  &\r\n"
-					<< "    ixy = " << -im[4][3] << "  &\r\n"
-					<< "    izx = " << -im[5][3] << "  &\r\n"
-					<< "    iyz = " << -im[5][4] << "\r\n"
-					<< "!\r\n";
-			}
-
-			//导入marker
-			this->markerPool().saveAdams(file);
-
-			//导入parasolid
-			std::stringstream stream(imp_->graphic_file_path_);
-			std::string path;
-			while (stream >> path)
-			{
-				file << "file parasolid read &\r\n"
-					<< "file_name = \"" << path << "\" &\r\n"
-					<< "type = ASCII" << " &\r\n"
-					<< "part_name = " << this->name() << " \r\n"
-					<< "\r\n";
-			}
-		}
-		auto Part::update()->void
-		{
-			double tem[6];
-
-			// update inv_pm, prt_vs, prt_as, prt_gravity, prt_fg, prt_fv.
-			s_inv_pm(*pm(), *imp_->inv_pm_);
-			s_tv(*invPm(), vs(), imp_->prt_vs_);
-			s_tv(*invPm(), as(), imp_->prt_as_);
-			s_tv(*invPm(), model().environment().gravity(), imp_->prt_gravity_);
-			s_m6_dot_v6(*prtIs(), prtGravity(), imp_->prt_fg_);
-			s_m6_dot_v6(*prtIs(), imp_->prt_vs_, tem);
-			s_cf(prtVs(), tem, imp_->prt_fv_);
 		}
 		auto Part::operator=(Part &&other)->Part&
 		{
@@ -2195,6 +2194,9 @@ namespace aris
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
 			setMv(velDiff_in_J[axis()]);
 		}
+		auto Motion::absID()const->std::size_t { return id(); }
+		auto Motion::slaID()const->std::size_t { return imp_->sla_id_; }
+		auto Motion::phyID()const->std::size_t { return imp_->phy_id_; }
 		auto Motion::axis()const->int { return imp_->component_axis_; }
 		auto Motion::frcCoe()const->const double3& { return imp_->frc_coe_; }
 		auto Motion::setFrcCoe(const double *frc_coe)->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
@@ -2209,9 +2211,6 @@ namespace aris
 		auto Motion::mfDyn() const->double { return imp_->mot_fce_dyn_; }
 		auto Motion::setMfDyn(double mot_dyn_fce)->void { imp_->mot_fce_dyn_ = mot_dyn_fce; }
 		auto Motion::mfFrc() const->double { return s_sgn(imp_->mot_vel_)*frcCoe()[0] + imp_->mot_vel_*frcCoe()[1] + imp_->mot_acc_*frcCoe()[2]; }
-		auto Motion::absID()const->std::size_t { return id(); }
-		auto Motion::slaID()const->std::size_t { return imp_->sla_id_;}
-		auto Motion::phyID()const->std::size_t { return imp_->phy_id_;}
 		Motion::~Motion() = default;
 		Motion::Motion(const std::string &name, Marker &makI, Marker &makJ, int component_axis, const double *frc_coe, bool active): Constraint(name, makI, makJ, active)
 		{
@@ -2223,7 +2222,7 @@ namespace aris
 
 			double loc_cst[6]{ 0,0,0,0,0,0, };
 			loc_cst[axis()] = 1;
-			s_tf(*this->makI().prtPm(), loc_cst, *cmI_);
+			s_tf(*this->makI().prtPm(), loc_cst, *prtCmI_);
 		}
 		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) : Constraint(father, xml_ele)
 		{
@@ -2232,7 +2231,7 @@ namespace aris
 
 			double loc_cst[6]{ 0,0,0,0,0,0, };
 			loc_cst[axis()] = 1;
-			s_tf(*this->makI().prtPm(), loc_cst, *cmI_);
+			s_tf(*this->makI().prtPm(), loc_cst, *prtCmI_);
 
 			imp_->sla_id_ = attributeInt32(xml_ele, "slave_id");
 		}
@@ -2530,14 +2529,10 @@ namespace aris
 				imp_->mot_vec_sla2abs_.at(mot.slaID()) = mot.id();
 			}
 			
-			auto &debug1 = imp_->mot_vec_sla2abs_;
-
 			// 更新 mot_vec_phy2abs_
 			imp_->mot_vec_phy2abs_.clear();
 			for (auto id : imp_->mot_vec_sla2abs_)if (id != std::numeric_limits<std::size_t>::max())imp_->mot_vec_phy2abs_.push_back(id);
 			
-			auto &debug2 = imp_->mot_vec_phy2abs_;
-
 			// 更新 motion的phy_id
 			for (std::size_t phy_id = 0; phy_id < imp_->mot_vec_phy2abs_.size(); ++phy_id)
 			{
@@ -2572,16 +2567,16 @@ namespace aris
 			{
 				if (jnt.active())
 				{
-					s_block_cpy(6, jnt.dim(), jnt.cmPtrI(), 0, 0, jnt.dim(), cst_mtx, jnt.makI().fatherPart().rowID(), jnt.colID(), dynDimN());
-					s_block_cpy(6, jnt.dim(), jnt.cmPtrJ(), 0, 0, jnt.dim(), cst_mtx, jnt.makJ().fatherPart().rowID(), jnt.colID(), dynDimN());
+					s_block_cpy(6, jnt.dim(), jnt.prtCmPtrI(), 0, 0, jnt.dim(), cst_mtx, jnt.makI().fatherPart().rowID(), jnt.colID(), dynDimN());
+					s_block_cpy(6, jnt.dim(), jnt.prtCmPtrJ(), 0, 0, jnt.dim(), cst_mtx, jnt.makJ().fatherPart().rowID(), jnt.colID(), dynDimN());
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot.active())
 				{
-					s_block_cpy(6, 1, *mot.cmI(), 0, 0, 1, cst_mtx, mot.makI().fatherPart().rowID(), mot.colID(), dynDimN());
-					s_block_cpy(6, 1, *mot.cmJ(), 0, 0, 1, cst_mtx, mot.makJ().fatherPart().rowID(), mot.colID(), dynDimN());
+					s_block_cpy(6, 1, *mot.prtCmI(), 0, 0, 1, cst_mtx, mot.makI().fatherPart().rowID(), mot.colID(), dynDimN());
+					s_block_cpy(6, 1, *mot.prtCmJ(), 0, 0, 1, cst_mtx, mot.makJ().fatherPart().rowID(), mot.colID(), dynDimN());
 				}
 			}
 		}
@@ -2701,13 +2696,13 @@ namespace aris
 		}
 		auto Model::dynMtx(double *D, double *b) const->void
 		{
-			dynCstMtx(&D[(dynDim())*dynDimM()]);
+			dynCstMtx(&D[dynDim()*dynDimM()]);
 			s_block_cpy(dynDimM(), dynDimN(), &D[(dynDim())*dynDimM()], 0, 0, dynDimN(), D, 0, dynDimM(), dynDim());
 
-			dynIneMtx(&D[(dynDim())*dynDimM()]);
+			dynIneMtx(&D[dynDim()*dynDimM()]);
 			s_block_cpy(dynDimM(), dynDimM(), -1, &D[(dynDim())*dynDimM()], 0, 0, dynDimM(), 0, D, 0, 0, dynDim());
 
-			std::fill_n(&D[(dynDim())*dynDimM()], dynDimN()*(dynDim()), 0);
+			std::fill_n(&D[dynDim()*dynDimM()], dynDimN()*(dynDim()), 0);
 			s_block_cpyT(dynDimM(), dynDimN(), D, 0, dynDimM(), dynDim(), D, dynDimM(), 0, dynDim());
 
 			dynPrtFce(b);
@@ -3159,7 +3154,7 @@ namespace aris
 				0,0,0,0,0
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 		RevoluteJoint::RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
 		{
@@ -3173,7 +3168,7 @@ namespace aris
 				0,0,0,0,0
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 
 		PrismaticJoint::PrismaticJoint(const std::string &name, Marker &makI, Marker &makJ): JointTemplate(name, makI, makJ)
@@ -3188,7 +3183,7 @@ namespace aris
 				0,0,0,0,1
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 		PrismaticJoint::PrismaticJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
 		{
@@ -3202,7 +3197,7 @@ namespace aris
 				0,0,0,0,1
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 
 		auto UniversalJoint::update()->void
@@ -3223,23 +3218,23 @@ namespace aris
 			double c_in_m[3];
 			s_c3(axis_i_m, axis_j_m, c_in_m);
 
-			cmI_[3][3] = c_in_m[0];
-			cmI_[4][3] = c_in_m[1];
-			cmI_[5][3] = c_in_m[2];
+			prtCmI_[3][3] = c_in_m[0];
+			prtCmI_[4][3] = c_in_m[1];
+			prtCmI_[5][3] = c_in_m[2];
 			
 			
 			// // update csmJ //
-			std::fill_n(static_cast<double *>(*cmJ_), this->dim() * 6, 0);
+			std::fill_n(static_cast<double *>(*prtCmJ_), this->dim() * 6, 0);
 			double pm_M2N[4][4];
 			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
-			s_tf_n(Dim(), -1, *pm_M2N, *cmI_, 0, *cmJ_);
+			s_tfa_n(Dim(), -1.0, *pm_M2N, *prtCmI_, 0.0, *prtCmJ_);
 
 			// // update A_c // //
 			std::fill(const_cast<double*>(caPtr()), const_cast<double*>(caPtr()) + dim(), 0);
 			double vn_in_m[6]{ 0 }, tem[6]{ 0 };
 			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVs(), vn_in_m);
 			s_cv(makI().fatherPart().prtVs(), vn_in_m, tem);
-			s_mdmTN(dim(), 1, 6, -1.0, cmPtrI(), dim(), tem, 1, 0.0, const_cast<double*>(caPtr()), 1);
+			s_mdmTN(dim(), 1, 6, -1.0, prtCmPtrI(), dim(), tem, 1, 0.0, const_cast<double*>(caPtr()), 1);
 
 			// compute c_dot //
 			// c_dot = i_dot x j + i x j_dot
@@ -3248,7 +3243,7 @@ namespace aris
 			s_c3(vm_in_m + 3, axis_i_m, axis_i_dot_m);
 			s_c3(vn_in_m + 3, axis_j_m, axis_j_dot_m);
 			s_c3(axis_i_dot_m, axis_j_m, cdot_in_m);
-			s_c3(1.0, axis_i_m, axis_j_dot_m, 1.0, cdot_in_m);
+			s_c3a(1.0, axis_i_m, axis_j_dot_m, 1.0, cdot_in_m);
 			
 			double v_diff_m[3]{ vn_in_m[3] - vm_in_m[3],vn_in_m[4] - vm_in_m[4] ,vn_in_m[5] - vm_in_m[5] };
 			ca_[3] += s_vdv(3, cdot_in_m, v_diff_m);
@@ -3265,7 +3260,7 @@ namespace aris
 				0,0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 		UniversalJoint::UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele) : JointTemplate(father, xml_ele)
 		{
@@ -3279,7 +3274,7 @@ namespace aris
 				0,0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 
 		SphericalJoint::SphericalJoint(const std::string &name, Marker &makI, Marker &makJ): JointTemplate(name, makI, makJ)
@@ -3294,7 +3289,7 @@ namespace aris
 				0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 		SphericalJoint::SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
 		{
@@ -3308,7 +3303,7 @@ namespace aris
 				0,0,0,
 			};
 
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *cmI_);
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 
 		auto SingleComponentForce::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -3354,7 +3349,7 @@ namespace aris
 			s_tf(*makI().prtPm(), fce_value_, fsI_);
 			double pm_M2N[16];
 			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), pm_M2N);
-			s_tf(-1, pm_M2N, fsI_, 0, fsJ_);
+			s_tfa(-1.0, pm_M2N, fsI_, 0.0, fsJ_);
 		}
 		SingleComponentForce::SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, int componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
 		SingleComponentForce::SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele) : Force(father, xml_ele), component_axis_(attributeInt32(xml_ele, "component")) {}

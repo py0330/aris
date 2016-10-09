@@ -2,7 +2,12 @@
 #include <iostream>
 #include <aris.h>
 
+#ifdef WIN32
 #include "C:\Eigen\Eigen"
+#endif
+#ifdef UNIX
+#include "/usr/Eigen/Eigen"
+#endif
 
 using namespace aris::dynamic;
 
@@ -32,8 +37,8 @@ const char xml_file[] =
 "                    <u4o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
 "                    <u5o pe=\"{ -1,0,0,0,0,0 }\"/>"
 "                    <u6o pe=\"{ -1,0,0,0,0,0 }\"/>"
-"                    <u1j pe=\"{ 1,0.1,0,PI/2,PI/2,PI/2 }\"/>"
-"                    <u2j pe=\"{ 1,-0.1,0,PI/2,PI/2,PI/2 }\"/>"
+"                    <u1j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                    <u2j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
 "                    <u3j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
 "                    <u4j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
 "                    <u5j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
@@ -249,6 +254,8 @@ public:
 		p6a_->setPe(*ground().markerPool().findByName("u6o"), pe, "132");
 		pe2[1] = s_vnm(3, pp, 1);
 		p6b_->setPe(*p6a_, pe2);
+
+		for (auto &mot : motionPool())mot.update();
 	};
 	auto setVee(double *vee, double *pee)
 	{
@@ -337,23 +344,31 @@ void test_model_stewart()
 {
 	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
 	
+	
+
 	try 
 	{
 		Robot rbt;
+
+		
 
 		rbt.loadString(xml_file);
 		double pee[6]{ 0,1.5,1.2,0,0.1,0 };
 		double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
 		rbt.setVee(vee, pee);
 	
+		// 1.78e-5 //
+		auto time = aris::core::benchmark(100000, [&rbt, &pee, &vee]() {rbt.setVee(vee, pee); });
+		std::cout << "benchmark Robot::setVee:" << time << std::endl;
+
 		aris::dynamic::PlanFunc plan = [&pee, &vee](Model &model, const PlanParamBase &param)->int
 		{
 			auto &rbt = static_cast<Robot&>(model);
 
-			double pee_local[6];
+			double pee_local[6], vee_local[6]{0,0.1,0,0,0,0};
 			std::copy(pee, pee + 6, pee_local);
 			pee_local[1] += param.count_ *0.0001;
-			rbt.setPee(pee_local);
+			rbt.setVee(vee_local, pee_local);
 
 			return 5000 - param.count_;
 		};
@@ -381,7 +396,24 @@ void test_model_stewart()
 			xm = Dm.lu().solve(bm);
 		});
 
-		rbt.dyn();
+		rbt.dynPre();
+		std::vector<double> D(rbt.dynDim() * rbt.dynDim());
+		std::vector<double> b(rbt.dynDim());
+		std::vector<double> x(rbt.dynDim());
+		std::vector<double> C(rbt.dynDimM() * rbt.dynDimN());
+		rbt.dynUpd();
+		rbt.dynMtx(D.data(), b.data());
+		rbt.dynCstMtx(C.data());
+		//dsp(D.data() + rbt.dynDim()*rbt.dynDimM(), rbt.dynDimN(), rbt.dynDimM(),0,0, rbt.dynDim());
+		//dsp(C.data(), rbt.dynDimN(), rbt.dynDimM());
+		rbt.dynSov(D.data(), b.data(), x.data());
+		rbt.dynEnd(x.data());
+
+		//1.93e-5, 3.61 for linux
+		std::cout << "benchmark Robot::dynUpd():" << aris::core::benchmark(100000, [&rbt]() {rbt.dynUpd(); }) << std::endl;
+
+
+		//rbt.dyn();
 
 		for (auto &mot : rbt.motionPool())
 		{

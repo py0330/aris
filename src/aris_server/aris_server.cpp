@@ -147,6 +147,8 @@ namespace aris
 
 				this->parser_vec_.at(cmdPair->second).operator()(*server_, cmd, params, cmd_msg);
 
+				if (plan_vec_.at(cmdPair->second) == nullptr) return;
+
 				if (cmd_msg.size() < sizeof(GaitParamBase))
 				{
 					throw std::runtime_error(std::string("parse function of command \"") + cmdPair->first + "\" failed: because it returned invalid cmd_msg");
@@ -154,8 +156,6 @@ namespace aris
 
 				reinterpret_cast<GaitParamBase *>(cmd_msg.data())->cmd_type_ = RUN_GAIT;
 				reinterpret_cast<GaitParamBase *>(cmd_msg.data())->gait_id_ = cmdPair->second;
-
-				if (plan_vec_.at(cmdPair->second) == nullptr) return;
 			}
 
 			cmd_msg.setMsgID(0);
