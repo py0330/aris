@@ -1087,10 +1087,10 @@ void test_auto_kinematic()
 void test_model()
 {
 	std::cout << std::endl << "-----------------test model---------------------" << std::endl;
-	//test_coordinate();
-	//test_part();
-	//test_simulation();
-	test_auto_kinematic();
+	test_coordinate();
+	test_part();
+	test_simulation();
+	//test_auto_kinematic();
 	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
 }
 

@@ -27,10 +27,10 @@ namespace aris
 		class MsgBase
 		{
 		public:
-			virtual auto resize(std::int32_t size)->void = 0;
-			virtual auto header()->MsgHeader& = 0;
-			virtual auto header()const->const MsgHeader& = 0;
-			virtual auto capacity()const->std::int32_t = 0;
+			auto virtual resize(std::int32_t size)->void = 0;
+			auto virtual header()->MsgHeader& = 0;
+			auto virtual header()const->const MsgHeader& = 0;
+			auto virtual capacity()const->std::int32_t = 0;
 			auto empty()const->bool { return size() == 0; }
 			auto size() const->std::int32_t;
 			auto setType(std::int64_t type)->void;
@@ -83,10 +83,10 @@ namespace aris
 		class Msg final :public MsgBase
 		{
 		public:
-			virtual auto resize(std::int32_t size)->void override;
-			virtual auto header()->MsgHeader& override;
-			virtual auto header()const->const MsgHeader& override;
-			virtual auto capacity()const->std::int32_t override { return capacity_; }
+			auto virtual resize(std::int32_t size)->void override;
+			auto virtual header()->MsgHeader& override;
+			auto virtual header()const->const MsgHeader& override;
+			auto virtual capacity()const->std::int32_t override { return capacity_; }
 			auto swap(Msg &other)->void;
 
 			virtual ~Msg();
@@ -105,10 +105,10 @@ namespace aris
 		class MsgFix final :public MsgBase
 		{
 		public:
-			virtual auto resize(std::int32_t size)->void override { header().msg_size_ = size; };
-			virtual auto header()->MsgHeader& override { return *reinterpret_cast<MsgHeader*>(data_); };
-			virtual auto header()const->const MsgHeader& override{ return *reinterpret_cast<const MsgHeader*>(data_); };
-			virtual auto capacity()const->std::int32_t override { return CAPACITY; }
+			auto virtual resize(std::int32_t size)->void override { header().msg_size_ = size; };
+			auto virtual header()->MsgHeader& override { return *reinterpret_cast<MsgHeader*>(data_); };
+			auto virtual header()const->const MsgHeader& override{ return *reinterpret_cast<const MsgHeader*>(data_); };
+			auto virtual capacity()const->std::int32_t override { return CAPACITY; }
 
 			virtual ~MsgFix() = default;
 			explicit MsgFix(std::int32_t msg_id = 0, std::int32_t size = 0) :MsgBase() {}

@@ -164,7 +164,7 @@ class Robot :public aris::dynamic::Model
 {
 public:
 	using Model::loadXml;
-	virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override
+	auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override
 	{
 		Model::loadXml(xml_ele);
 
@@ -205,8 +205,8 @@ public:
 		ground().markerPool().findByName("u6o")->update();
 	}
 
-	virtual auto kinFromPin()->void override{};
-	virtual auto kinFromVin()->void override{};
+	auto virtual kinFromPin()->void override{};
+	auto virtual kinFromVin()->void override{};
 
 	auto setPee(double *pee) 
 	{

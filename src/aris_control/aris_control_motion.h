@@ -66,7 +66,7 @@ namespace aris
             };
 
 			static auto Type()->const std::string &{ static const std::string type("Motion"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string&{ return Type(); }
             auto maxPos()->double;
             auto minPos()->double;
             auto maxVel()->double;
@@ -76,9 +76,9 @@ namespace aris
 			Motion(Object &father, const aris::core::XmlElement &xml_ele);
 
         protected:
-            virtual auto readUpdate()->void override;
-            virtual auto writeUpdate()->void override;
-            virtual auto logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override;
+            auto virtual readUpdate()->void override;
+            auto virtual writeUpdate()->void override;
+            auto virtual logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override;
 
         private:
             class Imp;

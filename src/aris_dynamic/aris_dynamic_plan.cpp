@@ -18,7 +18,7 @@ namespace aris
 			std::fill(lhs.begin(), lhs.end(), 0);
 			std::fill(rhs.begin(), rhs.end(), 0);
 
-			aris::dynamic::s_mdm(data.size, 1, data.size, 1, data.Ji, data.size, data.g, 1, 0, J_dot_g.data(), 1);
+			aris::dynamic::s_mm(data.size, 1, data.size, data.Ji, data.size, data.g, 1, J_dot_g.data(), 1);
 
 			for (int i = 0; i < data.size; ++i)
 			{
@@ -50,9 +50,9 @@ namespace aris
 			std::fill(lhs.begin(), lhs.end(), 0);
 			std::fill(rhs.begin(), rhs.end(), 0);
 
-			aris::dynamic::s_mdm(locData.size, 1, locData.size, 1, locData.Ji, locData.size, locData.g, 1, 0, J_dot_g.data(), 1);
-			aris::dynamic::s_mdm(locData.size, 1, locData.size, 1, locData.Ji, locData.size, locData.h, 1, 0, J_dot_h.data(), 1);
-			aris::dynamic::s_mdm(locData.size, 1, locData.size, 1, locData.dJi, locData.size, locData.g, 1, 0, dJ_dot_g.data(), 1);
+			aris::dynamic::s_mm(locData.size, 1, locData.size, locData.Ji, locData.size, locData.g, 1, J_dot_g.data(), 1);
+			aris::dynamic::s_mm(locData.size, 1, locData.size, locData.Ji, locData.size, locData.h, 1, J_dot_h.data(), 1);
+			aris::dynamic::s_mm(locData.size, 1, locData.size, locData.dJi, locData.size, locData.g, 1, dJ_dot_g.data(), 1);
 
 			for (int i = 0; i < locData.size; ++i)
 			{
@@ -70,7 +70,7 @@ namespace aris
 
 			return ((data.ddsLhs < 0) && (data.ddsRhs > 0));
 		}
-		/*考虑dds是否有合法取值的情况下,来计算ds的取值范围*/
+		// 考虑dds是否有合法取值的情况下,来计算ds的取值范围 //
 		bool FastPath::computeDsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			const double errorBund = 1e-7;
@@ -142,7 +142,7 @@ namespace aris
 
 			return true;
 		}
-		/*考虑下一时刻ds能否让dds取到合法值的dds范围*/
+		// 考虑下一时刻ds能否让dds取到合法值的dds范围 //
 		bool FastPath::computeDdsBund(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)
 		{
 			auto locData = data;
@@ -160,10 +160,10 @@ namespace aris
 			return ((data.ddsLhs < 0) && (data.ddsRhs > 0));
 		}
 
-		/*经过多少个减速后加速*/
+		// 经过多少个减速后加速 //
 		int FastPath::computeForward(std::list<Node>::iterator iter, FastPath::Data &data, int num)
 		{
-			/*进行n个减速*/
+			// 进行n个减速 //
 			for (int i = 0; i < num; ++i)
 			{
 				auto c_iter = std::prev(iter, num - i);
@@ -181,7 +181,7 @@ namespace aris
 				std::next(c_iter)->s = c_iter->s + c_iter->ds * dt + 0.5 * c_iter->dds * dt*dt;
 			}
 
-			/*减速完了在最后一个结点进行加速*/
+			// 减速完了在最后一个结点进行加速 //
 			data.time = iter->time;
 			data.s = iter->s;
 			data.ds = iter->ds;
@@ -199,7 +199,7 @@ namespace aris
 		}
 		int FastPath::computeBackward(std::list<Node>::iterator iter, FastPath::Data &data, int num)
 		{
-			/*进行n个加速*/
+			// 进行n个加速 //
 			for (int i = 0; i < num; ++i)
 			{
 				
@@ -221,7 +221,7 @@ namespace aris
 
 			}
 
-			/*加速完了在最后一个结点上进行减速*/
+			// 加速完了在最后一个结点上进行减速 //
 			data.time = iter->time;
 			data.s = iter->s;
 			data.ds = iter->ds;

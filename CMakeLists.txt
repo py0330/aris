@@ -66,7 +66,7 @@ set(XENOMAI_LINK_DIR "/usr/xenomai/lib")
 set(XENOMAI_LINK_LIB native rtdm xenomai)
 set(ETHERLAB_INCL_DIR "/opt/etherlab/include")
 set(ETHERLAB_LINK_DIR "/opt/etherlab/lib")
-set(ETHERLAB_LINK_LIB ethercat rt)
+set(ETHERLAB_LINK_LIB ethercat_rtdm)
 set(ARIS_INCL_DIR src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 

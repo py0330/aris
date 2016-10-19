@@ -17,48 +17,48 @@ namespace aris
 	namespace dynamic
 	{
 		using double3x3 = double[3][3];
-		
-		inline auto default_pp()->const double* { static double value[3]{ 0,0,0 }; return value; }
-		inline auto default_re()->const double* { static double value[3]{ 0,0,0 }; return value; }
-		inline auto default_rq()->const double* { static double value[4]{ 0,0,0,1 };	return value; }
-		inline auto default_rm()->const double* { static double value[9]{ 1,0,0,0,1,0,0,0,1 };	return value; }
-		inline auto default_pe()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
-		inline auto default_pq()->const double* { static double value[7]{ 0,0,0,0,0,0,1 };	return value; }
-		inline auto default_pm()->const double* { static double value[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 }; return value; }
 
-		inline auto default_vp()->const double* { static double value[3]{ 0,0,0 }; return value; }
-		inline auto default_we()->const double* { static double value[3]{ 0,0,0 };	return value; }
-		inline auto default_wq()->const double* { static double value[4]{ 0,0,0,0 };	return value; }
-		inline auto default_wm()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
-		inline auto default_ve()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
-		inline auto default_vq()->const double* { static double value[7]{ 0,0,0,0,0,0,0 };	return value; }
-		inline auto default_vm()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
-		inline auto default_wa()->const double* { static double value[3]{ 0,0,0 }; return value; }
-		inline auto default_va()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
-		inline auto default_vs()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		auto inline default_pp()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		auto inline default_re()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		auto inline default_rq()->const double* { static double value[4]{ 0,0,0,1 };	return value; }
+		auto inline default_rm()->const double* { static double value[9]{ 1,0,0,0,1,0,0,0,1 };	return value; }
+		auto inline default_pe()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		auto inline default_pq()->const double* { static double value[7]{ 0,0,0,0,0,0,1 };	return value; }
+		auto inline default_pm()->const double* { static double value[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 }; return value; }
 
-		inline auto default_ap()->const double* { static double value[3]{ 0,0,0 }; return value; }
-		inline auto default_xe()->const double* { static double value[3]{ 0,0,0 };	return value; }
-		inline auto default_xq()->const double* { static double value[4]{ 0,0,0,0 };	return value; }
-		inline auto default_xm()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
-		inline auto default_ae()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
-		inline auto default_aq()->const double* { static double value[7]{ 0,0,0,0,0,0,0 };	return value; }
-		inline auto default_am()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
-		inline auto default_xa()->const double* { static double value[3]{ 0,0,0 }; return value; }
-		inline auto default_aa()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
-		inline auto default_as()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		auto inline default_vp()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		auto inline default_we()->const double* { static double value[3]{ 0,0,0 };	return value; }
+		auto inline default_wq()->const double* { static double value[4]{ 0,0,0,0 };	return value; }
+		auto inline default_wm()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
+		auto inline default_ve()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		auto inline default_vq()->const double* { static double value[7]{ 0,0,0,0,0,0,0 };	return value; }
+		auto inline default_vm()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		auto inline default_wa()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		auto inline default_va()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		auto inline default_vs()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
 
-		inline auto default_fs()->const double* { static double value[6]{ 0,0,0,0,0,0 }; return value; }
-		inline auto default_is()->const double* { static double value[36]{ 0 }; return value; }
-		inline auto default_iv()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
-		inline auto default_in()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
+		auto inline default_ap()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		auto inline default_xe()->const double* { static double value[3]{ 0,0,0 };	return value; }
+		auto inline default_xq()->const double* { static double value[4]{ 0,0,0,0 };	return value; }
+		auto inline default_xm()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
+		auto inline default_ae()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		auto inline default_aq()->const double* { static double value[7]{ 0,0,0,0,0,0,0 };	return value; }
+		auto inline default_am()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		auto inline default_xa()->const double* { static double value[3]{ 0,0,0 }; return value; }
+		auto inline default_aa()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
+		auto inline default_as()->const double* { static double value[6]{ 0,0,0,0,0,0 };	return value; }
 
-		inline auto P()noexcept->const double3x3&
+		auto inline default_fs()->const double* { static double value[6]{ 0,0,0,0,0,0 }; return value; }
+		auto inline default_is()->const double* { static double value[36]{ 0 }; return value; }
+		auto inline default_iv()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		auto inline default_in()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
+
+		auto inline P()noexcept->const double3x3&
 		{
 			static const double p[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
 			return p;
 		}
-		inline auto Q()noexcept->const double3x3&
+		auto inline Q()noexcept->const double3x3&
 		{
 			static const double q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
 			return q;
@@ -81,82 +81,6 @@ namespace aris
 				y_idx += y_ld;
 			}
 		}
-
-		auto s_nd(int n, double a, double *x) noexcept->void { for (auto i = 0; i < n; ++i)x[i] *= a; }
-		auto s_nd(int n, double a, double *x, int x_ld) noexcept->void
-		{
-			int final_idx = n*x_ld;
-			for (int i = 0; i < final_idx; i += x_ld)x[i] *= a;
-		}
-		auto s_ndv(int n, double a, const double *x, double *y) noexcept->void { for (auto i = 0; i < n; ++i)y[i] += a*x[i]; }
-		auto s_ndv(int n, double a, const double *x, int x_ld, double *y, int y_ld) noexcept->void
-		{
-			int x_idx{ 0 }, y_idx{ 0 };
-			for (int i = 0; i < n; ++i)
-			{
-				y[y_idx] = a*x[x_idx];
-				x_idx += x_ld;
-				y_idx += y_ld;
-			}
-		}
-		auto s_vdv(int n, const double *x, const double *y) noexcept->double
-		{
-			double ret{ 0 };
-
-			for (int i = 0; i < n; ++i)ret += x[i] * y[i];
-
-			return ret;
-		}
-		auto s_vdv(int n, const double *x, int x_ld, const double *y, int y_ld) noexcept->double
-		{
-			double ret{ 0 };
-			int x_idx{ 0 }, y_idx{ 0 };
-
-			for (int i = 0; i < n; ++i)
-			{
-				x_idx += x_ld;
-				y_idx += y_ld;
-
-				ret += x[x_idx] * y[y_idx];
-			}
-
-			return ret;
-		}
-		auto s_va(int n, const double* x, double* y) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)y[i] += x[i];
-		}
-		auto s_va(int n, const double* x, int x_ld, double* y, int y_ld) noexcept->void
-		{
-			int x_idx{ 0 }, y_idx{ 0 };
-
-			for (int i = 0; i < n; ++i)
-			{
-				y[y_idx] += x[x_idx];
-				x_idx += x_ld;
-				y_idx += y_ld;
-			}
-		}
-		auto s_va(int n, double alpha, const double* x, double beta, double* y) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)
-			{
-				y[i] *= beta;
-				y[i] += alpha * x[i];
-			}
-		}
-		auto s_va(int n, double alpha, const double* x, int x_ld, double beta, double* y, int y_ld) noexcept->void
-		{
-			int x_idx{ 0 }, y_idx{ 0 };
-
-			for (int i = 0; i < n; ++i)
-			{
-				y[y_idx] *= beta;
-				y[y_idx] += alpha * x[x_idx];
-				x_idx += x_ld;
-				y_idx += y_ld;
-			}
-		}
 		auto s_mtm(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void
 		{
 			for (int i = 0; i < m; ++i)
@@ -171,201 +95,97 @@ namespace aris
 				}
 			}
 		}
-		auto s_ma(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void
+		auto s_fill(int m, int n, double value, double *A, int lda) noexcept->void{	for (double* end{ A + m*lda }; A < end; A += lda) std::fill(A, A + n, value);}
+		
+		auto s_mma(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void 
 		{
-			for (int i = 0; i < m; ++i)
+			for (int i{ 0 }, c_row{ 0 }, a_row{ 0 }; i < m; ++i, c_row += ldc, a_row += lda)
 			{
-				int row_idx_a = i*lda;
-				int row_idx_b = i*ldb;
-
-				for (int j = 0; j < n; ++j)B[row_idx_b + j] += A[row_idx_a + j];
-			}
-		}
-		auto s_ma(int m, int n, double alpha, const double* A, int lda, double beta, double* B, int ldb) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				int row_idx_a = i*lda;
-				int row_idx_b = i*ldb;
-
-				for (int j = 0; j < n; ++j)
+				for (int j{ 0 }; j < n; ++j)
 				{
-					B[row_idx_b + j] *= beta;
-					B[row_idx_b + j] += alpha * A[row_idx_a + j];
+					for (int u{ 0 }, b_row{ 0 }; u < k; ++u, b_row += ldb)
+						C[c_row + j] += A[a_row + u] * B[j + b_row];
 				}
 			}
 		}
-		auto s_mam(int m, int n, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mma(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
 		{
-			for (int i = 0; i < m; ++i)
+			for (int i{ 0 }, c_row{ 0 }, a_row{ 0 }; i < m; ++i, c_row += ldc, a_row += lda)
 			{
-				int row_idx_a = i*lda;
-				int row_idx_b = i*ldb;
-				int row_idx_c = i*ldc;
-
-				for (int j = 0; j < n; ++j)C[row_idx_c + j] = A[row_idx_a + j] + B[row_idx_b + j];
-			}
-		}
-		auto s_mam(int m, int n, double alpha, const double* A, int lda, double beta, const double* B, int ldb, double gamma, double *C, int ldc) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				int row_idx_a = i*lda;
-				int row_idx_b = i*ldb;
-				int row_idx_c = i*ldc;
-
-				for (int j = 0; j < n; ++j)
+				for (int j{ 0 }; j < n; ++j)
 				{
-					C[row_idx_c + j] = alpha*A[row_idx_a + j] + beta*B[row_idx_b + j];
+					double value{0};
+					for (int u{ 0 }, b_row{ 0 }; u < k; ++u, b_row += ldb)value += A[a_row + u] * B[j + b_row];
+					C[c_row + j] += alpha * value;
 				}
 			}
 		}
-		auto s_mdm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmaTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void 
 		{
-			for (int i = 0; i < m; ++i)
+			for (int i{ 0 }, c_row{ 0 }; i < m; ++i, c_row += ldc)
 			{
-				int row_idx = i*lda;
-				for (int j = 0; j < n; ++j)
+				for (int j{ 0 }; j < n; ++j)
 				{
-					int idx = i*ldc + j;
-
-					C[idx] = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						C[idx] += A[row_idx + u] * B[j + u*ldb];
-					}
+					for (int u{ 0 }, a_row{ 0 }, b_row{ 0 }; u < k; ++u, a_row += lda, b_row += ldb)
+						C[c_row + j] += A[a_row + i] * B[j + b_row];
 				}
 			}
 		}
-		auto s_mdm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
+		auto s_mmaTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
 		{
-			for (int i = 0; i < m; ++i)
+			for (int i{ 0 }, c_row{ 0 }; i < m; ++i, c_row += ldc)
 			{
-				int row_idx = i*lda;
-				for (int j = 0; j < n; ++j)
+				for (int j{ 0 }; j < n; ++j)
 				{
-					int idx = i*ldc + j;
-
-					double add_factor = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						add_factor += A[row_idx + u] * B[j + u*ldb];
-					}
-
-					C[idx] *= beta;
-					C[idx] += alpha *add_factor;
+					double value{ 0 };
+					for (int u{ 0 }, a_row{ 0 }, b_row{ 0 }; u < k; ++u, a_row += lda, b_row += ldb)value += A[a_row + i] * B[j + b_row];
+					C[c_row + j] += alpha * value;
 				}
 			}
 		}
-		auto s_mdmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmaNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void 
 		{
-			for (int i = 0; i < m; ++i)
+			for (int i{ 0 }, c_row{ 0 }, a_row{ 0 }; i < m; ++i, c_row += ldc, a_row += lda)
 			{
-				for (int j = 0; j < n; ++j)
+				for (int j{ 0 }, b_row{ 0 }; j < n; ++j, b_row += ldb)
 				{
-					int idx = i*ldc + j;
-
-					C[idx] = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						C[idx] += A[i + u*lda] * B[j + u*ldb];
-					}
+					for (int u{ 0 }; u < k; ++u)
+						C[c_row + j] += A[a_row + u] * B[u + b_row];
 				}
 			}
 		}
-		auto s_mdmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
+		auto s_mmaNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
 		{
-			for (int i = 0; i < m; ++i)
+			for (int i{ 0 }, c_row{ 0 }, a_row{ 0 }; i < m; ++i, c_row += ldc, a_row += lda)
 			{
-				for (int j = 0; j < n; ++j)
+				for (int j{ 0 }, b_row{ 0 }; j < n; ++j, b_row += ldb)
 				{
-					int idx = i*ldc + j;
-
-					double add_factor = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						add_factor += A[i + u*lda] * B[j + u*ldb];
-					}
-
-					C[idx] *= beta;
-					C[idx] += alpha *add_factor;
+					double value{ 0 };
+					for (int u{ 0 }; u < k; ++u)value += A[a_row + u] * B[u + b_row];
+					C[c_row + j] += alpha * value;
 				}
 			}
 		}
-		auto s_mdmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmaTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void 
 		{
-			for (int i = 0; i < m; ++i)
+			for (int i{ 0 }, c_row{ 0 }; i < m; ++i, c_row += ldc)
 			{
-				int row_idx = i*lda;
-				for (int j = 0; j < n; ++j)
+				for (int j{ 0 }, b_row{ 0 }; j < n; ++j, b_row += ldb)
 				{
-					int col_idx = j*ldb;
-
-					int idx = i*ldc + j;
-
-					C[idx] = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						C[idx] += A[row_idx + u] * B[col_idx + u];
-					}
+					for (int u{ 0 }, a_row{ 0 }; u < k; ++u, a_row += lda)
+						C[c_row + j] += A[a_row + i] * B[u + b_row];
 				}
 			}
 		}
-		auto s_mdmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
+		auto s_mmaTT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void 
 		{
-			for (int i = 0; i < m; ++i)
+			for (int i{ 0 }, c_row{ 0 }; i < m; ++i, c_row += ldc)
 			{
-				int row_idx = i*lda;
-				for (int j = 0; j < n; ++j)
+				for (int j{ 0 }, b_row{ 0 }; j < n; ++j, b_row += ldb)
 				{
-					int col_idx = j*ldb;
-					int idx = i*ldc + j;
-
-					double add_factor{ 0 };
-					for (int u = 0; u < k; ++u)
-					{
-						add_factor += A[row_idx + u] * B[col_idx + u];
-					}
-
-					C[idx] *= beta;
-					C[idx] += alpha * add_factor;
-				}
-			}
-		}
-		auto s_mdmTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				for (int j = 0; j < n; ++j)
-				{
-					int col_idx = j*ldb;
-					int idx = i*ldc + j;
-
-					C[idx] = 0;
-					for (int u = 0; u < k; ++u)
-					{
-						C[idx] += A[i + u*lda] * B[col_idx + u];
-					}
-				}
-			}
-		}
-		auto s_mdmTT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double *C, int ldc) noexcept->void
-		{
-			for (int i = 0; i < m; ++i)
-			{
-				for (int j = 0; j < n; ++j)
-				{
-					int col_idx = j*ldb;
-					int idx = i*ldc + j;
-
-					double add_factor{ 0 };
-					for (int u = 0; u < k; ++u)
-					{
-						add_factor += A[i + u*lda] * B[col_idx + u];
-					}
-
-					C[idx] *= beta;
-					C[idx] += alpha * add_factor;
+					double value{ 0 };
+					for (int u{ 0 }, a_row{ 0 }; u < k; ++u, a_row += lda)value += A[a_row + i] * B[u + b_row];
+					C[c_row + j] += alpha * value;
 				}
 			}
 		}
@@ -576,15 +396,6 @@ namespace aris
 			v3_out[b1] = inv_pm[1] * v3[a0] + inv_pm[5] * v3[a1] + inv_pm[9] * v3[a2];
 			v3_out[b2] = inv_pm[2] * v3[a0] + inv_pm[6] * v3[a1] + inv_pm[10] * v3[a2];
 		}
-		auto s_m6_dot_v6(const double *m6_in, const double *v6_in, double *v6_out) noexcept->void
-		{
-			// seemed that loop is faster than cblas //
-			for (int i = 0; i < 6; ++i)
-			{
-				v6_out[i] = m6_in[i * 6] * v6_in[0] + m6_in[i * 6 + 1] * v6_in[1] + m6_in[i * 6 + 2] * v6_in[2] +
-					m6_in[i * 6 + 3] * v6_in[3] + m6_in[i * 6 + 4] * v6_in[4] + m6_in[i * 6 + 5] * v6_in[5];
-			}
-		}
 
 		auto s_cm3(const double *a, double *cm_out) noexcept->void
 		{
@@ -630,22 +441,6 @@ namespace aris
 			c_out[c1] = alpha*(a[a2] * b[b0] - a[a0] * b[b2]);
 			c_out[c2] = alpha*(-a[a1] * b[b0] + a[a0] * b[b1]);
 		}
-		auto s_c3_n(int n, const double *a, const double *b_mtx, double *c_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_c3(a, 1, b_mtx + i, n, c_mtx_out + i, n);
-		}
-		auto s_c3_n(int n, const double *a, int a_ld, const double *b_mtx, int b_mtx_ld, double *c_mtx_out, int c_mtx_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_c3(a, a_ld, b_mtx + i, b_mtx_ld, c_mtx_out + i, c_mtx_ld);
-		}
-		auto s_c3_n(int n, double alpha, const double *a, const double *b_mtx, double *c_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_c3(alpha, a, 1, b_mtx + i, n, c_mtx_out + i, n);
-		}
-		auto s_c3_n(int n, double alpha, const double *a, int a_ld, const double *b_mtx, int b_mtx_ld, double *c_mtx_out, int c_mtx_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_c3(alpha, a, a_ld, b_mtx + i, b_mtx_ld, c_mtx_out + i, c_mtx_ld);
-		}
 		auto s_c3a(const double *a, const double *b, double *c_out) noexcept->void
 		{
 			c_out[0] += -a[2] * b[1] + a[1] * b[2];
@@ -662,45 +457,21 @@ namespace aris
 			c_out[c1] += a[a2] * b[b0] - a[a0] * b[b2];
 			c_out[c2] += -a[a1] * b[b0] + a[a0] * b[b1];
 		}
-		auto s_c3a(double alpha, const double *a, const double *b, double beta, double *c_out) noexcept->void
+		auto s_c3a(double alpha, const double *a, const double *b, double *c_out) noexcept->void
 		{
-			c_out[0] *= beta;
-			c_out[1] *= beta;
-			c_out[2] *= beta;
-
 			c_out[0] += alpha*(-a[2] * b[1] + a[1] * b[2]);
 			c_out[1] += alpha*(a[2] * b[0] - a[0] * b[2]);
 			c_out[2] += alpha*(-a[1] * b[0] + a[0] * b[1]);
 		}
-		auto s_c3a(double alpha, const double *a, int a_ld, const double *b, int b_ld, double beta, double *c_out, int c_ld) noexcept->void
+		auto s_c3a(double alpha, const double *a, int a_ld, const double *b, int b_ld, double *c_out, int c_ld) noexcept->void
 		{
 			const int a0{ 0 }, a1{ a_ld }, a2{ a_ld + a_ld };
 			const int b0{ 0 }, b1{ b_ld }, b2{ b_ld + b_ld };
 			const int c0{ 0 }, c1{ c_ld }, c2{ c_ld + c_ld };
 
-			c_out[c0] *= beta;
-			c_out[c1] *= beta;
-			c_out[c2] *= beta;
-
 			c_out[c0] += alpha*(-a[a2] * b[b1] + a[a1] * b[b2]);
 			c_out[c1] += alpha*(a[a2] * b[b0] - a[a0] * b[b2]);
 			c_out[c2] += alpha*(-a[a1] * b[b0] + a[a0] * b[b1]);
-		}
-		auto s_c3a_n(int n, const double *a, const double *b_mtx, double *c_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_c3a(a, 1, b_mtx + i, n, c_mtx_out + i, n);
-		}
-		auto s_c3a_n(int n, const double *a, int a_ld, const double *b_mtx, int b_mtx_ld, double *c_mtx_out, int c_mtx_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_c3a(a, a_ld, b_mtx + i, b_mtx_ld, c_mtx_out + i, c_mtx_ld);
-		}
-		auto s_c3a_n(int n, double alpha, const double *a, const double *b_mtx, double beta, double *c_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_c3a(alpha, a, 1, b_mtx + i, n, beta, c_mtx_out + i, n);
-		}
-		auto s_c3a_n(int n, double alpha, const double *a, int a_ld, const double *b_mtx, int b_mtx_ld, double beta, double *c_mtx_out, int c_mtx_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_c3a(alpha, a, a_ld, b_mtx + i, b_mtx_ld, beta, c_mtx_out + i, c_mtx_ld);
 		}
 		auto s_cmf(const double *vs_in, double *cmf_out) noexcept->void
 		{
@@ -742,29 +513,12 @@ namespace aris
 		auto s_cf(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void
 		{
 			s_cf(vs, fs, vfs_out);
-			for (int i = 0; i < 6; ++i)vfs_out[i] *= alpha;
+			s_nv(6, alpha, vfs_out);
 		}
 		auto s_cf(double alpha, const double *vs, int vs_ld, const double *fs, int fs_ld, double* vfs_out, int vfs_ld) noexcept->void
 		{
 			s_cf(vs, vs_ld, fs, fs_ld, vfs_out, vfs_ld);
-			int end_id{ 6 * vfs_ld };
-			for (int i = 0; i < end_id; i += vfs_ld)vfs_out[i] *= alpha;
-		}
-		auto s_cf_n(int n, const double *vs, const double *fs_mtx, double* vfs_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cf(vs, 1, fs_mtx + i, n, vfs_mtx_out + i, n);
-		}
-		auto s_cf_n(int n, const double *vs, int vs_ld, const double *fs_mtx, int fs_ld, double* vfs_mtx_out, int vfs_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cf(vs, vs_ld, fs_mtx + i, fs_ld, vfs_mtx_out + i, vfs_ld);
-		}
-		auto s_cf_n(int n, double alpha, const double *vs, const double *fs_mtx, double* vfs_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cf(alpha, vs, 1, fs_mtx + i, n, vfs_mtx_out + i, n);
-		}
-		auto s_cf_n(int n, double alpha, const double *vs, int vs_ld, const double *fs_mtx, int fs_ld, double* vfs_mtx_out, int vfs_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cf(alpha, vs, vs_ld, fs_mtx + i, fs_ld, vfs_mtx_out + i, vfs_ld);
+			s_nv(6, alpha, vfs_out, vfs_ld);
 		}
 		auto s_cfa(const double *vs, const double *fs, double* vfs_out) noexcept->void
 		{
@@ -778,33 +532,17 @@ namespace aris
 			s_c3a(vs + 3 * vs_ld, vs_ld, fs + 3 * fs_ld, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
 			s_c3a(vs, vs_ld, fs, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
 		}
-		auto s_cfa(double alpha, const double *vs, const double *fs, double beta, double* vfs_out) noexcept->void
+		auto s_cfa(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void
 		{
-			s_c3a(alpha, vs + 3, fs, beta, vfs_out);
-			s_c3a(alpha, vs + 3, fs + 3, beta, vfs_out + 3);
-			s_c3a(alpha, vs, fs, 1.0, vfs_out + 3);
+			s_c3a(alpha, vs + 3, fs, vfs_out);
+			s_c3a(alpha, vs + 3, fs + 3, vfs_out + 3);
+			s_c3a(alpha, vs, fs, vfs_out + 3);
 		}
-		auto s_cfa(double alpha, const double *vs, int vs_ld, const double *fs, int fs_ld, double beta, double* vfs_out, int vfs_ld) noexcept->void
+		auto s_cfa(double alpha, const double *vs, int vs_ld, const double *fs, int fs_ld, double* vfs_out, int vfs_ld) noexcept->void
 		{
-			s_c3a(alpha, vs + 3 * vs_ld, vs_ld, fs, fs_ld, beta, vfs_out, vfs_ld);
-			s_c3a(alpha, vs + 3 * vs_ld, vs_ld, fs + 3 * fs_ld, fs_ld, beta, vfs_out + 3 * vfs_ld, vfs_ld);
-			s_c3a(alpha, vs, vs_ld, fs, fs_ld, 1.0, vfs_out + 3 * vfs_ld, vfs_ld);
-		}
-		auto s_cfa_n(int n, const double *vs, const double *fs_mtx, double* vfs_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cfa(vs, 1, fs_mtx + i, n, vfs_mtx_out + i, n);
-		}
-		auto s_cfa_n(int n, const double *vs, int vs_ld, const double *fs_mtx, int fs_ld, double* vfs_mtx_out, int vfs_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cfa(vs, vs_ld, fs_mtx + i, fs_ld, vfs_mtx_out + i, vfs_ld);
-		}
-		auto s_cfa_n(int n, double alpha, const double *vs, const double *fs_mtx, double beta, double* vfs_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cfa(alpha, vs, 1, fs_mtx + i, n, beta, vfs_mtx_out + i, n);
-		}
-		auto s_cfa_n(int n, double alpha, const double *vs, int vs_ld, const double *fs_mtx, int fs_ld, double beta, double* vfs_mtx_out, int vfs_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cfa(alpha, vs, vs_ld, fs_mtx + i, fs_ld, beta, vfs_mtx_out + i, vfs_ld);
+			s_c3a(alpha, vs + 3 * vs_ld, vs_ld, fs, fs_ld, vfs_out, vfs_ld);
+			s_c3a(alpha, vs + 3 * vs_ld, vs_ld, fs + 3 * fs_ld, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
+			s_c3a(alpha, vs, vs_ld, fs, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
 		}
 		auto s_cmv(const double *vs_in, double *cmv_out) noexcept->void
 		{
@@ -845,31 +583,13 @@ namespace aris
 		}
 		auto s_cv(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void
 		{
-			s_c3(alpha, vs + 3, vs2, vvs_out);
-			s_c3(alpha, vs + 3, vs2 + 3, vvs_out + 3);
-			s_c3a(alpha, vs, vs2 + 3, 1.0, vvs_out);
+			s_cv(vs, vs2, vvs_out);
+			s_nv(6, alpha, vvs_out);
 		}
 		auto s_cv(double alpha, const double *vs, int vs_ld, const double *vs2, int vs2_ld, double* vvs_out, int vvs_ld) noexcept->void
 		{
-			s_c3(alpha, vs + 3 * vs_ld, vs_ld, vs2, vs2_ld, vvs_out, vvs_ld);
-			s_c3(alpha, vs + 3 * vs_ld, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out + 3 * vvs_ld, vvs_ld);
-			s_c3a(alpha, vs, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, 1.0, vvs_out, vvs_ld);
-		}
-		auto s_cv_n(int n, const double *vs, const double *vs_mtx, double* vvs_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cv(vs, 1, vs_mtx + i, n, vvs_mtx_out + i, n);
-		}
-		auto s_cv_n(int n, const double *vs, int vs_ld, const double *vs_mtx, int vs2_ld, double* vvs_mtx_out, int vvs_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cv(vs, vs_ld, vs_mtx + i, vs2_ld, vvs_mtx_out + i, vvs_ld);
-		}
-		auto s_cv_n(int n, double alpha, const double *vs, const double *vs_mtx, double* vvs_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cv(alpha, vs, 1, vs_mtx + i, n, vvs_mtx_out + i, n);
-		}
-		auto s_cv_n(int n, double alpha, const double *vs, int vs_ld, const double *vs_mtx, int vs2_ld, double* vvs_mtx_out, int vvs_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cv(alpha, vs, vs_ld, vs_mtx + i, vs2_ld, vvs_mtx_out + i, vvs_ld);
+			s_cv(vs, vs_ld, vs2, vs2_ld, vvs_out, vvs_ld);
+			s_nv(6, alpha, vvs_out, vvs_ld);
 		}
 		auto s_cva(const double *vs, const double *vs2, double* vvs_out) noexcept->void
 		{
@@ -883,35 +603,19 @@ namespace aris
 			s_c3a(vs + 3 * vs_ld, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out + 3 * vvs_ld, vvs_ld);
 			s_c3a(vs, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out, vvs_ld);
 		}
-		auto s_cva(double alpha, const double *vs, const double *vs2, double beta, double* vvs_out) noexcept->void
+		auto s_cva(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void
 		{
-			s_c3a(alpha, vs + 3, vs2, beta, vvs_out);
-			s_c3a(alpha, vs + 3, vs2 + 3, beta, vvs_out + 3);
-			s_c3a(alpha, vs, vs2 + 3, 1.0, vvs_out);
+			s_c3a(alpha, vs + 3, vs2, vvs_out);
+			s_c3a(alpha, vs + 3, vs2 + 3, vvs_out + 3);
+			s_c3a(alpha, vs, vs2 + 3, vvs_out);
 		}
-		auto s_cva(double alpha, const double *vs, int vs_ld, const double *vs2, int vs2_ld, double beta, double* vvs_out, int vvs_ld) noexcept->void
+		auto s_cva(double alpha, const double *vs, int vs_ld, const double *vs2, int vs2_ld, double* vvs_out, int vvs_ld) noexcept->void
 		{
-			s_c3a(alpha, vs + 3 * vs_ld, vs_ld, vs2, vs2_ld, beta, vvs_out, vvs_ld);
-			s_c3a(alpha, vs + 3 * vs_ld, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, beta, vvs_out + 3 * vvs_ld, vvs_ld);
-			s_c3a(alpha, vs, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, 1.0, vvs_out, vvs_ld);
+			s_c3a(alpha, vs + 3 * vs_ld, vs_ld, vs2, vs2_ld, vvs_out, vvs_ld);
+			s_c3a(alpha, vs + 3 * vs_ld, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out + 3 * vvs_ld, vvs_ld);
+			s_c3a(alpha, vs, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out, vvs_ld);
 		}
-		auto s_cva_n(int n, const double *vs, const double *vs_mtx, double* vvs_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cva(vs, 1, vs_mtx + i, n, vvs_mtx_out + i, n);
-		}
-		auto s_cva_n(int n, const double *vs, int vs_ld, const double *vs_mtx, int vs2_ld, double* vvs_mtx_out, int vvs_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cva(vs, vs_ld, vs_mtx + i, vs2_ld, vvs_mtx_out + i, vvs_ld);
-		}
-		auto s_cva_n(int n, double alpha, const double *vs, const double *vs_mtx, double beta, double* vvs_mtx_out) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cva(alpha, vs, 1, vs_mtx + i, n, beta, vvs_mtx_out + i, n);
-		}
-		auto s_cva_n(int n, double alpha, const double *vs, int vs_ld, const double *vs_mtx, int vs2_ld, double beta, double* vvs_mtx_out, int vvs_ld) noexcept->void
-		{
-			for (int i = 0; i < n; ++i)s_cva(alpha, vs, vs_ld, vs_mtx + i, vs2_ld, beta, vvs_mtx_out + i, vvs_ld);
-		}
-
+		
 		auto s_tmf(const double *pm_in, double *tmf_out) noexcept->void
 		{
 			std::fill_n(tmf_out + 3, 3, 0);
@@ -950,28 +654,12 @@ namespace aris
 		auto s_tf(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void
 		{
 			s_tf(pm, fs, fs_out);
-			s_nd(6, alpha, fs_out);
+			s_nv(6, alpha, fs_out);
 		}
 		auto s_tf(double alpha, const double *pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void
 		{
 			s_tf(pm, fs, fs_ld, fs_out, fs_out_ld);
-			s_nd(6, alpha, fs_out, fs_out_ld);
-		}
-		auto s_tf_n(int n, const double *pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tf(pm, fs_mtx + i, n, fs_mtx_out + i, n);
-		}
-		auto s_tf_n(int n, const double *pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tf(pm, fs_mtx + i, fs_ld, fs_mtx_out + i, fs_out_ld);
-		}
-		auto s_tf_n(int n, double alpha, const double *pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tf(alpha, pm, fs_mtx + i, n, fs_mtx_out + i, n);
-		}
-		auto s_tf_n(int n, double alpha, const double *pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tf(alpha, pm, fs_mtx + i, fs_ld, fs_mtx_out + i, fs_out_ld);
+			s_nv(6, alpha, fs_out, fs_out_ld);
 		}
 		auto s_tfa(const double *pm, const double *fs, double *fs_out) noexcept->void
 		{
@@ -985,33 +673,17 @@ namespace aris
 			s_tf(pm, fs, fs_ld, tem, 1);
 			s_va(6, tem, 1, fs_out, fs_out_ld);
 		}
-		auto s_tfa(double alpha, const double *pm, const double *fs, double beta, double *fs_out) noexcept->void
+		auto s_tfa(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void
 		{
 			double tem[6];
 			s_tf(pm, fs, tem);
-			s_va(6, alpha, tem, beta, fs_out);
+			s_va(6, alpha, tem, fs_out);
 		}
-		auto s_tfa(double alpha, const double *pm, const double *fs, int fs_ld, double beta, double *fs_out, int fs_out_ld) noexcept->void
+		auto s_tfa(double alpha, const double *pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void
 		{
 			double tem[6];
 			s_tf(pm, fs, fs_ld, tem, 1);
-			s_va(6, alpha, tem, 1, beta, fs_out, fs_out_ld);
-		}
-		auto s_tfa_n(int n, const double *pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tfa(pm, fs_mtx + i, n, fs_mtx_out + i, n);
-		}
-		auto s_tfa_n(int n, const double *pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tfa(pm, fs_mtx + i, fs_ld, fs_mtx_out + i, fs_out_ld);
-		}
-		auto s_tfa_n(int n, double alpha, const double *pm, const double *fs_mtx, double beta, double *fs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tfa(alpha, pm, fs_mtx + i, n, beta, fs_mtx_out + i, n);
-		}
-		auto s_tfa_n(int n, double alpha, const double *pm, const double *fs_mtx, int fs_ld, double beta, double *fs_mtx_out, int fs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tfa(alpha, pm, fs_mtx + i, fs_ld, beta, fs_mtx_out + i, fs_out_ld);
+			s_va(6, alpha, tem, 1, fs_out, fs_out_ld);
 		}
 		auto s_inv_tf(const double *inv_pm, const double *fs, double *fs_out) noexcept->void
 		{
@@ -1034,28 +706,12 @@ namespace aris
 		auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void
 		{
 			s_inv_tf(inv_pm, fs, fs_out);
-			s_nd(6, alpha, fs_out);
+			s_nv(6, alpha, fs_out);
 		}
 		auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void
 		{
 			s_inv_tf(inv_pm, fs, fs_ld, fs_out, fs_out_ld);
-			s_nd(6, alpha, fs_out, fs_out_ld);
-		}
-		auto s_inv_tf_n(int n, const double *inv_pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tf(inv_pm, fs_mtx + i, n, fs_mtx_out + i, n);
-		}
-		auto s_inv_tf_n(int n, const double *inv_pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tf(inv_pm, fs_mtx + i, fs_ld, fs_mtx_out + i, fs_out_ld);
-		}
-		auto s_inv_tf_n(int n, double alpha, const double *inv_pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tf(alpha, inv_pm, fs_mtx + i, n, fs_mtx_out + i, n);
-		}
-		auto s_inv_tf_n(int n, double alpha, const double *inv_pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tf(alpha, inv_pm, fs_mtx + i, fs_ld, fs_mtx_out + i, fs_out_ld);
+			s_nv(6, alpha, fs_out, fs_out_ld);
 		}
 		auto s_inv_tfa(const double *inv_pm, const double *fs, double *fs_out) noexcept->void
 		{
@@ -1069,33 +725,17 @@ namespace aris
 			s_inv_tf(inv_pm, fs, fs_ld, tem, 1);
 			s_va(6, tem, 1, fs_out, fs_out_ld);
 		}
-		auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, double beta, double *fs_out) noexcept->void
+		auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void
 		{
 			double tem[6];
 			s_inv_tf(inv_pm, fs, tem);
-			s_va(6, alpha, tem, beta, fs_out);
+			s_va(6, alpha, tem, fs_out);
 		}
-		auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, int fs_ld, double beta, double *fs_out, int fs_out_ld) noexcept->void
+		auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, int fs_ld, double *fs_out, int fs_out_ld) noexcept->void
 		{
 			double tem[6];
 			s_inv_tf(inv_pm, fs, fs_ld, tem, 1);
-			s_va(6, alpha, tem, 1, beta, fs_out, fs_out_ld);
-		}
-		auto s_inv_tfa_n(int n, const double *inv_pm, const double *fs_mtx, double *fs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tfa(inv_pm, fs_mtx + i, n, fs_mtx_out + i, n);
-		}
-		auto s_inv_tfa_n(int n, const double *inv_pm, const double *fs_mtx, int fs_ld, double *fs_mtx_out, int fs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tfa(inv_pm, fs_mtx + i, fs_ld, fs_mtx_out + i, fs_out_ld);
-		}
-		auto s_inv_tfa_n(int n, double alpha, const double *inv_pm, const double *fs_mtx, double beta, double *fs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tfa(alpha, inv_pm, fs_mtx + i, n, beta, fs_mtx_out + i, n);
-		}
-		auto s_inv_tfa_n(int n, double alpha, const double *inv_pm, const double *fs_mtx, int fs_ld, double beta, double *fs_mtx_out, int fs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tfa(alpha, inv_pm, fs_mtx + i, fs_ld, beta, fs_mtx_out + i, fs_out_ld);
+			s_va(6, alpha, tem, 1, fs_out, fs_out_ld);
 		}
 		auto s_tmv(const double *pm, double *tmv_out) noexcept->void
 		{
@@ -1135,28 +775,12 @@ namespace aris
 		auto s_tv(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void
 		{
 			s_tv(pm, vs, vs_out);
-			s_nd(6, alpha, vs_out);
+			s_nv(6, alpha, vs_out);
 		}
 		auto s_tv(double alpha, const double *pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void
 		{
 			s_tv(pm, vs, vs_ld, vs_out, vs_out_ld);
-			s_nd(6, alpha, vs_out, vs_out_ld);
-		}
-		auto s_tv_n(int n, const double *pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tv(pm, vs_mtx + i, n, vs_mtx_out + i, n);
-		}
-		auto s_tv_n(int n, const double *pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tv(pm, vs_mtx + i, vs_ld, vs_mtx_out + i, vs_out_ld);
-		}
-		auto s_tv_n(int n, double alpha, const double *pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tv(alpha, pm, vs_mtx + i, n, vs_mtx_out + i, n);
-		}
-		auto s_tv_n(int n, double alpha, const double *pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tv(alpha, pm, vs_mtx + i, vs_ld, vs_mtx_out + i, vs_out_ld);
+			s_nv(6, alpha, vs_out, vs_out_ld);
 		}
 		auto s_tva(const double *pm, const double *vs, double *vs_out) noexcept->void
 		{
@@ -1170,33 +794,17 @@ namespace aris
 			s_tv(pm, vs, vs_ld, tem, 1);
 			s_va(6, tem, 1, vs_out, vs_out_ld);
 		}
-		auto s_tva(double alpha, const double *pm, const double *vs, double beta, double *vs_out) noexcept->void
+		auto s_tva(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void
 		{
 			double tem[6];
 			s_tv(pm, vs, tem);
-			s_va(6, alpha, tem, beta, vs_out);
+			s_va(6, alpha, tem, vs_out);
 		}
-		auto s_tva(double alpha, const double *pm, const double *vs, int vs_ld, double beta, double *vs_out, int vs_out_ld) noexcept->void
+		auto s_tva(double alpha, const double *pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void
 		{
 			double tem[6];
 			s_tv(pm, vs, vs_ld, tem, 1);
-			s_va(6, alpha, tem, 1, beta, vs_out, vs_out_ld);
-		}
-		auto s_tva_n(int n, const double *pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tva(pm, vs_mtx + i, n, vs_mtx_out + i, n);
-		}
-		auto s_tva_n(int n, const double *pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tva(pm, vs_mtx + i, vs_ld, vs_mtx_out + i, vs_out_ld);
-		}
-		auto s_tva_n(int n, double alpha, const double *pm, const double *vs_mtx, double beta, double *vs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tva(alpha, pm, vs_mtx + i, n, beta, vs_mtx_out + i, n);
-		}
-		auto s_tva_n(int n, double alpha, const double *pm, const double *vs_mtx, int vs_ld, double beta, double *vs_mtx_out, int vs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_tva(alpha, pm, vs_mtx + i, vs_ld, beta, vs_mtx_out + i, vs_out_ld);
+			s_va(6, alpha, tem, 1, vs_out, vs_out_ld);
 		}
 		auto s_inv_tv(const double *inv_pm, const double *vs, double *vs_out) noexcept->void
 		{
@@ -1222,28 +830,12 @@ namespace aris
 		auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void
 		{
 			s_inv_tv(inv_pm, vs, vs_out);
-			s_nd(6, alpha, vs_out);
+			s_nv(6, alpha, vs_out);
 		}
 		auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void
 		{
 			s_inv_tv(inv_pm, vs, vs_ld, vs_out, vs_out_ld);
-			s_nd(6, alpha, vs_out, vs_out_ld);
-		}
-		auto s_inv_tv_n(int n, const double *inv_pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tv(inv_pm, vs_mtx + i, n, vs_mtx_out + i, n);
-		}
-		auto s_inv_tv_n(int n, const double *inv_pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tv(inv_pm, vs_mtx + i, vs_ld, vs_mtx_out + i, vs_out_ld);
-		}
-		auto s_inv_tv_n(int n, double alpha, const double *inv_pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tv(alpha, inv_pm, vs_mtx + i, n, vs_mtx_out + i, n);
-		}
-		auto s_inv_tv_n(int n, double alpha, const double *inv_pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tv(alpha, inv_pm, vs_mtx + i, vs_ld, vs_mtx_out + i, vs_out_ld);
+			s_nv(6, alpha, vs_out, vs_out_ld);
 		}
 		auto s_inv_tva(const double *inv_pm, const double *vs, double *vs_out) noexcept->void
 		{
@@ -1257,34 +849,19 @@ namespace aris
 			s_inv_tv(inv_pm, vs, vs_ld, tem, 1);
 			s_va(6, tem, 1, vs_out, vs_out_ld);
 		}
-		auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, double beta, double *vs_out) noexcept->void
+		auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void
 		{
 			double tem[6];
 			s_inv_tv(inv_pm, vs, tem);
-			s_va(6, alpha, tem, beta, vs_out);
+			s_va(6, alpha, tem, vs_out);
 		}
-		auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, int vs_ld, double beta, double *vs_out, int vs_out_ld) noexcept->void
+		auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, int vs_ld, double *vs_out, int vs_out_ld) noexcept->void
 		{
 			double tem[6];
 			s_inv_tv(inv_pm, vs, vs_ld, tem, 1);
-			s_va(6, alpha, tem, 1, beta, vs_out, vs_out_ld);
+			s_va(6, alpha, tem, 1, vs_out, vs_out_ld);
 		}
-		auto s_inv_tva_n(int n, const double *inv_pm, const double *vs_mtx, double *vs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tva(inv_pm, vs_mtx + i, n, vs_mtx_out + i, n);
-		}
-		auto s_inv_tva_n(int n, const double *inv_pm, const double *vs_mtx, int vs_ld, double *vs_mtx_out, int vs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tva(inv_pm, vs_mtx + i, vs_ld, vs_mtx_out + i, vs_out_ld);
-		}
-		auto s_inv_tva_n(int n, double alpha, const double *inv_pm, const double *vs_mtx, double beta, double *vs_mtx_out) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tva(alpha, inv_pm, vs_mtx + i, n, beta, vs_mtx_out + i, n);
-		}
-		auto s_inv_tva_n(int n, double alpha, const double *inv_pm, const double *vs_mtx, int vs_ld, double beta, double *vs_mtx_out, int vs_out_ld) noexcept->void
-		{
-			for (auto i = 0; i < n; ++i)s_inv_tva(alpha, inv_pm, vs_mtx + i, vs_ld, beta, vs_mtx_out + i, vs_out_ld);
-		}
+
 
 		auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in, int rm_ld) noexcept->void
 		{
@@ -1574,6 +1151,7 @@ namespace aris
 			s_pm2rq(pm_in, pq_out + 3);
 		}
 
+
 		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->void
 		{
 			// 补充默认参数 //
@@ -1603,7 +1181,7 @@ namespace aris
 			axis[b][2] = c == a ? -std::sin(re_in[0])*std::sin(re_in[1]) : P()[b][d] * std::sin(re_in[0])* std::cos(re_in[1]);
 			axis[d][2] = c == a ? P()[d][a] * std::cos(re_in[0])* std::sin(re_in[1]) : std::cos(re_in[0])* std::cos(re_in[1]);
 
-			s_mdm(3, 1, 3, *axis, 3, we_in, 1, wa_out, 1);
+			s_mm(3, 1, 3, *axis, 3, we_in, 1, wa_out, 1);
 		}
 		auto s_wa2we(const double *wa_in, const double *re_in, double *we_out, const char *eu_type_in) noexcept->void
 		{
@@ -2139,7 +1717,7 @@ namespace aris
 			std::copy(xm_in + 1 * xm_ld, xm_in + 1 * xm_ld + 3, tem + 3);
 			std::copy(xm_in + 2 * xm_ld, xm_in + 2 * xm_ld + 3, tem + 6);
 
-			s_c3a_n(3, -1.0, wa_out, 1, wm_in, wm_ld, 1.0, tem, 3);
+			s_c3a_n(3, -1.0, wa_out, 1, wm_in, wm_ld, tem, 3);
 
 			xa_out[0] = tem[2 * 3 + 0] * rm_in[1 * rm_ld + 0] + tem[2 * 3 + 1] * rm_in[1 * rm_ld + 1] + tem[2 * 3 + 2] * rm_in[1 * rm_ld + 2];
 			xa_out[1] = tem[0 * 3 + 0] * rm_in[2 * rm_ld + 0] + tem[0 * 3 + 1] * rm_in[2 * rm_ld + 1] + tem[0 * 3 + 2] * rm_in[2 * rm_ld + 2];
@@ -2164,7 +1742,7 @@ namespace aris
 			s_wa2wm(wa_in, rm_in, wm_out, rm_ld, wm_ld);
 
 			s_c3_n(3, wa_in,1, wm_out, wm_ld, xm_out, xm_ld);
-			s_c3a_n(3, 1.0, xa_in,1, rm_in, rm_ld, 1.0, xm_out, xm_ld);
+			s_c3a_n(3, 1.0, xa_in,1, rm_in, rm_ld, xm_out, xm_ld);
 		}
 		auto s_ap2as(const double *pp_in, const double *vp_in, const double *ap_in, double *as_out, double *vs_out) noexcept->void
 		{
@@ -2181,8 +1759,8 @@ namespace aris
 			s_vp2vs(pp_in, vp_in, vs_out);
 
 			std::copy(ap_in, ap_in + 3, as_out);
-			s_c3a(-1.0, vs_out + 3, vp_in, 1.0, as_out);
-			s_c3a(-1.0, as_out + 3, pp_in, 1.0, as_out);
+			s_c3a(-1.0, vs_out + 3, vp_in, as_out);
+			s_c3a(-1.0, as_out + 3, pp_in, as_out);
 		}
 		auto s_as2ap(const double *vs_in, const double *as_in, const double *pp_in, double *ap_out, double *vp_out) noexcept->void
 		{
@@ -2199,8 +1777,8 @@ namespace aris
 			s_vs2vp(vs_in, pp_in, vp_out);
 
 			std::copy(as_in, as_in + 3, ap_out);
-			s_c3a(1.0, vs_in + 3, vp_out, 1.0, ap_out);
-			s_c3a(1.0, as_in + 3, pp_in, 1.0, ap_out);
+			s_c3a(1.0, vs_in + 3, vp_out, ap_out);
+			s_c3a(1.0, as_in + 3, pp_in, ap_out);
 		}
 		auto s_xe2as(const double *re_in, const double *we_in, const double *xe_in, double *as_out, double *vs_out, const char *eu_type_in) noexcept->void
 		{
@@ -2556,8 +2134,8 @@ namespace aris
 			is_out[35] = in_in[8];
 
 			s_tmf(pm_in, *tmf);
-			s_mdm(6, 6, 6, *tmf, 6, is_out, 6, *tem, 6);
-			s_mdm(6, 6, 6, *tem, 6, *tmf, 6, is_out, 6);
+			s_mm(6, 6, 6, *tmf, 6, is_out, 6, *tem, 6);
+			s_mm(6, 6, 6, *tem, 6, *tmf, 6, is_out, 6);
 		}
 
 		auto s_pp2pp(const double *relative_pm, const double *from_pp, double *to_pp) noexcept->void
@@ -2653,7 +2231,7 @@ namespace aris
 			to_rm = to_rm ? to_rm : default_to_rm;
 
 			// 正式开始计算 //
-			s_mdm(3, 3, 3, relative_pm, 4, from_rm, from_rm_ld, to_rm, to_rm_ld);
+			s_mm(3, 3, 3, relative_pm, 4, from_rm, from_rm_ld, to_rm, to_rm_ld);
 		}
 		auto s_inv_rm2rm(const double *inv_relative_pm, const double *from_rm, double *to_rm, int from_rm_ld, int to_rm_ld) noexcept->void
 		{
@@ -2664,7 +2242,7 @@ namespace aris
 			to_rm = to_rm ? to_rm : default_to_rm;
 
 			// 正式开始计算 //
-			s_mdmTN(3, 3, 3, inv_relative_pm, 4, from_rm, from_rm_ld, to_rm, to_rm_ld);
+			s_mmTN(3, 3, 3, inv_relative_pm, 4, from_rm, from_rm_ld, to_rm, to_rm_ld);
 		}
 		auto s_pe2pe(const double *relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type, const char *to_pe_type) noexcept->void
 		{
@@ -2731,7 +2309,7 @@ namespace aris
 			to_pm = to_pm ? to_pm : default_to_pm;
 
 			// 正式开始计算 //
-			s_mdm(3, 4, 3, relative_pm, 4, from_pm, 4, to_pm, 4);
+			s_mm(3, 4, 3, relative_pm, 4, from_pm, 4, to_pm, 4);
 
 			to_pm[3] += relative_pm[3];
 			to_pm[7] += relative_pm[7];
@@ -2751,7 +2329,7 @@ namespace aris
 			to_pm = to_pm ? to_pm : default_to_pm;
 
 			// 正式开始计算 //
-			s_mdmTN(3, 4, 3, inv_relative_pm, 4, from_pm, 4, to_pm, 4);
+			s_mmTN(3, 4, 3, inv_relative_pm, 4, from_pm, 4, to_pm, 4);
 
 			to_pm[3] += -inv_relative_pm[0] * inv_relative_pm[3] - inv_relative_pm[4] * inv_relative_pm[7] - inv_relative_pm[8] * inv_relative_pm[11];
 			to_pm[7] += -inv_relative_pm[1] * inv_relative_pm[3] - inv_relative_pm[5] * inv_relative_pm[7] - inv_relative_pm[9] * inv_relative_pm[11];
@@ -2778,7 +2356,7 @@ namespace aris
 			// 正式开始计算 //
 			s_pp2pp(relative_pm, from_pp, to_pp);
 			s_c3(relative_vs + 3, to_pp, to_vp);
-			s_mdm(3, 1, 3, 1, relative_pm, 4, from_vp, 1, 1, to_vp, 1);
+			s_mma(3, 1, 3, relative_pm, 4, from_vp, 1, to_vp, 1);
 			s_va(3, relative_vs, to_vp);
 		}
 		auto s_inv_vp2vp(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp) noexcept->void
@@ -2798,9 +2376,9 @@ namespace aris
 
 			double tem[3];
 			std::copy_n(from_vp, 3, tem);
-			s_c3a(-1.0, inv_relative_vs + 3, from_pp, 1.0, tem);
-			s_va(3, -1, inv_relative_vs, 1, tem);
-			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_vp, 1);
+			s_c3a(-1.0, inv_relative_vs + 3, from_pp, tem);
+			s_va(3, -1.0, inv_relative_vs, tem);
+			s_mmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_vp, 1);
 		}
 		auto s_we2we(const double *relative_pm, const double *relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re, const char *from_re_type, const char *to_re_type) noexcept->void
 		{
@@ -2932,7 +2510,7 @@ namespace aris
 			to_wa = to_wa ? to_wa : default_to_we;
 
 			// 正式开始计算 //
-			s_mdm(3, 1, 3, relative_pm, 4, from_wa, 1, to_wa, 1);
+			s_mm(3, 1, 3, relative_pm, 4, from_wa, 1, to_wa, 1);
 			s_va(3, relative_vs + 3, to_wa);
 		}
 		auto s_inv_wa2wa(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_wa, double *to_wa) noexcept->void
@@ -2947,7 +2525,7 @@ namespace aris
 			// 正式计算开始 //
 			double tem[3]{ -inv_relative_vs[3],-inv_relative_vs[4],-inv_relative_vs[5] };
 			s_va(3, from_wa, tem);
-			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_wa, 1);
+			s_mmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_wa, 1);
 		}
 		auto s_va2va(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp) noexcept->void
 		{
@@ -3135,7 +2713,7 @@ namespace aris
 			// 正式开始计算 //
 			double tem[6];
 			std::copy_n(from_vs, 6, tem);
-			s_va(6, -1, inv_relative_vs, 1, tem);
+			s_va(6, -1.0, inv_relative_vs, tem);
 			s_inv_tv(inv_relative_pm, tem, to_vs);
 		}
 
@@ -3162,9 +2740,9 @@ namespace aris
 
 			s_c3(relative_as + 3, to_pp, to_ap);
 			std::copy_n(to_vp, 3, tem_vp);
-			s_mdm(3, 1, 3, 1, relative_pm, 4, from_vp, 1, 1, tem_vp, 1);
-			s_c3a(1, relative_vs + 3, tem_vp, 1, to_ap);
-			s_mdm(3, 1, 3, 1, relative_pm, 4, from_ap, 1, 1, to_ap, 1);
+			s_mma(3, 1, 3, 1.0, relative_pm, 4, from_vp, 1, tem_vp, 1);
+			s_c3a(relative_vs + 3, tem_vp, to_ap);
+			s_mma(3, 1, 3, 1.0, relative_pm, 4, from_ap, 1, to_ap, 1);
 			s_va(3, relative_as, to_ap);
 		}
 		auto s_inv_ap2ap(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
@@ -3192,15 +2770,15 @@ namespace aris
 			double tem[3], tem2[3];
 
 			std::copy_n(from_ap, 3, tem);
-			s_c3a(-1.0, inv_relative_as + 3, from_pp, 1.0, tem);
+			s_c3a(-1.0, inv_relative_as + 3, from_pp, tem);
 
 			std::copy_n(from_vp, 3, tem2);
-			s_mdm(3, 1, 3, 1, inv_relative_pm, 4, to_vp, 1, 1, tem2, 1);
-			s_c3a(-1.0, inv_relative_vs + 3, tem2, 1.0, tem);
+			s_mma(3, 1, 3, 1.0, inv_relative_pm, 4, to_vp, 1, tem2, 1);
+			s_c3a(-1.0, inv_relative_vs + 3, tem2, tem);
 
-			s_va(3, -1, inv_relative_as, 1, tem);
+			s_va(3, -1.0, inv_relative_as, tem);
 
-			s_mdmTN(3, 1, 3, 1, inv_relative_pm, 4, tem, 1, 0, to_ap, 1);
+			s_mmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_ap, 1);
 		}
 		auto s_xe2xe(const double *relative_pm, const double *relative_vs, const double *relative_as,
 			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we, double *to_re, const char *from_re_type, const char *to_re_type) noexcept->void
@@ -3369,8 +2947,8 @@ namespace aris
 			// 正式开始计算 //
 			s_wa2wa(relative_pm, relative_vs, from_wa, to_wa);
 
-			s_mdm(3, 1, 3, relative_pm, 4, from_xa, 1, to_xa, 1);
-			s_c3a(1.0, relative_vs + 3, to_wa, 1.0, to_xa);
+			s_mm(3, 1, 3, relative_pm, 4, from_xa, 1, to_xa, 1);
+			s_c3a(relative_vs + 3, to_wa, to_xa);
 			s_va(3, relative_as + 3, to_xa);
 		}
 		auto s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
@@ -3391,8 +2969,8 @@ namespace aris
 
 			double tem[3]{ -inv_relative_as[3],-inv_relative_as[4],-inv_relative_as[5] };
 			s_va(3, from_xa, tem);
-			s_c3a(-1.0, inv_relative_vs + 3, from_wa, 1, tem);
-			s_mdmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_xa, 1);
+			s_c3a(-1.0, inv_relative_vs + 3, from_wa, tem);
+			s_mmTN(3, 1, 3, inv_relative_pm, 4, tem, 1, to_xa, 1);
 		}
 		auto s_ae2ae(const double *relative_pm, const double *relative_vs, const double *relative_as,
 			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve, double *to_pe, const char *from_re_type, const char *to_re_type) noexcept->void
@@ -3611,8 +3189,8 @@ namespace aris
 			// 正式开始计算 //
 			s_vs2vs(relative_pm, relative_vs, from_vs, to_vs);
 			s_cv(relative_vs, to_vs, to_as);
-			s_tva(1.0, relative_pm, from_as, 1.0, to_as);
-			s_va(6, 1, relative_as, 1, to_as);
+			s_tva(relative_pm, from_as, to_as);
+			s_va(6, relative_as, to_as);
 		}
 		auto s_inv_as2as(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 			const double *from_vs, const double *from_as, double *to_as, double *to_vs) noexcept->void
@@ -3633,8 +3211,8 @@ namespace aris
 			double tem[6];
 			std::fill_n(to_as, 6, 0);
 			std::copy_n(from_as, 6, tem);
-			s_va(6, -1, inv_relative_as, 1, tem);
-			s_cva(-1.0, inv_relative_vs, from_vs, 1.0, tem);
+			s_va(6, -1.0, inv_relative_as, tem);
+			s_cva(-1.0, inv_relative_vs, from_vs, tem);
 			s_inv_tv(inv_relative_pm, tem, to_as);
 		}
 
@@ -3672,8 +3250,8 @@ namespace aris
 			std::fill_n(to_is, 36, 0);
 			double tem[6][6], tmf[6][6];
 			s_tmf(relative_pm, *tmf);
-			s_mdm(6, 6, 6, *tmf, 6, from_is, 6, *tem, 6);
-			s_mdmNT(6, 6, 6, 1, *tem, 6, *tmf, 6, 0, to_is, 6);
+			s_mm(6, 6, 6, *tmf, 6, from_is, 6, *tem, 6);
+			s_mmNT(6, 6, 6, *tem, 6, *tmf, 6, to_is, 6);
 		}
 		auto s_inv_is2is(const double *inv_relative_pm, const double *from_is, double *to_is) noexcept->void
 		{
@@ -3683,13 +3261,13 @@ namespace aris
 			double default_to_is[36];
 			to_is = to_is ? to_is : default_to_is;
 
-			/*以下为慢速但准确的算法*/
+			// 以下为慢速但准确的算法 //
 			std::fill_n(to_is, 36, 0);
 			double tem[6][6], tmf[6][6], pm[4][4];
 			s_inv_pm(inv_relative_pm, *pm);
 			s_tmf(*pm, *tmf);
-			s_mdm(6, 6, 6, *tmf, 6, from_is, 6, *tem, 6);
-			s_mdmNT(6, 6, 6, 1, *tem, 6, *tmf, 6, 0, to_is, 6);
+			s_mm(6, 6, 6, *tmf, 6, from_is, 6, *tem, 6);
+			s_mmNT(6, 6, 6, *tem, 6, *tmf, 6, to_is, 6);
 		}
 
 		auto s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder) noexcept->void
@@ -3705,8 +3283,8 @@ namespace aris
 			std::copy_n(firstAxisPnt, 3, Axis1);
 			std::copy_n(secondAxisPnt, 3, Axis2);
 
-			s_va(3, -1, origin, 1, Axis1);
-			s_va(3, -1, origin, 1, Axis2);
+			s_va(3, -1.0, origin, Axis1);
+			s_va(3, -1.0, origin, Axis2);
 
 			nrm = s_vnm(3, Axis1, 1);
 			if (nrm != 0)
@@ -3758,14 +3336,14 @@ namespace aris
 				}
 				else
 				{
-					s_nd(3, -1, Axis3, 1);
+					s_nv(3, -1, Axis3, 1);
 				}
 			}
 			else
 			{
 				if ((Order[1] - Order[0]) == -1)
 				{
-					s_nd(3, -1, Axis3, 1);
+					s_nv(3, -1, Axis3, 1);
 				}
 				else
 				{
@@ -3781,14 +3359,14 @@ namespace aris
 				}
 				else
 				{
-					s_nd(3, -1, Axis2, 1);
+					s_nv(3, -1, Axis2, 1);
 				}
 			}
 			else
 			{
 				if ((Order[0] - Order[2]) == -1)
 				{
-					s_nd(3, -1, Axis2, 1);
+					s_nv(3, -1, Axis2, 1);
 				}
 				else
 				{
@@ -4060,6 +3638,5 @@ namespace aris
 				}
 			}
 		}
-
 	}
 }

@@ -16,8 +16,8 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("parambase"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
-			virtual auto help(bool isfull, int begin)const->const std::string{ return std::string{}; };
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual help(bool isfull, int begin)const->const std::string{ return std::string{}; };
 			auto simpleHelp()const->const std::string &;
 			auto command()const->const Command &;
 			virtual ~ParamBase();
@@ -29,9 +29,9 @@ namespace aris
 			ParamBase& operator=(ParamBase&&);
 
 		protected:
-			virtual auto take()->void;
-			virtual auto reset()->void;
-			virtual auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void = 0;
+			auto virtual take()->void;
+			auto virtual reset()->void;
+			auto virtual addDefaultParam(std::map<std::string, std::string> &param_map_out)->void = 0;
 			auto isTaken()->bool;
 
 			struct Imp;
@@ -44,8 +44,8 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Param"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
-			virtual auto help(bool isfull, int begin)const->const std::string override;
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual help(bool isfull, int begin)const->const std::string override;
 			auto abbreviation()->char;
 			auto abbreviation()const->char;
 			auto defaultParam()const->const std::string &;
@@ -59,9 +59,9 @@ namespace aris
 			Param& operator=(Param&&);
 
 		protected:
-			virtual auto take()->void override final;
-			virtual auto reset()->void override final;
-			virtual auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void final override;
+			auto virtual take()->void override final;
+			auto virtual reset()->void override final;
+			auto virtual addDefaultParam(std::map<std::string, std::string> &param_map_out)->void final override;
 
 			struct Imp;
 			ImpPtr<Imp> imp_;
@@ -73,8 +73,8 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("UniqueParam"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
-			virtual auto help(bool isfull, int begin)const->const std::string override;
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual help(bool isfull, int begin)const->const std::string override;
 			auto defaultParam()const->const std::string &;
 			
 			virtual ~UniqueParam();
@@ -86,9 +86,9 @@ namespace aris
 			UniqueParam& operator=(UniqueParam &&);
 
 		protected:
-			virtual auto take()->void override final;
-			virtual auto reset()->void override final;
-			virtual auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void final override;
+			auto virtual take()->void override final;
+			auto virtual reset()->void override final;
+			auto virtual addDefaultParam(std::map<std::string, std::string> &param_map_out)->void final override;
 			
 			struct Imp;
 			ImpPtr<Imp> imp_;
@@ -99,8 +99,8 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("GroupParam"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
-			virtual auto help(bool isfull, int begin)const->const std::string override;
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual help(bool isfull, int begin)const->const std::string override;
 			
 			virtual ~GroupParam();
 			explicit GroupParam(const std::string &name);
@@ -111,15 +111,15 @@ namespace aris
 			GroupParam& operator=(GroupParam &&);
 
 		protected:
-			virtual auto take()->void override final;
-			virtual auto reset()->void override final;
-			virtual auto addDefaultParam(std::map<std::string, std::string> &param_map_out)->void override final;
+			auto virtual take()->void override final;
+			auto virtual reset()->void override final;
+			auto virtual addDefaultParam(std::map<std::string, std::string> &param_map_out)->void override final;
 		};
 		class Command :public ObjectPool<ParamBase>
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Command"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string&{ return Type(); }
 			auto defaultParam()const->const std::string &;
 			auto help(bool isfull, int begin)const->std::string;
 			virtual ~Command();
@@ -145,7 +145,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("CommandParser"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string&{ return Type(); }
 			auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
             auto help()const->std::string;
             auto commandPool()->ObjectPool<Command> &;

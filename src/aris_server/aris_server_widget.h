@@ -16,8 +16,8 @@ namespace aris
 		{
 		public:
 			using Root::loadXml;
-			virtual auto loadXml(const aris::core::XmlDocument &xml_doc)->void override;
-			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto cmdParser()->aris::core::CommandParser&;
 			auto cmdParser()const->const aris::core::CommandParser&;
 			auto cmdPipe()->aris::core::Pipe &;

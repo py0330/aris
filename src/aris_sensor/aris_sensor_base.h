@@ -44,7 +44,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Sensor"); return std::ref(type); }
-			virtual auto type() const->const std::string& override{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto start()->void;
 			auto stop()->void;
 			auto dataProtector()->SensorDataProtector;
@@ -54,9 +54,9 @@ namespace aris
 			Sensor(Object &father, const aris::core::XmlElement &xml_ele, std::function<SensorData*()> new_func);
 
 		protected:
-			virtual auto init()->void {}
-			virtual auto release()->void {}
-			virtual auto updateData(SensorData & data)->void {}
+			auto virtual init()->void {}
+			auto virtual release()->void {}
+			auto virtual updateData(SensorData & data)->void {}
 
 		private:
 			auto operator=(const Sensor &)->Sensor& = default;
@@ -81,8 +81,8 @@ namespace aris
 		{
 		public:
 			using Root::loadXml;
-			virtual auto loadXml(const aris::core::XmlDocument &xml_doc)->void override;
-			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto sensorPool()->aris::core::ObjectPool<Sensor> &;
 			auto sensorPool()const->const aris::core::ObjectPool<Sensor> &;
 			auto start()->void { for (auto &sensor : sensorPool())sensor.start(); }

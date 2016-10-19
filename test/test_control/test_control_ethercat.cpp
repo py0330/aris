@@ -48,18 +48,18 @@ class TestSlave :public SlaveTemplate<TxTestData, RxTestData>
 {
 public:
     static auto Type()->const std::string &{ static const std::string type("TestSlave"); return std::ref(type); }
-    virtual auto type() const->const std::string&{ return Type(); }
+    auto virtual type() const->const std::string&{ return Type(); }
     TestSlave(Object &father, const aris::core::XmlElement &xml_ele):SlaveTemplate(father, xml_ele){}
 
 protected:
-    virtual auto readUpdate()->void override
+    auto virtual readUpdate()->void override
     {
         std::int32_t feedback_pos;
         readPdoIndex(0x6064,0,feedback_pos);
         rxData().feedback_pos = feedback_pos;
     };
-    virtual auto writeUpdate()->void override{}
-    virtual auto logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override
+    auto virtual writeUpdate()->void override{}
+    auto virtual logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override
     {
 		file << static_cast<const TxTestData&>(tx_data).target_pos << " " << static_cast<const RxTestData&>(rx_data).feedback_pos;
     }
@@ -68,7 +68,7 @@ protected:
 class TestMaster :public aris::control::Master
 {
 protected:
-	virtual auto controlStrategy()->void override
+	auto virtual controlStrategy()->void override
 	{
         static int count{ 0 };
 

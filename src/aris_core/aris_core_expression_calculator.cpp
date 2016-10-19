@@ -14,7 +14,7 @@ namespace aris
 {
 	namespace core
 	{
-		auto s_mdm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
 		{
 			for (int i = 0; i < m; ++i)
 			{
@@ -31,7 +31,7 @@ namespace aris
 				}
 			}
 		}
-		auto s_mdmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
 		{
 			for (int i = 0; i < m; ++i)
 			{
@@ -47,7 +47,7 @@ namespace aris
 				}
 			}
 		}
-		auto s_mdmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
 		{
 			for (int i = 0; i < m; ++i)
 			{
@@ -66,7 +66,7 @@ namespace aris
 				}
 			}
 		}
-		auto s_mdmTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
 		{
 			for (int i = 0; i < m; ++i)
 			{
@@ -296,22 +296,22 @@ namespace aris
 				{
 					if (m2.is_row_major_)
 					{
-						aris::core::s_mdm(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
+						aris::core::s_mm(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 					}
 					else
 					{
-						aris::core::s_mdmNT(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
+						aris::core::s_mmNT(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 					}
 				}
 				else
 				{
 					if (m2.is_row_major_)
 					{
-						aris::core::s_mdmTN(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
+						aris::core::s_mmTN(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 					}
 					else
 					{
-						aris::core::s_mdmTT(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
+						aris::core::s_mmTT(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 					}
 				}
 

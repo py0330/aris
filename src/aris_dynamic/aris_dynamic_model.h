@@ -36,10 +36,10 @@ namespace aris
 		class Element :public aris::core::Object
 		{
 		public:
-			virtual auto saveAdams(std::ofstream &file) const->void { for (auto &ele : children())static_cast<const Element &>(ele).saveAdams(file); }
-			virtual auto adamsID()const->std::size_t { return id() + 1; }
-			virtual auto adamsType()const->const std::string &{ return type(); }
-			virtual auto adamsScriptType()const->const std::string &{ return adamsType(); }
+			auto virtual saveAdams(std::ofstream &file) const->void { for (auto &ele : children())static_cast<const Element &>(ele).saveAdams(file); }
+			auto virtual adamsID()const->std::size_t { return id() + 1; }
+			auto virtual adamsType()const->const std::string &{ return type(); }
+			auto virtual adamsScriptType()const->const std::string &{ return adamsType(); }
 			auto model()->Model&;
 			auto model()const->const Model&;
 			
@@ -60,8 +60,8 @@ namespace aris
 		class DynEle : public Element
 		{
 		public:
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			virtual auto update()->void = 0;
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual update()->void = 0;
 			auto active() const->bool { return active_; }
 			auto activate(bool active = true)->void { active_ = active; }
 
@@ -80,9 +80,9 @@ namespace aris
 		class Coordinate :public DynEle
 		{
 		public:
-			virtual auto pm() const->const double4x4& = 0;
-			virtual auto vs() const->const double6& = 0;
-			virtual auto as() const->const double6& = 0;
+			auto virtual pm() const->const double4x4& = 0;
+			auto virtual vs() const->const double6& = 0;
+			auto virtual as() const->const double6& = 0;
 			
 			auto getPp(double *pp)const->void;
 			auto getPp(const Coordinate &relative_to, double *pp)const->void;
@@ -151,7 +151,7 @@ namespace aris
 		class Interaction :public DynEle
 		{
 		public:
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto makI()->Marker& { return *makI_; }
 			auto makI() const->const Marker&{ return *makI_; }
 			auto makJ()->Marker& { return *makJ_; }
@@ -174,15 +174,15 @@ namespace aris
 		class Constraint :public Interaction
 		{
 		public:
-			virtual auto update()->void override;
-			virtual auto dim() const->std::size_t = 0;
-			virtual auto caPtr() const->const double* = 0;
-			virtual auto cfPtr() const->const double* = 0;
-			virtual auto prtCmPtrI() const->const double* = 0;
-			virtual auto prtCmPtrJ() const->const double* = 0;
+			auto virtual update()->void override;
+			auto virtual dim() const->std::size_t = 0;
+			auto virtual caPtr() const->const double* = 0;
+			auto virtual cfPtr() const->const double* = 0;
+			auto virtual prtCmPtrI() const->const double* = 0;
+			auto virtual prtCmPtrJ() const->const double* = 0;
 			auto colID()const->std::size_t;
 
-			virtual auto kinUpd()->void {};
+			auto virtual kinUpd()->void {};
 			auto vaError()const->const double6&{ return va_error_; }
 
 		protected:
@@ -232,15 +232,15 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Environment" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string &{ static const std::string type{ "environment" }; return type; }
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			virtual auto saveAdams(std::ofstream &file) const->void override;
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string &{ static const std::string type{ "environment" }; return type; }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto gravity()const ->const double6&{ return gravity_; }
 
 		private:
-			virtual auto operator=(const Object &other)->Object&{ return dynamic_cast<Environment&>(*this) = dynamic_cast<const Environment&>(other); }
-			virtual auto operator=(Object &&other)->Object&{ return dynamic_cast<Environment&>(*this) = dynamic_cast<Environment&&>(other); }
+			auto virtual operator=(const Object &other)->Object&{ return dynamic_cast<Environment&>(*this) = dynamic_cast<const Environment&>(other); }
+			auto virtual operator=(Object &&other)->Object&{ return dynamic_cast<Environment&>(*this) = dynamic_cast<Environment&&>(other); }
 			
 			virtual ~Environment() = default;
 			explicit Environment(const std::string &name) :Element(name) {}
@@ -261,10 +261,10 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Akima" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string &{ static const std::string type{ "akima" }; return type; }
-			virtual auto saveAdams(std::ofstream &file) const->void override;
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string &{ static const std::string type{ "akima" }; return type; }
+			auto virtual saveAdams(std::ofstream &file) const->void override;
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto x() const->const std::vector<double> &;
 			auto y() const->const std::vector<double> &;
 			auto operator()(double x, char derivativeOrder = '0') const ->double;
@@ -294,10 +294,10 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Script" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string &{ static const std::string type{ "script" }; return type; }
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			virtual auto saveAdams(std::ofstream &file) const->void override final;
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string &{ static const std::string type{ "script" }; return type; }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual saveAdams(std::ofstream &file) const->void override final;
 			auto act(DynEle &ele, bool isActive)->void;
 			auto aln(Marker &mak_move, const Marker& mak_target)->void;
 			auto sim(std::uint32_t ms_dur, std::uint32_t ms_dt)->void;
@@ -327,10 +327,10 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Variable" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string &{ static const std::string type{ "variable" }; return type; }
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			virtual auto toString() const->std::string { return ""; }//TBD
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string &{ static const std::string type{ "variable" }; return type; }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual toString() const->std::string { return ""; }//TBD
 
 		protected:
 			virtual ~Variable() = default;
@@ -348,15 +348,15 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Marker" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string &{ static const std::string type{ "marker" }; return type; }
-			virtual auto adamsID()const->std::size_t;
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			virtual auto saveAdams(std::ofstream &file) const->void override;
-			virtual auto update()->void override;
-			virtual auto pm() const->const double4x4& override final;
-			virtual auto vs() const->const double6& override final;
-			virtual auto as() const->const double6& override final;
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string &{ static const std::string type{ "marker" }; return type; }
+			auto virtual adamsID()const->std::size_t;
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual saveAdams(std::ofstream &file) const->void override;
+			auto virtual update()->void override;
+			auto virtual pm() const->const double4x4& override final;
+			auto virtual vs() const->const double6& override final;
+			auto virtual as() const->const double6& override final;
 			auto prtPm() const->const double4x4&;
 			auto fatherPart() const->const Part&;
 			auto fatherPart()->Part&;
@@ -381,22 +381,21 @@ namespace aris
 		class Part final:public Coordinate
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type{ "Part" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string &{ static const std::string type{ "part" }; return type; }
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			virtual auto saveAdams(std::ofstream &file) const->void override;
-			virtual auto update()->void override;
-			virtual auto pm()const->const double4x4& override final;
-			virtual auto vs()const->const double6& override final;
-			virtual auto as()const->const double6& override final;
+			auto static Type()->const std::string &{ static const std::string type{ "Part" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string &{ static const std::string type{ "part" }; return type; }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual saveAdams(std::ofstream &file) const->void override;
+			auto virtual update()->void override;
+			auto virtual pm()const->const double4x4& override final;
+			auto virtual vs()const->const double6& override final;
+			auto virtual as()const->const double6& override final;
 			auto rowID()const->std::size_t;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto pm()->double4x4&;
 			auto vs()->double6&;
 			auto as()->double6&;
-			auto invPm() const->const double4x4&;
 			auto prtGravity() const->const double6&;
 			auto prtIs() const->const double6x6&;
 			auto prtVs() const->const double6&;
@@ -479,9 +478,9 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Joint" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string &{ static const std::string type{ "joint" }; return type; }
-			virtual auto saveAdams(std::ofstream &file) const->void override;
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string &{ static const std::string type{ "joint" }; return type; }
+			auto virtual saveAdams(std::ofstream &file) const->void override;
 
 		protected:
 			virtual ~Joint() = default;
@@ -499,13 +498,13 @@ namespace aris
 		public:
 			static auto Type()->const std::string & { static const std::string type{ "Motion" }; return type; }
 			static auto Dim()->std::size_t { return 1; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type{ "single_component_motion" }; return type; }
-			virtual auto adamsScriptType()const->const std::string& override{ return Type(); }
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			virtual auto saveAdams(std::ofstream &file) const->void override;
-			virtual auto update()->void override;
-			virtual auto computeVaError()->void 
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "single_component_motion" }; return type; }
+			auto virtual adamsScriptType()const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual saveAdams(std::ofstream &file) const->void override;
+			auto virtual update()->void override;
+			auto virtual computeVaError()->void 
 			{
 				makI().update();
 				makJ().update();
@@ -515,11 +514,11 @@ namespace aris
 				
 				s_pm2pq(*pmI2J, pqI2J);
 			}
-			virtual auto dim() const ->std::size_t override { return 1; }
-			virtual auto caPtr() const->const double* override { return ca(); }
-			virtual auto cfPtr() const->const double* override { return cf(); }
-			virtual auto prtCmPtrI() const->const double* override { return *prtCmI(); }
-			virtual auto prtCmPtrJ() const->const double* override { return *prtCmJ(); }
+			auto virtual dim() const ->std::size_t override { return 1; }
+			auto virtual caPtr() const->const double* override { return ca(); }
+			auto virtual cfPtr() const->const double* override { return cf(); }
+			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
+			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
 			auto axis()const->int;
 			auto mp() const->double;
 			auto mv() const->double;
@@ -559,15 +558,15 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "GeneralMotion" }; return type; }
 			static auto Dim()->std::size_t { return 6; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type{ "general_motion" }; return type; }
-			virtual auto saveAdams(std::ofstream &file) const->void override;
-			virtual auto update()->void override;
-			virtual auto dim() const ->std::size_t override { return Dim(); }
-			virtual auto prtCmPtrI() const->const double* override { return *prtCmI(); }
-			virtual auto prtCmPtrJ() const->const double* override { return *prtCmJ(); }
-			virtual auto caPtr() const->const double* override { return ca(); }
-			virtual auto cfPtr() const->const double* override { return cf(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "general_motion" }; return type; }
+			auto virtual saveAdams(std::ofstream &file) const->void override;
+			auto virtual update()->void override;
+			auto virtual dim() const ->std::size_t override { return Dim(); }
+			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
+			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
+			auto virtual caPtr() const->const double* override { return ca(); }
+			auto virtual cfPtr() const->const double* override { return cf(); }
 			auto mp() const->const double6&;
 			auto setMp(const double *mot_pos)->void;
 			auto mv() const->const double6&;
@@ -596,8 +595,8 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Force" }; return type; }
-			virtual auto type()const->const std::string & override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type{ "force" }; return type; }
+			auto virtual type()const->const std::string & override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "force" }; return type; }
 			auto fsI() const->const double* { return fsI_; }
 			auto fsJ() const->const double* { return fsJ_; }
 
@@ -631,13 +630,13 @@ namespace aris
 			};
 			using Root::loadXml;
 			using Root::saveXml;
-			virtual auto loadXml(const aris::core::XmlDocument &xml_doc)->void override;
-            virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			virtual auto saveXml(aris::core::XmlDocument &xml_doc)const->void override;
-			virtual auto loadDynEle(const std::string &name)->void;
-			virtual auto saveDynEle(const std::string &name)->void;
-			virtual auto saveAdams(const std::string &filename, bool using_script = false) const->void;
-			virtual auto saveAdams(std::ofstream &file, bool using_script = false) const->void;
+			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
+            auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual saveXml(aris::core::XmlDocument &xml_doc)const->void override;
+			auto virtual loadDynEle(const std::string &name)->void;
+			auto virtual saveDynEle(const std::string &name)->void;
+			auto virtual saveAdams(const std::string &filename, bool using_script = false) const->void;
+			auto virtual saveAdams(std::ofstream &file, bool using_script = false) const->void;
 			auto calculator()->aris::core::Calculator&;
 			auto calculator()const ->const aris::core::Calculator&;
 			auto environment()->aris::dynamic::Environment&;
@@ -673,7 +672,7 @@ namespace aris
 			// 约束力为n维的向量,约束加速度为n维向量
 			// 部件力为m维的向量,部件加速度为m维向量
 			// 动力学为所求的未知量为部件加速度和约束力,其他均为已知
-			virtual auto dyn()->void;
+			auto virtual dyn()->void;
 			auto dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void;
 			auto dynDimM()const->std::size_t;
 			auto dynDimN()const->std::size_t;
@@ -703,8 +702,8 @@ namespace aris
 			auto clbUkn(double *clb_x) const->void;
 
 			// 仿真函数
-			virtual auto kinFromPin()->void {}
-			virtual auto kinFromVin()->void {}
+			auto virtual kinFromPin()->void {}
+			auto virtual kinFromVin()->void {}
 			// 静态仿真
 			auto simKin(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1)->SimResult;
 			// 动态仿真
@@ -740,11 +739,11 @@ namespace aris
 		template<std::size_t DIM>	class JointTemplate :public Joint, public ConstraintData<DIM>
 		{
 		public:
-			virtual auto dim() const->std::size_t { return DIM; }
-			virtual auto prtCmPtrI() const->const double* override { return *ConstraintData<DIM>::prtCmI(); }
-			virtual auto prtCmPtrJ() const->const double* override { return *ConstraintData<DIM>::prtCmJ(); }
-			virtual auto caPtr() const->const double* override { return ConstraintData<DIM>::ca(); }
-			virtual auto cfPtr() const->const double* override { return ConstraintData<DIM>::cf(); }
+			auto virtual dim() const->std::size_t { return DIM; }
+			auto virtual prtCmPtrI() const->const double* override { return *ConstraintData<DIM>::prtCmI(); }
+			auto virtual prtCmPtrJ() const->const double* override { return *ConstraintData<DIM>::prtCmJ(); }
+			auto virtual caPtr() const->const double* override { return ConstraintData<DIM>::ca(); }
+			auto virtual cfPtr() const->const double* override { return ConstraintData<DIM>::cf(); }
 
 		protected:
 			explicit JointTemplate(const std::string &name, Marker &makI, Marker &makJ)	:Joint(name, makI, makJ) {}
@@ -762,9 +761,9 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "MatrixVariable" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type{ "matrix" }; return type; }
-			virtual auto toString() const->std::string override { return data_.toString(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "matrix" }; return type; }
+			auto virtual toString() const->std::string override { return data_.toString(); }
 
 		private:
 			virtual ~MatrixVariable() = default;
@@ -787,9 +786,9 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "StringVariable" }; return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type{ "string" }; return type; }
-			virtual auto toString() const->std::string override { return data_; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "string" }; return type; }
+			auto virtual toString() const->std::string override { return data_; }
 
 		private:
 			virtual ~StringVariable() = default;
@@ -830,8 +829,8 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("RevoluteJoint"); return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type("revolute"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type("revolute"); return type; }
 
 		private:
 			virtual ~RevoluteJoint() = default;
@@ -850,8 +849,8 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("PrismaticJoint"); return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type("translational"); return type;}
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type("translational"); return type;}
 
 		private:
 			virtual ~PrismaticJoint() = default;
@@ -870,9 +869,9 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("UniversalJoint"); return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type("universal"); return type; }
-			virtual auto update()->void override;
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type("universal"); return type; }
+			auto virtual update()->void override;
 
 		private:
 			virtual ~UniversalJoint() = default;
@@ -891,8 +890,8 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("SphericalJoint"); return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type("spherical"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type("spherical"); return type; }
 
 		private:
 			virtual ~SphericalJoint() = default;
@@ -911,12 +910,12 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("SingleComponentForce"); return type; }
-			virtual auto type() const->const std::string& override{ return Type(); }
-			virtual auto adamsType()const->const std::string& override{ static const std::string type("single_component_force"); return type; }
-			virtual auto adamsScriptType()const->const std::string& override{ static const std::string type("sforce"); return std::ref(type); }
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			virtual auto saveAdams(std::ofstream &file) const->void override;
-			virtual auto update()->void override;
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type("single_component_force"); return type; }
+			auto virtual adamsScriptType()const->const std::string& override{ static const std::string type("sforce"); return std::ref(type); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual saveAdams(std::ofstream &file) const->void override;
+			auto virtual update()->void override;
 			auto setComponentID(std::size_t id)->void { component_axis_ = id; }
 			auto setFce(double value)->void { std::fill_n(fce_value_, 6, 0); fce_value_[component_axis_] = value; }
 			auto setFce(double value, int componentID)->void { this->component_axis_ = componentID; setFce(value); }

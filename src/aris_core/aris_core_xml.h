@@ -221,8 +221,8 @@ namespace aris
 			static auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->char;
 			static auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, char default_value)->char;
 			static auto Type()->const std::string &{ static const std::string type("Object"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
-			virtual auto saveXml(aris::core::XmlElement &xml_ele) const->void;
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void;
 			auto name() const->const std::string&;
 			auto id()const->std::size_t;
 			auto root()->Root&;
@@ -396,14 +396,14 @@ namespace aris
 			};
 			using Object::saveXml;
 			static auto Type()->const std::string &{ static const std::string type("Root"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
-			virtual auto loadXml(const char* filename)->void { loadXml(std::string(filename)); }
-			virtual auto loadXml(const std::string &filename)->void;
-			virtual auto loadXml(const aris::core::XmlDocument &xml_doc)->void;
-			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void;
-			virtual auto saveXml(const char *filename) const->void { saveXml(std::string(filename)); }
-			virtual auto saveXml(const std::string &filename) const->void;
-			virtual auto saveXml(aris::core::XmlDocument &xml_doc)const->void;
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual loadXml(const char* filename)->void { loadXml(std::string(filename)); }
+			auto virtual loadXml(const std::string &filename)->void;
+			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void;
+			auto virtual saveXml(const char *filename) const->void { saveXml(std::string(filename)); }
+			auto virtual saveXml(const std::string &filename) const->void;
+			auto virtual saveXml(aris::core::XmlDocument &xml_doc)const->void;
 			template<typename ChildType>
 			auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); }
 			auto childTypeMap()const ->const std::map<std::string, TypeInfo>&;
@@ -556,7 +556,7 @@ namespace aris
 				static const std::string type{ (&Type == &T::Type ? std::string("Noname") : T::Type()) + "Pool" + (&Type == &Base::Type ? std::string("Noname") : Base::Type()) };
 				return type;
 			}
-			virtual auto type()const->const std::string & override{ return Type(); }
+			auto virtual type()const->const std::string & override{ return Type(); }
 			auto findByName(const std::string &name)const->const_iterator { return Base::findByName(name); }
 			auto findByName(const std::string &name)->iterator { return Base::findByName(name);}
 

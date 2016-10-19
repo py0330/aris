@@ -10,7 +10,7 @@ class Child :public Object
 {
 public:
 	static auto Type()->const std::string &{ static const std::string type("Child"); return std::ref(type); }
-	virtual auto type() const->const std::string&{ return Type(); }
+	auto virtual type() const->const std::string&{ return Type(); }
 
 	int a = 0;
 

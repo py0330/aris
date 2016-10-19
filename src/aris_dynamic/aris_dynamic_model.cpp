@@ -720,17 +720,16 @@ namespace aris
 			double pm_M2N[4][4];
 
 			// Get pm M2N //
-			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
+			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
 
 			// update CstMtx //
 			s_tf_n(dim(), -1.0, *pm_M2N, prtCmPtrI(), const_cast<double*>(prtCmPtrJ()));
 
 			// update CstAcc //
-			std::fill(const_cast<double*>(caPtr()), const_cast<double*>(caPtr()) + dim(), 0);
-			double vn_in_m[6]{ 0 }, tem[6]{ 0 };
+			double vn_in_m[6], tem[6];
 			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVs(), vn_in_m);
 			s_cv(makI().fatherPart().prtVs(), vn_in_m, tem);
-			s_mdmTN(dim(), 1, 6, -1.0, prtCmPtrI(), dim(), tem, 1, 0.0, const_cast<double*>(caPtr()), 1);
+			s_mmTN(dim(), 1, 6, -1.0, prtCmPtrI(), tem, const_cast<double*>(caPtr()));
 		}
 		Constraint::~Constraint() = default;
 		Constraint::Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active): Interaction(name, makI, makJ, is_active) {}
@@ -1029,9 +1028,9 @@ namespace aris
 			struct Node
 			{
 				virtual ~Node() = default;
-				virtual auto doNode()->void {}
-				virtual auto adamsScript()const->std::string = 0;
-				virtual auto msConsumed()const->std::uint32_t { return 0; }
+				auto virtual doNode()->void {}
+				auto virtual adamsScript()const->std::string = 0;
+				auto virtual msConsumed()const->std::uint32_t { return 0; }
 
 				static auto create(Model *model, const std::string &expression)->Node*
 				{
@@ -1144,8 +1143,8 @@ namespace aris
 			};
 			struct ActNode final :public Node
 			{
-				virtual auto doNode()->void override final { dyn_ele_->activate(isActive); }
-				virtual auto adamsScript()const->std::string override final
+				auto virtual doNode()->void override final { dyn_ele_->activate(isActive); }
+				auto virtual adamsScript()const->std::string override final
 				{
 					std::stringstream ss;
 					std::string cmd = isActive ? "activate/" : "deactivate/";
@@ -1159,7 +1158,7 @@ namespace aris
 			};
 			struct AlnNode final :public Node
 			{
-				virtual auto doNode()->void override final
+				auto virtual doNode()->void override final
 				{
 					if (mak_target_)
 					{
@@ -1170,7 +1169,7 @@ namespace aris
 						s_pm2pe(*mak_move_->prtPm(), prt_pe_);
 					}
 				}
-				virtual auto adamsScript()const->std::string override final
+				auto virtual adamsScript()const->std::string override final
 				{
 					std::stringstream ss;
 					ss << std::setprecision(15) << "marker/" << mak_move_->adamsID()
@@ -1190,8 +1189,8 @@ namespace aris
 			};
 			struct SimNode final :public Node
 			{
-				virtual auto msConsumed()const->std::uint32_t override final { return ms_dur_; }
-				virtual auto adamsScript()const->std::string override final
+				auto virtual msConsumed()const->std::uint32_t override final { return ms_dur_; }
+				auto virtual adamsScript()const->std::string override final
 				{
 					std::stringstream ss;
 					ss << "simulate/transient, dur=" << double(ms_dur_) / 1000.0 << ", dtout=" << double(ms_dt_) / 1000.0;
@@ -1392,7 +1391,6 @@ namespace aris
 		{
 			aris::core::ObjectPool<Marker, Element> *marker_pool_;
 			
-			double inv_pm_[4][4]{ { 0 } };
 			double pm_[4][4]{ { 0 } };
 			double vs_[6]{ 0 };
 			double as_[6]{ 0 };
@@ -1524,13 +1522,12 @@ namespace aris
 		{
 			double tem[6];
 
-			// update inv_pm, prt_vs, prt_as, prt_gravity, prt_fg, prt_fv.
-			s_inv_pm(*pm(), *imp_->inv_pm_);
-			s_tv(*invPm(), vs(), imp_->prt_vs_);
-			s_tv(*invPm(), as(), imp_->prt_as_);
-			s_tv(*invPm(), model().environment().gravity(), imp_->prt_gravity_);
-			s_m6_dot_v6(*prtIs(), prtGravity(), imp_->prt_fg_);
-			s_m6_dot_v6(*prtIs(), imp_->prt_vs_, tem);
+			// update prt_vs, prt_as, prt_gravity, prt_fg, prt_fv.
+			s_inv_tv(*pm(), vs(), imp_->prt_vs_);
+			s_inv_tv(*pm(), as(), imp_->prt_as_);
+			s_inv_tv(*pm(), model().environment().gravity(), imp_->prt_gravity_);
+			s_mm(6, 1, 6, *prtIs(), prtGravity(), imp_->prt_fg_);
+			s_mm(6, 1, 6, *prtIs(), imp_->prt_vs_, tem);
 			s_cf(prtVs(), tem, imp_->prt_fv_);
 		}
 		auto Part::rowID()const->std::size_t { return imp_->row_id_; }
@@ -1542,7 +1539,6 @@ namespace aris
 		auto Part::vs()->double6& { return imp_->vs_; }
 		auto Part::as()const->const double6&{ return imp_->as_; }
 		auto Part::as()->double6& { return imp_->as_; }
-		auto Part::invPm() const->const double4x4&{ return imp_->inv_pm_; }
 		auto Part::prtGravity() const->const double6&{ return imp_->prt_gravity_; }
 		auto Part::prtIs() const->const double6x6&{ return imp_->prt_is_; }
 		auto Part::prtVs() const->const double6&{ return imp_->prt_vs_; }
@@ -2190,7 +2186,7 @@ namespace aris
 
 			double velDiff[6], velDiff_in_J[6];
 			std::copy_n(makI().vs(), 6, velDiff);
-			s_va(6, -1, makJ().vs(), 1, velDiff);
+			s_va(6, -1.0, makJ().vs(), velDiff);
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
 			setMv(velDiff_in_J[axis()]);
 		}
@@ -2311,7 +2307,7 @@ namespace aris
 
 			double velDiff[6], velDiff_in_J[6];
 			std::copy_n(makI().vs(), 6, velDiff);
-			s_va(6, -1, makJ().vs(), 1, velDiff);
+			s_va(6, -1.0, makJ().vs(), velDiff);
 			s_inv_tv(*makJ().pm(), velDiff, velDiff_in_J);
 			setMv(velDiff_in_J);
 		}
@@ -2624,8 +2620,8 @@ namespace aris
 			{
 				if (prt.active())
 				{
-					s_va(6, -1, prt.prtFg(), 1, &prt_fce[prt.rowID()]);
-					s_va(6, 1, prt.prtFv(), 1, &prt_fce[prt.rowID()]);
+					s_va(6, -1.0, prt.prtFg(), &prt_fce[prt.rowID()]);
+					s_va(6, 1.0, prt.prtFv(), &prt_fce[prt.rowID()]);
 				}
 			}
 
@@ -2633,8 +2629,8 @@ namespace aris
 			{
 				if (fce.active())
 				{
-					s_va(6, -1, fce.fsI(), 1, &prt_fce[fce.makI().fatherPart().rowID()]);
-					s_va(6, -1, fce.fsJ(), 1, &prt_fce[fce.makJ().fatherPart().rowID()]);
+					s_va(6, -1.0, fce.fsI(), &prt_fce[fce.makI().fatherPart().rowID()]);
+					s_va(6, -1.0, fce.fsJ(), &prt_fce[fce.makJ().fatherPart().rowID()]);
 				}
 			}
 		}
@@ -2833,7 +2829,7 @@ namespace aris
 				{
 					double cm[6][6];
 					s_cmf(i.prtVs(), *cm);
-					s_mdm(clbDimM(), 6, 6, 1, &A(beginRow, i.rowID()), dynDimM(), *cm, 6, 0, &B(beginRow, i.rowID()), dynDimM());
+					s_mm(clbDimM(), 6, 6, &A(beginRow, i.rowID()), dynDimM(), *cm, 6, &B(beginRow, i.rowID()), dynDimM());
 				}
 			}
 
@@ -2846,7 +2842,7 @@ namespace aris
 				{
 					double q[6]{ 0 };
 					std::copy_n(i.prtAs(), 6, q);
-					s_va(6, -1, i.prtGravity(), 1, q);
+					s_va(6, -1.0, i.prtGravity(), q);
 
 					double v[6];
 					std::copy_n(i.prtVs(), 6, v);
@@ -2899,7 +2895,7 @@ namespace aris
 					s_va(6, fce.fsJ(), &f[fce.makJ().fatherPart().rowID()]);
 				}
 			}
-			s_mdm(clbDimM(), 1, dynDimM(), 1, &A(beginRow, 0), dynDimM(), f.data(), 1, 1, clb_b_m.data(), 1);
+			s_mma(clbDimM(), 1, dynDimM(), 1.0, &A(beginRow, 0), dynDimM(), f.data(), 1, clb_b_m.data(), 1);
 
 			// 以下添加驱动摩擦系数 //
 			row = 0;
@@ -3226,15 +3222,15 @@ namespace aris
 			// // update csmJ //
 			std::fill_n(static_cast<double *>(*prtCmJ_), this->dim() * 6, 0);
 			double pm_M2N[4][4];
-			s_pm_dot_pm(*makJ().fatherPart().invPm(), *makI().fatherPart().pm(), *pm_M2N);
-			s_tfa_n(Dim(), -1.0, *pm_M2N, *prtCmI_, 0.0, *prtCmJ_);
+			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
+			s_tf_n(Dim(), -1.0, *pm_M2N, *prtCmI_, *prtCmJ_);
 
 			// // update A_c // //
 			std::fill(const_cast<double*>(caPtr()), const_cast<double*>(caPtr()) + dim(), 0);
 			double vn_in_m[6]{ 0 }, tem[6]{ 0 };
 			s_inv_tv(*pm_M2N, makJ().fatherPart().prtVs(), vn_in_m);
 			s_cv(makI().fatherPart().prtVs(), vn_in_m, tem);
-			s_mdmTN(dim(), 1, 6, -1.0, prtCmPtrI(), dim(), tem, 1, 0.0, const_cast<double*>(caPtr()), 1);
+			s_mmaTN(dim(), 1, 6, -1.0, prtCmPtrI(), dim(), tem, 1, const_cast<double*>(caPtr()), 1);
 
 			// compute c_dot //
 			// c_dot = i_dot x j + i x j_dot
@@ -3243,10 +3239,10 @@ namespace aris
 			s_c3(vm_in_m + 3, axis_i_m, axis_i_dot_m);
 			s_c3(vn_in_m + 3, axis_j_m, axis_j_dot_m);
 			s_c3(axis_i_dot_m, axis_j_m, cdot_in_m);
-			s_c3a(1.0, axis_i_m, axis_j_dot_m, 1.0, cdot_in_m);
+			s_c3a(axis_i_m, axis_j_dot_m, cdot_in_m);
 			
 			double v_diff_m[3]{ vn_in_m[3] - vm_in_m[3],vn_in_m[4] - vm_in_m[4] ,vn_in_m[5] - vm_in_m[5] };
-			ca_[3] += s_vdv(3, cdot_in_m, v_diff_m);
+			ca_[3] += s_vv(3, cdot_in_m, v_diff_m);
 		}
 		UniversalJoint::UniversalJoint(const std::string &name, Marker &makI, Marker &makJ) : JointTemplate(name, makI, makJ)
 		{
@@ -3349,7 +3345,7 @@ namespace aris
 			s_tf(*makI().prtPm(), fce_value_, fsI_);
 			double pm_M2N[16];
 			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), pm_M2N);
-			s_tfa(-1.0, pm_M2N, fsI_, 0.0, fsJ_);
+			s_tf(-1.0, pm_M2N, fsI_, fsJ_);
 		}
 		SingleComponentForce::SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, int componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
 		SingleComponentForce::SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele) : Force(father, xml_ele), component_axis_(attributeInt32(xml_ele, "component")) {}

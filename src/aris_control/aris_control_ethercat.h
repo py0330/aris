@@ -33,7 +33,7 @@ namespace aris
 		public:
 			enum { MAX_LOG_DATA_SIZE = 8192 };
 			static auto Type()->const std::string &{ static const std::string type("DataLogger"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string&{ return Type(); }
 			auto prepair(const std::string &log_file_name = std::string())->void;
 			auto start()->void;
 			auto stop()->void;
@@ -86,7 +86,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Pdo"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string&{ return Type(); }
 			auto ecHandle()->Handle*;
 			auto ecHandle()const->const Handle*;
 			auto read(std::int32_t &value)->void;
@@ -122,7 +122,7 @@ namespace aris
 				CONFIG = 0x04
 			};
 			static auto Type()->const std::string &{ static const std::string type("Sdo"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string&{ return Type(); }
 			auto readable()const->bool;
 			auto writeable()const->bool;
 			auto configurable()const->bool;
@@ -175,7 +175,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("PdoGroup"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string&{ return Type(); }
 			auto ecHandle()->Handle*;
 			auto ecHandle()const->const Handle*;
 			auto tx()const->bool;
@@ -199,7 +199,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("SlaveType"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string&{ return Type(); }
 			auto productCode()const->std::uint32_t;
 			auto venderID()const->std::uint32_t;
 			auto alias()const->std::uint16_t;
@@ -222,18 +222,18 @@ namespace aris
 			struct TxType {};
 			struct RxType { std::int32_t ret{ 0 }; };
 			static auto Type()->const std::string &{ static const std::string type("Slave"); return std::ref(type); }
-			virtual auto type() const->const std::string&{ return Type(); }
-			virtual auto txData()->TxType&;
-			virtual auto txData()const->const TxType&;
-			virtual auto rxData()->RxType&;
-			virtual auto rxData()const->const RxType&;
-			virtual auto getTxData(TxType& tx_data)const->void { tx_data = txData(); }
-			virtual auto setTxData(const TxType& tx_data)->void { txData() = tx_data; }
-			virtual auto getRxData(RxType& rx_data)const->void { rx_data = rxData(); }
-			virtual auto setTxData(const RxType& rx_data)->void { rxData() = rx_data; }
-			virtual auto txTypeSize()const->std::size_t { return sizeof(TxType); }
-			virtual auto rxTypeSize()const->std::size_t { return sizeof(RxType); }
-            virtual auto logData(const TxType &tx_data, const RxType &rx_data, std::fstream &file)->void {}
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual txData()->TxType&;
+			auto virtual txData()const->const TxType&;
+			auto virtual rxData()->RxType&;
+			auto virtual rxData()const->const RxType&;
+			auto virtual getTxData(TxType& tx_data)const->void { tx_data = txData(); }
+			auto virtual setTxData(const TxType& tx_data)->void { txData() = tx_data; }
+			auto virtual getRxData(RxType& rx_data)const->void { rx_data = rxData(); }
+			auto virtual setTxData(const RxType& rx_data)->void { rxData() = rx_data; }
+			auto virtual txTypeSize()const->std::size_t { return sizeof(TxType); }
+			auto virtual rxTypeSize()const->std::size_t { return sizeof(RxType); }
+            auto virtual logData(const TxType &tx_data, const RxType &rx_data, std::fstream &file)->void {}
 			auto ecHandle()->Handle*;
 			auto ecHandle()const->const Handle*;
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
@@ -292,9 +292,9 @@ namespace aris
 			Slave& operator=(Slave &&other) = delete;
 
 		protected:
-            virtual auto init()->void {}
-            virtual auto readUpdate()->void {}
-            virtual auto writeUpdate()->void {}
+            auto virtual init()->void {}
+            auto virtual readUpdate()->void {}
+            auto virtual writeUpdate()->void {}
 
 		private:
 			struct Imp;
@@ -307,10 +307,10 @@ namespace aris
 		{
 		public:
 			using Root::loadXml;
-			virtual auto loadXml(const aris::core::XmlDocument &xml_doc)->void override;
-			virtual auto loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			virtual auto start()->void;
-			virtual auto stop()->void;
+			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual start()->void;
+			auto virtual stop()->void;
 			auto ecHandle()const->const Handle*;
 			auto ecHandle()->Handle*;
 			auto rtHandle()const->const Handle*;
@@ -327,7 +327,7 @@ namespace aris
 			auto dataLogger()const->const DataLogger&;
 
 		protected:
-            virtual auto controlStrategy()->void {}
+            auto virtual controlStrategy()->void {}
 			virtual ~Master();
 			Master();
 			Master(const Master &other) = delete;
@@ -350,16 +350,16 @@ namespace aris
 		public:
 			using TxType = Tx;
 			using RxType = Rx;
-			virtual auto txData()->TxType & override { return tx_data_; }
-			virtual auto txData()const->const TxType & override{ return tx_data_; }
-			virtual auto rxData()->RxType & override { return rx_data_; }
-			virtual auto rxData()const->const RxType & override{ return rx_data_; }
-			virtual auto getTxData(Slave::TxType& tx_data)const->void override { static_cast<TxType &>(tx_data) = txData(); }
-			virtual auto setTxData(const Slave::TxType& tx_data)->void override { txData() = static_cast<const TxType &>(tx_data); }
-			virtual auto getRxData(Slave::RxType& rx_data)const->void override { static_cast<RxType &>(rx_data) = rxData(); }
-			virtual auto setTxData(const Slave::RxType& rx_data)->void override { rxData() = static_cast<const RxType &>(rx_data); }
-			virtual auto txTypeSize()const->std::size_t override { return sizeof(TxType); }
-			virtual auto rxTypeSize()const->std::size_t override { return sizeof(RxType); }
+			auto virtual txData()->TxType & override { return tx_data_; }
+			auto virtual txData()const->const TxType & override{ return tx_data_; }
+			auto virtual rxData()->RxType & override { return rx_data_; }
+			auto virtual rxData()const->const RxType & override{ return rx_data_; }
+			auto virtual getTxData(Slave::TxType& tx_data)const->void override { static_cast<TxType &>(tx_data) = txData(); }
+			auto virtual setTxData(const Slave::TxType& tx_data)->void override { txData() = static_cast<const TxType &>(tx_data); }
+			auto virtual getRxData(Slave::RxType& rx_data)const->void override { static_cast<RxType &>(rx_data) = rxData(); }
+			auto virtual setTxData(const Slave::RxType& rx_data)->void override { rxData() = static_cast<const RxType &>(rx_data); }
+			auto virtual txTypeSize()const->std::size_t override { return sizeof(TxType); }
+			auto virtual rxTypeSize()const->std::size_t override { return sizeof(RxType); }
 
 			SlaveTemplate(Object &father, const aris::core::XmlElement &xml_ele) :Slave(father, xml_ele)
 			{
