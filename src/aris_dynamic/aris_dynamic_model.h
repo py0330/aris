@@ -61,7 +61,6 @@ namespace aris
 		{
 		public:
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual update()->void = 0;
 			auto active() const->bool { return active_; }
 			auto activate(bool active = true)->void { active_ = active; }
 
@@ -80,10 +79,15 @@ namespace aris
 		class Coordinate :public DynEle
 		{
 		public:
-			auto virtual pm() const->const double4x4& = 0;
-			auto virtual vs() const->const double6& = 0;
-			auto virtual as() const->const double6& = 0;
-			
+			auto virtual prtPm()const->const double4x4& = 0;
+			auto virtual prtVs()const->const double6& = 0;
+			auto virtual prtAs()const->const double6& = 0;
+			auto virtual glbPm()const->const double4x4& = 0;
+			auto virtual glbVs()const->const double6& = 0;
+			auto virtual glbAs()const->const double6& = 0;
+			auto virtual pm() const->const double4x4&{ return glbPm(); };
+			auto virtual vs() const->const double6&{ return glbVs(); };
+			auto virtual as() const->const double6&{ return glbAs(); };
 			auto getPp(double *pp)const->void;
 			auto getPp(const Coordinate &relative_to, double *pp)const->void;
 			auto getRe(double *re, const char *type = "313")const->void;
@@ -174,16 +178,25 @@ namespace aris
 		class Constraint :public Interaction
 		{
 		public:
-			auto virtual update()->void override;
 			auto virtual dim() const->std::size_t = 0;
+			auto virtual cptCa(double *ca)const->void;
+			auto virtual cptCe(double *ce)const->void;
+			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void;
+			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void;
+			auto virtual setCf(const double *cf)const->void;
+
+			auto virtual cePtr() const->const double* { return ce_; };
 			auto virtual caPtr() const->const double* = 0;
 			auto virtual cfPtr() const->const double* = 0;
 			auto virtual prtCmPtrI() const->const double* = 0;
 			auto virtual prtCmPtrJ() const->const double* = 0;
+			auto virtual glbCmPtrI() const->const double* = 0;
+			auto virtual glbCmPtrJ() const->const double* = 0;
+			auto virtual updPrtCm()->void;
+			auto virtual updGlbCm()->void;
+			auto virtual updCa()->void;
+			auto virtual updCe()->void;
 			auto colID()const->std::size_t;
-
-			auto virtual kinUpd()->void {};
-			auto vaError()const->const double6&{ return va_error_; }
 
 		protected:
 			virtual ~Constraint();
@@ -195,10 +208,10 @@ namespace aris
 			Constraint& operator=(Constraint&&);
 
 		private:
+			double ce_[6];
+
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			double va_error_[6];
 
 			friend class Model;
 		};
@@ -213,6 +226,8 @@ namespace aris
 			auto cf() const->const doubled &{ return cf_; }
 			auto prtCmI() const->const double6xd &{ return prtCmI_; }
 			auto prtCmJ() const->const double6xd &{ return prtCmJ_; }
+			auto glbCmI() const->const double6xd &{ return glbCmI_; }
+			auto glbCmJ() const->const double6xd &{ return glbCmJ_; }
 
 		protected:
 			~ConstraintData() = default;
@@ -222,7 +237,9 @@ namespace aris
 			double ca_[DIM]{ 0 };
 			double prtCmI_[6][DIM]{ { 0 } };
 			double prtCmJ_[6][DIM]{ { 0 } };
-
+			double glbCmI_[6][DIM]{ { 0 } };
+			double glbCmJ_[6][DIM]{ { 0 } };
+			
 
 		private:
 			friend class Model;
@@ -353,11 +370,13 @@ namespace aris
 			auto virtual adamsID()const->std::size_t;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto virtual update()->void override;
-			auto virtual pm() const->const double4x4& override final;
-			auto virtual vs() const->const double6& override final;
-			auto virtual as() const->const double6& override final;
-			auto prtPm() const->const double4x4&;
+			auto virtual glbPm()const->const double4x4& override;
+			auto virtual glbVs()const->const double6& override;
+			auto virtual glbAs()const->const double6& override;
+			auto virtual prtPm()const->const double4x4& override;
+			auto virtual prtVs()const->const double6& override;
+			auto virtual prtAs()const->const double6& override;
+			auto virtual updGlbPm()->void;
 			auto fatherPart() const->const Part&;
 			auto fatherPart()->Part&;
 
@@ -386,22 +405,38 @@ namespace aris
 			auto virtual adamsType()const->const std::string &{ static const std::string type{ "part" }; return type; }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto virtual update()->void override;
-			auto virtual pm()const->const double4x4& override final;
-			auto virtual vs()const->const double6& override final;
-			auto virtual as()const->const double6& override final;
 			auto rowID()const->std::size_t;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
-			auto pm()->double4x4&;
-			auto vs()->double6&;
-			auto as()->double6&;
-			auto prtGravity() const->const double6&;
+			auto cptGlbIm(double *im, int ld = 0)const->void;
+			auto cptGlbFg(double *fg)const->void;
+			auto cptGlbFv(double *fv)const->void;
+			auto cptPrtFg(double *fg)const->void;
+			auto cptPrtFv(double *fv)const->void;
+			auto cptPrtVs(double *vs)const->void;
+			auto cptPrtAs(double *as)const->void;
+			
+			auto virtual glbPm()const->const double4x4& override;
+			auto virtual glbVs()const->const double6& override;
+			auto virtual glbAs()const->const double6& override;
+			auto virtual prtPm()const->const double4x4& override;
+			auto virtual prtVs()const->const double6& override;
+			auto virtual prtAs()const->const double6& override;
+			auto updPrtVs()->void;
+			auto updPrtAs()->void;
 			auto prtIs() const->const double6x6&;
-			auto prtVs() const->const double6&;
-			auto prtAs() const->const double6&;
+			auto glbIs() const->const double6x6&;
+			auto updGlbIs()->void;
+			auto glbFg() const->const double6&;
+			auto updGlbFg()->void;
+			auto glbFv() const->const double6&;
+			auto updGlbFv()->void;
+			auto prtGr() const->const double6&;
+			auto updPrtGr()->void;
 			auto prtFg() const->const double6&;
+			auto updPrtFg()->void;
 			auto prtFv() const->const double6&;
+			auto updPrtFv()->void;
 			auto setPp(const double *pp)->void;
 			auto setPp(const Coordinate &relative_to, const double *pp)->void;
 			auto setRe(const double *re, const char *type = "313")->void;
@@ -503,34 +538,34 @@ namespace aris
 			auto virtual adamsScriptType()const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto virtual update()->void override;
-			auto virtual computeVaError()->void 
-			{
-				makI().update();
-				makJ().update();
-
-				double pmI2J[4][4], pqI2J[7];
-				s_inv_pm2pm(*makJ().pm(), *makI().pm(), *pmI2J);
-				
-				s_pm2pq(*pmI2J, pqI2J);
-			}
 			auto virtual dim() const ->std::size_t override { return 1; }
-			auto virtual caPtr() const->const double* override { return ca(); }
-			auto virtual cfPtr() const->const double* override { return cf(); }
+			
+			
+			auto virtual cptCa(double *ca)const->void override;
+			auto virtual cptCe(double *ce)const->void override;
+			
 			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
 			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
+			auto virtual glbCmPtrI() const->const double* override { return *glbCmI(); }
+			auto virtual glbCmPtrJ() const->const double* override { return *glbCmJ(); }
+			auto virtual caPtr() const->const double* override { return ca(); }
+			auto virtual cfPtr() const->const double* override { return cf(); }
+			auto virtual updCa()->void override;
+			auto virtual updCe()->void override;
 			auto axis()const->int;
 			auto mp() const->double;
-			auto mv() const->double;
-			auto ma() const->double;
-			auto mf() const->double;
-			auto mfDyn() const->double;
-			auto mfFrc() const->double;
+			auto updMp()->void;
 			auto setMp(double mot_pos)->void;
+			auto mv() const->double;
+			auto updMv()->void;
 			auto setMv(double mot_vel)->void;
+			auto ma() const->double;
 			auto setMa(double mot_acc)->void;
+			auto mf() const->double;
 			auto setMf(double mot_fce)->void;
+			auto mfDyn() const->double;
 			auto setMfDyn(double mot_dyn_fce)->void;
+			auto mfFrc() const->double;
 			auto frcCoe() const ->const double3&;
 			auto setFrcCoe(const double *frc_coe)->void;
 			auto absID()const->std::size_t;
@@ -561,15 +596,19 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "general_motion" }; return type; }
 			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto virtual update()->void override;
+			auto virtual updCa()->void override;
 			auto virtual dim() const ->std::size_t override { return Dim(); }
 			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
 			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
+			auto virtual glbCmPtrI() const->const double* override { return *glbCmI(); }
+			auto virtual glbCmPtrJ() const->const double* override { return *glbCmJ(); }
 			auto virtual caPtr() const->const double* override { return ca(); }
 			auto virtual cfPtr() const->const double* override { return cf(); }
 			auto mp() const->const double6&;
+			auto updMp()->void;
 			auto setMp(const double *mot_pos)->void;
 			auto mv() const->const double6&;
+			auto updMv()->void;
 			auto setMv(const double * mot_vel)->void;
 			auto ma() const->const double6&;
 			auto setMa(const double * mot_acc)->void;
@@ -599,6 +638,7 @@ namespace aris
 			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "force" }; return type; }
 			auto fsI() const->const double* { return fsI_; }
 			auto fsJ() const->const double* { return fsJ_; }
+			auto virtual updFs()->void = 0;
 
 		protected:
 			virtual ~Force() = default;
@@ -668,27 +708,102 @@ namespace aris
 			auto ground()->Part&;
 			auto ground()const->const Part&;
 
+			auto allocateMemory()->void;
+			auto activePartPool()->aris::core::RefPool<Part>&;
+			auto activeConstraintPool()->aris::core::RefPool<Constraint>&;
+			auto cSize()->BlockSize&;
+			auto pSize()->BlockSize&;
+			auto glbIm()->BlockMatrix&;
+			auto glbCm()->BlockMatrix&;
+			auto glbCct()->BlockMatrix&;
+			auto glbCce()->BlockMatrix&;
+			auto ce()->BlockMatrix&;
+
+			auto cptPrtCm()->void;
+			auto cptPrtIm()->void;
+
+			auto cptCe()->void;
+			auto cptGlbIm()->void;
+			auto cptGlbCm()->void;
+			auto cptGlbCctCce()->void;
+			
+			
+
+
+
+
+			auto virtual kinPre()->void;
+			auto virtual kin()->void;
+			auto kinUpd()->void;
+			auto kinCe(double *ce)const->void;
+			auto kinGlbCmT(double *glb_cmT, int ld = 0, bool is_mtx_inited = false)const->void;
+			auto kinSov(const double *A, const double *b, double *x)->void;
+
+			auto updCa(double *ca)->void;
+			auto getCf(double *cf)const->void;
+			auto setCf(const double *cf)->void;
+			auto getPrtIs(double *prt_cm, int ld = 0, bool is_mtx_inited = false)const->void;
+			auto updPrtCm(double *prt_cm, int ld = 0, bool is_mtx_inited = false)->void;
+			auto updPrtCmT(double *prt_cmT, int ld = 0, bool is_mtx_inited = false)->void;
+			auto updPrtCct(double *prt_cct, int ld = 0, bool is_mtx_inited = false)->void;
+			auto updPrtFs(double *prt_fs)->void;
+			auto getPrtAs(double *prt_as) const->void;
+			auto setPrtAs(const double *prt_as)->void;
+			auto updPrtA(double *prt_A, bool is_mtx_inited)->void;
+			auto updPrtB(double *prt_b, bool is_mtx_inited)->void;
+			auto getPrtX(double *prt_x) const->void;
+			auto setPrtX(const double *prt_x)->void;
+			
+
+
 			// 约束矩阵C为m x n维的矩阵,惯量矩阵为m x m维的矩阵
 			// 约束力为n维的向量,约束加速度为n维向量
 			// 部件力为m维的向量,部件加速度为m维向量
 			// 动力学为所求的未知量为部件加速度和约束力,其他均为已知
-			auto virtual dyn()->void;
+			// 动力学主要求解以下方程：
+			// [  I  C  ]  *  [ as ]  = [ fs ]
+			// [  C' O  ]     [ cf ]    [ ca ]
+			//
+			// A = [ I  C ]
+			//     [ C' O ]
+			//
+			// x = [ as ]
+			//     [ cf ]
+			//
+			// b = [ fs ]
+			//     [ ca ]
+			auto virtual dynPre()->void;
+			auto virtual dynPrt()->void;
+			auto virtual dynGlb()->void;
+			auto dynUpdDim()->void;
+			auto dynAllocate(std::unique_ptr<double[]> &A, std::unique_ptr<double[]> &b, std::unique_ptr<double[]> &x)->void;
 			auto dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void;
+			auto dynSov(const double *A, const double *b, double *x) const->void;
 			auto dynDimM()const->std::size_t;
 			auto dynDimN()const->std::size_t;
 			auto dynDim()const->std::size_t { return dynDimN() + dynDimM(); }
-			auto dynCstMtx(double *cst_mtx) const->void;
-			auto dynIneMtx(double *ine_mtx) const->void;
-			auto dynCstAcc(double *cst_acc) const->void;
-			auto dynPrtFce(double *prt_fce) const->void;
-			auto dynCstFce(double *cst_fce) const->void;
-			auto dynPrtAcc(double *prt_acc) const->void;
-			auto dynPre()->void;
-			auto dynUpd()->void;
-			auto dynMtx(double *D, double *b) const->void;
-			auto dynSov(const double *D, const double *b, double *x) const->void;
-			auto dynUkn(double *x) const->void;
-			auto dynEnd(const double *x)->void;
+			auto dynCa(double *ca) const->void;
+			auto dynCf(double *cf) const->void;
+			auto dynPrtUpd()->void;
+			auto dynPrtCm(double *prt_cm, int ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynPrtCmT(double *prt_cmT, int ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynPrtIs(double *prt_is, int ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynPrtFs(double *prt_fs) const->void;
+			auto dynPrtAs(double *prt_as) const->void;
+			auto dynPrtMtx(double *A, double *b, bool is_mtx_inited = false) const->void;
+			auto dynPrtUkn(double *x) const->void;
+			auto dynPrtEnd(const double *x)->void;
+			auto dynPrtSov()->void;
+			auto dynGlbUpd()->void;
+			auto dynGlbCm(double *glb_cm, int ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynGlbCmT(double *glb_cmT, int ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynGlbIs(double *glb_is, int ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynGlbFs(double *glb_fs) const->void;
+			auto dynGlbAs(double *glb_as) const->void;
+			auto dynGlbMtx(double *A, double *b, bool is_mtx_inited = false) const->void;
+			auto dynGlbUkn(double *x) const->void;
+			auto dynGlbEnd(const double *x)->void;
+			auto dynGlbSovGaussSeidel()->void;
 
 			// 标定矩阵为m x n维的矩阵,其中m为驱动的数目,n为部件个数*10+驱动数*3
 			auto clbSetInverseMethod(std::function<void(int n, double *A)> inverse_method)->void;
@@ -736,14 +851,16 @@ namespace aris
 			VariableType data_;
 			friend class Model;
 		};
-		template<std::size_t DIM>	class JointTemplate :public Joint, public ConstraintData<DIM>
+		template<std::size_t DIM> class JointTemplate :public Joint, public ConstraintData<DIM>
 		{
 		public:
 			auto virtual dim() const->std::size_t { return DIM; }
-			auto virtual prtCmPtrI() const->const double* override { return *ConstraintData<DIM>::prtCmI(); }
-			auto virtual prtCmPtrJ() const->const double* override { return *ConstraintData<DIM>::prtCmJ(); }
 			auto virtual caPtr() const->const double* override { return ConstraintData<DIM>::ca(); }
 			auto virtual cfPtr() const->const double* override { return ConstraintData<DIM>::cf(); }
+			auto virtual prtCmPtrI() const->const double* override { return *ConstraintData<DIM>::prtCmI(); }
+			auto virtual prtCmPtrJ() const->const double* override { return *ConstraintData<DIM>::prtCmJ(); }
+			auto virtual glbCmPtrI() const->const double* override { return *ConstraintData<DIM>::glbCmI(); }
+			auto virtual glbCmPtrJ() const->const double* override { return *ConstraintData<DIM>::glbCmJ(); }
 
 		protected:
 			explicit JointTemplate(const std::string &name, Marker &makI, Marker &makJ)	:Joint(name, makI, makJ) {}
@@ -810,9 +927,9 @@ namespace aris
 		class FloatMarker final :public Marker
 		{
 		public:
-			void setPrtPm(const double *prtPm) { std::copy_n(prtPm, 16, const_cast<double *>(*this->prtPm())); }
-			void setPrtPe(const double *prtPe, const char *type = "313") { s_pe2pm(prtPe, const_cast<double *>(*prtPm()), type); }
-			void setPrtPq(const double *prtPq) { s_pq2pm(prtPq, const_cast<double *>(*prtPm())); }
+			void setPrtPm(const double *prt_pm) { std::copy_n(prt_pm, 16, const_cast<double *>(*this->prtPm())); }
+			void setPrtPe(const double *prt_pe, const char *type = "313") { s_pe2pm(prt_pe, const_cast<double *>(*prtPm()), type); }
+			void setPrtPq(const double *prt_pq) { s_pq2pm(prt_pq, const_cast<double *>(*prtPm())); }
 
 			explicit FloatMarker(Part &prt, const double *prt_pe = nullptr, const char* eu_type = "313") :Marker("float_marker")
 			{
@@ -871,7 +988,15 @@ namespace aris
 			static const std::string& Type() { static const std::string type("UniversalJoint"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string& override{ static const std::string type("universal"); return type; }
-			auto virtual update()->void override;
+			auto virtual cptCa(double *ca)const->void override;
+			auto virtual cptCe(double *ce)const->void override;
+			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void override;
+			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void override;
+			
+			
+			auto virtual updCa()->void override;
+			auto virtual updPrtCm()->void override;
+			auto virtual updGlbCm()->void override;
 
 		private:
 			virtual ~UniversalJoint() = default;
@@ -915,7 +1040,7 @@ namespace aris
 			auto virtual adamsScriptType()const->const std::string& override{ static const std::string type("sforce"); return std::ref(type); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto virtual update()->void override;
+			auto virtual updFs()->void override;
 			auto setComponentID(std::size_t id)->void { component_axis_ = id; }
 			auto setFce(double value)->void { std::fill_n(fce_value_, 6, 0); fce_value_[component_axis_] = value; }
 			auto setFce(double value, int componentID)->void { this->component_axis_ = componentID; setFce(value); }

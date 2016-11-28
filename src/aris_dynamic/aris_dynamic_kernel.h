@@ -52,29 +52,69 @@ namespace aris
 	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
 	namespace dynamic
 	{
-		auto s_vnm(int n, const double *x, int x_ld) noexcept->double;// vector norm
-		auto s_vsw(int n, double *x, const int x_ld, double *y, const int y_ld) noexcept->void;// vector swap
-		auto s_mtm(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void;// matrix transpose to matrix
-		auto s_fill(int m, int n, double value, double *A, int lda) noexcept->void;// fill matrix with value
+		auto s_norm(int n, const double *x, int x_ld) noexcept->double;// vector norm
+		auto inline s_norm(int n, const double *x) noexcept->double { return s_norm(n, x, 1); }
+		auto s_swap_v(int n, double *x, const int x_ld, double *y, const int y_ld) noexcept->void;// vector swap
+		auto s_transpose(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void;// matrix transpose to matrix
+		auto inline s_transpose(int m, int n, const double *A, double *B) noexcept->void { s_transpose(m, n, A, n, B, m); };
+		auto inline s_fill(int m, int n, double value, double *A) noexcept->void { std::fill(A, A + m*n, value); }
+		auto inline s_fill(int m, int n, double value, double *A, int lda) noexcept->void { for (double* end{ A + m*lda }; A < end; A += lda) std::fill(A, A + n, value); }// fill matrix with value
 
-		auto inline s_nv(int n, double alpha, double *x) noexcept->void  { for (auto i = 0; i < n; ++i)x[i] *= alpha; }
+		using BlockSize = std::vector<int>;
+		using BlockMatrix = std::vector<std::vector<std::vector<double> > >;
+
+		auto s_blk_make(const double *mtx, const BlockSize &blk_size_m, const BlockSize &blk_size_n, BlockMatrix &blk_mtx) noexcept->void;
+		auto s_blk_resolve(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockMatrix &blk_mtx, double *mtx) noexcept->void;
+		auto s_blk_allocate(const BlockSize &blk_size_m, const BlockSize &blk_size_n, BlockMatrix &blk_mtx) noexcept->void;
+		auto s_blk_check_empty_num(const BlockMatrix &blk_mtx)noexcept->int;
+
+		auto s_blk_norm(const BlockSize &blk_size_m, const BlockMatrix &blk_mtx)noexcept->double;
+
+		auto s_blk_llt(const BlockSize &blk_size, const BlockMatrix &A, BlockMatrix &L) noexcept->void;
+		auto s_blk_sov_lm(const BlockSize &blk_size, const BlockSize &rhs_size, const BlockMatrix &L, const BlockMatrix &b, BlockMatrix &x)noexcept->void;
+		auto s_blk_sov_um(const BlockSize &blk_size, const BlockSize &rhs_size, const BlockMatrix &L, const BlockMatrix &b, BlockMatrix &x)noexcept->void;
+		auto s_blk_mm(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
+		auto s_blk_mmNT(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
+		auto s_blk_mmTN(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
+		auto s_blk_mmTT(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
+
+		auto s_llt(int m, const double *A, double *L) noexcept->void;
+		auto s_inv_lm(int m, const double *L, double *inv_L) noexcept->void;
+		auto s_sov_lm(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
+		auto s_sov_lmNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
+		auto s_sov_um(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
+		auto s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
+
+		auto inline s_nv(int n, double alpha, double *x) noexcept->void  { for (int i{ 0 }; i < n; ++i)x[i] *= alpha; }
 		auto inline s_nv(int n, double alpha, double *x, int x_ld) noexcept->void { for (int i{ 0 }, end{ n*x_ld }; i < end; i += x_ld)x[i] *= alpha; }
 		auto inline s_vc(int n, const double *x, double *y) noexcept->void { std::copy(x, x + n, y); }
-		auto inline s_vc(int n, const double *x, int x_ld, double *y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ -x_ld }, y_idx{ -y_ld }; i < n; ++i)y[y_idx += y_ld] = x[x_idx += x_ld]; }
-		auto inline s_vc(int n, double alpha, const double *x, double *y) noexcept->void { for (auto i = 0; i < n; ++i)y[i] += alpha*x[i]; }
-		auto inline s_vc(int n, double alpha, const double *x, int x_ld, double *y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ -x_ld }, y_idx{ -y_ld }; i < n; ++i)y[y_idx += y_ld] = alpha*x[x_idx += x_ld]; }
+		auto inline s_vc(int n, const double *x, int x_ld, double *y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)y[y_idx] = x[x_idx]; }
+		auto inline s_vc(int n, double alpha, const double *x, double *y) noexcept->void { for (int i{ 0 }; i < n; ++i)y[i] = alpha*x[i]; }
+		auto inline s_vc(int n, double alpha, const double *x, int x_ld, double *y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)y[y_idx] = alpha*x[x_idx]; }
 		auto inline s_va(int n, const double* x, double* y) noexcept->void { for (auto i = 0; i < n; ++i)y[i] += x[i]; }
-		auto inline s_va(int n, const double* x, int x_ld, double* y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ -x_ld }, y_idx{ -y_ld }; i < n; ++i)y[y_idx += y_ld] += x[x_idx += x_ld]; }
+		auto inline s_va(int n, const double* x, int x_ld, double* y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)y[y_idx] += x[x_idx]; }
 		auto inline s_va(int n, double alpha, const double* x, double* y) noexcept->void { for (auto i = 0; i < n; ++i)y[i] += alpha * x[i]; }
-		auto inline s_va(int n, double alpha, const double* x, int x_ld, double* y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ -x_ld }, y_idx{ -y_ld }; i < n; ++i)y[y_idx += y_ld] += alpha*x[x_idx += x_ld]; }
+		auto inline s_va(int n, double alpha, const double* x, int x_ld, double* y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)y[y_idx] += alpha*x[x_idx]; }
 		auto inline s_vv(int n, const double *x, const double *y) noexcept->double { double ret{ 0 }; for (int i = 0; i < n; ++i)ret += x[i] * y[i];	return ret; }
-		auto inline s_vv(int n, const double *x, int x_ld, const double *y, int y_ld) noexcept->double { double ret{ 0 }; for (int i = 0, x_idx{ -x_ld }, y_idx{ -y_ld }; i < n; ++i)ret += x[x_idx += x_ld] * y[y_idx += y_ld]; return ret; }
+		auto inline s_vv(int n, const double *x, int x_ld, const double *y, int y_ld) noexcept->double { double ret{ 0 }; for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)ret += x[x_idx] * y[y_idx]; return ret; }
 		auto inline s_nm(int m, int n, double alpha, double* A) noexcept->void { s_nv(m*n, alpha, A); }
-		auto inline s_nm(int m, int n, double alpha, double* A, int lda) noexcept->void { for (int idx{ 0 }, end{ m*lda }; idx < end; idx += lda)s_nv(n, alpha, A + idx); }
+		auto inline s_nm(int m, int n, double alpha, double* A, int lda) noexcept->void { for (int row{ 0 }, end{ m*lda }; row < end; row += lda)s_nv(n, alpha, A + row); }
+		auto inline s_mc(int m, int n, const double *A, double *B) noexcept->void { s_vc(m*n, A, B); }
+		auto inline s_mc(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void { for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a += lda, row_b += ldb)	s_vc(n, A + row_a, B + row_b);}
+		auto inline s_mc(int m, int n, double alpha, const double *A, double *B) noexcept->void { s_vc(m*n, alpha, A, B); }
+		auto inline s_mc(int m, int n, double alpha, const double *A, int lda, double *B, int ldb) noexcept->void { for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a += lda, row_b += ldb)s_vc(n, alpha, A + row_a, B + row_b); }
+		auto inline s_mcT(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void { for (int i{ 0 }, row_b{ 0 }; i<m; ++i, row_b += ldb)for (int j{ 0 }, row_a{ 0 }; j < n; ++j, row_a += lda)B[row_b + j] = A[row_a + i]; }
+		auto inline s_mcT(int m, int n, const double *A, double *B) noexcept->void { s_mcT(m, n, A, m, B, n); }
+		auto inline s_mcT(int m, int n, double alpha, const double *A, int lda, double *B, int ldb) noexcept->void { for (int i{ 0 }, row_b{ 0 }; i<m; ++i, row_b += ldb)for (int j{ 0 }, row_a{ 0 }; j < n; ++j, row_a += lda)B[row_b + j] = alpha*A[row_a + i]; }
+		auto inline s_mcT(int m, int n, double alpha, const double *A, double *B) noexcept->void { s_mcT(m, n, alpha, A, m, B, n); }
 		auto inline s_ma(int m, int n, const double* A, double* B) noexcept->void { s_va(m*n, A, B); }
-		auto inline s_ma(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void { for (int row_a{ 0 }, row_b{ 0 }, end{ m*lda }; row_a < end; row_a += lda, row_b += ldb)for (int j = 0; j < n; ++j)B[row_b + j] += A[row_a + j]; }
+		auto inline s_ma(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void { for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a += lda, row_b += ldb)for (int j = 0; j < n; ++j)B[row_b + j] += A[row_a + j]; }
 		auto inline s_ma(int m, int n, double alpha, const double* A, double* B) noexcept->void { s_va(m*n, alpha, A, B); }
-		auto inline s_ma(int m, int n, double alpha, const double* A, int lda, double* B, int ldb) noexcept->void { for (int row_a{ 0 }, row_b{ 0 }, end{ m*lda }; row_a < end; row_a += lda, row_b += ldb)for (int j = 0; j < n; ++j)B[row_b + j] += alpha*A[row_a + j]; }
+		auto inline s_ma(int m, int n, double alpha, const double* A, int lda, double* B, int ldb) noexcept->void { for (int i{0}, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a += lda, row_b += ldb)for (int j = 0; j < n; ++j)B[row_b + j] += alpha*A[row_a + j]; }
+		auto inline s_maT(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void{for (int i{ 0 }, row_b{ 0 }; i<m; ++i, row_b += ldb)for (int j{ 0 }, row_a{ 0 }; j < n; ++j, row_a += lda)B[row_b + j] += A[row_a + i];}
+		auto inline s_maT(int m, int n, const double* A, double* B) noexcept->void { s_maT(m, n, A, m, B, n); }
+		auto inline s_maT(int m, int n, double alpha, const double* A, int lda, double* B, int ldb) noexcept->void{for (int i{ 0 }, row_b{ 0 }; i<m; ++i, row_b += ldb)for (int j{ 0 }, row_a{ 0 }; j < n; ++j, row_a += lda)B[row_b + j] += alpha * A[row_a + i];}
+		auto inline s_maT(int m, int n, double alpha, const double* A, double* B) noexcept->void { s_maT(m, n, alpha, A, m, B, n); }
 		auto s_mma(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
 		auto inline s_mma(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, k, B, n, C, n); }
 		auto s_mma(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
@@ -92,35 +132,22 @@ namespace aris
 		auto s_mmaTT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
 		auto inline s_mmaTT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmaTT(m, n, k, alpha, A, m, B, k, C, n); }
 		auto inline s_mm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc); s_mma(m, n, k, A, lda, B, ldb, C, ldc); }
-		auto inline s_mm(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mm(m, n, k, A, k, B, n, C, n); }
+		auto inline s_mm(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mma(m, n, k, A, B, C); }
 		auto inline s_mm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_mm(m, n, k, A, lda, B, ldb, C, ldc);	s_nm(m, n, alpha, C, ldc); }
-		auto inline s_mm(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mm(m, n, k, alpha, A, k, B, n, C, n); }
-		auto inline s_mmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc);	s_mmaTN(m, n, k, A, lda, B, ldb, C, ldc); }
-		auto inline s_mmTN(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mmTN(m, n, k, A, m, B, n, C, n); }
+		auto inline s_mm(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mm(m, n, k, A, B, C); s_nm(m, n, alpha, C);}
+		auto inline s_mmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc); s_mmaTN(m, n, k, A, lda, B, ldb, C, ldc); }
+		auto inline s_mmTN(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaTN(m, n, k, A, B, C); }
 		auto inline s_mmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_mmTN(m, n, k, A, lda, B, ldb, C, ldc); s_nm(m, n, alpha, C, ldc); }
-		auto inline s_mmTN(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTN(m, n, k, alpha, A, m, B, n, C, n); }
+		auto inline s_mmTN(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTN(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
 		auto inline s_mmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc); s_mmaNT(m, n, k, A, lda, B, ldb, C, ldc); }
-		auto inline s_mmNT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mmNT(m, n, k, A, k, B, k, C, n); }
+		auto inline s_mmNT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaNT(m, n, k, A, B, C); }
 		auto inline s_mmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_mmNT(m, n, k, A, lda, B, ldb, C, ldc); s_nm(m, n, alpha, C, ldc); }
-		auto inline s_mmNT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmNT(m, n, k, alpha, A, k, B, k, C, n); }
+		auto inline s_mmNT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmNT(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
 		auto inline s_mmTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc); s_mmaTT(m, n, k, A, lda, B, ldb, C, ldc); }
-		auto inline s_mmTT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mmTT(m, n, k, A, m, B, k, C, n); }
+		auto inline s_mmTT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaTT(m, n, k, A, B, C); }
 		auto inline s_mmTT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_mmTT(m, n, k, A, lda, B, ldb, C, ldc); s_nm(m, n, alpha, C, ldc); }
-		auto inline s_mmTT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTT(m, n, k, alpha, A, m, B, k, C, n); }
+		auto inline s_mmTT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTT(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
 
-		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
-			const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
-		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
-			double alpha, const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
-		auto s_block_cpyT(const int &block_size_m, const int &block_size_n,
-			const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
-		auto s_block_cpyT(const int &block_size_m, const int &block_size_n,
-			double alpha, const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void;
-		
 		auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
 		auto s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept->void;
 		template <typename ...Args>
@@ -1026,7 +1053,12 @@ namespace aris
 		///
 		///
 		auto s_sov_aab(const double*pp, const double*vp, const double*ap, double *aab, double *vab, double *ab, const char*order = "321")noexcept->void;
-		
+		/// \brief 求解某根轴下的相对位移，axis为0，1，2时对应x、y、z轴的位移，为4、5、6时对应延x、y、z轴的转角
+		///
+		///
+		auto s_sov_axis_distance(const double*from_pm, const double*to_pm, int axis)noexcept->double;
+
+
 		template <typename T>
 		auto inline s_sgn(T val)->int { return (T(0) < val) - (val < T(0)); }
 		template <typename T>

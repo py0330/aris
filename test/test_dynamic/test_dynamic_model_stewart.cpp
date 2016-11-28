@@ -2,6 +2,7 @@
 #include <iostream>
 #include <aris.h>
 
+#define EIGEN_RUNTIME_NO_MALLOC
 #ifdef WIN32
 #include "C:\Eigen\Eigen"
 #endif
@@ -45,16 +46,6 @@ const char xml_file[] =
 "                    <u6j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
 "                </marker_pool>"
 "            </ground>"
-"            <up active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\up.xmt_txt\">"
-"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-"                    <s1i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
-"                    <s2i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
-"                    <s3i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
-"                    <s4i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
-"                    <s5i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
-"                    <s6i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
-"                </marker_pool>"
-"            </up>"
 "            <p1a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pa.xmt_txt\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <u1i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
@@ -127,6 +118,16 @@ const char xml_file[] =
 "                    <s6j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
 "            </p6b>"
+"            <up active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\up.xmt_txt\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <s1i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
+"                    <s2i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
+"                    <s3i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
+"                    <s4i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
+"                    <s5i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
+"                    <s6i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
+"                </marker_pool>"
+"            </up>"
 "        </part_pool>"
 "        <joint_pool type=\"JointPoolObject\">"
 "            <u1 active=\"true\" type=\"UniversalJoint\" prt_m=\"p1a\" prt_n=\"ground\" mak_i=\"u1i\" mak_j=\"u1j\"/>"
@@ -190,19 +191,19 @@ public:
 		m6_ = &*motionPool().findByName("m6");
 
 
-		ground().markerPool().findByName("u1j")->update();
-		ground().markerPool().findByName("u2j")->update();
-		ground().markerPool().findByName("u3j")->update();
-		ground().markerPool().findByName("u4j")->update();
-		ground().markerPool().findByName("u5j")->update();
-		ground().markerPool().findByName("u6j")->update();
+		ground().markerPool().findByName("u1j")->updGlbPm();
+		ground().markerPool().findByName("u2j")->updGlbPm();
+		ground().markerPool().findByName("u3j")->updGlbPm();
+		ground().markerPool().findByName("u4j")->updGlbPm();
+		ground().markerPool().findByName("u5j")->updGlbPm();
+		ground().markerPool().findByName("u6j")->updGlbPm();
 
-		ground().markerPool().findByName("u1o")->update();
-		ground().markerPool().findByName("u2o")->update();
-		ground().markerPool().findByName("u3o")->update();
-		ground().markerPool().findByName("u4o")->update();
-		ground().markerPool().findByName("u5o")->update();
-		ground().markerPool().findByName("u6o")->update();
+		ground().markerPool().findByName("u1o")->updGlbPm();
+		ground().markerPool().findByName("u2o")->updGlbPm();
+		ground().markerPool().findByName("u3o")->updGlbPm();
+		ground().markerPool().findByName("u4o")->updGlbPm();
+		ground().markerPool().findByName("u5o")->updGlbPm();
+		ground().markerPool().findByName("u6o")->updGlbPm();
 	}
 
 	auto virtual kinFromPin()->void override{};
@@ -211,61 +212,65 @@ public:
 	auto setPee(double *pee) 
 	{
 		up_->setPe(pee, "321");
-		up_->markerPool().findByName("s1i")->update();
-		up_->markerPool().findByName("s2i")->update();
-		up_->markerPool().findByName("s3i")->update();
-		up_->markerPool().findByName("s4i")->update();
-		up_->markerPool().findByName("s5i")->update();
-		up_->markerPool().findByName("s6i")->update();
+		up_->markerPool().findByName("s1i")->updGlbPm();
+		up_->markerPool().findByName("s2i")->updGlbPm();
+		up_->markerPool().findByName("s3i")->updGlbPm();
+		up_->markerPool().findByName("s4i")->updGlbPm();
+		up_->markerPool().findByName("s5i")->updGlbPm();
+		up_->markerPool().findByName("s6i")->updGlbPm();
 
 		double pp[3], pe[6]{ 0,0,0,0,0,0 }, pe2[6]{0,0,0,0,0,0};
 		up_->markerPool().findByName("s1i")->getPp(*ground().markerPool().findByName("u1o"), pp);
 		s_sov_ab(pp, pe + 3, "132");
 		p1a_->setPe(*ground().markerPool().findByName("u1o"), pe, "132");
-		pe2[1] = s_vnm(3, pp, 1);
+		pe2[1] = s_norm(3, pp, 1);
 		p1b_->setPe(*p1a_, pe2);
 
 		up_->markerPool().findByName("s2i")->getPp(*ground().markerPool().findByName("u2o"), pp);
 		s_sov_ab(pp, pe + 3, "132");
 		p2a_->setPe(*ground().markerPool().findByName("u2o"), pe, "132");
-		pe2[1] = s_vnm(3, pp, 1);
+		pe2[1] = s_norm(3, pp, 1);
 		p2b_->setPe(*p2a_, pe2);
 
 		up_->markerPool().findByName("s3i")->getPp(*ground().markerPool().findByName("u3o"), pp);
 		s_sov_ab(pp, pe + 3, "132");
 		p3a_->setPe(*ground().markerPool().findByName("u3o"), pe, "132");
-		pe2[1] = s_vnm(3, pp, 1);
+		pe2[1] = s_norm(3, pp, 1);
 		p3b_->setPe(*p3a_, pe2);
 
 		up_->markerPool().findByName("s4i")->getPp(*ground().markerPool().findByName("u4o"), pp);
 		s_sov_ab(pp, pe + 3, "132");
 		p4a_->setPe(*ground().markerPool().findByName("u4o"), pe, "132");
-		pe2[1] = s_vnm(3, pp, 1);
+		pe2[1] = s_norm(3, pp, 1);
 		p4b_->setPe(*p4a_, pe2);
 
 		up_->markerPool().findByName("s5i")->getPp(*ground().markerPool().findByName("u5o"), pp);
 		s_sov_ab(pp, pe + 3, "132");
 		p5a_->setPe(*ground().markerPool().findByName("u5o"), pe, "132");
-		pe2[1] = s_vnm(3, pp, 1);
+		pe2[1] = s_norm(3, pp, 1);
 		p5b_->setPe(*p5a_, pe2);
 
 		up_->markerPool().findByName("s6i")->getPp(*ground().markerPool().findByName("u6o"), pp);
 		s_sov_ab(pp, pe + 3, "132");
 		p6a_->setPe(*ground().markerPool().findByName("u6o"), pe, "132");
-		pe2[1] = s_vnm(3, pp, 1);
+		pe2[1] = s_norm(3, pp, 1);
 		p6b_->setPe(*p6a_, pe2);
 
-		for (auto &mot : motionPool())mot.update();
+		for (auto &mot : motionPool()) 
+		{
+			mot.updMp();
+			mot.updMv();
+		}
 	};
 	auto setVee(double *vee, double *pee)
 	{
 		up_->setVe(vee, pee, "321");
-		up_->markerPool().findByName("s1i")->update();
-		up_->markerPool().findByName("s2i")->update();
-		up_->markerPool().findByName("s3i")->update();
-		up_->markerPool().findByName("s4i")->update();
-		up_->markerPool().findByName("s5i")->update();
-		up_->markerPool().findByName("s6i")->update();
+		up_->markerPool().findByName("s1i")->updGlbPm();
+		up_->markerPool().findByName("s2i")->updGlbPm();
+		up_->markerPool().findByName("s3i")->updGlbPm();
+		up_->markerPool().findByName("s4i")->updGlbPm();
+		up_->markerPool().findByName("s5i")->updGlbPm();
+		up_->markerPool().findByName("s6i")->updGlbPm();
 
 		double pe[6]{ 0,0,0,0,0,0 }, pe2[6]{ 0,0,0,0,0,0 }, ve[6]{ 0,0,0,0,0,0 }, ve2[6]{ 0,0,0,0,0,0 };
 		up_->markerPool().findByName("s1i")->getPp(*ground().markerPool().findByName("u1o"), pe2);
@@ -310,7 +315,11 @@ public:
 		p6a_->setVe(*ground().markerPool().findByName("u6o"), ve, pe, "132");
 		p6b_->setVe(*ground().markerPool().findByName("u6o"), ve2, pe2, "132");
 
-		for (auto &mot : motionPool())mot.update();
+		for (auto &mot : motionPool())
+		{
+			mot.updMp();
+			mot.updMv();
+		}
 	};
 
 	auto p1a()->Part& { return *p1a_; }
@@ -340,26 +349,21 @@ private:
 	//aris::dynamic::Joint *u1, *p1, *s1, *p5b_, *p5a_, *p5b_, *p5a_, *p5b_, *p5a_, *p5b_, *p6a_, *p6b_;
 };
 
+
 void test_model_stewart()
 {
 	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
-	
-	
 
 	try 
 	{
 		Robot rbt;
-
-		
 
 		rbt.loadString(xml_file);
 		double pee[6]{ 0,1.5,1.2,0,0.1,0 };
 		double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
 		rbt.setVee(vee, pee);
 	
-		// 1.78e-5 //
-		auto time = aris::core::benchmark(100000, [&rbt, &pee, &vee]() {rbt.setVee(vee, pee); });
-		std::cout << "benchmark Robot::setVee:" << time << std::endl;
+		//std::cout << "benchmark Robot::setVee:" << aris::core::benchmark(100000, [&rbt, &pee, &vee]() {rbt.setVee(vee, pee); }) << std::endl;
 
 		aris::dynamic::PlanFunc plan = [&pee, &vee](Model &model, const PlanParamBase &param)->int
 		{
@@ -367,7 +371,7 @@ void test_model_stewart()
 
 			double pee_local[6], vee_local[6]{0,0.1,0,0,0,0};
 			std::copy(pee, pee + 6, pee_local);
-			pee_local[1] += param.count_ *0.0001;
+			pee_local[1] += param.count_ * 0.0001;
 			rbt.setVee(vee_local, pee_local);
 
 			return 5000 - param.count_;
@@ -387,38 +391,61 @@ void test_model_stewart()
 		}
 		file.close();
 
-		rbt.dynSetSolveMethod([](int n, const double *D, const double *b, double *x)
+		
+		rbt.dynPre();
+		Eigen::internal::set_is_malloc_allowed(true);
+		Eigen::PartialPivLU<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > solver(rbt.dynDim());
+		//Eigen::internal::set_is_malloc_allowed(false);
+		rbt.dynSetSolveMethod([&solver](int n, const double *D, const double *b, double *x)
 		{
 			Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >Dm(D, n, n);
 			Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1> >bm(b, n);
 			Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1> >xm(x, n);
-
-			xm = Dm.lu().solve(bm);
+			xm = Dm.partialPivLu().solve(bm);
 		});
+		
+		//rbt.dynPrt();
 
-		rbt.dynPre();
-		std::vector<double> D(rbt.dynDim() * rbt.dynDim());
-		std::vector<double> b(rbt.dynDim());
-		std::vector<double> x(rbt.dynDim());
-		std::vector<double> C(rbt.dynDimM() * rbt.dynDimN());
-		rbt.dynUpd();
-		rbt.dynMtx(D.data(), b.data());
-		rbt.dynCstMtx(C.data());
-		//dsp(D.data() + rbt.dynDim()*rbt.dynDimM(), rbt.dynDimN(), rbt.dynDimM(),0,0, rbt.dynDim());
-		//dsp(C.data(), rbt.dynDimN(), rbt.dynDimM());
-		rbt.dynSov(D.data(), b.data(), x.data());
-		rbt.dynEnd(x.data());
+		//std::vector<double> D(rbt.dynDim() * rbt.dynDim(), 0);
+		//std::vector<double> b(rbt.dynDim(), 0);
+		//std::vector<double> x(rbt.dynDim(), 0);
+		//rbt.dynPrtUpd();
+		//rbt.dynPrtMtx(D.data(), b.data());
+		//rbt.dynSov(D.data(), b.data(), x.data());
+		//rbt.dynPrtEnd(x.data());
 
+
+		//rbt.dynGlbUpd();
+		//std::vector<double> im(rbt.dynDimM() * rbt.dynDimM(), 0);
+		//std::vector<double> cmT(rbt.dynDimN() * rbt.dynDimM(), 0);
+		//std::vector<double> as(rbt.dynDimM(), 0);
+		//std::vector<double> ca(rbt.dynDimN(), 0);
+		//std::vector<double> r(rbt.dynDimN(), 0);
+		//rbt.dynGlbIs(im.data());
+		//rbt.dynCa(ca.data());
+		//rbt.dynGlbAs(as.data());
+		//rbt.dynGlbCmT(cmT.data());
+
+		//s_mm(rbt.dynDimN(), 1, rbt.dynDimM(), cmT.data(), as.data(), r.data());
+		//
+		//dlmwrite("C:\\Users\\py033\\Desktop\\im.txt", im.data(), rbt.dynDimM(), rbt.dynDimM());
+		//dlmwrite("C:\\Users\\py033\\Desktop\\cmT.txt", cmT.data(), rbt.dynDimN(), rbt.dynDimM());
+		//dlmwrite("C:\\Users\\py033\\Desktop\\r.txt", r.data(), rbt.dynDimN(), 1);
+		//dlmwrite("C:\\Users\\py033\\Desktop\\ca.txt", ca.data(), rbt.dynDimN(), 1);
+
+		//if (!s_is_equal(rbt.dynDimN(), r.data(), ca.data(), 1e-10))	std::cout << "not equal" << std::endl;
+
+		rbt.dynGlb();
+
+		rbt.dynPrtSov();
 		//1.93e-5, 3.61 for linux
-		std::cout << "benchmark Robot::dynUpd():" << aris::core::benchmark(100000, [&rbt]() {rbt.dynUpd(); }) << std::endl;
-
+		//std::cout << "benchmark Robot::dynUpd():" << aris::core::benchmark(100000, [&rbt]() {rbt.dynUpd(); }) << std::endl;
+		//std::cout << "benchmark Robot::dynMtx():" << aris::core::benchmark(1000000, [&rbt, &D, &b]() {rbt.dynMtx(D.data(), b.data(), true); }) << std::endl;
+		//std::cout << "benchmark Robot::dynSov():" << aris::core::benchmark(1000, [&rbt, &D, &b, &x]() {rbt.dynSov(D.data(), b.data(), x.data()); }) << std::endl;
 
 		//rbt.dyn();
 
-		for (auto &mot : rbt.motionPool())
-		{
-			std::cout << mot.mf() << std::endl;
-		}
+		for (auto &mot : rbt.motionPool())std::cout << mot.mf() << std::endl;
 	}
 	catch (std::exception&e)
 	{

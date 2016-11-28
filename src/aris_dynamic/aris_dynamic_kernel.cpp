@@ -53,25 +53,19 @@ namespace aris
 		auto inline default_iv()->const double* { static double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
 		auto inline default_in()->const double* { static double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
 
-		auto inline P()noexcept->const double3x3&
-		{
-			static const double p[3][3] = { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };
-			return p;
-		}
-		auto inline Q()noexcept->const double3x3&
-		{
-			static const double q[3][3] = { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };
-			return q;
-		}
+		auto inline P()noexcept->const double3x3&{ static const double p[3][3] { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };	return p; }
+		auto inline Q()noexcept->const double3x3&{ static const double q[3][3] { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };	return q; }
 
-		auto s_vnm(int n, const double *x, int x_ld) noexcept->double
+		auto inline id(int i, int j, int m) { return i*m + j; }
+
+		auto s_norm(int n, const double *x, int x_ld) noexcept->double
 		{
 			double norm = 0;
 			int final_idx = n*x_ld;
 			for (int i = 0; i < final_idx; i += x_ld)norm += x[i] * x[i];
 			return std::sqrt(norm);
 		}
-		auto s_vsw(int n, double *x, int x_ld, double *y, int y_ld) noexcept->void
+		auto s_swap_v(int n, double *x, int x_ld, double *y, int y_ld) noexcept->void
 		{
 			int x_idx{ 0 }, y_idx{ 0 };
 			for (int i = 0; i < n; ++i)
@@ -81,7 +75,7 @@ namespace aris
 				y_idx += y_ld;
 			}
 		}
-		auto s_mtm(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void
+		auto s_transpose(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void
 		{
 			for (int i = 0; i < m; ++i)
 			{
@@ -95,8 +89,392 @@ namespace aris
 				}
 			}
 		}
-		auto s_fill(int m, int n, double value, double *A, int lda) noexcept->void{	for (double* end{ A + m*lda }; A < end; A += lda) std::fill(A, A + n, value);}
-		
+	
+		auto s_blk_make(const double *mtx, const BlockSize &blk_size_m, const BlockSize &blk_size_n, BlockMatrix &blk_mtx) noexcept->void
+		{
+			blk_mtx.clear();
+
+			int ld{ 0 };
+			for (auto size : blk_size_n)ld += size;
+
+
+			int begin_row{ 0 };
+			for (int i = 0; i < static_cast<int>(blk_size_m.size()); ++i)
+			{
+				blk_mtx.push_back(std::vector<std::vector<double>>());
+
+				int begin_col{ 0 };
+				for (int j = 0; j < static_cast<int>(blk_size_n.size()); ++j)
+				{
+					blk_mtx.back().push_back(std::vector<double>());
+					blk_mtx.back().back().resize(blk_size_m[i] * blk_size_n[j]);
+					s_mc(blk_size_m[i], blk_size_n[j], mtx + begin_row*ld + begin_col, ld, blk_mtx.back().back().data(), blk_size_n[j]);
+
+					begin_col += blk_size_n[j];
+				}
+
+				begin_row += blk_size_m[i];
+			}
+		}
+		auto s_blk_resolve(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockMatrix &blk_mtx, double *mtx) noexcept->void
+		{
+			int ld{ 0 };
+			for (auto size : blk_size_n)ld += size;
+
+			int begin_row{ 0 };
+			for (int i = 0; i < static_cast<int>(blk_size_m.size()); ++i)
+			{
+				int begin_col{ 0 };
+				for (int j = 0; j < static_cast<int>(blk_size_n.size()); ++j)
+				{
+					if (blk_mtx[i][j].empty())
+					{
+						s_fill(blk_size_m[i], blk_size_n[j], 0, mtx + begin_row*ld + begin_col, ld);
+					}
+					else
+					{
+						s_mc(blk_size_m[i], blk_size_n[j], blk_mtx[i][j].data(), blk_size_n[j], mtx + begin_row*ld + begin_col, ld);
+					}
+
+
+
+					begin_col += blk_size_n[j];
+				}
+
+				begin_row += blk_size_m[i];
+			}
+		}
+		auto s_blk_allocate(const BlockSize &blk_size_m, const BlockSize &blk_size_n, BlockMatrix &blk_mtx) noexcept->void
+		{
+			blk_mtx.clear();
+			for (int i = 0; i < static_cast<int>(blk_size_m.size()); ++i)
+			{
+				blk_mtx.push_back(std::vector<std::vector<double>>());
+				for (int j = 0; j < static_cast<int>(blk_size_n.size()); ++j)
+				{
+					blk_mtx.back().push_back(std::vector<double>());
+					blk_mtx.back().back().reserve(blk_size_m[i] * blk_size_n[j]);
+				}
+			}
+		}
+		auto s_blk_check_empty_num(const BlockMatrix &blk_mtx)noexcept->int
+		{
+			int num{ 0 };
+			for (auto &row : blk_mtx)for (auto &ele : row)if (ele.empty())++num;
+			return num;
+		}
+
+		auto s_blk_norm(const BlockSize &blk_size_m, const BlockMatrix &blk_mtx)noexcept->double
+		{
+			double norm{ 0 };
+			for (std::size_t i = 0; i < blk_size_m.size(); ++i)
+			{
+				for (auto j = 0; j < blk_size_m[i]; ++j)
+				{
+					norm += blk_mtx[i][0][j] * blk_mtx[i][0][j];
+				}
+			}
+
+			return std::sqrt(norm);
+		}
+
+		auto s_blk_mm(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void
+		{
+			for (std::size_t i{ 0 }; i < blk_size_m.size(); ++i)
+			{
+				for (std::size_t j{ 0 }; j < blk_size_n.size(); ++j)
+				{
+					C[i][j].clear();
+					for (std::size_t k{ 0 }; k < blk_size_k.size(); ++k)
+					{
+						if (A[i][k].empty() || B[k][j].empty())continue;
+						if (C[i][j].empty()) 
+						{
+							C[i][j].resize(blk_size_m[i] * blk_size_n[j]);
+							s_mm(blk_size_m[i], blk_size_n[j], blk_size_k[k], A[i][k].data(), B[k][j].data(), C[i][j].data());
+						}
+						else
+						{
+							s_mma(blk_size_m[i], blk_size_n[j], blk_size_k[k], A[i][k].data(), B[k][j].data(), C[i][j].data());
+						}
+					}
+				}
+			}
+		}
+		auto s_blk_mmNT(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void
+		{
+			for (std::size_t i{ 0 }; i < blk_size_m.size(); ++i)
+			{
+				for (std::size_t j{ 0 }; j < blk_size_n.size(); ++j)
+				{
+					C[i][j].clear();
+					for (std::size_t k{ 0 }; k < blk_size_k.size(); ++k)
+					{
+						if (A[i][k].empty() || B[j][k].empty())continue;
+						if (C[i][j].empty())
+						{
+							C[i][j].resize(blk_size_m[i] * blk_size_n[j]);
+							s_mmNT(blk_size_m[i], blk_size_n[j], blk_size_k[k], A[i][k].data(), B[j][k].data(), C[i][j].data());
+						}
+						else
+						{
+							s_mmaNT(blk_size_m[i], blk_size_n[j], blk_size_k[k], A[i][k].data(), B[j][k].data(), C[i][j].data());
+						}
+					}
+				}
+			}
+		}
+		auto s_blk_mmTN(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void
+		{
+			for (std::size_t i{ 0 }; i < blk_size_m.size(); ++i)
+			{
+				for (std::size_t j{ 0 }; j < blk_size_n.size(); ++j)
+				{
+					C[i][j].clear();
+					for (std::size_t k{ 0 }; k < blk_size_k.size(); ++k)
+					{
+						if (A[k][i].empty() || B[k][j].empty())continue;
+						if (C[i][j].empty())
+						{
+							C[i][j].resize(blk_size_m[i] * blk_size_n[j]);
+							s_mmTN(blk_size_m[i], blk_size_n[j], blk_size_k[k], A[k][i].data(), B[k][j].data(), C[i][j].data());
+						}
+						else
+						{
+							s_mmaTN(blk_size_m[i], blk_size_n[j], blk_size_k[k], A[k][i].data(), B[k][j].data(), C[i][j].data());
+						}
+					}
+				}
+			}
+		}
+		auto s_blk_mmTT(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void
+		{
+			for (std::size_t i{ 0 }; i < blk_size_m.size(); ++i)
+			{
+				for (std::size_t j{ 0 }; j < blk_size_n.size(); ++j)
+				{
+					C[i][j].clear();
+					for (std::size_t k{ 0 }; k < blk_size_k.size(); ++k)
+					{
+						if (A[k][i].empty() || B[j][k].empty())continue;
+						if (C[i][j].empty())
+						{
+							C[i][j].resize(blk_size_m[i] * blk_size_n[j]);
+							s_mmTT(blk_size_m[i], blk_size_n[j], blk_size_k[k], A[k][i].data(), B[j][k].data(), C[i][j].data());
+						}
+						else
+						{
+							s_mmaTT(blk_size_m[i], blk_size_n[j], blk_size_k[k], A[k][i].data(), B[j][k].data(), C[i][j].data());
+						}
+					}
+				}
+			}
+		}
+
+		auto s_blk_llt(const BlockSize &blk_size, const BlockMatrix &A, BlockMatrix &L) noexcept->void
+		{
+			int m = blk_size.size();
+
+			for (int j = 0; j < m; ++j)
+			{
+				L[j][j].resize(blk_size[j] * blk_size[j]);
+
+				std::copy(A[j][j].data(), A[j][j].data() + blk_size[j] * blk_size[j], L[j][j].data());
+				for (int k = 0; k < j; ++k)
+				{
+					if (!L[j][k].empty())s_mmaNT(blk_size[j], blk_size[j], blk_size[k], -1.0, L[j][k].data(), L[j][k].data(), L[j][j].data());
+				}
+				s_llt(blk_size[j], L[j][j].data(), L[j][j].data());
+
+				for (int i = j + 1; i < m; ++i)
+				{
+					L[i][j].clear();
+					L[j][i].clear();
+
+					if (!A[i][j].empty())
+					{
+						L[i][j].resize(blk_size[i] * blk_size[j]);
+						std::copy(A[i][j].data(), A[i][j].data() + blk_size[i] * blk_size[j], L[i][j].data());
+					}
+					for (int k = 0; k < j; ++k)
+					{
+						if (L[i][k].empty() || L[j][k].empty())continue;
+
+						if (L[i][j].empty())
+						{
+							L[i][j].resize(blk_size[i] * blk_size[j]);
+							s_mmNT(blk_size[i], blk_size[j], blk_size[k], -1.0, L[i][k].data(), L[j][k].data(), L[i][j].data());
+						}
+						else
+						{
+							s_mmaNT(blk_size[i], blk_size[j], blk_size[k], -1.0, L[i][k].data(), L[j][k].data(), L[i][j].data());
+						}
+					}
+
+					if (!L[i][j].empty())
+					{
+						L[j][i].resize(blk_size[i] * blk_size[j]);
+						s_sov_lmNT(blk_size[j], blk_size[i], L[j][j].data(), L[i][j].data(), L[j][i].data());
+						s_transpose(blk_size[j], blk_size[i], L[j][i].data(), L[i][j].data());
+					}
+				}
+			}
+		}
+		auto s_blk_sov_lm(const BlockSize &blk_size, const BlockSize &rhs_size, const BlockMatrix &L, const BlockMatrix &b, BlockMatrix &x)noexcept->void
+		{
+			int m = static_cast<int>(blk_size.size());
+			int rhs = static_cast<int>(rhs_size.size());
+
+			for (int j = 0; j < rhs; ++j)
+			{
+				for (int i = 0; i < m; ++i)
+				{
+					if (!b[i][j].empty())
+						x[i][j].assign(b[i][j].begin(), b[i][j].begin() + rhs_size[j] * blk_size[i]);
+
+					for (int k = 0; k < i; ++k)
+					{
+						if (L[i][k].empty() || x[k][j].empty()) { continue; std::cout << "continue" << std::endl; };
+						if (x[i][j].empty())x[i][j].resize(blk_size[i] * rhs_size[j], 0);
+						s_mma(blk_size[i], rhs_size[j], blk_size[k], -1.0, L[i][k].data(), x[k][j].data(), x[i][j].data());
+					}
+
+					if (x[i][j].empty()) x[i][j].clear();
+					else s_sov_lm(blk_size[i], rhs_size[j], L[i][i].data(), x[i][j].data(), x[i][j].data());
+				}
+			}
+		}
+		auto s_blk_sov_um(const BlockSize &blk_size, const BlockSize &rhs_size, const BlockMatrix &L, const BlockMatrix &b, BlockMatrix &x)noexcept->void
+		{
+			int m = static_cast<int>(blk_size.size());
+			int rhs = static_cast<int>(rhs_size.size());
+
+			for (int j = 0; j < rhs; ++j)
+			{
+				for (int i = m - 1; i > -1; --i)
+				{
+					if (!b[i][j].empty())x[i][j].assign(b[i][j].begin(), b[i][j].begin() + rhs_size[j] * blk_size[i]);
+
+					for (int k = i + 1; k < m; ++k)
+					{
+						if (L[i][k].empty() || x[k][j].empty()) { continue; std::cout << "continue" << std::endl; };
+						if (x[i][j].empty())x[i][j].resize(blk_size[i] * rhs_size[j], 0);
+						s_mma(blk_size[i], rhs_size[j], blk_size[k], -1.0, L[i][k].data(), x[k][j].data(), x[i][j].data());
+					}
+
+					if (x[i][j].empty()) x[i][j].clear();
+					else s_sov_um(blk_size[i], rhs_size[j], L[i][i].data(), x[i][j].data(), x[i][j].data());
+				}
+			}
+		}
+
+		auto s_llt(int m, const double *A, double *L) noexcept->void
+		{
+			for (int j = 0; j < m; ++j)
+			{
+				L[j*m + j] = A[j*m + j];
+				for (int k = 0; k < j; ++k)
+				{
+					L[j*m + j] -= L[j*m + k] * L[j*m + k];
+				}
+				L[j*m + j] = std::sqrt(L[j*m + j]);
+				
+
+				for (int i = j + 1; i < m; ++i)
+				{
+					L[i*m + j] = A[i*m + j];
+					for (int k = 0; k < j; ++k)
+					{
+						L[i*m + j] -= L[i*m + k] * L[j*m + k];
+					}
+					L[i*m + j] /= L[j*m + j];
+					L[j*m + i] = L[i*m + j];
+				}
+			}
+		}
+		auto s_inv_lm(int m, const double *L, double *inv_L) noexcept->void
+		{
+			std::fill_n(inv_L, m*m, 0);
+
+			for (int j = 0; j < m; ++j)
+			{
+				inv_L[j*m + j] = 1;
+				
+				for (int i = j; i < m; ++i)
+				{
+					for (int k = 0; k < i; ++k)
+					{
+						inv_L[i*m + j] -= L[i*m + k] * inv_L[k*m + j];
+					}
+					inv_L[i*m + j] /= L[i*m+i];
+				}
+			}
+		}
+		auto s_sov_lm(int m, int rhs, const double *L, const double *b, double *x) noexcept->void
+		{
+			for (int j = 0; j < rhs; ++j)
+			{
+				for (int i = 0; i < m; ++i)
+				{
+					x[i*rhs + j] = b[i*rhs + j];
+					
+					for (int k = 0; k < i; ++k)
+					{
+						x[i*rhs + j] -= L[i*m + k] * x[k*rhs + j];
+					}
+					x[i*rhs + j] /= L[i*m + i];
+				}
+			}
+		}
+		auto s_sov_lmNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void
+		{
+			for (int j = 0; j < rhs; ++j)
+			{
+				for (int i = 0; i < m; ++i)
+				{
+					x[i*rhs + j] = b[j*m + i];
+
+					for (int k = 0; k < i; ++k)
+					{
+						x[i*rhs + j] -= L[i*m + k] * x[k*rhs + j];
+					}
+					x[i*rhs + j] /= L[i*m + i];
+				}
+			}
+		}
+		auto s_sov_um(int m, int rhs, const double *L, const double *b, double *x) noexcept->void
+		{
+			for (int j = 0; j < rhs; ++j)
+			{
+				for (int i = m - 1; i > -1; --i)
+				{
+					x[i*rhs + j] = b[i*rhs + j];
+
+					for (int k = i + 1; k < m; ++k)
+					{
+						x[i*rhs + j] -= L[i*m + k] * x[k*rhs + j];
+					}
+					x[i*rhs + j] /= L[i*m + i];
+				}
+			}
+		}
+		auto s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void
+		{
+			for (int j = 0; j < rhs; ++j)
+			{
+				for (int i = m - 1; i > -1; --i)
+				{
+					x[i*rhs + j] = b[j*m + i];
+
+					for (int k = i + 1; k < m; ++k)
+					{
+						x[i*rhs + j] -= L[i*m + k] * x[k*rhs + j];
+					}
+					x[i*rhs + j] /= L[i*m + i];
+				}
+			}
+		}
+
 		auto s_mma(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void 
 		{
 			for (int i{ 0 }, c_row{ 0 }, a_row{ 0 }; i < m; ++i, c_row += ldc, a_row += lda)
@@ -188,92 +566,6 @@ namespace aris
 					C[c_row + j] += alpha * value;
 				}
 			}
-		}
-
-		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
-			const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void
-		{
-			int fm_place;
-			int tm_place;
-
-			fm_place = fm_begin_row*fm_ld + fm_begin_col;
-			tm_place = tm_begin_row*tm_ld + tm_begin_col;
-
-			for (int i = 0; i < block_size_m; i++)
-			{
-				std::copy_n(&from_mtx[fm_place], block_size_n, &to_mtx[tm_place]);
-
-				fm_place += fm_ld;
-				tm_place += tm_ld;
-			}
-
-		}
-		auto s_block_cpy(const int &block_size_m, const int &block_size_n,
-			double alpha, const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void
-		{
-			int fm_place;
-			int tm_place;
-
-			fm_place = fm_begin_row*fm_ld + fm_begin_col;
-			tm_place = tm_begin_row*tm_ld + tm_begin_col;
-
-			for (int i = 0; i < block_size_m; i++)
-			{
-				for (int j = 0; j < block_size_n; j++)
-				{
-					to_mtx[tm_place + j] = alpha*from_mtx[fm_place + j] + beta*to_mtx[tm_place + j];
-				}
-
-				fm_place += fm_ld;
-				tm_place += tm_ld;
-			}
-
-		}
-		auto s_block_cpyT(const int &block_size_m, const int &block_size_n,
-			const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void
-		{
-			int fm_place;
-			int tm_place;
-
-			fm_place = fm_begin_row*fm_ld + fm_begin_col;
-			tm_place = tm_begin_row*tm_ld + tm_begin_col;
-
-			for (int i = 0; i < block_size_m; i++)
-			{
-				for (int j = 0; j < block_size_n; j++)
-				{
-					to_mtx[tm_place + tm_ld * j] = from_mtx[fm_place + j];
-				}
-
-				fm_place += fm_ld;
-				tm_place += 1;
-			}
-
-		}
-		auto s_block_cpyT(const int &block_size_m, const int &block_size_n,
-			double alpha, const double *from_mtx, const int &fm_begin_row, const int &fm_begin_col, const int &fm_ld,
-			double beta, double *to_mtx, const int &tm_begin_row, const int &tm_begin_col, const int &tm_ld) noexcept->void
-		{
-			int fm_place;
-			int tm_place;
-
-			fm_place = fm_begin_row*fm_ld + fm_begin_col;
-			tm_place = tm_begin_row*tm_ld + tm_begin_col;
-
-			for (int i = 0; i < block_size_m; i++)
-			{
-				for (int j = 0; j < block_size_n; j++)
-				{
-					to_mtx[tm_place + tm_ld * j] = alpha*from_mtx[fm_place + j] + beta*to_mtx[tm_place + tm_ld * j];
-				}
-
-				fm_place += fm_ld;
-				tm_place += 1;
-			}
-
 		}
 
 		auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void
@@ -862,7 +1154,6 @@ namespace aris
 			s_va(6, alpha, tem, 1, vs_out, vs_out_ld);
 		}
 
-
 		auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in, int rm_ld) noexcept->void
 		{
 			// 补充默认参数 //
@@ -996,16 +1287,13 @@ namespace aris
 			qt_square[2] = (1 + rm_in[2 * rm_ld + 2] - rm_in[0] - rm_in[rm_ld + 1]) / 4;
 			qt_square[3] = (1 + rm_in[0] + rm_in[rm_ld + 1] + rm_in[2 * rm_ld + 2]) / 4;
 
-			for (int i = 0; i < 4; ++i)rq_out[i] = qt_square[i] < 0 ? 0 : std::sqrt(qt_square[i]);
+			int i = std::max_element(qt_square, qt_square + 4) - qt_square;
+			rq_out[i] = std::sqrt(qt_square[i]);
 
-			int i = std::max_element(rq_out, rq_out + 4) - rq_out;
 			int jkl[3]{ (i + 1) % 4 ,(i + 2) % 4 ,(i + 3) % 4 };
-			for (auto m : jkl)
-			{
-				rq_out[m] = (rm_in[P[i][m] * rm_ld + Q[i][m]] + T[i][m] * rm_in[Q[i][m] * rm_ld + P[i][m]])<0 ? -rq_out[m] : rq_out[m];
-			}
+			for (auto m : jkl)rq_out[m] = (rm_in[P[i][m] * rm_ld + Q[i][m]] + T[i][m] * rm_in[Q[i][m] * rm_ld + P[i][m]]) / 4.0 / rq_out[i];
 
-			// 将rq_out[3]置为正
+			// 将rq[3]置为正
 			for (auto m = 0; m < 4; ++m)rq_out[m] = rq_out[3] < 0 ? -rq_out[m] : rq_out[m];
 		}
 		auto s_pp2pm(const double *pp_in, double *pm_out) noexcept->void
@@ -1150,7 +1438,6 @@ namespace aris
 			s_pm2pp(pm_in, pq_out);
 			s_pm2rq(pm_in, pq_out + 3);
 		}
-
 
 		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->void
 		{
@@ -3286,7 +3573,7 @@ namespace aris
 			s_va(3, -1.0, origin, Axis1);
 			s_va(3, -1.0, origin, Axis2);
 
-			nrm = s_vnm(3, Axis1, 1);
+			nrm = s_norm(3, Axis1, 1);
 			if (nrm != 0)
 			{
 				for (int i = 0; i < 3; ++i)
@@ -3299,7 +3586,7 @@ namespace aris
 				Axis1[Order[0]] = 1;
 			}
 
-			nrm = s_vnm(3, Axis2, 1);
+			nrm = s_norm(3, Axis2, 1);
 			if (nrm != 0)
 			{
 				for (int i = 0; i < 3; ++i)
@@ -3315,7 +3602,7 @@ namespace aris
 			//下求差乘计算。首先要判断差乘之后的正负号。
 			s_c3(Axis1, Axis2, Axis3);
 
-			nrm = s_vnm(3, Axis3, 1);
+			nrm = s_norm(3, Axis3, 1);
 			if (nrm == 0)
 			{
 				//有待补充
@@ -3373,7 +3660,7 @@ namespace aris
 				}
 			}
 
-			nrm = s_vnm(3, Axis2, 1);
+			nrm = s_norm(3, Axis2, 1);
 			for (int i = 0; i < 3; ++i)
 			{
 				Axis2[i] = Axis2[i] / nrm;
@@ -3535,6 +3822,26 @@ namespace aris
 
 			aab[0] = Pbc*((vq1*c1*c1 - 2 * q1*c1*s1*vab[0])*pc - 2 * vpc*q1*c1*c1) / (pc*pc*pc);
 			aab[1] = Pac*((vq2*c2*c2 - 2 * q2*c2*s2*vab[1])*k - 2 * vk*q2*c2*c2) / (k*k*k);
+		}
+		auto s_sov_axis_distance(const double*from_pm, const double*to_pm, int axis)noexcept->double
+		{
+			if (axis < 3)
+			{
+				double dx{ to_pm[3] - from_pm[3] }, dy{ to_pm[7] - from_pm[7] }, dz{ to_pm[11] - from_pm[11] };
+				return from_pm[axis] * dx + from_pm[axis + 4] * dy + from_pm[axis + 8] * dz;
+			}
+			else
+			{
+				int b{ (axis - 2) % 3 }, c{ (axis - 1) % 3 };
+
+				double Pbb = from_pm[b] * to_pm[b] + from_pm[b + 4] * to_pm[b + 4] + from_pm[b + 8] * to_pm[b + 8];
+				double Pcc = from_pm[c] * to_pm[c] + from_pm[c + 4] * to_pm[c + 4] + from_pm[c + 8] * to_pm[c + 8];
+				double Pbc = from_pm[b] * to_pm[c] + from_pm[b + 4] * to_pm[c + 4] + from_pm[b + 8] * to_pm[c + 8];
+				double Pcb = from_pm[c] * to_pm[b] + from_pm[c + 4] * to_pm[b + 4] + from_pm[c + 8] * to_pm[b + 8];
+
+				return std::atan2(Pcb - Pbc, Pbb + Pcc);
+			}
+
 		}
 
 		auto dlmwrite(const char *FileName, const double *pMatrix, const int m, const int n)->void

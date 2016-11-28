@@ -270,7 +270,7 @@ void test_control_motion()
 	widget_root.registerChildType<aris::core::Pipe>();
 	widget_root.loadXml(*xml_doc.RootElement()->FirstChildElement("widget_root"));
 	parser = static_cast<aris::core::CommandParser*>(&*widget_root.findByName("command_parser"));
-	msg_pipe = static_cast<aris::core::Pipe*>(&*widget_root.findByName("msg_pipe"));
+	msg_pipe = static_cast<aris::core::Pipe*>(&*widget_root.findByName("message_pipe"));
 
 	controller.setControlStrategy(tg);
 	controller.start();
