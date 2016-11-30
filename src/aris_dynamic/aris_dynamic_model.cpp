@@ -724,43 +724,29 @@ namespace aris
 			s_inv_tv(*makI().fatherPart().pm(), vm_cross_vn, tem);
 			s_mmTN(dim(), 1, 6, -1.0, prtCmPtrI(), tem, ca);
 		}
-		auto Constraint::cptCe(double *ce)const->void
+		auto Constraint::cptCp(double *ce)const->void
 		{
-			double pq_n2m[7];
-			double pm_n2m[4][4];
+			double pq_j2i[7];
+			double pm_j2i[4][4];
 			double diff[6];
 
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_n2m);
-			s_pm2pq(*pm_n2m, pq_n2m);
+			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
+			s_pm2pq(*pm_j2i, pq_j2i);
 
-			double theta = atan2(s_norm(3, pq_n2m + 3, 1), pq_n2m[6]) * 2;
+			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
 
 			if (theta < 1e-3)
 			{
-				s_nv(3, 2.0, pq_n2m + 3);
+				s_nv(3, 2.0, pq_j2i + 3);
 			}
 			else
 			{
-				s_nv(3, theta / std::sin(theta / 2.0), pq_n2m + 3);
+				s_nv(3, theta / std::sin(theta / 2.0), pq_j2i + 3);
 			}
 
+			s_tv(*makI().prtPm(), pq_j2i, diff);
 
-			//s_nv(3, 2.0, pq_n2m + 3);
-			s_tv(*makI().pm(), pq_n2m, diff);
-
-
-
-			//s_pm_dot_v3(*makI().pm(), pq_n2m, diff);
-			//s_pm_dot_v3(*makI().pm(), pq_n2m + 3, diff + 3);
-			//s_nv(3, 2.0, diff + 3);
-
-			//dsp(glbCmPtrI(), 6, dim());
-			//dsp(diff, 1, 6);
-
-			double glbCmI[36], glbCmJ[36];
-			cptGlbCm(glbCmI, glbCmJ);
-
-			s_mmTN(dim(), 1, 6, glbCmI, diff, ce);
+			s_mmTN(dim(), 1, 6, prtCmPtrI(), diff, ce);
 		}
 		auto Constraint::cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld, int cmJ_ld)const->void
 		{
@@ -2358,9 +2344,9 @@ namespace aris
 			Constraint::cptCa(ca);
 			ca[0] += ma();
 		}
-		auto Motion::cptCe(double *ce)const->void
+		auto Motion::cptCp(double *ce)const->void
 		{
-			Constraint::cptCe(ce);
+			Constraint::cptCp(ce);
 			ce[0] += mp();
 		}
 		auto Motion::updCa()->void
@@ -2550,8 +2536,9 @@ namespace aris
 			aris::core::RefPool<Part> active_part_pool_;
 			aris::core::RefPool<Constraint> active_constraint_pool_;
 			BlockSize p_size_, c_size_;
-			BlockMatrix im_, cm_, ce_, cct_, cce_;
-			BlockMatrix cct_L_, cct_x_;
+			BlockMatrix im_, cm_, cp_, cv_, ca_;
+			BlockMatrix cct_, ctc_, ccp_, ccv_, cca_;
+			BlockMatrix cct_llt_, cct_x_, ctc_llt_, ctc_x_;
 
 			std::function<void(int dim, const double *D, const double *b, double *x)> dyn_solve_method_{ nullptr };
 			std::function<void(int n, double *A)> clb_inverse_method_{ nullptr };
@@ -2791,11 +2778,17 @@ namespace aris
 			// allocate memory //
 			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->im_);
 			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->c_size_, imp_->cm_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->cct_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->cce_);
-			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->ce_);
+			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->cp_);
+			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->cv_);
+			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->ca_);
 
-			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->cct_L_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->cct_);
+			aris::dynamic::s_blk_allocate(imp_->c_size_, imp_->c_size_, imp_->ctc_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->ccp_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->ccv_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->cca_);
+
+			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->cct_llt_);
 			aris::dynamic::s_blk_allocate(imp_->p_size_, {1}, imp_->cct_x_);
 
 			imp_->cm_[ground().rowID()][0].resize(36, 0);
@@ -2811,11 +2804,10 @@ namespace aris
 
 		auto Model::glbIm()->BlockMatrix& { return imp_->im_; }
 		auto Model::glbCm()->BlockMatrix& { return imp_->cm_; }
-		auto Model::glbCct()->BlockMatrix& { return imp_->cct_; }
-		auto Model::glbCce()->BlockMatrix& { return imp_->cce_; }
-		auto Model::ce()->BlockMatrix& { return imp_->ce_; }
-		
-		
+		auto Model::cp()->BlockMatrix& { return imp_->cp_; }
+		auto Model::cv()->BlockMatrix& { return imp_->cv_; }
+		auto Model::ca()->BlockMatrix& { return imp_->ca_; }
+
 		auto Model::cptGlbIm()->void
 		{
 			for (auto &prt : activePartPool())
@@ -2833,23 +2825,17 @@ namespace aris
 				cst.cptGlbCm(imp_->cm_[cst.makI().fatherPart().rowID()][cst.colID()].data(), imp_->cm_[cst.makJ().fatherPart().rowID()][cst.colID()].data());
 			}
 		}
-		auto Model::cptGlbCctCce()->void 
+		auto Model::cptCp()->void 
 		{
-			cptGlbCm();
-			cptCe();
-			s_blk_mmNT(pSize(), pSize(), cSize(), this->glbCm(), this->glbCm(), this->glbCct());
-			s_blk_mm(pSize(), { 1 }, cSize(), this->glbCm(), this->ce(), this->glbCce());
-		}
-		auto Model::cptCe()->void 
-		{
-			imp_->ce_[0][0].resize(6);
+			imp_->cp_[0][0].resize(6);
 			for (auto &cst : activeConstraintPool())
 			{
-				imp_->ce_[cst.colID()][0].resize(cst.dim());
-				cst.cptCe(imp_->ce_[cst.colID()][0].data());
+				imp_->cp_[cst.colID()][0].resize(cst.dim());
+				cst.cptCp(imp_->cp_[cst.colID()][0].data());
 			}
 		}
-
+		auto Model::cptCv()->void {}
+		auto Model::cptCa()->void {}
 
 		auto Model::kinPre()->void
 		{
@@ -2883,34 +2869,28 @@ namespace aris
 		{
 			const double error{ 1e-6 };
 
-			double cm1[24 * 24], cct1[24*24], ce1[24], cce1[24];
-			double cm2[24 * 24], cct2[24*24], cce2[24];
-
-			//for (;;)
+			for (;;)
 			{
-				cptGlbCctCce();
+				cptGlbCm();
+				cptCp();
+				s_blk_mmNT(pSize(), pSize(), cSize(), glbCm(), glbCm(), imp_->cct_);
+				s_blk_mm(pSize(), { 1 }, cSize(), glbCm(), cp(), imp_->ccp_);
 				
-				s_blk_resolve(pSize(), cSize(), imp_->cm_, cm1);
-				s_blk_resolve(cSize(), { 1 }, imp_->ce_, ce1);
-				s_blk_mm(pSize(), { 1 }, cSize(), imp_->cm_, imp_->ce_, imp_->cce_);
-				s_blk_resolve(pSize(), { 1 }, imp_->cce_, cce1);
-
-				aris::dynamic::dsp(cce1, 24, 1);
-
-				if (s_blk_norm(cSize(), ce()) < error)
+				if (s_blk_norm(cSize(), cp()) < error)
 				{
-					std::cout << "norm and break:" << s_blk_norm(cSize(), ce()) << std::endl;
-					//break;
+					std::cout << "norm and break:" << s_blk_norm(cSize(), cp()) << std::endl;
+					break;
 				}
 				else
 				{
-					std::cout << "norm:" << s_blk_norm(cSize(), ce()) << std::endl;
+					std::cout << "norm:" << s_blk_norm(cSize(), cp()) << std::endl;
 				}
 
-				s_blk_llt(pSize(), glbCct(), imp_->cct_L_);
-				s_blk_sov_lm(pSize(), { 1 }, imp_->cct_L_, imp_->cce_, imp_->cct_x_);
+				s_blk_llt(pSize(), imp_->cct_, imp_->cct_llt_);
+				s_blk_sov_lm(pSize(), { 1 }, imp_->cct_llt_, imp_->ccp_, imp_->cct_x_);
+				s_blk_sov_um(pSize(), { 1 }, imp_->cct_llt_, imp_->cct_x_, imp_->cct_x_);
 
-				/*for (auto &prt : activePartPool())
+				for (auto &prt : activePartPool())
 				{
 					double pm[4][4];
 					double pq[7];
@@ -2928,77 +2908,9 @@ namespace aris
 					double final_pm[4][4];
 					s_pm2pm(*pm, *prt.pm(), *final_pm);
 
-
-					std::cout << prt.name() << ":";
-					dsp(pq, 1, 7);
-					prt.setPm(*final_pm);
-				}*/
-			}
-			
-			
-
-			//////////////////////////////////////////////////////////////
-			
-			kinPre();
-
-			//for(;;)
-			{
-				kinUpd();
-				kinCe(imp_->dyn_b_.get());
-
-				dynGlbCm(cm2);
-				std::copy_n(imp_->dyn_b_.get(), 24, ce2);
-				s_mm(24, 1, 24, cm1, imp_->dyn_b_.get(), cce2);
-
-				aris::dynamic::dsp(cce2, 24, 1);
-
-
-				if (s_norm(dynDimN(), imp_->dyn_b_.get()) < 1e-5) 
-				{
-					std::cout << "norm and break:" << s_norm(dynDimN(), imp_->dyn_b_.get()) << std::endl;
-					//break;
-				}
-				else
-				{
-					std::cout << "norm:" << s_norm(dynDimN(), imp_->dyn_b_.get()) << std::endl;
-				}
-				
-
-				kinGlbCmT(imp_->dyn_A_.get());
-				imp_->dyn_solve_method_(dynDimM(), imp_->dyn_A_.get(), imp_->dyn_b_.get(), imp_->dyn_x_.get());
-				
-				auto x = imp_->dyn_x_.get();
-
-				for (auto &prt:partPool())
-				{
-					double pm[4][4];
-					double pq[7];
-
-					s_vc(6, x + prt.rowID(), pq);
-					
-					double theta = s_norm(3, pq + 3);
-					pq[6] = std::cos(theta / 2);
-
-					double factor = theta < 1e-4 ? 0.5 : std::sin(theta / 2) / theta;
-					s_nv(3, factor, pq + 3);
-
-					s_pq2pm(pq, *pm);
-
-					double final_pm[4][4];
-					s_pm2pm(*pm, *prt.pm(), *final_pm);
-
 					prt.setPm(*final_pm);
 				}
-			}
-
-			if (aris::dynamic::s_is_equal(24 * 24, cm1, cm2,1e-10))std::cout << "cm yes" << std::endl;
-			else std::cout << "cm no" << std::endl;
-
-			if (aris::dynamic::s_is_equal(24, ce1, ce2, 1e-10))std::cout << "ce yes" << std::endl;
-			else std::cout << "ce no" << std::endl;
-
-			if (aris::dynamic::s_is_equal(24, cce1, cce2, 1e-10))std::cout << "cce yes" << std::endl;
-			else std::cout << "cce no" << std::endl;
+			}			
 		}
 		auto Model::kinCe(double *ce)const->void
 		{
@@ -4518,7 +4430,7 @@ namespace aris
 
 			ca[3] += 2 * jwm*iwn - jwm*iwm - jwn*iwn;
 		}
-		auto UniversalJoint::cptCe(double *ce)const->void
+		auto UniversalJoint::cptCp(double *ce)const->void
 		{
 			double pq_n2m[7];
 			double pm_n2m[4][4];

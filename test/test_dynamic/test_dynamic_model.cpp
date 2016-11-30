@@ -1034,8 +1034,8 @@ void test_constraint()
 		jnt.cptCa(result1);
 		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"RevoluteJoint:cptCa\" failed" << std::endl;
 
-		jnt.cptCe(result1);
-		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"RevoluteJoint:cptCe\" failed" << std::endl;
+		jnt.cptCp(result1);
+		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"RevoluteJoint:cptCp\" failed" << std::endl;
 	}
 
 	// test prismatic joints //
@@ -1097,8 +1097,8 @@ void test_constraint()
 		jnt.cptCa(result1);
 		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"PrismaticJoint:cptCa\" failed" << std::endl;
 
-		jnt.cptCe(result1);
-		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"PrismaticJoint:cptCe\" failed" << std::endl;
+		jnt.cptCp(result1);
+		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"PrismaticJoint:cptCp\" failed" << std::endl;
 	}
 
 	// test spherical joints //
@@ -1158,8 +1158,8 @@ void test_constraint()
 		jnt.cptCa(result1);
 		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"SphericalJoint:cptCa\" failed" << std::endl;
 
-		jnt.cptCe(result1);
-		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"SphericalJoint:cptCe\" failed" << std::endl;
+		jnt.cptCp(result1);
+		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"SphericalJoint:cptCp\" failed" << std::endl;
 	}
 	
 	// test universal joints //
@@ -1221,8 +1221,8 @@ void test_constraint()
 		jnt.cptCa(result1);
 		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"UniversalJoint:cptCa\" failed" << std::endl;
 
-		jnt.cptCe(result1);
-		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"UniversalJoint:cptCe\" failed" << std::endl;
+		jnt.cptCp(result1);
+		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"UniversalJoint:cptCp\" failed" << std::endl;
 	}
 	
 	// test motion 1//
@@ -1284,8 +1284,8 @@ void test_constraint()
 		mot.cptCa(result1);
 		if (!s_is_equal(mot.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
 
-		mot.cptCe(result1);
-		if (!s_is_equal(mot.dim(), result1, ce, error))std::cout << "\"Motion:cptCe\" failed" << std::endl;
+		mot.cptCp(result1);
+		if (!s_is_equal(mot.dim(), result1, ce, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
 
 		mot.updMp();
 		if (std::abs(mot.mp() - 0.521)>error)std::cout << "\"Motion:updMp\" failed" << std::endl;

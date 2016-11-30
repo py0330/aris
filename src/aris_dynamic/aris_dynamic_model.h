@@ -179,8 +179,9 @@ namespace aris
 		{
 		public:
 			auto virtual dim() const->std::size_t = 0;
+			auto virtual cptCp(double *ce)const->void;
+			auto virtual cptCv(double *cv)const->void {};
 			auto virtual cptCa(double *ca)const->void;
-			auto virtual cptCe(double *ce)const->void;
 			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void;
 			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void;
 			auto virtual setCf(const double *cf)const->void;
@@ -542,7 +543,7 @@ namespace aris
 			
 			
 			auto virtual cptCa(double *ca)const->void override;
-			auto virtual cptCe(double *ce)const->void override;
+			auto virtual cptCp(double *ce)const->void override;
 			
 			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
 			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
@@ -715,17 +716,15 @@ namespace aris
 			auto pSize()->BlockSize&;
 			auto glbIm()->BlockMatrix&;
 			auto glbCm()->BlockMatrix&;
-			auto glbCct()->BlockMatrix&;
-			auto glbCce()->BlockMatrix&;
-			auto ce()->BlockMatrix&;
+			auto cp()->BlockMatrix&;
+			auto cv()->BlockMatrix&;
+			auto ca()->BlockMatrix&;
 
-			auto cptPrtCm()->void;
-			auto cptPrtIm()->void;
-
-			auto cptCe()->void;
+			auto cptCp()->void;
+			auto cptCv()->void;
+			auto cptCa()->void;
 			auto cptGlbIm()->void;
 			auto cptGlbCm()->void;
-			auto cptGlbCctCce()->void;
 			
 			
 
@@ -989,7 +988,7 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string& override{ static const std::string type("universal"); return type; }
 			auto virtual cptCa(double *ca)const->void override;
-			auto virtual cptCe(double *ce)const->void override;
+			auto virtual cptCp(double *ce)const->void override;
 			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void override;
 			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void override;
 			
