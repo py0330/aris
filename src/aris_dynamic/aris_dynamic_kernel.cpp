@@ -475,6 +475,82 @@ namespace aris
 			}
 		}
 
+		auto s_householder_qr(int m, int n, const double *A, double *Q, double *R, double *tau, int *P, double error)noexcept->void
+		{
+			s_householder(m, n, A, R, tau, P);
+
+			// init Q
+			double t = -1.0 / tau[0];
+			s_mmNT(m - 1, m - 1, 1, t, R + n, n, R + n, n, Q + m + 1, m);
+			s_vc(m - 1, t, R + n, n, Q + 1, 1);
+			s_vc(m - 1, Q + 1, 1, Q + m, m);
+			*Q = t;
+			for (int i = 0; i < m; ++i)Q[i*m + i] += 1.0;
+
+			s_vc(m - 1, tau, 1, R + n, n);
+			// make Q
+			for (int i = 1; i < (std::min(m, n) - 1); ++i)
+			{
+				s_vc(m, Q + i, m, tau, 1);
+				
+				s_mma(m, 1, m - i - 1, Q + i + 1, m, R + (i + 1)*n + i, n, tau, 1);
+				s_nv(m, -1.0 / R[(i + 1)*n], tau);
+				
+				s_va(m, tau, 1, Q + i, m);
+				//dsp(Q, m, m);
+				//dsp(tau, m, 1);
+				//dsp(R + (i + 1)*n + i, m - i - 1, 1, 0, 0, n);
+				//dsp(R, m, n);
+				s_mmaNT(m, m - i - 1, 1, tau, 1, R + (i + 1)*n + i, n, Q + i + 1, m);
+				s_fill(m - i - 1, 1, 0.0, R + (i + 1)*n + i, n);
+				//dsp(Q, m, m);
+				//dsp(R, m, n);
+				//s_mma(m,m-i,1,,tau,1,)
+				//dsp(tau, m, 1);
+			}
+			s_fill(m - 1, 1, 0.0, R + n, n);
+			dsp(Q, m, m);
+			dsp(R, m, n);
+
+		}
+		auto s_householder(int m, int n, const double *A, double *U, double *tau, int *P, double error)noexcept->void
+		{
+			int k = std::min(m, n) - 1;
+
+			std::copy(A, A + m*n, U);
+
+			for (int i{ 0 }, j{ 0 }; i < k; ++i)
+			{
+				double x2_norm = s_norm(m - i - 1, U + (i + 1)*n + i, n);
+				double alpha = std::sqrt(x2_norm*x2_norm + U[i*n + i] * U[i*n + i]);
+
+				////////
+				//if (alpha < error);
+				//////////
+
+				double rho = -s_sgn2(U[i*n + i])*alpha;
+
+				double v1 = U[i*n + i] - rho;
+				s_vc(m - i - 1, 1.0 / v1, U + (i + 1)*n + i, n, U + (i + 1)*n + i, n);
+				x2_norm /= std::abs(v1);
+				double t = (1 + x2_norm*x2_norm) / 2;
+
+				s_vc(n - i - 1, U + i*n + i + 1, tau + i);
+				s_mmaTN(1, n - i - 1, m - i - 1, U + (i + 1)*n + i, n, U + (i + 1)*n + i + 1, n, tau + i, 1);
+				s_nv(n - i - 1, 1.0 / t, tau + i);
+				U[i*n + i] = rho;
+
+				// make new u
+				s_vc(n - i - 1, U + i*n + i + 1, U + i*n + i + 1);
+				s_va(n - i - 1, -1.0, tau + i, U + i*n + i + 1);
+
+				s_mc(m - i - 1, n - i - 1, U + (i + 1)*n + i + 1, n, U + (i + 1)*n + i + 1, n);
+				s_mma(m - i - 1, n - i - 1, 1, -1.0, U + (i + 1)*n + i, n, tau + i, 1, U + (i + 1)*n + i + 1, n);
+
+				tau[i] = t;
+			}
+		}
+
 		auto s_mma(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void 
 		{
 			for (int i{ 0 }, c_row{ 0 }, a_row{ 0 }; i < m; ++i, c_row += ldc, a_row += lda)
@@ -3557,134 +3633,60 @@ namespace aris
 			s_mmNT(6, 6, 6, *tem, 6, *tmf, 6, to_is, 6);
 		}
 
-		auto s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder) noexcept->void
+		auto s_sov_axes2pm(const double *origin, int origin_ld, const double *first_pnt, int first_ld, const double *second_pnt, int second_ld, double *pm_out, const char *axis_order) noexcept->void
 		{
-			int Order[3];
-			double Axis1[3], Axis2[3], Axis3[3];
-			double nrm;
+			pm_out[12] = 0;
+			pm_out[13] = 0;
+			pm_out[14] = 0;
+			pm_out[15] = 1;
+			
+			// 以下求解位置 //
+			s_vc(3, origin, origin_ld, pm_out + 3, 4);
+			
+			// 以下求解角度 //
+			int order[3]{ axis_order[0] - 'x', axis_order[1] - 'x', 3 + 'x' + 'x' - axis_order[0] - axis_order[1] };
 
-			Order[0] = axesOrder[0] - 'w';//asc玛顺序 uvw  xyz...
-			Order[1] = axesOrder[1] - 'w';
-			Order[2] = 6 - Order[1] - Order[0];
+			s_vc(3, first_pnt, first_ld, pm_out + order[0], 4);
+			s_vc(3, second_pnt, second_ld, pm_out + order[1], 4);
 
-			std::copy_n(firstAxisPnt, 3, Axis1);
-			std::copy_n(secondAxisPnt, 3, Axis2);
+			s_va(3, -1.0, origin, origin_ld, pm_out + order[0], 4);
+			s_va(3, -1.0, origin, origin_ld, pm_out + order[1], 4);
 
-			s_va(3, -1.0, origin, Axis1);
-			s_va(3, -1.0, origin, Axis2);
+			double alpha = (((order[1] - order[0] + 3) % 3) == 1) ? 1.0 : -1.0;
 
-			nrm = s_norm(3, Axis1, 1);
-			if (nrm != 0)
-			{
-				for (int i = 0; i < 3; ++i)
-				{
-					Axis1[i] = Axis1[i] / nrm;
-				}
-			}
-			else
-			{
-				Axis1[Order[0]] = 1;
-			}
+			s_c3(alpha, pm_out + order[0], 4, pm_out + order[1], 4, pm_out + order[2], 4);
 
-			nrm = s_norm(3, Axis2, 1);
-			if (nrm != 0)
-			{
-				for (int i = 0; i < 3; ++i)
-				{
-					Axis2[i] = Axis2[i] / nrm;
-				}
-			}
-			else
-			{
-				Axis2[Order[1]] = 1;
-			}
-
-			//下求差乘计算。首先要判断差乘之后的正负号。
-			s_c3(Axis1, Axis2, Axis3);
-
-			nrm = s_norm(3, Axis3, 1);
+			double nrm = s_norm(3, pm_out + order[2], 4);
 			if (nrm == 0)
 			{
-				//有待补充
-			}
-			else
-			{
-				for (int i = 0; i < 3; ++i)
+				if (s_norm(3, pm_out + order[0], 4) == 0)
 				{
-					Axis3[i] = Axis3[i] / nrm;
-				}
-			}
-
-			//判断第三根轴的正负号
-			if (Order[1]>Order[0])
-			{
-				if ((Order[1] - Order[0]) == 1)
-				{
+					s_mc(3, 3, default_rm(), 3, pm_out, 4);
+					return;
 				}
 				else
 				{
-					s_nv(3, -1, Axis3, 1);
-				}
-			}
-			else
-			{
-				if ((Order[1] - Order[0]) == -1)
-				{
-					s_nv(3, -1, Axis3, 1);
-				}
-				else
-				{
-				}
-			}
+					double rm[9];
+					s_c3_n(3, pm_out + order[0], 4, default_rm(), 3, rm, 3);
+					double norm[3];
+					norm[0] = s_norm(3, rm, 3);
+					norm[1] = s_norm(3, rm + 1, 3);
+					norm[2] = s_norm(3, rm + 2, 3);
 
-			s_c3(Axis3, Axis1, Axis2);
-
-			if (Order[0]>Order[2])
-			{
-				if ((Order[0] - Order[2]) == 1)
-				{
-				}
-				else
-				{
-					s_nv(3, -1, Axis2, 1);
+					int max_id = std::max_element(norm, norm + 3) - norm;
+					s_vc(3, 1.0 / norm[max_id], rm + max_id, 3, pm_out + order[1], 4);
+					s_c3(alpha, pm_out + order[0], 4, pm_out + order[1], 4, pm_out + order[2], 4);
 				}
 			}
 			else
 			{
-				if ((Order[0] - Order[2]) == -1)
-				{
-					s_nv(3, -1, Axis2, 1);
-				}
-				else
-				{
-				}
+				s_nv(3, 1.0 / nrm, pm_out + order[2], 4);
+				s_nv(3, 1.0 / s_norm(3, pm_out + order[0], 4), pm_out + order[0], 4);
+
+				s_c3(alpha, pm_out + order[2], 4, pm_out + order[0], 4, pm_out + order[1], 4);
 			}
 
-			nrm = s_norm(3, Axis2, 1);
-			for (int i = 0; i < 3; ++i)
-			{
-				Axis2[i] = Axis2[i] / nrm;
-			}
-
-			std::fill_n(pm_out, 16, 0);
-
-			pm_out[3] = origin[0];
-			pm_out[7] = origin[1];
-			pm_out[11] = origin[2];
-
-			pm_out[0 + Order[0] - 1] = Axis1[0];
-			pm_out[4 + Order[0] - 1] = Axis1[1];
-			pm_out[8 + Order[0] - 1] = Axis1[2];
-
-			pm_out[0 + Order[1] - 1] = Axis2[0];
-			pm_out[4 + Order[1] - 1] = Axis2[1];
-			pm_out[8 + Order[1] - 1] = Axis2[2];
-
-			pm_out[0 + Order[2] - 1] = Axis3[0];
-			pm_out[4 + Order[2] - 1] = Axis3[1];
-			pm_out[8 + Order[2] - 1] = Axis3[2];
-
-			pm_out[15] = 1;
+			
 		}
 		auto s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void
 		{

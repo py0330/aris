@@ -1164,6 +1164,7 @@ void test_constraint()
 	
 	// test universal joints //
 	{
+		//const double relative_pe[6]{ 0,0,0,0,0,0 };
 		const double relative_pe[6]{ 0,0,0,0.856,PI / 2,0.972 };
 		const double relative_ve[6]{ 0,0,0,0.157,0,0.895 };
 
@@ -1532,7 +1533,7 @@ void test_kinematic()
 			Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1> >xm(x, n);
 			xm = Dm.partialPivLu().solve(bm);
 		});
-		m.kin();
+		m.kinPos();
 		
 
 	}

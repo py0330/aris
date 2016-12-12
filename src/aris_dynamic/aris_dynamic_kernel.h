@@ -85,6 +85,10 @@ namespace aris
 		auto s_sov_um(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
 		auto s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
 
+		// tau must have same size with max(m,n)
+		auto s_householder_qr(int m, int n, const double *A, double *Q, double *R, double *tau, int *P, double error = 1e-10)noexcept->void;
+		auto s_householder(int m, int n, const double *A, double *U, double *tau, int *P, double error = 1e-10)noexcept->void;
+
 		auto inline s_nv(int n, double alpha, double *x) noexcept->void  { for (int i{ 0 }; i < n; ++i)x[i] *= alpha; }
 		auto inline s_nv(int n, double alpha, double *x, int x_ld) noexcept->void { for (int i{ 0 }, end{ n*x_ld }; i < end; i += x_ld)x[i] *= alpha; }
 		auto inline s_vc(int n, const double *x, double *y) noexcept->void { std::copy(x, x + n, y); }
@@ -1033,10 +1037,16 @@ namespace aris
 		
 		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		///
+		/// 这里原点origin为位姿矩阵pm_out的点,first_pnt位于第一根坐标轴,second_pnt位于第一根坐标轴和第二根坐标轴所构成的平面内
+		///
+		///
+		auto s_sov_axes2pm(const double *origin, int origin_ld, const double *first_pnt, int first_ld, const double *second_pnt, int second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
+		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
+		///
 		/// 这里原点origin为位姿矩阵pm_out的点,firstAxisPnt位于第一根坐标轴,secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
 		///
 		///
-		auto s_axes2pm(const double *origin, const double *firstAxisPnt, const double *secondAxisPnt, double *pm_out, const char *axesOrder = "xy") noexcept->void;
+		auto inline s_sov_axes2pm(const double *origin, const double *first_pnt, const double *second_pnt, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_axes2pm(origin, 1, first_pnt, 1, second_pnt, 1, pm_out, axis_order); };
 		/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程,该方程有2个根
 		///
 		///
@@ -1081,6 +1091,32 @@ namespace aris
 			}
 		}
 		auto dlmwrite(const char *filename, const double *mtx, const int m, const int n)->void;
+		auto inline dlmwrite(const char *filename, const BlockMatrix &mtx, const BlockSize &m, const BlockSize &n)->void
+		{
+			std::ofstream file;
+
+			file.open(filename);
+
+			file << std::setprecision(15);
+
+			for (std::size_t blk_i = 0; blk_i < m.size(); ++blk_i)
+			{
+				for (int i = 0; i < m[blk_i]; ++i)
+				{
+					for (std::size_t blk_j = 0; blk_j < n.size(); ++blk_j)
+					{
+						for (int j = 0; j < n[blk_j]; ++j)
+						{
+							//std::cout << "blk:" << blk_i << "," << blk_j << "  inner:" << i << "," << j << std::endl;
+							
+							double a = mtx[blk_i][blk_j].empty() ? 0.0 : mtx[blk_i][blk_j].at(i*n[blk_j] + j);
+							file << a << "   ";
+						}
+					}
+					file << std::endl;
+				}
+			}
+		}
 		auto dlmread(const char *filename, double *mtx)->void;
 
 		auto s_is_equal(int n, const double *v1, const double *v2, double error, int ld_v1 = 1, int ld_v2 = 1) noexcept->bool;

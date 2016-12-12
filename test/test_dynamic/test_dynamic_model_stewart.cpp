@@ -22,30 +22,8 @@ const char xml_file[] =
 "            <Mot_friction type=\"MatrixVariable\">{0, 0, 0}</Mot_friction>"
 "        </variable_pool>"
 "        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
-"            <m1_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-"            <m2_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-"            <m3_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-"            <m4_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-"            <m5_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-"            <m6_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
 "        </akima_pool>"
 "        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
-"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
-"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-"                    <u1o pe=\"{ 1,0,0,0,0,0 }\"/>"
-"                    <u2o pe=\"{ 1,0,0,0,0,0 }\"/>"
-"                    <u3o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
-"                    <u4o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
-"                    <u5o pe=\"{ -1,0,0,0,0,0 }\"/>"
-"                    <u6o pe=\"{ -1,0,0,0,0,0 }\"/>"
-"                    <u1j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
-"                    <u2j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
-"                    <u3j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
-"                    <u4j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
-"                    <u5j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
-"                    <u6j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
-"                </marker_pool>"
-"            </ground>"
 "            <p1a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pa.xmt_txt\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <u1i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
@@ -128,6 +106,22 @@ const char xml_file[] =
 "                    <s6i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
 "                </marker_pool>"
 "            </up>"
+"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <u1o pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                    <u2o pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                    <u3o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
+"                    <u4o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
+"                    <u5o pe=\"{ -1,0,0,0,0,0 }\"/>"
+"                    <u6o pe=\"{ -1,0,0,0,0,0 }\"/>"
+"                    <u1j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                    <u2j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                    <u3j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
+"                    <u4j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
+"                    <u5j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                    <u6j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                </marker_pool>"
+"            </ground>"
 "        </part_pool>"
 "        <joint_pool type=\"JointPoolObject\">"
 "            <u1 active=\"true\" type=\"UniversalJoint\" prt_m=\"p1a\" prt_n=\"ground\" mak_i=\"u1i\" mak_j=\"u1j\"/>"
@@ -353,7 +347,32 @@ private:
 void test_model_stewart()
 {
 	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
+	
+	try 
+	{
+		Robot rbt;
 
+		rbt.loadString(xml_file);
+		double pee[6]{ 0,1.5,1.2,0,0.1,0 };
+		double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+		rbt.setVee(vee, pee);
+
+		rbt.motionAtAbs(0).setMp(rbt.motionAtAbs(0).mp() + 0.1);
+		rbt.motionAtAbs(1).setMp(rbt.motionAtAbs(1).mp() + 0.085);
+
+		std::cout << rbt.motionAtAbs(0).mp() << std::endl;
+		std::cout << rbt.motionAtAbs(1).mp() << std::endl;
+
+		rbt.allocateMemory();
+		rbt.kinPos();
+		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
+	}
+	catch (std::exception&e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+	
+	/*
 	try 
 	{
 		Robot rbt;
@@ -451,7 +470,7 @@ void test_model_stewart()
 	{
 		std::cout << e.what() << std::endl;
 	}
-
+	*/
 	std::cout << "-----------------test model stewart finished------------" << std::endl << std::endl;
 }
 

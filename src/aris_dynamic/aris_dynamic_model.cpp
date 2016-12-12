@@ -724,7 +724,7 @@ namespace aris
 			s_inv_tv(*makI().fatherPart().pm(), vm_cross_vn, tem);
 			s_mmTN(dim(), 1, 6, -1.0, prtCmPtrI(), tem, ca);
 		}
-		auto Constraint::cptCp(double *ce)const->void
+		auto Constraint::cptCp(double *cp)const->void
 		{
 			double pq_j2i[7];
 			double pm_j2i[4][4];
@@ -744,9 +744,10 @@ namespace aris
 				s_nv(3, theta / std::sin(theta / 2.0), pq_j2i + 3);
 			}
 
+			// 此时位移差值在makI()坐标系中。需要转换到部件坐标系下。
 			s_tv(*makI().prtPm(), pq_j2i, diff);
 
-			s_mmTN(dim(), 1, 6, prtCmPtrI(), diff, ce);
+			s_mmTN(dim(), 1, 6, prtCmPtrI(), diff, cp);
 		}
 		auto Constraint::cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld, int cmJ_ld)const->void
 		{
@@ -1491,6 +1492,7 @@ namespace aris
 			int row_id_;
 			std::string graphic_file_path_;
 		};
+		auto Part::adamsID()const->std::size_t { return (this == &this->model().ground()) ? 1 : id() + (this->model().ground().id() < id() ? 1 : 2); }
 		auto Part::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			DynEle::saveXml(xml_ele);
@@ -1560,7 +1562,7 @@ namespace aris
 				file << "! ****** cm and mass for current part ******\r\n"
 					<< "marker create  &\r\n"
 					<< "    marker_name = ." << model().name() << "." << this->name() << ".cm  &\r\n"
-					<< "    adams_id = " << id() + model().markerSize() << "  &\r\n"
+					<< "    adams_id = " << adamsID() + model().markerSize() << "  &\r\n"
 					<< "    location = ({" << pe[0] << "," << pe[1] << "," << pe[2] << "})  &\r\n"
 					<< "    orientation = (" << "{0,0,0}" << ")\r\n"
 					<< "!\r\n";
@@ -2293,6 +2295,7 @@ namespace aris
 		auto Motion::saveAdams(std::ofstream &file) const->void
 		{
 			std::string s;
+			std::stringstream mot_func;
 
 			switch (axis())
 			{
@@ -2318,37 +2321,39 @@ namespace aris
 
 			if (model().akimaPool().findByName(this->name() + "_akima") == model().akimaPool().end())
 			{
-				file << "constraint create motion_generator &\r\n"
-					<< "    motion_name = ." << model().name() << "." << this->name() << "  &\r\n"
-					<< "    adams_id = " << adamsID() << "  &\r\n"
-					<< "    i_marker_name = ." << model().name() << "." << this->makI().fatherPart().name() << "." << this->makI().name() << "  &\r\n"
-					<< "    j_marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << "  &\r\n"
-					<< "    axis = " << s << "  &\r\n"
-					<< "    function = \"" << this->mp() << "\"  \r\n"
-					<< "!\r\n";
+				mot_func << this->mp() << " + " << this->mv() << " * time + " << this->ma()*0.5 << " * time * time";
 			}
 			else
 			{
-				file << "constraint create motion_generator &\r\n"
-					<< "    motion_name = ." << model().name() << "." << this->name() << "  &\r\n"
-					<< "    adams_id = " << adamsID() << "  &\r\n"
-					<< "    i_marker_name = ." << model().name() << "." << this->makI().fatherPart().name() << "." << this->makI().name() << "  &\r\n"
-					<< "    j_marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << "  &\r\n"
-					<< "    axis = " << s << "  &\r\n"
-					<< "    function = \"AKISPL(time,0," << this->name() << "_akima)\"  \r\n"
-					<< "!\r\n";
+				mot_func << "AKISPL(time,0," << this->name() << "_akima)";
 			}
+
+			file << "constraint create motion_generator &\r\n"
+				<< "    motion_name = ." << model().name() << "." << this->name() << "  &\r\n"
+				<< "    adams_id = " << adamsID() << "  &\r\n"
+				<< "    i_marker_name = ." << model().name() << "." << this->makI().fatherPart().name() << "." << this->makI().name() << "  &\r\n"
+				<< "    j_marker_name = ." << model().name() << "." << this->makJ().fatherPart().name() << "." << this->makJ().name() << "  &\r\n"
+				<< "    axis = " << s << "  &\r\n"
+				<< "    function = \"" << mot_func.str() << "\"  \r\n"
+				<< "!\r\n";
+
+		}
+		auto Motion::cptCp(double *cp)const->void
+		{
+			Constraint::cptCp(cp);
+			cp[0] += mp();
+		}
+		auto Motion::cptCv(double *cv)const->void
+		{
+			Constraint::cptCp(cv);
+			cv[0] += mv();
 		}
 		auto Motion::cptCa(double *ca)const->void
 		{
 			Constraint::cptCa(ca);
 			ca[0] += ma();
 		}
-		auto Motion::cptCp(double *ce)const->void
-		{
-			Constraint::cptCp(ce);
-			ce[0] += mp();
-		}
+		
 		auto Motion::updCa()->void
 		{
 			Constraint::updCa();
@@ -2536,9 +2541,9 @@ namespace aris
 			aris::core::RefPool<Part> active_part_pool_;
 			aris::core::RefPool<Constraint> active_constraint_pool_;
 			BlockSize p_size_, c_size_;
-			BlockMatrix im_, cm_, cp_, cv_, ca_;
-			BlockMatrix cct_, ctc_, ccp_, ccv_, cca_;
-			BlockMatrix cct_llt_, cct_x_, ctc_llt_, ctc_x_;
+			BlockMatrix im_, cm_, cp_, cv_, ca_, pp_, pv_, pa_;
+			BlockMatrix cct_, ctc_;
+			BlockMatrix cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
 
 			std::function<void(int dim, const double *D, const double *b, double *x)> dyn_solve_method_{ nullptr };
 			std::function<void(int n, double *A)> clb_inverse_method_{ nullptr };
@@ -2781,21 +2786,22 @@ namespace aris
 			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->cp_);
 			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->cv_);
 			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->ca_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->pp_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->pv_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->pa_);
 
 			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->cct_);
 			aris::dynamic::s_blk_allocate(imp_->c_size_, imp_->c_size_, imp_->ctc_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->ccp_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->ccv_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->cca_);
 
 			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->cct_llt_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, {1}, imp_->cct_x_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->cct_x_);
+			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->cct_b_);
+			aris::dynamic::s_blk_allocate(imp_->c_size_, imp_->c_size_, imp_->ctc_llt_);
+			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->ctc_x_);
+			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->ctc_b_);
 
 			imp_->cm_[ground().rowID()][0].resize(36, 0);
 			for (int i = 0; i < 6; ++i)imp_->cm_[ground().rowID()][0].data()[i * 6 + i] = 1.0;
-
-			// init memory //
-			// tbd
 		}
 		auto Model::activePartPool()->aris::core::RefPool<Part>& { return imp_->active_part_pool_; }
 		auto Model::activeConstraintPool()->aris::core::RefPool<Constraint>& { return imp_->active_constraint_pool_; }
@@ -2816,7 +2822,7 @@ namespace aris
 				prt.cptGlbIm(imp_->im_[prt.rowID()][prt.rowID()].data());
 			}
 		}
-		auto Model::cptGlbCm()->void 
+		auto Model::cptGlbCm()->void
 		{
 			for (auto &cst : activeConstraintPool())
 			{
@@ -2825,17 +2831,92 @@ namespace aris
 				cst.cptGlbCm(imp_->cm_[cst.makI().fatherPart().rowID()][cst.colID()].data(), imp_->cm_[cst.makJ().fatherPart().rowID()][cst.colID()].data());
 			}
 		}
-		auto Model::cptCp()->void 
+		auto Model::cptCp()->void
 		{
-			imp_->cp_[0][0].resize(6);
+			imp_->cp_[0][0].resize(6, 0.0);
 			for (auto &cst : activeConstraintPool())
 			{
 				imp_->cp_[cst.colID()][0].resize(cst.dim());
 				cst.cptCp(imp_->cp_[cst.colID()][0].data());
 			}
 		}
-		auto Model::cptCv()->void {}
+		auto Model::cptCv()->void 
+		{
+			imp_->cv_[0][0].resize(6, 0.0);
+			for (auto &cst : activeConstraintPool())
+			{
+				imp_->cv_[cst.colID()][0].resize(cst.dim());
+				cst.cptCv(imp_->cv_[cst.colID()][0].data());
+			}
+		}
 		auto Model::cptCa()->void {}
+		auto Model::setPartP()->void
+		{
+			for (auto &prt : activePartPool())
+			{
+				double pm[4][4];
+				double pq[7];
+
+				s_vc(6, imp_->pp_[prt.rowID()][0].data(), pq);
+
+				double theta = s_norm(3, pq + 3);
+				pq[6] = std::cos(theta / 2);
+
+				double factor = theta < 1e-4 ? 0.5 : std::sin(theta / 2) / theta;
+				s_nv(3, factor, pq + 3);
+
+				s_pq2pm(pq, *pm);
+
+				double final_pm[4][4];
+				s_pm2pm(*pm, *prt.pm(), *final_pm);
+
+				prt.setPm(*final_pm);
+			}
+		}
+		auto Model::setPartV()->void
+		{
+		}
+		auto Model::setPartA()->void
+		{
+		}
+		auto Model::setConstraintF()->void
+		{
+		}
+
+		auto Model::kinPos(double error)->void
+		{
+			for (;;)
+			{
+				cptGlbCm();
+				cptCp();
+				s_blk_mmNT(pSize(), pSize(), cSize(), glbCm(), glbCm(), imp_->cct_);
+				s_blk_mm(pSize(), { 1 }, cSize(), glbCm(), cp(), imp_->cct_b_);
+
+				if (s_blk_norm(cSize(), cp()) < error)
+				{
+					std::cout << "norm and break:" << s_blk_norm(cSize(), cp()) << std::endl;
+					break;
+				}
+				else
+				{
+					std::cout << "norm:" << s_blk_norm(cSize(), cp()) << std::endl;
+				}
+
+				s_blk_llt(pSize(), imp_->cct_, imp_->cct_llt_);
+				s_blk_sov_lm(pSize(), { 1 }, imp_->cct_llt_, imp_->cct_b_, imp_->cct_x_);
+				s_blk_sov_um(pSize(), { 1 }, imp_->cct_llt_, imp_->cct_x_, imp_->pp_);
+
+				setPartP();
+			}
+		}
+		auto Model::kinVel()->void
+		{
+			cptCv();
+
+
+
+		}
+
 
 		auto Model::kinPre()->void
 		{
@@ -2865,53 +2946,7 @@ namespace aris
 				}
 			}
 		}
-		auto Model::kin()->void
-		{
-			const double error{ 1e-6 };
-
-			for (;;)
-			{
-				cptGlbCm();
-				cptCp();
-				s_blk_mmNT(pSize(), pSize(), cSize(), glbCm(), glbCm(), imp_->cct_);
-				s_blk_mm(pSize(), { 1 }, cSize(), glbCm(), cp(), imp_->ccp_);
-				
-				if (s_blk_norm(cSize(), cp()) < error)
-				{
-					std::cout << "norm and break:" << s_blk_norm(cSize(), cp()) << std::endl;
-					break;
-				}
-				else
-				{
-					std::cout << "norm:" << s_blk_norm(cSize(), cp()) << std::endl;
-				}
-
-				s_blk_llt(pSize(), imp_->cct_, imp_->cct_llt_);
-				s_blk_sov_lm(pSize(), { 1 }, imp_->cct_llt_, imp_->ccp_, imp_->cct_x_);
-				s_blk_sov_um(pSize(), { 1 }, imp_->cct_llt_, imp_->cct_x_, imp_->cct_x_);
-
-				for (auto &prt : activePartPool())
-				{
-					double pm[4][4];
-					double pq[7];
-
-					s_vc(6, imp_->cct_x_[prt.rowID()][0].data(), pq);
-
-					double theta = s_norm(3, pq + 3);
-					pq[6] = std::cos(theta / 2);
-
-					double factor = theta < 1e-4 ? 0.5 : std::sin(theta / 2) / theta;
-					s_nv(3, factor, pq + 3);
-
-					s_pq2pm(pq, *pm);
-
-					double final_pm[4][4];
-					s_pm2pm(*pm, *prt.pm(), *final_pm);
-
-					prt.setPm(*final_pm);
-				}
-			}			
-		}
+		
 		auto Model::kinCe(double *ce)const->void
 		{
 			for (auto &jnt : jointPool())
@@ -4430,43 +4465,54 @@ namespace aris
 
 			ca[3] += 2 * jwm*iwn - jwm*iwm - jwn*iwn;
 		}
-		auto UniversalJoint::cptCp(double *ce)const->void
+		auto UniversalJoint::cptCp(double *cp)const->void
 		{
-			double pq_n2m[7];
-			double pm_n2m[4][4];
+			double pm_t[16];
+
+			double origin[3]{ 0,0,0 };
+
+			const double *pm_i = *makI().pm();
+			const double *pm_j = *makJ().pm();
+
+			double v[3], new_z[3];
+			s_c3(pm_i + 2, 4, pm_j + 2, 4, v, 1);
+			if (s_norm(3, v) == 0)s_vc(3, pm_i, 4, new_z, 1);
+			else s_c3(v, 1, pm_i + 2, 4, new_z, 1);
+			
+			s_sov_axes2pm(origin, 1, new_z, 1, pm_j, 4, pm_t, "zx");
+			s_vc(3, pm_i + 3, 4, pm_t + 3, 4);
+
+			double pq_j2i[7];
+			double pm_j2i[4][4];
 			double diff[6];
 
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_n2m);
-			s_pm2pq(*pm_n2m, pq_n2m);
+			s_inv_pm_dot_pm(pm_t, pm_j, *pm_j2i);
+			s_pm2pq(*pm_j2i, pq_j2i);
 
-			double theta = atan2(s_norm(3, pq_n2m + 3, 1), pq_n2m[6]) * 2;
+			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
 
 			if (theta < 1e-3)
 			{
-				s_nv(3, 2.0, pq_n2m + 3);
+				s_nv(3, 2.0, pq_j2i + 3);
 			}
 			else
 			{
-				s_nv(3, theta / std::sin(theta / 2.0), pq_n2m + 3);
+				s_nv(3, theta / std::sin(theta / 2.0), pq_j2i + 3);
 			}
 
+			// 此时位移差值在makI()坐标系中。需要转换到部件坐标系下。
+			double diff2[6];
+			s_tv(pm_t, pq_j2i, diff2);
+			s_inv_tv(*makI().fatherPart().pm(), diff2, diff);
 
-			//s_nv(3, 2.0, pq_n2m + 3);
-			s_tv(*makI().pm(), pq_n2m, diff);
+			s_mmTN(dim(), 1, 6, prtCmPtrI(), diff, cp);
 
-
-
-			//s_pm_dot_v3(*makI().pm(), pq_n2m, diff);
-			//s_pm_dot_v3(*makI().pm(), pq_n2m + 3, diff + 3);
-			//s_nv(3, 2.0, diff + 3);
-
-			//dsp(glbCmPtrI(), 6, dim());
-			//dsp(diff, 1, 6);
-
-			s_mmTN(dim(), 1, 6, glbCmPtrI(), diff, ce);
 		}
 		auto UniversalJoint::cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld, int cmJ_ld)const->void
 		{
+			cmI_ld = std::max(cmI_ld, static_cast<int>(dim()));
+			cmJ_ld = std::max(cmJ_ld, static_cast<int>(dim()));
+			
 			double tem[3];
 			const double axis_i_m[3]{ makI().prtPm()[0][2] ,makI().prtPm()[1][2] ,makI().prtPm()[2][2] };
 			double axis_j_m[3];
@@ -4479,6 +4525,9 @@ namespace aris
 		}
 		auto UniversalJoint::cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld, int cmJ_ld)const->void
 		{
+			cmI_ld = std::max(cmI_ld, static_cast<int>(dim()));
+			cmJ_ld = std::max(cmJ_ld, static_cast<int>(dim()));
+			
 			double axis_i_g[3], axis_j_g[3];
 			s_pm_dot_v3(*makI().fatherPart().pm(), &makI().prtPm()[0][2], 4, axis_i_g, 1);
 			s_pm_dot_v3(*makJ().fatherPart().pm(), &makJ().prtPm()[0][2], 4, axis_j_g, 1);
@@ -4487,6 +4536,7 @@ namespace aris
 			s_c3(axis_i_g, 1, axis_j_g, 1, glb_cmI + 3 * cmI_ld + 3, cmI_ld);
 			
 			s_tf_n(3, *makI().fatherPart().pm(), prtCmPtrI(), dim(), glb_cmI, cmI_ld);
+
 			s_mc(6, 4, -1.0, glb_cmI, cmI_ld, glb_cmJ, cmJ_ld);
 		}
 		auto UniversalJoint::updPrtCm()->void

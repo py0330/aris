@@ -81,6 +81,56 @@ void test_blk()
 
 
 }
+void test_mtx_householder() 
+{
+	const int P[]{ 1,2,3,4,5 };
+	
+	const double A[]{ 0.8147,0.0975,0.1576,0.1419,0.6557,0.7577,
+		0.9058,0.2785,0.9706,0.4218,0.0357,0.7431,
+		0.1270,0.5469,0.9572,0.9157,0.8491,0.3922,
+		0.9134,0.9575,0.4854,0.7922,0.9340,0.6555,
+		0.6324,0.9649,0.8003,0.9595,0.6787,0.1712 };
+	const double Q[]
+	{
+		-0.492666858742303, - 0.480667841387474,0.177953454506114,0.656659986061627,0.25173006035788,
+		- 0.547757015648433, - 0.358349168353002, - 0.57774356601946, - 0.475777233310347, - 0.106754491874129,
+		- 0.0767996698910918,0.475432019801101, - 0.634320532325754,0.554658862728443, - 0.240950645401142,
+		- 0.552352901405695,0.339054939876482,0.480845521478708, - 0.0718314601196047, - 0.586153432016755,
+		- 0.382426072749027,0.547312015298238,0.0311446094260189, - 0.172126332392726,0.723603756065892,
+	};
+	const double R[]
+	{
+		-1.65365294121832, - 1.14046790774039, - 1.25697758470928, - 1.1757905794716, - 1.18325736992819, - 1.23799141825475,
+		0,0.966094882200634,0.634107648406748,1.0097398566765,0.763860337732694, - 0.128076522148321,
+		0,0,-0.881556607241129, - 0.388478877543586,0.0277046342935185 ,- 0.222740227744911,
+		0,0,0,0.178338236974704,0.700634820427496,0.284984865114035,
+		0,0,0,0,-0.0997003640550825,-0.243436850953329,
+	};
+	const double U[]
+	{
+		-1.65365294121832, - 1.14046790774039, - 1.25697758470928, - 1.1757905794716, - 1.18325736992819, - 1.23799141825475,
+		0.366965349595799,0.966094882200634,0.634107648406748,1.0097398566765,0.763860337732694, - 0.128076522148321,
+		0.0514513130919259, - 0.423163816226815, - 0.881556607241129, - 0.388478877543586,0.0277046342935185, - 0.222740227744911,
+		0.370044325812324, - 0.437343928487383, - 0.0698283162531727,0.178338236974704,0.700634820427497,0.284984865114035,
+		0.256203231490819, - 0.567244456473452,0.197960951688692,0.489745227556259, - 0.0997003640550822, - 0.243436850953329
+	};
+	const double tau[]
+	{
+		0.669941852157543,
+		0.84605180027414,
+		0.522032266072123,
+		0.619925193957066,
+	};
+
+	double result1[36], result2[36], result3[36];
+	int result_int[36];
+
+	s_householder(5, 6, A, result1, result2, result_int);
+	if (!(s_is_equal(30, result1, U, error) && s_is_equal(4, result2, tau, error)))std::cout << "\"s_householder\" failed" << std::endl;
+
+	s_householder_qr(5, 6, A, result1, result2, result3, result_int);
+	if (!(s_is_equal(25, result1, Q, error) && s_is_equal(30, result2, R, error)))std::cout << "\"s_householder_qr\" failed" << std::endl;
+}
 void test_mtx_solver()
 {
 	const double A[]{ 1.82553083943141,1.42060601118548,1.36736238745112,1.50658906468564,1.86464891726001,1.04079482779702,
@@ -2149,7 +2199,58 @@ void test_solve()
 {
 	double result[36], result2[36], result3[36];
 	
-	
+	const double pm[16]{ -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
+		0.175499782797526, -0.04, -0.983666521865018, 0.2,
+		0.959583152331272, -0.216333478134982,   0.18, 0.3,
+		0,0,0,1 };
+	const double origin[]{ 0.1,0.2,0.3 };
+	const double first_pnt[]{ -0.12,0.375499782797526, 1.259583152331272 };
+	const double second_pnt[]{ -0.875499782797526,0.16, 0.083666521865018 };
+	const double origin_1[]{ 0.1,0,0.2,0,0.3,0 };
+	const double first_pnt_1[]{ -0.12,0,0,0.375499782797526,0,0, 1.259583152331272,0,0 };
+	const double second_pnt_1[]{ -0.875499782797526,0,0,0,0.16,0,0,0, 0.083666521865018,0,0,0 };
+
+
+	const double pm_2[]{ -0.220000000000000, -0.974711186851828, -0.039218646405775,0.100000000000000,
+		0.175499782797526,   0.000000000000000, -0.984479469688434,0.200000000000000,
+		0.959583152331272, -0.223468347257282,   0.171061601582815,0.300000000000000,
+		0.000000000000000,0.000000000000000,0.000000000000000,1.000000000000000 };
+	const double origin_2[]{ 0.1,0.2,0.3 };
+	const double first_pnt_2[]{ -0.12,0.375499782797526, 1.259583152331272 };
+	const double second_pnt_2[]{ -0.12,0.375499782797526, 1.259583152331272 };
+	const double pm_3[]{ -0.974711186851828, - 0.220000000000000,0.039218646405775,0.100000000000000,
+		0.000000000000000,0.175499782797526,0.984479469688434,0.200000000000000,
+		- 0.223468347257282,0.959583152331272, - 0.171061601582815,0.300000000000000,
+		0.000000000000000,0.000000000000000,0.000000000000000,1.000000000000000 };
+	const double origin_3[]{ 0.1,0,0.2,0,0.3,0 };
+	const double first_pnt_3[]{ -0.12,0,0,0.375499782797526,0,0, 1.259583152331272,0,0 };
+	const double second_pnt_3[]{ -0.12,0,0,0,0.375499782797526,0,0,0, 1.259583152331272,0,0,0 };
+
+	s_sov_axes2pm(origin, first_pnt, second_pnt, result, "xy");
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+
+	s_sov_axes2pm(origin, second_pnt, first_pnt, result, "yx");
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+
+	s_sov_axes2pm(origin_1, 2, first_pnt_1, 3, second_pnt_1, 4, result, "xy");
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+
+	s_sov_axes2pm(origin_1, 2, second_pnt_1, 4, first_pnt_1, 3, result, "yx");
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+
+	s_sov_axes2pm(origin, first_pnt_2, second_pnt_2, result, "xy");
+	if (!s_is_equal(16, pm_2, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+
+	s_sov_axes2pm(origin, second_pnt_2, first_pnt_2, result, "yx");
+	if (!s_is_equal(16, pm_3, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+
+	s_sov_axes2pm(origin_1, 2, first_pnt_3, 3, second_pnt_3, 4, result, "xy");
+	if (!s_is_equal(16, pm_2, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+
+	s_sov_axes2pm(origin_1, 2, second_pnt_3, 4, first_pnt_3, 3, result, "yx");
+	if (!s_is_equal(16, pm_3, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+
+
 	const double ab[2] = { 2.46823966120654, -1.28551725555848 };
 	const double vab[2] = { 5.886, -2.65 };
 	const double aab[2] = { -1.234, 3.875 };
@@ -2157,12 +2258,11 @@ void test_solve()
 	const double vp31[3]{ 2.88069659757518,   0.954878838208465, - 0.745776923914583 };
 	const double ap31[3]{ -18.6788800017547,   25.144386102382,   7.82919554768749 };
 	
-
 	s_sov_ab(pp31, result, "31");
 	if (!s_is_equal(2, ab, result, error))std::cout << "\"s_sov_ab\" failed" << std::endl;
 
 	s_sov_vab(pp31, vp31, result, result2, "31");
-	if (!(s_is_equal(2, vab, result, error)&& s_is_equal(2, ab, result2, error)))std::cout << "\"s_sov_vab\" failed" << std::endl;
+	if (!(s_is_equal(2, vab, result, error) && s_is_equal(2, ab, result2, error)))std::cout << "\"s_sov_vab\" failed" << std::endl;
 
 	s_sov_aab(pp31, vp31, ap31, result, result2, result3, "31");
 	if (!(s_is_equal(2, aab, result, error) && s_is_equal(2, vab, result2, error) && s_is_equal(2, ab, result3, error)))std::cout << "\"s_sov_aab\" failed" << std::endl;
@@ -2205,6 +2305,7 @@ void test_kernel()
 	}
 
 	test_blk();
+	test_mtx_householder();
 	test_mtx_solver();
 	test_mtx_and_vec();
 	test_pm_operation();

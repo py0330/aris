@@ -180,7 +180,7 @@ namespace aris
 		public:
 			auto virtual dim() const->std::size_t = 0;
 			auto virtual cptCp(double *ce)const->void;
-			auto virtual cptCv(double *cv)const->void {};
+			auto virtual cptCv(double *cv)const->void { std::fill(cv, cv + dim(), 0.0); };
 			auto virtual cptCa(double *ca)const->void;
 			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void;
 			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void;
@@ -403,7 +403,8 @@ namespace aris
 		public:
 			auto static Type()->const std::string &{ static const std::string type{ "Part" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string &{ static const std::string type{ "part" }; return type; }
+			auto virtual adamsType()const->const std::string & override{ static const std::string type{ "part" }; return type; }
+			auto virtual adamsID()const->std::size_t override;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto rowID()const->std::size_t;
@@ -540,10 +541,11 @@ namespace aris
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual dim() const ->std::size_t override { return 1; }
+
 			
-			
+			auto virtual cptCp(double *cp)const->void override;
+			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
-			auto virtual cptCp(double *ce)const->void override;
 			
 			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
 			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
@@ -725,14 +727,17 @@ namespace aris
 			auto cptCa()->void;
 			auto cptGlbIm()->void;
 			auto cptGlbCm()->void;
+
+			auto setPartP()->void;
+			auto setPartV()->void;
+			auto setPartA()->void;
+			auto setConstraintF()->void;
 			
-			
 
-
-
-
+			auto virtual kinPos(double error = 1e-10)->void;
+			auto virtual kinVel()->void;
 			auto virtual kinPre()->void;
-			auto virtual kin()->void;
+			
 			auto kinUpd()->void;
 			auto kinCe(double *ce)const->void;
 			auto kinGlbCmT(double *glb_cmT, int ld = 0, bool is_mtx_inited = false)const->void;
@@ -988,11 +993,10 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string& override{ static const std::string type("universal"); return type; }
 			auto virtual cptCa(double *ca)const->void override;
-			auto virtual cptCp(double *ce)const->void override;
+			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void override;
 			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void override;
-			
-			
+
 			auto virtual updCa()->void override;
 			auto virtual updPrtCm()->void override;
 			auto virtual updGlbCm()->void override;
