@@ -14,7 +14,7 @@
 #include "aris_dynamic_kernel.h"
 #include "aris_dynamic_model.h"
 
-#include "C:\Eigen\Eigen"
+//#include "C:\Eigen\Eigen"
 
 namespace aris
 {
@@ -3855,9 +3855,9 @@ namespace aris
 			///////// inverse mtx //////////
 			for (std::size_t i = 0; i < active_prt_num; ++i)
 			{
-				Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> >D(block_D[i].get());
-				Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> >D_inv(block_D_inv[i].get());
-				D_inv = D.inverse();
+				//Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> >D(block_D[i].get());
+				//Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> >D_inv(block_D_inv[i].get());
+				//D_inv = D.inverse();
 			}
 			///////// inverse finished //////////
 
@@ -3947,39 +3947,39 @@ namespace aris
 			{ 
 				double w = 1.0;
 
-				for (std::size_t i = 0; i < active_prt_num; ++i)
-				{
-					Eigen::Map<Eigen::Matrix<double, 6, 1> >x_k1_i(block_x_k1[i].get());
-					Eigen::Map<Eigen::Matrix<double, 6, 1> >x_k_i(block_x_k[i].get());
+				//for (std::size_t i = 0; i < active_prt_num; ++i)
+				//{
+				//	Eigen::Map<Eigen::Matrix<double, 6, 1> >x_k1_i(block_x_k1[i].get());
+				//	Eigen::Map<Eigen::Matrix<double, 6, 1> >x_k_i(block_x_k[i].get());
 
-					Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> >D_inv(block_D_inv[i].get());
-					Eigen::Map<Eigen::Matrix<double, 6, 1> >b_i(block_b[i].get());
+				//	Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> >D_inv(block_D_inv[i].get());
+				//	Eigen::Map<Eigen::Matrix<double, 6, 1> >b_i(block_b[i].get());
 
-					Eigen::Matrix<double, 6, 1> tem;
-				
-					tem.fill(0);
+				//	Eigen::Matrix<double, 6, 1> tem;
+				//
+				//	tem.fill(0);
 
-					for (std::size_t j = 0; j < i; ++j)
-					{
-						if (!block_k[i][j])continue;
+				//	for (std::size_t j = 0; j < i; ++j)
+				//	{
+				//		if (!block_k[i][j])continue;
 
-						Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> > k_ij(block_k[i][j].get());
-						Eigen::Map<Eigen::Matrix<double, 6, 1> > x_k1_j(block_x_k1[j].get());
-					
-						tem += k_ij*x_k1_j;
-					}
-					for (std::size_t j = i+1; j < active_prt_num; ++j)
-					{
-						if (!block_k[i][j])continue;
-					
-						Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> > k_ij(block_k[i][j].get());
-						Eigen::Map<Eigen::Matrix<double, 6, 1> > x_k_j(block_x_k[j].get());
+				//		Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> > k_ij(block_k[i][j].get());
+				//		Eigen::Map<Eigen::Matrix<double, 6, 1> > x_k1_j(block_x_k1[j].get());
+				//	
+				//		tem += k_ij*x_k1_j;
+				//	}
+				//	for (std::size_t j = i+1; j < active_prt_num; ++j)
+				//	{
+				//		if (!block_k[i][j])continue;
+				//	
+				//		Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor> > k_ij(block_k[i][j].get());
+				//		Eigen::Map<Eigen::Matrix<double, 6, 1> > x_k_j(block_x_k[j].get());
 
-						tem += k_ij*x_k_j;
-					}
+				//		tem += k_ij*x_k_j;
+				//	}
 
-					x_k1_i = w * (b_i - tem) + (1.0 - w)*x_k_i;
-				}
+				//	x_k1_i = w * (b_i - tem) + (1.0 - w)*x_k_i;
+				//}
 
 				std::swap(block_x_k, block_x_k1);
 

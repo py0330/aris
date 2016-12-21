@@ -56,7 +56,11 @@ namespace aris
 		auto inline P()noexcept->const double3x3&{ static const double p[3][3] { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };	return p; }
 		auto inline Q()noexcept->const double3x3&{ static const double q[3][3] { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };	return q; }
 
-		auto inline id(int i, int j, int m) { return i*m + j; }
+		auto inline id(int i, int ld) { return i*ld; }
+		auto inline id(int i, int j, int ld) { return i*ld + j; }
+		auto inline idT(int i, int j, int ld) { return j*ld + i; }
+		auto inline id(int i, int j, Stride s) { return i*s.r_ld + j*s.c_ld; }
+		auto inline idT(int i, int j, Stride s) { return j*s.r_ld + i*s.c_ld; }
 
 		auto s_norm(int n, const double *x, int x_ld) noexcept->double
 		{
@@ -442,113 +446,162 @@ namespace aris
 				}
 			}
 		}
-		auto s_sov_um(int m, int rhs, const double *L, const double *b, double *x) noexcept->void
+		auto s_sov_um(int m, int rhs, const double *L, int ldl, const double *b, int ldb, double *x, int ldx) noexcept->void
 		{
 			for (int j = 0; j < rhs; ++j)
 			{
 				for (int i = m - 1; i > -1; --i)
 				{
-					x[i*rhs + j] = b[i*rhs + j];
+					x[id(i, j, ldx)] = b[id(i, j, ldb)];
 
 					for (int k = i + 1; k < m; ++k)
 					{
-						x[i*rhs + j] -= L[i*m + k] * x[k*rhs + j];
+						x[id(i, j, ldx)] -= L[id(i, k, ldl)] * x[id(k, j, ldx)];
 					}
-					x[i*rhs + j] /= L[i*m + i];
+					x[id(i, j, ldx)] /= L[id(i, i, ldl)];
 				}
 			}
 		}
-		auto s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void
+		auto s_sov_umNT(int m, int rhs, const double *L, int ldl, const double *b, int ldb, double *x, int ldx) noexcept->void
 		{
 			for (int j = 0; j < rhs; ++j)
 			{
 				for (int i = m - 1; i > -1; --i)
 				{
-					x[i*rhs + j] = b[j*m + i];
+					x[id(i, j, ldx)] = b[idT(i, j, ldb)];
 
 					for (int k = i + 1; k < m; ++k)
 					{
-						x[i*rhs + j] -= L[i*m + k] * x[k*rhs + j];
+						x[id(i, j, ldx)] -= L[id(i, k, ldl)] * x[id(k, j, ldx)];
 					}
-					x[i*rhs + j] /= L[i*m + i];
+					x[id(i, j, ldx)] /= L[id(i, i, ldl)];
 				}
 			}
 		}
+		//auto s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void
+		//{
+		//	for (int j = 0; j < rhs; ++j)
+		//	{
+		//		for (int i = m - 1; i > -1; --i)
+		//		{
+		//			x[i*rhs + j] = b[j*m + i];
 
-		auto s_householder_qr(int m, int n, const double *A, double *Q, double *R, double *tau, int *P, double error)noexcept->void
+		//			for (int k = i + 1; k < m; ++k)
+		//			{
+		//				x[i*rhs + j] -= L[i*m + k] * x[k*rhs + j];
+		//			}
+		//			x[i*rhs + j] /= L[i*m + i];
+		//		}
+		//	}
+		//}
+
+		// R is U //
+		auto inline local_U2QR(int m, int n, double *Q, double *R, double *tau)->void 
 		{
-			s_householder(m, n, A, R, tau, P);
-
 			// init Q
-			double t = -1.0 / tau[0];
+			double t = tau[0];
 			s_mmNT(m - 1, m - 1, 1, t, R + n, n, R + n, n, Q + m + 1, m);
 			s_vc(m - 1, t, R + n, n, Q + 1, 1);
 			s_vc(m - 1, Q + 1, 1, Q + m, m);
 			*Q = t;
 			for (int i = 0; i < m; ++i)Q[i*m + i] += 1.0;
 
-			s_vc(m - 1, tau, 1, R + n, n);
+			// store tau because we need memory near n
+			s_vc(std::min(m, n) - 1, tau + 1, 1, R + n, n);
 			// make Q
-			for (int i = 1; i < (std::min(m, n) - 1); ++i)
+			for (int i = 1; i < std::min(m - 1, n); ++i)
 			{
 				s_vc(m, Q + i, m, tau, 1);
-				
+
 				s_mma(m, 1, m - i - 1, Q + i + 1, m, R + (i + 1)*n + i, n, tau, 1);
-				s_nv(m, -1.0 / R[(i + 1)*n], tau);
-				
+				s_nv(m, R[i*n], tau);
+
 				s_va(m, tau, 1, Q + i, m);
-				//dsp(Q, m, m);
-				//dsp(tau, m, 1);
-				//dsp(R + (i + 1)*n + i, m - i - 1, 1, 0, 0, n);
-				//dsp(R, m, n);
 				s_mmaNT(m, m - i - 1, 1, tau, 1, R + (i + 1)*n + i, n, Q + i + 1, m);
 				s_fill(m - i - 1, 1, 0.0, R + (i + 1)*n + i, n);
-				//dsp(Q, m, m);
-				//dsp(R, m, n);
-				//s_mma(m,m-i,1,,tau,1,)
-				//dsp(tau, m, 1);
 			}
 			s_fill(m - 1, 1, 0.0, R + n, n);
-			dsp(Q, m, m);
-			dsp(R, m, n);
-
-		}
-		auto s_householder(int m, int n, const double *A, double *U, double *tau, int *P, double error)noexcept->void
+		};
+		auto s_householder(int m, int n, const double *A, double *U, double *tau)noexcept->void
 		{
-			int k = std::min(m, n) - 1;
-
 			std::copy(A, A + m*n, U);
 
-			for (int i{ 0 }, j{ 0 }; i < k; ++i)
+			for (int i = 0; i < std::min(m - 1, n); ++i)
 			{
-				double x2_norm = s_norm(m - i - 1, U + (i + 1)*n + i, n);
-				double alpha = std::sqrt(x2_norm*x2_norm + U[i*n + i] * U[i*n + i]);
-
-				////////
-				//if (alpha < error);
-				//////////
-
-				double rho = -s_sgn2(U[i*n + i])*alpha;
-
-				double v1 = U[i*n + i] - rho;
-				s_vc(m - i - 1, 1.0 / v1, U + (i + 1)*n + i, n, U + (i + 1)*n + i, n);
-				x2_norm /= std::abs(v1);
-				double t = (1 + x2_norm*x2_norm) / 2;
-
-				s_vc(n - i - 1, U + i*n + i + 1, tau + i);
-				s_mmaTN(1, n - i - 1, m - i - 1, U + (i + 1)*n + i, n, U + (i + 1)*n + i + 1, n, tau + i, 1);
-				s_nv(n - i - 1, 1.0 / t, tau + i);
+				// compute householder vector //
+				double rho = -s_norm(m - i, U + i*n + i, n) * s_sgn2(U[i*n + i]);
+				tau[i] = U[i*n + i] / rho - 1.0;
+				s_nv(m - 1 - i, 1.0 / (U[i*n + i] - rho), U + (i + 1)*n + i, n);
 				U[i*n + i] = rho;
 
-				// make new u
-				s_vc(n - i - 1, U + i*n + i + 1, U + i*n + i + 1);
-				s_va(n - i - 1, -1.0, tau + i, U + i*n + i + 1);
-
-				s_mc(m - i - 1, n - i - 1, U + (i + 1)*n + i + 1, n, U + (i + 1)*n + i + 1, n);
-				s_mma(m - i - 1, n - i - 1, 1, -1.0, U + (i + 1)*n + i, n, tau + i, 1, U + (i + 1)*n + i + 1, n);
-
-				tau[i] = t;
+				// update matrix //
+				s_mc(1, n - i - 1, U + i*n + i + 1, 1, tau + i + 1, 1);
+				s_mmaTN(1, n - i - 1, m - i - 1, U + (i + 1)*n + i, n, U + (i + 1)*n + i + 1, n, tau + i + 1, 1);
+				s_nv(n - i - 1, tau[i], tau + i + 1);
+				
+				s_va(n - i - 1, tau + i + 1, U + i*n + i + 1);
+				s_mma(m - i - 1, n - i - 1, 1, U + (i + 1)*n + i, n, tau + i + 1, n, U + (i + 1)*n + i + 1, n);
 			}
+		}
+		auto s_householder_qr(int m, int n, const double *A, double *Q, double *R, double *tau)noexcept->void
+		{
+			s_householder(m, n, A, R, tau);
+			local_U2QR(m, n, Q, R, tau);
+		}
+		auto s_householder_sov(int m, int n, int rhs, const double *U, const double *tau, double *b, double *x)noexcept->void
+		{
+			for (int i = 0; i < std::min(m - 1, n); ++i)
+			{
+				double k = tau[i] * (b[i] + s_vv(m - i - 1, U + (i + 1)*n + i, n, b + i + 1, 1));
+				b[i] += k;
+				s_va(m - i - 1, k, U + (i + 1)*n + i, n, b + i + 1, 1);
+			}
+		}
+		auto s_householder_colpiv(int m, int n, const double *A, double *U, double *tau, int *P)noexcept->void
+		{
+			std::copy(A, A + m*n, U);
+
+			for (int i = 0; i < n; ++i)P[i] = i;
+
+			for (int i = 0; i < std::min(m - 1, n); ++i)
+			{
+				//////////////////////////////// following is different ///////////////////////
+				for (int j = i; j < n; ++j)tau[j] = s_vv(m - i, U + i*n + j, n, U + i*n + j, n);
+				int max_col = std::max_element(tau + i, tau + n) - tau;
+				s_swap_v(m, U + max_col, n, U + i, n);
+				std::swap(P[i], P[max_col]);
+				//////////////////////////////// different part finished ///////////////////////
+				
+				// compute householder vector //
+				double rho = -s_norm(m - i, U + i*n + i, n) * s_sgn2(U[i*n + i]);
+				tau[i] = U[i*n + i] / rho - 1.0;
+				s_nv(m - 1 - i, 1.0 / (U[i*n + i] - rho), U + (i + 1)*n + i, n);
+				U[i*n + i] = rho;
+
+				// update matrix //
+				s_mc(1, n - i - 1, U + i*n + i + 1, 1, tau + i + 1, 1);
+				s_mmaTN(1, n - i - 1, m - i - 1, U + (i + 1)*n + i, n, U + (i + 1)*n + i + 1, n, tau + i + 1, 1);
+				s_nv(n - i - 1, tau[i], tau + i + 1);
+
+				s_va(n - i - 1, tau + i + 1, U + i*n + i + 1);
+				s_mma(m - i - 1, n - i - 1, 1, U + (i + 1)*n + i, n, tau + i + 1, n, U + (i + 1)*n + i + 1, n);
+			}
+			
+			// switch last max element
+			if (m < n)
+			{
+				auto begin = U + (m - 1)*n + m - 1;
+				auto end = begin + n - m + 1;
+				int max_col = std::max_element(begin, end, [](double a, double b) {return std::abs(a) < std::abs(b); }) - begin;
+
+				s_swap_v(m, U + max_col + m - 1, n, U + m - 1, n);
+				std::swap(P[m - 1], P[max_col]);
+			}
+		}
+		auto s_householder_colpiv_qr(int m, int n, const double *A, double *Q, double *R, double *tau, int *P)noexcept->void
+		{
+			s_householder_colpiv(m, n, A, R, tau, P);
+			local_U2QR(m, n, Q, R, tau);
 		}
 
 		auto s_mma(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void 
@@ -3879,23 +3932,23 @@ namespace aris
 				++i;
 			}
 		}
-		auto dsp(const double *p, const int m, const int n, const int begin_row, const int begin_col, int ld)->void
-		{
-			if (ld < 1)	ld = n;
+		//auto dsp(const double *p, const int m, const int n, const int begin_row, const int begin_col, int ld)->void
+		//{
+		//	if (ld < 1)	ld = n;
 
-			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(15);
+		//	std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(15);
 
-			std::cout << std::endl;
-			for (int i = 0; i < m; i++)
-			{
-				for (int j = 0; j < n; j++)
-				{
-					std::cout << p[(begin_row + i)*ld + j + begin_col] << "   ";
-				}
-				std::cout << std::endl;
-			}
-			std::cout << std::endl;
-		}
+		//	std::cout << std::endl;
+		//	for (int i = 0; i < m; i++)
+		//	{
+		//		for (int j = 0; j < n; j++)
+		//		{
+		//			std::cout << p[(begin_row + i)*ld + j + begin_col] << "   ";
+		//		}
+		//		std::cout << std::endl;
+		//	}
+		//	std::cout << std::endl;
+		//}
 
 		auto s_is_equal(int n, const double *v1, const double *v2, double error, int ld_v1, int ld_v2) noexcept->bool
 		{

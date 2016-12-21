@@ -52,6 +52,13 @@ namespace aris
 	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
 	namespace dynamic
 	{
+		struct ND {};
+		struct TD {};
+		struct NS {};
+		struct TS {};
+		
+		struct Stride { int c_ld; int r_ld; };
+		
 		auto s_norm(int n, const double *x, int x_ld) noexcept->double;// vector norm
 		auto inline s_norm(int n, const double *x) noexcept->double { return s_norm(n, x, 1); }
 		auto s_swap_v(int n, double *x, const int x_ld, double *y, const int y_ld) noexcept->void;// vector swap
@@ -82,12 +89,17 @@ namespace aris
 		auto s_inv_lm(int m, const double *L, double *inv_L) noexcept->void;
 		auto s_sov_lm(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
 		auto s_sov_lmNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
-		auto s_sov_um(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
-		auto s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
+		auto s_sov_um(int m, int rhs, const double *L, int ldl, const double *b, int ldb, double *x, int ldx) noexcept->void;
+		inline auto s_sov_um(int m, int rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_um(m, rhs, L, m, b, rhs, x, rhs); }
+		auto s_sov_umNT(int m, int rhs, const double *L, int ldl, const double *b, int ldb, double *x, int ldx) noexcept->void;
+		inline auto s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_umNT(m, rhs, L, m, b, m, x, rhs); }
 
-		// tau must have same size with max(m,n)
-		auto s_householder_qr(int m, int n, const double *A, double *Q, double *R, double *tau, int *P, double error = 1e-10)noexcept->void;
-		auto s_householder(int m, int n, const double *A, double *U, double *tau, int *P, double error = 1e-10)noexcept->void;
+		// tau must have same size with max(m,n), A can be the same as U
+		auto s_householder(int m, int n, const double *A, double *U, double *tau)noexcept->void;
+		auto s_householder_qr(int m, int n, const double *A, double *Q, double *R, double *tau)noexcept->void;
+		auto s_householder_sov(int m, int n, int rhs, const double *U, const double *tau, double *b, double *x)noexcept->void;
+		auto s_householder_colpiv(int m, int n, const double *A, double *U, double *tau, int *P)noexcept->void;
+		auto s_householder_colpiv_qr(int m, int n, const double *A, double *Q, double *R, double *tau, int *P)noexcept->void;
 
 		auto inline s_nv(int n, double alpha, double *x) noexcept->void  { for (int i{ 0 }; i < n; ++i)x[i] *= alpha; }
 		auto inline s_nv(int n, double alpha, double *x, int x_ld) noexcept->void { for (int i{ 0 }, end{ n*x_ld }; i < end; i += x_ld)x[i] *= alpha; }
@@ -1074,7 +1086,24 @@ namespace aris
 		template <typename T>
 		auto inline s_sgn2(T val)->int { return val < T(0) ? -1 : 1; }
 
-		auto dsp(const double *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0)->void;
+		template <typename T>
+		auto dsp(const T *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0)->void 
+		{
+			if (ld < 1)	ld = n;
+
+			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(15);
+
+			std::cout << std::endl;
+			for (int i = 0; i < m; i++)
+			{
+				for (int j = 0; j < n; j++)
+				{
+					std::cout << p[(begin_row + i)*ld + j + begin_col] << "   ";
+				}
+				std::cout << std::endl;
+			}
+			std::cout << std::endl;
+		};
 		template<class Container>
 		auto dlmwrite(const char *filename, const Container &container)->void
 		{
