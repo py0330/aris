@@ -1,5 +1,4 @@
-﻿#include "test_dynamic_model.h"
-#include <iostream>
+﻿#include <iostream>
 #include <aris.h>
 
 using namespace aris::dynamic;
@@ -145,9 +144,12 @@ const char xml_file[] =
 "            <m5 active=\"true\" slave_id=\"7\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
 "            <m6 active=\"true\" slave_id=\"5\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
 "        </motion_pool>"
-"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
+"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\">"
+"            <general_motion active=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"ref\"/>"
+"        </general_motion_pool>"
 "    </model>"
 "</root>";
+
 
 class Robot :public aris::dynamic::Model
 {
@@ -179,14 +181,14 @@ public:
 		m6_ = &*motionPool().findByName("m6");
 	}
 
-	auto virtual kinFromPin()->void override{};
-	auto virtual kinFromVin()->void override{};
+	auto virtual kinFromPin()->void override {};
+	auto virtual kinFromVin()->void override {};
 
-	auto setPee(double *pee) 
+	auto setPee(double *pee)
 	{
 		up_->setPe(pee, "321");
 
-		double pp[3], pe[6]{ 0,0,0,0,0,0 }, pe2[6]{0,0,0,0,0,0};
+		double pp[3], pe[6]{ 0,0,0,0,0,0 }, pe2[6]{ 0,0,0,0,0,0 };
 		up_->markerPool().findByName("s1i")->getPp(*ground().markerPool().findByName("u1o"), pp);
 		s_sov_ab(pp, pe + 3, "132");
 		p1a_->setPe(*ground().markerPool().findByName("u1o"), pe, "132");
@@ -223,7 +225,7 @@ public:
 		pe2[1] = s_norm(3, pp, 1);
 		p6b_->setPe(*p6a_, pe2);
 
-		for (auto &mot : motionPool()) 
+		for (auto &mot : motionPool())
 		{
 			mot.updMp();
 			mot.updMv();
@@ -311,215 +313,57 @@ private:
 };
 
 
-void test_model_stewart()
+int main()
 {
 	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
-	
-	try 
-	{
-		Robot rbt;
 
-		rbt.loadString(xml_file);
-		double pee[6]{ 0,1.5,1.2,0,0.1,0 };
-		double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-		rbt.setVee(vee, pee);
-
-		rbt.motionAtAbs(0).setMp(rbt.motionAtAbs(0).mp() + 0.1);
-		rbt.motionAtAbs(1).setMp(rbt.motionAtAbs(1).mp() + 0.085);
-
-		std::cout << rbt.motionAtAbs(0).mp() << std::endl;
-		std::cout << rbt.motionAtAbs(1).mp() << std::endl;
-
-		rbt.allocateMemory();
-		auto ret = rbt.kinPos();
-		std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
-
-		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
-	}
-	catch (std::exception&e)
-	{
-		std::cout << e.what() << std::endl;
-	}
-	
 	try
 	{
 		Model rbt;
-
 		rbt.loadString(xml_file);
 
-		auto ee = &*rbt.partPool().findByName("up")->markerPool().findByName("ee");
-		auto ref = &*rbt.partPool().findByName("ground")->markerPool().findByName("ref");
-
-		auto gmt = &rbt.generalMotionPool().add<GeneralMotion>("general_motion",*ee,*ref);
-
-		for (auto &m : rbt.motionPool()) 
-		{
-			m.updMp();
-			std::cout << m.mp() << std::endl;
-		}
-
-
-		for (auto &m : rbt.motionPool())m.activate(true);
-		gmt->activate(false);
-		rbt.allocateMemory();
-		auto b = aris::core::benchmark(1, [&rbt, &gmt]()
-		{
-			static int count{ 0 };
-			double pin1[6]{ 2.0,2.0,2.0,2.0,2.0,2.0 };
-			double pin2[6]{ 2.15,2.03,1.98,1.68,2.22,2.01 };
-
-			if (count % 2)for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin1[i]);
-			else for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin2[i]);
-
-			
-
-			auto ret = rbt.kinPos(100);
-			if (count++<2)std::cout << "benchmark computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
-		});
-		std::cout << "computational time:" << b << std::endl;
-
-
-
-		
-
-		
-
+		rbt.generalMotionPool().findByName("general_motion")->activate(true);
 		for (auto &m : rbt.motionPool())m.activate(false);
-		gmt->activate(true);
+
+		double pee[6]{ 0.0 , 1.5 , 1.2 , 0.0 , 0.1 , 0.0 };
+		rbt.generalMotionPool().findByName("general_motion")->setMp(pee);
+
 		rbt.allocateMemory();
-		auto a = aris::core::benchmark(1, [&rbt, &gmt]() 
-		{
-			static int count{0};
-			double pee1[6]{ 0.1 , 1.0 , 0.2 , 0,0,0 };
-			double pee2[6]{ 0, 1.0 , 0, 0.2 , 0.15 , 0.13 };
-
-			if (count % 2)  
-				gmt->setMp(pee1); 
-			else 
-				gmt->setMp(pee2);
-
-			auto ret = rbt.kinPos(100);
-			if(count++<2)std::cout << "benchmark computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
-		});
-		std::cout << "computational time:" << a << std::endl;
-
-		
-		double pee[6]{ 0,1.1,0,0.3,0,0 };
-		gmt->setMp(pee);
 		auto ret = rbt.kinPos(100);
-
 		std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 
 		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
-		
-		rbt.saveXml("C:\\Users\\py033\\Desktop\\model.xml");
 	}
 	catch (std::exception&e)
 	{
 		std::cout << e.what() << std::endl;
 	}
 
-
-
-	/*
-	try 
+	try
 	{
-		Robot rbt;
-
+		Model rbt;
 		rbt.loadString(xml_file);
-		double pee[6]{ 0,1.5,1.2,0,0.1,0 };
-		double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-		rbt.setVee(vee, pee);
-	
-		//std::cout << "benchmark Robot::setVee:" << aris::core::benchmark(100000, [&rbt, &pee, &vee]() {rbt.setVee(vee, pee); }) << std::endl;
 
-		aris::dynamic::PlanFunc plan = [&pee, &vee](Model &model, const PlanParamBase &param)->int
-		{
-			auto &rbt = static_cast<Robot&>(model);
+		rbt.generalMotionPool().findByName("general_motion")->activate(false);
+		for (auto &m : rbt.motionPool())m.activate(true);
 
-			double pee_local[6], vee_local[6]{0,0.1,0,0,0,0};
-			std::copy(pee, pee + 6, pee_local);
-			pee_local[1] += param.count_ * 0.0001;
-			rbt.setVee(vee_local, pee_local);
+		double pin[6]{ 2.0,2.0,2.0,2.0,2.0,2.0 };
+		for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin[i]);
 
-			return 5000 - param.count_;
-		};
-		rbt.saveDynEle("before");
-		rbt.simKin(plan, aris::dynamic::PlanParamBase());
-		rbt.loadDynEle("before");
+		rbt.allocateMemory();
+		auto ret = rbt.kinPos(100);
+		std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 
 		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
-
-		std::ofstream file;
-		file.open("C:\\Users\\py033\\Desktop\\motion.txt");
-
-		for (auto &mot : rbt.motionPool())
-		{
-			file<<std::setprecision(15) << mot.mv() <<"*time+"<<mot.mp() << std::endl;
-		}
-		file.close();
-
-		
-		rbt.dynPre();
-		Eigen::internal::set_is_malloc_allowed(true);
-		Eigen::PartialPivLU<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > solver(rbt.dynDim());
-		//Eigen::internal::set_is_malloc_allowed(false);
-		rbt.dynSetSolveMethod([&solver](int n, const double *D, const double *b, double *x)
-		{
-			Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >Dm(D, n, n);
-			Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1> >bm(b, n);
-			Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1> >xm(x, n);
-			xm = Dm.partialPivLu().solve(bm);
-		});
-		
-		//rbt.dynPrt();
-
-		//std::vector<double> D(rbt.dynDim() * rbt.dynDim(), 0);
-		//std::vector<double> b(rbt.dynDim(), 0);
-		//std::vector<double> x(rbt.dynDim(), 0);
-		//rbt.dynPrtUpd();
-		//rbt.dynPrtMtx(D.data(), b.data());
-		//rbt.dynSov(D.data(), b.data(), x.data());
-		//rbt.dynPrtEnd(x.data());
-
-
-		//rbt.dynGlbUpd();
-		//std::vector<double> im(rbt.dynDimM() * rbt.dynDimM(), 0);
-		//std::vector<double> cmT(rbt.dynDimN() * rbt.dynDimM(), 0);
-		//std::vector<double> as(rbt.dynDimM(), 0);
-		//std::vector<double> ca(rbt.dynDimN(), 0);
-		//std::vector<double> r(rbt.dynDimN(), 0);
-		//rbt.dynGlbIs(im.data());
-		//rbt.dynCa(ca.data());
-		//rbt.dynGlbAs(as.data());
-		//rbt.dynGlbCmT(cmT.data());
-
-		//s_mm(rbt.dynDimN(), 1, rbt.dynDimM(), cmT.data(), as.data(), r.data());
-		//
-		//dlmwrite("C:\\Users\\py033\\Desktop\\im.txt", im.data(), rbt.dynDimM(), rbt.dynDimM());
-		//dlmwrite("C:\\Users\\py033\\Desktop\\cmT.txt", cmT.data(), rbt.dynDimN(), rbt.dynDimM());
-		//dlmwrite("C:\\Users\\py033\\Desktop\\r.txt", r.data(), rbt.dynDimN(), 1);
-		//dlmwrite("C:\\Users\\py033\\Desktop\\ca.txt", ca.data(), rbt.dynDimN(), 1);
-
-		//if (!s_is_equal(rbt.dynDimN(), r.data(), ca.data(), 1e-10))	std::cout << "not equal" << std::endl;
-
-		rbt.dynGlb();
-
-		rbt.dynPrtSov();
-		//1.93e-5, 3.61 for linux
-		//std::cout << "benchmark Robot::dynUpd():" << aris::core::benchmark(100000, [&rbt]() {rbt.dynUpd(); }) << std::endl;
-		//std::cout << "benchmark Robot::dynMtx():" << aris::core::benchmark(1000000, [&rbt, &D, &b]() {rbt.dynMtx(D.data(), b.data(), true); }) << std::endl;
-		//std::cout << "benchmark Robot::dynSov():" << aris::core::benchmark(1000, [&rbt, &D, &b, &x]() {rbt.dynSov(D.data(), b.data(), x.data()); }) << std::endl;
-
-		//rbt.dyn();
-
-		for (auto &mot : rbt.motionPool())std::cout << mot.mf() << std::endl;
 	}
 	catch (std::exception&e)
 	{
 		std::cout << e.what() << std::endl;
 	}
-	*/
-	std::cout << "-----------------test model stewart finished------------" << std::endl << std::endl;
+
+
+	std::cout << "demo_stewart finished, press any key to continue" << std::endl;
+	std::cin.get();
+	return 0; 
 }
 

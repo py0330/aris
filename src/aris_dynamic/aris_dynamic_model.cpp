@@ -1434,22 +1434,12 @@ namespace aris
 		auto Marker::prtPm()const->const double4x4&{ return imp_->prt_pm_; }
 		auto Marker::prtVs()const->const double6&{ return fatherPart().prtVs(); }
 		auto Marker::prtAs()const->const double6&{ return fatherPart().prtAs(); }
-		auto Marker::updGlbPm()->void { s_pm_dot_pm(*fatherPart().pm(), *prtPm(), *imp_->pm_); }
 		Marker::~Marker() = default;
-		Marker::Marker(const std::string &name, const double *prt_pm, Marker *relative_mak, bool active): Coordinate(name, active)
+		Marker::Marker(const std::string &name, const double *prt_pm, bool active): Coordinate(name, active)
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			prt_pm = prt_pm ? prt_pm : default_pm_in;
-
-			if (relative_mak)
-			{
-				if (&relative_mak->fatherPart() != &fatherPart())throw std::logic_error("relative marker must has same father part with this marker");
-				s_pm_dot_pm(*relative_mak->prtPm(), prt_pm, *imp_->prt_pm_);
-			}
-			else
-			{
-				std::copy_n(prt_pm, 16, static_cast<double *>(*imp_->prt_pm_));
-			}
+			std::copy_n(prt_pm, 16, static_cast<double *>(*imp_->prt_pm_));
 		}
 		Marker::Marker(Object &father, const aris::core::XmlElement &xml_ele): Coordinate(father, xml_ele)
 		{
@@ -1507,10 +1497,6 @@ namespace aris
 			s_is2iv(*this->prtIs(), iv);
 			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, iv).toString().c_str());
 			xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path_.c_str());
-
-			auto child_mak_group = xml_ele.GetDocument()->NewElement("ChildMarker");
-			xml_ele.InsertEndChild(child_mak_group);
-			markerPool().saveXml(*child_mak_group);
 		}
 		auto Part::saveAdams(std::ofstream &file) const->void
 		{
@@ -2216,10 +2202,11 @@ namespace aris
 			return *this;
 		}
 		Part::~Part() = default;
-		Part::Part(const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active)
+		Part::Part(const std::string &name, const double *im, const double *pm, const double *vs, const double *as, const std::string &graphic_file, bool active)
 			: Coordinate(name, active)
 		{
 			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
+			imp_->graphic_file_path_ = graphic_file;
 
 			static const double default_im[36]{
 				1,0,0,0,0,0,
@@ -2366,8 +2353,6 @@ namespace aris
 		}
 		auto Motion::updMp()->void
 		{
-			makI().updGlbPm();
-			makJ().updGlbPm();
 			setMp(s_sov_axis_distance(*makJ().pm(), *makI().pm(), axis()));
 		}
 		auto Motion::updMv()->void
@@ -2479,6 +2464,47 @@ namespace aris
 				<< "instance_name = ." << model().name() << "." << name() << "\r\n"
 				<< "!\r\n";
 		}
+		
+		auto GeneralMotion::cptCp(double *cp)const->void 
+		{
+			double pm_real_j[16], tem[16];
+			s_pe2pm(mp(), tem, "123");
+
+			s_pm_dot_pm(*makJ().fatherPart().pm(), *makJ().prtPm(), tem, pm_real_j);
+			
+			//makJ().updGlbPm();
+			//s_pm2pm(*makJ().pm(), tem, pm_real_j);
+
+			double pq_j2i[7];
+			double pm_j2i[4][4];
+			double diff[6];
+
+			s_inv_pm_dot_pm(*makI().pm(), pm_real_j, *pm_j2i);
+			s_pm2pq(*pm_j2i, pq_j2i);
+
+			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
+
+			if (theta < 1e-3)
+			{
+				s_nv(3, 2.0, pq_j2i + 3);
+			}
+			else
+			{
+				s_nv(3, theta / std::sin(theta / 2.0), pq_j2i + 3);
+			}
+
+			// 此时位移差值在makI()坐标系中。需要转换到部件坐标系下。
+			s_tv(*makI().prtPm(), pq_j2i, diff);
+
+			s_mmTN(dim(), 1, 6, prtCmPtrI(), diff, cp);
+		}
+		auto GeneralMotion::cptCv(double *cv)const->void 
+		{
+		}
+		auto GeneralMotion::cptCa(double *ca)const->void 
+		{
+		}
+		
 		auto GeneralMotion::updCa()->void
 		{
 			Constraint::updCa();
@@ -2486,9 +2512,6 @@ namespace aris
 		}
 		auto GeneralMotion::updMp()->void
 		{
-			makI().updGlbPm();
-			makJ().updGlbPm();
-
 			double pm_I2J[4][4], pe[6];
 			s_inv_pm_dot_pm(*makJ().pm(), *makI().pm(), *pm_I2J);
 			s_pm2pe(&pm_I2J[0][0], pe, "123");
@@ -2511,8 +2534,34 @@ namespace aris
 		auto GeneralMotion::mf() const->const double6&{ return imp_->mot_fce_; }
 		auto GeneralMotion::setMf(const double * mot_fce)->void { std::copy(mot_fce, mot_fce + 6, imp_->mot_fce_); }
 		GeneralMotion::~GeneralMotion() = default;
-		GeneralMotion::GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active):Constraint(name, makI, makJ, active){}
-		GeneralMotion::GeneralMotion(Object &father, const aris::core::XmlElement &xml_ele):Constraint(father, xml_ele){}
+		GeneralMotion::GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active):Constraint(name, makI, makJ, active)
+		{
+			const static double loc_cst[6][6]
+			{
+				1,0,0,0,0,0,
+				0,1,0,0,0,0,
+				0,0,1,0,0,0,
+				0,0,0,1,0,0,
+				0,0,0,0,1,0,
+				0,0,0,0,0,1
+			};
+
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
+		}
+		GeneralMotion::GeneralMotion(Object &father, const aris::core::XmlElement &xml_ele):Constraint(father, xml_ele)
+		{
+			const static double loc_cst[6][6]
+			{
+				1,0,0,0,0,0,
+				0,1,0,0,0,0,
+				0,0,1,0,0,0,
+				0,0,0,1,0,0,
+				0,0,0,0,1,0,
+				0,0,0,0,0,1
+			};
+
+			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
+		}
 		GeneralMotion::GeneralMotion(const GeneralMotion &other) = default;
 		GeneralMotion::GeneralMotion(GeneralMotion &&other) = default;
 		GeneralMotion& GeneralMotion::operator=(const GeneralMotion &other) = default;
@@ -2779,6 +2828,15 @@ namespace aris
 					imp_->c_size_.push_back(mot.dim());
 				} 
 			}
+			for (auto &gmt : generalMotionPool())
+			{
+				if (gmt.active())
+				{
+					imp_->active_constraint_pool_.push_back_ptr(&gmt);
+					gmt.Constraint::imp_->col_id_ = imp_->c_size_.size();
+					imp_->c_size_.push_back(gmt.dim());
+				}
+			}
 
 			// allocate memory //
 			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->im_);
@@ -2883,24 +2941,21 @@ namespace aris
 		{
 		}
 
-		auto Model::kinPos(double error)->void
+		auto Model::kinPos(int max_count, double error)->std::tuple<int, double>
 		{
-			for (;;)
+			int count{ 0 };
+			double real_error;
+
+			for (; count < max_count; ++count)
 			{
 				cptGlbCm();
 				cptCp();
 				s_blk_mmNT(pSize(), pSize(), cSize(), glbCm(), glbCm(), imp_->cct_);
 				s_blk_mm(pSize(), { 1 }, cSize(), glbCm(), cp(), imp_->cct_b_);
 
-				if (s_blk_norm(cSize(), cp()) < error)
-				{
-					std::cout << "norm and break:" << s_blk_norm(cSize(), cp()) << std::endl;
-					break;
-				}
-				else
-				{
-					std::cout << "norm:" << s_blk_norm(cSize(), cp()) << std::endl;
-				}
+				real_error = s_blk_norm(cSize(), cp());
+				
+				if (real_error < error) return std::make_tuple(count, real_error);
 
 				s_blk_llt(pSize(), imp_->cct_, imp_->cct_llt_);
 				s_blk_sov_lm(pSize(), { 1 }, imp_->cct_llt_, imp_->cct_b_, imp_->cct_x_);
@@ -2908,6 +2963,8 @@ namespace aris
 
 				setPartP();
 			}
+
+			return std::make_tuple(count, real_error);
 		}
 		auto Model::kinVel()->void
 		{
@@ -2929,8 +2986,6 @@ namespace aris
 			{
 				if (jnt.active())
 				{
-					jnt.makI().updGlbPm();
-					jnt.makJ().updGlbPm();
 					jnt.updGlbCm();
 					jnt.updCe();
 				}
@@ -2939,8 +2994,6 @@ namespace aris
 			{
 				if (mot.active())
 				{
-					mot.makI().updGlbPm();
-					mot.makJ().updGlbPm();
 					mot.updGlbCm();
 					mot.updCe();
 				}
@@ -3040,8 +3093,8 @@ namespace aris
 				if (jnt.active())
 				{
 					jnt.updPrtCm();
-					s_mcT(jnt.dim(), 6, jnt.prtCmPtrI(), jnt.dim(), prt_cmT + jnt.makI().fatherPart().rowID() + ld*jnt.colID(), ld);
-					s_mcT(jnt.dim(), 6, jnt.prtCmPtrJ(), jnt.dim(), prt_cmT + jnt.makJ().fatherPart().rowID() + ld*jnt.colID(), ld);
+					s_mc(jnt.dim(), 6, jnt.prtCmPtrI(), ColMajor{ static_cast<int>(jnt.dim()) }, prt_cmT + jnt.makI().fatherPart().rowID() + ld*jnt.colID(), ld);
+					s_mc(jnt.dim(), 6, jnt.prtCmPtrJ(), ColMajor{ static_cast<int>(jnt.dim()) }, prt_cmT + jnt.makJ().fatherPart().rowID() + ld*jnt.colID(), ld);
 				}
 			}
 			for (auto &mot : motionPool())
@@ -3049,8 +3102,8 @@ namespace aris
 				if (mot.active())
 				{
 					mot.updPrtCm();
-					s_mcT(1, 6, *mot.prtCmI(), 1, prt_cmT + mot.makI().fatherPart().rowID() + ld*mot.colID(), ld);
-					s_mcT(1, 6, *mot.prtCmJ(), 1, prt_cmT + mot.makJ().fatherPart().rowID() + ld*mot.colID(), ld);
+					s_mc(1, 6, *mot.prtCmI(), ColMajor{ 1 }, prt_cmT + mot.makI().fatherPart().rowID() + ld*mot.colID(), ld);
+					s_mc(1, 6, *mot.prtCmJ(), ColMajor{ 1 }, prt_cmT + mot.makJ().fatherPart().rowID() + ld*mot.colID(), ld);
 				}
 			}
 		}
@@ -3236,16 +3289,16 @@ namespace aris
 			{
 				if (jnt.active())
 				{
-					s_mcT(jnt.dim(), 6, jnt.prtCmPtrI(), jnt.dim(), prt_cmT + jnt.makI().fatherPart().rowID() + ld*jnt.colID(), ld);
-					s_mcT(jnt.dim(), 6, jnt.prtCmPtrJ(), jnt.dim(), prt_cmT + jnt.makJ().fatherPart().rowID() + ld*jnt.colID(), ld);
+					s_mc(jnt.dim(), 6, jnt.prtCmPtrI(), ColMajor{ static_cast<int>(jnt.dim()) }, prt_cmT + jnt.makI().fatherPart().rowID() + ld*jnt.colID(), ld);
+					s_mc(jnt.dim(), 6, jnt.prtCmPtrJ(), ColMajor{ static_cast<int>(jnt.dim()) }, prt_cmT + jnt.makJ().fatherPart().rowID() + ld*jnt.colID(), ld);
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot.active())
 				{
-					s_mcT(1, 6, *mot.prtCmI(), 1, prt_cmT + mot.makI().fatherPart().rowID() + ld*mot.colID(), ld);
-					s_mcT(1, 6, *mot.prtCmJ(), 1, prt_cmT + mot.makJ().fatherPart().rowID() + ld*mot.colID(), ld);
+					s_mc(1, 6, *mot.prtCmI(), ColMajor{ 1 }, prt_cmT + mot.makI().fatherPart().rowID() + ld*mot.colID(), ld);
+					s_mc(1, 6, *mot.prtCmJ(), ColMajor{ 1 }, prt_cmT + mot.makJ().fatherPart().rowID() + ld*mot.colID(), ld);
 				}
 			}
 
@@ -3581,16 +3634,16 @@ namespace aris
 			{
 				if (jnt.active())
 				{
-					s_mcT(jnt.dim(), 6, jnt.glbCmPtrI(), jnt.dim(), glb_cmT + jnt.makI().fatherPart().rowID() + ld*jnt.colID(), ld);
-					s_mcT(jnt.dim(), 6, jnt.glbCmPtrJ(), jnt.dim(), glb_cmT + jnt.makJ().fatherPart().rowID() + ld*jnt.colID(), ld);
+					s_mc(jnt.dim(), 6, jnt.glbCmPtrI(), ColMajor{ static_cast<int>(jnt.dim()) }, glb_cmT + jnt.makI().fatherPart().rowID() + ld*jnt.colID(), ld);
+					s_mc(jnt.dim(), 6, jnt.glbCmPtrJ(), ColMajor{ static_cast<int>(jnt.dim()) }, glb_cmT + jnt.makJ().fatherPart().rowID() + ld*jnt.colID(), ld);
 				}
 			}
 			for (auto &mot : motionPool())
 			{
 				if (mot.active())
 				{
-					s_mcT(1, 6, *mot.glbCmI(), 1, glb_cmT + mot.makI().fatherPart().rowID() + ld*mot.colID(), ld);
-					s_mcT(1, 6, *mot.glbCmJ(), 1, glb_cmT + mot.makJ().fatherPart().rowID() + ld*mot.colID(), ld);
+					s_mc(1, 6, *mot.glbCmI(), ColMajor{ 1 }, glb_cmT + mot.makI().fatherPart().rowID() + ld*mot.colID(), ld);
+					s_mc(1, 6, *mot.glbCmJ(), ColMajor{ 1 }, glb_cmT + mot.makJ().fatherPart().rowID() + ld*mot.colID(), ld);
 				}
 			}
 		}

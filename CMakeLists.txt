@@ -193,4 +193,16 @@ PREPEND(FULL_SRC demo/demo_Aris_ExpCal/demo_ExpCal ${SOURCE_FILES})
 add_executable(demo_ExpCal ${FULL_SRC})
 target_link_libraries(demo_ExpCal ${ALL_LINK_LIB})
 
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_3R ${SOURCE_FILES})
+add_executable(demo_3R ${FULL_SRC})
+target_link_libraries(demo_3R ${ALL_LINK_LIB})
+install(DIRECTORY demo/demo_3R/resource/ DESTINATION resource/demo_3R)
+
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_stewart ${SOURCE_FILES})
+add_executable(demo_stewart ${FULL_SRC})
+target_link_libraries(demo_stewart ${ALL_LINK_LIB})
+install(DIRECTORY demo/demo_stewart/resource/ DESTINATION resource/demo_stewart)
+
 endif(MAKE_DEMO)

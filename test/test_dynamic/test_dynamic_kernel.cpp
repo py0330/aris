@@ -83,7 +83,6 @@ void test_blk()
 }
 void test_mtx_householder() 
 {
-	
 	{
 		const double A[]{ 
 			0.8147,0.0975,0.1576,0.1419,0.6557,0.7577,
@@ -120,6 +119,9 @@ void test_mtx_householder()
 
 		double result_Q[m*m], result_R[m*n], result_U[m*n], result_tau[n], result_b[m], result_x[n];
 
+		s_householder(m, n, A, n, result_U, n, result_tau, 1);
+		if (!(s_is_equal(m*n, result_U, U, error) && s_is_equal(std::min(m - 1, n), result_tau, tau, error)))std::cout << "\"s_householder tem\" failed" << std::endl;
+
 		s_householder(m, n, A, result_U, result_tau);
 		if (!(s_is_equal(m*n, result_U, U, error) && s_is_equal(std::min(m - 1, n), result_tau, tau, error)))std::cout << "\"s_householder\" failed" << std::endl;
 
@@ -128,7 +130,9 @@ void test_mtx_householder()
 
 		s_vc(m, b, result_b);
 		s_householder_sov(m, n, 1, U, tau, result_b, result_x);
-		dsp(result_b, m, 1);
+
+		
+		//dsp(result_b, m, 1);
 		//if (!(s_is_equal(m*m, result_Q, Q, error) && s_is_equal(m*n, result_R, R, error)))std::cout << "\"s_householder_qr\" failed" << std::endl;
 	}
 	{
@@ -221,8 +225,7 @@ void test_mtx_householder()
 	}
 	
 
-	Stride a{ 1,2 };
-	a.c_ld = 5;
+
 }
 void test_mtx_solver()
 {
@@ -576,14 +579,14 @@ void test_mtx_and_vec()
 	if (!s_is_equal(6, result, m1, error))std::cout << "\"s_mcT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
-	s_mcT(2, 3, m2T_ld, 5, result, 6);
+	s_mc(2, 3, m2T_ld, ColMajor{ 5 }, result, 6);
 	if (!s_is_equal(12, result, m2, error))std::cout << "\"s_mcT with ld\" failed" << std::endl;
 
 	s_mcT(2, 3, alpha, m1T, result);
 	if (!s_is_equal(6, result, o1, error))std::cout << "\"s_mcT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
-	s_mcT(2, 3, alpha, m2T_ld, 5, result, 6);
+	s_mc(2, 3, alpha, m2T_ld, ColMajor{ 5 }, result, 6);
 	if (!s_is_equal(12, result, o2, error))std::cout << "\"s_mcT with ld\" failed" << std::endl;
 
 	s_ma(2, 3, m3, o3_before);
@@ -601,13 +604,13 @@ void test_mtx_and_vec()
 	s_maT(2, 3, m3T, o3T_before);
 	if (!s_is_equal(6, o3, o3T_before, error))std::cout << "\"s_maT\" failed" << std::endl;
 
-	s_maT(2, 3, m4T, 5, o4T_before, 4);
+	s_ma(2, 3, m4T, ColMajor{ 5 }, o4T_before, 4);
 	if (!s_is_equal(8, o4, o4T_before, error))std::cout << "\"s_maT with ld\" failed" << std::endl;
 
 	s_maT(2, 3, alpha, m5T, o5T_before);
 	if (!s_is_equal(6, o5, o5T_before, error))std::cout << "\"s_maT\" failed" << std::endl;
 
-	s_maT(2, 3, alpha, m6T, 5, o6T_before, 4);
+	s_ma(2, 3, alpha, m6T, ColMajor{ 5 }, o6T_before, 4);
 	if (!s_is_equal(8, o6, o6T_before, error))std::cout << "\"s_maT with ld\" failed" << std::endl;
 
 	s_mm(2, 4, 3, m7a, m7b, result);
@@ -628,42 +631,42 @@ void test_mtx_and_vec()
 	if (!s_is_equal(8, o11, result, error))std::cout << "\"s_mmTN\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
-	s_mmTN(2, 4, 3, m12a, 5, m12b, 6, result, 5);
+	s_mm(2, 4, 3, m12a, ColMajor{ 5 }, m12b, 6, result, 5);
 	if (!s_is_equal(10, o12, result, error))std::cout << "\"s_mmTN with ld\" failed" << std::endl;
 
 	s_mmTN(2, 4, 3, alpha, m13a, m13b, result);
 	if (!s_is_equal(8, o13, result, error))std::cout << "\"s_mmTN\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
-	s_mmTN(2, 4, 3, alpha, m14a, 5, m14b, 6, result, 5);
+	s_mm(2, 4, 3, alpha, m14a, ColMajor{ 5 }, m14b, 6, result, 5);
 	if (!s_is_equal(10, o14, result, error))std::cout << "\"s_mmTN with ld\" failed" << std::endl;
 
 	s_mmNT(2, 4, 3, m15a, m15b, result);
 	if (!s_is_equal(8, o15, result, error))std::cout << "\"s_mmNT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
-	s_mmNT(2, 4, 3, m16a, 6, m16b, 5, result, 5);
+	s_mm(2, 4, 3, m16a, 6, m16b, ColMajor{ 5 }, result, 5);
 	if (!s_is_equal(10, o16, result, error))std::cout << "\"s_mmNT with ld\" failed" << std::endl;
 
 	s_mmNT(2, 4, 3, alpha, m17a, m17b, result);
 	if (!s_is_equal(8, o17, result, error))std::cout << "\"s_mmNT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
-	s_mmNT(2, 4, 3, alpha, m18a, 6, m18b, 5, result, 5);
+	s_mm(2, 4, 3, alpha, m18a, 6, m18b, ColMajor{ 5 }, result, 5);
 	if (!s_is_equal(10, o18, result, error))std::cout << "\"s_mmNT with ld\" failed" << std::endl;
 
 	s_mmTT(2, 4, 3, m19a, m19b, result);
 	if (!s_is_equal(8, o19, result, error))std::cout << "\"s_mmTT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
-	s_mmTT(2, 4, 3, m20a, 5, m20b, 5, result, 5);
+	s_mm(2, 4, 3, m20a, ColMajor{ 5 }, m20b, ColMajor{ 5 }, result, 5);
 	if (!s_is_equal(10, o20, result, error))std::cout << "\"s_mmTT with ld\" failed" << std::endl;
 
 	s_mmTT(2, 4, 3, alpha, m21a, m21b, result);
 	if (!s_is_equal(8, o21, result, error))std::cout << "\"s_mmTT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
-	s_mmTT(2, 4, 3, alpha, m22a, 5, m22b, 5, result, 5);
+	s_mm(2, 4, 3, alpha, m22a, ColMajor{ 5 }, m22b, ColMajor{ 5 }, result, 5);
 	if (!s_is_equal(10, o22, result, error))std::cout << "\"s_mmTT with ld\" failed" << std::endl;
 
 	const double ma01a[]{ 0.498364051982143,0.959743958516081,0.340385726666133,0.585267750979777,0.223811939491137,0.751267059305653 };
@@ -749,37 +752,37 @@ void test_mtx_and_vec()
 	s_mmaTN(2, 4, 3, ma05a, ma05b, oa05_before);
 	if (!s_is_equal(8, oa05_before, oa05, error))std::cout << "\"s_mmaTN\" failed" << std::endl;
 
-	s_mmaTN(2, 4, 3, ma06a, 5, ma06b, 6, oa06_before, 5);
+	s_mma(2, 4, 3, ma06a, ColMajor{ 5 }, ma06b, RowMajor{ 6 }, oa06_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa06_before, oa06, error))std::cout << "\"s_mmaTN with ld\" failed" << std::endl;
 
 	s_mmaTN(2, 4, 3, alpha, ma07a, ma07b, oa07_before);
 	if (!s_is_equal(8, oa07_before, oa07, error))std::cout << "\"s_mmaTN\" failed" << std::endl;
 
-	s_mmaTN(2, 4, 3, alpha, ma08a, 5, ma08b, 6, oa08_before, 5);
+	s_mma(2, 4, 3, alpha, ma08a, ColMajor{ 5 }, ma08b, RowMajor{ 6 }, oa08_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa08_before, oa08, error))std::cout << "\"s_mmaTN with ld\" failed" << std::endl;
 
 	s_mmaNT(2, 4, 3, ma09a, ma09b, oa09_before);
 	if (!s_is_equal(8, oa09_before, oa09, error))std::cout << "\"s_mmaNT\" failed" << std::endl;
 
-	s_mmaNT(2, 4, 3, ma10a, 6, ma10b, 5, oa10_before, 5);
+	s_mma(2, 4, 3, ma10a, RowMajor{ 6 }, ma10b, ColMajor{ 5 }, oa10_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa06_before, oa10, error))std::cout << "\"s_mmaNT with ld\" failed" << std::endl;
 
 	s_mmaNT(2, 4, 3, alpha, ma11a, ma11b, oa11_before);
 	if (!s_is_equal(8, oa11_before, oa11, error))std::cout << "\"s_mmaNT\" failed" << std::endl;
 
-	s_mmaNT(2, 4, 3, alpha, ma12a, 6, ma12b, 5, oa12_before, 5);
+	s_mma(2, 4, 3, alpha, ma12a, RowMajor{ 6 }, ma12b, ColMajor{ 5 }, oa12_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa12_before, oa12, error))std::cout << "\"s_mmaNT with ld\" failed" << std::endl;
 
 	s_mmaTT(2, 4, 3, ma13a, ma13b, oa13_before);
 	if (!s_is_equal(8, oa13_before, oa13, error))std::cout << "\"s_mmaTT\" failed" << std::endl;
 
-	s_mmaTT(2, 4, 3, ma14a, 5, ma14b, 5, oa14_before, 5);
+	s_mma(2, 4, 3, ma14a, ColMajor{ 5 }, ma14b, ColMajor{ 5 }, oa14_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa14_before, oa14, error))std::cout << "\"s_mmaTT with ld\" failed" << std::endl;
 
 	s_mmaTT(2, 4, 3, alpha, ma15a, ma15b, oa15_before);
 	if (!s_is_equal(8, oa15_before, oa15, error))std::cout << "\"s_mmaTT\" failed" << std::endl;
 
-	s_mmaTT(2, 4, 3, alpha, ma16a, 5, ma16b, 5, oa16_before, 5);
+	s_mma(2, 4, 3, alpha, ma16a, ColMajor{ 5 }, ma16b, ColMajor{ 5 }, oa16_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa16_before, oa16, error))std::cout << "\"s_mmaTT with ld\" failed" << std::endl;
 }
 void test_pm_operation()

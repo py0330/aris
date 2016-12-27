@@ -1,0 +1,45 @@
+**ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz**************************
+**PARASOLID !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~0123456789**************************
+**PART1;
+MC=AMD64;
+MC_MODEL=Intel64 Family 6 Model 58 Stepping 9, GenuineIntel;
+MC_ID=unknown;
+OS=Windows_NT;
+OS_RELEASE=unknown;
+FRU=Parasolid Version 27.0, build 196, 10- 7-2014;
+APPL=SOLIDWORKS 2015-2014346;
+SITE=;
+USER=unknown;
+FORMAT=text;
+GUISE=transmit;
+KEY=part1;
+FILE=part1.x_t;
+DATE=Thu Jul 07 12:33:12 2016;
+**PART2;
+SCH=SCH_2700196_26105;
+USFLD_SIZE=0;
+**PART3;
+**END_OF_HEADER*****************************************************************
+T51 : TRANSMIT FILE created by modeller version 270019623 SCH_2700196_26105_1300
+6196 0 12 30 CCCCCCCCCCCCCDI5 owner1040 0 CCCCCCCCCA13 boundary_mesh1006 0 A16 i
+ndex_map_offset0 0 1 dA9 index_map82 0 A17 node_id_index_map82 0 A20 schema_embe
+dding_map82 0 A5 child12 0 A14 lowest_node_id0 0 1 dZ1 65 0 2 0 0 0 0 1e3 1e-8 0
+ 3 0 1 0 1 1 4 5 6 0 7 8 0 0 0 0 0 0 0 0 70 11 CI9 list_type0 0 1 uI10 notransmi
+t0 0 1 lCCCDCCDI12 finger_index0 0 1 dI12 finger_block1012 0 CZ2 0 4 T1 0 0 2 20
+ 1 9 9 13 255 4 29 0 1 0 10 0 0 11 0 51 255 5 28 0 10 12 0 0 -1 0 0 -1 0 0 .015
+ 0 0 1 31 255 6 23 0 13 14 0 0 +0 0 0 1 0 0 0 0 -1 .015 19 8 CCCCCCCA5 owner12 0
+ Z7 7 0 1 11 0 15 V0 16 255 8 4 0 ?16 0 13 14 0 0 1 17 255 16 0 17 16 16 0 18 8
+ 0 0 +16 13 18 0 ?19 8 0 6 0 0 1 31 14 5 0 8 0 6 0 +1 0 0 1 0 0 0 0 -1 .015 17 1
+9 0 20 19 19 0 21 13 0 0 +15 255 20 26 0 19 10 0 17 21 0 22 21 21 0 19 13 0 0 -1
+5 22 17 0 21 23 0 14 255 23 16 24 ?0 25 22 4 12 -0 0 0 25 15 81 255 1 24 63 26 2
+3 27 0 0 28 29 14 25 1 28 ?23 10 17 4 30 +0 0 23 10 15 50 255 12 22 0 23 30 5 0
+ +0 0 0 1 0 0 0 0 -1 13 15 8 0 0 0 0 0 0 7 10 14 10 25 31 ?25 0 32 4 5 -0 0 25 0
+ 15 81 1 31 65 26 10 33 0 28 0 34 15 32 24 0 18 10 20 17 18 0 32 18 18 0 16 8 0
+ 0 -80 255 1 26 35 36 9000 1 1 1 1 1 1 1 1 0 FFFFTFTFFFFFFF1 81 1 33 52 37 10 0
+ 31 0 38 39 81 1 28 64 26 25 38 0 24 31 40 82 255 1 34 38862989 81 1 38 53 37 25
+ 0 28 33 27 41 82 1 40 36896909 80 1 37 0 42 8001 0 0 0 0 3 5 0 0 0 FFFFTFTFFFFF
+FF2 81 1 27 54 37 23 0 24 38 0 43 83 255 3 41 1 1 1 83 3 43 1 1 1 79 255 15 42 S
+DL/TYSA_COLOUR83 3 39 1 1 1 79 14 36 SWEntUnchanged50 30 2 0 25 0 12 0 +1 0 0 1
+ 0 0 0 0 -1 15 17 3 0 16 25 0 82 1 29 38600845 19 11 30 0 1 0 7 4 S0 74 4 CI16 i
+ndex_map_offset0 0 1 dCCZ20 9 2 0 0 31 27 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+ 0 

@@ -1,12 +1,6 @@
 ﻿#include "test_dynamic_model.h"
 #include <iostream>
 #include <aris.h>
-#ifdef WIN32
-#include "C:\Eigen\Eigen"
-#endif
-#ifdef UNIX
-#include "/usr/Eigen/Eigen"
-#endif
 
 #include<type_traits>
 
@@ -1294,6 +1288,80 @@ void test_constraint()
 		mot.updMv();
 		if (std::abs(mot.mv() - 0.689)>error)std::cout << "\"Motion:updMv\" failed" << std::endl;
 
+	}
+
+	// test general motion//
+	{
+		const double relative_pe[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+		const double relative_vs[6]{ 0,0,0.689,0,0,0 };
+
+		double relative_pm[16];
+		s_pe2pm(relative_pe, relative_pm, "123");
+
+		double mak_i_pm[16];
+		s_pm_dot_pm(*mak_j.pm(), relative_pm, mak_i_pm);
+
+		double glb_pm_m[16];
+		s_pm_dot_inv_pm(mak_i_pm, *mak_i.prtPm(), glb_pm_m);
+
+		prt_m.setPm(glb_pm_m);
+		prt_m.setVs(mak_j, relative_vs);
+
+		auto &mot = model.add<GeneralMotion>("m1", mak_i, mak_j);
+
+		const double glb_cmI[]{ 0.413710949602281, - 0.464491586871515,   0.783001159580726,   0,   0,   0,
+			- 0.0419709404545899,   0.849409663646283,   0.526062414036267, 0, 0, 0,
+			- 0.90944031708328, - 0.25050107590565,   0.331914929814216,   0,   0,   0,
+			- 0.705694160625697, - 0.681200783491694, - 0.0312370311099321,   0.413710949602281, - 0.464491586871515,   0.783001159580726,
+			1.04378672046201, - 0.0395661962367909,   0.147162423437692, - 0.0419709404545899,   0.849409663646283,   0.526062414036267,
+			- 0.369196422575466,   1.12895372781328, - 0.159552895610227, - 0.90944031708328, - 0.25050107590565,   0.331914929814216 };
+		const double glb_cmJ[]{ -0.413710949602281, 0.464491586871515,   -0.783001159580726,   0,   0,   0,
+			0.0419709404545899,  - 0.849409663646283,   -0.526062414036267, 0, 0, 0,
+			0.90944031708328, 0.25050107590565,   -0.331914929814216,   0,   0,   0,
+			0.705694160625697, 0.681200783491694, 0.0312370311099321,   -0.413710949602281, 0.464491586871515,   -0.783001159580726,
+			-1.04378672046201, 0.0395661962367909,   -0.147162423437692, 0.0419709404545899,   -0.849409663646283,   -0.526062414036267,
+			0.369196422575466,   -1.12895372781328, 0.159552895610227, 0.90944031708328, 0.25050107590565,   -0.331914929814216 };
+		const double prt_cmI[]{ -0.22, - 0.975499782797526,   0.000416847668728071,   0,   0,   0,
+			0.175499782797526, - 0.04, - 0.983666521865018,   0,   0,   0,
+			0.959583152331272, - 0.216333478134982,   0.18,   0,   0,   0,
+			0.139266695626997, - 0.0312666956269964,   0.331099956559505, - 0.22, - 0.975499782797526,   0.000416847668728071,
+			- 0.161958315233127, - 0.27101658702576, - 0.0178749456993816,   0.175499782797526, - 0.04, - 0.983666521865018,
+			0.0615499782797526,   0.191099956559505, - 0.0984500217202474,   0.959583152331272, - 0.216333478134982,   0.18 };
+		const double prt_cmJ[]{ 0.056450322927895, - 0.774310621053255, - 0.630282812049845,   0,   0,   0,
+			0.667701575653235, - 0.440066920670111,   0.600429605534333, - 0, - 0, - 0,
+			0.742285637010123,   0.454735271840714, - 0.492166501940581, - 0, - 0, - 0,
+			- 0.347790781866912,   0.0242346634708827, - 0.0609219520773668,   0.056450322927895, - 0.774310621053255, - 0.630282812049845,
+			- 0.139627559696223, - 0.311594926010587, - 0.0731027876832712,   0.667701575653235, - 0.440066920670111,   0.600429605534333,
+			0.152047187678477, - 0.260277725507541, - 0.0111649587681636,   0.742285637010123,   0.454735271840714, - 0.492166501940581 };
+		const double ce[6]{ 0,0,0,0,0,0 };
+		const double ca[]{ 0,0,0,0,0,0 };
+
+
+		double result1[42], result2[48];
+
+		mot.setMp(relative_pe);
+
+
+		mot.cptGlbCm(result1, result2, 6, 7);
+		if (!s_is_equal(6, mot.dim(), result1, 6, glb_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, glb_cmJ, mot.dim(), error))std::cout << "\"GeneralMotion:cptGlbCm\" failed" << std::endl;
+
+		mot.cptPrtCm(result1, result2, 6, 7);
+		if (!s_is_equal(6, mot.dim(), result1, 6, prt_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, prt_cmJ, mot.dim(), error))std::cout << "\"GeneralMotion:cptPrtCm\" failed" << std::endl;
+
+		mot.cptCp(result1);
+		if (!s_is_equal(mot.dim(), result1, ce, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+
+		//mot.cptCa(result1);
+		//if (!s_is_equal(mot.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
+
+
+
+		//mot.updMp();
+		//if (std::abs(mot.mp() - 0.521)>error)std::cout << "\"Motion:updMp\" failed" << std::endl;
+
+		//mot.updMv();
+		//if (std::abs(mot.mv() - 0.689)>error)std::cout << "\"Motion:updMv\" failed" << std::endl;
+
 		//mot.updGlbCm();
 		//mot.updPrtCm();
 		//mot.updCa();
@@ -1445,7 +1513,7 @@ void test_model_cpt()
 		
 
 		m.dynGlbIs(result);
-		dlmwrite("C:\\Users\\py033\\Desktop\\cm.txt", result, m.dynDimM(), m.dynDimN());
+		//dlmwrite("C:\\Users\\py033\\Desktop\\cm.txt", result, m.dynDimM(), m.dynDimN());
 
 	}
 	catch (std::exception &e)
@@ -1454,7 +1522,6 @@ void test_model_cpt()
 	}
 
 }
-
 void test_kinematic()
 {
 	const char xml_file[] =
@@ -1524,18 +1591,7 @@ void test_kinematic()
 		
 		m.allocateMemory();
 		m.motionAtAbs(0).setMp(0.585);
-
-
-		m.dynSetSolveMethod([](int n, const double *D, const double *b, double *x)
-		{
-			Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >Dm(D, n, n);
-			Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1> >bm(b, n);
-			Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1> >xm(x, n);
-			xm = Dm.partialPivLu().solve(bm);
-		});
 		m.kinPos();
-		
-
 	}
 	catch (std::exception &e)
 	{
@@ -1649,8 +1705,7 @@ void test_model()
 	test_constraint();
 	test_model_cpt();
 	test_kinematic();
-	//test_simulation();
-	//test_auto_kinematic();
+	test_simulation();
 	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
 }
 

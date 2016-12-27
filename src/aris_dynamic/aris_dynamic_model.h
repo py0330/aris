@@ -377,13 +377,12 @@ namespace aris
 			auto virtual prtPm()const->const double4x4& override;
 			auto virtual prtVs()const->const double6& override;
 			auto virtual prtAs()const->const double6& override;
-			auto virtual updGlbPm()->void;
 			auto fatherPart() const->const Part&;
 			auto fatherPart()->Part&;
 
 		protected:
 			virtual ~Marker();
-			explicit Marker(const std::string &name, const double *prt_pm = nullptr, Marker *relative_mak = nullptr, bool active = true);//only for child class Part to construct
+			explicit Marker(const std::string &name, const double *prt_pm = nullptr, bool active = true);//only for child class Part to construct
 			explicit Marker(Object &father, const aris::core::XmlElement &xml_ele);
 			Marker(const Marker&);
 			Marker(Marker&&);
@@ -496,7 +495,7 @@ namespace aris
 
 		private:
 			virtual ~Part();
-			explicit Part(const std::string &name, const double *prt_im = nullptr, const double *pm = nullptr, const double *vel = nullptr, const double *acc = nullptr, bool active = true);
+			explicit Part(const std::string &name, const double *prt_im = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, const std::string &graphic_file = "", bool active = true);
 			explicit Part(Object &father, const aris::core::XmlElement &xml_ele);
 			Part(const Part &other);
 			Part(Part &&other);
@@ -601,6 +600,11 @@ namespace aris
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual updCa()->void override;
 			auto virtual dim() const ->std::size_t override { return Dim(); }
+			
+			auto virtual cptCp(double *cp)const->void override;
+			auto virtual cptCv(double *cv)const->void override;
+			auto virtual cptCa(double *ca)const->void override;
+			
 			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
 			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
 			auto virtual glbCmPtrI() const->const double* override { return *glbCmI(); }
@@ -632,6 +636,7 @@ namespace aris
 
 			friend class Model;
 			friend class aris::core::Root;
+			friend class aris::core::Object;
 		};
 		class Force :public Interaction
 		{
@@ -734,7 +739,7 @@ namespace aris
 			auto setConstraintF()->void;
 			
 
-			auto virtual kinPos(double error = 1e-10)->void;
+			auto virtual kinPos(int max_count = 10, double error = 1e-10)->std::tuple<int, double>;
 			auto virtual kinVel()->void;
 			auto virtual kinPre()->void;
 			

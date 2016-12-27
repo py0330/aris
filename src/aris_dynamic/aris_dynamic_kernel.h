@@ -52,20 +52,187 @@ namespace aris
 	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
 	namespace dynamic
 	{
-		struct ND {};
-		struct TD {};
-		struct NS {};
-		struct TS {};
-		
+		struct RowMajor { int r_ld; };
+		struct ColMajor { int c_ld; };
 		struct Stride { int c_ld; int r_ld; };
-		
-		auto s_norm(int n, const double *x, int x_ld) noexcept->double;// vector norm
+
+		auto inline vid(int i, int ld)->int { return i*ld; }
+		auto inline next_vid(int id, int ld)->int { return id + ld; }
+
+		auto inline id(int i, int j, int ld)->int { return i*ld + j; };
+		auto inline id(int i, int j, RowMajor row_major)->int { return i*row_major.r_ld + j; };
+		auto inline id(int i, int j, ColMajor col_major)->int { return i + j*col_major.c_ld; };
+		auto inline id(int i, int j, Stride stride)->int { return i*stride.r_ld + j*stride.c_ld; };
+		auto inline next_row(int id, int ld)->int { return id + ld; };
+		auto inline next_row(int id, RowMajor row_major)->int { return id + row_major.r_ld; };
+		auto inline next_row(int id, ColMajor col_major)->int { return id + 1; };
+		auto inline next_row(int id, Stride stride)->int { return id + stride.r_ld; };
+		auto inline next_col(int id, int ld)->int { return id + 1; };
+		auto inline next_col(int id, RowMajor row_major)->int { return id + 1; };
+		auto inline next_col(int id, ColMajor col_major)->int { return id + col_major.c_ld; };
+		auto inline next_col(int id, Stride stride)->int { return id + stride.c_ld; };
+		auto inline T(int ld)->ColMajor { return ColMajor{ ld }; }
+		auto inline T(RowMajor r)->ColMajor { return ColMajor{ r.r_ld }; }
+		auto inline T(ColMajor c)->RowMajor { return RowMajor{ c.c_ld }; }
+		auto inline T(Stride s)->Stride { return Stride{ s.r_ld,s.c_ld }; }
+
+		template<typename XType>
+		auto inline s_norm(int n, const double *x, XType x_t) noexcept->double 
+		{
+			double norm = 0;
+			for (int i{ 0 }, x_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t))norm += x[x_id] * x[x_id];
+			return std::sqrt(norm);
+		}
 		auto inline s_norm(int n, const double *x) noexcept->double { return s_norm(n, x, 1); }
-		auto s_swap_v(int n, double *x, const int x_ld, double *y, const int y_ld) noexcept->void;// vector swap
-		auto s_transpose(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void;// matrix transpose to matrix
+		template<typename XType>
+		auto inline s_norm_col(int m, const double *x, XType x_t) noexcept->double
+		{
+			double norm = 0;
+			for (int i{ 0 }, x_id{ 0 }; i < m; ++i, x_id = next_row(x_id, x_t))norm += x[x_id] * x[x_id];
+			return std::sqrt(norm);
+		}
+		template<typename XType>
+		auto inline s_norm_row(int n, const double *x, XType x_t) noexcept->double
+		{
+			double norm = 0;
+			for (int i{ 0 }, x_id{ 0 }; i < n; ++i, x_id = next_col(x_id, x_t))norm += x[x_id] * x[x_id];
+			return std::sqrt(norm);
+		}
+		template<typename XType, typename YType>
+		auto inline s_swap_v(int n, double *x, XType x_t, double *y, YType y_t) noexcept->void
+		{
+			for (int i{ 0 }, x_id{ 0 }, y_id{0}; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))
+				std::swap(x[x_id], y[y_id]);
+		}
+		auto inline s_swap_v(int n, double *x, double *y) noexcept->void { s_swap_v(n, x, 1, y, 1); }
+		// matrix transpose to matrix
+		template<typename AType, typename BType>
+		auto inline s_transpose(int m, int n, const double *A, AType a_t, double *B, BType b_t) noexcept->void
+		{
+			for (int i{ 0 }, a_row{ 0 }, b_col{0}; i < m; ++i, a_row = next_row(a_row, a_t), b_col = next_col(b_col, b_t))
+				for (int j{ 0 }, a_id{ a_row }, b_id{ b_col }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
+					B[b_id] = A[a_id];
+		}
 		auto inline s_transpose(int m, int n, const double *A, double *B) noexcept->void { s_transpose(m, n, A, n, B, m); };
+		template<typename AType>
+		auto inline s_fill(int m, int n, double value, double *A, AType a_t) noexcept->void 
+		{ 
+			for (int i{ 0 }, a_row{ 0 }; i < m; ++i, a_row = next_row(a_row, a_t)) for (int j{ 0 }, a_id{ a_row }; j < n; ++j, a_id = next_col(a_id, a_t)) A[a_id] = value;
+		}// fill matrix with value
 		auto inline s_fill(int m, int n, double value, double *A) noexcept->void { std::fill(A, A + m*n, value); }
-		auto inline s_fill(int m, int n, double value, double *A, int lda) noexcept->void { for (double* end{ A + m*lda }; A < end; A += lda) std::fill(A, A + n, value); }// fill matrix with value
+
+		template <typename T>
+		auto inline s_sgn(T val)->int { return (T(0) < val) - (val < T(0)); }
+		template <typename T>
+		auto inline s_sgn2(T val)->int { return val < T(0) ? -1 : 1; }
+
+		template<typename XType>
+		auto inline s_nv(int n, double alpha, double *x, XType x_t) noexcept->void { for (int i{ 0 }, vid{ 0 }; i < n; ++i, vid = next_vid(vid, x_t))x[vid] *= alpha; }
+		auto inline s_nv(int n, double alpha, double *x) noexcept->void  { for (int i{ 0 }; i < n; ++i)x[i] *= alpha; }
+		template<typename XType, typename YType>
+		auto inline s_vc(int n, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (int i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] = x[x_id]; }
+		template<typename XType, typename YType>
+		auto inline s_vc(int n, double alpha, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (int i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] = alpha*x[x_id]; }
+		auto inline s_vc(int n, const double *x, double *y) noexcept->void { std::copy(x, x + n, y); }
+		auto inline s_vc(int n, double alpha, const double *x, double *y) noexcept->void { for (int i{ 0 }; i < n; ++i)y[i] = alpha*x[i]; }
+		template<typename XType, typename YType>
+		auto inline s_va(int n, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (int i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] += x[x_id]; }
+		template<typename XType, typename YType>
+		auto inline s_va(int n, double alpha, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (int i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] += alpha*x[x_id]; }
+		auto inline s_va(int n, const double* x, double* y) noexcept->void { for (auto i = 0; i < n; ++i)y[i] += x[i]; }
+		auto inline s_va(int n, double alpha, const double* x, double* y) noexcept->void { for (auto i = 0; i < n; ++i)y[i] += alpha * x[i]; }
+		template<typename XType, typename YType>
+		auto inline s_vv(int n, const double *x, XType x_t, const double *y, YType y_t) noexcept->double { double ret{ 0 }; for (int i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))ret += x[x_id] * y[y_id]; return ret; }
+		auto inline s_vv(int n, const double *x, const double *y) noexcept->double { double ret{ 0 }; for (int i = 0; i < n; ++i)ret += x[i] * y[i];	return ret; }
+		template<typename AType>
+		auto inline s_nm(int m, int n, double alpha, double* A, AType a_t) noexcept->void
+		{ 
+			for (int i{ 0 }, a_row{0}; i < m; ++i, a_row = next_row(a_row, a_t))for (int j{ 0 }, a_id{ a_row }; j < n; ++j, a_id = next_col(a_id, a_t))	A[id(i, j, a_t)] *= alpha; 
+		}
+		auto inline s_nm(int m, int n, double alpha, double* A) noexcept->void { s_nv(m*n, alpha, A); }
+		template<typename AType, typename BType>
+		auto inline s_mc(int m, int n, const double *A, AType a_t, double *B, BType b_t) noexcept->void
+		{ 
+			for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
+				for (int j{ 0 }, a_id{ row_a }, b_id{ row_b }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
+					B[b_id] = A[a_id];
+		}
+		template<typename AType, typename BType>
+		auto inline s_mc(int m, int n, double alpha, const double *A, AType a_t, double *B, BType b_t) noexcept->void
+		{
+			for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
+				for (int j{ 0 }, a_id{ row_a }, b_id{ row_b }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
+					B[b_id] = alpha * A[a_id];
+		}
+		auto inline s_mc(int m, int n, const double *A, double *B) noexcept->void { s_vc(m*n, A, B); }
+		auto inline s_mc(int m, int n, double alpha, const double *A, double *B) noexcept->void { s_vc(m*n, alpha, A, B); }
+		auto inline s_mcT(int m, int n, const double *A, double *B) noexcept->void { s_mc(m, n, A, ColMajor{ m }, B, n); }
+		auto inline s_mcT(int m, int n, double alpha, const double *A, double *B) noexcept->void { s_mc(m, n, alpha, A, ColMajor{ m }, B, n); }
+		template<typename AType, typename BType>
+		auto inline s_ma(int m, int n, const double* A, AType a_t, double* B, BType b_t) noexcept->void 
+		{ 
+			for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
+				for (int j{ 0 }, a_id{ row_a }, b_id{ row_b }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
+					B[b_id] += A[a_id];
+		}
+		template<typename AType, typename BType>
+		auto inline s_ma(int m, int n, double alpha, const double* A, AType a_t, double* B, BType b_t) noexcept->void
+		{ 
+			for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
+				for (int j{ 0 }, a_id{ row_a }, b_id{ row_b }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
+					B[b_id] += alpha*A[a_id];
+		}
+		auto inline s_ma(int m, int n, const double* A, double* B) noexcept->void { s_va(m*n, A, B); }
+		auto inline s_ma(int m, int n, double alpha, const double* A, double* B) noexcept->void { s_va(m*n, alpha, A, B); }
+		auto inline s_maT(int m, int n, const double* A, double* B) noexcept->void { s_ma(m, n, A, ColMajor{ m }, B, n); }
+		auto inline s_maT(int m, int n, double alpha, const double* A, double* B) noexcept->void { s_ma(m, n, alpha, A, ColMajor{ m }, B, n); }
+		
+		template<typename AType, typename BType, typename CType>
+		auto inline s_mma(int m, int n, int k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
+		{
+			for (int i{ 0 }, a_row{ 0 }, c_row{ 0 }; i < m; ++i, a_row = next_row(a_row, a_t), c_row = next_row(c_row, c_t))
+			{
+				for (int j{ 0 }, b_col{ 0 }, c_id{ c_row }; j < n; ++j, b_col = next_col(b_col, b_t), c_id = next_col(c_id, c_t))
+				{
+					for (int u{ 0 }, a_id{ a_row }, b_id{ b_col }; u < k; ++u, a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
+						C[c_id] += A[a_id] * B[b_id];
+				}
+			}
+		}
+		template<typename AType, typename BType, typename CType>
+		auto inline s_mma(int m, int n, int k, double alpha, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
+		{
+			for (int i{ 0 }, a_row{ 0 }, c_row{ 0 }; i < m; ++i, a_row = next_row(a_row, a_t), c_row = next_row(c_row, c_t))
+			{
+				for (int j{ 0 }, b_col{ 0 }, c_id{ c_row }; j < n; ++j, b_col = next_col(b_col, b_t), c_id = next_col(c_id, c_t))
+				{
+					double value{ 0 };
+					for (int u{ 0 }, a_id{ a_row }, b_id{ b_col }; u < k; ++u, a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
+						value += A[a_id] * B[b_id];
+					C[c_id] += alpha*value;
+				}
+			}
+		}
+		auto inline s_mma(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, k, B, n, C, n); }
+		auto inline s_mma(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, k, B, n, C, n); }
+		auto inline s_mmaTN(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, ColMajor{ m }, B, RowMajor{ n }, C, RowMajor{ n }); }
+		auto inline s_mmaTN(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, ColMajor{ m }, B, RowMajor{ n }, C, RowMajor{ n }); }
+		auto inline s_mmaNT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, RowMajor{ k }, B, ColMajor{ k }, C, RowMajor{ n }); }
+		auto inline s_mmaNT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, RowMajor{ k }, B, ColMajor{ k }, C, RowMajor{ n }); }
+		auto inline s_mmaTT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, ColMajor{ m }, B, ColMajor{ k }, C, RowMajor{ n }); }
+		auto inline s_mmaTT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, ColMajor{ m }, B, ColMajor{ k }, C, RowMajor{ n }); }
+		template<typename AType, typename BType, typename CType>
+		auto inline s_mm(int m, int n, int k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t) noexcept->void { s_fill(m, n, 0.0, C, c_t); s_mma(m, n, k, A, a_t, B, b_t, C, c_t); }
+		template<typename AType, typename BType, typename CType>
+		auto inline s_mm(int m, int n, int k, double alpha, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t) noexcept->void { s_mm(m, n, k, A, a_t, B, b_t, C, c_t);	s_nm(m, n, alpha, C, c_t); }
+		auto inline s_mm(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mma(m, n, k, A, B, C); }
+		auto inline s_mm(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mm(m, n, k, A, B, C); s_nm(m, n, alpha, C);}
+		auto inline s_mmTN(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaTN(m, n, k, A, B, C); }
+		auto inline s_mmTN(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTN(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
+		auto inline s_mmNT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaNT(m, n, k, A, B, C); }
+		auto inline s_mmNT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmNT(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
+		auto inline s_mmTT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaTT(m, n, k, A, B, C); }
+		auto inline s_mmTT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTT(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
 
 		using BlockSize = std::vector<int>;
 		using BlockMatrix = std::vector<std::vector<std::vector<double> > >;
@@ -85,14 +252,138 @@ namespace aris
 		auto s_blk_mmTN(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
 		auto s_blk_mmTT(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
 
-		auto s_llt(int m, const double *A, double *L) noexcept->void;
-		auto s_inv_lm(int m, const double *L, double *inv_L) noexcept->void;
-		auto s_sov_lm(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
-		auto s_sov_lmNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void;
-		auto s_sov_um(int m, int rhs, const double *L, int ldl, const double *b, int ldb, double *x, int ldx) noexcept->void;
-		inline auto s_sov_um(int m, int rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_um(m, rhs, L, m, b, rhs, x, rhs); }
-		auto s_sov_umNT(int m, int rhs, const double *L, int ldl, const double *b, int ldb, double *x, int ldx) noexcept->void;
-		inline auto s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_umNT(m, rhs, L, m, b, m, x, rhs); }
+		template<typename AType, typename LType>
+		auto inline s_llt(int m, const double *A, AType a_t, double *L, LType l_t) noexcept->void
+		{
+			for (int j = 0; j < m; ++j)
+			{
+				L[id(j, j, l_t)] = A[id(j, j, a_t)];
+				for (int k = 0; k < j; ++k)
+				{
+					L[id(j, j, l_t)] -= L[id(j, k, l_t)] * L[id(j, k, l_t)];
+				}
+				L[id(j, j, l_t)] = std::sqrt(L[id(j, j, l_t)]);
+
+
+				for (int i = j + 1; i < m; ++i)
+				{
+					L[id(i, j, l_t)] = A[id(i, j, a_t)];
+					for (int k = 0; k < j; ++k)
+					{
+						L[id(i, j, l_t)] -= L[id(i, k, l_t)] * L[id(j, k, l_t)];
+					}
+					L[id(i, j, l_t)] /= L[id(j, j, l_t)];
+					L[id(j, i, l_t)] = L[id(i, j, l_t)];
+				}
+			}
+		}
+		auto inline s_llt(int m, const double *A, double *L) noexcept->void { s_llt(m, A, m, L, m); };
+		template<typename LType, typename InvLType>
+		auto inline s_inv_lm(int m, const double *L, LType l_t, double *inv_L, InvLType inv_l_t) noexcept->void
+		{
+			s_fill(m, m, 0.0, inv_L, inv_l_t);
+
+			for (int j = 0; j < m; ++j)
+			{
+				inv_L[id(j, j, inv_l_t)] = 1.0;
+
+				for (int i = j; i < m; ++i)
+				{
+					for (int k = 0; k < i; ++k)
+					{
+						inv_L[id(i, j, inv_l_t)] -= L[id(i, k, l_t)] * inv_L[id(k, j, inv_l_t)];
+					}
+					inv_L[id(i, j, inv_l_t)] /= L[id(i, i, l_t)];
+				}
+			}
+		}
+		auto inline s_inv_lm(int m, const double *L, double *inv_L) noexcept->void { s_inv_lm(m, L, m, inv_L, m); }
+		template<typename LType, typename bType, typename xType>
+		auto inline s_sov_lm(int m, int rhs, const double *L, LType l_t, const double *b, bType b_t, double *x, xType x_t) noexcept->void
+		{
+			for (int j = 0; j < rhs; ++j)
+			{
+				for (int i = 0; i < m; ++i)
+				{
+					x[id(i, j, x_t)] = b[id(i, j, b_t)];
+
+					for (int k = 0; k < i; ++k)
+					{
+						x[id(i, j, x_t)] -= L[id(i, k, l_t)] * x[id(k, j, x_t)];
+					}
+					x[id(i, j, x_t)] /= L[id(i, i, l_t)];
+				}
+			}
+		}
+		auto inline s_sov_lm(int m, int rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_lm(m, rhs, L, m, b, rhs, x, rhs); }
+		auto inline s_sov_lmNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_lm(m, rhs, L, m, b, ColMajor{ m }, x, rhs); }
+		template<typename LType, typename bType, typename xType>
+		auto inline s_sov_um(int m, int rhs, const double *L, LType l_t, const double *b, bType b_t, double *x, xType x_t) noexcept->void
+		{
+			for (int j = 0; j < rhs; ++j)
+			{
+				for (int i = m - 1; i > -1; --i)
+				{
+					x[id(i, j, x_t)] = b[id(i, j, b_t)];
+
+					for (int k = i + 1; k < m; ++k)
+					{
+						x[id(i, j, x_t)] -= L[id(i, k, l_t)] * x[id(k, j, x_t)];
+					}
+					x[id(i, j, x_t)] /= L[id(i, i, l_t)];
+				}
+			}
+		}
+		auto inline s_sov_um(int m, int rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_um(m, rhs, L, m, b, rhs, x, rhs); }
+		auto inline s_sov_umNT(int m, int rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_um(m, rhs, L, m, b, ColMajor{ m }, x, rhs); }
+
+		template<typename AType, typename UType, typename TauType>
+		auto s_householder(int m, int n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t)noexcept->void
+		{
+			s_mc(m, n, A, a_t, U, u_t);
+			for (int i = 0; i < std::min(m - 1, n); ++i)
+			{
+				// compute householder vector //
+				double rho = -s_norm_col(m - i, U + id(i, i, u_t), u_t) * s_sgn2(U[id(i, i, u_t)]);
+				tau[id(i, 0, tau_t)] = U[id(i, i, u_t)] / rho - 1.0;
+				s_nv(m - 1 - i, 1.0 / (U[id(i, i, u_t)] - rho), U + id(i + 1, i, u_t), u_t);
+				U[id(i, i, u_t)] = rho;
+
+
+				// update matrix //
+				s_mc(1, n - i - 1, U + id(i, i + 1, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t));
+				s_mma(1, n - i - 1, m - i - 1, U + id(i + 1, i, u_t), T(u_t), U + id(i + 1, i + 1, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t));
+				s_nm(n - i - 1, 1, tau[id(i, 0, tau_t)], tau + id(i + 1, 0, tau_t), tau_t);
+
+				s_ma(n - i - 1, 1, tau + id(i + 1, 0, tau_t), tau_t, U + id(i, i + 1, u_t), T(u_t));
+				s_mma(m - i - 1, n - i - 1, 1, U + id(i + 1, i, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t), U + id(i + 1, i + 1, u_t), u_t);
+
+				//if (i == 0)dsp(U, m, n);
+			}
+
+
+
+
+
+			//std::copy(A, A + m*n, U);
+
+			//for (int i = 0; i < std::min(m - 1, n); ++i)
+			//{
+			//	// compute householder vector //
+			//	double rho = -s_norm(m - i, U + i*n + i, n) * s_sgn2(U[i*n + i]);
+			//	tau[i] = U[i*n + i] / rho - 1.0;
+			//	s_nv(m - 1 - i, 1.0 / (U[i*n + i] - rho), U + (i + 1)*n + i, n);
+			//	U[i*n + i] = rho;
+
+			//	// update matrix //
+			//	s_mc(1, n - i - 1, U + i*n + i + 1, 1, tau + i + 1, 1);
+			//	s_mma(1, n - i - 1, m - i - 1, U + (i + 1)*n + i, ColMajor{ n }, U + (i + 1)*n + i + 1, RowMajor{ n }, tau + i + 1, RowMajor{ 1 });
+			//	s_nv(n - i - 1, tau[i], tau + i + 1);
+
+			//	s_va(n - i - 1, tau + i + 1, U + i*n + i + 1);
+			//	s_mma(m - i - 1, n - i - 1, 1, U + (i + 1)*n + i, n, tau + i + 1, n, U + (i + 1)*n + i + 1, n);
+			//}
+		}
 
 		// tau must have same size with max(m,n), A can be the same as U
 		auto s_householder(int m, int n, const double *A, double *U, double *tau)noexcept->void;
@@ -100,69 +391,6 @@ namespace aris
 		auto s_householder_sov(int m, int n, int rhs, const double *U, const double *tau, double *b, double *x)noexcept->void;
 		auto s_householder_colpiv(int m, int n, const double *A, double *U, double *tau, int *P)noexcept->void;
 		auto s_householder_colpiv_qr(int m, int n, const double *A, double *Q, double *R, double *tau, int *P)noexcept->void;
-
-		auto inline s_nv(int n, double alpha, double *x) noexcept->void  { for (int i{ 0 }; i < n; ++i)x[i] *= alpha; }
-		auto inline s_nv(int n, double alpha, double *x, int x_ld) noexcept->void { for (int i{ 0 }, end{ n*x_ld }; i < end; i += x_ld)x[i] *= alpha; }
-		auto inline s_vc(int n, const double *x, double *y) noexcept->void { std::copy(x, x + n, y); }
-		auto inline s_vc(int n, const double *x, int x_ld, double *y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)y[y_idx] = x[x_idx]; }
-		auto inline s_vc(int n, double alpha, const double *x, double *y) noexcept->void { for (int i{ 0 }; i < n; ++i)y[i] = alpha*x[i]; }
-		auto inline s_vc(int n, double alpha, const double *x, int x_ld, double *y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)y[y_idx] = alpha*x[x_idx]; }
-		auto inline s_va(int n, const double* x, double* y) noexcept->void { for (auto i = 0; i < n; ++i)y[i] += x[i]; }
-		auto inline s_va(int n, const double* x, int x_ld, double* y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)y[y_idx] += x[x_idx]; }
-		auto inline s_va(int n, double alpha, const double* x, double* y) noexcept->void { for (auto i = 0; i < n; ++i)y[i] += alpha * x[i]; }
-		auto inline s_va(int n, double alpha, const double* x, int x_ld, double* y, int y_ld) noexcept->void { for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)y[y_idx] += alpha*x[x_idx]; }
-		auto inline s_vv(int n, const double *x, const double *y) noexcept->double { double ret{ 0 }; for (int i = 0; i < n; ++i)ret += x[i] * y[i];	return ret; }
-		auto inline s_vv(int n, const double *x, int x_ld, const double *y, int y_ld) noexcept->double { double ret{ 0 }; for (int i{ 0 }, x_idx{ 0 }, y_idx{ 0 }; i < n; ++i, x_idx += x_ld, y_idx += y_ld)ret += x[x_idx] * y[y_idx]; return ret; }
-		auto inline s_nm(int m, int n, double alpha, double* A) noexcept->void { s_nv(m*n, alpha, A); }
-		auto inline s_nm(int m, int n, double alpha, double* A, int lda) noexcept->void { for (int row{ 0 }, end{ m*lda }; row < end; row += lda)s_nv(n, alpha, A + row); }
-		auto inline s_mc(int m, int n, const double *A, double *B) noexcept->void { s_vc(m*n, A, B); }
-		auto inline s_mc(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void { for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a += lda, row_b += ldb)	s_vc(n, A + row_a, B + row_b);}
-		auto inline s_mc(int m, int n, double alpha, const double *A, double *B) noexcept->void { s_vc(m*n, alpha, A, B); }
-		auto inline s_mc(int m, int n, double alpha, const double *A, int lda, double *B, int ldb) noexcept->void { for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a += lda, row_b += ldb)s_vc(n, alpha, A + row_a, B + row_b); }
-		auto inline s_mcT(int m, int n, const double *A, int lda, double *B, int ldb) noexcept->void { for (int i{ 0 }, row_b{ 0 }; i<m; ++i, row_b += ldb)for (int j{ 0 }, row_a{ 0 }; j < n; ++j, row_a += lda)B[row_b + j] = A[row_a + i]; }
-		auto inline s_mcT(int m, int n, const double *A, double *B) noexcept->void { s_mcT(m, n, A, m, B, n); }
-		auto inline s_mcT(int m, int n, double alpha, const double *A, int lda, double *B, int ldb) noexcept->void { for (int i{ 0 }, row_b{ 0 }; i<m; ++i, row_b += ldb)for (int j{ 0 }, row_a{ 0 }; j < n; ++j, row_a += lda)B[row_b + j] = alpha*A[row_a + i]; }
-		auto inline s_mcT(int m, int n, double alpha, const double *A, double *B) noexcept->void { s_mcT(m, n, alpha, A, m, B, n); }
-		auto inline s_ma(int m, int n, const double* A, double* B) noexcept->void { s_va(m*n, A, B); }
-		auto inline s_ma(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void { for (int i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a += lda, row_b += ldb)for (int j = 0; j < n; ++j)B[row_b + j] += A[row_a + j]; }
-		auto inline s_ma(int m, int n, double alpha, const double* A, double* B) noexcept->void { s_va(m*n, alpha, A, B); }
-		auto inline s_ma(int m, int n, double alpha, const double* A, int lda, double* B, int ldb) noexcept->void { for (int i{0}, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a += lda, row_b += ldb)for (int j = 0; j < n; ++j)B[row_b + j] += alpha*A[row_a + j]; }
-		auto inline s_maT(int m, int n, const double* A, int lda, double* B, int ldb) noexcept->void{for (int i{ 0 }, row_b{ 0 }; i<m; ++i, row_b += ldb)for (int j{ 0 }, row_a{ 0 }; j < n; ++j, row_a += lda)B[row_b + j] += A[row_a + i];}
-		auto inline s_maT(int m, int n, const double* A, double* B) noexcept->void { s_maT(m, n, A, m, B, n); }
-		auto inline s_maT(int m, int n, double alpha, const double* A, int lda, double* B, int ldb) noexcept->void{for (int i{ 0 }, row_b{ 0 }; i<m; ++i, row_b += ldb)for (int j{ 0 }, row_a{ 0 }; j < n; ++j, row_a += lda)B[row_b + j] += alpha * A[row_a + i];}
-		auto inline s_maT(int m, int n, double alpha, const double* A, double* B) noexcept->void { s_maT(m, n, alpha, A, m, B, n); }
-		auto s_mma(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto inline s_mma(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, k, B, n, C, n); }
-		auto s_mma(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto inline s_mma(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, k, B, n, C, n); }
-		auto s_mmaTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto inline s_mmaTN(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mmaTN(m, n, k, A, m, B, n, C, n); }
-		auto s_mmaTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto inline s_mmaTN(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmaTN(m, n, k, alpha, A, m, B, n, C, n); }
-		auto s_mmaNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto inline s_mmaNT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mmaNT(m, n, k, A, k, B, k, C, n); }
-		auto s_mmaNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto inline s_mmaNT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmaNT(m, n, k, alpha, A, k, B, k, C, n); }
-		auto s_mmaTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto inline s_mmaTT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_mmaTT(m, n, k, A, m, B, k, C, n); }
-		auto s_mmaTT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void;
-		auto inline s_mmaTT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmaTT(m, n, k, alpha, A, m, B, k, C, n); }
-		auto inline s_mm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc); s_mma(m, n, k, A, lda, B, ldb, C, ldc); }
-		auto inline s_mm(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mma(m, n, k, A, B, C); }
-		auto inline s_mm(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_mm(m, n, k, A, lda, B, ldb, C, ldc);	s_nm(m, n, alpha, C, ldc); }
-		auto inline s_mm(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mm(m, n, k, A, B, C); s_nm(m, n, alpha, C);}
-		auto inline s_mmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc); s_mmaTN(m, n, k, A, lda, B, ldb, C, ldc); }
-		auto inline s_mmTN(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaTN(m, n, k, A, B, C); }
-		auto inline s_mmTN(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_mmTN(m, n, k, A, lda, B, ldb, C, ldc); s_nm(m, n, alpha, C, ldc); }
-		auto inline s_mmTN(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTN(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
-		auto inline s_mmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc); s_mmaNT(m, n, k, A, lda, B, ldb, C, ldc); }
-		auto inline s_mmNT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaNT(m, n, k, A, B, C); }
-		auto inline s_mmNT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_mmNT(m, n, k, A, lda, B, ldb, C, ldc); s_nm(m, n, alpha, C, ldc); }
-		auto inline s_mmNT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmNT(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
-		auto inline s_mmTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_fill(m, n, 0, C, ldc); s_mmaTT(m, n, k, A, lda, B, ldb, C, ldc); }
-		auto inline s_mmTT(int m, int n, int k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaTT(m, n, k, A, B, C); }
-		auto inline s_mmTT(int m, int n, int k, double alpha, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void { s_mmTT(m, n, k, A, lda, B, ldb, C, ldc); s_nm(m, n, alpha, C, ldc); }
-		auto inline s_mmTT(int m, int n, int k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTT(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
 
 		auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
 		auto s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept->void;
@@ -891,161 +1119,161 @@ namespace aris
 
 
 		// 以下函数为物理量之间的转换函数 //
-		auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in = "313", int rm_ld = 3) noexcept->void;
-		auto s_rm2re(const double *rm_in, double *re_out, const char *eu_type_in = "313", int rm_ld = 3) noexcept->void;
-		auto s_rq2rm(const double *rq_in, double *rm_out, int rm_ld = 3) noexcept->void;
-		auto s_rm2rq(const double *rm_in, double *rq_out, int rm_ld = 3) noexcept->void;
-		auto s_pp2pm(const double *pp_in, double *pm_out) noexcept->void;
-		auto s_pm2pp(const double *pm_in, double *pp_out) noexcept->void;
-		auto s_re2pm(const double *re_in, double *pm_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_pm2re(const double *pm_in, double *re_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->void;
-		auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->void;
-		auto s_rm2pm(const double *rm_in, double *pm_out, int rm_ld = 3) noexcept->void;
-		auto s_pm2rm(const double *pm_in, double *rm_out, int rm_ld = 3) noexcept->void;
-		auto s_pe2pm(const double *pe_in, double *pm_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_pm2pe(const double *pm_in, double *pe_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_pq2pm(const double *pq_in, double *pm_out) noexcept->void;
-		auto s_pm2pq(const double *pm_in, double *pq_out) noexcept->void;
+		auto s_re2rm(const double *re_in, double *rm_out = nullptr, const char *eu_type_in = "313", int rm_ld = 3) noexcept->double *;
+		auto s_rm2re(const double *rm_in, double *re_out = nullptr, const char *eu_type_in = "313", int rm_ld = 3) noexcept->double *;
+		auto s_rq2rm(const double *rq_in, double *rm_out = nullptr, int rm_ld = 3) noexcept->double *;
+		auto s_rm2rq(const double *rm_in, double *rq_out = nullptr, int rm_ld = 3) noexcept->double *;
+		auto s_pp2pm(const double *pp_in, double *pm_out = nullptr) noexcept->double *;
+		auto s_pm2pp(const double *pm_in, double *pp_out = nullptr) noexcept->double *;
+		auto s_re2pm(const double *re_in, double *pm_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_pm2re(const double *pm_in, double *re_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_rq2pm(const double *rq_in, double *pm_out = nullptr) noexcept->double *;
+		auto s_pm2rq(const double *pm_in, double *rq_out = nullptr) noexcept->double *;
+		auto s_rm2pm(const double *rm_in, double *pm_out = nullptr, int rm_ld = 3) noexcept->double *;
+		auto s_pm2rm(const double *pm_in, double *rm_out = nullptr, int rm_ld = 3) noexcept->double *;
+		auto s_pe2pm(const double *pe_in, double *pm_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_pm2pe(const double *pm_in, double *pe_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_pq2pm(const double *pq_in, double *pm_out = nullptr) noexcept->double *;
+		auto s_pm2pq(const double *pm_in, double *pq_out = nullptr) noexcept->double *;
 		
-		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_wa2we(const double *wa_in, const double *re_in, double *we_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_wq2wa(const double *rq_in, const double *wq_in, double *wa_out) noexcept->void;
-		auto s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out) noexcept->void;
-		auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out, int rm_ld = 3, int wm_ld = 3) noexcept->void;
-		auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out, int rm_ld = 3, int wm_ld = 3) noexcept->void;
-		auto s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out) noexcept->void;
-		auto s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out) noexcept->void;
-		auto s_we2vs(const double *re_in, const double *we_in, double *vs_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_vs2we(const double *vs_in, const double *re_in, double *we_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out) noexcept->void;
-		auto s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out) noexcept->void;
-		auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out, int rm_ld = 3, int wm_ld = 3) noexcept->void;
-		auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out, int rm_ld = 3, int wm_ld = 3) noexcept->void;
-		auto s_wa2vs(const double *wa_in, double *vs_out) noexcept->void;
-		auto s_vs2wa(const double *vs_in, double *wa_out) noexcept->void;
-		auto s_ve2vs(const double *pe_in, const double *ve_in, double *vs_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_vs2ve(const double *vs_in, const double *pe_in, double *ve_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_vq2vs(const double *pq_in, const double *vq_in, double *vs_out) noexcept->void;
-		auto s_vs2vq(const double *vs_in, const double *pq_in, double *vq_out) noexcept->void;
-		auto s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out) noexcept->void;
-		auto s_vs2vm(const double *vs_in, const double *pm_in, double *vm_out) noexcept->void;
-		auto s_va2vs(const double *pp_in, const double *va_in, double *vs_out) noexcept->void;
-		auto s_vs2va(const double *vs_in, const double *pp_in, double *va_out) noexcept->void;
+		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_wa2we(const double *wa_in, const double *re_in, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_wq2wa(const double *rq_in, const double *wq_in, double *wa_out = nullptr) noexcept->double *;
+		auto s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out = nullptr) noexcept->double *;
+		auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out = nullptr, int rm_ld = 3, int wm_ld = 3) noexcept->double *;
+		auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out = nullptr, int rm_ld = 3, int wm_ld = 3) noexcept->double *;
+		auto s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out = nullptr) noexcept->double *;
+		auto s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out = nullptr) noexcept->double *;
+		auto s_we2vs(const double *re_in, const double *we_in, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_vs2we(const double *vs_in, const double *re_in, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out = nullptr) noexcept->double *;
+		auto s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out = nullptr) noexcept->double *;
+		auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out = nullptr, int rm_ld = 3, int wm_ld = 3) noexcept->double *;
+		auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out = nullptr, int rm_ld = 3, int wm_ld = 3) noexcept->double *;
+		auto s_wa2vs(const double *wa_in, double *vs_out = nullptr) noexcept->double *;
+		auto s_vs2wa(const double *vs_in, double *wa_out = nullptr) noexcept->double *;
+		auto s_ve2vs(const double *pe_in, const double *ve_in, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_vs2ve(const double *vs_in, const double *pe_in, double *ve_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_vq2vs(const double *pq_in, const double *vq_in, double *vs_out = nullptr) noexcept->double *;
+		auto s_vs2vq(const double *vs_in, const double *pq_in, double *vq_out = nullptr) noexcept->double *;
+		auto s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out = nullptr) noexcept->double *;
+		auto s_vs2vm(const double *vs_in, const double *pm_in, double *vm_out = nullptr) noexcept->double *;
+		auto s_va2vs(const double *pp_in, const double *va_in, double *vs_out = nullptr) noexcept->double *;
+		auto s_vs2va(const double *vs_in, const double *pp_in, double *va_out = nullptr) noexcept->double *;
 		
-		auto s_xe2xa(const double *re_in, const double *we_in, const double *xe_in, double *xa_out, double *wa_out = nullptr, const char *eu_type_in = "313") noexcept->void;
-		auto s_xa2xe(const double *wa_in, const double *xa_in, const double *re_in, double *xe_out, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->void;
-		auto s_xq2xa(const double *rq_in, const double *wq_in, const double *xq_in, double *xa_out, double *wa_out = nullptr) noexcept->void;
-		auto s_xa2xq(const double *wa_in, const double *xa_in, const double *rq_in, double *xq_out, double *wq_out = nullptr) noexcept->void;
-		auto s_xm2xa(const double *rm_in, const double *wm_in, const double *xm_in, double *xa_out, double *wa_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->void;
-		auto s_xa2xm(const double *wa_in, const double *xa_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->void;
-		auto s_ap2as(const double *pp_in, const double *vp_in, const double *ap_in, double *as_out, double *vs_out = nullptr) noexcept->void;
-		auto s_as2ap(const double *vs_in, const double *as_in, const double *pp_in, double *ap_out, double *vp_out = nullptr) noexcept->void;
-		auto s_xe2as(const double *re_in, const double *we_in, const double *xe_in, double *as_out, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->void;
-		auto s_as2xe(const double *vs_in, const double *as_in, const double *re_in, double *xe_out, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->void;
-		auto s_xq2as(const double *rq_in, const double *wq_in, const double *xq_in, double *as_out, double *vs_out = nullptr) noexcept->void;
-		auto s_as2xq(const double *vs_in, const double *as_in, const double *rq_in, double *xq_out, double *wq_out = nullptr) noexcept->void;
-		auto s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out, double *vs_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->void;
-		auto s_as2xm(const double *vs_in, const double *as_in, const double *rm_in, double *xm_out, double *wm_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->void;
-		auto s_xa2as(const double *xa_in, double *as_out) noexcept->void;
-		auto s_as2xa(const double *as_in, double *xa_out) noexcept->void;
-		auto s_ae2as(const double *pe_in, const double *ve_in, const double *ae_in, double *as_out, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->void;
-		auto s_as2ae(const double *vs_in, const double *as_in, const double *pe_in, double *ae_out, double *ve_out = nullptr, const char *eu_type_in = "313") noexcept->void;
-		auto s_aq2as(const double *pq_in, const double *vq_in, const double *aq_in, double *as_out, double *vs_out = nullptr) noexcept->void;
-		auto s_as2aq(const double *vs_in, const double *as_in, const double *pq_in, double *aq_out, double *vq_out = nullptr) noexcept->void;
-		auto s_am2as(const double *pm_in, const double *vm_in, const double *am_in, double *as_out, double *vs_out = nullptr) noexcept->void;
-		auto s_as2am(const double *vs_in, const double *as_in, const double *pm_in, double *am_out, double *vm_out = nullptr) noexcept->void;
-		auto s_aa2as(const double *pp_in, const double *va_in, const double *aa_in, double *as_out, double *vs_out = nullptr) noexcept->void;
-		auto s_as2aa(const double *vs_in, const double *as_in, const double *pp_in, double *aa_out, double *va_out = nullptr) noexcept->void;
+		auto s_xe2xa(const double *re_in, const double *we_in, const double *xe_in, double *xa_out = nullptr, double *wa_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_xa2xe(const double *wa_in, const double *xa_in, const double *re_in, double *xe_out = nullptr, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_xq2xa(const double *rq_in, const double *wq_in, const double *xq_in, double *xa_out = nullptr, double *wa_out = nullptr) noexcept->double *;
+		auto s_xa2xq(const double *wa_in, const double *xa_in, const double *rq_in, double *xq_out = nullptr, double *wq_out = nullptr) noexcept->double *;
+		auto s_xm2xa(const double *rm_in, const double *wm_in, const double *xm_in, double *xa_out = nullptr, double *wa_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->double *;
+		auto s_xa2xm(const double *wa_in, const double *xa_in, const double *rm_in, double *xm_out = nullptr, double *wm_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->double *;
+		auto s_ap2as(const double *pp_in, const double *vp_in, const double *ap_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+		auto s_as2ap(const double *vs_in, const double *as_in, const double *pp_in, double *ap_out = nullptr, double *vp_out = nullptr) noexcept->double *;
+		auto s_xe2as(const double *re_in, const double *we_in, const double *xe_in, double *as_out = nullptr, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_as2xe(const double *vs_in, const double *as_in, const double *re_in, double *xe_out = nullptr, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_xq2as(const double *rq_in, const double *wq_in, const double *xq_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+		auto s_as2xq(const double *vs_in, const double *as_in, const double *rq_in, double *xq_out = nullptr, double *wq_out = nullptr) noexcept->double *;
+		auto s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out = nullptr, double *vs_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->double *;
+		auto s_as2xm(const double *vs_in, const double *as_in, const double *rm_in, double *xm_out = nullptr, double *wm_out = nullptr, int rm_ld = 3, int wm_ld = 3, int xm_ld = 3) noexcept->double *;
+		auto s_xa2as(const double *xa_in, double *as_out = nullptr) noexcept->double *;
+		auto s_as2xa(const double *as_in, double *xa_out = nullptr) noexcept->double *;
+		auto s_ae2as(const double *pe_in, const double *ve_in, const double *ae_in, double *as_out = nullptr, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_as2ae(const double *vs_in, const double *as_in, const double *pe_in, double *ae_out = nullptr, double *ve_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_aq2as(const double *pq_in, const double *vq_in, const double *aq_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+		auto s_as2aq(const double *vs_in, const double *as_in, const double *pq_in, double *aq_out = nullptr, double *vq_out = nullptr) noexcept->double *;
+		auto s_am2as(const double *pm_in, const double *vm_in, const double *am_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+		auto s_as2am(const double *vs_in, const double *as_in, const double *pm_in, double *am_out = nullptr, double *vm_out = nullptr) noexcept->double *;
+		auto s_aa2as(const double *pp_in, const double *va_in, const double *aa_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+		auto s_as2aa(const double *vs_in, const double *as_in, const double *pp_in, double *aa_out = nullptr, double *va_out = nullptr) noexcept->double *;
 
-		auto s_pq2pe(const double *pq_in, double *pe_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_pe2pq(const double *pe_in, double *pq_out, const char *eu_type_in = "313") noexcept->void;
-		auto s_iv2is(const double *iv_in, double *is_out) noexcept->void;
-		auto s_is2iv(const double *is_in, double *iv_out) noexcept->void;
-		auto s_im2is(const double mass_in, const double * in_in, const double *pm_in, double *is_out) noexcept->void;
+		auto s_pq2pe(const double *pq_in, double *pe_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_pe2pq(const double *pe_in, double *pq_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_iv2is(const double *iv_in, double *is_out = nullptr) noexcept->double *;
+		auto s_is2iv(const double *is_in, double *iv_out = nullptr) noexcept->double *;
+		auto s_im2is(const double mass_in, const double * in_in, const double *pm_in, double *is_out = nullptr) noexcept->double *;
 
 		// 以下函数为同一物理量在不同坐标系之间的转换函数 //
-		auto s_pp2pp(const double *relative_pm, const double *from_pp, double *to_pp) noexcept->void;
-		auto s_inv_pp2pp(const double *inv_relative_pm, const double *from_pp, double *to_pp) noexcept->void;
-		auto s_re2re(const double *relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
-		auto s_inv_re2re(const double *inv_relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
-		auto s_rq2rq(const double *relative_pm, const double *from_rq, double *to_rq) noexcept->void;
-		auto s_inv_rq2rq(const double *inv_relative_pm, const double *from_rq, double *to_rq) noexcept->void;
-		auto s_rm2rm(const double *relative_pm, const double *from_rm, double *to_rm, int from_rm_ld = 3, int to_rm_ld = 3) noexcept->void;
-		auto s_inv_rm2rm(const double *inv_relative_pm, const double *from_rm, double *to_rm, int from_rm_ld = 3, int to_rm_ld = 3) noexcept->void;
-		auto s_pe2pe(const double *relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->void;
-		auto s_inv_pe2pe(const double *inv_relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->void;
-		auto s_pq2pq(const double *relative_pm, const double *from_pq, double *to_pq) noexcept->void;
-		auto s_inv_pq2pq(const double *inv_relative_pm, const double *from_pq, double *to_pq) noexcept->void;
-		auto s_pm2pm(const double *relative_pm, const double *from_pm, double *to_pm) noexcept->void;
-		auto s_inv_pm2pm(const double *inv_relative_pm, const double *from_pm, double *to_pm) noexcept->void;
+		auto s_pp2pp(const double *relative_pm, const double *from_pp, double *to_pp) noexcept->double *;
+		auto s_inv_pp2pp(const double *inv_relative_pm, const double *from_pp, double *to_pp) noexcept->double *;
+		auto s_re2re(const double *relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+		auto s_inv_re2re(const double *inv_relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+		auto s_rq2rq(const double *relative_pm, const double *from_rq, double *to_rq) noexcept->double *;
+		auto s_inv_rq2rq(const double *inv_relative_pm, const double *from_rq, double *to_rq) noexcept->double *;
+		auto s_rm2rm(const double *relative_pm, const double *from_rm, double *to_rm, int from_rm_ld = 3, int to_rm_ld = 3) noexcept->double *;
+		auto s_inv_rm2rm(const double *inv_relative_pm, const double *from_rm, double *to_rm, int from_rm_ld = 3, int to_rm_ld = 3) noexcept->double *;
+		auto s_pe2pe(const double *relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->double *;
+		auto s_inv_pe2pe(const double *inv_relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->double *;
+		auto s_pq2pq(const double *relative_pm, const double *from_pq, double *to_pq) noexcept->double *;
+		auto s_inv_pq2pq(const double *inv_relative_pm, const double *from_pq, double *to_pq) noexcept->double *;
+		auto s_pm2pm(const double *relative_pm, const double *from_pm, double *to_pm) noexcept->double *;
+		auto s_inv_pm2pm(const double *inv_relative_pm, const double *from_pm, double *to_pm) noexcept->double *;
 
-		auto s_vp2vp(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->void;
-		auto s_inv_vp2vp(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->void;
-		auto s_we2we(const double *relative_pm, const double *relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
-		auto s_inv_we2we(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
-		auto s_wq2wq(const double *relative_pm, const double *relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->void;
-		auto s_inv_wq2wq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->void;
-		auto s_wm2wm(const double *relative_pm, const double *relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->void;
-		auto s_inv_wm2wm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->void;
-		auto s_wa2wa(const double *relative_pm, const double *relative_vs, const double *from_wa, double *to_wa) noexcept->void;
-		auto s_inv_wa2wa(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_wa, double *to_wa) noexcept->void;
-		auto s_ve2ve(const double *relative_pm, const double *relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
-		auto s_inv_ve2ve(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->void;
-		auto s_vq2vq(const double *relative_pm, const double *relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->void;
-		auto s_inv_vq2vq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->void;
-		auto s_vm2vm(const double *relative_pm, const double *relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->void;
-		auto s_inv_vm2vm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->void;
-		auto s_va2va(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->void;
-		auto s_inv_va2va(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->void;
-		auto s_vs2vs(const double *relative_pm, const double *relative_vs, const double *from_vs, double *to_vs) noexcept->void;
-		auto s_inv_vs2vs(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_vs, double *to_vs) noexcept->void;
+		auto s_vp2vp(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->double *;
+		auto s_inv_vp2vp(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->double *;
+		auto s_we2we(const double *relative_pm, const double *relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+		auto s_inv_we2we(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+		auto s_wq2wq(const double *relative_pm, const double *relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->double *;
+		auto s_inv_wq2wq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->double *;
+		auto s_wm2wm(const double *relative_pm, const double *relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->double *;
+		auto s_inv_wm2wm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->double *;
+		auto s_wa2wa(const double *relative_pm, const double *relative_vs, const double *from_wa, double *to_wa) noexcept->double *;
+		auto s_inv_wa2wa(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_wa, double *to_wa) noexcept->double *;
+		auto s_ve2ve(const double *relative_pm, const double *relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+		auto s_inv_ve2ve(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+		auto s_vq2vq(const double *relative_pm, const double *relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->double *;
+		auto s_inv_vq2vq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->double *;
+		auto s_vm2vm(const double *relative_pm, const double *relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->double *;
+		auto s_inv_vm2vm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->double *;
+		auto s_va2va(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->double *;
+		auto s_inv_va2va(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->double *;
+		auto s_vs2vs(const double *relative_pm, const double *relative_vs, const double *from_vs, double *to_vs) noexcept->double *;
+		auto s_inv_vs2vs(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_vs, double *to_vs) noexcept->double *;
 
 		auto s_ap2ap(const double *relative_pm, const double *relative_vs, const double *relative_as, 
-			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->void;
+			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->double *;
 		auto s_inv_ap2ap(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
-			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->void;
+			const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->double *;
 		auto s_xe2xe(const double *relative_pm, const double *relative_vs, const double *relative_as,
-			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->void;
+			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->double *;
 		auto s_inv_xe2xe(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
-			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->void;
+			const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->double *;
 		auto s_xq2xq(const double *relative_pm, const double *relative_vs, const double *relative_as, 
-			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->void;
+			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->double *;
 		auto s_inv_xq2xq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
-			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->void;
+			const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->double *;
 		auto s_xm2xm(const double *relative_pm, const double *relative_vs, const double *relative_as, 
-			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->void;
+			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->double *;
 		auto s_inv_xm2xm(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
-			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->void;
+			const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->double *;
 		auto s_xa2xa(const double *relative_pm, const double *relative_vs, const double *relative_as,
-			const double *from_wa, const double *from_xa, double *to_xa, double *to_wa = nullptr) noexcept->void;
+			const double *from_wa, const double *from_xa, double *to_xa, double *to_wa = nullptr) noexcept->double *;
 		auto s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
-			const double *from_wa, const double *from_xa, double *to_xa, double *to_wa = nullptr) noexcept->void;
+			const double *from_wa, const double *from_xa, double *to_xa, double *to_wa = nullptr) noexcept->double *;
 		auto s_ae2ae(const double *relative_pm, const double *relative_vs, const double *relative_as,
-			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->void;
+			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->double *;
 		auto s_inv_ae2ae(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
-			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->void;
+			const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->double *;
 		auto s_aq2aq(const double *relative_pm, const double *relative_vs, const double *relative_as, 
-			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq = nullptr, double *to_pq = nullptr) noexcept->void;
+			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq = nullptr, double *to_pq = nullptr) noexcept->double *;
 		auto s_inv_aq2aq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
-			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq = nullptr, double *to_pq = nullptr) noexcept->void;
+			const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq = nullptr, double *to_pq = nullptr) noexcept->double *;
 		auto s_am2am(const double *relative_pm, const double *relative_vs, const double *relative_as, 
-			const double *from_pm, const double *from_vm, const double *from_am, double *to_am, double *to_vm = nullptr, double *to_pm = nullptr) noexcept->void;
+			const double *from_pm, const double *from_vm, const double *from_am, double *to_am, double *to_vm = nullptr, double *to_pm = nullptr) noexcept->double *;
 		auto s_inv_am2am(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as, 
-			const double *from_pm, const double *from_vm, const double *from_am, double *to_am, double *to_vm = nullptr, double *to_pm = nullptr) noexcept->void;
+			const double *from_pm, const double *from_vm, const double *from_am, double *to_am, double *to_vm = nullptr, double *to_pm = nullptr) noexcept->double *;
 		auto s_aa2aa(const double *relative_pm, const double *relative_vs, const double *relative_as,
-			const double *from_pp, const double *from_va, const double *from_aa, double *to_aa, double *to_va = nullptr, double *to_pp = nullptr) noexcept->void;
+			const double *from_pp, const double *from_va, const double *from_aa, double *to_aa, double *to_va = nullptr, double *to_pp = nullptr) noexcept->double *;
 		auto s_inv_aa2aa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
-			const double *from_pp, const double *from_va, const double *from_aa, double *to_aa, double *to_va = nullptr, double *to_pp = nullptr) noexcept->void;
+			const double *from_pp, const double *from_va, const double *from_aa, double *to_aa, double *to_va = nullptr, double *to_pp = nullptr) noexcept->double *;
 		auto s_as2as(const double *relative_pm, const double *relative_vs, const double *relative_as,
-			const double *from_vs, const double *from_as, double *to_as, double *to_vs = nullptr) noexcept->void;
+			const double *from_vs, const double *from_as, double *to_as, double *to_vs = nullptr) noexcept->double *;
 		auto s_inv_as2as(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
-			const double *from_vs, const double *from_as, double *to_as, double *to_vs = nullptr) noexcept->void;
+			const double *from_vs, const double *from_as, double *to_as, double *to_vs = nullptr) noexcept->double *;
 
-		auto s_fs2fs(const double *relative_pm, const double *from_fs, double *to_fs) noexcept->void;
-		auto s_inv_fs2fs(const double *inv_relative_pm, const double *from_fs, double *to_fs) noexcept->void;
-		auto s_is2is(const double *relative_pm, const double *from_is, double *to_is) noexcept->void;
-		auto s_inv_is2is(const double *inv_relative_pm, const double *from_is, double *to_is) noexcept->void;
+		auto s_fs2fs(const double *relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
+		auto s_inv_fs2fs(const double *inv_relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
+		auto s_is2is(const double *relative_pm, const double *from_is, double *to_is) noexcept->double *;
+		auto s_inv_is2is(const double *inv_relative_pm, const double *from_is, double *to_is) noexcept->double *;
 		
 		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		///
@@ -1081,10 +1309,7 @@ namespace aris
 		auto s_sov_axis_distance(const double*from_pm, const double*to_pm, int axis)noexcept->double;
 
 
-		template <typename T>
-		auto inline s_sgn(T val)->int { return (T(0) < val) - (val < T(0)); }
-		template <typename T>
-		auto inline s_sgn2(T val)->int { return val < T(0) ? -1 : 1; }
+
 
 		template <typename T>
 		auto dsp(const T *p, const int m, const int n, const int begin_row = 0, const int begin_col = 0, int ld = 0)->void 
