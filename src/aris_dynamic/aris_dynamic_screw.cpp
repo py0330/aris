@@ -3212,6 +3212,8 @@ namespace aris
 				}
 				else
 				{
+					s_nv(3, 1.0 / s_norm(3, pm_out + order[0], 4), pm_out + order[0], 4);
+					
 					double rm[9];
 					s_c3_n(3, pm_out + order[0], 4, default_rm(), 3, rm, 3);
 					double norm[3];
