@@ -180,7 +180,8 @@ BasicFunctionParam decode(const std::string input)
 		bfParam.cmd_type = 120;
 
 
-	std::fill_n(bfParam.active_motor, MOTION_NUM, false);
+	std::fill(bfParam.active_motor, bfParam.active_motor + MOTION_NUM, false);
+
 	for (auto &i : params) {
         if (i.first != "physical_id")
             std::cout << "the first param must be 'p', it means the physic id." << std::endl;

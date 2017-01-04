@@ -32,7 +32,7 @@ int main()
 	for (auto &mot : m.motionPool())mot.activate(false);
 	m.allocateMemory();
 
-	gm.setMp(std::array<double, 6>{ 1.5, 0.5, 0.0, 0.0, 0.0, PI / 3}.data());
+	gm.setMp(std::array<double, 6>{ 1.5, 0.6, 0.0, 0.0, 0.0, PI / 4}.data());
 	auto ret = m.kinPos(100);
 	std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 

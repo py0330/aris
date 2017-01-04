@@ -12,9 +12,9 @@
 
 #include "aris_core.h"
 #include "aris_dynamic_kernel.h"
+#include "aris_dynamic_screw.h"
 #include "aris_dynamic_model.h"
 
-//#include "C:\Eigen\Eigen"
 
 namespace aris
 {
@@ -2590,9 +2590,9 @@ namespace aris
 			aris::core::RefPool<Part> active_part_pool_;
 			aris::core::RefPool<Constraint> active_constraint_pool_;
 			BlockSize p_size_, c_size_;
-			BlockMatrix im_, cm_, cp_, cv_, ca_, pp_, pv_, pa_;
-			BlockMatrix cct_, ctc_;
-			BlockMatrix cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
+			BlockData im_, cm_, cp_, cv_, ca_, pp_, pv_, pa_;
+			BlockData cct_, ctc_;
+			BlockData cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
 
 			std::function<void(int dim, const double *D, const double *b, double *x)> dyn_solve_method_{ nullptr };
 			std::function<void(int n, double *A)> clb_inverse_method_{ nullptr };
@@ -2866,11 +2866,11 @@ namespace aris
 		auto Model::cSize()->BlockSize& { return imp_->c_size_; }
 		auto Model::pSize()->BlockSize& { return imp_->p_size_; }
 
-		auto Model::glbIm()->BlockMatrix& { return imp_->im_; }
-		auto Model::glbCm()->BlockMatrix& { return imp_->cm_; }
-		auto Model::cp()->BlockMatrix& { return imp_->cp_; }
-		auto Model::cv()->BlockMatrix& { return imp_->cv_; }
-		auto Model::ca()->BlockMatrix& { return imp_->ca_; }
+		auto Model::glbIm()->BlockData& { return imp_->im_; }
+		auto Model::glbCm()->BlockData& { return imp_->cm_; }
+		auto Model::cp()->BlockData& { return imp_->cp_; }
+		auto Model::cv()->BlockData& { return imp_->cv_; }
+		auto Model::ca()->BlockData& { return imp_->ca_; }
 
 		auto Model::cptGlbIm()->void
 		{
@@ -3433,9 +3433,9 @@ namespace aris
 			///////////////////// allocate memory /////////////////////////////////
 			auto active_prt_num = dynDimM() / 6;
 
-			BlockMatrix block_CCT;
-			BlockMatrix block_LLT;
-			BlockMatrix block_b, block_x;
+			BlockData block_CCT;
+			BlockData block_LLT;
+			BlockData block_b, block_x;
 			BlockSize CCT_size(active_prt_num, 6);
 			BlockSize cca_size{ 1 };
 

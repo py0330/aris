@@ -330,6 +330,7 @@ int main()
 
 		rbt.allocateMemory();
 		auto ret = rbt.kinPos(100);
+
 		std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 
 		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");

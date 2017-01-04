@@ -721,11 +721,11 @@ namespace aris
 			auto activeConstraintPool()->aris::core::RefPool<Constraint>&;
 			auto cSize()->BlockSize&;
 			auto pSize()->BlockSize&;
-			auto glbIm()->BlockMatrix&;
-			auto glbCm()->BlockMatrix&;
-			auto cp()->BlockMatrix&;
-			auto cv()->BlockMatrix&;
-			auto ca()->BlockMatrix&;
+			auto glbIm()->BlockData&;
+			auto glbCm()->BlockData&;
+			auto cp()->BlockData&;
+			auto cv()->BlockData&;
+			auto ca()->BlockData&;
 
 			auto cptCp()->void;
 			auto cptCv()->void;
