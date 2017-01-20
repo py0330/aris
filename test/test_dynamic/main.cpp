@@ -1,5 +1,6 @@
 ﻿#include <iostream>
-#include "test_dynamic_kernel.h"
+#include "test_dynamic_matrix.h"
+#include "test_dynamic_block_matrix.h"
 #include "test_dynamic_screw.h"
 #include "test_dynamic_model.h"
 #include "test_dynamic_model_stewart.h"
@@ -11,7 +12,8 @@
 
 int main(int argc, char *argv[])
 {
-	test_kernel();
+	test_matrix();
+	test_block_matrix();
 	test_screw();
 	test_model();
 	test_model_stewart();

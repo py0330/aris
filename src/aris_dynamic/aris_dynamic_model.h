@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include <aris_core.h>
-#include <aris_dynamic_kernel.h>
+#include <aris_dynamic_matrix.h>
 
 namespace aris
 {
@@ -37,7 +37,7 @@ namespace aris
 		{
 		public:
 			auto virtual saveAdams(std::ofstream &file) const->void { for (auto &ele : children())static_cast<const Element &>(ele).saveAdams(file); }
-			auto virtual adamsID()const->std::size_t { return id() + 1; }
+			auto virtual adamsID()const->Size { return id() + 1; }
 			auto virtual adamsType()const->const std::string &{ return type(); }
 			auto virtual adamsScriptType()const->const std::string &{ return adamsType(); }
 			auto model()->Model&;
@@ -45,8 +45,8 @@ namespace aris
 			
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix;
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const aris::core::Matrix& default_value)const->aris::core::Matrix;
-			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::size_t m, std::size_t n)const->aris::core::Matrix;
-			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::size_t m, std::size_t n, const aris::core::Matrix& default_value)const->aris::core::Matrix;
+			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, Size m, Size n)const->aris::core::Matrix;
+			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, Size m, Size n, const aris::core::Matrix& default_value)const->aris::core::Matrix;
 
 		protected:
 			~Element() = default;
@@ -94,8 +94,8 @@ namespace aris
 			auto getRe(const Coordinate &relative_to, double *re, const char *type = "313")const->void;
 			auto getRq(double *rq)const->void;
 			auto getRq(const Coordinate &relative_to, double *rq)const->void;
-			auto getRm(double *rm, int rm_ld = 3)const->void;
-			auto getRm(const Coordinate &relative_to, double *rm, int rm_ld = 3)const->void;
+			auto getRm(double *rm, Size rm_ld = 3)const->void;
+			auto getRm(const Coordinate &relative_to, double *rm, Size rm_ld = 3)const->void;
 			auto getPe(double *pe, const char *type = "313")const->void;
 			auto getPe(const Coordinate &relative_to, double *pe, const char *type = "313")const->void;
 			auto getPq(double *pq)const->void;
@@ -108,10 +108,10 @@ namespace aris
 			auto getWe(const Coordinate &relative_to, double *we, double *re = nullptr, const char *type = "313")const->void;
 			auto getWq(double *wq, double *rq = nullptr)const->void;
 			auto getWq(const Coordinate &relative_to, double *wq, double *rq = nullptr)const->void;
-			auto getWm(double *wm, double *rm = nullptr, int wm_ld = 3, int rm_ld = 3)const->void;
-			auto getWm(const Coordinate &relative_to, double *wm, double *rm = nullptr, int wm_ld = 3, int rm_ld = 3)const->void;
-			auto getWa(double *wa, double *rm = nullptr, int rm_ld = 3)const->void;
-			auto getWa(const Coordinate &relative_to, double *wa, double *rm = nullptr, int rm_ld = 3)const->void;
+			auto getWm(double *wm, double *rm = nullptr, Size wm_ld = 3, Size rm_ld = 3)const->void;
+			auto getWm(const Coordinate &relative_to, double *wm, double *rm = nullptr, Size wm_ld = 3, Size rm_ld = 3)const->void;
+			auto getWa(double *wa, double *rm = nullptr, Size rm_ld = 3)const->void;
+			auto getWa(const Coordinate &relative_to, double *wa, double *rm = nullptr, Size rm_ld = 3)const->void;
 			auto getVe(double *ve, double *pe = nullptr, const char *type = "313")const->void;
 			auto getVe(const Coordinate &relative_to, double *ve, double *pe = nullptr, const char *type = "313")const->void;
 			auto getVq(double *vq, double *pq = nullptr)const->void;
@@ -128,10 +128,10 @@ namespace aris
 			auto getXe(const Coordinate &relative_to, double *xe, double *we = nullptr, double *re = nullptr, const char *type = "313")const->void;
 			auto getXq(double *xq, double *wq = nullptr, double *rq = nullptr)const->void;
 			auto getXq(const Coordinate &relative_to, double *xq, double *wq = nullptr, double *rq = nullptr)const->void;
-			auto getXm(double *xm, double *wm = nullptr, double *rm = nullptr, int xm_ld = 3, int wm_ld = 3, int rm_ld = 3)const->void;
-			auto getXm(const Coordinate &relative_to, double *xm, double *wm = nullptr, double *rm = nullptr, int xm_ld = 3, int wm_ld = 3, int rm_ld = 3)const->void;
-			auto getXa(double *xa, double *wa = nullptr, double *rm = nullptr, int rm_ld = 3)const->void;
-			auto getXa(const Coordinate &relative_to, double *xa, double *wa = nullptr, double *rm = nullptr, int rm_ld = 3)const->void;
+			auto getXm(double *xm, double *wm = nullptr, double *rm = nullptr, Size xm_ld = 3, Size wm_ld = 3, Size rm_ld = 3)const->void;
+			auto getXm(const Coordinate &relative_to, double *xm, double *wm = nullptr, double *rm = nullptr, Size xm_ld = 3, Size wm_ld = 3, Size rm_ld = 3)const->void;
+			auto getXa(double *xa, double *wa = nullptr, double *rm = nullptr, Size rm_ld = 3)const->void;
+			auto getXa(const Coordinate &relative_to, double *xa, double *wa = nullptr, double *rm = nullptr, Size rm_ld = 3)const->void;
 			auto getAe(double *ae, double *ve = nullptr, double *pe = nullptr, const char *type = "313")const->void;
 			auto getAe(const Coordinate &relative_to, double *ae, double *ve = nullptr, double *pe = nullptr, const char *type = "313")const->void;
 			auto getAq(double *aq, double *vq = nullptr, double *pq = nullptr)const->void;
@@ -178,12 +178,12 @@ namespace aris
 		class Constraint :public Interaction
 		{
 		public:
-			auto virtual dim() const->std::size_t = 0;
+			auto virtual dim() const->Size = 0;
 			auto virtual cptCp(double *ce)const->void;
 			auto virtual cptCv(double *cv)const->void { std::fill(cv, cv + dim(), 0.0); };
 			auto virtual cptCa(double *ca)const->void;
-			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void;
-			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void;
+			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, Size cmI_ld = 0, Size cmJ_ld = 0)const->void;
+			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, Size cmI_ld = 0, Size cmJ_ld = 0)const->void;
 			auto virtual setCf(const double *cf)const->void;
 
 			auto virtual cePtr() const->const double* { return ce_; };
@@ -197,7 +197,7 @@ namespace aris
 			auto virtual updGlbCm()->void;
 			auto virtual updCa()->void;
 			auto virtual updCe()->void;
-			auto colID()const->std::size_t;
+			auto colID()const->Size;
 
 		protected:
 			virtual ~Constraint();
@@ -216,13 +216,13 @@ namespace aris
 
 			friend class Model;
 		};
-		template<std::size_t DIM> class ConstraintData
+		template<Size DIM> class ConstraintData
 		{
 		public:
 			using double6xd = double[6][DIM];
 			using doubled = double[DIM];
 
-			static constexpr int Dim() { return DIM; }
+			static constexpr Size Dim() { return DIM; }
 			auto ca() const->const doubled &{ return ca_; }
 			auto cf() const->const doubled &{ return cf_; }
 			auto prtCmI() const->const double6xd &{ return prtCmI_; }
@@ -286,11 +286,11 @@ namespace aris
 			auto x() const->const std::vector<double> &;
 			auto y() const->const std::vector<double> &;
 			auto operator()(double x, char derivativeOrder = '0') const ->double;
-			auto operator()(int length, const double *x_in, double *y_out, char derivativeOrder = '0') const->void;
+			auto operator()(Size length, const double *x_in, double *y_out, char derivativeOrder = '0') const->void;
 
 		private:
 			virtual ~Akima();
-			explicit Akima(const std::string &name, int num, const double *x_in, const double *y_in);
+			explicit Akima(const std::string &name, Size num, const double *x_in, const double *y_in);
 			explicit Akima(Object &father, const aris::core::XmlElement &xml_ele);
 			explicit Akima(const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in);
 			explicit Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in);
@@ -318,10 +318,10 @@ namespace aris
 			auto virtual saveAdams(std::ofstream &file) const->void override final;
 			auto act(DynEle &ele, bool isActive)->void;
 			auto aln(Marker &mak_move, const Marker& mak_target)->void;
-			auto sim(std::uint32_t ms_dur, std::uint32_t ms_dt)->void;
+			auto sim(Size ms_dur, Size ms_dt)->void;
 			auto empty() const->bool;
-			auto endTime()const->std::uint32_t;
-			auto doScript(std::uint32_t ms_begin, std::uint32_t ms_end)->void;
+			auto endTime()const->Size;
+			auto doScript(Size ms_begin, Size ms_end)->void;
 			auto clear()->void;
 
 		private:
@@ -368,7 +368,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "Marker" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string &{ static const std::string type{ "marker" }; return type; }
-			auto virtual adamsID()const->std::size_t;
+			auto virtual adamsID()const->Size;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual glbPm()const->const double4x4& override;
@@ -403,13 +403,13 @@ namespace aris
 			auto static Type()->const std::string &{ static const std::string type{ "Part" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string & override{ static const std::string type{ "part" }; return type; }
-			auto virtual adamsID()const->std::size_t override;
+			auto virtual adamsID()const->Size override;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto rowID()const->std::size_t;
+			auto rowID()const->Size;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
-			auto cptGlbIm(double *im, int ld = 0)const->void;
+			auto cptGlbIm(double *im, Size ld = 0)const->void;
 			auto cptGlbFg(double *fg)const->void;
 			auto cptGlbFv(double *fv)const->void;
 			auto cptPrtFg(double *fg)const->void;
@@ -444,8 +444,8 @@ namespace aris
 			auto setRe(const Coordinate &relative_to, const double *re, const char *type = "313")->void;
 			auto setRq(const double *rq)->void;
 			auto setRq(const Coordinate &relative_to, const double *rq)->void;
-			auto setRm(const double *rm, int rm_ld = 3)->void;
-			auto setRm(const Coordinate &relative_to, const double *rm, int rm_ld = 3)->void;
+			auto setRm(const double *rm, Size rm_ld = 3)->void;
+			auto setRm(const Coordinate &relative_to, const double *rm, Size rm_ld = 3)->void;
 			auto setPe(const double *pe, const char *type = "313")->void;
 			auto setPe(const Coordinate &relative_to, const double *pe, const char *type = "313")->void;
 			auto setPq(const double *pq)->void;
@@ -458,10 +458,10 @@ namespace aris
 			auto setWe(const Coordinate &relative_to, const double *we, const double *re = nullptr, const char *type = "313")->void;
 			auto setWq(const double *wq, const double *rq = nullptr)->void;
 			auto setWq(const Coordinate &relative_to, const double *wq, const double *rq = nullptr)->void;
-			auto setWm(const double *wm, const double *rm = nullptr, int wm_ld = 3, int rm_ld = 3)->void;
-			auto setWm(const Coordinate &relative_to, const double *wm, const double *rm = nullptr, int wm_ld = 3, int rm_ld = 3)->void;
-			auto setWa(const double *wa, const double *rm = nullptr, int rm_ld = 3)->void;
-			auto setWa(const Coordinate &relative_to, const double *wa, const double *rm = nullptr, int rm_ld = 3)->void;
+			auto setWm(const double *wm, const double *rm = nullptr, Size wm_ld = 3, Size rm_ld = 3)->void;
+			auto setWm(const Coordinate &relative_to, const double *wm, const double *rm = nullptr, Size wm_ld = 3, Size rm_ld = 3)->void;
+			auto setWa(const double *wa, const double *rm = nullptr, Size rm_ld = 3)->void;
+			auto setWa(const Coordinate &relative_to, const double *wa, const double *rm = nullptr, Size rm_ld = 3)->void;
 			auto setVe(const double *ve, const double *pe = nullptr, const char *type = "313")->void;
 			auto setVe(const Coordinate &relative_to, const double *ve, const double *pe = nullptr, const char *type = "313")->void;
 			auto setVq(const double *vq, const double *pq = nullptr)->void;
@@ -478,10 +478,10 @@ namespace aris
 			auto setXe(const Coordinate &relative_to, const double *xe, const double *we = nullptr, const double *re = nullptr, const char *type = "313")->void;
 			auto setXq(const double *xq, const double *wq = nullptr, const double *rq = nullptr)->void;
 			auto setXq(const Coordinate &relative_to, const double *xq, const double *wq = nullptr, const double *rq = nullptr)->void;
-			auto setXm(const double *xm, const double *wm = nullptr, const double *rm = nullptr, int xm_ld = 3, int wm_ld = 3, int rm_ld = 3)->void;
-			auto setXm(const Coordinate &relative_to, const double *xm, const double *vm = nullptr, const double *rm = nullptr, int xm_ld = 3, int wm_ld = 3, int rm_ld = 3)->void;
-			auto setXa(const double *xa, const double *wa = nullptr, const double *rm = nullptr, int rm_ld = 3)->void;
-			auto setXa(const Coordinate &relative_to, const double *xa, const double *wa = nullptr, const double *rm = nullptr, int rm_ld = 3)->void;
+			auto setXm(const double *xm, const double *wm = nullptr, const double *rm = nullptr, Size xm_ld = 3, Size wm_ld = 3, Size rm_ld = 3)->void;
+			auto setXm(const Coordinate &relative_to, const double *xm, const double *vm = nullptr, const double *rm = nullptr, Size xm_ld = 3, Size wm_ld = 3, Size rm_ld = 3)->void;
+			auto setXa(const double *xa, const double *wa = nullptr, const double *rm = nullptr, Size rm_ld = 3)->void;
+			auto setXa(const Coordinate &relative_to, const double *xa, const double *wa = nullptr, const double *rm = nullptr, Size rm_ld = 3)->void;
 			auto setAe(const double *ae, const double *ve = nullptr, const double *pe = nullptr, const char *type = "313")->void;
 			auto setAe(const Coordinate &relative_to, const double *ae, const double *ve = nullptr, const double *pe = nullptr, const char *type = "313")->void;
 			auto setAq(const double *aq, const double *vq = nullptr, const double *pq = nullptr)->void;
@@ -533,13 +533,13 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string & { static const std::string type{ "Motion" }; return type; }
-			static auto Dim()->std::size_t { return 1; }
+			static auto Dim()->Size { return 1; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "single_component_motion" }; return type; }
 			auto virtual adamsScriptType()const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto virtual dim() const ->std::size_t override { return 1; }
+			auto virtual dim() const ->Size override { return 1; }
 
 			
 			auto virtual cptCp(double *cp)const->void override;
@@ -554,7 +554,7 @@ namespace aris
 			auto virtual cfPtr() const->const double* override { return cf(); }
 			auto virtual updCa()->void override;
 			auto virtual updCe()->void override;
-			auto axis()const->int;
+			auto axis()const->Size;
 			auto mp() const->double;
 			auto updMp()->void;
 			auto setMp(double mot_pos)->void;
@@ -570,13 +570,13 @@ namespace aris
 			auto mfFrc() const->double;
 			auto frcCoe() const ->const double3&;
 			auto setFrcCoe(const double *frc_coe)->void;
-			auto absID()const->std::size_t;
-			auto slaID()const->std::size_t;
-			auto phyID()const->std::size_t;
+			auto absID()const->Size;
+			auto slaID()const->Size;
+			auto phyID()const->Size;
 
 		protected:
 			virtual ~Motion();
-			explicit Motion(const std::string &name, Marker &makI, Marker &makJ, int component_axis = 2, const double *frc_coe = nullptr, bool active = true);
+			explicit Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis = 2, const double *frc_coe = nullptr, bool active = true);
 			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
 			Motion(const Motion &other);
 			Motion(Motion &&other);
@@ -594,12 +594,12 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "GeneralMotion" }; return type; }
-			static auto Dim()->std::size_t { return 6; }
+			static auto Dim()->Size { return 6; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "general_motion" }; return type; }
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual updCa()->void override;
-			auto virtual dim() const ->std::size_t override { return Dim(); }
+			auto virtual dim() const ->Size override { return Dim(); }
 			
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
@@ -673,7 +673,7 @@ namespace aris
 				std::vector<std::list<double> > Pin_, Fin_, Vin_, Ain_;//vector的维数为电机个数,但list维数为时间的维数
 
 				auto clear()->void;
-				auto resize(std::size_t size)->void;
+				auto resize(Size size)->void;
 				auto saveToTxt(const std::string &filename)const->void;
 			};
 			using Root::loadXml;
@@ -705,14 +705,14 @@ namespace aris
 			auto generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>&;
 			auto forcePool()->aris::core::ObjectPool<Force, Element>&;
 			auto forcePool()const->const aris::core::ObjectPool<Force, Element>&;
-			auto markerSize()const->std::size_t { std::size_t size{ 0 }; for (auto &prt : partPool())size += prt.markerPool().size(); return size; }
+			auto markerSize()const->Size { Size size{ 0 }; for (auto &prt : partPool())size += prt.markerPool().size(); return size; }
 			auto updMotionID()->void;
-			auto motionAtAbs(std::size_t abs_id)->Motion&;
-			auto motionAtAbs(std::size_t abs_id)const->const Motion&;
-			auto motionAtPhy(std::size_t phy_id)->Motion&;
-			auto motionAtPhy(std::size_t phy_id)const->const Motion&;
-			auto motionAtSla(std::size_t sla_id)->Motion&;
-			auto motionAtSla(std::size_t sla_id)const->const Motion&;
+			auto motionAtAbs(Size abs_id)->Motion&;
+			auto motionAtAbs(Size abs_id)const->const Motion&;
+			auto motionAtPhy(Size phy_id)->Motion&;
+			auto motionAtPhy(Size phy_id)const->const Motion&;
+			auto motionAtSla(Size sla_id)->Motion&;
+			auto motionAtSla(Size sla_id)const->const Motion&;
 			auto ground()->Part&;
 			auto ground()const->const Part&;
 
@@ -721,11 +721,11 @@ namespace aris
 			auto activeConstraintPool()->aris::core::RefPool<Constraint>&;
 			auto cSize()->BlockSize&;
 			auto pSize()->BlockSize&;
-			auto glbIm()->BlockData&;
-			auto glbCm()->BlockData&;
-			auto cp()->BlockData&;
-			auto cv()->BlockData&;
-			auto ca()->BlockData&;
+			auto glbIm()->BlockMatrix&;
+			auto glbCm()->BlockMatrix&;
+			auto cp()->BlockMatrix&;
+			auto cv()->BlockMatrix&;
+			auto ca()->BlockMatrix&;
 
 			auto cptCp()->void;
 			auto cptCv()->void;
@@ -739,22 +739,22 @@ namespace aris
 			auto setConstraintF()->void;
 			
 
-			auto virtual kinPos(int max_count = 10, double error = 1e-10)->std::tuple<int, double>;
+			auto virtual kinPos(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
 			auto virtual kinVel()->void;
 			auto virtual kinPre()->void;
 			
 			auto kinUpd()->void;
 			auto kinCe(double *ce)const->void;
-			auto kinGlbCmT(double *glb_cmT, int ld = 0, bool is_mtx_inited = false)const->void;
+			auto kinGlbCmT(double *glb_cmT, Size ld = 0, bool is_mtx_inited = false)const->void;
 			auto kinSov(const double *A, const double *b, double *x)->void;
 
 			auto updCa(double *ca)->void;
 			auto getCf(double *cf)const->void;
 			auto setCf(const double *cf)->void;
-			auto getPrtIs(double *prt_cm, int ld = 0, bool is_mtx_inited = false)const->void;
-			auto updPrtCm(double *prt_cm, int ld = 0, bool is_mtx_inited = false)->void;
-			auto updPrtCmT(double *prt_cmT, int ld = 0, bool is_mtx_inited = false)->void;
-			auto updPrtCct(double *prt_cct, int ld = 0, bool is_mtx_inited = false)->void;
+			auto getPrtIs(double *prt_cm, Size ld = 0, bool is_mtx_inited = false)const->void;
+			auto updPrtCm(double *prt_cm, Size ld = 0, bool is_mtx_inited = false)->void;
+			auto updPrtCmT(double *prt_cmT, Size ld = 0, bool is_mtx_inited = false)->void;
+			auto updPrtCct(double *prt_cct, Size ld = 0, bool is_mtx_inited = false)->void;
 			auto updPrtFs(double *prt_fs)->void;
 			auto getPrtAs(double *prt_as) const->void;
 			auto setPrtAs(const double *prt_as)->void;
@@ -786,17 +786,17 @@ namespace aris
 			auto virtual dynGlb()->void;
 			auto dynUpdDim()->void;
 			auto dynAllocate(std::unique_ptr<double[]> &A, std::unique_ptr<double[]> &b, std::unique_ptr<double[]> &x)->void;
-			auto dynSetSolveMethod(std::function<void(int dim, const double *D, const double *b, double *x)> solve_method)->void;
+			auto dynSetSolveMethod(std::function<void(Size dim, const double *D, const double *b, double *x)> solve_method)->void;
 			auto dynSov(const double *A, const double *b, double *x) const->void;
-			auto dynDimM()const->std::size_t;
-			auto dynDimN()const->std::size_t;
-			auto dynDim()const->std::size_t { return dynDimN() + dynDimM(); }
+			auto dynDimM()const->Size;
+			auto dynDimN()const->Size;
+			auto dynDim()const->Size { return dynDimN() + dynDimM(); }
 			auto dynCa(double *ca) const->void;
 			auto dynCf(double *cf) const->void;
 			auto dynPrtUpd()->void;
-			auto dynPrtCm(double *prt_cm, int ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynPrtCmT(double *prt_cmT, int ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynPrtIs(double *prt_is, int ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynPrtCm(double *prt_cm, Size ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynPrtCmT(double *prt_cmT, Size ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynPrtIs(double *prt_is, Size ld = 0, bool is_mtx_inited = false) const->void;
 			auto dynPrtFs(double *prt_fs) const->void;
 			auto dynPrtAs(double *prt_as) const->void;
 			auto dynPrtMtx(double *A, double *b, bool is_mtx_inited = false) const->void;
@@ -804,9 +804,9 @@ namespace aris
 			auto dynPrtEnd(const double *x)->void;
 			auto dynPrtSov()->void;
 			auto dynGlbUpd()->void;
-			auto dynGlbCm(double *glb_cm, int ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynGlbCmT(double *glb_cmT, int ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynGlbIs(double *glb_is, int ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynGlbCm(double *glb_cm, Size ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynGlbCmT(double *glb_cmT, Size ld = 0, bool is_mtx_inited = false) const->void;
+			auto dynGlbIs(double *glb_is, Size ld = 0, bool is_mtx_inited = false) const->void;
 			auto dynGlbFs(double *glb_fs) const->void;
 			auto dynGlbAs(double *glb_as) const->void;
 			auto dynGlbMtx(double *A, double *b, bool is_mtx_inited = false) const->void;
@@ -815,11 +815,11 @@ namespace aris
 			auto dynGlbSovGaussSeidel()->void;
 
 			// 标定矩阵为m x n维的矩阵,其中m为驱动的数目,n为部件个数*10+驱动数*3
-			auto clbSetInverseMethod(std::function<void(int n, double *A)> inverse_method)->void;
-			auto clbDimM()const->std::size_t;
-			auto clbDimN()const->std::size_t;
-			auto clbDimGam()const->std::size_t;
-			auto clbDimFrc()const->std::size_t;
+			auto clbSetInverseMethod(std::function<void(Size n, double *A)> inverse_method)->void;
+			auto clbDimM()const->Size;
+			auto clbDimN()const->Size;
+			auto clbDimGam()const->Size;
+			auto clbDimFrc()const->Size;
 			auto clbPre()->void;
 			auto clbUpd()->void;
 			auto clbMtx(double *clb_D, double *clb_b) const->void;
@@ -829,11 +829,11 @@ namespace aris
 			auto virtual kinFromPin()->void {}
 			auto virtual kinFromVin()->void {}
 			// 静态仿真
-			auto simKin(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1)->SimResult;
+			auto simKin(const PlanFunc &func, const PlanParamBase &param, Size akima_interval = 1)->SimResult;
 			// 动态仿真
-			auto simDyn(const PlanFunc &func, const PlanParamBase &param, std::size_t akima_interval = 1, Script *script = nullptr)->SimResult;
+			auto simDyn(const PlanFunc &func, const PlanParamBase &param, Size akima_interval = 1, Script *script = nullptr)->SimResult;
 			// 直接生成Adams模型,依赖SimDynAkima
-			auto simToAdams(const std::string &filename, const PlanFunc &func, const PlanParamBase &param, int ms_dt = 10, Script *script = nullptr)->SimResult;
+			auto simToAdams(const std::string &filename, const PlanFunc &func, const PlanParamBase &param, Size ms_dt = 10, Script *script = nullptr)->SimResult;
 
 			virtual ~Model();
 			Model(const std::string &name = "Root");
@@ -860,10 +860,10 @@ namespace aris
 			VariableType data_;
 			friend class Model;
 		};
-		template<std::size_t DIM> class JointTemplate :public Joint, public ConstraintData<DIM>
+		template<Size DIM> class JointTemplate :public Joint, public ConstraintData<DIM>
 		{
 		public:
-			auto virtual dim() const->std::size_t { return DIM; }
+			auto virtual dim() const->Size { return DIM; }
 			auto virtual caPtr() const->const double* override { return ConstraintData<DIM>::ca(); }
 			auto virtual cfPtr() const->const double* override { return ConstraintData<DIM>::cf(); }
 			auto virtual prtCmPtrI() const->const double* override { return *ConstraintData<DIM>::prtCmI(); }
@@ -999,8 +999,8 @@ namespace aris
 			auto virtual adamsType()const->const std::string& override{ static const std::string type("universal"); return type; }
 			auto virtual cptCa(double *ca)const->void override;
 			auto virtual cptCp(double *cp)const->void override;
-			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void override;
-			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, int cmI_ld = 0, int cmJ_ld = 0)const->void override;
+			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, Size cmI_ld = 0, Size cmJ_ld = 0)const->void override;
+			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, Size cmI_ld = 0, Size cmJ_ld = 0)const->void override;
 
 			auto virtual updCa()->void override;
 			auto virtual updPrtCm()->void override;
@@ -1049,21 +1049,21 @@ namespace aris
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual updFs()->void override;
-			auto setComponentID(std::size_t id)->void { component_axis_ = id; }
+			auto setComponentID(Size id)->void { component_axis_ = id; }
 			auto setFce(double value)->void { std::fill_n(fce_value_, 6, 0); fce_value_[component_axis_] = value; }
-			auto setFce(double value, int componentID)->void { this->component_axis_ = componentID; setFce(value); }
+			auto setFce(double value, Size componentID)->void { this->component_axis_ = componentID; setFce(value); }
 			auto fce()const->double { return fce_value_[component_axis_]; }
 
 		private:
 			virtual ~SingleComponentForce() = default;
-			explicit SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, int componentID);
+			explicit SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, Size componentID);
 			explicit SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele);
 			SingleComponentForce(const SingleComponentForce &other) = default;
 			SingleComponentForce(SingleComponentForce &&other) = default;
 			SingleComponentForce& operator=(const SingleComponentForce &other) = default;
 			SingleComponentForce& operator=(SingleComponentForce &&other) = default;
 
-			int component_axis_;
+			Size component_axis_;
 			double fce_value_[6]{ 0 };
 
 			friend class Model;

@@ -50,7 +50,7 @@ namespace aris
 
 				imp_->log_data_size_ = 0;
 				for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
-				imp_->log_data_msg_.resize(imp_->log_data_size_);
+				imp_->log_data_msg_.resize(static_cast<aris::core::MsgSize>(imp_->log_data_size_));
 
 				aris::core::MsgFix<MAX_LOG_DATA_SIZE> recv_msg;
 				while (imp_->log_pipe_->recvMsg(recv_msg));

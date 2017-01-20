@@ -111,7 +111,7 @@ void test_core_command()
 				parser.parse(cmd_string, cmd, params);
 
 				std::cout << cmd << std::endl;
-				int paramPrintLength;
+				aris::Size paramPrintLength;
 				if (params.empty())
 				{
 					paramPrintLength = 2;

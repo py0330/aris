@@ -78,7 +78,7 @@ namespace aris
 		};
 		auto Socket::Imp::acceptThread(Socket::Imp* imp, std::promise<void> accept_thread_ready)->void
 		{
-			int lisn_sock, conn_sock;
+			int lisn_sock;
 			struct sockaddr_in client_addr;
 			socklen_t sin_size;
 
@@ -94,7 +94,7 @@ namespace aris
 			accept_thread_ready.set_value();
 
 			// 服务器阻塞,直到客户程序建立连接 //
-			conn_sock = accept(lisn_sock, (struct sockaddr *)(&client_addr), &sin_size);
+			auto conn_sock = accept(lisn_sock, (struct sockaddr *)(&client_addr), &sin_size);
 
 			// 检查是否正在Close,如果不能锁住,则证明正在close,于是结束线程释放资源 //
 			std::unique_lock<std::mutex> cls_lck(imp->close_mutex_, std::defer_lock);

@@ -22,7 +22,7 @@ namespace aris
 			auto send_pos = imp_->send_pos_.load();
 			auto recv_pos = imp_->recv_pos_.load();
 			
-			std::size_t remain_data_size = ((send_pos - recv_pos) % imp_->pool_size_ + imp_->pool_size_) % imp_->pool_size_;
+			std::size_t remain_data_size = (send_pos - recv_pos + imp_->pool_size_) % imp_->pool_size_;
 			if (remain_data_size + sizeof(MsgHeader) + msg.size()> imp_->pool_size_) return false;
 			std::size_t send_num1 = send_pos + sizeof(MsgHeader) + msg.size() > imp_->pool_size_ ? imp_->pool_size_ - send_pos : sizeof(MsgHeader) + msg.size();
 			std::size_t send_num2 = sizeof(MsgHeader) + msg.size() - send_num1;

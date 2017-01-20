@@ -592,7 +592,7 @@ namespace aris
 				{
 					imp_->plan_vec_.push_back(plan_func);
 					imp_->parser_vec_.push_back(parse_func);
-					imp_->cmd_id_map_.insert(std::make_pair(cmd_name, imp_->plan_vec_.size() - 1));
+					imp_->cmd_id_map_.insert(std::make_pair(cmd_name, static_cast<int>(imp_->plan_vec_.size() - 1)));
 
 					std::cout << cmd_name << ":" << imp_->cmd_id_map_.at(cmd_name) << std::endl;
 				}

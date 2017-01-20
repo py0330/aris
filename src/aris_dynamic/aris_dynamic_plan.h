@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iostream>
 
-#include"aris_dynamic_kernel.h"
+#include"aris_dynamic_matrix.h"
 
 namespace aris
 {
@@ -84,7 +84,7 @@ namespace aris
 				double * const Ca;
 				double * const g;
 				double * const h;
-				const int size;
+				const Size size;
 				double time, s, ds;
 				double dsLhs, dsRhs;
 				double ddsLhs, ddsRhs;

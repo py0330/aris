@@ -20,7 +20,7 @@ namespace aris
 
 			aris::dynamic::s_mm(data.size, 1, data.size, data.Ji, data.size, data.g, 1, J_dot_g.data(), 1);
 
-			for (int i = 0; i < data.size; ++i)
+			for (Size i = 0; i < data.size; ++i)
 			{
 				lhs[i] = (limits[i].minVel - data.Cv[i]) / J_dot_g[i];
 				rhs[i] = (limits[i].maxVel - data.Cv[i]) / J_dot_g[i];
@@ -54,7 +54,7 @@ namespace aris
 			aris::dynamic::s_mm(locData.size, 1, locData.size, locData.Ji, locData.size, locData.h, 1, J_dot_h.data(), 1);
 			aris::dynamic::s_mm(locData.size, 1, locData.size, locData.dJi, locData.size, locData.g, 1, dJ_dot_g.data(), 1);
 
-			for (int i = 0; i < locData.size; ++i)
+			for (Size i = 0; i < locData.size; ++i)
 			{
 				lhs[i] = (limits[i].minAcc - J_dot_h[i] * locData.ds * locData.ds - dJ_dot_g[i] * locData.ds - locData.Ca[i]) / J_dot_g[i];
 				rhs[i] = (limits[i].maxAcc - J_dot_h[i] * locData.ds * locData.ds - dJ_dot_g[i] * locData.ds - locData.Ca[i]) / J_dot_g[i];
@@ -361,7 +361,7 @@ namespace aris
 
 		void FastPath::run()
 		{
-			const int size = motor_limits.size();
+			const auto size = motor_limits.size();
 			std::vector<double> Ji(size*size), dJi(size*size), Cv(size), Ca(size), g(size), h(size);
 			
 			FastPath::Data data{ Ji.data(),dJi.data(),Cv.data() ,Ca.data() ,g.data() ,h.data(), size };

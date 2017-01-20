@@ -98,7 +98,7 @@ namespace aris
 			char *dot = strrchr(path, '.');
 			if ((dot != nullptr) && (dot - p > 0))
 			{
-				std::int32_t n = dot - p - 1;
+				auto n = dot - p - 1;
 				strncpy(proName, p + 1, n);
 				proName[n] = 0;
 			}
@@ -160,23 +160,26 @@ namespace aris
 		auto log(const char *data)->const char * { LogFile::instance().log(data);	return data; }
 		auto log(const std::string& data)->const std::string &{ log(data.c_str());	return data; }
 
-		auto MsgBase::size() const->std::int32_t { return header().msg_size_; }
+		auto MsgBase::size() const->MsgSize { return header().msg_size_; }
 		auto MsgBase::setMsgID(std::int32_t msg_id)->void{ header().msg_id_ = msg_id; }
 		auto MsgBase::msgID() const->std::int32_t{	return header().msg_id_;}
 		auto MsgBase::data() const->const char*	{ return size() > 0 ? reinterpret_cast<const char*>(&header()) + sizeof(MsgHeader) : nullptr; }
 		auto MsgBase::data()->char*	{ return size() > 0 ? reinterpret_cast<char*>(&header()) + sizeof(MsgHeader) : nullptr;	}
-		auto MsgBase::copy(const char *src)->void { copy(static_cast<const void *>(src), strlen(src) + 1); }
-		auto MsgBase::copy(const void *src, std::int32_t data_size)->void { resize(data_size); copy(src); }
+		auto MsgBase::copy(const char *src)->void 
+		{ 
+			copy(static_cast<const void *>(src), static_cast<MsgSize>(strlen(src) + 1));
+		}
+		auto MsgBase::copy(const void *src, MsgSize data_size)->void { resize(data_size); copy(src); }
 		auto MsgBase::copy(const void *src)->void { copyAt(src, size(), 0); }
-		auto MsgBase::copyAt(const void *src, std::int32_t data_size, std::int32_t at_this_pos_of_msg)->void
+		auto MsgBase::copyAt(const void *src, MsgSize data_size, MsgSize at_this_pos_of_msg)->void
 		{
 			if ((data_size + at_this_pos_of_msg) > size())resize(data_size + at_this_pos_of_msg);
 			std::copy_n(static_cast<const char *>(src), data_size, data() + at_this_pos_of_msg);
 		}
-		auto MsgBase::copyMore(const void *src, std::int32_t data_size)->void{ copyAt(src, data_size, size()); }
-		auto MsgBase::paste(void *tar, std::int32_t data_size) const->void { std::copy_n(data(), std::min(size(), data_size), static_cast<char*>(tar)); }
+		auto MsgBase::copyMore(const void *src, MsgSize data_size)->void{ copyAt(src, data_size, size()); }
+		auto MsgBase::paste(void *tar, MsgSize data_size) const->void { std::copy_n(data(), std::min(size(), data_size), static_cast<char*>(tar)); }
 		auto MsgBase::paste(void *tar) const->void{ std::copy_n(data(), size(), static_cast<char*>(tar)); }
-		auto MsgBase::pasteAt(void *tar, std::int32_t data_size, std::int32_t at_this_pos_of_msg) const->void
+		auto MsgBase::pasteAt(void *tar, MsgSize data_size, MsgSize at_this_pos_of_msg) const->void
 		{
 			std::copy_n(data() + at_this_pos_of_msg, std::min(data_size, size() - at_this_pos_of_msg), static_cast<char*>(tar));
 		}
@@ -184,7 +187,7 @@ namespace aris
 		auto MsgBase::type() const->std::int64_t { return header().msg_type_; }
 
 		auto Msg::swap(Msg &other)->void { std::swap(data_, other.data_); std::swap(capacity_, other.capacity_); }
-		auto Msg::resize(std::int32_t data_size)->void
+		auto Msg::resize(MsgSize data_size)->void
 		{
 			if (!data_)
 			{
@@ -203,13 +206,13 @@ namespace aris
 		auto Msg::header()->MsgHeader& { return *reinterpret_cast<MsgHeader*>(data_.get()); }
 		auto Msg::header()const->const MsgHeader& { return *reinterpret_cast<const MsgHeader*>(data_.get()); }
 		Msg::~Msg() = default;
-		Msg::Msg(std::int32_t msg_id, std::int32_t size) { resize(size); setMsgID(msg_id); };
+		Msg::Msg(MsgID msg_id, MsgSize size) { resize(size); setMsgID(msg_id); };
 		Msg::Msg(const MsgBase &other)
 		{
 			resize(other.size());
 			std::copy_n(reinterpret_cast<const char*>(&other.header()), other.size() + sizeof(MsgHeader), reinterpret_cast<char*>(&header()));
 		}
-		Msg::Msg(const std::string &msg_str) { resize(msg_str.size() + 1); std::copy(msg_str.begin(), msg_str.end(), data()); }
+		Msg::Msg(const std::string &msg_str) { resize(static_cast<MsgSize>(msg_str.size() + 1)); std::copy(msg_str.begin(), msg_str.end(), data()); }
 		Msg::Msg(const Msg& other)
 		{
 			resize(other.size());
@@ -245,7 +248,7 @@ namespace aris
 		{
 			auto msg_buf = reinterpret_cast<char*>(&msg_->header()) + sizeof(MsgHeader);
 			if (gptr() != msg_buf)std::copy(gptr(), pptr(), msg_buf);
-			msg_->resize(pptr() - gptr());
+			msg_->resize(static_cast<MsgSize>(pptr() - gptr()));
 			resetBuf();
 		}
 		auto MsgStreamBuf::resetBuf()->void

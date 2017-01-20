@@ -13,6 +13,8 @@
 #include<cmath>
 #include<algorithm>
 
+#include<aris_core_basic_type.h>
+
 namespace aris
 {
 	namespace core
@@ -26,38 +28,35 @@ namespace aris
 			Matrix(Matrix &&other) { this->swap(other); }
 			Matrix &operator=(Matrix other) { this->swap(other); return *this; }
 			Matrix(double value);
-			Matrix(std::size_t m, std::size_t n, double value = 0);
-			Matrix(std::size_t m, std::size_t n, const double *data);
+			Matrix(Size m, Size n, double value = 0);
+			Matrix(Size m, Size n, const double *data);
 			Matrix(const std::initializer_list<Matrix> &data);
 			auto swap(Matrix &other)->Matrix&;
 			auto empty() const->bool { return data_vec_.empty(); }
-			auto size() const->std::size_t { return m()*n(); }
+			auto size() const->Size { return m()*n(); }
 			auto data()->double * { return data_vec_.data(); }
 			auto data() const->const double * { return data_vec_.data(); }
 			auto begin() ->double * { return data(); }
 			auto begin() const ->const double * { return data(); }
 			auto end() ->double * { return data() + size(); }
 			auto end()  const ->const double * { return data() + size(); }
-			auto m() const->std::size_t { return m_; }
-			auto n() const->std::size_t { return n_; }
-			auto resize(std::size_t m, std::size_t n)->Matrix &;
+			auto m() const->Size { return m_; }
+			auto n() const->Size { return n_; }
+			auto resize(Size m, Size n)->Matrix &;
 			auto transpose()->Matrix &;
 
-			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol, std::size_t rowNum, std::size_t colNum)->void;
-			auto copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol)->void { copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); }
+			auto copySubMatrixTo(const Matrix &subMat, Size beginRow, Size beginCol, Size rowNum, Size colNum)->void;
+			auto copySubMatrixTo(const Matrix &subMat, Size beginRow, Size beginCol)->void { copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); }
 
 			auto toString() const->std::string;
 			auto toDouble() const->double { return data()[0]; }
-			auto dsp() const ->void
-			{
-				std::cout << this->toString();
-			}
+			auto dsp() const ->void { std::cout << this->toString(); }
 
-			auto operator()(std::size_t i, std::size_t j)->double &
+			auto operator()(Size i, Size j)->double &
 			{
 				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
 			}
-			auto operator()(std::size_t i, std::size_t j) const->const double &
+			auto operator()(Size i, Size j) const->const double &
 			{
 				return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
 			}
@@ -77,7 +76,7 @@ namespace aris
 			friend auto combineMatrices(const MATRIX_LISTLIST &matrices)->Matrix;
 
 		private:
-			int m_, n_;
+			Size m_, n_;
 			bool is_row_major_;
 			std::vector<double> data_vec_;
 		};
@@ -100,12 +99,12 @@ namespace aris
 			ret.resize(ret.m(), ret.n());
 
 			// 赋值 //
-			std::size_t beginRow = 0;
+			Size beginRow = 0;
 			for (const auto &mat : matrices)
 			{
-				for (std::size_t i = 0; i < mat.m(); i++)
+				for (Size i = 0; i < mat.m(); i++)
 				{
-					for (std::size_t j = 0; j < mat.n(); j++)
+					for (Size j = 0; j < mat.n(); j++)
 					{
 						ret(i + beginRow, j) = mat(i, j);
 					}
@@ -133,12 +132,12 @@ namespace aris
 			ret.resize(ret.m(), ret.n());
 
 			// 赋值 //
-			int beginCol = 0;
+			Size beginCol = 0;
 			for (const auto &mat : matrices)
 			{
-				for (std::size_t i = 0; i < mat.m(); i++)
+				for (Size i = 0; i < mat.m(); i++)
 				{
-					for (std::size_t j = 0; j < mat.n(); j++)
+					for (Size j = 0; j < mat.n(); j++)
 					{
 						ret(i, j + beginCol) = mat(i, j);
 					}
@@ -182,7 +181,7 @@ namespace aris
 			auto evaluateExpression(const std::string &expression)const->std::string;
 			auto addVariable(const std::string &name, const Matrix &value)->void;
 			auto addVariable(const std::string &name, const std::string &value)->void;
-			auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, int n)->void;
+			auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void;
 			auto clearVariables()->void { variable_map_.clear(); string_map_.clear(); }
 
 		private:
@@ -222,9 +221,9 @@ namespace aris
 			public:
 				std::string name;
 
-				int priority_ul;//unary left
-				int priority_ur;//unary right
-				int priority_b;//binary
+				Size priority_ul;//unary left
+				Size priority_ur;//unary right
+				Size priority_b;//binary
 
 				typedef std::function<Matrix(Matrix)> U_FUN;
 				typedef std::function<Matrix(Matrix, Matrix)> B_FUN;
@@ -235,18 +234,18 @@ namespace aris
 
 				Operator() :priority_ul(0), priority_ur(0), priority_b(0) {}
 
-				void SetUnaryLeftOpr(int priority, U_FUN fun) { priority_ul = priority; this->fun_ul = fun; }
-				void SetUnaryRightOpr(int priority, U_FUN fun) { priority_ur = priority; this->fun_ur = fun; }
-				void SetBinaryOpr(int priority, B_FUN fun) { priority_b = priority; this->fun_b = fun; }
+				void SetUnaryLeftOpr(Size priority, U_FUN fun) { priority_ul = priority; this->fun_ul = fun; }
+				void SetUnaryRightOpr(Size priority, U_FUN fun) { priority_ur = priority; this->fun_ur = fun; }
+				void SetBinaryOpr(Size priority, B_FUN fun) { priority_b = priority; this->fun_b = fun; }
 			};
 			class Function
 			{
 				typedef std::function<Matrix(std::vector<Matrix>)> FUN;
 			public:
 				std::string name;
-				std::map<int, FUN> funs;
+				std::map<Size, FUN> funs;
 
-				void AddOverloadFun(int n, FUN fun) { funs.insert(make_pair(n, fun)); }
+				void AddOverloadFun(Size n, FUN fun) { funs.insert(make_pair(n, fun)); }
 			};
 
 			typedef std::vector<Token> TokenVec;
@@ -259,7 +258,7 @@ namespace aris
 			Matrix CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
 
 			TokenVec::iterator FindNextOutsideToken(TokenVec::iterator leftPar, TokenVec::iterator endToken, Token::Type type) const;
-			TokenVec::iterator FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, int precedence)const;
+			TokenVec::iterator FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, Size precedence)const;
 			std::vector<std::vector<Matrix> > GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const;
 
 		private:

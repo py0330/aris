@@ -428,8 +428,8 @@ namespace aris
             int maxPrintLength = 70;
 
 			int count = 0;
-			int width = maxPrintLength - begin;
-			int StringLength = originalString.length();
+			std::size_t width = maxPrintLength - begin;
+			std::size_t StringLength = originalString.length();
 			while (StringLength>width)
 			{
 				formatStr += std::string(begin, ' ') + originalString.substr(width*count, width*(count + 1)) + "\n";

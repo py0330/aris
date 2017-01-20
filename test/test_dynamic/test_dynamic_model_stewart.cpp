@@ -327,8 +327,8 @@ void test_model_stewart()
 		rbt.motionAtAbs(0).setMp(rbt.motionAtAbs(0).mp() + 0.1);
 		rbt.motionAtAbs(1).setMp(rbt.motionAtAbs(1).mp() + 0.085);
 
-		std::cout << rbt.motionAtAbs(0).mp() << std::endl;
-		std::cout << rbt.motionAtAbs(1).mp() << std::endl;
+		//std::cout << rbt.motionAtAbs(0).mp() << std::endl;
+		//std::cout << rbt.motionAtAbs(1).mp() << std::endl;
 
 		rbt.allocateMemory();
 		auto ret = rbt.kinPos();
@@ -355,7 +355,7 @@ void test_model_stewart()
 		for (auto &m : rbt.motionPool()) 
 		{
 			m.updMp();
-			std::cout << m.mp() << std::endl;
+			//std::cout << m.mp() << std::endl;
 		}
 
 

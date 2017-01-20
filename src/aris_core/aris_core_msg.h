@@ -15,11 +15,15 @@ namespace aris
 {
 	namespace core
 	{
+		using MsgSize = std::int32_t;
+		using MsgID = std::int32_t;
+		using MsgType = std::int64_t;
+		
 		struct MsgHeader
 		{
-			std::int32_t msg_size_;
-			std::int32_t msg_id_;
-			std::int64_t msg_type_;
+			MsgSize msg_size_;
+			MsgID msg_id_;
+			MsgType msg_type_;
 			std::int64_t reserved1_;
 			std::int64_t reserved2_;
 			std::int64_t reserved3_;
@@ -27,15 +31,15 @@ namespace aris
 		class MsgBase
 		{
 		public:
-			auto virtual resize(std::int32_t size)->void = 0;
+			auto virtual resize(MsgSize size)->void = 0;
 			auto virtual header()->MsgHeader& = 0;
 			auto virtual header()const->const MsgHeader& = 0;
-			auto virtual capacity()const->std::int32_t = 0;
+			auto virtual capacity()const->MsgSize = 0;
 			auto empty()const->bool { return size() == 0; }
-			auto size() const->std::int32_t;
+			auto size() const->MsgSize;
 			auto setType(std::int64_t type)->void;
 			auto type() const->std::int64_t;
-			auto setMsgID(std::int32_t id)->void;
+			auto setMsgID(MsgID id)->void;
 			auto msgID() const->std::int32_t;
 			auto data() const->const char*;
 			auto data()->char*;
@@ -112,7 +116,6 @@ namespace aris
 
 			virtual ~MsgFix() = default;
 			explicit MsgFix(std::int32_t msg_id = 0, std::int32_t size = 0) :MsgBase() {}
-			explicit MsgFix(const std::string &msg_str) :MsgBase(msg_str) {}
 			MsgFix(const MsgBase &other)
 			{
 				resize(other.size());

@@ -8,75 +8,75 @@
 
 #include "aris_core_expression_calculator.h"
 
-#include "aris_dynamic_kernel.h"
+#include "aris_dynamic_matrix.h"
 
 namespace aris
 {
 	namespace core
 	{
-		auto s_mm(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mm(Size m, Size n, Size k, const double* A, Size lda, const double* B, Size ldb, double *C, Size ldc) noexcept->void
 		{
-			for (int i = 0; i < m; ++i)
+			for (Size i = 0; i < m; ++i)
 			{
-				int row_idx = i*lda;
-				for (int j = 0; j < n; ++j)
+				Size row_idx = i*lda;
+				for (Size j = 0; j < n; ++j)
 				{
-					int idx = i*ldc + j;
+					Size idx = i*ldc + j;
 
 					C[idx] = 0;
-					for (int u = 0; u < k; ++u)
+					for (Size u = 0; u < k; ++u)
 					{
 						C[idx] += A[row_idx + u] * B[j + u*ldb];
 					}
 				}
 			}
 		}
-		auto s_mmTN(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmTN(Size m, Size n, Size k, const double* A, Size lda, const double* B, Size ldb, double *C, Size ldc) noexcept->void
 		{
-			for (int i = 0; i < m; ++i)
+			for (Size i = 0; i < m; ++i)
 			{
-				for (int j = 0; j < n; ++j)
+				for (Size j = 0; j < n; ++j)
 				{
-					int idx = i*ldc + j;
+					Size idx = i*ldc + j;
 
 					C[idx] = 0;
-					for (int u = 0; u < k; ++u)
+					for (Size u = 0; u < k; ++u)
 					{
 						C[idx] += A[i + u*lda] * B[j + u*ldb];
 					}
 				}
 			}
 		}
-		auto s_mmNT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmNT(Size m, Size n, Size k, const double* A, Size lda, const double* B, Size ldb, double *C, Size ldc) noexcept->void
 		{
-			for (int i = 0; i < m; ++i)
+			for (Size i = 0; i < m; ++i)
 			{
-				int row_idx = i*lda;
-				for (int j = 0; j < n; ++j)
+				Size row_idx = i*lda;
+				for (Size j = 0; j < n; ++j)
 				{
-					int col_idx = j*ldb;
+					Size col_idx = j*ldb;
 
-					int idx = i*ldc + j;
+					Size idx = i*ldc + j;
 
 					C[idx] = 0;
-					for (int u = 0; u < k; ++u)
+					for (Size u = 0; u < k; ++u)
 					{
 						C[idx] += A[row_idx + u] * B[col_idx + u];
 					}
 				}
 			}
 		}
-		auto s_mmTT(int m, int n, int k, const double* A, int lda, const double* B, int ldb, double *C, int ldc) noexcept->void
+		auto s_mmTT(Size m, Size n, Size k, const double* A, Size lda, const double* B, Size ldb, double *C, Size ldc) noexcept->void
 		{
-			for (int i = 0; i < m; ++i)
+			for (Size i = 0; i < m; ++i)
 			{
-				for (int j = 0; j < n; ++j)
+				for (Size j = 0; j < n; ++j)
 				{
-					int col_idx = j*ldb;
-					int idx = i*ldc + j;
+					Size col_idx = j*ldb;
+					Size idx = i*ldc + j;
 
 					C[idx] = 0;
-					for (int u = 0; u < k; ++u)
+					for (Size u = 0; u < k; ++u)
 					{
 						C[idx] += A[i + u*lda] * B[col_idx + u];
 					}
@@ -84,22 +84,9 @@ namespace aris
 			}
 		}
 
-		Matrix::Matrix(std::size_t m, std::size_t n, double value) : m_(m), n_(n), is_row_major_(true), data_vec_(m*n, value)
-		{
-		}
-		Matrix::Matrix(std::size_t m, std::size_t n, const double *Data)
-			: Matrix(m, n)
-		{
-			if ((m*n>0) && (Data != nullptr))
-				memcpy(data(), Data, m*n * sizeof(double));
-		}
-		Matrix::Matrix(double value)
-			: m_(1)
-			, n_(1)
-			, is_row_major_(true)
-			, data_vec_(1, value)
-		{
-		}
+		Matrix::Matrix(Size m, Size n, double value) : m_(m), n_(n), is_row_major_(true), data_vec_(m*n, value)	{ }
+		Matrix::Matrix(Size m, Size n, const double *data) : Matrix(m, n) { std::copy(data, data + m*n, this->data()); }
+		Matrix::Matrix(double value): m_(1), n_(1), is_row_major_(true), data_vec_(1, value){}
 		Matrix::Matrix(const std::initializer_list<Matrix> &data) :Matrix()
 		{
 			std::list<std::list<Matrix> > mat_list_list;
@@ -135,7 +122,7 @@ namespace aris
 
 			return *this;
 		}
-		auto Matrix::resize(std::size_t m, std::size_t n)->Matrix &
+		auto Matrix::resize(Size m, Size n)->Matrix &
 		{
 			m_ = m;
 			n_ = n;
@@ -148,16 +135,16 @@ namespace aris
 			std::swap(m_, n_);
 			return *this;
 		}
-		auto Matrix::copySubMatrixTo(const Matrix &subMat, std::size_t beginRow, std::size_t beginCol, std::size_t rowNum, std::size_t colNum)->void
+		auto Matrix::copySubMatrixTo(const Matrix &subMat, Size beginRow, Size beginCol, Size rowNum, Size colNum)->void
 		{
 			if ((beginRow + subMat.m() > m()) || (beginCol + subMat.n() > n()))
 			{
 				throw std::logic_error("Function CopySubMatrixTo must have subMat smaller than self matrix");
 			}
 
-			for (std::size_t i = 0; i < subMat.m(); ++i)
+			for (Size i = 0; i < subMat.m(); ++i)
 			{
-				for (std::size_t j = 0; j < subMat.n(); ++j)
+				for (Size j = 0; j < subMat.n(); ++j)
 				{
 					this->operator()(i + beginRow, j + beginCol) = subMat(i, j);
 				}
@@ -170,9 +157,9 @@ namespace aris
 
 			stream.precision(15);
 			stream << "{";
-			for (std::size_t i = 0; i < m(); ++i)
+			for (Size i = 0; i < m(); ++i)
 			{
-				for (std::size_t j = 0; j < n(); ++j)
+				for (Size j = 0; j < n(); ++j)
 				{
 					stream << this->operator()(i, j);
 					if (j<n() - 1)stream << " , ";
@@ -211,9 +198,9 @@ namespace aris
 			{
 				ret.resize(m1.m(), m1.n());
 
-				for (std::size_t i = 0; i < ret.m(); ++i)
+				for (Size i = 0; i < ret.m(); ++i)
 				{
-					for (std::size_t j = 0; j < ret.n(); ++j)
+					for (Size j = 0; j < ret.n(); ++j)
 					{
 						ret(i, j) = m1(i, j) + m2(i, j);
 					}
@@ -233,7 +220,7 @@ namespace aris
 			{
 				ret = Matrix(m2);
 
-				for (std::size_t i = 0; i < ret.size(); ++i)
+				for (Size i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] = m1(0, 0) - ret.data()[i];
 				}
@@ -242,7 +229,7 @@ namespace aris
 			{
 				ret = Matrix(m1);
 
-				for (std::size_t i = 0; i < ret.size(); ++i)
+				for (Size i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] -= m2(0, 0);
 				}
@@ -251,9 +238,9 @@ namespace aris
 			{
 				ret.resize(m1.m(), m1.n());
 
-				for (std::size_t i = 0; i < ret.m(); i++)
+				for (Size i = 0; i < ret.m(); i++)
 				{
-					for (std::size_t j = 0; j < ret.n(); j++)
+					for (Size j = 0; j < ret.n(); j++)
 					{
 						ret(i, j) = m1(i, j) - m2(i, j);
 					}
@@ -274,7 +261,7 @@ namespace aris
 			{
 				ret = Matrix(m2);
 
-				for (std::size_t i = 0; i < ret.size(); ++i)
+				for (Size i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] *= m1(0, 0);
 				}
@@ -283,7 +270,7 @@ namespace aris
 			{
 				ret = Matrix(m1);
 
-				for (std::size_t i = 0; i < ret.size(); ++i)
+				for (Size i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] *= m2(0, 0);
 				}
@@ -332,7 +319,7 @@ namespace aris
 			{
 				ret = Matrix(m2);
 
-				for (std::size_t i = 0; i < ret.size(); ++i)
+				for (Size i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] = m1(0, 0) / ret.data()[i];
 				}
@@ -341,7 +328,7 @@ namespace aris
 			{
 				ret = Matrix(m1);
 
-				for (std::size_t i = 0; i < ret.size(); ++i)
+				for (Size i = 0; i < ret.size(); ++i)
 				{
 					ret.data()[i] /= m2(0, 0);
 				}
@@ -356,7 +343,7 @@ namespace aris
 		Matrix operator - (const Matrix &m1)
 		{
 			Matrix m(m1.m(), m1.n());
-			for (std::size_t i = 0; i < m1.size(); ++i)m.data()[i] = -m1.data()[i];
+			for (Size i = 0; i < m1.size(); ++i)m.data()[i] = -m1.data()[i];
 
 			return m;
 		}
@@ -578,7 +565,7 @@ namespace aris
 
 		auto Calculator::FindNextOutsideToken(TokenVec::iterator beginToken, TokenVec::iterator endToken, Token::Type type)const->Calculator::TokenVec::iterator
 		{
-			int parNum = 0, braNum = 0, bceNum = 0;
+			Size parNum = 0, braNum = 0, bceNum = 0;
 			auto nextPlace = beginToken;
 
 			while (nextPlace < endToken)
@@ -599,7 +586,7 @@ namespace aris
 
 			return nextPlace;
 		}
-		auto Calculator::FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, int precedence)const->Calculator::TokenVec::iterator
+		auto Calculator::FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, Size precedence)const->Calculator::TokenVec::iterator
 		{
 			auto nextOpr = beginToken;
 
@@ -695,7 +682,7 @@ namespace aris
 			}
 			string_map_.insert(make_pair(name, value));
 		}
-		auto Calculator::addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, int n)->void
+		auto Calculator::addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void
 		{
 			if (variable_map_.find(name) != variable_map_.end())
 			{

@@ -1,4 +1,4 @@
-﻿#include "test_dynamic_kernel.h"
+﻿#include "test_dynamic_matrix.h"
 #include <iostream>
 #include <aris.h>
 
@@ -544,8 +544,8 @@ void test_mtx_householder()
 		if (!(s_is_equal(n, rhs, result_x_ld, x_t, x_ld, x_t, error)))std::cout << "\"s_householder_ut_sov\" failed" << std::endl;
 	}
 	{
-		const int m{ 6 }, n{ 5 }, rhs{ 2 };
-		const int a_t{ 9 }, q_t{ 8 }, r_t{ 6 }, u_t{ 7 }, tau_t{ 2 }, b_t{ 4 }, x_t{ 3 };
+		const aris::Size m{ 6 }, n{ 5 }, rhs{ 2 };
+		const aris::Size a_t{ 9 }, q_t{ 8 }, r_t{ 6 }, u_t{ 7 }, tau_t{ 2 }, b_t{ 4 }, x_t{ 3 };
 		const double A[]{ 0.8147,0.9058, 0.127,0.9134,0.6324,
 			0.0975,0.2785,0.5469,0.9575,0.9649,
 			0.1576,0.9706,0.9572,0.4854,0.8003,
@@ -701,7 +701,7 @@ void test_mtx_householder()
 
 		const int m{ 5 }, n{ 7 };
 		double result_Q[m*m], result_R[m*n], result_U[m*n], result_tau[std::max(m, n)];
-		int result_P[n];
+		aris::Size result_P[n];
 
 		s_householder_colpiv(m, n, A, result_U, result_tau, result_P);
 		if (!(s_is_equal(m*n, result_U, U, error) && s_is_equal(std::min(m - 1, n), result_tau, tau, error)))std::cout << "\"s_householder\" failed" << std::endl;
@@ -736,7 +736,7 @@ void test_mtx_householder()
 		double result_U[m*m], result_tau[m];
 
 		BlockSize blk_m{ 2,4 }, blk_n{ 2,4 };
-		BlockData blk_A, blk_U, blk_tau;
+		BlockMatrix blk_A, blk_U, blk_tau;
 
 		s_blk_make(A, blk_m, blk_n, blk_A);
 		s_blk_allocate(blk_m, blk_n, blk_U);
@@ -746,7 +746,7 @@ void test_mtx_householder()
 
 		s_blk_resolve(blk_m, blk_m, blk_U, result_U);
 
-		dsp(6, 6, result_U);
+		//dsp(6, 6, result_U);
 
 		//s_blk_make(A, m, k, a);
 		//s_blk_make(AT, k, m, at);
@@ -851,7 +851,7 @@ void test_mtx_solver()
 	s_sov_umNT(6, 2, llt, bT, result);
 	if (!s_is_equal(12, inv_u_dot_b, result, error))std::cout << "\"s_sov_umNT\" failed" << std::endl;
 
-	BlockData A_blk, L_blk, b_blk;
+	BlockMatrix A_blk, L_blk, b_blk;
 	BlockSize blk_size{ 1,3,2 };
 	BlockSize b_blk_size{ 1,1 };
 	
@@ -967,7 +967,7 @@ void test_mtx_blk()
 	double result[100];
 
 	BlockSize m{ 2,4 }, n{ 3,2 }, k{ 1,3,5 };
-	BlockData a, at, b, bt, c;
+	BlockMatrix a, at, b, bt, c;
 
 	s_blk_make(A, m, k, a);
 	s_blk_make(AT, k, m, at);
@@ -996,7 +996,7 @@ void test_mtx_blk()
 
 
 	const double x[]{ 0.32514568182056,0.105629203329022,0.610958658746201,0.778802241824093,0.423452918962738,0.0908232857874395,0.266471490779072,0.153656717591307,0.281005302533871 };
-	BlockData x_blk;
+	BlockMatrix x_blk;
 	s_blk_make(x, { 1,3,5 }, { 1 }, x_blk);
 	if (!s_is_equal(s_blk_norm({ 1,3,5 }, x_blk), 1.20740354633406, error))std::cout << "\"s_blk_norm\" failed" << std::endl;
 
@@ -1007,7 +1007,7 @@ void test_mtx_blk()
 	if (!s_is_equal(s_blk_norm_row({ 2,3,1 }, { 3,4,2 }, a, 0, 0, a[0][0].data() + 4), 1.9022683449028, error))std::cout << "\"s_blk_norm_row\" failed" << std::endl;
 }
 
-void test_kernel()
+void test_matrix()
 {
 	std::cout << std::endl << "-----------------test kernel--------------------" << std::endl;
 

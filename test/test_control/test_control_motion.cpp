@@ -130,7 +130,7 @@ BasicFunctionParam decode(const std::string input)
 		parser->parse(input, cmd, params);
 
 		std::cout << "\n" << cmd << std::endl;
-		int paramPrintLength;
+		aris::Size paramPrintLength;
 		if (params.empty())
 		{
 			paramPrintLength = 2;
