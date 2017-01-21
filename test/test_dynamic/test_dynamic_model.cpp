@@ -1496,15 +1496,15 @@ void test_model_cpt()
 
 
 		m.cptGlbCm();
-		s_blk_resolve(m.pSize(), m.cSize(), m.glbCm(), result);
-		if (!s_is_equal(576, result, cm, error))std::cout << "model::cptGlbCm() failed" << std::endl;
+		//s_blk_resolve(m.pSize(), m.cSize(), m.glbCm(), result);
+		if (!s_is_equal(576, m.glbCm(), cm, error))std::cout << "model::cptGlbCm() failed" << std::endl;
 		
 		//dlmwrite("C:\\Users\\py033\\Desktop\\cm1.txt", result, 24, 24);
 
 
 		m.cptGlbIm();
-		s_blk_resolve(m.pSize(), m.pSize(), m.glbIm(), result);
-		if (!s_is_equal(576, result, im, error))std::cout << "model::cptGlbIm() failed" << std::endl;
+		//s_blk_resolve(m.pSize(), m.pSize(), m.glbIm(), result);
+		if (!s_is_equal(576, m.glbIm(), im, error))std::cout << "model::cptGlbIm() failed" << std::endl;
 
 		
 		

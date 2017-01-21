@@ -712,10 +712,8 @@ namespace aris
 			makJ_ = &(*mak_j);
 		}
 		
-		struct Constraint::Imp
-		{
-			Size col_id_;
-		};
+		struct Constraint::Imp { Size col_id_, blk_col_id_; };
+		auto Constraint::blkColID()const->Size { return imp_->blk_col_id_; }
 		auto Constraint::colID()const->Size { return imp_->col_id_; }
 		auto Constraint::cptCa(double *ca)const->void
 		{
@@ -1479,7 +1477,7 @@ namespace aris
 			double glb_is_[6][6]{ { 0 } };
 			double glb_fg_[6]{ 0 };
 			double glb_fv_[6]{ 0 };
-			Size row_id_;
+			Size row_id_, blk_row_id_;
 			std::string graphic_file_path_;
 		};
 		auto Part::adamsID()const->Size { return (this == &this->model().ground()) ? 1 : id() + (this->model().ground().id() < id() ? 1 : 2); }
@@ -1594,6 +1592,7 @@ namespace aris
 					<< "\r\n";
 			}
 		}
+		auto Part::blkRowID()const->Size { return imp_->blk_row_id_; }
 		auto Part::rowID()const->Size { return imp_->row_id_; }
 		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
 		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return std::ref(*imp_->marker_pool_); }
@@ -2589,10 +2588,16 @@ namespace aris
 			
 			aris::core::RefPool<Part> active_part_pool_;
 			aris::core::RefPool<Constraint> active_constraint_pool_;
-			BlockSize p_size_, c_size_;
-			BlockMatrix im_, cm_, cp_, cv_, ca_, pp_, pv_, pa_;
-			BlockMatrix cct_, ctc_;
-			BlockMatrix cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
+
+			Size p_size_, c_size_;
+			std::vector<double> im_, cm_, cp_, cv_, ca_, pp_, pv_, pa_;
+			std::vector<double> cct_, ctc_;
+			std::vector<double> cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
+
+			BlockSize p_blk_size_, c_blk_size_;
+			BlockData im_blk_, cm_blk_, cp_blk_, cv_blk_, ca_blk_, pp_blk_, pv_blk_, pa_blk_;
+			BlockData cct_blk_, ctc_blk_;
+			BlockData cct_llt_blk_, cct_x_blk_, cct_b_blk_, ctc_llt_blk_, ctc_x_blk_, ctc_b_blk_;
 
 			std::function<void(Size dim, const double *D, const double *b, double *x)> dyn_solve_method_{ nullptr };
 			std::function<void(Size n, double *A)> clb_inverse_method_{ nullptr };
@@ -2795,116 +2800,149 @@ namespace aris
 		
 		auto Model::allocateMemory()->void
 		{
-			// compute memory size //
-			imp_->p_size_.resize(0);
-			imp_->c_size_.resize(1, 6);
+			// make active pool //
 			imp_->active_part_pool_.clear();
 			imp_->active_constraint_pool_.clear();
-
 			for (auto &prt : partPool())
 			{
-				if (prt.active())
-				{
-					imp_->active_part_pool_.push_back_ptr(&prt);
-					prt.Part::imp_->row_id_ = imp_->p_size_.size();
-					imp_->p_size_.push_back(6);
-				}
+				if (prt.active())imp_->active_part_pool_.push_back_ptr(&prt);
 			}
 			for (auto &jnt : jointPool())
 			{
-				if (jnt.active())
-				{
-					imp_->active_constraint_pool_.push_back_ptr(&jnt);
-					jnt.Constraint::imp_->col_id_ = imp_->c_size_.size();
-					imp_->c_size_.push_back(jnt.dim());
-				}
+				if (jnt.active())imp_->active_constraint_pool_.push_back_ptr(&jnt);
 			}
 			for (auto &mot : motionPool()) 
 			{
-				if (mot.active()) 
-				{
-					imp_->active_constraint_pool_.push_back_ptr(&mot);
-					mot.Constraint::imp_->col_id_ = imp_->c_size_.size();
-					imp_->c_size_.push_back(mot.dim());
-				} 
+				if (mot.active()) imp_->active_constraint_pool_.push_back_ptr(&mot);
 			}
 			for (auto &gmt : generalMotionPool())
 			{
-				if (gmt.active())
-				{
-					imp_->active_constraint_pool_.push_back_ptr(&gmt);
-					gmt.Constraint::imp_->col_id_ = imp_->c_size_.size();
-					imp_->c_size_.push_back(gmt.dim());
-				}
+				if (gmt.active())imp_->active_constraint_pool_.push_back_ptr(&gmt);
+			}
+
+			// compute memory size //
+			imp_->p_size_ = 0;
+			imp_->c_size_ = 6;
+			imp_->p_blk_size_.resize(0);
+			imp_->c_blk_size_.resize(1, 6);
+			
+			for (auto &prt : activePartPool())
+			{
+				prt.Part::imp_->row_id_ = imp_->p_size_;
+				prt.Part::imp_->blk_row_id_ = imp_->p_blk_size_.size();
+				imp_->p_size_ += 6;
+				imp_->p_blk_size_.push_back(6);
+			}
+			for (auto &cst : activeConstraintPool())
+			{
+				cst.Constraint::imp_->col_id_ = imp_->c_size_;
+				cst.Constraint::imp_->blk_col_id_ = imp_->c_blk_size_.size();
+				imp_->c_size_ += cst.dim();
+				imp_->c_blk_size_.push_back(cst.dim());
 			}
 
 			// allocate memory //
-			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->im_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->c_size_, imp_->cm_);
-			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->cp_);
-			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->cv_);
-			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->ca_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->pp_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->pv_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->pa_);
+			imp_->im_.resize(imp_->p_size_ * imp_->p_size_);
+			imp_->cm_.resize(imp_->p_size_ * imp_->c_size_);
+			imp_->cp_.resize(imp_->c_size_ * 1);
+			imp_->cv_.resize(imp_->c_size_ * 1);
+			imp_->ca_.resize(imp_->c_size_ * 1);
+			imp_->pp_.resize(imp_->p_size_ * 1);
+			imp_->pv_.resize(imp_->p_size_ * 1);
+			imp_->pa_.resize(imp_->p_size_ * 1);
 
-			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->cct_);
-			aris::dynamic::s_blk_allocate(imp_->c_size_, imp_->c_size_, imp_->ctc_);
+			imp_->cct_.resize(imp_->p_size_ * imp_->p_size_);
+			imp_->cct_llt_.resize(imp_->p_size_ * imp_->p_size_);
+			imp_->cct_b_.resize(imp_->p_size_ * 1);
+			imp_->cct_x_.resize(imp_->p_size_ * 1);
 
-			aris::dynamic::s_blk_allocate(imp_->p_size_, imp_->p_size_, imp_->cct_llt_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->cct_x_);
-			aris::dynamic::s_blk_allocate(imp_->p_size_, { 1 }, imp_->cct_b_);
-			aris::dynamic::s_blk_allocate(imp_->c_size_, imp_->c_size_, imp_->ctc_llt_);
-			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->ctc_x_);
-			aris::dynamic::s_blk_allocate(imp_->c_size_, { 1 }, imp_->ctc_b_);
+			imp_->im_blk_.resize(imp_->p_blk_size_.size() * imp_->p_blk_size_.size());
+			imp_->cm_blk_.resize(imp_->p_blk_size_.size() * imp_->c_blk_size_.size());
+			imp_->cp_blk_.resize(imp_->c_blk_size_.size() * 1);
+			imp_->cv_blk_.resize(imp_->c_blk_size_.size() * 1);
+			imp_->ca_blk_.resize(imp_->c_blk_size_.size() * 1);
+			imp_->pp_blk_.resize(imp_->p_blk_size_.size() * 1);
+			imp_->pv_blk_.resize(imp_->p_blk_size_.size() * 1);
+			imp_->pa_blk_.resize(imp_->p_blk_size_.size() * 1);
 
-			imp_->cm_[ground().rowID()][0].resize(36, 0);
-			for (Size i = 0; i < 6; ++i)imp_->cm_[ground().rowID()][0].data()[i * 6 + i] = 1.0;
+			imp_->cct_blk_.resize(imp_->p_blk_size_.size() * imp_->p_blk_size_.size());
+			imp_->cct_llt_blk_.resize(imp_->p_blk_size_.size() * imp_->p_blk_size_.size());
+			imp_->cct_b_blk_.resize(imp_->p_blk_size_.size() * 1);
+			imp_->cct_x_blk_.resize(imp_->p_blk_size_.size() * 1);
+
+			s_blk_map(pBlkSize(), pBlkSize(), imp_->im_.data(), imp_->im_blk_);
+			s_blk_map(pBlkSize(), cBlkSize(), imp_->cm_.data(), imp_->cm_blk_);
+			s_blk_map(cBlkSize(), { 1 }, imp_->cp_.data(), imp_->cp_blk_);
+			s_blk_map(cBlkSize(), { 1 }, imp_->cv_.data(), imp_->cv_blk_);
+			s_blk_map(cBlkSize(), { 1 }, imp_->ca_.data(), imp_->ca_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->pp_.data(), imp_->pp_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->pv_.data(), imp_->pv_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->pa_.data(), imp_->pa_blk_);
+
+			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_.data(), imp_->cct_blk_);
+			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_llt_.data(), imp_->cct_llt_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->cct_b_.data(), imp_->cct_b_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->cct_x_.data(), imp_->cct_x_blk_);
+
+			for (auto &ele : imp_->im_blk_)ele.is_zero = true;
+			for (auto &ele : imp_->cm_blk_)ele.is_zero = true;
+
+			for (auto &prt : activePartPool())
+			{
+				imp_->im_blk_[dynamic::id(prt.blkRowID(), prt.blkRowID(), pBlkSize().size())].is_zero = false;
+			}
+			for (auto &cst : activeConstraintPool())
+			{
+				imp_->cm_blk_[dynamic::id(cst.makI().fatherPart().blkRowID(), cst.blkColID(), cBlkSize().size())].is_zero = false;
+				imp_->cm_blk_[dynamic::id(cst.makJ().fatherPart().blkRowID(), cst.blkColID(), cBlkSize().size())].is_zero = false;
+			}
+			imp_->cm_blk_[dynamic::id(ground().blkRowID(), 0, cBlkSize().size())].is_zero = false;
+			
+			for (Size i = 0; i < 6; ++i)imp_->cm_[aris::dynamic::id(ground().rowID() + i, i, cSize())] = 1.0;
 		}
 		auto Model::activePartPool()->aris::core::RefPool<Part>& { return imp_->active_part_pool_; }
 		auto Model::activeConstraintPool()->aris::core::RefPool<Constraint>& { return imp_->active_constraint_pool_; }
-		auto Model::cSize()->BlockSize& { return imp_->c_size_; }
-		auto Model::pSize()->BlockSize& { return imp_->p_size_; }
-
-		auto Model::glbIm()->BlockMatrix& { return imp_->im_; }
-		auto Model::glbCm()->BlockMatrix& { return imp_->cm_; }
-		auto Model::cp()->BlockMatrix& { return imp_->cp_; }
-		auto Model::cv()->BlockMatrix& { return imp_->cv_; }
-		auto Model::ca()->BlockMatrix& { return imp_->ca_; }
+		auto Model::cSize()->Size { return imp_->c_size_; }
+		auto Model::pSize()->Size { return imp_->p_size_; }
+		auto Model::glbIm()->double * { return imp_->im_.data(); }
+		auto Model::glbCm()->double * { return imp_->cm_.data(); }
+		auto Model::cp()->double * { return imp_->cp_.data(); }
+		auto Model::cv()->double * { return imp_->cv_.data(); }
+		auto Model::ca()->double * { return imp_->ca_.data(); }
+		auto Model::cBlkSize()->BlockSize& { return imp_->c_blk_size_; }
+		auto Model::pBlkSize()->BlockSize& { return imp_->p_blk_size_; }
+		auto Model::glbImBlk()->BlockData& { return imp_->im_blk_; }
+		auto Model::glbCmBlk()->BlockData& { return imp_->cm_blk_; }
+		auto Model::cpBlk()->BlockData& { return imp_->cp_blk_; }
+		auto Model::cvBlk()->BlockData& { return imp_->cv_blk_; }
+		auto Model::caBlk()->BlockData& { return imp_->ca_blk_; }
 
 		auto Model::cptGlbIm()->void
 		{
 			for (auto &prt : activePartPool())
 			{
-				imp_->im_[prt.rowID()][prt.rowID()].resize(36, 0);
-				prt.cptGlbIm(imp_->im_[prt.rowID()][prt.rowID()].data());
+				prt.cptGlbIm(imp_->im_.data() + dynamic::id(prt.rowID(), prt.rowID(), pSize()), pSize());
 			}
 		}
 		auto Model::cptGlbCm()->void
 		{
 			for (auto &cst : activeConstraintPool())
 			{
-				imp_->cm_[cst.makI().fatherPart().rowID()][cst.colID()].resize(6 * cst.dim());
-				imp_->cm_[cst.makJ().fatherPart().rowID()][cst.colID()].resize(6 * cst.dim());
-				cst.cptGlbCm(imp_->cm_[cst.makI().fatherPart().rowID()][cst.colID()].data(), imp_->cm_[cst.makJ().fatherPart().rowID()][cst.colID()].data());
+				cst.cptGlbCm(imp_->cm_.data() + dynamic::id(cst.makI().fatherPart().rowID(), cst.colID(), cSize()), imp_->cm_.data() + dynamic::id(cst.makJ().fatherPart().rowID(), cst.colID(), cSize()), cSize(), cSize());
 			}
 		}
 		auto Model::cptCp()->void
 		{
-			imp_->cp_[0][0].resize(6, 0.0);
 			for (auto &cst : activeConstraintPool())
 			{
-				imp_->cp_[cst.colID()][0].resize(cst.dim());
-				cst.cptCp(imp_->cp_[cst.colID()][0].data());
+				cst.cptCp(imp_->cp_.data() + dynamic::id(cst.colID(), 0, 1));
 			}
 		}
 		auto Model::cptCv()->void 
 		{
-			imp_->cv_[0][0].resize(6, 0.0);
 			for (auto &cst : activeConstraintPool())
 			{
-				imp_->cv_[cst.colID()][0].resize(cst.dim());
-				cst.cptCv(imp_->cv_[cst.colID()][0].data());
+				cst.cptCp(imp_->cv_.data() + dynamic::id(cst.colID(), 0, 1));
 			}
 		}
 		auto Model::cptCa()->void {}
@@ -2915,7 +2953,7 @@ namespace aris
 				double pm[4][4];
 				double pq[7];
 
-				s_vc(6, imp_->pp_[prt.rowID()][0].data(), pq);
+				s_vc(6, imp_->pp_.data() + dynamic::id(prt.rowID(), 0, 1), pq);
 
 				double theta = s_norm(3, pq + 3);
 				pq[6] = std::cos(theta / 2);
@@ -2950,16 +2988,17 @@ namespace aris
 			{
 				cptGlbCm();
 				cptCp();
-				s_blk_mmNT(pSize(), pSize(), cSize(), glbCm(), glbCm(), imp_->cct_);
-				s_blk_mm(pSize(), { 1 }, cSize(), glbCm(), cp(), imp_->cct_b_);
+				s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), glbCmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, glbCmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+				s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), glbCmBlk(), cpBlk(), imp_->cct_b_blk_);
 
-				real_error = s_blk_norm(cSize(), cp());
+				real_error = s_blk_norm(cBlkSize(), cpBlk(), BlockStride{ 1,1,1,1 });
 				
 				if (real_error < error) return std::make_tuple(count, real_error);
 
-				s_blk_llt(pSize(), imp_->cct_, imp_->cct_llt_);
-				s_blk_sov_lm(pSize(), { 1 }, imp_->cct_llt_, imp_->cct_b_, imp_->cct_x_);
-				s_blk_sov_um(pSize(), { 1 }, imp_->cct_llt_, imp_->cct_x_, imp_->pp_);
+				s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+				
+				s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
+				s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, imp_->pp_blk_, BlockStride{ 1,1,1,1 });
 
 				setPartP();
 			}

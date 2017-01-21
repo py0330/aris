@@ -250,8 +250,22 @@ namespace aris
 				}
 			}
 		}
+		
+		template <typename AType>
+		auto s_blk_norm(const BlockSize &blk_m, const BlockData &blk_A, AType a_t)noexcept->double
+		{
+			double norm{ 0 };
+			for (std::size_t i = 0; i < blk_m.size(); ++i)
+			{
+				for (Size j = 0; j < blk_m[i]; ++j)
+				{
+					norm += blk_A[id(i, 0, a_t)].data[id(j, 0, a_t.blockStride())] * blk_A[id(i, 0, a_t)].data[id(j, 0, a_t.blockStride())];
+				}
+			}
 
+			return std::sqrt(norm);
 
+		}
 		
 	}
 }

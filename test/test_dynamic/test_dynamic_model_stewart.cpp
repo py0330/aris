@@ -362,7 +362,7 @@ void test_model_stewart()
 		for (auto &m : rbt.motionPool())m.activate(true);
 		gmt->activate(false);
 		rbt.allocateMemory();
-		auto b = aris::core::benchmark(1, [&rbt, &gmt]()
+		auto b = aris::core::benchmark(1000, [&rbt, &gmt]()
 		{
 			static int count{ 0 };
 			double pin1[6]{ 2.0,2.0,2.0,2.0,2.0,2.0 };
@@ -378,16 +378,10 @@ void test_model_stewart()
 		});
 		std::cout << "computational time:" << b << std::endl;
 
-
-
-		
-
-		
-
 		for (auto &m : rbt.motionPool())m.activate(false);
 		gmt->activate(true);
 		rbt.allocateMemory();
-		auto a = aris::core::benchmark(1, [&rbt, &gmt]() 
+		auto a = aris::core::benchmark(1000, [&rbt, &gmt]() 
 		{
 			static int count{0};
 			double pee1[6]{ 0.1 , 1.0 , 0.2 , 0,0,0 };

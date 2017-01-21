@@ -11,6 +11,7 @@
 
 #include <aris_core.h>
 #include <aris_dynamic_matrix.h>
+#include <aris_dynamic_block_matrix.h>
 
 namespace aris
 {
@@ -198,6 +199,7 @@ namespace aris
 			auto virtual updCa()->void;
 			auto virtual updCe()->void;
 			auto colID()const->Size;
+			auto blkColID()const->Size;
 
 		protected:
 			virtual ~Constraint();
@@ -406,6 +408,7 @@ namespace aris
 			auto virtual adamsID()const->Size override;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
+			auto blkRowID()const->Size;
 			auto rowID()const->Size;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
@@ -719,13 +722,20 @@ namespace aris
 			auto allocateMemory()->void;
 			auto activePartPool()->aris::core::RefPool<Part>&;
 			auto activeConstraintPool()->aris::core::RefPool<Constraint>&;
-			auto cSize()->BlockSize&;
-			auto pSize()->BlockSize&;
-			auto glbIm()->BlockMatrix&;
-			auto glbCm()->BlockMatrix&;
-			auto cp()->BlockMatrix&;
-			auto cv()->BlockMatrix&;
-			auto ca()->BlockMatrix&;
+			auto cBlkSize()->BlockSize&;
+			auto pBlkSize()->BlockSize&;
+			auto cSize()->Size;
+			auto pSize()->Size;
+			auto glbImBlk()->BlockData&;
+			auto glbCmBlk()->BlockData&;
+			auto cpBlk()->BlockData&;
+			auto cvBlk()->BlockData&;
+			auto caBlk()->BlockData&;
+			auto glbIm()->double *;
+			auto glbCm()->double *;
+			auto cp()->double *;
+			auto cv()->double *;
+			auto ca()->double *;
 
 			auto cptCp()->void;
 			auto cptCv()->void;
