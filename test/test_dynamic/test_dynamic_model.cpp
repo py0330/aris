@@ -6,303 +6,6 @@
 
 using namespace aris::dynamic;
 
-void test_coordinate()
-{
-	aris::dynamic::Model model;
-
-	auto &p = model.partPool().add<Part>("test_part");
-	auto &r = model.partPool().add<Part>("relative_part");
-
-	const double pp[3] = { 0.1, 0.2, 0.3 };
-	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };
-	const double re321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
-	const double rq[4] = { 0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
-	const double rm[9] = { -0.22, -0.975499782797526,   0.000416847668728071,
-		0.175499782797526, -0.04, -0.983666521865018,
-		0.959583152331272, -0.216333478134982,   0.18 };
-	const double pe313[6] = { 0.1, 0.2, 0.3,0.000423769269879415,   1.38980987554835,   1.79253453841257 };
-	const double pe321[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
-	const double pq[7] = { 0.1, 0.2, 0.3,0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
-	const double pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
-		0.175499782797526, -0.04, -0.983666521865018, 0.2,
-		0.959583152331272, -0.216333478134982,   0.18,0.3,
-		0,0,0,1 };
-
-	const double vp[3] = { 0.307558670154491,   1.2433000508379, -1.04895965543501 };
-	const double we313[3] = { -0.644213536852877, -0.245050866834802, -1.27836042009784 };
-	const double we321[3] = { -4.19969388864156, -0.83045134600268,   3.46543753721832 };
-	const double wq[4] = { 0.1, 0.2, -0.4, -(rq[0] * 0.1 + rq[1] * 0.2 - rq[2] * 0.4) / rq[3] };
-	const double wm[9] = { 1.36, -0.30698536874045, -0.633709981238717,
-		0.426985368740452,   0.8,   0.0436487757967661,
-		0.233709981238715,   1.23635122420323,   0.24 , };
-	const double ve313[6] = { 0.307558670154491,   1.2433000508379, -1.04895965543501,-0.644213536852877, -0.245050866834802, -1.27836042009784 };
-	const double ve321[6] = { 0.307558670154491,   1.2433000508379, -1.04895965543501,-4.19969388864156, -0.83045134600268,   3.46543753721832 };
-	const double vq[7] = { 0.307558670154491,   1.2433000508379, -1.04895965543501, 0.1, 0.2, -0.4, -(rq[0] * 0.1 + rq[1] * 0.2 - rq[2] * 0.4) / rq[3] };
-	const double vm[16] = { 1.36, -0.30698536874045, -0.633709981238717,0.307558670154491,
-		0.426985368740452,   0.8,   0.0436487757967661,1.2433000508379,
-		0.233709981238715,   1.23635122420323,   0.24 , -1.04895965543501,
-		0,0,0,0 };
-	const double wa[3] = { -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
-	const double va[6] = { 0.307558670154491,   1.2433000508379, -1.04895965543501, -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
-	const double vs[6] = { -0.244517963270725,	1.25737650310373,	-0.874318412470487, -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
-
-	const double ap[3] = { 2.2628985000154, -0.843606386309081, -0.248846478459814 };
-	const double xe313[3] = { 1.51734920338156,   1.71538128045296,   1.3693196878275 };
-	const double xe321[3] = { -15.6049676192293,   4.50445705187534,   16.9352080725126 };
-	const double xq[4] = { -0.033,   0.022, 0.011,   -(wq[0] * wq[0] + wq[1] * wq[1] + wq[2] * wq[2] + wq[3] * wq[3] + rq[0] * (-0.033) + rq[1] * (0.022) + rq[2] * (0.011)) / rq[3] };
-	const double xm[9] = { -0.782400000000002,   2.58144759895694,   1.54784395313479,
-		-2.32024759895695, -0.653600000000002,   0.450521351741563,
-		-1.92944395313478, -1.05972135174157, -0.103200000000001 };
-	const double ae313[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 1.51734920338156,   1.71538128045296,   1.3693196878275 };
-	const double ae321[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, -15.6049676192293,   4.50445705187534,   16.9352080725126 };
-	const double aq[7] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, -0.033,   0.022, 0.011,   -(wq[0] * wq[0] + wq[1] * wq[1] + wq[2] * wq[2] + wq[3] * wq[3] + rq[0] * (-0.033) + rq[1] * (0.022) + rq[2] * (0.011)) / rq[3] };
-	const double am[16] = { -0.782400000000002,   2.58144759895694,   1.54784395313479,2.2628985000154,
-		-2.32024759895695, -0.653600000000002,   0.450521351741563,-0.843606386309081,
-		-1.92944395313478, -1.05972135174157, -0.103200000000001,-0.248846478459814,
-		0,0,0,0 };
-	const double xa[3] = { 0.904633672502324, -1.24440604199266,   1.45568007018557 };
-	const double aa[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 0.904633672502324, -1.24440604199266,   1.45568007018557 };
-	const double as[6] = { 3.15925342342501, -0.192390604845803,   0.136512424183815,   0.904633672502324, -1.24440604199266,   1.45568007018557 };
-
-	const double relative_vs[16] = { 0.12, -0.35, 0.26, 0.58, 0.36, -0.135 };
-	const double relative_as[16] = { 0.14, 1.35, -0.35, -0.56, -0.34, 0.14 };
-	const double relative_pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071,   0.1,
-		0.175499782797526, -0.04, -0.983666521865018,   0.2,
-		0.959583152331272, -0.216333478134982,   0.18,   0.3,
-		0,   0,   0,   1 };
-
-	const double to_pm[4][4] = { -0.1224,   0.253539765421328,   0.959549804517774, -0.116974902258887,
-		-0.989539765421329,   0.0432, -0.137640156385781, -0.0855499782797527,
-		-0.0763498045177736, -0.966359843614219,   0.2456,   0.406691619606131,
-		0,   0,   0,   1 };
-	const double to_vs[6] = { -1.4159950169102,   0.131290065274018, -0.0927140779913885, -0.593141011344806,   1.12682984222913, -0.799025264483263 };
-	const double to_as[6] = { 0.25059773457297,   2.12918260428844,   2.93584830296579,   0.319978146055887, -1.01985580694063,   2.40639240365168 };
-
-	const double error = 1e-10;
-
-	double result[16], result2[16], result3[16];
-
-	r.setPm(relative_pm);
-	r.setVs(relative_vs);
-	r.setAs(relative_as);
-
-	p.setPm(pm);
-	p.setVs(vs);
-	p.setAs(as);
-
-	p.getPp(result);
-	if (!(s_is_equal(3, result, pp, error)))std::cout << "\"coordinate:getPp\" failed" << std::endl;
-
-	p.getRe(result);
-	if (!(s_is_equal(3, result, re313, error)))std::cout << "\"coordinate:getRe 313\" failed" << std::endl;
-
-	p.getRe(result, "321");
-	if (!(s_is_equal(3, result, re321, error)))std::cout << "\"coordinate:getRe 321\" failed" << std::endl;
-
-	p.getRq(result);
-	if (!(s_is_equal(3, result, rq, error)))std::cout << "\"coordinate:getRq\" failed" << std::endl;
-
-	p.getRm(result);
-	if (!(s_is_equal(9, result, rm, error)))std::cout << "\"coordinate:getRm\" failed" << std::endl;
-
-	p.getPe(result);
-	if (!(s_is_equal(6, result, pe313, error)))std::cout << "\"coordinate:getPe\" failed" << std::endl;
-
-	p.getPe(result, "321");
-	if (!(s_is_equal(6, result, pe321, error)))std::cout << "\"coordinate:getPe 321\" failed" << std::endl;
-
-	p.getPq(result);
-	if (!(s_is_equal(7, result, pq, error)))std::cout << "\"coordinate:getPq\" failed" << std::endl;
-
-	p.getPm(result);
-	if (!(s_is_equal(16, result, pm, error)))std::cout << "\"coordinate:getPm\" failed" << std::endl;
-
-	p.getVp(result, result2);
-	if (!(s_is_equal(3, result, vp, error)&& s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVp\" failed" << std::endl;
-
-	p.getWe(result, result2);
-	if (!(s_is_equal(3, result, we313, error) && s_is_equal(3, result2, re313, error)))std::cout << "\"coordinate:getWe 313\" failed" << std::endl;
-
-	p.getWe(result, result2, "321");
-	if (!(s_is_equal(3, result, we321, error) && s_is_equal(3, result2, re321, error)))std::cout << "\"coordinate:getWe 321\" failed" << std::endl;
-
-	p.getWq(result, result2);
-	if (!(s_is_equal(4, result, wq, error) && s_is_equal(4, result2, rq, error)))std::cout << "\"coordinate:getWq\" failed" << std::endl;
-
-	p.getWm(result, result2);
-	if (!(s_is_equal(9, result, wm, error) && s_is_equal(9, result2, rm, error)))std::cout << "\"coordinate:getWm\" failed" << std::endl;
-
-	p.getWa(result, result3);
-	if (!(s_is_equal(3, result, wa, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getWa\" failed" << std::endl;
-
-	p.getVe(result, result2);
-	if (!(s_is_equal(6, result, ve313, error) && s_is_equal(6, result2, pe313, error)))std::cout << "\"coordinate:getVe 313\" failed" << std::endl;
-
-	p.getVe(result, result2, "321");
-	if (!(s_is_equal(6, result, ve321, error) && s_is_equal(6, result2, pe321, error)))std::cout << "\"coordinate:getVe 321\" failed" << std::endl;
-
-	p.getVq(result, result2);
-	if (!(s_is_equal(7, result, vq, error) && s_is_equal(7, result2, pq, error)))std::cout << "\"coordinate:getVq\" failed" << std::endl;
-
-	p.getVm(result, result2);
-	if (!(s_is_equal(16, result, vm, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVm\" failed" << std::endl;
-
-	p.getVa(result, result2);
-	if (!(s_is_equal(6, result, va, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVa\" failed" << std::endl;
-
-	p.getVs(result, result2);
-	if (!(s_is_equal(6, result, vs, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVs\" failed" << std::endl;
-
-	p.getAp(result, result2, result3);
-	if (!(s_is_equal(3, result, ap, error) && s_is_equal(3, result2, vp, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAp\" failed" << std::endl;
-
-	p.getXe(result, result2, result3);
-	if (!(s_is_equal(3, result, xe313, error) && s_is_equal(3, result2, we313, error) && s_is_equal(3, result3, re313, error)))std::cout << "\"coordinate:getXe 313\" failed" << std::endl;
-
-	p.getXe(result, result2, result3, "321");
-	if (!(s_is_equal(3, result, xe321, error) && s_is_equal(3, result2, we321, error) && s_is_equal(3, result3, re321, error)))std::cout << "\"coordinate:getXe 313\" failed" << std::endl;
-
-	p.getXq(result, result2, result3);
-	if (!(s_is_equal(4, result, xq, error) && s_is_equal(4, result2, wq, error) && s_is_equal(4, result3, rq, error)))std::cout << "\"coordinate:getXq\" failed" << std::endl;
-
-	p.getXm(result, result2, result3);
-	if (!(s_is_equal(9, result, xm, error) && s_is_equal(9, result2, wm, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXm\" failed" << std::endl;
-
-	p.getXa(result, result2, result3);
-	if (!(s_is_equal(3, result, xa, error) && s_is_equal(3, result2, wa, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXm\" failed" << std::endl;
-
-	p.getAe(result, result2, result3);
-	if (!(s_is_equal(6, result, ae313, error) && s_is_equal(6, result2, ve313, error) && s_is_equal(6, result3, pe313, error)))std::cout << "\"coordinate:getAe 313\" failed" << std::endl;
-
-	p.getAe(result, result2, result3, "321");
-	if (!(s_is_equal(6, result, ae321, error) && s_is_equal(6, result2, ve321, error) && s_is_equal(6, result3, pe321, error)))std::cout << "\"coordinate:getAe 321\" failed" << std::endl;
-
-	p.getAq(result, result2, result3);
-	if (!(s_is_equal(7, result, aq, error) && s_is_equal(7, result2, vq, error) && s_is_equal(7, result3, pq, error)))std::cout << "\"coordinate:getAq\" failed" << std::endl;
-
-	p.getAm(result, result2, result3);
-	if (!(s_is_equal(16, result, am, error) && s_is_equal(16, result2, vm, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAm\" failed" << std::endl;
-
-	p.getAa(result, result2, result3);
-	if (!(s_is_equal(6, result, aa, error) && s_is_equal(3, result2, va, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAa\" failed" << std::endl;
-
-	p.getAs(result, result2, result3);
-	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result2, vs, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAs\" failed" << std::endl;
-
-	p.setPm(r, pm);
-	p.setVs(r, vs);
-	p.setAs(r, as);
-
-	p.getPp(r, result);
-	if (!(s_is_equal(3, result, pp, error)))std::cout << "\"coordinate:getPp\" failed" << std::endl;
-
-	p.getRe(r, result);
-	if (!(s_is_equal(3, result, re313, error)))std::cout << "\"coordinate:getRe\" failed" << std::endl;
-
-	p.getRe(r, result, "321");
-	if (!(s_is_equal(3, result, re321, error)))std::cout << "\"coordinate:getRe 321\" failed" << std::endl;
-
-	p.getRq(r, result);
-	if (!(s_is_equal(4, result, rq, error)))std::cout << "\"coordinate:getRq\" failed" << std::endl;
-
-	p.getRm(r, result);
-	if (!(s_is_equal(9, result, rm, error)))std::cout << "\"coordinate:getRm\" failed" << std::endl;
-
-	p.getRm(r, result, 4);
-	if (!(s_is_equal(3, 3, result, 4, rm, 3, error)))std::cout << "\"coordinate:getRm\" failed" << std::endl;
-
-	p.getPe(r, result);
-	if (!(s_is_equal(6, result, pe313, error)))std::cout << "\"coordinate:getPe\" failed" << std::endl;
-
-	p.getPe(r, result, "321");
-	if (!(s_is_equal(6, result, pe321, error)))std::cout << "\"coordinate:getPe 321\" failed" << std::endl;
-
-	p.getPq(r, result);
-	if (!(s_is_equal(7, result, pq, error)))std::cout << "\"coordinate:getPq\" failed" << std::endl;
-
-	p.getPm(r, result);
-	if (!(s_is_equal(16, result, pm, error)))std::cout << "\"coordinate:getPm\" failed" << std::endl;
-
-	p.getVp(r, result, result2);
-	if (!(s_is_equal(3, result, vp, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVp\" failed" << std::endl;
-
-	p.getWe(r, result, result2);
-	if (!(s_is_equal(3, result, we313, error) && s_is_equal(3, result2, re313, error)))std::cout << "\"coordinate:getWe 313\" failed" << std::endl;
-
-	p.getWe(r, result, result2, "321");
-	if (!(s_is_equal(3, result, we321, error) && s_is_equal(3, result2, re321, error)))std::cout << "\"coordinate:getWe 321\" failed" << std::endl;
-
-	p.getWq(r, result, result2);
-	if (!(s_is_equal(4, result, wq, error) && s_is_equal(4, result2, rq, error)))std::cout << "\"coordinate:getWq\" failed" << std::endl;
-
-	p.getWm(r, result, result2);
-	if (!(s_is_equal(9, result, wm, error) && s_is_equal(9, result2, rm, error)))std::cout << "\"coordinate:getWm\" failed" << std::endl;
-
-	p.getWm(r, result, result2, 4, 4);
-	if (!(s_is_equal(3, 3, result, 4, wm, 3, error) && s_is_equal(3, 3, result2, 4, rm, 3, error)))std::cout << "\"coordinate:getWm\" failed" << std::endl;
-
-	p.getWa(r, result, result2);
-	if (!(s_is_equal(3, result, wa, error) && s_is_equal(9, result2, rm, error)))std::cout << "\"coordinate:getWa\" failed" << std::endl;
-
-	p.getWa(r, result, result2, 4);
-	if (!(s_is_equal(3, result, wa, error) && s_is_equal(3, 3, result2, 4, rm, 3, error)))std::cout << "\"coordinate:getWa\" failed" << std::endl;
-
-	p.getVe(r, result, result2);
-	if (!(s_is_equal(6, result, ve313, error) && s_is_equal(6, result2, pe313, error)))std::cout << "\"coordinate:getVe 313\" failed" << std::endl;
-
-	p.getVe(r, result, result2, "321");
-	if (!(s_is_equal(6, result, ve321, error) && s_is_equal(6, result2, pe321, error)))std::cout << "\"coordinate:getVe 321\" failed" << std::endl;
-
-	p.getVq(r, result, result2);
-	if (!(s_is_equal(7, result, vq, error) && s_is_equal(7, result2, pq, error)))std::cout << "\"coordinate:getVq\" failed" << std::endl;
-
-	p.getVm(r, result, result2);
-	if (!(s_is_equal(16, result, vm, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVm\" failed" << std::endl;
-
-	p.getVa(r, result, result2);
-	if (!(s_is_equal(6, result, va, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVa\" failed" << std::endl;
-
-	p.getVs(r, result, result2);
-	if (!(s_is_equal(6, result, vs, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVs\" failed" << std::endl;
-
-	p.getAp(r, result, result2, result3);
-	if (!(s_is_equal(3, result, ap, error) && s_is_equal(3, result2, vp, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAp\" failed" << std::endl;
-
-	p.getXe(r, result, result2, result3);
-	if (!(s_is_equal(3, result, xe313, error) && s_is_equal(3, result2, we313, error) && s_is_equal(3, result3, re313, error)))std::cout << "\"coordinate:getXe 313\" failed" << std::endl;
-
-	p.getXe(r, result, result2, result3, "321");
-	if (!(s_is_equal(3, result, xe321, error) && s_is_equal(3, result2, we321, error) && s_is_equal(3, result3, re321, error)))std::cout << "\"coordinate:getXe 321\" failed" << std::endl;
-
-	p.getXq(r, result, result2, result3);
-	if (!(s_is_equal(4, result, xq, error) && s_is_equal(4, result2, wq, error) && s_is_equal(4, result3, rq, error)))std::cout << "\"coordinate:getXq\" failed" << std::endl;
-
-	p.getXm(r, result, result2, result3);
-	if (!(s_is_equal(9, result, xm, error) && s_is_equal(9, result2, wm, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXm\" failed" << std::endl;
-
-	p.getXa(r, result, result2, result3);
-	if (!(s_is_equal(3, result, xa, error) && s_is_equal(3, result2, wa, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXa\" failed" << std::endl;
-
-	p.getAe(r, result, result2, result3);
-	if (!(s_is_equal(6, result, ae313, error) && s_is_equal(6, result2, ve313, error) && s_is_equal(6, result3, pe313, error)))std::cout << "\"coordinate:getAe 313\" failed" << std::endl;
-
-	p.getAe(r, result, result2, result3, "321");
-	if (!(s_is_equal(6, result, ae321, error) && s_is_equal(6, result2, ve321, error) && s_is_equal(6, result3, pe321, error)))std::cout << "\"coordinate:getAe 321\" failed" << std::endl;
-
-	p.getAq(r, result, result2, result3);
-	if (!(s_is_equal(7, result, aq, error) && s_is_equal(7, result2, vq, error) && s_is_equal(7, result3, pq, error)))std::cout << "\"coordinate:getAq\" failed" << std::endl;
-
-	p.getAm(r, result, result2, result3);
-	if (!(s_is_equal(16, result, am, error) && s_is_equal(16, result2, vm, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAm\" failed" << std::endl;
-
-	p.getAa(r, result, result2, result3);
-	if (!(s_is_equal(6, result, aa, error) && s_is_equal(6, result2, va, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAa\" failed" << std::endl;
-
-	p.getAs(r, result, result2, result3);
-	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result2, vs, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAs\" failed" << std::endl;
-
-	std::cout << "test coordinate finished" << std::endl;
-}
 void test_part()
 {
 	aris::dynamic::Model model;
@@ -899,6 +602,229 @@ void test_part()
 	p.setAs(r, as);
 	if (!(s_is_equal(6, to_as, p.as(), error)))std::cout << "\"part:setAs relative\" failed" << std::endl;
 
+
+	r.setPm(relative_pm);
+	r.setVs(relative_vs);
+	r.setAs(relative_as);
+
+	p.setPm(pm);
+	p.setVs(vs);
+	p.setAs(as);
+
+	p.getPp(result);
+	if (!(s_is_equal(3, result, pp, error)))std::cout << "\"coordinate:getPp\" failed" << std::endl;
+
+	p.getRe(result);
+	if (!(s_is_equal(3, result, re313, error)))std::cout << "\"coordinate:getRe 313\" failed" << std::endl;
+
+	p.getRe(result, "321");
+	if (!(s_is_equal(3, result, re321, error)))std::cout << "\"coordinate:getRe 321\" failed" << std::endl;
+
+	p.getRq(result);
+	if (!(s_is_equal(3, result, rq, error)))std::cout << "\"coordinate:getRq\" failed" << std::endl;
+
+	p.getRm(result);
+	if (!(s_is_equal(9, result, rm, error)))std::cout << "\"coordinate:getRm\" failed" << std::endl;
+
+	p.getPe(result);
+	if (!(s_is_equal(6, result, pe313, error)))std::cout << "\"coordinate:getPe\" failed" << std::endl;
+
+	p.getPe(result, "321");
+	if (!(s_is_equal(6, result, pe321, error)))std::cout << "\"coordinate:getPe 321\" failed" << std::endl;
+
+	p.getPq(result);
+	if (!(s_is_equal(7, result, pq, error)))std::cout << "\"coordinate:getPq\" failed" << std::endl;
+
+	p.getPm(result);
+	if (!(s_is_equal(16, result, pm, error)))std::cout << "\"coordinate:getPm\" failed" << std::endl;
+
+	p.getVp(result, result2);
+	if (!(s_is_equal(3, result, vp, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVp\" failed" << std::endl;
+
+	p.getWe(result, result2);
+	if (!(s_is_equal(3, result, we313, error) && s_is_equal(3, result2, re313, error)))std::cout << "\"coordinate:getWe 313\" failed" << std::endl;
+
+	p.getWe(result, result2, "321");
+	if (!(s_is_equal(3, result, we321, error) && s_is_equal(3, result2, re321, error)))std::cout << "\"coordinate:getWe 321\" failed" << std::endl;
+
+	p.getWq(result, result2);
+	if (!(s_is_equal(4, result, wq, error) && s_is_equal(4, result2, rq, error)))std::cout << "\"coordinate:getWq\" failed" << std::endl;
+
+	p.getWm(result, result2);
+	if (!(s_is_equal(9, result, wm, error) && s_is_equal(9, result2, rm, error)))std::cout << "\"coordinate:getWm\" failed" << std::endl;
+
+	p.getWa(result, result3);
+	if (!(s_is_equal(3, result, wa, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getWa\" failed" << std::endl;
+
+	p.getVe(result, result2);
+	if (!(s_is_equal(6, result, ve313, error) && s_is_equal(6, result2, pe313, error)))std::cout << "\"coordinate:getVe 313\" failed" << std::endl;
+
+	p.getVe(result, result2, "321");
+	if (!(s_is_equal(6, result, ve321, error) && s_is_equal(6, result2, pe321, error)))std::cout << "\"coordinate:getVe 321\" failed" << std::endl;
+
+	p.getVq(result, result2);
+	if (!(s_is_equal(7, result, vq, error) && s_is_equal(7, result2, pq, error)))std::cout << "\"coordinate:getVq\" failed" << std::endl;
+
+	p.getVm(result, result2);
+	if (!(s_is_equal(16, result, vm, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVm\" failed" << std::endl;
+
+	p.getVa(result, result2);
+	if (!(s_is_equal(6, result, va, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVa\" failed" << std::endl;
+
+	p.getVs(result, result2);
+	if (!(s_is_equal(6, result, vs, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVs\" failed" << std::endl;
+
+	p.getAp(result, result2, result3);
+	if (!(s_is_equal(3, result, ap, error) && s_is_equal(3, result2, vp, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAp\" failed" << std::endl;
+
+	p.getXe(result, result2, result3);
+	if (!(s_is_equal(3, result, xe313, error) && s_is_equal(3, result2, we313, error) && s_is_equal(3, result3, re313, error)))std::cout << "\"coordinate:getXe 313\" failed" << std::endl;
+
+	p.getXe(result, result2, result3, "321");
+	if (!(s_is_equal(3, result, xe321, error) && s_is_equal(3, result2, we321, error) && s_is_equal(3, result3, re321, error)))std::cout << "\"coordinate:getXe 313\" failed" << std::endl;
+
+	p.getXq(result, result2, result3);
+	if (!(s_is_equal(4, result, xq, error) && s_is_equal(4, result2, wq, error) && s_is_equal(4, result3, rq, error)))std::cout << "\"coordinate:getXq\" failed" << std::endl;
+
+	p.getXm(result, result2, result3);
+	if (!(s_is_equal(9, result, xm, error) && s_is_equal(9, result2, wm, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXm\" failed" << std::endl;
+
+	p.getXa(result, result2, result3);
+	if (!(s_is_equal(3, result, xa, error) && s_is_equal(3, result2, wa, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXm\" failed" << std::endl;
+
+	p.getAe(result, result2, result3);
+	if (!(s_is_equal(6, result, ae313, error) && s_is_equal(6, result2, ve313, error) && s_is_equal(6, result3, pe313, error)))std::cout << "\"coordinate:getAe 313\" failed" << std::endl;
+
+	p.getAe(result, result2, result3, "321");
+	if (!(s_is_equal(6, result, ae321, error) && s_is_equal(6, result2, ve321, error) && s_is_equal(6, result3, pe321, error)))std::cout << "\"coordinate:getAe 321\" failed" << std::endl;
+
+	p.getAq(result, result2, result3);
+	if (!(s_is_equal(7, result, aq, error) && s_is_equal(7, result2, vq, error) && s_is_equal(7, result3, pq, error)))std::cout << "\"coordinate:getAq\" failed" << std::endl;
+
+	p.getAm(result, result2, result3);
+	if (!(s_is_equal(16, result, am, error) && s_is_equal(16, result2, vm, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAm\" failed" << std::endl;
+
+	p.getAa(result, result2, result3);
+	if (!(s_is_equal(6, result, aa, error) && s_is_equal(3, result2, va, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAa\" failed" << std::endl;
+
+	p.getAs(result, result2, result3);
+	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result2, vs, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAs\" failed" << std::endl;
+
+	p.setPm(r, pm);
+	p.setVs(r, vs);
+	p.setAs(r, as);
+
+	p.getPp(r, result);
+	if (!(s_is_equal(3, result, pp, error)))std::cout << "\"coordinate:getPp\" failed" << std::endl;
+
+	p.getRe(r, result);
+	if (!(s_is_equal(3, result, re313, error)))std::cout << "\"coordinate:getRe\" failed" << std::endl;
+
+	p.getRe(r, result, "321");
+	if (!(s_is_equal(3, result, re321, error)))std::cout << "\"coordinate:getRe 321\" failed" << std::endl;
+
+	p.getRq(r, result);
+	if (!(s_is_equal(4, result, rq, error)))std::cout << "\"coordinate:getRq\" failed" << std::endl;
+
+	p.getRm(r, result);
+	if (!(s_is_equal(9, result, rm, error)))std::cout << "\"coordinate:getRm\" failed" << std::endl;
+
+	p.getRm(r, result, 4);
+	if (!(s_is_equal(3, 3, result, 4, rm, 3, error)))std::cout << "\"coordinate:getRm\" failed" << std::endl;
+
+	p.getPe(r, result);
+	if (!(s_is_equal(6, result, pe313, error)))std::cout << "\"coordinate:getPe\" failed" << std::endl;
+
+	p.getPe(r, result, "321");
+	if (!(s_is_equal(6, result, pe321, error)))std::cout << "\"coordinate:getPe 321\" failed" << std::endl;
+
+	p.getPq(r, result);
+	if (!(s_is_equal(7, result, pq, error)))std::cout << "\"coordinate:getPq\" failed" << std::endl;
+
+	p.getPm(r, result);
+	if (!(s_is_equal(16, result, pm, error)))std::cout << "\"coordinate:getPm\" failed" << std::endl;
+
+	p.getVp(r, result, result2);
+	if (!(s_is_equal(3, result, vp, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVp\" failed" << std::endl;
+
+	p.getWe(r, result, result2);
+	if (!(s_is_equal(3, result, we313, error) && s_is_equal(3, result2, re313, error)))std::cout << "\"coordinate:getWe 313\" failed" << std::endl;
+
+	p.getWe(r, result, result2, "321");
+	if (!(s_is_equal(3, result, we321, error) && s_is_equal(3, result2, re321, error)))std::cout << "\"coordinate:getWe 321\" failed" << std::endl;
+
+	p.getWq(r, result, result2);
+	if (!(s_is_equal(4, result, wq, error) && s_is_equal(4, result2, rq, error)))std::cout << "\"coordinate:getWq\" failed" << std::endl;
+
+	p.getWm(r, result, result2);
+	if (!(s_is_equal(9, result, wm, error) && s_is_equal(9, result2, rm, error)))std::cout << "\"coordinate:getWm\" failed" << std::endl;
+
+	p.getWm(r, result, result2, 4, 4);
+	if (!(s_is_equal(3, 3, result, 4, wm, 3, error) && s_is_equal(3, 3, result2, 4, rm, 3, error)))std::cout << "\"coordinate:getWm\" failed" << std::endl;
+
+	p.getWa(r, result, result2);
+	if (!(s_is_equal(3, result, wa, error) && s_is_equal(9, result2, rm, error)))std::cout << "\"coordinate:getWa\" failed" << std::endl;
+
+	p.getWa(r, result, result2, 4);
+	if (!(s_is_equal(3, result, wa, error) && s_is_equal(3, 3, result2, 4, rm, 3, error)))std::cout << "\"coordinate:getWa\" failed" << std::endl;
+
+	p.getVe(r, result, result2);
+	if (!(s_is_equal(6, result, ve313, error) && s_is_equal(6, result2, pe313, error)))std::cout << "\"coordinate:getVe 313\" failed" << std::endl;
+
+	p.getVe(r, result, result2, "321");
+	if (!(s_is_equal(6, result, ve321, error) && s_is_equal(6, result2, pe321, error)))std::cout << "\"coordinate:getVe 321\" failed" << std::endl;
+
+	p.getVq(r, result, result2);
+	if (!(s_is_equal(7, result, vq, error) && s_is_equal(7, result2, pq, error)))std::cout << "\"coordinate:getVq\" failed" << std::endl;
+
+	p.getVm(r, result, result2);
+	if (!(s_is_equal(16, result, vm, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVm\" failed" << std::endl;
+
+	p.getVa(r, result, result2);
+	if (!(s_is_equal(6, result, va, error) && s_is_equal(3, result2, pp, error)))std::cout << "\"coordinate:getVa\" failed" << std::endl;
+
+	p.getVs(r, result, result2);
+	if (!(s_is_equal(6, result, vs, error) && s_is_equal(16, result2, pm, error)))std::cout << "\"coordinate:getVs\" failed" << std::endl;
+
+	p.getAp(r, result, result2, result3);
+	if (!(s_is_equal(3, result, ap, error) && s_is_equal(3, result2, vp, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAp\" failed" << std::endl;
+
+	p.getXe(r, result, result2, result3);
+	if (!(s_is_equal(3, result, xe313, error) && s_is_equal(3, result2, we313, error) && s_is_equal(3, result3, re313, error)))std::cout << "\"coordinate:getXe 313\" failed" << std::endl;
+
+	p.getXe(r, result, result2, result3, "321");
+	if (!(s_is_equal(3, result, xe321, error) && s_is_equal(3, result2, we321, error) && s_is_equal(3, result3, re321, error)))std::cout << "\"coordinate:getXe 321\" failed" << std::endl;
+
+	p.getXq(r, result, result2, result3);
+	if (!(s_is_equal(4, result, xq, error) && s_is_equal(4, result2, wq, error) && s_is_equal(4, result3, rq, error)))std::cout << "\"coordinate:getXq\" failed" << std::endl;
+
+	p.getXm(r, result, result2, result3);
+	if (!(s_is_equal(9, result, xm, error) && s_is_equal(9, result2, wm, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXm\" failed" << std::endl;
+
+	p.getXa(r, result, result2, result3);
+	if (!(s_is_equal(3, result, xa, error) && s_is_equal(3, result2, wa, error) && s_is_equal(9, result3, rm, error)))std::cout << "\"coordinate:getXa\" failed" << std::endl;
+
+	p.getAe(r, result, result2, result3);
+	if (!(s_is_equal(6, result, ae313, error) && s_is_equal(6, result2, ve313, error) && s_is_equal(6, result3, pe313, error)))std::cout << "\"coordinate:getAe 313\" failed" << std::endl;
+
+	p.getAe(r, result, result2, result3, "321");
+	if (!(s_is_equal(6, result, ae321, error) && s_is_equal(6, result2, ve321, error) && s_is_equal(6, result3, pe321, error)))std::cout << "\"coordinate:getAe 321\" failed" << std::endl;
+
+	p.getAq(r, result, result2, result3);
+	if (!(s_is_equal(7, result, aq, error) && s_is_equal(7, result2, vq, error) && s_is_equal(7, result3, pq, error)))std::cout << "\"coordinate:getAq\" failed" << std::endl;
+
+	p.getAm(r, result, result2, result3);
+	if (!(s_is_equal(16, result, am, error) && s_is_equal(16, result2, vm, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAm\" failed" << std::endl;
+
+	p.getAa(r, result, result2, result3);
+	if (!(s_is_equal(6, result, aa, error) && s_is_equal(6, result2, va, error) && s_is_equal(3, result3, pp, error)))std::cout << "\"coordinate:getAa\" failed" << std::endl;
+
+	p.getAs(r, result, result2, result3);
+	if (!(s_is_equal(6, result, as, error) && s_is_equal(6, result2, vs, error) && s_is_equal(16, result3, pm, error)))std::cout << "\"coordinate:getAs\" failed" << std::endl;
+
+
+
+
 	const double glb_im[36]{ 12.3, 0, 0,   0,   4.86680056754638, 1.19059364505643,
 		0,   12.3, 0, -4.86680056754639, 0, -1.05294290764011,
 		0, 0,   12.3, -1.19059364505643,1.05294290764011, 0,
@@ -935,17 +861,6 @@ void test_part()
 
 	p.cptPrtAs(result);
 	if (!(s_is_equal(6, result, prt_as, error)))std::cout << "\"part:cptPrtAs\" failed" << std::endl;
-
-	p.updPrtAs();
-
-
-	//p.cptPrtFv()
-
-	//double im[6][6];
-	//p.updGlbFv();
-	dlmwrite("C:\\Users\\py033\\Desktop\\fg.txt", p.prtAs(), 1, 6);
-
-	std::cout << "test part finished" << std::endl;
 }
 void test_constraint()
 {
@@ -1158,7 +1073,6 @@ void test_constraint()
 	
 	// test universal joints //
 	{
-		//const double relative_pe[6]{ 0,0,0,0,0,0 };
 		const double relative_pe[6]{ 0,0,0,0.856,PI / 2,0.972 };
 		const double relative_ve[6]{ 0,0,0,0.157,0,0.895 };
 
@@ -1220,10 +1134,11 @@ void test_constraint()
 		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"UniversalJoint:cptCp\" failed" << std::endl;
 	}
 	
-	// test motion 1//
+	// test motion //
 	{
 		const double relative_pe[6]{ 0,0,0.521,0,0,0 };
 		const double relative_vs[6]{ 0,0,0.689,0,0,0 };
+		const double relative_as[6]{ 0,0,0.123,0,0,0 };
 
 		double relative_pm[16];
 		s_pe2pm(relative_pe, relative_pm, "123");
@@ -1236,6 +1151,7 @@ void test_constraint()
 
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
+		prt_m.setAs(mak_j, relative_as);
 
 		auto &mot = model.add<Motion>("m1", mak_i, mak_j);
 
@@ -1283,14 +1199,16 @@ void test_constraint()
 		if (!s_is_equal(mot.dim(), result1, ce, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
 
 		mot.updMp();
-		if (std::abs(mot.mp() - 0.521)>error)std::cout << "\"Motion:updMp\" failed" << std::endl;
+		if (!s_is_equal(mot.mp(), 0.521, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
 
 		mot.updMv();
-		if (std::abs(mot.mv() - 0.689)>error)std::cout << "\"Motion:updMv\" failed" << std::endl;
+		if (!s_is_equal(mot.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
 
+		mot.updMa();
+		if (!s_is_equal(mot.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
 	}
 
-	// test general motion//
+	// test general motion //
 	{
 		const double relative_pe[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
 		const double relative_vs[6]{ 0,0,0.689,0,0,0 };
@@ -1308,6 +1226,185 @@ void test_constraint()
 		prt_m.setVs(mak_j, relative_vs);
 
 		auto &mot = model.add<GeneralMotion>("m1", mak_i, mak_j);
+		
+		const double mpm_default[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+		const double mpe313[6] = { 0.1, 0.2, 0.3,0.000423769269879415,   1.38980987554835,   1.79253453841257 };
+		const double mpe321[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
+		const double mpq[7] = { 0.1, 0.2, 0.3,0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
+		const double mpm[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
+			0.175499782797526, -0.04, -0.983666521865018, 0.2,
+			0.959583152331272, -0.216333478134982,   0.18,0.3,
+			0,0,0,1 };
+
+		const double mvs_default[6]{ 0,0,0,0,0,0 };
+		const double mve313[6] = { 0.307558670154491,   1.2433000508379, -1.04895965543501,-0.644213536852877, -0.245050866834802, -1.27836042009784 };
+		const double mve321[6] = { 0.307558670154491,   1.2433000508379, -1.04895965543501,-4.19969388864156, -0.83045134600268,   3.46543753721832 };
+		const double mvq[7] = { 0.307558670154491,   1.2433000508379, -1.04895965543501, 0.1, 0.2, -0.4, -(mpq[3] * 0.1 + mpq[4] * 0.2 - mpq[5] * 0.4) / mpq[6] };
+		const double mvm[16] = { 1.36, -0.30698536874045, -0.633709981238717,0.307558670154491,
+			0.426985368740452,   0.8,   0.0436487757967661,1.2433000508379,
+			0.233709981238715,   1.23635122420323,   0.24 , -1.04895965543501,
+			0,0,0,0 };
+		const double mva[6] = { 0.307558670154491,   1.2433000508379, -1.04895965543501, -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
+		const double mvs[6] = { -0.244517963270725,	1.25737650310373,	-0.874318412470487, -0.244517963270725,	1.25737650310373,	-0.874318412470487 };
+		
+		const double mas_default[6]{ 0,0,0,0,0,0 };
+		const double mae313[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 1.51734920338156,   1.71538128045296,   1.3693196878275 };
+		const double mae321[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, -15.6049676192293,   4.50445705187534,   16.9352080725126 };
+		const double maq[7] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, -0.033,   0.022, 0.011,   -(mvq[3] * mvq[3] + mvq[4] * mvq[4] + mvq[5] * mvq[5] + mvq[6] * mvq[6] + mpq[3] * (-0.033) + mpq[4] * (0.022) + mpq[5] * (0.011)) / mpq[6] };
+		const double mam[16] = { -0.782400000000002,   2.58144759895694,   1.54784395313479,2.2628985000154,
+			-2.32024759895695, -0.653600000000002,   0.450521351741563,-0.843606386309081,
+			-1.92944395313478, -1.05972135174157, -0.103200000000001,-0.248846478459814,
+			0,0,0,0 };
+		const double maa[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 0.904633672502324, -1.24440604199266,   1.45568007018557 };
+		const double mas[6] = { 3.15925342342501, -0.192390604845803,   0.136512424183815,   0.904633672502324, -1.24440604199266,   1.45568007018557 };
+
+		double result[36];
+
+		mot.setMpm(mpm_default);
+		if (!s_is_equal(16, *mot.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+
+		mot.setMpe(mpe313, "313");
+		if (!s_is_equal(16, *mot.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpe 313\" failed" << std::endl;
+
+		mot.setMpm(mpm_default);
+		if (!s_is_equal(16, *mot.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+
+		mot.setMpe(mpe321, "321");
+		if (!s_is_equal(16, *mot.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpe 321\" failed" << std::endl;
+
+		mot.setMpm(mpm_default);
+		if (!s_is_equal(16, *mot.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+
+		mot.setMpq(mpq);
+		if (!s_is_equal(16, *mot.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpq\" failed" << std::endl;
+		
+		mot.setMpm(mpm_default);
+		if (!s_is_equal(16, *mot.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+
+		mot.setMpm(mpm);
+		if (!s_is_equal(16, *mot.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+
+		mot.getMpe(result, "313");
+		if (!s_is_equal(6, result, mpe313, error))std::cout << "\"GeneralMotion:getMpe\" failed" << std::endl;
+
+		mot.getMpe(result, "321");
+		if (!s_is_equal(6, result, mpe321, error))std::cout << "\"GeneralMotion:getMpe\" failed" << std::endl;
+
+		mot.getMpq(result);
+		if (!s_is_equal(7, result, mpq, error))std::cout << "\"GeneralMotion:getMpq\" failed" << std::endl;
+
+		mot.getMpm(result);
+		if (!s_is_equal(16, result, mpm, error))std::cout << "\"GeneralMotion:getMpm\" failed" << std::endl;
+
+
+		mot.setMvs(mvs_default);
+		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+
+		mot.setMve(mve313, "313");
+		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMve 313\" failed" << std::endl;
+
+		mot.setMvs(mvs_default);
+		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+
+		mot.setMve(mve321, "321");
+		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMve 321\" failed" << std::endl;
+
+		mot.setMvs(mvs_default);
+		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+
+		mot.setMvq(mvq);
+		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvq\" failed" << std::endl;
+
+		mot.setMvs(mvs_default);
+		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+
+		mot.setMvm(mvm);
+		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvm\" failed" << std::endl;
+
+		mot.setMvs(mvs_default);
+		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+
+		mot.setMva(mva);
+		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMva\" failed" << std::endl;
+
+		mot.setMvs(mvs_default);
+		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+
+		mot.setMvs(mvs);
+		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+
+		mot.getMve(result, "313");
+		if (!s_is_equal(6, result, mve313, error))std::cout << "\"GeneralMotion:getMve\" failed" << std::endl;
+
+		mot.getMve(result, "321");
+		if (!s_is_equal(6, result, mve321, error))std::cout << "\"GeneralMotion:getMve\" failed" << std::endl;
+
+		mot.getMvq(result);
+		if (!s_is_equal(7, result, mvq, error))std::cout << "\"GeneralMotion:getMvq\" failed" << std::endl;
+
+		mot.getMvm(result);
+		if (!s_is_equal(16, result, mvm, error))std::cout << "\"GeneralMotion:getMvm\" failed" << std::endl;
+
+		mot.getMva(result);
+		if (!s_is_equal(6, result, mva, error))std::cout << "\"GeneralMotion:getMva\" failed" << std::endl;
+
+		mot.getMvs(result);
+		if (!s_is_equal(6, result, mvs, error))std::cout << "\"GeneralMotion:getMvs\" failed" << std::endl;
+
+
+		mot.setMas(mas_default);
+		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+
+		mot.setMae(mae313, "313");
+		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMae 313\" failed" << std::endl;
+
+		mot.setMas(mas_default);
+		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+
+		mot.setMae(mae321, "321");
+		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMae 321\" failed" << std::endl;
+
+		mot.setMas(mas_default);
+		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+
+		mot.setMaq(maq);
+		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMaq\" failed" << std::endl;
+
+		mot.setMas(mas_default);
+		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+
+		mot.setMam(mam);
+		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMam\" failed" << std::endl;
+
+		mot.setMas(mas_default);
+		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+
+		mot.setMaa(maa);
+		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMaa\" failed" << std::endl;
+
+		mot.setMas(mas_default);
+		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+
+		mot.setMas(mas);
+		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		
+		mot.getMae(result, "313");
+		if (!s_is_equal(6, result, mae313, error))std::cout << "\"GeneralMotion:getMae\" failed" << std::endl;
+
+		mot.getMae(result, "321");
+		if (!s_is_equal(6, result, mae321, error))std::cout << "\"GeneralMotion:getMae\" failed" << std::endl;
+
+		mot.getMaq(result);
+		if (!s_is_equal(7, result, maq, error))std::cout << "\"GeneralMotion:getMaq\" failed" << std::endl;
+
+		mot.getMam(result);
+		if (!s_is_equal(16, result, mam, error))std::cout << "\"GeneralMotion:getMam\" failed" << std::endl;
+
+		mot.getMaa(result);
+		if (!s_is_equal(6, result, maa, error))std::cout << "\"GeneralMotion:getMaa\" failed" << std::endl;
+
+		mot.getMas(result);
+		if (!s_is_equal(6, result, mas, error))std::cout << "\"GeneralMotion:getMas\" failed" << std::endl;
 
 		const double glb_cmI[]{ 0.413710949602281, - 0.464491586871515,   0.783001159580726,   0,   0,   0,
 			- 0.0419709404545899,   0.849409663646283,   0.526062414036267, 0, 0, 0,
@@ -1339,8 +1436,8 @@ void test_constraint()
 
 		double result1[42], result2[48];
 
-		mot.setMp(relative_pe);
-
+		mot.setMpe(relative_pe, "123");
+		
 
 		mot.cptGlbCm(result1, result2, 6, 7);
 		if (!s_is_equal(6, mot.dim(), result1, 6, glb_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, glb_cmJ, mot.dim(), error))std::cout << "\"GeneralMotion:cptGlbCm\" failed" << std::endl;
@@ -1371,7 +1468,7 @@ void test_constraint()
 
 	}
 }
-void test_model_cpt()
+void test_model_class()
 {
 	const char xml_file[] =
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
@@ -1494,205 +1591,17 @@ void test_model_cpt()
 		m.loadXml(xml_doc);
 		m.allocateMemory();
 
-
-		m.cptGlbCm();
-		//s_blk_resolve(m.pSize(), m.cSize(), m.glbCm(), result);
+		m.updGlbCm();
 		if (!s_is_equal(576, m.glbCm(), cm, error))std::cout << "model::cptGlbCm() failed" << std::endl;
-		
-		//dlmwrite("C:\\Users\\py033\\Desktop\\cm1.txt", result, 24, 24);
 
-
-		m.cptGlbIm();
-		//s_blk_resolve(m.pSize(), m.pSize(), m.glbIm(), result);
+		m.updGlbIm();
 		if (!s_is_equal(576, m.glbIm(), im, error))std::cout << "model::cptGlbIm() failed" << std::endl;
-
-		
-		
-		m.dynPre();
-		m.dynGlbUpd();
-		
-
-		m.dynGlbIs(result);
-		//dlmwrite("C:\\Users\\py033\\Desktop\\cm.txt", result, m.dynDimM(), m.dynDimN());
-
 	}
 	catch (std::exception &e)
 	{
 		std::cout << e.what();
 	}
 
-}
-void test_kinematic()
-{
-	const char xml_file[] =
-		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-		"<root>"
-		"    <model>"
-		"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
-		"        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
-		"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
-		"            <Mot_friction type=\"MatrixVariable\">{20, 30, 560}</Mot_friction>"
-		"        </variable_pool>"
-		"        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
-		"            <m1_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-		"            <m2_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-		"            <m3_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-		"        </akima_pool>"
-		"        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
-		"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
-		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-		"                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
-		"                </marker_pool>"
-		"            </ground>"
-		"            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
-		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-		"                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
-		"                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
-		"                </marker_pool>"
-		"            </part1>"
-		"            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
-		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-		"                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
-		"                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
-		"                </marker_pool>"
-		"            </part2>"
-		"            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part3.x_t\">"
-		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-		"                    <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
-		"                </marker_pool>"
-		"            </part3>"
-		"            <part4 active=\"false\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part3.x_t\">"
-		"            </part4>"
-		"        </part_pool>"
-		"        <joint_pool type=\"JointPoolObject\">"
-		"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
-		"            <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
-		"            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
-		"            <r4 active=\"false\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
-		"        </joint_pool>"
-		"        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
-		"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-		"            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-		"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-		"        </motion_pool>"
-		"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
-		"    </model>"
-		"</root>";
-
-	const double error = 1e-10;
-
-	try
-	{
-		aris::core::XmlDocument xml_doc;
-		auto a = xml_doc.Parse(xml_file);
-
-		Model m;
-		m.loadXml(xml_doc);
-		
-		m.allocateMemory();
-		m.motionAtAbs(0).setMp(0.585);
-		m.kinPos();
-	}
-	catch (std::exception &e)
-	{
-		std::cout << e.what();
-	}
-}
-void test_simulation()
-{
-	const char xml_file[] =
-	"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-	"<root>"
-	"    <model>"
-	"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
-	"        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
-	"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
-	"            <Mot_friction type=\"MatrixVariable\">{20, 30, 560}</Mot_friction>"
-	"        </variable_pool>"
-	"        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
-	"            <m1_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-	"            <m2_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-	"            <m3_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-	"        </akima_pool>"
-	"        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
-	"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
-	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-	"                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
-	"                </marker_pool>"
-	"            </ground>"
-	"            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
-	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-	"                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
-	"                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
-	"                </marker_pool>"
-	"            </part1>"
-	"            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
-	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-	"                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
-	"                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
-	"                </marker_pool>"
-	"            </part2>"
-	"            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part3.x_t\">"
-	"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-	"                    <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
-	"                </marker_pool>"
-	"            </part3>"
-	"        </part_pool>"
-	"        <joint_pool type=\"JointPoolObject\">"
-	"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
-	"            <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
-	"            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
-	"        </joint_pool>"
-	"        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
-	"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-	"            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-	"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-	"        </motion_pool>"
-	"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
-	"    </model>"
-	"</root>";
-		
-	
-	try 
-	{
-		aris::core::XmlDocument xml_doc;
-		auto a = xml_doc.Parse(xml_file);
-
-		Model m;
-		m.loadXml(xml_doc);
-
-		aris::dynamic::PlanParamBase p;
-		aris::dynamic::PlanFunc f = [](aris::dynamic::Model &m, const aris::dynamic::PlanParamBase &p)
-		{
-			double pe2[6]{ 0,0,0,0,0,0 };
-			pe2[5] = p.count_*0.001 / 3 * PI / 3 + PI / 2;
-			auto &r2j = *m.partPool().findByName("part1")->markerPool().findByName("r2j");
-			m.partPool().findByName("part2")->setPe(r2j, pe2, "123");
-
-			double pe3[6]{ 0,0,0,0,0,0 };
-			pe3[5] = -p.count_*0.001 / 3 * PI / 3 - PI / 2;
-			auto &r3j = *m.partPool().findByName("part2")->markerPool().findByName("r3j");
-			m.partPool().findByName("part3")->setPe(r3j, pe3, "123");
-
-			m.motionAtAbs(0).updMp();
-			m.motionAtAbs(1).updMp();
-			m.motionAtAbs(2).updMp();
-
-			return 3000 - p.count_;
-		};
-
-		m.saveDynEle("before");
-		m.simKin(f, p);
-		m.loadDynEle("before");
-		m.saveAdams("C:\\aris\\robot\\resource\\test.cmd");
-
-		std::cout << "test simulation finished, please check \"C:\\aris\\robot\\resource\\test.cmd\"" << std::endl;
-	}
-	catch (std::exception &e)
-	{
-		std::cout << e.what();
-	}
-	
 }
 
 
@@ -1700,12 +1609,9 @@ void test_simulation()
 void test_model()
 {
 	std::cout << std::endl << "-----------------test model---------------------" << std::endl;
-	test_coordinate();
 	test_part();
 	test_constraint();
-	test_model_cpt();
-	test_kinematic();
-	test_simulation();
+	test_model_class();
 	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
 }
 

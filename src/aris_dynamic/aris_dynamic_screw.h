@@ -937,13 +937,25 @@ namespace aris
 		/// 这里原点origin为位姿矩阵pm_out的点,first_pnt位于第一根坐标轴,second_pnt位于第一根坐标轴和第二根坐标轴所构成的平面内
 		///
 		///
-		auto s_sov_axes2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
+		auto s_sov_pnts2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
 		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		///
 		/// 这里原点origin为位姿矩阵pm_out的点,firstAxisPnt位于第一根坐标轴,secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
 		///
 		///
-		auto inline s_sov_axes2pm(const double *origin, const double *first_pnt, const double *second_pnt, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_axes2pm(origin, 1, first_pnt, 1, second_pnt, 1, pm_out, axis_order); };
+		auto inline s_sov_pnts2pm(const double *origin, const double *first_pnt, const double *second_pnt, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_pnts2pm(origin, 1, first_pnt, 1, second_pnt, 1, pm_out, axis_order); };
+		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
+		///
+		/// 这里原点origin为位姿矩阵pm_out的点,first_pnt位于第一根坐标轴,second_pnt位于第一根坐标轴和第二根坐标轴所构成的平面内
+		///
+		///
+		auto s_sov_axes2pm(const double *origin, Size origin_ld, const double *first_axis, Size first_ld, const double *second_axis, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
+		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
+		///
+		/// 这里原点origin为位姿矩阵pm_out的点,firstAxisPnt位于第一根坐标轴,secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
+		///
+		///
+		auto inline s_sov_axes2pm(const double *origin, const double *first_axis, const double *second_axis, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_axes2pm(origin, 1, first_axis, 1, second_axis, 1, pm_out, axis_order); };
 		/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程,该方程有2个根
 		///
 		///

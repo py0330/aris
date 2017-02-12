@@ -846,7 +846,7 @@ void test_transform()
 
 	double fsa_to_original11[]{ -0.1,0.11,-0.2,0.12,-0.3,0.13,-0.4,0.14,-0.5,0.15,-0.6,0.16 };
 	s_inv_tv_n(2, -1.0, pm, fsa_to_original11, result);
-	dlmwrite("C:\\Users\\py033\\Desktop\\r1.txt", result, 2, 6);
+	//dlmwrite("C:\\Users\\py033\\Desktop\\r1.txt", result, 2, 6);
 
 	//double fsa_to_original11[]{ -0.1,0.11,-0.2,0.12,-0.3,0.13,-0.4,0.14,-0.5,0.15,-0.6,0.16 };
 	//s_inv_tf_n(2, -4.0, pm, fsa_to_original11, result);
@@ -1543,29 +1543,29 @@ void test_solve()
 	const double first_pnt_3[]{ -0.12,0,0,0.375499782797526,0,0, 1.259583152331272,0,0 };
 	const double second_pnt_3[]{ -0.12,0,0,0,0.375499782797526,0,0,0, 1.259583152331272,0,0,0 };
 
-	s_sov_axes2pm(origin, first_pnt, second_pnt, result, "xy");
-	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+	s_sov_pnts2pm(origin, first_pnt, second_pnt, result, "xy");
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_pnts2pm\" failed" << std::endl;
 
-	s_sov_axes2pm(origin, second_pnt, first_pnt, result, "yx");
-	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+	s_sov_pnts2pm(origin, second_pnt, first_pnt, result, "yx");
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_pnts2pm\" failed" << std::endl;
 
-	s_sov_axes2pm(origin_1, 2, first_pnt_1, 3, second_pnt_1, 4, result, "xy");
-	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+	s_sov_pnts2pm(origin_1, 2, first_pnt_1, 3, second_pnt_1, 4, result, "xy");
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_pnts2pm\" failed" << std::endl;
 
-	s_sov_axes2pm(origin_1, 2, second_pnt_1, 4, first_pnt_1, 3, result, "yx");
-	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+	s_sov_pnts2pm(origin_1, 2, second_pnt_1, 4, first_pnt_1, 3, result, "yx");
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_sov_pnts2pm\" failed" << std::endl;
 
-	s_sov_axes2pm(origin, first_pnt_2, second_pnt_2, result, "xy");
-	if (!s_is_equal(16, pm_2, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+	s_sov_pnts2pm(origin, first_pnt_2, second_pnt_2, result, "xy");
+	if (!s_is_equal(16, pm_2, result, error))std::cout << "\"s_sov_pnts2pm\" failed" << std::endl;
 
-	s_sov_axes2pm(origin, second_pnt_2, first_pnt_2, result, "yx");
-	if (!s_is_equal(16, pm_3, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+	s_sov_pnts2pm(origin, second_pnt_2, first_pnt_2, result, "yx");
+	if (!s_is_equal(16, pm_3, result, error))std::cout << "\"s_sov_pnts2pm\" failed" << std::endl;
 
-	s_sov_axes2pm(origin_1, 2, first_pnt_3, 3, second_pnt_3, 4, result, "xy");
-	if (!s_is_equal(16, pm_2, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+	s_sov_pnts2pm(origin_1, 2, first_pnt_3, 3, second_pnt_3, 4, result, "xy");
+	if (!s_is_equal(16, pm_2, result, error))std::cout << "\"s_sov_pnts2pm\" failed" << std::endl;
 
-	s_sov_axes2pm(origin_1, 2, second_pnt_3, 4, first_pnt_3, 3, result, "yx");
-	if (!s_is_equal(16, pm_3, result, error))std::cout << "\"s_sov_axes2pm\" failed" << std::endl;
+	s_sov_pnts2pm(origin_1, 2, second_pnt_3, 4, first_pnt_3, 3, result, "yx");
+	if (!s_is_equal(16, pm_3, result, error))std::cout << "\"s_sov_pnts2pm\" failed" << std::endl;
 
 
 	const double ab[2] = { 2.46823966120654, -1.28551725555848 };

@@ -6,9 +6,9 @@ using namespace aris::dynamic;
 int main()
 {
 	Model m;
-	auto &p1 = m.partPool().add<Part>("p1", nullptr, s_pe2pm(std::array<double,6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}.data()), nullptr, nullptr, "C:\\aris\\resource\\demo_3R\\part1.x_t");
-	auto &p2 = m.partPool().add<Part>("p2", nullptr, s_pe2pm(std::array<double,6>{1.0, 0.0, 0.0, PI/2, 0.0, 0.0}.data()), nullptr, nullptr, "C:\\aris\\resource\\demo_3R\\part2.x_t");
-	auto &p3 = m.partPool().add<Part>("p3", nullptr, s_pe2pm(std::array<double,6>{1.0, 1.0, 0.0, 0.0, 0.0, 0.0}.data()), nullptr, nullptr, "C:\\aris\\resource\\demo_3R\\part3.x_t");
+	auto &p1 = m.partPool().add<Part>("p1", nullptr, s_pe2pm(std::array<double,6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}.data()), nullptr, nullptr);
+	auto &p2 = m.partPool().add<Part>("p2", nullptr, s_pe2pm(std::array<double,6>{1.0, 0.0, 0.0, PI/2, 0.0, 0.0}.data()), nullptr, nullptr);
+	auto &p3 = m.partPool().add<Part>("p3", nullptr, s_pe2pm(std::array<double,6>{1.0, 1.0, 0.0, 0.0, 0.0, 0.0}.data()), nullptr, nullptr);
 
 	auto &r1i = m.ground().markerPool().add<Marker>("r1i", s_pe2pm(std::array<double,6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}.data()));
 	auto &r1j = p1.markerPool().add<Marker>("r1j", s_pe2pm(std::array<double,6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}.data()));
@@ -32,7 +32,7 @@ int main()
 	for (auto &mot : m.motionPool())mot.activate(false);
 	m.allocateMemory();
 
-	gm.setMp(std::array<double, 6>{ 1.5, 0.6, 0.0, 0.0, 0.0, PI / 4}.data());
+	gm.setMpe(std::array<double, 6>{ 1.5, 0.6, 0.0, 0.0, 0.0, PI / 4}.data(), "123");
 	auto ret = m.kinPos(100);
 	std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 

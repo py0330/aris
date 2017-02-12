@@ -317,29 +317,83 @@ int main()
 {
 	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
 
-	try
-	{
-		Model rbt;
-		rbt.loadString(xml_file);
+	//try
+	//{
+	//	Model rbt;
+	//	rbt.loadString(xml_file);
 
-		rbt.generalMotionPool().findByName("general_motion")->activate(true);
-		for (auto &m : rbt.motionPool())m.activate(false);
+	//	rbt.generalMotionPool().findByName("general_motion")->activate(true);
+	//	for (auto &m : rbt.motionPool())m.activate(false);
 
-		double pee[6]{ 0.0 , 1.5 , 1.2 , 0.0 , 0.1 , 0.0 };
-		rbt.generalMotionPool().findByName("general_motion")->setMp(pee);
+	//	double pee[6]{ 0.0 , 1.5 , 1.2 , 0.0 , 0.1 , 0.0 };
+	//	rbt.generalMotionPool().findByName("general_motion")->setMp(pee);
 
-		rbt.allocateMemory();
-		auto ret = rbt.kinPos(100);
+	//	rbt.allocateMemory();
+	//	auto ret = rbt.kinPos(100);
 
-		std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
+	//	std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 
-		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
-	}
-	catch (std::exception&e)
-	{
-		std::cout << e.what() << std::endl;
-	}
+	//	rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
+	//}
+	//catch (std::exception&e)
+	//{
+	//	std::cout << e.what() << std::endl;
+	//}
 
+	//try
+	//{
+	//	Model rbt;
+	//	rbt.loadString(xml_file);
+
+	//	rbt.generalMotionPool().findByName("general_motion")->activate(false);
+	//	for (auto &m : rbt.motionPool())m.activate(true);
+
+	//	double pin[6]{ 2.0,2.0,2.0,2.0,2.0,2.0 };
+	//	for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin[i]);
+
+	//	rbt.allocateMemory();
+	//	auto ret = rbt.kinPos(100);
+	//	std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
+
+	//	rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
+	//}
+	//catch (std::exception&e)
+	//{
+	//	std::cout << e.what() << std::endl;
+	//}
+
+
+	//// test inverse efficiency
+	//try
+	//{
+	//	Model rbt;
+	//	rbt.loadString(xml_file);
+
+	//	auto gmt = rbt.generalMotionPool().findByName("general_motion");
+	//	gmt->activate(true);
+	//	for (auto &m : rbt.motionPool())m.activate(false);
+
+	//	
+	//	rbt.allocateMemory();
+
+	//	std::cout << "inverse time:" << aris::core::benchmark(1000, [&]()
+	//	{
+	//		double pee1[6]{ 0.0 , 1.5 , 1.2 , 0.0 , 0.1 , 0.0 };
+	//		double pee2[6]{ 0.0 , 1.6 , 1.25 , 0.11 , 0.12 , 0.06 };
+
+	//		gmt->setMp(pee1);
+	//		auto ret1 = rbt.kinPos(100);
+
+	//		gmt->setMp(pee2);
+	//		auto ret2 = rbt.kinPos(100);
+	//	}) << std::endl;
+	//}
+	//catch (std::exception&e)
+	//{
+	//	std::cout << e.what() << std::endl;
+	//}
+
+	// test forward efficiency
 	try
 	{
 		Model rbt;
@@ -348,20 +402,24 @@ int main()
 		rbt.generalMotionPool().findByName("general_motion")->activate(false);
 		for (auto &m : rbt.motionPool())m.activate(true);
 
-		double pin[6]{ 2.0,2.0,2.0,2.0,2.0,2.0 };
-		for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin[i]);
-
 		rbt.allocateMemory();
-		auto ret = rbt.kinPos(100);
-		std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 
-		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
+		std::cout << "forward time:" << aris::core::benchmark(1000, [&]()
+		{
+			double pin1[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
+			double pin2[6]{ 2.1 , 1.98 , 2.05 , 2.13 , 1.86 , 1.88 };
+
+			for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin1[i]);
+			auto ret1 = rbt.kinPos(100);
+
+			for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin2[i]);
+			auto ret2 = rbt.kinPos(100);
+		}) << std::endl;
 	}
 	catch (std::exception&e)
 	{
 		std::cout << e.what() << std::endl;
 	}
-
 
 	std::cout << "demo_stewart finished, press any key to continue" << std::endl;
 	std::cin.get();

@@ -3179,7 +3179,7 @@ namespace aris
 			return to_is;
 		}
 
-		auto s_sov_axes2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order) noexcept->void
+		auto s_sov_pnts2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order) noexcept->void
 		{
 			pm_out[12] = 0;
 			pm_out[13] = 0;
@@ -3233,8 +3233,13 @@ namespace aris
 
 				s_c3(alpha, pm_out + order[2], 4, pm_out + order[0], 4, pm_out + order[1], 4);
 			}
+		}
+		auto s_sov_axes2pm(const double *origin, Size origin_ld, const double *first_axis, Size first_ld, const double *second_axis, Size second_ld, double *pm_out, const char *axis_order) noexcept->void
+		{
+			double origin_zero[3]{ 0,0,0 };
 
-			
+			s_sov_pnts2pm(origin_zero, 1, first_axis, first_ld, second_axis, second_ld, pm_out, axis_order);
+			s_vc(3, origin, origin_ld, pm_out + 3, 4);
 		}
 		auto s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void
 		{

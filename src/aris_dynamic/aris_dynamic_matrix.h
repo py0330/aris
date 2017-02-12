@@ -25,9 +25,6 @@ namespace aris
 		struct RowMajor { Size r_ld; };
 		struct ColMajor { Size c_ld; };
 		struct Stride { Size r_ld, c_ld; };
-		
-		using BlockSize = std::vector<Size>;
-		using BlockMatrix = std::vector<std::vector<std::vector<double> > >;
 
 		auto inline vid(Size i, Size ld)->Size { return i*ld; }
 		auto inline next_vid(Size id, Size ld)->Size { return id + ld; }
@@ -83,7 +80,7 @@ namespace aris
 			std::cout << std::endl;
 		};
 		template <typename T>
-		auto inline dsp(Size m, Size n, const T *data)->void{	dsp(m, n, data, n);}
+		auto inline dsp(Size m, Size n, const T *data)->void { dsp(m, n, data, n); }
 		template<class Container>
 		auto dlmwrite(const char *filename, const Container &container)->void
 		{
@@ -100,34 +97,8 @@ namespace aris
 			}
 		}
 		auto dlmwrite(const char *filename, const double *mtx, const Size m, const Size n)->void;
-		auto inline dlmwrite(const char *filename, const BlockMatrix &mtx, const BlockSize &m, const BlockSize &n)->void
-		{
-			std::ofstream file;
-
-			file.open(filename);
-
-			file << std::setprecision(15);
-
-			for (std::size_t blk_i = 0; blk_i < m.size(); ++blk_i)
-			{
-				for (Size i = 0; i < m[blk_i]; ++i)
-				{
-					for (std::size_t blk_j = 0; blk_j < n.size(); ++blk_j)
-					{
-						for (Size j = 0; j < n[blk_j]; ++j)
-						{
-							//std::cout << "blk:" << blk_i << "," << blk_j << "  inner:" << i << "," << j << std::endl;
-
-							double a = mtx[blk_i][blk_j].empty() ? 0.0 : mtx[blk_i][blk_j].at(i*n[blk_j] + j);
-							file << a << "   ";
-						}
-					}
-					file << std::endl;
-				}
-			}
-		}
 		auto dlmread(const char *filename, double *mtx)->void;
-		 
+
 		template <typename T>
 		auto inline s_sgn(T val)->T { return T(T(0) < val) - (val < T(0)); }
 		template <typename T>
@@ -160,14 +131,12 @@ namespace aris
 			return std::sqrt(std::abs(diff_square)) > error ? false : true;
 		}
 		auto inline s_is_equal(Size m, Size n, const double *m1, const double *m2, double error) noexcept->bool { return s_is_equal(m, n, m1, n, m2, n, error); };
-		
-
 
 		template<typename XType>
-		auto inline s_norm(Size n, const double *x, XType x_t) noexcept->double 
+		auto inline s_norm(Size n, const double *x, XType x_t) noexcept->double
 		{
 			double norm = 0;
-			for (Size i{ 0 }, x_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t))norm += x[x_id] * x[x_id];
+			for (Size i(-1), x_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t))norm += x[x_id] * x[x_id];
 			return std::sqrt(norm);
 		}
 		auto inline s_norm(Size n, const double *x) noexcept->double { return s_norm(n, x, 1); }
@@ -175,108 +144,94 @@ namespace aris
 		auto inline s_norm_col(Size m, const double *x, XType x_t) noexcept->double
 		{
 			double norm = 0;
-			for (Size i{ 0 }, x_id{ 0 }; i < m; ++i, x_id = next_row(x_id, x_t))norm += x[x_id] * x[x_id];
+			for (Size i(-1), x_id{ 0 }; ++i < m; x_id = next_row(x_id, x_t))norm += x[x_id] * x[x_id];
 			return std::sqrt(norm);
 		}
 		template<typename XType>
 		auto inline s_norm_row(Size n, const double *x, XType x_t) noexcept->double
 		{
 			double norm = 0;
-			for (Size i{ 0 }, x_id{ 0 }; i < n; ++i, x_id = next_col(x_id, x_t))norm += x[x_id] * x[x_id];
+			for (Size i(-1), x_id{ 0 }; ++i < n; x_id = next_col(x_id, x_t))norm += x[x_id] * x[x_id];
 			return std::sqrt(norm);
 		}
 		template<typename XType, typename YType>
 		auto inline s_swap_v(Size n, double *x, XType x_t, double *y, YType y_t) noexcept->void
 		{
-			for (Size i{ 0 }, x_id{ 0 }, y_id{0}; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))
+			for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))
 				std::swap(x[x_id], y[y_id]);
 		}
 		auto inline s_swap_v(Size n, double *x, double *y) noexcept->void { s_swap_v(n, x, 1, y, 1); }
-		// matrix transpose to matrix
-		template<typename AType, typename BType>
-		auto inline s_transpose(Size m, Size n, const double *A, AType a_t, double *B, BType b_t) noexcept->void
-		{
-			for (Size i{ 0 }, a_row{ 0 }, b_col{0}; i < m; ++i, a_row = next_row(a_row, a_t), b_col = next_col(b_col, b_t))
-				for (Size j{ 0 }, a_id{ a_row }, b_id{ b_col }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
-					B[b_id] = A[a_id];
-		}
-		auto inline s_transpose(Size m, Size n, const double *A, double *B) noexcept->void { s_transpose(m, n, A, n, B, m); };
 		template<typename AType>
-		auto inline s_fill(Size m, Size n, double value, double *A, AType a_t) noexcept->void 
-		{ 
-			for (Size i{ 0 }, a_row{ 0 }; i < m; ++i, a_row = next_row(a_row, a_t)) for (Size j{ 0 }, a_id{ a_row }; j < n; ++j, a_id = next_col(a_id, a_t)) A[a_id] = value;
+		auto inline s_fill(Size m, Size n, double value, double *A, AType a_t) noexcept->void
+		{
+			for (Size i(-1), a_row{ 0 }; ++i < m; a_row = next_row(a_row, a_t)) for (Size j(-1), a_id{ a_row }; ++j < n; a_id = next_col(a_id, a_t)) A[a_id] = value;
 		}// fill matrix with value
 		auto inline s_fill(Size m, Size n, double value, double *A) noexcept->void { std::fill(A, A + m*n, value); }
-
 		template<typename XType>
-		auto inline s_nv(Size n, double alpha, double *x, XType x_t) noexcept->void { for (Size i{ 0 }, vid{ 0 }; i < n; ++i, vid = next_vid(vid, x_t))x[vid] *= alpha; }
-		auto inline s_nv(Size n, double alpha, double *x) noexcept->void  { for (Size i{ 0 }; i < n; ++i)x[i] *= alpha; }
+		auto inline s_nv(Size n, double alpha, double *x, XType x_t) noexcept->void { for (Size i(-1), vid{ 0 }; ++i < n; vid = next_vid(vid, x_t))x[vid] *= alpha; }
+		auto inline s_nv(Size n, double alpha, double *x) noexcept->void { for (Size i(-1); ++i < n;)x[i] *= alpha; }
 		template<typename XType, typename YType>
-		auto inline s_vc(Size n, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] = x[x_id]; }
+		auto inline s_vc(Size n, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] = x[x_id]; }
 		template<typename XType, typename YType>
-		auto inline s_vc(Size n, double alpha, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] = alpha*x[x_id]; }
+		auto inline s_vc(Size n, double alpha, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] = alpha*x[x_id]; }
 		auto inline s_vc(Size n, const double *x, double *y) noexcept->void { std::copy(x, x + n, y); }
-		auto inline s_vc(Size n, double alpha, const double *x, double *y) noexcept->void { for (Size i{ 0 }; i < n; ++i)y[i] = alpha*x[i]; }
+		auto inline s_vc(Size n, double alpha, const double *x, double *y) noexcept->void { for (Size i(-1); ++i < n;)y[i] = alpha*x[i]; }
 		template<typename XType, typename YType>
-		auto inline s_va(Size n, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] += x[x_id]; }
+		auto inline s_va(Size n, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] += x[x_id]; }
 		template<typename XType, typename YType>
-		auto inline s_va(Size n, double alpha, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] += alpha*x[x_id]; }
+		auto inline s_va(Size n, double alpha, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] += alpha*x[x_id]; }
 		auto inline s_va(Size n, const double* x, double* y) noexcept->void { for (Size i = 0; i < n; ++i)y[i] += x[i]; }
 		auto inline s_va(Size n, double alpha, const double* x, double* y) noexcept->void { for (Size i = 0; i < n; ++i)y[i] += alpha * x[i]; }
 		template<typename XType, typename YType>
-		auto inline s_vv(Size n, const double *x, XType x_t, const double *y, YType y_t) noexcept->double { double ret{ 0 }; for (Size i{ 0 }, x_id{ 0 }, y_id{ 0 }; i < n; ++i, x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))ret += x[x_id] * y[y_id]; return ret; }
+		auto inline s_vv(Size n, const double *x, XType x_t, const double *y, YType y_t) noexcept->double { double ret{ 0 }; for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))ret += x[x_id] * y[y_id]; return ret; }
 		auto inline s_vv(Size n, const double *x, const double *y) noexcept->double { double ret{ 0 }; for (Size i = 0; i < n; ++i)ret += x[i] * y[i];	return ret; }
 		template<typename AType>
 		auto inline s_nm(Size m, Size n, double alpha, double* A, AType a_t) noexcept->void
-		{ 
-			for (Size i{ 0 }, a_row{0}; i < m; ++i, a_row = next_row(a_row, a_t))for (Size j{ 0 }, a_id{ a_row }; j < n; ++j, a_id = next_col(a_id, a_t))	A[id(i, j, a_t)] *= alpha; 
+		{
+			for (Size i(-1), a_row{ 0 }; ++i < m; a_row = next_row(a_row, a_t))for (Size j(-1), a_id{ a_row }; ++j < n; a_id = next_col(a_id, a_t))	A[a_id] *= alpha;
 		}
 		auto inline s_nm(Size m, Size n, double alpha, double* A) noexcept->void { s_nv(m*n, alpha, A); }
 		template<typename AType, typename BType>
 		auto inline s_mc(Size m, Size n, const double *A, AType a_t, double *B, BType b_t) noexcept->void
-		{ 
-			for (Size i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
-				for (Size j{ 0 }, a_id{ row_a }, b_id{ row_b }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
+		{
+			for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m; row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
+				for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n; a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
 					B[b_id] = A[a_id];
 		}
 		template<typename AType, typename BType>
 		auto inline s_mc(Size m, Size n, double alpha, const double *A, AType a_t, double *B, BType b_t) noexcept->void
 		{
-			for (Size i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
-				for (Size j{ 0 }, a_id{ row_a }, b_id{ row_b }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
+			for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m; row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
+				for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n; a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
 					B[b_id] = alpha * A[a_id];
 		}
 		auto inline s_mc(Size m, Size n, const double *A, double *B) noexcept->void { s_vc(m*n, A, B); }
 		auto inline s_mc(Size m, Size n, double alpha, const double *A, double *B) noexcept->void { s_vc(m*n, alpha, A, B); }
-		auto inline s_mcT(Size m, Size n, const double *A, double *B) noexcept->void { s_mc(m, n, A, ColMajor{ m }, B, n); }
-		auto inline s_mcT(Size m, Size n, double alpha, const double *A, double *B) noexcept->void { s_mc(m, n, alpha, A, ColMajor{ m }, B, n); }
 		template<typename AType, typename BType>
-		auto inline s_ma(Size m, Size n, const double* A, AType a_t, double* B, BType b_t) noexcept->void 
-		{ 
-			for (Size i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
-				for (Size j{ 0 }, a_id{ row_a }, b_id{ row_b }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
+		auto inline s_ma(Size m, Size n, const double* A, AType a_t, double* B, BType b_t) noexcept->void
+		{
+			for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m; row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
+				for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n; a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
 					B[b_id] += A[a_id];
 		}
 		template<typename AType, typename BType>
 		auto inline s_ma(Size m, Size n, double alpha, const double* A, AType a_t, double* B, BType b_t) noexcept->void
-		{ 
-			for (Size i{ 0 }, row_a{ 0 }, row_b{ 0 }; i < m; ++i, row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
-				for (Size j{ 0 }, a_id{ row_a }, b_id{ row_b }; j < n; ++j, a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
+		{
+			for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m; row_a = next_row(row_a, a_t), row_b = next_row(row_b, b_t))
+				for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n; a_id = next_col(a_id, a_t), b_id = next_col(b_id, b_t))
 					B[b_id] += alpha*A[a_id];
 		}
 		auto inline s_ma(Size m, Size n, const double* A, double* B) noexcept->void { s_va(m*n, A, B); }
 		auto inline s_ma(Size m, Size n, double alpha, const double* A, double* B) noexcept->void { s_va(m*n, alpha, A, B); }
-		auto inline s_maT(Size m, Size n, const double* A, double* B) noexcept->void { s_ma(m, n, A, ColMajor{ m }, B, n); }
-		auto inline s_maT(Size m, Size n, double alpha, const double* A, double* B) noexcept->void { s_ma(m, n, alpha, A, ColMajor{ m }, B, n); }
-		
+
 		template<typename AType, typename BType, typename CType>
 		auto inline s_mma(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
 		{
-			for (Size i{ 0 }, a_row{ 0 }, c_row{ 0 }; i < m; ++i, a_row = next_row(a_row, a_t), c_row = next_row(c_row, c_t))
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < m; a_row = next_row(a_row, a_t), c_row = next_row(c_row, c_t))
 			{
-				for (Size j{ 0 }, b_col{ 0 }, c_id{ c_row }; j < n; ++j, b_col = next_col(b_col, b_t), c_id = next_col(c_id, c_t))
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < n; b_col = next_col(b_col, b_t), c_id = next_col(c_id, c_t))
 				{
-					for (Size u{ 0 }, a_id{ a_row }, b_id{ b_col }; u < k; ++u, a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < k; a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
 						C[c_id] += A[a_id] * B[b_id];
 				}
 			}
@@ -284,12 +239,12 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto inline s_mma(Size m, Size n, Size k, double alpha, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
 		{
-			for (Size i{ 0 }, a_row{ 0 }, c_row{ 0 }; i < m; ++i, a_row = next_row(a_row, a_t), c_row = next_row(c_row, c_t))
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < m; a_row = next_row(a_row, a_t), c_row = next_row(c_row, c_t))
 			{
-				for (Size j{ 0 }, b_col{ 0 }, c_id{ c_row }; j < n; ++j, b_col = next_col(b_col, b_t), c_id = next_col(c_id, c_t))
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < n; b_col = next_col(b_col, b_t), c_id = next_col(c_id, c_t))
 				{
 					double value{ 0 };
-					for (Size u{ 0 }, a_id{ a_row }, b_id{ b_col }; u < k; ++u, a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < k; a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
 						value += A[a_id] * B[b_id];
 					C[c_id] += alpha*value;
 				}
@@ -297,78 +252,59 @@ namespace aris
 		}
 		auto inline s_mma(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, k, B, n, C, n); }
 		auto inline s_mma(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, k, B, n, C, n); }
-		auto inline s_mmaTN(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, ColMajor{ m }, B, RowMajor{ n }, C, RowMajor{ n }); }
-		auto inline s_mmaTN(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, ColMajor{ m }, B, RowMajor{ n }, C, RowMajor{ n }); }
-		auto inline s_mmaNT(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, RowMajor{ k }, B, ColMajor{ k }, C, RowMajor{ n }); }
-		auto inline s_mmaNT(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, RowMajor{ k }, B, ColMajor{ k }, C, RowMajor{ n }); }
-		auto inline s_mmaTT(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, ColMajor{ m }, B, ColMajor{ k }, C, RowMajor{ n }); }
-		auto inline s_mmaTT(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, ColMajor{ m }, B, ColMajor{ k }, C, RowMajor{ n }); }
 		template<typename AType, typename BType, typename CType>
-		auto inline s_mm(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t) noexcept->void { s_fill(m, n, 0.0, C, c_t); s_mma(m, n, k, A, a_t, B, b_t, C, c_t); }
-		template<typename AType, typename BType, typename CType>
-		auto inline s_mm(Size m, Size n, Size k, double alpha, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t) noexcept->void { s_mm(m, n, k, A, a_t, B, b_t, C, c_t);	s_nm(m, n, alpha, C, c_t); }
-		auto inline s_mm(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mma(m, n, k, A, B, C); }
-		auto inline s_mm(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mm(m, n, k, A, B, C); s_nm(m, n, alpha, C);}
-		auto inline s_mmTN(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaTN(m, n, k, A, B, C); }
-		auto inline s_mmTN(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTN(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
-		auto inline s_mmNT(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaNT(m, n, k, A, B, C); }
-		auto inline s_mmNT(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmNT(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
-		auto inline s_mmTT(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mmaTT(m, n, k, A, B, C); }
-		auto inline s_mmTT(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mmTT(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
-
-
-		auto s_blk_make(const double *mtx, const BlockSize &blk_size_m, const BlockSize &blk_size_n, BlockMatrix &blk_mtx) noexcept->void;
-		auto s_blk_resolve(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockMatrix &blk_mtx, double *mtx) noexcept->void;
-		auto s_blk_allocate(const BlockSize &blk_size_m, const BlockSize &blk_size_n, BlockMatrix &blk_mtx) noexcept->void;
-		auto s_blk_check_empty_num(const BlockMatrix &blk_mtx)noexcept->Size;
-
-		auto s_blk_norm(const BlockSize &blk_size_m, const BlockMatrix &blk_mtx)noexcept->double;
-		auto s_blk_norm_col(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockMatrix &blk_mtx, Size blk_i, Size blk_j, const double *data)noexcept->double;
-		auto s_blk_norm_row(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockMatrix &blk_mtx, Size blk_i, Size blk_j, const double *data)noexcept->double;
-		
-		auto inline s_blk_nm(const BlockSize &blk_size_m, const BlockSize &blk_size_n, double alpha, BlockMatrix &A) 
-		{ 
-			for (std::size_t i = 0; i < blk_size_m.size(); ++i)
+		auto inline s_mm(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t) noexcept->void
+		{
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < m; a_row = next_row(a_row, a_t), c_row = next_row(c_row, c_t))
 			{
-				for (std::size_t j = 0; j < blk_size_n.size(); ++j)
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < n; b_col = next_col(b_col, b_t), c_id = next_col(c_id, c_t))
 				{
-					if (!A[i][j].empty())s_nm(blk_size_m[i], blk_size_n[j], alpha, A[i][j].data());
+					C[c_id] = 0.0;
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < k; a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
+						C[c_id] += A[a_id] * B[b_id];
 				}
 			}
 		}
-		auto s_blk_mm(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
-		auto s_blk_mmNT(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
-		auto s_blk_mmTN(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
-		auto s_blk_mmTT(const BlockSize &blk_size_m, const BlockSize &blk_size_n, const BlockSize &blk_size_k, const BlockMatrix &A, const BlockMatrix &B, BlockMatrix &C)noexcept->void;
-
-		auto s_blk_llt(const BlockSize &blk_size, const BlockMatrix &A, BlockMatrix &L) noexcept->void;
-		auto s_blk_sov_lm(const BlockSize &blk_size, const BlockSize &rhs_size, const BlockMatrix &L, const BlockMatrix &b, BlockMatrix &x)noexcept->void;
-		auto s_blk_sov_um(const BlockSize &blk_size, const BlockSize &rhs_size, const BlockMatrix &L, const BlockMatrix &b, BlockMatrix &x)noexcept->void;
-
+		template<typename AType, typename BType, typename CType>
+		auto inline s_mm(Size m, Size n, Size k, double alpha, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t) noexcept->void
+		{
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < m; a_row = next_row(a_row, a_t), c_row = next_row(c_row, c_t))
+			{
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < n; b_col = next_col(b_col, b_t), c_id = next_col(c_id, c_t))
+				{
+					C[c_id] = 0.0;
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < k; a_id = next_col(a_id, a_t), b_id = next_row(b_id, b_t))
+						C[c_id] += A[a_id] * B[b_id];
+					C[c_id] *= alpha;
+				}
+			}
+		}
+		auto inline s_mm(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mma(m, n, k, A, B, C); }
+		auto inline s_mm(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mm(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
 
 		// A can be the same as L
 		template<typename AType, typename LType>
 		auto inline s_llt(Size m, const double *A, AType a_t, double *L, LType l_t) noexcept->void
 		{
-			for (Size j = 0; j < m; ++j)
+			for (Size j(-1), a_jj{ 0 }, l_jj{ 0 }, l_j0{ 0 }; ++j < m; a_jj = next_row(next_col(a_jj, a_t), a_t), l_jj = next_row(next_col(l_jj, l_t), l_t), l_j0 = next_row(l_j0, l_t))
 			{
-				L[id(j, j, l_t)] = A[id(j, j, a_t)];
-				for (Size k = 0; k < j; ++k)
+				L[l_jj] = A[a_jj];
+				for (Size k(-1), l_jk{ l_j0 }; ++k < j; l_jk = next_col(l_jk, l_t))
 				{
-					L[id(j, j, l_t)] -= L[id(j, k, l_t)] * L[id(j, k, l_t)];
+					L[l_jj] -= L[l_jk] * L[l_jk];
 				}
-				L[id(j, j, l_t)] = std::sqrt(L[id(j, j, l_t)]);
+				L[l_jj] = std::sqrt(L[l_jj]);
 
 
-				for (Size i = j + 1; i < m; ++i)
+				for (Size i(j), l_i0{ next_row(l_j0,l_t) }, l_ji{ next_col(l_jj, l_t) }, l_ij{ next_row(l_jj, l_t) }, a_ij{ next_row(a_jj,a_t) }; ++i < m; l_i0 = next_row(l_i0, l_t), l_ji = next_col(l_ji, l_t), l_ij = next_row(l_ij, l_t), a_ij = next_row(a_ij, a_t))
 				{
-					L[id(i, j, l_t)] = A[id(i, j, a_t)];
-					for (Size k = 0; k < j; ++k)
+					L[l_ij] = A[a_ij];
+					for (Size k(-1), l_ik{ l_i0 }, l_jk{ l_j0 }; ++k < j; l_ik = next_col(l_ik, l_t), l_jk = next_col(l_jk, l_t))
 					{
-						L[id(i, j, l_t)] -= L[id(i, k, l_t)] * L[id(j, k, l_t)];
+						L[l_ij] -= L[l_ik] * L[l_jk];
 					}
-					L[id(i, j, l_t)] /= L[id(j, j, l_t)];
-					L[id(j, i, l_t)] = L[id(i, j, l_t)];
+					L[l_ij] /= L[l_jj];
+					L[l_ji] = L[l_ij];
 				}
 			}
 		}
@@ -397,13 +333,13 @@ namespace aris
 		template<typename LType, typename bType, typename xType>
 		auto inline s_sov_lm(Size m, Size rhs, const double *L, LType l_t, const double *b, bType b_t, double *x, xType x_t) noexcept->void
 		{
-			for (Size j = 0; j < rhs; ++j)
+			for (Size j(-1); ++j < rhs;)
 			{
-				for (Size i = 0; i < m; ++i)
+				for (Size i(-1); ++i < m;)
 				{
 					x[id(i, j, x_t)] = b[id(i, j, b_t)];
 
-					for (Size k = 0; k < i; ++k)
+					for (Size k(-1); ++k < i;)
 					{
 						x[id(i, j, x_t)] -= L[id(i, k, l_t)] * x[id(k, j, x_t)];
 					}
@@ -412,18 +348,17 @@ namespace aris
 			}
 		}
 		auto inline s_sov_lm(Size m, Size rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_lm(m, rhs, L, m, b, rhs, x, rhs); }
-		auto inline s_sov_lmNT(Size m, Size rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_lm(m, rhs, L, m, b, ColMajor{ m }, x, rhs); }
 		// b can be the same as x
 		template<typename LType, typename bType, typename xType>
 		auto inline s_sov_um(Size m, Size rhs, const double *L, LType l_t, const double *b, bType b_t, double *x, xType x_t) noexcept->void
 		{
-			for (Size j = 0; j < rhs; ++j)
+			for (Size j(-1); ++j < rhs;)
 			{
-				for (Size i = m - 1; i < m; --i)
+				for (Size i(m); --i < m;)
 				{
 					x[id(i, j, x_t)] = b[id(i, j, b_t)];
 
-					for (Size k = i + 1; k < m; ++k)
+					for (Size k(i); ++k < m;)
 					{
 						x[id(i, j, x_t)] -= L[id(i, k, l_t)] * x[id(k, j, x_t)];
 					}
@@ -432,7 +367,6 @@ namespace aris
 			}
 		}
 		auto inline s_sov_um(Size m, Size rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_um(m, rhs, L, m, b, rhs, x, rhs); }
-		auto inline s_sov_umNT(Size m, Size rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_um(m, rhs, L, m, b, ColMajor{ m }, x, rhs); }
 
 		// tau must have same size with max(m,n), A can be the same as U
 		template<typename AType, typename UType, typename TauType>
@@ -493,7 +427,7 @@ namespace aris
 		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
 		{
 			s_mc(m, rhs, b, b_t, x, x_t);
-			
+
 			for (Size i = 0; i < std::min(m - 1, n); ++i)
 			{
 				for (Size j = 0; j < rhs; ++j)
@@ -509,13 +443,6 @@ namespace aris
 			if (n > m)s_fill(n - m, rhs, 0.0, x + id(m, 0, x_t), x_t);
 		}
 		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x) { s_householder_ut_sov(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
-
-		auto s_blk_householder_ut(const BlockSize &blk_size, const BlockMatrix &A, BlockMatrix &U, BlockMatrix &tau) noexcept->void;
-
-		auto s_householder_qr(Size m, Size n, const double *A, double *Q, double *R, double *tau)noexcept->void;
-		auto s_householder_sov(Size m, Size n, Size rhs, const double *U, const double *tau, double *b, double *x)noexcept->void;
-		auto s_householder_colpiv(Size m, Size n, const double *A, double *U, double *tau, Size *P)noexcept->void;
-		auto s_householder_colpiv_qr(Size m, Size n, const double *A, double *Q, double *R, double *tau, Size *P)noexcept->void;
 	}
 }
 

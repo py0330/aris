@@ -223,14 +223,14 @@ void test_mtx_and_vec()
 	s_mc(2, 3, alpha, m2_ld, 5, result, 6);
 	if (!s_is_equal(12, result, o2, error))std::cout << "\"s_mc with ld\" failed" << std::endl;
 
-	s_mcT(2, 3, m1T, result);
+	s_mc(2, 3, m1T, ColMajor{2}, result, 3);
 	if (!s_is_equal(6, result, m1, error))std::cout << "\"s_mcT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
 	s_mc(2, 3, m2T_ld, ColMajor{ 5 }, result, 6);
 	if (!s_is_equal(12, result, m2, error))std::cout << "\"s_mcT with ld\" failed" << std::endl;
 
-	s_mcT(2, 3, alpha, m1T, result);
+	s_mc(2, 3, alpha, m1T, ColMajor{ 2 }, result, 3);
 	if (!s_is_equal(6, result, o1, error))std::cout << "\"s_mcT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
@@ -249,13 +249,13 @@ void test_mtx_and_vec()
 	s_ma(2, 3, alpha, m6, 5, o6_before, 4);
 	if (!s_is_equal(8, o6, o6_before, error))std::cout << "\"s_ma with ld\" failed" << std::endl;
 
-	s_maT(2, 3, m3T, o3T_before);
+	s_ma(2, 3, m3T, ColMajor{2}, o3T_before, 3);
 	if (!s_is_equal(6, o3, o3T_before, error))std::cout << "\"s_maT\" failed" << std::endl;
 
 	s_ma(2, 3, m4T, ColMajor{ 5 }, o4T_before, 4);
 	if (!s_is_equal(8, o4, o4T_before, error))std::cout << "\"s_maT with ld\" failed" << std::endl;
 
-	s_maT(2, 3, alpha, m5T, o5T_before);
+	s_ma(2, 3, alpha, m5T, ColMajor{2}, o5T_before, 3);
 	if (!s_is_equal(6, o5, o5T_before, error))std::cout << "\"s_maT\" failed" << std::endl;
 
 	s_ma(2, 3, alpha, m6T, ColMajor{ 5 }, o6T_before, 4);
@@ -275,42 +275,42 @@ void test_mtx_and_vec()
 	s_mm(2, 4, 3, alpha, m10a, 6, m10b, 6, result, 5);
 	if (!s_is_equal(10, o10, result, error))std::cout << "\"s_mm with ld\" failed" << std::endl;
 
-	s_mmTN(2, 4, 3, m11a, m11b, result);
+	s_mm(2, 4, 3, m11a, ColMajor{2}, m11b, 4, result, 4);
 	if (!s_is_equal(8, o11, result, error))std::cout << "\"s_mmTN\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
 	s_mm(2, 4, 3, m12a, ColMajor{ 5 }, m12b, 6, result, 5);
 	if (!s_is_equal(10, o12, result, error))std::cout << "\"s_mmTN with ld\" failed" << std::endl;
 
-	s_mmTN(2, 4, 3, alpha, m13a, m13b, result);
+	s_mm(2, 4, 3, alpha, m13a, ColMajor{2}, m13b, 4, result, 4);
 	if (!s_is_equal(8, o13, result, error))std::cout << "\"s_mmTN\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
 	s_mm(2, 4, 3, alpha, m14a, ColMajor{ 5 }, m14b, 6, result, 5);
 	if (!s_is_equal(10, o14, result, error))std::cout << "\"s_mmTN with ld\" failed" << std::endl;
 
-	s_mmNT(2, 4, 3, m15a, m15b, result);
+	s_mm(2, 4, 3, m15a, 3, m15b, ColMajor{3}, result, 4);
 	if (!s_is_equal(8, o15, result, error))std::cout << "\"s_mmNT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
 	s_mm(2, 4, 3, m16a, 6, m16b, ColMajor{ 5 }, result, 5);
 	if (!s_is_equal(10, o16, result, error))std::cout << "\"s_mmNT with ld\" failed" << std::endl;
 
-	s_mmNT(2, 4, 3, alpha, m17a, m17b, result);
+	s_mm(2, 4, 3, alpha, m17a, 3, m17b, ColMajor{ 3 }, result, 4);
 	if (!s_is_equal(8, o17, result, error))std::cout << "\"s_mmNT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
 	s_mm(2, 4, 3, alpha, m18a, 6, m18b, ColMajor{ 5 }, result, 5);
 	if (!s_is_equal(10, o18, result, error))std::cout << "\"s_mmNT with ld\" failed" << std::endl;
 
-	s_mmTT(2, 4, 3, m19a, m19b, result);
+	s_mm(2, 4, 3, m19a, ColMajor{ 2 }, m19b, ColMajor{3}, result, 4);
 	if (!s_is_equal(8, o19, result, error))std::cout << "\"s_mmTT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
 	s_mm(2, 4, 3, m20a, ColMajor{ 5 }, m20b, ColMajor{ 5 }, result, 5);
 	if (!s_is_equal(10, o20, result, error))std::cout << "\"s_mmTT with ld\" failed" << std::endl;
 
-	s_mmTT(2, 4, 3, alpha, m21a, m21b, result);
+	s_mm(2, 4, 3, alpha, m21a, ColMajor{ 2 }, m21b, ColMajor{3}, result, 4);
 	if (!s_is_equal(8, o21, result, error))std::cout << "\"s_mmTT\" failed" << std::endl;
 
 	std::fill_n(result, 36, 0);
@@ -397,38 +397,38 @@ void test_mtx_and_vec()
 	s_mma(2, 4, 3, alpha, ma04a, 6, ma04b, 6, oa04_before, 5);
 	if (!s_is_equal(10, oa04_before, oa04, error))std::cout << "\"s_mma with ld\" failed" << std::endl;
 
-	s_mmaTN(2, 4, 3, ma05a, ma05b, oa05_before);
-	if (!s_is_equal(8, oa05_before, oa05, error))std::cout << "\"s_mmaTN\" failed" << std::endl;
+	//s_mmaTN(2, 4, 3, ma05a, ma05b, oa05_before);
+	//if (!s_is_equal(8, oa05_before, oa05, error))std::cout << "\"s_mmaTN\" failed" << std::endl;
 
 	s_mma(2, 4, 3, ma06a, ColMajor{ 5 }, ma06b, RowMajor{ 6 }, oa06_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa06_before, oa06, error))std::cout << "\"s_mmaTN with ld\" failed" << std::endl;
 
-	s_mmaTN(2, 4, 3, alpha, ma07a, ma07b, oa07_before);
-	if (!s_is_equal(8, oa07_before, oa07, error))std::cout << "\"s_mmaTN\" failed" << std::endl;
+	//s_mmaTN(2, 4, 3, alpha, ma07a, ma07b, oa07_before);
+	//if (!s_is_equal(8, oa07_before, oa07, error))std::cout << "\"s_mmaTN\" failed" << std::endl;
 
 	s_mma(2, 4, 3, alpha, ma08a, ColMajor{ 5 }, ma08b, RowMajor{ 6 }, oa08_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa08_before, oa08, error))std::cout << "\"s_mmaTN with ld\" failed" << std::endl;
 
-	s_mmaNT(2, 4, 3, ma09a, ma09b, oa09_before);
-	if (!s_is_equal(8, oa09_before, oa09, error))std::cout << "\"s_mmaNT\" failed" << std::endl;
+	//s_mmaNT(2, 4, 3, ma09a, ma09b, oa09_before);
+	//if (!s_is_equal(8, oa09_before, oa09, error))std::cout << "\"s_mmaNT\" failed" << std::endl;
 
 	s_mma(2, 4, 3, ma10a, RowMajor{ 6 }, ma10b, ColMajor{ 5 }, oa10_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa06_before, oa10, error))std::cout << "\"s_mmaNT with ld\" failed" << std::endl;
 
-	s_mmaNT(2, 4, 3, alpha, ma11a, ma11b, oa11_before);
-	if (!s_is_equal(8, oa11_before, oa11, error))std::cout << "\"s_mmaNT\" failed" << std::endl;
+	//s_mmaNT(2, 4, 3, alpha, ma11a, ma11b, oa11_before);
+	//if (!s_is_equal(8, oa11_before, oa11, error))std::cout << "\"s_mmaNT\" failed" << std::endl;
 
 	s_mma(2, 4, 3, alpha, ma12a, RowMajor{ 6 }, ma12b, ColMajor{ 5 }, oa12_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa12_before, oa12, error))std::cout << "\"s_mmaNT with ld\" failed" << std::endl;
 
-	s_mmaTT(2, 4, 3, ma13a, ma13b, oa13_before);
-	if (!s_is_equal(8, oa13_before, oa13, error))std::cout << "\"s_mmaTT\" failed" << std::endl;
+	//s_mmaTT(2, 4, 3, ma13a, ma13b, oa13_before);
+	//if (!s_is_equal(8, oa13_before, oa13, error))std::cout << "\"s_mmaTT\" failed" << std::endl;
 
 	s_mma(2, 4, 3, ma14a, ColMajor{ 5 }, ma14b, ColMajor{ 5 }, oa14_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa14_before, oa14, error))std::cout << "\"s_mmaTT with ld\" failed" << std::endl;
 
-	s_mmaTT(2, 4, 3, alpha, ma15a, ma15b, oa15_before);
-	if (!s_is_equal(8, oa15_before, oa15, error))std::cout << "\"s_mmaTT\" failed" << std::endl;
+	//s_mmaTT(2, 4, 3, alpha, ma15a, ma15b, oa15_before);
+	//if (!s_is_equal(8, oa15_before, oa15, error))std::cout << "\"s_mmaTT\" failed" << std::endl;
 
 	s_mma(2, 4, 3, alpha, ma16a, ColMajor{ 5 }, ma16b, ColMajor{ 5 }, oa16_before, RowMajor{ 5 });
 	if (!s_is_equal(10, oa16_before, oa16, error))std::cout << "\"s_mmaTT with ld\" failed" << std::endl;
@@ -703,48 +703,43 @@ void test_mtx_householder()
 		double result_Q[m*m], result_R[m*n], result_U[m*n], result_tau[std::max(m, n)];
 		aris::Size result_P[n];
 
-		s_householder_colpiv(m, n, A, result_U, result_tau, result_P);
-		if (!(s_is_equal(m*n, result_U, U, error) && s_is_equal(std::min(m - 1, n), result_tau, tau, error)))std::cout << "\"s_householder\" failed" << std::endl;
-
-		s_householder_colpiv_qr(m, n, A, result_Q, result_R, result_tau, result_P);
-		if (!(s_is_equal(m*m, result_Q, Q, error) && s_is_equal(m*n, result_R, R, error)))std::cout << "\"s_householder_qr\" failed" << std::endl;
 	}
 	{
-		const int m{ 6 };
-		
-		const double A[]{ 1.82553083943141,1.42060601118548,1.36736238745112,1.50658906468564,1.86464891726001,1.04079482779702,
-			1.42060601118548,2.10941693872417,1.92463386848915,1.23889223270807,2.23186828169132,1.22211204078486,
-			1.36736238745112,1.92463386848915,2.06653199450749,1.37659815598197,2.07988145626914,1.30113287432829,
-			1.50658906468564,1.23889223270807,1.37659815598197,1.69212820994619,1.67619205287543,0.914095057763804,
-			1.86464891726001,2.23186828169132,2.07988145626914,1.67619205287543, 3.0881251584706,1.69495025317372,
-			1.04079482779702,1.22211204078486,1.30113287432829,0.914095057763804,1.69495025317372,1.17872570447206 };
+		//const int m{ 6 };
+		//
+		//const double A[]{ 1.82553083943141,1.42060601118548,1.36736238745112,1.50658906468564,1.86464891726001,1.04079482779702,
+		//	1.42060601118548,2.10941693872417,1.92463386848915,1.23889223270807,2.23186828169132,1.22211204078486,
+		//	1.36736238745112,1.92463386848915,2.06653199450749,1.37659815598197,2.07988145626914,1.30113287432829,
+		//	1.50658906468564,1.23889223270807,1.37659815598197,1.69212820994619,1.67619205287543,0.914095057763804,
+		//	1.86464891726001,2.23186828169132,2.07988145626914,1.67619205287543, 3.0881251584706,1.69495025317372,
+		//	1.04079482779702,1.22211204078486,1.30113287432829,0.914095057763804,1.69495025317372,1.17872570447206 };
 
-		const double Q[]{ -0.487018761004792,0.58615158818106,0.269169996030875,0.469225664315028,0.322931724090467, - 0.149428688219487,
-			- 0.378992107117184, - 0.531014268871378,0.395414660684538, - 0.148366226025505,0.471255375679519,0.41706343520106,
-			- 0.364787666905925, - 0.407154830432649, - 0.6218869826655,0.167150077035578,0.243911898269689, - 0.476423467672795,
-			- 0.401930837747503,   0.418371584453535, - 0.382204354563855, - 0.6780304845932,0.0471261323067019,0.235351736679332,
-			- 0.497454759885483, - 0.169067369137248,0.374748698253167, - 0.19092216761576, - 0.645437708327441, - 0.361216403696958,
-			- 0.277665321530135, - 0.071109408646299, - 0.312945018579389,0.483424222133397, - 0.441961254720844,0.625205652044336 };
+		//const double Q[]{ -0.487018761004792,0.58615158818106,0.269169996030875,0.469225664315028,0.322931724090467, - 0.149428688219487,
+		//	- 0.378992107117184, - 0.531014268871378,0.395414660684538, - 0.148366226025505,0.471255375679519,0.41706343520106,
+		//	- 0.364787666905925, - 0.407154830432649, - 0.6218869826655,0.167150077035578,0.243911898269689, - 0.476423467672795,
+		//	- 0.401930837747503,   0.418371584453535, - 0.382204354563855, - 0.6780304845932,0.0471261323067019,0.235351736679332,
+		//	- 0.497454759885483, - 0.169067369137248,0.374748698253167, - 0.19092216761576, - 0.645437708327441, - 0.361216403696958,
+		//	- 0.277665321530135, - 0.071109408646299, - 0.312945018579389,0.483424222133397, - 0.441961254720844,0.625205652044336 };
 
-		const double R[]{ -3.74837888311545, -4.14093747425994, -4.09842122428956, -3.47319426928742, -5.19323931441872, -2.98254996581135,
-			0, - 1.01698645699612, - 0.930158218823203,0.024279751808276, - 0.88037774250209, - 0.556605795615909,
-			0,0, - 0.309959963166431, - 0.265333224503581,0.0771665208290705, - 0.128832887738307,
-			0,0,0, - 0.272222060476389, - 0.0152612526957455,0.150968618871018,
-			0,0,0,0, - 0.502060268034026, - 0.34246380747859,
-			0,0,0,0,0,0.0741194013003414 };
+		//const double R[]{ -3.74837888311545, -4.14093747425994, -4.09842122428956, -3.47319426928742, -5.19323931441872, -2.98254996581135,
+		//	0, - 1.01698645699612, - 0.930158218823203,0.024279751808276, - 0.88037774250209, - 0.556605795615909,
+		//	0,0, - 0.309959963166431, - 0.265333224503581,0.0771665208290705, - 0.128832887738307,
+		//	0,0,0, - 0.272222060476389, - 0.0152612526957455,0.150968618871018,
+		//	0,0,0,0, - 0.502060268034026, - 0.34246380747859,
+		//	0,0,0,0,0,0.0741194013003414 };
 
-		double result_U[m*m], result_tau[m];
+		//double result_U[m*m], result_tau[m];
 
-		BlockSize blk_m{ 2,4 }, blk_n{ 2,4 };
-		BlockMatrix blk_A, blk_U, blk_tau;
+		//BlockSize blk_m{ 2,4 }, blk_n{ 2,4 };
+		//BlockMatrix blk_A, blk_U, blk_tau;
 
-		s_blk_make(A, blk_m, blk_n, blk_A);
-		s_blk_allocate(blk_m, blk_n, blk_U);
-		s_blk_allocate(blk_m, {1}, blk_tau);
+		//s_blk_make(A, blk_m, blk_n, blk_A);
+		//s_blk_allocate(blk_m, blk_n, blk_U);
+		//s_blk_allocate(blk_m, {1}, blk_tau);
 
-		s_blk_householder_ut(blk_m, blk_A, blk_U, blk_tau);
+		//s_blk_householder_ut(blk_m, blk_A, blk_U, blk_tau);
 
-		s_blk_resolve(blk_m, blk_m, blk_U, result_U);
+		//s_blk_resolve(blk_m, blk_m, blk_U, result_U);
 
 		//dsp(6, 6, result_U);
 
@@ -842,170 +837,16 @@ void test_mtx_solver()
 	s_sov_lm(6, 2, llt, b, result);
 	if (!s_is_equal(12, inv_l_dot_b, result, error))std::cout << "\"s_sov_lm\" failed" << std::endl;
 
-	s_sov_lmNT(6, 2, llt, bT, result);
+	s_sov_lm(6, 2, llt, 6, bT, ColMajor{6}, result, 2);
 	if (!s_is_equal(12, inv_l_dot_b, result, error))std::cout << "\"s_sov_lmNT\" failed" << std::endl;
 
 	s_sov_um(6, 2, llt, b, result);
 	if (!s_is_equal(12, inv_u_dot_b, result, error))std::cout << "\"s_sov_um\" failed" << std::endl;
 
-	s_sov_umNT(6, 2, llt, bT, result);
+	s_sov_um(6, 2, llt, 6, bT, ColMajor{6}, result, 2);
 	if (!s_is_equal(12, inv_u_dot_b, result, error))std::cout << "\"s_sov_umNT\" failed" << std::endl;
-
-	BlockMatrix A_blk, L_blk, b_blk;
-	BlockSize blk_size{ 1,3,2 };
-	BlockSize b_blk_size{ 1,1 };
-	
-	s_blk_make(A, blk_size, blk_size, A_blk);
-	s_blk_resolve(blk_size, blk_size, A_blk, result);
-	if(!s_is_equal(36, A, result, error))std::cout << "\"s_make_symetric_blk\" or \"s_resolve_symetric_blk\" failed" << std::endl;
-
-	s_blk_allocate(blk_size, blk_size, L_blk);
-	for (std::size_t i = 0; i < blk_size.size(); ++i)for (std::size_t j = 0; j < blk_size.size(); ++j)
-		if (L_blk[i][j].capacity()<static_cast<std::size_t>(blk_size[i]*blk_size[j]))std::cout << "\"s_allocate_symetric_blk\" failed" << std::endl;
-
-	s_blk_llt(blk_size, A_blk, L_blk);
-	s_blk_resolve(blk_size, blk_size, L_blk, result);
-	if (!s_is_equal(36, llt, result, error))std::cout << "\"s_resolve_symetric_blk\" failed" << std::endl;
-
-
-	blk_size = { 1,2,2,1 };
-	s_blk_make(B, blk_size, blk_size, A_blk);
-	A_blk[2][0].clear();
-	A_blk[2][1].clear();
-	A_blk[3][0].clear();
-	A_blk[3][1].clear();
-	A_blk[0][2].clear();
-	A_blk[1][2].clear();
-	A_blk[0][3].clear();
-	A_blk[1][3].clear();
-	s_blk_resolve(blk_size, blk_size, A_blk, result);
-	if (!s_is_equal(36, B, result, error))std::cout << "\"s_blk_make\" or \"s_blk_resolve\" failed" << std::endl;
-
-	s_blk_allocate(blk_size, blk_size, L_blk);
-	s_blk_llt(blk_size, A_blk, L_blk);
-	s_blk_resolve(blk_size, blk_size, L_blk, result);
-	if (!s_is_equal(36, B_llt, result, error))std::cout << "\"s_blk_llt\" failed" << std::endl;
-	if(s_blk_check_empty_num(A_blk)!=8)std::cout << "\"s_blk_llt\" failed:wrong empty num" << std::endl;
-
-	blk_size = { 2,3,1 };
-	s_blk_make(C, blk_size, blk_size, A_blk);
-	A_blk[1][0].clear();
-	A_blk[0][1].clear();
-	A_blk[1][2].clear();
-	A_blk[2][1].clear();
-	s_blk_resolve(blk_size, blk_size, A_blk, result);
-	if (!s_is_equal(36, C, result, error))std::cout << "\"s_blk_make\" or \"s_blk_resolve\" failed" << std::endl;
-
-	s_blk_allocate(blk_size, blk_size, L_blk);
-	s_blk_llt(blk_size, A_blk, L_blk);
-	s_blk_resolve(blk_size, blk_size, L_blk, result);
-	if (!s_is_equal(36, C_llt, result, error))std::cout << "\"s_blk_llt\" failed" << std::endl;
-	if (s_blk_check_empty_num(A_blk) != 4)std::cout << "\"s_blk_llt\" failed:wrong empty num" << std::endl;
-
-	s_blk_make(llt, blk_size, blk_size, L_blk);
-	s_blk_make(b, blk_size, { 2 }, b_blk);
-	s_blk_sov_lm(blk_size, { 2 }, L_blk, b_blk, b_blk);
-	s_blk_resolve(blk_size, { 2 }, b_blk, result);
-	if (!s_is_equal(12, inv_l_dot_b, result, error))std::cout << "\"s_blk_sov_lm\" failed" << std::endl;
-
-	s_blk_make(llt, blk_size, blk_size, L_blk);
-	s_blk_make(b, blk_size, { 1,1 }, b_blk);
-	s_blk_sov_lm(blk_size, { 1,1 }, L_blk, b_blk, b_blk);
-	s_blk_resolve(blk_size, { 1,1 }, b_blk, result);
-	if (!s_is_equal(12, inv_l_dot_b, result, error))std::cout << "\"s_blk_sov_lm\" failed" << std::endl;
-
-	s_blk_make(llt, blk_size, blk_size, L_blk);
-	s_blk_make(b, blk_size, { 2 }, b_blk);
-	s_blk_sov_um(blk_size, { 2 }, L_blk, b_blk, b_blk);
-	s_blk_resolve(blk_size, { 2 }, b_blk, result);
-	if (!s_is_equal(12, inv_u_dot_b, result, error))std::cout << "\"s_blk_sov_um\" failed" << std::endl;
-
-	s_blk_make(llt, blk_size, blk_size, L_blk);
-	s_blk_make(b, blk_size, { 1,1 }, b_blk);
-	s_blk_sov_um(blk_size, { 1,1 }, L_blk, b_blk, b_blk);
-	s_blk_resolve(blk_size, { 1,1 }, b_blk, result);
-	if (!s_is_equal(12, inv_u_dot_b, result, error))std::cout << "\"s_blk_sov_um\" failed" << std::endl;
 }
-void test_mtx_blk()
-{
-	const double A[]{ 0.083469814858914,0.0604711791698936,0.291984079961715,0.372409740055537,0.0526769976807926,0.417744104316662,0.698105520180308,0.032600820530528,0.460725937260412,
-		0.133171007607162,0.399257770613576, 0.43165117024872,0.198118402542975,0.737858095516997,0.983052466469856,0.666527913402587, 0.56119979270966, 0.98163795097075,
-		0.173388613119006,0.526875830508296,0.015487125636019,0.489687638016024,0.269119426398556,0.301454948712065,0.178132454400338, 0.88186650045181,0.156404952226563,
-		0.390937802323736,0.416799467930787,0.984063724379154,0.339493413390758,0.422835615008808,0.701098755900926,0.128014399720173,0.669175304534394,0.855522805845911,
-		0.83137974283907,0.656859890973707,0.167168409914656,0.951630464777727,0.547870901214845,0.666338851584426,0.999080394761361,0.190433267179954,0.644764536870088,
-		0.80336439160244,0.627973359190104,0.106216344928664,0.920332039836564,0.942736984276934,0.539126465042857,0.171121066356432,0.368916546063895,0.376272210278832 };
-	const double AT[]{ 0.083469814858914,0.133171007607162,0.173388613119006,0.390937802323736, 0.83137974283907, 0.80336439160244,
-		0.0604711791698936,0.399257770613576,0.526875830508296,0.416799467930787,0.656859890973707,0.627973359190104,
-		0.291984079961715, 0.43165117024872,0.015487125636019,0.984063724379154,0.167168409914656,0.106216344928664,
-		0.372409740055537,0.198118402542975,0.489687638016024,0.339493413390758,0.951630464777727,0.920332039836564,
-		0.0526769976807926,0.737858095516997,0.269119426398556,0.422835615008808,0.547870901214845,0.942736984276934,
-		0.417744104316662,0.983052466469856,0.301454948712065,0.701098755900926,0.666338851584426,0.539126465042857,
-		0.698105520180308,0.666527913402587,0.178132454400338,0.128014399720173,0.999080394761361,0.171121066356432,
-		0.032600820530528, 0.56119979270966, 0.88186650045181,0.669175304534394,0.190433267179954,0.368916546063895,
-		0.460725937260412, 0.98163795097075,0.156404952226563,0.855522805845911,0.644764536870088,0.376272210278832 };
-	const double B[]{ 0.32514568182056,0.440085139001721,0.676122303863752,0.344462411301042,0.424349039815375,
-		0.105629203329022,0.527142741760652,0.289064571674477,0.780519652731358,0.460916366028964,
-		0.610958658746201,0.457424365687674,0.671808165414215,   0.675332065747,0.770159728608609,
-		0.778802241824093,0.875371598604185,0.695140499551737,0.00671531431847749,0.322471807186779,
-		0.423452918962738,0.518052108361104,0.0679927684700106,0.602170487581795,0.784739294760742,
-		0.0908232857874395,0.943622624548388,0.254790156597005,0.386771194520985,0.471357153710612,
-		0.266471490779072,0.637709098072174,0.224040030824219,0.915991244131425,0.0357627332691179,
-		0.153656717591307,0.957693939841583,0.667832727013717,0.00115105712910724,0.175874415683531,
-		0.281005302533871, 0.24070703548016,0.844392156527205,0.462449159242329,0.721758033391102 };
-	const double BT[]{ 0.32514568182056,0.105629203329022,0.610958658746201,0.778802241824093,0.423452918962738,0.0908232857874395,0.266471490779072,0.153656717591307,0.281005302533871,
-		0.440085139001721,0.527142741760652,0.457424365687674,0.875371598604185,0.518052108361104,0.943622624548388,0.637709098072174,0.957693939841583,0.24070703548016,
-		0.676122303863752,0.289064571674477,0.671808165414215,0.695140499551737,0.0679927684700106,0.254790156597005,0.224040030824219,0.667832727013717,0.844392156527205,
-		0.344462411301042,0.780519652731358,  0.675332065747,0.00671531431847749,0.602170487581795,0.386771194520985,0.915991244131425,0.00115105712910724,0.462449159242329,
-		0.424349039815375,0.460916366028964,0.770159728608609,0.322471807186779,0.784739294760742,0.471357153710612,0.0357627332691179,0.175874415683531,0.721758033391102 };
-	const double C[]{ 0.882699220389462,1.53696035254701,1.20617784639246,1.32148852911613,1.00973535379553,
-		1.44490982798386,3.14862260940081,2.28680308612416,2.54000934334887,2.51030105404234,
-		0.871122945877781,2.20946761947791,1.47636028538785,0.999872211710309,1.11389732784129,
-		1.65682740032538,2.94813131784912,2.68725848495219,2.16628320911793,2.62740013735909,
-		1.9521547101672,3.50893087374696,2.62828481759543,2.71952708284136,2.36977862102099,
-		1.76538308227268,3.08892358329822,2.23971174415062,1.95216979243096,2.34543889613871 };
 
-	double result[100];
-
-	BlockSize m{ 2,4 }, n{ 3,2 }, k{ 1,3,5 };
-	BlockMatrix a, at, b, bt, c;
-
-	s_blk_make(A, m, k, a);
-	s_blk_make(AT, k, m, at);
-	s_blk_make(B, k, n, b);
-	s_blk_make(BT, n, k, bt);
-	
-	s_blk_allocate(m, n, c);
-	s_blk_mm(m, n, k, a, b, c);
-	s_blk_resolve(m, n, c, result);
-	if (!s_is_equal(30, result, C, error))std::cout << "\"s_blk_mm\" failed" << std::endl;
-
-	s_blk_allocate(m, n, c);
-	s_blk_mmNT(m, n, k, a, bt, c);
-	s_blk_resolve(m, n, c, result);
-	if (!s_is_equal(30, result, C, error))std::cout << "\"s_blk_mmNT\" failed" << std::endl;
-
-	s_blk_allocate(m, n, c);
-	s_blk_mmTN(m, n, k, at, b, c);
-	s_blk_resolve(m, n, c, result);
-	if (!s_is_equal(30, result, C, error))std::cout << "\"s_blk_mmTN\" failed" << std::endl;
-
-	s_blk_allocate(m, n, c);
-	s_blk_mmTT(m, n, k, at, bt, c);
-	s_blk_resolve(m, n, c, result);
-	if (!s_is_equal(30, result, C, error))std::cout << "\"s_blk_mmTT\" failed" << std::endl;
-
-
-	const double x[]{ 0.32514568182056,0.105629203329022,0.610958658746201,0.778802241824093,0.423452918962738,0.0908232857874395,0.266471490779072,0.153656717591307,0.281005302533871 };
-	BlockMatrix x_blk;
-	s_blk_make(x, { 1,3,5 }, { 1 }, x_blk);
-	if (!s_is_equal(s_blk_norm({ 1,3,5 }, x_blk), 1.20740354633406, error))std::cout << "\"s_blk_norm\" failed" << std::endl;
-
-	s_blk_make(A, { 2,3,1 }, { 3,4,2 }, a);
-	if(!s_is_equal(s_blk_norm_col({ 2,3,1 }, {3,4,2}, a, 0, 0, a[0][0].data() + 4), 1.19855836773142, error))std::cout << "\"s_blk_norm_col\" failed" << std::endl;
-
-	s_blk_make(A, { 2,3,1 }, { 3,4,2 }, a);
-	if (!s_is_equal(s_blk_norm_row({ 2,3,1 }, { 3,4,2 }, a, 0, 0, a[0][0].data() + 4), 1.9022683449028, error))std::cout << "\"s_blk_norm_row\" failed" << std::endl;
-}
 
 void test_matrix()
 {
@@ -1015,7 +856,6 @@ void test_matrix()
 	test_mtx_and_vec();
 	test_mtx_householder();
 	test_mtx_solver();
-	test_mtx_blk();
 
 	std::cout << "-----------------test kernel finished-----------" << std::endl << std::endl;
 }

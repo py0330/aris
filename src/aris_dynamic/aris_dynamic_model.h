@@ -12,6 +12,7 @@
 #include <aris_core.h>
 #include <aris_dynamic_matrix.h>
 #include <aris_dynamic_block_matrix.h>
+#include <aris_dynamic_screw.h>
 
 namespace aris
 {
@@ -21,6 +22,7 @@ namespace aris
 		using double4x4 = double[4][4];
 		using double3 = double[3];
 		using double6 = double[6];
+		using double7 = double[7];
 		
 		class Marker;
 		class Part;
@@ -161,6 +163,10 @@ namespace aris
 			auto makI() const->const Marker&{ return *makI_; }
 			auto makJ()->Marker& { return *makJ_; }
 			auto makJ() const->const Marker&{ return *makJ_; }
+			auto rowIdI()const->Size;
+			auto rowIdJ()const->Size;
+			auto blkRowIdI()const->Size;
+			auto blkRowIdJ()const->Size;
 
 		protected:
 			virtual ~Interaction() = default;
@@ -180,8 +186,8 @@ namespace aris
 		{
 		public:
 			auto virtual dim() const->Size = 0;
-			auto virtual cptCp(double *ce)const->void;
-			auto virtual cptCv(double *cv)const->void { std::fill(cv, cv + dim(), 0.0); };
+			auto virtual cptCp(double *cp)const->void;
+			auto virtual cptCv(double *cv)const->void;
 			auto virtual cptCa(double *ca)const->void;
 			auto virtual cptPrtCm(double *prt_cmI, double *prt_cmJ, Size cmI_ld = 0, Size cmJ_ld = 0)const->void;
 			auto virtual cptGlbCm(double *glb_cmI, double *glb_cmJ, Size cmI_ld = 0, Size cmJ_ld = 0)const->void;
@@ -200,6 +206,7 @@ namespace aris
 			auto virtual updCe()->void;
 			auto colID()const->Size;
 			auto blkColID()const->Size;
+
 
 		protected:
 			virtual ~Constraint();
@@ -263,8 +270,8 @@ namespace aris
 			auto virtual operator=(Object &&other)->Object&{ return dynamic_cast<Environment&>(*this) = dynamic_cast<Environment&&>(other); }
 			
 			virtual ~Environment() = default;
-			explicit Environment(const std::string &name) :Element(name) {}
 			explicit Environment(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Environment(const std::string &name) :Element(name) {}
 			Environment(const Environment &) = default;
 			Environment(Environment &&) = default;
 			Environment &operator=(const Environment &) = default;
@@ -292,8 +299,8 @@ namespace aris
 
 		private:
 			virtual ~Akima();
-			explicit Akima(const std::string &name, Size num, const double *x_in, const double *y_in);
 			explicit Akima(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Akima(const std::string &name, Size num, const double *x_in, const double *y_in);
 			explicit Akima(const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in);
 			explicit Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in);
 			explicit Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope);
@@ -350,16 +357,37 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual adamsType()const->const std::string &{ static const std::string type{ "variable" }; return type; }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual toString() const->std::string { return ""; }//TBD
+			auto virtual toString() const->std::string { return ""; }
 
 		protected:
 			virtual ~Variable() = default;
-			explicit Variable(const std::string &name) : Element(name) {	}
 			explicit Variable(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele) {}
+			explicit Variable(const std::string &name) : Element(name) {}
 			Variable(const Variable&) = default;
 			Variable(Variable&&) = default;
 			Variable& operator=(const Variable&) = default;
 			Variable& operator=(Variable&&) = default;
+
+			friend class Model;
+			friend class aris::core::Root;
+		};
+		class Geometry :public Element
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Geometry" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string &{ static const std::string type{ "geometry" }; return type; }
+			auto fatherPart() const->const Part&;
+			auto fatherPart()->Part&;
+
+		protected:
+			virtual ~Geometry() = default;
+			explicit Geometry(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele) {}
+			explicit Geometry(const std::string &name) : Element(name) {}
+			Geometry(const Geometry&) = default;
+			Geometry(Geometry&&) = default;
+			Geometry& operator=(const Geometry&) = default;
+			Geometry& operator=(Geometry&&) = default;
 
 			friend class Model;
 			friend class aris::core::Root;
@@ -384,8 +412,8 @@ namespace aris
 
 		protected:
 			virtual ~Marker();
-			explicit Marker(const std::string &name, const double *prt_pm = nullptr, bool active = true);//only for child class Part to construct
 			explicit Marker(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Marker(const std::string &name, const double *prt_pm = nullptr, bool active = true);
 			Marker(const Marker&);
 			Marker(Marker&&);
 			Marker& operator=(const Marker&);
@@ -412,11 +440,15 @@ namespace aris
 			auto rowID()const->Size;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
+			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
+			auto geometryPool()const->const aris::core::ObjectPool<Geometry, Element>&;
 			auto cptGlbIm(double *im, Size ld = 0)const->void;
 			auto cptGlbFg(double *fg)const->void;
 			auto cptGlbFv(double *fv)const->void;
+			auto cptGlbPf(double *pf)const->void;
 			auto cptPrtFg(double *fg)const->void;
 			auto cptPrtFv(double *fv)const->void;
+			auto cptPrtPf(double *pf)const->void;
 			auto cptPrtVs(double *vs)const->void;
 			auto cptPrtAs(double *as)const->void;
 			
@@ -498,12 +530,13 @@ namespace aris
 
 		private:
 			virtual ~Part();
-			explicit Part(const std::string &name, const double *prt_im = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, const std::string &graphic_file = "", bool active = true);
-			explicit Part(Object &father, const aris::core::XmlElement &xml_ele);
 			Part(const Part &other);
 			Part(Part &&other);
 			Part& operator=(const Part &other);
 			Part& operator=(Part &&other);
+			explicit Part(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Part(const std::string &name, const double *prt_im = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
+			
 
 		private:
 			struct Imp;
@@ -523,8 +556,8 @@ namespace aris
 
 		protected:
 			virtual ~Joint() = default;
+			explicit Joint(Object &father, const aris::core::XmlElement &xml_ele) : Constraint(father, xml_ele) {}
 			explicit Joint(const std::string &name, Marker &makI, Marker &makJ, bool active = true): Constraint(name, makI, makJ, active) {}
-			explicit Joint(Object &father, const aris::core::XmlElement &xml_ele): Constraint(father, xml_ele) {}
 			Joint(const Joint &other);
 			Joint(Joint &&other);
 			Joint& operator=(const Joint &other);
@@ -565,6 +598,7 @@ namespace aris
 			auto updMv()->void;
 			auto setMv(double mot_vel)->void;
 			auto ma() const->double;
+			auto updMa()->void;
 			auto setMa(double mot_acc)->void;
 			auto mf() const->double;
 			auto setMf(double mot_fce)->void;
@@ -579,8 +613,8 @@ namespace aris
 
 		protected:
 			virtual ~Motion();
-			explicit Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis = 2, const double *frc_coe = nullptr, bool active = true);
 			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis = 2, const double *frc_coe = nullptr, Size sla_id = -1, bool active = true);
 			Motion(const Motion &other);
 			Motion(Motion &&other);
 			Motion& operator=(const Motion &other);
@@ -603,32 +637,54 @@ namespace aris
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual updCa()->void override;
 			auto virtual dim() const ->Size override { return Dim(); }
-			
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
-			
 			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
 			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
 			auto virtual glbCmPtrI() const->const double* override { return *glbCmI(); }
 			auto virtual glbCmPtrJ() const->const double* override { return *glbCmJ(); }
 			auto virtual caPtr() const->const double* override { return ca(); }
 			auto virtual cfPtr() const->const double* override { return cf(); }
-			auto mp() const->const double6&;
+			auto mpm()const->const double4x4&;
 			auto updMp()->void;
-			auto setMp(const double *mot_pos)->void;
-			auto mv() const->const double6&;
+			auto setMpe(const double* pe, const char *type = "313")->void;
+			auto setMpq(const double* pq)->void;
+			auto setMpm(const double* pm)->void;
+			auto getMpe(double* pe, const char *type = "313")const->void;
+			auto getMpq(double* pq)const->void;
+			auto getMpm(double* pm)const->void;
+			auto mvs()const->const double6&;
 			auto updMv()->void;
-			auto setMv(const double * mot_vel)->void;
-			auto ma() const->const double6&;
-			auto setMa(const double * mot_acc)->void;
+			auto setMve(const double* ve, const char *type = "313")->void;
+			auto setMvq(const double* vq)->void;
+			auto setMvm(const double* vm)->void;
+			auto setMva(const double* va)->void;
+			auto setMvs(const double* vs)->void;
+			auto getMve(double* ve, const char *type = "313")const->void;
+			auto getMvq(double* vq)const->void;
+			auto getMvm(double* vm)const->void;
+			auto getMva(double* va)const->void;
+			auto getMvs(double* vs)const->void;
+			auto mas()const->const double6&;
+			auto updMa()->void;
+			auto setMae(const double* ae, const char *type = "313")->void;
+			auto setMaq(const double* aq)->void;
+			auto setMam(const double* am)->void;
+			auto setMaa(const double* aa)->void;
+			auto setMas(const double* as)->void;
+			auto getMae(double* ae, const char *type = "313")const->void;
+			auto getMaq(double* aq)const->void;
+			auto getMam(double* am)const->void;
+			auto getMaa(double* aa)const->void;
+			auto getMas(double* as)const->void;
 			auto mf() const->const double6&;
 			auto setMf(const double * mot_fce)->void;
 
 		protected:
 			virtual ~GeneralMotion();
-			explicit GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom = "xyz123", bool active = true);
 			explicit GeneralMotion(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom = "xyz123", bool active = true);
 			GeneralMotion(const GeneralMotion &other);
 			GeneralMotion(GeneralMotion &&other);
 			GeneralMotion& operator=(const GeneralMotion &other);
@@ -653,12 +709,12 @@ namespace aris
 
 		protected:
 			virtual ~Force() = default;
-			explicit Force(const std::string &name, Marker &makI, Marker &makJ, bool active = true):Interaction(name, makI, makJ, active) {}
-			explicit Force(Object &father, const aris::core::XmlElement &xml_ele):Interaction(father, xml_ele) {}
 			Force(const Force &other) = default;
 			Force(Force &&other) = default;
 			Force& operator=(const Force &other) = default;
 			Force& operator=(Force &&other) = default;
+			explicit Force(Object &father, const aris::core::XmlElement &xml_ele) :Interaction(father, xml_ele) {}
+			explicit Force(const std::string &name, Marker &makI, Marker &makJ, bool active = true):Interaction(name, makI, makJ, active) {}
 
 			double fsI_[6]{ 0 };
 			double fsJ_[6]{ 0 };
@@ -719,6 +775,27 @@ namespace aris
 			auto ground()->Part&;
 			auto ground()const->const Part&;
 
+
+
+			// 动力学计算以下变量的关系
+			// I  ： 惯量矩阵,m*m
+			// C  ： 约束矩阵,m*n
+			// pa ： 杆件的螺旋加速度 m*1
+			// pf ： 杆件的螺旋外力（不包括惯性力）m*1
+			// ca ： 约束的加速度（不是螺旋）n*1
+			// cf ： 约束力n*1
+			// 动力学主要求解以下方程：
+			// [ -I  C  ]  *  [ pa ]  = [ pf ]
+			// [  C' O  ]     [ cf ]    [ ca ]
+			//
+			// A = [-I  C ]
+			//     [ C' O ]
+			//
+			// x = [ pa ]
+			//     [ cf ]
+			//
+			// b = [ pf ]
+			//     [ ca ]
 			auto allocateMemory()->void;
 			auto activePartPool()->aris::core::RefPool<Part>&;
 			auto activeConstraintPool()->aris::core::RefPool<Constraint>&;
@@ -728,29 +805,73 @@ namespace aris
 			auto pSize()->Size;
 			auto glbImBlk()->BlockData&;
 			auto glbCmBlk()->BlockData&;
+			auto glbPpBlk()->BlockData&;
+			auto glbPvBlk()->BlockData&;
+			auto glbPaBlk()->BlockData&;
+			auto glbPfBlk()->BlockData&;
+			auto prtImBlk()->BlockData&;
+			auto prtCmBlk()->BlockData&;
+			auto prtPpBlk()->BlockData&;
+			auto prtPvBlk()->BlockData&;
+			auto prtPaBlk()->BlockData&;
+			auto prtPfBlk()->BlockData&;
 			auto cpBlk()->BlockData&;
 			auto cvBlk()->BlockData&;
 			auto caBlk()->BlockData&;
+			auto cfBlk()->BlockData&;
 			auto glbIm()->double *;
 			auto glbCm()->double *;
+			auto glbPp()->double *;
+			auto glbPv()->double *;
+			auto glbPa()->double *;
+			auto glbPf()->double *;
+			auto prtIm()->double *;
+			auto prtCm()->double *;
+			auto prtPp()->double *;
+			auto prtPv()->double *;
+			auto prtPa()->double *;
+			auto prtPf()->double *;
 			auto cp()->double *;
 			auto cv()->double *;
 			auto ca()->double *;
+			auto cf()->double *;
 
-			auto cptCp()->void;
-			auto cptCv()->void;
-			auto cptCa()->void;
-			auto cptGlbIm()->void;
-			auto cptGlbCm()->void;
+			auto updGlbIm()->void;
+			auto updGlbCm()->void;
+			//auto updGlbPp()->void;
+			auto updGlbPv()->void;
+			auto updGlbPa()->void;
+			auto updGlbPf()->void;
+			auto updPrtIm()->void;
+			auto updPrtCm()->void;
+			//auto updPrtPp()->void;
+			auto updPrtPv()->void;
+			auto updPrtPa()->void;
+			auto updPrtPf()->void;
+			auto updCp()->void;
+			auto updCv()->void;
+			auto updCa()->void;
+			auto updCf()->void;
 
-			auto setPartP()->void;
-			auto setPartV()->void;
-			auto setPartA()->void;
-			auto setConstraintF()->void;
+			auto updConstraintF()->void;
+			auto updPartGlbP()->void;
+			auto updPartGlbV()->void;
+			auto updPartGlbA()->void;
+			auto updPartPrtP()->void;
+			auto updPartPrtV()->void;
+			auto updPartPrtA()->void;
 			
 
 			auto virtual kinPos(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
 			auto virtual kinVel()->void;
+			auto virtual kinAcc()->void;
+			auto virtual dynFce()->void;
+
+			//auto virtual kinPosInPrt(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
+			auto virtual kinVelInPrt()->void;
+			auto virtual kinAccInPrt()->void;
+			auto virtual dynFceInPrt()->void;
+			
 			auto virtual kinPre()->void;
 			
 			auto kinUpd()->void;
@@ -846,7 +967,7 @@ namespace aris
 			auto simToAdams(const std::string &filename, const PlanFunc &func, const PlanParamBase &param, Size ms_dt = 10, Script *script = nullptr)->SimResult;
 
 			virtual ~Model();
-			Model(const std::string &name = "Root");
+			Model(const std::string &name = "model");
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
@@ -938,6 +1059,31 @@ namespace aris
 			StringVariable(StringVariable &&other) = default;
 			StringVariable& operator=(const StringVariable &other) = default;
 			StringVariable& operator=(StringVariable &&other) = default;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class ParasolidGeometry final :public Geometry
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "ParasolidGeometry" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "parasolid" }; return type; }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual saveAdams(std::ofstream &file) const->void override;
+
+		private:
+			virtual ~ParasolidGeometry();
+			ParasolidGeometry(const ParasolidGeometry &other);
+			ParasolidGeometry(ParasolidGeometry &&other);
+			ParasolidGeometry& operator=(const ParasolidGeometry &other);
+			ParasolidGeometry& operator=(ParasolidGeometry &&other);
+			explicit ParasolidGeometry(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit ParasolidGeometry(const std::string &name, const std::string &graphic_file_path, const double* prt_pm = nullptr);
+			
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
 
 			friend class Model;
 			friend class aris::core::Root;

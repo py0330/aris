@@ -1,4 +1,4 @@
-﻿#include "test_dynamic_model.h"
+﻿#include "test_dynamic_model_stewart.h"
 #include <iostream>
 #include <aris.h>
 
@@ -16,79 +16,115 @@ const char xml_file[] =
 "        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
 "        </akima_pool>"
 "        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
-"            <p1a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999974 , 1.22522177619812e-16 , -9.28869564848867e-18 , 6.38378239159465e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pa.xmt_txt\">"
+"            <p1a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999974 , 1.22522177619812e-16 , -9.28869564848867e-18 , 6.38378239159465e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <u1i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
 "                    <p1j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p1a>"
-"            <p1b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425892889 , 1.49999999999963 , 0.912443796234424 , 8.04911692853238e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pb.xmt_txt\">"
+"            <p1b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425892889 , 1.49999999999963 , 0.912443796234424 , 8.04911692853238e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <p1i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                    <s1j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p1b>"
-"            <p2a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999995 , 1.22524189323061e-16 , -9.2876368573046e-18 , 5.55111512312578e-17 , 0.721024145526766 , 0.308719565228027}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pa.xmt_txt\">"
+"            <p2a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999995 , 1.22524189323061e-16 , -9.2876368573046e-18 , 5.55111512312578e-17 , 0.721024145526766 , 0.308719565228027}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <u2i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
 "                    <p2j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p2a>"
-"            <p2b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316677 , 1.49999999999988 , 1.31832224563822 , 6.28318530717959 , 0.721024145526766 , 0.308719565228028}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pb.xmt_txt\">"
+"            <p2b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316677 , 1.49999999999988 , 1.31832224563822 , 6.28318530717959 , 0.721024145526766 , 0.308719565228028}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <p2i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                    <s2j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p2b>"
-"            <p3a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24902578429613e-16 , 3.6066466064807e-14 , 1.73199999999999 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pa.xmt_txt\">"
+"            <p3a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24902578429613e-16 , 3.6066466064807e-14 , 1.73199999999999 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <u3i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
 "                    <p3j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p3a>"
-"            <p3b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316337 , 1.49999999999935 , 1.31832224563851 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pb.xmt_txt\">"
+"            <p3b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316337 , 1.49999999999935 , 1.31832224563851 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <p3i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                    <s3j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p3b>"
-"            <p4a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24898250620648e-16 , 1.52855080404276e-14 , 1.732 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pa.xmt_txt\">"
+"            <p4a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24898250620648e-16 , 1.52855080404276e-14 , 1.732 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <u4i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
 "                    <p4j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p4a>"
-"            <p4b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322252 , 1.49999999999964 , 1.36823895396183 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pb.xmt_txt\">"
+"            <p4b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322252 , 1.49999999999964 , 1.36823895396183 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <p4i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                    <s4j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p4b>"
-"            <p5a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999993 , -1.0082029353865e-16 , 4.19175032725778e-17 , 6.28318530717959 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pa.xmt_txt\">"
+"            <p5a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999993 , -1.0082029353865e-16 , 4.19175032725778e-17 , 6.28318530717959 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <u5i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
 "                    <p5j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p5a>"
-"            <p5b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322406 , 1.49999999999987 , 1.36823895396163 , 2.77555756156289e-17 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pb.xmt_txt\">"
+"            <p5b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322406 , 1.49999999999987 , 1.36823895396163 , 2.77555756156289e-17 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <p5i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                    <s5j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p5b>"
-"            <p6a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999969 , -1.00821934664985e-16 , 4.19165900651815e-17 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pa.xmt_txt\">"
+"            <p6a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999969 , -1.00821934664985e-16 , 4.19165900651815e-17 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <u6i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
 "                    <p6j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p6a>"
-"            <p6b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425888235 , 1.49999999999959 , 0.912443796234401 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\pb.xmt_txt\">"
+"            <p6b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425888235 , 1.49999999999959 , 0.912443796234401 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <p6i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "                    <s6j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </p6b>"
-"            <up active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.1 , 1.5 , 1.2 , 1.5707963267949 , 0.1 , 4.71238898038469}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\up.xmt_txt\">"
+"            <up active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.1 , 1.5 , 1.2 , 1.5707963267949 , 0.1 , 4.71238898038469}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <ee pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                    <s1i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
@@ -98,10 +134,13 @@ const char xml_file[] =
 "                    <s5i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
 "                    <s6i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\up.xmt_txt\"/>"
+"                </geometry_pool>"
 "            </up>"
-"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
+"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-"                    <ref pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                    <origin pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                    <u1o pe=\"{ 1,0,0,0,0,0 }\"/>"
 "                    <u2o pe=\"{ 1,0,0,0,0,0 }\"/>"
 "                    <u3o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
@@ -145,7 +184,9 @@ const char xml_file[] =
 "            <m5 active=\"true\" slave_id=\"7\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
 "            <m6 active=\"true\" slave_id=\"5\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
 "        </motion_pool>"
-"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
+"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\">"
+"            <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        </general_motion_pool>"
 "    </model>"
 "</root>";
 
@@ -313,28 +354,27 @@ private:
 
 void test_model_stewart()
 {
+	const double error = 1e-10;
+	
 	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
 	
 	try 
 	{
-		Robot rbt;
+		//Robot rbt;
 
-		rbt.loadString(xml_file);
-		double pee[6]{ 0,1.5,1.2,0,0.1,0 };
-		double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-		rbt.setVee(vee, pee);
+		//rbt.loadString(xml_file);
+		//double pee[6]{ 0,1.5,1.2,0,0.1,0 };
+		//double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+		//rbt.setVee(vee, pee);
 
-		rbt.motionAtAbs(0).setMp(rbt.motionAtAbs(0).mp() + 0.1);
-		rbt.motionAtAbs(1).setMp(rbt.motionAtAbs(1).mp() + 0.085);
+		//rbt.motionAtAbs(0).setMp(rbt.motionAtAbs(0).mp() + 0.1);
+		//rbt.motionAtAbs(1).setMp(rbt.motionAtAbs(1).mp() + 0.085);
 
-		//std::cout << rbt.motionAtAbs(0).mp() << std::endl;
-		//std::cout << rbt.motionAtAbs(1).mp() << std::endl;
+		//rbt.allocateMemory();
+		//auto ret = rbt.kinPos();
+		//std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 
-		rbt.allocateMemory();
-		auto ret = rbt.kinPos();
-		std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
-
-		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
+		//rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
 	}
 	catch (std::exception&e)
 	{
@@ -343,70 +383,141 @@ void test_model_stewart()
 	
 	try
 	{
-		Model rbt;
+		aris::core::XmlDocument xml_doc;
+		xml_doc.Parse(xml_file);
 
-		rbt.loadString(xml_file);
+		const double input_origin_p[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
+		const double input_origin_v[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_a[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_pm[16]{ 1,0,0,0,
+			0, 0.999999999751072,2.2312668404904e-05,1.7078344386197,
+			0, -2.23126684049141e-05,0.999999999751072,0.577658198650165,
+			0,0,0,1 };
+		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 
-		auto ee = &*rbt.partPool().findByName("up")->markerPool().findByName("ee");
-		auto ref = &*rbt.partPool().findByName("ground")->markerPool().findByName("ref");
+		const double input_p[6]{ 2.15,2.03,1.98,1.68,2.22,2.01 };
+		const double input_v[6]{ 0.687,1.521,-0.325,0.665,1.225,-0.999 };
+		const double input_a[6]{ 1.687,0.521,-1.325,1.665,0.225,-1.999 };
+		const double output_pm[16]{ 0.654617242227831, - 0.16813527373803,0.737025641279234,0.0674004103296998,
+			0.286892301165042,0.957269694021347, - 0.0364354283699648,1.66351811346172,
+			- 0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
+			0,0,0,1 };
+		const double output_va[6]{ -1.67602445813444,0.322144550146041,1.43386389933679, - 4.13258637478856,0.229701802785213,2.06026880988191 };
+		const double output_aa[6]{ -3.99625983193204, - 4.52459258496676,3.82662285536541, - 4.70386456087171,10.2271223856012,12.7760010719168 };
 
-		auto gmt = &rbt.generalMotionPool().add<GeneralMotion>("general_motion",*ee,*ref);
+		double result1[16], result2[16], result3[16];
 
-		for (auto &m : rbt.motionPool()) 
+		Model m;
+		m.loadXml(xml_doc);
+
+		std::tuple<aris::Size, double> ret;
+
+		// test inverse kinematic //
+		for (auto &mot : m.motionPool())mot.activate(false);
+		m.generalMotionPool().at(0).activate(true);
+		m.allocateMemory();
+
+		m.generalMotionPool().at(0).setMpm(output_origin_pm);
+		m.generalMotionPool().at(0).setMva(output_origin_va);
+		m.generalMotionPool().at(0).setMaa(output_origin_aa);
+		ret = m.kinPos(100, 1e-12);
+		m.kinVel();
+		m.kinAcc();
+		for (aris::Size i = 0; i < 6; ++i)
 		{
-			m.updMp();
-			//std::cout << m.mp() << std::endl;
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
 		}
 
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_origin_p, error))std::cout << "model::kinPos() stewart failed" << std::endl;
+		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "model::kinVel() stewart failed" << std::endl;
+		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "model::kinAcc() stewart failed" << std::endl;
 
-		for (auto &m : rbt.motionPool())m.activate(true);
-		gmt->activate(false);
-		rbt.allocateMemory();
-		auto b = aris::core::benchmark(1000, [&rbt, &gmt]()
+
+		m.generalMotionPool().at(0).setMpm(output_pm);
+		m.generalMotionPool().at(0).setMva(output_va);
+		m.generalMotionPool().at(0).setMaa(output_aa);
+		ret = m.kinPos(100, 1e-12);
+		m.kinVel();
+		m.kinAcc();
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPos() stewart failed" << std::endl;
+		if (!s_is_equal(6, result2, input_v, 1e-9))std::cout << "model::kinVel() stewart failed" << std::endl;
+		if (!s_is_equal(6, result3, input_a, 1e-7))std::cout << "model::kinAcc() stewart failed" << std::endl;
+
+
+		// test forward kinematic //
+		for (auto &mot : m.motionPool())mot.activate(true);
+		m.generalMotionPool().at(0).activate(false);
+		m.allocateMemory();
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_origin_p[i]);
+			m.motionAtAbs(i).setMv(input_origin_v[i]);
+			m.motionAtAbs(i).setMa(input_origin_a[i]);
+		}
+		ret = m.kinPos(100, 1e-12);
+		m.kinVel();
+		m.kinAcc();
+		m.generalMotionPool().at(0).updMp();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMv();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMa();
+		m.generalMotionPool().at(0).getMaa(result3);
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "model::kinPos() stewart failed" << std::endl;
+		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "model::kinVel() stewart failed" << std::endl;
+		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "model::kinAcc() stewart failed" << std::endl;
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_p[i]);
+			m.motionAtAbs(i).setMv(input_v[i]);
+			m.motionAtAbs(i).setMa(input_a[i]);
+		}
+		ret = m.kinPos(100, 1e-15);
+		m.kinVel();
+		m.kinAcc();
+		m.generalMotionPool().at(0).updMp();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMv();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMa();
+		m.generalMotionPool().at(0).getMaa(result3);
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_pm, error))std::cout << "model::kinPos() stewart failed" << std::endl;
+		if (!s_is_equal(6, result2, output_va, error))std::cout << "model::kinVel() stewart failed" << std::endl;
+		if (!s_is_equal(6, result3, output_aa, error))std::cout << "model::kinAcc() stewart failed" << std::endl;
+
+		// benchmark //
+		auto bench = aris::core::benchmark(100, [&]()
 		{
 			static int count{ 0 };
-			double pin1[6]{ 2.0,2.0,2.0,2.0,2.0,2.0 };
-			double pin2[6]{ 2.15,2.03,1.98,1.68,2.22,2.01 };
 
-			if (count % 2)for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin1[i]);
-			else for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin2[i]);
+			if (count % 2)for (int i{ 0 }; i < 6; ++i) m.motionAtAbs(i).setMp(input_p[i]);
+			else for (int i{ 0 }; i < 6; ++i) m.motionAtAbs(i).setMp(input_origin_p[i]);
 
-			
-
-			auto ret = rbt.kinPos(100);
+			auto ret = m.kinPos(100);
 			if (count++<2)std::cout << "benchmark computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 		});
-		std::cout << "computational time:" << b << std::endl;
 
-		for (auto &m : rbt.motionPool())m.activate(false);
-		gmt->activate(true);
-		rbt.allocateMemory();
-		auto a = aris::core::benchmark(1000, [&rbt, &gmt]() 
-		{
-			static int count{0};
-			double pee1[6]{ 0.1 , 1.0 , 0.2 , 0,0,0 };
-			double pee2[6]{ 0, 1.0 , 0, 0.2 , 0.15 , 0.13 };
-
-			if (count % 2)  
-				gmt->setMp(pee1); 
-			else 
-				gmt->setMp(pee2);
-
-			auto ret = rbt.kinPos(100);
-			if(count++<2)std::cout << "benchmark computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
-		});
-		std::cout << "computational time:" << a << std::endl;
-
-		
-		double pee[6]{ 0,1.1,0,0.3,0,0 };
-		gmt->setMp(pee);
-		auto ret = rbt.kinPos(100);
-
-		std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
-
-		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
-		
-		rbt.saveXml("C:\\Users\\py033\\Desktop\\model.xml");
+		std::cout << "computational time:" << bench << std::endl;
 	}
 	catch (std::exception&e)
 	{

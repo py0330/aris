@@ -121,7 +121,7 @@ install(FILES ${FULL_H} src/aris_control/aris_control.h DESTINATION include)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 # aris dynamic project
-set(SOURCE aris_dynamic_plan aris_dynamic_matrix aris_dynamic_block_matrix aris_dynamic_screw aris_dynamic_model)
+set(SOURCE aris_dynamic_plan aris_dynamic_matrix aris_dynamic_block_matrix aris_dynamic_screw aris_dynamic_model aris_dynamic_simple_model)
 PREPEND_CPP(FULL_SRC src/aris_dynamic ${SOURCE})
 PREPEND_H(FULL_H src/aris_dynamic ${SOURCE})
 add_library(aris_dynamic STATIC ${FULL_SRC} ${FULL_H} src/aris_dynamic/aris_dynamic.h)
@@ -148,7 +148,7 @@ install(FILES ${FULL_H} DESTINATION include)
 ################################### build tests for aris ####################################
 enable_testing()
 
-set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_model_stewart.h test_dynamic_model_stewart.cpp)
+set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_model_3R.h  test_dynamic_model_3R.cpp test_dynamic_model_6R.h  test_dynamic_model_6R.cpp test_dynamic_model_stewart.h  test_dynamic_model_stewart.cpp test_dynamic_simple_model.h test_dynamic_simple_model.cpp)
 PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
 add_executable(test_dynamic ${FULL_SRC})
 target_link_libraries(test_dynamic ${ALL_LINK_LIB})
