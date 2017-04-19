@@ -41,11 +41,11 @@ namespace aris
 			
 			if (dynamic_cast<RevoluteJoint*>(joint))
 			{
-				dim = 2;
+				dim = 5;
 			}
 			else if (dynamic_cast<PrismaticJoint*>(joint))
 			{
-				dim = 5;
+				dim = 2;
 			}
 			else
 			{
@@ -70,7 +70,7 @@ namespace aris
 			for (auto &mot : imp_->m_.motionPool())mot.activate(true);
 			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(false);
 
-			auto ret = imp_->m_.kinPos(max_count, error);
+			auto ret = imp_->m_.kinPosInGlb(max_count, error);
 			if (std::get<0>(ret) == max_count) 
 			{
 				imp_->m_.loadDynEle("temp");
@@ -88,12 +88,16 @@ namespace aris
 
 
 			imp_->m_.allocateMemory();
-			auto ret = imp_->m_.kinPos(max_count, error);
+			auto ret = imp_->m_.kinPosInGlb(max_count, error);
 			if (std::get<0>(ret) == max_count)
 			{
 				imp_->m_.loadDynEle("temp");
 				return false;
 			}
+
+			for (auto &mot : imp_->m_.motionPool()) { mot.updMp(); }
+
+			
 
 			return true;
 		}

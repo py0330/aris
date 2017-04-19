@@ -91,21 +91,25 @@ void test_kinematic_6R()
 		const double input_origin_p[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double input_origin_v[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double input_origin_a[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_mf[6]{ -34.8372347443935, -0.179465241344625, -26.1146353297101,3.12638803734444e-13,5.6843418860808e-13, -9.9475983006414e-14 };
 		const double output_origin_pm[16]{ 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0};
 		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_mfs[6]{ -1.53575836143848,-38.0002468240561,-16.8933419758238,-8.4241178308505,16.6881665634178,-51.5626922658449 };
 
-		const double input_p[6]{ -0.864321840829742,0.111235847475406,0.635012012498587,0.41316722587035, -0.0861578092597486,0.229246197281016 };
-		const double input_v[6]{ 76.9342672257942, - 7.0248760537999, - 89.419018046124,   24.5922301638701, - 8.23100367003297, - 7.48185561218356 };
-		const double input_a[6]{ 708.07836306709, - 496.581922752884, - 1595.13727427361, - 59.0163055515337,   1318.06583011732, - 165.802060177352 };
-		const double output_pm[16]{ 0.969061486621173, - 0.122712022612269,   0.214153203697654, - 0.2,
-			0.146459319092386,   0.98427640122227, - 0.0987402341901776, - 0.5,
-			- 0.198669330795061,   0.127050090528668,   0.971796671890833,   0.1,
-			0,0,0,1	};
-		const double output_va[6]{ 0.35,0.67,0.12,1.85,-6.52,0.66 };
-		const double output_aa[6]{ 0.111,0.222,0.333,0.444,0.555,0.666 };
+		const double input_p[6]{ -0.084321840829742,0.111235847475406,0.163501201249858,0.41316722587035, -0.0861578092597486,0.229246197281016 };
+		const double input_v[6]{  0.93426722257942, - 0.024823760537999, - 0.89419018046124,   0.245922301638701, - 1.23100367003297, - 0.48185561218356 };
+		const double input_a[6]{ 0.70807836306709, - 0.496581922752884, - 0.159513727427361, - 0.590163055515337,   0.131806583011732, - 1.65802060177352 };
+		const double input_mf[6]{ -24.6359418510515,3.06678992657553, - 13.4565070365958,   15.0336821069307,   0.786112551012351,   1.93281931696021};
+		const double output_pm[16]{ 0.863013488544127, - 0.284074444773496,   0.417743256579356, - 0.137731283515364,
+			0.387677110267304,   0.902605554641921, - 0.187108714132569, - 0.343275971674581,
+			- 0.323904579723239,   0.323426842664891,   0.889089928341408, - 0.0474940394315194,
+			0,   0,   0,   1 };
+		const double output_va[6]{ -1.93242030056314,   0.500930573127293,   0.577926916892486, - 0.399682310201935, - 0.66053331463003, - 0.857440373970742};
+		const double output_aa[6]{ 1.07075600145293,   0.349116022890415,   2.0925775293411, - 1.77982973680254, - 0.927893632540704,   0.0659817357654945};
+		const double output_mfs[6]{ -8.44990411304192, - 54.7768126462764, - 23.2058019399381, - 18.6214939645874,   51.751313528282, - 82.047228392192};
 
-		double result1[16], result2[16], result3[16];
+		double result1[16], result2[16], result3[16], result4[16];
 
 		Model m;
 		m.loadXml(xml_doc);
@@ -117,12 +121,17 @@ void test_kinematic_6R()
 		m.generalMotionPool().at(0).activate(true);
 		m.allocateMemory();
 
+		// in glb //
 		m.generalMotionPool().at(0).setMpm(output_origin_pm);
 		m.generalMotionPool().at(0).setMva(output_origin_va);
 		m.generalMotionPool().at(0).setMaa(output_origin_aa);
-		ret = m.kinPos(100, 1e-12);
-		m.kinVel();
-		m.kinAcc();
+		ret = m.kinPosInGlb(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
 		for (aris::Size i = 0; i < 6; ++i)
 		{
 			m.motionAtAbs(i).updMp();
@@ -136,14 +145,18 @@ void test_kinematic_6R()
 		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_origin_p, error))std::cout << "model::kinPos() 6R failed" << std::endl;
 		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "model::kinVel() 6R failed" << std::endl;
 		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "model::kinAcc() 6R failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, error))std::cout << "model::dynFce() 6R failed" << std::endl;
 
-		
 		m.generalMotionPool().at(0).setMpm(output_pm);
 		m.generalMotionPool().at(0).setMva(output_va);
 		m.generalMotionPool().at(0).setMaa(output_aa);
-		ret = m.kinPos(100, 1e-12);
-		m.kinVel();
-		m.kinAcc();
+		ret = m.kinPosInGlb(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
 		for (aris::Size i = 0; i < 6; ++i) 
 		{ 
 			m.motionAtAbs(i).updMp();
@@ -155,33 +168,92 @@ void test_kinematic_6R()
 		}
 
 		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPos() 6R failed" << std::endl;
-		if (!s_is_equal(6, result2, input_v, 1e-9))std::cout << "model::kinVel() 6R failed" << std::endl;
-		if (!s_is_equal(6, result3, input_a, 1e-7))std::cout << "model::kinAcc() 6R failed" << std::endl;
-		
+		if (!s_is_equal(6, result2, input_v, error))std::cout << "model::kinVel() 6R failed" << std::endl;
+		if (!s_is_equal(6, result3, input_a, error))std::cout << "model::kinAcc() 6R failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << "model::dynFce() 6R failed" << std::endl;
+
+		// in prt //
+		m.generalMotionPool().at(0).setMpm(output_origin_pm);
+		m.generalMotionPool().at(0).setMva(output_origin_va);
+		m.generalMotionPool().at(0).setMaa(output_origin_aa);
+		ret = m.kinPosInPrt(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_origin_p, error))std::cout << "model::kinPosInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "model::kinVelInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "model::kinAccInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, error))std::cout << "model::dynFceInPrt() 6R failed" << std::endl;
+
+		m.generalMotionPool().at(0).setMpm(output_pm);
+		m.generalMotionPool().at(0).setMva(output_va);
+		m.generalMotionPool().at(0).setMaa(output_aa);
+		ret = m.kinPosInPrt(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPosInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result2, input_v, error))std::cout << "model::kinVelInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result3, input_a, error))std::cout << "model::kinAccInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << "model::dynFceInPrt() 6R failed" << std::endl;
+
 		// test forward kinematic //
 		for (auto &mot : m.motionPool())mot.activate(true);
 		m.generalMotionPool().at(0).activate(false);
 		m.allocateMemory();
 
+		// in glb //
 		for (aris::Size i = 0; i < 6; ++i)
 		{
 			m.motionAtAbs(i).setMp(input_origin_p[i]);
 			m.motionAtAbs(i).setMv(input_origin_v[i]);
 			m.motionAtAbs(i).setMa(input_origin_a[i]);
 		}
-		ret = m.kinPos(100, 1e-12);
-		m.kinVel();
-		m.kinAcc();
-		m.generalMotionPool().at(0).updMp();
+		ret = m.kinPosInGlb(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
+		m.generalMotionPool().at(0).updMpm();
 		m.generalMotionPool().at(0).getMpm(result1);
-		m.generalMotionPool().at(0).updMv();
+		m.generalMotionPool().at(0).updMvs();
 		m.generalMotionPool().at(0).getMva(result2);
-		m.generalMotionPool().at(0).updMa();
+		m.generalMotionPool().at(0).updMas();
 		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
 
 		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "model::kinPos() 6R failed" << std::endl;
 		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "model::kinVel() 6R failed" << std::endl;
 		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "model::kinAcc() 6R failed" << std::endl;
+		if (!s_is_equal(6, result4, input_origin_mf, error))std::cout << "model::dynFce() 6R failed" << std::endl;
 
 		for (aris::Size i = 0; i < 6; ++i)
 		{
@@ -189,19 +261,76 @@ void test_kinematic_6R()
 			m.motionAtAbs(i).setMv(input_v[i]);
 			m.motionAtAbs(i).setMa(input_a[i]);
 		}
-		ret = m.kinPos(100, 1e-12);
-		m.kinVel();
-		m.kinAcc();
-		m.generalMotionPool().at(0).updMp();
+		ret = m.kinPosInGlb(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
+		m.generalMotionPool().at(0).updMpm();
 		m.generalMotionPool().at(0).getMpm(result1);
-		m.generalMotionPool().at(0).updMv();
+		m.generalMotionPool().at(0).updMvs();
 		m.generalMotionPool().at(0).getMva(result2);
-		m.generalMotionPool().at(0).updMa();
+		m.generalMotionPool().at(0).updMas();
 		m.generalMotionPool().at(0).getMaa(result3);
-
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
 		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_pm, error))std::cout << "model::kinPos() 6R failed" << std::endl;
-		if (!s_is_equal(6, result2, output_va, 1e-9))std::cout << "model::kinVel() 6R failed" << std::endl;
-		if (!s_is_equal(6, result3, output_aa, 1e-7))std::cout << "model::kinAcc() 6R failed" << std::endl;
+		if (!s_is_equal(6, result2, output_va, error))std::cout << "model::kinVel() 6R failed" << std::endl;
+		if (!s_is_equal(6, result3, output_aa, error))std::cout << "model::kinAcc() 6R failed" << std::endl;
+		if (!s_is_equal(6, result4, input_mf, error))std::cout << "model::dynFce() 6R failed" << std::endl;
+
+		// in prt //
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_origin_p[i]);
+			m.motionAtAbs(i).setMv(input_origin_v[i]);
+			m.motionAtAbs(i).setMa(input_origin_a[i]);
+		}
+		ret = m.kinPosInPrt(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+		m.generalMotionPool().at(0).updMpm();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMvs();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMas();
+		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "model::kinPosInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "model::kinVelInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "model::kinAccInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result4, input_origin_mf, error))std::cout << "model::dynFceInPrt() 6R failed" << std::endl;
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_p[i]);
+			m.motionAtAbs(i).setMv(input_v[i]);
+			m.motionAtAbs(i).setMa(input_a[i]);
+		}
+		ret = m.kinPosInPrt(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+		m.generalMotionPool().at(0).updMpm();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMvs();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMas();
+		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_pm, error))std::cout << "model::kinPosInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result2, output_va, error))std::cout << "model::kinVelInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result3, output_aa, error))std::cout << "model::kinAccInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, result4, input_mf, error))std::cout << "model::dynFceInPrt() 6R failed" << std::endl;
 	}
 	catch (std::exception &e)
 	{

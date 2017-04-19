@@ -11,12 +11,12 @@ const char xml_file[] =
 "        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
 "        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
 "            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
-"            <Mot_friction type=\"MatrixVariable\">{20, 30, 560}</Mot_friction>"
+"            <Mot_friction type=\"MatrixVariable\">{0, 0, 0}</Mot_friction>"
 "        </variable_pool>"
 "        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
 "        </akima_pool>"
 "        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
-"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <ground active=\"true\" inertia=\"{0,0,0,0,0,0,0,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
@@ -83,6 +83,7 @@ void test_kinematic_3R()
 
 		// test kinematic //
 		m.allocateMemory();
+
 		m.motionAtAbs(0).setMp(0.585);
 		m.motionAtAbs(0).setMv(0.235);
 		m.motionAtAbs(0).setMa(-1.567);
@@ -98,20 +99,46 @@ void test_kinematic_3R()
 		const double ee_pq[7]{ 1.70515017988957 , 2.32534312862588, 0.0 , 0.0 , 0.0 , 0.460891949876968 , 0.887456258380438 };
 		const double ee_va[6]{ -1.1553844949236325 , 0.7406601913177889 , 0.0 , 0.0 , 0.0 , 0.705 };
 		const double ee_aa[6]{ 7.3068444301678799 ,-5.5868499482603751 , 0.0 , 0.0 , 0.0 ,-4.701 };
-		double result1[16], result2[16], result3[16];
+		const double mot_fs[3]{ 0.17105260350807,	9.24402272506392,	4.70099999999998 };
+		double result1[16], result2[16], result3[16], result4[16];;
 
-		auto ret = m.kinPos(100, 1e-12);
-		m.kinVel();
-		m.kinAcc();
-		m.dynFce();
+		// in glb //
+		auto ret = m.kinPosInGlb(100, 1e-12);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
 
 		m.partPool().at(3).markerPool().findByName("ee")->getPq(result1);
 		m.partPool().at(3).markerPool().findByName("ee")->getVa(result2);
 		m.partPool().at(3).markerPool().findByName("ee")->getAa(result3);
+		for (int i = 0; i < 3; ++i) result4[i] = m.motionAtAbs(i).mf();
 
 		if (std::get<0>(ret) == 100 || !s_is_equal(7, ee_pq, result1, error))std::cout << "model::kinPos() 3R failed" << std::endl;
 		if (!s_is_equal(6, result2, ee_va, error))std::cout << "\"model:kinVel() 3R\" failed" << std::endl;
 		if (!s_is_equal(6, result3, ee_aa, error))std::cout << "\"model:kinAcc() 3R\" failed" << std::endl;
+		if (!s_is_equal(3, result4, mot_fs, error))std::cout << "\"model:dynFce() 3R\" failed" << std::endl;
+
+		// in prt //
+		ret = m.kinPosInPrt(100, 1e-12);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+
+		m.partPool().at(3).markerPool().findByName("ee")->getPq(result1);
+		m.partPool().at(3).markerPool().findByName("ee")->getVa(result2);
+		m.partPool().at(3).markerPool().findByName("ee")->getAa(result3);
+		for (int i = 0; i < 3; ++i) result4[i] = m.motionAtAbs(i).mf();
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(7, ee_pq, result1, error))std::cout << "model::kinPosInPrt() 3R failed" << std::endl;
+		if (!s_is_equal(6, result2, ee_va, error))std::cout << "\"model:kinVelInPrt() 3R\" failed" << std::endl;
+		if (!s_is_equal(6, result3, ee_aa, error))std::cout << "\"model:kinAccInPrt() 3R\" failed" << std::endl;
+		if (!s_is_equal(3, result4, mot_fs, error))std::cout << "\"model:dynFceInPrt() 3R\" failed" << std::endl;
 
 		// benchmark efficiency //
 		auto bench = aris::core::benchmark(100, [&m]()
@@ -131,7 +158,7 @@ void test_kinematic_3R()
 				m.motionAtAbs(2).setMp(0.0);
 			}
 
-			auto ret = m.kinPos(100);
+			auto ret = m.kinPosInGlb(100);
 			if (count++<2)std::cout << "benchmark computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 		});
 
@@ -178,7 +205,7 @@ void test_simulation_3R()
 		m.saveDynEle("before");
 		m.simKin(f, p);
 		m.loadDynEle("before");
-		//m.saveAdams("C:\\aris\\robot\\resource\\test.cmd");
+		m.saveAdams("C:\\Users\\py033\\Desktop\\test.cmd");
 
 		std::cout << "test simulation finished, please check \"C:\\aris\\robot\\resource\\test.cmd\"" << std::endl;
 	}

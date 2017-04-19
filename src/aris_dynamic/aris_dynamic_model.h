@@ -438,6 +438,7 @@ namespace aris
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto blkRowID()const->Size;
 			auto rowID()const->Size;
+			auto clbID()const->Size;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
@@ -460,9 +461,9 @@ namespace aris
 			auto virtual prtAs()const->const double6& override;
 			auto updPrtVs()->void;
 			auto updPrtAs()->void;
-			auto prtIs() const->const double6x6&;
-			auto glbIs() const->const double6x6&;
-			auto updGlbIs()->void;
+			auto prtIm() const->const double6x6&;
+			auto glbIm() const->const double6x6&;
+			auto updGlbIm()->void;
 			auto glbFg() const->const double6&;
 			auto updGlbFg()->void;
 			auto glbFv() const->const double6&;
@@ -576,12 +577,9 @@ namespace aris
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual dim() const ->Size override { return 1; }
-
-			
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
-			
 			auto virtual prtCmPtrI() const->const double* override { return *prtCmI(); }
 			auto virtual prtCmPtrJ() const->const double* override { return *prtCmJ(); }
 			auto virtual glbCmPtrI() const->const double* override { return *glbCmI(); }
@@ -590,20 +588,22 @@ namespace aris
 			auto virtual cfPtr() const->const double* override { return cf(); }
 			auto virtual updCa()->void override;
 			auto virtual updCe()->void override;
+			auto clbID()const->Size;
+			auto clbFrcID()const->Size;
 			auto axis()const->Size;
 			auto mp() const->double;
 			auto updMp()->void;
-			auto setMp(double mot_pos)->void;
+			auto setMp(double mp)->void;
 			auto mv() const->double;
 			auto updMv()->void;
-			auto setMv(double mot_vel)->void;
+			auto setMv(double mv)->void;
 			auto ma() const->double;
 			auto updMa()->void;
-			auto setMa(double mot_acc)->void;
+			auto setMa(double ma)->void;
 			auto mf() const->double;
-			auto setMf(double mot_fce)->void;
+			auto setMf(double mf)->void;
 			auto mfDyn() const->double;
-			auto setMfDyn(double mot_dyn_fce)->void;
+			auto setMfDyn(double mf_dyn)->void;
 			auto mfFrc() const->double;
 			auto frcCoe() const ->const double3&;
 			auto setFrcCoe(const double *frc_coe)->void;
@@ -647,7 +647,7 @@ namespace aris
 			auto virtual caPtr() const->const double* override { return ca(); }
 			auto virtual cfPtr() const->const double* override { return cf(); }
 			auto mpm()const->const double4x4&;
-			auto updMp()->void;
+			auto updMpm()->void;
 			auto setMpe(const double* pe, const char *type = "313")->void;
 			auto setMpq(const double* pq)->void;
 			auto setMpm(const double* pm)->void;
@@ -655,7 +655,7 @@ namespace aris
 			auto getMpq(double* pq)const->void;
 			auto getMpm(double* pm)const->void;
 			auto mvs()const->const double6&;
-			auto updMv()->void;
+			auto updMvs()->void;
 			auto setMve(const double* ve, const char *type = "313")->void;
 			auto setMvq(const double* vq)->void;
 			auto setMvm(const double* vm)->void;
@@ -667,7 +667,7 @@ namespace aris
 			auto getMva(double* va)const->void;
 			auto getMvs(double* vs)const->void;
 			auto mas()const->const double6&;
-			auto updMa()->void;
+			auto updMas()->void;
 			auto setMae(const double* ae, const char *type = "313")->void;
 			auto setMaq(const double* aq)->void;
 			auto setMam(const double* am)->void;
@@ -678,8 +678,8 @@ namespace aris
 			auto getMam(double* am)const->void;
 			auto getMaa(double* aa)const->void;
 			auto getMas(double* as)const->void;
-			auto mf() const->const double6&;
-			auto setMf(const double * mot_fce)->void;
+			auto mfs() const->const double6&;
+			auto setMfs(const double * mfs)->void;
 
 		protected:
 			virtual ~GeneralMotion();
@@ -803,6 +803,9 @@ namespace aris
 			auto pBlkSize()->BlockSize&;
 			auto cSize()->Size;
 			auto pSize()->Size;
+			auto mSizeClb()->Size;
+			auto pSizeClb()->Size;
+			auto frcSizeClb()->Size;
 			auto glbImBlk()->BlockData&;
 			auto glbCmBlk()->BlockData&;
 			auto glbPpBlk()->BlockData&;
@@ -835,23 +838,26 @@ namespace aris
 			auto cv()->double *;
 			auto ca()->double *;
 			auto cf()->double *;
+			auto clbA()->double *;
+			auto clbB()->double *;
+			auto clbX()->double *;
 
 			auto updGlbIm()->void;
 			auto updGlbCm()->void;
-			//auto updGlbPp()->void;
 			auto updGlbPv()->void;
 			auto updGlbPa()->void;
 			auto updGlbPf()->void;
 			auto updPrtIm()->void;
 			auto updPrtCm()->void;
-			//auto updPrtPp()->void;
 			auto updPrtPv()->void;
 			auto updPrtPa()->void;
 			auto updPrtPf()->void;
 			auto updCp()->void;
 			auto updCv()->void;
 			auto updCa()->void;
-			auto updCf()->void;
+			auto updClbA()->void;
+			auto updClbB()->void;
+			auto updClbX()->void;
 
 			auto updConstraintF()->void;
 			auto updPartGlbP()->void;
@@ -862,12 +868,12 @@ namespace aris
 			auto updPartPrtA()->void;
 			
 
-			auto virtual kinPos(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
-			auto virtual kinVel()->void;
-			auto virtual kinAcc()->void;
-			auto virtual dynFce()->void;
+			auto virtual kinPosInGlb(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
+			auto virtual kinVelInGlb()->void;
+			auto virtual kinAccInGlb()->void;
+			auto virtual dynFceInGlb()->void;
 
-			//auto virtual kinPosInPrt(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
+			auto virtual kinPosInPrt(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
 			auto virtual kinVelInPrt()->void;
 			auto virtual kinAccInPrt()->void;
 			auto virtual dynFceInPrt()->void;

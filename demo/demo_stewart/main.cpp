@@ -410,10 +410,10 @@ int main()
 			double pin2[6]{ 2.1 , 1.98 , 2.05 , 2.13 , 1.86 , 1.88 };
 
 			for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin1[i]);
-			auto ret1 = rbt.kinPos(100);
+			auto ret1 = rbt.kinPosInGlb(100);
 
 			for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin2[i]);
-			auto ret2 = rbt.kinPos(100);
+			auto ret2 = rbt.kinPosInGlb(100);
 		}) << std::endl;
 	}
 	catch (std::exception&e)

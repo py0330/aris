@@ -47,6 +47,9 @@ namespace aris
 	/// xa  :  3x1 角加速度(alpha, acceleration of angle)\n
 	/// aa  :  6x1 线加速度与角加速度(acceleration and alpha)\n
 	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
+
+	/// i3  :  3x3 惯量矩阵
+	/// im  :  6x6 空间惯量矩阵
 	namespace dynamic
 	{
 		auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
@@ -845,9 +848,9 @@ namespace aris
 
 		auto s_pq2pe(const double *pq_in, double *pe_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
 		auto s_pe2pq(const double *pe_in, double *pq_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-		auto s_iv2is(const double *iv_in, double *is_out = nullptr) noexcept->double *;
-		auto s_is2iv(const double *is_in, double *iv_out = nullptr) noexcept->double *;
-		auto s_im2is(const double mass_in, const double * in_in, const double *pm_in, double *is_out = nullptr) noexcept->double *;
+		auto s_iv2im(const double *iv_in, double *im_out = nullptr) noexcept->double *;
+		auto s_im2iv(const double *im_in, double *iv_out = nullptr) noexcept->double *;
+		auto s_i32im(const double mass_in, const double * in_in, const double *pm_in, double *is_out = nullptr) noexcept->double *;
 
 		// 以下函数为同一物理量在不同坐标系之间的转换函数 //
 		auto s_pp2pp(const double *relative_pm, const double *from_pp, double *to_pp) noexcept->double *;
@@ -929,8 +932,8 @@ namespace aris
 
 		auto s_fs2fs(const double *relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
 		auto s_inv_fs2fs(const double *inv_relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
-		auto s_is2is(const double *relative_pm, const double *from_is, double *to_is) noexcept->double *;
-		auto s_inv_is2is(const double *inv_relative_pm, const double *from_is, double *to_is) noexcept->double *;
+		auto s_im2im(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *;
+		auto s_inv_im2im(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *;
 		
 		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		///

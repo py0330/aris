@@ -49,9 +49,9 @@ namespace aris
 		auto inline default_as()->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
 
 		auto inline default_fs()->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
-		auto inline default_is()->const double* { static const double value[36]{ 0 }; return value; }
+		auto inline default_im()->const double* { static const double value[36]{ 0 }; return value; }
 		auto inline default_iv()->const double* { static const double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
-		auto inline default_in()->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
+		auto inline default_i3()->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
 
 		auto inline default_out()->double* { static double value[36]{ 0,0,0 }; return value; }
 
@@ -1897,70 +1897,70 @@ namespace aris
 
 			return pq_out;
 		}
-		auto s_iv2is(const double * iv_in, double *is_out) noexcept->double *
+		auto s_iv2im(const double * iv_in, double *im_out) noexcept->double *
 		{
 			// 补充默认参数 //
 			iv_in = iv_in ? iv_in : default_iv();
-			is_out = is_out ? is_out : default_out();
+			im_out = im_out ? im_out : default_out();
 
 			// 正式开始计算 //
 
-			std::fill_n(is_out, 36, 0);
+			std::fill(im_out, im_out + 36, 0);
 
-			is_out[0] = iv_in[0];
-			is_out[7] = iv_in[0];
-			is_out[14] = iv_in[0];
+			im_out[0] = iv_in[0];
+			im_out[7] = iv_in[0];
+			im_out[14] = iv_in[0];
 
-			is_out[4] = iv_in[3];
-			is_out[5] = -iv_in[2];
-			is_out[9] = -iv_in[3];
-			is_out[11] = iv_in[1];
-			is_out[15] = iv_in[2];
-			is_out[16] = -iv_in[1];
+			im_out[4] = iv_in[3];
+			im_out[5] = -iv_in[2];
+			im_out[9] = -iv_in[3];
+			im_out[11] = iv_in[1];
+			im_out[15] = iv_in[2];
+			im_out[16] = -iv_in[1];
 
-			is_out[19] = -iv_in[3];
-			is_out[20] = iv_in[2];
-			is_out[24] = iv_in[3];
-			is_out[26] = -iv_in[1];
-			is_out[30] = -iv_in[2];
-			is_out[31] = iv_in[1];
+			im_out[19] = -iv_in[3];
+			im_out[20] = iv_in[2];
+			im_out[24] = iv_in[3];
+			im_out[26] = -iv_in[1];
+			im_out[30] = -iv_in[2];
+			im_out[31] = iv_in[1];
 
-			is_out[21] = iv_in[4];
-			is_out[22] = iv_in[7];
-			is_out[23] = iv_in[8];
-			is_out[27] = iv_in[7];
-			is_out[28] = iv_in[5];
-			is_out[29] = iv_in[9];
-			is_out[33] = iv_in[8];
-			is_out[34] = iv_in[9];
-			is_out[35] = iv_in[6];
+			im_out[21] = iv_in[4];
+			im_out[22] = iv_in[7];
+			im_out[23] = iv_in[8];
+			im_out[27] = iv_in[7];
+			im_out[28] = iv_in[5];
+			im_out[29] = iv_in[9];
+			im_out[33] = iv_in[8];
+			im_out[34] = iv_in[9];
+			im_out[35] = iv_in[6];
 
-			return is_out;
+			return im_out;
 		}
-		auto s_is2iv(const double * is_in, double *iv_out) noexcept->double *
+		auto s_im2iv(const double * im_in, double *iv_out) noexcept->double *
 		{
 			// 补充默认参数 //
-			is_in = is_in ? is_in : default_is();
+			im_in = im_in ? im_in : default_im();
 			iv_out = iv_out ? iv_out : default_out();
 
 			// 正式开始计算 //
-			iv_out[0] = is_in[0];
-			iv_out[1] = is_in[11];
-			iv_out[2] = is_in[15];
-			iv_out[3] = is_in[4];
-			iv_out[4] = is_in[21];
-			iv_out[5] = is_in[28];
-			iv_out[6] = is_in[35];
-			iv_out[7] = is_in[22];
-			iv_out[8] = is_in[23];
-			iv_out[9] = is_in[29];
+			iv_out[0] = im_in[0];
+			iv_out[1] = im_in[11];
+			iv_out[2] = im_in[15];
+			iv_out[3] = im_in[4];
+			iv_out[4] = im_in[21];
+			iv_out[5] = im_in[28];
+			iv_out[6] = im_in[35];
+			iv_out[7] = im_in[22];
+			iv_out[8] = im_in[23];
+			iv_out[9] = im_in[29];
 
 			return iv_out;
 		}
-		auto s_im2is(const double mass_in, const double * in_in, const double *pm_in, double *is_out) noexcept->double *
+		auto s_i32im(const double mass_in, const double * i3_in, const double *pm_in, double *is_out) noexcept->double *
 		{
 			// 补充默认参数 //
-			in_in = in_in ? in_in : default_in();
+			i3_in = i3_in ? i3_in : default_i3();
 			pm_in = pm_in ? pm_in : default_pm();
 			is_out = is_out ? is_out : default_out();
 
@@ -1971,16 +1971,16 @@ namespace aris
 			is_out[7] = mass_in;
 			is_out[14] = mass_in;
 
-			is_out[21] = in_in[0];
-			is_out[22] = in_in[1];
-			is_out[23] = in_in[2];
-			is_out[27] = in_in[3];
-			is_out[28] = in_in[4];
-			is_out[29] = in_in[5];
-			is_out[33] = in_in[6];
-			is_out[34] = in_in[7];
-			is_out[35] = in_in[8];
-
+			is_out[21] = i3_in[0];
+			is_out[22] = i3_in[1];
+			is_out[23] = i3_in[2];
+			is_out[27] = i3_in[3];
+			is_out[28] = i3_in[4];
+			is_out[29] = i3_in[5];
+			is_out[33] = i3_in[6];
+			is_out[34] = i3_in[7];
+			is_out[35] = i3_in[8];
+			
 			s_tmf(pm_in, *tmf);
 			s_mm(6, 6, 6, *tmf, 6, is_out, 6, *tem, 6);
 			s_mm(6, 6, 6, *tem, 6, *tmf, 6, is_out, 6);
@@ -3145,38 +3145,38 @@ namespace aris
 
 			return to_fs;
 		}
-		auto s_is2is(const double *relative_pm, const double *from_is, double *to_is) noexcept->double *
+		auto s_im2im(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *
 		{
 			// 补充默认参数 //
 			relative_pm = relative_pm ? relative_pm : default_pm();
-			from_is = from_is ? from_is : default_is();
-			to_is = to_is ? to_is : default_out();
+			from_im = from_im ? from_im : default_im();
+			to_im = to_im ? to_im : default_out();
 
 			/*以下为慢速但准确的算法*/
-			std::fill_n(to_is, 36, 0);
+			std::fill(to_im, to_im + 36, 0);
 			double tem[6][6], tmf[6][6];
 			s_tmf(relative_pm, *tmf);
-			s_mm(6, 6, 6, *tmf, 6, from_is, 6, *tem, 6);
-			s_mm(6, 6, 6, *tem, 6, *tmf, ColMajor{ 6 }, to_is, 6);
+			s_mm(6, 6, 6, *tmf, 6, from_im, 6, *tem, 6);
+			s_mm(6, 6, 6, *tem, 6, *tmf, ColMajor{ 6 }, to_im, 6);
 
-			return to_is;
+			return to_im;
 		}
-		auto s_inv_is2is(const double *inv_relative_pm, const double *from_is, double *to_is) noexcept->double *
+		auto s_inv_im2im(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *
 		{
 			// 补充默认参数 //
 			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
-			from_is = from_is ? from_is : default_is();
-			to_is = to_is ? to_is : default_out();
+			from_im = from_im ? from_im : default_im();
+			to_im = to_im ? to_im : default_out();
 
 			// 以下为慢速但准确的算法 //
-			std::fill_n(to_is, 36, 0);
+			std::fill_n(to_im, 36, 0);
 			double tem[6][6], tmf[6][6], pm[4][4];
 			s_inv_pm(inv_relative_pm, *pm);
 			s_tmf(*pm, *tmf);
-			s_mm(6, 6, 6, *tmf, 6, from_is, 6, *tem, 6);
-			s_mm(6, 6, 6, *tem, 6, *tmf, ColMajor{ 6 }, to_is, 6);
+			s_mm(6, 6, 6, *tmf, 6, from_im, 6, *tem, 6);
+			s_mm(6, 6, 6, *tem, 6, *tmf, ColMajor{ 6 }, to_im, 6);
 
-			return to_is;
+			return to_im;
 		}
 
 		auto s_sov_pnts2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order) noexcept->void

@@ -352,34 +352,9 @@ private:
 };
 
 
-void test_model_stewart()
+void test_kinematic_stewart()
 {
 	const double error = 1e-10;
-	
-	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
-	
-	try 
-	{
-		//Robot rbt;
-
-		//rbt.loadString(xml_file);
-		//double pee[6]{ 0,1.5,1.2,0,0.1,0 };
-		//double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-		//rbt.setVee(vee, pee);
-
-		//rbt.motionAtAbs(0).setMp(rbt.motionAtAbs(0).mp() + 0.1);
-		//rbt.motionAtAbs(1).setMp(rbt.motionAtAbs(1).mp() + 0.085);
-
-		//rbt.allocateMemory();
-		//auto ret = rbt.kinPos();
-		//std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
-
-		//rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
-	}
-	catch (std::exception&e)
-	{
-		std::cout << e.what() << std::endl;
-	}
 	
 	try
 	{
@@ -389,24 +364,28 @@ void test_model_stewart()
 		const double input_origin_p[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
 		const double input_origin_v[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double input_origin_a[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_mf[6]{ -13.3849595750926, - 13.3927097990384, - 13.3901587863615, - 13.3901587863617, - 13.3927097990384, - 13.3849595750926 };
 		const double output_origin_pm[16]{ 1,0,0,0,
 			0, 0.999999999751072,2.2312668404904e-05,1.7078344386197,
 			0, -2.23126684049141e-05,0.999999999751072,0.577658198650165,
 			0,0,0,1 };
 		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_mfs[6]{ 5.96877625518755e-14, -68.5999999829237, -0.00153064905217093, -0.0195999999954068,   2.09622926874175e-15, -1.42897385990919e-14 };
 
 		const double input_p[6]{ 2.15,2.03,1.98,1.68,2.22,2.01 };
 		const double input_v[6]{ 0.687,1.521,-0.325,0.665,1.225,-0.999 };
 		const double input_a[6]{ 1.687,0.521,-1.325,1.665,0.225,-1.999 };
+		const double input_mf[6]{ -54.3666620596338, - 25.0817857667786, - 18.1840142074996,   36.630055076576, - 65.6950872736471,   75.5093067608351 };
 		const double output_pm[16]{ 0.654617242227831, - 0.16813527373803,0.737025641279234,0.0674004103296998,
 			0.286892301165042,0.957269694021347, - 0.0364354283699648,1.66351811346172,
 			- 0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
 			0,0,0,1 };
 		const double output_va[6]{ -1.67602445813444,0.322144550146041,1.43386389933679, - 4.13258637478856,0.229701802785213,2.06026880988191 };
 		const double output_aa[6]{ -3.99625983193204, - 4.52459258496676,3.82662285536541, - 4.70386456087171,10.2271223856012,12.7760010719168 };
+		const double output_mfs[6]{ 43.6438945057721, - 43.4082817089241,   0.842045165182085,   11.2174553475889, - 25.1497728624644, - 4.77548370421841 };
 
-		double result1[16], result2[16], result3[16];
+		double result1[16], result2[16], result3[16], result4[16];
 
 		Model m;
 		m.loadXml(xml_doc);
@@ -418,12 +397,19 @@ void test_model_stewart()
 		m.generalMotionPool().at(0).activate(true);
 		m.allocateMemory();
 
+		// in glb //
 		m.generalMotionPool().at(0).setMpm(output_origin_pm);
 		m.generalMotionPool().at(0).setMva(output_origin_va);
 		m.generalMotionPool().at(0).setMaa(output_origin_aa);
-		ret = m.kinPos(100, 1e-12);
-		m.kinVel();
-		m.kinAcc();
+		
+		m.allocateMemory();
+		ret = m.kinPosInGlb(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
 		for (aris::Size i = 0; i < 6; ++i)
 		{
 			m.motionAtAbs(i).updMp();
@@ -434,17 +420,22 @@ void test_model_stewart()
 			result3[i] = m.motionAtAbs(i).ma();
 		}
 
-		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_origin_p, error))std::cout << "model::kinPos() stewart failed" << std::endl;
-		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "model::kinVel() stewart failed" << std::endl;
-		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "model::kinAcc() stewart failed" << std::endl;
-
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_origin_p, error))std::cout << "model::kinPos() stewart inverse origin failed" << std::endl;
+		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "model::kinVel() stewart inverse origin failed" << std::endl;
+		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "model::kinAcc() stewart inverse origin failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, 1e-9))std::cout << "model::dynFce() inverse stewart origin failed" << std::endl;
 
 		m.generalMotionPool().at(0).setMpm(output_pm);
 		m.generalMotionPool().at(0).setMva(output_va);
 		m.generalMotionPool().at(0).setMaa(output_aa);
-		ret = m.kinPos(100, 1e-12);
-		m.kinVel();
-		m.kinAcc();
+		m.allocateMemory();
+		ret = m.kinPosInGlb(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
 		for (aris::Size i = 0; i < 6; ++i)
 		{
 			m.motionAtAbs(i).updMp();
@@ -455,35 +446,97 @@ void test_model_stewart()
 			result3[i] = m.motionAtAbs(i).ma();
 		}
 
-		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPos() stewart failed" << std::endl;
-		if (!s_is_equal(6, result2, input_v, 1e-9))std::cout << "model::kinVel() stewart failed" << std::endl;
-		if (!s_is_equal(6, result3, input_a, 1e-7))std::cout << "model::kinAcc() stewart failed" << std::endl;
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPos() stewart inverse failed" << std::endl;
+		if (!s_is_equal(6, result2, input_v, error))std::cout << "model::kinVel() stewart inverse failed" << std::endl;
+		if (!s_is_equal(6, result3, input_a, error))std::cout << "model::kinAcc() stewart inverse failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, 1e-9))std::cout << "model::dynFce() stewart inverse failed" << std::endl;
 
+		// in prt //
+		m.generalMotionPool().at(0).setMpm(output_origin_pm);
+		m.generalMotionPool().at(0).setMva(output_origin_va);
+		m.generalMotionPool().at(0).setMaa(output_origin_aa);
+
+		m.allocateMemory();
+		ret = m.kinPosInPrt(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_origin_p, error))std::cout << "model::kinPosInPrt() stewart inverse origin failed" << std::endl;
+		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "model::kinVelInPrt() stewart inverse origin failed" << std::endl;
+		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "model::kinAccInPrt() stewart inverse origin failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, 1e-9))std::cout << "model::dynFceInPrt() stewart inverse origin failed" << std::endl;
+
+		m.generalMotionPool().at(0).setMpm(output_pm);
+		m.generalMotionPool().at(0).setMva(output_va);
+		m.generalMotionPool().at(0).setMaa(output_aa);
+		m.allocateMemory();
+		ret = m.kinPosInPrt(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPosInPrt() stewart inverse failed" << std::endl;
+		if (!s_is_equal(6, result2, input_v, error))std::cout << "model::kinVelInPrt() stewart inverse failed" << std::endl;
+		if (!s_is_equal(6, result3, input_a, error))std::cout << "model::kinAccInPrt() stewart inverse failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, 1e-9))std::cout << "model::dynFceInPrt() stewart inverse failed" << std::endl;
 
 		// test forward kinematic //
 		for (auto &mot : m.motionPool())mot.activate(true);
 		m.generalMotionPool().at(0).activate(false);
 		m.allocateMemory();
 
+		// in glb //
 		for (aris::Size i = 0; i < 6; ++i)
 		{
 			m.motionAtAbs(i).setMp(input_origin_p[i]);
 			m.motionAtAbs(i).setMv(input_origin_v[i]);
 			m.motionAtAbs(i).setMa(input_origin_a[i]);
 		}
-		ret = m.kinPos(100, 1e-12);
-		m.kinVel();
-		m.kinAcc();
-		m.generalMotionPool().at(0).updMp();
+		ret = m.kinPosInGlb(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
+		m.allocateMemory();
+		m.generalMotionPool().at(0).updMpm();
 		m.generalMotionPool().at(0).getMpm(result1);
-		m.generalMotionPool().at(0).updMv();
+		m.generalMotionPool().at(0).updMvs();
 		m.generalMotionPool().at(0).getMva(result2);
-		m.generalMotionPool().at(0).updMa();
+		m.generalMotionPool().at(0).updMas();
 		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
 
-		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "model::kinPos() stewart failed" << std::endl;
-		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "model::kinVel() stewart failed" << std::endl;
-		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "model::kinAcc() stewart failed" << std::endl;
+		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "model::kinPos() stewart forward origin failed" << std::endl;
+		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "model::kinVel() stewart forward origin failed" << std::endl;
+		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "model::kinAcc() stewart forward origin failed" << std::endl;
+		if (!s_is_equal(6, result4, input_origin_mf, 1e-9))std::cout << "model::dynFce() stewart forward origin failed" << std::endl;
 
 		for (aris::Size i = 0; i < 6; ++i)
 		{
@@ -491,19 +544,81 @@ void test_model_stewart()
 			m.motionAtAbs(i).setMv(input_v[i]);
 			m.motionAtAbs(i).setMa(input_a[i]);
 		}
-		ret = m.kinPos(100, 1e-15);
-		m.kinVel();
-		m.kinAcc();
-		m.generalMotionPool().at(0).updMp();
+		ret = m.kinPosInGlb(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInGlb();
+		m.allocateMemory();
+		m.kinAccInGlb();
+		m.allocateMemory();
+		m.dynFceInGlb();
+		m.allocateMemory();
+		m.generalMotionPool().at(0).updMpm();
 		m.generalMotionPool().at(0).getMpm(result1);
-		m.generalMotionPool().at(0).updMv();
+		m.generalMotionPool().at(0).updMvs();
 		m.generalMotionPool().at(0).getMva(result2);
-		m.generalMotionPool().at(0).updMa();
+		m.generalMotionPool().at(0).updMas();
 		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
 
-		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_pm, error))std::cout << "model::kinPos() stewart failed" << std::endl;
-		if (!s_is_equal(6, result2, output_va, error))std::cout << "model::kinVel() stewart failed" << std::endl;
-		if (!s_is_equal(6, result3, output_aa, error))std::cout << "model::kinAcc() stewart failed" << std::endl;
+		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_pm, error))std::cout << "model::kinPos() stewart forward failed" << std::endl;
+		if (!s_is_equal(6, result2, output_va, error))std::cout << "model::kinVel() stewart forward failed" << std::endl;
+		if (!s_is_equal(6, result3, output_aa, error))std::cout << "model::kinAcc() stewart forward failed" << std::endl;
+		if (!s_is_equal(6, result4, input_mf, 1e-9))std::cout << "model::dynFce() stewart forward failed" << std::endl;
+
+		// in prt //
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_origin_p[i]);
+			m.motionAtAbs(i).setMv(input_origin_v[i]);
+			m.motionAtAbs(i).setMa(input_origin_a[i]);
+		}
+		ret = m.kinPosInPrt(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+		m.allocateMemory();
+		m.generalMotionPool().at(0).updMpm();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMvs();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMas();
+		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "model::kinPos() stewart forward origin failed" << std::endl;
+		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "model::kinVel() stewart forward origin failed" << std::endl;
+		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "model::kinAcc() stewart forward origin failed" << std::endl;
+		if (!s_is_equal(6, result4, input_origin_mf, 1e-9))std::cout << "model::dynFce() stewart forward origin failed" << std::endl;
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_p[i]);
+			m.motionAtAbs(i).setMv(input_v[i]);
+			m.motionAtAbs(i).setMa(input_a[i]);
+		}
+		ret = m.kinPosInPrt(100, 1e-14);
+		m.allocateMemory();
+		m.kinVelInPrt();
+		m.allocateMemory();
+		m.kinAccInPrt();
+		m.allocateMemory();
+		m.dynFceInPrt();
+		m.allocateMemory();
+		m.generalMotionPool().at(0).updMpm();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMvs();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMas();
+		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+
+		if (std::get<0>(ret) == 100 || !s_is_equal(16, result1, output_pm, error))std::cout << "model::kinPos() stewart forward failed" << std::endl;
+		if (!s_is_equal(6, result2, output_va, error))std::cout << "model::kinVel() stewart forward failed" << std::endl;
+		if (!s_is_equal(6, result3, output_aa, error))std::cout << "model::kinAcc() stewart forward failed" << std::endl;
+		if (!s_is_equal(6, result4, input_mf, 1e-9))std::cout << "model::dynFce() stewart forward failed" << std::endl;
 
 		// benchmark //
 		auto bench = aris::core::benchmark(100, [&]()
@@ -513,7 +628,7 @@ void test_model_stewart()
 			if (count % 2)for (int i{ 0 }; i < 6; ++i) m.motionAtAbs(i).setMp(input_p[i]);
 			else for (int i{ 0 }; i < 6; ++i) m.motionAtAbs(i).setMp(input_origin_p[i]);
 
-			auto ret = m.kinPos(100);
+			auto ret = m.kinPosInGlb(100);
 			if (count++<2)std::cout << "benchmark computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 		});
 
@@ -523,108 +638,12 @@ void test_model_stewart()
 	{
 		std::cout << e.what() << std::endl;
 	}
+}
 
-
-
-	/*
-	try 
-	{
-		Robot rbt;
-
-		rbt.loadString(xml_file);
-		double pee[6]{ 0,1.5,1.2,0,0.1,0 };
-		double vee[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-		rbt.setVee(vee, pee);
-	
-		//std::cout << "benchmark Robot::setVee:" << aris::core::benchmark(100000, [&rbt, &pee, &vee]() {rbt.setVee(vee, pee); }) << std::endl;
-
-		aris::dynamic::PlanFunc plan = [&pee, &vee](Model &model, const PlanParamBase &param)->int
-		{
-			auto &rbt = static_cast<Robot&>(model);
-
-			double pee_local[6], vee_local[6]{0,0.1,0,0,0,0};
-			std::copy(pee, pee + 6, pee_local);
-			pee_local[1] += param.count_ * 0.0001;
-			rbt.setVee(vee_local, pee_local);
-
-			return 5000 - param.count_;
-		};
-		rbt.saveDynEle("before");
-		rbt.simKin(plan, aris::dynamic::PlanParamBase());
-		rbt.loadDynEle("before");
-
-		rbt.saveAdams("C:\\Users\\py033\\Desktop\\stewart.cmd");
-
-		std::ofstream file;
-		file.open("C:\\Users\\py033\\Desktop\\motion.txt");
-
-		for (auto &mot : rbt.motionPool())
-		{
-			file<<std::setprecision(15) << mot.mv() <<"*time+"<<mot.mp() << std::endl;
-		}
-		file.close();
-
-		
-		rbt.dynPre();
-		Eigen::internal::set_is_malloc_allowed(true);
-		Eigen::PartialPivLU<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > solver(rbt.dynDim());
-		//Eigen::internal::set_is_malloc_allowed(false);
-		rbt.dynSetSolveMethod([&solver](int n, const double *D, const double *b, double *x)
-		{
-			Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >Dm(D, n, n);
-			Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1> >bm(b, n);
-			Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1> >xm(x, n);
-			xm = Dm.partialPivLu().solve(bm);
-		});
-		
-		//rbt.dynPrt();
-
-		//std::vector<double> D(rbt.dynDim() * rbt.dynDim(), 0);
-		//std::vector<double> b(rbt.dynDim(), 0);
-		//std::vector<double> x(rbt.dynDim(), 0);
-		//rbt.dynPrtUpd();
-		//rbt.dynPrtMtx(D.data(), b.data());
-		//rbt.dynSov(D.data(), b.data(), x.data());
-		//rbt.dynPrtEnd(x.data());
-
-
-		//rbt.dynGlbUpd();
-		//std::vector<double> im(rbt.dynDimM() * rbt.dynDimM(), 0);
-		//std::vector<double> cmT(rbt.dynDimN() * rbt.dynDimM(), 0);
-		//std::vector<double> as(rbt.dynDimM(), 0);
-		//std::vector<double> ca(rbt.dynDimN(), 0);
-		//std::vector<double> r(rbt.dynDimN(), 0);
-		//rbt.dynGlbIs(im.data());
-		//rbt.dynCa(ca.data());
-		//rbt.dynGlbAs(as.data());
-		//rbt.dynGlbCmT(cmT.data());
-
-		//s_mm(rbt.dynDimN(), 1, rbt.dynDimM(), cmT.data(), as.data(), r.data());
-		//
-		//dlmwrite("C:\\Users\\py033\\Desktop\\im.txt", im.data(), rbt.dynDimM(), rbt.dynDimM());
-		//dlmwrite("C:\\Users\\py033\\Desktop\\cmT.txt", cmT.data(), rbt.dynDimN(), rbt.dynDimM());
-		//dlmwrite("C:\\Users\\py033\\Desktop\\r.txt", r.data(), rbt.dynDimN(), 1);
-		//dlmwrite("C:\\Users\\py033\\Desktop\\ca.txt", ca.data(), rbt.dynDimN(), 1);
-
-		//if (!s_is_equal(rbt.dynDimN(), r.data(), ca.data(), 1e-10))	std::cout << "not equal" << std::endl;
-
-		rbt.dynGlb();
-
-		rbt.dynPrtSov();
-		//1.93e-5, 3.61 for linux
-		//std::cout << "benchmark Robot::dynUpd():" << aris::core::benchmark(100000, [&rbt]() {rbt.dynUpd(); }) << std::endl;
-		//std::cout << "benchmark Robot::dynMtx():" << aris::core::benchmark(1000000, [&rbt, &D, &b]() {rbt.dynMtx(D.data(), b.data(), true); }) << std::endl;
-		//std::cout << "benchmark Robot::dynSov():" << aris::core::benchmark(1000, [&rbt, &D, &b, &x]() {rbt.dynSov(D.data(), b.data(), x.data()); }) << std::endl;
-
-		//rbt.dyn();
-
-		for (auto &mot : rbt.motionPool())std::cout << mot.mf() << std::endl;
-	}
-	catch (std::exception&e)
-	{
-		std::cout << e.what() << std::endl;
-	}
-	*/
+void test_model_stewart()
+{
+	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
+	test_kinematic_stewart();
 	std::cout << "-----------------test model stewart finished------------" << std::endl << std::endl;
 }
 
