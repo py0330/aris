@@ -167,10 +167,10 @@ void test_kinematic_6R()
 			result3[i] = m.motionAtAbs(i).ma();
 		}
 
-		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPos() 6R failed" << std::endl;
-		if (!s_is_equal(6, result2, input_v, error))std::cout << "model::kinVel() 6R failed" << std::endl;
-		if (!s_is_equal(6, result3, input_a, error))std::cout << "model::kinAcc() 6R failed" << std::endl;
-		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << "model::dynFce() 6R failed" << std::endl;
+		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPosInGlb() 6R failed" << std::endl;
+		if (!s_is_equal(6, result2, input_v, error))std::cout << "model::kinVelInGlb() 6R failed" << std::endl;
+		if (!s_is_equal(6, result3, input_a, error))std::cout << "model::kinAccInGlb() 6R failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, 1e-9))std::cout << "model::dynFceInGlb() 6R failed" << std::endl;
 
 		// in prt //
 		m.generalMotionPool().at(0).setMpm(output_origin_pm);
@@ -196,7 +196,7 @@ void test_kinematic_6R()
 		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_origin_p, error))std::cout << "model::kinPosInPrt() 6R failed" << std::endl;
 		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "model::kinVelInPrt() 6R failed" << std::endl;
 		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "model::kinAccInPrt() 6R failed" << std::endl;
-		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, error))std::cout << "model::dynFceInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, 1e-9))std::cout << "model::dynFceInPrt() 6R failed" << std::endl;
 
 		m.generalMotionPool().at(0).setMpm(output_pm);
 		m.generalMotionPool().at(0).setMva(output_va);
@@ -221,7 +221,7 @@ void test_kinematic_6R()
 		if (std::get<0>(ret) == 100 || !s_is_equal(6, result1, input_p, error))std::cout << "model::kinPosInPrt() 6R failed" << std::endl;
 		if (!s_is_equal(6, result2, input_v, error))std::cout << "model::kinVelInPrt() 6R failed" << std::endl;
 		if (!s_is_equal(6, result3, input_a, error))std::cout << "model::kinAccInPrt() 6R failed" << std::endl;
-		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << "model::dynFceInPrt() 6R failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, 1e-9))std::cout << "model::dynFceInPrt() 6R failed" << std::endl;
 
 		// test forward kinematic //
 		for (auto &mot : m.motionPool())mot.activate(true);

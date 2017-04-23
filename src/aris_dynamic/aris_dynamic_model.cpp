@@ -2652,6 +2652,11 @@ namespace aris
 			BlockData glb_im_blk_, glb_cm_blk_, glb_pp_blk_, glb_pv_blk_, glb_pa_blk_, glb_pf_blk_;
 			BlockData prt_im_blk_, prt_cm_blk_, prt_pp_blk_, prt_pv_blk_, prt_pa_blk_, prt_pf_blk_;
 			
+			BlockSize r_blk_size_;
+			BlockData cpr_blk_, cvr_blk_, car_blk_, cfr_blk_;
+			BlockData glb_cmr_blk_;
+			BlockData cctr_blk_, ctcr_blk_;
+			BlockData cctr_llt_blk_, cctr_x_blk_, cctr_b_blk_, ctcr_llt_blk_, ctcr_x_blk_, ctcr_b_blk_;
 
 			std::vector<double> cct_, ctc_, cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
 			BlockData cct_blk_, ctc_blk_;
@@ -2889,89 +2894,112 @@ namespace aris
 			for (auto &mot : motionPool())if (mot.active()) imp_->active_constraint_pool_.push_back_ptr(&mot);
 			for (auto &gmt : generalMotionPool())if (gmt.active())imp_->active_constraint_pool_.push_back_ptr(&gmt);
 
-			//// adjust order //
-			//std::vector<Part*> pp;
-			//for (auto &prt : partPool())if (prt.active())pp.push_back(&prt);
-			//std::vector<Relation> rp;
-			//for (auto &c : activeConstraintPool())
-			//{
-			//	auto ret = std::find_if(rp.begin(), rp.end(), [&c](Relation &relation) 
-			//	{
-			//		const auto ri{ relation.prtI }, rj{ relation.prtJ }, ci{ &c.makI().fatherPart() }, cj{ &c.makJ().fatherPart() };
-			//		return ((ri == ci) && (rj == cj)) || ((ri == cj) && (rj == ci));
-			//	});
+			// adjust order //
+			std::vector<Part*> pp;
+			for (auto &prt : partPool())if (prt.active())pp.push_back(&prt);
+			std::vector<Relation> rp;
+			for (auto &c : activeConstraintPool())
+			{
+				auto ret = std::find_if(rp.begin(), rp.end(), [&c](Relation &relation) 
+				{
+					const auto ri{ relation.prtI }, rj{ relation.prtJ }, ci{ &c.makI().fatherPart() }, cj{ &c.makJ().fatherPart() };
+					return ((ri == ci) && (rj == cj)) || ((ri == cj) && (rj == ci));
+				});
 
-			//	if (ret == rp.end()) rp.push_back( Relation{ &c.makI().fatherPart(), &c.makJ().fatherPart(), c.dim() });
-			//	else ret->dim += c.dim();
-			//}
+				if (ret == rp.end()) rp.push_back( Relation{ &c.makI().fatherPart(), &c.makJ().fatherPart(), c.dim() });
+				else ret->dim += c.dim();
+			}
+			for (Size i = 0; i < std::min(pp.size(), rp.size()); ++i)
+			{
+				// 先插入part
+				std::sort(pp.begin() + i, pp.end(), [&rp, i, this](Part* a, Part* b)
+				{
+					if (a == &ground()) return true;
+					if (b == &ground()) return false;
+					if (i == 0)return a->id() < b->id();
+					if (b == rp[i - 1].prtI) return false;
+					if (b == rp[i - 1].prtJ) return false;
+					if (a == rp[i - 1].prtI) return true;
+					if (a == rp[i - 1].prtJ) return true;
+					return a->id() < b->id();
+				});
+				//std::cout << (*(pp.begin() + i))->name() << std::endl;
+				//std::cout << std::endl;
+				// 再插入joint
+				std::sort(rp.begin() + i, rp.end(), [&pp, i, this](Relation a, Relation b)
+				{
+					auto pend = pp.begin() + i + 1;
+					auto a_part_i = std::find_if(pp.begin(), pend, [a](Part* p)->bool { return p == a.prtI; });
+					auto a_part_j = std::find_if(pp.begin(), pend, [a](Part* p)->bool { return p == a.prtJ; });
+					auto b_part_i = std::find_if(pp.begin(), pend, [b](Part* p)->bool { return p == b.prtI; });
+					auto b_part_j = std::find_if(pp.begin(), pend, [b](Part* p)->bool { return p == b.prtJ; });
 
-			//for (Size i = 0; i < std::min(pp.size(), rp.size()); ++i)
-			//{
-			//	// 先插入part
-			//	std::sort(pp.begin() + i, pp.end(), [&rp, i, this](Part* a, Part* b)
-			//	{
-			//		if (a == &ground()) return true;
-			//		if (b == &ground()) return false;
-			//		if (i == 0)return a->id() < b->id();
-			//		if (b == rp[i - 1].prtI) return false;
-			//		if (b == rp[i - 1].prtJ) return false;
-			//		if (a == rp[i - 1].prtI) return true;
-			//		if (a == rp[i - 1].prtJ) return true;
-			//		return a->id() < b->id();
-			//	});
-			//	std::cout << (*(pp.begin() + i))->name() << std::endl;
-			//	std::cout << std::endl;
-			//	// 再插入joint
-			//	std::sort(rp.begin() + i, rp.end(), [&pp, i, this](Relation a, Relation b)
-			//	{
-			//		auto pend = pp.begin() + i + 1;
-			//		auto a_part_i = std::find_if(pp.begin(), pend, [a](Part* p)->bool { return p == a.prtI; });
-			//		auto a_part_j = std::find_if(pp.begin(), pend, [a](Part* p)->bool { return p == a.prtJ; });
-			//		auto b_part_i = std::find_if(pp.begin(), pend, [b](Part* p)->bool { return p == b.prtI; });
-			//		auto b_part_j = std::find_if(pp.begin(), pend, [b](Part* p)->bool { return p == b.prtJ; });
+					bool a_is_ok = (a_part_i == pend) != (a_part_j == pend);
+					bool b_is_ok = (b_part_i == pend) != (b_part_j == pend);
 
-			//		bool a_is_ok = (a_part_i == pend) != (a_part_j == pend);
-			//		bool b_is_ok = (b_part_i == pend) != (b_part_j == pend);
+					if (a_is_ok && !b_is_ok) return true;
+					else if (!a_is_ok && b_is_ok) return false;
+					else if (a.dim != b.dim)return a.dim > b.dim;
+					else return false;
+				});
 
-			//		if (a_is_ok && !b_is_ok) return true;
-			//		else if (!a_is_ok && b_is_ok) return false;
-			//		else if (a.dim != b.dim)return a.dim > b.dim;
-			//		else return false;
-			//	});
-
-			//	
-			//	std::cout << rp[i].prtI->name() << "--" << rp[i].prtJ->name()<<":"<<rp[i].dim << std::endl;
-			//}
-
-
-			//std::sort(pp.begin(), pp.end());
-			//for (Size i{ 0 }; i < activePartPool().size(); ++i)
-			//{
-
-			//}
-
-
+				//std::cout << rp[i].prtI->name() << "--" << rp[i].prtJ->name()<<":"<<rp[i].dim << std::endl;
+			}
 
 			// compute memory size //
 			imp_->p_size_ = 0;
 			imp_->c_size_ = 6;
 			imp_->p_blk_size_.resize(0);
 			imp_->c_blk_size_.resize(1, 6);
-			
-			for (auto &prt : activePartPool())
+			imp_->r_blk_size_.resize(1, 6);
+
+			for (auto prt : pp)
 			{
-				prt.Part::imp_->row_id_ = imp_->p_size_;
-				prt.Part::imp_->blk_row_id_ = imp_->p_blk_size_.size();
+				prt->Part::imp_->row_id_ = imp_->p_size_;
+				prt->Part::imp_->blk_row_id_ = imp_->p_blk_size_.size();
 				imp_->p_size_ += 6;
 				imp_->p_blk_size_.push_back(6);
 			}
-			for (auto &cst : activeConstraintPool())
+			for (auto rel : rp)
 			{
-				cst.Constraint::imp_->col_id_ = imp_->c_size_;
-				cst.Constraint::imp_->blk_col_id_ = imp_->c_blk_size_.size();
-				imp_->c_size_ += cst.dim();
-				imp_->c_blk_size_.push_back(cst.dim());
+				for (auto &cst : activeConstraintPool())
+				{
+					if (((rel.prtI == &cst.makI().fatherPart()) && (rel.prtJ == &cst.makJ().fatherPart()))
+						||
+						((rel.prtI == &cst.makJ().fatherPart()) && (rel.prtJ == &cst.makI().fatherPart())))
+					{
+						cst.Constraint::imp_->col_id_ = imp_->c_size_;
+						cst.Constraint::imp_->blk_col_id_ = imp_->c_blk_size_.size();
+						imp_->c_size_ += cst.dim();
+						imp_->c_blk_size_.push_back(cst.dim());
+					}
+				}
+
+				imp_->r_blk_size_.push_back(rel.dim);
 			}
+
+
+
+			// compute memory size old //
+			//imp_->p_size_ = 0;
+			//imp_->c_size_ = 6;
+			//imp_->p_blk_size_.resize(0);
+			//imp_->c_blk_size_.resize(1, 6);
+			//
+			//for (auto &prt : activePartPool())
+			//{
+			//	prt.Part::imp_->row_id_ = imp_->p_size_;
+			//	prt.Part::imp_->blk_row_id_ = imp_->p_blk_size_.size();
+			//	imp_->p_size_ += 6;
+			//	imp_->p_blk_size_.push_back(6);
+			//}
+			//for (auto &cst : activeConstraintPool())
+			//{
+			//	cst.Constraint::imp_->col_id_ = imp_->c_size_;
+			//	cst.Constraint::imp_->blk_col_id_ = imp_->c_blk_size_.size();
+			//	imp_->c_size_ += cst.dim();
+			//	imp_->c_blk_size_.push_back(cst.dim());
+			//}
 
 			// allocate memory //
 			imp_->cp_.resize(imp_->c_size_ * 1, 0.0);
@@ -3008,6 +3036,44 @@ namespace aris
 			imp_->prt_im_blk_.resize(imp_->p_blk_size_.size() * imp_->p_blk_size_.size());
 			imp_->prt_cm_blk_.resize(imp_->p_blk_size_.size() * imp_->c_blk_size_.size());
 
+			/////////////////////////////////////////////////////////////////////////////////////////
+			imp_->cpr_blk_.resize(imp_->r_blk_size_.size() * 1);
+			imp_->cvr_blk_.resize(imp_->r_blk_size_.size() * 1);
+			imp_->car_blk_.resize(imp_->r_blk_size_.size() * 1);
+			imp_->cfr_blk_.resize(imp_->r_blk_size_.size() * 1);
+			imp_->glb_cmr_blk_.resize(imp_->p_blk_size_.size() * imp_->r_blk_size_.size());
+			
+			s_blk_map(imp_->r_blk_size_, { 1 }, imp_->cp_.data(), imp_->cpr_blk_);
+			s_blk_map(imp_->r_blk_size_, { 1 }, imp_->cv_.data(), imp_->cvr_blk_);
+			s_blk_map(imp_->r_blk_size_, { 1 }, imp_->ca_.data(), imp_->car_blk_);
+			s_blk_map(imp_->r_blk_size_, { 1 }, imp_->cf_.data(), imp_->cfr_blk_);
+			s_blk_map(pBlkSize(), imp_->r_blk_size_, imp_->glb_cm_.data(), imp_->glb_cmr_blk_);
+
+			for (auto &ele : imp_->glb_cmr_blk_)ele.is_zero = true;
+			int aaa{ 1 };
+			for (auto rel : rp)
+			{
+				imp_->glb_cmr_blk_[dynamic::id(rel.prtI->blkRowID(), aaa, imp_->r_blk_size_.size())].is_zero = false;
+				imp_->glb_cmr_blk_[dynamic::id(rel.prtJ->blkRowID(), aaa, imp_->r_blk_size_.size())].is_zero = false;
+				++aaa;
+			}
+			imp_->glb_cmr_blk_[dynamic::id(ground().blkRowID(), 0, imp_->r_blk_size_.size())].is_zero = false;
+			//imp_->prt_cmr_blk_[dynamic::id(ground().blkRowID(), 0, cBlkSize().size())].is_zero = false;
+
+
+			//auto &a = imp_->r_blk_size_;
+			//auto &b = imp_->c_blk_size_;
+			//imp_->cctr_blk_.resize(imp_->p_blk_size_.size() * imp_->p_blk_size_.size());
+			//imp_->cctr_llt_blk_.resize(imp_->p_blk_size_.size() * imp_->p_blk_size_.size());
+			//imp_->cctr_b_blk_.resize(imp_->p_blk_size_.size() * 1);
+			//imp_->cctr_x_blk_.resize(imp_->p_blk_size_.size() * 1);
+
+			//s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_.data(), imp_->cctr_blk_);
+			//s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_llt_.data(), imp_->cctr_llt_blk_);
+			//s_blk_map(pBlkSize(), { 1 }, imp_->cct_b_.data(), imp_->cctr_b_blk_);
+			//s_blk_map(pBlkSize(), { 1 }, imp_->cct_x_.data(), imp_->cctr_x_blk_);
+			/////////////////////////////////////////////////////////////////////////////////////
+			
 			s_blk_map(cBlkSize(), { 1 }, imp_->cp_.data(), imp_->cp_blk_);
 			s_blk_map(cBlkSize(), { 1 }, imp_->cv_.data(), imp_->cv_blk_);
 			s_blk_map(cBlkSize(), { 1 }, imp_->ca_.data(), imp_->ca_blk_);
@@ -3242,13 +3308,47 @@ namespace aris
 				s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), glbCmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, glbCmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
 				s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), glbCmBlk(), cpBlk(), imp_->cct_b_blk_);
 
-				real_error = s_blk_norm_fro(cBlkSize(), { 1 }, cpBlk(), BlockStride{ 1,1,1,1 });
+				//real_error = s_blk_norm_fro(cBlkSize(), { 1 }, cpBlk(), BlockStride{ 1,1,1,1 });
 				
+				//if (real_error < error) return std::make_tuple(count, real_error);
+
+				//s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+				//s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
+				//s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, imp_->glb_pp_blk_, BlockStride{ 1,1,1,1 });
+
+				//////////////////////////////////////////////////////////////////////////////
+				//s_blk_mm(pBlkSize(), pBlkSize(), imp_->r_blk_size_, imp_->glb_cmr_blk_, BlockStride{ imp_->r_blk_size_.size(),1,cSize(),1 }, imp_->glb_cmr_blk_, T(BlockStride{ imp_->r_blk_size_.size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+				auto &r1 = imp_->cct_b_blk_;
+				
+				s_blk_mm(pBlkSize(), { 1 }, imp_->r_blk_size_, imp_->glb_cmr_blk_, imp_->cpr_blk_, imp_->cct_b_blk_);
+				
+				auto &r2 = imp_->cct_b_blk_;
+				auto &a = imp_->r_blk_size_;
+				auto &b = imp_->c_blk_size_;
+				auto &c = imp_->cpr_blk_;
+				auto &d = imp_->cp_blk_;
+				auto &e = imp_->glb_cmr_blk_;
+				auto &f = imp_->glb_cm_blk_;
+
+				real_error = s_blk_norm_fro(imp_->r_blk_size_, { 1 }, imp_->cpr_blk_, BlockStride{ 1,1,1,1 });
+
 				if (real_error < error) return std::make_tuple(count, real_error);
 
 				s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
 				s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
 				s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, imp_->glb_pp_blk_, BlockStride{ 1,1,1,1 });
+
+
+
+
+
+				//////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
 
 				updPartGlbP();
 			}
