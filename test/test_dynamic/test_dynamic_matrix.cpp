@@ -515,7 +515,7 @@ void test_llt()
 	s_llt(6, result, result);
 	if (!s_is_equal(6, 6, llt, result, error))std::cout << "\"s_llt\" failed" << std::endl;
 
-	s_mc(6, 6, A, 7, result, ColMajor{ 8 });
+	s_mc(6, 6, A_ld, 7, result, ColMajor{ 8 });
 	s_llt(6, result, ColMajor{ 8 }, result, ColMajor{ 8 });
 	if (!s_is_equal(6, 6, llt, 6, result, ColMajor{ 8 }, error))std::cout << "\"s_llt\" failed" << std::endl;
 

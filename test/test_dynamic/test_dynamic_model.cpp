@@ -6,6 +6,338 @@
 
 using namespace aris::dynamic;
 
+const char xml_file_3R[] =
+"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+"<root>"
+"    <model>"
+"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
+"        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
+"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
+"            <Mot_friction type=\"MatrixVariable\">{0, 0, 0}</Mot_friction>"
+"        </variable_pool>"
+"        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\"/>"
+"        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
+"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"            </ground>"
+"            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"            </part1>"
+"            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"            </part2>"
+"            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                    <ee pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part3.x_t\"/>"
+"                </geometry_pool>"
+"            </part3>"
+"            <part4 active=\"false\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part3.x_t\"/>"
+"                </geometry_pool>"
+"            </part4>"
+"        </part_pool>"
+"        <joint_pool type=\"JointPoolObject\">"
+"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
+"            <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
+"            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
+"            <r4 active=\"false\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
+"        </joint_pool>"
+"        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
+"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"        </motion_pool>"
+"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
+"        <solver_pool type=\"SolverPoolObject\" default_child_type=\"Solver\">"
+"            <gs type=\"GroundFullMatrixSolver\"/>"
+"            <ps type=\"PartFullMatrixSolver\"/>"
+"        </solver_pool>"
+"    </model>"
+"</root>";
+
+const char xml_file_6R[] =
+"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
+"<Root>"
+"    <model>"
+"        <environment type=\"Environment\" gravity=\"{0 , -9.8 , 0 , 0 , 0 , 0}\"/>"
+"        <script type=\"ScriptPoolObject\"/>"
+"        <variable_pool type=\"VariablePoolObject\"/>"
+"        <akima_pool type=\"AkimaPoolObject\"/>"
+"        <part_pool type=\"PartPoolObject\">"
+"            <ground type=\"Part\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"                <marker_pool type=\"MarkerPoolObject\">"
+"                    <R0j type=\"Marker\" active=\"true\" pe=\"{0.1 , 0.2 , 0.3 , 2.64224593190966 , 0.649484790532536 , 5.12219242612033}\"/>"
+"                    <origin type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                </marker_pool>"
+"            </ground>"
+"            <part0 type=\"Part\" active=\"true\" pe=\"{0.1 , 0.2 , 0.3 , 2.64224593190966 , 0.649484790532536 , 5.12219242612033}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"                <marker_pool type=\"MarkerPoolObject\">"
+"                    <R0i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                    <R1j type=\"Marker\" active=\"true\" pe=\"{0.127581045131803 , -0.255551891814505 , 0.743785121868611 , 1.39801111882379 , 0.92874853281329 , 2.99910369947683}\"/>"
+"                </marker_pool>"
+"            </part0>"
+"            <part1 type=\"Part\" active=\"true\" pe=\"{0.56 , 0.66 , 0.76 , 2.83142459280181 , 1.5646920289751 , 3.14159265358979}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"                <marker_pool type=\"MarkerPoolObject\">"
+"                    <R1i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                    <R2j type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , 6.21426444075139 , 1.09203109440023 , 1.87858662805362}\"/>"
+"                </marker_pool>"
+"            </part1>"
+"            <part2 type=\"Part\" active=\"true\" pe=\"{0.56 , 0.66 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322217}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"                <marker_pool type=\"MarkerPoolObject\">"
+"                    <R2i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                    <R3j type=\"Marker\" active=\"true\" pe=\"{0 , -0.996734365258792 , 0.0807502638519182 , 1.5707963267949 , 7.66425882286152e-17 , 4.71238898038469}\"/>"
+"                </marker_pool>"
+"            </part2>"
+"            <part3 type=\"Part\" active=\"true\" pe=\"{1.56 , 0.66 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322218}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"                <marker_pool type=\"MarkerPoolObject\">"
+"                    <R3i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                    <R4j type=\"Marker\" active=\"true\" pe=\"{1.53280055883457 , 0.0630122434114775 , 0.777786541421676 , 4.71238898038469 , 1.11022302462516e-16 , 1.5707963267949}\"/>"
+"                </marker_pool>"
+"            </part3>"
+"            <part4 type=\"Part\" active=\"true\" pe=\"{1.56 , 2.38 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322218}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"                <marker_pool type=\"MarkerPoolObject\">"
+"                    <R4i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                    <R5j type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , 0.299854573312955 , 1.27790273658208 , 3.56732345865295}\"/>"
+"                </marker_pool>"
+"            </part4>"
+"            <part5 type=\"Part\" active=\"true\" pe=\"{1.56 , 2.38 , 0.76 , 1.928105009803 , 1.5084212451233 , 3.14159265358979}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"                <marker_pool type=\"MarkerPoolObject\">"
+"                    <R5i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                    <end_effector type=\"Marker\" active=\"true\" pe=\"{1.6840663068739 , 0.615533362716626 , -2.33680109411025 , -0 , 1.5084212451233 , 1.2134876437868}\"/>"
+"                </marker_pool>"
+"            </part5>"
+"        </part_pool>"
+"        <joint_pool type=\"JointPoolObject\">"
+"            <R0 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part0\" prt_n=\"ground\" mak_i=\"R0i\" mak_j=\"R0j\"/>"
+"            <R1 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part1\" prt_n=\"part0\" mak_i=\"R1i\" mak_j=\"R1j\"/>"
+"            <R2 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"R2i\" mak_j=\"R2j\"/>"
+"            <R3 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"R3i\" mak_j=\"R3j\"/>"
+"            <R4 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part4\" prt_n=\"part3\" mak_i=\"R4i\" mak_j=\"R4j\"/>"
+"            <R5 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part5\" prt_n=\"part4\" mak_i=\"R5i\" mak_j=\"R5j\"/>"
+"        </joint_pool>"
+"        <motion_pool type=\"MotionPoolObject\">"
+"            <M0 type=\"Motion\" active=\"true\" prt_m=\"part0\" prt_n=\"ground\" mak_i=\"R0i\" mak_j=\"R0j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"            <M1 type=\"Motion\" active=\"true\" prt_m=\"part1\" prt_n=\"part0\" mak_i=\"R1i\" mak_j=\"R1j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"            <M2 type=\"Motion\" active=\"true\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"R2i\" mak_j=\"R2j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"            <M3 type=\"Motion\" active=\"true\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"R3i\" mak_j=\"R3j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"            <M4 type=\"Motion\" active=\"true\" prt_m=\"part4\" prt_n=\"part3\" mak_i=\"R4i\" mak_j=\"R4j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"            <M5 type=\"Motion\" active=\"true\" prt_m=\"part5\" prt_n=\"part4\" mak_i=\"R5i\" mak_j=\"R5j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"        </motion_pool>"
+"        <general_motion_pool type=\"GeneralMotionPoolObject\">"
+"            <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
+"        </general_motion_pool>"
+"        <force_pool type=\"ForcePoolObject\"/>"
+"        <solver_pool type=\"SolverPoolObject\" default_child_type=\"Solver\">"
+"            <gs type=\"GroundFullMatrixSolver\"/>"
+"            <ps type=\"PartFullMatrixSolver\"/>"
+"        </solver_pool>"
+"    </model>"
+"</Root>";
+
+const char xml_file_stewart[] =
+"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+"<root>"
+"    <model>"
+"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
+"        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
+"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
+"            <Mot_friction type=\"MatrixVariable\">{0, 0, 0}</Mot_friction>"
+"        </variable_pool>"
+"        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
+"        </akima_pool>"
+"        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
+"            <p1a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999974 , 1.22522177619812e-16 , -9.28869564848867e-18 , 6.38378239159465e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <u1i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                    <p1j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p1a>"
+"            <p1b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425892889 , 1.49999999999963 , 0.912443796234424 , 8.04911692853238e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <p1i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                    <s1j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p1b>"
+"            <p2a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999995 , 1.22524189323061e-16 , -9.2876368573046e-18 , 5.55111512312578e-17 , 0.721024145526766 , 0.308719565228027}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <u2i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                    <p2j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p2a>"
+"            <p2b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316677 , 1.49999999999988 , 1.31832224563822 , 6.28318530717959 , 0.721024145526766 , 0.308719565228028}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <p2i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                    <s2j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p2b>"
+"            <p3a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24902578429613e-16 , 3.6066466064807e-14 , 1.73199999999999 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <u3i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                    <p3j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p3a>"
+"            <p3b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316337 , 1.49999999999935 , 1.31832224563851 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <p3i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                    <s3j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p3b>"
+"            <p4a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24898250620648e-16 , 1.52855080404276e-14 , 1.732 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <u4i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                    <p4j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p4a>"
+"            <p4b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322252 , 1.49999999999964 , 1.36823895396183 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <p4i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                    <s4j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p4b>"
+"            <p5a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999993 , -1.0082029353865e-16 , 4.19175032725778e-17 , 6.28318530717959 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <u5i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                    <p5j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p5a>"
+"            <p5b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322406 , 1.49999999999987 , 1.36823895396163 , 2.77555756156289e-17 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <p5i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                    <s5j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p5b>"
+"            <p6a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999969 , -1.00821934664985e-16 , 4.19165900651815e-17 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <u6i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                    <p6j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p6a>"
+"            <p6b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425888235 , 1.49999999999959 , 0.912443796234401 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <p6i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                    <s6j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </p6b>"
+"            <up active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.1 , 1.5 , 1.2 , 1.5707963267949 , 0.1 , 4.71238898038469}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <ee pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                    <s1i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
+"                    <s2i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
+"                    <s3i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
+"                    <s4i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
+"                    <s5i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
+"                    <s6i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
+"                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\up.xmt_txt\"/>"
+"                </geometry_pool>"
+"            </up>"
+"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <origin pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                    <u1o pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                    <u2o pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                    <u3o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
+"                    <u4o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
+"                    <u5o pe=\"{ -1,0,0,0,0,0 }\"/>"
+"                    <u6o pe=\"{ -1,0,0,0,0,0 }\"/>"
+"                    <u1j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                    <u2j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                    <u3j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
+"                    <u4j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
+"                    <u5j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                    <u6j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                </marker_pool>"
+"            </ground>"
+"        </part_pool>"
+"        <joint_pool type=\"JointPoolObject\">"
+"            <u1 active=\"true\" type=\"UniversalJoint\" prt_m=\"p1a\" prt_n=\"ground\" mak_i=\"u1i\" mak_j=\"u1j\"/>"
+"            <p1 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\"/>"
+"            <s1 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p1b\" mak_i=\"s1i\" mak_j=\"s1j\"/>"
+"            <u2 active=\"true\" type=\"UniversalJoint\" prt_m=\"p2a\" prt_n=\"ground\" mak_i=\"u2i\" mak_j=\"u2j\"/>"
+"            <p2 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\"/>"
+"            <s2 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p2b\" mak_i=\"s2i\" mak_j=\"s2j\"/>"
+"            <u3 active=\"true\" type=\"UniversalJoint\" prt_m=\"p3a\" prt_n=\"ground\" mak_i=\"u3i\" mak_j=\"u3j\"/>"
+"            <p3 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\"/>"
+"            <s3 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p3b\" mak_i=\"s3i\" mak_j=\"s3j\"/>"
+"            <u4 active=\"true\" type=\"UniversalJoint\" prt_m=\"p4a\" prt_n=\"ground\" mak_i=\"u4i\" mak_j=\"u4j\"/>"
+"            <p4 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\"/>"
+"            <s4 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p4b\" mak_i=\"s4i\" mak_j=\"s4j\"/>"
+"            <u5 active=\"true\" type=\"UniversalJoint\" prt_m=\"p5a\" prt_n=\"ground\" mak_i=\"u5i\" mak_j=\"u5j\"/>"
+"            <p5 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\"/>"
+"            <s5 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p5b\" mak_i=\"s5i\" mak_j=\"s5j\"/>"
+"            <u6 active=\"true\" type=\"UniversalJoint\" prt_m=\"p6a\" prt_n=\"ground\" mak_i=\"u6i\" mak_j=\"u6j\"/>"
+"            <p6 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\"/>"
+"            <s6 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p6b\" mak_i=\"s6i\" mak_j=\"s6j\"/>"
+"        </joint_pool>"
+"        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
+"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"            <m2 active=\"true\" slave_id=\"9\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"            <m3 active=\"true\" slave_id=\"8\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"            <m4 active=\"true\" slave_id=\"3\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"            <m5 active=\"true\" slave_id=\"7\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"            <m6 active=\"true\" slave_id=\"5\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        </motion_pool>"
+"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\">"
+"            <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        </general_motion_pool>"
+"        <solver_pool type=\"SolverPoolObject\" default_child_type=\"Solver\">"
+"            <gs type=\"GroundFullMatrixSolver\"/>"
+"            <ps type=\"PartFullMatrixSolver\"/>"
+"            <ds type=\"DiagSolver\"/>"
+"        </solver_pool>"
+"    </model>"
+"</root>";
+
 void test_part()
 {
 	aris::dynamic::Model model;
@@ -1468,70 +1800,12 @@ void test_constraint()
 
 	}
 }
-void test_model_class()
+void test_solver_3R()
 {
-	const char xml_file[] =
-		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-		"<root>"
-		"    <model>"
-		"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
-		"        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
-		"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
-		"            <Mot_friction type=\"MatrixVariable\">{20, 30, 560}</Mot_friction>"
-		"        </variable_pool>"
-		"        <akima_pool type=\"AkimaPoolObject\" default_child_type=\"Akima\">"
-		"            <m1_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-		"            <m2_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-		"            <m3_akima x=\"{0,1,2,3,4}\" y=\"{0,1,2,3,4}\"/>"
-		"        </akima_pool>"
-		"        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
-		"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
-		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-		"                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
-		"                </marker_pool>"
-		"            </ground>"
-		"            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
-		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-		"                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
-		"                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
-		"                </marker_pool>"
-		"            </part1>"
-		"            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
-		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-		"                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
-		"                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
-		"                </marker_pool>"
-		"            </part2>"
-		"            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part3.x_t\">"
-		"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
-		"                    <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
-		"                </marker_pool>"
-		"            </part3>"
-		"            <part4 active=\"false\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part3.x_t\">"
-		"            </part4>"
-		"        </part_pool>"
-		"        <joint_pool type=\"JointPoolObject\">"
-		"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
-		"            <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
-		"            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
-		"            <r4 active=\"false\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
-		"        </joint_pool>"
-		"        <motion_pool type=\"MotionPoolObject\" default_child_type=\"Motion\">"
-		"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-		"            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-		"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-		"        </motion_pool>"
-		"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
-		"    </model>"
-		"</root>";
-
 	const double error = 1e-10;
 
 	try
 	{
-		aris::core::XmlDocument xml_doc;
-		auto a = xml_doc.Parse(xml_file);
-
 		const double im[]{ 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1585,17 +1859,83 @@ void test_model_class()
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-0.78139724704618,1.03443807849322,-0.565116097870074,0,0.479425538604203,0,0,0.877582561890373,
 		};
 
-		double result[10000];
-
+		aris::core::XmlDocument xml_doc;
+		xml_doc.Parse(xml_file_3R);
 		Model m;
 		m.loadXml(xml_doc);
-		m.allocateMemory();
 
-		m.updGlbCm();
-		if (!s_is_equal(576, m.glbCm(), cm, error))std::cout << "model::cptGlbCm() failed" << std::endl;
+		auto &gs = static_cast<GroundFullMatrixSolver&>(*m.solverPool().findByName("gs"));
+		auto &ps = static_cast<PartFullMatrixSolver&>(*m.solverPool().findByName("ps"));
+		gs.allocateMemory();
+		
+		gs.updCm();
+		if (!s_is_equal(576, gs.cm(), cm, error))std::cout << "GroundFullMatrixSolver::updCm() failed" << std::endl;
 
-		m.updGlbIm();
-		if (!s_is_equal(576, m.glbIm(), im, error))std::cout << "model::cptGlbIm() failed" << std::endl;
+		gs.updIm();
+		if (!s_is_equal(576, gs.im(), im, error))std::cout << "GroundFullMatrixSolver::updIm() failed" << std::endl;
+
+		
+		const double ee_pq[7]{ 1.70515017988957 , 2.32534312862588, 0.0 , 0.0 , 0.0 , 0.460891949876968 , 0.887456258380438 };
+		const double ee_va[6]{ -1.1553844949236325 , 0.7406601913177889 , 0.0 , 0.0 , 0.0 , 0.705 };
+		const double ee_aa[6]{ 7.3068444301678799 ,-5.5868499482603751 , 0.0 , 0.0 , 0.0 ,-4.701 };
+		const double mot_fs[3]{ 0.17105260350807,	9.24402272506392,	4.70099999999998 };
+
+		m.motionAtAbs(0).setMp(0.585);
+		m.motionAtAbs(0).setMv(0.235);
+		m.motionAtAbs(0).setMa(-1.567);
+
+		m.motionAtAbs(1).setMp(0.685);
+		m.motionAtAbs(1).setMv(0.235);
+		m.motionAtAbs(1).setMa(-1.567);
+
+		m.motionAtAbs(2).setMp(-0.312);
+		m.motionAtAbs(2).setMv(0.235);
+		m.motionAtAbs(2).setMa(-1.567);
+
+		double result1[16], result2[16], result3[16], result4[16];
+
+
+		///////////////////////////////test part solver//////////////////////////////////////////////////////////////////////////////
+		ps.setMaxError(1e-12);
+		ps.allocateMemory();
+		ps.kinPos();
+		ps.allocateMemory();
+		ps.kinVel();
+		ps.allocateMemory();
+		ps.kinAcc();
+		ps.allocateMemory();
+		ps.dynFce();
+
+		m.partPool().at(3).markerPool().findByName("ee")->getPq(result1);
+		m.partPool().at(3).markerPool().findByName("ee")->getVa(result2);
+		m.partPool().at(3).markerPool().findByName("ee")->getAa(result3);
+		for (int i = 0; i < 3; ++i) result4[i] = m.motionAtAbs(i).mf();
+
+		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(7, ee_pq, result1, error))std::cout << "PartFullMatrixSolver::kinPos() 3R failed" << std::endl;
+		if (!s_is_equal(6, result2, ee_va, error))std::cout << "PartFullMatrixSolver:kinVel() 3R\" failed" << std::endl;
+		if (!s_is_equal(6, result3, ee_aa, error))std::cout << "PartFullMatrixSolver:kinAcc() 3R\" failed" << std::endl;
+		if (!s_is_equal(3, result4, mot_fs, error))std::cout << "PartFullMatrixSolver:dynFce() 3R\" failed" << std::endl;
+
+		///////////////////////////test glb solver///////////////////////////////////////
+		gs.setMaxError(1e-12);
+		gs.allocateMemory();
+		gs.kinPos();
+		gs.allocateMemory();
+		gs.kinVel();
+		gs.allocateMemory();
+		gs.kinAcc();
+		gs.allocateMemory();
+		gs.dynFce();
+
+		m.partPool().at(3).markerPool().findByName("ee")->getPq(result1);
+		m.partPool().at(3).markerPool().findByName("ee")->getVa(result2);
+		m.partPool().at(3).markerPool().findByName("ee")->getAa(result3);
+		for (int i = 0; i < 3; ++i) result4[i] = m.motionAtAbs(i).mf();
+
+		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(7, ee_pq, result1, error))std::cout << "groundFullMatrixSolver::kinPos() 3R failed" << std::endl;
+		if (!s_is_equal(6, result2, ee_va, error))std::cout << "GroundFullMatrixSolver:kinVel() 3R\" failed" << std::endl;
+		if (!s_is_equal(6, result3, ee_aa, error))std::cout << "GroundFullMatrixSolver:kinAcc() 3R\" failed" << std::endl;
+		if (!s_is_equal(3, result4, mot_fs, error))std::cout << "GroundFullMatrixSolver:dynFce() 3R\" failed" << std::endl;
 	}
 	catch (std::exception &e)
 	{
@@ -1603,15 +1943,666 @@ void test_model_class()
 	}
 
 }
+void test_solver_6R()
+{
+	try
+	{
+		const double error = 1e-10;
+
+		const double input_origin_p[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_v[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_a[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_mf[6]{ -34.8372347443935, -0.179465241344625, -26.1146353297101,3.12638803734444e-13,5.6843418860808e-13, -9.9475983006414e-14 };
+		const double output_origin_pm[16]{ 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 };
+		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_mfs[6]{ -1.53575836143848,-38.0002468240561,-16.8933419758238,-8.4241178308505,16.6881665634178,-51.5626922658449 };
+
+		const double input_p[6]{ -0.084321840829742,0.111235847475406,0.163501201249858,0.41316722587035, -0.0861578092597486,0.229246197281016 };
+		const double input_v[6]{ 0.93426722257942, -0.024823760537999, -0.89419018046124,   0.245922301638701, -1.23100367003297, -0.48185561218356 };
+		const double input_a[6]{ 0.70807836306709, -0.496581922752884, -0.159513727427361, -0.590163055515337,   0.131806583011732, -1.65802060177352 };
+		const double input_mf[6]{ -24.6359418510515,3.06678992657553, -13.4565070365958,   15.0336821069307,   0.786112551012351,   1.93281931696021 };
+		const double output_pm[16]{ 0.863013488544127, -0.284074444773496,   0.417743256579356, -0.137731283515364,
+			0.387677110267304,   0.902605554641921, -0.187108714132569, -0.343275971674581,
+			-0.323904579723239,   0.323426842664891,   0.889089928341408, -0.0474940394315194,
+			0,   0,   0,   1 };
+		const double output_va[6]{ -1.93242030056314,   0.500930573127293,   0.577926916892486, -0.399682310201935, -0.66053331463003, -0.857440373970742 };
+		const double output_aa[6]{ 1.07075600145293,   0.349116022890415,   2.0925775293411, -1.77982973680254, -0.927893632540704,   0.0659817357654945 };
+		const double output_mfs[6]{ -8.44990411304192, -54.7768126462764, -23.2058019399381, -18.6214939645874,   51.751313528282, -82.047228392192 };
+
+		double result1[16], result2[16], result3[16], result4[16];
+
+		aris::core::XmlDocument xml_doc;
+		xml_doc.Parse(xml_file_6R);
+		Model m;
+		m.loadXml(xml_doc);
+
+		auto &gs = static_cast<GroundFullMatrixSolver&>(*m.solverPool().findByName("gs"));
+		auto &ps = static_cast<PartFullMatrixSolver&>(*m.solverPool().findByName("ps"));
+
+		// test inverse kinematic //
+		for (auto &mot : m.motionPool())mot.activate(false);
+		m.generalMotionPool().at(0).activate(true);
+
+		// in glb //
+		m.generalMotionPool().at(0).setMpm(output_origin_pm);
+		m.generalMotionPool().at(0).setMva(output_origin_va);
+		m.generalMotionPool().at(0).setMaa(output_origin_aa);
+		gs.allocateMemory();
+		gs.setMaxError(1e-14);
+		gs.kinPos();
+		gs.allocateMemory();
+		gs.kinVel();
+		gs.allocateMemory();
+		gs.kinAcc();
+		gs.allocateMemory();
+		gs.dynFce();
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+
+		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(6, result1, input_origin_p, error))std::cout << "GroundFullMatrixSolver::kinPos() 6R inverse origin failed" << std::endl;
+		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "GroundFullMatrixSolver::kinVel() 6R inverse origin failed" << std::endl;
+		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "GroundFullMatrixSolver::kinAcc() 6R inverse origin failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, error))std::cout << "GroundFullMatrixSolver::dynFce() 6R inverse origin failed" << std::endl;
+
+		m.generalMotionPool().at(0).setMpm(output_pm);
+		m.generalMotionPool().at(0).setMva(output_va);
+		m.generalMotionPool().at(0).setMaa(output_aa);
+		gs.allocateMemory();
+		gs.setMaxError(1e-14);
+		gs.kinPos();
+		gs.allocateMemory();
+		gs.kinVel();
+		gs.allocateMemory();
+		gs.kinAcc();
+		gs.allocateMemory();
+		gs.dynFce();
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(6, result1, input_p, error))std::cout << "GroundFullMatrixSolver::kinPos() 6R inverse failed" << std::endl;
+		if (!s_is_equal(6, result2, input_v, error))std::cout << "GroundFullMatrixSolver::kinVel() 6R inverse failed" << std::endl;
+		if (!s_is_equal(6, result3, input_a, error))std::cout << "GroundFullMatrixSolver::kinAcc() 6R inverse failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << "GroundFullMatrixSolver::dynFce() 6R inverse failed" << std::endl;
+
+		// in prt //
+		m.generalMotionPool().at(0).setMpm(output_origin_pm);
+		m.generalMotionPool().at(0).setMva(output_origin_va);
+		m.generalMotionPool().at(0).setMaa(output_origin_aa);
+		ps.allocateMemory();
+		ps.setMaxError(1e-14);
+		ps.kinPos();
+		ps.allocateMemory();
+		ps.kinVel();
+		ps.allocateMemory();
+		ps.kinAcc();
+		ps.allocateMemory();
+		ps.dynFce();
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(6, result1, input_origin_p, error))std::cout << "PartFullMatrixSolver::kinPos() 6R inverse origin failed" << std::endl;
+		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "PartFullMatrixSolver::kinVel() 6R inverse origin failed" << std::endl;
+		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "PartFullMatrixSolver::kinAcc() 6R inverse origin failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, error))std::cout << "PartFullMatrixSolver::dynFce() 6R inverse origin failed" << std::endl;
 
 
+		m.generalMotionPool().at(0).setMpm(output_pm);
+		m.generalMotionPool().at(0).setMva(output_va);
+		m.generalMotionPool().at(0).setMaa(output_aa);
+		ps.allocateMemory();
+		ps.setMaxError(1e-14);
+		ps.kinPos();
+		ps.allocateMemory();
+		ps.kinVel();
+		ps.allocateMemory();
+		ps.kinAcc();
+		ps.allocateMemory();
+		ps.dynFce();
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).updMp();
+			m.motionAtAbs(i).updMv();
+			m.motionAtAbs(i).updMa();
+			result1[i] = m.motionAtAbs(i).mp();
+			result2[i] = m.motionAtAbs(i).mv();
+			result3[i] = m.motionAtAbs(i).ma();
+		}
+		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(6, result1, input_p, error))std::cout << "PartFullMatrixSolver::kinPos() 6R inverse failed" << std::endl;
+		if (!s_is_equal(6, result2, input_v, error))std::cout << "PartFullMatrixSolver::kinVel() 6R inverse failed" << std::endl;
+		if (!s_is_equal(6, result3, input_a, error))std::cout << "PartFullMatrixSolver::kinAcc() 6R inverse failed" << std::endl;
+		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, 1e-6))std::cout << "PartFullMatrixSolver::dynFce() 6R inverse failed" << std::endl;
+
+		// test forward kinematic //
+		for (auto &mot : m.motionPool())mot.activate(true);
+		m.generalMotionPool().at(0).activate(false);
+
+		// in glb //
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_origin_p[i]);
+			m.motionAtAbs(i).setMv(input_origin_v[i]);
+			m.motionAtAbs(i).setMa(input_origin_a[i]);
+		}
+		gs.allocateMemory();
+		gs.setMaxError(1e-14);
+		gs.kinPos();
+		gs.allocateMemory();
+		gs.kinVel();
+		gs.allocateMemory();
+		gs.kinAcc();
+		gs.allocateMemory();
+		gs.dynFce();
+		m.generalMotionPool().at(0).updMpm();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMvs();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMas();
+		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "GroundFullMatrixSolver::kinPos() 6R forward origin failed" << std::endl;
+		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "GroundFullMatrixSolver::kinVel() 6R forward origin failed" << std::endl;
+		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "GroundFullMatrixSolver::kinAcc() 6R forward origin failed" << std::endl;
+		if (!s_is_equal(6, result4, input_origin_mf, error))std::cout << "GroundFullMatrixSolver::dynFce() 6R forward origin failed" << std::endl;
+
+
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_p[i]);
+			m.motionAtAbs(i).setMv(input_v[i]);
+			m.motionAtAbs(i).setMa(input_a[i]);
+		}
+		gs.allocateMemory();
+		gs.setMaxError(1e-14);
+		gs.kinPos();
+		gs.allocateMemory();
+		gs.kinVel();
+		gs.allocateMemory();
+		gs.kinAcc();
+		gs.allocateMemory();
+		gs.dynFce();
+		m.generalMotionPool().at(0).updMpm();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMvs();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMas();
+		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(16, result1, output_pm, error))std::cout << "GroundFullMatrixSolver::kinPos() 6R forward failed" << std::endl;
+		if (!s_is_equal(6, result2, output_va, error))std::cout << "GroundFullMatrixSolver::kinVel() 6R forward failed" << std::endl;
+		if (!s_is_equal(6, result3, output_aa, error))std::cout << "GroundFullMatrixSolver::kinAcc() 6R forward failed" << std::endl;
+		if (!s_is_equal(6, result4, input_mf, error))std::cout << "GroundFullMatrixSolver::dynFce() 6R forward failed" << std::endl;
+
+
+
+		// in prt //
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_origin_p[i]);
+			m.motionAtAbs(i).setMv(input_origin_v[i]);
+			m.motionAtAbs(i).setMa(input_origin_a[i]);
+		}
+		ps.allocateMemory();
+		ps.setMaxError(1e-14);
+		ps.kinPos();
+		ps.allocateMemory();
+		ps.kinVel();
+		ps.allocateMemory();
+		ps.kinAcc();
+		ps.allocateMemory();
+		ps.dynFce();
+		m.generalMotionPool().at(0).updMpm();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMvs();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMas();
+		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "PartFullMatrixSolver::kinPos() 6R forward origin failed" << std::endl;
+		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "PartFullMatrixSolver::kinVel() 6R forward origin failed" << std::endl;
+		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "PartFullMatrixSolver::kinAcc() 6R forward origin failed" << std::endl;
+		if (!s_is_equal(6, result4, input_origin_mf, error))std::cout << "PartFullMatrixSolver::dynFce() 6R forward origin failed" << std::endl;
+
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			m.motionAtAbs(i).setMp(input_p[i]);
+			m.motionAtAbs(i).setMv(input_v[i]);
+			m.motionAtAbs(i).setMa(input_a[i]);
+		}
+		ps.allocateMemory();
+		ps.setMaxError(1e-14);
+		ps.kinPos();
+		ps.allocateMemory();
+		ps.kinVel();
+		ps.allocateMemory();
+		ps.kinAcc();
+		ps.allocateMemory();
+		ps.dynFce();
+		m.generalMotionPool().at(0).updMpm();
+		m.generalMotionPool().at(0).getMpm(result1);
+		m.generalMotionPool().at(0).updMvs();
+		m.generalMotionPool().at(0).getMva(result2);
+		m.generalMotionPool().at(0).updMas();
+		m.generalMotionPool().at(0).getMaa(result3);
+		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(16, result1, output_pm, error))std::cout << "PartFullMatrixSolver::kinPos() 6R forward failed" << std::endl;
+		if (!s_is_equal(6, result2, output_va, error))std::cout << "PartFullMatrixSolver::kinVel() 6R forward failed" << std::endl;
+		if (!s_is_equal(6, result3, output_aa, error))std::cout << "PartFullMatrixSolver::kinAcc() 6R forward failed" << std::endl;
+		if (!s_is_equal(6, result4, input_mf, error))std::cout << "PartFullMatrixSolver::dynFce() 6R forward failed" << std::endl;
+	}
+	catch (std::exception&e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+}
+void test_solver_stewart()
+{
+	try
+	{	
+		const double error = 1e-10;
+		
+		const double input_origin_p[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
+		const double input_origin_v[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_a[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_mf[6]{ -13.3849595750926, -13.3927097990384, -13.3901587863615, -13.3901587863617, -13.3927097990384, -13.3849595750926 };
+		const double output_origin_pm[16]{ 1,0,0,0,
+			0, 0.999999999751072,2.2312668404904e-05,1.7078344386197,
+			0, -2.23126684049141e-05,0.999999999751072,0.577658198650165,
+			0,0,0,1 };
+		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_mfs[6]{ 5.96877625518755e-14, -68.5999999829237, -0.00153064905217093, -0.0195999999954068,   2.09622926874175e-15, -1.42897385990919e-14 };
+
+		const double input_p[6]{ 2.15,2.03,1.98,1.68,2.22,2.01 };
+		const double input_v[6]{ 0.687,1.521,-0.325,0.665,1.225,-0.999 };
+		const double input_a[6]{ 1.687,0.521,-1.325,1.665,0.225,-1.999 };
+		const double input_mf[6]{ -54.3666620596338, -25.0817857667786, -18.1840142074996,   36.630055076576, -65.6950872736471,   75.5093067608351 };
+		const double output_pm[16]{ 0.654617242227831, -0.16813527373803,0.737025641279234,0.0674004103296998,
+			0.286892301165042,0.957269694021347, -0.0364354283699648,1.66351811346172,
+			-0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
+			0,0,0,1 };
+		const double output_va[6]{ -1.67602445813444,0.322144550146041,1.43386389933679, -4.13258637478856,0.229701802785213,2.06026880988191 };
+		const double output_aa[6]{ -3.99625983193204, -4.52459258496676,3.82662285536541, -4.70386456087171,10.2271223856012,12.7760010719168 };
+		const double output_mfs[6]{ 43.6438945057721, -43.4082817089241,   0.842045165182085,   11.2174553475889, -25.1497728624644, -4.77548370421841 };
+
+		double result1[16], result2[16], result3[16], result4[16];
+
+		aris::core::XmlDocument xml_doc;
+		xml_doc.Parse(xml_file_stewart);
+		Model m;
+		m.loadXml(xml_doc);
+
+		auto &gs = static_cast<GroundFullMatrixSolver&>(*m.solverPool().findByName("gs"));
+		auto &ps = static_cast<PartFullMatrixSolver&>(*m.solverPool().findByName("ps"));
+		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
+
+		// test kinematic and dynamic model //
+		auto test_stewart_forward = [&](Solver &s)->void
+		{
+			// set topology //
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			// set input origin //
+			for (aris::Size i = 0; i < 6; ++i)
+			{
+				m.motionAtAbs(i).setMp(input_origin_p[i]);
+				m.motionAtAbs(i).setMv(input_origin_v[i]);
+				m.motionAtAbs(i).setMa(input_origin_a[i]);
+			}
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			gs.allocateMemory();
+			gs.dynFce();
+
+			// get result //
+			m.generalMotionPool().at(0).updMpm();
+			m.generalMotionPool().at(0).getMpm(result1);
+			m.generalMotionPool().at(0).updMvs();
+			m.generalMotionPool().at(0).getMva(result2);
+			m.generalMotionPool().at(0).updMas();
+			m.generalMotionPool().at(0).getMaa(result3);
+			for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+			// check //
+			if (!s_is_equal(16, result1, output_origin_pm, error))std::cout << s.type() << "::kinPos() stewart forward origin failed" << std::endl;
+			if (!s_is_equal(6, result2, output_origin_va, error))std::cout << s.type() << "::kinVel() stewart forward origin failed" << std::endl;
+			if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << s.type() << "::kinAcc() stewart forward origin failed" << std::endl;
+			if (!s_is_equal(6, result4, input_origin_mf, 1e-9))std::cout << s.type() << "::dynFce() stewart forward origin failed" << std::endl;
+
+			// set input //
+			for (aris::Size i = 0; i < 6; ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			gs.allocateMemory();
+			gs.dynFce();
+			// get result //
+			m.generalMotionPool().at(0).updMpm();
+			m.generalMotionPool().at(0).getMpm(result1);
+			m.generalMotionPool().at(0).updMvs();
+			m.generalMotionPool().at(0).getMva(result2);
+			m.generalMotionPool().at(0).updMas();
+			m.generalMotionPool().at(0).getMaa(result3);
+			for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+			// check //
+			if (!s_is_equal(16, result1, output_pm, error))std::cout << s.type() << "::kinPos() stewart forward failed" << std::endl;
+			if (!s_is_equal(6, result2, output_va, error))std::cout << s.type() << "::kinVel() stewart forward failed" << std::endl;
+			if (!s_is_equal(6, result3, output_aa, error))std::cout << s.type() << "::kinAcc() stewart forward failed" << std::endl;
+			if (!s_is_equal(6, result4, input_mf, 1e-9))std::cout << s.type() << "::dynFce() stewart forward failed" << std::endl;
+
+		};
+		auto test_stewart_inverse = [&](Solver &s)->void
+		{
+			// set topology //
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			// set ee origin status //
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
+			
+			// get result //
+			for (aris::Size i = 0; i < 6; ++i)
+			{
+				m.motionAtAbs(i).updMp();
+				m.motionAtAbs(i).updMv();
+				m.motionAtAbs(i).updMa();
+				result1[i] = m.motionAtAbs(i).mp();
+				result2[i] = m.motionAtAbs(i).mv();
+				result3[i] = m.motionAtAbs(i).ma();
+			}
+			// check //
+			if (!s_is_equal(6, result1, input_origin_p, error))std::cout << s.type() << "::kinPos() stewart inverse origin failed" << std::endl;
+			if (!s_is_equal(6, result2, input_origin_v, error))std::cout << s.type() << "::kinVel() stewart inverse origin failed" << std::endl;
+			if (!s_is_equal(6, result3, input_origin_a, error))std::cout << s.type() << "::kinAcc() stewart inverse origin failed" << std::endl;
+			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, 1e-9))std::cout << s.type() << "::dynFce() stewart inverse origin failed" << std::endl;
+
+
+			// set ee status //
+			m.generalMotionPool().at(0).setMpm(output_pm);
+			m.generalMotionPool().at(0).setMva(output_va);
+			m.generalMotionPool().at(0).setMaa(output_aa);
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
+
+			// get result //
+			for (aris::Size i = 0; i < 6; ++i)
+			{
+				m.motionAtAbs(i).updMp();
+				m.motionAtAbs(i).updMv();
+				m.motionAtAbs(i).updMa();
+				result1[i] = m.motionAtAbs(i).mp();
+				result2[i] = m.motionAtAbs(i).mv();
+				result3[i] = m.motionAtAbs(i).ma();
+			}
+			// check //
+			if (!s_is_equal(6, result1, input_p, error))std::cout << s.type() << "::kinPos() stewart inverse failed" << std::endl;
+			if (!s_is_equal(6, result2, input_v, error))std::cout << s.type() << "::kinVel() stewart inverse failed" << std::endl;
+			if (!s_is_equal(6, result3, input_a, error))std::cout << s.type() << "::kinAcc() stewart inverse failed" << std::endl;
+			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << s.type() << "::dynFce() stewart inverse failed" << std::endl;
+		};
+		auto bench_pos_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			s.allocateMemory();
+			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				if (count % 2)for (int i{ 0 }; i < 6; ++i) m.motionAtAbs(i).setMp(input_p[i]);
+				else for (int i{ 0 }; i < 6; ++i) m.motionAtAbs(i).setMp(input_origin_p[i]);
+
+				// compute //
+				s.kinPos();
+				m.generalMotionPool().at(0).updMpm();
+				m.generalMotionPool().at(0).getMpm(result1);
+
+				if (count < 2 && count % 2 && !s_is_equal(16, result1, output_pm, error))
+					std::cout << s.type() << "::kinPos() stewart forward bench failed" << std::endl;
+				if (count < 2 && (count + 1) % 2 && !s_is_equal(16, result1, output_origin_pm, error))
+					std::cout << s.type() << "::kinPos() stewart forward bench origin failed" << std::endl;
+
+				++count;
+			}) << std::endl;
+		};
+		auto bench_vel_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < 6; ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::forward computational vel time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinVel();
+			}) << std::endl;
+		};
+		auto bench_acc_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < 6; ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+
+			std::cout << s.type() << "::forward computational acc time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinAcc();
+			}) << std::endl;
+		};
+		auto bench_fce_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < 6; ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+
+			std::cout << s.type() << "::forward computational fce time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.dynFce();
+			}) << std::endl;
+		};
+		auto bench_pos_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			s.allocateMemory();
+			std::cout << s.type() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				if (count % 2)for (int i{ 0 }; i < 6; ++i) m.generalMotionPool().at(0).setMpm(output_pm);
+				else for (int i{ 0 }; i < 6; ++i) m.generalMotionPool().at(0).setMpm(output_origin_pm);
+
+				// compute //
+				s.kinPos();
+				for (aris::Size i = 0; i < 6; ++i){	m.motionAtAbs(i).updMp(); result1[i] = m.motionAtAbs(i).mp(); }
+
+				if (count < 2 && count % 2 && !s_is_equal(6, result1, input_p, error))
+					std::cout << s.type() << "::kinPos() stewart forward bench failed" << std::endl;
+				if (count < 2 && (count + 1) % 2 && !s_is_equal(6, result1, input_origin_p, error))
+					std::cout << s.type() << "::kinPos() stewart forward bench origin failed" << std::endl;
+
+				++count;
+			}) << std::endl;
+		};
+		auto bench_vel_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinVel();
+			}) << std::endl;
+		};
+		auto bench_acc_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational acc time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinAcc();
+			}) << std::endl;
+		};
+		auto bench_fce_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational fce time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.dynFce();
+			}) << std::endl;
+		};
+
+		gs.setMaxError(1e-10);
+		ps.setMaxError(1e-10);
+		ds.setMaxError(1e-10);
+
+		test_stewart_inverse(ds);
+		test_stewart_forward(ds);
+		test_stewart_forward(gs);
+		test_stewart_inverse(gs);
+		test_stewart_forward(ps);
+		test_stewart_inverse(ps);
+		
+		bench_pos_inverse(ps, 1000);
+		bench_vel_inverse(ps, 1000);
+		bench_acc_inverse(ps, 1000);
+		bench_fce_inverse(ps, 1000);
+		bench_pos_inverse(gs, 1000);
+		bench_vel_inverse(gs, 1000);
+		bench_acc_inverse(gs, 1000);
+		bench_fce_inverse(gs, 1000);
+		bench_pos_inverse(ds, 1000);
+		bench_vel_inverse(ds, 1000);
+		bench_acc_inverse(ds, 1000);
+		bench_fce_inverse(ds, 1000);
+		bench_pos_forward(ps, 1000);
+		bench_vel_forward(ps, 1000);
+		bench_acc_forward(ps, 1000);
+		bench_fce_forward(ps, 1000);
+		bench_pos_forward(gs, 1000);
+		bench_vel_forward(gs, 1000);
+		bench_acc_forward(gs, 1000);
+		bench_fce_forward(gs, 1000);
+		bench_pos_forward(ds, 1000);
+		bench_vel_forward(ds, 1000);
+		bench_acc_forward(ds, 1000);
+		bench_fce_forward(ds, 1000);
+	}
+	catch (std::exception&e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+}
 
 void test_model()
 {
 	std::cout << std::endl << "-----------------test model---------------------" << std::endl;
 	test_part();
 	test_constraint();
-	test_model_class();
+	//test_solver_3R();
+	//test_solver_6R();
+	test_solver_stewart();
 	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
 }
 

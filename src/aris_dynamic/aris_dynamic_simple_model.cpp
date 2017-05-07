@@ -70,8 +70,8 @@ namespace aris
 			for (auto &mot : imp_->m_.motionPool())mot.activate(true);
 			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(false);
 
-			auto ret = imp_->m_.kinPosInGlb(max_count, error);
-			if (std::get<0>(ret) == max_count) 
+			//auto ret = imp_->m_.kinPosInGlb(max_count, error);
+			//if (std::get<0>(ret) == max_count) 
 			{
 				imp_->m_.loadDynEle("temp");
 				return false;
@@ -87,9 +87,9 @@ namespace aris
 			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(true);
 
 
-			imp_->m_.allocateMemory();
-			auto ret = imp_->m_.kinPosInGlb(max_count, error);
-			if (std::get<0>(ret) == max_count)
+			//imp_->m_.allocateMemory();
+			//auto ret = imp_->m_.kinPosInGlb(max_count, error);
+			//if (std::get<0>(ret) == max_count)
 			{
 				imp_->m_.loadDynEle("temp");
 				return false;

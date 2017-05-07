@@ -68,7 +68,7 @@ namespace aris
 		template <typename T, typename TType>
 		auto inline dsp(Size m, Size n, const T *data, TType d_t)->void
 		{
-			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(15);
+			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(4);
 
 			std::cout << std::endl;
 			for (Size i = 0; i < m; i++)
@@ -110,27 +110,15 @@ namespace aris
 		template <typename V1Type, typename V2Type>
 		auto inline s_is_equal(Size n, const double *v1, V1Type v1_t, const double *v2, V2Type v2_t, double error) noexcept->bool
 		{
-			double diff_square{ 0 };
-
-			for (Size i = 0; i < n; ++i)
-			{
-				diff_square += (v1[vid(i, v1_t)] - v2[vid(i, v2_t)])*(v1[vid(i, v1_t)] - v2[vid(i, v2_t)]);
-			}
-
-			return std::sqrt(std::abs(diff_square)) < error ? true : false;
+			for (Size i = 0; i < n; ++i)if (!s_is_equal(v1[vid(i, v1_t)], v2[vid(i, v2_t)], error))return false;
+			return true;
 		}
 		auto inline s_is_equal(Size n, const double *v1, const double *v2, double error) noexcept->bool { return s_is_equal(n, v1, 1, v2, 1, error); };
 		template <typename M1Type, typename M2Type>
 		auto inline s_is_equal(Size m, Size n, const double *m1, M1Type m1_t, const double *m2, M2Type m2_t, double error) noexcept->bool
 		{
-			double diff_square{ 0 };
-
-			for (Size i = 0; i < m; ++i)for (Size j = 0; j < n; ++j)
-			{
-				diff_square += (m1[id(i, j, m1_t)] - m2[id(i, j, m2_t)])*(m1[id(i, j, m1_t)] - m2[id(i, j, m2_t)]);
-			}
-
-			return std::sqrt(std::abs(diff_square)) > error ? false : true;
+			for (Size i = 0; i < m; ++i)for (Size j = 0; j < n; ++j)if (!s_is_equal(m1[id(i, j, m1_t)], m2[id(i, j, m2_t)], error)) return false;
+			return true;
 		}
 		auto inline s_is_equal(Size m, Size n, const double *m1, const double *m2, double error) noexcept->bool { return s_is_equal(m, n, m1, n, m2, n, error); };
 
@@ -384,7 +372,7 @@ namespace aris
 				// compute householder vector //
 				double rho = -s_norm_col(m - i, U + id(i, i, u_t), u_t) * s_sgn2(U[id(i, i, u_t)]);
 				tau[id(i, 0, tau_t)] = U[id(i, i, u_t)] / rho - 1.0;
-				s_nv(m - 1 - i, 1.0 / (U[id(i, i, u_t)] - rho), U + id(i + 1, i, u_t), u_t);
+				s_nm(m - 1 - i, 1, 1.0 / (U[id(i, i, u_t)] - rho), U + id(i + 1, i, u_t), u_t);
 				U[id(i, i, u_t)] = rho;
 
 				// update matrix //
@@ -413,7 +401,7 @@ namespace aris
 
 			// make Q
 			double r = R[0];
-			for (Size i = 1; i < std::min(m - 1, n); ++i)
+			for (Size i(0); ++i < std::min(m - 1, n);)
 			{
 				s_mc(m, 1, Q + id(0, i, q_t), q_t, R, r_t);
 
@@ -430,20 +418,44 @@ namespace aris
 		auto inline s_householder_ut2qr(Size m, Size n, const double *U, const double *tau, double *Q, double *R) { s_householder_ut2qr(m, n, U, n, tau, 1, Q, m, R, n); }
 		// x must have the same or bigger size with b
 		template<typename UType, typename TauType, typename BType, typename XType>
-		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
+		auto inline s_householder_ut_q_dot(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
 		{
 			s_mc(m, rhs, b, b_t, x, x_t);
 
-			for (Size i = 0; i < std::min(m - 1, n); ++i)
+			Size i_begin{ std::min(m - 1, n) };
+			for (Size i(i_begin); --i < i_begin;)
 			{
-				for (Size j = 0; j < rhs; ++j)
+				for (Size j(-1); ++j < rhs;)
 				{
 					double k = tau[id(i, 0, tau_t)] * (x[id(i, j, x_t)] + s_vv(m - i - 1, U + id(i + 1, i, u_t), CV(u_t), x + id(i + 1, j, x_t), CV(x_t)));
 					x[id(i, j, x_t)] += k;
-					s_va(m - i - 1, k, U + id(i + 1, i, u_t), u_t, x + id(i + 1, j, x_t), x_t);
+					s_ma(m - i - 1, 1, k, U + id(i + 1, i, u_t), u_t, x + id(i + 1, j, x_t), x_t);
 				}
 			}
+		}
+		auto inline s_householder_ut_q_dot(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x) { s_householder_ut_q_dot(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
+		// x must have the same or bigger size with b
+		template<typename UType, typename TauType, typename BType, typename XType>
+		auto inline s_householder_ut_qt_dot(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
+		{
+			s_mc(m, rhs, b, b_t, x, x_t);
 
+			for (Size i(-1); ++i < std::min(m - 1, n);)
+			{
+				for (Size j(-1); ++j < rhs;)
+				{
+					double k = tau[id(i, 0, tau_t)] * (x[id(i, j, x_t)] + s_vv(m - i - 1, U + id(i + 1, i, u_t), CV(u_t), x + id(i + 1, j, x_t), CV(x_t)));
+					x[id(i, j, x_t)] += k;
+					s_ma(m - i - 1, 1, k, U + id(i + 1, i, u_t), u_t, x + id(i + 1, j, x_t), x_t);
+				}
+			}
+		}
+		auto inline s_householder_ut_qt_dot(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x) { s_householder_ut_qt_dot(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
+		// x must have the same or bigger size with b
+		template<typename UType, typename TauType, typename BType, typename XType>
+		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
+		{
+			s_householder_ut_qt_dot(m, n, rhs, U, u_t, tau, tau_t, b, b_t, x, x_t);
 			s_sov_um(std::min(m, n), rhs, U, u_t, x, x_t, x, x_t);
 
 			if (n > m)s_fill(n - m, rhs, 0.0, x + id(m, 0, x_t), x_t);

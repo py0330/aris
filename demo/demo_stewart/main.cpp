@@ -151,166 +151,166 @@ const char xml_file[] =
 "</root>";
 
 
-class Robot :public aris::dynamic::Model
-{
-public:
-	using Model::loadXml;
-	auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override
-	{
-		Model::loadXml(xml_ele);
-
-		up_ = &*partPool().findByName("up");
-		p1a_ = &*partPool().findByName("p1a");
-		p1b_ = &*partPool().findByName("p1b");
-		p2a_ = &*partPool().findByName("p2a");
-		p2b_ = &*partPool().findByName("p2b");
-		p3a_ = &*partPool().findByName("p3a");
-		p3b_ = &*partPool().findByName("p3b");
-		p4a_ = &*partPool().findByName("p4a");
-		p4b_ = &*partPool().findByName("p4b");
-		p5a_ = &*partPool().findByName("p5a");
-		p5b_ = &*partPool().findByName("p5b");
-		p6a_ = &*partPool().findByName("p6a");
-		p6b_ = &*partPool().findByName("p6b");
-
-		m1_ = &*motionPool().findByName("m1");
-		m2_ = &*motionPool().findByName("m2");
-		m3_ = &*motionPool().findByName("m3");
-		m4_ = &*motionPool().findByName("m4");
-		m5_ = &*motionPool().findByName("m5");
-		m6_ = &*motionPool().findByName("m6");
-	}
-
-	auto virtual kinFromPin()->void override {};
-	auto virtual kinFromVin()->void override {};
-
-	auto setPee(double *pee)
-	{
-		up_->setPe(pee, "321");
-
-		double pp[3], pe[6]{ 0,0,0,0,0,0 }, pe2[6]{ 0,0,0,0,0,0 };
-		up_->markerPool().findByName("s1i")->getPp(*ground().markerPool().findByName("u1o"), pp);
-		s_sov_ab(pp, pe + 3, "132");
-		p1a_->setPe(*ground().markerPool().findByName("u1o"), pe, "132");
-		pe2[1] = s_norm(3, pp, 1);
-		p1b_->setPe(*p1a_, pe2);
-
-		up_->markerPool().findByName("s2i")->getPp(*ground().markerPool().findByName("u2o"), pp);
-		s_sov_ab(pp, pe + 3, "132");
-		p2a_->setPe(*ground().markerPool().findByName("u2o"), pe, "132");
-		pe2[1] = s_norm(3, pp, 1);
-		p2b_->setPe(*p2a_, pe2);
-
-		up_->markerPool().findByName("s3i")->getPp(*ground().markerPool().findByName("u3o"), pp);
-		s_sov_ab(pp, pe + 3, "132");
-		p3a_->setPe(*ground().markerPool().findByName("u3o"), pe, "132");
-		pe2[1] = s_norm(3, pp, 1);
-		p3b_->setPe(*p3a_, pe2);
-
-		up_->markerPool().findByName("s4i")->getPp(*ground().markerPool().findByName("u4o"), pp);
-		s_sov_ab(pp, pe + 3, "132");
-		p4a_->setPe(*ground().markerPool().findByName("u4o"), pe, "132");
-		pe2[1] = s_norm(3, pp, 1);
-		p4b_->setPe(*p4a_, pe2);
-
-		up_->markerPool().findByName("s5i")->getPp(*ground().markerPool().findByName("u5o"), pp);
-		s_sov_ab(pp, pe + 3, "132");
-		p5a_->setPe(*ground().markerPool().findByName("u5o"), pe, "132");
-		pe2[1] = s_norm(3, pp, 1);
-		p5b_->setPe(*p5a_, pe2);
-
-		up_->markerPool().findByName("s6i")->getPp(*ground().markerPool().findByName("u6o"), pp);
-		s_sov_ab(pp, pe + 3, "132");
-		p6a_->setPe(*ground().markerPool().findByName("u6o"), pe, "132");
-		pe2[1] = s_norm(3, pp, 1);
-		p6b_->setPe(*p6a_, pe2);
-
-		for (auto &mot : motionPool())
-		{
-			mot.updMp();
-			mot.updMv();
-		}
-	};
-	auto setVee(double *vee, double *pee)
-	{
-		up_->setVe(vee, pee, "321");
-
-		double pe[6]{ 0,0,0,0,0,0 }, pe2[6]{ 0,0,0,0,0,0 }, ve[6]{ 0,0,0,0,0,0 }, ve2[6]{ 0,0,0,0,0,0 };
-		up_->markerPool().findByName("s1i")->getPp(*ground().markerPool().findByName("u1o"), pe2);
-		up_->markerPool().findByName("s1i")->getVp(*ground().markerPool().findByName("u1o"), ve2);
-		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
-		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
-		p1a_->setVe(*ground().markerPool().findByName("u1o"), ve, pe, "132");
-		p1b_->setVe(*ground().markerPool().findByName("u1o"), ve2, pe2, "132");
-
-		up_->markerPool().findByName("s2i")->getPp(*ground().markerPool().findByName("u2o"), pe2);
-		up_->markerPool().findByName("s2i")->getVp(*ground().markerPool().findByName("u2o"), ve2);
-		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
-		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
-		p2a_->setVe(*ground().markerPool().findByName("u2o"), ve, pe, "132");
-		p2b_->setVe(*ground().markerPool().findByName("u2o"), ve2, pe2, "132");
-
-		up_->markerPool().findByName("s3i")->getPp(*ground().markerPool().findByName("u3o"), pe2);
-		up_->markerPool().findByName("s3i")->getVp(*ground().markerPool().findByName("u3o"), ve2);
-		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
-		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
-		p3a_->setVe(*ground().markerPool().findByName("u3o"), ve, pe, "132");
-		p3b_->setVe(*ground().markerPool().findByName("u3o"), ve2, pe2, "132");
-
-		up_->markerPool().findByName("s4i")->getPp(*ground().markerPool().findByName("u4o"), pe2);
-		up_->markerPool().findByName("s4i")->getVp(*ground().markerPool().findByName("u4o"), ve2);
-		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
-		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
-		p4a_->setVe(*ground().markerPool().findByName("u4o"), ve, pe, "132");
-		p4b_->setVe(*ground().markerPool().findByName("u4o"), ve2, pe2, "132");
-
-		up_->markerPool().findByName("s5i")->getPp(*ground().markerPool().findByName("u5o"), pe2);
-		up_->markerPool().findByName("s5i")->getVp(*ground().markerPool().findByName("u5o"), ve2);
-		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
-		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
-		p5a_->setVe(*ground().markerPool().findByName("u5o"), ve, pe, "132");
-		p5b_->setVe(*ground().markerPool().findByName("u5o"), ve2, pe2, "132");
-
-		up_->markerPool().findByName("s6i")->getPp(*ground().markerPool().findByName("u6o"), pe2);
-		up_->markerPool().findByName("s6i")->getVp(*ground().markerPool().findByName("u6o"), ve2);
-		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
-		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
-		p6a_->setVe(*ground().markerPool().findByName("u6o"), ve, pe, "132");
-		p6b_->setVe(*ground().markerPool().findByName("u6o"), ve2, pe2, "132");
-
-		for (auto &mot : motionPool())
-		{
-			mot.updMp();
-			mot.updMv();
-		}
-	};
-
-	auto p1a()->Part& { return *p1a_; }
-	auto p1b()->Part& { return *p1b_; }
-	auto p2a()->Part& { return *p2a_; }
-	auto p2b()->Part& { return *p2b_; }
-	auto p3a()->Part& { return *p3a_; }
-	auto p3b()->Part& { return *p3b_; }
-	auto p4a()->Part& { return *p4a_; }
-	auto p4b()->Part& { return *p4b_; }
-	auto p5a()->Part& { return *p5a_; }
-	auto p5b()->Part& { return *p5b_; }
-	auto p6a()->Part& { return *p6a_; }
-	auto p6b()->Part& { return *p6b_; }
-	auto up()->Part& { return *up_; }
-
-	auto m1()->Motion& { return *m1_; }
-	auto m2()->Motion& { return *m2_; }
-	auto m3()->Motion& { return *m3_; }
-	auto m4()->Motion& { return *m4_; }
-	auto m5()->Motion& { return *m5_; }
-	auto m6()->Motion& { return *m6_; }
-
-private:
-	aris::dynamic::Part *p1a_, *p1b_, *p2a_, *p2b_, *p3a_, *p3b_, *p4a_, *p4b_, *p5a_, *p5b_, *p6a_, *p6b_, *up_;
-	aris::dynamic::Motion *m1_, *m2_, *m3_, *m4_, *m5_, *m6_;
-	//aris::dynamic::Joint *u1, *p1, *s1, *p5b_, *p5a_, *p5b_, *p5a_, *p5b_, *p5a_, *p5b_, *p6a_, *p6b_;
-};
+//class Robot :public aris::dynamic::Model
+//{
+//public:
+//	using Model::loadXml;
+//	auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override
+//	{
+//		Model::loadXml(xml_ele);
+//
+//		up_ = &*partPool().findByName("up");
+//		p1a_ = &*partPool().findByName("p1a");
+//		p1b_ = &*partPool().findByName("p1b");
+//		p2a_ = &*partPool().findByName("p2a");
+//		p2b_ = &*partPool().findByName("p2b");
+//		p3a_ = &*partPool().findByName("p3a");
+//		p3b_ = &*partPool().findByName("p3b");
+//		p4a_ = &*partPool().findByName("p4a");
+//		p4b_ = &*partPool().findByName("p4b");
+//		p5a_ = &*partPool().findByName("p5a");
+//		p5b_ = &*partPool().findByName("p5b");
+//		p6a_ = &*partPool().findByName("p6a");
+//		p6b_ = &*partPool().findByName("p6b");
+//
+//		m1_ = &*motionPool().findByName("m1");
+//		m2_ = &*motionPool().findByName("m2");
+//		m3_ = &*motionPool().findByName("m3");
+//		m4_ = &*motionPool().findByName("m4");
+//		m5_ = &*motionPool().findByName("m5");
+//		m6_ = &*motionPool().findByName("m6");
+//	}
+//
+//	auto virtual kinFromPin()->void override {};
+//	auto virtual kinFromVin()->void override {};
+//
+//	auto setPee(double *pee)
+//	{
+//		up_->setPe(pee, "321");
+//
+//		double pp[3], pe[6]{ 0,0,0,0,0,0 }, pe2[6]{ 0,0,0,0,0,0 };
+//		up_->markerPool().findByName("s1i")->getPp(*ground().markerPool().findByName("u1o"), pp);
+//		s_sov_ab(pp, pe + 3, "132");
+//		p1a_->setPe(*ground().markerPool().findByName("u1o"), pe, "132");
+//		pe2[1] = s_norm(3, pp, 1);
+//		p1b_->setPe(*p1a_, pe2);
+//
+//		up_->markerPool().findByName("s2i")->getPp(*ground().markerPool().findByName("u2o"), pp);
+//		s_sov_ab(pp, pe + 3, "132");
+//		p2a_->setPe(*ground().markerPool().findByName("u2o"), pe, "132");
+//		pe2[1] = s_norm(3, pp, 1);
+//		p2b_->setPe(*p2a_, pe2);
+//
+//		up_->markerPool().findByName("s3i")->getPp(*ground().markerPool().findByName("u3o"), pp);
+//		s_sov_ab(pp, pe + 3, "132");
+//		p3a_->setPe(*ground().markerPool().findByName("u3o"), pe, "132");
+//		pe2[1] = s_norm(3, pp, 1);
+//		p3b_->setPe(*p3a_, pe2);
+//
+//		up_->markerPool().findByName("s4i")->getPp(*ground().markerPool().findByName("u4o"), pp);
+//		s_sov_ab(pp, pe + 3, "132");
+//		p4a_->setPe(*ground().markerPool().findByName("u4o"), pe, "132");
+//		pe2[1] = s_norm(3, pp, 1);
+//		p4b_->setPe(*p4a_, pe2);
+//
+//		up_->markerPool().findByName("s5i")->getPp(*ground().markerPool().findByName("u5o"), pp);
+//		s_sov_ab(pp, pe + 3, "132");
+//		p5a_->setPe(*ground().markerPool().findByName("u5o"), pe, "132");
+//		pe2[1] = s_norm(3, pp, 1);
+//		p5b_->setPe(*p5a_, pe2);
+//
+//		up_->markerPool().findByName("s6i")->getPp(*ground().markerPool().findByName("u6o"), pp);
+//		s_sov_ab(pp, pe + 3, "132");
+//		p6a_->setPe(*ground().markerPool().findByName("u6o"), pe, "132");
+//		pe2[1] = s_norm(3, pp, 1);
+//		p6b_->setPe(*p6a_, pe2);
+//
+//		for (auto &mot : motionPool())
+//		{
+//			mot.updMp();
+//			mot.updMv();
+//		}
+//	};
+//	auto setVee(double *vee, double *pee)
+//	{
+//		up_->setVe(vee, pee, "321");
+//
+//		double pe[6]{ 0,0,0,0,0,0 }, pe2[6]{ 0,0,0,0,0,0 }, ve[6]{ 0,0,0,0,0,0 }, ve2[6]{ 0,0,0,0,0,0 };
+//		up_->markerPool().findByName("s1i")->getPp(*ground().markerPool().findByName("u1o"), pe2);
+//		up_->markerPool().findByName("s1i")->getVp(*ground().markerPool().findByName("u1o"), ve2);
+//		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
+//		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
+//		p1a_->setVe(*ground().markerPool().findByName("u1o"), ve, pe, "132");
+//		p1b_->setVe(*ground().markerPool().findByName("u1o"), ve2, pe2, "132");
+//
+//		up_->markerPool().findByName("s2i")->getPp(*ground().markerPool().findByName("u2o"), pe2);
+//		up_->markerPool().findByName("s2i")->getVp(*ground().markerPool().findByName("u2o"), ve2);
+//		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
+//		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
+//		p2a_->setVe(*ground().markerPool().findByName("u2o"), ve, pe, "132");
+//		p2b_->setVe(*ground().markerPool().findByName("u2o"), ve2, pe2, "132");
+//
+//		up_->markerPool().findByName("s3i")->getPp(*ground().markerPool().findByName("u3o"), pe2);
+//		up_->markerPool().findByName("s3i")->getVp(*ground().markerPool().findByName("u3o"), ve2);
+//		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
+//		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
+//		p3a_->setVe(*ground().markerPool().findByName("u3o"), ve, pe, "132");
+//		p3b_->setVe(*ground().markerPool().findByName("u3o"), ve2, pe2, "132");
+//
+//		up_->markerPool().findByName("s4i")->getPp(*ground().markerPool().findByName("u4o"), pe2);
+//		up_->markerPool().findByName("s4i")->getVp(*ground().markerPool().findByName("u4o"), ve2);
+//		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
+//		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
+//		p4a_->setVe(*ground().markerPool().findByName("u4o"), ve, pe, "132");
+//		p4b_->setVe(*ground().markerPool().findByName("u4o"), ve2, pe2, "132");
+//
+//		up_->markerPool().findByName("s5i")->getPp(*ground().markerPool().findByName("u5o"), pe2);
+//		up_->markerPool().findByName("s5i")->getVp(*ground().markerPool().findByName("u5o"), ve2);
+//		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
+//		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
+//		p5a_->setVe(*ground().markerPool().findByName("u5o"), ve, pe, "132");
+//		p5b_->setVe(*ground().markerPool().findByName("u5o"), ve2, pe2, "132");
+//
+//		up_->markerPool().findByName("s6i")->getPp(*ground().markerPool().findByName("u6o"), pe2);
+//		up_->markerPool().findByName("s6i")->getVp(*ground().markerPool().findByName("u6o"), ve2);
+//		s_sov_vab(pe2, ve2, ve + 3, pe + 3, "132");
+//		s_sov_vab(pe2, ve2, ve2 + 3, pe2 + 3, "132");
+//		p6a_->setVe(*ground().markerPool().findByName("u6o"), ve, pe, "132");
+//		p6b_->setVe(*ground().markerPool().findByName("u6o"), ve2, pe2, "132");
+//
+//		for (auto &mot : motionPool())
+//		{
+//			mot.updMp();
+//			mot.updMv();
+//		}
+//	};
+//
+//	auto p1a()->Part& { return *p1a_; }
+//	auto p1b()->Part& { return *p1b_; }
+//	auto p2a()->Part& { return *p2a_; }
+//	auto p2b()->Part& { return *p2b_; }
+//	auto p3a()->Part& { return *p3a_; }
+//	auto p3b()->Part& { return *p3b_; }
+//	auto p4a()->Part& { return *p4a_; }
+//	auto p4b()->Part& { return *p4b_; }
+//	auto p5a()->Part& { return *p5a_; }
+//	auto p5b()->Part& { return *p5b_; }
+//	auto p6a()->Part& { return *p6a_; }
+//	auto p6b()->Part& { return *p6b_; }
+//	auto up()->Part& { return *up_; }
+//
+//	auto m1()->Motion& { return *m1_; }
+//	auto m2()->Motion& { return *m2_; }
+//	auto m3()->Motion& { return *m3_; }
+//	auto m4()->Motion& { return *m4_; }
+//	auto m5()->Motion& { return *m5_; }
+//	auto m6()->Motion& { return *m6_; }
+//
+//private:
+//	aris::dynamic::Part *p1a_, *p1b_, *p2a_, *p2b_, *p3a_, *p3b_, *p4a_, *p4b_, *p5a_, *p5b_, *p6a_, *p6b_, *up_;
+//	aris::dynamic::Motion *m1_, *m2_, *m3_, *m4_, *m5_, *m6_;
+//	//aris::dynamic::Joint *u1, *p1, *s1, *p5b_, *p5a_, *p5b_, *p5a_, *p5b_, *p5a_, *p5b_, *p6a_, *p6b_;
+//};
 
 
 int main()
@@ -402,7 +402,7 @@ int main()
 		rbt.generalMotionPool().findByName("general_motion")->activate(false);
 		for (auto &m : rbt.motionPool())m.activate(true);
 
-		rbt.allocateMemory();
+		//rbt.allocateMemory();
 
 		std::cout << "forward time:" << aris::core::benchmark(1000, [&]()
 		{
@@ -410,10 +410,10 @@ int main()
 			double pin2[6]{ 2.1 , 1.98 , 2.05 , 2.13 , 1.86 , 1.88 };
 
 			for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin1[i]);
-			auto ret1 = rbt.kinPosInGlb(100);
+			//auto ret1 = rbt.kinPosInGlb(100);
 
 			for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin2[i]);
-			auto ret2 = rbt.kinPosInGlb(100);
+			//auto ret2 = rbt.kinPosInGlb(100);
 		}) << std::endl;
 	}
 	catch (std::exception&e)

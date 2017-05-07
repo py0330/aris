@@ -434,9 +434,13 @@ void test_kinematic_stewart()
 		m.kinVelInGlb();
 		m.allocateMemory();
 		m.kinAccInGlb();
+		//////////////////////////////////////////
 		dlmwrite("C:\\Users\\py033\\Desktop\\cm.txt", m.glbCm(), m.pSize(), m.cSize());
 		dlmwrite("C:\\Users\\py033\\Desktop\\ca.txt", m.ca(), m.cSize(), 1);
 		dlmwrite("C:\\Users\\py033\\Desktop\\pa.txt", m.glbPa(), m.pSize(), 1);
+		m.allocate();
+		m.kinAccInGlbNew();
+		////////////////////////////////////////////
 		m.allocateMemory();
 		m.dynFceInGlb();
 		for (aris::Size i = 0; i < 6; ++i)
@@ -525,6 +529,10 @@ void test_kinematic_stewart()
 		m.kinVelInGlb();
 		m.allocateMemory();
 		m.kinAccInGlb();
+		////////////////////////////////////////////////////////////////////////////
+		//m.allocate();
+		//m.kinAccInGlbNew();
+		////////////////////////////////////////////////////////////////////////////
 		m.allocateMemory();
 		m.dynFceInGlb();
 		m.allocateMemory();

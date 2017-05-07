@@ -39,6 +39,8 @@ namespace aris
 		class Element :public aris::core::Object
 		{
 		public:
+			//static auto Type()->const std::string &{ static const std::string type{ "Element" }; return type; }
+			//auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveAdams(std::ofstream &file) const->void { for (auto &ele : children())static_cast<const Element &>(ele).saveAdams(file); }
 			auto virtual adamsID()const->Size { return id() + 1; }
 			auto virtual adamsType()const->const std::string &{ return type(); }
@@ -204,9 +206,6 @@ namespace aris
 			auto virtual updGlbCm()->void;
 			auto virtual updCa()->void;
 			auto virtual updCe()->void;
-			auto colID()const->Size;
-			auto blkColID()const->Size;
-
 
 		protected:
 			virtual ~Constraint();
@@ -436,9 +435,6 @@ namespace aris
 			auto virtual adamsID()const->Size override;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto blkRowID()const->Size;
-			auto rowID()const->Size;
-			auto clbID()const->Size;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
@@ -722,6 +718,38 @@ namespace aris
 			friend class Model;
 			friend class aris::core::Root;
 		};
+		class Solver :public Element
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Solver" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual allocateMemory()->void = 0;
+			auto virtual kinPos()->void = 0;
+			auto virtual kinVel()->void = 0;
+			auto virtual kinAcc()->void = 0;
+			auto virtual dynFce()->void = 0;
+			auto error()const->double;
+			auto setError(double error)->void;
+			auto maxError()const->double;
+			auto setMaxError(double max_error)->void;
+			auto iterCount()const->Size;
+			auto setIterCount(Size iter_count)->void;
+			auto maxIterCount()const->Size;
+			auto setMaxIterCount(Size max_count)->void;
+
+
+		protected:
+			virtual ~Solver();
+			explicit Solver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Solver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
+			Solver(const Solver&);
+			Solver(Solver&&);
+			Solver& operator=(const Solver&);
+			Solver& operator=(Solver&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
 
 		class Model :public aris::core::Root
 		{
@@ -764,6 +792,8 @@ namespace aris
 			auto generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>&;
 			auto forcePool()->aris::core::ObjectPool<Force, Element>&;
 			auto forcePool()const->const aris::core::ObjectPool<Force, Element>&;
+			auto solverPool()->aris::core::ObjectPool<Solver, Element>&;
+			auto solverPool()const->const aris::core::ObjectPool<Solver, Element>&;
 			auto markerSize()const->Size { Size size{ 0 }; for (auto &prt : partPool())size += prt.markerPool().size(); return size; }
 			auto updMotionID()->void;
 			auto motionAtAbs(Size abs_id)->Motion&;
@@ -776,7 +806,7 @@ namespace aris
 			auto ground()const->const Part&;
 
 
-
+			/*
 			// 动力学计算以下变量的关系
 			// I  ： 惯量矩阵,m*m
 			// C  ： 约束矩阵,m*n
@@ -796,6 +826,8 @@ namespace aris
 			//
 			// b = [ pf ]
 			//     [ ca ]
+			auto allocate()->void;
+			auto kinAccInGlbNew()->void;
 			auto allocateMemory()->void;
 			auto activePartPool()->aris::core::RefPool<Part>&;
 			auto activeConstraintPool()->aris::core::RefPool<Constraint>&;
@@ -971,7 +1003,7 @@ namespace aris
 			auto simDyn(const PlanFunc &func, const PlanParamBase &param, Size akima_interval = 1, Script *script = nullptr)->SimResult;
 			// 直接生成Adams模型,依赖SimDynAkima
 			auto simToAdams(const std::string &filename, const PlanFunc &func, const PlanParamBase &param, Size ms_dt = 10, Script *script = nullptr)->SimResult;
-
+			*/
 			virtual ~Model();
 			Model(const std::string &name = "model");
 		private:
@@ -1232,6 +1264,231 @@ namespace aris
 			friend class aris::core::Root;
 			friend class aris::core::Object;
 		};
+
+		class FullMatrixSolver : public Solver
+		{
+		public:
+			struct PartBlock
+			{
+				Part* part_;
+				Size row_id_, blk_row_id_;
+			};
+			struct ConstraintBlock
+			{
+				Constraint* constraint_;
+				Size col_id_, blk_col_id_;
+				PartBlock *pb_i_, *pb_j_;
+			};
+			
+			static const std::string& Type() { static const std::string type("FullMatrixSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual allocateMemory()->void;
+
+			auto activePartBlockPool()->std::vector<PartBlock>&;
+			auto activeConstraintBlockPool()->std::vector<ConstraintBlock>&;
+			auto cSize()->Size;
+			auto pSize()->Size;
+			auto im()->double *;
+			auto cm()->double *;
+			auto cp()->double *;
+			auto cv()->double *;
+			auto ca()->double *;
+			auto cf()->double *;
+			auto pp()->double *;
+			auto pv()->double *;
+			auto pa()->double *;
+			auto pf()->double *;
+
+			auto cBlkSize()->BlockSize&;
+			auto pBlkSize()->BlockSize&;
+			auto cpBlk()->BlockData&;
+			auto cvBlk()->BlockData&;
+			auto caBlk()->BlockData&;
+			auto cfBlk()->BlockData&;
+			auto imBlk()->BlockData&;
+			auto cmBlk()->BlockData&;
+			auto ppBlk()->BlockData&;
+			auto pvBlk()->BlockData&;
+			auto paBlk()->BlockData&;
+			auto pfBlk()->BlockData&;
+
+		protected:
+			virtual ~FullMatrixSolver();
+			explicit FullMatrixSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
+			explicit FullMatrixSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			FullMatrixSolver(const FullMatrixSolver &other);
+			FullMatrixSolver(FullMatrixSolver &&other);
+			FullMatrixSolver& operator=(const FullMatrixSolver &other);
+			FullMatrixSolver& operator=(FullMatrixSolver &&other);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class GroundFullMatrixSolver:public FullMatrixSolver
+		{
+		public:
+			static const std::string& Type() { static const std::string type("GroundFullMatrixSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->void override;
+			auto virtual kinVel()->void override;
+			auto virtual kinAcc()->void override;
+			auto virtual dynFce()->void override;
+			auto updIm()->void;
+			auto updCm()->void;
+			auto updCp()->void;
+			auto updCv()->void;
+			auto updCa()->void;
+			auto updPv()->void;
+			auto updPa()->void;
+			auto updPf()->void;
+
+			auto updConstraintFce()->void;
+			auto updPartPos()->void;
+			auto updPartVel()->void;
+			auto updPartAcc()->void;
+
+
+
+		protected:
+			virtual ~GroundFullMatrixSolver();
+			explicit GroundFullMatrixSolver(const std::string &name);
+			explicit GroundFullMatrixSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			GroundFullMatrixSolver(const GroundFullMatrixSolver &other);
+			GroundFullMatrixSolver(GroundFullMatrixSolver &&other);
+			GroundFullMatrixSolver& operator=(const GroundFullMatrixSolver &other);
+			GroundFullMatrixSolver& operator=(GroundFullMatrixSolver &&other);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class PartFullMatrixSolver :public FullMatrixSolver
+		{
+		public:
+			static const std::string& Type() { static const std::string type("PartFullMatrixSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->void override;
+			auto virtual kinVel()->void override;
+			auto virtual kinAcc()->void override;
+			auto virtual dynFce()->void override;
+			auto updIm()->void;
+			auto updCm()->void;
+			auto updCp()->void;
+			auto updCv()->void;
+			auto updCa()->void;
+			auto updPv()->void;
+			auto updPa()->void;
+			auto updPf()->void;
+
+			auto updConstraintFce()->void;
+			auto updPartPos()->void;
+			auto updPartVel()->void;
+			auto updPartAcc()->void;
+
+
+
+		protected:
+			virtual ~PartFullMatrixSolver();
+			explicit PartFullMatrixSolver(const std::string &name);
+			explicit PartFullMatrixSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			PartFullMatrixSolver(const PartFullMatrixSolver &other);
+			PartFullMatrixSolver(PartFullMatrixSolver &&other);
+			PartFullMatrixSolver& operator=(const PartFullMatrixSolver &other);
+			PartFullMatrixSolver& operator=(PartFullMatrixSolver &&other);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class DiagSolver : public Solver
+		{
+		public:
+			struct Relation
+			{
+				struct Block { Constraint* constraint; bool is_I; };
+				
+				Part *prtI;
+				Part *prtJ;
+				Size dim;
+				std::vector<Block> cst_pool_;
+			};
+			struct Diag
+			{
+				double cm[36], x[6], b[6]; // determine I or J automatically
+				double U[36], tau[6];
+				//double Q[36], R[36];
+				Size rows;
+				Relation *rel;
+				Part *part;
+				Diag *rd;//related diag
+				bool is_I;
+			};
+			struct Remainder
+			{
+				struct Block { Diag* diag; bool is_I; };
+				
+				double cmI[36], cmJ[36], x[6], b[6];
+				std::vector<Block> cm_blk_series;
+				Relation *rel;
+			};
+			static const std::string& Type() { static const std::string type("DiagSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->void override;
+			auto virtual kinVel()->void override;
+			auto virtual kinAcc()->void override;
+			auto virtual dynFce()->void override;
+			auto updDiagCm()->void;
+			auto updDiagCp()->void;
+			auto updDiagCv()->void;
+			auto updDiagCa()->void;
+			auto updDiagPf()->void;
+			auto updRemainderCm()->void;
+			auto updRemainderCp()->void;
+			auto updRemainderCv()->void;
+			auto updRemainderCa()->void;
+			auto updA()->void;
+			auto updB()->void;
+			auto updX()->void;
+			auto updBf()->void;
+			auto updXf()->void;
+			auto relationPool()->std::vector<Relation>&;
+			auto activePartPool()->std::vector<Part*>&;
+			auto diagPool()->std::vector<Diag>&;
+			auto remainderPool()->std::vector<Remainder>&;
+			auto plotRelation()->void;
+			auto plotDiag()->void;
+			auto plotRemainder()->void;
+
+		protected:
+			virtual ~DiagSolver();
+			explicit DiagSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
+			explicit DiagSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			DiagSolver(const DiagSolver &other);
+			DiagSolver(DiagSolver &&other);
+			DiagSolver& operator=(const DiagSolver &other);
+			DiagSolver& operator=(DiagSolver &&other);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+
 	}
 }
 
