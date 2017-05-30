@@ -1,11 +1,12 @@
 ﻿#include "test_dynamic_block_matrix.h"
 #include <iostream>
 #include <aris.h>
+#include <aris_dynamic_cell.h>
 
 using namespace aris::dynamic;
 
 const double error = 1e-10;
-
+/*
 void test_block_basic()
 {
 	std::vector<double> A_data(100, 0.15);
@@ -304,7 +305,7 @@ void test_block_householder_new()
 
 	Block<double*, StrideN> A{ 2,2,A_data,StrideN{ 2,1 },false };
 }
-
+*/
 
 void test_block_multiply()
 {
@@ -669,10 +670,10 @@ void test_block_matrix()
 {
 	std::cout << std::endl << "-----------------test block matrix--------------------" << std::endl;
 
-	test_block_basic();
-	test_block_multiply_new();
-	test_block_llt_new();
-	test_block_householder_new();
+	//test_block_basic();
+	//test_block_multiply_new();
+	//test_block_llt_new();
+	//test_block_householder_new();
 
 	test_block_multiply();
 	test_block_llt();

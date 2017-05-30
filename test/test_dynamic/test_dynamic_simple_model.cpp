@@ -277,34 +277,34 @@ void test_simple_model()
 	rl_ee->updMpm();
 	rl_ee->getMpm(rl_ee_pm1);
 
+	m.allocateMemory();
+	for (int i = 0; i < 1000; ++i)
+	{
+		body_ee->setMpe(std::array<double, 6>{0, 0, -1e-5*i, 0, 0, 0}.data(), "313");
+		la_ee->setMpm(pm_hand_change(la_ee_pm));
+		ra_ee->setMpm(pm_hand_change(ra_ee_pm));
+		ll_ee->setMpm(pm_hand_change(ll_ee_pm));
+		rl_ee->setMpm(pm_hand_change(rl_ee_pm));
+		if (!m.inverseKinematic())
+		{
+			std::cout << "inverseKinematic failed" << std::endl;
+			break;
+		}
+	}
 
-	//for (int i = 0; i < 1000; ++i)
-	//{
-	//	body_ee->setMpe(std::array<double, 6>{0, 0, -1e-5*i, 0, 0, 0}.data(), "313");
-	//	la_ee->setMpm(pm_hand_change(la_ee_pm));
-	//	ra_ee->setMpm(pm_hand_change(ra_ee_pm));
-	//	ll_ee->setMpm(pm_hand_change(ll_ee_pm));
-	//	rl_ee->setMpm(pm_hand_change(rl_ee_pm));
-	//	if (!m.inverseKinematic())
-	//	{
-	//		std::cout << "inverseKinematic failed" << std::endl;
-	//		break;
-	//	}
-	//}
-
-	//for (int i = 0; i < 1000; ++i)
-	//{
-	//	body_ee->setMpe(std::array<double, 6>{0, 0, -1e-2 - 1e-4*i, 0, 0, 0}.data(), "313");
-	//	la_ee->setMpm(pm_hand_change(la_ee_pm));
-	//	ra_ee->setMpm(pm_hand_change(ra_ee_pm));
-	//	ll_ee->setMpm(pm_hand_change(ll_ee_pm));
-	//	rl_ee->setMpm(pm_hand_change(rl_ee_pm));
-	//	if (!m.inverseKinematic())
-	//	{
-	//		std::cout << "inverseKinematic failed" << std::endl;
-	//		break;
-	//	}
-	//}
+	for (int i = 0; i < 1000; ++i)
+	{
+		body_ee->setMpe(std::array<double, 6>{0, 0, -1e-2 - 1e-4*i, 0, 0, 0}.data(), "313");
+		la_ee->setMpm(pm_hand_change(la_ee_pm));
+		ra_ee->setMpm(pm_hand_change(ra_ee_pm));
+		ll_ee->setMpm(pm_hand_change(ll_ee_pm));
+		rl_ee->setMpm(pm_hand_change(rl_ee_pm));
+		if (!m.inverseKinematic())
+		{
+			std::cout << "inverseKinematic failed" << std::endl;
+			break;
+		}
+	}
 
 	//m.saveXml("C:\\Users\\py033\\Desktop\\m.xml");
 

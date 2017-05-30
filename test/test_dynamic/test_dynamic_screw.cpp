@@ -159,6 +159,46 @@ void test_cross()
 	const double r16[]{ 0.152125,0.09875,0,0.2096,0.226,0,0.335575,0.32975,0 };
 	double c16[]{ 0.1,0.11,0,0.2,0.22,0,0.35,0.33,0 };
 
+	const double a17[]{ 0.12, 0.25, 0.6 };
+	const double b17[]{ 0.13, -0.21, 0.33 };
+	const double r17[]{ -0.2085,-0.0384,0.0577 };
+	double c17[]{ 0,0,0 };
+
+	const double a18[]{ 0.12,0,0,0, 0.25,0,0,0, 0.6,0,0,0 };
+	const double b18[]{ 0.13,0,0, -0.21,0,0, 0.33,0,0 };
+	const double r18[]{ -0.2085,0,-0.0384,0,0.0577,0 };
+	double c18[]{ 0,0,0,0,0,0 };
+
+	const double a19[]{ 0.12, 0.25, 0.6 };
+	const double b19[]{ 0.13, -0.21, 0.33 };
+	const double r19[]{ -0.3085,   -0.2384,   -0.2923 };
+	double c19[]{ -0.1,-0.2,-0.35 };
+
+	const double a20[]{ 0.12,0,0,0, 0.25,0,0,0, 0.6,0,0,0 };
+	const double b20[]{ 0.13,0,0, -0.21,0,0, 0.33,0,0 };
+	const double r20[]{ -0.3085,0,   -0.2384,0,   -0.2923,0 };
+	double c20[]{ -0.1,0,-0.2,0,-0.35,0 };
+
+	const double a21[]{ 0.12, 0.25, 0.6 };
+	const double b21[]{ 0.13, 0.1,-0.21, 0.2,0.33,0.3 };
+	const double r21[]{ -0.2085,0.045,-0.0384,-0.024,0.0577,0.001 };
+	double c21[]{ 0,0,0,0,0,0 };
+
+	const double a22[]{ 0.12,0,0,0,0, 0.25,0,0,0,0, 0.6,0,0,0,0 };
+	const double b22[]{ 0.13, 0.1,0,0,-0.21, 0.2,0,0,0.33,0.3,0,0 };
+	const double r22[]{ -0.2085,0.045,0,-0.0384,-0.024,0,0.0577,0.001,0 };
+	double c22[]{ 0,0,0,0,0,0,0,0,0 };
+
+	const double a23[]{ 0.12, 0.25, 0.6 };
+	const double b23[]{ 0.13, 0.1,-0.21, 0.2,0.33,0.3 };
+	const double r23[]{ -0.3085,   -0.065,   -0.2384,   -0.244,   -0.2923,   -0.329 };
+	double c23[]{ -0.1,-0.11,-0.2,-0.22,-0.35,-0.33 };
+
+	const double a24[]{ 0.12,0,0,0,0, 0.25,0,0,0,0, 0.6,0,0,0,0 };
+	const double b24[]{ 0.13, 0.1,0,0,-0.21,0.2,0,0,0.33,0.3,0,0 };
+	const double r24[]{ -0.3085,-0.065,0,-0.2384,-0.244,0,-0.2923,-0.329,0 };
+	double c24[]{ -0.1,-0.11,0,-0.2,-0.22,0,-0.35,-0.33,0 };
+
 	s_cm3(a1, result);
 	if (!s_is_equal(9, result, cm3, error))std::cout << "\"s_cm3\" failed" << std::endl;
 
@@ -209,6 +249,30 @@ void test_cross()
 
 	s_c3a_n(2, 0.25, a16, 5, b16, 4, c16, 3);
 	if (!s_is_equal(9, c16, r16, error))std::cout << "\"s_c3a_n with ld\" failed" << std::endl;
+
+	s_c3i(a17, b17, c17);
+	if (!s_is_equal(3, c17, r17, error))std::cout << "\"s_c3i\" failed" << std::endl;
+
+	s_c3i(a18, 4, b18, 3, c18, 2);
+	if (!s_is_equal(6, c18, r18, error))std::cout << "\"s_c3i with ld\" failed" << std::endl;
+
+	s_c3s(a19, b19, c19);
+	if (!s_is_equal(3, c19, r19, error))std::cout << "\"s_c3s\" failed" << std::endl;
+
+	s_c3s(a20, 4, b20, 3, c20, 2);
+	if (!s_is_equal(6, c20, r20, error))std::cout << "\"s_c3s with ld\" failed" << std::endl;
+
+	s_c3i_n(2, a21, b21, c21);
+	if (!s_is_equal(6, c21, r21, error))std::cout << "\"s_c3i_n\" failed" << std::endl;
+
+	s_c3i_n(2, a22, 5, b22, 4, c22, 3);
+	if (!s_is_equal(9, c22, r22, error))std::cout << "\"s_c3i_n with ld\" failed" << std::endl;
+
+	s_c3s_n(2, a23, b23, c23);
+	if (!s_is_equal(6, c23, r23, error))std::cout << "\"s_c3s_n\" failed" << std::endl;
+
+	s_c3s_n(2, a24, 5, b24, 4, c24, 3);
+	if (!s_is_equal(9, c24, r24, error))std::cout << "\"s_c3s_n with ld\" failed" << std::endl;
 
 	const double cmf[]{ 0,-0.63,0.52,0,0,0,0.63,0,-0.41,0,0,0,-0.52,0.41,0,0,0,0,0,-0.3,0.2,0,-0.63,0.52,0.3,0,-0.1,0.63,0,-0.41,-0.2,0.1,0,-0.52,0.41,0 };
 
@@ -292,6 +356,47 @@ void test_cross()
 	const double rf16[]{ 0.512075,0.1325,0,0.307,0.22,0,0.687475,-0.3675,0,1.0914,0.44425,0,0.88615,0.5765,0,-0.2894,-0.66575,0 };
 	double cf16[]{ 0.36,0.125,0,0.23,0.235,0,0.85,-0.375,0,1.12,0.445,0,0.89,0.575,0,-0.34,-0.665,0 };
 
+	const double vs17[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
+	const double f17[]{ 0.99,-0.33,0.77,-0.66,0.22,-0.44 };
+	const double rf17[]{ -0.6083,-0.308,0.6501,0.1144,0.0154,-0.2024 };
+	double cf17[]{ 0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	const double vs18[]{ 0.1,0,0,0,0.2,0,0,0,0.3,0,0,0,0.41,0,0,0,0.52,0,0,0,0.63,0,0,0 };
+	const double f18[]{ 0.99,0,0,-0.33,0,0,0.77,0,0,-0.66,0,0,0.22,0,0,-0.44,0,0 };
+	const double rf18[]{ -0.6083,0,-0.308,0,0.6501,0,0.1144,0,0.0154,0,-0.2024,0 };
+	double cf18[]{ 0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	const double vs19[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
+	const double f19[]{ 0.99,-0.33,0.77,-0.66,0.22,-0.44 };
+	const double rf19[]{ -0.9683,-0.538,-0.1999,-1.0056,-0.8746,0.1376 };
+	double cf19[]{ -0.36,-0.23,-0.85,-1.12,-0.89,0.34 };
+
+	const double vs20[]{ 0.1,0,0,0,0.2,0,0,0,0.3,0,0,0,0.41,0,0,0,0.52,0,0,0,0.63,0,0,0 };
+	const double f20[]{ 0.99,0,0,-0.33,0,0,0.77,0,0,-0.66,0,0,0.22,0,0,-0.44,0,0 };
+	const double rf20[]{ -0.9683,0,-0.538,0,-0.1999,0,-1.0056,0,-0.8746,0,0.1376,0 };
+	double cf20[]{ -0.36,0,-0.23,0,-0.85,0,-1.12,0,-0.89,0,0.34,0 };
+
+	const double vs21[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
+	const double f21[]{ 0.99,0.1,-0.33,0.2,0.77,0.3,-0.66,0.4,0.22,0.5,-0.44,0.6 };
+	const double rf21[]{ -0.6083,-0.03,-0.308,0.06,0.6501,-0.03,0.1144,0.003,0.0154,-0.006,-0.2024,0.003 };
+	double cf21[]{ 0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	const double vs22[]{ 0.1,0,0,0,0,0.2,0,0,0,0,0.3,0,0,0,0,0.41,0,0,0,0,0.52,0,0,0,0,0.63,0,0,0,0 };
+	const double f22[]{ 0.99,0.1,0,0,-0.33,0.2,0,0,0.77,0.3,0,0,-0.66,0.4,0,0,0.22,0.5,0,0,-0.44,0.6,0,0 };
+	const double rf22[]{ -0.6083,-0.03,0,-0.308,0.06,0,0.6501,-0.03,0,0.1144,0.003,0,0.0154,-0.006,0,-0.2024,0.003,0 };
+	double cf22[]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	const double vs23[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
+	const double f23[]{ 0.99,0.1,-0.33,0.2,0.77,0.3,-0.66,0.4,0.22,0.5,-0.44,0.6 };
+	const double rf23[]{ -0.9683,-0.155,-0.538,-0.175,-0.1999,0.345,-1.0056,-0.442,-0.8746,-0.581,0.1376,0.668 };
+	double cf23[]{ -0.36,-0.125,-0.23,-0.235,-0.85,0.375,-1.12,-0.445,-0.89,-0.575,0.34,0.665 };
+
+	const double vs24[]{ 0.1,0,0,0,0,0.2,0,0,0,0,0.3,0,0,0,0,0.41,0,0,0,0,0.52,0,0,0,0,0.63,0,0,0,0 };
+	const double f24[]{ 0.99,0.1,0,0,-0.33,0.2,0,0,0.77,0.3,0,0,-0.66,0.4,0,0,0.22,0.5,0,0,-0.44,0.6,0,0 };
+	const double rf24[]{ -0.9683,-0.155,0,-0.538,-0.175,0,-0.1999,0.345,0,-1.0056,-0.442,0,-0.8746,-0.581,0,0.1376,0.668,0 };
+	double cf24[]{ -0.36,-0.125,0,-0.23,-0.235,0,-0.85,0.375,0,-1.12,-0.445,0,-0.89,-0.575,0,0.34,0.665,0 };
+
+
 	s_cmf(vs1, result);
 	if (!s_is_equal(36, cmf, result, error))std::cout << "\"s_cmf\" failed" << std::endl;
 
@@ -342,6 +447,30 @@ void test_cross()
 
 	s_cfa_n(2, 0.25, vs16, 5, f16, 4, cf16, 3);
 	if (!s_is_equal(18, rf16, cf16, error))std::cout << "\"s_cfa_n with ld\" failed" << std::endl;
+
+	s_cfi(vs17, f17, cf17);
+	if (!s_is_equal(3, rf17, cf17, error))std::cout << "\"s_cfi\" failed" << std::endl;
+
+	s_cfi(vs18, 4, f18, 3, cf18, 2);
+	if (!s_is_equal(6, rf18, cf18, error))std::cout << "\"s_cfi with ld\" failed" << std::endl;
+
+	s_cfs(vs19, f19, cf19);
+	if (!s_is_equal(3, cf19, rf19, error))std::cout << "\"s_cfs\" failed" << std::endl;
+
+	s_cfs(vs20, 4, f20, 3, cf20, 2);
+	if (!s_is_equal(6, cf20, rf20, error))std::cout << "\"s_cfs with ld\" failed" << std::endl;
+
+	s_cfi_n(2, vs21, f21, cf21);
+	if (!s_is_equal(6, rf21, cf21, error))std::cout << "\"s_cfi_n\" failed" << std::endl;
+
+	s_cfi_n(2, vs22, 5, f22, 4, cf22, 3);
+	if (!s_is_equal(9, rf22, cf22, error))std::cout << "\"s_cfi_n with ld\" failed" << std::endl;
+
+	s_cfs_n(2, vs23, f23, cf23);
+	if (!s_is_equal(6, cf23, rf23, error))std::cout << "\"s_cfs_n\" failed" << std::endl;
+
+	s_cfs_n(2, vs24, 5, f24, 4, cf24, 3);
+	if (!s_is_equal(9, cf24, rf24, error))std::cout << "\"s_cfs_n with ld\" failed" << std::endl;
 
 	const double cmv[]{ 0,-0.63,0.52,0,-0.3,0.2,0.63,0,-0.41,0.3,0,-0.1,-0.52,0.41,0,-0.2,0.1,0,0,0,0,0,-0.63,0.52,	0,0,0,0.63,0,-0.41,0,0,0,-0.52,0.41,0 };
 
@@ -425,56 +554,121 @@ void test_cross()
 	const double rv16[]{ 0.473575,0.042825,0,0.2685,0.306425,0,0.725975,-0.380475,0,1.02815,0.44425,0,0.83115,0.5765,0,-0.23165,-0.66575,0 };
 	double cv16[]{ 0.36,0.125,0,0.23,0.235,0,0.85,-0.375,0,1.12,0.445,0,0.89,0.575,0,-0.34,-0.665,0 };
 	
+	const double v17[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
+	const double w17[]{ 0.99,-0.33,0.77,-0.66,0.22,-0.44 };
+	const double rv17[]{ -0.4543,-0.154,0.4961,0.3674,0.2354,-0.4334 };
+	double cv17[]{ 0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	const double v18[]{ 0.1,0,0,0,0.2,0,0,0,0.3,0,0,0,0.41,0,0,0,0.52,0,0,0,0.63,0,0,0 };
+	const double w18[]{ 0.99,0,0,-0.33,0,0,0.77,0,0,-0.66,0,0,0.22,0,0,-0.44,0,0 };
+	const double rv18[]{ -0.4543,0,-0.154,0,0.4961,0,0.3674,0,0.2354,0,-0.4334,0 };
+	double cv18[]{ 0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	const double v19[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
+	const double w19[]{ 0.99,-0.33,0.77,-0.66,0.22,-0.44 };
+	const double rv19[]{ -0.8143,-0.384,-0.3539,-0.7526,-0.6546,-0.0934 };
+	double cv19[]{ -0.36,-0.23,-0.85,-1.12,-0.89,0.34 };
+
+	const double v20[]{ 0.1,0,0,0,0.2,0,0,0,0.3,0,0,0,0.41,0,0,0,0.52,0,0,0,0.63,0,0,0 };
+	const double w20[]{ 0.99,0,0,-0.33,0,0,0.77,0,0,-0.66,0,0,0.22,0,0,-0.44,0,0 };
+	const double rv20[]{ -0.8143,0,-0.384,0,-0.3539,0,-0.7526,0,-0.6546,0,-0.0934,0 };
+	double cv20[]{ -0.36,0,-0.23,0,-0.85,0,-1.12,0,-0.89,0,0.34,0 };
+
+	const double v21[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
+	const double w21[]{ 0.99,0.15,-0.33,0.21,0.77,-0.32,-0.66,0.4,0.22,0.5,-0.44,0.6 };
+	const double rv21[]{ -0.4543,0.3287,-0.154,-0.2857,0.4961,0.0219,0.3674,0.003,0.2354,-0.006,-0.4334,0.003 };
+	double cv21[]{ 0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	const double v22[]{ 0.1,0,0,0,0,0.2,0,0,0,0,0.3,0,0,0,0,0.41,0,0,0,0,0.52,0,0,0,0,0.63,0,0,0,0 };
+	const double w22[]{ 0.99,0.15,0,0,-0.33,0.21,0,0,0.77,-0.32,0,0,-0.66,0.4,0,0,0.22,0.5,0,0,-0.44,0.6,0,0 };
+	const double rv22[]{ -0.4543,0.3287,0,-0.154,-0.2857,0,0.4961,0.0219,0,0.3674,0.003,0,0.2354,-0.006,0,-0.4334,0.003,0 };
+	double cv22[]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	const double v23[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
+	const double w23[]{ 0.99,0.15,-0.33,0.21,0.77,-0.32,-0.66,0.4,0.22,0.5,-0.44,0.6 };
+	const double rv23[]{ -0.8143,0.2037,-0.384,-0.5207,-0.3539,0.3969,-0.7526,-0.442,-0.6546,-0.581,-0.0934,0.668 };
+	double cv23[]{ -0.36,-0.125,-0.23,-0.235,-0.85,0.375,-1.12,-0.445,-0.89,-0.575,0.34,0.665 };
+
+	const double v24[]{ 0.1,0,0,0,0,0.2,0,0,0,0,0.3,0,0,0,0,0.41,0,0,0,0,0.52,0,0,0,0,0.63,0,0,0,0 };
+	const double w24[]{ 0.99,0.15,0,0,-0.33,0.21,0,0,0.77,-0.32,0,0,-0.66,0.4,0,0,0.22,0.5,0,0,-0.44,0.6,0,0 };
+	const double rv24[]{ -0.8143,0.2037,0,-0.384,-0.5207,0,-0.3539,0.3969,0,-0.7526,-0.442,0,-0.6546,-0.581,0,-0.0934,0.668,0 };
+	double cv24[]{ -0.36,-0.125,0,-0.23,-0.235,0,-0.85,0.375,0,-1.12,-0.445,0,-0.89,-0.575,0,0.34,0.665,0 };
+
+
 	s_cmv(v1, result);
 	if (!s_is_equal(36, cmv, result, error))std::cout << "\"s_cmv\" failed" << std::endl;
 
 	s_cv(v1, w1, cv1);
-	if (!s_is_equal(6, rv1, cv1, error))std::cout << "\"s_cv\" vailed" << std::endl;
+	if (!s_is_equal(6, rv1, cv1, error))std::cout << "\"s_cv\" failed" << std::endl;
 
 	s_cv(v2, 4, w2, 3, cv2, 2);
-	if (!s_is_equal(12, rv2, cv2, error))std::cout << "\"s_cv with ld\" vailed" << std::endl;
+	if (!s_is_equal(12, rv2, cv2, error))std::cout << "\"s_cv with ld\" failed" << std::endl;
 
 	s_cv(0.25, v3, w3, cv3);
-	if (!s_is_equal(6, rv3, cv3, error))std::cout << "\"s_cv\" vailed" << std::endl;
+	if (!s_is_equal(6, rv3, cv3, error))std::cout << "\"s_cv\" failed" << std::endl;
 
 	s_cv(0.25, v4, 4, w4, 3, cv4, 2);
-	if (!s_is_equal(12, rv4, cv4, error))std::cout << "\"s_cv with ld\" vailed" << std::endl;
+	if (!s_is_equal(12, rv4, cv4, error))std::cout << "\"s_cv with ld\" failed" << std::endl;
 
 	s_cv_n(2, v5, w5, cv5);
-	if (!s_is_equal(12, rv5, cv5, error))std::cout << "\"s_cv_n\" vailed" << std::endl;
+	if (!s_is_equal(12, rv5, cv5, error))std::cout << "\"s_cv_n\" failed" << std::endl;
 
 	s_cv_n(2, v6, 5, w6, 4, cv6, 3);
-	if (!s_is_equal(18, rv6, cv6, error))std::cout << "\"s_cv_n with ld\" vailed" << std::endl;
+	if (!s_is_equal(18, rv6, cv6, error))std::cout << "\"s_cv_n with ld\" failed" << std::endl;
 
 	s_cv_n(2, 0.25, v7, w7, cv7);
-	if (!s_is_equal(12, rv7, cv7, error))std::cout << "\"s_cv_n\" vailed" << std::endl;
+	if (!s_is_equal(12, rv7, cv7, error))std::cout << "\"s_cv_n\" failed" << std::endl;
 
 	s_cv_n(2, 0.25, v8, 5, w8, 4, cv8, 3);
-	if (!s_is_equal(18, rv8, cv8, error))std::cout << "\"s_cv_n with ld\" vailed" << std::endl;
+	if (!s_is_equal(18, rv8, cv8, error))std::cout << "\"s_cv_n with ld\" failed" << std::endl;
 
 	s_cva(v9, w9, cv9);
-	if (!s_is_equal(6, rv9, cv9, error))std::cout << "\"s_cva\" vailed" << std::endl;
+	if (!s_is_equal(6, rv9, cv9, error))std::cout << "\"s_cva\" failed" << std::endl;
 
 	s_cva(v10, 4, w10, 3, cv10, 2);
-	if (!s_is_equal(12, rv10, cv10, error))std::cout << "\"s_cva with ld\" vailed" << std::endl;
+	if (!s_is_equal(12, rv10, cv10, error))std::cout << "\"s_cva with ld\" failed" << std::endl;
 
 	s_cva(0.25, v11, w11, cv11);
-	if (!s_is_equal(6, rv11, cv11, error))std::cout << "\"s_cva\" vailed" << std::endl;
+	if (!s_is_equal(6, rv11, cv11, error))std::cout << "\"s_cva\" failed" << std::endl;
 
 	s_cva(0.25, v12, 4, w12, 3, cv12, 2);
-	if (!s_is_equal(12, rv12, cv12, error))std::cout << "\"s_cva with ld\" vailed" << std::endl;
+	if (!s_is_equal(12, rv12, cv12, error))std::cout << "\"s_cva with ld\" failed" << std::endl;
 
 	s_cva_n(2, v13, w13, cv13);
-	if (!s_is_equal(12, rv13, cv13, error))std::cout << "\"s_cva_n\" vailed" << std::endl;
+	if (!s_is_equal(12, rv13, cv13, error))std::cout << "\"s_cva_n\" failed" << std::endl;
 
 	s_cva_n(2, v14, 5, w14, 4, cv14, 3);
-	if (!s_is_equal(18, rv14, cv14, error))std::cout << "\"s_cva_n with ld\" vailed" << std::endl;
+	if (!s_is_equal(18, rv14, cv14, error))std::cout << "\"s_cva_n with ld\" failed" << std::endl;
 
 	s_cva_n(2, 0.25, v15, w15, cv15);
-	if (!s_is_equal(12, rv15, cv15, error))std::cout << "\"s_cva_n\" vailed" << std::endl;
+	if (!s_is_equal(12, rv15, cv15, error))std::cout << "\"s_cva_n\" failed" << std::endl;
 
 	s_cva_n(2, 0.25, v16, 5, w16, 4, cv16, 3);
-	if (!s_is_equal(18, rv16, cv16, error))std::cout << "\"s_cva_n with ld\" vailed" << std::endl;
+	if (!s_is_equal(18, rv16, cv16, error))std::cout << "\"s_cva_n with ld\" failed" << std::endl;
+
+	s_cvi(v17, w17, cv17);
+	if (!s_is_equal(6, rv17, cv17, error))std::cout << "\"s_cvi\" failed" << std::endl;
+
+	s_cvi(v18, 4, w18, 3, cv18, 2);
+	if (!s_is_equal(12, rv18, cv18, error))std::cout << "\"s_cvi with ld\" failed" << std::endl;
+
+	s_cvs(v19, w19, cv19);
+	if (!s_is_equal(6, rv19, cv19, error))std::cout << "\"s_cvs\" failed" << std::endl;
+
+	s_cvs(v20, 4, w20, 3, cv20, 2);
+	if (!s_is_equal(12, rv20, cv20, error))std::cout << "\"s_cvs with ld\" failed" << std::endl;
+
+	s_cvi_n(2, v21, w21, cv21);
+	if (!s_is_equal(6, rv21, cv21, error))std::cout << "\"s_cvi_n\" failed" << std::endl;
+
+	s_cvi_n(2, v22, 5, w22, 4, cv22, 3);
+	if (!s_is_equal(9, rv22, cv22, error))std::cout << "\"s_cvi_n with ld\" failed" << std::endl;
+
+	s_cvs_n(2, v23, w23, cv23);
+	if (!s_is_equal(6, rv23, cv23, error))std::cout << "\"s_cvs_n\" failed" << std::endl;
+
+	s_cvs_n(2, v24, 5, w24, 4, cv24, 3);
+	if (!s_is_equal(9, rv24, cv24, error))std::cout << "\"s_cvs_n with ld\" failed" << std::endl;
 }
 void test_transform()
 {

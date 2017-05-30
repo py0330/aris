@@ -19,6 +19,7 @@ const char xml_file_3R[] =
 "        <part_pool type=\"PartPoolObject\" default_child_type=\"Part\">"
 "            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                    <origin pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
 "            </ground>"
@@ -27,12 +28,18 @@ const char xml_file_3R[] =
 "                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t\"/>"
+"                </geometry_pool>"
 "            </part1>"
 "            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
 "                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
+"                <geometry_pool type=\"GeometryPoolObject\">"
+"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part2.x_t\"/>"
+"                </geometry_pool>"
 "            </part2>"
 "            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
 "                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
@@ -60,10 +67,13 @@ const char xml_file_3R[] =
 "            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 "            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 "        </motion_pool>"
-"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
+"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\">"
+"            <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"part3\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"        </general_motion_pool>"
 "        <solver_pool type=\"SolverPoolObject\" default_child_type=\"Solver\">"
-"            <gs type=\"GroundFullMatrixSolver\"/>"
-"            <ps type=\"PartFullMatrixSolver\"/>"
+"            <gs type=\"LltGroundDividedSolver\"/>"
+"            <ps type=\"LltPartDividedSolver\"/>"
+"            <ds type=\"DiagSolver\"/>"
 "        </solver_pool>"
 "    </model>"
 "</root>";
@@ -141,8 +151,9 @@ const char xml_file_6R[] =
 "        </general_motion_pool>"
 "        <force_pool type=\"ForcePoolObject\"/>"
 "        <solver_pool type=\"SolverPoolObject\" default_child_type=\"Solver\">"
-"            <gs type=\"GroundFullMatrixSolver\"/>"
-"            <ps type=\"PartFullMatrixSolver\"/>"
+"            <gs type=\"LltGroundDividedSolver\"/>"
+"            <ps type=\"LltPartDividedSolver\"/>"
+"            <ds type=\"DiagSolver\"/>"
 "        </solver_pool>"
 "    </model>"
 "</Root>";
@@ -328,11 +339,11 @@ const char xml_file_stewart[] =
 "            <m6 active=\"true\" slave_id=\"5\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
 "        </motion_pool>"
 "        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\">"
-"            <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"            <ee_mot type=\"GeneralMotion\" active=\"false\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
 "        </general_motion_pool>"
 "        <solver_pool type=\"SolverPoolObject\" default_child_type=\"Solver\">"
-"            <gs type=\"GroundFullMatrixSolver\"/>"
-"            <ps type=\"PartFullMatrixSolver\"/>"
+"            <gs type=\"LltGroundDividedSolver\"/>"
+"            <ps type=\"LltPartDividedSolver\"/>"
 "            <ds type=\"DiagSolver\"/>"
 "        </solver_pool>"
 "    </model>"
@@ -417,7 +428,7 @@ void test_part()
 		- 0.0763498045177736, - 0.966359843614219,   0.2456,   0.406691619606131,
 		0,   0,   0,   1 };
 	const double to_vs[6] = { -1.4159950169102,   0.131290065274018, - 0.0927140779913885, - 0.593141011344806,   1.12682984222913, - 0.799025264483263 };
-	const double to_as[6] = { 0.25059773457297,   2.12918260428844,   2.93584830296579,   0.319978146055887, - 1.01985580694063,   2.40639240365168 };
+	const double to_as[6] = { 0.25059773457297,   2.12918260428844,   2.93584830296579,   0.319978146055887, -1.01985580694063,   2.40639240365168 };
 
 	const double error = 1e-10;
 
@@ -1266,10 +1277,10 @@ void test_constraint()
 
 		double result1[42], result2[48];
 
-		jnt.cptGlbCm(result1, result2, 5, 7);
+		jnt.cptGlbCm(result1, 5, result2, 7);
 		if (!s_is_equal(6, jnt.dim(), result1, 5, glb_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, glb_cmJ, jnt.dim(), error))std::cout << "\"RevoluteJoint:cptGlbCm\" failed" << std::endl;
 
-		jnt.cptPrtCm(result1, result2, 6, 7);
+		jnt.cptPrtCm(result1, 6, result2, 7);
 		if (!s_is_equal(6, jnt.dim(), result1, 6, prt_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, prt_cmJ, jnt.dim(), error))std::cout << "\"RevoluteJoint:cptPrtCm\" failed" << std::endl;
 
 		jnt.cptCa(result1);
@@ -1329,10 +1340,10 @@ void test_constraint()
 		double result1[42], result2[48];
 
 
-		jnt.cptGlbCm(result1, result2, 5, 7);
+		jnt.cptGlbCm(result1, 5, result2, 7);
 		if (!s_is_equal(6, jnt.dim(), result1, 5, glb_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, glb_cmJ, jnt.dim(), error))std::cout << "\"PrismaticJoint:cptGlbCm\" failed" << std::endl;
 
-		jnt.cptPrtCm(result1, result2, 6, 7);
+		jnt.cptPrtCm(result1, 6, result2, 7);
 		if (!s_is_equal(6, jnt.dim(), result1, 6, prt_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, prt_cmJ, jnt.dim(), error))std::cout << "\"PrismaticJoint:cptPrtCm\" failed" << std::endl;
 
 		jnt.cptCa(result1);
@@ -1390,10 +1401,10 @@ void test_constraint()
 
 		double result1[42], result2[48];
 
-		jnt.cptGlbCm(result1, result2, 5, 7);
+		jnt.cptGlbCm(result1, 5, result2, 7);
 		if (!s_is_equal(6, jnt.dim(), result1, 5, glb_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, glb_cmJ, jnt.dim(), error))std::cout << "\"SphericalJoint:cptGlbCm\" failed" << std::endl;
 
-		jnt.cptPrtCm(result1, result2, 6, 7);
+		jnt.cptPrtCm(result1, 6, result2, 7);
 		if (!s_is_equal(6, jnt.dim(), result1, 6, prt_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, prt_cmJ, jnt.dim(), error))std::cout << "\"SphericalJoint:cptPrtCm\" failed" << std::endl;
 
 		jnt.cptCa(result1);
@@ -1453,10 +1464,10 @@ void test_constraint()
 		double result1[42], result2[48];
 
 
-		jnt.cptGlbCm(result1, result2, 5, 7);
+		jnt.cptGlbCm(result1, 5, result2, 7);
 		if (!s_is_equal(6, jnt.dim(), result1, 5, glb_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, glb_cmJ, jnt.dim(), error))std::cout << "\"UniversalJoint:cptGlbCm\" failed" << std::endl;
 
-		jnt.cptPrtCm(result1, result2, 6, 7);
+		jnt.cptPrtCm(result1, 6, result2, 7);
 		if (!s_is_equal(6, jnt.dim(), result1, 6, prt_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, prt_cmJ, jnt.dim(), error))std::cout << "\"UniversalJoint:cptPrtCm\" failed" << std::endl;
 
 		jnt.cptCa(result1);
@@ -1518,10 +1529,10 @@ void test_constraint()
 		double result1[42], result2[48];
 
 
-		mot.cptGlbCm(result1, result2, 5, 7);
+		mot.cptGlbCm(result1, 5, result2, 7);
 		if (!s_is_equal(6, mot.dim(), result1, 5, glb_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, glb_cmJ, mot.dim(), error))std::cout << "\"Motion:cptGlbCm\" failed" << std::endl;
 
-		mot.cptPrtCm(result1, result2, 6, 7);
+		mot.cptPrtCm(result1, 6, result2, 7);
 		if (!s_is_equal(6, mot.dim(), result1, 6, prt_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, prt_cmJ, mot.dim(), error))std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;
 
 		mot.cptCa(result1);
@@ -1771,10 +1782,10 @@ void test_constraint()
 		mot.setMpe(relative_pe, "123");
 		
 
-		mot.cptGlbCm(result1, result2, 6, 7);
+		mot.cptGlbCm(result1, 6, result2, 7);
 		if (!s_is_equal(6, mot.dim(), result1, 6, glb_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, glb_cmJ, mot.dim(), error))std::cout << "\"GeneralMotion:cptGlbCm\" failed" << std::endl;
 
-		mot.cptPrtCm(result1, result2, 6, 7);
+		mot.cptPrtCm(result1, 6, result2, 7);
 		if (!s_is_equal(6, mot.dim(), result1, 6, prt_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, prt_cmJ, mot.dim(), error))std::cout << "\"GeneralMotion:cptPrtCm\" failed" << std::endl;
 
 		mot.cptCp(result1);
@@ -1864,15 +1875,45 @@ void test_solver_3R()
 		Model m;
 		m.loadXml(xml_doc);
 
-		auto &gs = static_cast<GroundFullMatrixSolver&>(*m.solverPool().findByName("gs"));
-		auto &ps = static_cast<PartFullMatrixSolver&>(*m.solverPool().findByName("ps"));
+		for (auto &mot : m.motionPool())mot.activate(true);
+		m.generalMotionPool().at(0).activate(false);
+
+		auto &gs = static_cast<GroundDividedSolver&>(*m.solverPool().findByName("gs"));
+		auto &ps = static_cast<PartDividedSolver&>(*m.solverPool().findByName("ps"));
+		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
 		gs.allocateMemory();
 		
 		gs.updCm();
-		if (!s_is_equal(576, gs.cm(), cm, error))std::cout << "GroundFullMatrixSolver::updCm() failed" << std::endl;
+		if (!s_is_equal(576, gs.cm(), cm, error))std::cout << "GroundDividedSolver::updCm() failed" << std::endl;
 
 		gs.updIm();
-		if (!s_is_equal(576, gs.im(), im, error))std::cout << "GroundFullMatrixSolver::updIm() failed" << std::endl;
+		if (!s_is_equal(576, gs.im(), im, error))std::cout << "GroundDividedSolver::updIm() failed" << std::endl;
+
+		const double input_origin_p[3]{ 0.0, 0.0, 0.0 };
+		const double input_origin_v[3]{ 0.0, 0.0, 0.0 };
+		const double input_origin_a[3]{ 0.0, 0.0, 0.0 };
+		const double input_origin_mf[3]{ -29.4,	-9.8,	0.0 };
+		const double output_origin_pm[16]{ 1.0 , 0.0 , 0.0 , 3.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 0.0 , 1.0 };
+		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_mfs[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+
+		const double input_p[3]{ 0.585, 0.685, -0.312 };
+		const double input_v[3]{ 0.235, 0.235, 0.235 };
+		const double input_a[3]{ -1.567, -1.567, -1.567};
+		const double input_mf[3]{ 0.17105260350807,	9.24402272506392,	4.70099999999998 };
+		const double input_p2[3]{ 1.27, -0.685, 0.373 };
+		const double input_v2[3]{ 0.47, -0.235, 0.47 };
+		const double input_a2[3]{ -3.134, 1.567, -3.134 };
+		const double output_pm[16]{ 0.5751572210772128, - 0.8180428907109568,   0.0000000000000000,   1.7051501798895701,
+			0.8180428907109568,   0.5751572210772128,   0.0000000000000000,   2.3253431286258799,
+			0.0000000000000000,   0.0000000000000000,   1.0000000000000000,   0.0000000000000000,
+			0.0000000000000000,   0.0000000000000000,   0.0000000000000000,   1.0000000000000000, };
+		const double output_va[6]{ -1.1553844949236325 , 0.7406601913177889 , 0.0 , 0.0 , 0.0 , 0.705 };
+		const double output_aa[6]{ 7.3068444301678799 ,-5.5868499482603751 , 0.0 , 0.0 , 0.0 ,-4.701 };
+		const double output_mfs[6]{ 0.17105260350807,	9.24402272506392,	4.70099999999998 };
+
+		double result1[16], result2[16], result3[16], result4[16];
 
 		
 		const double ee_pq[7]{ 1.70515017988957 , 2.32534312862588, 0.0 , 0.0 , 0.0 , 0.460891949876968 , 0.887456258380438 };
@@ -1892,50 +1933,315 @@ void test_solver_3R()
 		m.motionAtAbs(2).setMv(0.235);
 		m.motionAtAbs(2).setMa(-1.567);
 
-		double result1[16], result2[16], result3[16], result4[16];
+		
 
 
-		///////////////////////////////test part solver//////////////////////////////////////////////////////////////////////////////
-		ps.setMaxError(1e-12);
-		ps.allocateMemory();
-		ps.kinPos();
-		ps.allocateMemory();
-		ps.kinVel();
-		ps.allocateMemory();
-		ps.kinAcc();
-		ps.allocateMemory();
-		ps.dynFce();
+		auto test_forward = [&](Solver &s)->void
+		{
+			// set topology //
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			// set input origin //
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_origin_p[i]);
+				m.motionAtAbs(i).setMv(input_origin_v[i]);
+				m.motionAtAbs(i).setMa(input_origin_a[i]);
+			}
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
 
-		m.partPool().at(3).markerPool().findByName("ee")->getPq(result1);
-		m.partPool().at(3).markerPool().findByName("ee")->getVa(result2);
-		m.partPool().at(3).markerPool().findByName("ee")->getAa(result3);
-		for (int i = 0; i < 3; ++i) result4[i] = m.motionAtAbs(i).mf();
+			// get result //
+			m.generalMotionPool().at(0).updMpm();
+			m.generalMotionPool().at(0).getMpm(result1);
+			m.generalMotionPool().at(0).updMvs();
+			m.generalMotionPool().at(0).getMva(result2);
+			m.generalMotionPool().at(0).updMas();
+			m.generalMotionPool().at(0).getMaa(result3);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionAtAbs(i).mf();
+			// check //
+			if (!s_is_equal(16, result1, output_origin_pm, error))std::cout << s.type() << "::kinPos() forward origin failed" << std::endl;
+			if (!s_is_equal(6, result2, output_origin_va, error))std::cout << s.type() << "::kinVel() forward origin failed" << std::endl;
+			if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << s.type() << "::kinAcc() forward origin failed" << std::endl;
+			if (!s_is_equal(m.motionPool().size(), result4, input_origin_mf, 1e-9))std::cout << s.type() << "::dynFce() forward origin failed" << std::endl;
 
-		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(7, ee_pq, result1, error))std::cout << "PartFullMatrixSolver::kinPos() 3R failed" << std::endl;
-		if (!s_is_equal(6, result2, ee_va, error))std::cout << "PartFullMatrixSolver:kinVel() 3R\" failed" << std::endl;
-		if (!s_is_equal(6, result3, ee_aa, error))std::cout << "PartFullMatrixSolver:kinAcc() 3R\" failed" << std::endl;
-		if (!s_is_equal(3, result4, mot_fs, error))std::cout << "PartFullMatrixSolver:dynFce() 3R\" failed" << std::endl;
+			// set input //
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
+			// get result //
+			m.generalMotionPool().at(0).updMpm();
+			m.generalMotionPool().at(0).getMpm(result1);
+			m.generalMotionPool().at(0).updMvs();
+			m.generalMotionPool().at(0).getMva(result2);
+			m.generalMotionPool().at(0).updMas();
+			m.generalMotionPool().at(0).getMaa(result3);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionAtAbs(i).mf();
+			// check //
+			if (!s_is_equal(16, result1, output_pm, error))std::cout << s.type() << "::kinPos() forward failed" << std::endl;
+			if (!s_is_equal(6, result2, output_va, error))std::cout << s.type() << "::kinVel() forward failed" << std::endl;
+			if (!s_is_equal(6, result3, output_aa, error))std::cout << s.type() << "::kinAcc() forward failed" << std::endl;
+			if (!s_is_equal(m.motionPool().size(), result4, input_mf, 1e-9))std::cout << s.type() << "::dynFce() forward failed" << std::endl;
 
-		///////////////////////////test glb solver///////////////////////////////////////
-		gs.setMaxError(1e-12);
-		gs.allocateMemory();
-		gs.kinPos();
-		gs.allocateMemory();
-		gs.kinVel();
-		gs.allocateMemory();
-		gs.kinAcc();
-		gs.allocateMemory();
-		gs.dynFce();
+		};
+		auto test_inverse = [&](Solver &s)->void
+		{
+			// set topology //
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			// set ee origin status //
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
 
-		m.partPool().at(3).markerPool().findByName("ee")->getPq(result1);
-		m.partPool().at(3).markerPool().findByName("ee")->getVa(result2);
-		m.partPool().at(3).markerPool().findByName("ee")->getAa(result3);
-		for (int i = 0; i < 3; ++i) result4[i] = m.motionAtAbs(i).mf();
+			
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
 
-		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(7, ee_pq, result1, error))std::cout << "groundFullMatrixSolver::kinPos() 3R failed" << std::endl;
-		if (!s_is_equal(6, result2, ee_va, error))std::cout << "GroundFullMatrixSolver:kinVel() 3R\" failed" << std::endl;
-		if (!s_is_equal(6, result3, ee_aa, error))std::cout << "GroundFullMatrixSolver:kinAcc() 3R\" failed" << std::endl;
-		if (!s_is_equal(3, result4, mot_fs, error))std::cout << "GroundFullMatrixSolver:dynFce() 3R\" failed" << std::endl;
+			// get result //
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).updMp();
+				m.motionAtAbs(i).updMv();
+				m.motionAtAbs(i).updMa();
+				result1[i] = m.motionAtAbs(i).mp();
+				result2[i] = m.motionAtAbs(i).mv();
+				result3[i] = m.motionAtAbs(i).ma();
+			}
+			// check //
+			if (!s_is_equal(m.motionPool().size(), result1, input_origin_p, 1e-6))std::cout << s.type() << "::kinPos() inverse origin failed" << std::endl;
+			if (!s_is_equal(m.motionPool().size(), result2, input_origin_v, error))std::cout << s.type() << "::kinVel() inverse origin failed" << std::endl;
+			if (!s_is_equal(m.motionPool().size(), result3, input_origin_a, error))std::cout << s.type() << "::kinAcc() inverse origin failed" << std::endl;
+			//if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, 1e-9))std::cout << s.type() << "::dynFce() inverse origin failed" << std::endl;
+
+
+			// set ee status //
+			m.generalMotionPool().at(0).setMpm(output_pm);
+			m.generalMotionPool().at(0).setMva(output_va);
+			m.generalMotionPool().at(0).setMaa(output_aa);
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
+
+			// get result //
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).updMp();
+				m.motionAtAbs(i).updMv();
+				m.motionAtAbs(i).updMa();
+				result1[i] = m.motionAtAbs(i).mp();
+				result2[i] = m.motionAtAbs(i).mv();
+				result3[i] = m.motionAtAbs(i).ma();
+			}
+			// check //
+			if (!(s_is_equal(m.motionPool().size(), result1, input_p, error) || s_is_equal(m.motionPool().size(), result1, input_p2, error)))std::cout << s.type() << "::kinPos() inverse failed" << std::endl;
+			if (!(s_is_equal(m.motionPool().size(), result2, input_v, error) || s_is_equal(m.motionPool().size(), result2, input_v2, error)))std::cout << s.type() << "::kinVel() inverse failed" << std::endl;
+			if (!(s_is_equal(m.motionPool().size(), result3, input_a, error) || s_is_equal(m.motionPool().size(), result3, input_a2, error)))std::cout << s.type() << "::kinAcc() inverse failed" << std::endl;
+			//if (!(s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error)|| s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error)))std::cout << s.type() << "::dynFce() inverse failed" << std::endl;
+		};
+		auto bench_pos_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			s.allocateMemory();
+			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionAtAbs(i).setMp(input_p[i]);
+				else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionAtAbs(i).setMp(input_origin_p[i]);
+
+				// compute //
+				s.kinPos();
+				m.generalMotionPool().at(0).updMpm();
+				m.generalMotionPool().at(0).getMpm(result1);
+
+				if (count < 2 && count % 2 && !s_is_equal(16, result1, output_pm, error))
+					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
+				if (count < 2 && (count + 1) % 2 && !s_is_equal(16, result1, output_origin_pm, error))
+					std::cout << s.type() << "::kinPos() forward bench origin failed" << std::endl;
+
+				++count;
+			}) << std::endl;
+		};
+		auto bench_vel_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::forward computational vel time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinVel();
+			}) << std::endl;
+		};
+		auto bench_acc_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+
+			std::cout << s.type() << "::forward computational acc time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinAcc();
+			}) << std::endl;
+		};
+		auto bench_fce_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+
+			std::cout << s.type() << "::forward computational fce time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.dynFce();
+			}) << std::endl;
+		};
+		auto bench_pos_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			s.allocateMemory();
+			std::cout << s.type() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.generalMotionPool().at(0).setMpm(output_pm);
+				else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.generalMotionPool().at(0).setMpm(output_origin_pm);
+
+				// compute //
+				s.kinPos();
+				for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionAtAbs(i).updMp(); result1[i] = m.motionAtAbs(i).mp(); }
+
+				if (count < 2 && count % 2 && !s_is_equal(6, result1, input_p, error))
+					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
+				if (count < 2 && (count + 1) % 2 && !s_is_equal(6, result1, input_origin_p, error))
+					std::cout << s.type() << "::kinPos() forward bench origin failed" << std::endl;
+
+				++count;
+			}) << std::endl;
+		};
+		auto bench_vel_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinVel();
+			}) << std::endl;
+		};
+		auto bench_acc_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational acc time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinAcc();
+			}) << std::endl;
+		};
+		auto bench_fce_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational fce time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.dynFce();
+			}) << std::endl;
+		};
+
+
+		
+		ps.setMaxError(1e-14);
+		gs.setMaxError(1e-14);
+		ds.setMaxError(1e-14);
+
+		std::cout << "test 3R robot:" << std::endl;
+
+		test_forward(ds);
+		test_inverse(ds);
 	}
 	catch (std::exception &e)
 	{
@@ -1977,289 +2283,8 @@ void test_solver_6R()
 		Model m;
 		m.loadXml(xml_doc);
 
-		auto &gs = static_cast<GroundFullMatrixSolver&>(*m.solverPool().findByName("gs"));
-		auto &ps = static_cast<PartFullMatrixSolver&>(*m.solverPool().findByName("ps"));
-
-		// test inverse kinematic //
-		for (auto &mot : m.motionPool())mot.activate(false);
-		m.generalMotionPool().at(0).activate(true);
-
-		// in glb //
-		m.generalMotionPool().at(0).setMpm(output_origin_pm);
-		m.generalMotionPool().at(0).setMva(output_origin_va);
-		m.generalMotionPool().at(0).setMaa(output_origin_aa);
-		gs.allocateMemory();
-		gs.setMaxError(1e-14);
-		gs.kinPos();
-		gs.allocateMemory();
-		gs.kinVel();
-		gs.allocateMemory();
-		gs.kinAcc();
-		gs.allocateMemory();
-		gs.dynFce();
-
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			m.motionAtAbs(i).updMp();
-			m.motionAtAbs(i).updMv();
-			m.motionAtAbs(i).updMa();
-			result1[i] = m.motionAtAbs(i).mp();
-			result2[i] = m.motionAtAbs(i).mv();
-			result3[i] = m.motionAtAbs(i).ma();
-		}
-
-		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(6, result1, input_origin_p, error))std::cout << "GroundFullMatrixSolver::kinPos() 6R inverse origin failed" << std::endl;
-		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "GroundFullMatrixSolver::kinVel() 6R inverse origin failed" << std::endl;
-		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "GroundFullMatrixSolver::kinAcc() 6R inverse origin failed" << std::endl;
-		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, error))std::cout << "GroundFullMatrixSolver::dynFce() 6R inverse origin failed" << std::endl;
-
-		m.generalMotionPool().at(0).setMpm(output_pm);
-		m.generalMotionPool().at(0).setMva(output_va);
-		m.generalMotionPool().at(0).setMaa(output_aa);
-		gs.allocateMemory();
-		gs.setMaxError(1e-14);
-		gs.kinPos();
-		gs.allocateMemory();
-		gs.kinVel();
-		gs.allocateMemory();
-		gs.kinAcc();
-		gs.allocateMemory();
-		gs.dynFce();
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			m.motionAtAbs(i).updMp();
-			m.motionAtAbs(i).updMv();
-			m.motionAtAbs(i).updMa();
-			result1[i] = m.motionAtAbs(i).mp();
-			result2[i] = m.motionAtAbs(i).mv();
-			result3[i] = m.motionAtAbs(i).ma();
-		}
-		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(6, result1, input_p, error))std::cout << "GroundFullMatrixSolver::kinPos() 6R inverse failed" << std::endl;
-		if (!s_is_equal(6, result2, input_v, error))std::cout << "GroundFullMatrixSolver::kinVel() 6R inverse failed" << std::endl;
-		if (!s_is_equal(6, result3, input_a, error))std::cout << "GroundFullMatrixSolver::kinAcc() 6R inverse failed" << std::endl;
-		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << "GroundFullMatrixSolver::dynFce() 6R inverse failed" << std::endl;
-
-		// in prt //
-		m.generalMotionPool().at(0).setMpm(output_origin_pm);
-		m.generalMotionPool().at(0).setMva(output_origin_va);
-		m.generalMotionPool().at(0).setMaa(output_origin_aa);
-		ps.allocateMemory();
-		ps.setMaxError(1e-14);
-		ps.kinPos();
-		ps.allocateMemory();
-		ps.kinVel();
-		ps.allocateMemory();
-		ps.kinAcc();
-		ps.allocateMemory();
-		ps.dynFce();
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			m.motionAtAbs(i).updMp();
-			m.motionAtAbs(i).updMv();
-			m.motionAtAbs(i).updMa();
-			result1[i] = m.motionAtAbs(i).mp();
-			result2[i] = m.motionAtAbs(i).mv();
-			result3[i] = m.motionAtAbs(i).ma();
-		}
-		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(6, result1, input_origin_p, error))std::cout << "PartFullMatrixSolver::kinPos() 6R inverse origin failed" << std::endl;
-		if (!s_is_equal(6, result2, input_origin_v, error))std::cout << "PartFullMatrixSolver::kinVel() 6R inverse origin failed" << std::endl;
-		if (!s_is_equal(6, result3, input_origin_a, error))std::cout << "PartFullMatrixSolver::kinAcc() 6R inverse origin failed" << std::endl;
-		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, error))std::cout << "PartFullMatrixSolver::dynFce() 6R inverse origin failed" << std::endl;
-
-
-		m.generalMotionPool().at(0).setMpm(output_pm);
-		m.generalMotionPool().at(0).setMva(output_va);
-		m.generalMotionPool().at(0).setMaa(output_aa);
-		ps.allocateMemory();
-		ps.setMaxError(1e-14);
-		ps.kinPos();
-		ps.allocateMemory();
-		ps.kinVel();
-		ps.allocateMemory();
-		ps.kinAcc();
-		ps.allocateMemory();
-		ps.dynFce();
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			m.motionAtAbs(i).updMp();
-			m.motionAtAbs(i).updMv();
-			m.motionAtAbs(i).updMa();
-			result1[i] = m.motionAtAbs(i).mp();
-			result2[i] = m.motionAtAbs(i).mv();
-			result3[i] = m.motionAtAbs(i).ma();
-		}
-		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(6, result1, input_p, error))std::cout << "PartFullMatrixSolver::kinPos() 6R inverse failed" << std::endl;
-		if (!s_is_equal(6, result2, input_v, error))std::cout << "PartFullMatrixSolver::kinVel() 6R inverse failed" << std::endl;
-		if (!s_is_equal(6, result3, input_a, error))std::cout << "PartFullMatrixSolver::kinAcc() 6R inverse failed" << std::endl;
-		if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, 1e-6))std::cout << "PartFullMatrixSolver::dynFce() 6R inverse failed" << std::endl;
-
-		// test forward kinematic //
-		for (auto &mot : m.motionPool())mot.activate(true);
-		m.generalMotionPool().at(0).activate(false);
-
-		// in glb //
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			m.motionAtAbs(i).setMp(input_origin_p[i]);
-			m.motionAtAbs(i).setMv(input_origin_v[i]);
-			m.motionAtAbs(i).setMa(input_origin_a[i]);
-		}
-		gs.allocateMemory();
-		gs.setMaxError(1e-14);
-		gs.kinPos();
-		gs.allocateMemory();
-		gs.kinVel();
-		gs.allocateMemory();
-		gs.kinAcc();
-		gs.allocateMemory();
-		gs.dynFce();
-		m.generalMotionPool().at(0).updMpm();
-		m.generalMotionPool().at(0).getMpm(result1);
-		m.generalMotionPool().at(0).updMvs();
-		m.generalMotionPool().at(0).getMva(result2);
-		m.generalMotionPool().at(0).updMas();
-		m.generalMotionPool().at(0).getMaa(result3);
-		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
-		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "GroundFullMatrixSolver::kinPos() 6R forward origin failed" << std::endl;
-		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "GroundFullMatrixSolver::kinVel() 6R forward origin failed" << std::endl;
-		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "GroundFullMatrixSolver::kinAcc() 6R forward origin failed" << std::endl;
-		if (!s_is_equal(6, result4, input_origin_mf, error))std::cout << "GroundFullMatrixSolver::dynFce() 6R forward origin failed" << std::endl;
-
-
-
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			m.motionAtAbs(i).setMp(input_p[i]);
-			m.motionAtAbs(i).setMv(input_v[i]);
-			m.motionAtAbs(i).setMa(input_a[i]);
-		}
-		gs.allocateMemory();
-		gs.setMaxError(1e-14);
-		gs.kinPos();
-		gs.allocateMemory();
-		gs.kinVel();
-		gs.allocateMemory();
-		gs.kinAcc();
-		gs.allocateMemory();
-		gs.dynFce();
-		m.generalMotionPool().at(0).updMpm();
-		m.generalMotionPool().at(0).getMpm(result1);
-		m.generalMotionPool().at(0).updMvs();
-		m.generalMotionPool().at(0).getMva(result2);
-		m.generalMotionPool().at(0).updMas();
-		m.generalMotionPool().at(0).getMaa(result3);
-		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
-		if (gs.iterCount() == gs.maxIterCount() || !s_is_equal(16, result1, output_pm, error))std::cout << "GroundFullMatrixSolver::kinPos() 6R forward failed" << std::endl;
-		if (!s_is_equal(6, result2, output_va, error))std::cout << "GroundFullMatrixSolver::kinVel() 6R forward failed" << std::endl;
-		if (!s_is_equal(6, result3, output_aa, error))std::cout << "GroundFullMatrixSolver::kinAcc() 6R forward failed" << std::endl;
-		if (!s_is_equal(6, result4, input_mf, error))std::cout << "GroundFullMatrixSolver::dynFce() 6R forward failed" << std::endl;
-
-
-
-		// in prt //
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			m.motionAtAbs(i).setMp(input_origin_p[i]);
-			m.motionAtAbs(i).setMv(input_origin_v[i]);
-			m.motionAtAbs(i).setMa(input_origin_a[i]);
-		}
-		ps.allocateMemory();
-		ps.setMaxError(1e-14);
-		ps.kinPos();
-		ps.allocateMemory();
-		ps.kinVel();
-		ps.allocateMemory();
-		ps.kinAcc();
-		ps.allocateMemory();
-		ps.dynFce();
-		m.generalMotionPool().at(0).updMpm();
-		m.generalMotionPool().at(0).getMpm(result1);
-		m.generalMotionPool().at(0).updMvs();
-		m.generalMotionPool().at(0).getMva(result2);
-		m.generalMotionPool().at(0).updMas();
-		m.generalMotionPool().at(0).getMaa(result3);
-		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
-		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(16, result1, output_origin_pm, error))std::cout << "PartFullMatrixSolver::kinPos() 6R forward origin failed" << std::endl;
-		if (!s_is_equal(6, result2, output_origin_va, error))std::cout << "PartFullMatrixSolver::kinVel() 6R forward origin failed" << std::endl;
-		if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << "PartFullMatrixSolver::kinAcc() 6R forward origin failed" << std::endl;
-		if (!s_is_equal(6, result4, input_origin_mf, error))std::cout << "PartFullMatrixSolver::dynFce() 6R forward origin failed" << std::endl;
-
-
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			m.motionAtAbs(i).setMp(input_p[i]);
-			m.motionAtAbs(i).setMv(input_v[i]);
-			m.motionAtAbs(i).setMa(input_a[i]);
-		}
-		ps.allocateMemory();
-		ps.setMaxError(1e-14);
-		ps.kinPos();
-		ps.allocateMemory();
-		ps.kinVel();
-		ps.allocateMemory();
-		ps.kinAcc();
-		ps.allocateMemory();
-		ps.dynFce();
-		m.generalMotionPool().at(0).updMpm();
-		m.generalMotionPool().at(0).getMpm(result1);
-		m.generalMotionPool().at(0).updMvs();
-		m.generalMotionPool().at(0).getMva(result2);
-		m.generalMotionPool().at(0).updMas();
-		m.generalMotionPool().at(0).getMaa(result3);
-		for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
-		if (ps.iterCount() == ps.maxIterCount() || !s_is_equal(16, result1, output_pm, error))std::cout << "PartFullMatrixSolver::kinPos() 6R forward failed" << std::endl;
-		if (!s_is_equal(6, result2, output_va, error))std::cout << "PartFullMatrixSolver::kinVel() 6R forward failed" << std::endl;
-		if (!s_is_equal(6, result3, output_aa, error))std::cout << "PartFullMatrixSolver::kinAcc() 6R forward failed" << std::endl;
-		if (!s_is_equal(6, result4, input_mf, error))std::cout << "PartFullMatrixSolver::dynFce() 6R forward failed" << std::endl;
-	}
-	catch (std::exception&e)
-	{
-		std::cout << e.what() << std::endl;
-	}
-}
-void test_solver_stewart()
-{
-	try
-	{	
-		const double error = 1e-10;
 		
-		const double input_origin_p[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
-		const double input_origin_v[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double input_origin_a[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double input_origin_mf[6]{ -13.3849595750926, -13.3927097990384, -13.3901587863615, -13.3901587863617, -13.3927097990384, -13.3849595750926 };
-		const double output_origin_pm[16]{ 1,0,0,0,
-			0, 0.999999999751072,2.2312668404904e-05,1.7078344386197,
-			0, -2.23126684049141e-05,0.999999999751072,0.577658198650165,
-			0,0,0,1 };
-		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		const double output_origin_mfs[6]{ 5.96877625518755e-14, -68.5999999829237, -0.00153064905217093, -0.0195999999954068,   2.09622926874175e-15, -1.42897385990919e-14 };
-
-		const double input_p[6]{ 2.15,2.03,1.98,1.68,2.22,2.01 };
-		const double input_v[6]{ 0.687,1.521,-0.325,0.665,1.225,-0.999 };
-		const double input_a[6]{ 1.687,0.521,-1.325,1.665,0.225,-1.999 };
-		const double input_mf[6]{ -54.3666620596338, -25.0817857667786, -18.1840142074996,   36.630055076576, -65.6950872736471,   75.5093067608351 };
-		const double output_pm[16]{ 0.654617242227831, -0.16813527373803,0.737025641279234,0.0674004103296998,
-			0.286892301165042,0.957269694021347, -0.0364354283699648,1.66351811346172,
-			-0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
-			0,0,0,1 };
-		const double output_va[6]{ -1.67602445813444,0.322144550146041,1.43386389933679, -4.13258637478856,0.229701802785213,2.06026880988191 };
-		const double output_aa[6]{ -3.99625983193204, -4.52459258496676,3.82662285536541, -4.70386456087171,10.2271223856012,12.7760010719168 };
-		const double output_mfs[6]{ 43.6438945057721, -43.4082817089241,   0.842045165182085,   11.2174553475889, -25.1497728624644, -4.77548370421841 };
-
-		double result1[16], result2[16], result3[16], result4[16];
-
-		aris::core::XmlDocument xml_doc;
-		xml_doc.Parse(xml_file_stewart);
-		Model m;
-		m.loadXml(xml_doc);
-
-		auto &gs = static_cast<GroundFullMatrixSolver&>(*m.solverPool().findByName("gs"));
-		auto &ps = static_cast<PartFullMatrixSolver&>(*m.solverPool().findByName("ps"));
-		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
-
-		// test kinematic and dynamic model //
-		auto test_stewart_forward = [&](Solver &s)->void
+		auto test_forward = [&](Solver &s)->void
 		{
 			// set topology //
 			for (auto &mot : m.motionPool())mot.activate(true);
@@ -2278,8 +2303,8 @@ void test_solver_stewart()
 			s.kinVel();
 			s.allocateMemory();
 			s.kinAcc();
-			gs.allocateMemory();
-			gs.dynFce();
+			s.allocateMemory();
+			s.dynFce();
 
 			// get result //
 			m.generalMotionPool().at(0).updMpm();
@@ -2290,10 +2315,10 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).getMaa(result3);
 			for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
 			// check //
-			if (!s_is_equal(16, result1, output_origin_pm, error))std::cout << s.type() << "::kinPos() stewart forward origin failed" << std::endl;
-			if (!s_is_equal(6, result2, output_origin_va, error))std::cout << s.type() << "::kinVel() stewart forward origin failed" << std::endl;
-			if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << s.type() << "::kinAcc() stewart forward origin failed" << std::endl;
-			if (!s_is_equal(6, result4, input_origin_mf, 1e-9))std::cout << s.type() << "::dynFce() stewart forward origin failed" << std::endl;
+			if (!s_is_equal(16, result1, output_origin_pm, error))std::cout << s.type() << "::kinPos() forward origin failed" << std::endl;
+			if (!s_is_equal(6, result2, output_origin_va, error))std::cout << s.type() << "::kinVel() forward origin failed" << std::endl;
+			if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << s.type() << "::kinAcc() forward origin failed" << std::endl;
+			if (!s_is_equal(6, result4, input_origin_mf, 1e-9))std::cout << s.type() << "::dynFce() forward origin failed" << std::endl;
 
 			// set input //
 			for (aris::Size i = 0; i < 6; ++i)
@@ -2309,8 +2334,8 @@ void test_solver_stewart()
 			s.kinVel();
 			s.allocateMemory();
 			s.kinAcc();
-			gs.allocateMemory();
-			gs.dynFce();
+			s.allocateMemory();
+			s.dynFce();
 			// get result //
 			m.generalMotionPool().at(0).updMpm();
 			m.generalMotionPool().at(0).getMpm(result1);
@@ -2320,13 +2345,13 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).getMaa(result3);
 			for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
 			// check //
-			if (!s_is_equal(16, result1, output_pm, error))std::cout << s.type() << "::kinPos() stewart forward failed" << std::endl;
-			if (!s_is_equal(6, result2, output_va, error))std::cout << s.type() << "::kinVel() stewart forward failed" << std::endl;
-			if (!s_is_equal(6, result3, output_aa, error))std::cout << s.type() << "::kinAcc() stewart forward failed" << std::endl;
-			if (!s_is_equal(6, result4, input_mf, 1e-9))std::cout << s.type() << "::dynFce() stewart forward failed" << std::endl;
+			if (!s_is_equal(16, result1, output_pm, error))std::cout << s.type() << "::kinPos() 6R forward failed" << std::endl;
+			if (!s_is_equal(6, result2, output_va, error))std::cout << s.type() << "::kinVel() 6R forward failed" << std::endl;
+			if (!s_is_equal(6, result3, output_aa, error))std::cout << s.type() << "::kinAcc() 6R forward failed" << std::endl;
+			if (!s_is_equal(6, result4, input_mf, 1e-9))std::cout << s.type() << "::dynFce() 6R forward failed" << std::endl;
 
 		};
-		auto test_stewart_inverse = [&](Solver &s)->void
+		auto test_inverse = [&](Solver &s)->void
 		{
 			// set topology //
 			for (auto &mot : m.motionPool())mot.activate(false);
@@ -2344,7 +2369,7 @@ void test_solver_stewart()
 			s.kinAcc();
 			s.allocateMemory();
 			s.dynFce();
-			
+
 			// get result //
 			for (aris::Size i = 0; i < 6; ++i)
 			{
@@ -2356,10 +2381,10 @@ void test_solver_stewart()
 				result3[i] = m.motionAtAbs(i).ma();
 			}
 			// check //
-			if (!s_is_equal(6, result1, input_origin_p, error))std::cout << s.type() << "::kinPos() stewart inverse origin failed" << std::endl;
-			if (!s_is_equal(6, result2, input_origin_v, error))std::cout << s.type() << "::kinVel() stewart inverse origin failed" << std::endl;
-			if (!s_is_equal(6, result3, input_origin_a, error))std::cout << s.type() << "::kinAcc() stewart inverse origin failed" << std::endl;
-			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, 1e-9))std::cout << s.type() << "::dynFce() stewart inverse origin failed" << std::endl;
+			if (!s_is_equal(6, result1, input_origin_p, error))std::cout << s.type() << "::kinPos() stewart origin failed" << std::endl;
+			if (!s_is_equal(6, result2, input_origin_v, error))std::cout << s.type() << "::kinVel() stewart origin failed" << std::endl;
+			if (!s_is_equal(6, result3, input_origin_a, error))std::cout << s.type() << "::kinAcc() stewart origin failed" << std::endl;
+			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, 1e-9))std::cout << s.type() << "::dynFce() inverse origin failed" << std::endl;
 
 
 			// set ee status //
@@ -2387,11 +2412,11 @@ void test_solver_stewart()
 				result3[i] = m.motionAtAbs(i).ma();
 			}
 			// check //
-			if (!s_is_equal(6, result1, input_p, error))std::cout << s.type() << "::kinPos() stewart inverse failed" << std::endl;
-			if (!s_is_equal(6, result2, input_v, error))std::cout << s.type() << "::kinVel() stewart inverse failed" << std::endl;
-			if (!s_is_equal(6, result3, input_a, error))std::cout << s.type() << "::kinAcc() stewart inverse failed" << std::endl;
-			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << s.type() << "::dynFce() stewart inverse failed" << std::endl;
-		};
+			if (!s_is_equal(6, result1, input_p, error))std::cout << s.type() << "::kinPos() 6R inverse failed" << std::endl;
+			if (!s_is_equal(6, result2, input_v, error))std::cout << s.type() << "::kinVel() 6R inverse failed" << std::endl;
+			if (!s_is_equal(6, result3, input_a, error))std::cout << s.type() << "::kinAcc() 6R inverse failed" << std::endl;
+			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << s.type() << "::dynFce() 6R inverse failed" << std::endl;
+		};	
 		auto bench_pos_forward = [&](Solver &s, aris::Size bench_count)
 		{
 			int count{ 0 };
@@ -2409,9 +2434,9 @@ void test_solver_stewart()
 				m.generalMotionPool().at(0).getMpm(result1);
 
 				if (count < 2 && count % 2 && !s_is_equal(16, result1, output_pm, error))
-					std::cout << s.type() << "::kinPos() stewart forward bench failed" << std::endl;
+					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
 				if (count < 2 && (count + 1) % 2 && !s_is_equal(16, result1, output_origin_pm, error))
-					std::cout << s.type() << "::kinPos() stewart forward bench origin failed" << std::endl;
+					std::cout << s.type() << "::kinPos() forward bench origin failed" << std::endl;
 
 				++count;
 			}) << std::endl;
@@ -2491,12 +2516,397 @@ void test_solver_stewart()
 
 				// compute //
 				s.kinPos();
-				for (aris::Size i = 0; i < 6; ++i){	m.motionAtAbs(i).updMp(); result1[i] = m.motionAtAbs(i).mp(); }
+				for (aris::Size i = 0; i < 6; ++i) { m.motionAtAbs(i).updMp(); result1[i] = m.motionAtAbs(i).mp(); }
 
 				if (count < 2 && count % 2 && !s_is_equal(6, result1, input_p, error))
-					std::cout << s.type() << "::kinPos() stewart forward bench failed" << std::endl;
+					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
 				if (count < 2 && (count + 1) % 2 && !s_is_equal(6, result1, input_origin_p, error))
-					std::cout << s.type() << "::kinPos() stewart forward bench origin failed" << std::endl;
+					std::cout << s.type() << "::kinPos() forward bench origin failed" << std::endl;
+
+				++count;
+			}) << std::endl;
+		};
+		auto bench_vel_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinVel();
+			}) << std::endl;
+		};
+		auto bench_acc_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational acc time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinAcc();
+			}) << std::endl;
+		};
+		auto bench_fce_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::inverse computational fce time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.dynFce();
+			}) << std::endl;
+		};
+
+
+		auto &gs = static_cast<LltGroundDividedSolver&>(*m.solverPool().findByName("gs"));
+		auto &ps = static_cast<LltPartDividedSolver&>(*m.solverPool().findByName("ps"));
+		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
+
+		gs.setMaxError(1e-14);
+		ps.setMaxError(1e-14);
+		ds.setMaxError(1e-14);
+
+		std::cout << "test 6R robot:" << std::endl;
+
+		test_forward(gs);
+		test_inverse(gs);
+		test_forward(ps);
+		test_inverse(ps);
+		test_forward(ds);
+		test_inverse(ds);
+		bench_pos_inverse(ps, 1000);
+		bench_vel_inverse(ps, 1000);
+		bench_acc_inverse(ps, 1000);
+		bench_fce_inverse(ps, 1000);
+		bench_pos_forward(ps, 1000);
+		bench_vel_forward(ps, 1000);
+		bench_acc_forward(ps, 1000);
+		bench_fce_forward(ps, 1000);
+
+		bench_pos_inverse(gs, 1000);
+		bench_vel_inverse(gs, 1000);
+		bench_acc_inverse(gs, 1000);
+		bench_fce_inverse(gs, 1000);
+		bench_pos_forward(gs, 1000);
+		bench_vel_forward(gs, 1000);
+		bench_acc_forward(gs, 1000);
+		bench_fce_forward(gs, 1000);
+
+		bench_pos_inverse(ds, 1000);
+		bench_vel_inverse(ds, 1000);
+		bench_acc_inverse(ds, 1000);
+		bench_fce_inverse(ds, 1000);
+		bench_pos_forward(ds, 1000);
+		bench_vel_forward(ds, 1000);
+		bench_acc_forward(ds, 1000);
+		bench_fce_forward(ds, 1000);
+	}
+	catch (std::exception&e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+}
+void test_solver_stewart()
+{
+	try
+	{	
+		const double error = 1e-10;
+		
+		const double input_origin_p[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
+		const double input_origin_v[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_a[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double input_origin_mf[6]{ -13.3849595750926, -13.3927097990384, -13.3901587863615, -13.3901587863617, -13.3927097990384, -13.3849595750926 };
+		const double output_origin_pm[16]{ 1,0,0,0,
+			0, 0.999999999751072,2.2312668404904e-05,1.7078344386197,
+			0, -2.23126684049141e-05,0.999999999751072,0.577658198650165,
+			0,0,0,1 };
+		const double output_origin_va[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_aa[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
+		const double output_origin_mfs[6]{ 5.96877625518755e-14, -68.5999999829237, -0.00153064905217093, -0.0195999999954068,   2.09622926874175e-15, -1.42897385990919e-14 };
+
+		const double input_p[6]{ 2.15,2.03,1.98,1.68,2.22,2.01 };
+		const double input_v[6]{ 0.687,1.521,-0.325,0.665,1.225,-0.999 };
+		const double input_a[6]{ 1.687,0.521,-1.325,1.665,0.225,-1.999 };
+		const double input_mf[6]{ -54.3666620596338, -25.0817857667786, -18.1840142074996,   36.630055076576, -65.6950872736471,   75.5093067608351 };
+		const double output_pm[16]{ 0.654617242227831, -0.16813527373803,0.737025641279234,0.0674004103296998,
+			0.286892301165042,0.957269694021347, -0.0364354283699648,1.66351811346172,
+			-0.699406229390514,0.235298241883176,0.674881962758251,0.907546391448817,
+			0,0,0,1 };
+		const double output_va[6]{ -1.67602445813444,0.322144550146041,1.43386389933679, -4.13258637478856,0.229701802785213,2.06026880988191 };
+		const double output_aa[6]{ -3.99625983193204, -4.52459258496676,3.82662285536541, -4.70386456087171,10.2271223856012,12.7760010719168 };
+		const double output_mfs[6]{ 43.6438945057721, -43.4082817089241,   0.842045165182085,   11.2174553475889, -25.1497728624644, -4.77548370421841 };
+
+		double result1[16], result2[16], result3[16], result4[16];
+
+		aris::core::XmlDocument xml_doc;
+		xml_doc.Parse(xml_file_stewart);
+		Model m;
+		m.loadXml(xml_doc);
+
+		auto &gs = static_cast<GroundDividedSolver&>(*m.solverPool().findByName("gs"));
+		auto &ps = static_cast<PartDividedSolver&>(*m.solverPool().findByName("ps"));
+		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
+
+		// test kinematic and dynamic model //
+		auto test_forward = [&](Solver &s)->void
+		{
+			// set topology //
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			// set input origin //
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_origin_p[i]);
+				m.motionAtAbs(i).setMv(input_origin_v[i]);
+				m.motionAtAbs(i).setMa(input_origin_a[i]);
+			}
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
+
+			// get result //
+			m.generalMotionPool().at(0).updMpm();
+			m.generalMotionPool().at(0).getMpm(result1);
+			m.generalMotionPool().at(0).updMvs();
+			m.generalMotionPool().at(0).getMva(result2);
+			m.generalMotionPool().at(0).updMas();
+			m.generalMotionPool().at(0).getMaa(result3);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionAtAbs(i).mf();
+			// check //
+			if (!s_is_equal(16, result1, output_origin_pm, error))std::cout << s.type() << "::kinPos() forward origin failed" << std::endl;
+			if (!s_is_equal(6, result2, output_origin_va, error))std::cout << s.type() << "::kinVel() forward origin failed" << std::endl;
+			if (!s_is_equal(6, result3, output_origin_aa, error))std::cout << s.type() << "::kinAcc() forward origin failed" << std::endl;
+			if (!s_is_equal(6, result4, input_origin_mf, 1e-9))std::cout << s.type() << "::dynFce() forward origin failed" << std::endl;
+
+			// set input //
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
+			// get result //
+			m.generalMotionPool().at(0).updMpm();
+			m.generalMotionPool().at(0).getMpm(result1);
+			m.generalMotionPool().at(0).updMvs();
+			m.generalMotionPool().at(0).getMva(result2);
+			m.generalMotionPool().at(0).updMas();
+			m.generalMotionPool().at(0).getMaa(result3);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionAtAbs(i).mf();
+			// check //
+			if (!s_is_equal(16, result1, output_pm, error))std::cout << s.type() << "::kinPos() forward failed" << std::endl;
+			if (!s_is_equal(6, result2, output_va, error))std::cout << s.type() << "::kinVel() forward failed" << std::endl;
+			if (!s_is_equal(6, result3, output_aa, error))std::cout << s.type() << "::kinAcc() forward failed" << std::endl;
+			if (!s_is_equal(6, result4, input_mf, 1e-9))std::cout << s.type() << "::dynFce() forward failed" << std::endl;
+
+		};
+		auto test_inverse = [&](Solver &s)->void
+		{
+			// set topology //
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			// set ee origin status //
+			m.generalMotionPool().at(0).setMpm(output_origin_pm);
+			m.generalMotionPool().at(0).setMva(output_origin_va);
+			m.generalMotionPool().at(0).setMaa(output_origin_aa);
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
+			
+			// get result //
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).updMp();
+				m.motionAtAbs(i).updMv();
+				m.motionAtAbs(i).updMa();
+				result1[i] = m.motionAtAbs(i).mp();
+				result2[i] = m.motionAtAbs(i).mv();
+				result3[i] = m.motionAtAbs(i).ma();
+			}
+			// check //
+			if (!s_is_equal(6, result1, input_origin_p, error))std::cout << s.type() << "::kinPos() inverse origin failed" << std::endl;
+			if (!s_is_equal(6, result2, input_origin_v, error))std::cout << s.type() << "::kinVel() inverse origin failed" << std::endl;
+			if (!s_is_equal(6, result3, input_origin_a, error))std::cout << s.type() << "::kinAcc() inverse origin failed" << std::endl;
+			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_origin_mfs, 1e-9))std::cout << s.type() << "::dynFce() inverse origin failed" << std::endl;
+
+
+			// set ee status //
+			m.generalMotionPool().at(0).setMpm(output_pm);
+			m.generalMotionPool().at(0).setMva(output_va);
+			m.generalMotionPool().at(0).setMaa(output_aa);
+			// compute //
+			s.allocateMemory();
+			s.kinPos();
+			s.allocateMemory();
+			s.kinVel();
+			s.allocateMemory();
+			s.kinAcc();
+			s.allocateMemory();
+			s.dynFce();
+
+			// get result //
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).updMp();
+				m.motionAtAbs(i).updMv();
+				m.motionAtAbs(i).updMa();
+				result1[i] = m.motionAtAbs(i).mp();
+				result2[i] = m.motionAtAbs(i).mv();
+				result3[i] = m.motionAtAbs(i).ma();
+			}
+			// check //
+			if (!s_is_equal(6, result1, input_p, error))std::cout << s.type() << "::kinPos() inverse failed" << std::endl;
+			if (!s_is_equal(6, result2, input_v, error))std::cout << s.type() << "::kinVel() inverse failed" << std::endl;
+			if (!s_is_equal(6, result3, input_a, error))std::cout << s.type() << "::kinAcc() inverse failed" << std::endl;
+			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, error))std::cout << s.type() << "::dynFce() inverse failed" << std::endl;
+		};
+		auto bench_pos_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			s.allocateMemory();
+			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionAtAbs(i).setMp(input_p[i]);
+				else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionAtAbs(i).setMp(input_origin_p[i]);
+
+				// compute //
+				s.kinPos();
+				m.generalMotionPool().at(0).updMpm();
+				m.generalMotionPool().at(0).getMpm(result1);
+
+				if (count < 2 && count % 2 && !s_is_equal(16, result1, output_pm, error))
+					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
+				if (count < 2 && (count + 1) % 2 && !s_is_equal(16, result1, output_origin_pm, error))
+					std::cout << s.type() << "::kinPos() forward bench origin failed" << std::endl;
+
+				++count;
+			}) << std::endl;
+		};
+		auto bench_vel_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+			std::cout << s.type() << "::forward computational vel time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinVel();
+			}) << std::endl;
+		};
+		auto bench_acc_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+
+			std::cout << s.type() << "::forward computational acc time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.kinAcc();
+			}) << std::endl;
+		};
+		auto bench_fce_forward = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(true);
+			m.generalMotionPool().at(0).activate(false);
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+			{
+				m.motionAtAbs(i).setMp(input_p[i]);
+				m.motionAtAbs(i).setMv(input_v[i]);
+				m.motionAtAbs(i).setMa(input_a[i]);
+			}
+			s.allocateMemory();
+			s.kinPos();
+			s.kinVel();
+			s.kinAcc();
+
+			std::cout << s.type() << "::forward computational fce time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				s.dynFce();
+			}) << std::endl;
+		};
+		auto bench_pos_inverse = [&](Solver &s, aris::Size bench_count)
+		{
+			int count{ 0 };
+			for (auto &mot : m.motionPool())mot.activate(false);
+			m.generalMotionPool().at(0).activate(true);
+			s.allocateMemory();
+			std::cout << s.type() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
+			{
+				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.generalMotionPool().at(0).setMpm(output_pm);
+				else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.generalMotionPool().at(0).setMpm(output_origin_pm);
+
+				// compute //
+				s.kinPos();
+				for (aris::Size i = 0; i < m.motionPool().size(); ++i){	m.motionAtAbs(i).updMp(); result1[i] = m.motionAtAbs(i).mp(); }
+
+				if (count < 2 && count % 2 && !s_is_equal(6, result1, input_p, error))
+					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
+				if (count < 2 && (count + 1) % 2 && !s_is_equal(6, result1, input_origin_p, error))
+					std::cout << s.type() << "::kinPos() forward bench origin failed" << std::endl;
 
 				++count;
 			}) << std::endl;
@@ -2557,33 +2967,37 @@ void test_solver_stewart()
 		ps.setMaxError(1e-10);
 		ds.setMaxError(1e-10);
 
-		test_stewart_inverse(ds);
-		test_stewart_forward(ds);
-		test_stewart_forward(gs);
-		test_stewart_inverse(gs);
-		test_stewart_forward(ps);
-		test_stewart_inverse(ps);
+		std::cout << "test stewart robot:" << std::endl;
+
+		test_inverse(ds);
+		test_forward(ds);
+		test_forward(gs);
+		test_inverse(gs);
+		test_forward(ps);
+		test_inverse(ps);
 		
 		bench_pos_inverse(ps, 1000);
 		bench_vel_inverse(ps, 1000);
 		bench_acc_inverse(ps, 1000);
 		bench_fce_inverse(ps, 1000);
-		bench_pos_inverse(gs, 1000);
-		bench_vel_inverse(gs, 1000);
-		bench_acc_inverse(gs, 1000);
-		bench_fce_inverse(gs, 1000);
-		bench_pos_inverse(ds, 1000);
-		bench_vel_inverse(ds, 1000);
-		bench_acc_inverse(ds, 1000);
-		bench_fce_inverse(ds, 1000);
 		bench_pos_forward(ps, 1000);
 		bench_vel_forward(ps, 1000);
 		bench_acc_forward(ps, 1000);
 		bench_fce_forward(ps, 1000);
+
+		bench_pos_inverse(gs, 1000);
+		bench_vel_inverse(gs, 1000);
+		bench_acc_inverse(gs, 1000);
+		bench_fce_inverse(gs, 1000);
 		bench_pos_forward(gs, 1000);
 		bench_vel_forward(gs, 1000);
 		bench_acc_forward(gs, 1000);
 		bench_fce_forward(gs, 1000);
+
+		bench_pos_inverse(ds, 1000);
+		bench_vel_inverse(ds, 1000);
+		bench_acc_inverse(ds, 1000);
+		bench_fce_inverse(ds, 1000);
 		bench_pos_forward(ds, 1000);
 		bench_vel_forward(ds, 1000);
 		bench_acc_forward(ds, 1000);
@@ -2600,8 +3014,8 @@ void test_model()
 	std::cout << std::endl << "-----------------test model---------------------" << std::endl;
 	test_part();
 	test_constraint();
-	//test_solver_3R();
-	//test_solver_6R();
+	test_solver_3R();
+	test_solver_6R();
 	test_solver_stewart();
 	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
 }

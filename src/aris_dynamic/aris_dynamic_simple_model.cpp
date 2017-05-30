@@ -5,12 +5,23 @@ namespace aris
 {
 	namespace dynamic
 	{
-		struct SimpleModel::Imp{ Model m_; };
+		struct SimpleModel::Imp
+		{ 
+			Model m_;
+			DiagSolver *inv_solver_;
+			DiagSolver *fwd_solver_;
+		};
 
 		SimpleModel::~SimpleModel() {}
-		SimpleModel::SimpleModel() :imp_(new SimpleModel::Imp) { imp_->m_.ground().markerPool().add<Marker>("origin"); }
+		SimpleModel::SimpleModel() :imp_(new SimpleModel::Imp) 
+		{
+			imp_->m_.ground().markerPool().add<Marker>("origin"); 
+			imp_->inv_solver_ = &model().solverPool().add<DiagSolver>("inv_solver");
+			imp_->fwd_solver_ = &model().solverPool().add<DiagSolver>("fwd_solver");
+		}
 		auto SimpleModel::loadXml(const std::string &file)->void { imp_->m_.loadXml(file); }
 		auto SimpleModel::saveXml(const std::string &file)->void { imp_->m_.saveXml(file); }
+		auto SimpleModel::model()->Model& { return imp_->m_; }
 		auto SimpleModel::ground()->Part& { return imp_->m_.ground(); }
 		auto SimpleModel::addPart(const double *pm)->Part* { return &imp_->m_.partPool().add<Part>("part_" + std::to_string(imp_->m_.partPool().size()), nullptr, pm); }
 		auto SimpleModel::addRevoluteJoint(Part *first_part, Part *second_part, const double *position, const double *axis)->RevoluteJoint* 
@@ -63,15 +74,25 @@ namespace aris
 			auto &mak_i = end_effector->markerPool().add<Marker>(name + "_i", pm_prt);
 			return &imp_->m_.generalMotionPool().add<GeneralMotion>(name, mak_i, *imp_->m_.ground().markerPool().findByName("origin"));
 		}
+		auto SimpleModel::allocateMemory()->void
+		{
+			for (auto &mot : imp_->m_.motionPool())mot.activate(true);
+			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(false);
+			imp_->fwd_solver_->allocateMemory();
+
+			for (auto &mot : imp_->m_.motionPool())mot.activate(false);
+			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(true);
+			imp_->inv_solver_->allocateMemory();
+		}
 		auto SimpleModel::forwardKinematic(int max_count, double error)->bool
 		{
 			imp_->m_.saveDynEle("temp");
 			
-			for (auto &mot : imp_->m_.motionPool())mot.activate(true);
-			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(false);
+			imp_->fwd_solver_->setMaxIterCount(max_count);
+			imp_->fwd_solver_->setMaxError(error);
+			imp_->fwd_solver_->kinPos();
 
-			//auto ret = imp_->m_.kinPosInGlb(max_count, error);
-			//if (std::get<0>(ret) == max_count) 
+			if (imp_->fwd_solver_->iterCount() == imp_->fwd_solver_->maxIterCount())
 			{
 				imp_->m_.loadDynEle("temp");
 				return false;
@@ -83,21 +104,15 @@ namespace aris
 		{
 			imp_->m_.saveDynEle("temp");
 
-			for (auto &mot : imp_->m_.motionPool())mot.activate(false);
-			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(true);
+			imp_->inv_solver_->setMaxIterCount(max_count);
+			imp_->inv_solver_->setMaxError(error);
+			imp_->inv_solver_->kinPos();
 
-
-			//imp_->m_.allocateMemory();
-			//auto ret = imp_->m_.kinPosInGlb(max_count, error);
-			//if (std::get<0>(ret) == max_count)
+			if (imp_->inv_solver_->iterCount() == imp_->inv_solver_->maxIterCount())
 			{
 				imp_->m_.loadDynEle("temp");
 				return false;
 			}
-
-			for (auto &mot : imp_->m_.motionPool()) { mot.updMp(); }
-
-			
 
 			return true;
 		}

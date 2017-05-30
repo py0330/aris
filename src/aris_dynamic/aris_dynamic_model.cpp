@@ -15,6 +15,7 @@
 #include "aris_dynamic_screw.h"
 #include "aris_dynamic_model.h"
 
+//#define debug_output
 
 namespace aris
 {
@@ -738,72 +739,9 @@ namespace aris
 			double vm_cross_vn[6], tem[6];
 			s_cv(makI().fatherPart().glbVs(), makJ().fatherPart().glbVs(), vm_cross_vn);
 			s_inv_tv(*makI().fatherPart().pm(), vm_cross_vn, tem);
-			s_mm(dim(), 1, 6, -1.0, prtCmPtrI(), ColMajor{ dim() }, tem, 1, ca, 1);
-		}
-		auto Constraint::cptPrtCm(double *prt_cmI, double *prt_cmJ, Size cmI_ld, Size cmJ_ld)const->void
-		{
-			cmI_ld = std::max(cmI_ld, static_cast<Size>(dim()));
-			cmJ_ld = std::max(cmJ_ld, static_cast<Size>(dim()));
-			
-			s_mc(6, dim(), const_cast<double*>(prtCmPtrI()), dim(), prt_cmI, cmI_ld);
-			
-			double pm_M2N[4][4];
-			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
-			s_tf_n(dim(), -1.0, *pm_M2N, prtCmPtrI(), dim(), prt_cmJ, cmJ_ld);
-		}
-		auto Constraint::cptGlbCm(double *glb_cmI, double *glb_cmJ, Size cmI_ld, Size cmJ_ld)const->void
-		{
-			cmI_ld = std::max(cmI_ld, static_cast<Size>(dim()));
-			cmJ_ld = std::max(cmJ_ld, static_cast<Size>(dim()));
-			
-			s_tf_n(dim(), *makI().fatherPart().pm(), prtCmPtrI(), dim(), glb_cmI, cmI_ld);
-			s_mc(6, dim(), -1.0, glb_cmI, cmI_ld, glb_cmJ, cmJ_ld);
+			s_mmi(dim(), 1, 6, prtCmPtrI(), ColMajor{ dim() }, tem, 1, ca, 1);
 		}
 		auto Constraint::setCf(const double *cf)const->void { std::copy(cf, cf + dim(), const_cast<double *>(cfPtr())); }
-		auto Constraint::updPrtCm()->void
-		{
-			double pm_M2N[4][4];
-			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
-			s_tf_n(dim(), -1.0, *pm_M2N, prtCmPtrI(), const_cast<double*>(prtCmPtrJ()));
-		}
-		auto Constraint::updGlbCm()->void
-		{
-			s_tf_n(dim(), *makI().fatherPart().pm(), prtCmPtrI(), const_cast<double*>(glbCmPtrI()));
-			s_mc(6, dim(), -1.0, glbCmPtrI(), const_cast<double*>(glbCmPtrJ()));
-		}
-		auto Constraint::updCa()->void
-		{
-			double vm_cross_vn[6], tem[6];
-			s_cv(makI().fatherPart().glbVs(), makJ().fatherPart().glbVs(), vm_cross_vn);
-			s_inv_tv(*makI().fatherPart().pm(), vm_cross_vn, tem);
-			s_mm(dim(), 1, 6, -1.0, prtCmPtrI(), ColMajor{ dim() }, tem, 1, const_cast<double*>(caPtr()), 1);
-		}
-		auto Constraint::updCe()->void
-		{
-			double pq_n2m[7];
-			double pm_n2m[4][4];
-			double diff[6];
-
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_n2m);
-			s_pm2pq(*pm_n2m, pq_n2m);
-
-			double theta = atan2(s_norm(3, pq_n2m + 3, 1), pq_n2m[6]) * 2;
-			
-			if (theta < 1e-3)
-			{
-				s_nv(3, 2.0, pq_n2m + 3);
-			}
-			else
-			{
-				s_nv(3, theta / std::sin(theta / 2.0), pq_n2m + 3);
-			}
-
-
-			//s_nv(3, 2.0, pq_n2m + 3);
-			s_tv(*makI().pm(), pq_n2m, diff);
-			
-			s_mm(dim(), 1, 6, glbCmPtrI(), ColMajor{ dim() }, diff, 1, const_cast<double*>(cePtr()), 1);
-		}
 		Constraint::~Constraint() = default;
 		Constraint::Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active): Interaction(name, makI, makJ, is_active) {}
 		Constraint::Constraint(Object &father, const aris::core::XmlElement &xml_ele): Interaction(father, xml_ele) {}
@@ -1609,7 +1547,7 @@ namespace aris
 			double fv[6];
 			cptGlbFv(fv);
 			cptGlbFg(pf);
-			s_va(6, -1.0, fv, pf);
+			s_vs(6, fv, pf);
 		}
 		auto Part::cptPrtFg(double *fg)const->void
 		{
@@ -1629,7 +1567,7 @@ namespace aris
 			double fv[6];
 			cptPrtFv(fv);
 			cptPrtFg(pf);
-			s_va(6, -1.0, fv, pf);
+			s_vs(6, fv, pf);
 		}
 		auto Part::cptPrtVs(double *prt_vs)const->void
 		{
@@ -2309,17 +2247,6 @@ namespace aris
 		auto Motion::cptCp(double *cp)const->void{ Constraint::cptCp(cp); cp[0] += mp(); }
 		auto Motion::cptCv(double *cv)const->void{ cv[0] = mv(); }
 		auto Motion::cptCa(double *ca)const->void{ Constraint::cptCa(ca); ca[0] += ma(); }
-
-		auto Motion::updCa()->void
-		{
-			Constraint::updCa();
-			ca_[0] += ma();
-		}
-		auto Motion::updCe()->void
-		{
-			Constraint::updCe();
-			const_cast<double*>(cePtr())[0] += mp();
-		}
 		auto Motion::updMp()->void { setMp(s_sov_axis_distance(*makJ().pm(), *makI().pm(), axis())); }
 		auto Motion::updMv()->void
 		{
@@ -2336,8 +2263,6 @@ namespace aris
 		auto Motion::absID()const->Size { return id(); }
 		auto Motion::slaID()const->Size { return imp_->sla_id_; }
 		auto Motion::phyID()const->Size { return imp_->phy_id_; }
-		auto Motion::clbID()const->Size { return imp_->clb_id_; }
-		auto Motion::clbFrcID()const->Size { return imp_->clb_frc_id_; }
 		auto Motion::axis()const->Size { return imp_->component_axis_; }
 		auto Motion::frcCoe()const->const double3& { return imp_->frc_coe_; }
 		auto Motion::setFrcCoe(const double *frc_coe)->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
@@ -2469,11 +2394,6 @@ namespace aris
 		}
 		auto GeneralMotion::cptCv(double *cv)const->void { s_inv_tv(*mpm(), mvs(), cv); }
 		auto GeneralMotion::cptCa(double *ca)const->void { s_inv_tv(*mpm(), mas(), ca); }
-		auto GeneralMotion::updCa()->void
-		{
-			//Constraint::updCa();
-			//s_va(dim(), ma(), ca_);
-		}
 		auto GeneralMotion::mpm()const->const double4x4&{ return imp_->mpm_;	}
 		auto GeneralMotion::updMpm()->void {	s_inv_pm_dot_pm(*makJ().glbPm(), *makI().glbPm(), *imp_->mpm_);	}
 		auto GeneralMotion::setMpe(const double* pe, const char *type)->void { s_pe2pm(pe, *imp_->mpm_, type); }
@@ -2636,6 +2556,15 @@ namespace aris
 		Solver::Solver(Solver&&) = default;
 		Solver& Solver::operator=(const Solver&) = default;
 		Solver& Solver::operator=(Solver&&) = default;
+
+		struct Calibrator::Imp{};
+		Calibrator::~Calibrator() = default;
+		Calibrator::Calibrator(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp){}
+		Calibrator::Calibrator(const std::string &name) : Element(name), imp_(new Imp) {}
+		Calibrator::Calibrator(const Calibrator&) = default;
+		Calibrator::Calibrator(Calibrator&&) = default;
+		Calibrator& Calibrator::operator=(const Calibrator&) = default;
+		Calibrator& Calibrator::operator=(Calibrator&&) = default;
 
 		struct Model::Imp
 		{
@@ -2943,8 +2872,8 @@ namespace aris
 			registerChildType<ParasolidGeometry>();
 
 			registerChildType<aris::core::ObjectPool<Solver, Element>>();
-			registerChildType<GroundFullMatrixSolver>();
-			registerChildType<PartFullMatrixSolver>();
+			registerChildType<LltGroundDividedSolver>();
+			registerChildType<LltPartDividedSolver>();
 			registerChildType<DiagSolver>();
 
 			imp_->environment_ = &this->add<Environment>("environment");
@@ -3034,7 +2963,7 @@ namespace aris
 				0,0,0,0,1,
 				0,0,0,0,0
 			};
-
+			s_mc(6, Dim(), *loc_cst, const_cast<double*>(locCmPtrI()));
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 		RevoluteJoint::RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
@@ -3048,7 +2977,7 @@ namespace aris
 				0,0,0,0,1,
 				0,0,0,0,0
 			};
-
+			s_mc(6, Dim(), *loc_cst, const_cast<double*>(locCmPtrI()));
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 
@@ -3063,7 +2992,7 @@ namespace aris
 				0,0,0,1,0,
 				0,0,0,0,1
 			};
-
+			s_mc(6, Dim(), *loc_cst, const_cast<double*>(locCmPtrI()));
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 		PrismaticJoint::PrismaticJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
@@ -3077,7 +3006,7 @@ namespace aris
 				0,0,0,1,0,
 				0,0,0,0,1
 			};
-
+			s_mc(6, Dim(), *loc_cst, const_cast<double*>(locCmPtrI()));
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 
@@ -3129,14 +3058,8 @@ namespace aris
 
 			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
 
-			if (theta < 1e-3)
-			{
-				s_nv(3, 2.0, pq_j2i + 3);
-			}
-			else
-			{
-				s_nv(3, theta / std::sin(theta / 2.0), pq_j2i + 3);
-			}
+			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
+			s_nv(3, coe, pq_j2i + 3);
 
 			// 此时位移差值在makI()坐标系中。需要转换到部件坐标系下。
 			double diff2[6];
@@ -3156,11 +3079,8 @@ namespace aris
 
 			s_mm(dim(), 1, 6, prtCmPtrI(), ColMajor{ dim() }, diff, 1, cp, 1);
 		}
-		auto UniversalJoint::cptPrtCm(double *prt_cmI, double *prt_cmJ, Size cmI_ld, Size cmJ_ld)const->void
+		auto UniversalJoint::updPrtCmI()->void 
 		{
-			cmI_ld = std::max(cmI_ld, static_cast<Size>(dim()));
-			cmJ_ld = std::max(cmJ_ld, static_cast<Size>(dim()));
-			
 			double tem[3];
 			const double axis_i_m[3]{ makI().prtPm()[0][2] ,makI().prtPm()[1][2] ,makI().prtPm()[2][2] };
 			double axis_j_m[3];
@@ -3169,79 +3089,6 @@ namespace aris
 
 			s_c3(axis_i_m, 1, axis_j_m, 1, const_cast<double*>(prtCmPtrI()) + 3 * 4 + 3, 4);
 			s_nv(3, 1.0 / s_norm(3, prtCmPtrI() + 3 * 4 + 3, 4), const_cast<double*>(prtCmPtrI()) + 3 * 4 + 3, 4);
-			
-			Constraint::cptPrtCm(prt_cmI, prt_cmJ, cmI_ld, cmJ_ld);
-		}
-		auto UniversalJoint::cptGlbCm(double *glb_cmI, double *glb_cmJ, Size cmI_ld, Size cmJ_ld)const->void
-		{
-			cmI_ld = std::max(cmI_ld, static_cast<Size>(dim()));
-			cmJ_ld = std::max(cmJ_ld, static_cast<Size>(dim()));
-			
-			double axis_i_g[3], axis_j_g[3];
-			s_pm_dot_v3(*makI().fatherPart().pm(), &makI().prtPm()[0][2], 4, axis_i_g, 1);
-			s_pm_dot_v3(*makJ().fatherPart().pm(), &makJ().prtPm()[0][2], 4, axis_j_g, 1);
-
-			s_fill(3, 1, 0.0, glb_cmI + dynamic::id(0, 3, cmI_ld), cmI_ld);
-			s_c3(axis_i_g, 1, axis_j_g, 1, glb_cmI + dynamic::id(3, 3, cmI_ld), cmI_ld);
-			s_nv(3, 1.0 / s_norm(3, glb_cmI + dynamic::id(3, 3, cmI_ld), cmI_ld), glb_cmI + dynamic::id(3, 3, cmI_ld), cmI_ld);
-			
-			s_tf_n(3, *makI().fatherPart().pm(), prtCmPtrI(), dim(), glb_cmI, cmI_ld);
-
-			s_mc(6, 4, -1.0, glb_cmI, cmI_ld, glb_cmJ, cmJ_ld);
-		}
-		auto UniversalJoint::updPrtCm()->void
-		{
-			// 在零位时，makI的x、y、z轴分别对应makJ的z，x，y轴。转轴分别为makI的z轴和makJ的z轴
-
-			// update cmI
-			// makI的z轴 和 makJ的z轴
-			double tem[3];
-			const double axis_i_m[3]{ makI().prtPm()[0][2] ,makI().prtPm()[1][2] ,makI().prtPm()[2][2] };
-			double axis_j_m[3];
-			s_pm_dot_v3(*makJ().fatherPart().pm(), &makJ().prtPm()[0][2], 4, tem, 1);
-			s_inv_pm_dot_v3(*makI().fatherPart().pm(), tem, axis_j_m);
-
-			s_c3(axis_i_m, 1, axis_j_m, 1, const_cast<double*>(&prtCmI()[3][3]), 4);
-
-			// // update csmJ //
-			Constraint::updPrtCm();
-		}
-		auto UniversalJoint::updGlbCm()->void
-		{
-			double axis_i_g[3], axis_j_g[3];
-			s_pm_dot_v3(*makI().fatherPart().pm(), &makI().prtPm()[0][2], 4, axis_i_g, 1);
-			s_pm_dot_v3(*makJ().fatherPart().pm(), &makJ().prtPm()[0][2], 4, axis_j_g, 1);
-
-			s_fill(3, 1, 0.0, const_cast<double*>(&glbCmI()[0][3]), 4);
-			s_c3(axis_i_g, 1, axis_j_g, 1, const_cast<double*>(&glbCmI()[3][3]), 4);
-
-			s_tf_n(3, *makI().fatherPart().pm(), prtCmPtrI(), 4, const_cast<double*>(glbCmPtrI()), 4);
-			s_mc(6, dim(), -1.0, glbCmPtrI(), const_cast<double*>(glbCmPtrJ()));
-		}
-		auto UniversalJoint::updCa()->void
-		{
-			Constraint::updCa();
-			
-			double tem[6];
-			
-			// update makI的z轴 和 makJ的z轴
-			const double axis_i_m[3]{ makI().prtPm()[0][2] ,makI().prtPm()[1][2] ,makI().prtPm()[2][2] };
-			double axis_j_m[3];
-			s_pm_dot_v3(*makJ().fatherPart().pm(), &makJ().prtPm()[0][2], 4, tem, 1);
-			s_inv_pm_dot_v3(*makI().fatherPart().pm(), tem, axis_j_m);
-
-			// compute c_dot //
-			double wm_in_m[3], wn_in_m[3];
-			s_inv_pm_dot_v3(*makI().fatherPart().pm(), makI().fatherPart().glbVs() + 3, wm_in_m);
-			s_inv_pm_dot_v3(*makI().fatherPart().pm(), makJ().fatherPart().glbVs() + 3, wn_in_m);
-
-			double iwm = s_vv(3, axis_i_m, wm_in_m);
-			double jwm = s_vv(3, axis_j_m, wm_in_m);
-			double iwn = s_vv(3, axis_i_m, wn_in_m);
-			double jwn = s_vv(3, axis_j_m, wn_in_m);
-
-			ca_[3] += 2*jwm*iwn - jwm*iwm -jwn*iwn;
-
 		}
 		UniversalJoint::UniversalJoint(const std::string &name, Marker &makI, Marker &makJ) : JointTemplate(name, makI, makJ)
 		{
@@ -3254,7 +3101,7 @@ namespace aris
 				0,0,0,0,
 				0,0,0,0,
 			};
-
+			s_mc(6, Dim(), *loc_cst, const_cast<double*>(locCmPtrI()));
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 		UniversalJoint::UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele) : JointTemplate(father, xml_ele)
@@ -3268,7 +3115,7 @@ namespace aris
 				0,0,0,0,
 				0,0,0,0,
 			};
-
+			s_mc(6, Dim(), *loc_cst, const_cast<double*>(locCmPtrI()));
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 
@@ -3284,6 +3131,7 @@ namespace aris
 				0,0,0,
 			};
 
+			s_mc(6, Dim(), *loc_cst, const_cast<double*>(locCmPtrI()));
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 		SphericalJoint::SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele): JointTemplate(father, xml_ele)
@@ -3298,6 +3146,7 @@ namespace aris
 				0,0,0,
 			};
 
+			s_mc(6, Dim(), *loc_cst, const_cast<double*>(locCmPtrI()));
 			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, *prtCmI_);
 		}
 
@@ -3349,7 +3198,96 @@ namespace aris
 		SingleComponentForce::SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, Size componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
 		SingleComponentForce::SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele) : Force(father, xml_ele), component_axis_(attributeInt32(xml_ele, "component")) {}
 		
-		struct FullMatrixSolver::Imp
+		struct CombineSolver::Imp
+		{
+			Size p_size_, c_size_;
+			std::vector<double> A_, x_, b_;
+
+			std::vector<PartBlock> part_block_pool_;
+			std::vector<ConstraintBlock> constraint_block_pool_;
+		};
+		auto CombineSolver::allocateMemory()->void
+		{
+			// make active pool //
+			imp_->part_block_pool_.clear();
+			imp_->constraint_block_pool_.clear();
+
+			for (auto &prt : model().partPool())if (prt.active())imp_->part_block_pool_.push_back(PartBlock{ &prt, 0 });
+			for (auto &jnt : model().jointPool())if (jnt.active())imp_->constraint_block_pool_.push_back(ConstraintBlock{ &jnt,0, nullptr, nullptr });
+			for (auto &mot : model().motionPool())if (mot.active()) imp_->constraint_block_pool_.push_back(ConstraintBlock{ &mot,0, nullptr, nullptr });
+			for (auto &gmt : model().generalMotionPool())if (gmt.active())imp_->constraint_block_pool_.push_back(ConstraintBlock{ &gmt,0, nullptr, nullptr });
+
+			// compute memory size //
+			imp_->p_size_ = 0;
+			imp_->c_size_ = 6;
+
+			for (auto &pb : activePartBlockPool())
+			{
+				pb.row_id_ = imp_->p_size_;
+				imp_->p_size_ += 6;
+			}
+			for (auto &cb : activeConstraintBlockPool())
+			{
+				cb.col_id_ = imp_->c_size_;
+				imp_->c_size_ += cb.constraint_->dim();
+
+				auto i_ = std::find_if(activePartBlockPool().begin(), activePartBlockPool().end(), [&cb](PartBlock &pb) {return pb.part_ == &cb.constraint_->makI().fatherPart(); });
+				auto j_ = std::find_if(activePartBlockPool().begin(), activePartBlockPool().end(), [&cb](PartBlock &pb) {return pb.part_ == &cb.constraint_->makJ().fatherPart(); });
+				if (i_ == activePartBlockPool().end()) throw std::runtime_error("i part not found");
+				if (j_ == activePartBlockPool().end()) throw std::runtime_error("j part not found");
+				cb.pb_i_ = &*i_;
+				cb.pb_j_ = &*j_;
+			}
+		}
+		auto CombineSolver::activePartBlockPool()->std::vector<PartBlock>& { return imp_->part_block_pool_; }
+		auto CombineSolver::activeConstraintBlockPool()->std::vector<ConstraintBlock>& { return imp_->constraint_block_pool_; }
+		auto CombineSolver::cSize()->Size { return imp_->c_size_; }
+		auto CombineSolver::pSize()->Size { return imp_->p_size_; }
+		auto CombineSolver::A()->double * { return imp_->A_.data(); }
+		auto CombineSolver::x()->double * { return imp_->x_.data(); }
+		auto CombineSolver::b()->double * { return imp_->b_.data(); }
+		CombineSolver::~CombineSolver() = default;
+		CombineSolver::CombineSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
+		CombineSolver::CombineSolver(Object &father, const aris::core::XmlElement &xml_ele) : Solver(father, xml_ele) {}
+		CombineSolver::CombineSolver(const CombineSolver &other) = default;
+		CombineSolver::CombineSolver(CombineSolver &&other) = default;
+		CombineSolver& CombineSolver::operator=(const CombineSolver &other) = default;
+		CombineSolver& CombineSolver::operator=(CombineSolver &&other) = default;
+
+		auto GroundCombineSolver::updA()->void 
+		{
+			for (auto &pb : activePartBlockPool())
+				pb.part_->cptGlbIm(A() + dynamic::id(pb.row_id_, pb.row_id_, aSize()), aSize());
+
+			for (auto &cb : activeConstraintBlockPool())
+			{
+				auto row_i = cb.pb_i_->row_id_;
+				auto row_j = cb.pb_j_->row_id_;
+				auto col = cb.col_id_ + pSize();
+
+
+
+				cb.constraint_->cptGlbCm(A() + dynamic::id(row_i, col, aSize()), aSize(), A() + dynamic::id(row_j, col, aSize()), aSize());
+				//cb.constraint_->cptGlbCm(A() + dynamic::id(row_i, col, ColMajor{ aSize() }), ColMajor{ aSize() }, A() + dynamic::id(row_j, col, ColMajor{ aSize() }), ColMajor{ aSize() });
+
+			}
+		}
+		auto GroundCombineSolver::updB()->void {}
+		auto GroundCombineSolver::updX()->void {}
+		auto GroundCombineSolver::updConstraintFce()->void {}
+		auto GroundCombineSolver::updPartPos()->void {}
+		auto GroundCombineSolver::updPartVel()->void {}
+		auto GroundCombineSolver::updPartAcc()->void {}
+		GroundCombineSolver::~GroundCombineSolver() = default;
+		GroundCombineSolver::GroundCombineSolver(const std::string &name, Size max_iter_count, double max_error) :CombineSolver(name, max_iter_count, max_error) {}
+		GroundCombineSolver::GroundCombineSolver(Object &father, const aris::core::XmlElement &xml_ele) : CombineSolver(father, xml_ele) {}
+		GroundCombineSolver::GroundCombineSolver(const GroundCombineSolver &other) = default;
+		GroundCombineSolver::GroundCombineSolver(GroundCombineSolver &&other) = default;
+		GroundCombineSolver& GroundCombineSolver::operator=(const GroundCombineSolver &other) = default;
+		GroundCombineSolver& GroundCombineSolver::operator=(GroundCombineSolver &&other) = default;
+
+
+		struct DividedSolver::Imp
 		{
 			Size p_size_, c_size_;
 			std::vector<double> im_, cm_, pp_, pv_, pa_, pf_, cp_, cv_, ca_, cf_;
@@ -3360,7 +3298,7 @@ namespace aris
 			BlockSize p_blk_size_, c_blk_size_;
 			BlockData im_blk_, cm_blk_, pp_blk_, pv_blk_, pa_blk_, pf_blk_, cp_blk_, cv_blk_, ca_blk_, cf_blk_;
 		};
-		auto FullMatrixSolver::allocateMemory()->void
+		auto DividedSolver::allocateMemory()->void
 		{
 			// make active pool //
 			imp_->part_block_pool_.clear();
@@ -3371,10 +3309,11 @@ namespace aris
 			for (auto &mot : model().motionPool())if (mot.active()) imp_->constraint_block_pool_.push_back(ConstraintBlock{ &mot,0,0, nullptr, nullptr });
 			for (auto &gmt : model().generalMotionPool())if (gmt.active())imp_->constraint_block_pool_.push_back(ConstraintBlock{ &gmt,0,0, nullptr, nullptr });
 
-			// compute memory size old //
+			// compute memory size //
 			imp_->p_size_ = 0;
 			imp_->c_size_ = 6;
-			imp_->p_blk_size_.resize(0);
+			imp_->p_blk_size_.clear();
+			imp_->c_blk_size_.clear();
 			imp_->c_blk_size_.resize(1, 6);
 
 			for (auto &pb : activePartBlockPool())
@@ -3400,26 +3339,46 @@ namespace aris
 			}
 
 			// allocate memory //
+			imp_->im_.clear();
 			imp_->im_.resize(imp_->p_size_ * imp_->p_size_, 0.0);
+			imp_->cm_.clear();
 			imp_->cm_.resize(imp_->p_size_ * imp_->c_size_, 0.0);
+			imp_->cp_.clear();
 			imp_->cp_.resize(imp_->c_size_ * 1, 0.0);
+			imp_->cv_.clear();
 			imp_->cv_.resize(imp_->c_size_ * 1, 0.0);
+			imp_->ca_.clear();
 			imp_->ca_.resize(imp_->c_size_ * 1, 0.0);
+			imp_->cf_.clear();
 			imp_->cf_.resize(imp_->c_size_ * 1, 0.0);
+			imp_->pp_.clear();
 			imp_->pp_.resize(imp_->p_size_ * 1, 0.0);
+			imp_->pv_.clear();
 			imp_->pv_.resize(imp_->p_size_ * 1, 0.0);
+			imp_->pa_.clear();
 			imp_->pa_.resize(imp_->p_size_ * 1, 0.0);
+			imp_->pf_.clear();
 			imp_->pf_.resize(imp_->p_size_ * 1, 0.0);
 
+			imp_->im_blk_.clear();
 			imp_->im_blk_.resize(imp_->p_blk_size_.size() * imp_->p_blk_size_.size());
+			imp_->cm_blk_.clear();
 			imp_->cm_blk_.resize(imp_->p_blk_size_.size() * imp_->c_blk_size_.size());
+			imp_->cp_blk_.clear();
 			imp_->cp_blk_.resize(imp_->c_blk_size_.size() * 1);
+			imp_->cv_blk_.clear();
 			imp_->cv_blk_.resize(imp_->c_blk_size_.size() * 1);
+			imp_->ca_blk_.clear();
 			imp_->ca_blk_.resize(imp_->c_blk_size_.size() * 1);
+			imp_->cf_blk_.clear();
 			imp_->cf_blk_.resize(imp_->c_blk_size_.size() * 1);
+			imp_->pp_blk_.clear();
 			imp_->pp_blk_.resize(imp_->p_blk_size_.size() * 1);
+			imp_->pv_blk_.clear();
 			imp_->pv_blk_.resize(imp_->p_blk_size_.size() * 1);
+			imp_->pa_blk_.clear();
 			imp_->pa_blk_.resize(imp_->p_blk_size_.size() * 1);
+			imp_->pf_blk_.clear();
 			imp_->pf_blk_.resize(imp_->p_blk_size_.size() * 1);
 			
 			s_blk_map(cBlkSize(), { 1 }, imp_->cp_.data(), imp_->cp_blk_);
@@ -3448,75 +3407,51 @@ namespace aris
 			for (Size i = 0; i < 6; ++i)imp_->cm_[aris::dynamic::id(ground_iter->row_id_ + i, i, cSize())] = 1.0;
 
 		}
-		auto FullMatrixSolver::activePartBlockPool()->std::vector<PartBlock>& { return imp_->part_block_pool_; }
-		auto FullMatrixSolver::activeConstraintBlockPool()->std::vector<ConstraintBlock>& { return imp_->constraint_block_pool_; }
-		auto FullMatrixSolver::cSize()->Size { return imp_->c_size_; }
-		auto FullMatrixSolver::pSize()->Size { return imp_->p_size_; }
-		auto FullMatrixSolver::im()->double * { return imp_->im_.data(); }
-		auto FullMatrixSolver::cm()->double * { return imp_->cm_.data(); }
-		auto FullMatrixSolver::pp()->double * { return imp_->pp_.data(); }
-		auto FullMatrixSolver::pv()->double * { return imp_->pv_.data(); }
-		auto FullMatrixSolver::pa()->double * { return imp_->pa_.data(); }
-		auto FullMatrixSolver::pf()->double * { return imp_->pf_.data(); }
-		auto FullMatrixSolver::cp()->double * { return imp_->cp_.data(); }
-		auto FullMatrixSolver::cv()->double * { return imp_->cv_.data(); }
-		auto FullMatrixSolver::ca()->double * { return imp_->ca_.data(); }
-		auto FullMatrixSolver::cf()->double * { return imp_->cf_.data(); }
-		auto FullMatrixSolver::cBlkSize()->BlockSize& { return imp_->c_blk_size_; }
-		auto FullMatrixSolver::pBlkSize()->BlockSize& { return imp_->p_blk_size_; }
-		auto FullMatrixSolver::imBlk()->BlockData& { return imp_->im_blk_; }
-		auto FullMatrixSolver::cmBlk()->BlockData& { return imp_->cm_blk_; }
-		auto FullMatrixSolver::ppBlk()->BlockData& { return imp_->pp_blk_; }
-		auto FullMatrixSolver::pvBlk()->BlockData& { return imp_->pv_blk_; }
-		auto FullMatrixSolver::paBlk()->BlockData& { return imp_->pa_blk_; }
-		auto FullMatrixSolver::pfBlk()->BlockData& { return imp_->pf_blk_; }
-		auto FullMatrixSolver::cpBlk()->BlockData& { return imp_->cp_blk_; }
-		auto FullMatrixSolver::cvBlk()->BlockData& { return imp_->cv_blk_; }
-		auto FullMatrixSolver::caBlk()->BlockData& { return imp_->ca_blk_; }
-		auto FullMatrixSolver::cfBlk()->BlockData& { return imp_->cf_blk_; }
-		FullMatrixSolver::~FullMatrixSolver() = default;
-		FullMatrixSolver::FullMatrixSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
-		FullMatrixSolver::FullMatrixSolver(Object &father, const aris::core::XmlElement &xml_ele) :Solver(father, xml_ele){}
-		FullMatrixSolver::FullMatrixSolver(const FullMatrixSolver &other) = default;
-		FullMatrixSolver::FullMatrixSolver(FullMatrixSolver &&other) = default;
-		FullMatrixSolver& FullMatrixSolver::operator=(const FullMatrixSolver &other) = default;
-		FullMatrixSolver& FullMatrixSolver::operator=(FullMatrixSolver &&other) = default;
-
-		struct GroundFullMatrixSolver::Imp
-		{
-			std::vector<double> cct_, ctc_, cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
-			BlockData cct_blk_, ctc_blk_;
-			BlockData cct_llt_blk_, cct_x_blk_, cct_b_blk_, ctc_llt_blk_, ctc_x_blk_, ctc_b_blk_;
-		};
-		auto GroundFullMatrixSolver::allocateMemory()->void
-		{
-			FullMatrixSolver::allocateMemory();
-
-			imp_->cct_.resize(pSize() * pSize());
-			imp_->cct_llt_.resize(pSize() * pSize());
-			imp_->cct_b_.resize(pSize() * 1);
-			imp_->cct_x_.resize(pSize() * 1);
-
-			imp_->cct_blk_.resize(pBlkSize().size() * pBlkSize().size());
-			imp_->cct_llt_blk_.resize(pBlkSize().size() * pBlkSize().size());
-			imp_->cct_b_blk_.resize(pBlkSize().size() * 1);
-			imp_->cct_x_blk_.resize(pBlkSize().size() * 1);
-
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_.data(), imp_->cct_blk_);
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_llt_.data(), imp_->cct_llt_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->cct_b_.data(), imp_->cct_b_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->cct_x_.data(), imp_->cct_x_blk_);
-		}
-		auto GroundFullMatrixSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->getVs(pv() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->getAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbPf(pf() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::updIm()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbIm(im() + dynamic::id(pb.row_id_, pb.row_id_, pSize()), pSize()); }
-		auto GroundFullMatrixSolver::updCm()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptGlbCm(cm() + dynamic::id(cb.pb_i_->row_id_, cb.col_id_, cSize()), cm() + dynamic::id(cb.pb_j_->row_id_, cb.col_id_, cSize()), cSize(), cSize()); }
-		auto GroundFullMatrixSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::updPartPos()->void
+		auto DividedSolver::activePartBlockPool()->std::vector<PartBlock>& { return imp_->part_block_pool_; }
+		auto DividedSolver::activeConstraintBlockPool()->std::vector<ConstraintBlock>& { return imp_->constraint_block_pool_; }
+		auto DividedSolver::cSize()->Size { return imp_->c_size_; }
+		auto DividedSolver::pSize()->Size { return imp_->p_size_; }
+		auto DividedSolver::im()->double * { return imp_->im_.data(); }
+		auto DividedSolver::cm()->double * { return imp_->cm_.data(); }
+		auto DividedSolver::pp()->double * { return imp_->pp_.data(); }
+		auto DividedSolver::pv()->double * { return imp_->pv_.data(); }
+		auto DividedSolver::pa()->double * { return imp_->pa_.data(); }
+		auto DividedSolver::pf()->double * { return imp_->pf_.data(); }
+		auto DividedSolver::cp()->double * { return imp_->cp_.data(); }
+		auto DividedSolver::cv()->double * { return imp_->cv_.data(); }
+		auto DividedSolver::ca()->double * { return imp_->ca_.data(); }
+		auto DividedSolver::cf()->double * { return imp_->cf_.data(); }
+		auto DividedSolver::cBlkSize()->BlockSize& { return imp_->c_blk_size_; }
+		auto DividedSolver::pBlkSize()->BlockSize& { return imp_->p_blk_size_; }
+		auto DividedSolver::imBlk()->BlockData& { return imp_->im_blk_; }
+		auto DividedSolver::cmBlk()->BlockData& { return imp_->cm_blk_; }
+		auto DividedSolver::ppBlk()->BlockData& { return imp_->pp_blk_; }
+		auto DividedSolver::pvBlk()->BlockData& { return imp_->pv_blk_; }
+		auto DividedSolver::paBlk()->BlockData& { return imp_->pa_blk_; }
+		auto DividedSolver::pfBlk()->BlockData& { return imp_->pf_blk_; }
+		auto DividedSolver::cpBlk()->BlockData& { return imp_->cp_blk_; }
+		auto DividedSolver::cvBlk()->BlockData& { return imp_->cv_blk_; }
+		auto DividedSolver::caBlk()->BlockData& { return imp_->ca_blk_; }
+		auto DividedSolver::cfBlk()->BlockData& { return imp_->cf_blk_; }
+		DividedSolver::~DividedSolver() = default;
+		DividedSolver::DividedSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
+		DividedSolver::DividedSolver(Object &father, const aris::core::XmlElement &xml_ele) :Solver(father, xml_ele){}
+		DividedSolver::DividedSolver(const DividedSolver &other) = default;
+		DividedSolver::DividedSolver(DividedSolver &&other) = default;
+		DividedSolver& DividedSolver::operator=(const DividedSolver &other) = default;
+		DividedSolver& DividedSolver::operator=(DividedSolver &&other) = default;
+		
+		struct GroundDividedSolver::Imp {};
+		auto GroundDividedSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + dynamic::id(cb.col_id_, 0, 1)); }
+		auto GroundDividedSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + dynamic::id(cb.col_id_, 0, 1)); }
+		auto GroundDividedSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + dynamic::id(cb.col_id_, 0, 1)); }
+		auto GroundDividedSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->getVs(pv() + dynamic::id(pb.row_id_, 0, 1)); }
+		auto GroundDividedSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->getAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
+		auto GroundDividedSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbPf(pf() + dynamic::id(pb.row_id_, 0, 1)); }
+		auto GroundDividedSolver::updIm()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbIm(im() + dynamic::id(pb.row_id_, pb.row_id_, pSize()), pSize()); }
+		auto GroundDividedSolver::updCm()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptGlbCm(cm() + dynamic::id(cb.pb_i_->row_id_, cb.col_id_, cSize()), cSize(), cm() + dynamic::id(cb.pb_j_->row_id_, cb.col_id_, cSize()), cSize()); }
+		auto GroundDividedSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1)); }
+		auto GroundDividedSolver::updPartPos()->void
 		{
 			for (auto pb : activePartBlockPool())
 			{
@@ -3539,120 +3474,27 @@ namespace aris
 				pb.part_->setPm(*final_pm);
 			}
 		}
-		auto GroundFullMatrixSolver::updPartVel()->void { for (auto &pb : activePartBlockPool())pb.part_->setVs(pv() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool())pb.part_->setAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto GroundFullMatrixSolver::kinPos()->void 
-		{
-			setIterCount(0);
+		auto GroundDividedSolver::updPartVel()->void { for (auto &pb : activePartBlockPool())pb.part_->setVs(pv() + dynamic::id(pb.row_id_, 0, 1)); }
+		auto GroundDividedSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool())pb.part_->setAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
+		GroundDividedSolver::~GroundDividedSolver() = default;
+		GroundDividedSolver::GroundDividedSolver(const std::string &name, Size max_iter_count, double max_error) :DividedSolver(name, max_iter_count, max_error) {}
+		GroundDividedSolver::GroundDividedSolver(Object &father, const aris::core::XmlElement &xml_ele) : DividedSolver(father, xml_ele) {}
+		GroundDividedSolver::GroundDividedSolver(const GroundDividedSolver &other) = default;
+		GroundDividedSolver::GroundDividedSolver(GroundDividedSolver &&other) = default;
+		GroundDividedSolver& GroundDividedSolver::operator=(const GroundDividedSolver &other) = default;
+		GroundDividedSolver& GroundDividedSolver::operator=(GroundDividedSolver &&other) = default;
 
-			for (; iterCount() < maxIterCount(); setIterCount(iterCount() + 1))
-			{
-				updCm();
-				updCp();
-				s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-				s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), cpBlk(), imp_->cct_b_blk_);
-
-				setError(s_blk_norm_fro(cBlkSize(), { 1 }, cpBlk(), BlockStride{ 1,1,1,1 }));
-
-				if (error() < maxError()) return;
-
-				s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-				s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-				s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, ppBlk(), BlockStride{ 1,1,1,1 });
-
-				updPartPos();
-			}
-		}
-		auto GroundFullMatrixSolver::kinVel()->void 
-		{
-			updCm();
-			updCv();
-
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), cvBlk(), imp_->cct_b_blk_);
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, pvBlk(), BlockStride{ 1,1,1,1 });
-
-			updPartVel();
-		}
-		auto GroundFullMatrixSolver::kinAcc()->void
-		{
-			updCm();
-			updCa();
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), caBlk(), imp_->cct_b_blk_);
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, paBlk(), BlockStride{ 1,1,1,1 });
-
-			updPartAcc();
-		}
-		auto GroundFullMatrixSolver::dynFce()->void 
-		{
-			updIm();
-			updCm();
-			updPf();
-			updPa();
-
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_vc(pSize(), pf(), imp_->cct_b_.data());
-			s_blk_mma(pBlkSize(), { 1 }, pBlkSize(), -1.0, imBlk(), BlockStride{ pBlkSize().size(),1,pSize(),1 }, paBlk(), BlockStride{ 1,1,1,1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 });
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 });
-			s_vc(pSize(), imp_->cct_b_.data(), imp_->cct_x_.data());
-
-			s_blk_mm(cBlkSize(), { 1 }, pBlkSize(), cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, cfBlk(), BlockStride{ 1,1,1,1 });
-
-			updConstraintFce();
-		}
-		GroundFullMatrixSolver::~GroundFullMatrixSolver() = default;
-		GroundFullMatrixSolver::GroundFullMatrixSolver(const std::string &name) :FullMatrixSolver(name) {}
-		GroundFullMatrixSolver::GroundFullMatrixSolver(Object &father, const aris::core::XmlElement &xml_ele) : FullMatrixSolver(father, xml_ele) {}
-		GroundFullMatrixSolver::GroundFullMatrixSolver(const GroundFullMatrixSolver &other) = default;
-		GroundFullMatrixSolver::GroundFullMatrixSolver(GroundFullMatrixSolver &&other) = default;
-		GroundFullMatrixSolver& GroundFullMatrixSolver::operator=(const GroundFullMatrixSolver &other) = default;
-		GroundFullMatrixSolver& GroundFullMatrixSolver::operator=(GroundFullMatrixSolver &&other) = default;
-
-		struct PartFullMatrixSolver::Imp
-		{
-			std::vector<double> cct_, ctc_, cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
-			BlockData cct_blk_, ctc_blk_;
-			BlockData cct_llt_blk_, cct_x_blk_, cct_b_blk_, ctc_llt_blk_, ctc_x_blk_, ctc_b_blk_;
-		};
-		auto PartFullMatrixSolver::allocateMemory()->void
-		{
-			FullMatrixSolver::allocateMemory();
-
-			imp_->cct_.resize(pSize() * pSize());
-			imp_->cct_llt_.resize(pSize() * pSize());
-			imp_->cct_b_.resize(pSize() * 1);
-			imp_->cct_x_.resize(pSize() * 1);
-
-			imp_->cct_blk_.resize(pBlkSize().size() * pBlkSize().size());
-			imp_->cct_llt_blk_.resize(pBlkSize().size() * pBlkSize().size());
-			imp_->cct_b_blk_.resize(pBlkSize().size() * 1);
-			imp_->cct_x_blk_.resize(pBlkSize().size() * 1);
-
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_.data(), imp_->cct_blk_);
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_llt_.data(), imp_->cct_llt_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->cct_b_.data(), imp_->cct_b_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->cct_x_.data(), imp_->cct_x_blk_);
-		}
-		auto PartFullMatrixSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto PartFullMatrixSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto PartFullMatrixSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto PartFullMatrixSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtVs(pv() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto PartFullMatrixSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto PartFullMatrixSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtPf(pf() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto PartFullMatrixSolver::updIm()->void { for (auto &pb : activePartBlockPool())s_mc(6, 6, *pb.part_->prtIm(), 6, im() + dynamic::id(pb.row_id_, pb.row_id_, pSize()), pSize()); }
-		auto PartFullMatrixSolver::updCm()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptPrtCm(cm() + dynamic::id(cb.pb_i_->row_id_, cb.col_id_, cSize()), cm() + dynamic::id(cb.pb_j_->row_id_, cb.col_id_, cSize()), cSize(), cSize()); }
-		auto PartFullMatrixSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto PartFullMatrixSolver::updPartPos()->void
+		struct PartDividedSolver::Imp {};
+		auto PartDividedSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + dynamic::id(cb.col_id_, 0, 1)); }
+		auto PartDividedSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + dynamic::id(cb.col_id_, 0, 1)); }
+		auto PartDividedSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + dynamic::id(cb.col_id_, 0, 1)); }
+		auto PartDividedSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtVs(pv() + dynamic::id(pb.row_id_, 0, 1)); }
+		auto PartDividedSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
+		auto PartDividedSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtPf(pf() + dynamic::id(pb.row_id_, 0, 1)); }
+		auto PartDividedSolver::updIm()->void { for (auto &pb : activePartBlockPool())s_mc(6, 6, *pb.part_->prtIm(), 6, im() + dynamic::id(pb.row_id_, pb.row_id_, pSize()), pSize()); }
+		auto PartDividedSolver::updCm()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptPrtCm(cm() + dynamic::id(cb.pb_i_->row_id_, cb.col_id_, cSize()), cSize(), cm() + dynamic::id(cb.pb_j_->row_id_, cb.col_id_, cSize()), cSize()); }
+		auto PartDividedSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1)); }
+		auto PartDividedSolver::updPartPos()->void
 		{
 			for (auto pb : activePartBlockPool())
 			{
@@ -3676,9 +3518,42 @@ namespace aris
 				pb.part_->setPm(*final_pm);
 			}
 		}
-		auto PartFullMatrixSolver::updPartVel()->void { for (auto &pb : activePartBlockPool())s_tv(*pb.part_->pm(), pv() + dynamic::id(pb.row_id_, 0, 1), const_cast<double6&>(pb.part_->vs()));}
-		auto PartFullMatrixSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool())s_tv(*pb.part_->pm(), pa() + dynamic::id(pb.row_id_, 0, 1), const_cast<double6&>(pb.part_->as()));}
-		auto PartFullMatrixSolver::kinPos()->void
+		auto PartDividedSolver::updPartVel()->void { for (auto &pb : activePartBlockPool())s_tv(*pb.part_->pm(), pv() + dynamic::id(pb.row_id_, 0, 1), const_cast<double6&>(pb.part_->vs())); }
+		auto PartDividedSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool())s_tv(*pb.part_->pm(), pa() + dynamic::id(pb.row_id_, 0, 1), const_cast<double6&>(pb.part_->as())); }
+		PartDividedSolver::~PartDividedSolver() = default;
+		PartDividedSolver::PartDividedSolver(const std::string &name, Size max_iter_count, double max_error) :DividedSolver(name, max_iter_count, max_error) {}
+		PartDividedSolver::PartDividedSolver(Object &father, const aris::core::XmlElement &xml_ele) : DividedSolver(father, xml_ele) {}
+		PartDividedSolver::PartDividedSolver(const PartDividedSolver &other) = default;
+		PartDividedSolver::PartDividedSolver(PartDividedSolver &&other) = default;
+		PartDividedSolver& PartDividedSolver::operator=(const PartDividedSolver &other) = default;
+		PartDividedSolver& PartDividedSolver::operator=(PartDividedSolver &&other) = default;
+
+		struct LltGroundDividedSolver::Imp
+		{
+			std::vector<double> cct_, ctc_, cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
+			BlockData cct_blk_, ctc_blk_;
+			BlockData cct_llt_blk_, cct_x_blk_, cct_b_blk_, ctc_llt_blk_, ctc_x_blk_, ctc_b_blk_;
+		};
+		auto LltGroundDividedSolver::allocateMemory()->void
+		{
+			DividedSolver::allocateMemory();
+
+			imp_->cct_.resize(pSize() * pSize());
+			imp_->cct_llt_.resize(pSize() * pSize());
+			imp_->cct_b_.resize(pSize() * 1);
+			imp_->cct_x_.resize(pSize() * 1);
+
+			imp_->cct_blk_.resize(pBlkSize().size() * pBlkSize().size());
+			imp_->cct_llt_blk_.resize(pBlkSize().size() * pBlkSize().size());
+			imp_->cct_b_blk_.resize(pBlkSize().size() * 1);
+			imp_->cct_x_blk_.resize(pBlkSize().size() * 1);
+
+			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_.data(), imp_->cct_blk_);
+			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_llt_.data(), imp_->cct_llt_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->cct_b_.data(), imp_->cct_b_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->cct_x_.data(), imp_->cct_x_blk_);
+		}
+		auto LltGroundDividedSolver::kinPos()->void
 		{
 			setIterCount(0);
 
@@ -3700,7 +3575,7 @@ namespace aris
 				updPartPos();
 			}
 		}
-		auto PartFullMatrixSolver::kinVel()->void
+		auto LltGroundDividedSolver::kinVel()->void
 		{
 			updCm();
 			updCv();
@@ -3714,7 +3589,7 @@ namespace aris
 
 			updPartVel();
 		}
-		auto PartFullMatrixSolver::kinAcc()->void
+		auto LltGroundDividedSolver::kinAcc()->void
 		{
 			updCm();
 			updCa();
@@ -3727,7 +3602,7 @@ namespace aris
 
 			updPartAcc();
 		}
-		auto PartFullMatrixSolver::dynFce()->void
+		auto LltGroundDividedSolver::dynFce()->void
 		{
 			updIm();
 			updCm();
@@ -3747,13 +3622,116 @@ namespace aris
 
 			updConstraintFce();
 		}
-		PartFullMatrixSolver::~PartFullMatrixSolver() = default;
-		PartFullMatrixSolver::PartFullMatrixSolver(const std::string &name) :FullMatrixSolver(name) {}
-		PartFullMatrixSolver::PartFullMatrixSolver(Object &father, const aris::core::XmlElement &xml_ele) : FullMatrixSolver(father, xml_ele) {}
-		PartFullMatrixSolver::PartFullMatrixSolver(const PartFullMatrixSolver &other) = default;
-		PartFullMatrixSolver::PartFullMatrixSolver(PartFullMatrixSolver &&other) = default;
-		PartFullMatrixSolver& PartFullMatrixSolver::operator=(const PartFullMatrixSolver &other) = default;
-		PartFullMatrixSolver& PartFullMatrixSolver::operator=(PartFullMatrixSolver &&other) = default;
+		LltGroundDividedSolver::~LltGroundDividedSolver() = default;
+		LltGroundDividedSolver::LltGroundDividedSolver(const std::string &name) :GroundDividedSolver(name) {}
+		LltGroundDividedSolver::LltGroundDividedSolver(Object &father, const aris::core::XmlElement &xml_ele) : GroundDividedSolver(father, xml_ele) {}
+		LltGroundDividedSolver::LltGroundDividedSolver(const LltGroundDividedSolver &other) = default;
+		LltGroundDividedSolver::LltGroundDividedSolver(LltGroundDividedSolver &&other) = default;
+		LltGroundDividedSolver& LltGroundDividedSolver::operator=(const LltGroundDividedSolver &other) = default;
+		LltGroundDividedSolver& LltGroundDividedSolver::operator=(LltGroundDividedSolver &&other) = default;
+
+		struct LltPartDividedSolver::Imp
+		{
+			std::vector<double> cct_, ctc_, cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
+			BlockData cct_blk_, ctc_blk_;
+			BlockData cct_llt_blk_, cct_x_blk_, cct_b_blk_, ctc_llt_blk_, ctc_x_blk_, ctc_b_blk_;
+		};
+		auto LltPartDividedSolver::allocateMemory()->void
+		{
+			DividedSolver::allocateMemory();
+
+			imp_->cct_.resize(pSize() * pSize());
+			imp_->cct_llt_.resize(pSize() * pSize());
+			imp_->cct_b_.resize(pSize() * 1);
+			imp_->cct_x_.resize(pSize() * 1);
+
+			imp_->cct_blk_.resize(pBlkSize().size() * pBlkSize().size());
+			imp_->cct_llt_blk_.resize(pBlkSize().size() * pBlkSize().size());
+			imp_->cct_b_blk_.resize(pBlkSize().size() * 1);
+			imp_->cct_x_blk_.resize(pBlkSize().size() * 1);
+
+			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_.data(), imp_->cct_blk_);
+			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_llt_.data(), imp_->cct_llt_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->cct_b_.data(), imp_->cct_b_blk_);
+			s_blk_map(pBlkSize(), { 1 }, imp_->cct_x_.data(), imp_->cct_x_blk_);
+		}
+		auto LltPartDividedSolver::kinPos()->void
+		{
+			setIterCount(0);
+
+			for (; iterCount() < maxIterCount(); setIterCount(iterCount() + 1))
+			{
+				updCm();
+				updCp();
+				s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+				s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), cpBlk(), imp_->cct_b_blk_);
+
+				setError(s_blk_norm_fro(cBlkSize(), { 1 }, cpBlk(), BlockStride{ 1,1,1,1 }));
+
+				if (error() < maxError()) return;
+
+				s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+				s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
+				s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, ppBlk(), BlockStride{ 1,1,1,1 });
+
+				updPartPos();
+			}
+		}
+		auto LltPartDividedSolver::kinVel()->void
+		{
+			updCm();
+			updCv();
+
+			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+			s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), cvBlk(), imp_->cct_b_blk_);
+
+			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
+			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, pvBlk(), BlockStride{ 1,1,1,1 });
+
+			updPartVel();
+		}
+		auto LltPartDividedSolver::kinAcc()->void
+		{
+			updCm();
+			updCa();
+			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+			s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), caBlk(), imp_->cct_b_blk_);
+
+			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
+			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, paBlk(), BlockStride{ 1,1,1,1 });
+
+			updPartAcc();
+		}
+		auto LltPartDividedSolver::dynFce()->void
+		{
+			updIm();
+			updCm();
+			updPf();
+			updPa();
+
+			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+			s_vc(pSize(), pf(), imp_->cct_b_.data());
+			s_blk_mma(pBlkSize(), { 1 }, pBlkSize(), -1.0, imBlk(), BlockStride{ pBlkSize().size(),1,pSize(),1 }, paBlk(), BlockStride{ 1,1,1,1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 });
+
+			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
+			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
+			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 });
+			s_vc(pSize(), imp_->cct_b_.data(), imp_->cct_x_.data());
+
+			s_blk_mm(cBlkSize(), { 1 }, pBlkSize(), cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, cfBlk(), BlockStride{ 1,1,1,1 });
+
+			updConstraintFce();
+		}
+		LltPartDividedSolver::~LltPartDividedSolver() = default;
+		LltPartDividedSolver::LltPartDividedSolver(const std::string &name, Size max_iter_count, double max_error) :PartDividedSolver(name, max_iter_count, max_error) {}
+		LltPartDividedSolver::LltPartDividedSolver(Object &father, const aris::core::XmlElement &xml_ele) : PartDividedSolver(father, xml_ele) {}
+		LltPartDividedSolver::LltPartDividedSolver(const LltPartDividedSolver &other) = default;
+		LltPartDividedSolver::LltPartDividedSolver(LltPartDividedSolver &&other) = default;
+		LltPartDividedSolver& LltPartDividedSolver::operator=(const LltPartDividedSolver &other) = default;
+		LltPartDividedSolver& LltPartDividedSolver::operator=(LltPartDividedSolver &&other) = default;
+
 
 		struct DiagSolver::Imp
 		{
@@ -3833,6 +3811,8 @@ namespace aris
 				});
 			}
 			
+			this->plotRelation();
+
 			// make diag pool //
 			diagPool().clear();
 			diagPool().resize(activePartPool().size());
@@ -3849,6 +3829,12 @@ namespace aris
 				diagPool().at(i).rel = &relationPool().at(i - 1);
 				diagPool().at(i).is_I = relationPool().at(i - 1).prtI == activePartPool().at(i);
 				diagPool().at(i).part = diagPool().at(i).is_I ? relationPool().at(i - 1).prtI : relationPool().at(i - 1).prtJ;
+				
+				
+			}
+			// 以上两个循环不可替代，因为先要构造好所有的part
+			for (Size i = 1; i < diagPool().size(); ++i) 
+			{
 				auto add_part = diagPool().at(i).is_I ? diagPool().at(i).rel->prtJ : diagPool().at(i).rel->prtI;
 				diagPool().at(i).rd = &*std::find_if(diagPool().begin(), diagPool().end(), [&](Diag &d) {return d.part == add_part; });
 			}
@@ -3900,8 +3886,6 @@ namespace aris
 						}
 					}
 				}
-
-
 			}
 			
 			// allocate memory //
@@ -3921,11 +3905,12 @@ namespace aris
 			imp_->A_.clear();
 			imp_->A_.resize(imp_->rows*imp_->cols, 0.0);
 			imp_->x_.clear();
-			imp_->x_.resize(imp_->rows*1, 0.0);
+			imp_->x_.resize(std::max(imp_->rows, imp_->cols) * 1, 0.0);
 			imp_->b_.clear();
-			imp_->b_.resize(imp_->cols*1, 0.0);
-
+			imp_->b_.resize(std::max(imp_->rows, imp_->cols) * 1, 0.0);
+			imp_->U_.clear();
 			imp_->U_.resize(imp_->rows*imp_->cols, 0.0);
+			imp_->tau_.clear();
 			imp_->tau_.resize(std::max(imp_->rows, imp_->cols), 0.0);
 		}
 		auto DiagSolver::kinPos()->void 
@@ -3934,12 +3919,12 @@ namespace aris
 			s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
 
 			setIterCount(0);
-
+			
 			for (; iterCount() < maxIterCount(); setIterCount(iterCount() + 1))
 			{
 				updDiagCp();
 				updRemainderCp();
-
+				
 				double error{ 0.0 };
 				for (auto d = diagPool().begin() + 1; d < diagPool().end(); ++d)for (Size i{ 0 }; i < d->rel->dim; ++i)error = std::max(error, std::abs(d->b[i]));
 				for (auto &r : remainderPool())for (Size i{ 0 }; i < r.rel->dim; ++i)error = std::max(error, std::abs(r.b[i]));
@@ -3951,13 +3936,22 @@ namespace aris
 				updB();
 				updX();
 
+				for (auto &x : imp_->x_)
+				{
+					x = std::min(x, std::max(error, 1.0));
+					x = std::max(x, std::min(-error, -1.0));
+				}
+
 				// 将x写入diag, 重新乘Q, 并反向做行变换
 				for (auto d = diagPool().begin() + 1; d<diagPool().end(); ++d)
 				{
 					double tem[6];
 					s_vc(6 - d->rel->dim, imp_->x_.data() + d->rows, d->x + d->rel->dim);
-					//s_mm(6, 1, 6, d->Q, d->x, tem);
-					s_householder_ut_q_dot(6, d->rel->dim, 1, d->U, d->tau, d->x, tem);
+					///////////////////////////////////////
+					s_mm(6, 1, 6, d->Q, d->x, tem);
+					////
+					//s_householder_ut_q_dot(6, d->rel->dim, 1, d->U, d->tau, d->x, tem);
+					///////////////////////////////////////
 					s_vc(6, tem, d->x);
 					s_va(6, d->rd->x, d->x);
 				}
@@ -4003,8 +3997,11 @@ namespace aris
 			for (auto d = diagPool().begin() + 1; d<diagPool().end(); ++d)
 			{
 				s_mc(6 - d->rel->dim, 1, imp_->x_.data() + d->rows, d->x + d->rel->dim);
-				//s_mm(6, 1, 6, d->Q, d->x, const_cast<double *>(d->part->vs()));
-				s_householder_ut_q_dot(6, d->rel->dim, 1, d->U, d->tau, d->x, const_cast<double *>(d->part->vs()));
+				////////////////////////////////
+				s_mm(6, 1, 6, d->Q, d->x, const_cast<double *>(d->part->vs()));
+				///////
+				//s_householder_ut_q_dot(6, d->rel->dim, 1, d->U, d->tau, d->x, const_cast<double *>(d->part->vs()));
+				////////////////////////////////
 				s_ma(6, 1, d->rd->part->vs(), const_cast<double *>(d->part->vs()));
 			}
 		}
@@ -4025,8 +4022,11 @@ namespace aris
 			for (auto d = diagPool().begin() + 1; d<diagPool().end(); ++d)
 			{
 				s_mc(6 - d->rel->dim, 1, imp_->x_.data() + d->rows, d->x + d->rel->dim);
-				//s_mm(6, 1, 6, d->Q, d->x, const_cast<double *>(d->part->as()));
-				s_householder_ut_q_dot(6, d->rel->dim, 1, d->U, d->tau, d->x, const_cast<double *>(d->part->as()));
+				//////////////////////////////////
+				s_mm(6, 1, 6, d->Q, d->x, const_cast<double *>(d->part->as()));
+				//////
+				//s_householder_ut_q_dot(6, d->rel->dim, 1, d->U, d->tau, d->x, const_cast<double *>(d->part->as()));
+				//////////////////////////////////
 				s_ma(6, 1, d->rd->part->as(), const_cast<double *>(d->part->as()));
 			}
 		}
@@ -4054,12 +4054,12 @@ namespace aris
 					double *cmI = d->is_I ? d->cm : cm;
 					double *cmJ = d->is_I ? cm : d->cm;
 
-					c.constraint->cptGlbCm(cmI + pos, cmJ + pos, d->rel->dim, d->rel->dim);
+					c.constraint->cptGlbCm(cmI + pos, d->rel->dim, cmJ + pos, d->rel->dim);
 					pos += c.constraint->dim();
 					
 					// make ut and qr
 					s_householder_ut(6, d->rel->dim, d->cm, d->U, d->tau);
-					//s_householder_ut2qr(6, d->rel->dim, d->U, d->tau, d->Q, d->R);
+					s_householder_ut2qr(6, d->rel->dim, d->U, d->tau, d->Q, d->R);
 				}
 			}
 		}
@@ -4107,7 +4107,7 @@ namespace aris
 				
 				d->part->cptPrtPf(prt_f);
 				d->part->cptPrtAs(prt_as);
-				s_mma(6, 1, 6, -1.0, *d->part->prtIm(), prt_as, prt_f);
+				s_mms(6, 1, 6, *d->part->prtIm(), prt_as, prt_f);
 				s_tf(*d->part->pm(), prt_f, d->b);
 			}
 		}
@@ -4119,7 +4119,7 @@ namespace aris
 				Size pos{ 0 };
 				for (auto &c : r.rel->cst_pool_)
 				{
-					c.constraint->cptGlbCm(r.cmI + pos, r.cmJ + pos, r.rel->dim, r.rel->dim);
+					c.constraint->cptGlbCm(r.cmI + pos, r.rel->dim, r.cmJ + pos, r.rel->dim);
 					pos += c.constraint->dim();
 				}
 			}
@@ -4170,11 +4170,13 @@ namespace aris
 			{
 				for (auto &b : r.cm_blk_series)
 				{
-					//s_mm(6 - b.diag->rel->dim, r.rel->dim, 6, b.diag->Q + dynamic::id(0, b.diag->rel->dim, 6), ColMajor{ 6 }, b.is_I ? r.cmI : r.cmJ, r.rel->dim, imp_->A_.data() + dynamic::id(b.diag->rows, cols, imp_->rows), imp_->cols);
-					
-					double tem[36];
-					s_householder_ut_qt_dot(6, b.diag->rel->dim, r.rel->dim, b.diag->U, b.diag->tau, b.is_I ? r.cmI : r.cmJ, tem);
-					s_mc(6 - b.diag->rel->dim, r.rel->dim, tem + dynamic::id(b.diag->rel->dim, 0, r.rel->dim), r.rel->dim, imp_->A_.data() + dynamic::id(b.diag->rows, cols, imp_->rows), imp_->cols);
+					/////////////////////////////
+					s_mm(6 - b.diag->rel->dim, r.rel->dim, 6, b.diag->Q + dynamic::id(0, b.diag->rel->dim, 6), ColMajor{ 6 }, b.is_I ? r.cmI : r.cmJ, r.rel->dim, imp_->A_.data() + dynamic::id(b.diag->rows, cols, imp_->cols), imp_->cols);
+					/////////////////////////////
+					//double tem[36];
+					//s_householder_ut_qt_dot(6, b.diag->rel->dim, r.rel->dim, b.diag->U, b.diag->tau, b.is_I ? r.cmI : r.cmJ, tem);
+					//s_mc(6 - b.diag->rel->dim, r.rel->dim, tem + dynamic::id(b.diag->rel->dim, 0, r.rel->dim), r.rel->dim, imp_->A_.data() + dynamic::id(b.diag->rows, cols, imp_->cols), imp_->cols);
+					/////////////////////////////
 				}
 				cols += r.rel->dim;
 			}
@@ -4195,8 +4197,10 @@ namespace aris
 				{
 					double tem[6];
 					auto cm = b.is_I ? r.cmJ : r.cmI;//这里是颠倒的，因为加到右侧需要乘-1.0
-					//s_mm(6, 1, b.diag->rel->dim, b.diag->Q, 6, b.diag->x, 1, tem, 1);
-					s_householder_ut_q_dot(6, b.diag->rel->dim, 1, b.diag->U, b.diag->tau, b.diag->x, tem);
+					/////////////////////////////////////////////
+					s_mm(6, 1, b.diag->rel->dim, b.diag->Q, 6, b.diag->x, 1, tem, 1);
+					//s_householder_ut_q_dot(6, b.diag->rel->dim, 1, b.diag->U, b.diag->tau, b.diag->x, tem);
+					/////////////////////////////////////////////
 					s_mma(r.rel->dim, 1, 6, cm, ColMajor{ r.rel->dim }, tem, 1, r.b, 1);
 				}
 				s_mc(r.rel->dim, 1, r.b, imp_->b_.data() + cols);
@@ -4206,8 +4210,8 @@ namespace aris
 		auto DiagSolver::updX()->void
 		{
 			// 求解x
-			s_householder_ut(imp_->cols, imp_->rows, imp_->A_.data(), ColMajor{ imp_->rows }, imp_->U_.data(), ColMajor{ imp_->rows }, imp_->tau_.data(), 1);
-			s_householder_ut_sov(imp_->cols, imp_->rows, 1, imp_->U_.data(), ColMajor{ imp_->rows }, imp_->tau_.data(), 1, imp_->b_.data(), 1, imp_->x_.data(), 1);
+			s_householder_ut(imp_->cols, imp_->rows, imp_->A_.data(), ColMajor{ imp_->cols }, imp_->U_.data(), ColMajor{ imp_->cols }, imp_->tau_.data(), 1);
+			s_householder_ut_sov(imp_->cols, imp_->rows, 1, imp_->U_.data(), ColMajor{ imp_->cols }, imp_->tau_.data(), 1, imp_->b_.data(), 1, imp_->x_.data(), 1);
 		}
 		auto DiagSolver::updBf()->void
 		{
@@ -4218,8 +4222,10 @@ namespace aris
 
 				// dot Q //
 				double tem[6];
-				//s_mm(6, 1, 6, d->Q, ColMajor{ 6 }, d->b, 1, tem, 1);
-				s_householder_ut_qt_dot(6, d->rel->dim, 1, d->U, d->tau, d->b, tem);
+				//////////////////////////////////////
+				s_mm(6, 1, 6, d->Q, ColMajor{ 6 }, d->b, 1, tem, 1);
+				//s_householder_ut_qt_dot(6, d->rel->dim, 1, d->U, d->tau, d->b, tem);
+				//////////////////////////////////////
 				s_vc(6, tem, d->b);
 				s_vc(6 - d->rel->dim, d->b + d->rel->dim, imp_->b_.data() + d->rows);
 			}
@@ -4241,11 +4247,15 @@ namespace aris
 				}
 				for (auto &b : r.cm_blk_series)
 				{
-					double tem[6], tem2[6];
+					double tem[6];
 					s_mm(6, 1, r.rel->dim, b.is_I ? r.cmJ : r.cmI, imp_->x_.data() + cols, tem);
-					//s_mma(6, 1, 6, b.diag->Q, ColMajor{ 6 }, tem, 1, b.diag->b, 1);
-					s_householder_ut_qt_dot(6, b.diag->rel->dim, 1, b.diag->U, b.diag->tau, tem, tem2);
-					s_ma(6, 1, tem2, b.diag->b);
+					/////////////////////////////////////////
+					s_mma(6, 1, 6, b.diag->Q, ColMajor{ 6 }, tem, 1, b.diag->b, 1);
+					/////////////////////////////////////////
+					//double tem2[6];
+					//s_householder_ut_qt_dot(6, b.diag->rel->dim, 1, b.diag->U, b.diag->tau, tem, tem2);
+					//s_ma(6, 1, tem2, b.diag->b);
+					////////////////////////////////////////
 				}
 				
 				cols += r.rel->dim;
@@ -4401,7 +4411,5 @@ namespace aris
 		DiagSolver::DiagSolver(DiagSolver &&other) = default;
 		DiagSolver& DiagSolver::operator=(const DiagSolver &other) = default;
 		DiagSolver& DiagSolver::operator=(DiagSolver &&other) = default;
-
-
 	}
 }

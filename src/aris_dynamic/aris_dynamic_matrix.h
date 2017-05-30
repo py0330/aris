@@ -22,53 +22,38 @@ namespace aris
 {
 	namespace dynamic
 	{
-		struct RowMajor { Size r_ld; };
-		struct ColMajor { Size c_ld; };
-		struct Stride { Size r_ld, c_ld; };
+		struct RowMajor { Size r_ld; constexpr RowMajor(Size r_ld_) :r_ld(r_ld_) {}; };
+		struct ColMajor { Size c_ld; constexpr ColMajor(Size c_ld_) :c_ld(c_ld_) {}; };
+		struct Stride { Size r_ld, c_ld; Stride() = default; constexpr Stride(Size r_ld_, Size c_ld_) :r_ld(r_ld_), c_ld(c_ld_) {}; };
 
-		auto inline vid(Size i, Size ld)->Size { return i*ld; }
-		auto inline next_vid(Size id, Size ld)->Size { return id + ld; }
+		auto inline constexpr T(Size ld)->ColMajor { return ColMajor(ld); }
+		auto inline constexpr id(Size i, Size ld)->Size { return i*ld; }
+		auto inline constexpr id(Size i, Size j, Size ld)->Size { return i*ld + j; }
+		auto inline constexpr next_rid(Size id, Size ld)->Size { return id + ld; }
+		auto inline constexpr next_cid(Size id, Size ld)->Size { return id + 1; }
 
-		auto inline T(Size ld)->ColMajor { return ColMajor{ ld }; }
-		auto inline id(Size i, Size j, Size ld)->Size { return i*ld + j; }
-		auto inline next_rid(Size id, Size ld)->Size { return id + ld; }
-		auto inline next_cid(Size id, Size ld)->Size { return id + 1; }
+		auto inline constexpr T(RowMajor r)->ColMajor { return ColMajor(r.r_ld); }
+		auto inline constexpr id(Size i, RowMajor row_major)->Size { return i*row_major.r_ld; }
+		auto inline constexpr id(Size i, Size j, RowMajor row_major)->Size { return i*row_major.r_ld + j; }
+		auto inline constexpr next_rid(Size id, RowMajor row_major)->Size { return id + row_major.r_ld; }
+		auto inline constexpr next_cid(Size id, RowMajor row_major)->Size { return id + 1; }
 
-		auto inline T(RowMajor r)->ColMajor { return ColMajor{ r.r_ld }; }
-		auto inline id(Size i, Size j, RowMajor row_major)->Size { return i*row_major.r_ld + j; }
-		auto inline next_rid(Size id, RowMajor row_major)->Size { return id + row_major.r_ld; }
-		auto inline next_cid(Size id, RowMajor row_major)->Size { return id + 1; }
+		auto inline constexpr T(ColMajor c)->RowMajor { return RowMajor(c.c_ld); }
+		auto inline constexpr id(Size i, ColMajor col_major)->Size { return i; }
+		auto inline constexpr id(Size i, Size j, ColMajor col_major)->Size { return i + j*col_major.c_ld; }
+		auto inline constexpr next_rid(Size id, ColMajor col_major)->Size { return id + 1; }
+		auto inline constexpr next_cid(Size id, ColMajor col_major)->Size { return id + col_major.c_ld; }
 
-		auto inline T(ColMajor c)->RowMajor { return RowMajor{ c.c_ld }; }
-		auto inline id(Size i, Size j, ColMajor col_major)->Size { return i + j*col_major.c_ld; }
-		auto inline next_rid(Size id, ColMajor col_major)->Size { return id + 1; }
-		auto inline next_cid(Size id, ColMajor col_major)->Size { return id + col_major.c_ld; }
-
-		auto inline T(Stride s)->Stride { return Stride{ s.c_ld, s.r_ld }; }
-		auto inline id(Size i, Size j, Stride stride)->Size { return i*stride.r_ld + j*stride.c_ld; }
-		auto inline next_rid(Size id, Stride stride)->Size { return id + stride.r_ld; }
-		auto inline next_cid(Size id, Stride stride)->Size { return id + stride.c_ld; }
-
-		// make vector type from matrix type, just select one row
-		auto inline RV(Size ld)->Size { return 1; }
-		auto inline RV(RowMajor row_major)->Size { return 1; }
-		auto inline RV(ColMajor col_major)->Size { return col_major.c_ld; }
-		auto inline RV(Stride stride)->Size { return stride.c_ld; }
-		// make vector type from matrix type, just select one col
-		auto inline CV(Size ld)->Size { return ld; }
-		auto inline CV(RowMajor row_major)->Size { return row_major.r_ld; }
-		auto inline CV(ColMajor col_major)->Size { return 1; }
-		auto inline CV(Stride stride)->Size { return stride.r_ld; }
-		// make matrix type from a row vector
-		auto inline RM(Size ld)->ColMajor { return ColMajor{ ld }; }
-		// make matrix type from a col vector
-		auto inline CM(Size ld)->RowMajor { return RowMajor{ ld }; }
-
+		auto inline constexpr T(Stride s)->Stride { return Stride(s.c_ld, s.r_ld); }
+		auto inline constexpr id(Size i, Stride stride)->Size { return i*stride.r_ld; }
+		auto inline constexpr id(Size i, Size j, Stride stride)->Size { return i*stride.r_ld + j*stride.c_ld; }
+		auto inline constexpr next_rid(Size id, Stride stride)->Size { return id + stride.r_ld; }
+		auto inline constexpr next_cid(Size id, Stride stride)->Size { return id + stride.c_ld; }
 
 		template <typename T, typename TType>
 		auto inline dsp(Size m, Size n, const T *data, TType d_t)->void
 		{
-			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(4);
+			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(16);
 
 			std::cout << std::endl;
 			for (Size i = 0; i < m; i++)
@@ -110,7 +95,7 @@ namespace aris
 		template <typename V1Type, typename V2Type>
 		auto inline s_is_equal(Size n, const double *v1, V1Type v1_t, const double *v2, V2Type v2_t, double error) noexcept->bool
 		{
-			for (Size i = 0; i < n; ++i)if (!s_is_equal(v1[vid(i, v1_t)], v2[vid(i, v2_t)], error))return false;
+			for (Size i = 0; i < n; ++i)if (!s_is_equal(v1[id(i, v1_t)], v2[id(i, v2_t)], error))return false;
 			return true;
 		}
 		auto inline s_is_equal(Size n, const double *v1, const double *v2, double error) noexcept->bool { return s_is_equal(n, v1, 1, v2, 1, error); };
@@ -126,7 +111,7 @@ namespace aris
 		auto inline s_norm(Size n, const double *x, XType x_t) noexcept->double
 		{
 			double norm = 0;
-			for (Size i(-1), x_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t))norm += x[x_id] * x[x_id];
+			for (Size i(-1), x_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t))norm += x[x_id] * x[x_id];
 			return std::sqrt(norm);
 		}
 		auto inline s_norm(Size n, const double *x) noexcept->double { return s_norm(n, x, 1); }
@@ -147,7 +132,7 @@ namespace aris
 		template<typename XType, typename YType>
 		auto inline s_swap_v(Size n, double *x, XType x_t, double *y, YType y_t) noexcept->void
 		{
-			for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))
+			for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t), y_id = next_rid(y_id, y_t))
 				std::swap(x[x_id], y[y_id]);
 		}
 		auto inline s_swap_v(Size n, double *x, double *y) noexcept->void { s_swap_v(n, x, 1, y, 1); }
@@ -158,22 +143,31 @@ namespace aris
 		}// fill matrix with value
 		auto inline s_fill(Size m, Size n, double value, double *A) noexcept->void { std::fill(A, A + m*n, value); }
 		template<typename XType>
-		auto inline s_nv(Size n, double alpha, double *x, XType x_t) noexcept->void { for (Size i(-1), vid{ 0 }; ++i < n; vid = next_vid(vid, x_t))x[vid] *= alpha; }
+		auto inline s_iv(Size n, double *x, XType x_t) noexcept->void { for (Size i(-1), vid{ 0 }; ++i < n; vid = next_rid(vid, x_t))x[vid] = -x[vid]; }
+		auto inline s_iv(Size n, double *x) noexcept->void { for (Size i(-1); ++i < n;)x[i] = -x[i]; }
+		template<typename XType>
+		auto inline s_nv(Size n, double alpha, double *x, XType x_t) noexcept->void { for (Size i(-1), vid{ 0 }; ++i < n; vid = next_rid(vid, x_t))x[vid] *= alpha; }
 		auto inline s_nv(Size n, double alpha, double *x) noexcept->void { for (Size i(-1); ++i < n;)x[i] *= alpha; }
 		template<typename XType, typename YType>
-		auto inline s_vc(Size n, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] = x[x_id]; }
+		auto inline s_vc(Size n, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t), y_id = next_rid(y_id, y_t))y[y_id] = x[x_id]; }
 		template<typename XType, typename YType>
-		auto inline s_vc(Size n, double alpha, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] = alpha*x[x_id]; }
+		auto inline s_vc(Size n, double alpha, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t), y_id = next_rid(y_id, y_t))y[y_id] = alpha*x[x_id]; }
 		auto inline s_vc(Size n, const double *x, double *y) noexcept->void { std::copy(x, x + n, y); }
 		auto inline s_vc(Size n, double alpha, const double *x, double *y) noexcept->void { for (Size i(-1); ++i < n;)y[i] = alpha*x[i]; }
 		template<typename XType, typename YType>
-		auto inline s_va(Size n, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] += x[x_id]; }
+		auto inline s_vi(Size n, const double *x, XType x_t, double *y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t), y_id = next_rid(y_id, y_t))y[y_id] = -x[x_id]; }
+		auto inline s_vi(Size n, const double *x, double *y) noexcept->void { for (Size i(-1); ++i < n;)y[i] = -x[i]; }
 		template<typename XType, typename YType>
-		auto inline s_va(Size n, double alpha, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))y[y_id] += alpha*x[x_id]; }
+		auto inline s_va(Size n, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t), y_id = next_rid(y_id, y_t))y[y_id] += x[x_id]; }
+		template<typename XType, typename YType>
+		auto inline s_va(Size n, double alpha, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t), y_id = next_rid(y_id, y_t))y[y_id] += alpha*x[x_id]; }
 		auto inline s_va(Size n, const double* x, double* y) noexcept->void { for (Size i = 0; i < n; ++i)y[i] += x[i]; }
 		auto inline s_va(Size n, double alpha, const double* x, double* y) noexcept->void { for (Size i = 0; i < n; ++i)y[i] += alpha * x[i]; }
 		template<typename XType, typename YType>
-		auto inline s_vv(Size n, const double *x, XType x_t, const double *y, YType y_t) noexcept->double { double ret{ 0 }; for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_vid(x_id, x_t), y_id = next_vid(y_id, y_t))ret += x[x_id] * y[y_id]; return ret; }
+		auto inline s_vs(Size n, const double* x, XType x_t, double* y, YType y_t) noexcept->void { for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t), y_id = next_rid(y_id, y_t))y[y_id] -= x[x_id]; }
+		auto inline s_vs(Size n, const double* x, double* y) noexcept->void { for (Size i = 0; i < n; ++i)y[i] -= x[i]; }
+		template<typename XType, typename YType>
+		auto inline s_vv(Size n, const double *x, XType x_t, const double *y, YType y_t) noexcept->double { double ret{ 0 }; for (Size i(-1), x_id{ 0 }, y_id{ 0 }; ++i < n; x_id = next_rid(x_id, x_t), y_id = next_rid(y_id, y_t))ret += x[x_id] * y[y_id]; return ret; }
 		auto inline s_vv(Size n, const double *x, const double *y) noexcept->double { double ret{ 0 }; for (Size i = 0; i < n; ++i)ret += x[i] * y[i];	return ret; }
 		template<typename AType>
 		auto inline s_nm(Size m, Size n, double alpha, double* A, AType a_t) noexcept->void
@@ -181,6 +175,12 @@ namespace aris
 			for (Size i(-1), a_row{ 0 }; ++i < m; a_row = next_rid(a_row, a_t))for (Size j(-1), a_id{ a_row }; ++j < n; a_id = next_cid(a_id, a_t))	A[a_id] *= alpha;
 		}
 		auto inline s_nm(Size m, Size n, double alpha, double* A) noexcept->void { s_nv(m*n, alpha, A); }
+		template<typename AType>
+		auto inline s_im(Size m, Size n, double* A, AType a_t) noexcept->void
+		{
+			for (Size i(-1), a_row{ 0 }; ++i < m; a_row = next_rid(a_row, a_t))for (Size j(-1), a_id{ a_row }; ++j < n; a_id = next_cid(a_id, a_t))	A[a_id] = -A[a_id];
+		}
+		auto inline s_im(Size m, Size n, double* A) noexcept->void { s_iv(m*n, A); }
 		template<typename AType, typename BType>
 		auto inline s_mc(Size m, Size n, const double *A, AType a_t, double *B, BType b_t) noexcept->void
 		{
@@ -213,6 +213,22 @@ namespace aris
 		}
 		auto inline s_ma(Size m, Size n, const double* A, double* B) noexcept->void { s_va(m*n, A, B); }
 		auto inline s_ma(Size m, Size n, double alpha, const double* A, double* B) noexcept->void { s_va(m*n, alpha, A, B); }
+		template<typename AType, typename BType>
+		auto inline s_mi(Size m, Size n, const double* A, AType a_t, double* B, BType b_t) noexcept->void
+		{
+			for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m; row_a = next_rid(row_a, a_t), row_b = next_rid(row_b, b_t))
+				for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n; a_id = next_cid(a_id, a_t), b_id = next_cid(b_id, b_t))
+					B[b_id] = -A[a_id];
+		}
+		auto inline s_mi(Size m, Size n, const double* A, double* B) noexcept->void { s_vi(m*n, A, B); }
+		template<typename AType, typename BType>
+		auto inline s_ms(Size m, Size n, const double* A, AType a_t, double* B, BType b_t) noexcept->void
+		{
+			for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m; row_a = next_rid(row_a, a_t), row_b = next_rid(row_b, b_t))
+				for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n; a_id = next_cid(a_id, a_t), b_id = next_cid(b_id, b_t))
+					B[b_id] -= A[a_id];
+		}
+		auto inline s_ms(Size m, Size n, const double* A, double* B) noexcept->void { s_vs(m*n, A, B); }
 		template<typename AType, typename BType, typename CType>
 		auto inline s_mma(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
 		{
@@ -242,6 +258,19 @@ namespace aris
 		auto inline s_mma(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, k, B, n, C, n); }
 		auto inline s_mma(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, k, B, n, C, n); }
 		template<typename AType, typename BType, typename CType>
+		auto inline s_mms(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
+		{
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < m; a_row = next_rid(a_row, a_t), c_row = next_rid(c_row, c_t))
+			{
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < n; b_col = next_cid(b_col, b_t), c_id = next_cid(c_id, c_t))
+				{
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < k; a_id = next_cid(a_id, a_t), b_id = next_rid(b_id, b_t))
+						C[c_id] -= A[a_id] * B[b_id];
+				}
+			}
+		}
+		auto inline s_mms(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_mms(m, n, k, A, k, B, n, C, n); }
+		template<typename AType, typename BType, typename CType>
 		auto inline s_mm(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t) noexcept->void
 		{
 			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < m; a_row = next_rid(a_row, a_t), c_row = next_rid(c_row, c_t))
@@ -270,6 +299,21 @@ namespace aris
 		}
 		auto inline s_mm(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mma(m, n, k, A, B, C); }
 		auto inline s_mm(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mm(m, n, k, A, B, C); s_nm(m, n, alpha, C); }
+		template<typename AType, typename BType, typename CType>
+		auto inline s_mmi(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t) noexcept->void
+		{
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < m; a_row = next_rid(a_row, a_t), c_row = next_rid(c_row, c_t))
+			{
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < n; b_col = next_cid(b_col, b_t), c_id = next_cid(c_id, c_t))
+				{
+					C[c_id] = 0.0;
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < k; a_id = next_cid(a_id, a_t), b_id = next_rid(b_id, b_t))
+						C[c_id] -= A[a_id] * B[b_id];
+				}
+			}
+		}
+		auto inline s_mmi(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_fill(m, n, 0, C); s_mms(m, n, k, A, B, C); }
+
 
 		// A can be the same as L, only when they have same type
 		template<typename AType, typename LType>
@@ -325,7 +369,7 @@ namespace aris
 		auto inline s_inv_um(Size m, const double *U, double *inv_U) noexcept->void { s_inv_um(m, U, m, inv_U, m); }
 		// b can be the same as x, only when they have same type
 		template<typename LType, typename bType, typename xType>
-		auto inline s_sov_lm(Size m, Size rhs, const double *L, LType l_t, const double *b, bType b_t, double *x, xType x_t) noexcept->void
+		auto inline s_sov_lm(Size m, Size rhs, const double *L, LType l_t, const double *b, bType b_t, double *x, xType x_t, double zero_check = 1e-10) noexcept->void
 		{
 			for (Size j(-1); ++j < rhs;)
 			{
@@ -337,14 +381,14 @@ namespace aris
 					{
 						x[id(i, j, x_t)] -= L[id(i, k, l_t)] * x[id(k, j, x_t)];
 					}
-					x[id(i, j, x_t)] /= L[id(i, i, l_t)];
+					x[id(i, j, x_t)] = std::abs(L[id(i, i, l_t)]) > zero_check ? x[id(i, j, x_t)] / L[id(i, i, l_t)] : 0.0;
 				}
 			}
 		}
-		auto inline s_sov_lm(Size m, Size rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_lm(m, rhs, L, m, b, rhs, x, rhs); }
+		auto inline s_sov_lm(Size m, Size rhs, const double *L, const double *b, double *x, double zero_check = 1e-10) noexcept->void { s_sov_lm(m, rhs, L, m, b, rhs, x, rhs, zero_check); }
 		// b can be the same as x, only when they have same type
 		template<typename LType, typename bType, typename xType>
-		auto inline s_sov_um(Size m, Size rhs, const double *L, LType l_t, const double *b, bType b_t, double *x, xType x_t) noexcept->void
+		auto inline s_sov_um(Size m, Size rhs, const double *L, LType l_t, const double *b, bType b_t, double *x, xType x_t, double zero_check = 1e-10) noexcept->void
 		{
 			for (Size j(-1); ++j < rhs;)
 			{
@@ -356,35 +400,45 @@ namespace aris
 					{
 						x[id(i, j, x_t)] -= L[id(i, k, l_t)] * x[id(k, j, x_t)];
 					}
-					x[id(i, j, x_t)] /= L[id(i, i, l_t)];
+					//x[id(i, j, x_t)] /= L[id(i, i, l_t)];
+					x[id(i, j, x_t)] = std::abs(L[id(i, i, l_t)]) > zero_check ? x[id(i, j, x_t)] / L[id(i, i, l_t)] : 0.0;
 				}
 			}
 		}
-		auto inline s_sov_um(Size m, Size rhs, const double *L, const double *b, double *x) noexcept->void { s_sov_um(m, rhs, L, m, b, rhs, x, rhs); }
+		auto inline s_sov_um(Size m, Size rhs, const double *L, const double *b, double *x, double zero_check = 1e-10) noexcept->void { s_sov_um(m, rhs, L, m, b, rhs, x, rhs, zero_check); }
 
 		// tau must have same size with max(m,n), A can be the same as U
 		template<typename AType, typename UType, typename TauType>
-		auto inline s_householder_ut(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t)noexcept->void
+		auto inline s_householder_ut(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, double zero_check = 1e-10)noexcept->void
 		{
 			s_mc(m, n, A, a_t, U, u_t);
 			for (Size i(-1); ++i < std::min(m - 1, n);)
 			{
 				// compute householder vector //
 				double rho = -s_norm_col(m - i, U + id(i, i, u_t), u_t) * s_sgn2(U[id(i, i, u_t)]);
-				tau[id(i, 0, tau_t)] = U[id(i, i, u_t)] / rho - 1.0;
-				s_nm(m - 1 - i, 1, 1.0 / (U[id(i, i, u_t)] - rho), U + id(i + 1, i, u_t), u_t);
-				U[id(i, i, u_t)] = rho;
+				if (std::abs(rho) > zero_check)
+				{
+					tau[id(i, 0, tau_t)] = U[id(i, i, u_t)] / rho - 1.0;
+					s_nm(m - 1 - i, 1, 1.0 / (U[id(i, i, u_t)] - rho), U + id(i + 1, i, u_t), u_t);
+					U[id(i, i, u_t)] = rho;
 
-				// update matrix //
-				s_mc(1, n - i - 1, U + id(i, i + 1, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t));
-				s_mma(1, n - i - 1, m - i - 1, U + id(i + 1, i, u_t), T(u_t), U + id(i + 1, i + 1, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t));
-				s_nm(n - i - 1, 1, tau[id(i, 0, tau_t)], tau + id(i + 1, 0, tau_t), tau_t);
+					// update matrix //
+					s_mc(1, n - i - 1, U + id(i, i + 1, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t));
+					s_mma(1, n - i - 1, m - i - 1, U + id(i + 1, i, u_t), T(u_t), U + id(i + 1, i + 1, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t));
+					s_nm(n - i - 1, 1, tau[id(i, 0, tau_t)], tau + id(i + 1, 0, tau_t), tau_t);
 
-				s_ma(n - i - 1, 1, tau + id(i + 1, 0, tau_t), tau_t, U + id(i, i + 1, u_t), T(u_t));
-				s_mma(m - i - 1, n - i - 1, 1, U + id(i + 1, i, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t), U + id(i + 1, i + 1, u_t), u_t);
+					s_ma(n - i - 1, 1, tau + id(i + 1, 0, tau_t), tau_t, U + id(i, i + 1, u_t), T(u_t));
+					s_mma(m - i - 1, n - i - 1, 1, U + id(i + 1, i, u_t), u_t, tau + id(i + 1, 0, tau_t), T(tau_t), U + id(i + 1, i + 1, u_t), u_t);
+				}
+				else
+				{
+					tau[id(i, 0, tau_t)] = 1.0;
+				}
+				
+
 			}
 		}
-		auto inline s_householder_ut(Size m, Size n, const double *A, double *U, double *tau)noexcept->void { s_householder_ut(m, n, A, n, U, n, tau, 1); }
+		auto inline s_householder_ut(Size m, Size n, const double *A, double *U, double *tau, double zero_check = 1e-10)noexcept->void { s_householder_ut(m, n, A, n, U, n, tau, 1, zero_check); }
 		// U can be the same as R
 		template<typename UType, typename TauType, typename QType, typename RType>
 		auto inline s_householder_ut2qr(Size m, Size n, const double *U, UType u_t, const double *tau, TauType tau_t, double *Q, QType q_t, double *R, RType r_t)noexcept->void
@@ -427,7 +481,7 @@ namespace aris
 			{
 				for (Size j(-1); ++j < rhs;)
 				{
-					double k = tau[id(i, 0, tau_t)] * (x[id(i, j, x_t)] + s_vv(m - i - 1, U + id(i + 1, i, u_t), CV(u_t), x + id(i + 1, j, x_t), CV(x_t)));
+					double k = tau[id(i, 0, tau_t)] * (x[id(i, j, x_t)] + s_vv(m - i - 1, U + id(i + 1, i, u_t), u_t, x + id(i + 1, j, x_t), x_t));
 					x[id(i, j, x_t)] += k;
 					s_ma(m - i - 1, 1, k, U + id(i + 1, i, u_t), u_t, x + id(i + 1, j, x_t), x_t);
 				}
@@ -444,7 +498,7 @@ namespace aris
 			{
 				for (Size j(-1); ++j < rhs;)
 				{
-					double k = tau[id(i, 0, tau_t)] * (x[id(i, j, x_t)] + s_vv(m - i - 1, U + id(i + 1, i, u_t), CV(u_t), x + id(i + 1, j, x_t), CV(x_t)));
+					double k = tau[id(i, 0, tau_t)] * (x[id(i, j, x_t)] + s_vv(m - i - 1, U + id(i + 1, i, u_t), u_t, x + id(i + 1, j, x_t), x_t));
 					x[id(i, j, x_t)] += k;
 					s_ma(m - i - 1, 1, k, U + id(i + 1, i, u_t), u_t, x + id(i + 1, j, x_t), x_t);
 				}
