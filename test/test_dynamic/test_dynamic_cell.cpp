@@ -297,10 +297,6 @@ void test_cell_householder()
 		-0.524722596591983, -1.04635860123482,0,
 		1.13918462877824,0.723696504731286,0, };
 
-	double result1[100], result2[100];
-
-	
-	
 	std::vector<Block<double*, StrideN> > A_blk_data(4, { 3,3,A_data,StrideN{ 6,1 },false });
 
 	Block<double*, StrideN> A{ 2,2,A_data,StrideN{ 2,1 },false };

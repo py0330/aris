@@ -16,23 +16,6 @@ namespace aris
 {
 	namespace dynamic
 	{
-		auto dlmwrite(const char *FileName, const double *pMatrix, const Size m, const Size n)->void
-		{
-			std::ofstream file;
-
-			file.open(FileName);
-
-			file << std::setprecision(15);
-
-			for (Size i = 0; i < m; i++)
-			{
-				for (Size j = 0; j < n; j++)
-				{
-					file << pMatrix[n*i + j] << "   ";
-				}
-				file << std::endl;
-			}
-		}
 		auto dlmread(const char *FileName, double *pMatrix)->void
 		{
 			std::ifstream file;

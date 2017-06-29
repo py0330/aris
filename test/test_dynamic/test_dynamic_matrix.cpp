@@ -505,6 +505,18 @@ void test_multiply()
 
 	s_mms(2, 4, 3, ma18a, 6, ma18b, 6, oa18_before, 5);
 	if (!s_is_equal(10, oa18_before, oa18, error))std::cout << "\"s_mms with ld\" failed" << std::endl;
+
+	const double v01[]{ 0.3500,0.1966,0.2511,0.6160,0.4733,0.3517,0.8308,0.5853,0.5497,0.9172 };
+	const double v02[]{ 0.8308,0.3517,0.3500,0.6160,0.5853,0.4733,0.2511,0.1966,0.5497,0.9172 };
+	aris::Size p[10]{ 6,5,0,3,7,4,2,1,8,9 };
+
+	s_vc(10, v01, result);
+	s_permutate(10, 1, p, result, 1);
+	if (!s_is_equal(10, v02, result, error))std::cout << "\"s_permutate\" failed" << std::endl;
+
+	s_vc(10, v02, result);
+	s_permutate_inv(10, 1, p, result, 1);
+	if (!s_is_equal(10, v01, result, error))std::cout << "\"s_permutate_inv\" failed" << std::endl;
 }
 void test_llt()
 {
@@ -814,11 +826,29 @@ void test_householder()
 			0.356220740376622, - 0.00334385430562029,0.000250527139268941, - 0.275874736646322,0.711610030647557 };
 		const double tau[]{
 			-1.6207938622228,
-			- 1.16999382740955,
-			- 1.08936038603983,
-			- 1.33835118423397,
-			- 1.32767845364868,
+			-1.16999382740955,
+			-1.08936038603983,
+			-1.33835118423397,
+			-1.32767845364868,
 			0 };
+		const double U_p[]
+		{
+			-1.9789734864317916, - 1.2227281146464213, - 1.4552228666754592, - 1.0791006623592800, - 1.7161598441238421,
+			0.3310430013591469,   1.0375083361849231,   0.1205422679295597,   0.2360825672981153,   0.0733413570847640,
+			0.1678206505062453, - 0.4190838645420051, - 0.9014180827713946,   0.3408882995178777, - 0.4325106805558034,
+			0.2738927056675887,   0.1101281942121770,   0.3176468269001335,   0.6211839012446341, - 0.4434593675209600,
+			0.3229181861821861,   0.4452182562066503,   0.2458013762676567, - 0.8994930705633606, - 0.2184490222474343,
+			0.2266304829147998, - 0.1781245180361834,   0.0104789845315289, - 0.3076377256333895, - 0.7160073181950455,
+		};
+		const double tau_p[]
+		{
+			-1.4615524191013369,
+			- 1.4107285895329176,
+			- 1.7220186125457726,
+			- 1.0505698333136935,
+			- 1.3221685195172266,
+		};
+		const aris::Size p[]{ 3,1,2,0,4 };
 		const double b[]{
 			0.5060,0.1493,
 			0.6991,0.2575,
@@ -861,6 +891,23 @@ void test_householder()
 			0.0667120536616637,0.224587809775278,0.43088167987985, -0.664332641480675,-0.646519613301525,0,0,
 			0.30826704429847, -0.486866265436373,0.806399797389196,0.64673735967616,0.218449022247434,0,0,
 			0.356220740376622, -0.00334385430562029,0.000250527139268941, -0.275874736646322,0.711610030647557,0,0 };
+		const double U_p_ld[]
+		{
+			-1.9789734864317916, -1.2227281146464213, -1.4552228666754592, -1.0791006623592800, -1.7161598441238421,0,0,
+			0.3310430013591469,   1.0375083361849231,   0.1205422679295597,   0.2360825672981153,   0.0733413570847640,0,0,
+			0.1678206505062453, -0.4190838645420051, -0.9014180827713946,   0.3408882995178777, -0.4325106805558034,0,0,
+			0.2738927056675887,   0.1101281942121770,   0.3176468269001335,   0.6211839012446341, -0.4434593675209600,0,0,
+			0.3229181861821861,   0.4452182562066503,   0.2458013762676567, -0.8994930705633606, -0.2184490222474343,0,0,
+			0.2266304829147998, -0.1781245180361834,   0.0104789845315289, -0.3076377256333895, -0.7160073181950455,0,0,
+		};
+		const double tau_p_ld[]
+		{
+			-1.4615524191013369,0,
+			-1.4107285895329176,0,
+			-1.7220186125457726,0,
+			-1.0505698333136935,0,
+			-1.3221685195172266,0,
+		};
 		const double tau_ld[]{
 			-1.6207938622228,0,
 			-1.16999382740955,0,
@@ -886,24 +933,43 @@ void test_householder()
 
 		double result_Q[m*m], result_R[m*n], result_U[m*n], result_tau[std::max(m, n)], result_x[std::max(m, n)*rhs];
 		double result_Q_ld[m*q_t], result_R_ld[m*r_t], result_U_ld[m*u_t], result_tau_ld[n*tau_t], result_x_ld[std::max(m, n)*x_t];
+		aris::Size result_P[m];
 
 		s_householder_ut(m, n, A, result_U, result_tau);
-		if (!(s_is_equal(m, n, result_U, U, error) && s_is_equal(std::min(m - 1, n), result_tau, tau, error)))std::cout << "\"s_householder\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U, U, error && s_is_equal(std::min(m - 1, n), result_tau, tau, error))))std::cout << "\"s_householder\" failed" << std::endl;
 
 		s_householder_ut(m, n, A_ld, a_t, result_U_ld, u_t, result_tau_ld, tau_t);
-		if (!(s_is_equal(m, n, result_U_ld, u_t, U_ld, u_t, error) && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_ld, tau_t, error)))std::cout << "\"s_householder_ut\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U_ld, u_t, U_ld, u_t, error && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_ld, tau_t, error))))std::cout << "\"s_householder_ut\" failed" << std::endl;
 
 		s_householder_ut2qr(m, n, U, tau, result_Q, result_R);
-		if (!(s_is_equal(m, m, result_Q, Q, error) && s_is_equal(m, n, result_R, R, error)))std::cout << "\"s_householder_ut2qr\" failed" << std::endl;
+		if (!(s_is_equal(m, m, result_Q, Q, error && s_is_equal(m, n, result_R, R, error))))std::cout << "\"s_householder_ut2qr\" failed" << std::endl;
 
 		s_householder_ut2qr(m, n, U_ld, u_t, tau_ld, tau_t, result_Q_ld, q_t, result_R_ld, r_t);
-		if (!(s_is_equal(m, m, result_Q_ld, q_t, Q_ld, q_t, error) && s_is_equal(m, n, result_R_ld, r_t, R_ld, r_t, error)))std::cout << "\"s_householder_ut2qr\" failed" << std::endl;
+		if (!(s_is_equal(m, m, result_Q_ld, q_t, Q_ld, q_t, error && s_is_equal(m, n, result_R_ld, r_t, R_ld, r_t, error))))std::cout << "\"s_householder_ut2qr\" failed" << std::endl;
 
 		s_householder_ut_sov(m, n, rhs, U, tau, b, result_x);
 		if (!(s_is_equal(n, rhs, result_x, x, error)))std::cout << "\"s_householder_ut_sov\" failed" << std::endl;
 
 		s_householder_ut_sov(m, n, rhs, U_ld, u_t, tau_ld, tau_t, b_ld, b_t, result_x_ld, x_t);
 		if (!(s_is_equal(n, rhs, result_x_ld, x_t, x_ld, x_t, error)))std::cout << "\"s_householder_ut_sov\" failed" << std::endl;
+
+		s_householder_ut(m, n, A, result_U, result_tau);
+		if (!(s_is_equal(m, n, result_U, U, error && s_is_equal(std::min(m - 1, n), result_tau, tau, error))))std::cout << "\"s_householder_ut\" failed" << std::endl;
+
+		s_householder_ut(m, n, A_ld, a_t, result_U_ld, u_t, result_tau_ld, tau_t);
+		if (!(s_is_equal(m, n, result_U_ld, u_t, U_ld, u_t, error && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_ld, tau_t, error))))std::cout << "\"s_householder_ut\" failed" << std::endl;
+		
+		s_householder_utp(m, n, A, result_U, result_tau, result_P);
+		if (!(s_is_equal(m, n, result_U, U_p, error && s_is_equal(std::min(m - 1, n), result_tau, tau_p, error) && std::equal(result_P, result_P + std::min(m, n), p))))std::cout << "\"s_householder_utp\" failed" << std::endl;
+
+		s_householder_utp(m, n, A_ld, a_t, result_U_ld, u_t, result_tau_ld, tau_t, result_P);
+		if (!(s_is_equal(m, n, result_U_ld, u_t, U_p_ld, u_t, error && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_p_ld, tau_t, error) && std::equal(result_P, result_P + std::min(m, n), p))))std::cout << "\"s_householder_utp\" failed" << std::endl;
+
+		s_householder_utp_sov(m, n, rhs, U_p, tau_p, p, b, result_x);
+		if (!(s_is_equal(n, rhs, result_x, x, error)))std::cout << "\"s_householder_utp_sov\" failed" << std::endl;
+
+		s_householder_utp_sov(m, n, rhs, U_p_ld, u_t, tau_p_ld, tau_t, p, b_ld, b_t, result_x_ld, x_t);
+		if (!(s_is_equal(n, rhs, result_x_ld, x_t, x_ld, x_t, error)))std::cout << "\"s_householder_utp_sov\" failed" << std::endl;
 	}
 }
 

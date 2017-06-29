@@ -8,6 +8,8 @@
 #include <memory>
 #include <functional>
 #include <algorithm>
+#include <deque>
+#include <type_traits>
 
 #include <aris_core.h>
 #include <aris_dynamic_matrix.h>
@@ -23,28 +25,39 @@ namespace aris
 		using double3 = double[3];
 		using double6 = double[6];
 		using double7 = double[7];
-		
+
 		class Marker;
 		class Part;
+		class RevoluteJoint;
+		class PrismaticJoint;
+		class UniversalJoint;
+		class SphericalJoint;
 		class Model;
 
 		struct PlanParamBase
 		{
 			Model* model_;
 			std::int32_t cmd_type_{ 0 };
-			mutable std::int32_t count_{ 0 };
+			std::int32_t count_{ 0 };
+			double dt{ 1e-3 };
 		};
 		using PlanFunc = std::function<int(Model &, const PlanParamBase &)>;
+
+		struct PlanParam 
+		{
+			Model* model_;
+			std::int32_t count_;
+			void *param_;
+			std::int32_t param_size_;
+		};
+		using PlanFunction = std::function<int(const PlanParam &)>;
+		using ParseFunction = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::MsgBase &msg_out)>;
 
 		class Element :public aris::core::Object
 		{
 		public:
-			//static auto Type()->const std::string &{ static const std::string type{ "Element" }; return type; }
-			//auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual saveAdams(std::ofstream &file) const->void { for (auto &ele : children())static_cast<const Element &>(ele).saveAdams(file); }
-			auto virtual adamsID()const->Size { return id() + 1; }
-			auto virtual adamsType()const->const std::string &{ return type(); }
-			auto virtual adamsScriptType()const->const std::string &{ return adamsType(); }
+			static auto Type()->const std::string &{ static const std::string type{ "Element" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto model()->Model&;
 			auto model()const->const Model&;
 			
@@ -65,6 +78,8 @@ namespace aris
 		class DynEle : public Element
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type{ "DynEle" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto active() const->bool { return active_; }
 			auto activate(bool active = true)->void { active_ = active; }
@@ -84,6 +99,8 @@ namespace aris
 		class Coordinate :public DynEle
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Coordinate" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual prtPm()const->const double4x4& = 0;
 			auto virtual prtVs()const->const double6& = 0;
 			auto virtual prtAs()const->const double6& = 0;
@@ -160,6 +177,8 @@ namespace aris
 		class Interaction :public DynEle
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Interaction" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto makI()->Marker& { return *makI_; }
 			auto makI() const->const Marker&{ return *makI_; }
@@ -179,44 +198,6 @@ namespace aris
 		private:
 			Marker *makI_;
 			Marker *makJ_;
-		};
-		class Constraint :public Interaction
-		{
-		public:
-			auto virtual dim() const->Size = 0;
-			auto virtual cptCp(double *cp)const->void;
-			auto virtual cptCv(double *cv)const->void;
-			auto virtual cptCa(double *ca)const->void;
-			template<typename CMI_TYPE, typename CMJ_TYPE>
-			auto cptPrtCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void;
-			auto cptPrtCm(double *cmI, double *cmJ)->void { cptPrtCm(cmI, dim(), cmJ, dim()); }
-			template<typename CMI_TYPE, typename CMJ_TYPE>
-			auto cptGlbCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void;
-			auto cptGlbCm(double *cmI, double *cmJ)->void { cptGlbCm(cmI, dim(), cmJ, dim()); }
-			
-			auto virtual cfPtr() const->const double* = 0;
-			auto virtual setCf(const double *cf)const->void;
-			auto virtual prtCmPtrI() const->const double* = 0;
-			auto virtual locCmPtrI() const->const double* = 0;
-
-			
-
-		protected:
-			auto virtual updPrtCmI()->void {};
-
-			virtual ~Constraint();
-			explicit Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active = true);
-			explicit Constraint(Object &father, const aris::core::XmlElement &xml_ele);
-			Constraint(const Constraint&);
-			Constraint(Constraint&&);
-			Constraint& operator=(const Constraint&);
-			Constraint& operator=(Constraint&&);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
 		};
 		template<Size DIM> class ConstraintData
 		{
@@ -246,9 +227,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Environment" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string &{ static const std::string type{ "environment" }; return type; }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto gravity()const ->const double6&{ return gravity_; }
 
 		private:
@@ -270,78 +249,11 @@ namespace aris
 			friend class aris::core::Root;
 			friend class aris::core::Object;
 		};
-		class Akima final :public Element
-		{
-		public:
-			static auto Type()->const std::string &{ static const std::string type{ "Akima" }; return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string &{ static const std::string type{ "akima" }; return type; }
-			auto virtual saveAdams(std::ofstream &file) const->void override;
-			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto x() const->const std::vector<double> &;
-			auto y() const->const std::vector<double> &;
-			auto operator()(double x, char derivativeOrder = '0') const ->double;
-			auto operator()(Size length, const double *x_in, double *y_out, char derivativeOrder = '0') const->void;
-
-		private:
-			virtual ~Akima();
-			explicit Akima(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit Akima(const std::string &name, Size num, const double *x_in, const double *y_in);
-			explicit Akima(const std::string &name, const std::list<double> &x_in, const std::list<double> &y_in);
-			explicit Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in);
-			explicit Akima(const std::string &name, const std::list<std::pair<double, double> > &data_in, double begin_slope, double end_slope);
-			Akima(const Akima&);
-			Akima(Akima&&);
-			Akima& operator=(const Akima&);
-			Akima& operator=(Akima&&);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
-		class Script final :public Element
-		{
-		public:
-			static auto Type()->const std::string &{ static const std::string type{ "Script" }; return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string &{ static const std::string type{ "script" }; return type; }
-			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual saveAdams(std::ofstream &file) const->void override final;
-			auto act(DynEle &ele, bool isActive)->void;
-			auto aln(Marker &mak_move, const Marker& mak_target)->void;
-			auto sim(Size ms_dur, Size ms_dt)->void;
-			auto empty() const->bool;
-			auto endTime()const->Size;
-			auto doScript(Size ms_begin, Size ms_end)->void;
-			auto clear()->void;
-
-		private:
-			virtual ~Script();
-			explicit Script(const std::string &name);
-			explicit Script(Object &father, const aris::core::XmlElement &ele);
-			Script(const Script&);
-			Script(Script&&);
-			Script& operator=(const Script&);
-			Script& operator=(Script&&);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
 		class Variable :public Element
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Variable" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string &{ static const std::string type{ "variable" }; return type; }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual toString() const->std::string { return ""; }
 
@@ -362,7 +274,6 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Geometry" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string &{ static const std::string type{ "geometry" }; return type; }
 			auto fatherPart() const->const Part&;
 			auto fatherPart()->Part&;
 
@@ -383,10 +294,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Marker" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string &{ static const std::string type{ "marker" }; return type; }
-			auto virtual adamsID()const->Size;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual glbPm()const->const double4x4& override;
 			auto virtual glbVs()const->const double6& override;
 			auto virtual glbAs()const->const double6& override;
@@ -418,24 +326,11 @@ namespace aris
 		public:
 			auto static Type()->const std::string &{ static const std::string type{ "Part" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string & override{ static const std::string type{ "part" }; return type; }
-			auto virtual adamsID()const->Size override;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
 			auto geometryPool()const->const aris::core::ObjectPool<Geometry, Element>&;
-			auto cptGlbIm(double *im, Size ld = 0)const->void;
-			auto cptGlbFg(double *fg)const->void;
-			auto cptGlbFv(double *fv)const->void;
-			auto cptGlbPf(double *pf)const->void;
-			auto cptPrtFg(double *fg)const->void;
-			auto cptPrtFv(double *fv)const->void;
-			auto cptPrtPf(double *pf)const->void;
-			auto cptPrtVs(double *vs)const->void;
-			auto cptPrtAs(double *as)const->void;
-			
 			auto virtual glbPm()const->const double4x4& override;
 			auto virtual glbVs()const->const double6& override;
 			auto virtual glbAs()const->const double6& override;
@@ -445,18 +340,21 @@ namespace aris
 			auto updPrtVs()->void;
 			auto updPrtAs()->void;
 			auto prtIm() const->const double6x6&;
-			auto glbIm() const->const double6x6&;
-			auto updGlbIm()->void;
-			auto glbFg() const->const double6&;
-			auto updGlbFg()->void;
-			auto glbFv() const->const double6&;
-			auto updGlbFv()->void;
-			auto prtGr() const->const double6&;
-			auto updPrtGr()->void;
-			auto prtFg() const->const double6&;
-			auto updPrtFg()->void;
-			auto prtFv() const->const double6&;
-			auto updPrtFv()->void;
+			template<typename IM_TYPE>
+			auto cptGlbIm(double *im, IM_TYPE i_t)const->void 
+			{
+				double tem[36];
+				s_tf_n(6, *pm(), *prtIm(), tem);
+				s_tf_n(6, *pm(), tem, T(6), im, i_t);
+			}
+			auto cptGlbFg(double *fg)const->void;
+			auto cptGlbFv(double *fv)const->void;
+			auto cptGlbPf(double *pf)const->void;
+			auto cptPrtFg(double *fg)const->void;
+			auto cptPrtFv(double *fv)const->void;
+			auto cptPrtPf(double *pf)const->void;
+			auto cptPrtVs(double *vs)const->void;
+			auto cptPrtAs(double *as)const->void;
 			auto setPp(const double *pp)->void;
 			auto setPp(const Coordinate &relative_to, const double *pp)->void;
 			auto setRe(const double *re, const char *type = "313")->void;
@@ -530,13 +428,62 @@ namespace aris
 			friend class aris::core::Root;
 			friend class aris::core::Object;
 		};
+		class Constraint :public Interaction
+		{
+		public:
+			auto virtual dim() const->Size = 0;
+			auto virtual cptCp(double *cp)const->void;
+			auto virtual cptCv(double *cv)const->void;
+			auto virtual cptCa(double *ca)const->void;
+			template<typename CMI_TYPE, typename CMJ_TYPE>
+			auto cptPrtCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
+			{
+				updPrtCmI();
+				s_mc(6, dim(), prtCmPtrI(), dim(), cmI, cmi_type);
+
+				double pm_M2N[4][4];
+				s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
+				s_tf_n(dim(), -1.0, *pm_M2N, prtCmPtrI(), dim(), cmJ, cmj_type);
+			}
+			auto cptPrtCm(double *cmI, double *cmJ)->void { cptPrtCm(cmI, dim(), cmJ, dim()); }
+			template<typename CMI_TYPE, typename CMJ_TYPE>
+			auto cptGlbCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
+			{
+				updPrtCmI();
+				s_tf_n(dim(), *makI().fatherPart().pm(), prtCmPtrI(), dim(), cmI, cmi_type);
+				s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
+			}
+			auto cptGlbCm(double *cmI, double *cmJ)->void { cptGlbCm(cmI, dim(), cmJ, dim()); }
+
+			auto virtual cfPtr() const->const double* = 0;
+			auto virtual setCf(const double *cf)const->void;
+			auto virtual prtCmPtrI() const->const double* = 0;
+			auto virtual locCmPtrI() const->const double* = 0;
+
+
+
+		protected:
+			auto virtual updPrtCmI()->void {};
+
+			virtual ~Constraint();
+			explicit Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active = true);
+			explicit Constraint(Object &father, const aris::core::XmlElement &xml_ele);
+			Constraint(const Constraint&);
+			Constraint(Constraint&&);
+			Constraint& operator=(const Constraint&);
+			Constraint& operator=(Constraint&&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+		};
 		class Joint :public Constraint
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Joint" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string &{ static const std::string type{ "joint" }; return type; }
-			auto virtual saveAdams(std::ofstream &file) const->void override;
 
 		protected:
 			virtual ~Joint() = default;
@@ -555,10 +502,7 @@ namespace aris
 			static auto Type()->const std::string & { static const std::string type{ "Motion" }; return type; }
 			static auto Dim()->Size { return 1; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "single_component_motion" }; return type; }
-			auto virtual adamsScriptType()const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual dim() const ->Size override { return 1; }
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
@@ -609,8 +553,6 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "GeneralMotion" }; return type; }
 			static auto Dim()->Size { return 6; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "general_motion" }; return type; }
-			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual dim() const ->Size override { return Dim(); }
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
@@ -674,7 +616,6 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Force" }; return type; }
 			auto virtual type()const->const std::string & override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "force" }; return type; }
 			auto fsI() const->const double* { return fsI_; }
 			auto fsJ() const->const double* { return fsJ_; }
 			auto virtual updFs()->void = 0;
@@ -702,8 +643,7 @@ namespace aris
 			auto virtual allocateMemory()->void = 0;
 			auto virtual kinPos()->void = 0;
 			auto virtual kinVel()->void = 0;
-			auto virtual kinAcc()->void = 0;
-			auto virtual dynFce()->void = 0;
+			auto virtual dynAccAndFce()->void = 0;
 			auto error()const->double;
 			auto setError(double error)->void;
 			auto maxError()const->double;
@@ -725,6 +665,10 @@ namespace aris
 
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
 		};
 		class Calibrator :public Element
 		{
@@ -732,7 +676,6 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "Calibrator" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual allocateMemory()->void = 0;
-
 
 		protected:
 			virtual ~Calibrator();
@@ -745,52 +688,221 @@ namespace aris
 
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class SimResult : public Element
+		{
+		public:
+			class TimeResult : public Element
+			{
+			public:
+				static auto Type()->const std::string &{ static const std::string type{ "TimeResult" }; return type; }
+				auto virtual type() const->const std::string& override{ return Type(); }
+				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto record()->void;
+				auto restore(Size pos)->void;
+
+			private:
+				virtual ~TimeResult();
+				explicit TimeResult(Object &father, const aris::core::XmlElement &xml_ele);
+				explicit TimeResult(const std::string &name);
+				TimeResult(const TimeResult&);
+				TimeResult(TimeResult&&);
+				TimeResult& operator=(const TimeResult&);
+				TimeResult& operator=(TimeResult&&);
+
+				struct Imp;
+				aris::core::ImpPtr<Imp> imp_;
+
+				friend class SimResult;
+				friend class Model;
+				friend class aris::core::Root;
+				friend class aris::core::Object;
+
+			};
+			class PartResult : public Element
+			{
+			public:
+				static auto Type()->const std::string &{ static const std::string type{ "PartResult" }; return type; }
+				auto virtual type() const->const std::string& override{ return Type(); }
+				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto part()->Part&;
+				auto part()const->const Part&{ return const_cast<PartResult*>(this)->part(); }
+				auto record()->void;
+				auto restore(Size pos)->void;
+
+			private:
+				virtual ~PartResult();
+				explicit PartResult(Object &father, const aris::core::XmlElement &xml_ele);
+				explicit PartResult(const std::string &name, Part &part);
+				PartResult(const PartResult&);
+				PartResult(PartResult&&);
+				PartResult& operator=(const PartResult&);
+				PartResult& operator=(PartResult&&);
+
+				struct Imp;
+				aris::core::ImpPtr<Imp> imp_;
+
+				friend class SimResult;
+				friend class Model;
+				friend class aris::core::Root;
+				friend class aris::core::Object;
+
+			};
+			class ConstraintResult : public Element
+			{
+			public:
+				static auto Type()->const std::string &{ static const std::string type{ "ConstraintResult" }; return type; }
+				auto virtual type() const->const std::string& override{ return Type(); }
+				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto constraint()->Constraint&;
+				auto constraint()const->const Constraint&{ return const_cast<ConstraintResult*>(this)->constraint(); }
+				auto record()->void;
+				auto restore(Size pos)->void;
+
+			private:
+				virtual ~ConstraintResult();
+				explicit ConstraintResult(Object &father, const aris::core::XmlElement &xml_ele);
+				explicit ConstraintResult(const std::string &name, Constraint &constraint);
+				ConstraintResult(const ConstraintResult&);
+				ConstraintResult(ConstraintResult&&);
+				ConstraintResult& operator=(const ConstraintResult&);
+				ConstraintResult& operator=(ConstraintResult&&);
+
+				struct Imp;
+				aris::core::ImpPtr<Imp> imp_;
+
+				friend class SimResult;
+				friend class Model;
+				friend class aris::core::Root;
+				friend class aris::core::Object;
+			};
+			
+			static auto Type()->const std::string &{ static const std::string type{ "SimResult" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto timeResult()->TimeResult&;
+			auto timeResult()const->const TimeResult&{ return const_cast<SimResult*>(this)->timeResult(); }
+			auto partResultPool()->aris::core::ObjectPool<PartResult, Element>&;
+			auto partResultPool()const->const aris::core::ObjectPool<PartResult, Element>&{return const_cast<SimResult*>(this)->partResultPool(); };
+			auto constraintResultPool()->aris::core::ObjectPool<ConstraintResult, Element>&;
+			auto constraintResultPool()const->const aris::core::ObjectPool<ConstraintResult, Element>&{return const_cast<SimResult*>(this)->constraintResultPool(); };
+			
+			auto allocateMemory()->void;
+			auto record()->void;
+			auto restore(Size pos)->void;
+			auto size()const->Size;
+			auto clear()->void;
+
+		protected:
+			virtual ~SimResult();
+			explicit SimResult(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit SimResult(const std::string &name);
+			SimResult(const SimResult&);
+			SimResult(SimResult&&);
+			SimResult& operator=(const SimResult&);
+			SimResult& operator=(SimResult&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class Simulator :public Element
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Simulator" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual simulate(const PlanFunction &plan, void *param, std::int32_t param_size, SimResult &result)->void;
+			template<typename ParamType>
+			auto simulate(const PlanFunction &plan, ParamType type, SimResult &result)->void 
+			{
+				static_assert(std::is_trivial<ParamType>::value, "ParamType must be trivial type");
+				simulate(plan, &type, std::int32_t(sizeof(type)), result);
+			}
+
+		protected:
+			virtual ~Simulator();
+			explicit Simulator(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Simulator(const std::string &name);
+			Simulator(const Simulator&);
+			Simulator(Simulator&&);
+			Simulator& operator=(const Simulator&);
+			Simulator& operator=(Simulator&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
 		};
 
 		class Model :public aris::core::Root
 		{
 		public:
-			struct SimResult
-			{
-				std::list<double> time_;
-				std::vector<std::list<double> > Pin_, Fin_, Vin_, Ain_;//vector的维数为电机个数,但list维数为时间的维数
-
-				auto clear()->void;
-				auto resize(Size size)->void;
-				auto saveToTxt(const std::string &filename)const->void;
-			};
+			static auto Type()->const std::string &{ static const std::string type("Model"); return std::ref(type); }
+			auto virtual type() const->const std::string&{ return Type(); }
 			using Root::loadXml;
 			using Root::saveXml;
 			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
             auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual saveXml(aris::core::XmlDocument &xml_doc)const->void override;
+			auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 			auto virtual loadDynEle(const std::string &name)->void;
 			auto virtual saveDynEle(const std::string &name)->void;
-			auto virtual saveAdams(const std::string &filename, bool using_script = false) const->void;
-			auto virtual saveAdams(std::ofstream &file, bool using_script = false) const->void;
+			auto time()const->double;
+			auto setTime(double time)->void;
 			auto calculator()->aris::core::Calculator&;
-			auto calculator()const ->const aris::core::Calculator&;
+			auto calculator()const ->const aris::core::Calculator&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->calculator(); }
 			auto environment()->aris::dynamic::Environment&;
-			auto environment()const ->const aris::dynamic::Environment&;
-			auto scriptPool()->aris::core::ObjectPool<Script, Element>&;
-			auto scriptPool()const->const aris::core::ObjectPool<Script, Element>&;
+			auto environment()const ->const aris::dynamic::Environment&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->environment(); }
 			auto variablePool()->aris::core::ObjectPool<Variable, Element>&;
-			auto variablePool()const->const aris::core::ObjectPool<Variable, Element>&;
-			auto akimaPool()->aris::core::ObjectPool<Akima, Element>&;
-			auto akimaPool()const->const aris::core::ObjectPool<Akima, Element>&;
+			auto variablePool()const->const aris::core::ObjectPool<Variable, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->variablePool(); }
 			auto partPool()->aris::core::ObjectPool<Part, Element>&;
-			auto partPool()const->const aris::core::ObjectPool<Part, Element>&;
+			auto partPool()const->const aris::core::ObjectPool<Part, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->partPool(); }
 			auto jointPool()->aris::core::ObjectPool<Joint, Element>&;
-			auto jointPool()const->const aris::core::ObjectPool<Joint, Element>&;
+			auto jointPool()const->const aris::core::ObjectPool<Joint, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->jointPool(); }
 			auto motionPool()->aris::core::ObjectPool<Motion, Element>&;
-			auto motionPool()const->const aris::core::ObjectPool<Motion, Element>&;
+			auto motionPool()const->const aris::core::ObjectPool<Motion, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 			auto generalMotionPool()->aris::core::ObjectPool<GeneralMotion, Element>&;
-			auto generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>&;
+			auto generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->generalMotionPool(); }
 			auto forcePool()->aris::core::ObjectPool<Force, Element>&;
-			auto forcePool()const->const aris::core::ObjectPool<Force, Element>&;
+			auto forcePool()const->const aris::core::ObjectPool<Force, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->forcePool(); }
 			auto solverPool()->aris::core::ObjectPool<Solver, Element>&;
-			auto solverPool()const->const aris::core::ObjectPool<Solver, Element>&;
+			auto solverPool()const->const aris::core::ObjectPool<Solver, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->solverPool(); }
+			auto simulatorPool()->aris::core::ObjectPool<Simulator, Element>&;
+			auto simulatorPool()const->const aris::core::ObjectPool<Simulator, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->simulatorPool(); }
+			auto simResultPool()->aris::core::ObjectPool<SimResult, Element>&;
+			auto simResultPool()const->const aris::core::ObjectPool<SimResult, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->simResultPool(); }
 			auto markerSize()const->Size { Size size{ 0 }; for (auto &prt : partPool())size += prt.markerPool().size(); return size; }
+			auto ground()->Part&;
+			auto ground()const->const Part&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ground(); }
+			
+			auto addPartByPm(const double*pm, const double *prt_im = nullptr)->Part&;
+			auto addPartByPe(const double*pe, const char* eul_type, const double *prt_im = nullptr)->Part&;
+			auto addPartByPq(const double*pq, const double *prt_im = nullptr)->Part&;
+			auto addRevoluteJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->RevoluteJoint&;
+			auto addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&;
+			auto addUniversalJoint(Part &first_part, Part &second_part, const double *position, const double *first_axis, const double *second_axis)->UniversalJoint&;
+			auto addSphericalJoint(Part &first_part, Part &second_part, const double *position)->SphericalJoint&;
+			auto addMotion(Joint &joint)->Motion&;
+			auto addGeneralMotion(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&;
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
 			auto updMotionID()->void;
 			auto motionAtAbs(Size abs_id)->Motion&;
 			auto motionAtAbs(Size abs_id)const->const Motion&;
@@ -798,11 +910,11 @@ namespace aris
 			auto motionAtPhy(Size phy_id)const->const Motion&;
 			auto motionAtSla(Size sla_id)->Motion&;
 			auto motionAtSla(Size sla_id)const->const Motion&;
-			auto ground()->Part&;
-			auto ground()const->const Part&;
 
 
-			/*
+
+
+
 			// 动力学计算以下变量的关系
 			// I  ： 惯量矩阵,m*m
 			// C  ： 约束矩阵,m*n
@@ -822,114 +934,7 @@ namespace aris
 			//
 			// b = [ pf ]
 			//     [ ca ]
-			auto allocate()->void;
-			auto kinAccInGlbNew()->void;
-			auto allocateMemory()->void;
-			auto activePartPool()->aris::core::RefPool<Part>&;
-			auto activeConstraintPool()->aris::core::RefPool<Constraint>&;
-			auto cBlkSize()->BlockSize&;
-			auto pBlkSize()->BlockSize&;
-			auto cSize()->Size;
-			auto pSize()->Size;
-			auto mSizeClb()->Size;
-			auto pSizeClb()->Size;
-			auto frcSizeClb()->Size;
-			auto glbImBlk()->BlockData&;
-			auto glbCmBlk()->BlockData&;
-			auto glbPpBlk()->BlockData&;
-			auto glbPvBlk()->BlockData&;
-			auto glbPaBlk()->BlockData&;
-			auto glbPfBlk()->BlockData&;
-			auto prtImBlk()->BlockData&;
-			auto prtCmBlk()->BlockData&;
-			auto prtPpBlk()->BlockData&;
-			auto prtPvBlk()->BlockData&;
-			auto prtPaBlk()->BlockData&;
-			auto prtPfBlk()->BlockData&;
-			auto cpBlk()->BlockData&;
-			auto cvBlk()->BlockData&;
-			auto caBlk()->BlockData&;
-			auto cfBlk()->BlockData&;
-			auto glbIm()->double *;
-			auto glbCm()->double *;
-			auto glbPp()->double *;
-			auto glbPv()->double *;
-			auto glbPa()->double *;
-			auto glbPf()->double *;
-			auto prtIm()->double *;
-			auto prtCm()->double *;
-			auto prtPp()->double *;
-			auto prtPv()->double *;
-			auto prtPa()->double *;
-			auto prtPf()->double *;
-			auto cp()->double *;
-			auto cv()->double *;
-			auto ca()->double *;
-			auto cf()->double *;
-			auto clbA()->double *;
-			auto clbB()->double *;
-			auto clbX()->double *;
-
-			auto updGlbIm()->void;
-			auto updGlbCm()->void;
-			auto updGlbPv()->void;
-			auto updGlbPa()->void;
-			auto updGlbPf()->void;
-			auto updPrtIm()->void;
-			auto updPrtCm()->void;
-			auto updPrtPv()->void;
-			auto updPrtPa()->void;
-			auto updPrtPf()->void;
-			auto updCp()->void;
-			auto updCv()->void;
-			auto updCa()->void;
-			auto updClbA()->void;
-			auto updClbB()->void;
-			auto updClbX()->void;
-
-			auto updConstraintF()->void;
-			auto updPartGlbP()->void;
-			auto updPartGlbV()->void;
-			auto updPartGlbA()->void;
-			auto updPartPrtP()->void;
-			auto updPartPrtV()->void;
-			auto updPartPrtA()->void;
-			
-
-			auto virtual kinPosInGlb(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
-			auto virtual kinVelInGlb()->void;
-			auto virtual kinAccInGlb()->void;
-			auto virtual dynFceInGlb()->void;
-
-			auto virtual kinPosInPrt(Size max_count = 10, double error = 1e-10)->std::tuple<Size, double>;
-			auto virtual kinVelInPrt()->void;
-			auto virtual kinAccInPrt()->void;
-			auto virtual dynFceInPrt()->void;
-			
-			auto virtual kinPre()->void;
-			
-			auto kinUpd()->void;
-			auto kinCe(double *ce)const->void;
-			auto kinGlbCmT(double *glb_cmT, Size ld = 0, bool is_mtx_inited = false)const->void;
-			auto kinSov(const double *A, const double *b, double *x)->void;
-
-			auto updCa(double *ca)->void;
-			auto getCf(double *cf)const->void;
-			auto setCf(const double *cf)->void;
-			auto getPrtIs(double *prt_cm, Size ld = 0, bool is_mtx_inited = false)const->void;
-			auto updPrtCm(double *prt_cm, Size ld = 0, bool is_mtx_inited = false)->void;
-			auto updPrtCmT(double *prt_cmT, Size ld = 0, bool is_mtx_inited = false)->void;
-			auto updPrtCct(double *prt_cct, Size ld = 0, bool is_mtx_inited = false)->void;
-			auto updPrtFs(double *prt_fs)->void;
-			auto getPrtAs(double *prt_as) const->void;
-			auto setPrtAs(const double *prt_as)->void;
-			auto updPrtA(double *prt_A, bool is_mtx_inited)->void;
-			auto updPrtB(double *prt_b, bool is_mtx_inited)->void;
-			auto getPrtX(double *prt_x) const->void;
-			auto setPrtX(const double *prt_x)->void;
-			
-
-
+			// 
 			// 约束矩阵C为m x n维的矩阵,惯量矩阵为m x m维的矩阵
 			// 约束力为n维的向量,约束加速度为n维向量
 			// 部件力为m维的向量,部件加速度为m维向量
@@ -946,60 +951,6 @@ namespace aris
 			//
 			// b = [ fs ]
 			//     [ ca ]
-			auto virtual dynPre()->void;
-			auto virtual dynPrt()->void;
-			auto virtual dynGlb()->void;
-			auto dynUpdDim()->void;
-			auto dynAllocate(std::unique_ptr<double[]> &A, std::unique_ptr<double[]> &b, std::unique_ptr<double[]> &x)->void;
-			auto dynSetSolveMethod(std::function<void(Size dim, const double *D, const double *b, double *x)> solve_method)->void;
-			auto dynSov(const double *A, const double *b, double *x) const->void;
-			auto dynDimM()const->Size;
-			auto dynDimN()const->Size;
-			auto dynDim()const->Size { return dynDimN() + dynDimM(); }
-			auto dynCa(double *ca) const->void;
-			auto dynCf(double *cf) const->void;
-			auto dynPrtUpd()->void;
-			auto dynPrtCm(double *prt_cm, Size ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynPrtCmT(double *prt_cmT, Size ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynPrtIs(double *prt_is, Size ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynPrtFs(double *prt_fs) const->void;
-			auto dynPrtAs(double *prt_as) const->void;
-			auto dynPrtMtx(double *A, double *b, bool is_mtx_inited = false) const->void;
-			auto dynPrtUkn(double *x) const->void;
-			auto dynPrtEnd(const double *x)->void;
-			auto dynPrtSov()->void;
-			auto dynGlbUpd()->void;
-			auto dynGlbCm(double *glb_cm, Size ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynGlbCmT(double *glb_cmT, Size ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynGlbIs(double *glb_is, Size ld = 0, bool is_mtx_inited = false) const->void;
-			auto dynGlbFs(double *glb_fs) const->void;
-			auto dynGlbAs(double *glb_as) const->void;
-			auto dynGlbMtx(double *A, double *b, bool is_mtx_inited = false) const->void;
-			auto dynGlbUkn(double *x) const->void;
-			auto dynGlbEnd(const double *x)->void;
-			auto dynGlbSovGaussSeidel()->void;
-
-			// 标定矩阵为m x n维的矩阵,其中m为驱动的数目,n为部件个数*10+驱动数*3
-			auto clbSetInverseMethod(std::function<void(Size n, double *A)> inverse_method)->void;
-			auto clbDimM()const->Size;
-			auto clbDimN()const->Size;
-			auto clbDimGam()const->Size;
-			auto clbDimFrc()const->Size;
-			auto clbPre()->void;
-			auto clbUpd()->void;
-			auto clbMtx(double *clb_D, double *clb_b) const->void;
-			auto clbUkn(double *clb_x) const->void;
-
-			// 仿真函数
-			auto virtual kinFromPin()->void {}
-			auto virtual kinFromVin()->void {}
-			// 静态仿真
-			auto simKin(const PlanFunc &func, const PlanParamBase &param, Size akima_interval = 1)->SimResult;
-			// 动态仿真
-			auto simDyn(const PlanFunc &func, const PlanParamBase &param, Size akima_interval = 1, Script *script = nullptr)->SimResult;
-			// 直接生成Adams模型,依赖SimDynAkima
-			auto simToAdams(const std::string &filename, const PlanFunc &func, const PlanParamBase &param, Size ms_dt = 10, Script *script = nullptr)->SimResult;
-			*/
 			virtual ~Model();
 			Model(const std::string &name = "model");
 		private:
@@ -1007,25 +958,6 @@ namespace aris
 			aris::core::ImpPtr<Imp> imp_;
 			friend class Motion;
 		};
-
-		template<typename CMI_TYPE, typename CMJ_TYPE>
-		auto Constraint::cptPrtCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
-		{
-			updPrtCmI();
-			s_mc(6, dim(), prtCmPtrI(), dim(), cmI, cmi_type);
-
-			double pm_M2N[4][4];
-			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
-			s_tf_n(dim(), -1.0, *pm_M2N, prtCmPtrI(), dim(), cmJ, cmj_type);
-		}
-		template<typename CMI_TYPE, typename CMJ_TYPE>
-		auto Constraint::cptGlbCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
-		{
-			updPrtCmI();
-			s_tf_n(dim(), *makI().fatherPart().pm(), prtCmPtrI(), dim(), cmI, cmi_type);
-			s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
-		}
-
 
 		template<typename VariableType> class VariableTemplate : public Variable
 		{
@@ -1044,32 +976,11 @@ namespace aris
 			VariableType data_;
 			friend class Model;
 		};
-		template<Size DIM> class JointTemplate :public Joint, public ConstraintData<DIM>
-		{
-		public:
-			auto virtual dim() const->Size { return DIM; }
-			auto virtual cfPtr() const->const double* override { return ConstraintData<DIM>::cf(); }
-			auto virtual prtCmPtrI() const->const double* override { return *ConstraintData<DIM>::prtCmI(); }
-			auto virtual locCmPtrI() const->const double* override { return *ConstraintData<DIM>::locCmI(); }
-
-		protected:
-			explicit JointTemplate(const std::string &name, Marker &makI, Marker &makJ)	:Joint(name, makI, makJ) {}
-			explicit JointTemplate(Object &father, const aris::core::XmlElement &xml_ele):Joint(father, xml_ele) {}
-			JointTemplate(const JointTemplate &other) = default;
-			JointTemplate(JointTemplate &&other) = default;
-			JointTemplate& operator=(const JointTemplate &other) = default;
-			JointTemplate& operator=(JointTemplate &&other) = default;
-
-		private:
-			friend class Model;
-		};
-
 		class MatrixVariable final : public VariableTemplate<aris::core::Matrix>
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "MatrixVariable" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "matrix" }; return type; }
 			auto virtual toString() const->std::string override { return data_.toString(); }
 
 		private:
@@ -1094,7 +1005,6 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "StringVariable" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "string" }; return type; }
 			auto virtual toString() const->std::string override { return data_; }
 
 		private:
@@ -1119,9 +1029,9 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "ParasolidGeometry" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type{ "parasolid" }; return type; }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual saveAdams(std::ofstream &file) const->void override;
+			auto prtPm()const->const double4x4&;
+			auto filePath()const->const std::string &;
 
 		private:
 			virtual ~ParasolidGeometry();
@@ -1157,102 +1067,12 @@ namespace aris
 			FloatMarker& operator=(const FloatMarker &other) = default;
 			FloatMarker& operator=(FloatMarker &&other) = default;
 		};
-		class RevoluteJoint final :public JointTemplate<5>
-		{
-		public:
-			static const std::string& Type() { static const std::string type("RevoluteJoint"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type("revolute"); return type; }
-
-		private:
-			virtual ~RevoluteJoint() = default;
-			explicit RevoluteJoint(const std::string &name, Marker &makI, Marker &makJ);
-			explicit RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele);
-			RevoluteJoint(const RevoluteJoint &other) = default;
-			RevoluteJoint(RevoluteJoint &&other) = default;
-			RevoluteJoint& operator=(const RevoluteJoint &other) = default;
-			RevoluteJoint& operator=(RevoluteJoint &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
-		class PrismaticJoint final :public JointTemplate<5>
-		{
-		public:
-			static const std::string& Type() { static const std::string type("PrismaticJoint"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type("translational"); return type;}
-
-		private:
-			virtual ~PrismaticJoint() = default;
-			explicit PrismaticJoint(const std::string &name, Marker &makI, Marker &makJ);
-			explicit PrismaticJoint(Object &father, const aris::core::XmlElement &xml_ele);
-			PrismaticJoint(const PrismaticJoint &other) = default;
-			PrismaticJoint(PrismaticJoint &&other) = default;
-			PrismaticJoint& operator=(const PrismaticJoint &other) = default;
-			PrismaticJoint& operator=(PrismaticJoint &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
-		class UniversalJoint final :public JointTemplate<4>
-		{
-		public:
-			using Constraint::cptGlbCm;
-			using Constraint::cptPrtCm;
-			static const std::string& Type() { static const std::string type("UniversalJoint"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type("universal"); return type; }
-			auto virtual cptCa(double *ca)const->void override;
-			auto virtual cptCp(double *cp)const->void override;
-
-		protected:
-			auto virtual updPrtCmI()->void override;
-
-		private:
-			virtual ~UniversalJoint() = default;
-			explicit UniversalJoint(const std::string &name, Marker &makI, Marker &makJ);
-			explicit UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele);
-			UniversalJoint(const UniversalJoint &other) = default;
-			UniversalJoint(UniversalJoint &&other) = default;
-			UniversalJoint& operator=(const UniversalJoint &other) = default;
-			UniversalJoint& operator=(UniversalJoint &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
-		class SphericalJoint final :public JointTemplate<3>
-		{
-		public:
-			static const std::string& Type() { static const std::string type("SphericalJoint"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type("spherical"); return type; }
-
-		private:
-			virtual ~SphericalJoint() = default;
-			explicit SphericalJoint(const std::string &Name, Marker &makI, Marker &makJ);
-			explicit SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele);
-			SphericalJoint(const SphericalJoint &other) = default;
-			SphericalJoint(SphericalJoint &&other) = default;
-			SphericalJoint& operator=(const SphericalJoint &other) = default;
-			SphericalJoint& operator=(SphericalJoint &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
 		class SingleComponentForce final :public Force
 		{
 		public:
 			static const std::string& Type() { static const std::string type("SingleComponentForce"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual adamsType()const->const std::string& override{ static const std::string type("single_component_force"); return type; }
-			auto virtual adamsScriptType()const->const std::string& override{ static const std::string type("sforce"); return std::ref(type); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual saveAdams(std::ofstream &file) const->void override;
 			auto virtual updFs()->void override;
 			auto setComponentID(Size id)->void { component_axis_ = id; }
 			auto setFce(double value)->void { std::fill_n(fce_value_, 6, 0); fce_value_[component_axis_] = value; }
@@ -1275,43 +1095,26 @@ namespace aris
 			friend class aris::core::Root;
 			friend class aris::core::Object;
 		};
-
-		class CombineSolver : public Solver
+		class SolverSimulator : public Simulator
 		{
 		public:
-			struct PartBlock
-			{
-				Part* part_;
-				Size row_id_;
-			};
-			struct ConstraintBlock
-			{
-				Constraint* constraint_;
-				Size col_id_;
-				PartBlock *pb_i_, *pb_j_;
-			};
-
-			static const std::string& Type() { static const std::string type("CombineSolver"); return type; }
+			static auto Type()->const std::string &{ static const std::string type{ "SolverSimulator" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void;
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual simulate(const PlanFunction &plan, void *param, std::int32_t param_size, SimResult &result)->void;
+			using Simulator::simulate;
+			auto solver()->Solver&;
+			auto solver()const ->const Solver&{ return const_cast<SolverSimulator*>(this)->solver(); };
 
-			auto activePartBlockPool()->std::vector<PartBlock>&;
-			auto activeConstraintBlockPool()->std::vector<ConstraintBlock>&;
-			auto cSize()->Size;
-			auto pSize()->Size;
-			auto aSize()->Size { return cSize() + pSize(); };
-			auto A()->double *;
-			auto x()->double *;
-			auto b()->double *;
 
 		protected:
-			virtual ~CombineSolver();
-			explicit CombineSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit CombineSolver(Object &father, const aris::core::XmlElement &xml_ele);
-			CombineSolver(const CombineSolver &other);
-			CombineSolver(CombineSolver &&other);
-			CombineSolver& operator=(const CombineSolver &other);
-			CombineSolver& operator=(CombineSolver &&other);
+			virtual ~SolverSimulator();
+			explicit SolverSimulator(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit SolverSimulator(const std::string &name, Solver &solver);
+			SolverSimulator(const SolverSimulator&);
+			SolverSimulator(SolverSimulator&&);
+			SolverSimulator& operator=(const SolverSimulator&);
+			SolverSimulator& operator=(SolverSimulator&&);
 
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
@@ -1320,284 +1123,25 @@ namespace aris
 			friend class aris::core::Root;
 			friend class aris::core::Object;
 		};
-		class GroundCombineSolver :public CombineSolver
+		class AdamsSimulator :public SolverSimulator
 		{
 		public:
-			static const std::string& Type() { static const std::string type("GroundDividedSolver"); return type; }
+			static auto Type()->const std::string &{ static const std::string type{ "AdamsSimulator" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto updA()->void;
-			auto updB()->void;
-			auto updX()->void;
-			auto updConstraintFce()->void;
-			auto updPartPos()->void;
-			auto updPartVel()->void;
-			auto updPartAcc()->void;
-
-		protected:
-			virtual ~GroundCombineSolver();
-			explicit GroundCombineSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit GroundCombineSolver(Object &father, const aris::core::XmlElement &xml_ele);
-			GroundCombineSolver(const GroundCombineSolver &other);
-			GroundCombineSolver(GroundCombineSolver &&other);
-			GroundCombineSolver& operator=(const GroundCombineSolver &other);
-			GroundCombineSolver& operator=(GroundCombineSolver &&other);
-		};
-
-		class DividedSolver : public Solver
-		{
-		public:
-			struct PartBlock
-			{
-				Part* part_;
-				Size row_id_, blk_row_id_;
-			};
-			struct ConstraintBlock
-			{
-				Constraint* constraint_;
-				Size col_id_, blk_col_id_;
-				PartBlock *pb_i_, *pb_j_;
-			};
-			
-			static const std::string& Type() { static const std::string type("DividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void;
-
-			auto activePartBlockPool()->std::vector<PartBlock>&;
-			auto activeConstraintBlockPool()->std::vector<ConstraintBlock>&;
-			auto cSize()->Size;
-			auto pSize()->Size;
-			auto im()->double *;
-			auto cm()->double *;
-			auto cp()->double *;
-			auto cv()->double *;
-			auto ca()->double *;
-			auto cf()->double *;
-			auto pp()->double *;
-			auto pv()->double *;
-			auto pa()->double *;
-			auto pf()->double *;
-
-			auto cBlkSize()->BlockSize&;
-			auto pBlkSize()->BlockSize&;
-			auto cpBlk()->BlockData&;
-			auto cvBlk()->BlockData&;
-			auto caBlk()->BlockData&;
-			auto cfBlk()->BlockData&;
-			auto imBlk()->BlockData&;
-			auto cmBlk()->BlockData&;
-			auto ppBlk()->BlockData&;
-			auto pvBlk()->BlockData&;
-			auto paBlk()->BlockData&;
-			auto pfBlk()->BlockData&;
-
-		protected:
-			virtual ~DividedSolver();
-			explicit DividedSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit DividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
-			DividedSolver(const DividedSolver &other);
-			DividedSolver(DividedSolver &&other);
-			DividedSolver& operator=(const DividedSolver &other);
-			DividedSolver& operator=(DividedSolver &&other);
-
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
-		class GroundDividedSolver:public DividedSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("GroundDividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto updIm()->void;
-			auto updCm()->void;
-			auto updCp()->void;
-			auto updCv()->void;
-			auto updCa()->void;
-			auto updPv()->void;
-			auto updPa()->void;
-			auto updPf()->void;
-			auto updConstraintFce()->void;
-			auto updPartPos()->void;
-			auto updPartVel()->void;
-			auto updPartAcc()->void;
-
-		protected:
-			virtual ~GroundDividedSolver();
-			explicit GroundDividedSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit GroundDividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
-			GroundDividedSolver(const GroundDividedSolver &other);
-			GroundDividedSolver(GroundDividedSolver &&other);
-			GroundDividedSolver& operator=(const GroundDividedSolver &other);
-			GroundDividedSolver& operator=(GroundDividedSolver &&other);
-
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
-		class PartDividedSolver :public DividedSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("PartDividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto updIm()->void;
-			auto updCm()->void;
-			auto updCp()->void;
-			auto updCv()->void;
-			auto updCa()->void;
-			auto updPv()->void;
-			auto updPa()->void;
-			auto updPf()->void;
-			auto updConstraintFce()->void;
-			auto updPartPos()->void;
-			auto updPartVel()->void;
-			auto updPartAcc()->void;
-
-		protected:
-			virtual ~PartDividedSolver();
-			explicit PartDividedSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit PartDividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
-			PartDividedSolver(const PartDividedSolver &other);
-			PartDividedSolver(PartDividedSolver &&other);
-			PartDividedSolver& operator=(const PartDividedSolver &other);
-			PartDividedSolver& operator=(PartDividedSolver &&other);
-
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
-		class LltGroundDividedSolver :public GroundDividedSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("LltGroundDividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual kinAcc()->void override;
-			auto virtual dynFce()->void override;
-
-		protected:
-			virtual ~LltGroundDividedSolver();
-			explicit LltGroundDividedSolver(const std::string &name);
-			explicit LltGroundDividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
-			LltGroundDividedSolver(const LltGroundDividedSolver &other);
-			LltGroundDividedSolver(LltGroundDividedSolver &&other);
-			LltGroundDividedSolver& operator=(const LltGroundDividedSolver &other);
-			LltGroundDividedSolver& operator=(LltGroundDividedSolver &&other);
-
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-
-		};
-		class LltPartDividedSolver :public PartDividedSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("LltPartDividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual kinAcc()->void override;
-			auto virtual dynFce()->void override;
-
-		protected:
-			virtual ~LltPartDividedSolver();
-			explicit LltPartDividedSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit LltPartDividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
-			LltPartDividedSolver(const LltPartDividedSolver &other);
-			LltPartDividedSolver(LltPartDividedSolver &&other);
-			LltPartDividedSolver& operator=(const LltPartDividedSolver &other);
-			LltPartDividedSolver& operator=(LltPartDividedSolver &&other);
-
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
+			auto saveAdams(const std::string &filename, SimResult &result, Size pos = -1)->void;
+			auto saveAdams(std::ofstream &file, SimResult &result, Size pos = -1)->void;
+			auto adamsID(const Marker &mak)const->Size;
+			auto adamsID(const Part &prt)const->Size{ return (&prt == &model().ground()) ? 1 : prt.id() + (model().ground().id() < prt.id() ? 1 : 2); }
+			auto adamsID(const Element &ele)const->Size { return ele.id() + 1; };
 		
-		class DiagSolver : public Solver
-		{
-		public:
-			struct Relation
-			{
-				struct Block { Constraint* constraint; bool is_I; };
-				
-				Part *prtI;
-				Part *prtJ;
-				Size dim;
-				std::vector<Block> cst_pool_;
-			};
-			struct Diag
-			{
-				double cm[36], x[6], b[6]; // determine I or J automatically
-				double U[36], tau[6];
-				double Q[36], R[36];
-				Size rows;
-				Relation *rel;
-				Part *part;
-				Diag *rd;//related diag
-				bool is_I;
-			};
-			struct Remainder
-			{
-				struct Block { Diag* diag; bool is_I; };
-				
-				double cmI[36], cmJ[36], x[6], b[6];
-				std::vector<Block> cm_blk_series;
-				Relation *rel;
-			};
-			static const std::string& Type() { static const std::string type("DiagSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual kinAcc()->void override;
-			auto virtual dynFce()->void override;
-			auto updDiagCm()->void;
-			auto updDiagCp()->void;
-			auto updDiagCv()->void;
-			auto updDiagCa()->void;
-			auto updDiagPf()->void;
-			auto updRemainderCm()->void;
-			auto updRemainderCp()->void;
-			auto updRemainderCv()->void;
-			auto updRemainderCa()->void;
-			auto updA()->void;
-			auto updB()->void;
-			auto updX()->void;
-			auto updBf()->void;
-			auto updXf()->void;
-			auto relationPool()->std::vector<Relation>&;
-			auto activePartPool()->std::vector<Part*>&;
-			auto diagPool()->std::vector<Diag>&;
-			auto remainderPool()->std::vector<Remainder>&;
-			auto plotRelation()->void;
-			auto plotDiag()->void;
-			auto plotRemainder()->void;
-
 		protected:
-			virtual ~DiagSolver();
-			explicit DiagSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit DiagSolver(Object &father, const aris::core::XmlElement &xml_ele);
-			DiagSolver(const DiagSolver &other);
-			DiagSolver(DiagSolver &&other);
-			DiagSolver& operator=(const DiagSolver &other);
-			DiagSolver& operator=(DiagSolver &&other);
+			virtual ~AdamsSimulator();
+			explicit AdamsSimulator(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit AdamsSimulator(const std::string &name, Solver &solver);
+			AdamsSimulator(const AdamsSimulator&);
+			AdamsSimulator(AdamsSimulator&&);
+			AdamsSimulator& operator=(const AdamsSimulator&);
+			AdamsSimulator& operator=(AdamsSimulator&&);
 
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
@@ -1606,7 +1150,6 @@ namespace aris
 			friend class aris::core::Root;
 			friend class aris::core::Object;
 		};
-
 	}
 }
 

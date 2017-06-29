@@ -51,6 +51,12 @@ namespace aris
 			return a*s*s*s+b*s*s+c*s+d;
 		}
 
+		auto moveAbsolute(Size i, double begin_pos, double end_pos, double vel, double acc, double dec, double &current_pos, double &current_vel, double &current_acc, Size& total_count)->void;
+
+
+
+
+
 		class FastPath
 		{
 		public:

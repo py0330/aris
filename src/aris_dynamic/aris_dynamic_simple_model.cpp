@@ -76,9 +76,9 @@ namespace aris
 		}
 		auto SimpleModel::allocateMemory()->void
 		{
-			for (auto &mot : imp_->m_.motionPool())mot.activate(true);
-			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(false);
-			imp_->fwd_solver_->allocateMemory();
+			//for (auto &mot : imp_->m_.motionPool())mot.activate(true);
+			//for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(false);
+			//imp_->fwd_solver_->allocateMemory();
 
 			for (auto &mot : imp_->m_.motionPool())mot.activate(false);
 			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(true);

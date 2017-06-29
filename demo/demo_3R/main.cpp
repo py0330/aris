@@ -36,7 +36,6 @@ int main()
 	//auto ret = m.kinPosInGlb(100);
 	//std::cout << "computation finished, spend " << std::get<0>(ret) << " count with error " << std::get<1>(ret) << std::endl;
 
-	m.saveAdams("C:\\Users\\py033\\Desktop\\3R.cmd");
 
 
 

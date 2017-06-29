@@ -199,7 +199,7 @@ namespace aris
 				}
             }
 
-			// 储存上次的slave数据 //
+			// 储存slave数据 //
 			for (std::size_t i = 0; i < controller_->slavePool().size(); ++i)
 			{
 				controller_->slavePool().at(i).getTxData(std::ref(*last_data_vec_tx_.at(i)));
@@ -300,7 +300,6 @@ namespace aris
 
                         if (param->count_ % 1000 == 0)
                         {
-
                             server_->widgetRoot().mout() << "Unenabled motor, slave id: " << slaID << ", absolute id: " << i << ", ret: " << rx_motion_data.ret << "\n";
                         }
                     }
