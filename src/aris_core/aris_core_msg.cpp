@@ -160,11 +160,6 @@ namespace aris
 		auto log(const char *data)->const char * { LogFile::instance().log(data);	return data; }
 		auto log(const std::string& data)->const std::string &{ log(data.c_str());	return data; }
 
-		auto MsgBase::size() const->MsgSize { return header().msg_size_; }
-		auto MsgBase::setMsgID(std::int32_t msg_id)->void{ header().msg_id_ = msg_id; }
-		auto MsgBase::msgID() const->std::int32_t{	return header().msg_id_;}
-		auto MsgBase::data() const->const char*	{ return size() > 0 ? reinterpret_cast<const char*>(&header()) + sizeof(MsgHeader) : nullptr; }
-		auto MsgBase::data()->char*	{ return size() > 0 ? reinterpret_cast<char*>(&header()) + sizeof(MsgHeader) : nullptr;	}
 		auto MsgBase::copy(const char *src)->void 
 		{ 
 			copy(static_cast<const void *>(src), static_cast<MsgSize>(strlen(src) + 1));
@@ -183,8 +178,6 @@ namespace aris
 		{
 			std::copy_n(data() + at_this_pos_of_msg, std::min(data_size, size() - at_this_pos_of_msg), static_cast<char*>(tar));
 		}
-		auto MsgBase::setType(std::int64_t type)->void { header().msg_type_ = type; }
-		auto MsgBase::type() const->std::int64_t { return header().msg_type_; }
 
 		auto Msg::swap(Msg &other)->void { std::swap(data_, other.data_); std::swap(capacity_, other.capacity_); }
 		auto Msg::resize(MsgSize data_size)->void

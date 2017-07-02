@@ -2549,46 +2549,46 @@ void test_solver_6R()
 		adams_simulator.saveAdams("C:\\Users\\py033\\Desktop\\m3.cmd", r);
 
 		
-		//auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
-		//gcs.setMaxError(1e-14);
-		//test_forward(gcs);
-		//test_inverse(gcs);
-		//bench_pos_inverse(gcs, 1000);
-		//bench_vel_inverse(gcs, 1000);
-		//bench_dyn_inverse(gcs, 1000);
-		//bench_pos_forward(gcs, 1000);
-		//bench_vel_forward(gcs, 1000);
-		//bench_dyn_forward(gcs, 1000);
+		auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
+		gcs.setMaxError(1e-14);
+		test_forward(gcs);
+		test_inverse(gcs);
+		bench_pos_inverse(gcs, 1000);
+		bench_vel_inverse(gcs, 1000);
+		bench_dyn_inverse(gcs, 1000);
+		bench_pos_forward(gcs, 1000);
+		bench_vel_forward(gcs, 1000);
+		bench_dyn_forward(gcs, 1000);
 
-		//gs.setMaxError(1e-14);
-		//test_forward(gs);
-		//test_inverse(gs);
-		//bench_pos_inverse(gs, 1000);
-		//bench_vel_inverse(gs, 1000);
-		//bench_dyn_inverse(gs, 1000);
-		//bench_pos_forward(gs, 1000);
-		//bench_vel_forward(gs, 1000);
-		//bench_dyn_forward(gs, 1000);
+		gs.setMaxError(1e-14);
+		test_forward(gs);
+		test_inverse(gs);
+		bench_pos_inverse(gs, 1000);
+		bench_vel_inverse(gs, 1000);
+		bench_dyn_inverse(gs, 1000);
+		bench_pos_forward(gs, 1000);
+		bench_vel_forward(gs, 1000);
+		bench_dyn_forward(gs, 1000);
 
-		//ps.setMaxError(1e-14);
-		//test_forward(ps);
-		//test_inverse(ps);
-		//bench_pos_inverse(ps, 1000);
-		//bench_vel_inverse(ps, 1000);
-		//bench_dyn_inverse(ps, 1000);
-		//bench_pos_forward(ps, 1000);
-		//bench_vel_forward(ps, 1000);
-		//bench_dyn_forward(ps, 1000);
+		ps.setMaxError(1e-14);
+		test_forward(ps);
+		test_inverse(ps);
+		bench_pos_inverse(ps, 1000);
+		bench_vel_inverse(ps, 1000);
+		bench_dyn_inverse(ps, 1000);
+		bench_pos_forward(ps, 1000);
+		bench_vel_forward(ps, 1000);
+		bench_dyn_forward(ps, 1000);
 
-		//ds.setMaxError(1e-14);
-		//test_forward(ds);
-		//test_inverse(ds);
-		//bench_pos_inverse(ds, 1000);
-		//bench_vel_inverse(ds, 1000);
-		//bench_dyn_inverse(ds, 1000);
-		//bench_pos_forward(ds, 1000);
-		//bench_vel_forward(ds, 1000);
-		//bench_dyn_forward(ds, 1000);
+		ds.setMaxError(1e-14);
+		test_forward(ds);
+		test_inverse(ds);
+		bench_pos_inverse(ds, 1000);
+		bench_vel_inverse(ds, 1000);
+		bench_dyn_inverse(ds, 1000);
+		bench_pos_forward(ds, 1000);
+		bench_vel_forward(ds, 1000);
+		bench_dyn_forward(ds, 1000);
 	}
 	catch (std::exception&e)
 	{
@@ -2890,46 +2890,46 @@ void test_solver_stewart()
 		adams_simulator.saveAdams("C:\\Users\\py033\\Desktop\\m4.cmd", r, 0);
 
 
-		//auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
-		//gcs.setMaxError(1e-14);
-		//test_forward(gcs);
-		//test_inverse(gcs);
-		//bench_pos_inverse(gcs, 100);
-		//bench_vel_inverse(gcs, 100);
-		//bench_dyn_inverse(gcs, 100);
-		//bench_pos_forward(gcs, 100);
-		//bench_vel_forward(gcs, 100);
-		//bench_dyn_forward(gcs, 100);
+		auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
+		gcs.setMaxError(1e-14);
+		test_forward(gcs);
+		test_inverse(gcs);
+		bench_pos_inverse(gcs, 100);
+		bench_vel_inverse(gcs, 100);
+		bench_dyn_inverse(gcs, 100);
+		bench_pos_forward(gcs, 100);
+		bench_vel_forward(gcs, 100);
+		bench_dyn_forward(gcs, 100);
 
-		//gs.setMaxError(1e-14);
-		//test_forward(gs);
-		//test_inverse(gs);
-		//bench_pos_inverse(gs, 1000);
-		//bench_vel_inverse(gs, 1000);
-		//bench_dyn_inverse(gs, 1000);
-		//bench_pos_forward(gs, 1000);
-		//bench_vel_forward(gs, 1000);
-		//bench_dyn_forward(gs, 1000);
+		gs.setMaxError(1e-14);
+		test_forward(gs);
+		test_inverse(gs);
+		bench_pos_inverse(gs, 1000);
+		bench_vel_inverse(gs, 1000);
+		bench_dyn_inverse(gs, 1000);
+		bench_pos_forward(gs, 1000);
+		bench_vel_forward(gs, 1000);
+		bench_dyn_forward(gs, 1000);
 
-		//ds.setMaxError(1e-14);
-		//test_forward(ds);
-		//test_inverse(ds);
-		//bench_pos_inverse(ds, 1000);
-		//bench_vel_inverse(ds, 1000);
-		//bench_dyn_inverse(ds, 1000);
-		//bench_pos_forward(ds, 1000);
-		//bench_vel_forward(ds, 1000);
-		//bench_dyn_forward(ds, 1000);
+		ds.setMaxError(1e-14);
+		test_forward(ds);
+		test_inverse(ds);
+		bench_pos_inverse(ds, 1000);
+		bench_vel_inverse(ds, 1000);
+		bench_dyn_inverse(ds, 1000);
+		bench_pos_forward(ds, 1000);
+		bench_vel_forward(ds, 1000);
+		bench_dyn_forward(ds, 1000);
 
-		//ps.setMaxError(1e-14);
-		//test_forward(ps);
-		//test_inverse(ps);
-		//bench_pos_inverse(ps, 1000);
-		//bench_vel_inverse(ps, 1000);
-		//bench_dyn_inverse(ps, 1000);
-		//bench_pos_forward(ps, 1000);
-		//bench_vel_forward(ps, 1000);
-		//bench_dyn_forward(ps, 1000);
+		ps.setMaxError(1e-14);
+		test_forward(ps);
+		test_inverse(ps);
+		bench_pos_inverse(ps, 1000);
+		bench_vel_inverse(ps, 1000);
+		bench_dyn_inverse(ps, 1000);
+		bench_pos_forward(ps, 1000);
+		bench_vel_forward(ps, 1000);
+		bench_dyn_forward(ps, 1000);
 
 
 

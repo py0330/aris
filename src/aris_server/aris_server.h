@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <memory>
+#include <future>
 
 #include <aris_core.h>
 #include <aris_control.h>
@@ -25,7 +26,7 @@ namespace aris
 		using ParseFunc = std::function<void(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
 
 		// for enable, disable, and home //
-		struct BasicFunctionParam :aris::dynamic::PlanParamBase
+		struct BasicFunctionParam
 		{
 			bool active_motor_[MAX_MOTOR_NUM];
             BasicFunctionParam() { std::fill(active_motor_, active_motor_ + MAX_MOTOR_NUM, true); }
@@ -33,19 +34,17 @@ namespace aris
 		// for all ordinary gaits //
 		struct GaitParamBase :BasicFunctionParam
 		{
-			ControlServer* cs_;
-			std::int32_t gait_id_;
-
 			bool if_check_pos_min_{ true };
             bool if_check_pos_max_{ true };
             bool if_check_pos_continuous_{ true };
+			bool if_check_pos_target_and_feedback_{ true };
 		};
 
 		class ControlServer
 		{
 		public:
-			enum { MAX_PLAN_PARAM_SIZE = 8192 };
 			enum { MAX_RTOUT_MSG_SIZE = 8192 };
+			enum { MAX_PLAN_PARAM_SIZE = 8192 };
 			static auto instance()->ControlServer &;
 			template<typename T = aris::dynamic::Model, typename... Args>
 			auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
@@ -69,8 +68,8 @@ namespace aris
 			auto widgetRoot()const->const WidgetRoot&{ return const_cast<ControlServer *>(this)->widgetRoot(); }
 			auto loadXml(const char *file_name)->void;
 			auto loadXml(const aris::core::XmlDocument &xml_doc)->void;
-			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunc &gait_func)->void;
-			auto executeCmd(const std::string &cmd_string)->void;
+			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunction &gait_func)->void;
+			auto executeCmd(const std::string &cmd_string, bool if_wait_finish = true)->void;
 			auto setOnExit(std::function<void(void)> callback_func)->void;
 
 		private:

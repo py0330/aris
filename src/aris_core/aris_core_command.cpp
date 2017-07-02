@@ -272,26 +272,25 @@ namespace aris
 		{
 			ObjectPool<Command>* command_pool_;
 		};
-		auto CommandParser::parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void
+		auto CommandParser::parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_out)->void
 		{
 			try
 			{
+				std::string cmd;
+				std::map<std::string, std::string> param;
+				
 				// 将msg转换成cmd和一系列参数,不过这里的参数为原生字符串,既包括名称也包括值,例如-height=0.5 //
 				std::stringstream input_stream{ command_string };
 				std::string word;
 				std::vector<std::string> param_vec;
 				std::size_t param_num{ 0 };
 
-				if (!(input_stream >> cmd_out))
-				{
-					throw std::runtime_error("invalid command string: please at least contain a word");
-				};
+				if (!(input_stream >> cmd))throw std::runtime_error("invalid command string: please at least contain a word");
 
-				auto command = imp_->command_pool_->findByName(cmd_out);
-				if (command == imp_->command_pool_->end())
-					throw std::runtime_error("invalid command name: server does not have this command \"" + cmd_out + "\"");
+				auto command = imp_->command_pool_->findByName(cmd);
+				if (command == imp_->command_pool_->end()) throw std::runtime_error("invalid command name: server does not have this command \"" + cmd + "\"");
+				
 				command->reset();
-
 				while (input_stream >> word)
 				{
 					std::string str{ word };
@@ -307,22 +306,46 @@ namespace aris
 						param_value.assign(str, str.find("=") + 1, str.size() - str.find("="));
 					}
 
-					if (param_name.size() == 0)
-						throw std::runtime_error("invalid param: what the hell, param should not start with '='");
-
-					/// not start with '-' ///
-					if (param_name.data()[0] != '-')
+					if (param_name == "")throw std::runtime_error("invalid param: param should not start with '='");
+					else if (param_name == "-")throw std::runtime_error("invalid param: symbol \"-\" must be followed by an abbreviation of param");
+					else if (param_name == "--")throw std::runtime_error("invalid param: symbol \"--\" must be followed by a full name of param");
+					else if (param_name.size() > 2 && param_name.data()[0] == '-' && param_name.data()[1] != '-')throw std::runtime_error("invalid param: param start with single '-' must be an abbreviation");
+					else if (param_name.size() == 2 && param_name.data()[0] == '-' && param_name.data()[1] != '-')
 					{
-						if (param_value != "")
-						{
-							throw std::runtime_error("invalid param: only param start with - or -- can be assigned a value");
-						}
+						char c = param_name.data()[1];
 
+						if (command->imp_->abbreviation_map_.find(c) != command->imp_->abbreviation_map_.end())
+						{
+							param.insert(make_pair(command->imp_->abbreviation_map_.at(c), param_value));
+							command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(c))->take();
+						}
+						else
+						{
+							throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
+						}
+					}
+					else if (param_name.data()[0] == '-' && param_name.data()[1] == '-')
+					{
+						std::string str = param_name;
+						param_name.assign(str, 2, str.size() - 2);
+
+						if (command->imp_->param_map_.find(param_name) != command->imp_->param_map_.end())
+						{
+							param.insert(make_pair(param_name, param_value));
+							command->imp_->param_map_.at(param_name)->take();
+						}
+						else
+						{
+							throw std::runtime_error(std::string("invalid param: param \"") + param_name + "\" is not a valid param");
+						}
+					}
+					else
+					{
 						for (auto c : param_name)
 						{
 							if (command->imp_->abbreviation_map_.find(c) != command->imp_->abbreviation_map_.end())
 							{
-								param_map_out.insert(make_pair(command->imp_->abbreviation_map_.at(c), param_value));
+								param.insert(make_pair(command->imp_->abbreviation_map_.at(c), param_value));
 								command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(c))->take();
 							}
 							else
@@ -330,64 +353,13 @@ namespace aris
 								throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
 							}
 						}
-
-						continue;
 					}
 
-					/// all following part start with at least one '-' ///
-					if (param_name.size() == 1)
-					{
-						throw std::runtime_error("invalid param: symbol \"-\" must be followed by an abbreviation of param");
-					}
-
-					/// start with '-', but only one '-' ///
-					if (param_name.data()[1] != '-')
-					{
-						if (param_name.size() != 2)
-						{
-							throw std::runtime_error("invalid param: param start with single '-' must be an abbreviation");
-						}
-
-						char c = param_name.data()[1];
-
-						if (command->imp_->abbreviation_map_.find(c) != command->imp_->abbreviation_map_.end())
-						{
-							param_map_out.insert(make_pair(command->imp_->abbreviation_map_.at(c), param_value));
-							command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(c))->take();
-						}
-						else
-						{
-							throw std::runtime_error(std::string("invalid param: param \"") + c + "\" is not a abbreviation of any valid param");
-						}
-
-						continue;
-					}
-					else
-					{
-						/// start with '--' ///
-						if (param_name.size()<3)
-						{
-							throw std::runtime_error("invalid param: symbol \"--\" must be followed by a full name of param");
-						}
-
-						std::string str = param_name;
-						param_name.assign(str, 2, str.size() - 2);
-
-						if (command->imp_->param_map_.find(param_name) != command->imp_->param_map_.end())
-						{
-							param_map_out.insert(make_pair(param_name, param_value));
-							command->imp_->param_map_.at(param_name)->take();
-						}
-						else
-						{
-							throw std::runtime_error(std::string("invalid param: param \"") + param_name + "\" is not a valid param");
-						}
-
-						continue;
-					}
 				}
+				command->addDefaultParam(param);
 
-				command->addDefaultParam(param_map_out);
+				cmd_out = cmd;
+				param_out = param;
 			}
 			catch (std::exception &e)
 			{

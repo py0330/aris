@@ -70,6 +70,7 @@ namespace aris
             auto maxPos()->double;
             auto minPos()->double;
             auto maxVel()->double;
+			auto posOffset()->double;
             auto pos2countRatio()->std::int32_t;
 
 			virtual ~Motion();

@@ -16,6 +16,8 @@
 #include <rtdm/rtipc.h>
 #endif
 
+#include <chrono>
+#include <thread>
 #include <cstdarg>
 #include <memory>
 #include <vector>
@@ -27,32 +29,46 @@ namespace aris
 	namespace control
 	{
 #ifdef WIN32
-        auto aris_rt_printf(const char * format, ...)->void
+        // should not have global variables
+		int nanoseconds{1000};
+		std::chrono::time_point<std::chrono::steady_clock> last_time, begin_time;
+		//
+
+		struct RtTaskHandle :public Handle { std::thread task; };
+
+		auto aris_rt_printf(const char * format, ...)->void
 		{
 			va_list args;
 			va_start(args, format);
 			vprintf(format, args);
 			va_end(args);
 		}
-
-		auto aris_rt_set_periodic(int nanoseconds)->void
-		{
+		auto aris_rt_set_periodic(int nanoseconds)->void 
+		{ 
+			control::nanoseconds = nanoseconds;
+			begin_time = last_time = std::chrono::high_resolution_clock::now();
 		};
 		auto aris_rt_wait_period()->void
 		{
+			last_time = last_time + std::chrono::nanoseconds(nanoseconds);
+			std::this_thread::sleep_until(last_time);
 		};
 		auto aris_rt_timer_read()->std::int64_t
 		{
-			return 0;
+			auto now = std::chrono::high_resolution_clock::now();
+			return std::chrono::duration_cast<std::chrono::nanoseconds>(now - begin_time).count();
 		}
 		auto aris_rt_task_start(void(*task_func)(void*), void*param)->Handle*
 		{
-			std::unique_ptr<Handle> handle;
+			std::unique_ptr<Handle> handle(new RtTaskHandle);
+
+			static_cast<RtTaskHandle*>(handle.get())->task = std::thread(task_func, param);
+
 			return handle.release();
 		}
 		auto aris_rt_task_stop(Handle* handle)->void
 		{
-
+			static_cast<RtTaskHandle*>(handle)->task.join();
 		}
 #endif
 

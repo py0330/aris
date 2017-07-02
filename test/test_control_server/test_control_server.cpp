@@ -36,7 +36,7 @@ const char xml_data[] =
 "                    <rc_param type=\"GroupParam\" default_child_type=\"Param\">"
 "                        <t1 abbreviation=\"t\" default=\"3000\"/>"
 "                        <t2 default=\"3000\"/>"
-"                        <margin_offset abbreviation=\"m\" default=\"0.01\"/>"
+"                        <mag abbreviation=\"m\" default=\"1.0\"/>"
 "                    </rc_param>"
 "                </rc>"
 "            </command_pool>"
@@ -44,37 +44,22 @@ const char xml_data[] =
 "    </widget_root>"
 "    <controller>"
 "        <slave_type_pool type=\"SlaveTypePoolObject\">"
-"            <elmo type=\"SlaveType\" product_code=\"0x00030924\" vender_id=\"0x0000009a\" alias=\"0\" distributed_clock=\"0x0300\">"
+"            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vender_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
-"                    <index_1605 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1605\" is_tx=\"false\">"
+"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
+"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
 "                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
 "                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
 "                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                        <max_torque index=\"0x6072\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
-"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
-"                    </index_1605>"
-"                    <index_1617 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1617\" is_tx=\"false\">"
-"                        <VelocityOffset index=\"0x60B1\" subindex=\"0x00\" datatype=\"int32\"/>"
-"                    </index_1617>"
-"                    <index_1618 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1618\" is_tx=\"false\">"
-"                        <TorqueOffset index=\"0x60B2\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                    </index_1618>"
-"                    <index_1a03 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A03\" is_tx=\"true\">"
+"                    </index_1600>"
+"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
+"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
 "                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
 "                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
-"                        <digital_inputs index=\"0x60fd\" subindex=\"0x00\" datatype=\"uint32\"/>"
-"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
-"                    </index_1a03>"
-"                    <index_1a1f type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A1F\" is_tx=\"true\">"
 "                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                    </index_1a1f>"
-"                    <index_1a13 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A13\" is_tx=\"true\">"
-"                        <tor_actual_value index=\"0x6077\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                    </index_1a13>"
-"                    <index_1a0b type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A0B\" is_tx=\"true\">"
-"                        <mode_of_operation_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
-"                    </index_1a0b>"
+"                    </index_1a00>"
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
 "                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
@@ -86,37 +71,37 @@ const char xml_data[] =
 "            </elmo>"
 "        </slave_type_pool>"
 "        <slave_pool type=\"SlavePoolObject\">"
-"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-1.0\" max_pos=\"1.0\" max_vel=\"0.2\" home_pos=\"0\" input2count=\"22937600\"/>"
-"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-1.0\" max_pos=\"1.0\" max_vel=\"0.2\" home_pos=\"0\" input2count=\"22937600\"/>"
-"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-1.0\" max_pos=\"1.0\" max_vel=\"0.2\" home_pos=\"0\" input2count=\"22937600\"/>"
+"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" input2count=\"62914560\"/>"
+"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" input2count=\"22937600\"/>"
+"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" input2count=\"22937600\"/>"
 "        </slave_pool>"
 "    </controller>"
 "    <model>"
 "        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
-"        <variable_pool type=\"VariablePoolObject\" default_child_type=\"Matrix\">"
+"        <variable_pool type=\"VariablePoolElement\" default_child_type=\"Matrix\">"
 "            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
 "            <Mot_friction type=\"MatrixVariable\">{20, 30, 560}</Mot_friction>"
 "        </variable_pool>"
 "        <part_pool type=\"PartPoolElement\" default_child_type=\"Part\">"
 "            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
-"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
 "                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
 "            </ground>"
 "            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
-"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
 "                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
 "            </part1>"
 "            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
-"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
 "                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
 "            </part2>"
 "            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part3.x_t\">"
-"                <marker_pool type=\"MarkerPoolObject\" default_child_type=\"Marker\">"
+"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
 "                    <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
 "                </marker_pool>"
 "            </part3>"
@@ -131,123 +116,94 @@ const char xml_data[] =
 "            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 "            <m3 active=\"true\" slave_id=\"0\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
 "        </motion_pool>"
-"        <general_motion_pool type=\"GeneralMotionPoolObject\" default_child_type=\"GeneralMotion\"/>"
+"        <general_motion_pool type=\"GeneralMotionPoolElement\" default_child_type=\"GeneralMotion\"/>"
 "    </model>"
 "    <sensor_root>"
 "        <sensor_pool type=\"SensorPoolObject\"/>"
 "    </sensor_root>"
 "</root>";
 
+
+struct RcParam :aris::server::GaitParamBase
+{
+	int t1;
+	int t2;
+	double mag;
+};
+
 void test_control_server()
 {
-	aris::core::XmlDocument xml_doc;
-	xml_doc.Parse(xml_data);
-
-	auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+	try
 	{
-		aris::server::GaitParamBase param;
-		param.active_motor_[cs.model().motionAtPhy(1).absID()] = false;
-		param.active_motor_[cs.model().motionAtPhy(2).absID()] = false;
-		msg_out.copyStruct(param);
-	};
-	auto rc_plan_func = [](aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param)->int
-	{
-		auto &cs = aris::server::ControlServer::instance();
-		
-		static double begin_pos;
-
-		if (param.count_ == 0)
+		auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 		{
-			begin_pos = model.motionAtPhy(0).mp();
-		}
-
-		int total_count{ 5000 };
-
-		model.motionAtPhy(0).setMp(begin_pos + 0.01 * std::sin(2 * PI * (param.count_ + 1) / total_count));
-
-		if (param.count_ % 100 == 0)cs.widgetRoot().mout() << "mout: rc in count " << param.count_ << '\0';
-		
-		return total_count - param.count_ - 1;
-	};
-
-	std::promise<void> exit_ready;
-	auto fut = exit_ready.get_future();
-
-	auto&cs = aris::server::ControlServer::instance();
-	cs.loadXml(xml_doc);
-	cs.setOnExit([&exit_ready]() { exit_ready.set_value(); });
-	cs.addCmd("rc", rc_parse_func, rc_plan_func);
-
-	// Set socket connection callback function //
-	auto &cmdSock = *cs.widgetRoot().findType<aris::core::Socket>("command_socket");
-	cmdSock.setOnReceivedConnection([](aris::core::Socket *sock, const char *remote_ip, int remote_port)
-	{
-		aris::core::log(std::string("received connection, the server_socket_ip_ is: ") + remote_ip);
-		return 0;
-	});
-	cmdSock.setOnReceivedRequest([&cs](aris::core::Socket *sock, aris::core::Msg &msg)
-	{
-		try
+			RcParam param;
+			param.t1 = std::atoi(params.at("t1").c_str());
+			param.mag = std::atof(params.at("mag").c_str());
+			param.active_motor_[cs.model().motionAtPhy(0).absID()] = true;
+			param.active_motor_[cs.model().motionAtPhy(1).absID()] = false;
+			param.active_motor_[cs.model().motionAtPhy(2).absID()] = false;
+			msg_out.copyStruct(param);
+		};
+		auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 		{
-			if (msg.size() == 0)
+			auto p = reinterpret_cast<RcParam*>(param.param_);
+
+			static double begin_pos;
+
+			auto &rx = aris::server::ControlServer::instance().controller().rxDataPool().at(param.model_->motionAtPhy(0).slaID());
+			static_cast<aris::control::Motion::RxType&>(rx).feedback_pos;
+			if (param.count_ == 1)
 			{
-				throw std::runtime_error("received data but it's an empty message \\0");
+				auto &rx = aris::server::ControlServer::instance().controller().rxDataPool().at(param.model_->motionAtPhy(0).slaID());
+				begin_pos = static_cast<aris::control::Motion::RxType&>(rx).feedback_pos;
 			}
-			else if (msg.data()[msg.size() - 1] != 0)
-			{
-				throw std::runtime_error("received data but it's not a string, because last char is nots \\0");
-			}
-			else
-			{
-				cs.executeCmd(msg.data());
-			}
-		}
-		catch (std::exception &e)
+
+			param.model_->motionAtPhy(0).setMp(begin_pos + p->mag * std::sin(2 * PI * param.count_ / p->t1));
+
+			return p->t1 - param.count_;
+		};
+
+		aris::core::XmlDocument xml_doc;
+		xml_doc.Parse(xml_data);
+
+		auto&cs = aris::server::ControlServer::instance();
+
+		cs.loadXml(xml_doc);
+		cs.addCmd("rc", rc_parse_func, rc_plan_func);
+
+		// 接收并打印信息 //
+		auto t = std::thread([&]()
 		{
-			return aris::core::Msg(e.what());
-		}
+			for (;;)
+			{
+				aris::core::Msg msg;
+				cs.widgetRoot().msgPipe().recvMsg(msg);
+				if (!msg.empty())std::cout << msg.data() << std::endl;
 
-		return aris::core::Msg();
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
+		});
 
-	});
-	cmdSock.setOnLoseConnection([&cs](aris::core::Socket *sock)
-	{
-		aris::core::log("lost connection");
-		while (true)
+		// 接收命令 //
+		for (std::string command_in; std::getline(std::cin, command_in);)
 		{
 			try
 			{
-				sock->startServer();
-				break;
+				cs.executeCmd(command_in);
+				std::cout << "cmd finished" << std::endl;
 			}
-			catch (aris::core::Socket::StartServerError &e)
+			catch (std::exception &e)
 			{
-				std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-				std::this_thread::sleep_for(std::chrono::seconds(1));
+				std::cout << e.what() << std::endl;
 			}
-		}
-		aris::core::log("restart server socket successful");
 
-		return 0;
-	});
-	cmdSock.startServer();
-
-	while (fut.wait_for(std::chrono::microseconds(10)) == std::future_status::timeout)
-	{
-		aris::core::Msg msg;
-		cs.widgetRoot().msgPipe().recvMsg(msg);
-
-		if (!msg.empty())
-		{
-            std::cout << msg.data() <<std::endl;
-            /*
-			aris::core::MsgStream ms(msg);
-			std::string str;
-			while (ms >> str) 
-			{
-				std::cout << "msg1:" << str << std::endl;
-			}
-            */
 		}
 	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+
 }
+

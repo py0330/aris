@@ -36,18 +36,18 @@ namespace aris
 			auto virtual header()const->const MsgHeader& = 0;
 			auto virtual capacity()const->MsgSize = 0;
 			auto empty()const->bool { return size() == 0; }
-			auto size() const->MsgSize;
-			auto setType(std::int64_t type)->void;
-			auto type() const->std::int64_t;
-			auto setMsgID(MsgID id)->void;
-			auto msgID() const->std::int32_t;
-			auto data() const->const char*;
-			auto data()->char*;
+			auto size() const->MsgSize { return header().msg_size_; }
+			auto setType(MsgType msg_type)->void { header().msg_type_ = msg_type; }
+			auto type() const->MsgType { return header().msg_type_; }
+			auto setMsgID(MsgID msg_id)->void { header().msg_id_ = msg_id; }
+			auto msgID() const->MsgID { return header().msg_id_; }
+			auto data() const->const char* { return const_cast<MsgBase*>(this)->data(); }
+			auto data()->char* { return size() > 0 ? reinterpret_cast<char*>(&header()) + sizeof(MsgHeader) : nullptr; }
 			auto copy(const char *src)->void;
-			auto copy(const void *src, std::int32_t size)->void;
+			auto copy(const void *src, MsgSize size)->void;
 			auto copy(const void *src)->void;
-			auto copyAt(const void *src, std::int32_t size, std::int32_t at_this_pos_of_msg)->void;
-			auto copyMore(const void *src, std::int32_t size)->void;
+			auto copyAt(const void *src, MsgSize size, MsgSize at_this_pos_of_msg)->void;
+			auto copyMore(const void *src, MsgSize size)->void;
 			template<class... Args>
 			auto copyStruct(const Args&... args)->void
 			{
@@ -61,9 +61,9 @@ namespace aris
 				copyStructMore(args...);
 			}
 			auto copyStructMore()->void {};
-			auto paste(void *tar, std::int32_t size) const->void;
+			auto paste(void *tar, MsgSize size) const->void;
 			auto paste(void *tar) const->void;
-			auto pasteAt(void *tar, std::int32_t size, std::int32_t at_this_pos_of_msg) const->void;
+			auto pasteAt(void *tar, MsgSize size, MsgSize at_this_pos_of_msg) const->void;
 			template<class FirstArg, class... Args>
 			auto pasteStruct(FirstArg& first_arg, Args&... args) const->void
 			{
@@ -87,14 +87,14 @@ namespace aris
 		class Msg final :public MsgBase
 		{
 		public:
-			auto virtual resize(std::int32_t size)->void override;
+			auto virtual resize(MsgSize size)->void override;
 			auto virtual header()->MsgHeader& override;
 			auto virtual header()const->const MsgHeader& override;
 			auto virtual capacity()const->std::int32_t override { return capacity_; }
 			auto swap(Msg &other)->void;
 
 			virtual ~Msg();
-			explicit Msg(std::int32_t msg_id = 0, std::int32_t size = 0);
+			explicit Msg(MsgID msg_id = 0, MsgSize size = 0);
 			explicit Msg(const std::string &msg_str);
 			Msg(const MsgBase &other);
 			Msg(const Msg& other);
@@ -109,7 +109,7 @@ namespace aris
 		class MsgFix final :public MsgBase
 		{
 		public:
-			auto virtual resize(std::int32_t size)->void override { header().msg_size_ = size; };
+			auto virtual resize(MsgSize size)->void override { header().msg_size_ = size; };
 			auto virtual header()->MsgHeader& override { return *reinterpret_cast<MsgHeader*>(data_); };
 			auto virtual header()const->const MsgHeader& override{ return *reinterpret_cast<const MsgHeader*>(data_); };
 			auto virtual capacity()const->std::int32_t override { return CAPACITY; }
@@ -166,7 +166,6 @@ namespace aris
 		auto benchmark(std::size_t count, Function func, Args&&... args)->double
 		{
 			auto begin_time = std::chrono::high_resolution_clock::now();
-			// for (std::size_t i = 0; i < count; ++i)std::invoke(func, std::forward<Args>(args)...);//
 			for (std::size_t i = 0; i < count; ++i)func(std::forward<Args>(args)...);
 			auto end_time = std::chrono::high_resolution_clock::now();
 

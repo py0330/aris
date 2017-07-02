@@ -197,18 +197,18 @@ BasicFunctionParam decode(const std::string input)
 }
 void tg()
 {
-	BasicFunctionParam *param;
+	BasicFunctionParam *param = reinterpret_cast<BasicFunctionParam *>(cmd_char);;
 	aris::core::MsgFix<8192> recv_msg;
 
 	if (msg_pipe->recvMsg(recv_msg))
 	{
 		recv_msg.paste(cmd_char);
-		param = reinterpret_cast<BasicFunctionParam *>(cmd_char);
 		cmd_count = 0;
 		cmd_success = false;
 	}
 
-	for (std::size_t i = 0; i<MOTION_NUM && param->active_motor[i]; i++) {
+	for (std::size_t i = 0; i<MOTION_NUM && param->active_motor[i]; i++) 
+	{
 		auto &txmotiondata = static_cast<aris::control::TxMotionData&>(controller.slavePool().at(i).txData());
 		auto &rxmotiondata = static_cast<aris::control::RxMotionData&>(controller.slavePool().at(i).rxData());
 		if (param->cmd_type != aris::control::Motion::Cmd::RUN)
