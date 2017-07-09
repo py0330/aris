@@ -13,9 +13,13 @@ const char xml_file[] =
 "<root>"
 "    <controller>"
 "        <data_logger type=\"DataLogger\"/>"
-"        <slave_type_pool type=\"SlaveTypePoolObject\">"
+"        <slave_type_pool type=\"SlaveTypePoolElement\">"
 "            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vender_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
-"                <pdo_group_pool type=\"PdoGroupPoolObject\">"
+"            </elmo>"
+"        </slave_type_pool>"
+"        <slave_pool type=\"SlavePoolElement\">"
+"            <sla type=\"Slave\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
 "                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
@@ -31,13 +35,10 @@ const char xml_file[] =
 "                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
 "                    </index_1a00>"
 "                </pdo_group_pool>"
-"                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
 "                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"17\" read=\"true\" write=\"true\"/>"
 "                </sdo_pool>"
-"            </elmo>"
-"        </slave_type_pool>"
-"        <slave_pool type=\"SlavePoolObject\">"
-"            <sla type=\"TestSlave\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
+"            </sla>"
 "        </slave_pool>"
 "    </controller>"
 "</root>";
@@ -65,7 +66,7 @@ class TestSlave :public SlaveTemplate<TxTestData, RxTestData>
 public:
 	static auto Type()->const std::string &{ static const std::string type("TestSlave"); return std::ref(type); }
 	auto virtual type() const->const std::string&{ return Type(); }
-		TestSlave(Object &father, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, xml_ele) {}
+	TestSlave(Object &father, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, xml_ele) {}
 
 protected:
 	auto virtual readUpdate()->void override
@@ -94,17 +95,40 @@ protected:
 		static int count{ 0 };
 
 		auto& slave = dynamic_cast<aris::control::Slave &>(slavePool().at(0));
-
-#ifdef UNIX
-		if (count++ % 1000 == 0)rt_printf("%d:%d %d %d\n", count, static_cast<TestSlave&>(slave).rxData().actual_pos, static_cast<TestSlave&>(slave).rxData().actual_vel, static_cast<TestSlave&>(slave).rxData().actual_cur);
-#endif
-
-
 	};
 };
 
+void test_pdo() 
+{
+	aris::control::Master m;
+
+	auto &st = m.slaveTypePool().add<SlaveType>("st",1,1,1,1);
+	auto &s1 = m.slavePool().add<Slave>("s1", st);
+
+	auto &pdo_group = s1.pdoGroupPool().add<PdoGroup>("1600", 1600, true);
+	pdo_group.add<Pdo>("index_1a00", DO::INT32, 0x120a, 0x12);
+	s1.sdoPool().add<Sdo>("index_0601", DO::INT16, 0x120b, 0x12, Sdo::READ | Sdo::WRITE);
+	s1.sdoPool().add<Sdo>("index_0602", DO::INT32, 0x120c, 0x13, Sdo::READ);
+	s1.sdoPool().add<Sdo>("index_0603", DO::UINT16, 0x120d, 0x14, Sdo::READ | Sdo::WRITE | Sdo::CONFIG, 12);
+	s1.sdoPool().add<Sdo>("index_0604", DO::UINT8, 0x120e, 0x15, Sdo::WRITE | Sdo::CONFIG);
+	s1.sdoPool().add<Sdo>("index_0605", DO::INT8, 0x120f, 0x16, Sdo::READ | Sdo::WRITE, 12);
+	std::cout << m.xmlString() <<"end" << std::endl;
+
+
+	//m.loadString(xml_file);
+	//m.xmlString();
+	//std::string s;
+	//m.saveString(s);
+	//std::cout << m.xmlString() <<"end"<<std::endl;
+}
+void test_sdo() {}
+void test_data_logger(){}
+
 void test_control_ethercat()
 {
+	test_pdo();
+	
+	
 	std::cout << std::endl << "-----------------test ethercat---------------------" << std::endl;
 
 	aris::core::XmlDocument xml_doc;
@@ -132,5 +156,5 @@ void test_control_ethercat()
 
 
 
-	std::cout << "-----------------test ethercat finished------------" << std::endl << std::endl;
+	//std::cout << "-----------------test ethercat finished------------" << std::endl << std::endl;
 }

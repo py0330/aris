@@ -331,6 +331,18 @@ namespace aris
 				xml_ele.InsertEndChild(new_ele);
 			}
 		}
+		auto Object::xmlString()->std::string 
+		{
+			XmlDocument doc;
+			auto new_ele = doc.NewElement("a");
+			saveXml(*new_ele);
+			doc.InsertEndChild(new_ele);
+			
+			tinyxml2::XMLPrinter printer;
+			doc.Print(&printer);
+
+			return std::string(printer.CStr());;
+		}
 		auto Object::id()const->std::size_t { return imp_->id_; }
 		auto Object::name() const->const std::string&{ return imp_->name_; }
 		auto Object::father()->Object& { return *imp_->father_; }
@@ -528,14 +540,6 @@ namespace aris
 
 			saveXml(*root_xml_ele);
 		}
-		auto Root::saveString(std::string &xml_src) const->void
-		{
-			aris::core::XmlDocument xml_doc;
-			saveXml(xml_doc); 
-			tinyxml2::XMLPrinter streamer(0, true);
-			xml_doc.Print(&streamer);
-			xml_src = streamer.CStr();
-		};
 		auto Root::save(const std::string &name, bool auto_override_save)->void
 		{
 			decltype(Object::imp_->save_data_map_) tem = std::move(Object::imp_->save_data_map_);

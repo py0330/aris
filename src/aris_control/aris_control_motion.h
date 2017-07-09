@@ -59,10 +59,10 @@ namespace aris
 			};
 			enum Mode
 			{
-				HOME_MODE = 0x0006,
-				POSITION = 0x0008,
-				VELOCITY = 0x0009,
-				TORQUE = 0x0010,
+				HOME_MODE = 0x06,
+				POSITION = 0x08,
+				VELOCITY = 0x09,
+				TORQUE = 0x10,
 			};
 
 			static auto Type()->const std::string &{ static const std::string type("Motion"); return std::ref(type); }

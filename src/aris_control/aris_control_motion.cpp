@@ -17,18 +17,19 @@ namespace aris
 			enum PDO_Entry
 			{
 				// following is 0x1600 RX//
-				CONTROLWORD = 0x6040,
-				TARGETPOSITION = 0x607A,
-				TARGETVELOCITY = 0x60FF,
-				TARGETTORQUE = 0x6071,
-				MODEOPERATION = 0x6060,
+				CONTROL_WORD = 0x6040,
+				MODE_OF_OPERATION = 0x6060,
+				TARGET_POSITION = 0x607A,
+				TARGET_VELOCITY = 0x60FF,
+				TARGET_TORQUE = 0x6071,
+
 
 				// following is 0x1a00 TX //
-				STATUSWORD = 0x6041,
-				ACTUALPOSITION = 0x6064,
-				ACTUALVELOCITY = 0x606C,
-				ACTUALTORQUE = 0x6078,
-				MODEOPERATIONDIS = 0x6061,
+				STATUS_WORD = 0x6041,
+				MODE_OF_DISPLAY = 0x6061,
+				ACTUAL_POSITION = 0x6064,
+				ACTUAL_VELOCITY = 0x606C,
+				ACTUAL_TORQUE = 0x6078,
 			};
 			enum SDO_Entry_Index
 			{
@@ -42,59 +43,59 @@ namespace aris
 			{
 				is_fake = false;
 
-				std::uint16_t statusWord;
-				father->readPdoIndex(STATUSWORD, 0x00, statusWord);
+				std::uint16_t status_word;
+				father->readPdoIndex(STATUS_WORD, 0x00, status_word);
 
-				std::uint8_t modeRead;
-				father->readPdoIndex(MODEOPERATIONDIS, 0x00, modeRead);
+				std::uint8_t mode_read;
+				father->readPdoIndex(MODE_OF_DISPLAY, 0x00, mode_read);
 
-				int motorState = (statusWord & 0x006F);
+				int state = (status_word & 0x006F);
 
-				if (motorState != 0x0027) {
+				if (state != 0x0027) {
 					switch (mode)
 					{
 					case Motion::POSITION:
-						//targetposition should be equal to actualposition
+						// target position should be equal to actual position
 						std::int32_t actualPosition;
-						father->readPdoIndex(ACTUALPOSITION, 0x00, actualPosition);
-						father->writePdoIndex(TARGETPOSITION, 0x00, actualPosition);
+						father->readPdoIndex(ACTUAL_POSITION, 0x00, actualPosition);
+						father->writePdoIndex(TARGET_POSITION, 0x00, actualPosition);
 						break;
 					case Motion::VELOCITY:
-						//velocity loop to set velocity of 0
-						father->writePdoIndex(TARGETVELOCITY, 0x00, static_cast<std::int32_t>(0));
+						// velocity loop to set velocity of 0
+						father->writePdoIndex(TARGET_VELOCITY, 0x00, static_cast<std::int32_t>(0));
 						break;
 					case Motion::TORQUE:
-						father->writePdoIndex(TARGETTORQUE, 0x00, static_cast<std::int16_t>(0));
+						father->writePdoIndex(TARGET_TORQUE, 0x00, static_cast<std::int16_t>(0));
 						break;
 					}
 				}
 
-				if (modeRead != mode)
+				if (mode_read != mode)
 				{
-					/*state is RUNNING, now change it to desired mode*/
-					father->writePdoIndex(MODEOPERATION, 0x00, static_cast<std::uint8_t>(mode));
+					// state is RUNNING, now change it to desired mode //
+					father->writePdoIndex(MODE_OF_OPERATION, 0x00, static_cast<std::uint8_t>(mode));
 					return Motion::MODE_CHANGE;
 				}
 
-				if (motorState == 0x0060 || motorState == 0x0040)
+				if (state == 0x0060 || state == 0x0040)
 				{
 					// switch on disable //
-					father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x06));
+					father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x06));
 					return Motion::EXECUTING;
 				}
-				else if (motorState == 0x0021)
+				else if (state == 0x0021)
 				{
 					// ready to switch on //
-					father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x07));
+					father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x07));
 					return Motion::EXECUTING;
 				}
-				else if (motorState == 0x0023)
+				else if (state == 0x0023)
 				{
 					// switch on //
-					father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x0F));
+					father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x0F));
 					return Motion::EXECUTING;
 				}
-				else if (motorState == 0x0027)
+				else if (state == 0x0027)
 				{
 					// successfull, but still need to wait for 10 more cycles to make it stable //
 					if (++enable_period >= 10)
@@ -111,7 +112,7 @@ namespace aris
 				else
 				{
 					// the motor is in fault //
-					father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x80));
+					father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x80));
 					return Motion::EXE_FAULT;
 				}
 			}
@@ -120,24 +121,24 @@ namespace aris
 				is_fake = false;
 
 				std::uint16_t statusWord;
-				father->readPdoIndex(STATUSWORD, 0x00, statusWord);
+				father->readPdoIndex(STATUS_WORD, 0x00, statusWord);
 
 				int motorState = (statusWord & 0x006F);
 				if (motorState == 0x0021)
 				{
-					/*alReady disabled*/
+					// alReady disabled //
 					return Motion::SUCCESS;
 				}
 				else if (motorState == 0x0023 || motorState == 0x0027 || motorState == 0x0060 || motorState == 0x0040)
 				{
-					/*try to disable*/
-					father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x06));
+					// try to disable //
+					father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x06));
 					return Motion::EXECUTING;
 				}
 				else
 				{
-					/*the motor is in fault*/
-					father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x80));
+					// the motor is in fault //
+					father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x80));
 					return Motion::EXE_FAULT;
 				}
 
@@ -152,26 +153,26 @@ namespace aris
 				}
 
 				std::uint16_t statusWord;
-				father->readPdoIndex(STATUSWORD, 0x00, statusWord);
+				father->readPdoIndex(STATUS_WORD, 0x00, statusWord);
 				std::uint8_t modeRead;
-				father->readPdoIndex(MODEOPERATIONDIS, 0x00, modeRead);
+				father->readPdoIndex(MODE_OF_DISPLAY, 0x00, modeRead);
 				int motorState = (statusWord & 0x3400);
 
 				if (modeRead != Motion::HOME_MODE) {
-					father->writePdoIndex(MODEOPERATION, 0x00, static_cast<std::uint8_t>(Motion::HOME_MODE));
+					father->writePdoIndex(MODE_OF_OPERATION, 0x00, static_cast<std::uint8_t>(Motion::HOME_MODE));
 					return Motion::MODE_CHANGE;
 				}
 				else if (motorState == 0x0400) {
 					// homing procedure is interrupted or not started
 					if (home_period < 10) {
 						// write 15 to controlword, make the bit4 equal to 0, 10 times
-						father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x1F));
+						father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x1F));
 						home_period++;
 						return Motion::NOT_START;
 					}
 					else if (home_period < 20)
 					{
-						father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x0F));
+						father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x0F));
 						home_period++;
 						return Motion::NOT_START;
 					}
@@ -184,27 +185,27 @@ namespace aris
 				else if (motorState == 0x0000) {
 					//in progress
 					home_period = 0;
-					father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x1F));
-					father->writePdoIndex(TARGETPOSITION, 0x00, home_count_);
+					father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x1F));
+					father->writePdoIndex(TARGET_POSITION, 0x00, home_count_);
 					return Motion::EXECUTING;
 				}
 				else if (motorState == 0x2000 || motorState == 0x2400)
 				{
-					//homing error occurred, velocity is not 0 , or homing error occurred, velocity is 0, should halt
-					father->writePdoIndex(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x0100));
+					// homing error occurred, velocity is not 0 , or homing error occurred, velocity is 0, should halt
+					father->writePdoIndex(CONTROL_WORD, 0x00, static_cast<std::uint16_t>(0x0100));
 					home_period = 0;
 					return Motion::HOME_ERROR;
 				}
 				else if (motorState == 0x1400)
 				{
-					//homing procedure is completed successfully, home method 35<->0x1400,
-					father->writePdoIndex(TARGETPOSITION, 0x00, home_count_);
+					// homing procedure is completed successfully, home method 35<->0x1400, //
+					father->writePdoIndex(TARGET_POSITION, 0x00, home_count_);
 					home_period = 0;
 					is_waiting_mode = true;
 					return Motion::EXECUTING;
 				}
 				else {
-					//other statusworld
+					// other status word //
 					home_period = 0;
 					return Motion::EXECUTING;
 				}
@@ -214,11 +215,11 @@ namespace aris
 				if (is_fake) return 0;
 
 				std::uint16_t statusWord;
-				father->readPdoIndex(STATUSWORD, 0x00, statusWord);
+				father->readPdoIndex(STATUS_WORD, 0x00, statusWord);
 				int motorState = (statusWord & 0x006F);
 
 				std::uint8_t modeRead;
-				father->readPdoIndex(MODEOPERATIONDIS, 0x00, modeRead);
+				father->readPdoIndex(MODE_OF_DISPLAY, 0x00, modeRead);
 				if (motorState != 0x0027)
 				{
 					return Motion::ENABLE_ERROR;
@@ -229,7 +230,7 @@ namespace aris
 				}
 				else
 				{
-					father->writePdoIndex(TARGETPOSITION, 0x00, pos);
+					father->writePdoIndex(TARGET_POSITION, 0x00, pos);
 					return Motion::SUCCESS;
 				}
 			}
@@ -238,11 +239,11 @@ namespace aris
 				if (is_fake)return 0;
 
 				std::uint16_t statusWord;
-				father->readPdoIndex(STATUSWORD, 0x00, statusWord);
+				father->readPdoIndex(STATUS_WORD, 0x00, statusWord);
 				int motorState = (statusWord & 0x006F);
 
 				std::uint8_t modeRead;
-				father->readPdoIndex(MODEOPERATIONDIS, 0x00, modeRead);
+				father->readPdoIndex(MODE_OF_DISPLAY, 0x00, modeRead);
 				if (motorState != 0x0027)
 				{
 					return Motion::ENABLE_ERROR;
@@ -253,7 +254,7 @@ namespace aris
 				}
 				else
 				{
-					father->writePdoIndex(TARGETVELOCITY, 0x00, vel);
+					father->writePdoIndex(TARGET_VELOCITY, 0x00, vel);
 					return Motion::SUCCESS;
 				}
 			}
@@ -262,11 +263,11 @@ namespace aris
 				if (is_fake)return 0;
 
 				std::uint16_t statusWord;
-				father->readPdoIndex(STATUSWORD, 0x00, statusWord);
+				father->readPdoIndex(STATUS_WORD, 0x00, statusWord);
 				int motorState = (statusWord & 0x006F);
 
 				std::uint8_t modeRead;
-				father->readPdoIndex(MODEOPERATIONDIS, 0x00, modeRead);
+				father->readPdoIndex(MODE_OF_DISPLAY, 0x00, modeRead);
 				if (motorState != 0x0027)
 				{
 					return Motion::ENABLE_ERROR;
@@ -277,7 +278,7 @@ namespace aris
 				}
 				else
 				{
-					father->writePdoIndex(TARGETTORQUE, 0x00, tor);
+					father->writePdoIndex(TARGET_TORQUE, 0x00, tor);
 					return Motion::SUCCESS;
 				}
 			}
@@ -286,22 +287,22 @@ namespace aris
 				if (is_fake)return static_cast<std::int32_t>((father->txData().target_pos + pos_offset_) * father->pos2countRatio());
 
 				std::int32_t pos;
-				father->readPdoIndex(ACTUALPOSITION, 0x00, pos);
+				father->readPdoIndex(ACTUAL_POSITION, 0x00, pos);
 				return pos;
 			}
 			std::int32_t vel()
 			{
 				std::int32_t vel;
-				father->readPdoIndex(ACTUALVELOCITY, 0x00, vel);
+				father->readPdoIndex(ACTUAL_VELOCITY, 0x00, vel);
 				return vel;
 			}
-			std::int32_t tor() { std::int16_t tor; father->readPdoIndex(ACTUALTORQUE, 0x00, tor); return tor; }
+			std::int32_t tor() { std::int16_t tor; father->readPdoIndex(ACTUAL_TORQUE, 0x00, tor); return tor; }
 			std::uint8_t modeDisplay()
 			{
 				if (is_fake)return father->txData().mode;
 
 				std::uint8_t mode;
-				father->readPdoIndex(MODEOPERATIONDIS, 0x00, mode);
+				father->readPdoIndex(MODE_OF_DISPLAY, 0x00, mode);
 				return mode;
 			}
 			std::int8_t hasFault()
@@ -309,7 +310,7 @@ namespace aris
 				if (is_fake)return 0;
 
 				std::uint16_t statusWord;
-				father->readPdoIndex(STATUSWORD, 0x00, statusWord);
+				father->readPdoIndex(STATUS_WORD, 0x00, statusWord);
 				int motorState = (statusWord & 0x0088);
 				if (motorState == 0x0000)
 					//no fault and no warning

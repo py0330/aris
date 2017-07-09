@@ -1,15 +1,5 @@
 ﻿#include <iostream>
 #include <aris.h>
-
-#ifdef UNIX
-#include "rtdk.h"
-#include "unistd.h"
-#endif
-
-#ifdef WIN32
-#define rt_printf printf
-#endif
-
 #include "test_control_ethercat.h"
 #include "test_control_motion.h"
 
@@ -214,11 +204,11 @@ void tg()
 		if (param->cmd_type != aris::control::Motion::Cmd::RUN)
 		{
 			if (rxmotiondata.ret == 0 && cmd_count != 0 && !cmd_success) {
-				rt_printf("command finished, cmd_count: %d\n", cmd_count);
+				printf("command finished, cmd_count: %d\n", cmd_count);
 				cmd_success = true;
 			}
 
-			if (cmd_count % 1000 == 0 && !cmd_success)	rt_printf("executing command: %d\n", cmd_count);
+			if (cmd_count % 1000 == 0 && !cmd_success)	printf("executing command: %d\n", cmd_count);
 		}
 		switch (param->cmd_type)
 		{
@@ -245,7 +235,7 @@ void tg()
 			if (cmd_count == 0)	begin = rxmotiondata.feedback_pos;
 			txmotiondata.target_pos = 0.020*std::sin(cmd_count / 10000.0 * 2 * PI) + begin;
 
-			if (cmd_count % 5000 == 0)	rt_printf("executing command: %d\n", cmd_count);
+			if (cmd_count % 5000 == 0)	printf("executing command: %d\n", cmd_count);
 			break;
 		default:
 			break;

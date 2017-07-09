@@ -30,17 +30,16 @@ namespace aris
 		// 6. master sync
 		// 7. slave send
 		// 8. master send
-		// 9. log data
 		
 		struct Handle { virtual ~Handle() = default; };
 
-        auto aris_rt_printf(const char * format, ...)->void;
-
-		auto aris_rt_set_periodic(int nanoseconds)->void;
-		auto aris_rt_wait_period()->void;
-		auto aris_rt_timer_read()->std::int64_t;
+		//auto aris_rt_task_create();
 		auto aris_rt_task_start(void(*task_func)(void*), void*param)->Handle*;
-		auto aris_rt_task_stop(Handle* handle)->void;
+		auto aris_rt_task_stop(Handle* handle)->int;
+		auto aris_rt_task_set_periodic(int nanoseconds)->int;
+		auto aris_rt_task_wait_period()->int;
+		auto aris_rt_timer_read()->std::int64_t;
+		
 
 		auto aris_ecrt_master_init()->Handle*;
 		auto aris_ecrt_master_config(Handle* master_handle)->void;

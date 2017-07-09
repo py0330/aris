@@ -223,6 +223,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("Object"); return std::ref(type); }
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void;
+			auto xmlString()->std::string;
 			auto name() const->const std::string&;
 			auto id()const->std::size_t;
 			auto root()->Root&;
@@ -408,7 +409,6 @@ namespace aris
 			auto registerChildType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); }
 			auto childTypeMap()const ->const std::map<std::string, TypeInfo>&;
 			auto loadString(const std::string &xml_src)->void { aris::core::XmlDocument xml_doc; xml_doc.Parse(xml_src.c_str()); loadXml(xml_doc); };
-			auto saveString(std::string &xml_src)const->void;
 			auto save(const std::string &name, bool auto_override_save = true)->void;
 			auto load(const std::string &name, bool auto_delete_save = true)->void;
 

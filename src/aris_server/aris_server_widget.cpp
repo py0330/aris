@@ -1,12 +1,4 @@
-﻿#ifdef WIN32
-#define rt_printf printf
-#endif
-#ifdef UNIX
-#include "rtdk.h"
-#include "unistd.h"
-#endif
-
-#include <cstring>
+﻿#include <cstring>
 #include <thread>
 #include <algorithm>
 #include <memory>

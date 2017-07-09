@@ -1,7 +1,4 @@
-﻿#ifdef WIN32
-#include <ecrt_windows_py.h>//just for IDE vs2015, it does not really work
-#endif
-#ifdef UNIX
+﻿#ifdef UNIX
 #include <ecrt.h>
 #include <rtdk.h>
 #include <native/task.h>
@@ -36,28 +33,6 @@ namespace aris
 
 		struct RtTaskHandle :public Handle { std::thread task; };
 
-		auto aris_rt_printf(const char * format, ...)->void
-		{
-			va_list args;
-			va_start(args, format);
-			vprintf(format, args);
-			va_end(args);
-		}
-		auto aris_rt_set_periodic(int nanoseconds)->void 
-		{ 
-			control::nanoseconds = nanoseconds;
-			begin_time = last_time = std::chrono::high_resolution_clock::now();
-		};
-		auto aris_rt_wait_period()->void
-		{
-			last_time = last_time + std::chrono::nanoseconds(nanoseconds);
-			std::this_thread::sleep_until(last_time);
-		};
-		auto aris_rt_timer_read()->std::int64_t
-		{
-			auto now = std::chrono::high_resolution_clock::now();
-			return std::chrono::duration_cast<std::chrono::nanoseconds>(now - begin_time).count();
-		}
 		auto aris_rt_task_start(void(*task_func)(void*), void*param)->Handle*
 		{
 			std::unique_ptr<Handle> handle(new RtTaskHandle);
@@ -66,9 +41,27 @@ namespace aris
 
 			return handle.release();
 		}
-		auto aris_rt_task_stop(Handle* handle)->void
+		auto aris_rt_task_stop(Handle* handle)->int
 		{
 			static_cast<RtTaskHandle*>(handle)->task.join();
+			return 0;
+		}
+		auto aris_rt_task_set_periodic(int nanoseconds)->int
+		{ 
+			control::nanoseconds = nanoseconds;
+			begin_time = last_time = std::chrono::high_resolution_clock::now();
+			return 0;
+		};
+		auto aris_rt_task_wait_period()->int
+		{
+			last_time = last_time + std::chrono::nanoseconds(nanoseconds);
+			std::this_thread::sleep_until(last_time);
+			return 0;
+		};
+		auto aris_rt_timer_read()->std::int64_t
+		{
+			auto now = std::chrono::high_resolution_clock::now();
+			return std::chrono::duration_cast<std::chrono::nanoseconds>(now - begin_time).count();
 		}
 #endif
 
@@ -112,37 +105,17 @@ namespace aris
 #ifdef UNIX
 		struct RtTaskHandle :public Handle { RT_TASK task; };
 
-        auto aris_rt_printf(const char * format, ...)->void
-		{
-			va_list args;
-			va_start(args, format);
-			rt_vprintf(format, args);
-			va_end(args);
-		}
-		auto aris_rt_set_periodic(int nanoseconds)->void
-		{
-			rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
-		};
-		auto aris_rt_wait_period()->void
-		{
-			rt_task_wait_period(NULL);
-		};
-		auto aris_rt_timer_read()->std::int64_t
-		{
-			return rt_timer_read();
-		}
 		auto aris_rt_task_start(void(*task_func)(void*), void*param)->Handle*
 		{
 			std::unique_ptr<Handle> handle(new RtTaskHandle);
-			rt_print_auto_init(1);
 			rt_task_create(&static_cast<RtTaskHandle*>(handle.get())->task, "realtime core", 0, 99, T_FPU);
 			rt_task_start(&static_cast<RtTaskHandle*>(handle.get())->task, task_func, param);
 			return handle.release();
 		}
-		auto aris_rt_task_stop(Handle* handle)->void
-		{
-			rt_task_delete(&static_cast<RtTaskHandle*>(handle)->task);
-		}
+		auto aris_rt_task_stop(Handle* handle)->int { return rt_task_delete(&static_cast<RtTaskHandle*>(handle)->task); }
+		auto aris_rt_task_set_periodic(int nanoseconds)->int { return rt_task_set_periodic(NULL, TM_NOW, nanoseconds); }
+		auto aris_rt_task_wait_period()->int { return rt_task_wait_period(NULL); }
+		auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
 #endif
 
 #ifdef UNIX

@@ -17,6 +17,7 @@ namespace aris
 {
 	namespace control
 	{
+		auto Element::saveXml(aris::core::XmlElement &xml_ele) const->void{	Object::saveXml(xml_ele); }
 		auto Element::master()->Master & { return static_cast<Master &>(root()); }
 		auto Element::master()const->const Master &{ return static_cast<const Master &>(root()); }
 
@@ -25,40 +26,40 @@ namespace aris
 			aris::core::Pipe *log_pipe_;
 			aris::core::MsgFix<MAX_LOG_DATA_SIZE> log_data_msg_;
 			std::size_t log_data_size_{ 0 };
-			std::atomic_bool is_receiving_{ false }, is_sending_{ false }, is_prepaired_{ false };
-			std::mutex mu_prepair_, mu_running_;
+			std::mutex mu_running_;
+
+			std::thread log_thread_;
+			std::atomic_bool is_running_{false};
 		};
-		auto DataLogger::prepair(const std::string &log_file_name)->void
+		auto DataLogger::saveXml(aris::core::XmlElement &xml_ele) const->void{	Element::saveXml(xml_ele);	}
+		auto DataLogger::start(const std::string &log_file_name)->void
 		{
-			std::unique_lock<std::mutex> prepair_lck(imp_->mu_prepair_);
-			std::unique_lock<std::mutex> running_lck(imp_->mu_running_, std::try_to_lock);
-			if (!running_lck.owns_lock())throw std::runtime_error("failed to prepair pipe, because it's started already");
-			running_lck.unlock();
-			running_lck.release();
+			std::unique_lock<std::mutex> prepair_lck(imp_->mu_running_);
+			if(imp_->log_thread_.joinable())throw std::runtime_error("failed to prepair pipe, because it's started already");
 
 			auto file_name = aris::core::logDirPath() + (log_file_name.empty() ? "logdata_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + ".txt" : log_file_name);
 
 			std::promise<void> thread_ready;
 			auto fut = thread_ready.get_future();
 
-			std::thread([this, file_name](std::promise<void> thread_ready)
+			imp_->log_thread_ = std::thread([this, file_name](std::promise<void> thread_ready)
 			{
-				std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-
 				std::fstream file;
 				file.open(file_name.c_str(), std::ios::out | std::ios::trunc);
 
+				// compute log msg size //
 				imp_->log_data_size_ = 0;
 				for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
 				imp_->log_data_msg_.resize(static_cast<aris::core::MsgSize>(imp_->log_data_size_));
 
+
 				aris::core::MsgFix<MAX_LOG_DATA_SIZE> recv_msg;
 				while (imp_->log_pipe_->recvMsg(recv_msg));
-				imp_->is_receiving_ = true;
+				imp_->is_running_ = true;
 				thread_ready.set_value();
 
 				long long count = 0;
-				while (imp_->is_receiving_)
+				while (imp_->is_running_)
 				{
 					if (imp_->log_pipe_->recvMsg(recv_msg))
 					{
@@ -82,28 +83,19 @@ namespace aris
 					}
 				}
 				file.close();
-			}, std::move(thread_ready)).detach();
+			}, std::move(thread_ready));
 
 			fut.wait();
-
-			imp_->is_prepaired_ = true;
-		}
-		auto DataLogger::start()->void
-		{
-			if (imp_->is_prepaired_)
-			{
-				imp_->is_sending_ = true;
-				imp_->is_prepaired_ = false;
-			}
 		}
 		auto DataLogger::stop()->void
 		{
-			imp_->is_sending_ = false;
-			imp_->is_receiving_ = false;
+			std::unique_lock<std::mutex> prepair_lck(imp_->mu_running_);
+			imp_->is_running_ = false;
+			imp_->log_thread_.join();
 		}
 		auto DataLogger::logDataRT()->void
 		{
-			if (imp_->is_sending_)
+			if (imp_->is_running_)
 			{
 				std::size_t size_count = 0;
 				for (auto &sla : master().slavePool())
@@ -137,7 +129,31 @@ namespace aris
 			std::uint8_t subindex_;
 			std::uint8_t data_bit_size_;
 			Slave *slave_;
+
+			Imp(DataType data_type = DO::INT32, std::uint16_t index = 0, std::uint8_t subindex = 0):data_type_(data_type), index_(index), subindex_(subindex), slave_(nullptr){}
 		};
+		auto DO::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Element::saveXml(xml_ele);
+
+			std::stringstream s;
+			s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
+			xml_ele.SetAttribute("index", s.str().c_str());
+
+			s = std::stringstream();
+			s << "0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(subindex());
+			xml_ele.SetAttribute("subindex", s.str().c_str());
+
+			switch (dataType())
+			{
+			case INT32:xml_ele.SetAttribute("datatype", "int32"); break;
+			case INT16:xml_ele.SetAttribute("datatype", "int16"); break;
+			case INT8:xml_ele.SetAttribute("datatype", "int8"); break;
+			case UINT32:xml_ele.SetAttribute("datatype", "uint32"); break;
+			case UINT16:xml_ele.SetAttribute("datatype", "uint16"); break;
+			case UINT8:xml_ele.SetAttribute("datatype", "uint8"); break;
+			}
+		}
 		auto DO::slave()->Slave& { return *imp_->slave_; }
 		auto DO::slave()const->const Slave&{ return *imp_->slave_; }
 		auto DO::index()const->std::uint16_t { return imp_->index_; }
@@ -145,6 +161,7 @@ namespace aris
 		auto DO::dataBit()const->std::uint8_t { return imp_->data_bit_size_; }
 		auto DO::dataType()const->DataType { return imp_->data_type_; }
 		DO::~DO() = default;
+		DO::DO(const std::string &name, DO::DataType data_type, std::uint16_t index, std::uint8_t subindex):Element(name), imp_(new Imp(data_type, index, subindex)){}
 		DO::DO(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
 		{
 			imp_->index_ = attributeUint16(xml_ele, "index");
@@ -204,7 +221,28 @@ namespace aris
 				std::int16_t config_value_int16_;
 				std::int8_t config_value_int8_;
 			};
+
+			Imp(unsigned opt = Sdo::READ | Sdo::WRITE | Sdo::CONFIG):option_(opt) {}
 		};
+		auto Sdo::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			DO::saveXml(xml_ele);
+
+			xml_ele.SetAttribute("read", option() & READ ? "true" : "false");
+			xml_ele.SetAttribute("write", option() & WRITE ? "true" : "false");
+			if (option() & CONFIG) 
+			{
+				switch (dataType())
+				{
+				case aris::control::DO::INT32:xml_ele.SetAttribute("config", imp_->config_value_int32_); break;
+				case aris::control::DO::INT16:xml_ele.SetAttribute("config", imp_->config_value_int16_); break;
+				case aris::control::DO::INT8:xml_ele.SetAttribute("config", imp_->config_value_int8_); break;
+				case aris::control::DO::UINT32:xml_ele.SetAttribute("config", imp_->config_value_uint32_); break;
+				case aris::control::DO::UINT16:xml_ele.SetAttribute("config", imp_->config_value_uint16_); break;
+				case aris::control::DO::UINT8:xml_ele.SetAttribute("config", imp_->config_value_uint8_); break;
+				}
+			}
+		}
 		auto Sdo::readable()const->bool { return (imp_->option_ & READ) != 0; }
 		auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
 		auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0; }
@@ -361,6 +399,38 @@ namespace aris
 			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
 		}
 		Sdo::~Sdo() = default;
+		Sdo::Sdo(const std::string &name, DO::DataType data_type, std::uint16_t index, std::uint8_t sub_index, unsigned opt, std::int32_t config_value) :DO(name, data_type, index, sub_index), imp_(new Imp(opt)) 
+		{
+			if (opt & Sdo::CONFIG)
+			{
+				if(!(opt & Sdo::WRITE)) throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + name + "\" sdo");
+				switch (dataType())
+				{
+				case aris::control::DO::INT32:
+					imp_->config_value_int32_ = static_cast<std::int32_t>(config_value);
+					break;
+				case aris::control::DO::INT16:
+					imp_->config_value_int16_ = static_cast<std::int16_t>(config_value);
+					break;
+				case aris::control::DO::INT8:
+					imp_->config_value_int8_ = static_cast<std::int8_t>(config_value);
+					break;
+				case aris::control::DO::UINT32:
+					imp_->config_value_uint32_ = static_cast<std::uint32_t>(config_value);
+					break;
+				case aris::control::DO::UINT16:
+					imp_->config_value_uint16_ = static_cast<std::uint16_t>(config_value);
+					break;
+				case aris::control::DO::UINT8:
+					imp_->config_value_uint8_ = static_cast<std::uint8_t>(config_value);
+					break;
+				default:
+					throw std::runtime_error("failed to get sdo config value");
+					break;
+				}
+
+			}
+		}
 		Sdo::Sdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele)
 		{
 			if (attributeBool(xml_ele, "read", true))imp_->option_ |= READ; else imp_->option_ &= ~READ;
@@ -400,12 +470,10 @@ namespace aris
 		Sdo& Sdo::operator=(const Sdo &) = default;
 		Sdo& Sdo::operator=(Sdo &&) = default;
 
-		struct Pdo::Imp
-		{
-			aris::core::ImpPtr<Handle> ec_handle_;
-		};
-		auto Pdo::ecHandle()->Handle* { return imp_->ec_handle_.get(); };
-		auto Pdo::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); };
+		struct Pdo::Imp { aris::core::ImpPtr<Handle> ec_handle_; };
+		auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void{	DO::saveXml(xml_ele);}
+		auto Pdo::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
+		auto Pdo::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); }
 		auto Pdo::read(std::int32_t &value)->void
 		{
 			if (!static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
@@ -479,6 +547,7 @@ namespace aris
 			aris_ecrt_pdo_write_uint8(slave().ecHandle(), ecHandle(), value);
 		}
 		Pdo::~Pdo() = default;
+		Pdo::Pdo(const std::string &name, DO::DataType data_type, std::uint16_t index, std::uint8_t sub_index):DO(name, data_type, index, sub_index){}
 		Pdo::Pdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele) {}
 		Pdo::Pdo(const Pdo &) = default;
 		Pdo::Pdo(Pdo &&) = default;
@@ -490,13 +559,26 @@ namespace aris
 			aris::core::ImpPtr<Handle> handle_;
 			bool is_tx_;
 			std::uint16_t index_;
+
+			Imp(std::uint16_t index = 0, bool is_tx = true):is_tx_(is_tx), index_(index) {}
 		};
+		auto PdoGroup::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Element::saveXml(xml_ele);
+
+			std::stringstream s;
+			s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
+			xml_ele.SetAttribute("index", s.str().c_str());
+
+			xml_ele.SetAttribute("is_tx", tx());
+		}
 		auto PdoGroup::ecHandle()->Handle* { return imp_->handle_.get(); };
 		auto PdoGroup::ecHandle()const->const Handle*{ return imp_->handle_.get(); };
 		auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 		auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
 		PdoGroup::~PdoGroup() = default;
+		PdoGroup::PdoGroup(const std::string &name, std::uint16_t index, bool is_tx):aris::core::ObjectPool<Pdo, Element>(name), imp_(new Imp(index, is_tx)){}
 		PdoGroup::PdoGroup(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele)
 		{
 			imp_->index_ = attributeUint16(xml_ele, "index");
@@ -512,12 +594,37 @@ namespace aris
 			std::uint32_t product_code_, vender_id_;
 			std::uint16_t alias_;
 			std::uint32_t distributed_clock_;
+
+			Imp(std::uint32_t product_code = 0, std::uint32_t vender_id = 0, std::uint16_t alias = 0, std::uint32_t distributed_clock = 0)
+				:product_code_(product_code), vender_id_(vender_id), alias_(alias), distributed_clock_(distributed_clock){}
 		};
+		auto SlaveType::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Element::saveXml(xml_ele);
+
+			std::stringstream s;
+			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(productCode())) * 2) << std::hex << productCode();
+			xml_ele.SetAttribute("product_code", s.str().c_str());
+
+			s = std::stringstream();
+			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(venderID())) * 2) << std::hex << venderID();
+			xml_ele.SetAttribute("vender_id", s.str().c_str());
+
+			s = std::stringstream();
+			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(alias())) * 2) << std::hex << alias();
+			xml_ele.SetAttribute("alias", s.str().c_str());
+
+			s = std::stringstream();
+			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(distributedClock())) * 2) << std::hex << distributedClock();
+			xml_ele.SetAttribute("distributed_clock", s.str().c_str());
+		}
 		auto SlaveType::productCode()const->std::uint32_t { return imp_->product_code_; }
 		auto SlaveType::venderID()const->std::uint32_t { return imp_->vender_id_; }
 		auto SlaveType::alias()const->std::uint16_t { return imp_->alias_; }
 		auto SlaveType::distributedClock()const->std::uint32_t { return imp_->distributed_clock_; }
 		SlaveType::~SlaveType() = default;
+		SlaveType::SlaveType(const std::string &name, std::uint32_t product_code, std::uint32_t vender_id, std::uint16_t alias, std::uint32_t distributed_clock)
+			:Element(name), imp_(new Imp(product_code, vender_id, alias, distributed_clock)){}
 		SlaveType::SlaveType(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
 		{
 			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
@@ -533,11 +640,11 @@ namespace aris
 		struct Slave::Imp
 		{
 		public:
-			Imp(Slave*slave) :slave_(slave) {}
+			Imp(Slave*slave, const SlaveType *st = nullptr) :slave_(slave) {}
 
 			aris::core::ImpPtr<Handle> ec_handle_;
 
-			SlaveType *slave_type_;
+			const SlaveType *slave_type_;
 
 			aris::core::ObjectPool<PdoGroup, Element> *pdo_group_pool_;
 			aris::core::ObjectPool<Sdo, Element> *sdo_pool_;
@@ -552,6 +659,49 @@ namespace aris
 			friend class Slave;
 			friend class Master;
 		};
+		auto Slave::saveXml(aris::core::XmlElement &xml_ele) const->void{Element::saveXml(xml_ele);}
+		auto Slave::init()->void
+		{
+			// make PDO map and upd pdo's slave ptr //
+			imp_->pdo_map_.clear();
+			for (int i = 0; i < static_cast<int>(pdoGroupPool().size()); ++i)
+			{
+				auto &group = pdoGroupPool().at(i);
+				for (int j = 0; j < static_cast<int>(group.size()); ++j)
+				{
+					auto &pdo = group.at(j);
+					pdo.DO::imp_->slave_ = this;
+					if (imp_->pdo_map_.find(pdo.index()) != imp_->pdo_map_.end())
+					{
+						imp_->pdo_map_.at(pdo.index()).insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+					}
+					else
+					{
+						std::map<std::uint8_t, std::pair<int, int> > subindex_map;
+						subindex_map.insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+						imp_->pdo_map_.insert(std::make_pair(pdo.index(), subindex_map));
+					}
+				}
+			}
+
+			// make SDO map and upd pdo's slave ptr //
+			imp_->sdo_map_.clear();
+			for (int i = 0; i < static_cast<int>(sdoPool().size()); ++i)
+			{
+				auto &sdo = sdoPool().at(i);
+				sdo.DO::imp_->slave_ = this;
+				if (imp_->sdo_map_.find(sdo.index()) != imp_->sdo_map_.end())
+				{
+					imp_->sdo_map_.at(sdo.index()).insert(std::make_pair(sdo.subindex(), i));
+				}
+				else
+				{
+					std::map<std::uint8_t, int > subindex_map;
+					subindex_map.insert(std::make_pair(sdo.subindex(), i));
+					imp_->sdo_map_.insert(std::make_pair(sdo.index(), subindex_map));
+				}
+			}
+		}
 		auto Slave::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
 		auto Slave::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); }
 		auto Slave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
@@ -747,61 +897,23 @@ namespace aris
 			sdoPool().at(sdo_ID).write(value);
 		}
 		Slave::~Slave() = default;
+		Slave::Slave(const std::string &name, const SlaveType &slave_type) :Element(name), imp_(new Imp(this, &slave_type))
+		{
+			imp_->pdo_group_pool_ = &add<aris::core::ObjectPool<PdoGroup, Element> >("pdo_group_pool");
+			imp_->sdo_pool_ = &add<aris::core::ObjectPool<Sdo, Element> >("sdo_pool");
+		}
 		Slave::Slave(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele), imp_(new Imp(this))
 		{
-			if (master().findByName("slave_type_pool") == master().children().end())
-			{
-				throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
-			}
+			if (master().findByName("slave_type_pool") == master().children().end())throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
 			auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType, Element> &>(*master().findByName("slave_type_pool"));
 
 			if (slave_type_pool.findByName(attributeString(xml_ele, "slave_type")) == slave_type_pool.end())
 			{
 				throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
 			}
-			imp_->slave_type_ = &add<SlaveType>(*slave_type_pool.findByName(attributeString(xml_ele, "slave_type")));
-			imp_->pdo_group_pool_ = static_cast<aris::core::ObjectPool<PdoGroup, Element> *>(&*imp_->slave_type_->findByName("pdo_group_pool"));
-			imp_->sdo_pool_ = static_cast<aris::core::ObjectPool<Sdo, Element> *>(&*imp_->slave_type_->findByName("sdo_pool"));
-
-			for (auto &group : pdoGroupPool())for (auto &pdo : group)pdo.DO::imp_->slave_ = this;
-			for (auto &sdo : sdoPool())sdo.DO::imp_->slave_ = this;
-
-			// make PDO map //
-			for (int i = 0; i < static_cast<int>(pdoGroupPool().size()); ++i)
-			{
-				auto &group = pdoGroupPool().at(i);
-				for (int j = 0; j < static_cast<int>(group.size()); ++j)
-				{
-					auto &pdo = group.at(j);
-
-					if (imp_->pdo_map_.find(pdo.index()) != imp_->pdo_map_.end())
-					{
-						imp_->pdo_map_.at(pdo.index()).insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
-					}
-					else
-					{
-						std::map<std::uint8_t, std::pair<int, int> > subindex_map;
-						subindex_map.insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
-						imp_->pdo_map_.insert(std::make_pair(pdo.index(), subindex_map));
-					}
-				}
-			}
-
-			// make SDO map //
-			for (int i = 0; i < static_cast<int>(sdoPool().size()); ++i)
-			{
-				auto &sdo = sdoPool().at(i);
-				if (imp_->sdo_map_.find(sdo.index()) != imp_->sdo_map_.end())
-				{
-					imp_->sdo_map_.at(sdo.index()).insert(std::make_pair(sdo.subindex(), i));
-				}
-				else
-				{
-					std::map<std::uint8_t, int > subindex_map;
-					subindex_map.insert(std::make_pair(sdo.subindex(), i));
-					imp_->sdo_map_.insert(std::make_pair(sdo.index(), subindex_map));
-				}
-			}
+			imp_->slave_type_ = &*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"));
+			imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<PdoGroup, Element> >("pdo_group_pool");
+			imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo, Element> >("sdo_pool");
 		}
 
 		class Master::Imp
@@ -811,11 +923,11 @@ namespace aris
 			{
 				auto &mst = *reinterpret_cast<Master*>(master);
 
-				aris_rt_set_periodic(mst.imp_->sample_period_ns_);
+				aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
 
 				while (!mst.imp_->is_stopping_)
 				{
-					aris_rt_wait_period();
+					aris_rt_task_wait_period();
 
 					// receive pdo data
 					aris_ecrt_master_receive(mst.ecHandle());
@@ -839,9 +951,6 @@ namespace aris
 						aris_ecrt_slave_send(sla.ecHandle());
 					}
 					aris_ecrt_master_send(mst.ecHandle());
-
-					// log data
-					mst.dataLogger().logDataRT();
 				}
 			};
 
@@ -901,7 +1010,7 @@ namespace aris
 				rxDataPool().push_back_ptr(&slave.rxData());
 			}
 
-			// init ethercat master, slave, pdo group, and pdo
+			// init ethercat master, slave, pdo group, and pdo //
 			imp_->ec_handle_.reset(aris_ecrt_master_init());
 			for (auto &sla : slavePool())
 			{
@@ -917,7 +1026,7 @@ namespace aris
 				}
 			}
 
-			// config ethercat master, slave, pdo group, and pdo
+			// config ethercat master, slave, pdo group, and pdo //
 			for (auto &sla : slavePool())
 			{
 				for (auto &pdo_group : sla.pdoGroupPool())
@@ -932,12 +1041,12 @@ namespace aris
 			}
 			aris_ecrt_master_config(ecHandle());
 
-			//config ethercat sdo
+			// config ethercat sdo //
 			for (auto &sla : slavePool())for (auto &sdo : sla.sdoPool())
 				aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), sdo.configBuffer(), sdo.dataBit());
 
 
-			// start ethercat master and slave
+			// start ethercat master and slave //
 			aris_ecrt_master_start(ecHandle());
 			for (auto &sla : slavePool())aris_ecrt_slave_start(sla.ecHandle());
 
@@ -984,6 +1093,10 @@ namespace aris
 			registerChildType<SlaveType>();
 			registerChildType<Slave>();
 			registerChildType<aris::core::ObjectPool<Slave, Element> >();
+
+			imp_->slave_type_pool_ = &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool");
+			imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave, Element> >("slave_pool");
+			imp_->data_logger_ = &add<DataLogger>("date_logger");
 		}
 	}
 }
