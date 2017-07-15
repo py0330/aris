@@ -24,38 +24,36 @@ namespace aris
 		struct DataLogger::Imp
 		{
 			aris::core::Pipe *log_pipe_;
-			aris::core::MsgFix<MAX_LOG_DATA_SIZE> log_data_msg_;
-			std::size_t log_data_size_{ 0 };
-			std::mutex mu_running_;
-
+			aris::core::MsgFix<MAX_LOG_DATA_SIZE> log_msg_;
+			
+			std::unique_ptr<aris::core::MsgStream> log_msg_stream_;
+			
 			std::thread log_thread_;
-			std::atomic_bool is_running_{false};
+			
+			std::mutex mu_running_;
+			std::atomic_bool is_running_;
+
+			Imp() :log_msg_(), is_running_(false) { log_msg_stream_.reset(new aris::core::MsgStream(log_msg_)); };
 		};
 		auto DataLogger::saveXml(aris::core::XmlElement &xml_ele) const->void{	Element::saveXml(xml_ele);	}
 		auto DataLogger::start(const std::string &log_file_name)->void
 		{
-			std::unique_lock<std::mutex> prepair_lck(imp_->mu_running_);
-			if(imp_->log_thread_.joinable())throw std::runtime_error("failed to prepair pipe, because it's started already");
+			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
+			if (imp_->is_running_)throw std::runtime_error("failed to start DataLogger, because it's running");
+			imp_->is_running_ = true;
 
+			aris::core::createLogDir();
 			auto file_name = aris::core::logDirPath() + (log_file_name.empty() ? "logdata_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + ".txt" : log_file_name);
 
 			std::promise<void> thread_ready;
 			auto fut = thread_ready.get_future();
-
 			imp_->log_thread_ = std::thread([this, file_name](std::promise<void> thread_ready)
 			{
 				std::fstream file;
 				file.open(file_name.c_str(), std::ios::out | std::ios::trunc);
 
-				// compute log msg size //
-				imp_->log_data_size_ = 0;
-				for (auto &sla : master().slavePool()) imp_->log_data_size_ += sla.txTypeSize() + sla.rxTypeSize();
-				imp_->log_data_msg_.resize(static_cast<aris::core::MsgSize>(imp_->log_data_size_));
-
-
 				aris::core::MsgFix<MAX_LOG_DATA_SIZE> recv_msg;
-				while (imp_->log_pipe_->recvMsg(recv_msg));
-				imp_->is_running_ = true;
+
 				thread_ready.set_value();
 
 				long long count = 0;
@@ -63,25 +61,16 @@ namespace aris
 				{
 					if (imp_->log_pipe_->recvMsg(recv_msg))
 					{
-						file << count++ << " ";
-
-						std::size_t size_count = 0;
-						for (auto &sla : master().slavePool())
-						{
-							sla.logData(*reinterpret_cast<Slave::TxType *>(recv_msg.data() + size_count)
-								, *reinterpret_cast<Slave::RxType *>(recv_msg.data() + size_count + sla.txTypeSize()), file);
-
-							file << " ";
-
-							size_count += sla.txTypeSize() + sla.rxTypeSize();
-						}
-						file << std::endl;
+						file << recv_msg.data();
 					}
 					else
 					{
 						std::this_thread::sleep_for(std::chrono::microseconds(10));
 					}
 				}
+
+				// clean pipe //
+				while(imp_->log_pipe_->recvMsg(recv_msg))file << recv_msg.data();
 				file.close();
 			}, std::move(thread_ready));
 
@@ -89,27 +78,22 @@ namespace aris
 		}
 		auto DataLogger::stop()->void
 		{
-			std::unique_lock<std::mutex> prepair_lck(imp_->mu_running_);
+			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
+			if (!imp_->is_running_)throw std::runtime_error("failed to stop DataLogger, because it's not running");
 			imp_->is_running_ = false;
 			imp_->log_thread_.join();
 		}
-		auto DataLogger::logDataRT()->void
+		auto DataLogger::lout()->aris::core::MsgStream & { return *imp_->log_msg_stream_; }
+		auto DataLogger::send()->void
 		{
-			if (imp_->is_running_)
+			lout().update();
+			if (!imp_->log_msg_.empty())
 			{
-				std::size_t size_count = 0;
-				for (auto &sla : master().slavePool())
-				{
-					auto tx_data_char = reinterpret_cast<char *>(&sla.txData());
-					auto rx_data_char = reinterpret_cast<char *>(&sla.rxData());
-
-					std::copy(tx_data_char, tx_data_char + sla.txTypeSize(), imp_->log_data_msg_.data() + size_count);
-					size_count += sla.txTypeSize();
-					std::copy(rx_data_char, rx_data_char + sla.rxTypeSize(), imp_->log_data_msg_.data() + size_count);
-					size_count += sla.rxTypeSize();
-				}
-
-				imp_->log_pipe_->sendMsg(imp_->log_data_msg_);
+				lout() << '\0';
+				lout().update();
+				imp_->log_pipe_->sendMsg(imp_->log_msg_);
+				imp_->log_msg_.resize(0);
+				lout().resetBuf();
 			}
 		}
 		DataLogger::~DataLogger() = default;
@@ -158,10 +142,22 @@ namespace aris
 		auto DO::slave()const->const Slave&{ return *imp_->slave_; }
 		auto DO::index()const->std::uint16_t { return imp_->index_; }
 		auto DO::subindex()const->std::uint8_t { return imp_->subindex_; }
-		auto DO::dataBit()const->std::uint8_t { return imp_->data_bit_size_; }
+		auto DO::dataBitSize()const->std::uint8_t { return imp_->data_bit_size_; }
 		auto DO::dataType()const->DataType { return imp_->data_type_; }
 		DO::~DO() = default;
-		DO::DO(const std::string &name, DO::DataType data_type, std::uint16_t index, std::uint8_t subindex):Element(name), imp_(new Imp(data_type, index, subindex)){}
+		DO::DO(const std::string &name, DO::DataType data_type, std::uint16_t index, std::uint8_t subindex):Element(name), imp_(new Imp(data_type, index, subindex))
+		{
+			switch (data_type)
+			{
+			case aris::control::DO::INT32:	imp_->data_bit_size_ = 32; break;
+			case aris::control::DO::INT16:imp_->data_bit_size_ = 16; break;
+			case aris::control::DO::INT8:imp_->data_bit_size_ = 8; break;
+			case aris::control::DO::UINT32:imp_->data_bit_size_ = 32; break;
+			case aris::control::DO::UINT16:imp_->data_bit_size_ = 16; break;
+			case aris::control::DO::UINT8:imp_->data_bit_size_ = 8;	break;
+			default:throw std::runtime_error("wrong type in DO"); break;
+			}
+		}
 		DO::DO(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
 		{
 			imp_->index_ = attributeUint16(xml_ele, "index");
@@ -303,7 +299,7 @@ namespace aris
 
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::int16_t &value)->void
 		{
@@ -312,7 +308,7 @@ namespace aris
 
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::int8_t &value)->void
 		{
@@ -321,7 +317,7 @@ namespace aris
 
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::uint32_t &value)->void
 		{
@@ -330,7 +326,7 @@ namespace aris
 
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::uint16_t &value)->void
 		{
@@ -339,7 +335,7 @@ namespace aris
 
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &real_size, &abort_code);
 		}
 		auto Sdo::read(std::uint8_t &value)->void
 		{
@@ -348,7 +344,7 @@ namespace aris
 
 			std::size_t real_size;
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &real_size, &abort_code);
+			aris_ecrt_sdo_read(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &real_size, &abort_code);
 		}
 		auto Sdo::write(std::int32_t value)->void
 		{
@@ -356,7 +352,7 @@ namespace aris
 			if (dataType() != INT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int32 type");
 
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &abort_code);
 		}
 		auto Sdo::write(std::int16_t value)->void
 		{
@@ -364,7 +360,7 @@ namespace aris
 			if (dataType() != INT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int16 type");
 
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &abort_code);
 		}
 		auto Sdo::write(std::int8_t value)->void
 		{
@@ -372,7 +368,7 @@ namespace aris
 			if (dataType() != INT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not int8 type");
 
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &abort_code);
 		}
 		auto Sdo::write(std::uint32_t value)->void
 		{
@@ -380,7 +376,7 @@ namespace aris
 			if (dataType() != UINT32)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint32 type");
 
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &abort_code);
 		}
 		auto Sdo::write(std::uint16_t value)->void
 		{
@@ -388,7 +384,7 @@ namespace aris
 			if (dataType() != UINT16)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint16 type");
 
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &abort_code);
 		}
 		auto Sdo::write(std::uint8_t value)->void
 		{
@@ -396,7 +392,7 @@ namespace aris
 			if (dataType() != UINT8)throw std::runtime_error("sdo " + std::to_string(index()) + "-" + std::to_string(subindex()) + " is not uint8 type");
 
 			std::uint32_t abort_code;
-			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBit(), &abort_code);
+			aris_ecrt_sdo_write(master().ecHandle(), slave().position(), index(), subindex(), reinterpret_cast<std::uint8_t *>(&value), dataBitSize(), &abort_code);
 		}
 		Sdo::~Sdo() = default;
 		Sdo::Sdo(const std::string &name, DO::DataType data_type, std::uint16_t index, std::uint8_t sub_index, unsigned opt, std::int32_t config_value) :DO(name, data_type, index, sub_index), imp_(new Imp(opt)) 
@@ -640,7 +636,7 @@ namespace aris
 		struct Slave::Imp
 		{
 		public:
-			Imp(Slave*slave, const SlaveType *st = nullptr) :slave_(slave) {}
+			Imp(Slave*slave, const SlaveType *st = nullptr) :slave_(slave), slave_type_(st) {}
 
 			aris::core::ImpPtr<Handle> ec_handle_;
 
@@ -925,7 +921,7 @@ namespace aris
 
 				aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
 
-				while (!mst.imp_->is_stopping_)
+				while (mst.imp_->is_running_)
 				{
 					aris_rt_task_wait_period();
 
@@ -938,7 +934,7 @@ namespace aris
 					}
 
 					// tg begin
-					mst.controlStrategy();
+					if (mst.imp_->strategy_)mst.imp_->strategy_();
 					// tg end
 
 					// sync
@@ -954,14 +950,25 @@ namespace aris
 				}
 			};
 
+			// slave type and slave //
 			aris::core::ObjectPool<SlaveType, Element> *slave_type_pool_;
 			aris::core::ObjectPool<Slave, Element> *slave_pool_;
 			aris::core::RefPool<Slave::TxType> tx_data_pool_;
 			aris::core::RefPool<Slave::RxType> rx_data_pool_;
-
-			//for log
+			
+			// for log //
 			DataLogger* data_logger_;
-			std::atomic_bool is_running_{ false }, is_stopping_{ false };
+
+			// for msg in and out //
+			aris::core::Pipe *pipe_in_;
+			aris::core::Pipe *pipe_out_;
+
+			// strategy //
+			std::function<void()> strategy_{ nullptr };
+
+			// is running //
+			std::mutex mu_running_;
+			std::atomic_bool is_running_{ false };
 
 			const int sample_period_ns_{ 1000000 };
 
@@ -984,11 +991,13 @@ namespace aris
 		{
 			Root::loadXml(xml_ele);
 
-			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
 			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
 			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
 			imp_->tx_data_pool_.clear();
 			imp_->rx_data_pool_.clear();
+			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
+			imp_->pipe_in_ = findOrInsert<aris::core::Pipe>("msg_pipe_in");
+			imp_->pipe_out_ = findOrInsert<aris::core::Pipe>("msg_pipe_out");
 			for (auto &slave : slavePool())
 			{
 				imp_->tx_data_pool_.push_back_ptr(&slave.txData());
@@ -997,18 +1006,12 @@ namespace aris
 		}
 		auto Master::start()->void
 		{
-			if (imp_->is_running_)throw std::runtime_error("master already running");
+			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
+			if (imp_->is_running_)throw std::runtime_error("master already running, so cannot start");
 			imp_->is_running_ = true;
 
-			// init each slave and update tx & rx data pool //
-			txDataPool().clear();
-			rxDataPool().clear();
-			for (auto &slave : slavePool())
-			{
-				slave.init();
-				txDataPool().push_back_ptr(&slave.txData());
-				rxDataPool().push_back_ptr(&slave.rxData());
-			}
+			// init each slave //
+			for (auto &slave : slavePool())slave.init();
 
 			// init ethercat master, slave, pdo group, and pdo //
 			imp_->ec_handle_.reset(aris_ecrt_master_init());
@@ -1033,7 +1036,7 @@ namespace aris
 				{
 					for (auto &pdo : pdo_group)
 					{
-						aris_ecrt_pdo_config(sla.ecHandle(), pdo_group.ecHandle(), pdo.ecHandle(), pdo.index(), pdo.subindex(), pdo.dataBit());
+						aris_ecrt_pdo_config(sla.ecHandle(), pdo_group.ecHandle(), pdo.ecHandle(), pdo.index(), pdo.subindex(), pdo.dataBitSize());
 					}
 					aris_ecrt_pdo_group_config(sla.ecHandle(), pdo_group.ecHandle(), pdo_group.index(), pdo_group.tx());
 				}
@@ -1043,41 +1046,40 @@ namespace aris
 
 			// config ethercat sdo //
 			for (auto &sla : slavePool())for (auto &sdo : sla.sdoPool())
-				aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), sdo.configBuffer(), sdo.dataBit());
+				aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), sdo.configBuffer(), sdo.dataBitSize());
 
 
 			// start ethercat master and slave //
 			aris_ecrt_master_start(ecHandle());
 			for (auto &sla : slavePool())aris_ecrt_slave_start(sla.ecHandle());
 
-			imp_->rt_task_handle_.reset(aris_rt_task_start(&Imp::rt_task_func, this));
+			// create and start rt thread //
+			imp_->rt_task_handle_.reset(aris_rt_task_create());
+			if (imp_->rt_task_handle_.get() == nullptr) throw std::runtime_error("rt_task_create failed");
+			if (aris_rt_task_start(imp_->rt_task_handle_.get(), &Imp::rt_task_func, this))throw std::runtime_error("rt_task_start failed");
 		};
 		auto Master::stop()->void
 		{
+			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 			if (!imp_->is_running_)throw std::runtime_error("master is not running, so can't stop");
-
-			imp_->is_stopping_ = true;
-
-			aris_rt_task_stop(rtHandle());
-			aris_ecrt_master_stop(ecHandle());
-
-			imp_->is_stopping_ = false;
 			imp_->is_running_ = false;
+
+			if (aris_rt_task_join(rtHandle()))throw std::runtime_error("aris_rt_task_join failed");
+			aris_ecrt_master_stop(ecHandle());
 		}
-		auto Master::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); };
+		auto Master::setControlStrategy(std::function<void()> strategy)->void 
+		{
+			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
+			if (imp_->is_running_)throw std::runtime_error("master already running, cannot set control strategy");
+			imp_->strategy_ = strategy;
+		}
 		auto Master::ecHandle()->Handle* { return imp_->ec_handle_.get(); };
-		auto Master::rtHandle()const->const Handle*{ return imp_->rt_task_handle_.get(); };
 		auto Master::rtHandle()->Handle* { return imp_->rt_task_handle_.get(); };
+		auto Master::pipeIn()->aris::core::Pipe& { return *imp_->pipe_in_; }
+		auto Master::pipeOut()->aris::core::Pipe& { return *imp_->pipe_out_; }
 		auto Master::slaveTypePool()->aris::core::ObjectPool<SlaveType, Element>& { return *imp_->slave_type_pool_; }
-		auto Master::slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&{ return *imp_->slave_type_pool_; }
 		auto Master::slavePool()->aris::core::ObjectPool<Slave, Element>& { return *imp_->slave_pool_; }
-		auto Master::slavePool()const->const aris::core::ObjectPool<Slave, Element>&{ return *imp_->slave_pool_; }
-		auto Master::txDataPool()->aris::core::RefPool<Slave::TxType> & { return imp_->tx_data_pool_; }
-		auto Master::txDataPool()const->const aris::core::RefPool<Slave::TxType> &{return imp_->tx_data_pool_; }
-		auto Master::rxDataPool()->aris::core::RefPool<Slave::RxType> & { return imp_->rx_data_pool_; }
-		auto Master::rxDataPool()const->const aris::core::RefPool<Slave::RxType> &{return imp_->rx_data_pool_; }
-		auto Master::dataLogger()->DataLogger& { return std::ref(*imp_->data_logger_); }
-		auto Master::dataLogger()const->const DataLogger&{ return std::ref(*imp_->data_logger_); }
+		auto Master::dataLogger()->DataLogger& { return *imp_->data_logger_; }
 		Master::~Master() = default;
 		Master::Master() :imp_(new Imp)
 		{
@@ -1097,6 +1099,8 @@ namespace aris
 			imp_->slave_type_pool_ = &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool");
 			imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave, Element> >("slave_pool");
 			imp_->data_logger_ = &add<DataLogger>("date_logger");
+			imp_->pipe_in_ = &add<aris::core::Pipe>("msg_pipe_in");
+			imp_->pipe_out_ = &add<aris::core::Pipe>("msg_pipe_out");
 		}
 	}
 }

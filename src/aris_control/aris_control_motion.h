@@ -64,7 +64,7 @@ namespace aris
 				VELOCITY = 0x09,
 				TORQUE = 0x10,
 			};
-
+			
 			static auto Type()->const std::string &{ static const std::string type("Motion"); return std::ref(type); }
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto maxPos()->double;
@@ -79,7 +79,6 @@ namespace aris
 		protected:
 			auto virtual readUpdate()->void override;
 			auto virtual writeUpdate()->void override;
-			auto virtual logData(const Slave::TxType &tx_data, const Slave::RxType &rx_data, std::fstream &file)->void override;
 
 		private:
 			class Imp;
@@ -88,15 +87,46 @@ namespace aris
 		class Controller :public Master
 		{
 		public:
-			auto setControlStrategy(std::function<void()> strategy)->void { strategy_ = strategy; }
 			Controller() { registerChildType<Motion>(); }
+		};
+
+
+		class MyMotion :public Slave
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("Motion"); return std::ref(type); }
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto maxPos()->double;
+			auto minPos()->double;
+			auto maxVel()->double;
+			auto posOffset()->double;
+			auto pos2countRatio()->std::int32_t;
+
+			auto actualPos()->double;
+			auto actualVel()->double;
+			auto actualCur()->double;
+			
+			auto disable()->int;
+			auto enable(std::uint8_t mode = 8)->int;
+			auto home()->int;
+			auto setTargetPos(double pos)->int;
+			auto setTargetVel(double vel)->int;
+			auto setTargetCur(double cur)->int;
+
+			virtual ~MyMotion();
+			MyMotion(Object &father, const aris::core::XmlElement &xml_ele);
+			MyMotion(const std::string &name, const SlaveType &slave_type, std::int32_t input_ratio, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
 
 		protected:
-			auto controlStrategy()->void override final { if (strategy_)strategy_(); }
+			auto virtual readUpdate()->void override;
+			auto virtual writeUpdate()->void override;
 
 		private:
-			std::function<void()> strategy_{ nullptr };
+			class Imp;
+			std::unique_ptr<Imp> imp_;
 		};
+
+
 	}
 }
 

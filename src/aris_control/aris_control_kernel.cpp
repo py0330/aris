@@ -15,7 +15,6 @@
 
 #include <chrono>
 #include <thread>
-#include <cstdarg>
 #include <memory>
 #include <vector>
 
@@ -28,20 +27,22 @@ namespace aris
 #ifdef WIN32
         // should not have global variables
 		int nanoseconds{1000};
-		std::chrono::time_point<std::chrono::steady_clock> last_time, begin_time;
+		std::chrono::time_point<std::chrono::high_resolution_clock> last_time, begin_time;
 		//
 
 		struct RtTaskHandle :public Handle { std::thread task; };
 
-		auto aris_rt_task_start(void(*task_func)(void*), void*param)->Handle*
+		auto aris_rt_task_create()->Handle*
 		{
 			std::unique_ptr<Handle> handle(new RtTaskHandle);
-
-			static_cast<RtTaskHandle*>(handle.get())->task = std::thread(task_func, param);
-
 			return handle.release();
 		}
-		auto aris_rt_task_stop(Handle* handle)->int
+		auto aris_rt_task_start(Handle* handle, void(*task_func)(void*), void*param)->int
+		{
+			static_cast<RtTaskHandle*>(handle)->task = std::thread(task_func, param);
+			return 0;
+		}
+		auto aris_rt_task_join(Handle* handle)->int
 		{
 			static_cast<RtTaskHandle*>(handle)->task.join();
 			return 0;
@@ -49,7 +50,7 @@ namespace aris
 		auto aris_rt_task_set_periodic(int nanoseconds)->int
 		{ 
 			control::nanoseconds = nanoseconds;
-			begin_time = last_time = std::chrono::high_resolution_clock::now();
+			last_time = begin_time = std::chrono::high_resolution_clock::now();
 			return 0;
 		};
 		auto aris_rt_task_wait_period()->int
@@ -105,14 +106,13 @@ namespace aris
 #ifdef UNIX
 		struct RtTaskHandle :public Handle { RT_TASK task; };
 
-		auto aris_rt_task_start(void(*task_func)(void*), void*param)->Handle*
+		auto aris_rt_task_create()->Handle*
 		{
 			std::unique_ptr<Handle> handle(new RtTaskHandle);
-			rt_task_create(&static_cast<RtTaskHandle*>(handle.get())->task, "realtime core", 0, 99, T_FPU);
-			rt_task_start(&static_cast<RtTaskHandle*>(handle.get())->task, task_func, param);
-			return handle.release();
+			return rt_task_create(&static_cast<RtTaskHandle*>(handle.get())->task, "realtime core", 0, 99, T_FPU | T_JOINABLE) ? nullptr : handle.release();
 		}
-		auto aris_rt_task_stop(Handle* handle)->int { return rt_task_delete(&static_cast<RtTaskHandle*>(handle)->task); }
+		auto aris_rt_task_start(Handle* handle, void(*task_func)(void*), void*param)->int{return rt_task_start(&static_cast<RtTaskHandle*>(handle)->task, task_func, param);}
+		auto aris_rt_task_join(Handle* handle)->int { return rt_task_join(&static_cast<RtTaskHandle*>(handle)->task); }
 		auto aris_rt_task_set_periodic(int nanoseconds)->int { return rt_task_set_periodic(NULL, TM_NOW, nanoseconds); }
 		auto aris_rt_task_wait_period()->int { return rt_task_wait_period(NULL); }
 		auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
@@ -226,7 +226,8 @@ namespace aris
 		}
 		auto aris_ecrt_slave_start(Handle* slave_handle)->void
 		{
-			static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_ = ecrt_domain_data(static_cast<EcSlaveHandle*>(slave_handle)->domain_);
+			auto &domain_pd = static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_;
+			if(!(domain_pd = ecrt_domain_data(static_cast<EcSlaveHandle*>(slave_handle)->domain_)))throw std::runtime_error("failed ecrt_domain_data");
 		}
 		auto aris_ecrt_slave_send(Handle* slave_handle)->void
 		{

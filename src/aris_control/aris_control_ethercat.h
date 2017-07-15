@@ -40,7 +40,9 @@ namespace aris
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto start(const std::string &log_file_name = std::string())->void;
 			auto stop()->void;
-			auto logDataRT()->void;
+			auto lout()->aris::core::MsgStream &;
+			auto lout()const->const aris::core::MsgStream &{ return const_cast<DataLogger*>(this)->lout(); };
+			auto send()->void;
 
 			virtual ~DataLogger();
 			DataLogger(const std::string &name);
@@ -71,7 +73,7 @@ namespace aris
 			auto slave()const->const Slave&;
 			auto index()const->std::uint16_t;
 			auto subindex()const->std::uint8_t;
-			auto dataBit()const->std::uint8_t;
+			auto dataBitSize()const->std::uint8_t;
 			auto dataType()const->DataType;
 			virtual ~DO();
 			explicit DO(const std::string &name, DO::DataType data_type, std::uint16_t index, std::uint8_t sub_index);
@@ -89,6 +91,7 @@ namespace aris
 		class Pdo :public DO
 		{
 		public:
+			enum TransmitType {};
 			static auto Type()->const std::string &{ static const std::string type("Pdo"); return std::ref(type); }
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
@@ -246,7 +249,6 @@ namespace aris
 			auto virtual setTxData(const RxType& rx_data)->void { rxData() = rx_data; }
 			auto virtual txTypeSize()const->std::size_t { return sizeof(TxType); }
 			auto virtual rxTypeSize()const->std::size_t { return sizeof(RxType); }
-			auto virtual logData(const TxType &tx_data, const RxType &rx_data, std::fstream &file)->void {}
 			auto ecHandle()->Handle*;
 			auto ecHandle()const->const Handle*;
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
@@ -325,20 +327,21 @@ namespace aris
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual start()->void;
 			auto virtual stop()->void;
-			auto ecHandle()const->const Handle*;
+			auto setControlStrategy(std::function<void()> strategy)->void;
 			auto ecHandle()->Handle*;
-			auto rtHandle()const->const Handle*;
+			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 			auto rtHandle()->Handle*;
+			auto rtHandle()const->const Handle*{return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
+			auto pipeIn()->aris::core::Pipe&;
+			auto pipeIn()const->const aris::core::Pipe&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->pipeIn(); }
+			auto pipeOut()->aris::core::Pipe&;
+			auto pipeOut()const->const aris::core::Pipe&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->pipeIn(); }
 			auto slaveTypePool()->aris::core::ObjectPool<SlaveType, Element>&;
-			auto slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&;
+			auto slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveTypePool(); }
 			auto slavePool()->aris::core::ObjectPool<Slave, Element>&;
-			auto slavePool()const->const aris::core::ObjectPool<Slave, Element>&;
-			auto txDataPool()->aris::core::RefPool<Slave::TxType> &;
-			auto txDataPool()const->const aris::core::RefPool<Slave::TxType> &;
-			auto rxDataPool()->aris::core::RefPool<Slave::RxType> &;
-			auto rxDataPool()const->const aris::core::RefPool<Slave::RxType> &;
+			auto slavePool()const->const aris::core::ObjectPool<Slave, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
 			auto dataLogger()->DataLogger&;
-			auto dataLogger()const->const DataLogger&;
+			auto dataLogger()const->const DataLogger&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->dataLogger(); }
 			virtual ~Master();
 			Master();
 			Master(const Master &other) = delete;

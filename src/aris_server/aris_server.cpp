@@ -238,8 +238,8 @@ namespace aris
 
 				for (std::size_t i = 0; i<model_->motionPool().size(); i++)
 				{
-					std::size_t slaID = model_->motionPool().at(i).slaID();
-					static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID)).cmd = aris::control::Motion::DISABLE;
+					std::size_t sla_id = model_->motionPool().at(i).slaID();
+					static_cast<aris::control::TxMotionData&>(controller_->slavePool().at(sla_id).txData()).cmd = aris::control::Motion::DISABLE;
 				}
 
 				cmd_num_ = 0;
@@ -291,11 +291,11 @@ namespace aris
 			bool is_all_enabled = true;
 			for (std::size_t i = 0; i<model_->motionPool().size(); i++)
 			{
-				std::size_t slaID = model_->motionPool().at(i).slaID();
+				std::size_t sla_id = model_->motionPool().at(i).slaID();
 				if (param->active_motor_[i])
 				{
-					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
-					auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->slavePool().at(sla_id).txData());
+					auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->slavePool().at(sla_id).rxData());
 					//判断是否已经Enable了
 					if ((plan_param.count_ != 1) && (rx_motion_data.ret == 0))
 					{
@@ -315,7 +315,7 @@ namespace aris
 
 						if (plan_param.count_ % 1000 == 0)
 						{
-							server_->widgetRoot().mout() << "Unenabled motor, slave id: " << slaID << ", absolute id: " << i << ", ret: " << rx_motion_data.ret << "\n";
+							server_->widgetRoot().mout() << "Unenabled motor, slave id: " << sla_id << ", absolute id: " << i << ", ret: " << rx_motion_data.ret << "\n";
 						}
 					}
 				}
@@ -329,11 +329,11 @@ namespace aris
 			bool is_all_disabled = true;
 			for (std::size_t i = 0; i<model_->motionPool().size(); i++)
 			{
-				std::size_t slaID = model_->motionPool().at(i).slaID();
+				std::size_t sla_id = model_->motionPool().at(i).slaID();
 				if (param->active_motor_[i])
 				{
-					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
-					auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->slavePool().at(sla_id).txData());
+					auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->slavePool().at(sla_id).rxData());
 					//判断是否已经Disable了
 					if ((plan_param.count_ != 1) && (rx_motion_data.ret == 0))
 					{
@@ -347,7 +347,7 @@ namespace aris
 
 						if (plan_param.count_ % 1000 == 0)
 						{
-							server_->widgetRoot().mout() << "Undisabled motor, slave id: " << slaID << ", absolute id: " << i << ", ret: " << rx_motion_data.ret << "\n";
+							server_->widgetRoot().mout() << "Undisabled motor, slave id: " << sla_id << ", absolute id: " << i << ", ret: " << rx_motion_data.ret << "\n";
 						}
 					}
 				}
@@ -361,31 +361,31 @@ namespace aris
 			bool is_all_homed = true;
 			for (std::size_t i = 0; i<model_->motionPool().size(); i++)
 			{
-				std::size_t slaID = model_->motionPool().at(i).slaID();
+				std::size_t sla_id = model_->motionPool().at(i).slaID();
 				if (param->active_motor_[i])
 				{
-					auto &txmotiondata = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(slaID));
-					auto &rxmotiondata = static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(slaID));
+					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->slavePool().at(sla_id).txData());
+					auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->slavePool().at(sla_id).rxData());
 					// 根据返回值来判断是否走到home了
-					if ((plan_param.count_ != 1) && (rxmotiondata.ret == 0))
+					if ((plan_param.count_ != 1) && (rx_motion_data.ret == 0))
 					{
 						// 判断是否为第一次走到home,否则什么也不做,这样就会继续刷上次的值
-						if (txmotiondata.cmd == aris::control::Motion::HOME)
+						if (tx_motion_data.cmd == aris::control::Motion::HOME)
 						{
-							txmotiondata.cmd = aris::control::Motion::RUN;
-							txmotiondata.target_pos = rxmotiondata.feedback_pos;
-							txmotiondata.target_vel = 0;
-							txmotiondata.target_tor = 0;
+							tx_motion_data.cmd = aris::control::Motion::RUN;
+							tx_motion_data.target_pos = rx_motion_data.feedback_pos;
+							tx_motion_data.target_vel = 0;
+							tx_motion_data.target_tor = 0;
 						}
 					}
 					else
 					{
 						is_all_homed = false;
-						txmotiondata.cmd = aris::control::Motion::HOME;
+						tx_motion_data.cmd = aris::control::Motion::HOME;
 
 						if (plan_param.count_ % 1000 == 0)
 						{
-							server_->widgetRoot().mout() << "Unhomeed motor, slave id: " << slaID << ", absolute id: " << i << ", ret: " << rxmotiondata.ret << "\n";
+							server_->widgetRoot().mout() << "Unhomeed motor, slave id: " << sla_id << ", absolute id: " << i << ", ret: " << rx_motion_data.ret << "\n";
 						}
 					}
 				}
@@ -405,8 +405,8 @@ namespace aris
 				std::size_t phy_id = model_->motionPool().at(i).phyID();
 				if (param->active_motor_[i])
 				{
-					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(sla_id));
-					auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(sla_id));
+					auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->slavePool().at(sla_id).txData());
+					auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->slavePool().at(sla_id).rxData());
 					tx_motion_data.cmd = aris::control::Motion::RUN;
 					if (rx_motion_data.mode == 8)
 					{
@@ -436,8 +436,8 @@ namespace aris
 				std::size_t abs_id = model_->motionPool().at(i).absID();
 				std::size_t sla_id = model_->motionPool().at(i).slaID();
 				std::size_t phy_id = model_->motionPool().at(i).phyID();
-				auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->txDataPool().at(sla_id));
-				auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->rxDataPool().at(sla_id));
+				auto &tx_motion_data = static_cast<aris::control::TxMotionData&>(controller_->slavePool().at(sla_id).txData());
+				auto &rx_motion_data = static_cast<aris::control::RxMotionData&>(controller_->slavePool().at(sla_id).rxData());
 				auto &last_tx_motion_data = static_cast<aris::control::TxMotionData&>(*last_data_vec_tx_.at(sla_id));
 				auto &control_motion = static_cast<aris::control::Motion&>(controller_->slavePool().at(sla_id));
 
@@ -510,10 +510,7 @@ namespace aris
 			count_ = 0;
 
 			// 发现不连续,那么使用上一个成功的cmd,以便等待修复 //
-			for (std::size_t i = 0; i < controller_->txDataPool().size(); ++i)
-			{
-				controller_->slavePool().at(i).setTxData(*last_data_vec_tx_.at(i));
-			}
+			for (std::size_t i = 0; i < controller_->slavePool().size(); ++i)controller_->slavePool().at(i).setTxData(*last_data_vec_tx_.at(i));
 
 			return 0;
 		}

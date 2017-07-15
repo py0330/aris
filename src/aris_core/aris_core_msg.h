@@ -115,7 +115,7 @@ namespace aris
 			auto virtual capacity()const->std::int32_t override { return CAPACITY; }
 
 			virtual ~MsgFix() = default;
-			explicit MsgFix(std::int32_t msg_id = 0, std::int32_t size = 0) :MsgBase() {}
+			explicit MsgFix(std::int32_t msg_id = 0, std::int32_t size = 0) :MsgBase() { resize(size); setMsgID(msg_id); }
 			MsgFix(const MsgBase &other)
 			{
 				resize(other.size());

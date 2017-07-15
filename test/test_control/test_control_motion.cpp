@@ -4,287 +4,96 @@
 #include "test_control_motion.h"
 
 using namespace aris::control;
-
-const char xml_file[] =
-"<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
-"<root>"
-"    <widget_root>"
-"        <command_parser type=\"CommandParser\">"
-"            <command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
-"                <exit/>"
-"                <en default_child_type=\"Param\" default=\"all\">"
-"                    <all abbreviation=\"a\"/>"
-"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                </en>"
-"                <ds default_child_type=\"Param\" default=\"all\">"
-"                    <all abbreviation=\"a\"/>"
-"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                </ds>"
-"                <hm default_child_type=\"Param\" default=\"all\">"
-"                    <all abbreviation=\"a\"/>"
-"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                </hm>"
-"                <test default_child_type=\"Param\" default=\"all\">"
-"                    <all abbreviation=\"a\"/>"
-"                    <motion_id abbreviation=\"m\" default=\"0\"/>"
-"                    <physical_id abbreviation=\"p\" default=\"0\"/>"
-"                </test>"
-"            </command_pool>"
-"        </command_parser>"
-"        <command_pipe type=\"Pipe\"/>"
-"        <message_pipe type=\"Pipe\"/>"
-"    </widget_root>"
-"    <controller>"
-"        <slave_type_pool type=\"SlaveTypePoolObject\">"
-"            <elmo type=\"SlaveType\" product_code=\"0x00030924\" vender_id=\"0x0000009a\" alias=\"0\" distributed_clock=\"0x0300\">"
-"                <pdo_group_pool type=\"PdoGroupPoolObject\">"
-"                    <index_1605 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1605\" is_tx=\"false\">"
+/*
+"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
+"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
 "                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
 "                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
 "                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                        <max_torque index=\"0x6072\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
-"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
-"                    </index_1605>"
-"                    <index_1617 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1617\" is_tx=\"false\">"
-"                        <VelocityOffset index=\"0x60B1\" subindex=\"0x00\" datatype=\"int32\"/>"
-"                    </index_1617>"
-"                    <index_1618 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1618\" is_tx=\"false\">"
-"                        <TorqueOffset index=\"0x60B2\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                    </index_1618>"
-"                    <index_1a03 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A03\" is_tx=\"true\">"
+"                    </index_1600>"
+"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
+"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
 "                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
 "                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
-"                        <digital_inputs index=\"0x60fd\" subindex=\"0x00\" datatype=\"uint32\"/>"
-"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
-"                    </index_1a03>"
-"                    <index_1a1f type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A1F\" is_tx=\"true\">"
 "                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                    </index_1a1f>"
-"                    <index_1a13 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A13\" is_tx=\"true\">"
-"                        <tor_actual_value index=\"0x6077\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                    </index_1a13>"
-"                    <index_1a0b type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A0B\" is_tx=\"true\">"
-"                        <mode_of_operation_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
-"                    </index_1a0b>"
-"                </pdo_group_pool>"
-"                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
-"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"-1\"/>"
-"                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
-"                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
-"                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
-"                    <home_offset index=\"0x607C\" subindex=\"0\" datatype=\"int32\" config=\"0\"/>"
-"                </sdo_pool>"
-"            </elmo>"
-"        </slave_type_pool>"
-"        <slave_pool type=\"SlavePoolObject\">"
-"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
-"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\"/>"
-"        </slave_pool>"
-"    </controller>"
-"</root>"
-;
-
-
-enum { MOTION_NUM = 100 };
-struct BasicFunctionParam
+"                    </index_1a00>"
+*/
+void test_elmo_enable()
 {
-	std::uint8_t cmd_type;
-	bool active_motor[MOTION_NUM];
-
-	BasicFunctionParam() {
-		cmd_type = aris::control::Motion::IDLE;
-		std::fill(active_motor, active_motor + MOTION_NUM, true);
-	}
-};
-
-static aris::control::Controller controller;
-static aris::core::Root widget_root;
-static aris::core::CommandParser *parser;
-static aris::core::Pipe *msg_pipe;
-
-char cmd_char[8192];
-
-static bool is_running = true;
-
-static std::string command_in("idle");//command input from terminal
-static std::int32_t cmd_count{ 0 };
-static bool cmd_success{ false };
-
-BasicFunctionParam decode(const std::string input)
-{
-	std::string cmd;
-	std::map<std::string, std::string> params;
 	try
 	{
-		parser->parse(input, cmd, params);
+		aris::control::Master m;
+		m.registerChildType<MyMotion>();
 
-		std::cout << "\n" << cmd << std::endl;
-		aris::Size paramPrintLength;
-		if (params.empty())
-		{
-			paramPrintLength = 2;
-		}
-		else
-		{
-			paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
-			{
-				return a.first.length() < b.first.length();
-			})->first.length() + 2;
-		}
+		auto &st = m.slaveTypePool().add<SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+		auto &s1 = m.slavePool().add<MyMotion>("s1", st, 0, 0, 0, 0, 0, 0);
 
-		for (auto &i : params)
-		{
-			std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
-		}
 
-		std::cout << std::endl;
+		auto &tx = s1.pdoGroupPool().add<PdoGroup>("index_1A00", 0x1A00, true);
+		tx.add<Pdo>("index_6064", DO::INT32, 0x6064, 0x00);
+		tx.add<Pdo>("index_606c", DO::INT32, 0x606c, 0x00);
+		tx.add<Pdo>("index_6041", DO::UINT16, 0x6041, 0x00);
+
+		auto &tx2 = s1.pdoGroupPool().add<PdoGroup>("index_1A0B", 0x1A0B, true);
+		tx2.add<Pdo>("index_6061", DO::UINT8, 0x6061, 0x00);
+
+		auto &tx3 = s1.pdoGroupPool().add<PdoGroup>("index_1A1F", 0x1A1F, true);
+		tx3.add<Pdo>("index_6078", DO::INT16, 0x6078, 0x00);
+
+		auto &rx = s1.pdoGroupPool().add<PdoGroup>("index_1605", 0x1605, false);
+		rx.add<Pdo>("index_607A", DO::INT32, 0x607A, 0x00);
+		rx.add<Pdo>("index_60FF", DO::INT32, 0x60FF, 0x00);
+		rx.add<Pdo>("index_6071", DO::INT16, 0x6071, 0x00);
+		rx.add<Pdo>("index_6072", DO::INT16, 0x6072, 0x00);
+		rx.add<Pdo>("index_6040", DO::UINT16, 0x6040, 0x00);
+		rx.add<Pdo>("index_6060", DO::UINT8, 0x6060, 0x00);
+
+
+
+		m.setControlStrategy([&]()
+		{
+			static aris::core::MsgFix<8192> msg;
+			static int count{ 0 };
+
+			auto ret = s1.enable(8);
+
+			msg.resize(1);
+			sprintf(msg.data(), "count %d : pos %d", count, ret);
+			msg.resize(std::strlen(msg.data()) + 1);
+			
+
+			if (++count % 1000 == 0)m.pipeOut().sendMsg(msg);
+
+			m.dataLogger().lout() << "count " << count << " : ret " << ret <<"\n";
+			m.dataLogger().send();
+		});
+		m.dataLogger().start();
+		m.start();
+		for (auto i{ 0 }; i < 20; ++i)
+		{
+			aris::core::Msg msg;
+			while (!m.pipeOut().recvMsg(msg));
+			std::cout << msg.data() << std::endl;
+		}
+		m.stop();
+		m.dataLogger().stop();
+		std::cout << "test pdo finished" << std::endl;
 	}
 	catch (std::exception &e)
 	{
-		std::cout << e.what() << std::endl << std::endl;
+		std::cout << e.what() << std::endl;
 	}
-
-	BasicFunctionParam bfParam;
-	if (cmd == "ds")
-	{
-		bfParam.cmd_type = aris::control::Motion::Cmd::DISABLE;
-	}
-	else if (cmd == "en")
-	{
-		bfParam.cmd_type = aris::control::Motion::Cmd::ENABLE;
-	}
-	else if (cmd == "hm")
-	{
-		bfParam.cmd_type = aris::control::Motion::Cmd::HOME;
-	}
-	else if (cmd == "test")
-	{
-		bfParam.cmd_type = aris::control::Motion::Cmd::RUN;
-	}
-	else if (cmd == "exit")
-	{
-		bfParam.cmd_type = 110;
-	}
-	else
-		bfParam.cmd_type = 120;
-
-
-	std::fill(bfParam.active_motor, bfParam.active_motor + MOTION_NUM, false);
-
-	for (auto &i : params) {
-        if (i.first != "physical_id")
-            std::cout << "the first param must be 'p', it means the physic id." << std::endl;
-		else {
-			if (stoi(i.second)>MOTION_NUM - 1 || stoi(i.second)<0) {
-				throw std::runtime_error("the second param is invalid");
-			}
-			else
-				bfParam.active_motor[stoi(i.second)] = true;
-		}
-	}
-	return bfParam;
 }
-void tg()
-{
-	BasicFunctionParam *param = reinterpret_cast<BasicFunctionParam *>(cmd_char);;
-	aris::core::MsgFix<8192> recv_msg;
 
-	if (msg_pipe->recvMsg(recv_msg))
-	{
-		recv_msg.paste(cmd_char);
-		cmd_count = 0;
-		cmd_success = false;
-	}
 
-	for (std::size_t i = 0; i<MOTION_NUM && param->active_motor[i]; i++) 
-	{
-		auto &txmotiondata = static_cast<aris::control::TxMotionData&>(controller.slavePool().at(i).txData());
-		auto &rxmotiondata = static_cast<aris::control::RxMotionData&>(controller.slavePool().at(i).rxData());
-		if (param->cmd_type != aris::control::Motion::Cmd::RUN)
-		{
-			if (rxmotiondata.ret == 0 && cmd_count != 0 && !cmd_success) {
-				printf("command finished, cmd_count: %d\n", cmd_count);
-				cmd_success = true;
-			}
 
-			if (cmd_count % 1000 == 0 && !cmd_success)	printf("executing command: %d\n", cmd_count);
-		}
-		switch (param->cmd_type)
-		{
-		case aris::control::Motion::Cmd::ENABLE:
-			txmotiondata.cmd = aris::control::Motion::Cmd::ENABLE;
-			if (cmd_success) {
-				txmotiondata.cmd = aris::control::Motion::Cmd::RUN;
-				txmotiondata.target_pos = rxmotiondata.feedback_pos;
-			}
-			break;
-		case aris::control::Motion::Cmd::DISABLE:
-			txmotiondata.cmd = aris::control::Motion::Cmd::DISABLE;
-			break;
-		case aris::control::Motion::Cmd::HOME:
-			txmotiondata.cmd = aris::control::Motion::Cmd::HOME;
-			if (cmd_success) {
-				txmotiondata.cmd = aris::control::Motion::Cmd::RUN;
-				txmotiondata.target_pos = rxmotiondata.feedback_pos;
-			}
-			break;
-		case aris::control::Motion::Cmd::RUN:
-			txmotiondata.cmd = aris::control::Motion::Cmd::RUN;
-			static double begin;
-			if (cmd_count == 0)	begin = rxmotiondata.feedback_pos;
-			txmotiondata.target_pos = 0.020*std::sin(cmd_count / 10000.0 * 2 * PI) + begin;
 
-			if (cmd_count % 5000 == 0)	printf("executing command: %d\n", cmd_count);
-			break;
-		default:
-			break;
-		}
-
-	}
-	cmd_count++;
-}
 void test_control_motion()
 {
 	std::cout << std::endl << "-----------------test motion---------------------" << std::endl;
-	
-	aris::core::XmlDocument xml_doc;
-    xml_doc.Parse(xml_file);
-
-	controller.loadXml(xml_doc);
-	widget_root.registerChildType<aris::core::Param>();
-	widget_root.registerChildType<aris::core::UniqueParam>();
-	widget_root.registerChildType<aris::core::GroupParam>();
-	widget_root.registerChildType<aris::core::Command>();
-	widget_root.registerChildType<aris::core::ObjectPool<aris::core::Command> >();
-	widget_root.registerChildType<aris::core::CommandParser>();
-	widget_root.registerChildType<aris::core::Pipe>();
-	widget_root.loadXml(*xml_doc.RootElement()->FirstChildElement("widget_root"));
-	parser = static_cast<aris::core::CommandParser*>(&*widget_root.findByName("command_parser"));
-	msg_pipe = static_cast<aris::core::Pipe*>(&*widget_root.findByName("message_pipe"));
-
-	controller.setControlStrategy(tg);
-	controller.start();
-
-	while (std::getline(std::cin, command_in) && is_running)
-	{
-		BasicFunctionParam param = decode(command_in);
-
-		if (param.cmd_type < 100)
-		{
-			aris::core::Msg cmd_msg;
-			cmd_msg.copyStruct(param);
-			if (cmd_msg.size() != sizeof(BasicFunctionParam))throw std::runtime_error("invalid msg length of parse function");
-			cmd_msg.setMsgID(0);
-			msg_pipe->sendMsg(cmd_msg);
-		}
-		else if (param.cmd_type == 110) {
-			controller.stop();
-			is_running = false;
-			break;
-		}
-	}
-
+	test_elmo_enable();
 	std::cout << "-----------------test motion finished------------" << std::endl << std::endl;
 
 	return;

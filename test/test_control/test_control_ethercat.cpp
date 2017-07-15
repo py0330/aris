@@ -45,116 +45,133 @@ const char xml_file[] =
 
 using namespace aris::control;
 
-struct TxTestData :public Slave::TxType
-{
-	std::uint16_t control_word{ 0 };
-	std::uint8_t mode_of_operation;
-	std::int32_t target_pos;
-	std::int32_t target_vel;
-	std::int16_t target_cur;
-};
-struct RxTestData :public Slave::RxType
-{
-	std::uint16_t status_word;
-	std::uint8_t mode_of_display;
-	std::int32_t actual_pos;
-	std::int32_t actual_vel;
-	std::int16_t actual_cur;
-};
-class TestSlave :public SlaveTemplate<TxTestData, RxTestData>
-{
-public:
-	static auto Type()->const std::string &{ static const std::string type("TestSlave"); return std::ref(type); }
-	auto virtual type() const->const std::string&{ return Type(); }
-	TestSlave(Object &father, const aris::core::XmlElement &xml_ele) :SlaveTemplate(father, xml_ele) {}
-
-protected:
-	auto virtual readUpdate()->void override
-	{
-		readPdoIndex(0x6041, 0, rxData().status_word);
-		readPdoIndex(0x6061, 0, rxData().mode_of_display);
-		readPdoIndex(0x6064, 0, rxData().actual_pos);
-		readPdoIndex(0x606C, 0, rxData().actual_vel);
-		readPdoIndex(0x6078, 0, rxData().actual_cur);
-	};
-	auto virtual writeUpdate()->void override
-	{
-		writePdoIndex(0x6040, 0, txData().control_word);
-		writePdoIndex(0x6060, 0, txData().mode_of_operation);
-		writePdoIndex(0x607A, 0, txData().target_pos);
-		writePdoIndex(0x60FF, 0, txData().target_vel);
-		writePdoIndex(0x6071, 0, txData().target_cur);
-	}
-};
-
-class TestMaster :public aris::control::Master
-{
-protected:
-	auto virtual controlStrategy()->void override
-	{
-		static int count{ 0 };
-
-		auto& slave = dynamic_cast<aris::control::Slave &>(slavePool().at(0));
-	};
-};
-
 void test_pdo() 
 {
-	aris::control::Master m;
+	try 
+	{
+		aris::control::Master m;
 
-	auto &st = m.slaveTypePool().add<SlaveType>("st",1,1,1,1);
-	auto &s1 = m.slavePool().add<Slave>("s1", st);
+		auto &st = m.slaveTypePool().add<SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+		auto &s1 = m.slavePool().add<Slave>("s1", st);
 
-	auto &pdo_group = s1.pdoGroupPool().add<PdoGroup>("1600", 1600, true);
-	pdo_group.add<Pdo>("index_1a00", DO::INT32, 0x120a, 0x12);
-	s1.sdoPool().add<Sdo>("index_0601", DO::INT16, 0x120b, 0x12, Sdo::READ | Sdo::WRITE);
-	s1.sdoPool().add<Sdo>("index_0602", DO::INT32, 0x120c, 0x13, Sdo::READ);
-	s1.sdoPool().add<Sdo>("index_0603", DO::UINT16, 0x120d, 0x14, Sdo::READ | Sdo::WRITE | Sdo::CONFIG, 12);
-	s1.sdoPool().add<Sdo>("index_0604", DO::UINT8, 0x120e, 0x15, Sdo::WRITE | Sdo::CONFIG);
-	s1.sdoPool().add<Sdo>("index_0605", DO::INT8, 0x120f, 0x16, Sdo::READ | Sdo::WRITE, 12);
-	std::cout << m.xmlString() <<"end" << std::endl;
+		auto &pdo_group = s1.pdoGroupPool().add<PdoGroup>("index_1a00", 0x1A00, true);
+		pdo_group.add<Pdo>("index_6064", DO::INT32, 0x6064, 0x00);
 
+		m.setControlStrategy([&]()
+		{
+			static aris::core::MsgFix<8192> msg;
+			static int count{ 0 };
 
-	//m.loadString(xml_file);
-	//m.xmlString();
-	//std::string s;
-	//m.saveString(s);
-	//std::cout << m.xmlString() <<"end"<<std::endl;
+			std::int32_t value{ 0 };
+			s1.readPdoIndex(0x6064, 0x00, value);
+
+			if (++count % 1000 == 0)
+			{
+				msg.resize(1);
+				sprintf(msg.data(), "count %d : pos %d", count, value);
+				msg.resize(std::strlen(msg.data()) + 1);
+				m.pipeOut().sendMsg(msg);
+			}
+		});
+		m.start();
+		for (auto i{ 0 }; i < 20; ++i)
+		{
+			aris::core::Msg msg;
+			while (!m.pipeOut().recvMsg(msg));
+			std::cout << msg.data() << std::endl;
+		}
+		m.stop();
+		std::cout << "test pdo finished" << std::endl;
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+	}
 }
-void test_sdo() {}
-void test_data_logger(){}
-
-void test_control_ethercat()
+void test_sdo() 
 {
-	test_pdo();
-	
-	
-	std::cout << std::endl << "-----------------test ethercat---------------------" << std::endl;
+	try
+	{
+		std::cout << "test sdo" << std::endl;
+		aris::control::Master m;
 
+		auto &st = m.slaveTypePool().add<SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+		auto &s1 = m.slavePool().add<Slave>("s1", st);
+
+		auto &home_mode = s1.sdoPool().add<Sdo>("index_6098", DO::INT16, 0x6098, 0x00, Sdo::READ | Sdo::WRITE | Sdo::CONFIG, 17);
+
+		// test read sdo //
+		std::int8_t mode = 0;
+		home_mode.read(mode);
+		std::cout << "home mode before write and start:" << static_cast<int>(mode) << std::endl;
+		// test write sdo //
+		home_mode.write(static_cast<std::int8_t>(16));
+		std::this_thread::sleep_for(std::chrono::seconds(3));
+		home_mode.read(mode);
+		std::cout << "home mode after write before start:" << static_cast<int>(mode) << std::endl;
+		// test config sdo //
+		m.start();
+		std::this_thread::sleep_for(std::chrono::seconds(3));
+		home_mode.read(mode);
+		std::cout << "home mode after start and config:" << static_cast<int>(mode) << std::endl;
+		// test write sdo when running //
+		home_mode.write(static_cast<std::int8_t>(16));
+		std::this_thread::sleep_for(std::chrono::seconds(3));
+		home_mode.read(mode);
+		std::cout << "home mode after write before start:" << static_cast<int>(mode) << std::endl;
+		m.stop();
+		std::cout << "test sdo finished" << std::endl;
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+	
+
+}
+void test_data_logger()
+{
 	aris::core::XmlDocument xml_doc;
 	xml_doc.Parse(xml_file);
 
-	TestMaster master;
+	aris::control::Master m;
+	m.loadXml(xml_doc);
 
-	master.registerChildType<TestSlave>();
-	master.loadXml(xml_doc);
+	m.setControlStrategy([&]()
+	{
+		static aris::core::MsgFix<8192> msg;
+		static int count{ 0 };
 
+		std::int32_t value{ 0 };
+		m.slavePool().front().readPdoIndex(0x6064, 0x00, value);
 
-	master.start();
+		if (++count % 1000 == 0)
+		{
+			msg.resize(1);
+			sprintf(msg.data(), "count %d : pos %d", count, value);
+			msg.resize(std::strlen(msg.data()) + 1);
+			m.pipeOut().sendMsg(msg);
+		}
 
-	// test sdo read and write
-	std::this_thread::sleep_for(std::chrono::seconds(1));
-	std::int8_t mode = 0;
-	master.slavePool().front().sdoPool().front().read(mode);
-	std::cout << "home mode:" << static_cast<int>(mode) << std::endl;
-	master.slavePool().front().sdoPool().front().write(static_cast<std::int8_t>(18));
-	master.slavePool().front().sdoPool().front().read(mode);
-	std::cout << "home mode:" << static_cast<int>(mode) << std::endl;
+		m.dataLogger().lout() << count << " pos:" << value << "\n";
+		m.dataLogger().send();
+	});
+	m.dataLogger().start();
+	m.start();
+	for (auto i{ 0 }; i < 20; ++i)
+	{
+		aris::core::Msg msg;
+		while (!m.pipeOut().recvMsg(msg));
+		std::cout << msg.data() << std::endl;
+	}
+	m.stop();
+	m.dataLogger().stop();
+	std::cout << "test data logger finished" << std::endl;
+}
 
-	std::cin.get();
-	std::cin.get();
-
-
-
-	//std::cout << "-----------------test ethercat finished------------" << std::endl << std::endl;
+void test_control_ethercat()
+{
+	//test_pdo();
+	//test_sdo();
+	//test_data_logger();
 }

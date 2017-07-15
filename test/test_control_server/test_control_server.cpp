@@ -151,11 +151,9 @@ void test_control_server()
 
 			static double begin_pos;
 
-			auto &rx = aris::server::ControlServer::instance().controller().rxDataPool().at(param.model_->motionAtPhy(0).slaID());
-			static_cast<aris::control::Motion::RxType&>(rx).feedback_pos;
 			if (param.count_ == 1)
 			{
-				auto &rx = aris::server::ControlServer::instance().controller().rxDataPool().at(param.model_->motionAtPhy(0).slaID());
+				auto &rx = aris::server::ControlServer::instance().controller().slavePool().at(param.model_->motionAtPhy(0).slaID()).rxData();
 				begin_pos = static_cast<aris::control::Motion::RxType&>(rx).feedback_pos;
 			}
 
