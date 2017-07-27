@@ -9,15 +9,14 @@
 
 int main(int argc, char *argv[])
 {
-	//test_core_xml();
+	test_core_xml();
 	test_core_msg();
-	//test_core_socket();
-	//test_core_pipe();
-	//test_command();
+	test_core_socket();
+	test_core_pipe();
+	test_command();
 
 	std::cout << "test_core finished, press any key to continue" << std::endl;
-	char s;
-	std::cin >> s;
+	std::cin.get();
 
 	return 0;
 }

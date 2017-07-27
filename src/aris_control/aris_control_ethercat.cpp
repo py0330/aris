@@ -10,8 +10,9 @@
 #include <chrono>
 #include <future>
 
-#include "aris_control_kernel.h"
+#include "aris_control_ethercat_kernel.h"
 #include "aris_control_ethercat.h"
+#include "aris_control_motion.h"
 
 namespace aris
 {
@@ -33,7 +34,7 @@ namespace aris
 			std::mutex mu_running_;
 			std::atomic_bool is_running_;
 
-			Imp() :log_msg_(), is_running_(false) { log_msg_stream_.reset(new aris::core::MsgStream(log_msg_)); };
+			Imp() :log_msg_(), is_running_(false) { log_msg_stream_.reset(new aris::core::MsgStream(log_msg_)); }
 		};
 		auto DataLogger::saveXml(aris::core::XmlElement &xml_ele) const->void{	Element::saveXml(xml_ele);	}
 		auto DataLogger::start(const std::string &log_file_name)->void
@@ -241,9 +242,9 @@ namespace aris
 		}
 		auto Sdo::readable()const->bool { return (imp_->option_ & READ) != 0; }
 		auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
-		auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0; }
+		auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0;  }
 		auto Sdo::option()const->unsigned { return imp_->option_; }
-		auto Sdo::configBuffer()->char* { return imp_->config_value_; };
+		auto Sdo::configBuffer()->char* { return imp_->config_value_; }
 		auto Sdo::configValueInt32()const->std::int32_t { return imp_->config_value_int32_; }
 		auto Sdo::configValueInt16()const->std::int16_t { return imp_->config_value_int16_; }
 		auto Sdo::configValueInt8()const->std::int8_t { return imp_->config_value_int8_; }
@@ -509,37 +510,37 @@ namespace aris
 		auto Pdo::write(std::int32_t value)->void
 		{
 			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
-			if (dataType() != INT32) throw std::runtime_error("can not read pdo with wrong data type");
+			if (dataType() != INT32) throw std::runtime_error("can not write pdo with wrong data type");
 			aris_ecrt_pdo_write_int32(slave().ecHandle(), ecHandle(), value);
 		}
 		auto Pdo::write(std::int16_t value)->void
 		{
 			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
-			if (dataType() != INT16) throw std::runtime_error("can not read pdo with wrong data type");
+			if (dataType() != INT16) throw std::runtime_error("can not write pdo with wrong data type");
 			aris_ecrt_pdo_write_int16(slave().ecHandle(), ecHandle(), value);
 		}
 		auto Pdo::write(std::int8_t value)->void
 		{
-			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
-			if (dataType() != INT8) throw std::runtime_error("can not read pdo with wrong data type");
+			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not write pdo with rx type");
+			if (dataType() != INT8) throw std::runtime_error("can not write pdo with wrong data type");
 			aris_ecrt_pdo_write_int8(slave().ecHandle(), ecHandle(), value);
 		}
 		auto Pdo::write(std::uint32_t value)->void
 		{
-			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
-			if (dataType() != UINT32) throw std::runtime_error("can not read pdo with wrong data type");
+			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not write pdo with rx type");
+			if (dataType() != UINT32) throw std::runtime_error("can not write pdo with wrong data type");
 			aris_ecrt_pdo_write_uint32(slave().ecHandle(), ecHandle(), value);
 		}
 		auto Pdo::write(std::uint16_t value)->void
 		{
-			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
-			if (dataType() != UINT16) throw std::runtime_error("can not read pdo with wrong data type");
+			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not write pdo with rx type");
+			if (dataType() != UINT16) throw std::runtime_error("can not write pdo with wrong data type");
 			aris_ecrt_pdo_write_uint16(slave().ecHandle(), ecHandle(), value);
 		}
 		auto Pdo::write(std::uint8_t value)->void
 		{
-			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not read pdo with rx type");
-			if (dataType() != UINT8) throw std::runtime_error("can not read pdo with wrong data type");
+			if (static_cast<const PdoGroup &>(father()).tx()) throw std::runtime_error("can not write pdo with rx type");
+			if (dataType() != UINT8) throw std::runtime_error("can not write pdo with wrong data type");
 			aris_ecrt_pdo_write_uint8(slave().ecHandle(), ecHandle(), value);
 		}
 		Pdo::~Pdo() = default;
@@ -568,8 +569,8 @@ namespace aris
 
 			xml_ele.SetAttribute("is_tx", tx());
 		}
-		auto PdoGroup::ecHandle()->Handle* { return imp_->handle_.get(); };
-		auto PdoGroup::ecHandle()const->const Handle*{ return imp_->handle_.get(); };
+		auto PdoGroup::ecHandle()->Handle* { return imp_->handle_.get(); }
+		auto PdoGroup::ecHandle()const->const Handle*{ return imp_->handle_.get(); }
 		auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 		auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
@@ -648,8 +649,6 @@ namespace aris
 			std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
 
 			Slave *slave_;
-			RxType rx_data_;
-			TxType tx_data_;
 
 			friend class Master::Imp;
 			friend class Slave;
@@ -704,10 +703,6 @@ namespace aris
 		auto Slave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }
 		auto Slave::alias()const->std::uint16_t { return imp_->slave_type_->alias(); }
 		auto Slave::distributedClock()const->std::uint32_t { return imp_->slave_type_->distributedClock(); }
-		auto Slave::txData()->TxType& { return imp_->tx_data_; }
-		auto Slave::txData()const->const TxType&{ return imp_->tx_data_; }
-		auto Slave::rxData()->RxType& { return imp_->rx_data_; }
-		auto Slave::rxData()const->const RxType&{ return imp_->rx_data_; }
 		auto Slave::pdoGroupPool()->aris::core::ObjectPool<PdoGroup, Element>& { return *imp_->pdo_group_pool_; }
 		auto Slave::pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&{return *imp_->pdo_group_pool_; }
 		auto Slave::sdoPool()->aris::core::ObjectPool<Sdo, Element>& { return *imp_->sdo_pool_; }
@@ -923,38 +918,28 @@ namespace aris
 
 				while (mst.imp_->is_running_)
 				{
+					// rt timer //
 					aris_rt_task_wait_period();
 
 					// receive pdo data
 					aris_ecrt_master_receive(mst.ecHandle());
-					for (auto &sla : mst.slavePool())
-					{
-						aris_ecrt_slave_receive(sla.ecHandle());
-						sla.readUpdate();
-					}
+					for (auto &sla : mst.slavePool())aris_ecrt_slave_receive(sla.ecHandle());
 
-					// tg begin
+					// tragectory generator //
 					if (mst.imp_->strategy_)mst.imp_->strategy_();
-					// tg end
 
 					// sync
 					aris_ecrt_master_sync(mst.ecHandle(), aris_rt_timer_read());
 
 					// send pdo data
-					for (auto &sla : mst.slavePool())
-					{
-						sla.writeUpdate();
-						aris_ecrt_slave_send(sla.ecHandle());
-					}
+					for (auto &sla : mst.slavePool())aris_ecrt_slave_send(sla.ecHandle());
 					aris_ecrt_master_send(mst.ecHandle());
 				}
-			};
+			}
 
 			// slave type and slave //
 			aris::core::ObjectPool<SlaveType, Element> *slave_type_pool_;
 			aris::core::ObjectPool<Slave, Element> *slave_pool_;
-			aris::core::RefPool<Slave::TxType> tx_data_pool_;
-			aris::core::RefPool<Slave::RxType> rx_data_pool_;
 			
 			// for log //
 			DataLogger* data_logger_;
@@ -962,6 +947,8 @@ namespace aris
 			// for msg in and out //
 			aris::core::Pipe *pipe_in_;
 			aris::core::Pipe *pipe_out_;
+			aris::core::MsgFix<MAX_MSG_SIZE> out_msg_, in_msg_;
+			std::unique_ptr<aris::core::MsgStream> out_msg_stream_;
 
 			// strategy //
 			std::function<void()> strategy_{ nullptr };
@@ -975,6 +962,8 @@ namespace aris
 			aris::core::ImpPtr<Handle> rt_task_handle_;
 			aris::core::ImpPtr<Handle> ec_handle_;
 
+
+			Imp() { out_msg_stream_.reset(new aris::core::MsgStream(out_msg_)); }
 
 			friend class Slave;
 			friend class Master;
@@ -993,16 +982,9 @@ namespace aris
 
 			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Element> *>(&(*findByName("slave_type_pool")));
 			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Element> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Element> *>(&(*findByName("slave_pool")));
-			imp_->tx_data_pool_.clear();
-			imp_->rx_data_pool_.clear();
 			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
 			imp_->pipe_in_ = findOrInsert<aris::core::Pipe>("msg_pipe_in");
 			imp_->pipe_out_ = findOrInsert<aris::core::Pipe>("msg_pipe_out");
-			for (auto &slave : slavePool())
-			{
-				imp_->tx_data_pool_.push_back_ptr(&slave.txData());
-				imp_->rx_data_pool_.push_back_ptr(&slave.rxData());
-			}
 		}
 		auto Master::start()->void
 		{
@@ -1048,7 +1030,7 @@ namespace aris
 			for (auto &sla : slavePool())for (auto &sdo : sla.sdoPool())
 				aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), sdo.configBuffer(), sdo.dataBitSize());
 
-
+			aris_mlockall();
 			// start ethercat master and slave //
 			aris_ecrt_master_start(ecHandle());
 			for (auto &sla : slavePool())aris_ecrt_slave_start(sla.ecHandle());
@@ -1057,7 +1039,7 @@ namespace aris
 			imp_->rt_task_handle_.reset(aris_rt_task_create());
 			if (imp_->rt_task_handle_.get() == nullptr) throw std::runtime_error("rt_task_create failed");
 			if (aris_rt_task_start(imp_->rt_task_handle_.get(), &Imp::rt_task_func, this))throw std::runtime_error("rt_task_start failed");
-		};
+		}
 		auto Master::stop()->void
 		{
 			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
@@ -1073,10 +1055,23 @@ namespace aris
 			if (imp_->is_running_)throw std::runtime_error("master already running, cannot set control strategy");
 			imp_->strategy_ = strategy;
 		}
-		auto Master::ecHandle()->Handle* { return imp_->ec_handle_.get(); };
-		auto Master::rtHandle()->Handle* { return imp_->rt_task_handle_.get(); };
-		auto Master::pipeIn()->aris::core::Pipe& { return *imp_->pipe_in_; }
-		auto Master::pipeOut()->aris::core::Pipe& { return *imp_->pipe_out_; }
+		auto Master::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
+		auto Master::rtHandle()->Handle* { return imp_->rt_task_handle_.get(); }
+		auto Master::msgIn()->aris::core::MsgFix<MAX_MSG_SIZE>& { return imp_->in_msg_; }
+		auto Master::msgOut()->aris::core::MsgFix<MAX_MSG_SIZE>& { return imp_->out_msg_; }
+		auto Master::mout()->aris::core::MsgStream & { return *imp_->out_msg_stream_; }
+		auto Master::sendOut()->void 
+		{
+			if (!imp_->out_msg_.empty())
+			{
+				imp_->pipe_out_->sendMsg(imp_->out_msg_);
+				imp_->out_msg_.resize(0);
+				mout().resetBuf();
+			}
+		}
+		auto Master::recvOut(aris::core::MsgBase &recv_msg)->int { return imp_->pipe_out_->recvMsg(recv_msg); }
+		auto Master::sendIn(const aris::core::MsgBase &send_msg)->void { imp_->pipe_in_->sendMsg(send_msg); }
+		auto Master::recvIn()->int { return imp_->pipe_in_->recvMsg(imp_->in_msg_); }
 		auto Master::slaveTypePool()->aris::core::ObjectPool<SlaveType, Element>& { return *imp_->slave_type_pool_; }
 		auto Master::slavePool()->aris::core::ObjectPool<Slave, Element>& { return *imp_->slave_pool_; }
 		auto Master::dataLogger()->DataLogger& { return *imp_->data_logger_; }
@@ -1096,11 +1091,259 @@ namespace aris
 			registerChildType<Slave>();
 			registerChildType<aris::core::ObjectPool<Slave, Element> >();
 
+			registerChildType<aris::control::Motion>();
+
 			imp_->slave_type_pool_ = &add<aris::core::ObjectPool<SlaveType, Element> >("slave_type_pool");
 			imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave, Element> >("slave_pool");
 			imp_->data_logger_ = &add<DataLogger>("date_logger");
 			imp_->pipe_in_ = &add<aris::core::Pipe>("msg_pipe_in");
 			imp_->pipe_out_ = &add<aris::core::Pipe>("msg_pipe_out");
+		}
+
+
+		struct EthercatSlave::Imp
+		{
+		public:
+			Imp(EthercatSlave*slave, const SlaveType *st = nullptr) :slave_(slave), slave_type_(st) {}
+
+			aris::core::ImpPtr<Handle> ec_handle_;
+
+			const SlaveType *slave_type_;
+
+			aris::core::ObjectPool<PdoGroup, Element> *pdo_group_pool_;
+			aris::core::ObjectPool<Sdo, Element> *sdo_pool_;
+			std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
+			std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
+
+			EthercatSlave *slave_;
+
+			friend class EthercatSlave;
+			friend class Master;
+		};
+		auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void { NSlave::saveXml(xml_ele); }
+		//auto EthercatSlave::init()->void
+		//{
+		//	// make PDO map and upd pdo's slave ptr //
+		//	imp_->pdo_map_.clear();
+		//	for (int i = 0; i < static_cast<int>(pdoGroupPool().size()); ++i)
+		//	{
+		//		auto &group = pdoGroupPool().at(i);
+		//		for (int j = 0; j < static_cast<int>(group.size()); ++j)
+		//		{
+		//			auto &pdo = group.at(j);
+		//			pdo.DO::imp_->slave_ = this;
+		//			if (imp_->pdo_map_.find(pdo.index()) != imp_->pdo_map_.end())
+		//			{
+		//				imp_->pdo_map_.at(pdo.index()).insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+		//			}
+		//			else
+		//			{
+		//				std::map<std::uint8_t, std::pair<int, int> > subindex_map;
+		//				subindex_map.insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+		//				imp_->pdo_map_.insert(std::make_pair(pdo.index(), subindex_map));
+		//			}
+		//		}
+		//	}
+
+		//	// make SDO map and upd pdo's slave ptr //
+		//	imp_->sdo_map_.clear();
+		//	for (int i = 0; i < static_cast<int>(sdoPool().size()); ++i)
+		//	{
+		//		auto &sdo = sdoPool().at(i);
+		//		sdo.DO::imp_->slave_ = this;
+		//		if (imp_->sdo_map_.find(sdo.index()) != imp_->sdo_map_.end())
+		//		{
+		//			imp_->sdo_map_.at(sdo.index()).insert(std::make_pair(sdo.subindex(), i));
+		//		}
+		//		else
+		//		{
+		//			std::map<std::uint8_t, int > subindex_map;
+		//			subindex_map.insert(std::make_pair(sdo.subindex(), i));
+		//			imp_->sdo_map_.insert(std::make_pair(sdo.index(), subindex_map));
+		//		}
+		//	}
+		//}
+		auto EthercatSlave::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
+		auto EthercatSlave::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); }
+		auto EthercatSlave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
+		auto EthercatSlave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }
+		auto EthercatSlave::alias()const->std::uint16_t { return imp_->slave_type_->alias(); }
+		auto EthercatSlave::distributedClock()const->std::uint32_t { return imp_->slave_type_->distributedClock(); }
+		auto EthercatSlave::pdoGroupPool()->aris::core::ObjectPool<PdoGroup, Element>& { return *imp_->pdo_group_pool_; }
+		auto EthercatSlave::pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&{return *imp_->pdo_group_pool_; }
+		auto EthercatSlave::sdoPool()->aris::core::ObjectPool<Sdo, Element>& { return *imp_->sdo_pool_; }
+		auto EthercatSlave::sdoPool()const->const aris::core::ObjectPool<Sdo, Element>&{return *imp_->sdo_pool_; }
+		auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			aris_ecrt_pdo_read(ecHandle(), pdoGroupPool().at(id_pair.first).at(id_pair.second).ecHandle(), value, byte_size);
+		}
+		auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)
+		{
+			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
+			aris_ecrt_pdo_write(ecHandle(), pdoGroupPool().at(id_pair.first).at(id_pair.second).ecHandle(), value, byte_size);
+		}
+		auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)
+		{
+		}
+		auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)
+		{
+		}
+		auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)
+		{
+		}
+		EthercatSlave::~EthercatSlave() = default;
+		EthercatSlave::EthercatSlave(const std::string &name, const SlaveType &slave_type) :NSlave(name), imp_(new Imp(this, &slave_type))
+		{
+			imp_->pdo_group_pool_ = &add<aris::core::ObjectPool<PdoGroup, Element> >("pdo_group_pool");
+			imp_->sdo_pool_ = &add<aris::core::ObjectPool<Sdo, Element> >("sdo_pool");
+		}
+		EthercatSlave::EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele) : NSlave(father, xml_ele), imp_(new Imp(this))
+		{
+			if (root().findByName("slave_type_pool") == root().children().end())throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
+			auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType, Element> &>(*root().findByName("slave_type_pool"));
+
+			if (slave_type_pool.findByName(attributeString(xml_ele, "slave_type")) == slave_type_pool.end())
+			{
+				throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
+			}
+			imp_->slave_type_ = &*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"));
+			imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<PdoGroup, Element> >("pdo_group_pool");
+			imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo, Element> >("sdo_pool");
+		}
+
+
+
+		class EthercatMaster::Imp
+		{
+		public:
+			aris::core::ImpPtr<Handle> ec_handle_;
+		};
+		auto EthercatMaster::loadXml(const aris::core::XmlDocument &xml_doc)->void
+		{
+			auto root_xml_ele = xml_doc.RootElement()->FirstChildElement("controller");
+
+			if (!root_xml_ele)throw std::runtime_error("can't find controller element in xml file");
+
+			loadXml(*root_xml_ele);
+		}
+		auto EthercatMaster::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			NMaster::loadXml(xml_ele);
+		}
+		auto EthercatMaster::start()->void
+		{
+			// make pdo & sdo map for each slave //
+			for (auto &sla : slavePool()) 
+			{
+				// make PDO map and upd pdo's slave ptr //
+				sla.imp_->pdo_map_.clear();
+				for (int i = 0; i < static_cast<int>(sla.pdoGroupPool().size()); ++i)
+				{
+					auto &group = sla.pdoGroupPool().at(i);
+					for (int j = 0; j < static_cast<int>(group.size()); ++j)
+					{
+						auto &pdo = group.at(j);
+						if (sla.imp_->pdo_map_.find(pdo.index()) != sla.imp_->pdo_map_.end())
+						{
+							sla.imp_->pdo_map_.at(pdo.index()).insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+						}
+						else
+						{
+							std::map<std::uint8_t, std::pair<int, int> > subindex_map;
+							subindex_map.insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+							sla.imp_->pdo_map_.insert(std::make_pair(pdo.index(), subindex_map));
+						}
+					}
+				}
+
+				// make SDO map and upd pdo's slave ptr //
+				sla.imp_->sdo_map_.clear();
+				for (int i = 0; i < static_cast<int>(sla.sdoPool().size()); ++i)
+				{
+					auto &sdo = sla.sdoPool().at(i);
+					if (sla.imp_->sdo_map_.find(sdo.index()) != sla.imp_->sdo_map_.end())
+					{
+						sla.imp_->sdo_map_.at(sdo.index()).insert(std::make_pair(sdo.subindex(), i));
+					}
+					else
+					{
+						std::map<std::uint8_t, int > subindex_map;
+						subindex_map.insert(std::make_pair(sdo.subindex(), i));
+						sla.imp_->sdo_map_.insert(std::make_pair(sdo.index(), subindex_map));
+					}
+				}
+			}
+
+			// init ethercat master, slave, pdo group, and pdo //
+			imp_->ec_handle_.reset(aris_ecrt_master_init());
+			for (auto &sla : slavePool())
+			{
+				sla.imp_->ec_handle_.reset(aris_ecrt_slave_init());
+
+				for (auto &pdo_group : sla.pdoGroupPool())
+				{
+					pdo_group.imp_->handle_.reset(aris_ecrt_pdo_group_init());
+					for (auto &pdo : pdo_group)
+					{
+						pdo.imp_->ec_handle_.reset(aris_ecrt_pdo_init());
+					}
+				}
+			}
+
+			// config ethercat master, slave, pdo group, and pdo //
+			for (auto &sla : slavePool())
+			{
+				for (auto &pdo_group : sla.pdoGroupPool())
+				{
+					for (auto &pdo : pdo_group)
+					{
+						aris_ecrt_pdo_config(sla.ecHandle(), pdo_group.ecHandle(), pdo.ecHandle(), pdo.index(), pdo.subindex(), pdo.dataBitSize());
+					}
+					aris_ecrt_pdo_group_config(sla.ecHandle(), pdo_group.ecHandle(), pdo_group.index(), pdo_group.tx());
+				}
+				aris_ecrt_slave_config(ecHandle(), sla.ecHandle(), sla.alias(), sla.position(), sla.venderID(), sla.productCode(), sla.distributedClock());
+			}
+			aris_ecrt_master_config(ecHandle());
+
+			// config ethercat sdo //
+			for (auto &sla : slavePool())for (auto &sdo : sla.sdoPool())
+				aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), sdo.configBuffer(), sdo.dataBitSize());
+
+			// start ethercat master and slave //
+			aris_ecrt_master_start(ecHandle());
+			for (auto &sla : slavePool())aris_ecrt_slave_start(sla.ecHandle());
+
+			// create and start rt thread //
+			NMaster::start();
+		}
+		auto EthercatMaster::stop()->void
+		{
+			NMaster::stop();
+			aris_ecrt_master_stop(ecHandle());
+		}
+		auto EthercatMaster::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
+		auto EthercatMaster::slavePool()->aris::core::ObjectPool<EthercatSlave, aris::core::ObjectPool<NSlave> >& 
+		{ 
+			return static_cast<aris::core::ObjectPool<EthercatSlave, aris::core::ObjectPool<NSlave> >&>(NMaster::slavePool());
+		}
+		EthercatMaster::~EthercatMaster() = default;
+		EthercatMaster::EthercatMaster() :imp_(new Imp)
+		{
+			registerChildType<DataLogger>();
+
+			registerChildType<Pdo>();
+			registerChildType<Sdo>();
+			registerChildType<PdoGroup>();
+			registerChildType<aris::core::ObjectPool<Sdo, Element> >();
+			registerChildType<aris::core::ObjectPool<PdoGroup, Element> >();
+			registerChildType<aris::core::ObjectPool<SlaveType, Element> >();
+
+			registerChildType<SlaveType>();
+			registerChildType<Slave>();
+			registerChildType<aris::core::ObjectPool<Slave, Element> >();
+
+			registerChildType<aris::control::Motion>();
 		}
 	}
 }

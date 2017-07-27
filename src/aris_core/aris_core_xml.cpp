@@ -323,7 +323,7 @@ namespace aris
 			xml_ele.DeleteChildren();
 			xml_ele.SetName(name().c_str());
 			xml_ele.SetAttribute("type", this->type().c_str());
-
+			if (!imp_->default_type_.empty() && imp_->default_type_ != Object::Type())xml_ele.SetAttribute("default_child_type", imp_->default_type_.c_str());
 			for (auto &ele : children())
 			{
 				auto new_ele = xml_ele.GetDocument()->NewElement(ele.name().c_str());
@@ -394,8 +394,7 @@ namespace aris
 
 			if (root().childTypeMap().find(type) == root().childTypeMap().end())
 			{
-				throw std::runtime_error("unrecognized type \"" + type
-					+ "\" when add xml element \"" + xml_ele.Name() + "\" to \"" + name() + "\"");
+				throw std::runtime_error("unrecognized type \"" + type + "\" when add xml element \"" + xml_ele.Name() + "\" to \"" + name() + "\"");
 			}
 			else
 			{

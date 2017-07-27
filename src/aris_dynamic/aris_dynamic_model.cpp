@@ -1499,6 +1499,7 @@ namespace aris
 			Size sla_id_{ 0 }, phy_id_{ 0 }, clb_frc_id_{ 0 }, clb_id_{0};
 			Size component_axis_;
 			double frc_coe_[3]{ 0,0,0 };
+			double mp_offset_{ 0 }, mp_factor_{ 1.0 };
 			double mp_{ 0 }, mv_{ 0 }, ma_{ 0 };
 		};
 		auto Motion::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -1508,6 +1509,8 @@ namespace aris
 			xml_ele.SetAttribute("slave_id", static_cast<int>(imp_->sla_id_));
 			xml_ele.SetAttribute("frc_coe", core::Matrix(1, 3, this->frcCoe()).toString().c_str());
 			xml_ele.SetAttribute("component", static_cast<int>(axis()));
+			if (imp_->mp_offset_ != 0)xml_ele.SetAttribute("mp_offset", imp_->mp_offset_);
+			if (imp_->mp_factor_ != 1.0)xml_ele.SetAttribute("mp_factor", imp_->mp_factor_);
 		}
 		auto Motion::cptCp(double *cp)const->void { Constraint::cptCp(cp); cp[0] += mp(); }
 		auto Motion::cptCv(double *cv)const->void { Constraint::cptCv(cv); cv[0] += mv(); }
@@ -1531,8 +1534,8 @@ namespace aris
 		auto Motion::axis()const->Size { return imp_->component_axis_; }
 		auto Motion::frcCoe()const->const double3& { return imp_->frc_coe_; }
 		auto Motion::setFrcCoe(const double *frc_coe)->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
-		auto Motion::mp() const->double { return imp_->mp_; }
-		auto Motion::setMp(double mp)->void { imp_->mp_ = mp; }
+		auto Motion::mp() const->double { return imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_; }
+		auto Motion::setMp(double mp)->void { imp_->mp_ = (mp + imp_->mp_offset_) * imp_->mp_factor_; }
 		auto Motion::mv() const->double { return imp_->mv_; }
 		auto Motion::setMv(double mv)->void { imp_->mv_ = mv; }
 		auto Motion::ma() const->double { return imp_->ma_; }
@@ -1543,7 +1546,7 @@ namespace aris
 		auto Motion::setMfDyn(double mf_dyn)->void { cf_[0] = mf_dyn; }
 		auto Motion::mfFrc() const->double { return s_sgn(imp_->mv_)*frcCoe()[0] + imp_->mv_*frcCoe()[1] + imp_->ma_*frcCoe()[2]; }
 		Motion::~Motion() = default;
-		Motion::Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis, const double *frc_coe, Size sla_id, bool active): Constraint(name, makI, makJ, active)
+		Motion::Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis, const double *frc_coe, Size sla_id, double mp_offset, double mp_factor, bool active): Constraint(name, makI, makJ, active)
 		{
 			static const double default_frc_coe[3]{ 0,0,0 };
 			frc_coe = frc_coe ? frc_coe : default_frc_coe;
@@ -1556,6 +1559,9 @@ namespace aris
 			s_tf(*this->makI().prtPm(), loc_cst, *prtCmI_);
 
 			imp_->sla_id_ = sla_id;
+
+			imp_->mp_offset_ = mp_offset;
+			imp_->mp_factor_ = mp_factor;
 		}
 		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) : Constraint(father, xml_ele)
 		{
@@ -1567,6 +1573,9 @@ namespace aris
 			s_tf(*this->makI().prtPm(), loc_cst, *prtCmI_);
 
 			imp_->sla_id_ = attributeInt32(xml_ele, "slave_id", -1);
+
+			imp_->mp_offset_ = attributeDouble(xml_ele, "mp_offset", 0.0);
+			imp_->mp_factor_ = attributeDouble(xml_ele, "mp_factor", 1.0);
 		}
 		Motion::Motion(const Motion &other) = default;
 		Motion::Motion(Motion &&other) = default;
@@ -2232,6 +2241,17 @@ namespace aris
 			}
 
 			return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), joint.makI(), joint.makJ(), dim);
+		}
+		auto Model::addMotion()->Motion&
+		{
+			if (ground().markerPool().findByName("origin") == ground().markerPool().end())
+			{
+				double pm[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+				this->ground().markerPool().add<Marker>("origin", pm);
+			}
+			
+			auto mak = ground().markerPool().findByName("origin");
+			return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), *mak, *mak, 0, nullptr, motionPool().size());
 		}
 		auto Model::addGeneralMotion(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&
 		{

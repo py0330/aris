@@ -1,16 +1,5 @@
 ﻿#ifdef UNIX
 #include <ecrt.h>
-#include <rtdk.h>
-#include <native/task.h>
-#include <native/timer.h>
-#include <sys/mman.h>
-// following for pipe
-#include <cstdio>
-#include <cstdlib>
-#include <unistd.h>
-#include <fcntl.h>
-#include <rtdm/rtdm.h>
-#include <rtdm/rtipc.h>
 #endif
 
 #include <chrono>
@@ -18,54 +7,12 @@
 #include <memory>
 #include <vector>
 
-#include "aris_control_kernel.h"
+#include "aris_control_ethercat_kernel.h"
 
 namespace aris
 {
 	namespace control
 	{
-#ifdef WIN32
-        // should not have global variables
-		int nanoseconds{1000};
-		std::chrono::time_point<std::chrono::high_resolution_clock> last_time, begin_time;
-		//
-
-		struct RtTaskHandle :public Handle { std::thread task; };
-
-		auto aris_rt_task_create()->Handle*
-		{
-			std::unique_ptr<Handle> handle(new RtTaskHandle);
-			return handle.release();
-		}
-		auto aris_rt_task_start(Handle* handle, void(*task_func)(void*), void*param)->int
-		{
-			static_cast<RtTaskHandle*>(handle)->task = std::thread(task_func, param);
-			return 0;
-		}
-		auto aris_rt_task_join(Handle* handle)->int
-		{
-			static_cast<RtTaskHandle*>(handle)->task.join();
-			return 0;
-		}
-		auto aris_rt_task_set_periodic(int nanoseconds)->int
-		{ 
-			control::nanoseconds = nanoseconds;
-			last_time = begin_time = std::chrono::high_resolution_clock::now();
-			return 0;
-		};
-		auto aris_rt_task_wait_period()->int
-		{
-			last_time = last_time + std::chrono::nanoseconds(nanoseconds);
-			std::this_thread::sleep_until(last_time);
-			return 0;
-		};
-		auto aris_rt_timer_read()->std::int64_t
-		{
-			auto now = std::chrono::high_resolution_clock::now();
-			return std::chrono::duration_cast<std::chrono::nanoseconds>(now - begin_time).count();
-		}
-#endif
-
 #ifdef WIN32
 		auto aris_ecrt_master_init()->Handle* { return nullptr; }
 		auto aris_ecrt_master_config(Handle* master_handle)->void {}
@@ -83,6 +30,12 @@ namespace aris
 		auto aris_ecrt_pdo_group_config(Handle* slave_handle, Handle* pdo_group_handle, std::uint16_t index, bool is_tx)->void {}
 		auto aris_ecrt_pdo_init()->Handle*{ return nullptr; }
 		auto aris_ecrt_pdo_config(Handle* slave_handle, Handle* pdo_group_handle, Handle* pdo_handle, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void{}
+		auto aris_ecrt_pdo_read(Handle* slave_handle, Handle* pdo_handle, void *data, int byte_size)->void
+		{
+		}
+		auto aris_ecrt_pdo_write(Handle* slave_handle, Handle* pdo_handle, const void *data, int byte_size)->void
+		{
+		}
 		auto aris_ecrt_pdo_read_uint8(Handle* slave_handle, Handle* pdo_handle)->std::uint8_t { return 0; }
 		auto aris_ecrt_pdo_read_uint16(Handle* slave_handle, Handle* pdo_handle)->std::uint16_t { return 0; }
 		auto aris_ecrt_pdo_read_uint32(Handle* slave_handle, Handle* pdo_handle)->std::uint32_t { return 0; }
@@ -101,21 +54,6 @@ namespace aris
 			std::uint8_t *to_buffer, std::size_t buffer_size, std::uint32_t *abort_code) ->int{	return 0;}
 		auto aris_ecrt_sdo_config(Handle* master_handle, Handle* slave_handle, std::uint16_t index, std::uint8_t subindex,
 			char *buffer, std::size_t bit_size)->void {}
-#endif
-
-#ifdef UNIX
-		struct RtTaskHandle :public Handle { RT_TASK task; };
-
-		auto aris_rt_task_create()->Handle*
-		{
-			std::unique_ptr<Handle> handle(new RtTaskHandle);
-			return rt_task_create(&static_cast<RtTaskHandle*>(handle.get())->task, "realtime core", 0, 99, T_FPU | T_JOINABLE) ? nullptr : handle.release();
-		}
-		auto aris_rt_task_start(Handle* handle, void(*task_func)(void*), void*param)->int{return rt_task_start(&static_cast<RtTaskHandle*>(handle)->task, task_func, param);}
-		auto aris_rt_task_join(Handle* handle)->int { return rt_task_join(&static_cast<RtTaskHandle*>(handle)->task); }
-		auto aris_rt_task_set_periodic(int nanoseconds)->int { return rt_task_set_periodic(NULL, TM_NOW, nanoseconds); }
-		auto aris_rt_task_wait_period()->int { return rt_task_wait_period(NULL); }
-		auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
 #endif
 
 #ifdef UNIX
@@ -153,7 +91,6 @@ namespace aris
 		auto aris_ecrt_master_start(Handle* master_handle)->void
 		{
 			// init begin //
-			if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) { throw std::runtime_error("lock failed"); }
 			ecrt_master_activate(static_cast<EcMasterHandle*>(master_handle)->ec_master_);
 		}
 		auto aris_ecrt_master_stop(Handle* master_handle)->void
@@ -270,6 +207,14 @@ namespace aris
 
 			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0, 0, 0, 0, index, subindex, &(static_cast<EcPdoHandle*>(pdo_handle)->offset_) });
 			ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ index, subindex, bit_length });
+		}
+		auto aris_ecrt_pdo_read(Handle* slave_handle, Handle* pdo_handle, void *data, int byte_size)->void
+		{
+			std::copy_n(static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_ + static_cast<EcPdoHandle*>(pdo_handle)->offset_, byte_size, data);
+		}
+		auto aris_ecrt_pdo_write(Handle* slave_handle, Handle* pdo_handle, const void *data, int byte_size)->void
+		{
+			std::copy_n(static_cast<const char *>(data), byte_size, static_cast<EcSlaveHandle*>(slave_handle)->domain_pd_ + static_cast<EcPdoHandle*>(pdo_handle)->offset_);
 		}
 		auto aris_ecrt_pdo_read_uint8(Handle* slave_handle, Handle* pdo_handle)->std::uint8_t
 		{

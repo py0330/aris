@@ -8,7 +8,9 @@
 #include <cstdint>
 
 #include <aris_core.h>
-#include <aris_control_kernel.h>
+#include <aris_control_master_slave.h>
+#include <aris_control_ethercat_kernel.h>
+
 
 namespace aris
 {
@@ -87,6 +89,7 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 			friend class Slave;
+			friend class EthercatMaster;
 		};
 		class Pdo :public DO
 		{
@@ -234,21 +237,9 @@ namespace aris
 		class Slave : public Element
 		{
 		public:
-			struct TxType {};
-			struct RxType { std::int32_t ret{ 0 }; };
 			static auto Type()->const std::string &{ static const std::string type("Slave"); return std::ref(type); }
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual txData()->TxType&;
-			auto virtual txData()const->const TxType&;
-			auto virtual rxData()->RxType&;
-			auto virtual rxData()const->const RxType&;
-			auto virtual getTxData(TxType& tx_data)const->void { tx_data = txData(); }
-			auto virtual setTxData(const TxType& tx_data)->void { txData() = tx_data; }
-			auto virtual getRxData(RxType& rx_data)const->void { rx_data = rxData(); }
-			auto virtual setTxData(const RxType& rx_data)->void { rxData() = rx_data; }
-			auto virtual txTypeSize()const->std::size_t { return sizeof(TxType); }
-			auto virtual rxTypeSize()const->std::size_t { return sizeof(RxType); }
 			auto ecHandle()->Handle*;
 			auto ecHandle()const->const Handle*;
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
@@ -309,8 +300,6 @@ namespace aris
 
 		protected:
 			auto virtual init()->void;
-			auto virtual readUpdate()->void {}
-			auto virtual writeUpdate()->void {}
 
 		private:
 			struct Imp;
@@ -322,6 +311,8 @@ namespace aris
 		class Master : public aris::core::Root
 		{
 		public:
+			enum {MAX_MSG_SIZE = 8192};
+			
 			using Root::loadXml;
 			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
@@ -332,10 +323,16 @@ namespace aris
 			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 			auto rtHandle()->Handle*;
 			auto rtHandle()const->const Handle*{return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
-			auto pipeIn()->aris::core::Pipe&;
-			auto pipeIn()const->const aris::core::Pipe&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->pipeIn(); }
-			auto pipeOut()->aris::core::Pipe&;
-			auto pipeOut()const->const aris::core::Pipe&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->pipeIn(); }
+			auto msgIn()->aris::core::MsgFix<MAX_MSG_SIZE>&;
+			auto msgIn()const->const aris::core::MsgFix<MAX_MSG_SIZE>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->msgIn(); }
+			auto msgOut()->aris::core::MsgFix<MAX_MSG_SIZE>&;
+			auto msgOut()const->const aris::core::MsgFix<MAX_MSG_SIZE>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->msgOut(); }
+			auto mout()->aris::core::MsgStream &;
+			auto mout()const->const aris::core::MsgStream &{ return const_cast<std::decay_t<decltype(*this)> *>(this)->mout(); };
+			auto sendOut()->void;
+			auto recvOut(aris::core::MsgBase &recv_msg)->int;
+			auto sendIn(const aris::core::MsgBase &send_msg)->void;
+			auto recvIn()->int;
 			auto slaveTypePool()->aris::core::ObjectPool<SlaveType, Element>&;
 			auto slaveTypePool()const->const aris::core::ObjectPool<SlaveType, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveTypePool(); }
 			auto slavePool()->aris::core::ObjectPool<Slave, Element>&;
@@ -349,10 +346,6 @@ namespace aris
 			Master& operator=(const Master &other) = delete;
 			Master& operator=(Master &&other) = delete;
 
-		protected:
-			auto virtual controlStrategy()->void {}
-
-
 		private:
 			class Imp;
 			std::unique_ptr<Imp> imp_;
@@ -362,31 +355,83 @@ namespace aris
 			friend class Pdo;
 		};
 
-		template<typename Tx, typename Rx>
-		class SlaveTemplate :public Slave
+		class EthercatSlave : public NSlave
 		{
 		public:
-			using TxType = Tx;
-			using RxType = Rx;
-			auto virtual txData()->TxType & override { return tx_data_; }
-			auto virtual txData()const->const TxType & override{ return tx_data_; }
-			auto virtual rxData()->RxType & override { return rx_data_; }
-			auto virtual rxData()const->const RxType & override{ return rx_data_; }
-			auto virtual getTxData(Slave::TxType& tx_data)const->void override { static_cast<TxType &>(tx_data) = txData(); }
-			auto virtual setTxData(const Slave::TxType& tx_data)->void override { txData() = static_cast<const TxType &>(tx_data); }
-			auto virtual getRxData(Slave::RxType& rx_data)const->void override { static_cast<RxType &>(rx_data) = rxData(); }
-			auto virtual setTxData(const Slave::RxType& rx_data)->void override { rxData() = static_cast<const RxType &>(rx_data); }
-			auto virtual txTypeSize()const->std::size_t override { return sizeof(TxType); }
-			auto virtual rxTypeSize()const->std::size_t override { return sizeof(RxType); }
+			static auto Type()->const std::string &{ static const std::string type("EthercatSlave"); return std::ref(type); }
+			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*;
+			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
+			auto productCode()const->std::uint32_t;
+			auto venderID()const->std::uint32_t;
+			auto alias()const->std::uint16_t;
+			auto distributedClock()const->std::uint32_t;
+			auto pdoGroupPool()->aris::core::ObjectPool<PdoGroup, Element>&;
+			auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup, Element>&;
+			auto sdoPool()->aris::core::ObjectPool<Sdo, Element>&;
+			auto sdoPool()const->const aris::core::ObjectPool<Sdo, Element>&;
 
-			SlaveTemplate(Object &father, const aris::core::XmlElement &xml_ele) :Slave(father, xml_ele)
-			{
-				static_assert(std::is_base_of<Slave::TxType, TxType>(), "\"TxDataType\" must be derived from \"TxData\"");
-				static_assert(std::is_base_of<Slave::RxType, RxType>(), "\"RxDataType\" must be derived from \"RxData\"");
-			}
+			template<typename ValueType>
+			auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value) { readPdo(index, subindex, &value, sizeof(ValueType) * 8); }
+			auto readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int bit_size);
+			template<typename ValueType>
+			auto writePdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value) { writePdo(index, subindex, &value, sizeof(ValueType) * 8); }
+			auto writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int bit_size);
+			template<typename ValueType>
+			auto readSdo(std::uint16_t index, std::uint8_t subindex, ValueType &value) { readSdo(index, subindex, &value, sizeof(ValueType) * 8); }
+			auto readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int bit_size);
+			template<typename ValueType>
+			auto writeSdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value) { writeSdo(index, subindex, &value, sizeof(ValueType) * 8); }
+			auto writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int bit_size);
+			template<typename ValueType>
+			auto configSdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value) { configSdo(index, subindex, &value, sizeof(ValueType) * 8); }
+			auto configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int bit_size);
+
+			virtual ~EthercatSlave();
+			explicit EthercatSlave(const std::string &name, const SlaveType &slave_type);
+			explicit EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele);
+			EthercatSlave(const EthercatSlave &other) = delete;
+			EthercatSlave(EthercatSlave &&other) = delete;
+			EthercatSlave& operator=(const EthercatSlave &other) = delete;
+			EthercatSlave& operator=(EthercatSlave &&other) = delete;
+
 		private:
-			TxType tx_data_;
-			RxType rx_data_;
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class EthercatMaster;
+		};
+		class EthercatMaster : public NMaster
+		{
+		public:
+			enum { MAX_MSG_SIZE = 8192 };
+
+			using Root::loadXml;
+			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual start()->void;
+			auto virtual stop()->void;
+			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
+			auto slavePool()->aris::core::ObjectPool<EthercatSlave, aris::core::ObjectPool<NSlave> >&;
+			auto slavePool()const->const aris::core::ObjectPool<EthercatSlave, aris::core::ObjectPool<NSlave> >&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
+
+			virtual ~EthercatMaster();
+			EthercatMaster();
+			EthercatMaster(const EthercatMaster &other) = delete;
+			EthercatMaster(EthercatMaster &&other) = delete;
+			EthercatMaster& operator=(const EthercatMaster &other) = delete;
+			EthercatMaster& operator=(EthercatMaster &&other) = delete;
+
+		private:
+			class Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Slave;
+			friend class Sdo;
+			friend class Pdo;
 		};
 	}
 }

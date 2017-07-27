@@ -112,7 +112,7 @@ install(TARGETS aris_core ARCHIVE DESTINATION lib)
 install(FILES ${FULL_H} src/aris_core/aris_core.h DESTINATION include)
 
 # aris control project
-set(SOURCE aris_control_motion aris_control_ethercat aris_control_kernel)
+set(SOURCE aris_control_motion aris_control_ethercat aris_control_ethercat_kernel aris_control_master_slave aris_control_rt_timer)
 PREPEND_CPP(FULL_SRC src/aris_control ${SOURCE})
 PREPEND_H(FULL_H src/aris_control ${SOURCE})
 add_library(aris_control STATIC ${FULL_SRC} ${FULL_H} src/aris_control/aris_control.h)
@@ -163,7 +163,7 @@ target_link_libraries(test_core ${ALL_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
 set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp test_control_motion.h test_control_motion.cpp)
+set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp test_control_motion.h test_control_motion.cpp test_control_master_slave.h test_control_master_slave.cpp)
 PREPEND(FULL_SRC test/test_control ${SOURCE_FILES})
 add_executable(test_control ${FULL_SRC})
 target_link_libraries(test_control ${ALL_LINK_LIB})

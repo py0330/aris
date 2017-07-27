@@ -11,6 +11,34 @@ const char xml_data[] =
 "            <start help=\"start the control system.\"/>"
 "            <stop/>"
 "            <exit/>"
+"            <tt default_child_type=\"Param\" default=\"ap0\">"
+"                <ap0 abbreviation=\"a\"/>"
+"                <bu0 type=\"UniqueParam\" default_child_type=\"Param\" default=\"ap1\">"
+"                    <ap1 default=\"0\"/>"
+"                    <bg1 type=\"GroupParam\" default_child_type=\"Param\">"
+"                         <ap2 default=\"1\"/>"
+"                         <bp2 default=\"2\" abbreviation=\"b\"/>"
+"                    </bg1>"
+"                </bu0>"
+"                <cg0 type=\"GroupParam\" default_child_type=\"Param\" default=\"bg1\">"
+"                    <cp1 default=\"0\"/>"
+"                    <dg1 type=\"GroupParam\" default_child_type=\"Param\">"
+"                         <cp2 default=\"3\" abbreviation=\"c\"/>"
+"                         <dp2 default=\"4\" abbreviation=\"d\"/>"
+"                    </dg1>"
+"                    <eu1 type=\"UniqueParam\" default_child_type=\"Param\">"
+"                         <ep2 default=\"5\" abbreviation=\"e\"/>"
+"                         <fp2 default=\"6\"/>"
+"                    </eu1>"
+"                </cg0>"
+"                <du0 type=\"UniqueParam\" default_child_type=\"Param\" default=\"fp1\">"
+"                    <fp1 default=\"0\" abbreviation=\"f\"/>"
+"                    <gg1 type=\"GroupParam\" default_child_type=\"Param\">"
+"                         <gp2 default=\"1\"/>"
+"                         <hp2 default=\"2\"/>"
+"                    </gg1>"
+"                </du0>"
+"            </tt>"
 "            <en default_child_type=\"Param\" default=\"all\">"
 "                <all abbreviation=\"a\"/>"
 "                <first abbreviation=\"f\"/>"
@@ -81,6 +109,13 @@ const char xml_data[] =
 "</root>";
 
 
+class A
+{
+	static std::map<int, double> m;
+};
+
+std::map<int, double> A::m;
+
 void test_command_xml()
 {
 	try
@@ -127,7 +162,7 @@ void test_command_xml()
 
 		cmd_string = "en -m";
 		cmd = "en";
-		param = { ParamPair("motion_id", "") };
+		param = { ParamPair("motion_id", "0") };
 		try { parser.parse(cmd_string, cmd_result, param_result); }
 		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
 		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
@@ -145,148 +180,162 @@ void test_command_xml()
 		try { parser.parse(cmd_string, cmd_result, param_result); }
 		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
 		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
-
-
-
-
-
-
-
-
-		//cmd_string = "en -m=0 -m=1";
-		//cmd = "en";
-		//param = { ParamPair("all", "") };
-		//try { parser.parse(cmd_string, cmd_result, param_result); }
-		//catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
-		//if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
-
-
-		//cmd_string = "en -m=0 --all";
-		//cmd = "en";
-		//param = { ParamPair("all", "") };
-		//try { parser.parse(cmd_string, cmd_result, param_result); }
-		//catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
-
-
-
-
-
-
-
-		//if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
-
 		
-		//result = { ParamPair("all", "") };
-		//try { parser.parse("en -m=0 --all", cmd, param); }
-		//catch (std::exception &e) { std::cout << e.what() << std::endl; };
-		//if (!(cmd == "en" && result.size() == param.size() && std::equal(param.begin(), param.end(), result.begin())))std::cout << "cmd parse failed \"en --all\"" << std::endl;
 
-		//result = { ParamPair("all", "") };
-		//try { parser.parse("en -m=", cmd, param); }
-		//catch (std::exception &e) { std::cout << e.what() << std::endl; };
-		//if (!(cmd == "en" && result.size() == param.size() && std::equal(param.begin(), param.end(), result.begin())))std::cout << "cmd parse failed \"en --all\"" << std::endl;
+		// following are correct cmd string examples //
+		cmd_string = "tt ";
+		cmd = "tt";
+		param = { ParamPair("ap0", "") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
 
-		//try { parser.parse("en --all", cmd, param); }
-		//catch (std::exception &e) { std::cout << "failed parse:" << e.what() << std::endl; };
-		//if (!(cmd == "en" && std::equal(param.begin(), param.end(), std::map<std::string, std::string>({std::pair}))))std::cout << "cmd parse failed \"en --all\"" << std::endl;
+		cmd_string = "tt -a";
+		cmd = "tt";
+		param = { ParamPair("ap0", "") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
 
-		//get all command of the system  
-		//      std::cout << parser.help() << std::endl;
-		////display all command help information in detail
-		//for (auto &command : parser.commandPool())
-		//{
-		//          std::cout << command.help(true, 0)<<std::endl;
-		//}
+		cmd_string = "tt --ap2";
+		cmd = "tt";
+		param = { ParamPair("ap2", "1"), ParamPair("bp2", "2") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
 
+		cmd_string = "tt --ap2=";
+		cmd = "tt";
+		param = { ParamPair("ap2", ""), ParamPair("bp2", "2") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
 
-		//test the command param
-		//std::vector<std::string> cmd_string_vec{ "en --all", "en -m=0 --all", "en -motor=0", "en --moto=0", "rc -t=3000","ds","start" };
+		cmd_string = "tt cde";
+		cmd = "tt";
+		param = { ParamPair("cp1", "0"), ParamPair("cp2", "3"), ParamPair("dp2", "4"), ParamPair("ep2", "5") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
 
-		//for (auto &cmd_string : cmd_string_vec)
-		//{
-		//	try 
-		//	{
-		//		std::string cmd;
-		//		std::map<std::string, std::string> params;
-		//		parser.parse(cmd_string, cmd, params);
-
-		//		std::cout << cmd << std::endl;
-		//		aris::Size paramPrintLength;
-		//		if (params.empty())
-		//		{
-		//			paramPrintLength = 2;
-		//		}
-		//		else
-		//		{
-		//			paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
-		//			{
-		//				return a.first.length() < b.first.length();
-		//			})->first.length() + 2;
-		//		}
-		//		for (auto &i : params)
-		//		{
-		//			std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
-		//		}
-
-		//		std::cout << std::endl;
-		//	}
-		//	catch (std::exception &e)
-		//	{
-		//		std::cout << e.what() << std::endl << std::endl;
-		//	}
-		//}
-
-		//try { parser.parse("en --all", cmd, param); }
-		//catch (std::exception &e) { std::cout << "failed parse:" << e.what() << std::endl; };
-		//if (!(cmd == "en" && std::equal(param.begin(), param.end(), std::map<std::string, std::string>({std::pair}))))std::cout << "cmd parse failed \"en --all\"" << std::endl;
-		
-		//get all command of the system  
-  //      std::cout << parser.help() << std::endl;
-		////display all command help information in detail
-		//for (auto &command : parser.commandPool())
-		//{
-  //          std::cout << command.help(true, 0)<<std::endl;
-		//}
+		cmd_string = "tt ce";
+		cmd = "tt";
+		param = { ParamPair("cp1", "0"), ParamPair("cp2", "3"), ParamPair("dp2", "4"), ParamPair("ep2", "5") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
 
 
-		//test the command param
-		//std::vector<std::string> cmd_string_vec{ "en --all", "en -m=0 --all", "en -motor=0", "en --moto=0", "rc -t=3000","ds","start" };
+		// following are wrong cmd string examples //
+		cmd_string = "tt -a -b";
+		cmd = "tt";
+		try { parser.parse(cmd_string, cmd_result, param_result); std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl; }
+		catch (std::exception &) { };
 
-		//for (auto &cmd_string : cmd_string_vec)
-		//{
-		//	try 
-		//	{
-		//		std::string cmd;
-		//		std::map<std::string, std::string> params;
-		//		parser.parse(cmd_string, cmd, params);
+		cmd_string = "tt --ap1 --ap2";
+		cmd = "tt";
+		try { parser.parse(cmd_string, cmd_result, param_result); std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl; }
+		catch (std::exception &) { };
 
-		//		std::cout << cmd << std::endl;
-		//		aris::Size paramPrintLength;
-		//		if (params.empty())
-		//		{
-		//			paramPrintLength = 2;
-		//		}
-		//		else
-		//		{
-		//			paramPrintLength = std::max_element(params.begin(), params.end(), [](decltype(*params.begin()) a, decltype(*params.begin()) b)
-		//			{
-		//				return a.first.length() < b.first.length();
-		//			})->first.length() + 2;
-		//		}
-		//		for (auto &i : params)
-		//		{
-		//			std::cout << std::string(paramPrintLength - i.first.length(), ' ') << i.first << " : " << i.second << std::endl;
-		//		}
+		cmd_string = "tt --ap1 --ap1";
+		cmd = "tt";
+		try { parser.parse(cmd_string, cmd_result, param_result); std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl; }
+		catch (std::exception &) {};
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+}
+void test_command_construct()
+{
+	try
+	{
+		aris::core::CommandParser parser("parser");
+		auto &tt = parser.commandPool().add<aris::core::Command>("tt", "ap0", "");
+		auto &ap0 = tt.add<aris::core::Param>("ap0", "", "", 'a');
+		auto &bu0 = tt.add<aris::core::UniqueParam>("bu0", "ap1", "");
+		auto &ap1 = bu0.add<aris::core::Param>("ap1", "0", "");
+		auto &bg1 = bu0.add<aris::core::GroupParam>("bg1", "");
+		auto &ap2 = bg1.add<aris::core::Param>("ap2", "1", "");
+		auto &bp2 = bg1.add<aris::core::Param>("bp2", "2", "", 'b');
+		auto &cg0 = tt.add<aris::core::GroupParam>("cg0", "");
+		auto &cp1 = cg0.add<aris::core::Param>("cp1", "0", "");
+		auto &dg1 = cg0.add<aris::core::GroupParam>("dg1", "");
+		auto &cp2 = dg1.add<aris::core::Param>("cp2", "3", "", 'c');
+		auto &dp2 = dg1.add<aris::core::Param>("dp2", "4", "", 'd');
+		auto &eu1 = cg0.add<aris::core::UniqueParam>("eu1", "", "");
+		auto &ep2 = eu1.add<aris::core::Param>("ep2", "5", "", 'e');
+		auto &fp2 = eu1.add<aris::core::Param>("fp2", "6", "");
+		auto &du0 = tt.add<aris::core::UniqueParam>("du0", "fp1", "");
+		auto &fp1 = du0.add<aris::core::Param>("fp1", "0", "", 'f');
+		auto &gg1 = du0.add<aris::core::GroupParam>("gg1", "");
+		auto &gp2 = gg1.add<aris::core::Param>("gp2", "1", "");
+		auto &hp2 = gg1.add<aris::core::Param>("hp2", "2", "");
 
-		//		std::cout << std::endl;
-		//	}
-		//	catch (std::exception &e)
-		//	{
-		//		std::cout << e.what() << std::endl << std::endl;
-		//	}
-		//}
-		
-	
+		std::string cmd_string, cmd, cmd_result;
+		std::map<std::string, std::string> param, param_result;
+		using ParamPair = std::pair<std::string, std::string>;
+
+		// following are correct cmd string examples //
+		cmd_string = "tt ";
+		cmd = "tt";
+		param = { ParamPair("ap0", "") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
+
+		cmd_string = "tt -a";
+		cmd = "tt";
+		param = { ParamPair("ap0", "") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
+
+		cmd_string = "tt --ap2";
+		cmd = "tt";
+		param = { ParamPair("ap2", "1"), ParamPair("bp2", "2") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
+
+		cmd_string = "tt --ap2=";
+		cmd = "tt";
+		param = { ParamPair("ap2", ""), ParamPair("bp2", "2") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
+
+		cmd_string = "tt cde";
+		cmd = "tt";
+		param = { ParamPair("cp1", "0"), ParamPair("cp2", "3"), ParamPair("dp2", "4"), ParamPair("ep2", "5") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
+
+		cmd_string = "tt ce";
+		cmd = "tt";
+		param = { ParamPair("cp1", "0"), ParamPair("cp2", "3"), ParamPair("dp2", "4"), ParamPair("ep2", "5") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
+
+
+		// following are wrong cmd string examples //
+		cmd_string = "tt -a -b";
+		cmd = "tt";
+		try { parser.parse(cmd_string, cmd_result, param_result); std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl; }
+		catch (std::exception &) {};
+
+		cmd_string = "tt --ap1 --ap2";
+		cmd = "tt";
+		try { parser.parse(cmd_string, cmd_result, param_result); std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl; }
+		catch (std::exception &) {};
+
+		cmd_string = "tt --ap1 --ap1";
+		cmd = "tt";
+		try { parser.parse(cmd_string, cmd_result, param_result); std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl; }
+		catch (std::exception &) {};
 	}
 	catch (std::exception &e)
 	{
@@ -294,8 +343,12 @@ void test_command_xml()
 	}
 }
 
+
 void test_command()
 {
+	std::cout << std::endl << "-----------------test command---------------------" << std::endl;
 	test_command_xml();
+	test_command_construct();
+	std::cout << "-----------------test command finished------------" << std::endl << std::endl;
 }
 

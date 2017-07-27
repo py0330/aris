@@ -34,15 +34,6 @@ namespace aris
 		class SphericalJoint;
 		class Model;
 
-		struct PlanParamBase
-		{
-			Model* model_;
-			std::int32_t cmd_type_{ 0 };
-			std::int32_t count_{ 0 };
-			double dt{ 1e-3 };
-		};
-		using PlanFunc = std::function<int(Model &, const PlanParamBase &)>;
-
 		struct PlanParam 
 		{
 			Model* model_;
@@ -534,7 +525,7 @@ namespace aris
 		protected:
 			virtual ~Motion();
 			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis = 2, const double *frc_coe = nullptr, Size sla_id = -1, bool active = true);
+			explicit Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis = 2, const double *frc_coe = nullptr, Size sla_id = -1, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
 			Motion(const Motion &other);
 			Motion(Motion &&other);
 			Motion& operator=(const Motion &other);
@@ -891,6 +882,7 @@ namespace aris
 			auto addUniversalJoint(Part &first_part, Part &second_part, const double *position, const double *first_axis, const double *second_axis)->UniversalJoint&;
 			auto addSphericalJoint(Part &first_part, Part &second_part, const double *position)->SphericalJoint&;
 			auto addMotion(Joint &joint)->Motion&;
+			auto addMotion()->Motion&;
 			auto addGeneralMotion(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&;
 			
 			

@@ -3,11 +3,6 @@
 
 #include "test_control_ethercat.h"
 
-#ifdef UNIX
-#include "rtdk.h"
-#include "unistd.h"
-#endif
-
 const char xml_file[] =
 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
 "<root>"
@@ -59,7 +54,6 @@ void test_pdo()
 
 		m.setControlStrategy([&]()
 		{
-			static aris::core::MsgFix<8192> msg;
 			static int count{ 0 };
 
 			std::int32_t value{ 0 };
@@ -67,17 +61,16 @@ void test_pdo()
 
 			if (++count % 1000 == 0)
 			{
-				msg.resize(1);
-				sprintf(msg.data(), "count %d : pos %d", count, value);
-				msg.resize(std::strlen(msg.data()) + 1);
-				m.pipeOut().sendMsg(msg);
+				m.mout() << "count " << count << " : pos " << value << '\0';
+				m.mout().update();
+				m.sendOut();
 			}
 		});
 		m.start();
 		for (auto i{ 0 }; i < 20; ++i)
 		{
 			aris::core::Msg msg;
-			while (!m.pipeOut().recvMsg(msg));
+			while (!m.recvOut(msg));
 			std::cout << msg.data() << std::endl;
 		}
 		m.stop();
@@ -147,10 +140,9 @@ void test_data_logger()
 
 		if (++count % 1000 == 0)
 		{
-			msg.resize(1);
-			sprintf(msg.data(), "count %d : pos %d", count, value);
-			msg.resize(std::strlen(msg.data()) + 1);
-			m.pipeOut().sendMsg(msg);
+			m.mout() << "count " << count << " : pos " << value << '\0';
+			m.mout().update();
+			m.sendOut();
 		}
 
 		m.dataLogger().lout() << count << " pos:" << value << "\n";
@@ -161,7 +153,7 @@ void test_data_logger()
 	for (auto i{ 0 }; i < 20; ++i)
 	{
 		aris::core::Msg msg;
-		while (!m.pipeOut().recvMsg(msg));
+		while (!m.recvOut(msg));
 		std::cout << msg.data() << std::endl;
 	}
 	m.stop();
@@ -171,7 +163,7 @@ void test_data_logger()
 
 void test_control_ethercat()
 {
-	//test_pdo();
-	//test_sdo();
-	//test_data_logger();
+	test_pdo();
+	test_sdo();
+	test_data_logger();
 }

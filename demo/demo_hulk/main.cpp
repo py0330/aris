@@ -33,17 +33,27 @@ const char xml_data[] =
 "                        <p2 default=\"0.0\"/>"
 "                        <p3 default=\"0.0\"/>"
 "                        <p4 default=\"0.0\"/>"
-"                        <p5 default=\"0.0\"/>"
+"                        <p5 default=\"90.0\"/>"
 "                        <p6 default=\"0.0\"/>"
 "                    </rc_param>"
 "                </rc>"
+"                <mv default=\"mv_param\">"
+"                    <mv_param type=\"UniqueParam\" default_child_type=\"Param\">"
+"                        <x default=\"0.0\"/>"
+"                        <y default=\"0.0\"/>"
+"                        <z default=\"0.0\"/>"
+"                        <a default=\"0.0\"/>"
+"                        <b default=\"0.0\"/>"
+"                        <c default=\"0.0\"/>"
+"                    </mv_param>"
+"                </mv>"
 "            </command_pool>"
 "        </command_parser>"
 "    </widget_root>"
 "    <controller>"
-"        <slave_type_pool type=\"SlaveTypePoolObject\">"
+"        <slave_type_pool type=\"SlaveTypePoolElement\">"
 "            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vender_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
-"                <pdo_group_pool type=\"PdoGroupPoolObject\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
 "                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
@@ -59,7 +69,7 @@ const char xml_data[] =
 "                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
 "                    </index_1a00>"
 "                </pdo_group_pool>"
-"                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
 "                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
 "                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
 "                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
@@ -68,13 +78,157 @@ const char xml_data[] =
 "                </sdo_pool>"
 "            </elmo>"
 "        </slave_type_pool>"
-"        <slave_pool type=\"SlavePoolObject\">"
-"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-0.3\" max_pos=\"0.3\" max_vel=\"0.2\" pos_offset=\"5.04533038139343\" home_pos=\"0\" input2count=\"62914560\"/>"
-"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-0.3\" max_pos=\"0.3\" max_vel=\"0.2\" pos_offset=\"14.8233647187551\" home_pos=\"0\" input2count=\"62914560\"/>"
-"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-0.3\" max_pos=\"0.3\" max_vel=\"0.2\" pos_offset=\"-2.02818260192871\" home_pos=\"0\" input2count=\"62914560\"/>"
-"            <m4 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-0.3\" max_pos=\"0.3\" max_vel=\"0.2\" pos_offset=\"-7.99304718017578\" home_pos=\"0\" input2count=\"26214400\"/>"
-"            <m5 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-0.3\" max_pos=\"0.3\" max_vel=\"0.2\" pos_offset=\"31.4111904144287\" home_pos=\"0\" input2count=\"13107200\"/>"
-"            <m6 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-0.3\" max_pos=\"0.3\" max_vel=\"0.2\" pos_offset=\"8.44414009094238\" home_pos=\"0\" input2count=\"13107200\"/>"
+"        <slave_pool type=\"SlavePoolElement\">"
+"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-170\" max_pos=\"170\" max_vel=\"150\" pos_offset=\"1816.31893730163\" home_pos=\"0\" pos_factor=\"174763\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
+"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
+"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1600>"
+"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
+"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1a00>"
+"                </pdo_group_pool>"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
+"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
+"                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
+"                    <home_offset index=\"0x607C\" subindex=\"0\" datatype=\"int32\" config=\"0\"/>"
+"                </sdo_pool>"
+"            </m1>"
+"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-65\" max_pos=\"135\" max_vel=\"150\" pos_offset=\"5336.41129875184\" home_pos=\"0\" pos_factor=\"174763\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
+"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
+"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1600>"
+"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
+"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1a00>"
+"                </pdo_group_pool>"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
+"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
+"                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
+"                    <home_offset index=\"0x607C\" subindex=\"0\" datatype=\"int32\" config=\"0\"/>"
+"                </sdo_pool>"
+"            </m2>"
+"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-55\" max_pos=\"55\" max_vel=\"150\" pos_offset=\"-730.145736694336\" home_pos=\"0\" pos_factor=\"174763\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
+"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
+"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1600>"
+"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
+"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1a00>"
+"                </pdo_group_pool>"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
+"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
+"                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
+"                    <home_offset index=\"0x607C\" subindex=\"0\" datatype=\"int32\" config=\"0\"/>"
+"                </sdo_pool>"
+"            </m3>"
+"            <m4 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-140\" max_pos=\"140\" max_vel=\"176\" pos_offset=\"-2877.49698486328\" home_pos=\"0\" pos_factor=\"72818\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
+"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
+"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1600>"
+"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
+"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1a00>"
+"                </pdo_group_pool>"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
+"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
+"                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
+"                    <home_offset index=\"0x607C\" subindex=\"0\" datatype=\"int32\" config=\"0\"/>"
+"                </sdo_pool>"
+"            </m4>"
+"            <m5 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-120\" max_pos=\"120\" max_vel=\"360\" pos_offset=\"-11308.0285491943\" home_pos=\"0\" pos_factor=\"-36409\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
+"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
+"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1600>"
+"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
+"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1a00>"
+"                </pdo_group_pool>"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
+"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
+"                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
+"                    <home_offset index=\"0x607C\" subindex=\"0\" datatype=\"int32\" config=\"0\"/>"
+"                </sdo_pool>"
+"            </m5>"
+"            <m6 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-360\" max_pos=\"360\" max_vel=\"360\" pos_offset=\"3039.89043273926\" home_pos=\"0\" pos_factor=\"36409\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
+"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
+"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1600>"
+"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
+"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
+"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
+"                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
+"                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
+"                    </index_1a00>"
+"                </pdo_group_pool>"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
+"                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
+"                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
+"                    <home_low_speed index=\"0x6099\" subindex=\"2\" datatype=\"uint32\" config=\"100000\"/>"
+"                    <home_offset index=\"0x607C\" subindex=\"0\" datatype=\"int32\" config=\"0\"/>"
+"                </sdo_pool>"
+"            </m6>"
 "        </slave_pool>"
 "    </controller>"
 "    <model type=\"Model\" time=\"0\">"
@@ -164,12 +318,10 @@ const char xml_data[] =
 "        </general_motion_pool>"
 "        <force_pool type=\"ForcePoolElement\"/>"
 "        <solver_pool type=\"SolverPoolElement\">"
-"            <ds type=\"DiagSolver\"/>"
 "            <inverse type=\"HulkInverseSolver\"/>"
 "            <forward type=\"HulkForwardSolver\"/>"
 "        </solver_pool>"
 "        <simulator_pool type=\"SimulatorPoolElement\">"
-"            <s type=\"AdamsSimulator\" solver=\"ds\"/>"
 "            <inv_sim type=\"AdamsSimulator\" solver=\"inverse\"/>"
 "            <fwd_sim type=\"AdamsSimulator\" solver=\"forward\"/>"
 "        </simulator_pool>"
@@ -215,6 +367,15 @@ public:
 
 		s_rm2re(last_3_rm, q + 3, "131");
 
+		if (q[3] > PI * 150 / 180) 
+		{
+			q[3] -= PI;
+			q[4] = -q[4];
+			q[5] -= PI;
+		}
+
+
+
 		double pm[16];
 		double pe1[6]{ 0,0,0,0,q[0],0 };
 		double pe2[6]{ 0,0.29,0,0,0,q[1] };
@@ -259,12 +420,12 @@ public:
 	auto virtual kinPos()->void override
 	{
 		double pm[16];
-		double pe1[6]{ 0,0,0,0,model().motionPool().at(0).mp(),0 };
-		double pe2[6]{ 0,0.29,0,0,0,model().motionPool().at(1).mp() };
-		double pe3[6]{ 0,0.56,0,0,0,model().motionPool().at(2).mp() };
-		double pe4[6]{ 0,0.63,0,model().motionPool().at(3).mp(),0,0 };
-		double pe5[6]{ 0.316,0.63,0,0,0,model().motionPool().at(4).mp() };
-		double pe6[6]{ 0.316,0.63,0,model().motionPool().at(5).mp(),0,0 };
+		double pe1[6]{ 0,0,0,0,-model().motionPool().at(0).mp(),0 };
+		double pe2[6]{ 0,0.29,0,0,0,-model().motionPool().at(1).mp() };
+		double pe3[6]{ 0,0.56,0,0,0,-model().motionPool().at(2).mp() };
+		double pe4[6]{ 0,0.63,0,-model().motionPool().at(3).mp(),0,0 };
+		double pe5[6]{ 0.316,0.63,0,0,0,-model().motionPool().at(4).mp() };
+		double pe6[6]{ 0.316,0.63,0,-model().motionPool().at(5).mp(),0,0 };
 
 		s_pe2pm(pe1, pm, "123");
 		s_mms(3, 1, 3, pm, 4, pe1, 1, pm + 3, 4);
@@ -295,12 +456,7 @@ public:
 	HulkForwardSolver(Object &father, const aris::core::XmlElement &xml_ele) :DiagSolver(father, xml_ele) {};
 };
 
-struct RcParam :aris::server::GaitParamBase
-{
-	double p[6];
-};
-
-
+struct RcParam { double p[6]; };
 auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
 	RcParam param;
@@ -310,42 +466,118 @@ auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd,
 	param.p[3] = std::atof(params.at("p4").c_str());
 	param.p[4] = std::atof(params.at("p5").c_str());
 	param.p[5] = std::atof(params.at("p6").c_str());
-	param.active_motor_[0] = true;
-	param.active_motor_[1] = true;
-	param.active_motor_[2] = true;
-	param.active_motor_[3] = true;
-	param.active_motor_[4] = true;
-	param.active_motor_[5] = true;
 	msg_out.copyStruct(param);
 };
 auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 {
 	auto &cs = aris::server::ControlServer::instance();
-	
+
 	// 取得起始位置 //
 	static double begin_pos[6];
 	if (param.count_ == 1)
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			auto &mot = static_cast<aris::control::Motion&>(cs.controller().slavePool().at(cs.model().motionAtAbs(i).slaID()));
-			begin_pos[i] = mot.rxData().feedback_pos;
+			auto &mot = static_cast<aris::control::Motion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
+			begin_pos[i] = mot.actualPos();
 		}
 	}
-	
+
+	// 计算轨迹 //
 	auto p = static_cast<RcParam*>(param.param_);
 	static aris::Size total_count[6];
-	//static double end_pos[6]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-
 	for (int i = 0; i < 6; ++i)
 	{
-		auto &mot = static_cast<aris::control::Motion&>(cs.controller().slavePool().at(cs.model().motionAtAbs(i).slaID()));
+		auto &mot = static_cast<aris::control::Motion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
 		double mp, mv, ma;
 		aris::dynamic::moveAbsolute(param.count_, begin_pos[i], p->p[i], 0.5*mot.maxVel() / 1000, 0.5*mot.maxVel() / 1000 / 1000, 0.5*mot.maxVel() / 1000 / 1000, mp, mv, ma, total_count[i]);
 		cs.model().motionAtAbs(i).setMp(mp);
 	}
 
+	// 正解确定末端,这里先将角度转成弧度 //
+	double mp[6];
+	for (int i = 0; i < 6; ++i)
+	{
+		mp[i] = cs.model().motionAtAbs(i).mp();
+		cs.model().motionAtAbs(i).setMp(mp[i] / 360 * 2.0 * PI);
+	}
+	cs.model().solverPool().at(1).kinPos();
+	for (int i = 0; i < 6; ++i)cs.model().motionAtAbs(i).setMp(mp[i]);
+
 	return (static_cast<int>(*std::max_element(total_count, total_count + 6)) > param.count_) ? 1 : 0;
+};
+
+struct MvParam { int axis; double value; };
+auto mv_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+{
+	MvParam param;
+	if (params.find("x") != params.end())
+	{
+		param.axis = 0;
+		param.value = std::atof(params.at("x").c_str());
+	}
+	else if (params.find("y") != params.end())
+	{
+		param.axis = 1;
+		param.value = std::atof(params.at("y").c_str());
+	}
+	else if (params.find("z") != params.end())
+	{
+		param.axis = 2;
+		param.value = std::atof(params.at("z").c_str());
+	}
+	else if (params.find("a") != params.end())
+	{
+		param.axis = 3;
+		param.value = std::atof(params.at("a").c_str());
+	}
+	else if (params.find("b") != params.end())
+	{
+		param.axis = 4;
+		param.value = std::atof(params.at("b").c_str());
+	}
+	else if (params.find("c") != params.end())
+	{
+		param.axis = 5;
+		param.value = std::atof(params.at("c").c_str());
+	}
+	else
+	{
+		throw std::runtime_error("invalid param in mv parse");
+	}
+	msg_out.copyStruct(param);
+};
+auto mv_plan_func = [](const aris::dynamic::PlanParam &param)->int
+{
+	auto &cs = aris::server::ControlServer::instance();
+	auto p = static_cast<MvParam*>(param.param_);
+
+	// 取得起始位置 //
+	static double pe[6], vel[6]{ 0.1 , 0.1 , 0.1 , 10.0 , 10.0 , 10.0 }, acc[6]{ 0.1 , 0.1 , 0.1 , 10.0 , 10.0 , 10.0 }, begin_value;
+	if (param.count_ == 1)
+	{
+		cs.model().generalMotionPool().front().updMpm();
+		cs.model().generalMotionPool().front().getMpe(pe, "123");
+		for (int i = 3; i < 6; ++i)	if (pe[i] > PI)pe[i] -= 2 * PI;
+
+
+		begin_value = pe[p->axis];
+	}
+
+	// 计算轨迹 //
+	static aris::Size total_count;
+	double p_value, v, a;
+	aris::dynamic::moveAbsolute(param.count_, begin_value, p->value, vel[p->axis] / 1000, acc[p->axis] / 1000 / 1000, acc[p->axis] / 1000 / 1000, p_value, v, a, total_count);
+	pe[p->axis] = p_value;
+	cs.model().generalMotionPool().front().setMpe(pe, "123");
+	cs.model().solverPool().at(0).kinPos();
+	for (int i = 0; i < 6; ++i)
+	{
+		cs.model().motionAtAbs(i).updMp();
+		cs.model().motionAtAbs(i).setMp(cs.model().motionAtAbs(i).mp()*360/2.0/PI);
+	}
+
+	return total_count - param.count_;
 };
 
 
@@ -357,15 +589,48 @@ int main()
 		xml_doc.Parse(xml_data);
 
 		auto&cs = aris::server::ControlServer::instance();
-
 		cs.model().registerChildType<HulkInverseSolver>();
 		cs.model().registerChildType<HulkForwardSolver>();
 		cs.loadXml(xml_doc);
-		
-		
+
+		double mp[6]{ 0.135,0.246,-0.001,0.2,PI / 2,0.1 };
+		//for (auto &m : cs.model().motionPool())
+		//{
+		//	m.setMp(mp[m.id()]);
+		//}
+
+		//cs.model().solverPool().at(1).kinPos();
+
+		double pe[6]{0.2,0.63,0,0,0,0};
+		cs.model().generalMotionPool().front().setMpe(pe, "123");
+		//cs.model().generalMotionPool().front().updMpm();
+		//cs.model().generalMotionPool().front().getMpe(pe, "123");
+		dsp(1, 6, pe);
+
+		cs.model().solverPool().at(0).kinPos();
+		for (auto &m : cs.model().motionPool())
+		{
+			m.updMp();
+			mp[m.id()]=m.mp();
+		}
+		dsp(1, 6, mp);
+
+		cs.model().generalMotionPool().front().updMpm();
+		cs.model().generalMotionPool().front().getMpe(pe, "123");
+		dsp(1, 6, pe);
+
+
+
+
+
+
 		cs.addCmd("rc", rc_parse_func, rc_plan_func);
+		cs.addCmd("mv", mv_parse_func, mv_plan_func);
 		
-		
+
+
+
+
 		
 		// 接收并打印信息 //
 		auto t = std::thread([&]()
@@ -373,7 +638,7 @@ int main()
 			for (;;)
 			{
 				aris::core::Msg msg;
-				cs.widgetRoot().msgPipe().recvMsg(msg);
+				cs.master().recvOut(msg);
 				if (!msg.empty())std::cout << msg.data() << std::endl;
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));

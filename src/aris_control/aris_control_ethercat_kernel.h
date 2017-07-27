@@ -1,8 +1,11 @@
-﻿#ifndef ARIS_CONTROL_KERNEL_H
-#define ARIS_CONTROL_KERNEL_H
+﻿#ifndef ARIS_CONTROL_ETHERCAT_KERNEL_H
+#define ARIS_CONTROL_ETHERCAT_KERNEL_H
+
 
 #include <cstddef>
 #include <cstdint>
+
+#include <aris_control_rt_timer.h>
 
 namespace aris
 {
@@ -18,8 +21,9 @@ namespace aris
 		// 7. config slave
 		// 8. config master
 		// 9. config sdo
-		// 10.start master
-		// 11.start slave
+		// 10.lock memory
+		// 11.start master
+		// 12.start slave
 
 		////////////////////// Ecrt 的通讯流程 //////////////////////
 		// 1. master receive
@@ -31,15 +35,6 @@ namespace aris
 		// 7. slave send
 		// 8. master send
 		
-		struct Handle { virtual ~Handle() = default; };
-
-		auto aris_rt_task_create()->Handle*;
-		auto aris_rt_task_start(Handle* handle, void(*task_func)(void*), void*param)->int;
-		auto aris_rt_task_join(Handle* handle)->int;
-		auto aris_rt_task_set_periodic(int nanoseconds)->int;
-		auto aris_rt_task_wait_period()->int;
-		auto aris_rt_timer_read()->std::int64_t;
-
 		auto aris_ecrt_master_init()->Handle*;
 		auto aris_ecrt_master_config(Handle* master_handle)->void;
 		auto aris_ecrt_master_start(Handle* master_handle)->void;
@@ -56,6 +51,8 @@ namespace aris
 		auto aris_ecrt_pdo_group_config(Handle* slave_handle, Handle* pdo_group_handle, std::uint16_t index, bool is_tx)->void;
 		auto aris_ecrt_pdo_init()->Handle*;
 		auto aris_ecrt_pdo_config(Handle* slave_handle, Handle* pdo_group_handle, Handle* pdo_handle, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void;
+		auto aris_ecrt_pdo_read(Handle* slave_handle, Handle* pdo_handle, void *data, int byte_size)->void;
+		auto aris_ecrt_pdo_write(Handle* slave_handle, Handle* pdo_handle, const void *data, int byte_size)->void;
 		auto aris_ecrt_pdo_read_uint8(Handle* slave_handle, Handle* pdo_handle)->std::uint8_t;
 		auto aris_ecrt_pdo_read_uint16(Handle* slave_handle, Handle* pdo_handle)->std::uint16_t;
 		auto aris_ecrt_pdo_read_uint32(Handle* slave_handle, Handle* pdo_handle)->std::uint32_t;

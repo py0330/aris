@@ -43,9 +43,9 @@ const char xml_data[] =
 "        </command_parser>"
 "    </widget_root>"
 "    <controller>"
-"        <slave_type_pool type=\"SlaveTypePoolObject\">"
+"        <slave_type_pool type=\"SlaveTypePoolElement\">"
 "            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vender_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
-"                <pdo_group_pool type=\"PdoGroupPoolObject\">"
+"                <pdo_group_pool type=\"PdoGroupPoolElement\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
 "                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
@@ -61,7 +61,7 @@ const char xml_data[] =
 "                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
 "                    </index_1a00>"
 "                </pdo_group_pool>"
-"                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
+"                <sdo_pool type=\"SdoPoolElement\" default_child_type=\"Sdo\">"
 "                    <home_mode index=\"0x6098\" subindex=\"0\" datatype=\"int8\" config=\"35\"/>"
 "                    <home_acc index=\"0x609A\" subindex=\"0\" datatype=\"uint32\" config=\"200000\"/>"
 "                    <home_high_speed index=\"0x6099\" subindex=\"1\" datatype=\"uint32\" config=\"200000\"/>"
@@ -70,10 +70,10 @@ const char xml_data[] =
 "                </sdo_pool>"
 "            </elmo>"
 "        </slave_type_pool>"
-"        <slave_pool type=\"SlavePoolObject\">"
-"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" input2count=\"62914560\"/>"
-"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" input2count=\"22937600\"/>"
-"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" input2count=\"22937600\"/>"
+"        <slave_pool type=\"SlavePoolElement\">"
+"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" pos_factor=\"62914560\"/>"
+"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" pos_factor=\"22937600\"/>"
+"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" pos_factor=\"22937600\"/>"
 "        </slave_pool>"
 "    </controller>"
 "    <model>"
@@ -123,51 +123,49 @@ const char xml_data[] =
 "    </sensor_root>"
 "</root>";
 
-
-struct RcParam :aris::server::GaitParamBase
+struct RcParam
 {
 	int t1;
 	int t2;
 	double mag;
 };
+auto rc_parse_func(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+{
+	RcParam param;
+	param.t1 = std::atoi(params.at("t1").c_str());
+	param.mag = std::atof(params.at("mag").c_str());
+	msg_out.header().reserved1_ |= aris::server::ControlServer::USING_TARGET_POS;
+	msg_out.copyStruct(param);
+};
+auto rc_plan_func(const aris::dynamic::PlanParam &param)->int
+{
+	auto p = reinterpret_cast<RcParam*>(param.param_);
 
-void test_control_server()
+	static double begin_pos;
+
+	if (param.count_ == 1)
+	{
+		auto &slave = aris::server::ControlServer::instance().master().slavePool().at(param.model_->motionAtPhy(0).slaID());
+		begin_pos = static_cast<aris::control::Motion&>(slave).actualPos();
+	}
+
+	param.model_->motionAtPhy(0).setMp(begin_pos + p->mag * std::sin(2 * PI * param.count_ / p->t1));
+
+	return p->t1 - param.count_;
+};
+
+void test_xml()
 {
 	try
 	{
-		auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
-		{
-			RcParam param;
-			param.t1 = std::atoi(params.at("t1").c_str());
-			param.mag = std::atof(params.at("mag").c_str());
-			param.active_motor_[cs.model().motionAtPhy(0).absID()] = true;
-			param.active_motor_[cs.model().motionAtPhy(1).absID()] = false;
-			param.active_motor_[cs.model().motionAtPhy(2).absID()] = false;
-			msg_out.copyStruct(param);
-		};
-		auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
-		{
-			auto p = reinterpret_cast<RcParam*>(param.param_);
-
-			static double begin_pos;
-
-			if (param.count_ == 1)
-			{
-				auto &rx = aris::server::ControlServer::instance().controller().slavePool().at(param.model_->motionAtPhy(0).slaID()).rxData();
-				begin_pos = static_cast<aris::control::Motion::RxType&>(rx).feedback_pos;
-			}
-
-			param.model_->motionAtPhy(0).setMp(begin_pos + p->mag * std::sin(2 * PI * param.count_ / p->t1));
-
-			return p->t1 - param.count_;
-		};
-
 		aris::core::XmlDocument xml_doc;
 		xml_doc.Parse(xml_data);
 
 		auto&cs = aris::server::ControlServer::instance();
 
 		cs.loadXml(xml_doc);
+		cs.addCmd("en", aris::server::default_parse, aris::server::default_enable_plan);
+		cs.addCmd("ds", aris::server::default_parse, aris::server::default_disable_plan);
 		cs.addCmd("rc", rc_parse_func, rc_plan_func);
 
 		// 接收并打印信息 //
@@ -176,7 +174,7 @@ void test_control_server()
 			for (;;)
 			{
 				aris::core::Msg msg;
-				cs.widgetRoot().msgPipe().recvMsg(msg);
+				cs.master().recvOut(msg);
 				if (!msg.empty())std::cout << msg.data() << std::endl;
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -195,13 +193,100 @@ void test_control_server()
 			{
 				std::cout << e.what() << std::endl;
 			}
-
 		}
 	}
 	catch (std::exception &e)
 	{
 		std::cout << e.what() << std::endl;
 	}
+}
+void test_construct()
+{
+	auto&cs = aris::server::ControlServer::instance();
+
+	cs.resetMaster(new aris::control::Master);
+	cs.resetModel(new aris::dynamic::Model);
+	cs.resetSensorRoot(new aris::sensor::SensorRoot);
+	cs.resetWidgetRoot(new aris::server::WidgetRoot);
+
+	cs.widgetRoot().cmdParser().commandPool().add<aris::core::Command>(aris::server::default_enable_command());
+	cs.widgetRoot().cmdParser().commandPool().add<aris::core::Command>(aris::server::default_disable_command());
+	cs.addCmd("en", aris::server::default_parse, aris::server::default_enable_plan);
+	cs.addCmd("ds", aris::server::default_parse, aris::server::default_disable_plan);
+
+	auto &rc = cs.widgetRoot().cmdParser().commandPool().add<aris::core::Command>("rc", "", "");
+	auto &gp = rc.add<aris::core::GroupParam>("gp","");
+	auto &t1 = gp.add<aris::core::Param>("t1", "3000", "", 't');
+	auto &t2 = gp.add<aris::core::Param>("t2", "3000", "");
+	auto &mag = gp.add<aris::core::Param>("mag", "1.0", "", 'm');
+	cs.addCmd("rc", rc_parse_func, rc_plan_func);
+
+
+	auto &m = cs.model().addMotion();
+	cs.model().updMotionID();
+
+	auto &st = cs.master().slaveTypePool().add<aris::control::SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+	auto &s1 = cs.master().slavePool().add<aris::control::Motion>("s1", st, 65536, 10.0, -10.0, 10.0, 0, 0);
+
+	auto &tx = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1A00", 0x1A00, true);
+	tx.add<aris::control::Pdo>("index_6064", aris::control::DO::INT32, 0x6064, 0x00);
+	tx.add<aris::control::Pdo>("index_606c", aris::control::DO::INT32, 0x606c, 0x00);
+	tx.add<aris::control::Pdo>("index_6041", aris::control::DO::UINT16, 0x6041, 0x00);
+
+	auto &tx2 = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1A0B", 0x1A0B, true);
+	tx2.add<aris::control::Pdo>("index_6061", aris::control::DO::UINT8, 0x6061, 0x00);
+
+	auto &tx3 = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1A1F", 0x1A1F, true);
+	tx3.add<aris::control::Pdo>("index_6078", aris::control::DO::INT16, 0x6078, 0x00);
+
+	auto &rx = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1605", 0x1605, false);
+	rx.add<aris::control::Pdo>("index_607A", aris::control::DO::INT32, 0x607A, 0x00);
+	rx.add<aris::control::Pdo>("index_60FF", aris::control::DO::INT32, 0x60FF, 0x00);
+	rx.add<aris::control::Pdo>("index_6071", aris::control::DO::INT16, 0x6071, 0x00);
+	rx.add<aris::control::Pdo>("index_6072", aris::control::DO::INT16, 0x6072, 0x00);
+	rx.add<aris::control::Pdo>("index_6040", aris::control::DO::UINT16, 0x6040, 0x00);
+	rx.add<aris::control::Pdo>("index_6060", aris::control::DO::UINT8, 0x6060, 0x00);
+
+	cs.start();
+
+	// 接收并打印信息 //
+	auto t = std::thread([&]()
+	{
+		for (;;)
+		{
+			aris::core::Msg msg;
+			cs.master().recvOut(msg);
+			if (!msg.empty())std::cout << msg.data() << std::endl;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+	});
+
+	// 接收命令 //
+	for (std::string command_in; std::getline(std::cin, command_in);)
+	{
+		try
+		{
+			cs.executeCmd(command_in);
+			std::cout << "cmd finished" << std::endl;
+		}
+		catch (std::exception &e)
+		{
+			std::cout << e.what() << std::endl;
+		}
+	}
+
+
+	cs.saveXml("C:\\Users\\py033\\Desktop\\cs.xml");
+
+}
+
+
+
+void test_control_server()
+{
+	//test_xml();
+	test_construct();
 
 }
 

@@ -4,31 +4,16 @@
 #include "test_control_motion.h"
 
 using namespace aris::control;
-/*
-"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
-"                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
-"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" datatype=\"uint8\"/>"
-"                        <target_pos index=\"0x607A\" subindex=\"0x00\" datatype=\"int32\"/>"
-"                        <target_vel index=\"0x60FF\" subindex=\"0x00\" datatype=\"int32\"/>"
-"                        <targer_tor index=\"0x6071\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                    </index_1600>"
-"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
-"                        <status_word index=\"0x6041\" subindex=\"0x00\" datatype=\"uint16\"/>"
-"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" datatype=\"uint8\"/>"
-"                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" datatype=\"int32\"/>"
-"                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" datatype=\"int32\"/>"
-"                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" datatype=\"int16\"/>"
-"                    </index_1a00>"
-*/
+
 void test_elmo_enable()
 {
 	try
 	{
 		aris::control::Master m;
-		m.registerChildType<MyMotion>();
+		m.registerChildType<Motion>();
 
 		auto &st = m.slaveTypePool().add<SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
-		auto &s1 = m.slavePool().add<MyMotion>("s1", st, 0, 0, 0, 0, 0, 0);
+		auto &s1 = m.slavePool().add<Motion>("s1", st, 0, 0, 0, 0, 0, 0);
 
 
 		auto &tx = s1.pdoGroupPool().add<PdoGroup>("index_1A00", 0x1A00, true);
@@ -50,21 +35,16 @@ void test_elmo_enable()
 		rx.add<Pdo>("index_6040", DO::UINT16, 0x6040, 0x00);
 		rx.add<Pdo>("index_6060", DO::UINT8, 0x6060, 0x00);
 
-
-
 		m.setControlStrategy([&]()
 		{
-			static aris::core::MsgFix<8192> msg;
 			static int count{ 0 };
 
-			auto ret = s1.enable(8);
+			auto ret = s1.enable();
 
-			msg.resize(1);
-			sprintf(msg.data(), "count %d : pos %d", count, ret);
-			msg.resize(std::strlen(msg.data()) + 1);
-			
-
-			if (++count % 1000 == 0)m.pipeOut().sendMsg(msg);
+			if (++count % 1000 == 0) 
+			{
+				m.mout() << "count " << count << " : ret " << ret << '\0';
+			}
 
 			m.dataLogger().lout() << "count " << count << " : ret " << ret <<"\n";
 			m.dataLogger().send();
@@ -74,12 +54,12 @@ void test_elmo_enable()
 		for (auto i{ 0 }; i < 20; ++i)
 		{
 			aris::core::Msg msg;
-			while (!m.pipeOut().recvMsg(msg));
+			while (!m.recvOut(msg));
 			std::cout << msg.data() << std::endl;
 		}
 		m.stop();
 		m.dataLogger().stop();
-		std::cout << "test pdo finished" << std::endl;
+		std::cout << "test motion enable finished" << std::endl;
 	}
 	catch (std::exception &e)
 	{
