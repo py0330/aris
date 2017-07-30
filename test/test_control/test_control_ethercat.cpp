@@ -35,7 +35,7 @@ void test_pdo()
 	{
 		aris::control::EthercatMaster m;
 
-		auto &st = m.slaveTypePool().add<SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
 		auto &s1 = m.slavePool().add<EthercatSlave>("s1", st);
 
 		auto &pdo_group = s1.pdoGroupPool().add<PdoGroup>("index_1a00", 0x1A00, true);
@@ -77,7 +77,7 @@ void test_sdo()
 		std::cout << "test sdo" << std::endl;
 		aris::control::EthercatMaster m;
 
-		auto &st = m.slaveTypePool().add<SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
 		auto &s1 = m.slavePool().add<EthercatSlave>("s1", st);
 
 		auto &home_mode = s1.sdoPool().add<Sdo>("index_6098", 0x6098, 0x00, sizeof(std::int16_t), Sdo::READ | Sdo::WRITE | Sdo::CONFIG, 17);

@@ -145,7 +145,7 @@ auto rc_plan_func(const aris::dynamic::PlanParam &param)->int
 
 	if (param.count_ == 1)
 	{
-		auto &slave = aris::server::ControlServer::instance().master().slavePool().at(param.model_->motionAtPhy(0).slaID());
+		auto &slave = aris::server::ControlServer::instance().controller().slavePool().at(param.model_->motionAtPhy(0).slaID());
 		begin_pos = dynamic_cast<aris::control::EthercatMotion&>(slave).actualPos();
 	}
 
@@ -174,7 +174,7 @@ void test_xml()
 			for (;;)
 			{
 				aris::core::Msg msg;
-				cs.master().recvOut(msg);
+				cs.controller().recvOut(msg);
 				if (!msg.empty())std::cout << msg.data() << std::endl;
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -204,7 +204,7 @@ void test_construct()
 {
 	auto&cs = aris::server::ControlServer::instance();
 
-	cs.resetMaster(new aris::control::EthercatMaster);
+	cs.resetController(new aris::control::EthercatController);
 	cs.resetModel(new aris::dynamic::Model);
 	cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	cs.resetWidgetRoot(new aris::server::WidgetRoot);
@@ -225,8 +225,8 @@ void test_construct()
 	auto &m = cs.model().addMotion();
 	cs.model().updMotionID();
 
-	auto &st = dynamic_cast<aris::control::EthercatMaster&>(cs.master()).slaveTypePool().add<aris::control::SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
-	auto &s1 = cs.master().slavePool().add<aris::control::EthercatMotion>("s1", st, 65536, 10.0, -10.0, 10.0, 0, 0);
+	auto &st = dynamic_cast<aris::control::EthercatMaster&>(cs.controller()).slaveTypePool().add<aris::control::EthercatSlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+	auto &s1 = cs.controller().slavePool().add<aris::control::EthercatMotion>("s1", st, 65536, 10.0, -10.0, 10.0, 0, 0);
 
 	auto &tx = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1A00", 0x1A00, true);
 	tx.add<aris::control::Pdo>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));
@@ -255,7 +255,7 @@ void test_construct()
 		for (;;)
 		{
 			aris::core::Msg msg;
-			cs.master().recvOut(msg);
+			cs.controller().recvOut(msg);
 			if (!msg.empty())std::cout << msg.data() << std::endl;
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));

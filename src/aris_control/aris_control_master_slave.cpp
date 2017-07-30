@@ -111,8 +111,18 @@ namespace aris
 		}
 
 		Slave::~Slave() = default;
-		Slave::Slave(const std::string &name) :Object(name) {}
-		Slave::Slave(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) {}
+		Slave::Slave(const std::string &name, const SlaveType &slave_type) :Object(name), slave_type_(&slave_type) {}
+		Slave::Slave(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) 
+		{
+			if (root().findByName("slave_type_pool") == root().children().end())throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
+			auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType> &>(*root().findByName("slave_type_pool"));
+
+			if (slave_type_pool.findByName(attributeString(xml_ele, "slave_type")) == slave_type_pool.end())
+			{
+				throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
+			}
+			slave_type_ = &*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"));
+		}
 		Slave::Slave(const Slave &other) = default;
 		Slave::Slave(Slave &&other) = default;
 		Slave& Slave::operator=(const Slave &other) = default;
@@ -147,7 +157,8 @@ namespace aris
 			}
 
 			// slave //
-			aris::core::ObjectPool<Slave, Object> *slave_pool_;
+			aris::core::ObjectPool<SlaveType> *slave_type_pool_;
+			aris::core::ObjectPool<Slave> *slave_pool_;
 
 			// for log //
 			DataLogger* data_logger_;
@@ -188,7 +199,7 @@ namespace aris
 		{
 			Root::loadXml(xml_ele);
 
-			//imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Object> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Object> *>(&(*findByName("slave_type_pool")));
+			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Object> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Object> *>(&(*findByName("slave_type_pool")));
 			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Object> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Object> *>(&(*findByName("slave_pool")));
 			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
 			imp_->pipe_in_ = findOrInsert<aris::core::Pipe>("msg_pipe_in");
@@ -245,6 +256,7 @@ namespace aris
 		auto Master::recvOut(aris::core::MsgBase &recv_msg)->int { return imp_->pipe_out_->recvMsg(recv_msg); }
 		auto Master::sendIn(const aris::core::MsgBase &send_msg)->void { imp_->pipe_in_->sendMsg(send_msg); }
 		auto Master::recvIn()->int { return imp_->pipe_in_->recvMsg(imp_->in_msg_); }
+		auto Master::slaveTypePool()->aris::core::ObjectPool<SlaveType>& { return *imp_->slave_type_pool_; }
 		auto Master::slavePool()->aris::core::ObjectPool<Slave, aris::core::Object>& { return *imp_->slave_pool_; }
 		auto Master::dataLogger()->DataLogger& { return *imp_->data_logger_; }
 		Master::~Master() = default;
@@ -252,10 +264,13 @@ namespace aris
 		{
 			registerChildType<RTTimer>();
 			registerChildType<DataLogger>();
+			registerChildType<SlaveType>();
+			registerChildType<aris::core::ObjectPool<SlaveType> >();
 			registerChildType<Slave>();
 			registerChildType<aris::core::ObjectPool<Slave> >();
 
-			imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave, Object> >("slave_pool");
+			imp_->slave_type_pool_ = &add<aris::core::ObjectPool<SlaveType> >("slave_type_pool");
+			imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave> >("slave_pool");
 			imp_->data_logger_ = &add<DataLogger>("data_logger");
 			imp_->pipe_in_ = &add<aris::core::Pipe>("msg_pipe_in");
 			imp_->pipe_out_ = &add<aris::core::Pipe>("msg_pipe_out");

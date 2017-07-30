@@ -48,7 +48,7 @@ namespace aris
 			auto virtual mode(std::uint8_t md)->int = 0;
 
 			virtual ~Motion();
-			explicit Motion(const std::string &name, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
+			explicit Motion(const std::string &name, const SlaveType &st, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
 			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
 			Motion(const Motion &other) = delete;
 			Motion(Motion &&other) = delete;
@@ -63,7 +63,6 @@ namespace aris
 		{
 		public:
 			auto motionPool()->aris::core::RefPool<Motion>&;
-			auto motionPool()const->const aris::core::RefPool<Motion>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 
 			virtual ~Controller();
 			Controller();

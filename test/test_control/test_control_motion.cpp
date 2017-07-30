@@ -9,10 +9,10 @@ void test_elmo_enable()
 {
 	try
 	{
-		aris::control::EthercatMaster m;
+		aris::control::EthercatController m;
 		m.registerChildType<EthercatMotion>();
 
-		auto &st = m.slaveTypePool().add<SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
 		auto &s1 = m.slavePool().add<EthercatMotion>("s1", st, 0, 0, 0, 0, 0, 0);
 
 

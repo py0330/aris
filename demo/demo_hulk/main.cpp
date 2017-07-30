@@ -419,7 +419,7 @@ auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
+			auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(cs.model().motionAtAbs(i).slaID()));
 			begin_pos[i] = mot.actualPos();
 		}
 	}
@@ -429,7 +429,7 @@ auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	static aris::Size total_count[6];
 	for (int i = 0; i < 6; ++i)
 	{
-		auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
+		auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(cs.model().motionAtAbs(i).slaID()));
 		double mp, mv, ma;
 		aris::dynamic::moveAbsolute(param.count_, begin_pos[i], p->p[i], 0.5*mot.maxVel() / 1000, 0.5*mot.maxVel() / 1000 / 1000, 0.5*mot.maxVel() / 1000 / 1000, mp, mv, ma, total_count[i]);
 		cs.model().motionAtAbs(i).setMp(mp);
@@ -465,12 +465,12 @@ auto ck_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
+			auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(cs.model().motionAtAbs(i).slaID()));
 			begin_pos[i] = mot.actualPos();
 		}
 	}
 
-	cs.master().mout() << "pos:" << begin_pos[0] << "  " << begin_pos[1] << "  " << begin_pos[2] << "  " << begin_pos[3] << "  " << begin_pos[4] << "  " << begin_pos[5] << '\n';
+	cs.controller().mout() << "pos:" << begin_pos[0] << "  " << begin_pos[1] << "  " << begin_pos[2] << "  " << begin_pos[3] << "  " << begin_pos[4] << "  " << begin_pos[5] << '\n';
 
 	return 0;
 };
@@ -560,7 +560,7 @@ int main()
 		auto&cs = aris::server::ControlServer::instance();
 		cs.model().registerChildType<HulkInverseSolver>();
 		cs.model().registerChildType<HulkForwardSolver>();
-		cs.resetMaster(new aris::control::EthercatMaster);
+		cs.resetController(new aris::control::EthercatController);
 		cs.loadXml(xml_doc);
 
 		cs.widgetRoot().cmdParser().commandPool().add<aris::core::Command>(aris::server::default_enable_command());
@@ -613,7 +613,7 @@ int main()
 			for (; flag;)
 			{
 				aris::core::Msg msg;
-				cs.master().recvOut(msg);
+				cs.controller().recvOut(msg);
 				if (!msg.empty())std::cout << msg.data() << std::endl;
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));

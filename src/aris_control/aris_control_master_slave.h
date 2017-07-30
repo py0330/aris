@@ -56,6 +56,20 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
+		class SlaveType :public aris::core::Object
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("SlaveType"); return std::ref(type); }
+			auto virtual type() const->const std::string&{ return Type(); }
+
+			virtual ~SlaveType() = default;
+			explicit SlaveType(const std::string &name) :Object(name) {};
+			explicit SlaveType(Object &father, const aris::core::XmlElement &xml_ele):Object(father, xml_ele) {};
+			SlaveType(const SlaveType &) = default;
+			SlaveType(SlaveType &&) = default;
+			SlaveType& operator=(const SlaveType &) = default;
+			SlaveType& operator=(SlaveType &&) = default;
+		};
 		class Slave : public aris::core::Object
 		{
 		public:
@@ -63,14 +77,18 @@ namespace aris
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual send()->void {}
 			auto virtual recv()->void {}
+			auto slaveType()const->const SlaveType &{ return *slave_type_; }
 
 			virtual ~Slave();
-			explicit Slave(const std::string &name);
+			explicit Slave(const std::string &name, const SlaveType &slave_type);
 			explicit Slave(Object &father, const aris::core::XmlElement &xml_ele);
 			Slave(const Slave &other);
 			Slave(Slave &&other);
 			Slave& operator=(const Slave &other);
 			Slave& operator=(Slave &&other);
+
+		private:
+			const SlaveType *slave_type_;
 		};
 		class Master : public aris::core::Root
 		{
@@ -83,21 +101,16 @@ namespace aris
 			auto stop()->void;
 			auto setControlStrategy(std::function<void()> strategy)->void;
 			auto rtHandle()->Handle*;
-			auto rtHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
 			auto msgIn()->aris::core::MsgFix<MAX_MSG_SIZE>&;
-			auto msgIn()const->const aris::core::MsgFix<MAX_MSG_SIZE>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->msgIn(); }
 			auto msgOut()->aris::core::MsgFix<MAX_MSG_SIZE>&;
-			auto msgOut()const->const aris::core::MsgFix<MAX_MSG_SIZE>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->msgOut(); }
 			auto mout()->aris::core::MsgStream &;
-			auto mout()const->const aris::core::MsgStream &{ return const_cast<std::decay_t<decltype(*this)> *>(this)->mout(); };
 			auto sendOut()->void;
 			auto recvOut(aris::core::MsgBase &recv_msg)->int;
 			auto sendIn(const aris::core::MsgBase &send_msg)->void;
 			auto recvIn()->int;
+			auto slaveTypePool()->aris::core::ObjectPool<SlaveType>&;
 			auto slavePool()->aris::core::ObjectPool<Slave, Object>&;
-			auto slavePool()const->const aris::core::ObjectPool<Slave, Object>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
 			auto dataLogger()->DataLogger&;
-			auto dataLogger()const->const DataLogger&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->dataLogger(); }
 			virtual ~Master();
 			Master();
 			Master(const Master &other) = delete;

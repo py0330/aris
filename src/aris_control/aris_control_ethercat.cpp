@@ -112,7 +112,6 @@ namespace aris
 		struct Pdo::Imp { aris::core::ImpPtr<Handle> ec_handle_; };
 		auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void{	DO::saveXml(xml_ele);}
 		auto Pdo::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
-		auto Pdo::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); }
 		Pdo::~Pdo() = default;
 		Pdo::Pdo(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size size):DO(name, index, sub_index, size){}
 		Pdo::Pdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele) {}
@@ -140,7 +139,6 @@ namespace aris
 			xml_ele.SetAttribute("is_tx", tx());
 		}
 		auto PdoGroup::ecHandle()->Handle* { return imp_->handle_.get(); }
-		auto PdoGroup::ecHandle()const->const Handle*{ return imp_->handle_.get(); }
 		auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 		auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
@@ -156,7 +154,7 @@ namespace aris
 		PdoGroup& PdoGroup::operator=(const PdoGroup &) = default;
 		PdoGroup& PdoGroup::operator=(PdoGroup &&) = default;
 
-		struct SlaveType::Imp
+		struct EthercatSlaveType::Imp
 		{
 			std::uint32_t product_code_, vender_id_;
 			std::uint16_t alias_;
@@ -165,7 +163,7 @@ namespace aris
 			Imp(std::uint32_t product_code = 0, std::uint32_t vender_id = 0, std::uint16_t alias = 0, std::uint32_t distributed_clock = 0)
 				:product_code_(product_code), vender_id_(vender_id), alias_(alias), distributed_clock_(distributed_clock){}
 		};
-		auto SlaveType::saveXml(aris::core::XmlElement &xml_ele) const->void
+		auto EthercatSlaveType::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Object::saveXml(xml_ele);
 
@@ -185,33 +183,31 @@ namespace aris
 			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(distributedClock())) * 2) << std::hex << distributedClock();
 			xml_ele.SetAttribute("distributed_clock", s.str().c_str());
 		}
-		auto SlaveType::productCode()const->std::uint32_t { return imp_->product_code_; }
-		auto SlaveType::venderID()const->std::uint32_t { return imp_->vender_id_; }
-		auto SlaveType::alias()const->std::uint16_t { return imp_->alias_; }
-		auto SlaveType::distributedClock()const->std::uint32_t { return imp_->distributed_clock_; }
-		SlaveType::~SlaveType() = default;
-		SlaveType::SlaveType(const std::string &name, std::uint32_t product_code, std::uint32_t vender_id, std::uint16_t alias, std::uint32_t distributed_clock)
-			:Object(name), imp_(new Imp(product_code, vender_id, alias, distributed_clock)){}
-		SlaveType::SlaveType(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele)
+		auto EthercatSlaveType::productCode()const->std::uint32_t { return imp_->product_code_; }
+		auto EthercatSlaveType::venderID()const->std::uint32_t { return imp_->vender_id_; }
+		auto EthercatSlaveType::alias()const->std::uint16_t { return imp_->alias_; }
+		auto EthercatSlaveType::distributedClock()const->std::uint32_t { return imp_->distributed_clock_; }
+		EthercatSlaveType::~EthercatSlaveType() = default;
+		EthercatSlaveType::EthercatSlaveType(const std::string &name, std::uint32_t product_code, std::uint32_t vender_id, std::uint16_t alias, std::uint32_t distributed_clock)
+			:SlaveType(name), imp_(new Imp(product_code, vender_id, alias, distributed_clock)){}
+		EthercatSlaveType::EthercatSlaveType(Object &father, const aris::core::XmlElement &xml_ele) : SlaveType(father, xml_ele)
 		{
 			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
 			imp_->vender_id_ = attributeUint32(xml_ele, "vender_id");
 			imp_->alias_ = attributeUint16(xml_ele, "alias");
 			imp_->distributed_clock_ = attributeUint32(xml_ele, "distributed_clock", 0);
 		}
-		SlaveType::SlaveType(const SlaveType &) = default;
-		SlaveType::SlaveType(SlaveType &&) = default;
-		SlaveType& SlaveType::operator=(const SlaveType &) = default;
-		SlaveType& SlaveType::operator=(SlaveType &&) = default;
+		EthercatSlaveType::EthercatSlaveType(const EthercatSlaveType &) = default;
+		EthercatSlaveType::EthercatSlaveType(EthercatSlaveType &&) = default;
+		EthercatSlaveType& EthercatSlaveType::operator=(const EthercatSlaveType &) = default;
+		EthercatSlaveType& EthercatSlaveType::operator=(EthercatSlaveType &&) = default;
 		
 		struct EthercatSlave::Imp
 		{
 		public:
-			Imp(EthercatSlave*slave, const SlaveType *st = nullptr) :slave_(slave), slave_type_(st) {}
+			Imp(EthercatSlave*slave) :slave_(slave) {}
 
 			aris::core::ImpPtr<Handle> ec_handle_;
-
-			const SlaveType *slave_type_;
 
 			aris::core::ObjectPool<PdoGroup> *pdo_group_pool_;
 			aris::core::ObjectPool<Sdo> *sdo_pool_;
@@ -225,15 +221,12 @@ namespace aris
 		};
 		auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void { Slave::saveXml(xml_ele); }
 		auto EthercatSlave::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
-		auto EthercatSlave::ecHandle()const->const Handle*{ return imp_->ec_handle_.get(); }
-		auto EthercatSlave::productCode()const->std::uint32_t { return imp_->slave_type_->productCode(); }
-		auto EthercatSlave::venderID()const->std::uint32_t { return imp_->slave_type_->venderID(); }
-		auto EthercatSlave::alias()const->std::uint16_t { return imp_->slave_type_->alias(); }
-		auto EthercatSlave::distributedClock()const->std::uint32_t { return imp_->slave_type_->distributedClock(); }
+		auto EthercatSlave::productCode()const->std::uint32_t { return dynamic_cast<const EthercatSlaveType&>(slaveType()).productCode(); }
+		auto EthercatSlave::venderID()const->std::uint32_t { return dynamic_cast<const EthercatSlaveType&>(slaveType()).venderID(); }
+		auto EthercatSlave::alias()const->std::uint16_t { return dynamic_cast<const EthercatSlaveType&>(slaveType()).alias(); }
+		auto EthercatSlave::distributedClock()const->std::uint32_t { return dynamic_cast<const EthercatSlaveType&>(slaveType()).distributedClock(); }
 		auto EthercatSlave::pdoGroupPool()->aris::core::ObjectPool<PdoGroup>& { return *imp_->pdo_group_pool_; }
-		auto EthercatSlave::pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup>&{return *imp_->pdo_group_pool_; }
 		auto EthercatSlave::sdoPool()->aris::core::ObjectPool<Sdo>& { return *imp_->sdo_pool_; }
-		auto EthercatSlave::sdoPool()const->const aris::core::ObjectPool<Sdo>&{return *imp_->sdo_pool_; }
 		auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
 		{
 			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
@@ -271,21 +264,14 @@ namespace aris
 
 		}
 		EthercatSlave::~EthercatSlave() = default;
-		EthercatSlave::EthercatSlave(const std::string &name, const SlaveType &slave_type) :Slave(name), imp_(new Imp(this, &slave_type))
+		EthercatSlave::EthercatSlave(const std::string &name, const EthercatSlaveType &slave_type) :Slave(name, slave_type), imp_(new Imp(this))
 		{
 			imp_->pdo_group_pool_ = &add<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
 			imp_->sdo_pool_ = &add<aris::core::ObjectPool<Sdo> >("sdo_pool");
 		}
 		EthercatSlave::EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele) : Slave(father, xml_ele), imp_(new Imp(this))
 		{
-			if (root().findByName("slave_type_pool") == root().children().end())throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
-			auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType> &>(*root().findByName("slave_type_pool"));
-
-			if (slave_type_pool.findByName(attributeString(xml_ele, "slave_type")) == slave_type_pool.end())
-			{
-				throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
-			}
-			imp_->slave_type_ = &*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"));
+			if (!dynamic_cast<const EthercatSlaveType*>(&slaveType()))throw std::runtime_error("invalid slaveType, because it's not EthercatSlaveType");
 			imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
 			imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo> >("sdo_pool");
 		}
@@ -294,7 +280,6 @@ namespace aris
 		{
 		public:
 			aris::core::ImpPtr<Handle> ec_handle_;
-			aris::core::ObjectPool<SlaveType> *slave_type_pool_;
 			aris::core::RefPool<EthercatSlave> ec_slave_pool_;
 		};
 		auto EthercatMaster::init()->void
@@ -398,7 +383,6 @@ namespace aris
 		auto EthercatMaster::sync()->void { aris_ecrt_master_sync(ecHandle(), aris_rt_timer_read()); }
 		auto EthercatMaster::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
 		auto EthercatMaster::ecSlavePool()->aris::core::RefPool<EthercatSlave>& { return imp_->ec_slave_pool_; }
-		auto EthercatMaster::slaveTypePool()->aris::core::ObjectPool<SlaveType>& { return *imp_->slave_type_pool_; }
 		EthercatMaster::~EthercatMaster() = default;
 		EthercatMaster::EthercatMaster() :imp_(new Imp)
 		{
@@ -407,15 +391,13 @@ namespace aris
 			registerChildType<PdoGroup>();
 			registerChildType<aris::core::ObjectPool<Sdo> >();
 			registerChildType<aris::core::ObjectPool<PdoGroup> >();
-			registerChildType<aris::core::ObjectPool<SlaveType> >();
+			registerChildType<aris::core::ObjectPool<EthercatSlaveType> >();
 
-			registerChildType<SlaveType>();
-			registerChildType<aris::core::ObjectPool<SlaveType> >();
+			registerChildType<EthercatSlaveType>();
 			registerChildType<EthercatSlave>();
 			registerChildType<aris::core::ObjectPool<EthercatSlave, aris::core::ObjectPool<Slave> > >();
 			
 			registerChildType<EthercatMotion>();
-			imp_->slave_type_pool_ = &add<aris::core::ObjectPool<SlaveType> >("slave_type_pool");
 		}
 
 		class EthercatMotion::Imp
@@ -787,8 +769,8 @@ namespace aris
 		}
 		EthercatMotion::~EthercatMotion() = default;
 		EthercatMotion::EthercatMotion(Object &father, const aris::core::XmlElement &xml_ele) :EthercatSlave(father, xml_ele), Motion(father, xml_ele), Slave(father, xml_ele), imp_(new Imp) {}
-		EthercatMotion::EthercatMotion(const std::string &name, const SlaveType &slave_type, std::int32_t input_ratio, double max_pos, double min_pos, double max_vel, double home_pos, double pos_offset)
-			: EthercatSlave(name, slave_type), Motion(name, input_ratio, max_pos, min_pos, max_vel, home_pos, pos_offset), Slave(name), imp_(new Imp)
+		EthercatMotion::EthercatMotion(const std::string &name, const EthercatSlaveType &slave_type, std::int32_t input_ratio, double max_pos, double min_pos, double max_vel, double home_pos, double pos_offset)
+			: EthercatSlave(name, slave_type), Motion(name, slave_type, input_ratio, max_pos, min_pos, max_vel, home_pos, pos_offset), Slave(name, slave_type), imp_(new Imp)
 		{
 		}
 

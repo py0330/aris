@@ -44,7 +44,6 @@ namespace aris
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto ecHandle()->Handle*;
-			auto ecHandle()const->const Handle*;
 
 			virtual ~Pdo();
 			explicit Pdo(const std::string &name, std::uint16_t index, std::uint8_t subindex, aris::Size data_size);
@@ -94,7 +93,6 @@ namespace aris
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto ecHandle()->Handle*;
-			auto ecHandle()const->const Handle*;
 			auto tx()const->bool;
 			auto rx()const->bool;
 			auto index()const->std::uint16_t;
@@ -111,10 +109,10 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		class SlaveType :public aris::core::Object
+		class EthercatSlaveType :public SlaveType
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("SlaveType"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("EthercatSlaveType"); return std::ref(type); }
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto productCode()const->std::uint32_t;
@@ -122,19 +120,18 @@ namespace aris
 			auto alias()const->std::uint16_t;
 			auto distributedClock()const->std::uint32_t;
 
-			virtual ~SlaveType();
-			explicit SlaveType(const std::string &name, std::uint32_t product_code, std::uint32_t vender_id, std::uint16_t alias, std::uint32_t distributed_clock);
-			explicit SlaveType(Object &father, const aris::core::XmlElement &xml_ele);
-			SlaveType(const SlaveType &);
-			SlaveType(SlaveType &&);
-			SlaveType& operator=(const SlaveType &);
-			SlaveType& operator=(SlaveType &&);
+			virtual ~EthercatSlaveType();
+			explicit EthercatSlaveType(const std::string &name, std::uint32_t product_code, std::uint32_t vender_id, std::uint16_t alias, std::uint32_t distributed_clock);
+			explicit EthercatSlaveType(Object &father, const aris::core::XmlElement &xml_ele);
+			EthercatSlaveType(const EthercatSlaveType &);
+			EthercatSlaveType(EthercatSlaveType &&);
+			EthercatSlaveType& operator=(const EthercatSlaveType &);
+			EthercatSlaveType& operator=(EthercatSlaveType &&);
 
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-
 		class EthercatSlave : virtual public Slave
 		{
 		public:
@@ -142,16 +139,13 @@ namespace aris
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto ecHandle()->Handle*;
-			auto ecHandle()const->const Handle*;
 			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 			auto productCode()const->std::uint32_t;
 			auto venderID()const->std::uint32_t;
 			auto alias()const->std::uint16_t;
 			auto distributedClock()const->std::uint32_t;
 			auto pdoGroupPool()->aris::core::ObjectPool<PdoGroup>&;
-			auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup>&;
 			auto sdoPool()->aris::core::ObjectPool<Sdo>&;
-			auto sdoPool()const->const aris::core::ObjectPool<Sdo>&;
 
 			template<typename ValueType>
 			auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType)); }
@@ -170,7 +164,7 @@ namespace aris
 			auto configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void;
 
 			virtual ~EthercatSlave();
-			explicit EthercatSlave(const std::string &name, const SlaveType &slave_type);
+			explicit EthercatSlave(const std::string &name, const EthercatSlaveType &slave_type);
 			explicit EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele);
 			EthercatSlave(const EthercatSlave &other) = delete;
 			EthercatSlave(EthercatSlave &&other) = delete;
@@ -186,14 +180,10 @@ namespace aris
 		class EthercatMaster : virtual public Master
 		{
 		public:
-			enum { MAX_MSG_SIZE = 8192 };
-
 			auto ecHandle()->Handle*;
 			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 			auto ecSlavePool()->aris::core::RefPool<EthercatSlave>&;
 			auto ecSlavePool()const->const aris::core::RefPool<EthercatSlave>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ecSlavePool(); }
-			auto slaveTypePool()->aris::core::ObjectPool<SlaveType>&;
-			auto slaveTypePool()const->const aris::core::ObjectPool<SlaveType>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveTypePool(); }
 
 			virtual ~EthercatMaster();
 			EthercatMaster();
@@ -262,7 +252,7 @@ namespace aris
 
 			virtual ~EthercatMotion();
 			EthercatMotion(Object &father, const aris::core::XmlElement &xml_ele);
-			EthercatMotion(const std::string &name, const SlaveType &slave_type, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
+			EthercatMotion(const std::string &name, const EthercatSlaveType &slave_type, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
 
 		private:
 			class Imp;

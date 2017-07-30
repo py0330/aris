@@ -29,7 +29,7 @@ namespace aris
 		auto Motion::posOffset()->double { return imp_->pos_offset_; }
 		auto Motion::posFactor()->double { return imp_->pos_factor_; }
 		Motion::~Motion() = default;
-		Motion::Motion(const std::string &name, std::int32_t input_ratio, double max_pos, double min_pos, double max_vel, double home_pos, double pos_offset) :Slave(name), imp_(new Imp)
+		Motion::Motion(const std::string &name, const SlaveType &st, std::int32_t input_ratio, double max_pos, double min_pos, double max_vel, double home_pos, double pos_offset) :Slave(name, st), imp_(new Imp)
 		{
 			imp_->pos_factor_ = input_ratio;
 			imp_->max_pos_ = max_pos;
