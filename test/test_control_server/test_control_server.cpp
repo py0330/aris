@@ -129,7 +129,7 @@ struct RcParam
 	int t2;
 	double mag;
 };
-auto rc_parse_func(aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+auto rc_parse_func(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
 	RcParam param;
 	param.t1 = std::atoi(params.at("t1").c_str());
@@ -146,7 +146,7 @@ auto rc_plan_func(const aris::dynamic::PlanParam &param)->int
 	if (param.count_ == 1)
 	{
 		auto &slave = aris::server::ControlServer::instance().master().slavePool().at(param.model_->motionAtPhy(0).slaID());
-		begin_pos = static_cast<aris::control::EthercatMotion&>(slave).actualPos();
+		begin_pos = dynamic_cast<aris::control::EthercatMotion&>(slave).actualPos();
 	}
 
 	param.model_->motionAtPhy(0).setMp(begin_pos + p->mag * std::sin(2 * PI * param.count_ / p->t1));

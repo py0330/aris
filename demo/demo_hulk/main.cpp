@@ -398,7 +398,7 @@ public:
 };
 
 struct RcParam { double p[6]; };
-auto rc_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+auto rc_parse_func = [](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
 	RcParam param;
 	param.p[0] = std::atof(params.at("p1").c_str());
@@ -419,7 +419,7 @@ auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			auto &mot = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
+			auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
 			begin_pos[i] = mot.actualPos();
 		}
 	}
@@ -429,7 +429,7 @@ auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	static aris::Size total_count[6];
 	for (int i = 0; i < 6; ++i)
 	{
-		auto &mot = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
+		auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
 		double mp, mv, ma;
 		aris::dynamic::moveAbsolute(param.count_, begin_pos[i], p->p[i], 0.5*mot.maxVel() / 1000, 0.5*mot.maxVel() / 1000 / 1000, 0.5*mot.maxVel() / 1000 / 1000, mp, mv, ma, total_count[i]);
 		cs.model().motionAtAbs(i).setMp(mp);
@@ -449,7 +449,7 @@ auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 };
 
 struct CkParam { double p[6]; };
-auto ck_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+auto ck_parse_func = [](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
 	CkParam param;
 	msg_out.header().reserved1_ = 0;
@@ -465,7 +465,7 @@ auto ck_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			auto &mot = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
+			auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(cs.model().motionAtAbs(i).slaID()));
 			begin_pos[i] = mot.actualPos();
 		}
 	}
@@ -476,7 +476,7 @@ auto ck_plan_func = [](const aris::dynamic::PlanParam &param)->int
 };
 
 struct MvParam { int axis; double value; };
-auto mv_parse_func = [](aris::server::ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+auto mv_parse_func = [](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
 	MvParam param;
 	if (params.find("x") != params.end())
@@ -547,7 +547,6 @@ auto mv_plan_func = [](const aris::dynamic::PlanParam &param)->int
 
 	return total_count - param.count_;
 };
-
 
 int main()
 {

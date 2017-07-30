@@ -23,7 +23,7 @@ namespace aris
 
 		class ControlServer;
 		
-		using ParseFunc = std::function<void(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
+		using ParseFunc = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
 
 		class ControlServer
 		{
@@ -101,7 +101,7 @@ namespace aris
 			bool active_motor_[MAX_MOTOR_NUM];
 			DefaultParam() { std::fill(active_motor_, active_motor_ + MAX_MOTOR_NUM, true); }
 		};
-		auto default_parse(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
+		auto default_parse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
 		auto default_enable_plan(const aris::dynamic::PlanParam &plan_param)->int;
 		auto default_disable_plan(const aris::dynamic::PlanParam &plan_param)->int;
 		auto default_mode_plan(const aris::dynamic::PlanParam &plan_param)->int;

@@ -46,6 +46,8 @@ void test_elmo_enable()
 			if (++count % 1000 == 0) 
 			{
 				m.mout() << "count " << count << " : ret " << ret << '\0';
+				m.mout().update();
+				m.sendOut();
 			}
 
 			m.dataLogger().lout() << "count " << count << " : ret " << ret <<"\n";

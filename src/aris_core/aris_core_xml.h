@@ -245,7 +245,7 @@ namespace aris
 			auto add(Object *obj)->Object &;
 			auto add(const aris::core::XmlElement &xml_ele)->Object &;
 			template<typename T, typename ...Args>
-			auto add(Args&&... args)->T& { return static_cast<T&>(add(new T(std::forward<Args>(args)...))); }
+			auto add(Args&&... args)->T& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
 			
 
 			virtual ~Object();

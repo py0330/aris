@@ -9,6 +9,7 @@
 
 #include <aris_core.h>
 #include <aris_control_master_slave.h>
+#include <aris_control_controller_motion.h>
 #include <aris_control_ethercat_kernel.h>
 
 
@@ -134,7 +135,7 @@ namespace aris
 			aris::core::ImpPtr<Imp> imp_;
 		};
 
-		class EthercatSlave : public Slave
+		class EthercatSlave : virtual public Slave
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("EthercatSlave"); return std::ref(type); }
@@ -187,9 +188,6 @@ namespace aris
 		public:
 			enum { MAX_MSG_SIZE = 8192 };
 
-			using Root::loadXml;
-			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
-			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto ecHandle()->Handle*;
 			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 			auto ecSlavePool()->aris::core::RefPool<EthercatSlave>&;
@@ -217,6 +215,75 @@ namespace aris
 
 			friend class Sdo;
 			friend class Pdo;
+		};
+
+		class EthercatMotion :public EthercatSlave, public Motion
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("EthercatMotion"); return std::ref(type); }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+
+			auto virtual modeOfOperation()const->std::uint8_t override;
+			auto virtual targetPos()const->double override;
+			auto virtual targetVel()const->double override;
+			auto virtual targetCur()const->double override;
+			auto virtual offsetVel()const->double override;
+			auto virtual offsetCur()const->double override;
+			// require pdo 0x6061 //
+			auto virtual modeOfDisplay()->std::uint8_t override;
+			// require pdo 0x6064 //
+			auto virtual actualPos()->double override;
+			// require pdo 0x606C //
+			auto virtual actualVel()->double override;
+			// require pdo 0x6078 //
+			auto virtual actualCur()->double override;
+			// require pdo 0x6060 //
+			auto virtual setModeOfOperation(std::uint8_t mode)->void override;
+			// require pdo 0x607A //
+			auto virtual setTargetPos(double pos)->void override;
+			// require pdo 0x60FF //
+			auto virtual setTargetVel(double vel)->void override;
+			// require pdo 0x6071 //
+			auto virtual setTargetCur(double cur)->void override;
+			// require pdo 0x6071 //
+			auto virtual setOffsetVel(double vel)->void override;
+			// require pdo 0x6071 //
+			auto virtual setOffsetCur(double cur)->void override;
+
+			// require pdo 0x6040 0x6041 // 
+			auto virtual disable()->int override;
+			// require pdo 0x6040 0x6041 //
+			auto virtual enable()->int override;
+			// require pdo 0x6040 0x6041 0x6060 0x6061 //
+			auto virtual home()->int override;
+			// require pdo 0x6060 0x6061 //
+			auto virtual mode(std::uint8_t md)->int override;
+
+			virtual ~EthercatMotion();
+			EthercatMotion(Object &father, const aris::core::XmlElement &xml_ele);
+			EthercatMotion(const std::string &name, const SlaveType &slave_type, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
+
+		private:
+			class Imp;
+			std::unique_ptr<Imp> imp_;
+		};
+		class EthercatController :public EthercatMaster, public Controller
+		{
+		public:
+			virtual ~EthercatController() = default;
+			EthercatController() = default;
+			EthercatController(const EthercatController &other) = delete;
+			EthercatController(EthercatController &&other) = delete;
+			EthercatController& operator=(const EthercatController &other) = delete;
+			EthercatController& operator=(EthercatController &&other) = delete;
+
+		protected:
+			auto virtual init()->void override { EthercatMaster::init(); Controller::init(); };
+			auto virtual send()->void override { EthercatMaster::send(); };
+			auto virtual recv()->void override { EthercatMaster::recv(); };
+			auto virtual sync()->void override { EthercatMaster::sync(); };
+			auto virtual release()->void override { EthercatMaster::release(); };
 		};
 	}
 }

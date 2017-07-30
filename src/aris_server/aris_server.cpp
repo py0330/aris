@@ -47,9 +47,11 @@ namespace aris
 			return root;
 		}
 		
-		auto default_parse(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
+		auto default_parse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 		{
 			DefaultParam param;
+
+			auto &cs = aris::server::ControlServer::instance();
 
 			for (auto &i : params)
 			{
@@ -97,7 +99,7 @@ namespace aris
 			bool is_all_enabled = true;
 			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
 			{
-				auto &cm = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.enable();
@@ -131,7 +133,7 @@ namespace aris
 			bool is_all_enabled = true;
 			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
 			{
-				auto &cm = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.disable();
@@ -163,7 +165,7 @@ namespace aris
 			bool is_all_moded = true;
 			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
 			{
-				auto &cm = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.mode(8);
@@ -197,7 +199,7 @@ namespace aris
 			bool is_all_homed = true;
 			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
 			{
-				auto &cm = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = dynamic_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.home();
@@ -498,7 +500,7 @@ namespace aris
 		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunction &plan_func)->void
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-			if (imp_->is_running_)throw std::runtime_error("ControlServer already running, so cannot addCmd");
+			if (imp_->is_running_)throw std::runtime_error("failed to ControlServer::addCmd, because it's already started");
 			
 			if (imp_->cmd_id_map_.find(cmd_name) != imp_->cmd_id_map_.end())
 			{
@@ -520,6 +522,7 @@ namespace aris
 		auto ControlServer::executeCmd(const std::string &cmd_string)->void
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+			if (!imp_->is_running_)throw std::runtime_error("failed in ControlServer::executeCmd, because ControlServer is not running");
 
 			aris::core::log(cmd_string);
 
@@ -547,7 +550,7 @@ namespace aris
 			cmd_msg.header().reserved1_ = CHECK_POS_MAX | CHECK_POS_MIN | CHECK_POS_PLAN_CONTINUOUS | CHECK_POS_FOLLOWING_ERROR | CHECK_VEL_PLAN_CONTINUOUS | CHECK_VEL_FOLLOWING_ERROR;
 			cmd_msg.header().reserved2_ = EXECUTE_RT_PLAN;
 			cmd_msg.header().reserved3_ = WAIT_FOR_RT_PLAN_FINISHED;
-			imp_->parser_vec_.at(cmd_pair->second).operator()(*this, cmd, params, cmd_msg);
+			imp_->parser_vec_.at(cmd_pair->second).operator()(cmd, params, cmd_msg);
 			if (!(cmd_msg.header().reserved2_ & EXECUTE_RT_PLAN)) return;
 			cmd_msg.header().reserved2_ = cmd_pair->second;// using reserved 2 to store gait id
 			if (imp_->plan_vec_.at(cmd_pair->second) == nullptr)throw std::runtime_error(std::string("command \"") + cmd + "\" have invalid gait function, it's nullptr");
@@ -570,7 +573,7 @@ namespace aris
 		auto ControlServer::start()->void
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-			if (imp_->is_running_)throw std::runtime_error("ControlServer already running, so cannot start");
+			if (imp_->is_running_)throw std::runtime_error("failed to ControlServer::start, because it's already started");
 			imp_->is_running_ = true;
 
 			// 得到电机向量以及数据 //
@@ -587,7 +590,7 @@ namespace aris
 		auto ControlServer::stop()->void
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-			if (!imp_->is_running_)throw std::runtime_error("ControlServer is not running, so can't stop");
+			if (!imp_->is_running_)throw std::runtime_error("failed to ControlServer::stop, because it's not started");
 			imp_->is_running_ = false;
 
 			master().stop();

@@ -260,41 +260,5 @@ namespace aris
 			imp_->pipe_in_ = &add<aris::core::Pipe>("msg_pipe_in");
 			imp_->pipe_out_ = &add<aris::core::Pipe>("msg_pipe_out");
 		}
-
-		struct EthercatMotionBase::Imp 
-		{
-			double max_pos_;
-			double min_pos_;
-			double max_vel_;
-			double pos_offset_;
-			double pos_factor_;
-			double home_pos;
-		};
-		auto EthercatMotionBase::maxPos()->double { return imp_->max_pos_; }
-		auto EthercatMotionBase::minPos()->double { return imp_->min_pos_; }
-		auto EthercatMotionBase::maxVel()->double { return imp_->max_vel_; }
-		auto EthercatMotionBase::posOffset()->double { return imp_->pos_offset_; }
-		auto EthercatMotionBase::posFactor()->double { return imp_->pos_factor_; }
-		EthercatMotionBase::~EthercatMotionBase() = default;
-		EthercatMotionBase::EthercatMotionBase(const std::string &name, std::int32_t input_ratio, double max_pos, double min_pos, double max_vel, double home_pos, double pos_offset) :Slave(name), imp_(new Imp)
-		{
-			imp_->pos_factor_ = input_ratio;
-			imp_->max_pos_ = max_pos;
-			imp_->min_pos_ = min_pos;
-			imp_->max_vel_ = max_vel;
-			imp_->home_pos = home_pos;
-			imp_->pos_offset_ = pos_offset;
-		}
-		EthercatMotionBase::EthercatMotionBase(Object &father, const aris::core::XmlElement &xml_ele) : Slave(father, xml_ele), imp_(new Imp) {}
-
-		struct Controller::Imp{	aris::core::RefPool<EthercatMotionBase> motion_pool_; };
-		auto Controller::motionPool()->aris::core::RefPool<EthercatMotionBase>& { return imp_->motion_pool_; }
-		auto Controller::init()->void
-		{
-			motionPool().clear();
-			for (auto &s : slavePool())if (dynamic_cast<EthercatMotionBase*>(&s))motionPool().push_back_ptr(dynamic_cast<EthercatMotionBase*>(&s));
-		}
-		Controller::~Controller() = default;
-		Controller::Controller() :imp_(new Imp) {}
     }
 }

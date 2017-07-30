@@ -164,7 +164,7 @@ void test_data_logger()
 
 void test_control_ethercat()
 {
-	//test_pdo();
-	//test_sdo();
+	test_pdo();
+	test_sdo();
 	test_data_logger();
 }
