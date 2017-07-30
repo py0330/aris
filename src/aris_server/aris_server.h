@@ -104,8 +104,12 @@ namespace aris
 		auto default_parse(ControlServer &cs, const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void;
 		auto default_enable_plan(const aris::dynamic::PlanParam &plan_param)->int;
 		auto default_disable_plan(const aris::dynamic::PlanParam &plan_param)->int;
+		auto default_mode_plan(const aris::dynamic::PlanParam &plan_param)->int;
+		auto default_home_plan(const aris::dynamic::PlanParam &plan_param)->int;
 		auto default_enable_command()->const aris::core::Command &;
 		auto default_disable_command()->const aris::core::Command &;
+		auto default_home_command()->const aris::core::Command &;
+		auto default_mode_command()->const aris::core::Command &;
 	}
 }
 

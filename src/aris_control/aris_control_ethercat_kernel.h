@@ -53,24 +53,12 @@ namespace aris
 		auto aris_ecrt_pdo_config(Handle* slave_handle, Handle* pdo_group_handle, Handle* pdo_handle, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void;
 		auto aris_ecrt_pdo_read(Handle* slave_handle, Handle* pdo_handle, void *data, int byte_size)->void;
 		auto aris_ecrt_pdo_write(Handle* slave_handle, Handle* pdo_handle, const void *data, int byte_size)->void;
-		auto aris_ecrt_pdo_read_uint8(Handle* slave_handle, Handle* pdo_handle)->std::uint8_t;
-		auto aris_ecrt_pdo_read_uint16(Handle* slave_handle, Handle* pdo_handle)->std::uint16_t;
-		auto aris_ecrt_pdo_read_uint32(Handle* slave_handle, Handle* pdo_handle)->std::uint32_t;
-		auto aris_ecrt_pdo_read_int8(Handle* slave_handle, Handle* pdo_handle)->std::int8_t;
-		auto aris_ecrt_pdo_read_int16(Handle* slave_handle, Handle* pdo_handle)->std::int16_t;
-		auto aris_ecrt_pdo_read_int32(Handle* slave_handle, Handle* pdo_handle)->std::int32_t;
-		auto aris_ecrt_pdo_write_uint8(Handle* slave_handle, Handle* pdo_handle, std::uint8_t value)->void;
-		auto aris_ecrt_pdo_write_uint16(Handle* slave_handle, Handle* pdo_handle, std::uint16_t value)->void;
-		auto aris_ecrt_pdo_write_uint32(Handle* slave_handle, Handle* pdo_handle, std::uint32_t value)->void;
-		auto aris_ecrt_pdo_write_int8(Handle* slave_handle, Handle* pdo_handle, std::int8_t value)->void;
-		auto aris_ecrt_pdo_write_int16(Handle* slave_handle, Handle* pdo_handle, std::int16_t value)->void;
-		auto aris_ecrt_pdo_write_int32(Handle* slave_handle, Handle* pdo_handle, std::int32_t value)->void;
 		auto aris_ecrt_sdo_read(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 			std::uint8_t *to_buffer, std::size_t bit_size, std::size_t *result_size, std::uint32_t *abort_code)->int;
 		auto aris_ecrt_sdo_write(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 			std::uint8_t *to_buffer, std::size_t bit_size, std::uint32_t *abort_code) ->int;
 		auto aris_ecrt_sdo_config(Handle* master_handle, Handle* slave_handle, std::uint16_t index, std::uint8_t subindex,
-			char *buffer, std::size_t bit_size)->void;
+			std::uint8_t *buffer, std::size_t bit_size)->void;
 	}
 }
 

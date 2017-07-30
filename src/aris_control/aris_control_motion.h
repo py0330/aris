@@ -12,16 +12,16 @@ namespace aris
 {
 	namespace control
 	{
-		class Motion :public Slave
+		class EthercatMotion :public EthercatSlave
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("Motion"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("EthercatMotion"); return std::ref(type); }
 			auto virtual type() const->const std::string&{ return Type(); }
-			auto maxPos()->double;
-			auto minPos()->double;
-			auto maxVel()->double;
-			auto posOffset()->double;
-			auto posFactor()->std::int32_t;
+			auto maxPos()const ->double;
+			auto minPos()const ->double;
+			auto maxVel()const ->double;
+			auto posOffset()const ->double;
+			auto posFactor()const->std::int32_t;
 
 			auto modeOfOperation()const->std::uint8_t;
 			auto targetPos()const->double;
@@ -59,20 +59,15 @@ namespace aris
 			// require pdo 0x6060 0x6061 //
 			auto mode(std::uint8_t md)->int;
 
-
-			virtual ~Motion();
-			Motion(Object &father, const aris::core::XmlElement &xml_ele);
-			Motion(const std::string &name, const SlaveType &slave_type, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
+			virtual ~EthercatMotion();
+			EthercatMotion(Object &father, const aris::core::XmlElement &xml_ele);
+			EthercatMotion(const std::string &name, const SlaveType &slave_type, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
 
 		private:
 			class Imp;
 			std::unique_ptr<Imp> imp_;
 		};
 
-		class Controller
-		{
-
-		};
 	}
 }
 

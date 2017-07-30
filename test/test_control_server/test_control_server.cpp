@@ -146,7 +146,7 @@ auto rc_plan_func(const aris::dynamic::PlanParam &param)->int
 	if (param.count_ == 1)
 	{
 		auto &slave = aris::server::ControlServer::instance().master().slavePool().at(param.model_->motionAtPhy(0).slaID());
-		begin_pos = static_cast<aris::control::Motion&>(slave).actualPos();
+		begin_pos = static_cast<aris::control::EthercatMotion&>(slave).actualPos();
 	}
 
 	param.model_->motionAtPhy(0).setMp(begin_pos + p->mag * std::sin(2 * PI * param.count_ / p->t1));
@@ -204,7 +204,7 @@ void test_construct()
 {
 	auto&cs = aris::server::ControlServer::instance();
 
-	cs.resetMaster(new aris::control::Master);
+	cs.resetMaster(new aris::control::EthercatMaster);
 	cs.resetModel(new aris::dynamic::Model);
 	cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	cs.resetWidgetRoot(new aris::server::WidgetRoot);
@@ -225,27 +225,27 @@ void test_construct()
 	auto &m = cs.model().addMotion();
 	cs.model().updMotionID();
 
-	auto &st = cs.master().slaveTypePool().add<aris::control::SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
-	auto &s1 = cs.master().slavePool().add<aris::control::Motion>("s1", st, 65536, 10.0, -10.0, 10.0, 0, 0);
+	auto &st = dynamic_cast<aris::control::EthercatMaster&>(cs.master()).slaveTypePool().add<aris::control::SlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
+	auto &s1 = cs.master().slavePool().add<aris::control::EthercatMotion>("s1", st, 65536, 10.0, -10.0, 10.0, 0, 0);
 
 	auto &tx = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1A00", 0x1A00, true);
-	tx.add<aris::control::Pdo>("index_6064", aris::control::DO::INT32, 0x6064, 0x00);
-	tx.add<aris::control::Pdo>("index_606c", aris::control::DO::INT32, 0x606c, 0x00);
-	tx.add<aris::control::Pdo>("index_6041", aris::control::DO::UINT16, 0x6041, 0x00);
+	tx.add<aris::control::Pdo>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));
+	tx.add<aris::control::Pdo>("index_606c", 0x606c, 0x00, sizeof(std::int32_t));
+	tx.add<aris::control::Pdo>("index_6041", 0x6041, 0x00, sizeof(std::uint16_t));
 
 	auto &tx2 = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1A0B", 0x1A0B, true);
-	tx2.add<aris::control::Pdo>("index_6061", aris::control::DO::UINT8, 0x6061, 0x00);
+	tx2.add<aris::control::Pdo>("index_6061", 0x6061, 0x00, sizeof(std::uint8_t));
 
 	auto &tx3 = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1A1F", 0x1A1F, true);
-	tx3.add<aris::control::Pdo>("index_6078", aris::control::DO::INT16, 0x6078, 0x00);
+	tx3.add<aris::control::Pdo>("index_6078", 0x6078, 0x00, sizeof(std::int16_t));
 
 	auto &rx = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1605", 0x1605, false);
-	rx.add<aris::control::Pdo>("index_607A", aris::control::DO::INT32, 0x607A, 0x00);
-	rx.add<aris::control::Pdo>("index_60FF", aris::control::DO::INT32, 0x60FF, 0x00);
-	rx.add<aris::control::Pdo>("index_6071", aris::control::DO::INT16, 0x6071, 0x00);
-	rx.add<aris::control::Pdo>("index_6072", aris::control::DO::INT16, 0x6072, 0x00);
-	rx.add<aris::control::Pdo>("index_6040", aris::control::DO::UINT16, 0x6040, 0x00);
-	rx.add<aris::control::Pdo>("index_6060", aris::control::DO::UINT8, 0x6060, 0x00);
+	rx.add<aris::control::Pdo>("index_607A", 0x607A, 0x00, sizeof(std::int32_t));
+	rx.add<aris::control::Pdo>("index_60FF", 0x60FF, 0x00, sizeof(std::int32_t));
+	rx.add<aris::control::Pdo>("index_6071", 0x6071, 0x00, sizeof(std::int16_t));
+	rx.add<aris::control::Pdo>("index_6072", 0x6072, 0x00, sizeof(std::int16_t));
+	rx.add<aris::control::Pdo>("index_6040", 0x6040, 0x00, sizeof(std::uint16_t));
+	rx.add<aris::control::Pdo>("index_6060", 0x6060, 0x00, sizeof(std::uint8_t));
 
 	cs.start();
 

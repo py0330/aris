@@ -13,7 +13,7 @@ static const char xml_file[] =
 "            </elmo>"
 "        </slave_type_pool>"
 "        <slave_pool type=\"SlavePoolElement\">"
-"            <sla type=\"Slave\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
+"            <sla type=\"EthercatSlave\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
 "                <pdo_group_pool type=\"PdoGroupPoolElement\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
@@ -42,7 +42,7 @@ using namespace aris::control;
 
 void test_construct()
 {
-	aris::control::NMaster m;
+	aris::control::Master m;
 	
 	m.setControlStrategy([]() 
 	{

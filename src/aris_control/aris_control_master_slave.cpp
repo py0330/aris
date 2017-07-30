@@ -25,7 +25,7 @@ namespace aris
 		{
 		}
 		
-		struct RTLogger::Imp
+		struct DataLogger::Imp
 		{
 			aris::core::Pipe *log_pipe_;
 			aris::core::MsgFix<MAX_LOG_DATA_SIZE> log_msg_;
@@ -39,11 +39,11 @@ namespace aris
 
 			Imp() :log_msg_(), is_running_(false) { log_msg_stream_.reset(new aris::core::MsgStream(log_msg_)); }
 		};
-		auto RTLogger::saveXml(aris::core::XmlElement &xml_ele) const->void { Object::saveXml(xml_ele); }
-		auto RTLogger::start(const std::string &log_file_name)->void
+		auto DataLogger::saveXml(aris::core::XmlElement &xml_ele) const->void { Object::saveXml(xml_ele); }
+		auto DataLogger::start(const std::string &log_file_name)->void
 		{
 			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-			if (imp_->is_running_)throw std::runtime_error("failed to start RTLogger, because it's running");
+			if (imp_->is_running_)throw std::runtime_error("failed to start DataLogger, because it's running");
 			imp_->is_running_ = true;
 
 			aris::core::createLogDir();
@@ -80,15 +80,15 @@ namespace aris
 
 			fut.wait();
 		}
-		auto RTLogger::stop()->void
+		auto DataLogger::stop()->void
 		{
 			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-			if (!imp_->is_running_)throw std::runtime_error("failed to stop RTLogger, because it's not running");
+			if (!imp_->is_running_)throw std::runtime_error("failed to stop DataLogger, because it's not running");
 			imp_->is_running_ = false;
 			imp_->log_thread_.join();
 		}
-		auto RTLogger::lout()->aris::core::MsgStream & { return *imp_->log_msg_stream_; }
-		auto RTLogger::send()->void
+		auto DataLogger::lout()->aris::core::MsgStream & { return *imp_->log_msg_stream_; }
+		auto DataLogger::send()->void
 		{
 			lout().update();
 			if (!imp_->log_msg_.empty())
@@ -100,31 +100,30 @@ namespace aris
 				lout().resetBuf();
 			}
 		}
-		RTLogger::~RTLogger() = default;
-		RTLogger::RTLogger(const std::string &name) :Object(name), imp_(new Imp)
+		DataLogger::~DataLogger() = default;
+		DataLogger::DataLogger(const std::string &name) :Object(name), imp_(new Imp)
 		{
 			imp_->log_pipe_ = &add<aris::core::Pipe>("pipe", 16384);
 		}
-		RTLogger::RTLogger(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele), imp_(new Imp)
+		DataLogger::DataLogger(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele), imp_(new Imp)
 		{
 			imp_->log_pipe_ = findOrInsert<aris::core::Pipe>("pipe", 16384);
 		}
 
-		struct NSlave::Imp { Size col_id_, blk_col_id_; };
-		NSlave::~NSlave() = default;
-		NSlave::NSlave(const std::string &name) :Object(name) {}
-		NSlave::NSlave(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) {}
-		NSlave::NSlave(const NSlave &other) = default;
-		NSlave::NSlave(NSlave &&other) = default;
-		NSlave& NSlave::operator=(const NSlave &other) = default;
-		NSlave& NSlave::operator=(NSlave &&other) = default;
+		Slave::~Slave() = default;
+		Slave::Slave(const std::string &name) :Object(name) {}
+		Slave::Slave(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) {}
+		Slave::Slave(const Slave &other) = default;
+		Slave::Slave(Slave &&other) = default;
+		Slave& Slave::operator=(const Slave &other) = default;
+		Slave& Slave::operator=(Slave &&other) = default;
 
-		class NMaster::Imp
+		struct Master::Imp
 		{
 		public:
 			static auto rt_task_func(void *master)->void
 			{
-				auto &mst = *reinterpret_cast<NMaster*>(master);
+				auto &mst = *reinterpret_cast<Master*>(master);
 
 				aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
 
@@ -148,10 +147,10 @@ namespace aris
 			}
 
 			// slave //
-			aris::core::ObjectPool<NSlave, Object> *slave_pool_;
+			aris::core::ObjectPool<Slave, Object> *slave_pool_;
 
 			// for log //
-			RTLogger* data_logger_;
+			DataLogger* data_logger_;
 
 			// for msg in and out //
 			aris::core::Pipe *pipe_in_;
@@ -174,10 +173,10 @@ namespace aris
 
 			Imp() { out_msg_stream_.reset(new aris::core::MsgStream(out_msg_)); }
 
-			friend class NSlave;
-			friend class NMaster;
+			friend class Slave;
+			friend class Master;
 		};
-		auto NMaster::loadXml(const aris::core::XmlDocument &xml_doc)->void
+		auto Master::loadXml(const aris::core::XmlDocument &xml_doc)->void
 		{
 			auto root_xml_ele = xml_doc.RootElement()->FirstChildElement("controller");
 
@@ -185,23 +184,26 @@ namespace aris
 
 			loadXml(*root_xml_ele);
 		}
-		auto NMaster::loadXml(const aris::core::XmlElement &xml_ele)->void
+		auto Master::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			Root::loadXml(xml_ele);
 
 			//imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Object> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Object> *>(&(*findByName("slave_type_pool")));
-			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<NSlave, Object> >("slave_pool") : static_cast<aris::core::ObjectPool<NSlave, Object> *>(&(*findByName("slave_pool")));
-			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<RTLogger>("data_logger") : static_cast<RTLogger*>(&(*findByName("data_logger")));
+			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Object> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Object> *>(&(*findByName("slave_pool")));
+			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
 			imp_->pipe_in_ = findOrInsert<aris::core::Pipe>("msg_pipe_in");
 			imp_->pipe_out_ = findOrInsert<aris::core::Pipe>("msg_pipe_out");
 		}
-		auto NMaster::start()->void
+		auto Master::start()->void
 		{
 			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 			if (imp_->is_running_)throw std::runtime_error("master already running, so cannot start");
 			imp_->is_running_ = true;
 
-			// lock memory// 
+			// init child master //
+			init();
+			
+			// lock memory // 
 			aris_mlockall();
 
 			// create and start rt task //
@@ -209,26 +211,29 @@ namespace aris
 			if (imp_->rt_task_handle_.get() == nullptr) throw std::runtime_error("rt_task_create failed");
 			if (aris_rt_task_start(imp_->rt_task_handle_.get(), &Imp::rt_task_func, this))throw std::runtime_error("rt_task_start failed");
 		}
-		auto NMaster::stop()->void
+		auto Master::stop()->void
 		{
 			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 			if (!imp_->is_running_)throw std::runtime_error("master is not running, so can't stop");
 			imp_->is_running_ = false;
 
+			// join task //
 			if (aris_rt_task_join(rtHandle()))throw std::runtime_error("aris_rt_task_join failed");
-			//aris_ecrt_master_stop(ecHandle());
+			
+			// release child resources //
+			release();
 		}
-		auto NMaster::setControlStrategy(std::function<void()> strategy)->void
+		auto Master::setControlStrategy(std::function<void()> strategy)->void
 		{
 			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 			if (imp_->is_running_)throw std::runtime_error("master already running, cannot set control strategy");
 			imp_->strategy_ = strategy;
 		}
-		auto NMaster::rtHandle()->Handle* { return imp_->rt_task_handle_.get(); }
-		auto NMaster::msgIn()->aris::core::MsgFix<MAX_MSG_SIZE>& { return imp_->in_msg_; }
-		auto NMaster::msgOut()->aris::core::MsgFix<MAX_MSG_SIZE>& { return imp_->out_msg_; }
-		auto NMaster::mout()->aris::core::MsgStream & { return *imp_->out_msg_stream_; }
-		auto NMaster::sendOut()->void
+		auto Master::rtHandle()->Handle* { return imp_->rt_task_handle_.get(); }
+		auto Master::msgIn()->aris::core::MsgFix<MAX_MSG_SIZE>& { return imp_->in_msg_; }
+		auto Master::msgOut()->aris::core::MsgFix<MAX_MSG_SIZE>& { return imp_->out_msg_; }
+		auto Master::mout()->aris::core::MsgStream & { return *imp_->out_msg_stream_; }
+		auto Master::sendOut()->void
 		{
 			if (!imp_->out_msg_.empty())
 			{
@@ -237,22 +242,59 @@ namespace aris
 				mout().resetBuf();
 			}
 		}
-		auto NMaster::recvOut(aris::core::MsgBase &recv_msg)->int { return imp_->pipe_out_->recvMsg(recv_msg); }
-		auto NMaster::sendIn(const aris::core::MsgBase &send_msg)->void { imp_->pipe_in_->sendMsg(send_msg); }
-		auto NMaster::recvIn()->int { return imp_->pipe_in_->recvMsg(imp_->in_msg_); }
-		auto NMaster::slavePool()->aris::core::ObjectPool<NSlave, aris::core::Object>& { return *imp_->slave_pool_; }
-		auto NMaster::dataLogger()->RTLogger& { return *imp_->data_logger_; }
-		NMaster::~NMaster() = default;
-		NMaster::NMaster() :imp_(new Imp)
+		auto Master::recvOut(aris::core::MsgBase &recv_msg)->int { return imp_->pipe_out_->recvMsg(recv_msg); }
+		auto Master::sendIn(const aris::core::MsgBase &send_msg)->void { imp_->pipe_in_->sendMsg(send_msg); }
+		auto Master::recvIn()->int { return imp_->pipe_in_->recvMsg(imp_->in_msg_); }
+		auto Master::slavePool()->aris::core::ObjectPool<Slave, aris::core::Object>& { return *imp_->slave_pool_; }
+		auto Master::dataLogger()->DataLogger& { return *imp_->data_logger_; }
+		Master::~Master() = default;
+		Master::Master() :imp_(new Imp)
 		{
 			registerChildType<RTTimer>();
-			registerChildType<RTLogger>();
-			registerChildType<NSlave>();
+			registerChildType<DataLogger>();
+			registerChildType<Slave>();
+			registerChildType<aris::core::ObjectPool<Slave> >();
 
-			imp_->slave_pool_ = &add<aris::core::ObjectPool<NSlave, Object> >("slave_pool");
-			imp_->data_logger_ = &add<RTLogger>("data_logger");
+			imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave, Object> >("slave_pool");
+			imp_->data_logger_ = &add<DataLogger>("data_logger");
 			imp_->pipe_in_ = &add<aris::core::Pipe>("msg_pipe_in");
 			imp_->pipe_out_ = &add<aris::core::Pipe>("msg_pipe_out");
 		}
+
+		struct EthercatMotionBase::Imp 
+		{
+			double max_pos_;
+			double min_pos_;
+			double max_vel_;
+			double pos_offset_;
+			double pos_factor_;
+			double home_pos;
+		};
+		auto EthercatMotionBase::maxPos()->double { return imp_->max_pos_; }
+		auto EthercatMotionBase::minPos()->double { return imp_->min_pos_; }
+		auto EthercatMotionBase::maxVel()->double { return imp_->max_vel_; }
+		auto EthercatMotionBase::posOffset()->double { return imp_->pos_offset_; }
+		auto EthercatMotionBase::posFactor()->double { return imp_->pos_factor_; }
+		EthercatMotionBase::~EthercatMotionBase() = default;
+		EthercatMotionBase::EthercatMotionBase(const std::string &name, std::int32_t input_ratio, double max_pos, double min_pos, double max_vel, double home_pos, double pos_offset) :Slave(name), imp_(new Imp)
+		{
+			imp_->pos_factor_ = input_ratio;
+			imp_->max_pos_ = max_pos;
+			imp_->min_pos_ = min_pos;
+			imp_->max_vel_ = max_vel;
+			imp_->home_pos = home_pos;
+			imp_->pos_offset_ = pos_offset;
+		}
+		EthercatMotionBase::EthercatMotionBase(Object &father, const aris::core::XmlElement &xml_ele) : Slave(father, xml_ele), imp_(new Imp) {}
+
+		struct Controller::Imp{	aris::core::RefPool<EthercatMotionBase> motion_pool_; };
+		auto Controller::motionPool()->aris::core::RefPool<EthercatMotionBase>& { return imp_->motion_pool_; }
+		auto Controller::init()->void
+		{
+			motionPool().clear();
+			for (auto &s : slavePool())if (dynamic_cast<EthercatMotionBase*>(&s))motionPool().push_back_ptr(dynamic_cast<EthercatMotionBase*>(&s));
+		}
+		Controller::~Controller() = default;
+		Controller::Controller() :imp_(new Imp) {}
     }
 }

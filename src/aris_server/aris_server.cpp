@@ -97,7 +97,7 @@ namespace aris
 			bool is_all_enabled = true;
 			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
 			{
-				auto &cm = static_cast<aris::control::Motion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.enable();
@@ -131,7 +131,7 @@ namespace aris
 			bool is_all_enabled = true;
 			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
 			{
-				auto &cm = static_cast<aris::control::Motion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.disable();
@@ -163,7 +163,7 @@ namespace aris
 			bool is_all_moded = true;
 			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
 			{
-				auto &cm = static_cast<aris::control::Motion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.mode(8);
@@ -197,7 +197,7 @@ namespace aris
 			bool is_all_homed = true;
 			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
 			{
-				auto &cm = static_cast<aris::control::Motion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = static_cast<aris::control::EthercatMotion&>(cs.master().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.home();
@@ -239,17 +239,6 @@ namespace aris
 			Imp(const Imp&) = delete;
 
 		private:
-			enum RobotCmdID
-			{
-				ENABLE,
-				DISABLE,
-				HOME,
-				RUN_GAIT,
-
-				ROBOT_CMD_COUNT
-			};
-
-		private:
 			std::recursive_mutex mu_running_;
 			std::atomic_bool is_running_{ false };
 
@@ -263,7 +252,7 @@ namespace aris
 			// 储存上一次motion的数据 //
 			struct PVC { double p; double v; double c; };
 			std::vector<PVC> last_target_motion_data_vec_;
-			std::vector<aris::control::Motion *> cm_vec_;
+			std::vector<aris::control::EthercatMotion *> cm_vec_;
 
 
 			// 以下储存所有的命令的parse和plan函数 //
@@ -290,6 +279,9 @@ namespace aris
 				if (cmd_num_ >= CMD_POOL_SIZE)
 				{
 					server_->master().mout() << "cmd pool is full, thus ignore last command\n";
+					// 结束同步调用的等待 //
+					auto promise = reinterpret_cast<std::promise<void>*&>(server_->master().msgIn().header().reserved3_);
+					if (promise)promise->set_value();
 				}
 				else
 				{
@@ -397,7 +389,7 @@ namespace aris
 				last_target_motion_data_vec_.at(i).c = cm_vec_.at(i)->targetCur();
 			}
 
-			// 如果是异步指令，那么通知等待线程结束 //
+			// 如果是同步指令，那么通知等待线程结束 //
 			auto promise = reinterpret_cast<std::promise<void>*&>(msg_queue_[current_cmd_].header().reserved3_);
 			if (ret == 0 && promise)promise->set_value();
 			return ret;
@@ -583,7 +575,7 @@ namespace aris
 
 			// 得到电机向量以及数据 //
 			imp_->cm_vec_.clear();
-			for (auto &cm : master().slavePool())if (dynamic_cast<aris::control::Motion*>(&cm))imp_->cm_vec_.push_back(dynamic_cast<aris::control::Motion*>(&cm));
+			for (auto &cm : master().slavePool())if (dynamic_cast<aris::control::EthercatMotion*>(&cm))imp_->cm_vec_.push_back(dynamic_cast<aris::control::EthercatMotion*>(&cm));
 			imp_->last_target_motion_data_vec_.clear();
 			imp_->last_target_motion_data_vec_.resize(imp_->cm_vec_.size(), Imp::PVC{ 0,0,0 });
 
