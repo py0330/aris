@@ -2,8 +2,6 @@
 #define ARIS_DYNAMIC_SIMPLE_MODEL_
 
 #include <aris_dynamic_model.h>
-#include <aris_dynamic_model_joint.h>
-#include <aris_dynamic_model_solver.h>
 
 namespace aris
 {

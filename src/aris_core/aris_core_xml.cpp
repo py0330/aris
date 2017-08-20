@@ -506,16 +506,14 @@ namespace aris
 		{
 			aris::core::XmlDocument xmlDoc;
 
-			if (xmlDoc.LoadFile(filename.c_str()) != 0)
-			{
-				throw std::runtime_error((std::string("could not open file:") + std::string(filename)));
-			}
+			if (xmlDoc.LoadFile(filename.c_str()) != 0)throw std::runtime_error((std::string("could not open file:") + std::string(filename)));
 
 			loadXml(xmlDoc);
 		}
 		auto Root::loadXml(const aris::core::XmlDocument &xml_doc)->void{loadXml(*xml_doc.RootElement());}
 		auto Root::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
+			Object::imp_->name_ = xml_ele.Name();
 			children().clear();
 			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
 		}
@@ -534,7 +532,7 @@ namespace aris
 			auto header_xml_ele = xml_doc.NewDeclaration("xml version=\"1.0\" encoding=\"UTF-8\" ");
 			xml_doc.InsertEndChild(header_xml_ele);
 
-			auto root_xml_ele = xml_doc.NewElement(this->name().c_str());
+			auto root_xml_ele = xml_doc.NewElement(name().c_str());
 			xml_doc.InsertEndChild(root_xml_ele);
 
 			saveXml(*root_xml_ele);

@@ -9,7 +9,7 @@ static const char xml_file[] =
 "    <controller>"
 "        <data_logger type=\"DataLogger\"/>"
 "        <slave_type_pool type=\"SlaveTypePoolElement\">"
-"            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vender_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
+"            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vendor_id_=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
 "            </elmo>"
 "        </slave_type_pool>"
 "        <slave_pool type=\"SlavePoolElement\">"
@@ -48,8 +48,6 @@ void test_construct()
 	{
 		static int count{0};
 		std::cout << "count:" << ++count << std::endl;
-
-
 	});
 	m.start();
 	std::this_thread::sleep_for(std::chrono::seconds(2));

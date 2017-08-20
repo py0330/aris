@@ -156,46 +156,276 @@ namespace aris
 
 		struct EthercatSlaveType::Imp
 		{
-			std::uint32_t product_code_, vender_id_;
-			std::uint16_t alias_;
-			std::uint32_t distributed_clock_;
+			struct SubDataType
+			{
+				int bit_size;
+				int bit_offset;
+			};
+			struct DataType
+			{
+				int bit_size;
+				bool tx, rx;
+				std::map<std::uint8_t, SubDataType> sub_items;
+			};
 
-			Imp(std::uint32_t product_code = 0, std::uint32_t vender_id = 0, std::uint16_t alias = 0, std::uint32_t distributed_clock = 0)
-				:product_code_(product_code), vender_id_(vender_id), alias_(alias), distributed_clock_(distributed_clock){}
+			struct PdoG
+			{
+				std::uint16_t index_;
+				std::vector<std::uint16_t> exclude_;
+				std::vector<std::pair<std::uint16_t, std::uint8_t> > entry_;
+				bool is_tx_;
+				bool fix;
+			};
+
+			struct Device
+			{
+				std::uint32_t product_code_, revision_num_;
+				std::list<std::uint32_t> dc_assign_activate_list_;
+				std::list<PdoG> pdo_groups_;
+				std::map<std::uint16_t, DataType> pdo_map_;
+			};
+			
+			std::vector<Device> devices_;
+			std::uint32_t vendor_id_;
+
+			std::string esi_file_path_;
+			auto init()->void // load esi file //
+			{
+				aris::core::XmlDocument doc;
+				if (doc.LoadFile(this->esi_file_path_.c_str()))throw std::runtime_error((std::string("failed in EthercatSlaveType ctor, because could not open esi file:") + esi_file_path_));
+
+				std::string word;
+				word = doc.RootElement()->FirstChildElement("Vendor")->FirstChildElement("Id")->GetText();
+				if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+				this->vendor_id_ = std::stoi(word, nullptr, 0);
+
+				auto devices = doc.RootElement()->FirstChildElement("Descriptions")->FirstChildElement("Devices");
+				for (auto device = devices->FirstChildElement("Device"); device; device = device->NextSiblingElement("Device"))
+				{
+					this->devices_.push_back(Imp::Device());
+					auto &d = this->devices_.back();
+
+					word = device->FirstChildElement("Type")->Attribute("ProductCode");
+					if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+					d.product_code_ = std::stoi(word, nullptr, 0);
+
+					word = device->FirstChildElement("Type")->Attribute("RevisionNo");
+					if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+					d.revision_num_ = std::stoi(word, nullptr, 0);
+
+					for (auto dc = device->FirstChildElement("Dc")->FirstChildElement("OpMode"); dc; dc = dc->NextSiblingElement("OpMode"))
+					{
+						word = dc->FirstChildElement("AssignActivate")->GetText();
+						if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+						d.dc_assign_activate_list_.push_back(static_cast<std::uint32_t>(std::stoi(word, nullptr, 0)));
+					}
+
+					// make object type map //
+					std::map<std::string, DataType> type_map;
+					for (auto t = device->FirstChildElement("Profile")->FirstChildElement("Dictionary")->FirstChildElement("DataTypes")->FirstChildElement("DataType"); t; t = t->NextSiblingElement("DataType"))
+					{
+						DataType dt;
+						word = t->FirstChildElement("BitSize")->GetText();
+						if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+						dt.bit_size = std::stoi(word, nullptr, 0);
+
+						if (t->FirstChildElement("ArrayInfo"))
+						{
+							word = t->FirstChildElement("ArrayInfo")->FirstChildElement("LBound")->GetText();
+							if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+							std::uint8_t l_bound = std::stoi(word, nullptr, 0);
+
+							word = t->FirstChildElement("ArrayInfo")->FirstChildElement("Elements")->GetText();
+							if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+							std::uint8_t elements = std::stoi(word, nullptr, 0);
+
+							auto bs = t->FirstChildElement("BaseType") ? type_map.at(t->FirstChildElement("BaseType")->GetText()).bit_size : dt.bit_size/elements;
+
+							for (std::uint8_t i = 0; i < elements; ++i)
+							{
+								dt.sub_items.insert(std::pair<std::uint8_t, SubDataType>(i + l_bound, SubDataType{ bs, i*bs }));
+							}
+						}
+						
+						if (t->FirstChildElement("SubItem"))
+						{
+							for (auto s = t->FirstChildElement("SubItem"); s; s = s->NextSiblingElement("SubItem"))
+							{
+								if (s->FirstChildElement("SubIdx"))
+								{
+									word = s->FirstChildElement("BitSize")->GetText();
+									if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+									int bit_size = std::stoi(word, nullptr, 0);
+
+									word = s->FirstChildElement("BitOffs")->GetText();
+									if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+									int bit_offs = std::stoi(word, nullptr, 0);
+
+									word = s->FirstChildElement("SubIdx")->GetText();
+									if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+									int sub_idx = std::stoi(word, nullptr, 0);
+
+									dt.sub_items.insert(std::make_pair(sub_idx, SubDataType{ bit_size, bit_offs }));
+								}
+								else
+								{
+									word = s->FirstChildElement("BitOffs")->GetText();
+									if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+									int bit_offs = std::stoi(word, nullptr, 0);
+
+									auto &type = type_map.at(s->FirstChildElement("Type")->GetText());
+									for (auto &sub : type.sub_items)dt.sub_items.insert(std::make_pair(sub.first, SubDataType{sub.second.bit_size, sub.second.bit_offset + bit_offs}));
+								}
+							}
+						}
+						
+
+						type_map.insert(std::make_pair(std::string(t->FirstChildElement("Name")->GetText()), dt));
+					}
+
+					// make object data //
+					for (auto o = device->FirstChildElement("Profile")->FirstChildElement("Dictionary")->FirstChildElement("Objects")->FirstChildElement("Object");	o; o = o->NextSiblingElement("Object"))
+					{
+						word = o->FirstChildElement("Type")->GetText();
+						auto &data = type_map.at(word);
+
+						word = o->FirstChildElement("Index")->GetText();
+						if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+						std::int16_t index = std::stoi(word, nullptr, 0);
+						
+						data.tx = data.rx = false;
+						if (o->FirstChildElement("Flags") && o->FirstChildElement("Flags")->FirstChildElement("PdoMapping"))
+						{
+							word = o->FirstChildElement("Flags")->FirstChildElement("PdoMapping")->GetText();
+							if (word.find("T") != std::string::npos)data.tx = true;
+							if (word.find("R") != std::string::npos)data.rx = true;
+						}
+
+						d.pdo_map_.insert(std::make_pair(index, data));
+					}
+
+					// make tx and rx pdo //
+					for (auto o = device->FirstChildElement("RxPdo"); o; o = o->NextSiblingElement("RxPdo"))
+					{
+						PdoG pg;
+						
+						pg.is_tx_ = false;
+
+						pg.fix = o->IntAttribute("Fixed") == 0 ? false : true;
+
+						word = o->FirstChildElement("Index")->GetText();
+						if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+						pg.index_ = std::stoi(word, nullptr, 0);
+
+						for (auto e = o->FirstChildElement("Exclude"); e; e = e->NextSiblingElement("Exclude"))
+						{
+							word = e->GetText();
+							if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+							pg.exclude_.push_back(static_cast<std::uint16_t>(std::stoi(word, nullptr, 0)));
+						}
+
+						d.pdo_groups_.push_back(pg);
+					}
+					for (auto o = device->FirstChildElement("TxPdo"); o; o = o->NextSiblingElement("TxPdo"))
+					{
+						PdoG pg;
+
+						pg.is_tx_ = true;
+
+						pg.fix = o->IntAttribute("Fixed") == 0 ? false : true;
+
+						word = o->FirstChildElement("Index")->GetText();
+						if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+						pg.index_ = std::stoi(word, nullptr, 0);
+
+						for (auto e = o->FirstChildElement("Exclude"); e; e = e->NextSiblingElement("Exclude"))
+						{
+							word = e->GetText();
+							if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+							pg.exclude_.push_back(static_cast<std::uint16_t>(std::stoi(word, nullptr, 0)));
+						}
+
+						for (auto e = o->FirstChildElement("Entry"); e; e = e->NextSiblingElement("Entry"))
+						{
+							word = e->FirstChildElement("Index")->GetText();
+							if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+							auto index = static_cast<std::uint16_t>(std::stoi(word, nullptr, 0));
+
+							word = e->FirstChildElement("SubIndex")->GetText();
+							if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+							auto subindex = static_cast<std::uint8_t>(std::stoi(word, nullptr, 0));
+
+							pg.entry_.push_back(std::make_pair(index, subindex));
+							
+							//word = e->GetText();
+							//if (word.find("#x") != std::string::npos)word.replace(word.find("#x"), word.find("#x") + 2, "0x");
+							//pg.exclude_.push_back(static_cast<std::uint16_t>(std::stoi(word, nullptr, 0)));
+						}
+
+						d.pdo_groups_.push_back(pg);
+					}
+
+					// print //
+					//for (auto &k : d.pdo_map_)
+					//{
+					//	std::stringstream s;
+					//	s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(k.first);
+					//	std::cout << s.str() << ":" << std::endl;
+					//	if (k.second.tx) std::cout << "  tx" << std::endl;
+					//	if (k.second.rx) std::cout << "  rx" << std::endl;
+					//	std::cout << "  size:" << k.second.bit_size << std::endl;
+					//	std::cout << "  item:" << std::endl;
+					//	for (auto &s : k.second.sub_items)
+					//	{
+					//		std::stringstream ss;
+					//		ss << "0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(s.first);
+					//		std::cout << "       "<<ss.str()<<":"<<s.second.bit_size<<"  "<<s.second.bit_offset << std::endl;
+					//	}
+					//}
+
+					//for (auto &k : d.pdo_groups_)
+					//{
+					//	std::stringstream s;
+					//	s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(k.index_);
+					//	std::cout << s.str() << ":" << std::endl;
+					//	if (k.is_tx_) std::cout << "  tx" << std::endl; else std::cout << "  rx" << std::endl;
+					//	if (k.fix) std::cout << "  fixed" << std::endl; 
+					//	std::cout << "  exclude:" << std::endl;
+					//	for (auto &e : k.exclude_)
+					//	{
+					//		std::stringstream s;
+					//		s << "  0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(e);
+					//		std::cout << s.str() << std::endl;
+					//	}
+					//	std::cout << "  entry:" << std::endl;
+					//	for (auto &e : k.entry_)
+					//	{
+					//		std::stringstream s;
+					//		s << "  0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(e.first)
+					//			<< "  0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(e.second);
+					//		std::cout << s.str() << std::endl;
+					//	}
+
+					//}
+				}
+			};
 		};
 		auto EthercatSlaveType::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Object::saveXml(xml_ele);
-
-			std::stringstream s;
-			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(productCode())) * 2) << std::hex << productCode();
-			xml_ele.SetAttribute("product_code", s.str().c_str());
-
-			s = std::stringstream();
-			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(venderID())) * 2) << std::hex << venderID();
-			xml_ele.SetAttribute("vender_id", s.str().c_str());
-
-			s = std::stringstream();
-			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(alias())) * 2) << std::hex << alias();
-			xml_ele.SetAttribute("alias", s.str().c_str());
-
-			s = std::stringstream();
-			s << "0x" << std::setfill('0') << std::setw(sizeof(decltype(distributedClock())) * 2) << std::hex << distributedClock();
-			xml_ele.SetAttribute("distributed_clock", s.str().c_str());
+			xml_ele.SetAttribute("esi_file_path", imp_->esi_file_path_.c_str());
 		}
-		auto EthercatSlaveType::productCode()const->std::uint32_t { return imp_->product_code_; }
-		auto EthercatSlaveType::venderID()const->std::uint32_t { return imp_->vender_id_; }
-		auto EthercatSlaveType::alias()const->std::uint16_t { return imp_->alias_; }
-		auto EthercatSlaveType::distributedClock()const->std::uint32_t { return imp_->distributed_clock_; }
+		auto EthercatSlaveType::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
 		EthercatSlaveType::~EthercatSlaveType() = default;
-		EthercatSlaveType::EthercatSlaveType(const std::string &name, std::uint32_t product_code, std::uint32_t vender_id, std::uint16_t alias, std::uint32_t distributed_clock)
-			:SlaveType(name), imp_(new Imp(product_code, vender_id, alias, distributed_clock)){}
-		EthercatSlaveType::EthercatSlaveType(Object &father, const aris::core::XmlElement &xml_ele) : SlaveType(father, xml_ele)
+		EthercatSlaveType::EthercatSlaveType(const std::string &name, const std::string &esi_file_path) : SlaveType(name), imp_(new Imp)
 		{
-			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
-			imp_->vender_id_ = attributeUint32(xml_ele, "vender_id");
-			imp_->alias_ = attributeUint16(xml_ele, "alias");
-			imp_->distributed_clock_ = attributeUint32(xml_ele, "distributed_clock", 0);
+			imp_->esi_file_path_ = esi_file_path;
+			imp_->init();
+		}
+		EthercatSlaveType::EthercatSlaveType(Object &father, const aris::core::XmlElement &xml_ele) : SlaveType(father, xml_ele), imp_(new Imp)
+		{
+			imp_->esi_file_path_ = attributeString(xml_ele, "esi_file_path");
+			imp_->init();
 		}
 		EthercatSlaveType::EthercatSlaveType(const EthercatSlaveType &) = default;
 		EthercatSlaveType::EthercatSlaveType(EthercatSlaveType &&) = default;
@@ -205,26 +435,74 @@ namespace aris
 		struct EthercatSlave::Imp
 		{
 		public:
-			Imp(EthercatSlave*slave) :slave_(slave) {}
-
 			aris::core::ImpPtr<Handle> ec_handle_;
 
+			std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
 			aris::core::ObjectPool<PdoGroup> *pdo_group_pool_;
 			aris::core::ObjectPool<Sdo> *sdo_pool_;
 			std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
 			std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
 
-			EthercatSlave *slave_;
+			static auto check(EthercatSlave* sla)->void
+			{
+				if (sla->slaveType())
+				{
+					auto ec_type = dynamic_cast<const EthercatSlaveType*>(sla->slaveType());
+					
+					// check vendor id //
+					if (sla->vendorID() != ec_type->vendorID())throw std::runtime_error(sla->name() + " has invalid EthercatSlave vendor id, not same with slaveType");
 
-			friend class EthercatSlave;
-			friend class Master;
+					// check product code and revision num //
+					auto device = std::find_if(ec_type->imp_->devices_.begin(), ec_type->imp_->devices_.end(), [&](const EthercatSlaveType::Imp::Device& d)->bool
+					{
+						return (d.product_code_ == sla->productCode()) && (d.revision_num_ == sla->revisionNum());
+					});
+
+					if(device == ec_type->imp_->devices_.end())throw std::runtime_error(sla->name() + " has invalid EthercatSlave product_code or revision num, please check");
+
+					// check dc assign activate //
+					auto dc = std::find(device->dc_assign_activate_list_.begin(), device->dc_assign_activate_list_.end(), sla->dcAssignActivate());
+					if (dc == device->dc_assign_activate_list_.end())throw std::runtime_error(sla->name() + " has invalid dc assign activate, please check");
+
+
+					// check pdo group //
+					for (auto &pdo_group : sla->pdoGroupPool())
+					{
+						//if(pdo_group.empty())
+					}
+
+
+
+				}
+
+			}
 		};
-		auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void { Slave::saveXml(xml_ele); }
+
+		auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void 
+		{
+			Slave::saveXml(xml_ele);
+			
+			std::stringstream s;
+			s << "0x" << std::setfill('0') << std::setw(sizeof(vendorID()) * 2) << std::hex << vendorID();
+			xml_ele.SetAttribute("vendor_id", s.str().c_str());
+
+			s = std::stringstream();
+			s << "0x" << std::setfill('0') << std::setw(sizeof(productCode()) * 2) << std::hex << productCode();
+			xml_ele.SetAttribute("product_code", s.str().c_str());
+
+			s = std::stringstream();
+			s << "0x" << std::setfill('0') << std::setw(sizeof(revisionNum()) * 2) << std::hex << revisionNum();
+			xml_ele.SetAttribute("revision_num", s.str().c_str());
+
+			s = std::stringstream();
+			s << "0x" << std::setfill('0') << std::setw(sizeof(dcAssignActivate()) * 2) << std::hex << dcAssignActivate();
+			xml_ele.SetAttribute("dc_assign_activate", s.str().c_str());
+		}
 		auto EthercatSlave::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
-		auto EthercatSlave::productCode()const->std::uint32_t { return dynamic_cast<const EthercatSlaveType&>(slaveType()).productCode(); }
-		auto EthercatSlave::venderID()const->std::uint32_t { return dynamic_cast<const EthercatSlaveType&>(slaveType()).venderID(); }
-		auto EthercatSlave::alias()const->std::uint16_t { return dynamic_cast<const EthercatSlaveType&>(slaveType()).alias(); }
-		auto EthercatSlave::distributedClock()const->std::uint32_t { return dynamic_cast<const EthercatSlaveType&>(slaveType()).distributedClock(); }
+		auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
+		auto EthercatSlave::productCode()const->std::uint32_t { return imp_->product_code_; }
+		auto EthercatSlave::revisionNum()const->std::uint32_t { return imp_->revision_num_; }
+		auto EthercatSlave::dcAssignActivate()const->std::uint32_t { return imp_->dc_assign_activate_; }
 		auto EthercatSlave::pdoGroupPool()->aris::core::ObjectPool<PdoGroup>& { return *imp_->pdo_group_pool_; }
 		auto EthercatSlave::sdoPool()->aris::core::ObjectPool<Sdo>& { return *imp_->sdo_pool_; }
 		auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
@@ -232,7 +510,6 @@ namespace aris
 			auto id_pair = imp_->pdo_map_.at(index).at(subindex);
 			auto &pdo_group = pdoGroupPool().at(id_pair.first);
 			auto &pdo = pdo_group.at(id_pair.second);
-			if (!pdo_group.tx())throw std::runtime_error("failed to read pdo:\"" + pdo.name() + "\" because it is not tx");
 			if (pdo.size() != byte_size)throw std::runtime_error("failed to read pdo:\"" + pdo.name() + "\" because byte size is not correct");
 			aris_ecrt_pdo_read(ecHandle(), pdo.ecHandle(), value, byte_size);
 		}
@@ -250,13 +527,13 @@ namespace aris
 			std::size_t result_size;
 			std::uint32_t abort_code;
 			auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
-			aris_ecrt_sdo_read(ecHandle(), position(), index, subindex, reinterpret_cast<std::uint8_t*>(value), byte_size, &result_size, &abort_code);
+			aris_ecrt_sdo_read(ecHandle(), phyId(), index, subindex, reinterpret_cast<std::uint8_t*>(value), byte_size, &result_size, &abort_code);
 		}
 		auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
 		{
 			std::uint32_t abort_code;
 			auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
-			aris_ecrt_sdo_write(dynamic_cast<EthercatMaster&>(root()).ecHandle(), position(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
+			aris_ecrt_sdo_write(dynamic_cast<EthercatMaster&>(root()).ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 
 		}
 		auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
@@ -264,16 +541,24 @@ namespace aris
 
 		}
 		EthercatSlave::~EthercatSlave() = default;
-		EthercatSlave::EthercatSlave(const std::string &name, const EthercatSlaveType &slave_type) :Slave(name, slave_type), imp_(new Imp(this))
+		EthercatSlave::EthercatSlave(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, slave_type, phy_id), imp_(new Imp)
 		{
 			imp_->pdo_group_pool_ = &add<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
 			imp_->sdo_pool_ = &add<aris::core::ObjectPool<Sdo> >("sdo_pool");
+			imp_->vendor_id_ = vid;
+			imp_->product_code_ = p_code;
+			imp_->revision_num_ = r_num;
+			imp_->dc_assign_activate_ = dc;
 		}
-		EthercatSlave::EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele) : Slave(father, xml_ele), imp_(new Imp(this))
+		EthercatSlave::EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele) : Slave(father, xml_ele), imp_(new Imp)
 		{
-			if (!dynamic_cast<const EthercatSlaveType*>(&slaveType()))throw std::runtime_error("invalid slaveType, because it's not EthercatSlaveType");
+			if (slaveType() && !dynamic_cast<const EthercatSlaveType*>(slaveType()))throw std::runtime_error("invalid slaveType, because it's not EthercatSlaveType");
 			imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
 			imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo> >("sdo_pool");
+			imp_->vendor_id_ = attributeUint32(xml_ele, "vendor_id");
+			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
+			imp_->revision_num_ = attributeUint32(xml_ele, "revision_num");
+			imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
 		}
 
 		class EthercatMaster::Imp
@@ -357,7 +642,8 @@ namespace aris
 					}
 					aris_ecrt_pdo_group_config(sla.ecHandle(), pdo_group.ecHandle(), pdo_group.index(), pdo_group.tx());
 				}
-				aris_ecrt_slave_config(ecHandle(), sla.ecHandle(), sla.alias(), sla.position(), sla.venderID(), sla.productCode(), sla.distributedClock());
+				// following 0x00 is alias //
+				aris_ecrt_slave_config(ecHandle(), sla.ecHandle(), 0x00, sla.phyId(), sla.vendorID(), sla.productCode(), sla.dcAssignActivate());
 			}
 			aris_ecrt_master_config(ecHandle());
 
@@ -422,8 +708,17 @@ namespace aris
 		};
 		auto EthercatMotion::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
-			Motion::saveXml(xml_ele);
 			EthercatSlave::saveXml(xml_ele);
+
+			xml_ele.SetAttribute("max_pos", maxPos());
+			xml_ele.SetAttribute("min_pos", minPos());
+			xml_ele.SetAttribute("max_vel", maxVel());
+			xml_ele.SetAttribute("max_acc", maxAcc());
+			xml_ele.SetAttribute("pos_factor", posFactor());
+			xml_ele.SetAttribute("pos_offset", posOffset());
+			xml_ele.SetAttribute("home_pos", homePos());
+
+
 		}
 		auto EthercatMotion::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
 		auto EthercatMotion::targetPos()const->double { return imp_->target_pos_; }
@@ -440,7 +735,7 @@ namespace aris
 		auto EthercatMotion::actualPos()->double
 		{
 			std::int32_t pos_count;
-			readPdo(0x607A, 0x00, pos_count);
+			readPdo(0x6064, 0x00, pos_count);
 			return static_cast<double>(pos_count) / posFactor() - posOffset();
 		}
 		auto EthercatMotion::actualVel()->double
@@ -769,11 +1064,12 @@ namespace aris
 		}
 		EthercatMotion::~EthercatMotion() = default;
 		EthercatMotion::EthercatMotion(Object &father, const aris::core::XmlElement &xml_ele) :EthercatSlave(father, xml_ele), Motion(father, xml_ele), Slave(father, xml_ele), imp_(new Imp) {}
-		EthercatMotion::EthercatMotion(const std::string &name, const EthercatSlaveType &slave_type, std::int32_t input_ratio, double max_pos, double min_pos, double max_vel, double home_pos, double pos_offset)
-			: EthercatSlave(name, slave_type), Motion(name, slave_type, input_ratio, max_pos, min_pos, max_vel, home_pos, pos_offset), Slave(name, slave_type), imp_(new Imp)
+		EthercatMotion::EthercatMotion(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
+			, double max_pos, double min_pos, double max_vel, double max_acc, double pos_factor, double pos_offset, double home_pos)
+			: EthercatSlave(name, slave_type, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)
+			, Motion(name, slave_type, phy_id, max_pos, min_pos, max_vel, max_acc,pos_factor, pos_offset, home_pos)
+			, Slave(name, slave_type, phy_id), imp_(new Imp)
 		{
 		}
-
-
 	}
 }

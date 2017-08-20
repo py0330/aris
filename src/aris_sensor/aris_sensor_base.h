@@ -80,6 +80,8 @@ namespace aris
 		class SensorRoot:public aris::core::Root
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type("SensorRoot"); return std::ref(type); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			using Root::loadXml;
 			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;

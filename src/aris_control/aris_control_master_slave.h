@@ -16,7 +16,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("RTTimer"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 
 			virtual ~RTTimer();
@@ -36,13 +36,14 @@ namespace aris
 		public:
 			enum { MAX_LOG_DATA_SIZE = 8192 };
 			static auto Type()->const std::string &{ static const std::string type("DataLogger"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto start(const std::string &log_file_name = std::string())->void;
 			auto stop()->void;
+			// use in rt thread //
+			auto send()->void;
 			auto lout()->aris::core::MsgStream &;
 			auto lout()const->const aris::core::MsgStream &{ return const_cast<DataLogger*>(this)->lout(); };
-			auto send()->void;
 
 			virtual ~DataLogger();
 			DataLogger(const std::string &name);
@@ -60,7 +61,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("SlaveType"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 
 			virtual ~SlaveType() = default;
 			explicit SlaveType(const std::string &name) :Object(name) {};
@@ -74,13 +75,16 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Slave"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual send()->void {}
 			auto virtual recv()->void {}
-			auto slaveType()const->const SlaveType &{ return *slave_type_; }
+			auto slaveType()const->const SlaveType *;
+			auto phyId()const->std::uint16_t;
+			auto slaId()const->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 
 			virtual ~Slave();
-			explicit Slave(const std::string &name, const SlaveType &slave_type);
+			explicit Slave(const std::string &name, const SlaveType *slave_type, std::uint16_t phy_id);
 			explicit Slave(Object &father, const aris::core::XmlElement &xml_ele);
 			Slave(const Slave &other);
 			Slave(Slave &&other);
@@ -88,7 +92,8 @@ namespace aris
 			Slave& operator=(Slave &&other);
 
 		private:
-			const SlaveType *slave_type_;
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
 		};
 		class Master : public aris::core::Root
 		{
@@ -97,22 +102,34 @@ namespace aris
 			using Root::loadXml;
 			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			// used only in non-rt thread //
 			auto start()->void;
 			auto stop()->void;
 			auto setControlStrategy(std::function<void()> strategy)->void;
-			auto rtHandle()->Handle*;
+			
+			// used in rt thread //
+			auto mout()->aris::core::MsgStream &;
 			auto msgIn()->aris::core::MsgFix<MAX_MSG_SIZE>&;
 			auto msgOut()->aris::core::MsgFix<MAX_MSG_SIZE>&;
-			auto mout()->aris::core::MsgStream &;
 			auto sendOut()->void;
 			auto recvOut(aris::core::MsgBase &recv_msg)->int;
 			auto sendIn(const aris::core::MsgBase &send_msg)->void;
 			auto recvIn()->int;
+			auto slaveAtAbs(aris::Size id)->Slave& { return slavePool().at(id); }
+			auto slaveAtAbs(aris::Size id)const->const Slave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
+			auto slaveAtPhy(aris::Size id)->Slave&;
+			auto slaveAtPhy(aris::Size id)const->const Slave&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
 			auto slaveTypePool()->aris::core::ObjectPool<SlaveType>&;
-			auto slavePool()->aris::core::ObjectPool<Slave, Object>&;
+			auto slaveTypePool()const->const aris::core::ObjectPool<SlaveType>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveTypePool(); }
+			auto slavePool()->aris::core::ObjectPool<Slave>&;
+			auto slavePool()const->const aris::core::ObjectPool<Slave>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
 			auto dataLogger()->DataLogger&;
+			auto dataLogger()const->const DataLogger&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->dataLogger(); }
+			auto rtHandle()->Handle*;
+			auto rtHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
+
 			virtual ~Master();
-			Master();
+			Master(const std::string &name = "master");
 			Master(const Master &other) = delete;
 			Master(Master &&other) = delete;
 			Master& operator=(const Master &other) = delete;

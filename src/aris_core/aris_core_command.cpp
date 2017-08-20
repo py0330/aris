@@ -65,8 +65,8 @@ namespace aris
 
 		struct Param::Imp
 		{
-			char abbreviation_{ 0 };
 			std::string default_value_{ "" };
+			char abbreviation_{ 0 };
 
 			Imp(const std::string &default_param = std::string(""), char abbrev = 0) :default_value_(default_param), abbreviation_(abbrev){}
 		};
@@ -353,10 +353,7 @@ namespace aris
 		Command& Command::operator=(const Command &) = default;
 		Command& Command::operator=(Command &&) = default;
 
-		struct CommandParser::Imp
-		{
-			ObjectPool<Command>* command_pool_;
-		};
+		struct CommandParser::Imp { ObjectPool<Command>* command_pool_; };
 		auto CommandParser::parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_out)->void
 		{
 			try

@@ -409,10 +409,10 @@ int main()
 			double pin1[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
 			double pin2[6]{ 2.1 , 1.98 , 2.05 , 2.13 , 1.86 , 1.88 };
 
-			for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin1[i]);
+			for (int i{ 0 }; i < 6; ++i) rbt.motionPool().at(i).setMp(pin1[i]);
 			//auto ret1 = rbt.kinPosInGlb(100);
 
-			for (int i{ 0 }; i < 6; ++i) rbt.motionAtAbs(i).setMp(pin2[i]);
+			for (int i{ 0 }; i < 6; ++i) rbt.motionPool().at(i).setMp(pin2[i]);
 			//auto ret2 = rbt.kinPosInGlb(100);
 		}) << std::endl;
 	}

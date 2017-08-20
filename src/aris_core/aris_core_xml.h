@@ -58,6 +58,8 @@ namespace aris
 			using const_pointer = typename A::const_pointer;
 			using difference_type = typename A::difference_type;
 			using size_type = typename A::size_type;
+			class iterator;
+			class const_iterator;
 
 			class iterator
 			{
@@ -97,8 +99,8 @@ namespace aris
 				iterator(const typename std::vector<ImpPtr<T>>::iterator iter) :iter_(iter) {} //
 
 			private:
-				friend class ImpContainer::const_iterator;
-				friend class ImpContainer<T,A>;
+				friend class ImpContainer<T, A>::const_iterator;
+				friend class ImpContainer<T, A>;
 				typename std::vector<ImpPtr<T>>::iterator iter_;
 			};
 			class const_iterator 
@@ -397,7 +399,7 @@ namespace aris
 			};
 			using Object::saveXml;
 			static auto Type()->const std::string &{ static const std::string type("Root"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual loadXml(const char* filename)->void { loadXml(std::string(filename)); }
 			auto virtual loadXml(const std::string &filename)->void;
 			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void;
@@ -584,6 +586,7 @@ namespace aris
 			using const_pointer = const T*;
 			using difference_type = std::size_t;
 			using size_type = std::size_t;
+			class const_iterator;
 
 			class iterator
 			{
@@ -624,7 +627,7 @@ namespace aris
 
 			private:
 				typename std::vector<T*>::iterator iter_;
-				friend class RefPool::const_iterator;
+				friend class RefPool<T>::const_iterator;
 			};
 			class const_iterator
 			{

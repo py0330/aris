@@ -1954,17 +1954,17 @@ void test_solver_3R()
 		const double ee_aa[6]{ 7.3068444301678799 ,-5.5868499482603751 , 0.0 , 0.0 , 0.0 ,-4.701 };
 		const double mot_fs[3]{ 0.17105260350807,	9.24402272506392,	4.70099999999998 };
 
-		m.motionAtAbs(0).setMp(0.585);
-		m.motionAtAbs(0).setMv(0.235);
-		m.motionAtAbs(0).setMa(-1.567);
+		m.motionPool().at(0).setMp(0.585);
+		m.motionPool().at(0).setMv(0.235);
+		m.motionPool().at(0).setMa(-1.567);
 
-		m.motionAtAbs(1).setMp(0.685);
-		m.motionAtAbs(1).setMv(0.235);
-		m.motionAtAbs(1).setMa(-1.567);
+		m.motionPool().at(1).setMp(0.685);
+		m.motionPool().at(1).setMv(0.235);
+		m.motionPool().at(1).setMa(-1.567);
 
-		m.motionAtAbs(2).setMp(-0.312);
-		m.motionAtAbs(2).setMv(0.235);
-		m.motionAtAbs(2).setMa(-1.567);
+		m.motionPool().at(2).setMp(-0.312);
+		m.motionPool().at(2).setMv(0.235);
+		m.motionPool().at(2).setMa(-1.567);
 
 		auto test_forward = [&](Solver &s)->void
 		{
@@ -1974,9 +1974,9 @@ void test_solver_3R()
 			// set input origin //
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).setMp(input_origin_p[i]);
-				m.motionAtAbs(i).setMv(input_origin_v[i]);
-				m.motionAtAbs(i).setMa(input_origin_a[i]);
+				m.motionPool().at(i).setMp(input_origin_p[i]);
+				m.motionPool().at(i).setMv(input_origin_v[i]);
+				m.motionPool().at(i).setMa(input_origin_a[i]);
 			}
 			// compute //
 			s.allocateMemory();
@@ -1993,7 +1993,7 @@ void test_solver_3R()
 			m.generalMotionPool().at(0).getMva(result2);
 			m.generalMotionPool().at(0).updMas();
 			m.generalMotionPool().at(0).getMaa(result3);
-			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionAtAbs(i).mf();
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionPool().at(i).mf();
 			// check //
 			if (!s_is_equal(16, result1, output_origin_pm, error))std::cout << s.type() << "::kinPos() forward origin failed" << std::endl;
 			if (!s_is_equal(6, result2, output_origin_va, error))std::cout << s.type() << "::kinVel() forward origin failed" << std::endl;
@@ -2003,9 +2003,9 @@ void test_solver_3R()
 			// set input //
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			// compute //
 			s.allocateMemory();
@@ -2021,7 +2021,7 @@ void test_solver_3R()
 			m.generalMotionPool().at(0).getMva(result2);
 			m.generalMotionPool().at(0).updMas();
 			m.generalMotionPool().at(0).getMaa(result3);
-			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionAtAbs(i).mf();
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionPool().at(i).mf();
 			// check //
 			if (!s_is_equal(16, result1, output_pm, error))std::cout << s.type() << "::kinPos() forward failed" << std::endl;
 			if (!s_is_equal(6, result2, output_va, error))std::cout << s.type() << "::kinVel() forward failed" << std::endl;
@@ -2051,12 +2051,12 @@ void test_solver_3R()
 			// get result //
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).updMp();
-				m.motionAtAbs(i).updMv();
-				m.motionAtAbs(i).updMa();
-				result1[i] = m.motionAtAbs(i).mp();
-				result2[i] = m.motionAtAbs(i).mv();
-				result3[i] = m.motionAtAbs(i).ma();
+				m.motionPool().at(i).updMp();
+				m.motionPool().at(i).updMv();
+				m.motionPool().at(i).updMa();
+				result1[i] = m.motionPool().at(i).mp();
+				result2[i] = m.motionPool().at(i).mv();
+				result3[i] = m.motionPool().at(i).ma();
 			}
 			// check //
 			if (!s_is_equal(m.motionPool().size(), result1, input_origin_p, 1e-6))std::cout << s.type() << "::kinPos() inverse origin failed" << std::endl;
@@ -2080,12 +2080,12 @@ void test_solver_3R()
 			// get result //
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).updMp();
-				m.motionAtAbs(i).updMv();
-				m.motionAtAbs(i).updMa();
-				result1[i] = m.motionAtAbs(i).mp();
-				result2[i] = m.motionAtAbs(i).mv();
-				result3[i] = m.motionAtAbs(i).ma();
+				m.motionPool().at(i).updMp();
+				m.motionPool().at(i).updMv();
+				m.motionPool().at(i).updMa();
+				result1[i] = m.motionPool().at(i).mp();
+				result2[i] = m.motionPool().at(i).mv();
+				result3[i] = m.motionPool().at(i).ma();
 			}
 			// check //
 			if (!(s_is_equal(m.motionPool().size(), result1, input_p, error) || s_is_equal(m.motionPool().size(), result1, input_p2, error)))std::cout << s.type() << "::kinPos() inverse failed" << std::endl;
@@ -2101,8 +2101,8 @@ void test_solver_3R()
 			s.allocateMemory();
 			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
-				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionAtAbs(i).setMp(input_p[i]);
-				else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionAtAbs(i).setMp(input_origin_p[i]);
+				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(input_p[i]);
+				else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(input_origin_p[i]);
 
 				// compute //
 				s.kinPos();
@@ -2124,9 +2124,9 @@ void test_solver_3R()
 			m.generalMotionPool().at(0).activate(false);
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			s.allocateMemory();
 			s.kinPos();
@@ -2144,9 +2144,9 @@ void test_solver_3R()
 			m.generalMotionPool().at(0).activate(false);
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			s.allocateMemory();
 			s.kinPos();
@@ -2168,7 +2168,7 @@ void test_solver_3R()
 
 				// compute //
 				s.kinPos();
-				for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionAtAbs(i).updMp(); result1[i] = m.motionAtAbs(i).mp(); }
+				for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMp(); result1[i] = m.motionPool().at(i).mp(); }
 
 				if (count < 2 && count % 2 && !s_is_equal(6, result1, input_p, error))
 					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
@@ -2286,9 +2286,9 @@ void test_solver_6R()
 			// set input origin //
 			for (aris::Size i = 0; i < 6; ++i)
 			{
-				m.motionAtAbs(i).setMp(input_origin_p[i]);
-				m.motionAtAbs(i).setMv(input_origin_v[i]);
-				m.motionAtAbs(i).setMa(input_origin_a[i]);
+				m.motionPool().at(i).setMp(input_origin_p[i]);
+				m.motionPool().at(i).setMv(input_origin_v[i]);
+				m.motionPool().at(i).setMa(input_origin_a[i]);
 			}
 			// compute //
 			s.allocateMemory();
@@ -2305,7 +2305,7 @@ void test_solver_6R()
 			m.generalMotionPool().at(0).getMva(result2);
 			m.generalMotionPool().at(0).updMas();
 			m.generalMotionPool().at(0).getMaa(result3);
-			for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+			for (int i = 0; i < 6; ++i)result4[i] = m.motionPool().at(i).mf();
 			// check //
 			if (!s_is_equal(16, result1, output_origin_pm, error))std::cout << s.type() << "::kinPos() forward origin failed" << std::endl;
 			if (!s_is_equal(6, result2, output_origin_va, error))std::cout << s.type() << "::kinVel() forward origin failed" << std::endl;
@@ -2315,9 +2315,9 @@ void test_solver_6R()
 			// set input //
 			for (aris::Size i = 0; i < 6; ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			// compute //
 			s.allocateMemory();
@@ -2333,7 +2333,7 @@ void test_solver_6R()
 			m.generalMotionPool().at(0).getMva(result2);
 			m.generalMotionPool().at(0).updMas();
 			m.generalMotionPool().at(0).getMaa(result3);
-			for (int i = 0; i < 6; ++i)result4[i] = m.motionAtAbs(i).mf();
+			for (int i = 0; i < 6; ++i)result4[i] = m.motionPool().at(i).mf();
 			// check //
 			if (!s_is_equal(16, result1, output_pm, error))std::cout << s.type() << "::kinPos() forward failed" << std::endl;
 			if (!s_is_equal(6, result2, output_va, error))std::cout << s.type() << "::kinVel() forward failed" << std::endl;
@@ -2361,12 +2361,12 @@ void test_solver_6R()
 			// get result //
 			for (aris::Size i = 0; i < 6; ++i)
 			{
-				m.motionAtAbs(i).updMp();
-				m.motionAtAbs(i).updMv();
-				m.motionAtAbs(i).updMa();
-				result1[i] = m.motionAtAbs(i).mp();
-				result2[i] = m.motionAtAbs(i).mv();
-				result3[i] = m.motionAtAbs(i).ma();
+				m.motionPool().at(i).updMp();
+				m.motionPool().at(i).updMv();
+				m.motionPool().at(i).updMa();
+				result1[i] = m.motionPool().at(i).mp();
+				result2[i] = m.motionPool().at(i).mv();
+				result3[i] = m.motionPool().at(i).ma();
 			}
 			// check //
 			if (!s_is_equal(6, result1, input_origin_p, error))std::cout << s.type() << "::kinPos() inverse origin failed" << std::endl;
@@ -2390,12 +2390,12 @@ void test_solver_6R()
 			// get result //
 			for (aris::Size i = 0; i < 6; ++i)
 			{
-				m.motionAtAbs(i).updMp();
-				m.motionAtAbs(i).updMv();
-				m.motionAtAbs(i).updMa();
-				result1[i] = m.motionAtAbs(i).mp();
-				result2[i] = m.motionAtAbs(i).mv();
-				result3[i] = m.motionAtAbs(i).ma();
+				m.motionPool().at(i).updMp();
+				m.motionPool().at(i).updMv();
+				m.motionPool().at(i).updMa();
+				result1[i] = m.motionPool().at(i).mp();
+				result2[i] = m.motionPool().at(i).mv();
+				result3[i] = m.motionPool().at(i).ma();
 			}
 			// check //
 			if (!s_is_equal(6, result1, input_p, error))std::cout << s.type() << "::kinPos() inverse failed" << std::endl;
@@ -2411,8 +2411,8 @@ void test_solver_6R()
 			s.allocateMemory();
 			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
-				if (count % 2)for (int i{ 0 }; i < 6; ++i) m.motionAtAbs(i).setMp(input_p[i]);
-				else for (int i{ 0 }; i < 6; ++i) m.motionAtAbs(i).setMp(input_origin_p[i]);
+				if (count % 2)for (int i{ 0 }; i < 6; ++i) m.motionPool().at(i).setMp(input_p[i]);
+				else for (int i{ 0 }; i < 6; ++i) m.motionPool().at(i).setMp(input_origin_p[i]);
 
 				// compute //
 				s.kinPos();
@@ -2434,9 +2434,9 @@ void test_solver_6R()
 			m.generalMotionPool().at(0).activate(false);
 			for (aris::Size i = 0; i < 6; ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			s.allocateMemory();
 			s.kinPos();
@@ -2454,9 +2454,9 @@ void test_solver_6R()
 			m.generalMotionPool().at(0).activate(false);
 			for (aris::Size i = 0; i < 6; ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			s.allocateMemory();
 			s.kinPos();
@@ -2478,7 +2478,7 @@ void test_solver_6R()
 
 				// compute //
 				s.kinPos();
-				for (aris::Size i = 0; i < 6; ++i) { m.motionAtAbs(i).updMp(); result1[i] = m.motionAtAbs(i).mp(); }
+				for (aris::Size i = 0; i < 6; ++i) { m.motionPool().at(i).updMp(); result1[i] = m.motionPool().at(i).mp(); }
 
 				if (count < 2 && count % 2 && !s_is_equal(6, result1, input_p, error))
 					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
@@ -2645,9 +2645,9 @@ void test_solver_stewart()
 			// set input origin //
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).setMp(input_origin_p[i]);
-				m.motionAtAbs(i).setMv(input_origin_v[i]);
-				m.motionAtAbs(i).setMa(input_origin_a[i]);
+				m.motionPool().at(i).setMp(input_origin_p[i]);
+				m.motionPool().at(i).setMv(input_origin_v[i]);
+				m.motionPool().at(i).setMa(input_origin_a[i]);
 			}
 			// compute //
 			s.allocateMemory();
@@ -2664,7 +2664,7 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).getMva(result2);
 			m.generalMotionPool().at(0).updMas();
 			m.generalMotionPool().at(0).getMaa(result3);
-			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionAtAbs(i).mf();
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionPool().at(i).mf();
 			// check //
 			if (!s_is_equal(16, result1, output_origin_pm, error))std::cout << s.type() << "::kinPos() forward origin failed" << std::endl;
 			if (!s_is_equal(6, result2, output_origin_va, error))std::cout << s.type() << "::kinVel() forward origin failed" << std::endl;
@@ -2674,9 +2674,9 @@ void test_solver_stewart()
 			// set input //
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			// compute //
 			s.allocateMemory();
@@ -2692,7 +2692,7 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).getMva(result2);
 			m.generalMotionPool().at(0).updMas();
 			m.generalMotionPool().at(0).getMaa(result3);
-			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionAtAbs(i).mf();
+			for (aris::Size i = 0; i < m.motionPool().size(); ++i)result4[i] = m.motionPool().at(i).mf();
 			// check //
 			if (!s_is_equal(16, result1, output_pm, error))std::cout << s.type() << "::kinPos() forward failed" << std::endl;
 			if (!s_is_equal(6, result2, output_va, error))std::cout << s.type() << "::kinVel() forward failed" << std::endl;
@@ -2720,12 +2720,12 @@ void test_solver_stewart()
 			// get result //
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).updMp();
-				m.motionAtAbs(i).updMv();
-				m.motionAtAbs(i).updMa();
-				result1[i] = m.motionAtAbs(i).mp();
-				result2[i] = m.motionAtAbs(i).mv();
-				result3[i] = m.motionAtAbs(i).ma();
+				m.motionPool().at(i).updMp();
+				m.motionPool().at(i).updMv();
+				m.motionPool().at(i).updMa();
+				result1[i] = m.motionPool().at(i).mp();
+				result2[i] = m.motionPool().at(i).mv();
+				result3[i] = m.motionPool().at(i).ma();
 			}
 			// check //
 			if (!s_is_equal(6, result1, input_origin_p, error))std::cout << s.type() << "::kinPos() inverse origin failed" << std::endl;
@@ -2748,12 +2748,12 @@ void test_solver_stewart()
 			// get result //
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).updMp();
-				m.motionAtAbs(i).updMv();
-				m.motionAtAbs(i).updMa();
-				result1[i] = m.motionAtAbs(i).mp();
-				result2[i] = m.motionAtAbs(i).mv();
-				result3[i] = m.motionAtAbs(i).ma();
+				m.motionPool().at(i).updMp();
+				m.motionPool().at(i).updMv();
+				m.motionPool().at(i).updMa();
+				result1[i] = m.motionPool().at(i).mp();
+				result2[i] = m.motionPool().at(i).mv();
+				result3[i] = m.motionPool().at(i).ma();
 			}
 			// check //
 			if (!s_is_equal(6, result1, input_p, error))std::cout << s.type() << "::kinPos() inverse failed" << std::endl;
@@ -2769,8 +2769,8 @@ void test_solver_stewart()
 			s.allocateMemory();
 			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
-				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionAtAbs(i).setMp(input_p[i]);
-				else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionAtAbs(i).setMp(input_origin_p[i]);
+				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(input_p[i]);
+				else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(input_origin_p[i]);
 
 				// compute //
 				s.kinPos();
@@ -2792,9 +2792,9 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).activate(false);
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			s.allocateMemory();
 			s.kinPos();
@@ -2812,9 +2812,9 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).activate(false);
 			for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 			{
-				m.motionAtAbs(i).setMp(input_p[i]);
-				m.motionAtAbs(i).setMv(input_v[i]);
-				m.motionAtAbs(i).setMa(input_a[i]);
+				m.motionPool().at(i).setMp(input_p[i]);
+				m.motionPool().at(i).setMv(input_v[i]);
+				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			s.allocateMemory();
 			s.kinPos();
@@ -2836,7 +2836,7 @@ void test_solver_stewart()
 
 				// compute //
 				s.kinPos();
-				for (aris::Size i = 0; i < m.motionPool().size(); ++i){	m.motionAtAbs(i).updMp(); result1[i] = m.motionAtAbs(i).mp(); }
+				for (aris::Size i = 0; i < m.motionPool().size(); ++i){	m.motionPool().at(i).updMp(); result1[i] = m.motionPool().at(i).mp(); }
 
 				if (count < 2 && count % 2 && !s_is_equal(6, result1, input_p, error))
 					std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;

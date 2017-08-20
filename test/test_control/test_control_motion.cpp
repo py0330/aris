@@ -12,9 +12,8 @@ void test_elmo_enable()
 		aris::control::EthercatController m;
 		m.registerChildType<EthercatMotion>();
 
-		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
-		auto &s1 = m.slavePool().add<EthercatMotion>("s1", st, 0, 0, 0, 0, 0, 0);
-
+		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", "C:\\Users\\py033\\Desktop\\Elmo ECAT 000103F6 V07.xml");
+		auto &s1 = m.slavePool().add<EthercatMotion>("s1", &st, 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,0.0);
 
 		auto &tx = s1.pdoGroupPool().add<PdoGroup>("index_1A00", 0x1A00, true);
 		tx.add<Pdo>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));

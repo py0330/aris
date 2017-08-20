@@ -10,13 +10,339 @@
 #include <limits>
 #include <type_traits>
 
-#include "aris_dynamic_model_solver.h"
+#include "aris_dynamic_model.h"
 
 
 namespace aris
 {
 	namespace dynamic
 	{
+		struct Solver::Imp
+		{
+			Size max_iter_count_, iter_count_;
+			double max_error_, error_;
+
+			Imp(Size max_iter_count, double max_error) :max_iter_count_(max_iter_count), max_error_(max_error) {};
+		};
+		auto Solver::error()const->double { return imp_->error_; }
+		auto Solver::setError(double error)->void { imp_->error_ = error; }
+		auto Solver::maxError()const->double { return imp_->max_error_; }
+		auto Solver::setMaxError(double max_error)->void { imp_->max_error_ = max_error; }
+		auto Solver::iterCount()const->Size { return imp_->iter_count_; }
+		auto Solver::setIterCount(Size iter_count)->void { imp_->iter_count_ = iter_count; }
+		auto Solver::maxIterCount()const->Size { return imp_->max_iter_count_; }
+		auto Solver::setMaxIterCount(Size max_count)->void { imp_->max_iter_count_ = max_count; }
+		Solver::~Solver() = default;
+		Solver::Solver(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp(0, 0.0))
+		{
+			imp_->max_iter_count_ = attributeInt32(xml_ele, "max_iter_count", 100);
+			imp_->max_error_ = attributeDouble(xml_ele, "max_error", 1e-10);
+		}
+		Solver::Solver(const std::string &name, Size max_iter_count, double max_error) : Element(name), imp_(new Imp(max_iter_count, max_error)) {}
+		Solver::Solver(const Solver&) = default;
+		Solver::Solver(Solver&&) = default;
+		Solver& Solver::operator=(const Solver&) = default;
+		Solver& Solver::operator=(Solver&&) = default;
+
+		struct Calibrator::Imp {};
+		Calibrator::~Calibrator() = default;
+		Calibrator::Calibrator(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) {}
+		Calibrator::Calibrator(const std::string &name) : Element(name), imp_(new Imp) {}
+		Calibrator::Calibrator(const Calibrator&) = default;
+		Calibrator::Calibrator(Calibrator&&) = default;
+		Calibrator& Calibrator::operator=(const Calibrator&) = default;
+		Calibrator& Calibrator::operator=(Calibrator&&) = default;
+
+		struct Simulator::Imp { };
+		auto Simulator::simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void
+		{
+			result.allocateMemory();
+			// 记录初始位置 //
+			result.record();
+			// 记录轨迹中的位置 //
+			for (PlanParam plan_param{ &model(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_);
+			// 记录结束位置 //
+			result.record();
+		}
+		Simulator::~Simulator() = default;
+		Simulator::Simulator(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) {}
+		Simulator::Simulator(const std::string &name) : Element(name), imp_(new Imp) {}
+		Simulator::Simulator(const Simulator&) = default;
+		Simulator::Simulator(Simulator&&) = default;
+		Simulator& Simulator::operator=(const Simulator&) = default;
+		Simulator& Simulator::operator=(Simulator&&) = default;
+
+		struct SimResult::TimeResult::Imp { std::deque<double> time_; };
+		auto SimResult::TimeResult::saveXml(aris::core::XmlElement &xml_ele)const->void
+		{
+			Element::saveXml(xml_ele);
+
+			std::stringstream ss;
+			ss << std::setprecision(15);
+			ss.str().reserve((25 * 1 + 1)*imp_->time_.size());
+
+			for (auto &t : imp_->time_)ss << t << std::endl;
+
+			xml_ele.SetText(ss.str().c_str());
+		}
+		auto SimResult::TimeResult::record()->void { imp_->time_.push_back(model().time()); }
+		auto SimResult::TimeResult::restore(Size pos)->void { model().setTime(imp_->time_.at(pos)); }
+		SimResult::TimeResult::~TimeResult() = default;
+		SimResult::TimeResult::TimeResult(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp)
+		{
+			// 以下导入数据 //
+			std::stringstream ss(std::string(xml_ele.GetText()));
+			for (double t; ss >> t, !ss.eof(); imp_->time_.push_back(t));
+		}
+		SimResult::TimeResult::TimeResult(const std::string &name) : Element(name), imp_(new Imp) {}
+		SimResult::TimeResult::TimeResult(const SimResult::TimeResult&) = default;
+		SimResult::TimeResult::TimeResult(SimResult::TimeResult&&) = default;
+		SimResult::TimeResult& SimResult::TimeResult::operator=(const TimeResult&) = default;
+		SimResult::TimeResult& SimResult::TimeResult::operator=(TimeResult&&) = default;
+
+		struct SimResult::PartResult::Imp
+		{
+			Part *part_;
+			std::deque<std::array<double, 6> > pe_;
+			std::deque<std::array<double, 6> > vs_;
+			std::deque<std::array<double, 6> > as_;
+
+			Imp(Part* part) :part_(part) {};
+		};
+		auto SimResult::PartResult::saveXml(aris::core::XmlElement &xml_ele)const->void
+		{
+			Element::saveXml(xml_ele);
+
+			xml_ele.SetAttribute("part", part().name().c_str());
+			std::stringstream ss;
+			ss << std::setprecision(15);
+			ss.str().reserve((25 * 18 + 1)*imp_->pe_.size());
+
+			for (auto pe = imp_->pe_.begin(), vs = imp_->vs_.begin(), as = imp_->as_.begin(); pe < imp_->pe_.end(); ++pe, ++vs, ++as)
+			{
+				for (auto e : *pe) ss << e << " ";
+				for (auto e : *vs)ss << e << " ";
+				for (auto e : *as)ss << e << " ";
+				ss << std::endl;
+			}
+
+			xml_ele.SetText(ss.str().c_str());
+		}
+		auto SimResult::PartResult::part()->Part& { return *imp_->part_; }
+		auto SimResult::PartResult::record()->void
+		{
+			std::array<double, 6> result;
+			s_pm2pe(*part().pm(), result.data());
+			imp_->pe_.push_back(result);
+			std::copy(static_cast<const double*>(part().vs()), static_cast<const double*>(part().vs()) + 6, result.data());
+			imp_->vs_.push_back(result);
+			std::copy(static_cast<const double*>(part().as()), static_cast<const double*>(part().as()) + 6, result.data());
+			imp_->as_.push_back(result);
+		}
+		auto SimResult::PartResult::restore(Size pos)->void
+		{
+			part().setPe(imp_->pe_.at(pos).data());
+			part().setVs(imp_->vs_.at(pos).data());
+			part().setAs(imp_->as_.at(pos).data());
+		}
+		SimResult::PartResult::~PartResult() = default;
+		SimResult::PartResult::PartResult(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp(nullptr))
+		{
+			// 以下寻找对应的part //
+			if (model().findByName("part_pool") == model().children().end())
+				throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
+
+			auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model().findByName("part_pool"));
+
+			if (!xml_ele.Attribute("part"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"part\"");
+			auto p = part_pool.findByName(xml_ele.Attribute("part"));
+			if (p == part_pool.end())	throw std::runtime_error(std::string("can't find part for PartResult \"") + this->name() + "\"");
+
+			imp_->part_ = &*p;
+
+			// 以下导入数据 //
+			std::stringstream ss(std::string(xml_ele.GetText()));
+			std::array<double, 6> pe, vs, as;
+			for (Size i{ 0 }; !ss.eof(); ++i)
+			{
+				if (i < 6) ss >> pe[i];
+				else if (i < 12) ss >> vs[i - 6];
+				else if (i < 18) ss >> as[i - 12];
+
+				if (i == 6)imp_->pe_.push_back(pe);
+				if (i == 12)imp_->vs_.push_back(vs);
+				if (i == 18) { imp_->as_.push_back(as); i = -1; }
+			}
+
+		}
+		SimResult::PartResult::PartResult(const std::string &name, Part &part) : Element(name), imp_(new Imp(&part)) {}
+		SimResult::PartResult::PartResult(const SimResult::PartResult&) = default;
+		SimResult::PartResult::PartResult(SimResult::PartResult&&) = default;
+		SimResult::PartResult& SimResult::PartResult::operator=(const PartResult&) = default;
+		SimResult::PartResult& SimResult::PartResult::operator=(PartResult&&) = default;
+
+		struct SimResult::ConstraintResult::Imp
+		{
+			Constraint *constraint_;
+			std::deque<std::array<double, 6> > cf_;
+
+			Imp(Constraint* constraint) :constraint_(constraint) {};
+		};
+		auto SimResult::ConstraintResult::saveXml(aris::core::XmlElement &xml_ele)const->void
+		{
+			Element::saveXml(xml_ele);
+
+			xml_ele.SetAttribute("constraint", constraint().name().c_str());
+
+			std::stringstream ss;
+			ss << std::setprecision(15);
+			ss.str().reserve((25 * 6 + 1)*imp_->cf_.size());
+			for (auto &cf : imp_->cf_)
+			{
+				for (Size i(-1); ++i < constraint().dim();) ss << cf[i] << " ";
+				ss << std::endl;
+			}
+
+			xml_ele.SetText(ss.str().c_str());
+		}
+		auto SimResult::ConstraintResult::constraint()->Constraint& { return *imp_->constraint_; }
+		auto SimResult::ConstraintResult::record()->void
+		{
+			std::array<double, 6> result{ 0,0,0,0,0,0 };
+			std::copy(constraint().cf(), constraint().cf() + constraint().dim(), result.data());
+			imp_->cf_.push_back(result);
+		}
+		auto SimResult::ConstraintResult::restore(Size pos)->void { constraint().setCf(imp_->cf_.at(pos).data()); }
+		SimResult::ConstraintResult::~ConstraintResult() = default;
+		SimResult::ConstraintResult::ConstraintResult(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp(nullptr))
+		{
+			// 以下寻找对应的constraint //
+			if (!xml_ele.Attribute("constraint"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"constraint\"");
+			if (!imp_->constraint_ && model().findByName("joint_pool") != model().children().end())
+			{
+				auto &pool = static_cast<aris::core::ObjectPool<Joint, Element>&>(*model().findByName("joint_pool"));
+				auto c = pool.findByName(xml_ele.Attribute("constraint"));
+				if (c != pool.end())imp_->constraint_ = &*c;
+			}
+			if (!imp_->constraint_ && model().findByName("motion_pool") != model().children().end())
+			{
+				auto &pool = static_cast<aris::core::ObjectPool<Motion, Element>&>(*model().findByName("motion_pool"));
+				auto c = pool.findByName(xml_ele.Attribute("constraint"));
+				if (c != pool.end())imp_->constraint_ = &*c;
+			}
+			if (!imp_->constraint_ && model().findByName("general_motion_pool") != model().children().end())
+			{
+				auto &pool = static_cast<aris::core::ObjectPool<GeneralMotion, Element>&>(*model().findByName("general_motion_pool"));
+				auto c = pool.findByName(xml_ele.Attribute("constraint"));
+				if (c != pool.end())imp_->constraint_ = &*c;
+			}
+			if (!imp_->constraint_)throw std::runtime_error(std::string("can't find constraint for ConstraintResult \"") + this->name() + "\"");
+
+			// 以下读取数据 //
+			std::stringstream ss(std::string(xml_ele.GetText()));
+			std::array<double, 6> cf{ 0,0,0,0,0,0 };
+			for (Size i{ 0 }; !ss.eof(); ss >> cf[i++])
+			{
+				if (i == constraint().dim())
+				{
+					i = 0;
+					imp_->cf_.push_back(cf);
+				}
+			}
+
+		}
+		SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint &constraint) : Element(name), imp_(new Imp(&constraint)) {}
+		SimResult::ConstraintResult::ConstraintResult(const SimResult::ConstraintResult&) = default;
+		SimResult::ConstraintResult::ConstraintResult(SimResult::ConstraintResult&&) = default;
+		SimResult::ConstraintResult& SimResult::ConstraintResult::operator=(const ConstraintResult&) = default;
+		SimResult::ConstraintResult& SimResult::ConstraintResult::operator=(ConstraintResult&&) = default;
+
+		struct SimResult::Imp
+		{
+			TimeResult *time_result_;
+			aris::core::ObjectPool<PartResult, Element> *part_result_pool_;
+			aris::core::ObjectPool<ConstraintResult, Element> *constraint_result_pool_;
+		};
+		auto SimResult::timeResult()->TimeResult& { return *imp_->time_result_; }
+		auto SimResult::partResultPool()->aris::core::ObjectPool<SimResult::PartResult, Element>& { return *imp_->part_result_pool_; }
+		auto SimResult::constraintResultPool()->aris::core::ObjectPool<SimResult::ConstraintResult, Element>& { return *imp_->constraint_result_pool_; }
+		auto SimResult::allocateMemory()->void
+		{
+			partResultPool().clear();
+			for (auto &p : model().partPool())partResultPool().add<PartResult>(p.name() + "_result", p);
+			constraintResultPool().clear();
+			for (auto &c : model().jointPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", c);
+			for (auto &c : model().motionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", c);
+			for (auto &c : model().generalMotionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", c);
+		}
+		auto SimResult::record()->void
+		{
+			timeResult().record();
+			for (auto &p : partResultPool())p.record();
+			for (auto &p : constraintResultPool())p.record();
+		}
+		auto SimResult::restore(Size pos)->void
+		{
+			timeResult().restore(pos);
+			for (auto &r : partResultPool())r.restore(pos);
+			for (auto &r : constraintResultPool())r.restore(pos);
+		}
+		auto SimResult::size()const->Size { return timeResult().imp_->time_.size() == 0 ? 0 : timeResult().imp_->time_.size() - 1; }
+		auto SimResult::clear()->void
+		{
+			timeResult().imp_->time_.clear();
+			for (auto &r : partResultPool())
+			{
+				r.imp_->pe_.clear();
+				r.imp_->vs_.clear();
+				r.imp_->as_.clear();
+			}
+			for (auto &r : constraintResultPool())r.imp_->cf_.clear();
+		}
+		SimResult::~SimResult() = default;
+		SimResult::SimResult(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_()
+		{
+			imp_->time_result_ = findOrInsert<TimeResult>("time_result");
+			imp_->constraint_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+			imp_->part_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+		}
+		SimResult::SimResult(const std::string &name) : Element(name), imp_(new Imp())
+		{
+			imp_->time_result_ = &add<TimeResult>("time_result");
+			imp_->part_result_pool_ = &add<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+			imp_->constraint_result_pool_ = &add<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+		}
+		SimResult::SimResult(const SimResult&other) : Element(other), imp_(other.imp_)
+		{
+			imp_->time_result_ = findType<TimeResult >("time_result");
+			imp_->constraint_result_pool_ = findType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+			imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+		}
+		SimResult::SimResult(SimResult&&other) : Element(std::move(other)), imp_(std::move(other.imp_))
+		{
+			imp_->time_result_ = findType<TimeResult >("time_result");
+			imp_->constraint_result_pool_ = findType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+			imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+		}
+		SimResult& SimResult::operator=(const SimResult&other)
+		{
+			Element::operator=(other);
+			imp_ = other.imp_;
+			imp_->time_result_ = findType<TimeResult >("time_result");
+			imp_->constraint_result_pool_ = findType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+			imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+			return *this;
+		}
+		SimResult& SimResult::operator=(SimResult&&other)
+		{
+			Element::operator=(std::move(other));
+			imp_ = other.imp_;
+			imp_->time_result_ = findType<TimeResult >("time_result");
+			imp_->constraint_result_pool_ = findType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+			imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+			return *this;
+		}
+
 		struct CombineSolver::Imp
 		{
 			Size p_size_, c_size_;
@@ -1398,5 +1724,485 @@ namespace aris
 		DiagSolver::DiagSolver(DiagSolver &&other) = default;
 		DiagSolver& DiagSolver::operator=(const DiagSolver &other) = default;
 		DiagSolver& DiagSolver::operator=(DiagSolver &&other) = default;
+
+		struct SolverSimulator::Imp
+		{
+			Solver *solver_;
+
+			Imp(Solver *solver) :solver_(solver) { };
+		};
+		auto SolverSimulator::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Simulator::saveXml(xml_ele);
+			xml_ele.SetAttribute("solver", solver().name().c_str());
+		}
+		auto SolverSimulator::solver()->Solver& { return *imp_->solver_; }
+		auto SolverSimulator::simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void
+		{
+			solver().allocateMemory();
+			result.allocateMemory();
+			// 记录初始位置 //
+			result.record();
+			// 记录轨迹中的位置 //
+			for (PlanParam plan_param{ &model(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_)
+			{
+				solver().kinPos();
+				if (solver().iterCount() == solver().maxIterCount())throw std::runtime_error("simulate failed because kinPos() failed at " + std::to_string(plan_param.count_) + " count");
+				solver().kinVel();
+				solver().dynAccAndFce();
+				result.record();
+			}
+			// 记录结束位置 //
+			result.record();
+			result.restore(0);
+		}
+		SolverSimulator::~SolverSimulator() = default;
+		SolverSimulator::SolverSimulator(Object &father, const aris::core::XmlElement &xml_ele) : Simulator(father, xml_ele), imp_(new Imp(nullptr))
+		{
+			if (model().findByName("solver_pool") == model().children().end())
+				throw std::runtime_error("you must insert \"solver_pool\" node before insert " + type() + " \"" + name() + "\"");
+
+			auto &solver_pool = static_cast<aris::core::ObjectPool<Solver, Element>&>(*model().findByName("solver_pool"));
+
+			if (!xml_ele.Attribute("solver"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"solver\"");
+			auto s = solver_pool.findByName(xml_ele.Attribute("solver"));
+			if (s == solver_pool.end())	throw std::runtime_error(std::string("can't find solver for element \"") + this->name() + "\"");
+
+			imp_->solver_ = &*s;
+		}
+		SolverSimulator::SolverSimulator(const std::string &name, Solver &solver) : Simulator(name), imp_(new Imp(&solver)) {}
+		SolverSimulator::SolverSimulator(const SolverSimulator&) = default;
+		SolverSimulator::SolverSimulator(SolverSimulator&&) = default;
+		SolverSimulator& SolverSimulator::operator=(const SolverSimulator&) = default;
+		SolverSimulator& SolverSimulator::operator=(SolverSimulator&&) = default;
+
+		struct AdamsSimulator::Imp
+		{
+		};
+		auto AdamsSimulator::saveAdams(const std::string &filename, SimResult &result, Size pos)->void
+		{
+			std::string filename_ = filename;
+			if (filename_.size() < 4 || filename_.substr(filename.size() - 4, 4) != ".cmd")
+			{
+				filename_ += ".cmd";
+			}
+
+			std::ofstream file;
+			file.open(filename_, std::ios::out | std::ios::trunc);
+
+			saveAdams(file, result, pos);
+
+			file.close();
+		}
+		auto AdamsSimulator::saveAdams(std::ofstream &file, SimResult &result, Size pos)->void
+		{
+			// 生成akima曲线 //
+			std::vector<double> time(result.size() + 1);
+			std::vector<std::vector<double>> mot_akima(model().motionPool().size(), std::vector<double>(result.size() + 1));
+			std::vector<std::vector<std::array<double, 6>>> gm_akima(model().generalMotionPool().size(), std::vector<std::array<double, 6>>(result.size() + 1));
+			if (pos == -1)
+			{
+				if (result.size() < 4)throw std::runtime_error("failed to AdamsSimulator::saveAdams: because result size is smaller than 4\n");
+
+				for (Size i(-1); ++i < result.size() + 1;)
+				{
+					result.restore(i);
+					time.at(i) = model().time();
+					for (Size j(-1); ++j < model().motionPool().size();)
+					{
+						model().motionPool().at(j).updMp();
+						mot_akima.at(j).at(i) = model().motionPool().at(j).mp();
+					}
+					for (Size j(-1); ++j < model().generalMotionPool().size();)
+					{
+						model().generalMotionPool().at(j).updMpm();
+						model().generalMotionPool().at(j).getMpe(gm_akima.at(j).at(i).data(), "123");
+					}
+				}
+			}
+
+			// 生成ADAMS模型
+			result.restore(pos == -1 ? 0 : pos);
+			file << "!----------------------------------- Environment -------------------------------!\r\n!\r\n!\r\n";
+			file << "!-------------------------- Default Units for Model ---------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n"
+				<< "defaults units  &\r\n"
+				<< "    length = meter  &\r\n"
+				<< "    angle = rad  &\r\n"
+				<< "    force = newton  &\r\n"
+				<< "    mass = kg  &\r\n"
+				<< "    time = sec\r\n"
+				<< "!\n"
+				<< "defaults units  &\r\n"
+				<< "    coordinate_system_type = cartesian  &\r\n"
+				<< "    orientation_type = body313\r\n"
+				<< "!\r\n"
+				<< "!------------------------ Default Attributes for Model ------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n"
+				<< "defaults attributes  &\r\n"
+				<< "    inheritance = bottom_up  &\r\n"
+				<< "    icon_visibility = off  &\r\n"
+				<< "    grid_visibility = off  &\r\n"
+				<< "    size_of_icons = 5.0E-002  &\r\n"
+				<< "    spacing_for_grid = 1.0\r\n"
+				<< "!\r\n"
+				<< "!------------------------------ Adams/View Model ------------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n"
+				<< "model create  &\r\n"
+				<< "   model_name = " << this->model().name() << "\r\n"
+				<< "!\r\n"
+				<< "view erase\r\n"
+				<< "!\r\n"
+				<< "!---------------------------------- Accgrav -----------------------------------!\r\n"
+				<< "!\r\n"
+				<< "!\r\n"
+				<< "force create body gravitational  &\r\n"
+				<< "    gravity_field_name = gravity  &\r\n"
+				<< "    x_component_gravity = " << model().environment().gravity()[0] << "  &\r\n"
+				<< "    y_component_gravity = " << model().environment().gravity()[1] << "  &\r\n"
+				<< "    z_component_gravity = " << model().environment().gravity()[2] << "\r\n"
+				<< "!\r\n";
+			for (auto &part : model().partPool())
+			{
+				if (&part == &model().ground())
+				{
+					file << "!----------------------------------- ground -----------------------------------!\r\n"
+						<< "!\r\n"
+						<< "!\r\n"
+						<< "! ****** Ground Part ******\r\n"
+						<< "!\r\n"
+						<< "defaults model  &\r\n"
+						<< "    part_name = ground\r\n"
+						<< "!\r\n"
+						<< "defaults coordinate_system  &\r\n"
+						<< "    default_coordinate_system = ." << model().name() << ".ground\r\n"
+						<< "!\r\n"
+						<< "! ****** Markers for current part ******\r\n"
+						<< "!\r\n";
+				}
+				else
+				{
+					double pe[6];
+					s_pm2pe(*part.pm(), pe, "313");
+					core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
+
+					file << "!----------------------------------- " << part.name() << " -----------------------------------!\r\n"
+						<< "!\r\n"
+						<< "!\r\n"
+						<< "defaults coordinate_system  &\r\n"
+						<< "    default_coordinate_system = ." << model().name() << ".ground\r\n"
+						<< "!\r\n"
+						<< "part create rigid_body name_and_position  &\r\n"
+						<< "    part_name = ." << model().name() << "." << part.name() << "  &\r\n"
+						<< "    adams_id = " << adamsID(part) << "  &\r\n"
+						<< "    location = (" << loc.toString() << ")  &\r\n"
+						<< "    orientation = (" << ori.toString() << ")\r\n"
+						<< "!\r\n"
+						<< "defaults coordinate_system  &\r\n"
+						<< "    default_coordinate_system = ." << model().name() << "." << part.name() << " \r\n"
+						<< "!\r\n";
+
+
+					double mass = part.prtIm()[0][0] == 0 ? 1 : part.prtIm()[0][0];
+					std::fill_n(pe, 6, 0);
+					pe[0] = part.prtIm()[1][5] / mass;
+					pe[1] = -part.prtIm()[0][5] / mass;
+					pe[2] = part.prtIm()[0][4] / mass;
+
+					file << "! ****** cm and mass for current part ******\r\n"
+						<< "marker create  &\r\n"
+						<< "    marker_name = ." << model().name() << "." << part.name() << ".cm  &\r\n"
+						<< "    adams_id = " << adamsID(part) + model().markerSize() << "  &\r\n"
+						<< "    location = ({" << pe[0] << "," << pe[1] << "," << pe[2] << "})  &\r\n"
+						<< "    orientation = (" << "{0,0,0}" << ")\r\n"
+						<< "!\r\n";
+
+					double pm[16];
+					double im[6][6];
+
+					pe[0] = -pe[0];
+					pe[1] = -pe[1];
+					pe[2] = -pe[2];
+
+					s_pe2pm(pe, pm);
+					s_im2im(pm, *part.prtIm(), *im);
+
+					//！注意！//
+					//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy,Ixz,Iyz上互为相反数。别问我为什么,我也不知道。
+					file << "part create rigid_body mass_properties  &\r\n"
+						<< "    part_name = ." << model().name() << "." << part.name() << "  &\r\n"
+						<< "    mass = " << part.prtIm()[0][0] << "  &\r\n"
+						<< "    center_of_mass_marker = ." << model().name() << "." << part.name() << ".cm  &\r\n"
+						<< "    inertia_marker = ." << model().name() << "." << part.name() << ".cm  &\r\n"
+						<< "    ixx = " << im[3][3] << "  &\r\n"
+						<< "    iyy = " << im[4][4] << "  &\r\n"
+						<< "    izz = " << im[5][5] << "  &\r\n"
+						<< "    ixy = " << -im[4][3] << "  &\r\n"
+						<< "    izx = " << -im[5][3] << "  &\r\n"
+						<< "    iyz = " << -im[5][4] << "\r\n"
+						<< "!\r\n";
+				}
+
+				//导入marker
+				for (auto &marker : part.markerPool())
+				{
+					double pe[6];
+
+					s_pm2pe(*marker.prtPm(), pe, "313");
+					core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
+
+					file << "marker create  &\r\n"
+						<< "marker_name = ." << model().name() << "." << part.name() << "." << marker.name() << "  &\r\n"
+						<< "adams_id = " << adamsID(marker) << "  &\r\n"
+						<< "location = (" << loc.toString() << ")  &\r\n"
+						<< "orientation = (" << ori.toString() << ")\r\n"
+						<< "!\r\n";
+				}
+				for (auto &geometry : part.geometryPool())
+				{
+					if (ParasolidGeometry* geo = dynamic_cast<ParasolidGeometry*>(&geometry))
+					{
+						double pe[6];
+						s_pm2pe(*geo->prtPm(), pe, "313");
+						core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
+
+						file << "file parasolid read &\r\n"
+							<< "	file_name = \"" << geo->filePath() << "\" &\r\n"
+							<< "	type = ASCII" << " &\r\n"
+							<< "	part_name = " << part.name() << " &\r\n"
+							<< "	location = (" << loc.toString() << ") &\r\n"
+							<< "	orientation = (" << ori.toString() << ") &\r\n"
+							<< "	relative_to = ." << model().name() << "." << part.name() << " \r\n"
+							<< "\r\n";
+					}
+					else
+					{
+						throw std::runtime_error("unrecognized geometry type:" + geometry.type());
+					}
+
+				}
+			}
+			for (auto &joint : model().jointPool())
+			{
+				std::string type;
+				if (dynamic_cast<RevoluteJoint*>(&joint))type = "revolute";
+				else if (dynamic_cast<PrismaticJoint*>(&joint))type = "translational";
+				else if (dynamic_cast<UniversalJoint*>(&joint))type = "universal";
+				else if (dynamic_cast<SphericalJoint*>(&joint))type = "spherical";
+				else throw std::runtime_error("unrecognized joint type:" + joint.type());
+
+				file << "constraint create joint " << type << "  &\r\n"
+					<< "    joint_name = ." << model().name() << "." << joint.name() << "  &\r\n"
+					<< "    adams_id = " << adamsID(joint) << "  &\r\n"
+					<< "    i_marker_name = ." << model().name() << "." << joint.makI().fatherPart().name() << "." << joint.makI().name() << "  &\r\n"
+					<< "    j_marker_name = ." << model().name() << "." << joint.makJ().fatherPart().name() << "." << joint.makJ().name() << "  \r\n"
+					<< "!\r\n";
+			}
+			for (auto &motion : model().motionPool())
+			{
+				std::string axis_names[6]{ "x","y","z","B1","B2","B3" };
+				std::string axis_name = axis_names[motion.axis()];
+
+				std::string akima = motion.name() + "_akima";
+				std::string akima_func = "AKISPL(time,0," + akima + ")";
+				std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << motion.mp() << " + " << motion.mv() << " * time + " << motion.ma()*0.5 << " * time * time").str();
+
+				// 构建akima曲线 //
+				if (pos == -1)
+				{
+					file << "data_element create spline &\r\n"
+						<< "    spline_name = ." << model().name() + "." + motion.name() + "_akima &\r\n"
+						<< "    adams_id = " << adamsID(motion) << "  &\r\n"
+						<< "    units = m &\r\n"
+						<< "    x = " << time.at(0);
+					for (auto p = time.begin() + 1; p < time.end(); ++p)
+					{
+						file << "," << *p;
+					}
+					file << "    y = " << mot_akima.at(motion.id()).at(0);
+					for (auto p = mot_akima.at(motion.id()).begin() + 1; p < mot_akima.at(motion.id()).end(); ++p)
+					{
+						file << "," << *p;
+					}
+					file << " \r\n!\r\n";
+				}
+
+				file << "constraint create motion_generator &\r\n"
+					<< "    motion_name = ." << model().name() << "." << motion.name() << "  &\r\n"
+					<< "    adams_id = " << adamsID(motion) << "  &\r\n"
+					<< "    i_marker_name = ." << model().name() << "." << motion.makI().fatherPart().name() << "." << motion.makI().name() << "  &\r\n"
+					<< "    j_marker_name = ." << model().name() << "." << motion.makJ().fatherPart().name() << "." << motion.makJ().name() << "  &\r\n"
+					<< "    axis = " << axis_name << "  &\r\n"
+					<< "    function = \"" << (pos == -1 ? akima_func : polynomial_func) << "\"  \r\n"
+					<< "!\r\n";
+			}
+			for (auto &gm : model().generalMotionPool())
+			{
+				file << "ude create instance  &\r\n"
+					<< "    instance_name = ." << model().name() << "." << gm.name() << "  &\r\n"
+					<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
+					<< "    location = 0.0, 0.0, 0.0  &\r\n"
+					<< "    orientation = 0.0, 0.0, 0.0  \r\n"
+					<< "!\r\n";
+
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model().name() << "." << gm.name() << ".i_marker  &\r\n"
+					<< "	object_value = ." << model().name() << "." << gm.makI().fatherPart().name() << "." << gm.makI().name() << " \r\n"
+					<< "!\r\n";
+
+				file << "variable modify  &\r\n"
+					<< "	variable_name = ." << model().name() << "." << gm.name() << ".j_marker  &\r\n"
+					<< "	object_value = ." << model().name() << "." << gm.makJ().fatherPart().name() << "." << gm.makJ().name() << " \r\n"
+					<< "!\r\n";
+
+				std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
+
+				double pe123[6], ve123[6], ae123[6];
+				gm.getMpe(pe123, "123");
+				gm.getMve(ve123, "123");
+				gm.getMae(ae123, "123");
+				for (Size i = 0; i < 6; ++i)
+				{
+					std::string akima = gm.name() + "_" + axis_names[i] + "_akima";
+					std::string akima_func = "AKISPL(time,0," + akima + ")";
+					std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << pe123[i] << " + " << ve123[i] << " * time + " << ae123[i] * 0.5 << " * time * time").str();
+					std::string func = pos == -1 ? akima_func : polynomial_func;
+
+					// 构建akima曲线 //
+					if (pos == -1)
+					{
+						file << "data_element create spline &\r\n"
+							<< "    spline_name = ." << model().name() + "." + akima + " &\r\n"
+							<< "    adams_id = " << model().motionPool().size() + adamsID(gm) * 6 + i << "  &\r\n"
+							<< "    units = m &\r\n"
+							<< "    x = " << time.at(0);
+						for (auto p = time.begin() + 1; p < time.end(); ++p)
+						{
+							file << "," << *p;
+						}
+						file << "    y = " << gm_akima.at(gm.id()).at(0).at(i);
+						for (auto p = gm_akima.at(gm.id()).begin() + 1; p < gm_akima.at(gm.id()).end(); ++p)
+						{
+							file << "," << p->at(i);
+						}
+						file << " \r\n!\r\n";
+					}
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model().name() << "." << gm.name() << "." << axis_names[i] << "_type  &\r\n"
+						<< "	integer_value = 1 \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model().name() << "." << gm.name() << "." << axis_names[i] << "_func  &\r\n"
+						<< "	string_value = \"" + func + "\" \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model().name() << "." << gm.name() << "." << axis_names[i] << "_ic_disp  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+
+					file << "variable modify  &\r\n"
+						<< "	variable_name = ." << model().name() << "." << gm.name() << "." << axis_names[i] << "_ic_velo  &\r\n"
+						<< "	real_value = 0.0 \r\n"
+						<< "!\r\n";
+				}
+
+				file << "ude modify instance  &\r\n"
+					<< "	instance_name = ." << model().name() << "." << gm.name() << "\r\n"
+					<< "!\r\n";
+			}
+			for (auto &force : model().forcePool())
+			{
+				if (dynamic_cast<SingleComponentForce *>(&force))
+				{
+					std::string type = "translational";
+
+					file << "force create direct single_component_force  &\r\n"
+						<< "    single_component_force_name = ." << model().name() << "." << force.name() << "  &\r\n"
+						<< "    adams_id = " << adamsID(force) << "  &\r\n"
+						<< "    type_of_freedom = " << type << "  &\r\n"
+						<< "    i_marker_name = ." << model().name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
+						<< "    j_marker_name = ." << model().name() << "." << force.makJ().fatherPart().name() << "." << force.makJ().name() << "  &\r\n"
+						<< "    action_only = off  &\r\n"
+						<< "    function = \"" << dynamic_cast<SingleComponentForce&>(force).fce() << "\"  \r\n"
+						<< "!\r\n";
+				}
+
+			}
+
+			file << "!----------------------------------- Motify Active -------------------------------------!\r\n!\r\n!\r\n";
+			for (auto &prt : model().partPool())
+			{
+				if ((&prt != &model().ground()) && (!prt.active()))
+				{
+					file << "part attributes  &\r\n"
+						<< "    part_name = ." << model().name() << "." << prt.name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+			}
+			for (auto &jnt : model().jointPool())
+			{
+				if (!jnt.active())
+				{
+					file << "constraint attributes  &\r\n"
+						<< "    constraint_name = ." << model().name() << "." << jnt.name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+			}
+			for (auto &mot : model().motionPool())
+			{
+				if (!mot.active())
+				{
+					file << "constraint attributes  &\r\n"
+						<< "    constraint_name = ." << model().name() << "." << mot.name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+			}
+			for (auto &gm : model().generalMotionPool())
+			{
+				if (!gm.active())
+				{
+					file << "ude attributes  &\r\n"
+						<< "    instance_name = ." << model().name() << "." << gm.name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+			}
+			for (auto &fce : model().forcePool())
+			{
+				if (!fce.active())
+				{
+					file << "force attributes  &\r\n"
+						<< "    force_name = ." << model().name() << "." << fce.name() << "  &\r\n"
+						<< "    active = off \r\n!\r\n";
+				}
+			}
+		}
+		auto AdamsSimulator::adamsID(const Marker &mak)const->Size
+		{
+			Size size{ 0 };
+
+			for (auto &prt : model().partPool())
+			{
+				if (&prt == &mak.fatherPart()) break;
+				size += prt.markerPool().size();
+			}
+
+			size += mak.id() + 1;
+
+			return size;
+		}
+		auto AdamsSimulator::adamsID(const Part &prt)const->Size { return (&prt == &model().ground()) ? 1 : prt.id() + (model().ground().id() < prt.id() ? 1 : 2); }
+		AdamsSimulator::~AdamsSimulator() = default;
+		AdamsSimulator::AdamsSimulator(Object &father, const aris::core::XmlElement &xml_ele) : SolverSimulator(father, xml_ele) {}
+		AdamsSimulator::AdamsSimulator(const std::string &name, Solver &solver) : SolverSimulator(name, solver) {}
+		AdamsSimulator::AdamsSimulator(const AdamsSimulator&) = default;
+		AdamsSimulator::AdamsSimulator(AdamsSimulator&&) = default;
+		AdamsSimulator& AdamsSimulator::operator=(const AdamsSimulator&) = default;
+		AdamsSimulator& AdamsSimulator::operator=(AdamsSimulator&&) = default;
 	}
 }

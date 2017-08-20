@@ -579,6 +579,7 @@ namespace aris
 				case Token::BRACKET_R:braNum--; break;
 				case Token::BRACE_L:bceNum++; break;
 				case Token::BRACE_R:bceNum--; break;
+				default:break;
 				}
 
 				++nextPlace;

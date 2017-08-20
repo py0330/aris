@@ -169,7 +169,7 @@ namespace aris
 		template<typename AType, typename ValueType>
 		auto s_fill(AType &A, const ValueType &value) noexcept->void
 		{
-			if (A.is_zero = (value == 0)) return;
+			if ((A.is_zero = (value == 0))) return;
 			for_each_ele(A, [&value](typename AType::DataType &ele) {s_fill(ele, value); });
 		}
 		template<typename AType>
@@ -177,7 +177,7 @@ namespace aris
 		template<typename ValueType, typename AType>
 		auto s_nm(const ValueType &number, AType &A) noexcept->void
 		{
-			if (A.is_zero = (number == 0 || A.is_zero))return;
+			if ((A.is_zero = (number == 0 || A.is_zero)))return;
 			for_each_ele(A, [&number](typename AType::DataType &ele) {	s_nm(number, ele); });
 		}
 		template<typename AType>
@@ -189,7 +189,7 @@ namespace aris
 		template<typename AType, typename BType>
 		auto s_mc(const AType &A, BType &B) noexcept->void
 		{
-			if(B.is_zero = A.is_zero)return;
+			if((B.is_zero = A.is_zero))return;
 			for_each_ele(A, B, [](typename AType::DataType &A_ele, typename BType::DataType &B_ele) {s_mc(A_ele, B_ele); });
 		}
 		template<typename AType, typename BType>
@@ -203,7 +203,7 @@ namespace aris
 		auto s_mi(const AType &A, BType &B) noexcept->void
 		{
 			// set and check if A.is_zero is true, note here operator '=' is correct
-			if (B.is_zero = A.is_zero)return;
+			if ((B.is_zero = A.is_zero))return;
 			for_each_ele(A, B, [](typename AType::DataType &A_ele, typename BType::DataType &B_ele) {s_mi(A_ele, B_ele); });
 		}
 		template<typename AType, typename BType>

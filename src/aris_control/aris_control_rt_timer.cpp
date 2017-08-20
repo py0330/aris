@@ -1,4 +1,4 @@
-﻿#ifdef UNIX
+﻿#ifdef USE_XENOMAI
 #include <native/task.h>
 #include <native/timer.h>
 #include <sys/mman.h>
@@ -15,7 +15,7 @@ namespace aris
 {
 	namespace control
 	{
-#ifdef WIN32
+#ifndef USE_XENOMAI
         // should not have global variables
 		int nanoseconds{1000};
 		std::chrono::time_point<std::chrono::high_resolution_clock> last_time, begin_time;
@@ -58,7 +58,7 @@ namespace aris
 		}
 #endif
 
-#ifdef UNIX
+#ifdef USE_XENOMAI
 		struct RtTaskHandle :public Handle { RT_TASK task; };
 
 		auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) throw std::runtime_error("lock failed"); }

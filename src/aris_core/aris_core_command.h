@@ -38,7 +38,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Param"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual help(bool isfull, int begin)const->std::string override;
 			auto abbreviation()const->char;
@@ -63,7 +63,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("UniqueParam"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual help(bool isfull, int begin)const->std::string override;
 			auto defaultParam()const->const std::string &;
@@ -86,7 +86,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("GroupParam"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual help(bool isfull, int begin)const->std::string override;
 			
 			virtual ~GroupParam();
@@ -101,7 +101,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Command"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto defaultParam()const->const std::string &;
 			auto help(bool isfull, int begin)const->std::string;
@@ -124,7 +124,7 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("CommandParser"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
             auto help()const->std::string;
             auto commandPool()->ObjectPool<Command> &;

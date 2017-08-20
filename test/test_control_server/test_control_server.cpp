@@ -44,7 +44,7 @@ const char xml_data[] =
 "    </widget_root>"
 "    <controller>"
 "        <slave_type_pool type=\"SlaveTypePoolElement\">"
-"            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vender_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
+"            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vendor_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
 "                <pdo_group_pool type=\"PdoGroupPoolElement\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" datatype=\"uint16\"/>"
@@ -145,11 +145,11 @@ auto rc_plan_func(const aris::dynamic::PlanParam &param)->int
 
 	if (param.count_ == 1)
 	{
-		auto &slave = aris::server::ControlServer::instance().controller().slavePool().at(param.model_->motionAtPhy(0).slaID());
-		begin_pos = dynamic_cast<aris::control::EthercatMotion&>(slave).actualPos();
+		auto &cm = aris::server::ControlServer::instance().controller().motionPool().at(0);
+		begin_pos = dynamic_cast<aris::control::EthercatMotion&>(cm).actualPos();
 	}
 
-	param.model_->motionAtPhy(0).setMp(begin_pos + p->mag * std::sin(2 * PI * param.count_ / p->t1));
+	param.model_->motionPool().at(0).setMp(begin_pos + p->mag * std::sin(2 * PI * param.count_ / p->t1));
 
 	return p->t1 - param.count_;
 };
@@ -223,10 +223,9 @@ void test_construct()
 
 
 	auto &m = cs.model().addMotion();
-	cs.model().updMotionID();
 
-	auto &st = dynamic_cast<aris::control::EthercatMaster&>(cs.controller()).slaveTypePool().add<aris::control::EthercatSlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
-	auto &s1 = cs.controller().slavePool().add<aris::control::EthercatMotion>("s1", st, 65536, 10.0, -10.0, 10.0, 0, 0);
+	//auto &st = dynamic_cast<aris::control::EthercatMaster&>(cs.controller()).slaveTypePool().add<aris::control::EthercatSlaveType>("st", 0x00030924, , 0x0300);
+	auto &s1 = cs.controller().slavePool().add<aris::control::EthercatMotion>("s1", nullptr, 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 65536, 10.0, -10.0, 10.0, 0, 0);
 
 	auto &tx = s1.pdoGroupPool().add<aris::control::PdoGroup>("index_1A00", 0x1A00, true);
 	tx.add<aris::control::Pdo>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));

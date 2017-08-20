@@ -21,8 +21,6 @@ namespace aris
 	{
 		enum { MAX_MOTOR_NUM = 100 };
 
-		class ControlServer;
-		
 		using ParseFunc = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
 
 		class ControlServer
@@ -47,6 +45,7 @@ namespace aris
 			enum
 			{
 				EXECUTE_RT_PLAN = 0x0001,
+				EXECUTE_AFTER_ALL_PLAN_FINISHED = 0x0002,
 			};
 			// Msg reserved 3 //
 			enum
@@ -99,6 +98,7 @@ namespace aris
 
 		struct DefaultParam
 		{
+			std::uint32_t limit_time_;
 			bool active_motor_[MAX_MOTOR_NUM];
 			DefaultParam() { std::fill(active_motor_, active_motor_ + MAX_MOTOR_NUM, true); }
 		};

@@ -9,11 +9,9 @@ const char xml_file[] =
 "    <controller>"
 "        <data_logger type=\"DataLogger\"/>"
 "        <slave_type_pool type=\"SlaveTypePoolObject\">"
-"            <elmo type=\"SlaveType\" product_code=\"0x00030924\" vender_id=\"0x0000009a\" alias=\"0\" distributed_clock=\"0x0300\">"
-"            </elmo>"
 "        </slave_type_pool>"
 "        <slave_pool type=\"SlavePoolObject\">"
-"            <sla type=\"EthercatSlave\" slave_type=\"elmo\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
+"            <sla type=\"EthercatSlave\" phy_id=\"0\" product_code=\"0x00030924\" vendor_id=\"0x0000009a\" distributed_clock=\"0x0300\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
 "                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
 "                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" size=\"4\"/>"
@@ -35,8 +33,10 @@ void test_pdo()
 	{
 		aris::control::EthercatMaster m;
 
-		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
-		auto &s1 = m.slavePool().add<EthercatSlave>("s1", st);
+		//auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", "C:\\Users\\py033\\Desktop\\Elmo ECAT 000103F6 V07.xml");
+		//return;
+		
+		auto &s1 = m.slavePool().add<EthercatSlave>("s1", nullptr, 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300);
 
 		auto &pdo_group = s1.pdoGroupPool().add<PdoGroup>("index_1a00", 0x1A00, true);
 		pdo_group.add<Pdo>("index_6064", 0x6064, 0x00, 4);
@@ -77,8 +77,8 @@ void test_sdo()
 		std::cout << "test sdo" << std::endl;
 		aris::control::EthercatMaster m;
 
-		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", 0x00030924, 0x0000009a, 0x0000, 0x0300);
-		auto &s1 = m.slavePool().add<EthercatSlave>("s1", st);
+		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", "C:\\Users\\py033\\Desktop\\Elmo ECAT 000103F6 V07.xml");
+		auto &s1 = m.slavePool().add<EthercatSlave>("s1", &st, 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300);
 
 		auto &home_mode = s1.sdoPool().add<Sdo>("index_6098", 0x6098, 0x00, sizeof(std::int16_t), Sdo::READ | Sdo::WRITE | Sdo::CONFIG, 17);
 
@@ -165,6 +165,6 @@ void test_data_logger()
 void test_control_ethercat()
 {
 	test_pdo();
-	test_sdo();
+	//test_sdo();
 	test_data_logger();
 }

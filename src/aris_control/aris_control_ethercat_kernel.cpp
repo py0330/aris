@@ -1,4 +1,4 @@
-﻿#ifdef UNIX
+﻿#ifdef USE_ETHERLAB
 #include <ecrt.h>
 #endif
 
@@ -14,7 +14,7 @@ namespace aris
 {
 	namespace control
 	{
-#ifdef WIN32
+#ifndef USE_ETHERLAB
 		auto aris_ecrt_master_init()->Handle* { return nullptr; }
 		auto aris_ecrt_master_config(Handle* master_handle)->void {}
 		auto aris_ecrt_master_start(Handle* master_handle)->void {}
@@ -23,7 +23,7 @@ namespace aris
 		auto aris_ecrt_master_receive(Handle* master_handle)->void {}
 		auto aris_ecrt_master_send(Handle* master_handle)->void {}
 		auto aris_ecrt_slave_init()->Handle* { return nullptr; }
-		auto aris_ecrt_slave_config(Handle* master_handle, Handle* slave_handle, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t distribute_clock)->void {}
+		auto aris_ecrt_slave_config(Handle* master_handle, Handle* slave_handle, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t dc_assign_activate)->void {}
 		auto aris_ecrt_slave_start(Handle* slave_handle)->void {}
 		auto aris_ecrt_slave_send(Handle* slave_handle)->void {}
 		auto aris_ecrt_slave_receive(Handle* slave_handle)->void {}
@@ -41,7 +41,7 @@ namespace aris
 			std::uint8_t *buffer, std::size_t bit_size)->void {}
 #endif
 
-#ifdef UNIX
+#ifdef USE_ETHERLAB
 		struct EcMasterHandle :public Handle
 		{
 			ec_master_t* ec_master_;
@@ -102,7 +102,7 @@ namespace aris
 			std::unique_ptr<Handle> handle(new EcSlaveHandle);
 			return handle.release();
 		}
-		auto aris_ecrt_slave_config(Handle* master_handle, Handle* slave_handle, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t distribute_clock)->void
+		auto aris_ecrt_slave_config(Handle* master_handle, Handle* slave_handle, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t dc_assign_activate)->void
 		{
 			auto &ec_mst = static_cast<EcMasterHandle*>(master_handle)->ec_master_;
 			auto &domain = static_cast<EcSlaveHandle*>(slave_handle)->domain_;
@@ -144,7 +144,7 @@ namespace aris
 			if (ecrt_domain_reg_pdo_entry_list(domain, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
 			// Configure the slave's discrete clock
-			if (distribute_clock)ecrt_slave_config_dc(ec_slave_config, distribute_clock, 1000000, 4400000, 0, 0);
+			ecrt_slave_config_dc(ec_slave_config, dc_assign_activate, 1000000, 4400000, 0, 0);
 		}
 		auto aris_ecrt_slave_start(Handle* slave_handle)->void
 		{

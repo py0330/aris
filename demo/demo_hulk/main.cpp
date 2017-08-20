@@ -11,22 +11,28 @@ const char xml_data[] =
 "            <command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
 "                <rc default=\"rc_param\">"
 "                    <rc_param type=\"GroupParam\" default_child_type=\"Param\">"
-"                        <p1 default=\"0.0\"/>"
-"                        <p2 default=\"0.0\"/>"
-"                        <p3 default=\"0.0\"/>"
-"                        <p4 default=\"0.0\"/>"
-"                        <p5 default=\"90.0\"/>"
-"                        <p6 default=\"0.0\"/>"
+"                        <p0 default=\"\"/>"
+"                        <p1 default=\"\"/>"
+"                        <p2 default=\"\"/>"
+"                        <p3 default=\"\"/>"
+"                        <p4 default=\"\"/>"
+"                        <p5 default=\"\"/>"
 "                    </rc_param>"
 "                </rc>"
 "                <mv default=\"mv_param\">"
-"                    <mv_param type=\"UniqueParam\" default_child_type=\"Param\">"
-"                        <x default=\"0.0\"/>"
-"                        <y default=\"0.0\"/>"
-"                        <z default=\"0.0\"/>"
-"                        <a default=\"0.0\"/>"
-"                        <b default=\"0.0\"/>"
-"                        <c default=\"0.0\"/>"
+"                    <mv_param type=\"GroupParam\" default_child_type=\"Param\">"
+"                        <pos_param type=\"UniqueParam\" default_child_type=\"Param\" default=\"target\">"
+"                            <target default=\"{0,0.63,0.316,0,-90,-90}\" abbreviation=\"t\"/>"
+"                            <pos_group type=\"GroupParam\" default_child_type=\"Param\">"
+"                                <x default=\"0\" abbreviation=\"x\"/>"
+"                                <y default=\"0.63\" abbreviation=\"y\"/>"
+"                                <z default=\"0.316\" abbreviation=\"z\"/>"
+"                                <a default=\"0\" abbreviation=\"a\"/>"
+"                                <b default=\"-90\" abbreviation=\"b\"/>"
+"                                <c default=\"-90\" abbreviation=\"c\"/>"
+"                            </pos_group>"
+"                        </pos_param>"
+"                        <expression default=\"123\" abbreviation=\"e\"/>"
 "                    </mv_param>"
 "                </mv>"
 "                <ck/>"
@@ -35,28 +41,10 @@ const char xml_data[] =
 "    </widget_root>"
 "    <controller>"
 "        <slave_type_pool type=\"SlaveTypePoolObject\">"
-"            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vender_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
-"                <pdo_group_pool type=\"PdoGroupPoolObject\">"
-"                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
-"                        <control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
-"                        <mode_of_operation index=\"0x6060\" subindex=\"0x00\" size=\"1\"/>"
-"                        <target_pos index=\"0x607A\" subindex=\"0x00\" size=\"4\"/>"
-"                        <target_vel index=\"0x60FF\" subindex=\"0x00\" size=\"4\"/>"
-"                        <targer_tor index=\"0x6071\" subindex=\"0x00\" size=\"2\"/>"
-"                    </index_1600>"
-"                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
-"                        <status_word index=\"0x6041\" subindex=\"0x00\" size=\"2\"/>"
-"                        <mode_of_display index=\"0x6061\" subindex=\"0x00\" size=\"1\"/>"
-"                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" size=\"4\"/>"
-"                        <vel_actual_value index=\"0x606c\" subindex=\"0x00\" size=\"4\"/>"
-"                        <cur_actual_value index=\"0x6078\" subindex=\"0x00\" size=\"2\"/>"
-"                    </index_1a00>"
-"                </pdo_group_pool>"
-"                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\"/>"
-"            </elmo>"
+"            <elmo type=\"SlaveType\" product_code=\"0x00010001\" alias=\"0\" distributed_clock=\"0x0300\"/>"
 "        </slave_type_pool>"
 "        <slave_pool type=\"SlavePoolObject\">"
-"            <m1 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-135\" max_pos=\"135\" max_vel=\"200\" pos_offset=\"10.7925888626948\" home_pos=\"0\" pos_factor=\"43691\">"
+"            <m1 type=\"EthercatMotion\" vendor_id=\"0x00007595\" product_code=\"0x00010001\" revision_num=\"0x00000001\" dc_assign_activate=\"0x0300\" phy_id=\"0\" min_pos=\"80\" max_pos=\"100\" max_vel=\"200\" max_acc=\"2000\" pos_offset=\"-10.7925888626948\" home_pos=\"0\" pos_factor=\"-43691\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
@@ -75,7 +63,7 @@ const char xml_data[] =
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\"/>"
 "            </m1>"
-"            <m2 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-135\" max_pos=\"135\" max_vel=\"200\" pos_offset=\"-8.85539355931428\" home_pos=\"0\" pos_factor=\"43691\">"
+"            <m2 type=\"EthercatMotion\" vendor_id=\"0x00007595\" product_code=\"0x00010001\" revision_num=\"0x00000001\" dc_assign_activate=\"0x0300\" phy_id=\"1\" min_pos=\"-135\" max_pos=\"135\" max_vel=\"200\" max_acc=\"2000\" pos_offset=\"8.85539355931428\" home_pos=\"0\" pos_factor=\"-43691\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
@@ -94,7 +82,7 @@ const char xml_data[] =
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\"/>"
 "            </m2>"
-"            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-120\" max_pos=\"70\" max_vel=\"191\" pos_offset=\"-7.15872044749377\" home_pos=\"0\" pos_factor=\"45766\">"
+"            <m3 type=\"EthercatMotion\" vendor_id=\"0x00007595\" product_code=\"0x00010001\" revision_num=\"0x00000001\" dc_assign_activate=\"0x0300\" phy_id=\"2\" min_pos=\"-120\" max_pos=\"70\" max_vel=\"191\" max_acc=\"1910\" pos_offset=\"7.15872044749377\" home_pos=\"0\" pos_factor=\"-45766\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
@@ -113,7 +101,7 @@ const char xml_data[] =
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\"/>"
 "            </m3>"
-"            <m4 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-160\" max_pos=\"160\" max_vel=\"480\" pos_offset=\"15.9680839375961\" home_pos=\"0\" pos_factor=\"-18204\">"
+"            <m4 type=\"EthercatMotion\" vendor_id=\"0x00007595\" product_code=\"0x00010001\" revision_num=\"0x00000001\" dc_assign_activate=\"0x0300\" phy_id=\"3\" min_pos=\"-160\" max_pos=\"160\" max_vel=\"480\" max_acc=\"4800\" pos_offset=\"-15.9680839375961\" home_pos=\"0\" pos_factor=\"-18204\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
@@ -132,7 +120,7 @@ const char xml_data[] =
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\"/>"
 "            </m4>"
-"            <m5 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-120\" max_pos=\"120\" max_vel=\"403\" pos_offset=\"0.377648525135023\" home_pos=\"0\" pos_factor=\"21663\">"
+"            <m5 type=\"EthercatMotion\" vendor_id=\"0x00007595\" product_code=\"0x00010001\" revision_num=\"0x00000001\" dc_assign_activate=\"0x0300\" phy_id=\"4\" min_pos=\"-120\" max_pos=\"120\" max_vel=\"403\" max_acc=\"4030\" pos_offset=\"0.377648525135023\" home_pos=\"0\" pos_factor=\"21663\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
@@ -151,7 +139,7 @@ const char xml_data[] =
 "                </pdo_group_pool>"
 "                <sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\"/>"
 "            </m5>"
-"            <m6 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-360\" max_pos=\"360\" max_vel=\"480\" pos_offset=\"-319.130136233795\" home_pos=\"0\" pos_factor=\"-18204\">"
+"            <m6 type=\"EthercatMotion\" vendor_id=\"0x00007595\" product_code=\"0x00010001\" revision_num=\"0x00000001\" dc_assign_activate=\"0x0300\" phy_id=\"5\" min_pos=\"-360\" max_pos=\"360\" max_vel=\"480\" max_acc=\"4800\" pos_offset=\"319.130136233795\" home_pos=\"0\" pos_factor=\"-18204\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
 "                    <index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 "                        <control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
@@ -397,16 +385,52 @@ public:
 	HulkForwardSolver(Object &father, const aris::core::XmlElement &xml_ele) :DiagSolver(father, xml_ele) {};
 };
 
-struct RcParam { double p[6]; };
+struct RcParam 
+{ 
+	double p[6];
+	bool active[6];
+};
 auto rc_parse_func = [](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
+	msg_out.header().reserved1_ |= aris::server::ControlServer::USING_TARGET_POS;
+	
 	RcParam param;
-	param.p[0] = std::atof(params.at("p1").c_str());
-	param.p[1] = std::atof(params.at("p2").c_str());
-	param.p[2] = std::atof(params.at("p3").c_str());
-	param.p[3] = std::atof(params.at("p4").c_str());
-	param.p[4] = std::atof(params.at("p5").c_str());
-	param.p[5] = std::atof(params.at("p6").c_str());
+	
+	std::fill_n(param.active, 6, false);
+	std::fill_n(param.p, 6, 0.0);
+
+	if (!params.at("p0").empty())
+	{
+		param.active[0] = true;
+		param.p[0] = std::atof(params.at("p0").c_str());
+	}
+	if (!params.at("p1").empty())
+	{
+		param.active[1] = true;
+		param.p[1] = std::atof(params.at("p1").c_str());
+	}
+	if (!params.at("p2").empty())
+	{
+		param.active[2] = true;
+		param.p[2] = std::atof(params.at("p2").c_str());
+	}
+	if (!params.at("p3").empty())
+	{
+		param.active[3] = true;
+		param.p[3] = std::atof(params.at("p3").c_str());
+	}
+	if (!params.at("p4").empty())
+	{
+		param.active[4] = true;
+		param.p[4] = std::atof(params.at("p4").c_str());
+	}
+	if (!params.at("p5").empty())
+	{
+		param.active[5] = true;
+		param.p[5] = std::atof(params.at("p5").c_str());
+	}
+
+	
 	msg_out.copyStruct(param);
 };
 auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
@@ -419,8 +443,7 @@ auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(cs.model().motionAtAbs(i).slaID()));
-			begin_pos[i] = mot.actualPos();
+			begin_pos[i] = cs.controller().motionPool().at(i).actualPos();
 		}
 	}
 
@@ -429,21 +452,29 @@ auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	static aris::Size total_count[6];
 	for (int i = 0; i < 6; ++i)
 	{
-		auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(cs.model().motionAtAbs(i).slaID()));
-		double mp, mv, ma;
-		aris::dynamic::moveAbsolute(param.count_, begin_pos[i], p->p[i], 0.5*mot.maxVel() / 1000, 0.5*mot.maxVel() / 1000 / 1000, 0.5*mot.maxVel() / 1000 / 1000, mp, mv, ma, total_count[i]);
-		cs.model().motionAtAbs(i).setMp(mp);
+		if (p->active[i])
+		{
+			auto &cm = cs.controller().motionPool().at(i);
+			double mp, mv, ma;
+			aris::dynamic::moveAbsolute(param.count_, begin_pos[i], p->p[i], 0.5*cm.maxVel() / 1000, 0.5*cm.maxVel() / 1000 / 1000, 0.5*cm.maxVel() / 1000 / 1000, mp, mv, ma, total_count[i]);
+			cs.model().motionPool().at(i).setMp(mp);
+		}
+		else
+		{
+			cs.model().motionPool().at(i).setMp(begin_pos[i]);
+			total_count[i] = 0;
+		}
 	}
 
 	// 正解确定末端,这里先将角度转成弧度 //
 	double mp[6];
 	for (int i = 0; i < 6; ++i)
 	{
-		mp[i] = cs.model().motionAtAbs(i).mp();
-		cs.model().motionAtAbs(i).setMp(mp[i] / 360 * 2.0 * PI);
+		mp[i] = cs.model().motionPool().at(i).mp();
+		cs.model().motionPool().at(i).setMp(mp[i] / 360 * 2.0 * PI);
 	}
 	cs.model().solverPool().at(1).kinPos();
-	for (int i = 0; i < 6; ++i)cs.model().motionAtAbs(i).setMp(mp[i]);
+	for (int i = 0; i < 6; ++i)cs.model().motionPool().at(i).setMp(mp[i]);
 
 	return (static_cast<int>(*std::max_element(total_count, total_count + 6)) > param.count_) ? 1 : 0;
 };
@@ -465,8 +496,7 @@ auto ck_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			auto &mot = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(cs.model().motionAtAbs(i).slaID()));
-			begin_pos[i] = mot.actualPos();
+			begin_pos[i] = cs.controller().motionPool().at(i).actualPos();
 		}
 	}
 
@@ -475,83 +505,123 @@ auto ck_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	return 0;
 };
 
-struct MvParam { int axis; double value; };
+struct MvParam { double pq[7]; };
 auto mv_parse_func = [](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
+	msg_out.header().reserved1_ |= aris::server::ControlServer::USING_TARGET_POS;
+	
 	MvParam param;
-	if (params.find("x") != params.end())
+
+	double data[16];
+	if (params.find("target") != params.end())
 	{
-		param.axis = 0;
-		param.value = std::atof(params.at("x").c_str());
+		auto &cs = aris::server::ControlServer::instance();
+		auto target = cs.model().calculator().calculateExpression(params.at("target"));
+		if (target.size() != 6)throw std::runtime_error("eula angle expression must have 6 elements, first 3 are positon, others are angles");
+		std::copy(target.data(), target.data() + 6, data);
+	}
+	else if (params.find("x") != params.end())
+	{
+		data[0] = std::atof(params.at("x").c_str());
 	}
 	else if (params.find("y") != params.end())
 	{
-		param.axis = 1;
-		param.value = std::atof(params.at("y").c_str());
+		data[1] = std::atof(params.at("y").c_str());
 	}
 	else if (params.find("z") != params.end())
 	{
-		param.axis = 2;
-		param.value = std::atof(params.at("z").c_str());
+		data[2] = std::atof(params.at("z").c_str());
 	}
 	else if (params.find("a") != params.end())
 	{
-		param.axis = 3;
-		param.value = std::atof(params.at("a").c_str());
+		data[3] = std::atof(params.at("a").c_str());
 	}
 	else if (params.find("b") != params.end())
 	{
-		param.axis = 4;
-		param.value = std::atof(params.at("b").c_str());
+		data[4] = std::atof(params.at("b").c_str());
 	}
 	else if (params.find("c") != params.end())
 	{
-		param.axis = 5;
-		param.value = std::atof(params.at("c").c_str());
+		data[5] = std::atof(params.at("c").c_str());
+	}
+
+
+	if (params.at("expression") == "313")
+	{
+		s_nv(3, PI / 180, data + 3);
+		s_pe2pq(data, param.pq, "313");
+	}
+	else if (params.at("expression") == "321")
+	{
+		s_nv(3, PI / 180, data + 3);
+		s_pe2pq(data, param.pq, "321");
+	}
+	else if (params.at("expression") == "123")
+	{
+		s_nv(3, PI / 180, data + 3);
+		s_pe2pq(data, param.pq, "123");
 	}
 	else
 	{
-		throw std::runtime_error("invalid param in mv parse");
+		throw std::runtime_error("unknown expression type");
 	}
+
 	msg_out.copyStruct(param);
 };
-auto mv_plan_func = [](const aris::dynamic::PlanParam &param)->int
+auto mv_plan_func = [](const aris::dynamic::PlanParam &plan_param)->int
 {
 	auto &cs = aris::server::ControlServer::instance();
-	auto p = static_cast<MvParam*>(param.param_);
+	auto param = static_cast<MvParam*>(plan_param.param_);
 
-	// 取得起始位置 //
-	static double pe[6], vel[6]{ 0.1 , 0.1 , 0.1 , 10.0 , 10.0 , 10.0 }, acc[6]{ 0.1 , 0.1 , 0.1 , 10.0 , 10.0 , 10.0 }, begin_value;
-	if (param.count_ == 1)
+	// 正解取得起始位置 //
+	static double begin_pq[7], relative_pq[7], d;
+	const double max_a = 0.2, max_v = 0.1;
+	if (plan_param.count_ == 1)
 	{
-		cs.model().generalMotionPool().front().updMpm();
-		cs.model().generalMotionPool().front().getMpe(pe, "123");
-		for (int i = 3; i < 6; ++i)	if (pe[i] > PI)pe[i] -= 2 * PI;
+		for (aris::Size i(-1); ++i < 6;) cs.model().motionPool().at(i).setMp(cs.controller().motionPool().at(i).actualPos() / 180.0*PI);
+		cs.model().solverPool().at(1).kinPos();
+		cs.model().generalMotionPool().at(0).updMpm();
+		cs.model().generalMotionPool().at(0).getMpq(begin_pq);
 
+		if (s_vv(4, begin_pq + 3, param->pq + 3)<0)s_nv(4, -1.0, begin_pq + 3);
+		
+		s_vc(7, param->pq, relative_pq);
+		s_vs(7, begin_pq, relative_pq);
+		d = s_norm(7, relative_pq);
 
-		begin_value = pe[p->axis];
+		aris::dynamic::dsp(1, 7, begin_pq);
+		aris::dynamic::dsp(1, 7, param->pq);
+		std::cout << "d:" << d << std::endl;
+
+		if (d < 1e-10)return 0;
 	}
 
 	// 计算轨迹 //
 	static aris::Size total_count;
-	double p_value, v, a;
-	aris::dynamic::moveAbsolute(param.count_, begin_value, p->value, vel[p->axis] / 1000, acc[p->axis] / 1000 / 1000, acc[p->axis] / 1000 / 1000, p_value, v, a, total_count);
-	pe[p->axis] = p_value;
-	cs.model().generalMotionPool().front().setMpe(pe, "123");
+	double p, v, a;
+	aris::dynamic::moveAbsolute(plan_param.count_, 0.0, d, max_v / 1000, max_a / 1000 / 1000, max_a / 1000 / 1000, p, v, a, total_count);
+	
+	double pq[7]{0,0,0,0,0,0};
+	s_va(7, 1.0 - p / d, begin_pq, pq);
+	s_va(7, p / d, param->pq, pq);
+
+	double norm = s_norm(4, pq + 3);
+	s_nv(4, 1.0 / norm, pq + 3);
+
+	// 反解计算电机位置 //
+	cs.model().generalMotionPool().at(0).setMpq(pq);
 	cs.model().solverPool().at(0).kinPos();
 	for (int i = 0; i < 6; ++i)
 	{
-		cs.model().motionAtAbs(i).updMp();
-		cs.model().motionAtAbs(i).setMp(cs.model().motionAtAbs(i).mp()*360/2.0/PI);
+		cs.model().motionPool().at(i).updMp();
+		cs.model().motionPool().at(i).setMp(cs.model().motionPool().at(i).mp()*360/2.0/PI);
 	}
 
-	return total_count - param.count_;
+	return total_count > plan_param.count_ ? 1 : 0;
 };
 
 int main()
 {
-	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-
 	try
 	{
 		aris::core::XmlDocument xml_doc;
@@ -572,20 +642,32 @@ int main()
 		cs.addCmd("md", aris::server::default_parse, aris::server::default_mode_plan);
 		cs.addCmd("hm", aris::server::default_parse, aris::server::default_home_plan);
 
-		double mp[6]{ 0.135,0.246,-0.001,0.2,PI / 2,0.1 };
-		//for (auto &m : cs.model().motionPool())
-		//{
-		//	m.setMp(mp[m.id()]);
-		//}
-		//
-		//cs.model().solverPool().at(1).kinPos();
+		std::cout << cs.controller().name() << std::endl;
 
-		double pe[6]{0.4,0.63,0,0,0,0};
-		cs.model().generalMotionPool().front().setMpe(pe, "131");
-		//cs.model().generalMotionPool().front().updMpm();
-		//cs.model().generalMotionPool().front().getMpe(pe, "123");
-		//dsp(1, 6, pe);
+		cs.saveXml("C:\\Users\\py033\\Desktop\\hulk.xml");
 
+
+		double r[7];
+
+		// 计算正解 //
+		std::cout << "forward:" << std::endl;
+		//double mp[6]{ 0.135,0.246,-0.001,0.2,PI / 2,0.1 };
+		double mp[6]{ PI/2,0,0,0,0,0};
+		for (auto &m : cs.model().motionPool())
+		{
+			m.setMp(mp[m.id()]);
+		}
+		cs.model().solverPool().at(1).kinPos();
+		cs.model().generalMotionPool().front().updMpm();
+		cs.model().generalMotionPool().front().getMpq(r);
+		dsp(1, 7, r);
+		cs.model().generalMotionPool().front().getMpe(r, "321");
+		dsp(1, 6, r);
+
+		// 计算反解 //
+		std::cout << "inverse" << std::endl;
+		double pe[6]{0,0.63,0.316,0,-PI/2,-PI/2};
+		cs.model().generalMotionPool().front().setMpe(pe, "123");
 		cs.model().solverPool().at(0).kinPos();
 		for (auto &m : cs.model().motionPool())
 		{

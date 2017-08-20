@@ -16,12 +16,16 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Motion"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
-			auto maxPos()->double;
-			auto minPos()->double;
-			auto maxVel()->double;
-			auto posOffset()->double;
-			auto posFactor()->double;
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto motId()const->aris::Size;
+			auto maxPos()const->double;
+			auto minPos()const->double;
+			auto maxVel()const->double;
+			auto maxAcc()const->double;
+			auto posOffset()const->double;
+			auto posFactor()const->double;
+			auto homePos()const->double;
 
 			auto virtual modeOfOperation()const->std::uint8_t = 0;
 			auto virtual targetPos()const->double = 0;
@@ -48,7 +52,7 @@ namespace aris
 			auto virtual mode(std::uint8_t md)->int = 0;
 
 			virtual ~Motion();
-			explicit Motion(const std::string &name, const SlaveType &st, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
+			explicit Motion(const std::string &name, const SlaveType *st, std::uint16_t phy_id, double max_pos, double min_pos, double max_vel, double max_acc, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
 			Motion(const Motion &other) = delete;
 			Motion(Motion &&other) = delete;
@@ -58,14 +62,25 @@ namespace aris
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Controller;
 		};
 		class Controller : public virtual Master
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type("Controller"); return std::ref(type); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto motionPool()->aris::core::RefPool<Motion>&;
+			auto motionPool()const->const aris::core::RefPool<Motion>&{return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
+			auto motionAtSla(aris::Size id)->Motion&;
+			auto motionAtSla(aris::Size id)const->const Motion&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
+			auto motionAtPhy(aris::Size id)-> Motion&;
+			auto motionAtPhy(aris::Size id)const->const Motion&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
+			auto motionAtAbs(aris::Size id)->Motion&;
+			auto motionAtAbs(aris::Size id)const->const Motion&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
 
 			virtual ~Controller();
-			Controller();
+			Controller(const std::string &name = "controller");
 			Controller(const Controller &other) = delete;
 			Controller(Controller &&other) = delete;
 			Controller& operator=(const Controller &other) = delete;

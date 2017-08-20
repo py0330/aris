@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_MODEL_SOLVER_
-#define ARIS_DYNAMIC_MODEL_SOLVER_
+﻿#ifndef ARIS_DYNAMIC_MODEL_COMPUTE_
+#define ARIS_DYNAMIC_MODEL_COMPUTE_
 
 #include <vector>
 #include <array>
@@ -9,12 +9,229 @@
 #include <functional>
 #include <algorithm>
 
-#include <aris_dynamic_model.h>
+#include <aris_dynamic_model_basic.h>
+#include <aris_dynamic_model_coordinate.h>
+#include <aris_dynamic_model_interaction.h>
 
 namespace aris
 {
 	namespace dynamic
 	{
+		struct PlanParam
+		{
+			Model* model_;
+			std::uint32_t count_;
+			void *param_;
+			std::uint32_t param_size_;
+		};
+		using PlanFunction = std::function<int(const PlanParam &)>;
+		using ParseFunction = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::MsgBase &msg_out)>;
+
+		class Solver :public Element
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Solver" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual allocateMemory()->void = 0;
+			auto virtual kinPos()->void = 0;
+			auto virtual kinVel()->void = 0;
+			auto virtual dynAccAndFce()->void = 0;
+			auto error()const->double;
+			auto setError(double error)->void;
+			auto maxError()const->double;
+			auto setMaxError(double max_error)->void;
+			auto iterCount()const->Size;
+			auto setIterCount(Size iter_count)->void;
+			auto maxIterCount()const->Size;
+			auto setMaxIterCount(Size max_count)->void;
+
+		protected:
+			virtual ~Solver();
+			explicit Solver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Solver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
+			Solver(const Solver&);
+			Solver(Solver&&);
+			Solver& operator=(const Solver&);
+			Solver& operator=(Solver&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class Calibrator :public Element
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Calibrator" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual allocateMemory()->void = 0;
+
+		protected:
+			virtual ~Calibrator();
+			explicit Calibrator(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Calibrator(const std::string &name);
+			Calibrator(const Calibrator&);
+			Calibrator(Calibrator&&);
+			Calibrator& operator=(const Calibrator&);
+			Calibrator& operator=(Calibrator&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class SimResult : public Element
+		{
+		public:
+			class TimeResult : public Element
+			{
+			public:
+				static auto Type()->const std::string &{ static const std::string type{ "TimeResult" }; return type; }
+				auto virtual type() const->const std::string& override{ return Type(); }
+				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto record()->void;
+				auto restore(Size pos)->void;
+
+			private:
+				virtual ~TimeResult();
+				explicit TimeResult(Object &father, const aris::core::XmlElement &xml_ele);
+				explicit TimeResult(const std::string &name);
+				TimeResult(const TimeResult&);
+				TimeResult(TimeResult&&);
+				TimeResult& operator=(const TimeResult&);
+				TimeResult& operator=(TimeResult&&);
+
+				struct Imp;
+				aris::core::ImpPtr<Imp> imp_;
+
+				friend class SimResult;
+				friend class Model;
+				friend class aris::core::Root;
+				friend class aris::core::Object;
+			};
+			class PartResult : public Element
+			{
+			public:
+				static auto Type()->const std::string &{ static const std::string type{ "PartResult" }; return type; }
+				auto virtual type() const->const std::string& override{ return Type(); }
+				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto part()->Part&;
+				auto part()const->const Part&{ return const_cast<PartResult*>(this)->part(); }
+				auto record()->void;
+				auto restore(Size pos)->void;
+
+			private:
+				virtual ~PartResult();
+				explicit PartResult(Object &father, const aris::core::XmlElement &xml_ele);
+				explicit PartResult(const std::string &name, Part &part);
+				PartResult(const PartResult&);
+				PartResult(PartResult&&);
+				PartResult& operator=(const PartResult&);
+				PartResult& operator=(PartResult&&);
+
+				struct Imp;
+				aris::core::ImpPtr<Imp> imp_;
+
+				friend class SimResult;
+				friend class Model;
+				friend class aris::core::Root;
+				friend class aris::core::Object;
+
+			};
+			class ConstraintResult : public Element
+			{
+			public:
+				static auto Type()->const std::string &{ static const std::string type{ "ConstraintResult" }; return type; }
+				auto virtual type() const->const std::string& override{ return Type(); }
+				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto constraint()->Constraint&;
+				auto constraint()const->const Constraint&{ return const_cast<ConstraintResult*>(this)->constraint(); }
+				auto record()->void;
+				auto restore(Size pos)->void;
+
+			private:
+				virtual ~ConstraintResult();
+				explicit ConstraintResult(Object &father, const aris::core::XmlElement &xml_ele);
+				explicit ConstraintResult(const std::string &name, Constraint &constraint);
+				ConstraintResult(const ConstraintResult&);
+				ConstraintResult(ConstraintResult&&);
+				ConstraintResult& operator=(const ConstraintResult&);
+				ConstraintResult& operator=(ConstraintResult&&);
+
+				struct Imp;
+				aris::core::ImpPtr<Imp> imp_;
+
+				friend class SimResult;
+				friend class Model;
+				friend class aris::core::Root;
+				friend class aris::core::Object;
+			};
+
+			static auto Type()->const std::string &{ static const std::string type{ "SimResult" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto timeResult()->TimeResult&;
+			auto timeResult()const->const TimeResult&{ return const_cast<SimResult*>(this)->timeResult(); }
+			auto partResultPool()->aris::core::ObjectPool<PartResult, Element>&;
+			auto partResultPool()const->const aris::core::ObjectPool<PartResult, Element>&{return const_cast<SimResult*>(this)->partResultPool(); };
+			auto constraintResultPool()->aris::core::ObjectPool<ConstraintResult, Element>&;
+			auto constraintResultPool()const->const aris::core::ObjectPool<ConstraintResult, Element>&{return const_cast<SimResult*>(this)->constraintResultPool(); };
+
+			auto allocateMemory()->void;
+			auto record()->void;
+			auto restore(Size pos)->void;
+			auto size()const->Size;
+			auto clear()->void;
+
+		protected:
+			virtual ~SimResult();
+			explicit SimResult(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit SimResult(const std::string &name);
+			SimResult(const SimResult&);
+			SimResult(SimResult&&);
+			SimResult& operator=(const SimResult&);
+			SimResult& operator=(SimResult&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class Simulator :public Element
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Simulator" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void;
+			template<typename ParamType>
+			auto simulate(const PlanFunction &plan, ParamType type, SimResult &result)->void
+			{
+				static_assert(std::is_trivial<ParamType>::value, "ParamType must be trivial type");
+				simulate(plan, &type, std::int32_t(sizeof(type)), result);
+			}
+
+		protected:
+			virtual ~Simulator();
+			explicit Simulator(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Simulator(const std::string &name);
+			Simulator(const Simulator&);
+			Simulator(Simulator&&);
+			Simulator& operator=(const Simulator&);
+			Simulator& operator=(Simulator&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		
 		class CombineSolver : public Solver
 		{
 		public:
@@ -32,7 +249,7 @@ namespace aris
 
 			static const std::string& Type() { static const std::string type("CombineSolver"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void;
+			auto virtual allocateMemory()->void override;
 			auto virtual kinPos()->void override;
 			auto virtual kinVel()->void override;
 			auto virtual dynAccAndFce()->void override;
@@ -100,10 +317,10 @@ namespace aris
 			auto virtual updPv()->void override;
 			auto virtual updPa()->void override;
 			auto virtual updPf()->void override;
-			auto virtual updConstraintFce()->void;
-			auto virtual updPartPos()->void;
-			auto virtual updPartVel()->void;
-			auto virtual updPartAcc()->void;
+			auto virtual updConstraintFce()->void override;
+			auto virtual updPartPos()->void override;
+			auto virtual updPartVel()->void override;
+			auto virtual updPartAcc()->void override;
 
 		protected:
 			virtual ~GroundCombineSolver();
@@ -136,7 +353,7 @@ namespace aris
 			
 			static const std::string& Type() { static const std::string type("DividedSolver"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void;
+			auto virtual allocateMemory()->void override;
 
 			auto activePartBlockPool()->std::vector<PartBlock>&;
 			auto activeConstraintBlockPool()->std::vector<ConstraintBlock>&;
@@ -315,7 +532,6 @@ namespace aris
 			friend class aris::core::Root;
 			friend class aris::core::Object;
 		};
-		
 		class DiagSolver : public Solver
 		{
 		public:
@@ -398,6 +614,61 @@ namespace aris
 			friend class aris::core::Object;
 		};
 
+		class SolverSimulator : public Simulator
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "SolverSimulator" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void override;
+			using Simulator::simulate;
+			auto solver()->Solver&;
+			auto solver()const ->const Solver&{ return const_cast<SolverSimulator*>(this)->solver(); };
+
+
+		protected:
+			virtual ~SolverSimulator();
+			explicit SolverSimulator(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit SolverSimulator(const std::string &name, Solver &solver);
+			SolverSimulator(const SolverSimulator&);
+			SolverSimulator(SolverSimulator&&);
+			SolverSimulator& operator=(const SolverSimulator&);
+			SolverSimulator& operator=(SolverSimulator&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
+		class AdamsSimulator :public SolverSimulator
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "AdamsSimulator" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto saveAdams(const std::string &filename, SimResult &result, Size pos = -1)->void;
+			auto saveAdams(std::ofstream &file, SimResult &result, Size pos = -1)->void;
+			auto adamsID(const Marker &mak)const->Size;
+			auto adamsID(const Part &prt)const->Size;
+			auto adamsID(const Element &ele)const->Size { return ele.id() + 1; };
+
+		protected:
+			virtual ~AdamsSimulator();
+			explicit AdamsSimulator(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit AdamsSimulator(const std::string &name, Solver &solver);
+			AdamsSimulator(const AdamsSimulator&);
+			AdamsSimulator(AdamsSimulator&&);
+			AdamsSimulator& operator=(const AdamsSimulator&);
+			AdamsSimulator& operator=(AdamsSimulator&&);
+
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+
+			friend class Model;
+			friend class aris::core::Root;
+			friend class aris::core::Object;
+		};
 	}
 }
 

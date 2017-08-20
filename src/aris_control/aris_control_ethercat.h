@@ -24,6 +24,7 @@ namespace aris
 			auto index()const->std::uint16_t;
 			auto subindex()const->std::uint8_t;
 			auto size()const->aris::Size;
+			
 			virtual ~DO();
 			explicit DO(const std::string &name, std::uint16_t index, std::uint8_t subindex, aris::Size data_size);
 			explicit DO(Object &father, const aris::core::XmlElement &xml_ele);
@@ -41,9 +42,10 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Pdo"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 
 			virtual ~Pdo();
 			explicit Pdo(const std::string &name, std::uint16_t index, std::uint8_t subindex, aris::Size data_size);
@@ -67,7 +69,7 @@ namespace aris
 				CONFIG = 0x04
 			};
 			static auto Type()->const std::string &{ static const std::string type("Sdo"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto readable()const->bool;
 			auto writeable()const->bool;
@@ -90,9 +92,10 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("PdoGroup"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 			auto tx()const->bool;
 			auto rx()const->bool;
 			auto index()const->std::uint16_t;
@@ -113,15 +116,12 @@ namespace aris
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("EthercatSlaveType"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto productCode()const->std::uint32_t;
-			auto venderID()const->std::uint32_t;
-			auto alias()const->std::uint16_t;
-			auto distributedClock()const->std::uint32_t;
+			auto vendorID()const->std::uint32_t;
 
 			virtual ~EthercatSlaveType();
-			explicit EthercatSlaveType(const std::string &name, std::uint32_t product_code, std::uint32_t vender_id, std::uint16_t alias, std::uint32_t distributed_clock);
+			explicit EthercatSlaveType(const std::string &name, const std::string &esi_file_path);
 			explicit EthercatSlaveType(Object &father, const aris::core::XmlElement &xml_ele);
 			EthercatSlaveType(const EthercatSlaveType &);
 			EthercatSlaveType(EthercatSlaveType &&);
@@ -131,21 +131,25 @@ namespace aris
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
+
+			friend class EthercatSlave;
 		};
 		class EthercatSlave : virtual public Slave
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("EthercatSlave"); return std::ref(type); }
-			auto virtual type() const->const std::string&{ return Type(); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto ecHandle()->Handle*;
-			auto position()const ->std::uint16_t { return static_cast<std::uint16_t>(id()); }
+			auto vendorID()const->std::uint32_t;
 			auto productCode()const->std::uint32_t;
-			auto venderID()const->std::uint32_t;
-			auto alias()const->std::uint16_t;
-			auto distributedClock()const->std::uint32_t;
+			auto revisionNum()const->std::uint32_t;
+			auto dcAssignActivate()const->std::uint32_t;
 			auto pdoGroupPool()->aris::core::ObjectPool<PdoGroup>&;
+			auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->pdoGroupPool(); }
 			auto sdoPool()->aris::core::ObjectPool<Sdo>&;
+			auto sdoPool()const->const aris::core::ObjectPool<Sdo>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->sdoPool(); }
+			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 
 			template<typename ValueType>
 			auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType)); }
@@ -164,7 +168,7 @@ namespace aris
 			auto configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void;
 
 			virtual ~EthercatSlave();
-			explicit EthercatSlave(const std::string &name, const EthercatSlaveType &slave_type);
+			explicit EthercatSlave(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate);
 			explicit EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele);
 			EthercatSlave(const EthercatSlave &other) = delete;
 			EthercatSlave(EthercatSlave &&other) = delete;
@@ -252,7 +256,8 @@ namespace aris
 
 			virtual ~EthercatMotion();
 			EthercatMotion(Object &father, const aris::core::XmlElement &xml_ele);
-			EthercatMotion(const std::string &name, const EthercatSlaveType &slave_type, std::int32_t pos_factor, double max_pos, double min_pos, double max_vel, double home_pos = 0, double pos_offset = 0);
+			EthercatMotion(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
+				, double max_pos, double min_pos, double max_vel, double max_acc, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 
 		private:
 			class Imp;
@@ -261,6 +266,9 @@ namespace aris
 		class EthercatController :public EthercatMaster, public Controller
 		{
 		public:
+			static auto Type()->const std::string &{ static const std::string type("EthercatController"); return std::ref(type); }
+			auto virtual type() const->const std::string& override{ return Type(); }
+
 			virtual ~EthercatController() = default;
 			EthercatController() = default;
 			EthercatController(const EthercatController &other) = delete;

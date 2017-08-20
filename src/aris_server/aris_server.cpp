@@ -20,29 +20,41 @@ namespace aris
 				root.registerChildType<aris::core::GroupParam>();
 				root.registerChildType<aris::core::UniqueParam>();
 				
-				auto &en = root.add<aris::core::Command>("en", "all", "");
-				en.add<aris::core::Param>("all", "", "", 'a');
-				en.add<aris::core::Param>("motion_id", "0", "", 'm');
-				en.add<aris::core::Param>("physical_id", "0", "", 'p');
-				en.add<aris::core::Param>("slave_id", "0", "", 's');
+				auto &en = root.add<aris::core::Command>("en", "", "");
+				auto &en_group = en.add<aris::core::GroupParam>("group", "");
+				auto &en_active_motion = en_group.add<aris::core::UniqueParam>("active", "all", "");
+				en_active_motion.add<aris::core::Param>("all", "", "", 'a');
+				en_active_motion.add<aris::core::Param>("motion_id", "0", "", 'm');
+				en_active_motion.add<aris::core::Param>("physical_id", "0", "", 'p');
+				en_active_motion.add<aris::core::Param>("slave_id", "0", "", 's');
+				auto &en_limit_time = en_group.add<aris::core::Param>("limit_time", "10000", "", 'l');
 
-				auto &ds = root.add<aris::core::Command>("ds", "all", "");
-				ds.add<aris::core::Param>("all", "", "", 'a');
-				ds.add<aris::core::Param>("motion_id", "0", "", 'm');
-				ds.add<aris::core::Param>("physical_id", "0", "", 'p');
-				ds.add<aris::core::Param>("slave_id", "0", "", 's');
+				auto &ds = root.add<aris::core::Command>("ds", "", "");
+				auto &ds_group = ds.add<aris::core::GroupParam>("group", "");
+				auto &ds_active_motion = ds_group.add<aris::core::UniqueParam>("active", "all", "");
+				ds_active_motion.add<aris::core::Param>("all", "", "", 'a');
+				ds_active_motion.add<aris::core::Param>("motion_id", "0", "", 'm');
+				ds_active_motion.add<aris::core::Param>("physical_id", "0", "", 'p');
+				ds_active_motion.add<aris::core::Param>("slave_id", "0", "", 's');
+				auto &ds_limit_time = ds_group.add<aris::core::Param>("limit_time", "10000", "", 'l');
 
-				auto &hm = root.add<aris::core::Command>("hm", "all", "");
-				hm.add<aris::core::Param>("all", "", "", 'a');
-				hm.add<aris::core::Param>("motion_id", "0", "", 'm');
-				hm.add<aris::core::Param>("physical_id", "0", "", 'p');
-				hm.add<aris::core::Param>("slave_id", "0", "", 's');
+				auto &hm = root.add<aris::core::Command>("hm", "", "");
+				auto &hm_group = hm.add<aris::core::GroupParam>("group", "");
+				auto &hm_active_motion = hm_group.add<aris::core::UniqueParam>("active", "all", "");
+				hm_active_motion.add<aris::core::Param>("all", "", "", 'a');
+				hm_active_motion.add<aris::core::Param>("motion_id", "0", "", 'm');
+				hm_active_motion.add<aris::core::Param>("physical_id", "0", "", 'p');
+				hm_active_motion.add<aris::core::Param>("slave_id", "0", "", 's');
+				auto &hm_limit_time = hm_group.add<aris::core::Param>("limit_time", "10000", "", 'l');
 
-				auto &md = root.add<aris::core::Command>("md", "all", "");
-				md.add<aris::core::Param>("all", "", "", 'a');
-				md.add<aris::core::Param>("motion_id", "0", "", 'm');
-				md.add<aris::core::Param>("physical_id", "0", "", 'p');
-				md.add<aris::core::Param>("slave_id", "0", "", 's');
+				auto &md = root.add<aris::core::Command>("md", "", "");
+				auto &md_group = md.add<aris::core::GroupParam>("group", "");
+				auto &md_active_motion = md_group.add<aris::core::UniqueParam>("active", "all", "");
+				md_active_motion.add<aris::core::Param>("all", "", "", 'a');
+				md_active_motion.add<aris::core::Param>("motion_id", "0", "", 'm');
+				md_active_motion.add<aris::core::Param>("physical_id", "0", "", 'p');
+				md_active_motion.add<aris::core::Param>("slave_id", "0", "", 's');
+				auto &md_limit_time = md_group.add<aris::core::Param>("limit_time", "10000", "", 'l');
 			}
 			return root;
 		}
@@ -62,24 +74,27 @@ namespace aris
 				else if (i.first == "motion_id")
 				{
 					std::size_t id{ std::stoul(i.second) };
-					if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+					if (id > cs.controller().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
 					std::fill(param.active_motor_, param.active_motor_ + MAX_MOTOR_NUM, false);
-					param.active_motor_[cs.model().motionAtAbs(id).absID()] = true;
+					param.active_motor_[cs.controller().motionAtAbs(id).motId()] = true;
 				}
 				else if (i.first == "physical_id")
 				{
 					std::size_t id{ std::stoul(i.second) };
-					if (id < 0 || id > cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+					if (id > cs.controller().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
 					std::fill(param.active_motor_, param.active_motor_ + MAX_MOTOR_NUM, false);
-					param.active_motor_[cs.model().motionAtPhy(id).absID()] = true;
+					param.active_motor_[cs.controller().motionAtPhy(id).motId()] = true;
 				}
 				else if (i.first == "slave_id")
 				{
 					std::size_t id{ std::stoul(i.second) };
-					if (id < 0 || id > cs.controller().slavePool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
+					if (id > cs.controller().slavePool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\"");
 					std::fill(param.active_motor_, param.active_motor_ + MAX_MOTOR_NUM, false);
-					if (cs.model().motionAtSla(id).absID() >= cs.model().motionPool().size())throw std::runtime_error("invalid param in basic parse func in param \"" + i.first + "\", this slave is not motion");
-					param.active_motor_[cs.model().motionAtSla(id).absID()] = true;
+					param.active_motor_[cs.controller().motionAtSla(id).motId()] = true;
+				}
+				else if (i.first == "limit_time")
+				{
+					param.limit_time_ = std::stoul(i.second);
 				}
 				else
 				{
@@ -97,25 +112,19 @@ namespace aris
 			auto param = reinterpret_cast<DefaultParam*>(plan_param.param_);
 
 			bool is_all_enabled = true;
-			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
+			for (std::size_t i = 0; i < cs.controller().motionPool().size(); ++i)
 			{
-				auto &cm = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = cs.controller().motionPool().at(i);
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.enable();
-
-					// 使能出错，直接返回并错误处理 //
-					if (ret < 0)return -1;
-					// 已经正常使能，什么都不做 //
-					else if (ret == 0);
-					// 还在使能过程中 //
-					else
+					if (ret)
 					{
 						is_all_enabled = false;
 
 						if (plan_param.count_ % 1000 == 0)
 						{
-							cs.controller().mout() << "Unenabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << "\n" << '\0';
+							cs.controller().mout() << "Unenabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << '\0';
 							cs.controller().mout().update();
 							cs.controller().sendOut();
 						}
@@ -123,39 +132,35 @@ namespace aris
 				}
 			}
 
-			return is_all_enabled ? 0 : 1;
+			return (is_all_enabled || param->limit_time_ <= plan_param.count_) ? 0 : 1;
 		}
 		auto default_disable_plan(const aris::dynamic::PlanParam &plan_param)->int
 		{
 			auto &cs = aris::server::ControlServer::instance();
 			auto param = reinterpret_cast<DefaultParam*>(plan_param.param_);
 
-			bool is_all_enabled = true;
-			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
+			bool is_all_disabled = true;
+			for (std::size_t i = 0; i < cs.controller().motionPool().size(); ++i)
 			{
-				auto &cm = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = cs.controller().motionPool().at(i);
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.disable();
-
-					// 使能出错，直接返回并错误处理 //
-					if (ret < 0)return -1;
-					// 已经正常使能，什么都不做 //
-					else if (ret == 0);
-					// 还在使能过程中 //
-					else
+					if (ret)
 					{
-						is_all_enabled = false;
+						is_all_disabled = false;
 
 						if (plan_param.count_ % 1000 == 0)
 						{
-							cs.controller().mout() << "Undisabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << "\n";
+							cs.controller().mout() << "Undisabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << '\0';
+							cs.controller().mout().update();
+							cs.controller().sendOut();
 						}
 					}
 				}
 			}
 
-			return is_all_enabled ? 0 : 1;
+			return (is_all_disabled || param->limit_time_ <= plan_param.count_) ? 0 : 1;
 		}
 		auto default_mode_plan(const aris::dynamic::PlanParam &plan_param)->int
 		{
@@ -163,25 +168,19 @@ namespace aris
 			auto param = reinterpret_cast<DefaultParam*>(plan_param.param_);
 
 			bool is_all_moded = true;
-			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
+			for (std::size_t i = 0; i < cs.controller().motionPool().size(); ++i)
 			{
-				auto &cm = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = cs.controller().motionPool().at(i);
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.mode(8);
-
-					// 使能出错，直接返回并错误处理 //
-					if (ret < 0)return -1;
-					// 已经正常使能，什么都不做 //
-					else if (ret == 0);
-					// 还在使能过程中 //
-					else
+					if (ret)
 					{
 						is_all_moded = false;
 
 						if (plan_param.count_ % 1000 == 0)
 						{
-							cs.controller().mout() << "Unmoded motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << "\n" << '\0';
+							cs.controller().mout() << "Unmoded motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << '\0';
 							cs.controller().mout().update();
 							cs.controller().sendOut();
 						}
@@ -189,7 +188,7 @@ namespace aris
 				}
 			}
 
-			return is_all_moded ? 0 : 1;
+			return (is_all_moded || param->limit_time_ <= plan_param.count_) ? 0 : 1;
 		}
 		auto default_home_plan(const aris::dynamic::PlanParam &plan_param)->int
 		{
@@ -197,25 +196,19 @@ namespace aris
 			auto param = reinterpret_cast<DefaultParam*>(plan_param.param_);
 
 			bool is_all_homed = true;
-			for (std::size_t i = 0; i < plan_param.model_->motionPool().size(); ++i)
+			for (std::size_t i = 0; i < cs.controller().motionPool().size(); ++i)
 			{
-				auto &cm = dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slavePool().at(plan_param.model_->motionPool().at(i).slaID()));
+				auto &cm = cs.controller().motionPool().at(i);
 				if (param->active_motor_[i])
 				{
 					auto ret = cm.home();
-
-					// 使能出错，直接返回并错误处理 //
-					if (ret < 0)return -1;
-					// 已经正常使能，什么都不做 //
-					else if (ret == 0);
-					// 还在使能过程中 //
-					else
+					if (ret)
 					{
 						is_all_homed = false;
 
 						if (plan_param.count_ % 1000 == 0)
 						{
-							cs.controller().mout() << "Unmoded motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << "\n" << '\0';
+							cs.controller().mout() << "Unmoded motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << '\0';
 							cs.controller().mout().update();
 							cs.controller().sendOut();
 						}
@@ -223,7 +216,7 @@ namespace aris
 				}
 			}
 
-			return is_all_homed ? 0 : 1;
+			return (is_all_homed || param->limit_time_ <= plan_param.count_) ? 0 : 1;
 		}
 		auto default_enable_command()->const aris::core::Command &{ return static_cast<const aris::core::Command &>(default_command_root().children().at(0)); }
 		auto default_disable_command()->const aris::core::Command &{ return static_cast<const aris::core::Command &>(default_command_root().children().at(1)); }
@@ -249,13 +242,12 @@ namespace aris
 			// 实时循环中的步态参数 //
 			enum { CMD_POOL_SIZE = 50 };
 			aris::core::MsgFix<aris::control::Master::MAX_MSG_SIZE> msg_queue_[CMD_POOL_SIZE];
-			int current_cmd_{ 0 }, cmd_num_{ 0 }, count_{ 1 };
+			int current_cmd_{ 0 }, cmd_num_{ 0 };
+			std::uint32_t count_{ 1 };
 
 			// 储存上一次motion的数据 //
 			struct PVC { double p; double v; double c; };
 			std::vector<PVC> last_target_motion_data_vec_;
-			std::vector<aris::control::EthercatMotion *> cm_vec_;
-
 
 			// 以下储存所有的命令的parse和plan函数 //
 			std::map<std::string, int> cmd_id_map_;//store gait id in follow vector
@@ -316,16 +308,16 @@ namespace aris
 		}
 		auto ControlServer::Imp::executeCmd()->int
 		{
-			aris::dynamic::PlanParam plan_param{ model_.get(), count_, msg_queue_[current_cmd_].data(), msg_queue_[current_cmd_].size() };
+			aris::dynamic::PlanParam plan_param{ model_.get(), count_, msg_queue_[current_cmd_].data(), static_cast<std::uint32_t>(msg_queue_[current_cmd_].size()) };
 
 			// 执行plan函数 //
 			int ret = this->plan_vec_.at(static_cast<std::size_t>(msg_queue_[current_cmd_].header().reserved2_)).operator()(plan_param);
 
 			// 控制电机 //
-			for (std::size_t i = 0; i < cm_vec_.size(); ++i)
+			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 			{
-				auto &cm = *cm_vec_.at(i);
-				auto &mm = model_->motionAtPhy(i);
+				auto &cm = controller_->motionPool().at(i);
+				auto &mm = model_->motionPool().at(i);
 				
 				if (mm.active())
 				{
@@ -338,16 +330,16 @@ namespace aris
 			}
 
 			// 检查规划的指令是否合理（包括电机是否已经跟随上） //
-			for (std::size_t i = 0; i < cm_vec_.size(); ++i)
+			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 			{
-				auto &cm = *cm_vec_.at(i);
+				auto &cm = controller_->motionPool().at(i);
 				
 				// check max pos //
 				if ((msg_queue_[current_cmd_].header().reserved1_ & CHECK_POS_MAX) && (cm.targetPos() > cm.maxPos()))
 				{
 					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is bigger than its MAX permitted value in count: " << count_ << "\n";
 					server_->controller().mout() << "The min, max and current count using ABS sequence are:\n";
-					for (auto &cmp : cm_vec_)server_->controller().mout() << cmp->minPos() << "\t" << cmp->maxPos() << "\t" << cmp->targetPos() << "\n";
+					for (auto &cm1 : controller_->motionPool())server_->controller().mout() << cm1.minPos() << "\t" << cm1.maxPos() << "\t" << cm1.targetPos() << "\n";
 					onRunError();
 					return 0;
 				}
@@ -357,7 +349,7 @@ namespace aris
 				{
 					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is smaller than its MIN permitted value in count: " << count_ << "\n";
 					server_->controller().mout() << "The min, max and current count using ABS sequence are:\n";
-					for (auto &cmp : cm_vec_)server_->controller().mout() << cmp->minPos() << "\t" << cmp->maxPos() << "\t" << cmp->targetPos() << "\n";
+					for (auto &cm1 : controller_->motionPool())server_->controller().mout() << cm1.minPos() << "\t" << cm1.maxPos() << "\t" << cm1.targetPos() << "\n";
 					onRunError();
 					return 0;
 				}
@@ -367,7 +359,7 @@ namespace aris
 				{
 					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is not continuous in count: " << count_ << "\n";
 					server_->controller().mout() << "The pin of last and this count using ABS sequence are:\n";
-					for (std::size_t i = 0; i < cm_vec_.size(); ++i)server_->controller().mout() << last_target_motion_data_vec_.at(i).p << "\t" << cm_vec_[i]->targetPos() << "\n";
+					for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)server_->controller().mout() << last_target_motion_data_vec_.at(i).p << "\t" << controller_->motionPool().at(i).targetPos() << "\n";
 					onRunError();
 					return 0;
 				}
@@ -377,18 +369,18 @@ namespace aris
 				{
 					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target and feedback positions are not near in count: " << count_ << "\n";
 					server_->controller().mout() << "The pin of target and feedback using ABS sequence are:\n";
-					for (auto &cmp : cm_vec_)server_->controller().mout() << cmp->targetPos() << "\t" << cmp->actualPos() << "\n";
+					for (auto &cmp : controller_->motionPool())server_->controller().mout() << cmp.targetPos() << "\t" << cmp.actualPos() << "\n";
 					onRunError();
 					return 0;
 				}
 			}
 
 			// 储存电机指令 //
-			for (std::size_t i = 0; i < cm_vec_.size(); ++i)
+			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 			{
-				last_target_motion_data_vec_.at(i).p = cm_vec_.at(i)->targetPos();
-				last_target_motion_data_vec_.at(i).v = cm_vec_.at(i)->targetVel();
-				last_target_motion_data_vec_.at(i).c = cm_vec_.at(i)->targetCur();
+				last_target_motion_data_vec_.at(i).p = controller_->motionPool().at(i).targetPos();
+				last_target_motion_data_vec_.at(i).v = controller_->motionPool().at(i).targetVel();
+				last_target_motion_data_vec_.at(i).c = controller_->motionPool().at(i).targetCur();
 			}
 
 			// 如果是同步指令，那么通知等待线程结束 //
@@ -399,9 +391,9 @@ namespace aris
 		auto ControlServer::Imp::onRunError()->int
 		{
 			// 恢复电机状态 //
-			for (std::size_t i = 0; i < cm_vec_.size(); ++i)
+			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 			{
-				auto &cm = *cm_vec_.at(i);
+				auto &cm = controller_->motionPool().at(i);
 				switch (cm.modeOfDisplay())
 				{
 				case 8:
@@ -577,15 +569,13 @@ namespace aris
 			imp_->is_running_ = true;
 
 			// 得到电机向量以及数据 //
-			imp_->cm_vec_.clear();
-			for (auto &cm : controller().slavePool())if (dynamic_cast<aris::control::EthercatMotion*>(&cm))imp_->cm_vec_.push_back(dynamic_cast<aris::control::EthercatMotion*>(&cm));
 			imp_->last_target_motion_data_vec_.clear();
-			imp_->last_target_motion_data_vec_.resize(imp_->cm_vec_.size(), Imp::PVC{ 0,0,0 });
+			imp_->last_target_motion_data_vec_.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
 
 			controller().setControlStrategy([this]() {this->imp_->tg(); });
 
-			controller().start();
 			sensorRoot().start();
+			controller().start();
 		}
 		auto ControlServer::stop()->void
 		{
