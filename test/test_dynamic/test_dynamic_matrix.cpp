@@ -936,16 +936,16 @@ void test_householder()
 		aris::Size result_P[m];
 
 		s_householder_ut(m, n, A, result_U, result_tau);
-		if (!(s_is_equal(m, n, result_U, U, error && s_is_equal(std::min(m - 1, n), result_tau, tau, error))))std::cout << "\"s_householder\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U, U, error) && s_is_equal(std::min(m - 1, n), result_tau, tau, error)))std::cout << "\"s_householder\" failed" << std::endl;
 
 		s_householder_ut(m, n, A_ld, a_t, result_U_ld, u_t, result_tau_ld, tau_t);
-		if (!(s_is_equal(m, n, result_U_ld, u_t, U_ld, u_t, error && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_ld, tau_t, error))))std::cout << "\"s_householder_ut\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U_ld, u_t, U_ld, u_t, error) && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_ld, tau_t, error)))std::cout << "\"s_householder_ut\" failed" << std::endl;
 
 		s_householder_ut2qr(m, n, U, tau, result_Q, result_R);
-		if (!(s_is_equal(m, m, result_Q, Q, error && s_is_equal(m, n, result_R, R, error))))std::cout << "\"s_householder_ut2qr\" failed" << std::endl;
+		if (!(s_is_equal(m, m, result_Q, Q, error) && s_is_equal(m, n, result_R, R, error)))std::cout << "\"s_householder_ut2qr\" failed" << std::endl;
 
 		s_householder_ut2qr(m, n, U_ld, u_t, tau_ld, tau_t, result_Q_ld, q_t, result_R_ld, r_t);
-		if (!(s_is_equal(m, m, result_Q_ld, q_t, Q_ld, q_t, error && s_is_equal(m, n, result_R_ld, r_t, R_ld, r_t, error))))std::cout << "\"s_householder_ut2qr\" failed" << std::endl;
+		if (!(s_is_equal(m, m, result_Q_ld, q_t, Q_ld, q_t, error) && s_is_equal(m, n, result_R_ld, r_t, R_ld, r_t, error)))std::cout << "\"s_householder_ut2qr\" failed" << std::endl;
 
 		s_householder_ut_sov(m, n, rhs, U, tau, b, result_x);
 		if (!(s_is_equal(n, rhs, result_x, x, error)))std::cout << "\"s_householder_ut_sov\" failed" << std::endl;
@@ -954,16 +954,16 @@ void test_householder()
 		if (!(s_is_equal(n, rhs, result_x_ld, x_t, x_ld, x_t, error)))std::cout << "\"s_householder_ut_sov\" failed" << std::endl;
 
 		s_householder_ut(m, n, A, result_U, result_tau);
-		if (!(s_is_equal(m, n, result_U, U, error && s_is_equal(std::min(m - 1, n), result_tau, tau, error))))std::cout << "\"s_householder_ut\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U, U, error) && s_is_equal(std::min(m - 1, n), result_tau, tau, error)))std::cout << "\"s_householder_ut\" failed" << std::endl;
 
 		s_householder_ut(m, n, A_ld, a_t, result_U_ld, u_t, result_tau_ld, tau_t);
-		if (!(s_is_equal(m, n, result_U_ld, u_t, U_ld, u_t, error && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_ld, tau_t, error))))std::cout << "\"s_householder_ut\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U_ld, u_t, U_ld, u_t, error) && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_ld, tau_t, error)))std::cout << "\"s_householder_ut\" failed" << std::endl;
 		
 		s_householder_utp(m, n, A, result_U, result_tau, result_P);
-		if (!(s_is_equal(m, n, result_U, U_p, error && s_is_equal(std::min(m - 1, n), result_tau, tau_p, error) && std::equal(result_P, result_P + std::min(m, n), p))))std::cout << "\"s_householder_utp\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U, U_p, error) && s_is_equal(std::min(m - 1, n), result_tau, tau_p, error) && std::equal(result_P, result_P + std::min(m, n), p)))std::cout << "\"s_householder_utp\" failed" << std::endl;
 
 		s_householder_utp(m, n, A_ld, a_t, result_U_ld, u_t, result_tau_ld, tau_t, result_P);
-		if (!(s_is_equal(m, n, result_U_ld, u_t, U_p_ld, u_t, error && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_p_ld, tau_t, error) && std::equal(result_P, result_P + std::min(m, n), p))))std::cout << "\"s_householder_utp\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U_ld, u_t, U_p_ld, u_t, error) && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_p_ld, tau_t, error) && std::equal(result_P, result_P + std::min(m, n), p)))std::cout << "\"s_householder_utp\" failed" << std::endl;
 
 		s_householder_utp_sov(m, n, rhs, U_p, tau_p, p, b, result_x);
 		if (!(s_is_equal(n, rhs, result_x, x, error)))std::cout << "\"s_householder_utp_sov\" failed" << std::endl;

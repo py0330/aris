@@ -27,14 +27,6 @@ ENDFUNCTION(PREPEND_H)
 
 project(aris)
 
-# set unix compiler
-if(UNIX)
-#	set(CMAKE_C_COMPILER "/usr/bin/gcc")
-#	set(CMAKE_CXX_COMPILER "/usr/bin/g++")
-	set(CMAKE_C_COMPILER "/usr/bin/clang-3.8")
-	set(CMAKE_CXX_COMPILER "/usr/bin/clang++-3.8")
-endif(UNIX)
-
 # set binary and library folders
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
@@ -51,9 +43,6 @@ endif(WIN32)
 if(UNIX)
 	add_definitions(-DUNIX)
 endif(UNIX)
-
-
-
 
 # set debug and release options
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
@@ -109,6 +98,8 @@ if(WIN32)
 	set(CMAKE_INSTALL_PREFIX "C:/aris")
 endif(WIN32)
 
+add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
+
 install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
@@ -116,7 +107,7 @@ install(FILES src/aris.h DESTINATION include)
 set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_xml tinyxml2 aris_core_basic_type)
 PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
 PREPEND_H(FULL_H src/aris_core ${SOURCE})
-add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h)
+add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h src/aris.h)
 install(TARGETS aris_core ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
 install(TARGETS aris_core ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
 install(FILES ${FULL_H} src/aris_core/aris_core.h DESTINATION include)
@@ -201,6 +192,19 @@ target_link_libraries(rbt ${ALL_LINK_LIB})
 # Make demo projects
 set(MAKE_DEMO " ")
 if(MAKE_DEMO)
+
+add_executable(demo_command_parser_xml demo/demo_command_parser_xml/main.cpp)
+target_link_libraries(demo_command_parser_xml ${ALL_LINK_LIB})
+install(DIRECTORY demo/demo_command_parser_xml/resource/ DESTINATION resource/demo_command_parser_xml)
+
+add_executable(demo_command_parser_cpp demo/demo_command_parser_cpp/main.cpp)
+target_link_libraries(demo_command_parser_cpp ${ALL_LINK_LIB})
+
+add_executable(demo_core_structure_cpp demo/demo_core_structure_cpp/main.cpp)
+target_link_libraries(demo_core_structure_cpp ${ALL_LINK_LIB})
+
+add_executable(demo_control_wifi demo/demo_control_wifi/main.cpp)
+target_link_libraries(demo_control_wifi ${ALL_LINK_LIB})
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_ExpCal/demo_ExpCal ${SOURCE_FILES})

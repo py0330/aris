@@ -1776,9 +1776,7 @@ namespace aris
 		SolverSimulator& SolverSimulator::operator=(const SolverSimulator&) = default;
 		SolverSimulator& SolverSimulator::operator=(SolverSimulator&&) = default;
 
-		struct AdamsSimulator::Imp
-		{
-		};
+		struct AdamsSimulator::Imp{};
 		auto AdamsSimulator::saveAdams(const std::string &filename, SimResult &result, Size pos)->void
 		{
 			std::string filename_ = filename;

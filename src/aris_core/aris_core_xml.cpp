@@ -316,8 +316,6 @@ namespace aris
 		{
 			return xml_ele.Attribute(attribute_name.c_str()) ? attributeChar(xml_ele, attribute_name) : default_value;
 		}
-		auto Object::root()->Root& { return dynamic_cast<Root *>(this) ? dynamic_cast<Root &>(*this) : father().root(); }
-		auto Object::root()const->const Root&{ return dynamic_cast<const Root *>(this) ? dynamic_cast<const Root &>(*this) : father().root(); }
 		auto Object::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{ 
 			xml_ele.DeleteChildren();
@@ -330,6 +328,13 @@ namespace aris
 				ele.saveXml(*new_ele);
 				xml_ele.InsertEndChild(new_ele);
 			}
+		}
+		auto Object::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			if (xml_ele.Attribute("type") && type() != xml_ele.Attribute("type")) throw std::runtime_error("failed in Object::loadXml : invalid type");
+			imp_->name_ = xml_ele.Name();
+			children().clear();
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
 		}
 		auto Object::xmlString()->std::string 
 		{
@@ -345,9 +350,8 @@ namespace aris
 		}
 		auto Object::id()const->std::size_t { return imp_->id_; }
 		auto Object::name() const->const std::string&{ return imp_->name_; }
+		auto Object::root()->Root& { return dynamic_cast<Root *>(this) ? dynamic_cast<Root &>(*this) : father().root(); }
 		auto Object::father()->Object& { return *imp_->father_; }
-		auto Object::father()const->const Object&{ return *imp_->father_; }
-		auto Object::children()const->const ImpContainer<Object>&{ return imp_->children_; };
 		auto Object::children()->ImpContainer<Object>& { return imp_->children_; };
 		auto Object::save(const std::string &name, bool auto_override_save)->void
 		{

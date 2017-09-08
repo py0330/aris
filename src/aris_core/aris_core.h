@@ -8,5 +8,4 @@
 #include <aris_core_expression_calculator.h>
 #include <aris_core_command.h>
 
-
 #endif // ARIS_H_

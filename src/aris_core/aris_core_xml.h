@@ -18,6 +18,58 @@ namespace aris
 {
 	namespace core
 	{
+		/// @defgroup xml_group XML解析模块
+		///
+		/// aris主要使用树状数据结构。无论是树的根部，还是枝叶，aris都支持用户使用自创的类型，不过需要从以下类型继承：
+		/// - \ref aris::core::Object "Object"
+		/// - \ref aris::core::Root "Root"
+		///
+		/// 假设用户有如下结构：
+		/// 
+		/// \dot “典型aris数据结构”
+		/// digraph G{
+		/// node[shape = record, fontname = Helvetica, fontsize = 10];
+		/// family[label = "Class Family \n name = \"family\""]
+		/// father[label = "class Man \n name = \"father\" \n age = \"35\""];
+		/// uncle[label = "class Man \n name = \"uncle\" \n age = \"33\""];
+		/// son1[label = "class Boy \n name = \"son1\" \n age = \"8\""];
+		/// son2[label = "class Boy \n name = \"son2\" \n age = \"6\""];
+		/// family->father->son1[arrowhead = "open"];
+		/// father->son2[arrowhead = "open"];
+		/// family->uncle[arrowhead = "open"];
+		/// }
+		/// \enddot
+		///
+		/// 那么在代码中首先需要构造如下Family、Man和Boy三个类：
+		///
+		/// ~~~{.cpp}
+		/// Object(const std::string &name = "object");
+		/// Object(Object &father, const aris::core::XmlElement &xml_ele);
+		/// ~~~
+		///
+		/// 本模块是最基本的模块，aris中的所有对象几乎都依赖本模块，模块最重要的两个类为：
+		/// - Object类：在aris中，几乎所有的对象都继承自Object
+		/// - Root类：对象的根节点比较特殊，必须继承自Root
+		///
+		/// aris的一个基本思路是，所有的对象可以从代码构造，也可以与xml文本互相转换。因此，Object提供两个特殊构造函数：
+		///
+		/// ~~~{.cpp}
+		/// Object(const std::string &name = "object");
+		/// Object(Object &father, const aris::core::XmlElement &xml_ele);
+		/// ~~~
+		/// 前者从代码构造，后者从xml对象节点构造。除此之外，还提供一个可继承的虚函数，用来将Object储存成Xml节点：
+		///
+		/// ~~~{.cpp}
+		/// auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void;
+		/// ~~~
+		///
+		///
+
+
+		///
+		///  @{
+		///
+		
 		using XmlDocument = tinyxml2::XMLDocument;
 		using XmlDeclaration = tinyxml2::XMLDeclaration ;
 		using XmlNode = tinyxml2::XMLNode;
@@ -225,15 +277,16 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("Object"); return std::ref(type); }
 			auto virtual type() const->const std::string&{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void;
 			auto xmlString()->std::string;
-			auto name() const->const std::string&;
+			auto name()const->const std::string&;
 			auto id()const->std::size_t;
 			auto root()->Root&;
-			auto root()const->const Root&;
-			auto father()const->const Object&;
+			auto root()const->const Root&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->root(); }
 			auto father()->Object&;
-			auto children()const->const ImpContainer<Object>&;
+			auto father()const->const Object&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->father(); }
 			auto children()->ImpContainer<Object>&;
+			auto children()const->const ImpContainer<Object>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->children(); }
 			auto save(const std::string &name, bool auto_override_save = true)->void;
 			auto load(const std::string &name, bool auto_delete_save = true)->void;
 			auto findByName(const std::string &name)const->ImpContainer<Object>::const_iterator;
@@ -248,7 +301,6 @@ namespace aris
 			auto add(const aris::core::XmlElement &xml_ele)->Object &;
 			template<typename T, typename ...Args>
 			auto add(Args&&... args)->T& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
-			
 
 			virtual ~Object();
 			explicit Object(const std::string &name = "object");
@@ -403,7 +455,7 @@ namespace aris
 			auto virtual loadXml(const char* filename)->void { loadXml(std::string(filename)); }
 			auto virtual loadXml(const std::string &filename)->void;
 			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void;
-			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual saveXml(const char *filename) const->void { saveXml(std::string(filename)); }
 			auto virtual saveXml(const std::string &filename) const->void;
 			auto virtual saveXml(aris::core::XmlDocument &xml_doc)const->void;
@@ -711,6 +763,10 @@ namespace aris
 		private:
 			std::vector<T*> container_;
 		};
+
+		///
+		///  @}
+		///
 	}
 }
 
