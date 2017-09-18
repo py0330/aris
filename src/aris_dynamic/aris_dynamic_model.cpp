@@ -131,7 +131,7 @@ namespace aris
 			auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
 			s_inv_pm_dot_pm(*second_part.glbPm(), glb_pm, loc_pm);
 			auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
-			return jointPool().add<RevoluteJoint>(name, mak_i, mak_j);
+			return jointPool().add<RevoluteJoint>(name, &mak_i, &mak_j);
 		}
 		auto Model::addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&
 		{
@@ -142,7 +142,7 @@ namespace aris
 			auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
 			s_inv_pm_dot_pm(*second_part.glbPm(), glb_pm, loc_pm);
 			auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
-			return jointPool().add<PrismaticJoint>(name, mak_i, mak_j);
+			return jointPool().add<PrismaticJoint>(name, &mak_i, &mak_j);
 		}
 		auto Model::addUniversalJoint(Part &first_part, Part &second_part, const double *position, const double *first_axis, const double *second_axis)->UniversalJoint&
 		{
@@ -154,7 +154,7 @@ namespace aris
 			s_sov_axes2pm(position, second_axis, first_axis, glb_pm, "zx");
 			s_inv_pm_dot_pm(*second_part.glbPm(), glb_pm, loc_pm);
 			auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
-			return jointPool().add<UniversalJoint>(name, mak_i, mak_j);
+			return jointPool().add<UniversalJoint>(name, &mak_i, &mak_j);
 		}
 		auto Model::addSphericalJoint(Part &first_part, Part &second_part, const double *position)->SphericalJoint&
 		{
@@ -164,7 +164,7 @@ namespace aris
 			auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
 			s_inv_pm_dot_pm(*second_part.glbPm(), glb_pm, loc_pm);
 			auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
-			return jointPool().add<SphericalJoint>(name, mak_i, mak_j);
+			return jointPool().add<SphericalJoint>(name, &mak_i, &mak_j);
 		}
 		auto Model::addMotion(Joint &joint)->Motion&
 		{
@@ -183,7 +183,7 @@ namespace aris
 				throw std::runtime_error("wrong joint when Model::addMotion(joint)");
 			}
 
-			return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), joint.makI(), joint.makJ(), dim);
+			return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), &joint.makI(), &joint.makJ(), dim);
 		}
 		auto Model::addMotion()->Motion&
 		{
@@ -194,7 +194,7 @@ namespace aris
 			}
 			
 			auto mak = ground().markerPool().findByName("origin");
-			return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), *mak, *mak, 0);
+			return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), &*mak, &*mak, 0);
 		}
 		auto Model::addGeneralMotion(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&
 		{
@@ -205,7 +205,7 @@ namespace aris
 			auto name = "general_motion_" + std::to_string(generalMotionPool().size());
 			auto &mak_i = end_effector.markerPool().add<Marker>(name + "_i", pm_prt);
 			auto &mak_j = dynamic_cast<Part*>(&reference) ? dynamic_cast<Part&>(reference).markerPool().add<Marker>(name + "_j") : dynamic_cast<Marker&>(reference);
-			return generalMotionPool().add<GeneralMotion>(name, mak_i, mak_j);
+			return generalMotionPool().add<GeneralMotion>(name, &mak_i, &mak_j);
 		}
 		Model::~Model() = default;
 		Model::Model(const std::string &name):Root(name)

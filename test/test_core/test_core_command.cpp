@@ -134,6 +134,7 @@ void test_command_xml()
 		root.loadXml(xml_doc);
 		auto& parser = static_cast<aris::core::CommandParser&>(*root.findByName("command_parser"));
 
+		std::cout << parser.xmlString() << std::endl;
 
 		std::string cmd_string, cmd, cmd_result;
 		std::map<std::string, std::string> param, param_result;

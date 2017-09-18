@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <aris.h>
+#include <aris_core.h>
 
 #include "test_core_xml.h"
 #include "test_core_socket.h"

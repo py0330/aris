@@ -14,8 +14,7 @@ public:
 
 	int a = 0;
 
-	Child(const std::string &name) :Object(name) {};
-	Child(Object &father, const aris::core::XmlElement &ele) :Object(father, ele) {};
+	Child(const std::string &name = "child") :Object(name) {};
 };
 
 void test_core_xml()

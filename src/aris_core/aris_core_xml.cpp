@@ -17,13 +17,17 @@ namespace aris
 	{
 		struct Object::Imp 
 		{
-			// 这里添加的任何内容请在Object里手动构造
+			// 不变属性 //
 			Object *father_{nullptr};
 			std::size_t id_{0};
+
+			// 可变属性 //
 			std::string name_{"object"};
 			std::string default_type_{ Object::Type() };
-			std::map<std::string, std::shared_ptr<Object> > save_data_map_;
 			ImpContainer<Object> children_;
+
+			// mutable variable //
+			std::map<std::string, std::shared_ptr<Object> > save_data_map_;
 
 			Imp() = default;
 			Imp(const std::string &name) :name_(name) {}
@@ -332,9 +336,29 @@ namespace aris
 		auto Object::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			if (xml_ele.Attribute("type") && type() != xml_ele.Attribute("type")) throw std::runtime_error("failed in Object::loadXml : invalid type");
+			
+			// set name and default child type //
 			imp_->name_ = xml_ele.Name();
+			imp_->default_type_ = xml_ele.Attribute("default_child_type") ? xml_ele.Attribute("default_child_type") : Object::Type();
+			
+			// insert children //
 			children().clear();
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
+			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())
+			{
+				std::string type = ele->Attribute("type") ? ele->Attribute("type") : imp_->default_type_;
+
+				if (root().childTypeMap().find(type) == root().childTypeMap().end())
+				{
+					throw std::runtime_error("unrecognized type \"" + type + "\" when load element \"" + ele->Name() + "\" to \"" + name() + "\"");
+				}
+				else
+				{
+					children().push_back_ptr(root().childTypeMap().find(type)->second.default_construct_func());
+					children().back().imp_->father_ = this;
+					children().back().imp_->id_ = children().size() - 1;
+					children().back().loadXml(*ele);
+				}
+			}
 		}
 		auto Object::xmlString()->std::string 
 		{
@@ -411,10 +435,6 @@ namespace aris
 		}
 		Object::~Object() = default;
 		Object::Object(const std::string &name) : imp_(new Imp(name)) {}
-		Object::Object(Object &father, const aris::core::XmlElement &xml_ele) : imp_(new Imp(&father, xml_ele))
-		{
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement()) add(*ele);
-		}
 		Object::Object(const Object &other)
 		{ 
 			imp_->father_ = other.imp_->father_;
@@ -515,12 +535,6 @@ namespace aris
 			loadXml(xmlDoc);
 		}
 		auto Root::loadXml(const aris::core::XmlDocument &xml_doc)->void{loadXml(*xml_doc.RootElement());}
-		auto Root::loadXml(const aris::core::XmlElement &xml_ele)->void
-		{
-			Object::imp_->name_ = xml_ele.Name();
-			children().clear();
-			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())add(*ele);
-		}
 		auto Root::saveXml(const std::string &filename) const->void
 		{
 			aris::core::XmlDocument doc;
@@ -566,7 +580,6 @@ namespace aris
 		}
 		Root::~Root() = default;
 		Root::Root(const std::string &name) :Object(name) { registerChildType<Object>(); }
-		Root::Root(const aris::core::XmlElement &xml_ele) :Object(*this, xml_ele) { registerChildType<Object>(); }
 		Root::Root(const Root&) = default;
 		Root::Root(Root&&) = default;
 		Root& Root::operator=(const Root&) = default;

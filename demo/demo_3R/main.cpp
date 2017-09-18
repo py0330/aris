@@ -17,17 +17,17 @@ int main()
 	auto &r3i = p2.markerPool().add<Marker>("r3i", s_pe2pm(std::array<double,6>{1.0, 0.0, 0.0, 0.0, 0.0, 0.0}.data()));
 	auto &r3j = p3.markerPool().add<Marker>("r3j", s_pe2pm(std::array<double,6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}.data()));
 
-	m.jointPool().add<RevoluteJoint>("r1", r1i, r1j);
-	m.jointPool().add<RevoluteJoint>("r2", r2i, r2j);
-	m.jointPool().add<RevoluteJoint>("r3", r3i, r3j);
+	m.jointPool().add<RevoluteJoint>("r1", &r1i, &r1j);
+	m.jointPool().add<RevoluteJoint>("r2", &r2i, &r2j);
+	m.jointPool().add<RevoluteJoint>("r3", &r3i, &r3j);
 
-	m.motionPool().add<Motion>("m1", r1i, r1j, 5);
-	m.motionPool().add<Motion>("m2", r2i, r2j, 5);
-	m.motionPool().add<Motion>("m3", r3i, r3j, 5);
+	m.motionPool().add<Motion>("m1", &r1i, &r1j, 5);
+	m.motionPool().add<Motion>("m2", &r2i, &r2j, 5);
+	m.motionPool().add<Motion>("m3", &r3i, &r3j, 5);
 
 	auto &ee = p3.markerPool().add<Marker>("ee", s_pe2pm(std::array<double, 6>{1.0, 0.0, 0.0, 0.0, 0.0, 0.0}.data()));
 	auto &origin = m.ground().markerPool().add<Marker>("origin", s_pe2pm(std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}.data()));
-	auto &gm = m.generalMotionPool().add<GeneralMotion>("ge", ee, origin);
+	auto &gm = m.generalMotionPool().add<GeneralMotion>("ge", &ee, &origin);
 
 	for (auto &mot : m.motionPool())mot.activate(false);
 	//m.allocateMemory();

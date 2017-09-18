@@ -51,7 +51,6 @@ namespace aris
 
 			virtual ~Sensor();
 			Sensor(const std::string &name, std::function<SensorData*()> new_func);
-			Sensor(Object &father, const aris::core::XmlElement &xml_ele, std::function<SensorData*()> new_func);
 
 		protected:
 			auto virtual init()->void {}

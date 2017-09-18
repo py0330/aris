@@ -62,6 +62,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Socket"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto isConnected()->bool;
 			auto state()->State;
 			auto startServer(const std::string &port = std::string())->void;
@@ -81,8 +82,7 @@ namespace aris
 			auto setOnReceiveError(std::function<void(Socket*)> = nullptr)->void;
 
 			virtual ~Socket();
-			Socket(const std::string &name, const std::string& remote_ip = std::string(), const std::string& port = std::string());
-			Socket(Object &father, const aris::core::XmlElement &xml_ele);
+			Socket(const std::string &name = "socket", const std::string& remote_ip = "", const std::string& port = "");
 			Socket(const Socket & other) = delete;
 			Socket(Socket && other) = default;
 			Socket &operator=(const Socket& other) = delete;

@@ -66,9 +66,10 @@ namespace aris
 			Element::saveXml(xml_ele);
 			xml_ele.SetAttribute("active", active() ? "true" : "false");
 		}
-		DynEle::DynEle(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
+		auto DynEle::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			active_ = attributeBool(xml_ele, "active", true);
+			Element::loadXml(xml_ele);
 		}
 
 		auto Environment::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -76,9 +77,10 @@ namespace aris
 			Object::saveXml(xml_ele);
 			xml_ele.SetAttribute("gravity", core::Matrix(1, 6, gravity_).toString().c_str());
 		}
-		Environment::Environment(Object &father, const aris::core::XmlElement &xml_ele) :Element(father, xml_ele)
+		auto Environment::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			std::copy_n(attributeMatrix(xml_ele, "gravity", 1, 6).data(), 6, gravity_);
+			Object::loadXml(xml_ele);
 		}
 
 		auto Variable::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -87,16 +89,17 @@ namespace aris
 			xml_ele.SetText(this->toString().c_str());
 		}
 
-		MatrixVariable::MatrixVariable(Object &father, const aris::core::XmlElement &xml_ele) : VariableTemplate(father, xml_ele)
+		auto MatrixVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			data_ = model().calculator().calculateExpression(xml_ele.GetText());
+			Variable::loadXml(xml_ele);
 			model().calculator().addVariable(name(), data_);
 		}
-
-		StringVariable::StringVariable(Object &father, const aris::core::XmlElement &xml_ele) : VariableTemplate(father, xml_ele)
+		auto StringVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			data_ = std::string(xml_ele.GetText());
 			model().calculator().addVariable(name(), data_);
+			Variable::loadXml(xml_ele);
 		}
 	}
 }

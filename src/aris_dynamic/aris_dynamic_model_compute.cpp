@@ -24,6 +24,29 @@ namespace aris
 
 			Imp(Size max_iter_count, double max_error) :max_iter_count_(max_iter_count), max_error_(max_error) {};
 		};
+		auto Solver::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Element::saveXml(xml_ele);
+			xml_ele.SetAttribute("max_iter_count", static_cast<std::int64_t>(imp_->max_iter_count_));
+			xml_ele.SetAttribute("max_error", imp_->max_error_);
+		}
+		auto Solver::loadXml(const aris::core::XmlElement &xml_ele)->void 
+		{
+			imp_->max_iter_count_ = attributeInt32(xml_ele, "max_iter_count", 100);
+			imp_->max_error_ = attributeDouble(xml_ele, "max_error", 1e-10);
+			Element::loadXml(xml_ele);
+			
+		}
+		auto Solver::init()->void
+		{
+			// make all part cm correct //
+			for (auto &c : model().jointPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
+			for (auto &c : model().motionPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
+			for (auto &c : model().generalMotionPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
+
+			allocateMemory();
+
+		}
 		auto Solver::error()const->double { return imp_->error_; }
 		auto Solver::setError(double error)->void { imp_->error_ = error; }
 		auto Solver::maxError()const->double { return imp_->max_error_; }
@@ -33,11 +56,6 @@ namespace aris
 		auto Solver::maxIterCount()const->Size { return imp_->max_iter_count_; }
 		auto Solver::setMaxIterCount(Size max_count)->void { imp_->max_iter_count_ = max_count; }
 		Solver::~Solver() = default;
-		Solver::Solver(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp(0, 0.0))
-		{
-			imp_->max_iter_count_ = attributeInt32(xml_ele, "max_iter_count", 100);
-			imp_->max_error_ = attributeDouble(xml_ele, "max_error", 1e-10);
-		}
 		Solver::Solver(const std::string &name, Size max_iter_count, double max_error) : Element(name), imp_(new Imp(max_iter_count, max_error)) {}
 		Solver::Solver(const Solver&) = default;
 		Solver::Solver(Solver&&) = default;
@@ -46,31 +64,11 @@ namespace aris
 
 		struct Calibrator::Imp {};
 		Calibrator::~Calibrator() = default;
-		Calibrator::Calibrator(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) {}
 		Calibrator::Calibrator(const std::string &name) : Element(name), imp_(new Imp) {}
 		Calibrator::Calibrator(const Calibrator&) = default;
 		Calibrator::Calibrator(Calibrator&&) = default;
 		Calibrator& Calibrator::operator=(const Calibrator&) = default;
 		Calibrator& Calibrator::operator=(Calibrator&&) = default;
-
-		struct Simulator::Imp { };
-		auto Simulator::simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void
-		{
-			result.allocateMemory();
-			// 记录初始位置 //
-			result.record();
-			// 记录轨迹中的位置 //
-			for (PlanParam plan_param{ &model(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_);
-			// 记录结束位置 //
-			result.record();
-		}
-		Simulator::~Simulator() = default;
-		Simulator::Simulator(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp) {}
-		Simulator::Simulator(const std::string &name) : Element(name), imp_(new Imp) {}
-		Simulator::Simulator(const Simulator&) = default;
-		Simulator::Simulator(Simulator&&) = default;
-		Simulator& Simulator::operator=(const Simulator&) = default;
-		Simulator& Simulator::operator=(Simulator&&) = default;
 
 		struct SimResult::TimeResult::Imp { std::deque<double> time_; };
 		auto SimResult::TimeResult::saveXml(aris::core::XmlElement &xml_ele)const->void
@@ -85,15 +83,17 @@ namespace aris
 
 			xml_ele.SetText(ss.str().c_str());
 		}
-		auto SimResult::TimeResult::record()->void { imp_->time_.push_back(model().time()); }
-		auto SimResult::TimeResult::restore(Size pos)->void { model().setTime(imp_->time_.at(pos)); }
-		SimResult::TimeResult::~TimeResult() = default;
-		SimResult::TimeResult::TimeResult(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp)
+		auto SimResult::TimeResult::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			// 以下导入数据 //
 			std::stringstream ss(std::string(xml_ele.GetText()));
 			for (double t; ss >> t, !ss.eof(); imp_->time_.push_back(t));
+
+			Element::loadXml(xml_ele);
 		}
+		auto SimResult::TimeResult::record()->void { imp_->time_.push_back(model().time()); }
+		auto SimResult::TimeResult::restore(Size pos)->void { model().setTime(imp_->time_.at(pos)); }
+		SimResult::TimeResult::~TimeResult() = default;
 		SimResult::TimeResult::TimeResult(const std::string &name) : Element(name), imp_(new Imp) {}
 		SimResult::TimeResult::TimeResult(const SimResult::TimeResult&) = default;
 		SimResult::TimeResult::TimeResult(SimResult::TimeResult&&) = default;
@@ -128,25 +128,7 @@ namespace aris
 
 			xml_ele.SetText(ss.str().c_str());
 		}
-		auto SimResult::PartResult::part()->Part& { return *imp_->part_; }
-		auto SimResult::PartResult::record()->void
-		{
-			std::array<double, 6> result;
-			s_pm2pe(*part().pm(), result.data());
-			imp_->pe_.push_back(result);
-			std::copy(static_cast<const double*>(part().vs()), static_cast<const double*>(part().vs()) + 6, result.data());
-			imp_->vs_.push_back(result);
-			std::copy(static_cast<const double*>(part().as()), static_cast<const double*>(part().as()) + 6, result.data());
-			imp_->as_.push_back(result);
-		}
-		auto SimResult::PartResult::restore(Size pos)->void
-		{
-			part().setPe(imp_->pe_.at(pos).data());
-			part().setVs(imp_->vs_.at(pos).data());
-			part().setAs(imp_->as_.at(pos).data());
-		}
-		SimResult::PartResult::~PartResult() = default;
-		SimResult::PartResult::PartResult(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp(nullptr))
+		auto SimResult::PartResult::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			// 以下寻找对应的part //
 			if (model().findByName("part_pool") == model().children().end())
@@ -174,8 +156,27 @@ namespace aris
 				if (i == 18) { imp_->as_.push_back(as); i = -1; }
 			}
 
+			Element::loadXml(xml_ele);
 		}
-		SimResult::PartResult::PartResult(const std::string &name, Part &part) : Element(name), imp_(new Imp(&part)) {}
+		auto SimResult::PartResult::part()->Part& { return *imp_->part_; }
+		auto SimResult::PartResult::record()->void
+		{
+			std::array<double, 6> result;
+			s_pm2pe(*part().pm(), result.data());
+			imp_->pe_.push_back(result);
+			std::copy(static_cast<const double*>(part().vs()), static_cast<const double*>(part().vs()) + 6, result.data());
+			imp_->vs_.push_back(result);
+			std::copy(static_cast<const double*>(part().as()), static_cast<const double*>(part().as()) + 6, result.data());
+			imp_->as_.push_back(result);
+		}
+		auto SimResult::PartResult::restore(Size pos)->void
+		{
+			part().setPe(imp_->pe_.at(pos).data());
+			part().setVs(imp_->vs_.at(pos).data());
+			part().setAs(imp_->as_.at(pos).data());
+		}
+		SimResult::PartResult::~PartResult() = default;
+		SimResult::PartResult::PartResult(const std::string &name, Part *part) : Element(name), imp_(new Imp(part)) {}
 		SimResult::PartResult::PartResult(const SimResult::PartResult&) = default;
 		SimResult::PartResult::PartResult(SimResult::PartResult&&) = default;
 		SimResult::PartResult& SimResult::PartResult::operator=(const PartResult&) = default;
@@ -205,16 +206,7 @@ namespace aris
 
 			xml_ele.SetText(ss.str().c_str());
 		}
-		auto SimResult::ConstraintResult::constraint()->Constraint& { return *imp_->constraint_; }
-		auto SimResult::ConstraintResult::record()->void
-		{
-			std::array<double, 6> result{ 0,0,0,0,0,0 };
-			std::copy(constraint().cf(), constraint().cf() + constraint().dim(), result.data());
-			imp_->cf_.push_back(result);
-		}
-		auto SimResult::ConstraintResult::restore(Size pos)->void { constraint().setCf(imp_->cf_.at(pos).data()); }
-		SimResult::ConstraintResult::~ConstraintResult() = default;
-		SimResult::ConstraintResult::ConstraintResult(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_(new Imp(nullptr))
+		auto SimResult::ConstraintResult::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			// 以下寻找对应的constraint //
 			if (!xml_ele.Attribute("constraint"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"constraint\"");
@@ -250,8 +242,18 @@ namespace aris
 				}
 			}
 
+			Element::loadXml(xml_ele);
 		}
-		SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint &constraint) : Element(name), imp_(new Imp(&constraint)) {}
+		auto SimResult::ConstraintResult::constraint()->Constraint& { return *imp_->constraint_; }
+		auto SimResult::ConstraintResult::record()->void
+		{
+			std::array<double, 6> result{ 0,0,0,0,0,0 };
+			std::copy(constraint().cf(), constraint().cf() + constraint().dim(), result.data());
+			imp_->cf_.push_back(result);
+		}
+		auto SimResult::ConstraintResult::restore(Size pos)->void { constraint().setCf(imp_->cf_.at(pos).data()); }
+		SimResult::ConstraintResult::~ConstraintResult() = default;
+		SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint *constraint) : Element(name), imp_(new Imp(constraint)) {}
 		SimResult::ConstraintResult::ConstraintResult(const SimResult::ConstraintResult&) = default;
 		SimResult::ConstraintResult::ConstraintResult(SimResult::ConstraintResult&&) = default;
 		SimResult::ConstraintResult& SimResult::ConstraintResult::operator=(const ConstraintResult&) = default;
@@ -263,17 +265,26 @@ namespace aris
 			aris::core::ObjectPool<PartResult, Element> *part_result_pool_;
 			aris::core::ObjectPool<ConstraintResult, Element> *constraint_result_pool_;
 		};
+		auto SimResult::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			Element::loadXml(xml_ele);
+
+			imp_->time_result_ = findOrInsert<TimeResult>("time_result");
+			imp_->constraint_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+			imp_->part_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+
+		}
 		auto SimResult::timeResult()->TimeResult& { return *imp_->time_result_; }
 		auto SimResult::partResultPool()->aris::core::ObjectPool<SimResult::PartResult, Element>& { return *imp_->part_result_pool_; }
 		auto SimResult::constraintResultPool()->aris::core::ObjectPool<SimResult::ConstraintResult, Element>& { return *imp_->constraint_result_pool_; }
 		auto SimResult::allocateMemory()->void
 		{
 			partResultPool().clear();
-			for (auto &p : model().partPool())partResultPool().add<PartResult>(p.name() + "_result", p);
+			for (auto &p : model().partPool())partResultPool().add<PartResult>(p.name() + "_result", &p);
 			constraintResultPool().clear();
-			for (auto &c : model().jointPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", c);
-			for (auto &c : model().motionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", c);
-			for (auto &c : model().generalMotionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", c);
+			for (auto &c : model().jointPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
+			for (auto &c : model().motionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
+			for (auto &c : model().generalMotionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
 		}
 		auto SimResult::record()->void
 		{
@@ -300,12 +311,6 @@ namespace aris
 			for (auto &r : constraintResultPool())r.imp_->cf_.clear();
 		}
 		SimResult::~SimResult() = default;
-		SimResult::SimResult(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele), imp_()
-		{
-			imp_->time_result_ = findOrInsert<TimeResult>("time_result");
-			imp_->constraint_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
-			imp_->part_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
-		}
 		SimResult::SimResult(const std::string &name) : Element(name), imp_(new Imp())
 		{
 			imp_->time_result_ = &add<TimeResult>("time_result");
@@ -342,6 +347,24 @@ namespace aris
 			imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
 			return *this;
 		}
+
+		struct Simulator::Imp { };
+		auto Simulator::simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void
+		{
+			result.allocateMemory();
+			// 记录初始位置 //
+			result.record();
+			// 记录轨迹中的位置 //
+			for (PlanParam plan_param{ &model(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_);
+			// 记录结束位置 //
+			result.record();
+		}
+		Simulator::~Simulator() = default;
+		Simulator::Simulator(const std::string &name) : Element(name), imp_(new Imp) {}
+		Simulator::Simulator(const Simulator&) = default;
+		Simulator::Simulator(Simulator&&) = default;
+		Simulator& Simulator::operator=(const Simulator&) = default;
+		Simulator& Simulator::operator=(Simulator&&) = default;
 
 		struct CombineSolver::Imp
 		{
@@ -481,7 +504,6 @@ namespace aris
 		}
 		CombineSolver::~CombineSolver() = default;
 		CombineSolver::CombineSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
-		CombineSolver::CombineSolver(Object &father, const aris::core::XmlElement &xml_ele) : Solver(father, xml_ele) {}
 		CombineSolver::CombineSolver(const CombineSolver &other) = default;
 		CombineSolver::CombineSolver(CombineSolver &&other) = default;
 		CombineSolver& CombineSolver::operator=(const CombineSolver &other) = default;
@@ -547,7 +569,6 @@ namespace aris
 		auto GroundCombineSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool()) pb.part_->setAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
 		GroundCombineSolver::~GroundCombineSolver() = default;
 		GroundCombineSolver::GroundCombineSolver(const std::string &name, Size max_iter_count, double max_error) :CombineSolver(name, max_iter_count, max_error) {}
-		GroundCombineSolver::GroundCombineSolver(Object &father, const aris::core::XmlElement &xml_ele) : CombineSolver(father, xml_ele) {}
 		GroundCombineSolver::GroundCombineSolver(const GroundCombineSolver &other) = default;
 		GroundCombineSolver::GroundCombineSolver(GroundCombineSolver &&other) = default;
 		GroundCombineSolver& GroundCombineSolver::operator=(const GroundCombineSolver &other) = default;
@@ -701,7 +722,6 @@ namespace aris
 		auto DividedSolver::cfBlk()->BlockData& { return imp_->cf_blk_; }
 		DividedSolver::~DividedSolver() = default;
 		DividedSolver::DividedSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
-		DividedSolver::DividedSolver(Object &father, const aris::core::XmlElement &xml_ele) :Solver(father, xml_ele){}
 		DividedSolver::DividedSolver(const DividedSolver &other) = default;
 		DividedSolver::DividedSolver(DividedSolver &&other) = default;
 		DividedSolver& DividedSolver::operator=(const DividedSolver &other) = default;
@@ -760,7 +780,6 @@ namespace aris
 		}
 		GroundDividedSolver::~GroundDividedSolver() = default;
 		GroundDividedSolver::GroundDividedSolver(const std::string &name, Size max_iter_count, double max_error) :DividedSolver(name, max_iter_count, max_error) {}
-		GroundDividedSolver::GroundDividedSolver(Object &father, const aris::core::XmlElement &xml_ele) : DividedSolver(father, xml_ele) {}
 		GroundDividedSolver::GroundDividedSolver(const GroundDividedSolver &other) = default;
 		GroundDividedSolver::GroundDividedSolver(GroundDividedSolver &&other) = default;
 		GroundDividedSolver& GroundDividedSolver::operator=(const GroundDividedSolver &other) = default;
@@ -810,7 +829,6 @@ namespace aris
 		auto PartDividedSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool())s_tv(*pb.part_->pm(), pa() + dynamic::id(pb.row_id_, 0, 1), const_cast<double6&>(pb.part_->as())); }
 		PartDividedSolver::~PartDividedSolver() = default;
 		PartDividedSolver::PartDividedSolver(const std::string &name, Size max_iter_count, double max_error) :DividedSolver(name, max_iter_count, max_error) {}
-		PartDividedSolver::PartDividedSolver(Object &father, const aris::core::XmlElement &xml_ele) : DividedSolver(father, xml_ele) {}
 		PartDividedSolver::PartDividedSolver(const PartDividedSolver &other) = default;
 		PartDividedSolver::PartDividedSolver(PartDividedSolver &&other) = default;
 		PartDividedSolver& PartDividedSolver::operator=(const PartDividedSolver &other) = default;
@@ -918,7 +936,6 @@ namespace aris
 		}
 		LltGroundDividedSolver::~LltGroundDividedSolver() = default;
 		LltGroundDividedSolver::LltGroundDividedSolver(const std::string &name) :GroundDividedSolver(name) {}
-		LltGroundDividedSolver::LltGroundDividedSolver(Object &father, const aris::core::XmlElement &xml_ele) : GroundDividedSolver(father, xml_ele) {}
 		LltGroundDividedSolver::LltGroundDividedSolver(const LltGroundDividedSolver &other) = default;
 		LltGroundDividedSolver::LltGroundDividedSolver(LltGroundDividedSolver &&other) = default;
 		LltGroundDividedSolver& LltGroundDividedSolver::operator=(const LltGroundDividedSolver &other) = default;
@@ -1026,7 +1043,6 @@ namespace aris
 		}
 		LltPartDividedSolver::~LltPartDividedSolver() = default;
 		LltPartDividedSolver::LltPartDividedSolver(const std::string &name, Size max_iter_count, double max_error) :PartDividedSolver(name, max_iter_count, max_error) {}
-		LltPartDividedSolver::LltPartDividedSolver(Object &father, const aris::core::XmlElement &xml_ele) : PartDividedSolver(father, xml_ele) {}
 		LltPartDividedSolver::LltPartDividedSolver(const LltPartDividedSolver &other) = default;
 		LltPartDividedSolver::LltPartDividedSolver(LltPartDividedSolver &&other) = default;
 		LltPartDividedSolver& LltPartDividedSolver::operator=(const LltPartDividedSolver &other) = default;
@@ -1719,7 +1735,6 @@ namespace aris
 		}
 		DiagSolver::~DiagSolver() = default;
 		DiagSolver::DiagSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error){}
-		DiagSolver::DiagSolver(Object &father, const aris::core::XmlElement &xml_ele) : Solver(father, xml_ele){}
 		DiagSolver::DiagSolver(const DiagSolver &other) = default;
 		DiagSolver::DiagSolver(DiagSolver &&other) = default;
 		DiagSolver& DiagSolver::operator=(const DiagSolver &other) = default;
@@ -1735,6 +1750,21 @@ namespace aris
 		{
 			Simulator::saveXml(xml_ele);
 			xml_ele.SetAttribute("solver", solver().name().c_str());
+		}
+		auto SolverSimulator::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			Simulator::loadXml(xml_ele);
+			
+			if (model().findByName("solver_pool") == model().children().end())
+				throw std::runtime_error("you must insert \"solver_pool\" node before insert " + type() + " \"" + name() + "\"");
+
+			auto &solver_pool = static_cast<aris::core::ObjectPool<Solver, Element>&>(*model().findByName("solver_pool"));
+
+			if (!xml_ele.Attribute("solver"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"solver\"");
+			auto s = solver_pool.findByName(xml_ele.Attribute("solver"));
+			if (s == solver_pool.end())	throw std::runtime_error(std::string("can't find solver for element \"") + this->name() + "\"");
+
+			imp_->solver_ = &*s;
 		}
 		auto SolverSimulator::solver()->Solver& { return *imp_->solver_; }
 		auto SolverSimulator::simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void
@@ -1757,20 +1787,7 @@ namespace aris
 			result.restore(0);
 		}
 		SolverSimulator::~SolverSimulator() = default;
-		SolverSimulator::SolverSimulator(Object &father, const aris::core::XmlElement &xml_ele) : Simulator(father, xml_ele), imp_(new Imp(nullptr))
-		{
-			if (model().findByName("solver_pool") == model().children().end())
-				throw std::runtime_error("you must insert \"solver_pool\" node before insert " + type() + " \"" + name() + "\"");
-
-			auto &solver_pool = static_cast<aris::core::ObjectPool<Solver, Element>&>(*model().findByName("solver_pool"));
-
-			if (!xml_ele.Attribute("solver"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"solver\"");
-			auto s = solver_pool.findByName(xml_ele.Attribute("solver"));
-			if (s == solver_pool.end())	throw std::runtime_error(std::string("can't find solver for element \"") + this->name() + "\"");
-
-			imp_->solver_ = &*s;
-		}
-		SolverSimulator::SolverSimulator(const std::string &name, Solver &solver) : Simulator(name), imp_(new Imp(&solver)) {}
+		SolverSimulator::SolverSimulator(const std::string &name, Solver *solver) : Simulator(name), imp_(new Imp(solver)) {}
 		SolverSimulator::SolverSimulator(const SolverSimulator&) = default;
 		SolverSimulator::SolverSimulator(SolverSimulator&&) = default;
 		SolverSimulator& SolverSimulator::operator=(const SolverSimulator&) = default;
@@ -2196,8 +2213,7 @@ namespace aris
 		}
 		auto AdamsSimulator::adamsID(const Part &prt)const->Size { return (&prt == &model().ground()) ? 1 : prt.id() + (model().ground().id() < prt.id() ? 1 : 2); }
 		AdamsSimulator::~AdamsSimulator() = default;
-		AdamsSimulator::AdamsSimulator(Object &father, const aris::core::XmlElement &xml_ele) : SolverSimulator(father, xml_ele) {}
-		AdamsSimulator::AdamsSimulator(const std::string &name, Solver &solver) : SolverSimulator(name, solver) {}
+		AdamsSimulator::AdamsSimulator(const std::string &name, Solver *solver) : SolverSimulator(name, solver) {}
 		AdamsSimulator::AdamsSimulator(const AdamsSimulator&) = default;
 		AdamsSimulator::AdamsSimulator(AdamsSimulator&&) = default;
 		AdamsSimulator& AdamsSimulator::operator=(const AdamsSimulator&) = default;

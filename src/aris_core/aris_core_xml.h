@@ -43,6 +43,7 @@ namespace aris
 		/// 那么在代码中首先需要构造如下Family、Man和Boy三个类：
 		///
 		/// ~~~{.cpp}
+		///
 		/// Object(const std::string &name = "object");
 		/// Object(Object &father, const aris::core::XmlElement &xml_ele);
 		/// ~~~
@@ -304,7 +305,6 @@ namespace aris
 
 			virtual ~Object();
 			explicit Object(const std::string &name = "object");
-			explicit Object(Object &father, const aris::core::XmlElement &xml_ele);
 			Object(const Object &);
 			Object(Object &&);
 			Object& operator=(const Object &);
@@ -320,6 +320,7 @@ namespace aris
 		public:
 			struct TypeInfo
 			{
+				std::function<Object*(void)> default_construct_func;
 				std::function<Object*(Object &father, const aris::core::XmlElement &xml_ele)> xml_construct_func;
 				std::function<Object*(const Object &from_object)> copy_construct_func;
 				std::function<Object*(Object &&from_object)> move_construct_func;
@@ -332,7 +333,7 @@ namespace aris
 					static_assert(std::is_base_of<Object, ChildType>::value, "failed to register type, because it is not inheritated from Object");
 
 					TypeInfo info;
-					info.xml_construct_func = [](Object &father, const aris::core::XmlElement &xml_ele)->Object* {return new ChildType(father, xml_ele); };
+					info.default_construct_func = [](void)->Object* {return new ChildType(); };
 					info.copy_construct_func = CopyConstruct<ChildType, is_copy_constructible<ChildType>()>::func();
 					info.move_construct_func = MoveConstruct<ChildType, is_copy_constructible<ChildType>(), is_move_constructible<ChildType>()>::func();
 					info.copy_assign_func = CopyAssign<ChildType, is_copy_assignable<ChildType>()>::func();
@@ -450,12 +451,12 @@ namespace aris
 				};
 			};
 			using Object::saveXml;
+			using Object::loadXml;
 			static auto Type()->const std::string &{ static const std::string type("Root"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual loadXml(const char* filename)->void { loadXml(std::string(filename)); }
 			auto virtual loadXml(const std::string &filename)->void;
 			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void;
-			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual saveXml(const char *filename) const->void { saveXml(std::string(filename)); }
 			auto virtual saveXml(const std::string &filename) const->void;
 			auto virtual saveXml(aris::core::XmlDocument &xml_doc)const->void;
@@ -468,7 +469,6 @@ namespace aris
 
 			virtual ~Root();
 			explicit Root(const std::string &name = "Root");
-			explicit Root(const aris::core::XmlElement &xml_ele);
 			Root(const Root&);
 			Root(Root&&);
 			Root& operator=(const Root&);
@@ -621,8 +621,7 @@ namespace aris
 			virtual ~ObjectPool() = default;
 
 		protected:
-			explicit ObjectPool(const std::string &name):Base(name) {}
-			explicit ObjectPool(Object &father, const aris::core::XmlElement &xml_ele) :Base(father, xml_ele) {}
+			explicit ObjectPool(const std::string &name = "object_pool"):Base(name) {}
 		
 		private:
 			friend class Object;

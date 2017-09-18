@@ -11,7 +11,7 @@ const char xml_file[] =
 "        <slave_type_pool type=\"SlaveTypePoolObject\">"
 "        </slave_type_pool>"
 "        <slave_pool type=\"SlavePoolObject\">"
-"            <sla type=\"EthercatSlave\" phy_id=\"0\" product_code=\"0x00030924\" vendor_id=\"0x0000009a\" distributed_clock=\"0x0300\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
+"            <sla type=\"EthercatSlave\" phy_id=\"0\" product_code=\"0x00030924\" vendor_id=\"0x0000009a\" revision_num=\"0x000103F6\" dc_assign_activate=\"0x0300\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
 "                <pdo_group_pool type=\"PdoGroupPoolObject\">"
 "                    <index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
 "                        <pos_actual_value index=\"0x6064\" subindex=\"0x00\" size=\"4\"/>"

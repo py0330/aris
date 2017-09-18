@@ -17,11 +17,9 @@ namespace aris
 	{
 		struct RTTimer::Imp { int sample_period_ns_{ 1000000 }; };
 		auto RTTimer::saveXml(aris::core::XmlElement &xml_ele) const->void { Object::saveXml(xml_ele); }
+		auto RTTimer::loadXml(const aris::core::XmlElement &xml_ele)->void { Object::loadXml(xml_ele); }
 		RTTimer::~RTTimer() = default;
 		RTTimer::RTTimer(const std::string &name) :Object(name), imp_(new Imp)
-		{
-		}
-		RTTimer::RTTimer(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele), imp_(new Imp)
 		{
 		}
 		
@@ -40,6 +38,11 @@ namespace aris
 			Imp() :log_msg_(), is_running_(false) { log_msg_stream_.reset(new aris::core::MsgStream(log_msg_)); }
 		};
 		auto DataLogger::saveXml(aris::core::XmlElement &xml_ele) const->void { Object::saveXml(xml_ele); }
+		auto DataLogger::loadXml(const aris::core::XmlElement &xml_ele)->void 
+		{ 
+			Object::loadXml(xml_ele);
+			imp_->log_pipe_ = findOrInsert<aris::core::Pipe>("pipe", 16384);
+		}
 		auto DataLogger::start(const std::string &log_file_name)->void
 		{
 			std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
@@ -105,10 +108,6 @@ namespace aris
 		{
 			imp_->log_pipe_ = &add<aris::core::Pipe>("pipe", 16384);
 		}
-		DataLogger::DataLogger(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele), imp_(new Imp)
-		{
-			imp_->log_pipe_ = findOrInsert<aris::core::Pipe>("pipe", 16384);
-		}
 
 		struct Slave::Imp
 		{
@@ -123,17 +122,9 @@ namespace aris
 
 			xml_ele.SetAttribute("phy_id", std::to_string(phyId()).c_str());
 		}
-		auto Slave::slaveType()const->const SlaveType *{ return imp_->slave_type_; }
-		auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
-		Slave::~Slave() = default;
-		Slave::Slave(const std::string &name, const SlaveType *slave_type, std::uint16_t phy_id) :Object(name), imp_(new Imp) 
+		auto Slave::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
-			imp_->slave_type_ = slave_type;
-			imp_->phy_id_ = phy_id;
-
-		}
-		Slave::Slave(Object &father, const aris::core::XmlElement &xml_ele) :Object(father, xml_ele) 
-		{
+			Object::loadXml(xml_ele);
 			imp_->slave_type_ = nullptr;
 			if (!attributeString(xml_ele, "slave_type", "").empty())
 			{
@@ -146,8 +137,17 @@ namespace aris
 				}
 				imp_->slave_type_ = &*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"));
 			}
-			
+
 			imp_->phy_id_ = attributeUint16(xml_ele, "phy_id");
+		}
+		auto Slave::slaveType()const->const SlaveType *{ return imp_->slave_type_; }
+		auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
+		Slave::~Slave() = default;
+		Slave::Slave(const std::string &name, const SlaveType *slave_type, std::uint16_t phy_id) :Object(name), imp_(new Imp) 
+		{
+			imp_->slave_type_ = slave_type;
+			imp_->phy_id_ = phy_id;
+
 		}
 		Slave::Slave(const Slave &other) = default;
 		Slave::Slave(Slave &&other) = default;

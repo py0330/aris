@@ -302,11 +302,14 @@ void test_simple_model()
 	ra_ee->setMpm(pm_hand_change(ra_ee_pm));
 	ll_ee->setMpm(pm_hand_change(ll_ee_pm));
 	rl_ee->setMpm(pm_hand_change(rl_ee_pm));
+
+	aris::dynamic::dsp(4, 4, *rl_p1->pm());
 	if (!m.inverseKinematic(100, 1e-8))
 	{
 		std::cout << "inverseKinematic failed" << std::endl;
 		//break;
 	}
+	aris::dynamic::dsp(4, 4, *rl_p1->pm());
 	////
 	//m.saveXml("C:\\Users\\py033\\Desktop\\m.xml");
 

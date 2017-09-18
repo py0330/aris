@@ -17,6 +17,13 @@ namespace aris
 			std::unique_ptr<char[]> pool_;
 			std::atomic_size_t send_pos_{ 0 }, recv_pos_{ 0 };
 		};
+		auto Pipe::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			imp_->pool_size_ = attributeInt32(xml_ele, "pool_size", 16384);
+			imp_->pool_.reset(new char[imp_->pool_size_]());
+
+			Object::loadXml(xml_ele);
+		}
 		auto Pipe::sendMsg(const aris::core::MsgBase &msg)->bool
 		{
 			auto send_pos = imp_->send_pos_.load();
@@ -54,11 +61,6 @@ namespace aris
 		Pipe::Pipe(const std::string &name, std::size_t pool_size) :Object(name), imp_(new Imp)
 		{
 			imp_->pool_size_ = pool_size;
-			imp_->pool_.reset(new char[imp_->pool_size_]());
-		}
-		Pipe::Pipe(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele), imp_(new Imp)
-		{
-			imp_->pool_size_ = attributeInt32(xml_ele, "pool_size", 16384);
 			imp_->pool_.reset(new char[imp_->pool_size_]());
 		}
 		Pipe::Pipe(Pipe&&) = default;

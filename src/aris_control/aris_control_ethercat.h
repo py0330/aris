@@ -21,13 +21,13 @@ namespace aris
 		{
 		public:
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto index()const->std::uint16_t;
 			auto subindex()const->std::uint8_t;
 			auto size()const->aris::Size;
 			
 			virtual ~DO();
-			explicit DO(const std::string &name, std::uint16_t index, std::uint8_t subindex, aris::Size data_size);
-			explicit DO(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit DO(const std::string &name = "do", std::uint16_t index = 0x0000, std::uint8_t subindex=0x00, aris::Size data_size = 0);
 			DO(const DO &);
 			DO(DO &&);
 			DO& operator=(const DO &);
@@ -37,27 +37,6 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 			friend class EthercatMaster;
-		};
-		class Pdo :public DO
-		{
-		public:
-			static auto Type()->const std::string &{ static const std::string type("Pdo"); return std::ref(type); }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto ecHandle()->Handle*;
-			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
-
-			virtual ~Pdo();
-			explicit Pdo(const std::string &name, std::uint16_t index, std::uint8_t subindex, aris::Size data_size);
-			explicit Pdo(Object &father, const aris::core::XmlElement &xml_ele);
-			Pdo(const Pdo &);
-			Pdo(Pdo &&);
-			Pdo& operator=(const Pdo &);
-			Pdo& operator=(Pdo &&);
-
-		public:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
 		};
 		class Sdo :public DO
 		{
@@ -71,14 +50,14 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("Sdo"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto readable()const->bool;
 			auto writeable()const->bool;
 			auto configurable()const->bool;
 			auto option()const->unsigned;
 			auto configBuffer()->char*;
 			virtual ~Sdo();
-			explicit Sdo(const std::string &name, std::uint16_t index, std::uint8_t subindex, aris::Size data_size, unsigned opt, std::int32_t config_value = 0);
-			explicit Sdo(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Sdo(const std::string &name = "sdo", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0, unsigned opt = 0, std::int32_t config_value = 0);
 			Sdo(const Sdo &);
 			Sdo(Sdo &&);
 			Sdo& operator=(const Sdo &);
@@ -88,12 +67,34 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
+		class Pdo :public DO
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("Pdo"); return std::ref(type); }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto ecHandle()->Handle*;
+			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+
+			virtual ~Pdo();
+			explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0);
+			Pdo(const Pdo &);
+			Pdo(Pdo &&);
+			Pdo& operator=(const Pdo &);
+			Pdo& operator=(Pdo &&);
+
+		public:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
 		class PdoGroup :public aris::core::ObjectPool<Pdo>
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("PdoGroup"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto ecHandle()->Handle*;
 			auto ecHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 			auto tx()const->bool;
@@ -101,8 +102,7 @@ namespace aris
 			auto index()const->std::uint16_t;
 
 			virtual ~PdoGroup();
-			explicit PdoGroup(const std::string &name, std::uint16_t index, bool is_tx);
-			explicit PdoGroup(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit PdoGroup(const std::string &name = "pdo_group", std::uint16_t index = 0x0000, bool is_tx = true);
 			PdoGroup(const PdoGroup &);
 			PdoGroup(PdoGroup &&);
 			PdoGroup& operator=(const PdoGroup &);
@@ -118,11 +118,11 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("EthercatSlaveType"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto vendorID()const->std::uint32_t;
 
 			virtual ~EthercatSlaveType();
-			explicit EthercatSlaveType(const std::string &name, const std::string &esi_file_path);
-			explicit EthercatSlaveType(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit EthercatSlaveType(const std::string &name = "ethercat_slave_type", const std::string &esi_file_path = "");
 			EthercatSlaveType(const EthercatSlaveType &);
 			EthercatSlaveType(EthercatSlaveType &&);
 			EthercatSlaveType& operator=(const EthercatSlaveType &);
@@ -140,6 +140,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("EthercatSlave"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto vendorID()const->std::uint32_t;
 			auto productCode()const->std::uint32_t;
 			auto revisionNum()const->std::uint32_t;
@@ -168,8 +169,7 @@ namespace aris
 			auto configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void;
 
 			virtual ~EthercatSlave();
-			explicit EthercatSlave(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate);
-			explicit EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit EthercatSlave(const std::string &name = "ethercat_slave", const EthercatSlaveType *slave_type = nullptr, std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);
 			EthercatSlave(const EthercatSlave &other) = delete;
 			EthercatSlave(EthercatSlave &&other) = delete;
 			EthercatSlave& operator=(const EthercatSlave &other) = delete;
@@ -217,6 +217,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("EthercatMotion"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 
 			auto virtual modeOfOperation()const->std::uint8_t override;
 			auto virtual targetPos()const->double override;
@@ -255,9 +256,9 @@ namespace aris
 			auto virtual mode(std::uint8_t md)->int override;
 
 			virtual ~EthercatMotion();
-			EthercatMotion(Object &father, const aris::core::XmlElement &xml_ele);
-			EthercatMotion(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
-				, double max_pos, double min_pos, double max_vel, double max_acc, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
+			EthercatMotion(const std::string &name = "ethercat_motion", const EthercatSlaveType *slave_type = nullptr, std::uint16_t phy_id = 0
+				, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
+				, double max_pos = 0.0, double min_pos = 0.0, double max_vel = 0.0, double max_acc = 0.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 
 		private:
 			class Imp;

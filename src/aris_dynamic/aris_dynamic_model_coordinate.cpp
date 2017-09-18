@@ -637,21 +637,10 @@ namespace aris
 			s_pm2pe(*prtPm(), pe);
 			xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
 		}
-		auto Marker::fatherPart() const->const Part&{ return static_cast<const Part &>(this->father().father()); }
-		auto Marker::fatherPart()->Part& { return static_cast<Part &>(this->father().father()); }
-		auto Marker::glbPm()const->const double4x4&{ s_pm_dot_pm(*fatherPart().pm(), *prtPm(), const_cast<double*>(*imp_->pm_)); return imp_->pm_; }
-		auto Marker::glbVs()const->const double6&{ return fatherPart().glbVs(); }
-		auto Marker::glbAs()const->const double6&{ return fatherPart().glbAs(); }
-		auto Marker::prtPm()const->const double4x4&{ return imp_->prt_pm_; }
-		auto Marker::prtVs()const->const double6&{ return fatherPart().prtVs(); }
-		auto Marker::prtAs()const->const double6&{ return fatherPart().prtAs(); }
-		Marker::~Marker() = default;
-		Marker::Marker(const Marker&) = default;
-		Marker::Marker(Marker&&) = default;
-		Marker& Marker::operator=(const Marker&) = default;
-		Marker& Marker::operator=(Marker&&) = default;
-		Marker::Marker(Object &father, const aris::core::XmlElement &xml_ele) : Coordinate(father, xml_ele)
+		auto Marker::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
+			Coordinate::loadXml(xml_ele);
+			
 			double pm[16];
 
 			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), pm);
@@ -666,6 +655,19 @@ namespace aris
 				s_vc(16, pm, *imp_->prt_pm_);
 			}
 		}
+		auto Marker::fatherPart() const->const Part&{ return static_cast<const Part &>(this->father().father()); }
+		auto Marker::fatherPart()->Part& { return static_cast<Part &>(this->father().father()); }
+		auto Marker::glbPm()const->const double4x4&{ s_pm_dot_pm(*fatherPart().pm(), *prtPm(), const_cast<double*>(*imp_->pm_)); return imp_->pm_; }
+		auto Marker::glbVs()const->const double6&{ return fatherPart().glbVs(); }
+		auto Marker::glbAs()const->const double6&{ return fatherPart().glbAs(); }
+		auto Marker::prtPm()const->const double4x4&{ return imp_->prt_pm_; }
+		auto Marker::prtVs()const->const double6&{ return fatherPart().prtVs(); }
+		auto Marker::prtAs()const->const double6&{ return fatherPart().prtAs(); }
+		Marker::~Marker() = default;
+		Marker::Marker(const Marker&) = default;
+		Marker::Marker(Marker&&) = default;
+		Marker& Marker::operator=(const Marker&) = default;
+		Marker& Marker::operator=(Marker&&) = default;
 		Marker::Marker(const std::string &name, const double *prt_pm, bool active) : Coordinate(name, active)
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
@@ -707,6 +709,19 @@ namespace aris
 			s_im2iv(*this->prtIm(), iv);
 			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, iv).toString().c_str());
 			//xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path_.c_str());
+		}
+		auto Part::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), *imp_->glb_pm_);
+			std::copy_n(attributeMatrix(xml_ele, "vel", 1, 6).data(), 6, imp_->glb_vs_);
+			std::copy_n(attributeMatrix(xml_ele, "acc", 1, 6).data(), 6, imp_->glb_as_);
+			s_iv2im(attributeMatrix(xml_ele, "inertia", 1, 10).data(), *imp_->prt_im_);
+
+			Coordinate::loadXml(xml_ele);
+
+			imp_->marker_pool_ = findOrInsert<aris::core::ObjectPool<Marker, Element> >("marker_pool");
+			imp_->geometry_pool_ = findOrInsert<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
+
 		}
 		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
 		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
@@ -1266,29 +1281,6 @@ namespace aris
 			if (as_in) s_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), vs, as_in, imp_->glb_as_);
 		}
 		Part::~Part() = default;
-		Part::Part(Part &&other) :Coordinate(std::move(other)), imp_(std::move(other.imp_))
-		{
-			imp_->marker_pool_ = findType<aris::core::ObjectPool<Marker, Element> >("marker_pool");
-			imp_->geometry_pool_ = findType<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
-		};
-		Part::Part(const Part &other) :Coordinate(other), imp_(other.imp_)
-		{
-			imp_->marker_pool_ = findType<aris::core::ObjectPool<Marker, Element> >("marker_pool");
-			imp_->geometry_pool_ = findType<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
-		};
-		Part::Part(Object &father, const aris::core::XmlElement &xml_ele) : Coordinate(father, xml_ele)
-		{
-			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), *imp_->glb_pm_);
-			std::copy_n(attributeMatrix(xml_ele, "vel", 1, 6).data(), 6, imp_->glb_vs_);
-			std::copy_n(attributeMatrix(xml_ele, "acc", 1, 6).data(), 6, imp_->glb_as_);
-			s_iv2im(attributeMatrix(xml_ele, "inertia", 1, 10).data(), *imp_->prt_im_);
-
-			//if (xml_ele.Attribute("graphic_file_path"))
-			//	imp_->graphic_file_path_ = model().calculator().evaluateExpression(xml_ele.Attribute("graphic_file_path"));
-
-			imp_->marker_pool_ = findOrInsert<aris::core::ObjectPool<Marker, Element> >("marker_pool");
-			imp_->geometry_pool_ = findOrInsert<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
-		}
 		Part::Part(const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active)
 		{
 			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
@@ -1321,6 +1313,16 @@ namespace aris
 			setVs(vs);
 			setAs(as);
 		}
+		Part::Part(Part &&other) :Coordinate(std::move(other)), imp_(std::move(other.imp_))
+		{
+			imp_->marker_pool_ = findType<aris::core::ObjectPool<Marker, Element> >("marker_pool");
+			imp_->geometry_pool_ = findType<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
+		};
+		Part::Part(const Part &other) :Coordinate(other), imp_(other.imp_)
+		{
+			imp_->marker_pool_ = findType<aris::core::ObjectPool<Marker, Element> >("marker_pool");
+			imp_->geometry_pool_ = findType<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
+		};
 		Part& Part::operator=(Part &&other)
 		{
 			Coordinate::operator=(other);
@@ -1354,14 +1356,7 @@ namespace aris
 			xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
 			xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path.c_str());
 		}
-		auto ParasolidGeometry::prtPm()const->const double4x4&{ return imp_->prt_pm_; }
-		auto ParasolidGeometry::filePath()const->const std::string &{ return imp_->graphic_file_path; }
-		ParasolidGeometry::~ParasolidGeometry() = default;
-		ParasolidGeometry::ParasolidGeometry(const ParasolidGeometry &other) = default;
-		ParasolidGeometry::ParasolidGeometry(ParasolidGeometry &&other) = default;
-		ParasolidGeometry& ParasolidGeometry::operator=(const ParasolidGeometry &other) = default;
-		ParasolidGeometry& ParasolidGeometry::operator=(ParasolidGeometry &&other) = default;
-		ParasolidGeometry::ParasolidGeometry(Object &father, const aris::core::XmlElement &xml_ele) : Geometry(father, xml_ele), imp_(new Imp)
+		auto ParasolidGeometry::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			double pm[16];
 			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6, core::Matrix(1, 6, 0.0)).data(), pm);
@@ -1377,7 +1372,12 @@ namespace aris
 			}
 
 			imp_->graphic_file_path = attributeString(xml_ele, "graphic_file_path", "");
+
+			Geometry::loadXml(xml_ele);
 		}
+		auto ParasolidGeometry::prtPm()const->const double4x4&{ return imp_->prt_pm_; }
+		auto ParasolidGeometry::filePath()const->const std::string &{ return imp_->graphic_file_path; }
+		ParasolidGeometry::~ParasolidGeometry() = default;
 		ParasolidGeometry::ParasolidGeometry(const std::string &name, const std::string &graphic_file_path, const double* prt_pm) : Geometry(name), imp_(new Imp)
 		{
 			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
@@ -1385,7 +1385,11 @@ namespace aris
 			s_vc(16, prt_pm, *imp_->prt_pm_);
 
 			imp_->graphic_file_path = graphic_file_path;
-
 		}
+		ParasolidGeometry::ParasolidGeometry(const ParasolidGeometry &other) = default;
+		ParasolidGeometry::ParasolidGeometry(ParasolidGeometry &&other) = default;
+		ParasolidGeometry& ParasolidGeometry::operator=(const ParasolidGeometry &other) = default;
+		ParasolidGeometry& ParasolidGeometry::operator=(ParasolidGeometry &&other) = default;
+
 	}
 }

@@ -32,6 +32,17 @@ namespace aris
 			xml_ele.SetAttribute("pos_offset", posOffset());
 			xml_ele.SetAttribute("home_pos", homePos());
 		}
+		auto Motion::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			imp_->max_pos_ = attributeDouble(xml_ele, "max_pos", 0.0);
+			imp_->min_pos_ = attributeDouble(xml_ele, "min_pos", 0.0);
+			imp_->max_vel_ = attributeDouble(xml_ele, "max_vel", 0.0);
+			imp_->max_acc_ = attributeDouble(xml_ele, "max_acc", 0.0);
+			imp_->pos_factor_ = attributeDouble(xml_ele, "pos_factor", 1.0);
+			imp_->pos_offset_ = attributeDouble(xml_ele, "pos_offset", 0.0);
+			imp_->home_pos_ = attributeDouble(xml_ele, "home_pos", 0.0);
+			Slave::loadXml(xml_ele);
+		}
 		auto Motion::motId()const->aris::Size { return imp_->mot_id_; }
 		auto Motion::maxPos()const->double { return imp_->max_pos_; }
 		auto Motion::minPos()const->double { return imp_->min_pos_; }
@@ -50,16 +61,6 @@ namespace aris
 			imp_->pos_factor_ = pos_factor;
 			imp_->pos_offset_ = pos_offset;
 			imp_->home_pos_ = home_pos;
-		}
-		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) : Slave(father, xml_ele), imp_(new Imp) 
-		{
-			imp_->max_pos_ = attributeDouble(xml_ele, "max_pos");
-			imp_->min_pos_ = attributeDouble(xml_ele, "min_pos");
-			imp_->max_vel_ = attributeDouble(xml_ele, "max_vel");
-			imp_->max_acc_ = attributeDouble(xml_ele, "max_acc");
-			imp_->pos_factor_ = attributeDouble(xml_ele, "pos_factor", 1.0);
-			imp_->pos_offset_ = attributeDouble(xml_ele, "pos_offset", 0.0);
-			imp_->home_pos_ = attributeDouble(xml_ele, "home_pos", 0.0);
 		}
 
 		struct Controller::Imp{	aris::core::RefPool<Motion> motion_pool_;};

@@ -22,6 +22,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "Interaction" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto makI()->Marker& { return *makI_; }
 			auto makI() const->const Marker&{ return *makI_; }
 			auto makJ()->Marker& { return *makJ_; }
@@ -29,9 +30,8 @@ namespace aris
 
 		protected:
 			virtual ~Interaction() = default;
-			explicit Interaction(const std::string &name, Marker &makI, Marker &makJ, bool is_active = true)
-				: DynEle(name, is_active), makI_(&makI), makJ_(&makJ) {}
-			explicit Interaction(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true)
+				: DynEle(name, is_active), makI_(makI), makJ_(makJ) {}
 			Interaction(const Interaction &) = default;
 			Interaction(Interaction &&) = default;
 			Interaction& operator=(const Interaction &) = default;
@@ -76,8 +76,7 @@ namespace aris
 			auto virtual updPrtCmI()->void {};
 
 			virtual ~Constraint();
-			explicit Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active = true);
-			explicit Constraint(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Constraint(const std::string &name = "constraint", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true);
 			Constraint(const Constraint&);
 			Constraint(Constraint&&);
 			Constraint& operator=(const Constraint&);
@@ -99,8 +98,7 @@ namespace aris
 
 		protected:
 			virtual ~Joint() = default;
-			explicit Joint(Object &father, const aris::core::XmlElement &xml_ele) : Constraint(father, xml_ele) {}
-			explicit Joint(const std::string &name, Marker &makI, Marker &makJ, bool active = true) : Constraint(name, makI, makJ, active) {}
+			explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
 			Joint(const Joint &other);
 			Joint(Joint &&other);
 			Joint& operator=(const Joint &other);
@@ -115,7 +113,8 @@ namespace aris
 			static auto Dim()->Size { return 1; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual dim() const ->Size override { return 1; }
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual dim() const ->Size override { return Dim(); }
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
@@ -139,8 +138,7 @@ namespace aris
 
 		protected:
 			virtual ~Motion();
-			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
+			explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
 			Motion(const Motion &other);
 			Motion(Motion &&other);
 			Motion& operator=(const Motion &other);
@@ -163,9 +161,6 @@ namespace aris
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
-			//auto virtual cfPtr() const->const double* override { return cf(); }
-			//auto virtual prtCmI() const->const double* override { return *prtCmI(); }
-			//auto virtual locCmPtrI() const->const double* override { return *locCmI(); }
 			auto mpm()const->const double4x4&;
 			auto updMpm()->void;
 			auto setMpe(const double* pe, const char *type = "313")->void;
@@ -203,8 +198,7 @@ namespace aris
 
 		protected:
 			virtual ~GeneralMotion();
-			explicit GeneralMotion(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom = "xyz123", bool active = true);
+			explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr, const std::string& freedom = "xyz123", bool active = true);
 			GeneralMotion(const GeneralMotion &other);
 			GeneralMotion(GeneralMotion &&other);
 			GeneralMotion& operator=(const GeneralMotion &other);
@@ -228,12 +222,11 @@ namespace aris
 
 		protected:
 			virtual ~Force() = default;
+			explicit Force(const std::string &name = "force", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true):Interaction(name, makI, makJ, active) {}
 			Force(const Force &other) = default;
 			Force(Force &&other) = default;
 			Force& operator=(const Force &other) = default;
 			Force& operator=(Force &&other) = default;
-			explicit Force(Object &father, const aris::core::XmlElement &xml_ele) :Interaction(father, xml_ele) {}
-			explicit Force(const std::string &name, Marker &makI, Marker &makJ, bool active = true) :Interaction(name, makI, makJ, active) {}
 
 			double fsI_[6]{ 0 };
 			double fsJ_[6]{ 0 };
@@ -246,12 +239,12 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("RevoluteJoint"); return type; }
+			static auto Dim()->Size { return 5; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual dim() const->Size override { return 5; }
+			auto virtual dim() const ->Size override { return Dim(); }
 		private:
 			virtual ~RevoluteJoint() = default;
-			explicit RevoluteJoint(const std::string &name, Marker &makI, Marker &makJ);
-			explicit RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit RevoluteJoint(const std::string &name = "revolute_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 			RevoluteJoint(const RevoluteJoint &other) = default;
 			RevoluteJoint(RevoluteJoint &&other) = default;
 			RevoluteJoint& operator=(const RevoluteJoint &other) = default;
@@ -265,12 +258,12 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("PrismaticJoint"); return type; }
+			static auto Dim()->Size { return 5; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual dim() const->Size override { return 5; }
+			auto virtual dim() const->Size override { return Dim(); }
 		private:
 			virtual ~PrismaticJoint() = default;
-			explicit PrismaticJoint(const std::string &name, Marker &makI, Marker &makJ);
-			explicit PrismaticJoint(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit PrismaticJoint(const std::string &name = "prismatic_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 			PrismaticJoint(const PrismaticJoint &other) = default;
 			PrismaticJoint(PrismaticJoint &&other) = default;
 			PrismaticJoint& operator=(const PrismaticJoint &other) = default;
@@ -284,8 +277,9 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("UniversalJoint"); return type; }
+			static auto Dim()->Size { return 4; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual dim() const->Size override { return 4; }
+			auto virtual dim() const->Size override { return Dim(); }
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
@@ -295,8 +289,7 @@ namespace aris
 
 		private:
 			virtual ~UniversalJoint() = default;
-			explicit UniversalJoint(const std::string &name, Marker &makI, Marker &makJ);
-			explicit UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit UniversalJoint(const std::string &name = "universal_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 			UniversalJoint(const UniversalJoint &other) = default;
 			UniversalJoint(UniversalJoint &&other) = default;
 			UniversalJoint& operator=(const UniversalJoint &other) = default;
@@ -310,12 +303,12 @@ namespace aris
 		{
 		public:
 			static const std::string& Type() { static const std::string type("SphericalJoint"); return type; }
+			static auto Dim()->Size { return 3; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual dim() const->Size override { return 3; }
+			auto virtual dim() const->Size override { return Dim(); }
 		private:
 			virtual ~SphericalJoint() = default;
-			explicit SphericalJoint(const std::string &Name, Marker &makI, Marker &makJ);
-			explicit SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit SphericalJoint(const std::string &name = "spherical_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 			SphericalJoint(const SphericalJoint &other) = default;
 			SphericalJoint(SphericalJoint &&other) = default;
 			SphericalJoint& operator=(const SphericalJoint &other) = default;
@@ -332,6 +325,7 @@ namespace aris
 			static const std::string& Type() { static const std::string type("SingleComponentForce"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual updFs()->void override;
 			auto setComponentID(Size id)->void { component_axis_ = id; }
 			auto setFce(double value)->void { std::fill_n(fce_value_, 6, 0); fce_value_[component_axis_] = value; }
@@ -340,7 +334,7 @@ namespace aris
 
 		private:
 			virtual ~SingleComponentForce() = default;
-			explicit SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, Size componentID);
+			explicit SingleComponentForce(const std::string &name = "single_component_force", Marker *makI = nullptr, Marker *makJ = nullptr, Size componentID = 0);
 			explicit SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele);
 			SingleComponentForce(const SingleComponentForce &other) = default;
 			SingleComponentForce(SingleComponentForce &&other) = default;

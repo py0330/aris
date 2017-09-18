@@ -95,8 +95,7 @@ namespace aris
 
 		protected:
 			virtual ~Coordinate() = default;
-			explicit Coordinate(const std::string &name, bool active = true);
-			explicit Coordinate(Object &father, const aris::core::XmlElement &xml_ele) :DynEle(father, xml_ele) {}
+			explicit Coordinate(const std::string &name = "coordinate", bool active = true);
 			Coordinate(const Coordinate &) = default;
 			Coordinate(Coordinate &&) = default;
 			Coordinate& operator=(const Coordinate &) = default;
@@ -108,19 +107,22 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "Marker" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual glbPm()const->const double4x4& override;
 			auto virtual glbVs()const->const double6& override;
 			auto virtual glbAs()const->const double6& override;
 			auto virtual prtPm()const->const double4x4& override;
 			auto virtual prtVs()const->const double6& override;
 			auto virtual prtAs()const->const double6& override;
+			void setPrtPm(const double *prt_pm) { std::copy_n(prt_pm, 16, const_cast<double *>(*this->prtPm())); }
+			void setPrtPe(const double *prt_pe, const char *type = "313") { s_pe2pm(prt_pe, const_cast<double *>(*prtPm()), type); }
+			void setPrtPq(const double *prt_pq) { s_pq2pm(prt_pq, const_cast<double *>(*prtPm())); }
 			auto fatherPart() const->const Part&;
 			auto fatherPart()->Part&;
 
 		protected:
 			virtual ~Marker();
-			explicit Marker(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit Marker(const std::string &name, const double *prt_pm = nullptr, bool active = true);
+			explicit Marker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true);
 			Marker(const Marker&);
 			Marker(Marker&&);
 			Marker& operator=(const Marker&);
@@ -140,6 +142,7 @@ namespace aris
 			auto static Type()->const std::string &{ static const std::string type{ "Part" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
@@ -225,12 +228,11 @@ namespace aris
 
 		private:
 			virtual ~Part();
+			explicit Part(const std::string &name = "part", const double *prt_im = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
 			Part(const Part &other);
 			Part(Part &&other);
 			Part& operator=(const Part &other);
 			Part& operator=(Part &&other);
-			explicit Part(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit Part(const std::string &name, const double *prt_im = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
 
 
 		private:
@@ -251,8 +253,7 @@ namespace aris
 
 		protected:
 			virtual ~Geometry() = default;
-			explicit Geometry(Object &father, const aris::core::XmlElement &xml_ele) : Element(father, xml_ele) {}
-			explicit Geometry(const std::string &name) : Element(name) {}
+			explicit Geometry(const std::string &name = "geometry") : Element(name) {}
 			Geometry(const Geometry&) = default;
 			Geometry(Geometry&&) = default;
 			Geometry& operator=(const Geometry&) = default;
@@ -268,17 +269,17 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "ParasolidGeometry" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto prtPm()const->const double4x4&;
 			auto filePath()const->const std::string &;
 
 		private:
 			virtual ~ParasolidGeometry();
+			explicit ParasolidGeometry(const std::string &name = "parasolid_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
 			ParasolidGeometry(const ParasolidGeometry &other);
 			ParasolidGeometry(ParasolidGeometry &&other);
 			ParasolidGeometry& operator=(const ParasolidGeometry &other);
 			ParasolidGeometry& operator=(ParasolidGeometry &&other);
-			explicit ParasolidGeometry(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit ParasolidGeometry(const std::string &name, const std::string &graphic_file_path, const double* prt_pm = nullptr);
 
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
@@ -286,24 +287,6 @@ namespace aris
 			friend class Model;
 			friend class aris::core::Root;
 			friend class aris::core::Object;
-		};
-		class FloatMarker final :public Marker
-		{
-		public:
-			void setPrtPm(const double *prt_pm) { std::copy_n(prt_pm, 16, const_cast<double *>(*this->prtPm())); }
-			void setPrtPe(const double *prt_pe, const char *type = "313") { s_pe2pm(prt_pe, const_cast<double *>(*prtPm()), type); }
-			void setPrtPq(const double *prt_pq) { s_pq2pm(prt_pq, const_cast<double *>(*prtPm())); }
-
-			explicit FloatMarker(Part &prt, const double *prt_pe = nullptr, const char* eu_type = "313") :Marker("float_marker")
-			{
-				static const double default_prt_pe[6]{ 0,0,0,0,0,0 };
-				prt_pe = prt_pe ? prt_pe : default_prt_pe;
-				setPrtPe(prt_pe, eu_type);
-			}
-			FloatMarker(const FloatMarker &other) = default;
-			FloatMarker(FloatMarker &&other) = default;
-			FloatMarker& operator=(const FloatMarker &other) = default;
-			FloatMarker& operator=(FloatMarker &&other) = default;
 		};
 	}
 }

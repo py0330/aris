@@ -1241,7 +1241,7 @@ void test_constraint()
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
 
-		auto &jnt = model.add<RevoluteJoint>("r1", mak_i, mak_j);
+		auto &jnt = model.add<RevoluteJoint>("r1", &mak_i, &mak_j);
 
 		const double glb_cmI[30]{ 0.772732834750084, -0.55499915414649,0.307993352194134,0,0,
 			-0.0834135974649058,   0.392232918710641,   0.916076148165476, 0, 0,
@@ -1302,7 +1302,7 @@ void test_constraint()
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
 
-		auto &jnt = model.add<PrismaticJoint>("p1", mak_i, mak_j);
+		auto &jnt = model.add<PrismaticJoint>("p1", &mak_i, &mak_j);
 
 		const double glb_cmI[30]{ 0.905206704276648, - 0.292815500847941,0,0,0,
 			- 0.199091608400864,0.348090537398911, - 0, - 0, - 0,
@@ -1365,7 +1365,7 @@ void test_constraint()
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
 
-		auto &jnt = model.add<SphericalJoint>("s1", mak_i, mak_j);
+		auto &jnt = model.add<SphericalJoint>("s1", &mak_i, &mak_j);
 
 		const double glb_cmI[]{ 0.462635502589964, - 0.389341212341349,   0.796480892498936,
 			- 0.650918208225164,   0.460769198258918,   0.603321831311263,
@@ -1426,7 +1426,7 @@ void test_constraint()
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVe(mak_j, relative_ve, nullptr, "313");
 
-		auto &jnt = model.add<UniversalJoint>("u1", mak_i, mak_j);
+		auto &jnt = model.add<UniversalJoint>("u1", &mak_i, &mak_j);
 
 		const double glb_cmI[]{ 0.464190255001298, - 0.133832675696459,   0.875566229406867,   0,
 			0.831313762500364,   0.40698899884696, - 0.378519990350626,   0,
@@ -1491,7 +1491,7 @@ void test_constraint()
 		prt_m.setVs(mak_j, relative_vs);
 		prt_m.setAs(mak_j, relative_as);
 
-		auto &mot = model.add<Motion>("m1", mak_i, mak_j);
+		auto &mot = model.add<Motion>("m1", &mak_i, &mak_j);
 
 		const double glb_cmI[]{ 0.307993352194134,
 			0.916076148165476,
@@ -1563,7 +1563,7 @@ void test_constraint()
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
 
-		auto &mot = model.add<GeneralMotion>("m1", mak_i, mak_j);
+		auto &mot = model.add<GeneralMotion>("m1", &mak_i, &mak_j);
 		
 		const double mpm_default[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		const double mpe313[6] = { 0.1, 0.2, 0.3,0.000423769269879415,   1.38980987554835,   1.79253453841257 };
@@ -1878,7 +1878,7 @@ void test_solver_compute()
 		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
 		auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
 
-		gs.allocateMemory();
+		gs.init();
 
 		gs.updCm();
 		if (!s_is_equal(24, 24, gs.cm(), cm, error))std::cout << "GroundDividedSolver::updCm() failed" << std::endl;
@@ -1979,11 +1979,11 @@ void test_solver_3R()
 				m.motionPool().at(i).setMa(input_origin_a[i]);
 			}
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 
 			// get result //
@@ -2008,11 +2008,11 @@ void test_solver_3R()
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 			// get result //
 			m.generalMotionPool().at(0).updMpm();
@@ -2041,11 +2041,11 @@ void test_solver_3R()
 
 			
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 
 			// get result //
@@ -2070,11 +2070,11 @@ void test_solver_3R()
 			m.generalMotionPool().at(0).setMva(output_va);
 			m.generalMotionPool().at(0).setMaa(output_aa);
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 
 			// get result //
@@ -2098,7 +2098,7 @@ void test_solver_3R()
 			int count{ 0 };
 			for (auto &mot : m.motionPool())mot.activate(true);
 			m.generalMotionPool().at(0).activate(false);
-			s.allocateMemory();
+			s.init();
 			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
 				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(input_p[i]);
@@ -2128,7 +2128,7 @@ void test_solver_3R()
 				m.motionPool().at(i).setMv(input_v[i]);
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2148,7 +2148,7 @@ void test_solver_3R()
 				m.motionPool().at(i).setMv(input_v[i]);
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2160,7 +2160,7 @@ void test_solver_3R()
 			int count{ 0 };
 			for (auto &mot : m.motionPool())mot.activate(false);
 			m.generalMotionPool().at(0).activate(true);
-			s.allocateMemory();
+			s.init();
 			std::cout << s.type() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
 				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.generalMotionPool().at(0).setMpm(output_pm);
@@ -2186,7 +2186,7 @@ void test_solver_3R()
 			m.generalMotionPool().at(0).setMpm(output_origin_pm);
 			m.generalMotionPool().at(0).setMva(output_origin_va);
 			m.generalMotionPool().at(0).setMaa(output_origin_aa);
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2203,7 +2203,7 @@ void test_solver_3R()
 			m.generalMotionPool().at(0).setMpm(output_origin_pm);
 			m.generalMotionPool().at(0).setMva(output_origin_va);
 			m.generalMotionPool().at(0).setMaa(output_origin_aa);
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2223,7 +2223,7 @@ void test_solver_3R()
 		test_forward(ds);
 		test_inverse(ds);
 
-		m.simulatorPool().add<SolverSimulator>("simulator", ds);
+		m.simulatorPool().add<SolverSimulator>("simulator", &ds);
 		m.simResultPool().add<SimResult>("result1");
 		m.simResultPool().front().allocateMemory();
 		m.simResultPool().front().allocateMemory();
@@ -2291,11 +2291,11 @@ void test_solver_6R()
 				m.motionPool().at(i).setMa(input_origin_a[i]);
 			}
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 
 			// get result //
@@ -2320,11 +2320,11 @@ void test_solver_6R()
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 			// get result //
 			m.generalMotionPool().at(0).updMpm();
@@ -2351,11 +2351,11 @@ void test_solver_6R()
 			m.generalMotionPool().at(0).setMva(output_origin_va);
 			m.generalMotionPool().at(0).setMaa(output_origin_aa);
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 
 			// get result //
@@ -2380,11 +2380,11 @@ void test_solver_6R()
 			m.generalMotionPool().at(0).setMva(output_va);
 			m.generalMotionPool().at(0).setMaa(output_aa);
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 
 			// get result //
@@ -2408,7 +2408,7 @@ void test_solver_6R()
 			int count{ 0 };
 			for (auto &mot : m.motionPool())mot.activate(true);
 			m.generalMotionPool().at(0).activate(false);
-			s.allocateMemory();
+			s.init();
 			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
 				if (count % 2)for (int i{ 0 }; i < 6; ++i) m.motionPool().at(i).setMp(input_p[i]);
@@ -2438,7 +2438,7 @@ void test_solver_6R()
 				m.motionPool().at(i).setMv(input_v[i]);
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2458,7 +2458,7 @@ void test_solver_6R()
 				m.motionPool().at(i).setMv(input_v[i]);
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2470,7 +2470,7 @@ void test_solver_6R()
 			int count{ 0 };
 			for (auto &mot : m.motionPool())mot.activate(false);
 			m.generalMotionPool().at(0).activate(true);
-			s.allocateMemory();
+			s.init();
 			std::cout << s.type() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
 				if (count % 2)for (int i{ 0 }; i < 6; ++i) m.generalMotionPool().at(0).setMpm(output_pm);
@@ -2496,7 +2496,7 @@ void test_solver_6R()
 			m.generalMotionPool().at(0).setMpm(output_origin_pm);
 			m.generalMotionPool().at(0).setMva(output_origin_va);
 			m.generalMotionPool().at(0).setMaa(output_origin_aa);
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2513,7 +2513,7 @@ void test_solver_6R()
 			m.generalMotionPool().at(0).setMpm(output_origin_pm);
 			m.generalMotionPool().at(0).setMva(output_origin_va);
 			m.generalMotionPool().at(0).setMaa(output_origin_aa);
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2539,13 +2539,13 @@ void test_solver_6R()
 		};
 		for (auto &mot : m.motionPool())mot.activate(false);
 		m.generalMotionPool().at(0).activate(true);
-		auto &s = m.simulatorPool().add<SolverSimulator>("simulator", ds);
+		auto &s = m.simulatorPool().add<SolverSimulator>("simulator", &ds);
 		auto &r = m.simResultPool().add<SimResult>("result1");
 
 		s.simulate(plan, 0, r);
 		m.saveXml("C:\\Users\\py033\\Desktop\\m3.xml");
 		
-		auto &adams_simulator = m.simulatorPool().add<AdamsSimulator>("adams_simulator", ds);
+		auto &adams_simulator = m.simulatorPool().add<AdamsSimulator>("adams_simulator", &ds);
 		adams_simulator.saveAdams("C:\\Users\\py033\\Desktop\\m3.cmd", r);
 
 		
@@ -2650,11 +2650,11 @@ void test_solver_stewart()
 				m.motionPool().at(i).setMa(input_origin_a[i]);
 			}
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 
 			// get result //
@@ -2679,11 +2679,11 @@ void test_solver_stewart()
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 			// get result //
 			m.generalMotionPool().at(0).updMpm();
@@ -2710,11 +2710,11 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).setMva(output_origin_va);
 			m.generalMotionPool().at(0).setMaa(output_origin_aa);
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 			
 			// get result //
@@ -2738,11 +2738,11 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).setMva(output_va);
 			m.generalMotionPool().at(0).setMaa(output_aa);
 			// compute //
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
-			s.allocateMemory();
+			s.init();
 			s.kinVel();
-			s.allocateMemory();
+			s.init();
 			s.dynAccAndFce();
 
 			// get result //
@@ -2766,7 +2766,7 @@ void test_solver_stewart()
 			int count{ 0 };
 			for (auto &mot : m.motionPool())mot.activate(true);
 			m.generalMotionPool().at(0).activate(false);
-			s.allocateMemory();
+			s.init();
 			std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
 				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(input_p[i]);
@@ -2796,7 +2796,7 @@ void test_solver_stewart()
 				m.motionPool().at(i).setMv(input_v[i]);
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2816,7 +2816,7 @@ void test_solver_stewart()
 				m.motionPool().at(i).setMv(input_v[i]);
 				m.motionPool().at(i).setMa(input_a[i]);
 			}
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2828,7 +2828,7 @@ void test_solver_stewart()
 			int count{ 0 };
 			for (auto &mot : m.motionPool())mot.activate(false);
 			m.generalMotionPool().at(0).activate(true);
-			s.allocateMemory();
+			s.init();
 			std::cout << s.type() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
 			{
 				if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.generalMotionPool().at(0).setMpm(output_pm);
@@ -2854,7 +2854,7 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).setMpm(output_origin_pm);
 			m.generalMotionPool().at(0).setMva(output_origin_va);
 			m.generalMotionPool().at(0).setMaa(output_origin_aa);
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2871,7 +2871,7 @@ void test_solver_stewart()
 			m.generalMotionPool().at(0).setMpm(output_origin_pm);
 			m.generalMotionPool().at(0).setMva(output_origin_va);
 			m.generalMotionPool().at(0).setMaa(output_origin_aa);
-			s.allocateMemory();
+			s.init();
 			s.kinPos();
 			s.kinVel();
 			s.dynAccAndFce();
@@ -2885,7 +2885,7 @@ void test_solver_stewart()
 		std::cout << "test stewart robot:" << std::endl;
 
 		auto &r = m.simResultPool().add<SimResult>("result1");
-		auto &adams_simulator = m.simulatorPool().add<AdamsSimulator>("adams_simulator", ds);
+		auto &adams_simulator = m.simulatorPool().add<AdamsSimulator>("adams_simulator", &ds);
 		r.record();
 		adams_simulator.saveAdams("C:\\Users\\py033\\Desktop\\m4.cmd", r, 0);
 

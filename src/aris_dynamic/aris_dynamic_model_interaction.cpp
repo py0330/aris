@@ -25,7 +25,7 @@ namespace aris
 			xml_ele.SetAttribute("mak_i", this->makI().name().c_str());
 			xml_ele.SetAttribute("mak_j", this->makJ().name().c_str());
 		}
-		Interaction::Interaction(Object &father, const aris::core::XmlElement &xml_ele) : DynEle(father, xml_ele)
+		auto Interaction::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			if (model().findByName("part_pool") == model().children().end())
 				throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
@@ -49,6 +49,8 @@ namespace aris
 			auto mak_j = prt_n->markerPool().findByName(xml_ele.Attribute("mak_j"));
 			if (mak_j == prt_n->markerPool().end())throw std::runtime_error(std::string("can't find marker j for element \"") + this->name() + "\"");
 			makJ_ = &(*mak_j);
+
+			DynEle::loadXml(xml_ele);
 		}
 
 		struct Constraint::Imp { Size col_id_, blk_col_id_; double cf_[6]{ 0 }, prtCmI_[36]{ 0 }, locCmI_[36]{ 0 }; };
@@ -91,8 +93,7 @@ namespace aris
 			s_mmi(dim(), 1, 6, prtCmI(), ColMajor{ dim() }, tem, 1, ca, 1);
 		}
 		Constraint::~Constraint() = default;
-		Constraint::Constraint(const std::string &name, Marker &makI, Marker &makJ, bool is_active) : Interaction(name, makI, makJ, is_active) {}
-		Constraint::Constraint(Object &father, const aris::core::XmlElement &xml_ele) : Interaction(father, xml_ele) {}
+		Constraint::Constraint(const std::string &name, Marker* makI, Marker* makJ, bool is_active) : Interaction(name, makI, makJ, is_active) {}
 		Constraint::Constraint(const Constraint&) = default;
 		Constraint::Constraint(Constraint&&) = default;
 		Constraint& Constraint::operator=(const Constraint&) = default;
@@ -119,6 +120,17 @@ namespace aris
 			xml_ele.SetAttribute("component", static_cast<int>(axis()));
 			if (imp_->mp_offset_ != 0)xml_ele.SetAttribute("mp_offset", imp_->mp_offset_);
 			if (imp_->mp_factor_ != 1.0)xml_ele.SetAttribute("mp_factor", imp_->mp_factor_);
+		}
+		auto Motion::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			imp_->component_axis_ = attributeInt32(xml_ele, "component");
+			imp_->mp_offset_ = attributeDouble(xml_ele, "mp_offset", 0.0);
+			imp_->mp_factor_ = attributeDouble(xml_ele, "mp_factor", 1.0);
+			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
+
+			Constraint::loadXml(xml_ele);
+			s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
+			const_cast<double*>(locCmI())[axis()] = 1.0;
 		}
 		auto Motion::cptCp(double *cp)const->void { Constraint::cptCp(cp); cp[0] += mp(); }
 		auto Motion::cptCv(double *cv)const->void { Constraint::cptCv(cv); cv[0] += mv(); }
@@ -151,32 +163,19 @@ namespace aris
 		auto Motion::setMfDyn(double mf_dyn)->void { Constraint::imp_->cf_[0] = mf_dyn; }
 		auto Motion::mfFrc() const->double { return s_sgn(imp_->mv_)*frcCoe()[0] + imp_->mv_*frcCoe()[1] + imp_->ma_*frcCoe()[2]; }
 		Motion::~Motion() = default;
-		Motion::Motion(const std::string &name, Marker &makI, Marker &makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : Constraint(name, makI, makJ, active)
+		Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : Constraint(name, makI, makJ, active)
 		{
-			static const double default_frc_coe[3]{ 0,0,0 };
-			frc_coe = frc_coe ? frc_coe : default_frc_coe;
-			setFrcCoe(frc_coe);
-
 			imp_->component_axis_ = component_axis;
-
-			double loc_cst[6]{ 0,0,0,0,0,0, };
-			loc_cst[axis()] = 1;
-			s_tf(*this->makI().prtPm(), loc_cst, const_cast<double*>(prtCmI()));
-
 			imp_->mp_offset_ = mp_offset;
 			imp_->mp_factor_ = mp_factor;
-		}
-		Motion::Motion(Object &father, const aris::core::XmlElement &xml_ele) : Constraint(father, xml_ele)
-		{
-			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
-			imp_->component_axis_ = attributeInt32(xml_ele, "component");
+			
+			static const double default_frc_coe[3]{ 0,0,0 };
+			setFrcCoe(frc_coe ? frc_coe : default_frc_coe);
 
 			double loc_cst[6]{ 0,0,0,0,0,0, };
-			loc_cst[axis()] = 1;
-			s_tf(*this->makI().prtPm(), loc_cst, const_cast<double*>(prtCmI()));
-
-			imp_->mp_offset_ = attributeDouble(xml_ele, "mp_offset", 0.0);
-			imp_->mp_factor_ = attributeDouble(xml_ele, "mp_factor", 1.0);
+			s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
+			const_cast<double*>(locCmI())[axis()] = 1.0;
+			if (makI)s_tf_n(Dim(), *this->makI().prtPm(), locCmI(), const_cast<double*>(prtCmI()));
 		}
 		Motion::Motion(const Motion &other) = default;
 		Motion::Motion(Motion &&other) = default;
@@ -315,7 +314,7 @@ namespace aris
 		auto GeneralMotion::mfs() const->const double6&{ return Constraint::imp_->cf_; }
 		auto GeneralMotion::setMfs(const double * mfs)->void { s_vc(6, mfs, Constraint::imp_->cf_); }
 		GeneralMotion::~GeneralMotion() = default;
-		GeneralMotion::GeneralMotion(const std::string &name, Marker &makI, Marker &makJ, const std::string& freedom, bool active) :Constraint(name, makI, makJ, active)
+		GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, const std::string& freedom, bool active) :Constraint(name, makI, makJ, active)
 		{
 			const static double loc_cst[6][6]
 			{
@@ -326,30 +325,15 @@ namespace aris
 				0,0,0,0,1,0,
 				0,0,0,0,0,1
 			};
-
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
-		}
-		GeneralMotion::GeneralMotion(Object &father, const aris::core::XmlElement &xml_ele) :Constraint(father, xml_ele)
-		{
-			const static double loc_cst[6][6]
-			{
-				1,0,0,0,0,0,
-				0,1,0,0,0,0,
-				0,0,1,0,0,0,
-				0,0,0,1,0,0,
-				0,0,0,0,1,0,
-				0,0,0,0,0,1
-			};
-
-			s_tf_n(Dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
+			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
+			if (makI)s_tf_n(Dim(), *this->makI().prtPm(), locCmI(), const_cast<double*>(prtCmI()));
 		}
 		GeneralMotion::GeneralMotion(const GeneralMotion &other) = default;
 		GeneralMotion::GeneralMotion(GeneralMotion &&other) = default;
 		GeneralMotion& GeneralMotion::operator=(const GeneralMotion &other) = default;
 		GeneralMotion& GeneralMotion::operator=(GeneralMotion &&other) = default;
 
-
-		RevoluteJoint::RevoluteJoint(const std::string &name, Marker &makI, Marker &makJ): Joint(name, makI, makJ)
+		RevoluteJoint::RevoluteJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
 		{
 			const static double loc_cst[6][5]
 			{
@@ -361,24 +345,9 @@ namespace aris
 				0,0,0,0,0
 			};
 			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-			s_tf_n(dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
+			if (makI)s_tf_n(Dim(), *this->makI().prtPm(), locCmI(), const_cast<double*>(prtCmI()));
 		}
-		RevoluteJoint::RevoluteJoint(Object &father, const aris::core::XmlElement &xml_ele): Joint(father, xml_ele)
-		{
-			const static double loc_cst[6][5]
-			{
-				1,0,0,0,0,
-				0,1,0,0,0,
-				0,0,1,0,0,
-				0,0,0,1,0,
-				0,0,0,0,1,
-				0,0,0,0,0
-			};
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-			s_tf_n(dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
-		}
-
-		PrismaticJoint::PrismaticJoint(const std::string &name, Marker &makI, Marker &makJ): Joint(name, makI, makJ)
+		PrismaticJoint::PrismaticJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
 		{
 			const static double loc_cst[6][5]
 			{
@@ -390,23 +359,8 @@ namespace aris
 				0,0,0,0,1
 			};
 			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-			s_tf_n(dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
+			if (makI)s_tf_n(Dim(), *this->makI().prtPm(), locCmI(), const_cast<double*>(prtCmI()));
 		}
-		PrismaticJoint::PrismaticJoint(Object &father, const aris::core::XmlElement &xml_ele): Joint(father, xml_ele)
-		{
-			const static double loc_cst[6][5]
-			{
-				1,0,0,0,0,
-				0,1,0,0,0,
-				0,0,0,0,0,
-				0,0,1,0,0,
-				0,0,0,1,0,
-				0,0,0,0,1
-			};
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-			s_tf_n(dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
-		}
-
 		auto UniversalJoint::cptCa(double *ca)const->void
 		{
 			Constraint::cptCa(ca);
@@ -483,7 +437,7 @@ namespace aris
 			s_c3(axis_i_m, 1, axis_j_m, 1, const_cast<double*>(prtCmI()) + 3 * 4 + 3, 4);
 			s_nv(3, 1.0 / s_norm(3, prtCmI() + 3 * 4 + 3, 4), const_cast<double*>(prtCmI()) + 3 * 4 + 3, 4);
 		}
-		UniversalJoint::UniversalJoint(const std::string &name, Marker &makI, Marker &makJ) : Joint(name, makI, makJ)
+		UniversalJoint::UniversalJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ)
 		{
 			const static double loc_cst[6][4]
 			{
@@ -495,24 +449,9 @@ namespace aris
 				0,0,0,0,
 			};
 			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-			s_tf_n(dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
+			if (makI)s_tf_n(Dim(), *this->makI().prtPm(), locCmI(), const_cast<double*>(prtCmI()));
 		}
-		UniversalJoint::UniversalJoint(Object &father, const aris::core::XmlElement &xml_ele) : Joint(father, xml_ele)
-		{
-			const static double loc_cst[6][4]
-			{
-				1,0,0,0,
-				0,1,0,0,
-				0,0,1,0,
-				0,0,0,0,
-				0,0,0,0,
-				0,0,0,0,
-			};
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-			s_tf_n(dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
-		}
-
-		SphericalJoint::SphericalJoint(const std::string &name, Marker &makI, Marker &makJ): Joint(name, makI, makJ)
+		SphericalJoint::SphericalJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
 		{
 			const static double loc_cst[6][3]
 			{
@@ -525,28 +464,19 @@ namespace aris
 			};
 
 			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-			s_tf_n(dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
-		}
-		SphericalJoint::SphericalJoint(Object &father, const aris::core::XmlElement &xml_ele): Joint(father, xml_ele)
-		{
-			const static double loc_cst[6][3]
-			{
-				1,0,0,
-				0,1,0,
-				0,0,1,
-				0,0,0,
-				0,0,0,
-				0,0,0,
-			};
-
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-			s_tf_n(dim(), *this->makI().prtPm(), *loc_cst, const_cast<double*>(prtCmI()));
+			if (makI)s_tf_n(Dim(), *this->makI().prtPm(), locCmI(), const_cast<double*>(prtCmI()));
 		}
 
 		auto SingleComponentForce::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Force::saveXml(xml_ele);
 			xml_ele.SetAttribute("component", static_cast<int>(this->component_axis_));
+		}
+		auto SingleComponentForce::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			component_axis_ = attributeInt32(xml_ele, "component", 0);
+
+			Force::loadXml(xml_ele);
 		}
 		auto SingleComponentForce::updFs()->void
 		{
@@ -555,8 +485,6 @@ namespace aris
 			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), pm_M2N);
 			s_tf(-1.0, pm_M2N, fsI_, fsJ_);
 		}
-		SingleComponentForce::SingleComponentForce(const std::string &name, Marker& makI, Marker& makJ, Size componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
-		SingleComponentForce::SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele) : Force(father, xml_ele), component_axis_(attributeInt32(xml_ele, "component")) {}
-
+		SingleComponentForce::SingleComponentForce(const std::string &name, Marker* makI, Marker* makJ, Size componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
 	}
 }

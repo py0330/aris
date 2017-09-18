@@ -18,10 +18,10 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("RTTimer"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 
 			virtual ~RTTimer();
-			RTTimer(const std::string &name);
-			RTTimer(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit RTTimer(const std::string &name = "rt_timer");
 			RTTimer(const RTTimer &) = delete;
 			RTTimer(RTTimer &&) = delete;
 			RTTimer& operator=(const RTTimer &) = delete;
@@ -38,6 +38,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("DataLogger"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto start(const std::string &log_file_name = std::string())->void;
 			auto stop()->void;
 			// use in rt thread //
@@ -46,8 +47,7 @@ namespace aris
 			auto lout()const->const aris::core::MsgStream &{ return const_cast<DataLogger*>(this)->lout(); };
 
 			virtual ~DataLogger();
-			DataLogger(const std::string &name);
-			DataLogger(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit DataLogger(const std::string &name = "data_logger");
 			DataLogger(const DataLogger &) = delete;
 			DataLogger(DataLogger &&) = delete;
 			DataLogger& operator=(const DataLogger &) = delete;
@@ -64,8 +64,7 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 
 			virtual ~SlaveType() = default;
-			explicit SlaveType(const std::string &name) :Object(name) {};
-			explicit SlaveType(Object &father, const aris::core::XmlElement &xml_ele):Object(father, xml_ele) {};
+			explicit SlaveType(const std::string &name = "slave_type") :Object(name) {};
 			SlaveType(const SlaveType &) = default;
 			SlaveType(SlaveType &&) = default;
 			SlaveType& operator=(const SlaveType &) = default;
@@ -77,6 +76,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("Slave"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual send()->void {}
 			auto virtual recv()->void {}
 			auto slaveType()const->const SlaveType *;
@@ -84,8 +84,7 @@ namespace aris
 			auto slaId()const->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 
 			virtual ~Slave();
-			explicit Slave(const std::string &name, const SlaveType *slave_type, std::uint16_t phy_id);
-			explicit Slave(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit Slave(const std::string &name = "slave", const SlaveType *slave_type = nullptr, std::uint16_t phy_id = 0);
 			Slave(const Slave &other);
 			Slave(Slave &&other);
 			Slave& operator=(const Slave &other);
@@ -129,7 +128,7 @@ namespace aris
 			auto rtHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
 
 			virtual ~Master();
-			Master(const std::string &name = "master");
+			explicit Master(const std::string &name = "master");
 			Master(const Master &other) = delete;
 			Master(Master &&other) = delete;
 			Master& operator=(const Master &other) = delete;

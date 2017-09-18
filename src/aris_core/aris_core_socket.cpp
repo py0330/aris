@@ -228,6 +228,13 @@ namespace aris
 				}
 			}
 		}
+		auto Socket::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			setRemoteIP(attributeString(xml_ele, "remote_ip", std::string()));
+			setPort(attributeString(xml_ele, "port", std::string()));
+
+			Object::loadXml(xml_ele);
+		}
 		auto Socket::stop()->void
 		{
 			std::lock(imp_->state_mutex_, imp_->close_mutex_);
@@ -521,11 +528,6 @@ namespace aris
 		{
 			setRemoteIP(remote_ip);
 			setPort(port);
-		}
-		Socket::Socket(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele), imp_(new Imp(this))
-		{
-			setRemoteIP(attributeString(xml_ele, "remote_ip", std::string()));
-			setPort(attributeString(xml_ele, "port", std::string()));
 		}
 	}
 }

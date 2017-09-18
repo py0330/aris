@@ -18,6 +18,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("Motion"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto motId()const->aris::Size;
 			auto maxPos()const->double;
 			auto minPos()const->double;
@@ -52,7 +53,7 @@ namespace aris
 			auto virtual mode(std::uint8_t md)->int = 0;
 
 			virtual ~Motion();
-			explicit Motion(const std::string &name, const SlaveType *st, std::uint16_t phy_id, double max_pos, double min_pos, double max_vel, double max_acc, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
+			explicit Motion(const std::string &name = "motion", const SlaveType *st = nullptr, std::uint16_t phy_id = 0, double max_pos = 0.0, double min_pos = 0.0, double max_vel = 0.0, double max_acc = 0.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
 			Motion(const Motion &other) = delete;
 			Motion(Motion &&other) = delete;

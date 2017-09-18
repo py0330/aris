@@ -40,17 +40,19 @@ namespace aris
 
 			xml_ele.SetAttribute("size", static_cast<std::int32_t>(size()));
 		}
+		auto DO::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			imp_->index_ = attributeUint16(xml_ele, "index");
+			imp_->subindex_ = attributeUint8(xml_ele, "subindex");
+			imp_->data_size_ = attributeUint32(xml_ele, "size");
+			
+			Object::loadXml(xml_ele);
+		}
 		auto DO::index()const->std::uint16_t { return imp_->index_; }
 		auto DO::subindex()const->std::uint8_t { return imp_->subindex_; }
 		auto DO::size()const->aris::Size { return imp_->data_size_; }
 		DO::~DO() = default;
 		DO::DO(const std::string &name, std::uint16_t index, std::uint8_t subindex, aris::Size data_size):Object(name), imp_(new Imp(index, subindex, data_size)){}
-		DO::DO(Object &father, const aris::core::XmlElement &xml_ele) : Object(father, xml_ele)
-		{
-			imp_->index_ = attributeUint16(xml_ele, "index");
-			imp_->subindex_ = attributeUint8(xml_ele, "subindex");
-			imp_->data_size_ = attributeUint32(xml_ele, "size");
-		}
 		DO::DO(const DO &) = default;
 		DO::DO(DO &&) = default;
 		DO& DO::operator=(const DO &) = default;
@@ -79,6 +81,19 @@ namespace aris
 			xml_ele.SetAttribute("read", option() & READ ? "true" : "false");
 			xml_ele.SetAttribute("write", option() & WRITE ? "true" : "false");
 		}
+		auto Sdo::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			if (attributeBool(xml_ele, "read", true))imp_->option_ |= READ; else imp_->option_ &= ~READ;
+			if (attributeBool(xml_ele, "write", true))imp_->option_ |= WRITE; else imp_->option_ &= ~WRITE;
+			if (xml_ele.Attribute("config"))
+			{
+				if (!writeable())throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + std::string(xml_ele.Name()) + "\" sdo");
+				imp_->option_ |= CONFIG;
+				imp_->config_value_int32_ = attributeInt64(xml_ele, "config");
+			}
+
+			DO::loadXml(xml_ele);
+		}
 		auto Sdo::readable()const->bool { return (imp_->option_ & READ) != 0; }
 		auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
 		auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0;  }
@@ -93,17 +108,6 @@ namespace aris
 				//
 			}
 		}
-		Sdo::Sdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele)
-		{
-			if (attributeBool(xml_ele, "read", true))imp_->option_ |= READ; else imp_->option_ &= ~READ;
-			if (attributeBool(xml_ele, "write", true))imp_->option_ |= WRITE; else imp_->option_ &= ~WRITE;
-			if (xml_ele.Attribute("config"))
-			{
-				if (!writeable())throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + std::string(xml_ele.Name()) + "\" sdo");
-				imp_->option_ |= CONFIG;
-				imp_->config_value_int32_ = attributeInt64(xml_ele, "config");
-			}
-		}
 		Sdo::Sdo(const Sdo &) = default;
 		Sdo::Sdo(Sdo &&) = default;
 		Sdo& Sdo::operator=(const Sdo &) = default;
@@ -111,10 +115,10 @@ namespace aris
 
 		struct Pdo::Imp { aris::core::ImpPtr<Handle> ec_handle_; };
 		auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void{	DO::saveXml(xml_ele);}
+		auto Pdo::loadXml(const aris::core::XmlElement &xml_ele)->void{	DO::loadXml(xml_ele);}
 		auto Pdo::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
 		Pdo::~Pdo() = default;
 		Pdo::Pdo(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size size):DO(name, index, sub_index, size){}
-		Pdo::Pdo(Object &father, const aris::core::XmlElement &xml_ele) :DO(father, xml_ele) {}
 		Pdo::Pdo(const Pdo &) = default;
 		Pdo::Pdo(Pdo &&) = default;
 		Pdo& Pdo::operator=(const Pdo &) = default;
@@ -138,17 +142,19 @@ namespace aris
 
 			xml_ele.SetAttribute("is_tx", tx());
 		}
+		auto PdoGroup::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			imp_->index_ = attributeUint16(xml_ele, "index");
+			imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
+
+			Object::loadXml(xml_ele);
+		}
 		auto PdoGroup::ecHandle()->Handle* { return imp_->handle_.get(); }
 		auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 		auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
 		PdoGroup::~PdoGroup() = default;
 		PdoGroup::PdoGroup(const std::string &name, std::uint16_t index, bool is_tx):aris::core::ObjectPool<Pdo>(name), imp_(new Imp(index, is_tx)){}
-		PdoGroup::PdoGroup(Object &father, const aris::core::XmlElement &xml_ele) :ObjectPool(father, xml_ele)
-		{
-			imp_->index_ = attributeUint16(xml_ele, "index");
-			imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
-		}
 		PdoGroup::PdoGroup(const PdoGroup &) = default;
 		PdoGroup::PdoGroup(PdoGroup &&) = default;
 		PdoGroup& PdoGroup::operator=(const PdoGroup &) = default;
@@ -415,16 +421,18 @@ namespace aris
 			Object::saveXml(xml_ele);
 			xml_ele.SetAttribute("esi_file_path", imp_->esi_file_path_.c_str());
 		}
+		auto EthercatSlaveType::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			SlaveType::loadXml(xml_ele);
+
+			imp_->esi_file_path_ = attributeString(xml_ele, "esi_file_path");
+			imp_->init();
+		}
 		auto EthercatSlaveType::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
 		EthercatSlaveType::~EthercatSlaveType() = default;
 		EthercatSlaveType::EthercatSlaveType(const std::string &name, const std::string &esi_file_path) : SlaveType(name), imp_(new Imp)
 		{
 			imp_->esi_file_path_ = esi_file_path;
-			imp_->init();
-		}
-		EthercatSlaveType::EthercatSlaveType(Object &father, const aris::core::XmlElement &xml_ele) : SlaveType(father, xml_ele), imp_(new Imp)
-		{
-			imp_->esi_file_path_ = attributeString(xml_ele, "esi_file_path");
 			imp_->init();
 		}
 		EthercatSlaveType::EthercatSlaveType(const EthercatSlaveType &) = default;
@@ -477,7 +485,6 @@ namespace aris
 
 			}
 		};
-
 		auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void 
 		{
 			Slave::saveXml(xml_ele);
@@ -497,6 +504,17 @@ namespace aris
 			s = std::stringstream();
 			s << "0x" << std::setfill('0') << std::setw(sizeof(dcAssignActivate()) * 2) << std::hex << dcAssignActivate();
 			xml_ele.SetAttribute("dc_assign_activate", s.str().c_str());
+		}
+		auto EthercatSlave::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			imp_->vendor_id_ = attributeUint32(xml_ele, "vendor_id");
+			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
+			imp_->revision_num_ = attributeUint32(xml_ele, "revision_num");
+			imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
+			
+			Slave::loadXml(xml_ele);
+			imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
+			imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo> >("sdo_pool");
 		}
 		auto EthercatSlave::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
 		auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
@@ -549,16 +567,6 @@ namespace aris
 			imp_->product_code_ = p_code;
 			imp_->revision_num_ = r_num;
 			imp_->dc_assign_activate_ = dc;
-		}
-		EthercatSlave::EthercatSlave(Object &father, const aris::core::XmlElement &xml_ele) : Slave(father, xml_ele), imp_(new Imp)
-		{
-			if (slaveType() && !dynamic_cast<const EthercatSlaveType*>(slaveType()))throw std::runtime_error("invalid slaveType, because it's not EthercatSlaveType");
-			imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
-			imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo> >("sdo_pool");
-			imp_->vendor_id_ = attributeUint32(xml_ele, "vendor_id");
-			imp_->product_code_ = attributeUint32(xml_ele, "product_code");
-			imp_->revision_num_ = attributeUint32(xml_ele, "revision_num");
-			imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
 		}
 
 		class EthercatMaster::Imp
@@ -719,6 +727,11 @@ namespace aris
 			xml_ele.SetAttribute("home_pos", homePos());
 
 
+		}
+		auto EthercatMotion::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			Motion::loadXml(xml_ele);
+			EthercatSlave::loadXml(xml_ele);
 		}
 		auto EthercatMotion::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
 		auto EthercatMotion::targetPos()const->double { return imp_->target_pos_; }
@@ -1063,7 +1076,6 @@ namespace aris
 			return md == modeOfDisplay() ? 0 : 1;
 		}
 		EthercatMotion::~EthercatMotion() = default;
-		EthercatMotion::EthercatMotion(Object &father, const aris::core::XmlElement &xml_ele) :EthercatSlave(father, xml_ele), Motion(father, xml_ele), Slave(father, xml_ele), imp_(new Imp) {}
 		EthercatMotion::EthercatMotion(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
 			, double max_pos, double min_pos, double max_vel, double max_acc, double pos_factor, double pos_offset, double home_pos)
 			: EthercatSlave(name, slave_type, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)

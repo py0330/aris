@@ -69,10 +69,6 @@ namespace aris
 		{
 			for (auto i = 0; i < 3; ++i)imp_->data_[i].reset(new_func());
 		};
-		Sensor::Sensor(Object &father, const aris::core::XmlElement &xml_ele, std::function<SensorData*()> new_func) :Object(father, xml_ele), imp_(new Imp) 
-		{
-			for (auto i = 0; i < 3; ++i)imp_->data_[i].reset(new_func());
-		};
 
 		SensorDataProtector::SensorDataProtector(Sensor *sensor) : sensor_(sensor), data_(nullptr)
 		{

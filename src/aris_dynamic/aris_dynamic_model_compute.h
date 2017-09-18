@@ -32,10 +32,13 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Solver" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual allocateMemory()->void = 0;
 			auto virtual kinPos()->void = 0;
 			auto virtual kinVel()->void = 0;
 			auto virtual dynAccAndFce()->void = 0;
+			auto init()->void;
 			auto error()const->double;
 			auto setError(double error)->void;
 			auto maxError()const->double;
@@ -47,8 +50,7 @@ namespace aris
 
 		protected:
 			virtual ~Solver();
-			explicit Solver(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit Solver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
+			explicit Solver(const std::string &name = "solver", Size max_iter_count = 100, double max_error = 1e-10);
 			Solver(const Solver&);
 			Solver(Solver&&);
 			Solver& operator=(const Solver&);
@@ -70,8 +72,7 @@ namespace aris
 
 		protected:
 			virtual ~Calibrator();
-			explicit Calibrator(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit Calibrator(const std::string &name);
+			explicit Calibrator(const std::string &name = "calibrator");
 			Calibrator(const Calibrator&);
 			Calibrator(Calibrator&&);
 			Calibrator& operator=(const Calibrator&);
@@ -92,14 +93,14 @@ namespace aris
 			public:
 				static auto Type()->const std::string &{ static const std::string type{ "TimeResult" }; return type; }
 				auto virtual type() const->const std::string& override{ return Type(); }
-				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+				auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 				auto record()->void;
 				auto restore(Size pos)->void;
 
 			private:
 				virtual ~TimeResult();
-				explicit TimeResult(Object &father, const aris::core::XmlElement &xml_ele);
-				explicit TimeResult(const std::string &name);
+				explicit TimeResult(const std::string &name = "time_result");
 				TimeResult(const TimeResult&);
 				TimeResult(TimeResult&&);
 				TimeResult& operator=(const TimeResult&);
@@ -118,7 +119,8 @@ namespace aris
 			public:
 				static auto Type()->const std::string &{ static const std::string type{ "PartResult" }; return type; }
 				auto virtual type() const->const std::string& override{ return Type(); }
-				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+				auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 				auto part()->Part&;
 				auto part()const->const Part&{ return const_cast<PartResult*>(this)->part(); }
 				auto record()->void;
@@ -126,8 +128,7 @@ namespace aris
 
 			private:
 				virtual ~PartResult();
-				explicit PartResult(Object &father, const aris::core::XmlElement &xml_ele);
-				explicit PartResult(const std::string &name, Part &part);
+				explicit PartResult(const std::string &name = "part_result", Part *part = nullptr);
 				PartResult(const PartResult&);
 				PartResult(PartResult&&);
 				PartResult& operator=(const PartResult&);
@@ -147,7 +148,8 @@ namespace aris
 			public:
 				static auto Type()->const std::string &{ static const std::string type{ "ConstraintResult" }; return type; }
 				auto virtual type() const->const std::string& override{ return Type(); }
-				auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+				auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+				auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 				auto constraint()->Constraint&;
 				auto constraint()const->const Constraint&{ return const_cast<ConstraintResult*>(this)->constraint(); }
 				auto record()->void;
@@ -155,8 +157,7 @@ namespace aris
 
 			private:
 				virtual ~ConstraintResult();
-				explicit ConstraintResult(Object &father, const aris::core::XmlElement &xml_ele);
-				explicit ConstraintResult(const std::string &name, Constraint &constraint);
+				explicit ConstraintResult(const std::string &name = "constraint_result", Constraint *constraint = nullptr);
 				ConstraintResult(const ConstraintResult&);
 				ConstraintResult(ConstraintResult&&);
 				ConstraintResult& operator=(const ConstraintResult&);
@@ -173,6 +174,7 @@ namespace aris
 
 			static auto Type()->const std::string &{ static const std::string type{ "SimResult" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto timeResult()->TimeResult&;
 			auto timeResult()const->const TimeResult&{ return const_cast<SimResult*>(this)->timeResult(); }
 			auto partResultPool()->aris::core::ObjectPool<PartResult, Element>&;
@@ -188,8 +190,7 @@ namespace aris
 
 		protected:
 			virtual ~SimResult();
-			explicit SimResult(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit SimResult(const std::string &name);
+			explicit SimResult(const std::string &name = "sim_result");
 			SimResult(const SimResult&);
 			SimResult(SimResult&&);
 			SimResult& operator=(const SimResult&);
@@ -207,6 +208,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Simulator" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
+			
 			auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void;
 			template<typename ParamType>
 			auto simulate(const PlanFunction &plan, ParamType type, SimResult &result)->void
@@ -217,8 +219,7 @@ namespace aris
 
 		protected:
 			virtual ~Simulator();
-			explicit Simulator(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit Simulator(const std::string &name);
+			explicit Simulator(const std::string &name = "simulator");
 			Simulator(const Simulator&);
 			Simulator(Simulator&&);
 			Simulator& operator=(const Simulator&);
@@ -289,8 +290,7 @@ namespace aris
 
 		protected:
 			virtual ~CombineSolver();
-			explicit CombineSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit CombineSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit CombineSolver(const std::string &name = "combine_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			CombineSolver(const CombineSolver &other);
 			CombineSolver(CombineSolver &&other);
 			CombineSolver& operator=(const CombineSolver &other);
@@ -324,8 +324,7 @@ namespace aris
 
 		protected:
 			virtual ~GroundCombineSolver();
-			explicit GroundCombineSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit GroundCombineSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit GroundCombineSolver(const std::string &name = "ground_combine_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			GroundCombineSolver(const GroundCombineSolver &other);
 			GroundCombineSolver(GroundCombineSolver &&other);
 			GroundCombineSolver& operator=(const GroundCombineSolver &other);
@@ -385,8 +384,7 @@ namespace aris
 
 		protected:
 			virtual ~DividedSolver();
-			explicit DividedSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit DividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit DividedSolver(const std::string &name = "devided_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			DividedSolver(const DividedSolver &other);
 			DividedSolver(DividedSolver &&other);
 			DividedSolver& operator=(const DividedSolver &other);
@@ -419,8 +417,7 @@ namespace aris
 
 		protected:
 			virtual ~GroundDividedSolver();
-			explicit GroundDividedSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit GroundDividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit GroundDividedSolver(const std::string &name = "ground_devided_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			GroundDividedSolver(const GroundDividedSolver &other);
 			GroundDividedSolver(GroundDividedSolver &&other);
 			GroundDividedSolver& operator=(const GroundDividedSolver &other);
@@ -453,8 +450,7 @@ namespace aris
 
 		protected:
 			virtual ~PartDividedSolver();
-			explicit PartDividedSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit PartDividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit PartDividedSolver(const std::string &name = "part_divided_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			PartDividedSolver(const PartDividedSolver &other);
 			PartDividedSolver(PartDividedSolver &&other);
 			PartDividedSolver& operator=(const PartDividedSolver &other);
@@ -485,8 +481,7 @@ namespace aris
 
 		protected:
 			virtual ~LltGroundDividedSolver();
-			explicit LltGroundDividedSolver(const std::string &name);
-			explicit LltGroundDividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit LltGroundDividedSolver(const std::string &name = "llt_ground_divided_solver");
 			LltGroundDividedSolver(const LltGroundDividedSolver &other);
 			LltGroundDividedSolver(LltGroundDividedSolver &&other);
 			LltGroundDividedSolver& operator=(const LltGroundDividedSolver &other);
@@ -518,8 +513,7 @@ namespace aris
 
 		protected:
 			virtual ~LltPartDividedSolver();
-			explicit LltPartDividedSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit LltPartDividedSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit LltPartDividedSolver(const std::string &name = "llt_part_divided_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			LltPartDividedSolver(const LltPartDividedSolver &other);
 			LltPartDividedSolver(LltPartDividedSolver &&other);
 			LltPartDividedSolver& operator=(const LltPartDividedSolver &other);
@@ -599,8 +593,7 @@ namespace aris
 
 		protected:
 			virtual ~DiagSolver();
-			explicit DiagSolver(const std::string &name, Size max_iter_count = 100, double max_error = 1e-10);
-			explicit DiagSolver(Object &father, const aris::core::XmlElement &xml_ele);
+			explicit DiagSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			DiagSolver(const DiagSolver &other);
 			DiagSolver(DiagSolver &&other);
 			DiagSolver& operator=(const DiagSolver &other);
@@ -620,6 +613,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "SolverSimulator" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void override;
 			using Simulator::simulate;
 			auto solver()->Solver&;
@@ -628,8 +622,7 @@ namespace aris
 
 		protected:
 			virtual ~SolverSimulator();
-			explicit SolverSimulator(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit SolverSimulator(const std::string &name, Solver &solver);
+			explicit SolverSimulator(const std::string &name = "solver_simulator", Solver *solver = nullptr);
 			SolverSimulator(const SolverSimulator&);
 			SolverSimulator(SolverSimulator&&);
 			SolverSimulator& operator=(const SolverSimulator&);
@@ -655,8 +648,7 @@ namespace aris
 
 		protected:
 			virtual ~AdamsSimulator();
-			explicit AdamsSimulator(Object &father, const aris::core::XmlElement &xml_ele);
-			explicit AdamsSimulator(const std::string &name, Solver &solver);
+			explicit AdamsSimulator(const std::string &name = "adams_solver", Solver *solver = nullptr);
 			AdamsSimulator(const AdamsSimulator&);
 			AdamsSimulator(AdamsSimulator&&);
 			AdamsSimulator& operator=(const AdamsSimulator&);

@@ -338,8 +338,7 @@ public:
 		model().partPool().at(6).setPm(model().partPool().at(5), pm);
 	}
 
-	HulkInverseSolver(const std::string &name) :DiagSolver(name) {};
-	HulkInverseSolver(Object &father, const aris::core::XmlElement &xml_ele) :DiagSolver(father, xml_ele) {};
+	HulkInverseSolver(const std::string &name = "hulk_inverse_solver") :DiagSolver(name) {};
 };
 class HulkForwardSolver :public aris::dynamic::DiagSolver
 {
@@ -381,8 +380,7 @@ public:
 		model().partPool().at(6).setPm(model().partPool().at(5), pm);
 	}
 
-	HulkForwardSolver(const std::string &name) :DiagSolver(name) {};
-	HulkForwardSolver(Object &father, const aris::core::XmlElement &xml_ele) :DiagSolver(father, xml_ele) {};
+	HulkForwardSolver(const std::string &name = "hulk_forward_solver") :DiagSolver(name) {};
 };
 
 struct RcParam 
