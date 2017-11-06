@@ -214,17 +214,9 @@ namespace aris
 			friend class Slave;
 			friend class Master;
 		};
-		auto Master::loadXml(const aris::core::XmlDocument &xml_doc)->void
-		{
-			auto root_xml_ele = xml_doc.RootElement()->FirstChildElement("controller");
-
-			if (!root_xml_ele)throw std::runtime_error("can't find controller element in xml file");
-
-			loadXml(*root_xml_ele);
-		}
 		auto Master::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
-			Root::loadXml(xml_ele);
+			Object::loadXml(xml_ele);
 
 			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Object> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Object> *>(&(*findByName("slave_type_pool")));
 			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Object> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Object> *>(&(*findByName("slave_pool")));
@@ -297,14 +289,14 @@ namespace aris
 		auto Master::slavePool()->aris::core::ObjectPool<Slave, aris::core::Object>& { return *imp_->slave_pool_; }
 		auto Master::dataLogger()->DataLogger& { return *imp_->data_logger_; }
 		Master::~Master() = default;
-		Master::Master(const std::string &name) :imp_(new Imp), Root(name)
+		Master::Master(const std::string &name) :imp_(new Imp), Object(name)
 		{
-			registerChildType<RTTimer>();
-			registerChildType<DataLogger>();
-			registerChildType<SlaveType>();
-			registerChildType<aris::core::ObjectPool<SlaveType> >();
-			registerChildType<Slave>();
-			registerChildType<aris::core::ObjectPool<Slave> >();
+			registerType<RTTimer>();
+			registerType<DataLogger>();
+			registerType<SlaveType>();
+			registerType<aris::core::ObjectPool<SlaveType> >();
+			registerType<Slave>();
+			registerType<aris::core::ObjectPool<Slave> >();
 
 			imp_->slave_type_pool_ = &add<aris::core::ObjectPool<SlaveType> >("slave_type_pool");
 			imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave> >("slave_pool");

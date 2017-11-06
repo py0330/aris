@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include <aris_core_xml.h>
+#include <aris_core_object.h>
 
 
 namespace aris

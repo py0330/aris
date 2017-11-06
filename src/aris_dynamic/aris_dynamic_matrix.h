@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <fstream>
 #include <list>
+#include <cmath>
 
 #include <aris_core_basic_type.h>
 

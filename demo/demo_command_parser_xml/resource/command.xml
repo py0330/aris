@@ -1,19 +1,17 @@
-<root>
-	<command_parser type="CommandParser">
-		<command_pool type="CommandPoolObject" default_child_type="Command">
-			<enable type="Command" default="group">
-				<group type="GroupParam">
-					<unique1 type="UniqueParam">
-						<all type="Param" abbreviation="a"/>
-						<motion type="Param" abbreviation="m" default="0"/>
-					</unique1>
-					<unique2 type="UniqueParam" default="position">
-						<position type="Param" abbreviation="p"/>
-						<velocity type="Param" abbreviation="v"/>
-						<current type="Param"/>
-					</unique2>
-				</group>
-			</enable>
-		</command_pool>
-	</command_parser>
-</root>
+<command_parser type="CommandParser">
+	<command_pool type="CommandPoolObject" default_child_type="Command">
+		<enable type="Command" default="group">
+			<group type="GroupParam">
+				<unique1 type="UniqueParam">
+					<all type="Param" abbreviation="a"/>
+					<motion type="Param" abbreviation="m" default="0"/>
+				</unique1>
+				<unique2 type="UniqueParam" default="position">
+					<position type="Param" abbreviation="p"/>
+					<velocity type="Param" abbreviation="v"/>
+					<current type="Param"/>
+				</unique2>
+			</group>
+		</enable>
+	</command_pool>
+</command_parser>

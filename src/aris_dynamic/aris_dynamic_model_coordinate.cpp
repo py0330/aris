@@ -727,6 +727,59 @@ namespace aris
 		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
 		auto Part::geometryPool()->aris::core::ObjectPool<Geometry, Element>& { return *imp_->geometry_pool_; }
 		auto Part::geometryPool()const->const aris::core::ObjectPool<Geometry, Element>&{ return *imp_->geometry_pool_; }
+		
+		auto Part::cptFg(const Coordinate &relative_to, double *fg)const->void
+		{
+			double prt_gr[3], prt_fg[6];
+			s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
+			s_mm(6, 1, 3, *prtIm(), 6, prt_gr, 1, prt_fg, 1);
+
+			double pm[16];
+			getPm(relative_to, pm);
+			s_tf(pm, prt_fg, fg);
+		}
+		//auto Part::cptGlbFg(double *fg)const->void
+		//{
+		//	double prt_gr[3], prt_fg[6];
+		//	s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
+		//	s_mm(6, 1, 3, *prtIm(), 6, prt_gr, 1, prt_fg, 1);
+		//	s_tf(*pm(), prt_fg, fg);
+		//}
+		auto Part::cptPrtFg(double *fg)const->void
+		{
+			double prt_gr[3];
+			s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
+			s_mm(6, 1, 3, *prtIm(), 6, prt_gr, 1, fg, 1);
+		}
+
+		auto Part::cptFv(const Coordinate &relative_to, double *fv)const->void
+		{
+			double prt_vs[6], tem[6], prt_fv[6];
+			s_inv_tv(*pm(), vs(), prt_vs);
+			s_mm(6, 1, 6, *prtIm(), prt_vs, tem);
+			s_cf(prt_vs, tem, prt_fv);
+
+			double pm[16];
+			getPm(relative_to, pm);
+			s_tf(pm, prt_fv, fv);
+		}
+		//auto Part::cptGlbFv(double *fv)const->void
+		//{
+		//	double prt_vs[6], prt_fv[6], tem[6];
+		//	s_inv_tv(*pm(), vs(), prt_vs);
+		//	s_mm(6, 1, 6, *prtIm(), prt_vs, tem);
+		//	s_cf(prt_vs, tem, prt_fv);
+		//	s_tf(*pm(), prt_fv, fv);
+		//}
+		auto Part::cptPrtFv(double *fv)const->void
+		{
+			double prt_vs[6], tem[6];
+			s_inv_tv(*pm(), vs(), prt_vs);
+			s_mm(6, 1, 6, *prtIm(), prt_vs, tem);
+			s_cf(prt_vs, tem, fv);
+		}
+
+
 		auto Part::cptGlbFg(double *fg)const->void
 		{
 			double prt_gr[3], prt_fg[6];
@@ -749,19 +802,25 @@ namespace aris
 			cptGlbFg(pf);
 			s_vs(6, fv, pf);
 		}
-		auto Part::cptPrtFg(double *fg)const->void
+
+		/*auto Part::cptPf(const Coordinate &relative_to, double *pf)const->void 
 		{
-			double prt_gr[3];
-			s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
-			s_mm(6, 1, 3, *prtIm(), 6, prt_gr, 1, fg, 1);
-		}
-		auto Part::cptPrtFv(double *fv)const->void
-		{
-			double prt_vs[6], tem[6];
-			s_inv_tv(*pm(), vs(), prt_vs);
-			s_mm(6, 1, 6, *prtIm(), prt_vs, tem);
-			s_cf(prt_vs, tem, fv);
-		}
+			double fv[6], prt_pf[6];
+			cptPrtFv(fv);
+			cptPrtFg(prt_pf);
+			s_vs(6, fv, prt_pf);
+
+			double pm[16];
+			getPm(relative_to, pm);
+			s_tf(pm, prt_pf, pf);
+		}*/
+		//auto Part::cptGlbPf(double *pf)const->void
+		//{
+		//	double fv[6];
+		//	cptGlbFv(fv);
+		//	cptGlbFg(pf);
+		//	s_vs(6, fv, pf);
+		//}
 		auto Part::cptPrtPf(double *pf)const->void
 		{
 			double fv[6];
@@ -769,6 +828,7 @@ namespace aris
 			cptPrtFg(pf);
 			s_vs(6, fv, pf);
 		}
+
 		auto Part::cptPrtVs(double *prt_vs)const->void
 		{
 			s_inv_tv(*pm(), vs(), prt_vs);
@@ -777,6 +837,7 @@ namespace aris
 		{
 			s_inv_tv(*pm(), as(), prt_as);
 		}
+
 		auto Part::prtIm()const->const double6x6&{ return imp_->prt_im_; }
 		auto Part::updPrtVs()->void { s_inv_tv(*pm(), vs(), imp_->prt_vs_); }
 		auto Part::updPrtAs()->void { s_inv_tv(*pm(), as(), imp_->prt_as_); }
@@ -1283,6 +1344,12 @@ namespace aris
 		Part::~Part() = default;
 		Part::Part(const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active)
 		{
+			registerType<aris::core::ObjectPool<Marker, Element>>();
+			registerType<Marker>();
+
+			registerType<aris::core::ObjectPool<Geometry, Element>>();
+			registerType<ParasolidGeometry>();
+			
 			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
 			imp_->geometry_pool_ = &add<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
 

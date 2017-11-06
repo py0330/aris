@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <future>
-#include <aris.h>
+#include <aris_core.h>
 #include "test_core_socket.h"
 
 using namespace aris::core;
@@ -15,76 +15,25 @@ void test_core_socket()
 {
 	try
 	{
-		Root root;
-		root.registerChildType<Socket>();
-		auto& server = root.add<Socket>("server");
-		auto& client = root.add<Socket>("client");
-
-		server.setOnReceivedMsg([](Socket *, Msg &msg)
-		{
-			std::cout << msg.data() << std::endl;
-			return 0;
-		});
-		server.setOnReceivedRequest([](Socket *, Msg &msg) 
-		{
-			std::cout << msg.data() << std::endl;
-			return Msg(std::string(msg.data()) + " was received");
-		});
-		server.setOnLoseConnection( [](Socket*)
-		{
-			std::cout << "connection lost" << std::endl;
-			return 0;
-		});
-		client.setRemoteIP("127.0.0.1");
-		client.setPort("5866");
-		
-		server.startServer("5866");
-		client.connect();
-
-		enum { THREAD_NUM = 8 };
-		std::future<void> ft[THREAD_NUM];
-		for (auto i = 0; i < THREAD_NUM; ++i)
-		{
-			ft[i] = std::async(std::launch::async, [&client, i]() 
-			{
-				for (auto j = 0; j < 100; ++j)
-				{
-					auto msg = client.sendRequest(Msg("thread " + std::to_string(i) + " count: " + std::to_string(j)));
-					std::cout << msg.data() << std::endl;
-				}
-			});
-		}
-
-		for (auto i = 0; i < THREAD_NUM; ++i) ft[i].wait();
-
-		client.stop();
-
-		std::string s;
-		std::getline(std::cin, s);
-		
-	}
-	catch (std::exception &e)
-	{
-		std::cout << e.what();
-	}
-
-	try
-	{
-		Root root;
-		root.registerChildType<Socket>();
+		Object root;
+		root.registerType<Socket>();
 
 		aris::core::XmlDocument xml_doc;
 		xml_doc.Parse(xml_data);
-		root.loadXml(xml_doc);
+		root.loadXmlDoc(xml_doc);
 
 		auto& server = static_cast<Socket&>(*root.findByName("server"));
 		auto& client = static_cast<Socket&>(*root.findByName("client"));
 
 		server.setOnReceivedMsg([](Socket *, Msg &msg)
 		{
-			std::cout << msg.data();
-
+			std::cout << msg.data() << std::endl;
 			return 0;
+		});
+		server.setOnReceivedRequest([](Socket *, Msg &msg)
+		{
+			std::cout << msg.data() << std::endl;
+			return Msg(std::string(msg.data()) + " was received");
 		});
 		server.setOnLoseConnection([](Socket*)
 		{
@@ -103,26 +52,22 @@ void test_core_socket()
 			ft[i] = std::async(std::launch::async, [&client, i]()
 			{
 				for (auto j = 0; j<100; ++j)
-					client.sendMsg(Msg("thread " + std::to_string(i) + " count: " + std::to_string(j) + "\n"));
+					client.sendMsg(Msg("thread " + std::to_string(i) + " count: " + std::to_string(j)));
 			});
 		}
 
-		for (auto i = 0; i < THREAD_NUM; ++i)
-		{
-			ft[i].wait();
-		}
-
+		for (auto i = 0; i < THREAD_NUM; ++i) ft[i].wait();
 		client.stop();
 
-		char s;
-		std::cin >> s;
+		std::string s;
+		std::getline(std::cin, s);
 
 		server.startServer();
 		client.connect();
 		client.sendMsg(Msg("123456\n"));
+		client.stop();
 
-
-		std::cin >> s;
+		std::getline(std::cin, s);
 
 	}
 	catch (std::exception &e)

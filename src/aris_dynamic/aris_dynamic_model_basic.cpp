@@ -91,14 +91,14 @@ namespace aris
 
 		auto MatrixVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
-			data_ = model().calculator().calculateExpression(xml_ele.GetText());
+			data() = model().calculator().calculateExpression(xml_ele.GetText());
 			Variable::loadXml(xml_ele);
-			model().calculator().addVariable(name(), data_);
+			model().calculator().addVariable(name(), data());
 		}
 		auto StringVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
-			data_ = std::string(xml_ele.GetText());
-			model().calculator().addVariable(name(), data_);
+			data() = std::string(xml_ele.GetText());
+			model().calculator().addVariable(name(), data());
 			Variable::loadXml(xml_ele);
 		}
 	}

@@ -48,7 +48,6 @@ namespace aris
 			auto maxIterCount()const->Size;
 			auto setMaxIterCount(Size max_count)->void;
 
-		protected:
 			virtual ~Solver();
 			explicit Solver(const std::string &name = "solver", Size max_iter_count = 100, double max_error = 1e-10);
 			Solver(const Solver&);
@@ -56,12 +55,9 @@ namespace aris
 			Solver& operator=(const Solver&);
 			Solver& operator=(Solver&&);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class Calibrator :public Element
 		{
@@ -70,7 +66,6 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual allocateMemory()->void = 0;
 
-		protected:
 			virtual ~Calibrator();
 			explicit Calibrator(const std::string &name = "calibrator");
 			Calibrator(const Calibrator&);
@@ -78,12 +73,9 @@ namespace aris
 			Calibrator& operator=(const Calibrator&);
 			Calibrator& operator=(Calibrator&&);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class SimResult : public Element
 		{
@@ -98,7 +90,6 @@ namespace aris
 				auto record()->void;
 				auto restore(Size pos)->void;
 
-			private:
 				virtual ~TimeResult();
 				explicit TimeResult(const std::string &name = "time_result");
 				TimeResult(const TimeResult&);
@@ -106,13 +97,11 @@ namespace aris
 				TimeResult& operator=(const TimeResult&);
 				TimeResult& operator=(TimeResult&&);
 
+			private:
 				struct Imp;
 				aris::core::ImpPtr<Imp> imp_;
 
 				friend class SimResult;
-				friend class Model;
-				friend class aris::core::Root;
-				friend class aris::core::Object;
 			};
 			class PartResult : public Element
 			{
@@ -126,7 +115,6 @@ namespace aris
 				auto record()->void;
 				auto restore(Size pos)->void;
 
-			private:
 				virtual ~PartResult();
 				explicit PartResult(const std::string &name = "part_result", Part *part = nullptr);
 				PartResult(const PartResult&);
@@ -134,14 +122,11 @@ namespace aris
 				PartResult& operator=(const PartResult&);
 				PartResult& operator=(PartResult&&);
 
+			private:
 				struct Imp;
 				aris::core::ImpPtr<Imp> imp_;
 
 				friend class SimResult;
-				friend class Model;
-				friend class aris::core::Root;
-				friend class aris::core::Object;
-
 			};
 			class ConstraintResult : public Element
 			{
@@ -155,7 +140,6 @@ namespace aris
 				auto record()->void;
 				auto restore(Size pos)->void;
 
-			private:
 				virtual ~ConstraintResult();
 				explicit ConstraintResult(const std::string &name = "constraint_result", Constraint *constraint = nullptr);
 				ConstraintResult(const ConstraintResult&);
@@ -163,13 +147,11 @@ namespace aris
 				ConstraintResult& operator=(const ConstraintResult&);
 				ConstraintResult& operator=(ConstraintResult&&);
 
+			private:
 				struct Imp;
 				aris::core::ImpPtr<Imp> imp_;
 
 				friend class SimResult;
-				friend class Model;
-				friend class aris::core::Root;
-				friend class aris::core::Object;
 			};
 
 			static auto Type()->const std::string &{ static const std::string type{ "SimResult" }; return type; }
@@ -188,7 +170,6 @@ namespace aris
 			auto size()const->Size;
 			auto clear()->void;
 
-		protected:
 			virtual ~SimResult();
 			explicit SimResult(const std::string &name = "sim_result");
 			SimResult(const SimResult&);
@@ -196,19 +177,16 @@ namespace aris
 			SimResult& operator=(const SimResult&);
 			SimResult& operator=(SimResult&&);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class Simulator :public Element
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Simulator" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			
+
 			auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void;
 			template<typename ParamType>
 			auto simulate(const PlanFunction &plan, ParamType type, SimResult &result)->void
@@ -217,7 +195,6 @@ namespace aris
 				simulate(plan, &type, std::int32_t(sizeof(type)), result);
 			}
 
-		protected:
 			virtual ~Simulator();
 			explicit Simulator(const std::string &name = "simulator");
 			Simulator(const Simulator&);
@@ -225,15 +202,59 @@ namespace aris
 			Simulator& operator=(const Simulator&);
 			Simulator& operator=(Simulator&&);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
-		
-		class CombineSolver : public Solver
+
+		class FrameSolver:public Solver
+		{
+		public:
+			enum Frame
+			{
+				GROUND,
+				PART,
+			};
+
+			auto setFrame(Frame frame)->void { frame_ = frame; }
+			template<typename CMI_TYPE, typename CMJ_TYPE>
+			auto cptCm(Constraint &cst, double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
+			{
+				switch (frame_)
+				{
+				case GROUND:
+					return cst.cptGlbCm(cmI, cmi_type, cmJ, cmj_type);
+				case PART:
+					return cst.cptPrtCm(cmI, cmi_type, cmJ, cmj_type);
+				}
+			}
+			auto cptCm(Constraint &cst, double *cmI, double *cmJ)->void
+			{
+				switch (frame_)
+				{
+				case GROUND:
+					return cst.cptGlbCm(cmI, cmJ);
+				case PART:
+					return cst.cptPrtCm(cmI, cmJ);
+				}
+			}
+
+
+
+
+			virtual ~FrameSolver() = default;
+			explicit FrameSolver(const std::string &name = "frame_solver", Size max_iter_count = 100, double max_error = 1e-10) :Solver(name, max_iter_count, max_error) {}
+			FrameSolver(const FrameSolver &other) = default;
+			FrameSolver(FrameSolver &&other) = default;
+			FrameSolver& operator=(const FrameSolver &other) = default;
+			FrameSolver& operator=(FrameSolver &&other) = default;
+
+
+		private:
+			Frame frame_{ GROUND };
+		};
+
+		class CombineSolver : public FrameSolver
 		{
 		public:
 			struct PartBlock
@@ -254,19 +275,19 @@ namespace aris
 			auto virtual kinPos()->void override;
 			auto virtual kinVel()->void override;
 			auto virtual dynAccAndFce()->void override;
-			auto virtual updCm()->void = 0;
-			auto virtual updCmT()->void = 0;
-			auto virtual updIm()->void = 0;
-			auto virtual updCp()->void = 0;
-			auto virtual updCv()->void = 0;
-			auto virtual updCa()->void = 0;
-			auto virtual updPv()->void = 0;
-			auto virtual updPa()->void = 0;
-			auto virtual updPf()->void = 0;
-			auto virtual updConstraintFce()->void = 0;
-			auto virtual updPartPos()->void = 0;
-			auto virtual updPartVel()->void = 0;
-			auto virtual updPartAcc()->void = 0;
+			auto virtual updCm()->void;
+			auto virtual updCmT()->void;
+			auto virtual updIm()->void;
+			auto virtual updCp()->void;
+			auto virtual updCv()->void;
+			auto virtual updCa()->void;
+			auto virtual updPv()->void;
+			auto virtual updPa()->void;
+			auto virtual updPf()->void;
+			auto virtual updConstraintFce()->void;
+			auto virtual updPartPos()->void;
+			auto virtual updPartVel()->void;
+			auto virtual updPartAcc()->void;
 
 
 			auto activePartBlockPool()->std::vector<PartBlock>&;
@@ -288,7 +309,6 @@ namespace aris
 			auto ca()->double * { return b() + pSize(); }
 			auto cf()->double * { return x() + pSize(); }
 
-		protected:
 			virtual ~CombineSolver();
 			explicit CombineSolver(const std::string &name = "combine_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			CombineSolver(const CombineSolver &other);
@@ -296,44 +316,36 @@ namespace aris
 			CombineSolver& operator=(const CombineSolver &other);
 			CombineSolver& operator=(CombineSolver &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
-		class GroundCombineSolver :public CombineSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("GroundCombineSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual updCm()->void override;
-			auto virtual updCmT()->void override;
-			auto virtual updIm()->void override;
-			auto virtual updCp()->void override;
-			auto virtual updCv()->void override;
-			auto virtual updCa()->void override;
-			auto virtual updPv()->void override;
-			auto virtual updPa()->void override;
-			auto virtual updPf()->void override;
-			auto virtual updConstraintFce()->void override;
-			auto virtual updPartPos()->void override;
-			auto virtual updPartVel()->void override;
-			auto virtual updPartAcc()->void override;
+		//class GroundCombineSolver :public CombineSolver
+		//{
+		//public:
+		//	static const std::string& Type() { static const std::string type("GroundCombineSolver"); return type; }
+		//	auto virtual type() const->const std::string& override{ return Type(); }
+		//	auto virtual updCm()->void override;
+		//	auto virtual updCmT()->void override;
+		//	auto virtual updIm()->void override;
+		//	auto virtual updCp()->void override;
+		//	auto virtual updCv()->void override;
+		//	auto virtual updCa()->void override;
+		//	auto virtual updPv()->void override;
+		//	auto virtual updPa()->void override;
+		//	auto virtual updPf()->void override;
+		//	auto virtual updConstraintFce()->void override;
+		//	auto virtual updPartPos()->void override;
+		//	auto virtual updPartVel()->void override;
+		//	auto virtual updPartAcc()->void override;
 
-		protected:
-			virtual ~GroundCombineSolver();
-			explicit GroundCombineSolver(const std::string &name = "ground_combine_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			GroundCombineSolver(const GroundCombineSolver &other);
-			GroundCombineSolver(GroundCombineSolver &&other);
-			GroundCombineSolver& operator=(const GroundCombineSolver &other);
-			GroundCombineSolver& operator=(GroundCombineSolver &&other);
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-		};
+		//	virtual ~GroundCombineSolver();
+		//	explicit GroundCombineSolver(const std::string &name = "ground_combine_solver", Size max_iter_count = 100, double max_error = 1e-10);
+		//	GroundCombineSolver(const GroundCombineSolver &other);
+		//	GroundCombineSolver(GroundCombineSolver &&other);
+		//	GroundCombineSolver& operator=(const GroundCombineSolver &other);
+		//	GroundCombineSolver& operator=(GroundCombineSolver &&other);
+		//};
 
 		class DividedSolver : public Solver
 		{
@@ -382,7 +394,6 @@ namespace aris
 			auto paBlk()->BlockData&;
 			auto pfBlk()->BlockData&;
 
-		protected:
 			virtual ~DividedSolver();
 			explicit DividedSolver(const std::string &name = "devided_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			DividedSolver(const DividedSolver &other);
@@ -390,12 +401,9 @@ namespace aris
 			DividedSolver& operator=(const DividedSolver &other);
 			DividedSolver& operator=(DividedSolver &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class GroundDividedSolver:public DividedSolver
 		{
@@ -415,7 +423,6 @@ namespace aris
 			auto updPartVel()->void;
 			auto updPartAcc()->void;
 
-		protected:
 			virtual ~GroundDividedSolver();
 			explicit GroundDividedSolver(const std::string &name = "ground_devided_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			GroundDividedSolver(const GroundDividedSolver &other);
@@ -423,12 +430,9 @@ namespace aris
 			GroundDividedSolver& operator=(const GroundDividedSolver &other);
 			GroundDividedSolver& operator=(GroundDividedSolver &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class PartDividedSolver :public DividedSolver
 		{
@@ -448,7 +452,6 @@ namespace aris
 			auto updPartVel()->void;
 			auto updPartAcc()->void;
 
-		protected:
 			virtual ~PartDividedSolver();
 			explicit PartDividedSolver(const std::string &name = "part_divided_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			PartDividedSolver(const PartDividedSolver &other);
@@ -456,12 +459,9 @@ namespace aris
 			PartDividedSolver& operator=(const PartDividedSolver &other);
 			PartDividedSolver& operator=(PartDividedSolver &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class LltGroundDividedSolver :public GroundDividedSolver
 		{
@@ -479,7 +479,6 @@ namespace aris
 				dynFce();
 			};
 
-		protected:
 			virtual ~LltGroundDividedSolver();
 			explicit LltGroundDividedSolver(const std::string &name = "llt_ground_divided_solver");
 			LltGroundDividedSolver(const LltGroundDividedSolver &other);
@@ -487,13 +486,9 @@ namespace aris
 			LltGroundDividedSolver& operator=(const LltGroundDividedSolver &other);
 			LltGroundDividedSolver& operator=(LltGroundDividedSolver &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
-
 		};
 		class LltPartDividedSolver :public PartDividedSolver
 		{
@@ -511,7 +506,6 @@ namespace aris
 				dynFce();
 			};
 
-		protected:
 			virtual ~LltPartDividedSolver();
 			explicit LltPartDividedSolver(const std::string &name = "llt_part_divided_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			LltPartDividedSolver(const LltPartDividedSolver &other);
@@ -519,12 +513,9 @@ namespace aris
 			LltPartDividedSolver& operator=(const LltPartDividedSolver &other);
 			LltPartDividedSolver& operator=(LltPartDividedSolver &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class DiagSolver : public Solver
 		{
@@ -591,7 +582,6 @@ namespace aris
 			auto plotDiag()->void;
 			auto plotRemainder()->void;
 
-		protected:
 			virtual ~DiagSolver();
 			explicit DiagSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
 			DiagSolver(const DiagSolver &other);
@@ -599,12 +589,9 @@ namespace aris
 			DiagSolver& operator=(const DiagSolver &other);
 			DiagSolver& operator=(DiagSolver &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 
 		class SolverSimulator : public Simulator
@@ -619,8 +606,6 @@ namespace aris
 			auto solver()->Solver&;
 			auto solver()const ->const Solver&{ return const_cast<SolverSimulator*>(this)->solver(); };
 
-
-		protected:
 			virtual ~SolverSimulator();
 			explicit SolverSimulator(const std::string &name = "solver_simulator", Solver *solver = nullptr);
 			SolverSimulator(const SolverSimulator&);
@@ -628,12 +613,9 @@ namespace aris
 			SolverSimulator& operator=(const SolverSimulator&);
 			SolverSimulator& operator=(SolverSimulator&&);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class AdamsSimulator :public SolverSimulator
 		{
@@ -646,7 +628,6 @@ namespace aris
 			auto adamsID(const Part &prt)const->Size;
 			auto adamsID(const Element &ele)const->Size { return ele.id() + 1; };
 
-		protected:
 			virtual ~AdamsSimulator();
 			explicit AdamsSimulator(const std::string &name = "adams_solver", Solver *solver = nullptr);
 			AdamsSimulator(const AdamsSimulator&);
@@ -654,12 +635,9 @@ namespace aris
 			AdamsSimulator& operator=(const AdamsSimulator&);
 			AdamsSimulator& operator=(AdamsSimulator&&);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 	}
 }

@@ -5,8 +5,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <aris_core_object.h>
 #include <aris_core_msg.h>
-#include <aris_core_xml.h>
 
 namespace aris
 {

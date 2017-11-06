@@ -9,62 +9,46 @@
 
 int main()
 {
-	// 注册命令解析所需要的类 //
-	aris::core::Root root;
-	root.registerChildType<aris::core::Param>();
-	root.registerChildType<aris::core::UniqueParam>();
-	root.registerChildType<aris::core::GroupParam>();
-	root.registerChildType<aris::core::Command>();
-	root.registerChildType<aris::core::ObjectPool<aris::core::Command> >();
-	root.registerChildType<aris::core::CommandParser>();
-	
 	// 读取xml文档 //
-	aris::core::XmlDocument xml_doc;
-	xml_doc.LoadFile((ARIS_INSTALL_PATH + std::string("/resource/demo_command_parser_xml/command.xml")).c_str());
+	aris::core::CommandParser parser;
+	parser.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_command_parser_xml/command.xml"));
 
-	// 从xml里得到parser // 
-	root.loadXml(xml_doc);
-	auto& parser = static_cast<aris::core::CommandParser&>(*root.findByName("command_parser"));
-
-	// 结果：命令与参数集 //
-	std::string cmd;
-	std::map<std::string, std::string> params;
-	
-	// 构造输入的命令字符串 //
-	std::vector<std::string> cmd_strs
+	// 和用户进行交互 //
+	for (;;)
 	{
-		"enable --all --velocity",
-		"enable -m=1 -p",
-		"enable ap",
-		"enable -a",
-		"enable -a -m=1 --position",
-		"enable -p"
-	};
+		std::cout << "please input command, you can input \"exit\" to leave program:" << std::endl;
 
-	// parse以上命令，前4个成功，后2个失败 //
-	for (auto &cmd_str : cmd_strs)
-	{
+		// 获取命令字符串 //
+		std::string cmd_string;
+		std::getline(std::cin, cmd_string);
+
+		// 如果是exit，那么退出 //
+		if (cmd_string == "exit")break;
+
+		// 以下变量用来保存分析的结果，包括命令与参数集 //
+		std::string cmd;
+		std::map<std::string, std::string> params;
+
+		// parse //
 		try
 		{
-			// parse //
-			parser.parse(cmd_str, cmd, params);
+			parser.parse(cmd_string, cmd, params);
 
 			// 打印命令和参数 //
-			std::cout << "-----------" << "parsing" << " -----------" << std::endl;
-			std::cout << "string : " << cmd_str << std::endl;
+			std::cout << "------------------------------------------" << std::endl;
 			std::cout << "cmd    : " << cmd << std::endl << "params : " << std::endl;
 			for (auto &p : params)
 			{
 				std::cout << std::setfill(' ') << std::setw(10) << p.first << " : " << p.second << std::endl;
 			}
-			std::cout << "-----------" << "finished" << "-----------" << std::endl;
+			std::cout << "------------------------------------------" << std::endl << std::endl;
 		}
 		catch (std::exception &e)
 		{
 			// 打印错误信息 //
-			std::cout << "-----------" << "parsing failed" << "  -----------" << std::endl;
+			std::cout << "------------------------------------------" << std::endl;
 			std::cout << e.what() << std::endl;
-			std::cout << "-----------" << "parsing finished" << "-----------" << std::endl;
+			std::cout << "------------------------------------------" << std::endl << std::endl;
 		}
 	}
 	

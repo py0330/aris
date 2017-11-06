@@ -28,10 +28,8 @@ namespace aris
 			auto makJ()->Marker& { return *makJ_; }
 			auto makJ() const->const Marker&{ return *makJ_; }
 
-		protected:
 			virtual ~Interaction() = default;
-			explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true)
-				: DynEle(name, is_active), makI_(makI), makJ_(makJ) {}
+			explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true):DynEle(name, is_active), makI_(makI), makJ_(makJ) {}
 			Interaction(const Interaction &) = default;
 			Interaction(Interaction &&) = default;
 			Interaction& operator=(const Interaction &) = default;
@@ -53,27 +51,51 @@ namespace aris
 			auto prtCmI() const->const double*;
 			auto locCmI() const->const double*;
 			template<typename CMI_TYPE, typename CMJ_TYPE>
+			auto cptCm(const Coordinate &relative_to_I, double *cmI, CMI_TYPE cmi_type, const Coordinate &relative_to_J, double *cmJ, CMJ_TYPE cmj_type)->void
+			{
+				updLocCmI();
+				
+				double pm[16];
+				makI().getPm(relative_to_I, pm);
+				s_tf_n(dim(), pm, locCmI(), dim(), cmI, cmi_type);
+				
+				makI().getPm(relative_to_J, pm);
+				s_tf_n(dim(), -1.0, pm, locCmI(), dim(), cmJ, cmj_type);
+			}
+			template<typename CMI_TYPE, typename CMJ_TYPE>
+			auto cptCm(const Coordinate &relative_to, double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
+			{
+				updLocCmI();
+
+				double pm[16];
+				makI().getPm(relative_to, pm);
+				s_tf_n(dim(), pm, locCmI(), dim(), cmI, cmi_type);
+
+				s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
+			}
+			template<typename CMI_TYPE, typename CMJ_TYPE>
 			auto cptPrtCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
 			{
+				cptCm(makI().fatherPart(), cmI, cmi_type, makJ().fatherPart(), cmJ, cmj_type);
+				
 				updPrtCmI();
-				s_mc(6, dim(), prtCmI(), dim(), cmI, cmi_type);
+				//s_mc(6, dim(), prtCmI(), dim(), cmI, cmi_type);
 
-				double pm_M2N[4][4];
-				s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
-				s_tf_n(dim(), -1.0, *pm_M2N, prtCmI(), dim(), cmJ, cmj_type);
+				//double pm_M2N[4][4];
+				//s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
+				//s_tf_n(dim(), -1.0, *pm_M2N, prtCmI(), dim(), cmJ, cmj_type);
 			}
 			auto cptPrtCm(double *cmI, double *cmJ)->void { cptPrtCm(cmI, dim(), cmJ, dim()); }
 			template<typename CMI_TYPE, typename CMJ_TYPE>
 			auto cptGlbCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
 			{
+				//cptCm(model().ground(), cmI, cmi_type, cmJ, cmj_type);
+				
 				updPrtCmI();
 				s_tf_n(dim(), *makI().fatherPart().pm(), prtCmI(), dim(), cmI, cmi_type);
 				s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
 			}
 			auto cptGlbCm(double *cmI, double *cmJ)->void { cptGlbCm(cmI, dim(), cmJ, dim()); }
-
-		protected:
-			auto virtual updPrtCmI()->void {};
 
 			virtual ~Constraint();
 			explicit Constraint(const std::string &name = "constraint", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true);
@@ -82,11 +104,13 @@ namespace aris
 			Constraint& operator=(const Constraint&);
 			Constraint& operator=(Constraint&&);
 
+		protected:
+			auto virtual updPrtCmI()->void {};
+			auto virtual updLocCmI()->void {};
+
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
 			friend class Motion;
 			friend class GeneralMotion;
 		};
@@ -96,15 +120,12 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "Joint" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 
-		protected:
 			virtual ~Joint() = default;
 			explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
 			Joint(const Joint &other);
 			Joint(Joint &&other);
 			Joint& operator=(const Joint &other);
 			Joint& operator=(Joint &&other);
-
-			friend class aris::core::Root;
 		};
 		class Motion final :public Constraint
 		{
@@ -136,20 +157,16 @@ namespace aris
 			auto frcCoe() const ->const double3&;
 			auto setFrcCoe(const double *frc_coe)->void;
 
-		protected:
 			virtual ~Motion();
 			explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
 			Motion(const Motion &other);
 			Motion(Motion &&other);
 			Motion& operator=(const Motion &other);
 			Motion& operator=(Motion &&other);
-
+		
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class GeneralMotion final :public Constraint
 		{
@@ -196,7 +213,6 @@ namespace aris
 			auto mfs() const->const double6&;
 			auto setMfs(const double * mfs)->void;
 
-		protected:
 			virtual ~GeneralMotion();
 			explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr, const std::string& freedom = "xyz123", bool active = true);
 			GeneralMotion(const GeneralMotion &other);
@@ -204,12 +220,9 @@ namespace aris
 			GeneralMotion& operator=(const GeneralMotion &other);
 			GeneralMotion& operator=(GeneralMotion &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class Force :public Interaction
 		{
@@ -220,7 +233,6 @@ namespace aris
 			auto fsJ() const->const double* { return fsJ_; }
 			auto virtual updFs()->void = 0;
 
-		protected:
 			virtual ~Force() = default;
 			explicit Force(const std::string &name = "force", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true):Interaction(name, makI, makJ, active) {}
 			Force(const Force &other) = default;
@@ -228,11 +240,8 @@ namespace aris
 			Force& operator=(const Force &other) = default;
 			Force& operator=(Force &&other) = default;
 
-			double fsI_[6]{ 0 };
-			double fsJ_[6]{ 0 };
-
-			friend class Model;
-			friend class aris::core::Root;
+		protected:
+			double fsI_[6]{ 0 }, fsJ_[6]{ 0 };
 		};
 
 		class RevoluteJoint final :public Joint
@@ -242,17 +251,13 @@ namespace aris
 			static auto Dim()->Size { return 5; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual dim() const ->Size override { return Dim(); }
-		private:
+
 			virtual ~RevoluteJoint() = default;
 			explicit RevoluteJoint(const std::string &name = "revolute_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 			RevoluteJoint(const RevoluteJoint &other) = default;
 			RevoluteJoint(RevoluteJoint &&other) = default;
 			RevoluteJoint& operator=(const RevoluteJoint &other) = default;
 			RevoluteJoint& operator=(RevoluteJoint &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class PrismaticJoint final :public Joint
 		{
@@ -261,17 +266,13 @@ namespace aris
 			static auto Dim()->Size { return 5; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual dim() const->Size override { return Dim(); }
-		private:
+
 			virtual ~PrismaticJoint() = default;
 			explicit PrismaticJoint(const std::string &name = "prismatic_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 			PrismaticJoint(const PrismaticJoint &other) = default;
 			PrismaticJoint(PrismaticJoint &&other) = default;
 			PrismaticJoint& operator=(const PrismaticJoint &other) = default;
 			PrismaticJoint& operator=(PrismaticJoint &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class UniversalJoint final :public Joint
 		{
@@ -284,20 +285,16 @@ namespace aris
 			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
 
-		protected:
-			auto virtual updPrtCmI()->void override;
-
-		private:
 			virtual ~UniversalJoint() = default;
 			explicit UniversalJoint(const std::string &name = "universal_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 			UniversalJoint(const UniversalJoint &other) = default;
 			UniversalJoint(UniversalJoint &&other) = default;
 			UniversalJoint& operator=(const UniversalJoint &other) = default;
 			UniversalJoint& operator=(UniversalJoint &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
+		
+		private:
+			auto virtual updPrtCmI()->void override;
+			auto virtual updLocCmI()->void override;
 		};
 		class SphericalJoint final :public Joint
 		{
@@ -306,17 +303,13 @@ namespace aris
 			static auto Dim()->Size { return 3; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual dim() const->Size override { return Dim(); }
-		private:
+
 			virtual ~SphericalJoint() = default;
 			explicit SphericalJoint(const std::string &name = "spherical_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 			SphericalJoint(const SphericalJoint &other) = default;
 			SphericalJoint(SphericalJoint &&other) = default;
 			SphericalJoint& operator=(const SphericalJoint &other) = default;
 			SphericalJoint& operator=(SphericalJoint &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 
 		class SingleComponentForce final :public Force
@@ -332,21 +325,16 @@ namespace aris
 			auto setFce(double value, Size componentID)->void { this->component_axis_ = componentID; setFce(value); }
 			auto fce()const->double { return fce_value_[component_axis_]; }
 
-		private:
 			virtual ~SingleComponentForce() = default;
 			explicit SingleComponentForce(const std::string &name = "single_component_force", Marker *makI = nullptr, Marker *makJ = nullptr, Size componentID = 0);
-			explicit SingleComponentForce(Object &father, const aris::core::XmlElement &xml_ele);
 			SingleComponentForce(const SingleComponentForce &other) = default;
 			SingleComponentForce(SingleComponentForce &&other) = default;
 			SingleComponentForce& operator=(const SingleComponentForce &other) = default;
 			SingleComponentForce& operator=(SingleComponentForce &&other) = default;
 
+		private:
 			Size component_axis_;
 			double fce_value_[6]{ 0 };
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 	}
 }

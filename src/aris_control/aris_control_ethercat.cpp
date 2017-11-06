@@ -12,7 +12,6 @@
 
 #include "aris_control_ethercat_kernel.h"
 #include "aris_control_ethercat.h"
-#include "aris_control_motion.h"
 
 namespace aris
 {
@@ -105,7 +104,6 @@ namespace aris
 			if (opt & Sdo::CONFIG)
 			{
 				if(!(opt & Sdo::WRITE)) throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + name + "\" sdo");
-				//
 			}
 		}
 		Sdo::Sdo(const Sdo &) = default;
@@ -154,7 +152,10 @@ namespace aris
 		auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 		auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
 		PdoGroup::~PdoGroup() = default;
-		PdoGroup::PdoGroup(const std::string &name, std::uint16_t index, bool is_tx):aris::core::ObjectPool<Pdo>(name), imp_(new Imp(index, is_tx)){}
+		PdoGroup::PdoGroup(const std::string &name, std::uint16_t index, bool is_tx):aris::core::ObjectPool<Pdo>(name), imp_(new Imp(index, is_tx))
+		{
+			registerType<Pdo>();
+		}
 		PdoGroup::PdoGroup(const PdoGroup &) = default;
 		PdoGroup::PdoGroup(PdoGroup &&) = default;
 		PdoGroup& PdoGroup::operator=(const PdoGroup &) = default;
@@ -567,6 +568,11 @@ namespace aris
 			imp_->product_code_ = p_code;
 			imp_->revision_num_ = r_num;
 			imp_->dc_assign_activate_ = dc;
+
+			registerType<Sdo>();
+			registerType<PdoGroup>();
+			registerType<aris::core::ObjectPool<Sdo> >();
+			registerType<aris::core::ObjectPool<PdoGroup> >();
 		}
 
 		class EthercatMaster::Imp
@@ -680,18 +686,13 @@ namespace aris
 		EthercatMaster::~EthercatMaster() = default;
 		EthercatMaster::EthercatMaster() :imp_(new Imp)
 		{
-			registerChildType<Pdo>();
-			registerChildType<Sdo>();
-			registerChildType<PdoGroup>();
-			registerChildType<aris::core::ObjectPool<Sdo> >();
-			registerChildType<aris::core::ObjectPool<PdoGroup> >();
-			registerChildType<aris::core::ObjectPool<EthercatSlaveType> >();
-
-			registerChildType<EthercatSlaveType>();
-			registerChildType<EthercatSlave>();
-			registerChildType<aris::core::ObjectPool<EthercatSlave, aris::core::ObjectPool<Slave> > >();
+			//registerType<aris::core::ObjectPool<EthercatSlaveType> >();
+			registerType<EthercatSlaveType>();
 			
-			registerChildType<EthercatMotion>();
+			registerType<EthercatSlave>();
+			//registerType<aris::core::ObjectPool<EthercatSlave, aris::core::ObjectPool<Slave> > >();
+			
+			registerType<EthercatMotion>();
 		}
 
 		class EthercatMotion::Imp

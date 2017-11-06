@@ -82,8 +82,8 @@ namespace aris
 			double dv[6], dv_in_I[6];
 			s_vc(6, makJ().vs(), dv);
 			s_vs(6, makI().vs(), dv);
-			s_inv_tv(*makI().fatherPart().pm(), dv, dv_in_I);
-			s_mm(dim(), 1, 6, prtCmI(), ColMajor{ dim() }, dv_in_I, 1, cv, 1);
+			s_inv_tv(*makI().pm(), dv, dv_in_I);
+			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, dv_in_I, 1, cv, 1);
 		};
 		auto Constraint::cptCa(double *ca)const->void
 		{
@@ -436,6 +436,22 @@ namespace aris
 
 			s_c3(axis_i_m, 1, axis_j_m, 1, const_cast<double*>(prtCmI()) + 3 * 4 + 3, 4);
 			s_nv(3, 1.0 / s_norm(3, prtCmI() + 3 * 4 + 3, 4), const_cast<double*>(prtCmI()) + 3 * 4 + 3, 4);
+		}
+		auto UniversalJoint::updLocCmI()->void
+		{
+			const double axis_iz_i[3]{ 0,0,1 };
+			double axis_jz_g[3], axis_jz_m[3];
+		
+			s_pm_dot_v3(*makJ().fatherPart().pm(), &makJ().prtPm()[0][2], 4, axis_jz_g, 1);
+			s_inv_pm_dot_v3(*makI().fatherPart().pm(), axis_jz_g, axis_jz_m);
+
+			// following instead of:
+			// s_inv_pm_dot_v3(*makI().prtPm(), axis_jz_m, axis_jz_i);
+			// s_c3(axis_iz_i, 1, axis_jz_i, 1, const_cast<double*>(locCmI()) + 3 * 4 + 3, 4);
+			const_cast<double*>(locCmI())[dynamic::id(3, 3, 4)] = -makI().prtPm()[0][1] * axis_jz_m[0] - makI().prtPm()[1][1] * axis_jz_m[1] - makI().prtPm()[2][1] * axis_jz_m[2];
+			const_cast<double*>(locCmI())[dynamic::id(4, 3, 4)] = makI().prtPm()[0][0] * axis_jz_m[0] + makI().prtPm()[1][0] * axis_jz_m[1] + makI().prtPm()[2][0] * axis_jz_m[2];
+
+			s_nv(3, 1.0 / s_norm(2, locCmI() + dynamic::id(3, 3, 4), 4), const_cast<double*>(locCmI()) + dynamic::id(3, 3, 4), 4);
 		}
 		UniversalJoint::UniversalJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ)
 		{

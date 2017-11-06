@@ -12,9 +12,6 @@
 #include <type_traits>
 
 #include <aris_core.h>
-#include <aris_dynamic_matrix.h>
-#include <aris_dynamic_block_matrix.h>
-#include <aris_dynamic_screw.h>
 #include <aris_dynamic_model_basic.h>
 #include <aris_dynamic_model_coordinate.h>
 #include <aris_dynamic_model_interaction.h>
@@ -24,19 +21,13 @@ namespace aris
 {
 	namespace dynamic
 	{
-		class Model :public aris::core::Root
+		class Model :public aris::core::Object
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type("Model"); return std::ref(type); }
+			static auto Type()->const std::string &{ static const std::string type("Model"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			using Root::loadXml;
-			using Root::saveXml;
-			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
             auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto virtual saveXml(aris::core::XmlDocument &xml_doc)const->void override;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
-			auto virtual loadDynEle(const std::string &name)->void;
-			auto virtual saveDynEle(const std::string &name)->void;
 			auto time()const->double;
 			auto setTime(double time)->void;
 			auto calculator()->aris::core::Calculator&;
@@ -113,7 +104,13 @@ namespace aris
 			// b = [ fs ]
 			//     [ ca ]
 			virtual ~Model();
-			Model(const std::string &name = "model");
+			explicit Model(const std::string &name = "model");
+			Model(const Model &);
+			Model(Model &&);
+			Model &operator=(const Model &);
+			Model &operator=(Model &&);
+
+
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;

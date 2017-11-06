@@ -313,6 +313,12 @@ namespace aris
 		SimResult::~SimResult() = default;
 		SimResult::SimResult(const std::string &name) : Element(name), imp_(new Imp())
 		{
+			registerType<aris::core::ObjectPool<SimResult::PartResult, Element>>();
+			registerType<aris::core::ObjectPool<SimResult::ConstraintResult, Element>>();
+			registerType<SimResult::PartResult>();
+			registerType<SimResult::ConstraintResult>();
+			registerType<SimResult::TimeResult>();
+			
 			imp_->time_result_ = &add<TimeResult>("time_result");
 			imp_->part_result_pool_ = &add<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
 			imp_->constraint_result_pool_ = &add<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
@@ -503,13 +509,13 @@ namespace aris
 
 		}
 		CombineSolver::~CombineSolver() = default;
-		CombineSolver::CombineSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
+		CombineSolver::CombineSolver(const std::string &name, Size max_iter_count, double max_error) :FrameSolver(name, max_iter_count, max_error) {}
 		CombineSolver::CombineSolver(const CombineSolver &other) = default;
 		CombineSolver::CombineSolver(CombineSolver &&other) = default;
 		CombineSolver& CombineSolver::operator=(const CombineSolver &other) = default;
 		CombineSolver& CombineSolver::operator=(CombineSolver &&other) = default;
 
-		auto GroundCombineSolver::updCm()->void 
+		auto CombineSolver::updCm()->void 
 		{
 			for (auto &cb : activeConstraintBlockPool())
 			{
@@ -517,10 +523,10 @@ namespace aris
 				auto row_j = cb.pb_j_->row_id_;
 				auto col = cb.col_id_ + pSize();
 
-				cb.constraint_->cptGlbCm(A() + dynamic::id(row_i, col, aSize()), aSize(), A() + dynamic::id(row_j, col, aSize()), aSize());
+				cptCm(*cb.constraint_, A() + dynamic::id(row_i, col, aSize()), aSize(), A() + dynamic::id(row_j, col, aSize()), aSize());
 			}
 		}
-		auto GroundCombineSolver::updCmT()->void
+		auto CombineSolver::updCmT()->void
 		{
 			for (auto &cb : activeConstraintBlockPool())
 			{
@@ -528,18 +534,18 @@ namespace aris
 				auto row_j = cb.pb_j_->row_id_;
 				auto col = cb.col_id_ + pSize();
 
-				cb.constraint_->cptGlbCm(A() + dynamic::id(row_i, col, ColMajor{ aSize() }), ColMajor{ aSize() }, A() + dynamic::id(row_j, col, ColMajor{ aSize() }), ColMajor{ aSize() });
+				cptCm(*cb.constraint_, A() + dynamic::id(row_i, col, ColMajor{ aSize() }), ColMajor{ aSize() }, A() + dynamic::id(row_j, col, ColMajor{ aSize() }), ColMajor{ aSize() });
 			}
 		}
-		auto GroundCombineSolver::updIm()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbIm(A() + dynamic::id(pb.row_id_, pb.row_id_, aSize()), aSize()); }
-		auto GroundCombineSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + cb.col_id_); }
-		auto GroundCombineSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + cb.col_id_); }
-		auto GroundCombineSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + cb.col_id_); }
-		auto GroundCombineSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->getVs(pv() + pb.row_id_); }
-		auto GroundCombineSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->getAs(pa() + pb.row_id_); }
-		auto GroundCombineSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbPf(pf() + pb.row_id_); }
-		auto GroundCombineSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1));}
-		auto GroundCombineSolver::updPartPos()->void 
+		auto CombineSolver::updIm()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbIm(A() + dynamic::id(pb.row_id_, pb.row_id_, aSize()), aSize()); }
+		auto CombineSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + cb.col_id_); }
+		auto CombineSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + cb.col_id_); }
+		auto CombineSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + cb.col_id_); }
+		auto CombineSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->getVs(pv() + pb.row_id_); }
+		auto CombineSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->getAs(pa() + pb.row_id_); }
+		auto CombineSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbPf(pf() + pb.row_id_); }
+		auto CombineSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1));}
+		auto CombineSolver::updPartPos()->void 
 		{
 			for (auto pb : activePartBlockPool())
 			{
@@ -565,14 +571,8 @@ namespace aris
 				}
 			}
 		}
-		auto GroundCombineSolver::updPartVel()->void { for (auto &pb : activePartBlockPool()) s_va(6, pv() + pb.row_id_, const_cast<double*>(pb.part_->vs())); }
-		auto GroundCombineSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool()) pb.part_->setAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
-		GroundCombineSolver::~GroundCombineSolver() = default;
-		GroundCombineSolver::GroundCombineSolver(const std::string &name, Size max_iter_count, double max_error) :CombineSolver(name, max_iter_count, max_error) {}
-		GroundCombineSolver::GroundCombineSolver(const GroundCombineSolver &other) = default;
-		GroundCombineSolver::GroundCombineSolver(GroundCombineSolver &&other) = default;
-		GroundCombineSolver& GroundCombineSolver::operator=(const GroundCombineSolver &other) = default;
-		GroundCombineSolver& GroundCombineSolver::operator=(GroundCombineSolver &&other) = default;
+		auto CombineSolver::updPartVel()->void { for (auto &pb : activePartBlockPool()) s_va(6, pv() + pb.row_id_, const_cast<double*>(pb.part_->vs())); }
+		auto CombineSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool()) pb.part_->setAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
 
 		struct DividedSolver::Imp
 		{

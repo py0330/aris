@@ -347,7 +347,12 @@ namespace aris
 			return helpString;
 		}
 		Command::~Command() = default;
-        Command::Command(const std::string &name, const std::string &default_param, const std::string &help) :ObjectPool(name), imp_(new Imp(default_param, help)) {}
+        Command::Command(const std::string &name, const std::string &default_param, const std::string &help) :ObjectPool(name), imp_(new Imp(default_param, help)) 
+		{
+			registerType<aris::core::Param>();
+			registerType<aris::core::UniqueParam>();
+			registerType<aris::core::GroupParam>();
+		}
 		Command::Command(const Command &)=default;
 		Command::Command(Command &&) = default;
 		Command& Command::operator=(const Command &) = default;
@@ -455,14 +460,15 @@ namespace aris
 		CommandParser::~CommandParser() = default;
 		CommandParser::CommandParser(const std::string &name):Object(name)
 		{ 
+			registerType<aris::core::ObjectPool<Command> >();
+			registerType<Command>();
+			
 			imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
 		}
 		CommandParser::CommandParser(const CommandParser &) = default;
 		CommandParser::CommandParser(CommandParser &&) = default;
 		CommandParser& CommandParser::operator=(const CommandParser &) = default;
 		CommandParser& CommandParser::operator=(CommandParser &&) = default;
-
-
 	}
 
 	

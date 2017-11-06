@@ -1,6 +1,6 @@
 ﻿#include "test_dynamic_spline.h"
 #include <iostream>
-#include <aris.h>
+#include <aris_dynamic.h>
 
 using namespace aris::dynamic;
 

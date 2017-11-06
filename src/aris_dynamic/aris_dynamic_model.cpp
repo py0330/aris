@@ -12,8 +12,6 @@
 #include <ios>
 
 #include "aris_core.h"
-#include "aris_dynamic_matrix.h"
-#include "aris_dynamic_screw.h"
 #include "aris_dynamic_model.h"
 
 namespace aris
@@ -22,7 +20,7 @@ namespace aris
 	{
 		struct Model::Imp
 		{
-			double time_{0.0};
+			double time_{ 0.0 };
 			aris::core::Calculator calculator_;
 			Environment *environment_;
 			Part* ground_;
@@ -36,31 +34,9 @@ namespace aris
 			aris::core::ObjectPool<Simulator, Element> *simulator_pool_;
 			aris::core::ObjectPool<SimResult, Element> *sim_result_pool_;
 		};
-		auto Model::loadDynEle(const std::string &name)->void
-		{
-			partPool().load(name);
-			jointPool().load(name);
-			motionPool().load(name);
-			forcePool().load(name);
-		}
-		auto Model::saveDynEle(const std::string &name)->void
-		{
-			partPool().save(name);
-			jointPool().save(name);
-			motionPool().save(name);
-			forcePool().save(name);
-		}
-		auto Model::loadXml(const aris::core::XmlDocument &xml_doc)->void
-        {
-            auto model_xml_ele = xml_doc.RootElement()->FirstChildElement("model");
-
-            if (!model_xml_ele)throw std::runtime_error("can't find \"model\" element in xml file");
-
-            loadXml(*model_xml_ele);
-		}
         auto Model::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
-            Root::loadXml(xml_ele);
+            Object::loadXml(xml_ele);
 
 			setTime(Object::attributeDouble(xml_ele, "time", 0.0));
 
@@ -76,23 +52,9 @@ namespace aris
 			imp_->sim_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult, Element>>("sim_result_pool");
 			imp_->ground_ = partPool().findOrInsert<Part>("ground");
         }
-		auto Model::saveXml(aris::core::XmlDocument &xml_doc)const->void
-		{
-			xml_doc.DeleteChildren();
-
-			auto header_xml_ele = xml_doc.NewDeclaration("xml version=\"1.0\" encoding=\"UTF-8\" ");
-			xml_doc.InsertEndChild(header_xml_ele);
-
-			auto root_xml_ele = xml_doc.NewElement("Root");
-			xml_doc.InsertEndChild(root_xml_ele);
-
-			auto model_xml_ele = xml_doc.NewElement("Model");
-			root_xml_ele->InsertEndChild(model_xml_ele);
-			saveXml(*model_xml_ele);
-		}
 		auto Model::saveXml(aris::core::XmlElement &xml_ele)const->void
 		{
-			Root::saveXml(xml_ele);
+			Object::saveXml(xml_ele);
 			xml_ele.SetAttribute("time", time());
 		}
 		auto Model::time()const->double { return imp_->time_; }
@@ -208,56 +170,45 @@ namespace aris
 			return generalMotionPool().add<GeneralMotion>(name, &mak_i, &mak_j);
 		}
 		Model::~Model() = default;
-		Model::Model(const std::string &name):Root(name)
+		Model::Model(const std::string &name):Object(name)
 		{
-			registerChildType<Environment>();
+			registerType<Environment>();
 
-			registerChildType<aris::core::ObjectPool<Variable, Element>>();
-			registerChildType<MatrixVariable>();
-			registerChildType<StringVariable>();
+			registerType<aris::core::ObjectPool<Variable, Element>>();
+			registerType<MatrixVariable>();
+			registerType<StringVariable>();
 
-			registerChildType<aris::core::ObjectPool<Part, Element>>();
-			registerChildType<Part>();
+			registerType<aris::core::ObjectPool<Part, Element>>();
+			registerType<Part>();
 
-			registerChildType<aris::core::ObjectPool<Marker, Element>>();
-			registerChildType<Marker>();
+			registerType<aris::core::ObjectPool<Joint, Element>>();
+			registerType<RevoluteJoint>();
+			registerType<PrismaticJoint>();
+			registerType<UniversalJoint>();
+			registerType<SphericalJoint>();
 
-			registerChildType<aris::core::ObjectPool<Joint, Element>>();
-			registerChildType<RevoluteJoint>();
-			registerChildType<PrismaticJoint>();
-			registerChildType<UniversalJoint>();
-			registerChildType<SphericalJoint>();
+			registerType<aris::core::ObjectPool<Motion, Element>>();
+			registerType<Motion>();
 
-			registerChildType<aris::core::ObjectPool<Motion, Element>>();
-			registerChildType<Motion>();
+			registerType<aris::core::ObjectPool<GeneralMotion, Element>>();
+			registerType<GeneralMotion>();
 
-			registerChildType<aris::core::ObjectPool<GeneralMotion, Element>>();
-			registerChildType<GeneralMotion>();
+			registerType<aris::core::ObjectPool<Force, Element>>();
+			registerType<SingleComponentForce>();
 
-			registerChildType<aris::core::ObjectPool<Force, Element>>();
-			registerChildType<SingleComponentForce>();
+			registerType<aris::core::ObjectPool<Solver, Element>>();
+			registerType<CombineSolver>();
+			registerType<LltGroundDividedSolver>();
+			registerType<LltPartDividedSolver>();
+			registerType<DiagSolver>();
 
-			registerChildType<aris::core::ObjectPool<Geometry, Element>>();
-			registerChildType<ParasolidGeometry>();
-
-			registerChildType<aris::core::ObjectPool<Solver, Element>>();
-			registerChildType<GroundCombineSolver>();
-			registerChildType<LltGroundDividedSolver>();
-			registerChildType<LltPartDividedSolver>();
-			registerChildType<DiagSolver>();
-
-			registerChildType<aris::core::ObjectPool<Simulator, Element>>();
-			registerChildType<Simulator>();
-			registerChildType<SolverSimulator>();
-			registerChildType<AdamsSimulator>();
+			registerType<aris::core::ObjectPool<Simulator, Element>>();
+			registerType<Simulator>();
+			registerType<SolverSimulator>();
+			registerType<AdamsSimulator>();
 			
-			registerChildType<aris::core::ObjectPool<SimResult, Element>>();
-			registerChildType<SimResult>();
-			registerChildType<aris::core::ObjectPool<SimResult::PartResult, Element>>();
-			registerChildType<aris::core::ObjectPool<SimResult::ConstraintResult, Element>>();
-			registerChildType<SimResult::PartResult>();
-			registerChildType<SimResult::ConstraintResult>();
-			registerChildType<SimResult::TimeResult>();
+			registerType<aris::core::ObjectPool<SimResult, Element>>();
+			registerType<SimResult>();
 
 			imp_->environment_ = &this->add<Environment>("environment");
 			imp_->variable_pool_ = &this->add<aris::core::ObjectPool<Variable, Element>>("variable_pool");
@@ -272,5 +223,9 @@ namespace aris
 
 			imp_->ground_ = &imp_->part_pool_->add<Part>("ground");
 		}
+		Model::Model(const Model &) = default;
+		Model::Model(Model &&) = default;
+		Model& Model::operator=(const Model &) = default;
+		Model& Model::operator=(Model &&) = default;
 	}
 }

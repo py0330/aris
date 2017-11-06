@@ -19,8 +19,8 @@ namespace aris
 			imp_->inv_solver_ = &model().solverPool().add<DiagSolver>("inv_solver");
 			imp_->fwd_solver_ = &model().solverPool().add<DiagSolver>("fwd_solver");
 		}
-		auto SimpleModel::loadXml(const std::string &file)->void { imp_->m_.loadXml(file); }
-		auto SimpleModel::saveXml(const std::string &file)->void { imp_->m_.saveXml(file); }
+		auto SimpleModel::loadXmlFile(const std::string &file)->void { imp_->m_.loadXmlFile(file); }
+		auto SimpleModel::saveXmlFile(const std::string &file)->void { imp_->m_.saveXmlFile(file); }
 		auto SimpleModel::model()->Model& { return imp_->m_; }
 		auto SimpleModel::ground()->Part& { return imp_->m_.ground(); }
 		auto SimpleModel::addPart(const double *pm)->Part* { return &imp_->m_.partPool().add<Part>("part_" + std::to_string(imp_->m_.partPool().size()), nullptr, pm); }
@@ -86,7 +86,10 @@ namespace aris
 		}
 		auto SimpleModel::forwardKinematic(int max_count, double error)->bool
 		{
-			imp_->m_.saveDynEle("temp");
+			auto temp_part_pool = model().partPool();
+			auto temp_joint_pool = model().jointPool();
+			auto temp_motion_pool = model().motionPool();
+			auto temp_force_pool = model().forcePool();
 			
 			imp_->fwd_solver_->setMaxIterCount(max_count);
 			imp_->fwd_solver_->setMaxError(error);
@@ -94,7 +97,10 @@ namespace aris
 
 			if (imp_->fwd_solver_->iterCount() == imp_->fwd_solver_->maxIterCount())
 			{
-				imp_->m_.loadDynEle("temp");
+				model().partPool() = temp_part_pool;
+				model().jointPool() = temp_joint_pool;
+				model().motionPool() = temp_motion_pool;
+				model().forcePool() = temp_force_pool;
 				return false;
 			}
 
@@ -102,7 +108,10 @@ namespace aris
 		}
 		auto SimpleModel::inverseKinematic(int max_count, double error)->bool
 		{
-			imp_->m_.saveDynEle("temp");
+			auto temp_part_pool = model().partPool();
+			auto temp_joint_pool = model().jointPool();
+			auto temp_motion_pool = model().motionPool();
+			auto temp_force_pool = model().forcePool();
 
 			imp_->inv_solver_->setMaxIterCount(max_count);
 			imp_->inv_solver_->setMaxError(error);
@@ -110,7 +119,10 @@ namespace aris
 
 			if (imp_->inv_solver_->iterCount() == imp_->inv_solver_->maxIterCount())
 			{
-				imp_->m_.loadDynEle("temp");
+				model().partPool() = temp_part_pool;
+				model().jointPool() = temp_joint_pool;
+				model().motionPool() = temp_motion_pool;
+				model().forcePool() = temp_force_pool;
 				return false;
 			}
 

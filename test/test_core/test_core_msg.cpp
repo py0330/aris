@@ -1,6 +1,5 @@
 ﻿#include <iostream>
-#include <aris.h>
-
+#include <aris_core.h>
 #include "test_core_msg.h"
 
 using namespace aris::core;

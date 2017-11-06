@@ -76,13 +76,12 @@ namespace aris
 			SensorTemplate(Object &father, const aris::core::XmlElement &xml_ele) :Sensor(father, xml_ele, []()->SensorData* {return new DataType; }) {}
 		};
 
-		class SensorRoot:public aris::core::Root
+		class SensorRoot:public aris::core::Object
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("SensorRoot"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			using Root::loadXml;
-			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
+			using Object::loadXml;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto sensorPool()->aris::core::ObjectPool<Sensor> &;
 			auto sensorPool()const->const aris::core::ObjectPool<Sensor> &;
@@ -90,7 +89,11 @@ namespace aris
 			auto stop()->void { for (auto &sensor : sensorPool())sensor.stop(); }
 
 			virtual ~SensorRoot();
-			SensorRoot(const std::string &name = "SensorRoot");
+			explicit SensorRoot(const std::string &name = "SensorRoot");
+			SensorRoot(const SensorRoot &);
+			SensorRoot(SensorRoot &&);
+			SensorRoot& operator=(const SensorRoot &);
+			SensorRoot& operator=(SensorRoot &&);
 
 		private:
 			struct Imp;

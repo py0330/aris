@@ -10,8 +10,8 @@ namespace aris
 		class SimpleModel
 		{
 		public:
-			auto loadXml(const std::string &file)->void;
-			auto saveXml(const std::string &file)->void;
+			auto loadXmlFile(const std::string &file)->void;
+			auto saveXmlFile(const std::string &file)->void;
 			auto model()->Model&;
 			auto ground()->Part&;
 			auto addPart(const double *pm = nullptr)->Part*;

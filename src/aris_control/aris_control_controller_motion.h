@@ -54,7 +54,6 @@ namespace aris
 
 			virtual ~Motion();
 			explicit Motion(const std::string &name = "motion", const SlaveType *st = nullptr, std::uint16_t phy_id = 0, double max_pos = 0.0, double min_pos = 0.0, double max_vel = 0.0, double max_acc = 0.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
-			explicit Motion(Object &father, const aris::core::XmlElement &xml_ele);
 			Motion(const Motion &other) = delete;
 			Motion(Motion &&other) = delete;
 			Motion& operator=(const Motion &other) = delete;

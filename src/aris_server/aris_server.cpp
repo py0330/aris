@@ -11,14 +11,14 @@ namespace aris
 {
 	namespace server
 	{
-		auto default_command_root()->const aris::core::Root &	{
-			static aris::core::Root root;
+		auto default_command_root()->const aris::core::Object &	{
+			static aris::core::Object root;
 			if (root.children().size() == 0)
 			{
-				root.registerChildType<aris::core::Command>();
-				root.registerChildType<aris::core::Param>();
-				root.registerChildType<aris::core::GroupParam>();
-				root.registerChildType<aris::core::UniqueParam>();
+				root.registerType<aris::core::Command>();
+				root.registerType<aris::core::Param>();
+				root.registerType<aris::core::GroupParam>();
+				root.registerType<aris::core::UniqueParam>();
 				
 				auto &en = root.add<aris::core::Command>("en", "", "");
 				auto &en_group = en.add<aris::core::GroupParam>("group", "");
@@ -255,10 +255,10 @@ namespace aris
 			std::vector<ParseFunc> parser_vec_; // store parse func
 
 			// 储存Model, Controller, SensorRoot, WidgetRoot //
-			std::unique_ptr<aris::dynamic::Model> model_;
-			std::unique_ptr<aris::sensor::SensorRoot> sensor_root_;
-			std::unique_ptr<aris::control::Controller> controller_;
-			std::unique_ptr<aris::server::WidgetRoot> widget_root_;
+			aris::dynamic::Model* model_;
+			aris::sensor::SensorRoot* sensor_root_;
+			aris::control::Controller* controller_;
+			aris::server::WidgetRoot* widget_root_;
 
 			// 结束时的callback //
 			std::function<void(void)> on_exit_callback_{ nullptr };
@@ -308,7 +308,7 @@ namespace aris
 		}
 		auto ControlServer::Imp::executeCmd()->int
 		{
-			aris::dynamic::PlanParam plan_param{ model_.get(), count_, msg_queue_[current_cmd_].data(), static_cast<std::uint32_t>(msg_queue_[current_cmd_].size()) };
+			aris::dynamic::PlanParam plan_param{ model_, count_, msg_queue_[current_cmd_].data(), static_cast<std::uint32_t>(msg_queue_[current_cmd_].size()) };
 
 			// 执行plan函数 //
 			int ret = this->plan_vec_.at(static_cast<std::size_t>(msg_queue_[current_cmd_].header().reserved2_)).operator()(plan_param);
@@ -427,67 +427,45 @@ namespace aris
 			return 0;
 		}
 		auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
-		auto ControlServer::resetModel(dynamic::Model *model)->void { imp_->model_.reset(model); }
-		auto ControlServer::resetController(control::Controller *controller)->void { imp_->controller_.reset(controller); }
-		auto ControlServer::resetSensorRoot(sensor::SensorRoot *sensor_root)->void { imp_->sensor_root_.reset(sensor_root); }
-		auto ControlServer::resetWidgetRoot(server::WidgetRoot *widget_root)->void { imp_->widget_root_.reset(widget_root); }
-		auto ControlServer::widgetRoot()->WidgetRoot& { return std::ref(*imp_->widget_root_); }
-		auto ControlServer::model()->dynamic::Model& { return std::ref(*imp_->model_); }
-		auto ControlServer::controller()->control::Controller& { return std::ref(*imp_->controller_); }
-		auto ControlServer::sensorRoot()->sensor::SensorRoot& { return std::ref(*imp_->sensor_root_); }
-		auto ControlServer::saveXml(const char *file_name)->void
-		{
-			aris::core::XmlDocument xml_doc;
-			saveXml(xml_doc);
-			xml_doc.SaveFile(file_name);
+		auto ControlServer::resetModel(dynamic::Model *model)->void 
+		{ 
+			auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "model"; });
+			if(iter != children().end())children().erase(iter);
+			children().push_back_ptr(model);
+			imp_->model_ = model;
 		}
-		auto ControlServer::saveXml(aris::core::XmlDocument &xml_doc)->void
+		auto ControlServer::resetController(control::Controller *controller)->void 
 		{
-			xml_doc.Clear();
-
-			auto header_xml_ele = xml_doc.NewDeclaration("xml version=\"1.0\" encoding=\"UTF-8\" ");
-			xml_doc.InsertEndChild(header_xml_ele);
-
-			auto root_xml_ele = xml_doc.NewElement("Root");
-			xml_doc.InsertEndChild(root_xml_ele);
-
-			saveXml(*root_xml_ele);
+			auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "controller"; });
+			if (iter != children().end())children().erase(iter);
+			children().push_back_ptr(controller);
+			imp_->controller_ = controller;
 		}
-		auto ControlServer::saveXml(aris::core::XmlElement &xml_ele)->void
+		auto ControlServer::resetSensorRoot(sensor::SensorRoot *sensor_root)->void 
 		{
-			xml_ele.DeleteChildren();
-			
-			auto model_xml_ele = xml_ele.GetDocument()->NewElement("model");
-			xml_ele.InsertEndChild(model_xml_ele);
-			model().saveXml(*model_xml_ele);
-
-			auto master_xml_ele = xml_ele.GetDocument()->NewElement("master");
-			xml_ele.InsertEndChild(master_xml_ele);
-			controller().saveXml(*master_xml_ele);
-			
-			auto sensor_root_xml_ele = xml_ele.GetDocument()->NewElement("sensor_root");
-			xml_ele.InsertEndChild(sensor_root_xml_ele);
-			sensorRoot().saveXml(*sensor_root_xml_ele);
-
-			auto widget_root_xml_ele = xml_ele.GetDocument()->NewElement("widget_root");
-			xml_ele.InsertEndChild(widget_root_xml_ele);
-			widgetRoot().saveXml(*widget_root_xml_ele);
+			auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "sensor_root"; });
+			if (iter != children().end())children().erase(iter);
+			children().push_back_ptr(sensor_root);
+			imp_->sensor_root_ = sensor_root;
 		}
-		auto ControlServer::loadXml(const char *file_name)->void
+		auto ControlServer::resetWidgetRoot(server::WidgetRoot *widget_root)->void 
 		{
-			aris::core::XmlDocument doc;
-
-			if (doc.LoadFile(file_name) != 0)throw std::logic_error((std::string("could not open file:") + std::string(file_name)));
-
-			loadXml(doc);
+			auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "widget_root"; });
+			if (iter != children().end())children().erase(iter);
+			children().push_back_ptr(widget_root);
+			imp_->widget_root_ = widget_root;
 		}
-		auto ControlServer::loadXml(const aris::core::XmlDocument &xml_doc)->void
+		auto ControlServer::widgetRoot()->WidgetRoot& { return *imp_->widget_root_; }
+		auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
+		auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
+		auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
+		auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
-			// load robot model_ //
-			imp_->model_->loadXml(xml_doc);
-			imp_->controller_->loadXml(xml_doc);
-			imp_->sensor_root_->loadXml(xml_doc);
-			imp_->widget_root_->loadXml(xml_doc);
+			Object::loadXml(xml_ele);
+			imp_->controller_ = findOrInsert<aris::control::Controller>("controller");
+			imp_->model_ = findOrInsert<aris::dynamic::Model>("model");
+			imp_->sensor_root_ = findOrInsert<aris::sensor::SensorRoot>("sensor_root");
+			imp_->widget_root_ = findOrInsert<aris::server::WidgetRoot>("widget_root");
 		}
 		auto ControlServer::addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunction &plan_func)->void
 		{
@@ -589,11 +567,16 @@ namespace aris
 		ControlServer::~ControlServer() = default;
 		ControlServer::ControlServer() :imp_(new Imp(this))
 		{
+			registerType<aris::dynamic::Model>();
+			registerType<aris::control::Controller>();
+			registerType<aris::sensor::SensorRoot>();
+			registerType<aris::server::WidgetRoot>();
+
 			// create instance //
-			makeModel<aris::dynamic::Model>();
-			makeController<aris::control::Controller>();
-			makeSensorRoot<aris::sensor::SensorRoot>();
-			makeWidgetRoot<aris::server::WidgetRoot>();
+			makeModel<aris::dynamic::Model>("model");
+			makeController<aris::control::Controller>("controller");
+			makeSensorRoot<aris::sensor::SensorRoot>("sensor_root");
+			makeWidgetRoot<aris::server::WidgetRoot>("widget_root");
 		}
 	}
 }

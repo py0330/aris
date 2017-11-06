@@ -52,35 +52,35 @@ set(CMAKE_BUILD_TYPE "Release")
 
 # set include and lib folders
 if(UNIX)
-	set(ALL_LINK_LIB pthread)#pthread is needed for concurrency
+	set(RELY_LINK_LIB pthread)#pthread is needed for concurrency
 
 	option (USE_XENOMAI "Use Xenomai RT system" OFF)
 	if(USE_XENOMAI)
 		message("using xenomai")
 		add_definitions(-DUSE_XENOMAI)
-		set(ALL_INCL_DIR "/usr/xenomai/include" ${ALL_INCL_DIR})
-		set(ALL_LINK_DIR "/usr/xenomai/lib" ${ALL_LINK_DIR})
-		set(ALL_LINK_LIB native rtdm xenomai ${ALL_LINK_LIB})
+		set(RELY_INCL_DIR "/usr/xenomai/include" ${RELY_INCL_DIR})
+		set(RELY_LINK_DIR "/usr/xenomai/lib" ${RELY_LINK_DIR})
+		set(RELY_LINK_LIB native rtdm xenomai ${RELY_LINK_LIB})
 	endif(USE_XENOMAI)
 
 	option (USE_ETHERLAB "Use Etherlab Ethercat drivers" OFF)
 	if(USE_ETHERLAB)
 		message("using etherlab")
 		add_definitions(-DUSE_ETHERLAB)
-		set(ALL_INCL_DIR "/opt/etherlab/include" ${ALL_INCL_DIR})
-		set(ALL_LINK_DIR "/opt/etherlab/lib" ${ALL_LINK_DIR})
-		set(ALL_LINK_LIB ethercat_rtdm ${ALL_LINK_LIB})
+		set(RELY_INCL_DIR "/opt/etherlab/include" ${RELY_INCL_DIR})
+		set(RELY_LINK_DIR "/opt/etherlab/lib" ${RELY_LINK_DIR})
+		set(RELY_LINK_LIB ethercat_rtdm ${RELY_LINK_LIB})
 	endif(USE_ETHERLAB)
 endif(UNIX)
 if(WIN32)
-	set(ALL_LINK_LIB "ws2_32")#ws2_32 is needed for socket
+	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
 endif(WIN32)
 
 set(ARIS_INCL_DIR src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
-set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${ALL_INCL_DIR})
-set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${ALL_LINK_DIR})
-set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${ALL_LINK_LIB})
+set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${RELY_INCL_DIR})
+set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${RELY_LINK_DIR})
+set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
 
 include_directories(${ALL_INCL_DIR})
 link_directories(${ALL_LINK_DIR})
@@ -104,7 +104,7 @@ install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
 # aris core project
-set(SOURCE aris_core_command aris_core_msg aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_xml tinyxml2 aris_core_basic_type)
+set(SOURCE aris_core_command aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_msg aris_core_object tinyxml2 aris_core_basic_type)
 PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
 PREPEND_H(FULL_H src/aris_core ${SOURCE})
 add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h src/aris.h)
@@ -113,7 +113,7 @@ install(TARGETS aris_core ARCHIVE CONFIGURATIONS Release DESTINATION lib/release
 install(FILES ${FULL_H} src/aris_core/aris_core.h DESTINATION include)
 
 # aris control project
-set(SOURCE aris_control_motion aris_control_ethercat aris_control_ethercat_kernel aris_control_master_slave aris_control_controller_motion aris_control_rt_timer)
+set(SOURCE aris_control_ethercat aris_control_ethercat_kernel aris_control_master_slave aris_control_controller_motion aris_control_rt_timer)
 PREPEND_CPP(FULL_SRC src/aris_control ${SOURCE})
 PREPEND_H(FULL_H src/aris_control ${SOURCE})
 add_library(aris_control STATIC ${FULL_SRC} ${FULL_H} src/aris_control/aris_control.h)
@@ -153,32 +153,32 @@ install(FILES ${FULL_H} DESTINATION include)
 ################################### build tests for aris ####################################
 enable_testing()
 
-set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_cell.h test_dynamic_cell.cpp test_dynamic_spline.h test_dynamic_spline.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_simple_model.h test_dynamic_simple_model.cpp test_dynamic_plan.h test_dynamic_plan.cpp)
-PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
-add_executable(test_dynamic ${FULL_SRC})
-target_link_libraries(test_dynamic ${ALL_LINK_LIB})
-add_test(NAME test_dynamic COMMAND test_dynamic)
-set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-install(DIRECTORY test/test_dynamic/resource/ DESTINATION resource/test_dynamic)
-
-set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_msg.h test_core_msg.cpp test_core_xml.h test_core_xml.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
+set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_msg.h test_core_msg.cpp test_core_object.h test_core_object.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
 PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
 add_executable(test_core ${FULL_SRC})
-target_link_libraries(test_core ${ALL_LINK_LIB})
+target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
 set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp test_control_motion.h test_control_motion.cpp test_control_master_slave.h test_control_master_slave.cpp)
 PREPEND(FULL_SRC test/test_control ${SOURCE_FILES})
 add_executable(test_control ${FULL_SRC})
-target_link_libraries(test_control ${ALL_LINK_LIB})
+target_link_libraries(test_control aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_control COMMAND test_control)
 set_tests_properties (test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+
+set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_cell.h test_dynamic_cell.cpp test_dynamic_spline.h test_dynamic_spline.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_simple_model.h test_dynamic_simple_model.cpp test_dynamic_plan.h test_dynamic_plan.cpp)
+PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
+add_executable(test_dynamic ${FULL_SRC})
+target_link_libraries(test_dynamic aris_dynamic aris_core ${RELY_LINK_LIB})
+add_test(NAME test_dynamic COMMAND test_dynamic)
+set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+install(DIRECTORY test/test_dynamic/resource/ DESTINATION resource/test_dynamic)
 
 set(SOURCE_FILES main.cpp test_control_server.h test_control_server.cpp)
 PREPEND(FULL_SRC test/test_control_server ${SOURCE_FILES})
 add_executable(test_control_server ${FULL_SRC})
-target_link_libraries(test_control_server ${ALL_LINK_LIB})
+target_link_libraries(test_control_server aris_server aris_sensor aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_control_server COMMAND test_control_server)
 set_tests_properties (test_control_server PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
@@ -193,15 +193,15 @@ target_link_libraries(rbt ${ALL_LINK_LIB})
 set(MAKE_DEMO " ")
 if(MAKE_DEMO)
 
+add_executable(demo_object demo/demo_object/main.cpp)
+target_link_libraries(demo_object ${ALL_LINK_LIB})
+
 add_executable(demo_command_parser_xml demo/demo_command_parser_xml/main.cpp)
 target_link_libraries(demo_command_parser_xml ${ALL_LINK_LIB})
 install(DIRECTORY demo/demo_command_parser_xml/resource/ DESTINATION resource/demo_command_parser_xml)
 
 add_executable(demo_command_parser_cpp demo/demo_command_parser_cpp/main.cpp)
 target_link_libraries(demo_command_parser_cpp ${ALL_LINK_LIB})
-
-add_executable(demo_core_structure_cpp demo/demo_core_structure_cpp/main.cpp)
-target_link_libraries(demo_core_structure_cpp ${ALL_LINK_LIB})
 
 add_executable(demo_control_wifi demo/demo_control_wifi/main.cpp)
 target_link_libraries(demo_control_wifi ${ALL_LINK_LIB})

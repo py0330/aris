@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <aris.h>
+#include <aris_control.h>
 
 #include "test_control_master_slave.h"
 #include "test_control_ethercat.h"

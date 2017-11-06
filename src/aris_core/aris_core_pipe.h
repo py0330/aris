@@ -4,7 +4,7 @@
 #include <memory>
 #include <cstdint>
 
-#include <aris_core_xml.h>
+#include <aris_core_object.h>
 #include <aris_core_msg.h>
 
 namespace aris

@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <aris.h>
+#include <aris_control.h>
 #include "test_control_ethercat.h"
 #include "test_control_motion.h"
 
@@ -10,7 +10,7 @@ void test_elmo_enable()
 	try
 	{
 		aris::control::EthercatController m;
-		m.registerChildType<EthercatMotion>();
+		m.registerType<EthercatMotion>();
 
 		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", "C:\\Users\\py033\\Desktop\\Elmo ECAT 000103F6 V07.xml");
 		auto &s1 = m.slavePool().add<EthercatMotion>("s1", &st, 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,0.0);

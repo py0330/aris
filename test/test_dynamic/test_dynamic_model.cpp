@@ -1,362 +1,353 @@
 ﻿#include "test_dynamic_model.h"
 #include <iostream>
-#include <aris.h>
+#include <aris_dynamic.h>
 
 #include<type_traits>
 
 using namespace aris::dynamic;
 
 const char xml_file_3R[] =
-"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-"<root>"
-"    <model>"
-"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
-"        <variable_pool type=\"VariablePoolElement\" default_child_type=\"Matrix\">"
-"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
-"            <Mot_friction type=\"MatrixVariable\">{0, 0, 0}</Mot_friction>"
-"        </variable_pool>"
-"        <part_pool type=\"PartPoolElement\" default_child_type=\"Part\">"
-"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <origin pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                    <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"            </ground>"
-"            <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                    <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t\"/>"
-"                </geometry_pool>"
-"            </part1>"
-"            <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                    <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part2.x_t\"/>"
-"                </geometry_pool>"
-"            </part2>"
-"            <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                    <ee pe=\"{ 1,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part3.x_t\"/>"
-"                </geometry_pool>"
-"            </part3>"
-"            <part4 active=\"false\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part3.x_t\"/>"
-"                </geometry_pool>"
-"            </part4>"
-"        </part_pool>"
-"        <joint_pool type=\"JointPoolElement\">"
-"            <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
-"            <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
-"            <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
-"            <r4 active=\"false\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
-"        </joint_pool>"
-"        <motion_pool type=\"MotionPoolElement\" default_child_type=\"Motion\">"
-"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-"            <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-"            <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-"        </motion_pool>"
-"        <general_motion_pool type=\"GeneralMotionPoolElement\" default_child_type=\"GeneralMotion\">"
-"            <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"part3\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
-"        </general_motion_pool>"
-"        <solver_pool type=\"SolverPoolElement\" default_child_type=\"Solver\">"
-"            <gs type=\"LltGroundDividedSolver\"/>"
-"            <ps type=\"LltPartDividedSolver\"/>"
-"            <ds type=\"DiagSolver\"/>"
-"        </solver_pool>"
-"    </model>"
-"</root>";
+"<model>"
+"    <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
+"    <variable_pool type=\"VariablePoolElement\" default_child_type=\"Matrix\">"
+"        <PI type=\"MatrixVariable\">3.14159265358979</PI>"
+"        <Mot_friction type=\"MatrixVariable\">{0, 0, 0}</Mot_friction>"
+"    </variable_pool>"
+"    <part_pool type=\"PartPoolElement\" default_child_type=\"Part\">"
+"        <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <origin pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                <r1j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"        </ground>"
+"        <part1 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part1.x_t\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <r1i pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                <r2j pe=\"{ 1,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t\"/>"
+"            </geometry_pool>"
+"        </part1>"
+"        <part2 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,0,0,PI/2,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\" graphic_file_path=\"C:\\aris\\robot\\resource\\graphic_file\\part2.x_t\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <r2i pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                <r3j pe=\"{ 1,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part2.x_t\"/>"
+"            </geometry_pool>"
+"        </part2>"
+"        <part3 active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <r3i pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                <ee pe=\"{ 1,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part3.x_t\"/>"
+"            </geometry_pool>"
+"        </part3>"
+"        <part4 active=\"false\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1,1,0,0.2,0.5,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\3R\\part3.x_t\"/>"
+"            </geometry_pool>"
+"        </part4>"
+"    </part_pool>"
+"    <joint_pool type=\"JointPoolElement\">"
+"        <r1 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\"/>"
+"        <r2 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\"/>"
+"        <r3 active=\"true\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
+"        <r4 active=\"false\" type=\"RevoluteJoint\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\"/>"
+"    </joint_pool>"
+"    <motion_pool type=\"MotionPoolElement\" default_child_type=\"Motion\">"
+"        <m1 active=\"true\" slave_id=\"0\" prt_m=\"part1\" prt_n=\"ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"        <m2 active=\"true\" slave_id=\"1\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"r2i\" mak_j=\"r2j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"        <m3 active=\"true\" slave_id=\"2\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"r3i\" mak_j=\"r3j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"    </motion_pool>"
+"    <general_motion_pool type=\"GeneralMotionPoolElement\" default_child_type=\"GeneralMotion\">"
+"        <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"part3\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"    </general_motion_pool>"
+"    <solver_pool type=\"SolverPoolElement\" default_child_type=\"Solver\">"
+"        <gs type=\"LltGroundDividedSolver\"/>"
+"        <ps type=\"LltPartDividedSolver\"/>"
+"        <ds type=\"DiagSolver\"/>"
+"    </solver_pool>"
+"</model>";
 
 const char xml_file_6R[] =
-"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
-"<Root>"
-"    <model>"
-"        <environment type=\"Environment\" gravity=\"{0 , -9.8 , 0 , 0 , 0 , 0}\"/>"
-"        <variable_pool type=\"VariablePoolElement\"/>"
-"        <part_pool type=\"PartPoolElement\">"
-"            <ground type=\"Part\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
-"                <marker_pool type=\"MarkerPoolElement\">"
-"                    <R0j type=\"Marker\" active=\"true\" pe=\"{0.1 , 0.2 , 0.3 , 2.64224593190966 , 0.649484790532536 , 5.12219242612033}\"/>"
-"                    <origin type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
-"                </marker_pool>"
-"            </ground>"
-"            <part0 type=\"Part\" active=\"true\" pe=\"{0.1 , 0.2 , 0.3 , 2.64224593190966 , 0.649484790532536 , 5.12219242612033}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
-"                <marker_pool type=\"MarkerPoolElement\">"
-"                    <R0i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
-"                    <R1j type=\"Marker\" active=\"true\" pe=\"{0.127581045131803 , -0.255551891814505 , 0.743785121868611 , 1.39801111882379 , 0.92874853281329 , 2.99910369947683}\"/>"
-"                </marker_pool>"
-"            </part0>"
-"            <part1 type=\"Part\" active=\"true\" pe=\"{0.56 , 0.66 , 0.76 , 2.83142459280181 , 1.5646920289751 , 3.14159265358979}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
-"                <marker_pool type=\"MarkerPoolElement\">"
-"                    <R1i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
-"                    <R2j type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , 6.21426444075139 , 1.09203109440023 , 1.87858662805362}\"/>"
-"                </marker_pool>"
-"            </part1>"
-"            <part2 type=\"Part\" active=\"true\" pe=\"{0.56 , 0.66 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322217}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
-"                <marker_pool type=\"MarkerPoolElement\">"
-"                    <R2i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
-"                    <R3j type=\"Marker\" active=\"true\" pe=\"{0 , -0.996734365258792 , 0.0807502638519182 , 1.5707963267949 , 7.66425882286152e-17 , 4.71238898038469}\"/>"
-"                </marker_pool>"
-"            </part2>"
-"            <part3 type=\"Part\" active=\"true\" pe=\"{1.56 , 0.66 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322218}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
-"                <marker_pool type=\"MarkerPoolElement\">"
-"                    <R3i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
-"                    <R4j type=\"Marker\" active=\"true\" pe=\"{1.53280055883457 , 0.0630122434114775 , 0.777786541421676 , 4.71238898038469 , 1.11022302462516e-16 , 1.5707963267949}\"/>"
-"                </marker_pool>"
-"            </part3>"
-"            <part4 type=\"Part\" active=\"true\" pe=\"{1.56 , 2.38 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322218}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
-"                <marker_pool type=\"MarkerPoolElement\">"
-"                    <R4i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
-"                    <R5j type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , 0.299854573312955 , 1.27790273658208 , 3.56732345865295}\"/>"
-"                </marker_pool>"
-"            </part4>"
-"            <part5 type=\"Part\" active=\"true\" pe=\"{1.56 , 2.38 , 0.76 , 1.928105009803 , 1.5084212451233 , 3.14159265358979}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
-"                <marker_pool type=\"MarkerPoolElement\">"
-"                    <R5i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
-"                    <end_effector type=\"Marker\" active=\"true\" pe=\"{1.6840663068739 , 0.615533362716626 , -2.33680109411025 , -0 , 1.5084212451233 , 1.2134876437868}\"/>"
-"                </marker_pool>"
-"            </part5>"
-"        </part_pool>"
-"        <joint_pool type=\"JointPoolElement\">"
-"            <R0 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part0\" prt_n=\"ground\" mak_i=\"R0i\" mak_j=\"R0j\"/>"
-"            <R1 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part1\" prt_n=\"part0\" mak_i=\"R1i\" mak_j=\"R1j\"/>"
-"            <R2 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"R2i\" mak_j=\"R2j\"/>"
-"            <R3 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"R3i\" mak_j=\"R3j\"/>"
-"            <R4 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part4\" prt_n=\"part3\" mak_i=\"R4i\" mak_j=\"R4j\"/>"
-"            <R5 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part5\" prt_n=\"part4\" mak_i=\"R5i\" mak_j=\"R5j\"/>"
-"        </joint_pool>"
-"        <motion_pool type=\"MotionPoolElement\">"
-"            <M0 type=\"Motion\" active=\"true\" prt_m=\"part0\" prt_n=\"ground\" mak_i=\"R0i\" mak_j=\"R0j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
-"            <M1 type=\"Motion\" active=\"true\" prt_m=\"part1\" prt_n=\"part0\" mak_i=\"R1i\" mak_j=\"R1j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
-"            <M2 type=\"Motion\" active=\"true\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"R2i\" mak_j=\"R2j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
-"            <M3 type=\"Motion\" active=\"true\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"R3i\" mak_j=\"R3j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
-"            <M4 type=\"Motion\" active=\"true\" prt_m=\"part4\" prt_n=\"part3\" mak_i=\"R4i\" mak_j=\"R4j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
-"            <M5 type=\"Motion\" active=\"true\" prt_m=\"part5\" prt_n=\"part4\" mak_i=\"R5i\" mak_j=\"R5j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
-"        </motion_pool>"
-"        <general_motion_pool type=\"GeneralMotionPoolElement\">"
-"            <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
-"        </general_motion_pool>"
-"        <force_pool type=\"ForcePoolElement\"/>"
-"        <solver_pool type=\"SolverPoolElement\" default_child_type=\"Solver\">"
-"            <gs type=\"LltGroundDividedSolver\"/>"
-"            <ps type=\"LltPartDividedSolver\"/>"
-"            <ds type=\"DiagSolver\"/>"
-"        </solver_pool>"
-"    </model>"
-"</Root>";
+"<model>"
+"    <environment type=\"Environment\" gravity=\"{0 , -9.8 , 0 , 0 , 0 , 0}\"/>"
+"    <variable_pool type=\"VariablePoolElement\"/>"
+"    <part_pool type=\"PartPoolElement\">"
+"        <ground type=\"Part\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"            <marker_pool type=\"MarkerPoolElement\">"
+"                <R0j type=\"Marker\" active=\"true\" pe=\"{0.1 , 0.2 , 0.3 , 2.64224593190966 , 0.649484790532536 , 5.12219242612033}\"/>"
+"                <origin type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"            </marker_pool>"
+"        </ground>"
+"        <part0 type=\"Part\" active=\"true\" pe=\"{0.1 , 0.2 , 0.3 , 2.64224593190966 , 0.649484790532536 , 5.12219242612033}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"            <marker_pool type=\"MarkerPoolElement\">"
+"                <R0i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                <R1j type=\"Marker\" active=\"true\" pe=\"{0.127581045131803 , -0.255551891814505 , 0.743785121868611 , 1.39801111882379 , 0.92874853281329 , 2.99910369947683}\"/>"
+"            </marker_pool>"
+"        </part0>"
+"        <part1 type=\"Part\" active=\"true\" pe=\"{0.56 , 0.66 , 0.76 , 2.83142459280181 , 1.5646920289751 , 3.14159265358979}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"            <marker_pool type=\"MarkerPoolElement\">"
+"                <R1i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                <R2j type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , 6.21426444075139 , 1.09203109440023 , 1.87858662805362}\"/>"
+"            </marker_pool>"
+"        </part1>"
+"        <part2 type=\"Part\" active=\"true\" pe=\"{0.56 , 0.66 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322217}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"            <marker_pool type=\"MarkerPoolElement\">"
+"                <R2i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                <R3j type=\"Marker\" active=\"true\" pe=\"{0 , -0.996734365258792 , 0.0807502638519182 , 1.5707963267949 , 7.66425882286152e-17 , 4.71238898038469}\"/>"
+"            </marker_pool>"
+"        </part2>"
+"        <part3 type=\"Part\" active=\"true\" pe=\"{1.56 , 0.66 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322218}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"            <marker_pool type=\"MarkerPoolElement\">"
+"                <R3i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                <R4j type=\"Marker\" active=\"true\" pe=\"{1.53280055883457 , 0.0630122434114775 , 0.777786541421676 , 4.71238898038469 , 1.11022302462516e-16 , 1.5707963267949}\"/>"
+"            </marker_pool>"
+"        </part3>"
+"        <part4 type=\"Part\" active=\"true\" pe=\"{1.56 , 2.38 , 0.76 , 2.96488379751976 , 0.477268629930651 , 4.86969507322218}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"            <marker_pool type=\"MarkerPoolElement\">"
+"                <R4i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                <R5j type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , 0.299854573312955 , 1.27790273658208 , 3.56732345865295}\"/>"
+"            </marker_pool>"
+"        </part4>"
+"        <part5 type=\"Part\" active=\"true\" pe=\"{1.56 , 2.38 , 0.76 , 1.928105009803 , 1.5084212451233 , 3.14159265358979}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1 , 0 , 0 , 0 , 1 , 1 , 1 , 0 , 0 , 0}\">"
+"            <marker_pool type=\"MarkerPoolElement\">"
+"                <R5i type=\"Marker\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
+"                <end_effector type=\"Marker\" active=\"true\" pe=\"{1.6840663068739 , 0.615533362716626 , -2.33680109411025 , -0 , 1.5084212451233 , 1.2134876437868}\"/>"
+"            </marker_pool>"
+"        </part5>"
+"    </part_pool>"
+"    <joint_pool type=\"JointPoolElement\">"
+"        <R0 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part0\" prt_n=\"ground\" mak_i=\"R0i\" mak_j=\"R0j\"/>"
+"        <R1 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part1\" prt_n=\"part0\" mak_i=\"R1i\" mak_j=\"R1j\"/>"
+"        <R2 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"R2i\" mak_j=\"R2j\"/>"
+"        <R3 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"R3i\" mak_j=\"R3j\"/>"
+"        <R4 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part4\" prt_n=\"part3\" mak_i=\"R4i\" mak_j=\"R4j\"/>"
+"        <R5 type=\"RevoluteJoint\" active=\"true\" prt_m=\"part5\" prt_n=\"part4\" mak_i=\"R5i\" mak_j=\"R5j\"/>"
+"    </joint_pool>"
+"    <motion_pool type=\"MotionPoolElement\">"
+"        <M0 type=\"Motion\" active=\"true\" prt_m=\"part0\" prt_n=\"ground\" mak_i=\"R0i\" mak_j=\"R0j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"        <M1 type=\"Motion\" active=\"true\" prt_m=\"part1\" prt_n=\"part0\" mak_i=\"R1i\" mak_j=\"R1j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"        <M2 type=\"Motion\" active=\"true\" prt_m=\"part2\" prt_n=\"part1\" mak_i=\"R2i\" mak_j=\"R2j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"        <M3 type=\"Motion\" active=\"true\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"R3i\" mak_j=\"R3j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"        <M4 type=\"Motion\" active=\"true\" prt_m=\"part4\" prt_n=\"part3\" mak_i=\"R4i\" mak_j=\"R4j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"        <M5 type=\"Motion\" active=\"true\" prt_m=\"part5\" prt_n=\"part4\" mak_i=\"R5i\" mak_j=\"R5j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
+"    </motion_pool>"
+"    <general_motion_pool type=\"GeneralMotionPoolElement\">"
+"        <ee_mot type=\"GeneralMotion\" active=\"true\" prt_m=\"part5\" prt_n=\"ground\" mak_i=\"end_effector\" mak_j=\"origin\"/>"
+"    </general_motion_pool>"
+"    <force_pool type=\"ForcePoolElement\"/>"
+"    <solver_pool type=\"SolverPoolElement\" default_child_type=\"Solver\">"
+"        <gs type=\"LltGroundDividedSolver\"/>"
+"        <ps type=\"LltPartDividedSolver\"/>"
+"        <ds type=\"DiagSolver\"/>"
+"    </solver_pool>"
+"</model>";
 
 const char xml_file_stewart[] =
-"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-"<root>"
-"    <model>"
-"        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
-"        <variable_pool type=\"VariablePoolElement\" default_child_type=\"Matrix\">"
-"            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
-"            <Mot_friction type=\"MatrixVariable\">{0, 0, 0}</Mot_friction>"
-"        </variable_pool>"
-"        <part_pool type=\"PartPoolElement\" default_child_type=\"Part\">"
-"            <p1a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999974 , 1.22522177619812e-16 , -9.28869564848867e-18 , 6.38378239159465e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <u1i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
-"                    <p1j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p1a>"
-"            <p1b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425892889 , 1.49999999999963 , 0.912443796234424 , 8.04911692853238e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <p1i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                    <s1j pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p1b>"
-"            <p2a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999995 , 1.22524189323061e-16 , -9.2876368573046e-18 , 5.55111512312578e-17 , 0.721024145526766 , 0.308719565228027}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <u2i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
-"                    <p2j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p2a>"
-"            <p2b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316677 , 1.49999999999988 , 1.31832224563822 , 6.28318530717959 , 0.721024145526766 , 0.308719565228028}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <p2i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                    <s2j pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p2b>"
-"            <p3a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24902578429613e-16 , 3.6066466064807e-14 , 1.73199999999999 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <u3i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
-"                    <p3j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p3a>"
-"            <p3b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316337 , 1.49999999999935 , 1.31832224563851 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <p3i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                    <s3j pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p3b>"
-"            <p4a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24898250620648e-16 , 1.52855080404276e-14 , 1.732 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <u4i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
-"                    <p4j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p4a>"
-"            <p4b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322252 , 1.49999999999964 , 1.36823895396183 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <p4i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                    <s4j pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p4b>"
-"            <p5a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999993 , -1.0082029353865e-16 , 4.19175032725778e-17 , 6.28318530717959 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <u5i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
-"                    <p5j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p5a>"
-"            <p5b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322406 , 1.49999999999987 , 1.36823895396163 , 2.77555756156289e-17 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <p5i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                    <s5j pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p5b>"
-"            <p6a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999969 , -1.00821934664985e-16 , 4.19165900651815e-17 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <u6i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
-"                    <p6j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p6a>"
-"            <p6b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425888235 , 1.49999999999959 , 0.912443796234401 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <p6i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
-"                    <s6j pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </p6b>"
-"            <up active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.1 , 1.5 , 1.2 , 1.5707963267949 , 0.1 , 4.71238898038469}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <ee pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                    <s1i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
-"                    <s2i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
-"                    <s3i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
-"                    <s4i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
-"                    <s5i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
-"                    <s6i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
-"                </marker_pool>"
-"                <geometry_pool type=\"GeometryPoolElement\">"
-"                    <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\up.xmt_txt\"/>"
-"                </geometry_pool>"
-"            </up>"
-"            <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
-"                <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
-"                    <origin pe=\"{ 0,0,0,0,0,0 }\"/>"
-"                    <u1o pe=\"{ 1,0,0,0,0,0 }\"/>"
-"                    <u2o pe=\"{ 1,0,0,0,0,0 }\"/>"
-"                    <u3o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
-"                    <u4o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
-"                    <u5o pe=\"{ -1,0,0,0,0,0 }\"/>"
-"                    <u6o pe=\"{ -1,0,0,0,0,0 }\"/>"
-"                    <u1j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
-"                    <u2j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
-"                    <u3j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
-"                    <u4j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
-"                    <u5j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
-"                    <u6j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
-"                </marker_pool>"
-"            </ground>"
-"        </part_pool>"
-"        <joint_pool type=\"JointPoolElement\">"
-"            <u1 active=\"true\" type=\"UniversalJoint\" prt_m=\"p1a\" prt_n=\"ground\" mak_i=\"u1i\" mak_j=\"u1j\"/>"
-"            <p1 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\"/>"
-"            <s1 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p1b\" mak_i=\"s1i\" mak_j=\"s1j\"/>"
-"            <u2 active=\"true\" type=\"UniversalJoint\" prt_m=\"p2a\" prt_n=\"ground\" mak_i=\"u2i\" mak_j=\"u2j\"/>"
-"            <p2 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\"/>"
-"            <s2 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p2b\" mak_i=\"s2i\" mak_j=\"s2j\"/>"
-"            <u3 active=\"true\" type=\"UniversalJoint\" prt_m=\"p3a\" prt_n=\"ground\" mak_i=\"u3i\" mak_j=\"u3j\"/>"
-"            <p3 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\"/>"
-"            <s3 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p3b\" mak_i=\"s3i\" mak_j=\"s3j\"/>"
-"            <u4 active=\"true\" type=\"UniversalJoint\" prt_m=\"p4a\" prt_n=\"ground\" mak_i=\"u4i\" mak_j=\"u4j\"/>"
-"            <p4 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\"/>"
-"            <s4 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p4b\" mak_i=\"s4i\" mak_j=\"s4j\"/>"
-"            <u5 active=\"true\" type=\"UniversalJoint\" prt_m=\"p5a\" prt_n=\"ground\" mak_i=\"u5i\" mak_j=\"u5j\"/>"
-"            <p5 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\"/>"
-"            <s5 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p5b\" mak_i=\"s5i\" mak_j=\"s5j\"/>"
-"            <u6 active=\"true\" type=\"UniversalJoint\" prt_m=\"p6a\" prt_n=\"ground\" mak_i=\"u6i\" mak_j=\"u6j\"/>"
-"            <p6 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\"/>"
-"            <s6 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p6b\" mak_i=\"s6i\" mak_j=\"s6j\"/>"
-"        </joint_pool>"
-"        <motion_pool type=\"MotionPoolElement\" default_child_type=\"Motion\">"
-"            <m1 active=\"true\" slave_id=\"0\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"            <m2 active=\"true\" slave_id=\"9\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"            <m3 active=\"true\" slave_id=\"8\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"            <m4 active=\"true\" slave_id=\"3\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"            <m5 active=\"true\" slave_id=\"7\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"            <m6 active=\"true\" slave_id=\"5\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        </motion_pool>"
-"        <general_motion_pool type=\"GeneralMotionPoolElement\" default_child_type=\"GeneralMotion\">"
-"            <ee_mot type=\"GeneralMotion\" active=\"false\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
-"        </general_motion_pool>"
-"        <solver_pool type=\"SolverPoolElement\" default_child_type=\"Solver\">"
-"            <gs type=\"LltGroundDividedSolver\"/>"
-"            <ps type=\"LltPartDividedSolver\"/>"
-"            <ds type=\"DiagSolver\"/>"
-"        </solver_pool>"
-"    </model>"
-"</root>";
+"<model>"
+"    <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
+"    <variable_pool type=\"VariablePoolElement\" default_child_type=\"Matrix\">"
+"        <PI type=\"MatrixVariable\">3.14159265358979</PI>"
+"        <Mot_friction type=\"MatrixVariable\">{0, 0, 0}</Mot_friction>"
+"    </variable_pool>"
+"    <part_pool type=\"PartPoolElement\" default_child_type=\"Part\">"
+"        <p1a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999974 , 1.22522177619812e-16 , -9.28869564848867e-18 , 6.38378239159465e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <u1i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                <p1j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p1a>"
+"        <p1b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425892889 , 1.49999999999963 , 0.912443796234424 , 8.04911692853238e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <p1i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                <s1j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p1b>"
+"        <p2a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.999999999999995 , 1.22524189323061e-16 , -9.2876368573046e-18 , 5.55111512312578e-17 , 0.721024145526766 , 0.308719565228027}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <u2i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                <p2j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p2a>"
+"        <p2b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316677 , 1.49999999999988 , 1.31832224563822 , 6.28318530717959 , 0.721024145526766 , 0.308719565228028}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <p2i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                <s2j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p2b>"
+"        <p3a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24902578429613e-16 , 3.6066466064807e-14 , 1.73199999999999 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <u3i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                <p3j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p3a>"
+"        <p3b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.363127053316337 , 1.49999999999935 , 1.31832224563851 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <p3i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                <s3j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p3b>"
+"        <p4a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{1.24898250620648e-16 , 1.52855080404276e-14 , 1.732 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <u4i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                <p4j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p4a>"
+"        <p4b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322252 , 1.49999999999964 , 1.36823895396183 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <p4i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                <s4j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p4b>"
+"        <p5a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999993 , -1.0082029353865e-16 , 4.19175032725778e-17 , 6.28318530717959 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <u5i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                <p5j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p5a>"
+"        <p5b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.134375029322406 , 1.49999999999987 , 1.36823895396163 , 2.77555756156289e-17 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <p5i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                <s5j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p5b>"
+"        <p6a active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{-0.999999999999969 , -1.00821934664985e-16 , 4.19165900651815e-17 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <u6i pe=\"{ 0,0,0,-PI/2,0,0 }\"/>"
+"                <p6j pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p6a>"
+"        <p6b active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.0711481425888235 , 1.49999999999959 , 0.912443796234401 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <p6i pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
+"                <s6j pe=\"{ 0,0,0,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </p6b>"
+"        <up active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0.1 , 1.5 , 1.2 , 1.5707963267949 , 0.1 , 4.71238898038469}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <ee pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                <s1i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
+"                <s2i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
+"                <s3i pe=\"{ 0.25,0,0.144,0,0,0 }\"/>"
+"                <s4i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
+"                <s5i pe=\"{ -0.25,0,0.144,0,0,0 }\"/>"
+"                <s6i pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
+"            </marker_pool>"
+"            <geometry_pool type=\"GeometryPoolElement\">"
+"                <solid type=\"ParasolidGeometry\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\up.xmt_txt\"/>"
+"            </geometry_pool>"
+"        </up>"
+"        <ground active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
+"            <marker_pool type=\"MarkerPoolElement\" default_child_type=\"Marker\">"
+"                <origin pe=\"{ 0,0,0,0,0,0 }\"/>"
+"                <u1o pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                <u2o pe=\"{ 1,0,0,0,0,0 }\"/>"
+"                <u3o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
+"                <u4o pe=\"{ 0,0,1.732,0,0,0 }\"/>"
+"                <u5o pe=\"{ -1,0,0,0,0,0 }\"/>"
+"                <u6o pe=\"{ -1,0,0,0,0,0 }\"/>"
+"                <u1j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                <u2j pe=\"{ 1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                <u3j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
+"                <u4j pe=\"{ 0,0,1.732,PI/2,PI/2,PI/2 }\"/>"
+"                <u5j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"                <u6j pe=\"{ -1,0,0,PI/2,PI/2,PI/2 }\"/>"
+"            </marker_pool>"
+"        </ground>"
+"    </part_pool>"
+"    <joint_pool type=\"JointPoolElement\">"
+"        <u1 active=\"true\" type=\"UniversalJoint\" prt_m=\"p1a\" prt_n=\"ground\" mak_i=\"u1i\" mak_j=\"u1j\"/>"
+"        <p1 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\"/>"
+"        <s1 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p1b\" mak_i=\"s1i\" mak_j=\"s1j\"/>"
+"        <u2 active=\"true\" type=\"UniversalJoint\" prt_m=\"p2a\" prt_n=\"ground\" mak_i=\"u2i\" mak_j=\"u2j\"/>"
+"        <p2 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\"/>"
+"        <s2 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p2b\" mak_i=\"s2i\" mak_j=\"s2j\"/>"
+"        <u3 active=\"true\" type=\"UniversalJoint\" prt_m=\"p3a\" prt_n=\"ground\" mak_i=\"u3i\" mak_j=\"u3j\"/>"
+"        <p3 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\"/>"
+"        <s3 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p3b\" mak_i=\"s3i\" mak_j=\"s3j\"/>"
+"        <u4 active=\"true\" type=\"UniversalJoint\" prt_m=\"p4a\" prt_n=\"ground\" mak_i=\"u4i\" mak_j=\"u4j\"/>"
+"        <p4 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\"/>"
+"        <s4 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p4b\" mak_i=\"s4i\" mak_j=\"s4j\"/>"
+"        <u5 active=\"true\" type=\"UniversalJoint\" prt_m=\"p5a\" prt_n=\"ground\" mak_i=\"u5i\" mak_j=\"u5j\"/>"
+"        <p5 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\"/>"
+"        <s5 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p5b\" mak_i=\"s5i\" mak_j=\"s5j\"/>"
+"        <u6 active=\"true\" type=\"UniversalJoint\" prt_m=\"p6a\" prt_n=\"ground\" mak_i=\"u6i\" mak_j=\"u6j\"/>"
+"        <p6 active=\"true\" type=\"PrismaticJoint\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\"/>"
+"        <s6 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p6b\" mak_i=\"s6i\" mak_j=\"s6j\"/>"
+"    </joint_pool>"
+"    <motion_pool type=\"MotionPoolElement\" default_child_type=\"Motion\">"
+"        <m1 active=\"true\" slave_id=\"0\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m2 active=\"true\" slave_id=\"9\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m3 active=\"true\" slave_id=\"8\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m4 active=\"true\" slave_id=\"3\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m5 active=\"true\" slave_id=\"7\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m6 active=\"true\" slave_id=\"5\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"    </motion_pool>"
+"    <general_motion_pool type=\"GeneralMotionPoolElement\" default_child_type=\"GeneralMotion\">"
+"        <ee_mot type=\"GeneralMotion\" active=\"false\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
+"    </general_motion_pool>"
+"    <solver_pool type=\"SolverPoolElement\" default_child_type=\"Solver\">"
+"        <gs type=\"LltGroundDividedSolver\"/>"
+"        <ps type=\"LltPartDividedSolver\"/>"
+"        <ds type=\"DiagSolver\"/>"
+"    </solver_pool>"
+"</model>";
 
 void test_part()
 {
 	aris::dynamic::Model model;
 
-	const double im[36]{ 12.3,0,0,0,0.356, -0.2228,
+	const double prt_im[36]{ 12.3,0,0,0,0.356, -0.2228,
 		0,12.3,0,-0.356,0,0.1,
 		0,0,12.3,0.2228, -0.1,0,
 		0, -0.356,0.2228,5.8,0.85,0.75,
 		0.356,0, -0.1,0.85,6.4,0.98,
 		-0.2228,0.1,0,0.75,0.98,3.9 };
 
-	auto &p = model.partPool().add<Part>("test_part",im);
-	auto &r = model.partPool().add<Part>("relative_part",im);
+	auto &p = model.partPool().add<Part>("test_part", prt_im);
+	auto &r = model.partPool().add<Part>("relative_part", prt_im);
 
 	const double pp[3] = { 0.1, 0.2, 0.3 };
 	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };
@@ -1162,37 +1153,66 @@ void test_part()
 
 
 
-
+	const double im[36]{ 12.2999999999999954,0.0000000000000095,0.0000000000000008,-0.0000000000000028,3.8018392163046553,-2.1184526964958033,
+		0.0000000000000094,12.2999999999999901,-0.0000000000000027,-3.8018392163046530,0.0000000000000031,0.9908070461627771,
+		0.0000000000000008,-0.0000000000000031,12.3000000000000203,2.1184526964958104,-0.9908070461627823,-0.0000000000000005,
+		-0.0000000000000027,-3.8018392163046539,2.1184526964958099,8.2643465287835660,0.8248630422298895,-1.1387229998146720,
+		3.8018392163046548,0.0000000000000031,-0.9908070461627819,0.8248630422298896,5.0180208478483292,-0.8639469278395188,
+		-2.1184526964958033,0.9908070461627773,-0.0000000000000004,-1.1387229998146717,-0.8639469278395188,6.0269246585954530 };
 	const double glb_im[36]{ 12.3, 0, 0,   0,   4.86680056754638, 1.19059364505643,
 		0,   12.3, 0, -4.86680056754639, 0, -1.05294290764011,
 		0, 0,   12.3, -1.19059364505643,1.05294290764011, 0,
 		0, -4.86680056754639, -1.19059364505643, 6.37494518313694, -0.759574604730052, -1.02350564428774,
 		4.86680056754638, 0,   1.05294290764011, -0.759574604730052,   7.88731016704578,   1.28815826950323,
 		1.19059364505643, -1.05294290764011, 0, -1.02350564428774, 1.28815826950323,   6.06954528699909 };
+	const double fg[6]{ -21.1547438184137988,4.8215999999999539,118.5711625456093685,18.9314187850450608, - 16.0900876407826203,4.0319186454939082 };
 	const double glb_fg[6]{ 0, -120.54,0,47.6946455619546,0,10.3188404948731 };
-	const double glb_fv[6]{ 5.11681554065846,10.7408556783149,11.3489822760672, -3.55177495791515,2.99639902169271,-1.75750746281364 };
 	const double prt_fg[6]{ 119.279123323887,-5.207328,16.5911444507421,0.45124518305897,3.31741898034387,-2.20293670541155 };
+	const double fv[6]{ 11.6496106078792767, - 7.8762514847338121, - 8.5204704046205890, - 0.7076559679417713,2.8229614995915187, - 2.8804116565669942 };
+	const double glb_fv[6]{ 5.11681554065846,10.7408556783149,11.3489822760672, -3.55177495791515,2.99639902169271,-1.75750746281364 };
 	const double prt_fv[6]{ -12.121294608774,-9.20587956029489,6.21877634351408,0.260711372733768,1.34261769787459,1.5411918276253 };
+	const double pf[6]{ -32.8043544262930737,12.6978514847337607,127.0916329502299504,19.6390747529868364, - 18.9130491403741381,6.9123303020609024 };
+	const double glb_pf[6]{ -5.1168155406584122, - 131.2808556783149641, - 11.3489822760671935,51.2464205198697371, - 2.9963990216926910,12.0763479576867141};
+	const double prt_pf[6]{ 131.4004179326610142,3.9985515602948922,10.3723681072279739,0.1905338103252023,1.9748012824692744, - 3.7441285330368426 };
 	const double prt_vs[6]{ -0.342374318815878, - 0.326839225000394, - 1.02664731827659, - 0.981437055212506,0.670440145936023, - 0.920485982149056 };
 	const double prt_as[6]{ -1.91765344470424, - 2.61057756494702,0.488627252217732,0.786294961274511, - 2.28837157363616,1.03841805459299 };
 
 
-
+	//p.cptIm(r, result, 7);
+	//if (!(s_is_equal(6, 6, result, 7, im, 6, error)))std::cout << "\"part:cptIm\" failed" << std::endl;
 
 	p.cptGlbIm(result, 7);
 	if (!(s_is_equal(6, 6, result, 7, glb_im, 6, error)))std::cout << "\"part:cptGlbIm\" failed" << std::endl;
 
+	p.cptPrtIm(result, 7);
+	if (!(s_is_equal(6, 6, result, 7, prt_im, 6, error)))std::cout << "\"part:cptGlbIm\" failed" << std::endl;
+
+	p.cptFg(r, result);
+	if (!(s_is_equal(6, result, fg, error)))std::cout << "\"part:cptFg\" failed" << std::endl;
+
 	p.cptGlbFg(result);
 	if (!(s_is_equal(6, result, glb_fg, error)))std::cout << "\"part:cptGlbFg\" failed" << std::endl;
-
-	p.cptGlbFv(result);
-	if (!(s_is_equal(6, result, glb_fv, error)))std::cout << "\"part:cptGlbFv\" failed" << std::endl;
 
 	p.cptPrtFg(result);
 	if (!(s_is_equal(6, result, prt_fg, error)))std::cout << "\"part:cptPrtFg\" failed" << std::endl;
 
+	p.cptFv(r, result);
+	if (!(s_is_equal(6, result, fv, error)))std::cout << "\"part:cptFv\" failed" << std::endl;
+
+	p.cptGlbFv(result);
+	if (!(s_is_equal(6, result, glb_fv, error)))std::cout << "\"part:cptGlbFv\" failed" << std::endl;
+
 	p.cptPrtFv(result);
 	if (!(s_is_equal(6, result, prt_fv, error)))std::cout << "\"part:cptPrtFv\" failed" << std::endl;
+
+	//p.cptPf(r, result);
+	//if (!(s_is_equal(6, result, pf, error)))std::cout << "\"part:cptPf\" failed" << std::endl;
+
+	p.cptGlbPf(result);
+	if (!(s_is_equal(6, result, glb_pf, error)))std::cout << "\"part:cptGlbPf\" failed" << std::endl;
+
+	p.cptPrtPf(result);
+	if (!(s_is_equal(6, result, prt_pf, error)))std::cout << "\"part:cptPrtPf\" failed" << std::endl;
 
 	p.cptPrtVs(result);
 	if (!(s_is_equal(6, result, prt_vs, error)))std::cout << "\"part:cptPrtVs\" failed" << std::endl;
@@ -1868,7 +1888,7 @@ void test_solver_compute()
 		aris::core::XmlDocument xml_doc;
 		xml_doc.Parse(xml_file_3R);
 		Model m;
-		m.loadXml(xml_doc);
+		m.loadXmlDoc(xml_doc);
 
 		for (auto &mot : m.motionPool())mot.activate(true);
 		m.generalMotionPool().at(0).activate(false);
@@ -1876,7 +1896,7 @@ void test_solver_compute()
 		auto &gs = static_cast<GroundDividedSolver&>(*m.solverPool().findByName("gs"));
 		auto &ps = static_cast<PartDividedSolver&>(*m.solverPool().findByName("ps"));
 		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
-		auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
+		auto &gcs = m.solverPool().add<CombineSolver>("gcs");
 
 		gs.init();
 
@@ -1913,7 +1933,7 @@ void test_solver_3R()
 		aris::core::XmlDocument xml_doc;
 		xml_doc.Parse(xml_file_3R);
 		Model m;
-		m.loadXml(xml_doc);
+		m.loadXmlDoc(xml_doc);
 
 		for (auto &mot : m.motionPool())mot.activate(true);
 		m.generalMotionPool().at(0).activate(false);
@@ -1921,7 +1941,7 @@ void test_solver_3R()
 		auto &gs = static_cast<GroundDividedSolver&>(*m.solverPool().findByName("gs"));
 		auto &ps = static_cast<PartDividedSolver&>(*m.solverPool().findByName("ps"));
 		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
-		auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
+		auto &gcs = m.solverPool().add<CombineSolver>("gcs");
 
 		const double input_origin_p[3]{ 0.0, 0.0, 0.0 };
 		const double input_origin_v[3]{ 0.0, 0.0, 0.0 };
@@ -2231,12 +2251,12 @@ void test_solver_3R()
 		m.simResultPool().front().record();
 		m.simResultPool().front().record();
 
-		m.saveXml("C:\\Users\\py033\\Desktop\\m.xml");
+		m.saveXmlFile("C:\\Users\\py033\\Desktop\\m.xml");
 
 
 		Model m2;
-		m2.loadXml("C:\\Users\\py033\\Desktop\\m.xml");
-		m2.saveXml("C:\\Users\\py033\\Desktop\\m2.xml");
+		m2.loadXmlFile("C:\\Users\\py033\\Desktop\\m.xml");
+		m2.saveXmlFile("C:\\Users\\py033\\Desktop\\m2.xml");
 	}
 	catch (std::exception &e)
 	{
@@ -2276,7 +2296,7 @@ void test_solver_6R()
 		aris::core::XmlDocument xml_doc;
 		xml_doc.Parse(xml_file_6R);
 		Model m;
-		m.loadXml(xml_doc);
+		m.loadXmlDoc(xml_doc);
 
 		auto test_forward = [&](Solver &s)->void
 		{
@@ -2543,13 +2563,13 @@ void test_solver_6R()
 		auto &r = m.simResultPool().add<SimResult>("result1");
 
 		s.simulate(plan, 0, r);
-		m.saveXml("C:\\Users\\py033\\Desktop\\m3.xml");
+		m.saveXmlFile("C:\\Users\\py033\\Desktop\\m3.xml");
 		
 		auto &adams_simulator = m.simulatorPool().add<AdamsSimulator>("adams_simulator", &ds);
 		adams_simulator.saveAdams("C:\\Users\\py033\\Desktop\\m3.cmd", r);
 
 		
-		auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
+		auto &gcs = m.solverPool().add<CombineSolver>("gcs");
 		gcs.setMaxError(1e-14);
 		test_forward(gcs);
 		test_inverse(gcs);
@@ -2630,7 +2650,7 @@ void test_solver_stewart()
 		aris::core::XmlDocument xml_doc;
 		xml_doc.Parse(xml_file_stewart);
 		Model m;
-		m.loadXml(xml_doc);
+		m.loadXmlDoc(xml_doc);
 
 		auto &gs = static_cast<GroundDividedSolver&>(*m.solverPool().findByName("gs"));
 		auto &ps = static_cast<PartDividedSolver&>(*m.solverPool().findByName("ps"));
@@ -2760,6 +2780,8 @@ void test_solver_stewart()
 			if (!s_is_equal(6, result2, input_v, error))std::cout << s.type() << "::kinVel() inverse failed" << std::endl;
 			if (!s_is_equal(6, result3, input_a, error))std::cout << s.type() << "::kinAcc() inverse failed" << std::endl;
 			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, 1e-8))std::cout << s.type() << "::dynFce() inverse failed" << std::endl;
+
+			dsp(1, 6, m.generalMotionPool().at(0).mfs());
 		};
 		auto bench_pos_forward = [&](Solver &s, aris::Size bench_count)
 		{
@@ -2890,7 +2912,7 @@ void test_solver_stewart()
 		adams_simulator.saveAdams("C:\\Users\\py033\\Desktop\\m4.cmd", r, 0);
 
 
-		auto &gcs = m.solverPool().add<GroundCombineSolver>("gcs");
+		auto &gcs = m.solverPool().add<CombineSolver>("gcs");
 		gcs.setMaxError(1e-14);
 		test_forward(gcs);
 		test_inverse(gcs);
@@ -2947,8 +2969,8 @@ void test_model()
 	test_part();
 	test_constraint();
 	test_solver_compute();
-	test_solver_3R();
-	test_solver_6R();
+	//test_solver_3R();
+	//test_solver_6R();
 	test_solver_stewart();
 	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
 }

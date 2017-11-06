@@ -35,13 +35,11 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto model()->Model&;
 			auto model()const->const Model&;
-
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix;
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const aris::core::Matrix& default_value)const->aris::core::Matrix;
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, Size m, Size n)const->aris::core::Matrix;
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, Size m, Size n, const aris::core::Matrix& default_value)const->aris::core::Matrix;
 
-		protected:
 			~Element() = default;
 			explicit Element(const std::string &name = "element") :Object(name) {}
 			Element(const Element&) = default;
@@ -59,7 +57,6 @@ namespace aris
 			auto active() const->bool { return active_; }
 			auto activate(bool active = true)->void { active_ = active; }
 
-		protected:
 			virtual ~DynEle() = default;
 			explicit DynEle(const std::string &name, bool active = true) : Element(name), active_(active) {};
 			DynEle(const DynEle &) = default;
@@ -80,10 +77,6 @@ namespace aris
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto gravity()const ->const double6&{ return gravity_; }
 
-		private:
-			auto virtual operator=(const Object &other)->Object& { return dynamic_cast<Environment&>(*this) = dynamic_cast<const Environment&>(other); }
-			auto virtual operator=(Object &&other)->Object& { return dynamic_cast<Environment&>(*this) = dynamic_cast<Environment&&>(other); }
-
 			virtual ~Environment() = default;
 			explicit Environment(const std::string &name = "dyn_ele") :Element(name) {}
 			Environment(const Environment &) = default;
@@ -93,10 +86,6 @@ namespace aris
 
 		private:
 			double gravity_[6]{ 0, -9.8, 0, 0, 0, 0 };
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 
 		class Variable :public Element
@@ -107,16 +96,12 @@ namespace aris
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual toString() const->std::string { return ""; }
 
-		protected:
 			virtual ~Variable() = default;
 			explicit Variable(const std::string &name = "variable") : Element(name) {}
 			Variable(const Variable&) = default;
 			Variable(Variable&&) = default;
 			Variable& operator=(const Variable&) = default;
 			Variable& operator=(Variable&&) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
 		};
 		template<typename VariableType> class VariableTemplate : public Variable
 		{
@@ -124,15 +109,15 @@ namespace aris
 			auto data()->VariableType& { return data_; }
 			auto data()const->const VariableType&{ return data_; }
 
-		protected:
+			virtual ~VariableTemplate() = default;
 			explicit VariableTemplate(const std::string &name = "variable_template", const VariableType &data = VariableType(), bool active = true) : Variable(name), data_(data) {}
 			VariableTemplate(const VariableTemplate &other) = default;
 			VariableTemplate(VariableTemplate &&other) = default;
 			VariableTemplate& operator=(const VariableTemplate &other) = default;
 			VariableTemplate& operator=(VariableTemplate &&other) = default;
 
+		private:
 			VariableType data_;
-			friend class Model;
 		};
 		class MatrixVariable final : public VariableTemplate<aris::core::Matrix>
 		{
@@ -140,19 +125,14 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "MatrixVariable" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto virtual toString() const->std::string override { return data_.toString(); }
+			auto virtual toString() const->std::string override { return data().toString(); }
 
-		private:
 			virtual ~MatrixVariable() = default;
 			explicit MatrixVariable(const std::string &name = "matrix_variable", const aris::core::Matrix &data = aris::core::Matrix()) : VariableTemplate(name, data) {}
 			MatrixVariable(const MatrixVariable &other) = default;
 			MatrixVariable(MatrixVariable &&other) = default;
 			MatrixVariable& operator=(const MatrixVariable &other) = default;
 			MatrixVariable& operator=(MatrixVariable &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class StringVariable final : public VariableTemplate<std::string>
 		{
@@ -160,20 +140,18 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "StringVariable" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto virtual toString() const->std::string override { return data_; }
+			auto virtual toString() const->std::string override { return data(); }
 
-		private:
 			virtual ~StringVariable() = default;
 			explicit StringVariable(const std::string &name = "string_variable", const std::string &data = "") : VariableTemplate(name, data) {}
 			StringVariable(const StringVariable &other) = default;
 			StringVariable(StringVariable &&other) = default;
 			StringVariable& operator=(const StringVariable &other) = default;
 			StringVariable& operator=(StringVariable &&other) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
+
+
+
 	}
 }
 

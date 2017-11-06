@@ -8,7 +8,7 @@
 const char xml_data[] =
 "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
 "<root>"
-"    <widget_root>"
+"    <widget_root type=\"WidgetRoot\">"
 "        <message_pipe type=\"Pipe\" pool_size=\"16384\"/>"
 "        <command_pipe type=\"Pipe\" pool_size=\"16384\"/>"
 "        <command_socket type=\"Socket\" port=\"5866\"/>"
@@ -42,7 +42,7 @@ const char xml_data[] =
 "            </command_pool>"
 "        </command_parser>"
 "    </widget_root>"
-"    <controller>"
+"    <controller type=\"EthercatController\">"
 "        <slave_type_pool type=\"SlaveTypePoolElement\">"
 "            <elmo type=\"SlaveType\" product_code=\"0x00010001\" vendor_id=\"0x00007595\" alias=\"0\" distributed_clock=\"0x0300\">"
 "                <pdo_group_pool type=\"PdoGroupPoolElement\">"
@@ -76,7 +76,7 @@ const char xml_data[] =
 "            <m3 type=\"Motion\" slave_type=\"elmo\" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" home_pos=\"0\" pos_factor=\"22937600\"/>"
 "        </slave_pool>"
 "    </controller>"
-"    <model>"
+"    <model type=\"Model\">"
 "        <environment type=\"Environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
 "        <variable_pool type=\"VariablePoolElement\" default_child_type=\"Matrix\">"
 "            <PI type=\"MatrixVariable\">3.14159265358979</PI>"
@@ -118,7 +118,7 @@ const char xml_data[] =
 "        </motion_pool>"
 "        <general_motion_pool type=\"GeneralMotionPoolElement\" default_child_type=\"GeneralMotion\"/>"
 "    </model>"
-"    <sensor_root>"
+"    <sensor_root type=\"SensorRoot\">"
 "        <sensor_pool type=\"SensorPoolObject\"/>"
 "    </sensor_root>"
 "</root>";
@@ -158,12 +158,9 @@ void test_xml()
 {
 	try
 	{
-		aris::core::XmlDocument xml_doc;
-		xml_doc.Parse(xml_data);
-
 		auto&cs = aris::server::ControlServer::instance();
 
-		cs.loadXml(xml_doc);
+		cs.loadXmlStr(xml_data);
 		cs.addCmd("en", aris::server::default_parse, aris::server::default_enable_plan);
 		cs.addCmd("ds", aris::server::default_parse, aris::server::default_disable_plan);
 		cs.addCmd("rc", rc_parse_func, rc_plan_func);
@@ -276,7 +273,7 @@ void test_construct()
 	}
 
 
-	cs.saveXml("C:\\Users\\py033\\Desktop\\cs.xml");
+	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\cs.xml");
 
 }
 
@@ -284,7 +281,7 @@ void test_construct()
 
 void test_control_server()
 {
-	//test_xml();
+	test_xml();
 	test_construct();
 
 }

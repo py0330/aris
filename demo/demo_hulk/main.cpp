@@ -626,10 +626,10 @@ int main()
 		xml_doc.Parse(xml_data);
 
 		auto&cs = aris::server::ControlServer::instance();
-		cs.model().registerChildType<HulkInverseSolver>();
-		cs.model().registerChildType<HulkForwardSolver>();
+		cs.model().registerType<HulkInverseSolver>();
+		cs.model().registerType<HulkForwardSolver>();
 		cs.resetController(new aris::control::EthercatController);
-		cs.loadXml(xml_doc);
+		cs.loadXmlDoc(xml_doc);
 
 		cs.widgetRoot().cmdParser().commandPool().add<aris::core::Command>(aris::server::default_enable_command());
 		cs.widgetRoot().cmdParser().commandPool().add<aris::core::Command>(aris::server::default_disable_command());
@@ -642,7 +642,7 @@ int main()
 
 		std::cout << cs.controller().name() << std::endl;
 
-		cs.saveXml("C:\\Users\\py033\\Desktop\\hulk.xml");
+		cs.saveXmlFile("C:\\Users\\py033\\Desktop\\hulk.xml");
 
 
 		double r[7];
@@ -781,8 +781,8 @@ int main()
 		//	return total_coult - param.count_;
 		//};
 
-		//m.registerChildType<HulkInverseSolver>();
-		//m.registerChildType<HulkForwardSolver>();
+		//m.registerType<HulkInverseSolver>();
+		//m.registerType<HulkForwardSolver>();
 		//auto &inv = m.solverPool().add<HulkInverseSolver>("inverse");
 		//auto &fwd = m.solverPool().add<HulkForwardSolver>("forward");
 		//auto &inv_sim = m.simulatorPool().add<aris::dynamic::AdamsSimulator>("inv_sim", inv);

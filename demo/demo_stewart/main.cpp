@@ -3,7 +3,7 @@
 
 using namespace aris::dynamic;
 
-const char xml_file[] =
+const char xml_data[] =
 "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 "<root>"
 "    <model>"
@@ -397,7 +397,7 @@ int main()
 	try
 	{
 		Model rbt;
-		rbt.loadString(xml_file);
+		rbt.loadXmlStr(xml_data);
 
 		rbt.generalMotionPool().findByName("general_motion")->activate(false);
 		for (auto &m : rbt.motionPool())m.activate(true);

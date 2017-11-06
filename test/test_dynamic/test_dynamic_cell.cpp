@@ -1,6 +1,6 @@
 ﻿#include "test_dynamic_cell.h"
 #include <iostream>
-#include <aris.h>
+#include <aris_dynamic.h>
 #include <aris_dynamic_cell.h>
 
 using namespace aris::dynamic;

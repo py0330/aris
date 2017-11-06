@@ -94,12 +94,12 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		class Master : public aris::core::Root
+		class Master : public aris::core::Object
 		{
 		public:
 			enum { MAX_MSG_SIZE = 8192 };
-			using Root::loadXml;
-			auto virtual loadXml(const aris::core::XmlDocument &xml_doc)->void override;
+			static auto Type()->const std::string &{ static const std::string type("Master"); return std::ref(type); }
+			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			// used only in non-rt thread //
 			auto start()->void;

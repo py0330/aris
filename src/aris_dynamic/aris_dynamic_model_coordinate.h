@@ -93,7 +93,6 @@ namespace aris
 			auto getAs(double *as, double *vs = nullptr, double *pm = nullptr)const->void;
 			auto getAs(const Coordinate &relative_to, double *as, double *vs = nullptr, double *pm = nullptr)const->void;
 
-		protected:
 			virtual ~Coordinate() = default;
 			explicit Coordinate(const std::string &name = "coordinate", bool active = true);
 			Coordinate(const Coordinate &) = default;
@@ -120,7 +119,6 @@ namespace aris
 			auto fatherPart() const->const Part&;
 			auto fatherPart()->Part&;
 
-		protected:
 			virtual ~Marker();
 			explicit Marker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true);
 			Marker(const Marker&);
@@ -131,10 +129,6 @@ namespace aris
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class Part final :public Coordinate
 		{
@@ -147,6 +141,7 @@ namespace aris
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
 			auto geometryPool()const->const aris::core::ObjectPool<Geometry, Element>&;
+			auto prtIm() const->const double6x6&;
 			auto virtual glbPm()const->const double4x4& override;
 			auto virtual glbVs()const->const double6& override;
 			auto virtual glbAs()const->const double6& override;
@@ -155,7 +150,19 @@ namespace aris
 			auto virtual prtAs()const->const double6& override;
 			auto updPrtVs()->void;
 			auto updPrtAs()->void;
-			auto prtIm() const->const double6x6&;
+			
+
+
+
+
+			//template<typename IM_TYPE>
+			//auto cptIm(const Coordinate &relative_to, double *im, IM_TYPE i_t)const->void
+			//{
+			//	double tem[36], pm[16];
+			//	getPm(relative_to, pm);
+			//	s_tf_n(6, pm, *prtIm(), tem);
+			//	s_tf_n(6, pm, tem, T(6), im, i_t);
+			//}
 			template<typename IM_TYPE>
 			auto cptGlbIm(double *im, IM_TYPE i_t)const->void
 			{
@@ -163,14 +170,34 @@ namespace aris
 				s_tf_n(6, *pm(), *prtIm(), tem);
 				s_tf_n(6, *pm(), tem, T(6), im, i_t);
 			}
+			template<typename IM_TYPE>
+			auto cptPrtIm(double *im, IM_TYPE i_t)const->void
+			{
+				s_mc(6, 6, *prtIm(), 6, im, i_t);
+			}
+
+			auto cptFg(const Coordinate &relative_to, double *fg)const->void;
 			auto cptGlbFg(double *fg)const->void;
-			auto cptGlbFv(double *fv)const->void;
-			auto cptGlbPf(double *pf)const->void;
 			auto cptPrtFg(double *fg)const->void;
+
+			auto cptFv(const Coordinate &relative_to, double *fv)const->void;
+			auto cptGlbFv(double *fv)const->void;
 			auto cptPrtFv(double *fv)const->void;
+
+			//auto cptPf(const Coordinate &relative_to, double *pf)const->void;
+			auto cptGlbPf(double *pf)const->void;
 			auto cptPrtPf(double *pf)const->void;
+
+
+			//auto cptGlbVs(double *vs)const->void;
 			auto cptPrtVs(double *vs)const->void;
+
+			//auto cptGlbAs(double *as)const->void;
 			auto cptPrtAs(double *as)const->void;
+
+
+
+
 			auto setPp(const double *pp)->void;
 			auto setPp(const Coordinate &relative_to, const double *pp)->void;
 			auto setRe(const double *re, const char *type = "313")->void;
@@ -226,7 +253,6 @@ namespace aris
 			auto setAs(const double *as, const double *vs = nullptr, const double *pm = nullptr)->void;
 			auto setAs(const Coordinate &relative_to, const double *as, const double *vs = nullptr, const double *pm = nullptr)->void;
 
-		private:
 			virtual ~Part();
 			explicit Part(const std::string &name = "part", const double *prt_im = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
 			Part(const Part &other);
@@ -234,14 +260,9 @@ namespace aris
 			Part& operator=(const Part &other);
 			Part& operator=(Part &&other);
 
-
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 		class Geometry :public Element
 		{
@@ -251,16 +272,12 @@ namespace aris
 			auto fatherPart() const->const Part&;
 			auto fatherPart()->Part&;
 
-		protected:
 			virtual ~Geometry() = default;
 			explicit Geometry(const std::string &name = "geometry") : Element(name) {}
 			Geometry(const Geometry&) = default;
 			Geometry(Geometry&&) = default;
 			Geometry& operator=(const Geometry&) = default;
 			Geometry& operator=(Geometry&&) = default;
-
-			friend class Model;
-			friend class aris::core::Root;
 		};
 
 		class ParasolidGeometry final :public Geometry
@@ -273,7 +290,6 @@ namespace aris
 			auto prtPm()const->const double4x4&;
 			auto filePath()const->const std::string &;
 
-		private:
 			virtual ~ParasolidGeometry();
 			explicit ParasolidGeometry(const std::string &name = "parasolid_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
 			ParasolidGeometry(const ParasolidGeometry &other);
@@ -281,12 +297,9 @@ namespace aris
 			ParasolidGeometry& operator=(const ParasolidGeometry &other);
 			ParasolidGeometry& operator=(ParasolidGeometry &&other);
 
+		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			friend class Model;
-			friend class aris::core::Root;
-			friend class aris::core::Object;
 		};
 	}
 }

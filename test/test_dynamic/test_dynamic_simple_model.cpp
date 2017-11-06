@@ -1,6 +1,6 @@
 ﻿#include "test_dynamic_model.h"
 #include <iostream>
-#include <aris.h>
+#include <aris_dynamic.h>
 
 #include<type_traits>
 

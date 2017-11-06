@@ -23,7 +23,7 @@ namespace aris
 
 		using ParseFunc = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)>;
 
-		class ControlServer
+		class ControlServer : public aris::core::Object
 		{
 		public:
 			// Msg reserved 1 //
@@ -53,11 +53,9 @@ namespace aris
 				WAIT_FOR_RT_PLAN_FINISHED = 0x0001
 			};
 			static auto instance()->ControlServer &;
-			auto saveXml(const char *file_name)->void;
-			auto saveXml(aris::core::XmlDocument &xml_doc)->void;
-			auto saveXml(aris::core::XmlElement &xml_ele)->void;
-			auto loadXml(const char *file_name)->void;
-			auto loadXml(const aris::core::XmlDocument &xml_doc)->void;
+			static auto Type()->const std::string &{ static const std::string type("ControlServer"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			template<typename T = aris::dynamic::Model, typename... Args>
 			auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
 			template<typename T = aris::control::Controller, typename... Args>
@@ -83,7 +81,6 @@ namespace aris
 			auto executeCmd(const std::string &cmd_string)->void;
 			auto start()->void;
 			auto stop()->void;
-
 
 		private:
 			~ControlServer();

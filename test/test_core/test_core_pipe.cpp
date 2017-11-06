@@ -1,9 +1,7 @@
 ﻿#include <iostream>
 #include <thread>
 #include <future>
-
-#include <aris.h>
-
+#include <aris_core.h>
 #include "test_core_pipe.h"
 
 
