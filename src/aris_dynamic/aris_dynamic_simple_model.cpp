@@ -29,9 +29,9 @@ namespace aris
 			double glb_pm[16], loc_pm[16];
 			s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
 			auto name = "joint_" + std::to_string(imp_->m_.jointPool().size());
-			s_inv_pm_dot_pm(*first_part->glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*first_part->pm(), glb_pm, loc_pm);
 			auto &mak_i = first_part->markerPool().add<Marker>(name + "_i", loc_pm);
-			s_inv_pm_dot_pm(*second_part->glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*second_part->pm(), glb_pm, loc_pm);
 			auto &mak_j = second_part->markerPool().add<Marker>(name + "_j", loc_pm);
 			return &imp_->m_.jointPool().add<RevoluteJoint>(name, &mak_i, &mak_j);
 		}
@@ -40,9 +40,9 @@ namespace aris
 			double glb_pm[16], loc_pm[16];
 			s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
 			auto name = "joint_" + std::to_string(imp_->m_.jointPool().size());
-			s_inv_pm_dot_pm(*first_part->glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*first_part->pm(), glb_pm, loc_pm);
 			auto &mak_i = first_part->markerPool().add<Marker>(name + "_i", loc_pm);
-			s_inv_pm_dot_pm(*second_part->glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*second_part->pm(), glb_pm, loc_pm);
 			auto &mak_j = second_part->markerPool().add<Marker>(name + "_j", loc_pm);
 			return &imp_->m_.jointPool().add<PrismaticJoint>(name, &mak_i, &mak_j);
 		}

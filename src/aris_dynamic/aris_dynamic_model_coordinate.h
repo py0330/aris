@@ -29,15 +29,9 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Coordinate" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual prtPm()const->const double4x4& = 0;
-			auto virtual prtVs()const->const double6& = 0;
-			auto virtual prtAs()const->const double6& = 0;
-			auto virtual glbPm()const->const double4x4& = 0;
-			auto virtual glbVs()const->const double6& = 0;
-			auto virtual glbAs()const->const double6& = 0;
-			auto virtual pm() const->const double4x4&{ return glbPm(); }
-			auto virtual vs() const->const double6&{ return glbVs(); }
-			auto virtual as() const->const double6&{ return glbAs(); }
+			auto virtual pm() const->const double4x4& = 0;
+			auto virtual vs() const->const double6& = 0;
+			auto virtual as() const->const double6& = 0;
 			auto getPp(double *pp)const->void;
 			auto getPp(const Coordinate &relative_to, double *pp)const->void;
 			auto getRe(double *re, const char *type = "313")const->void;
@@ -100,19 +94,17 @@ namespace aris
 			Coordinate& operator=(const Coordinate &) = default;
 			Coordinate& operator=(Coordinate &&) = default;
 		};
-		class Marker :public Coordinate
+		class Marker final :public Coordinate
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Marker" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto virtual glbPm()const->const double4x4& override;
-			auto virtual glbVs()const->const double6& override;
-			auto virtual glbAs()const->const double6& override;
-			auto virtual prtPm()const->const double4x4& override;
-			auto virtual prtVs()const->const double6& override;
-			auto virtual prtAs()const->const double6& override;
+			auto virtual pm() const->const double4x4& override;
+			auto virtual vs() const->const double6& override;
+			auto virtual as() const->const double6& override;
+			auto prtPm()const->const double4x4&;
 			void setPrtPm(const double *prt_pm) { std::copy_n(prt_pm, 16, const_cast<double *>(*this->prtPm())); }
 			void setPrtPe(const double *prt_pe, const char *type = "313") { s_pe2pm(prt_pe, const_cast<double *>(*prtPm()), type); }
 			void setPrtPq(const double *prt_pq) { s_pq2pm(prt_pq, const_cast<double *>(*prtPm())); }
@@ -137,67 +129,14 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual pm() const->const double4x4& override;
+			auto virtual vs() const->const double6& override;
+			auto virtual as() const->const double6& override;
+			auto prtIm() const->const double6x6&;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
 			auto geometryPool()const->const aris::core::ObjectPool<Geometry, Element>&;
-			auto prtIm() const->const double6x6&;
-			auto virtual glbPm()const->const double4x4& override;
-			auto virtual glbVs()const->const double6& override;
-			auto virtual glbAs()const->const double6& override;
-			auto virtual prtPm()const->const double4x4& override;
-			auto virtual prtVs()const->const double6& override;
-			auto virtual prtAs()const->const double6& override;
-			auto updPrtVs()->void;
-			auto updPrtAs()->void;
-			
-
-
-
-
-			//template<typename IM_TYPE>
-			//auto cptIm(const Coordinate &relative_to, double *im, IM_TYPE i_t)const->void
-			//{
-			//	double tem[36], pm[16];
-			//	getPm(relative_to, pm);
-			//	s_tf_n(6, pm, *prtIm(), tem);
-			//	s_tf_n(6, pm, tem, T(6), im, i_t);
-			//}
-			template<typename IM_TYPE>
-			auto cptGlbIm(double *im, IM_TYPE i_t)const->void
-			{
-				double tem[36];
-				s_tf_n(6, *pm(), *prtIm(), tem);
-				s_tf_n(6, *pm(), tem, T(6), im, i_t);
-			}
-			template<typename IM_TYPE>
-			auto cptPrtIm(double *im, IM_TYPE i_t)const->void
-			{
-				s_mc(6, 6, *prtIm(), 6, im, i_t);
-			}
-
-			auto cptFg(const Coordinate &relative_to, double *fg)const->void;
-			auto cptGlbFg(double *fg)const->void;
-			auto cptPrtFg(double *fg)const->void;
-
-			auto cptFv(const Coordinate &relative_to, double *fv)const->void;
-			auto cptGlbFv(double *fv)const->void;
-			auto cptPrtFv(double *fv)const->void;
-
-			//auto cptPf(const Coordinate &relative_to, double *pf)const->void;
-			auto cptGlbPf(double *pf)const->void;
-			auto cptPrtPf(double *pf)const->void;
-
-
-			//auto cptGlbVs(double *vs)const->void;
-			auto cptPrtVs(double *vs)const->void;
-
-			//auto cptGlbAs(double *as)const->void;
-			auto cptPrtAs(double *as)const->void;
-
-
-
-
 			auto setPp(const double *pp)->void;
 			auto setPp(const Coordinate &relative_to, const double *pp)->void;
 			auto setRe(const double *re, const char *type = "313")->void;
@@ -252,6 +191,39 @@ namespace aris
 			auto setAa(const Coordinate &relative_to, const double *aa, const double *va = nullptr, const double *pp = nullptr)->void;
 			auto setAs(const double *as, const double *vs = nullptr, const double *pm = nullptr)->void;
 			auto setAs(const Coordinate &relative_to, const double *as, const double *vs = nullptr, const double *pm = nullptr)->void;
+
+			template<typename IM_TYPE>
+			auto cptIm(const Coordinate &relative_to, double *im, IM_TYPE i_t)const->void
+			{
+				double tem[36], pm[16];
+				getPm(relative_to, pm);
+				s_tf_n(6, pm, *prtIm(), tem);
+				s_tf_n(6, pm, tem, T(6), im, i_t);
+			}
+			template<typename IM_TYPE>
+			auto cptGlbIm(double *im, IM_TYPE i_t)const->void
+			{
+				double tem[36];
+				s_tf_n(6, *pm(), *prtIm(), tem);
+				s_tf_n(6, *pm(), tem, T(6), im, i_t);
+			}
+			template<typename IM_TYPE>
+			auto cptPrtIm(double *im, IM_TYPE i_t)const->void{	s_mc(6, 6, *prtIm(), 6, im, i_t);}
+			auto cptFg(const Coordinate &relative_to, double *fg)const->void;
+			auto cptGlbFg(double *fg)const->void;
+			auto cptPrtFg(double *fg)const->void;
+			auto cptFv(const Coordinate &relative_to, double *fv)const->void;
+			auto cptGlbFv(double *fv)const->void;
+			auto cptPrtFv(double *fv)const->void;
+			auto cptPf(const Coordinate &relative_to, double *pf)const->void;
+			auto cptGlbPf(double *pf)const->void;
+			auto cptPrtPf(double *pf)const->void;
+			auto cptVs(const Coordinate &relative_to, double *vs)const->void { s_inv_tv(*relative_to.pm(), this->vs(), vs); }
+			auto cptGlbVs(double *vs)const->void { getVs(vs); }
+			auto cptPrtVs(double *vs)const->void { s_inv_tv(*pm(), this->vs(), vs); }
+			auto cptAs(const Coordinate &relative_to, double *as)const->void { s_inv_tv(*relative_to.pm(), this->as(), as); }
+			auto cptGlbAs(double *as)const->void { getAs(as); }
+			auto cptPrtAs(double *as)const->void { s_inv_tv(*pm(), this->as(), as); }
 
 			virtual ~Part();
 			explicit Part(const std::string &name = "part", const double *prt_im = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);

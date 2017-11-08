@@ -253,7 +253,6 @@ namespace aris
 		private:
 			Frame frame_{ GROUND };
 		};
-
 		class CombineSolver : public FrameSolver
 		{
 		public:
@@ -320,32 +319,6 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		//class GroundCombineSolver :public CombineSolver
-		//{
-		//public:
-		//	static const std::string& Type() { static const std::string type("GroundCombineSolver"); return type; }
-		//	auto virtual type() const->const std::string& override{ return Type(); }
-		//	auto virtual updCm()->void override;
-		//	auto virtual updCmT()->void override;
-		//	auto virtual updIm()->void override;
-		//	auto virtual updCp()->void override;
-		//	auto virtual updCv()->void override;
-		//	auto virtual updCa()->void override;
-		//	auto virtual updPv()->void override;
-		//	auto virtual updPa()->void override;
-		//	auto virtual updPf()->void override;
-		//	auto virtual updConstraintFce()->void override;
-		//	auto virtual updPartPos()->void override;
-		//	auto virtual updPartVel()->void override;
-		//	auto virtual updPartAcc()->void override;
-
-		//	virtual ~GroundCombineSolver();
-		//	explicit GroundCombineSolver(const std::string &name = "ground_combine_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		//	GroundCombineSolver(const GroundCombineSolver &other);
-		//	GroundCombineSolver(GroundCombineSolver &&other);
-		//	GroundCombineSolver& operator=(const GroundCombineSolver &other);
-		//	GroundCombineSolver& operator=(GroundCombineSolver &&other);
-		//};
 
 		class DividedSolver : public Solver
 		{
@@ -534,11 +507,15 @@ namespace aris
 				double cm[36], x[6], b[6]; // determine I or J automatically
 				double U[36], tau[6];
 				double Q[36], R[36];
+				double RN[36];
+				//double T1[36], L1[36], R1[36], U1[36], tau1[6];
 				Size rows;
 				Relation *rel;
 				Part *part;
 				Diag *rd;//related diag
 				bool is_I;
+
+				std::function<void(double*)> fast;
 			};
 			struct Remainder
 			{

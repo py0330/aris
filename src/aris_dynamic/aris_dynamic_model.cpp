@@ -89,9 +89,9 @@ namespace aris
 			double glb_pm[16], loc_pm[16];
 			s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
 			auto name = "joint_" + std::to_string(jointPool().size());
-			s_inv_pm_dot_pm(*first_part.glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
 			auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
-			s_inv_pm_dot_pm(*second_part.glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
 			auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
 			return jointPool().add<RevoluteJoint>(name, &mak_i, &mak_j);
 		}
@@ -100,9 +100,9 @@ namespace aris
 			double glb_pm[16], loc_pm[16];
 			s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
 			auto name = "joint_" + std::to_string(jointPool().size());
-			s_inv_pm_dot_pm(*first_part.glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
 			auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
-			s_inv_pm_dot_pm(*second_part.glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
 			auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
 			return jointPool().add<PrismaticJoint>(name, &mak_i, &mak_j);
 		}
@@ -111,10 +111,10 @@ namespace aris
 			double glb_pm[16], loc_pm[16];
 			s_sov_axes2pm(position, first_axis, second_axis, glb_pm, "zx");
 			auto name = "joint_" + std::to_string(jointPool().size());
-			s_inv_pm_dot_pm(*first_part.glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
 			auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
 			s_sov_axes2pm(position, second_axis, first_axis, glb_pm, "zx");
-			s_inv_pm_dot_pm(*second_part.glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
 			auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
 			return jointPool().add<UniversalJoint>(name, &mak_i, &mak_j);
 		}
@@ -122,9 +122,9 @@ namespace aris
 		{
 			double glb_pm[16]{ 1,0,0,position[0],0,1,0,position[1],0,0,1,position[2],0,0,0,1 }, loc_pm[16];
 			auto name = "joint_" + std::to_string(jointPool().size());
-			s_inv_pm_dot_pm(*first_part.glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
 			auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
-			s_inv_pm_dot_pm(*second_part.glbPm(), glb_pm, loc_pm);
+			s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
 			auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
 			return jointPool().add<SphericalJoint>(name, &mak_i, &mak_j);
 		}

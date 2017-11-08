@@ -13,14 +13,14 @@
 
 int main(int argc, char *argv[])
 {
-	test_matrix();
-	test_block_matrix();
-	test_cell();
-	test_screw();
-	test_spline();
+	//test_matrix();
+	//test_block_matrix();
+	//test_cell();
+	//test_screw();
+	//test_spline();
 	test_model();
-	test_simple_model();
-	test_plan();
+	//test_simple_model();
+	//test_plan();
 
 	std::cout << "test_dynamic finished, press any key to continue" << std::endl;
 	std::cin.get();

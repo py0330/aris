@@ -1178,8 +1178,8 @@ void test_part()
 	const double prt_as[6]{ -1.91765344470424, - 2.61057756494702,0.488627252217732,0.786294961274511, - 2.28837157363616,1.03841805459299 };
 
 
-	//p.cptIm(r, result, 7);
-	//if (!(s_is_equal(6, 6, result, 7, im, 6, error)))std::cout << "\"part:cptIm\" failed" << std::endl;
+	p.cptIm(r, result, 7);
+	if (!(s_is_equal(6, 6, result, 7, im, 6, error)))std::cout << "\"part:cptIm\" failed" << std::endl;
 
 	p.cptGlbIm(result, 7);
 	if (!(s_is_equal(6, 6, result, 7, glb_im, 6, error)))std::cout << "\"part:cptGlbIm\" failed" << std::endl;
@@ -1205,8 +1205,8 @@ void test_part()
 	p.cptPrtFv(result);
 	if (!(s_is_equal(6, result, prt_fv, error)))std::cout << "\"part:cptPrtFv\" failed" << std::endl;
 
-	//p.cptPf(r, result);
-	//if (!(s_is_equal(6, result, pf, error)))std::cout << "\"part:cptPf\" failed" << std::endl;
+	p.cptPf(r, result);
+	if (!(s_is_equal(6, result, pf, error)))std::cout << "\"part:cptPf\" failed" << std::endl;
 
 	p.cptGlbPf(result);
 	if (!(s_is_equal(6, result, glb_pf, error)))std::cout << "\"part:cptGlbPf\" failed" << std::endl;
@@ -1287,7 +1287,7 @@ void test_constraint()
 			- 0.409335377653455,   0.0627598442188279, - 0.0349660234578675,   0.0392211338303902, - 0.278793607012357,
 			0.0589399899253518, - 0.008455863358525, - 0.418969900086863,   0.929193404253209, - 0.343008461765058,
 			- 0.105336940494824,   0.0162725942644976, - 0.0981899087749608,   0.367506898103141,   0.897005752404413 };
-		const double ce[6]{ 0,0,0,0,0,0 };
+		const double cp[6]{ 0,0,0,0,0,0 };
 		const double ca[6]{ 0.926329546106927,-1.72197953069011,0,	-0.0282942143129791,	0.887671869636436 };
 
 		double result1[42], result2[48];
@@ -1302,7 +1302,7 @@ void test_constraint()
 		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"RevoluteJoint:cptCa\" failed" << std::endl;
 
 		jnt.cptCp(result1);
-		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"RevoluteJoint:cptCp\" failed" << std::endl;
+		if (!s_is_equal(jnt.dim(), result1, cp, error))std::cout << "\"RevoluteJoint:cptCp\" failed" << std::endl;
 	}
 
 	// test prismatic joints //
@@ -1348,7 +1348,7 @@ void test_constraint()
 			- 0.491623217509383, - 0.105005385664637,   0.1224, - 0.253539765421328, - 0.959549804517775,
 			0.0446268651607419, - 0.312662613107425,   0.989539765421329, - 0.0431999999999995,   0.137640156385781,
 			0.209753309018236, - 0.0415270419200584,   0.0763498045177739,   0.966359843614218, - 0.2456 };
-		const double ce[6]{ 0,0,0,0,0,0 };
+		const double cp[6]{ 0,0,0,0,0,0 };
 		const double ca[6]{ -0.299471893489825,   0.841602471649138, - 0, - 0, - 0 };
 
 
@@ -1365,7 +1365,7 @@ void test_constraint()
 		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"PrismaticJoint:cptCa\" failed" << std::endl;
 
 		jnt.cptCp(result1);
-		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"PrismaticJoint:cptCp\" failed" << std::endl;
+		if (!s_is_equal(jnt.dim(), result1, cp, error))std::cout << "\"PrismaticJoint:cptCp\" failed" << std::endl;
 	}
 
 	// test spherical joints //
@@ -1411,7 +1411,7 @@ void test_constraint()
 			- 0.306741039154564, - 0.00832192286513729, - 0.280281202972532,
 			0.302076466901929, - 0.039518308129878, - 0.293716381366335,
 			- 0.0246829966679223, - 0.0107065066158384, - 0.142401007488425 };
-		const double ce[6]{ 0,0,0,0,0,0 };
+		const double cp[6]{ 0,0,0,0,0,0 };
 		const double ca[]{ 1.25497709355873, - 1.42034889864347,   0.552653481810815 };
 
 		double result1[42], result2[48];
@@ -1426,7 +1426,7 @@ void test_constraint()
 		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"SphericalJoint:cptCa\" failed" << std::endl;
 
 		jnt.cptCp(result1);
-		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"SphericalJoint:cptCp\" failed" << std::endl;
+		if (!s_is_equal(jnt.dim(), result1, cp, error))std::cout << "\"SphericalJoint:cptCp\" failed" << std::endl;
 	}
 	
 	// test universal joints //
@@ -1472,7 +1472,7 @@ void test_constraint()
 			- 0.207689819425203,   0.242329716037551, - 0.266191885439452,   0.111251268906238,
 			- 0.320158878686852, - 0.274131726528483,   0.0378323951769434, - 0.615981511798859,
 			- 0.127084205706559,   0.0120349949732274, - 0.0686053212081227, - 0.779865329585016 };
-		const double ce[6]{ 0,0,0,0,0,0 };
+		const double cp[6]{ 0,0,0,0,0,0 };
 		const double ca[]{ 0.297342839758157,3.33820400487961,3.34479764841342,5.30996702214242 };
 
 
@@ -1489,7 +1489,7 @@ void test_constraint()
 		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"UniversalJoint:cptCa\" failed" << std::endl;
 
 		jnt.cptCp(result1);
-		if (!s_is_equal(jnt.dim(), result1, ce, error))std::cout << "\"UniversalJoint:cptCp\" failed" << std::endl;
+		if (!s_is_equal(jnt.dim(), result1, cp, error))std::cout << "\"UniversalJoint:cptCp\" failed" << std::endl;
 	}
 	
 	// test motion //
@@ -1537,7 +1537,7 @@ void test_constraint()
 			- 0.0349660234578675,
 			- 0.418969900086863,
 			- 0.0981899087749607 };
-		const double ce[6]{ -0.521,0,0,0,0,0 };
+		const double cp[6]{ -0.521,0,0,0,0,0 };
 		const double ca[]{ 0 };
 
 
@@ -1554,7 +1554,7 @@ void test_constraint()
 		if (!s_is_equal(mot.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
 
 		mot.cptCp(result1);
-		if (!s_is_equal(mot.dim(), result1, ce, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+		if (!s_is_equal(mot.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
 
 		mot.updMp();
 		if (!s_is_equal(mot.mp(), 0.521, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
@@ -1804,7 +1804,7 @@ void test_constraint()
 		if (!s_is_equal(6, mot.dim(), result1, 6, prt_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, prt_cmJ, mot.dim(), error))std::cout << "\"GeneralMotion:cptPrtCm\" failed" << std::endl;
 
 		mot.cptCp(result1);
-		if (!s_is_equal(mot.dim(), result1, ce, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+		if (!s_is_equal(mot.dim(), result1, ce, error))std::cout << "\"GeneralMotion:cptCp\" failed" << std::endl;
 
 		//mot.cptCa(result1);
 		//if (!s_is_equal(mot.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
@@ -2780,8 +2780,6 @@ void test_solver_stewart()
 			if (!s_is_equal(6, result2, input_v, error))std::cout << s.type() << "::kinVel() inverse failed" << std::endl;
 			if (!s_is_equal(6, result3, input_a, error))std::cout << s.type() << "::kinAcc() inverse failed" << std::endl;
 			if (!s_is_equal(6, m.generalMotionPool().at(0).mfs(), output_mfs, 1e-8))std::cout << s.type() << "::dynFce() inverse failed" << std::endl;
-
-			dsp(1, 6, m.generalMotionPool().at(0).mfs());
 		};
 		auto bench_pos_forward = [&](Solver &s, aris::Size bench_count)
 		{
@@ -2912,50 +2910,46 @@ void test_solver_stewart()
 		adams_simulator.saveAdams("C:\\Users\\py033\\Desktop\\m4.cmd", r, 0);
 
 
-		auto &gcs = m.solverPool().add<CombineSolver>("gcs");
-		gcs.setMaxError(1e-14);
-		test_forward(gcs);
-		test_inverse(gcs);
-		bench_pos_inverse(gcs, 100);
-		bench_vel_inverse(gcs, 100);
-		bench_dyn_inverse(gcs, 100);
-		bench_pos_forward(gcs, 100);
-		bench_vel_forward(gcs, 100);
-		bench_dyn_forward(gcs, 100);
+		//auto &gcs = m.solverPool().add<CombineSolver>("gcs");
+		//gcs.setMaxError(1e-14);
+		//test_forward(gcs);
+		//test_inverse(gcs);
+		//bench_pos_inverse(gcs, 100);
+		//bench_vel_inverse(gcs, 100);
+		//bench_dyn_inverse(gcs, 100);
+		//bench_pos_forward(gcs, 100);
+		//bench_vel_forward(gcs, 100);
+		//bench_dyn_forward(gcs, 100);
 
-		gs.setMaxError(1e-14);
-		test_forward(gs);
-		test_inverse(gs);
-		bench_pos_inverse(gs, 1000);
-		bench_vel_inverse(gs, 1000);
-		bench_dyn_inverse(gs, 1000);
-		bench_pos_forward(gs, 1000);
-		bench_vel_forward(gs, 1000);
-		bench_dyn_forward(gs, 1000);
+		//gs.setMaxError(1e-14);
+		//test_forward(gs);
+		//test_inverse(gs);
+		//bench_pos_inverse(gs, 1000);
+		//bench_vel_inverse(gs, 1000);
+		//bench_dyn_inverse(gs, 1000);
+		//bench_pos_forward(gs, 1000);
+		//bench_vel_forward(gs, 1000);
+		//bench_dyn_forward(gs, 1000);
 
 		ds.setMaxError(1e-14);
 		test_forward(ds);
 		test_inverse(ds);
-		bench_pos_inverse(ds, 1000);
-		bench_vel_inverse(ds, 1000);
-		bench_dyn_inverse(ds, 1000);
-		bench_pos_forward(ds, 1000);
-		bench_vel_forward(ds, 1000);
-		bench_dyn_forward(ds, 1000);
+		bench_pos_inverse(ds, 10000);
+		bench_vel_inverse(ds, 10000);
+		bench_dyn_inverse(ds, 10000);
+		bench_pos_forward(ds, 10000);
+		bench_vel_forward(ds, 10000);
+		bench_dyn_forward(ds, 10000);
 
-		ps.setMaxError(1e-14);
-		test_forward(ps);
-		test_inverse(ps);
-		bench_pos_inverse(ps, 1000);
-		bench_vel_inverse(ps, 1000);
-		bench_dyn_inverse(ps, 1000);
-		bench_pos_forward(ps, 1000);
-		bench_vel_forward(ps, 1000);
-		bench_dyn_forward(ps, 1000);
-
-
-
-
+		//ps.setMaxError(1e-14);
+		//test_forward(ps);
+		//test_inverse(ps);
+		//bench_pos_inverse(ps, 1000);
+		//bench_vel_inverse(ps, 1000);
+		//bench_dyn_inverse(ps, 1000);
+		//bench_pos_forward(ps, 1000);
+		//bench_vel_forward(ps, 1000);
+		//bench_dyn_forward(ps, 1000);
 	}
 	catch (std::exception&e)
 	{
@@ -2966,9 +2960,9 @@ void test_solver_stewart()
 void test_model()
 {
 	std::cout << std::endl << "-----------------test model---------------------" << std::endl;
-	test_part();
-	test_constraint();
-	test_solver_compute();
+	//test_part();
+	//test_constraint();
+	//test_solver_compute();
 	//test_solver_3R();
 	//test_solver_6R();
 	test_solver_stewart();

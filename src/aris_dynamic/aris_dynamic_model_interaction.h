@@ -48,7 +48,6 @@ namespace aris
 			auto virtual cptCa(double *ca)const->void;
 			auto cf() const->const double*;
 			auto setCf(const double *cf)->void;
-			auto prtCmI() const->const double*;
 			auto locCmI() const->const double*;
 			template<typename CMI_TYPE, typename CMJ_TYPE>
 			auto cptCm(const Coordinate &relative_to_I, double *cmI, CMI_TYPE cmi_type, const Coordinate &relative_to_J, double *cmJ, CMJ_TYPE cmj_type)->void
@@ -78,7 +77,6 @@ namespace aris
 			{
 				cptCm(makI().fatherPart(), cmI, cmi_type, makJ().fatherPart(), cmJ, cmj_type);
 				
-				updPrtCmI();
 				//s_mc(6, dim(), prtCmI(), dim(), cmI, cmi_type);
 
 				//double pm_M2N[4][4];
@@ -89,10 +87,8 @@ namespace aris
 			template<typename CMI_TYPE, typename CMJ_TYPE>
 			auto cptGlbCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
 			{
-				//cptCm(model().ground(), cmI, cmi_type, cmJ, cmj_type);
-				
-				updPrtCmI();
-				s_tf_n(dim(), *makI().fatherPart().pm(), prtCmI(), dim(), cmI, cmi_type);
+				updLocCmI();
+				s_tf_n(dim(), *makI().pm(), locCmI(), dim(), cmI, cmi_type);
 				s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
 			}
 			auto cptGlbCm(double *cmI, double *cmJ)->void { cptGlbCm(cmI, dim(), cmJ, dim()); }
@@ -105,7 +101,6 @@ namespace aris
 			Constraint& operator=(Constraint&&);
 
 		protected:
-			auto virtual updPrtCmI()->void {};
 			auto virtual updLocCmI()->void {};
 
 		private:
@@ -293,7 +288,6 @@ namespace aris
 			UniversalJoint& operator=(UniversalJoint &&other) = default;
 		
 		private:
-			auto virtual updPrtCmI()->void override;
 			auto virtual updLocCmI()->void override;
 		};
 		class SphericalJoint final :public Joint

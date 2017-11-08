@@ -40,9 +40,9 @@ namespace aris
 		auto Solver::init()->void
 		{
 			// make all part cm correct //
-			for (auto &c : model().jointPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
-			for (auto &c : model().motionPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
-			for (auto &c : model().generalMotionPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
+			//for (auto &c : model().jointPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
+			//for (auto &c : model().motionPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
+			//for (auto &c : model().generalMotionPool())s_tf_n(c.dim(), *c.makI().prtPm(), c.locCmI(), const_cast<double*>(c.prtCmI()));
 
 			allocateMemory();
 
@@ -1048,6 +1048,10 @@ namespace aris
 		LltPartDividedSolver& LltPartDividedSolver::operator=(const LltPartDividedSolver &other) = default;
 		LltPartDividedSolver& LltPartDividedSolver::operator=(LltPartDividedSolver &&other) = default;
 
+		
+
+
+
 		struct DiagSolver::Imp
 		{
 			std::vector<Relation> relation_pool_;
@@ -1085,7 +1089,10 @@ namespace aris
 					return ((ri == ci) && (rj == cj)) || ((ri == cj) && (rj == ci));
 				});
 
-				if (ret == relationPool().end()) relationPool().push_back(Relation{ &c->makI().fatherPart(), &c->makJ().fatherPart(), c->dim(),{ { c, true } } });
+				if (ret == relationPool().end()) 
+				{
+					relationPool().push_back(Relation{ &c->makI().fatherPart(), &c->makJ().fatherPart(), c->dim(),{ { c, true } } });
+				}
 				else
 				{
 					ret->dim += c->dim();
@@ -1145,7 +1152,6 @@ namespace aris
 				diagPool().at(i).part = diagPool().at(i).is_I ? relationPool().at(i - 1).prtI : relationPool().at(i - 1).prtJ;
 				auto add_part = diagPool().at(i).is_I ? diagPool().at(i).rel->prtJ : diagPool().at(i).rel->prtI;
 				diagPool().at(i).rd = &*std::find_if(diagPool().begin(), diagPool().end(), [&](Diag &d) {return d.part == add_part; });
-				
 			}
 			
 			// make remainder pool //
@@ -1209,7 +1215,7 @@ namespace aris
 					imp_->rows += 6 - d.rel->dim;
 				}
 			}
-			for (auto &r : remainderPool()) imp_->cols += r.rel->dim ;
+			for (auto &r : remainderPool()) imp_->cols += r.rel->dim;
 
 			imp_->A_.clear();
 			imp_->A_.resize(imp_->rows*imp_->cols, 0.0);
@@ -1240,6 +1246,12 @@ namespace aris
 				for (auto d = diagPool().begin() + 1; d < diagPool().end(); ++d)for (Size i{ 0 }; i < d->rel->dim; ++i)error = std::max(error, std::abs(d->b[i]));
 				for (auto &r : remainderPool())for (Size i{ 0 }; i < r.rel->dim; ++i)error = std::max(error, std::abs(r.b[i]));
 				if (error < maxError())return;
+
+
+				// 1.更新对角线的Cm，这里还将CM分解成Q R
+				// 2.更新右侧剩余的Cm
+				// 3.将右侧Cm中的残余部分，左乘QT
+				// 4.将
 
 				updDiagCm();
 				updRemainderCm();
@@ -1382,6 +1394,16 @@ namespace aris
 					s_householder_ut(6, d->rel->dim, d->cm, d->U, d->tau);
 					s_householder_ut2qr(6, d->rel->dim, d->U, d->tau, d->Q, d->R);
 				}
+
+				
+
+
+
+				///////////////////////////////
+				//s_householder_ut(6, d->rel->dim, c.constraint->locCmI(), d->U1, d->tau1);
+				//s_householder_ut2qr(6, d->rel->dim, d->U1, d->tau1, d->L1, d->R1);
+				//s_tmf(*c.constraint->makI().pm(), d->T1);
+				///////////////////////////////
 			}
 		}
 		auto DiagSolver::updDiagCp()->void 
