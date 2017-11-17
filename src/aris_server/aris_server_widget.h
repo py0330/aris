@@ -34,6 +34,11 @@ namespace aris
 			class Imp;
 			std::unique_ptr<Imp> imp_;
 		};
+
+
+		auto sendStringToAris(const char *data_to_aris, int data_to_size, char *data_from_aris, int *data_from_size)->void;
+		auto sendDataToMotion(const char *data, int ms_pause_time)->void;
+
 	}
 }
 

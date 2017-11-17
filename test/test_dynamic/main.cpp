@@ -5,6 +5,7 @@
 #include "test_dynamic_screw.h"
 #include "test_dynamic_spline.h"
 #include "test_dynamic_model.h"
+#include "test_dynamic_model_multi.h"
 #include "test_dynamic_simple_model.h"
 #include "test_dynamic_plan.h"
 
@@ -13,12 +14,13 @@
 
 int main(int argc, char *argv[])
 {
-	//test_matrix();
+	test_matrix();
 	//test_block_matrix();
 	//test_cell();
 	//test_screw();
 	//test_spline();
-	test_model();
+	//test_model();
+	test_model_multi();
 	//test_simple_model();
 	//test_plan();
 

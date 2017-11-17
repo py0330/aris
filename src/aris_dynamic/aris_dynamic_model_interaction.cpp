@@ -198,8 +198,8 @@ namespace aris
 			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
 			s_nv(3, coe, pq_j2i + 3);
 
-			// 此时位移差值在makI坐标系中
-			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, pq_j2i, 1, cp, 1);
+			// locCmI为单位矩阵，此时无需相乘
+			s_vc(6, pq_j2i, cp);
 		}
 		auto GeneralMotion::cptCv(double *cv)const->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
 		auto GeneralMotion::cptCa(double *ca)const->void { s_inv_tv(*mpm(), mas(), ca); }
@@ -324,6 +324,22 @@ namespace aris
 		GeneralMotion& GeneralMotion::operator=(const GeneralMotion &other) = default;
 		GeneralMotion& GeneralMotion::operator=(GeneralMotion &&other) = default;
 
+		auto RevoluteJoint::cptCp(double *cp)const->void
+		{
+			double pq_j2i[7];
+			double pm_j2i[4][4];
+
+			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
+			s_pm2pq(*pm_j2i, pq_j2i);
+
+			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
+
+			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
+			s_nv(3, coe, pq_j2i + 3);
+
+			// 此时位移差值在makI()坐标系中
+			s_vc(5, pq_j2i, cp);
+		}
 		RevoluteJoint::RevoluteJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
 		{
 			const static double loc_cst[6][5]
@@ -336,6 +352,23 @@ namespace aris
 				0,0,0,0,0
 			};
 			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
+		}
+		auto PrismaticJoint::cptCp(double *cp)const->void 
+		{
+			double pq_j2i[7];
+			double pm_j2i[4][4];
+
+			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
+			s_pm2pq(*pm_j2i, pq_j2i);
+
+			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
+
+			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
+			s_nv(3, coe, pq_j2i + 3);
+
+			// 此时位移差值在makI()坐标系中
+			s_vc(2, pq_j2i, cp);
+			s_vc(3, pq_j2i + 3, cp + 2);
 		}
 		PrismaticJoint::PrismaticJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
 		{
@@ -376,36 +409,17 @@ namespace aris
 		}
 		auto UniversalJoint::cptCp(double *cp)const->void
 		{
-			const double *pm_i = *makI().pm();
-			const double *pm_j = *makJ().pm();
-			const double origin[3]{ 0,0,0 };
-			double pm_t[16];
-
-			double v[3], new_z[3];
-			s_c3(pm_i + 2, 4, pm_j + 2, 4, v, 1);
-			if (s_norm(3, v) == 0)s_vc(3, pm_i, 4, new_z, 1);
-			else s_c3(v, 1, pm_i + 2, 4, new_z, 1);
-			
-			s_sov_pnts2pm(origin, 1, new_z, 1, pm_j, 4, pm_t, "zx");
-			s_vc(3, pm_i + 3, 4, pm_t + 3, 4);
-
-			double pq_j2i[7];
 			double pm_j2i[4][4];
 			double diff[6];
 
-			s_inv_pm_dot_pm(pm_t, pm_j, *pm_j2i);
-			s_pm2pq(*pm_j2i, pq_j2i);
+			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
+			s_pm2pp(*pm_j2i, diff);
 
-			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
+			double axis[3]{ pm_j2i[1][2], -pm_j2i[0][2], 0.0 };
+			double theta = PI / 2.0 - std::acos(pm_j2i[2][2]);
 
-			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
-			s_nv(3, coe, pq_j2i + 3);
-
-			// 此时位移差值在makI()坐标系中。需要转换到部件坐标系下。
-			double diff2[6];
-			s_tv(pm_t, pq_j2i, diff2);
-			s_inv_tv(*makI().pm(), diff2, diff);
-
+			s_nv(2, theta / s_norm(2, axis), axis);
+			s_vc(3, axis, diff + 3);
 
 			const_cast<UniversalJoint*>(this)->updLocCmI();
 			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, diff, 1, cp, 1);
@@ -443,6 +457,22 @@ namespace aris
 				0,0,0,0,
 			};
 			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
+		}
+		auto SphericalJoint::cptCp(double *cp)const->void 
+		{
+			double pq_j2i[7];
+			double pm_j2i[4][4];
+
+			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
+			s_pm2pq(*pm_j2i, pq_j2i);
+
+			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
+
+			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
+			s_nv(3, coe, pq_j2i + 3);
+
+			// 此时位移差值在makI()坐标系中
+			s_vc(3, pq_j2i, cp);
 		}
 		SphericalJoint::SphericalJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
 		{

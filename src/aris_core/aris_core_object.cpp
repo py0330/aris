@@ -475,7 +475,9 @@ namespace aris
 
 			for (std::size_t i = 0; i < other.children().size(); ++i)
 			{
-				auto info = other.children().at(i).imp_->getTypeInfo(other.children().at(i).type());
+				auto info1 = other.children().at(i).imp_->getTypeInfo(other.children().at(i).type());
+				auto info2 = (i>=children().size() || children().at(i).type() != other.children().at(i).type()) ? imp_->getTypeInfo(other.children().at(i).type()) : children().at(i).imp_->getTypeInfo(other.children().at(i).type());
+				auto info = info1 ? info1 : info2;
 				if (info == nullptr)throw std::runtime_error("unrecognized type \"" + other.children().at(i).type() + "\" in Object::operator=(const Object &other)");
 
 				if (i >= children().size())

@@ -155,30 +155,12 @@ namespace aris
 			v3_out[1] = pm[4] * v3[0] + pm[5] * v3[1] + pm[6] * v3[2];
 			v3_out[2] = pm[8] * v3[0] + pm[9] * v3[1] + pm[10] * v3[2];
 		}
-		//auto s_pm_dot_v3(const double *pm, const double *v3, Size v3_ld, double *v3_out, Size v3_out_ld) noexcept->void
-		//{
-		//	const Size a0{ 0 }, a1{ v3_ld }, a2{ v3_ld + v3_ld };
-		//	const Size b0{ 0 }, b1{ v3_out_ld }, b2{ v3_out_ld + v3_out_ld };
-
-		//	v3_out[b0] = pm[0] * v3[a0] + pm[1] * v3[a1] + pm[2] * v3[a2];
-		//	v3_out[b1] = pm[4] * v3[a0] + pm[5] * v3[a1] + pm[6] * v3[a2];
-		//	v3_out[b2] = pm[8] * v3[a0] + pm[9] * v3[a1] + pm[10] * v3[a2];
-		//}
 		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out) noexcept->void
 		{
 			v3_out[0] = inv_pm[0] * v3[0] + inv_pm[4] * v3[1] + inv_pm[8] * v3[2];
 			v3_out[1] = inv_pm[1] * v3[0] + inv_pm[5] * v3[1] + inv_pm[9] * v3[2];
 			v3_out[2] = inv_pm[2] * v3[0] + inv_pm[6] * v3[1] + inv_pm[10] * v3[2];
 		}
-		//auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, Size v3_ld, double *v3_out, Size v3_out_ld) noexcept->void
-		//{
-		//	const Size a0{ 0 }, a1{ v3_ld }, a2{ v3_ld + v3_ld };
-		//	const Size b0{ 0 }, b1{ v3_out_ld }, b2{ v3_out_ld + v3_out_ld };
-
-		//	v3_out[b0] = inv_pm[0] * v3[a0] + inv_pm[4] * v3[a1] + inv_pm[8] * v3[a2];
-		//	v3_out[b1] = inv_pm[1] * v3[a0] + inv_pm[5] * v3[a1] + inv_pm[9] * v3[a2];
-		//	v3_out[b2] = inv_pm[2] * v3[a0] + inv_pm[6] * v3[a1] + inv_pm[10] * v3[a2];
-		//}
 
 		auto s_cm3(const double *a, double *cm_out) noexcept->void
 		{
@@ -198,32 +180,12 @@ namespace aris
 			c_out[1] = a[2] * b[0] - a[0] * b[2];
 			c_out[2] = -a[1] * b[0] + a[0] * b[1];
 		}
-		//auto s_c3(const double *a, Size a_ld, const double *b, Size b_ld, double *c_out, Size c_ld) noexcept->void
-		//{
-		//	const Size a0{ 0 }, a1{ a_ld }, a2{ a_ld + a_ld };
-		//	const Size b0{ 0 }, b1{ b_ld }, b2{ b_ld + b_ld };
-		//	const Size c0{ 0 }, c1{ c_ld }, c2{ c_ld + c_ld };
-
-		//	c_out[c0] = -a[a2] * b[b1] + a[a1] * b[b2];
-		//	c_out[c1] = a[a2] * b[b0] - a[a0] * b[b2];
-		//	c_out[c2] = -a[a1] * b[b0] + a[a0] * b[b1];
-		//}
 		auto s_c3(double alpha, const double *a, const double *b, double *c_out) noexcept->void
 		{
 			c_out[0] = alpha*(-a[2] * b[1] + a[1] * b[2]);
 			c_out[1] = alpha*(a[2] * b[0] - a[0] * b[2]);
 			c_out[2] = alpha*(-a[1] * b[0] + a[0] * b[1]);
 		}
-		//auto s_c3(double alpha, const double *a, Size a_ld, const double *b, Size b_ld, double *c_out, Size c_ld) noexcept->void
-		//{
-		//	const Size a0{ 0 }, a1{ a_ld }, a2{ a_ld + a_ld };
-		//	const Size b0{ 0 }, b1{ b_ld }, b2{ b_ld + b_ld };
-		//	const Size c0{ 0 }, c1{ c_ld }, c2{ c_ld + c_ld };
-
-		//	c_out[c0] = alpha*(-a[a2] * b[b1] + a[a1] * b[b2]);
-		//	c_out[c1] = alpha*(a[a2] * b[b0] - a[a0] * b[b2]);
-		//	c_out[c2] = alpha*(-a[a1] * b[b0] + a[a0] * b[b1]);
-		//}
 		auto s_c3i(const double *a, const double *b, double *c_out) noexcept->void
 		{
 			c_out[0] = a[2] * b[1] - a[1] * b[2];
@@ -236,32 +198,12 @@ namespace aris
 			c_out[1] += a[2] * b[0] - a[0] * b[2];
 			c_out[2] += -a[1] * b[0] + a[0] * b[1];
 		}
-		//auto s_c3a(const double *a, Size a_ld, const double *b, Size b_ld, double *c_out, Size c_ld) noexcept->void
-		//{
-		//	const Size a0{ 0 }, a1{ a_ld }, a2{ a_ld + a_ld };
-		//	const Size b0{ 0 }, b1{ b_ld }, b2{ b_ld + b_ld };
-		//	const Size c0{ 0 }, c1{ c_ld }, c2{ c_ld + c_ld };
-
-		//	c_out[c0] += -a[a2] * b[b1] + a[a1] * b[b2];
-		//	c_out[c1] += a[a2] * b[b0] - a[a0] * b[b2];
-		//	c_out[c2] += -a[a1] * b[b0] + a[a0] * b[b1];
-		//}
 		auto s_c3a(double alpha, const double *a, const double *b, double *c_out) noexcept->void
 		{
 			c_out[0] += alpha*(-a[2] * b[1] + a[1] * b[2]);
 			c_out[1] += alpha*(a[2] * b[0] - a[0] * b[2]);
 			c_out[2] += alpha*(-a[1] * b[0] + a[0] * b[1]);
 		}
-		//auto s_c3a(double alpha, const double *a, Size a_ld, const double *b, Size b_ld, double *c_out, Size c_ld) noexcept->void
-		//{
-		//	const Size a0{ 0 }, a1{ a_ld }, a2{ a_ld + a_ld };
-		//	const Size b0{ 0 }, b1{ b_ld }, b2{ b_ld + b_ld };
-		//	const Size c0{ 0 }, c1{ c_ld }, c2{ c_ld + c_ld };
-
-		//	c_out[c0] += alpha*(-a[a2] * b[b1] + a[a1] * b[b2]);
-		//	c_out[c1] += alpha*(a[a2] * b[b0] - a[a0] * b[b2]);
-		//	c_out[c2] += alpha*(-a[a1] * b[b0] + a[a0] * b[b1]);
-		//}
 		auto s_c3s(const double *a, const double *b, double *c_out) noexcept->void
 		{
 			c_out[0] -= -a[2] * b[1] + a[1] * b[2];
@@ -299,22 +241,11 @@ namespace aris
 			s_c3(vs + 3, fs + 3, vfs_out + 3);
 			s_c3a(vs, fs, vfs_out + 3);
 		}
-		//auto s_cf(const double *vs, Size vs_ld, const double *fs, Size fs_ld, double* vfs_out, Size vfs_ld) noexcept->void
-		//{
-		//	s_c3(vs + 3 * vs_ld, vs_ld, fs, fs_ld, vfs_out, vfs_ld);
-		//	s_c3(vs + 3 * vs_ld, vs_ld, fs + 3 * fs_ld, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
-		//	s_c3a(vs, vs_ld, fs, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
-		//}
 		auto s_cf(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void
 		{
 			s_cf(vs, fs, vfs_out);
 			s_nv(6, alpha, vfs_out);
 		}
-		//auto s_cf(double alpha, const double *vs, Size vs_ld, const double *fs, Size fs_ld, double* vfs_out, Size vfs_ld) noexcept->void
-		//{
-		//	s_cf(vs, vs_ld, fs, fs_ld, vfs_out, vfs_ld);
-		//	s_nv(6, alpha, vfs_out, vfs_ld);
-		//}
 		auto s_cfi(const double *vs, const double *fs, double* vfs_out) noexcept->void
 		{
 			s_c3i(vs + 3, fs, vfs_out);
@@ -328,24 +259,12 @@ namespace aris
 			s_c3a(vs + 3, fs + 3, vfs_out + 3);
 			s_c3a(vs, fs, vfs_out + 3);
 		}
-		//auto s_cfa(const double *vs, Size vs_ld, const double *fs, Size fs_ld, double* vfs_out, Size vfs_ld) noexcept->void
-		//{
-		//	s_c3a(vs + 3 * vs_ld, vs_ld, fs, fs_ld, vfs_out, vfs_ld);
-		//	s_c3a(vs + 3 * vs_ld, vs_ld, fs + 3 * fs_ld, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
-		//	s_c3a(vs, vs_ld, fs, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
-		//}
 		auto s_cfa(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void
 		{
 			s_c3a(alpha, vs + 3, fs, vfs_out);
 			s_c3a(alpha, vs + 3, fs + 3, vfs_out + 3);
 			s_c3a(alpha, vs, fs, vfs_out + 3);
 		}
-		//auto s_cfa(double alpha, const double *vs, Size vs_ld, const double *fs, Size fs_ld, double* vfs_out, Size vfs_ld) noexcept->void
-		//{
-		//	s_c3a(alpha, vs + 3 * vs_ld, vs_ld, fs, fs_ld, vfs_out, vfs_ld);
-		//	s_c3a(alpha, vs + 3 * vs_ld, vs_ld, fs + 3 * fs_ld, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
-		//	s_c3a(alpha, vs, vs_ld, fs, fs_ld, vfs_out + 3 * vfs_ld, vfs_ld);
-		//}
 		auto s_cfs(const double *vs, const double *fs, double* vfs_out) noexcept->void
 		{
 			s_c3s(vs + 3, fs, vfs_out);
@@ -383,22 +302,11 @@ namespace aris
 			s_c3(vs + 3, vs2 + 3, vvs_out + 3);
 			s_c3a(vs, vs2 + 3, vvs_out);
 		}
-		//auto s_cv(const double *vs, Size vs_ld, const double *vs2, Size vs2_ld, double* vvs_out, Size vvs_ld) noexcept->void
-		//{
-		//	s_c3(vs + 3 * vs_ld, vs_ld, vs2, vs2_ld, vvs_out, vvs_ld);
-		//	s_c3(vs + 3 * vs_ld, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out + 3 * vvs_ld, vvs_ld);
-		//	s_c3a(vs, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out, vvs_ld);
-		//}
 		auto s_cv(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void
 		{
 			s_cv(vs, vs2, vvs_out);
 			s_nv(6, alpha, vvs_out);
 		}
-		//auto s_cv(double alpha, const double *vs, Size vs_ld, const double *vs2, Size vs2_ld, double* vvs_out, Size vvs_ld) noexcept->void
-		//{
-		//	s_cv(vs, vs_ld, vs2, vs2_ld, vvs_out, vvs_ld);
-		//	s_nv(6, alpha, vvs_out, vvs_ld);
-		//}
 		auto s_cvi(const double *vs, const double *vs2, double* vvs_out) noexcept->void
 		{
 			s_c3i(vs + 3, vs2, vvs_out);
@@ -411,24 +319,12 @@ namespace aris
 			s_c3a(vs + 3, vs2 + 3, vvs_out + 3);
 			s_c3a(vs, vs2 + 3, vvs_out);
 		}
-		//auto s_cva(const double *vs, Size vs_ld, const double *vs2, Size vs2_ld, double* vvs_out, Size vvs_ld) noexcept->void
-		//{
-		//	s_c3a(vs + 3 * vs_ld, vs_ld, vs2, vs2_ld, vvs_out, vvs_ld);
-		//	s_c3a(vs + 3 * vs_ld, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out + 3 * vvs_ld, vvs_ld);
-		//	s_c3a(vs, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out, vvs_ld);
-		//}
 		auto s_cva(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void
 		{
 			s_c3a(alpha, vs + 3, vs2, vvs_out);
 			s_c3a(alpha, vs + 3, vs2 + 3, vvs_out + 3);
 			s_c3a(alpha, vs, vs2 + 3, vvs_out);
 		}
-		//auto s_cva(double alpha, const double *vs, Size vs_ld, const double *vs2, Size vs2_ld, double* vvs_out, Size vvs_ld) noexcept->void
-		//{
-		//	s_c3a(alpha, vs + 3 * vs_ld, vs_ld, vs2, vs2_ld, vvs_out, vvs_ld);
-		//	s_c3a(alpha, vs + 3 * vs_ld, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out + 3 * vvs_ld, vvs_ld);
-		//	s_c3a(alpha, vs, vs_ld, vs2 + 3 * vs2_ld, vs2_ld, vvs_out, vvs_ld);
-		//}
 		auto s_cvs(const double *vs, const double *vs2, double* vvs_out) noexcept->void
 		{
 			s_c3s(vs + 3, vs2, vvs_out);
@@ -465,46 +361,23 @@ namespace aris
 			s_pm_dot_v3(pm, fs + 3, fs_out + 3);
 			s_c3a(pm + 3, 4, fs_out, 1, fs_out + 3, 1);
 		}
-		//auto s_tf(const double *pm, const double *fs, Size fs_ld, double *fs_out, Size fs_out_ld) noexcept->void
-		//{
-		//	s_pm_dot_v3(pm, fs, fs_ld, fs_out, fs_out_ld);
-		//	s_pm_dot_v3(pm, fs + 3 * fs_ld, fs_ld, fs_out + 3 * fs_out_ld, fs_out_ld);
-		//	s_c3a(pm + 3, 4, fs_out, fs_out_ld, fs_out + 3 * fs_out_ld, fs_out_ld);
-		//}
 		auto s_tf(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void
 		{
 			s_tf(pm, fs, fs_out);
 			s_nv(6, alpha, fs_out);
 		}
-		//auto s_tf(double alpha, const double *pm, const double *fs, Size fs_ld, double *fs_out, Size fs_out_ld) noexcept->void
-		//{
-		//	s_tf(pm, fs, fs_ld, fs_out, fs_out_ld);
-		//	s_nv(6, alpha, fs_out, fs_out_ld);
-		//}
 		auto s_tfa(const double *pm, const double *fs, double *fs_out) noexcept->void
 		{
 			double tem[6];
 			s_tf(pm, fs, tem);
 			s_va(6, tem, fs_out);
 		}
-		//auto s_tfa(const double *pm, const double *fs, Size fs_ld, double *fs_out, Size fs_out_ld) noexcept->void
-		//{
-		//	double tem[6];
-		//	s_tf(pm, fs, fs_ld, tem, 1);
-		//	s_va(6, tem, 1, fs_out, fs_out_ld);
-		//}
 		auto s_tfa(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void
 		{
 			double tem[6];
 			s_tf(pm, fs, tem);
 			s_va(6, alpha, tem, fs_out);
 		}
-		//auto s_tfa(double alpha, const double *pm, const double *fs, Size fs_ld, double *fs_out, Size fs_out_ld) noexcept->void
-		//{
-		//	double tem[6];
-		//	s_tf(pm, fs, fs_ld, tem, 1);
-		//	s_va(6, alpha, tem, 1, fs_out, fs_out_ld);
-		//}
 		auto s_inv_tf(const double *inv_pm, const double *fs, double *fs_out) noexcept->void
 		{
 			s_c3i(inv_pm + 3, 4, fs, 1, fs_out, 1);
@@ -513,49 +386,23 @@ namespace aris
 			s_inv_pm_dot_v3(inv_pm, fs_out, fs_out + 3);
 			s_inv_pm_dot_v3(inv_pm, fs, fs_out);
 		}
-		//auto s_inv_tf(const double *inv_pm, const double *fs, Size fs_ld, double *fs_out, Size fs_out_ld) noexcept->void
-		//{
-		//	s_c3(inv_pm + 3, 4, fs, fs_ld, fs_out, fs_out_ld);
-		//	fs_out[0] = fs[3 * fs_ld] - fs_out[0];
-		//	fs_out[fs_out_ld] = fs[4 * fs_ld] - fs_out[fs_out_ld];
-		//	fs_out[2 * fs_out_ld] = fs[5 * fs_ld] - fs_out[2 * fs_out_ld];
-		//	s_inv_pm_dot_v3(inv_pm, fs_out, fs_out_ld, fs_out + 3 * fs_out_ld, fs_out_ld);
-		//	s_inv_pm_dot_v3(inv_pm, fs, fs_ld, fs_out, fs_out_ld);
-		//}
 		auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void
 		{
 			s_inv_tf(inv_pm, fs, fs_out);
 			s_nv(6, alpha, fs_out);
 		}
-		//auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, Size fs_ld, double *fs_out, Size fs_out_ld) noexcept->void
-		//{
-		//	s_inv_tf(inv_pm, fs, fs_ld, fs_out, fs_out_ld);
-		//	s_nv(6, alpha, fs_out, fs_out_ld);
-		//}
 		auto s_inv_tfa(const double *inv_pm, const double *fs, double *fs_out) noexcept->void
 		{
 			double tem[6];
 			s_inv_tf(inv_pm, fs, tem);
 			s_va(6, tem, fs_out);
 		}
-		//auto s_inv_tfa(const double *inv_pm, const double *fs, Size fs_ld, double *fs_out, Size fs_out_ld) noexcept->void
-		//{
-		//	double tem[6];
-		//	s_inv_tf(inv_pm, fs, fs_ld, tem, 1);
-		//	s_va(6, tem, 1, fs_out, fs_out_ld);
-		//}
 		auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void
 		{
 			double tem[6];
 			s_inv_tf(inv_pm, fs, tem);
 			s_va(6, alpha, tem, fs_out);
 		}
-		//auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, Size fs_ld, double *fs_out, Size fs_out_ld) noexcept->void
-		//{
-		//	double tem[6];
-		//	s_inv_tf(inv_pm, fs, fs_ld, tem, 1);
-		//	s_va(6, alpha, tem, 1, fs_out, fs_out_ld);
-		//}
 		auto s_tmv(const double *pm, double *tmv_out) noexcept->void
 		{
 			std::fill_n(tmv_out + 18, 3, 0);
@@ -585,46 +432,23 @@ namespace aris
 			s_pm_dot_v3(pm, vs + 3, vs_out + 3);
 			s_c3a(pm + 3, 4, vs_out + 3, 1, vs_out, 1);
 		}
-		//auto s_tv(const double *pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void
-		//{
-		//	s_pm_dot_v3(pm, vs, vs_ld, vs_out, vs_out_ld);
-		//	s_pm_dot_v3(pm, vs + 3 * vs_ld, vs_ld, vs_out + 3 * vs_out_ld, vs_out_ld);
-		//	s_c3a(pm + 3, 4, vs_out + 3 * vs_out_ld, vs_out_ld, vs_out, vs_out_ld);
-		//}
 		auto s_tv(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void
 		{
 			s_tv(pm, vs, vs_out);
 			s_nv(6, alpha, vs_out);
 		}
-		//auto s_tv(double alpha, const double *pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void
-		//{
-		//	s_tv(pm, vs, vs_ld, vs_out, vs_out_ld);
-		//	s_nv(6, alpha, vs_out, vs_out_ld);
-		//}
 		auto s_tva(const double *pm, const double *vs, double *vs_out) noexcept->void
 		{
 			double tem[6];
 			s_tv(pm, vs, tem);
 			s_va(6, tem, vs_out);
 		}
-		//auto s_tva(const double *pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void
-		//{
-		//	double tem[6];
-		//	s_tv(pm, vs, vs_ld, tem, 1);
-		//	s_va(6, tem, 1, vs_out, vs_out_ld);
-		//}
 		auto s_tva(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void
 		{
 			double tem[6];
 			s_tv(pm, vs, tem);
 			s_va(6, alpha, tem, vs_out);
 		}
-		//auto s_tva(double alpha, const double *pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void
-		//{
-		//	double tem[6];
-		//	s_tv(pm, vs, vs_ld, tem, 1);
-		//	s_va(6, alpha, tem, 1, vs_out, vs_out_ld);
-		//}
 		auto s_inv_tv(const double *inv_pm, const double *vs, double *vs_out) noexcept->void
 		{
 			s_c3i(inv_pm + 3, 4, vs + 3, 1, vs_out + 3, 1);
@@ -633,28 +457,11 @@ namespace aris
 			s_inv_pm_dot_v3(inv_pm, vs_out + 3, vs_out);
 			s_inv_pm_dot_v3(inv_pm, vs + 3, vs_out + 3);
 		}
-		//auto s_inv_tv(const double *inv_pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void
-		//{
-		//	const Size a3{ vs_ld * 3 };
-		//	const Size b3{ vs_out_ld * 3 }, b4{ b3 + vs_out_ld }, b5{ b4 + vs_out_ld };
-
-		//	s_c3(inv_pm + 3, 4, vs + 3 * vs_ld, vs_ld, vs_out + 3 * vs_out_ld, vs_out_ld);
-		//	vs_out[b3] = vs[0] - vs_out[b3];
-		//	vs_out[b4] = vs[vs_ld] - vs_out[b4];
-		//	vs_out[b5] = vs[vs_ld + vs_ld] - vs_out[b5];
-		//	s_inv_pm_dot_v3(inv_pm, vs_out + b3, vs_out_ld, vs_out, vs_out_ld);
-		//	s_inv_pm_dot_v3(inv_pm, vs + a3, vs_ld, vs_out + b3, vs_out_ld);
-		//}
 		auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void
 		{
 			s_inv_tv(inv_pm, vs, vs_out);
 			s_nv(6, alpha, vs_out);
 		}
-		//auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, Size vs_ld, double *vs_out, Size vs_out_ld) noexcept->void
-		//{
-		//	s_inv_tv(inv_pm, vs, vs_ld, vs_out, vs_out_ld);
-		//	s_nv(6, alpha, vs_out, vs_out_ld);
-		//}
 		auto s_inv_tva(const double *inv_pm, const double *vs, double *vs_out) noexcept->void
 		{
 			double tem[6];
@@ -3187,7 +2994,7 @@ namespace aris
 			from_im = from_im ? from_im : default_im();
 			to_im = to_im ? to_im : default_out();
 
-			/*以下为慢速但准确的算法*/
+			// 以下为慢速但准确的算法 //
 			std::fill(to_im, to_im + 36, 0);
 			double tem[6][6], tmf[6][6];
 			s_tmf(relative_pm, *tmf);

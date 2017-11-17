@@ -92,6 +92,23 @@ namespace aris
 				s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
 			}
 			auto cptGlbCm(double *cmI, double *cmJ)->void { cptGlbCm(cmI, dim(), cmJ, dim()); }
+			auto virtual cptGlbDm(double *dm)->void
+			{
+				double cmI[36], cmJ[36];
+				double U[36], tau[6];
+				double Q[36], R[36];
+
+				cptGlbCm(cmI, cmJ);
+
+				s_householder_ut(6, dim(), cmI, U, tau);
+				s_householder_ut2qr(6, dim(), U, tau, Q, R);
+
+				double tem[36];
+				s_fill(6, 6, 0.0, tem);
+				s_fill(6, 1, 1.0, tem, 7);
+				s_inv_um(dim(), R, dim(), tem, 6);
+				s_mm(6, 6, 6, tem, 6, Q, dynamic::ColMajor{ 6 }, dm, 6);
+			}
 
 			virtual ~Constraint();
 			explicit Constraint(const std::string &name = "constraint", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true);
@@ -173,6 +190,12 @@ namespace aris
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
+			auto virtual cptGlbDm(double *dm)->void override
+			{
+				double pm[16];
+				s_inv_pm(*makI().pm(), pm);
+				s_tmf(pm, dm);
+			}
 			auto mpm()const->const double4x4&;
 			auto updMpm()->void;
 			auto setMpe(const double* pe, const char *type = "313")->void;
@@ -246,6 +269,13 @@ namespace aris
 			static auto Dim()->Size { return 5; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual dim() const ->Size override { return Dim(); }
+			auto virtual cptCp(double *cp)const->void override;
+			auto virtual cptGlbDm(double *dm)->void override
+			{
+				double pm[16];
+				s_inv_pm(*makI().pm(), pm);
+				s_tmf(pm, dm);
+			}
 
 			virtual ~RevoluteJoint() = default;
 			explicit RevoluteJoint(const std::string &name = "revolute_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
@@ -261,6 +291,17 @@ namespace aris
 			static auto Dim()->Size { return 5; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual dim() const->Size override { return Dim(); }
+			auto virtual cptCp(double *cp)const->void override;
+			auto virtual cptGlbDm(double *dm)->void override
+			{
+				double pm[16];
+				s_inv_pm(*makI().pm(), pm);
+				s_tmf(pm, dm);
+
+				s_swap_m(1, 6, dm + 12, dm + 18);
+				s_swap_m(1, 6, dm + 18, dm + 24);
+				s_swap_m(1, 6, dm + 24, dm + 30);
+			}
 
 			virtual ~PrismaticJoint() = default;
 			explicit PrismaticJoint(const std::string &name = "prismatic_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
@@ -279,6 +320,19 @@ namespace aris
 			auto virtual cptCp(double *cp)const->void override;
 			auto virtual cptCv(double *cv)const->void override;
 			auto virtual cptCa(double *ca)const->void override;
+			auto virtual cptGlbDm(double *dm)->void override
+			{
+				double pm[16];
+				s_inv_pm(*makI().pm(), pm);
+				s_tmf(pm, dm);
+
+				updLocCmI();
+
+				double rz[3]{locCmI()[15], locCmI()[19], locCmI()[19] };
+				double r[4]{ rz[0], rz[1], -rz[1], rz[0] };
+				s_mm(2, 6, 2, r, dm + 18, pm);
+				s_mc(2, 6, pm, dm + 18);
+			}
 
 			virtual ~UniversalJoint() = default;
 			explicit UniversalJoint(const std::string &name = "universal_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
@@ -297,6 +351,13 @@ namespace aris
 			static auto Dim()->Size { return 3; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual dim() const->Size override { return Dim(); }
+			auto virtual cptCp(double *cp)const->void override;
+			auto virtual cptGlbDm(double *dm)->void override
+			{
+				double pm[16];
+				s_inv_pm(*makI().pm(), pm);
+				s_tmf(pm, dm);
+			}
 
 			virtual ~SphericalJoint() = default;
 			explicit SphericalJoint(const std::string &name = "spherical_joint", Marker *makI = nullptr, Marker *makJ = nullptr);

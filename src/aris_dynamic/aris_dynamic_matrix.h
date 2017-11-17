@@ -161,7 +161,7 @@ namespace aris
 		{
 			for (Size i(-1), ai0{ 0 }, bi0{ 0 }; ++i < m; ai0 = next_rid(ai0, a_t), bi0 = next_rid(bi0, b_t))
 			{
-				for (Size j(-1), aij{ ai0 }, bij{ bi0 }; ++i < m; aij = next_cid(aij, a_t), bij = next_cid(bij, b_t))
+				for (Size j(-1), aij{ ai0 }, bij{ bi0 }; ++j < n; aij = next_cid(aij, a_t), bij = next_cid(bij, b_t))
 				{
 					std::swap(a[aij], b[bij]);
 				}
@@ -480,7 +480,8 @@ namespace aris
 		auto inline s_householder_ut(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, double zero_check = 1e-10)noexcept->void
 		{
 			s_mc(m, n, A, a_t, U, u_t);
-			for (Size i(-1), uii{ 0 }, ti0{ 0 }; ++i < std::min(m - 1, n); uii = next_did(uii, u_t), ti0 = next_rid(ti0, tau_t))
+			// 这里防止 m - 1 变成 -1（既最大）
+			for (Size i(-1), uii{ 0 }, ti0{ 0 }; ++i < std::min(std::min(m - 1, n), m); uii = next_did(uii, u_t), ti0 = next_rid(ti0, tau_t))
 			{
 				// compute householder vector //
 				double rho = -s_norm_col(m - i, U + uii, u_t) * s_sgn2(U[uii]);
@@ -525,15 +526,17 @@ namespace aris
 			auto Q10 = Q + next_rid(0, q_t);
 			auto Q01 = Q + next_cid(0, q_t);
 
+
+			Size m_minus_one = std::max(Size(1), m) - 1;
 			Q[0] = tau[0];
-			s_mm(m - 1, m - 1, 1, tau[0], R10, r_t, R10, T(r_t), Q11, q_t);
-			s_mc(m - 1, 1, tau[0], R10, r_t, Q10, q_t);
-			s_mc(1, m - 1, Q10, T(q_t), Q01, q_t);
+			s_mm(m_minus_one, m_minus_one, 1, tau[0], R10, r_t, R10, T(r_t), Q11, q_t);
+			s_mc(m_minus_one, 1, tau[0], R10, r_t, Q10, q_t);
+			s_mc(1, m_minus_one, Q10, T(q_t), Q01, q_t);
 			for (Size i = 0; i < m; ++i) Q[id(i, i, q_t)] += 1.0;
 
 			// make Q
 			double r = R[0];
-			for (Size i(0), q0i{ next_cid(0, q_t) }, rii{ next_did(0, r_t) }, ti0{ next_rid(0, tau_t) }; ++i < std::min(m - 1, n); q0i = next_cid(q0i, q_t), rii = next_did(rii, r_t), ti0 = next_rid(ti0, tau_t))
+			for (Size i(0), q0i{ next_cid(0, q_t) }, rii{ next_did(0, r_t) }, ti0{ next_rid(0, tau_t) }; ++i < std::min(m_minus_one, n); q0i = next_cid(q0i, q_t), rii = next_did(rii, r_t), ti0 = next_rid(ti0, tau_t))
 			{
 				auto Ri1i = R + next_rid(rii, r_t);
 				auto Qii1 = Q + next_cid(q0i, q_t);
@@ -547,7 +550,7 @@ namespace aris
 				s_mma(m, m - i - 1, 1, R, r_t, Ri1i, T(r_t), Qii1, q_t);
 				s_fill(m - i - 1, 1, 0.0, Ri1i, r_t);
 			}
-			s_fill(m - 1, 1, 0.0, R10, r_t);
+			s_fill(m_minus_one, 1, 0.0, R10, r_t);
 			R[0] = r;
 		}
 		auto inline s_householder_ut2qr(Size m, Size n, const double *U, const double *tau, double *Q, double *R) { s_householder_ut2qr(m, n, U, n, tau, 1, Q, m, R, n); }
@@ -557,7 +560,7 @@ namespace aris
 		{
 			s_mc(m, rhs, b, b_t, x, x_t);
 
-			Size i_begin{ std::min(m - 1, n) };
+			Size i_begin{ std::min(std::min(m - 1, n), m) };
 			for (Size i(i_begin); --i < i_begin;)
 			{
 				for (Size j(-1); ++j < rhs;)
@@ -575,7 +578,7 @@ namespace aris
 		{
 			s_mc(m, rhs, b, b_t, x, x_t);
 
-			for (Size i(-1), ti0{ 0 }, xi0{ 0 }, uii{0}; ++i < std::min(m - 1, n); ti0 = next_rid(ti0, tau_t), xi0 = next_rid(xi0, x_t), uii = next_did(uii, u_t))
+			for (Size i(-1), ti0{ 0 }, xi0{ 0 }, uii{0}; ++i < std::min(std::min(m - 1, n), m); ti0 = next_rid(ti0, tau_t), xi0 = next_rid(xi0, x_t), uii = next_did(uii, u_t))
 			{
 				for (Size j(-1), xij{xi0}; ++j < rhs; xij = next_cid(xij, x_t))
 				{
@@ -601,8 +604,10 @@ namespace aris
 		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x, double zero_check = 1e-10) { s_householder_ut_sov(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs, zero_check); }
 		// tau must have same size with max(m,n), A can be the same as U
 		template<typename AType, typename UType, typename TauType>
-		auto inline s_householder_utp(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, Size *p, double zero_check = 1e-10)noexcept->void
+		auto inline s_householder_utp(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void
 		{
+			rank = 0;
+
 			for (Size i(-1); ++i < n; p[i] = i);
 
 			s_mc(m, n, A, a_t, U, u_t);
@@ -624,49 +629,61 @@ namespace aris
 				s_swap_v(m, U + id(0, max_pos, u_t), u_t, U + id(0, i, u_t), u_t);
 				std::swap(p[max_pos], p[i]);
 
+				// compute rank //
+				double rho = -std::sqrt(max_value) * s_sgn2(U[uii]);
+				if (std::abs(rho) < zero_check) { s_fill(m - i, 1, 0.0, tau + ti0); return; }
+
+				++rank;
+
 				// 若已经到达最后一行，那么就返回，因为最后一行不需要householder化 //
-				if (i == m - 1) break;
+				if (i == m - 1) return;
 				
 				// compute householder vector //
-				double rho = -std::sqrt(max_value) * s_sgn2(U[uii]);
-				if (std::abs(rho) > zero_check)
-				{
-					auto U_i_i1 = U + next_cid(uii, u_t);
-					auto U_i1_i = U + next_rid(uii, u_t);
-					auto U_i1_i1 = U + next_did(uii, u_t);
-					auto ti1 = tau + next_rid(ti0, tau_t);
+				auto U_i_i1 = U + next_cid(uii, u_t);
+				auto U_i1_i = U + next_rid(uii, u_t);
+				auto U_i1_i1 = U + next_did(uii, u_t);
+				auto ti1 = tau + next_rid(ti0, tau_t);
 
-					tau[ti0] = U[uii] / rho - 1.0;
-					s_nm(m - 1 - i, 1, 1.0 / (U[uii] - rho), U_i1_i, u_t);
-					U[uii] = rho;
+				tau[ti0] = U[uii] / rho - 1.0;
+				s_nm(m - 1 - i, 1, 1.0 / (U[uii] - rho), U_i1_i, u_t);
+				U[uii] = rho;
 
-					// update matrix //
-					s_mc(1, n - i - 1, U_i_i1, u_t, ti1, T(tau_t));
-					s_mma(1, n - i - 1, m - i - 1, U_i1_i, T(u_t), U_i1_i1, u_t, ti1, T(tau_t));
-					s_nm(n - i - 1, 1, tau[ti0], ti1, tau_t);
+				// update matrix //
+				s_mc(1, n - i - 1, U_i_i1, u_t, ti1, T(tau_t));
+				s_mma(1, n - i - 1, m - i - 1, U_i1_i, T(u_t), U_i1_i1, u_t, ti1, T(tau_t));
+				s_nm(n - i - 1, 1, tau[ti0], ti1, tau_t);
 
-					s_ma(n - i - 1, 1, ti1, tau_t, U_i_i1, T(u_t));
-					s_mma(m - i - 1, n - i - 1, 1, U_i1_i, u_t, ti1, T(tau_t), U_i1_i1, u_t);
-				}
-				else
-				{
-					s_fill(m - i, 1, 0.0, tau + ti0);
-					return;
-				}
+				s_ma(1, n - i - 1, ti1, T(tau_t), U_i_i1, u_t);
+				s_mma(m - i - 1, n - i - 1, 1, U_i1_i, u_t, ti1, T(tau_t), U_i1_i1, u_t);
 			}
 		}
-		auto inline s_householder_utp(Size m, Size n, const double *A, double *U, double *tau, Size *p, double zero_check = 1e-10)noexcept->void { s_householder_utp(m, n, A, n, U, n, tau, 1, p, zero_check); }
+		auto inline s_householder_utp(Size m, Size n, const double *A, double *U, double *tau, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void { s_householder_utp(m, n, A, n, U, n, tau, 1, p, rank, zero_check); }
 		// x must have the same or bigger size with b
 		template<typename UType, typename TauType, typename BType, typename XType>
-		auto inline s_householder_utp_sov(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const Size *p, const double *b, BType b_t, double *x, XType x_t, double zero_check = 1e-10)noexcept->void
+		auto inline s_householder_utp_sov(Size m, Size n, Size rhs, Size rank, const double *U, UType u_t, const double *tau, TauType tau_t, const Size *p, const double *b, BType b_t, double *x, XType x_t, double zero_check = 1e-10)noexcept->void
 		{
-			s_householder_ut_qt_dot(m, n, rhs, U, u_t, tau, tau_t, b, b_t, x, x_t);
-			s_sov_um(std::min(m, n), rhs, U, u_t, x, x_t, x, x_t, zero_check);
+			s_householder_ut_qt_dot(m, rank, rhs, U, u_t, tau, tau_t, b, b_t, x, x_t);
+			s_sov_um(rank, rhs, U, u_t, x, x_t, x, x_t, zero_check);
 			
 			if (n > m)s_fill(n - m, rhs, 0.0, x + id(m, 0, x_t), x_t);
 			s_permutate_inv(n, rhs, p, x, x_t);
 		}
-		auto inline s_householder_utp_sov(Size m, Size n, Size rhs, const double *U, const double *tau, const Size *p, const double *b, double *x, double zero_check = 1e-10) { s_householder_utp_sov(m, n, rhs, U, n, tau, 1, p, b, rhs, x, rhs, zero_check); }
+		auto inline s_householder_utp_sov(Size m, Size n, Size rhs, Size rank, const double *U, const double *tau, const Size *p, const double *b, double *x, double zero_check = 1e-10) { s_householder_utp_sov(m, n, rhs, rank, U, n, tau, 1, p, b, rhs, x, rhs, zero_check); }
+		template<typename UType, typename TauType, typename XType>
+		auto inline s_householder_utp_sov_solution_space(Size m, Size n, Size rank, const double *U, UType u_t, const double *tau, TauType tau_t, const Size *p, double *x, XType x_t, double zero_check = 1e-10)noexcept->void
+		{
+			// [R1, R2]
+			// solution is:
+			// [ R1\R2 ]
+			// [  -I   ]
+
+			s_sov_um(rank, n - rank, U, u_t, U + id(0, rank, u_t), u_t, x, x_t, zero_check);
+			s_fill(n - rank, n - rank, 0.0, x + id(rank, 0, x_t), x_t);
+			for (Size i(-1); ++i < n - rank; )x[id(i + rank, i, x_t)] = -1.0;
+			s_permutate_inv(n, n - rank, p, x, x_t);
+		}
+		auto inline s_householder_utp_sov_solution_space(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double zero_check = 1e-10) { s_householder_utp_sov_solution_space(m, n, rank, U, n, tau, 1, p, x, n-rank, zero_check); }
+
 
 	}
 }

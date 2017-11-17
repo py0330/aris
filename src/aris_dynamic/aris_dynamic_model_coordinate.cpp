@@ -1265,10 +1265,10 @@ namespace aris
 		}
 		auto Part::cptPf(const Coordinate &relative_to, double *pf)const->void
 		{
-			double fv[6], prt_pf[6];
-			cptPrtFv(fv);
-			cptPrtFg(prt_pf);
-			s_vs(6, fv, prt_pf);
+			double fg[6], prt_pf[6];
+			cptPrtFg(fg);
+			cptPrtFv(prt_pf);
+			s_vs(6, fg, prt_pf);
 
 			double pm[16];
 			getPm(relative_to, pm);
@@ -1276,17 +1276,17 @@ namespace aris
 		}
 		auto Part::cptGlbPf(double *pf)const->void
 		{
-			double fv[6];
-			cptGlbFv(fv);
-			cptGlbFg(pf);
-			s_vs(6, fv, pf);
+			double fg[6];
+			cptGlbFg(fg);
+			cptGlbFv(pf);
+			s_vs(6, fg, pf);
 		}
 		auto Part::cptPrtPf(double *pf)const->void
 		{
-			double fv[6];
-			cptPrtFv(fv);
-			cptPrtFg(pf);
-			s_vs(6, fv, pf);
+			double fg[6];
+			cptPrtFg(fg);
+			cptPrtFv(pf);
+			s_vs(6, fg, pf);
 		}
 		Part::~Part() = default;
 		Part::Part(const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active)

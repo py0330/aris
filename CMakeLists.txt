@@ -167,7 +167,7 @@ target_link_libraries(test_control aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_control COMMAND test_control)
 set_tests_properties (test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_cell.h test_dynamic_cell.cpp test_dynamic_spline.h test_dynamic_spline.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_simple_model.h test_dynamic_simple_model.cpp test_dynamic_plan.h test_dynamic_plan.cpp)
+set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_cell.h test_dynamic_cell.cpp test_dynamic_spline.h test_dynamic_spline.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_model_multi.h test_dynamic_model_multi.cpp test_dynamic_simple_model.h test_dynamic_simple_model.cpp test_dynamic_plan.h test_dynamic_plan.cpp)
 PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
 add_executable(test_dynamic ${FULL_SRC})
 target_link_libraries(test_dynamic aris_dynamic aris_core ${RELY_LINK_LIB})

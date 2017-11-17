@@ -23,7 +23,6 @@ namespace aris
 			auto forwardKinematic(int max_count = 100, double error = 1e-10)->bool;
 			auto inverseKinematic(int max_count = 100, double error = 1e-10)->bool;
 
-
 			virtual ~SimpleModel();
 			SimpleModel();
 

@@ -279,44 +279,23 @@ void test_simple_model()
 
 	m.allocateMemory();
 	
-	//std::cout << "time consumed" << aris::core::benchmark(1, [&]()
-	//{
-	//	for (int i = 0; i < 1000; ++i)
-	//	{
-	//		body_ee->setMpe(std::array<double, 6>{0, 0, -3e-4*i, 0, 0, 0}.data(), "313");
-	//		la_ee->setMpm(pm_hand_change(la_ee_pm));
-	//		ra_ee->setMpm(pm_hand_change(ra_ee_pm));
-	//		ll_ee->setMpm(pm_hand_change(ll_ee_pm));
-	//		rl_ee->setMpm(pm_hand_change(rl_ee_pm));
-	//		if (!m.inverseKinematic())
-	//		{
-	//			std::cout << "inverseKinematic failed" << std::endl;
-	//			break;
-	//		}
-	//	}
-	//}) << std::endl;
-	
-
-	body_ee->setMpe(std::array<double, 6>{0, 0, -1.5e-2, 0, 0, 0}.data(), "313");
-	la_ee->setMpm(pm_hand_change(la_ee_pm));
-	ra_ee->setMpm(pm_hand_change(ra_ee_pm));
-	ll_ee->setMpm(pm_hand_change(ll_ee_pm));
-	rl_ee->setMpm(pm_hand_change(rl_ee_pm));
-
-	aris::dynamic::dsp(4, 4, *rl_p1->pm());
-	if (!m.inverseKinematic(100, 1e-8))
+	std::cout << "time consumed" << aris::core::benchmark(1, [&]()
 	{
-		std::cout << "inverseKinematic failed" << std::endl;
-		//break;
-	}
-	aris::dynamic::dsp(4, 4, *rl_p1->pm());
-	////
-	//m.saveXml("C:\\Users\\py033\\Desktop\\m.xml");
+		for (int i = 0; i < 100; ++i)
+		{
+			body_ee->setMpe(std::array<double, 6>{0, 0, -1e-3*i, 0, 0, 0}.data(), "313");
 
-
-	//aris::dynamic::Model m1;
-	//m1.loadXml("C:\\Users\\py033\\Desktop\\m.xml");
-	//m1.saveAdams("C:\\Users\\py033\\Desktop\\m.cmd");
+			if (!m.inverseKinematic())
+			{
+				std::cout << "inverseKinematic failed" << std::endl;
+				break;
+			}
+		}
+	}) << std::endl;
+	
+	aris::dynamic::dsp(4, 4, *ll_p4->pm());
+	ra_m5->updMp();
+	std::cout << "ra_m5 pos:" << ra_m5->mp() << std::endl;
 
 
 

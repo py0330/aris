@@ -504,24 +504,25 @@ namespace aris
 			};
 			struct Diag
 			{
-				double cm[36], x[6], b[6]; // determine I or J automatically
-				double U[36], tau[6];
-				double Q[36], R[36];
-				double RN[36];
-				//double T1[36], L1[36], R1[36], U1[36], tau1[6];
+				double dm[36];
+				double xp[6], bc[6], xc[6], bp[6];
 				Size rows;
 				Relation *rel;
 				Part *part;
-				Diag *rd;//related diag
+				Diag *rd;//related diag, for row addition
 				bool is_I;
 
-				std::function<void(double*)> fast;
+				std::function<void(Diag*)> upd_d;
+				std::function<void(Diag*, const double *left, double* right)> d_dot;
+				std::function<void(Diag*, const double *left, double* right)> dt_dot;
+
 			};
 			struct Remainder
 			{
 				struct Block { Diag* diag; bool is_I; };
 				
-				double cmI[36], cmJ[36], x[6], b[6];
+				double cmI[36], cmJ[36];
+				double xp[6], bc[6], xc[6], bp[6];
 				std::vector<Block> cm_blk_series;
 				Relation *rel;
 			};
@@ -532,12 +533,10 @@ namespace aris
 			auto virtual kinVel()->void override;
 			auto kinAcc()->void;
 			auto dynFce()->void;
-			auto virtual dynAccAndFce()->void override
-			{
-				kinAcc();
-				dynFce();
-			};
-			auto updDiagCm()->void;
+			auto virtual dynAccAndFce()->void override;
+			auto rowAddInverseXp()->void;
+			auto rowAddBp()->void;
+			auto updDiagDm()->void;
 			auto updDiagCp()->void;
 			auto updDiagCv()->void;
 			auto updDiagCa()->void;
@@ -546,11 +545,17 @@ namespace aris
 			auto updRemainderCp()->void;
 			auto updRemainderCv()->void;
 			auto updRemainderCa()->void;
-			auto updA()->void;
-			auto updB()->void;
-			auto updX()->void;
-			auto updBf()->void;
-			auto updXf()->void;
+			auto updF()->void;
+			auto updXpf()->void;
+			auto updBcf()->void;
+			auto updXcf()->void;
+			auto updBpf()->void;
+			auto updXp()->void;
+			auto updXc()->void;
+			auto updCf()->void;
+			auto updPp()->void;
+			auto updPv()->void;
+			auto updPa()->void;
 			auto relationPool()->std::vector<Relation>&;
 			auto activePartPool()->std::vector<Part*>&;
 			auto diagPool()->std::vector<Diag>&;
