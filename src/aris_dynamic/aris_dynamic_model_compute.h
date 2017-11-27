@@ -506,7 +506,8 @@ namespace aris
 			{
 				double dm[36];
 				double xp[6], bc[6], xc[6], bp[6];
-				Size rows;
+				Size rows;// in F
+				Size dim;// equal to rel->dim
 				Relation *rel;
 				Part *part;
 				Diag *rd;//related diag, for row addition
@@ -531,38 +532,8 @@ namespace aris
 			auto virtual allocateMemory()->void override;
 			auto virtual kinPos()->void override;
 			auto virtual kinVel()->void override;
-			auto kinAcc()->void;
-			auto dynFce()->void;
 			auto virtual dynAccAndFce()->void override;
-			auto rowAddInverseXp()->void;
-			auto rowAddBp()->void;
-			auto updDiagDm()->void;
-			auto updDiagCp()->void;
-			auto updDiagCv()->void;
-			auto updDiagCa()->void;
-			auto updDiagPf()->void;
-			auto updRemainderCm()->void;
-			auto updRemainderCp()->void;
-			auto updRemainderCv()->void;
-			auto updRemainderCa()->void;
-			auto updF()->void;
-			auto updXpf()->void;
-			auto updBcf()->void;
-			auto updXcf()->void;
-			auto updBpf()->void;
-			auto updXp()->void;
-			auto updXc()->void;
-			auto updCf()->void;
-			auto updPp()->void;
-			auto updPv()->void;
-			auto updPa()->void;
-			auto relationPool()->std::vector<Relation>&;
-			auto activePartPool()->std::vector<Part*>&;
-			auto diagPool()->std::vector<Diag>&;
-			auto remainderPool()->std::vector<Remainder>&;
 			auto plotRelation()->void;
-			auto plotDiag()->void;
-			auto plotRemainder()->void;
 
 			virtual ~DiagSolver();
 			explicit DiagSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);

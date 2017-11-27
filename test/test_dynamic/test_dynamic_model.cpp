@@ -3082,8 +3082,8 @@ void test_model()
 	test_part();
 	test_constraint();
 	test_solver_compute();
-	test_solver_under_constraint();
-	test_solver_3R();
+	//test_solver_under_constraint();
+	//test_solver_3R();
 	//test_solver_6R();
 	test_solver_stewart();
 	std::cout << "-----------------test model finished------------" << std::endl << std::endl;
