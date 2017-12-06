@@ -65,8 +65,8 @@ namespace aris
 			while (ss.getline(cmd, 1024))
 			{
 				cmd[std::strlen(cmd) + 2] = '\0';
-				cmd[std::strlen(cmd) + 1] = '\r';
-				cmd[std::strlen(cmd) + 0] = '\n';
+				cmd[std::strlen(cmd) + 1] = '\n';
+				cmd[std::strlen(cmd) + 0] = '\r';
 
 				std::cout << "send:" << cmd << std::endl;
 				std::cout << "pause:" << ms_pause_time << std::endl;

@@ -608,29 +608,34 @@ namespace aris
 		{
 			rank = 0;
 
-			for (Size i(-1); ++i < n; p[i] = i);
-
+			// init u //
 			s_mc(m, n, A, a_t, U, u_t);
+
+			// init p and tau //
+			for (Size i(-1), ti0{ 0 }, u0i{ 0 }; ++i < n; p[i] = i, ti0 = next_rid(ti0, tau_t), u0i = next_cid(u0i, u_t))
+			{
+				tau[ti0] = s_vv(m, U + u0i, u_t, U + u0i, u_t);
+			};
+
+			// compute //
 			for (Size i(-1), uii{ 0 }, ti0{ 0 }; ++i < std::min(m, n); uii = next_did(uii, u_t), ti0 = next_rid(ti0, tau_t))
 			{
-				// find and swap vector
 				double max_value{ 0 };
 				Size max_pos{ i };
-				for (Size j(i - 1), uij{ uii }; ++j < n; uij = next_cid(uij, u_t))
+
+				for (Size j(i - 1), tj0{ ti0 }; ++j < n; tj0 = next_rid(tj0, tau_t))
 				{
-					double value = s_vv(m - i, U + uij, u_t, U + uij, u_t);
-					if (value > max_value)
-					{
-						max_pos = j;
-						max_value = value;
-					}
+					max_pos = tau[tj0] > max_value ? j : max_pos;
+					max_value = tau[tj0] > max_value ? tau[tj0] : max_value;
 				}
 
 				s_swap_v(m, U + id(0, max_pos, u_t), u_t, U + id(0, i, u_t), u_t);
+				std::swap(tau[id(max_pos, 0, tau_t)], tau[ti0]);
 				std::swap(p[max_pos], p[i]);
 
 				// compute rank //
-				double rho = -std::sqrt(max_value) * s_sgn2(U[uii]);
+				// 这里由于截断误差，max_value可能小于0
+				double rho = -std::sqrt(std::max(max_value, 0.0)) * s_sgn2(U[uii]);
 				if (std::abs(rho) < zero_check) { s_fill(m - i, 1, 0.0, tau + ti0); return; }
 
 				++rank;
@@ -639,22 +644,22 @@ namespace aris
 				if (i == m - 1) return;
 				
 				// compute householder vector //
-				auto U_i_i1 = U + next_cid(uii, u_t);
 				auto U_i1_i = U + next_rid(uii, u_t);
-				auto U_i1_i1 = U + next_did(uii, u_t);
-				auto ti1 = tau + next_rid(ti0, tau_t);
 
 				tau[ti0] = U[uii] / rho - 1.0;
 				s_nm(m - 1 - i, 1, 1.0 / (U[uii] - rho), U_i1_i, u_t);
 				U[uii] = rho;
 
 				// update matrix //
-				s_mc(1, n - i - 1, U_i_i1, u_t, ti1, T(tau_t));
-				s_mma(1, n - i - 1, m - i - 1, U_i1_i, T(u_t), U_i1_i1, u_t, ti1, T(tau_t));
-				s_nm(n - i - 1, 1, tau[ti0], ti1, tau_t);
+				for (Size j(i), uij(next_cid(uii, u_t)), tj0{ next_rid(ti0, tau_t) }; ++j < n; uij = next_cid(uij, u_t), tj0 = next_rid(tj0, tau_t))
+				{
+					double t = tau[ti0] * (s_vv(m - i - 1, U_i1_i, u_t, U + next_rid(uij, u_t), u_t) + U[uij]);
+					U[uij] += t;
+					s_va(m - i - 1, t, U_i1_i, u_t, U + next_rid(uij, u_t), u_t);
 
-				s_ma(1, n - i - 1, ti1, T(tau_t), U_i_i1, u_t);
-				s_mma(m - i - 1, n - i - 1, 1, U_i1_i, u_t, ti1, T(tau_t), U_i1_i1, u_t);
+					// 更新余下的矩阵列向量的模，用于下一轮寻找最大的模 //
+					tau[tj0] -= U[uij] * U[uij];
+				}
 			}
 		}
 		auto inline s_householder_utp(Size m, Size n, const double *A, double *U, double *tau, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void { s_householder_utp(m, n, A, n, U, n, tau, 1, p, rank, zero_check); }

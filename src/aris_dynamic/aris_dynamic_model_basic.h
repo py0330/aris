@@ -25,6 +25,7 @@ namespace aris
 		using double3 = double[3];
 		using double6 = double[6];
 		using double7 = double[7];
+		using double10 = double[10];
 
 		class Model;
 

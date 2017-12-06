@@ -52,7 +52,6 @@ namespace aris
 			auto simulatorPool()const->const aris::core::ObjectPool<Simulator, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->simulatorPool(); }
 			auto simResultPool()->aris::core::ObjectPool<SimResult, Element>&;
 			auto simResultPool()const->const aris::core::ObjectPool<SimResult, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->simResultPool(); }
-			auto markerSize()const->Size { Size size{ 0 }; for (auto &prt : partPool())size += prt.markerPool().size(); return size; }
 			auto ground()->Part&;
 			auto ground()const->const Part&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ground(); }
 			
@@ -65,44 +64,10 @@ namespace aris
 			auto addSphericalJoint(Part &first_part, Part &second_part, const double *position)->SphericalJoint&;
 			auto addMotion(Joint &joint)->Motion&;
 			auto addMotion()->Motion&;
-			auto addGeneralMotion(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&;
+			auto addGeneralMotionByPm(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&;
+			auto addGeneralMotionByPe(Part &end_effector, Coordinate &reference, const double* pe, const char* eul_type)->GeneralMotion&;
+			auto addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion&;
 
-			// 动力学计算以下变量的关系
-			// I  ： 惯量矩阵,m*m
-			// C  ： 约束矩阵,m*n
-			// pa ： 杆件的螺旋加速度 m*1
-			// pf ： 杆件的螺旋外力（不包括惯性力）m*1
-			// ca ： 约束的加速度（不是螺旋）n*1
-			// cf ： 约束力n*1
-			// 动力学主要求解以下方程：
-			// [ -I  C  ]  *  [ pa ]  = [ pf ]
-			// [  C' O  ]     [ cf ]    [ ca ]
-			//
-			// A = [-I  C ]
-			//     [ C' O ]
-			//
-			// x = [ pa ]
-			//     [ cf ]
-			//
-			// b = [ pf ]
-			//     [ ca ]
-			// 
-			// 约束矩阵C为m x n维的矩阵,惯量矩阵为m x m维的矩阵
-			// 约束力为n维的向量,约束加速度为n维向量
-			// 部件力为m维的向量,部件加速度为m维向量
-			// 动力学为所求的未知量为部件加速度和约束力,其他均为已知
-			// 动力学主要求解以下方程：
-			// [  I  C  ]  *  [ as ]  = [ fs ]
-			// [  C' O  ]     [ cf ]    [ ca ]
-			//
-			// A = [ I  C ]
-			//     [ C' O ]
-			//
-			// x = [ as ]
-			//     [ cf ]
-			//
-			// b = [ fs ]
-			//     [ ca ]
 			virtual ~Model();
 			explicit Model(const std::string &name = "model");
 			Model(const Model &);

@@ -19,11 +19,13 @@ namespace aris
 		using double3x3 = double[3][3];
 
 		auto inline default_pp()->const double* { static const double value[3]{ 0,0,0 }; return value; }
+		auto inline default_ra()->const double* { static const double value[3]{ 0,0,0 };	return value; }
 		auto inline default_re()->const double* { static const double value[3]{ 0,0,0 }; return value; }
 		auto inline default_rq()->const double* { static const double value[4]{ 0,0,0,1 };	return value; }
 		auto inline default_rm()->const double* { static const double value[9]{ 1,0,0,0,1,0,0,0,1 };	return value; }
 		auto inline default_pe()->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
 		auto inline default_pq()->const double* { static const double value[7]{ 0,0,0,0,0,0,1 };	return value; }
+		auto inline default_pa()->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
 		auto inline default_pm()->const double* { static const double value[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 }; return value; }
 
 		auto inline default_vp()->const double* { static const double value[3]{ 0,0,0 }; return value; }
@@ -50,7 +52,7 @@ namespace aris
 
 		auto inline default_fs()->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
 		auto inline default_im()->const double* { static const double value[36]{ 0 }; return value; }
-		auto inline default_iv()->const double* { static const double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
+		auto inline default_iv()->const double* { static const double value[10]{ 1,0,0,0,1,1,1,0,0,0 }; return value; }
 		auto inline default_i3()->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
 
 		auto inline default_out()->double* { static double value[36]{ 0,0,0 }; return value; }
@@ -160,6 +162,28 @@ namespace aris
 			v3_out[0] = inv_pm[0] * v3[0] + inv_pm[4] * v3[1] + inv_pm[8] * v3[2];
 			v3_out[1] = inv_pm[1] * v3[0] + inv_pm[5] * v3[1] + inv_pm[9] * v3[2];
 			v3_out[2] = inv_pm[2] * v3[0] + inv_pm[6] * v3[1] + inv_pm[10] * v3[2];
+		}
+
+		auto s_im_dot_as(const double *im, const double *as, double * fs) noexcept->void
+		{
+			const double c[3]{ im[11], im[15], im[4] };
+
+			s_vc(3, im[0], as, fs);
+			s_c3s(c, as + 3, fs);
+
+			s_c3(c, as, fs + 3);
+			s_mma(3, 1, 3, im + 21, 6, as + 3, 1, fs + 3, 1);
+		}
+		auto s_iv_dot_as(const double *iv, const double *as, double * fs) noexcept->void
+		{
+			s_vc(3, iv[0], as, fs);
+			s_c3s(iv + 1, as + 3, fs);
+
+			s_c3(iv + 1, as, fs + 3);
+
+			fs[3] += iv[4] * as[3] + iv[7] * as[4] + iv[8] * as[5];
+			fs[4] += iv[7] * as[3] + iv[5] * as[4] + iv[9] * as[5];
+			fs[5] += iv[8] * as[3] + iv[9] * as[4] + iv[6] * as[5];
 		}
 
 		auto s_cm3(const double *a, double *cm_out) noexcept->void
@@ -487,6 +511,53 @@ namespace aris
 			s_va(6, alpha, tem, 1, vs_out, vs_out_ld);
 		}
 
+		auto s_ra2rm(const double *ra_in, double *rm_out, Size rm_ld)noexcept->double *
+		{
+			// 补充默认参数 //
+			ra_in = ra_in ? ra_in : default_ra();
+			rm_out = rm_out ? rm_out : default_out();
+
+			double theta = sqrt(ra_in[0] * ra_in[0] + ra_in[1] * ra_in[1] + ra_in[2] * ra_in[2]);
+
+			const double &a = ra_in[0];
+			const double &b = ra_in[1];
+			const double &c = ra_in[2];
+
+			const double A = theta < 1e-8 ? 1.0 : std::sin(theta) / theta;
+			const double B = theta < 1e-8 ? 0.5 : (1 - std::cos(theta)) / theta / theta;
+
+			rm_out[0] = 1 - (b*b + c*c)*B;
+			rm_out[1] = -c*A + a*b*B;
+			rm_out[2] = b*A + a*c*B;
+
+			rm_out[rm_ld] = c*A + a*b*B;
+			rm_out[rm_ld + 1] = 1 - (a*a + c*c)*B;
+			rm_out[rm_ld + 2] = -a*A + b*c*B;
+
+			rm_out[rm_ld + rm_ld] = -b*A + a*c*B;
+			rm_out[rm_ld + rm_ld + 1] = a*A + b*c*B;
+			rm_out[rm_ld + rm_ld + 2] = 1 - (a*a + b*b)*B;
+
+			return rm_out;
+		}
+		auto s_rm2ra(const double *rm_in, double *ra_out, Size rm_ld)noexcept->double *
+		{
+			// 补充默认参数 //
+			rm_in = rm_in ? rm_in : default_rm();
+			ra_out = ra_out ? ra_out : default_out();
+			
+			double rq[4];
+			s_rm2rq(rm_in, rq, rm_ld);
+			
+			double s_theta_over_two = s_norm(3, rq);
+			double ratio = s_theta_over_two < 1e-3 ? 0.0 : std::atan2(s_theta_over_two, rq[3])*2.0 / s_theta_over_two;
+
+			ra_out[0] = rq[0] * ratio;
+			ra_out[1] = rq[1] * ratio;
+			ra_out[2] = rq[2] * ratio;
+
+			return ra_out;
+		}
 		auto s_re2rm(const double *re_in, double *rm_out, const char *eu_type_in, Size rm_ld) noexcept->double *
 		{
 			// 补充默认参数 //
@@ -681,28 +752,10 @@ namespace aris
 
 			return re_out;
 		};
-		auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->double *
-		{
-			// 补充默认参数 //
-			rq_in = rq_in ? rq_in : default_rq();
-			pm_out = pm_out ? pm_out : default_out();
-
-			// 正式开始计算 //
-			s_rq2rm(rq_in, pm_out, 4);
-
-			return pm_out;
-		};
-		auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->double *
-		{
-			// 补充默认参数 //
-			pm_in = pm_in ? pm_in : default_pm();
-			rq_out = rq_out ? rq_out : default_out();
-
-			// 正式开始计算 //
-			s_rm2rq(pm_in, rq_out, 4);
-
-			return rq_out;
-		};
+		auto s_ra2pm(const double *ra_in, double *pm_out) noexcept->double * { return s_ra2rm(ra_in, pm_out, 4); };
+		auto s_pm2ra(const double *pm_in, double *ra_out) noexcept->double * { return s_rm2ra(pm_in, ra_out, 4); };
+		auto s_rq2pm(const double *rq_in, double *pm_out) noexcept->double * { return s_rq2rm(rq_in, pm_out, 4); };
+		auto s_pm2rq(const double *pm_in, double *rq_out) noexcept->double * { return s_rm2rq(pm_in, rq_out, 4); }
 		auto s_rm2pm(const double *rm_in, double *pm_out, Size rm_ld) noexcept->double *
 		{
 			// 补充默认参数 //
@@ -786,6 +839,35 @@ namespace aris
 			s_pm2rq(pm_in, pq_out + 3);
 
 			return pq_out;
+		}
+		auto s_pa2pm(const double *pa_in, double *pm_out) noexcept->double *
+		{
+			// 补充默认参数 //
+			pa_in = pa_in ? pa_in : default_pa();
+			pm_out = pm_out ? pm_out : default_out();
+
+			// 正式开始计算 //
+			s_pp2pm(pa_in, pm_out);
+			s_ra2pm(pa_in + 3, pm_out);
+
+			pm_out[12] = 0;
+			pm_out[13] = 0;
+			pm_out[14] = 0;
+			pm_out[15] = 1;
+
+			return pm_out;
+		}
+		auto s_pm2pa(const double *pm_in, double *pa_out) noexcept->double *
+		{
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			pa_out = pa_out ? pa_out : default_out();
+
+			// 正式开始计算 //
+			s_pm2pp(pm_in, pa_out);
+			s_pm2ra(pm_in, pa_out + 3);
+
+			return pa_out;
 		}
 
 		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->double *
@@ -2994,12 +3076,119 @@ namespace aris
 			from_im = from_im ? from_im : default_im();
 			to_im = to_im ? to_im : default_out();
 
-			// 以下为慢速但准确的算法 //
+			// It = Tf * If * (Tf)^T
+			//
+			// I = [ m   -cx ]
+			//     [ cx   I  ]
+			//   = [  m               cz -cy ]
+			//     |      m      -cz      cx |
+			//     |          m   cy -cx     |
+			//     |     -cz  cy Ixx Ixy Ixz |
+			//     |  cz     -cx Ixy Iyy Iyz |
+			//     [ -cy  cx     Ixz Iyz Izz ]
+			//
+			// Tf = [ R     ]
+			//      [ pxR R ]
+			//
+			// It = Tf * If * Tf^T
+			//    = [ m              |  - m*px - (R*c)x                             ]
+			//      [ m*px + (R*c)x  |  - m*px*px - (R*c)x*px - px*(R*c)x + R*I*R^T ]
+			//    = [ m              |  - m*px - (R*c)x                             ]
+			//      [ m*px + (R*c)x  |  - m*px*px - (R*c)x*px - px*(R*c)x + R*I*R^T ]
+			//    = [ m              |  - (R*c + m*p)x                              ]
+			//      [ (R*c + m*p)x   |  - m*px*px - p*(R*c)^T - (R*c)*p^T + 2*(R*c)^T*p + R*I*R^T ]  
+
 			std::fill(to_im, to_im + 36, 0);
-			double tem[6][6], tmf[6][6];
-			s_tmf(relative_pm, *tmf);
-			s_mm(6, 6, 6, *tmf, 6, from_im, 6, *tem, 6);
-			s_mm(6, 6, 6, *tem, 6, *tmf, ColMajor{ 6 }, to_im, 6);
+
+			const double &m = from_im[0];
+			const double &x = relative_pm[3];
+			const double &y = relative_pm[7];
+			const double &z = relative_pm[11];
+			
+			// R*c 
+			double rc[3];
+			rc[0] = relative_pm[0] * from_im[11] + relative_pm[1] * from_im[15] + relative_pm[2] * from_im[4];
+			rc[1] = relative_pm[4] * from_im[11] + relative_pm[5] * from_im[15] + relative_pm[6] * from_im[4];
+			rc[2] = relative_pm[8] * from_im[11] + relative_pm[9] * from_im[15] + relative_pm[10] * from_im[4];
+
+			// R*c + m*p
+			const double cx = rc[0] + m*relative_pm[3];
+			const double cy = rc[1] + m*relative_pm[7];
+			const double cz = rc[2] + m*relative_pm[11];
+
+			// left top corner //
+			to_im[0] = m;
+			to_im[7] = m;
+			to_im[14] = m;
+
+			// right top corner //
+			to_im[4] = cz;
+			to_im[5] = -cy;
+			to_im[9] = -cz;
+			to_im[11] = cx;
+			to_im[15] = cy;
+			to_im[16] = -cx;
+
+			// left bottom corner //
+			to_im[19] = -cz;
+			to_im[20] = cy;
+			to_im[24] = cz;
+			to_im[26] = -cx;
+			to_im[30] = -cy;
+			to_im[31] = cx;
+
+			// right bottom corner //
+
+			// R = [ r11 r12 r13 ]
+			//     | r21 r22 r23 |
+			//     [ r31 r32 r33 ]
+			// I = [ Ixx Ixy Ixz ]
+			//     | Ixy Iyy Iyz |
+			//     [ Ixz Iyz Izz ]
+			//
+			// R * I = [ r11 r12 r13 ]     [ Ixx Ixy Ixz ]     [ r11 r21 r31 ]
+			//         | r21 r22 r23 |  *  | Ixy Iyy Iyz |  *  | r12 r22 r32 |
+			//         [ r31 r32 r33 ]     [ Ixz Iyz Izz ]     [ r13 r23 r33 ]
+			//       = [ r11*Ixx + r12*Ixy + r13*Ixz     r11*Ixy + r12*Iyy + r13*Iyz     r11*Ixz + r12*Iyz + r13*Izz ]     [ r11 r21 r31 ]
+			//         [ r21*Ixx + r22*Ixy + r23*Ixz     r21*Ixy + r22*Iyy + r23*Iyz     r21*Ixz + r22*Iyz + r23*Izz ]  *  | r12 r22 r32 |
+			//         [ r31*Ixx + r32*Ixy + r33*Ixz     r31*Ixy + r32*Iyy + r33*Iyz     r31*Ixz + r32*Iyz + r33*Izz ]     [ r13 r23 r33 ]
+			// tbd
+
+			// R*I*R^T
+			double RI[9]
+			{
+				relative_pm[0] * from_im[21] + relative_pm[1] * from_im[27] + relative_pm[2] * from_im[33],
+				relative_pm[0] * from_im[22] + relative_pm[1] * from_im[28] + relative_pm[2] * from_im[34],
+				relative_pm[0] * from_im[23] + relative_pm[1] * from_im[29] + relative_pm[2] * from_im[35],
+				relative_pm[4] * from_im[21] + relative_pm[5] * from_im[27] + relative_pm[6] * from_im[33],
+				relative_pm[4] * from_im[22] + relative_pm[5] * from_im[28] + relative_pm[6] * from_im[34],
+				relative_pm[4] * from_im[23] + relative_pm[5] * from_im[29] + relative_pm[6] * from_im[35],
+				relative_pm[8] * from_im[21] + relative_pm[9] * from_im[27] + relative_pm[10] * from_im[33],
+				relative_pm[8] * from_im[22] + relative_pm[9] * from_im[28] + relative_pm[10] * from_im[34],
+				relative_pm[8] * from_im[23] + relative_pm[9] * from_im[29] + relative_pm[10] * from_im[35],
+			};
+
+			to_im[21] = RI[0] * relative_pm[0] + RI[1] * relative_pm[1] + RI[2] * relative_pm[2];
+			to_im[28] = RI[3] * relative_pm[4] + RI[4] * relative_pm[5] + RI[5] * relative_pm[6];
+			to_im[35] = RI[6] * relative_pm[8] + RI[7] * relative_pm[9] + RI[8] * relative_pm[10];
+
+			to_im[27] = RI[3] * relative_pm[0] + RI[4] * relative_pm[1] + RI[5] * relative_pm[2];
+			to_im[33] = RI[6] * relative_pm[0] + RI[7] * relative_pm[1] + RI[8] * relative_pm[2];
+			to_im[34] = RI[6] * relative_pm[4] + RI[7] * relative_pm[5] + RI[8] * relative_pm[6];
+
+			// R*I*R^T - m*px*px - (R*c)*p^T - p*(R*c)^T + 2*(R*c)^T*p
+			to_im[21] += m*(y*y + z*z) + 2.0*(rc[1] * y + rc[2] * z);
+			to_im[28] += m*(x*x + z*z) + 2.0*(rc[0] * x + rc[2] * z);
+			to_im[35] += m*(y*y + x*x) + 2.0*(rc[0] * x + rc[1] * y);
+
+			to_im[27] -= m*(x*y) + rc[0] * y + rc[1] * x;
+			to_im[33] -= m*(x*z) + rc[0] * z + rc[2] * x;
+			to_im[34] -= m*(y*z) + rc[1] * z + rc[2] * y;
+
+			// make symetric part
+			to_im[22] = to_im[27];
+			to_im[23] = to_im[33];
+			to_im[29] = to_im[34];
 
 			return to_im;
 		}
@@ -3010,16 +3199,102 @@ namespace aris
 			from_im = from_im ? from_im : default_im();
 			to_im = to_im ? to_im : default_out();
 
-			// 以下为慢速但准确的算法 //
-			std::fill_n(to_im, 36, 0);
-			double tem[6][6], tmf[6][6], pm[4][4];
-			s_inv_pm(inv_relative_pm, *pm);
-			s_tmf(*pm, *tmf);
-			s_mm(6, 6, 6, *tmf, 6, from_im, 6, *tem, 6);
-			s_mm(6, 6, 6, *tem, 6, *tmf, ColMajor{ 6 }, to_im, 6);
+			double pm[16];
+			s_inv_pm(inv_relative_pm, pm);
+
+			s_im2im(pm, from_im, to_im);
 
 			return to_im;
 		}
+		auto s_iv2iv(const double *relative_pm, const double *from_iv, double *to_iv) noexcept->double *
+		{
+			// 补充默认参数 //
+			relative_pm = relative_pm ? relative_pm : default_pm();
+			from_iv = from_iv ? from_iv : default_iv();
+			to_iv = to_iv ? to_iv : default_out();
+
+			const double &x = relative_pm[3];
+			const double &y = relative_pm[7];
+			const double &z = relative_pm[11];
+
+			// m //
+			to_iv[0] = from_iv[0];
+
+			// R*c 
+			to_iv[1] = relative_pm[0] * from_iv[1] + relative_pm[1] * from_iv[2] + relative_pm[2] * from_iv[3];
+			to_iv[2] = relative_pm[4] * from_iv[1] + relative_pm[5] * from_iv[2] + relative_pm[6] * from_iv[3];
+			to_iv[3] = relative_pm[8] * from_iv[1] + relative_pm[9] * from_iv[2] + relative_pm[10] * from_iv[3];
+
+			// make last 6 inertia //
+
+			// R = [ r11 r12 r13 ]
+			//     | r21 r22 r23 |
+			//     [ r31 r32 r33 ]
+			// I = [ Ixx Ixy Ixz ]
+			//     | Ixy Iyy Iyz |
+			//     [ Ixz Iyz Izz ]
+			//
+			// R * I * R = [ r11 r12 r13 ]     [ Ixx Ixy Ixz ]     [ r11 r21 r31 ]
+			//             | r21 r22 r23 |  *  | Ixy Iyy Iyz |  *  | r12 r22 r32 |
+			//             [ r31 r32 r33 ]     [ Ixz Iyz Izz ]     [ r13 r23 r33 ]
+			//           = [ r11*Ixx + r12*Ixy + r13*Ixz     r11*Ixy + r12*Iyy + r13*Iyz     r11*Ixz + r12*Iyz + r13*Izz ]     [ r11 r21 r31 ]
+			//             | r21*Ixx + r22*Ixy + r23*Ixz     r21*Ixy + r22*Iyy + r23*Iyz     r21*Ixz + r22*Iyz + r23*Izz |  *  | r12 r22 r32 |
+			//             [ r31*Ixx + r32*Ixy + r33*Ixz     r31*Ixy + r32*Iyy + r33*Iyz     r31*Ixz + r32*Iyz + r33*Izz ]     [ r13 r23 r33 ]
+			// tbd
+
+			// R*I*R^T
+			double RI[9]
+			{
+				relative_pm[0] * from_iv[4] + relative_pm[1] * from_iv[7] + relative_pm[2] * from_iv[8],
+				relative_pm[0] * from_iv[7] + relative_pm[1] * from_iv[5] + relative_pm[2] * from_iv[9],
+				relative_pm[0] * from_iv[8] + relative_pm[1] * from_iv[9] + relative_pm[2] * from_iv[6],
+				relative_pm[4] * from_iv[4] + relative_pm[5] * from_iv[7] + relative_pm[6] * from_iv[8],
+				relative_pm[4] * from_iv[7] + relative_pm[5] * from_iv[5] + relative_pm[6] * from_iv[9],
+				relative_pm[4] * from_iv[8] + relative_pm[5] * from_iv[9] + relative_pm[6] * from_iv[6],
+				relative_pm[8] * from_iv[4] + relative_pm[9] * from_iv[7] + relative_pm[10] * from_iv[8],
+				relative_pm[8] * from_iv[7] + relative_pm[9] * from_iv[5] + relative_pm[10] * from_iv[9],
+				relative_pm[8] * from_iv[8] + relative_pm[9] * from_iv[9] + relative_pm[10] * from_iv[6],
+			};
+
+			to_iv[4] = RI[0] * relative_pm[0] + RI[1] * relative_pm[1] + RI[2] * relative_pm[2];
+			to_iv[5] = RI[3] * relative_pm[4] + RI[4] * relative_pm[5] + RI[5] * relative_pm[6];
+			to_iv[6] = RI[6] * relative_pm[8] + RI[7] * relative_pm[9] + RI[8] * relative_pm[10];
+
+			to_iv[7] = RI[3] * relative_pm[0] + RI[4] * relative_pm[1] + RI[5] * relative_pm[2];
+			to_iv[8] = RI[6] * relative_pm[0] + RI[7] * relative_pm[1] + RI[8] * relative_pm[2];
+			to_iv[9] = RI[6] * relative_pm[4] + RI[7] * relative_pm[5] + RI[8] * relative_pm[6];
+
+			// R*I*R^T - m*px*px - (R*c)*p^T - p*(R*c)^T + 2*(R*c)^T*p
+			to_iv[4] += to_iv[0] *(y*y + z*z) + 2.0*(to_iv[2] * y + to_iv[3] * z);
+			to_iv[5] += to_iv[0] *(x*x + z*z) + 2.0*(to_iv[1] * x + to_iv[3] * z);
+			to_iv[6] += to_iv[0] *(y*y + x*x) + 2.0*(to_iv[1] * x + to_iv[2] * y);
+
+			to_iv[7] -= to_iv[0] *(x*y) + to_iv[1] * y + to_iv[2] * x;
+			to_iv[8] -= to_iv[0] *(x*z) + to_iv[1] * z + to_iv[3] * x;
+			to_iv[9] -= to_iv[0] *(y*z) + to_iv[2] * z + to_iv[3] * y;
+
+			// R*c + m*p
+			to_iv[1] += to_iv[0] * relative_pm[3];
+			to_iv[2] += to_iv[0] * relative_pm[7];
+			to_iv[3] += to_iv[0] * relative_pm[11];
+
+			return to_iv;
+		}
+		auto s_inv_iv2iv(const double *inv_relative_pm, const double *from_iv, double *to_iv) noexcept->double *
+		{
+			// 补充默认参数 //
+			inv_relative_pm = inv_relative_pm ? inv_relative_pm : default_pm();
+			from_iv = from_iv ? from_iv : default_iv();
+			to_iv = to_iv ? to_iv : default_out();
+
+			double pm[16];
+			s_inv_pm(inv_relative_pm, pm);
+
+			s_iv2iv(pm, from_iv, to_iv);
+
+			return to_iv;
+		}
+
 
 		auto s_sov_pnts2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order) noexcept->void
 		{
@@ -3240,10 +3515,6 @@ namespace aris
 			}
 
 		}
-
-
-		
-
 
 		auto s_dlt_col(const Size &dlt_col_num, const Size *col_index, const Size &m, const Size &n, double *A, const Size &ldA) noexcept->void
 		{

@@ -8,16 +8,16 @@ namespace aris
 		struct SimpleModel::Imp
 		{ 
 			Model m_;
-			DiagSolver *inv_solver_;
-			DiagSolver *fwd_solver_;
+			UniversalSolver *inv_solver_;
+			UniversalSolver *fwd_solver_;
 		};
 
 		SimpleModel::~SimpleModel() {}
 		SimpleModel::SimpleModel() :imp_(new SimpleModel::Imp) 
 		{
 			imp_->m_.ground().markerPool().add<Marker>("origin"); 
-			imp_->inv_solver_ = &model().solverPool().add<DiagSolver>("inv_solver");
-			imp_->fwd_solver_ = &model().solverPool().add<DiagSolver>("fwd_solver");
+			imp_->inv_solver_ = &model().solverPool().add<UniversalSolver>("inv_solver");
+			imp_->fwd_solver_ = &model().solverPool().add<UniversalSolver>("fwd_solver");
 		}
 		auto SimpleModel::loadXmlFile(const std::string &file)->void { imp_->m_.loadXmlFile(file); }
 		auto SimpleModel::saveXmlFile(const std::string &file)->void { imp_->m_.saveXmlFile(file); }

@@ -359,6 +359,7 @@ namespace aris
 			double pm_j2i[4][4];
 
 			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
+
 			s_pm2pq(*pm_j2i, pq_j2i);
 
 			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;

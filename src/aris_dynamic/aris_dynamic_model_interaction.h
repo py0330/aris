@@ -76,12 +76,6 @@ namespace aris
 			auto cptPrtCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
 			{
 				cptCm(makI().fatherPart(), cmI, cmi_type, makJ().fatherPart(), cmJ, cmj_type);
-				
-				//s_mc(6, dim(), prtCmI(), dim(), cmI, cmi_type);
-
-				//double pm_M2N[4][4];
-				//s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), *pm_M2N);
-				//s_tf_n(dim(), -1.0, *pm_M2N, prtCmI(), dim(), cmJ, cmj_type);
 			}
 			auto cptPrtCm(double *cmI, double *cmJ)->void { cptPrtCm(cmI, dim(), cmJ, dim()); }
 			template<typename CMI_TYPE, typename CMJ_TYPE>

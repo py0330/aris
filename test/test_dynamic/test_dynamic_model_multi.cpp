@@ -247,7 +247,7 @@ const char xml_file_under_constraint[] =
 "    <solver_pool type=\"SolverPoolElement\" default_child_type=\"Solver\">"
 "        <gs type=\"LltGroundDividedSolver\"/>"
 "        <ps type=\"LltPartDividedSolver\"/>"
-"        <ds type=\"DiagSolver\"/>"
+"        <ds type=\"UniversalSolver\"/>"
 "    </solver_pool>"
 "</model>";
 
@@ -269,7 +269,7 @@ void test_solver_multi()
 
 		auto &gs = static_cast<GroundDividedSolver&>(*m.solverPool().findByName("gs"));
 		auto &ps = static_cast<PartDividedSolver&>(*m.solverPool().findByName("ps"));
-		auto &ds = static_cast<DiagSolver&>(*m.solverPool().findByName("ds"));
+		auto &ds = static_cast<UniversalSolver&>(*m.solverPool().findByName("ds"));
 		auto &gcs = m.solverPool().add<CombineSolver>("gcs");
 
 		ps.setMaxError(1e-14);

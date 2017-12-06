@@ -490,44 +490,11 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		class DiagSolver : public Solver
+		
+		class UniversalSolver : public Solver
 		{
 		public:
-			struct Relation
-			{
-				struct Block { Constraint* constraint; bool is_I; };
-				
-				Part *prtI;
-				Part *prtJ;
-				Size dim;
-				std::vector<Block> cst_pool_;
-			};
-			struct Diag
-			{
-				double dm[36];
-				double xp[6], bc[6], xc[6], bp[6];
-				Size rows;// in F
-				Size dim;// equal to rel->dim
-				Relation *rel;
-				Part *part;
-				Diag *rd;//related diag, for row addition
-				bool is_I;
-
-				std::function<void(Diag*)> upd_d;
-				std::function<void(Diag*, const double *left, double* right)> d_dot;
-				std::function<void(Diag*, const double *left, double* right)> dt_dot;
-
-			};
-			struct Remainder
-			{
-				struct Block { Diag* diag; bool is_I; };
-				
-				double cmI[36], cmJ[36];
-				double xp[6], bc[6], xc[6], bp[6];
-				std::vector<Block> cm_blk_series;
-				Relation *rel;
-			};
-			static const std::string& Type() { static const std::string type("DiagSolver"); return type; }
+			static const std::string& Type() { static const std::string type("UniversalSolver"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual allocateMemory()->void override;
 			auto virtual kinPos()->void override;
@@ -535,17 +502,52 @@ namespace aris
 			auto virtual dynAccAndFce()->void override;
 			auto plotRelation()->void;
 
-			virtual ~DiagSolver();
-			explicit DiagSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			DiagSolver(const DiagSolver &other);
-			DiagSolver(DiagSolver &&other);
-			DiagSolver& operator=(const DiagSolver &other);
-			DiagSolver& operator=(DiagSolver &&other);
+			virtual ~UniversalSolver();
+			explicit UniversalSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			UniversalSolver(const UniversalSolver &other);
+			UniversalSolver(UniversalSolver &&other);
+			UniversalSolver& operator=(const UniversalSolver &other);
+			UniversalSolver& operator=(UniversalSolver &&other);
 
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
+		class ForwardKinematicSolver :public UniversalSolver
+		{
+			static const std::string& Type() { static const std::string type("ForwardKinematicSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->void override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
+
+			virtual ~ForwardKinematicSolver();
+			explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			ForwardKinematicSolver(const ForwardKinematicSolver &other);
+			ForwardKinematicSolver(ForwardKinematicSolver &&other);
+			ForwardKinematicSolver& operator=(const ForwardKinematicSolver &other);
+			ForwardKinematicSolver& operator=(ForwardKinematicSolver &&other);
+		};
+		class InverseKinematicSolver :public UniversalSolver
+		{
+			static const std::string& Type() { static const std::string type("InverseKinematicSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->void override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
+
+			virtual ~InverseKinematicSolver();
+			explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			InverseKinematicSolver(const InverseKinematicSolver &other);
+			InverseKinematicSolver(InverseKinematicSolver &&other);
+			InverseKinematicSolver& operator=(const InverseKinematicSolver &other);
+			InverseKinematicSolver& operator=(InverseKinematicSolver &&other);
+		};
+
 
 		class SolverSimulator : public Simulator
 		{

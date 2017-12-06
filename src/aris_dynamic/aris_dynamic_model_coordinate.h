@@ -132,7 +132,7 @@ namespace aris
 			auto virtual pm() const->const double4x4& override;
 			auto virtual vs() const->const double6& override;
 			auto virtual as() const->const double6& override;
-			auto prtIm() const->const double6x6&;
+			auto prtIv() const->const double10&;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
@@ -195,20 +195,22 @@ namespace aris
 			template<typename IM_TYPE>
 			auto cptIm(const Coordinate &relative_to, double *im, IM_TYPE i_t)const->void
 			{
-				double tem[36], pm[16];
+				double tem[10], pm[16], im2[36];
 				getPm(relative_to, pm);
-				s_tf_n(6, pm, *prtIm(), tem);
-				s_tf_n(6, pm, tem, T(6), im, i_t);
+				s_iv2iv(pm, prtIv(), tem);
+				s_iv2im(tem, im2);
+				s_mc(6, 6, tem, 6, im, i_t);
 			}
 			template<typename IM_TYPE>
 			auto cptGlbIm(double *im, IM_TYPE i_t)const->void
 			{
-				double tem[36];
-				s_tf_n(6, *pm(), *prtIm(), tem);
-				s_tf_n(6, *pm(), tem, T(6), im, i_t);
+				double tem[10], im2[36];
+				s_iv2iv(*pm(), prtIv(), tem);
+				s_iv2im(tem, im2);
+				s_mc(6, 6, im2, 6, im, i_t);
 			}
 			template<typename IM_TYPE>
-			auto cptPrtIm(double *im, IM_TYPE i_t)const->void{	s_mc(6, 6, *prtIm(), 6, im, i_t);}
+			auto cptPrtIm(double *im, IM_TYPE i_t)const->void { double tem[36]; s_iv2im(prtIv(), tem); s_mc(6, 6, tem, 6, im, i_t);	}
 			auto cptFg(const Coordinate &relative_to, double *fg)const->void;
 			auto cptGlbFg(double *fg)const->void;
 			auto cptPrtFg(double *fg)const->void;

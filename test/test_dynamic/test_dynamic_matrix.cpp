@@ -1033,7 +1033,7 @@ void test_householder()
 		if (!(s_is_equal(m, n, result_U, U_p, error) && s_is_equal(std::min(m - 1, n), result_tau, tau_p, error) && std::equal(result_P, result_P + std::min(m, n), p)))std::cout << "\"s_householder_utp\" failed" << std::endl;
 
 		s_householder_utp(m, n, A_ld, a_t, result_U_ld, u_t, result_tau_ld, tau_t, result_P, rank);
-		if (!(s_is_equal(m, n, result_U_ld, u_t, U_p_ld, u_t, error) && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_p_ld, tau_t, error) && std::equal(result_P, result_P + std::min(m, n), p)))std::cout << "\"s_householder_utp\" failed" << std::endl;
+		if (!(s_is_equal(m, n, result_U_ld, u_t, U_p_ld, u_t, error) && s_is_equal(std::min(m - 1, n), 1, result_tau_ld, tau_t, tau_p_ld, tau_t, error) && std::equal(result_P, result_P + std::min(m, n), p)))std::cout << "\"s_householder_utp ld\" failed" << std::endl;
 
 		s_householder_utp_sov(m, n, rhs, rank, U_p, tau_p, p, b, result_x);
 		if (!(s_is_equal(n, rhs, result_x, x, error)))std::cout << "\"s_householder_utp_sov\" failed" << std::endl;

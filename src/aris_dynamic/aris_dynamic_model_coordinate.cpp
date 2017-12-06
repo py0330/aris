@@ -678,20 +678,10 @@ namespace aris
 			aris::core::ObjectPool<Marker, Element> *marker_pool_;
 			aris::core::ObjectPool<Geometry, Element> *geometry_pool_;
 
-			double prt_im_[6][6]{ { 0 } };
-			double prt_gr_[6]{ 0 };
-			double prt_as_[6]{ 0 };
-			double prt_vs_[6]{ 0 };
-			double prt_fg_[6]{ 0 };
-			double prt_fv_[6]{ 0 };
-
+			double prt_iv_[10]{ 0 };
 			double glb_pm_[4][4]{ { 0 } };
 			double glb_vs_[6]{ 0 };
 			double glb_as_[6]{ 0 };
-			double glb_im_[6][6]{ { 0 } };
-			double glb_fg_[6]{ 0 };
-			double glb_fv_[6]{ 0 };
-			Size row_id_{ 0 }, blk_row_id_{ 0 }, clb_id_{ 0 };
 		};
 		auto Part::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -703,17 +693,14 @@ namespace aris
 			xml_ele.SetAttribute("vel", core::Matrix(1, 6, vs()).toString().c_str());
 			xml_ele.SetAttribute("acc", core::Matrix(1, 6, as()).toString().c_str());
 
-			double iv[10];
-			s_im2iv(*this->prtIm(), iv);
-			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, iv).toString().c_str());
-			//xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path_.c_str());
+			xml_ele.SetAttribute("inertia", core::Matrix(1, 10, prtIv()).toString().c_str());
 		}
 		auto Part::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), *imp_->glb_pm_);
 			std::copy_n(attributeMatrix(xml_ele, "vel", 1, 6).data(), 6, imp_->glb_vs_);
 			std::copy_n(attributeMatrix(xml_ele, "acc", 1, 6).data(), 6, imp_->glb_as_);
-			s_iv2im(attributeMatrix(xml_ele, "inertia", 1, 10).data(), *imp_->prt_im_);
+			std::copy_n(attributeMatrix(xml_ele, "inertia", 1, 10).data(), 10, imp_->prt_iv_);
 
 			Coordinate::loadXml(xml_ele);
 
@@ -728,7 +715,7 @@ namespace aris
 		auto Part::pm()const->const double4x4&{ return imp_->glb_pm_; }
 		auto Part::vs()const->const double6&{ return imp_->glb_vs_; }
 		auto Part::as()const->const double6&{ return imp_->glb_as_; }
-		auto Part::prtIm()const->const double6x6&{ return imp_->prt_im_; }
+		auto Part::prtIv()const->const double10&{ return imp_->prt_iv_; }
 		auto Part::setPp(const double *pp)->void { if (pp)s_pp2pm(pp, *imp_->glb_pm_); }
 		auto Part::setPp(const Coordinate &relative_to, const double *pp)->void
 		{
@@ -1216,9 +1203,12 @@ namespace aris
 		}
 		auto Part::cptFg(const Coordinate &relative_to, double *fg)const->void
 		{
+			double prt_im[36];
+			s_iv2im(prtIv(), prt_im);
+			
 			double prt_gr[3], prt_fg[6];
 			s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
-			s_mm(6, 1, 3, *prtIm(), 6, prt_gr, 1, prt_fg, 1);
+			s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, prt_fg, 1);
 
 			double pm[16];
 			getPm(relative_to, pm);
@@ -1226,22 +1216,32 @@ namespace aris
 		}
 		auto Part::cptGlbFg(double *fg)const->void
 		{
+			double prt_im[36];
+			s_iv2im(prtIv(), prt_im);
+			
+			
 			double prt_gr[3], prt_fg[6];
 			s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
-			s_mm(6, 1, 3, *prtIm(), 6, prt_gr, 1, prt_fg, 1);
+			s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, prt_fg, 1);
 			s_tf(*pm(), prt_fg, fg);
 		}
 		auto Part::cptPrtFg(double *fg)const->void
 		{
+			double prt_im[36];
+			s_iv2im(prtIv(), prt_im);
+			
 			double prt_gr[3];
 			s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
-			s_mm(6, 1, 3, *prtIm(), 6, prt_gr, 1, fg, 1);
+			s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, fg, 1);
 		}
 		auto Part::cptFv(const Coordinate &relative_to, double *fv)const->void
 		{
+			double prt_im[36];
+			s_iv2im(prtIv(), prt_im);
+			
 			double prt_vs[6], tem[6], prt_fv[6];
 			s_inv_tv(*pm(), vs(), prt_vs);
-			s_mm(6, 1, 6, *prtIm(), prt_vs, tem);
+			s_mm(6, 1, 6, prt_im, prt_vs, tem);
 			s_cf(prt_vs, tem, prt_fv);
 
 			double pm[16];
@@ -1250,17 +1250,24 @@ namespace aris
 		}
 		auto Part::cptGlbFv(double *fv)const->void
 		{
+			double prt_im[36];
+			s_iv2im(prtIv(), prt_im);
+			
 			double prt_vs[6], prt_fv[6], tem[6];
 			s_inv_tv(*pm(), vs(), prt_vs);
-			s_mm(6, 1, 6, *prtIm(), prt_vs, tem);
+			s_mm(6, 1, 6, prt_im, prt_vs, tem);
 			s_cf(prt_vs, tem, prt_fv);
 			s_tf(*pm(), prt_fv, fv);
 		}
 		auto Part::cptPrtFv(double *fv)const->void
 		{
+			double prt_im[36];
+			s_iv2im(prtIv(), prt_im);
+			
+			
 			double prt_vs[6], tem[6];
 			s_inv_tv(*pm(), vs(), prt_vs);
-			s_mm(6, 1, 6, *prtIm(), prt_vs, tem);
+			s_mm(6, 1, 6, prt_im, prt_vs, tem);
 			s_cf(prt_vs, tem, fv);
 		}
 		auto Part::cptPf(const Coordinate &relative_to, double *pf)const->void
@@ -1289,7 +1296,7 @@ namespace aris
 			s_vs(6, fg, pf);
 		}
 		Part::~Part() = default;
-		Part::Part(const std::string &name, const double *im, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active)
+		Part::Part(const std::string &name, const double *iv, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active)
 		{
 			registerType<aris::core::ObjectPool<Marker, Element>>();
 			registerType<Marker>();
@@ -1300,29 +1307,17 @@ namespace aris
 			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
 			imp_->geometry_pool_ = &add<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
 
-			static const double default_im[36]{
-				1,0,0,0,0,0,
-				0,1,0,0,0,0,
-				0,0,1,0,0,0,
-				0,0,0,1,0,0,
-				0,0,0,0,1,0,
-				0,0,0,0,0,1,
-			};
-			static const double default_pm[16]{
-				1,0,0,0,
-				0,1,0,0,
-				0,0,1,0,
-				0,0,0,1
-			};
+			static const double default_iv[10]{ 1,0,0,0,1,1,1,0,0,0 };
+			static const double default_pm[16]{	1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			static const double default_vs[6]{ 0,0,0,0,0,0 };
 			static const double default_as[6]{ 0,0,0,0,0,0 };
 
-			im = im ? im : default_im;
+			iv = iv ? iv : default_iv;
 			pm = pm ? pm : default_pm;
 			vs = vs ? vs : default_vs;
 			as = as ? as : default_as;
 
-			s_vc(36, im, *imp_->prt_im_);
+			s_vc(10, iv, imp_->prt_iv_);
 			setPm(pm);
 			setVs(vs);
 			setAs(as);

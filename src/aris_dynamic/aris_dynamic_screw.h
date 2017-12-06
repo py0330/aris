@@ -25,6 +25,7 @@ namespace aris
 	/// pe  :  6x1 点位置与欧拉角(position and eula angle)\n
 	/// pq  :  7x1 点位置与四元数(position and quaternions)\n
 	/// pm  :  4x4 位姿矩阵(pose matrix)\n
+	/// ra  :  3x1 绕固定轴的旋转的指数积（rotation around axis, exponential product）
 	///
 	/// vp  :  3x1 线速度(velocity of point)\n
 	/// we  :  3x1 欧拉角导数(omega in term of eula angle)\n
@@ -35,7 +36,7 @@ namespace aris
 	/// vm  :  4x4 位姿矩阵导数(velocity in term of pose matrix)\n
 	/// wa  :  3x1 角速度(omega)\n
 	/// va  :  6x1 线速度与角速度(velocity and omega)\n
-	/// vs  :  6x1 螺旋速度(velocity of screw)\n
+	/// vs  :  6x1 螺旋速度(velocity screw)\n
 	///
 	/// ap  :  3x1 线加速度(acceleration of point)\n
 	/// xe  :  3x1 欧拉角导导数(alpha in term of eula angle)\n
@@ -46,7 +47,7 @@ namespace aris
 	/// am  :  4x4 位姿矩阵导导数(acceleration in term of pose matrix)\n
 	/// xa  :  3x1 角加速度(alpha, acceleration of angle)\n
 	/// aa  :  6x1 线加速度与角加速度(acceleration and alpha)\n
-	/// as  :  6x1 螺旋加速度(acceleration of screw)\n
+	/// as  :  6x1 螺旋加速度(acceleration screw)\n
 
 	/// i3  :  3x3 惯量矩阵
 	/// im  :  6x6 空间惯量矩阵
@@ -84,8 +85,10 @@ namespace aris
 			v3_out[b0] = inv_pm[0] * v3_in[a0] + inv_pm[4] * v3_in[a1] + inv_pm[8] * v3_in[a2];
 			v3_out[b1] = inv_pm[1] * v3_in[a0] + inv_pm[5] * v3_in[a1] + inv_pm[9] * v3_in[a2];
 			v3_out[b2] = inv_pm[2] * v3_in[a0] + inv_pm[6] * v3_in[a1] + inv_pm[10] * v3_in[a2];
-
 		}
+
+		auto s_im_dot_as(const double *im, const double *as, double * fs) noexcept->void;
+		auto s_iv_dot_as(const double *iv, const double *as, double * fs) noexcept->void;
 
 		/// \brief 计算三维向量叉乘矩阵
 		///
@@ -1363,14 +1366,20 @@ namespace aris
 		}
 
 		// 以下函数为物理量之间的转换函数 //
+		auto s_ra2rm(const double *ra_in, double *rm_out = nullptr, Size rm_ld = 3) noexcept->double *;
+		auto s_rm2ra(const double *rm_in, double *ra_out = nullptr, Size rm_ld = 3) noexcept->double *;
 		auto s_re2rm(const double *re_in, double *rm_out = nullptr, const char *eu_type_in = "313", Size rm_ld = 3) noexcept->double *;
 		auto s_rm2re(const double *rm_in, double *re_out = nullptr, const char *eu_type_in = "313", Size rm_ld = 3) noexcept->double *;
 		auto s_rq2rm(const double *rq_in, double *rm_out = nullptr, Size rm_ld = 3) noexcept->double *;
 		auto s_rm2rq(const double *rm_in, double *rq_out = nullptr, Size rm_ld = 3) noexcept->double *;
 		auto s_pp2pm(const double *pp_in, double *pm_out = nullptr) noexcept->double *;
 		auto s_pm2pp(const double *pm_in, double *pp_out = nullptr) noexcept->double *;
+		auto s_ra2pm(const double *ra_in, double *rm_out = nullptr) noexcept->double *;
+		auto s_pm2ra(const double *rm_in, double *ra_out = nullptr) noexcept->double *;
 		auto s_re2pm(const double *re_in, double *pm_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
 		auto s_pm2re(const double *pm_in, double *re_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+		auto s_pa2pm(const double *pa_in, double *pm_out = nullptr) noexcept->double *;
+		auto s_pm2pa(const double *pm_in, double *pa_out = nullptr) noexcept->double *;
 		auto s_rq2pm(const double *rq_in, double *pm_out = nullptr) noexcept->double *;
 		auto s_pm2rq(const double *pm_in, double *rq_out = nullptr) noexcept->double *;
 		auto s_rm2pm(const double *rm_in, double *pm_out = nullptr, Size rm_ld = 3) noexcept->double *;
@@ -1518,6 +1527,8 @@ namespace aris
 		auto s_inv_fs2fs(const double *inv_relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
 		auto s_im2im(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *;
 		auto s_inv_im2im(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *;
+		auto s_iv2iv(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *;
+		auto s_inv_iv2iv(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *;
 		
 		/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 		///

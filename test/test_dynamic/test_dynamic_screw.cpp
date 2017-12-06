@@ -673,7 +673,7 @@ void test_cross()
 void test_transform()
 {
 	double result[36];
-	
+
 	const double pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
 		0.175499782797526, -0.04, -0.983666521865018, 0.2,
 		0.959583152331272, -0.216333478134982,   0.18, 0.3,
@@ -694,6 +694,34 @@ void test_transform()
 		0,0,0, - 0.22, - 0.975499782797526,0.000416847668728071,
 		0,0,0,0.175499782797526, - 0.04, - 0.983666521865018,
 		0,0,0,0.959583152331272, - 0.216333478134982,0.18, };
+
+	const double iv_from[10]{ 0.765 , -0.62 , 0.13 , -0.58 , 105.0 , 116.25 , 100.28 , 20.11015 , 12.2000345614 , 0.58539 };
+	const double im_from[36]{ 0.765, 0.00, 0.00, 0.00, -0.58, -0.13,
+		0.00, 0.765, 0.00, 0.58, 0.00, -0.62,
+		0.00, 0.00, 0.765, 0.13, 0.62, 0.00,
+		0.00, 0.58, 0.13, 105.00, 20.11015, 12.2000345614,
+		-0.58, 0.00, 0.62, 20.11015, 116.25, 0.58539,
+		-0.13, -0.62, 0.00, 12.2000345614, 0.58539, 100.28 };
+
+	const double iv_to[10]{ 0.765 ,  0.0858432565884590,0.6095167173472437, - 0.4979649066029362,124.1800379045616154,95.6442751549216865,101.4158797291064076,0.3149734017776580, - 16.0277810847312772, - 11.6496725642042094 };
+	const double im_to[36]{ 0.7649999999999996,   0.0000000000000000, - 0.0000000000000004, - 0.0000000000000001, - 0.4979649066029362, - 0.6095167173472437,
+		0.0000000000000000,   0.7650000000000006, - 0.0000000000000003,   0.4979649066029360,   0.0000000000000000,   0.0858432565884590,
+		- 0.0000000000000004, - 0.0000000000000003,   0.7649999999999999,   0.6095167173472437, - 0.0858432565884590,   0.0000000000000001,
+		- 0.0000000000000001,   0.4979649066029360,   0.6095167173472438 ,  124.1800379045616154,   0.3149734017776580, - 16.0277810847312772,
+		- 0.4979649066029363,   0.0000000000000000, - 0.0858432565884591,   0.3149734017776592,   95.6442751549216865, - 11.6496725642042094,
+		- 0.6095167173472436,   0.0858432565884590 ,  0.0000000000000000, - 16.0277810847312772, - 11.6496725642042058,   101.4158797291064076 };
+
+	s_im2im(pm, im_from, result);
+	if (!s_is_equal(36, result, im_to, error))std::cout << "\"s_im2im\" failed" << std::endl;
+
+	s_inv_im2im(pm, im_to, result);
+	if (!s_is_equal(36, result, im_from, error))std::cout << "\"s_inv_im2im\" failed" << std::endl;
+
+	s_iv2iv(pm, iv_from, result);
+	if (!s_is_equal(10, result, iv_to, error))std::cout << "\"s_iv2iv\" failed" << std::endl;
+
+	s_inv_iv2iv(pm, iv_to, result);
+	if (!s_is_equal(10, result, iv_from, error))std::cout << "\"s_inv_iv2iv\" failed" << std::endl;
 
 	const double fs_from[]{0.685,0.747,-0.321,0.985,-0.444,0.333};
 	const double fs_to[]{ -0.879532145851414,0.406094304734976,0.43793335118009,0.182319092651313,-0.444586644598921,1.31769732898202 };
@@ -1034,46 +1062,9 @@ void test_transform()
 	s_inv_tva_n(2, 4.0, pm, vsan_alpha_ld_to, 3, vsan_alpha_ld_from_original, 4);
 	if (!s_is_equal(24, vsan_alpha_ld_from_original, vsan_alpha_ld_from, error))std::cout << "\"s_inv_tva with ld\" failed" << std::endl;
 
-
-	//s_tv_n(2, pm, vsn_from, result);
-	//dlmwrite("C:\\Users\\py033\\Desktop\\r1.txt", result, 2, 6);
-
 	double fsa_to_original11[]{ -0.1,0.11,-0.2,0.12,-0.3,0.13,-0.4,0.14,-0.5,0.15,-0.6,0.16 };
 	s_inv_tv_n(2, -1.0, pm, fsa_to_original11, result);
-	//dlmwrite("C:\\Users\\py033\\Desktop\\r1.txt", result, 2, 6);
 
-	//double fsa_to_original11[]{ -0.1,0.11,-0.2,0.12,-0.3,0.13,-0.4,0.14,-0.5,0.15,-0.6,0.16 };
-	//s_inv_tf_n(2, -4.0, pm, fsa_to_original11, result);
-	//dlmwrite("C:\\Users\\py033\\Desktop\\r1.txt", result, 2, 6);
-
-
-	//s_inv_tfa(0.25, pm, fsa_alpha_from, 0.13, fsa_alpha_to_original);
-	//if (!s_is_equal(6, fsa_alpha_to_original, fsa_alpha_to, error))std::cout << "\"s_tfa\" failed" << std::endl;
-
-	//s_inv_tfa(0.25, pm, fsa_alpha_ld_from, 3, 0.13, fsa_alpha_ld_to_original, 2);
-	//if (!s_is_equal(12, fsa_alpha_ld_to_original, fsa_alpha_ld_to, error))std::cout << "\"s_tfa with ld\" failed" << std::endl;
-
-	//s_tf(pm, fsa_from_original, result);
-	//dsp(result, 1, 6);
-	
-	//std::cout << "benchmark:s_tf_n: " << aris::core::benchmark(10000000, static_cast<void(*)(int, const double *, const double *, double *)>(&s_tf_n), 2, pm, fsan_alpha_from, fsan_alpha_to_original) << std::endl;
-	//std::cout << "benchmark:s_tfa_n: " << aris::core::benchmark(10000000, static_cast<void(*)(int, const double *, const double *, double *)>(&s_tfa_n), 2, pm, fsan_alpha_from, fsan_alpha_to_original) << std::endl;
-
-	//std::cout << "benchmark:s_tf_n alpha: " << aris::core::benchmark(10000000, static_cast<void(*)(int, double, const double *, const double *, double *)>(&s_tf_n), 2, 0.25, pm, fsan_alpha_from, fsan_alpha_to_original) << std::endl;
-	//std::cout << "benchmark:s_tfa_n alpha: " << aris::core::benchmark(10000000, static_cast<void(*)(int, double , const double *, const double *, double, double *)>(&s_tfa_n), 2, 0.25, pm, fsan_alpha_from, 0.13, fsan_alpha_to_original) << std::endl;
-	// 4.78e-8 //
-	//std::cout << "benchmark:s_tf: " << aris::core::benchmark(10000000, static_cast<void(*)(const double*, const double*, double*)>(&s_tf), pm, fs_to, result) << std::endl;
-	//std::cout << "benchmark:s_inv_tf: " << aris::core::benchmark(10000000, static_cast<void(*)(const double*, const double*, double*)>(&s_inv_tf), pm, fs_to, result) << std::endl;
-	
-	
-
-
-	
-
-
-
-
-	
 
 }
 void test_variable_change()
@@ -1081,6 +1072,7 @@ void test_variable_change()
 	const double pp[3] = { 0.1, 0.2, 0.3 };
 	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };
 	const double re321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };
+	const double ra[3] = { 0.9760647868936518, - 1.2200809836170647,   1.4640971803404776 };
 	const double rq[4] = { 0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
 	const double rm[9] = { -0.22, -0.975499782797526,   0.000416847668728071,
 		0.175499782797526, -0.04, -0.983666521865018,
@@ -1088,6 +1080,7 @@ void test_variable_change()
 	const double pe313[6] = { 0.1, 0.2, 0.3,0.000423769269879415,   1.38980987554835,   1.79253453841257 };
 	const double pe321[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
 	const double pq[7] = { 0.1, 0.2, 0.3,0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
+	const double pa[6] = { 0.1, 0.2, 0.3,0.9760647868936518, -1.2200809836170647,   1.4640971803404776 };
 	const double pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
 		0.175499782797526, -0.04, -0.983666521865018, 0.2,
 		0.959583152331272, -0.216333478134982,   0.18, 0.3,
@@ -1129,6 +1122,15 @@ void test_variable_change()
 	const double aa[6] = { 2.2628985000154, -0.843606386309081, -0.248846478459814, 0.904633672502324, -1.24440604199266,   1.45568007018557 };
 	const double as[6] = { 3.15925342342501, -0.192390604845803,   0.136512424183815,   0.904633672502324, -1.24440604199266,   1.45568007018557 };
 
+	const double iv[10]{ 1 , -0.62 , 0.13 , -0.58 , 105.0 , 116.25 , 100.28 , 20.11015 , 12.2000345614 , 0.58539 };
+	const double im[36]{ 1.00, 0.00, 0.00, 0.00, - 0.58, - 0.13,
+		0.00,   1.00,   0.00,   0.58,   0.00, - 0.62,
+		0.00,   0.00,   1.00,   0.13,   0.62,   0.00,
+		0.00,   0.58,   0.13,   105.00,   20.11015,   12.2000345614,
+		- 0.58,   0.00,   0.62,   20.11015,   116.25,   0.58539,
+		- 0.13, - 0.62,   0.00,   12.2000345614,   0.58539,   100.28 };
+
+
 	double result_pm_for_position[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0,
 		0.175499782797526, -0.04, -0.983666521865018, 0,
 		0.959583152331272, -0.216333478134982,   0.18,0,
@@ -1141,8 +1143,14 @@ void test_variable_change()
 		0,0,0,1 };
 	double result_vs_for_angle[6] = { -0.244517963270725,	1.25737650310373,	-0.874318412470487, 0,0,0 };
 	double result_as_for_angle[6] = { 3.15925342342501, -0.192390604845803,   0.136512424183815,   0,0,0 };
-	double result[16];
-	double result1[16];
+	double result[36];
+	double result1[36];
+
+	s_ra2rm(ra, result);
+	if (!s_is_equal(9, result, rm, error))std::cout << "\"s_ra2rm\" failed" << std::endl;
+
+	s_rm2ra(rm, result);
+	if (!s_is_equal(3, result, ra, error))std::cout << "\"s_rm2ra\" failed" << std::endl;
 
 	s_re2rm(re321, result, "321");
 	if (!s_is_equal(9, result, rm, error))std::cout << "\"s_re2rm 321\" failed" << std::endl;
@@ -1180,6 +1188,12 @@ void test_variable_change()
 	s_pm2re(pm, result);
 	if (!s_is_equal(3, result, re313, error))std::cout << "\"s_pm2re\" failed" << std::endl;
 
+	s_ra2pm(ra, result_pm_for_angle);
+	if (!s_is_equal(16, result_pm_for_angle, pm, error))std::cout << "\"s_ra2pm\" failed" << std::endl;
+
+	s_pm2ra(pm, result);
+	if (!s_is_equal(3, result, ra, error))std::cout << "\"s_pm2ra\" failed" << std::endl;
+
 	s_rq2pm(rq, result_pm_for_angle);
 	if (!s_is_equal(16, result_pm_for_angle, pm, error))std::cout << "\"s_rq2pm\" failed" << std::endl;
 
@@ -1209,6 +1223,12 @@ void test_variable_change()
 
 	s_pm2pq(pm, result);
 	if (!s_is_equal(7, pq, result, error))std::cout << "\"s_pm2pq\" failed" << std::endl;
+
+	s_pa2pm(pa, result);
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_pa2pm\" failed" << std::endl;
+
+	s_pm2pa(pm, result);
+	if (!s_is_equal(6, pa, result, error))std::cout << "\"s_pm2pa\" failed" << std::endl;
 
 
 
@@ -1392,6 +1412,14 @@ void test_variable_change()
 
 	s_aa2as(pp, va, aa, result);
 	if (!s_is_equal(6, result, as, error))std::cout << "\"s_aa2as\" failed" << std::endl;
+
+
+	s_iv2im(iv, result);
+	if (!s_is_equal(36, result, im, error))std::cout << "\"s_iv2im\" failed" << std::endl;
+
+	s_im2iv(im, result);
+	if (!s_is_equal(10, result, iv, error))std::cout << "\"s_im2iv\" failed" << std::endl;
+
 }
 void test_coordinate_transform()
 {

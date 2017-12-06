@@ -158,7 +158,7 @@ namespace aris
 			auto mak = ground().markerPool().findByName("origin");
 			return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), &*mak, &*mak, 0);
 		}
-		auto Model::addGeneralMotion(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&
+		auto Model::addGeneralMotionByPm(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&
 		{
 			double pm_prt[16], pm_target_in_ground[16];
 			s_pm_dot_pm(*reference.pm(), pm, pm_target_in_ground);
@@ -168,6 +168,13 @@ namespace aris
 			auto &mak_i = end_effector.markerPool().add<Marker>(name + "_i", pm_prt);
 			auto &mak_j = dynamic_cast<Part*>(&reference) ? dynamic_cast<Part&>(reference).markerPool().add<Marker>(name + "_j") : dynamic_cast<Marker&>(reference);
 			return generalMotionPool().add<GeneralMotion>(name, &mak_i, &mak_j);
+		}
+		auto Model::addGeneralMotionByPe(Part &end_effector, Coordinate &reference, const double* pe, const char* eul_type)->GeneralMotion&
+		{
+			return addGeneralMotionByPm(end_effector, reference, s_pe2pm(pe, nullptr, eul_type));
+		}
+		auto Model::addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion& {
+			return addGeneralMotionByPm(end_effector, reference, s_pq2pm(pq));
 		}
 		Model::~Model() = default;
 		Model::Model(const std::string &name):Object(name)
@@ -200,7 +207,7 @@ namespace aris
 			registerType<CombineSolver>();
 			registerType<LltGroundDividedSolver>();
 			registerType<LltPartDividedSolver>();
-			registerType<DiagSolver>();
+			registerType<UniversalSolver>();
 
 			registerType<aris::core::ObjectPool<Simulator, Element>>();
 			registerType<Simulator>();

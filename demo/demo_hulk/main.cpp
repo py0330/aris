@@ -265,7 +265,7 @@ const char xml_data[] =
 using namespace std;
 using namespace aris::dynamic;
 
-class HulkInverseSolver :public aris::dynamic::DiagSolver
+class HulkInverseSolver :public aris::dynamic::UniversalSolver
 {
 public:
 	static const std::string& Type() { static const std::string type("HulkInverseSolver"); return type; }
@@ -338,9 +338,9 @@ public:
 		model().partPool().at(6).setPm(model().partPool().at(5), pm);
 	}
 
-	HulkInverseSolver(const std::string &name = "hulk_inverse_solver") :DiagSolver(name) {};
+	HulkInverseSolver(const std::string &name = "hulk_inverse_solver") :UniversalSolver(name) {};
 };
-class HulkForwardSolver :public aris::dynamic::DiagSolver
+class HulkForwardSolver :public aris::dynamic::UniversalSolver
 {
 public:
 	static const std::string& Type() { static const std::string type("HulkForwardSolver"); return type; }
@@ -380,7 +380,7 @@ public:
 		model().partPool().at(6).setPm(model().partPool().at(5), pm);
 	}
 
-	HulkForwardSolver(const std::string &name = "hulk_forward_solver") :DiagSolver(name) {};
+	HulkForwardSolver(const std::string &name = "hulk_forward_solver") :UniversalSolver(name) {};
 };
 
 struct RcParam 
@@ -758,7 +758,7 @@ int main()
 		//double ee_pm[16]{ 1,0,0,0.316,0,1,0,0.63,0,0,1,0,0,0,0,1 };
 		//auto &ee = m.addGeneralMotion(p6, m.ground(), ee_pm);
 
-		//auto &ds = m.solverPool().add<aris::dynamic::DiagSolver>("ds");
+		//auto &ds = m.solverPool().add<aris::dynamic::UniversalSolver>("ds");
 		//auto &s = m.simulatorPool().add<aris::dynamic::AdamsSimulator>("s", ds);
 		//auto &r = m.simResultPool().add<aris::dynamic::SimResult>("r");
 		//auto plan1 = [](const aris::dynamic::PlanParam &param)->int
