@@ -233,13 +233,13 @@ const char xml_file_under_constraint[] =
 "        <s6 active=\"true\" type=\"SphericalJoint\" prt_m=\"up\" prt_n=\"p6b\" mak_i=\"s6i\" mak_j=\"s6j\"/>"
 "    </joint_pool>"
 "    <motion_pool type=\"MotionPoolElement\" default_child_type=\"Motion\">"
-"        <mr active=\"true\" slave_id=\"1\" prt_m=\"part1\" prt_n=\"fake_ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
-"        <m1 active=\"true\" slave_id=\"0\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <m2 active=\"true\" slave_id=\"9\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <m3 active=\"true\" slave_id=\"8\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <m4 active=\"true\" slave_id=\"3\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <m5 active=\"true\" slave_id=\"7\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <m6 active=\"true\" slave_id=\"5\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <mr active=\"true\" prt_m=\"part1\" prt_n=\"fake_ground\" mak_i=\"r1i\" mak_j=\"r1j\" frc_coe=\"Mot_friction\" component=\"5\"/>"
+"        <m1 active=\"true\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m2 active=\"true\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m3 active=\"true\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m4 active=\"true\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m5 active=\"true\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <m6 active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
 "    </motion_pool>"
 "    <general_motion_pool type=\"GeneralMotionPoolElement\" default_child_type=\"GeneralMotion\">"
 "        <ee_mot type=\"GeneralMotion\" active=\"false\" prt_m=\"up\" prt_n=\"ground\" mak_i=\"ee\" mak_j=\"origin\"/>"
@@ -267,15 +267,10 @@ void test_solver_multi()
 		Model m;
 		m.loadXmlDoc(xml_doc);
 
-		auto &gs = static_cast<GroundDividedSolver&>(*m.solverPool().findByName("gs"));
-		auto &ps = static_cast<PartDividedSolver&>(*m.solverPool().findByName("ps"));
 		auto &ds = static_cast<UniversalSolver&>(*m.solverPool().findByName("ds"));
-		auto &gcs = m.solverPool().add<CombineSolver>("gcs");
 
-		ps.setMaxError(1e-14);
-		gs.setMaxError(1e-14);
+
 		ds.setMaxError(1e-14);
-		gcs.setMaxError(1e-14);
 
 		ds.allocateMemory();
 
@@ -305,7 +300,7 @@ void test_solver_multi()
 		for (auto &mot : m.motionPool())std::cout << mot.mf() << std::endl;
 
 		auto &r = m.simResultPool().add<SimResult>("result1");
-		auto &adams_simulator = m.simulatorPool().add<AdamsSimulator>("adams_simulator", &ds);
+		auto &adams_simulator = m.simulatorPool().add<AdamsSimulator>("adams_simulator");
 		r.record();
 		adams_simulator.saveAdams("C:\\Users\\py033\\Desktop\\m4.cmd", r, 0);
 	}

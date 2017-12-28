@@ -17,16 +17,16 @@
 
 int main(int argc, char *argv[])
 {
-	//test_matrix();
-	//test_block_matrix();
-	//test_cell();
-	//test_screw();
-	//test_spline();
-	//test_model();
-	//test_model_coordinate();
-	//test_model_interaction();
+	test_matrix();
+	test_block_matrix();
+	test_cell();
+	test_screw();
+	test_spline();
+	test_model();
+	test_model_coordinate();
+	test_model_interaction();
 	test_model_compute();
-	test_model_multi();
+	//test_model_multi();
 	//test_simple_model();
 	//test_plan();
 

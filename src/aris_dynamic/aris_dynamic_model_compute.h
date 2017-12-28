@@ -207,290 +207,6 @@ namespace aris
 			aris::core::ImpPtr<Imp> imp_;
 		};
 
-		class FrameSolver:public Solver
-		{
-		public:
-			enum Frame
-			{
-				GROUND,
-				PART,
-			};
-
-			auto setFrame(Frame frame)->void { frame_ = frame; }
-			template<typename CMI_TYPE, typename CMJ_TYPE>
-			auto cptCm(Constraint &cst, double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)->void
-			{
-				switch (frame_)
-				{
-				case GROUND:
-					return cst.cptGlbCm(cmI, cmi_type, cmJ, cmj_type);
-				case PART:
-					return cst.cptPrtCm(cmI, cmi_type, cmJ, cmj_type);
-				}
-			}
-			auto cptCm(Constraint &cst, double *cmI, double *cmJ)->void
-			{
-				switch (frame_)
-				{
-				case GROUND:
-					return cst.cptGlbCm(cmI, cmJ);
-				case PART:
-					return cst.cptPrtCm(cmI, cmJ);
-				}
-			}
-
-
-
-
-			virtual ~FrameSolver() = default;
-			explicit FrameSolver(const std::string &name = "frame_solver", Size max_iter_count = 100, double max_error = 1e-10) :Solver(name, max_iter_count, max_error) {}
-			FrameSolver(const FrameSolver &other) = default;
-			FrameSolver(FrameSolver &&other) = default;
-			FrameSolver& operator=(const FrameSolver &other) = default;
-			FrameSolver& operator=(FrameSolver &&other) = default;
-
-
-		private:
-			Frame frame_{ GROUND };
-		};
-		class CombineSolver : public FrameSolver
-		{
-		public:
-			struct PartBlock
-			{
-				Part* part_;
-				Size row_id_;
-			};
-			struct ConstraintBlock
-			{
-				Constraint* constraint_;
-				Size col_id_;
-				PartBlock *pb_i_, *pb_j_;
-			};
-
-			static const std::string& Type() { static const std::string type("CombineSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual dynAccAndFce()->void override;
-			auto virtual updCm()->void;
-			auto virtual updCmT()->void;
-			auto virtual updIm()->void;
-			auto virtual updCp()->void;
-			auto virtual updCv()->void;
-			auto virtual updCa()->void;
-			auto virtual updPv()->void;
-			auto virtual updPa()->void;
-			auto virtual updPf()->void;
-			auto virtual updConstraintFce()->void;
-			auto virtual updPartPos()->void;
-			auto virtual updPartVel()->void;
-			auto virtual updPartAcc()->void;
-
-
-			auto activePartBlockPool()->std::vector<PartBlock>&;
-			auto activeConstraintBlockPool()->std::vector<ConstraintBlock>&;
-			auto cSize()->Size;
-			auto pSize()->Size;
-			auto aSize()->Size { return cSize() + pSize(); };
-			auto A()->double *;
-			auto x()->double *;
-			auto b()->double *;
-			auto cm()->double * { return A() + pSize(); }
-			auto im()->double * { return A(); }
-			auto pp()->double * { return x(); }
-			auto pv()->double * { return x(); }
-			auto pa()->double * { return x(); }
-			auto pf()->double * { return b(); }
-			auto cp()->double * { return b() + pSize(); }
-			auto cv()->double * { return b() + pSize(); }
-			auto ca()->double * { return b() + pSize(); }
-			auto cf()->double * { return x() + pSize(); }
-
-			virtual ~CombineSolver();
-			explicit CombineSolver(const std::string &name = "combine_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			CombineSolver(const CombineSolver &other);
-			CombineSolver(CombineSolver &&other);
-			CombineSolver& operator=(const CombineSolver &other);
-			CombineSolver& operator=(CombineSolver &&other);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
-
-		class DividedSolver : public Solver
-		{
-		public:
-			struct PartBlock
-			{
-				Part* part_;
-				Size row_id_, blk_row_id_;
-			};
-			struct ConstraintBlock
-			{
-				Constraint* constraint_;
-				Size col_id_, blk_col_id_;
-				PartBlock *pb_i_, *pb_j_;
-			};
-			
-			static const std::string& Type() { static const std::string type("DividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void override;
-
-			auto activePartBlockPool()->std::vector<PartBlock>&;
-			auto activeConstraintBlockPool()->std::vector<ConstraintBlock>&;
-			auto cSize()->Size;
-			auto pSize()->Size;
-			auto im()->double *;
-			auto cm()->double *;
-			auto cp()->double *;
-			auto cv()->double *;
-			auto ca()->double *;
-			auto cf()->double *;
-			auto pp()->double *;
-			auto pv()->double *;
-			auto pa()->double *;
-			auto pf()->double *;
-
-			auto cBlkSize()->BlockSize&;
-			auto pBlkSize()->BlockSize&;
-			auto cpBlk()->BlockData&;
-			auto cvBlk()->BlockData&;
-			auto caBlk()->BlockData&;
-			auto cfBlk()->BlockData&;
-			auto imBlk()->BlockData&;
-			auto cmBlk()->BlockData&;
-			auto ppBlk()->BlockData&;
-			auto pvBlk()->BlockData&;
-			auto paBlk()->BlockData&;
-			auto pfBlk()->BlockData&;
-
-			virtual ~DividedSolver();
-			explicit DividedSolver(const std::string &name = "devided_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			DividedSolver(const DividedSolver &other);
-			DividedSolver(DividedSolver &&other);
-			DividedSolver& operator=(const DividedSolver &other);
-			DividedSolver& operator=(DividedSolver &&other);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
-		class GroundDividedSolver:public DividedSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("GroundDividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto updIm()->void;
-			auto updCm()->void;
-			auto updCp()->void;
-			auto updCv()->void;
-			auto updCa()->void;
-			auto updPv()->void;
-			auto updPa()->void;
-			auto updPf()->void;
-			auto updConstraintFce()->void;
-			auto updPartPos()->void;
-			auto updPartVel()->void;
-			auto updPartAcc()->void;
-
-			virtual ~GroundDividedSolver();
-			explicit GroundDividedSolver(const std::string &name = "ground_devided_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			GroundDividedSolver(const GroundDividedSolver &other);
-			GroundDividedSolver(GroundDividedSolver &&other);
-			GroundDividedSolver& operator=(const GroundDividedSolver &other);
-			GroundDividedSolver& operator=(GroundDividedSolver &&other);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
-		class PartDividedSolver :public DividedSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("PartDividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto updIm()->void;
-			auto updCm()->void;
-			auto updCp()->void;
-			auto updCv()->void;
-			auto updCa()->void;
-			auto updPv()->void;
-			auto updPa()->void;
-			auto updPf()->void;
-			auto updConstraintFce()->void;
-			auto updPartPos()->void;
-			auto updPartVel()->void;
-			auto updPartAcc()->void;
-
-			virtual ~PartDividedSolver();
-			explicit PartDividedSolver(const std::string &name = "part_divided_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			PartDividedSolver(const PartDividedSolver &other);
-			PartDividedSolver(PartDividedSolver &&other);
-			PartDividedSolver& operator=(const PartDividedSolver &other);
-			PartDividedSolver& operator=(PartDividedSolver &&other);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
-		class LltGroundDividedSolver :public GroundDividedSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("LltGroundDividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto kinAcc()->void;
-			auto dynFce()->void;
-			auto virtual dynAccAndFce()->void override
-			{
-				kinAcc();
-				dynFce();
-			};
-
-			virtual ~LltGroundDividedSolver();
-			explicit LltGroundDividedSolver(const std::string &name = "llt_ground_divided_solver");
-			LltGroundDividedSolver(const LltGroundDividedSolver &other);
-			LltGroundDividedSolver(LltGroundDividedSolver &&other);
-			LltGroundDividedSolver& operator=(const LltGroundDividedSolver &other);
-			LltGroundDividedSolver& operator=(LltGroundDividedSolver &&other);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
-		class LltPartDividedSolver :public PartDividedSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("LltPartDividedSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto kinAcc()->void;
-			auto dynFce()->void;
-			auto virtual dynAccAndFce()->void override 
-			{
-				kinAcc();
-				dynFce();
-			};
-
-			virtual ~LltPartDividedSolver();
-			explicit LltPartDividedSolver(const std::string &name = "llt_part_divided_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			LltPartDividedSolver(const LltPartDividedSolver &other);
-			LltPartDividedSolver(LltPartDividedSolver &&other);
-			LltPartDividedSolver& operator=(const LltPartDividedSolver &other);
-			LltPartDividedSolver& operator=(LltPartDividedSolver &&other);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
-		
 		class UniversalSolver : public Solver
 		{
 		public:
@@ -515,6 +231,7 @@ namespace aris
 		};
 		class ForwardKinematicSolver :public UniversalSolver
 		{
+		public:
 			static const std::string& Type() { static const std::string type("ForwardKinematicSolver"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			
@@ -532,6 +249,7 @@ namespace aris
 		};
 		class InverseKinematicSolver :public UniversalSolver
 		{
+		public:
 			static const std::string& Type() { static const std::string type("InverseKinematicSolver"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 
@@ -547,8 +265,43 @@ namespace aris
 			InverseKinematicSolver& operator=(const InverseKinematicSolver &other);
 			InverseKinematicSolver& operator=(InverseKinematicSolver &&other);
 		};
+		class ForwardDynamicSolver :public UniversalSolver
+		{
+		public:
+			static const std::string& Type() { static const std::string type("ForwardDynamicSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
 
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->void override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
 
+			virtual ~ForwardDynamicSolver();
+			explicit ForwardDynamicSolver(const std::string &name = "forward_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			ForwardDynamicSolver(const ForwardDynamicSolver &other);
+			ForwardDynamicSolver(ForwardDynamicSolver &&other);
+			ForwardDynamicSolver& operator=(const ForwardDynamicSolver &other);
+			ForwardDynamicSolver& operator=(ForwardDynamicSolver &&other);
+		};
+		class InverseDynamicSolver :public UniversalSolver
+		{
+		public:
+			static const std::string& Type() { static const std::string type("InverseDynamicSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->void override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
+
+			virtual ~InverseDynamicSolver();
+			explicit InverseDynamicSolver(const std::string &name = "inverse_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			InverseDynamicSolver(const InverseDynamicSolver &other);
+			InverseDynamicSolver(InverseDynamicSolver &&other);
+			InverseDynamicSolver& operator=(const InverseDynamicSolver &other);
+			InverseDynamicSolver& operator=(InverseDynamicSolver &&other);
+		};
+		
 		class SolverSimulator : public Simulator
 		{
 		public:
@@ -572,19 +325,21 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		class AdamsSimulator :public SolverSimulator
+		class AdamsSimulator :public Simulator
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "AdamsSimulator" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto saveAdams(const std::string &filename, SimResult &result, Size pos = -1)->void;
 			auto saveAdams(std::ofstream &file, SimResult &result, Size pos = -1)->void;
+			auto saveAdams(const std::string &filename)->void;
+			auto saveAdams(std::ofstream &file)->void;
 			auto adamsID(const Marker &mak)const->Size;
 			auto adamsID(const Part &prt)const->Size;
 			auto adamsID(const Element &ele)const->Size { return ele.id() + 1; };
 
 			virtual ~AdamsSimulator();
-			explicit AdamsSimulator(const std::string &name = "adams_solver", Solver *solver = nullptr);
+			explicit AdamsSimulator(const std::string &name = "adams_solver");
 			AdamsSimulator(const AdamsSimulator&);
 			AdamsSimulator(AdamsSimulator&&);
 			AdamsSimulator& operator=(const AdamsSimulator&);

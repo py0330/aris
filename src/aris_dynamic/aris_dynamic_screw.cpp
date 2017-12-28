@@ -26,6 +26,7 @@ namespace aris
 		auto inline default_pe()->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
 		auto inline default_pq()->const double* { static const double value[7]{ 0,0,0,0,0,0,1 };	return value; }
 		auto inline default_pa()->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
+		auto inline default_ps()->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
 		auto inline default_pm()->const double* { static const double value[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 }; return value; }
 
 		auto inline default_vp()->const double* { static const double value[3]{ 0,0,0 }; return value; }
@@ -549,12 +550,18 @@ namespace aris
 			double rq[4];
 			s_rm2rq(rm_in, rq, rm_ld);
 			
-			double s_theta_over_two = s_norm(3, rq);
-			double ratio = s_theta_over_two < 1e-3 ? 0.0 : std::atan2(s_theta_over_two, rq[3])*2.0 / s_theta_over_two;
+			//double s_theta_over_two = s_norm(3, rq);
+			//double ratio = s_theta_over_two < 1e-3 ? 2.0 : std::atan2(s_theta_over_two, rq[3])*2.0 / s_theta_over_two;
 
-			ra_out[0] = rq[0] * ratio;
-			ra_out[1] = rq[1] * ratio;
-			ra_out[2] = rq[2] * ratio;
+			//ra_out[0] = rq[0] * ratio;
+			//ra_out[1] = rq[1] * ratio;
+			//ra_out[2] = rq[2] * ratio;
+
+			double theta = atan2(s_norm(3, rq), rq[3]) * 2;
+			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
+			s_nv(3, coe, rq);
+
+			s_vc(3, rq, ra_out);
 
 			return ra_out;
 		}
@@ -868,6 +875,107 @@ namespace aris
 			s_pm2ra(pm_in, pa_out + 3);
 
 			return pa_out;
+		}
+		auto s_ps2pm(const double *ps_in, double *pm_out) noexcept->double *
+		{
+			// 补充默认参数 //
+			ps_in = ps_in ? ps_in : default_ps();
+			pm_out = pm_out ? pm_out : default_out();
+
+			// 正式开始计算 //
+			s_ra2pm(ps_in + 3, pm_out);
+			// 计算螺旋前进的位移 //
+			// vh 是螺线线方向的速度
+			// vt 是切线方向的速度
+
+			// norm(w)^2
+			const double n_square = ps_in[3] * ps_in[3] + ps_in[4] * ps_in[4] + ps_in[5] * ps_in[5];
+			// norm(w)
+			const double n = std::sqrt(n_square);
+			
+			// vh is parallel part of v with w
+			double ratio = n<1e-8 ? 0.0 : (ps_in[0] * ps_in[3] + ps_in[1] * ps_in[4] + ps_in[2] * ps_in[5]) / n_square;
+			const double vh[3]{ ratio*ps_in[3],ratio*ps_in[4],ratio*ps_in[5] };
+			
+			// vt is vertical part of v with w
+			const double vt[3]{ ps_in[0] - vh[0],ps_in[1] - vh[1],ps_in[2] - vh[2] };
+			
+			// p = vh + sin(n) / n * vt + (1-cos(n)) / n^2 * w x v
+			double w_cross_v[3];
+			s_c3(ps_in + 3, ps_in, w_cross_v);
+
+			auto r1 = s_sinx_over_x(n);
+			auto r2 = s_one_minus_x_over_square_x(n);
+
+			pm_out[3] = vh[0] + vt[0] * r1 + w_cross_v[0] * r2;
+			pm_out[7] = vh[1] + vt[1] * r1 + w_cross_v[1] * r2;
+			pm_out[11] = vh[2] + vt[2] * r1 + w_cross_v[2] * r2;
+
+			pm_out[12] = 0;
+			pm_out[13] = 0;
+			pm_out[14] = 0;
+			pm_out[15] = 1;
+
+			return pm_out;
+		}
+		auto s_pm2ps(const double *pm_in, double *ps_out) noexcept->double *
+		{
+			// 补充默认参数 //
+			pm_in = pm_in ? pm_in : default_pm();
+			ps_out = ps_out ? ps_out : default_out();
+
+			// 正式开始计算 //
+			s_pm2ra(pm_in, ps_out + 3);
+
+			// v = vh + vt
+			// vh= (w * v) / |w|^2 * w
+			//                  [ w(0)*w(0)  w(0)*w(1)  w(0)*w(2) ]
+			//   = 1 / |w|^2 *  | w(1)*w(0)  w(1)*w(1)  w(1)*w(2) |  *  v
+			//                  [ w(2)*w(0)  w(2)*w(1)  w(2)*w(2) ]
+			//   = 1 / |w|^2 * A * v
+			// 
+			// vt= v - vh
+			//
+			// p = vh + sin(|w|) / |w| * vt + (1 - cos(|w|)) / |w|^2 * w x v 
+			//   = sin(|w|)/|w| * v + [1 - sin(|w|)/|w|] / |w|^2 * A * v + (1 - cos(|w|)) / |w|^2 * w x v 
+			//   = [ sin(|w|)/|w|*I + [|w| - sin(|w|)] / |w|^3 * A + (1 - cos(|w|)) / |w|^2 * w x ] * v
+			//   = [a*A + b*wx + c*I] * v
+			//
+			// 其中：
+			// a = [|w| - sin(|w|)] / |w|^3
+			// b = (1 - cos(|w|)) / |w|^2
+			// c = sin(|w|)/|w|
+			// 
+			// 在趋向于0时：
+			// a = 1 / 6
+			// b = 0.5
+			// c = 1.0
+			// 
+			// 其中a趋向于0的判断应该在1e-3左右
+			//
+
+			// norm(w)^2
+			const double n_square = ps_out[3] * ps_out[3] + ps_out[4] * ps_out[4] + ps_out[5] * ps_out[5];
+			// norm(w)
+			const double n = std::sqrt(n_square);
+
+			const double a = n<1e-3 ? 1.0/6.0 : (1.0 - std::sin(n) / n) / n / n;
+			const double b = s_one_minus_x_over_square_x(n);
+			const double c = s_sinx_over_x(n);
+
+			const double T[9]
+			{
+				a * ps_out[3] * ps_out[3] + c, a * ps_out[3] * ps_out[4] - b*ps_out[5], a * ps_out[3] * ps_out[5] + b*ps_out[4],
+				a * ps_out[4] * ps_out[3] + b*ps_out[5], a * ps_out[4] * ps_out[4] + c, a * ps_out[4] * ps_out[5] - b*ps_out[3],
+				a * ps_out[5] * ps_out[3] - b*ps_out[4], a * ps_out[5] * ps_out[4] + b*ps_out[3], a * ps_out[5] * ps_out[5] + c,
+			};
+
+			const double det = T[0] * T[4] * T[8] - T[0] * T[5] * T[7] + T[1] * T[5] * T[6] - T[1] * T[3] * T[8] + T[2] * T[3] * T[7] - T[2] * T[4] * T[6];
+			ps_out[0] = (pm_in[3] * T[4] * T[8] - pm_in[3] * T[5] * T[7] + T[1] * T[5] * pm_in[11] - T[1] * pm_in[7] * T[8] + T[2] * pm_in[7] * T[7] - T[2] * T[4] * pm_in[11]) / det;
+			ps_out[1] = (T[0] * pm_in[7] * T[8] - T[0] * T[5] * pm_in[11] + pm_in[3] * T[5] * T[6] - pm_in[3] * T[3] * T[8] + T[2] * T[3] * pm_in[11] - T[2] * pm_in[7] * T[6]) / det;
+			ps_out[2] = (T[0] * T[4] * pm_in[11] - T[0] * pm_in[7] * T[7] + T[1] * pm_in[7] * T[6] - T[1] * T[3] * pm_in[11] + pm_in[3] * T[3] * T[7] - pm_in[3] * T[4] * T[6]) / det;
+
+			return ps_out;
 		}
 
 		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out, const char *eu_type_in) noexcept->double *

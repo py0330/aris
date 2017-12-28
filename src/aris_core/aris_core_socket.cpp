@@ -872,17 +872,15 @@ namespace aris
 				return reply;
 			}
 		}
-		auto Socket::remoteIP()const->const std::string &
-		{
+		auto Socket::remoteIP()const->const std::string &{
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
-		return imp_->remote_ip_;
+			return imp_->remote_ip_;
 		}
-			auto Socket::port()const->const std::string &
-		{
+		auto Socket::port()const->const std::string &{
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
-		return imp_->port_;
+			return imp_->port_;
 		}
-			auto Socket::setRemoteIP(const std::string &remote_ip)->void
+		auto Socket::setRemoteIP(const std::string &remote_ip)->void
 		{
 			std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 			imp_->remote_ip_ = remote_ip;

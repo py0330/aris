@@ -113,6 +113,8 @@ namespace aris
 			imp_->inv_solver_->setMaxError(error);
 			imp_->inv_solver_->kinPos();
 
+			std::cout << "max error:" << imp_->inv_solver_->error() << std::endl;
+
 			if (imp_->inv_solver_->iterCount() == imp_->inv_solver_->maxIterCount())
 			{
 				model().partPool() = temp_part_pool;

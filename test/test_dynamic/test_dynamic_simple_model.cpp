@@ -148,65 +148,65 @@ void test_simple_model()
 	auto la_m6 = m.addMotion(la_j6);
 	auto la_ee = m.addEndEffector(la_p6, pm_hand_change(la_ee_pm));
 
-	auto ra_p1 = m.addPart(pm_hand_change(ra_p1_pm));
-	auto ra_p2 = m.addPart(pm_hand_change(ra_p2_pm));
-	auto ra_p3 = m.addPart(pm_hand_change(ra_p3_pm));
-	auto ra_p4 = m.addPart(pm_hand_change(ra_p4_pm));
-	auto ra_p5 = m.addPart(pm_hand_change(ra_p5_pm));
-	auto ra_p6 = m.addPart(pm_hand_change(ra_p6_pm));
-	auto ra_j1 = m.addRevoluteJoint(body, ra_p1, pp_hand_change(ra_j1_pos, tem1), pp_hand_change(ra_j1_axis, tem2));
-	auto ra_j2 = m.addRevoluteJoint(ra_p1, ra_p2, pp_hand_change(ra_j2_pos, tem1), pp_hand_change(ra_j2_axis, tem2));
-	auto ra_j3 = m.addRevoluteJoint(ra_p2, ra_p3, pp_hand_change(ra_j3_pos, tem1), pp_hand_change(ra_j3_axis, tem2));
-	auto ra_j4 = m.addRevoluteJoint(ra_p3, ra_p4, pp_hand_change(ra_j4_pos, tem1), pp_hand_change(ra_j4_axis, tem2));
-	auto ra_j5 = m.addRevoluteJoint(ra_p4, ra_p5, pp_hand_change(ra_j5_pos, tem1), pp_hand_change(ra_j5_axis, tem2));
-	auto ra_j6 = m.addRevoluteJoint(ra_p5, ra_p6, pp_hand_change(ra_j6_pos, tem1), pp_hand_change(ra_j6_axis, tem2));
-	auto ra_m1 = m.addMotion(ra_j1);
-	auto ra_m2 = m.addMotion(ra_j2);
-	auto ra_m3 = m.addMotion(ra_j3);
-	auto ra_m4 = m.addMotion(ra_j4);
-	auto ra_m5 = m.addMotion(ra_j5);
-	auto ra_m6 = m.addMotion(ra_j6);
-	auto ra_ee = m.addEndEffector(ra_p6, pm_hand_change(ra_ee_pm));
+	//auto ra_p1 = m.addPart(pm_hand_change(ra_p1_pm));
+	//auto ra_p2 = m.addPart(pm_hand_change(ra_p2_pm));
+	//auto ra_p3 = m.addPart(pm_hand_change(ra_p3_pm));
+	//auto ra_p4 = m.addPart(pm_hand_change(ra_p4_pm));
+	//auto ra_p5 = m.addPart(pm_hand_change(ra_p5_pm));
+	//auto ra_p6 = m.addPart(pm_hand_change(ra_p6_pm));
+	//auto ra_j1 = m.addRevoluteJoint(body, ra_p1, pp_hand_change(ra_j1_pos, tem1), pp_hand_change(ra_j1_axis, tem2));
+	//auto ra_j2 = m.addRevoluteJoint(ra_p1, ra_p2, pp_hand_change(ra_j2_pos, tem1), pp_hand_change(ra_j2_axis, tem2));
+	//auto ra_j3 = m.addRevoluteJoint(ra_p2, ra_p3, pp_hand_change(ra_j3_pos, tem1), pp_hand_change(ra_j3_axis, tem2));
+	//auto ra_j4 = m.addRevoluteJoint(ra_p3, ra_p4, pp_hand_change(ra_j4_pos, tem1), pp_hand_change(ra_j4_axis, tem2));
+	//auto ra_j5 = m.addRevoluteJoint(ra_p4, ra_p5, pp_hand_change(ra_j5_pos, tem1), pp_hand_change(ra_j5_axis, tem2));
+	//auto ra_j6 = m.addRevoluteJoint(ra_p5, ra_p6, pp_hand_change(ra_j6_pos, tem1), pp_hand_change(ra_j6_axis, tem2));
+	//auto ra_m1 = m.addMotion(ra_j1);
+	//auto ra_m2 = m.addMotion(ra_j2);
+	//auto ra_m3 = m.addMotion(ra_j3);
+	//auto ra_m4 = m.addMotion(ra_j4);
+	//auto ra_m5 = m.addMotion(ra_j5);
+	//auto ra_m6 = m.addMotion(ra_j6);
+	//auto ra_ee = m.addEndEffector(ra_p6, pm_hand_change(ra_ee_pm));
 
-	auto ll_p1 = m.addPart(pm_hand_change(ll_p1_pm));
-	auto ll_p2 = m.addPart(pm_hand_change(ll_p2_pm));
-	auto ll_p3 = m.addPart(pm_hand_change(ll_p3_pm));
-	auto ll_p4 = m.addPart(pm_hand_change(ll_p4_pm));
-	auto ll_p5 = m.addPart(pm_hand_change(ll_p5_pm));
-	auto ll_p6 = m.addPart(pm_hand_change(ll_p6_pm));
-	auto ll_j1 = m.addRevoluteJoint(body, ll_p1, pp_hand_change(ll_j1_pos, tem1), pp_hand_change(ll_j1_axis, tem2));
-	auto ll_j2 = m.addRevoluteJoint(ll_p1, ll_p2, pp_hand_change(ll_j2_pos, tem1), pp_hand_change(ll_j2_axis, tem2));
-	auto ll_j3 = m.addRevoluteJoint(ll_p2, ll_p3, pp_hand_change(ll_j3_pos, tem1), pp_hand_change(ll_j3_axis, tem2));
-	auto ll_j4 = m.addRevoluteJoint(ll_p3, ll_p4, pp_hand_change(ll_j4_pos, tem1), pp_hand_change(ll_j4_axis, tem2));
-	auto ll_j5 = m.addRevoluteJoint(ll_p4, ll_p5, pp_hand_change(ll_j5_pos, tem1), pp_hand_change(ll_j5_axis, tem2));
-	auto ll_j6 = m.addRevoluteJoint(ll_p5, ll_p6, pp_hand_change(ll_j6_pos, tem1), pp_hand_change(ll_j6_axis, tem2));
-	auto ll_m1 = m.addMotion(ll_j1);
-	auto ll_m2 = m.addMotion(ll_j2);
-	auto ll_m3 = m.addMotion(ll_j3);
-	auto ll_m4 = m.addMotion(ll_j4);
-	auto ll_m5 = m.addMotion(ll_j5);
-	auto ll_m6 = m.addMotion(ll_j6);
-	auto ll_ee = m.addEndEffector(ll_p6, pm_hand_change(ll_ee_pm));
+	//auto ll_p1 = m.addPart(pm_hand_change(ll_p1_pm));
+	//auto ll_p2 = m.addPart(pm_hand_change(ll_p2_pm));
+	//auto ll_p3 = m.addPart(pm_hand_change(ll_p3_pm));
+	//auto ll_p4 = m.addPart(pm_hand_change(ll_p4_pm));
+	//auto ll_p5 = m.addPart(pm_hand_change(ll_p5_pm));
+	//auto ll_p6 = m.addPart(pm_hand_change(ll_p6_pm));
+	//auto ll_j1 = m.addRevoluteJoint(body, ll_p1, pp_hand_change(ll_j1_pos, tem1), pp_hand_change(ll_j1_axis, tem2));
+	//auto ll_j2 = m.addRevoluteJoint(ll_p1, ll_p2, pp_hand_change(ll_j2_pos, tem1), pp_hand_change(ll_j2_axis, tem2));
+	//auto ll_j3 = m.addRevoluteJoint(ll_p2, ll_p3, pp_hand_change(ll_j3_pos, tem1), pp_hand_change(ll_j3_axis, tem2));
+	//auto ll_j4 = m.addRevoluteJoint(ll_p3, ll_p4, pp_hand_change(ll_j4_pos, tem1), pp_hand_change(ll_j4_axis, tem2));
+	//auto ll_j5 = m.addRevoluteJoint(ll_p4, ll_p5, pp_hand_change(ll_j5_pos, tem1), pp_hand_change(ll_j5_axis, tem2));
+	//auto ll_j6 = m.addRevoluteJoint(ll_p5, ll_p6, pp_hand_change(ll_j6_pos, tem1), pp_hand_change(ll_j6_axis, tem2));
+	//auto ll_m1 = m.addMotion(ll_j1);
+	//auto ll_m2 = m.addMotion(ll_j2);
+	//auto ll_m3 = m.addMotion(ll_j3);
+	//auto ll_m4 = m.addMotion(ll_j4);
+	//auto ll_m5 = m.addMotion(ll_j5);
+	//auto ll_m6 = m.addMotion(ll_j6);
+	//auto ll_ee = m.addEndEffector(ll_p6, pm_hand_change(ll_ee_pm));
 
-	auto rl_p1 = m.addPart(pm_hand_change(rl_p1_pm));
-	auto rl_p2 = m.addPart(pm_hand_change(rl_p2_pm));
-	auto rl_p3 = m.addPart(pm_hand_change(rl_p3_pm));
-	auto rl_p4 = m.addPart(pm_hand_change(rl_p4_pm));
-	auto rl_p5 = m.addPart(pm_hand_change(rl_p5_pm));
-	auto rl_p6 = m.addPart(pm_hand_change(rl_p6_pm));
-	auto rl_j1 = m.addRevoluteJoint(body, rl_p1, pp_hand_change(rl_j1_pos, tem1), pp_hand_change(rl_j1_axis, tem2));
-	auto rl_j2 = m.addRevoluteJoint(rl_p1, rl_p2, pp_hand_change(rl_j2_pos, tem1), pp_hand_change(rl_j2_axis, tem2));
-	auto rl_j3 = m.addRevoluteJoint(rl_p2, rl_p3, pp_hand_change(rl_j3_pos, tem1), pp_hand_change(rl_j3_axis, tem2));
-	auto rl_j4 = m.addRevoluteJoint(rl_p3, rl_p4, pp_hand_change(rl_j4_pos, tem1), pp_hand_change(rl_j4_axis, tem2));
-	auto rl_j5 = m.addRevoluteJoint(rl_p4, rl_p5, pp_hand_change(rl_j5_pos, tem1), pp_hand_change(rl_j5_axis, tem2));
-	auto rl_j6 = m.addRevoluteJoint(rl_p5, rl_p6, pp_hand_change(rl_j6_pos, tem1), pp_hand_change(rl_j6_axis, tem2));
-	auto rl_m1 = m.addMotion(rl_j1);
-	auto rl_m2 = m.addMotion(rl_j2);
-	auto rl_m3 = m.addMotion(rl_j3);
-	auto rl_m4 = m.addMotion(rl_j4);
-	auto rl_m5 = m.addMotion(rl_j5);
-	auto rl_m6 = m.addMotion(rl_j6);
-	auto rl_ee = m.addEndEffector(rl_p6, pm_hand_change(rl_ee_pm));
+	//auto rl_p1 = m.addPart(pm_hand_change(rl_p1_pm));
+	//auto rl_p2 = m.addPart(pm_hand_change(rl_p2_pm));
+	//auto rl_p3 = m.addPart(pm_hand_change(rl_p3_pm));
+	//auto rl_p4 = m.addPart(pm_hand_change(rl_p4_pm));
+	//auto rl_p5 = m.addPart(pm_hand_change(rl_p5_pm));
+	//auto rl_p6 = m.addPart(pm_hand_change(rl_p6_pm));
+	//auto rl_j1 = m.addRevoluteJoint(body, rl_p1, pp_hand_change(rl_j1_pos, tem1), pp_hand_change(rl_j1_axis, tem2));
+	//auto rl_j2 = m.addRevoluteJoint(rl_p1, rl_p2, pp_hand_change(rl_j2_pos, tem1), pp_hand_change(rl_j2_axis, tem2));
+	//auto rl_j3 = m.addRevoluteJoint(rl_p2, rl_p3, pp_hand_change(rl_j3_pos, tem1), pp_hand_change(rl_j3_axis, tem2));
+	//auto rl_j4 = m.addRevoluteJoint(rl_p3, rl_p4, pp_hand_change(rl_j4_pos, tem1), pp_hand_change(rl_j4_axis, tem2));
+	//auto rl_j5 = m.addRevoluteJoint(rl_p4, rl_p5, pp_hand_change(rl_j5_pos, tem1), pp_hand_change(rl_j5_axis, tem2));
+	//auto rl_j6 = m.addRevoluteJoint(rl_p5, rl_p6, pp_hand_change(rl_j6_pos, tem1), pp_hand_change(rl_j6_axis, tem2));
+	//auto rl_m1 = m.addMotion(rl_j1);
+	//auto rl_m2 = m.addMotion(rl_j2);
+	//auto rl_m3 = m.addMotion(rl_j3);
+	//auto rl_m4 = m.addMotion(rl_j4);
+	//auto rl_m5 = m.addMotion(rl_j5);
+	//auto rl_m6 = m.addMotion(rl_j6);
+	//auto rl_ee = m.addEndEffector(rl_p6, pm_hand_change(rl_ee_pm));
 
 
 	double tem_pm[16];
@@ -226,78 +226,93 @@ void test_simple_model()
 	s_inv_pm(pm_hand_change(la_p6_pm), tem_pm);
 	la_p6->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\la_p6.x_t", tem_pm);
 
-	s_inv_pm(pm_hand_change(ra_p1_pm), tem_pm);
-	ra_p1->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p1.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ra_p2_pm), tem_pm);
-	ra_p2->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p2.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ra_p3_pm), tem_pm);
-	ra_p3->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p3.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ra_p4_pm), tem_pm);
-	ra_p4->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p4.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ra_p5_pm), tem_pm);
-	ra_p5->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p5.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ra_p6_pm), tem_pm);
-	ra_p6->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p6.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ra_p1_pm), tem_pm);
+	//ra_p1->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p1.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ra_p2_pm), tem_pm);
+	//ra_p2->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p2.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ra_p3_pm), tem_pm);
+	//ra_p3->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p3.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ra_p4_pm), tem_pm);
+	//ra_p4->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p4.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ra_p5_pm), tem_pm);
+	//ra_p5->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p5.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ra_p6_pm), tem_pm);
+	//ra_p6->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ra_p6.x_t", tem_pm);
 
-	s_inv_pm(pm_hand_change(ll_p1_pm), tem_pm);
-	ll_p1->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p1.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ll_p2_pm), tem_pm);
-	ll_p2->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p2.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ll_p3_pm), tem_pm);
-	ll_p3->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p3.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ll_p4_pm), tem_pm);
-	ll_p4->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p4.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ll_p5_pm), tem_pm);
-	ll_p5->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p5.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(ll_p6_pm), tem_pm);
-	ll_p6->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p6.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ll_p1_pm), tem_pm);
+	//ll_p1->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p1.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ll_p2_pm), tem_pm);
+	//ll_p2->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p2.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ll_p3_pm), tem_pm);
+	//ll_p3->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p3.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ll_p4_pm), tem_pm);
+	//ll_p4->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p4.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ll_p5_pm), tem_pm);
+	//ll_p5->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p5.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(ll_p6_pm), tem_pm);
+	//ll_p6->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\ll_p6.x_t", tem_pm);
 
-	s_inv_pm(pm_hand_change(rl_p1_pm), tem_pm);
-	rl_p1->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p1.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(rl_p2_pm), tem_pm);
-	rl_p2->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p2.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(rl_p3_pm), tem_pm);
-	rl_p3->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p3.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(rl_p4_pm), tem_pm);
-	rl_p4->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p4.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(rl_p5_pm), tem_pm);
-	rl_p5->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p5.x_t", tem_pm);
-	s_inv_pm(pm_hand_change(rl_p6_pm), tem_pm);
-	rl_p6->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p6.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(rl_p1_pm), tem_pm);
+	//rl_p1->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p1.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(rl_p2_pm), tem_pm);
+	//rl_p2->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p2.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(rl_p3_pm), tem_pm);
+	//rl_p3->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p3.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(rl_p4_pm), tem_pm);
+	//rl_p4->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p4.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(rl_p5_pm), tem_pm);
+	//rl_p5->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p5.x_t", tem_pm);
+	//s_inv_pm(pm_hand_change(rl_p6_pm), tem_pm);
+	//rl_p6->geometryPool().add<ParasolidGeometry>("solid", "C:\\Users\\py033\\Desktop\\xt\\rl_p6.x_t", tem_pm);
 
 
 	double la_ee_pm1[16], ra_ee_pm1[16], ll_ee_pm1[16], rl_ee_pm1[16];
 	
 	la_ee->updMpm();
 	la_ee->getMpm(la_ee_pm1);
-	ra_ee->updMpm();
-	ra_ee->getMpm(ra_ee_pm1);
-	ll_ee->updMpm();
-	ll_ee->getMpm(ll_ee_pm1);
-	rl_ee->updMpm();
-	rl_ee->getMpm(rl_ee_pm1);
+	//ra_ee->updMpm();
+	//ra_ee->getMpm(ra_ee_pm1);
+	//ll_ee->updMpm();
+	//ll_ee->getMpm(ll_ee_pm1);
+	//rl_ee->updMpm();
+	//rl_ee->getMpm(rl_ee_pm1);
 
 	m.allocateMemory();
 	
-	std::cout << "time consumed" << aris::core::benchmark(1, [&]()
+
+	auto &mm = m.model();
+
+	mm.simulatorPool().add<AdamsSimulator>();
+
+	auto &s = dynamic_cast<UniversalSolver&>(mm.solverPool().at(0));
+	s.plotRelation();
+
+	body_ee->setMpe(std::array<double, 6>{0, 0, -2e-1, 0, 0, 0}.data(), "313");
+
+	if (!m.inverseKinematic())
 	{
-		for (int i = 0; i < 100; ++i)
-		{
-			body_ee->setMpe(std::array<double, 6>{0, 0, -1e-3*i, 0, 0, 0}.data(), "313");
+		std::cout << "inverseKinematic failed" << std::endl;
+	}
 
-			if (!m.inverseKinematic())
-			{
-				std::cout << "inverseKinematic failed" << std::endl;
-				break;
-			}
-		}
-	}) << std::endl;
 	
-	aris::dynamic::dsp(4, 4, *ll_p4->pm());
-	ra_m5->updMp();
-	std::cout << "ra_m5 pos:" << ra_m5->mp() << std::endl;
 
 
+
+	//std::cout << "time consumed" << aris::core::benchmark(1, [&]()
+	//{
+	//	for (int i = 0; i < 100; ++i)
+	//	{
+	//		body_ee->setMpe(std::array<double, 6>{0, 0, -1e-3*i, 0, 0, 0}.data(), "313");
+
+	//		if (!m.inverseKinematic())
+	//		{
+	//			std::cout << "inverseKinematic failed" << std::endl;
+	//			break;
+	//		}
+	//	}
+	//}) << std::endl;
+	
+	
 
 	std::cout << "-----------------test simple model finished------------" << std::endl << std::endl;
 }

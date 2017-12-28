@@ -53,25 +53,25 @@ namespace aris
 			DynEle::loadXml(xml_ele);
 		}
 
-		struct Constraint::Imp { Size col_id_, blk_col_id_; double cf_[6]{ 0 }, prtCmI_[36]{ 0 }, locCmI_[36]{ 0 }; };
+		struct Constraint::Imp { Size col_id_, blk_col_id_; double cf_[6]{ 0 }; };
+		auto Constraint::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Interaction::saveXml(xml_ele);
+			xml_ele.SetAttribute("cf", core::Matrix(1, dim(), cf()).toString().c_str());
+		}
+		auto Constraint::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			Interaction::loadXml(xml_ele);
+			setCf(attributeMatrix(xml_ele, "cf", 1, dim(), core::Matrix(1, dim(), 0.0)).data());
+		}
 		auto Constraint::cf() const->const double* { return imp_->cf_; }
 		auto Constraint::setCf(const double *cf)->void { return s_vc(dim(), cf, imp_->cf_); }
-		auto Constraint::locCmI() const->const double* { return imp_->locCmI_; }
 		auto Constraint::cptCp(double *cp)const->void
 		{
-			double pq_j2i[7];
-			double pm_j2i[4][4];
-
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
-			s_pm2pq(*pm_j2i, pq_j2i);
-
-			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
-
-			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
-			s_nv(3, coe, pq_j2i + 3);
-
-			// 此时位移差值在makI()坐标系中
-			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, pq_j2i, 1, cp, 1);
+			double pm_j2i[16], ps_j2i[6];
+			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), pm_j2i);
+			s_pm2ps(pm_j2i, ps_j2i);
+			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 		}
 		auto Constraint::cptCv(double *cv)const->void
 		{
@@ -87,6 +87,13 @@ namespace aris
 			s_cv(makI().vs(), makJ().vs(), vi_cross_vj);
 			s_inv_tv(*makI().pm(), vi_cross_vj, tem);
 			s_mmi(dim(), 1, 6, locCmI(), ColMajor{ dim() }, tem, 1, ca, 1);
+		}
+		auto Constraint::cptCp1(double *cp, const double *makI_pm, const double *makJ_pm)const->void
+		{
+			double pm_j2i[16], ps_j2i[6];
+			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
+			s_pm2ps(pm_j2i, ps_j2i);
+			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 		}
 		Constraint::~Constraint() = default;
 		Constraint::Constraint(const std::string &name, Marker* makI, Marker* makJ, bool is_active) : Interaction(name, makI, makJ, is_active) {}
@@ -107,6 +114,8 @@ namespace aris
 			double frc_coe_[3]{ 0,0,0 };
 			double mp_offset_{ 0 }, mp_factor_{ 1.0 };
 			double mp_{ 0 }, mv_{ 0 }, ma_{ 0 };
+
+			double loc_cm_I[6];
 		};
 		auto Motion::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -114,6 +123,9 @@ namespace aris
 
 			xml_ele.SetAttribute("frc_coe", core::Matrix(1, 3, this->frcCoe()).toString().c_str());
 			xml_ele.SetAttribute("component", static_cast<int>(axis()));
+			xml_ele.SetAttribute("mp", mp());
+			xml_ele.SetAttribute("mv", mv());
+			xml_ele.SetAttribute("ma", ma());
 			if (imp_->mp_offset_ != 0)xml_ele.SetAttribute("mp_offset", imp_->mp_offset_);
 			if (imp_->mp_factor_ != 1.0)xml_ele.SetAttribute("mp_factor", imp_->mp_factor_);
 		}
@@ -122,13 +134,47 @@ namespace aris
 			imp_->component_axis_ = attributeInt32(xml_ele, "component");
 			imp_->mp_offset_ = attributeDouble(xml_ele, "mp_offset", 0.0);
 			imp_->mp_factor_ = attributeDouble(xml_ele, "mp_factor", 1.0);
+			imp_->mp_ = attributeDouble(xml_ele, "mp", 0.0);
+			imp_->mv_ = attributeDouble(xml_ele, "mv", 0.0);
+			imp_->ma_ = attributeDouble(xml_ele, "ma", 0.0);
+
 			setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
 
 			Constraint::loadXml(xml_ele);
 			s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
 			const_cast<double*>(locCmI())[axis()] = 1.0;
 		}
-		auto Motion::cptCp(double *cp)const->void { Constraint::cptCp(cp); cp[0] += mp(); }
+		auto Motion::locCmI() const->const double* { return imp_->loc_cm_I;	}
+		auto Motion::cptCp(double *cp)const->void 
+		{
+			//if (axis() < 3)
+			//{
+			//	double pp_j_in_n[3]{ makJ().prtPm()[0][3],makJ().prtPm()[1][3],makJ().prtPm()[2][3], }, pp_j_in_g[3], pp_j_in_m[3];
+
+			//	s_pp2pp(*makJ().fatherPart().pm(), pp_j_in_n, pp_j_in_g);
+			//	s_inv_pp2pp(*makI().fatherPart().pm(), pp_j_in_g, pp_j_in_m);
+			//	cp[0] = mp() + makI().prtPm()[0][axis()] * (pp_j_in_m[0] - makI().prtPm()[0][3]) + makI().prtPm()[1][axis()] * (pp_j_in_m[1] - makI().prtPm()[1][3]) + makI().prtPm()[2][axis()] * (pp_j_in_m[2] - makI().prtPm()[2][3]);
+			//}
+			//else
+			//{
+			//	double pq_j2i[7];
+			//	double pm_j2i[4][4];
+
+			//	s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
+			//	s_pm2pq(*pm_j2i, pq_j2i);
+
+			//	double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
+			//	double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
+			//	s_nv(3, coe, pq_j2i + 3);
+
+			//	cp[0] = mp() + pq_j2i[axis()];
+			//}
+			
+			
+			Constraint::cptCp(cp);
+			cp[0] += mp();
+
+		}
 		auto Motion::cptCv(double *cv)const->void { Constraint::cptCv(cv); cv[0] += mv(); }
 		auto Motion::cptCa(double *ca)const->void { Constraint::cptCa(ca); ca[0] += ma(); }
 		auto Motion::updMp()->void { setMp(s_sov_axis_distance(*makJ().pm(), *makI().pm(), axis())); }
@@ -168,7 +214,6 @@ namespace aris
 			static const double default_frc_coe[3]{ 0,0,0 };
 			setFrcCoe(frc_coe ? frc_coe : default_frc_coe);
 
-			double loc_cst[6]{ 0,0,0,0,0,0, };
 			s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
 			const_cast<double*>(locCmI())[axis()] = 1.0;
 		}
@@ -181,25 +226,22 @@ namespace aris
 		{
 			double mpm_[4][4]{ { 0 } }, mvs_[6]{ 0 }, mas_[6]{ 0 };
 		};
+		auto GeneralMotion::locCmI() const->const double* 
+		{
+			static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
+			return loc_cm_I;
+		}
 		auto GeneralMotion::cptCp(double *cp)const->void
 		{
 			double pm_real_j[16];
-
 			s_pm_dot_pm(*makJ().fatherPart().pm(), *makJ().prtPm(), *mpm(), pm_real_j);
 
-			double pq_j2i[7];
-			double pm_j2i[4][4];
-
-			s_inv_pm_dot_pm(*makI().pm(), pm_real_j, *pm_j2i);
-			s_pm2pq(*pm_j2i, pq_j2i);
-
-			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
-
-			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
-			s_nv(3, coe, pq_j2i + 3);
+			double pm_j2i[16], ps_j2i[6];
+			s_inv_pm_dot_pm(*makI().pm(), pm_real_j, pm_j2i);
+			s_pm2ps(pm_j2i, ps_j2i);
 
 			// locCmI为单位矩阵，此时无需相乘
-			s_vc(6, pq_j2i, cp);
+			s_vc(6, ps_j2i, cp);
 		}
 		auto GeneralMotion::cptCv(double *cv)const->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
 		auto GeneralMotion::cptCa(double *ca)const->void { s_inv_tv(*mpm(), mas(), ca); }
@@ -306,74 +348,37 @@ namespace aris
 		auto GeneralMotion::mfs() const->const double6&{ return Constraint::imp_->cf_; }
 		auto GeneralMotion::setMfs(const double * mfs)->void { s_vc(6, mfs, Constraint::imp_->cf_); }
 		GeneralMotion::~GeneralMotion() = default;
-		GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, const std::string& freedom, bool active) :Constraint(name, makI, makJ, active)
-		{
-			const static double loc_cst[6][6]
-			{
-				1,0,0,0,0,0,
-				0,1,0,0,0,0,
-				0,0,1,0,0,0,
-				0,0,0,1,0,0,
-				0,0,0,0,1,0,
-				0,0,0,0,0,1
-			};
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
-		}
+		GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :Constraint(name, makI, makJ, active){}
 		GeneralMotion::GeneralMotion(const GeneralMotion &other) = default;
 		GeneralMotion::GeneralMotion(GeneralMotion &&other) = default;
 		GeneralMotion& GeneralMotion::operator=(const GeneralMotion &other) = default;
 		GeneralMotion& GeneralMotion::operator=(GeneralMotion &&other) = default;
 
-		auto RevoluteJoint::cptCp(double *cp)const->void
+		auto RevoluteJoint::locCmI() const->const double*
 		{
-			double pq_j2i[7];
-			double pm_j2i[4][4];
-
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
-			s_pm2pq(*pm_j2i, pq_j2i);
-
-			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
-
-			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
-			s_nv(3, coe, pq_j2i + 3);
-
-			// 此时位移差值在makI()坐标系中
-			s_vc(5, pq_j2i, cp);
-		}
-		RevoluteJoint::RevoluteJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
-		{
-			const static double loc_cst[6][5]
-			{
+			static const double loc_cm_I[30]
+			{   
 				1,0,0,0,0,
 				0,1,0,0,0,
 				0,0,1,0,0,
 				0,0,0,1,0,
 				0,0,0,0,1,
-				0,0,0,0,0
+				0,0,0,0,0  
 			};
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
+			return loc_cm_I;
 		}
-		auto PrismaticJoint::cptCp(double *cp)const->void 
+		auto RevoluteJoint::cptCp(double *cp)const->void
 		{
-			double pq_j2i[7];
-			double pm_j2i[4][4];
-
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
-
-			s_pm2pq(*pm_j2i, pq_j2i);
-
-			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
-
-			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
-			s_nv(3, coe, pq_j2i + 3);
-
-			// 此时位移差值在makI()坐标系中
-			s_vc(2, pq_j2i, cp);
-			s_vc(3, pq_j2i + 3, cp + 2);
+			double pm_j2i[16], ps_j2i[6];
+			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), pm_j2i);
+			s_pm2ps(pm_j2i, ps_j2i);
+			s_vc(5, ps_j2i, cp);
 		}
-		PrismaticJoint::PrismaticJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
+		RevoluteJoint::RevoluteJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ){}
+		
+		auto PrismaticJoint::locCmI() const->const double*
 		{
-			const static double loc_cst[6][5]
+			static const double loc_cm_I[30]
 			{
 				1,0,0,0,0,
 				0,1,0,0,0,
@@ -382,7 +387,41 @@ namespace aris
 				0,0,0,1,0,
 				0,0,0,0,1
 			};
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
+			return loc_cm_I;
+		}
+		auto PrismaticJoint::cptCp(double *cp)const->void 
+		{
+			double pm_j2i[16], ps_j2i[6];
+			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), pm_j2i);
+			s_pm2ps(pm_j2i, ps_j2i);
+
+			// 此时位移差值在makI()坐标系中
+			s_vc(2, ps_j2i, cp);
+			s_vc(3, ps_j2i + 3, cp + 2);
+		}
+		PrismaticJoint::PrismaticJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ){}
+
+		struct UniversalJoint::Imp{	double loc_cm_I[24];};
+		auto UniversalJoint::locCmI() const->const double*
+		{
+			const double axis_iz_i[3]{ 0,0,1 };
+			double axis_jz_g[3], axis_jz_m[3];
+
+			s_pm_dot_v3(*makJ().fatherPart().pm(), &makJ().prtPm()[0][2], 4, axis_jz_g, 1);
+			s_inv_pm_dot_v3(*makI().fatherPart().pm(), axis_jz_g, axis_jz_m);
+
+			// 应该求 axis_iz_i(x1 y1 z1) x axis_jz_i(x2 y2 z2), 但是因为axis_iz_i为单位向量(0,0,1)
+			// 那么，这里应该为：
+			// [ -y2 x2 0 ]
+			double x2 = makI().prtPm()[0][0] * axis_jz_m[0] + makI().prtPm()[1][0] * axis_jz_m[1] + makI().prtPm()[2][0] * axis_jz_m[2];
+			double y2 = makI().prtPm()[0][1] * axis_jz_m[0] + makI().prtPm()[1][1] * axis_jz_m[1] + makI().prtPm()[2][1] * axis_jz_m[2];
+
+			double norm = std::sqrt(x2*x2 + y2*y2);
+
+			const_cast<double*>(imp_->loc_cm_I)[15] = -y2 / norm;
+			const_cast<double*>(imp_->loc_cm_I)[19] = x2 / norm;
+
+			return imp_->loc_cm_I;
 		}
 		auto UniversalJoint::cptCa(double *ca)const->void
 		{
@@ -410,43 +449,36 @@ namespace aris
 		}
 		auto UniversalJoint::cptCp(double *cp)const->void
 		{
-			double pm_j2i[4][4];
-			double diff[6];
+			// 对于位置，因为是单位矩阵相乘，所以不用计算 //
+			double pp_j_in_n[3]{ makJ().prtPm()[0][3],makJ().prtPm()[1][3],makJ().prtPm()[2][3], }, pp_j_in_g[3], pp_j_in_m[3];
 
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
-			s_pm2pp(*pm_j2i, diff);
+			s_pp2pp(*makJ().fatherPart().pm(), pp_j_in_n, pp_j_in_g);
+			s_inv_pp2pp(*makI().fatherPart().pm(), pp_j_in_g, pp_j_in_m);
+			s_inv_pp2pp(*makI().prtPm(), pp_j_in_m, cp);
 
-			double axis[3]{ pm_j2i[1][2], -pm_j2i[0][2], 0.0 };
-			double theta = PI / 2.0 - std::acos(pm_j2i[2][2]);
+			// 对于角度，因为转动是一维的，两个z轴相隔90度，因此只要计算出需要转动的角度即可 //
+			// 这里求pm_j2i[2][2] //
+			double jz[3]{ makJ().prtPm()[0][2] , makJ().prtPm()[1][2] , makJ().prtPm()[2][2] };
 
-			s_nv(2, theta / s_norm(2, axis), axis);
-			s_vc(3, axis, diff + 3);
+			s_pm_dot_v3(*makJ().fatherPart().pm(), jz, pp_j_in_g);
+			s_inv_pm_dot_v3(*makI().fatherPart().pm(), pp_j_in_g, pp_j_in_m);
 
-			const_cast<UniversalJoint*>(this)->updLocCmI();
-			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, diff, 1, cp, 1);
+			cp[3] = -PI / 2.0 + std::acos(makI().prtPm()[0][2] * pp_j_in_m[0] + makI().prtPm()[1][2] * pp_j_in_m[1] + makI().prtPm()[2][2] * pp_j_in_m[2]);
 		}
-		auto UniversalJoint::cptCv(double *cv)const->void
+		auto UniversalJoint::cptCv(double *cv)const->void{	Constraint::cptCv(cv);}
+		auto UniversalJoint::cptGlbDm(double *dm)->void
 		{
-			const_cast<UniversalJoint*>(this)->updLocCmI();
-			Constraint::cptCv(cv);
-		}
-		auto UniversalJoint::updLocCmI()->void
-		{
-			const double axis_iz_i[3]{ 0,0,1 };
-			double axis_jz_g[3], axis_jz_m[3];
-		
-			s_pm_dot_v3(*makJ().fatherPart().pm(), &makJ().prtPm()[0][2], 4, axis_jz_g, 1);
-			s_inv_pm_dot_v3(*makI().fatherPart().pm(), axis_jz_g, axis_jz_m);
+			double pm[16];
+			s_inv_pm(*makI().pm(), pm);
+			s_tmf(pm, dm);
 
-			// following instead of:
-			// s_inv_pm_dot_v3(*makI().prtPm(), axis_jz_m, axis_jz_i);
-			// s_c3(axis_iz_i, 1, axis_jz_i, 1, const_cast<double*>(locCmI()) + 3 * 4 + 3, 4);
-			const_cast<double*>(locCmI())[dynamic::id(3, 3, 4)] = -makI().prtPm()[0][1] * axis_jz_m[0] - makI().prtPm()[1][1] * axis_jz_m[1] - makI().prtPm()[2][1] * axis_jz_m[2];
-			const_cast<double*>(locCmI())[dynamic::id(4, 3, 4)] = makI().prtPm()[0][0] * axis_jz_m[0] + makI().prtPm()[1][0] * axis_jz_m[1] + makI().prtPm()[2][0] * axis_jz_m[2];
-
-			s_nv(3, 1.0 / s_norm(2, locCmI() + dynamic::id(3, 3, 4), 4), const_cast<double*>(locCmI()) + dynamic::id(3, 3, 4), 4);
+			auto loc_cm_I = locCmI();
+			double r[4]{ loc_cm_I[15], loc_cm_I[19], -loc_cm_I[19], loc_cm_I[15] };
+			s_mm(2, 6, 2, r, dm + 18, pm);
+			s_mc(2, 6, pm, dm + 18);
 		}
-		UniversalJoint::UniversalJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ)
+		UniversalJoint::~UniversalJoint() = default;
+		UniversalJoint::UniversalJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ), imp_(new Imp)
 		{
 			const static double loc_cst[6][4]
 			{
@@ -457,27 +489,16 @@ namespace aris
 				0,0,0,0,
 				0,0,0,0,
 			};
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
+			s_mc(6, dim(), *loc_cst, imp_->loc_cm_I);
 		}
-		auto SphericalJoint::cptCp(double *cp)const->void 
+		UniversalJoint::UniversalJoint(const UniversalJoint &other) = default;
+		UniversalJoint::UniversalJoint(UniversalJoint &&other) = default;
+		UniversalJoint& UniversalJoint::operator=(const UniversalJoint &other) = default;
+		UniversalJoint& UniversalJoint::operator=(UniversalJoint &&other) = default;
+
+		auto SphericalJoint::locCmI() const->const double*
 		{
-			double pq_j2i[7];
-			double pm_j2i[4][4];
-
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
-			s_pm2pq(*pm_j2i, pq_j2i);
-
-			double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
-
-			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
-			s_nv(3, coe, pq_j2i + 3);
-
-			// 此时位移差值在makI()坐标系中
-			s_vc(3, pq_j2i, cp);
-		}
-		SphericalJoint::SphericalJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ)
-		{
-			const static double loc_cst[6][3]
+			static const double loc_cm_I[18]
 			{
 				1,0,0,
 				0,1,0,
@@ -486,8 +507,18 @@ namespace aris
 				0,0,0,
 				0,0,0,
 			};
-			s_mc(6, dim(), *loc_cst, const_cast<double*>(locCmI()));
+			return loc_cm_I;
 		}
+		auto SphericalJoint::cptCp(double *cp)const->void 
+		{
+			/////////////////////////以下是pa的计算方法///////////////////////////
+			double pp_j_in_n[3]{ makJ().prtPm()[0][3],makJ().prtPm()[1][3],makJ().prtPm()[2][3], }, pp_j_in_g[3], pp_j_in_m[3];
+			s_pp2pp(*makJ().fatherPart().pm(), pp_j_in_n, pp_j_in_g);
+			s_inv_pp2pp(*makI().fatherPart().pm(), pp_j_in_g, pp_j_in_m);
+			s_inv_pp2pp(*makI().prtPm(), pp_j_in_m, cp);
+			/////////////////////////以上是pa的计算方法///////////////////////////
+		}
+		SphericalJoint::SphericalJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ){}
 
 		auto SingleComponentForce::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
@@ -500,12 +531,11 @@ namespace aris
 
 			Force::loadXml(xml_ele);
 		}
-		auto SingleComponentForce::updFs()->void
+		auto SingleComponentForce::cptGlbFs(double *fsI, double *fsJ)->void
 		{
-			s_tf(*makI().prtPm(), fce_value_, fsI_);
-			double pm_M2N[16];
-			s_inv_pm_dot_pm(*makJ().fatherPart().pm(), *makI().fatherPart().pm(), pm_M2N);
-			s_tf(-1.0, pm_M2N, fsI_, fsJ_);
+			s_tf(*makI().prtPm(), fce_value_, fsJ);
+			s_tf(*makI().fatherPart().pm(), fsJ, fsI);
+			s_vi(6, fsI, fsJ);
 		}
 		SingleComponentForce::SingleComponentForce(const std::string &name, Marker* makI, Marker* makJ, Size componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
 	}

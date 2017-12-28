@@ -1081,6 +1081,7 @@ void test_variable_change()
 	const double pe321[6] = { 0.1, 0.2, 0.3,2.46823966120654, -1.28551725555848,  5.40636866254317 };
 	const double pq[7] = { 0.1, 0.2, 0.3,0.4,-0.5, 0.6, std::sqrt(1 - 0.4*0.4 - 0.5*0.5 - 0.6*0.6) };
 	const double pa[6] = { 0.1, 0.2, 0.3,0.9760647868936518, -1.2200809836170647,   1.4640971803404776 };
+	const double ps[6]{ 0.4137969022551177,0.1579034055412022,0.0557215697809234,0.9760647868936518, -1.2200809836170647,1.4640971803404776 };
 	const double pm[16] = { -0.22, -0.975499782797526,   0.000416847668728071, 0.1,
 		0.175499782797526, -0.04, -0.983666521865018, 0.2,
 		0.959583152331272, -0.216333478134982,   0.18, 0.3,
@@ -1145,6 +1146,7 @@ void test_variable_change()
 	double result_as_for_angle[6] = { 3.15925342342501, -0.192390604845803,   0.136512424183815,   0,0,0 };
 	double result[36];
 	double result1[36];
+
 
 	s_ra2rm(ra, result);
 	if (!s_is_equal(9, result, rm, error))std::cout << "\"s_ra2rm\" failed" << std::endl;
@@ -1230,6 +1232,11 @@ void test_variable_change()
 	s_pm2pa(pm, result);
 	if (!s_is_equal(6, pa, result, error))std::cout << "\"s_pm2pa\" failed" << std::endl;
 
+	s_ps2pm(ps, result);
+	if (!s_is_equal(16, pm, result, error))std::cout << "\"s_ps2pm\" failed" << std::endl;
+
+	s_pm2ps(pm, result);
+	if (!s_is_equal(6, ps, result, error))std::cout << "\"s_pm2ps\" failed" << std::endl;
 
 
 	s_wa2we(wa, re313, result, "313");

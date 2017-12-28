@@ -10,6 +10,7 @@ void test_part()
 {
 	aris::dynamic::Model model;
 
+	const double prt_iv[10]{ 12.3,0.1,0.2228,0.356,5.8,6.4,3.9,0.85,0.75,0.98 };
 	const double prt_im[36]{ 12.3,0,0,0,0.356, -0.2228,
 		0,12.3,0,-0.356,0,0.1,
 		0,0,12.3,0.2228, -0.1,0,
@@ -17,8 +18,8 @@ void test_part()
 		0.356,0, -0.1,0.85,6.4,0.98,
 		-0.2228,0.1,0,0.75,0.98,3.9 };
 
-	auto &p = model.partPool().add<Part>("test_part", prt_im);
-	auto &r = model.partPool().add<Part>("relative_part", prt_im);
+	auto &p = model.partPool().add<Part>("test_part", prt_iv);
+	auto &r = model.partPool().add<Part>("relative_part", prt_iv);
 
 	const double pp[3] = { 0.1, 0.2, 0.3 };
 	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };

@@ -1218,8 +1218,7 @@ namespace aris
 		{
 			double prt_im[36];
 			s_iv2im(prtIv(), prt_im);
-			
-			
+
 			double prt_gr[3], prt_fg[6];
 			s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
 			s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, prt_fg, 1);

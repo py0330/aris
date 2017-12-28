@@ -695,6 +695,7 @@ namespace aris
 			private:
 				typename ImpContainer<Object>::iterator iter_;
 				friend class ObjectPool::const_iterator;
+				friend class ObjectPool;
 			};
 			class const_iterator
 			{

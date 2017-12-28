@@ -348,15 +348,15 @@ namespace aris
 			return *this;
 		}
 
-		struct Simulator::Imp { };
+		struct Simulator::Imp {};
 		auto Simulator::simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void
 		{
 			result.allocateMemory();
-			// 记录初始位置 //
+			// 记录初始状态 //
 			result.record();
-			// 记录轨迹中的位置 //
-			for (PlanParam plan_param{ &model(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_);
-			// 记录结束位置 //
+			// 记录轨迹中的状态 //
+			for (PlanParam plan_param{ &model(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_)result.record();
+			// 记录结束状态 //
 			result.record();
 		}
 		Simulator::~Simulator() = default;
@@ -365,690 +365,6 @@ namespace aris
 		Simulator::Simulator(Simulator&&) = default;
 		Simulator& Simulator::operator=(const Simulator&) = default;
 		Simulator& Simulator::operator=(Simulator&&) = default;
-
-		struct CombineSolver::Imp
-		{
-			Size p_size_, c_size_;
-			std::vector<double> A_, x_, b_;
-			std::vector<double> U_, t_;
-			std::vector<Size> p_;
-
-			std::vector<PartBlock> part_block_pool_;
-			std::vector<ConstraintBlock> constraint_block_pool_;
-		};
-		auto CombineSolver::allocateMemory()->void
-		{
-			// make active pool //
-			imp_->part_block_pool_.clear();
-			imp_->constraint_block_pool_.clear();
-
-			imp_->part_block_pool_.push_back(PartBlock{ &model().ground(), 0 });
-			for (auto &prt : model().partPool())if (prt.active() && (&prt != &model().ground()))imp_->part_block_pool_.push_back(PartBlock{ &prt, 0 });
-			for (auto &jnt : model().jointPool())if (jnt.active())imp_->constraint_block_pool_.push_back(ConstraintBlock{ &jnt,0, nullptr, nullptr });
-			for (auto &mot : model().motionPool())if (mot.active()) imp_->constraint_block_pool_.push_back(ConstraintBlock{ &mot,0, nullptr, nullptr });
-			for (auto &gmt : model().generalMotionPool())if (gmt.active())imp_->constraint_block_pool_.push_back(ConstraintBlock{ &gmt,0, nullptr, nullptr });
-
-			// compute memory size //
-			imp_->p_size_ = 0;
-			imp_->c_size_ = 6;
-
-			for (auto &pb : activePartBlockPool())
-			{
-				pb.row_id_ = imp_->p_size_;
-				imp_->p_size_ += 6;
-			}
-			for (auto &cb : activeConstraintBlockPool())
-			{
-				cb.col_id_ = imp_->c_size_;
-				imp_->c_size_ += cb.constraint_->dim();
-
-				auto i_ = std::find_if(activePartBlockPool().begin(), activePartBlockPool().end(), [&cb](PartBlock &pb) {return pb.part_ == &cb.constraint_->makI().fatherPart(); });
-				auto j_ = std::find_if(activePartBlockPool().begin(), activePartBlockPool().end(), [&cb](PartBlock &pb) {return pb.part_ == &cb.constraint_->makJ().fatherPart(); });
-				if (i_ == activePartBlockPool().end()) throw std::runtime_error("i part not found");
-				if (j_ == activePartBlockPool().end()) throw std::runtime_error("j part not found");
-				cb.pb_i_ = &*i_;
-				cb.pb_j_ = &*j_;
-			}
-
-			// allocate memory //
-			imp_->A_.clear();
-			imp_->A_.resize(aSize() * aSize(), 0.0);
-			imp_->b_.clear();
-			imp_->b_.resize(aSize() * 1, 0.0);
-			imp_->x_.clear();
-			imp_->x_.resize(aSize() * 1, 0.0);
-			for (Size i(-1); ++i < 6;) 
-			{
-				imp_->A_.data()[aris::dynamic::id(i, i, aSize())] = 1.0;
-				imp_->A_.data()[aris::dynamic::id(i + pSize(), i, aSize())] = 1.0;
-				imp_->A_.data()[aris::dynamic::id(i, i + pSize(), aSize())] = 1.0;
-			}
-
-			imp_->U_.clear();
-			imp_->U_.resize(aSize() * aSize(), 0.0);
-			imp_->t_.clear();
-			imp_->t_.resize(aSize() * 1, 0.0);
-			imp_->p_.clear();
-			imp_->p_.resize(aSize() * 1, 0);
-		}
-		auto CombineSolver::activePartBlockPool()->std::vector<PartBlock>& { return imp_->part_block_pool_; }
-		auto CombineSolver::activeConstraintBlockPool()->std::vector<ConstraintBlock>& { return imp_->constraint_block_pool_; }
-		auto CombineSolver::cSize()->Size { return imp_->c_size_; }
-		auto CombineSolver::pSize()->Size { return imp_->p_size_; }
-		auto CombineSolver::A()->double * { return imp_->A_.data(); }
-		auto CombineSolver::x()->double * { return imp_->x_.data(); }
-		auto CombineSolver::b()->double * { return imp_->b_.data(); }
-		auto CombineSolver::kinPos()->void
-		{
-			setIterCount(0);
-
-			double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
-			for (; iterCount() < maxIterCount(); setIterCount(iterCount() + 1))
-			{
-				// make cp //
-				updCp();
-
-				// check error //
-				setError(s_norm(cSize(), cp()));
-				if (error() < maxError()) return;
-
-				auto e = error();
-
-				// make C //
-				updCm();
-
-				// solve dp //
-				Size rank;
-				s_householder_utp(cSize(), pSize(), cm(), ColMajor{ aSize() }, imp_->U_.data(), pSize(), imp_->t_.data(), 1, imp_->p_.data(), rank, maxError());
-				s_householder_utp_sov(cSize(), pSize(), 1, rank, imp_->U_.data(), imp_->t_.data(), imp_->p_.data(), cp(), pp(), maxError());
-
-				// upd part pos //
-				updPartPos();
-			}
-		}
-		auto CombineSolver::kinVel()->void
-		{
-			s_fill(6, 1, 0.0, const_cast<double *>(model().ground().vs()));
-			
-			// make cv //
-			updCv();
-
-			// make C //
-			updCm();
-
-			// solve compensate pv //
-			Size rank;
-			s_householder_utp(cSize(), pSize(), cm(), ColMajor{ aSize() }, imp_->U_.data(), pSize(), imp_->t_.data(), 1, imp_->p_.data(), rank, maxError());
-			s_householder_utp_sov(cSize(), pSize(), 1, rank, imp_->U_.data(), imp_->t_.data(), imp_->p_.data(), cv(), pv(), maxError());
-
-			// upd part vel //
-			updPartVel();
-		}
-		auto CombineSolver::dynAccAndFce()->void
-		{
-			s_fill(6, 1, 0.0, const_cast<double *>(model().ground().as()));
-			
-			updIm();
-			updCm();
-			updCmT();
-
-			updCa();
-			updPf();
-
-			// solve x //
-			Size rank;
-			s_householder_utp(aSize(), aSize(), A(), imp_->U_.data(), imp_->t_.data(), imp_->p_.data(), rank, maxError());
-			s_householder_utp_sov(aSize(), aSize(), 1, rank, imp_->U_.data(), imp_->t_.data(), imp_->p_.data(), b(), x(), maxError());
-
-			updConstraintFce();
-			updPartAcc();
-		}
-		CombineSolver::~CombineSolver() = default;
-		CombineSolver::CombineSolver(const std::string &name, Size max_iter_count, double max_error) :FrameSolver(name, max_iter_count, max_error) {}
-		CombineSolver::CombineSolver(const CombineSolver &other) = default;
-		CombineSolver::CombineSolver(CombineSolver &&other) = default;
-		CombineSolver& CombineSolver::operator=(const CombineSolver &other) = default;
-		CombineSolver& CombineSolver::operator=(CombineSolver &&other) = default;
-		auto CombineSolver::updCm()->void 
-		{
-			for (auto &cb : activeConstraintBlockPool())
-			{
-				auto row_i = cb.pb_i_->row_id_;
-				auto row_j = cb.pb_j_->row_id_;
-				auto col = cb.col_id_ + pSize();
-
-				cptCm(*cb.constraint_, A() + dynamic::id(row_i, col, aSize()), aSize(), A() + dynamic::id(row_j, col, aSize()), aSize());
-			}
-		}
-		auto CombineSolver::updCmT()->void
-		{
-			for (auto &cb : activeConstraintBlockPool())
-			{
-				auto row_i = cb.pb_i_->row_id_;
-				auto row_j = cb.pb_j_->row_id_;
-				auto col = cb.col_id_ + pSize();
-
-				cptCm(*cb.constraint_, A() + dynamic::id(row_i, col, ColMajor{ aSize() }), ColMajor{ aSize() }, A() + dynamic::id(row_j, col, ColMajor{ aSize() }), ColMajor{ aSize() });
-			}
-		}
-		auto CombineSolver::updIm()->void 
-		{ 
-			for (auto &pb : activePartBlockPool()) 
-			{
-				pb.part_->cptGlbIm(A() + dynamic::id(pb.row_id_, pb.row_id_, aSize()), aSize());
-				s_im(6, 6, A() + dynamic::id(pb.row_id_, pb.row_id_, aSize()), aSize());
-			} 
-		}
-		auto CombineSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + cb.col_id_); }
-		auto CombineSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + cb.col_id_); }
-		auto CombineSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + cb.col_id_); }
-		auto CombineSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->getVs(pv() + pb.row_id_); }
-		auto CombineSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->getAs(pa() + pb.row_id_); }
-		auto CombineSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbPf(pf() + pb.row_id_); }
-		auto CombineSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1));}
-		auto CombineSolver::updPartPos()->void 
-		{
-			for (auto pb : activePartBlockPool())
-			{
-				if (pb.part_ != &model().ground())
-				{
-					double pm[4][4];
-					double pq[7];
-
-					s_vc(6, x() + dynamic::id(pb.row_id_, 0, 1), pq);
-
-					double theta = s_norm(3, pq + 3);
-					pq[6] = std::cos(theta / 2);
-
-					double factor = theta < 1e-4 ? 0.5 : std::sin(theta / 2) / theta;
-					s_nv(3, factor, pq + 3);
-
-					s_pq2pm(pq, *pm);
-
-					double final_pm[4][4];
-					s_pm2pm(*pm, *pb.part_->pm(), *final_pm);
-
-					pb.part_->setPm(*final_pm);
-				}
-			}
-		}
-		auto CombineSolver::updPartVel()->void { for (auto &pb : activePartBlockPool()) s_va(6, pv() + pb.row_id_, const_cast<double*>(pb.part_->vs())); }
-		auto CombineSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool()) pb.part_->setAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
-
-		struct DividedSolver::Imp
-		{
-			Size p_size_, c_size_;
-			std::vector<double> im_, cm_, pp_, pv_, pa_, pf_, cp_, cv_, ca_, cf_;
-
-			std::vector<PartBlock> part_block_pool_;
-			std::vector<ConstraintBlock> constraint_block_pool_;
-
-			BlockSize p_blk_size_, c_blk_size_;
-			BlockData im_blk_, cm_blk_, pp_blk_, pv_blk_, pa_blk_, pf_blk_, cp_blk_, cv_blk_, ca_blk_, cf_blk_;
-		};
-		auto DividedSolver::allocateMemory()->void
-		{
-			// make active pool //
-			imp_->part_block_pool_.clear();
-			imp_->constraint_block_pool_.clear();
-
-			for (auto &prt : model().partPool())if (prt.active())imp_->part_block_pool_.push_back(PartBlock{ &prt, 0, 0 });
-			for (auto &jnt : model().jointPool())if (jnt.active())imp_->constraint_block_pool_.push_back(ConstraintBlock{ &jnt,0,0, nullptr, nullptr });
-			for (auto &mot : model().motionPool())if (mot.active()) imp_->constraint_block_pool_.push_back(ConstraintBlock{ &mot,0,0, nullptr, nullptr });
-			for (auto &gmt : model().generalMotionPool())if (gmt.active())imp_->constraint_block_pool_.push_back(ConstraintBlock{ &gmt,0,0, nullptr, nullptr });
-
-			// compute memory size //
-			imp_->p_size_ = 0;
-			imp_->c_size_ = 6;
-			imp_->p_blk_size_.clear();
-			imp_->c_blk_size_.clear();
-			imp_->c_blk_size_.resize(1, 6);
-
-			for (auto &pb : activePartBlockPool())
-			{
-				pb.row_id_ = imp_->p_size_;
-				pb.blk_row_id_ = imp_->p_blk_size_.size();
-				imp_->p_size_ += 6;
-				imp_->p_blk_size_.push_back(6);
-			}
-			for (auto &cb : activeConstraintBlockPool())
-			{
-				cb.col_id_ = imp_->c_size_;
-				cb.blk_col_id_ = imp_->c_blk_size_.size();
-				imp_->c_size_ += cb.constraint_->dim();
-				imp_->c_blk_size_.push_back(cb.constraint_->dim());
-
-				auto i_ = std::find_if(activePartBlockPool().begin(), activePartBlockPool().end(), [&cb](PartBlock &pb) {return pb.part_ == &cb.constraint_->makI().fatherPart(); });
-				auto j_ = std::find_if(activePartBlockPool().begin(), activePartBlockPool().end(), [&cb](PartBlock &pb) {return pb.part_ == &cb.constraint_->makJ().fatherPart(); });
-				if (i_ == activePartBlockPool().end()) throw std::runtime_error("i part not found");
-				if (j_ == activePartBlockPool().end()) throw std::runtime_error("j part not found");
-				cb.pb_i_ = &*i_;
-				cb.pb_j_ = &*j_;
-			}
-
-			// allocate memory //
-			imp_->im_.clear();
-			imp_->im_.resize(imp_->p_size_ * imp_->p_size_, 0.0);
-			imp_->cm_.clear();
-			imp_->cm_.resize(imp_->p_size_ * imp_->c_size_, 0.0);
-			imp_->cp_.clear();
-			imp_->cp_.resize(imp_->c_size_ * 1, 0.0);
-			imp_->cv_.clear();
-			imp_->cv_.resize(imp_->c_size_ * 1, 0.0);
-			imp_->ca_.clear();
-			imp_->ca_.resize(imp_->c_size_ * 1, 0.0);
-			imp_->cf_.clear();
-			imp_->cf_.resize(imp_->c_size_ * 1, 0.0);
-			imp_->pp_.clear();
-			imp_->pp_.resize(imp_->p_size_ * 1, 0.0);
-			imp_->pv_.clear();
-			imp_->pv_.resize(imp_->p_size_ * 1, 0.0);
-			imp_->pa_.clear();
-			imp_->pa_.resize(imp_->p_size_ * 1, 0.0);
-			imp_->pf_.clear();
-			imp_->pf_.resize(imp_->p_size_ * 1, 0.0);
-
-			imp_->im_blk_.clear();
-			imp_->im_blk_.resize(imp_->p_blk_size_.size() * imp_->p_blk_size_.size());
-			imp_->cm_blk_.clear();
-			imp_->cm_blk_.resize(imp_->p_blk_size_.size() * imp_->c_blk_size_.size());
-			imp_->cp_blk_.clear();
-			imp_->cp_blk_.resize(imp_->c_blk_size_.size() * 1);
-			imp_->cv_blk_.clear();
-			imp_->cv_blk_.resize(imp_->c_blk_size_.size() * 1);
-			imp_->ca_blk_.clear();
-			imp_->ca_blk_.resize(imp_->c_blk_size_.size() * 1);
-			imp_->cf_blk_.clear();
-			imp_->cf_blk_.resize(imp_->c_blk_size_.size() * 1);
-			imp_->pp_blk_.clear();
-			imp_->pp_blk_.resize(imp_->p_blk_size_.size() * 1);
-			imp_->pv_blk_.clear();
-			imp_->pv_blk_.resize(imp_->p_blk_size_.size() * 1);
-			imp_->pa_blk_.clear();
-			imp_->pa_blk_.resize(imp_->p_blk_size_.size() * 1);
-			imp_->pf_blk_.clear();
-			imp_->pf_blk_.resize(imp_->p_blk_size_.size() * 1);
-			
-			s_blk_map(cBlkSize(), { 1 }, imp_->cp_.data(), imp_->cp_blk_);
-			s_blk_map(cBlkSize(), { 1 }, imp_->cv_.data(), imp_->cv_blk_);
-			s_blk_map(cBlkSize(), { 1 }, imp_->ca_.data(), imp_->ca_blk_);
-			s_blk_map(cBlkSize(), { 1 }, imp_->cf_.data(), imp_->cf_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->pp_.data(), imp_->pp_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->pv_.data(), imp_->pv_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->pa_.data(), imp_->pa_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->pf_.data(), imp_->pf_blk_);
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->im_.data(), imp_->im_blk_);
-			s_blk_map(pBlkSize(), cBlkSize(), imp_->cm_.data(), imp_->cm_blk_);
-
-			for (auto &ele : imp_->im_blk_)ele.is_zero = true;
-			for (auto &ele : imp_->cm_blk_)ele.is_zero = true;
-			for (auto &pb : activePartBlockPool())imp_->im_blk_[dynamic::id(pb.blk_row_id_, pb.blk_row_id_, pBlkSize().size())].is_zero = false;
-			for (auto &cb : activeConstraintBlockPool())
-			{
-				imp_->cm_blk_[dynamic::id(cb.pb_i_->blk_row_id_, cb.blk_col_id_, cBlkSize().size())].is_zero = false;
-				imp_->cm_blk_[dynamic::id(cb.pb_j_->blk_row_id_, cb.blk_col_id_, cBlkSize().size())].is_zero = false;
-			}
-
-			auto ground_iter = std::find_if(imp_->part_block_pool_.begin(), imp_->part_block_pool_.end(), [&](PartBlock &pb) {return pb.part_ == &model().ground(); });
-
-			imp_->cm_blk_[dynamic::id(ground_iter->blk_row_id_, 0, cBlkSize().size())].is_zero = false;
-			for (Size i = 0; i < 6; ++i)imp_->cm_[aris::dynamic::id(ground_iter->row_id_ + i, i, cSize())] = 1.0;
-
-		}
-		auto DividedSolver::activePartBlockPool()->std::vector<PartBlock>& { return imp_->part_block_pool_; }
-		auto DividedSolver::activeConstraintBlockPool()->std::vector<ConstraintBlock>& { return imp_->constraint_block_pool_; }
-		auto DividedSolver::cSize()->Size { return imp_->c_size_; }
-		auto DividedSolver::pSize()->Size { return imp_->p_size_; }
-		auto DividedSolver::im()->double * { return imp_->im_.data(); }
-		auto DividedSolver::cm()->double * { return imp_->cm_.data(); }
-		auto DividedSolver::pp()->double * { return imp_->pp_.data(); }
-		auto DividedSolver::pv()->double * { return imp_->pv_.data(); }
-		auto DividedSolver::pa()->double * { return imp_->pa_.data(); }
-		auto DividedSolver::pf()->double * { return imp_->pf_.data(); }
-		auto DividedSolver::cp()->double * { return imp_->cp_.data(); }
-		auto DividedSolver::cv()->double * { return imp_->cv_.data(); }
-		auto DividedSolver::ca()->double * { return imp_->ca_.data(); }
-		auto DividedSolver::cf()->double * { return imp_->cf_.data(); }
-		auto DividedSolver::cBlkSize()->BlockSize& { return imp_->c_blk_size_; }
-		auto DividedSolver::pBlkSize()->BlockSize& { return imp_->p_blk_size_; }
-		auto DividedSolver::imBlk()->BlockData& { return imp_->im_blk_; }
-		auto DividedSolver::cmBlk()->BlockData& { return imp_->cm_blk_; }
-		auto DividedSolver::ppBlk()->BlockData& { return imp_->pp_blk_; }
-		auto DividedSolver::pvBlk()->BlockData& { return imp_->pv_blk_; }
-		auto DividedSolver::paBlk()->BlockData& { return imp_->pa_blk_; }
-		auto DividedSolver::pfBlk()->BlockData& { return imp_->pf_blk_; }
-		auto DividedSolver::cpBlk()->BlockData& { return imp_->cp_blk_; }
-		auto DividedSolver::cvBlk()->BlockData& { return imp_->cv_blk_; }
-		auto DividedSolver::caBlk()->BlockData& { return imp_->ca_blk_; }
-		auto DividedSolver::cfBlk()->BlockData& { return imp_->cf_blk_; }
-		DividedSolver::~DividedSolver() = default;
-		DividedSolver::DividedSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
-		DividedSolver::DividedSolver(const DividedSolver &other) = default;
-		DividedSolver::DividedSolver(DividedSolver &&other) = default;
-		DividedSolver& DividedSolver::operator=(const DividedSolver &other) = default;
-		DividedSolver& DividedSolver::operator=(DividedSolver &&other) = default;
-		
-		struct GroundDividedSolver::Imp {};
-		auto GroundDividedSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto GroundDividedSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto GroundDividedSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto GroundDividedSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->getVs(pv() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto GroundDividedSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->getAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto GroundDividedSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbPf(pf() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto GroundDividedSolver::updIm()->void { for (auto &pb : activePartBlockPool())pb.part_->cptGlbIm(im() + dynamic::id(pb.row_id_, pb.row_id_, pSize()), pSize()); }
-		auto GroundDividedSolver::updCm()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptGlbCm(cm() + dynamic::id(cb.pb_i_->row_id_, cb.col_id_, cSize()), cSize(), cm() + dynamic::id(cb.pb_j_->row_id_, cb.col_id_, cSize()), cSize()); }
-		auto GroundDividedSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto GroundDividedSolver::updPartPos()->void
-		{
-			double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
-			
-			for (auto pb : activePartBlockPool())
-			{
-				if (pb.part_ != &model().ground())
-				{
-					double pm[4][4];
-					double pq[7];
-
-					s_vc(6, pp() + dynamic::id(pb.row_id_, 0, 1), pq);
-
-					double theta = s_norm(3, pq + 3);
-					pq[6] = std::cos(theta / 2);
-
-					double factor = theta < 1e-4 ? 0.5 : std::sin(theta / 2) / theta;
-					s_nv(3, factor, pq + 3);
-
-					s_pq2pm(pq, *pm);
-
-					double final_pm[4][4];
-					s_pm2pm(*pm, *pb.part_->pm(), *final_pm);
-
-					pb.part_->setPm(*final_pm);
-				}
-			}
-		}
-		auto GroundDividedSolver::updPartVel()->void 
-		{ 
-			for (auto &pb : activePartBlockPool()) 
-				if (pb.part_ != &model().ground()) 
-					s_va(6, pv() + dynamic::id(pb.row_id_, 0, 1), const_cast<double*>(pb.part_->vs())); 
-		}
-		auto GroundDividedSolver::updPartAcc()->void 
-		{ 
-			for (auto &pb : activePartBlockPool())
-				if (pb.part_ != &model().ground()) 
-					pb.part_->setAs(pa() + dynamic::id(pb.row_id_, 0, 1)); 
-		}
-		GroundDividedSolver::~GroundDividedSolver() = default;
-		GroundDividedSolver::GroundDividedSolver(const std::string &name, Size max_iter_count, double max_error) :DividedSolver(name, max_iter_count, max_error) {}
-		GroundDividedSolver::GroundDividedSolver(const GroundDividedSolver &other) = default;
-		GroundDividedSolver::GroundDividedSolver(GroundDividedSolver &&other) = default;
-		GroundDividedSolver& GroundDividedSolver::operator=(const GroundDividedSolver &other) = default;
-		GroundDividedSolver& GroundDividedSolver::operator=(GroundDividedSolver &&other) = default;
-
-		struct PartDividedSolver::Imp {};
-		auto PartDividedSolver::updCp()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCp(cp() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto PartDividedSolver::updCv()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCv(cv() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto PartDividedSolver::updCa()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptCa(ca() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto PartDividedSolver::updPv()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtVs(pv() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto PartDividedSolver::updPa()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtAs(pa() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto PartDividedSolver::updPf()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtPf(pf() + dynamic::id(pb.row_id_, 0, 1)); }
-		auto PartDividedSolver::updIm()->void { for (auto &pb : activePartBlockPool())pb.part_->cptPrtIm(im() + dynamic::id(pb.row_id_, pb.row_id_, pSize()), pSize()); }
-		auto PartDividedSolver::updCm()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->cptPrtCm(cm() + dynamic::id(cb.pb_i_->row_id_, cb.col_id_, cSize()), cSize(), cm() + dynamic::id(cb.pb_j_->row_id_, cb.col_id_, cSize()), cSize()); }
-		auto PartDividedSolver::updConstraintFce()->void { for (auto &cb : activeConstraintBlockPool())cb.constraint_->setCf(cf() + dynamic::id(cb.col_id_, 0, 1)); }
-		auto PartDividedSolver::updPartPos()->void
-		{
-			double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
-
-			for (auto pb : activePartBlockPool())
-			{
-				if (pb.part_ != &model().ground())
-				{
-					double pm[4][4];
-					double pq[7];
-
-					s_vc(6, pp() + dynamic::id(pb.row_id_, 0, 1), pq);
-					s_tv(*pb.part_->pm(), pp() + dynamic::id(pb.row_id_, 0, 1), pq);
-
-					double theta = s_norm(3, pq + 3);
-					pq[6] = std::cos(theta / 2);
-
-					double factor = theta < 1e-4 ? 0.5 : std::sin(theta / 2) / theta;
-					s_nv(3, factor, pq + 3);
-
-					s_pq2pm(pq, *pm);
-
-					double final_pm[4][4];
-					s_pm2pm(*pm, *pb.part_->pm(), *final_pm);
-
-					pb.part_->setPm(*final_pm);
-				}
-			}
-		}
-		auto PartDividedSolver::updPartVel()->void { for (auto &pb : activePartBlockPool())s_tva(*pb.part_->pm(), pv() + dynamic::id(pb.row_id_, 0, 1), const_cast<double6&>(pb.part_->vs())); }
-		auto PartDividedSolver::updPartAcc()->void { for (auto &pb : activePartBlockPool())s_tv(*pb.part_->pm(), pa() + dynamic::id(pb.row_id_, 0, 1), const_cast<double6&>(pb.part_->as())); }
-		PartDividedSolver::~PartDividedSolver() = default;
-		PartDividedSolver::PartDividedSolver(const std::string &name, Size max_iter_count, double max_error) :DividedSolver(name, max_iter_count, max_error) {}
-		PartDividedSolver::PartDividedSolver(const PartDividedSolver &other) = default;
-		PartDividedSolver::PartDividedSolver(PartDividedSolver &&other) = default;
-		PartDividedSolver& PartDividedSolver::operator=(const PartDividedSolver &other) = default;
-		PartDividedSolver& PartDividedSolver::operator=(PartDividedSolver &&other) = default;
-
-		struct LltGroundDividedSolver::Imp
-		{
-			std::vector<double> cct_, ctc_, cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
-			BlockData cct_blk_, ctc_blk_;
-			BlockData cct_llt_blk_, cct_x_blk_, cct_b_blk_, ctc_llt_blk_, ctc_x_blk_, ctc_b_blk_;
-		};
-		auto LltGroundDividedSolver::allocateMemory()->void
-		{
-			DividedSolver::allocateMemory();
-
-			imp_->cct_.resize(pSize() * pSize());
-			imp_->cct_llt_.resize(pSize() * pSize());
-			imp_->cct_b_.resize(pSize() * 1);
-			imp_->cct_x_.resize(pSize() * 1);
-
-			imp_->cct_blk_.resize(pBlkSize().size() * pBlkSize().size());
-			imp_->cct_llt_blk_.resize(pBlkSize().size() * pBlkSize().size());
-			imp_->cct_b_blk_.resize(pBlkSize().size() * 1);
-			imp_->cct_x_blk_.resize(pBlkSize().size() * 1);
-
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_.data(), imp_->cct_blk_);
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_llt_.data(), imp_->cct_llt_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->cct_b_.data(), imp_->cct_b_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->cct_x_.data(), imp_->cct_x_blk_);
-		}
-		auto LltGroundDividedSolver::kinPos()->void
-		{
-			setIterCount(0);
-
-			double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
-			for (; iterCount() < maxIterCount(); setIterCount(iterCount() + 1))
-			{
-				updCm();
-				updCp();
-				s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-				s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), cpBlk(), imp_->cct_b_blk_);
-
-				setError(s_blk_norm_fro(cBlkSize(), { 1 }, cpBlk(), BlockStride{ 1,1,1,1 }));
-
-				if (error() < maxError()) return;
-
-				s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-				s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-				s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, ppBlk(), BlockStride{ 1,1,1,1 });
-
-				updPartPos();
-			}
-		}
-		auto LltGroundDividedSolver::kinVel()->void
-		{
-			s_fill(6, 1, 0.0, const_cast<double*>(model().ground().vs()));
-			
-			updCm();
-			updCv();
-
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), cvBlk(), imp_->cct_b_blk_);
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, pvBlk(), BlockStride{ 1,1,1,1 });
-
-			updPartVel();
-		}
-		auto LltGroundDividedSolver::kinAcc()->void
-		{
-			s_fill(6, 1, 0.0, const_cast<double *>(model().ground().as()));
-			
-			updCm();
-			updCa();
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), caBlk(), imp_->cct_b_blk_);
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, paBlk(), BlockStride{ 1,1,1,1 });
-
-			updPartAcc();
-		}
-		auto LltGroundDividedSolver::dynFce()->void
-		{
-			updIm();
-			updCm();
-			updPf();
-			updPa();
-
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_vc(pSize(), pf(), imp_->cct_b_.data());
-			s_blk_mma(pBlkSize(), { 1 }, pBlkSize(), imBlk(), BlockStride{ pBlkSize().size(),1,pSize(),1 }, paBlk(), BlockStride{ 1,1,1,1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 });
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 });
-			s_vc(pSize(), imp_->cct_b_.data(), imp_->cct_x_.data());
-
-			s_blk_mm(cBlkSize(), { 1 }, pBlkSize(), cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, cfBlk(), BlockStride{ 1,1,1,1 });
-
-			updConstraintFce();
-		}
-		LltGroundDividedSolver::~LltGroundDividedSolver() = default;
-		LltGroundDividedSolver::LltGroundDividedSolver(const std::string &name) :GroundDividedSolver(name) {}
-		LltGroundDividedSolver::LltGroundDividedSolver(const LltGroundDividedSolver &other) = default;
-		LltGroundDividedSolver::LltGroundDividedSolver(LltGroundDividedSolver &&other) = default;
-		LltGroundDividedSolver& LltGroundDividedSolver::operator=(const LltGroundDividedSolver &other) = default;
-		LltGroundDividedSolver& LltGroundDividedSolver::operator=(LltGroundDividedSolver &&other) = default;
-
-		struct LltPartDividedSolver::Imp
-		{
-			std::vector<double> cct_, ctc_, cct_llt_, cct_x_, cct_b_, ctc_llt_, ctc_x_, ctc_b_;
-			BlockData cct_blk_, ctc_blk_;
-			BlockData cct_llt_blk_, cct_x_blk_, cct_b_blk_, ctc_llt_blk_, ctc_x_blk_, ctc_b_blk_;
-		};
-		auto LltPartDividedSolver::allocateMemory()->void
-		{
-			DividedSolver::allocateMemory();
-
-			imp_->cct_.resize(pSize() * pSize());
-			imp_->cct_llt_.resize(pSize() * pSize());
-			imp_->cct_b_.resize(pSize() * 1);
-			imp_->cct_x_.resize(pSize() * 1);
-
-			imp_->cct_blk_.resize(pBlkSize().size() * pBlkSize().size());
-			imp_->cct_llt_blk_.resize(pBlkSize().size() * pBlkSize().size());
-			imp_->cct_b_blk_.resize(pBlkSize().size() * 1);
-			imp_->cct_x_blk_.resize(pBlkSize().size() * 1);
-
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_.data(), imp_->cct_blk_);
-			s_blk_map(pBlkSize(), pBlkSize(), imp_->cct_llt_.data(), imp_->cct_llt_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->cct_b_.data(), imp_->cct_b_blk_);
-			s_blk_map(pBlkSize(), { 1 }, imp_->cct_x_.data(), imp_->cct_x_blk_);
-		}
-		auto LltPartDividedSolver::kinPos()->void
-		{
-			setIterCount(0);
-
-			double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
-			for (; iterCount() < maxIterCount(); setIterCount(iterCount() + 1))
-			{
-				updCm();
-				updCp();
-				s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-				s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), cpBlk(), imp_->cct_b_blk_);
-
-				setError(s_blk_norm_fro(cBlkSize(), { 1 }, cpBlk(), BlockStride{ 1,1,1,1 }));
-
-				if (error() < maxError()) return;
-
-				s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-				s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-				s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, ppBlk(), BlockStride{ 1,1,1,1 });
-
-				updPartPos();
-			}
-		}
-		auto LltPartDividedSolver::kinVel()->void
-		{
-			s_fill(6, 1, 0.0, const_cast<double*>(model().ground().vs()));
-			
-			updCm();
-			updCv();
-
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), cvBlk(), imp_->cct_b_blk_);
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, pvBlk(), BlockStride{ 1,1,1,1 });
-
-			updPartVel();
-		}
-		auto LltPartDividedSolver::kinAcc()->void
-		{
-			s_fill(6, 1, 0.0, const_cast<double *>(model().ground().as()));
-			
-			updCm();
-			updCa();
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_mm(pBlkSize(), { 1 }, cBlkSize(), cmBlk(), caBlk(), imp_->cct_b_blk_);
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, paBlk(), BlockStride{ 1,1,1,1 });
-
-			updPartAcc();
-		}
-		auto LltPartDividedSolver::dynFce()->void
-		{
-			updIm();
-			updCm();
-			updPf();
-			updPa();
-
-			s_blk_mm(pBlkSize(), pBlkSize(), cBlkSize(), cmBlk(), BlockStride{ cBlkSize().size(),1,cSize(),1 }, cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_vc(pSize(), pf(), imp_->cct_b_.data());
-			s_blk_mma(pBlkSize(), { 1 }, pBlkSize(), imBlk(), BlockStride{ pBlkSize().size(),1,pSize(),1 }, paBlk(), BlockStride{ 1,1,1,1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 });
-
-			s_blk_llt(pBlkSize(), imp_->cct_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 });
-			s_blk_sov_lm(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 });
-			s_blk_sov_um(pBlkSize(), { 1 }, imp_->cct_llt_blk_, BlockStride{ pBlkSize().size(),1,pSize(),1 }, imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, imp_->cct_b_blk_, BlockStride{ 1,1,1,1 });
-			s_vc(pSize(), imp_->cct_b_.data(), imp_->cct_x_.data());
-
-			s_blk_mm(cBlkSize(), { 1 }, pBlkSize(), cmBlk(), T(BlockStride{ cBlkSize().size(),1,cSize(),1 }), imp_->cct_x_blk_, BlockStride{ 1,1,1,1 }, cfBlk(), BlockStride{ 1,1,1,1 });
-
-			updConstraintFce();
-		}
-		LltPartDividedSolver::~LltPartDividedSolver() = default;
-		LltPartDividedSolver::LltPartDividedSolver(const std::string &name, Size max_iter_count, double max_error) :PartDividedSolver(name, max_iter_count, max_error) {}
-		LltPartDividedSolver::LltPartDividedSolver(const LltPartDividedSolver &other) = default;
-		LltPartDividedSolver::LltPartDividedSolver(LltPartDividedSolver &&other) = default;
-		LltPartDividedSolver& LltPartDividedSolver::operator=(const LltPartDividedSolver &other) = default;
-		LltPartDividedSolver& LltPartDividedSolver::operator=(LltPartDividedSolver &&other) = default;
 
 		struct UniversalSolver::Imp
 		{
@@ -1088,56 +404,56 @@ namespace aris
 			//
 			// b = [ fs ]
 			//     [ ca ]
-			
 			struct Relation
 			{
 				struct Block { Constraint* constraint; bool is_I; };
 
-				Part *prtI;
-				Part *prtJ;
+				Part *prtI; // 对角块对应的Part
+				Part *prtJ; // rd对应的Part
 				Size dim;
 				std::vector<Block> cst_pool_;
 			};
 			struct Diag
 			{
 				double dm[36], iv[10];
+				double pm1[16], pm2[16];
+				double *pm, *last_pm;
 				double xp[6], bc[6], xc[6], bp[6];
 				Size rows;// in F
-				Relation *rel;
 				Part *part;
 				Diag *rd;//related diag, for row addition
-				bool is_I;
+				Relation rel_;
 
 				std::function<void(Diag*)> upd_d;
 				std::function<void(Diag*, const double *left, double* right)> d_dot;
 				std::function<void(Diag*, const double *left, double* right)> dt_dot;
-
 			};
 			struct Remainder
 			{
 				struct Block { Diag* diag; bool is_I; };
 
+				Diag *i_diag, *j_diag;
 				double cmI[36], cmJ[36];
 				double xp[6], bc[6], xc[6], bp[6];
 				std::vector<Block> cm_blk_series;
-				Relation *rel;
+				Relation rel_;
 			};
-			
-			
+
 			struct SubSystem
 			{
-				std::vector<Relation> relation_pool_;
-				std::vector<Part *> part_pool_;
 				std::vector<Diag> diag_pool_;
 				std::vector<Remainder> remainder_pool_;
 
 				Size fm, fn, fr;
 
-				double *F, *G, *S;
-				double *FU, *FT;
+				double *F, *FU, *FT;
 				Size* FP;
-				double *GU, *GT, *QT_DOT_G;
+				double *G, *GU, *GT;
 				Size *GP;
+
+				double *S;
+				double *QT_DOT_G;
+				
 				double *xpf, *xcf;
 				double *bpf, *bcf;
 				double *alpha;
@@ -1149,12 +465,12 @@ namespace aris
 				Size max_iter_count_;
 				Size iter_count_;
 
-				auto addPart(std::vector<Part *> &left_part_pool, std::vector<Relation> &relation_pool, Part *part)->void
+				static auto addPart(std::vector<Part *> &part_pool_, std::vector<Part *> &left_part_pool, std::vector<Relation> &relation_pool, Part *part)->void
 				{
 					if (std::find(part_pool_.begin(), part_pool_.end(), part) != part_pool_.end())return;
-					
+
 					part_pool_.push_back(part);
-					
+
 					// 如果不是地面 //
 					if (part != left_part_pool.front())
 					{
@@ -1163,11 +479,11 @@ namespace aris
 						{
 							if (rel.prtI == part)
 							{
-								addPart(left_part_pool, relation_pool, rel.prtJ);
+								addPart(part_pool_, left_part_pool, relation_pool, rel.prtJ);
 							}
 							else if (rel.prtJ == part)
 							{
-								addPart(left_part_pool, relation_pool, rel.prtI);
+								addPart(part_pool_, left_part_pool, relation_pool, rel.prtI);
 							}
 						}
 					}
@@ -1215,83 +531,101 @@ namespace aris
 
 			static auto one_constraint_upd_d(Diag *d)->void
 			{
-				d->rel->cst_pool_.begin()->constraint->cptGlbDm(d->dm);
-				if (!d->is_I)s_iv(36, d->dm);
+				double makI_pm[16], makJ_pm[16];
+				s_pm_dot_pm(d->rel_.cst_pool_.begin()->is_I ? d->pm : d->rd->pm, *d->rel_.cst_pool_.begin()->constraint->makI().prtPm(), makI_pm);
+				s_pm_dot_pm(d->rel_.cst_pool_.begin()->is_I ? d->rd->pm : d->pm, *d->rel_.cst_pool_.begin()->constraint->makJ().prtPm(), makJ_pm);
+				d->rel_.cst_pool_.begin()->constraint->cptGlbDm1(d->dm, makI_pm, makJ_pm);
+				//d->rel_.cst_pool_.begin()->constraint->cptGlbDm(d->dm);
+				//d->rel_.cst_pool_.begin()->constraint->cptGlbDm1(d->dm, *d->rel_.cst_pool_.begin()->constraint->makI().pm(), *d->rel_.cst_pool_.begin()->constraint->makJ().pm());
+				if (!d->rel_.cst_pool_.begin()->is_I)s_iv(36, d->dm);
 			}
 			static auto revolute_upd_d(Diag *d)->void
 			{
-				d->rel->cst_pool_.begin()->constraint->cptGlbDm(d->dm);
-				if (!d->is_I)s_iv(36, d->dm);
+				double makI_pm[16], makJ_pm[16];
+				s_pm_dot_pm(d->rel_.cst_pool_.begin()->is_I ? d->pm : d->rd->pm, *d->rel_.cst_pool_.begin()->constraint->makI().prtPm(), makI_pm);
+				s_pm_dot_pm(d->rel_.cst_pool_.begin()->is_I ? d->rd->pm : d->pm, *d->rel_.cst_pool_.begin()->constraint->makJ().prtPm(), makJ_pm);
+				d->rel_.cst_pool_.begin()->constraint->cptGlbDm1(d->dm, makI_pm, makJ_pm);
+				//d->rel_.cst_pool_.begin()->constraint->cptGlbDm(d->dm);
+				//d->rel_.cst_pool_.begin()->constraint->cptGlbDm1(d->dm, *d->rel_.cst_pool_.begin()->constraint->makI().pm(), *d->rel_.cst_pool_.begin()->constraint->makJ().pm());
+				if (!d->rel_.cst_pool_.begin()->is_I)s_iv(36, d->dm);
 			}
 			static auto prismatic_upd_d(Diag *d)->void
 			{
-				d->rel->cst_pool_.begin()->constraint->cptGlbDm(d->dm);
-				if (!d->is_I)s_iv(36, d->dm);
+				double makI_pm[16], makJ_pm[16];
+				s_pm_dot_pm(d->rel_.cst_pool_.begin()->is_I ? d->pm : d->rd->pm, *d->rel_.cst_pool_.begin()->constraint->makI().prtPm(), makI_pm);
+				s_pm_dot_pm(d->rel_.cst_pool_.begin()->is_I ? d->rd->pm : d->pm, *d->rel_.cst_pool_.begin()->constraint->makJ().prtPm(), makJ_pm);
+				d->rel_.cst_pool_.begin()->constraint->cptGlbDm1(d->dm, makI_pm, makJ_pm);
+				//d->rel_.cst_pool_.begin()->constraint->cptGlbDm(d->dm);
+				//d->rel_.cst_pool_.begin()->constraint->cptGlbDm1(d->dm, *d->rel_.cst_pool_.begin()->constraint->makI().pm(), *d->rel_.cst_pool_.begin()->constraint->makJ().pm());
+				if (!d->rel_.cst_pool_.begin()->is_I)s_iv(36, d->dm);
 			}
 			static auto normal_upd_d(Diag *d)->void
 			{
+				double makI_pm[16], makJ_pm[16];
+				s_pm_dot_pm(d->rel_.cst_pool_.begin()->is_I ? d->pm : d->rd->pm, *d->rel_.cst_pool_.begin()->constraint->makI().prtPm(), makI_pm);
+				s_pm_dot_pm(d->rel_.cst_pool_.begin()->is_I ? d->rd->pm : d->pm, *d->rel_.cst_pool_.begin()->constraint->makJ().prtPm(), makJ_pm);
+				
 				double cm1[36], cm2[36];
 				double U[36], tau[6];
 				double Q[36], R[36];
 
 				Size pos{ 0 };
-				for (auto &c : d->rel->cst_pool_)
+				for (auto &c : d->rel_.cst_pool_)
 				{
-					double *cmI = d->is_I ? cm1 : cm2;
-					double *cmJ = d->is_I ? cm2 : cm1;
+					double cmI_tem[36], cmJ_tem[36];
+					
+					double *cmI = c.is_I ? cm1 : cm2;
+					double *cmJ = c.is_I ? cm2 : cm1;
 
-					c.constraint->cptGlbCm(cmI + pos, d->rel->dim, cmJ + pos, d->rel->dim);
+					c.constraint->cptGlbCm1(cmI_tem, cmJ_tem, makI_pm, makJ_pm);
+					s_mc(6, c.constraint->dim(), cmI_tem, c.constraint->dim(), cmI + pos, d->rel_.dim);
+					s_mc(6, c.constraint->dim(), cmJ_tem, c.constraint->dim(), cmJ + pos, d->rel_.dim);
+					//c.constraint->cptGlbCm(cmI + pos, d->rel_.dim, cmJ + pos, d->rel_.dim);
 					pos += c.constraint->dim();
 				}
 
-				s_householder_ut(6, d->rel->dim, cm1, U, tau);
-				s_householder_ut2qr(6, d->rel->dim, U, tau, Q, R);
+				s_householder_ut(6, d->rel_.dim, cm1, U, tau);
+				s_householder_ut2qr(6, d->rel_.dim, U, tau, Q, R);
 
 				double tem[36];
 				s_fill(6, 6, 0.0, tem);
 				s_fill(6, 1, 1.0, tem, 7);
-				s_inv_um(d->rel->dim, R, d->rel->dim, tem, 6);
+				s_inv_um(d->rel_.dim, R, d->rel_.dim, tem, 6);
 				s_mm(6, 6, 6, tem, 6, Q, dynamic::ColMajor{ 6 }, d->dm, 6);
 			}
 		};
-		// check //
 		auto UniversalSolver::Imp::SubSystem::rowAddInverseXp()->void { for (auto d = diag_pool_.begin() + 1; d<diag_pool_.end(); ++d)s_va(6, d->rd->xp, d->xp); }
-		// check //
 		auto UniversalSolver::Imp::SubSystem::rowAddBp()->void { for (auto d = diag_pool_.rbegin(); d < diag_pool_.rend() - 1; ++d) s_va(6, d->bp, d->rd->bp); }
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updDiagDm()->void { for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)d->upd_d(&*d); }
-		// diff //
 		auto UniversalSolver::Imp::SubSystem::updDiagIm()->void 
 		{ 
 			if (!hasGround())s_iv2iv(*diag_pool_.begin()->part->pm(), diag_pool_.begin()->part->prtIv(), diag_pool_.begin()->iv);
 			for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)s_iv2iv(*d->part->pm(), d->part->prtIv(), d->iv);
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updF()->void
 		{
+			s_fill(fm, fn, 0.0, F);
+			
 			Size cols{ 0 };
 			for (auto &r : remainder_pool_)
 			{
 				for (auto &b : r.cm_blk_series)
 				{
-					s_mm(6 - b.diag->rel->dim, r.rel->dim, 6, b.diag->dm + dynamic::id(b.diag->rel->dim, 0, 6), 6, b.is_I ? r.cmI : r.cmJ, r.rel->dim, F + dynamic::id(b.diag->rows, cols, fn), fn);
+					s_mm(6 - b.diag->rel_.dim, r.rel_.dim, 6, b.diag->dm + dynamic::id(b.diag->rel_.dim, 0, 6), 6, b.is_I ? r.cmI : r.cmJ, r.rel_.dim, F + dynamic::id(b.diag->rows, cols, fn), fn);
 				}
-				cols += r.rel->dim;
+				cols += r.rel_.dim;
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updXpf()->void
 		{
 			s_householder_utp(fn, fm, F, ColMajor{ fn }, FU, ColMajor{ fn }, FT, 1, FP, fr, max_error_);
 			s_householder_utp_sov(fn, fm, 1, fr, FU, ColMajor{ fn }, FT, 1, FP, bcf, 1, xpf, 1, max_error_);
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updXcf()->void
 		{
 			s_householder_utp(fm, fn, F, FU, FT, FP, fr, max_error_);
 			s_householder_utp_sov(fm, fn, 1, fr, FU, FT, FP, bpf, xcf, max_error_);
 		}
-		// diff //
 		auto UniversalSolver::Imp::SubSystem::updBpf()->void
 		{
 			if (!hasGround())s_vc(6, diag_pool_.begin()->bp, bpf + diag_pool_.begin()->rows);
@@ -1302,10 +636,9 @@ namespace aris
 				s_mm(6, 1, 6, d->dm, 6, d->bp, 1, tem, 1);
 
 				s_vc(6, tem, d->bp);
-				s_vc(6 - d->rel->dim, d->bp + d->rel->dim, bpf + d->rows);
+				s_vc(6 - d->rel_.dim, d->bp + d->rel_.dim, bpf + d->rows);
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updBcf()->void
 		{
 			// 使用已求出的未知数，用以构建b
@@ -1319,58 +652,55 @@ namespace aris
 					double tem[6];
 					auto cm = b.is_I ? r.cmJ : r.cmI;//这里是颠倒的，因为加到右侧需要乘-1.0
 
-					s_mm(6, 1, b.diag->rel->dim, b.diag->dm, ColMajor{ 6 }, b.diag->bc, 1, tem, 1);
-					s_mma(r.rel->dim, 1, 6, cm, ColMajor{ r.rel->dim }, tem, 1, r.bc, 1);
+					s_mm(6, 1, b.diag->rel_.dim, b.diag->dm, ColMajor{ 6 }, b.diag->bc, 1, tem, 1);
+					s_mma(r.rel_.dim, 1, 6, cm, ColMajor{ r.rel_.dim }, tem, 1, r.bc, 1);
 				}
-				s_mc(r.rel->dim, 1, r.bc, bcf + cols);
-				cols += r.rel->dim;
+				s_vc(r.rel_.dim, r.bc, bcf + cols);
+				cols += r.rel_.dim;
 			}
 		}
-		// diff //
 		auto UniversalSolver::Imp::SubSystem::updXp()->void
 		{
 			if(!hasGround())s_vc(6, xpf + diag_pool_.begin()->rows, diag_pool_.begin()->xp);
 			for (auto d = diag_pool_.begin() + 1; d<diag_pool_.end(); ++d)
 			{
 				double tem[6];
-				s_vc(d->rel->dim, d->bc, tem);
-				s_vc(6 - d->rel->dim, xpf + d->rows, tem + d->rel->dim);
+				s_vc(d->rel_.dim, d->bc, tem);
+				s_vc(6 - d->rel_.dim, xpf + d->rows, tem + d->rel_.dim);
 
 				s_mm(6, 1, 6, d->dm, ColMajor{ 6 }, tem, 1, d->xp, 1);
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updXc()->void
 		{
 			// 将已经求出的x更新到remainder中，此后将已知数移到右侧
 			Size cols{ 0 };
 			for (auto &r : remainder_pool_)
 			{
-				s_vc(r.rel->dim, xcf + cols, r.xc);
+				s_vc(r.rel_.dim, xcf + cols, r.xc);
 
 				// 更新待求
 				for (auto &b : r.cm_blk_series)
 				{
 					double tem[6];
-					s_mm(6, 1, r.rel->dim, b.is_I ? r.cmJ : r.cmI, xcf + cols, tem);
+					s_mm(6, 1, r.rel_.dim, b.is_I ? r.cmJ : r.cmI, xcf + cols, tem);
 					s_mma(6, 1, 6, b.diag->dm, 6, tem, 1, b.diag->bp, 1);
 				}
 
-				cols += r.rel->dim;
+				cols += r.rel_.dim;
 			}
 			for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)
 			{
-				s_vc(d->rel->dim, d->bp, d->xc);
+				s_vc(d->rel_.dim, d->bp, d->xc);
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updCf()->void
 		{
 			for (auto &r : remainder_pool_)
 			{
 				Size pos{ 0 };
 				// 将Xcf更新 //
-				for (auto &c : r.rel->cst_pool_)
+				for (auto &c : r.rel_.cst_pool_)
 				{
 					c.constraint->setCf(r.xc + pos);
 					pos += c.constraint->dim();
@@ -1379,49 +709,53 @@ namespace aris
 			for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)
 			{
 				Size pos{ 0 };
-				for (auto &c : d->rel->cst_pool_)
+				for (auto &c : d->rel_.cst_pool_)
 				{
 					c.constraint->setCf(d->xc + pos);
 					pos += c.constraint->dim();
 				}
 			}
 		}
-		// diff //
 		auto UniversalSolver::Imp::SubSystem::updPp()->void
 		{
 			auto beg = hasGround() ? diag_pool_.begin() + 1 : diag_pool_.begin();
 			for (auto d = beg; d<diag_pool_.end(); ++d)
 			{
+				std::swap(d->pm, d->last_pm);
+				
 				double pm[4][4];
-				s_pa2pm(d->xp, *pm);
+				s_ps2pm(d->xp, *pm);
 				double final_pm[4][4];
-				s_pm2pm(*pm, *d->part->pm(), *final_pm);
+				s_pm2pm(*pm, d->last_pm, *final_pm);
 
-				d->part->setPm(*final_pm);
+				//d->part->setPm(*final_pm);
+				s_vc(16, *final_pm, d->pm);
 			}
 		}
-		// diff //
 		auto UniversalSolver::Imp::SubSystem::updPv()->void
 		{
 			auto beg = hasGround() ? diag_pool_.begin() + 1 : diag_pool_.begin();
 			for (auto d = beg; d<diag_pool_.end(); ++d)s_va(6, d->xp, const_cast<double*>(d->part->vs()));
 		}
-		// diff //
 		auto UniversalSolver::Imp::SubSystem::updPa()->void
 		{
 			auto beg = hasGround() ? diag_pool_.begin() + 1 : diag_pool_.begin();
 			for (auto d = beg; d<diag_pool_.end(); ++d)s_vc(6, d->xp, const_cast<double*>(d->part->as()));
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updCpToBc()->void
 		{
 			// bc in diag //
 			for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)
 			{
 				Size pos{ 0 };
-				for (auto &c : d->rel->cst_pool_)
+				for (auto &c : d->rel_.cst_pool_)
 				{
-					c.constraint->cptCp(d->bc + pos);
+					double makI_pm[16], makJ_pm[16];
+					s_pm_dot_pm(c.is_I ? d->pm : d->rd->pm, *c.constraint->makI().prtPm(), makI_pm);
+					s_pm_dot_pm(c.is_I ? d->rd->pm : d->pm, *c.constraint->makJ().prtPm(), makJ_pm);
+					c.constraint->cptCp1(d->bc + pos, makI_pm, makJ_pm);
+					//c.constraint->cptCp(d->bc + pos);
+					//c.constraint->cptCp1(d->bc + pos, *c.constraint->makI().pm(), *c.constraint->makJ().pm());
 					pos += c.constraint->dim();
 				}
 			}
@@ -1429,21 +763,25 @@ namespace aris
 			for (auto &r : remainder_pool_)
 			{
 				Size pos{ 0 };
-				for (auto &c : r.rel->cst_pool_)
+				for (auto &c : r.rel_.cst_pool_)
 				{
-					c.constraint->cptCp(r.bc + pos);
+					double makI_pm[16], makJ_pm[16];
+					s_pm_dot_pm(c.is_I ? r.i_diag->pm : r.j_diag->pm, *c.constraint->makI().prtPm(), makI_pm);
+					s_pm_dot_pm(c.is_I ? r.j_diag->pm : r.i_diag->pm, *c.constraint->makJ().prtPm(), makJ_pm);
+					c.constraint->cptCp1(r.bc + pos, makI_pm, makJ_pm);
+					//c.constraint->cptCp(r.bc + pos);
+					//c.constraint->cptCp1(r.bc + pos, *c.constraint->makI().pm(), *c.constraint->makJ().pm());
 					pos += c.constraint->dim();
 				}
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updCvToBc()->void
 		{
 			// bc in diag //
 			for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)
 			{
 				Size pos{ 0 };
-				for (auto &c : d->rel->cst_pool_)
+				for (auto &c : d->rel_.cst_pool_)
 				{
 					c.constraint->cptCv(d->bc + pos);
 					pos += c.constraint->dim();
@@ -1453,21 +791,20 @@ namespace aris
 			for (auto &r : remainder_pool_)
 			{
 				Size pos{ 0 };
-				for (auto &c : r.rel->cst_pool_)
+				for (auto &c : r.rel_.cst_pool_)
 				{
 					c.constraint->cptCv(r.bc + pos);
 					pos += c.constraint->dim();
 				}
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updCaToBc()->void
 		{
 			// bc in diag //
 			for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)
 			{
 				Size pos{ 0 };
-				for (auto &c : d->rel->cst_pool_)
+				for (auto &c : d->rel_.cst_pool_)
 				{
 					c.constraint->cptCa(d->bc + pos);
 					pos += c.constraint->dim();
@@ -1477,14 +814,13 @@ namespace aris
 			for (auto &r : remainder_pool_)
 			{
 				Size pos{ 0 };
-				for (auto &c : r.rel->cst_pool_)
+				for (auto &c : r.rel_.cst_pool_)
 				{
 					c.constraint->cptCa(r.bc + pos);
 					pos += c.constraint->dim();
 				}
 			}
 		}
-		// diff //
 		auto UniversalSolver::Imp::SubSystem::updPfToBp()->void
 		{
 			auto beg = hasGround() ? diag_pool_.begin() + 1 : diag_pool_.begin();
@@ -1492,31 +828,40 @@ namespace aris
 			{
 				// I*(a-g) //
 				double as_minus_g[6];
-				s_vc(6, d->part->as(), as_minus_g);
-				s_vs(6, d->part->model().environment().gravity(), as_minus_g);
-				s_iv_dot_as(d->iv, as_minus_g, d->bp);
+				s_vc(6, d->xp, as_minus_g);
+				s_vs(6, d->part->model().environment().gravity(), d->xp);
+				s_iv_dot_as(d->iv, d->xp, d->bp);
 
 				// v x I * v //
 				double I_dot_v[6];
 				s_iv_dot_as(d->iv, d->part->vs(), I_dot_v);
 				s_cfa(d->part->vs(), I_dot_v, d->bp);
+
+				// 外力，储存在as中//
+				s_vs(6, d->part->as(), d->bp);
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::updRemainderCm()->void
 		{
 			// upd remainder data //
 			for (auto &r : remainder_pool_)
 			{
 				Size pos{ 0 };
-				for (auto &c : r.rel->cst_pool_)
+				for (auto &c : r.rel_.cst_pool_)
 				{
-					c.constraint->cptGlbCm(r.cmI + pos, r.rel->dim, r.cmJ + pos, r.rel->dim);
+					double makI_pm[16], makJ_pm[16];
+					s_pm_dot_pm(c.is_I ? r.i_diag->pm : r.j_diag->pm, *c.constraint->makI().prtPm(), makI_pm);
+					s_pm_dot_pm(c.is_I ? r.j_diag->pm : r.i_diag->pm, *c.constraint->makJ().prtPm(), makJ_pm);
+
+					double cmI[36], cmJ[36];
+					c.constraint->cptGlbCm1(cmI, cmJ, makI_pm, makJ_pm);
+					s_mc(6, c.constraint->dim(), cmI, c.constraint->dim(), r.cmI + pos, r.rel_.dim);
+					s_mc(6, c.constraint->dim(), cmJ, c.constraint->dim(), r.cmJ + pos, r.rel_.dim);
+					//c.constraint->cptGlbCm(r.cmI + pos, r.rel_.dim, r.cmJ + pos, r.rel_.dim);
 					pos += c.constraint->dim();
 				}
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::kinPos()->void
 		{
 			for (iter_count_ = 0; iter_count_ < max_iter_count_; ++iter_count_)
@@ -1526,9 +871,9 @@ namespace aris
 
 				// 求解当前的误差
 				error_ = 0.0;
-				for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)for (Size i{ 0 }; i < d->rel->dim; ++i)error_ = std::max(error_, std::abs(d->bc[i]));
-				for (auto &r : remainder_pool_)for (Size i{ 0 }; i < r.rel->dim; ++i)error_ = std::max(error_, std::abs(r.bc[i]));
-				if (error_ < max_error_)return;
+				for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)for (Size i{ 0 }; i < d->rel_.dim; ++i)error_ = std::max(error_, std::abs(d->bc[i]));
+				for (auto &r : remainder_pool_)for (Size i{ 0 }; i < r.rel_.dim; ++i)error_ = std::max(error_, std::abs(r.bc[i]));
+				if (error_ < max_error_) return;
 
 				// make A
 				updDiagDm();
@@ -1538,23 +883,52 @@ namespace aris
 				updF();
 				updBcf();
 				updXpf();
-
-				for (Size i(-1); ++i < fm;)
-				{
-					xpf[i] = std::min(xpf[i], std::max(error_, 1.0));
-					xpf[i] = std::max(xpf[i], std::min(-error_, -1.0));
-				}
-
 				updXp();
 
-				// 将x写入diag, 重新乘Q, 并反向做行变换
+				// 反向做行变换
 				rowAddInverseXp();
 
 				// 将x更新到杆件
 				updPp();
+
+
+
+				// 以下为了防止奇异造成解过大的问题 //
+				// make b
+				updCpToBc();
+
+				// 求解当前的误差
+				double last_error = error_;
+				error_ = 0.0;
+				for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)for (Size i{ 0 }; i < d->rel_.dim; ++i)error_ = std::max(error_, std::abs(d->bc[i]));
+				for (auto &r : remainder_pool_)for (Size i{ 0 }; i < r.rel_.dim; ++i)error_ = std::max(error_, std::abs(r.bc[i]));
+
+				double coe = 1.0;
+				if (error_ > last_error)// 这里如果用while可以确保每个循环误差都会减小，但是有可能出现卡死
+				{
+					coe *= last_error / (error_ + last_error);
+
+					auto beg = hasGround() ? diag_pool_.begin() + 1 : diag_pool_.begin();
+					for (auto d = beg; d<diag_pool_.end(); ++d)
+					{
+						s_nv(6, coe, d->xp);
+						double pm[4][4];
+						s_ps2pm(d->xp, *pm);
+						double final_pm[4][4];
+						s_pm2pm(*pm, d->last_pm, *final_pm);
+						s_vc(16, *final_pm, d->pm);
+					}
+
+					updCpToBc();
+					error_ = 0.0;
+					for (auto d = diag_pool_.begin() + 1; d < diag_pool_.end(); ++d)for (Size i{ 0 }; i < d->rel_.dim; ++i)error_ = std::max(error_, std::abs(d->bc[i]));
+					for (auto &r : remainder_pool_)for (Size i{ 0 }; i < r.rel_.dim; ++i)error_ = std::max(error_, std::abs(r.bc[i]));
+				}
+
+
+				/////////////////////////////////结束///////////////////////////////
 			}
 		}
-		// check //
 		auto UniversalSolver::Imp::SubSystem::kinVel()->void
 		{
 			// make b
@@ -1576,11 +950,11 @@ namespace aris
 			// 将x更新到杆件
 			updPv();
 		}
-		// diff //
 		auto UniversalSolver::Imp::SubSystem::dynAccAndFce()->void
 		{
-			std::fill(F, F + fm * fn, 0.0);
-			
+			// [I   C] * [ pa ] = [ pf ]
+			// [C^T  ]   [ cf ]   [ ca ]
+
 			// upd Im //
 			updDiagIm();
 
@@ -1600,45 +974,45 @@ namespace aris
 
 			Size m_mimus_r = fm - fr;
 
-			//// 求通解 ////
-			// F * P = Q * R
-			// 这里R为：
-			//     1   r   n
-			// 1 [ * * * * * ]
-			//   |   * * * * |
-			// r |     * * * |
-			//   |           |
-			//   |           |
-			// m [           ]
-			//
-			// 这里求解：
-			// F^T * x = b
-			// 即：
-			// P^-T * P^T * F^T * x = b
-			// P^-T * R^T * Q*T * x = b
-			// 这里的R为：
-			//     1   r   m
-			// 1 [ *         ]
-			//   | * *       |
-			// r | * * *     |
-			//   | * * *     |
-			//   | * * *     |
-			// n [ * * *     ]
-			// 于是Q*T * x 的通解为：
-			//     1  m-r 
-			// 1 [       ]
-			//   |       |
-			// r |       |
-			//   | 1     |
-			//   |   1   |
-			// m [     1 ]
-			// 于是x的通解为以上左乘Q
-			// 
+
 			s_fill(fm, 1, 0.0, xpf);
 			//// 这里更新G ////
 			for (Size j(-1); ++j < m_mimus_r;)
 			{
-				// 这里构造通解的单位阵，随后左乘Q //
+				//// 求通解 ////
+				// F * P = Q * R
+				// 这里R为：
+				//     1   r   n
+				// 1 [ * * * * * ]
+				//   |   * * * * |
+				// r |     * * * |
+				//   |           |
+				//   |           |
+				// m [           ]
+				//
+				// 这里求解：
+				// F^T * x = b
+				// 即：
+				// P^-T * P^T * F^T * x = b
+				// P^-T * R^T * Q*T * x = b
+				// 这里的R为：
+				//     1   r   m
+				// 1 [ *         ]
+				//   | * *       |
+				// r | * * *     |
+				//   | * * *     |
+				//   | * * *     |
+				// n [ * * *     ]
+				// 于是Q*T * x 的通解为：
+				//     1  m-r 
+				// 1 [       ]
+				//   |       |
+				// r |       |
+				//   | 1     |
+				//   |   1   |
+				// m [     1 ]
+				// 于是x的通解为以上左乘Q
+				// 
 				xpf[fr + j] = 1.0;
 				s_householder_ut_q_dot(fm, fn, 1, FU, fn, FT, 1, xpf, 1, S + j, m_mimus_r);
 				xpf[fr + j] = 0.0;
@@ -1649,7 +1023,7 @@ namespace aris
 				{
 					//////////////////////// 可以优化 //////////////////
 					double tem[6]{ 0,0,0,0,0,0 };
-					s_vc(6 - d->rel->dim, S + dynamic::id(d->rows, j, m_mimus_r), m_mimus_r, tem + d->rel->dim, 1);
+					s_vc(6 - d->rel_.dim, S + dynamic::id(d->rows, j, m_mimus_r), m_mimus_r, tem + d->rel_.dim, 1);
 					s_mm(6, 1, 6, d->dm, ColMajor{ 6 }, tem, 1, d->xp, 1);
 				}
 
@@ -1669,7 +1043,7 @@ namespace aris
 					/////////// 可以优化
 					double tem[6];
 					s_mm(6, 1, 6, d->dm, 6, d->bp, 1, tem, 1);
-					s_mc(6 - d->rel->dim, 1, tem + d->rel->dim, 1, G + dynamic::id(d->rows, j, m_mimus_r), m_mimus_r);
+					s_mc(6 - d->rel_.dim, 1, tem + d->rel_.dim, 1, G + dynamic::id(d->rows, j, m_mimus_r), m_mimus_r);
 				}
 				if (!hasGround())s_vc(6, diag_pool_.begin()->bp, 1, G + dynamic::id(diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r);
 			}
@@ -1683,7 +1057,6 @@ namespace aris
 			//// 根据特解求解[F, G] 的右侧 ////
 			updXp();
 			rowAddInverseXp();
-			updPa();
 			updPfToBp();
 			rowAddBp();
 			updBpf();
@@ -1731,7 +1104,7 @@ namespace aris
 			for (auto &mot : model().motionPool())if (mot.active()) cp.push_back(&mot);
 			for (auto &gmt : model().generalMotionPool())if (gmt.active())cp.push_back( &gmt);
 			
-			// make relation pool //
+			// 制作包含所有relation的pool //
 			std::vector<Imp::Relation> relation_pool;
 			relation_pool.clear();
 			for (auto c : cp)
@@ -1753,56 +1126,56 @@ namespace aris
 				}
 			}
 
-			auto imp = this->imp_.get();
-			
-			// 划分子系统 //
-			auto tem_relation_pool = relation_pool;
-			auto tem_part_pool = active_part_pool;
-			imp_->subsys_pool_.clear();
-			while (tem_part_pool.size() > 1)
+			// 划分子系统,将相关的Part放到一起 //
+			std::vector<std::vector<Part*> > part_pool_pool_;
+			while (active_part_pool.size() > 1)
 			{
-				imp_->subsys_pool_.push_back(Imp::SubSystem());
-				auto &subsys = imp_->subsys_pool_.back();
-				subsys.addPart(tem_part_pool, tem_relation_pool, tem_part_pool.at(1));
-			}
-			for (auto &rel : tem_relation_pool)
-			{
-				for (auto &sys : imp_->subsys_pool_)
-				{
-					if (std::find_if(sys.part_pool_.begin(), sys.part_pool_.end(), [&rel, this](const Part *prt){ return prt !=&model().ground() && (prt == rel.prtI || prt == rel.prtJ);}) != sys.part_pool_.end())
-					{
-						sys.relation_pool_.push_back(rel);
-					}
-				}
+				part_pool_pool_.push_back(std::vector<Part*>());
+				Imp::SubSystem::addPart(part_pool_pool_.back(), active_part_pool, relation_pool, active_part_pool.at(1));
 			}
 
+
+			imp_->subsys_pool_.clear();
 			// 分配子系统的内存 //
 			Size max_fm{ 0 }, max_fn{ 0 };
-			for (auto &sys : imp_->subsys_pool_)
+			for (auto &part_pool : part_pool_pool_)
 			{
+				imp_->subsys_pool_.push_back(Imp::SubSystem());
+				auto &sys = imp_->subsys_pool_.back();
+
+				// 寻找本系统的relation_pool
+				std::vector<Imp::Relation> sys_relation_pool;
+				for (auto &rel : relation_pool)
+				{
+					if (std::find_if(part_pool.begin(), part_pool.end(), [&rel, this](const Part *prt) { return prt != &model().ground() && (prt == rel.prtI || prt == rel.prtJ); }) != part_pool.end())
+					{
+						sys_relation_pool.push_back(rel);
+					}
+				}
+
 				// 对sys的part和relation排序 //
-				for (Size i = 0; i < std::min(sys.part_pool_.size(), sys.relation_pool_.size()); ++i)
+				for (Size i = 0; i < std::min(part_pool.size(), sys_relation_pool.size()); ++i)
 				{
 					// 先对part排序，找出下一个跟上一个part联系的part
-					std::sort(sys.part_pool_.begin() + i, sys.part_pool_.end(), [i, this, &sys](Part* a, Part* b)
+					std::sort(part_pool.begin() + i, part_pool.end(), [i, this, &sys_relation_pool](Part* a, Part* b)
 					{
 						if (a == &model().ground()) return true; // 地面最优先
 						if (b == &model().ground()) return false; // 地面最优先
 						if (i == 0)return a->id() < b->id();// 第一轮先找地面或其他地面，防止下面的索引i-1出错
-						if (b == sys.relation_pool_[i - 1].prtI) return false;
-						if (b == sys.relation_pool_[i - 1].prtJ) return false;
-						if (a == sys.relation_pool_[i - 1].prtI) return true;
-						if (a == sys.relation_pool_[i - 1].prtJ) return true;
+						if (b == sys_relation_pool[i - 1].prtI) return false;
+						if (b == sys_relation_pool[i - 1].prtJ) return false;
+						if (a == sys_relation_pool[i - 1].prtI) return true;
+						if (a == sys_relation_pool[i - 1].prtJ) return true;
 						return a->id() < b->id();
 					});
 					// 再插入连接新part的relation
-					std::sort(sys.relation_pool_.begin() + i, sys.relation_pool_.end(), [i, this, &sys](Imp::Relation a, Imp::Relation b)
+					std::sort(sys_relation_pool.begin() + i, sys_relation_pool.end(), [i, this, &sys, &part_pool](Imp::Relation a, Imp::Relation b)
 					{
-						auto pend = sys.part_pool_.begin() + i + 1;
-						auto a_part_i = std::find_if(sys.part_pool_.begin(), pend, [a](Part* p)->bool { return p == a.prtI; });
-						auto a_part_j = std::find_if(sys.part_pool_.begin(), pend, [a](Part* p)->bool { return p == a.prtJ; });
-						auto b_part_i = std::find_if(sys.part_pool_.begin(), pend, [b](Part* p)->bool { return p == b.prtI; });
-						auto b_part_j = std::find_if(sys.part_pool_.begin(), pend, [b](Part* p)->bool { return p == b.prtJ; });
+						auto pend = part_pool.begin() + i + 1;
+						auto a_part_i = std::find_if(part_pool.begin(), pend, [a](Part* p)->bool { return p == a.prtI; });
+						auto a_part_j = std::find_if(part_pool.begin(), pend, [a](Part* p)->bool { return p == a.prtJ; });
+						auto b_part_i = std::find_if(part_pool.begin(), pend, [b](Part* p)->bool { return p == b.prtI; });
+						auto b_part_j = std::find_if(part_pool.begin(), pend, [b](Part* p)->bool { return p == b.prtJ; });
 
 						bool a_is_ok = (a_part_i == pend) != (a_part_j == pend);
 						bool b_is_ok = (b_part_i == pend) != (b_part_j == pend);
@@ -1815,48 +1188,54 @@ namespace aris
 				}
 
 				// 判断是否有地面 //
-				sys.has_ground_ = (sys.part_pool_.front() == &model().ground());
+				sys.has_ground_ = (part_pool.front() == &model().ground());
 
 				// 制造diag pool //
 				sys.diag_pool_.clear();
-				sys.diag_pool_.resize(sys.part_pool_.size());
-				sys.diag_pool_.at(0).is_I = true;
-				sys.diag_pool_.at(0).rel = nullptr;
-				sys.diag_pool_.at(0).part = sys.part_pool_.at(0);
+				sys.diag_pool_.resize(part_pool.size());
+				sys.diag_pool_.at(0).part = part_pool.at(0);
 				sys.diag_pool_.at(0).rd = &sys.diag_pool_.at(0);
+				sys.diag_pool_.at(0).pm = sys.diag_pool_.at(0).pm1;
+				sys.diag_pool_.at(0).last_pm = sys.diag_pool_.at(0).pm2;
 
 				for (Size i = 1; i < sys.diag_pool_.size(); ++i)
 				{
 					auto &diag = sys.diag_pool_.at(i);
 
-					diag.rel = &sys.relation_pool_.at(i - 1);
-					diag.is_I = sys.relation_pool_.at(i - 1).prtI == sys.part_pool_.at(i);
-					diag.part = diag.is_I ? sys.relation_pool_.at(i - 1).prtI : sys.relation_pool_.at(i - 1).prtJ;
-					diag.rd = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&](Imp::Diag &d) {return d.part == (diag.is_I ? diag.rel->prtJ : diag.rel->prtI); });
-
-					auto rel = diag.rel;
+					diag.rel_ = sys_relation_pool.at(i - 1);
+					// 如果relation的prtI不是对角线的杆件，那么进行反转
+					if (diag.rel_.prtI != part_pool.at(i))
+					{
+						std::swap(diag.rel_.prtI, diag.rel_.prtJ);
+						for (auto &c : diag.rel_.cst_pool_)c.is_I = !c.is_I;
+					}
+					
+					diag.part = diag.rel_.prtI;
+					diag.rd = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&](Imp::Diag &d) {return d.part == diag.rel_.prtJ; });
+					diag.pm = diag.pm1;
+					diag.last_pm = diag.pm2;
 
 					// 以下优化dm矩阵的计算
 					// 针对约束仅仅有一个时的优化 //
-					if (rel->cst_pool_.size() == 1)
+					if (diag.rel_.cst_pool_.size() == 1)
 					{
 						diag.upd_d = Imp::one_constraint_upd_d;
 					}
 					// 针对转动副加转动电机 //
-					else if (rel->cst_pool_.size() == 2
-						&& dynamic_cast<RevoluteJoint*>(rel->cst_pool_.at(0).constraint)
-						&& dynamic_cast<Motion*>(rel->cst_pool_.at(1).constraint)
-						&& dynamic_cast<Motion*>(rel->cst_pool_.at(1).constraint)->axis() == 5
-						&& &rel->cst_pool_.at(0).constraint->makI() == &rel->cst_pool_.at(1).constraint->makI())
+					else if (diag.rel_.cst_pool_.size() == 2
+						&& dynamic_cast<RevoluteJoint*>(diag.rel_.cst_pool_.at(0).constraint)
+						&& dynamic_cast<Motion*>(diag.rel_.cst_pool_.at(1).constraint)
+						&& dynamic_cast<Motion*>(diag.rel_.cst_pool_.at(1).constraint)->axis() == 5
+						&& &diag.rel_.cst_pool_.at(0).constraint->makI() == &diag.rel_.cst_pool_.at(1).constraint->makI())
 					{
 						diag.upd_d = Imp::revolute_upd_d;
 					}
 					// 针对移动副加移动电机 //
-					else if (rel->cst_pool_.size() == 2
-						&& dynamic_cast<PrismaticJoint*>(rel->cst_pool_.at(0).constraint)
-						&& dynamic_cast<Motion*>(rel->cst_pool_.at(1).constraint)
-						&& dynamic_cast<Motion*>(rel->cst_pool_.at(1).constraint)->axis() == 2
-						&& &rel->cst_pool_.at(0).constraint->makI() == &rel->cst_pool_.at(1).constraint->makI())
+					else if (diag.rel_.cst_pool_.size() == 2
+						&& dynamic_cast<PrismaticJoint*>(diag.rel_.cst_pool_.at(0).constraint)
+						&& dynamic_cast<Motion*>(diag.rel_.cst_pool_.at(1).constraint)
+						&& dynamic_cast<Motion*>(diag.rel_.cst_pool_.at(1).constraint)->axis() == 2
+						&& &diag.rel_.cst_pool_.at(0).constraint->makI() == &diag.rel_.cst_pool_.at(1).constraint->makI())
 					{
 						diag.upd_d = Imp::prismatic_upd_d;
 					}
@@ -1869,26 +1248,28 @@ namespace aris
 
 				// 制造remainder pool //
 				sys.remainder_pool_.clear();
-				sys.remainder_pool_.resize(sys.relation_pool_.size() - sys.part_pool_.size() + 1);
+				sys.remainder_pool_.resize(sys_relation_pool.size() - part_pool.size() + 1);
 				for (Size i = 0; i < sys.remainder_pool_.size(); ++i)
 				{
 					auto &r = sys.remainder_pool_.at(i);
 
-					r.rel = &sys.relation_pool_.at(i + sys.diag_pool_.size() - 1);
+					r.rel_ = sys_relation_pool.at(i + sys.diag_pool_.size() - 1);
+					r.i_diag = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&r](Imp::Diag& d) {return r.rel_.prtI == d.part; });
+					r.j_diag = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&r](Imp::Diag& d) {return r.rel_.prtJ == d.part; });
 					r.cm_blk_series.clear();
 					r.cm_blk_series.push_back(Imp::Remainder::Block());
-					r.cm_blk_series.back().diag = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&r](Imp::Diag& d) {return r.rel->prtI == d.part; });
+					r.cm_blk_series.back().diag = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&r](Imp::Diag& d) {return r.rel_.prtI == d.part; });
 					r.cm_blk_series.back().is_I = true;
 					r.cm_blk_series.push_back(Imp::Remainder::Block());
-					r.cm_blk_series.back().diag = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&r](Imp::Diag& d) {return r.rel->prtJ == d.part; });
+					r.cm_blk_series.back().diag = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&r](Imp::Diag& d) {return r.rel_.prtJ == d.part; });
 					r.cm_blk_series.back().is_I = false;
 
 					for (auto rd = sys.diag_pool_.rbegin(); rd < sys.diag_pool_.rend() - 1; ++rd)
 					{
 						auto &d = *rd;
 
-						auto diag_part = d.is_I ? d.rel->prtI : d.rel->prtJ;
-						auto add_part = d.is_I ? d.rel->prtJ : d.rel->prtI;
+						auto diag_part = d.rel_.prtI;
+						auto add_part = d.rel_.prtJ;
 
 						// 判断当前remainder加法元素是否存在（不为0）
 						auto diag_blk = std::find_if(r.cm_blk_series.begin(), r.cm_blk_series.end(), [&](Imp::Remainder::Block &blk) {return blk.diag->part == diag_part; });
@@ -1920,14 +1301,14 @@ namespace aris
 				for (auto d = sys.diag_pool_.begin() + 1; d < sys.diag_pool_.end(); ++d)
 				{
 					d->rows = sys.fm;
-					sys.fm += 6 - d->rel->dim;
+					sys.fm += 6 - d->rel_.dim;
 				}
 				if (!sys.hasGround())
 				{
 					sys.diag_pool_.begin()->rows = sys.fm;
 					sys.fm += 6;
 				}
-				for (auto &r : sys.remainder_pool_) sys.fn += r.rel->dim;
+				for (auto &r : sys.remainder_pool_) sys.fn += r.rel_.dim;
 
 				max_fm = std::max(sys.fm, max_fm);
 				max_fn = std::max(sys.fn, max_fn);
@@ -1972,7 +1353,7 @@ namespace aris
 			// 将内存付给子系统 //
 			for (auto &sys : imp_->subsys_pool_)
 			{
-				sys.has_ground_ = sys.part_pool_.front() == &model().ground();
+				sys.has_ground_ = sys.diag_pool_.begin()->part == &model().ground();
 				
 				sys.F = imp_->F_.data();
 				sys.FU = imp_->FU_.data();
@@ -1997,6 +1378,9 @@ namespace aris
 		}
 		auto UniversalSolver::kinPos()->void
 		{
+			// 储存位置信息，以便迭代失败后恢复 //
+			for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->getPm(d.pm);
+			
 			double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 			s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
 
@@ -2010,62 +1394,43 @@ namespace aris
 				setIterCount(std::max(iterCount(), sys.iter_count_));
 				setError(std::max(error(), sys.error_));
 			}
+
+			// 迭代成功，恢复 //
+			if (error() < maxError())for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->setPm(d.pm);
 		}
 		auto UniversalSolver::kinVel()->void 
 		{
+			for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->getPm(d.pm);
+			
 			s_fill(6, 1, 0.0, const_cast<double *>(model().ground().vs()));
 			for (auto &sys : imp_->subsys_pool_)sys.kinVel();
 		}
 		auto UniversalSolver::dynAccAndFce()->void
 		{
-			s_fill(6, 1, 0.0, const_cast<double *>(model().ground().vs()));
-			Size i = 0;
+			for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->getPm(d.pm);
 			
+			for (auto &prt : model().partPool())std::fill_n(const_cast<double*>(prt.as()), 6, 0.0);
+
+			// 更新外力，这里先将他们保存到as中 //
+			for (auto &fce : model().forcePool())
+			{
+				if (fce.active())
+				{
+					double fsI[6], fsJ[6];
+					fce.cptGlbFs(fsI, fsJ);
+
+					s_va(6, fsI, const_cast<double*>(fce.makI().fatherPart().as()));
+					s_va(6, fsJ, const_cast<double*>(fce.makJ().fatherPart().as()));
+				}
+			}
+			
+			
+			// 更新地面的as //
+			s_fill(6, 1, 0.0, const_cast<double *>(model().ground().as()));
 			for (auto &sys : imp_->subsys_pool_) sys.dynAccAndFce();
 		}
 		auto UniversalSolver::plotRelation()->void
 		{
-			for (Size i = 0; i < imp_->subsys_pool_.size(); ++i)
-			{
-				std::cout << "sub sys " << std::to_string(i) <<":" << std::endl;
-				std::cout << "fm:" << imp_->subsys_pool_.at(i).fm << " fn:" << imp_->subsys_pool_.at(i).fn << std::endl;
-				auto &sys = imp_->subsys_pool_.at(i);
-
-				std::size_t name_size{ 0 };
-				for (auto prt : sys.part_pool_)name_size = std::max(prt->name().size(), name_size);
-				for (auto prt : sys.part_pool_)
-				{
-					std::string s(name_size, ' ');
-					s.replace(0, prt->name().size(), prt->name().data());
-
-					std::cout << s << ":";
-
-					if (prt == &model().ground())
-					{
-						std::cout << "  6x6 ";
-					}
-					else
-						std::cout << "      ";
-
-
-
-					for (auto &rel : sys.relation_pool_)
-					{
-						std::cout << " ";
-						if (rel.prtI == prt)
-							std::cout << " 6x" << rel.dim;
-						else if (rel.prtJ == prt)
-							std::cout << "-6x" << rel.dim;
-						else
-							std::cout << "    ";
-
-						std::cout << " ";
-					}
-					std::cout << std::endl;
-				}
-
-				std::cout << "------------------------------------------------" << std::endl << std::endl;
-			}
 			for (Size i = 0; i < imp_->subsys_pool_.size(); ++i)
 			{
 				std::cout << "sub sys " << std::to_string(i) << ":" << std::endl;
@@ -2073,19 +1438,20 @@ namespace aris
 				auto &sys = imp_->subsys_pool_.at(i);
 
 				std::size_t name_size{ 0 };
-				for (auto prt : sys.part_pool_)name_size = std::max(prt->name().size(), name_size);
+				for (auto &d1 : sys.diag_pool_)name_size = std::max(d1.part->name().size(), name_size);
 
-				for (auto prt : sys.part_pool_)
+				/////  plot  origin /////
+				for (auto &d1 : sys.diag_pool_)
 				{
 					std::string s(name_size, ' ');
-					s.replace(0, prt->name().size(), prt->name().data());
+					s.replace(0, d1.part->name().size(), d1.part->name().data());
 
 					std::cout << s << ":";
 					for (auto &d : sys.diag_pool_)
 					{
-						if (d.rel == nullptr)
+						if (d.rel_.cst_pool_.size() == 0)
 						{
-							if (prt == &model().ground())
+							if (d1.part == &model().ground())
 							{
 								std::cout << "  6x6 ";
 							}
@@ -2095,13 +1461,74 @@ namespace aris
 							continue;
 						}
 
-						auto &rel = *d.rel;
+						auto &rel = d.rel_;
 						std::cout << " ";
-						if (d.is_I && rel.prtI == prt)
+						if (rel.cst_pool_.begin()->is_I && rel.prtI == d1.part)
 						{
 							std::cout << " 6x" << rel.dim;
 						}
-						else if (!d.is_I && rel.prtJ == prt)
+						else if (rel.cst_pool_.begin()->is_I && rel.prtJ == d1.part)
+						{
+							std::cout << "-6x" << rel.dim;
+						}
+						else if (rel.prtI == d1.part)
+						{
+							std::cout << "-6x" << rel.dim;
+						}
+						else if (rel.prtJ == d1.part)
+						{
+							std::cout << " 6x" << rel.dim;
+						}
+						else
+							std::cout << "    ";
+						std::cout << " ";
+
+					}
+					for (auto &r : sys.remainder_pool_)
+					{
+						std::cout << " ";
+
+
+						if(r.rel_.prtI == d1.part)
+							std::cout << " 6x" << r.rel_.dim;
+						else if(r.rel_.prtJ == d1.part)
+							std::cout << "-6x" << r.rel_.dim;
+						else
+							std::cout << "    ";
+
+						std::cout << " ";
+					}
+					std::cout << std::endl;
+				}
+				std::cout << std::endl;
+				/////  plot  diag /////
+				for (auto &d1 : sys.diag_pool_)
+				{
+					std::string s(name_size, ' ');
+					s.replace(0, d1.part->name().size(), d1.part->name().data());
+
+					std::cout << s << ":";
+					for (auto &d : sys.diag_pool_)
+					{
+						if (d.rel_.cst_pool_.size() == 0)
+						{
+							if (d1.part == &model().ground())
+							{
+								std::cout << "  6x6 ";
+							}
+							else
+								std::cout << "      ";
+
+							continue;
+						}
+
+						auto &rel = d.rel_;
+						std::cout << " ";
+						if (rel.cst_pool_.begin()->is_I && rel.prtI == d1.part)
+						{
+							std::cout << " 6x" << rel.dim;
+						}
+						else if (!rel.cst_pool_.begin()->is_I && rel.prtI == d1.part)
 						{
 							std::cout << "-6x" << rel.dim;
 						}
@@ -2117,13 +1544,13 @@ namespace aris
 						bool found{ false };
 						for (auto blk : r.cm_blk_series)
 						{
-							if (prt == blk.diag->part)
+							if (d1.part == blk.diag->part)
 							{
 								found = true;
 								if (blk.is_I)
-									std::cout << " 6x" << r.rel->dim;
+									std::cout << " 6x" << r.rel_.dim;
 								else
-									std::cout << "-6x" << r.rel->dim;
+									std::cout << "-6x" << r.rel_.dim;
 							}
 						}
 						if (!found)std::cout << "    ";
@@ -2132,10 +1559,9 @@ namespace aris
 					}
 					std::cout << std::endl;
 				}
-
-
 				std::cout << "------------------------------------------------" << std::endl << std::endl;
 			}
+		
 		}
 		UniversalSolver::~UniversalSolver() = default;
 		UniversalSolver::UniversalSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error){}
@@ -2154,12 +1580,12 @@ namespace aris
 		auto ForwardKinematicSolver::kinPos()->void
 		{
 			UniversalSolver::kinPos();
-			if (error() < maxError())for (auto &m : model().motionPool())m.updMp();
+			if (error() < maxError())for (auto &m : model().generalMotionPool())m.updMpm();
 		}
 		auto ForwardKinematicSolver::kinVel()->void
 		{
 			UniversalSolver::kinVel();
-			for (auto &m : model().motionPool())m.updMv();
+			for (auto &m : model().generalMotionPool())m.updMvs();
 		}
 		auto ForwardKinematicSolver::dynAccAndFce()->void
 		{
@@ -2183,12 +1609,13 @@ namespace aris
 		auto InverseKinematicSolver::kinPos()->void
 		{
 			UniversalSolver::kinPos();
-			if (error() < maxError())for (auto &m : model().generalMotionPool())m.updMpm();
+			if (error() < maxError())for (auto &m : model().motionPool())m.updMp();
+
 		}
 		auto InverseKinematicSolver::kinVel()->void
 		{
 			UniversalSolver::kinVel();
-			for (auto &m : model().generalMotionPool())m.updMvs();
+			for (auto &m : model().motionPool())m.updMv();
 		}
 		auto InverseKinematicSolver::dynAccAndFce()->void
 		{
@@ -2201,6 +1628,66 @@ namespace aris
 		InverseKinematicSolver::InverseKinematicSolver(InverseKinematicSolver &&other) = default;
 		InverseKinematicSolver& InverseKinematicSolver::operator=(const InverseKinematicSolver &other) = default;
 		InverseKinematicSolver& InverseKinematicSolver::operator=(InverseKinematicSolver &&other) = default;
+
+		auto ForwardDynamicSolver::allocateMemory()->void
+		{
+			for (auto &m : model().motionPool())m.activate(false);
+			for (auto &gm : model().generalMotionPool())gm.activate(false);
+			for (auto &f : model().forcePool())f.activate(true);
+			UniversalSolver::allocateMemory();
+		}
+		auto ForwardDynamicSolver::kinPos()->void
+		{
+			UniversalSolver::kinPos();
+			if (error() < maxError())for (auto &m : model().generalMotionPool())m.updMpm();
+		}
+		auto ForwardDynamicSolver::kinVel()->void
+		{
+			UniversalSolver::kinVel();
+			for (auto &m : model().generalMotionPool())m.updMvs();
+		}
+		auto ForwardDynamicSolver::dynAccAndFce()->void
+		{
+			UniversalSolver::dynAccAndFce();
+			for (auto &m : model().motionPool())m.updMa();
+			for (auto &m : model().generalMotionPool())m.updMas();
+		}
+		ForwardDynamicSolver::~ForwardDynamicSolver() = default;
+		ForwardDynamicSolver::ForwardDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
+		ForwardDynamicSolver::ForwardDynamicSolver(const ForwardDynamicSolver &other) = default;
+		ForwardDynamicSolver::ForwardDynamicSolver(ForwardDynamicSolver &&other) = default;
+		ForwardDynamicSolver& ForwardDynamicSolver::operator=(const ForwardDynamicSolver &other) = default;
+		ForwardDynamicSolver& ForwardDynamicSolver::operator=(ForwardDynamicSolver &&other) = default;
+
+		auto InverseDynamicSolver::allocateMemory()->void
+		{
+			for (auto &m : model().motionPool())m.activate(true);
+			for (auto &gm : model().generalMotionPool())gm.activate(false);
+			for (auto &f : model().forcePool())f.activate(false);
+			UniversalSolver::allocateMemory();
+		}
+		auto InverseDynamicSolver::kinPos()->void
+		{
+			UniversalSolver::kinPos();
+			if (error() < maxError())for (auto &m : model().motionPool())m.updMp();
+
+		}
+		auto InverseDynamicSolver::kinVel()->void
+		{
+			UniversalSolver::kinVel();
+			for (auto &m : model().motionPool())m.updMv();
+		}
+		auto InverseDynamicSolver::dynAccAndFce()->void
+		{
+			UniversalSolver::dynAccAndFce();
+			for (auto &m : model().generalMotionPool())m.updMas();
+		}
+		InverseDynamicSolver::~InverseDynamicSolver() = default;
+		InverseDynamicSolver::InverseDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
+		InverseDynamicSolver::InverseDynamicSolver(const InverseDynamicSolver &other) = default;
+		InverseDynamicSolver::InverseDynamicSolver(InverseDynamicSolver &&other) = default;
+		InverseDynamicSolver& InverseDynamicSolver::operator=(const InverseDynamicSolver &other) = default;
+		InverseDynamicSolver& InverseDynamicSolver::operator=(InverseDynamicSolver &&other) = default;
 
 		struct SolverSimulator::Imp
 		{
@@ -2401,12 +1888,8 @@ namespace aris
 					double pm[16];
 					double iv[10];
 
-					pe[0] = -pe[0];
-					pe[1] = -pe[1];
-					pe[2] = -pe[2];
-
 					s_pe2pm(pe, pm);
-					s_iv2iv(pm, part.prtIv(), iv);
+					s_inv_iv2iv(pm, part.prtIv(), iv);
 
 					//！注意！//
 					//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy,Ixz,Iyz上互为相反数。别问我为什么,我也不知道。
@@ -2422,6 +1905,30 @@ namespace aris
 						<< "    izx = " << -iv[8] << "  &\r\n"
 						<< "    iyz = " << -iv[9] << "\r\n"
 						<< "!\r\n";
+
+					
+					double cm_pm_in_g[16];
+					s_pm2pm(*part.pm(), pm, cm_pm_in_g);
+					double cm_vs[6];
+					s_inv_tv(cm_pm_in_g, part.vs(), cm_vs);
+
+					file << "part create rigid_body initial_velocity  &\r\n"
+						<< "    part_name = ." << model().name() << "." << part.name() << "  &\r\n"
+						<< "    vx = " << cm_vs[0] << "  &\r\n"
+						<< "    vy = " << cm_vs[1] << "  &\r\n"
+						<< "    vz = " << cm_vs[2] << "  &\r\n"
+						<< "    wx = " << cm_vs[3] << "  &\r\n"
+						<< "    wy = " << cm_vs[4] << "  &\r\n"
+						<< "    wz = " << cm_vs[5] << "  \r\n"
+						<< "!\r\n";
+
+					file << "part modify rigid_body initial_velocity  &\r\n"
+						<< "    part_name = ." << model().name() << "." << part.name() << "  &\r\n"
+						<< "    vm = ." << model().name() << "." << part.name() << ".cm  &\r\n"
+						<< "    wm = ." << model().name() << "." << part.name() << ".cm \r\n"
+						<< "!\r\n";
+
+
 				}
 
 				//导入marker
@@ -2439,6 +1946,7 @@ namespace aris
 						<< "orientation = (" << ori.toString() << ")\r\n"
 						<< "!\r\n";
 				}
+
 				for (auto &geometry : part.geometryPool())
 				{
 					if (ParasolidGeometry* geo = dynamic_cast<ParasolidGeometry*>(&geometry))
@@ -2596,20 +2104,28 @@ namespace aris
 			}
 			for (auto &force : model().forcePool())
 			{
-				if (dynamic_cast<SingleComponentForce *>(&force))
-				{
-					std::string type = "translational";
+				double fsI[6], fsJ[6], fsI_loc[6];
+				force.cptGlbFs(fsI, fsJ);
+				s_inv_fs2fs(*force.makI().pm(), fsI, fsI_loc);
 
-					file << "force create direct single_component_force  &\r\n"
-						<< "    single_component_force_name = ." << model().name() << "." << force.name() << "  &\r\n"
-						<< "    adams_id = " << adamsID(force) << "  &\r\n"
-						<< "    type_of_freedom = " << type << "  &\r\n"
-						<< "    i_marker_name = ." << model().name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
-						<< "    j_marker_name = ." << model().name() << "." << force.makJ().fatherPart().name() << "." << force.makJ().name() << "  &\r\n"
-						<< "    action_only = off  &\r\n"
-						<< "    function = \"" << dynamic_cast<SingleComponentForce&>(force).fce() << "\"  \r\n"
-						<< "!\r\n";
-				}
+				file << "floating_marker create  &\r\n"
+					<< "    floating_marker_name = ." << model().name() << "." << force.makJ().fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
+					<< "    adams_id = " << adamsID(force) + model().partPool().size() + std::accumulate(model().partPool().begin(), model().partPool().end(), Size(0), [](Size a, Part &b) {return a + b.markerPool().size(); }) << "\r\n"
+					<< "!\r\n";
+
+				file << "force create direct general_force  &\r\n"
+					<< "    general_force_name = ." << model().name() << "." << force.name() << "  &\r\n"
+					<< "    adams_id = " << adamsID(force) << "  &\r\n"
+					<< "    i_marker_name = ." << model().name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
+					<< "    j_floating_marker_name = ." << model().name() << "." << force.makJ().fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
+					<< "    ref_marker_name = ." << model().name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
+					<< "    x_force_function = \"" << fsI_loc[0] << "\"  &\r\n"
+					<< "    y_force_function = \"" << fsI_loc[1] << "\"  &\r\n"
+					<< "    z_force_function = \"" << fsI_loc[2] << "\"  &\r\n"
+					<< "    x_torque_function = \"" << fsI_loc[3] << "\"  &\r\n"
+					<< "    y_torque_function = \"" << fsI_loc[4] << "\"  &\r\n"
+					<< "    z_torque_function = \"" << fsI_loc[5] << "\"\r\n"
+					<< "!\r\n";
 
 			}
 
@@ -2660,6 +2176,30 @@ namespace aris
 				}
 			}
 		}
+		auto AdamsSimulator::saveAdams(const std::string &filename)->void
+		{
+			std::string filename_ = filename;
+			if (filename_.size() < 4 || filename_.substr(filename.size() - 4, 4) != ".cmd")
+			{
+				filename_ += ".cmd";
+			}
+
+			std::ofstream file;
+			file.open(filename_, std::ios::out | std::ios::trunc);
+
+			saveAdams(file);
+
+			file.close();
+		}
+		auto AdamsSimulator::saveAdams(std::ofstream &file)->void
+		{
+			model().simResultPool().add<SimResult>();
+			model().simResultPool().back().record();
+
+			saveAdams(file, model().simResultPool().back(), 0);
+
+			model().simResultPool().erase(model().simResultPool().end() - 1);
+		}
 		auto AdamsSimulator::adamsID(const Marker &mak)const->Size
 		{
 			Size size{ 0 };
@@ -2676,7 +2216,7 @@ namespace aris
 		}
 		auto AdamsSimulator::adamsID(const Part &prt)const->Size { return (&prt == &model().ground()) ? 1 : prt.id() + (model().ground().id() < prt.id() ? 1 : 2); }
 		AdamsSimulator::~AdamsSimulator() = default;
-		AdamsSimulator::AdamsSimulator(const std::string &name, Solver *solver) : SolverSimulator(name, solver) {}
+		AdamsSimulator::AdamsSimulator(const std::string &name) : Simulator(name) {}
 		AdamsSimulator::AdamsSimulator(const AdamsSimulator&) = default;
 		AdamsSimulator::AdamsSimulator(AdamsSimulator&&) = default;
 		AdamsSimulator& AdamsSimulator::operator=(const AdamsSimulator&) = default;

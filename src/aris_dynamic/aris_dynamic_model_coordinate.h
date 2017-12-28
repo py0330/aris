@@ -199,7 +199,7 @@ namespace aris
 				getPm(relative_to, pm);
 				s_iv2iv(pm, prtIv(), tem);
 				s_iv2im(tem, im2);
-				s_mc(6, 6, tem, 6, im, i_t);
+				s_mc(6, 6, im2, 6, im, i_t);
 			}
 			template<typename IM_TYPE>
 			auto cptGlbIm(double *im, IM_TYPE i_t)const->void

@@ -92,7 +92,6 @@ namespace aris
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
 		};
 	}
 }

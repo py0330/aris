@@ -26,6 +26,7 @@ namespace aris
 	/// pq  :  7x1 点位置与四元数(position and quaternions)\n
 	/// pm  :  4x4 位姿矩阵(pose matrix)\n
 	/// ra  :  3x1 绕固定轴的旋转的指数积（rotation around axis, exponential product）
+	/// ps  :  6x1 位移螺旋，[v;w]的速度螺旋转过theta角，也就是ps = [v;w]*theta
 	///
 	/// vp  :  3x1 线速度(velocity of point)\n
 	/// we  :  3x1 欧拉角导数(omega in term of eula angle)\n
@@ -51,6 +52,7 @@ namespace aris
 
 	/// i3  :  3x3 惯量矩阵
 	/// im  :  6x6 空间惯量矩阵
+	/// iv  :  10x1 惯量矩阵向量[m, cx, cy, cz, Ixx, Iyy, Izz, Ixy, Ixz, Iyz]
 	namespace dynamic
 	{
 		auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
@@ -90,6 +92,11 @@ namespace aris
 		auto s_im_dot_as(const double *im, const double *as, double * fs) noexcept->void;
 		auto s_iv_dot_as(const double *iv, const double *as, double * fs) noexcept->void;
 
+
+		auto inline s_sinx_over_x(double x)->double { return std::abs(x)<1e-8 ? 1.0 : std::sin(x) / x; };
+		auto inline s_one_minus_x_over_square_x(double x)->double { return 0.5*s_sinx_over_x(0.5*x)*s_sinx_over_x(0.5*x); };
+
+
 		/// \brief 计算三维向量叉乘矩阵
 		///
 		/// 用来计算：cm_out = \n
@@ -111,7 +118,7 @@ namespace aris
 		///
 		///
 		template<typename AType, typename BType, typename CType>
-		auto s_c3(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
+		auto s_c3(const double *a, AType a_t, const double *b , BType b_t, double *c_out, CType c_t) noexcept->void
 		{
 			const Size a0{ 0 }, a1{ next_rid(a0, a_t) }, a2{ next_rid(a1, a_t) };
 			const Size b0{ 0 }, b1{ next_rid(b0, b_t) }, b2{ next_rid(b1, b_t) };
@@ -1388,6 +1395,8 @@ namespace aris
 		auto s_pm2pe(const double *pm_in, double *pe_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
 		auto s_pq2pm(const double *pq_in, double *pm_out = nullptr) noexcept->double *;
 		auto s_pm2pq(const double *pm_in, double *pq_out = nullptr) noexcept->double *;
+		auto s_ps2pm(const double *ps_in, double *pm_out = nullptr) noexcept->double *;
+		auto s_pm2ps(const double *pm_in, double *ps_out = nullptr) noexcept->double *;
 		
 		auto s_we2wa(const double *re_in, const double *we_in, double *wa_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
 		auto s_wa2we(const double *wa_in, const double *re_in, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;

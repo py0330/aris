@@ -572,6 +572,8 @@ namespace aris
 			registerType<aris::sensor::SensorRoot>();
 			registerType<aris::server::WidgetRoot>();
 
+			registerType<aris::control::EthercatController>();
+
 			// create instance //
 			makeModel<aris::dynamic::Model>("model");
 			makeController<aris::control::Controller>("controller");

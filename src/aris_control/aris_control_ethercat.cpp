@@ -155,6 +155,7 @@ namespace aris
 		PdoGroup::PdoGroup(const std::string &name, std::uint16_t index, bool is_tx):aris::core::ObjectPool<Pdo>(name), imp_(new Imp(index, is_tx))
 		{
 			registerType<Pdo>();
+			registerType<aris::core::ObjectPool<Pdo> >();
 		}
 		PdoGroup::PdoGroup(const PdoGroup &) = default;
 		PdoGroup::PdoGroup(PdoGroup &&) = default;
@@ -433,6 +434,8 @@ namespace aris
 		EthercatSlaveType::~EthercatSlaveType() = default;
 		EthercatSlaveType::EthercatSlaveType(const std::string &name, const std::string &esi_file_path) : SlaveType(name), imp_(new Imp)
 		{
+			registerType<aris::core::ObjectPool<PdoGroup> >();
+			
 			imp_->esi_file_path_ = esi_file_path;
 			imp_->init();
 		}
@@ -686,12 +689,8 @@ namespace aris
 		EthercatMaster::~EthercatMaster() = default;
 		EthercatMaster::EthercatMaster() :imp_(new Imp)
 		{
-			//registerType<aris::core::ObjectPool<EthercatSlaveType> >();
 			registerType<EthercatSlaveType>();
-			
 			registerType<EthercatSlave>();
-			//registerType<aris::core::ObjectPool<EthercatSlave, aris::core::ObjectPool<Slave> > >();
-			
 			registerType<EthercatMotion>();
 		}
 

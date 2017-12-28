@@ -204,10 +204,11 @@ namespace aris
 			registerType<SingleComponentForce>();
 
 			registerType<aris::core::ObjectPool<Solver, Element>>();
-			registerType<CombineSolver>();
-			registerType<LltGroundDividedSolver>();
-			registerType<LltPartDividedSolver>();
 			registerType<UniversalSolver>();
+			registerType<ForwardKinematicSolver>();
+			registerType<InverseKinematicSolver>();
+			registerType<ForwardDynamicSolver>();
+			registerType<InverseDynamicSolver>();
 
 			registerType<aris::core::ObjectPool<Simulator, Element>>();
 			registerType<Simulator>();
