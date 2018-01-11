@@ -52,7 +52,7 @@
 /// ~~~~~~~~~~~~~~~~~
 /// mkdir build
 /// cd build
-/// cmake .. -DUSE_XENOMAI -DUSE_ETHERLAB
+/// cmake .. -DUSE_XENOMAI=ON -DUSE_ETHERLAB=ON
 /// make install
 /// ~~~~~~~~~~~~~~~~~
 ///
