@@ -42,7 +42,7 @@ namespace aris
 			std::function<void(Socket2 *)> onAcceptError;
 			std::function<void(Socket2 *)> onReceiveError;
 
-			int lisn_socket_, conn_socket_;  //也可以用SOCKET类型
+			decltype(socket(AF_INET, SOCK_STREAM, 0)) lisn_socket_, conn_socket_;  //也可以用SOCKET类型
 			struct sockaddr_in server_addr_, client_addr_;
 			socklen_t sin_size_;
 
@@ -78,7 +78,7 @@ namespace aris
 		};
 		auto Socket2::Imp::acceptThread(Socket2::Imp* imp, std::promise<void> accept_thread_ready)->void
 		{
-			int lisn_sock;
+			decltype(socket(AF_INET, SOCK_STREAM, 0)) lisn_sock;
 			struct sockaddr_in client_addr;
 			socklen_t sin_size;
 
@@ -141,7 +141,7 @@ namespace aris
 		{
 			aris::core::Msg msg(0,1024);
 
-			int conn_socket = imp->conn_socket_;
+			decltype(socket(AF_INET, SOCK_STREAM, 0)) conn_socket = imp->conn_socket_;
 
 			// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 			receive_thread_ready.set_value();
@@ -441,7 +441,7 @@ namespace aris
 			std::function<void(Socket *)> onAcceptError;
 			std::function<void(Socket *)> onReceiveError;
 
-			int lisn_socket_, conn_socket_;  //也可以用SOCKET类型
+			decltype(socket(AF_INET, SOCK_STREAM, 0)) lisn_socket_, conn_socket_;  //也可以用SOCKET类型
 			struct sockaddr_in server_addr_, client_addr_;
 			socklen_t sin_size_;
 
@@ -477,7 +477,7 @@ namespace aris
 		};
 		auto Socket::Imp::acceptThread(Socket::Imp* imp, std::promise<void> accept_thread_ready)->void
 		{
-			int lisn_sock;
+			decltype(socket(AF_INET, SOCK_STREAM, 0)) lisn_sock;
 			struct sockaddr_in client_addr;
 			socklen_t sin_size;
 
@@ -545,7 +545,7 @@ namespace aris
 			} head;
 			aris::core::Msg receivedData;
 
-			int conn_socket = imp->conn_socket_;
+			decltype(socket(AF_INET, SOCK_STREAM, 0)) conn_socket = imp->conn_socket_;
 
 			// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 			receive_thread_ready.set_value();
@@ -739,7 +739,7 @@ namespace aris
 #endif
 
 			// 服务器端开始建立socket描述符 //
-			if ((imp_->lisn_socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1)throw(StartServerError("Socket can't Start as server, because it can't socket\n", this, 0));
+			if (static_cast<int>(imp_->lisn_socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1)throw(StartServerError("Socket can't Start as server, because it can't socket\n", this, 0));
 
 			// 设置socketopt选项,使得地址在程序结束后立即可用 //
 			int nvalue = 1;

@@ -101,9 +101,8 @@ namespace aris
 					throw std::runtime_error("unknown param in basic parse func in param \"" + i.first + "\"");
 				}
 			}
-			msg_out.header().reserved1_ = 0;
-			msg_out.header().reserved2_ = ControlServer::EXECUTE_RT_PLAN;
-			msg_out.header().reserved3_ = ControlServer::WAIT_FOR_RT_PLAN_FINISHED;
+			msg_out.header().reserved1_ = ControlServer::WAIT_FOR_RT_PLAN_EXECUTION;
+			msg_out.header().reserved2_ = ControlServer::NOT_CHECK_POS_MAX | ControlServer::NOT_CHECK_POS_MIN | ControlServer::NOT_CHECK_POS_PLAN_CONTINUOUS | ControlServer::NOT_CHECK_POS_FOLLOWING_ERROR;
 			msg_out.copyStruct(param);
 		}
 		auto default_enable_plan(const aris::dynamic::PlanParam &plan_param)->int
@@ -242,7 +241,8 @@ namespace aris
 			// 实时循环中的步态参数 //
 			enum { CMD_POOL_SIZE = 50 };
 			aris::core::MsgFix<aris::control::Master::MAX_MSG_SIZE> msg_queue_[CMD_POOL_SIZE];
-			int current_cmd_{ 0 }, cmd_num_{ 0 };
+			int current_cmd_{ 0 };
+			std::atomic<int> cmd_num_{ 0 };
 			std::uint32_t count_{ 1 };
 
 			// 储存上一次motion的数据 //
@@ -259,9 +259,6 @@ namespace aris
 			aris::sensor::SensorRoot* sensor_root_;
 			aris::control::Controller* controller_;
 			aris::server::WidgetRoot* widget_root_;
-
-			// 结束时的callback //
-			std::function<void(void)> on_exit_callback_{ nullptr };
 
 			friend class ControlServer;
 		};
@@ -311,7 +308,7 @@ namespace aris
 			aris::dynamic::PlanParam plan_param{ model_, count_, msg_queue_[current_cmd_].data(), static_cast<std::uint32_t>(msg_queue_[current_cmd_].size()) };
 
 			// 执行plan函数 //
-			int ret = this->plan_vec_.at(static_cast<std::size_t>(msg_queue_[current_cmd_].header().reserved2_)).operator()(plan_param);
+			int ret = this->plan_vec_.at(static_cast<std::size_t>(msg_queue_[current_cmd_].header().reserved1_)).operator()(plan_param);
 
 			// 控制电机 //
 			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
@@ -321,11 +318,11 @@ namespace aris
 				
 				if (mm.active())
 				{
-					if ((msg_queue_[current_cmd_].header().reserved1_ & USING_TARGET_POS))cm.setTargetPos(mm.mp());
-					if ((msg_queue_[current_cmd_].header().reserved1_ & USING_TARGET_VEL))cm.setTargetVel(mm.mv());
-					if ((msg_queue_[current_cmd_].header().reserved1_ & USING_TARGET_CUR))cm.setTargetCur(mm.mf());
-					if ((msg_queue_[current_cmd_].header().reserved1_ & USING_VEL_OFFSET))cm.setOffsetVel(mm.mv());
-					if ((msg_queue_[current_cmd_].header().reserved1_ & USING_CUR_OFFSET))cm.setOffsetCur(mm.mf());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_TARGET_POS))cm.setTargetPos(mm.mp());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_TARGET_VEL))cm.setTargetVel(mm.mv());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_TARGET_CUR))cm.setTargetCur(mm.mf());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_VEL_OFFSET))cm.setOffsetVel(mm.mv());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_CUR_OFFSET))cm.setOffsetCur(mm.mf());
 				}
 			}
 
@@ -335,7 +332,7 @@ namespace aris
 				auto &cm = controller_->motionPool().at(i);
 				
 				// check max pos //
-				if ((msg_queue_[current_cmd_].header().reserved1_ & CHECK_POS_MAX) && (cm.targetPos() > cm.maxPos()))
+				if (!(msg_queue_[current_cmd_].header().reserved2_ & NOT_CHECK_POS_MAX) && (cm.targetPos() > cm.maxPos()))
 				{
 					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is bigger than its MAX permitted value in count: " << count_ << "\n";
 					server_->controller().mout() << "The min, max and current count using ABS sequence are:\n";
@@ -345,7 +342,7 @@ namespace aris
 				}
 
 				// check min pos //
-				if ((msg_queue_[current_cmd_].header().reserved1_ & CHECK_POS_MIN) && (cm.targetPos() < cm.minPos()))
+				if (!(msg_queue_[current_cmd_].header().reserved2_ & NOT_CHECK_POS_MIN) && (cm.targetPos() < cm.minPos()))
 				{
 					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is smaller than its MIN permitted value in count: " << count_ << "\n";
 					server_->controller().mout() << "The min, max and current count using ABS sequence are:\n";
@@ -354,8 +351,8 @@ namespace aris
 					return 0;
 				}
 
-				// check plan pos continuous //
-				if ((msg_queue_[current_cmd_].header().reserved1_ & CHECK_POS_PLAN_CONTINUOUS) && (std::abs(cm.targetPos() - last_target_motion_data_vec_.at(i).p) > 0.0012 * cm.maxVel()))
+				// check pos plan continuous //
+				if (!(msg_queue_[current_cmd_].header().reserved2_ & NOT_CHECK_POS_PLAN_CONTINUOUS) && (std::abs(cm.targetPos() - last_target_motion_data_vec_.at(i).p) > 0.001 * cm.maxVel()))
 				{
 					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is not continuous in count: " << count_ << "\n";
 					server_->controller().mout() << "The pin of last and this count using ABS sequence are:\n";
@@ -364,8 +361,8 @@ namespace aris
 					return 0;
 				}
 
-				// check target and feedback pos //
-				if ((msg_queue_[current_cmd_].header().reserved1_ & CHECK_POS_FOLLOWING_ERROR) && (std::abs(cm.targetPos() - cm.actualPos()) > 0.1 * cm.maxVel()))
+				// check pos following error //
+				if (!(msg_queue_[current_cmd_].header().reserved2_ & NOT_CHECK_POS_FOLLOWING_ERROR) && (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
 				{
 					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target and feedback positions are not near in count: " << count_ << "\n";
 					server_->controller().mout() << "The pin of target and feedback using ABS sequence are:\n";
@@ -489,16 +486,26 @@ namespace aris
 				std::cout << cmd_name << ":" << imp_->cmd_id_map_.at(cmd_name) << std::endl;
 			}
 		}
-		auto ControlServer::executeCmd(const std::string &cmd_string)->void
+		auto ControlServer::executeCmd(const aris::core::Msg &msg)->void
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 			if (!imp_->is_running_)throw std::runtime_error("failed in ControlServer::executeCmd, because ControlServer is not running");
 
-			aris::core::log(cmd_string);
+			aris::core::log(msg.data());
+
+			// check parse condition //
+			if (!(msg.header().reserved1_ & PARSE_EVEN_IF_CMD_POOL_IS_FULL) && (imp_->cmd_num_ == Imp::CMD_POOL_SIZE))
+			{
+				throw std::runtime_error("failed in ControlServer::executeCmd parse, because ControlServer is full");
+			}
+			if (msg.header().reserved1_ & PARSE_WHEN_ALL_PLAN_FINISHED)
+			{
+				while (imp_->cmd_num_ != 0)std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			}
 
 			std::string cmd;
 			std::map<std::string, std::string> params;
-			widgetRoot().cmdParser().parse(cmd_string, cmd, params);
+			widgetRoot().cmdParser().parse(msg.data(), cmd, params);
 
 			// print cmd and params //
 			auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)
@@ -514,20 +521,30 @@ namespace aris
 			// print over //
 
 			// parse msg //
-			aris::core::Msg cmd_msg;
+			aris::core::Msg cmd_msg = msg;
 			auto cmd_pair = imp_->cmd_id_map_.find(cmd);
 			if (cmd_pair == imp_->cmd_id_map_.end())throw std::runtime_error(std::string("command \"") + cmd + "\" does not have gait function, please AddCmd() first");
-			cmd_msg.header().reserved1_ = CHECK_POS_MAX | CHECK_POS_MIN | CHECK_POS_PLAN_CONTINUOUS | CHECK_POS_FOLLOWING_ERROR | CHECK_VEL_PLAN_CONTINUOUS | CHECK_VEL_FOLLOWING_ERROR;
-			cmd_msg.header().reserved2_ = EXECUTE_RT_PLAN;
-			cmd_msg.header().reserved3_ = WAIT_FOR_RT_PLAN_FINISHED;
 			imp_->parser_vec_.at(cmd_pair->second).operator()(cmd, params, cmd_msg);
-			if (!(cmd_msg.header().reserved2_ & EXECUTE_RT_PLAN)) return;
-			cmd_msg.header().reserved2_ = cmd_pair->second;// using reserved 2 to store gait id
-			if (imp_->plan_vec_.at(cmd_pair->second) == nullptr)throw std::runtime_error(std::string("command \"") + cmd + "\" have invalid gait function, it's nullptr");
-
-			// sync or async //
-			if (cmd_msg.header().reserved3_ & WAIT_FOR_RT_PLAN_FINISHED)
+			if (cmd_msg.header().reserved1_ & NOT_EXECUTE_RT_PLAN) return;
+			if (!(msg.header().reserved1_ & EXECUTE_EVEN_IF_CMD_POOL_IS_FULL) && (imp_->cmd_num_ == Imp::CMD_POOL_SIZE))
 			{
+				throw std::runtime_error("failed in ControlServer::executeCmd execute, because ControlServer is full");
+			}
+			if (msg.header().reserved1_ & EXECUTE_WHEN_ALL_PLAN_FINISHED)
+			{
+				while (imp_->cmd_num_ != 0)std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			}
+
+			if (imp_->plan_vec_.at(cmd_pair->second) == nullptr)throw std::runtime_error(std::string("command \"") + cmd + "\" have invalid gait function, it's nullptr");
+			
+			
+			
+			std::cout << cmd_msg.header().reserved1_ << "   " << cmd_msg.header().reserved2_ << "   " << cmd_msg.header().reserved3_ << "   " << std::endl;
+			// sync or async //
+			if (cmd_msg.header().reserved1_ & WAIT_FOR_RT_PLAN_EXECUTION)
+			{
+				cmd_msg.header().reserved1_ = cmd_pair->second;// using reserved 2 to store gait id
+
 				std::promise<void> cmd_finish_promise;
 				auto fut = cmd_finish_promise.get_future();
 				reinterpret_cast<std::promise<void> *&>(cmd_msg.header().reserved3_) = &cmd_finish_promise;
@@ -536,6 +553,8 @@ namespace aris
 			}
 			else
 			{
+				cmd_msg.header().reserved1_ = cmd_pair->second;// using reserved 2 to store gait id
+
 				reinterpret_cast<std::promise<void> *&>(cmd_msg.header().reserved3_) = nullptr;
 				controller().sendIn(cmd_msg);
 			}

@@ -16,6 +16,8 @@
 #include <aris_dynamic_block_matrix.h>
 #include <aris_dynamic_screw.h>
 
+
+
 namespace aris
 {
 	namespace dynamic
@@ -27,6 +29,11 @@ namespace aris
 		using double7 = double[7];
 		using double10 = double[10];
 
+
+		/// @defgroup dynamic_model_group 动力学建模模块
+		/// @{
+		///
+
 		class Model;
 
 		class Element :public aris::core::Object
@@ -35,7 +42,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type{ "Element" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto model()->Model&;
-			auto model()const->const Model&;
+			auto model()const->const Model&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->model(); }
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix;
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const aris::core::Matrix& default_value)const->aris::core::Matrix;
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, Size m, Size n)const->aris::core::Matrix;
@@ -152,7 +159,7 @@ namespace aris
 		};
 
 
-
+		/// @}
 	}
 }
 

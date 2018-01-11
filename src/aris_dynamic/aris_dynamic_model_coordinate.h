@@ -21,6 +21,10 @@ namespace aris
 {
 	namespace dynamic
 	{
+		/// @defgroup dynamic_model_group 动力学建模模块
+		/// @{
+		///
+		
 		class Part;
 		class Geometry;
 		
@@ -275,6 +279,8 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
+
+		/// @}
 	}
 }
 

@@ -112,7 +112,7 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		class EthercatSlaveType :public SlaveType
+		class EthercatSlaveType :public aris::core::Object
 		{
 		public:
 			static auto Type()->const std::string &{ static const std::string type("EthercatSlaveType"); return std::ref(type); }
@@ -169,7 +169,7 @@ namespace aris
 			auto configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void;
 
 			virtual ~EthercatSlave();
-			explicit EthercatSlave(const std::string &name = "ethercat_slave", const EthercatSlaveType *slave_type = nullptr, std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);
+			explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);
 			EthercatSlave(const EthercatSlave &other) = delete;
 			EthercatSlave(EthercatSlave &&other) = delete;
 			EthercatSlave& operator=(const EthercatSlave &other) = delete;
@@ -256,7 +256,7 @@ namespace aris
 			auto virtual mode(std::uint8_t md)->int override;
 
 			virtual ~EthercatMotion();
-			EthercatMotion(const std::string &name = "ethercat_motion", const EthercatSlaveType *slave_type = nullptr, std::uint16_t phy_id = 0
+			EthercatMotion(const std::string &name = "ethercat_motion", std::uint16_t phy_id = 0
 				, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
 				, double max_pos = 0.0, double min_pos = 0.0, double max_vel = 0.0, double max_acc = 0.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 

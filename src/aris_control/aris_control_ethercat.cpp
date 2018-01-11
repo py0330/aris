@@ -425,14 +425,14 @@ namespace aris
 		}
 		auto EthercatSlaveType::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
-			SlaveType::loadXml(xml_ele);
+			Object::loadXml(xml_ele);
 
 			imp_->esi_file_path_ = attributeString(xml_ele, "esi_file_path");
 			imp_->init();
 		}
 		auto EthercatSlaveType::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
 		EthercatSlaveType::~EthercatSlaveType() = default;
-		EthercatSlaveType::EthercatSlaveType(const std::string &name, const std::string &esi_file_path) : SlaveType(name), imp_(new Imp)
+		EthercatSlaveType::EthercatSlaveType(const std::string &name, const std::string &esi_file_path) : Object(name), imp_(new Imp)
 		{
 			registerType<aris::core::ObjectPool<PdoGroup> >();
 			
@@ -457,35 +457,35 @@ namespace aris
 
 			static auto check(EthercatSlave* sla)->void
 			{
-				if (sla->slaveType())
-				{
-					auto ec_type = dynamic_cast<const EthercatSlaveType*>(sla->slaveType());
-					
-					// check vendor id //
-					if (sla->vendorID() != ec_type->vendorID())throw std::runtime_error(sla->name() + " has invalid EthercatSlave vendor id, not same with slaveType");
+				//if (sla->slaveType())
+				//{
+				//	auto ec_type = dynamic_cast<const EthercatSlaveType*>(sla->slaveType());
+				//	
+				//	// check vendor id //
+				//	if (sla->vendorID() != ec_type->vendorID())throw std::runtime_error(sla->name() + " has invalid EthercatSlave vendor id, not same with slaveType");
 
-					// check product code and revision num //
-					auto device = std::find_if(ec_type->imp_->devices_.begin(), ec_type->imp_->devices_.end(), [&](const EthercatSlaveType::Imp::Device& d)->bool
-					{
-						return (d.product_code_ == sla->productCode()) && (d.revision_num_ == sla->revisionNum());
-					});
+				//	// check product code and revision num //
+				//	auto device = std::find_if(ec_type->imp_->devices_.begin(), ec_type->imp_->devices_.end(), [&](const EthercatSlaveType::Imp::Device& d)->bool
+				//	{
+				//		return (d.product_code_ == sla->productCode()) && (d.revision_num_ == sla->revisionNum());
+				//	});
 
-					if(device == ec_type->imp_->devices_.end())throw std::runtime_error(sla->name() + " has invalid EthercatSlave product_code or revision num, please check");
+				//	if(device == ec_type->imp_->devices_.end())throw std::runtime_error(sla->name() + " has invalid EthercatSlave product_code or revision num, please check");
 
-					// check dc assign activate //
-					auto dc = std::find(device->dc_assign_activate_list_.begin(), device->dc_assign_activate_list_.end(), sla->dcAssignActivate());
-					if (dc == device->dc_assign_activate_list_.end())throw std::runtime_error(sla->name() + " has invalid dc assign activate, please check");
-
-
-					// check pdo group //
-					for (auto &pdo_group : sla->pdoGroupPool())
-					{
-						//if(pdo_group.empty())
-					}
+				//	// check dc assign activate //
+				//	auto dc = std::find(device->dc_assign_activate_list_.begin(), device->dc_assign_activate_list_.end(), sla->dcAssignActivate());
+				//	if (dc == device->dc_assign_activate_list_.end())throw std::runtime_error(sla->name() + " has invalid dc assign activate, please check");
 
 
+				//	// check pdo group //
+				//	for (auto &pdo_group : sla->pdoGroupPool())
+				//	{
+				//		//if(pdo_group.empty())
+				//	}
 
-				}
+
+
+				//}
 
 			}
 		};
@@ -563,7 +563,7 @@ namespace aris
 
 		}
 		EthercatSlave::~EthercatSlave() = default;
-		EthercatSlave::EthercatSlave(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, slave_type, phy_id), imp_(new Imp)
+		EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
 		{
 			imp_->pdo_group_pool_ = &add<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
 			imp_->sdo_pool_ = &add<aris::core::ObjectPool<Sdo> >("sdo_pool");
@@ -1076,11 +1076,11 @@ namespace aris
 			return md == modeOfDisplay() ? 0 : 1;
 		}
 		EthercatMotion::~EthercatMotion() = default;
-		EthercatMotion::EthercatMotion(const std::string &name, const EthercatSlaveType *slave_type, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
+		EthercatMotion::EthercatMotion(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
 			, double max_pos, double min_pos, double max_vel, double max_acc, double pos_factor, double pos_offset, double home_pos)
-			: EthercatSlave(name, slave_type, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)
-			, Motion(name, slave_type, phy_id, max_pos, min_pos, max_vel, max_acc,pos_factor, pos_offset, home_pos)
-			, Slave(name, slave_type, phy_id), imp_(new Imp)
+			: EthercatSlave(name, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)
+			, Motion(name, phy_id, max_pos, min_pos, max_vel, max_acc,pos_factor, pos_offset, home_pos)
+			, Slave(name, phy_id), imp_(new Imp)
 		{
 		}
 	}

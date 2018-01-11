@@ -29,28 +29,27 @@ namespace aris
 			// Msg reserved 1 //
 			enum 
 			{ 
-				CHECK_POS_MIN = 0x0001, 
-				CHECK_POS_MAX = 0x0002, 
-				CHECK_POS_PLAN_CONTINUOUS = 0x0004, 
-				CHECK_POS_FOLLOWING_ERROR = 0x0008,
-				CHECK_VEL_PLAN_CONTINUOUS = 0x0010,
-				CHECK_VEL_FOLLOWING_ERROR = 0x0020,
+				PARSE_EVEN_IF_CMD_POOL_IS_FULL = 0x0001,
+				PARSE_WHEN_ALL_PLAN_FINISHED = 0x0002,
+				NOT_EXECUTE_RT_PLAN = 0x0004,
+				EXECUTE_EVEN_IF_CMD_POOL_IS_FULL = 0X0008,
+				EXECUTE_WHEN_ALL_PLAN_FINISHED = 0x0010,
+				WAIT_FOR_RT_PLAN_EXECUTION = 0x0020
+			};
+			// Msg reserved 2 //
+			enum
+			{
+				NOT_CHECK_POS_MIN = 0x0001,
+				NOT_CHECK_POS_MAX = 0x0002,
+				NOT_CHECK_POS_PLAN_CONTINUOUS = 0x0004,
+				NOT_CHECK_POS_FOLLOWING_ERROR = 0x0008,
+				NOT_CHECK_VEL_PLAN_CONTINUOUS = 0x0010,
+				NOT_CHECK_VEL_FOLLOWING_ERROR = 0x0020,
 				USING_TARGET_POS = 0x0100,
 				USING_TARGET_VEL = 0x0200,
 				USING_TARGET_CUR = 0x0400,
 				USING_VEL_OFFSET = 0x0800,
 				USING_CUR_OFFSET = 0x1000,
-			};
-			// Msg reserved 2 //
-			enum
-			{
-				EXECUTE_RT_PLAN = 0x0001,
-				EXECUTE_AFTER_ALL_PLAN_FINISHED = 0x0002,
-			};
-			// Msg reserved 3 //
-			enum
-			{
-				WAIT_FOR_RT_PLAN_FINISHED = 0x0001
 			};
 			static auto instance()->ControlServer &;
 			static auto Type()->const std::string &{ static const std::string type("ControlServer"); return type; }
@@ -78,7 +77,7 @@ namespace aris
 			auto widgetRoot()const->const WidgetRoot&{ return const_cast<ControlServer *>(this)->widgetRoot(); }
 
 			auto addCmd(const std::string &cmd_name, const ParseFunc &parse_func, const aris::dynamic::PlanFunction &gait_func)->void;
-			auto executeCmd(const std::string &cmd_string)->void;
+			auto executeCmd(const aris::core::Msg &cmd_string)->void;
 			auto start()->void;
 			auto stop()->void;
 

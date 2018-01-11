@@ -1376,7 +1376,7 @@ namespace aris
 			}
 
 		}
-		auto UniversalSolver::kinPos()->void
+		auto UniversalSolver::kinPos()->bool
 		{
 			// 储存位置信息，以便迭代失败后恢复 //
 			for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->getPm(d.pm);
@@ -1395,8 +1395,9 @@ namespace aris
 				setError(std::max(error(), sys.error_));
 			}
 
-			// 迭代成功，恢复 //
+			// 迭代成功，设置各杆件 //
 			if (error() < maxError())for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->setPm(d.pm);
+			return error() < maxError();
 		}
 		auto UniversalSolver::kinVel()->void 
 		{
@@ -1577,10 +1578,11 @@ namespace aris
 
 			UniversalSolver::allocateMemory();
 		}
-		auto ForwardKinematicSolver::kinPos()->void
+		auto ForwardKinematicSolver::kinPos()->bool
 		{
 			UniversalSolver::kinPos();
 			if (error() < maxError())for (auto &m : model().generalMotionPool())m.updMpm();
+			return error() < maxError();
 		}
 		auto ForwardKinematicSolver::kinVel()->void
 		{
@@ -1606,11 +1608,11 @@ namespace aris
 
 			UniversalSolver::allocateMemory();
 		}
-		auto InverseKinematicSolver::kinPos()->void
+		auto InverseKinematicSolver::kinPos()->bool
 		{
 			UniversalSolver::kinPos();
 			if (error() < maxError())for (auto &m : model().motionPool())m.updMp();
-
+			return error() < maxError();
 		}
 		auto InverseKinematicSolver::kinVel()->void
 		{
@@ -1636,10 +1638,11 @@ namespace aris
 			for (auto &f : model().forcePool())f.activate(true);
 			UniversalSolver::allocateMemory();
 		}
-		auto ForwardDynamicSolver::kinPos()->void
+		auto ForwardDynamicSolver::kinPos()->bool
 		{
 			UniversalSolver::kinPos();
 			if (error() < maxError())for (auto &m : model().generalMotionPool())m.updMpm();
+			return error() < maxError();
 		}
 		auto ForwardDynamicSolver::kinVel()->void
 		{
@@ -1666,11 +1669,11 @@ namespace aris
 			for (auto &f : model().forcePool())f.activate(false);
 			UniversalSolver::allocateMemory();
 		}
-		auto InverseDynamicSolver::kinPos()->void
+		auto InverseDynamicSolver::kinPos()->bool
 		{
 			UniversalSolver::kinPos();
 			if (error() < maxError())for (auto &m : model().motionPool())m.updMp();
-
+			return error() < maxError();
 		}
 		auto InverseDynamicSolver::kinVel()->void
 		{

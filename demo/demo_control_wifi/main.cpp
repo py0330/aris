@@ -82,7 +82,7 @@ int main()
 	// 目前只支持调用sendDataToMotion
 	// 后续会添加正反解模型等
 	int ret;
-	aris::server::sendStringToAris(xml, std::strlen(xml), nullptr, &ret);
+	//aris::server::sendStringToAris(xml, std::strlen(xml), nullptr, &ret);
 
 	std::cout << "demo_control_wifi finished, press any key to continue" << std::endl;
 	std::cin.get();

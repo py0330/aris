@@ -910,8 +910,6 @@ void test_single_body()
 	auto &p = m.partPool().add<aris::dynamic::Part>();
 	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
 
-	m.saveXmlFile("C:\\Users\\py033\\Desktop\\m.xml");
-
 	s.allocateMemory();
 
 	p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
@@ -932,9 +930,9 @@ void test_3R()
 	// inertia_vector的定义为：[m, m*x, m*y, m*z, Ixx, Iyy, Izz, Ixy, Ixz, Iyz]，其中x,y,z为质心位置
 	const double link1_position_and_euler321[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 	const double link1_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
-	const double link2_position_and_euler321[6]{ 1.0 , 0.0 , 0.0 , PI / 2 , 0.0 , 0.0 };
+	const double link2_position_and_euler321[6]{ 1.0 , 0.0 , 0.0 , aris::PI / 2 , 0.0 , 0.0 };
 	const double link2_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
-	const double link3_position_and_euler321[6]{ 1.0 , 1.0 , 0.0 , PI , 0.0 , 0.0 };
+	const double link3_position_and_euler321[6]{ 1.0 , 1.0 , 0.0 , aris::PI , 0.0 , 0.0 };
 	const double link3_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
 
 	// 定义关节的位置，以及轴线，SCARA包含3个转动副，转动轴线是Z轴
@@ -946,7 +944,7 @@ void test_3R()
 	const double joint3_axis[3]{ 0.0 , 0.0 , 1.0 };
 
 	// 定义末端位置与321欧拉角，这个位置为机构起始时的位置
-	const double end_effector_position_and_euler321[6]{ 0.0 , 1.0 , 0.0 , PI , 0.0 , 0.0 };
+	const double end_effector_position_and_euler321[6]{ 0.0 , 1.0 , 0.0 , aris::PI , 0.0 , 0.0 };
 
 
 	////////////////////////////////////////////////// 开始建模 ///////////////////////////////////////////////
@@ -1194,9 +1192,9 @@ void bench_3R()
 		// inertia_vector的定义为：[m, m*x, m*y, m*z, Ixx, Iyy, Izz, Ixy, Ixz, Iyz]，其中x,y,z为质心位置
 		const double link1_position_and_euler321[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
 		const double link1_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
-		const double link2_position_and_euler321[6]{ 1.0 , 0.0 , 0.0 , PI / 2 , 0.0 , 0.0 };
+		const double link2_position_and_euler321[6]{ 1.0 , 0.0 , 0.0 , aris::PI / 2 , 0.0 , 0.0 };
 		const double link2_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
-		const double link3_position_and_euler321[6]{ 1.0 , 1.0 , 0.0 , PI , 0.0 , 0.0 };
+		const double link3_position_and_euler321[6]{ 1.0 , 1.0 , 0.0 , aris::PI , 0.0 , 0.0 };
 		const double link3_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
 
 		// 定义关节的位置，以及轴线，SCARA包含3个转动副，转动轴线是Z轴
@@ -1208,7 +1206,7 @@ void bench_3R()
 		const double joint3_axis[3]{ 0.0 , 0.0 , 1.0 };
 
 		// 定义末端位置与321欧拉角，这个位置为机构起始时的位置
-		const double end_effector_position_and_euler321[6]{ 0.0 , 1.0 , 0.0 , PI , 0.0 , 0.0 };
+		const double end_effector_position_and_euler321[6]{ 0.0 , 1.0 , 0.0 , aris::PI , 0.0 , 0.0 };
 
 
 		////////////////////////////////////////////////// 开始建模 ///////////////////////////////////////////////

@@ -3,120 +3,79 @@
 #include "test_core_command.h"
 
 using namespace aris::core;
-const char xml_data[] =
-"<command_parser type=\"CommandParser\">"
-"	<command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
-"		<start help=\"start the control system.\"/>"
-"		<stop/>"
-"		<exit/>"
-"		<tt default_child_type=\"Param\" default=\"ap0\">"
-"			<ap0 abbreviation=\"a\"/>"
-"			<bu0 type=\"UniqueParam\" default_child_type=\"Param\" default=\"ap1\">"
-"				<ap1 default=\"0\"/>"
-"				<bg1 type=\"GroupParam\" default_child_type=\"Param\">"
-"					<ap2 default=\"1\"/>"
-"					<bp2 default=\"2\" abbreviation=\"b\"/>"
-"				</bg1>"
-"			</bu0>"
-"			<cg0 type=\"GroupParam\" default_child_type=\"Param\" default=\"bg1\">"
-"				<cp1 default=\"0\"/>"
-"				<dg1 type=\"GroupParam\" default_child_type=\"Param\">"
-"					<cp2 default=\"3\" abbreviation=\"c\"/>"
-"					<dp2 default=\"4\" abbreviation=\"d\"/>"
-"				</dg1>"
-"				<eu1 type=\"UniqueParam\" default_child_type=\"Param\">"
-"					<ep2 default=\"5\" abbreviation=\"e\"/>"
-"					<fp2 default=\"6\"/>"
-"				</eu1>"
-"			</cg0>"
-"			<du0 type=\"UniqueParam\" default_child_type=\"Param\" default=\"fp1\">"
-"				<fp1 default=\"0\" abbreviation=\"f\"/>"
-"				<gg1 type=\"GroupParam\" default_child_type=\"Param\">"
-"					<gp2 default=\"1\"/>"
-"					<hp2 default=\"2\"/>"
-"				</gg1>"
-"			</du0>"
-"		</tt>"
-"		<en default_child_type=\"Param\" default=\"all\">"
-"			<all abbreviation=\"a\"/>"
-"			<first abbreviation=\"f\"/>"
-"			<second abbreviation=\"s\"/>"
-"			<motion_id abbreviation=\"m\" default=\"0\"/>"
-"			<physical_id abbreviation=\"p\" default=\"0\"/>"
-"			<leg abbreviation=\"l\" default=\"0\"/>"
-"		</en>"
-"		<ds default_child_type=\"Param\" default=\"all\">"
-"			<all abbreviation=\"a\"/>"
-"			<first abbreviation=\"f\"/>"
-"			<second abbreviation=\"s\"/>"
-"			<motion_id abbreviation=\"m\" default=\"0\"/>"
-"			<physical_id abbreviation=\"p\" default=\"0\"/>"
-"			<leg abbreviation=\"l\" default=\"0\"/>"
-"		</ds>"
-"		<hm default_child_type=\"Param\" default=\"all\">"
-"			<all abbreviation=\"a\"/>"
-"			<first abbreviation=\"f\"/>"
-"			<second abbreviation=\"s\"/>"
-"			<motion_id abbreviation=\"m\" default=\"0\"/>"
-"			<physical_id abbreviation=\"p\" default=\"0\"/>"
-"			<leg abbreviation=\"l\" default=\"0\"/>"
-"		</hm>"
-"		<test default_child_type=\"Param\" default=\"all\">"
-"			<all abbreviation=\"a\"/>"
-"			<motion_id abbreviation=\"m\" default=\"0\"/>"
-"			<physical_id abbreviation=\"p\" default=\"0\"/>"
-"		</test>"
-"		<rc default=\"rc_param\">"
-"			<rc_param type=\"GroupParam\" default_child_type=\"Param\">"
-"				<leg_param type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
-"					<all abbreviation=\"a\"/>"
-"					<first abbreviation=\"f\"/>"
-"					<second abbreviation=\"s\"/>"
-"					<leg abbreviation=\"l\" default=\"0\"/>"
-"				</leg_param>"
-"				<t1 abbreviation=\"t\" default=\"3000\"/>"
-"				<t2 default=\"3000\"/>"
-"				<margin_offset abbreviation=\"m\" default=\"0.01\"/>"
-"			</rc_param>"
-"			<rc_param2 type=\"GroupParam\" default_child_type=\"Param\">"
-"				<leg_param2 type=\"UniqueParam\" default_child_type=\"Param\" default=\"group\">"
-"					<group type=\"GroupParam\">"
-"						<group2 type=\"GroupParam\"/>"
-"					</group>"
-"					<first2/>"
-"					<second2/>"
-"					<leg2/>"
-"				</leg_param2>"
-"				<t3 default=\"3000\"/>"
-"				<t4 default=\"3000\"/>"
-"				<margin_offset2 default=\"0.01\"/>"
-"			</rc_param2>"
-"		</rc>"
-"		<wk default_child_type=\"Param\" default=\"wk_param\">"
-"			<wk_param type=\"GroupParam\" default_child_type=\"Param\">"
-"				<totalCount abbreviation=\"t\" default=\"3000\"/>"
-"				<n abbreviation=\"n\" default=\"1\"/>"
-"				<distance abbreviation=\"d\" default=\"0.5\"/>"
-"				<height abbreviation=\"h\" default=\"0.05\"/>"
-"				<alpha abbreviation=\"a\" default=\"0\"/>"
-"				<beta abbreviation=\"b\" default=\"0\"/>"
-"			</wk_param>"
-"		</wk>"
-"	</command_pool>"
-"</command_parser>";
-
-
-class A
-{
-	static std::map<int, double> m;
-};
-
-std::map<int, double> A::m;
 
 void test_command_xml()
 {
 	try
 	{
+		const char xml_data[] =
+			"<command_parser type=\"CommandParser\">"
+			"	<command_pool type=\"CommandPoolObject\" default_child_type=\"Command\">"
+			"		<tt default_child_type=\"Param\" default=\"ap0\">"
+			"			<ap0 abbreviation=\"a\"/>"
+			"			<bu0 type=\"UniqueParam\" default_child_type=\"Param\" default=\"ap1\">"
+			"				<ap1 default=\"0\"/>"
+			"				<bg1 type=\"GroupParam\" default_child_type=\"Param\">"
+			"					<ap2 default=\"1\"/>"
+			"					<bp2 default=\"2\" abbreviation=\"b\"/>"
+			"				</bg1>"
+			"			</bu0>"
+			"			<cg0 type=\"GroupParam\" default_child_type=\"Param\" default=\"bg1\">"
+			"				<cp1 default=\"0\"/>"
+			"				<dg1 type=\"GroupParam\" default_child_type=\"Param\">"
+			"					<cp2 default=\"3\" abbreviation=\"c\"/>"
+			"					<dp2 default=\"4\" abbreviation=\"d\"/>"
+			"				</dg1>"
+			"				<eu1 type=\"UniqueParam\" default_child_type=\"Param\">"
+			"					<ep2 default=\"5\" abbreviation=\"e\"/>"
+			"					<fp2 default=\"6\"/>"
+			"				</eu1>"
+			"			</cg0>"
+			"			<du0 type=\"UniqueParam\" default_child_type=\"Param\" default=\"fp1\">"
+			"				<fp1 default=\"0\" abbreviation=\"f\"/>"
+			"				<gg1 type=\"GroupParam\" default_child_type=\"Param\">"
+			"					<gp2 default=\"1\"/>"
+			"					<hp2 default=\"2\"/>"
+			"				</gg1>"
+			"			</du0>"
+			"		</tt>"
+			"		<en default_child_type=\"Param\" default=\"all\">"
+			"			<all abbreviation=\"a\"/>"
+			"			<first abbreviation=\"f\"/>"
+			"			<second abbreviation=\"s\"/>"
+			"			<motion_id abbreviation=\"m\" default=\"0\"/>"
+			"			<physical_id abbreviation=\"p\" default=\"0\"/>"
+			"			<leg abbreviation=\"l\" default=\"0\"/>"
+			"		</en>"
+			"		<rc default=\"rc_param\">"
+			"			<rc_param type=\"GroupParam\" default_child_type=\"Param\">"
+			"				<leg_param type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
+			"					<all abbreviation=\"a\"/>"
+			"					<first abbreviation=\"f\"/>"
+			"					<second abbreviation=\"s\"/>"
+			"					<leg abbreviation=\"l\" default=\"0\"/>"
+			"				</leg_param>"
+			"				<t1 abbreviation=\"t\" default=\"3000\"/>"
+			"				<t2 default=\"3000\"/>"
+			"				<margin_offset abbreviation=\"m\" default=\"0.01\"/>"
+			"			</rc_param>"
+			"			<rc_param2 type=\"GroupParam\" default_child_type=\"Param\">"
+			"				<leg_param2 type=\"UniqueParam\" default_child_type=\"Param\" default=\"group\">"
+			"					<group type=\"GroupParam\">"
+			"						<group2 type=\"GroupParam\"/>"
+			"					</group>"
+			"					<first2/>"
+			"					<second2/>"
+			"					<leg2/>"
+			"				</leg_param2>"
+			"				<t3 default=\"3000\"/>"
+			"				<t4 default=\"3000\"/>"
+			"				<margin_offset2 default=\"0.01\"/>"
+			"			</rc_param2>"
+			"		</rc>"
+			"	</command_pool>"
+			"</command_parser>";
+
 		aris::core::CommandParser parser;
 		parser.loadXmlStr(xml_data);
 
@@ -232,7 +191,7 @@ void test_command_xml()
 		std::cout << e.what() << std::endl;
 	}
 }
-void test_command_construct()
+void test_command_code()
 {
 	try
 	{
@@ -333,7 +292,7 @@ void test_command()
 {
 	std::cout << std::endl << "-----------------test command---------------------" << std::endl;
 	test_command_xml();
-	test_command_construct();
+	test_command_code();
 	std::cout << "-----------------test command finished------------" << std::endl << std::endl;
 }
 

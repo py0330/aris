@@ -217,7 +217,7 @@ void test_constraint()
 	
 	// test universal joints //
 	{
-		const double relative_pe[6]{ 0,0,0,0.856,PI / 2,0.972 };
+		const double relative_pe[6]{ 0,0,0,0.856,aris::PI / 2,0.972 };
 		const double relative_ve[6]{ 0,0,0,0.157,0,0.895 };
 
 		double relative_pm[16];

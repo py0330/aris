@@ -1,10 +1,6 @@
 ﻿#ifndef ARIS_DYNAMIC_MATRIX_
 #define ARIS_DYNAMIC_MATRIX_
 
-#ifndef PI
-#define PI 3.141592653589793
-#endif
-
 #include <vector>
 #include <map>
 #include <string>

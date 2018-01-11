@@ -270,7 +270,7 @@ class HulkInverseSolver :public aris::dynamic::UniversalSolver
 public:
 	static const std::string& Type() { static const std::string type("HulkInverseSolver"); return type; }
 	auto virtual type() const->const std::string& override{ return Type(); }
-	auto virtual kinPos()->void override
+	auto virtual kinPos()->bool override
 	{
 		auto &ee = model().generalMotionPool().front();
 
@@ -285,7 +285,7 @@ public:
 
 		double q[6];
 		q[0] = atan2(-z, x);
-		q[1] = atan2(y - 0.29, std::sqrt(x * x + z * z)) + std::acos((l*l + 0.27*0.27 - 0.104756) / 0.27 / l / 2.0) - PI / 2;
+		q[1] = atan2(y - 0.29, std::sqrt(x * x + z * z)) + std::acos((l*l + 0.27*0.27 - 0.104756) / 0.27 / l / 2.0) - aris::PI / 2;
 		q[2] = std::acos((0.104756 + 0.27*0.27 - l*l) / 0.27 / 0.323660315763301 / 2.0) - 1.788795031482338;
 
 		double first_3_rm[9], last_3_rm[9];
@@ -296,11 +296,11 @@ public:
 
 		s_rm2re(last_3_rm, q + 3, "131");
 
-		if (q[3] > PI * 150 / 180) 
+		if (q[3] > aris::PI * 150 / 180) 
 		{
-			q[3] -= PI;
+			q[3] -= aris::PI;
 			q[4] = -q[4];
-			q[5] -= PI;
+			q[5] -= aris::PI;
 		}
 
 
@@ -336,6 +336,8 @@ public:
 		s_pe2pm(pe6, pm, "123");
 		s_mms(3, 1, 3, pm, 4, pe6, 1, pm + 3, 4);
 		model().partPool().at(6).setPm(model().partPool().at(5), pm);
+
+		return true;
 	}
 
 	HulkInverseSolver(const std::string &name = "hulk_inverse_solver") :UniversalSolver(name) {};
@@ -345,7 +347,7 @@ class HulkForwardSolver :public aris::dynamic::UniversalSolver
 public:
 	static const std::string& Type() { static const std::string type("HulkForwardSolver"); return type; }
 	auto virtual type() const->const std::string& override{ return Type(); }
-	auto virtual kinPos()->void override
+	auto virtual kinPos()->bool override
 	{
 		double pm[16];
 		double pe1[6]{ 0,0,0,0,-model().motionPool().at(0).mp(),0 };
@@ -378,6 +380,8 @@ public:
 		s_pe2pm(pe6, pm, "123");
 		s_mms(3, 1, 3, pm, 4, pe6, 1, pm + 3, 4);
 		model().partPool().at(6).setPm(model().partPool().at(5), pm);
+
+		return true;
 	}
 
 	HulkForwardSolver(const std::string &name = "hulk_forward_solver") :UniversalSolver(name) {};
@@ -469,7 +473,7 @@ auto rc_plan_func = [](const aris::dynamic::PlanParam &param)->int
 	for (int i = 0; i < 6; ++i)
 	{
 		mp[i] = cs.model().motionPool().at(i).mp();
-		cs.model().motionPool().at(i).setMp(mp[i] / 360 * 2.0 * PI);
+		cs.model().motionPool().at(i).setMp(mp[i] / 360 * 2.0 * aris::PI);
 	}
 	cs.model().solverPool().at(1).kinPos();
 	for (int i = 0; i < 6; ++i)cs.model().motionPool().at(i).setMp(mp[i]);
@@ -546,17 +550,17 @@ auto mv_parse_func = [](const std::string &cmd, const std::map<std::string, std:
 
 	if (params.at("expression") == "313")
 	{
-		s_nv(3, PI / 180, data + 3);
+		s_nv(3, aris::PI / 180, data + 3);
 		s_pe2pq(data, param.pq, "313");
 	}
 	else if (params.at("expression") == "321")
 	{
-		s_nv(3, PI / 180, data + 3);
+		s_nv(3, aris::PI / 180, data + 3);
 		s_pe2pq(data, param.pq, "321");
 	}
 	else if (params.at("expression") == "123")
 	{
-		s_nv(3, PI / 180, data + 3);
+		s_nv(3, aris::PI / 180, data + 3);
 		s_pe2pq(data, param.pq, "123");
 	}
 	else
@@ -576,7 +580,7 @@ auto mv_plan_func = [](const aris::dynamic::PlanParam &plan_param)->int
 	const double max_a = 0.2, max_v = 0.1;
 	if (plan_param.count_ == 1)
 	{
-		for (aris::Size i(-1); ++i < 6;) cs.model().motionPool().at(i).setMp(cs.controller().motionPool().at(i).actualPos() / 180.0*PI);
+		for (aris::Size i(-1); ++i < 6;) cs.model().motionPool().at(i).setMp(cs.controller().motionPool().at(i).actualPos() / 180.0*aris::PI);
 		cs.model().solverPool().at(1).kinPos();
 		cs.model().generalMotionPool().at(0).updMpm();
 		cs.model().generalMotionPool().at(0).getMpq(begin_pq);
@@ -612,7 +616,7 @@ auto mv_plan_func = [](const aris::dynamic::PlanParam &plan_param)->int
 	for (int i = 0; i < 6; ++i)
 	{
 		cs.model().motionPool().at(i).updMp();
-		cs.model().motionPool().at(i).setMp(cs.model().motionPool().at(i).mp()*360/2.0/PI);
+		cs.model().motionPool().at(i).setMp(cs.model().motionPool().at(i).mp()*360/2.0/ aris::PI);
 	}
 
 	return total_count > plan_param.count_ ? 1 : 0;
@@ -649,8 +653,8 @@ int main()
 
 		// 计算正解 //
 		std::cout << "forward:" << std::endl;
-		//double mp[6]{ 0.135,0.246,-0.001,0.2,PI / 2,0.1 };
-		double mp[6]{ PI/2,0,0,0,0,0};
+		//double mp[6]{ 0.135,0.246,-0.001,0.2,aris::PI / 2,0.1 };
+		double mp[6]{ aris::PI/2,0,0,0,0,0};
 		for (auto &m : cs.model().motionPool())
 		{
 			m.setMp(mp[m.id()]);
@@ -664,7 +668,7 @@ int main()
 
 		// 计算反解 //
 		std::cout << "inverse" << std::endl;
-		double pe[6]{0,0.63,0.316,0,-PI/2,-PI/2};
+		double pe[6]{0,0.63,0.316,0,-aris::PI/2,-aris::PI/2};
 		cs.model().generalMotionPool().front().setMpe(pe, "123");
 		cs.model().solverPool().at(0).kinPos();
 		for (auto &m : cs.model().motionPool())
@@ -707,7 +711,7 @@ int main()
 			
 			try
 			{
-				cs.executeCmd(command_in);
+				cs.executeCmd(aris::core::Msg(command_in));
 				std::cout << "cmd finished" << std::endl;
 			}
 			catch (std::exception &e)
@@ -774,7 +778,7 @@ int main()
 		//	
 		//	aris::Size total_coult;
 		//	double p, v, a;
-		//	aris::dynamic::moveAbsolute(param.count_, 0.0, PI, 0.5 * dt, 0.3 * dt * dt, 0.5 * dt * dt, p, v, a, total_coult);
+		//	aris::dynamic::moveAbsolute(param.count_, 0.0, aris::PI, 0.5 * dt, 0.3 * dt * dt, 0.5 * dt * dt, p, v, a, total_coult);
 		//	
 		//	param.model_->setTime(param.count_ * dt);
 		//	param.model_->motionPool().at(0).setMp(p);

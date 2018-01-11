@@ -112,42 +112,23 @@ namespace aris
 		struct Slave::Imp
 		{
 		public:
-			const SlaveType *slave_type_;
 			std::uint16_t phy_id_, sla_id_;
 		};
 		auto Slave::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Object::saveXml(xml_ele);
-			if(slaveType())	xml_ele.SetAttribute("slave_type", slaveType()->name().c_str());
-
 			xml_ele.SetAttribute("phy_id", std::to_string(phyId()).c_str());
 		}
 		auto Slave::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
 			Object::loadXml(xml_ele);
-			imp_->slave_type_ = nullptr;
-			if (!attributeString(xml_ele, "slave_type", "").empty())
-			{
-				if (root().findByName("slave_type_pool") == root().children().end())throw std::runtime_error("you must insert \"slave_type_pool\" before insert \"slave_pool\" node");
-				auto &slave_type_pool = static_cast<aris::core::ObjectPool<SlaveType> &>(*root().findByName("slave_type_pool"));
-
-				if (slave_type_pool.findByName(attributeString(xml_ele, "slave_type")) == slave_type_pool.end())
-				{
-					throw std::runtime_error("can not find slave_type \"" + attributeString(xml_ele, "slave_type") + "\" in slave \"" + name() + "\"");
-				}
-				imp_->slave_type_ = &*slave_type_pool.findByName(attributeString(xml_ele, "slave_type"));
-			}
-
 			imp_->phy_id_ = attributeUint16(xml_ele, "phy_id");
 		}
-		auto Slave::slaveType()const->const SlaveType *{ return imp_->slave_type_; }
 		auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
 		Slave::~Slave() = default;
-		Slave::Slave(const std::string &name, const SlaveType *slave_type, std::uint16_t phy_id) :Object(name), imp_(new Imp) 
+		Slave::Slave(const std::string &name, std::uint16_t phy_id) :Object(name), imp_(new Imp) 
 		{
-			imp_->slave_type_ = slave_type;
 			imp_->phy_id_ = phy_id;
-
 		}
 		Slave::Slave(const Slave &other) = default;
 		Slave::Slave(Slave &&other) = default;
@@ -183,7 +164,6 @@ namespace aris
 			}
 
 			// slave //
-			aris::core::ObjectPool<SlaveType> *slave_type_pool_;
 			aris::core::ObjectPool<Slave> *slave_pool_;
 			std::vector<Size> sla_vec_phy2abs_;
 
@@ -218,7 +198,6 @@ namespace aris
 		{
 			Object::loadXml(xml_ele);
 
-			imp_->slave_type_pool_ = findByName("slave_type_pool") == children().end() ? &add<aris::core::ObjectPool<SlaveType, Object> >("slave_type_pool") : static_cast<aris::core::ObjectPool<SlaveType, Object> *>(&(*findByName("slave_type_pool")));
 			imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Object> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Object> *>(&(*findByName("slave_pool")));
 			imp_->data_logger_ = findByName("data_logger") == children().end() ? &add<DataLogger>("data_logger") : static_cast<DataLogger*>(&(*findByName("data_logger")));
 			imp_->pipe_in_ = findOrInsert<aris::core::Pipe>("msg_pipe_in");
@@ -285,7 +264,6 @@ namespace aris
 		auto Master::sendIn(const aris::core::MsgBase &send_msg)->void { imp_->pipe_in_->sendMsg(send_msg); }
 		auto Master::recvIn()->int { return imp_->pipe_in_->recvMsg(imp_->in_msg_); }
 		auto Master::slaveAtPhy(aris::Size id)->Slave& { return slavePool().at(imp_->sla_vec_phy2abs_.at(id)); }
-		auto Master::slaveTypePool()->aris::core::ObjectPool<SlaveType>& { return *imp_->slave_type_pool_; }
 		auto Master::slavePool()->aris::core::ObjectPool<Slave, aris::core::Object>& { return *imp_->slave_pool_; }
 		auto Master::dataLogger()->DataLogger& { return *imp_->data_logger_; }
 		Master::~Master() = default;
@@ -293,12 +271,9 @@ namespace aris
 		{
 			registerType<RTTimer>();
 			registerType<DataLogger>();
-			registerType<SlaveType>();
-			registerType<aris::core::ObjectPool<SlaveType> >();
 			registerType<Slave>();
 			registerType<aris::core::ObjectPool<Slave> >();
 
-			imp_->slave_type_pool_ = &add<aris::core::ObjectPool<SlaveType> >("slave_type_pool");
 			imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave> >("slave_pool");
 			imp_->data_logger_ = &add<DataLogger>("data_logger");
 			imp_->pipe_in_ = &add<aris::core::Pipe>("msg_pipe_in");

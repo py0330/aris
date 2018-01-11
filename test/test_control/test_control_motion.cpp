@@ -12,8 +12,7 @@ void test_elmo_enable()
 		aris::control::EthercatController m;
 		m.registerType<EthercatMotion>();
 
-		auto &st = m.slaveTypePool().add<EthercatSlaveType>("st", "C:\\Users\\py033\\Desktop\\Elmo ECAT 000103F6 V07.xml");
-		auto &s1 = m.slavePool().add<EthercatMotion>("s1", &st, 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,0.0);
+		auto &s1 = m.slavePool().add<EthercatMotion>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,0.0);
 
 		auto &tx = s1.pdoGroupPool().add<PdoGroup>("index_1A00", 0x1A00, true);
 		tx.add<Pdo>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));
@@ -38,9 +37,43 @@ void test_elmo_enable()
 
 		m.setControlStrategy([&]()
 		{
-			static int count{ 0 };
+			static int count{ 0 }, cos_count{ 0 };
+			static int state{ 0 };// 0为 初始状态， 1为 使能结束， 2为 sin结束， 3为 去使能结束
+			static double begin_pos;
 
-			auto ret = s1.enable();
+			int ret;
+			switch (state)
+			{
+			case 0:
+				s1.setModeOfOperation(8);
+				ret = s1.enable();
+				if (ret == 0) 
+				{
+					m.mout() << "enabled at count " << count << std::endl;
+					state = 1;
+					cos_count = 0;
+					begin_pos = s1.actualPos();
+				}
+				break;
+			case 1:
+				s1.setTargetPos(begin_pos + 1.0 - std::cos(++cos_count / 5000.0 * 2.0 * 3.141592653));
+				if (cos_count == 5000)
+				{
+					m.mout() << "cos finished at count " << count << std::endl;
+					state = 2;
+				}
+				break;
+			case 2:
+				ret = s1.disable();
+				if (ret == 0)
+				{
+					m.mout() << "disabled at count " << count << std::endl;
+					state = 3;
+				}
+				break;
+			default:
+				break;
+			}
 
 			if (++count % 1000 == 0) 
 			{
@@ -54,7 +87,7 @@ void test_elmo_enable()
 		});
 		m.dataLogger().start();
 		m.start();
-		for (auto i{ 0 }; i < 20; ++i)
+		for (auto i{ 0 }; i < 25; ++i)
 		{
 			aris::core::Msg msg;
 			while (!m.recvOut(msg));

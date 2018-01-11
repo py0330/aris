@@ -17,6 +17,10 @@ namespace aris
 {
 	namespace dynamic
 	{
+		/// @defgroup dynamic_model_group 动力学建模模块
+		/// @{
+		///
+		
 		struct PlanParam
 		{
 			Model* model_;
@@ -27,6 +31,7 @@ namespace aris
 		using PlanFunction = std::function<int(const PlanParam &)>;
 		using ParseFunction = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::MsgBase &msg_out)>;
 
+		/// @{
 		class Solver :public Element
 		{
 		public:
@@ -35,7 +40,7 @@ namespace aris
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual allocateMemory()->void = 0;
-			auto virtual kinPos()->void = 0;
+			auto virtual kinPos()->bool = 0;
 			auto virtual kinVel()->void = 0;
 			auto virtual dynAccAndFce()->void = 0;
 			auto init()->void;
@@ -59,24 +64,102 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		class Calibrator :public Element
+		class UniversalSolver : public Solver
 		{
 		public:
-			static auto Type()->const std::string &{ static const std::string type{ "Calibrator" }; return type; }
+			static const std::string& Type() { static const std::string type("UniversalSolver"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void = 0;
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->bool override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
+			auto plotRelation()->void;
 
-			virtual ~Calibrator();
-			explicit Calibrator(const std::string &name = "calibrator");
-			Calibrator(const Calibrator&);
-			Calibrator(Calibrator&&);
-			Calibrator& operator=(const Calibrator&);
-			Calibrator& operator=(Calibrator&&);
+			virtual ~UniversalSolver();
+			explicit UniversalSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			UniversalSolver(const UniversalSolver &other);
+			UniversalSolver(UniversalSolver &&other);
+			UniversalSolver& operator=(const UniversalSolver &other);
+			UniversalSolver& operator=(UniversalSolver &&other);
 
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
+		class ForwardKinematicSolver :public UniversalSolver
+		{
+		public:
+			static const std::string& Type() { static const std::string type("ForwardKinematicSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->bool override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
+
+			virtual ~ForwardKinematicSolver();
+			explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			ForwardKinematicSolver(const ForwardKinematicSolver &other);
+			ForwardKinematicSolver(ForwardKinematicSolver &&other);
+			ForwardKinematicSolver& operator=(const ForwardKinematicSolver &other);
+			ForwardKinematicSolver& operator=(ForwardKinematicSolver &&other);
+		};
+		class InverseKinematicSolver :public UniversalSolver
+		{
+		public:
+			static const std::string& Type() { static const std::string type("InverseKinematicSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->bool override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
+
+			virtual ~InverseKinematicSolver();
+			explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			InverseKinematicSolver(const InverseKinematicSolver &other);
+			InverseKinematicSolver(InverseKinematicSolver &&other);
+			InverseKinematicSolver& operator=(const InverseKinematicSolver &other);
+			InverseKinematicSolver& operator=(InverseKinematicSolver &&other);
+		};
+		class ForwardDynamicSolver :public UniversalSolver
+		{
+		public:
+			static const std::string& Type() { static const std::string type("ForwardDynamicSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->bool override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
+
+			virtual ~ForwardDynamicSolver();
+			explicit ForwardDynamicSolver(const std::string &name = "forward_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			ForwardDynamicSolver(const ForwardDynamicSolver &other);
+			ForwardDynamicSolver(ForwardDynamicSolver &&other);
+			ForwardDynamicSolver& operator=(const ForwardDynamicSolver &other);
+			ForwardDynamicSolver& operator=(ForwardDynamicSolver &&other);
+		};
+		class InverseDynamicSolver :public UniversalSolver
+		{
+		public:
+			static const std::string& Type() { static const std::string type("InverseDynamicSolver"); return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+
+			auto virtual allocateMemory()->void override;
+			auto virtual kinPos()->bool override;
+			auto virtual kinVel()->void override;
+			auto virtual dynAccAndFce()->void override;
+
+			virtual ~InverseDynamicSolver();
+			explicit InverseDynamicSolver(const std::string &name = "inverse_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+			InverseDynamicSolver(const InverseDynamicSolver &other);
+			InverseDynamicSolver(InverseDynamicSolver &&other);
+			InverseDynamicSolver& operator=(const InverseDynamicSolver &other);
+			InverseDynamicSolver& operator=(InverseDynamicSolver &&other);
+		};
+		/// @}
+
 		class SimResult : public Element
 		{
 		public:
@@ -206,102 +289,6 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-
-		class UniversalSolver : public Solver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("UniversalSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual dynAccAndFce()->void override;
-			auto plotRelation()->void;
-
-			virtual ~UniversalSolver();
-			explicit UniversalSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			UniversalSolver(const UniversalSolver &other);
-			UniversalSolver(UniversalSolver &&other);
-			UniversalSolver& operator=(const UniversalSolver &other);
-			UniversalSolver& operator=(UniversalSolver &&other);
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
-		class ForwardKinematicSolver :public UniversalSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("ForwardKinematicSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual dynAccAndFce()->void override;
-
-			virtual ~ForwardKinematicSolver();
-			explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			ForwardKinematicSolver(const ForwardKinematicSolver &other);
-			ForwardKinematicSolver(ForwardKinematicSolver &&other);
-			ForwardKinematicSolver& operator=(const ForwardKinematicSolver &other);
-			ForwardKinematicSolver& operator=(ForwardKinematicSolver &&other);
-		};
-		class InverseKinematicSolver :public UniversalSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("InverseKinematicSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual dynAccAndFce()->void override;
-
-			virtual ~InverseKinematicSolver();
-			explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			InverseKinematicSolver(const InverseKinematicSolver &other);
-			InverseKinematicSolver(InverseKinematicSolver &&other);
-			InverseKinematicSolver& operator=(const InverseKinematicSolver &other);
-			InverseKinematicSolver& operator=(InverseKinematicSolver &&other);
-		};
-		class ForwardDynamicSolver :public UniversalSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("ForwardDynamicSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual dynAccAndFce()->void override;
-
-			virtual ~ForwardDynamicSolver();
-			explicit ForwardDynamicSolver(const std::string &name = "forward_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			ForwardDynamicSolver(const ForwardDynamicSolver &other);
-			ForwardDynamicSolver(ForwardDynamicSolver &&other);
-			ForwardDynamicSolver& operator=(const ForwardDynamicSolver &other);
-			ForwardDynamicSolver& operator=(ForwardDynamicSolver &&other);
-		};
-		class InverseDynamicSolver :public UniversalSolver
-		{
-		public:
-			static const std::string& Type() { static const std::string type("InverseDynamicSolver"); return type; }
-			auto virtual type() const->const std::string& override{ return Type(); }
-
-			auto virtual allocateMemory()->void override;
-			auto virtual kinPos()->void override;
-			auto virtual kinVel()->void override;
-			auto virtual dynAccAndFce()->void override;
-
-			virtual ~InverseDynamicSolver();
-			explicit InverseDynamicSolver(const std::string &name = "inverse_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-			InverseDynamicSolver(const InverseDynamicSolver &other);
-			InverseDynamicSolver(InverseDynamicSolver &&other);
-			InverseDynamicSolver& operator=(const InverseDynamicSolver &other);
-			InverseDynamicSolver& operator=(InverseDynamicSolver &&other);
-		};
-		
 		class SolverSimulator : public Simulator
 		{
 		public:
@@ -349,6 +336,27 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
+
+		class Calibrator :public Element
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "Calibrator" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual allocateMemory()->void = 0;
+
+			virtual ~Calibrator();
+			explicit Calibrator(const std::string &name = "calibrator");
+			Calibrator(const Calibrator&);
+			Calibrator(Calibrator&&);
+			Calibrator& operator=(const Calibrator&);
+			Calibrator& operator=(Calibrator&&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
+
+		/// @}
 	}
 }
 

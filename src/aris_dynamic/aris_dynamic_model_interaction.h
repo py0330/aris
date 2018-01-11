@@ -16,6 +16,10 @@ namespace aris
 {
 	namespace dynamic
 	{
+		/// @defgroup dynamic_model_group 动力学建模模块
+		/// @{
+		///
+		
 		class Interaction :public DynEle
 		{
 		public:
@@ -573,6 +577,8 @@ namespace aris
 			Size component_axis_;
 			double fce_value_[6]{ 0 };
 		};
+
+		/// @}
 	}
 }
 

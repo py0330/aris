@@ -199,13 +199,30 @@ namespace aris
 		auto Msg::header()->MsgHeader& { return *reinterpret_cast<MsgHeader*>(data_.get()); }
 		auto Msg::header()const->const MsgHeader& { return *reinterpret_cast<const MsgHeader*>(data_.get()); }
 		Msg::~Msg() = default;
-		Msg::Msg(MsgID msg_id, MsgSize size) { resize(size); setMsgID(msg_id); };
+		Msg::Msg(MsgID msg_id, MsgSize size) 
+		{ 
+			resize(size);
+			setMsgID(msg_id);
+			header().msg_type_ = 0;
+			header().reserved1_ = 0;
+			header().reserved2_ = 0;
+			header().reserved3_ = 0;
+		}
+		Msg::Msg(const std::string &msg_str) 
+		{ 
+			resize(static_cast<MsgSize>(msg_str.size() + 1));
+			std::copy(msg_str.begin(), msg_str.end(), data());
+			setMsgID(0);
+			header().msg_type_ = 0;
+			header().reserved1_ = 0;
+			header().reserved2_ = 0;
+			header().reserved3_ = 0;
+		}
 		Msg::Msg(const MsgBase &other)
 		{
 			resize(other.size());
 			std::copy_n(reinterpret_cast<const char*>(&other.header()), other.size() + sizeof(MsgHeader), reinterpret_cast<char*>(&header()));
 		}
-		Msg::Msg(const std::string &msg_str) { resize(static_cast<MsgSize>(msg_str.size() + 1)); std::copy(msg_str.begin(), msg_str.end(), data()); }
 		Msg::Msg(const Msg& other)
 		{
 			resize(other.size());

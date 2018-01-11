@@ -20,8 +20,7 @@ namespace aris
 {
 	namespace dynamic
 	{
-		auto Element::model()->Model& { return dynamic_cast<Model&>(root()); }
-		auto Element::model()const->const Model&{ return dynamic_cast<const Model&>(root()); }
+		auto Element::model()->Model& { return dynamic_cast<Model*>(&father()) ? static_cast<Model&>(father()) : static_cast<Element&>(father()).model();}
 		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix
 		{
 			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
@@ -79,8 +78,8 @@ namespace aris
 		}
 		auto Environment::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
-			std::copy_n(attributeMatrix(xml_ele, "gravity", 1, 6).data(), 6, gravity_);
 			Object::loadXml(xml_ele);
+			std::copy_n(attributeMatrix(xml_ele, "gravity", 1, 6).data(), 6, gravity_);
 		}
 
 		auto Variable::saveXml(aris::core::XmlElement &xml_ele) const->void
