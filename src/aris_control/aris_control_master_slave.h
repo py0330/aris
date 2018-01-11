@@ -57,19 +57,6 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		//class SlaveType :public aris::core::Object
-		//{
-		//public:
-		//	static auto Type()->const std::string &{ static const std::string type("SlaveType"); return std::ref(type); }
-		//	auto virtual type() const->const std::string& override{ return Type(); }
-
-		//	virtual ~SlaveType() = default;
-		//	explicit SlaveType(const std::string &name = "slave_type") :Object(name) {};
-		//	SlaveType(const SlaveType &) = default;
-		//	SlaveType(SlaveType &&) = default;
-		//	SlaveType& operator=(const SlaveType &) = default;
-		//	SlaveType& operator=(SlaveType &&) = default;
-		//};
 		class Slave : public aris::core::Object
 		{
 		public:
@@ -79,12 +66,11 @@ namespace aris
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual send()->void {}
 			auto virtual recv()->void {}
-			//auto slaveType()const->const SlaveType *;
 			auto phyId()const->std::uint16_t;
 			auto slaId()const->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 
 			virtual ~Slave();
-			explicit Slave(const std::string &name = "slave"/*, const SlaveType *slave_type = nullptr*/, std::uint16_t phy_id = 0);
+			explicit Slave(const std::string &name = "slave", std::uint16_t phy_id = 0);
 			Slave(const Slave &other);
 			Slave(Slave &&other);
 			Slave& operator=(const Slave &other);
@@ -118,8 +104,6 @@ namespace aris
 			auto slaveAtAbs(aris::Size id)const->const Slave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
 			auto slaveAtPhy(aris::Size id)->Slave&;
 			auto slaveAtPhy(aris::Size id)const->const Slave&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
-			//auto slaveTypePool()->aris::core::ObjectPool<SlaveType>&;
-			//auto slaveTypePool()const->const aris::core::ObjectPool<SlaveType>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveTypePool(); }
 			auto slavePool()->aris::core::ObjectPool<Slave>&;
 			auto slavePool()const->const aris::core::ObjectPool<Slave>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
 			auto dataLogger()->DataLogger&;

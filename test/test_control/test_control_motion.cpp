@@ -56,7 +56,7 @@ void test_elmo_enable()
 				}
 				break;
 			case 1:
-				s1.setTargetPos(begin_pos + 1.0 - std::cos(++cos_count / 5000.0 * 2.0 * 3.141592653)*65536);
+				s1.setTargetPos(begin_pos + (1.0 - std::cos(++cos_count / 5000.0 * 2.0 * 3.141592653)) * 65536);
 				if (cos_count == 5000)
 				{
 					m.mout() << "cos finished at count " << count << std::endl;
