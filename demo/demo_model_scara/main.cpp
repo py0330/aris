@@ -22,28 +22,28 @@ int main()
 	const double PI = 3.141592653589793;
 
 	// 定义关节的位置，以及轴线，SCARA为RRPR机构，包含3个转动副和1个移动副，轴线都是Z轴
-	const double joint1_position[3]{ 0.0 , 0.0 , 0.0 };
-	const double joint1_axis[3]{ 0.0 , 0.0 , 1.0 };
-	const double joint2_position[3]{ 1.0 , 0.0 , 0.0 };
-	const double joint2_axis[3]{ 0.0 , 0.0 , 1.0 };
-	const double joint3_position[3]{ 1.0 , 1.0 , 0.0 };
-	const double joint3_axis[3]{ 0.0 , 0.0 , 1.0 };
-	const double joint4_position[3]{ 1.0 , 1.0 , 0.0 };
-	const double joint4_axis[3]{ 0.0 , 0.0 , 1.0 };
+	const double joint1_position[3]{ 0 , 0 , 0 };
+	const double joint1_axis[3]{ 0 , 0 , 1 };
+	const double joint2_position[3]{ 1 , 0 , 0 };
+	const double joint2_axis[3]{ 0 , 0 , 1 };
+	const double joint3_position[3]{ 1 , 1 , 0 };
+	const double joint3_axis[3]{ 0 , 0 , 1 };
+	const double joint4_position[3]{ 1 , 1 , 0 };
+	const double joint4_axis[3]{ 0 , 0 , 1 };
 
 	// 定义3个杆件的位置与321欧拉角，以及10维的惯量向量
 	// inertia_vector的定义为：[m, m*x, m*y, m*z, Ixx, Iyy, Izz, Ixy, Ixz, Iyz]，其中x,y,z为质心位置
-	const double link1_position_and_euler321[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-	const double link1_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
-	const double link2_position_and_euler321[6]{ 1.0 , 0.0 , 0.0 , PI/2 , 0.0 , 0.0 };
-	const double link2_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
-	const double link3_position_and_euler321[6]{ 1.0 , 1.0 , 0.0 , PI/2 , 0.0 , 0.0 };
-	const double link3_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
-	const double link4_position_and_euler321[6]{ 1.0 , 1.0 , 0.0 , PI/2 , 0.0 , 0.0 };
-	const double link4_inertia_vector[10]{ 2.0 , 0.0 , 0.0 , 0.0 , 1.0 , 1.0, 10.0 , 0.0, 0.0, 0.0 };
+	const double link1_position_and_euler321[6]{ 0 , 0 , 0 , 0 , 0 , 0 };
+	const double link1_inertia_vector[10]{ 2 , 0 , 0 , 0 , 1 , 1, 10 , 0, 0, 0 };
+	const double link2_position_and_euler321[6]{ 1 , 0 , 0 , PI/2 , 0 , 0 };
+	const double link2_inertia_vector[10]{ 2 , 0 , 0 , 0 , 1 , 1, 10 , 0, 0, 0 };
+	const double link3_position_and_euler321[6]{ 1 , 1 , 0 , PI/2 , 0 , 0 };
+	const double link3_inertia_vector[10]{ 2 , 0 , 0 , 0 , 1 , 1, 10 , 0, 0, 0 };
+	const double link4_position_and_euler321[6]{ 1 , 1 , 0 , PI/2 , 0 , 0 };
+	const double link4_inertia_vector[10]{ 2 , 0 , 0 , 0 , 1 , 1, 10 , 0, 0, 0 };
 
 	// 定义末端位置与321欧拉角，这个位置为机构起始时的位置
-	const double end_effector_position_and_euler321[6]{ 1.0 , 1.0 , 0.0 , PI/2 , 0.0 , 0.0 };
+	const double end_effector_position_and_euler321[6]{ 1 , 1 , 0 , PI/2 , 0 , 0 };
 	/// [Parameter]
 
 	//-------------------------------------------- 机器人建模 --------------------------------------------//
@@ -85,7 +85,7 @@ int main()
 	//-------------------------------------------- 位置反解 --------------------------------------------//
 	/// [Inverse_Position]
 	// 现在求位置反解，首先设置末端的位置与321欧拉角
-	double end_effector_pos_and_eul[6]{ 1.3 , 1.0 , -0.3 , 0.3 , 0.0 , 0.0 };
+	double end_effector_pos_and_eul[6]{ 1.3 , 1 , -0.3 , 0.3 , 0 , 0 };
 	end_effector.setMpe(end_effector_pos_and_eul, "321");
 	
 	// 求解，位置求解需要迭代，有可能会失败,因此这里做一个判断
@@ -98,7 +98,7 @@ int main()
 	//-------------------------------------------- 速度反解 --------------------------------------------//
 	/// [Inverse_Velocity]
 	// 现在求速度反解，首先设置末端的线速度和角速度
-	double end_effector_point_and_angular_velocity[6]{ 0.3 , -0.2 , 0.2 , 0.0 , 0.0 , 0.3 };
+	double end_effector_point_and_angular_velocity[6]{ 0.3 , -0.2 , 0.2 , 0 , 0 , 0.3 };
 	end_effector.setMva(end_effector_point_and_angular_velocity);
 	
 	// 求解
@@ -111,11 +111,11 @@ int main()
 	//-------------------------------------------- 动力学反解 --------------------------------------------//
 	/// [Inverse_Dynamic]
 	// 现在设置电机的加速度，来求动力学反解
-	double motion_acceleration[4]{ 9.0 , 8.0 , 7.0 , 6.0 };
+	double motion_acceleration[4]{ 9 , 8 , 7 , 6 };
 	motion1.setMa(motion_acceleration[0]);
 	motion2.setMa(motion_acceleration[1]);
 	motion3.setMa(motion_acceleration[2]);
-	motion4.setMa(motion_acceleration[2]);
+	motion4.setMa(motion_acceleration[3]);
 
 	// 求解
 	inverse_dynamic_solver.dynAccAndFce();
@@ -153,11 +153,11 @@ int main()
 		param.model_->setTime(param.model_->time() + 0.001);
 		
 		// 计算末端的位置 //
-		double pe[6]{ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
-		pe[0] = 1.0 + 0.3*std::cos(PI * 2 * param.count_ / 1000);
-		pe[1] = 1.0 + 0.5*std::sin(PI * 2 * param.count_ / 1000);
+		double pe[6]{ 0 , 0 , 0 , 0 , 0 , 0 };
+		pe[0] = 1 + 0.3*std::cos(PI * 2 * param.count_ / 1000);
+		pe[1] = 1 + 0.5*std::sin(PI * 2 * param.count_ / 1000);
 		pe[2] = -0.3 + 0.2*std::sin(PI * 2 * param.count_ / 1000);
-		pe[3] = 0.3 + 4.0*PI*param.count_ / 1000;
+		pe[3] = 0.3 + 4*PI*param.count_ / 1000;
 
 		// 设置末端位置 //
 		param.model_->generalMotionPool().front().setMpe(pe, "321");
