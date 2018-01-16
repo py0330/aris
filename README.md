@@ -1,8 +1,8 @@
-﻿\mainpage aris简介
+﻿# aris简介
 
-aris的简介请参考 
+aris的简介请参考 http://106.15.224.250/
 
-\section introduction_sec 功能简介
+## 功能简介
 aris主要包含两个功能：
 - 机器人建模、仿真、规划、运动学与动力学
 		+ 可以让用户针对串联机构、并联机构、混连机构、六轴机械手、SCARA机器人、Sterwart等任意机器人机构建模
@@ -15,16 +15,16 @@ aris主要包含两个功能：
 		+ 支持linux-xenomai实时系统，以及etherlab库，可以作为实时控制器使用
 		+ 支持用户自己编写命令控制机器人（比如moveC,moveL等）
 
-\section install_sec 安装
+## 安装
 aris使用Cmake作为构建工具，可以跨平台使用。源码完全基于标准C++ 14编写，并在以下编译器下进行过测试：
 - Visual Studio 2015
 - gcc&g++ 5.4.1
 - clang&clang++ 3.8
 
-\subsection  Windows
+### Windows
 在Windows下master时钟不实时，同时无法使用EtherCat模块。Windows平台推荐使用cmake-gui等CMake工具来构建。
 
-\subsection  普通Linux
+### 普通Linux
 在普通Linux下master时钟不实时也无法使用EtherCat模块。普通Linux平台需要用户预装cmake软件。
 假设当前目录在aris的源码目录下，那么以下指令为使用gcc和g++的安装过程：
 ~~~~~~~~~~~~~~~~~
@@ -42,7 +42,7 @@ cmake .. -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang
 make install -j4
 ~~~~~~~~~~~~~~~~~
 
-\subsection  实时Linux
+### 实时Linux
 在实时Linux下，aris可以xenomai内核以及etherlab，这需要在编译时额外使用以下选项：
 ~~~~~~~~~~~~~~~~~
 mkdir build
