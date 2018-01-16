@@ -1,11 +1,53 @@
-﻿# Aris
-Aris为潘阳的个人项目，主要由潘阳独立开发（除了tinyxml2的部分，该部分由Lee Thomason等人开发，参考https://github.com/leethomason/tinyxml2 在此向原作者表示感谢）。
-项目基于Xenomai-Linux实时系统，需要依赖Etherlab库，除此之外再无依赖。
-项目使用c++语言，采用了大量的c++11的特性，需要基于gcc4.8以后的编译器。windows版需要vs2015，在windows下无法使用Ethercat实时控制功能。
+﻿\mainpage aris简介
 
-项目主要功能包含五部分：
-1、aris::core部分，这部分主要包含主体框架，消息循环、管道通讯、实时与非实时之间的通讯、socket通讯、可以识别矩阵的表达式计算器、xml解析等功能。
-2、aris::dynamic部分，这部分主要包含动力学框架，支持使用xml文件编写动力学模型、自动生成adams仿真模型，高速仿真模型（用于实时系统），螺旋理论，规划函数等功能。
-3、aris::control部分，这部分只可在linux实时系统下运行，可以自动解析xml文件，生成Ethercat网络拓扑、并可以控制Elmo驱动器以及ati传感器。
-4、aris::sensor部分，这部分为传感器框架，这个框架主要用来高速传输传感器数据到实时循环内。
-5、aris::server部分，这部分自动生成一个server，运行在机器人控制器中，可以让用户自定义指令及对应的步态等。
+aris的简介请参考 
+
+\section introduction_sec 功能简介
+aris主要包含两个功能：
+- 机器人建模、仿真、规划、运动学与动力学
+		+ 可以让用户针对串联机构、并联机构、混连机构、六轴机械手、SCARA机器人、Sterwart等任意机器人机构建模
+		+ 可以自动建立位置正反解、速度正反解等运动学模型
+		+ 可以自动建立机器人加速度->力或力->加速度等动力学正逆模型
+		+ 运动学位置模型需要迭代计算，不建议在实时循环中直接使用，用户可以自己针对机构进行重载，从而实时使用，
+		+ 运动学速度和动力学模型计算时间确定，且效率超高，Sterwart机构仅需0.03ms左右
+		+ 可以生成Adams模型等，便于用户比对结果
+- 机器人控制系统
+		+ 支持linux-xenomai实时系统，以及etherlab库，可以作为实时控制器使用
+		+ 支持用户自己编写命令控制机器人（比如moveC,moveL等）
+
+\section install_sec 安装
+aris使用Cmake作为构建工具，可以跨平台使用。源码完全基于标准C++ 14编写，并在以下编译器下进行过测试：
+- Visual Studio 2015
+- gcc&g++ 5.4.1
+- clang&clang++ 3.8
+
+\subsection  Windows
+在Windows下master时钟不实时，同时无法使用EtherCat模块。Windows平台推荐使用cmake-gui等CMake工具来构建。
+
+\subsection  普通Linux
+在普通Linux下master时钟不实时也无法使用EtherCat模块。普通Linux平台需要用户预装cmake软件。
+假设当前目录在aris的源码目录下，那么以下指令为使用gcc和g++的安装过程：
+~~~~~~~~~~~~~~~~~
+mkdir build
+cd build
+cmake .. -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc
+make install -j4
+~~~~~~~~~~~~~~~~~
+
+以下指令为使用clang和clang++的安装过程
+~~~~~~~~~~~~~~~~~
+mkdir build
+cd build
+cmake .. -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang
+make install -j4
+~~~~~~~~~~~~~~~~~
+
+\subsection  实时Linux
+在实时Linux下，aris可以xenomai内核以及etherlab，这需要在编译时额外使用以下选项：
+~~~~~~~~~~~~~~~~~
+mkdir build
+cd build
+cmake .. -DUSE_XENOMAI=ON -DUSE_ETHERLAB=ON
+make install
+~~~~~~~~~~~~~~~~~
+

@@ -245,7 +245,22 @@ namespace aris
 			std::copy(constraint().cf(), constraint().cf() + constraint().dim(), result.data());
 			imp_->cf_.push_back(result);
 		}
-		auto SimResult::ConstraintResult::restore(Size pos)->void { constraint().setCf(imp_->cf_.at(pos).data()); }
+		auto SimResult::ConstraintResult::restore(Size pos)->void 
+		{ 
+			constraint().setCf(imp_->cf_.at(pos).data());
+			if (dynamic_cast<Motion*>(&constraint()))
+			{
+				dynamic_cast<Motion*>(&constraint())->updMp();
+				dynamic_cast<Motion*>(&constraint())->updMv();
+				dynamic_cast<Motion*>(&constraint())->updMa();
+			}
+			if (dynamic_cast<GeneralMotion*>(&constraint()))
+			{
+				dynamic_cast<GeneralMotion*>(&constraint())->updMpm();
+				dynamic_cast<GeneralMotion*>(&constraint())->updMvs();
+				dynamic_cast<GeneralMotion*>(&constraint())->updMas();
+			}
+		}
 		SimResult::ConstraintResult::~ConstraintResult() = default;
 		SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint *constraint) : Element(name), imp_(new Imp(constraint)) {}
 		SimResult::ConstraintResult::ConstraintResult(const SimResult::ConstraintResult&) = default;

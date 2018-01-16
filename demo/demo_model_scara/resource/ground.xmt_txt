@@ -1,0 +1,48 @@
+**ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz**************************
+**PARASOLID !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~0123456789**************************
+**PART1;
+MC=unknown;
+MC_MODEL=unknown;
+MC_ID=unknown;
+OS=unknown;
+OS_RELEASE=unknown;
+FRU=sdl_parasolid_customer_support;
+APPL=parasolid_acceptance_tests;
+SITE=unknown;
+USER=unknown;
+FORMAT=text;
+GUISE=transmit;
+KEY=C:/Users/py033/Desktop/ground;
+FILE=C:/Users/py033/Desktop/ground.xmt_txt;
+DATE=unknown;
+**PART2;
+SCH=SCH_2400164_20000;
+USFLD_SIZE=0;
+**PART3;
+**END_OF_HEADER*****************************************************************
+T51 : TRANSMIT FILE created by modeller version 240016423 SCH_2400164_20000_1300
+6186 0 12 27 CCCCCCCCCCCCCCCCCCCCCCCA16 index_map_offset0 0 1 dA9 index_map82 0
+ A17 node_id_index_map82 0 A20 schema_embedding_map82 0 Z1 27 2 3 0 0 0 0 1e3 1e
+-8 0 4 0 1 0 1 1 5 6 7 0 8 9 0 0 0 0 0 81 255 1 2 22 10 1 11 0 0 0 12 70 11 CI9
+ list_type0 0 1 uI10 notransmit0 0 1 lCCCDCCDI12 finger_index0 0 1 dI12 finger_b
+lock1012 0 CZ3 0 4 T1 0 0 4 20 1 13 13 13 255 5 3 0 1 0 14 0 0 15 0 52 255 6 18
+ 0 16 17 0 0 +0 0 0 0 0 -1 .05 .0995037190209989 .995037190209989 -1 0 0 31 255
+ 7 16 0 9 18 0 0 +0 0 -.5 0 0 1 1 0 0 .1 19 255 8 1 0 1 15 0 19 V16 255 9 12 20
+ ?21 0 22 7 0 0 1 81 1 20 26 23 9 0 0 24 25 26 17 255 21 0 27 21 21 0 28 9 0 0 +
+16 22 6 25 ?29 9 0 18 0 0 1 81 1 25 27 23 22 0 0 20 0 30 17 29 0 31 29 29 0 32 2
+2 0 0 +31 18 10 0 22 0 7 0 +0 0 0 0 0 -1 -1 0 0 .05 15 255 31 7 0 29 16 0 17 32
+ 0 33 32 32 0 29 22 0 0 -15 33 8 0 32 34 0 14 255 34 9 35 ?16 14 33 5 36 +0 0 16
+ 14 19 81 1 35 24 23 34 37 0 38 24 39 14 16 2 24 ?0 34 27 5 6 +0 0 0 34 19 14 14
+ 15 38 ?34 0 40 5 17 +0 0 34 0 19 50 255 36 11 0 34 0 17 0 +0 0 0 0 0 1 1 0 0 13
+ 19 4 0 0 0 0 0 0 8 14 50 17 17 0 14 36 6 0 +0 0 -.5 0 0 -1 -1 0 0 81 1 38 23 23
+ 14 41 0 0 35 42 15 40 14 0 28 14 0 17 28 0 40 28 28 0 21 9 0 0 -80 255 1 23 0 4
+3 8001 0 0 0 0 3 5 0 0 0 FFFFTFTFFFFFFF2 91 255 41 0 44 14 0 38 37 0 83 255 3 42
+ 1 1 1 90 255 44 19 0 1 0 45 2 41 91 37 0 44 34 0 35 46 41 91 46 0 44 16 0 24 0
+ 37 81 1 24 25 23 16 46 0 35 20 47 83 3 47 1 1 1 81 1 45 20 48 1 44 11 0 0 49 80
+ 1 48 50 51 9000 0 0 0 0 3 5 0 0 0 FFTFFFFFFFFFFF1 81 1 11 21 52 1 45 2 0 0 53 8
+2 255 1 49 6 80 1 52 48 54 9000 0 0 0 0 3 5 0 0 0 FFTFFFFFFFFFFF3 84 255 6 53 PA
+RT_679 255 13 54 AdamsPartName79 12 51 UG2/ADAMS_ID79 15 43 SDL/TYSA_COLOUR15 27
+ 13 0 21 16 31 83 3 39 1 1 1 83 3 30 1 1 1 83 3 26 1 1 1 19 15 5 0 1 0 8 5 S74 4
+ CI16 index_map_offset0 0 1 dCCZ20 13 4 0 0 45 11 2 25 0 0 0 0 0 0 0 0 0 0 0 0 0
+ 0 0 0 80 1 10 52 55 9000 0 0 0 0 3 5 0 0 0 FFTFFFFFFFFFFF3 84 9 12 FRUSTUM_979
+ 15 55 AdamsObjectName1 0 

@@ -937,8 +937,8 @@ namespace aris
 				{
 				case 0x08: setTargetPos(actualPos()); break;
 				case 0x09: setTargetVel(0.0); break;
-				case 0x10: setTargetPos(0.0); break;
-				default: setTargetPos(actualPos()); setTargetVel(0.0); setTargetVel(0.0);
+				case 0x10: setTargetCur(0.0); break;
+				default: setTargetPos(actualPos()); setTargetVel(0.0); setTargetCur(0.0);
 				}
 
 				return 4;

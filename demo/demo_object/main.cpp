@@ -1,4 +1,4 @@
-﻿/// \example demo_core_structure_cpp/main.cpp
+﻿/// \example demo_object/main.cpp
 /// 本例子展示构造数据结构的过程:
 ///
 

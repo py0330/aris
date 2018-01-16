@@ -16,9 +16,9 @@ int main()
 		aris::core::Matrix X(0.1);
 		aris::core::Matrix Y = X;
 	}
-	
-	
-	
+
+
+
 	try
 	{
 		c.addVariable("fiveee", 5);
@@ -67,7 +67,7 @@ int main()
 
 
 
-	
+
 	try
 	{
 		m = c.calculateExpression("{multiply(-100+multiply(1,2)+1.23*addTwo(2.1-3.2*FIVE*(3-1)*(TWO*PI - 1))-1.38, 8.1),1}");
@@ -80,9 +80,9 @@ int main()
 	{
 		cout << e.what() << endl;
 	}
-	
+
 	char aaa;
-	cin>>aaa;
+	cin >> aaa;
 	return 0;
 }
 

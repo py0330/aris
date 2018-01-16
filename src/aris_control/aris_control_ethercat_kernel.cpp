@@ -1,5 +1,9 @@
 ﻿#ifdef USE_ETHERLAB
+extern "C"
+{
 #include <ecrt.h>
+}
+
 #endif
 
 #include <chrono>

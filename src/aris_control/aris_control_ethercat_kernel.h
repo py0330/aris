@@ -11,7 +11,7 @@ namespace aris
 {
 	namespace control
 	{	
-		////////////////////// Ecrt 的配置流程 //////////////////////
+		//------------------------ Ecrt 的配置流程 ------------------------//
 		// 1. init master
 		// 2. init slave
 		// 3. init pdo_group
@@ -25,7 +25,7 @@ namespace aris
 		// 11.start master
 		// 12.start slave
 
-		////////////////////// Ecrt 的通讯流程 //////////////////////
+		//------------------------ Ecrt 的通讯流程 ------------------------//
 		// 1. master receive
 		// 2. slave receive
 		// 3. pdo read update
