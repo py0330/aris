@@ -48,6 +48,45 @@ namespace aris
 		/// }
 		/// \enddot
 		///
+		/// \dot 四杆机器人拓扑
+		/// digraph G{
+		/// rankdir=LR;
+		/// ground[label = "link1(ground)"];
+		/// link1[label = "link2"];
+		/// link2[label = "link3"];
+		/// link3[label = "link4"];
+		/// ground->link1[label = "R1"];
+		/// link1->link2[label = "R2"];
+		/// link2->link3[label = "R3"];
+		/// link3->ground[label = "R4"];
+		/// }
+		/// \enddot
+		///
+		/// \dot 树形拓扑
+		/// digraph G{
+		/// rankdir=LR;
+		/// ground[label = "link1(ground)"];
+		/// link1[label = "link2"];
+		/// link2[label = "link3"];
+		/// link3[label = "link4"];
+		/// link4[label = "link2"];
+		/// link5[label = "link3"];
+		/// link6[label = "link4"];
+		/// link7[label = "link2"];
+		/// link8[label = "link3"];
+		/// link9[label = "link4"];
+		/// ground->link1[label = "R1"];
+		/// link1->link2[label = "R2"];
+		/// link2->link3[label = "R3"];
+		/// link1->link4[label = "R4"];
+		/// link4->link5[label = "R5"];
+		/// link5->link6[label = "R6"];
+		/// link4->link7[label = "R7"];
+		/// link4->link8[label = "R8"];
+		/// link5->link9[label = "R9"];
+		/// }
+		/// \enddot
+		///
 		/// 各个关节的位置和运动方向如下：
 		/// 关节 | R1 | R2 | P3 | R4 |
 		/// --------: | : -------- : | : ----- : | : ----- : | : ----------- : |

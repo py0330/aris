@@ -230,4 +230,11 @@ add_executable(demo_hulk ${FULL_SRC})
 target_link_libraries(demo_hulk ${ALL_LINK_LIB})
 install(DIRECTORY demo/demo_hulk/resource/ DESTINATION resource/demo_hulk)
 
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_ur ${SOURCE_FILES})
+add_executable(demo_ur ${FULL_SRC})
+target_link_libraries(demo_ur ${ALL_LINK_LIB})
+install(DIRECTORY demo/demo_ur/resource/ DESTINATION resource/demo_ur)
+
+
 endif(MAKE_DEMO)

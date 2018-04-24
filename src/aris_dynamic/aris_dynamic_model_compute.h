@@ -73,6 +73,7 @@ namespace aris
 			auto virtual kinPos()->bool override;
 			auto virtual kinVel()->void override;
 			auto virtual dynAccAndFce()->void override;
+			auto cptGeneralJacobi()->void;
 			auto plotRelation()->void;
 
 			virtual ~UniversalSolver();

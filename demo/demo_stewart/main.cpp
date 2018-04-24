@@ -394,32 +394,316 @@ int main()
 	//}
 
 	// test forward efficiency
+	//try
+	//{
+	//	Model rbt;
+	//	rbt.loadXmlStr(xml_data);
+
+	//	rbt.generalMotionPool().findByName("general_motion")->activate(false);
+	//	for (auto &m : rbt.motionPool())m.activate(true);
+
+	//	//rbt.allocateMemory();
+
+	//	std::cout << "forward time:" << aris::core::benchmark(1000, [&]()
+	//	{
+	//		double pin1[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
+	//		double pin2[6]{ 2.1 , 1.98 , 2.05 , 2.13 , 1.86 , 1.88 };
+
+	//		for (int i{ 0 }; i < 6; ++i) rbt.motionPool().at(i).setMp(pin1[i]);
+	//		//auto ret1 = rbt.kinPosInGlb(100);
+
+	//		for (int i{ 0 }; i < 6; ++i) rbt.motionPool().at(i).setMp(pin2[i]);
+	//		//auto ret2 = rbt.kinPosInGlb(100);
+	//	}) << std::endl;
+	//}
+	//catch (std::exception&e)
+	//{
+	//	std::cout << e.what() << std::endl;
+	//}
+
+
 	try
 	{
-		Model rbt;
-		rbt.loadXmlStr(xml_data);
-
-		rbt.generalMotionPool().findByName("general_motion")->activate(false);
-		for (auto &m : rbt.motionPool())m.activate(true);
-
-		//rbt.allocateMemory();
-
-		std::cout << "forward time:" << aris::core::benchmark(1000, [&]()
+		double a[6][3]
 		{
-			double pin1[6]{ 2.0 , 2.0 , 2.0 , 2.0 , 2.0 , 2.0 };
-			double pin2[6]{ 2.1 , 1.98 , 2.05 , 2.13 , 1.86 , 1.88 };
+			0.45, - 0.433012701892219  ,                       0,
+			0.6, - 0.173205080756888     ,                    0,
+			0.15,         0.606217782649107       ,                  0,
+			- 0.15,         0.606217782649107     ,                    0,
+			- 0.6, - 0.173205080756888            ,             0,
+			- 0.45, - 0.433012701892219           ,              0,
+		};
+		double b[6][3]
+		{
+			0.125, - 0.476313972081441          ,             0.8,
+			0.475,         0.129903810567666     ,                  0.8,
+			0.35   ,      0.346410161513775        ,               0.8,
+			- 0.35 ,        0.346410161513775     ,                  0.8,
+			- 0.475 ,        0.129903810567666     ,                  0.8,
+			- 0.125, - 0.476313972081441           ,            0.8,
+		};
+		
+		double R1a_pos[3]{ 0.45, -0.433012701892219,                         0 };
+		double R1a_axis[3]{ 0.5     ,    0.866025403784439                    ,     0 };
+		double R1b_pos[3]{ 0.45, -0.433012701892219                     ,    0 };
+		double R1b_axis[3]{ 0.823677867665496, -0.475550638622211      ,   0.308879200374561 };
+		double P1_pos[3]{ 0.45, -0.433012701892219                       ,  0 };
+		double P1_axis[3]{ -0.375904705778056, -0.0500835422470634     ,    0.925303891145984 };
+		double S1_pos[3]{ 0.125, -0.476313972081441               ,        0.8 };
+		double R2a_pos[3]{ 0.6, -0.173205080756888        ,                 0 };
+		double R2a_axis[3]{ 0.5,         0.866025403784439          ,               0 };
+		double R2b_pos[3]{ 0.6, -0.173205080756888                     ,    0 };
+		double R2b_axis[3]{ 0.823677867665496, -0.475550638622211    ,     0.308879200374561 };
+		double P2_pos[3]{ 0.6, -0.173205080756888                   ,      0 };
+		double P2_axis[3]{ -0.14457873299156,         0.350584795729443      ,   0.925303891145984 };
+		double S2_pos[3]{ 0.475,         0.129903810567666               ,        0.8 };
+		double R3a_pos[3]{ 0.15,         0.606217782649107              ,           0 };
+		double R3a_axis[3]{ -1,     0    , 0 };
+		double R3b_pos[3]{ 0.15,         0.606217782649107 ,                        0 };
+		double R3b_axis[3]{ 0  ,       0.951101277244422    ,     0.308879200374561 };
+		double P3_pos[3]{ 0.15 ,        0.606217782649107   ,                      0 };
+		double P3_axis[3]{ 0.231325972786496, -0.30050125348238  ,       0.925303891145984 };
+		double S3_pos[3]{ 0.35  ,       0.346410161513775   ,                    0.8 };
+		double R4a_pos[3]{ -0.15  ,       0.606217782649107    ,                     0 };
+		double R4a_axis[3]{ -1  ,   0  ,   0 };
+		double R4b_pos[3]{ -0.15 ,        0.606217782649107  ,                       0 };
+		double R4b_axis[3]{ 0    ,     0.951101277244422     ,    0.308879200374561 };
+		double P4_pos[3]{ -0.15   ,      0.606217782649107      ,                   0 };
+		double P4_axis[3]{ -0.231325972786496, -0.30050125348238     ,    0.925303891145984 };
+		double S4_pos[3]{ -0.35   ,      0.346410161513775         ,              0.8 };
+		double R5a_pos[3]{ -0.6, -0.173205080756888                ,         0 };
+		double R5a_axis[3]{ 0.5, -0.866025403784439               ,          0 };
+		double R5b_pos[3]{ -0.6, -0.173205080756888               ,          0 };
+		double R5b_axis[3]{ -0.823677867665496, -0.475550638622211  ,       0.308879200374561 };
+		double P5_pos[3]{ -0.6, -0.173205080756888                   ,      0 };
+		double P5_axis[3]{ 0.14457873299156,         0.350584795729443 ,        0.925303891145984 };
+		double S5_pos[3]{ -0.475,         0.129903810567666          ,             0.8 };
+		double R6a_pos[3]{ -0.45, -0.433012701892219                ,         0 };
+		double R6a_axis[3]{ 0.5, -0.866025403784439                ,         0 };
+		double R6b_pos[3]{ -0.45, -0.433012701892219                ,         0 };
+		double R6b_axis[3]{ -0.823677867665496, -0.475550638622211   ,      0.308879200374561 };
+		double P6_pos[3]{ -0.45, -0.433012701892219                    ,     0 };
+		double P6_axis[3]{ 0.375904705778056, -0.0500835422470634      ,   0.925303891145984 };
+		double S6_pos[3]{ -0.125, -0.476313972081441                   ,    0.8 };
 
-			for (int i{ 0 }; i < 6; ++i) rbt.motionPool().at(i).setMp(pin1[i]);
-			//auto ret1 = rbt.kinPosInGlb(100);
 
-			for (int i{ 0 }; i < 6; ++i) rbt.motionPool().at(i).setMp(pin2[i]);
-			//auto ret2 = rbt.kinPosInGlb(100);
-		}) << std::endl;
+
+		Model rbt;
+		s_vc(6, std::array<double, 6>{0.0, 0.0, -9.8, 0.0, 0.0, 0.0}.data(), const_cast<double *>(rbt.environment().gravity()));
+
+		auto &up = rbt.partPool().add<Part>("up", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+
+		auto &p1a = rbt.partPool().add<Part>("p1a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p1b = rbt.partPool().add<Part>("p1b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p1c = rbt.partPool().add<Part>("p1c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+
+		auto &p2a = rbt.partPool().add<Part>("p2a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p2b = rbt.partPool().add<Part>("p2b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p2c = rbt.partPool().add<Part>("p2c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+
+		auto &p3a = rbt.partPool().add<Part>("p3a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p3b = rbt.partPool().add<Part>("p3b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p3c = rbt.partPool().add<Part>("p3c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+
+		auto &p4a = rbt.partPool().add<Part>("p4a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p4b = rbt.partPool().add<Part>("p4b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p4c = rbt.partPool().add<Part>("p4c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+
+		auto &p5a = rbt.partPool().add<Part>("p5a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p5b = rbt.partPool().add<Part>("p5b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p5c = rbt.partPool().add<Part>("p5c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+
+		auto &p6a = rbt.partPool().add<Part>("p6a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p6b = rbt.partPool().add<Part>("p6b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p6c = rbt.partPool().add<Part>("p6c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+
+		auto &r1a = rbt.addRevoluteJoint(rbt.ground(), p1a, R1a_pos, R1a_axis);
+		auto &r1b = rbt.addRevoluteJoint(p1a, p1b, R1b_pos, R1b_axis);
+		auto &p1 = rbt.addPrismaticJoint(p1b, p1c, P1_pos, P1_axis);
+		auto &s1 = rbt.addSphericalJoint(p1c, up, S1_pos);
+
+		auto &r2a = rbt.addRevoluteJoint(rbt.ground(), p2a, R2a_pos, R2a_axis);
+		auto &r2b = rbt.addRevoluteJoint(p2a, p2b, R2b_pos, R2b_axis);
+		auto &p2 = rbt.addPrismaticJoint(p2b, p2c, P2_pos, P2_axis);
+		auto &s2 = rbt.addSphericalJoint(p2c, up, S2_pos);
+		
+		auto &r3a = rbt.addRevoluteJoint(rbt.ground(), p3a, R3a_pos, R3a_axis);
+		auto &r3b = rbt.addRevoluteJoint(p3a, p3b, R3b_pos, R3b_axis);
+		auto &p3 = rbt.addPrismaticJoint(p3b, p3c, P3_pos, P3_axis);
+		auto &s3 = rbt.addSphericalJoint(p3c, up, S3_pos);
+
+		auto &r4a = rbt.addRevoluteJoint(rbt.ground(), p4a, R4a_pos, R4a_axis);
+		auto &r4b = rbt.addRevoluteJoint(p4a, p4b, R4b_pos, R4b_axis);
+		auto &p4 = rbt.addPrismaticJoint(p4b, p4c, P4_pos, P4_axis);
+		auto &s4 = rbt.addSphericalJoint(p4c, up, S4_pos);
+
+		auto &r5a = rbt.addRevoluteJoint(rbt.ground(), p5a, R5a_pos, R5a_axis);
+		auto &r5b = rbt.addRevoluteJoint(p5a, p5b, R5b_pos, R5b_axis);
+		auto &p5 = rbt.addPrismaticJoint(p5b, p5c, P5_pos, P5_axis);
+		auto &s5 = rbt.addSphericalJoint(p5c, up, S5_pos);
+
+		auto &r6a = rbt.addRevoluteJoint(rbt.ground(), p6a, R6a_pos, R6a_axis);
+		auto &r6b = rbt.addRevoluteJoint(p6a, p6b, R6b_pos, R6b_axis);
+		auto &p6 = rbt.addPrismaticJoint(p6b, p6c, P6_pos, P6_axis);
+		auto &s6 = rbt.addSphericalJoint(p6c, up, S6_pos);
+
+		//auto &m1 = rbt.addMotion(p1);
+		//auto &m2 = rbt.addMotion(p2);
+		//auto &m3 = rbt.addMotion(p3);
+		//auto &m4 = rbt.addMotion(p4);
+		//auto &m5 = rbt.addMotion(p5);
+		//auto &m6 = rbt.addMotion(p6);
+
+
+		rbt.ground().geometryPool().add<ParasolidGeometry>("ground","C:\\Users\\py033\\Desktop\\dm\\stewart\\ground.xmt_txt");
+		up.geometryPool().add<ParasolidGeometry>("up", "C:\\Users\\py033\\Desktop\\dm\\stewart\\up.xmt_txt");
+
+
+		double p1b_pm[16]{ 0.823677867665496,         0.424559091872891, -0.375904705778056,                      0.45,
+			-0.475550638622211,         0.878261480939471, -0.0500835422470634, -0.433012701892219,
+			0.308879200374561,         0.220014428177045 ,        0.925303891145984    ,                     0,
+			0  ,                       0 ,                        0                ,         1 };
+
+		double p1c_pm[16]{0.823677867665496, 0.424559091872891, -0.375904705778056, 0.125,
+        -0.475550638622211, 0.878261480939471, -0.0500835422470634, -0.476313972081441,
+		0.308879200374561,0.220014428177045,0.925303891145984,   0.8,
+	    0,     0,     0,     1 };
+
+		double p2b_pm[16]{ 0.823677867665496,0.548317207722479,-0.14457873299156,0.6,
+		-0.475550638622211,0.806809699439311,0.350584795729443,-0.173205080756888,
+		 0.308879200374561,-0.220014428177045,0.925303891145984,0,
+						 0,0,0,1 };
+
+
+		double p2c_pm[16]{
+0.823677867665496,0.548317207722479,-0.14457873299156,0.475,
+-0.475550638622211,0.806809699439311,0.350584795729443,0.129903810567666,
+ 0.308879200374561,-0.220014428177045,0.925303891145984,0.8,
+				 0,0,0,1 };
+		double p3b_pm[16]{ 0,-0.972876299595371,0.231325972786496,0.15,
+				 0.951101277244422,-0.0714517815001604,-0.30050125348238,0.606217782649107,
+				 0.308879200374561,0.220014428177045,0.925303891145984,0,
+								 0,0,0,1 };
+
+
+		double p3c_pm[16]{
+
+						 0,-0.972876299595371,0.231325972786496,0.35,
+		 0.951101277244422,-0.0714517815001604,-0.30050125348238,0.346410161513775,
+		 0.308879200374561,0.220014428177045,0.925303891145984,0.8,
+						 0,0,0,1 };
+
+
+			double p4b_pm [16]{
+
+                         0,-0.972876299595371,-0.231325972786496,-0.15,
+         0.951101277244422,0.0714517815001604,-0.30050125348238,0.606217782649107,
+         0.308879200374561,-0.220014428177045,0.925303891145984,0,
+                         0,0,0,1};
+
+
+			double p4c_pm[16]{
+
+						 0,-0.972876299595371,-0.231325972786496,-0.35,
+		 0.951101277244422,0.0714517815001604,-0.30050125348238,0.346410161513775,
+		 0.308879200374561,-0.220014428177045,0.925303891145984,0.8,
+						 0,0,0,1 };
+
+
+			double p5b_pm[16]{
+
+		-0.823677867665496,0.548317207722479,0.14457873299156,-0.6,
+		-0.475550638622211,-0.806809699439311,0.350584795729443,-0.173205080756888,
+		 0.308879200374561,0.220014428177045,0.925303891145984,0,
+						 0,0,0,1 };
+
+
+			double p5c_pm[16]{
+
+		-0.823677867665496,0.548317207722479,0.14457873299156,-0.475,
+		-0.475550638622211,-0.806809699439311,0.350584795729443,0.129903810567666,
+		 0.308879200374561,0.220014428177045,0.925303891145984,0.8,
+						 0,0,0,1 };
+
+
+			double p6b_pm[16]{
+
+		-0.823677867665496,0.424559091872891,0.375904705778056,-0.45,
+		-0.475550638622211,-0.878261480939471,-0.0500835422470634,-0.433012701892219,
+		 0.308879200374561,-0.220014428177045,0.925303891145984,0,
+						 0,0,0,1 };
+
+
+			double p6c_pm[16]{
+
+		-0.823677867665496,0.424559091872891,0.375904705778056,-0.125,
+		-0.475550638622211,-0.878261480939471,-0.0500835422470634,-0.476313972081441,
+		 0.308879200374561,-0.220014428177045,0.925303891145984,0.8,
+						 0,0,0,1 };
+
+		p1b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p1b_pm);
+		p1c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p1c_pm);
+
+		p2b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p2b_pm);
+		p2c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p2c_pm);
+
+		p3b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p3b_pm);
+		p3c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p3c_pm);
+
+		p4b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p4b_pm);
+		p4c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p4c_pm);
+
+		p5b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p5b_pm);
+		p5c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p5c_pm);
+
+		p6b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p6b_pm);
+		p6c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p6c_pm);
+
+
+		auto &ee = rbt.addGeneralMotionByPe(up, rbt.ground(), nullptr, "321");
+
+		ee.setMpe(std::array<double, 6>{0.01, 0.02, 0.03, 0.3,0.2,0.1}.data(), "321");
+
+
+		auto &s = rbt.solverPool().add<UniversalSolver>();
+		s.setMaxError(1e-14);
+		//double theta[6]{ 0.1, 0.2, 0.3, 0.5, 0.6, 0.6 };
+		//double theta_dot[6]{ 0.1, 0.2, 0.4, 0.35, 0.5, 0.78 };
+		//double theta_dot_dot[6]{ 0.5,0.2,0.3,0.4,0.5,0.6 };
+
+		//for (aris::Size i = 0; i < 6; ++i)
+		//{
+		//	rbt.motionPool().at(i).setMp(theta[i]);
+		//	rbt.motionPool().at(i).setMv(theta_dot[i]);
+		//	rbt.motionPool().at(i).setMa(theta_dot_dot[i]);
+		//}
+
+		s.allocateMemory();
+		s.kinPos();
+		s.kinVel();
+		s.dynAccAndFce();
+
+		dsp(4, 4, *p1a.pm());
+		dsp(4, 4, *p1b.pm());
+		dsp(4, 4, *p1c.pm());
+
+
+		auto &adams = rbt.simulatorPool().add<AdamsSimulator>();
+		adams.saveAdams("C:\\Users\\py033\\Desktop\\stewart");
+
 	}
 	catch (std::exception&e)
 	{
 		std::cout << e.what() << std::endl;
 	}
+
+
+
+
+
+
+
+
 
 	std::cout << "demo_stewart finished, press any key to continue" << std::endl;
 	std::cin.get();

@@ -137,6 +137,7 @@ namespace aris
 			auto virtual vs() const->const double6& override;
 			auto virtual as() const->const double6& override;
 			auto prtIv() const->const double10&;
+			auto setPrtIv(const double *iv, const double *pm_relative_to_part)->void;
 			auto markerPool()->aris::core::ObjectPool<Marker, Element>&;
 			auto markerPool()const->const aris::core::ObjectPool<Marker, Element>&;
 			auto geometryPool()->aris::core::ObjectPool<Geometry, Element>&;
@@ -257,7 +258,6 @@ namespace aris
 			Geometry& operator=(const Geometry&) = default;
 			Geometry& operator=(Geometry&&) = default;
 		};
-
 		class ParasolidGeometry final :public Geometry
 		{
 		public:
@@ -279,7 +279,28 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
+		class FileGeometry final :public Geometry
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "FileGeometry" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto prtPm()const->const double4x4&;
+			auto filePath()const->const std::string &;
 
+			virtual ~FileGeometry();
+			explicit FileGeometry(const std::string &name = "file_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
+			FileGeometry(const FileGeometry &other);
+			FileGeometry(FileGeometry &&other);
+			FileGeometry& operator=(const FileGeometry &other);
+			FileGeometry& operator=(FileGeometry &&other);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
+		
 		/// @}
 	}
 }

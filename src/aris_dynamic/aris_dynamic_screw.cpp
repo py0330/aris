@@ -56,8 +56,7 @@ namespace aris
 		auto inline default_iv()->const double* { static const double value[10]{ 1,0,0,0,1,1,1,0,0,0 }; return value; }
 		auto inline default_i3()->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
 
-		auto inline default_out()->double* { static double value[36]{ 0,0,0 }; return value; }
-
+		auto inline default_out()->double* { static thread_local double value[36]{ 0,0,0 }; return value; }
 
 		auto inline P()noexcept->const double3x3&{ static const double p[3][3] { { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };	return p; }
 		auto inline Q()noexcept->const double3x3&{ static const double q[3][3] { { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };	return q; }

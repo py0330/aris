@@ -567,7 +567,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 	const double *opt, const double *ovt, const double *oat, const double *oft, const double *error)
 {
 	// 测试运动学正解、反解、动力学正向正解、反解/反向正解、反解
-	
 	for (auto &s : m.solverPool())
 	{
 		/////////////////////////////////////////////////////正向，从输入到输出///////////////////////////////////////////////////
@@ -592,8 +591,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		s.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  forward origin" << std::endl;
-		auto &sim = m.simulatorPool().add<AdamsSimulator>();
-		//sim.saveAdams("C:\\Users\\py033\\Desktop\\m1.cmd");
 
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)
 		{
@@ -628,7 +625,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		s.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
-		//sim.saveAdams("C:\\Users\\py033\\Desktop\\m2.cmd");
 
 		// get result //
 		m.generalMotionPool().at(0).updMpm();
@@ -657,7 +653,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		m.generalMotionPool().at(0).getMaa(result3);
 		if (!s_is_equal(6, result3, oat, error[2]))std::cout << s.type() << "::dynAccAndFce() forward forward failed: with force" << std::endl;
 
-		/////////////////////////////////////////////////////反向，从输入到输出///////////////////////////////////////////////////
+		/////////////////////////////////////////////////////反向，从输出到输入///////////////////////////////////////////////////
 		// set topology //
 		for (auto &fce : m.forcePool())fce.activate(false);
 		for (auto &mot : m.motionPool())mot.activate(false);
@@ -678,7 +674,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		s.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  inverse origin" << std::endl;
-		//sim.saveAdams("C:\\Users\\py033\\Desktop\\m3.cmd");
+
 		// get result //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 		{
@@ -711,7 +707,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		s.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
-		//sim.saveAdams("C:\\Users\\py033\\Desktop\\m4.cmd");
+
 		// get result //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 		{
@@ -1267,10 +1263,10 @@ void bench_3R()
 
 		std::cout << "bench 3R robot:" << std::endl;
 
-		bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
-			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
-			input_p, input_v, input_a, input_mf,
-			output_pm, output_va, output_aa, output_mfs, error);
+		//bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
+		//	output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
+		//	input_p, input_v, input_a, input_mf,
+		//	output_pm, output_va, output_aa, output_mfs, error);
 	}
 	catch (std::exception&e)
 	{
@@ -1304,7 +1300,7 @@ void bench_6R()
 
 		const double error[8]{ 1e-10, 1e-10, 1e-10, 1e-9, 1e-10, 1e-10, 1e-9, 1e-9 };
 
-		std::cout << "test 6R robot:" << std::endl;
+		std::cout << "bench 6R robot:" << std::endl;
 
 		Model m;
 		m.loadXmlStr(xml_file_6R);

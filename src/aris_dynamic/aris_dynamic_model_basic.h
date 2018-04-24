@@ -29,7 +29,6 @@ namespace aris
 		using double7 = double[7];
 		using double10 = double[10];
 
-
 		/// @defgroup dynamic_model_group 动力学建模模块
 		/// @{
 		///
@@ -84,6 +83,7 @@ namespace aris
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto gravity()const ->const double6&{ return gravity_; }
+			auto setGravity(const double *gravity)->void { s_vc(6, gravity, gravity_); }
 
 			virtual ~Environment() = default;
 			explicit Environment(const std::string &name = "dyn_ele") :Element(name) {}
@@ -157,7 +157,6 @@ namespace aris
 			StringVariable& operator=(const StringVariable &other) = default;
 			StringVariable& operator=(StringVariable &&other) = default;
 		};
-
 
 		/// @}
 	}

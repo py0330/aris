@@ -716,6 +716,7 @@ namespace aris
 		auto Part::vs()const->const double6&{ return imp_->glb_vs_; }
 		auto Part::as()const->const double6&{ return imp_->glb_as_; }
 		auto Part::prtIv()const->const double10&{ return imp_->prt_iv_; }
+		auto Part::setPrtIv(const double *iv, const double *pm_relative_to_part)->void { s_iv2iv(pm_relative_to_part, iv, imp_->prt_iv_); }
 		auto Part::setPp(const double *pp)->void { if (pp)s_pp2pm(pp, *imp_->glb_pm_); }
 		auto Part::setPp(const Coordinate &relative_to, const double *pp)->void
 		{
@@ -1302,6 +1303,7 @@ namespace aris
 
 			registerType<aris::core::ObjectPool<Geometry, Element>>();
 			registerType<ParasolidGeometry>();
+			registerType<FileGeometry>();
 			
 			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
 			imp_->geometry_pool_ = &add<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
@@ -1398,6 +1400,54 @@ namespace aris
 		ParasolidGeometry::ParasolidGeometry(ParasolidGeometry &&other) = default;
 		ParasolidGeometry& ParasolidGeometry::operator=(const ParasolidGeometry &other) = default;
 		ParasolidGeometry& ParasolidGeometry::operator=(ParasolidGeometry &&other) = default;
+
+		struct FileGeometry::Imp
+		{
+			double prt_pm_[4][4]{ { 0 } };
+			std::string graphic_file_path;
+		};
+		auto FileGeometry::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Element::saveXml(xml_ele);
+			double pe[6];
+			s_pm2pe(*imp_->prt_pm_, pe);
+			xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
+			xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path.c_str());
+		}
+		auto FileGeometry::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			double pm[16];
+			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6, core::Matrix(1, 6, 0.0)).data(), pm);
+
+			if (xml_ele.Attribute("relative_to"))
+			{
+				try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>&>(this->father()).findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
+				catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
+			}
+			else
+			{
+				s_vc(16, pm, *imp_->prt_pm_);
+			}
+
+			imp_->graphic_file_path = attributeString(xml_ele, "graphic_file_path", "");
+
+			Geometry::loadXml(xml_ele);
+		}
+		auto FileGeometry::prtPm()const->const double4x4&{ return imp_->prt_pm_; }
+		auto FileGeometry::filePath()const->const std::string &{ return imp_->graphic_file_path; }
+		FileGeometry::~FileGeometry() = default;
+		FileGeometry::FileGeometry(const std::string &name, const std::string &graphic_file_path, const double* prt_pm) : Geometry(name), imp_(new Imp)
+		{
+			static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+			prt_pm = prt_pm ? prt_pm : default_pm_in;
+			s_vc(16, prt_pm, *imp_->prt_pm_);
+
+			imp_->graphic_file_path = graphic_file_path;
+		}
+		FileGeometry::FileGeometry(const FileGeometry &other) = default;
+		FileGeometry::FileGeometry(FileGeometry &&other) = default;
+		FileGeometry& FileGeometry::operator=(const FileGeometry &other) = default;
+		FileGeometry& FileGeometry::operator=(FileGeometry &&other) = default;
 
 	}
 }

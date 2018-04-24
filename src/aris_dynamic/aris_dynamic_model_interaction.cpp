@@ -66,10 +66,10 @@ namespace aris
 		}
 		auto Constraint::cf() const->const double* { return imp_->cf_; }
 		auto Constraint::setCf(const double *cf)->void { return s_vc(dim(), cf, imp_->cf_); }
-		auto Constraint::cptCp(double *cp)const->void
+		auto Constraint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
 		{
 			double pm_j2i[16], ps_j2i[6];
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), pm_j2i);
+			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
 			s_pm2ps(pm_j2i, ps_j2i);
 			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 		}
@@ -87,13 +87,6 @@ namespace aris
 			s_cv(makI().vs(), makJ().vs(), vi_cross_vj);
 			s_inv_tv(*makI().pm(), vi_cross_vj, tem);
 			s_mmi(dim(), 1, 6, locCmI(), ColMajor{ dim() }, tem, 1, ca, 1);
-		}
-		auto Constraint::cptCp1(double *cp, const double *makI_pm, const double *makJ_pm)const->void
-		{
-			double pm_j2i[16], ps_j2i[6];
-			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
-			s_pm2ps(pm_j2i, ps_j2i);
-			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 		}
 		Constraint::~Constraint() = default;
 		Constraint::Constraint(const std::string &name, Marker* makI, Marker* makJ, bool is_active) : Interaction(name, makI, makJ, is_active) {}
@@ -145,35 +138,10 @@ namespace aris
 			const_cast<double*>(locCmI())[axis()] = 1.0;
 		}
 		auto Motion::locCmI() const->const double* { return imp_->loc_cm_I;	}
-		auto Motion::cptCp(double *cp)const->void 
+		auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
 		{
-			//if (axis() < 3)
-			//{
-			//	double pp_j_in_n[3]{ makJ().prtPm()[0][3],makJ().prtPm()[1][3],makJ().prtPm()[2][3], }, pp_j_in_g[3], pp_j_in_m[3];
-
-			//	s_pp2pp(*makJ().fatherPart().pm(), pp_j_in_n, pp_j_in_g);
-			//	s_inv_pp2pp(*makI().fatherPart().pm(), pp_j_in_g, pp_j_in_m);
-			//	cp[0] = mp() + makI().prtPm()[0][axis()] * (pp_j_in_m[0] - makI().prtPm()[0][3]) + makI().prtPm()[1][axis()] * (pp_j_in_m[1] - makI().prtPm()[1][3]) + makI().prtPm()[2][axis()] * (pp_j_in_m[2] - makI().prtPm()[2][3]);
-			//}
-			//else
-			//{
-			//	double pq_j2i[7];
-			//	double pm_j2i[4][4];
-
-			//	s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), *pm_j2i);
-			//	s_pm2pq(*pm_j2i, pq_j2i);
-
-			//	double theta = atan2(s_norm(3, pq_j2i + 3, 1), pq_j2i[6]) * 2;
-			//	double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
-			//	s_nv(3, coe, pq_j2i + 3);
-
-			//	cp[0] = mp() + pq_j2i[axis()];
-			//}
-			
-			
-			Constraint::cptCp(cp);
+			Constraint::cptCpFromPm(cp, makI_pm, makJ_pm);
 			cp[0] += mp();
-
 		}
 		auto Motion::cptCv(double *cv)const->void { Constraint::cptCv(cv); cv[0] += mv(); }
 		auto Motion::cptCa(double *ca)const->void { Constraint::cptCa(ca); ca[0] += ma(); }
@@ -231,17 +199,28 @@ namespace aris
 			static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
 			return loc_cm_I;
 		}
-		auto GeneralMotion::cptCp(double *cp)const->void
+		auto GeneralMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
 		{
-			double pm_real_j[16];
-			s_pm_dot_pm(*makJ().fatherPart().pm(), *makJ().prtPm(), *mpm(), pm_real_j);
+			// Pi : mak I 的实际位置
+			// Pj : mak J 的实际位置
+			// Pit: mak I 应该达到的位置
+			// Pc : 需补偿的位姿
+			// 理论上应该有：
+			// Pi = Pj * mpm
+			// 那么就有：
+			// Pit = Pj * mpm
+			// 于是：
+			// Pc = Pi^-1 * Pit
 
-			double pm_j2i[16], ps_j2i[6];
-			s_inv_pm_dot_pm(*makI().pm(), pm_real_j, pm_j2i);
-			s_pm2ps(pm_j2i, ps_j2i);
+			double pm_it[16];
+			s_pm_dot_pm(makJ_pm, *mpm(), pm_it);
+
+			double pm_c[16], ps_c[6];
+			s_inv_pm_dot_pm(makI_pm, pm_it, pm_c);
+			s_pm2ps(pm_c, ps_c);
 
 			// locCmI为单位矩阵，此时无需相乘
-			s_vc(6, ps_j2i, cp);
+			s_vc(6, ps_c, cp);
 		}
 		auto GeneralMotion::cptCv(double *cv)const->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
 		auto GeneralMotion::cptCa(double *ca)const->void { s_inv_tv(*mpm(), mas(), ca); }
@@ -367,12 +346,18 @@ namespace aris
 			};
 			return loc_cm_I;
 		}
-		auto RevoluteJoint::cptCp(double *cp)const->void
+		auto RevoluteJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
 		{
-			double pm_j2i[16], ps_j2i[6];
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), pm_j2i);
-			s_pm2ps(pm_j2i, ps_j2i);
-			s_vc(5, ps_j2i, cp);
+			double pm_j_in_i[16];
+			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j_in_i);
+
+			cp[0] = pm_j_in_i[3];
+			cp[1] = pm_j_in_i[7];
+			cp[2] = pm_j_in_i[11];
+
+			// 这里用i的z轴叉乘j的z轴，在i坐标系下，因此叉乘出来有如下结果:
+			cp[3] = -pm_j_in_i[6];
+			cp[4] = pm_j_in_i[2];
 		}
 		RevoluteJoint::RevoluteJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ){}
 		
@@ -389,10 +374,10 @@ namespace aris
 			};
 			return loc_cm_I;
 		}
-		auto PrismaticJoint::cptCp(double *cp)const->void 
+		auto PrismaticJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
 		{
 			double pm_j2i[16], ps_j2i[6];
-			s_inv_pm_dot_pm(*makI().pm(), *makJ().pm(), pm_j2i);
+			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
 			s_pm2ps(pm_j2i, ps_j2i);
 
 			// 此时位移差值在makI()坐标系中
@@ -447,35 +432,17 @@ namespace aris
 
 			ca[3] += 2 * jwm*iwn - jwm*iwm - jwn*iwn;
 		}
-		auto UniversalJoint::cptCp(double *cp)const->void
+		auto UniversalJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
 		{
-			// 对于位置，因为是单位矩阵相乘，所以不用计算 //
-			double pp_j_in_n[3]{ makJ().prtPm()[0][3],makJ().prtPm()[1][3],makJ().prtPm()[2][3], }, pp_j_in_g[3], pp_j_in_m[3];
+			double pm_j_in_i[16];
+			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j_in_i);
 
-			s_pp2pp(*makJ().fatherPart().pm(), pp_j_in_n, pp_j_in_g);
-			s_inv_pp2pp(*makI().fatherPart().pm(), pp_j_in_g, pp_j_in_m);
-			s_inv_pp2pp(*makI().prtPm(), pp_j_in_m, cp);
+			cp[0] = pm_j_in_i[3];
+			cp[1] = pm_j_in_i[7];
+			cp[2] = pm_j_in_i[11];
 
-			// 对于角度，因为转动是一维的，两个z轴相隔90度，因此只要计算出需要转动的角度即可 //
-			// 这里求pm_j2i[2][2] //
-			double jz[3]{ makJ().prtPm()[0][2] , makJ().prtPm()[1][2] , makJ().prtPm()[2][2] };
-
-			s_pm_dot_v3(*makJ().fatherPart().pm(), jz, pp_j_in_g);
-			s_inv_pm_dot_v3(*makI().fatherPart().pm(), pp_j_in_g, pp_j_in_m);
-
-			cp[3] = -PI / 2.0 + std::acos(makI().prtPm()[0][2] * pp_j_in_m[0] + makI().prtPm()[1][2] * pp_j_in_m[1] + makI().prtPm()[2][2] * pp_j_in_m[2]);
-		}
-		auto UniversalJoint::cptCv(double *cv)const->void{	Constraint::cptCv(cv);}
-		auto UniversalJoint::cptGlbDm(double *dm)->void
-		{
-			double pm[16];
-			s_inv_pm(*makI().pm(), pm);
-			s_tmf(pm, dm);
-
-			auto loc_cm_I = locCmI();
-			double r[4]{ loc_cm_I[15], loc_cm_I[19], -loc_cm_I[19], loc_cm_I[15] };
-			s_mm(2, 6, 2, r, dm + 18, pm);
-			s_mc(2, 6, pm, dm + 18);
+			// 两个坐标系的z轴的角度差应该为90度
+			cp[3] = -PI / 2.0 + std::acos(pm_j_in_i[10]);
 		}
 		UniversalJoint::~UniversalJoint() = default;
 		UniversalJoint::UniversalJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ), imp_(new Imp)
@@ -509,13 +476,11 @@ namespace aris
 			};
 			return loc_cm_I;
 		}
-		auto SphericalJoint::cptCp(double *cp)const->void 
+		auto SphericalJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
 		{
 			/////////////////////////以下是pa的计算方法///////////////////////////
-			double pp_j_in_n[3]{ makJ().prtPm()[0][3],makJ().prtPm()[1][3],makJ().prtPm()[2][3], }, pp_j_in_g[3], pp_j_in_m[3];
-			s_pp2pp(*makJ().fatherPart().pm(), pp_j_in_n, pp_j_in_g);
-			s_inv_pp2pp(*makI().fatherPart().pm(), pp_j_in_g, pp_j_in_m);
-			s_inv_pp2pp(*makI().prtPm(), pp_j_in_m, cp);
+			double pp_j[3]{ makJ_pm[3], makJ_pm[7], makJ_pm[11], };
+			s_inv_pp2pp(makI_pm, pp_j, cp);
 			/////////////////////////以上是pa的计算方法///////////////////////////
 		}
 		SphericalJoint::SphericalJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ){}
