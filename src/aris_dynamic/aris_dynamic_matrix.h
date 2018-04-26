@@ -66,7 +66,7 @@ namespace aris
 		template <typename T, typename TType>
 		auto inline dsp(Size m, Size n, const T *data, TType d_t)->void
 		{
-			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(16);
+			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(14);
 
 			std::cout << std::endl;
 			for (Size i = 0; i < m; i++)
@@ -358,7 +358,7 @@ namespace aris
 				for (Size j(-1), xij{ xi0 }, xkj{ id(k,0,x_t) }; ++j < rhs; xij = next_cid(xij, x_t), xkj = next_cid(xkj, x_t))std::swap(x[xij], x[xkj]);
 			}
 		}
-		auto inline s_permutate(Size m, Size rhs, const Size *p, double *x)->void{s_permutate(m, rhs, p, x, 1);}
+		auto inline s_permutate(Size m, Size rhs, const Size *p, double *x)->void{s_permutate(m, rhs, p, x, rhs);}
 		// x_new[p[i]] = x[i]
 		template<typename XType>
 		auto inline s_permutate_inv(Size m, Size rhs, const Size *p, double *x, XType x_t)->void
@@ -378,7 +378,7 @@ namespace aris
 				}
 			}
 		}
-		auto inline s_permutate_inv(Size m, Size rhs, const Size *p, double *x)->void { s_permutate_inv(m, rhs, p, x, 1); }
+		auto inline s_permutate_inv(Size m, Size rhs, const Size *p, double *x)->void { s_permutate_inv(m, rhs, p, x, rhs); }
 
 		// A can be the same as L, only when they have same type
 		template<typename AType, typename LType>
@@ -598,7 +598,7 @@ namespace aris
 			if (n > m)s_fill(n - m, rhs, 0.0, x + id(m, 0, x_t), x_t);
 		}
 		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x, double zero_check = 1e-10) { s_householder_ut_sov(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs, zero_check); }
-		// tau must have same size with max(m,n), A can be the same as U
+		// tau must have same size with max(m,n), A can be the same as U,  Q * R = A * P
 		template<typename AType, typename UType, typename TauType>
 		auto inline s_householder_utp(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void
 		{
@@ -684,8 +684,6 @@ namespace aris
 			s_permutate_inv(n, n - rank, p, x, x_t);
 		}
 		auto inline s_householder_utp_sov_solution_space(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double zero_check = 1e-10) { s_householder_utp_sov_solution_space(m, n, rank, U, n, tau, 1, p, x, n-rank, zero_check); }
-
-
 	}
 }
 

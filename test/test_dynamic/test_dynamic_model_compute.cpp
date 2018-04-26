@@ -1442,19 +1442,153 @@ void bench_multi_systems()
 		std::cout << e.what() << std::endl;
 	}
 }
+void test_ur5_calibration()
+{
+	const double PI = 3.14159265358979;
+	
+	Model rbt;
+	
+	// 设置重力 //
+	const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
+	rbt.environment().setGravity(gravity);
+
+	// add parts //
+	// iv : inertia vector : m cx cy cz Ixx Iyy Izz Ixy Ixz Iyz
+	// pm : 4x4 pose matrix
+	// pe : 6x1 position and euler angle
+	double iv[10], pm[16];
+
+	const double p1_pe[6]{ 0.0, 0.00193, 0.089159 - 0.02561, 0, 0, 0 };
+	const double p1_iv[10]{ 3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 };
+	s_pe2pm(p1_pe, pm, "321");
+	s_iv2iv(pm, p1_iv, iv);
+	auto &p1 = rbt.partPool().add<Part>("L1", iv);
+
+	const double p2_pe[6]{ 0.2125, -0.024201 + 0.13585, 0.089159, 0.0, 0.0, 0.0 };
+	const double p2_iv[10]{ 8.393, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 };
+	s_pe2pm(p2_pe, pm, "321");
+	s_iv2iv(pm, p2_iv, iv);
+	auto &p2 = rbt.partPool().add<Part>("L2", iv);
+
+	const double p3_pe[6]{ 0.425 + 0.110949, 0.13585 - 0.1197, 0.089159 + 0.01634, 0, 0, 0 };
+	const double p3_iv[10]{ 2.275, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 };
+	s_pe2pm(p3_pe, pm, "321");
+	s_iv2iv(pm, p3_iv, iv);
+	auto &p3 = rbt.partPool().add<Part>("L3", iv);
+
+	const double p4_pe[6]{ 0.425 + 0.39225, 0.13585 - 0.1197, 0.089159, 0, 0, 0 };
+	const double p4_iv[10]{ 1.219, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 };
+	s_pe2pm(p4_pe, pm, "321");
+	s_iv2iv(pm, p4_iv, iv);
+	auto &p4 = rbt.partPool().add<Part>("L4", iv);
+
+	const double p5_pe[6]{ 0.425 + 0.39225, 0.13585 - 0.1197 + 0.093, 0.089159, 0, 0, 0 };
+	const double p5_iv[10]{ 1.219, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 };
+	s_pe2pm(p5_pe, pm, "321");
+	s_iv2iv(pm, p5_iv, iv);
+	auto &p5 = rbt.partPool().add<Part>("L5", iv);
+
+	const double p6_pe[6]{ 0.425 + 0.39225, 0.13585 - 0.1197 + 0.093, 0.089159 - 0.09465, 0, 0, 0 };
+	const double p6_iv[10]{ 0.1879, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 };
+	s_pe2pm(p6_pe, pm, "321");
+	s_iv2iv(pm, p6_iv, iv);
+	auto &p6 = rbt.partPool().add<Part>("L6", iv);
+
+	// add joints //
+	const double j1_pos[6]{ 0.0, 0.0, 0.089159 }, j1_axis[6]{ 0.0, 0.0, 1.0 };
+	const double j2_pos[6]{ 0.0, 0.13585, 0.089159 }, j2_axis[6]{ 0.0, 1.0, 0.0 };
+	const double j3_pos[6]{ 0.425, 0.13585 - 0.1197, 0.089159 }, j3_axis[6]{ 0.0, 1.0, 0.0 };
+	const double j4_pos[6]{ 0.425 + 0.39225, 0.13585 - 0.1197, 0.089159 }, j4_axis[6]{ 0.0, 1.0, 0.0 };
+	const double j5_pos[6]{ 0.425 + 0.39225, 0.13585 - 0.1197 + 0.093, 0.089159 }, j5_axis[6]{ 0.0, 0.0, 1.0 };
+	const double j6_pos[6]{ 0.425 + 0.39225, 0.13585 - 0.1197 + 0.093, 0.089159 - 0.09465 }, j6_axis[6]{ 0.0, 1.0, 0.0 };
+
+	auto &j1 = rbt.addRevoluteJoint(p1, rbt.ground(), j1_pos, j1_axis);
+	auto &j2 = rbt.addRevoluteJoint(p2, p1, j2_pos, j2_axis);
+	auto &j3 = rbt.addRevoluteJoint(p3, p2, j3_pos, j3_axis);
+	auto &j4 = rbt.addRevoluteJoint(p4, p3, j4_pos, j4_axis);
+	auto &j5 = rbt.addRevoluteJoint(p5, p4, j5_pos, j5_axis);
+	auto &j6 = rbt.addRevoluteJoint(p6, p5, j6_pos, j6_axis);
+
+	// add actuation //
+	auto &m1 = rbt.addMotion(j1);
+	auto &m2 = rbt.addMotion(j2);
+	auto &m3 = rbt.addMotion(j3);
+	auto &m4 = rbt.addMotion(j4);
+	auto &m5 = rbt.addMotion(j5);
+	auto &m6 = rbt.addMotion(j6);
+
+	m1.setFrcCoe(std::array<double, 3>{0.5, 0.6, 7}.data());
+	m2.setFrcCoe(std::array<double, 3>{0.2, 0.1, 8}.data());
+	m3.setFrcCoe(std::array<double, 3>{0.3, 0.2, 9}.data());
+	m4.setFrcCoe(std::array<double, 3>{0.1, 0.3, 10}.data());
+	m5.setFrcCoe(std::array<double, 3>{0.5, 0.4, 11}.data());
+	m6.setFrcCoe(std::array<double, 3>{0.3, 0.5, 12}.data());
+
+	// add end effector //
+	double ee_pe[6]{ 0.425 + 0.39225, 0.13585 - 0.1197 + 0.093 + 0.0823, 0.089159 - 0.09465, PI, PI / 2, 0 };
+	auto &ee = rbt.addGeneralMotionByPe(p6, rbt.ground(), ee_pe, "321");
+
+
+	auto &fee = rbt.forcePool().add<aris::dynamic::GeneralForce>("fce", &ee.makI(), &ee.makJ());
+	fee.setFce(std::array<double, 6>{0.1, 0.2, 0.3, 0.1, 0.2, 0.3, }.data());
+
+	auto &f3 = rbt.forcePool().add<aris::dynamic::GeneralForce>("fce", &j3.makI(), &j3.makJ());
+	f3.setFce(std::array<double, 6>{0.1, 0.2, 0.3, 0.1, 0.2, 0.3, }.data());
+
+	// add solvers //
+	auto &forward_kinematic = rbt.solverPool().add<ForwardKinematicSolver>();
+
+	// add calibrator //
+	auto &calibrator = rbt.calibratorPool().add<Calibrator>();
+
+
+	// allocate memory //
+	forward_kinematic.allocateMemory();
+	ee.activate(false);
+	calibrator.allocateMemory();
+
+
+	double t = 0.1;
+	double q[6]{ 0.1 + 0.1*sin(t),0.2 + 0.2*sin(t * 2),0.3 + 0.3*sin(t * 3),0.4 + 0.4*sin(t * 4),0.5 + 0.5*sin(t * 5),0.6 + 0.6*sin(t * 6) };
+	double dq[6]{ 0.1*cos(t), 0.2 * 2 * cos(t * 2), 0.3 * 3 * cos(t * 3), 0.4 * 4 * cos(t * 4), 0.5 * 5 * cos(t * 5), 0.6 * 6 * cos(t * 6) };
+	double ddq[6]{ -0.1*sin(t), -0.2 * 2 * 2 * sin(t * 2), -0.3 * 3 * 3 * sin(t * 3), -0.4 * 4 * 4 * sin(t * 4), -0.5 * 5 * 5 * sin(t * 5), -0.6 * 6 * 6 * sin(t * 6) };
+
+	// 分别设置电机的位置、速度、加速度， mp的意思为motion position...
+	for (aris::Size i = 0; i < 6; ++i)
+	{
+		rbt.motionPool().at(i).setMp(q[i]);
+		rbt.motionPool().at(i).setMv(dq[i]);
+		rbt.motionPool().at(i).setMa(ddq[i]);
+	}
+
+	forward_kinematic.kinPos();
+	forward_kinematic.kinVel();
+	forward_kinematic.dynAccAndFce();
+
+	calibrator.clb();
+
+	dsp(calibrator.m(), 1, calibrator.b());
+
+	double b[6];
+	s_mm(calibrator.m(), 1, calibrator.n(), calibrator.A(), calibrator.x(), b);
+	dsp(calibrator.m(), 1, b);
+}
+
 void test_model_compute()
 {
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
 	test_single_body();
 	test_3R();
-	test_6R();
-	test_stewart();
-	test_multi_systems();
+	//test_6R();
+	//test_stewart();
+	//test_multi_systems();
 
-	bench_3R();
-	bench_6R();
-	bench_stewart();
-	bench_multi_systems();
+	//bench_3R();
+	//bench_6R();
+	//bench_stewart();
+	//bench_multi_systems();
+
+	test_ur5_calibration();
 	std::cout << "-----------------test model compute finished------------" << std::endl << std::endl;
 }
 

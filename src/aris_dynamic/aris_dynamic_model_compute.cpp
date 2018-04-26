@@ -56,7 +56,320 @@ namespace aris
 		Solver& Solver::operator=(const Solver&) = default;
 		Solver& Solver::operator=(Solver&&) = default;
 
-		struct Calibrator::Imp {};
+		struct Calibrator::Imp 
+		{
+			struct ConstraintBlock 
+			{
+				Constraint *c;
+				Size ri, rj, col;
+			};
+			struct ForceBlock 
+			{
+				Force *f;
+				Size ri, rj;
+			};
+			std::vector<ConstraintBlock> cst_blk_vec_;
+			std::vector<ForceBlock> fce_blk_vec_;
+
+			Size dyn_m_, dyn_n_;
+			std::vector<double> C_, C_inv_, U_, tau_, Q_, R_, B_, D_, f_;
+			std::vector<Size> p_;
+
+			Size m_, g_, k_;
+			std::vector<double> A_, x_, b_;
+		};
+		auto Calibrator::m()->Size { return imp_->m_; }
+		auto Calibrator::g()->Size { return imp_->g_; }
+		auto Calibrator::k()->Size { return imp_->k_; }
+		auto Calibrator::A()->double* { return imp_->A_.data(); }
+		auto Calibrator::x()->double* { return imp_->x_.data(); }
+		auto Calibrator::b()->double* { return imp_->b_.data(); }
+		auto Calibrator::allocateMemory()->void
+		{
+			imp_->m_ = 0;
+			imp_->g_ = 0;
+			imp_->k_ = 0;
+
+			for (auto &m : model().motionPool())
+			{
+				if (m.active())
+				{
+					imp_->m_ ++;
+					imp_->k_ += 3;
+				}
+			}
+			for (auto &p : model().partPool())
+			{
+				if (p.active())
+				{
+					imp_->g_ += 10;
+				}
+			}
+
+			imp_->A_.resize(m()*n());
+			imp_->x_.resize(n());
+			imp_->b_.resize(m());
+
+
+
+
+			imp_->dyn_m_ = 0;
+			imp_->dyn_n_ = 6;
+			std::vector<Part*> active_parts;
+			for (auto &prt : model().partPool())
+			{
+				if (prt.active()) 
+				{
+					active_parts.push_back(&prt);
+					imp_->dyn_m_ += 6;
+				}
+			}
+			
+			imp_->cst_blk_vec_.clear();
+			for (auto &jnt : model().jointPool()) 
+			{
+				if (jnt.active()) 
+				{
+					imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
+					{
+						&jnt,
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &jnt.makI().fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &jnt.makJ().fatherPart()) - active_parts.begin()) * 6),
+						imp_->dyn_n_
+					});
+					imp_->dyn_n_ += jnt.dim();
+				}
+			}
+			for (auto &mot : model().motionPool()) 
+			{
+				if (mot.active()) 
+				{
+					imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
+					{
+						&mot,
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &mot.makI().fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &mot.makJ().fatherPart()) - active_parts.begin()) * 6),
+						imp_->dyn_n_
+					});
+					imp_->dyn_n_ += mot.dim();
+				}
+			}
+			for (auto &gmt : model().generalMotionPool()) 
+			{
+				if (gmt.active())
+				{
+					imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
+					{
+						&gmt,
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &gmt.makI().fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &gmt.makJ().fatherPart()) - active_parts.begin()) * 6),
+						imp_->dyn_n_
+					});
+					imp_->dyn_n_ += 6;
+				}
+			}
+
+			imp_->fce_blk_vec_.clear();
+			for (auto &fce : model().forcePool())
+			{
+				if (fce.active())
+				{
+					imp_->fce_blk_vec_.push_back(Imp::ForceBlock
+					{
+						&fce,
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &fce.makI().fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &fce.makJ().fatherPart()) - active_parts.begin()) * 6)
+					});
+				}
+			}
+
+			imp_->f_.resize(imp_->dyn_m_, 0.0);
+
+			imp_->C_.resize(imp_->dyn_m_*imp_->dyn_n_, 0.0);
+			imp_->U_.resize(imp_->dyn_m_*imp_->dyn_n_, 0.0);
+			imp_->tau_.resize(std::max(imp_->dyn_m_, imp_->dyn_n_), 0.0);
+			imp_->p_.resize(std::max(imp_->dyn_m_, imp_->dyn_n_), 0);
+
+			imp_->C_inv_.resize(imp_->dyn_n_*imp_->dyn_m_, 0.0);
+			imp_->R_.resize(imp_->dyn_m_*imp_->dyn_n_, 0.0);
+			imp_->Q_.resize(imp_->dyn_m_*imp_->dyn_m_, 0.0);
+
+			imp_->B_.resize(imp_->m_*imp_->dyn_m_, 0.0);
+			imp_->D_.resize(imp_->m_*imp_->dyn_m_, 0.0);
+		}
+		auto Calibrator::clb()->void
+		{
+			auto f = imp_->f_.data();
+			
+			auto C = imp_->C_.data();
+			auto U = imp_->U_.data();
+			auto t = imp_->tau_.data();
+			auto p = imp_->p_.data();
+			auto Q = imp_->Q_.data();
+			auto R = imp_->R_.data();
+			auto C_inv = imp_->C_inv_.data();
+			
+			auto B = imp_->B_.data();
+			auto D = imp_->D_.data();
+
+			auto A = imp_->A_.data();
+			auto b = imp_->b_.data();
+			auto x = imp_->x_.data();
+
+			/////////////////////////////////////////// make A ///////////////////////////////////////
+			// make C //
+			std::fill_n(C, imp_->dyn_m_*imp_->dyn_n_, 0.0);
+			for (int i = 0; i < 6; ++i)
+			{
+				C[dynamic::id(i, i, imp_->dyn_n_)] = 1;
+			}
+			for (auto &b : imp_->cst_blk_vec_)
+			{
+				b.c->cptPrtCm(C + dynamic::id(b.ri, b.col, imp_->dyn_n_), imp_->dyn_n_, C + dynamic::id(b.rj, b.col, imp_->dyn_n_), imp_->dyn_n_);
+			}
+
+			// make C inv //
+			Size rank;
+			s_householder_utp(imp_->dyn_m_, imp_->dyn_n_, C, U, t, p, rank);
+			s_householder_ut2qr(imp_->dyn_m_, imp_->dyn_n_, U, t, Q, R);
+			s_sov_um(rank, imp_->dyn_m_, R, imp_->dyn_n_, Q, T(imp_->dyn_m_), C_inv, imp_->dyn_m_);
+			s_permutate_inv(imp_->dyn_n_, imp_->dyn_m_, p, C_inv);
+
+			// make D //
+			Size di = 0;
+			for (auto &b : imp_->cst_blk_vec_)
+			{
+				if (dynamic_cast<Motion*>(b.c))
+				{
+					s_mc(1,imp_->dyn_m_, C_inv + dynamic::id(b.col, 0, imp_->dyn_m_), D + dynamic::id(di, 0, imp_->dyn_m_));
+					di++;
+				}
+			}
+
+			// make B //
+			for (auto &b : imp_->cst_blk_vec_)
+			{
+				Size row{ 0 };
+				for (auto &p : model().partPool())
+				{
+					double cm[6][6], vs[6];
+
+					s_inv_tv(*p.pm(), p.vs(), vs);
+					s_cmf(vs, *cm);
+					s_mm(imp_->m_, 6, 6, D + dynamic::id(0, row, imp_->dyn_m_), imp_->dyn_m_, *cm, 6, B + dynamic::id(0, row, imp_->dyn_m_), imp_->dyn_m_);
+
+					row += 6;
+				}
+			}
+			
+			// make A //
+			int col1 = 0, col2 = 0;
+			for (auto &prt : model().partPool())
+			{
+				if (prt.active())
+				{
+					double q[6]{ 0 };
+
+					s_inv_tv(*prt.pm(), prt.as(), q);
+					s_inv_tva(-1.0, *prt.pm(), model().environment().gravity(), q);
+
+					double v[6];
+					s_inv_tv(*prt.pm(), prt.vs(), v);
+
+					for (std::size_t j = 0; j < imp_->m_; ++j)
+					{
+						A[dynamic::id(j, col1, n())] = D[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * q[0] + D[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * q[1] + D[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * q[2];
+						A[dynamic::id(j, col1 + 1, n())] = D[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * q[5] + D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[1] - D[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * q[4] - D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[2];
+						A[dynamic::id(j, col1 + 2, n())] = D[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * q[3] + D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[2] - D[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * q[5] - D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[0];
+						A[dynamic::id(j, col1 + 3, n())] = D[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * q[4] + D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[0] - D[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * q[3] - D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[1];
+						A[dynamic::id(j, col1 + 4, n())] = D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[3];
+						A[dynamic::id(j, col1 + 5, n())] = D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[4];
+						A[dynamic::id(j, col1 + 6, n())] = D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[5];
+						A[dynamic::id(j, col1 + 7, n())] = D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[4] + D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[3];
+						A[dynamic::id(j, col1 + 8, n())] = D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[5] + D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[3];
+						A[dynamic::id(j, col1 + 9, n())] = D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[5] + D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[4];
+
+						A[dynamic::id(j, col1, n())] += B[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * v[0] + B[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * v[1] + B[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * v[2];
+						A[dynamic::id(j, col1 + 1, n())] += B[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * v[5] + B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[1] - B[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * v[4] - B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[2];
+						A[dynamic::id(j, col1 + 2, n())] += B[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * v[3] + B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[2] - B[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * v[5] - B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[0];
+						A[dynamic::id(j, col1 + 3, n())] += B[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * v[4] + B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[0] - B[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * v[3] - B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[1];
+						A[dynamic::id(j, col1 + 4, n())] += B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[3];
+						A[dynamic::id(j, col1 + 5, n())] += B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[4];
+						A[dynamic::id(j, col1 + 6, n())] += B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[5];
+						A[dynamic::id(j, col1 + 7, n())] += B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[4] + B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[3];
+						A[dynamic::id(j, col1 + 8, n())] += B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[5] + B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[3];
+						A[dynamic::id(j, col1 + 9, n())] += B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[5] + B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[4];
+					}
+					col1 += 10;
+					col2 += 6;
+				}
+			}
+			// make A from frictions //
+			Size ai = 0;
+			for (auto &b : imp_->cst_blk_vec_)
+			{
+				if (dynamic_cast<Motion*>(b.c))
+				{
+					A[dynamic::id(ai, g() + ai * 3, n())] = s_sgn(dynamic_cast<Motion*>(b.c)->mv());
+					A[dynamic::id(ai, g() + ai * 3 + 1, n())] = dynamic_cast<Motion*>(b.c)->mv();
+					A[dynamic::id(ai, g() + ai * 3 + 2, n())] = dynamic_cast<Motion*>(b.c)->ma();
+					ai++;
+				}
+
+			}
+
+
+			/////////////////////////////////////////// make b ///////////////////////////////////////
+			Size bi{ 0 };
+			for (auto &blk : imp_->cst_blk_vec_)
+			{
+				if (dynamic_cast<Motion*>(blk.c))
+				{
+					b[bi] = dynamic_cast<Motion*>(blk.c)->mf();
+					bi++;
+				}
+			}
+			std::fill(f, f + imp_->dyn_m_, 0.0);
+			for (auto &fce : imp_->fce_blk_vec_)
+			{
+				double glb_fsI[6], glb_fsJ[6];
+				fce.f->cptGlbFs(glb_fsI, glb_fsJ);
+
+				double prt_fsI[6], prt_fsJ[6];
+				s_inv_tf(*fce.f->makI().fatherPart().pm(), glb_fsI, prt_fsI);
+				s_inv_tf(*fce.f->makJ().fatherPart().pm(), glb_fsJ, prt_fsJ);
+
+				s_va(6, prt_fsI, f + fce.ri);
+				s_va(6, prt_fsJ, f + fce.rj);
+			}
+
+			s_mma(m(), 1, imp_->dyn_m_, D, f, b);
+
+			/////////////////////////////////////////// make x ///////////////////////////////////////
+			Size xi = 0;
+			for (auto &prt : model().partPool())
+			{
+				if (prt.active())
+				{
+					s_vc(10, prt.prtIv(), x + xi);
+					xi += 10;
+				}
+			}
+			// make x from frictions //
+			bi = 0;
+			for (auto &blk : imp_->cst_blk_vec_)
+			{
+				if (dynamic_cast<Motion*>(blk.c))
+				{
+					s_vc(3, dynamic_cast<Motion*>(blk.c)->frcCoe(), x + g() + bi * 3);
+					bi++;
+				}
+			}
+		}
+
+		
+		
+		
 		Calibrator::~Calibrator() = default;
 		Calibrator::Calibrator(const std::string &name) : Element(name), imp_(new Imp) {}
 		Calibrator::Calibrator(const Calibrator&) = default;

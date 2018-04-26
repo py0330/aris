@@ -149,7 +149,6 @@ void build_model()
 	inverse_dynamic.allocateMemory();
 }
 
-
 int main()
 {
 	std::cout << std::endl << "-----------------test model ur---------------------" << std::endl;

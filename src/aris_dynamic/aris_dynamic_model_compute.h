@@ -343,7 +343,15 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Calibrator" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual allocateMemory()->void = 0;
+			auto virtual allocateMemory()->void;
+			auto m()->Size;
+			auto n()->Size { return g() + k(); }
+			auto g()->Size;
+			auto k()->Size;
+			auto A()->double*;
+			auto x()->double*;
+			auto b()->double*;
+			auto clb()->void;
 
 			virtual ~Calibrator();
 			explicit Calibrator(const std::string &name = "calibrator");

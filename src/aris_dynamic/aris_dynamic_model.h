@@ -250,6 +250,8 @@ namespace aris
 			auto simulatorPool()const->const aris::core::ObjectPool<Simulator, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->simulatorPool(); }
 			auto simResultPool()->aris::core::ObjectPool<SimResult, Element>&;
 			auto simResultPool()const->const aris::core::ObjectPool<SimResult, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->simResultPool(); }
+			auto calibratorPool()->aris::core::ObjectPool<Calibrator, Element>&;
+			auto calibratorPool()const->const aris::core::ObjectPool<Calibrator, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->calibratorPool(); }
 			auto ground()->Part&;
 			auto ground()const->const Part&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ground(); }
 			/// @}
