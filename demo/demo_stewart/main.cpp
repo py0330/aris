@@ -491,72 +491,72 @@ int main()
 		Model rbt;
 		s_vc(6, std::array<double, 6>{0.0, 0.0, -9.8, 0.0, 0.0, 0.0}.data(), const_cast<double *>(rbt.environment().gravity()));
 
-		auto &up = rbt.partPool().add<Part>("up", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &up = rbt.partPool().add<Part>("up");
 
-		auto &p1a = rbt.partPool().add<Part>("p1a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p1b = rbt.partPool().add<Part>("p1b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p1c = rbt.partPool().add<Part>("p1c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p1a = rbt.partPool().add<Part>("p1a");
+		auto &p1b = rbt.partPool().add<Part>("p1b");
+		auto &p1c = rbt.partPool().add<Part>("p1c");
 
-		auto &p2a = rbt.partPool().add<Part>("p2a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p2b = rbt.partPool().add<Part>("p2b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p2c = rbt.partPool().add<Part>("p2c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p2a = rbt.partPool().add<Part>("p2a");
+		auto &p2b = rbt.partPool().add<Part>("p2b");
+		auto &p2c = rbt.partPool().add<Part>("p2c");
 
-		auto &p3a = rbt.partPool().add<Part>("p3a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p3b = rbt.partPool().add<Part>("p3b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p3c = rbt.partPool().add<Part>("p3c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p3a = rbt.partPool().add<Part>("p3a");
+		auto &p3b = rbt.partPool().add<Part>("p3b");
+		auto &p3c = rbt.partPool().add<Part>("p3c");
 
-		auto &p4a = rbt.partPool().add<Part>("p4a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p4b = rbt.partPool().add<Part>("p4b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p4c = rbt.partPool().add<Part>("p4c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p4a = rbt.partPool().add<Part>("p4a");
+		auto &p4b = rbt.partPool().add<Part>("p4b");
+		auto &p4c = rbt.partPool().add<Part>("p4c");
 
-		auto &p5a = rbt.partPool().add<Part>("p5a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p5b = rbt.partPool().add<Part>("p5b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p5c = rbt.partPool().add<Part>("p5c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p5a = rbt.partPool().add<Part>("p5a");
+		auto &p5b = rbt.partPool().add<Part>("p5b");
+		auto &p5c = rbt.partPool().add<Part>("p5c");
 
-		auto &p6a = rbt.partPool().add<Part>("p6a", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p6b = rbt.partPool().add<Part>("p6b", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
-		auto &p6c = rbt.partPool().add<Part>("p6c", std::array<double, 10>{3.7, 0, 0, 0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0}.data());
+		auto &p6a = rbt.partPool().add<Part>("p6a");
+		auto &p6b = rbt.partPool().add<Part>("p6b");
+		auto &p6c = rbt.partPool().add<Part>("p6c");
 
 		auto &r1a = rbt.addRevoluteJoint(rbt.ground(), p1a, R1a_pos, R1a_axis);
 		auto &r1b = rbt.addRevoluteJoint(p1a, p1b, R1b_pos, R1b_axis);
-		auto &p1 = rbt.addPrismaticJoint(p1b, p1c, P1_pos, P1_axis);
+		auto &p1 = rbt.addPrismaticJoint(p1c, p1b, P1_pos, P1_axis);
 		auto &s1 = rbt.addSphericalJoint(p1c, up, S1_pos);
 
 		auto &r2a = rbt.addRevoluteJoint(rbt.ground(), p2a, R2a_pos, R2a_axis);
 		auto &r2b = rbt.addRevoluteJoint(p2a, p2b, R2b_pos, R2b_axis);
-		auto &p2 = rbt.addPrismaticJoint(p2b, p2c, P2_pos, P2_axis);
+		auto &p2 = rbt.addPrismaticJoint(p2c, p2b, P2_pos, P2_axis);
 		auto &s2 = rbt.addSphericalJoint(p2c, up, S2_pos);
 		
 		auto &r3a = rbt.addRevoluteJoint(rbt.ground(), p3a, R3a_pos, R3a_axis);
 		auto &r3b = rbt.addRevoluteJoint(p3a, p3b, R3b_pos, R3b_axis);
-		auto &p3 = rbt.addPrismaticJoint(p3b, p3c, P3_pos, P3_axis);
+		auto &p3 = rbt.addPrismaticJoint(p3c, p3b, P3_pos, P3_axis);
 		auto &s3 = rbt.addSphericalJoint(p3c, up, S3_pos);
 
 		auto &r4a = rbt.addRevoluteJoint(rbt.ground(), p4a, R4a_pos, R4a_axis);
 		auto &r4b = rbt.addRevoluteJoint(p4a, p4b, R4b_pos, R4b_axis);
-		auto &p4 = rbt.addPrismaticJoint(p4b, p4c, P4_pos, P4_axis);
+		auto &p4 = rbt.addPrismaticJoint(p4c, p4b, P4_pos, P4_axis);
 		auto &s4 = rbt.addSphericalJoint(p4c, up, S4_pos);
 
 		auto &r5a = rbt.addRevoluteJoint(rbt.ground(), p5a, R5a_pos, R5a_axis);
 		auto &r5b = rbt.addRevoluteJoint(p5a, p5b, R5b_pos, R5b_axis);
-		auto &p5 = rbt.addPrismaticJoint(p5b, p5c, P5_pos, P5_axis);
+		auto &p5 = rbt.addPrismaticJoint(p5c, p5b, P5_pos, P5_axis);
 		auto &s5 = rbt.addSphericalJoint(p5c, up, S5_pos);
 
 		auto &r6a = rbt.addRevoluteJoint(rbt.ground(), p6a, R6a_pos, R6a_axis);
 		auto &r6b = rbt.addRevoluteJoint(p6a, p6b, R6b_pos, R6b_axis);
-		auto &p6 = rbt.addPrismaticJoint(p6b, p6c, P6_pos, P6_axis);
+		auto &p6 = rbt.addPrismaticJoint(p6c, p6b, P6_pos, P6_axis);
 		auto &s6 = rbt.addSphericalJoint(p6c, up, S6_pos);
 
-		//auto &m1 = rbt.addMotion(p1);
-		//auto &m2 = rbt.addMotion(p2);
-		//auto &m3 = rbt.addMotion(p3);
-		//auto &m4 = rbt.addMotion(p4);
-		//auto &m5 = rbt.addMotion(p5);
-		//auto &m6 = rbt.addMotion(p6);
+		auto &m1 = rbt.addMotion(p1);
+		auto &m2 = rbt.addMotion(p2);
+		auto &m3 = rbt.addMotion(p3);
+		auto &m4 = rbt.addMotion(p4);
+		auto &m5 = rbt.addMotion(p5);
+		auto &m6 = rbt.addMotion(p6);
 
 
-		rbt.ground().geometryPool().add<ParasolidGeometry>("ground","C:\\Users\\py033\\Desktop\\dm\\stewart\\ground.xmt_txt");
-		up.geometryPool().add<ParasolidGeometry>("up", "C:\\Users\\py033\\Desktop\\dm\\stewart\\up.xmt_txt");
+		rbt.ground().geometryPool().add<ParasolidGeometry>("ground","C:\\aris\\resource\\demo_stewart\\ground.xmt_txt");
+		up.geometryPool().add<ParasolidGeometry>("up", "C:\\aris\\resource\\demo_stewart\\up.xmt_txt");
 
 
 		double p1b_pm[16]{ 0.823677867665496,         0.424559091872891, -0.375904705778056,                      0.45,
@@ -641,29 +641,29 @@ int main()
 		 0.308879200374561,-0.220014428177045,0.925303891145984,0.8,
 						 0,0,0,1 };
 
-		p1b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p1b_pm);
-		p1c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p1c_pm);
+		p1b.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1b.xmt_txt", p1b_pm);
+		p1c.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1c.xmt_txt", p1c_pm);
 
-		p2b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p2b_pm);
-		p2c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p2c_pm);
+		p2b.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1b.xmt_txt", p2b_pm);
+		p2c.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1c.xmt_txt", p2c_pm);
 
-		p3b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p3b_pm);
-		p3c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p3c_pm);
+		p3b.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1b.xmt_txt", p3b_pm);
+		p3c.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1c.xmt_txt", p3c_pm);
 
-		p4b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p4b_pm);
-		p4c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p4c_pm);
+		p4b.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1b.xmt_txt", p4b_pm);
+		p4c.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1c.xmt_txt", p4c_pm);
 
-		p5b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p5b_pm);
-		p5c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p5c_pm);
+		p5b.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1b.xmt_txt", p5b_pm);
+		p5c.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1c.xmt_txt", p5c_pm);
 
-		p6b.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1b.xmt_txt", p6b_pm);
-		p6c.geometryPool().add<ParasolidGeometry>("ground", "C:\\Users\\py033\\Desktop\\dm\\stewart\\p1c.xmt_txt", p6c_pm);
+		p6b.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1b.xmt_txt", p6b_pm);
+		p6c.geometryPool().add<ParasolidGeometry>("ground", "C:\\aris\\resource\\demo_stewart\\p1c.xmt_txt", p6c_pm);
 
 
 		auto &ee = rbt.addGeneralMotionByPe(up, rbt.ground(), nullptr, "321");
 
 		ee.setMpe(std::array<double, 6>{0.01, 0.02, 0.03, 0.3,0.2,0.1}.data(), "321");
-
+		ee.setMvs(std::array<double, 6>{0.1, 0.2, 0.3, 0.4, 0.5, 0.6}.data());
 
 		auto &s = rbt.solverPool().add<UniversalSolver>();
 		s.setMaxError(1e-14);
@@ -678,15 +678,51 @@ int main()
 		//	rbt.motionPool().at(i).setMa(theta_dot_dot[i]);
 		//}
 
+		for (auto &m : rbt.motionPool())m.activate(false);
+
 		s.allocateMemory();
 		s.kinPos();
+
+		for (auto &m : rbt.motionPool())m.activate(true);
+		ee.activate(false);
+
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			rbt.motionPool().at(i).setMv(i*0.1 + 0.1);
+			rbt.motionPool().at(i).setMa(i*0.1 + 0.1);
+		}
+
+		s.allocateMemory();
 		s.kinVel();
 		s.dynAccAndFce();
 
-		dsp(4, 4, *p1a.pm());
-		dsp(4, 4, *p1b.pm());
-		dsp(4, 4, *p1c.pm());
+		dsp(4, 4, *p5a.pm());
+		dsp(4, 4, *p5b.pm());
+		dsp(4, 4, *p5c.pm());
 
+
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			rbt.motionPool().at(i).updMp();
+			std::cout << std::setprecision(15) << rbt.motionPool().at(i).mv() << "  ";
+		}
+		std::cout << std::endl;
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			std::cout << std::setprecision(15) << rbt.motionPool().at(i).ma() << "  ";
+		}
+		std::cout << std::endl;
+		for (aris::Size i = 0; i < 6; ++i)
+		{
+			std::cout << std::setprecision(15) << rbt.motionPool().at(i).mf() << "  ";
+		}
+		std::cout << std::endl;
+
+		ee.updMvs();
+		ee.updMas();
+		dsp(1, 6, ee.mvs());
+		dsp(1, 6, ee.mas());
 
 		auto &adams = rbt.simulatorPool().add<AdamsSimulator>();
 		adams.saveAdams("C:\\Users\\py033\\Desktop\\stewart");

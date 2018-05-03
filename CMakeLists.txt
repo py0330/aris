@@ -76,8 +76,8 @@ if(WIN32)
 	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
 endif(WIN32)
 
-set(ARIS_INCL_DIR src/ src/aris_server src/aris_core src/aris_dynamic src/aris_sensor src/aris_control)
-set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
+set(ARIS_INCL_DIR src/ src/aris_server src/aris_sensor src/aris_robot src/aris_dynamic src/aris_control src/aris_core)
+set(ARIS_LINK_LIB aris_server aris_sensor aris_robot aris_dynamic aris_control aris_core)
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${RELY_INCL_DIR})
 set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${RELY_LINK_DIR})
 set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
@@ -130,6 +130,16 @@ add_library(aris_dynamic STATIC ${FULL_SRC} ${FULL_H} src/aris_dynamic/aris_dyna
 install(TARGETS aris_dynamic ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
 install(TARGETS aris_dynamic ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
 install(FILES ${FULL_H} src/aris_dynamic/aris_dynamic.h DESTINATION include)
+
+# aris robot project
+set(SOURCE aris_robot_ur)
+PREPEND_CPP(FULL_SRC src/aris_robot ${SOURCE})
+PREPEND_H(FULL_H src/aris_robot ${SOURCE})
+add_library(aris_robot STATIC ${FULL_SRC} ${FULL_H} src/aris_robot/aris_robot.h)
+install(TARGETS aris_robot ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
+install(TARGETS aris_robot ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
+install(FILES ${FULL_H} src/aris_robot/aris_robot.h DESTINATION include)
+install(DIRECTORY src/aris_robot/resource/ DESTINATION resource/aris_robot)
 
 # aris sensor project
 set(SOURCE aris_sensor_base)

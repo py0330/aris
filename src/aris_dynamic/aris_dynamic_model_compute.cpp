@@ -100,7 +100,7 @@ namespace aris
 			}
 			for (auto &p : model().partPool())
 			{
-				if (p.active())
+				if (p.active() && &p != &model().ground())
 				{
 					imp_->g_ += 10;
 				}
@@ -263,10 +263,10 @@ namespace aris
 			}
 			
 			// make A //
-			int col1 = 0, col2 = 0;
+			int col1 = 0, col2 = 6;
 			for (auto &prt : model().partPool())
 			{
-				if (prt.active())
+				if (prt.active() && &prt != &model().ground())
 				{
 					double q[6]{ 0 };
 
@@ -349,7 +349,7 @@ namespace aris
 			Size xi = 0;
 			for (auto &prt : model().partPool())
 			{
-				if (prt.active())
+				if (prt.active() && &prt != &model().ground())
 				{
 					s_vc(10, prt.prtIv(), x + xi);
 					xi += 10;
@@ -2605,7 +2605,7 @@ namespace aris
 							<< "	location = (" << loc.toString() << ") &\r\n"
 							<< "	orientation = (" << ori.toString() << ") &\r\n"
 							<< "	relative_to = ." << model().name() << "." << part.name() << " &\r\n"
-							<< "	scale = " << "0.001" << " \r\n"
+							<< "	scale = " << "0.001" << "\r\n"
 							<< "!\r\n";
 					}
 					else

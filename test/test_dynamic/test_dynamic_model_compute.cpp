@@ -1567,6 +1567,11 @@ void test_ur5_calibration()
 
 	calibrator.clb();
 
+
+	dsp(calibrator.m(), calibrator.n(), calibrator.A());
+	dsp(calibrator.m(), 1, calibrator.b());
+	dsp(calibrator.n(), 1, calibrator.x());
+
 	dsp(calibrator.m(), 1, calibrator.b());
 
 	double b[6];
@@ -1579,14 +1584,14 @@ void test_model_compute()
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
 	test_single_body();
 	test_3R();
-	//test_6R();
-	//test_stewart();
-	//test_multi_systems();
+	test_6R();
+	test_stewart();
+	test_multi_systems();
 
-	//bench_3R();
-	//bench_6R();
-	//bench_stewart();
-	//bench_multi_systems();
+	bench_3R();
+	bench_6R();
+	bench_stewart();
+	bench_multi_systems();
 
 	test_ur5_calibration();
 	std::cout << "-----------------test model compute finished------------" << std::endl << std::endl;

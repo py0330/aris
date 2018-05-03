@@ -248,6 +248,13 @@ int main()
 	}
 
 
+
+	auto r = aris::robot::create_ur5();
+
+	auto &s = r->simulatorPool().add<aris::dynamic::AdamsSimulator>();
+	s.saveAdams("C:\\Users\\py033\\Desktop\\ur5.cmd");
+
+
 	std::cout << "demo_ur finished, press any key to continue" << std::endl;
 	std::cin.get();
 	return 0; 
