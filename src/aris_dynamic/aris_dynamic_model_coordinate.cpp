@@ -1304,6 +1304,7 @@ namespace aris
 			registerType<aris::core::ObjectPool<Geometry, Element>>();
 			registerType<ParasolidGeometry>();
 			registerType<FileGeometry>();
+			registerType<ShellGeometry>();
 			
 			imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
 			imp_->geometry_pool_ = &add<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
@@ -1448,6 +1449,50 @@ namespace aris
 		FileGeometry::FileGeometry(FileGeometry &&other) = default;
 		FileGeometry& FileGeometry::operator=(const FileGeometry &other) = default;
 		FileGeometry& FileGeometry::operator=(FileGeometry &&other) = default;
+
+
+		struct ShellGeometry::Imp
+		{
+			Marker *relative_to_;
+			std::string graphic_file_path;
+		};
+		auto ShellGeometry::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Element::saveXml(xml_ele);
+			xml_ele.SetAttribute("relative_to", imp_->relative_to_->name().c_str());
+			xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path.c_str());
+		}
+		auto ShellGeometry::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			double pm[16];
+			s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6, core::Matrix(1, 6, 0.0)).data(), pm);
+
+			if (xml_ele.Attribute("relative_to"))
+			{
+				try { imp_->relative_to_ = &*static_cast<aris::core::ObjectPool<Marker, Element>&>(this->father()).findByName(xml_ele.Attribute("relative_to")); }
+				catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
+			}
+			else
+			{
+				throw std::runtime_error("you must specify ShellGeometry relative marker");
+			}
+
+			imp_->graphic_file_path = attributeString(xml_ele, "graphic_file_path", "");
+
+			Geometry::loadXml(xml_ele);
+		}
+		auto ShellGeometry::filePath()const->const std::string &{ return imp_->graphic_file_path; }
+		auto ShellGeometry::relativeToMarker()const->const Marker&{ return *imp_->relative_to_; }
+		ShellGeometry::~ShellGeometry() = default;
+		ShellGeometry::ShellGeometry(const std::string &name, const std::string &graphic_file_path, Marker* relative_to) : Geometry(name), imp_(new Imp)
+		{
+			imp_->graphic_file_path = graphic_file_path;
+			imp_->relative_to_ = relative_to;
+		}
+		ShellGeometry::ShellGeometry(const ShellGeometry &other) = default;
+		ShellGeometry::ShellGeometry(ShellGeometry &&other) = default;
+		ShellGeometry& ShellGeometry::operator=(const ShellGeometry &other) = default;
+		ShellGeometry& ShellGeometry::operator=(ShellGeometry &&other) = default;
 
 	}
 }

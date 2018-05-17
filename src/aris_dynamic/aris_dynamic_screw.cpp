@@ -85,8 +85,10 @@ namespace aris
 			pm_out[14] = 0;
 			pm_out[15] = 1;
 		}
-		auto s_pm_dot_pm(const double *pm1, const double *pm2, double *pm_out) noexcept->void
+		auto s_pm_dot_pm(const double *pm1, const double *pm2, double *pm_out) noexcept->double *
 		{
+			pm_out = pm_out ? pm_out : default_out();
+			
 			pm_out[0] = pm1[0] * pm2[0] + pm1[1] * pm2[4] + pm1[2] * pm2[8];
 			pm_out[1] = pm1[0] * pm2[1] + pm1[1] * pm2[5] + pm1[2] * pm2[9];
 			pm_out[2] = pm1[0] * pm2[2] + pm1[1] * pm2[6] + pm1[2] * pm2[10];
@@ -106,9 +108,13 @@ namespace aris
 			pm_out[13] = 0;
 			pm_out[14] = 0;
 			pm_out[15] = 1;
+
+			return pm_out;
 		}
-		auto s_inv_pm_dot_pm(const double *inv_pm, const double *pm, double *pm_out) noexcept->void
+		auto s_inv_pm_dot_pm(const double *inv_pm, const double *pm, double *pm_out) noexcept->double *
 		{
+			pm_out = pm_out ? pm_out : default_out();
+			
 			pm_out[0] = inv_pm[0] * pm[0] + inv_pm[4] * pm[4] + inv_pm[8] * pm[8];
 			pm_out[1] = inv_pm[0] * pm[1] + inv_pm[4] * pm[5] + inv_pm[8] * pm[9];
 			pm_out[2] = inv_pm[0] * pm[2] + inv_pm[4] * pm[6] + inv_pm[8] * pm[10];
@@ -128,9 +134,13 @@ namespace aris
 			pm_out[13] = 0;
 			pm_out[14] = 0;
 			pm_out[15] = 1;
+
+			return pm_out;
 		}
-		auto s_pm_dot_inv_pm(const double *pm, const double *inv_pm, double *pm_out) noexcept->void
+		auto s_pm_dot_inv_pm(const double *pm, const double *inv_pm, double *pm_out) noexcept->double *
 		{
+			pm_out = pm_out ? pm_out : default_out();
+			
 			pm_out[0] = pm[0] * inv_pm[0] + pm[1] * inv_pm[1] + pm[2] * inv_pm[2];
 			pm_out[1] = pm[0] * inv_pm[4] + pm[1] * inv_pm[5] + pm[2] * inv_pm[6];
 			pm_out[2] = pm[0] * inv_pm[8] + pm[1] * inv_pm[9] + pm[2] * inv_pm[10];
@@ -150,22 +160,34 @@ namespace aris
 			pm_out[13] = 0;
 			pm_out[14] = 0;
 			pm_out[15] = 1;
+
+			return pm_out;
 		}
-		auto s_pm_dot_v3(const double *pm, const double *v3, double *v3_out) noexcept->void
+		auto s_pm_dot_v3(const double *pm, const double *v3, double *v3_out) noexcept->double *
 		{
+			v3_out = v3_out ? v3_out : default_out();
+			
 			v3_out[0] = pm[0] * v3[0] + pm[1] * v3[1] + pm[2] * v3[2];
 			v3_out[1] = pm[4] * v3[0] + pm[5] * v3[1] + pm[6] * v3[2];
 			v3_out[2] = pm[8] * v3[0] + pm[9] * v3[1] + pm[10] * v3[2];
+
+			return v3_out;
 		}
-		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out) noexcept->void
+		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out) noexcept->double *
 		{
+			v3_out = v3_out ? v3_out : default_out();
+			
 			v3_out[0] = inv_pm[0] * v3[0] + inv_pm[4] * v3[1] + inv_pm[8] * v3[2];
 			v3_out[1] = inv_pm[1] * v3[0] + inv_pm[5] * v3[1] + inv_pm[9] * v3[2];
 			v3_out[2] = inv_pm[2] * v3[0] + inv_pm[6] * v3[1] + inv_pm[10] * v3[2];
+
+			return v3_out;
 		}
 
-		auto s_im_dot_as(const double *im, const double *as, double * fs) noexcept->void
+		auto s_im_dot_as(const double *im, const double *as, double * fs) noexcept->double *
 		{
+			fs = fs ? fs : default_out();
+			
 			const double c[3]{ im[11], im[15], im[4] };
 
 			s_vc(3, im[0], as, fs);
@@ -173,9 +195,13 @@ namespace aris
 
 			s_c3(c, as, fs + 3);
 			s_mma(3, 1, 3, im + 21, 6, as + 3, 1, fs + 3, 1);
+
+			return fs;
 		}
-		auto s_iv_dot_as(const double *iv, const double *as, double * fs) noexcept->void
+		auto s_iv_dot_as(const double *iv, const double *as, double * fs) noexcept->double *
 		{
+			fs = fs ? fs : default_out();
+			
 			s_vc(3, iv[0], as, fs);
 			s_c3s(iv + 1, as + 3, fs);
 
@@ -184,6 +210,8 @@ namespace aris
 			fs[3] += iv[4] * as[3] + iv[7] * as[4] + iv[8] * as[5];
 			fs[4] += iv[7] * as[3] + iv[5] * as[4] + iv[9] * as[5];
 			fs[5] += iv[8] * as[3] + iv[9] * as[4] + iv[6] * as[5];
+
+			return fs;
 		}
 
 		auto s_cm3(const double *a, double *cm_out) noexcept->void

@@ -222,8 +222,8 @@ namespace aris
 			// locCmI为单位矩阵，此时无需相乘
 			s_vc(6, ps_c, cp);
 		}
-		auto GeneralMotion::cptCv(double *cv)const->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv); }
-		auto GeneralMotion::cptCa(double *ca)const->void { s_inv_tv(*mpm(), mas(), ca); }
+		auto GeneralMotion::cptCv(double *cv)const->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv);}
+		auto GeneralMotion::cptCa(double *ca)const->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
 		auto GeneralMotion::mpm()const->const double4x4&{ return imp_->mpm_; }
 		auto GeneralMotion::updMpm()->void { s_inv_pm_dot_pm(*makJ().pm(), *makI().pm(), *imp_->mpm_); }
 		auto GeneralMotion::setMpe(const double* pe, const char *type)->void { s_pe2pm(pe, *imp_->mpm_, type); }

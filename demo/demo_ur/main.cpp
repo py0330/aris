@@ -2,65 +2,9 @@
 #include <aris.h>
 
 using namespace aris::dynamic;
+using namespace aris::robot;
 
 const double PI = 3.14159265358979;
-
-// ur5 的反解求解器，重载了kinPos()函数, 可以用它来求反解 //
-class Ur5InverseSolver :public aris::dynamic::InverseKinematicSolver
-{
-public:
-	static const std::string& Type() { static const std::string type("Ur5InverseSolver"); return type; }
-	auto virtual type() const->const std::string& override{ return Type(); }
-
-	auto virtual kinPos()->bool override
-	{
-		double q[6];
-
-		double j6_pnt_loc[3]{ 0.0, 0.0, -0.0823 };
-		double joint_pnt[3];
-		s_pp2pp(*model().generalMotionPool().at(0).mpm(), j6_pnt_loc, joint_pnt);
-		q[0] = std::atan2(joint_pnt[1], joint_pnt[0]) - std::asin(0.10915 / std::sqrt(joint_pnt[0] * joint_pnt[0] + joint_pnt[1] * joint_pnt[1]));
-
-		double pe[6]{ 0,0,0,q[0],0,0 };
-		double pm1[16], pm2[16], pm3[16], pm4[16];
-		s_pe2pm(pe, pm1, "321");
-
-		s_inv_pm_dot_pm(pm1, *model().generalMotionPool().at(0).mpm(), pm2);
-		s_pe2pm(std::array<double, 6>{0.425 + 0.39225, 0.13585 - 0.1197 + 0.093 + 0.0823, 0.089159 - 0.09465, PI, 0, PI / 2}.data(), pm3, "321");
-		s_pm_dot_inv_pm(pm2, pm3, pm4);
-		s_pm2pe(pm4, pe, "232");
-
-		q[4] = pe[4];
-		q[5] = pe[5];
-
-		double pe2[6]{ 0,0,0,q[0],pe[3],0.0 };
-		s_pe2pm(pe2, pm2, "323");
-		s_va(3, 0.09465, pm2 + 2, 4, joint_pnt, 1);
-		s_va(3, -(0.13585 - 0.1197 + 0.093), pm2 + 1, 4, joint_pnt, 1);
-
-		double pp[3];
-		s_inv_pp2pp(pm1, joint_pnt, pp);
-		pp[2] -= 0.089159;
-
-		q[2] = PI - std::acos(-(pp[0] * pp[0] + pp[2] * pp[2] - 0.425 * 0.425 - 0.39225 * 0.39225) / (2 * 0.425*0.39225));
-		q[1] = -PI + std::acos((-pp[0] * pp[0] - pp[2] * pp[2] - 0.425 * 0.425 + 0.39225 * 0.39225) / (2 * std::sqrt(pp[0] * pp[0] + pp[2] * pp[2]) *0.425)) - std::atan2(pp[2], pp[0]);
-		q[3] = pe[3] - q[1] - q[2];
-
-		double pe3[6]{0.0,0.0,0.0,0.0,0.0,0.0}, pm[16];
-		for (aris::Size i = 0; i < 6; ++i)
-		{
-			pe3[5] = q[i];
-			s_pm_dot_pm(*model().jointPool().at(i).makJ().pm(), s_pe2pm(pe3, pm, "123"), pm1);
-			s_pm_dot_inv_pm(pm1, *model().jointPool().at(i).makI().prtPm(), const_cast<double*>(*model().jointPool().at(i).makI().fatherPart().pm()));
-			model().motionPool().at(i).updMp();
-		}
-
-		return true;
-	};
-
-	virtual ~Ur5InverseSolver() = default;
-	explicit Ur5InverseSolver(const std::string &name = "ur5_inverse_solver", aris::Size max_iter_count = 100, double max_error = 1e-10) :InverseKinematicSolver(name, max_iter_count, max_error) {}
-};
 
 Model rbt;
 
@@ -151,9 +95,9 @@ void build_model()
 
 int main()
 {
-	std::cout << std::endl << "-----------------test model ur---------------------" << std::endl;
-
-	try
+	//std::cout << std::endl << "-----------------test model ur---------------------" << std::endl;
+	
+	/*try
 	{
 		build_model();
 		
@@ -204,13 +148,6 @@ int main()
 		// 我的机器大概需要0.05 ms/cycle, 但是事实上位置正解花了0.04ms，这是因为默认的求解器是使用迭代来求的，可以像重载反解求解器一样重载它 //
 		std::cout << "time elapsed " << time_elapsed.count() <<"(ns) for 51 cycles, each cycle consumes "<< time_elapsed.count()/51.0<<"(ns)" << std::endl;
 
-		
-		
-
-
-
-
-
 
 
 		// 以下展示使用反解求解器求解的过程
@@ -246,13 +183,107 @@ int main()
 	{
 		std::cout << e.what() << std::endl;
 	}
+	*/
 
-
-
+	
 	auto r = aris::robot::create_ur5();
 
+	r->saveXmlFile("C:\\Users\\py033\\Desktop\\ur5.xml");
+
+
+
+	//-0.99500416527803   0.00000000000000   0.09983341664683   0.83228026169050
+	//	0.09983341664683   0.00000000000000   0.99500416527803   0.10890468768786
+	//	0.00000000000000   1.00000000000000 - 0.00000000000000 - 0.00549100000000
+	//	0.00000000000000   0.00000000000000   0.00000000000000   1.00000000000000
+
+	// add solvers //
+	auto &forward_kinematic = r->solverPool().add<ForwardKinematicSolver>();
+	auto &inverse_kinematic = r->solverPool().add<Ur5InverseSolver>();
+
+	auto &sim = r->simulatorPool().add<aris::dynamic::Simulator>("sim");
+	auto &result = r->simResultPool().add<aris::dynamic::SimResult>("result");
+
+	auto &ee = r->generalMotionPool().at(0);
+
+	result.allocateMemory();
+	inverse_kinematic.allocateMemory();
+	forward_kinematic.allocateMemory();
+
+	ee.setMpe(std::array<double, 6>{0.7, 0.1, 0.2, 0, PI + 0.2 , -PI / 2.0 + 0.1}.data(), "321");
+	inverse_kinematic.kinPos();
+
+	std::cout << std::setprecision(16);
+	dsp(4, 4, *ee.mpm());
+
+	for (auto &m : r->motionPool()) 
+	{
+		m.updMp();
+		std::cout << m.mp() << std::endl;
+	}
+
+
+
+
+	double pin[6]{ -0.22007211565796,
+		- 1.39951770491866,
+		2.01242257417054,
+		- 2.18370119604678,
+		-1.57079632679490,
+		- 1.79086844245286 };
+
+
+	for (aris::Size i = 0; i<6;++i)
+	{
+		r->motionPool().at(i).setMp(pin[i]);
+	}
+	forward_kinematic.kinPos();
+	ee.updMpm();
+	dsp(4, 4, *ee.mpm());
+
+
+
+	sim.simulate([&](const PlanParam &param)->int
+	{
+		param.model_->setTime(param.count_*0.001);
+
+		aris::Size t0;
+		double p, v, a;
+
+		aris::Size c = param.count_;
+
+		moveAbsolute(c, 0.0, 1.0, 1 / 1e3, 10.0 / 1e6, 10.0 / 1e6, p, v, a, t0);
+
+		if (c < t0)
+		{
+			moveAbsolute(c, 0.0, 1.0, 1 / 1e3, 10.0 / 1e6, 10.0 / 1e6, p, v, a, t0);
+			param.model_->generalMotionPool().at(0).setMpe(std::array<double, 6>{0.5 + 0.2*p, 0, 0.35, 0, 0, PI}.data(), "321");
+		}
+
+		inverse_kinematic.kinPos();
+
+		return t0 - param.count_;
+	}, nullptr, result);
+
+
 	auto &s = r->simulatorPool().add<aris::dynamic::AdamsSimulator>();
-	s.saveAdams("C:\\Users\\py033\\Desktop\\ur5.cmd");
+	s.saveAdams("C:\\Users\\py033\\Desktop\\ur5.cmd", result);
+
+
+
+	auto plan = [](double s, double *pee, double *vee, double *aee)->void
+	{
+		double pee_[6]{ 0.5 + 0.2*s, 0, 0.35, 0, 0, PI };
+		double vee_[6]{ 0.2,0,0,0,0,0 };
+		double aee_[6]{ 0,0,0,0,0,0 };
+
+		s_vc(6, pee_, pee);
+		s_vc(6, vee_, vee);
+		s_vc(6, aee_, aee);
+	};
+
+
+
 
 
 	std::cout << "demo_ur finished, press any key to continue" << std::endl;

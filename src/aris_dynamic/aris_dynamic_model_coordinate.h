@@ -300,7 +300,27 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		
+		class ShellGeometry final :public Geometry
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type{ "ShellGeometry" }; return type; }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto filePath()const->const std::string &;
+			auto relativeToMarker()const->const Marker&;
+
+			virtual ~ShellGeometry();
+			explicit ShellGeometry(const std::string &name = "shell_geometry", const std::string &graphic_file_path = "", Marker* relative_to = nullptr);
+			ShellGeometry(const ShellGeometry &other);
+			ShellGeometry(ShellGeometry &&other);
+			ShellGeometry& operator=(const ShellGeometry &other);
+			ShellGeometry& operator=(ShellGeometry &&other);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
 		/// @}
 	}
 }

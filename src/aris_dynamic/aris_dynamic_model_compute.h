@@ -73,7 +73,12 @@ namespace aris
 			auto virtual kinPos()->bool override;
 			auto virtual kinVel()->void override;
 			auto virtual dynAccAndFce()->void override;
-			auto cptGeneralJacobi()->void;
+			auto cptGeneralJacobi()->void; 
+			auto Jg()->double *;
+			auto cg()->double *;
+			auto cptGeneralInverseDynamicMatrix()->void;// torque = M * theta_dot_dot + h
+			auto M()->double *;
+			auto h()->double *;
 			auto plotRelation()->void;
 
 			virtual ~UniversalSolver();

@@ -629,7 +629,9 @@ namespace aris
 			auto findOrInsert(const std::string &name, Args&&... args)-> T* { auto p = findType<T>(name); return p ? p : &add<T>(name, std::forward<Args>(args)...); }
 			auto add(Object *obj)->Object &;
 			template<typename T, typename ...Args>
-			auto add(Args&&... args)->T& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
+			auto add(Args&&... args)->std::enable_if_t<std::is_base_of<Object, T>::value, T>& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
+			template<typename T, typename ...Args>
+			auto add(Args&&... args)->std::enable_if_t<!std::is_base_of<Object, T>::value, T>& { static_assert(false, "you must add object that inherited from class \"Object\""); }
 
 			virtual ~Object();
 			explicit Object(const std::string &name = "object");
@@ -779,6 +781,12 @@ namespace aris
 			auto virtual type()const->const std::string & override{ return Type(); }
 			auto findByName(const std::string &name)const->const_iterator { return Base::findByName(name); }
 			auto findByName(const std::string &name)->iterator { return Base::findByName(name);}
+
+			auto add(T *obj)->T & { return dynamic_cast<T&>(Object::add(obj)); }
+			template<typename TT, typename ...Args>
+			auto add(Args&&... args)->std::enable_if_t<std::is_base_of<T, TT>::value, TT>& { return dynamic_cast<TT&>(add(new TT(std::forward<Args>(args)...))); }
+			template<typename ...Args>
+			auto addChild(Args&&... args)->T& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
 
 			virtual ~ObjectPool() = default;
 			explicit ObjectPool(const std::string &name = "object_pool") :Base(name){}

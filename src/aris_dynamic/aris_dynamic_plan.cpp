@@ -110,21 +110,68 @@ namespace aris
 		}
 		
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
 		const double dt = 0.001;
+		auto OptimalTrajectory::cptForward(std::list<Node>::iterator iter)->std::list<Node>::iterator 
+		{
+			double pee_over_s[6], vee_over_s[6], aee_over_s[6];
+			plan(iter->s, pee_over_s, vee_over_s, aee_over_s);
+
+			solver->cptGeneralJacobi();
+
+			return iter;
+		}
+		auto OptimalTrajectory::cptBackward(std::list<Node>::iterator iter)->std::list<Node>::iterator 
+		{
+			return iter;
+		}
+		auto OptimalTrajectory::cpt(std::list<Node>::iterator iter)->bool
+		{
+			auto l = iter;
+			auto r = std::next(iter);
+			
+			for (;; (list.back().s - list.front().s)*(r->s - l->s) < 0)
+			{
+				static Node node;
+				this->list.insert(r, node);
+
+				/*判断从前添加还是从后添加*/
+				if (l->ds < r->ds)
+				{
+					l = cptForward(iter);
+				}
+				else
+				{
+					r = cptBackward(iter);
+				}
+			}
+			
+			this->final_iter = iter;
+		}
+
+		auto OptimalTrajectory::run()->void
+		{
+			// 初始化 //
+			list.clear();
+			list.push_front(beg_);
+			list.push_back(end_);
+
+			cpt(list.begin());
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		
 		// 只根据电机最大速度和最小速度来计算ds的最大和最小值 //
 		bool FastPath::computeDsBundPure(FastPath::Data &data, std::vector<FastPath::MotionLimit> &limits)

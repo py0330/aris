@@ -5,7 +5,8 @@
 #include <cmath>
 #include <iostream>
 
-#include"aris_dynamic_matrix.h"
+#include <aris_dynamic_model.h>
+#include <aris_dynamic_matrix.h>
 
 namespace aris
 {
@@ -54,7 +55,62 @@ namespace aris
 		auto moveAbsolute(Size i, double begin_pos, double end_pos, double vel, double acc, double dec, double &current_pos, double &current_vel, double &current_acc, Size& total_count)->void;
 
 
+		using PathPlan = std::function<void(double s, double *pee_over_s, double *vee_over_s, double *aee_over_s)>;
+		class OptimalTrajectory :public Element
+		{
+		public:
+			struct MotionLimit
+			{
+				double max_vel, min_vel, max_acc, min_acc, max_tor, min_tor, max_jerk, min_jerk;
+			};
+			struct Node
+			{
+				double time, s, ds, dds;
+			};
 
+			template <typename LimitArray>
+			auto setMotionLimit(LimitArray limits)->void
+			{
+				motor_limits.clear();
+				for (auto &limit : limits)
+				{
+					motor_limits.push_back(limit);
+				}
+			}
+			auto setBeginNode(Node node)->void { beg_ = node; };
+			auto setEndNode(Node node)->void { end_ = node; };
+			//auto setFunction(const PathPlan &path_plan)->void { this->getEveryThing = getEveryThing; };
+			auto result()->std::vector<double>& { return resultVec; };
+			auto run()->void;
+
+
+
+			virtual ~OptimalTrajectory() = default;
+			explicit OptimalTrajectory(const std::string &name = "optimal_trajectory") : Element(name) {}
+			OptimalTrajectory(const OptimalTrajectory&) = default;
+			OptimalTrajectory(OptimalTrajectory&&) = default;
+			OptimalTrajectory& operator=(const OptimalTrajectory&) = default;
+			OptimalTrajectory& operator=(OptimalTrajectory&&) = default;
+
+
+
+
+
+		private:
+			auto cpt(std::list<Node>::iterator iter)->bool;
+			auto cptForward(std::list<Node>::iterator iter)->std::list<Node>::iterator;
+			auto cptBackward(std::list<Node>::iterator iter)->std::list<Node>::iterator;
+
+			PathPlan plan;
+			UniversalSolver *solver;
+
+			Node beg_, end_;
+			std::list<Node> list;
+			std::list<Node>::iterator final_iter;
+			std::vector<MotionLimit> motor_limits;
+
+			std::vector<double> resultVec;
+		};
 
 
 		class FastPath

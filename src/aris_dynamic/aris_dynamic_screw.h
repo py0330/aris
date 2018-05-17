@@ -56,17 +56,17 @@ namespace aris
 	namespace dynamic
 	{
 		auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
-		auto s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out) noexcept->void;
+		auto s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
 		template <typename ...Args>
-		auto s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept->void
+		auto s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept->double *
 		{
 			double pm[16];
 			s_pm_dot_pm(pm1, pm2, pm);
-			s_pm_dot_pm(pm, args...);
+			return s_pm_dot_pm(pm, args...);
 		}
-		auto s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out) noexcept->void;
-		auto s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out) noexcept->void;
-		auto s_pm_dot_v3(const double *pm, const double *v3_in, double *v3_out) noexcept->void;
+		auto s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
+		auto s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out = nullptr) noexcept->double *;
+		auto s_pm_dot_v3(const double *pm, const double *v3_in, double *v3_out = nullptr) noexcept->double *;
 		template <typename V3Type1, typename V3Type2>
 		auto s_pm_dot_v3(const double *pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void
 		{
@@ -77,7 +77,7 @@ namespace aris
 			v3_out[b1] = pm[4] * v3_in[a0] + pm[5] * v3_in[a1] + pm[6] * v3_in[a2];
 			v3_out[b2] = pm[8] * v3_in[a0] + pm[9] * v3_in[a1] + pm[10] * v3_in[a2];
 		}
-		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out) noexcept->void;
+		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out = nullptr) noexcept->double *;
 		template <typename V3Type1, typename V3Type2>
 		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void
 		{
@@ -89,8 +89,8 @@ namespace aris
 			v3_out[b2] = inv_pm[2] * v3_in[a0] + inv_pm[6] * v3_in[a1] + inv_pm[10] * v3_in[a2];
 		}
 
-		auto s_im_dot_as(const double *im, const double *as, double * fs) noexcept->void;
-		auto s_iv_dot_as(const double *iv, const double *as, double * fs) noexcept->void;
+		auto s_im_dot_as(const double *im, const double *as, double * fs = nullptr) noexcept->double *;
+		auto s_iv_dot_as(const double *iv, const double *as, double * fs = nullptr) noexcept->double *;
 
 
 		auto inline s_sinx_over_x(double x)->double { return std::abs(x)<1e-8 ? 1.0 : std::sin(x) / x; };
