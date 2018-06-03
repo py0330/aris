@@ -630,8 +630,6 @@ namespace aris
 			auto add(Object *obj)->Object &;
 			template<typename T, typename ...Args>
 			auto add(Args&&... args)->std::enable_if_t<std::is_base_of<Object, T>::value, T>& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
-			template<typename T, typename ...Args>
-			auto add(Args&&... args)->std::enable_if_t<!std::is_base_of<Object, T>::value, T>& { static_assert(false, "you must add object that inherited from class \"Object\""); }
 
 			virtual ~Object();
 			explicit Object(const std::string &name = "object");
