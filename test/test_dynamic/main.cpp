@@ -22,14 +22,14 @@ int main(int argc, char *argv[])
 	//test_cell();
 	//test_screw();
 	//test_spline();
-	//test_plan();
+	test_plan();
 	//test_model();
 	//test_model_coordinate();
 	//test_model_interaction();
-	test_model_compute();
+	//test_model_compute();
 	//test_model_multi();
 	//test_simple_model();
-	
+	//
 
 	std::cout << "test_dynamic finished, press any key to continue" << std::endl;
 	std::cin.get();

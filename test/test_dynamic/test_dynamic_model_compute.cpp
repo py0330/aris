@@ -1943,7 +1943,7 @@ void bench_3R()
 		std::cout << e.what() << std::endl;
 	}
 }
-void bench_6R()
+void bench_ur5()
 {
 	try
 	{
@@ -2263,10 +2263,10 @@ void test_model_compute()
 	test_ur5_on_stewart();
 	test_multi_systems();
 
-	bench_3R();
-	bench_6R();
-	bench_stewart();
-	bench_multi_systems();
+	//bench_3R();
+	//bench_ur5();
+	//bench_stewart();
+	//bench_multi_systems();
 
 	//test_ur5_calibration();
 	std::cout << "-----------------test model compute finished------------" << std::endl << std::endl;

@@ -73,12 +73,15 @@ namespace aris
 			auto virtual kinPos()->bool override;
 			auto virtual kinVel()->void override;
 			auto virtual dynAccAndFce()->void override;
-			auto cptGeneralJacobi()->void; 
-			auto Jg()->double *;
-			auto cg()->double *;
+			auto cptGeneralJacobi()->void;
+			auto mJ()->Size;// = part_number x 6
+			auto nJ()->Size;// = motion_number + general_motion_number x 6
+			auto Jg()->double *;// dimension : mJ x nJ 
+			auto cg()->double *;// dimension : mJ x 1
 			auto cptGeneralInverseDynamicMatrix()->void;// torque = M * theta_dot_dot + h
-			auto M()->double *;
-			auto h()->double *;
+			auto nM()->Size;// = motion_number + general_motion_number x 6
+			auto M()->double *;// dimension : nM x nM 
+			auto h()->double *;// dimension : nM x 1
 			auto plotRelation()->void;
 
 			virtual ~UniversalSolver();

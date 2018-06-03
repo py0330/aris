@@ -55,7 +55,7 @@ namespace aris
 		auto moveAbsolute(Size i, double begin_pos, double end_pos, double vel, double acc, double dec, double &current_pos, double &current_vel, double &current_acc, Size& total_count)->void;
 
 
-		using PathPlan = std::function<void(double s, double *pee_over_s, double *vee_over_s, double *aee_over_s)>;
+		using PathPlan = std::function<void(double s, double *pm, double *vs_over_s, double *as_over_s)>;
 		class OptimalTrajectory :public Element
 		{
 		public:
@@ -77,13 +77,12 @@ namespace aris
 					motor_limits.push_back(limit);
 				}
 			}
-			auto setBeginNode(Node node)->void { beg_ = node; };
-			auto setEndNode(Node node)->void { end_ = node; };
-			//auto setFunction(const PathPlan &path_plan)->void { this->getEveryThing = getEveryThing; };
-			auto result()->std::vector<double>& { return resultVec; };
+			auto setBeginNode(Node node)->void { beg_ = node; }
+			auto setEndNode(Node node)->void { end_ = node; }
+			auto setFunction(const PathPlan &path_plan)->void { this->plan = path_plan; }
+			auto setSolver(UniversalSolver *solver)->void { this->solver = solver; }
+			auto result()->std::vector<double>& { return result_; }
 			auto run()->void;
-
-
 
 			virtual ~OptimalTrajectory() = default;
 			explicit OptimalTrajectory(const std::string &name = "optimal_trajectory") : Element(name) {}
@@ -92,14 +91,15 @@ namespace aris
 			OptimalTrajectory& operator=(const OptimalTrajectory&) = default;
 			OptimalTrajectory& operator=(OptimalTrajectory&&) = default;
 
+		public:
+			auto testForward()->void;
+			auto join()->void;
+			auto cptDdsConstraint(double s, double ds, double &max_dds, double &min_dds)->bool;
+			auto cptInverseJacobi(double *Ji)->void;
 
 
 
-
-		private:
-			auto cpt(std::list<Node>::iterator iter)->bool;
-			auto cptForward(std::list<Node>::iterator iter)->std::list<Node>::iterator;
-			auto cptBackward(std::list<Node>::iterator iter)->std::list<Node>::iterator;
+			double failed_s;
 
 			PathPlan plan;
 			UniversalSolver *solver;
@@ -107,9 +107,10 @@ namespace aris
 			Node beg_, end_;
 			std::list<Node> list;
 			std::list<Node>::iterator final_iter;
+			std::list<Node>::iterator l_beg_, l_;
 			std::vector<MotionLimit> motor_limits;
 
-			std::vector<double> resultVec;
+			std::vector<double> result_;
 		};
 
 

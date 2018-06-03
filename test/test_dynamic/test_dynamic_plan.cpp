@@ -128,12 +128,32 @@ void test_move()
 	}
 	if (!(s_is_equal(size, result_p, p2, error) && s_is_equal(size, result_v, v2, error) && s_is_equal(size, result_a, a2, error) && count == 14))std::cout << "\"moveAbsolute\" failed" << std::endl;
 }
+void test_optimal()
+{
+	OptimalTrajectory planner;
+
+	planner.setBeginNode(OptimalTrajectory::Node{ 0,0,0,0 });
+	planner.setEndNode(OptimalTrajectory::Node{ 0,1,0,0 });
+	planner.run();
+
+	std::ofstream file;
+
+	file.open("C:\\Users\\py033\\Desktop\\test.txt");
+
+	file << std::setprecision(15);
+
+	for (auto &p : planner.list)
+	{
+		file << p.s << "   " << p.ds << "   " << p.dds << std::endl;
+	}
+}
 
 void test_plan()
 {
 	std::cout << std::endl << "-----------------test plan--------------------" << std::endl;
 
 	test_move();
+	test_optimal();
 
 	std::cout << "-----------------test plan finished-----------" << std::endl << std::endl;
 }

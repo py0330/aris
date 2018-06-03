@@ -41,8 +41,8 @@ namespace aris
 		
 		auto inline T(StrideN s)->StrideT { return StrideT{ s.c_ld, s.r_ld}; }
 		auto inline id(Size i, Size j, StrideN s)->Size { return i*s.r_ld + j*s.c_ld; }
-		auto inline next_rid(Size id, StrideN s)->Size { return id + s.r_ld; }
-		auto inline next_cid(Size id, StrideN s)->Size { return id + s.c_ld; }
+		auto inline next_r(Size id, StrideN s)->Size { return id + s.r_ld; }
+		auto inline next_c(Size id, StrideN s)->Size { return id + s.c_ld; }
 		template<typename AIter>
 		auto inline ele(AIter A, StrideN a_t)->decltype(*A) { return *A; }
 		template<typename AIter>
@@ -62,8 +62,8 @@ namespace aris
 
 		auto inline T(StrideT s)->StrideN { return StrideN{ s.c_ld, s.r_ld }; }
 		auto inline id(Size i, Size j, StrideT s)->Size { return i*s.r_ld + j*s.c_ld; }
-		auto inline next_rid(Size id, StrideT s)->Size { return id + s.r_ld; }
-		auto inline next_cid(Size id, StrideT s)->Size { return id + s.c_ld; }
+		auto inline next_r(Size id, StrideT s)->Size { return id + s.r_ld; }
+		auto inline next_c(Size id, StrideT s)->Size { return id + s.c_ld; }
 		template<typename AIter>
 		auto inline ele(AIter A, StrideT a_t)->decltype(*A) { return Tv(*A); }
 		template<typename AIter>

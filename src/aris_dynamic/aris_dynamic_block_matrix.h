@@ -38,9 +38,9 @@ namespace aris
 		using BlockData = std::vector<BlockNode>;
 
 		auto inline T(BlockStride blk_s)->BlockStride { return BlockStride{ blk_s.c_ld, blk_s.r_ld, blk_s.blk_c_ld, blk_s.blk_r_ld }; }
-		auto inline id(Size i, Size j, BlockStride blk_s)->Size { return id(i,j,blk_s.self_stride); }
-		auto inline next_rid(Size id, BlockStride blk_s)->Size { return next_rid(id, blk_s.self_stride); }
-		auto inline next_cid(Size id, BlockStride blk_s)->Size { return next_cid(id, blk_s.self_stride); }
+		auto inline at(Size i, Size j, BlockStride blk_s)->Size { return at(i, j, blk_s.self_stride); }
+		auto inline next_r(Size at, BlockStride blk_s)->Size { return next_r(at, blk_s.self_stride); }
+		auto inline next_c(Size at, BlockStride blk_s)->Size { return next_c(at, blk_s.self_stride); }
 
 		template <typename AType, typename BType>
 		auto inline s_blk_map(const BlockSize &blk_m, const BlockSize &blk_n, double *A, AType a_t, BlockData &blk_A, BType blk_a_t)noexcept->void
@@ -49,7 +49,7 @@ namespace aris
 			{
 				for (Size blk_j(-1), j{ 0 }; ++blk_j < blk_n.size(); j += blk_n[blk_j])
 				{
-					blk_A[id(blk_i, blk_j, blk_a_t)] = BlockNode{ A + id(i,j,a_t), false };
+					blk_A[at(blk_i, blk_j, blk_a_t)] = BlockNode{ A + at(i,j,a_t), false };
 				}
 			}
 		}
@@ -61,19 +61,19 @@ namespace aris
 		template<typename AType, typename BType>
 		auto inline s_blk_mc(BlockSize m, BlockSize n, const BlockData &A, AType a_t, BlockData &B, BType b_t) noexcept->void
 		{
-			for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m.size(); row_a = next_rid(row_a, a_t), row_b = next_rid(row_b, b_t))
-				for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n.size(); a_id = next_cid(a_id, a_t), b_id = next_cid(b_id, b_t))
+			for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m.size(); row_a = next_r(row_a, a_t), row_b = next_r(row_b, b_t))
+				for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n.size(); a_id = next_c(a_id, a_t), b_id = next_c(b_id, b_t))
 				{
 					B[b_id].is_zero = A[a_id].is_zero;
-					if (!B[b_id].is_zero)s_mc(m[i], n[j], A[id(i, j, a_t)].data, a_t.block_stride, B[id(i, j, b_t)].data, b_t.block_stride);
+					if (!B[b_id].is_zero)s_mc(m[i], n[j], A[at(i, j, a_t)].data, a_t.block_stride, B[at(i, j, b_t)].data, b_t.block_stride);
 				}
 					
 		}
 		//template<typename AType, typename BType>
 		//auto inline s_blk_mc(Size m, Size n, double alpha, const double *A, AType a_t, double *B, BType b_t) noexcept->void
 		//{
-		//	for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m; row_a = next_rid(row_a, a_t), row_b = next_rid(row_b, b_t))
-		//		for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n; a_id = next_cid(a_id, a_t), b_id = next_cid(b_id, b_t))
+		//	for (Size i(-1), row_a{ 0 }, row_b{ 0 }; ++i < m; row_a = next_r(row_a, a_t), row_b = next_r(row_b, b_t))
+		//		for (Size j(-1), a_id{ row_a }, b_id{ row_b }; ++j < n; a_id = next_c(a_id, a_t), b_id = next_c(b_id, b_t))
 		//			B[b_id] = alpha * A[a_id];
 		//}
 		//auto inline s_blk_mc(Size m, Size n, const double *A, double *B) noexcept->void { s_vc(m*n, A, B); }
@@ -85,13 +85,13 @@ namespace aris
 		{
 			double norm{ 0 };
 
-			for (Size i{ 0 }, blk_row{ 0 }; i < blk_m.size(); ++i, blk_row = next_rid(blk_row, a_t))
+			for (Size i{ 0 }, blk_row{ 0 }; i < blk_m.size(); ++i, blk_row = next_r(blk_row, a_t))
 			{
-				for (Size j{ 0 }, blk_id{ blk_row }; j < blk_n.size(); ++j, blk_id = next_cid(blk_id, a_t))
+				for (Size j{ 0 }, blk_id{ blk_row }; j < blk_n.size(); ++j, blk_id = next_c(blk_id, a_t))
 				{
-					for (Size inner_i{ 0 }, row_id{ 0 }; inner_i < blk_m[i]; ++inner_i, row_id = next_rid(row_id, a_t.block_stride))
+					for (Size inner_i{ 0 }, row_id{ 0 }; inner_i < blk_m[i]; ++inner_i, row_id = next_r(row_id, a_t.block_stride))
 					{
-						for (Size inner_j{ 0 }, ele_id{ row_id }; inner_j < blk_n[j]; ++inner_j, ele_id = next_cid(ele_id, a_t.block_stride))
+						for (Size inner_j{ 0 }, ele_id{ row_id }; inner_j < blk_n[j]; ++inner_j, ele_id = next_c(ele_id, a_t.block_stride))
 						{
 							norm += blk_A[blk_id].data[ele_id] * blk_A[blk_id].data[ele_id];
 						}
@@ -106,15 +106,15 @@ namespace aris
 		{
 			double max_norm{ 0 };
 
-			for (Size j{ 0 }, blk_col{ 0 }; j < blk_n.size(); ++j, blk_col = next_cid(blk_col, a_t))
+			for (Size j{ 0 }, blk_col{ 0 }; j < blk_n.size(); ++j, blk_col = next_c(blk_col, a_t))
 			{
-				for (Size inner_j{ 0 }, col_id{ 0 }; inner_j < blk_n[j]; ++inner_j, col_id = next_cid(col_id, a_t.block_stride))
+				for (Size inner_j{ 0 }, col_id{ 0 }; inner_j < blk_n[j]; ++inner_j, col_id = next_c(col_id, a_t.block_stride))
 				{
 					double norm{ 0 };
 
-					for (Size i{ 0 }, blk_id{ blk_col }; i < blk_m.size(); ++i, blk_id = next_rid(blk_id, a_t))
+					for (Size i{ 0 }, blk_id{ blk_col }; i < blk_m.size(); ++i, blk_id = next_r(blk_id, a_t))
 					{
-						for (Size inner_i{ 0 }, ele_id{ col_id }; inner_i < blk_m[i]; ++inner_i, ele_id = next_rid(ele_id, a_t.block_stride))
+						for (Size inner_i{ 0 }, ele_id{ col_id }; inner_i < blk_m[i]; ++inner_i, ele_id = next_r(ele_id, a_t.block_stride))
 						{
 							norm += std::abs(blk_A[blk_id].data[ele_id]);
 						}
@@ -131,15 +131,15 @@ namespace aris
 		{
 			double max_norm{ 0 };
 
-			for (Size i{ 0 }, blk_row{ 0 }; i < blk_m.size(); ++i, blk_row = next_rid(blk_row, a_t))
+			for (Size i{ 0 }, blk_row{ 0 }; i < blk_m.size(); ++i, blk_row = next_r(blk_row, a_t))
 			{
-				for (Size inner_i{ 0 }, row_id{ 0 }; inner_i < blk_m[i]; ++inner_i, row_id = next_rid(row_id, a_t.block_stride))
+				for (Size inner_i{ 0 }, row_id{ 0 }; inner_i < blk_m[i]; ++inner_i, row_id = next_r(row_id, a_t.block_stride))
 				{
 					double norm{ 0 };
 
-					for (Size j{ 0 }, blk_id{ blk_row }; j < blk_n.size(); ++j, blk_id = next_cid(blk_id, a_t))
+					for (Size j{ 0 }, blk_id{ blk_row }; j < blk_n.size(); ++j, blk_id = next_c(blk_id, a_t))
 					{
-						for (Size inner_j{ 0 }, ele_id{ row_id }; inner_j < blk_n[j]; ++inner_j, ele_id = next_cid(ele_id, a_t.block_stride))
+						for (Size inner_j{ 0 }, ele_id{ row_id }; inner_j < blk_n[j]; ++inner_j, ele_id = next_c(ele_id, a_t.block_stride))
 						{
 							norm += std::abs(blk_A[blk_id].data[ele_id]);
 						}
@@ -155,11 +155,11 @@ namespace aris
 		template <typename AType, typename BType, typename CType>
 		auto inline s_blk_mma(const BlockSize &blk_m, const BlockSize &blk_n, const BlockSize &blk_k, const BlockData &A, AType a_t, const BlockData &B, BType b_t, BlockData &C, CType c_t)noexcept->void
 		{
-			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < blk_m.size(); a_row = next_rid(a_row, a_t), c_row = next_rid(c_row, c_t))
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < blk_m.size(); a_row = next_r(a_row, a_t), c_row = next_r(c_row, c_t))
 			{
-				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < blk_n.size(); b_col = next_cid(b_col, b_t), c_id = next_cid(c_id, c_t))
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < blk_n.size(); b_col = next_c(b_col, b_t), c_id = next_c(c_id, c_t))
 				{
-					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < blk_k.size(); a_id = next_cid(a_id, a_t), b_id = next_rid(b_id, b_t))
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < blk_k.size(); a_id = next_c(a_id, a_t), b_id = next_r(b_id, b_t))
 					{
 						if (!(A[a_id].is_zero || B[b_id].is_zero))
 						{
@@ -178,11 +178,11 @@ namespace aris
 		template <typename AType, typename BType, typename CType>
 		auto inline s_blk_mma(const BlockSize &blk_m, const BlockSize &blk_n, const BlockSize &blk_k, double alpha, const BlockData &A, AType a_t, const BlockData &B, BType b_t, BlockData &C, CType c_t)noexcept->void
 		{
-			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < blk_m.size(); a_row = next_rid(a_row, a_t), c_row = next_rid(c_row, c_t))
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < blk_m.size(); a_row = next_r(a_row, a_t), c_row = next_r(c_row, c_t))
 			{
-				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < blk_n.size(); b_col = next_cid(b_col, b_t), c_id = next_cid(c_id, c_t))
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < blk_n.size(); b_col = next_c(b_col, b_t), c_id = next_c(c_id, c_t))
 				{
-					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < blk_k.size(); a_id = next_cid(a_id, a_t), b_id = next_rid(b_id, b_t))
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < blk_k.size(); a_id = next_c(a_id, a_t), b_id = next_r(b_id, b_t))
 					{
 						if (!(A[a_id].is_zero || B[b_id].is_zero))
 						{
@@ -213,12 +213,12 @@ namespace aris
 		template <typename AType, typename BType, typename CType>
 		auto inline s_blk_mm(const BlockSize &blk_m, const BlockSize &blk_n, const BlockSize &blk_k, const BlockData &A, AType a_t, const BlockData &B, BType b_t, BlockData &C, CType c_t)noexcept->void
 		{
-			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < blk_m.size(); a_row = next_rid(a_row, a_t), c_row = next_rid(c_row, c_t))
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < blk_m.size(); a_row = next_r(a_row, a_t), c_row = next_r(c_row, c_t))
 			{
-				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < blk_n.size(); b_col = next_cid(b_col, b_t), c_id = next_cid(c_id, c_t))
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < blk_n.size(); b_col = next_c(b_col, b_t), c_id = next_c(c_id, c_t))
 				{
 					C[c_id].is_zero = true;
-					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < blk_k.size(); a_id = next_cid(a_id, a_t), b_id = next_rid(b_id, b_t))
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < blk_k.size(); a_id = next_c(a_id, a_t), b_id = next_r(b_id, b_t))
 					{
 						if (!(A[a_id].is_zero || B[b_id].is_zero))
 						{
@@ -237,12 +237,12 @@ namespace aris
 		template <typename AType, typename BType, typename CType>
 		auto inline s_blk_mm(const BlockSize &blk_m, const BlockSize &blk_n, const BlockSize &blk_k, double alpha, const BlockData &A, AType a_t, const BlockData &B, BType b_t, BlockData &C, CType c_t)noexcept->void
 		{
-			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < blk_m.size(); a_row = next_rid(a_row, a_t), c_row = next_rid(c_row, c_t))
+			for (Size i(-1), a_row{ 0 }, c_row{ 0 }; ++i < blk_m.size(); a_row = next_r(a_row, a_t), c_row = next_r(c_row, c_t))
 			{
-				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < blk_n.size(); b_col = next_cid(b_col, b_t), c_id = next_cid(c_id, c_t))
+				for (Size j(-1), b_col{ 0 }, c_id{ c_row }; ++j < blk_n.size(); b_col = next_c(b_col, b_t), c_id = next_c(c_id, c_t))
 				{
 					C[c_id].is_zero = true;
-					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < blk_k.size(); a_id = next_cid(a_id, a_t), b_id = next_rid(b_id, b_t))
+					for (Size u(-1), a_id{ a_row }, b_id{ b_col }; ++u < blk_k.size(); a_id = next_c(a_id, a_t), b_id = next_r(b_id, b_t))
 					{
 						if (!(A[a_id].is_zero || B[b_id].is_zero))
 						{
@@ -274,24 +274,24 @@ namespace aris
 		template <typename AType, typename LltType>
 		auto s_blk_llt(const BlockSize &blk_m, const BlockData &blk_A, AType a_t, BlockData &blk_llt, LltType l_t) noexcept->void
 		{
-			for (Size j(-1), a_jj{ 0 }, l_jj{ 0 }, l_j0{ 0 }; ++j < blk_m.size(); a_jj = next_rid(next_cid(a_jj, a_t), a_t), l_jj = next_rid(next_cid(l_jj, l_t), l_t), l_j0 = next_rid(l_j0, l_t))
+			for (Size j(-1), a_jj{ 0 }, l_jj{ 0 }, l_j0{ 0 }; ++j < blk_m.size(); a_jj = next_r(next_c(a_jj, a_t), a_t), l_jj = next_r(next_c(l_jj, l_t), l_t), l_j0 = next_r(l_j0, l_t))
 			{
 				s_mc(blk_m[j], blk_m[j], blk_A[a_jj].data, a_t.block_stride, blk_llt[l_jj].data, l_t.block_stride);
 				blk_llt[l_jj].is_zero = false;
 
-				for (Size k(-1), l_jk{ l_j0 }; ++k < j; l_jk = next_cid(l_jk, l_t))
+				for (Size k(-1), l_jk{ l_j0 }; ++k < j; l_jk = next_c(l_jk, l_t))
 				{
 					if (!blk_llt[l_jk].is_zero)s_mma(blk_m[j], blk_m[j], blk_m[k], -1.0, blk_llt[l_jk].data, l_t.block_stride, blk_llt[l_jk].data, T(l_t.block_stride), blk_llt[l_jj].data, l_t.block_stride);
 				}
 
 				s_llt(blk_m[j], blk_llt[l_jj].data, l_t.block_stride, blk_llt[l_jj].data, l_t.block_stride);
 
-				for (Size i(j), l_i0{ next_rid(l_j0,l_t) }, l_ji{ next_cid(l_jj, l_t) }, l_ij{ next_rid(l_jj, l_t) }, a_ij{ next_rid(a_jj,a_t) }; ++i < blk_m.size(); l_i0 = next_rid(l_i0, l_t), l_ji = next_cid(l_ji, l_t), l_ij = next_rid(l_ij, l_t), a_ij = next_rid(a_ij, a_t))
+				for (Size i(j), l_i0{ next_r(l_j0,l_t) }, l_ji{ next_c(l_jj, l_t) }, l_ij{ next_r(l_jj, l_t) }, a_ij{ next_r(a_jj,a_t) }; ++i < blk_m.size(); l_i0 = next_r(l_i0, l_t), l_ji = next_c(l_ji, l_t), l_ij = next_r(l_ij, l_t), a_ij = next_r(a_ij, a_t))
 				{
 					blk_llt[l_ij].is_zero = blk_A[a_ij].is_zero;
 					s_mc(blk_m[i], blk_m[j], blk_A[a_ij].data, a_t.block_stride, blk_llt[l_ij].data, l_t.block_stride);
 
-					for (Size k(-1), l_ik{ l_i0 }, l_jk{ l_j0 }; ++k < j; l_ik = next_cid(l_ik, l_t), l_jk = next_cid(l_jk, l_t))
+					for (Size k(-1), l_ik{ l_i0 }, l_jk{ l_j0 }; ++k < j; l_ik = next_c(l_ik, l_t), l_jk = next_c(l_jk, l_t))
 					{
 						if (blk_llt[l_ik].is_zero || blk_llt[l_jk].is_zero)continue;
 
@@ -322,25 +322,25 @@ namespace aris
 			{
 				for (Size i(-1); ++i < blk_m.size();)
 				{
-					blk_x[id(i, j, x_t)].is_zero = blk_b[id(i, j, b_t)].is_zero;
-					if (!blk_b[id(i, j, b_t)].is_zero)s_mc(blk_m[i], blk_rhs[j], blk_b[id(i, j, b_t)].data, b_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride);
+					blk_x[at(i, j, x_t)].is_zero = blk_b[at(i, j, b_t)].is_zero;
+					if (!blk_b[at(i, j, b_t)].is_zero)s_mc(blk_m[i], blk_rhs[j], blk_b[at(i, j, b_t)].data, b_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride);
 						
 					for (Size k(-1); ++k < i;)
 					{
-						if (blk_llt[id(i, k, llt_t)].is_zero || blk_x[id(k, j, x_t)].is_zero) continue; 
-						if (blk_x[id(i, j, x_t)].is_zero)
+						if (blk_llt[at(i, k, llt_t)].is_zero || blk_x[at(k, j, x_t)].is_zero) continue; 
+						if (blk_x[at(i, j, x_t)].is_zero)
 						{
-							s_mm(blk_m[i], blk_rhs[j], blk_m[k], -1.0, blk_llt[id(i, k, llt_t)].data, llt_t.block_stride, blk_x[id(k, j, x_t)].data, x_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride);
-							blk_x[id(i, j, x_t)].is_zero = false;
+							s_mm(blk_m[i], blk_rhs[j], blk_m[k], -1.0, blk_llt[at(i, k, llt_t)].data, llt_t.block_stride, blk_x[at(k, j, x_t)].data, x_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride);
+							blk_x[at(i, j, x_t)].is_zero = false;
 						}
 						else
 						{
-							s_mma(blk_m[i], blk_rhs[j], blk_m[k], -1.0, blk_llt[id(i, k, llt_t)].data, llt_t.block_stride, blk_x[id(k, j, x_t)].data, x_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride);
+							s_mma(blk_m[i], blk_rhs[j], blk_m[k], -1.0, blk_llt[at(i, k, llt_t)].data, llt_t.block_stride, blk_x[at(k, j, x_t)].data, x_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride);
 						}
 						
 					}
 
-					if (!blk_x[id(i, j, x_t)].is_zero) s_sov_lm(blk_m[i], blk_rhs[j], blk_llt[id(i, i, llt_t)].data, llt_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride);
+					if (!blk_x[at(i, j, x_t)].is_zero) s_sov_lm(blk_m[i], blk_rhs[j], blk_llt[at(i, i, llt_t)].data, llt_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride);
 				}
 			}
 		}
@@ -351,25 +351,25 @@ namespace aris
 			{
 				for (Size i(blk_m.size()); --i < blk_m.size();)
 				{
-					blk_x[id(i, j, x_t)].is_zero = blk_b[id(i, j, b_t)].is_zero;
-					if (!blk_b[id(i, j, b_t)].is_zero)s_mc(blk_m[i], blk_rhs[j], blk_b[id(i, j, b_t)].data, b_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride);
+					blk_x[at(i, j, x_t)].is_zero = blk_b[at(i, j, b_t)].is_zero;
+					if (!blk_b[at(i, j, b_t)].is_zero)s_mc(blk_m[i], blk_rhs[j], blk_b[at(i, j, b_t)].data, b_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride);
 
 					for (Size k(i); ++k < blk_m.size();)
 					{
-						if (blk_llt[id(i, k, llt_t)].is_zero || blk_x[id(k, j, x_t)].is_zero) continue;
-						if (blk_x[id(i, j, x_t)].is_zero)
+						if (blk_llt[at(i, k, llt_t)].is_zero || blk_x[at(k, j, x_t)].is_zero) continue;
+						if (blk_x[at(i, j, x_t)].is_zero)
 						{
-							s_mm(blk_m[i], blk_rhs[j], blk_m[k], -1.0, blk_llt[id(i, k, llt_t)].data, llt_t.block_stride, blk_x[id(k, j, x_t)].data, x_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride);
-							blk_x[id(i, j, x_t)].is_zero = false;
+							s_mm(blk_m[i], blk_rhs[j], blk_m[k], -1.0, blk_llt[at(i, k, llt_t)].data, llt_t.block_stride, blk_x[at(k, j, x_t)].data, x_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride);
+							blk_x[at(i, j, x_t)].is_zero = false;
 						}
 						else
 						{
-							s_mma(blk_m[i], blk_rhs[j], blk_m[k], -1.0, blk_llt[id(i, k, llt_t)].data, llt_t.block_stride, blk_x[id(k, j, x_t)].data, x_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride);
+							s_mma(blk_m[i], blk_rhs[j], blk_m[k], -1.0, blk_llt[at(i, k, llt_t)].data, llt_t.block_stride, blk_x[at(k, j, x_t)].data, x_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride);
 						}
 
 					}
 
-					if (!blk_x[id(i, j, x_t)].is_zero) s_sov_um(blk_m[i], blk_rhs[j], blk_llt[id(i, i, llt_t)].data, llt_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride, blk_x[id(i, j, x_t)].data, x_t.block_stride);
+					if (!blk_x[at(i, j, x_t)].is_zero) s_sov_um(blk_m[i], blk_rhs[j], blk_llt[at(i, i, llt_t)].data, llt_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride, blk_x[at(i, j, x_t)].data, x_t.block_stride);
 				}
 			}
 		}
@@ -383,67 +383,67 @@ namespace aris
 			{
 				for (Size blk_j(-1); ++blk_j < blk_m[j];)
 				{
-					auto Ujj_blkjj = blk_U[id(j, j, u_t)].data + id(blk_j, blk_j, u_t.block_stride);
+					auto Ujj_blkjj = blk_U[at(j, j, u_t)].data + at(blk_j, blk_j, u_t.block_stride);
 					
 					// compute rho //
 					double rho{ 0 };
 					
-					if (!blk_U[id(j, j, u_t)].is_zero)
+					if (!blk_U[at(j, j, u_t)].is_zero)
 					{
 						s_mma(1, 1, blk_m[j] - blk_j, Ujj_blkjj, T(u_t.block_stride), Ujj_blkjj, u_t.block_stride, &rho, 1);
 					}
 					for (Size i(j); ++i < blk_m.size();)
 					{
-						if (!blk_U[id(i, j, u_t)].is_zero)
+						if (!blk_U[at(i, j, u_t)].is_zero)
 						{
-							auto data = blk_U[id(i, j, u_t)].data + id(0, blk_j, u_t.block_stride);
+							auto data = blk_U[at(i, j, u_t)].data + at(0, blk_j, u_t.block_stride);
 							s_mma(1, 1, blk_m[i], data, T(u_t.block_stride), data, u_t.block_stride, &rho, 1);
 						}
 					}
 					rho = -std::sqrt(rho);
 
 					// compute tau[i] //
-					auto t = blk_U[id(j, j, u_t)].data[id(blk_j, blk_j, u_t.block_stride)] / rho - 1.0;
-					// blk_tau[id(j, 0, tau_t)].data[id(blk_j, 0, tau_t.block_stride)] = 1.0;
+					auto t = blk_U[at(j, j, u_t)].data[at(blk_j, blk_j, u_t.block_stride)] / rho - 1.0;
+					// blk_tau[at(j, 0, tau_t)].data[at(blk_j, 0, tau_t.block_stride)] = 1.0;
 
 					// compute U left downward //
 					auto alpha = 1.0 / (*Ujj_blkjj - rho);
 					*Ujj_blkjj = 1.0;
-					if (!blk_U[id(j, j, u_t)].is_zero)
+					if (!blk_U[at(j, j, u_t)].is_zero)
 					{
-						s_nm(blk_m[j] - blk_j - 1, 1, alpha, blk_U[id(j, j, u_t)].data + id(blk_j + 1, blk_j, u_t.block_stride), u_t.block_stride);
+						s_nm(blk_m[j] - blk_j - 1, 1, alpha, blk_U[at(j, j, u_t)].data + at(blk_j + 1, blk_j, u_t.block_stride), u_t.block_stride);
 					}
 					for (Size i(j); ++i < blk_m.size();)
 					{
-						if (!blk_U[id(i, j, u_t)].is_zero)
+						if (!blk_U[at(i, j, u_t)].is_zero)
 						{
-							auto data = blk_U[id(i, j, u_t)].data + id(0, blk_j, u_t.block_stride);
+							auto data = blk_U[at(i, j, u_t)].data + at(0, blk_j, u_t.block_stride);
 							s_nm(blk_m[i], 1, alpha, data, u_t.block_stride);
 						}
 					}
 
 					// compute tau[i+1:m,i]
-					if (!blk_U[id(j, j, u_t)].is_zero)
+					if (!blk_U[at(j, j, u_t)].is_zero)
 					{
-						//blk_tau[id(j, 0, tau_t)].is_zero = blk_U[id(j, j, u_t)].is_zero;
-						//if(!blk_tau[id(j, 0, tau_t)].is_zero)s_mm(1,blk_m[j]-j+1,blk_m[j]-j+1, Ujj_blkjj, T(u_t.block_stride), U)
+						//blk_tau[at(j, 0, tau_t)].is_zero = blk_U[at(j, j, u_t)].is_zero;
+						//if(!blk_tau[at(j, 0, tau_t)].is_zero)s_mm(1,blk_m[j]-j+1,blk_m[j]-j+1, Ujj_blkjj, T(u_t.block_stride), U)
 						
 						//for (Size i(j); ++i < blk_m.size();)
 						//{
-						//	blk_tau[id(j, 0, tau_t)].is_zero = true;
-						//	if (!blk_U[id(i, j, u_t)].is_zero)
+						//	blk_tau[at(j, 0, tau_t)].is_zero = true;
+						//	if (!blk_U[at(i, j, u_t)].is_zero)
 						//	{
-						//		blk_tau[id(j, 0, tau_t)].is_zero = false;
+						//		blk_tau[at(j, 0, tau_t)].is_zero = false;
 						//	}
 						//}
 
-						//s_nm(blk_m[j] - blk_j - 1, 1, alpha, blk_U[id(j, j, u_t)].data + id(blk_j + 1, blk_j, u_t.block_stride), u_t.block_stride);
+						//s_nm(blk_m[j] - blk_j - 1, 1, alpha, blk_U[at(j, j, u_t)].data + at(blk_j + 1, blk_j, u_t.block_stride), u_t.block_stride);
 					}
 					for (Size i(j); ++i < blk_m.size();)
 					{
-						if (!blk_U[id(i, j, u_t)].is_zero)
+						if (!blk_U[at(i, j, u_t)].is_zero)
 						{
-							auto data = blk_U[id(i, j, u_t)].data + id(0, blk_j, u_t.block_stride);
+							auto data = blk_U[at(i, j, u_t)].data + at(0, blk_j, u_t.block_stride);
 							s_nm(blk_m[i], 1, alpha, data, u_t.block_stride);
 						}
 					}

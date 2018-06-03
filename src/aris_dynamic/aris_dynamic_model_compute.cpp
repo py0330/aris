@@ -221,11 +221,11 @@ namespace aris
 			std::fill_n(C, imp_->dyn_m_*imp_->dyn_n_, 0.0);
 			for (int i = 0; i < 6; ++i)
 			{
-				C[dynamic::id(i, i, imp_->dyn_n_)] = 1;
+				C[at(i, i, imp_->dyn_n_)] = 1;
 			}
 			for (auto &b : imp_->cst_blk_vec_)
 			{
-				b.c->cptPrtCm(C + dynamic::id(b.ri, b.col, imp_->dyn_n_), imp_->dyn_n_, C + dynamic::id(b.rj, b.col, imp_->dyn_n_), imp_->dyn_n_);
+				b.c->cptPrtCm(C + at(b.ri, b.col, imp_->dyn_n_), imp_->dyn_n_, C + at(b.rj, b.col, imp_->dyn_n_), imp_->dyn_n_);
 			}
 
 			// make C inv //
@@ -241,7 +241,7 @@ namespace aris
 			{
 				if (dynamic_cast<Motion*>(b.c))
 				{
-					s_mc(1, imp_->dyn_m_, C_inv + dynamic::id(b.col, 0, imp_->dyn_m_), D + dynamic::id(di, 0, imp_->dyn_m_));
+					s_mc(1, imp_->dyn_m_, C_inv + at(b.col, 0, imp_->dyn_m_), D + at(di, 0, imp_->dyn_m_));
 					di++;
 				}
 			}
@@ -256,7 +256,7 @@ namespace aris
 
 					s_inv_tv(*p.pm(), p.vs(), vs);
 					s_cmf(vs, *cm);
-					s_mm(imp_->m_, 6, 6, D + dynamic::id(0, row, imp_->dyn_m_), imp_->dyn_m_, *cm, 6, B + dynamic::id(0, row, imp_->dyn_m_), imp_->dyn_m_);
+					s_mm(imp_->m_, 6, 6, D + at(0, row, imp_->dyn_m_), imp_->dyn_m_, *cm, 6, B + at(0, row, imp_->dyn_m_), imp_->dyn_m_);
 
 					row += 6;
 				}
@@ -278,27 +278,27 @@ namespace aris
 
 					for (std::size_t j = 0; j < imp_->m_; ++j)
 					{
-						A[dynamic::id(j, col1, n())] = D[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * q[0] + D[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * q[1] + D[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * q[2];
-						A[dynamic::id(j, col1 + 1, n())] = D[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * q[5] + D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[1] - D[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * q[4] - D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[2];
-						A[dynamic::id(j, col1 + 2, n())] = D[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * q[3] + D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[2] - D[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * q[5] - D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[0];
-						A[dynamic::id(j, col1 + 3, n())] = D[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * q[4] + D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[0] - D[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * q[3] - D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[1];
-						A[dynamic::id(j, col1 + 4, n())] = D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[3];
-						A[dynamic::id(j, col1 + 5, n())] = D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[4];
-						A[dynamic::id(j, col1 + 6, n())] = D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[5];
-						A[dynamic::id(j, col1 + 7, n())] = D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[4] + D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[3];
-						A[dynamic::id(j, col1 + 8, n())] = D[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * q[5] + D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[3];
-						A[dynamic::id(j, col1 + 9, n())] = D[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * q[5] + D[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * q[4];
+						A[at(j, col1, n())] = D[at(j, col2 + 0, imp_->dyn_m_)] * q[0] + D[at(j, col2 + 1, imp_->dyn_m_)] * q[1] + D[at(j, col2 + 2, imp_->dyn_m_)] * q[2];
+						A[at(j, col1 + 1, n())] = D[at(j, col2 + 1, imp_->dyn_m_)] * q[5] + D[at(j, col2 + 5, imp_->dyn_m_)] * q[1] - D[at(j, col2 + 2, imp_->dyn_m_)] * q[4] - D[at(j, col2 + 4, imp_->dyn_m_)] * q[2];
+						A[at(j, col1 + 2, n())] = D[at(j, col2 + 2, imp_->dyn_m_)] * q[3] + D[at(j, col2 + 3, imp_->dyn_m_)] * q[2] - D[at(j, col2 + 0, imp_->dyn_m_)] * q[5] - D[at(j, col2 + 5, imp_->dyn_m_)] * q[0];
+						A[at(j, col1 + 3, n())] = D[at(j, col2 + 0, imp_->dyn_m_)] * q[4] + D[at(j, col2 + 4, imp_->dyn_m_)] * q[0] - D[at(j, col2 + 1, imp_->dyn_m_)] * q[3] - D[at(j, col2 + 3, imp_->dyn_m_)] * q[1];
+						A[at(j, col1 + 4, n())] = D[at(j, col2 + 3, imp_->dyn_m_)] * q[3];
+						A[at(j, col1 + 5, n())] = D[at(j, col2 + 4, imp_->dyn_m_)] * q[4];
+						A[at(j, col1 + 6, n())] = D[at(j, col2 + 5, imp_->dyn_m_)] * q[5];
+						A[at(j, col1 + 7, n())] = D[at(j, col2 + 3, imp_->dyn_m_)] * q[4] + D[at(j, col2 + 4, imp_->dyn_m_)] * q[3];
+						A[at(j, col1 + 8, n())] = D[at(j, col2 + 3, imp_->dyn_m_)] * q[5] + D[at(j, col2 + 5, imp_->dyn_m_)] * q[3];
+						A[at(j, col1 + 9, n())] = D[at(j, col2 + 4, imp_->dyn_m_)] * q[5] + D[at(j, col2 + 5, imp_->dyn_m_)] * q[4];
 
-						A[dynamic::id(j, col1, n())] += B[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * v[0] + B[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * v[1] + B[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * v[2];
-						A[dynamic::id(j, col1 + 1, n())] += B[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * v[5] + B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[1] - B[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * v[4] - B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[2];
-						A[dynamic::id(j, col1 + 2, n())] += B[dynamic::id(j, col2 + 2, imp_->dyn_m_)] * v[3] + B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[2] - B[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * v[5] - B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[0];
-						A[dynamic::id(j, col1 + 3, n())] += B[dynamic::id(j, col2 + 0, imp_->dyn_m_)] * v[4] + B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[0] - B[dynamic::id(j, col2 + 1, imp_->dyn_m_)] * v[3] - B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[1];
-						A[dynamic::id(j, col1 + 4, n())] += B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[3];
-						A[dynamic::id(j, col1 + 5, n())] += B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[4];
-						A[dynamic::id(j, col1 + 6, n())] += B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[5];
-						A[dynamic::id(j, col1 + 7, n())] += B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[4] + B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[3];
-						A[dynamic::id(j, col1 + 8, n())] += B[dynamic::id(j, col2 + 3, imp_->dyn_m_)] * v[5] + B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[3];
-						A[dynamic::id(j, col1 + 9, n())] += B[dynamic::id(j, col2 + 4, imp_->dyn_m_)] * v[5] + B[dynamic::id(j, col2 + 5, imp_->dyn_m_)] * v[4];
+						A[at(j, col1, n())] += B[at(j, col2 + 0, imp_->dyn_m_)] * v[0] + B[at(j, col2 + 1, imp_->dyn_m_)] * v[1] + B[at(j, col2 + 2, imp_->dyn_m_)] * v[2];
+						A[at(j, col1 + 1, n())] += B[at(j, col2 + 1, imp_->dyn_m_)] * v[5] + B[at(j, col2 + 5, imp_->dyn_m_)] * v[1] - B[at(j, col2 + 2, imp_->dyn_m_)] * v[4] - B[at(j, col2 + 4, imp_->dyn_m_)] * v[2];
+						A[at(j, col1 + 2, n())] += B[at(j, col2 + 2, imp_->dyn_m_)] * v[3] + B[at(j, col2 + 3, imp_->dyn_m_)] * v[2] - B[at(j, col2 + 0, imp_->dyn_m_)] * v[5] - B[at(j, col2 + 5, imp_->dyn_m_)] * v[0];
+						A[at(j, col1 + 3, n())] += B[at(j, col2 + 0, imp_->dyn_m_)] * v[4] + B[at(j, col2 + 4, imp_->dyn_m_)] * v[0] - B[at(j, col2 + 1, imp_->dyn_m_)] * v[3] - B[at(j, col2 + 3, imp_->dyn_m_)] * v[1];
+						A[at(j, col1 + 4, n())] += B[at(j, col2 + 3, imp_->dyn_m_)] * v[3];
+						A[at(j, col1 + 5, n())] += B[at(j, col2 + 4, imp_->dyn_m_)] * v[4];
+						A[at(j, col1 + 6, n())] += B[at(j, col2 + 5, imp_->dyn_m_)] * v[5];
+						A[at(j, col1 + 7, n())] += B[at(j, col2 + 3, imp_->dyn_m_)] * v[4] + B[at(j, col2 + 4, imp_->dyn_m_)] * v[3];
+						A[at(j, col1 + 8, n())] += B[at(j, col2 + 3, imp_->dyn_m_)] * v[5] + B[at(j, col2 + 5, imp_->dyn_m_)] * v[3];
+						A[at(j, col1 + 9, n())] += B[at(j, col2 + 4, imp_->dyn_m_)] * v[5] + B[at(j, col2 + 5, imp_->dyn_m_)] * v[4];
 					}
 					col1 += 10;
 					col2 += 6;
@@ -310,9 +310,9 @@ namespace aris
 			{
 				if (dynamic_cast<Motion*>(b.c))
 				{
-					A[dynamic::id(ai, g() + ai * 3, n())] = s_sgn(dynamic_cast<Motion*>(b.c)->mv());
-					A[dynamic::id(ai, g() + ai * 3 + 1, n())] = dynamic_cast<Motion*>(b.c)->mv();
-					A[dynamic::id(ai, g() + ai * 3 + 2, n())] = dynamic_cast<Motion*>(b.c)->ma();
+					A[at(ai, g() + ai * 3, n())] = s_sgn(dynamic_cast<Motion*>(b.c)->mv());
+					A[at(ai, g() + ai * 3 + 1, n())] = dynamic_cast<Motion*>(b.c)->mv();
+					A[at(ai, g() + ai * 3 + 2, n())] = dynamic_cast<Motion*>(b.c)->ma();
 					ai++;
 				}
 
@@ -934,7 +934,7 @@ namespace aris
 			{
 				for (auto &b : r.cm_blk_series)
 				{
-					s_mm(6 - b.diag->rel_.dim, r.rel_.dim, 6, b.diag->dm + dynamic::id(b.diag->rel_.dim, 0, 6), 6, b.is_I ? r.cmI : r.cmJ, r.rel_.dim, F + dynamic::id(b.diag->rows, cols, fn), fn);
+					s_mm(6 - b.diag->rel_.dim, r.rel_.dim, 6, b.diag->dm + at(b.diag->rel_.dim, 0, 6), 6, b.is_I ? r.cmI : r.cmJ, r.rel_.dim, F + at(b.diag->rows, cols, fn), fn);
 				}
 				cols += r.rel_.dim;
 			}
@@ -1334,10 +1334,10 @@ namespace aris
 
 				// 以下求G
 				// 乘以DT
-				if (!hasGround())s_vc(6, S + dynamic::id(diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r, diag_pool_.begin()->xp, 1);
+				if (!hasGround())s_vc(6, S + at(diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r, diag_pool_.begin()->xp, 1);
 				for (auto d = diag_pool_.begin() + 1; d<diag_pool_.end(); ++d)
 				{
-					s_mm(6, 1, 6 - d->rel_.dim, d->dm + dynamic::id(0, d->rel_.dim, ColMajor{ 6 }), ColMajor{ 6 }, S + dynamic::id(d->rows, j, m_mimus_r), m_mimus_r, d->xp, 1);
+					s_mm(6, 1, 6 - d->rel_.dim, d->dm + at(0, d->rel_.dim, ColMajor{ 6 }), ColMajor{ 6 }, S + at(d->rows, j, m_mimus_r), m_mimus_r, d->xp, 1);
 				}
 
 				// 乘以PT
@@ -1363,9 +1363,9 @@ namespace aris
 				// 乘以D，并取出来
 				for (auto d = diag_pool_.rbegin(); d<diag_pool_.rend() - 1; ++d)
 				{
-					s_mm(6 - d->rel_.dim, 1, 6, d->dm + dynamic::id(d->rel_.dim, 0, 6), 6, d->xp, 1, G + dynamic::id(d->rows, j, m_mimus_r), m_mimus_r);
+					s_mm(6 - d->rel_.dim, 1, 6, d->dm + at(d->rel_.dim, 0, 6), 6, d->xp, 1, G + at(d->rows, j, m_mimus_r), m_mimus_r);
 				}
-				if (!hasGround())s_vc(6, diag_pool_.begin()->xp, 1, G + dynamic::id(diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r);
+				if (!hasGround())s_vc(6, diag_pool_.begin()->xp, 1, G + at(diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r);
 
 				// 后面（循环内外）会用到xp为0
 				std::fill(diag_pool_.begin()->xp, diag_pool_.begin()->xp + 6, 0.0);
@@ -1391,7 +1391,7 @@ namespace aris
 
 			// 其次求解
 			Size rank;
-			s_householder_utp(m_mimus_r, m_mimus_r, QT_DOT_G + dynamic::id(fr, 0, m_mimus_r), GU, GT, GP, rank, max_error_);
+			s_householder_utp(m_mimus_r, m_mimus_r, QT_DOT_G + at(fr, 0, m_mimus_r), GU, GT, GP, rank, max_error_);
 			///////////////////////////////
 			// 可以通过rank == m-r来判断质点等是否影响计算
 			///////////////////////////////
@@ -1788,8 +1788,6 @@ namespace aris
 
 				for (auto &d : sys.diag_pool_) std::fill(d.bc, d.bc + 6, 0.0);
 				for (auto &r : sys.remainder_pool_) std::fill(r.bc, r.bc + 6, 0.0);
-				Size n = model().motionPool().size() + model().generalMotionPool().size() * 6;
-
 
 				auto func = [&](Size c_pos) 
 				{
@@ -1801,7 +1799,7 @@ namespace aris
 					auto beg = sys.hasGround() ? sys.diag_pool_.begin() + 1 : sys.diag_pool_.begin();
 					for (auto d = beg; d < sys.diag_pool_.end(); ++d)
 					{
-						s_vc(6, d->xp, 1, &imp_->Jg_.at(aris::dynamic::id(d->part->id() * 6, c_pos, n)), n);
+						s_vc(6, d->xp, 1, &imp_->Jg_.at(at(d->part->id() * 6, c_pos, nJ())), nJ());
 					}
 				};
 
@@ -1927,6 +1925,8 @@ namespace aris
 				}
 			}
 		}
+		auto UniversalSolver::mJ()->Size { return model().partPool().size() * 6; }
+		auto UniversalSolver::nJ()->Size { return model().motionPool().size() + model().generalMotionPool().size() * 6; }
 		auto UniversalSolver::Jg()->double * { return imp_->Jg_.data(); }
 		auto UniversalSolver::cg()->double * { return imp_->cg_.data(); }
 		auto UniversalSolver::cptGeneralInverseDynamicMatrix()->void
@@ -1955,13 +1955,10 @@ namespace aris
 					sys.xpf[sys.fr + j] = 1.0;
 					s_householder_ut_q_dot(sys.fm, sys.fn, 1, sys.FU, sys.fn, sys.FT, 1, sys.xpf, 1, sys.S + j, m_mimus_r);
 					sys.xpf[sys.fr + j] = 0.0;
-					if (!sys.hasGround())s_vc(6, sys.S + dynamic::id(sys.diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r, sys.diag_pool_.begin()->xp, 1);
+					if (!sys.hasGround())s_vc(6, sys.S + at(sys.diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r, sys.diag_pool_.begin()->xp, 1);
 					for (auto d = sys.diag_pool_.begin() + 1; d<sys.diag_pool_.end(); ++d)
 					{
-						//////////////////////// 可以优化 //////////////////
-						double tem[6]{ 0,0,0,0,0,0 };
-						s_vc(6 - d->rel_.dim, sys.S + dynamic::id(d->rows, j, m_mimus_r), m_mimus_r, tem + d->rel_.dim, 1);
-						s_mm(6, 1, 6, d->dm, ColMajor{ 6 }, tem, 1, d->xp, 1);
+						s_mm(6, 1, 6 - d->rel_.dim, d->dm + at(0, d->rel_.dim, ColMajor{ 6 }), ColMajor{ 6 }, sys.S + at(d->rows, j, m_mimus_r), m_mimus_r, d->xp, 1);
 					}
 					sys.rowAddInverseXp();
 					if (!sys.hasGround())
@@ -1979,9 +1976,9 @@ namespace aris
 					for (auto d = sys.diag_pool_.rbegin(); d < sys.diag_pool_.rend() - 1; ++d) s_va(6, d->xp, d->rd->xp);
 					for (auto d = sys.diag_pool_.rbegin(); d < sys.diag_pool_.rend() - 1; ++d)
 					{
-						s_mm(6 - d->rel_.dim, 1, 6, d->dm + dynamic::id(d->rel_.dim, 0, 6), 6, d->xp, 1, sys.G + dynamic::id(d->rows, j, m_mimus_r), m_mimus_r);
+						s_mm(6 - d->rel_.dim, 1, 6, d->dm + at(d->rel_.dim, 0, 6), 6, d->xp, 1, sys.G + at(d->rows, j, m_mimus_r), m_mimus_r);
 					}
-					if (!sys.hasGround())s_vc(6, sys.diag_pool_.begin()->xp, 1, sys.G + dynamic::id(sys.diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r);
+					if (!sys.hasGround())s_vc(6, sys.diag_pool_.begin()->xp, 1, sys.G + at(sys.diag_pool_.begin()->rows, j, m_mimus_r), m_mimus_r);
 					std::fill(sys.diag_pool_.begin()->xp, sys.diag_pool_.begin()->xp + 6, 0.0);
 				}
 				sys.updCaToBc();
@@ -2012,7 +2009,7 @@ namespace aris
 					s_householder_ut_qt_dot(sys.fm, sys.fn, m_mimus_r, sys.FU, sys.FT, sys.G, sys.QT_DOT_G);
 					s_householder_ut_qt_dot(sys.fm, sys.fn, 1, sys.FU, sys.FT, sys.bpf, sys.alpha);
 					Size rank;
-					s_householder_utp(m_mimus_r, m_mimus_r, sys.QT_DOT_G + dynamic::id(sys.fr, 0, m_mimus_r), sys.GU, sys.GT, sys.GP, rank, sys.max_error_);
+					s_householder_utp(m_mimus_r, m_mimus_r, sys.QT_DOT_G + at(sys.fr, 0, m_mimus_r), sys.GU, sys.GT, sys.GP, rank, sys.max_error_);
 					///////////////////////////////
 					// 可以通过rank == m-r来判断质点等是否影响计算
 					///////////////////////////////
@@ -2107,15 +2104,15 @@ namespace aris
 							if (dynamic_cast<Motion*>(cc.constraint))
 							{
 								Size ccid = cc.constraint->id();
-								imp_->M_[dynamic::id(ccid, cid, m)] = rr.xc[pos2] - h()[ccid];
+								imp_->M_[at(ccid, cid, m)] = rr.xc[pos2] - h()[ccid];
 							}
 							if (dynamic_cast<GeneralMotion*>(cc.constraint))
 							{
 								Size ccid = cc.constraint->id() * 6 + model().motionPool().size();
 								for (Size i = 0; i < 6; ++i)
 								{
-									s_vc(6, rr.xc, 1, imp_->M_.data() + dynamic::id(ccid, cid, m), m);
-									s_vs(6, h() + ccid, 1, imp_->M_.data() + dynamic::id(ccid, cid, m), m);
+									s_vc(6, rr.xc, 1, imp_->M_.data() + at(ccid, cid, m), m);
+									s_vs(6, h() + ccid, 1, imp_->M_.data() + at(ccid, cid, m), m);
 								}
 
 							}
@@ -2130,13 +2127,13 @@ namespace aris
 							if (dynamic_cast<Motion*>(cc.constraint))
 							{
 								Size ccid = cc.constraint->id();
-								imp_->M_[dynamic::id(cc.constraint->id(), cid, m)] = dd->xc[pos2] - h()[cc.constraint->id()];
+								imp_->M_[at(cc.constraint->id(), cid, m)] = dd->xc[pos2] - h()[cc.constraint->id()];
 							}
 							if (dynamic_cast<GeneralMotion*>(cc.constraint))
 							{
 								Size ccid = cc.constraint->id() * 6 + model().motionPool().size();
-								s_vc(6, dd->xc, 1, imp_->M_.data() + dynamic::id(ccid, cid, m), m);
-								s_vs(6, h() + ccid, 1, imp_->M_.data() + dynamic::id(ccid, cid, m), m);
+								s_vc(6, dd->xc, 1, imp_->M_.data() + at(ccid, cid, m), m);
+								s_vs(6, h() + ccid, 1, imp_->M_.data() + at(ccid, cid, m), m);
 							}
 							pos2 += cc.constraint->dim();
 						}
@@ -2211,6 +2208,7 @@ namespace aris
 				}
 			}
 		}
+		auto UniversalSolver::nM()->Size { return model().motionPool().size() + model().generalMotionPool().size() * 6; }
 		auto UniversalSolver::M()->double * { return imp_->M_.data(); }
 		auto UniversalSolver::h()->double * { return imp_->h_.data(); }
 		auto UniversalSolver::plotRelation()->void

@@ -70,8 +70,8 @@ namespace aris
 		template <typename V3Type1, typename V3Type2>
 		auto s_pm_dot_v3(const double *pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void
 		{
-			const Size a0{ 0 }, a1{ next_rid(a0, v31_t) }, a2{ next_rid(a1, v31_t) };
-			const Size b0{ 0 }, b1{ next_rid(b0, v32_t) }, b2{ next_rid(b1, v32_t) };
+			const Size a0{ 0 }, a1{ next_r(a0, v31_t) }, a2{ next_r(a1, v31_t) };
+			const Size b0{ 0 }, b1{ next_r(b0, v32_t) }, b2{ next_r(b1, v32_t) };
 
 			v3_out[b0] = pm[0] * v3_in[a0] + pm[1] * v3_in[a1] + pm[2] * v3_in[a2];
 			v3_out[b1] = pm[4] * v3_in[a0] + pm[5] * v3_in[a1] + pm[6] * v3_in[a2];
@@ -81,8 +81,8 @@ namespace aris
 		template <typename V3Type1, typename V3Type2>
 		auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void
 		{
-			const Size a0{ 0 }, a1{ next_rid(a0, v31_t) }, a2{ next_rid(a1, v31_t) };
-			const Size b0{ 0 }, b1{ next_rid(b0, v32_t) }, b2{ next_rid(b1, v32_t) };
+			const Size a0{ 0 }, a1{ next_r(a0, v31_t) }, a2{ next_r(a1, v31_t) };
+			const Size b0{ 0 }, b1{ next_r(b0, v32_t) }, b2{ next_r(b1, v32_t) };
 
 			v3_out[b0] = inv_pm[0] * v3_in[a0] + inv_pm[4] * v3_in[a1] + inv_pm[8] * v3_in[a2];
 			v3_out[b1] = inv_pm[1] * v3_in[a0] + inv_pm[5] * v3_in[a1] + inv_pm[9] * v3_in[a2];
@@ -120,9 +120,9 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto s_c3(const double *a, AType a_t, const double *b , BType b_t, double *c_out, CType c_t) noexcept->void
 		{
-			const Size a0{ 0 }, a1{ next_rid(a0, a_t) }, a2{ next_rid(a1, a_t) };
-			const Size b0{ 0 }, b1{ next_rid(b0, b_t) }, b2{ next_rid(b1, b_t) };
-			const Size c0{ 0 }, c1{ next_rid(c0, c_t) }, c2{ next_rid(c1, c_t) };
+			const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
+			const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
+			const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
 
 			c_out[c0] = -a[a2] * b[b1] + a[a1] * b[b2];
 			c_out[c1] = a[a2] * b[b0] - a[a0] * b[b2];
@@ -142,9 +142,9 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto s_c3(double alpha, const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
 		{
-			const Size a0{ 0 }, a1{ next_rid(a0, a_t) }, a2{ next_rid(a1, a_t) };
-			const Size b0{ 0 }, b1{ next_rid(b0, b_t) }, b2{ next_rid(b1, b_t) };
-			const Size c0{ 0 }, c1{ next_rid(c0, c_t) }, c2{ next_rid(c1, c_t) };
+			const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
+			const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
+			const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
 
 			c_out[c0] = alpha*(-a[a2] * b[b1] + a[a1] * b[b2]);
 			c_out[c1] = alpha*(a[a2] * b[b0] - a[a0] * b[b2]);
@@ -164,9 +164,9 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto s_c3i(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
 		{
-			const Size a0{ 0 }, a1{ next_rid(a0, a_t) }, a2{ next_rid(a1, a_t) };
-			const Size b0{ 0 }, b1{ next_rid(b0, b_t) }, b2{ next_rid(b1, b_t) };
-			const Size c0{ 0 }, c1{ next_rid(c0, c_t) }, c2{ next_rid(c1, c_t) };
+			const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
+			const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
+			const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
 
 			c_out[c0] = a[a2] * b[b1] - a[a1] * b[b2];
 			c_out[c1] = -a[a2] * b[b0] + a[a0] * b[b2];
@@ -186,9 +186,9 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto s_c3a(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
 		{
-			const Size a0{ 0 }, a1{ next_rid(a0, a_t) }, a2{ next_rid(a1, a_t) };
-			const Size b0{ 0 }, b1{ next_rid(b0, b_t) }, b2{ next_rid(b1, b_t) };
-			const Size c0{ 0 }, c1{ next_rid(c0, c_t) }, c2{ next_rid(c1, c_t) };
+			const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
+			const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
+			const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
 
 			c_out[c0] += -a[a2] * b[b1] + a[a1] * b[b2];
 			c_out[c1] += a[a2] * b[b0] - a[a0] * b[b2];
@@ -208,9 +208,9 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto s_c3a(double alpha, const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
 		{
-			const Size a0{ 0 }, a1{ next_rid(a0, a_t) }, a2{ next_rid(a1, a_t) };
-			const Size b0{ 0 }, b1{ next_rid(b0, b_t) }, b2{ next_rid(b1, b_t) };
-			const Size c0{ 0 }, c1{ next_rid(c0, c_t) }, c2{ next_rid(c1, c_t) };
+			const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
+			const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
+			const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
 			
 			c_out[c0] += alpha*(-a[a2] * b[b1] + a[a1] * b[b2]);
 			c_out[c1] += alpha*(a[a2] * b[b0] - a[a0] * b[b2]);
@@ -230,9 +230,9 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto s_c3s(const double *a, AType a_t, const double *b, BType b_t, double *c_out, CType c_t) noexcept->void
 		{
-			const Size a0{ 0 }, a1{ next_rid(a0, a_t) }, a2{ next_rid(a1, a_t) };
-			const Size b0{ 0 }, b1{ next_rid(b0, b_t) }, b2{ next_rid(b1, b_t) };
-			const Size c0{ 0 }, c1{ next_rid(c0, c_t) }, c2{ next_rid(c1, c_t) };
+			const Size a0{ 0 }, a1{ next_r(a0, a_t) }, a2{ next_r(a1, a_t) };
+			const Size b0{ 0 }, b1{ next_r(b0, b_t) }, b2{ next_r(b1, b_t) };
+			const Size c0{ 0 }, c1{ next_r(c0, c_t) }, c2{ next_r(c1, c_t) };
 
 			c_out[c0] -= -a[a2] * b[b1] + a[a1] * b[b2];
 			c_out[c1] -= a[a2] * b[b0] - a[a0] * b[b2];
@@ -258,7 +258,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto s_cf(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, f3_pos{ id(3, f_t) }, vf3_pos{ id(3, vf_t) };
+			Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 			
 			s_c3(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 			s_c3(vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -295,7 +295,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto s_cfi(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, f3_pos{ id(3, f_t) }, vf3_pos{ id(3, vf_t) };
+			Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 			s_c3i(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 			s_c3i(vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -315,7 +315,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto s_cfa(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, f3_pos{ id(3, f_t) }, vf3_pos{ id(3, vf_t) };
+			Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 			s_c3a(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 			s_c3a(vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -335,7 +335,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto s_cfa(double alpha, const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, f3_pos{ id(3, f_t) }, vf3_pos{ id(3, vf_t) };
+			Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 			s_c3a(alpha, vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 			s_c3a(alpha, vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -355,7 +355,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto s_cfs(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, f3_pos{ id(3, f_t) }, vf3_pos{ id(3, vf_t) };
+			Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 			s_c3s(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 			s_c3s(vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -383,7 +383,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto s_cv(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, v23_pos{ id(3, v2_t) }, vv3_pos{ id(3, vv_t) };
+			Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 			
 			s_c3(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 			s_c3(vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -420,7 +420,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto s_cvi(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, v23_pos{ id(3, v2_t) }, vv3_pos{ id(3, vv_t) };
+			Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 			s_c3i(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 			s_c3i(vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -440,7 +440,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto s_cva(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, v23_pos{ id(3, v2_t) }, vv3_pos{ id(3, vv_t) };
+			Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 			s_c3a(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 			s_c3a(vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -460,7 +460,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto s_cva(double alpha, const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, v23_pos{ id(3, v2_t) }, vv3_pos{ id(3, vv_t) };
+			Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 			s_c3a(alpha, vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 			s_c3a(alpha, vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -480,7 +480,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto s_cvs(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 		{
-			Size v3_pos{ id(3, v_t) }, v23_pos{ id(3, v2_t) }, vv3_pos{ id(3, vv_t) };
+			Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 			s_c3s(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 			s_c3s(vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -500,7 +500,7 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto inline s_c3_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
 		{ 
-			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_cid(bid, b_t), cid = next_cid(cid, c_t))
+			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 				s_c3(a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t); 
 		}
 		/// \brief 计算三维向量叉乘
@@ -517,7 +517,7 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto inline s_c3_n(Size n, double alpha, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
 		{ 
-			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_cid(bid, b_t), cid = next_cid(cid, c_t))
+			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 				s_c3(alpha, a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 		}
 		/// \brief 计算三维向量叉乘
@@ -534,7 +534,7 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto inline s_c3i_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
 		{
-			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_cid(bid, b_t), cid = next_cid(cid, c_t))
+			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 				s_c3i(a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 		}
 		/// \brief 计算三维向量叉乘
@@ -551,7 +551,7 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto inline s_c3a_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
 		{ 
-			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_cid(bid, b_t), cid = next_cid(cid, c_t))
+			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 				s_c3a(a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 		}
 		/// \brief 计算三维向量叉乘
@@ -568,7 +568,7 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto inline s_c3a_n(Size n, double alpha, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
 		{ 
-			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_cid(bid, b_t), cid = next_cid(cid, c_t))
+			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 				s_c3a(alpha, a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 		}
 		/// \brief 计算三维向量叉乘
@@ -585,7 +585,7 @@ namespace aris
 		template<typename AType, typename BType, typename CType>
 		auto inline s_c3s_n(Size n, const double *a, AType a_t, const double *b_mtx, BType b_t, double *c_mtx_out, CType c_t) noexcept->void
 		{
-			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_cid(bid, b_t), cid = next_cid(cid, c_t))
+			for (Size i(-1), bid(0), cid(0); ++i < n; bid = next_c(bid, b_t), cid = next_c(cid, c_t))
 				s_c3s(a, a_t, b_mtx + bid, b_t, c_mtx_out + cid, c_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -602,7 +602,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto inline s_cf_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void 
 		{ 
-			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_cid(fid, f_t), vfid = next_cid(vfid, vf_t))
+			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 				s_cf(vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -619,7 +619,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto inline s_cf_n(Size n, double alpha, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
 		{ 
-			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_cid(fid, f_t), vfid = next_cid(vfid, vf_t))
+			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 				s_cf(alpha, vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -636,7 +636,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto inline s_cfi_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
 		{
-			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_cid(fid, f_t), vfid = next_cid(vfid, vf_t))
+			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 				s_cfi(vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -653,7 +653,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto inline s_cfa_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void 
 		{ 
-			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_cid(fid, f_t), vfid = next_cid(vfid, vf_t))
+			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 				s_cfa(vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -670,7 +670,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto inline s_cfa_n(Size n, double alpha, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void 
 		{
-			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_cid(fid, f_t), vfid = next_cid(vfid, vf_t))
+			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 				s_cfa(alpha, vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -687,7 +687,7 @@ namespace aris
 		template<typename VType, typename FType, typename VFType>
 		auto inline s_cfs_n(Size n, const double *vs, VType v_t, const double *fs_mtx, FType f_t, double* vfs_mtx_out, VFType vf_t) noexcept->void
 		{
-			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_cid(fid, f_t), vfid = next_cid(vfid, vf_t))
+			for (Size i(-1), fid(0), vfid(0); ++i < n; fid = next_c(fid, f_t), vfid = next_c(vfid, vf_t))
 				s_cfs(vs, v_t, fs_mtx + fid, f_t, vfs_mtx_out + vfid, vf_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -704,7 +704,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto inline s_cv_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void 
 		{ 
-			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_cid(vid, v2_t), vvid = next_cid(vvid, vv_t))
+			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 				s_cv(vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -721,7 +721,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto inline s_cv_n(Size n, double alpha, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
 		{
-			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_cid(vid, v2_t), vvid = next_cid(vvid, vv_t))
+			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 				s_cv(alpha, vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -738,7 +738,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto inline s_cvi_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
 		{
-			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_cid(vid, v2_t), vvid = next_cid(vvid, vv_t))
+			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 				s_cvi(vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -755,7 +755,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto inline s_cva_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
 		{
-			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_cid(vid, v2_t), vvid = next_cid(vvid, vv_t))
+			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 				s_cva(vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -772,7 +772,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto inline s_cva_n(Size n, double alpha, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
 		{
-			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_cid(vid, v2_t), vvid = next_cid(vvid, vv_t))
+			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 				s_cva(alpha, vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 		}
 		/// \brief 计算六维向量叉乘
@@ -789,7 +789,7 @@ namespace aris
 		template<typename VType, typename V2Type, typename VVType>
 		auto inline s_cvs_n(Size n, const double *vs, VType v_t, const double *vs_mtx, V2Type v2_t, double* vvs_mtx_out, VVType vv_t) noexcept->void
 		{
-			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_cid(vid, v2_t), vvid = next_cid(vvid, vv_t))
+			for (Size i(-1), vid(0), vvid(0); ++i < n; vid = next_c(vid, v2_t), vvid = next_c(vvid, vv_t))
 				s_cvs(vs, v_t, vs_mtx + vid, v2_t, vvs_mtx_out + vvid, vv_t);
 		}
 		/// \brief 构造6x6的力转换矩阵
@@ -812,7 +812,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto s_tf(const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
 		{
-			Size f13_pos{ id(3, f1_t) }, f23_pos{ id(3,f2_t) };
+			Size f13_pos{ at(3, f1_t) }, f23_pos{ at(3,f2_t) };
 			
 			s_pm_dot_v3(pm, fs, f1_t, fs_out, f2_t);
 			s_pm_dot_v3(pm, fs + f13_pos, f1_t, fs_out + f23_pos, f2_t);
@@ -886,9 +886,9 @@ namespace aris
 		auto s_inv_tf(const double *inv_pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
 		{
 			s_c3i(inv_pm + 3, 4, fs, f1_t, fs_out, f2_t);
-			s_va(3, fs + id(3, f1_t), f1_t, fs_out, f2_t);
+			s_va(3, fs + at(3, f1_t), f1_t, fs_out, f2_t);
 
-			s_inv_pm_dot_v3(inv_pm, fs_out, f2_t, fs_out + id(3, f2_t), f2_t);
+			s_inv_pm_dot_v3(inv_pm, fs_out, f2_t, fs_out + at(3, f2_t), f2_t);
 			s_inv_pm_dot_v3(inv_pm, fs, f1_t, fs_out, f2_t);
 
 		}
@@ -966,8 +966,8 @@ namespace aris
 		auto s_tv(const double *pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
 		{
 			s_pm_dot_v3(pm, vs, v1_t, vs_out, v2_t);
-			s_pm_dot_v3(pm, vs + id(3, v1_t), v1_t, vs_out + id(3, v2_t), v2_t);
-			s_c3a(pm + 3, 4, vs_out + id(3, v2_t), v2_t, vs_out, v2_t);
+			s_pm_dot_v3(pm, vs + at(3, v1_t), v1_t, vs_out + at(3, v2_t), v2_t);
+			s_c3a(pm + 3, 4, vs_out + at(3, v2_t), v2_t, vs_out, v2_t);
 
 		}
 		/// \brief 根据位姿矩阵转换六维速度向量
@@ -1037,8 +1037,8 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto s_inv_tv(const double *inv_pm, const double *vs, V1Type v1_t, double *vs_out, V2Type v2_t) noexcept->void
 		{
-			const double* vs3{ vs + id(3, v1_t) };
-			double* vs_out3{ vs_out + id(3, v2_t) };
+			const double* vs3{ vs + at(3, v1_t) };
+			double* vs_out3{ vs_out + at(3, v2_t) };
 
 			s_c3i(inv_pm + 3, 4, vs3, v1_t, vs_out3, v2_t);
 			s_va(3, vs, v1_t, vs_out3, v2_t);
@@ -1113,7 +1113,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto inline s_tf_n(Size n, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void 
 		{ 
-			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_cid(f1id, f1_t), f2id = next_cid(f2id, f2_t))
+			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 				s_tf(pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1130,7 +1130,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto inline s_tf_n(Size n, double alpha, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
 		{
-			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_cid(f1id, f1_t), f2id = next_cid(f2id, f2_t))
+			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 				s_tf(alpha, pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1147,7 +1147,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto inline s_tfa_n(Size n, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
 		{
-			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_cid(f1id, f1_t), f2id = next_cid(f2id, f2_t))
+			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 				s_tfa(pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1164,7 +1164,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto inline s_tfa_n(Size n, double alpha, const double *pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
 		{
-			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_cid(f1id, f1_t), f2id = next_cid(f2id, f2_t))
+			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 				s_tfa(alpha, pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1181,7 +1181,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto inline s_inv_tf_n(Size n, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void 
 		{
-			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_cid(f1id, f1_t), f2id = next_cid(f2id, f2_t))
+			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 				s_inv_tf(inv_pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1198,7 +1198,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto inline s_inv_tf_n(Size n, double alpha, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
 		{
-			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_cid(f1id, f1_t), f2id = next_cid(f2id, f2_t))
+			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 				s_inv_tf(alpha, inv_pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1215,7 +1215,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto inline s_inv_tfa_n(Size n, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
 		{
-			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_cid(f1id, f1_t), f2id = next_cid(f2id, f2_t))
+			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 				s_inv_tfa(inv_pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1232,7 +1232,7 @@ namespace aris
 		template<typename F1Type, typename F2Type>
 		auto inline s_inv_tfa_n(Size n, double alpha, const double *inv_pm, const double *fs_mtx, F1Type f1_t, double *fs_mtx_out, F2Type f2_t) noexcept->void
 		{
-			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_cid(f1id, f1_t), f2id = next_cid(f2id, f2_t))
+			for (Size i(-1), f1id(0), f2id(0); ++i < n; f1id = next_c(f1id, f1_t), f2id = next_c(f2id, f2_t))
 				s_inv_tfa(alpha, inv_pm, fs_mtx + f1id, f1_t, fs_mtx_out + f2id, f2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1249,7 +1249,7 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto inline s_tv_n(Size n, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
 		{
-			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_cid(v1id, v1_t), v2id = next_cid(v2id, v2_t))
+			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 				s_tv(pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维速度向量
@@ -1266,7 +1266,7 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto inline s_tv_n(Size n, double alpha, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void 
 		{
-			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_cid(v1id, v1_t), v2id = next_cid(v2id, v2_t))
+			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 				s_tv(alpha, pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1283,7 +1283,7 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto inline s_tva_n(Size n, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
 		{
-			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_cid(v1id, v1_t), v2id = next_cid(v2id, v2_t))
+			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 				s_tva(pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维力矩阵
@@ -1300,7 +1300,7 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto inline s_tva_n(Size n, double alpha, const double *pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
 		{
-			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_cid(v1id, v1_t), v2id = next_cid(v2id, v2_t))
+			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 				s_tva(alpha, pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维速度矩阵
@@ -1317,7 +1317,7 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto inline s_inv_tv_n(Size n, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
 		{
-			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_cid(v1id, v1_t), v2id = next_cid(v2id, v2_t))
+			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 				s_inv_tv(inv_pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维速度矩阵
@@ -1334,7 +1334,7 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto inline s_inv_tv_n(Size n, double alpha, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
 		{
-			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_cid(v1id, v1_t), v2id = next_cid(v2id, v2_t))
+			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 				s_inv_tv(alpha, inv_pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维速度矩阵
@@ -1351,7 +1351,7 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto inline s_inv_tva_n(Size n, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
 		{
-			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_cid(v1id, v1_t), v2id = next_cid(v2id, v2_t))
+			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 				s_inv_tva(inv_pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 		}
 		/// \brief 根据位姿矩阵转换六维速度矩阵
@@ -1368,7 +1368,7 @@ namespace aris
 		template<typename V1Type, typename V2Type>
 		auto inline s_inv_tva_n(Size n, double alpha, const double *inv_pm, const double *vs_mtx, V1Type v1_t, double *vs_mtx_out, V2Type v2_t) noexcept->void
 		{
-			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_cid(v1id, v1_t), v2id = next_cid(v2id, v2_t))
+			for (Size i(-1), v1id(0), v2id(0); ++i < n; v1id = next_c(v1id, v1_t), v2id = next_c(v2id, v2_t))
 				s_inv_tva(alpha, inv_pm, vs_mtx + v1id, v1_t, vs_mtx_out + v2id, v2_t);
 		}
 
