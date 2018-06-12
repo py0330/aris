@@ -76,8 +76,8 @@ if(WIN32)
 	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
 endif(WIN32)
 
-set(ARIS_INCL_DIR src/ src/aris_server src/aris_sensor src/aris_robot src/aris_dynamic src/aris_control src/aris_core)
-set(ARIS_LINK_LIB aris_server aris_sensor aris_robot aris_dynamic aris_control aris_core)
+set(ARIS_INCL_DIR src/ src/aris_server src/aris_sensor src/aris_robot src/aris_dynamic src/aris_control src/aris_plan src/aris_core)
+set(ARIS_LINK_LIB aris_server aris_sensor aris_robot aris_dynamic aris_control aris_plan aris_core)
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${RELY_INCL_DIR})
 set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${RELY_LINK_DIR})
 set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
@@ -111,6 +111,15 @@ add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h src
 install(TARGETS aris_core ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
 install(TARGETS aris_core ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
 install(FILES ${FULL_H} src/aris_core/aris_core.h DESTINATION include)
+
+# aris plan project
+set(SOURCE aris_plan_function aris_plan_command)
+PREPEND_CPP(FULL_SRC src/aris_plan ${SOURCE})
+PREPEND_H(FULL_H src/aris_plan ${SOURCE})
+add_library(aris_plan STATIC ${FULL_SRC} ${FULL_H} src/aris_plan/aris_plan.h)
+install(TARGETS aris_plan ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
+install(TARGETS aris_plan ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
+install(FILES ${FULL_H} src/aris_plan/aris_plan.h DESTINATION include)
 
 # aris control project
 set(SOURCE aris_control_ethercat aris_control_ethercat_kernel aris_control_master_slave aris_control_controller_motion aris_control_rt_timer)
@@ -170,6 +179,13 @@ target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
 set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
+set(SOURCE_FILES main.cpp test_plan_command.h test_plan_command.cpp)
+PREPEND(FULL_SRC test/test_plan ${SOURCE_FILES})
+add_executable(test_plan ${FULL_SRC})
+target_link_libraries(test_plan aris_plan aris_core ${RELY_LINK_LIB})
+add_test(NAME test_plan COMMAND test_plan)
+set_tests_properties (test_plan PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+
 set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp test_control_motion.h test_control_motion.cpp test_control_master_slave.h test_control_master_slave.cpp)
 PREPEND(FULL_SRC test/test_control ${SOURCE_FILES})
 add_executable(test_control ${FULL_SRC})
@@ -204,34 +220,31 @@ set(MAKE_DEMO " ")
 if(MAKE_DEMO)
 
 add_executable(demo_object demo/demo_object/main.cpp)
-target_link_libraries(demo_object ${ALL_LINK_LIB})
+target_link_libraries(demo_object aris_core ${RELY_LINK_LIB})
 
 add_executable(demo_command_parser_xml demo/demo_command_parser_xml/main.cpp)
-target_link_libraries(demo_command_parser_xml ${ALL_LINK_LIB})
+target_link_libraries(demo_command_parser_xml aris_core ${RELY_LINK_LIB})
 install(DIRECTORY demo/demo_command_parser_xml/resource/ DESTINATION resource/demo_command_parser_xml)
 
 add_executable(demo_command_parser_cpp demo/demo_command_parser_cpp/main.cpp)
-target_link_libraries(demo_command_parser_cpp ${ALL_LINK_LIB})
-
-add_executable(demo_control_wifi demo/demo_control_wifi/main.cpp)
-target_link_libraries(demo_control_wifi ${ALL_LINK_LIB})
+target_link_libraries(demo_command_parser_cpp aris_core ${RELY_LINK_LIB})
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_Aris_ExpCal/demo_ExpCal ${SOURCE_FILES})
 add_executable(demo_ExpCal ${FULL_SRC})
-target_link_libraries(demo_ExpCal ${ALL_LINK_LIB})
+target_link_libraries(demo_ExpCal aris_core ${RELY_LINK_LIB})
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_model_scara ${SOURCE_FILES})
 add_executable(demo_model_scara ${FULL_SRC})
-target_link_libraries(demo_model_scara ${ALL_LINK_LIB})
+target_link_libraries(demo_model_scara aris_dynamic aris_core ${RELY_LINK_LIB})
 install(DIRECTORY demo/demo_model_scara/resource/ DESTINATION resource/demo_model_scara)
 install(DIRECTORY demo/demo_model_scara/doc/ DESTINATION doc/html/demo_model_scara)
 
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_stewart ${SOURCE_FILES})
 add_executable(demo_stewart ${FULL_SRC})
-target_link_libraries(demo_stewart ${ALL_LINK_LIB})
+target_link_libraries(demo_stewart aris_dynamic aris_core ${RELY_LINK_LIB})
 install(DIRECTORY demo/demo_stewart/resource/ DESTINATION resource/demo_stewart)
 
 set(SOURCE_FILES main.cpp)
@@ -243,7 +256,7 @@ install(DIRECTORY demo/demo_hulk/resource/ DESTINATION resource/demo_hulk)
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_ur ${SOURCE_FILES})
 add_executable(demo_ur ${FULL_SRC})
-target_link_libraries(demo_ur ${ALL_LINK_LIB})
+target_link_libraries(demo_ur aris_robot aris_dynamic aris_core ${RELY_LINK_LIB})
 install(DIRECTORY demo/demo_ur/resource/ DESTINATION resource/demo_ur)
 
 

@@ -16,6 +16,7 @@
 #include <aris_dynamic_model_coordinate.h>
 #include <aris_dynamic_model_interaction.h>
 #include <aris_dynamic_model_compute.h>
+#include <aris_dynamic_plan.h>
 
 namespace aris
 {
@@ -223,7 +224,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Model"); return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-            auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 			auto time()const->double;
 			auto setTime(double time)->void;
@@ -252,6 +253,8 @@ namespace aris
 			auto simResultPool()const->const aris::core::ObjectPool<SimResult, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->simResultPool(); }
 			auto calibratorPool()->aris::core::ObjectPool<Calibrator, Element>&;
 			auto calibratorPool()const->const aris::core::ObjectPool<Calibrator, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->calibratorPool(); }
+			auto planPool()->aris::core::ObjectPool<Element, Element>&;
+			auto planPool()const->const aris::core::ObjectPool<Element, Element>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->planPool(); }
 			auto ground()->Part&;
 			auto ground()const->const Part&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->ground(); }
 			/// @}

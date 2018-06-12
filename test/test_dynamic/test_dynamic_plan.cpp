@@ -130,22 +130,22 @@ void test_move()
 }
 void test_optimal()
 {
-	OptimalTrajectory planner;
+	//OptimalTrajectory planner;
 
-	planner.setBeginNode(OptimalTrajectory::Node{ 0,0,0,0 });
-	planner.setEndNode(OptimalTrajectory::Node{ 0,1,0,0 });
-	planner.run();
+	//planner.setBeginNode(OptimalTrajectory::Node{ 0,0,0,0 });
+	//planner.setEndNode(OptimalTrajectory::Node{ 0,1,0,0 });
+	//planner.run();
 
-	std::ofstream file;
+	//std::ofstream file;
 
-	file.open("C:\\Users\\py033\\Desktop\\test.txt");
+	//file.open("C:\\Users\\py033\\Desktop\\test.txt");
 
-	file << std::setprecision(15);
+	//file << std::setprecision(15);
 
-	for (auto &p : planner.list)
-	{
-		file << p.s << "   " << p.ds << "   " << p.dds << std::endl;
-	}
+	//for (auto &p : planner.list)
+	//{
+	//	file << p.s << "   " << p.ds << "   " << p.dds << std::endl;
+	//}
 }
 
 void test_plan()

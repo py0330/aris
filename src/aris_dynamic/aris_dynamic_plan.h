@@ -95,7 +95,7 @@ namespace aris
 			auto testForward()->void;
 			auto join()->void;
 			auto cptDdsConstraint(double s, double ds, double &max_dds, double &min_dds)->bool;
-			auto cptInverseJacobi(double *Ji)->void;
+			auto cptInverseJacobi()->void;
 
 
 
@@ -106,11 +106,14 @@ namespace aris
 
 			Node beg_, end_;
 			std::list<Node> list;
-			std::list<Node>::iterator final_iter;
 			std::list<Node>::iterator l_beg_, l_;
 			std::vector<MotionLimit> motor_limits;
 
+			std::vector<double> Ji_data_;
+
 			std::vector<double> result_;
+
+			
 		};
 
 

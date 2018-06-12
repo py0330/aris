@@ -224,19 +224,8 @@ namespace aris
 		}
 		auto OptimalTrajectory::cptDdsConstraint(double s, double ds, double &max_dds, double &min_dds)->bool
 		{
-		
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
+			//plan(s)
+
 			////////////////////////////////////////////////////////////////////////////////////////
 			max_dds = 0.1 + 0.2*s + 4 * (s - 0.5)*(s - 0.5) - ds * 1 - ds*ds*0.2 - sin(ds)*0.2;
 			min_dds = 0 - 0.3*(1 - s) - 4 * (s - 0.5)*(s - 0.5) + ds*0.1 + ds*ds*0.8 + sin(ds)*0.1;
@@ -259,16 +248,33 @@ namespace aris
 			return max_dds > min_dds && s < 1.0;
 		}
 
-		auto OptimalTrajectory::cptInverseJacobi(double *Ji)->void
+		auto OptimalTrajectory::cptInverseJacobi()->void
 		{
+			std::vector<double> Jf_data(model().generalMotionPool().size() * 6 * model().motionPool().size());
+			std::vector<double> Ji_data(model().generalMotionPool().size() * 6 * model().motionPool().size());
+			std::vector<double> tau_data(std::max(model().generalMotionPool().size() * 6, model().motionPool().size()));
+			std::vector<Size> p_data(std::max(model().generalMotionPool().size() * 6, model().motionPool().size()));
+			auto Jf = Jf_data.data();
+			auto Ji = Ji_data.data();
+			auto tau = tau_data.data();
+			auto p = p_data.data();
+
 			solver->cptGeneralJacobi();
 
-			auto i = model().generalMotionPool().at(0).makI().fatherPart().id();
+			for (auto k = 0; k < model().generalMotionPool().size(); ++k)
+			{
+				auto i = model().generalMotionPool().at(k).makI().fatherPart().id();
+				auto j = model().generalMotionPool().at(k).makJ().fatherPart().id();
 
-			double J[36], U[36], t[6];
-			Size p[6];
-			s_mc(6, 6, solver->Jg() + at(i, 0, solver->nJ()), solver->nJ(), J, 6);
+				s_mc(6, model().motionPool().size(), solver->Jg() + at(i, 0, solver->nJ()), solver->nJ(), Jf, model().motionPool().size());
+				s_mi(6, model().motionPool().size(), solver->Jg() + at(i, 0, solver->nJ()), solver->nJ(), Jf, model().motionPool().size());
+			}
 
+			Size rank;
+			s_householder_utp(model().generalMotionPool().size() * 6, model().motionPool().size(), Jf, Jf, tau, p, rank);
+			s_householder_utp2pinv(model().generalMotionPool().size() * 6, model().motionPool().size(), rank, Jf, tau, p, Ji, tau);
+
+			std::swap(Ji_data, Ji_data_);
 		}
 
 		
