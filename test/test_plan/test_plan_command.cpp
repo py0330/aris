@@ -4,7 +4,7 @@
 
 #include "test_plan_command.h"
 
-using namespace aris::core;
+using namespace aris::plan;
 
 void test_command_xml()
 {
@@ -78,7 +78,7 @@ void test_command_xml()
 			"	</command_pool>"
 			"</command_parser>";
 
-		aris::core::CommandParser parser;
+		aris::plan::CommandParser parser;
 		parser.loadXmlStr(xml_data);
 
 		std::string cmd_string, cmd, cmd_result;
@@ -197,27 +197,27 @@ void test_command_code()
 {
 	try
 	{
-		aris::core::CommandParser parser("parser");
-		auto &tt = parser.commandPool().add<aris::core::Command>("tt", "ap0", "");
-		auto &ap0 = tt.add<aris::core::Param>("ap0", "", "", 'a');
-		auto &bu0 = tt.add<aris::core::UniqueParam>("bu0", "ap1", "");
-		auto &ap1 = bu0.add<aris::core::Param>("ap1", "0", "");
-		auto &bg1 = bu0.add<aris::core::GroupParam>("bg1", "");
-		auto &ap2 = bg1.add<aris::core::Param>("ap2", "1", "");
-		auto &bp2 = bg1.add<aris::core::Param>("bp2", "2", "", 'b');
-		auto &cg0 = tt.add<aris::core::GroupParam>("cg0", "");
-		auto &cp1 = cg0.add<aris::core::Param>("cp1", "0", "");
-		auto &dg1 = cg0.add<aris::core::GroupParam>("dg1", "");
-		auto &cp2 = dg1.add<aris::core::Param>("cp2", "3", "", 'c');
-		auto &dp2 = dg1.add<aris::core::Param>("dp2", "4", "", 'd');
-		auto &eu1 = cg0.add<aris::core::UniqueParam>("eu1", "", "");
-		auto &ep2 = eu1.add<aris::core::Param>("ep2", "5", "", 'e');
-		auto &fp2 = eu1.add<aris::core::Param>("fp2", "6", "");
-		auto &du0 = tt.add<aris::core::UniqueParam>("du0", "fp1", "");
-		auto &fp1 = du0.add<aris::core::Param>("fp1", "0", "", 'f');
-		auto &gg1 = du0.add<aris::core::GroupParam>("gg1", "");
-		auto &gp2 = gg1.add<aris::core::Param>("gp2", "1", "");
-		auto &hp2 = gg1.add<aris::core::Param>("hp2", "2", "");
+		aris::plan::CommandParser parser("parser");
+		auto &tt = parser.commandPool().add<aris::plan::Command>("tt", "ap0", "");
+		auto &ap0 = tt.add<aris::plan::Param>("ap0", "", "", 'a');
+		auto &bu0 = tt.add<aris::plan::UniqueParam>("bu0", "ap1", "");
+		auto &ap1 = bu0.add<aris::plan::Param>("ap1", "0", "");
+		auto &bg1 = bu0.add<aris::plan::GroupParam>("bg1", "");
+		auto &ap2 = bg1.add<aris::plan::Param>("ap2", "1", "");
+		auto &bp2 = bg1.add<aris::plan::Param>("bp2", "2", "", 'b');
+		auto &cg0 = tt.add<aris::plan::GroupParam>("cg0", "");
+		auto &cp1 = cg0.add<aris::plan::Param>("cp1", "0", "");
+		auto &dg1 = cg0.add<aris::plan::GroupParam>("dg1", "");
+		auto &cp2 = dg1.add<aris::plan::Param>("cp2", "3", "", 'c');
+		auto &dp2 = dg1.add<aris::plan::Param>("dp2", "4", "", 'd');
+		auto &eu1 = cg0.add<aris::plan::UniqueParam>("eu1", "", "");
+		auto &ep2 = eu1.add<aris::plan::Param>("ep2", "5", "", 'e');
+		auto &fp2 = eu1.add<aris::plan::Param>("fp2", "6", "");
+		auto &du0 = tt.add<aris::plan::UniqueParam>("du0", "fp1", "");
+		auto &fp1 = du0.add<aris::plan::Param>("fp1", "0", "", 'f');
+		auto &gg1 = du0.add<aris::plan::GroupParam>("gg1", "");
+		auto &gp2 = gg1.add<aris::plan::Param>("gp2", "1", "");
+		auto &hp2 = gg1.add<aris::plan::Param>("hp2", "2", "");
 
 		std::string cmd_string, cmd, cmd_result;
 		std::map<std::string, std::string> param, param_result;

@@ -448,13 +448,13 @@ namespace aris
         auto CommandParser::commandPool()const->const ObjectPool<Command> &{ return *imp_->command_pool_; }
 		auto CommandParser::help()const->std::string
 		{
-			std::string helpstring{};
+			std::string help_string{};
 
-			helpstring = "All command: \n";
+			help_string = "All command: \n";
 			for (auto &command : *imp_->command_pool_)
-                helpstring += command.help(false,4)+"\n";
+                help_string += command.help(false,4)+"\n";
 
-			return helpstring;
+			return help_string;
 
 		}
 		CommandParser::~CommandParser() = default;

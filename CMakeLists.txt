@@ -179,7 +179,7 @@ target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
 set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_plan_command.h test_plan_command.cpp)
+set(SOURCE_FILES main.cpp test_plan_command.h test_plan_command.cpp test_plan_function.h test_plan_function.cpp)
 PREPEND(FULL_SRC test/test_plan ${SOURCE_FILES})
 add_executable(test_plan ${FULL_SRC})
 target_link_libraries(test_plan aris_plan aris_core ${RELY_LINK_LIB})

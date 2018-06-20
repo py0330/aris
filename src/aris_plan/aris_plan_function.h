@@ -5,6 +5,10 @@
 #include <cmath>
 #include <iostream>
 #include <functional>
+#include <map>
+
+#include <aris_core.h>
+#include <aris_plan_command.h>
 
 namespace aris
 {
@@ -28,10 +32,54 @@ namespace aris
 			std::uint32_t param_size_;
 		};
 		using PlanFunction = std::function<int(const PlanParam &plan_param)>;
-		using ParseFunction = std::function<int(const PlanParam &plan_param)>;
+		using ParseFunction = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::MsgBase &msg_out)>;
+
+		class Plan:public aris::core::Object
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("Plan"); return std::ref(type); }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto virtual prepairNrt()->void {}
+			auto virtual runRT()->void {}
+			auto virtual finishNrt()->void {}
+			auto command()->plan::Command &;
+
+			virtual ~Plan();
+			explicit Plan(const std::string &name = "plan");
+			Plan(const Plan &);
+			Plan(Plan &&);
+			Plan& operator=(const Plan &);
+			Plan& operator=(Plan &&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
+		class PlanRoot :public aris::core::Object
+		{
+		public:
+			static auto Type()->const std::string &{ static const std::string type("PlanRoot"); return std::ref(type); }
+			auto virtual type() const->const std::string& override{ return Type(); }
+			auto planPool()->aris::core::ObjectPool<Plan> &;
+			auto planPool()const->const aris::core::ObjectPool<Plan> &{ return const_cast<std::decay_t<decltype(*this)> *>(this)->planPool(); }
+
+			virtual ~PlanRoot();
+			explicit PlanRoot(const std::string &name = "plan_root");
+			PlanRoot(const PlanRoot &);
+			PlanRoot(PlanRoot &&);
+			PlanRoot& operator=(const PlanRoot &);
+			PlanRoot& operator=(PlanRoot &&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
 
 
+		auto simulatePlan(aris::dynamic::Model *model, aris::plan::Plan *plan)->void;
+		auto simulateCommand(std::string cmd, aris::plan::PlanRoot *plan_root, aris::dynamic::Model *model)->void;
 
+		auto executeCommand()->void;
 
 
 	}

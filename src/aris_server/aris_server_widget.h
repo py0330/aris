@@ -6,8 +6,6 @@
 #include <aris_sensor.h>
 #include <aris_dynamic.h>
 
-
-
 namespace aris
 {
 	namespace server
