@@ -32,7 +32,7 @@ void test_plan_root()
 
 
 	//aris::dynamic::Model model;
-	simulateCommand("ds -m=1", &root, nullptr);
+	simulateCommand("ds -m=1", &root, nullptr, nullptr);
 
 }
 

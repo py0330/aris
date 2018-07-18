@@ -38,13 +38,11 @@ namespace aris
 		PlanRoot& PlanRoot::operator=(PlanRoot &&) = default;
 		
 		
-		auto simulateCommand(std::string cmd_string, aris::plan::PlanRoot *plan_root, aris::dynamic::Model *model)->void
+		auto simulateCommand(std::string cmd_string, aris::plan::PlanRoot *plan_root, aris::dynamic::Model *model, aris::dynamic::SimResult *result)->void
 		{
+			// parse cmd_string to cmd and param map //
 			CommandParser parser;
-			for (auto &plan : plan_root->planPool())
-			{
-				parser.commandPool().add<Command>(plan.command());
-			}
+			for (auto &plan : plan_root->planPool()) parser.commandPool().add<Command>(plan.command());
 			
 			std::string cmd;
 			std::map<std::string, std::string> param_map;
@@ -55,6 +53,16 @@ namespace aris
 			{
 				std::cout << "  " << param.first << "   " << param.second << std::endl;
 			}
+
+
+			// find the plan //
+			auto f = std::find_if(plan_root->planPool().begin(), plan_root->planPool().end(), [&](decltype(*plan_root->planPool().begin())& iter)->bool {return iter.command().name() == cmd; });
+			std::cout << f->name() << std::endl;
+
+			// run prepare function //
+
+
+
 
 		}
 		

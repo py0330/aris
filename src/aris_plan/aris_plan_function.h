@@ -12,7 +12,7 @@
 
 namespace aris
 {
-	namespace dynamic { class Model; }
+	namespace dynamic { class Model; class SimResult; }
 	namespace control { class Master; }
 	
 	
@@ -39,7 +39,7 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type("Plan"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual prepairNrt()->void {}
+			auto virtual prepairNrt(const std::string &cmd, const std::map<std::string,std::string> &params, aris::core::MsgBase &msg_out)->void {}
 			auto virtual runRT()->void {}
 			auto virtual finishNrt()->void {}
 			auto command()->plan::Command &;
@@ -77,7 +77,7 @@ namespace aris
 
 
 		auto simulatePlan(aris::dynamic::Model *model, aris::plan::Plan *plan)->void;
-		auto simulateCommand(std::string cmd, aris::plan::PlanRoot *plan_root, aris::dynamic::Model *model)->void;
+		auto simulateCommand(std::string cmd, aris::plan::PlanRoot *plan_root, aris::dynamic::Model *model, aris::dynamic::SimResult *result)->void;
 
 		auto executeCommand()->void;
 
