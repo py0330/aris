@@ -190,7 +190,11 @@ int main()
 
 	r->saveXmlFile("C:\\Users\\py033\\Desktop\\ur5.xml");
 
-
+	for (auto &p : r->partPool())
+	{
+		dsp(4, 4, *dynamic_cast<FileGeometry&>(p.geometryPool().front()).prtPm());
+	}
+	
 
 	//-0.99500416527803   0.00000000000000   0.09983341664683   0.83228026169050
 	//	0.09983341664683   0.00000000000000   0.99500416527803   0.10890468768786

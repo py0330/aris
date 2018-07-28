@@ -26,6 +26,12 @@ namespace aris
 		
 		struct PlanRoot::Imp { Imp() {} };
 		auto PlanRoot::planPool()->aris::core::ObjectPool<Plan> & { return dynamic_cast<aris::core::ObjectPool<Plan> &>(children().front()); }
+		auto PlanRoot::planParser()->aris::plan::CommandParser 
+		{
+			CommandParser parser;
+			for (auto &plan : planPool()) parser.commandPool().add<Command>(plan.command());
+			return parser;
+		}
 		PlanRoot::~PlanRoot() = default;
 		PlanRoot::PlanRoot(const std::string &name):Object(name) 
 		{

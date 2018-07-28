@@ -599,5 +599,364 @@ namespace aris
 			makeSensorRoot<aris::sensor::SensorRoot>("sensor_root");
 			makeWidgetRoot<aris::server::WidgetRoot>("widget_root");
 		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		class ControlServer2::Imp
+		{
+		public:
+			auto tg()->void;
+			auto executeCmd()->int;
+			auto onRunError()->int;
+
+			Imp(ControlServer2 *server) :server_(server) {}
+			Imp(const Imp&) = delete;
+
+		private:
+			std::recursive_mutex mu_running_;
+			std::atomic_bool is_running_{ false };
+
+			ControlServer2 *server_;
+
+			// 实时循环中的步态参数 //
+			enum { CMD_POOL_SIZE = 50 };
+			aris::core::MsgFix<aris::control::Master::MAX_MSG_SIZE> msg_queue_[CMD_POOL_SIZE];
+
+			std::atomic<int> current_cmd_{ 0 };
+			std::atomic<int> cmd_num_{ 0 };
+			std::uint32_t count_{ 1 };
+
+			// 储存上一次motion的数据 //
+			struct PVC { double p; double v; double c; };
+			std::vector<PVC> last_target_motion_data_vec_;
+
+			// 储存Model, Controller, SensorRoot, WidgetRoot //
+			aris::dynamic::Model* model_;
+			aris::control::Controller* controller_;
+			aris::sensor::SensorRoot* sensor_root_;
+			aris::plan::PlanRoot* plan_root_;
+
+			friend class ControlServer2;
+		};
+		auto ControlServer2::Imp::tg()->void
+		{			
+			// 执行cmd queue中的cmd //
+			if (cmd_num_ > 0)
+			{
+				if (executeCmd())
+				{
+					if (++count_ % 1000 == 0) server_->controller().mout() << "execute cmd in count: " << count_;
+				}
+				else
+				{
+					server_->controller().mout() << "cmd finished, spend " << count_ << " counts\n\n";
+					count_ = 1;
+					current_cmd_ = (current_cmd_ + 1) % CMD_POOL_SIZE;
+					--cmd_num_;
+				}
+			}
+
+			// 向外发送msg //
+			server_->controller().mout().update();
+			if (!server_->controller().msgOut().empty()) server_->controller().mout() << '\0';
+			server_->controller().mout().update();
+			server_->controller().sendOut();
+		}
+		auto ControlServer2::Imp::executeCmd()->int
+		{
+			aris::dynamic::PlanParam plan_param{ model_, count_, msg_queue_[current_cmd_].data(), static_cast<std::uint32_t>(msg_queue_[current_cmd_].size()) };
+
+			// 执行plan函数 //
+			int ret = reinterpret_cast<aris::plan::Plan *>(msg_queue_[current_cmd_].header().reserved1_)->runRT();
+
+			// 控制电机 //
+			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+			{
+				auto &cm = controller_->motionPool().at(i);
+				auto &mm = model_->motionPool().at(i);
+
+				if (mm.active())
+				{
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_TARGET_POS))cm.setTargetPos(mm.mp());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_TARGET_VEL))cm.setTargetVel(mm.mv());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_TARGET_CUR))cm.setTargetCur(mm.mf());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_VEL_OFFSET))cm.setOffsetVel(mm.mv());
+					if ((msg_queue_[current_cmd_].header().reserved2_ & USING_CUR_OFFSET))cm.setOffsetCur(mm.mf());
+				}
+			}
+
+			// 检查规划的指令是否合理（包括电机是否已经跟随上） //
+			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+			{
+				auto &cm = controller_->motionPool().at(i);
+
+				// check max pos //
+				if (!(msg_queue_[current_cmd_].header().reserved2_ & NOT_CHECK_POS_MAX) && (cm.targetPos() > cm.maxPos()))
+				{
+					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is bigger than its MAX permitted value in count: " << count_ << "\n";
+					server_->controller().mout() << "The min, max and current count using ABS sequence are:\n";
+					for (auto &cm1 : controller_->motionPool())server_->controller().mout() << cm1.minPos() << "\t" << cm1.maxPos() << "\t" << cm1.targetPos() << "\n";
+					onRunError();
+					return 0;
+				}
+
+				// check min pos //
+				if (!(msg_queue_[current_cmd_].header().reserved2_ & NOT_CHECK_POS_MIN) && (cm.targetPos() < cm.minPos()))
+				{
+					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is smaller than its MIN permitted value in count: " << count_ << "\n";
+					server_->controller().mout() << "The min, max and current count using ABS sequence are:\n";
+					for (auto &cm1 : controller_->motionPool())server_->controller().mout() << cm1.minPos() << "\t" << cm1.maxPos() << "\t" << cm1.targetPos() << "\n";
+					onRunError();
+					return 0;
+				}
+
+				// check pos plan continuous //
+				if (!(msg_queue_[current_cmd_].header().reserved2_ & NOT_CHECK_POS_PLAN_CONTINUOUS) && (std::abs(cm.targetPos() - last_target_motion_data_vec_.at(i).p) > 0.001 * cm.maxVel()))
+				{
+					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is not continuous in count: " << count_ << "\n";
+					server_->controller().mout() << "The pin of last and this count using ABS sequence are:\n";
+					for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)server_->controller().mout() << last_target_motion_data_vec_.at(i).p << "\t" << controller_->motionPool().at(i).targetPos() << "\n";
+					onRunError();
+					return 0;
+				}
+
+				// check pos following error //
+				if (!(msg_queue_[current_cmd_].header().reserved2_ & NOT_CHECK_POS_FOLLOWING_ERROR) && (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
+				{
+					server_->controller().mout() << "Motor " << cm.id() << " (sla id) target and feedback positions are not near in count: " << count_ << "\n";
+					server_->controller().mout() << "The pin of target and feedback using ABS sequence are:\n";
+					for (auto &cmp : controller_->motionPool())server_->controller().mout() << cmp.targetPos() << "\t" << cmp.actualPos() << "\n";
+					onRunError();
+					return 0;
+				}
+			}
+
+			// 储存电机指令 //
+			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+			{
+				last_target_motion_data_vec_.at(i).p = controller_->motionPool().at(i).targetPos();
+				last_target_motion_data_vec_.at(i).v = controller_->motionPool().at(i).targetVel();
+				last_target_motion_data_vec_.at(i).c = controller_->motionPool().at(i).targetCur();
+			}
+
+			// 如果是同步指令，那么通知等待线程结束 //
+			auto promise = reinterpret_cast<std::promise<void>*&>(msg_queue_[current_cmd_].header().reserved3_);
+			if (ret == 0 && promise)promise->set_value();
+			return ret;
+		}
+		auto ControlServer2::Imp::onRunError()->int
+		{
+			// 恢复电机状态 //
+			for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+			{
+				auto &cm = controller_->motionPool().at(i);
+				switch (cm.modeOfDisplay())
+				{
+				case 8:
+					cm.setTargetPos(cm.actualPos());
+					break;
+				case 9:
+					cm.setTargetVel(0.0);
+					break;
+				case 10:
+					cm.setTargetCur(0.0);
+					break;
+				default:
+					cm.setTargetPos(cm.actualPos());
+					cm.setTargetVel(0.0);
+					cm.setTargetCur(0.0);
+				}
+			}
+
+			// 结束所有等待的指令 //
+			for (int i = -1; ++i < cmd_num_;)
+			{
+				auto promise = reinterpret_cast<std::promise<void>*&>(msg_queue_[current_cmd_ + i].header().reserved3_);
+				if (promise)promise->set_value();
+			}
+
+			// 清理命令 //
+			server_->controller().mout() << "All commands in command queue are discarded, please try to RECOVER\n";
+			cmd_num_ = 1;//因为这里为0退出,因此之后在tg中回递减cmd_num_,所以这里必须为1
+			count_ = 1;
+
+			return 0;
+		}
+		auto ControlServer2::instance()->ControlServer2 & { static ControlServer2 instance; return instance; }
+		auto ControlServer2::resetModel(dynamic::Model *model)->void
+		{
+			auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "model"; });
+			if (iter != children().end())children().erase(iter);
+			children().push_back_ptr(model);
+			imp_->model_ = model;
+		}
+		auto ControlServer2::resetController(control::Controller *controller)->void
+		{
+			auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "controller"; });
+			if (iter != children().end())children().erase(iter);
+			children().push_back_ptr(controller);
+			imp_->controller_ = controller;
+		}
+		auto ControlServer2::resetSensorRoot(sensor::SensorRoot *sensor_root)->void
+		{
+			auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "sensor_root"; });
+			if (iter != children().end())children().erase(iter);
+			children().push_back_ptr(sensor_root);
+			imp_->sensor_root_ = sensor_root;
+		}
+		auto ControlServer2::resetPlanRoot(plan::PlanRoot *plan_root)->void
+		{
+			auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "plan_root"; });
+			if (iter != children().end())children().erase(iter);
+			children().push_back_ptr(plan_root);
+			imp_->plan_root_ = plan_root;
+		}
+		auto ControlServer2::model()->dynamic::Model& { return *imp_->model_; }
+		auto ControlServer2::controller()->control::Controller& { return *imp_->controller_; }
+		auto ControlServer2::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
+		auto ControlServer2::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
+		auto ControlServer2::loadXml(const aris::core::XmlElement &xml_ele)->void
+		{
+			Object::loadXml(xml_ele);
+			imp_->controller_ = findOrInsert<aris::control::Controller>("controller");
+			imp_->model_ = findOrInsert<aris::dynamic::Model>("model");
+			imp_->sensor_root_ = findOrInsert<aris::sensor::SensorRoot>("sensor_root");
+			imp_->plan_root_ = findOrInsert<aris::plan::PlanRoot>("plan_root");
+		}
+		auto ControlServer2::executeCmd(const aris::core::Msg &msg)->void
+		{
+			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+			if (!imp_->is_running_)throw std::runtime_error("failed in ControlServer2::executeCmd, because ControlServer2 is not running");
+
+			aris::core::log(msg.data());
+
+			std::string cmd;
+			std::map<std::string, std::string> params;
+			planRoot().planParser().parse(msg.data(), cmd, params);
+			auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.name() == cmd; });
+
+			// print cmd and params //
+			auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)
+			{
+				return a.first.length() < b.first.length();
+			})->first.length();
+			std::cout << cmd << std::endl;
+			for (auto &p : params)
+			{
+				std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			}
+			std::cout << std::endl;
+			// print over //
+
+			// 等待所有任务完成，待优化 //
+			if (msg.header().reserved1_ & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_FINISHED)
+			{
+				while (imp_->cmd_num_ != 0)std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			}
+
+			// prepair //
+			aris::core::Msg cmd_msg = msg;
+			if (!(cmd_msg.header().reserved1_ & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
+			{
+				plan_iter->prepairNrt(params, cmd_msg);
+			}
+
+			std::unique_ptr<std::promise<void> > cmd_finish_promise = std::make_unique<std::promise<void> >();
+
+			// 等待所有任务完成，待优化 //
+			if (cmd_msg.header().reserved2_ & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_FINISHED)
+			{
+				while (imp_->cmd_num_ != 0)std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			}
+
+			// 执行 //
+			auto finish_option = msg.header().reserved3_;
+			if (!(cmd_msg.header().reserved2_ & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
+			{
+				if (imp_->cmd_num_ >= Imp::CMD_POOL_SIZE)throw std::runtime_error("cmd queqe is to long");
+				
+				reinterpret_cast<aris::plan::Plan *&>(cmd_msg.header().reserved1_) = &*plan_iter;
+				reinterpret_cast<std::promise<void> *&>(cmd_msg.header().reserved3_) = finish_option & aris::plan::Plan::NOT_RUN_FINISH_FUNCTION ? nullptr : cmd_finish_promise.get();
+				
+				imp_->msg_queue_[(imp_->current_cmd_ + imp_->cmd_num_) % Imp::CMD_POOL_SIZE] = cmd_msg;
+				++imp_->cmd_num_;
+			}
+
+			// 等待实时轨迹执行 //
+			if (!(finish_option & aris::plan::Plan::NOT_RUN_FINISH_FUNCTION))
+			{
+				if (finish_option & aris::plan::Plan::WAIT_FINISH_SYNC)
+				{
+					cmd_finish_promise->get_future().wait();
+				}
+				else
+				{
+					std::thread t([](std::unique_ptr<std::promise<void> > promise, decltype(plan_iter) iter)
+					{ 
+						promise->get_future().wait();
+						iter->finishNrt();
+					}, std::move(cmd_finish_promise), plan_iter);
+					t.detach();
+				}
+			}
+		}
+		auto ControlServer2::start()->void
+		{
+			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+			if (imp_->is_running_)throw std::runtime_error("failed to ControlServer2::start, because it's already started");
+			imp_->is_running_ = true;
+
+			// 得到电机向量以及数据 //
+			imp_->last_target_motion_data_vec_.clear();
+			imp_->last_target_motion_data_vec_.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
+
+			controller().setControlStrategy([this]() {this->imp_->tg(); });
+
+			imp_->current_cmd_ = 0;
+			imp_->cmd_num_ = 0;
+
+			sensorRoot().start();
+			controller().start();
+		}
+		auto ControlServer2::stop()->void
+		{
+			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+			if (!imp_->is_running_)throw std::runtime_error("failed to ControlServer2::stop, because it's not started");
+			imp_->is_running_ = false;
+
+			controller().stop();
+			sensorRoot().stop();
+		}
+		ControlServer2::~ControlServer2() = default;
+		ControlServer2::ControlServer2() :imp_(new Imp(this))
+		{
+			registerType<aris::dynamic::Model>();
+			registerType<aris::control::Controller>();
+			registerType<aris::sensor::SensorRoot>();
+			registerType<aris::plan::PlanRoot>();
+
+			registerType<aris::control::EthercatController>();
+
+			// create instance //
+			makeModel<aris::dynamic::Model>("model");
+			makeController<aris::control::Controller>("controller");
+			makeSensorRoot<aris::sensor::SensorRoot>("sensor_root");
+			makePlanRoot<aris::plan::PlanRoot>("plan_root");
+		}
 	}
 }

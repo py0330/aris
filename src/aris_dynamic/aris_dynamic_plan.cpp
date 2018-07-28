@@ -261,7 +261,7 @@ namespace aris
 
 			solver->cptGeneralJacobi();
 
-			for (auto k = 0; k < model().generalMotionPool().size(); ++k)
+			for (aris::Size k = 0; k < model().generalMotionPool().size(); ++k)
 			{
 				auto i = model().generalMotionPool().at(k).makI().fatherPart().id();
 				auto j = model().generalMotionPool().at(k).makJ().fatherPart().id();

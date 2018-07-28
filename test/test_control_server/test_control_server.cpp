@@ -324,12 +324,76 @@ void test_construct()
 
 }
 
+void test_server2()
+{
+	auto&cs = aris::server::ControlServer2::instance();
 
+	cs.resetController(new aris::control::EthercatController);
+	cs.resetModel(new aris::dynamic::Model);
+	cs.resetSensorRoot(new aris::sensor::SensorRoot);
+	cs.resetPlanRoot(new aris::plan::PlanRoot);
+
+	cs.planRoot().planPool().add<aris::plan::Plan>("en").command().loadXmlStr(
+		"		<en default_child_type=\"Param\" default=\"all\">"
+		"			<all abbreviation=\"a\"/>"
+		"			<first abbreviation=\"f\"/>"
+		"			<second abbreviation=\"s\"/>"
+		"			<motion_id abbreviation=\"m\" default=\"0\"/>"
+		"			<physical_id abbreviation=\"p\" default=\"0\"/>"
+		"			<leg abbreviation=\"l\" default=\"0\"/>"
+		"		</en>");
+
+	cs.planRoot().planPool().add<aris::plan::Plan>("ds").command().loadXmlStr(
+		"		<ds default_child_type=\"Param\" default=\"all\">"
+		"			<all abbreviation=\"a\"/>"
+		"			<first abbreviation=\"f\"/>"
+		"			<second abbreviation=\"s\"/>"
+		"			<motion_id abbreviation=\"m\" default=\"0\"/>"
+		"			<physical_id abbreviation=\"p\" default=\"0\"/>"
+		"			<leg abbreviation=\"l\" default=\"0\"/>"
+		"		</ds>");
+
+
+	cs.start();
+
+
+	// 接收并打印信息 //
+	auto t = std::thread([&]()
+	{
+		for (;;)
+		{
+			aris::core::Msg msg;
+			cs.controller().recvOut(msg);
+			if (!msg.empty())std::cout << msg.data() << std::endl;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+	});
+
+	// 接收命令 //
+	for (std::string command_in; std::getline(std::cin, command_in);)
+	{
+		try
+		{
+			cs.executeCmd(aris::core::Msg(command_in));
+			std::cout << "cmd finished" << std::endl;
+		}
+		catch (std::exception &e)
+		{
+			std::cout << e.what() << std::endl;
+		}
+	}
+
+
+	cs.stop();
+}
 
 void test_control_server()
 {
 	//test_xml();
-	test_construct();
+	//test_construct();
 
+
+	test_server2();
 }
 

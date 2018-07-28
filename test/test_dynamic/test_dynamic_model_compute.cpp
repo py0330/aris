@@ -923,7 +923,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 				dsp(1, 6, oao + i * 6);
 			}
 		}
-		for (int i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
+		for (aris::Size i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
 		if (!s_is_equal(m.motionPool().size(), result, ifo, error[3]))
 		{
 			std::cout << s.type() << "::dynAccAndFce() forward forward origin failed: fce not correct" << std::endl;
@@ -951,7 +951,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
 
 		// check //
-		for (auto i = 0; i < m.generalMotionPool().size(); ++i)
+		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)
 		{
 			m.generalMotionPool().at(i).updMpm();
 			m.generalMotionPool().at(i).getMpm(result);
@@ -979,7 +979,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 
 		}
-		for (int i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
+		for (aris::Size i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
 		if (!s_is_equal(m.motionPool().size(), result, ift, error[3]))
 		{
 			std::cout << s.type() << "::dynAccAndFce() forward forward failed: fce not correct" << std::endl;
@@ -1355,8 +1355,8 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	int count{ 0 };
 	std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 	{
-		if (count % 2)for (int i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipt[i]);
-		else for (int i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipo[i]);
+		if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipt[i]);
+		else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipo[i]);
 
 		s.kinPos();
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)
