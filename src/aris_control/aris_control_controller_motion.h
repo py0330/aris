@@ -23,7 +23,9 @@ namespace aris
 			auto maxPos()const->double;
 			auto minPos()const->double;
 			auto maxVel()const->double;
+			auto minVel()const->double;
 			auto maxAcc()const->double;
+			auto minAcc()const->double;
 			auto maxPosFollowingError()const->double;
 			auto maxVelFollowingError()const->double;
 			auto posOffset()const->double;
@@ -55,7 +57,9 @@ namespace aris
 			auto virtual mode(std::uint8_t md)->int = 0;
 
 			virtual ~Motion();
-			explicit Motion(const std::string &name = "motion"/*, const SlaveType *st = nullptr*/, std::uint16_t phy_id = 0, double max_pos = 0.0, double min_pos = 0.0, double max_vel = 0.0, double max_acc = 0.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
+			explicit Motion(const std::string &name = "motion", std::uint16_t phy_id = 0
+				, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
+				, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 			Motion(const Motion &other) = delete;
 			Motion(Motion &&other) = delete;
 			Motion& operator=(const Motion &other) = delete;

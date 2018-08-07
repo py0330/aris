@@ -30,7 +30,7 @@ namespace aris
 			auto recv_pos = imp_->recv_pos_.load();
 			
 			std::size_t remain_data_size = (send_pos - recv_pos + imp_->pool_size_) % imp_->pool_size_;
-			if (remain_data_size + sizeof(MsgHeader) + msg.size()> imp_->pool_size_) return false;
+			if (remain_data_size + sizeof(MsgHeader) + msg.size()> imp_->pool_size_) return false; // 查看现有数据容量加待发送数据容量，是否超过缓存大小
 			std::size_t send_num1 = send_pos + sizeof(MsgHeader) + msg.size() > imp_->pool_size_ ? imp_->pool_size_ - send_pos : sizeof(MsgHeader) + msg.size();
 			std::size_t send_num2 = sizeof(MsgHeader) + msg.size() - send_num1;
 			std::copy_n(reinterpret_cast<const char *>(&msg.header()), send_num1, &imp_->pool_[send_pos]);

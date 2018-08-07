@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <aris_dynamic.h>
+#include <aris_control.h>
 
 namespace aris
 {
@@ -24,7 +25,8 @@ namespace aris
 			virtual ~Ur5InverseSolver() = default;
 			explicit Ur5InverseSolver(const std::string &name = "ur5_inverse_solver", aris::Size max_iter_count = 100, double max_error = 1e-10) :InverseKinematicSolver(name, max_iter_count, max_error) {}
 		};
-		auto create_ur5()->std::unique_ptr<aris::dynamic::Model>;
+		auto createUr5Model()->std::unique_ptr<aris::dynamic::Model>;
+		auto createUr5Controller()->std::unique_ptr<aris::control::Controller>;
 	}
 }
 

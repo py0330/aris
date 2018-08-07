@@ -25,7 +25,7 @@ int sendRequest(int argc, char *argv[])
 	for (int i = 1; i < argc; ++i)cmdName = cmdName + " " + argv[i];
 
 	// 构造msg,这里需要先copy命令名称,然后依次copy各个参数 //
-	aris::core::Msg msg;
+	aris::core::Msg msg(0);
 	msg.copy(cmdName.c_str());
 
 	// 连接并发送msg //

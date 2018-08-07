@@ -105,10 +105,12 @@ namespace aris
 					imp_->g_ += 10;
 				}
 			}
-
-			imp_->A_.resize(m()*n());
-			imp_->x_.resize(n());
-			imp_->b_.resize(m());
+			imp_->A_.clear();
+			imp_->A_.resize(m()*n(), 0.0);
+			imp_->x_.clear();
+			imp_->x_.resize(n(), 0.0);
+			imp_->b_.clear();
+			imp_->b_.resize(m(), 0.0);
 
 
 
@@ -183,18 +185,28 @@ namespace aris
 				}
 			}
 
+			imp_->f_.clear();
 			imp_->f_.resize(imp_->dyn_m_, 0.0);
 
+			imp_->C_.clear();
 			imp_->C_.resize(imp_->dyn_m_*imp_->dyn_n_, 0.0);
+			imp_->U_.clear();
 			imp_->U_.resize(imp_->dyn_m_*imp_->dyn_n_, 0.0);
+			imp_->tau_.clear();
 			imp_->tau_.resize(std::max(imp_->dyn_m_, imp_->dyn_n_), 0.0);
+			imp_->p_.clear();
 			imp_->p_.resize(std::max(imp_->dyn_m_, imp_->dyn_n_), 0);
 
+			imp_->C_inv_.clear();
 			imp_->C_inv_.resize(imp_->dyn_n_*imp_->dyn_m_, 0.0);
+			imp_->R_.clear();
 			imp_->R_.resize(imp_->dyn_m_*imp_->dyn_n_, 0.0);
+			imp_->Q_.clear();
 			imp_->Q_.resize(imp_->dyn_m_*imp_->dyn_m_, 0.0);
 
+			imp_->B_.clear();
 			imp_->B_.resize(imp_->m_*imp_->dyn_m_, 0.0);
+			imp_->D_.clear();
 			imp_->D_.resize(imp_->m_*imp_->dyn_m_, 0.0);
 		}
 		auto Calibrator::clb()->void
@@ -315,7 +327,6 @@ namespace aris
 					A[at(ai, g() + ai * 3 + 2, n())] = dynamic_cast<Motion*>(b.c)->ma();
 					ai++;
 				}
-
 			}
 
 
@@ -1710,12 +1721,16 @@ namespace aris
 			}
 
 			// 分配内存给雅可比 //
-			imp_->Jg_.resize(model().partPool().size() * 6 * (model().motionPool().size() + model().generalMotionPool().size() * 6));
-			imp_->cg_.resize(model().partPool().size() * 6);
+			imp_->Jg_.clear();
+			imp_->Jg_.resize(model().partPool().size() * 6 * (model().motionPool().size() + model().generalMotionPool().size() * 6), 0.0);
+			imp_->cg_.clear();
+			imp_->cg_.resize(model().partPool().size() * 6, 0.0);
 
 			// 分配内存给动力学通用形式 //
-			imp_->M_.resize((model().motionPool().size() + model().generalMotionPool().size() * 6) * (model().motionPool().size() + model().generalMotionPool().size() * 6));
-			imp_->h_.resize((model().motionPool().size() + model().generalMotionPool().size() * 6));
+			imp_->M_.clear();
+			imp_->M_.resize((model().motionPool().size() + model().generalMotionPool().size() * 6) * (model().motionPool().size() + model().generalMotionPool().size() * 6), 0.0);
+			imp_->h_.clear();
+			imp_->h_.resize((model().motionPool().size() + model().generalMotionPool().size() * 6), 0.0);
 		}
 		auto UniversalSolver::kinPos()->bool
 		{

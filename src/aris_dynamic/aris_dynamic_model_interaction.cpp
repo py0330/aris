@@ -327,7 +327,7 @@ namespace aris
 		auto GeneralMotion::mfs() const->const double6&{ return Constraint::imp_->cf_; }
 		auto GeneralMotion::setMfs(const double * mfs)->void { s_vc(6, mfs, Constraint::imp_->cf_); }
 		GeneralMotion::~GeneralMotion() = default;
-		GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :Constraint(name, makI, makJ, active){}
+		GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :Constraint(name, makI, makJ, active) {}
 		GeneralMotion::GeneralMotion(const GeneralMotion &other) = default;
 		GeneralMotion::GeneralMotion(GeneralMotion &&other) = default;
 		GeneralMotion& GeneralMotion::operator=(const GeneralMotion &other) = default;

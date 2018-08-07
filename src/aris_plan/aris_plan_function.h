@@ -31,45 +31,54 @@ namespace aris
 			void *param_;
 			std::uint32_t param_size_;
 		};
-		using PlanFunction = std::function<int(const PlanParam &plan_param)>;
-		using ParseFunction = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::MsgBase &msg_out)>;
-
 		class Plan:public aris::core::Object
 		{
 		public:
-			enum PrepairOption
+			enum Option : std::uint64_t
 			{
-				NOT_RUN_PREPAIR_FUNCTION = 0x0001,
-				PREPAIR_WHEN_ALL_PLAN_FINISHED = 0x0002,
-			};
-			enum ExecuteOption
-			{
-				NOT_RUN_EXECUTE_FUNCTION = 0x0001,
-				EXECUTE_WHEN_ALL_PLAN_FINISHED = 0x0002,
-				NOT_CHECK_POS_MIN = 0x0001,
-				NOT_CHECK_POS_MAX = 0x0002,
-				NOT_CHECK_POS_PLAN_CONTINUOUS = 0x0004,
-				NOT_CHECK_POS_FOLLOWING_ERROR = 0x0008,
-				NOT_CHECK_VEL_PLAN_CONTINUOUS = 0x0010,
-				NOT_CHECK_VEL_FOLLOWING_ERROR = 0x0020,
-				USING_TARGET_POS = 0x0100,
-				USING_TARGET_VEL = 0x0200,
-				USING_TARGET_CUR = 0x0400,
-				USING_VEL_OFFSET = 0x0800,
-				USING_CUR_OFFSET = 0x1000,
-			};
-			enum FinishOption
-			{
-				NOT_RUN_FINISH_FUNCTION = 0x0001, // check if parse
-				WAIT_FINISH_SYNC = 0x0002,
+				NOT_RUN_PREPAIR_FUNCTION = 0x01ULL << 0,
+				PREPAIR_WHEN_ALL_PLAN_EXECUTED = 0x01ULL << 1,
+				PREPAIR_WHEN_ALL_PLAN_COLLECTED = 0x01ULL << 2,
+								
+				NOT_RUN_EXECUTE_FUNCTION = 0x01ULL << 3,
+				EXECUTE_WHEN_ALL_PLAN_EXECUTED = 0x01ULL << 4,
+				EXECUTE_WHEN_ALL_PLAN_COLLECTED = 0x01ULL << 5,
+				WAIT_FOR_EXECUTION = 0x01ULL << 6,
+				WAIT_IF_CMD_POOL_IS_FULL = 0x01ULL << 7,
+
+				NOT_RUN_COLLECT_FUNCTION = 0x01ULL << 8,
+				COLLECT_WHEN_ALL_PLAN_EXECUTED = 0x01ULL << 9,
+				COLLECT_WHEN_ALL_PLAN_COLLECTED = 0x01ULL << 10,
+				WAIT_FOR_COLLECTION = 0x01ULL << 11,
+
+				USING_TARGET_POS = 0x01ULL << 16,
+				USING_TARGET_VEL = 0x01ULL << 17,
+				USING_TARGET_CUR = 0x01ULL << 18,
+				USING_VEL_OFFSET = 0x01ULL << 19,
+				USING_CUR_OFFSET = 0x01ULL << 20,
+
+				NOT_CHECK_POS_MIN = 0x01ULL << 24,
+				NOT_CHECK_POS_MAX = 0x01ULL << 25,
+				NOT_CHECK_POS_CONTINUOUS = 0x01ULL << 26,
+				NOT_CHECK_POS_CONTINUOUS_AT_START = 0x01ULL << 27,
+				NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER = 0x01ULL << 28,
+				NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START = 0x01ULL << 29,
+				NOT_CHECK_POS_FOLLOWING_ERROR = 0x01ULL << 30,
+
+				NOT_CHECK_VEL_MIN = 0x01ULL << 31,
+				NOT_CHECK_VEL_MAX = 0x01ULL << 32,
+				NOT_CHECK_VEL_CONTINUOUS = 0x01ULL << 33,
+				NOT_CHECK_VEL_CONTINUOUS_AT_START = 0x01ULL << 34,
+				NOT_CHECK_VEL_FOLLOWING_ERROR = 0x01ULL << 35,
 			};
 
 			static auto Type()->const std::string &{ static const std::string type("Plan"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual prepairNrt(const std::map<std::string,std::string> &params, aris::core::MsgBase &msg_out)->void {}
-			auto virtual runRT()->int { return 0; }
-			auto virtual finishNrt()->void {}
+			auto virtual prepairNrt(const PlanParam &param, const std::map<std::string,std::string> &params, aris::core::Msg &msg_out)->void {}
+			auto virtual executeRT(const PlanParam &param)->int { return 0; }
+			auto virtual collectNrt(const PlanParam &param)->void {}
 			auto command()->plan::Command &;
+			auto command()const->const plan::Command & { return const_cast<std::decay_t<decltype(*this)> *>(this)->command(); }
 
 			virtual ~Plan();
 			explicit Plan(const std::string &name = "plan");
@@ -81,8 +90,6 @@ namespace aris
 		private:
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
-
-			int i;
 		};
 		class PlanRoot :public aris::core::Object
 		{
@@ -105,13 +112,122 @@ namespace aris
 			aris::core::ImpPtr<Imp> imp_;
 		};
 
+		class EnablePlan : public Plan
+		{
+		public:
+			static auto Type()->const std::string & { static const std::string type("EnablePlan"); return std::ref(type); }
+			auto virtual type() const->const std::string& override { return Type(); }
+			auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
+			auto virtual executeRT(const PlanParam &param)->int override;
+			auto virtual collectNrt(const PlanParam &param)->void override;
+
+			virtual ~EnablePlan();
+			explicit EnablePlan(const std::string &name = "enable_plan");
+			EnablePlan(const EnablePlan &);
+			EnablePlan(EnablePlan &&);
+			EnablePlan& operator=(const EnablePlan &);
+			EnablePlan& operator=(EnablePlan &&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
+		class DisablePlan : public Plan
+		{
+
+		};
+		class HomePlan : public Plan
+		{
+		public:
+			static auto Type()->const std::string & { static const std::string type("DisablePlan"); return std::ref(type); }
+			auto virtual type() const->const std::string& override { return Type(); }
+			auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
+			auto virtual executeRT(const PlanParam &param)->int override;
+			auto virtual collectNrt(const PlanParam &param)->void override;
+
+			virtual ~HomePlan();
+			explicit HomePlan(const std::string &name = "disable_plan");
+			HomePlan(const HomePlan &);
+			HomePlan(HomePlan &&);
+			HomePlan& operator=(const HomePlan &);
+			HomePlan& operator=(HomePlan &&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
+		class RecoverPlan : public Plan
+		{
+		public:
+			static auto Type()->const std::string & { static const std::string type("RecoverPlan"); return std::ref(type); }
+			auto virtual type() const->const std::string& override { return Type(); }
+			auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
+			auto virtual executeRT(const PlanParam &param)->int override;
+			auto virtual collectNrt(const PlanParam &param)->void override;
+
+			virtual ~RecoverPlan();
+			explicit RecoverPlan(const std::string &name = "recover_plan");
+			RecoverPlan(const RecoverPlan &);
+			RecoverPlan(RecoverPlan &&);
+			RecoverPlan& operator=(const RecoverPlan &);
+			RecoverPlan& operator=(RecoverPlan &&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
+		class MovePlan : public Plan
+		{
+		public:
+			static auto Type()->const std::string & { static const std::string type("MovePlan"); return std::ref(type); }
+			auto virtual type() const->const std::string& override { return Type(); }
+			auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
+			auto virtual executeRT(const PlanParam &param)->int override;
+			auto virtual collectNrt(const PlanParam &param)->void override;
+
+			virtual ~MovePlan();
+			explicit MovePlan(const std::string &name = "move_plan");
+			MovePlan(const MovePlan &);
+			MovePlan(MovePlan &&);
+			MovePlan& operator=(const MovePlan &);
+			MovePlan& operator=(MovePlan &&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
+		class UniversalPlan :public Plan
+		{
+		public:
+			using PrepairFunc = std::function<void(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)>;
+			using ExecuteFunc = std::function<int(const PlanParam &param)>;
+			using CollectFunc = std::function<void(const PlanParam &param)>;
+
+			static auto Type()->const std::string & { static const std::string type("UniversalPlan"); return std::ref(type); }
+			auto virtual type() const->const std::string& override { return Type(); }
+			auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
+			auto virtual executeRT(const PlanParam &param)->int override;
+			auto virtual collectNrt(const PlanParam &param)->void override;
+			auto virtual setPrepairFunc(PrepairFunc func)->void;
+			auto virtual setExecuteFunc(ExecuteFunc func)->void;
+			auto virtual setCollectFunc(CollectFunc func)->void;
+
+			virtual ~UniversalPlan();
+			explicit UniversalPlan(const std::string &name = "universal_plan", PrepairFunc prepair_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
+			UniversalPlan(const UniversalPlan &);
+			UniversalPlan(UniversalPlan &&);
+			UniversalPlan& operator=(const UniversalPlan &);
+			UniversalPlan& operator=(UniversalPlan &&);
+
+		private:
+			struct Imp;
+			aris::core::ImpPtr<Imp> imp_;
+		};
 
 		auto simulatePlan(aris::dynamic::Model *model, aris::plan::Plan *plan)->void;
 		auto simulateCommand(std::string cmd, aris::plan::PlanRoot *plan_root, aris::dynamic::Model *model, aris::dynamic::SimResult *result)->void;
 		auto simulateCommand(std::string cmd, aris::plan::PlanRoot *plan_root, aris::dynamic::Model *model, aris::control::Master*)->void;
 		auto executeCommand()->void;
-
-
 	}
 }
 

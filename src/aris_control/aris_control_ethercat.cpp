@@ -556,7 +556,6 @@ namespace aris
 			std::uint32_t abort_code;
 			auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
 			aris_ecrt_sdo_write(dynamic_cast<EthercatMaster&>(root()).ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
-
 		}
 		auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
 		{
@@ -717,16 +716,7 @@ namespace aris
 		auto EthercatMotion::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			EthercatSlave::saveXml(xml_ele);
-
-			xml_ele.SetAttribute("max_pos", maxPos());
-			xml_ele.SetAttribute("min_pos", minPos());
-			xml_ele.SetAttribute("max_vel", maxVel());
-			xml_ele.SetAttribute("max_acc", maxAcc());
-			xml_ele.SetAttribute("pos_factor", posFactor());
-			xml_ele.SetAttribute("pos_offset", posOffset());
-			xml_ele.SetAttribute("home_pos", homePos());
-
-
+			Motion::saveXml(xml_ele);
 		}
 		auto EthercatMotion::loadXml(const aris::core::XmlElement &xml_ele)->void
 		{
@@ -1077,9 +1067,9 @@ namespace aris
 		}
 		EthercatMotion::~EthercatMotion() = default;
 		EthercatMotion::EthercatMotion(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
-			, double max_pos, double min_pos, double max_vel, double max_acc, double pos_factor, double pos_offset, double home_pos)
+			, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos)
 			: EthercatSlave(name, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)
-			, Motion(name, phy_id, max_pos, min_pos, max_vel, max_acc,pos_factor, pos_offset, home_pos)
+			, Motion(name, phy_id, max_pos, min_pos, max_vel, min_vel, max_acc, min_acc, max_pos_following_error, max_vel_following_error, pos_factor, pos_offset, home_pos)
 			, Slave(name, phy_id), imp_(new Imp)
 		{
 		}

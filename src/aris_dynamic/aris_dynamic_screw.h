@@ -94,7 +94,14 @@ namespace aris
 
 
 		auto inline s_sinx_over_x(double x)->double { return std::abs(x)<1e-8 ? 1.0 : std::sin(x) / x; };
-		auto inline s_one_minus_x_over_square_x(double x)->double { return 0.5*s_sinx_over_x(0.5*x)*s_sinx_over_x(0.5*x); };
+		
+		// 1-cos(x) = 2 sin(x/2)^2
+		//    1-cos(x) / x^2
+		// =  2 sin(x/2)^2 / x^2 
+		// =  0.5 sin(x/2)^2 / (x/2)^2 
+		// =  0.5 [sin(x/2) / (x/2) ]^2 
+		// 
+		auto inline s_one_minus_cosx_over_square_x(double x)->double { return 0.5*s_sinx_over_x(0.5*x)*s_sinx_over_x(0.5*x); };
 
 
 		/// \brief 计算三维向量叉乘矩阵

@@ -551,8 +551,8 @@ namespace aris
 			const double &b = ra_in[1];
 			const double &c = ra_in[2];
 
-			const double A = theta < 1e-8 ? 1.0 : std::sin(theta) / theta;
-			const double B = theta < 1e-8 ? 0.5 : (1 - std::cos(theta)) / theta / theta;
+			const double A = s_sinx_over_x(theta);
+			const double B = s_one_minus_cosx_over_square_x(theta);
 
 			rm_out[0] = 1 - (b*b + c*c)*B;
 			rm_out[1] = -c*A + a*b*B;
@@ -577,15 +577,10 @@ namespace aris
 			double rq[4];
 			s_rm2rq(rm_in, rq, rm_ld);
 			
-			//double s_theta_over_two = s_norm(3, rq);
-			//double ratio = s_theta_over_two < 1e-3 ? 2.0 : std::atan2(s_theta_over_two, rq[3])*2.0 / s_theta_over_two;
-
-			//ra_out[0] = rq[0] * ratio;
-			//ra_out[1] = rq[1] * ratio;
-			//ra_out[2] = rq[2] * ratio;
-
+			// theta here is (-pi, pi]
+			// thus sin(theta/2) only has one zero point
 			double theta = atan2(s_norm(3, rq), rq[3]) * 2;
-			double coe = theta < 1e-3 ? 2.0 : theta / std::sin(theta / 2.0);
+			double coe = 2.0 / s_sinx_over_x(theta / 2.0);
 			s_nv(3, coe, rq);
 
 			s_vc(3, rq, ra_out);
@@ -921,7 +916,7 @@ namespace aris
 			const double n = std::sqrt(n_square);
 			
 			// vh is parallel part of v with w
-			double ratio = n<1e-8 ? 0.0 : (ps_in[0] * ps_in[3] + ps_in[1] * ps_in[4] + ps_in[2] * ps_in[5]) / n_square;
+			double ratio = n < 1e-8 ? 0.0 : (ps_in[0] * ps_in[3] + ps_in[1] * ps_in[4] + ps_in[2] * ps_in[5]) / n_square;
 			const double vh[3]{ ratio*ps_in[3],ratio*ps_in[4],ratio*ps_in[5] };
 			
 			// vt is vertical part of v with w
@@ -932,7 +927,7 @@ namespace aris
 			s_c3(ps_in + 3, ps_in, w_cross_v);
 
 			auto r1 = s_sinx_over_x(n);
-			auto r2 = s_one_minus_x_over_square_x(n);
+			auto r2 = s_one_minus_cosx_over_square_x(n);
 
 			pm_out[3] = vh[0] + vt[0] * r1 + w_cross_v[0] * r2;
 			pm_out[7] = vh[1] + vt[1] * r1 + w_cross_v[1] * r2;
@@ -986,8 +981,8 @@ namespace aris
 			// norm(w)
 			const double n = std::sqrt(n_square);
 
-			const double a = n<1e-3 ? 1.0/6.0 : (1.0 - std::sin(n) / n) / n / n;
-			const double b = s_one_minus_x_over_square_x(n);
+			const double a = n < 1e-3 ? 1.0 / 6.0 : (1.0 - std::sin(n) / n) / n / n;
+			const double b = s_one_minus_cosx_over_square_x(n);
 			const double c = s_sinx_over_x(n);
 
 			const double T[9]
@@ -3429,7 +3424,6 @@ namespace aris
 
 			return to_iv;
 		}
-
 
 		auto s_sov_pnts2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order) noexcept->void
 		{

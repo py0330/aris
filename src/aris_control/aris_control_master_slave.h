@@ -31,32 +31,6 @@ namespace aris
 			struct Imp;
 			aris::core::ImpPtr<Imp> imp_;
 		};
-		class DataLogger :public aris::core::Object
-		{
-		public:
-			enum { MAX_LOG_DATA_SIZE = 8192 };
-			static auto Type()->const std::string &{ static const std::string type("DataLogger"); return std::ref(type); }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto start(const std::string &log_file_name = std::string())->void;
-			auto stop()->void;
-			// use in rt thread //
-			auto send()->void;
-			auto lout()->aris::core::MsgStream &;
-			auto lout()const->const aris::core::MsgStream &{ return const_cast<DataLogger*>(this)->lout(); };
-
-			virtual ~DataLogger();
-			explicit DataLogger(const std::string &name = "data_logger");
-			DataLogger(const DataLogger &) = delete;
-			DataLogger(DataLogger &&) = delete;
-			DataLogger& operator=(const DataLogger &) = delete;
-			DataLogger& operator=(DataLogger &&) = delete;
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
 		class Slave : public aris::core::Object
 		{
 		public:
@@ -93,21 +67,15 @@ namespace aris
 			auto setControlStrategy(std::function<void()> strategy)->void;
 			
 			// used in rt thread //
+			auto logFile(const char *file_name)->void;
+			auto lout()->aris::core::MsgStream &;
 			auto mout()->aris::core::MsgStream &;
-			auto msgIn()->aris::core::MsgFix<MAX_MSG_SIZE>&;
-			auto msgOut()->aris::core::MsgFix<MAX_MSG_SIZE>&;
-			auto sendOut()->void;
-			auto recvOut(aris::core::MsgBase &recv_msg)->int;
-			auto sendIn(const aris::core::MsgBase &send_msg)->void;
-			auto recvIn()->int;
 			auto slaveAtAbs(aris::Size id)->Slave& { return slavePool().at(id); }
 			auto slaveAtAbs(aris::Size id)const->const Slave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
 			auto slaveAtPhy(aris::Size id)->Slave&;
 			auto slaveAtPhy(aris::Size id)const->const Slave&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
 			auto slavePool()->aris::core::ObjectPool<Slave>&;
 			auto slavePool()const->const aris::core::ObjectPool<Slave>&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
-			auto dataLogger()->DataLogger&;
-			auto dataLogger()const->const DataLogger&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->dataLogger(); }
 			auto rtHandle()->Handle*;
 			auto rtHandle()const->const Handle*{ return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
 

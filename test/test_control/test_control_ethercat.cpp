@@ -52,16 +52,10 @@ void test_pdo_xml()
 			{
 				m.mout() << "count " << count << " : pos " << value << '\0';
 				m.mout().update();
-				m.sendOut();
 			}
 		});
 		m.start();
-		for (auto i{ 0 }; i < 20; ++i)
-		{
-			aris::core::Msg msg;
-			while (!m.recvOut(msg));
-			std::cout << msg.data() << std::endl;
-		}
+		std::this_thread::sleep_for(std::chrono::seconds(10));
 		m.stop();
 		std::cout << "test pdo xml finished" << std::endl;
 	}
@@ -90,17 +84,10 @@ void test_pdo_code()
 			if (++count % 1000 == 0)
 			{
 				m.mout() << "count " << count << " : pos " << value << '\0';
-				m.mout().update();
-				m.sendOut();
 			}
 		});
 		m.start();
-		for (auto i{ 0 }; i < 20; ++i)
-		{
-			aris::core::Msg msg;
-			while (!m.recvOut(msg));
-			std::cout << msg.data() << std::endl;
-		}
+		std::this_thread::sleep_for(std::chrono::seconds(10));
 		m.stop();
 		std::cout << "test pdo code finished" << std::endl;
 	}
@@ -113,7 +100,7 @@ void test_sdo_xml()
 {
 	try
 	{
-		std::cout << "test sdo code" << std::endl;
+		std::cout << "test sdo xml" << std::endl;
 
 		aris::control::EthercatMaster m;
 
@@ -126,7 +113,6 @@ void test_sdo_xml()
 			"</sla>");
 
 		m.start();
-
 		// test read sdo //
 		std::int8_t mode = 0;
 		s1.readSdo(0x6098, 0x00, mode);//home_mode.read(mode);
@@ -150,14 +136,12 @@ void test_sdo_xml()
 		s1.readSdo(0x6098, 0x00, mode);//home_mode.read(mode);
 		std::cout << "home mode after write before start:" << static_cast<int>(mode) << std::endl;
 		m.stop();
-		std::cout << "test sdo code finished" << std::endl;
+		std::cout << "test sdo xml finished" << std::endl;
 	}
 	catch (std::exception &e)
 	{
 		std::cout << e.what() << std::endl;
 	}
-
-
 }
 void test_sdo_code() 
 {
@@ -170,7 +154,6 @@ void test_sdo_code()
 		auto &home_mode = s1.sdoPool().add<Sdo>("index_6098", 0x6098, 0x00, sizeof(std::int16_t), Sdo::READ | Sdo::WRITE | Sdo::CONFIG, 17);
 
 		m.start();
-
 		// test read sdo //
 		std::int8_t mode = 0;
 		s1.readSdo(0x6098, 0x00, mode);//home_mode.read(mode);
@@ -203,57 +186,12 @@ void test_sdo_code()
 	
 
 }
-void test_data_logger()
-{
-	try 
-	{
-		aris::core::XmlDocument xml_doc;
-		std::cout<<"ret:"<<xml_doc.Parse(xml_file)<<std::endl;
-
-		aris::control::EthercatMaster m;
-		m.loadXmlDoc(xml_doc);
-
-		m.setControlStrategy([&]()
-		{
-			static aris::core::MsgFix<8192> msg;
-			static int count{ 0 };
-
-			std::int32_t value{ 0 };
-			m.ecSlavePool().front().readPdo(0x6064, 0x00, value);
-
-			if (++count % 1000 == 0)
-			{
-				m.mout() << "count " << count << " : pos " << value << '\0';
-				m.mout().update();
-				m.sendOut();
-			}
-
-			m.dataLogger().lout() << count << " pos:" << value << "\n";
-			m.dataLogger().send();
-		});
-		m.dataLogger().start();
-		m.start();
-		for (auto i{ 0 }; i < 20; ++i)
-		{
-			aris::core::Msg msg;
-			while (!m.recvOut(msg));
-			std::cout << msg.data() << std::endl;
-		}
-		m.stop();
-		m.dataLogger().stop();
-		std::cout << "test data logger finished" << std::endl;
-	}
-	catch (std::exception &e)
-	{
-		std::cout << e.what() << std::endl;
-	}
-}
 
 void test_control_ethercat()
 {
 	test_pdo_code();
 	test_pdo_xml();
-	//test_sdo_code();
-	//test_sdo_xml();
-	test_data_logger();
+	test_sdo_code();
+	test_sdo_xml();
+	//test_data_logger();
 }

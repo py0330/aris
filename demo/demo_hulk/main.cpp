@@ -386,7 +386,7 @@ public:
 
 	HulkForwardSolver(const std::string &name = "hulk_forward_solver") :UniversalSolver(name) {};
 };
-
+/*
 struct RcParam 
 { 
 	double p[6];
@@ -621,9 +621,10 @@ auto mv_plan_func = [](const aris::dynamic::PlanParam &plan_param)->int
 
 	return total_count > plan_param.count_ ? 1 : 0;
 };
-
+*/
 int main()
 {
+	/*
 	try
 	{
 		aris::core::XmlDocument xml_doc;
@@ -689,20 +690,6 @@ int main()
 
 		cs.start();
 
-
-		std::atomic_bool flag{ true };
-		// 接收并打印信息 //
-		auto t = std::thread([&]()
-		{
-			for (; flag;)
-			{
-				aris::core::Msg msg;
-				cs.controller().recvOut(msg);
-				if (!msg.empty())std::cout << msg.data() << std::endl;
-
-				std::this_thread::sleep_for(std::chrono::milliseconds(10));
-			}
-		});
 
 		// 接收命令 //
 		for (std::string command_in; std::getline(std::cin, command_in);)
@@ -801,8 +788,6 @@ int main()
 		//m.saveXml("C:\\Users\\py033\\Desktop\\hulk.xml");
 
 		cs.stop();
-		flag = false;
-		t.join();
 		std::cout << "exit before error" << std::endl;
 	}
 	catch (std::exception &e)
@@ -811,7 +796,7 @@ int main()
 	}
 	std::cout << "demo_hulk finished, press any key to continue" << std::endl;
 	std::cin.get();
-
+	*/
 	return 0;
 }
 

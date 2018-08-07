@@ -12,7 +12,7 @@ void test_elmo_enable()
 		aris::control::EthercatController m;
 		m.registerType<EthercatMotion>();
 
-		auto &s1 = m.slavePool().add<EthercatMotion>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,0.0);
+		auto &s1 = m.slavePool().add<EthercatMotion>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 110.0, 1.0, 0.0, 0.0);
 
 		auto &tx = s1.pdoGroupPool().add<PdoGroup>("index_1A00", 0x1A00, true);
 		tx.add<Pdo>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));
@@ -78,23 +78,9 @@ void test_elmo_enable()
 			if (++count % 1000 == 0) 
 			{
 				m.mout() << "count " << count << " : ret " << ret << '\0';
-				m.mout().update();
-				m.sendOut();
 			}
 
-			m.dataLogger().lout() << "count " << count << " : ret " << ret <<"\n";
-			m.dataLogger().send();
 		});
-		m.dataLogger().start();
-		m.start();
-		for (auto i{ 0 }; i < 25; ++i)
-		{
-			aris::core::Msg msg;
-			while (!m.recvOut(msg));
-			std::cout << msg.data() << std::endl;
-		}
-		m.stop();
-		m.dataLogger().stop();
 		std::cout << "test motion enable finished" << std::endl;
 	}
 	catch (std::exception &e)

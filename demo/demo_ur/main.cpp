@@ -186,7 +186,7 @@ int main()
 	*/
 
 	
-	auto r = aris::robot::create_ur5();
+	auto r = aris::robot::createUr5Model();
 
 	r->saveXmlFile("C:\\Users\\py033\\Desktop\\ur5.xml");
 

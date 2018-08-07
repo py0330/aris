@@ -360,7 +360,7 @@ namespace aris
 			// set name and default child type //
 			imp_->name_ = xml_ele.Name();
 			imp_->default_type_ = xml_ele.Attribute("default_child_type") ? xml_ele.Attribute("default_child_type") : Object::Type();
-			
+
 			// insert children //
 			children().clear();
 			for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())
