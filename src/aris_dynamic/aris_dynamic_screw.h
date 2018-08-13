@@ -94,7 +94,6 @@ namespace aris
 
 
 		auto inline s_sinx_over_x(double x)->double { return std::abs(x)<1e-8 ? 1.0 : std::sin(x) / x; };
-		
 		// 1-cos(x) = 2 sin(x/2)^2
 		//    1-cos(x) / x^2
 		// =  2 sin(x/2)^2 / x^2 
@@ -1590,13 +1589,6 @@ namespace aris
 		///
 		///
 		auto s_sov_axis_distance(const double*from_pm, const double*to_pm, Size axis)noexcept->double;
-
-
-
-
-
-
-		auto s_dlt_col(const Size &dlt_col_num, const Size *col_index, const Size &m, const Size &n, double *A, const Size &ldA) noexcept->void;
 	}
 }
 

@@ -56,7 +56,9 @@ namespace aris
 			auto executeCmd(const aris::core::Msg &cmd_string)->std::int64_t;
 			auto start()->void;
 			auto stop()->void;
-			auto currentCmdId()->std::int64_t;
+			auto currentExecuteId()->std::int64_t;
+			auto currentCollectId()->std::int64_t;
+
 			auto getPartPm()->std::vector<double>;
 
 		private:

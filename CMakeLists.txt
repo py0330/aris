@@ -45,8 +45,10 @@ if(UNIX)
 endif(UNIX)
 
 # set debug and release options
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+if(WIN32)
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+endif(WIN32)
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
@@ -113,7 +115,7 @@ install(TARGETS aris_core ARCHIVE CONFIGURATIONS Release DESTINATION lib/release
 install(FILES ${FULL_H} src/aris_core/aris_core.h DESTINATION include)
 
 # aris plan project
-set(SOURCE aris_plan_function aris_plan_command)
+set(SOURCE aris_plan_function aris_plan_root)
 PREPEND_CPP(FULL_SRC src/aris_plan ${SOURCE})
 PREPEND_H(FULL_H src/aris_plan ${SOURCE})
 add_library(aris_plan STATIC ${FULL_SRC} ${FULL_H} src/aris_plan/aris_plan.h)
@@ -132,7 +134,9 @@ install(FILES ${FULL_H} src/aris_control/aris_control.h DESTINATION include)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 # aris dynamic project
-set(SOURCE aris_dynamic_plan aris_dynamic_matrix aris_dynamic_block_matrix aris_dynamic_cell aris_dynamic_spline aris_dynamic_screw aris_dynamic_model_basic aris_dynamic_model_coordinate aris_dynamic_model_interaction aris_dynamic_model_compute aris_dynamic_model aris_dynamic_simple_model)
+set(SOURCE aris_dynamic_plan aris_dynamic_matrix aris_dynamic_block_matrix aris_dynamic_cell aris_dynamic_spline aris_dynamic_screw
+ aris_dynamic_model_basic aris_dynamic_model_coordinate aris_dynamic_model_interaction aris_dynamic_model_solver
+ aris_dynamic_model_simulation aris_dynamic_model aris_dynamic_simple_model)
 PREPEND_CPP(FULL_SRC src/aris_dynamic ${SOURCE})
 PREPEND_H(FULL_H src/aris_dynamic ${SOURCE})
 add_library(aris_dynamic STATIC ${FULL_SRC} ${FULL_H} src/aris_dynamic/aris_dynamic.h)
@@ -179,7 +183,7 @@ target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
 set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_plan_command.h test_plan_command.cpp test_plan_function.h test_plan_function.cpp)
+set(SOURCE_FILES main.cpp test_plan_function.h test_plan_function.cpp)
 PREPEND(FULL_SRC test/test_plan ${SOURCE_FILES})
 add_executable(test_plan ${FULL_SRC})
 target_link_libraries(test_plan aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})

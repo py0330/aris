@@ -19,52 +19,52 @@ namespace aris
 {
 	namespace dynamic
 	{
-		struct RowMajor { Size r_ld; constexpr RowMajor(Size r_ld_) :r_ld(r_ld_) {}; };
-		struct ColMajor { Size c_ld; constexpr ColMajor(Size c_ld_) :c_ld(c_ld_) {}; };
-		struct Stride { Size r_ld, c_ld; Stride() = default; constexpr Stride(Size r_ld_, Size c_ld_) :r_ld(r_ld_), c_ld(c_ld_) {}; };
+		struct RowMajor { Size r_ld; constexpr RowMajor(Size r_ld_)noexcept :r_ld(r_ld_) {}; };
+		struct ColMajor { Size c_ld; constexpr ColMajor(Size c_ld_)noexcept :c_ld(c_ld_) {}; };
+		struct Stride { Size r_ld, c_ld; Stride()noexcept = default; constexpr Stride(Size r_ld_, Size c_ld_)noexcept :r_ld(r_ld_), c_ld(c_ld_) {}; };
 
-		auto inline constexpr T(Size ld)->ColMajor { return ColMajor(ld); }
-		auto inline constexpr at(Size i, Size ld)->Size { return i*ld; }
-		auto inline constexpr at(Size i, Size j, Size ld)->Size { return i*ld + j; }
-		auto inline constexpr next_r(Size at, Size ld)->Size { return at + ld; }
-		auto inline constexpr last_r(Size at, Size ld)->Size { return at - ld; }
-		auto inline constexpr next_c(Size at, Size ld)->Size { return at + 1; }
-		auto inline constexpr last_c(Size at, Size ld)->Size { return at - 1; }
-		auto inline constexpr next_d(Size at, Size ld)->Size { return at + 1 + ld; }
-		auto inline constexpr last_d(Size at, Size ld)->Size { return at - 1 - ld; }
+		auto inline constexpr T(Size ld)noexcept->ColMajor { return ColMajor(ld); }
+		auto inline constexpr at(Size i, Size ld)noexcept->Size { return i*ld; }
+		auto inline constexpr at(Size i, Size j, Size ld)noexcept->Size { return i*ld + j; }
+		auto inline constexpr next_r(Size at, Size ld)noexcept->Size { return at + ld; }
+		auto inline constexpr last_r(Size at, Size ld)noexcept->Size { return at - ld; }
+		auto inline constexpr next_c(Size at, Size ld)noexcept->Size { return at + 1; }
+		auto inline constexpr last_c(Size at, Size ld)noexcept->Size { return at - 1; }
+		auto inline constexpr next_d(Size at, Size ld)noexcept->Size { return at + 1 + ld; }
+		auto inline constexpr last_d(Size at, Size ld)noexcept->Size { return at - 1 - ld; }
 
-		auto inline constexpr T(RowMajor r)->ColMajor { return ColMajor(r.r_ld); }
-		auto inline constexpr at(Size i, RowMajor row_major)->Size { return i*row_major.r_ld; }
-		auto inline constexpr at(Size i, Size j, RowMajor row_major)->Size { return i*row_major.r_ld + j; }
-		auto inline constexpr next_r(Size at, RowMajor row_major)->Size { return at + row_major.r_ld; }
-		auto inline constexpr last_r(Size at, RowMajor row_major)->Size { return at - row_major.r_ld; }
-		auto inline constexpr next_c(Size at, RowMajor row_major)->Size { return at + 1; }
-		auto inline constexpr last_c(Size at, RowMajor row_major)->Size { return at - 1; }
-		auto inline constexpr next_d(Size at, RowMajor row_major)->Size { return at + 1 + row_major.r_ld; }
-		auto inline constexpr last_d(Size at, RowMajor row_major)->Size { return at - 1 - row_major.r_ld; }
+		auto inline constexpr T(RowMajor r)noexcept->ColMajor { return ColMajor(r.r_ld); }
+		auto inline constexpr at(Size i, RowMajor row_major)noexcept->Size { return i*row_major.r_ld; }
+		auto inline constexpr at(Size i, Size j, RowMajor row_major)noexcept->Size { return i*row_major.r_ld + j; }
+		auto inline constexpr next_r(Size at, RowMajor row_major)noexcept->Size { return at + row_major.r_ld; }
+		auto inline constexpr last_r(Size at, RowMajor row_major)noexcept->Size { return at - row_major.r_ld; }
+		auto inline constexpr next_c(Size at, RowMajor row_major)noexcept->Size { return at + 1; }
+		auto inline constexpr last_c(Size at, RowMajor row_major)noexcept->Size { return at - 1; }
+		auto inline constexpr next_d(Size at, RowMajor row_major)noexcept->Size { return at + 1 + row_major.r_ld; }
+		auto inline constexpr last_d(Size at, RowMajor row_major)noexcept->Size { return at - 1 - row_major.r_ld; }
 
-		auto inline constexpr T(ColMajor c)->RowMajor { return RowMajor(c.c_ld); }
-		auto inline constexpr at(Size i, ColMajor col_major)->Size { return i; }
-		auto inline constexpr at(Size i, Size j, ColMajor col_major)->Size { return i + j*col_major.c_ld; }
-		auto inline constexpr next_r(Size at, ColMajor col_major)->Size { return at + 1; }
-		auto inline constexpr last_r(Size at, ColMajor col_major)->Size { return at - 1; }
-		auto inline constexpr next_c(Size at, ColMajor col_major)->Size { return at + col_major.c_ld; }
-		auto inline constexpr last_c(Size at, ColMajor col_major)->Size { return at - col_major.c_ld; }
-		auto inline constexpr next_d(Size at, ColMajor col_major)->Size { return at + 1 + col_major.c_ld; }
-		auto inline constexpr last_d(Size at, ColMajor col_major)->Size { return at - 1 - col_major.c_ld; }
+		auto inline constexpr T(ColMajor c)noexcept->RowMajor { return RowMajor(c.c_ld); }
+		auto inline constexpr at(Size i, ColMajor col_major)noexcept->Size { return i; }
+		auto inline constexpr at(Size i, Size j, ColMajor col_major)noexcept->Size { return i + j*col_major.c_ld; }
+		auto inline constexpr next_r(Size at, ColMajor col_major)noexcept->Size { return at + 1; }
+		auto inline constexpr last_r(Size at, ColMajor col_major)noexcept->Size { return at - 1; }
+		auto inline constexpr next_c(Size at, ColMajor col_major)noexcept->Size { return at + col_major.c_ld; }
+		auto inline constexpr last_c(Size at, ColMajor col_major)noexcept->Size { return at - col_major.c_ld; }
+		auto inline constexpr next_d(Size at, ColMajor col_major)noexcept->Size { return at + 1 + col_major.c_ld; }
+		auto inline constexpr last_d(Size at, ColMajor col_major)noexcept->Size { return at - 1 - col_major.c_ld; }
 
-		auto inline constexpr T(Stride s)->Stride { return Stride(s.c_ld, s.r_ld); }
-		auto inline constexpr at(Size i, Stride stride)->Size { return i*stride.r_ld; }
-		auto inline constexpr at(Size i, Size j, Stride stride)->Size { return i*stride.r_ld + j*stride.c_ld; }
-		auto inline constexpr next_r(Size at, Stride stride)->Size { return at + stride.r_ld; }
-		auto inline constexpr last_r(Size at, Stride stride)->Size { return at - stride.r_ld; }
-		auto inline constexpr next_c(Size at, Stride stride)->Size { return at + stride.c_ld; }
-		auto inline constexpr last_c(Size at, Stride stride)->Size { return at - stride.c_ld; }
-		auto inline constexpr next_d(Size at, Stride stride)->Size { return at + stride.c_ld + stride.r_ld; }
-		auto inline constexpr last_d(Size at, Stride stride)->Size { return at - stride.c_ld - stride.r_ld; }
+		auto inline constexpr T(Stride s)noexcept->Stride { return Stride(s.c_ld, s.r_ld); }
+		auto inline constexpr at(Size i, Stride stride)noexcept->Size { return i*stride.r_ld; }
+		auto inline constexpr at(Size i, Size j, Stride stride)noexcept->Size { return i*stride.r_ld + j*stride.c_ld; }
+		auto inline constexpr next_r(Size at, Stride stride)noexcept->Size { return at + stride.r_ld; }
+		auto inline constexpr last_r(Size at, Stride stride)noexcept->Size { return at - stride.r_ld; }
+		auto inline constexpr next_c(Size at, Stride stride)noexcept->Size { return at + stride.c_ld; }
+		auto inline constexpr last_c(Size at, Stride stride)noexcept->Size { return at - stride.c_ld; }
+		auto inline constexpr next_d(Size at, Stride stride)noexcept->Size { return at + stride.c_ld + stride.r_ld; }
+		auto inline constexpr last_d(Size at, Stride stride)noexcept->Size { return at - stride.c_ld - stride.r_ld; }
 
 		template <typename T, typename TType>
-		auto inline dsp(Size m, Size n, const T *data, TType d_t)->void
+		auto inline dsp(Size m, Size n, const T *data, TType d_t)noexcept->void
 		{
 			std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(14);
 
@@ -80,7 +80,7 @@ namespace aris
 			std::cout << std::endl;
 		};
 		template <typename T>
-		auto inline dsp(Size m, Size n, const T *data)->void { dsp(m, n, data, n); }
+		auto inline dsp(Size m, Size n, const T *data)noexcept->void { dsp(m, n, data, n); }
 		template<typename AType>
 		auto dlmwrite(const Size m, const Size n, const double *A, AType a_t, const char *filename)->void
 		{
@@ -103,11 +103,11 @@ namespace aris
 		auto dlmread(const char *filename, double *mtx)->void;
 
 		template <typename T>
-		auto inline s_sgn(T val)->T { return T(T(0) < val) - (val < T(0)); }
+		auto inline s_sgn(T val)noexcept->T { return T(T(0) < val) - (val < T(0)); }
 		template <typename T>
-		auto inline s_sgn2(T val)->T { return val < T(0) ? T(-1) : T(1); }
+		auto inline s_sgn2(T val)noexcept->T { return val < T(0) ? T(-1) : T(1); }
 
-		auto inline s_is_equal(double a, double b, double error) { return std::abs(a - b) < error; }
+		auto inline s_is_equal(double a, double b, double error)noexcept { return std::abs(a - b) < error; }
 		template <typename V1Type, typename V2Type>
 		auto inline s_is_equal(Size n, const double *v1, V1Type v1_t, const double *v2, V2Type v2_t, double error) noexcept->bool
 		{
@@ -250,7 +250,7 @@ namespace aris
 		}
 		auto inline s_ms(Size m, Size n, const double* A, double* B) noexcept->void { s_vs(m*n, A, B); }
 		template<typename AType, typename BType, typename CType>
-		auto inline s_mma(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
+		auto inline s_mma(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)noexcept->void
 		{
 			for (Size i(-1), ai0{ 0 }, ci0{ 0 }; ++i < m; ai0 = next_r(ai0, a_t), ci0 = next_r(ci0, c_t))
 			{
@@ -262,7 +262,7 @@ namespace aris
 			}
 		}
 		template<typename AType, typename BType, typename CType>
-		auto inline s_mma(Size m, Size n, Size k, double alpha, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
+		auto inline s_mma(Size m, Size n, Size k, double alpha, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)noexcept->void
 		{
 			for (Size i(-1), ai0{ 0 }, ci0{ 0 }; ++i < m; ai0 = next_r(ai0, a_t), ci0 = next_r(ci0, c_t))
 			{
@@ -278,7 +278,7 @@ namespace aris
 		auto inline s_mma(Size m, Size n, Size k, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, A, k, B, n, C, n); }
 		auto inline s_mma(Size m, Size n, Size k, double alpha, const double* A, const double* B, double *C) noexcept->void { s_mma(m, n, k, alpha, A, k, B, n, C, n); }
 		template<typename AType, typename BType, typename CType>
-		auto inline s_mms(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)->void
+		auto inline s_mms(Size m, Size n, Size k, const double* A, AType a_t, const double* B, BType b_t, double *C, CType c_t)noexcept->void
 		{
 			for (Size i(-1), ai0{ 0 }, ci0{ 0 }; ++i < m; ai0 = next_r(ai0, a_t), ci0 = next_r(ci0, c_t))
 			{
@@ -336,7 +336,7 @@ namespace aris
 
 		// x_new[i] = x[p[i]]
 		template<typename XType>
-		auto inline s_permutate(Size m, Size rhs, const Size *p, double *x, XType x_t)->void
+		auto inline s_permutate(Size m, Size rhs, const Size *p, double *x, XType x_t)noexcept->void
 		{
 			for (Size i(-1), xi0{ 0 }; ++i < m; xi0 = next_r(xi0, x_t))
 			{
@@ -346,10 +346,10 @@ namespace aris
 				for (Size j(-1), xij{ xi0 }, xkj{ at(k,0,x_t) }; ++j < rhs; xij = next_c(xij, x_t), xkj = next_c(xkj, x_t))std::swap(x[xij], x[xkj]);
 			}
 		}
-		auto inline s_permutate(Size m, Size rhs, const Size *p, double *x)->void{s_permutate(m, rhs, p, x, rhs);}
+		auto inline s_permutate(Size m, Size rhs, const Size *p, double *x)noexcept->void{s_permutate(m, rhs, p, x, rhs);}
 		// x_new[p[i]] = x[i]
 		template<typename XType>
-		auto inline s_permutate_inv(Size m, Size rhs, const Size *p, double *x, XType x_t)->void
+		auto inline s_permutate_inv(Size m, Size rhs, const Size *p, double *x, XType x_t)noexcept->void
 		{
 			for (Size i(-1), xi0{ 0 }; ++i < m; xi0 = next_r(xi0, x_t))
 			{
@@ -366,7 +366,7 @@ namespace aris
 				}
 			}
 		}
-		auto inline s_permutate_inv(Size m, Size rhs, const Size *p, double *x)->void { s_permutate_inv(m, rhs, p, x, rhs); }
+		auto inline s_permutate_inv(Size m, Size rhs, const Size *p, double *x)noexcept->void { s_permutate_inv(m, rhs, p, x, rhs); }
 
 		// A can be the same as L, only when they have same type
 		template<typename AType, typename LType>
@@ -511,7 +511,7 @@ namespace aris
 				s_mma(m - j - 1, m - j - 1, 1, U + uj1j, u_t, Q + next_c(qjj, q_t), q_t, Q + next_d(qjj, q_t), q_t);
 			}
 		}
-		auto inline s_householder_ut2q(Size m, Size n, const double *U, const double *tau, double *Q) { s_householder_ut2q(m, n, U, n, tau, 1, Q, m); }
+		auto inline s_householder_ut2q(Size m, Size n, const double *U, const double *tau, double *Q)noexcept->void { s_householder_ut2q(m, n, U, n, tau, 1, Q, m); }
 		// Q can be the same with A, now Q size is m x n
 		template<typename UType, typename TauType, typename QType>
 		auto inline s_householder_ut2qmn(Size m, Size n, const double *U, UType u_t, const double *tau, TauType tau_t, double *Q, QType q_t)noexcept->void
@@ -526,7 +526,7 @@ namespace aris
 				s_mma(m - j - 1, std::min(m, n) - j - 1, 1, U + uj1j, u_t, Q + next_c(qjj, q_t), q_t, Q + next_d(qjj, q_t), q_t);
 			}
 		}
-		auto inline s_householder_ut2qmn(Size m, Size n, const double *U, const double *tau, double *Q) { s_householder_ut2qmn(m, n, U, n, tau, 1, Q, n); }
+		auto inline s_householder_ut2qmn(Size m, Size n, const double *U, const double *tau, double *Q)noexcept->void { s_householder_ut2qmn(m, n, U, n, tau, 1, Q, n); }
 		// U can be the same as R
 		template<typename UType, typename TauType, typename RType>
 		auto inline s_householder_ut2r(Size m, Size n, const double *U, UType u_t, const double *tau, TauType tau_t, double *R, RType r_t)noexcept->void
@@ -537,7 +537,7 @@ namespace aris
 				s_fill(m - i - 1, 1, 0.0, R + rj1j, r_t);
 			}
 		}
-		auto inline s_householder_ut2r(Size m, Size n, const double *U, const double *tau, double *R) { s_householder_ut2r(m, n, U, n, tau, 1, R, n); }
+		auto inline s_householder_ut2r(Size m, Size n, const double *U, const double *tau, double *R)noexcept->void { s_householder_ut2r(m, n, U, n, tau, 1, R, n); }
 		// U can be the same as R
 		template<typename UType, typename TauType, typename QType, typename RType>
 		auto inline s_householder_ut2qr(Size m, Size n, const double *U, UType u_t, const double *tau, TauType tau_t, double *Q, QType q_t, double *R, RType r_t)noexcept->void
@@ -545,7 +545,7 @@ namespace aris
 			s_householder_ut2q(m, n, U, u_t, tau, tau_t, Q, q_t);
 			s_householder_ut2r(m, n, U, u_t, tau, tau_t, R, r_t);
 		}
-		auto inline s_householder_ut2qr(Size m, Size n, const double *U, const double *tau, double *Q, double *R) { s_householder_ut2qr(m, n, U, n, tau, 1, Q, m, R, n); }
+		auto inline s_householder_ut2qr(Size m, Size n, const double *U, const double *tau, double *Q, double *R)noexcept->void { s_householder_ut2qr(m, n, U, n, tau, 1, Q, m, R, n); }
 		// x must have the same or bigger size with b
 		template<typename UType, typename TauType, typename BType, typename XType>
 		auto inline s_householder_ut_q_dot(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
@@ -566,7 +566,7 @@ namespace aris
 				}
 			}
 		}
-		auto inline s_householder_ut_q_dot(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x) { s_householder_ut_q_dot(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
+		auto inline s_householder_ut_q_dot(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x)noexcept->void { s_householder_ut_q_dot(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
 		// x must have the same or bigger size with b
 		template<typename UType, typename TauType, typename BType, typename XType>
 		auto inline s_householder_ut_qt_dot(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
@@ -586,7 +586,7 @@ namespace aris
 				}
 			}
 		}
-		auto inline s_householder_ut_qt_dot(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x) { s_householder_ut_qt_dot(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
+		auto inline s_householder_ut_qt_dot(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x)noexcept->void { s_householder_ut_qt_dot(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
 		// x must have the same or bigger size with b
 		template<typename UType, typename TauType, typename BType, typename XType>
 		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t, double zero_check = 1e-10)noexcept->void
@@ -596,7 +596,7 @@ namespace aris
 
 			if (n > m)s_fill(n - m, rhs, 0.0, x + at(m, 0, x_t), x_t);
 		}
-		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x, double zero_check = 1e-10) { s_householder_ut_sov(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs, zero_check); }
+		auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x, double zero_check = 1e-10)noexcept->void { s_householder_ut_sov(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs, zero_check); }
 		// tau must have same size with max(m,n), A can be the same as U,  Q * R = A * P
 		template<typename AType, typename UType, typename TauType>
 		auto inline s_householder_utp(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void
@@ -671,7 +671,7 @@ namespace aris
 			if (n > m)s_fill(n - m, rhs, 0.0, x + at(m, 0, x_t), x_t);
 			s_permutate_inv(n, rhs, p, x, x_t);
 		}
-		auto inline s_householder_utp_sov(Size m, Size n, Size rhs, Size rank, const double *U, const double *tau, const Size *p, const double *b, double *x, double zero_check = 1e-10) { s_householder_utp_sov(m, n, rhs, rank, U, n, tau, 1, p, b, rhs, x, rhs, zero_check); }
+		auto inline s_householder_utp_sov(Size m, Size n, Size rhs, Size rank, const double *U, const double *tau, const Size *p, const double *b, double *x, double zero_check = 1e-10)noexcept->void { s_householder_utp_sov(m, n, rhs, rank, U, n, tau, 1, p, b, rhs, x, rhs, zero_check); }
 		template<typename UType, typename TauType, typename XType>
 		auto inline s_householder_utp_sov_solution_space(Size m, Size n, Size rank, const double *U, UType u_t, const double *tau, TauType tau_t, const Size *p, double *x, XType x_t, double zero_check = 1e-10)noexcept->void
 		{
@@ -688,7 +688,7 @@ namespace aris
 			for (Size i(-1); ++i < n - rank; )x[at(i + rank, i, x_t)] = -1.0;
 			s_permutate_inv(n, n - rank, p, x, x_t);
 		}
-		auto inline s_householder_utp_sov_solution_space(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double zero_check = 1e-10) { s_householder_utp_sov_solution_space(m, n, rank, U, n, tau, 1, p, x, n-rank, zero_check); }
+		auto inline s_householder_utp_sov_solution_space(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double zero_check = 1e-10)noexcept->void { s_householder_utp_sov_solution_space(m, n, rank, U, n, tau, 1, p, x, n-rank, zero_check); }
 		//
 		template<typename UType, typename TauType, typename XType, typename TauType2>
 		auto inline s_householder_utp2pinv(Size m, Size n, Size rank, const double *U, UType u_t, const double *tau, TauType tau_t, const Size *p, double *x, XType x_t, double *tau2, TauType2 t_t, double zero_check = 1e-10)noexcept->void
@@ -905,35 +905,8 @@ namespace aris
 			// permutate
 			s_permutate_inv(n, m, p, x, x_t);
 		}
-		auto inline s_householder_utp2pinv(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10) { s_householder_utp2pinv(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
+		auto inline s_householder_utp2pinv(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10)noexcept->void { s_householder_utp2pinv(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif

@@ -12,25 +12,6 @@ namespace aris
 {
 	namespace control
 	{
-		class RTTimer : public aris::core::Object
-		{
-		public:
-			static auto Type()->const std::string &{ static const std::string type("RTTimer"); return std::ref(type); }
-			auto virtual type() const->const std::string& override{ return Type(); }
-			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-
-			virtual ~RTTimer();
-			explicit RTTimer(const std::string &name = "rt_timer");
-			RTTimer(const RTTimer &) = delete;
-			RTTimer(RTTimer &&) = delete;
-			RTTimer& operator=(const RTTimer &) = delete;
-			RTTimer& operator=(RTTimer &&) = delete;
-
-		private:
-			struct Imp;
-			aris::core::ImpPtr<Imp> imp_;
-		};
 		class Slave : public aris::core::Object
 		{
 		public:

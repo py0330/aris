@@ -703,7 +703,7 @@ namespace aris
 			double max_vel_;
 			double pos_offset_;
 
-			double target_pos_, target_vel_, target_cur_, offset_vel_, offset_cur_;
+			double target_pos_{ 0 }, target_vel_{ 0 }, target_cur_{ 0 }, offset_vel_{ 0 }, offset_cur_{ 0 };
 			std::uint8_t mode_of_operation;
 
 			bool is_waiting_mode{ false };
@@ -737,19 +737,19 @@ namespace aris
 		}
 		auto EthercatMotion::actualPos()->double
 		{
-			std::int32_t pos_count;
+			std::int32_t pos_count{ 0 };
 			readPdo(0x6064, 0x00, pos_count);
 			return static_cast<double>(pos_count) / posFactor() - posOffset();
 		}
 		auto EthercatMotion::actualVel()->double
 		{
-			std::int32_t vel_count;
+			std::int32_t vel_count{ 0 };
 			readPdo(0x606C, 0x00, vel_count);
 			return static_cast<double>(vel_count) / posFactor();
 		}
 		auto EthercatMotion::actualCur()->double
 		{
-			std::int16_t cur_count;
+			std::int16_t cur_count{ 0 };
 			readPdo(0x6078, 0x00, cur_count);
 			return static_cast<double>(cur_count);
 		}

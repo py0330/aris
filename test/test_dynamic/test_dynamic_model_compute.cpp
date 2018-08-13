@@ -884,11 +884,11 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.motionPool().at(i).setMa(iao[i]);
 		}
 		// compute origin //
-		s.init();
+		s.allocateMemory();
 		s.kinPos();
-		s.init();
+		s.allocateMemory();
 		s.kinVel();
-		s.init();
+		s.allocateMemory();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  forward origin" << std::endl;
 
@@ -939,13 +939,13 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.motionPool().at(i).setMa(iat[i]);
 		}
 		// compute //
-		s.init();
+		s.allocateMemory();
 		s.kinPos();
-		s.init();
+		s.allocateMemory();
 		s.kinVel();
-		s.init();
+		s.allocateMemory();
 		s.dynAccAndFce();
-		s.init();
+		s.allocateMemory();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
@@ -1085,7 +1085,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.forcePool().at(i).activate(true);
 			dynamic_cast<SingleComponentForce&>(m.forcePool().at(i)).setFce(ift[i]);
 		}
-		s.init();
+		s.allocateMemory();
 		s.dynAccAndFce();
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)
 		{
@@ -1114,11 +1114,11 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 
 		// compute origin //
-		s.init();
+		s.allocateMemory();
 		s.kinPos();
-		s.init();
+		s.allocateMemory();
 		s.kinVel();
-		s.init();
+		s.allocateMemory();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  inverse origin" << std::endl;
 
@@ -1174,13 +1174,13 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).setMaa(oat + i * 6);
 		}
 		// compute //
-		s.init();
+		s.allocateMemory();
 		s.kinPos();
-		s.init();
+		s.allocateMemory();
 		s.kinVel();
-		s.init();
+		s.allocateMemory();
 		s.dynAccAndFce();
-		s.init();
+		s.allocateMemory();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
@@ -1340,7 +1340,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	for (auto &mot : m.motionPool())mot.activate(true);
 	for (auto &fce : m.forcePool())fce.activate(false);
 	for (auto &gm : m.generalMotionPool())gm.activate(false);
-	s.init();
+	s.allocateMemory();
 
 	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 	{
@@ -1440,7 +1440,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	for (auto &mot : m.motionPool())mot.activate(false);
 	for (auto &fce : m.forcePool())fce.activate(false);
 	for (auto &gm : m.generalMotionPool())gm.activate(true);
-	s.init();
+	s.allocateMemory();
 
 
 	m.generalMotionPool().at(0).setMpm(opo);

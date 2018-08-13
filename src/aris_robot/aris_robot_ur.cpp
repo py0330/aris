@@ -8,58 +8,6 @@ namespace aris
 {
 	namespace robot
 	{
-		auto Ur5InverseSolver::kinPos()->bool
-		{
-			double q[6];
-
-			double j6_pnt_loc[3]{ 0.0, 0.0, -0.0823 };
-			double joint_pnt[3];
-			s_pp2pp(*model().generalMotionPool().at(0).mpm(), j6_pnt_loc, joint_pnt);
-			q[0] = std::atan2(joint_pnt[1], joint_pnt[0]) - std::asin(0.10915 / std::sqrt(joint_pnt[0] * joint_pnt[0] + joint_pnt[1] * joint_pnt[1]));
-
-			double pe[6]{ 0,0,0,q[0],0,0 };
-			double pm1[16], pm2[16], pm3[16], pm4[16];
-			s_pe2pm(pe, pm1, "321");
-
-			s_inv_pm_dot_pm(pm1, *model().generalMotionPool().at(0).mpm(), pm2);
-			s_pe2pm(std::array<double, 6>{0.425 + 0.39225, 0.13585 - 0.1197 + 0.093 + 0.0823, 0.089159 - 0.09465, PI, 0, PI / 2}.data(), pm3, "321");
-			s_pm_dot_inv_pm(pm2, pm3, pm4);
-			s_pm2pe(pm4, pe, "232");
-
-			if (std::abs(pe[4] - 0) < 1e-10)
-			{
-				pe[5] = (pe[3] + pe[5]) > PI ? pe[3] + pe[5] - 2 * PI : pe[3] + pe[5];
-				pe[3] = 0.0;
-			}
-
-			q[4] = -pe[4];
-			q[5] = pe[5];
-
-
-			double pe2[6]{ 0,0,0,q[0],pe[3],0.0 };
-			s_pe2pm(pe2, pm2, "323");
-			s_va(3, 0.09465, pm2 + 2, 4, joint_pnt, 1);
-			s_va(3, -(0.13585 - 0.1197 + 0.093), pm2 + 1, 4, joint_pnt, 1);
-
-			double pp[3];
-			s_inv_pp2pp(pm1, joint_pnt, pp);
-			pp[2] -= 0.089159;
-
-			q[2] = PI - std::acos(-(pp[0] * pp[0] + pp[2] * pp[2] - 0.425 * 0.425 - 0.39225 * 0.39225) / (2 * 0.425*0.39225));
-			q[1] = -PI + std::acos((-pp[0] * pp[0] - pp[2] * pp[2] - 0.425 * 0.425 + 0.39225 * 0.39225) / (2 * std::sqrt(pp[0] * pp[0] + pp[2] * pp[2]) *0.425)) - std::atan2(pp[2], pp[0]);
-			q[3] = pe[3] - q[1] - q[2];
-
-			double pe3[6]{ 0.0,0.0,0.0,0.0,0.0,0.0 }, pm[16];
-			for (aris::Size i = 0; i < 6; ++i)
-			{
-				pe3[5] = q[i];
-				s_pm_dot_pm(*model().jointPool().at(i).makJ().pm(), s_pe2pm(pe3, pm, "123"), pm1);
-				s_pm_dot_inv_pm(pm1, *model().jointPool().at(i).makI().prtPm(), const_cast<double*>(*model().jointPool().at(i).makI().fatherPart().pm()));
-				model().motionPool().at(i).updMp();
-			}
-
-			return true;
-		};
 		// 具体参数参考MR里面147-158页 //
 		auto createUr5Model()->std::unique_ptr<aris::dynamic::Model>
 		{
@@ -178,7 +126,7 @@ namespace aris
 			auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 			// add solver
-			auto &inverse_kinematic = model->solverPool().add<Ur5InverseSolver>();
+			auto &inverse_kinematic = model->solverPool().add<aris::dynamic::Ur5InverseKinematicSolver>();
 			auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 			auto &inverse_dynamic = model->solverPool().add<InverseDynamicSolver>();
 

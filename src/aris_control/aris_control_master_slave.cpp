@@ -15,12 +15,6 @@ namespace aris
 {
 	namespace control
 	{
-		struct RTTimer::Imp { int sample_period_ns_{ 1000000 }; };
-		auto RTTimer::saveXml(aris::core::XmlElement &xml_ele) const->void { Object::saveXml(xml_ele); }
-		auto RTTimer::loadXml(const aris::core::XmlElement &xml_ele)->void { Object::loadXml(xml_ele); }
-		RTTimer::~RTTimer() = default;
-		RTTimer::RTTimer(const std::string &name) :Object(name), imp_(new Imp) {}
-		
 		struct Slave::Imp
 		{
 		public:
@@ -269,7 +263,6 @@ namespace aris
 		Master::~Master() = default;
 		Master::Master(const std::string &name) :imp_(new Imp), Object(name)
 		{
-			registerType<RTTimer>();
 			registerType<Slave>();
 			registerType<aris::core::ObjectPool<Slave> >();
 

@@ -20,8 +20,8 @@ namespace aris
 {
 	namespace dynamic
 	{
-		auto Coordinate::getPp(double *pp)const->void { if (pp)s_pm2pp(*pm(), pp); }
-		auto Coordinate::getPp(const Coordinate &relative_to, double *pp)const->void
+		auto Coordinate::getPp(double *pp)const noexcept->void { if (pp)s_pm2pp(*pm(), pp); }
+		auto Coordinate::getPp(const Coordinate &relative_to, double *pp)const noexcept->void
 		{
 			if (pp)
 			{
@@ -30,8 +30,8 @@ namespace aris
 				s_pm2pp(*pm, pp);
 			}
 		}
-		auto Coordinate::getRe(double *re, const char *type)const->void { if (re)s_pm2re(*pm(), re, type); }
-		auto Coordinate::getRe(const Coordinate &relative_to, double *re, const char *type)const->void
+		auto Coordinate::getRe(double *re, const char *type)const noexcept->void { if (re)s_pm2re(*pm(), re, type); }
+		auto Coordinate::getRe(const Coordinate &relative_to, double *re, const char *type)const noexcept->void
 		{
 			if (re)
 			{
@@ -40,8 +40,8 @@ namespace aris
 				s_pm2re(*pm, re, type);
 			}
 		}
-		auto Coordinate::getRq(double *rq)const->void { if (rq)s_pm2rq(*pm(), rq); }
-		auto Coordinate::getRq(const Coordinate &relative_to, double *rq)const->void
+		auto Coordinate::getRq(double *rq)const noexcept->void { if (rq)s_pm2rq(*pm(), rq); }
+		auto Coordinate::getRq(const Coordinate &relative_to, double *rq)const noexcept->void
 		{
 			if (rq)
 			{
@@ -50,8 +50,8 @@ namespace aris
 				s_pm2rq(*pm, rq);
 			}
 		}
-		auto Coordinate::getRm(double *rm, Size rm_ld)const->void { if (rm)s_pm2rm(*pm(), rm, rm_ld); }
-		auto Coordinate::getRm(const Coordinate &relative_to, double *rm, Size rm_ld)const->void
+		auto Coordinate::getRm(double *rm, Size rm_ld)const noexcept->void { if (rm)s_pm2rm(*pm(), rm, rm_ld); }
+		auto Coordinate::getRm(const Coordinate &relative_to, double *rm, Size rm_ld)const noexcept->void
 		{
 			if (rm)
 			{
@@ -60,8 +60,8 @@ namespace aris
 				s_pm2rm(*pm, rm, rm_ld);
 			}
 		}
-		auto Coordinate::getPe(double *pe, const char *type)const->void { if (pe)s_pm2pe(*pm(), pe, type); }
-		auto Coordinate::getPe(const Coordinate &relative_to, double *pe, const char *type)const->void
+		auto Coordinate::getPe(double *pe, const char *type)const noexcept->void { if (pe)s_pm2pe(*pm(), pe, type); }
+		auto Coordinate::getPe(const Coordinate &relative_to, double *pe, const char *type)const noexcept->void
 		{
 			if (pe)
 			{
@@ -70,8 +70,8 @@ namespace aris
 				s_pm2pe(*pm, pe, type);
 			}
 		}
-		auto Coordinate::getPq(double *pq)const->void { if (pq)s_pm2pq(*pm(), pq); }
-		auto Coordinate::getPq(const Coordinate &relative_to, double *pq)const->void
+		auto Coordinate::getPq(double *pq)const noexcept->void { if (pq)s_pm2pq(*pm(), pq); }
+		auto Coordinate::getPq(const Coordinate &relative_to, double *pq)const noexcept->void
 		{
 			if (pq)
 			{
@@ -80,9 +80,9 @@ namespace aris
 				s_pm2pq(*pm, pq);
 			}
 		}
-		auto Coordinate::getPm(double *pm)const->void { if (pm)s_vc(16, *this->pm(), pm); }
-		auto Coordinate::getPm(const Coordinate &relative_to, double *pm)const->void { if (pm)s_inv_pm2pm(*relative_to.pm(), *this->pm(), pm); }
-		auto Coordinate::getVp(double *vp, double *pp)const->void
+		auto Coordinate::getPm(double *pm)const noexcept->void { if (pm)s_vc(16, *this->pm(), pm); }
+		auto Coordinate::getPm(const Coordinate &relative_to, double *pm)const noexcept->void { if (pm)s_inv_pm2pm(*relative_to.pm(), *this->pm(), pm); }
+		auto Coordinate::getVp(double *vp, double *pp)const noexcept->void
 		{
 			if (vp)
 			{
@@ -96,7 +96,7 @@ namespace aris
 				getPp(pp);
 			}
 		}
-		auto Coordinate::getVp(const Coordinate &relative_to, double *vp, double *pp)const->void
+		auto Coordinate::getVp(const Coordinate &relative_to, double *vp, double *pp)const noexcept->void
 		{
 			if (vp)
 			{
@@ -111,7 +111,7 @@ namespace aris
 				getPp(relative_to, pp);
 			}
 		}
-		auto Coordinate::getWe(double *we, double *re, const char *type)const->void
+		auto Coordinate::getWe(double *we, double *re, const char *type)const noexcept->void
 		{
 			if (we)
 			{
@@ -125,7 +125,7 @@ namespace aris
 				getRe(re, type);
 			}
 		}
-		auto Coordinate::getWe(const Coordinate &relative_to, double *we, double *re, const char *type)const->void
+		auto Coordinate::getWe(const Coordinate &relative_to, double *we, double *re, const char *type)const noexcept->void
 		{
 			if (we)
 			{
@@ -140,7 +140,7 @@ namespace aris
 				getRe(relative_to, re);
 			}
 		}
-		auto Coordinate::getWq(double *wq, double *rq)const->void
+		auto Coordinate::getWq(double *wq, double *rq)const noexcept->void
 		{
 			if (wq)
 			{
@@ -154,7 +154,7 @@ namespace aris
 				getRq(rq);
 			}
 		}
-		auto Coordinate::getWq(const Coordinate &relative_to, double *wq, double *rq)const->void
+		auto Coordinate::getWq(const Coordinate &relative_to, double *wq, double *rq)const noexcept->void
 		{
 			if (wq)
 			{
@@ -169,7 +169,7 @@ namespace aris
 				getRq(relative_to, rq);
 			}
 		}
-		auto Coordinate::getWm(double *wm, double *rm, Size wm_ld, Size rm_ld)const->void
+		auto Coordinate::getWm(double *wm, double *rm, Size wm_ld, Size rm_ld)const noexcept->void
 		{
 			if (wm)
 			{
@@ -183,7 +183,7 @@ namespace aris
 				getRm(rm, rm_ld);
 			}
 		}
-		auto Coordinate::getWm(const Coordinate &relative_to, double *wm, double *rm, Size wm_ld, Size rm_ld)const->void
+		auto Coordinate::getWm(const Coordinate &relative_to, double *wm, double *rm, Size wm_ld, Size rm_ld)const noexcept->void
 		{
 			if (wm)
 			{
@@ -198,12 +198,12 @@ namespace aris
 				getRm(relative_to, rm, rm_ld);
 			}
 		}
-		auto Coordinate::getWa(double *wa, double *rm, Size rm_ld)const->void
+		auto Coordinate::getWa(double *wa, double *rm, Size rm_ld)const noexcept->void
 		{
 			if (wa) { s_vs2wa(vs(), wa); }
 			getRm(rm, rm_ld);
 		}
-		auto Coordinate::getWa(const Coordinate &relative_to, double *wa, double *rm, Size rm_ld)const->void
+		auto Coordinate::getWa(const Coordinate &relative_to, double *wa, double *rm, Size rm_ld)const noexcept->void
 		{
 			if (wa)
 			{
@@ -218,7 +218,7 @@ namespace aris
 			}
 
 		}
-		auto Coordinate::getVe(double *ve, double *pe, const char *type)const->void
+		auto Coordinate::getVe(double *ve, double *pe, const char *type)const noexcept->void
 		{
 			if (ve)
 			{
@@ -232,7 +232,7 @@ namespace aris
 				getPe(pe, type);
 			}
 		}
-		auto Coordinate::getVe(const Coordinate &relative_to, double *ve, double *pe, const char *type)const->void
+		auto Coordinate::getVe(const Coordinate &relative_to, double *ve, double *pe, const char *type)const noexcept->void
 		{
 			if (ve)
 			{
@@ -247,7 +247,7 @@ namespace aris
 				getPe(relative_to, pe, type);
 			}
 		}
-		auto Coordinate::getVq(double *vq, double *pq)const->void
+		auto Coordinate::getVq(double *vq, double *pq)const noexcept->void
 		{
 			if (vq)
 			{
@@ -261,7 +261,7 @@ namespace aris
 				getPq(pq);
 			}
 		}
-		auto Coordinate::getVq(const Coordinate &relative_to, double *vq, double *pq)const->void
+		auto Coordinate::getVq(const Coordinate &relative_to, double *vq, double *pq)const noexcept->void
 		{
 			if (vq)
 			{
@@ -276,7 +276,7 @@ namespace aris
 				getPq(relative_to, pq);
 			}
 		}
-		auto Coordinate::getVm(double *vm, double *pm)const->void
+		auto Coordinate::getVm(double *vm, double *pm)const noexcept->void
 		{
 			if (vm)
 			{
@@ -290,7 +290,7 @@ namespace aris
 				getPm(pm);
 			}
 		}
-		auto Coordinate::getVm(const Coordinate &relative_to, double *vm, double *pm)const->void
+		auto Coordinate::getVm(const Coordinate &relative_to, double *vm, double *pm)const noexcept->void
 		{
 			if (vm)
 			{
@@ -305,7 +305,7 @@ namespace aris
 				getPm(relative_to, pm);
 			}
 		}
-		auto Coordinate::getVa(double *va, double *pp)const->void
+		auto Coordinate::getVa(double *va, double *pp)const noexcept->void
 		{
 			if (va)
 			{
@@ -319,7 +319,7 @@ namespace aris
 				getPp(pp);
 			}
 		}
-		auto Coordinate::getVa(const Coordinate &relative_to, double *va, double *pp)const->void
+		auto Coordinate::getVa(const Coordinate &relative_to, double *va, double *pp)const noexcept->void
 		{
 			if (va)
 			{
@@ -334,17 +334,17 @@ namespace aris
 				getPp(relative_to, pp);
 			}
 		}
-		auto Coordinate::getVs(double *vs, double *pm)const->void
+		auto Coordinate::getVs(double *vs, double *pm)const noexcept->void
 		{
 			if (vs)std::copy(&this->vs()[0], &this->vs()[6], vs);
 			getPm(pm);
 		}
-		auto Coordinate::getVs(const Coordinate &relative_to, double *vs, double *pm)const->void
+		auto Coordinate::getVs(const Coordinate &relative_to, double *vs, double *pm)const noexcept->void
 		{
 			if (vs)s_inv_vs2vs(*relative_to.pm(), relative_to.vs(), this->vs(), vs);
 			getPm(relative_to, pm);
 		}
-		auto Coordinate::getAp(double *ap, double *vp, double *pp)const->void
+		auto Coordinate::getAp(double *ap, double *vp, double *pp)const noexcept->void
 		{
 			if (ap)
 			{
@@ -359,7 +359,7 @@ namespace aris
 				getVp(vp, pp);
 			}
 		}
-		auto Coordinate::getAp(const Coordinate &relative_to, double *ap, double *vp, double *pp)const->void
+		auto Coordinate::getAp(const Coordinate &relative_to, double *ap, double *vp, double *pp)const noexcept->void
 		{
 			if (ap)
 			{
@@ -374,7 +374,7 @@ namespace aris
 				getVp(relative_to, vp, pp);
 			}
 		}
-		auto Coordinate::getXe(double *xe, double *we, double *re, const char *type)const->void
+		auto Coordinate::getXe(double *xe, double *we, double *re, const char *type)const noexcept->void
 		{
 			if (xe)
 			{
@@ -389,7 +389,7 @@ namespace aris
 				getVe(we, re, type);
 			}
 		}
-		auto Coordinate::getXe(const Coordinate &relative_to, double *xe, double *we, double *re, const char *type)const->void
+		auto Coordinate::getXe(const Coordinate &relative_to, double *xe, double *we, double *re, const char *type)const noexcept->void
 		{
 			if (xe)
 			{
@@ -404,7 +404,7 @@ namespace aris
 				getVe(relative_to, we, re, type);
 			}
 		}
-		auto Coordinate::getXq(double *xq, double *wq, double *rq)const->void
+		auto Coordinate::getXq(double *xq, double *wq, double *rq)const noexcept->void
 		{
 			if (xq)
 			{
@@ -419,7 +419,7 @@ namespace aris
 				getWq(wq, rq);
 			}
 		}
-		auto Coordinate::getXq(const Coordinate &relative_to, double *xq, double *wq, double *rq)const->void
+		auto Coordinate::getXq(const Coordinate &relative_to, double *xq, double *wq, double *rq)const noexcept->void
 		{
 			if (xq)
 			{
@@ -434,7 +434,7 @@ namespace aris
 				getWq(relative_to, wq, rq);
 			}
 		}
-		auto Coordinate::getXm(double *xm, double *wm, double *rm, Size xm_ld, Size wm_ld, Size rm_ld)const->void
+		auto Coordinate::getXm(double *xm, double *wm, double *rm, Size xm_ld, Size wm_ld, Size rm_ld)const noexcept->void
 		{
 			if (xm)
 			{
@@ -449,7 +449,7 @@ namespace aris
 				getWm(wm, rm, wm_ld, rm_ld);
 			}
 		}
-		auto Coordinate::getXm(const Coordinate &relative_to, double *xm, double *wm, double *rm, Size xm_ld, Size wm_ld, Size rm_ld)const->void
+		auto Coordinate::getXm(const Coordinate &relative_to, double *xm, double *wm, double *rm, Size xm_ld, Size wm_ld, Size rm_ld)const noexcept->void
 		{
 			if (xm)
 			{
@@ -464,12 +464,12 @@ namespace aris
 				getWm(relative_to, wm, rm, wm_ld, rm_ld);
 			}
 		}
-		auto Coordinate::getXa(double *xa, double *wa, double *rm, Size rm_ld)const->void
+		auto Coordinate::getXa(double *xa, double *wa, double *rm, Size rm_ld)const noexcept->void
 		{
 			if (xa)s_as2xa(as(), xa);
 			getWa(wa, rm, rm_ld);
 		}
-		auto Coordinate::getXa(const Coordinate &relative_to, double *xa, double *wa, double *rm, Size rm_ld)const->void
+		auto Coordinate::getXa(const Coordinate &relative_to, double *xa, double *wa, double *rm, Size rm_ld)const noexcept->void
 		{
 			if (xa)
 			{
@@ -485,7 +485,7 @@ namespace aris
 			}
 
 		}
-		auto Coordinate::getAe(double *ae, double *ve, double *pe, const char *type)const->void
+		auto Coordinate::getAe(double *ae, double *ve, double *pe, const char *type)const noexcept->void
 		{
 			if (ae)
 			{
@@ -500,7 +500,7 @@ namespace aris
 				getVe(ve, pe, type);
 			}
 		}
-		auto Coordinate::getAe(const Coordinate &relative_to, double *ae, double *ve, double *pe, const char *type)const->void
+		auto Coordinate::getAe(const Coordinate &relative_to, double *ae, double *ve, double *pe, const char *type)const noexcept->void
 		{
 			if (ae)
 			{
@@ -516,7 +516,7 @@ namespace aris
 				getVe(relative_to, ve, pe, type);
 			}
 		}
-		auto Coordinate::getAq(double *aq, double *vq, double *pq)const->void
+		auto Coordinate::getAq(double *aq, double *vq, double *pq)const noexcept->void
 		{
 			if (aq)
 			{
@@ -531,7 +531,7 @@ namespace aris
 				getVq(vq, pq);
 			}
 		}
-		auto Coordinate::getAq(const Coordinate &relative_to, double *aq, double *vq, double *pq)const->void
+		auto Coordinate::getAq(const Coordinate &relative_to, double *aq, double *vq, double *pq)const noexcept->void
 		{
 			if (aq)
 			{
@@ -547,7 +547,7 @@ namespace aris
 				getVq(relative_to, vq, pq);
 			}
 		}
-		auto Coordinate::getAm(double *am, double *vm, double *pm)const->void
+		auto Coordinate::getAm(double *am, double *vm, double *pm)const noexcept->void
 		{
 			if (am)
 			{
@@ -563,7 +563,7 @@ namespace aris
 			}
 
 		}
-		auto Coordinate::getAm(const Coordinate &relative_to, double *am, double *vm, double *pm)const->void
+		auto Coordinate::getAm(const Coordinate &relative_to, double *am, double *vm, double *pm)const noexcept->void
 		{
 			if (am)
 			{
@@ -580,7 +580,7 @@ namespace aris
 			}
 
 		}
-		auto Coordinate::getAa(double *aa, double *va, double *pp)const->void
+		auto Coordinate::getAa(double *aa, double *va, double *pp)const noexcept->void
 		{
 			if (aa)
 			{
@@ -596,7 +596,7 @@ namespace aris
 			}
 
 		}
-		auto Coordinate::getAa(const Coordinate &relative_to, double *aa, double *va, double *pp)const->void
+		auto Coordinate::getAa(const Coordinate &relative_to, double *aa, double *va, double *pp)const noexcept->void
 		{
 			if (aa)
 			{
@@ -613,12 +613,12 @@ namespace aris
 			}
 
 		}
-		auto Coordinate::getAs(double *as, double *vs, double *pm)const->void
+		auto Coordinate::getAs(double *as, double *vs, double *pm)const noexcept->void
 		{
 			if (as)std::copy(&this->as()[0], &this->as()[6], as);
 			getVs(vs, pm);
 		}
-		auto Coordinate::getAs(const Coordinate &relative_to, double *as, double *vs, double *pm)const->void
+		auto Coordinate::getAs(const Coordinate &relative_to, double *as, double *vs, double *pm)const noexcept->void
 		{
 			if (as)s_inv_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), this->vs(), this->as(), as, vs);
 			getVs(relative_to, vs, pm);
@@ -655,12 +655,12 @@ namespace aris
 				s_vc(16, pm, *imp_->prt_pm_);
 			}
 		}
-		auto Marker::fatherPart() const->const Part&{ return static_cast<const Part &>(this->father().father()); }
-		auto Marker::fatherPart()->Part& { return static_cast<Part &>(this->father().father()); }
-		auto Marker::pm()const->const double4x4&{ s_pm_dot_pm(*fatherPart().pm(), *prtPm(), const_cast<double*>(*imp_->pm_)); return imp_->pm_; }
-		auto Marker::vs()const->const double6&{ return fatherPart().vs(); }
-		auto Marker::as()const->const double6&{ return fatherPart().as(); }
-		auto Marker::prtPm()const->const double4x4&{ return imp_->prt_pm_; }
+		auto Marker::fatherPart() const noexcept->const Part&{ return static_cast<const Part &>(this->father().father()); }
+		auto Marker::fatherPart() noexcept->Part& { return static_cast<Part &>(this->father().father()); }
+		auto Marker::pm()const noexcept->const double4x4&{ s_pm_dot_pm(*fatherPart().pm(), *prtPm(), const_cast<double*>(*imp_->pm_)); return imp_->pm_; }
+		auto Marker::vs()const noexcept->const double6&{ return fatherPart().vs(); }
+		auto Marker::as()const noexcept->const double6&{ return fatherPart().as(); }
+		auto Marker::prtPm()const noexcept->const double4x4&{ return imp_->prt_pm_; }
 		Marker::~Marker() = default;
 		Marker::Marker(const Marker&) = default;
 		Marker::Marker(Marker&&) = default;
@@ -708,17 +708,17 @@ namespace aris
 			imp_->geometry_pool_ = findOrInsert<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
 
 		}
-		auto Part::markerPool()->aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
-		auto Part::markerPool()const->const aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
-		auto Part::geometryPool()->aris::core::ObjectPool<Geometry, Element>& { return *imp_->geometry_pool_; }
-		auto Part::geometryPool()const->const aris::core::ObjectPool<Geometry, Element>&{ return *imp_->geometry_pool_; }
-		auto Part::pm()const->const double4x4&{ return imp_->glb_pm_; }
-		auto Part::vs()const->const double6&{ return imp_->glb_vs_; }
-		auto Part::as()const->const double6&{ return imp_->glb_as_; }
-		auto Part::prtIv()const->const double10&{ return imp_->prt_iv_; }
-		auto Part::setPrtIv(const double *iv, const double *pm_relative_to_part)->void { s_iv2iv(pm_relative_to_part, iv, imp_->prt_iv_); }
-		auto Part::setPp(const double *pp)->void { if (pp)s_pp2pm(pp, *imp_->glb_pm_); }
-		auto Part::setPp(const Coordinate &relative_to, const double *pp)->void
+		auto Part::markerPool() noexcept->aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
+		auto Part::markerPool()const noexcept->const aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
+		auto Part::geometryPool() noexcept->aris::core::ObjectPool<Geometry, Element>& { return *imp_->geometry_pool_; }
+		auto Part::geometryPool()const noexcept->const aris::core::ObjectPool<Geometry, Element>&{ return *imp_->geometry_pool_; }
+		auto Part::pm()const noexcept->const double4x4&{ return imp_->glb_pm_; }
+		auto Part::vs()const noexcept->const double6&{ return imp_->glb_vs_; }
+		auto Part::as()const noexcept->const double6&{ return imp_->glb_as_; }
+		auto Part::prtIv()const noexcept->const double10&{ return imp_->prt_iv_; }
+		auto Part::setPrtIv(const double *iv, const double *pm_relative_to_part) noexcept->void { s_iv2iv(pm_relative_to_part, iv, imp_->prt_iv_); }
+		auto Part::setPp(const double *pp) noexcept->void { if (pp)s_pp2pm(pp, *imp_->glb_pm_); }
+		auto Part::setPp(const Coordinate &relative_to, const double *pp) noexcept->void
 		{
 			if (pp)
 			{
@@ -727,8 +727,8 @@ namespace aris
 				setPp(pp_o);
 			}
 		}
-		auto Part::setRe(const double *re, const char *type)->void { if (re)s_re2pm(re, *imp_->glb_pm_, type); }
-		auto Part::setRe(const Coordinate &relative_to, const double *re, const char *type)->void
+		auto Part::setRe(const double *re, const char *type) noexcept->void { if (re)s_re2pm(re, *imp_->glb_pm_, type); }
+		auto Part::setRe(const Coordinate &relative_to, const double *re, const char *type) noexcept->void
 		{
 			if (re)
 			{
@@ -737,8 +737,8 @@ namespace aris
 				setRm(relative_to, rm);
 			}
 		}
-		auto Part::setRq(const double *rq)->void { if (rq)s_rq2pm(rq, *imp_->glb_pm_); }
-		auto Part::setRq(const Coordinate &relative_to, const double *rq)->void
+		auto Part::setRq(const double *rq) noexcept->void { if (rq)s_rq2pm(rq, *imp_->glb_pm_); }
+		auto Part::setRq(const Coordinate &relative_to, const double *rq) noexcept->void
 		{
 			if (rq)
 			{
@@ -747,10 +747,10 @@ namespace aris
 				setRm(relative_to, rm);
 			}
 		}
-		auto Part::setRm(const double *rm, Size rm_ld)->void { if (rm)s_rm2pm(rm, *imp_->glb_pm_, rm_ld); }
-		auto Part::setRm(const Coordinate &relative_to, const double *rm, Size rm_ld)->void { if (rm) s_rm2rm(*relative_to.pm(), rm, *imp_->glb_pm_, rm_ld, 4); }
-		auto Part::setPe(const double *pe, const char *type)->void { if (pe)s_pe2pm(pe, *imp_->glb_pm_, type); }
-		auto Part::setPe(const Coordinate &relative_to, const double *pe, const char *type)->void
+		auto Part::setRm(const double *rm, Size rm_ld) noexcept->void { if (rm)s_rm2pm(rm, *imp_->glb_pm_, rm_ld); }
+		auto Part::setRm(const Coordinate &relative_to, const double *rm, Size rm_ld) noexcept->void { if (rm) s_rm2rm(*relative_to.pm(), rm, *imp_->glb_pm_, rm_ld, 4); }
+		auto Part::setPe(const double *pe, const char *type) noexcept->void { if (pe)s_pe2pm(pe, *imp_->glb_pm_, type); }
+		auto Part::setPe(const Coordinate &relative_to, const double *pe, const char *type) noexcept->void
 		{
 			if (pe)
 			{
@@ -759,8 +759,8 @@ namespace aris
 				setPm(relative_to, pm);
 			}
 		}
-		auto Part::setPq(const double *pq)->void { if (pq)s_pq2pm(pq, static_cast<double*>(*imp_->glb_pm_)); }
-		auto Part::setPq(const Coordinate &relative_to, const double *pq)->void
+		auto Part::setPq(const double *pq) noexcept->void { if (pq)s_pq2pm(pq, static_cast<double*>(*imp_->glb_pm_)); }
+		auto Part::setPq(const Coordinate &relative_to, const double *pq) noexcept->void
 		{
 			if (pq)
 			{
@@ -769,16 +769,16 @@ namespace aris
 				setPm(relative_to, pm);
 			}
 		}
-		auto Part::setPm(const double *pm)->void { if (pm)std::copy(pm, pm + 16, static_cast<double*>(*imp_->glb_pm_)); }
-		auto Part::setPm(const Coordinate &relative_to, const double *pm)->void { if (pm)s_pm2pm(*relative_to.pm(), pm, *imp_->glb_pm_); }
-		auto Part::setVp(const double *vp_in, const double *pp_in)->void
+		auto Part::setPm(const double *pm) noexcept->void { if (pm)std::copy(pm, pm + 16, static_cast<double*>(*imp_->glb_pm_)); }
+		auto Part::setPm(const Coordinate &relative_to, const double *pm) noexcept->void { if (pm)s_pm2pm(*relative_to.pm(), pm, *imp_->glb_pm_); }
+		auto Part::setVp(const double *vp_in, const double *pp_in) noexcept->void
 		{
 			setPp(pp_in);
 			double pp[3];
 			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(pp);
 			if (vp_in) s_vp2vs(pp, vp_in, imp_->glb_vs_);
 		}
-		auto Part::setVp(const Coordinate &relative_to, const double *vp_in, const double *pp_in)->void
+		auto Part::setVp(const Coordinate &relative_to, const double *vp_in, const double *pp_in) noexcept->void
 		{
 			setPp(relative_to, pp_in);
 			double pp[3], vp_o[3], pp_o[3];
@@ -789,7 +789,7 @@ namespace aris
 				s_vp2vs(pp_o, vp_o, imp_->glb_vs_);
 			}
 		}
-		auto Part::setWe(const double *we_in, const double *re_in, const char *type)->void
+		auto Part::setWe(const double *we_in, const double *re_in, const char *type) noexcept->void
 		{
 			setRe(re_in, type);
 			double re[3], wa[3];
@@ -800,7 +800,7 @@ namespace aris
 				setWa(wa);
 			}
 		}
-		auto Part::setWe(const Coordinate &relative_to, const double *we_in, const double *re_in, const char *type)->void
+		auto Part::setWe(const Coordinate &relative_to, const double *we_in, const double *re_in, const char *type) noexcept->void
 		{
 			setRe(relative_to, re_in, type);
 			double re[3], wa[3];
@@ -811,7 +811,7 @@ namespace aris
 				setWa(relative_to, wa);
 			}
 		}
-		auto Part::setWq(const double *wq_in, const double *rq_in)->void
+		auto Part::setWq(const double *wq_in, const double *rq_in) noexcept->void
 		{
 			setRq(rq_in);
 			double rq[4], wa[3];
@@ -822,7 +822,7 @@ namespace aris
 				setWa(wa);
 			}
 		}
-		auto Part::setWq(const Coordinate &relative_to, const double *wq_in, const double *rq_in)->void
+		auto Part::setWq(const Coordinate &relative_to, const double *wq_in, const double *rq_in) noexcept->void
 		{
 			setRq(relative_to, rq_in);
 			double rq[4], wa[3];
@@ -833,7 +833,7 @@ namespace aris
 				setWa(relative_to, wa);
 			}
 		}
-		auto Part::setWm(const double *wm_in, const double *rm_in, Size wm_ld, Size rm_ld)->void
+		auto Part::setWm(const double *wm_in, const double *rm_in, Size wm_ld, Size rm_ld) noexcept->void
 		{
 			setRm(rm_in, rm_ld);
 			double rm[9], wa[3];
@@ -844,7 +844,7 @@ namespace aris
 				setWa(wa);
 			}
 		}
-		auto Part::setWm(const Coordinate &relative_to, const double *wm_in, const double *rm_in, Size wm_ld, Size rm_ld)->void
+		auto Part::setWm(const Coordinate &relative_to, const double *wm_in, const double *rm_in, Size wm_ld, Size rm_ld) noexcept->void
 		{
 			setRm(relative_to, rm_in, rm_ld);
 			double rm[9], wa[3];
@@ -855,7 +855,7 @@ namespace aris
 				setWa(relative_to, wa);
 			}
 		}
-		auto Part::setWa(const double *wa_in, const double *rm_in, Size rm_ld)->void
+		auto Part::setWa(const double *wa_in, const double *rm_in, Size rm_ld) noexcept->void
 		{
 			setRm(rm_in, rm_ld);
 			if (wa_in)
@@ -866,7 +866,7 @@ namespace aris
 				setVp(vp, pp);
 			}
 		}
-		auto Part::setWa(const Coordinate &relative_to, const double *wa_in, const double *rm_in, Size rm_ld)->void
+		auto Part::setWa(const Coordinate &relative_to, const double *wa_in, const double *rm_in, Size rm_ld) noexcept->void
 		{
 			setRm(relative_to, rm_in, rm_ld);
 			if (wa_in)
@@ -877,14 +877,14 @@ namespace aris
 				setVp(vp, pp);
 			}
 		}
-		auto Part::setVe(const double *ve_in, const double *pe_in, const char *type)->void
+		auto Part::setVe(const double *ve_in, const double *pe_in, const char *type) noexcept->void
 		{
 			setPe(pe_in, type);
 			double pe[6];
 			if (pe_in) std::copy(pe_in, pe_in + 6, pe); else getPe(pe, type);
 			if (ve_in) s_ve2vs(pe, ve_in, imp_->glb_vs_, type);
 		}
-		auto Part::setVe(const Coordinate &relative_to, const double *ve_in, const double *pe_in, const char *type)->void
+		auto Part::setVe(const Coordinate &relative_to, const double *ve_in, const double *pe_in, const char *type) noexcept->void
 		{
 			setPe(relative_to, pe_in, type);
 
@@ -896,14 +896,14 @@ namespace aris
 				setVs(relative_to, vs);
 			}
 		}
-		auto Part::setVq(const double *vq_in, const double *pq_in)->void
+		auto Part::setVq(const double *vq_in, const double *pq_in) noexcept->void
 		{
 			setPq(pq_in);
 			double pq[7];
 			if (pq_in) std::copy(pq_in, pq_in + 7, pq); else getPq(pq);
 			if (vq_in) s_vq2vs(pq, vq_in, imp_->glb_vs_);
 		}
-		auto Part::setVq(const Coordinate &relative_to, const double *vq_in, const double *pq_in)->void
+		auto Part::setVq(const Coordinate &relative_to, const double *vq_in, const double *pq_in) noexcept->void
 		{
 			setPq(relative_to, pq_in);
 			double pq[7], vs[6];
@@ -914,12 +914,12 @@ namespace aris
 				setVs(relative_to, vs);
 			}
 		}
-		auto Part::setVm(const double *vm_in, const double *pm_in)->void
+		auto Part::setVm(const double *vm_in, const double *pm_in) noexcept->void
 		{
 			if (pm_in) setPm(pm_in);
 			if (vm_in) s_vm2vs(*pm(), vm_in, imp_->glb_vs_);
 		}
-		auto Part::setVm(const Coordinate &relative_to, const double *vm_in, const double *pm_in)->void
+		auto Part::setVm(const Coordinate &relative_to, const double *vm_in, const double *pm_in) noexcept->void
 		{
 			setPm(relative_to, pm_in);
 			double pm[16], vs[6];
@@ -930,14 +930,14 @@ namespace aris
 				setVs(relative_to, vs);
 			}
 		}
-		auto Part::setVa(const double *va_in, const double *pp_in)->void
+		auto Part::setVa(const double *va_in, const double *pp_in) noexcept->void
 		{
 			setPp(pp_in);
 			double pp[3];
 			if (pp_in) std::copy(pp_in, pp_in + 3, pp); else getPp(pp);
 			if (va_in)s_va2vs(pp, va_in, imp_->glb_vs_);
 		}
-		auto Part::setVa(const Coordinate &relative_to, const double *va_in, const double *pp_in)->void
+		auto Part::setVa(const Coordinate &relative_to, const double *va_in, const double *pp_in) noexcept->void
 		{
 			setPp(relative_to, pp_in);
 			double pp[3], vs[6];
@@ -948,17 +948,17 @@ namespace aris
 				setVs(relative_to, vs);
 			}
 		}
-		auto Part::setVs(const double *vs_in, const double *pm_in)->void
+		auto Part::setVs(const double *vs_in, const double *pm_in) noexcept->void
 		{
 			if (pm_in)setPm(pm_in);
 			if (vs_in)std::copy_n(vs_in, 6, imp_->glb_vs_);
 		}
-		auto Part::setVs(const Coordinate &relative_to, const double *vs_in, const double *pm_in)->void
+		auto Part::setVs(const Coordinate &relative_to, const double *vs_in, const double *pm_in) noexcept->void
 		{
 			if (pm_in)setPm(relative_to, pm_in);
 			if (vs_in)s_vs2vs(*relative_to.pm(), relative_to.vs(), vs_in, imp_->glb_vs_);
 		}
-		auto Part::setAp(const double *ap_in, const double *vp_in, const double *pp_in)->void
+		auto Part::setAp(const double *ap_in, const double *vp_in, const double *pp_in) noexcept->void
 		{
 			setVp(vp_in, pp_in);
 			double pp[3], vp[3];
@@ -966,7 +966,7 @@ namespace aris
 			if (vp_in) std::copy(vp_in, vp_in + 3, vp); else getVp(vp);
 			if (ap_in) s_ap2as(pp, vp, ap_in, imp_->glb_as_, imp_->glb_vs_);
 		}
-		auto Part::setAp(const Coordinate &relative_to, const double *ap_in, const double *vp_in, const double *pp_in)->void
+		auto Part::setAp(const Coordinate &relative_to, const double *ap_in, const double *vp_in, const double *pp_in) noexcept->void
 		{
 			setVp(relative_to, vp_in, pp_in);
 			double pp[3], vp[3], as[6], vs[6];
@@ -979,7 +979,7 @@ namespace aris
 				setAs(relative_to, as, vs);
 			}
 		}
-		auto Part::setXe(const double *xe_in, const double *we_in, const double *re_in, const char *type)->void
+		auto Part::setXe(const double *xe_in, const double *we_in, const double *re_in, const char *type) noexcept->void
 		{
 			if (xe_in)
 			{
@@ -995,7 +995,7 @@ namespace aris
 				setWe(we_in, re_in, type);
 			}
 		}
-		auto Part::setXe(const Coordinate &relative_to, const double *xe_in, const double *we_in, const double *re_in, const char *type)->void
+		auto Part::setXe(const Coordinate &relative_to, const double *xe_in, const double *we_in, const double *re_in, const char *type) noexcept->void
 		{
 			if (xe_in)
 			{
@@ -1011,7 +1011,7 @@ namespace aris
 				setWe(relative_to, we_in, re_in, type);
 			}
 		}
-		auto Part::setXq(const double *xq_in, const double *wq_in, const double *rq_in)->void
+		auto Part::setXq(const double *xq_in, const double *wq_in, const double *rq_in) noexcept->void
 		{
 			if (xq_in)
 			{
@@ -1027,7 +1027,7 @@ namespace aris
 				setWq(wq_in, rq_in);
 			}
 		}
-		auto Part::setXq(const Coordinate &relative_to, const double *xq_in, const double *wq_in, const double *rq_in)->void
+		auto Part::setXq(const Coordinate &relative_to, const double *xq_in, const double *wq_in, const double *rq_in) noexcept->void
 		{
 			if (xq_in)
 			{
@@ -1043,7 +1043,7 @@ namespace aris
 				setWq(relative_to, wq_in, rq_in);
 			}
 		}
-		auto Part::setXm(const double *xm_in, const double *wm_in, const double *rm_in, Size xm_ld, Size wm_ld, Size rm_ld)->void
+		auto Part::setXm(const double *xm_in, const double *wm_in, const double *rm_in, Size xm_ld, Size wm_ld, Size rm_ld) noexcept->void
 		{
 			if (xm_in)
 			{
@@ -1058,7 +1058,7 @@ namespace aris
 				setWm(wm_in, rm_in);
 			}
 		}
-		auto Part::setXm(const Coordinate &relative_to, const double *xm_in, const double *wm_in, const double *rm_in, Size xm_ld, Size wm_ld, Size rm_ld)->void
+		auto Part::setXm(const Coordinate &relative_to, const double *xm_in, const double *wm_in, const double *rm_in, Size xm_ld, Size wm_ld, Size rm_ld) noexcept->void
 		{
 			if (xm_in)
 			{
@@ -1073,7 +1073,7 @@ namespace aris
 				setWm(relative_to, wm_in, rm_in);
 			}
 		}
-		auto Part::setXa(const double *xa_in, const double *wa_in, const double *rm_in, Size rm_ld)->void
+		auto Part::setXa(const double *xa_in, const double *wa_in, const double *rm_in, Size rm_ld) noexcept->void
 		{
 			if (xa_in)
 			{
@@ -1090,7 +1090,7 @@ namespace aris
 				setWa(wa_in, rm_in, rm_ld);
 			}
 		}
-		auto Part::setXa(const Coordinate &relative_to, const double *xa_in, const double *wa_in, const double *rm_in, Size rm_ld)->void
+		auto Part::setXa(const Coordinate &relative_to, const double *xa_in, const double *wa_in, const double *rm_in, Size rm_ld) noexcept->void
 		{
 			if (xa_in)
 			{
@@ -1109,7 +1109,7 @@ namespace aris
 				setWa(relative_to, wa_in, rm_in, rm_ld);
 			}
 		}
-		auto Part::setAe(const double *ae_in, const double *ve_in, const double *pe_in, const char *type)->void
+		auto Part::setAe(const double *ae_in, const double *ve_in, const double *pe_in, const char *type) noexcept->void
 		{
 			setVe(ve_in, pe_in, type);
 			double pe[6], ve[6];
@@ -1117,7 +1117,7 @@ namespace aris
 			if (ve_in) std::copy(ve_in, ve_in + 6, ve); else getVe(ve, nullptr, type);
 			if (ae_in) s_ae2as(pe, ve, ae_in, imp_->glb_as_, nullptr, type);
 		}
-		auto Part::setAe(const Coordinate &relative_to, const double *ae_in, const double *ve_in, const double *pe_in, const char *type)->void
+		auto Part::setAe(const Coordinate &relative_to, const double *ae_in, const double *ve_in, const double *pe_in, const char *type) noexcept->void
 		{
 			setVe(relative_to, ve_in, pe_in, type);
 			double pe[6], ve[6], as[6];
@@ -1129,7 +1129,7 @@ namespace aris
 				setAs(relative_to, as);
 			}
 		}
-		auto Part::setAq(const double *aq_in, const double *vq_in, const double *pq_in)->void
+		auto Part::setAq(const double *aq_in, const double *vq_in, const double *pq_in) noexcept->void
 		{
 			setVq(vq_in, pq_in);
 			double pq[7], vq[7];
@@ -1137,7 +1137,7 @@ namespace aris
 			if (vq_in) std::copy(vq_in, vq_in + 7, vq); else getVq(vq);
 			if (aq_in) s_aq2as(pq, vq, aq_in, imp_->glb_as_, nullptr);
 		}
-		auto Part::setAq(const Coordinate &relative_to, const double *aq_in, const double *vq_in, const double *pq_in)->void
+		auto Part::setAq(const Coordinate &relative_to, const double *aq_in, const double *vq_in, const double *pq_in) noexcept->void
 		{
 			setVq(relative_to, vq_in, pq_in);
 			double pq[7], vq[7], as[6];
@@ -1149,7 +1149,7 @@ namespace aris
 				setAs(relative_to, as);
 			}
 		}
-		auto Part::setAm(const double *am_in, const double *vm_in, const double *pm_in)->void
+		auto Part::setAm(const double *am_in, const double *vm_in, const double *pm_in) noexcept->void
 		{
 			setVm(vm_in, pm_in);
 			double pm[16], vm[16];
@@ -1157,7 +1157,7 @@ namespace aris
 			if (vm_in) std::copy(vm_in, vm_in + 16, vm); else getVm(vm);
 			if (am_in) s_am2as(pm, vm, am_in, imp_->glb_as_);
 		}
-		auto Part::setAm(const Coordinate &relative_to, const double *am_in, const double *vm_in, const double *pm_in)->void
+		auto Part::setAm(const Coordinate &relative_to, const double *am_in, const double *vm_in, const double *pm_in) noexcept->void
 		{
 			setVm(relative_to, vm_in, pm_in);
 			double pm[16], vm[16], as[6];
@@ -1169,7 +1169,7 @@ namespace aris
 				setAs(relative_to, as);
 			}
 		}
-		auto Part::setAa(const double *aa_in, const double *va_in, const double *pp_in)->void
+		auto Part::setAa(const double *aa_in, const double *va_in, const double *pp_in) noexcept->void
 		{
 			setVa(va_in, pp_in);
 			double pp[3], va[6];
@@ -1178,7 +1178,7 @@ namespace aris
 			if (aa_in)s_aa2as(pp, va, aa_in, imp_->glb_as_);
 
 		}
-		auto Part::setAa(const Coordinate &relative_to, const double *aa_in, const double *va_in, const double *pp_in)->void
+		auto Part::setAa(const Coordinate &relative_to, const double *aa_in, const double *va_in, const double *pp_in) noexcept->void
 		{
 			setVa(relative_to, va_in, pp_in);
 			double pp[3], va[6], as[6];
@@ -1190,19 +1190,19 @@ namespace aris
 				setAs(relative_to, as);
 			}
 		}
-		auto Part::setAs(const double *as_in, const double *vs_in, const double *pm_in)->void
+		auto Part::setAs(const double *as_in, const double *vs_in, const double *pm_in) noexcept->void
 		{
 			setVs(vs_in, pm_in);
 			if (as_in)std::copy_n(as_in, 6, imp_->glb_as_);
 		}
-		auto Part::setAs(const Coordinate &relative_to, const double *as_in, const double *vs_in, const double *pm_in)->void
+		auto Part::setAs(const Coordinate &relative_to, const double *as_in, const double *vs_in, const double *pm_in) noexcept->void
 		{
 			setVs(relative_to, vs_in, pm_in);
 			double vs[6];
 			if (vs_in) std::copy(vs_in, vs_in + 6, vs); else getVs(relative_to, vs);
 			if (as_in) s_as2as(*relative_to.pm(), relative_to.vs(), relative_to.as(), vs, as_in, imp_->glb_as_);
 		}
-		auto Part::cptFg(const Coordinate &relative_to, double *fg)const->void
+		auto Part::cptFg(const Coordinate &relative_to, double *fg)const noexcept->void
 		{
 			double prt_im[36];
 			s_iv2im(prtIv(), prt_im);
@@ -1215,7 +1215,7 @@ namespace aris
 			getPm(relative_to, pm);
 			s_tf(pm, prt_fg, fg);
 		}
-		auto Part::cptGlbFg(double *fg)const->void
+		auto Part::cptGlbFg(double *fg)const noexcept->void
 		{
 			double prt_im[36];
 			s_iv2im(prtIv(), prt_im);
@@ -1225,7 +1225,7 @@ namespace aris
 			s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, prt_fg, 1);
 			s_tf(*pm(), prt_fg, fg);
 		}
-		auto Part::cptPrtFg(double *fg)const->void
+		auto Part::cptPrtFg(double *fg)const noexcept->void
 		{
 			double prt_im[36];
 			s_iv2im(prtIv(), prt_im);
@@ -1234,7 +1234,7 @@ namespace aris
 			s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
 			s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, fg, 1);
 		}
-		auto Part::cptFv(const Coordinate &relative_to, double *fv)const->void
+		auto Part::cptFv(const Coordinate &relative_to, double *fv)const noexcept->void
 		{
 			double prt_im[36];
 			s_iv2im(prtIv(), prt_im);
@@ -1248,7 +1248,7 @@ namespace aris
 			getPm(relative_to, pm);
 			s_tf(pm, prt_fv, fv);
 		}
-		auto Part::cptGlbFv(double *fv)const->void
+		auto Part::cptGlbFv(double *fv)const noexcept->void
 		{
 			double prt_im[36];
 			s_iv2im(prtIv(), prt_im);
@@ -1259,7 +1259,7 @@ namespace aris
 			s_cf(prt_vs, tem, prt_fv);
 			s_tf(*pm(), prt_fv, fv);
 		}
-		auto Part::cptPrtFv(double *fv)const->void
+		auto Part::cptPrtFv(double *fv)const noexcept->void
 		{
 			double prt_im[36];
 			s_iv2im(prtIv(), prt_im);
@@ -1270,7 +1270,7 @@ namespace aris
 			s_mm(6, 1, 6, prt_im, prt_vs, tem);
 			s_cf(prt_vs, tem, fv);
 		}
-		auto Part::cptPf(const Coordinate &relative_to, double *pf)const->void
+		auto Part::cptPf(const Coordinate &relative_to, double *pf)const noexcept->void
 		{
 			double fg[6], prt_pf[6];
 			cptPrtFg(fg);
@@ -1281,14 +1281,14 @@ namespace aris
 			getPm(relative_to, pm);
 			s_tf(pm, prt_pf, pf);
 		}
-		auto Part::cptGlbPf(double *pf)const->void
+		auto Part::cptGlbPf(double *pf)const noexcept->void
 		{
 			double fg[6];
 			cptGlbFg(fg);
 			cptGlbFv(pf);
 			s_vs(6, fg, pf);
 		}
-		auto Part::cptPrtPf(double *pf)const->void
+		auto Part::cptPrtPf(double *pf)const noexcept->void
 		{
 			double fg[6];
 			cptPrtFg(fg);

@@ -2,8 +2,6 @@
 #include <aris_core.h>
 #include <aris_plan.h>
 
-#include "test_plan_command.h"
-
 using namespace aris::plan;
 
 void test_plan_root()

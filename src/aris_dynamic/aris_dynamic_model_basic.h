@@ -40,8 +40,8 @@ namespace aris
 		public:
 			static auto Type()->const std::string &{ static const std::string type{ "Element" }; return type; }
 			auto virtual type() const->const std::string& override{ return Type(); }
-			auto model()->Model&;
-			auto model()const->const Model&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->model(); }
+			auto model()noexcept->Model&;
+			auto model()const noexcept->const Model&{ return const_cast<std::decay_t<decltype(*this)> *>(this)->model(); }
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix;
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const aris::core::Matrix& default_value)const->aris::core::Matrix;
 			auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, Size m, Size n)const->aris::core::Matrix;
@@ -61,8 +61,8 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto active() const->bool { return active_; }
-			auto activate(bool active = true)->void { active_ = active; }
+			auto active() const noexcept->bool { return active_; }
+			auto activate(bool active = true)noexcept->void { active_ = active; }
 
 			virtual ~DynEle() = default;
 			explicit DynEle(const std::string &name, bool active = true) : Element(name), active_(active) {};
@@ -82,8 +82,8 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto gravity()const ->const double6&{ return gravity_; }
-			auto setGravity(const double *gravity)->void { s_vc(6, gravity, gravity_); }
+			auto gravity()const noexcept->const double6&{ return gravity_; }
+			auto setGravity(const double *gravity)noexcept->void { s_vc(6, gravity, gravity_); }
 
 			virtual ~Environment() = default;
 			explicit Environment(const std::string &name = "dyn_ele") :Element(name) {}

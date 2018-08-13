@@ -85,7 +85,7 @@ void build_model()
 
 	// add solvers //
 	auto &forward_kinematic = rbt.solverPool().add<ForwardKinematicSolver>();
-	auto &inverse_kinematic = rbt.solverPool().add<Ur5InverseSolver>();
+	auto &inverse_kinematic = rbt.solverPool().add<Ur5InverseKinematicSolver>();
 	auto &inverse_dynamic = rbt.solverPool().add<InverseDynamicSolver>();
 
 	forward_kinematic.allocateMemory();
@@ -203,7 +203,7 @@ int main()
 
 	// add solvers //
 	auto &forward_kinematic = r->solverPool().add<ForwardKinematicSolver>();
-	auto &inverse_kinematic = r->solverPool().add<Ur5InverseSolver>();
+	auto &inverse_kinematic = r->solverPool().add<aris::dynamic::Ur5InverseKinematicSolver>();
 
 	auto &sim = r->simulatorPool().add<aris::dynamic::Simulator>("sim");
 	auto &result = r->simResultPool().add<aris::dynamic::SimResult>("result");

@@ -20,7 +20,7 @@ namespace aris
 {
 	namespace dynamic
 	{
-		auto Element::model()->Model& { return dynamic_cast<Model*>(&father()) ? static_cast<Model&>(father()) : static_cast<Element&>(father()).model();}
+		auto Element::model() noexcept->Model& { return dynamic_cast<Model*>(&father()) ? static_cast<Model&>(father()) : static_cast<Element&>(father()).model();}
 		auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix
 		{
 			std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";

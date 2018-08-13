@@ -15,7 +15,8 @@
 #include <aris_dynamic_model_basic.h>
 #include <aris_dynamic_model_coordinate.h>
 #include <aris_dynamic_model_interaction.h>
-#include <aris_dynamic_model_compute.h>
+#include <aris_dynamic_model_solver.h>
+#include <aris_dynamic_model_simulation.h>
 #include <aris_dynamic_plan.h>
 
 namespace aris

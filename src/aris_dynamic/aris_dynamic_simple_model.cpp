@@ -78,7 +78,7 @@ namespace aris
 		{
 			for (auto &mot : imp_->m_.motionPool())mot.activate(false);
 			for (auto &gmt : imp_->m_.generalMotionPool())gmt.activate(true);
-			imp_->inv_solver_->init();
+			imp_->inv_solver_->allocateMemory();
 		}
 		auto SimpleModel::forwardKinematic(int max_count, double error)->bool
 		{

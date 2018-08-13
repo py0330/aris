@@ -27,10 +27,10 @@ namespace aris
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-			auto makI()->Marker& { return *makI_; }
-			auto makI() const->const Marker&{ return *makI_; }
-			auto makJ()->Marker& { return *makJ_; }
-			auto makJ() const->const Marker&{ return *makJ_; }
+			auto makI() noexcept->Marker& { return *makI_; }
+			auto makI() const noexcept->const Marker&{ return *makI_; }
+			auto makJ() noexcept->Marker& { return *makJ_; }
+			auto makJ() const noexcept->const Marker&{ return *makJ_; }
 
 			virtual ~Interaction() = default;
 			explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true):DynEle(name, is_active), makI_(makI), makJ_(makJ) {}
