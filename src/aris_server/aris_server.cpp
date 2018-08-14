@@ -2,6 +2,7 @@
 #include <thread>
 #include <algorithm>
 #include <memory>
+#include <cinttypes>
 
 #include "aris_core.h"
 #include "aris_control.h"
@@ -63,7 +64,7 @@ namespace aris
 				if (count_ == 1)
 				{
 					char name[1000];
-					std::sprintf(name, "%lld", cmd_now);
+					std::sprintf(name, "%" PRId64 "\n", cmd_now);
 					server_->controller().logFile(name);
 				}
 
