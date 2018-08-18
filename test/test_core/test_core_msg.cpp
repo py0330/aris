@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <aris_core.h>
-#include "test_core_msg.h"
+#include "test_core_log.h"
 
 using namespace aris::core;
 
@@ -37,7 +37,7 @@ void test_msg_stream()
 	aris::core::MsgStream stream(msg);
 	stream << "1234 abc\n aaa" << '\0';
 	stream.update();
-	if(std::string(msg.data()) != "1234 abc\n aaa") std::cout << "aris::core::MsgStream input failed";
+	if (std::string(msg.data()) != "1234 abc\n aaa") std::cout << "aris::core::MsgStream input failed";
 
 	MsgFix<8192> msg_fix;
 	aris::core::MsgStream stream_fix(msg_fix);
@@ -50,13 +50,13 @@ void test_msg_stream()
 void test_core_msg()
 {
 	std::cout << std::endl << "-----------------test msg---------------------" << std::endl;
-	
+
 	test_log();
 	test_msg_copy();
 	test_msg_stream();
-	
 
-	
+
+
 
 
 

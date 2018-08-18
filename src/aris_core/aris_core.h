@@ -4,6 +4,7 @@
 #include <aris_core_basic_type.h>
 #include <aris_core_object.h>
 #include <aris_core_msg.h>
+#include <aris_core_log.h>
 #include <aris_core_expression_calculator.h>
 #include <aris_core_socket.h>
 #include <aris_core_pipe.h>

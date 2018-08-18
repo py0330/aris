@@ -47,10 +47,9 @@ namespace aris
 			auto setMsgID(MsgID msg_id)->void { header().msg_id_ = msg_id; }
 			auto msgID() const->MsgID { return header().msg_id_; }
 			auto data() const->const char* { return const_cast<MsgBase*>(this)->data(); }
-			auto data()->char* { return size() > 0 ? reinterpret_cast<char*>(&header()) + sizeof(MsgHeader) : nullptr; }
+			auto data()->char* { return reinterpret_cast<char*>(&header()) + sizeof(MsgHeader); }
 			auto copy(const char *src)->void;
 			auto copy(const void *src, MsgSize size)->void;
-			auto copy(const void *src)->void;
 			auto copyAt(const void *src, MsgSize size, MsgSize at_this_pos_of_msg)->void;
 			auto copyMore(const void *src, MsgSize size)->void;
 			template<class... Args>
@@ -83,8 +82,8 @@ namespace aris
 			MsgBase() = default;
 			MsgBase(const MsgBase &other) = default;
 			MsgBase(MsgBase &&other) = default;
-			MsgBase &operator=(const MsgBase& other) = default;
-			MsgBase &operator=(MsgBase&& other) = default;
+			MsgBase& operator=(const MsgBase& other) = default;
+			MsgBase& operator=(MsgBase&& other) = default;
 
 		private:
 			mutable std::int32_t paste_id_{ 0 };
@@ -104,11 +103,11 @@ namespace aris
 			Msg(const MsgBase &other);
 			Msg(const Msg& other);
 			Msg(Msg&& other);
-			Msg& operator=(Msg other);
+			Msg& operator=(Msg &&other);
 
 		private:
 			std::unique_ptr<char[]> data_;
-			std::int32_t capacity_{ 0 };
+			std::int32_t capacity_;
 		};
 		template<std::size_t CAPACITY>
 		class MsgFix final :public MsgBase
@@ -158,14 +157,6 @@ namespace aris
 		private:
 			MsgStreamBuf buf;
 		};
-
-		auto createLogDir()->void;
-		auto logExeName()->std::string;
-		auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
-		auto logDirPath()->std::string;
-		auto logFileName()->const std::string&;
-		auto log(const char *data)->const char *;
-		auto log(const std::string& data)->const std::string&;
 
 		template<typename Function, typename ...Args>
 		auto benchmark(std::size_t count, Function func, Args&&... args)->double

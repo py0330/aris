@@ -12,7 +12,7 @@ long mod(long a, long b)
 	return (a%b + b) % b;
 }
 
-void test_core_pipe()
+void test_pipe_multi_thread()
 {
 	aris::core::Pipe pipe;
 
@@ -20,11 +20,11 @@ void test_core_pipe()
 	{
 		for (int i = 0; i < 1000; ++i)
 		{
-			if (!pipe.sendMsg(aris::core::Msg("from pipe:" + std::to_string(i))))
+			if (!pipe.sendMsg(aris::core::Msg("from " + std::to_string(i) + " num " + std::to_string(i * 4))))
 			{
-				std::cout << "pool is full" << std::endl;
+				std::cout << __FILE__ << __LINE__ << "test_pipe failed" << std::endl;
 			}
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			std::this_thread::sleep_for(std::chrono::microseconds(1));
 		}
 	});
 
@@ -35,8 +35,24 @@ void test_core_pipe()
 		static int failed_count{ 0 };
 		if (pipe.recvMsg(msg)) 
 		{
+			std::string str(msg.data(), msg.size());
+			std::stringstream ss(str);
+			std::string word;
+			static int round{ 0 }; 
+			int id, num;
+
+			ss >> word;
+			if (word != "from")std::cout << __FILE__ << __LINE__ << "test_pipe failed" << std::endl;
+			ss >> id;
+			if (id != round)std::cout << __FILE__ << __LINE__ << "test_pipe failed" << std::endl;
+			ss >> word;
+			if (word != "num")std::cout << __FILE__ << __LINE__ << "test_pipe failed" << std::endl;
+			ss >> num;
+			if (num != round * 4)std::cout << __FILE__ << __LINE__ << "test_pipe failed" << std::endl;
+
+			round++;
+			
 			failed_count = 0;
-			std::cout << msg.data() << std::endl;
 		}
 		else
 		{
@@ -44,14 +60,16 @@ void test_core_pipe()
 			failed_count++;
 		}
 		
-		if (failed_count > 10)break;
+		if (failed_count > 100)break; // 超过100ms没有数据，那么退出
 
 	}
-	
-
-	//
 
 	fu.wait();
+}
 
-	std::cout << "finished" << std::endl;
+void test_core_pipe()
+{
+	std::cout << std::endl << "-----------------test pipe---------------------" << std::endl;
+	test_pipe_multi_thread();
+	std::cout << "-----------------test pipe finished------------" << std::endl << std::endl;
 }

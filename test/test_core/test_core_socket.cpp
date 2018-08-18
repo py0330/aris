@@ -4,78 +4,145 @@
 #include "test_core_socket.h"
 
 using namespace aris::core;
-const char xml_data[] =
-"<root>"
-"    <server type=\"Socket\" port=\"5866\"/>"
-"    <client type=\"Socket\" remote_ip=\"127.0.0.1\" port=\"5866\"/>"
-"</root>";
 
 
-void test_core_socket()
+
+void test_socket_xml()
+{
+	const char xml_data[] =
+		"<root>"
+		"    <server type=\"Socket\" port=\"5866\"/>"
+		"    <client type=\"Socket\" remote_ip=\"127.0.0.1\" port=\"5866\"/>"
+		"</root>";
+	
+	auto root = aris::core::Object();
+	root.registerType<Socket>();
+
+	root.loadXmlStr(xml_data);
+	auto str1 = root.xmlString();
+	auto &server = root.children().front();
+	auto &client = root.children().back();
+	
+	std::string xml_str;
+	server.saveXmlStr(xml_str);
+	if (server.xmlString() != "<server type=\"Socket\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+	if (client.xmlString() != "<client type=\"Socket\" remote_ip=\"127.0.0.1\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+}
+void test_socket_multi_thread()
 {
 	try
 	{
-		Object root;
-		root.registerType<Socket>();
+		Socket server("server", "", "5866"), client("server", "127.0.0.1", "5866");
 
-		aris::core::XmlDocument xml_doc;
-		xml_doc.Parse(xml_data);
-		root.loadXmlDoc(xml_doc);
-
-		auto& server = static_cast<Socket&>(*root.findByName("server"));
-		auto& client = static_cast<Socket&>(*root.findByName("client"));
-
-		server.setOnReceivedMsg([](Socket *, Msg &msg)
+		enum { THREAD_NUM = 8 };
+		int message_round[THREAD_NUM]{ 0 };
+		int request_round[THREAD_NUM]{ 0 };
+		int request_answer[THREAD_NUM]{ 0 };
+		std::atomic_bool lose_executed{ false }, connect_executed{ false };
+		server.setOnReceivedConnection([&](Socket*, const char*, int)
 		{
-			std::cout << msg.data() << std::endl;
+			connect_executed = true;
 			return 0;
 		});
-		server.setOnReceivedRequest([](Socket *, Msg &msg)
+		server.setOnReceivedMsg([&](Socket *, Msg &msg)
 		{
-			std::cout << msg.data() << std::endl;
-			return Msg(std::string(msg.data()) + " was received");
+			std::string str(msg.data(), msg.size());
+			std::stringstream ss(str);
+			std::string word;
+			int thread_id, num;
+
+			ss >> word;
+			if (word != "message")std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			ss >> thread_id;
+			if (thread_id > 7 || thread_id < -1)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			ss >> word;
+			if (word != "count")std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			ss >> num;
+			if (num != message_round[thread_id])std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+
+			message_round[thread_id] = num + 4;
+
+			return 0;
 		});
-		server.setOnLoseConnection([](Socket*)
+		server.setOnReceivedRequest([&](Socket *, Msg &msg)
 		{
-			std::cout << "connection lost" << std::endl;
+			std::string str(msg.data(), msg.size());
+			std::stringstream ss(str);
+			std::string word;
+			int thread_id, num;
+
+			ss >> word;
+			if (word != "request")std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			ss >> thread_id;
+			if (thread_id > 7 || thread_id < -1)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			ss >> word;
+			if (word != "count")std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			ss >> num;
+			if (num != request_round[thread_id])std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+
+			request_round[thread_id] = num + 1;
+
+			Msg answer;
+			answer.copyStruct(num*2);
+			return answer;
+		});
+		server.setOnLoseConnection([&](Socket*)
+		{
+			lose_executed = true;
 			return 0;
 		});
 
 		server.startServer();
 		client.connect();
 
-
-		enum { THREAD_NUM = 8 };
-		std::future<void> ft[THREAD_NUM];
+		std::future<void> ft_message[THREAD_NUM], ft_request[THREAD_NUM];
 		for (auto i = 0; i < THREAD_NUM; ++i)
 		{
-			ft[i] = std::async(std::launch::async, [&client, i]()
+			ft_request[i] = std::async(std::launch::async, [&client, i]()
 			{
-				for (auto j = 0; j<100; ++j)
-					client.sendMsg(Msg("thread " + std::to_string(i) + " count: " + std::to_string(j)));
+				for (auto j = 0; j < 100; ++j)
+				{
+					auto m = client.sendRequest(Msg("request " + std::to_string(i) + " count " + std::to_string(j)));
+					int answer;
+					m.pasteStruct(answer);
+					if (answer != j * 2)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+				}
+			});
+
+			ft_message[i] = std::async(std::launch::async, [&client, i]()
+			{
+				for (auto j = 0; j<400; j += 4)
+					client.sendMsg(Msg("message " + std::to_string(i) + " count " + std::to_string(j)));
 			});
 		}
 
-		for (auto i = 0; i < THREAD_NUM; ++i) ft[i].wait();
+		for (auto i = 0; i < THREAD_NUM; ++i) ft_message[i].wait();
+		for (auto i = 0; i < THREAD_NUM; ++i) ft_request[i].wait();
 		client.stop();
 
-		std::string s;
-		std::getline(std::cin, s);
+		for (auto i = 0; i < THREAD_NUM; ++i) 
+		{
+			if (message_round[i] != 400)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			if (request_round[i] != 100)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+		}
 
-		server.startServer();
-		client.connect();
-		client.sendMsg(Msg("123456\n"));
-		client.stop();
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-		std::getline(std::cin, s);
-
+		if (!connect_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+		if (!lose_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 	}
 	catch (std::exception &e)
 	{
 		std::cout << e.what();
 	}
+}
 
 
-	std::cout << "test socket finished" << std::endl;
+void test_core_socket()
+{
+	std::cout << std::endl << "-----------------test socket---------------------" << std::endl;
+	test_socket_xml();
+	test_socket_multi_thread();
+	std::cout << "-----------------test socket finished------------" << std::endl << std::endl;
 }
 

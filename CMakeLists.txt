@@ -79,7 +79,7 @@ if(WIN32)
 endif(WIN32)
 
 set(ARIS_INCL_DIR src/ src/aris_server src/aris_sensor src/aris_robot src/aris_dynamic src/aris_control src/aris_plan src/aris_core)
-set(ARIS_LINK_LIB aris_server aris_sensor aris_robot aris_dynamic aris_control aris_plan aris_core)
+set(ARIS_LINK_LIB aris_server aris_sensor aris_robot aris_plan aris_dynamic aris_control aris_core)
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${RELY_INCL_DIR})
 set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${RELY_LINK_DIR})
 set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
@@ -106,7 +106,7 @@ install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
 # aris core project
-set(SOURCE aris_core_command aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_msg aris_core_object tinyxml2 aris_core_basic_type)
+set(SOURCE aris_core_command aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_log aris_core_msg aris_core_object tinyxml2 aris_core_basic_type)
 PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
 PREPEND_H(FULL_H src/aris_core ${SOURCE})
 add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h src/aris.h)
@@ -176,7 +176,7 @@ install(FILES ${FULL_H} DESTINATION include)
 ################################### build tests for aris ####################################
 enable_testing()
 
-set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_msg.h test_core_msg.cpp test_core_object.h test_core_object.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
+set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_log.h test_core_log.cpp test_core_msg.h test_core_msg.cpp test_core_object.h test_core_object.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
 PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
 add_executable(test_core ${FULL_SRC})
 target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
@@ -262,6 +262,11 @@ PREPEND(FULL_SRC demo/demo_ur ${SOURCE_FILES})
 add_executable(demo_ur ${FULL_SRC})
 target_link_libraries(demo_ur aris_robot aris_control aris_dynamic aris_core ${RELY_LINK_LIB})
 install(DIRECTORY demo/demo_ur/resource/ DESTINATION resource/demo_ur)
+
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_server_ur ${SOURCE_FILES})
+add_executable(demo_server_ur ${FULL_SRC})
+target_link_libraries(demo_server_ur ${ALL_LINK_LIB})
 
 
 endif(MAKE_DEMO)

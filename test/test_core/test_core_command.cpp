@@ -287,7 +287,6 @@ void test_command_code()
 	}
 }
 
-
 void test_command()
 {
 	std::cout << std::endl << "-----------------test command---------------------" << std::endl;

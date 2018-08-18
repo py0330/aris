@@ -26,8 +26,8 @@ namespace aris
 		}
 		auto Pipe::sendMsg(const aris::core::MsgBase &msg)->bool
 		{
-			auto send_pos = imp_->send_pos_.load();
-			auto recv_pos = imp_->recv_pos_.load();
+			auto send_pos = imp_->send_pos_.load();// 原子操作
+			auto recv_pos = imp_->recv_pos_.load();// 原子操作
 			
 			std::size_t remain_data_size = (send_pos - recv_pos + imp_->pool_size_) % imp_->pool_size_;
 			if (remain_data_size + sizeof(MsgHeader) + msg.size()> imp_->pool_size_) return false; // 查看现有数据容量加待发送数据容量，是否超过缓存大小
@@ -35,13 +35,13 @@ namespace aris
 			std::size_t send_num2 = sizeof(MsgHeader) + msg.size() - send_num1;
 			std::copy_n(reinterpret_cast<const char *>(&msg.header()), send_num1, &imp_->pool_[send_pos]);
 			std::copy_n(reinterpret_cast<const char *>(&msg.header()) + send_num1, send_num2, &imp_->pool_[0]);
-			imp_->send_pos_.store( (send_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_);
+			imp_->send_pos_.store( (send_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_); // 原子操作
 			return true;
 		}
 		auto Pipe::recvMsg(aris::core::MsgBase &msg)->bool
 		{
-			auto send_pos = imp_->send_pos_.load();
-			auto recv_pos = imp_->recv_pos_.load();
+			auto send_pos = imp_->send_pos_.load();// 原子操作
+			auto recv_pos = imp_->recv_pos_.load();// 原子操作
 			
 			MsgHeader header;
 			if (send_pos == recv_pos) return false;
@@ -54,7 +54,7 @@ namespace aris
 			recv_num2 = sizeof(MsgHeader) + msg.size() - recv_num1;
 			std::copy_n(&imp_->pool_[recv_pos], recv_num1, reinterpret_cast<char *>(&msg.header()));
 			std::copy_n(&imp_->pool_[0], recv_num2, reinterpret_cast<char *>(&msg.header()) + recv_num1);
-			imp_->recv_pos_.store((recv_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_);
+			imp_->recv_pos_.store((recv_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_);// 原子操作
 			return true;
 		}
 		Pipe::~Pipe() = default;

@@ -63,6 +63,7 @@ namespace aris
 			static auto Type()->const std::string &{ static const std::string type("Socket"); return std::ref(type); }
 			auto virtual type() const->const std::string& override{ return Type(); }
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto isConnected()->bool;
 			auto state()->State;
 			auto startServer(const std::string &port = std::string())->void;

@@ -27,11 +27,6 @@ void test_plan_root()
 		"			<physical_id abbreviation=\"p\" default=\"0\"/>"
 		"			<leg abbreviation=\"l\" default=\"0\"/>"
 		"		</ds>");
-
-
-	//aris::dynamic::Model model;
-	//simulateCommand("ds -m=1", &root, nullptr, nullptr);
-
 }
 
 void test_function()

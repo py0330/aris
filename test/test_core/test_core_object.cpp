@@ -172,6 +172,7 @@ void test_xml()
 
 void test_object()
 {
-	// test big 5 //
+	std::cout << std::endl << "-----------------test object---------------------" << std::endl;
 	test_big_five();
+	std::cout << "-----------------test object finished------------" << std::endl << std::endl;
 }

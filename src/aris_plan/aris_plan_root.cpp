@@ -716,6 +716,10 @@ namespace aris
 				param.model_->motionPool().at(i).setMp(p);
 			}
 
+			double pq[7];
+			aris::dynamic::s_pm2pq(*param.model_->generalMotionPool().at(0).mpm(), pq);
+			param.master_->lout() << param.count_ << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "\n";
+
 			param.model_->solverPool().at(1).kinPos();
 			return (static_cast<int>(*std::max_element(total_count, total_count + 6)) > param.count_) ? 1 : 0;
 		}
@@ -949,6 +953,12 @@ namespace aris
 			// 反解计算电机位置 //
 			param.model_->generalMotionPool().at(0).setMpm(pm2);
 			if (!param.model_->solverPool().at(0).kinPos())return -1;
+
+
+			double pq[7];
+			aris::dynamic::s_pm2pq(*param.model_->generalMotionPool().at(0).mpm(), pq);
+			param.master_->lout() << param.count_ << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "\n";
+
 
 			return std::max(pos_total_count, ori_total_count) > param.count_ ? 1 : 0;
 		}

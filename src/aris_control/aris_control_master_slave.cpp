@@ -15,11 +15,7 @@ namespace aris
 {
 	namespace control
 	{
-		struct Slave::Imp
-		{
-		public:
-			std::uint16_t phy_id_, sla_id_;
-		};
+		struct Slave::Imp { std::uint16_t phy_id_, sla_id_; };
 		auto Slave::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			Object::saveXml(xml_ele);
@@ -32,10 +28,7 @@ namespace aris
 		}
 		auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
 		Slave::~Slave() = default;
-		Slave::Slave(const std::string &name, std::uint16_t phy_id) :Object(name), imp_(new Imp) 
-		{
-			imp_->phy_id_ = phy_id;
-		}
+		Slave::Slave(const std::string &name, std::uint16_t phy_id) :Object(name), imp_(new Imp) { imp_->phy_id_ = phy_id; }
 		Slave::Slave(const Slave &other) = default;
 		Slave::Slave(Slave &&other) = default;
 		Slave& Slave::operator=(const Slave &other) = default;
@@ -160,7 +153,7 @@ namespace aris
 			imp_->mout_thread_ = std::thread([this]() 
 			{
 				// prepair lout //
-				auto file_name = aris::core::logDirPath() + "rt_log_" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "_";
+				auto file_name = aris::core::logDirPath() + "rt_log--" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "--";
 				std::fstream file;
 				file.open(file_name + ".txt", std::ios::out | std::ios::trunc);
 

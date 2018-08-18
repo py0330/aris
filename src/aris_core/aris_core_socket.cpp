@@ -235,6 +235,13 @@ namespace aris
 
 			Object::loadXml(xml_ele);
 		}
+		auto Socket::saveXml(aris::core::XmlElement &xml_ele) const->void
+		{
+			Object::saveXml(xml_ele);
+			
+			if(!imp_->remote_ip_.empty())xml_ele.SetAttribute("remote_ip", imp_->remote_ip_.c_str());
+			if (!imp_->port_.empty())xml_ele.SetAttribute("port", imp_->port_.c_str());
+		}
 		auto Socket::stop()->void
 		{
 			std::lock(imp_->state_mutex_, imp_->close_mutex_);
@@ -529,4 +536,3 @@ namespace aris
 		}
 	}
 }
-

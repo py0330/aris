@@ -64,7 +64,7 @@ namespace aris
 				if (count_ == 1)
 				{
 					char name[1000];
-					std::sprintf(name, "%" PRId64 "\n", cmd_now);
+					std::sprintf(name, "%" PRId64 "", cmd_now);
 					server_->controller().logFile(name);
 				}
 
@@ -90,8 +90,6 @@ namespace aris
 					count_ = 1;
 					cmd_now_.store(cmd_end);//原子操作
 				}
-
-				server_->controller().lout() << '\n';
 			}
 
 			// 把杆件信息更新到外部 //
@@ -105,8 +103,6 @@ namespace aris
 		}
 		auto ControlServer::Imp::executeCmd(aris::core::MsgBase *msg)->int
 		{
-			server_->controller().lout() << " " << count_;
-			
 			aris::plan::PlanParam plan_param{ count_, model_, controller_, msg->data(), static_cast<std::uint32_t>(msg->size()) };
 
 			// 执行plan函数 //
@@ -364,15 +360,17 @@ namespace aris
 		auto ControlServer::executeCmd(const aris::core::Msg &msg)->std::int64_t
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-			if (!imp_->is_running_)throw std::runtime_error("failed in ControlServer::executeCmd, because ControlServer is not running");
+			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
 
 			static std::int64_t cmd_id{ 1 };
 
 			aris::core::Msg cmd_msg = msg;
+			cmd_msg.header().reserved3_ = cmd_id;
+
 			auto cmd_end = imp_->cmd_end_.load();
 			auto option = cmd_msg.header().reserved1_;
 
-			aris::core::log("received cmd " + std::to_string(cmd_end) + " : "+ cmd_msg.data());
+			LOG_INFO << "server receive cmd " << std::to_string(cmd_id) << " : " << cmd_msg.data() << std::endl;
 
 			// 找到命令对应的plan //
 			std::string cmd;
@@ -403,9 +401,8 @@ namespace aris
 				// 等待所有任务收集 //
 				while ((option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::yield();//原子操作
 
-				aris::core::log("prepair cmd " + std::to_string(cmd_end) + " : " + cmd_msg.data());
+				LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
 				plan_iter->prepairNrt(aris::plan::PlanParam{ std::uint32_t(0), imp_->model_, imp_->controller_, nullptr, 0 }, params, cmd_msg);
-				aris::core::log("prepair cmd " + std::to_string(cmd_end) + " over");
 			}
 
 			// execute //
@@ -419,11 +416,10 @@ namespace aris
 
 				// 判断是否等待命令池清空 //
 				if ((!(option & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
-					throw std::runtime_error("cmd queqe is full");
+					LOG_AND_THROW(std::runtime_error("failed to execute plan, because command pool is full"));
 				else
 					while ((cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)std::this_thread::yield();
 				reinterpret_cast<aris::plan::Plan *&>(cmd_msg.header().reserved2_) = &*plan_iter;
-				cmd_msg.header().reserved3_ = cmd_id;
 				
 				// 添加命令 //
 				imp_->msg_queue_[cmd_end % Imp::CMD_POOL_SIZE].swap(cmd_msg);
@@ -440,8 +436,8 @@ namespace aris
 				if (option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
 				{
 					// 等待所有任务完成 //
-					while ((option & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::yield();//原子操作
-																													   // 等待所有任务收集 //
+					while ((option & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+					// 等待所有任务收集 //
 					while ((option & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::yield();//原子操作
 
 					plan_iter->collectNrt(aris::plan::PlanParam{ 0, imp_->model_, imp_->controller_, cmd_msg.data(), static_cast<std::uint32_t>(cmd_msg.size()) });
@@ -459,7 +455,7 @@ namespace aris
 		auto ControlServer::currentExecuteId()->std::int64_t
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-			if (!imp_->is_running_)throw std::runtime_error("failed in ControlServer::executeCmd, because ControlServer is not running");
+			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current execute ID, because ControlServer is not running"));
 			
 			// 只有execute_cmd函数才可能会改变cmd_queue中的msg
 			auto cmd_end = imp_->cmd_end_.load();
@@ -470,7 +466,7 @@ namespace aris
 		auto ControlServer::currentCollectId()->std::int64_t
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-			if (!imp_->is_running_)throw std::runtime_error("failed in ControlServer::executeCmd, because ControlServer is not running");
+			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current collect ID, because ControlServer is not running"));
 
 			// 只有execute_cmd函数才可能会改变cmd_queue中的msg
 			auto cmd_end = imp_->cmd_end_.load();
@@ -481,7 +477,7 @@ namespace aris
 		auto ControlServer::start()->void
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-			if (imp_->is_running_)throw std::runtime_error("failed to ControlServer::start, because it's already started");
+			if (imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to start server, because it is already started "));
 			imp_->is_running_ = true;
 
 			// 分配model的内存 //
@@ -528,7 +524,7 @@ namespace aris
 		auto ControlServer::stop()->void
 		{
 			std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-			if (!imp_->is_running_)throw std::runtime_error("failed to ControlServer::stop, because it's not started");
+			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to stop server, because it is not running"));
 			imp_->is_running_ = false;
 
 			controller().stop();
@@ -551,7 +547,7 @@ namespace aris
 				imp_->if_part_pm_ready_.store(false);
 				imp_->if_need_part_pm_.store(true);
 
-				while (!imp_->if_part_pm_ready_.load());
+				while (!imp_->if_part_pm_ready_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 				imp_->if_part_pm_ready_.store(false);
 			}
