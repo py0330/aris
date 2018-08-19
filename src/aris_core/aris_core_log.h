@@ -70,7 +70,6 @@ namespace aris
 			LOG_SPACE_WIDTH = LOG_TYPE_WIDTH + 1 + LOG_TIME_WIDTH + 1 + LOG_FILE_WIDTH + 1 + LOG_LINE_WIDTH + 1,
 		};
 
-		
 		auto logFile(const std::string &file_path)->void;
 		auto log()->std::ostream&;
 	

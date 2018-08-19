@@ -31,9 +31,12 @@ project(aris)
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
 
+
+set(CMAKE_CXX_STANDARD 17)
+
 # set compile options
 if(UNIX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread")
 endif(UNIX)
 
 # set definitions to disable some warning
