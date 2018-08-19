@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.12)
 
 # add prefix to every string in a variable
 FUNCTION(PREPEND var prefix)
@@ -30,14 +30,7 @@ project(aris)
 # set binary and library folders
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
-
-
 set(CMAKE_CXX_STANDARD 17)
-
-# set compile options
-if(UNIX)
-#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-endif(UNIX)
 
 # set definitions to disable some warning
 if(WIN32)

@@ -12,9 +12,6 @@
 
 #include "aris_dynamic_block_matrix.h"
 
-namespace aris
+namespace aris::dynamic
 {
-	namespace dynamic
-	{
-	}
 }

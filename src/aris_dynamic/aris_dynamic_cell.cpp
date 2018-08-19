@@ -12,9 +12,6 @@
 
 #include "aris_dynamic_cell.h"
 
-namespace aris
+namespace aris::dynamic
 {
-	namespace dynamic
-	{
-	}
 }

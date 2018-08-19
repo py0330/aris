@@ -57,27 +57,24 @@
 
 
 
-namespace aris
+namespace aris::core
 {
-	namespace core
+	enum
 	{
-		enum
-		{
-			LOG_TYPE_WIDTH = 5,
-			LOG_TIME_WIDTH = 20,
-			LOG_FILE_WIDTH = 25,
-			LOG_LINE_WIDTH = 5,
-			LOG_SPACE_WIDTH = LOG_TYPE_WIDTH + 1 + LOG_TIME_WIDTH + 1 + LOG_FILE_WIDTH + 1 + LOG_LINE_WIDTH + 1,
-		};
+		LOG_TYPE_WIDTH = 5,
+		LOG_TIME_WIDTH = 20,
+		LOG_FILE_WIDTH = 25,
+		LOG_LINE_WIDTH = 5,
+		LOG_SPACE_WIDTH = LOG_TYPE_WIDTH + 1 + LOG_TIME_WIDTH + 1 + LOG_FILE_WIDTH + 1 + LOG_LINE_WIDTH + 1,
+	};
 
-		auto logFile(const std::string &file_path)->void;
-		auto log()->std::ostream&;
-	
-		auto createLogDir()->void;
-		auto logExeName()->std::string;
-		auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
-		auto logDirPath()->std::string;
-	}
+	auto logFile(const std::string &file_path)->void;
+	auto log()->std::ostream&;
+
+	auto createLogDir()->void;
+	auto logExeName()->std::string;
+	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
+	auto logDirPath()->std::string;
 }
 
 

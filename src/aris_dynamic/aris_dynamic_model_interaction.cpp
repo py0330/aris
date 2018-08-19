@@ -12,10 +12,8 @@
 
 #include "aris_dynamic_model.h"
 
-namespace aris
+namespace aris::dynamic
 {
-	namespace dynamic
-	{
 		auto Interaction::saveXml(aris::core::XmlElement &xml_ele) const->void
 		{
 			DynEle::saveXml(xml_ele);
@@ -503,5 +501,4 @@ namespace aris
 			s_vi(6, fsI, fsJ);
 		}
 		SingleComponentForce::SingleComponentForce(const std::string &name, Marker* makI, Marker* makJ, Size componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
-	}
 }

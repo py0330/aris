@@ -5,10 +5,6 @@
 #include <aris_control.h>
 #include <aris_dynamic.h>
 
-namespace aris
+namespace aris::plan
 {
-	namespace plan
-	{
-
-	}
 }
