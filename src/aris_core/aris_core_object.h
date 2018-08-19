@@ -305,8 +305,8 @@ namespace aris::core
 	public:
 		using allocator_type = A;
 		using value_type = typename std::allocator_traits<A>::value_type;
-		using reference = typename T&;
-		using const_reference = typename const T&;
+		using reference = T&;
+		using const_reference = const T&;
 		using pointer = typename std::allocator_traits<A>::pointer;
 		using const_pointer = typename std::allocator_traits<A>::const_pointer;
 		using difference_type = typename std::allocator_traits<A>::difference_type;
