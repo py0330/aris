@@ -685,7 +685,7 @@ namespace aris
 
 				auto operator*() const->reference { return static_cast<reference>(iter_.operator*());}
 				auto operator->() const->pointer { return static_cast<pointer>(iter_.operator->());}
-				auto operator[](size_type size) const->reference { return iter_->operator[](size); } //optional
+				auto operator[](size_type size) const->reference { return iter_.operator[](size); } //optional
 
 				~iterator() = default;
 				iterator() = default;
@@ -727,7 +727,7 @@ namespace aris
 
 				auto operator*() const->const_reference { return static_cast<const_reference>(iter_.operator*()); }
 				auto operator->() const->const_pointer { return static_cast<const_pointer>(iter_.operator->()); }
-				auto operator[](size_type size) const->const_reference { return iter_->operator[](size); } //optional
+				auto operator[](size_type size) const->const_reference { return iter_.operator[](size); } //optional
 
 				~const_iterator() = default;
 				const_iterator() = default;
