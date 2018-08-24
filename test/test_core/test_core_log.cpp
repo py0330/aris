@@ -1,10 +1,25 @@
 ﻿#include <iostream>
 #include <future>
 #include <aris_core.h>
+#include <filesystem>
+#include <fstream>
 #include "test_core_msg.h"
 
 using namespace aris::core;
 
+void test_log_stream()
+{
+	std::stringstream ss;
+
+	aris::core::logStream(&ss);
+
+	LOG_INFO << "test log stream to string stream" << 1 << std::endl;
+
+	if (ss.str().substr(aris::core::LOG_SPACE_WIDTH, std::string::npos) != "test log stream to string stream1\n")
+		std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+
+	aris::core::logStream();
+}
 void test_log_multi_thread()
 {
 	try
@@ -115,15 +130,12 @@ void test_log_every_multi_thread()
 void test_core_log()
 {
 	std::cout << std::endl << "-----------------test log---------------------" << std::endl;
-
+	
+	test_log_stream();
 	test_log_multi_thread();
 
 	logFile("test_log_every.txt");
 	test_log_every_multi_thread();
-
-
-
-
 
 	std::cout << "-----------------test log finished------------" << std::endl << std::endl;
 }

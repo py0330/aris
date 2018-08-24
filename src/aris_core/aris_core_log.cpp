@@ -27,15 +27,18 @@
 
 namespace aris::core
 {
-	std::ofstream log_file;
-	std::recursive_mutex log_file_mutex;
+	static std::filesystem::path log_dir_path_;
+	static std::filesystem::path log_file_path_;
+	static std::ofstream log_fstream_;
+	static std::ostream *log_stream_{ nullptr };
+	static std::recursive_mutex log_file_mutex;
 
 	class LogStreamBuf :public std::streambuf
 	{
 	public:
 		virtual auto overflow(int_type c)->int_type override
 		{
-			msg_.resize(msg_.capacity());
+			msg_.resize(msg_.capacity());// 保证在下次resize的时候，所有数据都会被copy，这是因为在resize重新分配内存时，不是按照capacity来copy
 			msg_.resize(msg_.capacity() + 1);
 			setp(msg_.data() + msg_.size(), msg_.data() + msg_.capacity());
 			*(pptr() - 1) = c;
@@ -45,15 +48,13 @@ namespace aris::core
 		{
 			std::unique_lock<std::recursive_mutex> lck(log_file_mutex);
 
-			if (!log_file.is_open())logFile(logExeName() + "--" + logFileTimeFormat(std::chrono::system_clock::now()) + "--log.txt");
+			if (!log_stream_)logStream();
 
 			msg_.resize(msg_.capacity() - (epptr() - pptr()));
-			std::string msg_data(msg_.data(), msg_.size());
-			log_file << msg_data;
-			log_file.flush();
+			*log_stream_ << msg_.toString() <<std::flush;
 
 			msg_.resize(0);
-			setp(msg_.data() + msg_.size(), msg_.data() + msg_.capacity());
+			setp(msg_.data(), msg_.data() + msg_.capacity());
 
 			return 0;
 		}
@@ -68,31 +69,36 @@ namespace aris::core
 		log_stream_.flush();
 		return log_stream_;
 	}
-	auto logFile(const std::string &file_name)->void
+	auto logDirectory(const std::filesystem::path &log_dir)->void
 	{
 		std::unique_lock<std::recursive_mutex> lck(log_file_mutex);
 
-		createLogDir();
-		log_file.close();
-		log_file.open(logDirPath() + file_name, std::ios::out | std::ios::trunc);
+		log_dir_path_ = log_dir.empty() ? std::filesystem::absolute("log") : std::filesystem::absolute(log_dir);
+		std::filesystem::create_directories(log_dir_path_);
+	}
+	auto logFile(const std::filesystem::path &log_file_path)->void
+	{
+		std::unique_lock<std::recursive_mutex> lck(log_file_mutex);
+
+		log_file_path_ = log_file_path.empty() ? std::filesystem::path(logExeName() + "--" + logFileTimeFormat(std::chrono::system_clock::now()) + "--log.txt") : log_file_path;
+		log_file_path_ = log_file_path_.has_root_path() ? log_file_path_ : logDirPath() / log_file_path_;
+		std::filesystem::create_directories(log_file_path_.parent_path());
+
+		log_fstream_.close();
+		log_fstream_.open(log_file_path_, std::ios::out | std::ios::trunc);
+	}
+	auto logStream(std::ostream *s)->void 
+	{ 
+		std::unique_lock<std::recursive_mutex> lck(log_file_mutex);
+
+		if (s == nullptr && !log_fstream_.is_open())logFile();
+		log_stream_ = s ? s : &log_fstream_;
 	}
 
-
-
-	auto createLogDir()->void
-	{
-#ifdef WIN32
-		CreateDirectory("log", NULL);
-#endif
-
-#ifdef UNIX
-		if (opendir("log") == nullptr)
-		{
-			umask(0);
-			if (mkdir("log", 0777) != 0)
-				throw std::logic_error("can't create log folder\n");
-		}
-#endif
+	auto logDirPath()->std::filesystem::path 
+	{ 
+		if (log_dir_path_.empty())logDirectory();
+		return log_dir_path_; 
 	}
 	auto logExeName()->std::string
 	{
@@ -157,16 +163,5 @@ namespace aris::core
 		char time_format[1024];
 		strftime(time_format, 1024, "%Y-%m-%d--%H-%M-%S", timeinfo);
 		return std::string(time_format);
-	}
-	auto logDirPath()->std::string
-	{
-#ifdef WIN32
-		return std::string("log\\");
-#endif
-
-#ifdef UNIX
-		return std::string("log/");
-#endif
-
 	}
 }

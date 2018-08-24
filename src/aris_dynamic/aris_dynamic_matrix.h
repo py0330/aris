@@ -121,6 +121,19 @@ namespace aris::dynamic
 	}
 	auto inline s_is_equal(Size m, Size n, const double *m1, const double *m2, double error) noexcept->bool { return s_is_equal(m, n, m1, n, m2, n, error); };
 
+	template <typename AType>
+	auto inline s_eye(Size m, double *A, AType a_t) noexcept->void
+	{
+		for (Size i(-1), ai0{ 0 }, aii{ 0 }; ++i < m; ai0 = next_r(ai0, a_t), aii = next_d(aii, a_t))
+		{
+			for (Size j(-1), aij{ ai0 }; ++j < m; aij = next_c(aij, a_t))
+				A[aij] = 0.0;
+			A[aii] = 1.0;
+		}
+	}
+	auto inline s_eye(Size m, double *A) noexcept->void { return s_eye(m, A, m); }
+
+
 	template<typename XType>
 	auto inline s_norm(Size n, const double *x, XType x_t) noexcept->double
 	{

@@ -60,29 +60,19 @@ namespace aris::control
 				mst.send();
 
 				// flush lout
-				mst.lout().update();
+				mst.lout() << std::flush;
 				if (!mst.imp_->lout_msg_.empty())
 				{
-					// 补充一个0作为结尾 //
-					mst.lout() << '\0';
-					mst.lout().update();
-
 					mst.imp_->lout_pipe_->sendMsg(mst.imp_->lout_msg_);
-					mst.imp_->lout_msg_.resize(0);
-					mst.lout().resetBuf();
+					mst.lout().reset();
 				}
 
 				// flush mout
-				mst.mout().update();
+				mst.mout() << std::flush;
 				if (!mst.imp_->mout_msg_.empty())
 				{
-					// 补充一个0作为结尾 //
-					mst.mout() << '\0';
-					mst.mout().update();
-
 					mst.imp_->mout_pipe_->sendMsg(mst.imp_->mout_msg_);
-					mst.imp_->mout_msg_.resize(0);
-					mst.mout().resetBuf();
+					mst.mout().reset();
 				}
 			}
 
@@ -151,9 +141,9 @@ namespace aris::control
 		imp_->mout_thread_ = std::thread([this]()
 		{
 			// prepair lout //
-			auto file_name = aris::core::logDirPath() + "rt_log--" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "--";
+			auto file_name = aris::core::logDirPath() / ("rt_log--" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "--");
 			std::fstream file;
-			file.open(file_name + ".txt", std::ios::out | std::ios::trunc);
+			file.open(file_name.string() + "0.txt", std::ios::out | std::ios::trunc);
 
 			// start read mout and lout //
 			aris::core::Msg msg;
@@ -164,16 +154,16 @@ namespace aris::control
 					if (msg.msgID() == Imp::LOG_NEW_FILE)
 					{
 						file.close();
-						file.open(file_name + msg.data() + ".txt", std::ios::out | std::ios::trunc);
+						file.open(file_name.string() + msg.toString() + ".txt", std::ios::out | std::ios::trunc);
 					}
 					else if (!msg.empty())
 					{
-						file << msg.data();
+						file << msg.toString();
 					}
 				}
 				else if (imp_->mout_pipe_->recvMsg(msg))
 				{
-					if (!msg.empty())std::cout << msg.data() << std::endl;
+					if (!msg.empty())std::cout << msg.toString() << std::endl;
 				}
 				else
 				{
@@ -182,17 +172,17 @@ namespace aris::control
 			}
 
 			// 结束前最后一次接收，此时实时线程已经结束 //
-			while (imp_->mout_pipe_->recvMsg(msg))if (!msg.empty())std::cout << msg.data() << std::endl;
+			while (imp_->mout_pipe_->recvMsg(msg)) if (!msg.empty())std::cout << msg.toString() << std::endl;
 			while (imp_->lout_pipe_->recvMsg(msg))
 			{
 				if (msg.msgID() == Imp::LOG_NEW_FILE)
 				{
 					file.close();
-					file.open(file_name + msg.data() + ".txt", std::ios::out | std::ios::trunc);
+					file.open(file_name.string() + msg.toString() + ".txt", std::ios::out | std::ios::trunc);
 				}
 				else if (!msg.empty())
 				{
-					file << msg.data();
+					file << msg.toString();
 				}
 			}
 		});
@@ -230,12 +220,9 @@ namespace aris::control
 		if (!imp_->lout_msg_.empty())
 		{
 			// 补充一个0作为结尾 //
-			lout() << '\0';
-			lout().update();
-
+			lout() << std::flush;
 			imp_->lout_pipe_->sendMsg(imp_->lout_msg_);
 			imp_->lout_msg_.resize(0);
-			lout().resetBuf();
 		}
 
 		// 发送切换文件的msg //

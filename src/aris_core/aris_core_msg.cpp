@@ -9,7 +9,7 @@
 
 namespace aris::core
 {
-	auto MsgBase::copy(const char *src)->void { copy(static_cast<const void *>(src), static_cast<MsgSize>(strlen(src) + 1)); }
+	auto MsgBase::copy(const std::string &str)->void { copy(str.data(), str.size()); }
 	auto MsgBase::copy(const void *src, MsgSize data_size)->void { resize(data_size); copyAt(src, data_size, 0); }
 	auto MsgBase::copyAt(const void *src, MsgSize data_size, MsgSize at_this_pos_of_msg)->void
 	{
@@ -49,12 +49,11 @@ namespace aris::core
 		header().reserved2_ = 0;
 		header().reserved3_ = 0;
 	}
-	Msg::Msg(const std::string &str) :data_(std::make_unique<char[]>(sizeof(MsgHeader) + str.size() + 1)), capacity_(str.size() + 1)
+	Msg::Msg(const std::string &str) :data_(std::make_unique<char[]>(sizeof(MsgHeader) + str.size())), capacity_(str.size())
 	{
 		std::copy(str.begin(), str.end(), data());
-		data()[str.size()] = '\0';
 		header().msg_id_ = 0;
-		header().msg_size_ = str.size() + 1;
+		header().msg_size_ = str.size();
 		header().msg_type_ = 0;
 		header().reserved1_ = 0;
 		header().reserved2_ = 0;
@@ -73,39 +72,20 @@ namespace aris::core
 
 	auto MsgStreamBuf::overflow(int_type c)->int_type
 	{
-		update();
-
-		msg_->resize(msg_->size() + 1);
-		resetBuf();
-		if (msg_->capacity() < msg_->size())
-		{
-			return traits_type::eof();
-		}
-		else
-		{
-			*(pptr() - 1) = c;
-			return c;
-		}
+		msg_->resize(msg_->capacity());// 保证在下次resize的时候，所有数据都会被copy，这是因为在resize重新分配内存时，不是按照capacity来copy
+		msg_->resize(msg_->capacity() + 1);
+		setp(msg_->data() + msg_->size(), msg_->data() + msg_->capacity());
+		*(pptr() - 1) = c;
+		return c;
 	}
-	auto MsgStreamBuf::underflow()->int_type
+	auto MsgStreamBuf::sync()->int
 	{
-		update();
-
-		if (gptr() == pptr()) return traits_type::eof();
-		else return *(reinterpret_cast<char*>(&msg_->header()) + sizeof(MsgHeader));
+		msg_->resize(msg_->capacity() - (epptr() - pptr()));
+		return 0;
 	}
-	auto MsgStreamBuf::update()->void
+	auto MsgStreamBuf::reset()->void { setp(msg_->data(), msg_->data() + msg_->capacity()); }
+	MsgStreamBuf::MsgStreamBuf(MsgBase& msg) :msg_(&msg), std::streambuf() 
 	{
-		auto msg_buf = reinterpret_cast<char*>(&msg_->header()) + sizeof(MsgHeader);
-		if (gptr() != msg_buf)std::copy(gptr(), pptr(), msg_buf);
-		msg_->resize(static_cast<MsgSize>(pptr() - gptr()));
-		resetBuf();
-	}
-	auto MsgStreamBuf::resetBuf()->void
-	{
-		auto msg_buf = reinterpret_cast<char*>(&msg_->header()) + sizeof(MsgHeader);
-		setp(msg_buf + msg_->size(), msg_buf + msg_->capacity());
-		setg(msg_buf, msg_buf, msg_buf + msg_->size());
-	}
-	MsgStreamBuf::MsgStreamBuf(MsgBase& msg) :msg_(&msg), std::streambuf() { resetBuf(); };
+		setp(msg.data(), msg.data() + msg.capacity());
+	};
 }

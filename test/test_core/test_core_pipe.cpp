@@ -14,7 +14,7 @@ long mod(long a, long b)
 
 void test_pipe_multi_thread()
 {
-	aris::core::Pipe pipe;
+	aris::core::Pipe pipe("pipe", 8192);
 
 	auto fu = std::async(std::launch::async, [&pipe]() 
 	{
@@ -24,7 +24,7 @@ void test_pipe_multi_thread()
 			{
 				std::cout << __FILE__ << __LINE__ << "test_pipe failed" << std::endl;
 			}
-			std::this_thread::sleep_for(std::chrono::microseconds(1));
+			std::this_thread::sleep_for(std::chrono::nanoseconds(1));
 		}
 	});
 
@@ -32,13 +32,13 @@ void test_pipe_multi_thread()
 	
 	for(;;)
 	{
-		static int failed_count{ 0 };
+		static int round{ 0 };
 		if (pipe.recvMsg(msg)) 
 		{
 			std::string str(msg.data(), msg.size());
 			std::stringstream ss(str);
 			std::string word;
-			static int round{ 0 }; 
+			
 			int id, num;
 
 			ss >> word;
@@ -51,17 +51,13 @@ void test_pipe_multi_thread()
 			if (num != round * 4)std::cout << __FILE__ << __LINE__ << "test_pipe failed" << std::endl;
 
 			round++;
-			
-			failed_count = 0;
 		}
 		else
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			failed_count++;
+			std::this_thread::yield();
 		}
-		
-		if (failed_count > 100)break; // 超过100ms没有数据，那么退出
 
+		if (round >= 999)break; // 超过100ms没有数据，那么退出
 	}
 
 	fu.wait();

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iostream>
 #include <functional>
+#include <filesystem>
 
 #include <aris_core_object.h>
 
@@ -68,14 +69,14 @@ namespace aris::core
 		LOG_SPACE_WIDTH = LOG_TYPE_WIDTH + 1 + LOG_TIME_WIDTH + 1 + LOG_FILE_WIDTH + 1 + LOG_LINE_WIDTH + 1,
 	};
 
-	auto logFile(const std::string &file_path)->void;
+	auto logDirectory(const std::filesystem::path &log_dir_path = std::filesystem::path())->void; 
+	auto logFile(const std::filesystem::path &log_file_path = std::filesystem::path())->void;
+	auto logStream(std::ostream *s = nullptr)->void;
 	auto log()->std::ostream&;
 
-	auto createLogDir()->void;
+	auto logDirPath()->std::filesystem::path;
 	auto logExeName()->std::string;
 	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
-	auto logDirPath()->std::string;
 }
-
 
 #endif

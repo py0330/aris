@@ -35,14 +35,12 @@ void test_msg_stream()
 {
 	Msg msg;
 	aris::core::MsgStream stream(msg);
-	stream << "1234 abc\n aaa" << '\0';
-	stream.update();
+	stream << "1234 abc\n aaa" << '\0' <<std::flush;
 	if (std::string(msg.data()) != "1234 abc\n aaa") std::cout << "aris::core::MsgStream input failed";
 
 	MsgFix<8192> msg_fix;
 	aris::core::MsgStream stream_fix(msg_fix);
-	stream_fix << "1234 abc\n aaa" << '\0';
-	stream_fix.update();
+	stream_fix << "1234 abc\n aaa" << '\0' << std::flush;
 	if (std::string(msg_fix.data()) != "1234 abc\n aaa") std::cout << "aris::core::MsgStream input failed";
 }
 

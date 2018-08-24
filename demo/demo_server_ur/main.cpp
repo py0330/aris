@@ -16,6 +16,7 @@ int main()
 	cs.planRoot().planPool().add<aris::plan::EnablePlan>();
 	cs.planRoot().planPool().add<aris::plan::RecoverPlan>();
 	cs.planRoot().planPool().add<aris::plan::MovePlan>();
+	cs.planRoot().planPool().add<aris::plan::MoveJ>();
 
 	aris::core::Socket socket;
 	socket.setOnReceivedMsg([&](aris::core::Socket *, aris::core::Msg &msg)->int
@@ -37,7 +38,7 @@ int main()
 	{
 		std::string msg_data(msg.data(), msg.size());
 
-		LOG_INFO << "socket receive request msg:" 
+		LOG_INFO_EVERY_N(10) << "socket receive request msg:" 
 			<< msg.header().msg_size_ << "&" 
 			<< msg.header().msg_id_	<< "&" 
 			<< msg.header().msg_type_ << "&" 
@@ -56,6 +57,7 @@ int main()
 			}
 			catch (std::exception &e)
 			{
+				LOG_ERROR << e.what() << std::endl;
 				return aris::core::Msg(e.what());
 			}
 		}

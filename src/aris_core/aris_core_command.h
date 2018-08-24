@@ -120,13 +120,9 @@ namespace aris::core
 	public:
 		static auto Type()->const std::string & { static const std::string type("parambase"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual help(bool isfull, int begin)const->std::string { return std::string{}; };
-		auto simpleHelp()const->const std::string &;
 		auto command()const->const Command &;
 		virtual ~ParamBase();
-		explicit ParamBase(const std::string &name = "param_base", const std::string &help = "");
+		explicit ParamBase(const std::string &name = "param_base");
 		ParamBase(const ParamBase&);
 		ParamBase(ParamBase&&);
 		ParamBase& operator=(const ParamBase&);
@@ -150,12 +146,11 @@ namespace aris::core
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual help(bool isfull, int begin)const->std::string override;
 		auto abbreviation()const->char;
 		auto defaultParam()const->const std::string &;
 
 		virtual ~Param();
-		explicit Param(const std::string &name = "param", const std::string &default_param = "", const std::string &help = "", char abbrev = 0);
+		explicit Param(const std::string &name = "param", const std::string &default_param = "", char abbrev = 0);
 		Param(const Param&);
 		Param(Param&&);
 		Param& operator=(const Param&);
@@ -175,11 +170,10 @@ namespace aris::core
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual help(bool isfull, int begin)const->std::string override;
 		auto defaultParam()const->const std::string &;
 
 		virtual ~UniqueParam();
-		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "", const std::string &help = "");
+		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "");
 		UniqueParam(const UniqueParam &);
 		UniqueParam(UniqueParam &&);
 		UniqueParam& operator=(const UniqueParam &);
@@ -196,10 +190,9 @@ namespace aris::core
 	public:
 		static auto Type()->const std::string & { static const std::string type("GroupParam"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual help(bool isfull, int begin)const->std::string override;
 
 		virtual ~GroupParam();
-		explicit GroupParam(const std::string &name = "group_param", const std::string &help = "");
+		explicit GroupParam(const std::string &name = "group_param");
 		GroupParam(const GroupParam &);
 		GroupParam(GroupParam &&);
 		GroupParam& operator=(const GroupParam &);
@@ -213,10 +206,9 @@ namespace aris::core
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto defaultParam()const->const std::string &;
-		auto help(bool isfull, int begin)const->std::string;
 
 		virtual ~Command();
-		explicit Command(const std::string &name = "command", const std::string &default_param = "", const std::string &help = "");
+		explicit Command(const std::string &name = "command", const std::string &default_param = "");
 		Command(const Command &);
 		Command(Command &&);
 		Command& operator=(const Command &);
@@ -236,7 +228,6 @@ namespace aris::core
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
-		auto help()const->std::string;
 		auto commandPool()->ObjectPool<Command> &;
 		auto commandPool()const->const ObjectPool<Command> &;
 

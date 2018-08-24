@@ -13,9 +13,11 @@
 ///
 namespace aris::robot
 {
-
 	auto createUr5Model()->std::unique_ptr<aris::dynamic::Model>;
 	auto createUr5Controller()->std::unique_ptr<aris::control::Controller>;
+
+	auto createRokaeModel()->std::unique_ptr<aris::dynamic::Model>;
+	auto createRokaeController()->std::unique_ptr<aris::control::Controller>;
 }
 
 

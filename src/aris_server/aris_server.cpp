@@ -13,7 +13,7 @@ namespace aris::server
 	struct ControlServer::Imp
 	{
 		auto tg()->void;
-		auto executeCmd(aris::core::MsgBase *msg)->int;
+		auto executeCmd(std::pair<aris::plan::Plan *, aris::plan::PlanTarget> &plan_and_target)->int;
 		auto onRunError()->int;
 
 		Imp(ControlServer *server) :server_(server) {}
@@ -26,7 +26,7 @@ namespace aris::server
 
 		// 实时循环中的轨迹参数 //
 		enum { CMD_POOL_SIZE = 50 };
-		aris::core::Msg msg_queue_[CMD_POOL_SIZE];
+		std::pair<aris::plan::Plan *, aris::plan::PlanTarget> plan_and_target_queue_[CMD_POOL_SIZE];
 
 		// cmd系列参数
 		std::atomic<std::int64_t> cmd_now_, cmd_end_, cmd_collect_;
@@ -40,7 +40,7 @@ namespace aris::server
 		struct PVC { double p; double v; double c; };
 		std::vector<PVC> last_pvc, last_last_pvc;
 
-		// 储存Model, Controller, SensorRoot, WidgetRoot //
+		// 储存Model, Controller, SensorRoot, PlanRoot //
 		aris::dynamic::Model* model_;
 		aris::control::Controller* controller_;
 		aris::sensor::SensorRoot* sensor_root_;
@@ -55,19 +55,19 @@ namespace aris::server
 		auto cmd_now = cmd_now_.load();//原子操作
 		auto cmd_end = cmd_end_.load();//原子操作
 
-									   // 执行cmd queue中的cmd //
+		// 执行cmd queue中的cmd //
 		if (cmd_end > cmd_now)
 		{
 			// 创建log文件
 			if (count_ == 1)
 			{
 				char name[1000];
-				std::sprintf(name, "%" PRId64 "", cmd_now);
+				std::sprintf(name, "%" PRId64 "", plan_and_target_queue_[cmd_now % CMD_POOL_SIZE].second.command_id);
 				server_->controller().logFile(name);
 			}
 
 			// 执行命令
-			auto ret = executeCmd(msg_queue_ + cmd_now % CMD_POOL_SIZE);
+			auto ret = executeCmd(plan_and_target_queue_[cmd_now % CMD_POOL_SIZE]);
 
 			// 命令正常运行，打印信息
 			if (ret > 0)
@@ -99,12 +99,12 @@ namespace aris::server
 			if_need_part_pm_.store(false); // 原子操作
 		}
 	}
-	auto ControlServer::Imp::executeCmd(aris::core::MsgBase *msg)->int
+	auto ControlServer::Imp::executeCmd(std::pair<aris::plan::Plan *, aris::plan::PlanTarget> &plan_and_target)->int
 	{
-		aris::plan::PlanParam plan_param{ count_, model_, controller_, msg->data(), static_cast<std::uint32_t>(msg->size()) };
+		plan_and_target.second.count = count_;
 
 		// 执行plan函数 //
-		int ret = reinterpret_cast<aris::plan::Plan *>(msg->header().reserved2_)->executeRT(plan_param);
+		int ret = reinterpret_cast<aris::plan::Plan *>(plan_and_target.first)->executeRT(plan_and_target.second);
 
 		// 控制电机 //
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
@@ -114,11 +114,11 @@ namespace aris::server
 
 			if (mm.active())
 			{
-				if ((msg->header().reserved1_ & aris::plan::Plan::USING_TARGET_POS))cm.setTargetPos(mm.mp());
-				if ((msg->header().reserved1_ & aris::plan::Plan::USING_TARGET_VEL))cm.setTargetVel(mm.mv());
-				if ((msg->header().reserved1_ & aris::plan::Plan::USING_TARGET_CUR))cm.setTargetCur(mm.mf());
-				if ((msg->header().reserved1_ & aris::plan::Plan::USING_VEL_OFFSET))cm.setOffsetVel(mm.mv());
-				if ((msg->header().reserved1_ & aris::plan::Plan::USING_CUR_OFFSET))cm.setOffsetCur(mm.mf());
+				if ((plan_and_target.second.option & aris::plan::Plan::USING_TARGET_POS))cm.setTargetPos(mm.mp());
+				if ((plan_and_target.second.option & aris::plan::Plan::USING_TARGET_VEL))cm.setTargetVel(mm.mv());
+				if ((plan_and_target.second.option & aris::plan::Plan::USING_TARGET_CUR))cm.setTargetCur(mm.mf());
+				if ((plan_and_target.second.option & aris::plan::Plan::USING_VEL_OFFSET))cm.setOffsetVel(mm.mv());
+				if ((plan_and_target.second.option & aris::plan::Plan::USING_CUR_OFFSET))cm.setOffsetCur(mm.mf());
 			}
 		}
 
@@ -130,7 +130,7 @@ namespace aris::server
 			auto &lld = last_last_pvc.at(i);
 
 			// check pos max //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_POS_MAX) && (cm.targetPos() > cm.maxPos()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_POS_MAX) && (cm.targetPos() > cm.maxPos()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is bigger than its MAX permitted value in count: " << count_ << "\n";
@@ -142,7 +142,7 @@ namespace aris::server
 			}
 
 			// check pos min //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_POS_MIN) && (cm.targetPos() < cm.minPos()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_POS_MIN) && (cm.targetPos() < cm.minPos()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is smaller than its MIN permitted value in count: " << count_ << "\n";
@@ -154,7 +154,7 @@ namespace aris::server
 			}
 
 			// check pos continuous //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS) && count_ > 1 && ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS) && count_ > 1 && ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is not continuous in count: " << count_ << "\n";
@@ -166,7 +166,7 @@ namespace aris::server
 			}
 
 			// check pos continuous at start //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START) && count_ <= 1 && ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START) && count_ <= 1 && ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target position is not continuous in count: " << count_ << "\n";
@@ -178,7 +178,7 @@ namespace aris::server
 			}
 
 			// check pos continuous second order //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER)
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER)
 				&& count_ > 2
 				&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
 			{
@@ -192,7 +192,7 @@ namespace aris::server
 			}
 
 			// check pos continuous second order at start //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START)
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START)
 				&& count_ <= 2
 				&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
 			{
@@ -206,7 +206,7 @@ namespace aris::server
 			}
 
 			// check pos following error //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_POS_FOLLOWING_ERROR) && (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_POS_FOLLOWING_ERROR) && (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target and feedback positions are not near in count: " << count_ << "\n";
@@ -218,7 +218,7 @@ namespace aris::server
 			}
 
 			// check vel max //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_VEL_MAX) && (cm.targetVel() > cm.maxVel()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_VEL_MAX) && (cm.targetVel() > cm.maxVel()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target velocity is bigger than its MAX permitted value in count: " << count_ << "\n";
@@ -230,7 +230,7 @@ namespace aris::server
 			}
 
 			// check vel min //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_VEL_MIN) && (cm.targetVel() < cm.minVel()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_VEL_MIN) && (cm.targetVel() < cm.minVel()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target veolcity is smaller than its MIN permitted value in count: " << count_ << "\n";
@@ -242,7 +242,7 @@ namespace aris::server
 			}
 
 			// check vel continuous //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS) && count_ > 1 && ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS) && count_ > 1 && ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target velocity is not continuous in count: " << count_ << "\n";
@@ -254,7 +254,7 @@ namespace aris::server
 			}
 
 			// check vel continuous at start //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START) && count_ <= 1 && ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START) && count_ <= 1 && ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target velocity is not continuous in count: " << count_ << "\n";
@@ -266,7 +266,7 @@ namespace aris::server
 			}
 
 			// check vel following error //
-			if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_CHECK_VEL_FOLLOWING_ERROR) && (std::abs(cm.targetVel() - cm.actualVel()) > cm.maxVelFollowingError()))
+			if (!(plan_and_target.second.option & aris::plan::Plan::NOT_CHECK_VEL_FOLLOWING_ERROR) && (std::abs(cm.targetVel() - cm.actualVel()) > cm.maxVelFollowingError()))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
 				server_->controller().mout() << "Motor " << cm.id() << " (sla id) target and feedback velocities are not near in count: " << count_ << "\n";
@@ -360,23 +360,20 @@ namespace aris::server
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
 
-		static std::int64_t cmd_id{ 1 };
+		static std::int64_t cmd_id{ 0 };
+		++cmd_id;
 
-		aris::core::Msg cmd_msg = msg;
-		cmd_msg.header().reserved3_ = cmd_id;
-
+		LOG_INFO << "server receive cmd " << std::to_string(cmd_id) << " : " << msg.data() << std::endl;
+		aris::plan::PlanTarget target{ &model(), &controller(), cmd_id, msg.header().reserved1_, 0, std::any() };
 		auto cmd_end = imp_->cmd_end_.load();
-		auto option = cmd_msg.header().reserved1_;
-
-		LOG_INFO << "server receive cmd " << std::to_string(cmd_id) << " : " << cmd_msg.data() << std::endl;
 
 		// 找到命令对应的plan //
 		std::string cmd;
 		std::map<std::string, std::string> params;
-		planRoot().planParser().parse(cmd_msg.data(), cmd, params);
+		planRoot().planParser().parse(msg.data(), cmd, params);
 		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 
-		// print cmd and params //
+		// print cmd and params /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)
 		{
 			return a.first.length() < b.first.length();
@@ -387,68 +384,68 @@ namespace aris::server
 			std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
 		}
 		std::cout << std::endl;
-		// print over //
-
+		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		// prepair //
-		if (!(option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
+		if (!(target.option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
 		{
 			// 等待所有任务完成 //
-			while ((option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::yield();//原子操作
+			while ((target.option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 
-																																			   // 等待所有任务收集 //
-			while ((option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::yield();//原子操作
+			// 等待所有任务收集 //
+			while ((target.option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 
 			LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
-			plan_iter->prepairNrt(aris::plan::PlanParam{ std::uint32_t(0), imp_->model_, imp_->controller_, nullptr, 0 }, params, cmd_msg);
+			plan_iter->prepairNrt(params, target);
 		}
 
 		// execute //
-		if (!(option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
+		if (!(target.option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
 		{
 			// 等待所有任务完成 //
-			while ((option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::yield();//原子操作
+			while ((target.option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 
-																																			   // 等待所有任务收集 //
-			while ((option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::yield();//原子操作
+			// 等待所有任务收集 //
+			while ((target.option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 
-																																					// 判断是否等待命令池清空 //
-			if ((!(option & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
+			// 判断是否等待命令池清空 //
+			if ((!(target.option & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
 				LOG_AND_THROW(std::runtime_error("failed to execute plan, because command pool is full"));
 			else
 				while ((cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)std::this_thread::yield();
-			reinterpret_cast<aris::plan::Plan *&>(cmd_msg.header().reserved2_) = &*plan_iter;
 
 			// 添加命令 //
-			imp_->msg_queue_[cmd_end % Imp::CMD_POOL_SIZE].swap(cmd_msg);
+			LOG_INFO << "server execute cmd " << std::to_string(cmd_id) << std::endl;
+			imp_->plan_and_target_queue_[cmd_end % Imp::CMD_POOL_SIZE] = std::pair<aris::plan::Plan*, aris::plan::PlanTarget>{ &*plan_iter, std::move(target) };
 			imp_->cmd_end_.store(++cmd_end);//原子操作
 
-											// 等待当前任务完成 //
-			while ((option & aris::plan::Plan::WAIT_FOR_EXECUTION) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::yield();//原子操作
+			// 等待当前任务完成 //
+			while ((target.option & aris::plan::Plan::WAIT_FOR_EXECUTION) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 		}
 
 		// collect //
-		if (!(option & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
+		if (!(target.option & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
 		{
 			// 没有实时规划的轨迹，直接同步收集 //
-			if (option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
+			if (target.option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
 			{
-				// 等待所有任务完成 //
-				while ((option & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
-																																												   // 等待所有任务收集 //
-				while ((option & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::yield();//原子操作
+				// 等待所有任务完成，原子操作 //
+				while ((target.option & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-				plan_iter->collectNrt(aris::plan::PlanParam{ 0, imp_->model_, imp_->controller_, cmd_msg.data(), static_cast<std::uint32_t>(cmd_msg.size()) });
+				// 等待所有任务收集，原子操作 //
+				while ((target.option & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+				plan_iter->collectNrt(target);
 			}
 			// 等待当前实时任务收集 //
 			else
 			{
 				// 等待当前任务收集 //
-				while ((option & aris::plan::Plan::WAIT_FOR_COLLECTION) && (cmd_end != imp_->cmd_collect_.load())) std::this_thread::yield();//原子操作
+				while ((target.option & aris::plan::Plan::WAIT_FOR_COLLECTION) && (cmd_end != imp_->cmd_collect_.load())) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 			}
 		}
 
-		return cmd_id++;
+		return cmd_id;
 	}
 	auto ControlServer::currentExecuteId()->std::int64_t
 	{
@@ -459,7 +456,7 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();
 		auto cmd_now = imp_->cmd_now_.load();
 
-		return cmd_now<cmd_end ? imp_->msg_queue_[cmd_now % Imp::CMD_POOL_SIZE].header().reserved3_ : 0;
+		return cmd_now<cmd_end ? imp_->plan_and_target_queue_[cmd_now % Imp::CMD_POOL_SIZE].second.command_id : 0;
 	}
 	auto ControlServer::currentCollectId()->std::int64_t
 	{
@@ -470,7 +467,7 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();
 		auto cmd_collect = imp_->cmd_collect_.load();
 
-		return cmd_collect<cmd_end ? imp_->msg_queue_[cmd_collect % Imp::CMD_POOL_SIZE].header().reserved3_ : 0;
+		return cmd_collect<cmd_end ? imp_->plan_and_target_queue_[cmd_collect % Imp::CMD_POOL_SIZE].second.command_id : 0;
 	}
 	auto ControlServer::start()->void
 	{
@@ -504,9 +501,9 @@ namespace aris::server
 
 				if (cmd_collect < cmd_now)
 				{
-					auto msg = imp_->msg_queue_ + cmd_collect % Imp::CMD_POOL_SIZE;
-					aris::plan::PlanParam plan_param{ 0, imp_->model_, imp_->controller_, msg->data(), static_cast<std::uint32_t>(msg->size()) };
-					if (!(msg->header().reserved1_ & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))reinterpret_cast<aris::plan::Plan *>(msg->header().reserved2_)->collectNrt(plan_param);
+					auto &plan_and_target = imp_->plan_and_target_queue_[cmd_collect % Imp::CMD_POOL_SIZE];
+					LOG_INFO << "server collect cmd " << plan_and_target.second.command_id << std::endl;
+					if (!(plan_and_target.second.option & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))plan_and_target.first->collectNrt(plan_and_target.second);
 					imp_->cmd_collect_.store(cmd_collect + 1);
 				}
 				else
@@ -565,7 +562,6 @@ namespace aris::server
 		registerType<aris::control::Controller>();
 		registerType<aris::sensor::SensorRoot>();
 		registerType<aris::plan::PlanRoot>();
-
 		registerType<aris::control::EthercatController>();
 
 		// create instance //

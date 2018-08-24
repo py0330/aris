@@ -62,16 +62,16 @@ namespace aris::dynamic
 			Interaction::loadXml(xml_ele);
 			setCf(attributeMatrix(xml_ele, "cf", 1, dim(), core::Matrix(1, dim(), 0.0)).data());
 		}
-		auto Constraint::cf() const->const double* { return imp_->cf_; }
-		auto Constraint::setCf(const double *cf)->void { return s_vc(dim(), cf, imp_->cf_); }
-		auto Constraint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
+		auto Constraint::cf() const noexcept->const double* { return imp_->cf_; }
+		auto Constraint::setCf(const double *cf) noexcept->void { return s_vc(dim(), cf, imp_->cf_); }
+		auto Constraint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		{
 			double pm_j2i[16], ps_j2i[6];
 			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
 			s_pm2ps(pm_j2i, ps_j2i);
 			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, ps_j2i, 1, cp, 1);
 		}
-		auto Constraint::cptCv(double *cv)const->void
+		auto Constraint::cptCv(double *cv)const noexcept->void
 		{
 			double dv[6], dv_in_I[6];
 			s_vc(6, makJ().vs(), dv);
@@ -79,7 +79,7 @@ namespace aris::dynamic
 			s_inv_tv(*makI().pm(), dv, dv_in_I);
 			s_mm(dim(), 1, 6, locCmI(), ColMajor{ dim() }, dv_in_I, 1, cv, 1);
 		};
-		auto Constraint::cptCa(double *ca)const->void
+		auto Constraint::cptCa(double *ca)const noexcept->void
 		{
 			double vi_cross_vj[6], tem[6];
 			s_cv(makI().vs(), makJ().vs(), vi_cross_vj);
@@ -135,41 +135,46 @@ namespace aris::dynamic
 			s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
 			const_cast<double*>(locCmI())[axis()] = 1.0;
 		}
-		auto Motion::locCmI() const->const double* { return imp_->loc_cm_I;	}
-		auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
+		auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I;	}
+		auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		{
 			Constraint::cptCpFromPm(cp, makI_pm, makJ_pm);
 			cp[0] += mp();
+			if (axis() > 2)//角度
+			{
+				while (cp[0] > PI) cp[0] -= 2 * PI;
+				while (cp[0] < -PI) cp[0] += 2 * PI;
+			}
 		}
-		auto Motion::cptCv(double *cv)const->void { Constraint::cptCv(cv); cv[0] += mv(); }
-		auto Motion::cptCa(double *ca)const->void { Constraint::cptCa(ca); ca[0] += ma(); }
-		auto Motion::updMp()->void { setMp(s_sov_axis_distance(*makJ().pm(), *makI().pm(), axis())); }
-		auto Motion::updMv()->void
+		auto Motion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); cv[0] += mv(); }
+		auto Motion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); ca[0] += ma(); }
+		auto Motion::updMp() noexcept->void { setMp(s_sov_axis_distance(*makJ().pm(), *makI().pm(), axis())); }
+		auto Motion::updMv() noexcept->void
 		{
 			double vs_i2j[6];
 			makI().getVs(makJ(), vs_i2j);
 			setMv(vs_i2j[axis()]);
 		}
-		auto Motion::updMa()->void
+		auto Motion::updMa() noexcept->void
 		{
 			double as_i2j[6];
 			makI().getAs(makJ(), as_i2j);
 			setMa(as_i2j[axis()]);
 		}
-		auto Motion::axis()const->Size { return imp_->component_axis_; }
-		auto Motion::frcCoe()const->const double3&{ return imp_->frc_coe_; }
-		auto Motion::setFrcCoe(const double *frc_coe)->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
-		auto Motion::mp() const->double { return imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_; }
-		auto Motion::setMp(double mp)->void { imp_->mp_ = (mp + imp_->mp_offset_) * imp_->mp_factor_; }
-		auto Motion::mv() const->double { return imp_->mv_; }
-		auto Motion::setMv(double mv)->void { imp_->mv_ = mv; }
-		auto Motion::ma() const->double { return imp_->ma_; }
-		auto Motion::setMa(double ma)->void { imp_->ma_ = ma; }
-		auto Motion::mf() const->double { return mfDyn() + mfFrc(); }
-		auto Motion::setMf(double mf)->void { Constraint::imp_->cf_[0] = mf - mfFrc(); }
-		auto Motion::mfDyn() const->double { return Constraint::imp_->cf_[0]; }
-		auto Motion::setMfDyn(double mf_dyn)->void { Constraint::imp_->cf_[0] = mf_dyn; }
-		auto Motion::mfFrc() const->double { return s_sgn(imp_->mv_)*frcCoe()[0] + imp_->mv_*frcCoe()[1] + imp_->ma_*frcCoe()[2]; }
+		auto Motion::axis()const noexcept->Size { return imp_->component_axis_; }
+		auto Motion::frcCoe()const noexcept->const double3&{ return imp_->frc_coe_; }
+		auto Motion::setFrcCoe(const double *frc_coe) noexcept->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
+		auto Motion::mp() const noexcept->double { return imp_->mp_ / imp_->mp_factor_ - imp_->mp_offset_; }
+		auto Motion::setMp(double mp) noexcept->void { imp_->mp_ = (mp + imp_->mp_offset_) * imp_->mp_factor_; }
+		auto Motion::mv() const noexcept->double { return imp_->mv_; }
+		auto Motion::setMv(double mv) noexcept->void { imp_->mv_ = mv; }
+		auto Motion::ma() const noexcept->double { return imp_->ma_; }
+		auto Motion::setMa(double ma) noexcept->void { imp_->ma_ = ma; }
+		auto Motion::mf() const noexcept->double { return mfDyn() + mfFrc(); }
+		auto Motion::setMf(double mf) noexcept->void { Constraint::imp_->cf_[0] = mf - mfFrc(); }
+		auto Motion::mfDyn() const noexcept->double { return Constraint::imp_->cf_[0]; }
+		auto Motion::setMfDyn(double mf_dyn) noexcept->void { Constraint::imp_->cf_[0] = mf_dyn; }
+		auto Motion::mfFrc() const noexcept->double { return s_sgn(imp_->mv_)*frcCoe()[0] + imp_->mv_*frcCoe()[1] + imp_->ma_*frcCoe()[2]; }
 		Motion::~Motion() = default;
 		Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : Constraint(name, makI, makJ, active)
 		{
@@ -192,12 +197,12 @@ namespace aris::dynamic
 		{
 			double mpm_[4][4]{ { 0 } }, mvs_[6]{ 0 }, mas_[6]{ 0 };
 		};
-		auto GeneralMotion::locCmI() const->const double* 
+		auto GeneralMotion::locCmI() const noexcept->const double*
 		{
 			static const double loc_cm_I[36]{ 1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1 };
 			return loc_cm_I;
 		}
-		auto GeneralMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
+		auto GeneralMotion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		{
 			// Pi : mak I 的实际位置
 			// Pj : mak J 的实际位置
@@ -220,110 +225,110 @@ namespace aris::dynamic
 			// locCmI为单位矩阵，此时无需相乘
 			s_vc(6, ps_c, cp);
 		}
-		auto GeneralMotion::cptCv(double *cv)const->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv);}
-		auto GeneralMotion::cptCa(double *ca)const->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
-		auto GeneralMotion::mpm()const->const double4x4&{ return imp_->mpm_; }
-		auto GeneralMotion::updMpm()->void { s_inv_pm_dot_pm(*makJ().pm(), *makI().pm(), *imp_->mpm_); }
-		auto GeneralMotion::setMpe(const double* pe, const char *type)->void { s_pe2pm(pe, *imp_->mpm_, type); }
-		auto GeneralMotion::setMpq(const double* pq)->void { s_pq2pm(pq, *imp_->mpm_); }
-		auto GeneralMotion::setMpm(const double* pm)->void { s_vc(16, pm, *imp_->mpm_); }
-		auto GeneralMotion::getMpe(double* pe, const char *type)const->void { s_pm2pe(*imp_->mpm_, pe, type); }
-		auto GeneralMotion::getMpq(double* pq)const->void { s_pm2pq(*imp_->mpm_, pq); }
-		auto GeneralMotion::getMpm(double* pm)const->void { s_vc(16, *imp_->mpm_, pm); }
-		auto GeneralMotion::mvs()const->const double6&{ return imp_->mvs_; }
-		auto GeneralMotion::updMvs()->void { s_inv_vs2vs(*makJ().pm(), makJ().vs(), makI().vs(), imp_->mvs_); }
-		auto GeneralMotion::setMve(const double* ve, const char *type)->void
+		auto GeneralMotion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); s_inv_tva(*mpm(), mvs(), cv);}
+		auto GeneralMotion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); s_inv_tva(*mpm(), mas(), ca); }
+		auto GeneralMotion::mpm()const noexcept->const double4x4&{ return imp_->mpm_; }
+		auto GeneralMotion::updMpm() noexcept->void { s_inv_pm_dot_pm(*makJ().pm(), *makI().pm(), *imp_->mpm_); }
+		auto GeneralMotion::setMpe(const double* pe, const char *type) noexcept->void { s_pe2pm(pe, *imp_->mpm_, type); }
+		auto GeneralMotion::setMpq(const double* pq) noexcept->void { s_pq2pm(pq, *imp_->mpm_); }
+		auto GeneralMotion::setMpm(const double* pm) noexcept->void { s_vc(16, pm, *imp_->mpm_); }
+		auto GeneralMotion::getMpe(double* pe, const char *type)const noexcept->void { s_pm2pe(*imp_->mpm_, pe, type); }
+		auto GeneralMotion::getMpq(double* pq)const noexcept->void { s_pm2pq(*imp_->mpm_, pq); }
+		auto GeneralMotion::getMpm(double* pm)const noexcept->void { s_vc(16, *imp_->mpm_, pm); }
+		auto GeneralMotion::mvs()const noexcept->const double6&{ return imp_->mvs_; }
+		auto GeneralMotion::updMvs() noexcept->void { s_inv_vs2vs(*makJ().pm(), makJ().vs(), makI().vs(), imp_->mvs_); }
+		auto GeneralMotion::setMve(const double* ve, const char *type) noexcept->void
 		{
 			double pe[6];
 			s_pm2pe(*mpm(), pe, type);
 			s_ve2vs(pe, ve, imp_->mvs_, type);
 		}
-		auto GeneralMotion::setMvq(const double* vq)->void
+		auto GeneralMotion::setMvq(const double* vq) noexcept->void
 		{
 			double pq[7];
 			s_pm2pq(*mpm(), pq);
 			s_vq2vs(pq, vq, imp_->mvs_);
 		}
-		auto GeneralMotion::setMvm(const double* vm)->void { s_vm2vs(*mpm(), vm, imp_->mvs_); }
-		auto GeneralMotion::setMva(const double* va)->void
+		auto GeneralMotion::setMvm(const double* vm) noexcept->void { s_vm2vs(*mpm(), vm, imp_->mvs_); }
+		auto GeneralMotion::setMva(const double* va) noexcept->void
 		{
 			double pp[3];
 			s_pm2pp(*mpm(), pp);
 			s_va2vs(pp, va, imp_->mvs_);
 		}
-		auto GeneralMotion::setMvs(const double* vs)->void { s_vc(6, vs, imp_->mvs_); }
-		auto GeneralMotion::getMve(double* ve, const char *type)const->void
+		auto GeneralMotion::setMvs(const double* vs) noexcept->void { s_vc(6, vs, imp_->mvs_); }
+		auto GeneralMotion::getMve(double* ve, const char *type)const noexcept->void
 		{
 			double pe[6];
 			s_pm2pe(*mpm(), pe, type);
 			s_vs2ve(imp_->mvs_, pe, ve, type);
 		}
-		auto GeneralMotion::getMvq(double* vq)const->void
+		auto GeneralMotion::getMvq(double* vq)const noexcept->void
 		{
 			double pq[7];
 			s_pm2pq(*mpm(), pq);
 			s_vs2vq(imp_->mvs_, pq, vq);
 		}
-		auto GeneralMotion::getMvm(double* vm)const->void { s_vs2vm(imp_->mvs_, *mpm(), vm); }
-		auto GeneralMotion::getMva(double* va)const->void
+		auto GeneralMotion::getMvm(double* vm)const noexcept->void { s_vs2vm(imp_->mvs_, *mpm(), vm); }
+		auto GeneralMotion::getMva(double* va)const noexcept->void
 		{
 			double pp[3];
 			s_pm2pp(*mpm(), pp);
 			s_vs2va(imp_->mvs_, pp, va);
 		}
-		auto GeneralMotion::getMvs(double* vs)const->void { s_vc(6, imp_->mvs_, vs); }
-		auto GeneralMotion::mas()const->const double6&{ return imp_->mas_; }
-		auto GeneralMotion::updMas()->void { s_inv_as2as(*makJ().pm(), makJ().vs(), makJ().as(), makI().vs(), makI().as(), imp_->mas_); }
-		auto GeneralMotion::setMae(const double* ae, const char *type)->void
+		auto GeneralMotion::getMvs(double* vs)const noexcept->void { s_vc(6, imp_->mvs_, vs); }
+		auto GeneralMotion::mas()const noexcept->const double6&{ return imp_->mas_; }
+		auto GeneralMotion::updMas() noexcept->void { s_inv_as2as(*makJ().pm(), makJ().vs(), makJ().as(), makI().vs(), makI().as(), imp_->mas_); }
+		auto GeneralMotion::setMae(const double* ae, const char *type) noexcept->void
 		{
 			double pe[6], ve[6];
 			s_pm2pe(*mpm(), pe, type);
 			s_vs2ve(mvs(), pe, ve, type);
 			s_ae2as(pe, ve, ae, imp_->mas_, nullptr, type);
 		}
-		auto GeneralMotion::setMaq(const double* aq)->void
+		auto GeneralMotion::setMaq(const double* aq) noexcept->void
 		{
 			double pq[7], vq[7];
 			s_pm2pq(*mpm(), pq);
 			s_vs2vq(mvs(), pq, vq);
 			s_aq2as(pq, vq, aq, imp_->mas_);
 		}
-		auto GeneralMotion::setMam(const double* am)->void
+		auto GeneralMotion::setMam(const double* am) noexcept->void
 		{
 			double vm[16];
 			getMvm(vm);
 			s_am2as(*mpm(), vm, am, imp_->mas_);
 		}
-		auto GeneralMotion::setMaa(const double* aa)->void
+		auto GeneralMotion::setMaa(const double* aa) noexcept->void
 		{
 			double pp[3], va[6];
 			s_pm2pp(*mpm(), pp);
 			s_vs2va(mvs(), pp, va);
 			s_aa2as(pp, va, aa, imp_->mas_);
 		}
-		auto GeneralMotion::setMas(const double* as)->void { s_vc(6, as, imp_->mas_); }
-		auto GeneralMotion::getMae(double* ae, const char *type)const->void
+		auto GeneralMotion::setMas(const double* as) noexcept->void { s_vc(6, as, imp_->mas_); }
+		auto GeneralMotion::getMae(double* ae, const char *type)const noexcept->void
 		{
 			double pe[6];
 			s_pm2pe(*mpm(), pe, type);
 			s_as2ae(mvs(), mas(), pe, ae, nullptr, type);
 		}
-		auto GeneralMotion::getMaq(double* aq)const->void
+		auto GeneralMotion::getMaq(double* aq)const noexcept->void
 		{
 			double pq[7];
 			s_pm2pq(*mpm(), pq);
 			s_as2aq(mvs(), mas(), pq, aq);
 		}
-		auto GeneralMotion::getMam(double* am)const->void { s_as2am(mvs(), mas(), *mpm(), am); }
-		auto GeneralMotion::getMaa(double* aa)const->void
+		auto GeneralMotion::getMam(double* am)const noexcept->void { s_as2am(mvs(), mas(), *mpm(), am); }
+		auto GeneralMotion::getMaa(double* aa)const noexcept->void
 		{
 			double pp[3];
 			s_pm2pp(*mpm(), pp);
 			s_as2aa(mvs(), mas(), pp, aa);
 		}
-		auto GeneralMotion::getMas(double* as)const->void { s_vc(6, imp_->mas_, as); }
-		auto GeneralMotion::mfs() const->const double6&{ return Constraint::imp_->cf_; }
-		auto GeneralMotion::setMfs(const double * mfs)->void { s_vc(6, mfs, Constraint::imp_->cf_); }
+		auto GeneralMotion::getMas(double* as)const noexcept->void { s_vc(6, imp_->mas_, as); }
+		auto GeneralMotion::mfs() const noexcept->const double6&{ return Constraint::imp_->cf_; }
+		auto GeneralMotion::setMfs(const double * mfs) noexcept->void { s_vc(6, mfs, Constraint::imp_->cf_); }
 		GeneralMotion::~GeneralMotion() = default;
 		GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :Constraint(name, makI, makJ, active) {}
 		GeneralMotion::GeneralMotion(const GeneralMotion &other) = default;
@@ -331,7 +336,7 @@ namespace aris::dynamic
 		GeneralMotion& GeneralMotion::operator=(const GeneralMotion &other) = default;
 		GeneralMotion& GeneralMotion::operator=(GeneralMotion &&other) = default;
 
-		auto RevoluteJoint::locCmI() const->const double*
+		auto RevoluteJoint::locCmI() const noexcept->const double*
 		{
 			static const double loc_cm_I[30]
 			{   
@@ -344,7 +349,7 @@ namespace aris::dynamic
 			};
 			return loc_cm_I;
 		}
-		auto RevoluteJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
+		auto RevoluteJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		{
 			double pm_j_in_i[16];
 			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j_in_i);
@@ -359,7 +364,7 @@ namespace aris::dynamic
 		}
 		RevoluteJoint::RevoluteJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ){}
 		
-		auto PrismaticJoint::locCmI() const->const double*
+		auto PrismaticJoint::locCmI() const noexcept->const double*
 		{
 			static const double loc_cm_I[30]
 			{
@@ -372,7 +377,7 @@ namespace aris::dynamic
 			};
 			return loc_cm_I;
 		}
-		auto PrismaticJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
+		auto PrismaticJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		{
 			double pm_j2i[16], ps_j2i[6];
 			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j2i);
@@ -385,7 +390,7 @@ namespace aris::dynamic
 		PrismaticJoint::PrismaticJoint(const std::string &name, Marker* makI, Marker* makJ): Joint(name, makI, makJ){}
 
 		struct UniversalJoint::Imp{	double loc_cm_I[24];};
-		auto UniversalJoint::locCmI() const->const double*
+		auto UniversalJoint::locCmI() const noexcept->const double*
 		{
 			const double axis_iz_i[3]{ 0,0,1 };
 			double axis_jz_g[3], axis_jz_m[3];
@@ -406,7 +411,7 @@ namespace aris::dynamic
 
 			return imp_->loc_cm_I;
 		}
-		auto UniversalJoint::cptCa(double *ca)const->void
+		auto UniversalJoint::cptCa(double *ca)const noexcept->void
 		{
 			Constraint::cptCa(ca);
 
@@ -430,7 +435,7 @@ namespace aris::dynamic
 
 			ca[3] += 2 * jwm*iwn - jwm*iwm - jwn*iwn;
 		}
-		auto UniversalJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
+		auto UniversalJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		{
 			double pm_j_in_i[16];
 			s_inv_pm_dot_pm(makI_pm, makJ_pm, pm_j_in_i);
@@ -461,7 +466,7 @@ namespace aris::dynamic
 		UniversalJoint& UniversalJoint::operator=(const UniversalJoint &other) = default;
 		UniversalJoint& UniversalJoint::operator=(UniversalJoint &&other) = default;
 
-		auto SphericalJoint::locCmI() const->const double*
+		auto SphericalJoint::locCmI() const noexcept->const double*
 		{
 			static const double loc_cm_I[18]
 			{
@@ -474,7 +479,7 @@ namespace aris::dynamic
 			};
 			return loc_cm_I;
 		}
-		auto SphericalJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const->void
+		auto SphericalJoint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		{
 			/////////////////////////以下是pa的计算方法///////////////////////////
 			double pp_j[3]{ makJ_pm[3], makJ_pm[7], makJ_pm[11], };
@@ -494,7 +499,7 @@ namespace aris::dynamic
 
 			Force::loadXml(xml_ele);
 		}
-		auto SingleComponentForce::cptGlbFs(double *fsI, double *fsJ)->void
+		auto SingleComponentForce::cptGlbFs(double *fsI, double *fsJ) noexcept->void
 		{
 			s_tf(*makI().prtPm(), fce_value_, fsJ);
 			s_tf(*makI().fatherPart().pm(), fsJ, fsI);

@@ -153,6 +153,7 @@ namespace aris::dynamic
 		InverseDynamicSolver& operator=(InverseDynamicSolver &&other);
 	};
 
+
 	class Ur5InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
@@ -166,6 +167,28 @@ namespace aris::dynamic
 
 	private:
 		int which_root_{ 0 };
+	};
+
+
+	class PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
+	{
+	public:
+		static const std::string& Type() { static const std::string type("PumaInverseSolver"); return type; }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual allocateMemory()->void override;
+		auto virtual kinPos()->bool override;
+		auto setWhichRoot(int root_of_0_to_7)->void;
+
+		virtual ~PumaInverseKinematicSolver() = default;
+		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+		int which_root_{ 0 };
+
+
+
 	};
 	///
 	/// @}

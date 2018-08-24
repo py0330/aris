@@ -6,30 +6,28 @@
 #include <iostream>
 #include <functional>
 #include <map>
+#include <any>
 
 #include <aris_core.h>
 
 namespace aris::dynamic { class Model; class SimResult; }
 namespace aris::control { class Master; }
 
+/// \brief 轨迹规划命名空间
+/// \ingroup aris
+/// 
+///
+///
 namespace aris::plan
 {
-
-
-
-	/// \brief 轨迹规划命名空间
-	/// \ingroup aris
-	/// 
-	///
-	///
-
-	struct PlanParam
+	struct PlanTarget
 	{
-		std::uint32_t count_;
-		aris::dynamic::Model* model_;
-		aris::control::Master* master_;
-		void *param_;
-		std::uint32_t param_size_;
+		aris::dynamic::Model* model;
+		aris::control::Master* master;
+		std::int64_t command_id;
+		std::int64_t option;
+		std::uint32_t count;
+		std::any param;
 	};
 	class Plan :public aris::core::Object
 	{
@@ -74,9 +72,9 @@ namespace aris::plan
 
 		static auto Type()->const std::string & { static const std::string type("Plan"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void {}
-		auto virtual executeRT(const PlanParam &param)->int { return 0; }
-		auto virtual collectNrt(const PlanParam &param)->void {}
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void {}
+		auto virtual executeRT(PlanTarget &target)->int { return 0; }
+		auto virtual collectNrt(PlanTarget &target)->void {}
 		auto command()->aris::core::Command &;
 		auto command()const->const aris::core::Command & { return const_cast<std::decay_t<decltype(*this)> *>(this)->command(); }
 
@@ -117,9 +115,9 @@ namespace aris::plan
 	public:
 		static auto Type()->const std::string & { static const std::string type("EnablePlan"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
-		auto virtual executeRT(const PlanParam &param)->int override;
-		auto virtual collectNrt(const PlanParam &param)->void override;
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~EnablePlan();
 		explicit EnablePlan(const std::string &name = "enable_plan");
@@ -132,38 +130,16 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class DisablePlan : public Plan
-	{
-
-	};
-	class HomePlan : public Plan
-	{
-	public:
-		static auto Type()->const std::string & { static const std::string type("DisablePlan"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
-		auto virtual executeRT(const PlanParam &param)->int override;
-		auto virtual collectNrt(const PlanParam &param)->void override;
-
-		virtual ~HomePlan();
-		explicit HomePlan(const std::string &name = "disable_plan");
-		HomePlan(const HomePlan &);
-		HomePlan(HomePlan &&);
-		HomePlan& operator=(const HomePlan &);
-		HomePlan& operator=(HomePlan &&);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
+	class DisablePlan : public Plan{};
+	class HomePlan : public Plan{};
 	class RecoverPlan : public Plan
 	{
 	public:
 		static auto Type()->const std::string & { static const std::string type("RecoverPlan"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
-		auto virtual executeRT(const PlanParam &param)->int override;
-		auto virtual collectNrt(const PlanParam &param)->void override;
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~RecoverPlan();
 		explicit RecoverPlan(const std::string &name = "recover_plan");
@@ -181,9 +157,9 @@ namespace aris::plan
 	public:
 		static auto Type()->const std::string & { static const std::string type("MovePlan"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
-		auto virtual executeRT(const PlanParam &param)->int override;
-		auto virtual collectNrt(const PlanParam &param)->void override;
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MovePlan();
 		explicit MovePlan(const std::string &name = "move_plan");
@@ -199,15 +175,15 @@ namespace aris::plan
 	class UniversalPlan :public Plan
 	{
 	public:
-		using PrepairFunc = std::function<void(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)>;
-		using ExecuteFunc = std::function<int(const PlanParam &param)>;
-		using CollectFunc = std::function<void(const PlanParam &param)>;
+		using PrepairFunc = std::function<void(const std::map<std::string, std::string> &params, PlanTarget &target)>;
+		using ExecuteFunc = std::function<int(const PlanTarget &param)>;
+		using CollectFunc = std::function<void(PlanTarget &param)>;
 
 		static auto Type()->const std::string & { static const std::string type("UniversalPlan"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
-		auto virtual executeRT(const PlanParam &param)->int override;
-		auto virtual collectNrt(const PlanParam &param)->void override;
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
 		auto virtual setPrepairFunc(PrepairFunc func)->void;
 		auto virtual setExecuteFunc(ExecuteFunc func)->void;
 		auto virtual setCollectFunc(CollectFunc func)->void;
@@ -218,6 +194,35 @@ namespace aris::plan
 		UniversalPlan(UniversalPlan &&);
 		UniversalPlan& operator=(const UniversalPlan &);
 		UniversalPlan& operator=(UniversalPlan &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+
+	class MoveJ :public Plan
+	{
+	public:
+		struct Param
+		{
+			double vel, acc, dec;
+			std::vector<double> joint_pos_vec, begin_joint_pos_vec;
+			std::vector<bool> joint_active_vec;
+		};
+		
+		static auto Type()->const std::string & { static const std::string type("MoveJ"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~MoveJ();
+		explicit MoveJ(const std::string &name = "move_plan");
+		MoveJ(const MoveJ &);
+		MoveJ(MoveJ &&);
+		MoveJ& operator=(const MoveJ &);
+		MoveJ& operator=(MoveJ &&);
+
 
 	private:
 		struct Imp;

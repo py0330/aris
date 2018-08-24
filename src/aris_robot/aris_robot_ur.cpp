@@ -173,4 +173,82 @@ namespace aris::robot
 
 		return controller;
 	}
+
+	auto createRokaeModel()->std::unique_ptr<aris::dynamic::Model>
+	{
+		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+
+		// 设置重力 //
+		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
+		model->environment().setGravity(gravity);
+
+
+		const double base_pe_313[16]{ 0,0,0.3295,0,0,0 };
+
+		//
+		const double d1 = 0.04;
+		const double d2 = 0.6045 - 0.3295;
+		const double d3 = -(0.6295 - 0.6045);
+		const double d4 = 0.0;
+		const double d5 = -(-0.32 - 0.04);
+		//
+
+
+
+		// add part //
+		auto &p1 = model->partPool().add<Part>("L1");
+		auto &p2 = model->partPool().add<Part>("L2");
+		auto &p3 = model->partPool().add<Part>("L3");
+		auto &p4 = model->partPool().add<Part>("L4");
+		auto &p5 = model->partPool().add<Part>("L5");
+		auto &p6 = model->partPool().add<Part>("L6");
+
+		// add joint //
+		const double j1_pos[3]{ 0.0, 0.0, 0.176 };
+		const double j2_pos[3]{ 0.04, -0.0465, 0.3295, };
+		const double j3_pos[3]{ 0.04, 0.0508, 0.6045 };
+		const double j4_pos[3]{ -0.1233, 0.1, 0.6295, };// 把0.1去掉
+		const double j5_pos[3]{ 0.32,-0.03235, 0.6295, };
+		const double j6_pos[3]{ 0.383,0.1, 0.6295, };// 把0.1去掉
+
+		const double j1_axis[6]{ 0.0, 0.0, 1.0 };
+		const double j2_axis[6]{ 0.0, 1.0, 0.0 };
+		const double j3_axis[6]{ 0.0, -1.0, 0.0 };
+		const double j4_axis[6]{ 1.0, 0.0, 0.0 };
+		const double j5_axis[6]{ 0.0, 1.0, 0.0 };
+		const double j6_axis[6]{ -1.0, 0.0, 0.0 };
+
+		auto &j1 = model->addRevoluteJoint(p1, model->ground(), j1_pos, j1_axis);
+		auto &j2 = model->addRevoluteJoint(p2, p1, j2_pos, j2_axis);
+		auto &j3 = model->addRevoluteJoint(p3, p2, j3_pos, j3_axis);
+		auto &j4 = model->addRevoluteJoint(p4, p3, j4_pos, j4_axis);
+		auto &j5 = model->addRevoluteJoint(p5, p4, j5_pos, j5_axis);
+		auto &j6 = model->addRevoluteJoint(p6, p5, j6_pos, j6_axis);
+
+		// add actuation //
+		auto &m1 = model->addMotion(j1);
+		auto &m2 = model->addMotion(j2);
+		auto &m3 = model->addMotion(j3);
+		auto &m4 = model->addMotion(j4);
+		auto &m5 = model->addMotion(j5);
+		auto &m6 = model->addMotion(j6);
+
+		// add ee general motion //
+		const double pm_ee[16]{ 1,0,0,0.32,0,1,0,0.1,0,0,1,0.6295,0,0,0,1 };// 把0.1去掉
+		double pm_ee_j[16];
+		s_pe2pm(std::array<double, 6>{0.1, 0.02, 0.03, 0.02, 0.01, 0.03}.data(), pm_ee_j);
+		//s_eye(4, pm_ee_j);
+		auto &makI = p6.markerPool().add<Marker>("ee_makI", pm_ee);
+		auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
+		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
+
+		// add solver
+		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
+		auto &inverse_dynamic = model->solverPool().add<InverseDynamicSolver>();
+
+		return model;
+	}
+	auto createRokaeController()->std::unique_ptr<aris::control::Controller>;
+
 }

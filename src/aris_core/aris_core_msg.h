@@ -11,11 +11,6 @@
 #include <iostream>
 #include <functional>
 
-
-
-
-
-
 namespace aris::core
 {
 	using MsgSize = std::int32_t;
@@ -46,7 +41,7 @@ namespace aris::core
 		auto msgID() const->MsgID { return header().msg_id_; }
 		auto data() const->const char* { return const_cast<MsgBase*>(this)->data(); }
 		auto data()->char* { return reinterpret_cast<char*>(&header()) + sizeof(MsgHeader); }
-		auto copy(const char *src)->void;
+		auto copy(const std::string &str)->void;
 		auto copy(const void *src, MsgSize size)->void;
 		auto copyAt(const void *src, MsgSize size, MsgSize at_this_pos_of_msg)->void;
 		auto copyMore(const void *src, MsgSize size)->void;
@@ -74,6 +69,8 @@ namespace aris::core
 			pasteStruct(args...);
 		}
 		auto pasteStruct() const->void { paste_id_ = 0; }
+
+		auto toString()const->std::string { return std::string(data(), size()); }
 
 	protected:
 		virtual ~MsgBase() = default;
@@ -134,13 +131,11 @@ namespace aris::core
 	class MsgStreamBuf :public std::streambuf
 	{
 	public:
-		auto resetBuf()->void;
-		auto update()->void;
 		explicit MsgStreamBuf(MsgBase& msg);
-
+		auto reset()->void;
 	protected:
-		auto overflow(int_type c)->int_type override;
-		auto underflow()->int_type override;
+		virtual auto overflow(int_type c)->int_type override;
+		virtual auto sync()->int override;
 
 	private:
 		MsgBase * msg_;
@@ -148,8 +143,7 @@ namespace aris::core
 	class MsgStream : public std::iostream
 	{
 	public:
-		auto resetBuf()->void { buf.resetBuf(); };
-		auto update()->void { buf.update(); }
+		auto reset()->void { buf.reset(); }
 		explicit MsgStream(MsgBase& msg) : buf(msg), std::iostream(&buf) { }
 
 	private:

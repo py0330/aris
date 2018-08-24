@@ -50,7 +50,7 @@ set(CMAKE_BUILD_TYPE "Release")
 
 # set include and lib folders
 if(UNIX)
-	set(RELY_LINK_LIB pthread)#pthread is needed for concurrency
+	set(RELY_LINK_LIB pthread stdc++fs)#pthread is needed for concurrency
 
 	option (USE_XENOMAI "Use Xenomai RT system" OFF)
 	if(USE_XENOMAI)
@@ -193,13 +193,20 @@ target_link_libraries(test_control aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_control COMMAND test_control)
 set_tests_properties (test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_cell.h test_dynamic_cell.cpp test_dynamic_spline.h test_dynamic_spline.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_model_coordinate.h test_dynamic_model_coordinate.cpp test_dynamic_model_compute.h test_dynamic_model_compute.cpp test_dynamic_model_interaction.h test_dynamic_model_interaction.cpp test_dynamic_model_multi.h test_dynamic_model_multi.cpp test_dynamic_simple_model.h test_dynamic_simple_model.cpp test_dynamic_plan.h test_dynamic_plan.cpp)
+set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_cell.h test_dynamic_cell.cpp test_dynamic_spline.h test_dynamic_spline.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_model_coordinate.h test_dynamic_model_coordinate.cpp test_dynamic_model_solver.h test_dynamic_model_solver.cpp test_dynamic_model_solver_puma.h test_dynamic_model_solver_puma.cpp test_dynamic_model_interaction.h test_dynamic_model_interaction.cpp test_dynamic_model_multi.h test_dynamic_model_multi.cpp test_dynamic_simple_model.h test_dynamic_simple_model.cpp test_dynamic_plan.h test_dynamic_plan.cpp)
 PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
 add_executable(test_dynamic ${FULL_SRC})
 target_link_libraries(test_dynamic aris_dynamic aris_core ${RELY_LINK_LIB})
 add_test(NAME test_dynamic COMMAND test_dynamic)
 set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 install(DIRECTORY test/test_dynamic/resource/ DESTINATION resource/test_dynamic)
+
+set(SOURCE_FILES main.cpp test_robot_rokae.h test_robot_rokae.cpp)
+PREPEND(FULL_SRC test/test_robot ${SOURCE_FILES})
+add_executable(test_robot ${FULL_SRC})
+target_link_libraries(test_robot aris_robot aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
+add_test(NAME test_robot COMMAND test_robot)
+set_tests_properties (test_robot PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 set(SOURCE_FILES main.cpp test_control_server.h test_control_server.cpp)
 PREPEND(FULL_SRC test/test_control_server ${SOURCE_FILES})

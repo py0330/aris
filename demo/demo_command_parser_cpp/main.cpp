@@ -12,17 +12,17 @@ int main()
 	auto &parser = root.add<aris::core::CommandParser>("parser");
 	
 	// 添加enable命令 //
-	auto &enable = parser.commandPool().add<aris::core::Command>("enable", "", "");
+	auto &enable = parser.commandPool().add<aris::core::Command>("enable", "");
 
 	// 添加命令各参数节点 //
-	auto &group = enable.add<aris::core::GroupParam>("group", "");
-	auto &unique1 = group.add<aris::core::UniqueParam>("unique1", "", "");
-	auto &unique2 = group.add<aris::core::UniqueParam>("unique2", "position", "");
-	auto &all = unique1.add<aris::core::Param>("all", "", "", 'a');
-	auto &motion = unique1.add<aris::core::Param>("motion", "0", "", 'm');
-	auto &position = unique2.add<aris::core::Param>("position", "", "", 'p');
-	auto &velocity = unique2.add<aris::core::Param>("velocity", "", "", 'v');
-	auto &current = unique2.add<aris::core::Param>("current", "", "", 0);
+	auto &group = enable.add<aris::core::GroupParam>("group");
+	auto &unique1 = group.add<aris::core::UniqueParam>("unique1", "");
+	auto &unique2 = group.add<aris::core::UniqueParam>("unique2", "position");
+	auto &all = unique1.add<aris::core::Param>("all", "", 'a');
+	auto &motion = unique1.add<aris::core::Param>("motion", "0", 'm');
+	auto &position = unique2.add<aris::core::Param>("position", "", 'p');
+	auto &velocity = unique2.add<aris::core::Param>("velocity", "", 'v');
+	auto &current = unique2.add<aris::core::Param>("current", "", 0);
 
 	// 和用户进行交互 //
 	for (;;)

@@ -5,89 +5,6 @@
 
 #include "test_control_server.h"
 
-//class TestPlan : public Plan
-//{
-//public:
-//	static auto Type()->const std::string & { static const std::string type("EnablePlan"); return std::ref(type); }
-//	auto virtual type() const->const std::string& override { return Type(); }
-//	auto virtual prepairNrt(const PlanParam &param, const std::map<std::string, std::string> &cmd_params, aris::core::Msg &msg_out)->void override;
-//	auto virtual runRT(const PlanParam &param)->int override;
-//	auto virtual finishNrt()->void override;
-//
-//	virtual ~EnablePlan();
-//	explicit EnablePlan(const std::string &name = "enable_plan");
-//	EnablePlan(const EnablePlan &);
-//	EnablePlan(EnablePlan &&);
-//	EnablePlan& operator=(const EnablePlan &);
-//	EnablePlan& operator=(EnablePlan &&);
-//
-//private:
-//	struct Imp;
-//	aris::core::ImpPtr<Imp> imp_;
-//};
-
-
-void test_server2()
-{
-	auto&cs = aris::server::ControlServer::instance();
-
-	cs.resetController(new aris::control::EthercatController);
-	cs.resetModel(new aris::dynamic::Model);
-	cs.resetSensorRoot(new aris::sensor::SensorRoot);
-	cs.resetPlanRoot(new aris::plan::PlanRoot);
-
-	cs.planRoot().planPool().add<aris::plan::Plan>("en").command().loadXmlStr(
-		"		<en default_child_type=\"Param\" default=\"all\">"
-		"			<all abbreviation=\"a\"/>"
-		"			<first abbreviation=\"f\"/>"
-		"			<second abbreviation=\"s\"/>"
-		"			<motion_id abbreviation=\"m\" default=\"0\"/>"
-		"			<physical_id abbreviation=\"p\" default=\"0\"/>"
-		"			<leg abbreviation=\"l\" default=\"0\"/>"
-		"		</en>");
-
-	cs.planRoot().planPool().add<aris::plan::Plan>("ds").command().loadXmlStr(
-		"		<ds default_child_type=\"Param\" default=\"all\">"
-		"			<all abbreviation=\"a\"/>"
-		"			<first abbreviation=\"f\"/>"
-		"			<second abbreviation=\"s\"/>"
-		"			<motion_id abbreviation=\"m\" default=\"0\"/>"
-		"			<physical_id abbreviation=\"p\" default=\"0\"/>"
-		"			<leg abbreviation=\"l\" default=\"0\"/>"
-		"		</ds>");
-
-
-	
-
-	// 接收命令 //
-	for (std::string command_in; std::getline(std::cin, command_in);)
-	{
-		try
-		{
-			if (command_in == "start")
-			{
-				cs.start();
-			}
-			else if(command_in == "stop")
-			{
-				cs.stop();
-			}
-			else
-			{
-				cs.executeCmd(aris::core::Msg(command_in));
-			}
-		}
-		catch (std::exception &e)
-		{
-			std::cout << e.what() << std::endl;
-		}
-	}
-
-
-	cs.stop();
-}
-
-
 void test_server_option()
 {
 	auto&cs = aris::server::ControlServer::instance();
@@ -100,14 +17,14 @@ void test_server_option()
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
 		std::atomic_bool is_plan_prepaired{ false }, is_plan_executed{ false }, is_plan_collected{ false };
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
 			is_plan_prepaired = true;
-		}, [&](const aris::plan::PlanParam &)->int
+		}, [&](const aris::plan::PlanTarget &)->int
 		{
 			is_plan_executed = true;
 			return 0;
-		}, [&](const aris::plan::PlanParam &)->void
+		}, [&](aris::plan::PlanTarget &)->void
 		{
 			is_plan_collected = true;
 		}, "<test_NOT_RUN_FUNCTION/>");
@@ -144,15 +61,15 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
 			if (cs.currentExecuteId())std::cout << __FILE__ << " " << __LINE__ << ":test PREPAIR_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 			if (cs.currentCollectId() == 0)std::cout << __FILE__ << " " << __LINE__ << ":test PREPAIR_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
 			
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &)->void
+			return 100 - param.count;
+		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<test_PREPAIR_WHEN_ALL_PLAN_EXECUTED/>");
@@ -177,14 +94,14 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
 			if (cs.currentExecuteId())std::cout << __FILE__ << " " << __LINE__ << ":test PREPAIR_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 			if (cs.currentCollectId())std::cout << __FILE__ << " " << __LINE__ << ":test PREPAIR_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &)->void
+			return 100 - param.count;
+		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<test_PREPAIR_WHEN_ALL_PLAN_COLLECTED/>");
@@ -209,12 +126,12 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &)->void
+			return 100 - param.count;
+		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<test_EXECUTE_WHEN_ALL_PLAN_EXECUTED/>");
@@ -242,12 +159,12 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &)->void
+			return 100 - param.count;
+		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<test_EXECUTE_WHEN_ALL_PLAN_COLLECTED/>");
@@ -255,15 +172,14 @@ void test_server_option()
 		cs.start();
 
 		aris::core::Msg cmd("test_EXECUTE_WHEN_ALL_PLAN_COLLECTED");
-		cmd.header().reserved1_ = 0;
 		cmd.header().reserved1_ = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED;
 		cs.executeCmd(cmd);
 		auto id = cs.executeCmd(cmd);
-		if (cs.currentCollectId() == id || cs.currentCollectId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (cs.currentCollectId() != id - 1) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		cmd.header().reserved1_ = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED;
 		id = cs.executeCmd(cmd);
-		if (cs.currentCollectId() != id && cs.currentCollectId() != 0) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (cs.currentCollectId() != id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -275,12 +191,12 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &)->void
+			return 100 - param.count;
+		}, [&](aris::plan::PlanTarget &)->void
 		{
 		}, "<test_COLLECT_WHEN_ALL_PLAN_EXECUTED/>");
 
@@ -308,15 +224,15 @@ void test_server_option()
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
 		int collect_time = 100;
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &msg)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &target)->void
 		{
-			msg.copyStruct(collect_time);
-		}, [&](const aris::plan::PlanParam &param)->int
+			target.param = collect_time;
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &param)->void
+			return 100 - param.count;
+		}, [&](aris::plan::PlanTarget &param)->void
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(*reinterpret_cast<int*>(param.param_)));
+			std::this_thread::sleep_for(std::chrono::milliseconds(std::any_cast<int>(param.param)));
 		}, "<test_COLLECT_WHEN_ALL_PLAN_COLLECTED/>");
 
 		cs.start();
@@ -345,12 +261,12 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &)->void
+			return 100 - param.count;
+		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<test_WAIT_FOR_EXECUTION/>");
@@ -377,12 +293,12 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &)->void
+			return 100 - param.count;
+		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<test_WAIT_FOR_COLLECTION/>");
@@ -409,22 +325,22 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count_;
-		}, [&](const aris::plan::PlanParam &)->void
+			return 100 - param.count;
+		}, [&](const aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		}, "<test_WAIT_IF_CMD_POOL_IS_FULL_1/>");
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const aris::plan::PlanParam &, const std::map<std::string, std::string> &, aris::core::Msg &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
 		{
-		}, [&](const aris::plan::PlanParam &param)->int
+		}, [&](const aris::plan::PlanTarget &param)->int
 		{
 			return 0;
-		}, [&](const aris::plan::PlanParam &)->void
+		}, [&](const aris::plan::PlanTarget &)->void
 		{
 		}, "<test_WAIT_IF_CMD_POOL_IS_FULL_2/>");
 
@@ -463,9 +379,6 @@ void test_server_option()
 
 void test_control_server()
 {
-	//test_xml();
-	//test_construct();
-
-	//test_server_option();
+	test_server_option();
 }
 

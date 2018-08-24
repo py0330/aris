@@ -50,8 +50,7 @@ void test_pdo_xml()
 
 			if (++count % 1000 == 0)
 			{
-				m.mout() << "count " << count << " : pos " << value << '\0';
-				m.mout().update();
+				m.mout() << "count " << count << " : pos " << value;
 			}
 		});
 		m.start();
