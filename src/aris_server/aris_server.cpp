@@ -363,14 +363,14 @@ namespace aris::server
 		static std::int64_t cmd_id{ 0 };
 		++cmd_id;
 
-		LOG_INFO << "server receive cmd " << std::to_string(cmd_id) << " : " << msg.data() << std::endl;
+		LOG_INFO << "server receive cmd " << std::to_string(cmd_id) << " : " << msg.toString() << std::endl;
 		aris::plan::PlanTarget target{ &model(), &controller(), cmd_id, msg.header().reserved1_, 0, std::any() };
 		auto cmd_end = imp_->cmd_end_.load();
 
 		// 找到命令对应的plan //
 		std::string cmd;
 		std::map<std::string, std::string> params;
-		planRoot().planParser().parse(msg.data(), cmd, params);
+		planRoot().planParser().parse(msg.toString(), cmd, params);
 		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 
 		// print cmd and params /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -452,7 +452,7 @@ namespace aris::server
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current execute ID, because ControlServer is not running"));
 
-		// 只有execute_cmd函数才可能会改变cmd_queue中的msg
+		// 只有execute_cmd函数才可能会改变cmd_queue中的数据
 		auto cmd_end = imp_->cmd_end_.load();
 		auto cmd_now = imp_->cmd_now_.load();
 
@@ -463,7 +463,7 @@ namespace aris::server
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current collect ID, because ControlServer is not running"));
 
-		// 只有execute_cmd函数才可能会改变cmd_queue中的msg
+		// 只有execute_cmd函数才可能会改变cmd_queue中的数据
 		auto cmd_end = imp_->cmd_end_.load();
 		auto cmd_collect = imp_->cmd_collect_.load();
 

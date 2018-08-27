@@ -9,6 +9,7 @@
 #include <regex>
 #include <limits>
 #include <type_traits>
+#include <numeric>
 
 #include "aris_dynamic_model.h"
 

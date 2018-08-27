@@ -133,7 +133,6 @@ namespace aris::dynamic
 	}
 	auto inline s_eye(Size m, double *A) noexcept->void { return s_eye(m, A, m); }
 
-
 	template<typename XType>
 	auto inline s_norm(Size n, const double *x, XType x_t) noexcept->double
 	{

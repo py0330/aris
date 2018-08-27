@@ -262,7 +262,7 @@ namespace aris::dynamic
 	template<typename VType, typename FType, typename VFType>
 	auto s_cf(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
+		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 		s_c3(vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -299,7 +299,7 @@ namespace aris::dynamic
 	template<typename VType, typename FType, typename VFType>
 	auto s_cfi(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
+		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3i(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 		s_c3i(vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -319,7 +319,7 @@ namespace aris::dynamic
 	template<typename VType, typename FType, typename VFType>
 	auto s_cfa(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
+		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3a(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 		s_c3a(vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -339,7 +339,7 @@ namespace aris::dynamic
 	template<typename VType, typename FType, typename VFType>
 	auto s_cfa(double alpha, const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
+		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3a(alpha, vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 		s_c3a(alpha, vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -359,7 +359,7 @@ namespace aris::dynamic
 	template<typename VType, typename FType, typename VFType>
 	auto s_cfs(const double *vs, VType v_t, const double *fs, FType f_t, double* vfs_out, VFType vf_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
+		const Size v3_pos{ at(3, v_t) }, f3_pos{ at(3, f_t) }, vf3_pos{ at(3, vf_t) };
 
 		s_c3s(vs + v3_pos, v_t, fs, f_t, vfs_out, vf_t);
 		s_c3s(vs + v3_pos, v_t, fs + f3_pos, f_t, vfs_out + vf3_pos, vf_t);
@@ -387,7 +387,7 @@ namespace aris::dynamic
 	template<typename VType, typename V2Type, typename VVType>
 	auto s_cv(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
+		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 		s_c3(vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -424,7 +424,7 @@ namespace aris::dynamic
 	template<typename VType, typename V2Type, typename VVType>
 	auto s_cvi(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
+		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3i(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 		s_c3i(vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -444,7 +444,7 @@ namespace aris::dynamic
 	template<typename VType, typename V2Type, typename VVType>
 	auto s_cva(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
+		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3a(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 		s_c3a(vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -464,7 +464,7 @@ namespace aris::dynamic
 	template<typename VType, typename V2Type, typename VVType>
 	auto s_cva(double alpha, const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
+		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3a(alpha, vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 		s_c3a(alpha, vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -484,7 +484,7 @@ namespace aris::dynamic
 	template<typename VType, typename V2Type, typename VVType>
 	auto s_cvs(const double *vs, VType v_t, const double *vs2, V2Type v2_t, double* vvs_out, VVType vv_t) noexcept->void
 	{
-		Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
+		const Size v3_pos{ at(3, v_t) }, v23_pos{ at(3, v2_t) }, vv3_pos{ at(3, vv_t) };
 
 		s_c3s(vs + v3_pos, v_t, vs2, v2_t, vvs_out, vv_t);
 		s_c3s(vs + v3_pos, v_t, vs2 + v23_pos, v2_t, vvs_out + vv3_pos, vv_t);
@@ -816,7 +816,7 @@ namespace aris::dynamic
 	template<typename F1Type, typename F2Type>
 	auto s_tf(const double *pm, const double *fs, F1Type f1_t, double *fs_out, F2Type f2_t) noexcept->void
 	{
-		Size f13_pos{ at(3, f1_t) }, f23_pos{ at(3,f2_t) };
+		const Size f13_pos{ at(3, f1_t) }, f23_pos{ at(3,f2_t) };
 
 		s_pm_dot_v3(pm, fs, f1_t, fs_out, f2_t);
 		s_pm_dot_v3(pm, fs + f13_pos, f1_t, fs_out + f23_pos, f2_t);
@@ -894,7 +894,6 @@ namespace aris::dynamic
 
 		s_inv_pm_dot_v3(inv_pm, fs_out, f2_t, fs_out + at(3, f2_t), f2_t);
 		s_inv_pm_dot_v3(inv_pm, fs, f1_t, fs_out, f2_t);
-
 	}
 	/// \brief 根据位姿矩阵的逆矩阵转换六维力向量
 	///
@@ -972,7 +971,6 @@ namespace aris::dynamic
 		s_pm_dot_v3(pm, vs, v1_t, vs_out, v2_t);
 		s_pm_dot_v3(pm, vs + at(3, v1_t), v1_t, vs_out + at(3, v2_t), v2_t);
 		s_c3a(pm + 3, 4, vs_out + at(3, v2_t), v2_t, vs_out, v2_t);
-
 	}
 	/// \brief 根据位姿矩阵转换六维速度向量
 	///

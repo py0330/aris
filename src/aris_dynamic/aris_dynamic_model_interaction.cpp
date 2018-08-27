@@ -138,12 +138,35 @@ namespace aris::dynamic
 		auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I;	}
 		auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		{
-			Constraint::cptCpFromPm(cp, makI_pm, makJ_pm);
-			cp[0] += mp();
+			// // old method
+			//Constraint::cptCpFromPm(cp, makI_pm, makJ_pm);
+			//cp[0] += mp();  
+			
 			if (axis() > 2)//角度
 			{
-				while (cp[0] > PI) cp[0] -= 2 * PI;
-				while (cp[0] < -PI) cp[0] += 2 * PI;
+				double re[3]{0.0}, rm[9], pm_j_should_be[16];
+				re[axis() - 3] = mp();
+				s_re2rm(re, rm, "123");
+
+				s_vc(16, makJ_pm, pm_j_should_be);
+				s_mm(3, 3, 3, makJ_pm, 4, rm, 3, pm_j_should_be, 4);
+
+				double pm_j2i[16], ps_j2i[6];
+				s_inv_pm_dot_pm(makI_pm, pm_j_should_be, pm_j2i);
+				s_pm2ps(pm_j2i, ps_j2i);
+
+				cp[0] = ps_j2i[axis()];
+			}
+			else
+			{
+				double pm_j_should_be[16];
+				s_vc(16, makJ_pm, pm_j_should_be);
+				s_va(3, mp(), pm_j_should_be + axis(), 4, pm_j_should_be + 3, 4);
+
+				double pm_j2i[16], ps_j2i[6];
+				s_inv_pm_dot_pm(makI_pm, pm_j_should_be, pm_j2i);
+				s_pm2ps(pm_j2i, ps_j2i);
+				cp[0] = ps_j2i[axis()];
 			}
 		}
 		auto Motion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); cv[0] += mv(); }

@@ -8,10 +8,7 @@
 
 namespace aris::plan
 {
-	struct Plan::Imp
-	{
-		Imp() {}
-	};
+	struct Plan::Imp{};
 	auto Plan::command()->aris::core::Command & { return dynamic_cast<aris::core::Command&>(children().front()); }
 	Plan::~Plan() = default;
 	Plan::Plan(const std::string &name) :Object(name), imp_(new Imp)
@@ -490,6 +487,7 @@ namespace aris::plan
 
 		target.option =
 			aris::plan::Plan::USING_TARGET_POS | 
+			aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED |
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START | 
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 

@@ -74,8 +74,8 @@ if(WIN32)
 	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
 endif(WIN32)
 
-set(ARIS_INCL_DIR src/ src/aris_server src/aris_sensor src/aris_robot src/aris_dynamic src/aris_control src/aris_plan src/aris_core)
-set(ARIS_LINK_LIB aris_server aris_sensor aris_robot aris_plan aris_dynamic aris_control aris_core)
+set(ARIS_INCL_DIR src/ src/aris_robot src/aris_server src/aris_sensor src/aris_plan src/aris_dynamic src/aris_control src/aris_core)
+set(ARIS_LINK_LIB aris_robot aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core)
 set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${RELY_INCL_DIR})
 set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${RELY_LINK_DIR})
 set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
@@ -110,15 +110,6 @@ install(TARGETS aris_core ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
 install(TARGETS aris_core ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
 install(FILES ${FULL_H} src/aris_core/aris_core.h DESTINATION include)
 
-# aris plan project
-set(SOURCE aris_plan_function aris_plan_root)
-PREPEND_CPP(FULL_SRC src/aris_plan ${SOURCE})
-PREPEND_H(FULL_H src/aris_plan ${SOURCE})
-add_library(aris_plan STATIC ${FULL_SRC} ${FULL_H} src/aris_plan/aris_plan.h)
-install(TARGETS aris_plan ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_plan ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} src/aris_plan/aris_plan.h DESTINATION include)
-
 # aris control project
 set(SOURCE aris_control_ethercat aris_control_ethercat_kernel aris_control_master_slave aris_control_controller_motion aris_control_rt_timer)
 PREPEND_CPP(FULL_SRC src/aris_control ${SOURCE})
@@ -130,9 +121,9 @@ install(FILES ${FULL_H} src/aris_control/aris_control.h DESTINATION include)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 # aris dynamic project
-set(SOURCE aris_dynamic_plan aris_dynamic_matrix aris_dynamic_block_matrix aris_dynamic_cell aris_dynamic_spline aris_dynamic_screw
+set(SOURCE aris_dynamic_plan aris_dynamic_matrix aris_dynamic_spline aris_dynamic_screw
  aris_dynamic_model_basic aris_dynamic_model_coordinate aris_dynamic_model_interaction aris_dynamic_model_solver
- aris_dynamic_model_simulation aris_dynamic_model aris_dynamic_simple_model)
+ aris_dynamic_model_simulation aris_dynamic_model)
 PREPEND_CPP(FULL_SRC src/aris_dynamic ${SOURCE})
 PREPEND_H(FULL_H src/aris_dynamic ${SOURCE})
 add_library(aris_dynamic STATIC ${FULL_SRC} ${FULL_H} src/aris_dynamic/aris_dynamic.h)
@@ -140,15 +131,14 @@ install(TARGETS aris_dynamic ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
 install(TARGETS aris_dynamic ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
 install(FILES ${FULL_H} src/aris_dynamic/aris_dynamic.h DESTINATION include)
 
-# aris robot project
-set(SOURCE aris_robot_ur)
-PREPEND_CPP(FULL_SRC src/aris_robot ${SOURCE})
-PREPEND_H(FULL_H src/aris_robot ${SOURCE})
-add_library(aris_robot STATIC ${FULL_SRC} ${FULL_H} src/aris_robot/aris_robot.h)
-install(TARGETS aris_robot ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_robot ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} src/aris_robot/aris_robot.h DESTINATION include)
-install(DIRECTORY src/aris_robot/resource/ DESTINATION resource/aris_robot)
+# aris plan project
+set(SOURCE aris_plan_function aris_plan_root)
+PREPEND_CPP(FULL_SRC src/aris_plan ${SOURCE})
+PREPEND_H(FULL_H src/aris_plan ${SOURCE})
+add_library(aris_plan STATIC ${FULL_SRC} ${FULL_H} src/aris_plan/aris_plan.h)
+install(TARGETS aris_plan ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
+install(TARGETS aris_plan ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
+install(FILES ${FULL_H} src/aris_plan/aris_plan.h DESTINATION include)
 
 # aris sensor project
 set(SOURCE aris_sensor_base)
@@ -168,10 +158,20 @@ install(TARGETS aris_server ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
 install(TARGETS aris_server ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
 install(FILES ${FULL_H} DESTINATION include)
 
+# aris robot project
+set(SOURCE aris_robot_ur aris_robot_rokae)
+PREPEND_CPP(FULL_SRC src/aris_robot ${SOURCE})
+PREPEND_H(FULL_H src/aris_robot ${SOURCE})
+add_library(aris_robot STATIC ${FULL_SRC} ${FULL_H} src/aris_robot/aris_robot.h)
+install(TARGETS aris_robot ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
+install(TARGETS aris_robot ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
+install(FILES ${FULL_H} src/aris_robot/aris_robot.h DESTINATION include)
+install(DIRECTORY src/aris_robot/resource/ DESTINATION resource/aris_robot)
 
 ################################### build tests for aris ####################################
 enable_testing()
 
+# test core
 set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_log.h test_core_log.cpp test_core_msg.h test_core_msg.cpp test_core_object.h test_core_object.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
 PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
 add_executable(test_core ${FULL_SRC})
@@ -179,13 +179,7 @@ target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
 set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_plan_function.h test_plan_function.cpp)
-PREPEND(FULL_SRC test/test_plan ${SOURCE_FILES})
-add_executable(test_plan ${FULL_SRC})
-target_link_libraries(test_plan aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
-add_test(NAME test_plan COMMAND test_plan)
-set_tests_properties (test_plan PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-
+# test control
 set(SOURCE_FILES main.cpp test_control_ethercat.h test_control_ethercat.cpp test_control_motion.h test_control_motion.cpp test_control_master_slave.h test_control_master_slave.cpp)
 PREPEND(FULL_SRC test/test_control ${SOURCE_FILES})
 add_executable(test_control ${FULL_SRC})
@@ -193,7 +187,8 @@ target_link_libraries(test_control aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_control COMMAND test_control)
 set_tests_properties (test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_block_matrix.h test_dynamic_block_matrix.cpp test_dynamic_cell.h test_dynamic_cell.cpp test_dynamic_spline.h test_dynamic_spline.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_model_coordinate.h test_dynamic_model_coordinate.cpp test_dynamic_model_solver.h test_dynamic_model_solver.cpp test_dynamic_model_solver_puma.h test_dynamic_model_solver_puma.cpp test_dynamic_model_interaction.h test_dynamic_model_interaction.cpp test_dynamic_model_multi.h test_dynamic_model_multi.cpp test_dynamic_simple_model.h test_dynamic_simple_model.cpp test_dynamic_plan.h test_dynamic_plan.cpp)
+# test dynamic
+set(SOURCE_FILES main.cpp test_dynamic_matrix.h test_dynamic_matrix.cpp test_dynamic_spline.h test_dynamic_spline.cpp test_dynamic_screw.h test_dynamic_screw.cpp test_dynamic_model.h test_dynamic_model.cpp test_dynamic_model_coordinate.h test_dynamic_model_coordinate.cpp test_dynamic_model_solver.h test_dynamic_model_solver.cpp test_dynamic_model_solver_puma.h test_dynamic_model_solver_puma.cpp test_dynamic_model_interaction.h test_dynamic_model_interaction.cpp test_dynamic_plan.h test_dynamic_plan.cpp)
 PREPEND(FULL_SRC test/test_dynamic ${SOURCE_FILES})
 add_executable(test_dynamic ${FULL_SRC})
 target_link_libraries(test_dynamic aris_dynamic aris_core ${RELY_LINK_LIB})
@@ -201,25 +196,34 @@ add_test(NAME test_dynamic COMMAND test_dynamic)
 set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 install(DIRECTORY test/test_dynamic/resource/ DESTINATION resource/test_dynamic)
 
-set(SOURCE_FILES main.cpp test_robot_rokae.h test_robot_rokae.cpp)
-PREPEND(FULL_SRC test/test_robot ${SOURCE_FILES})
-add_executable(test_robot ${FULL_SRC})
-target_link_libraries(test_robot aris_robot aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
-add_test(NAME test_robot COMMAND test_robot)
-set_tests_properties (test_robot PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+# test plan
+set(SOURCE_FILES main.cpp test_plan_function.h test_plan_function.cpp)
+PREPEND(FULL_SRC test/test_plan ${SOURCE_FILES})
+add_executable(test_plan ${FULL_SRC})
+target_link_libraries(test_plan aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
+add_test(NAME test_plan COMMAND test_plan)
+set_tests_properties (test_plan PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
+# test server
 set(SOURCE_FILES main.cpp test_control_server.h test_control_server.cpp)
 PREPEND(FULL_SRC test/test_control_server ${SOURCE_FILES})
 add_executable(test_control_server ${FULL_SRC})
-target_link_libraries(test_control_server aris_server aris_sensor aris_robot aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
+target_link_libraries(test_control_server aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_control_server COMMAND test_control_server)
 set_tests_properties (test_control_server PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+
+# test robot
+set(SOURCE_FILES main.cpp test_robot_rokae.h test_robot_rokae.cpp)
+PREPEND(FULL_SRC test/test_robot ${SOURCE_FILES})
+add_executable(test_robot ${FULL_SRC})
+target_link_libraries(test_robot aris_robot aris_server aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
+add_test(NAME test_robot COMMAND test_robot)
+set_tests_properties (test_robot PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 set(SOURCE_FILES client.cpp)
 PREPEND(FULL_SRC test/rbt ${SOURCE_FILES})
 add_executable(rbt ${FULL_SRC})
 target_link_libraries(rbt ${ALL_LINK_LIB})
-
 
 ################################### build demos for aris ####################################
 # Make demo projects
@@ -270,6 +274,11 @@ set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_server_ur ${SOURCE_FILES})
 add_executable(demo_server_ur ${FULL_SRC})
 target_link_libraries(demo_server_ur ${ALL_LINK_LIB})
+
+set(SOURCE_FILES main.cpp)
+PREPEND(FULL_SRC demo/demo_server_rokae_xl4 ${SOURCE_FILES})
+add_executable(demo_server_rokae_xl4 ${FULL_SRC})
+target_link_libraries(demo_server_rokae_xl4 ${ALL_LINK_LIB})
 
 
 endif(MAKE_DEMO)

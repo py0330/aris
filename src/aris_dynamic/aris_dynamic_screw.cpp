@@ -17,37 +17,37 @@ namespace aris::dynamic
 	using double3x3 = double[3][3];
 
 	auto inline default_pp()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
-	auto inline default_ra()noexcept->const double* { static const double value[3]{ 0,0,0 };	return value; }
+	auto inline default_ra()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
 	auto inline default_re()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
-	auto inline default_rq()noexcept->const double* { static const double value[4]{ 0,0,0,1 };	return value; }
-	auto inline default_rm()noexcept->const double* { static const double value[9]{ 1,0,0,0,1,0,0,0,1 };	return value; }
-	auto inline default_pe()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
-	auto inline default_pq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,1 };	return value; }
-	auto inline default_pa()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
-	auto inline default_ps()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
+	auto inline default_rq()noexcept->const double* { static const double value[4]{ 0,0,0,1 }; return value; }
+	auto inline default_rm()noexcept->const double* { static const double value[9]{ 1,0,0,0,1,0,0,0,1 }; return value; }
+	auto inline default_pe()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_pq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,1 }; return value; }
+	auto inline default_pa()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_ps()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
 	auto inline default_pm()noexcept->const double* { static const double value[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 }; return value; }
 
 	auto inline default_vp()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
-	auto inline default_we()noexcept->const double* { static const double value[3]{ 0,0,0 };	return value; }
-	auto inline default_wq()noexcept->const double* { static const double value[4]{ 0,0,0,0 };	return value; }
-	auto inline default_wm()noexcept->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
-	auto inline default_ve()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
-	auto inline default_vq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,0 };	return value; }
+	auto inline default_we()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_wq()noexcept->const double* { static const double value[4]{ 0,0,0,0 }; return value; }
+	auto inline default_wm()noexcept->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
+	auto inline default_ve()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_vq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,0 }; return value; }
 	auto inline default_vm()noexcept->const double* { static const double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
 	auto inline default_wa()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
-	auto inline default_va()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
-	auto inline default_vs()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
+	auto inline default_va()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_vs()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
 
 	auto inline default_ap()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
-	auto inline default_xe()noexcept->const double* { static const double value[3]{ 0,0,0 };	return value; }
-	auto inline default_xq()noexcept->const double* { static const double value[4]{ 0,0,0,0 };	return value; }
-	auto inline default_xm()noexcept->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 };	return value; }
-	auto inline default_ae()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
-	auto inline default_aq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,0 };	return value; }
+	auto inline default_xe()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
+	auto inline default_xq()noexcept->const double* { static const double value[4]{ 0,0,0,0 }; return value; }
+	auto inline default_xm()noexcept->const double* { static const double value[9]{ 0,0,0,0,0,0,0,0,0 }; return value; }
+	auto inline default_ae()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_aq()noexcept->const double* { static const double value[7]{ 0,0,0,0,0,0,0 }; return value; }
 	auto inline default_am()noexcept->const double* { static const double value[16]{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; return value; }
 	auto inline default_xa()noexcept->const double* { static const double value[3]{ 0,0,0 }; return value; }
-	auto inline default_aa()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
-	auto inline default_as()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 };	return value; }
+	auto inline default_aa()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
+	auto inline default_as()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
 
 	auto inline default_fs()noexcept->const double* { static const double value[6]{ 0,0,0,0,0,0 }; return value; }
 	auto inline default_im()noexcept->const double* { static const double value[36]{ 0 }; return value; }
@@ -56,7 +56,7 @@ namespace aris::dynamic
 
 	auto inline default_out()noexcept->double* { static thread_local double value[36]{ 0 }; return value; }
 
-	auto inline P()noexcept->const double3x3& { static const double p[3][3]{ { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } };	return p; }
+	auto inline P()noexcept->const double3x3& { static const double p[3][3]{ { 0, -1, 1 },{ 1, 0, -1 },{ -1, 1, 0 } }; return p; }
 	auto inline Q()noexcept->const double3x3& { static const double q[3][3]{ { 1, 0, 0 },{ 0, 1, 0 },{ 0, 0, 1 } };	return q; }
 
 	auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void

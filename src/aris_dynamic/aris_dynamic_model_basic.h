@@ -13,7 +13,6 @@
 
 #include <aris_core.h>
 #include <aris_dynamic_matrix.h>
-#include <aris_dynamic_block_matrix.h>
 #include <aris_dynamic_screw.h>
 
 
