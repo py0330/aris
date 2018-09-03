@@ -4,24 +4,49 @@
 using namespace aris::dynamic;
 using namespace aris::robot;
 
-int main()
+int main(int argc, char *argv[])
 {
+	double robot_pm[16];
+	std::string robot_name = argc < 2 ? "ur5" : argv[1];
+	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
+	aris::dynamic::s_pq2pm(argc < 4 ? nullptr : aris::core::Calculator().calculateExpression(argv[3]).data(), robot_pm);
+
 	auto&cs = aris::server::ControlServer::instance();
 
-	cs.resetController(aris::robot::createUr5Controller().release());
-	cs.resetModel(aris::robot::createUr5Model().release());
-	cs.resetSensorRoot(new aris::sensor::SensorRoot);
-	cs.resetPlanRoot(new aris::plan::PlanRoot);
-
-	cs.planRoot().planPool().add<aris::plan::EnablePlan>();
-	cs.planRoot().planPool().add<aris::plan::RecoverPlan>();
-	cs.planRoot().planPool().add<aris::plan::MovePlan>();
-	cs.planRoot().planPool().add<aris::plan::MoveJ>();
+	if (robot_name == "ur5")
+	{
+		cs.resetController(createControllerUr5().release());
+		cs.resetModel(createModelUr5(robot_pm).release());
+		cs.resetPlanRoot(createPlanRootUr5().release());
+		cs.resetSensorRoot(new aris::sensor::SensorRoot);
+	}
+	else if (robot_name == "rokae_xb4")
+	{
+		cs.resetController(createControllerRokaeXB4().release());
+		cs.resetModel(createModelRokaeXB4(robot_pm).release());
+		cs.resetPlanRoot(createPlanRootRokaeXB4().release());
+		cs.resetSensorRoot(new aris::sensor::SensorRoot);
+	}
+	else if (robot_name == "servo_press")
+	{
+		cs.resetController(createControllerServoPress().release());
+		cs.resetModel(createModelServoPress(robot_pm).release());
+		cs.resetPlanRoot(createPlanRootServoPress().release());
+		cs.resetSensorRoot(new aris::sensor::SensorRoot);
+	}
+	else
+	{
+		std::cout << "unknown robot:" << robot_name << std::endl;
+		return -1;
+	}
+	std::cout << "this server robot   :" << robot_name << std::endl;
+	std::cout << "this server port    :" << std::to_string(port) << std::endl;
+	std::cout << "this server position:" << argv[3] << std::endl;
 
 	aris::core::Socket socket;
 	socket.setOnReceivedMsg([&](aris::core::Socket *, aris::core::Msg &msg)->int
 	{
-		std::string msg_data(msg.data(), msg.size());
+		std::string msg_data = msg.toString();
 
 		LOG_INFO << "socket receive normal msg:\n"
 			<< msg.header().msg_size_ << "&"
@@ -36,19 +61,28 @@ int main()
 	});
 	socket.setOnReceivedRequest([&](aris::core::Socket *, aris::core::Msg &msg)
 	{
-		std::string msg_data(msg.data(), msg.size());
+		std::string msg_data = msg.toString();
 
-		LOG_INFO_EVERY_N(10) << "socket receive request msg:" 
-			<< msg.header().msg_size_ << "&" 
-			<< msg.header().msg_id_	<< "&" 
-			<< msg.header().msg_type_ << "&" 
-			<< msg.header().reserved1_ << "&" 
-			<< msg.header().reserved2_ << "&" 
-			<< msg.header().reserved3_ << ":" 
+		LOG_INFO_EVERY_N(10) << "socket receive request msg:"
+			<< msg.header().msg_size_ << "&"
+			<< msg.header().msg_id_ << "&"
+			<< msg.header().msg_type_ << "&"
+			<< msg.header().reserved1_ << "&"
+			<< msg.header().reserved2_ << "&"
+			<< msg.header().reserved3_ << ":"
 			<< msg_data << std::endl;
 
 		if (msg.header().msg_id_ == 0)
 		{
+			LOG_INFO << "the request is cmd:"
+				<< msg.header().msg_size_ << "&"
+				<< msg.header().msg_id_ << "&"
+				<< msg.header().msg_type_ << "&"
+				<< msg.header().reserved1_ << "&"
+				<< msg.header().reserved2_ << "&"
+				<< msg.header().reserved3_ << ":"
+				<< msg_data << std::endl;
+			
 			try
 			{
 				auto id = cs.executeCmd(aris::core::Msg(msg_data));
@@ -106,6 +140,9 @@ int main()
 		return 0;
 	});
 
+	cs.start();
+	socket.startServer(std::to_string(port));
+
 	// 接收命令 //
 	for (std::string command_in; std::getline(std::cin, command_in);)
 	{
@@ -114,7 +151,7 @@ int main()
 			if (command_in == "start")
 			{
 				cs.start();
-				socket.startServer("5866");
+				socket.startServer(std::to_string(port));
 			}
 			else if (command_in == "stop")
 			{
@@ -135,4 +172,3 @@ int main()
 
 	return 0;
 }
-

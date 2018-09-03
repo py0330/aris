@@ -159,7 +159,7 @@ install(TARGETS aris_server ARCHIVE CONFIGURATIONS Release DESTINATION lib/relea
 install(FILES ${FULL_H} DESTINATION include)
 
 # aris robot project
-set(SOURCE aris_robot_ur aris_robot_rokae)
+set(SOURCE aris_robot_ur aris_robot_rokae aris_robot_servo_press)
 PREPEND_CPP(FULL_SRC src/aris_robot ${SOURCE})
 PREPEND_H(FULL_H src/aris_robot ${SOURCE})
 add_library(aris_robot STATIC ${FULL_SRC} ${FULL_H} src/aris_robot/aris_robot.h)
@@ -267,18 +267,12 @@ install(DIRECTORY demo/demo_hulk/resource/ DESTINATION resource/demo_hulk)
 set(SOURCE_FILES main.cpp)
 PREPEND(FULL_SRC demo/demo_ur ${SOURCE_FILES})
 add_executable(demo_ur ${FULL_SRC})
-target_link_libraries(demo_ur aris_robot aris_control aris_dynamic aris_core ${RELY_LINK_LIB})
+target_link_libraries(demo_ur ${ALL_LINK_LIB})
 install(DIRECTORY demo/demo_ur/resource/ DESTINATION resource/demo_ur)
 
 set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_server_ur ${SOURCE_FILES})
-add_executable(demo_server_ur ${FULL_SRC})
-target_link_libraries(demo_server_ur ${ALL_LINK_LIB})
-
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_server_rokae_xl4 ${SOURCE_FILES})
-add_executable(demo_server_rokae_xl4 ${FULL_SRC})
-target_link_libraries(demo_server_rokae_xl4 ${ALL_LINK_LIB})
-
+PREPEND(FULL_SRC demo/demo_server ${SOURCE_FILES})
+add_executable(demo_server ${FULL_SRC})
+target_link_libraries(demo_server ${ALL_LINK_LIB})
 
 endif(MAKE_DEMO)

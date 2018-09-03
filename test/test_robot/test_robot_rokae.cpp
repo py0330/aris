@@ -8,7 +8,7 @@ using namespace aris::dynamic;
 
 void test_rokae_solver()
 {
-	auto m = aris::robot::createRokaeModel();
+	auto m = aris::robot::createModelRokaeXB4();
 	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
 	auto &ee = m->generalMotionPool().at(0);
 
@@ -26,7 +26,6 @@ void test_rokae_solver()
 		}
 		std::cout << std::endl;
 	}
-
 }
 
 void test_robot_rokae()

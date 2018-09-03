@@ -1,9 +1,10 @@
 ﻿#include<aris_core.h>
 #include<aris_control.h>
 #include<aris_dynamic.h>
-#include<aris_robot.h>
+#include<aris_plan.h>
 #include<aris_sensor.h>
 #include<aris_server.h>
+#include<aris_robot.h>
 
 /// \mainpage aris简介
 ///

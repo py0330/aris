@@ -101,11 +101,8 @@ namespace aris::dynamic
 		double *alpha;
 
 		bool has_ground_;
-
-		double max_error_;
-		double error_;
-		Size max_iter_count_;
-		Size iter_count_;
+		double error_, max_error_;
+		Size iter_count_, max_iter_count_;
 
 		static auto addPart(std::vector<Part *> &part_pool_, std::vector<Part *> &left_part_pool, std::vector<Relation> &relation_pool, Part *part)->void
 		{
@@ -734,8 +731,8 @@ namespace aris::dynamic
 				double *cmJ = c.is_I ? cm2 : cm1;
 
 				c.constraint->cptGlbCmFromPm(cmI_tem, cmJ_tem, makI_pm, makJ_pm);
-				s_mc(6, c.constraint->dim(), cmI_tem, c.constraint->dim(), cmI + pos, d->rel_.dim);
-				s_mc(6, c.constraint->dim(), cmJ_tem, c.constraint->dim(), cmJ + pos, d->rel_.dim);
+				s_mc(6, std::min(6 - pos, c.constraint->dim()), cmI_tem, c.constraint->dim(), cmI + pos, d->rel_.dim);//这里的max用来确保过约束的rel还是正确的
+				s_mc(6, std::min(6 - pos, c.constraint->dim()), cmJ_tem, c.constraint->dim(), cmJ + pos, d->rel_.dim);//这里的max用来确保过约束的rel还是正确的
 				pos += c.constraint->dim();
 			}
 
@@ -849,7 +846,9 @@ namespace aris::dynamic
 			else
 			{
 				ret->dim += c->dim();
+				ret->dim = std::min(ret->dim, Size(6));// 这里防止过约束的rel出错//
 				ret->cst_pool_.push_back({ c, &c->makI().fatherPart() == ret->prtI });
+				std::sort(ret->cst_pool_.begin(), ret->cst_pool_.end(), [](const Relation::Block& a, const Relation::Block& b) { return a.constraint->dim() >= b.constraint->dim(); });//这里把大的约束往前放
 			}
 		}
 
@@ -1132,11 +1131,11 @@ namespace aris::dynamic
 	}
 	auto UniversalSolver::kinPos()->bool
 	{
-		// 将杆件位姿拷贝到局部变量中 //
-		for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->getPm(d.pm);
-
 		double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
+		
+		// 将杆件位姿拷贝到局部变量中 //
+		for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->getPm(d.pm);
 
 		setError(0.0);
 		setIterCount(0);
@@ -1215,7 +1214,6 @@ namespace aris::dynamic
 					s_vc(6, d->xp, 1, &imp_->Jg_.at(at(d->part->id() * 6, c_pos, nJ())), nJ());
 				}
 			};
-
 
 			// upd Jg //
 			for (auto &d : sys.diag_pool_)
@@ -1348,7 +1346,6 @@ namespace aris::dynamic
 
 		// 更新地面的as //
 		s_fill(6, 1, 0.0, const_cast<double *>(model().ground().as()));
-
 
 		std::fill(imp_->M_.begin(), imp_->M_.end(), 0.0);
 		std::fill(imp_->h_.begin(), imp_->h_.end(), 0.0);
@@ -2439,7 +2436,6 @@ namespace aris::dynamic
 	struct PumaInverseKinematicSolver::Imp
 	{
 		PumaParam puma_param;
-
 		union 
 		{
 			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6; };
@@ -2690,7 +2686,11 @@ namespace aris::dynamic
 				}
 				else
 				{
-					// tbd 
+					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
+					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
+					s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
+					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
+					imp_->parts[i + 1]->setPm(pm_prt_j);
 				}
 
 				double last_mp = imp_->motions[i]->mp();

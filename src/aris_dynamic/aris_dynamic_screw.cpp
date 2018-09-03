@@ -552,17 +552,17 @@ namespace aris::dynamic
 		const double A = s_sinx_over_x(theta);
 		const double B = s_one_minus_cosx_over_square_x(theta);
 
-		rm_out[0] = 1 - (b*b + c * c)*B;
-		rm_out[1] = -c * A + a * b*B;
-		rm_out[2] = b * A + a * c*B;
+		rm_out[0] = 1 - (b * b + c * c)*B;
+		rm_out[1] = -c * A + a * b * B;
+		rm_out[2] = b * A + a * c * B;
 
-		rm_out[rm_ld] = c * A + a * b*B;
-		rm_out[rm_ld + 1] = 1 - (a*a + c * c)*B;
-		rm_out[rm_ld + 2] = -a * A + b * c*B;
+		rm_out[rm_ld] = c * A + a * b * B;
+		rm_out[rm_ld + 1] = 1 - (a * a + c * c) * B;
+		rm_out[rm_ld + 2] = -a * A + b * c * B;
 
-		rm_out[rm_ld + rm_ld] = -b * A + a * c*B;
-		rm_out[rm_ld + rm_ld + 1] = a * A + b * c*B;
-		rm_out[rm_ld + rm_ld + 2] = 1 - (a*a + b * b)*B;
+		rm_out[rm_ld + rm_ld] = -b * A + a * c * B;
+		rm_out[rm_ld + rm_ld + 1] = a * A + b * c * B;
+		rm_out[rm_ld + rm_ld + 2] = 1 - (a * a + b * b) * B;
 
 		return rm_out;
 	}

@@ -476,10 +476,16 @@ namespace aris::plan
 			aris::dynamic::s_nv(3, pe_unit, pe + 3);
 			target.model->generalMotionPool().at(0).setMpe(pe, eul_type.data());
 		}
+		//////////////////
+		auto &gm = target.model->generalMotionPool().at(0);
+		aris::dynamic::dsp(4, 4, *gm.mpm());
+		/////////////////
 
+		aris::dynamic::dsp(4, 4, *gm.makI().pm());
+		aris::dynamic::dsp(4, 4, *gm.makJ().pm());
 		if (!target.model->solverPool().at(0).kinPos())throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
 
-		for (aris::Size i = 0; i < 6; ++i)
+		for (aris::Size i = 0; i < target.model->motionPool().size(); ++i)
 		{
 			target.model->motionPool().at(i).updMp();
 			rc_param.axis_pos[i] = target.model->motionPool().at(i).mp();
@@ -503,16 +509,16 @@ namespace aris::plan
 		static aris::Size total_count[6];
 		if (target.count == 1)
 		{
-			for (int i = 0; i < 6; ++i)
+			for (int i = 0; i < controller->motionPool().size(); ++i)
 			{
 				begin_pos[i] = controller->motionPool().at(i).actualPos();
 			}
 		}
 
-		for (int i = 0; i < 6; ++i)
+		for (int i = 0; i < controller->motionPool().size(); ++i)
 		{
 			double p, v, a;
-			aris::dynamic::moveAbsolute(target.count, begin_pos[i], rc_param->axis_pos[i], rc_param->velocity / 1000, rc_param->acceleration / 1000 / 1000, rc_param->deceleration / 1000 / 1000, p, v, a, total_count[i]);
+			aris::plan::moveAbsolute(target.count, begin_pos[i], rc_param->axis_pos[i], rc_param->velocity / 1000, rc_param->acceleration / 1000 / 1000, rc_param->deceleration / 1000 / 1000, p, v, a, total_count[i]);
 			target.model->motionPool().at(i).setMp(p);
 		}
 
@@ -531,19 +537,19 @@ namespace aris::plan
 			"<rc default_child_type=\"Param\">"
 			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
 			"		<position_unit default=\"m\"/>"
-			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"pq\">"
-			"			<pq default=\"{0,0.63,0.316,0,0,0,1}\"/>"
-			"			<pm default=\"{1,0,0,0,0,1,0,0.63,0,0,1,0.316,0,0,0,1}\"/>"
+			"		<unique_pos type=\"UniqueParam\" default_child_type=\"Param\" default=\"pq\">"
+			"			<pq default=\"{0,0,0,0,0,0,1}\"/>"
+			"			<pm default=\"{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}\"/>"
 			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
-			"				<pe default=\"{0,0.63,0.316,0,0,0}\"/>"
+			"				<pe default=\"{0,0,0,0,0,0}\"/>"
 			"				<orientation_unit default=\"rad\"/>"
 			"				<euler_type default=\"321\"/>"
 			"			</group>"
-			"		</unique>"
-			"		<acceleration default=\"0.2\"/>"
-			"		<velocity default=\"0.2\"/>"
-			"		<deceleration default=\"0.2\"/>"
-			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_all\">"
+			"		</unique_pos>"
+			"		<acceleration default=\"0.5\"/>"
+			"		<velocity default=\"0.5\"/>"
+			"		<deceleration default=\"0.5\"/>"
+			"		<unique_check type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_all\">"
 			"			<check_all/>"
 			"			<check_none/>"
 			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
@@ -608,7 +614,7 @@ namespace aris::plan
 			"					</group>"
 			"				</unique>"
 			"			</group>"
-			"		</unique>"
+			"		</unique_check>"
 			"	</group>"
 			"</rc>");
 	}
@@ -722,8 +728,8 @@ namespace aris::plan
 			norm_pos = aris::dynamic::s_norm(3, relative_pa);
 			norm_ori = aris::dynamic::s_norm(3, relative_pa + 3);
 
-			aris::dynamic::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000, mv_param->acceleration / 1000 / 1000, mv_param->deceleration / 1000 / 1000, p, v, a, pos_total_count);
-			aris::dynamic::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000, mv_param->angular_acceleration / 1000 / 1000, mv_param->angular_deceleration / 1000 / 1000, p, v, a, ori_total_count);
+			aris::plan::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000, mv_param->acceleration / 1000 / 1000, mv_param->deceleration / 1000 / 1000, p, v, a, pos_total_count);
+			aris::plan::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000, mv_param->angular_acceleration / 1000 / 1000, mv_param->angular_deceleration / 1000 / 1000, p, v, a, ori_total_count);
 
 			pos_ratio = pos_total_count < ori_total_count ? double(pos_total_count) / ori_total_count : 1.0;
 			ori_ratio = ori_total_count < pos_total_count ? double(ori_total_count) / pos_total_count : 1.0;
@@ -731,8 +737,8 @@ namespace aris::plan
 			std::cout << "pos count before:" << pos_total_count << std::endl;
 			std::cout << "ori count before:" << ori_total_count << std::endl;
 
-			aris::dynamic::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000 * pos_ratio, mv_param->acceleration / 1000 / 1000 * pos_ratio* pos_ratio, mv_param->deceleration / 1000 / 1000 * pos_ratio* pos_ratio, p, v, a, pos_total_count);
-			aris::dynamic::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000 * ori_ratio, mv_param->angular_acceleration / 1000 / 1000 * ori_ratio * ori_ratio, mv_param->angular_deceleration / 1000 / 1000 * ori_ratio * ori_ratio, p, v, a, ori_total_count);
+			aris::plan::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000 * pos_ratio, mv_param->acceleration / 1000 / 1000 * pos_ratio* pos_ratio, mv_param->deceleration / 1000 / 1000 * pos_ratio* pos_ratio, p, v, a, pos_total_count);
+			aris::plan::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000 * ori_ratio, mv_param->angular_acceleration / 1000 / 1000 * ori_ratio * ori_ratio, mv_param->angular_deceleration / 1000 / 1000 * ori_ratio * ori_ratio, p, v, a, ori_total_count);
 
 			std::cout << "pos count after:" << pos_total_count << std::endl;
 			std::cout << "ori count after:" << ori_total_count << std::endl;
@@ -740,14 +746,24 @@ namespace aris::plan
 
 		double pa[6]{ 0,0,0,0,0,0 }, pm[16], pm2[16];
 
-		aris::dynamic::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000 * pos_ratio, mv_param->acceleration / 1000 / 1000 * pos_ratio* pos_ratio, mv_param->deceleration / 1000 / 1000 * pos_ratio* pos_ratio, p, v, a, pos_total_count);
+		aris::plan::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000 * pos_ratio, mv_param->acceleration / 1000 / 1000 * pos_ratio* pos_ratio, mv_param->deceleration / 1000 / 1000 * pos_ratio* pos_ratio, p, v, a, pos_total_count);
 		if (norm_pos > 1e-10)aris::dynamic::s_vc(3, p / norm_pos, relative_pa, pa);
 
-		aris::dynamic::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000 * ori_ratio, mv_param->angular_acceleration / 1000 / 1000 * ori_ratio * ori_ratio, mv_param->angular_deceleration / 1000 / 1000 * ori_ratio * ori_ratio, p, v, a, ori_total_count);
+		aris::plan::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000 * ori_ratio, mv_param->angular_acceleration / 1000 / 1000 * ori_ratio * ori_ratio, mv_param->angular_deceleration / 1000 / 1000 * ori_ratio * ori_ratio, p, v, a, ori_total_count);
 		if (norm_ori > 1e-10)aris::dynamic::s_vc(3, p / norm_ori, relative_pa + 3, pa + 3);
 
 		aris::dynamic::s_pa2pm(pa, pm);
 		aris::dynamic::s_pm_dot_pm(begin_pm, pm, pm2);
+
+		/////////////////////////////////////////////
+		//////////////////
+		auto &gm = param.model->generalMotionPool().at(0);
+		aris::dynamic::dsp(4, 4, *gm.mpm());
+		/////////////////
+
+		aris::dynamic::dsp(4, 4, *gm.makI().pm());
+		aris::dynamic::dsp(4, 4, *gm.makJ().pm());
+		/////////////////////////////////////////////
 
 		// 反解计算电机位置 //
 		param.model->generalMotionPool().at(0).setMpm(pm2);
@@ -963,7 +979,7 @@ namespace aris::plan
 			{
 				double p, v, a;
 				aris::Size t_count;
-				aris::dynamic::moveAbsolute(target.count, param->begin_joint_pos_vec[i], param->joint_pos_vec[i], param->vel / 1000, param->acc / 1000 / 1000, param->dec / 1000 / 1000, p, v, a, t_count);
+				aris::plan::moveAbsolute(target.count, param->begin_joint_pos_vec[i], param->joint_pos_vec[i], param->vel / 1000, param->acc / 1000 / 1000, param->dec / 1000 / 1000, p, v, a, t_count);
 				target.model->motionPool().at(i).setMp(p);
 				total_count = std::max(total_count, t_count);
 			}

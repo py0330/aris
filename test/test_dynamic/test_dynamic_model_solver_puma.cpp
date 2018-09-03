@@ -46,11 +46,11 @@ auto createPumaModel(const double (*j_pos)[3], const double (*j_axis)[3], const 
 
 	// add joint //
 	auto &j1 = model->addRevoluteJoint(p1, model->ground(), j_pos[0], j_axis[0]);
-	auto &j2 = model->addRevoluteJoint(p2, p1, j_pos[1], j_axis[1]);
+	auto &j2 = model->addRevoluteJoint(p1, p2, j_pos[1], j_axis[1]);
 	auto &j3 = model->addRevoluteJoint(p3, p2, j_pos[2], j_axis[2]);
-	auto &j4 = model->addRevoluteJoint(p4, p3, j_pos[3], j_axis[3]);
+	auto &j4 = model->addRevoluteJoint(p3, p4, j_pos[3], j_axis[3]);
 	auto &j5 = model->addRevoluteJoint(p5, p4, j_pos[4], j_axis[4]);
-	auto &j6 = model->addRevoluteJoint(p6, p5, j_pos[5], j_axis[5]);
+	auto &j6 = model->addRevoluteJoint(p5, p6, j_pos[5], j_axis[5]);
 
 	// add actuation //
 	auto &m1 = model->addMotion(j1);

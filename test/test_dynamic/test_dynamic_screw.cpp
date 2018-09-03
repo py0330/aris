@@ -73,7 +73,7 @@ void test_pm_operation()
 	s_inv_pm_dot_v3(inv_pm, from_v1_ld, 2, result, 3);
 	if (!s_is_equal(3, result, to_v1_ld, error))std::cout << "\"s_pm_dot_v3 with ld\" failed" << std::endl;
 }
-void test_cross()
+void test_cross_3()
 {
 	double result[36];
 	
@@ -273,6 +273,10 @@ void test_cross()
 
 	s_c3s_n(2, a24, 5, b24, 4, c24, 3);
 	if (!s_is_equal(9, c24, r24, error))std::cout << "\"s_c3s_n with ld\" failed" << std::endl;
+}
+void test_cross_f()
+{
+	double result[36];
 
 	const double cmf[]{ 0,-0.63,0.52,0,0,0,0.63,0,-0.41,0,0,0,-0.52,0.41,0,0,0,0,0,-0.3,0.2,0,-0.63,0.52,0.3,0,-0.1,0.63,0,-0.41,-0.2,0.1,0,-0.52,0.41,0 };
 
@@ -308,7 +312,7 @@ void test_cross()
 
 	const double vs7[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
 	const double f7[]{ 0.99,0.1,-0.33,0.2,0.77,0.3,-0.66,0.4,0.22,0.5,-0.44,0.6 };
-	const double rf7[]{0.152075,0.0075,0.077,-0.015,-0.162525,0.0075,-0.0286,-0.00075,-0.00385,0.0015,0.0506,-0.00075};
+	const double rf7[]{ 0.152075,0.0075,0.077,-0.015,-0.162525,0.0075,-0.0286,-0.00075,-0.00385,0.0015,0.0506,-0.00075 };
 	double cf7[]{ 0.6083,0.03,0.308,-0.06,-0.6501,0.03,-0.1144,-0.003,-0.0154,0.006,0.2024,-0.003 };
 
 	const double vs8[]{ 0.1,0,0,0,0,0.2,0,0,0,0,0.3,0,0,0,0,0.41,0,0,0,0,0.52,0,0,0,0,0.63,0,0,0,0 };
@@ -403,7 +407,7 @@ void test_cross()
 	s_cf(vs1, f1, cf1);
 	if (!s_is_equal(6, rf1, cf1, error))std::cout << "\"s_cf\" failed" << std::endl;
 
-	s_cf(vs2,4, f2,3, cf2,2);
+	s_cf(vs2, 4, f2, 3, cf2, 2);
 	if (!s_is_equal(12, rf2, cf2, error))std::cout << "\"s_cf with ld\" failed" << std::endl;
 
 	s_cf(0.25, vs3, f3, cf3);
@@ -415,7 +419,7 @@ void test_cross()
 	s_cf_n(2, vs5, f5, cf5);
 	if (!s_is_equal(12, rf5, cf5, error))std::cout << "\"s_cf_n\" failed" << std::endl;
 
-	s_cf_n(2, vs6, 5, f6, 4, cf6,3);
+	s_cf_n(2, vs6, 5, f6, 4, cf6, 3);
 	if (!s_is_equal(18, rf6, cf6, error))std::cout << "\"s_cf_n with ld\" failed" << std::endl;
 
 	s_cf_n(2, 0.25, vs7, f7, cf7);
@@ -427,7 +431,7 @@ void test_cross()
 	s_cfa(vs9, f9, cf9);
 	if (!s_is_equal(6, rf9, cf9, error))std::cout << "\"s_cfa\" failed" << std::endl;
 
-	s_cfa(vs10, 4, f10, 3, cf10,2);
+	s_cfa(vs10, 4, f10, 3, cf10, 2);
 	if (!s_is_equal(12, rf10, cf10, error))std::cout << "\"s_cfa with ld\" failed" << std::endl;
 
 	s_cfa(0.25, vs11, f11, cf11);
@@ -471,6 +475,10 @@ void test_cross()
 
 	s_cfs_n(2, vs24, 5, f24, 4, cf24, 3);
 	if (!s_is_equal(9, cf24, rf24, error))std::cout << "\"s_cfs_n with ld\" failed" << std::endl;
+}
+void test_cross_v()
+{
+	double result[36];
 
 	const double cmv[]{ 0,-0.63,0.52,0,-0.3,0.2,0.63,0,-0.41,0.3,0,-0.1,-0.52,0.41,0,-0.2,0.1,0,0,0,0,0,-0.63,0.52,	0,0,0,0.63,0,-0.41,0,0,0,-0.52,0.41,0 };
 
@@ -553,7 +561,7 @@ void test_cross()
 	const double w16[]{ 0.99,0.15,0,0,-0.33,0.21,0,0,0.77,-0.32,0,0,-0.66,0.4,0,0,0.22,0.5,0,0,-0.44,0.6,0,0 };
 	const double rv16[]{ 0.473575,0.042825,0,0.2685,0.306425,0,0.725975,-0.380475,0,1.02815,0.44425,0,0.83115,0.5765,0,-0.23165,-0.66575,0 };
 	double cv16[]{ 0.36,0.125,0,0.23,0.235,0,0.85,-0.375,0,1.12,0.445,0,0.89,0.575,0,-0.34,-0.665,0 };
-	
+
 	const double v17[]{ 0.1,0.2,0.3,0.41,0.52,0.63 };
 	const double w17[]{ 0.99,-0.33,0.77,-0.66,0.22,-0.44 };
 	const double rv17[]{ -0.4543,-0.154,0.4961,0.3674,0.2354,-0.4334 };
@@ -1834,7 +1842,9 @@ void test_screw()
 	std::cout << std::endl << "-----------------test screw--------------------" << std::endl;
 
 	test_pm_operation();
-	test_cross();
+	test_cross_3();
+	test_cross_f();
+	test_cross_v();
 	test_transform();
 	test_variable_change();
 	test_coordinate_transform();

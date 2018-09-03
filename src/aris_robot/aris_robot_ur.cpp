@@ -7,7 +7,7 @@ using namespace aris::dynamic;
 namespace aris::robot
 {
 	// 具体参数参考MR里面147-158页 //
-	auto createUr5Model()->std::unique_ptr<aris::dynamic::Model>
+	auto createModelUr5(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model>
 	{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
 
@@ -123,14 +123,25 @@ namespace aris::robot
 		auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ");
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
+		// change robot pose //
+		if (robot_pm)
+		{
+			p1.setPm(s_pm_dot_pm(robot_pm, *p1.pm()));
+			p2.setPm(s_pm_dot_pm(robot_pm, *p2.pm()));
+			p3.setPm(s_pm_dot_pm(robot_pm, *p3.pm()));
+			p4.setPm(s_pm_dot_pm(robot_pm, *p4.pm()));
+			p5.setPm(s_pm_dot_pm(robot_pm, *p5.pm()));
+			p6.setPm(s_pm_dot_pm(robot_pm, *p6.pm()));
+			j1.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ().prtPm()));
+		}
+
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::Ur5InverseKinematicSolver>();
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
-		auto &inverse_dynamic = model->solverPool().add<InverseDynamicSolver>();
 
 		return model;
 	};
-	auto createUr5Controller()->std::unique_ptr<aris::control::Controller>
+	auto createControllerUr5()->std::unique_ptr<aris::control::Controller>
 	{
 		std::unique_ptr<aris::control::Controller> controller(new aris::control::EthercatController);
 
@@ -170,5 +181,19 @@ namespace aris::robot
 		}
 
 		return controller;
+	}
+	auto createPlanRootUr5()->std::unique_ptr<aris::plan::PlanRoot>
+	{
+		std::unique_ptr<aris::plan::PlanRoot> plan_root(new aris::plan::PlanRoot);
+
+		plan_root->planPool().add<aris::plan::EnablePlan>();
+		auto &rc = plan_root->planPool().add<aris::plan::RecoverPlan>();
+		rc.command().findByName("group")->findByName("unique_pos")->findByName("pq")->loadXmlStr("<pq default=\"{0,0.63,0.316,0,0,0,1}\"/>");
+		rc.command().findByName("group")->findByName("unique_pos")->findByName("pm")->loadXmlStr("<pm default=\"{1,0,0,0,0,1,0,0.63,0,0,1,0.316,0,0,0,1}\"/>");
+		rc.command().findByName("group")->findByName("unique_pos")->findByName("group")->findByName("pe")->loadXmlStr("<pe default=\"{0,0.63,0.316,0,0,0}\"/>");
+		plan_root->planPool().add<aris::plan::MovePlan>();
+		plan_root->planPool().add<aris::plan::MoveJ>();
+
+		return plan_root;
 	}
 }

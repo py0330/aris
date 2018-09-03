@@ -1,6 +1,8 @@
 ﻿#ifndef ARIS_CONTROL_RT_TIMER_H
 #define ARIS_CONTROL_RT_TIMER_H
 
+#include <cstdint>
+
 namespace aris::control
 {
 	struct Handle { virtual ~Handle() = default; };

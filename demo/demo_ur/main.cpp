@@ -186,7 +186,7 @@ int main()
 	*/
 
 	
-	auto r = aris::robot::createUr5Model();
+	auto r = aris::robot::createModelUr5();
 
 	r->saveXmlFile("C:\\Users\\py033\\Desktop\\ur5.xml");
 
@@ -256,11 +256,11 @@ int main()
 
 		aris::Size c = param.count_;
 
-		moveAbsolute(c, 0.0, 1.0, 1 / 1e3, 10.0 / 1e6, 10.0 / 1e6, p, v, a, t0);
+		aris::plan::moveAbsolute(c, 0.0, 1.0, 1 / 1e3, 10.0 / 1e6, 10.0 / 1e6, p, v, a, t0);
 
 		if (c < t0)
 		{
-			moveAbsolute(c, 0.0, 1.0, 1 / 1e3, 10.0 / 1e6, 10.0 / 1e6, p, v, a, t0);
+			aris::plan::moveAbsolute(c, 0.0, 1.0, 1 / 1e3, 10.0 / 1e6, 10.0 / 1e6, p, v, a, t0);
 			param.model_->generalMotionPool().at(0).setMpe(std::array<double, 6>{0.5 + 0.2*p, 0, 0.35, 0, 0, PI}.data(), "321");
 		}
 
