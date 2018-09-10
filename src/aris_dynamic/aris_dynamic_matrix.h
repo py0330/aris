@@ -132,6 +132,48 @@ namespace aris::dynamic
 		}
 	}
 	auto inline s_eye(Size m, double *A) noexcept->void { return s_eye(m, A, m); }
+	template <typename AType>
+	auto inline s_rmx(double angle, double *A, AType a_t) noexcept->void
+	{
+		A[at(0, 0, a_t)] = 1.0;
+		A[at(0, 1, a_t)] = 0.0;
+		A[at(0, 2, a_t)] = 0.0;
+		A[at(1, 0, a_t)] = 0.0;
+		A[at(1, 1, a_t)] = std::cos(angle);
+		A[at(1, 2, a_t)] = -std::sin(angle);
+		A[at(2, 0, a_t)] = 0.0;
+		A[at(2, 1, a_t)] = std::sin(angle);
+		A[at(2, 2, a_t)] = std::cos(angle);
+	}
+	auto inline s_rmx(double angle, double *A) noexcept->void { return s_rmx(angle, A, 3); }
+	template <typename AType>
+	auto inline s_rmy(double angle, double *A, AType a_t) noexcept->void
+	{
+		A[at(0, 0, a_t)] = std::cos(angle);
+		A[at(0, 1, a_t)] = 0.0;
+		A[at(0, 2, a_t)] = std::sin(angle);
+		A[at(1, 0, a_t)] = 0.0;
+		A[at(1, 1, a_t)] = 1.0;
+		A[at(1, 2, a_t)] = 0.0;
+		A[at(2, 0, a_t)] = -std::sin(angle);
+		A[at(2, 1, a_t)] = 0.0;
+		A[at(2, 2, a_t)] = std::cos(angle);
+	}
+	auto inline s_rmy(double angle, double *A) noexcept->void { return s_rmy(angle, A, 3); }
+	template <typename AType>
+	auto inline s_rmz(double angle, double *A, AType a_t) noexcept->void
+	{
+		A[at(0, 0, a_t)] = std::cos(angle);
+		A[at(0, 1, a_t)] = -std::sin(angle);
+		A[at(0, 2, a_t)] = 0.0;
+		A[at(1, 0, a_t)] = std::sin(angle);
+		A[at(1, 1, a_t)] = std::cos(angle);
+		A[at(1, 2, a_t)] = 0.0;
+		A[at(2, 0, a_t)] = 0.0;
+		A[at(2, 1, a_t)] = 0.0;
+		A[at(2, 2, a_t)] = 1.0;
+	}
+	auto inline s_rmz(double angle, double *A) noexcept->void { return s_rmz(angle, A, 3); }
 
 	template<typename XType>
 	auto inline s_norm(Size n, const double *x, XType x_t) noexcept->double
@@ -735,8 +777,8 @@ namespace aris::dynamic
 		// r |............|
 		//   | -1         |           
 		//   |    -1      |
-		//   |       …    |
-		// n |         -1 |
+		//   |       …   |
+		// n [         -1 ]
 		// 
 		// 于是y的lls解中需求通解y_s的系数，它以下方程的最小二乘解：
 		// 

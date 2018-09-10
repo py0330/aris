@@ -230,7 +230,7 @@ namespace aris::dynamic
 		auto cptPrtAs(double *as)const noexcept->void { s_inv_tv(*pm(), this->as(), as); }
 
 		virtual ~Part();
-		explicit Part(const std::string &name = "part", const double *prt_im = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
+		explicit Part(const std::string &name = "part", const double *prt_iv = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
 		Part(const Part &other);
 		Part(Part &&other);
 		Part& operator=(const Part &other);

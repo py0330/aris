@@ -45,6 +45,37 @@ void test_basic_operation()
 	}
 
 }
+void test_specific_matrix()
+{
+	double result[36];
+	
+	const double eye3[9]{ 1,0,0,0,1,0,0,0,1 };
+
+	s_eye(3, result);
+	if (!s_is_equal(9, result, eye3, error))std::cout << __FILE__ << __LINE__ << " failed" << std::endl;
+	s_eye(3, result, 4);
+	if (!s_is_equal(3, 3, result, 4, eye3, 3, error))std::cout << __FILE__ << __LINE__ << " failed" << std::endl;
+
+
+	const double rmx[9]{ 1,0,0,0,0.696706709347165, - 0.717356090899523,0,0.717356090899523,0.696706709347165 };
+	const double rmy[9]{ 0.696706709347165,0,0.717356090899523,	0,1,0,- 0.717356090899523,0,0.696706709347165 };
+	const double rmz[9]{ 0.696706709347165, - 0.717356090899523,0,0.717356090899523,0.696706709347165,0,0,0,1 };
+
+	s_rmx(0.8, result);
+	if (!s_is_equal(9, result, rmx, error))std::cout << __FILE__ << __LINE__ << " failed" << std::endl;
+	s_rmx(0.8, result, 4);
+	if (!s_is_equal(3, 3, result, 4, rmx, 3, error))std::cout << __FILE__ << __LINE__ << " failed" << std::endl;
+
+	s_rmy(0.8, result);
+	if (!s_is_equal(9, result, rmy, error))std::cout << __FILE__ << __LINE__ << " failed" << std::endl;
+	s_rmy(0.8, result, 4);
+	if (!s_is_equal(3, 3, result, 4, rmy, 3, error))std::cout << __FILE__ << __LINE__ << " failed" << std::endl;
+
+	s_rmz(0.8, result);
+	if (!s_is_equal(9, result, rmz, error))std::cout << __FILE__ << __LINE__ << " failed" << std::endl;
+	s_rmz(0.8, result, 4);
+	if (!s_is_equal(3, 3, result, 4, rmz, 3, error))std::cout << __FILE__ << __LINE__ << " failed" << std::endl;
+}
 void test_multiply()
 {
 	const double alpha{ 0.255095115459269 };
@@ -1191,6 +1222,7 @@ void test_matrix()
 	std::cout << std::endl << "-----------------test matrix--------------------" << std::endl;
 
 	test_basic_operation();
+	test_specific_matrix();
 	test_multiply();
 	test_llt();
 	test_householder();

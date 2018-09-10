@@ -58,7 +58,7 @@ namespace aris::dynamic
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
-		auto cptGeneralJacobi()->void;
+		auto cptGeneralJacobi()->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
 		auto mJ()->Size;// = part_number x 6
 		auto nJ()->Size;// = motion_number + general_motion_number x 6
 		auto Jg()->double *;// dimension : mJ x nJ 
