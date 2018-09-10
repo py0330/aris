@@ -65,8 +65,7 @@ namespace aris::dynamic
 		std::vector<Size> p_vec;
 		Size *p;
 		double dm[36], iv[10];
-		double pm1[16], pm2[16];
-		double *pm, *last_pm;
+		double pm1[16], pm2[16], *pm, *last_pm;
 		double xp[6], bp[6];
 		double *bc, *xc;
 		std::vector<double> bc_vec, xc_vec;
@@ -474,7 +473,6 @@ namespace aris::dynamic
 			for (auto &d : diag_pool_)
 			{
 				std::swap(d.pm, d.last_pm);
-
 				double tem[16];
 				s_ps2pm(d.xp, tem);
 				s_pm2pm(tem, d.last_pm, d.pm);
@@ -984,8 +982,8 @@ namespace aris::dynamic
 			}
 		}
 
-		// 划分子系统,将相关的Part放到一起 //
-		std::vector<std::vector<const Part*> > part_pool_pool_;
+		// 划分出相关的Part和Relation //
+		std::vector<std::tuple<std::vector<const Part*>, std::vector<Relation> > > part_and_relation_vec;
 		while (active_part_pool.size() > 1)
 		{
 			std::function<void(std::vector<const Part *> &part_pool_, std::vector<const Part *> &left_part_pool, std::vector<Relation> &relation_pool, const Part *part)> addPart;
@@ -1008,53 +1006,47 @@ namespace aris::dynamic
 					}
 				}
 			};
-			
-			part_pool_pool_.push_back(std::vector<const Part*>());
-			addPart(part_pool_pool_.back(), active_part_pool, relation_pool, active_part_pool.at(1));
-		}
 
-		imp_->subsys_pool_.clear();
-		// 分配子系统的内存 //
-		Size max_fm{ 0 }, max_fn{ 0 }, max_gm{ 0 }, max_gn{ 0 };
-		for (auto &part_pool : part_pool_pool_)
-		{
-			imp_->subsys_pool_.push_back(SubSystem());
-			auto &sys = imp_->subsys_pool_.back();
-			sys.max_error_ = maxError();
+			// insert part_vec and rel_vec //
+			part_and_relation_vec.push_back(std::make_tuple(std::vector<const Part*>(), std::vector<Relation>()));
+			auto &part_vec = std::get<0>(part_and_relation_vec.back());
+			auto &rel_vec = std::get<1>(part_and_relation_vec.back());
 
-			// 寻找本系统的relation_pool
-			std::vector<Relation> sys_relation_pool;
+			// add related part //
+			addPart(part_vec, active_part_pool, relation_pool, active_part_pool.at(1));
+
+			// add related relation //
 			for (auto &rel : relation_pool)
 			{
-				if (std::find_if(part_pool.begin(), part_pool.end(), [&rel, this](const Part *prt) { return prt != &model().ground() && (prt == rel.prtI || prt == rel.prtJ); }) != part_pool.end())
+				if (std::find_if(part_vec.begin(), part_vec.end(), [&rel, this](const Part *prt) { return prt != &model().ground() && (prt == rel.prtI || prt == rel.prtJ); }) != part_vec.end())
 				{
-					sys_relation_pool.push_back(rel);
+					rel_vec.push_back(rel);
 				}
 			}
 
 			// 对sys的part和relation排序 //
-			for (Size i = 0; i < std::min(part_pool.size(), sys_relation_pool.size()); ++i)
+			for (Size i = 0; i < std::min(part_vec.size(), rel_vec.size()); ++i)
 			{
 				// 先对part排序，找出下一个跟上一个part联系的part
-				std::sort(part_pool.begin() + i, part_pool.end(), [i, this, &sys_relation_pool](const Part* a, const Part* b)
+				std::sort(part_vec.begin() + i, part_vec.end(), [i, this, &rel_vec](const Part* a, const Part* b)
 				{
 					if (a == &model().ground()) return true; // 地面最优先
 					if (b == &model().ground()) return false; // 地面最优先
 					if (i == 0)return a->id() < b->id();// 第一轮先找地面或其他地面，防止下面的索引i-1出错
-					if (b == sys_relation_pool[i - 1].prtI) return false;
-					if (b == sys_relation_pool[i - 1].prtJ) return false;
-					if (a == sys_relation_pool[i - 1].prtI) return true;
-					if (a == sys_relation_pool[i - 1].prtJ) return true;
+					if (b == rel_vec[i - 1].prtI) return false;
+					if (b == rel_vec[i - 1].prtJ) return false;
+					if (a == rel_vec[i - 1].prtI) return true;
+					if (a == rel_vec[i - 1].prtJ) return true;
 					return a->id() < b->id();
 				});
 				// 再插入连接新part的relation
-				std::sort(sys_relation_pool.begin() + i, sys_relation_pool.end(), [i, this, &sys, &part_pool](Relation a, Relation b)
+				std::sort(rel_vec.begin() + i, rel_vec.end(), [i, this, &part_vec](Relation a, Relation b)
 				{
-					auto pend = part_pool.begin() + i + 1;
-					auto a_part_i = std::find_if(part_pool.begin(), pend, [a](const Part* p)->bool { return p == a.prtI; });
-					auto a_part_j = std::find_if(part_pool.begin(), pend, [a](const Part* p)->bool { return p == a.prtJ; });
-					auto b_part_i = std::find_if(part_pool.begin(), pend, [b](const Part* p)->bool { return p == b.prtI; });
-					auto b_part_j = std::find_if(part_pool.begin(), pend, [b](const Part* p)->bool { return p == b.prtJ; });
+					auto pend = part_vec.begin() + i + 1;
+					auto a_part_i = std::find_if(part_vec.begin(), pend, [a](const Part* p)->bool { return p == a.prtI; });
+					auto a_part_j = std::find_if(part_vec.begin(), pend, [a](const Part* p)->bool { return p == a.prtJ; });
+					auto b_part_i = std::find_if(part_vec.begin(), pend, [b](const Part* p)->bool { return p == b.prtI; });
+					auto b_part_j = std::find_if(part_vec.begin(), pend, [b](const Part* p)->bool { return p == b.prtJ; });
 
 					bool a_is_ok = (a_part_i == pend) != (a_part_j == pend);
 					bool b_is_ok = (b_part_i == pend) != (b_part_j == pend);
@@ -1066,14 +1058,28 @@ namespace aris::dynamic
 					else return false;
 				});
 			}
+		}
+		
+		// 构建子系统 //
+		imp_->subsys_pool_.clear();
+		Size max_F_size{ 0 }, max_fm{ 0 }, max_fn{ 0 }, max_G_size{ 0 }, max_gm{ 0 }, max_gn{ 0 };
+		for (auto &part_and_relation : part_and_relation_vec)
+		{
+			auto part_vec = std::get<0>(part_and_relation);
+			auto rel_vec = std::get<1>(part_and_relation);
+
+			// 插入SubSystem //
+			imp_->subsys_pool_.push_back(SubSystem());
+			auto &sys = imp_->subsys_pool_.back();
+			sys.max_error_ = maxError();
 
 			// 判断是否有地面 //
-			sys.has_ground_ = (part_pool.front() == &model().ground());
+			sys.has_ground_ = (part_vec.front() == &model().ground());
 
 			// 制造diag pool //
 			sys.diag_pool_.clear();
-			sys.diag_pool_.resize(part_pool.size());
-			sys.diag_pool_.at(0).part = part_pool.at(0);
+			sys.diag_pool_.resize(part_vec.size());
+			sys.diag_pool_.at(0).part = part_vec.at(0);
 			sys.diag_pool_.at(0).rd = nullptr;
 			sys.diag_pool_.at(0).pm = sys.diag_pool_.at(0).pm1;
 			sys.diag_pool_.at(0).last_pm = sys.diag_pool_.at(0).pm2;
@@ -1081,20 +1087,19 @@ namespace aris::dynamic
 			sys.diag_pool_.at(0).bc = sys.diag_pool_.at(0).bc_vec.data();
 			sys.diag_pool_.at(0).xc_vec.resize(6);
 			sys.diag_pool_.at(0).xc = sys.diag_pool_.at(0).xc_vec.data();
-
 			for (Size i = 1; i < sys.diag_pool_.size(); ++i)
 			{
 				auto &diag = sys.diag_pool_.at(i);
 
-				diag.rel_ = sys_relation_pool.at(i - 1);
+				diag.rel_ = rel_vec.at(i - 1);
 				// 如果relation的prtI不是对角线的杆件，那么进行反转
-				if (diag.rel_.prtI != part_pool.at(i))
+				if (diag.rel_.prtI != part_vec.at(i))
 				{
 					std::swap(diag.rel_.prtI, diag.rel_.prtJ);
 					for (auto &c : diag.rel_.cst_pool_)c.is_I = !c.is_I;
 				}
 
-				diag.part = part_pool.at(i);
+				diag.part = part_vec.at(i);
 				diag.rd = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&](Diag &d) {return d.part == diag.rel_.prtJ; });
 				diag.pm = diag.pm1;
 				diag.last_pm = diag.pm2;
@@ -1140,12 +1145,12 @@ namespace aris::dynamic
 
 			// 制造remainder pool //
 			sys.remainder_pool_.clear();
-			sys.remainder_pool_.resize(sys_relation_pool.size() - part_pool.size() + 1);
+			sys.remainder_pool_.resize(rel_vec.size() - part_vec.size() + 1);
 			for (Size i = 0; i < sys.remainder_pool_.size(); ++i)
 			{
 				auto &r = sys.remainder_pool_.at(i);
 
-				r.rel_ = sys_relation_pool.at(i + sys.diag_pool_.size() - 1);
+				r.rel_ = rel_vec.at(i + sys.diag_pool_.size() - 1);
 				r.i_diag = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&r](Diag& d) {return r.rel_.prtI == d.part; });
 				r.j_diag = &*std::find_if(sys.diag_pool_.begin(), sys.diag_pool_.end(), [&r](Diag& d) {return r.rel_.prtJ == d.part; });
 				r.bc_vec.resize(r.rel_.size);
@@ -1193,11 +1198,9 @@ namespace aris::dynamic
 				}
 			}
 
-			// 计算所需要内存 //
+			// 更新子系统尺寸 //
 			sys.fm = 0;
 			sys.fn = 0;
-			sys.fr = 0;
-
 			for (auto d = sys.diag_pool_.begin() + 1; d < sys.diag_pool_.end(); ++d)
 			{
 				d->rows = sys.fm;
@@ -1205,14 +1208,15 @@ namespace aris::dynamic
 			}
 			for (auto &r : sys.remainder_pool_) sys.fn += r.rel_.dim_;
 
-			max_fm = std::max(sys.fm, max_fm);
-			max_fn = std::max(sys.fn, max_fn);
-
 			sys.gm = sys.hasGround() ? sys.fm : sys.fm + 6;
 			sys.gn = sys.hasGround() ? sys.fm : sys.fm + 6;
 
-			max_gm = std::max(sys.gm, max_gm);
-			max_gn = std::max(sys.gn, max_gn);
+			max_F_size = std::max(max_F_size, sys.fm * sys.fn);
+			max_fm = std::max(max_fm, sys.fm);
+			max_fn = std::max(max_fn, sys.fn);
+			max_G_size = std::max(max_G_size, sys.gm * sys.gn);
+			max_gm = std::max(max_gm, sys.gm);
+			max_gn = std::max(max_gn, sys.gn);
 		}
 
 		// 分配根据part id寻找diag的vector //
@@ -1228,28 +1232,28 @@ namespace aris::dynamic
 
 		// 分配计算所需内存 //
 		imp_->F_.clear();
-		imp_->F_.resize(max_fm*max_fn, 0.0);
+		imp_->F_.resize(max_F_size, 0.0);
 		imp_->FU_.clear();
-		imp_->FU_.resize(max_fm*max_fn, 0.0);
+		imp_->FU_.resize(max_F_size, 0.0);
 		imp_->FT_.clear();
 		imp_->FT_.resize(std::max(max_fm, max_fn), 0.0);
 		imp_->FP_.clear();
 		imp_->FP_.resize(std::max(max_fm, max_fn), 0);
 		imp_->G_.clear();
-		imp_->G_.resize(max_gm*max_gm, 0.0);
+		imp_->G_.resize(max_G_size, 0.0);
 		imp_->GU_.clear();
-		imp_->GU_.resize(max_gm*max_gm, 0.0);
+		imp_->GU_.resize(max_G_size, 0.0);
 		imp_->GT_.clear();
-		imp_->GT_.resize(max_gm, 0.0);
+		imp_->GT_.resize(std::max(max_gm, max_gn), 0.0);
 		imp_->GP_.clear();
-		imp_->GP_.resize(max_gm, 0);
+		imp_->GP_.resize(std::max(max_gm, max_gn), 0);
 
 		imp_->S_.clear();
 		imp_->S_.resize(max_fm*max_fm, 0.0);
 		imp_->beta_.clear();
-		imp_->beta_.resize(max_gm, 0.0); // beta可能会存储无地面处的未知量
+		imp_->beta_.resize(max_gn, 0.0); // beta可能会存储无地面处的未知量
 		imp_->QT_DOT_G_.clear();
-		imp_->QT_DOT_G_.resize(max_gm*max_gm, 0.0);
+		imp_->QT_DOT_G_.resize(max_G_size, 0.0);
 
 		// 这里必须给xcf等分配尽量大的内存，因为s_house_holder_ut_q_dot要求x > b
 		imp_->xcf_.clear();
