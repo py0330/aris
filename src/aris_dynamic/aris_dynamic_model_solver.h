@@ -59,8 +59,8 @@ namespace aris::dynamic
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
 		auto cptGeneralJacobi()->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
-		auto mJ()->Size;// = part_number x 6
-		auto nJ()->Size;// = motion_number + general_motion_number x 6
+		auto mJg()->Size;// = part_number x 6
+		auto nJg()->Size;// = motion_number + general_motion_number x 6
 		auto Jg()->double *;// dimension : mJ x nJ 
 		auto cg()->double *;// dimension : mJ x 1
 		auto cptGeneralInverseDynamicMatrix()->void;// torque = M * theta_dot_dot + h
@@ -90,6 +90,10 @@ namespace aris::dynamic
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
+		auto cptJacobi()->void;
+		auto Jf()const->const double *;// inverse jacobi   mot_vs = Ji * ee_vs
+		auto mJf()const->Size;// equal mot num
+		auto nJf()const->Size;// equal ee num * 6
 
 		virtual ~ForwardKinematicSolver();
 		explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
@@ -97,6 +101,10 @@ namespace aris::dynamic
 		ForwardKinematicSolver(ForwardKinematicSolver &&other);
 		ForwardKinematicSolver& operator=(const ForwardKinematicSolver &other);
 		ForwardKinematicSolver& operator=(ForwardKinematicSolver &&other);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 	};
 	class InverseKinematicSolver :public UniversalSolver
 	{
@@ -108,6 +116,10 @@ namespace aris::dynamic
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
+		auto cptJacobi()->void;
+		auto Ji()const->const double *;// inverse jacobi   mot_vs = Ji * ee_vs
+		auto mJi()const->Size;// equal mot num
+		auto nJi()const->Size;// equal ee num * 6
 
 		virtual ~InverseKinematicSolver();
 		explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
@@ -115,6 +127,10 @@ namespace aris::dynamic
 		InverseKinematicSolver(InverseKinematicSolver &&other);
 		InverseKinematicSolver& operator=(const InverseKinematicSolver &other);
 		InverseKinematicSolver& operator=(InverseKinematicSolver &&other);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 	};
 	class ForwardDynamicSolver :public UniversalSolver
 	{
@@ -153,7 +169,6 @@ namespace aris::dynamic
 		InverseDynamicSolver& operator=(InverseDynamicSolver &&other);
 	};
 
-
 	class Ur5InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
@@ -168,7 +183,6 @@ namespace aris::dynamic
 	private:
 		int which_root_{ 0 };
 	};
-
 
 	class PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{

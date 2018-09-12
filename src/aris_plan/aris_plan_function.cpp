@@ -109,5 +109,4 @@ namespace aris::plan
 			current_acc = current_acc;
 		}
 	}
-
 }

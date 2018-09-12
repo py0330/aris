@@ -192,5 +192,4 @@ void test_control_ethercat()
 	test_pdo_xml();
 	test_sdo_code();
 	test_sdo_xml();
-	//test_data_logger();
 }

@@ -25,6 +25,89 @@ void test_single_body_universal()
 
 	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
 }
+void test_servo_press_universal()
+{
+	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+
+	// 设置重力 //
+	const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
+	model->environment().setGravity(gravity);
+
+	// 添加变量 //
+	model->calculator().addVariable("PI", aris::core::Matrix(aris::PI));
+
+	// add part //
+	auto &p1 = model->partPool().add<Part>("L1");
+
+	//p1.setPe(std::array<double, 6>{0.4, 0.5, 0.6, 0.7, 0.8, 0.9}.data(), "321");
+
+	// add joint //
+	const double j1_pos[3]{ 0.13, -0.14, 0.85 };
+	const double j1_axis[6]{ 0.0, 0.0, 1.0 };
+
+	auto &j1 = model->addPrismaticJoint(p1, model->ground(), j1_pos, j1_axis);
+
+	// add actuation //
+	auto &m1 = model->addMotion(j1);
+
+	// add ee general motion //
+	double pq_ee_i[]{ 0.13, 0.54, 0.85, 0, 0, 0, 1 };
+	double pm_ee_i[16];
+	double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+	s_pq2pm(pq_ee_i, pm_ee_i);
+
+	auto &makI = p1.markerPool().add<Marker>("ee_makI", pm_ee_i);
+	auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
+	auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ);
+
+	// add solver
+	auto &universal_solver = model->solverPool().add<UniversalSolver>();
+
+	m1.activate(false);
+	universal_solver.allocateMemory();
+
+	auto &m = *model;
+
+
+	//p1.setPe(std::array<double, 6>{0.4, 0.5, 0.6, 0.7, 0.8, 0.9}.data(), "321");
+	//ee.setMpq(std::array<double, 7>{0.1, 0.2, 0.3, 0, 0, 0, 1}.data());
+	//ee.setMvs(std::array<double, 6>{0, 0, 0.2, 0, 0, 0}.data());
+	//ee.setMas(std::array<double, 6>{0, 0, 0.7, 0, 0, 0}.data());
+	//if (universal_solver.kinPos())std::cout << "failed1" << std::endl;
+
+	//p1.setPe(std::array<double, 6>{0.4, 0.5, 0.6, 0.7, 0.8, 0.9}.data(), "321");
+	//ee.setMpq(std::array<double, 7>{0.0, 0.0, 0.7, 0, 0, 0, 1}.data());
+	//ee.setMvs(std::array<double, 6>{0, 0, 0.2, 0, 0, 0}.data());
+	//ee.setMas(std::array<double, 6>{0, 0, 0.7, 0, 0, 0}.data());
+	//if (universal_solver.kinPos())std::cout << "failed2" << std::endl;
+
+	
+	ee.setMpq(std::array<double, 7>{0.13, 0.54, 0.2, 0, 0, 0, 1}.data());
+	ee.setMvs(std::array<double, 6>{0, 0, 0.2, 0, 0, 0}.data());
+	ee.setMas(std::array<double, 6>{0, 0, 0.7, 0, 0, 0}.data());
+	if (universal_solver.kinPos())std::cout << "failed3" << std::endl;
+	universal_solver.kinVel();
+
+	ee.updMpm();
+
+	double cmI[36], cmJ[36];
+	ee.cptGlbCm(cmI, cmJ);
+
+	universal_solver.dynAccAndFce();
+
+	double fs[6];
+	double cm1[36], cm2[36];
+
+
+	j1.cptGlbCm(cm1, cm2);
+	s_mm(6, 1, j1.dim(), cm1, j1.cf(), fs);
+
+	ee.cptGlbCm(cm1, cm2);
+	s_mma(6, 1, ee.dim(), cm1, ee.cf(), fs);
+
+	dsp(1, 6, fs);
+}
+
 void test_float_5_bar_universal()
 {
 	std::cout << "test float 5 bar:" << std::endl;
@@ -88,52 +171,6 @@ void test_float_5_bar_universal()
 	p4.markerPool().add<Marker>("origin");
 	p5.markerPool().add<Marker>("origin");
 	adams.saveAdams("C:\\Users\\py033\\Desktop\\test.cmd");
-}
-void test_servo_press_universal()
-{
-	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
-
-	// 设置重力 //
-	const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
-	model->environment().setGravity(gravity);
-
-	// 添加变量 //
-	model->calculator().addVariable("PI", aris::core::Matrix(aris::PI));
-
-	// add part //
-	auto &p1 = model->partPool().add<Part>("L1");
-
-	// add joint //
-	const double j1_pos[3]{ 2.800000e-001, 8.750000e-001, -2.500000e-001 };
-	const double j1_axis[6]{ 0.0, 1.0, 0.0 };
-
-	auto &j1 = model->addRevoluteJoint(p1, model->ground(), j1_pos, j1_axis);
-
-	// add actuation //
-	auto &m1 = model->addMotion(j1);
-
-	// add ee general motion //
-	double pq_ee_i[]{ 2.800000e-001, 8.750000e-001, -2.500000e-001, 0, 0, 0, 1 };
-	double pm_ee_i[16];
-	double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-	s_pq2pm(pq_ee_i, pm_ee_i);
-
-	auto &makI = p1.markerPool().add<Marker>("ee_makI", pm_ee_i);
-	auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
-	auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ);
-
-	// add solver
-	auto &universal_solver = model->solverPool().add<UniversalSolver>();
-	
-	m1.activate(false);
-	universal_solver.allocateMemory();
-
-	auto &m = *model;
-
-	ee.setMpq(std::array<double, 7>{0, 0.2, 0, 0, 0, 0, 1}.data());
-	ee.setMvs(std::array<double, 6>{0, 0.2, 0, 0, 0, 0}.data());
-	ee.setMas(std::array<double, 6>{0, 0, 0.7, 0, 0, 0}.data());
-	universal_solver.kinPos();
 }
 
 

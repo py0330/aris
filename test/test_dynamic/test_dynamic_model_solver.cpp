@@ -947,6 +947,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		s.dynAccAndFce();
 		s.allocateMemory();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
+		s.allocateMemory();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
 
@@ -1182,6 +1183,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		s.dynAccAndFce();
 		s.allocateMemory();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
+		s.allocateMemory();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
 
@@ -1322,10 +1324,6 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 			
 		}
-
-
-
-
 	}
 }
 
@@ -2396,9 +2394,9 @@ void test_ur5_calibration()
 void test_model_solver()
 {
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
-	test_single_body();
-	test_float_5_bar();
-	test_servo_press();
+	//test_single_body();
+	//test_float_5_bar();
+	//test_servo_press();
 	test_3R();
 	test_ur5();
 	test_stewart();
