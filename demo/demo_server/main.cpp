@@ -41,7 +41,8 @@ int main(int argc, char *argv[])
 	}
 	std::cout << "this server robot   :" << robot_name << std::endl;
 	std::cout << "this server port    :" << std::to_string(port) << std::endl;
-	std::cout << "this server position:" << argv[3] << std::endl;
+	std::cout << "this server position:" << std::endl;
+	dsp(4, 4, robot_pm);
 
 	aris::core::Socket socket;
 	socket.setOnReceivedMsg([&](aris::core::Socket *, aris::core::Msg &msg)->int

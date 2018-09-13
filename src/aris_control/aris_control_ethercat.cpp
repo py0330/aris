@@ -694,12 +694,7 @@ namespace aris::control
 	class EthercatMotion::Imp
 	{
 	public:
-		std::int32_t pos_factor_;
 		std::int32_t home_count_;
-		double max_pos_;
-		double min_pos_;
-		double max_vel_;
-		double pos_offset_;
 
 		double target_pos_{ 0 }, target_vel_{ 0 }, target_cur_{ 0 }, offset_vel_{ 0 }, offset_cur_{ 0 };
 		std::uint8_t mode_of_operation;

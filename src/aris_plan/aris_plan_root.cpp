@@ -215,43 +215,47 @@ namespace aris::plan
 		}
 	}
 
-	struct EnablePlan::Imp { Imp() {} };
-	auto EnablePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	struct EnableParam 
 	{
 		std::int32_t limit_time;
 		std::vector<int> active_motor;
+	};
+	struct EnablePlan::Imp { Imp() {} };
+	auto EnablePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		EnableParam param;
 
 		for (auto cmd_param : params)
 		{
 			if (cmd_param.first == "limit_time")
-				limit_time = std::stoi(cmd_param.second);
+				param.limit_time = std::stoi(cmd_param.second);
 			else if (cmd_param.first == "all")
 			{
-				active_motor.clear();
-				active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
 			}
 			else if (cmd_param.first == "none")
 			{
-				active_motor.clear();
-				active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
 			}
 			else if (cmd_param.first == "motion_id")
 			{
-				active_motor.clear();
-				active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				active_motor.at(std::stoi(cmd_param.second)) = 1;
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
 			}
 			else if (cmd_param.first == "physical_id")
 			{
-				active_motor.clear();
-				active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
 			}
 			else if (cmd_param.first == "slave_id")
 			{
-				active_motor.clear();
-				active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
 			}
 			else if (cmd_param.first == "check_all")
 			{
@@ -289,27 +293,26 @@ namespace aris::plan
 				throw std::runtime_error("unknown input target when prepair EnablePlan");
 		}
 
-		target.param = limit_time;
-		//msg_out.copyMore(active_motor.data(), active_motor.size() * sizeof(int));
+		target.param = param;
 	}
-	auto EnablePlan::executeRT(PlanTarget &param)->int
+	auto EnablePlan::executeRT(PlanTarget &target)->int
 	{
-		auto controller = dynamic_cast<aris::control::Controller *>(param.master);
+		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+		auto &param = std::any_cast<EnableParam &>(target.param);
 
 		bool is_all_finished = true;
 		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
 		{
 			auto &cm = controller->motionPool().at(i);
-//			int * active_motor = reinterpret_cast<int*>(reinterpret_cast<char *>(param.param) + sizeof(std::int32_t));
 
-//			if (active_motor[i])
+			if (param.active_motor[i])
 			{
 				auto ret = cm.enable();
 				if (ret)
 				{
 					is_all_finished = false;
 
-					if (param.count % 1000 == 0)
+					if (target.count % 1000 == 0)
 					{
 						controller->mout() << "Unenabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
@@ -317,10 +320,7 @@ namespace aris::plan
 			}
 		}
 
-//		auto max_count = *reinterpret_cast<std::uint32_t*>(param.param);
-		auto max_count = 1000;
-
-		return (is_all_finished || max_count <= param.count) ? 0 : 1;
+		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
 	}
 	auto EnablePlan::collectNrt(PlanTarget &param)->void {}
 	EnablePlan::~EnablePlan() = default;
@@ -337,7 +337,7 @@ namespace aris::plan
 			"			<physical_id abbreviation=\"p\" default=\"0\"/>"
 			"			<slave_id abbreviation=\"s\" default=\"0\"/>"
 			"		</unique>"
-			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_all\">"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_none\">"
 			"			<check_all/>"
 			"			<check_none/>"
 			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
@@ -411,6 +411,398 @@ namespace aris::plan
 	EnablePlan& EnablePlan::operator=(const EnablePlan &) = default;
 	EnablePlan& EnablePlan::operator=(EnablePlan &&) = default;
 
+	struct DisableParam
+	{
+		std::int32_t limit_time;
+		std::vector<int> active_motor;
+	};
+	struct DisablePlan::Imp { Imp() {} };
+	auto DisablePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		DisableParam param;
+
+		for (auto cmd_param : params)
+		{
+			if (cmd_param.first == "limit_time")
+				param.limit_time = std::stoi(cmd_param.second);
+			else if (cmd_param.first == "all")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
+			}
+			else if (cmd_param.first == "none")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+			}
+			else if (cmd_param.first == "motion_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
+			}
+			else if (cmd_param.first == "physical_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
+			}
+			else if (cmd_param.first == "slave_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
+			}
+			else if (cmd_param.first == "check_all")
+			{
+				target.option &= ~(
+					NOT_CHECK_POS_MIN |
+					NOT_CHECK_POS_MAX |
+					NOT_CHECK_POS_CONTINUOUS |
+					NOT_CHECK_POS_CONTINUOUS_AT_START |
+					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
+					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
+					NOT_CHECK_POS_FOLLOWING_ERROR |
+					NOT_CHECK_VEL_MIN |
+					NOT_CHECK_VEL_MAX |
+					NOT_CHECK_VEL_CONTINUOUS |
+					NOT_CHECK_VEL_CONTINUOUS_AT_START |
+					NOT_CHECK_VEL_FOLLOWING_ERROR);
+			}
+			else if (cmd_param.first == "check_none")
+			{
+				target.option |=
+					NOT_CHECK_POS_MIN |
+					NOT_CHECK_POS_MAX |
+					NOT_CHECK_POS_CONTINUOUS |
+					NOT_CHECK_POS_CONTINUOUS_AT_START |
+					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
+					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
+					NOT_CHECK_POS_FOLLOWING_ERROR |
+					NOT_CHECK_VEL_MIN |
+					NOT_CHECK_VEL_MAX |
+					NOT_CHECK_VEL_CONTINUOUS |
+					NOT_CHECK_VEL_CONTINUOUS_AT_START |
+					NOT_CHECK_VEL_FOLLOWING_ERROR;
+			}
+			else
+				throw std::runtime_error("unknown input target when prepair DisablePlan");
+		}
+
+		target.param = param;
+	}
+	auto DisablePlan::executeRT(PlanTarget &target)->int
+	{
+		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+		auto &param = std::any_cast<DisableParam &>(target.param);
+
+		bool is_all_finished = true;
+		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
+		{
+			auto &cm = controller->motionPool().at(i);
+
+			if (param.active_motor[i])
+			{
+				auto ret = cm.disable();
+				if (ret)
+				{
+					is_all_finished = false;
+
+					if (target.count % 1000 == 0)
+					{
+						controller->mout() << "Undisabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+					}
+				}
+			}
+		}
+
+		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
+	}
+	auto DisablePlan::collectNrt(PlanTarget &param)->void {}
+	DisablePlan::~DisablePlan() = default;
+	DisablePlan::DisablePlan(const std::string &name) :Plan(name), imp_(new Imp)
+	{
+		command().loadXmlStr(
+			"<ds default_child_type=\"Param\">"
+			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"		<limit_time default=\"5000\"/>"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
+			"			<all abbreviation=\"a\"/>"
+			"			<none abbreviation=\"n\"/>"
+			"			<motion_id abbreviation=\"m\" default=\"0\"/>"
+			"			<physical_id abbreviation=\"p\" default=\"0\"/>"
+			"			<slave_id abbreviation=\"s\" default=\"0\"/>"
+			"		</unique>"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_none\">"
+			"			<check_all/>"
+			"			<check_none/>"
+			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"				<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos\">"
+			"					<check_pos/>"
+			"					<not_check_pos/>"
+			"					<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_max\">"
+			"							<check_pos_max/>"
+			"							<not_check_pos_max/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_min\">"
+			"							<check_pos_min/>"
+			"							<not_check_pos_min/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous\">"
+			"							<check_pos_continuous/>"
+			"							<not_check_pos_continuous/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_at_start\">"
+			"							<check_pos_continuous_at_start/>"
+			"							<not_check_pos_continuous_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_second_order\">"
+			"							<check_pos_continuous_second_order/>"
+			"							<not_check_pos_continuous_second_order/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_second_order_at_start\">"
+			"							<check_pos_continuous_second_order_at_start/>"
+			"							<not_check_pos_continuous_second_order_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_following_error\">"
+			"							<check_pos_following_error/>"
+			"							<not_check_pos_following_error />"
+			"						</unique>"
+			"					</group>"
+			"				</unique>"
+			"				<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel\">"
+			"					<check_vel/>"
+			"					<not_check_vel/>"
+			"					<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_max\">"
+			"							<check_vel_max/>"
+			"							<not_check_vel_max/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_min\">"
+			"							<check_vel_min/>"
+			"							<not_check_vel_min/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_continuous\">"
+			"							<check_vel_continuous/>"
+			"							<not_check_vel_continuous/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_continuous_at_start\">"
+			"							<check_vel_continuous_at_start/>"
+			"							<not_check_vel_continuous_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_following_error\">"
+			"							<check_vel_following_error/>"
+			"							<not_check_vel_following_error />"
+			"						</unique>"
+			"					</group>"
+			"				</unique>"
+			"			</group>"
+			"		</unique>"
+			"	</group>"
+			"</ds>");
+	}
+	DisablePlan::DisablePlan(const DisablePlan &) = default;
+	DisablePlan::DisablePlan(DisablePlan &&) = default;
+	DisablePlan& DisablePlan::operator=(const DisablePlan &) = default;
+	DisablePlan& DisablePlan::operator=(DisablePlan &&) = default;
+
+	struct ModeParam
+	{
+		std::int32_t limit_time;
+		std::vector<int> active_motor;
+	};
+	struct ModePlan::Imp { Imp() {} };
+	auto ModePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		ModeParam param;
+
+		for (auto cmd_param : params)
+		{
+			if (cmd_param.first == "limit_time")
+				param.limit_time = std::stoi(cmd_param.second);
+			else if (cmd_param.first == "all")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
+			}
+			else if (cmd_param.first == "none")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+			}
+			else if (cmd_param.first == "motion_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
+			}
+			else if (cmd_param.first == "physical_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
+			}
+			else if (cmd_param.first == "slave_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
+			}
+			else if (cmd_param.first == "check_all")
+			{
+				target.option &= ~(
+					NOT_CHECK_POS_MIN |
+					NOT_CHECK_POS_MAX |
+					NOT_CHECK_POS_CONTINUOUS |
+					NOT_CHECK_POS_CONTINUOUS_AT_START |
+					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
+					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
+					NOT_CHECK_POS_FOLLOWING_ERROR |
+					NOT_CHECK_VEL_MIN |
+					NOT_CHECK_VEL_MAX |
+					NOT_CHECK_VEL_CONTINUOUS |
+					NOT_CHECK_VEL_CONTINUOUS_AT_START |
+					NOT_CHECK_VEL_FOLLOWING_ERROR);
+			}
+			else if (cmd_param.first == "check_none")
+			{
+				target.option |=
+					NOT_CHECK_POS_MIN |
+					NOT_CHECK_POS_MAX |
+					NOT_CHECK_POS_CONTINUOUS |
+					NOT_CHECK_POS_CONTINUOUS_AT_START |
+					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
+					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
+					NOT_CHECK_POS_FOLLOWING_ERROR |
+					NOT_CHECK_VEL_MIN |
+					NOT_CHECK_VEL_MAX |
+					NOT_CHECK_VEL_CONTINUOUS |
+					NOT_CHECK_VEL_CONTINUOUS_AT_START |
+					NOT_CHECK_VEL_FOLLOWING_ERROR;
+			}
+			else
+				throw std::runtime_error("unknown input target when prepair ModePlan");
+		}
+
+		target.param = param;
+	}
+	auto ModePlan::executeRT(PlanTarget &target)->int
+	{
+		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+		auto &param = std::any_cast<ModeParam &>(target.param);
+
+		bool is_all_finished = true;
+		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
+		{
+			auto &cm = controller->motionPool().at(i);
+
+			if (param.active_motor[i])
+			{
+				auto ret = cm.mode(8);
+				if (ret)
+				{
+					is_all_finished = false;
+
+					if (target.count % 1000 == 0)
+					{
+						controller->mout() << "Unmoded motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+					}
+				}
+			}
+		}
+
+		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
+	}
+	auto ModePlan::collectNrt(PlanTarget &param)->void {}
+	ModePlan::~ModePlan() = default;
+	ModePlan::ModePlan(const std::string &name) :Plan(name), imp_(new Imp)
+	{
+		command().loadXmlStr(
+			"<md default_child_type=\"Param\">"
+			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"		<limit_time default=\"5000\"/>"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
+			"			<all abbreviation=\"a\"/>"
+			"			<none abbreviation=\"n\"/>"
+			"			<motion_id abbreviation=\"m\" default=\"0\"/>"
+			"			<physical_id abbreviation=\"p\" default=\"0\"/>"
+			"			<slave_id abbreviation=\"s\" default=\"0\"/>"
+			"		</unique>"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_none\">"
+			"			<check_all/>"
+			"			<check_none/>"
+			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"				<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos\">"
+			"					<check_pos/>"
+			"					<not_check_pos/>"
+			"					<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_max\">"
+			"							<check_pos_max/>"
+			"							<not_check_pos_max/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_min\">"
+			"							<check_pos_min/>"
+			"							<not_check_pos_min/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous\">"
+			"							<check_pos_continuous/>"
+			"							<not_check_pos_continuous/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_at_start\">"
+			"							<check_pos_continuous_at_start/>"
+			"							<not_check_pos_continuous_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_second_order\">"
+			"							<check_pos_continuous_second_order/>"
+			"							<not_check_pos_continuous_second_order/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_second_order_at_start\">"
+			"							<check_pos_continuous_second_order_at_start/>"
+			"							<not_check_pos_continuous_second_order_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_following_error\">"
+			"							<check_pos_following_error/>"
+			"							<not_check_pos_following_error />"
+			"						</unique>"
+			"					</group>"
+			"				</unique>"
+			"				<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel\">"
+			"					<check_vel/>"
+			"					<not_check_vel/>"
+			"					<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_max\">"
+			"							<check_vel_max/>"
+			"							<not_check_vel_max/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_min\">"
+			"							<check_vel_min/>"
+			"							<not_check_vel_min/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_continuous\">"
+			"							<check_vel_continuous/>"
+			"							<not_check_vel_continuous/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_continuous_at_start\">"
+			"							<check_vel_continuous_at_start/>"
+			"							<not_check_vel_continuous_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_following_error\">"
+			"							<check_vel_following_error/>"
+			"							<not_check_vel_following_error />"
+			"						</unique>"
+			"					</group>"
+			"				</unique>"
+			"			</group>"
+			"		</unique>"
+			"	</group>"
+			"</md>");
+	}
+	ModePlan::ModePlan(const ModePlan &) = default;
+	ModePlan::ModePlan(ModePlan &&) = default;
+	ModePlan& ModePlan::operator=(const ModePlan &) = default;
+	ModePlan& ModePlan::operator=(ModePlan &&) = default;
+
 	struct RecoverParam
 	{
 		double axis_pos[6]{ 0.0 };
@@ -476,23 +868,19 @@ namespace aris::plan
 			aris::dynamic::s_nv(3, pe_unit, pe + 3);
 			target.model->generalMotionPool().at(0).setMpe(pe, eul_type.data());
 		}
-		//////////////////
-		auto &gm = target.model->generalMotionPool().at(0);
-		aris::dynamic::dsp(4, 4, *gm.mpm());
-		/////////////////
 
-		aris::dynamic::dsp(4, 4, *gm.makI().pm());
-		aris::dynamic::dsp(4, 4, *gm.makJ().pm());
-		if (!target.model->solverPool().at(0).kinPos())throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+		//if (!target.model->solverPool().at(0).kinPos())throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
 
-		for (aris::Size i = 0; i < target.model->motionPool().size(); ++i)
-		{
-			target.model->motionPool().at(i).updMp();
-			rc_param.axis_pos[i] = target.model->motionPool().at(i).mp();
-		}
+		//for (aris::Size i = 0; i < target.model->motionPool().size(); ++i)
+		//{
+		//	target.model->motionPool().at(i).updMp();
+		//	rc_param.axis_pos[i] = target.model->motionPool().at(i).mp();
+		//}
 
-		target.option =
-			aris::plan::Plan::USING_TARGET_POS | 
+		std::fill_n(rc_param.axis_pos, 6, 0.0);
+
+		target.option |=
+			aris::plan::Plan::USE_TARGET_POS | 
 			aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED |
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START | 
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
@@ -505,7 +893,7 @@ namespace aris::plan
 		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 
 		// 取得起始位置 //
-		static double begin_pos[6], acc[6], vel[6], dec[6];
+		static double begin_pos[6];
 		static aris::Size total_count[6];
 		if (target.count == 1)
 		{
@@ -702,7 +1090,7 @@ namespace aris::plan
 			aris::dynamic::s_pe2pq(pe, mv_param.pq, eul_type.data());
 		}
 
-		target.option |= USING_TARGET_POS;
+		target.option |= USE_TARGET_POS;
 		target.param = mv_param;
 	}
 	auto MovePlan::executeRT(PlanTarget &param)->int
@@ -755,16 +1143,6 @@ namespace aris::plan
 		aris::dynamic::s_pa2pm(pa, pm);
 		aris::dynamic::s_pm_dot_pm(begin_pm, pm, pm2);
 
-		/////////////////////////////////////////////
-		//////////////////
-		auto &gm = param.model->generalMotionPool().at(0);
-		aris::dynamic::dsp(4, 4, *gm.mpm());
-		/////////////////
-
-		aris::dynamic::dsp(4, 4, *gm.makI().pm());
-		aris::dynamic::dsp(4, 4, *gm.makJ().pm());
-		/////////////////////////////////////////////
-
 		// 反解计算电机位置 //
 		param.model->generalMotionPool().at(0).setMpm(pm2);
 		if (!param.model->solverPool().at(0).kinPos())return -1;
@@ -772,7 +1150,13 @@ namespace aris::plan
 
 		double pq[7];
 		aris::dynamic::s_pm2pq(*param.model->generalMotionPool().at(0).mpm(), pq);
-		param.master->lout() << param.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "\n";
+		param.master->lout() << param.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6]<<"  ";
+
+		for (auto &cm : controller->motionPool())
+		{
+			param.master->lout() << "  " << cm.targetPos() << "  " << cm.actualPos() << "  " << cm.actualVel() << "  " << cm.actualCur() << "  ";
+		}
+		param.master->lout() << "\n";
 
 
 		return std::max(pos_total_count, ori_total_count) > param.count ? 1 : 0;
@@ -899,6 +1283,47 @@ namespace aris::plan
 	UniversalPlan& UniversalPlan::operator=(const UniversalPlan &) = default;
 	UniversalPlan& UniversalPlan::operator=(UniversalPlan &&) = default;
 
+	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		target.option |= 
+			NOT_CHECK_POS_MIN |
+			NOT_CHECK_POS_MAX |
+			NOT_CHECK_POS_CONTINUOUS |
+			NOT_CHECK_POS_CONTINUOUS_AT_START |
+			NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
+			NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
+			NOT_CHECK_POS_FOLLOWING_ERROR |
+			NOT_CHECK_VEL_MIN |
+			NOT_CHECK_VEL_MAX |
+			NOT_CHECK_VEL_CONTINUOUS |
+			NOT_CHECK_VEL_CONTINUOUS_AT_START |
+			NOT_CHECK_VEL_FOLLOWING_ERROR;
+
+		target.option |=
+			USE_TARGET_POS;
+	}
+	auto Show::executeRT(PlanTarget &target)->int
+	{
+		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+
+		controller->mout() << "pos: ";
+		for (auto &m : controller->motionPool())
+		{
+			controller->mout() << std::setprecision(15) << m.actualPos() << "   ";
+			m.setTargetPos(m.targetPos());
+		}
+		controller->mout() << std::endl;
+
+		return 0;
+	}
+	auto Show::collectNrt(PlanTarget &param)->void { }
+	Show::Show(const std::string &name) : Plan(name)
+	{
+		command().loadXmlStr(
+			"<show default_child_type=\"Param\">"
+			"</show>");
+	}
+
 	auto MoveJ::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void 
 	{
 		default_prepair_check_option(params, target);
@@ -954,6 +1379,7 @@ namespace aris::plan
 		}
 
 		param.begin_joint_pos_vec.resize(target.model->motionPool().size());
+		target.option |= USE_TARGET_POS;
 		target.param = param;
 	}
 	auto MoveJ::executeRT(PlanTarget &target)->int 
@@ -967,7 +1393,7 @@ namespace aris::plan
 			{
 				if (param->joint_active_vec[i])
 				{
-					param->begin_joint_pos_vec[i] = target.model->motionPool().at(i).mp();
+					param->begin_joint_pos_vec[i] = target.model->motionPool()[i].mp();
 				}
 			}
 		}

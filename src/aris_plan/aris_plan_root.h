@@ -48,11 +48,11 @@ namespace aris::plan
 			COLLECT_WHEN_ALL_PLAN_COLLECTED = 0x01ULL << 10,
 			WAIT_FOR_COLLECTION = 0x01ULL << 11,
 
-			USING_TARGET_POS = 0x01ULL << 16,
-			USING_TARGET_VEL = 0x01ULL << 17,
-			USING_TARGET_CUR = 0x01ULL << 18,
-			USING_VEL_OFFSET = 0x01ULL << 19,
-			USING_CUR_OFFSET = 0x01ULL << 20,
+			USE_TARGET_POS = 0x01ULL << 16,
+			USE_TARGET_VEL = 0x01ULL << 17,
+			USE_TARGET_CUR = 0x01ULL << 18,
+			USE_VEL_OFFSET = 0x01ULL << 19,
+			USE_CUR_OFFSET = 0x01ULL << 20,
 
 			NOT_CHECK_POS_MIN = 0x01ULL << 24,
 			NOT_CHECK_POS_MAX = 0x01ULL << 25,
@@ -129,7 +129,46 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class DisablePlan : public Plan{};
+	class DisablePlan : public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("EnablePlan"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~DisablePlan();
+		explicit DisablePlan(const std::string &name = "enable_plan");
+		DisablePlan(const DisablePlan &);
+		DisablePlan(DisablePlan &&);
+		DisablePlan& operator=(const DisablePlan &);
+		DisablePlan& operator=(DisablePlan &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	class ModePlan : public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("ModePlan"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~ModePlan();
+		explicit ModePlan(const std::string &name = "mode_plan");
+		ModePlan(const ModePlan &);
+		ModePlan(ModePlan &&);
+		ModePlan& operator=(const ModePlan &);
+		ModePlan& operator=(ModePlan &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
 	class HomePlan : public Plan{};
 	class RecoverPlan : public Plan
 	{
@@ -221,13 +260,22 @@ namespace aris::plan
 		MoveJ(MoveJ &&);
 		MoveJ& operator=(const MoveJ &);
 		MoveJ& operator=(MoveJ &&);
-
-
+		
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	class Show :public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("MoveJ"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
 
+		explicit Show(const std::string &name = "move_plan");
+	};
 
 	class MvL :public Plan 
 	{
@@ -255,7 +303,7 @@ namespace aris::plan
 	};
 
 
-	using PathPlanFunction = std::function<void(double s, aris::dynamic::Model *model)>;
+	using PathPlanFunction = std::function<void(double s, double ds, aris::dynamic::Model *model)>;
 	class OptimalTrajectory
 	{
 	public:
@@ -386,24 +434,18 @@ namespace aris::plan
 		}
 		auto cptDdsConstraint(double s, double ds, double &max_dds, double &min_dds)->bool 
 		{
-			plan(s, model);
+			plan(s, ds, model);
+			solver->kinPos();
+			solver->kinVel();
 			solver->cptJacobi();
 
+			aris::dynamic::dsp(solver->mJi(), solver->nJi(), solver->Ji());
 
-			
-			
-			
-			
-			
-			
-			
-			
-			
-
+			max_dds = 0.1 + 0.2*s + 4 * (s - 0.5)*(s - 0.5) - ds * 1 - ds * ds*0.2 - sin(ds)*0.2;
+			min_dds = 0 - 0.3*(1 - s) - 4 * (s - 0.5)*(s - 0.5) + ds * 0.1 + ds * ds*0.8 + sin(ds)*0.1;
 
 			return max_dds > min_dds && s < 1.0;
 		}
-		auto cptInverseJacobi()->void;
 
 		double failed_s;
 

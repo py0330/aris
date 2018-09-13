@@ -114,11 +114,11 @@ namespace aris::server
 
 			if (mm.active())
 			{
-				if ((plan_and_target.second.option & aris::plan::Plan::USING_TARGET_POS))cm.setTargetPos(mm.mp());
-				if ((plan_and_target.second.option & aris::plan::Plan::USING_TARGET_VEL))cm.setTargetVel(mm.mv());
-				if ((plan_and_target.second.option & aris::plan::Plan::USING_TARGET_CUR))cm.setTargetCur(mm.mf());
-				if ((plan_and_target.second.option & aris::plan::Plan::USING_VEL_OFFSET))cm.setOffsetVel(mm.mv());
-				if ((plan_and_target.second.option & aris::plan::Plan::USING_CUR_OFFSET))cm.setOffsetCur(mm.mf());
+				if ((plan_and_target.second.option & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mm.mp());
+				if ((plan_and_target.second.option & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mm.mv());
+				if ((plan_and_target.second.option & aris::plan::Plan::USE_TARGET_CUR))cm.setTargetCur(mm.mf());
+				if ((plan_and_target.second.option & aris::plan::Plan::USE_VEL_OFFSET))cm.setOffsetVel(mm.mv());
+				if ((plan_and_target.second.option & aris::plan::Plan::USE_CUR_OFFSET))cm.setOffsetCur(mm.mf());
 			}
 		}
 

@@ -12,11 +12,41 @@ namespace aris::robot
 
 		for (aris::Size i = 0; i < 6; ++i)
 		{
+			//double pos_offset[6]
+			//{
+			//	0.0376052856445312,   4.09380340576172, - 3.76842498779297,   0.67547607421875,   19.7709655761719,   136.29167175293
+			//};
+			double pos_offset[6]
+			{
+				0.00292592631763409,0.254680204478808,-0.292379578876203,0.058253692600347,1.55281279890217,17.1269146715038
+			};
+			double pos_factor[6]
+			{
+				131072.0 * 81 / 2 / PI, 131072.0 * 101 / 2 / PI, 131072.0 * 81 / 2 / PI, 131072.0 * 72.857 / 2 / PI, 131072.0 * 80 / 2 / PI, 131072.0 * 50 / 2 / PI
+			};
+			double max_pos[6]
+			{
+				170.0 / 360 * 2 * PI, 130.0 / 360 * 2 * PI,	50.0 / 360 * 2 * PI, 170.0 / 360 * 2 * PI, 117.0 / 360 * 2 * PI, 360.0 / 360 * 2 * PI,
+			};
+			double min_pos[6]
+			{
+				-170.0 / 360 * 2 * PI, - 84.0 / 360 * 2 * PI, - 188.0 / 360 * 2 * PI, - 170.0 / 360 * 2 * PI, - 117.0 / 360 * 2 * PI, - 360.0 / 360 * 2 * PI
+			};
+			double max_vel[6]
+			{
+				310.0 / 360 * 2 * PI, 240.0 / 360 * 2 * PI, 310.0 / 360 * 2 * PI, 250.0 / 360 * 2 * PI, 295.0 / 360 * 2 * PI, 500.0 / 360 * 2 * PI,
+			};
+			double max_acc[6]
+			{
+				1500.0 / 360 * 2 * PI, 1500.0 / 360 * 2 * PI, 1500.0 / 360 * 2 * PI, 1750.0 / 360 * 2 * PI, 1500.0 / 360 * 2 * PI, 2500.0 / 360 * 2 * PI,
+			};
+			
 			std::string xml_str =
-				"<m" + std::to_string(i) + " type=\"EthercatMotion\" phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00030924\""
-				" vendor_id=\"0x0000009a\" revision_num=\"0x000103F6\" dc_assign_activate=\"0x0300\""
-				" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" max_acc=\"10.0\" max_pos_following_error=\"100.0\" max_vel_following_error=\"200.0\""
-				" home_pos=\"0\" pos_factor=\"62914560\">"
+				"<m" + std::to_string(i) + " type=\"EthercatMotion\" phy_id=\"" + std::to_string(i) + "\" product_code=\"0x0\""
+				" vendor_id=\"0x000002E1\" revision_num=\"0x29001\" dc_assign_activate=\"0x0300\""
+				" min_pos=\"" + std::to_string(min_pos[i]) + "\" max_pos=\"" + std::to_string(max_pos[i]) + "\" max_vel=\"" + std::to_string(max_vel[i]) + "\" min_vel=\"" + std::to_string(-max_vel[i]) + "\""
+				" max_acc=\"" + std::to_string(max_acc[i]) + "\" min_acc=\"" + std::to_string(-max_acc[i]) + "\" max_pos_following_error=\"0.1\" max_vel_following_error=\"0.5\""
+				" home_pos=\"0\" pos_factor=\"" + std::to_string(pos_factor[i]) + "\" pos_offset=\"" + std::to_string(pos_offset[i]) + "\">"
 				"	<pdo_group_pool type=\"PdoGroupPoolObject\">"
 				"		<index_1600 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1600\" is_tx=\"false\">"
 				"			<control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
@@ -34,11 +64,6 @@ namespace aris::robot
 				"		</index_1a00>"
 				"	</pdo_group_pool>"
 				"	<sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
-				"		<home_mode index=\"0x6098\" subindex=\"0\" size=\"1\" config=\"35\"/>"
-				"		<home_acc index=\"0x609A\" subindex=\"0\" size=\"4\" config=\"200000\"/>"
-				"		<home_high_speed index=\"0x6099\" subindex=\"1\" size=\"4\" config=\"200000\"/>"
-				"		<home_low_speed index=\"0x6099\" subindex=\"2\" size=\"4\" config=\"100000\"/>"
-				"		<home_offset index=\"0x607C\" subindex=\"0\" size=\"4\" config=\"0\"/>"
 				"	</sdo_pool>"
 				"</m" + std::to_string(i) + ">";
 
@@ -76,7 +101,7 @@ namespace aris::robot
 
 		const double j1_axis[6]{ 0.0, 0.0, 1.0 };
 		const double j2_axis[6]{ 0.0, 1.0, 0.0 };
-		const double j3_axis[6]{ 0.0, -1.0, 0.0 };
+		const double j3_axis[6]{ 0.0, 1.0, 0.0 };
 		const double j4_axis[6]{ 1.0, 0.0, 0.0 };
 		const double j5_axis[6]{ 0.0, 1.0, 0.0 };
 		const double j6_axis[6]{ -1.0, 0.0, 0.0 };
@@ -135,12 +160,16 @@ namespace aris::robot
 		std::unique_ptr<aris::plan::PlanRoot> plan_root(new aris::plan::PlanRoot);
 
 		plan_root->planPool().add<aris::plan::EnablePlan>();
+		plan_root->planPool().add<aris::plan::DisablePlan>();
+		plan_root->planPool().add<aris::plan::ModePlan>();
 		auto &rc = plan_root->planPool().add<aris::plan::RecoverPlan>();
-		rc.command().findByName("group")->findByName("unique_pos")->findByName("pq")->loadXmlStr("<pq default=\"{0.397,0,0.6295,0,0.70710678118655,0,0.70710678118655}\"/>");
+		rc.command().findByName("group")->findByName("unique_pos")->findByName("pq")->loadXmlStr("<pq default=\"{0.397, 0.0, 0.6295, 0.0, 0.0, 0.0, 1.0}\"/>");
 		rc.command().findByName("group")->findByName("unique_pos")->findByName("pm")->loadXmlStr("<pm default=\"{0,0,1,0.397,0,1,0,0,-1,0,0,0.6295,0,0,0,1}\"/>");
 		rc.command().findByName("group")->findByName("unique_pos")->findByName("group")->findByName("pe")->loadXmlStr("<pe default=\"{0.397,0,0.6295,0,PI/2,0}\"/>");
 		plan_root->planPool().add<aris::plan::MovePlan>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
+
+		plan_root->planPool().add<aris::plan::Show>();
 
 		return plan_root;
 	}

@@ -33,7 +33,7 @@ void test_pdo_xml()
 
 		auto &s1 = m.slavePool().add<EthercatSlave>();
 		s1.loadXmlStr(
-			"<sla type=\"EthercatSlave\" phy_id=\"0\" product_code=\"0x00030924\" vendor_id=\"0x0000009a\" revision_num=\"0x000103F6\" dc_assign_activate=\"0x0300\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
+			"<sla type=\"EthercatSlave\" phy_id=\"0\" product_code=\"0x0\" vendor_id=\"0x000002E1\" revision_num=\"0x29001\" dc_assign_activate=\"0x0300\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
 			"	<pdo_group_pool type=\"PdoGroupPoolObject\">"
 			"		<index_1a00 type=\"PdoGroup\" default_child_type=\"Pdo\" index=\"0x1A00\" is_tx=\"true\">"
 			"			<pos_actual_value index=\"0x6064\" subindex=\"0x00\" size=\"4\"/>"
@@ -188,8 +188,8 @@ void test_sdo_code()
 
 void test_control_ethercat()
 {
-	test_pdo_code();
+	//test_pdo_code();
 	test_pdo_xml();
-	test_sdo_code();
-	test_sdo_xml();
+	//test_sdo_code();
+	//test_sdo_xml();
 }

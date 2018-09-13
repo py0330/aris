@@ -5,30 +5,6 @@
 
 using namespace aris::plan;
 
-void test_plan_root()
-{
-	PlanRoot root;
-	
-	root.planPool().add<Plan>("en").command().loadXmlStr(
-		"		<en default_child_type=\"Param\" default=\"all\">"
-		"			<all abbreviation=\"a\"/>"
-		"			<first abbreviation=\"f\"/>"
-		"			<second abbreviation=\"s\"/>"
-		"			<motion_id abbreviation=\"m\" default=\"0\"/>"
-		"			<physical_id abbreviation=\"p\" default=\"0\"/>"
-		"			<leg abbreviation=\"l\" default=\"0\"/>"
-		"		</en>");
-
-	root.planPool().add<Plan>("ds").command().loadXmlStr(
-		"		<ds default_child_type=\"Param\" default=\"all\">"
-		"			<all abbreviation=\"a\"/>"
-		"			<first abbreviation=\"f\"/>"
-		"			<second abbreviation=\"s\"/>"
-		"			<motion_id abbreviation=\"m\" default=\"0\"/>"
-		"			<physical_id abbreviation=\"p\" default=\"0\"/>"
-		"			<leg abbreviation=\"l\" default=\"0\"/>"
-		"		</ds>");
-}
 void test_move()
 {
 	const double error = 1e-10;
@@ -160,10 +136,48 @@ void test_optimal()
 	
 	aris::plan::OptimalTrajectory planner;
 
+	std::vector<aris::plan::OptimalTrajectory::MotionLimit> limits(6, {1.0, -1.0, 10, -10, 100, -100, 100, -100});
+
+	planner.setMotionLimit(limits);
+	planner.setModel(m.get());
+	planner.setSolver(dynamic_cast<aris::dynamic::InverseKinematicSolver*>(&m->solverPool()[0]));
 	planner.setBeginNode(OptimalTrajectory::Node{ 0,0,0,0 });
 	planner.setEndNode(OptimalTrajectory::Node{ 0,1,0,0 });
-	planner.setModel(m.get());
-	planner.setSolver(dynamic_cast<aris::dynamic::InverseKinematicSolver*>(&m->solverPool()[1]));
+	planner.setFunction([](double s, double ds, aris::dynamic::Model *model)->void
+	{
+		double begin_pq[7]{ 0.397,0,0.6295,0,0.70710678118655,0,0.70710678118655 }, end_pq[7]{ 0.35,0.1,0.6295,0,0.70710678118655,0,0.70710678118655 };
+		if (aris::dynamic::s_vv(4, begin_pq + 3, end_pq + 3) < 0) aris::dynamic::s_iv(4, begin_pq + 3);
+
+		double pq[7], vq[7];
+
+		// 先插值位移，并算导数
+		double a{ 1 - s }, b{ s }, da{ -ds }, db{ds};
+		aris::dynamic::s_vc(3, a, begin_pq, pq);
+		aris::dynamic::s_va(3, b, end_pq, pq);
+		aris::dynamic::s_vc(3, da, begin_pq, vq);
+		aris::dynamic::s_va(3, db, end_pq, vq);
+
+		// 再插值角度，并算倒数
+		// following interpolation refer to  
+		// https://www.cnblogs.com/21207-iHome/p/6952004.html
+		// 
+		double c = aris::dynamic::s_vv(4, begin_pq + 3, end_pq + 3);	
+		if (c < 0.999)
+		{
+			auto theta = std::acos(c);
+			a = std::sin((1 - s)*theta) / std::sin(theta);
+			b = std::sin(s*theta) / std::sin(theta);
+			da = -theta * std::cos((1 - s)*theta) / std::sin(theta);
+			db = theta * std::cos(s*theta) / std::sin(theta);
+		}
+		aris::dynamic::s_vc(4, a, begin_pq + 3, pq + 3);
+		aris::dynamic::s_va(4, b, end_pq + 3, pq + 3);
+		aris::dynamic::s_vc(4, da, begin_pq + 3, vq + 3);
+		aris::dynamic::s_va(4, db, end_pq + 3, vq + 3);
+
+		model->generalMotionPool()[0].setMpq(pq);
+		model->generalMotionPool()[0].setMvq(vq);
+	});
 	planner.run();
 
 	std::ofstream file;
@@ -183,7 +197,6 @@ void test_optimal()
 void test_function()
 {
 	std::cout << std::endl << "-----------------test function---------------------" << std::endl;
-	test_plan_root();
 	test_optimal();
 	std::cout << "-----------------test function finished------------" << std::endl << std::endl;
 }

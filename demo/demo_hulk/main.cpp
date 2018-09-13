@@ -394,7 +394,7 @@ struct RcParam
 };
 auto rc_parse_func = [](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
-	msg_out.header().reserved1_ |= aris::server::ControlServer::USING_TARGET_POS;
+	msg_out.header().reserved1_ |= aris::server::ControlServer::USE_TARGET_POS;
 	
 	RcParam param;
 	
@@ -510,7 +510,7 @@ auto ck_plan_func = [](const aris::dynamic::PlanParam &param)->int
 struct MvParam { double pq[7]; };
 auto mv_parse_func = [](const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void
 {
-	msg_out.header().reserved1_ |= aris::server::ControlServer::USING_TARGET_POS;
+	msg_out.header().reserved1_ |= aris::server::ControlServer::USE_TARGET_POS;
 	
 	MvParam param;
 
