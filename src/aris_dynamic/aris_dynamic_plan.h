@@ -67,8 +67,6 @@ namespace aris::dynamic
 		std::vector<double> Ji_data_;
 
 		std::vector<double> result_;
-
-
 	};
 
 

@@ -7,4 +7,5 @@
 #include <aris_dynamic_model_solver.h>
 #include <aris_dynamic_model_simulation.h>
 #include <aris_dynamic_model.h>
+#include <aris_dynamic_model_instance.h>
 #include <aris_dynamic_plan.h>

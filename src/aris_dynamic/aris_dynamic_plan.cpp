@@ -83,7 +83,6 @@ namespace aris::dynamic
 				l_end_ = mid_iter;
 				failed_s = test_list.back().s;
 				test_distance = test_list.size();
-
 			}
 		}
 

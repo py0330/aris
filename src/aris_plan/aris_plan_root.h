@@ -9,9 +9,8 @@
 #include <any>
 
 #include <aris_core.h>
-
-namespace aris::dynamic { class Model; class SimResult; }
-namespace aris::control { class Master; }
+#include <aris_control.h>
+#include <aris_dynamic.h>
 
 /// \brief 轨迹规划命名空间
 /// \ingroup aris
@@ -228,6 +227,205 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+
+
+	class MvL :public Plan 
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("MvL"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~MvL();
+		explicit MvL(const std::string &name = "mvl");
+		MvL(const MvL &);
+		MvL(MvL &&);
+		MvL& operator=(const MvL &);
+		MvL& operator=(MvL &&);
+
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+
+
+
+	};
+
+
+	using PathPlanFunction = std::function<void(double s, aris::dynamic::Model *model)>;
+	class OptimalTrajectory
+	{
+	public:
+		struct MotionLimit { double max_vel, min_vel, max_acc, min_acc, max_tor, min_tor, max_jerk, min_jerk; };
+		struct Node { double time, s, ds, dds; };
+
+		template <typename LimitArray>
+		auto setMotionLimit(LimitArray limits)->void { motor_limits.assign(limits.begin(), limits.end()); }
+		auto setBeginNode(Node node)->void { beg_ = node; }
+		auto setEndNode(Node node)->void { end_ = node; }
+		auto setFunction(const PathPlanFunction &path_plan)->void { this->plan = path_plan; }
+		auto setSolver(aris::dynamic::InverseKinematicSolver *solver)->void { this->solver = solver; }
+		auto setModel(aris::dynamic::Model *model)->void { this->model = model; }
+		auto result()->std::vector<double>& { return result_; }
+		auto run()->void 
+		{
+			// 初始化 //
+			list.clear();
+			list.push_front(beg_);
+
+			l_ = list.begin();
+			l_beg_ = l_;
+
+			failed_s = 0;
+
+			while (l_->s < 1.0 && failed_s < 1.0)
+			{
+				l_ = list.insert(list.end(), Node());
+				l_->ds = std::prev(l_)->ds + std::prev(l_)->dds * dt;
+				l_->s = std::prev(l_)->s + std::prev(l_)->ds * dt + 0.5 * std::prev(l_)->dds * dt * dt;
+
+				double max_dds, min_dds;
+				if (cptDdsConstraint(l_->s, l_->ds, max_dds, min_dds))
+				{
+					l_->dds = max_dds;
+				}
+				else
+				{
+					testForward();
+				}
+
+				std::cout << 1.0 - l_->s << std::endl;
+			}
+
+			join();
+		}
+
+		virtual ~OptimalTrajectory() = default;
+		explicit OptimalTrajectory() = default;
+		OptimalTrajectory(const OptimalTrajectory&) = default;
+		OptimalTrajectory(OptimalTrajectory&&) = default;
+		OptimalTrajectory& operator=(const OptimalTrajectory&) = default;
+		OptimalTrajectory& operator=(OptimalTrajectory&&) = default;
+
+	public:
+		auto testForward()->void
+		{
+			failed_s = l_->s;
+			auto l_end_ = l_;
+
+			Size test_distance;
+			// 二分法，结束时，l_beg_为正好可以成功的，l_end_为正好不能成功的
+			while (std::distance(l_beg_, l_end_) > 1)
+			{
+				// init //
+				std::list<Node> test_list;
+				auto mid_iter = std::next(l_beg_, std::distance(l_beg_, l_end_) / 2);
+				test_list.push_back(*mid_iter);
+
+				// 测试mid_iter是否会成功 //
+				bool test_successful{ true };
+				while (test_list.back().ds > 0.0)
+				{
+					Node node;
+					node.ds = test_list.back().ds + test_list.back().dds * dt;
+					node.s = test_list.back().s + test_list.back().ds * dt + 0.5 * test_list.back().dds * dt * dt;
+
+					test_list.push_back(node);
+
+					double max_dds, min_dds;
+					if (cptDdsConstraint(node.s, node.ds, max_dds, min_dds))
+					{
+						test_list.back().dds = min_dds;
+					}
+					else
+					{
+						test_successful = false;
+						break;
+					}
+				}
+
+				// 测试成功，则左侧置为test_iter,否则右侧置为test_iter
+				if (test_successful)
+				{
+					l_beg_ = mid_iter;
+				}
+				else
+				{
+					l_end_ = mid_iter;
+					failed_s = test_list.back().s;
+					test_distance = test_list.size();
+				}
+			}
+
+			// 消除原先的iter们，开始新的iter//
+			list.erase(std::next(l_beg_), list.end());
+			l_ = l_beg_;
+
+			for (Size i = 0; i < test_distance && l_->ds > 0.0 && l_->s < failed_s; ++i)
+			{
+				l_ = list.insert(list.end(), Node());
+
+				l_->ds = std::prev(l_)->ds + std::prev(l_)->dds * dt;
+				l_->s = std::prev(l_)->s + std::prev(l_)->ds * dt + 0.5 * std::prev(l_)->dds * dt * dt;
+
+				double max_dds, min_dds;
+				cptDdsConstraint(l_->s, l_->ds, max_dds, min_dds);
+
+				l_->dds = min_dds;
+			}
+
+			l_beg_ = l_;
+		}
+		auto join()->void
+		{
+			auto coe = 1.0 / list.back().s;
+			for (auto &node : list)node.s *= coe;
+		}
+		auto cptDdsConstraint(double s, double ds, double &max_dds, double &min_dds)->bool 
+		{
+			plan(s, model);
+			solver->cptJacobi();
+
+
+			
+			
+			
+			
+			
+			
+			
+			
+			
+
+
+			return max_dds > min_dds && s < 1.0;
+		}
+		auto cptInverseJacobi()->void;
+
+		double failed_s;
+
+		PathPlanFunction plan;
+		aris::dynamic::InverseKinematicSolver *solver;
+		aris::dynamic::Model *model;
+
+		Node beg_, end_;
+		std::list<Node> list;
+		std::list<Node>::iterator l_beg_, l_;
+		std::vector<MotionLimit> motor_limits;
+
+		std::vector<double> Ji_data_;
+
+		std::vector<double> result_;
+
+
+		static inline const double dt = 1e-3;
+	};
+
+
+
 }
 
 #endif

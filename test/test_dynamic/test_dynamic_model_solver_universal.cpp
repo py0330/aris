@@ -107,7 +107,6 @@ void test_servo_press_universal()
 
 	dsp(1, 6, fs);
 }
-
 void test_float_5_bar_universal()
 {
 	std::cout << "test float 5 bar:" << std::endl;

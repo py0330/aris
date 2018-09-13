@@ -522,7 +522,7 @@ namespace aris::dynamic
 
 		Force::loadXml(xml_ele);
 	}
-	auto SingleComponentForce::cptGlbFs(double *fsI, double *fsJ) noexcept->void
+	auto SingleComponentForce::cptGlbFs(double *fsI, double *fsJ)const noexcept->void
 	{
 		s_tf(*makI().prtPm(), fce_value_, fsJ);
 		s_tf(*makI().fatherPart().pm(), fsJ, fsI);

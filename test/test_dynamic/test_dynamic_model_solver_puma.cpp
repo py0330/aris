@@ -163,48 +163,63 @@ void test_model_solver_puma()
 {
 	std::cout << std::endl << "-----------------test model solver puma---------------------" << std::endl;
 
-	test_puma_forward_solver();
-	test_puma_inverse_solver();
+	//test_puma_forward_solver();
+	//test_puma_inverse_solver();
 
 
-	//auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
+	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 
-	//auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
-	//auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
-	//auto &ee = m->generalMotionPool().at(0);
+	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));
+	auto &fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool().at(1));
+	auto &ee = m->generalMotionPool().at(0);
 
-	//double ee_pm[16];
-	//aris::dynamic::s_pe2pm(std::array<double, 7>{0.32, 0.01, 0.62, 0.6, 0.3, 0.2}.data(), ee_pm);
-	//ee.setMpm(ee_pm);
-	//double vs[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
-	//ee.setMvs(vs);
+	double ee_pm[16];
+	aris::dynamic::s_pe2pm(std::array<double, 7>{0.32, 0.01, 0.62, 0.6, 0.3, 0.2}.data(), ee_pm);
+	ee.setMpm(ee_pm);
+	double vs[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	ee.setMvs(vs);
+	double as[6]{ -0.01,0.02,-0.03,0.04,-0.05,0.06 };
+	ee.setMas(as);
 
-	//inv.setWhichRoot(1);
+	inv.setWhichRoot(1);
 
-	//if(!inv.kinPos())std::cout<<"failed"<<std::endl;
-	//inv.kinVel();
+	if(!inv.kinPos())std::cout<<"failed"<<std::endl;
+	inv.kinVel();
+	inv.dynAccAndFce();
+	
+	double tem[6];
+	
 
-	//for (auto &mot : m->motionPool())
-	//{
-	//	std::cout << mot.mv() << "  ";
-	//}
-	//std::cout << std::endl;
+	inv.cptJacobi();
+	for (auto &mot : m->motionPool())std::cout << mot.mv() << "  ";	std::cout << std::endl;
+	s_mm(6, 1, 6, inv.Ji(), ee.mvs(), tem);
+	dsp(1, 6, tem);
+
+	for (auto &mot : m->motionPool())std::cout << mot.ma() << "  "; std::cout << std::endl;
+	s_vc(6, inv.ci(), tem);
+	s_mma(6, 1, 6, inv.Ji(), ee.mas(), tem);
+	dsp(1, 6, tem);
 
 
-	//inv.cptJacobi();
-	//double tem[6];
-	//s_mm(6, 1, 6, inv.Ji(), ee.mvs(), tem);
-	//dsp(1, 6, tem);
 
-	//fwd.cptJacobi();
-	//dsp(6, 6, fwd.Jf());
+	double mv[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	for (int i = 0; i < 6; ++i)m->motionPool()[i].setMv(mv[i]);
+	fwd.kinVel();
+	double ma[6]{ 0.01,-0.02,0.03,-0.04,0.05,-0.06 };
+	for (int i = 0; i < 6; ++i)m->motionPool()[i].setMa(ma[i]);
+	fwd.dynAccAndFce();
+	
+	fwd.cptJacobi();
+	dsp(1, 6, ee.mvs());
+	s_mm(6, 1, 6, fwd.Jf(), mv, tem);
+	dsp(1, 6, tem);
 
-	//double r[36];
-	//s_mm(6, 6, 6, fwd.Jf(), 6, inv.Ji(), 6, r, 6);
-	//dsp(6, 6, r);
-
+	dsp(1, 6, ee.mas());
+	s_vc(6, fwd.cf(), tem);
+	s_mma(6, 1, 6, fwd.Jf(), ma, tem);
+	dsp(1, 6, tem);
 	//double tem2[6];
-	//s_mm(6, 1, 6, fwd.Jf(), tem, tem2);
+	//
 
 	//dsp(1, 6, tem2);
 

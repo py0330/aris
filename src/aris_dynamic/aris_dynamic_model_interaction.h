@@ -250,7 +250,7 @@ namespace aris::dynamic
 	public:
 		static auto Type()->const std::string & { static const std::string type{ "Force" }; return type; }
 		auto virtual type()const->const std::string & override { return Type(); }
-		auto virtual cptGlbFs(double *fsI, double *fsJ) noexcept->void = 0;
+		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void = 0;
 
 		virtual ~Force() = default;
 		explicit Force(const std::string &name = "force", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) :Interaction(name, makI, makJ, active) {}
@@ -400,7 +400,7 @@ namespace aris::dynamic
 	public:
 		static const std::string& Type() { static const std::string type("GeneralForce"); return type; }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual cptGlbFs(double *fsI, double *fsJ) noexcept->void override { s_vc(6, fce_value_, fsI); s_vi(6, fce_value_, fsJ); }
+		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void override { s_vc(6, fce_value_, fsI); s_vi(6, fce_value_, fsJ); }
 		auto setFce(const double *value) noexcept->void { std::copy(value, value + 6, fce_value_); }
 		auto fce()const noexcept->const double* { return fce_value_; }
 
@@ -421,7 +421,7 @@ namespace aris::dynamic
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual cptGlbFs(double *fsI, double *fsJ) noexcept->void override;
+		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void override;
 		auto setComponentID(Size id) noexcept->void { component_axis_ = id; }
 		auto setFce(double value) noexcept->void { std::fill_n(fce_value_, 6, 0); fce_value_[component_axis_] = value; }
 		auto setFce(double value, Size componentID) noexcept->void { this->component_axis_ = componentID; setFce(value); }

@@ -509,13 +509,13 @@ namespace aris::plan
 		static aris::Size total_count[6];
 		if (target.count == 1)
 		{
-			for (int i = 0; i < controller->motionPool().size(); ++i)
+			for (Size i = 0; i < controller->motionPool().size(); ++i)
 			{
 				begin_pos[i] = controller->motionPool().at(i).actualPos();
 			}
 		}
 
-		for (int i = 0; i < controller->motionPool().size(); ++i)
+		for (Size i = 0; i < controller->motionPool().size(); ++i)
 		{
 			double p, v, a;
 			aris::plan::moveAbsolute(target.count, begin_pos[i], rc_param->axis_pos[i], rc_param->velocity / 1000, rc_param->acceleration / 1000 / 1000, rc_param->deceleration / 1000 / 1000, p, v, a, total_count[i]);
@@ -963,7 +963,7 @@ namespace aris::plan
 
 		if (target.count == 1)
 		{
-			for (auto i = 0; i < param->joint_active_vec.size(); ++i)
+			for (Size i = 0; i < param->joint_active_vec.size(); ++i)
 			{
 				if (param->joint_active_vec[i])
 				{
@@ -973,7 +973,7 @@ namespace aris::plan
 		}
 
 		aris::Size total_count{ 1 };
-		for (auto i = 0; i < param->joint_active_vec.size(); ++i)
+		for (Size i = 0; i < param->joint_active_vec.size(); ++i)
 		{
 			if (param->joint_active_vec[i])
 			{
@@ -1080,4 +1080,165 @@ namespace aris::plan
 	MoveJ::MoveJ(MoveJ &&) = default;
 	MoveJ& MoveJ::operator=(const MoveJ &) = default;
 	MoveJ& MoveJ::operator=(MoveJ &&) = default;
+
+	struct MvL::Imp
+	{
+		struct Param {};
+
+
+	};
+	auto MvL::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		default_prepair_check_option(params, target);
+
+		MoveJ::Param param;
+		for (auto cmd_param : params)
+		{
+			if (cmd_param.first == "all")
+			{
+				param.joint_active_vec.resize(target.model->motionPool().size(), true);
+			}
+			else if (cmd_param.first == "none")
+			{
+				param.joint_active_vec.resize(target.model->motionPool().size(), false);
+			}
+			else if (cmd_param.first == "motion_id")
+			{
+				param.joint_active_vec.resize(target.model->motionPool().size(), false);
+				param.joint_active_vec.at(std::stoi(cmd_param.second)) = true;
+			}
+			else if (cmd_param.first == "physical_id")
+			{
+				param.joint_active_vec.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), false);
+				param.joint_active_vec.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = true;
+			}
+			else if (cmd_param.first == "slave_id")
+			{
+				param.joint_active_vec.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), false);
+				param.joint_active_vec.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = true;
+			}
+			else if (cmd_param.first == "pos")
+			{
+				aris::core::Matrix mat = target.model->calculator().calculateExpression(cmd_param.second);
+				if (mat.size() == 1)param.joint_pos_vec.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), mat.toDouble());
+				else
+				{
+					param.joint_pos_vec.resize(mat.size());
+					std::copy(mat.begin(), mat.end(), param.joint_pos_vec.begin());
+				}
+			}
+			else if (cmd_param.first == "vel")
+			{
+				param.vel = std::stod(cmd_param.second);
+			}
+			else if (cmd_param.first == "acc")
+			{
+				param.acc = std::stod(cmd_param.second);
+			}
+			else if (cmd_param.first == "dec")
+			{
+				param.dec = std::stod(cmd_param.second);
+			}
+		}
+
+		param.begin_joint_pos_vec.resize(target.model->motionPool().size());
+		target.param = param;
+	}
+	auto MvL::executeRT(PlanTarget &target)->int
+	{
+		auto param = std::any_cast<Imp::Param>(&target.param);
+
+		return 0;
+	}
+	auto MvL::collectNrt(PlanTarget &param)->void {}
+	MvL::~MvL() = default;
+	MvL::MvL(const std::string &name) : Plan(name), imp_(new Imp)
+	{
+		command().loadXmlStr(
+			"<moveJ default_child_type=\"Param\">"
+			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"		<limit_time default=\"5000\"/>"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
+			"			<all abbreviation=\"a\"/>"
+			"			<motion_id abbreviation=\"m\" default=\"0\"/>"
+			"			<physical_id abbreviation=\"p\" default=\"0\"/>"
+			"			<slave_id abbreviation=\"s\" default=\"0\"/>"
+			"		</unique>"
+			"		<pos default=\"0\"/>"
+			"		<vel default=\"0.5\"/>"
+			"		<acc default=\"1\"/>"
+			"		<dec default=\"1\"/>"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_all\">"
+			"			<check_all/>"
+			"			<check_none/>"
+			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"				<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos\">"
+			"					<check_pos/>"
+			"					<not_check_pos/>"
+			"					<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_max\">"
+			"							<check_pos_max/>"
+			"							<not_check_pos_max/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_min\">"
+			"							<check_pos_min/>"
+			"							<not_check_pos_min/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous\">"
+			"							<check_pos_continuous/>"
+			"							<not_check_pos_continuous/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_at_start\">"
+			"							<check_pos_continuous_at_start/>"
+			"							<not_check_pos_continuous_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_second_order\">"
+			"							<check_pos_continuous_second_order/>"
+			"							<not_check_pos_continuous_second_order/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_second_order_at_start\">"
+			"							<check_pos_continuous_second_order_at_start/>"
+			"							<not_check_pos_continuous_second_order_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_following_error\">"
+			"							<check_pos_following_error/>"
+			"							<not_check_pos_following_error />"
+			"						</unique>"
+			"					</group>"
+			"				</unique>"
+			"				<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel\">"
+			"					<check_vel/>"
+			"					<not_check_vel/>"
+			"					<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_max\">"
+			"							<check_vel_max/>"
+			"							<not_check_vel_max/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_min\">"
+			"							<check_vel_min/>"
+			"							<not_check_vel_min/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_continuous\">"
+			"							<check_vel_continuous/>"
+			"							<not_check_vel_continuous/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_continuous_at_start\">"
+			"							<check_vel_continuous_at_start/>"
+			"							<not_check_vel_continuous_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_following_error\">"
+			"							<check_vel_following_error/>"
+			"							<not_check_vel_following_error />"
+			"						</unique>"
+			"					</group>"
+			"				</unique>"
+			"			</group>"
+			"		</unique>"
+			"	</group>"
+			"</moveJ>");
+	}
+	MvL::MvL(const MvL &) = default;
+	MvL::MvL(MvL &&) = default;
+	MvL& MvL::operator=(const MvL &) = default;
+	MvL& MvL::operator=(MvL &&) = default;
 }

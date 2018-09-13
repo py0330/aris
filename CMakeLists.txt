@@ -123,7 +123,7 @@ install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 # aris dynamic project
 set(SOURCE aris_dynamic_plan aris_dynamic_matrix aris_dynamic_spline aris_dynamic_screw
  aris_dynamic_model_basic aris_dynamic_model_coordinate aris_dynamic_model_interaction aris_dynamic_model_solver
- aris_dynamic_model_simulation aris_dynamic_model)
+ aris_dynamic_model_simulation aris_dynamic_model aris_dynamic_model_instance)
 PREPEND_CPP(FULL_SRC src/aris_dynamic ${SOURCE})
 PREPEND_H(FULL_H src/aris_dynamic ${SOURCE})
 add_library(aris_dynamic STATIC ${FULL_SRC} ${FULL_H} src/aris_dynamic/aris_dynamic.h)

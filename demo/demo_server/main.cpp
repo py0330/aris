@@ -23,14 +23,14 @@ int main(int argc, char *argv[])
 	else if (robot_name == "rokae_xb4")
 	{
 		cs.resetController(createControllerRokaeXB4().release());
-		cs.resetModel(createModelRokaeXB4(robot_pm).release());
+		cs.resetModel(aris::robot::createModelRokaeXB4(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootRokaeXB4().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	}
 	else if (robot_name == "servo_press")
 	{
 		cs.resetController(createControllerServoPress().release());
-		cs.resetModel(createModelServoPress(robot_pm).release());
+		cs.resetModel(aris::robot::createModelServoPress(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootServoPress().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	}

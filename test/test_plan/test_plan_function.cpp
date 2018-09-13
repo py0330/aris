@@ -153,11 +153,38 @@ void test_move()
 	}
 	if (!(aris::dynamic::s_is_equal(size, result_p, p2, error) && aris::dynamic::s_is_equal(size, result_v, v2, error) && aris::dynamic::s_is_equal(size, result_a, a2, error) && count == 14))std::cout << "\"moveAbsolute\" failed" << std::endl;
 }
+void test_optimal()
+{
+	auto m = aris::dynamic::createModelRokaeXB4();
+	
+	
+	aris::plan::OptimalTrajectory planner;
+
+	planner.setBeginNode(OptimalTrajectory::Node{ 0,0,0,0 });
+	planner.setEndNode(OptimalTrajectory::Node{ 0,1,0,0 });
+	planner.setModel(m.get());
+	planner.setSolver(dynamic_cast<aris::dynamic::InverseKinematicSolver*>(&m->solverPool()[1]));
+	planner.run();
+
+	std::ofstream file;
+
+	file.open("C:\\Users\\py033\\Desktop\\test.txt");
+
+	file << std::setprecision(15);
+
+	for (auto &p : planner.list)
+	{
+		file << p.s << "   " << p.ds << "   " << p.dds << std::endl;
+	}
+}
+
+
 
 void test_function()
 {
 	std::cout << std::endl << "-----------------test function---------------------" << std::endl;
 	test_plan_root();
+	test_optimal();
 	std::cout << "-----------------test function finished------------" << std::endl << std::endl;
 }
 

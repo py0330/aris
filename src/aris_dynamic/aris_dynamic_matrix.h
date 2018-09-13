@@ -12,6 +12,7 @@
 #include <fstream>
 #include <list>
 #include <cmath>
+#include <numeric>
 
 #include <aris_core_basic_type.h>
 
@@ -658,8 +659,8 @@ namespace aris::dynamic
 		// init u //
 		s_mc(m, n, A, a_t, U, u_t);
 
-		// init p and tau //
-		for (Size i(-1); ++i < n; p[i] = i);
+		// init p //
+		std::iota(p, p + n, 0);
 
 		// compute //
 		for (Size i(-1), uii{ 0 }, ti{ 0 }; ++i < std::min(m, n); uii = next_d(uii, u_t), ti = next_r(ti, tau_t))

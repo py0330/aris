@@ -58,15 +58,15 @@ namespace aris::dynamic
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
-		auto cptGeneralJacobi()->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
-		auto mJg()->Size;// = part_number x 6
-		auto nJg()->Size;// = motion_number + general_motion_number x 6
-		auto Jg()->double *;// dimension : mJ x nJ 
-		auto cg()->double *;// dimension : mJ x 1
-		auto cptGeneralInverseDynamicMatrix()->void;// torque = M * theta_dot_dot + h
-		auto nM()->Size;// = motion_number + general_motion_number x 6
-		auto M()->double *;// dimension : nM x nM 
-		auto h()->double *;// dimension : nM x 1
+		auto cptGeneralJacobi() noexcept->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
+		auto mJg()const noexcept->Size;// = part_number x 6
+		auto nJg()const noexcept->Size;// = motion_number + general_motion_number x 6
+		auto Jg()const noexcept->const double *;// dimension : mJ x nJ 
+		auto cg()const noexcept->const double *;// dimension : mJ x 1
+		auto cptGeneralInverseDynamicMatrix() noexcept->void;// torque = M * theta_dot_dot + h
+		auto nM()const noexcept->Size;// = motion_number + general_motion_number x 6
+		auto M()const noexcept->const double *;// dimension : nM x nM 
+		auto h()const noexcept->const double *;// dimension : nM x 1
 		auto plotRelation()->void;
 
 		virtual ~UniversalSolver();
@@ -90,10 +90,11 @@ namespace aris::dynamic
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
-		auto cptJacobi()->void;
-		auto Jf()const->const double *;// inverse jacobi   mot_vs = Ji * ee_vs
-		auto mJf()const->Size;// equal mot num
-		auto nJf()const->Size;// equal ee num * 6
+		auto cptJacobi()noexcept->void;
+		auto mJf()const noexcept->Size;// equal mot num
+		auto nJf()const noexcept->Size;// equal ee num * 6
+		auto Jf()const noexcept->const double *;// inverse jacobi   mot_vs = Ji * ee_vs
+		auto cf()const noexcept->const double *;// dimension : mJ x 1
 
 		virtual ~ForwardKinematicSolver();
 		explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
@@ -116,10 +117,11 @@ namespace aris::dynamic
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
-		auto cptJacobi()->void;
-		auto Ji()const->const double *;// inverse jacobi   mot_vs = Ji * ee_vs
-		auto mJi()const->Size;// equal mot num
-		auto nJi()const->Size;// equal ee num * 6
+		auto cptJacobi()noexcept->void;
+		auto mJi()const noexcept->Size;// equal mot num
+		auto nJi()const noexcept->Size;// equal ee num * 6
+		auto Ji()const noexcept->const double *;// inverse jacobi   mot_vs = Ji * ee_vs
+		auto ci()const noexcept->const double *;// dimension : mJ x 1
 
 		virtual ~InverseKinematicSolver();
 		explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
