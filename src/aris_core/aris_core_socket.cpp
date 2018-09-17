@@ -143,8 +143,7 @@ namespace aris::core
 			char header[sizeof(MsgHeader)];
 		} head;
 		aris::core::Msg receivedData;
-
-		decltype(socket(AF_INET, SOCK_STREAM, 0)) conn_socket = imp->conn_socket_;
+		auto conn_socket = imp->conn_socket_;
 
 		// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 		receive_thread_ready.set_value();

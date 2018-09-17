@@ -122,7 +122,7 @@ namespace aris::robot
 		auto &m6 = model->addMotion(j6);
 
 		// add ee general motion //
-		double pq_ee_i[]{ 0.397, 0.0, 0.6295, 0.0, 0.0, 0.0, 1.0 };
+		double pq_ee_i[]{ 0.398, 0.0, 0.6295, 0.0, 0.0, 0.0, 1.0 };
 		double pm_ee_i[16];
 		double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 

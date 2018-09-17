@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <cinttypes>
+#include <queue>
 
 #include "aris_core.h"
 #include "aris_control.h"
@@ -27,7 +28,6 @@ namespace aris::server
 		// 实时循环中的轨迹参数 //
 		enum { CMD_POOL_SIZE = 1000 };
 		std::pair<aris::plan::Plan *, aris::plan::PlanTarget> plan_and_target_queue_[CMD_POOL_SIZE];
-
 		// cmd系列参数
 		std::atomic<std::int64_t> cmd_now_, cmd_end_, cmd_collect_;
 		std::uint32_t count_{ 1 };
@@ -412,7 +412,7 @@ namespace aris::server
 			if ((!(target.option & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
 				LOG_AND_THROW(std::runtime_error("failed to execute plan, because command pool is full"));
 			else
-				while ((cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)std::this_thread::yield();
+				while ((cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 			// 添加命令 //
 			LOG_INFO << "server execute cmd " << std::to_string(cmd_id) << std::endl;
