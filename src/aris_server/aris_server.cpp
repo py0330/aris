@@ -25,7 +25,7 @@ namespace aris::server
 		ControlServer *server_;
 
 		// 实时循环中的轨迹参数 //
-		enum { CMD_POOL_SIZE = 50 };
+		enum { CMD_POOL_SIZE = 1000 };
 		std::pair<aris::plan::Plan *, aris::plan::PlanTarget> plan_and_target_queue_[CMD_POOL_SIZE];
 
 		// cmd系列参数
