@@ -722,30 +722,6 @@ namespace aris::control
 	auto EthercatMotion::targetCur()const->double { return imp_->target_cur_; }
 	auto EthercatMotion::offsetVel()const->double { return imp_->offset_vel_; }
 	auto EthercatMotion::offsetCur()const->double { return imp_->offset_cur_; }
-	auto EthercatMotion::modeOfDisplay()->std::uint8_t
-	{
-		std::uint8_t mode;
-		readPdo(0x6061, 0x00, mode);
-		return mode;
-	}
-	auto EthercatMotion::actualPos()->double
-	{
-		std::int32_t pos_count{ 0 };
-		readPdo(0x6064, 0x00, pos_count);
-		return static_cast<double>(pos_count) / posFactor() - posOffset();
-	}
-	auto EthercatMotion::actualVel()->double
-	{
-		std::int32_t vel_count{ 0 };
-		readPdo(0x606C, 0x00, vel_count);
-		return static_cast<double>(vel_count) / posFactor();
-	}
-	auto EthercatMotion::actualCur()->double
-	{
-		std::int16_t cur_count{ 0 };
-		readPdo(0x6078, 0x00, cur_count);
-		return static_cast<double>(cur_count);
-	}
 	auto EthercatMotion::setModeOfOperation(std::uint8_t mode)->void
 	{
 		imp_->mode_of_operation = mode;
@@ -776,6 +752,31 @@ namespace aris::control
 		imp_->offset_cur_ = cur;
 		writePdo(0x60B2, 0x00, static_cast<std::int16_t>(cur));
 	}
+	auto EthercatMotion::modeOfDisplay()->std::uint8_t
+	{
+		std::uint8_t mode;
+		readPdo(0x6061, 0x00, mode);
+		return mode;
+	}
+	auto EthercatMotion::actualPos()->double
+	{
+		std::int32_t pos_count{ 0 };
+		readPdo(0x6064, 0x00, pos_count);
+		return static_cast<double>(pos_count) / posFactor() - posOffset();
+	}
+	auto EthercatMotion::actualVel()->double
+	{
+		std::int32_t vel_count{ 0 };
+		readPdo(0x606C, 0x00, vel_count);
+		return static_cast<double>(vel_count) / posFactor();
+	}
+	auto EthercatMotion::actualCur()->double
+	{
+		std::int16_t cur_count{ 0 };
+		readPdo(0x6078, 0x00, cur_count);
+		return static_cast<double>(cur_count);
+	}
+
 	auto EthercatMotion::disable()->int
 	{
 		// control word
