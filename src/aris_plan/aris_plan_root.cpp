@@ -889,7 +889,7 @@ namespace aris::plan
 	}
 	auto RecoverPlan::executeRT(PlanTarget &target)->int
 	{
-		auto rc_param = std::any_cast<RecoverParam>(&target.param);
+		auto &param = std::any_cast<RecoverParam&>(target.param);
 		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 
 		// 取得起始位置 //
@@ -906,7 +906,7 @@ namespace aris::plan
 		for (Size i = 0; i < controller->motionPool().size(); ++i)
 		{
 			double p, v, a;
-			aris::plan::moveAbsolute(target.count, begin_pos[i], rc_param->axis_pos[i], rc_param->velocity / 1000, rc_param->acceleration / 1000 / 1000, rc_param->deceleration / 1000 / 1000, p, v, a, total_count[i]);
+			aris::plan::moveAbsolute(target.count, begin_pos[i], param.axis_pos[i], param.velocity / 1000, param.acceleration / 1000 / 1000, param.deceleration / 1000 / 1000, p, v, a, total_count[i]);
 			target.model->motionPool().at(i).setMp(p);
 		}
 
@@ -1014,8 +1014,6 @@ namespace aris::plan
 	struct MovePlan::Imp
 	{
 		struct MvParam { double pq[7]; double acceleration, velocity, deceleration, angular_acceleration, angular_velocity, angular_deceleration; };
-
-		Imp() {}
 	};
 	auto MovePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
@@ -1093,21 +1091,21 @@ namespace aris::plan
 		target.option |= USE_TARGET_POS;
 		target.param = mv_param;
 	}
-	auto MovePlan::executeRT(PlanTarget &param)->int
+	auto MovePlan::executeRT(PlanTarget &target)->int
 	{
-		auto mv_param = std::any_cast<Imp::MvParam>(&param.param);
-		auto controller = dynamic_cast<aris::control::Controller *>(param.master);
+		auto mv_param = std::any_cast<Imp::MvParam>(&target.param);
+		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 
 		// 取得起始位置 //
 		static double begin_pm[16], relative_pm[16], relative_pa[6], pos_ratio, ori_ratio, norm_pos, norm_ori;
 		double p, v, a;
 		aris::Size pos_total_count, ori_total_count;
-		if (param.count == 1)
+		if (target.count == 1)
 		{
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mv_param->pq, end_pm);
-			param.model->generalMotionPool().at(0).updMpm();
-			param.model->generalMotionPool().at(0).getMpm(begin_pm);
+			target.model->generalMotionPool().at(0).updMpm();
+			target.model->generalMotionPool().at(0).getMpm(begin_pm);
 			aris::dynamic::s_inv_pm_dot_pm(begin_pm, end_pm, relative_pm);
 
 			// relative_pa //
@@ -1116,50 +1114,44 @@ namespace aris::plan
 			norm_pos = aris::dynamic::s_norm(3, relative_pa);
 			norm_ori = aris::dynamic::s_norm(3, relative_pa + 3);
 
-			aris::plan::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000, mv_param->acceleration / 1000 / 1000, mv_param->deceleration / 1000 / 1000, p, v, a, pos_total_count);
-			aris::plan::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000, mv_param->angular_acceleration / 1000 / 1000, mv_param->angular_deceleration / 1000 / 1000, p, v, a, ori_total_count);
+			aris::plan::moveAbsolute(target.count, 0.0, norm_pos, mv_param->velocity / 1000, mv_param->acceleration / 1000 / 1000, mv_param->deceleration / 1000 / 1000, p, v, a, pos_total_count);
+			aris::plan::moveAbsolute(target.count, 0.0, norm_ori, mv_param->angular_velocity / 1000, mv_param->angular_acceleration / 1000 / 1000, mv_param->angular_deceleration / 1000 / 1000, p, v, a, ori_total_count);
 
 			pos_ratio = pos_total_count < ori_total_count ? double(pos_total_count) / ori_total_count : 1.0;
 			ori_ratio = ori_total_count < pos_total_count ? double(ori_total_count) / pos_total_count : 1.0;
 
-			std::cout << "pos count before:" << pos_total_count << std::endl;
-			std::cout << "ori count before:" << ori_total_count << std::endl;
-
-			aris::plan::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000 * pos_ratio, mv_param->acceleration / 1000 / 1000 * pos_ratio* pos_ratio, mv_param->deceleration / 1000 / 1000 * pos_ratio* pos_ratio, p, v, a, pos_total_count);
-			aris::plan::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000 * ori_ratio, mv_param->angular_acceleration / 1000 / 1000 * ori_ratio * ori_ratio, mv_param->angular_deceleration / 1000 / 1000 * ori_ratio * ori_ratio, p, v, a, ori_total_count);
-
-			std::cout << "pos count after:" << pos_total_count << std::endl;
-			std::cout << "ori count after:" << ori_total_count << std::endl;
+			aris::plan::moveAbsolute(target.count, 0.0, norm_pos, mv_param->velocity / 1000 * pos_ratio, mv_param->acceleration / 1000 / 1000 * pos_ratio* pos_ratio, mv_param->deceleration / 1000 / 1000 * pos_ratio* pos_ratio, p, v, a, pos_total_count);
+			aris::plan::moveAbsolute(target.count, 0.0, norm_ori, mv_param->angular_velocity / 1000 * ori_ratio, mv_param->angular_acceleration / 1000 / 1000 * ori_ratio * ori_ratio, mv_param->angular_deceleration / 1000 / 1000 * ori_ratio * ori_ratio, p, v, a, ori_total_count);
 		}
 
 		double pa[6]{ 0,0,0,0,0,0 }, pm[16], pm2[16];
 
-		aris::plan::moveAbsolute(param.count, 0.0, norm_pos, mv_param->velocity / 1000 * pos_ratio, mv_param->acceleration / 1000 / 1000 * pos_ratio* pos_ratio, mv_param->deceleration / 1000 / 1000 * pos_ratio* pos_ratio, p, v, a, pos_total_count);
+		aris::plan::moveAbsolute(target.count, 0.0, norm_pos, mv_param->velocity / 1000 * pos_ratio, mv_param->acceleration / 1000 / 1000 * pos_ratio* pos_ratio, mv_param->deceleration / 1000 / 1000 * pos_ratio* pos_ratio, p, v, a, pos_total_count);
 		if (norm_pos > 1e-10)aris::dynamic::s_vc(3, p / norm_pos, relative_pa, pa);
 
-		aris::plan::moveAbsolute(param.count, 0.0, norm_ori, mv_param->angular_velocity / 1000 * ori_ratio, mv_param->angular_acceleration / 1000 / 1000 * ori_ratio * ori_ratio, mv_param->angular_deceleration / 1000 / 1000 * ori_ratio * ori_ratio, p, v, a, ori_total_count);
+		aris::plan::moveAbsolute(target.count, 0.0, norm_ori, mv_param->angular_velocity / 1000 * ori_ratio, mv_param->angular_acceleration / 1000 / 1000 * ori_ratio * ori_ratio, mv_param->angular_deceleration / 1000 / 1000 * ori_ratio * ori_ratio, p, v, a, ori_total_count);
 		if (norm_ori > 1e-10)aris::dynamic::s_vc(3, p / norm_ori, relative_pa + 3, pa + 3);
 
 		aris::dynamic::s_pa2pm(pa, pm);
 		aris::dynamic::s_pm_dot_pm(begin_pm, pm, pm2);
 
 		// 反解计算电机位置 //
-		param.model->generalMotionPool().at(0).setMpm(pm2);
-		if (!param.model->solverPool().at(0).kinPos())return -1;
+		target.model->generalMotionPool().at(0).setMpm(pm2);
+		if (!target.model->solverPool().at(0).kinPos())return -1;
 
 
 		double pq[7];
-		aris::dynamic::s_pm2pq(*param.model->generalMotionPool().at(0).mpm(), pq);
-		param.master->lout() << param.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6]<<"  ";
+		aris::dynamic::s_pm2pq(*target.model->generalMotionPool().at(0).mpm(), pq);
+		target.master->lout() << target.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6]<<"  ";
 
 		for (auto &cm : controller->motionPool())
 		{
-			param.master->lout() << "  " << cm.targetPos() << "  " << cm.actualPos() << "  " << cm.actualVel() << "  " << cm.actualCur() << "  ";
+			target.master->lout() << "  " << cm.targetPos() << "  " << cm.actualPos() << "  " << cm.actualVel() << "  " << cm.actualCur() << "  ";
 		}
-		param.master->lout() << "\n";
+		target.master->lout() << "\n";
 
 
-		return std::max(pos_total_count, ori_total_count) > param.count ? 1 : 0;
+		return std::max(pos_total_count, ori_total_count) > target.count ? 1 : 0;
 	}
 	auto MovePlan::collectNrt(PlanTarget &param)->void {}
 	MovePlan::~MovePlan() = default;
@@ -1510,8 +1502,6 @@ namespace aris::plan
 	struct MvL::Imp
 	{
 		struct Param {};
-
-
 	};
 	auto MvL::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
@@ -1667,4 +1657,67 @@ namespace aris::plan
 	MvL::MvL(MvL &&) = default;
 	MvL& MvL::operator=(const MvL &) = default;
 	MvL& MvL::operator=(MvL &&) = default;
+
+
+	struct OptimalTrajectory::Imp
+	{
+		
+	};
+	auto OptimalTrajectory::run()->void
+	{
+		// 初始化 //
+		l.clear();
+		l.push_back(beg_);
+		r.clear();
+		r.push_back(end_);
+		l_sure_ = l.begin(); // 肯定可以成功的节点
+		r_sure_ = r.begin(); // 肯定可以成功的节点
+
+		// 开始计算 //
+		while (l.back().s < r.front().s)
+		{
+			if (l.back().ds < r.front().ds)
+			{
+				double max_dds, min_dds;
+				if (cptDdsConstraint(l.back().s, l.back().ds, max_dds, min_dds, true))
+				{
+					l.back().dds = max_dds;
+					auto ins = l.insert(l.end(), Node());
+					ins->ds = std::prev(ins)->ds + std::prev(ins)->dds * dt;
+					ins->s = std::prev(ins)->s + std::prev(ins)->ds * dt + 0.5 * std::prev(ins)->dds * dt * dt;
+				}
+				else
+				{
+					testForward();
+				}
+			}
+			else
+			{
+				double max_dds, min_dds;
+				if (cptDdsConstraint(r.front().s, r.front().ds, max_dds, min_dds, false))
+				{
+					// 反向略有不同：加速度都放在前面的节点处
+					auto ins = r.insert(r.begin(), Node());
+					ins->dds = min_dds;
+					ins->ds = std::next(ins)->ds - ins->dds * dt;
+					ins->s = std::next(ins)->s - std::next(ins)->ds * dt + 0.5 * ins->dds * dt * dt;
+				}
+				else
+				{
+					testBackward();
+				}
+			}
+
+			std::cout << r.front().s - l.back().s << std::endl;
+		}
+
+		// 连接前后轨迹 //
+		join();
+	}
+	OptimalTrajectory::~OptimalTrajectory() = default;
+	OptimalTrajectory::OptimalTrajectory() = default;
+	OptimalTrajectory::OptimalTrajectory(const OptimalTrajectory&) = default;
+	OptimalTrajectory::OptimalTrajectory(OptimalTrajectory&&) = default;
+	OptimalTrajectory& OptimalTrajectory::operator=(const OptimalTrajectory&) = default;
+	OptimalTrajectory& OptimalTrajectory::operator=(OptimalTrajectory&&) = default;
 }

@@ -140,9 +140,9 @@ void test_optimal()
 	planner.setMotionLimit(limits);
 	planner.setModel(m.get());
 	planner.setSolver(dynamic_cast<aris::dynamic::InverseKinematicSolver*>(&m->solverPool()[0]));
-	planner.setBeginNode(OptimalTrajectory::Node{ 0,0,0,0 });
-	planner.setEndNode(OptimalTrajectory::Node{ 0,1,0,0 });
-	planner.setFunction([](double s, double ds, aris::dynamic::Model *m, std::vector<double> &x, std::vector<double> &dx_ds, std::vector<double> &ddx_ds2)->void
+	planner.setBeginNode(OptimalTrajectory::Node{ 0,0,0 });
+	planner.setEndNode(OptimalTrajectory::Node{ 1,0,0 });
+	planner.setFunction([](double s, double ds, std::vector<double> &pq, std::vector<double> &dpq_ds, std::vector<double> &ddpq_ds2)->void
 	{
 		double begin_pq[7]{ 0.398,0,0.6295,0,0.70710678118655,0,0.70710678118655 }, end_pq[7]{ 0.36,0.1,0.6295,0,0.70710678118655,0,0.70710678118655 };
 		if (aris::dynamic::s_vv(4, begin_pq + 3, end_pq + 3) < 0) aris::dynamic::s_iv(4, begin_pq + 3);
@@ -169,18 +169,18 @@ void test_optimal()
 		// g = vq2vs(pq, dpq/ds)
 		// h = aq2as(pq, vq, ddpq/ds^2)
 
-		x.resize(7);
-		dx_ds.resize(7);
-		ddx_ds2.resize(7);
+		pq.resize(7);
+		dpq_ds.resize(7);
+		ddpq_ds2.resize(7);
 
 		// 位置插值 //
 		double a{ 1 - s }, b{ s }, da{ -1.0 }, db{ 1.0 }, dda{ 0.0 }, ddb{ 0.0 };
-		aris::dynamic::s_vc(3, a, begin_pq, x.data());
-		aris::dynamic::s_va(3, b, end_pq, x.data());
-		aris::dynamic::s_vc(3, da, begin_pq, dx_ds.data());
-		aris::dynamic::s_va(3, db, end_pq, dx_ds.data());
-		aris::dynamic::s_vc(3, dda, begin_pq, ddx_ds2.data());
-		aris::dynamic::s_va(3, ddb, end_pq, ddx_ds2.data());
+		aris::dynamic::s_vc(3, a, begin_pq, pq.data());
+		aris::dynamic::s_va(3, b, end_pq, pq.data());
+		aris::dynamic::s_vc(3, da, begin_pq, dpq_ds.data());
+		aris::dynamic::s_va(3, db, end_pq, dpq_ds.data());
+		aris::dynamic::s_vc(3, dda, begin_pq, ddpq_ds2.data());
+		aris::dynamic::s_va(3, ddb, end_pq, ddpq_ds2.data());
 
 		// 角度插值 //
 		double c = aris::dynamic::s_vv(4, begin_pq + 3, end_pq + 3);	
@@ -195,47 +195,44 @@ void test_optimal()
 			ddb = -sin(s*theta) / sin(theta) * theta * theta;
 		}
 
-		aris::dynamic::s_vc(4, a, begin_pq + 3, x.data() + 3);
-		aris::dynamic::s_va(4, b, end_pq + 3, x.data() + 3);
-		aris::dynamic::s_vc(4, da, begin_pq + 3, dx_ds.data() + 3);
-		aris::dynamic::s_va(4, db, end_pq + 3, dx_ds.data() + 3);
-		aris::dynamic::s_vc(4, dda, begin_pq + 3, ddx_ds2.data() + 3);
-		aris::dynamic::s_va(4, ddb, end_pq + 3, ddx_ds2.data() + 3);
-
-
-		////////////////////////////////////////////////////////////////////////////////
-		double vs[6], as[6];
-		aris::dynamic::s_aq2as(x.data(), dx_ds.data(), ddx_ds2.data(), as, vs);
-
-		double real_vs[6];
-		aris::dynamic::s_vc(6, ds, vs, real_vs);
-
-		m->generalMotionPool().at(0).setMpq(x.data());
-		m->generalMotionPool().at(0).setMvs(real_vs);
-
-		dx_ds.assign(vs, vs + 6);
-		ddx_ds2.assign(as, as + 6);
+		aris::dynamic::s_vc(4, a, begin_pq + 3, pq.data() + 3);
+		aris::dynamic::s_va(4, b, end_pq + 3, pq.data() + 3);
+		aris::dynamic::s_vc(4, da, begin_pq + 3, dpq_ds.data() + 3);
+		aris::dynamic::s_va(4, db, end_pq + 3, dpq_ds.data() + 3);
+		aris::dynamic::s_vc(4, dda, begin_pq + 3, ddpq_ds2.data() + 3);
+		aris::dynamic::s_va(4, ddb, end_pq + 3, ddpq_ds2.data() + 3);
 	});
-	planner.run2();
+	planner.run();
 
 	std::ofstream file;
 
 	file.open("C:\\Users\\py033\\Desktop\\test.txt");
-
 	file << std::setprecision(15);
-
 	for (auto &node : planner.list_)
 	{
-		std::vector<double> x, dx_ds, ddx_ds2;
-		planner.plan(node.s, node.ds, planner.model, x, dx_ds, ddx_ds2);
+		std::vector<double> pq, dpq_ds, ddpq_ds2;
+		planner.plan(node.s, node.ds, pq, dpq_ds, ddpq_ds2);
+
+		for (aris::Size i = 0; i < planner.model->generalMotionPool().size(); ++i)
+		{
+			double vs[6], as[6];
+			aris::dynamic::s_aq2as(pq.data() + 7 * i, dpq_ds.data() + 7 * i, ddpq_ds2.data() + 7 * i, as, vs);
+
+			double real_vs[6];
+			aris::dynamic::s_vc(6, node.ds, vs, real_vs);
+
+			planner.model->generalMotionPool().at(i).setMpq(pq.data() + 7 * i);
+			planner.model->generalMotionPool().at(i).setMvs(real_vs);
+		}
+
 		planner.solver->kinPos();
 		planner.solver->kinVel();
 		planner.solver->cptJacobi();
 		
-
 		file << node.s << "  ";
 		for (auto &mot : planner.model->motionPool())
 		{
+			mot.updMp();
 			file << mot.mp() << "  ";
 		}
 		file << "\n";
@@ -243,46 +240,6 @@ void test_optimal()
 
 
 	file.close();
-	file.open("C:\\Users\\py033\\Desktop\\l.txt");
-	file << std::setprecision(15);
-	for (auto &node : planner.l)
-	{
-		std::vector<double> x, dx_ds, ddx_ds2;
-		planner.plan(node.s, node.ds, planner.model, x, dx_ds, ddx_ds2);
-		planner.solver->kinPos();
-		planner.solver->kinVel();
-		planner.solver->cptJacobi();
-
-
-		file << node.s << "  ";
-		for (auto &mot : planner.model->motionPool())
-		{
-			file << mot.mp() << "  ";
-		}
-		file << "\n";
-	}
-
-	file.close();
-	file.open("C:\\Users\\py033\\Desktop\\r.txt");
-
-	file << std::setprecision(15);
-
-	for (auto &node : planner.r)
-	{
-		std::vector<double> x, dx_ds, ddx_ds2;
-		planner.plan(node.s, node.ds, planner.model, x, dx_ds, ddx_ds2);
-		planner.solver->kinPos();
-		planner.solver->kinVel();
-		planner.solver->cptJacobi();
-
-
-		file << node.s << "  ";
-		for (auto &mot : planner.model->motionPool())
-		{
-			file << mot.mp() << "  ";
-		}
-		file << "\n";
-	}
 }
 
 

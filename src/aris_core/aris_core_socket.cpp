@@ -145,13 +145,30 @@ namespace aris::core
 		aris::core::Msg receivedData;
 		auto conn_socket = imp->conn_socket_;
 
+#ifdef UNIX
+		signal(SIGPIPE, SIG_IGN);
+#endif
+
+
 		// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 		receive_thread_ready.set_value();
 
 		// 开启接受数据的循环 //
 		for (;;)
 		{
-			int res = recv(conn_socket, head.header, sizeof(MsgHeader), 0);
+			int res = 0;
+			while (res < sizeof(MsgHeader))
+			{
+				int ret = recv(conn_socket, head.header + res, sizeof(MsgHeader) - res, 0);
+				if (ret <= 0)
+				{
+					res = ret;
+					break;
+				}
+
+				res += ret;
+			}
+			
 
 			// 检查是否正在Close,如果不能锁住,则证明正在close,于是结束线程释放资源, //
 			// 若能锁住,则开始获取Imp所有权 //
@@ -177,7 +194,20 @@ namespace aris::core
 			receivedData.header() = *reinterpret_cast<MsgHeader*>(head.header);
 
 			if (receivedData.size() > 0)
-				res = recv(conn_socket, receivedData.data(), receivedData.size(), 0);
+			{
+				res = 0;
+				while (res < receivedData.size())
+				{
+					int ret = recv(conn_socket, receivedData.data() + res, receivedData.size() - res, 0);
+					if (ret <= 0)
+					{
+						res = ret;
+						break;
+					}
+
+					res += ret;
+				}
+			}
 
 			if (res <= 0)
 			{

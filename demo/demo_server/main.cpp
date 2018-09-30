@@ -44,10 +44,12 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-	aris::core::Socket socket;
-	socket.setOnReceivedMsg([&](aris::core::Socket *, aris::core::Msg &msg)->int
+	aris::core::WebSocket socket;
+	socket.setOnReceivedMsg([&](aris::core::WebSocket *, aris::core::Msg &msg)->int
 	{
 		std::string msg_data = msg.toString();
+
+		std::cout << "recv:" << msg_data << std::endl;
 
 		LOG_INFO << "socket receive normal msg:\n"
 			<< msg.header().msg_size_ << "&"
@@ -60,9 +62,11 @@ int main(int argc, char *argv[])
 
 		return 0;
 	});
-	socket.setOnReceivedRequest([&](aris::core::Socket *, aris::core::Msg &msg)
+	socket.setOnReceivedRequest([&](aris::core::WebSocket *, aris::core::Msg &msg)
 	{
 		std::string msg_data = msg.toString();
+
+		std::cout << "recv:" << msg_data << std::endl;
 
 		LOG_INFO_EVERY_N(10) << "socket receive request msg:"
 			<< msg.header().msg_size_ << "&"
@@ -113,15 +117,17 @@ int main(int argc, char *argv[])
 
 		return aris::core::Msg("unknown msg id");
 	});
-	socket.setOnReceivedConnection([](aris::core::Socket *sock, const char *ip, int port)->int
+	socket.setOnReceivedConnection([](aris::core::WebSocket *sock, const char *ip, int port)->int
 	{
+		std::cout << "socket receive connection" << std::endl;
 		LOG_INFO << "socket receive connection:\n"
 			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
 			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
 		return 0;
 	});
-	socket.setOnLoseConnection([](aris::core::Socket *socket)
+	socket.setOnLoseConnection([](aris::core::WebSocket *socket)
 	{
+		std::cout << "socket lose connection" << std::endl;
 		LOG_INFO << "socket lose connection" << std::endl;
 		while (true)
 		{

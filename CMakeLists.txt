@@ -42,8 +42,8 @@ endif(UNIX)
 
 # set debug and release options
 if(WIN32)
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 endif(WIN32)
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CONFIGURATION_TYPES Debug Release)
@@ -102,7 +102,7 @@ install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
 # aris core project
-set(SOURCE aris_core_command aris_core_socket aris_core_pipe aris_core_expression_calculator aris_core_log aris_core_msg aris_core_object tinyxml2 aris_core_basic_type)
+set(SOURCE aris_core_command aris_core_socket aris_core_websocket sha1 aris_core_pipe aris_core_expression_calculator aris_core_log aris_core_msg aris_core_object tinyxml2 aris_core_basic_type)
 PREPEND_CPP(FULL_SRC src/aris_core ${SOURCE})
 PREPEND_H(FULL_H src/aris_core ${SOURCE})
 add_library(aris_core STATIC ${FULL_SRC} ${FULL_H} src/aris_core/aris_core.h src/aris.h)
@@ -172,7 +172,7 @@ install(DIRECTORY src/aris_robot/resource/ DESTINATION resource/aris_robot)
 enable_testing()
 
 # test core
-set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_log.h test_core_log.cpp test_core_msg.h test_core_msg.cpp test_core_object.h test_core_object.cpp test_core_socket.h test_core_socket.cpp test_core_command.h test_core_command.cpp)
+set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_log.h test_core_log.cpp test_core_msg.h test_core_msg.cpp test_core_object.h test_core_object.cpp test_core_socket.h test_core_socket.cpp test_core_websocket.h test_core_websocket.cpp test_core_command.h test_core_command.cpp)
 PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
 add_executable(test_core ${FULL_SRC})
 target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
