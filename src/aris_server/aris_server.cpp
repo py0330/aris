@@ -107,7 +107,7 @@ namespace aris::server
 		int ret = reinterpret_cast<aris::plan::Plan *>(plan_and_target.first)->executeRT(plan_and_target.second);
 
 		// 控制电机 //
-		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < std::min(controller_->motionPool().size(), model_->motionPool().size()); ++i)
 		{
 			auto &cm = controller_->motionPool().at(i);
 			auto &mm = model_->motionPool().at(i);
