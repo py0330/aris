@@ -26,6 +26,7 @@
 #include<netdb.h>
 #include<unistd.h>
 #include<arpa/inet.h>
+#include<signal.h>
 #endif
 
 #include "aris_core_websocket.h"
