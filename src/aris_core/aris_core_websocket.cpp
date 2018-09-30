@@ -337,6 +337,7 @@ namespace aris::core
 			bool fin{ false };
 			while (!fin)
 			{
+				// 接受头 //
 				char web_head[2];
 				int res = safe_recv(conn_socket, web_head, 2);
 
@@ -356,38 +357,55 @@ namespace aris::core
 					return;
 				}
 
-
-
+				// 是否最后一帧 //
 				fin = (web_head[0] & 0x80) == 0x80; // 1bit，1表示最后一帧    
-				bool mask_flag = (web_head[1] & 0x80) == 0x80; // 是否包含掩码    
-				
-				auto l = web_head[1] & 0x7F;
-				
-				std::int64_t payload_len = web_head[1] & 0x7F; // 数据长度 
 
+				// 获取数据长度
+				std::int64_t payload_len = web_head[1] & 0x7F; // 数据长度 
 				if (payload_len == 126)
 				{
-					std::int16_t length;
-					safe_recv(conn_socket, reinterpret_cast<char *>(&length), 2);
+					char length_char[2];
+					safe_recv(conn_socket, length_char, 2);
 					if (res <= 0)
 					{
 						imp->socket_->stop();
 						if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
 						return;
 					}
+
+					std::uint16_t length;
+					length = length_char[0] << 8 | length_char[1];
 					payload_len = length;
 				}
 				else if (payload_len == 127)
 				{
-					safe_recv(conn_socket, reinterpret_cast<char *>(&payload_len), 8);
+					char length_char[8];
+					safe_recv(conn_socket, length_char, 8);
 					if (res <= 0)
 					{
 						imp->socket_->stop();
 						if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
 						return;
 					}
+
+					char reverse_char[8];
+					for (int i = 0; i < 8; ++i)reverse_char[i] = length_char[7 - i];
+					std::copy_n(reverse_char, 8, reinterpret_cast<char*>(&payload_len));
 				}
 
+				//////////////////////////////////保护，数据不能太大///////////////////////////////
+				if (payload_len > 4096 || payload_len + payload_data.size() > 16384)
+				{
+					LOG_ERROR << "websocket receive too large object" << std::endl;
+					
+					imp->socket_->stop();
+					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
+					return;
+				}
+
+
+				// 获取掩码
+				bool mask_flag = (web_head[1] & 0x80) == 0x80; // 是否包含掩码    
 				char masks[4];
 				safe_recv(conn_socket, masks, 4);
 				if (res <= 0)
@@ -397,6 +415,7 @@ namespace aris::core
 					return;
 				}
 
+				// 用掩码读取出数据 //
 				auto last_size = payload_data.size();
 				payload_data.resize(payload_data.size() + payload_len);
 				safe_recv(conn_socket, payload_data.data() + last_size, payload_len);
@@ -411,14 +430,23 @@ namespace aris::core
 				{
 					payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
 				}
-
-				LOG_INFO <<"fin:"<< fin << " payload_len:" << payload_len << std::endl;
 			}
 
 			// 把web sock 的东西转成 msg //
 			aris::core::Msg msg;
 			msg.resize(payload_data.size() - sizeof(aris::core::MsgHeader));
 			std::copy(payload_data.data(), payload_data.data() + payload_data.size(), reinterpret_cast<char*>(&msg.header()));
+
+			if (msg.size() != payload_data.size() - sizeof(aris::core::MsgHeader))
+			{
+				LOG_ERROR << "websocket receive wrong msg size" << std::endl;
+
+				imp->socket_->stop();
+				if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
+				return;
+			}
+
+
 
 			// 处理msg，这里就和之前的socket一样了 //
 			receivedData = std::move(msg);
