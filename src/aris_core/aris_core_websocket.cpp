@@ -311,7 +311,7 @@ namespace aris::core
 		{
 			//////////////////////////////////////////////////////
 			// 循环去收指定size //
-			auto &safe_recv = [](decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
+			const auto &safe_recv = [](decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
 			{
 				int result{ 0 };
 				for (; result < size; )
