@@ -55,8 +55,8 @@ namespace aris::control
 		auto slaveAtPhy(aris::Size id)const->const Slave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
 		auto slavePool()->aris::core::ObjectPool<Slave>&;
 		auto slavePool()const->const aris::core::ObjectPool<Slave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
-		auto rtHandle()->Handle*;
-		auto rtHandle()const->const Handle* { return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
+		auto rtHandle()->std::any&;
+		auto rtHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
 
 		virtual ~Master();
 		explicit Master(const std::string &name = "master");

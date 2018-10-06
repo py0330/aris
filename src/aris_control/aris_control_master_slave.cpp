@@ -99,8 +99,8 @@ namespace aris::control
 
 		const int sample_period_ns_{ 1000000 };
 
-		aris::core::ImpPtr<Handle> rt_task_handle_;
-		aris::core::ImpPtr<Handle> ec_handle_;
+		std::any rt_task_handle_;
+		std::any ec_handle_;
 
 		Imp() { mout_msg_stream_.reset(new aris::core::MsgStream(mout_msg_)); lout_msg_stream_.reset(new aris::core::MsgStream(lout_msg_)); }
 
@@ -188,9 +188,9 @@ namespace aris::control
 		});
 
 		// create and start rt task //
-		imp_->rt_task_handle_.reset(aris_rt_task_create());
-		if (imp_->rt_task_handle_.get() == nullptr) throw std::runtime_error("rt_task_create failed");
-		if (aris_rt_task_start(imp_->rt_task_handle_.get(), &Imp::rt_task_func, this))throw std::runtime_error("rt_task_start failed");
+		imp_->rt_task_handle_ = aris_rt_task_create();
+		if (!imp_->rt_task_handle_.has_value()) throw std::runtime_error("rt_task_create failed");
+		if (aris_rt_task_start(rtHandle(), &Imp::rt_task_func, this))throw std::runtime_error("rt_task_start failed");
 	}
 	auto Master::stop()->void
 	{
@@ -213,7 +213,7 @@ namespace aris::control
 		if (imp_->is_rt_thread_running_)throw std::runtime_error("master already running, cannot set control strategy");
 		imp_->strategy_ = strategy;
 	}
-	auto Master::rtHandle()->Handle* { return imp_->rt_task_handle_.get(); }
+	auto Master::rtHandle()->std::any& { return imp_->rt_task_handle_; }
 	auto Master::logFile(const char *file_name)->void
 	{
 		// 将已有的log数据发送过去 //

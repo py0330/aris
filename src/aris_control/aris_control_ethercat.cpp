@@ -109,10 +109,10 @@ namespace aris::control
 	Sdo& Sdo::operator=(const Sdo &) = default;
 	Sdo& Sdo::operator=(Sdo &&) = default;
 
-	struct Pdo::Imp { aris::core::ImpPtr<Handle> ec_handle_; };
+	struct Pdo::Imp { std::any ec_handle_; };
 	auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void { DO::saveXml(xml_ele); }
 	auto Pdo::loadXml(const aris::core::XmlElement &xml_ele)->void { DO::loadXml(xml_ele); }
-	auto Pdo::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
+	auto Pdo::ecHandle()->std::any& { return imp_->ec_handle_; }
 	Pdo::~Pdo() = default;
 	Pdo::Pdo(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size size) :DO(name, index, sub_index, size) {}
 	Pdo::Pdo(const Pdo &) = default;
@@ -122,7 +122,7 @@ namespace aris::control
 
 	struct PdoGroup::Imp
 	{
-		aris::core::ImpPtr<Handle> handle_;
+		std::any handle_;
 		bool is_tx_;
 		std::uint16_t index_;
 
@@ -145,7 +145,7 @@ namespace aris::control
 
 		Object::loadXml(xml_ele);
 	}
-	auto PdoGroup::ecHandle()->Handle* { return imp_->handle_.get(); }
+	auto PdoGroup::ecHandle()->std::any& { return imp_->handle_; }
 	auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
 	auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
 	auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
@@ -173,7 +173,6 @@ namespace aris::control
 			bool tx, rx;
 			std::map<std::uint8_t, SubDataType> sub_items;
 		};
-
 		struct PdoG
 		{
 			std::uint16_t index_;
@@ -182,7 +181,6 @@ namespace aris::control
 			bool is_tx_;
 			bool fix;
 		};
-
 		struct Device
 		{
 			std::uint32_t product_code_, revision_num_;
@@ -284,7 +282,6 @@ namespace aris::control
 							}
 						}
 					}
-
 
 					type_map.insert(std::make_pair(std::string(t->FirstChildElement("Name")->GetText()), dt));
 				}
@@ -442,50 +439,32 @@ namespace aris::control
 	EthercatSlaveType& EthercatSlaveType::operator=(const EthercatSlaveType &) = default;
 	EthercatSlaveType& EthercatSlaveType::operator=(EthercatSlaveType &&) = default;
 
+	struct EthercatSlaveXml::Imp
+	{
+		//aris::core::XmlDocument doc;
+		std::string esi_file_path_;
+	};
+	EthercatSlaveXml::~EthercatSlaveXml() = default;
+	EthercatSlaveXml::EthercatSlaveXml(const std::string &name, const std::string &esi_file_path) : Object(name), imp_(new Imp)
+	{
+		imp_->esi_file_path_ = esi_file_path;
+	}
+	EthercatSlaveXml::EthercatSlaveXml(const EthercatSlaveXml &) = default;
+	EthercatSlaveXml::EthercatSlaveXml(EthercatSlaveXml &&) = default;
+	EthercatSlaveXml& EthercatSlaveXml::operator=(const EthercatSlaveXml &) = default;
+	EthercatSlaveXml& EthercatSlaveXml::operator=(EthercatSlaveXml &&) = default;
+
+
 	struct EthercatSlave::Imp
 	{
 	public:
-		aris::core::ImpPtr<Handle> ec_handle_;
+		std::any ec_handle_;
 
 		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
 		aris::core::ObjectPool<PdoGroup> *pdo_group_pool_;
 		aris::core::ObjectPool<Sdo> *sdo_pool_;
 		std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
 		std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
-
-		static auto check(EthercatSlave* sla)->void
-		{
-			//if (sla->slaveType())
-			//{
-			//	auto ec_type = dynamic_cast<const EthercatSlaveType*>(sla->slaveType());
-			//	
-			//	// check vendor id //
-			//	if (sla->vendorID() != ec_type->vendorID())throw std::runtime_error(sla->name() + " has invalid EthercatSlave vendor id, not same with slaveType");
-
-			//	// check product code and revision num //
-			//	auto device = std::find_if(ec_type->imp_->devices_.begin(), ec_type->imp_->devices_.end(), [&](const EthercatSlaveType::Imp::Device& d)->bool
-			//	{
-			//		return (d.product_code_ == sla->productCode()) && (d.revision_num_ == sla->revisionNum());
-			//	});
-
-			//	if(device == ec_type->imp_->devices_.end())throw std::runtime_error(sla->name() + " has invalid EthercatSlave product_code or revision num, please check");
-
-			//	// check dc assign activate //
-			//	auto dc = std::find(device->dc_assign_activate_list_.begin(), device->dc_assign_activate_list_.end(), sla->dcAssignActivate());
-			//	if (dc == device->dc_assign_activate_list_.end())throw std::runtime_error(sla->name() + " has invalid dc assign activate, please check");
-
-
-			//	// check pdo group //
-			//	for (auto &pdo_group : sla->pdoGroupPool())
-			//	{
-			//		//if(pdo_group.empty())
-			//	}
-
-
-
-			//}
-
-		}
 	};
 	auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
@@ -518,7 +497,7 @@ namespace aris::control
 		imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
 		imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo> >("sdo_pool");
 	}
-	auto EthercatSlave::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
+	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
 	auto EthercatSlave::productCode()const->std::uint32_t { return imp_->product_code_; }
 	auto EthercatSlave::revisionNum()const->std::uint32_t { return imp_->revision_num_; }
@@ -578,7 +557,7 @@ namespace aris::control
 	class EthercatMaster::Imp
 	{
 	public:
-		aris::core::ImpPtr<Handle> ec_handle_;
+		std::any ec_handle_;
 		aris::core::RefPool<EthercatSlave> ec_slave_pool_;
 	};
 	auto EthercatMaster::init()->void
@@ -630,17 +609,17 @@ namespace aris::control
 		}
 
 		// init ethercat master, slave, pdo group, and pdo //
-		imp_->ec_handle_.reset(aris_ecrt_master_init());
+		imp_->ec_handle_ = aris_ecrt_master_init();
 		for (auto &sla : ecSlavePool())
 		{
-			sla.imp_->ec_handle_.reset(aris_ecrt_slave_init());
+			sla.imp_->ec_handle_= aris_ecrt_slave_init();
 
 			for (auto &pdo_group : sla.pdoGroupPool())
 			{
-				pdo_group.imp_->handle_.reset(aris_ecrt_pdo_group_init());
+				pdo_group.imp_->handle_ = aris_ecrt_pdo_group_init();
 				for (auto &pdo : pdo_group)
 				{
-					pdo.imp_->ec_handle_.reset(aris_ecrt_pdo_init());
+					pdo.imp_->ec_handle_ = aris_ecrt_pdo_init();
 				}
 			}
 		}
@@ -681,7 +660,7 @@ namespace aris::control
 		for (auto &sla : ecSlavePool())aris_ecrt_slave_receive(sla.ecHandle());
 	}
 	auto EthercatMaster::sync()->void { aris_ecrt_master_sync(ecHandle(), aris_rt_timer_read()); }
-	auto EthercatMaster::ecHandle()->Handle* { return imp_->ec_handle_.get(); }
+	auto EthercatMaster::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatMaster::ecSlavePool()->aris::core::RefPool<EthercatSlave>& { return imp_->ec_slave_pool_; }
 	EthercatMaster::~EthercatMaster() = default;
 	EthercatMaster::EthercatMaster() :imp_(new Imp)

@@ -72,8 +72,8 @@ namespace aris::control
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto ecHandle()->Handle*;
-		auto ecHandle()const->const Handle* { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+		auto ecHandle()->std::any&;
+		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 
 		virtual ~Pdo();
 		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0);
@@ -93,8 +93,8 @@ namespace aris::control
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto ecHandle()->Handle*;
-		auto ecHandle()const->const Handle* { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+		auto ecHandle()->std::any&;
+		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 		auto tx()const->bool;
 		auto rx()const->bool;
 		auto index()const->std::uint16_t;
@@ -147,8 +147,8 @@ namespace aris::control
 		auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->pdoGroupPool(); }
 		auto sdoPool()->aris::core::ObjectPool<Sdo>&;
 		auto sdoPool()const->const aris::core::ObjectPool<Sdo>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->sdoPool(); }
-		auto ecHandle()->Handle*;
-		auto ecHandle()const->const Handle* { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+		auto ecHandle()->std::any&;
+		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 
 		template<typename ValueType>
 		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType)); }
@@ -182,8 +182,8 @@ namespace aris::control
 	class EthercatMaster : virtual public Master
 	{
 	public:
-		auto ecHandle()->Handle*;
-		auto ecHandle()const->const Handle* { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
+		auto ecHandle()->std::any&;
+		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 		auto ecSlavePool()->aris::core::RefPool<EthercatSlave>&;
 		auto ecSlavePool()const->const aris::core::RefPool<EthercatSlave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecSlavePool(); }
 
@@ -208,6 +208,31 @@ namespace aris::control
 		friend class Sdo;
 		friend class Pdo;
 	};
+
+
+	class EthercatSlaveXml :public aris::core::Object
+	{
+	public:
+		
+		
+		virtual ~EthercatSlaveXml();
+		explicit EthercatSlaveXml(const std::string &name = "ethercat_slave_xml", const std::string &esi_file_path = "");
+		EthercatSlaveXml(const EthercatSlaveXml &);
+		EthercatSlaveXml(EthercatSlaveXml &&);
+		EthercatSlaveXml& operator=(const EthercatSlaveXml &);
+		EthercatSlaveXml& operator=(EthercatSlaveXml &&);
+
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+
+
+
+
+
+
 
 	class EthercatMotion :public EthercatSlave, public Motion
 	{

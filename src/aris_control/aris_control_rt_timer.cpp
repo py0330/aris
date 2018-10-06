@@ -22,22 +22,18 @@ namespace aris::control
 	std::chrono::time_point<std::chrono::high_resolution_clock> last_time, begin_time;
 	//
 
-	struct RtTaskHandle :public Handle { std::thread task; };
+	//struct RtTaskHandle :public Handle { std::thread task; };
 
 	auto aris_mlockall()->void {}
-	auto aris_rt_task_create()->Handle*
+	auto aris_rt_task_create()->std::any { return std::make_shared<std::thread>(); }
+	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int
 	{
-		std::unique_ptr<Handle> handle(new RtTaskHandle);
-		return handle.release();
-	}
-	auto aris_rt_task_start(Handle* handle, void(*task_func)(void*), void*param)->int
-	{
-		static_cast<RtTaskHandle*>(handle)->task = std::thread(task_func, param);
+		*std::any_cast<std::shared_ptr<std::thread>&>(handle) = std::thread(task_func, param);
 		return 0;
 	}
-	auto aris_rt_task_join(Handle* handle)->int
+	auto aris_rt_task_join(std::any& handle)->int
 	{
-		static_cast<RtTaskHandle*>(handle)->task.join();
+		std::any_cast<std::shared_ptr<std::thread>&>(handle)->join();
 		return 0;
 	}
 	auto aris_rt_task_set_periodic(int nanoseconds)->int
@@ -60,16 +56,19 @@ namespace aris::control
 #endif
 
 #ifdef USE_XENOMAI
-	struct RtTaskHandle :public Handle { RT_TASK task; };
-
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) throw std::runtime_error("lock failed"); }
-	auto aris_rt_task_create()->Handle*
+	auto aris_rt_task_create()->std::any
 	{
-		std::unique_ptr<Handle> handle(new RtTaskHandle);
-		return rt_task_create(&static_cast<RtTaskHandle*>(handle.get())->task, "realtime core", 0, 99, T_FPU | T_JOINABLE) ? nullptr : handle.release();
+		std::any rt_task = RT_TASK();
+
+		// 为了使用返回值优化，这里必须判断，不能用三目运算符 //
+		if(rt_task_create(&std::any_cast<RT_TASK&>(rt_task), "realtime core", 0, 99, T_FPU | T_JOINABLE))
+			rt_task = std::any();
+
+		return rt_task;
 	}
-	auto aris_rt_task_start(Handle* handle, void(*task_func)(void*), void*param)->int { return rt_task_start(&static_cast<RtTaskHandle*>(handle)->task, task_func, param); }
-	auto aris_rt_task_join(Handle* handle)->int { return rt_task_join(&static_cast<RtTaskHandle*>(handle)->task); }
+	auto aris_rt_task_start(std::any& rt_task, void(*task_func)(void*), void*param)->int { return rt_task_start(&std::any_cast<RT_TASK&>(rt_task), task_func, param); }
+	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
 	auto aris_rt_task_set_periodic(int nanoseconds)->int { return rt_task_set_periodic(NULL, TM_NOW, nanoseconds); }
 	auto aris_rt_task_wait_period()->int { return rt_task_wait_period(NULL); }
 	auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }

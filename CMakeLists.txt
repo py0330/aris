@@ -132,7 +132,7 @@ install(TARGETS aris_dynamic ARCHIVE CONFIGURATIONS Release DESTINATION lib/rele
 install(FILES ${FULL_H} src/aris_dynamic/aris_dynamic.h DESTINATION include)
 
 # aris plan project
-set(SOURCE aris_plan_function aris_plan_root)
+set(SOURCE aris_plan_function aris_plan_root aris_plan_algorithm)
 PREPEND_CPP(FULL_SRC src/aris_plan ${SOURCE})
 PREPEND_H(FULL_H src/aris_plan ${SOURCE})
 add_library(aris_plan STATIC ${FULL_SRC} ${FULL_H} src/aris_plan/aris_plan.h)

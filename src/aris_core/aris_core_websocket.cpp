@@ -35,6 +35,12 @@
 
 namespace aris::core
 {
+	// please refer to 
+	// https://www.cnblogs.com/chyingp/p/websocket-deep-in.html
+	// sha1 hash 生成出来的是纯数字，可以把它改成2进制来保存
+	// 
+	
+	
 	std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len)
 	{
 		static const std::string base64_chars =
@@ -91,23 +97,23 @@ namespace aris::core
 		if (size < 126)
 		{
 			s.resize(size + 2);
-			s[0] = 0x81;
+			s[0] = 0x82;
 			s[1] = size;
 			std::copy_n(msg.data() - sizeof(MsgHeader), size, &s[2]);
 		}
 		else if (size < 0xFFFF)
 		{
 			s.resize(size + 4);
-			s[0] = 0x81;
+			s[0] = 0x82;
 			s[1] = 126;
-			s[2] = (size >> 8 & 0xFF);
+			s[2] = size >> 8;
 			s[3] = size & 0xFF;
  			std::copy_n(msg.data() - sizeof(MsgHeader), size, &s[4]);
 		}
 		else
 		{
 			s.resize(size + 10);
-			s[0] = 0x81;
+			s[0] = 0x82;
 			s[1] = 127;
 			s[2] = 0;
 			s[3] = 0;
@@ -234,6 +240,9 @@ namespace aris::core
 		std::string handShakeText(recv_data, res);
 		std::istringstream istream(handShakeText);
 
+		std::cout << "step1:handshake_text:" << std::endl;
+		std::cout << handShakeText << std::endl;
+
 
 		// 找到Sec-WebSocket-Key//
 		std::map<std::string, std::string> header_map;
@@ -250,7 +259,8 @@ namespace aris::core
 			}
 
 			auto end = header.find(": ", 0);
-			if (end != std::string::npos) {
+			if (end != std::string::npos) 
+			{
 				std::string key = header.substr(0, end);
 				std::string value = header.substr(end + 2);
 				header_map[key] = value;
@@ -260,16 +270,26 @@ namespace aris::core
 		std::string server_key = header_map["Sec-WebSocket-Key"];
 		server_key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+		std::cout << "step2:get key:" << std::endl;
+		std::cout << server_key << std::endl;
+
 		// 找到返回的key //
 		SHA1 checksum;
-		checksum.update(header_map[""]);
+		checksum.update(server_key);
 		std::string hash = checksum.final();
 
 		std::uint32_t message_digest[5];
-		for (int i = 0; i < 5; i++) {
-			message_digest[i] = checksum.digest[i];
-			message_digest[i] = htonl(message_digest[i]);
+		for (int i = 0; i < 20; ++i)
+		{
+			char num[5] = "0x00";
+
+			std::copy_n(hash.data() + i * 2, 2, num + 2);
+
+			std::uint8_t n = std::stoi(num, 0, 16);
+
+			*(reinterpret_cast<unsigned char*>(message_digest) + i) = n;
 		}
+
 		auto ret_hey = base64_encode(reinterpret_cast<const unsigned char*>(message_digest), 20);
 
 		std::string shake_hand;
@@ -277,6 +297,12 @@ namespace aris::core
 			"Upgrade: websocket\r\n"
 			"Connection: Upgrade\r\n"
 			"Sec-WebSocket-Accept: " + ret_hey + std::string("\r\n\r\n");
+
+		std::cout << "step3:return key:" << std::endl;
+		std::cout << shake_hand << std::endl;
+
+		std::cout << "step4:return length:" << std::endl;
+		std::cout << shake_hand.length() << std::endl;
 
 		if (send(imp->conn_socket_, shake_hand.c_str(), shake_hand.size(), 0) == -1)
 			throw SendDataError("WebSocket failed sending data, because network failed\n", imp->socket_, 0);
@@ -430,6 +456,8 @@ namespace aris::core
 				{
 					payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
 				}
+
+				LOG_INFO << payload_data << std::endl;
 			}
 
 			// 把web sock 的东西转成 msg //

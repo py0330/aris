@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include <aris_control_rt_timer.h>
+#include <any>
 
 namespace aris::control
 {
@@ -33,29 +34,29 @@ namespace aris::control
 	// 7. slave send
 	// 8. master send
 
-	auto aris_ecrt_master_init()->Handle*;
-	auto aris_ecrt_master_config(Handle* master_handle)->void;
-	auto aris_ecrt_master_start(Handle* master_handle)->void;
-	auto aris_ecrt_master_stop(Handle* master_handle)->void;
-	auto aris_ecrt_master_sync(Handle* master_handle, std::uint64_t ns)->void;
-	auto aris_ecrt_master_receive(Handle* master_handle)->void;
-	auto aris_ecrt_master_send(Handle* master_handle)->void;
-	auto aris_ecrt_slave_init()->Handle*;
-	auto aris_ecrt_slave_config(Handle* master_handle, Handle* slave_handle, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t distribute_clock)->void;
-	auto aris_ecrt_slave_start(Handle* slave_handle)->void;
-	auto aris_ecrt_slave_send(Handle* slave_handle)->void;
-	auto aris_ecrt_slave_receive(Handle* slave_handle)->void;
-	auto aris_ecrt_pdo_group_init()->Handle*;
-	auto aris_ecrt_pdo_group_config(Handle* slave_handle, Handle* pdo_group_handle, std::uint16_t index, bool is_tx)->void;
-	auto aris_ecrt_pdo_init()->Handle*;
-	auto aris_ecrt_pdo_config(Handle* slave_handle, Handle* pdo_group_handle, Handle* pdo_handle, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void;
-	auto aris_ecrt_pdo_read(Handle* slave_handle, Handle* pdo_handle, void *data, int byte_size)->void;
-	auto aris_ecrt_pdo_write(Handle* slave_handle, Handle* pdo_handle, const void *data, int byte_size)->void;
-	auto aris_ecrt_sdo_read(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
+	auto aris_ecrt_master_init()->std::any;
+	auto aris_ecrt_master_config(std::any& master)->void;
+	auto aris_ecrt_master_start(std::any& master)->void;
+	auto aris_ecrt_master_stop(std::any& master)->void;
+	auto aris_ecrt_master_sync(std::any& master, std::uint64_t ns)->void;
+	auto aris_ecrt_master_receive(std::any& master)->void;
+	auto aris_ecrt_master_send(std::any& master)->void;
+	auto aris_ecrt_slave_init()->std::any;
+	auto aris_ecrt_slave_config(std::any& master, std::any& slave, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t distribute_clock)->void;
+	auto aris_ecrt_slave_start(std::any& slave)->void;
+	auto aris_ecrt_slave_send(std::any& slave)->void;
+	auto aris_ecrt_slave_receive(std::any& slave)->void;
+	auto aris_ecrt_pdo_group_init()->std::any;
+	auto aris_ecrt_pdo_group_config(std::any& slave, std::any& pdo_group, std::uint16_t index, bool is_tx)->void;
+	auto aris_ecrt_pdo_init()->std::any;
+	auto aris_ecrt_pdo_config(std::any& slave, std::any& pdo_group, std::any& pdo, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void;
+	auto aris_ecrt_pdo_read(std::any& slave, std::any& pdo, void *data, int byte_size)->void;
+	auto aris_ecrt_pdo_write(std::any& slave, std::any& pdo, const void *data, int byte_size)->void;
+	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t bit_size, std::size_t *result_size, std::uint32_t *abort_code)->int;
-	auto aris_ecrt_sdo_write(Handle* master_handle, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
+	auto aris_ecrt_sdo_write(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t bit_size, std::uint32_t *abort_code) ->int;
-	auto aris_ecrt_sdo_config(Handle* master_handle, Handle* slave_handle, std::uint16_t index, std::uint8_t subindex,
+	auto aris_ecrt_sdo_config(std::any& master, std::any& slave, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *buffer, std::size_t bit_size)->void;
 }
 

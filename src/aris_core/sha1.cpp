@@ -292,7 +292,7 @@ std::string SHA1::final()
     }
 
     /* Reset for next run */
-    //reset(digest, buffer, transforms);
+    reset(digest, buffer, transforms);
 
     return result.str();
 }
