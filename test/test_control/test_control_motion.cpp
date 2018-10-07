@@ -14,24 +14,24 @@ void test_elmo_enable()
 
 		auto &s1 = m.slavePool().add<EthercatMotion>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 110.0, 1.0, 0.0, 0.0);
 
-		auto &tx = s1.pdoGroupPool().add<PdoGroup>("index_1A00", 0x1A00, true);
-		tx.add<Pdo>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));
-		tx.add<Pdo>("index_606c", 0x606c, 0x00, sizeof(std::int32_t));
-		tx.add<Pdo>("index_6041", 0x6041, 0x00, sizeof(std::uint16_t));
+		auto &tx = s1.pdoPool().add<Pdo>("index_1A00", 0x1A00, true);
+		tx.add<PdoEntry>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));
+		tx.add<PdoEntry>("index_606c", 0x606c, 0x00, sizeof(std::int32_t));
+		tx.add<PdoEntry>("index_6041", 0x6041, 0x00, sizeof(std::uint16_t));
 
-		auto &tx2 = s1.pdoGroupPool().add<PdoGroup>("index_1A0B", 0x1A0B, true);
-		tx2.add<Pdo>("index_6061", 0x6061, 0x00, sizeof(std::uint8_t));
+		auto &tx2 = s1.pdoPool().add<Pdo>("index_1A0B", 0x1A0B, true);
+		tx2.add<PdoEntry>("index_6061", 0x6061, 0x00, sizeof(std::uint8_t));
 
-		auto &tx3 = s1.pdoGroupPool().add<PdoGroup>("index_1A1F", 0x1A1F, true);
-		tx3.add<Pdo>("index_6078", 0x6078, 0x00, sizeof(std::int16_t));
+		auto &tx3 = s1.pdoPool().add<Pdo>("index_1A1F", 0x1A1F, true);
+		tx3.add<PdoEntry>("index_6078", 0x6078, 0x00, sizeof(std::int16_t));
 
-		auto &rx = s1.pdoGroupPool().add<PdoGroup>("index_1605", 0x1605, false);
-		rx.add<Pdo>("index_607A", 0x607A, 0x00, sizeof(std::int32_t));
-		rx.add<Pdo>("index_60FF", 0x60FF, 0x00, sizeof(std::int32_t));
-		rx.add<Pdo>("index_6071", 0x6071, 0x00, sizeof(std::int16_t));
-		rx.add<Pdo>("index_6072", 0x6072, 0x00, sizeof(std::int16_t));
-		rx.add<Pdo>("index_6040", 0x6040, 0x00, sizeof(std::uint16_t));
-		rx.add<Pdo>("index_6060", 0x6060, 0x00, sizeof(std::uint8_t));
+		auto &rx = s1.pdoPool().add<Pdo>("index_1605", 0x1605, false);
+		rx.add<PdoEntry>("index_607A", 0x607A, 0x00, sizeof(std::int32_t));
+		rx.add<PdoEntry>("index_60FF", 0x60FF, 0x00, sizeof(std::int32_t));
+		rx.add<PdoEntry>("index_6071", 0x6071, 0x00, sizeof(std::int16_t));
+		rx.add<PdoEntry>("index_6072", 0x6072, 0x00, sizeof(std::int16_t));
+		rx.add<PdoEntry>("index_6040", 0x6040, 0x00, sizeof(std::uint16_t));
+		rx.add<PdoEntry>("index_6060", 0x6060, 0x00, sizeof(std::uint8_t));
 
 		std::cout << m.xmlString() << std::endl;
 

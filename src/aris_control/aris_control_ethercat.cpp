@@ -109,18 +109,18 @@ namespace aris::control
 	Sdo& Sdo::operator=(const Sdo &) = default;
 	Sdo& Sdo::operator=(Sdo &&) = default;
 
-	struct Pdo::Imp { std::any ec_handle_; };
-	auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void { DO::saveXml(xml_ele); }
-	auto Pdo::loadXml(const aris::core::XmlElement &xml_ele)->void { DO::loadXml(xml_ele); }
-	auto Pdo::ecHandle()->std::any& { return imp_->ec_handle_; }
-	Pdo::~Pdo() = default;
-	Pdo::Pdo(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size size) :DO(name, index, sub_index, size) {}
-	Pdo::Pdo(const Pdo &) = default;
-	Pdo::Pdo(Pdo &&) = default;
-	Pdo& Pdo::operator=(const Pdo &) = default;
-	Pdo& Pdo::operator=(Pdo &&) = default;
+	struct PdoEntry::Imp { std::any ec_handle_; };
+	auto PdoEntry::saveXml(aris::core::XmlElement &xml_ele) const->void { DO::saveXml(xml_ele); }
+	auto PdoEntry::loadXml(const aris::core::XmlElement &xml_ele)->void { DO::loadXml(xml_ele); }
+	auto PdoEntry::ecHandle()->std::any& { return imp_->ec_handle_; }
+	PdoEntry::~PdoEntry() = default;
+	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size size) :DO(name, index, sub_index, size) {}
+	PdoEntry::PdoEntry(const PdoEntry &) = default;
+	PdoEntry::PdoEntry(PdoEntry &&) = default;
+	PdoEntry& PdoEntry::operator=(const PdoEntry &) = default;
+	PdoEntry& PdoEntry::operator=(PdoEntry &&) = default;
 
-	struct PdoGroup::Imp
+	struct Pdo::Imp
 	{
 		std::any handle_;
 		bool is_tx_;
@@ -128,7 +128,7 @@ namespace aris::control
 
 		Imp(std::uint16_t index = 0, bool is_tx = true) :is_tx_(is_tx), index_(index) {}
 	};
-	auto PdoGroup::saveXml(aris::core::XmlElement &xml_ele) const->void
+	auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		Object::saveXml(xml_ele);
 
@@ -138,27 +138,50 @@ namespace aris::control
 
 		xml_ele.SetAttribute("is_tx", tx());
 	}
-	auto PdoGroup::loadXml(const aris::core::XmlElement &xml_ele)->void
+	auto Pdo::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		imp_->index_ = attributeUint16(xml_ele, "index");
 		imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
 
 		Object::loadXml(xml_ele);
 	}
-	auto PdoGroup::ecHandle()->std::any& { return imp_->handle_; }
-	auto PdoGroup::tx()const->bool { return imp_->is_tx_; }
-	auto PdoGroup::rx()const->bool { return !imp_->is_tx_; }
-	auto PdoGroup::index()const->std::uint16_t { return imp_->index_; }
-	PdoGroup::~PdoGroup() = default;
-	PdoGroup::PdoGroup(const std::string &name, std::uint16_t index, bool is_tx) :aris::core::ObjectPool<Pdo>(name), imp_(new Imp(index, is_tx))
+	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
+	auto Pdo::tx()const->bool { return imp_->is_tx_; }
+	auto Pdo::rx()const->bool { return !imp_->is_tx_; }
+	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
+	Pdo::~Pdo() = default;
+	Pdo::Pdo(const std::string &name, std::uint16_t index, bool is_tx) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp(index, is_tx))
 	{
-		registerType<Pdo>();
-		registerType<aris::core::ObjectPool<Pdo> >();
+		registerType<PdoEntry>();
+		registerType<aris::core::ObjectPool<PdoEntry> >();
 	}
-	PdoGroup::PdoGroup(const PdoGroup &) = default;
-	PdoGroup::PdoGroup(PdoGroup &&) = default;
-	PdoGroup& PdoGroup::operator=(const PdoGroup &) = default;
-	PdoGroup& PdoGroup::operator=(PdoGroup &&) = default;
+	Pdo::Pdo(const Pdo &) = default;
+	Pdo::Pdo(Pdo &&) = default;
+	Pdo& Pdo::operator=(const Pdo &) = default;
+	Pdo& Pdo::operator=(Pdo &&) = default;
+
+	auto SyncManager::saveXml(aris::core::XmlElement &xml_ele) const->void
+	{
+		aris::core::ObjectPool<PdoEntry>::saveXml(xml_ele);
+	}
+	auto SyncManager::loadXml(const aris::core::XmlElement &xml_ele)->void
+	{
+		aris::core::ObjectPool<PdoEntry>::loadXml(xml_ele);
+	}
+	SyncManager::~SyncManager() = default;
+	SyncManager::SyncManager(const std::string &name, std::uint16_t, bool is_tx) {}
+	SyncManager::SyncManager(const SyncManager &) = default;
+	SyncManager::SyncManager(SyncManager &&) = default;
+	SyncManager& SyncManager::operator=(const SyncManager &) = default;
+	SyncManager& SyncManager::operator=(SyncManager &&) = default;
+
+
+
+
+
+
+
+
 
 	struct EthercatSlaveType::Imp
 	{
@@ -192,11 +215,11 @@ namespace aris::control
 		std::vector<Device> devices_;
 		std::uint32_t vendor_id_;
 
-		std::string esi_file_path_;
+		std::string esi_path_;
 		auto init()->void // load esi file //
 		{
 			aris::core::XmlDocument doc;
-			if (doc.LoadFile(this->esi_file_path_.c_str()))throw std::runtime_error((std::string("failed in EthercatSlaveType ctor, because could not open esi file:") + esi_file_path_));
+			if (doc.LoadFile(this->esi_path_.c_str()))throw std::runtime_error((std::string("failed in EthercatSlaveType ctor, because could not open esi file:") + esi_path_));
 
 			std::string word;
 			word = doc.RootElement()->FirstChildElement("Vendor")->FirstChildElement("Id")->GetText();
@@ -416,22 +439,22 @@ namespace aris::control
 	auto EthercatSlaveType::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		Object::saveXml(xml_ele);
-		xml_ele.SetAttribute("esi_file_path", imp_->esi_file_path_.c_str());
+		xml_ele.SetAttribute("esi_file_path", imp_->esi_path_.c_str());
 	}
 	auto EthercatSlaveType::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Object::loadXml(xml_ele);
 
-		imp_->esi_file_path_ = attributeString(xml_ele, "esi_file_path");
+		imp_->esi_path_ = attributeString(xml_ele, "esi_file_path");
 		imp_->init();
 	}
 	auto EthercatSlaveType::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
 	EthercatSlaveType::~EthercatSlaveType() = default;
 	EthercatSlaveType::EthercatSlaveType(const std::string &name, const std::string &esi_file_path) : Object(name), imp_(new Imp)
 	{
-		registerType<aris::core::ObjectPool<PdoGroup> >();
+		registerType<aris::core::ObjectPool<Pdo> >();
 
-		imp_->esi_file_path_ = esi_file_path;
+		imp_->esi_path_ = esi_file_path;
 		imp_->init();
 	}
 	EthercatSlaveType::EthercatSlaveType(const EthercatSlaveType &) = default;
@@ -439,21 +462,25 @@ namespace aris::control
 	EthercatSlaveType& EthercatSlaveType::operator=(const EthercatSlaveType &) = default;
 	EthercatSlaveType& EthercatSlaveType::operator=(EthercatSlaveType &&) = default;
 
-	struct EthercatSlaveXml::Imp
+	struct EsiPath::Imp { std::string esi_path_; };
+	auto EsiPath::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
-		//aris::core::XmlDocument doc;
-		std::string esi_file_path_;
-	};
-	EthercatSlaveXml::~EthercatSlaveXml() = default;
-	EthercatSlaveXml::EthercatSlaveXml(const std::string &name, const std::string &esi_file_path) : Object(name), imp_(new Imp)
-	{
-		imp_->esi_file_path_ = esi_file_path;
+		xml_ele.SetAttribute("path", imp_->esi_path_.c_str());
 	}
-	EthercatSlaveXml::EthercatSlaveXml(const EthercatSlaveXml &) = default;
-	EthercatSlaveXml::EthercatSlaveXml(EthercatSlaveXml &&) = default;
-	EthercatSlaveXml& EthercatSlaveXml::operator=(const EthercatSlaveXml &) = default;
-	EthercatSlaveXml& EthercatSlaveXml::operator=(EthercatSlaveXml &&) = default;
-
+	auto EsiPath::loadXml(const aris::core::XmlElement &xml_ele)->void
+	{
+		imp_->esi_path_ = attributeString(xml_ele, "path");
+	}
+	auto EsiPath::path()->std::string { return imp_->esi_path_; }
+	EsiPath::~EsiPath() = default;
+	EsiPath::EsiPath(const std::string &name, const std::string &esi_path) : Object(name), imp_(new Imp)
+	{
+		imp_->esi_path_ = esi_path;
+	}
+	EsiPath::EsiPath(const EsiPath &) = default;
+	EsiPath::EsiPath(EsiPath &&) = default;
+	EsiPath& EsiPath::operator=(const EsiPath &) = default;
+	EsiPath& EsiPath::operator=(EsiPath &&) = default;
 
 	struct EthercatSlave::Imp
 	{
@@ -461,7 +488,7 @@ namespace aris::control
 		std::any ec_handle_;
 
 		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
-		aris::core::ObjectPool<PdoGroup> *pdo_group_pool_;
+		aris::core::ObjectPool<Pdo> *pdo_group_pool_;
 		aris::core::ObjectPool<Sdo> *sdo_pool_;
 		std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
 		std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
@@ -494,7 +521,7 @@ namespace aris::control
 		imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
 
 		Slave::loadXml(xml_ele);
-		imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
+		imp_->pdo_group_pool_ = findOrInsert<aris::core::ObjectPool<Pdo> >("pdo_group_pool");
 		imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo> >("sdo_pool");
 	}
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
@@ -502,12 +529,12 @@ namespace aris::control
 	auto EthercatSlave::productCode()const->std::uint32_t { return imp_->product_code_; }
 	auto EthercatSlave::revisionNum()const->std::uint32_t { return imp_->revision_num_; }
 	auto EthercatSlave::dcAssignActivate()const->std::uint32_t { return imp_->dc_assign_activate_; }
-	auto EthercatSlave::pdoGroupPool()->aris::core::ObjectPool<PdoGroup>& { return *imp_->pdo_group_pool_; }
+	auto EthercatSlave::pdoPool()->aris::core::ObjectPool<Pdo>& { return *imp_->pdo_group_pool_; }
 	auto EthercatSlave::sdoPool()->aris::core::ObjectPool<Sdo>& { return *imp_->sdo_pool_; }
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
 	{
 		auto id_pair = imp_->pdo_map_.at(index).at(subindex);
-		auto &pdo_group = pdoGroupPool().at(id_pair.first);
+		auto &pdo_group = pdoPool().at(id_pair.first);
 		auto &pdo = pdo_group.at(id_pair.second);
 		if (pdo.size() != byte_size)throw std::runtime_error("failed to read pdo:\"" + pdo.name() + "\" because byte size is not correct");
 		aris_ecrt_pdo_read(ecHandle(), pdo.ecHandle(), value, byte_size);
@@ -515,11 +542,11 @@ namespace aris::control
 	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
 	{
 		auto id_pair = imp_->pdo_map_.at(index).at(subindex);
-		auto &pdo_group = pdoGroupPool().at(id_pair.first);
+		auto &pdo_group = pdoPool().at(id_pair.first);
 		auto &pdo = pdo_group.at(id_pair.second);
 		if (!pdo_group.rx())throw std::runtime_error("failed to write pdo:\"" + pdo.name() + "\" because it is not rx");
 		if (pdo.size() != byte_size)throw std::runtime_error("failed to write pdo:\"" + pdo.name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_write(ecHandle(), pdoGroupPool().at(id_pair.first).at(id_pair.second).ecHandle(), value, byte_size);
+		aris_ecrt_pdo_write(ecHandle(), pdoPool().at(id_pair.first).at(id_pair.second).ecHandle(), value, byte_size);
 	}
 	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
 	{
@@ -541,7 +568,7 @@ namespace aris::control
 	EthercatSlave::~EthercatSlave() = default;
 	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
 	{
-		imp_->pdo_group_pool_ = &add<aris::core::ObjectPool<PdoGroup> >("pdo_group_pool");
+		imp_->pdo_group_pool_ = &add<aris::core::ObjectPool<Pdo> >("pdo_group_pool");
 		imp_->sdo_pool_ = &add<aris::core::ObjectPool<Sdo> >("sdo_pool");
 		imp_->vendor_id_ = vid;
 		imp_->product_code_ = p_code;
@@ -549,9 +576,9 @@ namespace aris::control
 		imp_->dc_assign_activate_ = dc;
 
 		registerType<Sdo>();
-		registerType<PdoGroup>();
+		registerType<Pdo>();
 		registerType<aris::core::ObjectPool<Sdo> >();
-		registerType<aris::core::ObjectPool<PdoGroup> >();
+		registerType<aris::core::ObjectPool<Pdo> >();
 	}
 
 	class EthercatMaster::Imp
@@ -560,6 +587,10 @@ namespace aris::control
 		std::any ec_handle_;
 		aris::core::RefPool<EthercatSlave> ec_slave_pool_;
 	};
+	auto EthercatMaster::scanSlave()->void
+	{
+		aris_ecrt_scan(this);
+	}
 	auto EthercatMaster::init()->void
 	{
 		// make ec_slave_pool_ //
@@ -571,9 +602,9 @@ namespace aris::control
 		{
 			// make PDO map and upd pdo's slave ptr //
 			sla.imp_->pdo_map_.clear();
-			for (int i = 0; i < static_cast<int>(sla.pdoGroupPool().size()); ++i)
+			for (int i = 0; i < static_cast<int>(sla.pdoPool().size()); ++i)
 			{
-				auto &group = sla.pdoGroupPool().at(i);
+				auto &group = sla.pdoPool().at(i);
 				for (int j = 0; j < static_cast<int>(group.size()); ++j)
 				{
 					auto &pdo = group.at(j);
@@ -614,7 +645,7 @@ namespace aris::control
 		{
 			sla.imp_->ec_handle_= aris_ecrt_slave_init();
 
-			for (auto &pdo_group : sla.pdoGroupPool())
+			for (auto &pdo_group : sla.pdoPool())
 			{
 				pdo_group.imp_->handle_ = aris_ecrt_pdo_group_init();
 				for (auto &pdo : pdo_group)
@@ -627,7 +658,7 @@ namespace aris::control
 		// config ethercat master, slave, pdo group, and pdo //
 		for (auto &sla : ecSlavePool())
 		{
-			for (auto &pdo_group : sla.pdoGroupPool())
+			for (auto &pdo_group : sla.pdoPool())
 			{
 				for (auto &pdo : pdo_group)
 				{
@@ -755,7 +786,6 @@ namespace aris::control
 		readPdo(0x6078, 0x00, cur_count);
 		return static_cast<double>(cur_count);
 	}
-
 	auto EthercatMotion::disable()->int
 	{
 		// control word

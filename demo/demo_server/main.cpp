@@ -6,6 +6,19 @@ using namespace aris::robot;
 
 int main(int argc, char *argv[])
 {
+	aris::control::EthercatMaster mst;
+	mst.scanSlave();
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	double robot_pm[16];
 	std::string robot_name = argc < 2 ? "ur5" : argv[1];
 	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
@@ -110,9 +123,14 @@ int main(int argc, char *argv[])
 				aris::dynamic::s_pm2pq(part_pm.data() + i * 16, part_pq.data() + i * 7);
 			}
 
-			aris::core::Matrix mat(1, cs.model().partPool().size() * 7, part_pq.data());
+			//// return text //// 
+			//aris::core::Matrix mat(1, cs.model().partPool().size() * 7, part_pq.data());
+			//return aris::core::Msg(mat.toString());
 
-			return aris::core::Msg(mat.toString());
+			//// return binary ////
+			aris::core::Msg msg;
+			msg.copy(part_pq.data(), part_pq.size() * 8);
+			return msg;
 		}
 
 		return aris::core::Msg("unknown msg id");

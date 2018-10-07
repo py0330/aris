@@ -78,7 +78,7 @@ namespace aris::control
 
 		friend class Slave;
 		friend class Sdo;
-		friend class Pdo;
+		friend class PdoEntry;
 	};
 }
 

@@ -65,31 +65,31 @@ namespace aris::control
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class Pdo :public DO
+	class PdoEntry :public DO
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Pdo"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("PdoEntry"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 
-		virtual ~Pdo();
-		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0);
-		Pdo(const Pdo &);
-		Pdo(Pdo &&);
-		Pdo& operator=(const Pdo &);
-		Pdo& operator=(Pdo &&);
+		virtual ~PdoEntry();
+		explicit PdoEntry(const std::string &name = "pdo_entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0);
+		PdoEntry(const PdoEntry &);
+		PdoEntry(PdoEntry &&);
+		PdoEntry& operator=(const PdoEntry &);
+		PdoEntry& operator=(PdoEntry &&);
 
 	public:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class PdoGroup :public aris::core::ObjectPool<Pdo>
+	class Pdo :public aris::core::ObjectPool<PdoEntry>
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("PdoGroup"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("Pdo"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
@@ -99,17 +99,35 @@ namespace aris::control
 		auto rx()const->bool;
 		auto index()const->std::uint16_t;
 
-		virtual ~PdoGroup();
-		explicit PdoGroup(const std::string &name = "pdo_group", std::uint16_t index = 0x0000, bool is_tx = true);
-		PdoGroup(const PdoGroup &);
-		PdoGroup(PdoGroup &&);
-		PdoGroup& operator=(const PdoGroup &);
-		PdoGroup& operator=(PdoGroup &&);
+		virtual ~Pdo();
+		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000, bool is_tx = true);
+		Pdo(const Pdo &);
+		Pdo(Pdo &&);
+		Pdo& operator=(const Pdo &);
+		Pdo& operator=(Pdo &&);
 
 	public:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	class SyncManager :public aris::core::ObjectPool<PdoEntry>
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("SyncManager"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+
+		virtual ~SyncManager();
+		explicit SyncManager(const std::string &name = "sync_manager", std::uint16_t index = 0x0000, bool is_tx = true);
+		SyncManager(const SyncManager &);
+		SyncManager(SyncManager &&);
+		SyncManager& operator=(const SyncManager &);
+		SyncManager& operator=(SyncManager &&);
+	};
+
+
+
 	class EthercatSlaveType :public aris::core::Object
 	{
 	public:
@@ -143,8 +161,8 @@ namespace aris::control
 		auto productCode()const->std::uint32_t;
 		auto revisionNum()const->std::uint32_t;
 		auto dcAssignActivate()const->std::uint32_t;
-		auto pdoGroupPool()->aris::core::ObjectPool<PdoGroup>&;
-		auto pdoGroupPool()const->const aris::core::ObjectPool<PdoGroup>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->pdoGroupPool(); }
+		auto pdoPool()->aris::core::ObjectPool<Pdo>&;
+		auto pdoPool()const->const aris::core::ObjectPool<Pdo>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->pdoPool(); }
 		auto sdoPool()->aris::core::ObjectPool<Sdo>&;
 		auto sdoPool()const->const aris::core::ObjectPool<Sdo>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->sdoPool(); }
 		auto ecHandle()->std::any&;
@@ -182,10 +200,13 @@ namespace aris::control
 	class EthercatMaster : virtual public Master
 	{
 	public:
+		static auto Type()->const std::string & { static const std::string type("EthercatMaster"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 		auto ecSlavePool()->aris::core::RefPool<EthercatSlave>&;
 		auto ecSlavePool()const->const aris::core::RefPool<EthercatSlave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecSlavePool(); }
+		auto scanSlave()->void;
 
 		virtual ~EthercatMaster();
 		EthercatMaster();
@@ -206,21 +227,25 @@ namespace aris::control
 		aris::core::ImpPtr<Imp> imp_;
 
 		friend class Sdo;
-		friend class Pdo;
+		friend class PdoEntry;
 	};
 
 
-	class EthercatSlaveXml :public aris::core::Object
+	class EsiPath :public aris::core::Object
 	{
 	public:
+		static auto Type()->const std::string & { static const std::string type("EsiPath"); return type; }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		auto path()->std::string;
 		
-		
-		virtual ~EthercatSlaveXml();
-		explicit EthercatSlaveXml(const std::string &name = "ethercat_slave_xml", const std::string &esi_file_path = "");
-		EthercatSlaveXml(const EthercatSlaveXml &);
-		EthercatSlaveXml(EthercatSlaveXml &&);
-		EthercatSlaveXml& operator=(const EthercatSlaveXml &);
-		EthercatSlaveXml& operator=(EthercatSlaveXml &&);
+		virtual ~EsiPath();
+		explicit EsiPath(const std::string &name = "ethercat_slave_xml", const std::string &esi_file_path = "");
+		EsiPath(const EsiPath &);
+		EsiPath(EsiPath &&);
+		EsiPath& operator=(const EsiPath &);
+		EsiPath& operator=(EsiPath &&);
 
 
 	private:
