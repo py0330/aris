@@ -70,8 +70,8 @@ void test_pdo_code()
 		aris::control::EthercatMaster m;
 
 		auto &s1 = m.slavePool().add<EthercatSlave>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300);
-		auto &pdo_group = s1.pdoPool().add<Pdo>("index_1a00", 0x1A00, true);
-		pdo_group.add<PdoEntry>("index_6064", 0x6064, 0x00, 4);
+		//auto &pdo_group = s1.pdoPool().add<Pdo>("index_1a00", 0x1A00, true);
+		//pdo_group.add<PdoEntry>("index_6064", 0x6064, 0x00, 4);
 
 		m.setControlStrategy([&]()
 		{

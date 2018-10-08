@@ -489,7 +489,6 @@ namespace aris::control
 
 		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
 		aris::core::ObjectPool<SyncManager> *sm_pool_;
-		aris::core::ObjectPool<Pdo> *pdo_pool_;
 		aris::core::ObjectPool<Sdo> *sdo_pool_;
 		std::map<std::uint16_t, std::map<std::uint8_t, PdoEntry* > > pdo_map_;
 		std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
@@ -523,7 +522,6 @@ namespace aris::control
 
 		Slave::loadXml(xml_ele);
 		imp_->sm_pool_ = findOrInsert<aris::core::ObjectPool<SyncManager> >("sm_pool");
-		imp_->pdo_pool_ = findOrInsert<aris::core::ObjectPool<Pdo> >("pdo_pool");
 		imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo> >("sdo_pool");
 	}
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
@@ -566,7 +564,6 @@ namespace aris::control
 	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
 	{
 		imp_->sm_pool_ = &add<aris::core::ObjectPool<SyncManager> >("sm_pool");
-		imp_->pdo_pool_ = &add<aris::core::ObjectPool<Pdo> >("pdo_pool");
 		imp_->sdo_pool_ = &add<aris::core::ObjectPool<Sdo> >("sdo_pool");
 		imp_->vendor_id_ = vid;
 		imp_->product_code_ = p_code;

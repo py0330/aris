@@ -165,7 +165,7 @@ namespace aris::control
 			if (!(sla.ec_slave_config_ = ecrt_master_slave_config(mst, 0x00, slave.phyId(), slave.vendorID(), slave.productCode()))) { throw std::runtime_error("failed to slave config"); }
 
 			// Configure the slave's PDOs and sync masters
-			if (ecrt_slave_config_pdos(sla.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))throw std::runtime_error("failed to slave config pdos");
+			if (ecrt_slave_config_pdos(sla.ec_slave_config_, ec_sync_info_vec.size() - 1, ec_sync_info_vec.data()))throw std::runtime_error("failed to slave config pdos");
 
 			// Configure the slave's domain
 			if (ecrt_domain_reg_pdo_entry_list(sla.domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");

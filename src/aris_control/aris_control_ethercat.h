@@ -169,8 +169,6 @@ namespace aris::control
 		auto dcAssignActivate()const->std::uint32_t;
 		auto smPool()->aris::core::ObjectPool<SyncManager>&;
 		auto smPool()const->const aris::core::ObjectPool<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
-
-
 		auto sdoPool()->aris::core::ObjectPool<Sdo>&;
 		auto sdoPool()const->const aris::core::ObjectPool<Sdo>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->sdoPool(); }
 		auto ecHandle()->std::any&;

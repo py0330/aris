@@ -157,6 +157,8 @@ int main(int argc, char *argv[])
 		return 0;
 	});
 
+	std::cout << cs.controller().xmlString() << std::endl;
+
 	cs.start();
 	socket.startServer(std::to_string(port));
 
