@@ -76,7 +76,7 @@ namespace aris::control
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 
 		virtual ~PdoEntry();
-		explicit PdoEntry(const std::string &name = "pdo_entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0);
+		explicit PdoEntry(const std::string &name = "entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0);
 		PdoEntry(const PdoEntry &);
 		PdoEntry(PdoEntry &&);
 		PdoEntry& operator=(const PdoEntry &);
@@ -110,7 +110,7 @@ namespace aris::control
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class SyncManager :public aris::core::ObjectPool<PdoEntry>
+	class SyncManager :public aris::core::ObjectPool<Pdo>
 	{
 	public:
 		static auto Type()->const std::string & { static const std::string type("SyncManager"); return std::ref(type); }
@@ -119,11 +119,15 @@ namespace aris::control
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 
 		virtual ~SyncManager();
-		explicit SyncManager(const std::string &name = "sync_manager", std::uint16_t index = 0x0000, bool is_tx = true);
+		explicit SyncManager(const std::string &name = "sm", bool is_tx = true);
 		SyncManager(const SyncManager &);
 		SyncManager(SyncManager &&);
 		SyncManager& operator=(const SyncManager &);
 		SyncManager& operator=(SyncManager &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 	};
 
 
@@ -161,6 +165,10 @@ namespace aris::control
 		auto productCode()const->std::uint32_t;
 		auto revisionNum()const->std::uint32_t;
 		auto dcAssignActivate()const->std::uint32_t;
+		auto smPool()->aris::core::ObjectPool<SyncManager>&;
+		auto smPool()const->const aris::core::ObjectPool<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
+
+
 		auto pdoPool()->aris::core::ObjectPool<Pdo>&;
 		auto pdoPool()const->const aris::core::ObjectPool<Pdo>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->pdoPool(); }
 		auto sdoPool()->aris::core::ObjectPool<Sdo>&;

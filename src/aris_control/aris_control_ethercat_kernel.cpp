@@ -18,12 +18,12 @@ extern "C"
 namespace aris::control
 {
 #ifndef USE_ETHERLAB
-	auto aris_ecrt_scan(EthercatMaster *master)->int { return 0; }
+	auto aris_ecrt_scan(EthercatMaster *master)->int { return 0;}
 	
 	auto aris_ecrt_master_init()->std::any { return std::any(); }
 	auto aris_ecrt_slave_init()->std::any { return std::any(); }
-	auto aris_ecrt_pdo_group_init()->std::any { return std::any(); }
 	auto aris_ecrt_pdo_init()->std::any { return std::any(); }
+	auto aris_ecrt_pdo_entry_init()->std::any { return std::any(); }
 
 	auto aris_ecrt_master_config(std::any& master)->void {}
 	auto aris_ecrt_master_start(std::any& master)->void {}
@@ -39,7 +39,7 @@ namespace aris::control
 	
 	auto aris_ecrt_pdo_group_config(std::any& slave, std::any& pdo_group, std::uint16_t index, bool is_tx)->void {}
 	
-	auto aris_ecrt_pdo_config(std::any& slave, std::any& pdo_group, std::any& pdo, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void {}
+	auto aris_ecrt_pdo_entry_config(std::any& slave, std::any& pdo_group, std::any& pdo, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void {}
 	auto aris_ecrt_pdo_read(std::any& slave, std::any& pdo, void *data, int byte_size)->void {	}
 	auto aris_ecrt_pdo_write(std::any& slave, std::any& pdo, const void *data, int byte_size)->void { }
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
@@ -56,7 +56,6 @@ namespace aris::control
 
 
 #ifdef USE_ETHERLAB
-	
 	auto aris_ecrt_scan(EthercatMaster *master)->int
 	{
 		ec_master_t* ec_master;
@@ -76,9 +75,8 @@ namespace aris::control
 			ec_sync_info_vec_vec[sla_pos].resize(ec_slave_info_vec[sla_pos].sync_count);
 			ec_pdo_info_vec_vec_vec[sla_pos].resize(ec_slave_info_vec[sla_pos].sync_count);
 			ec_pdo_entry_info_vec_vec_vec_vec[sla_pos].resize(ec_slave_info_vec[sla_pos].sync_count);
-			for (uint8_t sync_pos = 0; sync_pos < ec_slave_info_vec[sync_pos].sync_count; ++sync_pos)
+			for (uint8_t sync_pos = 0; sync_pos < ec_slave_info_vec[sla_pos].sync_count; ++sync_pos)
 			{
-
 				if (ecrt_master_get_sync_manager(ec_master, sla_pos, sync_pos, ec_sync_info_vec_vec[sla_pos].data() + sync_pos))throw std::runtime_error("sync info failed!");
 
 				ec_pdo_info_vec_vec_vec[sla_pos][sync_pos].resize(ec_sync_info_vec_vec[sla_pos][sync_pos].n_pdos);
@@ -98,7 +96,32 @@ namespace aris::control
 
 		ecrt_release_master(ec_master);
 
-		//master->slavePool().clear();
+		master->slavePool().clear();
+
+		for (uint16_t sla_pos = 0; sla_pos < ec_master_info.slave_count; ++sla_pos)
+		{
+			auto &info = ec_slave_info_vec[sla_pos];
+			auto &sla = master->slavePool().add<EthercatSlave>("slave_" + std::to_string(sla_pos), sla_pos, info.vendor_id, info.product_code, info.revision_number);
+
+			for (uint8_t sync_pos = 0; sync_pos < ec_slave_info_vec[sla_pos].sync_count; ++sync_pos)
+			{
+				auto &info = ec_sync_info_vec_vec[sla_pos][sync_pos];
+				sla.smPool().add<SyncManager>("sm", info.dir == EC_DIR_INPUT);
+				
+				for (unsigned int pdo_pos = 0; pdo_pos < ec_sync_info_vec_vec[sla_pos][sync_pos].n_pdos; ++pdo_pos)
+				{
+					auto &pdo_info = ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos];
+					sla.smPool()[sync_pos].add<Pdo>("pdo", pdo_info.index, info.dir == EC_DIR_INPUT);
+					
+					for (unsigned int entry_pos = 0; entry_pos < ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos].n_entries; ++entry_pos)
+					{
+						auto &info = ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos][entry_pos];
+						sla.smPool()[sync_pos][pdo_pos].add<PdoEntry>("entry", info.index, info.subindex, info.bit_length);
+					}
+				}
+			}
+		}
+
 		return 0;
 	}
 
@@ -134,9 +157,9 @@ namespace aris::control
 		return master;
 	}
 	auto aris_ecrt_slave_init()->std::any { return EcSlaveHandle(); }
-	auto aris_ecrt_pdo_group_init()->std::any { return EcPdoHandle(); }
-	auto aris_ecrt_pdo_init()->std::any { return EcPdoEntryHandle(); }
-	auto aris_ecrt_pdo_config(std::any& slave, std::any& pdo_group, std::any& pdo, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void
+	auto aris_ecrt_pdo_init()->std::any { return EcPdoHandle(); }
+	auto aris_ecrt_pdo_entry_init()->std::any { return EcPdoEntryHandle(); }
+	auto aris_ecrt_pdo_entry_config(std::any& slave, std::any& pdo_group, std::any& pdo, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void
 	{
 		auto &ec_pdo_entry_reg_vec = std::any_cast<EcSlaveHandle&>(slave).ec_pdo_entry_reg_vec_;
 		auto &ec_pdo_entry_info_vec = std::any_cast<EcPdoHandle&>(pdo_group).ec_pdo_entry_info_vec_;

@@ -97,7 +97,7 @@ namespace aris::core
 		if (size < 126)
 		{
 			s.resize(size + 2);
-			s[0] = 0x82;
+			s[0] = 0x82;// binary data, 0x81 is text data
 			s[1] = size;
 			std::copy_n(msg.data() - sizeof(MsgHeader), size, &s[2]);
 		}

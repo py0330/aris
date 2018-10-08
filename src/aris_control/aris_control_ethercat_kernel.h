@@ -36,11 +36,10 @@ namespace aris::control
 
 
 
-	// pdo可以分为4级 //
-	// 1. Sm(sync manager), 每个sm可以同步多个pdo entry
-	// 2. pdo entry, 每个pdo entry 包含多个pdo
-	// 3. pdo index, 每个pdo index下包含多个subindex
-	// 4. pdo subindex, 每个pdo index 和 subindex共同确定一个pdo
+	// pdo可以分为3级 //
+	// 1. Sm(sync manager), 每个sm可以同步多个pdo
+	// 2. pdo, 每个pdo 包含多个pdo entry
+	// 3. pdo entry 每个pdo entry 对应一个 index 和 subindex
 
 	//int ecrt_master(
 	//	ec_master_t *master, /**< EtherCAT master */
@@ -96,10 +95,10 @@ namespace aris::control
 	auto aris_ecrt_slave_start(std::any& slave)->void;
 	auto aris_ecrt_slave_send(std::any& slave)->void;
 	auto aris_ecrt_slave_receive(std::any& slave)->void;
-	auto aris_ecrt_pdo_group_init()->std::any;
-	auto aris_ecrt_pdo_group_config(std::any& slave, std::any& pdo_group, std::uint16_t index, bool is_tx)->void;
 	auto aris_ecrt_pdo_init()->std::any;
-	auto aris_ecrt_pdo_config(std::any& slave, std::any& pdo_group, std::any& pdo, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void;
+	auto aris_ecrt_pdo_group_config(std::any& slave, std::any& pdo_group, std::uint16_t index, bool is_tx)->void;
+	auto aris_ecrt_pdo_entry_init()->std::any;
+	auto aris_ecrt_pdo_entry_config(std::any& slave, std::any& pdo_group, std::any& pdo, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void;
 	auto aris_ecrt_pdo_read(std::any& slave, std::any& pdo, void *data, int byte_size)->void;
 	auto aris_ecrt_pdo_write(std::any& slave, std::any& pdo, const void *data, int byte_size)->void;
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,

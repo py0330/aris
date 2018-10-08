@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 	aris::control::EthercatMaster mst;
 	mst.scanSlave();
 	
-	
+	std::cout << mst.xmlString() << std::endl;
 	
 	
 	
