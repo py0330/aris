@@ -192,7 +192,7 @@ namespace aris::control
 	auto aris_ecrt_sdo_config(std::any& master, std::any& slave, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *buffer, std::size_t byte_size)->void
 	{
-		auto &ec_slave_config = std::any_cast<EcSlaveHandle&>(slave).ec_slave_config_;
+		auto &ec_slave_config = std::any_cast<SlaveHandle&>(slave).ec_slave_config_;
 		ecrt_slave_config_sdo(ec_slave_config, index, subindex, buffer, byte_size * 8);
 	}
 
@@ -200,52 +200,52 @@ namespace aris::control
 	////////////////////////////////////////////////////////////////////////////////////////
 	auto aris_ecrt_master_stop(std::any& master)->void
 	{
-		ecrt_master_deactivate(std::any_cast<EcMasterHandle>(master).ec_master_);
-		ecrt_release_master(std::any_cast<EcMasterHandle>(master).ec_master_);
+		ecrt_master_deactivate(std::any_cast<MasterHandle>(master));
+		ecrt_release_master(std::any_cast<MasterHandle>(master));
 	}
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	auto aris_ecrt_master_sync(std::any& master, std::uint64_t ns)->void
 	{
-		ecrt_master_application_time(std::any_cast<EcMasterHandle>(master).ec_master_, ns);
-		ecrt_master_sync_reference_clock(std::any_cast<EcMasterHandle>(master).ec_master_);
-		ecrt_master_sync_slave_clocks(std::any_cast<EcMasterHandle>(master).ec_master_);
+		ecrt_master_application_time(std::any_cast<MasterHandle>(master), ns);
+		ecrt_master_sync_reference_clock(std::any_cast<MasterHandle>(master));
+		ecrt_master_sync_slave_clocks(std::any_cast<MasterHandle>(master));
 	}
 	auto aris_ecrt_master_receive(std::any& master)->void
 	{
-		ecrt_master_receive(std::any_cast<EcMasterHandle>(master).ec_master_);
+		ecrt_master_receive(std::any_cast<MasterHandle>(master));
 	}
 	auto aris_ecrt_master_send(std::any& master)->void
 	{
-		ecrt_master_send(std::any_cast<EcMasterHandle>(master).ec_master_);
+		ecrt_master_send(std::any_cast<MasterHandle>(master));
 	}
 
 	auto aris_ecrt_slave_send(std::any& slave)->void
 	{
-		ecrt_domain_queue(std::any_cast<EcSlaveHandle&>(slave).domain_);
+		ecrt_domain_queue(std::any_cast<SlaveHandle&>(slave).domain_);
 	}
 	auto aris_ecrt_slave_receive(std::any& slave)->void
 	{
-		ecrt_domain_process(std::any_cast<EcSlaveHandle&>(slave).domain_);
+		ecrt_domain_process(std::any_cast<SlaveHandle&>(slave).domain_);
 	}
 	auto aris_ecrt_pdo_read(std::any& slave, std::any& pdo, void *data, int byte_size)->void
 	{
-		std::copy_n(std::any_cast<EcSlaveHandle&>(slave).domain_pd_ + std::any_cast<EcPdoEntryHandle&>(pdo).offset_, byte_size, static_cast<char *>(data));
+		std::copy_n(std::any_cast<SlaveHandle&>(slave).domain_pd_ + std::any_cast<PdoEntryHandle&>(pdo), byte_size, static_cast<char *>(data));
 	}
 	auto aris_ecrt_pdo_write(std::any& slave, std::any& pdo, const void *data, int byte_size)->void
 	{
-		std::copy_n(static_cast<const char *>(data), byte_size, std::any_cast<EcSlaveHandle&>(slave).domain_pd_ + std::any_cast<EcPdoEntryHandle&>(pdo).offset_);
+		std::copy_n(static_cast<const char *>(data), byte_size, std::any_cast<SlaveHandle&>(slave).domain_pd_ + std::any_cast<PdoEntryHandle&>(pdo));
 	}
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code)->int
 	{
-		return ecrt_master_sdo_upload(std::any_cast<EcMasterHandle>(master).ec_master_, slave_position, index, subindex, to_buffer, buffer_size, result_size, abort_code);
+		return ecrt_master_sdo_upload(std::any_cast<MasterHandle>(master), slave_position, index, subindex, to_buffer, buffer_size, result_size, abort_code);
 	}
 	auto aris_ecrt_sdo_write(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t buffer_size, std::uint32_t *abort_code)->int
 	{
-		return ecrt_master_sdo_download(std::any_cast<EcMasterHandle>(master).ec_master_, slave_position, index, subindex, to_buffer, buffer_size, abort_code);
+		return ecrt_master_sdo_download(std::any_cast<MasterHandle>(master), slave_position, index, subindex, to_buffer, buffer_size, abort_code);
 	}
 
 #endif
