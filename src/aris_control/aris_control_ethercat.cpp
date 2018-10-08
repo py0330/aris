@@ -608,28 +608,32 @@ namespace aris::control
 		// make pdo & sdo map for each slave //
 		for (auto &sla : ecSlavePool())
 		{
-			// make PDO map and upd pdo's slave ptr //
+			// make PDO map //
 			sla.imp_->pdo_map_.clear();
-			for (int i = 0; i < static_cast<int>(sla.pdoPool().size()); ++i)
+			for (auto &sm : sla.smPool())
 			{
-				auto &group = sla.pdoPool().at(i);
-				for (int j = 0; j < static_cast<int>(group.size()); ++j)
+				for (int i = 0; i < static_cast<int>(sm.size()); ++i)
 				{
-					auto &pdo = group.at(j);
-					if (sla.imp_->pdo_map_.find(pdo.index()) != sla.imp_->pdo_map_.end())
+					auto &group = sm.at(i);
+					for (int j = 0; j < static_cast<int>(group.size()); ++j)
 					{
-						sla.imp_->pdo_map_.at(pdo.index()).insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
-					}
-					else
-					{
-						std::map<std::uint8_t, std::pair<int, int> > subindex_map;
-						subindex_map.insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
-						sla.imp_->pdo_map_.insert(std::make_pair(pdo.index(), subindex_map));
+						auto &pdo = group.at(j);
+						if (sla.imp_->pdo_map_.find(pdo.index()) != sla.imp_->pdo_map_.end())
+						{
+							sla.imp_->pdo_map_.at(pdo.index()).insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+						}
+						else
+						{
+							std::map<std::uint8_t, std::pair<int, int> > subindex_map;
+							subindex_map.insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+							sla.imp_->pdo_map_.insert(std::make_pair(pdo.index(), subindex_map));
+						}
 					}
 				}
 			}
+			
 
-			// make SDO map and upd pdo's slave ptr //
+			// make SDO map //
 			sla.imp_->sdo_map_.clear();
 			for (int i = 0; i < static_cast<int>(sla.sdoPool().size()); ++i)
 			{
@@ -647,6 +651,9 @@ namespace aris::control
 			}
 		}
 
+		aris_ecrt_master_request(this);
+
+		/*
 		// init ethercat master, slave, pdo group, and pdo //
 		imp_->ec_handle_ = aris_ecrt_master_init();
 		for (auto &sla : ecSlavePool())
@@ -685,7 +692,7 @@ namespace aris::control
 
 		// start ethercat master and slave //
 		aris_ecrt_master_start(ecHandle());
-		for (auto &sla : ecSlavePool())aris_ecrt_slave_start(sla.ecHandle());
+		for (auto &sla : ecSlavePool())aris_ecrt_slave_start(sla.ecHandle());*/
 	}
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(ecHandle()); }
 	auto EthercatMaster::send()->void

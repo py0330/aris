@@ -19,6 +19,7 @@ namespace aris::control
 {
 #ifndef USE_ETHERLAB
 	auto aris_ecrt_scan(EthercatMaster *master)->int { return 0;}
+	auto aris_ecrt_master_request(EthercatMaster *master)->void {}
 	
 	auto aris_ecrt_master_init()->std::any { return std::any(); }
 	auto aris_ecrt_slave_init()->std::any { return std::any(); }

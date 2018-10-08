@@ -80,7 +80,7 @@ namespace aris::control
 	class EthercatMaster;
 
 	auto aris_ecrt_scan(EthercatMaster *master)->int;
-
+	auto aris_ecrt_master_request(EthercatMaster *master)->void;
 
 
 	auto aris_ecrt_master_init()->std::any;
