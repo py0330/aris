@@ -133,28 +133,32 @@ namespace aris::control
 		{
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
 			std::vector<ec_sync_info_t> ec_sync_info_vec;
+			std::vector<std::vector<ec_pdo_info_t> > ec_pdo_info_vec_vec;
+			std::vector<std::vector<std::vector<ec_pdo_entry_info_t> > > ec_pdo_entry_info_vec_vec_vec;
 
 			for (auto &sm : slave.smPool())
 			{
-				std::vector<ec_pdo_info_t> ec_pdo_info_vec;
+				ec_pdo_info_vec_vec.push_back(std::vector<ec_pdo_info_t>());
+				ec_pdo_entry_info_vec_vec_vec.push_back(std::vector<std::vector<ec_pdo_entry_info_t> >());
+
 				for (auto &pdo : sm)
 				{
-					std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
+					ec_pdo_entry_info_vec_vec_vec.back().push_back(std::vector<ec_pdo_entry_info_t>());
 					for (auto &entry : pdo)
 					{
 						entry.ecHandle() = PdoEntryHandle();
 						ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0x00, slave.phyId(), slave.vendorID(), slave.productCode(), entry.index(), entry.subindex(), &(std::any_cast<PdoEntryHandle&>(entry.ecHandle())) });
-						ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.size() * 8) });
+						ec_pdo_entry_info_vec_vec_vec.back().back().push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.size() * 8) });
 					}
 
-					ec_pdo_info_vec.push_back(ec_pdo_info_t{ pdo.index(), static_cast<std::uint8_t>(ec_pdo_entry_info_vec.size()), ec_pdo_entry_info_vec.data() });
+					ec_pdo_info_vec_vec.back().push_back(ec_pdo_info_t{ pdo.index(), 
+						static_cast<std::uint8_t>(ec_pdo_entry_info_vec_vec_vec.back().back().size()), ec_pdo_entry_info_vec_vec_vec.back().back().data() });
 				}
 
-				ec_sync_info_vec.push_back(ec_sync_info_t{ static_cast<std::uint8_t>(sm.id()), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT, static_cast<unsigned int>(ec_pdo_info_vec.size()), ec_pdo_info_vec.data(), EC_WD_DEFAULT });
+				ec_sync_info_vec.push_back(ec_sync_info_t{ static_cast<std::uint8_t>(sm.id()), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT, 
+					static_cast<unsigned int>(ec_pdo_info_vec_vec.back().size()), ec_pdo_info_vec_vec.back().data(), EC_WD_DEFAULT });
 			}
 			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{});
-			ec_sync_info_vec.push_back(ec_sync_info_t{ 0xff });
-
 
 			SlaveHandle sla;
 
@@ -165,7 +169,7 @@ namespace aris::control
 			if (!(sla.ec_slave_config_ = ecrt_master_slave_config(mst, 0x00, slave.phyId(), slave.vendorID(), slave.productCode()))) { throw std::runtime_error("failed to slave config"); }
 
 			// Configure the slave's PDOs and sync masters
-			if (ecrt_slave_config_pdos(sla.ec_slave_config_, ec_sync_info_vec.size() - 1, ec_sync_info_vec.data()))throw std::runtime_error("failed to slave config pdos");
+			if (ecrt_slave_config_pdos(sla.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))throw std::runtime_error("failed to slave config pdos");
 
 			// Configure the slave's domain
 			if (ecrt_domain_reg_pdo_entry_list(sla.domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
