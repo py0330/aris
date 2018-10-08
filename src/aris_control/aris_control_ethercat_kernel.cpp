@@ -162,8 +162,9 @@ namespace aris::control
 					ec_pdo_info_vec.push_back(ec_pdo_info_t{ pdo.index(), static_cast<std::uint8_t>(ec_pdo_entry_info_vec.size()), ec_pdo_entry_info_vec.data() });
 				}
 
-				ec_sync_info_vec.push_back(ec_sync_info_t{ sm.id(), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT, static_cast<unsigned int>(ec_pdo_info_vec.size()), ec_pdo_info_vec.data(), EC_WD_DEFAULT });
+				ec_sync_info_vec.push_back(ec_sync_info_t{ static_cast<std::uint8_t>(sm.id()), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT, static_cast<unsigned int>(ec_pdo_info_vec.size()), ec_pdo_info_vec.data(), EC_WD_DEFAULT });
 			}
+			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{});
 			ec_sync_info_vec.push_back(ec_sync_info_t{ 0xff });
 
 
