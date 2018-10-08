@@ -583,6 +583,10 @@ namespace aris::control
 		registerType<Pdo>();
 		registerType<aris::core::ObjectPool<Sdo> >();
 		registerType<aris::core::ObjectPool<Pdo> >();
+
+		registerType<SyncManager>();
+		registerType<aris::core::ObjectPool<SyncManager> >();
+
 	}
 
 	class EthercatMaster::Imp

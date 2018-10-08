@@ -10,15 +10,7 @@ int main(int argc, char *argv[])
 	mst.scanSlave();
 	
 	std::cout << mst.xmlString() << std::endl;
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
 	double robot_pm[16];
 	std::string robot_name = argc < 2 ? "ur5" : argv[1];
 	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
@@ -56,14 +48,6 @@ int main(int argc, char *argv[])
 	std::cout << "this server port    :" << std::to_string(port) << std::endl;
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
-
-	
-	auto &controller = dynamic_cast<aris::control::EthercatController&>(cs.controller());
-	auto &slave = dynamic_cast<aris::control::EthercatSlave&>(controller.slavePool().at(0)).smPool().add<aris::control::SyncManager>();
-
-	std::cout << cs.controller().xmlString() << std::endl;
-
-
 
 	aris::core::WebSocket socket;
 	socket.setOnReceivedMsg([&](aris::core::WebSocket *, aris::core::Msg &msg)->int
