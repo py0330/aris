@@ -491,7 +491,7 @@ namespace aris::control
 		aris::core::ObjectPool<SyncManager> *sm_pool_;
 		aris::core::ObjectPool<Pdo> *pdo_pool_;
 		aris::core::ObjectPool<Sdo> *sdo_pool_;
-		std::map<std::uint16_t, std::map<std::uint8_t, std::pair<int, int> > > pdo_map_;
+		std::map<std::uint16_t, std::map<std::uint8_t, PdoEntry* > > pdo_map_;
 		std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
 	};
 	auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -532,24 +532,18 @@ namespace aris::control
 	auto EthercatSlave::revisionNum()const->std::uint32_t { return imp_->revision_num_; }
 	auto EthercatSlave::dcAssignActivate()const->std::uint32_t { return imp_->dc_assign_activate_; }
 	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& { return *imp_->sm_pool_; }
-	auto EthercatSlave::pdoPool()->aris::core::ObjectPool<Pdo>& { return *imp_->pdo_pool_; }
 	auto EthercatSlave::sdoPool()->aris::core::ObjectPool<Sdo>& { return *imp_->sdo_pool_; }
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
 	{
-		auto id_pair = imp_->pdo_map_.at(index).at(subindex);
-		auto &pdo = pdoPool().at(id_pair.first);
-		auto &pdo_entry = pdo.at(id_pair.second);
-		if (pdo_entry.size() != byte_size)throw std::runtime_error("failed to read pdo entry:\"" + pdo_entry.name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_read(ecHandle(), pdo_entry.ecHandle(), value, byte_size);
+		auto entry = imp_->pdo_map_.at(index).at(subindex);
+		if (entry->size() != byte_size)throw std::runtime_error("failed to read pdo entry:\"" + entry->name() + "\" because byte size is not correct");
+		aris_ecrt_pdo_read(ecHandle(), entry->ecHandle(), value, byte_size);
 	}
 	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
 	{
-		auto id_pair = imp_->pdo_map_.at(index).at(subindex);
-		auto &pdo = pdoPool().at(id_pair.first);
-		auto &pdo_entry = pdo.at(id_pair.second);
-		if (!pdo.rx())throw std::runtime_error("failed to write pdo_entry:\"" + pdo_entry.name() + "\" because it is not rx");
-		if (pdo_entry.size() != byte_size)throw std::runtime_error("failed to write pdo_entry:\"" + pdo_entry.name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_write(ecHandle(), pdo_entry.ecHandle(), value, byte_size);
+		auto entry = imp_->pdo_map_.at(index).at(subindex);
+		if (entry->size() != byte_size)throw std::runtime_error("failed to write pdo_entry:\"" + entry->name() + "\" because byte size is not correct");
+		aris_ecrt_pdo_write(ecHandle(), entry->ecHandle(), value, byte_size);
 	}
 	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
 	{
@@ -612,21 +606,19 @@ namespace aris::control
 			sla.imp_->pdo_map_.clear();
 			for (auto &sm : sla.smPool())
 			{
-				for (int i = 0; i < static_cast<int>(sm.size()); ++i)
+				for (auto &pdo : sm)
 				{
-					auto &group = sm.at(i);
-					for (int j = 0; j < static_cast<int>(group.size()); ++j)
+					for (auto &entry : pdo)
 					{
-						auto &pdo = group.at(j);
-						if (sla.imp_->pdo_map_.find(pdo.index()) != sla.imp_->pdo_map_.end())
+						if (sla.imp_->pdo_map_.find(entry.index()) != sla.imp_->pdo_map_.end())
 						{
-							sla.imp_->pdo_map_.at(pdo.index()).insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
+							sla.imp_->pdo_map_.at(entry.index()).insert(std::make_pair(entry.subindex(), &entry));
 						}
 						else
 						{
-							std::map<std::uint8_t, std::pair<int, int> > subindex_map;
-							subindex_map.insert(std::make_pair(pdo.subindex(), std::make_pair(i, j)));
-							sla.imp_->pdo_map_.insert(std::make_pair(pdo.index(), subindex_map));
+							std::map<std::uint8_t, PdoEntry* > subindex_map;
+							subindex_map.insert(std::make_pair(entry.subindex(), &entry));
+							sla.imp_->pdo_map_.insert(std::make_pair(entry.index(), subindex_map));
 						}
 					}
 				}

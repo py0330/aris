@@ -41,64 +41,20 @@ namespace aris::control
 	// 2. pdo, 每个pdo 包含多个pdo entry
 	// 3. pdo entry 每个pdo entry 对应一个 index 和 subindex
 
-	//int ecrt_master(
-	//	ec_master_t *master, /**< EtherCAT master */
-	//	ec_master_info_t *master_info /**< Structure that will output the
-	//								  information */
-	//);
-	//int ecrt_master_get_slave(
-	//	ec_master_t *master, /**< EtherCAT master */
-	//	uint16_t slave_position, /**< Slave position. */
-	//	ec_slave_info_t *slave_info /**< Structure that will output the
-	//								information */
-	//);
-	//int ecrt_master_get_sync_manager(
-	//	ec_master_t *master, /**< EtherCAT master. */
-	//	uint16_t slave_position, /**< Slave position. */
-	//	uint8_t sync_index, /**< Sync manager index. Must be less
-	//						than #EC_MAX_SYNC_MANAGERS. */
-	//	ec_sync_info_t *sync /**< Pointer to output structure. */
-	//);
-	//int ecrt_master_get_pdo(
-	//	ec_master_t *master, /**< EtherCAT master. */
-	//	uint16_t slave_position, /**< Slave position. */
-	//	uint8_t sync_index, /**< Sync manager index. Must be less
-	//						than #EC_MAX_SYNC_MANAGERS. */
-	//	uint16_t pos, /**< Zero-based PDO position. */
-	//	ec_pdo_info_t *pdo /**< Pointer to output structure. */
-	//);
-	//int ecrt_master_get_pdo_entry(
-	//	ec_master_t *master, /**< EtherCAT master. */
-	//	uint16_t slave_position, /**< Slave position. */
-	//	uint8_t sync_index, /**< Sync manager index. Must be less
-	//						than #EC_MAX_SYNC_MANAGERS. */
-	//	uint16_t pdo_pos, /**< Zero-based PDO position. */
-	//	uint16_t entry_pos, /**< Zero-based PDO entry position. */
-	//	ec_pdo_entry_info_t *entry /**< Pointer to output structure. */
-	//);
 
 	class EthercatMaster;
 
 	auto aris_ecrt_scan(EthercatMaster *master)->int;
 	auto aris_ecrt_master_request(EthercatMaster *master)->void;
 
-
-	auto aris_ecrt_master_init()->std::any;
-	auto aris_ecrt_master_config(std::any& master)->void;
-	auto aris_ecrt_master_start(std::any& master)->void;
 	auto aris_ecrt_master_stop(std::any& master)->void;
 	auto aris_ecrt_master_sync(std::any& master, std::uint64_t ns)->void;
 	auto aris_ecrt_master_receive(std::any& master)->void;
 	auto aris_ecrt_master_send(std::any& master)->void;
-	auto aris_ecrt_slave_init()->std::any;
-	auto aris_ecrt_slave_config(std::any& master, std::any& slave, std::uint16_t alias, std::uint16_t position, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t distribute_clock)->void;
-	auto aris_ecrt_slave_start(std::any& slave)->void;
+
 	auto aris_ecrt_slave_send(std::any& slave)->void;
 	auto aris_ecrt_slave_receive(std::any& slave)->void;
-	auto aris_ecrt_pdo_init()->std::any;
-	auto aris_ecrt_pdo_group_config(std::any& slave, std::any& pdo_group, std::uint16_t index, bool is_tx)->void;
-	auto aris_ecrt_pdo_entry_init()->std::any;
-	auto aris_ecrt_pdo_entry_config(std::any& slave, std::any& pdo_group, std::any& pdo, std::uint16_t index, std::uint8_t subindex, std::uint8_t bit_length)->void;
+
 	auto aris_ecrt_pdo_read(std::any& slave, std::any& pdo, void *data, int byte_size)->void;
 	auto aris_ecrt_pdo_write(std::any& slave, std::any& pdo, const void *data, int byte_size)->void;
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,

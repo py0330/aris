@@ -171,8 +171,6 @@ namespace aris::control
 		auto smPool()const->const aris::core::ObjectPool<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
 
 
-		auto pdoPool()->aris::core::ObjectPool<Pdo>&;
-		auto pdoPool()const->const aris::core::ObjectPool<Pdo>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->pdoPool(); }
 		auto sdoPool()->aris::core::ObjectPool<Sdo>&;
 		auto sdoPool()const->const aris::core::ObjectPool<Sdo>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->sdoPool(); }
 		auto ecHandle()->std::any&;
