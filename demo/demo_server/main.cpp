@@ -57,6 +57,14 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
+	
+	auto &controller = dynamic_cast<aris::control::EthercatController&>(cs.controller());
+	auto &slave = dynamic_cast<aris::control::EthercatSlave&>(controller.slavePool().at(0)).smPool().add<aris::control::SyncManager>();
+
+	std::cout << cs.controller().xmlString() << std::endl;
+
+
+
 	aris::core::WebSocket socket;
 	socket.setOnReceivedMsg([&](aris::core::WebSocket *, aris::core::Msg &msg)->int
 	{

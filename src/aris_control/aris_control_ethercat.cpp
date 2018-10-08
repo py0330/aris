@@ -130,7 +130,7 @@ namespace aris::control
 	};
 	auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
-		Object::saveXml(xml_ele);
+		aris::core::Object::saveXml(xml_ele);
 
 		std::stringstream s;
 		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
@@ -143,7 +143,7 @@ namespace aris::control
 		imp_->index_ = attributeUint16(xml_ele, "index");
 		imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
 
-		Object::loadXml(xml_ele);
+		aris::core::Object::loadXml(xml_ele);
 	}
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
 	auto Pdo::tx()const->bool { return imp_->is_tx_; }
@@ -160,17 +160,24 @@ namespace aris::control
 	Pdo& Pdo::operator=(const Pdo &) = default;
 	Pdo& Pdo::operator=(Pdo &&) = default;
 
-	struct SyncManager::Imp { };
+	struct SyncManager::Imp { std::any handle_; bool is_tx_; };
 	auto SyncManager::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		aris::core::ObjectPool<Pdo>::saveXml(xml_ele);
+		xml_ele.SetAttribute("is_tx", tx());
 	}
 	auto SyncManager::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
+		imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
 		aris::core::ObjectPool<Pdo>::loadXml(xml_ele);
 	}
+	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
+	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
 	SyncManager::~SyncManager() = default;
-	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) {}
+	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) 
+	{
+		imp_->is_tx_ = is_tx;
+	}
 	SyncManager::SyncManager(const SyncManager &) = default;
 	SyncManager::SyncManager(SyncManager &&) = default;
 	SyncManager& SyncManager::operator=(const SyncManager &) = default;

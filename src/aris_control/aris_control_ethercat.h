@@ -117,6 +117,8 @@ namespace aris::control
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		auto tx()const->bool;
+		auto rx()const->bool;
 
 		virtual ~SyncManager();
 		explicit SyncManager(const std::string &name = "sm", bool is_tx = true);

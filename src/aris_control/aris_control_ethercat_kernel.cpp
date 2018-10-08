@@ -93,11 +93,10 @@ namespace aris::control
 				}
 			}
 		}
-
+		// 释放master //
 		ecrt_release_master(ec_master);
 
 		master->slavePool().clear();
-
 		for (uint16_t sla_pos = 0; sla_pos < ec_master_info.slave_count; ++sla_pos)
 		{
 			auto &info = ec_slave_info_vec[sla_pos];
@@ -125,7 +124,75 @@ namespace aris::control
 		return 0;
 	}
 
+	using MasterHandle = ec_master_t*;
+	struct SlaveHandle
+	{
+		ec_domain_t* domain_;
+		std::uint8_t* domain_pd_;
+		ec_slave_config_t* ec_slave_config_;
+	};
+	using PdoEntryHandle = std::uint32_t;
 
+
+	auto aris_ecrt_master_request(EthercatMaster *master)->void
+	{
+		auto mst = ecrt_request_master(0);
+		if(mst == nullptr)throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":master request failed!").c_str());
+		master->ecHandle() = mst;
+
+		for (auto &slave : master->ecSlavePool())
+		{
+			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
+			std::vector<ec_sync_info_t> ec_sync_info_vec;
+
+			for (auto &sm : slave.smPool())
+			{
+				std::vector<ec_pdo_info_t> ec_pdo_info_vec;
+				for (auto &pdo : sm)
+				{
+					std::vector<ec_pdo_entry_info_t> ec_pdo_entry_info_vec;
+					for (auto &entry : pdo)
+					{
+						entry.ecHandle() = PdoEntryHandle();
+						ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0x00, slave.phyId(), slave.vendorID(), slave.productCode(), entry.index(), entry.subindex(), &(std::any_cast<PdoEntryHandle&>(entry.ecHandle())) });
+						ec_pdo_entry_info_vec.push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.size() * 8) });
+					}
+
+					ec_pdo_info_vec.push_back(ec_pdo_info_t{ pdo.index(), static_cast<std::uint8_t>(ec_pdo_entry_info_vec.size()), ec_pdo_entry_info_vec.data() });
+				}
+
+				ec_sync_info_vec.push_back(ec_sync_info_t{ sm.id(), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT, static_cast<unsigned int>(ec_pdo_info_vec.size()), ec_pdo_info_vec.data(), EC_WD_DEFAULT });
+			}
+			ec_sync_info_vec.push_back(ec_sync_info_t{ 0xff });
+
+
+			SlaveHandle sla;
+
+			// Create domain
+			if (!(sla.domain_ = ecrt_master_create_domain(mst)))throw std::runtime_error("failed to create domain");
+
+			// Get the slave configuration 
+			if (!(sla.ec_slave_config_ = ecrt_master_slave_config(mst, 0x00, slave.phyId(), slave.vendorID(), slave.productCode()))) { throw std::runtime_error("failed to slave config"); }
+
+			// Configure the slave's PDOs and sync masters
+			if (ecrt_slave_config_pdos(sla.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))throw std::runtime_error("failed to slave config pdos");
+
+			// Configure the slave's domain
+			if (ecrt_domain_reg_pdo_entry_list(sla.domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
+
+			// Configure the slave's discrete clock
+			ecrt_slave_config_dc(sla.ec_slave_config_, slave.dcAssignActivate(), 1000000, 4400000, 0, 0);
+
+			slave.ecHandle() = sla;
+		}
+
+		ecrt_master_activate(mst);
+		for (auto &slave : master->ecSlavePool()) 
+		{
+			auto &domain_pd = std::any_cast<SlaveHandle&>(slave.ecHandle()).domain_pd_;
+			if (!(domain_pd = ecrt_domain_data(std::any_cast<SlaveHandle&>(slave.ecHandle()).domain_)))throw std::runtime_error("failed ecrt_domain_data");
+		}
+	}
 
 
 
