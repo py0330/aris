@@ -104,7 +104,7 @@ namespace aris::control
 					for (unsigned int entry_pos = 0; entry_pos < ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos].n_entries; ++entry_pos)
 					{
 						auto &info = ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos][entry_pos];
-						sla.smPool()[sync_pos][pdo_pos].add<PdoEntry>("entry", info.index, info.subindex, info.bit_length);
+						sla.smPool()[sync_pos][pdo_pos].add<PdoEntry>("entry", info.index, info.subindex, info.bit_length / 8);
 					}
 				}
 			}

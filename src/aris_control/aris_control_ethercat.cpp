@@ -586,7 +586,7 @@ namespace aris::control
 		std::any ec_handle_;
 		aris::core::RefPool<EthercatSlave> ec_slave_pool_;
 	};
-	auto EthercatMaster::scanSlave()->void
+	auto EthercatMaster::scan()->void
 	{
 		aris_ecrt_scan(this);
 	}

@@ -212,7 +212,7 @@ namespace aris::control
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 		auto ecSlavePool()->aris::core::RefPool<EthercatSlave>&;
 		auto ecSlavePool()const->const aris::core::RefPool<EthercatSlave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecSlavePool(); }
-		auto scanSlave()->void;
+		auto scan()->void;
 
 		virtual ~EthercatMaster();
 		EthercatMaster();

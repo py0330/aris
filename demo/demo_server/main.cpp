@@ -6,11 +6,6 @@ using namespace aris::robot;
 
 int main(int argc, char *argv[])
 {
-	aris::control::EthercatMaster mst;
-	mst.scanSlave();
-	
-	std::cout << mst.xmlString() << std::endl;
-
 	double robot_pm[16];
 	std::string robot_name = argc < 2 ? "ur5" : argv[1];
 	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
