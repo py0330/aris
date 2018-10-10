@@ -99,8 +99,10 @@ namespace aris::control
 
 		const int sample_period_ns_{ 1000000 };
 
+		// rt stastics //
+		Master::RtStasticsData rt_stastics_;
+
 		std::any rt_task_handle_;
-		std::any ec_handle_;
 
 		Imp() { mout_msg_stream_.reset(new aris::core::MsgStream(mout_msg_)); lout_msg_stream_.reset(new aris::core::MsgStream(lout_msg_)); }
 
@@ -238,6 +240,8 @@ namespace aris::control
 	auto Master::mout()->aris::core::MsgStream & { return *imp_->mout_msg_stream_; }
 	auto Master::slaveAtPhy(aris::Size id)->Slave& { return slavePool().at(imp_->sla_vec_phy2abs_.at(id)); }
 	auto Master::slavePool()->aris::core::ObjectPool<Slave, aris::core::Object>& { return *imp_->slave_pool_; }
+	auto Master::rtStasticData()const->RtStasticsData { return imp_->rt_stastics_; }
+	auto Master::rtResetStasticData()->void { imp_->rt_stastics_ = RtStasticsData{ 0,0,0,0,0,0 }; }
 	Master::~Master() = default;
 	Master::Master(const std::string &name) :imp_(new Imp), Object(name)
 	{

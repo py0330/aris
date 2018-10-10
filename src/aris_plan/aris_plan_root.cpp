@@ -805,79 +805,93 @@ namespace aris::plan
 
 	struct RecoverParam
 	{
-		double axis_pos[6]{ 0.0 };
-		double acceleration, velocity, deceleration;
+		std::vector<Size> total_count_vec;
+		std::vector<double> axis_begin_pos_vec;
+		std::vector<double> axis_pos_vec;
+		std::vector<double> axis_vel_vec;
+		std::vector<double> axis_acc_vec;
+		std::vector<double> axis_dec_vec;
 	};
 	struct RecoverPlan::Imp { Imp() {} };
 	auto RecoverPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		default_prepair_check_option(params, target);
 
-		RecoverParam rc_param;
-
-		double pe[6], pe_unit;
-		std::string eul_type;
-		bool use_pe{ false };
+		auto c = dynamic_cast<aris::control::Controller*>(target.master);
+		RecoverParam param;
+		param.axis_begin_pos_vec.resize(c->motionPool().size(), 0.0);
+		param.total_count_vec.resize(c->motionPool().size(), 1);
 		for (auto cmd_param : params)
 		{
-			if (cmd_param.first == "pq")
+			if (cmd_param.first == "position")
 			{
-				auto pq = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pq.size() != 7)throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-				target.model->generalMotionPool().at(0).setMpq(pq.data());
-			}
-			else if (cmd_param.first == "pm")
-			{
-				auto pm = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pm.size() != 16)throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-				target.model->generalMotionPool().at(0).setMpm(pm.data());
-			}
-			else if (cmd_param.first == "pe")
-			{
-				auto pe_mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pe_mat.size() != 6)throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-				std::copy(pe_mat.data(), pe_mat.data() + 6, pe);
-				use_pe = true;
-			}
-			else if (cmd_param.first == "orientation_unit")
-			{
-				if (cmd_param.second == "rad")pe_unit = 1.0;
-				else if (cmd_param.second == "degree")pe_unit = PI / 180.0;
-				else throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-			}
-			else if (cmd_param.first == "euler_type")
-			{
-				eul_type = cmd_param.second;
+				auto p = target.model->calculator().calculateExpression(cmd_param.second);
+
+				if (p.size() == 1)
+				{
+					param.axis_pos_vec.resize(c->motionPool().size(), p.toDouble());
+				}
+				else if (p.size() == c->motionPool().size())
+				{
+					param.axis_pos_vec.assign(p.begin(), p.end());
+				}
+				else
+				{
+					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				}
 			}
 			else if (cmd_param.first == "acceleration")
 			{
-				rc_param.acceleration = std::atof(cmd_param.second.c_str());
+				auto a = target.model->calculator().calculateExpression(cmd_param.second);
+
+				if (a.size() == 1)
+				{
+					param.axis_acc_vec.resize(c->motionPool().size(), a.toDouble());
+				}
+				else if (a.size() == c->motionPool().size())
+				{
+					param.axis_acc_vec.assign(a.begin(), a.end());
+				}
+				else
+				{
+					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				}
 			}
 			else if (cmd_param.first == "velocity")
 			{
-				rc_param.velocity = std::atof(cmd_param.second.c_str());
+				auto v = target.model->calculator().calculateExpression(cmd_param.second);
+
+				if (v.size() == 1)
+				{
+					param.axis_vel_vec.resize(c->motionPool().size(), v.toDouble());
+				}
+				else if (v.size() == c->motionPool().size())
+				{
+					param.axis_vel_vec.assign(v.begin(), v.end());
+				}
+				else
+				{
+					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				}
 			}
 			else if (cmd_param.first == "deceleration")
 			{
-				rc_param.deceleration = std::atof(cmd_param.second.c_str());
+				auto d = target.model->calculator().calculateExpression(cmd_param.second);
+
+				if (d.size() == 1)
+				{
+					param.axis_dec_vec.resize(c->motionPool().size(), d.toDouble());
+				}
+				else if (d.size() == c->motionPool().size())
+				{
+					param.axis_dec_vec.assign(d.begin(), d.end());
+				}
+				else
+				{
+					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				}
 			}
 		}
-
-		if (use_pe)
-		{
-			aris::dynamic::s_nv(3, pe_unit, pe + 3);
-			target.model->generalMotionPool().at(0).setMpe(pe, eul_type.data());
-		}
-
-		//if (!target.model->solverPool().at(0).kinPos())throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-
-		//for (aris::Size i = 0; i < target.model->motionPool().size(); ++i)
-		//{
-		//	target.model->motionPool().at(i).updMp();
-		//	rc_param.axis_pos[i] = target.model->motionPool().at(i).mp();
-		//}
-
-		std::fill_n(rc_param.axis_pos, 6, 0.0);
 
 		target.option |=
 			aris::plan::Plan::USE_TARGET_POS | 
@@ -885,7 +899,7 @@ namespace aris::plan
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START | 
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 
-		target.param = rc_param;
+		target.param = param;
 	}
 	auto RecoverPlan::executeRT(PlanTarget &target)->int
 	{
@@ -893,29 +907,32 @@ namespace aris::plan
 		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 
 		// 取得起始位置 //
-		static double begin_pos[6];
-		static aris::Size total_count[6];
 		if (target.count == 1)
 		{
 			for (Size i = 0; i < controller->motionPool().size(); ++i)
 			{
-				begin_pos[i] = controller->motionPool().at(i).actualPos();
+				param.axis_begin_pos_vec[i] = controller->motionPool().at(i).actualPos();
 			}
 		}
 
+		// 设置驱动器的位置 //
 		for (Size i = 0; i < controller->motionPool().size(); ++i)
 		{
 			double p, v, a;
-			aris::plan::moveAbsolute(target.count, begin_pos[i], param.axis_pos[i], param.velocity / 1000, param.acceleration / 1000 / 1000, param.deceleration / 1000 / 1000, p, v, a, total_count[i]);
-			target.model->motionPool().at(i).setMp(p);
+			aris::plan::moveAbsolute(target.count, param.axis_begin_pos_vec[i], param.axis_pos_vec[i], param.axis_vel_vec[i] / 1000
+				, param.axis_acc_vec[i] / 1000 / 1000, param.axis_dec_vec[i] / 1000 / 1000, p, v, a, param.total_count_vec[i]);
+			controller->motionAtAbs(i).setTargetPos(p);
 		}
 
-		double pq[7];
-		aris::dynamic::s_pm2pq(*target.model->generalMotionPool().at(0).mpm(), pq);
-		target.master->lout() << target.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "\n";
+
+		// 改变模型中的驱动位置 //
+		for (Size i = 0; i < std::min(controller->motionPool().size(), target.model->motionPool().size()); ++i)
+		{
+			target.model->motionPool()[i].setMp(controller->motionPool().at(i).targetPos());
+		}
 
 		target.model->solverPool().at(1).kinPos();
-		return (static_cast<int>(*std::max_element(total_count, total_count + 6)) > target.count) ? 1 : 0;
+		return (static_cast<int>(*std::max_element(param.total_count_vec.begin(), param.total_count_vec.end())) > target.count) ? 1 : 0;
 	}
 	auto RecoverPlan::collectNrt(PlanTarget &target)->void {}
 	RecoverPlan::~RecoverPlan() = default;
@@ -924,16 +941,7 @@ namespace aris::plan
 		command().loadXmlStr(
 			"<rc default_child_type=\"Param\">"
 			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
-			"		<position_unit default=\"m\"/>"
-			"		<unique_pos type=\"UniqueParam\" default_child_type=\"Param\" default=\"pq\">"
-			"			<pq default=\"{0,0,0,0,0,0,1}\"/>"
-			"			<pm default=\"{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}\"/>"
-			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
-			"				<pe default=\"{0,0,0,0,0,0}\"/>"
-			"				<orientation_unit default=\"rad\"/>"
-			"				<euler_type default=\"321\"/>"
-			"			</group>"
-			"		</unique_pos>"
+			"		<position default=\"0.0\"/>"
 			"		<acceleration default=\"0.5\"/>"
 			"		<velocity default=\"0.5\"/>"
 			"		<deceleration default=\"0.5\"/>"
@@ -1320,7 +1328,9 @@ namespace aris::plan
 	{
 		default_prepair_check_option(params, target);
 		
+		auto c = dynamic_cast<aris::control::Controller*>(target.master);
 		MoveJ::Param param;
+
 		for (auto cmd_param : params)
 		{
 			if (cmd_param.first == "all")
@@ -1338,18 +1348,18 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "physical_id")
 			{
-				param.joint_active_vec.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), false);
-				param.joint_active_vec.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = true;
+				param.joint_active_vec.resize(c->motionPool().size(), false);
+				param.joint_active_vec.at(c->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = true;
 			}
 			else if (cmd_param.first == "slave_id")
 			{
-				param.joint_active_vec.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), false);
-				param.joint_active_vec.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = true;
+				param.joint_active_vec.resize(c->motionPool().size(), false);
+				param.joint_active_vec.at(c->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = true;
 			}
 			else if (cmd_param.first == "pos")
 			{
 				aris::core::Matrix mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if(mat.size()==1)param.joint_pos_vec.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), mat.toDouble());
+				if(mat.size()==1)param.joint_pos_vec.resize(c->motionPool().size(), mat.toDouble());
 				else 
 				{
 					param.joint_pos_vec.resize(mat.size());

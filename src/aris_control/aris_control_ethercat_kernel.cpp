@@ -40,10 +40,6 @@ namespace aris::control
 	
 #endif
 
-
-	
-
-
 #ifdef USE_ETHERLAB
 	auto aris_ecrt_scan(EthercatMaster *master)->int
 	{
@@ -99,7 +95,7 @@ namespace aris::control
 				for (unsigned int pdo_pos = 0; pdo_pos < ec_sync_info_vec_vec[sla_pos][sync_pos].n_pdos; ++pdo_pos)
 				{
 					auto &pdo_info = ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos];
-					sla.smPool()[sync_pos].add<Pdo>("pdo", pdo_info.index, info.dir == EC_DIR_INPUT);
+					sla.smPool()[sync_pos].add<Pdo>("pdo", pdo_info.index);
 					
 					for (unsigned int entry_pos = 0; entry_pos < ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos].n_entries; ++entry_pos)
 					{
@@ -174,8 +170,8 @@ namespace aris::control
 			// Configure the slave's domain
 			if (ecrt_domain_reg_pdo_entry_list(sla.domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
-			// Configure the slave's discrete clock
-			ecrt_slave_config_dc(sla.ec_slave_config_, slave.dcAssignActivate(), 1000000, 4400000, 0, 0);
+			// Configure the slave's distributed clock
+			if (slave.dcAssignActivate())ecrt_slave_config_dc(sla.ec_slave_config_, slave.dcAssignActivate(), 1000000, 4400000, 0, 0);
 
 			slave.ecHandle() = sla;
 		}

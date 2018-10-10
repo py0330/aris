@@ -123,10 +123,7 @@ namespace aris::control
 	struct Pdo::Imp
 	{
 		std::any handle_;
-		bool is_tx_;
 		std::uint16_t index_;
-
-		Imp(std::uint16_t index = 0, bool is_tx = true) :is_tx_(is_tx), index_(index) {}
 	};
 	auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
@@ -135,25 +132,22 @@ namespace aris::control
 		std::stringstream s;
 		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
 		xml_ele.SetAttribute("index", s.str().c_str());
-
-		xml_ele.SetAttribute("is_tx", tx());
 	}
 	auto Pdo::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		imp_->index_ = attributeUint16(xml_ele, "index");
-		imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
 
 		aris::core::Object::loadXml(xml_ele);
 	}
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
-	auto Pdo::tx()const->bool { return imp_->is_tx_; }
-	auto Pdo::rx()const->bool { return !imp_->is_tx_; }
 	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
 	Pdo::~Pdo() = default;
-	Pdo::Pdo(const std::string &name, std::uint16_t index, bool is_tx) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp(index, is_tx))
+	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp)
 	{
 		registerType<PdoEntry>();
 		registerType<aris::core::ObjectPool<PdoEntry> >();
+
+		imp_->index_ = index;
 	}
 	Pdo::Pdo(const Pdo &) = default;
 	Pdo::Pdo(Pdo &&) = default;
@@ -586,10 +580,7 @@ namespace aris::control
 		std::any ec_handle_;
 		aris::core::RefPool<EthercatSlave> ec_slave_pool_;
 	};
-	auto EthercatMaster::scan()->void
-	{
-		aris_ecrt_scan(this);
-	}
+	auto EthercatMaster::scan()->void { aris_ecrt_scan(this); }
 	auto EthercatMaster::init()->void
 	{
 		// make ec_slave_pool_ //
@@ -620,7 +611,6 @@ namespace aris::control
 					}
 				}
 			}
-			
 
 			// make SDO map //
 			sla.imp_->sdo_map_.clear();
@@ -641,47 +631,6 @@ namespace aris::control
 		}
 
 		aris_ecrt_master_request(this);
-
-		/*
-		// init ethercat master, slave, pdo group, and pdo //
-		imp_->ec_handle_ = aris_ecrt_master_init();
-		for (auto &sla : ecSlavePool())
-		{
-			sla.imp_->ec_handle_= aris_ecrt_slave_init();
-
-			for (auto &pdo_group : sla.pdoPool())
-			{
-				pdo_group.imp_->handle_ = aris_ecrt_pdo_init();
-				for (auto &pdo : pdo_group)
-				{
-					pdo.imp_->ec_handle_ = aris_ecrt_pdo_entry_init();
-				}
-			}
-		}
-
-		// config ethercat master, slave, pdo group, and pdo //
-		for (auto &sla : ecSlavePool())
-		{
-			for (auto &pdo_group : sla.pdoPool())
-			{
-				for (auto &pdo : pdo_group)
-				{
-					aris_ecrt_pdo_entry_config(sla.ecHandle(), pdo_group.ecHandle(), pdo.ecHandle(), pdo.index(), pdo.subindex(), static_cast<std::uint8_t>(pdo.size() * 8));
-				}
-				aris_ecrt_pdo_group_config(sla.ecHandle(), pdo_group.ecHandle(), pdo_group.index(), pdo_group.tx());
-			}
-			// following 0x00 is alias //
-			aris_ecrt_slave_config(ecHandle(), sla.ecHandle(), 0x00, sla.phyId(), sla.vendorID(), sla.productCode(), sla.dcAssignActivate());
-		}
-		aris_ecrt_master_config(ecHandle());
-
-		// config ethercat sdo //
-		for (auto &sla : ecSlavePool())for (auto &sdo : sla.sdoPool())
-			aris_ecrt_sdo_config(ecHandle(), sla.ecHandle(), sdo.index(), sdo.subindex(), reinterpret_cast<std::uint8_t*>(sdo.configBuffer()), sdo.size());
-
-		// start ethercat master and slave //
-		aris_ecrt_master_start(ecHandle());
-		for (auto &sla : ecSlavePool())aris_ecrt_slave_start(sla.ecHandle());*/
 	}
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(ecHandle()); }
 	auto EthercatMaster::send()->void

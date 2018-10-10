@@ -170,6 +170,7 @@ namespace aris::plan
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	class HomePlan : public Plan{};
+	// rc 会让电机走到指定位置处，同时将模型中的电机位置也变成指定位置，过程中会计算正解 //
 	class RecoverPlan : public Plan
 	{
 	public:

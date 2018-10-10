@@ -95,12 +95,10 @@ namespace aris::control
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
-		auto tx()const->bool;
-		auto rx()const->bool;
 		auto index()const->std::uint16_t;
 
 		virtual ~Pdo();
-		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000, bool is_tx = true);
+		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000);
 		Pdo(const Pdo &);
 		Pdo(Pdo &&);
 		Pdo& operator=(const Pdo &);

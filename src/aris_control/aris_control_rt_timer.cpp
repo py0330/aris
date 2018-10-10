@@ -22,8 +22,6 @@ namespace aris::control
 	std::chrono::time_point<std::chrono::high_resolution_clock> last_time, begin_time;
 	//
 
-	//struct RtTaskHandle :public Handle { std::thread task; };
-
 	auto aris_mlockall()->void {}
 	auto aris_rt_task_create()->std::any { return std::make_shared<std::thread>(); }
 	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int

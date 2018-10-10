@@ -36,6 +36,15 @@ namespace aris::control
 	class Master : public aris::core::Object
 	{
 	public:
+		struct RtStasticsData
+		{
+			std::int64_t max_time_consumed;
+			std::int64_t min_time_consumed;
+			std::int64_t avg_time_consumed;
+			std::int64_t max_time_occur_count;
+			std::int64_t total_count;
+			std::int64_t overrun_count;
+		};
 		enum { MAX_MSG_SIZE = 8192 };
 		static auto Type()->const std::string & { static const std::string type("Master"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
@@ -57,6 +66,8 @@ namespace aris::control
 		auto slavePool()const->const aris::core::ObjectPool<Slave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
 		auto rtHandle()->std::any&;
 		auto rtHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
+		auto rtStasticData()const->RtStasticsData;
+		auto rtResetStasticData()->void;
 
 		virtual ~Master();
 		explicit Master(const std::string &name = "master");

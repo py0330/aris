@@ -45,8 +45,8 @@ namespace aris::control
 	class EthercatMaster;
 
 	auto aris_ecrt_scan(EthercatMaster *master)->int;
-	auto aris_ecrt_master_request(EthercatMaster *master)->void;
 
+	auto aris_ecrt_master_request(EthercatMaster *master)->void;
 	auto aris_ecrt_master_stop(std::any& master)->void;
 	auto aris_ecrt_master_sync(std::any& master, std::uint64_t ns)->void;
 	auto aris_ecrt_master_receive(std::any& master)->void;
