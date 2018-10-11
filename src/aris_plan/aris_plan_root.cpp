@@ -823,10 +823,9 @@ namespace aris::plan
 		param.total_count_vec.resize(c->motionPool().size(), 1);
 		for (auto cmd_param : params)
 		{
-			if (cmd_param.first == "position")
+			if (cmd_param.first == "pos")
 			{
 				auto p = target.model->calculator().calculateExpression(cmd_param.second);
-
 				if (p.size() == 1)
 				{
 					param.axis_pos_vec.resize(c->motionPool().size(), p.toDouble());
@@ -839,8 +838,18 @@ namespace aris::plan
 				{
 					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
 				}
+
+				for (Size i = 0; i < c->motionPool().size(); ++i)
+				{
+					if(param.axis_pos_vec[i] > 1.0 || param.axis_pos_vec[i]<0.0)
+						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+
+					param.axis_pos_vec[i] = param.axis_pos_vec[i] * (c->motionPool()[i].maxPos() - c->motionPool()[i].minPos()) + c->motionPool()[i].minPos();
+					param.axis_pos_vec[i] = std::min(std::max(param.axis_pos_vec[i], c->motionPool()[i].minPos()), c->motionPool()[i].maxPos());// 防止截断误差
+				}
+
 			}
-			else if (cmd_param.first == "acceleration")
+			else if (cmd_param.first == "acc")
 			{
 				auto a = target.model->calculator().calculateExpression(cmd_param.second);
 
@@ -856,8 +865,16 @@ namespace aris::plan
 				{
 					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
 				}
+
+				for (Size i = 0; i < c->motionPool().size(); ++i)
+				{
+					if (param.axis_acc_vec[i] > 1.0 || param.axis_acc_vec[i] < 0.01)
+						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+
+					param.axis_acc_vec[i] = param.axis_acc_vec[i] * c->motionPool()[i].maxAcc();
+				}
 			}
-			else if (cmd_param.first == "velocity")
+			else if (cmd_param.first == "vel")
 			{
 				auto v = target.model->calculator().calculateExpression(cmd_param.second);
 
@@ -873,8 +890,16 @@ namespace aris::plan
 				{
 					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
 				}
+
+				for (Size i = 0; i < c->motionPool().size(); ++i)
+				{
+					if (param.axis_vel_vec[i] > 1.0 || param.axis_vel_vec[i] < 0.01)
+						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+
+					param.axis_vel_vec[i] = param.axis_vel_vec[i] * c->motionPool()[i].maxVel();
+				}
 			}
-			else if (cmd_param.first == "deceleration")
+			else if (cmd_param.first == "dec")
 			{
 				auto d = target.model->calculator().calculateExpression(cmd_param.second);
 
@@ -889,6 +914,14 @@ namespace aris::plan
 				else
 				{
 					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				}
+
+				for (Size i = 0; i < c->motionPool().size(); ++i)
+				{
+					if (param.axis_dec_vec[i] > 1.0 || param.axis_dec_vec[i] < 0.01)
+						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+
+					param.axis_dec_vec[i] = param.axis_dec_vec[i] * c->motionPool()[i].minAcc();
 				}
 			}
 		}
@@ -924,12 +957,16 @@ namespace aris::plan
 			controller->motionAtAbs(i).setTargetPos(p);
 		}
 
-
 		// 改变模型中的驱动位置 //
 		for (Size i = 0; i < std::min(controller->motionPool().size(), target.model->motionPool().size()); ++i)
 		{
 			target.model->motionPool()[i].setMp(controller->motionPool().at(i).targetPos());
 		}
+
+
+
+
+
 
 		target.model->solverPool().at(1).kinPos();
 		return (static_cast<int>(*std::max_element(param.total_count_vec.begin(), param.total_count_vec.end())) > target.count) ? 1 : 0;
@@ -941,10 +978,10 @@ namespace aris::plan
 		command().loadXmlStr(
 			"<rc default_child_type=\"Param\">"
 			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
-			"		<position default=\"0.0\"/>"
-			"		<acceleration default=\"0.5\"/>"
-			"		<velocity default=\"0.5\"/>"
-			"		<deceleration default=\"0.5\"/>"
+			"		<pos default=\"0.5\" abbreviation=\"p\"/>"
+			"		<acc default=\"0.3\" abbreviation=\"a\"/>"
+			"		<vel default=\"0.3\" abbreviation=\"v\"/>"
+			"		<dec default=\"0.3\" abbreviation=\"d\"/>"
 			"		<unique_check type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_all\">"
 			"			<check_all/>"
 			"			<check_none/>"

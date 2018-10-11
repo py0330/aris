@@ -65,7 +65,7 @@ namespace aris::plan
 		}
 		else
 		{
-			v = std::sqrt(2 * s*a*d / (a + d));
+			v = std::sqrt(2 * s * a * d / (a + d));
 			n1 = static_cast<Size>(std::ceil(v / a));
 			n3 = static_cast<Size>(std::ceil(v / d));
 

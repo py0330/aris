@@ -165,7 +165,7 @@ namespace aris::control
 				}
 				else if (imp_->mout_pipe_->recvMsg(msg))
 				{
-					if (!msg.empty())std::cout << msg.toString() << std::endl;
+					if (!msg.empty())std::cout << msg.toString() << std::flush;
 				}
 				else
 				{

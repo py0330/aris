@@ -910,8 +910,8 @@ namespace aris::core
 		auto back() const->const_reference { return *(end() - 1); } //optional
 		auto at(std::size_t id) const->const_reference { return static_cast<const_reference>(*container_.at(id)); }
 		auto at(std::size_t id)->reference { return static_cast<reference>(*container_.at(id)); }
-		auto operator[](size_type size)->reference { return static_cast<reference>(container_.operator[](size)); } //optional
-		auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(container_.operator[](size)); } //optional
+		auto operator[](size_type size)->reference { return static_cast<reference>(*container_.operator[](size)); } //optional
+		auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(*container_.operator[](size)); } //optional
 		auto pop_back()->void { container_.pop_back(); } //optional
 		auto erase(iterator iter)->iterator { return container_.erase(iter.iter_); } //optional
 		auto erase(iterator begin_iter, iterator end_iter)->iterator { return container_.erase(begin_iter.iter_, end_iter.iter_); } //optional

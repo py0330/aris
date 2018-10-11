@@ -201,10 +201,6 @@ namespace aris::dynamic
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
-		int which_root_{ 0 };
-
-
-
 	};
 	///
 	/// @}

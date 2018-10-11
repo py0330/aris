@@ -2469,6 +2469,7 @@ namespace aris::dynamic
 	}
 	struct PumaInverseKinematicSolver::Imp
 	{
+		int which_root_{ 0 };
 		PumaParam puma_param;
 		union
 		{
@@ -2704,16 +2705,41 @@ namespace aris::dynamic
 	}
 	auto PumaInverseKinematicSolver::kinPos()->bool
 	{
-		if (double q[6]; pumaInverse(imp_->puma_param, *imp_->ee->mpm(), which_root_, q))
+		if (imp_->which_root_ == 8)
 		{
+			int solution_num = 0;
+			double diff_q[8][6];
+			double diff_norm[8];
+
+			for (int i = 0; i < 8; ++i)
+			{
+				if (pumaInverse(imp_->puma_param, *imp_->ee->mpm(), i, diff_q[solution_num]))
+				{
+					diff_norm[solution_num] = 0;
+					for (int j = 0; j < 6; ++j)
+					{
+						diff_q[solution_num][j] -= imp_->motions[j]->mp();
+
+						while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
+						while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
+
+						diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
+					}
+
+					++solution_num;
+				}
+			}
+
+			if (solution_num == 0) return false;
+
+			int real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
+
 			for (aris::Size i = 0; i < 6; ++i)
 			{
-				auto &imp_loc = imp_;
-
 				if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
 				{
 					double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
-					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, q[i]}.data(), pm_rot);
+					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mp() + diff_q[real_solution][i]}.data(), pm_rot);
 					s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
 					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
 					imp_->parts[i + 1]->setPm(pm_prt_i);
@@ -2721,22 +2747,61 @@ namespace aris::dynamic
 				else
 				{
 					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
-					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
+					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mp() - diff_q[real_solution][i]}.data(), pm_rot);
 					s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
 					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
 					imp_->parts[i + 1]->setPm(pm_prt_j);
 				}
 
-				double last_mp = imp_->motions[i]->mp();
-				imp_->motions[i]->updMp();
-				while (imp_->motions[i]->mp() - last_mp > PI)imp_->motions[i]->setMp(imp_->motions[i]->mp() - 2 * PI);
-				while (imp_->motions[i]->mp() - last_mp < -PI)imp_->motions[i]->setMp(imp_->motions[i]->mp() + 2 * PI);
+				imp_->motions[i]->setMp(imp_->motions[i]->mp() + diff_q[real_solution][i]);
 			}
 
 			return true;
 		}
-		else return false;
+		else
+		{
+			if (double q[6]; pumaInverse(imp_->puma_param, *imp_->ee->mpm(), imp_->which_root_, q))
+			{
+				for (aris::Size i = 0; i < 6; ++i)
+				{
+					auto &imp_loc = imp_;
+
+					if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
+					{
+						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
+						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, q[i]}.data(), pm_rot);
+						s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
+						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
+						imp_->parts[i + 1]->setPm(pm_prt_i);
+					}
+					else
+					{
+						double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
+						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
+						s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
+						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
+						imp_->parts[i + 1]->setPm(pm_prt_j);
+					}
+
+					double last_mp = imp_->motions[i]->mp();
+					imp_->motions[i]->updMp();
+					while (imp_->motions[i]->mp() - last_mp > PI)imp_->motions[i]->setMp(imp_->motions[i]->mp() - 2 * PI);
+					while (imp_->motions[i]->mp() - last_mp < -PI)imp_->motions[i]->setMp(imp_->motions[i]->mp() + 2 * PI);
+				}
+
+				return true;
+			}
+			else return false;
+		}
+
+
+
+
+
+
+
+
 	}
-	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { which_root_ = root_of_0_to_7; }
+	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
 }

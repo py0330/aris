@@ -274,6 +274,8 @@ namespace aris::core
 			Command::Imp::reset(&*command);
 			while (input_stream >> word)
 			{
+				if (word == std::string(1, '\0')) break; // 这意味着结束
+				
 				std::string param_name_origin = word.substr(0, word.find_first_of('='));
 
 				if (param_name_origin == "")throw std::runtime_error("invalid param: param should not start with '='");

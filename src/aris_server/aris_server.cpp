@@ -72,7 +72,7 @@ namespace aris::server
 			// 命令正常运行，打印信息
 			if (ret > 0)
 			{
-				if (++count_ % 1000 == 0) server_->controller().mout() << "execute cmd in count: " << count_;
+				if (++count_ % 1000 == 0) server_->controller().mout() << "execute cmd in count: " << count_ <<"\n";
 			}
 			// 命令正常结束
 			else if (ret == 0)
