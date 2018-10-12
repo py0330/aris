@@ -11,6 +11,43 @@ int main(int argc, char *argv[])
 	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
 	aris::dynamic::s_pq2pm(argc < 4 ? nullptr : aris::core::Calculator().calculateExpression(argv[3]).data(), robot_pm);
 
+	auto m = aris::robot::createModelRokaeXB4(robot_pm);
+
+	m->generalMotionPool()[0].setMpe(std::array<double, 6>{0.4, 0, 0.45, 0, 0, aris::PI / 6}.data(), "123");
+
+	for (auto &mot : m->motionPool())
+	{
+		std::cout << mot.mp() << "  ";
+	}
+	std::cout << std::endl;
+
+	m->solverPool()[0].allocateMemory();
+	m->solverPool()[0].kinPos();
+
+	for (auto &mot : m->motionPool())
+	{
+		std::cout << mot.mp() << "  ";
+	}
+	std::cout << std::endl;
+
+	m->solverPool()[1].allocateMemory();
+	m->solverPool()[1].kinPos();
+
+	double pe[6],pq[7];
+	m->generalMotionPool()[0].getMpe(pe, "123");
+
+	dsp(1, 6, pe);
+
+	m->generalMotionPool()[0].getMpq(pq);
+	
+	dsp(1, 7, pq);
+
+	m->partPool().at(6).getPe(pe, "123");
+
+	dsp(1, 6, pe);
+
+
+
 	auto&cs = aris::server::ControlServer::instance();
 
 	if (robot_name == "ur5")

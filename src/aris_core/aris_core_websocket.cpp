@@ -399,9 +399,14 @@ namespace aris::core
 						return;
 					}
 
-					std::uint16_t length;
-					length = length_char[0] << 8 | length_char[1];
+					union 
+					{
+						std::uint16_t length;
+						char reverse_char[2];
+					};
+					for (int i = 0; i < 2; ++i)reverse_char[i] = length_char[1 - i];
 					payload_len = length;
+
 				}
 				else if (payload_len == 127)
 				{
