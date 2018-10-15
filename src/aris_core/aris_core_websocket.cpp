@@ -461,8 +461,6 @@ namespace aris::core
 				{
 					payload_data[i + last_size] = payload_data[i + last_size] ^ masks[i % 4];
 				}
-
-				LOG_INFO << payload_data << std::endl;
 			}
 
 			// 把web sock 的东西转成 msg //
