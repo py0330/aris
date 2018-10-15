@@ -379,9 +379,12 @@ namespace aris::server
 			return a.first.length() < b.first.length();
 		})->first.length();
 		std::cout << cmd << std::endl;
+
+		auto &log = LOG_INFO << cmd << std::endl;
 		for (auto &p : params)
 		{
 			std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
 		}
 		std::cout << std::endl;
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
