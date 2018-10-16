@@ -812,8 +812,8 @@ namespace aris::plan
 		std::vector<double> axis_acc_vec;
 		std::vector<double> axis_dec_vec;
 	};
-	struct RecoverPlan::Imp { Imp() {} };
-	auto RecoverPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	struct ResetPlan::Imp { Imp() {} };
+	auto ResetPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		default_prepair_check_option(params, target);
 
@@ -934,7 +934,7 @@ namespace aris::plan
 
 		target.param = param;
 	}
-	auto RecoverPlan::executeRT(PlanTarget &target)->int
+	auto ResetPlan::executeRT(PlanTarget &target)->int
 	{
 		auto &param = std::any_cast<RecoverParam&>(target.param);
 		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
@@ -963,20 +963,15 @@ namespace aris::plan
 			target.model->motionPool()[i].setMp(controller->motionPool().at(i).targetPos());
 		}
 
-
-
-
-
-
 		target.model->solverPool().at(1).kinPos();
 		return (static_cast<int>(*std::max_element(param.total_count_vec.begin(), param.total_count_vec.end())) > target.count) ? 1 : 0;
 	}
-	auto RecoverPlan::collectNrt(PlanTarget &target)->void {}
-	RecoverPlan::~RecoverPlan() = default;
-	RecoverPlan::RecoverPlan(const std::string &name) :Plan(name), imp_(new Imp)
+	auto ResetPlan::collectNrt(PlanTarget &target)->void {}
+	ResetPlan::~ResetPlan() = default;
+	ResetPlan::ResetPlan(const std::string &name) :Plan(name), imp_(new Imp)
 	{
 		command().loadXmlStr(
-			"<rc default_child_type=\"Param\">"
+			"<rs default_child_type=\"Param\">"
 			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
 			"		<pos default=\"0.5\" abbreviation=\"p\"/>"
 			"		<acc default=\"0.3\" abbreviation=\"a\"/>"
@@ -1049,6 +1044,34 @@ namespace aris::plan
 			"			</group>"
 			"		</unique_check>"
 			"	</group>"
+			"</rs>");
+	}
+	ResetPlan::ResetPlan(const ResetPlan &) = default;
+	ResetPlan::ResetPlan(ResetPlan &&) = default;
+	ResetPlan& ResetPlan::operator=(const ResetPlan &) = default;
+	ResetPlan& ResetPlan::operator=(ResetPlan &&) = default;
+
+	auto RecoverPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void{}
+	auto RecoverPlan::executeRT(PlanTarget &target)->int
+	{
+		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+
+		for (Size i = 0; i < std::min(controller->motionPool().size(), target.model->motionPool().size()); ++i)
+		{
+			controller->motionPool()[i].setTargetPos(controller->motionPool().at(i).actualPos());
+			target.model->motionPool()[i].setMp(controller->motionPool().at(i).actualPos());
+		}
+
+		target.model->solverPool()[1].kinPos();
+
+		return 0;
+	}
+	auto RecoverPlan::collectNrt(PlanTarget &target)->void {}
+	RecoverPlan::~RecoverPlan() = default;
+	RecoverPlan::RecoverPlan(const std::string &name) :Plan(name)
+	{
+		command().loadXmlStr(
+			"<rc default_child_type=\"Param\">"
 			"</rc>");
 	}
 	RecoverPlan::RecoverPlan(const RecoverPlan &) = default;

@@ -170,11 +170,32 @@ namespace aris::plan
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	class HomePlan : public Plan{};
-	// rc 会让电机走到指定位置处，同时将模型中的电机位置也变成指定位置，过程中会计算正解 //
+	// rs 会让电机走到指定位置处，同时将模型中的电机位置也变成指定位置，过程中会计算正解 //
+	class ResetPlan : public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("ResetPlan"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~ResetPlan();
+		explicit ResetPlan(const std::string &name = "reset_plan");
+		ResetPlan(const ResetPlan &);
+		ResetPlan(ResetPlan &&);
+		ResetPlan& operator=(const ResetPlan &);
+		ResetPlan& operator=(ResetPlan &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	// rc 不会让电机动，只会重新排列正反解
 	class RecoverPlan : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("RecoverPlan"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("RecoverPlan"); return type; }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
@@ -186,11 +207,9 @@ namespace aris::plan
 		RecoverPlan(RecoverPlan &&);
 		RecoverPlan& operator=(const RecoverPlan &);
 		RecoverPlan& operator=(RecoverPlan &&);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
 	};
+
+
 	class MovePlan : public Plan
 	{
 	public:

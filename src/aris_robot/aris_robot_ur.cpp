@@ -187,7 +187,7 @@ namespace aris::robot
 		std::unique_ptr<aris::plan::PlanRoot> plan_root(new aris::plan::PlanRoot);
 
 		plan_root->planPool().add<aris::plan::EnablePlan>();
-		auto &rc = plan_root->planPool().add<aris::plan::RecoverPlan>();
+		auto &rc = plan_root->planPool().add<aris::plan::ResetPlan>();
 		rc.command().findByName("group")->findByName("unique_pos")->findByName("pq")->loadXmlStr("<pq default=\"{0,0.63,0.316,0,0,0,1}\"/>");
 		rc.command().findByName("group")->findByName("unique_pos")->findByName("pm")->loadXmlStr("<pm default=\"{1,0,0,0,0,1,0,0.63,0,0,1,0.316,0,0,0,1}\"/>");
 		rc.command().findByName("group")->findByName("unique_pos")->findByName("group")->findByName("pe")->loadXmlStr("<pe default=\"{0,0.63,0.316,0,0,0}\"/>");
