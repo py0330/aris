@@ -208,6 +208,26 @@ namespace aris::plan
 		RecoverPlan& operator=(const RecoverPlan &);
 		RecoverPlan& operator=(RecoverPlan &&);
 	};
+	class SleepPlan : public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("SleepPlan"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~SleepPlan();
+		explicit SleepPlan(const std::string &name = "reset_plan");
+		SleepPlan(const SleepPlan &);
+		SleepPlan(SleepPlan &&);
+		SleepPlan& operator=(const SleepPlan &);
+		SleepPlan& operator=(SleepPlan &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
 
 
 	class MovePlan : public Plan

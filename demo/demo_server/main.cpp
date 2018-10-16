@@ -103,12 +103,17 @@ int main(int argc, char *argv[])
 				<< msg.header().reserved3_ << ":"
 				<< msg_data << std::endl;
 
-			auto part_pm = cs.getPartPm();
-			std::vector<double> part_pq(cs.model().partPool().size() * 7, 0.0);
-
+			auto part_pm_vec = std::make_any<std::vector<double> >(cs.model().partPool().size() * 16);
+			cs.getRtData([](aris::server::ControlServer& cs, std::any& data) 
+			{
+				for (aris::Size i(-1); ++i < cs.model().partPool().size();)
+					cs.model().partPool().at(i).getPm(std::any_cast<std::vector<double>& >(data).data() + i * 16);
+			}, part_pm_vec);
+			
+			std::vector<double> part_pq(cs.model().partPool().size() * 7);
 			for (aris::Size i(-1); ++i < cs.model().partPool().size();)
 			{
-				aris::dynamic::s_pm2pq(part_pm.data() + i * 16, part_pq.data() + i * 7);
+				aris::dynamic::s_pm2pq(std::any_cast<std::vector<double>& >(part_pm_vec).data() + i * 16, part_pq.data() + i * 7);
 			}
 
 			//// return binary ////

@@ -47,8 +47,9 @@ namespace aris::server
 		aris::plan::PlanRoot* plan_root_;
 
 		// hack 储存model中所有杆件的位姿参数 //
-		std::vector<double> part_pm_vec_;
-		std::atomic_bool if_need_part_pm_{ false }, if_part_pm_ready_{ false };
+		std::atomic_bool if_get_data_{ false }, if_get_data_ready_{ false };
+		const std::function<void(ControlServer&, std::any&)>* get_data_func_;
+		std::any *get_data_;
 	};
 	auto ControlServer::Imp::tg()->void
 	{
@@ -90,13 +91,12 @@ namespace aris::server
 			}
 		}
 
-		// 把杆件信息更新到外部 //
-		if (if_need_part_pm_.load())// 原子操作
+		// 给与外部想要的数据 //
+		if (if_get_data_.exchange(false))// 原子操作
 		{
-			for (Size i(-1); ++i < model_->partPool().size();)model_->partPool().at(i).getPm(part_pm_vec_.data() + i * 16);
-
-			if_part_pm_ready_.store(true); // 原子操作
-			if_need_part_pm_.store(false); // 原子操作
+			get_data_func_->operator()(ControlServer::instance(), *get_data_);
+			if_get_data_ready_.store(true); // 原子操作
+			if_get_data_.store(false); // 原子操作
 		}
 	}
 	auto ControlServer::Imp::executeCmd(std::pair<aris::plan::Plan *, aris::plan::PlanTarget> &plan_and_target)->int
@@ -534,29 +534,20 @@ namespace aris::server
 		imp_->is_collect_running_ = false;
 		imp_->collect_thread_.join();
 	}
-	auto ControlServer::getPartPm()->std::vector<double>
+	auto ControlServer::getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error(std::string("failed") + __FILE__));
 
-		if (imp_->is_running_)
-		{
-			imp_->part_pm_vec_.resize(imp_->model_->partPool().size() * 16);
+		imp_->get_data_func_ = &get_func;
+		imp_->get_data_ = &data;
 
-			imp_->if_part_pm_ready_.store(false);
-			imp_->if_need_part_pm_.store(true);
+		imp_->if_get_data_ready_.store(false);
+		imp_->if_get_data_.store(true);
 
-			while (!imp_->if_part_pm_ready_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		while (!imp_->if_get_data_ready_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-			imp_->if_part_pm_ready_.store(false);
-		}
-		else
-		{
-			for (Size i(-1); ++i < imp_->model_->partPool().size();)imp_->model_->partPool().at(i).getPm(imp_->part_pm_vec_.data() + i * 16);
-		}
-
-
-
-		return imp_->part_pm_vec_;
+		imp_->if_get_data_ready_.store(false);
 	}
 	ControlServer::~ControlServer() = default;
 	ControlServer::ControlServer() :imp_(new Imp(this))

@@ -51,8 +51,7 @@ namespace aris::server
 		auto stop()->void;
 		auto currentExecuteId()->std::int64_t;
 		auto currentCollectId()->std::int64_t;
-
-		auto getPartPm()->std::vector<double>;
+		auto getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void;
 
 	private:
 		~ControlServer();

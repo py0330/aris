@@ -151,7 +151,7 @@ namespace aris::core
 		// 线程同步变量 //
 		std::recursive_mutex state_mutex_;
 
-		std::thread recv_data_thread_, recv_conn_thread_;
+		std::thread recv_thread_, accept_thread_;
 		std::mutex close_mutex_;
 
 		std::condition_variable_any cv_reply_data_received_;
@@ -314,7 +314,7 @@ namespace aris::core
 
 		std::promise<void> receive_thread_ready;
 		auto fut = receive_thread_ready.get_future();
-		imp->recv_data_thread_ = std::thread(receiveThread, imp, std::move(receive_thread_ready));
+		imp->recv_thread_ = std::thread(receiveThread, imp, std::move(receive_thread_ready));
 		fut.wait();
 
 		return;
@@ -354,8 +354,7 @@ namespace aris::core
 
 				return result;
 			};
-			
-			
+
 			// 开始接受web sock 的消息 //
 			std::int64_t real_length{ 0 };
 			std::string payload_data;
@@ -477,8 +476,6 @@ namespace aris::core
 				return;
 			}
 
-
-
 			// 处理msg，这里就和之前的socket一样了 //
 			receivedData = std::move(msg);
 
@@ -581,22 +578,22 @@ namespace aris::core
 			break;
 		}
 
-		if (std::this_thread::get_id() == imp_->recv_data_thread_.get_id())
+		if (std::this_thread::get_id() == imp_->recv_thread_.get_id())
 		{
-			imp_->recv_data_thread_.detach();
+			imp_->recv_thread_.detach();
 		}
-		else if (imp_->recv_data_thread_.joinable())
+		else if (imp_->recv_thread_.joinable())
 		{
-			imp_->recv_data_thread_.join();
+			imp_->recv_thread_.join();
 		}
 
-		if (std::this_thread::get_id() == imp_->recv_conn_thread_.get_id())
+		if (std::this_thread::get_id() == imp_->accept_thread_.get_id())
 		{
-			imp_->recv_conn_thread_.detach();
+			imp_->accept_thread_.detach();
 		}
-		else if (imp_->recv_conn_thread_.joinable())
+		else if (imp_->accept_thread_.joinable())
 		{
-			imp_->recv_conn_thread_.join();
+			imp_->accept_thread_.join();
 		}
 
 		imp_->state_ = WebSocket::IDLE;
@@ -666,7 +663,7 @@ namespace aris::core
 		// 启动等待连接的线程 //
 		std::promise<void> accept_thread_ready;
 		auto ready = accept_thread_ready.get_future();
-		imp_->recv_conn_thread_ = std::thread(WebSocket::Imp::acceptThread, this->imp_.get(), std::move(accept_thread_ready));
+		imp_->accept_thread_ = std::thread(WebSocket::Imp::acceptThread, this->imp_.get(), std::move(accept_thread_ready));
 		ready.wait();
 
 		return;
@@ -710,7 +707,7 @@ namespace aris::core
 		// Start Thread //
 		std::promise<void> receive_thread_ready;
 		auto fut = receive_thread_ready.get_future();
-		imp_->recv_data_thread_ = std::thread(Imp::receiveThread, imp_.get(), std::move(receive_thread_ready));
+		imp_->recv_thread_ = std::thread(Imp::receiveThread, imp_.get(), std::move(receive_thread_ready));
 		fut.wait();
 
 		return;

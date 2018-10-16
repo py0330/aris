@@ -803,7 +803,7 @@ namespace aris::plan
 	ModePlan& ModePlan::operator=(const ModePlan &) = default;
 	ModePlan& ModePlan::operator=(ModePlan &&) = default;
 
-	struct RecoverParam
+	struct ResetParam
 	{
 		std::vector<Size> total_count_vec;
 		std::vector<double> axis_begin_pos_vec;
@@ -818,7 +818,7 @@ namespace aris::plan
 		default_prepair_check_option(params, target);
 
 		auto c = dynamic_cast<aris::control::Controller*>(target.master);
-		RecoverParam param;
+		ResetParam param;
 		param.axis_begin_pos_vec.resize(c->motionPool().size(), 0.0);
 		param.total_count_vec.resize(c->motionPool().size(), 1);
 		for (auto cmd_param : params)
@@ -936,7 +936,7 @@ namespace aris::plan
 	}
 	auto ResetPlan::executeRT(PlanTarget &target)->int
 	{
-		auto &param = std::any_cast<RecoverParam&>(target.param);
+		auto &param = std::any_cast<ResetParam&>(target.param);
 		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 
 		// 取得起始位置 //
@@ -1050,6 +1050,27 @@ namespace aris::plan
 	ResetPlan::ResetPlan(ResetPlan &&) = default;
 	ResetPlan& ResetPlan::operator=(const ResetPlan &) = default;
 	ResetPlan& ResetPlan::operator=(ResetPlan &&) = default;
+
+	struct SleepParam { int count; };
+	struct SleepPlan::Imp {};
+	auto SleepPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		target.param = SleepParam{ std::stoi(params.at("count")) };
+	}
+	auto SleepPlan::executeRT(PlanTarget &target)->int { return std::any_cast<SleepParam&>(target.param).count - target.count; }
+	auto SleepPlan::collectNrt(PlanTarget &target)->void {}
+	SleepPlan::~SleepPlan() = default;
+	SleepPlan::SleepPlan(const std::string &name) :Plan(name), imp_(new Imp)
+	{
+		command().loadXmlStr(
+			"<sl default_child_type=\"Param\">"
+			"	<count default=\"1000\" abbreviation=\"c\"/>"
+			"</sl>");
+	}
+	SleepPlan::SleepPlan(const SleepPlan &) = default;
+	SleepPlan::SleepPlan(SleepPlan &&) = default;
+	SleepPlan& SleepPlan::operator=(const SleepPlan &) = default;
+	SleepPlan& SleepPlan::operator=(SleepPlan &&) = default;
 
 	auto RecoverPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void{}
 	auto RecoverPlan::executeRT(PlanTarget &target)->int
