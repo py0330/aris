@@ -74,6 +74,9 @@ namespace aris::control
 					mst.imp_->mout_pipe_->sendMsg(mst.imp_->mout_msg_);
 					mst.mout().reset();
 				}
+
+
+
 			}
 
 			mst.imp_->is_mout_thread_running_ = false;
