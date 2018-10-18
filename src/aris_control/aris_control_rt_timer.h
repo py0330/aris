@@ -14,6 +14,9 @@ namespace aris::control
 	auto aris_rt_task_set_periodic(int nanoseconds)->int;
 	auto aris_rt_task_wait_period()->int;
 	auto aris_rt_timer_read()->std::int64_t;
+
+	// in nano seconds
+	auto aris_rt_time_since_last_time()->std::int64_t;
 }
 
 #endif

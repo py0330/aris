@@ -18,8 +18,8 @@ namespace aris::control
 {
 #ifndef USE_XENOMAI
 	// should not have global variables
-	int nanoseconds{ 1000 };
-	std::chrono::time_point<std::chrono::high_resolution_clock> last_time, begin_time;
+	thread_local int nanoseconds{ 1000 };
+	thread_local std::chrono::time_point<std::chrono::high_resolution_clock> last_time_, begin_time_;
 	//
 
 	auto aris_mlockall()->void {}
@@ -37,23 +37,32 @@ namespace aris::control
 	auto aris_rt_task_set_periodic(int nanoseconds)->int
 	{
 		control::nanoseconds = nanoseconds;
-		last_time = begin_time = std::chrono::high_resolution_clock::now();
+		last_time_ = begin_time_ = std::chrono::high_resolution_clock::now();
 		return 0;
 	};
 	auto aris_rt_task_wait_period()->int
 	{
-		last_time = last_time + std::chrono::nanoseconds(nanoseconds);
-		std::this_thread::sleep_until(last_time);
+		last_time_ += std::chrono::nanoseconds(nanoseconds);
+		std::this_thread::sleep_until(last_time_);
 		return 0;
 	};
 	auto aris_rt_timer_read()->std::int64_t
 	{
 		auto now = std::chrono::high_resolution_clock::now();
-		return std::chrono::duration_cast<std::chrono::nanoseconds>(now - begin_time).count();
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(now - begin_time_).count();
+	}
+
+	// in nano seconds
+	auto aris_rt_time_since_last_time()->std::int64_t
+	{
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_).count();
 	}
 #endif
 
 #ifdef USE_XENOMAI
+	thread_local std::int64_t begin_time_, last_time_;
+
+
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) throw std::runtime_error("lock failed"); }
 	auto aris_rt_task_create()->std::any
 	{
@@ -67,8 +76,18 @@ namespace aris::control
 	}
 	auto aris_rt_task_start(std::any& rt_task, void(*task_func)(void*), void*param)->int { return rt_task_start(&std::any_cast<RT_TASK&>(rt_task), task_func, param); }
 	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
-	auto aris_rt_task_set_periodic(int nanoseconds)->int { return rt_task_set_periodic(NULL, TM_NOW, nanoseconds); }
-	auto aris_rt_task_wait_period()->int { return rt_task_wait_period(NULL); }
+	auto aris_rt_task_set_periodic(int nanoseconds)->int 
+	{ 
+		last_time_ = begin_time_ = aris_rt_timer_read();
+		return rt_task_set_periodic(NULL, begin_time_, nanoseconds);
+	}
+	auto aris_rt_task_wait_period()->int 
+	{ 
+		last_time += std::chrono::nanoseconds(nanoseconds);
+		return rt_task_wait_period(NULL); 
+	}
 	auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
+
+	auto aris_rt_time_since_last_time()->std::int64_t { return aris_rt_timer_read() - last_time_; }
 #endif
 }

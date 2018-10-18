@@ -49,6 +49,7 @@ namespace aris::server
 		auto executeCmd(const aris::core::Msg &cmd_string)->std::int64_t;
 		auto start()->void;
 		auto stop()->void;
+		auto globalCount()->std::int64_t;
 		auto currentExecuteId()->std::int64_t;
 		auto currentCollectId()->std::int64_t;
 		auto getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void;

@@ -130,30 +130,6 @@ namespace aris::control
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-
-
-	class EthercatSlaveType :public aris::core::Object
-	{
-	public:
-		static auto Type()->const std::string & { static const std::string type("EthercatSlaveType"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto vendorID()const->std::uint32_t;
-
-		virtual ~EthercatSlaveType();
-		explicit EthercatSlaveType(const std::string &name = "ethercat_slave_type", const std::string &esi_file_path = "");
-		EthercatSlaveType(const EthercatSlaveType &);
-		EthercatSlaveType(EthercatSlaveType &&);
-		EthercatSlaveType& operator=(const EthercatSlaveType &);
-		EthercatSlaveType& operator=(EthercatSlaveType &&);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-
-		friend class EthercatSlave;
-	};
 	class EthercatSlave : virtual public Slave
 	{
 	public:
@@ -233,35 +209,6 @@ namespace aris::control
 		friend class Sdo;
 		friend class PdoEntry;
 	};
-
-
-	class EsiPath :public aris::core::Object
-	{
-	public:
-		static auto Type()->const std::string & { static const std::string type("EsiPath"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto path()->std::string;
-		
-		virtual ~EsiPath();
-		explicit EsiPath(const std::string &name = "ethercat_slave_xml", const std::string &esi_file_path = "");
-		EsiPath(const EsiPath &);
-		EsiPath(EsiPath &&);
-		EsiPath& operator=(const EsiPath &);
-		EsiPath& operator=(EsiPath &&);
-
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
-
-
-
-
-
-
 
 	class EthercatMotion :public EthercatSlave, public Motion
 	{

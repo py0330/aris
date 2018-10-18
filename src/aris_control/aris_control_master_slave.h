@@ -38,10 +38,11 @@ namespace aris::control
 	public:
 		struct RtStasticsData
 		{
+			double avg_time_consumed;
 			std::int64_t max_time_consumed;
-			std::int64_t min_time_consumed;
-			std::int64_t avg_time_consumed;
 			std::int64_t max_time_occur_count;
+			std::int64_t min_time_consumed;
+			std::int64_t min_time_occur_count;
 			std::int64_t total_count;
 			std::int64_t overrun_count;
 		};
@@ -66,8 +67,7 @@ namespace aris::control
 		auto slavePool()const->const aris::core::ObjectPool<Slave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
 		auto rtHandle()->std::any&;
 		auto rtHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
-		auto rtStasticData()const->RtStasticsData;
-		auto rtResetStasticData()->void;
+		auto resetRtStasticData(RtStasticsData *stastics, bool is_new_data_include_this_count = false)->void;
 
 		virtual ~Master();
 		explicit Master(const std::string &name = "master");

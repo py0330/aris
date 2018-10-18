@@ -33,7 +33,6 @@ void test_scan()
 		std::cout << "test scan" << std::endl;
 
 		aris::control::EthercatMaster mst;
-
 		mst.scan();
 		mst.setControlStrategy([&]()
 		{
@@ -41,6 +40,7 @@ void test_scan()
 			if (++count % 1000 == 0)
 			{
 				mst.mout() << "count:" << std::dec << count << std::endl;
+				
 				for (auto &sla : mst.ecSlavePool())
 				{
 					for (auto &sm : sla.smPool())

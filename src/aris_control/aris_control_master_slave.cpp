@@ -39,14 +39,22 @@ namespace aris::control
 		static auto rt_task_func(void *master)->void
 		{
 			auto &mst = *reinterpret_cast<Master*>(master);
+			auto add_time_to_stastics = [](std::int64_t time, RtStasticsData *data) 
+			{
+				data->avg_time_consumed += (double(time) - data->avg_time_consumed) / (data->total_count + 1);
+				data->max_time_occur_count = time < data->max_time_consumed ? data->max_time_occur_count : data->total_count;
+				data->max_time_consumed = std::max(time, data->max_time_consumed);
+				data->min_time_occur_count = time > data->min_time_consumed ? data->min_time_occur_count : data->total_count;
+				data->min_time_consumed = std::min(time, data->min_time_consumed);
+				data->total_count++;
+				data->overrun_count += time > 900000 ? 1 : 0;
+			};
+
 
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
 
 			while (mst.imp_->is_rt_thread_running_)
 			{
-				// rt timer //
-				aris_rt_task_wait_period();
-
 				// receive //
 				mst.recv();
 
@@ -75,8 +83,19 @@ namespace aris::control
 					mst.mout().reset();
 				}
 
+				// record stastics //
+				auto time = aris_rt_time_since_last_time();
+				add_time_to_stastics(time, &mst.imp_->global_stastics_);
+				if(mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
+				if (mst.imp_->is_need_change_)
+				{
+					if (mst.imp_->is_this_ready_)mst.imp_->is_this_ready_->store(true);
+					mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
+					mst.imp_->is_this_ready_ = mst.imp_->is_next_ready_;
+				}
 
-
+				// rt timer //
+				aris_rt_task_wait_period();
 			}
 
 			mst.imp_->is_mout_thread_running_ = false;
@@ -103,7 +122,10 @@ namespace aris::control
 		const int sample_period_ns_{ 1000000 };
 
 		// rt stastics //
-		Master::RtStasticsData rt_stastics_;
+		Master::RtStasticsData global_stastics_{ 0,0,0,0x8fffffff,0,0,0 };
+		Master::RtStasticsData* this_stastics_{ nullptr }, *next_stastics_{ nullptr };
+		std::atomic_bool* is_this_ready_{ nullptr }, *is_next_ready_{ nullptr };
+		bool is_need_change_{ false };
 
 		std::any rt_task_handle_;
 
@@ -243,8 +265,23 @@ namespace aris::control
 	auto Master::mout()->aris::core::MsgStream & { return *imp_->mout_msg_stream_; }
 	auto Master::slaveAtPhy(aris::Size id)->Slave& { return slavePool().at(imp_->sla_vec_phy2abs_.at(id)); }
 	auto Master::slavePool()->aris::core::ObjectPool<Slave, aris::core::Object>& { return *imp_->slave_pool_; }
-	auto Master::rtStasticData()const->RtStasticsData { return imp_->rt_stastics_; }
-	auto Master::rtResetStasticData()->void { imp_->rt_stastics_ = RtStasticsData{ 0,0,0,0,0,0 }; }
+	auto Master::resetRtStasticData(RtStasticsData *stastics, bool is_new_data_include_this_count)->void
+	{
+		if (stastics)*stastics = RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
+		
+		if (is_new_data_include_this_count)
+		{
+			// make new stastics //
+			imp_->this_stastics_ = stastics;
+			imp_->is_need_change_ = !is_new_data_include_this_count;
+		}
+		else
+		{
+			// mark need to change when this count finished //
+			imp_->next_stastics_ = stastics;
+			imp_->is_need_change_ = !is_new_data_include_this_count;
+		}
+	}
 	Master::~Master() = default;
 	Master::Master(const std::string &name) :imp_(new Imp), Object(name)
 	{

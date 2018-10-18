@@ -39,8 +39,6 @@ namespace aris::core
 	// https://www.cnblogs.com/chyingp/p/websocket-deep-in.html
 	// sha1 hash 生成出来的是纯数字，可以把它改成2进制来保存
 	// 
-	
-	
 	std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len)
 	{
 		static const std::string base64_chars =
@@ -321,23 +319,19 @@ namespace aris::core
 	}
 	auto WebSocket::Imp::receiveThread(WebSocket::Imp* imp, std::promise<void> receive_thread_ready)->void
 	{
-		union Head
-		{
-			MsgHeader msgHeader;
-			char header[sizeof(MsgHeader)];
-		} head;
 		aris::core::Msg receivedData;
 		auto conn_socket = imp->conn_socket_;
 
 		// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 		receive_thread_ready.set_value();
+		if (imp->accept_thread_.joinable())imp->accept_thread_.join();
 
 		// 开启接受数据的循环 //
 		for (;;)
 		{
 			//////////////////////////////////////////////////////
 			// 循环去收指定size //
-			const auto &safe_recv = [](decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
+			const auto &safe_recv = [&](decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
 			{
 				int result{ 0 };
 				for (; result < size; )
@@ -352,6 +346,12 @@ namespace aris::core
 					result += ret;
 				}
 
+				if (result <= 0)
+				{
+					imp->socket_->stop();
+					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
+				}
+
 				return result;
 			};
 
@@ -359,28 +359,11 @@ namespace aris::core
 			std::int64_t real_length{ 0 };
 			std::string payload_data;
 
-			bool fin{ false };
-			while (!fin)
+			for (bool fin{ false }; !fin;)
 			{
 				// 接受头 //
 				char web_head[2];
-				int res = safe_recv(conn_socket, web_head, 2);
-
-				// 检查是否正在Close,如果不能锁住,则证明正在close,于是结束线程释放资源, //
-				// 若能锁住,则开始获取Imp所有权 //
-				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
-				if (!close_lck.try_lock())return;
-
-				// 证明没有在close,于是正常接收消息头 //
-				std::unique_lock<std::recursive_mutex> state_lck(imp->state_mutex_);
-				close_lck.unlock();
-				close_lck.release();
-				if (res <= 0)
-				{
-					imp->socket_->stop();
-					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
-					return;
-				}
+				if (safe_recv(conn_socket, web_head, 2) <= 0)return;
 
 				// 是否最后一帧 //
 				fin = (web_head[0] & 0x80) == 0x80; // 1bit，1表示最后一帧    
@@ -390,13 +373,7 @@ namespace aris::core
 				if (payload_len == 126)
 				{
 					char length_char[2];
-					safe_recv(conn_socket, length_char, 2);
-					if (res <= 0)
-					{
-						imp->socket_->stop();
-						if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
-						return;
-					}
+					if (safe_recv(conn_socket, length_char, 2) <= 0)return;
 
 					union 
 					{
@@ -405,18 +382,11 @@ namespace aris::core
 					};
 					for (int i = 0; i < 2; ++i)reverse_char[i] = length_char[1 - i];
 					payload_len = length;
-
 				}
 				else if (payload_len == 127)
 				{
 					char length_char[8];
-					safe_recv(conn_socket, length_char, 8);
-					if (res <= 0)
-					{
-						imp->socket_->stop();
-						if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
-						return;
-					}
+					if (safe_recv(conn_socket, length_char, 8) <= 0)return;
 
 					char reverse_char[8];
 					for (int i = 0; i < 8; ++i)reverse_char[i] = length_char[7 - i];
@@ -437,24 +407,12 @@ namespace aris::core
 				// 获取掩码
 				bool mask_flag = (web_head[1] & 0x80) == 0x80; // 是否包含掩码    
 				char masks[4];
-				safe_recv(conn_socket, masks, 4);
-				if (res <= 0)
-				{
-					imp->socket_->stop();
-					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
-					return;
-				}
+				if (safe_recv(conn_socket, masks, 4) <= 0)return;
 
 				// 用掩码读取出数据 //
 				auto last_size = payload_data.size();
 				payload_data.resize(payload_data.size() + payload_len);
-				safe_recv(conn_socket, payload_data.data() + last_size, payload_len);
-				if (res <= 0)
-				{
-					imp->socket_->stop();
-					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
-					return;
-				}
+				if (safe_recv(conn_socket, payload_data.data() + last_size, payload_len) <= 0)return;
 
 				for (int i{ 0 }; i<payload_len; ++i)
 				{
@@ -497,7 +455,7 @@ namespace aris::core
 				if (send(imp->conn_socket_, s.data(), s.size(), 0) == -1)
 				{
 					imp->socket_->stop();
-					if (imp->onLoseConnection != nullptr)imp->onLoseConnection(imp->socket_);
+					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
 					return;
 				}
 				break;
@@ -730,48 +688,6 @@ namespace aris::core
 		}
 		default:
 			throw SendDataError("WebSocket failed sending data, because WebSocket is not at right state\n", this, 0);
-		}
-	}
-	auto WebSocket::sendRequest(const aris::core::MsgBase &request)->aris::core::Msg
-	{
-		std::unique_lock<std::mutex> cv_lck(imp_->mu_reply_);
-		std::unique_lock<std::recursive_mutex> state_lck(imp_->state_mutex_);
-
-		switch (imp_->state_)
-		{
-		case WORKING:
-			imp_->state_ = WAITING_FOR_REPLY;
-			break;
-		default:
-			throw SendRequestError("WebSocket failed sending request, because WebSocket is not at right state\n", this, 0);
-		}
-
-		aris::core::Msg request_copy_ = request;
-		request_copy_.setType(WebSocket::Imp::SOCKET_REQUEST);
-
-		try
-		{
-			sendMsg(request_copy_);
-		}
-		catch (SendDataError &error)
-		{
-			throw SendRequestError(error.what(), this, 0);
-		}
-
-		imp_->cv_reply_data_received_.wait(state_lck);
-		state_lck = std::unique_lock<std::recursive_mutex>(imp_->state_mutex_);
-
-
-		if (imp_->state_ != WAITING_FOR_REPLY)
-		{
-			throw SendRequestError("WebSocket failed sending request, because WebSocket is closed before it receive a reply\n", this, 0);
-		}
-		else
-		{
-			imp_->state_ = WORKING;
-			Msg reply;
-			reply.swap(imp_->reply_msg_);
-			return reply;
 		}
 	}
 	auto WebSocket::remoteIP()const->const std::string & {

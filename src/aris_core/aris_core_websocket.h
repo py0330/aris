@@ -68,7 +68,6 @@ namespace aris::core
 		auto connect(const std::string &remote_ip = std::string(), const std::string &port = std::string())->void;
 		auto stop()->void;
 		auto sendMsg(const aris::core::MsgBase &data)->void;
-		auto sendRequest(const aris::core::MsgBase &request)->Msg;
 		auto remoteIP()const->const std::string &;
 		auto port()const->const std::string &;
 		auto setRemoteIP(const std::string &remote_ip)->void;
