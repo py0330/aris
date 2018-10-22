@@ -45,24 +45,7 @@ int main(int argc, char *argv[])
 	dsp(4, 4, robot_pm);
 
 	aris::core::WebSocket socket;
-	socket.setOnReceivedMsg([&](aris::core::WebSocket *, aris::core::Msg &msg)->int
-	{
-		std::string msg_data = msg.toString();
-
-		std::cout << "recv:" << msg_data << std::endl;
-
-		LOG_INFO << "socket receive normal msg:\n"
-			<< msg.header().msg_size_ << "&"
-			<< msg.header().msg_id_ << "&"
-			<< msg.header().msg_type_ << "&"
-			<< msg.header().reserved1_ << "&"
-			<< msg.header().reserved2_ << "&"
-			<< msg.header().reserved3_ << ":"
-			<< msg_data << std::endl;
-
-		return 0;
-	});
-	socket.setOnReceivedRequest([&](aris::core::WebSocket *, aris::core::Msg &msg)
+	socket.setOnReceivedMsg([&](aris::core::WebSocket *socket, aris::core::Msg &msg)->int
 	{
 		std::string msg_data = msg.toString();
 
@@ -78,18 +61,18 @@ int main(int argc, char *argv[])
 				<< msg.header().reserved2_ << "&"
 				<< msg.header().reserved3_ << ":"
 				<< msg_data << std::endl;
-			
+
 			try
 			{
 				auto id = cs.executeCmd(aris::core::Msg(msg_data));
 				std::cout << "command id:" << id << std::endl;
-				return aris::core::Msg();
+				socket->sendMsg(aris::core::Msg());
 			}
 			catch (std::exception &e)
 			{
 				std::cout << e.what() << std::endl;
 				LOG_ERROR << e.what() << std::endl;
-				return aris::core::Msg(e.what());
+				socket->sendMsg(aris::core::Msg(e.what()));
 			}
 		}
 		else if (msg.header().msg_id_ == 1)
@@ -104,12 +87,12 @@ int main(int argc, char *argv[])
 				<< msg_data << std::endl;
 
 			auto part_pm_vec = std::make_any<std::vector<double> >(cs.model().partPool().size() * 16);
-			cs.getRtData([](aris::server::ControlServer& cs, std::any& data) 
+			cs.getRtData([](aris::server::ControlServer& cs, std::any& data)
 			{
 				for (aris::Size i(-1); ++i < cs.model().partPool().size();)
 					cs.model().partPool().at(i).getPm(std::any_cast<std::vector<double>& >(data).data() + i * 16);
 			}, part_pm_vec);
-			
+
 			std::vector<double> part_pq(cs.model().partPool().size() * 7);
 			for (aris::Size i(-1); ++i < cs.model().partPool().size();)
 			{
@@ -119,10 +102,10 @@ int main(int argc, char *argv[])
 			//// return binary ////
 			aris::core::Msg msg;
 			msg.copy(part_pq.data(), part_pq.size() * 8);
-			return msg;
+			socket->sendMsg(msg);
 		}
 
-		return aris::core::Msg("unknown msg id");
+		return 0;
 	});
 	socket.setOnReceivedConnection([](aris::core::WebSocket *sock, const char *ip, int port)->int
 	{
@@ -136,7 +119,7 @@ int main(int argc, char *argv[])
 	{
 		std::cout << "socket lose connection" << std::endl;
 		LOG_INFO << "socket lose connection" << std::endl;
-		while (true)
+		for(;;)
 		{
 			try
 			{
@@ -146,9 +129,11 @@ int main(int argc, char *argv[])
 			catch (aris::core::Socket::StartServerError &e)
 			{
 				std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+				LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 			}
 		}
+		std::cout << "socket restart successful" << std::endl;
 		LOG_INFO << "socket restart successful" << std::endl;
 
 		return 0;

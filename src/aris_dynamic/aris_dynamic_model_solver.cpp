@@ -1760,7 +1760,7 @@ namespace aris::dynamic
 		{
 			for (auto &mot : model().motionPool())
 			{
-				double tem[6], tem2[6];
+				double tem[6];
 				s_vc(6, Jg() + at(gm.makI().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
 				s_vs(6, Jg() + at(gm.makJ().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
 
@@ -2081,7 +2081,6 @@ namespace aris::dynamic
 	{
 		std::vector<const Part*> part_vec(7, nullptr);
 		std::vector<const RevoluteJoint*> joint_vec(6, nullptr);
-		GeneralMotion *ee;
 
 		// 必然有地，且与地相连的为杆件1, 那么找出所有杆件 //
 		//part_vec[0] = sys.diag_pool_.at(0).part;

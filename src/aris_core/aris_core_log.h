@@ -39,6 +39,9 @@
 	<< std::setw(aris::core::LOG_FILE_WIDTH) << std::string(__FILE__).substr(std::string(__FILE__).find_last_of("/\\") + 1) <<"|"\
 	<< std::setw(aris::core::LOG_LINE_WIDTH) << __LINE__ <<"|"
 
+#define LOG_CONTINUE aris::core::log() \
+	<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|"
+
 #define LOG_DEBUG_EVERY_N(n) static thread_local int LOG_OCCURRENCES_MOD_N ## __LINE__ = 0; \
 	if (++LOG_OCCURRENCES_MOD_N ## __LINE__ > n) LOG_OCCURRENCES_MOD_N ## __LINE__ -= n; \
 	if (LOG_OCCURRENCES_MOD_N ## __LINE__ == 1) LOG_DEBUG

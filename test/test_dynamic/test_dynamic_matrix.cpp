@@ -824,7 +824,6 @@ void test_householder()
 		// test 5*6 mat
 		const aris::Size m{ 5 }, n{ 6 }, rhs{ 2 };
 		const aris::Size a_t{ 7 }, q_t{ 8 }, r_t{ 10 }, u_t{ 9 }, tau_t{ 2 }, b_t{ 4 }, x_t{ 5 }, ss_t{n+3}, pinv_t{12};
-		aris::Size rank;
 		const double A[]{ 
 			0.8147,0.0975,0.1576,0.1419,0.6557,0.7577,
 			0.9058,0.2785,0.9706,0.4218,0.0357,0.7431,
