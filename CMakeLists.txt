@@ -1,30 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
 
-# add prefix to every string in a variable
-FUNCTION(PREPEND var prefix)
-   SET(listVar "")
-   FOREACH(f ${ARGN})
-      LIST(APPEND listVar "${prefix}/${f}")
-   ENDFOREACH(f)
-   SET(${var} "${listVar}" PARENT_SCOPE)
-ENDFUNCTION(PREPEND)
-
-FUNCTION(PREPEND_CPP var prefix)
-   SET(listVar "")
-   FOREACH(f ${ARGN})
-      LIST(APPEND listVar "${prefix}/${f}.cpp")
-   ENDFOREACH(f)
-   SET(${var} "${listVar}" PARENT_SCOPE)
-ENDFUNCTION(PREPEND_CPP)
-
-FUNCTION(PREPEND_H var prefix)
-   SET(listVar "")
-   FOREACH(f ${ARGN})
-      LIST(APPEND listVar "${prefix}/${f}.h")
-   ENDFOREACH(f)
-   SET(${var} "${listVar}" PARENT_SCOPE)
-ENDFUNCTION(PREPEND_H)
-
 project(aris)
 
 # set binary and library folders
@@ -41,10 +16,6 @@ if(UNIX)
 endif(UNIX)
 
 # set debug and release options
-if(WIN32)
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-endif(WIN32)
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
@@ -102,69 +73,109 @@ install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
 # aris core project
-file(GLOB SOURCES src/aris_core/*.h src/aris_core/*.cpp)
-add_library(aris_core STATIC ${SOURCES} src/aris_core/aris_core.h)
-install(TARGETS aris_core ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_core ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} src/aris_core/aris_core.h DESTINATION include)
+file(GLOB HEADERS src/aris_core/*.h src/aris_core/aris_core.h)
+file(GLOB SOURCES src/aris_core/*.cpp)
+add_library(aris_core STATIC ${HEADERS} ${SOURCES})
+set_target_properties(aris_core PROPERTIES PUBLIC_HEADER "${HEADERS}")
+target_include_directories(aris_core PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
+	$<INSTALL_INTERFACE:include>)
 
 # aris control project
-file(GLOB SOURCES src/aris_control/*.h src/aris_control/*.cpp)
-add_library(aris_control STATIC ${SOURCES} src/aris_control/aris_control.h)
-install(TARGETS aris_control ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_control ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} src/aris_control/aris_control.h DESTINATION include)
+file(GLOB HEADERS src/aris_control/*.h src/aris_control/aris_control.h)
+file(GLOB SOURCES src/aris_control/*.cpp)
+add_library(aris_control STATIC ${HEADERS} ${SOURCES})
+set_target_properties(aris_control PROPERTIES PUBLIC_HEADER "${HEADERS}")
+#target_include_directories(aris_control PUBLIC
+#	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
+#	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
+#	$<INSTALL_INTERFACE:include>)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 # aris dynamic project
-file(GLOB SOURCES src/aris_dynamic/*.h src/aris_dynamic/*.cpp)
-add_library(aris_dynamic STATIC ${SOURCES} src/aris_dynamic/aris_dynamic.h)
-install(TARGETS aris_dynamic ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_dynamic ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} src/aris_dynamic/aris_dynamic.h DESTINATION include)
+file(GLOB HEADERS src/aris_dynamic/*.h src/aris_dynamic/aris_dynamic.h)
+file(GLOB SOURCES src/aris_dynamic/*.cpp)
+add_library(aris_dynamic STATIC ${HEADERS} ${SOURCES})
+set_target_properties(aris_dynamic PROPERTIES PUBLIC_HEADER "${HEADERS}")
+target_include_directories(aris_dynamic PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_dynamic/>
+	$<INSTALL_INTERFACE:include>)
 
 # aris plan project
-file(GLOB SOURCES src/aris_plan/*.h src/aris_plan/*.cpp)
-add_library(aris_plan STATIC ${SOURCES} src/aris_plan/aris_plan.h)
-install(TARGETS aris_plan ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_plan ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} src/aris_plan/aris_plan.h DESTINATION include)
+file(GLOB HEADERS src/aris_plan/*.h src/aris_plan/aris_plan.h)
+file(GLOB SOURCES src/aris_plan/*.cpp)
+add_library(aris_plan STATIC ${HEADERS} ${SOURCES})
+set_target_properties(aris_plan PROPERTIES PUBLIC_HEADER "${HEADERS}")
+target_include_directories(aris_plan PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_dynamic/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_plan/>
+	$<INSTALL_INTERFACE:include>)
 
 # aris sensor project
-file(GLOB SOURCES src/aris_sensor/*.h src/aris_sensor/*.cpp)
-add_library(aris_sensor STATIC ${SOURCES} src/aris_sensor/aris_sensor.h)
-install(TARGETS aris_sensor ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_sensor ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} src/aris_sensor/aris_sensor.h DESTINATION include)
+file(GLOB HEADERS src/aris_sensor/*.h src/aris_sensor/aris_sensor.h)
+file(GLOB SOURCES src/aris_sensor/*.cpp)
+add_library(aris_sensor STATIC ${HEADERS} ${SOURCES})
+set_target_properties(aris_sensor PROPERTIES PUBLIC_HEADER "${HEADERS}")
+target_include_directories(aris_sensor PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_sensor/>
+	$<INSTALL_INTERFACE:include>)
 
-# aris control server project
-file(GLOB SOURCES src/aris_server/*.h src/aris_server/*.cpp)
-add_library(aris_server STATIC ${SOURCES} src/aris_server/aris_server.h)
-install(TARGETS aris_server ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_server ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} DESTINATION include)
-
+# aris server project
+file(GLOB HEADERS src/aris_server/*.h src/aris_server/aris_server.h)
+file(GLOB SOURCES src/aris_server/*.cpp)
+add_library(aris_server STATIC ${HEADERS} ${SOURCES})
+set_target_properties(aris_server PROPERTIES PUBLIC_HEADER "${HEADERS}")
+target_include_directories(aris_server PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_dynamic/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_plan/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_sensor/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_server/>
+	$<INSTALL_INTERFACE:include>)
+	
 # aris robot project
-file(GLOB SOURCES src/aris_robot/*.h src/aris_robot/*.cpp)
-add_library(aris_robot STATIC ${SOURCES} src/aris_robot/aris_robot.h)
-install(TARGETS aris_robot ARCHIVE CONFIGURATIONS Debug DESTINATION lib/debug)
-install(TARGETS aris_robot ARCHIVE CONFIGURATIONS Release DESTINATION lib/release)
-install(FILES ${FULL_H} src/aris_robot/aris_robot.h DESTINATION include)
-install(DIRECTORY src/aris_robot/resource/ DESTINATION resource/aris_robot)
+file(GLOB HEADERS src/aris_robot/*.h src/aris_robot/aris_robot.h)
+file(GLOB SOURCES src/aris_robot/*.cpp)
+add_library(aris_robot STATIC ${HEADERS} ${SOURCES})
+set_target_properties(aris_robot PROPERTIES PUBLIC_HEADER "${HEADERS}")
+target_include_directories(aris_robot PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_dynamic/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_plan/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_sensor/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_server/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_robot/>
+	$<INSTALL_INTERFACE:include>)
+
+install(TARGETS aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
+	EXPORT aris-targets
+    PUBLIC_HEADER DESTINATION include
+	ARCHIVE 
+	CONFIGURATIONS Debug DESTINATION lib/debug
+	CONFIGURATIONS Release DESTINATION lib/release)
+
+install(EXPORT aris-targets
+    NAMESPACE aris::
+    FILE aris-config.cmake
+    DESTINATION share/cmake/aris)
+
+export(PACKAGE aris-targets)
 
 ################################### build tests for aris ####################################
 enable_testing()
 
 # test core
-#set(SOURCE_FILES main.cpp test_core_pipe.h test_core_pipe.cpp test_core_log.h test_core_log.cpp test_core_msg.h test_core_msg.cpp test_core_object.h test_core_object.cpp test_core_socket.h test_core_socket.cpp test_core_websocket.h test_core_websocket.cpp test_core_command.h test_core_command.cpp)
-#PREPEND(FULL_SRC test/test_core ${SOURCE_FILES})
-#add_executable(test_core ${FULL_SRC})
 file(GLOB SOURCES test/test_core/*)
 add_executable(test_core ${SOURCES})
 target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
 set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-
 
 # test control
 file(GLOB SOURCES test/test_control/*)
@@ -202,9 +213,7 @@ target_link_libraries(test_robot aris_robot aris_server aris_plan aris_dynamic a
 add_test(NAME test_robot COMMAND test_robot)
 set_tests_properties (test_robot PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
-set(SOURCE_FILES client.cpp)
-PREPEND(FULL_SRC test/rbt ${SOURCE_FILES})
-add_executable(rbt ${FULL_SRC})
+add_executable(rbt test/rbt/client.cpp)
 target_link_libraries(rbt ${ALL_LINK_LIB})
 
 ################################### build demos for aris ####################################
@@ -222,39 +231,33 @@ install(DIRECTORY demo/demo_command_parser_xml/resource/ DESTINATION resource/de
 add_executable(demo_command_parser_cpp demo/demo_command_parser_cpp/main.cpp)
 target_link_libraries(demo_command_parser_cpp aris_core ${RELY_LINK_LIB})
 
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_Aris_ExpCal/demo_ExpCal ${SOURCE_FILES})
-add_executable(demo_ExpCal ${FULL_SRC})
+file(GLOB SOURCES demo/demo_Aris_ExpCal/demo_ExpCal/*)
+add_executable(demo_ExpCal ${SOURCES})
 target_link_libraries(demo_ExpCal aris_core ${RELY_LINK_LIB})
 
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_model_scara ${SOURCE_FILES})
-add_executable(demo_model_scara ${FULL_SRC})
+file(GLOB SOURCES demo/demo_model_scara/*)
+add_executable(demo_model_scara ${SOURCES})
 target_link_libraries(demo_model_scara aris_dynamic aris_core ${RELY_LINK_LIB})
 install(DIRECTORY demo/demo_model_scara/resource/ DESTINATION resource/demo_model_scara)
 install(DIRECTORY demo/demo_model_scara/doc/ DESTINATION doc/html/demo_model_scara)
 
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_stewart ${SOURCE_FILES})
-add_executable(demo_stewart ${FULL_SRC})
+file(GLOB SOURCES demo/demo_stewart/*)
+add_executable(demo_stewart ${SOURCES})
 target_link_libraries(demo_stewart aris_dynamic aris_core ${RELY_LINK_LIB})
 install(DIRECTORY demo/demo_stewart/resource/ DESTINATION resource/demo_stewart)
 
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_hulk ${SOURCE_FILES})
-add_executable(demo_hulk ${FULL_SRC})
+file(GLOB SOURCES demo/demo_hulk/*)
+add_executable(demo_hulk ${SOURCES})
 target_link_libraries(demo_hulk ${ALL_LINK_LIB})
 install(DIRECTORY demo/demo_hulk/resource/ DESTINATION resource/demo_hulk)
 
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_ur ${SOURCE_FILES})
-add_executable(demo_ur ${FULL_SRC})
+file(GLOB SOURCES demo/demo_ur/*)
+add_executable(demo_ur ${SOURCES})
 target_link_libraries(demo_ur ${ALL_LINK_LIB})
 install(DIRECTORY demo/demo_ur/resource/ DESTINATION resource/demo_ur)
 
-set(SOURCE_FILES main.cpp)
-PREPEND(FULL_SRC demo/demo_server ${SOURCE_FILES})
-add_executable(demo_server ${FULL_SRC})
+file(GLOB SOURCES demo/demo_server/*)
+add_executable(demo_server ${SOURCES})
 target_link_libraries(demo_server ${ALL_LINK_LIB})
 
 endif(MAKE_DEMO)

@@ -8,8 +8,6 @@
 
 #include "aris_core_expression_calculator.h"
 
-#include "aris_dynamic_matrix.h"
-
 namespace aris::core
 {
 	auto s_mm(Size m, Size n, Size k, const double* A, Size lda, const double* B, Size ldb, double *C, Size ldc) noexcept->void
