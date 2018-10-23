@@ -64,15 +64,22 @@ int main(int argc, char *argv[])
 
 			try
 			{
-				auto id = cs.executeCmd(aris::core::Msg(msg_data));
-				std::cout << "command id:" << id << std::endl;
-				socket->sendMsg(aris::core::Msg());
+				try 
+				{
+					auto id = cs.executeCmd(aris::core::Msg(msg_data));
+					std::cout << "command id:" << id << std::endl;
+				}
+				catch (std::exception &e)
+				{
+					std::cout << e.what() << std::endl;
+					LOG_ERROR << e.what() << std::endl;
+					socket->sendMsg(aris::core::Msg());
+				}
 			}
 			catch (std::exception &e)
 			{
 				std::cout << e.what() << std::endl;
 				LOG_ERROR << e.what() << std::endl;
-				socket->sendMsg(aris::core::Msg(e.what()));
 			}
 		}
 		else if (msg.header().msg_id_ == 1)
@@ -102,7 +109,16 @@ int main(int argc, char *argv[])
 			//// return binary ////
 			aris::core::Msg msg;
 			msg.copy(part_pq.data(), part_pq.size() * 8);
-			socket->sendMsg(msg);
+
+			try
+			{
+				socket->sendMsg(msg);
+			}
+			catch (std::exception &e)
+			{
+				std::cout << e.what() << std::endl;
+				LOG_ERROR << e.what() << std::endl;
+			}
 		}
 
 		return 0;

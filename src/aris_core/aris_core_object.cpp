@@ -409,7 +409,7 @@ namespace aris::core
 		tinyxml2::XMLPrinter printer;
 		doc.Print(&printer);
 
-		return std::string(printer.CStr());;
+		return std::string(printer.CStr());
 	}
 	auto Object::id()const->std::size_t { return imp_->id_; }
 	auto Object::name() const->const std::string& { return imp_->name_; }

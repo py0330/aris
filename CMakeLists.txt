@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(aris)
+project(aris VERSION 1.0.0)
 
 # set binary and library folders
 set(EXECUTABLE_OUTPUT_PATH bin)
@@ -86,10 +86,10 @@ file(GLOB HEADERS src/aris_control/*.h src/aris_control/aris_control.h)
 file(GLOB SOURCES src/aris_control/*.cpp)
 add_library(aris_control STATIC ${HEADERS} ${SOURCES})
 set_target_properties(aris_control PROPERTIES PUBLIC_HEADER "${HEADERS}")
-#target_include_directories(aris_control PUBLIC
-#	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
-#	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
-#	$<INSTALL_INTERFACE:include>)
+target_include_directories(aris_control PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
+	$<INSTALL_INTERFACE:include>)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 # aris dynamic project
@@ -155,17 +155,23 @@ target_include_directories(aris_robot PUBLIC
 
 install(TARGETS aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
 	EXPORT aris-targets
-    PUBLIC_HEADER DESTINATION include
+	PUBLIC_HEADER DESTINATION include
 	ARCHIVE 
 	CONFIGURATIONS Debug DESTINATION lib/debug
 	CONFIGURATIONS Release DESTINATION lib/release)
 
 install(EXPORT aris-targets
-    NAMESPACE aris::
-    FILE aris-config.cmake
-    DESTINATION share/cmake/aris)
+	NAMESPACE aris::
+	FILE aris-config.cmake
+	DESTINATION share/aris/cmake)
 
-export(PACKAGE aris-targets)
+#export(EXPORT aris-targets FILE aris-config.cmake)
+#export(PACKAGE aris)
+#export(TARGETS aris_robot aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core FILE aris-config.cmake)
+#export(TARGETS aris_robot aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core FILE aris-config.cmake)
+#export(EXPORT aris-targets)
+#export(TARGETS aris_robot aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core FILE aris-config.cmake)
+#export(PACKAGE aris)
 
 ################################### build tests for aris ####################################
 enable_testing()
