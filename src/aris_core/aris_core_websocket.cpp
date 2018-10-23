@@ -167,6 +167,11 @@ namespace aris::core
 		// 通知主线程,accept线程已经拷贝完毕,准备监听 //
 		accept_thread_ready.set_value();
 
+#ifdef UNIX
+		signal(SIGPIPE, SIG_IGN);
+#endif
+
+
 		// 开启循环去接听连接，防止不符合 websocket 的连接进来 //
 		for (;;)
 		{
@@ -328,6 +333,10 @@ namespace aris::core
 	{
 		// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 		receive_thread_ready.set_value();
+
+#ifdef UNIX
+		signal(SIGPIPE, SIG_IGN);
+#endif
 
 		// 开启接受数据的循环 //
 		for (;;)
@@ -575,6 +584,10 @@ namespace aris::core
 	auto WebSocket::sendMsg(const aris::core::MsgBase &data)->void
 	{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+
+#ifdef UNIX
+		signal(SIGPIPE, SIG_IGN);
+#endif
 
 		switch (imp_->state_)
 		{
