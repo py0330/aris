@@ -153,11 +153,15 @@ target_include_directories(aris_robot PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_robot/>
 	$<INSTALL_INTERFACE:include>)
 
-install(TARGETS aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
+install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
+	PUBLIC_HEADER DESTINATION include
+	ARCHIVE 
+	CONFIGURATIONS Debug DESTINATION lib/debug)
+
+install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
 	EXPORT aris-targets
 	PUBLIC_HEADER DESTINATION include
 	ARCHIVE 
-	CONFIGURATIONS Debug DESTINATION lib/debug
 	CONFIGURATIONS Release DESTINATION lib/release)
 
 install(EXPORT aris-targets
