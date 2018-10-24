@@ -60,7 +60,7 @@ namespace aris::control
 #endif
 
 #ifdef USE_XENOMAI
-	thread_local std::int64_t begin_time_, last_time_;
+	thread_local std::int64_t last_time_;
 
 
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) throw std::runtime_error("lock failed"); }
@@ -78,12 +78,12 @@ namespace aris::control
 	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
 	auto aris_rt_task_set_periodic(int nanoseconds)->int 
 	{ 
-		last_time_ = begin_time_ = aris_rt_timer_read();
-		return rt_task_set_periodic(NULL, begin_time_, nanoseconds);
+		last_time_ = aris_rt_timer_read();
+		return rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
 	}
 	auto aris_rt_task_wait_period()->int 
 	{ 
-		last_time += std::chrono::nanoseconds(nanoseconds);
+		last_time_ += 1000000;
 		return rt_task_wait_period(NULL); 
 	}
 	auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
