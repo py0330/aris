@@ -338,48 +338,48 @@ namespace aris::core
 		signal(SIGPIPE, SIG_IGN);
 #endif
 
+		//////////////////////////////////////////////////////
+		// lose //
+		const auto &lose = [&]() -> void
+		{
+#ifdef WIN32
+			shutdown(imp->recv_socket_, 2);
+			closesocket(imp->recv_socket_);
+			WSACleanup();
+#endif
+#ifdef UNIX
+			shutdown(imp->recv_socket_, 2);
+			close(imp->recv_socket_);
+#endif
+			imp->state_ = IDLE;
+			if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
+		};
+
+		//////////////////////////////////////////////////////
+		// 循环去收指定size //
+		const auto &safe_recv = [&](decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
+		{
+			int result{ 0 };
+			for (; result < size; )
+			{
+				int ret = recv(s, data + result, size - result, 0);
+				if (ret <= 0)
+				{
+					result = ret;
+					break;
+				}
+
+				result += ret;
+			}
+
+			if (result <= 0)lose();
+
+			return result;
+		};
+
 		// 开启接受数据的循环 //
 		for (;;)
 		{
-			//////////////////////////////////////////////////////
-			// lose //
-			const auto &lose = [&]() -> void
-			{
-#ifdef WIN32
-				shutdown(imp->recv_socket_, 2);
-				closesocket(imp->recv_socket_);
-				WSACleanup();
-#endif
-#ifdef UNIX
-				shutdown(imp->recv_socket_, 2);
-				close(imp->recv_socket_);
-#endif
-				imp->state_ = IDLE;
-				if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
-			};
-
-			//////////////////////////////////////////////////////
-			// 循环去收指定size //
-			const auto &safe_recv = [&](decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
-			{
-				int result{ 0 };
-				for (; result < size; )
-				{
-					int ret = recv(s, data + result, size - result, 0);
-					if (ret <= 0)
-					{
-						result = ret;
-						break;
-					}
-
-					result += ret;
-				}
-
-				if (result <= 0)lose();
-
-				return result;
-			};
-
 			// 开始接受web sock 的消息 //
 			std::int64_t real_length{ 0 };
 			std::string payload_data;
@@ -392,6 +392,10 @@ namespace aris::core
 
 				// 是否最后一帧 //
 				fin = (web_head[0] & 0x80) == 0x80; // 1bit，1表示最后一帧    
+
+				// 获取opcode //
+				std::int8_t op_code = web_head[0] & 0x0f;
+				if (op_code == 0x08) { lose(); return; }
 
 				// 获取数据长度
 				std::int64_t payload_len = web_head[1] & 0x7F; // 数据长度 
