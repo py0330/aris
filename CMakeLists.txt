@@ -26,10 +26,14 @@ if(UNIX)
 	option (USE_XENOMAI "Use Xenomai RT system" OFF)
 	if(USE_XENOMAI)
 		message("using xenomai")
-		add_definitions(-DUSE_XENOMAI)
-		set(RELY_INCL_DIR "/usr/xenomai/include" ${RELY_INCL_DIR})
-		set(RELY_LINK_DIR "/usr/xenomai/lib" ${RELY_LINK_DIR})
-		set(RELY_LINK_LIB native rtdm xenomai ${RELY_LINK_LIB})
+		
+		# copy this file to you project/config
+		set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
+
+		find_package(Xenomai REQUIRED)
+
+		include_directories(${XENOMAI_INCLUDE_DIRS})
+		set(RELY_LINK_LIB ${XENOMAI_LIBRARIES} ${RELY_LINK_LIB})
 	endif(USE_XENOMAI)
 
 	option (USE_ETHERLAB "Use Etherlab Ethercat drivers" OFF)
