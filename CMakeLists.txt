@@ -27,11 +27,12 @@ if(UNIX)
 	if(USE_XENOMAI)
 		message("using xenomai")
 		
+		add_definitions(-DUSE_XENOMAI)
+		set(RELY_LINK_DIR "/usr/xenomai/lib" ${RELY_LINK_DIR})
+		
 		# copy this file to you project/config
 		set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
-
 		find_package(Xenomai REQUIRED)
-
 		include_directories(${XENOMAI_INCLUDE_DIRS})
 		set(RELY_LINK_LIB ${XENOMAI_LIBRARIES} ${RELY_LINK_LIB})
 	endif(USE_XENOMAI)

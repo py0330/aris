@@ -1,8 +1,8 @@
 ﻿#ifdef USE_XENOMAI
 extern "C"
 {
-#include <native/task.h>
-#include <native/timer.h>
+#include <alchemy/task.h>
+#include <alchemy/timer.h>
 #include <sys/mman.h>
 }
 #endif
