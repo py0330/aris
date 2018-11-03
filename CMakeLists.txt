@@ -29,6 +29,7 @@ if(UNIX)
 		
 		add_definitions(-DUSE_XENOMAI)
 		set(RELY_LINK_DIR "/usr/xenomai/lib" ${RELY_LINK_DIR})
+		set(XENOMAI_ROOT_DIR "/usr/xenomai")
 		
 		# copy this file to you project/config
 		set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)

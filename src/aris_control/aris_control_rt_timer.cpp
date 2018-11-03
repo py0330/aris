@@ -69,7 +69,7 @@ namespace aris::control
 		std::any rt_task = RT_TASK();
 
 		// 为了使用返回值优化，这里必须判断，不能用三目运算符 //
-		if(rt_task_create(&std::any_cast<RT_TASK&>(rt_task), "realtime core", 0, 99, T_FPU | T_JOINABLE))
+		if(rt_task_create(&std::any_cast<RT_TASK&>(rt_task), "realtime core", 0, 99, T_JOINABLE))
 			rt_task = std::any();
 
 		return rt_task;
