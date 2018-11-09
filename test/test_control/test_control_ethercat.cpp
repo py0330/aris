@@ -34,13 +34,20 @@ void test_scan()
 
 		aris::control::EthercatMaster mst;
 		mst.scan();
+
+		aris::control::Master::RtStasticsData stastics;
+
 		mst.setControlStrategy([&]()
 		{
 			static int count{ 0 };
+
+			if (count == 0)mst.resetRtStasticData(&stastics);
+
+
 			if (++count % 1000 == 0)
 			{
 				mst.mout() << "count:" << std::dec << count << std::endl;
-				
+	
 				for (auto &sla : mst.ecSlavePool())
 				{
 					for (auto &sm : sla.smPool())
@@ -59,9 +66,20 @@ void test_scan()
 								}
 							}
 						}
-
 					}
 				}
+
+				mst.mout() << "---------------------------------------------------------" << std::endl;
+				mst.mout() << "total count:" << stastics.total_count << std::endl;
+				mst.mout() << "avg cost   :" << stastics.avg_time_consumed << std::endl;
+				mst.mout() << "max cost   :" << stastics.max_time_consumed << std::endl;
+				mst.mout() << "max count  :" << stastics.max_time_occur_count << std::endl;
+				mst.mout() << "min cost   :" << stastics.min_time_consumed << std::endl;
+				mst.mout() << "min count  :" << stastics.min_time_occur_count << std::endl;
+				mst.mout() << "overruns   :" << stastics.overrun_count << std::endl;
+
+				mst.resetRtStasticData(&stastics);
+
 			}
 		});
 
@@ -280,8 +298,8 @@ void test_sdo_code()
 
 void test_control_ethercat()
 {
-	test_pdo();
-	//test_scan();
+	//test_pdo();
+	test_scan();
 	//test_pdo_xml();
 	//test_sdo_code();
 	//test_sdo_xml();
