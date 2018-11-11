@@ -227,13 +227,13 @@ namespace aris::control
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
 		if (entry->size() != byte_size)throw std::runtime_error("failed to read pdo entry:\"" + entry->name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_read(ecHandle(), entry->ecHandle(), value, byte_size);
+		aris_ecrt_pdo_read(entry, value, byte_size);
 	}
 	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
 		if (entry->size() != byte_size)throw std::runtime_error("failed to write pdo_entry:\"" + entry->name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_write(ecHandle(), entry->ecHandle(), value, byte_size);
+		aris_ecrt_pdo_write(entry, value, byte_size);
 	}
 	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
 	{
@@ -326,18 +326,10 @@ namespace aris::control
 
 		aris_ecrt_master_request(this);
 	}
-	auto EthercatMaster::release()->void { aris_ecrt_master_stop(ecHandle()); }
-	auto EthercatMaster::send()->void
-	{
-		for (auto &sla : ecSlavePool())aris_ecrt_slave_send(sla.ecHandle());
-		aris_ecrt_master_send(ecHandle());
-	}
-	auto EthercatMaster::recv()->void
-	{
-		aris_ecrt_master_receive(ecHandle());
-		for (auto &sla : ecSlavePool())aris_ecrt_slave_receive(sla.ecHandle());
-	}
-	auto EthercatMaster::sync()->void { aris_ecrt_master_sync(ecHandle(), aris_rt_timer_read()); }
+	auto EthercatMaster::release()->void { aris_ecrt_master_stop(this); }
+	auto EthercatMaster::send()->void { aris_ecrt_master_send(this); }
+	auto EthercatMaster::recv()->void { aris_ecrt_master_recv(this); }
+	auto EthercatMaster::sync()->void { aris_ecrt_master_sync(this, aris_rt_timer_read()); }
 	auto EthercatMaster::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatMaster::ecSlavePool()->aris::core::RefPool<EthercatSlave>& { return imp_->ec_slave_pool_; }
 	EthercatMaster::~EthercatMaster() = default;

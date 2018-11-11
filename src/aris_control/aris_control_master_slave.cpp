@@ -50,7 +50,6 @@ namespace aris::control
 				data->overrun_count += time > 900000 ? 1 : 0;
 			};
 
-
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
 
 			while (mst.imp_->is_rt_thread_running_)

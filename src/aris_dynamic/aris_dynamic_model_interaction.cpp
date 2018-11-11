@@ -25,9 +25,9 @@ namespace aris::dynamic
 	}
 	auto Interaction::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		if (model().findByName("part_pool") == model().children().end())
+		if (ancestor<Model>()->findByName("part_pool") == ancestor<Model>()->children().end())
 			throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
-		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model().findByName("part_pool"));
+		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*ancestor<Model>()->findByName("part_pool"));
 
 		if (!xml_ele.Attribute("prt_m"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"prt_m\"");
 		auto prt_m = part_pool.findByName(xml_ele.Attribute("prt_m"));

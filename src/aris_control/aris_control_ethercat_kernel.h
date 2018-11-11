@@ -43,20 +43,18 @@ namespace aris::control
 
 
 	class EthercatMaster;
+	class PdoEntry;
 
 	auto aris_ecrt_scan(EthercatMaster *master)->int;
 
 	auto aris_ecrt_master_request(EthercatMaster *master)->void;
-	auto aris_ecrt_master_stop(std::any& master)->void;
-	auto aris_ecrt_master_sync(std::any& master, std::uint64_t ns)->void;
-	auto aris_ecrt_master_receive(std::any& master)->void;
-	auto aris_ecrt_master_send(std::any& master)->void;
+	auto aris_ecrt_master_stop(EthercatMaster *master)->void;
+	auto aris_ecrt_master_sync(EthercatMaster *master, std::uint64_t ns)->void;
+	auto aris_ecrt_master_recv(EthercatMaster *master)->void;
+	auto aris_ecrt_master_send(EthercatMaster *master)->void;
 
-	auto aris_ecrt_slave_send(std::any& slave)->void;
-	auto aris_ecrt_slave_receive(std::any& slave)->void;
-
-	auto aris_ecrt_pdo_read(std::any& slave, std::any& pdo, void *data, int byte_size)->void;
-	auto aris_ecrt_pdo_write(std::any& slave, std::any& pdo, const void *data, int byte_size)->void;
+	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data, int byte_size)->void;
+	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data, int byte_size)->void;
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t bit_size, std::size_t *result_size, std::uint32_t *abort_code)->int;
 	auto aris_ecrt_sdo_write(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,

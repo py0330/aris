@@ -645,7 +645,7 @@ namespace aris::dynamic
 
 		if (xml_ele.Attribute("relative_to"))
 		{
-			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>&>(this->father()).findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
+			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
 			catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 		}
 		else
@@ -653,8 +653,8 @@ namespace aris::dynamic
 			s_vc(16, pm, *imp_->prt_pm_);
 		}
 	}
-	auto Marker::fatherPart() const noexcept->const Part& { return static_cast<const Part &>(this->father().father()); }
-	auto Marker::fatherPart() noexcept->Part& { return static_cast<Part &>(this->father().father()); }
+	auto Marker::fatherPart() const noexcept->const Part& { return static_cast<const Part &>(*this->father()->father()); }
+	auto Marker::fatherPart() noexcept->Part& { return static_cast<Part &>(*this->father()->father()); }
 	auto Marker::pm()const noexcept->const double4x4& { s_pm_dot_pm(*fatherPart().pm(), *prtPm(), const_cast<double*>(*imp_->pm_)); return imp_->pm_; }
 	auto Marker::vs()const noexcept->const double6& { return fatherPart().vs(); }
 	auto Marker::as()const noexcept->const double6& { return fatherPart().as(); }
@@ -1206,7 +1206,7 @@ namespace aris::dynamic
 		s_iv2im(prtIv(), prt_im);
 
 		double prt_gr[3], prt_fg[6];
-		s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
+		s_inv_pm_dot_v3(*pm(), ancestor<Model>()->environment().gravity(), prt_gr);
 		s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, prt_fg, 1);
 
 		double pm[16];
@@ -1219,7 +1219,7 @@ namespace aris::dynamic
 		s_iv2im(prtIv(), prt_im);
 
 		double prt_gr[3], prt_fg[6];
-		s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
+		s_inv_pm_dot_v3(*pm(), ancestor<Model>()->environment().gravity(), prt_gr);
 		s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, prt_fg, 1);
 		s_tf(*pm(), prt_fg, fg);
 	}
@@ -1229,7 +1229,7 @@ namespace aris::dynamic
 		s_iv2im(prtIv(), prt_im);
 
 		double prt_gr[3];
-		s_inv_pm_dot_v3(*pm(), model().environment().gravity(), prt_gr);
+		s_inv_pm_dot_v3(*pm(), ancestor<Model>()->environment().gravity(), prt_gr);
 		s_mm(6, 1, 3, prt_im, 6, prt_gr, 1, fg, 1);
 	}
 	auto Part::cptFv(const Coordinate &relative_to, double *fv)const noexcept->void
@@ -1349,8 +1349,8 @@ namespace aris::dynamic
 		return *this;
 	}
 
-	auto Geometry::fatherPart() const->const Part& { return static_cast<const Part &>(this->father().father()); }
-	auto Geometry::fatherPart()->Part& { return static_cast<Part &>(this->father().father()); }
+	auto Geometry::fatherPart() const->const Part& { return static_cast<const Part &>(*this->father()->father()); }
+	auto Geometry::fatherPart()->Part& { return static_cast<Part &>(*this->father()->father()); }
 
 	struct ParasolidGeometry::Imp
 	{
@@ -1372,7 +1372,7 @@ namespace aris::dynamic
 
 		if (xml_ele.Attribute("relative_to"))
 		{
-			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>&>(this->father()).findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
+			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
 			catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 		}
 		else
@@ -1420,7 +1420,7 @@ namespace aris::dynamic
 
 		if (xml_ele.Attribute("relative_to"))
 		{
-			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>&>(this->father()).findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
+			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
 			catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 		}
 		else
@@ -1467,7 +1467,7 @@ namespace aris::dynamic
 
 		if (xml_ele.Attribute("relative_to"))
 		{
-			try { imp_->relative_to_ = &*static_cast<aris::core::ObjectPool<Marker, Element>&>(this->father()).findByName(xml_ele.Attribute("relative_to")); }
+			try { imp_->relative_to_ = &*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to")); }
 			catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 		}
 		else

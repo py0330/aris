@@ -50,7 +50,7 @@ namespace aris::dynamic
 		imp_->g_ = 0;
 		imp_->k_ = 0;
 
-		for (auto &m : model().motionPool())
+		for (auto &m : ancestor<Model>()->motionPool())
 		{
 			if (m.active())
 			{
@@ -58,9 +58,9 @@ namespace aris::dynamic
 				imp_->k_ += 3;
 			}
 		}
-		for (auto &p : model().partPool())
+		for (auto &p : ancestor<Model>()->partPool())
 		{
-			if (p.active() && &p != &model().ground())
+			if (p.active() && &p != &ancestor<Model>()->ground())
 			{
 				imp_->g_ += 10;
 			}
@@ -78,7 +78,7 @@ namespace aris::dynamic
 		imp_->dyn_m_ = 0;
 		imp_->dyn_n_ = 6;
 		std::vector<Part*> active_parts;
-		for (auto &prt : model().partPool())
+		for (auto &prt : ancestor<Model>()->partPool())
 		{
 			if (prt.active())
 			{
@@ -88,7 +88,7 @@ namespace aris::dynamic
 		}
 
 		imp_->cst_blk_vec_.clear();
-		for (auto &jnt : model().jointPool())
+		for (auto &jnt : ancestor<Model>()->jointPool())
 		{
 			if (jnt.active())
 			{
@@ -102,7 +102,7 @@ namespace aris::dynamic
 				imp_->dyn_n_ += jnt.dim();
 			}
 		}
-		for (auto &mot : model().motionPool())
+		for (auto &mot : ancestor<Model>()->motionPool())
 		{
 			if (mot.active())
 			{
@@ -116,7 +116,7 @@ namespace aris::dynamic
 				imp_->dyn_n_ += mot.dim();
 			}
 		}
-		for (auto &gmt : model().generalMotionPool())
+		for (auto &gmt : ancestor<Model>()->generalMotionPool())
 		{
 			if (gmt.active())
 			{
@@ -132,7 +132,7 @@ namespace aris::dynamic
 		}
 
 		imp_->fce_blk_vec_.clear();
-		for (auto &fce : model().forcePool())
+		for (auto &fce : ancestor<Model>()->forcePool())
 		{
 			if (fce.active())
 			{
@@ -222,7 +222,7 @@ namespace aris::dynamic
 		for (auto &b : imp_->cst_blk_vec_)
 		{
 			Size row{ 0 };
-			for (auto &p : model().partPool())
+			for (auto &p : ancestor<Model>()->partPool())
 			{
 				double cm[6][6], vs[6];
 
@@ -236,14 +236,14 @@ namespace aris::dynamic
 
 		// make A //
 		int col1 = 0, col2 = 6;
-		for (auto &prt : model().partPool())
+		for (auto &prt : ancestor<Model>()->partPool())
 		{
-			if (prt.active() && &prt != &model().ground())
+			if (prt.active() && &prt != &ancestor<Model>()->ground())
 			{
 				double q[6]{ 0 };
 
 				s_inv_tv(*prt.pm(), prt.as(), q);
-				s_inv_tva(-1.0, *prt.pm(), model().environment().gravity(), q);
+				s_inv_tva(-1.0, *prt.pm(), ancestor<Model>()->environment().gravity(), q);
 
 				double v[6];
 				s_inv_tv(*prt.pm(), prt.vs(), v);
@@ -318,9 +318,9 @@ namespace aris::dynamic
 
 		/////////////////////////////////////////// make x ///////////////////////////////////////
 		Size xi = 0;
-		for (auto &prt : model().partPool())
+		for (auto &prt : ancestor<Model>()->partPool())
 		{
-			if (prt.active() && &prt != &model().ground())
+			if (prt.active() && &prt != &ancestor<Model>()->ground())
 			{
 				s_vc(10, prt.prtIv(), x + xi);
 				xi += 10;
@@ -365,8 +365,8 @@ namespace aris::dynamic
 
 		Element::loadXml(xml_ele);
 	}
-	auto SimResult::TimeResult::record()->void { imp_->time_.push_back(model().time()); }
-	auto SimResult::TimeResult::restore(Size pos)->void { model().setTime(imp_->time_.at(pos)); }
+	auto SimResult::TimeResult::record()->void { imp_->time_.push_back(ancestor<Model>()->time()); }
+	auto SimResult::TimeResult::restore(Size pos)->void { ancestor<Model>()->setTime(imp_->time_.at(pos)); }
 	SimResult::TimeResult::~TimeResult() = default;
 	SimResult::TimeResult::TimeResult(const std::string &name) : Element(name), imp_(new Imp) {}
 	SimResult::TimeResult::TimeResult(const SimResult::TimeResult&) = default;
@@ -405,10 +405,10 @@ namespace aris::dynamic
 	auto SimResult::PartResult::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		// 以下寻找对应的part //
-		if (model().findByName("part_pool") == model().children().end())
+		if (ancestor<Model>()->findByName("part_pool") == ancestor<Model>()->children().end())
 			throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
 
-		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model().findByName("part_pool"));
+		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*ancestor<Model>()->findByName("part_pool"));
 
 		if (!xml_ele.Attribute("part"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"part\"");
 		auto p = part_pool.findByName(xml_ele.Attribute("part"));
@@ -484,21 +484,21 @@ namespace aris::dynamic
 	{
 		// 以下寻找对应的constraint //
 		if (!xml_ele.Attribute("constraint"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"constraint\"");
-		if (!imp_->constraint_ && model().findByName("joint_pool") != model().children().end())
+		if (!imp_->constraint_ && ancestor<Model>()->findByName("joint_pool") != ancestor<Model>()->children().end())
 		{
-			auto &pool = static_cast<aris::core::ObjectPool<Joint, Element>&>(*model().findByName("joint_pool"));
+			auto &pool = static_cast<aris::core::ObjectPool<Joint, Element>&>(*ancestor<Model>()->findByName("joint_pool"));
 			auto c = pool.findByName(xml_ele.Attribute("constraint"));
 			if (c != pool.end())imp_->constraint_ = &*c;
 		}
-		if (!imp_->constraint_ && model().findByName("motion_pool") != model().children().end())
+		if (!imp_->constraint_ && ancestor<Model>()->findByName("motion_pool") != ancestor<Model>()->children().end())
 		{
-			auto &pool = static_cast<aris::core::ObjectPool<Motion, Element>&>(*model().findByName("motion_pool"));
+			auto &pool = static_cast<aris::core::ObjectPool<Motion, Element>&>(*ancestor<Model>()->findByName("motion_pool"));
 			auto c = pool.findByName(xml_ele.Attribute("constraint"));
 			if (c != pool.end())imp_->constraint_ = &*c;
 		}
-		if (!imp_->constraint_ && model().findByName("general_motion_pool") != model().children().end())
+		if (!imp_->constraint_ && ancestor<Model>()->findByName("general_motion_pool") != ancestor<Model>()->children().end())
 		{
-			auto &pool = static_cast<aris::core::ObjectPool<GeneralMotion, Element>&>(*model().findByName("general_motion_pool"));
+			auto &pool = static_cast<aris::core::ObjectPool<GeneralMotion, Element>&>(*ancestor<Model>()->findByName("general_motion_pool"));
 			auto c = pool.findByName(xml_ele.Attribute("constraint"));
 			if (c != pool.end())imp_->constraint_ = &*c;
 		}
@@ -569,11 +569,11 @@ namespace aris::dynamic
 	auto SimResult::allocateMemory()->void
 	{
 		partResultPool().clear();
-		for (auto &p : model().partPool())partResultPool().add<PartResult>(p.name() + "_result", &p);
+		for (auto &p : ancestor<Model>()->partPool())partResultPool().add<PartResult>(p.name() + "_result", &p);
 		constraintResultPool().clear();
-		for (auto &c : model().jointPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
-		for (auto &c : model().motionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
-		for (auto &c : model().generalMotionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
+		for (auto &c : ancestor<Model>()->jointPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
+		for (auto &c : ancestor<Model>()->motionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
+		for (auto &c : ancestor<Model>()->generalMotionPool())constraintResultPool().add<ConstraintResult>(c.name() + "_result", &c);
 	}
 	auto SimResult::record()->void
 	{
@@ -650,7 +650,7 @@ namespace aris::dynamic
 		// 记录初始状态 //
 		result.record();
 		// 记录轨迹中的状态 //
-		for (PlanParam plan_param{ &model(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_)result.record();
+		for (PlanParam plan_param{ ancestor<Model>(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_)result.record();
 		// 记录结束状态 //
 		result.record();
 	}
@@ -676,10 +676,10 @@ namespace aris::dynamic
 	{
 		Simulator::loadXml(xml_ele);
 
-		if (model().findByName("solver_pool") == model().children().end())
+		if (ancestor<Model>()->findByName("solver_pool") == ancestor<Model>()->children().end())
 			throw std::runtime_error("you must insert \"solver_pool\" node before insert " + type() + " \"" + name() + "\"");
 
-		auto &solver_pool = static_cast<aris::core::ObjectPool<Solver, Element>&>(*model().findByName("solver_pool"));
+		auto &solver_pool = static_cast<aris::core::ObjectPool<Solver, Element>&>(*ancestor<Model>()->findByName("solver_pool"));
 
 		if (!xml_ele.Attribute("solver"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"solver\"");
 		auto s = solver_pool.findByName(xml_ele.Attribute("solver"));
@@ -695,7 +695,7 @@ namespace aris::dynamic
 		// 记录初始位置 //
 		result.record();
 		// 记录轨迹中的位置 //
-		for (PlanParam plan_param{ &model(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_)
+		for (PlanParam plan_param{ ancestor<Model>(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_)
 		{
 			solver().kinPos();
 			if (solver().iterCount() == solver().maxIterCount())throw std::runtime_error("simulate failed because kinPos() failed at " + std::to_string(plan_param.count_) + " count");
@@ -734,8 +734,8 @@ namespace aris::dynamic
 	{
 		// 生成akima曲线 //
 		std::vector<double> time(result.size() + 1);
-		std::vector<std::vector<double>> mot_akima(model().motionPool().size(), std::vector<double>(result.size() + 1));
-		std::vector<std::vector<std::array<double, 6>>> gm_akima(model().generalMotionPool().size(), std::vector<std::array<double, 6>>(result.size() + 1));
+		std::vector<std::vector<double>> mot_akima(ancestor<Model>()->motionPool().size(), std::vector<double>(result.size() + 1));
+		std::vector<std::vector<std::array<double, 6>>> gm_akima(ancestor<Model>()->generalMotionPool().size(), std::vector<std::array<double, 6>>(result.size() + 1));
 		if (pos == -1)
 		{
 			if (result.size() < 4)throw std::runtime_error("failed to AdamsSimulator::saveAdams: because result size is smaller than 4\n");
@@ -743,16 +743,16 @@ namespace aris::dynamic
 			for (Size i(-1); ++i < result.size() + 1;)
 			{
 				result.restore(i);
-				time.at(i) = model().time();
-				for (Size j(-1); ++j < model().motionPool().size();)
+				time.at(i) = ancestor<Model>()->time();
+				for (Size j(-1); ++j < ancestor<Model>()->motionPool().size();)
 				{
-					model().motionPool().at(j).updMp();
-					mot_akima.at(j).at(i) = model().motionPool().at(j).mp();
+					ancestor<Model>()->motionPool().at(j).updMp();
+					mot_akima.at(j).at(i) = ancestor<Model>()->motionPool().at(j).mp();
 				}
-				for (Size j(-1); ++j < model().generalMotionPool().size();)
+				for (Size j(-1); ++j < ancestor<Model>()->generalMotionPool().size();)
 				{
-					model().generalMotionPool().at(j).updMpm();
-					model().generalMotionPool().at(j).getMpe(gm_akima.at(j).at(i).data(), "123");
+					ancestor<Model>()->generalMotionPool().at(j).updMpm();
+					ancestor<Model>()->generalMotionPool().at(j).getMpe(gm_akima.at(j).at(i).data(), "123");
 				}
 			}
 		}
@@ -789,7 +789,7 @@ namespace aris::dynamic
 			<< "!\r\n"
 			<< "!\r\n"
 			<< "model create  &\r\n"
-			<< "   model_name = " << this->model().name() << "\r\n"
+			<< "   model_name = " << this->ancestor<Model>()->name() << "\r\n"
 			<< "!\r\n"
 			<< "view erase\r\n"
 			<< "!\r\n"
@@ -798,13 +798,13 @@ namespace aris::dynamic
 			<< "!\r\n"
 			<< "force create body gravitational  &\r\n"
 			<< "    gravity_field_name = gravity  &\r\n"
-			<< "    x_component_gravity = " << model().environment().gravity()[0] << "  &\r\n"
-			<< "    y_component_gravity = " << model().environment().gravity()[1] << "  &\r\n"
-			<< "    z_component_gravity = " << model().environment().gravity()[2] << "\r\n"
+			<< "    x_component_gravity = " << ancestor<Model>()->environment().gravity()[0] << "  &\r\n"
+			<< "    y_component_gravity = " << ancestor<Model>()->environment().gravity()[1] << "  &\r\n"
+			<< "    z_component_gravity = " << ancestor<Model>()->environment().gravity()[2] << "\r\n"
 			<< "!\r\n";
-		for (auto &part : model().partPool())
+		for (auto &part : ancestor<Model>()->partPool())
 		{
-			if (&part == &model().ground())
+			if (&part == &ancestor<Model>()->ground())
 			{
 				file << "!----------------------------------- ground -----------------------------------!\r\n"
 					<< "!\r\n"
@@ -815,7 +815,7 @@ namespace aris::dynamic
 					<< "    part_name = ground\r\n"
 					<< "!\r\n"
 					<< "defaults coordinate_system  &\r\n"
-					<< "    default_coordinate_system = ." << model().name() << ".ground\r\n"
+					<< "    default_coordinate_system = ." << ancestor<Model>()->name() << ".ground\r\n"
 					<< "!\r\n"
 					<< "! ****** Markers for current part ******\r\n"
 					<< "!\r\n";
@@ -830,16 +830,16 @@ namespace aris::dynamic
 					<< "!\r\n"
 					<< "!\r\n"
 					<< "defaults coordinate_system  &\r\n"
-					<< "    default_coordinate_system = ." << model().name() << ".ground\r\n"
+					<< "    default_coordinate_system = ." << ancestor<Model>()->name() << ".ground\r\n"
 					<< "!\r\n"
 					<< "part create rigid_body name_and_position  &\r\n"
-					<< "    part_name = ." << model().name() << "." << part.name() << "  &\r\n"
+					<< "    part_name = ." << ancestor<Model>()->name() << "." << part.name() << "  &\r\n"
 					<< "    adams_id = " << adamsID(part) << "  &\r\n"
 					<< "    location = (" << loc.toString() << ")  &\r\n"
 					<< "    orientation = (" << ori.toString() << ")\r\n"
 					<< "!\r\n"
 					<< "defaults coordinate_system  &\r\n"
-					<< "    default_coordinate_system = ." << model().name() << "." << part.name() << " \r\n"
+					<< "    default_coordinate_system = ." << ancestor<Model>()->name() << "." << part.name() << " \r\n"
 					<< "!\r\n";
 
 
@@ -851,8 +851,8 @@ namespace aris::dynamic
 
 				file << "! ****** cm and mass for current part ******\r\n"
 					<< "marker create  &\r\n"
-					<< "    marker_name = ." << model().name() << "." << part.name() << ".cm  &\r\n"
-					<< "    adams_id = " << adamsID(part) + std::accumulate(model().partPool().begin(), model().partPool().end(), Size(0), [](Size a, Part &b) {return a + b.markerPool().size(); }) << "  &\r\n"
+					<< "    marker_name = ." << ancestor<Model>()->name() << "." << part.name() << ".cm  &\r\n"
+					<< "    adams_id = " << adamsID(part) + std::accumulate(ancestor<Model>()->partPool().begin(), ancestor<Model>()->partPool().end(), Size(0), [](Size a, Part &b) {return a + b.markerPool().size(); }) << "  &\r\n"
 					<< "    location = ({" << pe[0] << "," << pe[1] << "," << pe[2] << "})  &\r\n"
 					<< "    orientation = (" << "{0,0,0}" << ")\r\n"
 					<< "!\r\n";
@@ -866,10 +866,10 @@ namespace aris::dynamic
 				//！注意！//
 				//Adams里对惯量矩阵的定义貌似和我自己的定义在Ixy,Ixz,Iyz上互为相反数。别问我为什么,我也不知道。
 				file << "part create rigid_body mass_properties  &\r\n"
-					<< "    part_name = ." << model().name() << "." << part.name() << "  &\r\n"
+					<< "    part_name = ." << ancestor<Model>()->name() << "." << part.name() << "  &\r\n"
 					<< "    mass = " << part.prtIv()[0] << "  &\r\n"
-					<< "    center_of_mass_marker = ." << model().name() << "." << part.name() << ".cm  &\r\n"
-					<< "    inertia_marker = ." << model().name() << "." << part.name() << ".cm  &\r\n"
+					<< "    center_of_mass_marker = ." << ancestor<Model>()->name() << "." << part.name() << ".cm  &\r\n"
+					<< "    inertia_marker = ." << ancestor<Model>()->name() << "." << part.name() << ".cm  &\r\n"
 					<< "    ixx = " << iv[4] << "  &\r\n"
 					<< "    iyy = " << iv[5] << "  &\r\n"
 					<< "    izz = " << iv[6] << "  &\r\n"
@@ -885,7 +885,7 @@ namespace aris::dynamic
 				s_inv_tv(cm_pm_in_g, part.vs(), cm_vs);
 
 				file << "part create rigid_body initial_velocity  &\r\n"
-					<< "    part_name = ." << model().name() << "." << part.name() << "  &\r\n"
+					<< "    part_name = ." << ancestor<Model>()->name() << "." << part.name() << "  &\r\n"
 					<< "    vx = " << cm_vs[0] << "  &\r\n"
 					<< "    vy = " << cm_vs[1] << "  &\r\n"
 					<< "    vz = " << cm_vs[2] << "  &\r\n"
@@ -895,9 +895,9 @@ namespace aris::dynamic
 					<< "!\r\n";
 
 				file << "part modify rigid_body initial_velocity  &\r\n"
-					<< "    part_name = ." << model().name() << "." << part.name() << "  &\r\n"
-					<< "    vm = ." << model().name() << "." << part.name() << ".cm  &\r\n"
-					<< "    wm = ." << model().name() << "." << part.name() << ".cm \r\n"
+					<< "    part_name = ." << ancestor<Model>()->name() << "." << part.name() << "  &\r\n"
+					<< "    vm = ." << ancestor<Model>()->name() << "." << part.name() << ".cm  &\r\n"
+					<< "    wm = ." << ancestor<Model>()->name() << "." << part.name() << ".cm \r\n"
 					<< "!\r\n";
 
 
@@ -912,14 +912,14 @@ namespace aris::dynamic
 				core::Matrix ori(1, 3, &pe[3]), loc(1, 3, &pe[0]);
 
 				file << "marker create  &\r\n"
-					<< "marker_name = ." << model().name() << "." << part.name() << "." << marker.name() << "  &\r\n"
+					<< "marker_name = ." << ancestor<Model>()->name() << "." << part.name() << "." << marker.name() << "  &\r\n"
 					<< "adams_id = " << adamsID(marker) << "  &\r\n"
 					<< "location = (" << loc.toString() << ")  &\r\n"
 					<< "orientation = (" << ori.toString() << ")\r\n"
 					<< "!\r\n";
 			}
 		}
-		for (auto &joint : model().jointPool())
+		for (auto &joint : ancestor<Model>()->jointPool())
 		{
 			std::string type;
 			if (dynamic_cast<RevoluteJoint*>(&joint))type = "revolute";
@@ -929,13 +929,13 @@ namespace aris::dynamic
 			else throw std::runtime_error("unrecognized joint type:" + joint.type());
 
 			file << "constraint create joint " << type << "  &\r\n"
-				<< "    joint_name = ." << model().name() << "." << joint.name() << "  &\r\n"
+				<< "    joint_name = ." << ancestor<Model>()->name() << "." << joint.name() << "  &\r\n"
 				<< "    adams_id = " << adamsID(joint) << "  &\r\n"
-				<< "    i_marker_name = ." << model().name() << "." << joint.makI().fatherPart().name() << "." << joint.makI().name() << "  &\r\n"
-				<< "    j_marker_name = ." << model().name() << "." << joint.makJ().fatherPart().name() << "." << joint.makJ().name() << "  \r\n"
+				<< "    i_marker_name = ." << ancestor<Model>()->name() << "." << joint.makI().fatherPart().name() << "." << joint.makI().name() << "  &\r\n"
+				<< "    j_marker_name = ." << ancestor<Model>()->name() << "." << joint.makJ().fatherPart().name() << "." << joint.makJ().name() << "  \r\n"
 				<< "!\r\n";
 		}
-		for (auto &motion : model().motionPool())
+		for (auto &motion : ancestor<Model>()->motionPool())
 		{
 			std::string axis_names[6]{ "x","y","z","B1","B2","B3" };
 			std::string axis_name = axis_names[motion.axis()];
@@ -948,7 +948,7 @@ namespace aris::dynamic
 			if (pos == -1)
 			{
 				file << "data_element create spline &\r\n"
-					<< "    spline_name = ." << model().name() + "." + motion.name() + "_akima &\r\n"
+					<< "    spline_name = ." << ancestor<Model>()->name() + "." + motion.name() + "_akima &\r\n"
 					<< "    adams_id = " << adamsID(motion) << "  &\r\n"
 					<< "    units = m &\r\n"
 					<< "    x = " << time.at(0);
@@ -965,31 +965,31 @@ namespace aris::dynamic
 			}
 
 			file << "constraint create motion_generator &\r\n"
-				<< "    motion_name = ." << model().name() << "." << motion.name() << "  &\r\n"
+				<< "    motion_name = ." << ancestor<Model>()->name() << "." << motion.name() << "  &\r\n"
 				<< "    adams_id = " << adamsID(motion) << "  &\r\n"
-				<< "    i_marker_name = ." << model().name() << "." << motion.makI().fatherPart().name() << "." << motion.makI().name() << "  &\r\n"
-				<< "    j_marker_name = ." << model().name() << "." << motion.makJ().fatherPart().name() << "." << motion.makJ().name() << "  &\r\n"
+				<< "    i_marker_name = ." << ancestor<Model>()->name() << "." << motion.makI().fatherPart().name() << "." << motion.makI().name() << "  &\r\n"
+				<< "    j_marker_name = ." << ancestor<Model>()->name() << "." << motion.makJ().fatherPart().name() << "." << motion.makJ().name() << "  &\r\n"
 				<< "    axis = " << axis_name << "  &\r\n"
 				<< "    function = \"" << (pos == -1 ? akima_func : polynomial_func) << "\"  \r\n"
 				<< "!\r\n";
 		}
-		for (auto &gm : model().generalMotionPool())
+		for (auto &gm : ancestor<Model>()->generalMotionPool())
 		{
 			file << "ude create instance  &\r\n"
-				<< "    instance_name = ." << model().name() << "." << gm.name() << "  &\r\n"
+				<< "    instance_name = ." << ancestor<Model>()->name() << "." << gm.name() << "  &\r\n"
 				<< "    definition_name = .MDI.Constraints.general_motion  &\r\n"
 				<< "    location = 0.0, 0.0, 0.0  &\r\n"
 				<< "    orientation = 0.0, 0.0, 0.0  \r\n"
 				<< "!\r\n";
 
 			file << "variable modify  &\r\n"
-				<< "	variable_name = ." << model().name() << "." << gm.name() << ".i_marker  &\r\n"
-				<< "	object_value = ." << model().name() << "." << gm.makI().fatherPart().name() << "." << gm.makI().name() << " \r\n"
+				<< "	variable_name = ." << ancestor<Model>()->name() << "." << gm.name() << ".i_marker  &\r\n"
+				<< "	object_value = ." << ancestor<Model>()->name() << "." << gm.makI().fatherPart().name() << "." << gm.makI().name() << " \r\n"
 				<< "!\r\n";
 
 			file << "variable modify  &\r\n"
-				<< "	variable_name = ." << model().name() << "." << gm.name() << ".j_marker  &\r\n"
-				<< "	object_value = ." << model().name() << "." << gm.makJ().fatherPart().name() << "." << gm.makJ().name() << " \r\n"
+				<< "	variable_name = ." << ancestor<Model>()->name() << "." << gm.name() << ".j_marker  &\r\n"
+				<< "	object_value = ." << ancestor<Model>()->name() << "." << gm.makJ().fatherPart().name() << "." << gm.makJ().name() << " \r\n"
 				<< "!\r\n";
 
 			std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
@@ -1009,8 +1009,8 @@ namespace aris::dynamic
 				if (pos == -1)
 				{
 					file << "data_element create spline &\r\n"
-						<< "    spline_name = ." << model().name() + "." + akima + " &\r\n"
-						<< "    adams_id = " << model().motionPool().size() + adamsID(gm) * 6 + i << "  &\r\n"
+						<< "    spline_name = ." << ancestor<Model>()->name() + "." + akima + " &\r\n"
+						<< "    adams_id = " << ancestor<Model>()->motionPool().size() + adamsID(gm) * 6 + i << "  &\r\n"
 						<< "    units = m &\r\n"
 						<< "    x = " << time.at(0);
 					for (auto p = time.begin() + 1; p < time.end(); ++p)
@@ -1026,47 +1026,47 @@ namespace aris::dynamic
 				}
 
 				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model().name() << "." << gm.name() << "." << axis_names[i] << "_type  &\r\n"
+					<< "	variable_name = ." << ancestor<Model>()->name() << "." << gm.name() << "." << axis_names[i] << "_type  &\r\n"
 					<< "	integer_value = 1 \r\n"
 					<< "!\r\n";
 
 				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model().name() << "." << gm.name() << "." << axis_names[i] << "_func  &\r\n"
+					<< "	variable_name = ." << ancestor<Model>()->name() << "." << gm.name() << "." << axis_names[i] << "_func  &\r\n"
 					<< "	string_value = \"" + func + "\" \r\n"
 					<< "!\r\n";
 
 				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model().name() << "." << gm.name() << "." << axis_names[i] << "_ic_disp  &\r\n"
+					<< "	variable_name = ." << ancestor<Model>()->name() << "." << gm.name() << "." << axis_names[i] << "_ic_disp  &\r\n"
 					<< "	real_value = 0.0 \r\n"
 					<< "!\r\n";
 
 				file << "variable modify  &\r\n"
-					<< "	variable_name = ." << model().name() << "." << gm.name() << "." << axis_names[i] << "_ic_velo  &\r\n"
+					<< "	variable_name = ." << ancestor<Model>()->name() << "." << gm.name() << "." << axis_names[i] << "_ic_velo  &\r\n"
 					<< "	real_value = 0.0 \r\n"
 					<< "!\r\n";
 			}
 
 			file << "ude modify instance  &\r\n"
-				<< "	instance_name = ." << model().name() << "." << gm.name() << "\r\n"
+				<< "	instance_name = ." << ancestor<Model>()->name() << "." << gm.name() << "\r\n"
 				<< "!\r\n";
 		}
-		for (auto &force : model().forcePool())
+		for (auto &force : ancestor<Model>()->forcePool())
 		{
 			double fsI[6], fsJ[6], fsI_loc[6];
 			force.cptGlbFs(fsI, fsJ);
 			s_inv_fs2fs(*force.makI().pm(), fsI, fsI_loc);
 
 			file << "floating_marker create  &\r\n"
-				<< "    floating_marker_name = ." << model().name() << "." << force.makJ().fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
-				<< "    adams_id = " << adamsID(force) + model().partPool().size() + std::accumulate(model().partPool().begin(), model().partPool().end(), Size(0), [](Size a, Part &b) {return a + b.markerPool().size(); }) << "\r\n"
+				<< "    floating_marker_name = ." << ancestor<Model>()->name() << "." << force.makJ().fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
+				<< "    adams_id = " << adamsID(force) + ancestor<Model>()->partPool().size() + std::accumulate(ancestor<Model>()->partPool().begin(), ancestor<Model>()->partPool().end(), Size(0), [](Size a, Part &b) {return a + b.markerPool().size(); }) << "\r\n"
 				<< "!\r\n";
 
 			file << "force create direct general_force  &\r\n"
-				<< "    general_force_name = ." << model().name() << "." << force.name() << "  &\r\n"
+				<< "    general_force_name = ." << ancestor<Model>()->name() << "." << force.name() << "  &\r\n"
 				<< "    adams_id = " << adamsID(force) << "  &\r\n"
-				<< "    i_marker_name = ." << model().name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
-				<< "    j_floating_marker_name = ." << model().name() << "." << force.makJ().fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
-				<< "    ref_marker_name = ." << model().name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
+				<< "    i_marker_name = ." << ancestor<Model>()->name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
+				<< "    j_floating_marker_name = ." << ancestor<Model>()->name() << "." << force.makJ().fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
+				<< "    ref_marker_name = ." << ancestor<Model>()->name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
 				<< "    x_force_function = \"" << fsI_loc[0] << "\"  &\r\n"
 				<< "    y_force_function = \"" << fsI_loc[1] << "\"  &\r\n"
 				<< "    z_force_function = \"" << fsI_loc[2] << "\"  &\r\n"
@@ -1078,7 +1078,7 @@ namespace aris::dynamic
 		}
 
 		// geometry, 防止geometry 添加marker，导致marker id冲突
-		for (auto &part : model().partPool())
+		for (auto &part : ancestor<Model>()->partPool())
 		{
 			for (auto &geometry : part.geometryPool())
 			{
@@ -1094,7 +1094,7 @@ namespace aris::dynamic
 						<< "	part_name = " << part.name() << " &\r\n"
 						<< "	location = (" << loc.toString() << ") &\r\n"
 						<< "	orientation = (" << ori.toString() << ") &\r\n"
-						<< "	relative_to = ." << model().name() << "." << part.name() << " \r\n"
+						<< "	relative_to = ." << ancestor<Model>()->name() << "." << part.name() << " \r\n"
 						<< "!\r\n";
 				}
 				else if (FileGeometry* geo = dynamic_cast<FileGeometry*>(&geometry))
@@ -1111,15 +1111,15 @@ namespace aris::dynamic
 						<< "	part_name = " << part.name() << " &\r\n"
 						<< "	location = (" << loc.toString() << ") &\r\n"
 						<< "	orientation = (" << ori.toString() << ") &\r\n"
-						<< "	relative_to = ." << model().name() << "." << part.name() << " &\r\n"
+						<< "	relative_to = ." << ancestor<Model>()->name() << "." << part.name() << " &\r\n"
 						<< "	scale = " << "0.001" << "\r\n"
 						<< "!\r\n";
 				}
 				else if (ShellGeometry* geo = dynamic_cast<ShellGeometry*>(&geometry))
 				{
 					file << "geometry create shape shell  &\r\n"
-						<< "	shell_name = ." << model().name() << "." << part.name() << "." << geo->name() << " &\r\n"
-						<< "	reference_marker = ." << model().name() << "." << part.name() << "." << geo->relativeToMarker().name() << " &\r\n"
+						<< "	shell_name = ." << ancestor<Model>()->name() << "." << part.name() << "." << geo->name() << " &\r\n"
+						<< "	reference_marker = ." << ancestor<Model>()->name() << "." << part.name() << "." << geo->relativeToMarker().name() << " &\r\n"
 						<< "	file_name = \"" << geo->filePath() << "\" &\r\n"
 						<< "	wireframe_only = " << "no" << "\r\n"
 						<< "!\r\n";
@@ -1133,48 +1133,48 @@ namespace aris::dynamic
 		}
 
 		file << "!----------------------------------- Motify Active -------------------------------------!\r\n!\r\n!\r\n";
-		for (auto &prt : model().partPool())
+		for (auto &prt : ancestor<Model>()->partPool())
 		{
-			if ((&prt != &model().ground()) && (!prt.active()))
+			if ((&prt != &ancestor<Model>()->ground()) && (!prt.active()))
 			{
 				file << "part attributes  &\r\n"
-					<< "    part_name = ." << model().name() << "." << prt.name() << "  &\r\n"
+					<< "    part_name = ." << ancestor<Model>()->name() << "." << prt.name() << "  &\r\n"
 					<< "    active = off \r\n!\r\n";
 			}
 		}
-		for (auto &jnt : model().jointPool())
+		for (auto &jnt : ancestor<Model>()->jointPool())
 		{
 			if (!jnt.active())
 			{
 				file << "constraint attributes  &\r\n"
-					<< "    constraint_name = ." << model().name() << "." << jnt.name() << "  &\r\n"
+					<< "    constraint_name = ." << ancestor<Model>()->name() << "." << jnt.name() << "  &\r\n"
 					<< "    active = off \r\n!\r\n";
 			}
 		}
-		for (auto &mot : model().motionPool())
+		for (auto &mot : ancestor<Model>()->motionPool())
 		{
 			if (!mot.active())
 			{
 				file << "constraint attributes  &\r\n"
-					<< "    constraint_name = ." << model().name() << "." << mot.name() << "  &\r\n"
+					<< "    constraint_name = ." << ancestor<Model>()->name() << "." << mot.name() << "  &\r\n"
 					<< "    active = off \r\n!\r\n";
 			}
 		}
-		for (auto &gm : model().generalMotionPool())
+		for (auto &gm : ancestor<Model>()->generalMotionPool())
 		{
 			if (!gm.active())
 			{
 				file << "ude attributes  &\r\n"
-					<< "    instance_name = ." << model().name() << "." << gm.name() << "  &\r\n"
+					<< "    instance_name = ." << ancestor<Model>()->name() << "." << gm.name() << "  &\r\n"
 					<< "    active = off \r\n!\r\n";
 			}
 		}
-		for (auto &fce : model().forcePool())
+		for (auto &fce : ancestor<Model>()->forcePool())
 		{
 			if (!fce.active())
 			{
 				file << "force attributes  &\r\n"
-					<< "    force_name = ." << model().name() << "." << fce.name() << "  &\r\n"
+					<< "    force_name = ." << ancestor<Model>()->name() << "." << fce.name() << "  &\r\n"
 					<< "    active = off \r\n!\r\n";
 			}
 		}
@@ -1196,18 +1196,18 @@ namespace aris::dynamic
 	}
 	auto AdamsSimulator::saveAdams(std::ofstream &file)->void
 	{
-		model().simResultPool().add<SimResult>();
-		model().simResultPool().back().record();
+		ancestor<Model>()->simResultPool().add<SimResult>();
+		ancestor<Model>()->simResultPool().back().record();
 
-		saveAdams(file, model().simResultPool().back(), 0);
+		saveAdams(file, ancestor<Model>()->simResultPool().back(), 0);
 
-		model().simResultPool().erase(model().simResultPool().end() - 1);
+		ancestor<Model>()->simResultPool().erase(ancestor<Model>()->simResultPool().end() - 1);
 	}
 	auto AdamsSimulator::adamsID(const Marker &mak)const->Size
 	{
 		Size size{ 0 };
 
-		for (auto &prt : model().partPool())
+		for (auto &prt : ancestor<Model>()->partPool())
 		{
 			if (&prt == &mak.fatherPart()) break;
 			size += prt.markerPool().size();
@@ -1217,7 +1217,7 @@ namespace aris::dynamic
 
 		return size;
 	}
-	auto AdamsSimulator::adamsID(const Part &prt)const->Size { return (&prt == &model().ground()) ? 1 : prt.id() + (model().ground().id() < prt.id() ? 1 : 2); }
+	auto AdamsSimulator::adamsID(const Part &prt)const->Size { return (&prt == &ancestor<Model>()->ground()) ? 1 : prt.id() + (ancestor<Model>()->ground().id() < prt.id() ? 1 : 2); }
 	AdamsSimulator::~AdamsSimulator() = default;
 	AdamsSimulator::AdamsSimulator(const std::string &name) : Simulator(name) {}
 	AdamsSimulator::AdamsSimulator(const AdamsSimulator&) = default;

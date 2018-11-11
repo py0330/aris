@@ -37,12 +37,20 @@ void test_scan()
 
 		aris::control::Master::RtStasticsData stastics;
 
+
+		std::int64_t time_series[2][10];
+
+
+
+
+
+
+
 		mst.setControlStrategy([&]()
 		{
 			static int count{ 0 };
 
 			if (count == 0)mst.resetRtStasticData(&stastics);
-
 
 			if (++count % 1000 == 0)
 			{
@@ -69,7 +77,7 @@ void test_scan()
 					}
 				}
 
-				mst.mout() << "---------------------------------------------------------" << std::endl;
+				mst.mout() << "---------------------------------------------------------" << std::dec << std::endl;
 				mst.mout() << "total count:" << stastics.total_count << std::endl;
 				mst.mout() << "avg cost   :" << stastics.avg_time_consumed << std::endl;
 				mst.mout() << "max cost   :" << stastics.max_time_consumed << std::endl;
@@ -86,7 +94,7 @@ void test_scan()
 
 		mst.start();
 
-		std::this_thread::sleep_for(std::chrono::seconds(10));
+		std::this_thread::sleep_for(std::chrono::seconds(100));
 
 		mst.stop();
 

@@ -613,8 +613,12 @@ namespace aris::core
 		auto id()const->std::size_t;
 		auto root()->Object&;
 		auto root()const->const Object& { return const_cast<std::decay_t<decltype(*this)> *>(this)->root(); }
-		auto father()->Object&;
-		auto father()const->const Object& { return const_cast<std::decay_t<decltype(*this)> *>(this)->father(); }
+		template<typename AncestorType>
+		auto ancestor()->AncestorType* { return father() ? (dynamic_cast<AncestorType*>(father()) ? dynamic_cast<AncestorType*>(father()) : father()->ancestor<AncestorType>()) : nullptr; };
+		template<typename AncestorType>
+		auto ancestor()const->const AncestorType* { return const_cast<std::decay_t<decltype(*this)> *>(this)->ancestor<AncestorType>(); }
+		auto father()->Object*;
+		auto father()const->const Object* { return const_cast<std::decay_t<decltype(*this)> *>(this)->father(); }
 		auto children()->ImpContainer<Object>&;
 		auto children()const->const ImpContainer<Object>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->children(); }
 		auto findByName(const std::string &name)const->ImpContainer<Object>::const_iterator { return const_cast<std::decay_t<decltype(*this)> *>(this)->findByName(name); }

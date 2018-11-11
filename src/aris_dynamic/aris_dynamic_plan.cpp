@@ -142,10 +142,12 @@ namespace aris::dynamic
 
 	auto OptimalTrajectory::cptInverseJacobi()->void
 	{
-		std::vector<double> Jf_data(model().generalMotionPool().size() * 6 * model().motionPool().size());
-		std::vector<double> Ji_data(model().generalMotionPool().size() * 6 * model().motionPool().size());
-		std::vector<double> tau_data(std::max(model().generalMotionPool().size() * 6, model().motionPool().size()));
-		std::vector<Size> p_data(std::max(model().generalMotionPool().size() * 6, model().motionPool().size()));
+		auto model = ancestor<Model>();
+		
+		std::vector<double> Jf_data(model->generalMotionPool().size() * 6 * model->motionPool().size());
+		std::vector<double> Ji_data(model->generalMotionPool().size() * 6 * model->motionPool().size());
+		std::vector<double> tau_data(std::max(model->generalMotionPool().size() * 6, model->motionPool().size()));
+		std::vector<Size> p_data(std::max(model->generalMotionPool().size() * 6, model->motionPool().size()));
 		auto Jf = Jf_data.data();
 		auto Ji = Ji_data.data();
 		auto tau = tau_data.data();
@@ -153,18 +155,18 @@ namespace aris::dynamic
 
 		solver->cptGeneralJacobi();
 
-		for (aris::Size k = 0; k < model().generalMotionPool().size(); ++k)
+		for (aris::Size k = 0; k < model->generalMotionPool().size(); ++k)
 		{
-			auto i = model().generalMotionPool().at(k).makI().fatherPart().id();
-			auto j = model().generalMotionPool().at(k).makJ().fatherPart().id();
+			auto i = model->generalMotionPool().at(k).makI().fatherPart().id();
+			auto j = model->generalMotionPool().at(k).makJ().fatherPart().id();
 
-			s_mc(6, model().motionPool().size(), solver->Jg() + at(i, 0, solver->nJg()), solver->nJg(), Jf, model().motionPool().size());
-			s_mi(6, model().motionPool().size(), solver->Jg() + at(i, 0, solver->nJg()), solver->nJg(), Jf, model().motionPool().size());
+			s_mc(6, model->motionPool().size(), solver->Jg() + at(i, 0, solver->nJg()), solver->nJg(), Jf, model->motionPool().size());
+			s_mi(6, model->motionPool().size(), solver->Jg() + at(i, 0, solver->nJg()), solver->nJg(), Jf, model->motionPool().size());
 		}
 
 		Size rank;
-		s_householder_utp(model().generalMotionPool().size() * 6, model().motionPool().size(), Jf, Jf, tau, p, rank);
-		s_householder_utp2pinv(model().generalMotionPool().size() * 6, model().motionPool().size(), rank, Jf, tau, p, Ji, tau);
+		s_householder_utp(model->generalMotionPool().size() * 6, model->motionPool().size(), Jf, Jf, tau, p, rank);
+		s_householder_utp2pinv(model->generalMotionPool().size() * 6, model->motionPool().size(), rank, Jf, tau, p, Ji, tau);
 
 		std::swap(Ji_data, Ji_data_);
 	}

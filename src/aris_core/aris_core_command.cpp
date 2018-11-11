@@ -13,9 +13,9 @@ namespace aris::core
 
 	struct ParamBase::Imp { bool is_taken_{ false }; };
 	auto ParamBase::command()const->const Command & {
-		if (auto c = dynamic_cast<const Command *>(&father()))
+		if (auto c = dynamic_cast<const Command *>(father()))
 			return *c;
-		else if (auto p = dynamic_cast<const ParamBase *>(&father()))
+		else if (auto p = dynamic_cast<const ParamBase *>(father()))
 			return p->command();
 		else
 			throw std::runtime_error("failed to find father command, please check the command tree");
@@ -102,14 +102,14 @@ namespace aris::core
 				if (p->ParamBase::imp_->is_taken_)
 					throw std::runtime_error("parse command error: command \"" + p->command().name() + "\"'s param \"" + p->name() + "\" has been set more than once");
 				p->ParamBase::imp_->is_taken_ = true;
-				take(&param->father());
+				take(param->father());
 			}
 			else if (auto g = dynamic_cast<GroupParam*>(param))
 			{
 				if (!g->ParamBase::imp_->is_taken_)
 				{
 					g->ParamBase::imp_->is_taken_ = true;
-					take(&param->father());
+					take(param->father());
 				}
 			}
 			else if (auto u = dynamic_cast<UniqueParam*>(param))
@@ -117,7 +117,7 @@ namespace aris::core
 				if (u->ParamBase::imp_->is_taken_)
 					throw std::runtime_error("parse command error: command \"" + u->command().name() + "\"'s UNIQUE param \"" + u->name() + "\" has been set more than once");
 				u->ParamBase::imp_->is_taken_ = true;
-				take(&param->father());
+				take(param->father());
 			}
 			else if (auto c = dynamic_cast<Command*>(param))
 			{

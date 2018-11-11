@@ -414,7 +414,7 @@ namespace aris::core
 	auto Object::id()const->std::size_t { return imp_->id_; }
 	auto Object::name() const->const std::string& { return imp_->name_; }
 	auto Object::root()->Object& { return imp_->father_ ? imp_->father_->root() : *this; }
-	auto Object::father()->Object& { return *imp_->father_; }
+	auto Object::father()->Object* { return imp_->father_; }
 	auto Object::children()->ImpContainer<Object>& { return imp_->children_; }
 	auto Object::findByName(const std::string &name)->ImpContainer<Object>::iterator
 	{

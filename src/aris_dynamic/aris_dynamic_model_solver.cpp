@@ -407,7 +407,7 @@ namespace aris::dynamic
 			// I*(a-g) //
 			double as_minus_g[6], iv_dot_as[6];
 			s_vc(6, d.xp, as_minus_g);// xp储存加速度
-			s_vs(6, d.part->model().environment().gravity(), as_minus_g);
+			s_vs(6, d.part->ancestor<Model>()->environment().gravity(), as_minus_g);
 			s_iv_dot_as(d.iv, as_minus_g, iv_dot_as);
 			s_va(6, iv_dot_as, d.bp);
 
@@ -929,14 +929,14 @@ namespace aris::dynamic
 		// make active part pool //
 		std::vector<const Part*> active_part_pool;
 		active_part_pool.clear();
-		active_part_pool.push_back(&model().ground());
-		for (auto &p : model().partPool())if (p.active() && &p != &model().ground())active_part_pool.push_back(&p);
+		active_part_pool.push_back(&ancestor<Model>()->ground());
+		for (auto &p : ancestor<Model>()->partPool())if (p.active() && &p != &ancestor<Model>()->ground())active_part_pool.push_back(&p);
 
 		// make active constraint pool //
 		std::vector<const Constraint*> cp;
-		for (auto &jnt : model().jointPool())if (jnt.active())cp.push_back(&jnt);
-		for (auto &mot : model().motionPool())if (mot.active()) cp.push_back(&mot);
-		for (auto &gmt : model().generalMotionPool())if (gmt.active())cp.push_back(&gmt);
+		for (auto &jnt : ancestor<Model>()->jointPool())if (jnt.active())cp.push_back(&jnt);
+		for (auto &mot : ancestor<Model>()->motionPool())if (mot.active()) cp.push_back(&mot);
+		for (auto &gmt : ancestor<Model>()->generalMotionPool())if (gmt.active())cp.push_back(&gmt);
 
 		// make relation pool //
 		std::vector<Relation> relation_pool;
@@ -996,7 +996,7 @@ namespace aris::dynamic
 			// add related relation //
 			for (auto &rel : relation_pool)
 			{
-				if (std::find_if(part_vec.begin(), part_vec.end(), [&rel, this](const Part *prt) { return prt != &model().ground() && (prt == rel.prtI || prt == rel.prtJ); }) != part_vec.end())
+				if (std::find_if(part_vec.begin(), part_vec.end(), [&rel, this](const Part *prt) { return prt != &(this->ancestor<Model>()->ground()) && (prt == rel.prtI || prt == rel.prtJ); }) != part_vec.end())
 				{
 					rel_vec.push_back(rel);
 				}
@@ -1008,8 +1008,8 @@ namespace aris::dynamic
 				// 先对part排序，找出下一个跟上一个part联系的part
 				std::sort(part_vec.begin() + i, part_vec.end(), [i, this, &rel_vec](const Part* a, const Part* b)
 				{
-					if (a == &model().ground()) return true; // 地面最优先
-					if (b == &model().ground()) return false; // 地面最优先
+					if (a == &this->ancestor<Model>()->ground()) return true; // 地面最优先
+					if (b == &this->ancestor<Model>()->ground()) return false; // 地面最优先
 					if (i == 0)return a->id() < b->id();// 第一轮先找地面或其他地面，防止下面的索引i-1出错
 					if (b == rel_vec[i - 1].prtI) return false;
 					if (b == rel_vec[i - 1].prtJ) return false;
@@ -1052,7 +1052,7 @@ namespace aris::dynamic
 			sys.max_error_ = maxError();
 
 			// 判断是否有地面 //
-			sys.has_ground_ = (part_vec.front() == &model().ground());
+			sys.has_ground_ = (part_vec.front() == &ancestor<Model>()->ground());
 
 			// 制造diag pool //
 			sys.diag_pool_.clear();
@@ -1197,7 +1197,7 @@ namespace aris::dynamic
 
 		// 分配根据part id寻找diag的vector //
 		imp_->get_diag_from_part_id_.clear();
-		imp_->get_diag_from_part_id_.resize(model().partPool().size(), nullptr);
+		imp_->get_diag_from_part_id_.resize(ancestor<Model>()->partPool().size(), nullptr);
 		for (auto &sys : imp_->subsys_pool_)for (auto &diag : sys.diag_pool_)imp_->get_diag_from_part_id_.at(diag.part->id()) = &diag;
 
 		// 分配计算所需内存 //
@@ -1224,7 +1224,7 @@ namespace aris::dynamic
 		// 将内存付给子系统 //
 		for (auto &sys : imp_->subsys_pool_)
 		{
-			sys.has_ground_ = sys.diag_pool_.begin()->part == &model().ground();
+			sys.has_ground_ = sys.diag_pool_.begin()->part == &ancestor<Model>()->ground();
 
 			sys.F = imp_->F_.data();
 			sys.FU = imp_->FU_.data();
@@ -1252,17 +1252,17 @@ namespace aris::dynamic
 		}
 
 		// 分配内存给雅可比 //
-		imp_->Jg_.resize(model().partPool().size() * 6 * (model().motionPool().size() + model().generalMotionPool().size() * 6));
-		imp_->cg_.resize(model().partPool().size() * 6);
+		imp_->Jg_.resize(ancestor<Model>()->partPool().size() * 6 * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
+		imp_->cg_.resize(ancestor<Model>()->partPool().size() * 6);
 
 		// 分配内存给动力学通用形式 //
-		imp_->M_.resize((model().motionPool().size() + model().generalMotionPool().size() * 6) * (model().motionPool().size() + model().generalMotionPool().size() * 6));
-		imp_->h_.resize((model().motionPool().size() + model().generalMotionPool().size() * 6));
+		imp_->M_.resize((ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6) * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
+		imp_->h_.resize((ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
 	}
 	auto UniversalSolver::kinPos()->bool
 	{
 		double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-		s_mc(4, 4, pm, const_cast<double *>(*model().ground().pm()));
+		s_mc(4, 4, pm, const_cast<double *>(*ancestor<Model>()->ground().pm()));
 
 		// 将杆件位姿拷贝到局部变量中 //
 		for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->getPm(d.pm);
@@ -1287,7 +1287,7 @@ namespace aris::dynamic
 	{
 		for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)d.part->getPm(d.pm);
 
-		s_fill(6, 1, 0.0, const_cast<double *>(model().ground().vs()));
+		s_fill(6, 1, 0.0, const_cast<double *>(ancestor<Model>()->ground().vs()));
 		for (auto &sys : imp_->subsys_pool_)sys.kinVel();
 
 		// 计算成功，设置各杆件 //
@@ -1306,7 +1306,7 @@ namespace aris::dynamic
 		}
 
 		// 更新外力 //
-		for (auto &fce : model().forcePool())
+		for (auto &fce : ancestor<Model>()->forcePool())
 		{
 			if (fce.active())
 			{
@@ -1319,7 +1319,7 @@ namespace aris::dynamic
 		}
 
 		// 更新地面的as //
-		s_fill(6, 1, 0.0, const_cast<double *>(model().ground().as()));
+		s_fill(6, 1, 0.0, const_cast<double *>(ancestor<Model>()->ground().as()));
 		for (auto &sys : imp_->subsys_pool_) sys.dynAccAndFce();
 
 		// 计算成功，设置各关节和杆件
@@ -1392,7 +1392,7 @@ namespace aris::dynamic
 							// Tmf^(T) * v //
 							s_vc(6, tmf[k], bc);
 							sys.sovXp();
-							for (auto &d : sys.diag_pool_)s_vc(6, d.xp, 1, &imp_->Jg_.at(at(d.part->id() * 6, model().motionPool().size() + gmt->id() * 6 + k, nJg())), nJg());
+							for (auto &d : sys.diag_pool_)s_vc(6, d.xp, 1, &imp_->Jg_.at(at(d.part->id() * 6, this->ancestor<Model>()->motionPool().size() + gmt->id() * 6 + k, nJg())), nJg());
 						}
 
 						std::fill(bc, bc + 6, 0.0);
@@ -1429,8 +1429,8 @@ namespace aris::dynamic
 			for (auto &d : sys.diag_pool_)s_vc(6, d.xp, imp_->cg_.data() + d.part->id() * 6);
 		}
 	}
-	auto UniversalSolver::mJg()const noexcept->Size { return model().partPool().size() * 6; }
-	auto UniversalSolver::nJg()const noexcept->Size { return model().motionPool().size() + model().generalMotionPool().size() * 6; }
+	auto UniversalSolver::mJg()const noexcept->Size { return ancestor<Model>()->partPool().size() * 6; }
+	auto UniversalSolver::nJg()const noexcept->Size { return ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6; }
 	auto UniversalSolver::Jg()const noexcept->const double * { return imp_->Jg_.data(); }
 	auto UniversalSolver::cg()const noexcept->const double * { return imp_->cg_.data(); }
 	auto UniversalSolver::cptGeneralInverseDynamicMatrix()noexcept->void
@@ -1455,7 +1455,7 @@ namespace aris::dynamic
 			auto dynamic = [&]()
 			{
 				for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)std::fill(d.bp, d.bp + 6, 0.0);
-				for (auto &fce : model().forcePool())
+				for (auto &fce : this->ancestor<Model>()->forcePool())
 				{
 					if (fce.active())
 					{
@@ -1506,7 +1506,7 @@ namespace aris::dynamic
 					}
 					if (dynamic_cast<const GeneralMotion*>(c.constraint))
 					{
-						s_vc(6, xc + pos, imp_->h_.data() + model().motionPool().size() + c.constraint->id() * 6);
+						s_vc(6, xc + pos, imp_->h_.data() + this->ancestor<Model>()->motionPool().size() + c.constraint->id() * 6);
 					}
 					pos += c.constraint->dim();
 				}
@@ -1517,7 +1517,7 @@ namespace aris::dynamic
 			// 开始计算M //
 			auto getMColumn = [&](const Constraint *c, Size cid)
 			{
-				auto Mn = model().motionPool().size() + model().generalMotionPool().size() * 6;
+				auto Mn = this->ancestor<Model>()->motionPool().size() + this->ancestor<Model>()->generalMotionPool().size() * 6;
 				auto getMRow = [&](Relation &rel, double *xc)
 				{
 					Size pos2{ 0 };
@@ -1530,7 +1530,7 @@ namespace aris::dynamic
 						}
 						if (dynamic_cast<const GeneralMotion*>(cc.constraint))
 						{
-							Size ccid = cc.constraint->id() * 6 + model().motionPool().size();
+							Size ccid = cc.constraint->id() * 6 + this->ancestor<Model>()->motionPool().size();
 							for (Size i = 0; i < 6; ++i)
 							{
 								s_vc(6, xc, 1, imp_->M_.data() + at(ccid, cid, Mn), Mn);
@@ -1569,7 +1569,7 @@ namespace aris::dynamic
 
 							dynamic();
 
-							getMColumn(c.constraint, c.constraint->id() * 6 + model().motionPool().size() + i);
+							getMColumn(c.constraint, c.constraint->id() * 6 + this->ancestor<Model>()->motionPool().size() + i);
 
 							s_vs(6, tmf[i], bc);
 						}
@@ -1581,7 +1581,7 @@ namespace aris::dynamic
 			for (auto &r : sys.remainder_pool_) getM(r.rel_, r.bc);
 		}
 	}
-	auto UniversalSolver::nM()const noexcept->Size { return model().motionPool().size() + model().generalMotionPool().size() * 6; }
+	auto UniversalSolver::nM()const noexcept->Size { return ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6; }
 	auto UniversalSolver::M()const noexcept->const double * { return imp_->M_.data(); }
 	auto UniversalSolver::h()const noexcept->const double * { return imp_->h_.data(); }
 	auto UniversalSolver::plotRelation()->void
@@ -1606,7 +1606,7 @@ namespace aris::dynamic
 				{
 					if (d.rel_.cst_pool_.size() == 0)
 					{
-						if (d1.part == &model().ground())
+						if (d1.part == &ancestor<Model>()->ground())
 						{
 							std::cout << "  6x6 ";
 						}
@@ -1667,7 +1667,7 @@ namespace aris::dynamic
 				{
 					if (d.rel_.cst_pool_.size() == 0)
 					{
-						if (d1.part == &model().ground())
+						if (d1.part == &ancestor<Model>()->ground())
 						{
 							std::cout << "  6x6 ";
 						}
@@ -1727,38 +1727,38 @@ namespace aris::dynamic
 	struct ForwardKinematicSolver::Imp { std::vector<double> J_vec_, cf_vec_; };
 	auto ForwardKinematicSolver::allocateMemory()->void
 	{
-		for (auto &m : model().motionPool())m.activate(true);
-		for (auto &gm : model().generalMotionPool())gm.activate(false);
+		for (auto &m : ancestor<Model>()->motionPool())m.activate(true);
+		for (auto &gm : ancestor<Model>()->generalMotionPool())gm.activate(false);
 
-		imp_->J_vec_.resize(6 * model().generalMotionPool().size() * model().motionPool().size());
-		imp_->cf_vec_.resize(6 * model().generalMotionPool().size());
+		imp_->J_vec_.resize(6 * ancestor<Model>()->generalMotionPool().size() * ancestor<Model>()->motionPool().size());
+		imp_->cf_vec_.resize(6 * ancestor<Model>()->generalMotionPool().size());
 
 		UniversalSolver::allocateMemory();
 	}
 	auto ForwardKinematicSolver::kinPos()->bool
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model().generalMotionPool())m.updMpm();
+		if (error() < maxError())for (auto &m : ancestor<Model>()->generalMotionPool())m.updMpm();
 		return error() < maxError();
 	}
 	auto ForwardKinematicSolver::kinVel()->void
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model().generalMotionPool())m.updMvs();
+		for (auto &m : ancestor<Model>()->generalMotionPool())m.updMvs();
 	}
 	auto ForwardKinematicSolver::dynAccAndFce()->void
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model().generalMotionPool())m.updMas();
+		for (auto &m : ancestor<Model>()->generalMotionPool())m.updMas();
 	}
 	auto ForwardKinematicSolver::cptJacobi() noexcept->void
 	{
 		cptGeneralJacobi();
 
 		// 需要根据求出末端对每个杆件造成的速度，然后针对驱动，寻找它的速度差，就求出了速度雅可比，找出加速度差，就是cfi
-		for (auto &gm : model().generalMotionPool())
+		for (auto &gm : ancestor<Model>()->generalMotionPool())
 		{
-			for (auto &mot : model().motionPool())
+			for (auto &mot : ancestor<Model>()->motionPool())
 			{
 				double tem[6];
 				s_vc(6, Jg() + at(gm.makI().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
@@ -1773,8 +1773,8 @@ namespace aris::dynamic
 			}
 		}
 	}
-	auto ForwardKinematicSolver::mJf()const noexcept->Size { return model().motionPool().size(); }
-	auto ForwardKinematicSolver::nJf()const noexcept->Size { return model().generalMotionPool().size() * 6; }
+	auto ForwardKinematicSolver::mJf()const noexcept->Size { return ancestor<Model>()->motionPool().size(); }
+	auto ForwardKinematicSolver::nJf()const noexcept->Size { return ancestor<Model>()->generalMotionPool().size() * 6; }
 	auto ForwardKinematicSolver::Jf()const noexcept->const double * { return imp_->J_vec_.data(); }
 	auto ForwardKinematicSolver::cf()const noexcept->const double * { return imp_->cf_vec_.data(); }
 	ForwardKinematicSolver::~ForwardKinematicSolver() = default;
@@ -1787,38 +1787,38 @@ namespace aris::dynamic
 	struct InverseKinematicSolver::Imp{std::vector<double> J_vec_, ci_vec_;};
 	auto InverseKinematicSolver::allocateMemory()->void
 	{
-		for (auto &m : model().motionPool())m.activate(false);
-		for (auto &gm : model().generalMotionPool())gm.activate(true);
+		for (auto &m : ancestor<Model>()->motionPool())m.activate(false);
+		for (auto &gm : ancestor<Model>()->generalMotionPool())gm.activate(true);
 
-		imp_->J_vec_.resize(6 * model().generalMotionPool().size() * model().motionPool().size());
-		imp_->ci_vec_.resize(6 * model().motionPool().size());
+		imp_->J_vec_.resize(6 * ancestor<Model>()->generalMotionPool().size() * ancestor<Model>()->motionPool().size());
+		imp_->ci_vec_.resize(6 * ancestor<Model>()->motionPool().size());
 
 		UniversalSolver::allocateMemory();
 	}
 	auto InverseKinematicSolver::kinPos()->bool
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model().motionPool())m.updMp();
+		if (error() < maxError())for (auto &m : ancestor<Model>()->motionPool())m.updMp();
 		return error() < maxError();
 	}
 	auto InverseKinematicSolver::kinVel()->void
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model().motionPool())m.updMv();
+		for (auto &m : ancestor<Model>()->motionPool())m.updMv();
 	}
 	auto InverseKinematicSolver::dynAccAndFce()->void
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model().motionPool())m.updMa();
+		for (auto &m : ancestor<Model>()->motionPool())m.updMa();
 	}
 	auto InverseKinematicSolver::cptJacobi()noexcept->void
 	{
 		cptGeneralJacobi();
 
 		// 需要根据求出末端对每个杆件造成的速度，然后针对驱动，寻找它的速度差，就求出了速度雅可比
-		for (auto &gm : model().generalMotionPool())
+		for (auto &gm : ancestor<Model>()->generalMotionPool())
 		{
-			for (auto &mot : model().motionPool())
+			for (auto &mot : ancestor<Model>()->motionPool())
 			{
 				for (Size i = 0; i < 6; ++i)
 				{
@@ -1845,8 +1845,8 @@ namespace aris::dynamic
 			}
 		}
 	}
-	auto InverseKinematicSolver::mJi()const noexcept->Size { return model().generalMotionPool().size() * 6; }
-	auto InverseKinematicSolver::nJi()const noexcept->Size { return model().motionPool().size(); }
+	auto InverseKinematicSolver::mJi()const noexcept->Size { return ancestor<Model>()->generalMotionPool().size() * 6; }
+	auto InverseKinematicSolver::nJi()const noexcept->Size { return ancestor<Model>()->motionPool().size(); }
 	auto InverseKinematicSolver::Ji()const noexcept->const double * { return imp_->J_vec_.data(); }
 	auto InverseKinematicSolver::ci()const noexcept->const double * { return imp_->ci_vec_.data(); }
 	InverseKinematicSolver::~InverseKinematicSolver() = default;
@@ -1858,26 +1858,26 @@ namespace aris::dynamic
 
 	auto ForwardDynamicSolver::allocateMemory()->void
 	{
-		for (auto &m : model().motionPool())m.activate(false);
-		for (auto &gm : model().generalMotionPool())gm.activate(false);
-		for (auto &f : model().forcePool())f.activate(true);
+		for (auto &m : ancestor<Model>()->motionPool())m.activate(false);
+		for (auto &gm : ancestor<Model>()->generalMotionPool())gm.activate(false);
+		for (auto &f : ancestor<Model>()->forcePool())f.activate(true);
 		UniversalSolver::allocateMemory();
 	}
 	auto ForwardDynamicSolver::kinPos()->bool
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model().generalMotionPool())m.updMpm();
+		if (error() < maxError())for (auto &m : ancestor<Model>()->generalMotionPool())m.updMpm();
 		return error() < maxError();
 	}
 	auto ForwardDynamicSolver::kinVel()->void
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model().generalMotionPool())m.updMvs();
+		for (auto &m : ancestor<Model>()->generalMotionPool())m.updMvs();
 	}
 	auto ForwardDynamicSolver::dynAccAndFce()->void
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model().generalMotionPool())m.updMas();
+		for (auto &m : ancestor<Model>()->generalMotionPool())m.updMas();
 	}
 	ForwardDynamicSolver::~ForwardDynamicSolver() = default;
 	ForwardDynamicSolver::ForwardDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
@@ -1888,26 +1888,26 @@ namespace aris::dynamic
 
 	auto InverseDynamicSolver::allocateMemory()->void
 	{
-		for (auto &m : model().motionPool())m.activate(true);
-		for (auto &gm : model().generalMotionPool())gm.activate(false);
-		for (auto &f : model().forcePool())f.activate(false);
+		for (auto &m : ancestor<Model>()->motionPool())m.activate(true);
+		for (auto &gm : ancestor<Model>()->generalMotionPool())gm.activate(false);
+		for (auto &f : ancestor<Model>()->forcePool())f.activate(false);
 		UniversalSolver::allocateMemory();
 	}
 	auto InverseDynamicSolver::kinPos()->bool
 	{
 		UniversalSolver::kinPos();
-		if (error() < maxError())for (auto &m : model().motionPool())m.updMp();
+		if (error() < maxError())for (auto &m : ancestor<Model>()->motionPool())m.updMp();
 		return error() < maxError();
 	}
 	auto InverseDynamicSolver::kinVel()->void
 	{
 		UniversalSolver::kinVel();
-		for (auto &m : model().motionPool())m.updMv();
+		for (auto &m : ancestor<Model>()->motionPool())m.updMv();
 	}
 	auto InverseDynamicSolver::dynAccAndFce()->void
 	{
 		UniversalSolver::dynAccAndFce();
-		for (auto &m : model().generalMotionPool())m.updMas();
+		for (auto &m : ancestor<Model>()->generalMotionPool())m.updMas();
 	}
 	InverseDynamicSolver::~InverseDynamicSolver() = default;
 	InverseDynamicSolver::InverseDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
@@ -2306,7 +2306,7 @@ namespace aris::dynamic
 		if (root_of_0_to_7 < 0 || root_of_0_to_7 > 7) throw std::runtime_error("root must be 0 to 7");
 		which_root_ = root_of_0_to_7;
 	}
-	auto Ur5InverseKinematicSolver::kinPos()->bool { return UrInverseKinematic(model(), UniversalSolver::imp_->subsys_pool_.at(0), which_root_); };
+	auto Ur5InverseKinematicSolver::kinPos()->bool { return UrInverseKinematic(*ancestor<Model>(), UniversalSolver::imp_->subsys_pool_.at(0), which_root_); };
 
 	struct PumaParam
 	{
@@ -2491,29 +2491,29 @@ namespace aris::dynamic
 	{
 		InverseKinematicSolver::allocateMemory();
 
-		imp_->GR = &model().partPool().at(0);
-		imp_->L1 = &model().partPool().at(1);
-		imp_->L2 = &model().partPool().at(2);
-		imp_->L3 = &model().partPool().at(3);
-		imp_->L4 = &model().partPool().at(4);
-		imp_->L5 = &model().partPool().at(5);
-		imp_->L6 = &model().partPool().at(6);
+		imp_->GR = &ancestor<Model>()->partPool().at(0);
+		imp_->L1 = &ancestor<Model>()->partPool().at(1);
+		imp_->L2 = &ancestor<Model>()->partPool().at(2);
+		imp_->L3 = &ancestor<Model>()->partPool().at(3);
+		imp_->L4 = &ancestor<Model>()->partPool().at(4);
+		imp_->L5 = &ancestor<Model>()->partPool().at(5);
+		imp_->L6 = &ancestor<Model>()->partPool().at(6);
 
-		imp_->R1 = dynamic_cast<RevoluteJoint*>(&model().jointPool().at(0));
-		imp_->R2 = dynamic_cast<RevoluteJoint*>(&model().jointPool().at(1));
-		imp_->R3 = dynamic_cast<RevoluteJoint*>(&model().jointPool().at(2));
-		imp_->R4 = dynamic_cast<RevoluteJoint*>(&model().jointPool().at(3));
-		imp_->R5 = dynamic_cast<RevoluteJoint*>(&model().jointPool().at(4));
-		imp_->R6 = dynamic_cast<RevoluteJoint*>(&model().jointPool().at(5));
+		imp_->R1 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(0));
+		imp_->R2 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(1));
+		imp_->R3 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(2));
+		imp_->R4 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(3));
+		imp_->R5 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(4));
+		imp_->R6 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(5));
 
-		imp_->M1 = &model().motionPool().at(0);
-		imp_->M2 = &model().motionPool().at(1);
-		imp_->M3 = &model().motionPool().at(2);
-		imp_->M4 = &model().motionPool().at(3);
-		imp_->M5 = &model().motionPool().at(4);
-		imp_->M6 = &model().motionPool().at(5);
+		imp_->M1 = &ancestor<Model>()->motionPool().at(0);
+		imp_->M2 = &ancestor<Model>()->motionPool().at(1);
+		imp_->M3 = &ancestor<Model>()->motionPool().at(2);
+		imp_->M4 = &ancestor<Model>()->motionPool().at(3);
+		imp_->M5 = &ancestor<Model>()->motionPool().at(4);
+		imp_->M6 = &ancestor<Model>()->motionPool().at(5);
 
-		imp_->ee = &model().generalMotionPool().at(0);
+		imp_->ee = &ancestor<Model>()->generalMotionPool().at(0);
 
 		auto R1_mak_on_GR = &imp_->R1->makI().fatherPart() == imp_->GR ? &imp_->R1->makI() : &imp_->R1->makJ();
 		auto R1_mak_on_L1 = &imp_->R1->makI().fatherPart() == imp_->L1 ? &imp_->R1->makI() : &imp_->R1->makJ();

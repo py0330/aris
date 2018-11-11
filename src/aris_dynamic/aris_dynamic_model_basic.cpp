@@ -18,7 +18,6 @@
 
 namespace aris::dynamic
 {
-	auto Element::model() noexcept->Model& { return dynamic_cast<Model*>(&father()) ? static_cast<Model&>(father()) : static_cast<Element&>(father()).model(); }
 	auto Element::attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix
 	{
 		std::string error = "failed to get Matrix attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
@@ -26,7 +25,7 @@ namespace aris::dynamic
 		aris::core::Matrix mat;
 		try
 		{
-			mat = this->model().calculator().calculateExpression(xml_ele.Attribute(attribute_name.c_str()));
+			mat = this->ancestor<Model>()->calculator().calculateExpression(xml_ele.Attribute(attribute_name.c_str()));
 		}
 		catch (std::exception &e)
 		{
@@ -88,14 +87,14 @@ namespace aris::dynamic
 
 	auto MatrixVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		data() = model().calculator().calculateExpression(xml_ele.GetText());
+		data() = ancestor<Model>()->calculator().calculateExpression(xml_ele.GetText());
 		Variable::loadXml(xml_ele);
-		model().calculator().addVariable(name(), data());
+		ancestor<Model>()->calculator().addVariable(name(), data());
 	}
 	auto StringVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		data() = std::string(xml_ele.GetText());
-		model().calculator().addVariable(name(), data());
+		ancestor<Model>()->calculator().addVariable(name(), data());
 		Variable::loadXml(xml_ele);
 	}
 }

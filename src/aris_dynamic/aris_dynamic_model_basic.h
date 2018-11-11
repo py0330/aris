@@ -37,7 +37,7 @@ namespace aris::dynamic
 	public:
 		static auto Type()->const std::string & { static const std::string type{ "Element" }; return type; }
 		auto virtual type() const->const std::string& override { return Type(); }
-		auto model()noexcept->Model&;
+		auto model()noexcept->Model& { return *ancestor<Model>(); }
 		auto model()const noexcept->const Model& { return const_cast<std::decay_t<decltype(*this)> *>(this)->model(); }
 		auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix;
 		auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const aris::core::Matrix& default_value)const->aris::core::Matrix;
