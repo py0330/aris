@@ -29,8 +29,8 @@ namespace aris::control
 	auto aris_ecrt_slave_send(std::any& slave)->void {}
 	auto aris_ecrt_slave_receive(std::any& slave)->void {}
 	
-	auto aris_ecrt_pdo_read(std::any& slave, std::any& pdo, void *data, int byte_size)->void {	}
-	auto aris_ecrt_pdo_write(std::any& slave, std::any& pdo, const void *data, int byte_size)->void { }
+	auto aris_ecrt_pdo_read(std::any& slave, std::any& pdo, void *data, int byte_size)->void {}
+	auto aris_ecrt_pdo_write(std::any& slave, std::any& pdo, const void *data, int byte_size)->void {}
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code) ->int { return 0; }
 	auto aris_ecrt_sdo_write(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,

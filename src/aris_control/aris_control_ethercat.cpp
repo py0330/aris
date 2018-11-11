@@ -168,10 +168,7 @@ namespace aris::control
 	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
 	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
 	SyncManager::~SyncManager() = default;
-	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) 
-	{
-		imp_->is_tx_ = is_tx;
-	}
+	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) {	imp_->is_tx_ = is_tx;}
 	SyncManager::SyncManager(const SyncManager &) = default;
 	SyncManager::SyncManager(SyncManager &&) = default;
 	SyncManager& SyncManager::operator=(const SyncManager &) = default;
@@ -251,10 +248,7 @@ namespace aris::control
 		auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
 		aris_ecrt_sdo_write(dynamic_cast<EthercatMaster&>(root()).ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 	}
-	auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
-	{
-
-	}
+	auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void{}
 	EthercatSlave::~EthercatSlave() = default;
 	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
 	{
