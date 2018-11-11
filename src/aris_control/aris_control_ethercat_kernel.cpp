@@ -211,7 +211,7 @@ namespace aris::control
 	{
 		std::copy_n(std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_ + std::any_cast<PdoEntryHandle&>(entry->ecHandle()), byte_size, static_cast<char *>(data));
 	}
-	auto aris_ecrt_pdo_write(std::any& master, std::any& pdo, const void *data, int byte_size)->void
+	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data, int byte_size)->void
 	{
 		std::copy_n(static_cast<const char *>(data), byte_size, std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_ + std::any_cast<PdoEntryHandle&>(entry->ecHandle()));
 	}
