@@ -57,7 +57,7 @@ void test_scan()
 								for (auto &entry : pdo)
 								{
 									std::uint32_t data;
-									sla.readPdo(entry.index(), entry.subindex(), &data, entry.size());
+									sla.readPdo(entry.index(), entry.subindex(), &data, entry.bitSize());
 									mst.mout() << "  index:0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(entry.index())
 										<< "  subindex:0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(entry.subindex())
 										<< "  value:0x" << std::setfill('0') << std::setw(sizeof(std::uint32_t) * 2) << std::hex << data << std::endl;
@@ -164,7 +164,7 @@ void test_pdo()
 								for (auto &entry : pdo)
 								{
 									std::uint32_t data;
-									sla.readPdo(entry.index(), entry.subindex(), &data, entry.size());
+									sla.readPdo(entry.index(), entry.subindex(), &data, entry.bitSize());
 									mst.mout() << "  index:0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(entry.index())
 										<< "  subindex:0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(entry.subindex())
 										<< "  value:0x" << std::setfill('0') << std::setw(sizeof(std::uint32_t) * 2) << std::hex << data << std::endl;
@@ -307,7 +307,7 @@ void test_bit()
 		std::uint32_t integer;
 	};
 	
-	const char pd[8] = {0b00110101, 0b101110111, 0b10010011, 0b11000110, 0b01010101, 0b10101010, 0b11110000, 0b00001111};
+	const char pd[8] = { (char)0b00110101, (char)0b101110111, (char)0b10010011, (char)0b11000110, (char)0b01010101, (char)0b10101010, (char)0b11110000, (char)0b00001111};
 	char r_pd[8];
 
 	T t1;
@@ -315,12 +315,12 @@ void test_bit()
 	t1.data[1] = (char)0b0010'1010;
 	t1.data[2] = (char)0b1111'1111;
 	t1.data[3] = (char)0b1111'1111;
-	char data1[4] = { 0xff,0xff,0xff,0xff };
+	char data1[4] = { (char)0xff,(char)0xff,(char)0xff,(char)0xff };
 	aris::control::read_bit(data1, 17, pd, 2, 7);
 	if (*reinterpret_cast<std::uint32_t*>(data1) != t1.integer)std::cout << "read bit failed" << std::endl;
 	std::fill_n(r_pd, 8, std::uint8_t(0x00));
 	aris::control::write_bit(data1, 17, r_pd, 2, 7);
-	const char r1[8]{ 0x00, 0x00, 0b0000000'1, 0b11000110, 0b01010101, 0x00, 0x00, 0x00 };
+	const char r1[8]{ (char)0x00, (char)0x00, (char)0b0000000'1, (char)0b11000110, (char)0b01010101, (char)0x00, (char)0x00, (char)0x00 };
 	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r1))std::cout << "write bit failed" << std::endl;
 
 	T t2;
@@ -328,12 +328,12 @@ void test_bit()
 	t2.data[1] = (char)0b0010'1010;
 	t2.data[2] = (char)0b1000'0000;
 	t2.data[3] = (char)0b0000'0000;
-	char data2[4] = { 0x00,0x00,0x00,0x00 };
+	char data2[4] = { (char)0x00,(char)0x00,(char)0x00,(char)0x00 };
 	aris::control::read_bit(data2, 17, pd, 2, 7);
 	if (*reinterpret_cast<std::uint32_t*>(data2) != t2.integer)std::cout << "read bit failed" << std::endl;
 	std::fill_n(r_pd, 8, std::uint8_t(0xff));
 	aris::control::write_bit(data2, 17, r_pd, 2, 7);
-	const char r2[8]{ 0xff, 0xff, 0b1111111'1, 0b11000110, 0b01010101, 0xff, 0xff, 0xff };
+	const char r2[8]{ (char)0xff, (char)0xff, (char)0b1111111'1, (char)0b11000110, (char)0b01010101, (char)0xff, (char)0xff, (char)0xff };
 	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r2))std::cout << "write bit failed" << std::endl;
 
 	T t3;
@@ -341,12 +341,12 @@ void test_bit()
 	t3.data[1] = (char)0b0010'1010;
 	t3.data[2] = (char)0b1101'0111;
 	t3.data[3] = (char)0b1111'1111;
-	char data3[4] = { 0xff,0xff,0xff,0xff };
+	char data3[4] = { (char)0xff,(char)0xff,(char)0xff,(char)0xff };
 	aris::control::read_bit(data3, 22, pd, 2, 7);
 	if (*reinterpret_cast<std::uint32_t*>(data3) != t3.integer)std::cout << "read bit failed" << std::endl;
 	std::fill_n(r_pd, 8, std::uint8_t(0x00));
 	aris::control::write_bit(data3, 22, r_pd, 2, 7);
-	const char r3[8]{ 0x00, 0x00, 0b0000000'1, 0b11000110, 0b01010101, 0b10101'000, 0x00, 0x00 };
+	const char r3[8]{ (char)0x00, (char)0x00, (char)0b0000000'1, (char)0b11000110, (char)0b01010101, (char)0b10101'000, (char)0x00, (char)0x00 };
 	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r3))std::cout << "write bit failed" << std::endl;
 
 	T t4;
@@ -354,12 +354,12 @@ void test_bit()
 	t4.data[1] = (char)0b0010'1010;
 	t4.data[2] = (char)0b1101'0100;
 	t4.data[3] = (char)0b0000'0000;
-	char data4[4] = { 0x00,0x00,0x00,0x00 };
+	char data4[4] = { (char)0x00,(char)0x00,(char)0x00,(char)0x00 };
 	aris::control::read_bit(data4, 22, pd, 2, 7);
 	if (*reinterpret_cast<std::uint32_t*>(data4) != t4.integer)std::cout << "read bit failed" << std::endl;
 	std::fill_n(r_pd, 8, std::uint8_t(0xff));
 	aris::control::write_bit(data4, 22, r_pd, 2, 7);
-	const char r4[8]{ 0xff, 0xff, 0b1111111'1, 0b11000110, 0b01010101, 0b10101'111, 0xff, 0xff };
+	const char r4[8]{ (char)0xff, (char)0xff, (char)0b1111111'1, (char)0b11000110, (char)0b01010101, (char)0b10101'111, (char)0xff, (char)0xff };
 	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r4))std::cout << "write bit failed" << std::endl;
 	
 	T t5;
@@ -367,12 +367,12 @@ void test_bit()
 	t5.data[1] = (char)0b0001'1001;
 	t5.data[2] = (char)0b0111'1111;
 	t5.data[3] = (char)0b1111'1111;
-	char data5[4] = { 0xff,0xff,0xff,0xff };
+	char data5[4] = { (char)0xff,(char)0xff,(char)0xff,(char)0xff };
 	aris::control::read_bit(data5, 17, pd, 2, 2);
 	if (*reinterpret_cast<std::uint32_t*>(data5) != t5.integer)std::cout << "read bit failed" << std::endl;
 	std::fill_n(r_pd, 8, std::uint8_t(0x00));
 	aris::control::write_bit(data5, 17, r_pd, 2, 2);
-	const char r5[8]{ 0x00, 0x00, 0b00'010011, 0b11000110, 0b010'00000, 0x00, 0x00, 0x00 };
+	const char r5[8]{ (char)0x00, (char)0x00, (char)0b00'010011, (char)0b11000110, (char)0b010'00000, (char)0x00, (char)0x00, (char)0x00 };
 	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r5))std::cout << "write bit failed" << std::endl;
 
 	T t6;
@@ -380,12 +380,12 @@ void test_bit()
 	t6.data[1] = (char)0b0001'1001;
 	t6.data[2] = (char)0b0000'0000;
 	t6.data[3] = (char)0b0000'0000;
-	char data6[4] = { 0x00,0x00,0x00,0x00 };
+	char data6[4] = { (char)0x00,(char)0x00,(char)0x00,(char)0x00 };
 	aris::control::read_bit(data6, 17, pd, 2, 2);
 	if (*reinterpret_cast<std::uint32_t*>(data6) != t6.integer)std::cout << "read bit failed" << std::endl;
 	std::fill_n(r_pd, 8, std::uint8_t(0xff));
 	aris::control::write_bit(data6, 17, r_pd, 2, 2);
-	const char r6[8]{ 0xff, 0xff, 0b11'010011, 0b11000110, 0b010'11111, 0xff, 0xff, 0xff };
+	const char r6[8]{ (char)0xff, (char)0xff, (char)0b11'010011, (char)0b11000110, (char)0b010'11111, (char)0xff, (char)0xff, (char)0xff };
 	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r6))std::cout << "write bit failed" << std::endl;
 
 	T t7;
@@ -393,12 +393,12 @@ void test_bit()
 	t7.data[1] = (char)0b0001'1001;
 	t7.data[2] = (char)0b0101'0111;
 	t7.data[3] = (char)0b1111'1111;
-	char data7[4] = { 0xff,0xff,0xff,0xff };
+	char data7[4] = { (char)0xff,(char)0xff,(char)0xff,(char)0xff };
 	aris::control::read_bit(data7, 22, pd, 2, 2);
 	if (*reinterpret_cast<std::uint32_t*>(data7) != t7.integer)std::cout << "read bit failed" << std::endl;
 	std::fill_n(r_pd, 8, std::uint8_t(0x00));
 	aris::control::write_bit(data7, 22, r_pd, 2, 2);
-	const char r7[8]{ 0x00, 0x00, 0b00'010011, 0b11000110, 0b01'010101, 0x00, 0x00, 0x00 };
+	const char r7[8]{ (char)0x00, (char)0x00, (char)0b00'010011, (char)0b11000110, (char)0b01'010101, (char)0x00, (char)0x00, (char)0x00 };
 	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r7))std::cout << "write bit failed" << std::endl;
 
 	T t8;
@@ -406,12 +406,12 @@ void test_bit()
 	t8.data[1] = (char)0b0001'1001;
 	t8.data[2] = (char)0b0101'0100;
 	t8.data[3] = (char)0b0000'0000;
-	char data8[8] = { 0x00,0x00,0x00,0x00 };
+	char data8[4] = { (char)0x00,(char)0x00,(char)0x00,(char)0x00 };
 	aris::control::read_bit(data8, 22, pd, 2, 2);
 	if (*reinterpret_cast<std::uint32_t*>(data8) != t8.integer)std::cout << "read bit failed" << std::endl;
 	std::fill_n(r_pd, 8, std::uint8_t(0xff));
 	aris::control::write_bit(data8, 22, r_pd, 2, 2);
-	const char r8[8]{ 0xff, 0xff, 0b11'010011, 0b11000110, 0b01'010101, 0xff, 0xff, 0xff };
+	const char r8[8]{ (char)0xff, (char)0xff, (char)0b11'010011, (char)0b11000110, (char)0b01'010101, (char)0xff, (char)0xff, (char)0xff };
 	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r8))std::cout << "write bit failed" << std::endl;
 }
 

@@ -65,18 +65,22 @@ namespace aris::control
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class PdoEntry :public DO
+	class PdoEntry :public aris::core::Object
 	{
 	public:
 		static auto Type()->const std::string & { static const std::string type("PdoEntry"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+		auto index()const->std::uint16_t;
+		auto subindex()const->std::uint8_t;
+		auto bitSize()const->aris::Size;
 
 		virtual ~PdoEntry();
-		explicit PdoEntry(const std::string &name = "entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0);
+		explicit PdoEntry(const std::string &name = "entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size bit_size = 8);
 		PdoEntry(const PdoEntry &);
 		PdoEntry(PdoEntry &&);
 		PdoEntry& operator=(const PdoEntry &);
@@ -149,11 +153,11 @@ namespace aris::control
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 
 		template<typename ValueType>
-		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType)); }
-		auto readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void;
+		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType) * 8); }
+		auto readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int bit_size)->void;
 		template<typename ValueType>
-		auto writePdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value)->void { writePdo(index, subindex, &value, sizeof(ValueType)); }
-		auto writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void;
+		auto writePdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value)->void { writePdo(index, subindex, &value, sizeof(ValueType) * 8); }
+		auto writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int bit_size)->void;
 		template<typename ValueType>
 		auto readSdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readSdo(index, subindex, &value, sizeof(ValueType)); }
 		auto readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void;

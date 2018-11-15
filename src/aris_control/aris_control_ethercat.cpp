@@ -109,12 +109,46 @@ namespace aris::control
 	Sdo& Sdo::operator=(const Sdo &) = default;
 	Sdo& Sdo::operator=(Sdo &&) = default;
 
-	struct PdoEntry::Imp { std::any ec_handle_; };
-	auto PdoEntry::saveXml(aris::core::XmlElement &xml_ele) const->void { DO::saveXml(xml_ele); }
-	auto PdoEntry::loadXml(const aris::core::XmlElement &xml_ele)->void { DO::loadXml(xml_ele); }
+	struct PdoEntry::Imp 
+	{ 
+		std::any ec_handle_; 
+		std::uint16_t index_;
+		std::uint8_t subindex_;
+		aris::Size bit_size_;
+	};
+	auto PdoEntry::saveXml(aris::core::XmlElement &xml_ele) const->void 
+	{ 
+		Object::saveXml(xml_ele);
+
+		std::stringstream s;
+		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
+		xml_ele.SetAttribute("index", s.str().c_str());
+
+		s = std::stringstream();
+		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(subindex());
+		xml_ele.SetAttribute("subindex", s.str().c_str());
+
+		xml_ele.SetAttribute("size", static_cast<std::int32_t>(bitSize()));
+	}
+	auto PdoEntry::loadXml(const aris::core::XmlElement &xml_ele)->void 
+	{ 
+		imp_->index_ = attributeUint16(xml_ele, "index");
+		imp_->subindex_ = attributeUint8(xml_ele, "subindex");
+		imp_->bit_size_ = attributeUint32(xml_ele, "size");
+		
+		Object::loadXml(xml_ele);
+	}
 	auto PdoEntry::ecHandle()->std::any& { return imp_->ec_handle_; }
+	auto PdoEntry::index()const->std::uint16_t { return imp_->index_; }
+	auto PdoEntry::subindex()const->std::uint8_t { return imp_->subindex_; }
+	auto PdoEntry::bitSize()const->aris::Size { return imp_->bit_size_; }
 	PdoEntry::~PdoEntry() = default;
-	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size size) :DO(name, index, sub_index, size) {}
+	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size) :Object(name) 
+	{
+		imp_->index_ = index;
+		imp_->subindex_ = sub_index;
+		imp_->bit_size_ = bit_size;
+	}
 	PdoEntry::PdoEntry(const PdoEntry &) = default;
 	PdoEntry::PdoEntry(PdoEntry &&) = default;
 	PdoEntry& PdoEntry::operator=(const PdoEntry &) = default;
@@ -223,17 +257,17 @@ namespace aris::control
 	auto EthercatSlave::dcAssignActivate()const->std::uint32_t { return imp_->dc_assign_activate_; }
 	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& { return *imp_->sm_pool_; }
 	auto EthercatSlave::sdoPool()->aris::core::ObjectPool<Sdo>& { return *imp_->sdo_pool_; }
-	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
+	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int bit_size)->void
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
-		if (entry->size() != byte_size)throw std::runtime_error("failed to read pdo entry:\"" + entry->name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_read(entry, value, byte_size);
+		if (entry->bitSize() != bit_size)throw std::runtime_error("failed to read pdo entry:\"" + entry->name() + "\" because byte size is not correct");
+		aris_ecrt_pdo_read(entry, value, bit_size);
 	}
-	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
+	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int bit_size)->void
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
-		if (entry->size() != byte_size)throw std::runtime_error("failed to write pdo_entry:\"" + entry->name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_write(entry, value, byte_size);
+		if (entry->bitSize() != bit_size)throw std::runtime_error("failed to write pdo_entry:\"" + entry->name() + "\" because byte size is not correct");
+		aris_ecrt_pdo_write(entry, value, bit_size);
 	}
 	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
 	{

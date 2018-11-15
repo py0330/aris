@@ -74,8 +74,6 @@ namespace aris::control
 		}
 	}
 
-
-
 #ifndef USE_ETHERLAB
 	auto aris_ecrt_scan(EthercatMaster *master)->int { return 0;}
 	auto aris_ecrt_master_request(EthercatMaster *master)->void {}
@@ -155,7 +153,7 @@ namespace aris::control
 					for (unsigned int entry_pos = 0; entry_pos < ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos].n_entries; ++entry_pos)
 					{
 						auto &info = ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos][entry_pos];
-						sla.smPool()[sync_pos][pdo_pos].add<PdoEntry>("entry", info.index, info.subindex, info.bit_length / 8);
+						sla.smPool()[sync_pos][pdo_pos].add<PdoEntry>("entry", info.index, info.subindex, info.bit_length);
 					}
 				}
 			}
@@ -163,7 +161,6 @@ namespace aris::control
 
 		return 0;
 	}
-
 
 	struct MasterHandle
 	{
@@ -180,8 +177,6 @@ namespace aris::control
 		std::uint32_t offset;
 		std::uint32_t bit_position;
 	};
-	//using PdoEntryHandle = std::uint32_t;
-
 
 	auto aris_ecrt_master_request(EthercatMaster *master)->void
 	{
@@ -211,12 +206,11 @@ namespace aris::control
 					ec_pdo_entry_info_vec_vec_vec.back().push_back(std::vector<ec_pdo_entry_info_t>());
 					for (auto &entry : pdo)
 					{
-						PdoEntryHandle pe_handle;
+						entry.ecHandle() = PdoEntryHandle();
+						auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry.ecHandle());
 
 						ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0x00, slave.phyId(), slave.vendorID(), slave.productCode(), entry.index(), entry.subindex(), &pe_handle.offset, &pe_handle.bit_position });
-						ec_pdo_entry_info_vec_vec_vec.back().back().push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.size() * 8) });
-
-						entry.ecHandle() = pe_handle;
+						ec_pdo_entry_info_vec_vec_vec.back().back().push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.bitSize()) });
 					}
 
 					ec_pdo_info_vec_vec.back().push_back(ec_pdo_info_t{ pdo.index(), 
@@ -279,14 +273,14 @@ namespace aris::control
 		auto pd = std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_;
 		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
 
-		read_bit(data, bit_size, pd, pe_handle.offset, pe_handle.bit_position)
+		read_bit(reinterpret_cast<char*>(data), bit_size, reinterpret_cast<const char*>(pd), pe_handle.offset, pe_handle.bit_position);
 	}
 	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data, int bit_size)->void
 	{
 		auto pd = std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_;
 		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
 
-		write_bit(data, bit_size, pd, pe_handle.offset, pe_handle.bit_position)
+		write_bit(reinterpret_cast<const char*>(data), bit_size, reinterpret_cast<char*>(pd), pe_handle.offset, pe_handle.bit_position);
 	}
 
 	auto aris_ecrt_sdo_config(std::any& master, std::any& slave, std::uint16_t index, std::uint8_t subindex,
