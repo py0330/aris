@@ -36,16 +36,6 @@ void test_scan()
 		mst.scan();
 
 		aris::control::Master::RtStasticsData stastics;
-
-
-		std::int64_t time_series[2][10];
-
-
-
-
-
-
-
 		mst.setControlStrategy([&]()
 		{
 			static int count{ 0 };
@@ -304,8 +294,132 @@ void test_sdo_code()
 
 }
 
+namespace aris::control
+{
+	void read_bit(char *data, int bit_size, const char *pd, int offset, int bit_position);
+	void write_bit(const char *data, int bit_size, char *pd, int offset, int bit_position);
+}
+void test_bit()
+{
+	union T
+	{
+		char data[4];
+		std::uint32_t integer;
+	};
+	
+	const char pd[8] = {0b00110101, 0b101110111, 0b10010011, 0b11000110, 0b01010101, 0b10101010, 0b11110000, 0b00001111};
+	char r_pd[8];
+
+	T t1;
+	t1.data[0] = (char)0b1110'0011;
+	t1.data[1] = (char)0b0010'1010;
+	t1.data[2] = (char)0b1111'1111;
+	t1.data[3] = (char)0b1111'1111;
+	char data1[4] = { 0xff,0xff,0xff,0xff };
+	aris::control::read_bit(data1, 17, pd, 2, 7);
+	if (*reinterpret_cast<std::uint32_t*>(data1) != t1.integer)std::cout << "read bit failed" << std::endl;
+	std::fill_n(r_pd, 8, std::uint8_t(0x00));
+	aris::control::write_bit(data1, 17, r_pd, 2, 7);
+	const char r1[8]{ 0x00, 0x00, 0b0000000'1, 0b11000110, 0b01010101, 0x00, 0x00, 0x00 };
+	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r1))std::cout << "write bit failed" << std::endl;
+
+	T t2;
+	t2.data[0] = (char)0b1110'0011;
+	t2.data[1] = (char)0b0010'1010;
+	t2.data[2] = (char)0b1000'0000;
+	t2.data[3] = (char)0b0000'0000;
+	char data2[4] = { 0x00,0x00,0x00,0x00 };
+	aris::control::read_bit(data2, 17, pd, 2, 7);
+	if (*reinterpret_cast<std::uint32_t*>(data2) != t2.integer)std::cout << "read bit failed" << std::endl;
+	std::fill_n(r_pd, 8, std::uint8_t(0xff));
+	aris::control::write_bit(data2, 17, r_pd, 2, 7);
+	const char r2[8]{ 0xff, 0xff, 0b1111111'1, 0b11000110, 0b01010101, 0xff, 0xff, 0xff };
+	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r2))std::cout << "write bit failed" << std::endl;
+
+	T t3;
+	t3.data[0] = (char)0b1110'0011;
+	t3.data[1] = (char)0b0010'1010;
+	t3.data[2] = (char)0b1101'0111;
+	t3.data[3] = (char)0b1111'1111;
+	char data3[4] = { 0xff,0xff,0xff,0xff };
+	aris::control::read_bit(data3, 22, pd, 2, 7);
+	if (*reinterpret_cast<std::uint32_t*>(data3) != t3.integer)std::cout << "read bit failed" << std::endl;
+	std::fill_n(r_pd, 8, std::uint8_t(0x00));
+	aris::control::write_bit(data3, 22, r_pd, 2, 7);
+	const char r3[8]{ 0x00, 0x00, 0b0000000'1, 0b11000110, 0b01010101, 0b10101'000, 0x00, 0x00 };
+	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r3))std::cout << "write bit failed" << std::endl;
+
+	T t4;
+	t4.data[0] = (char)0b1110'0011;
+	t4.data[1] = (char)0b0010'1010;
+	t4.data[2] = (char)0b1101'0100;
+	t4.data[3] = (char)0b0000'0000;
+	char data4[4] = { 0x00,0x00,0x00,0x00 };
+	aris::control::read_bit(data4, 22, pd, 2, 7);
+	if (*reinterpret_cast<std::uint32_t*>(data4) != t4.integer)std::cout << "read bit failed" << std::endl;
+	std::fill_n(r_pd, 8, std::uint8_t(0xff));
+	aris::control::write_bit(data4, 22, r_pd, 2, 7);
+	const char r4[8]{ 0xff, 0xff, 0b1111111'1, 0b11000110, 0b01010101, 0b10101'111, 0xff, 0xff };
+	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r4))std::cout << "write bit failed" << std::endl;
+	
+	T t5;
+	t5.data[0] = (char)0b0100'1111;
+	t5.data[1] = (char)0b0001'1001;
+	t5.data[2] = (char)0b0111'1111;
+	t5.data[3] = (char)0b1111'1111;
+	char data5[4] = { 0xff,0xff,0xff,0xff };
+	aris::control::read_bit(data5, 17, pd, 2, 2);
+	if (*reinterpret_cast<std::uint32_t*>(data5) != t5.integer)std::cout << "read bit failed" << std::endl;
+	std::fill_n(r_pd, 8, std::uint8_t(0x00));
+	aris::control::write_bit(data5, 17, r_pd, 2, 2);
+	const char r5[8]{ 0x00, 0x00, 0b00'010011, 0b11000110, 0b010'00000, 0x00, 0x00, 0x00 };
+	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r5))std::cout << "write bit failed" << std::endl;
+
+	T t6;
+	t6.data[0] = (char)0b0100'1111;
+	t6.data[1] = (char)0b0001'1001;
+	t6.data[2] = (char)0b0000'0000;
+	t6.data[3] = (char)0b0000'0000;
+	char data6[4] = { 0x00,0x00,0x00,0x00 };
+	aris::control::read_bit(data6, 17, pd, 2, 2);
+	if (*reinterpret_cast<std::uint32_t*>(data6) != t6.integer)std::cout << "read bit failed" << std::endl;
+	std::fill_n(r_pd, 8, std::uint8_t(0xff));
+	aris::control::write_bit(data6, 17, r_pd, 2, 2);
+	const char r6[8]{ 0xff, 0xff, 0b11'010011, 0b11000110, 0b010'11111, 0xff, 0xff, 0xff };
+	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r6))std::cout << "write bit failed" << std::endl;
+
+	T t7;
+	t7.data[0] = (char)0b0100'1111;
+	t7.data[1] = (char)0b0001'1001;
+	t7.data[2] = (char)0b0101'0111;
+	t7.data[3] = (char)0b1111'1111;
+	char data7[4] = { 0xff,0xff,0xff,0xff };
+	aris::control::read_bit(data7, 22, pd, 2, 2);
+	if (*reinterpret_cast<std::uint32_t*>(data7) != t7.integer)std::cout << "read bit failed" << std::endl;
+	std::fill_n(r_pd, 8, std::uint8_t(0x00));
+	aris::control::write_bit(data7, 22, r_pd, 2, 2);
+	const char r7[8]{ 0x00, 0x00, 0b00'010011, 0b11000110, 0b01'010101, 0x00, 0x00, 0x00 };
+	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r7))std::cout << "write bit failed" << std::endl;
+
+	T t8;
+	t8.data[0] = (char)0b0100'1111;
+	t8.data[1] = (char)0b0001'1001;
+	t8.data[2] = (char)0b0101'0100;
+	t8.data[3] = (char)0b0000'0000;
+	char data8[8] = { 0x00,0x00,0x00,0x00 };
+	aris::control::read_bit(data8, 22, pd, 2, 2);
+	if (*reinterpret_cast<std::uint32_t*>(data8) != t8.integer)std::cout << "read bit failed" << std::endl;
+	std::fill_n(r_pd, 8, std::uint8_t(0xff));
+	aris::control::write_bit(data8, 22, r_pd, 2, 2);
+	const char r8[8]{ 0xff, 0xff, 0b11'010011, 0b11000110, 0b01'010101, 0xff, 0xff, 0xff };
+	if (*reinterpret_cast<std::uint64_t*>(r_pd) != *reinterpret_cast<const std::uint64_t*>(r8))std::cout << "write bit failed" << std::endl;
+}
+
+
 void test_control_ethercat()
 {
+	test_bit();
+	
 	//test_pdo();
 	test_scan();
 	//test_pdo_xml();
