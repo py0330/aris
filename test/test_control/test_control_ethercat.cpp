@@ -67,14 +67,20 @@ void test_scan()
 					}
 				}
 
-				mst.mout() << "---------------------------------------------------------" << std::dec << std::endl;
-				mst.mout() << "total count:" << stastics.total_count << std::endl;
-				mst.mout() << "avg cost   :" << stastics.avg_time_consumed << std::endl;
-				mst.mout() << "max cost   :" << stastics.max_time_consumed << std::endl;
-				mst.mout() << "max count  :" << stastics.max_time_occur_count << std::endl;
-				mst.mout() << "min cost   :" << stastics.min_time_consumed << std::endl;
-				mst.mout() << "min count  :" << stastics.min_time_occur_count << std::endl;
-				mst.mout() << "overruns   :" << stastics.overrun_count << std::endl;
+
+				static std::int64_t all_max{ 0 };
+				all_max = std::max(stastics.max_time_consumed, all_max);
+
+				mst.mout() << "------------------------------------------------------------------------------------------------\n"
+					<< "total count|   avg cost|  max count|   max cost|  min count|   min cost|   overruns|    all max|\n" << std::dec
+					<< std::setw(11) << stastics.total_count << "|"
+					<< std::setw(11) << stastics.avg_time_consumed << "|"
+					<< std::setw(11) << stastics.max_time_occur_count << "|"
+					<< std::setw(11) << stastics.max_time_consumed << "|"
+					<< std::setw(11) << stastics.min_time_occur_count << "|"
+					<< std::setw(11) << stastics.min_time_consumed << "|"
+					<< std::setw(11) << stastics.overrun_count << "|" 
+					<< std::setw(11) << all_max << "|" << std::endl;
 
 				mst.resetRtStasticData(&stastics);
 

@@ -52,20 +52,21 @@ namespace aris::control
 
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
 
-
-			std::int64_t time_series[10];
+			///////////////////////////////////////////////////////////////
+			//std::int64_t time_series[10];
+			///////////////////////////////////////////////////////////////
 
 			while (mst.imp_->is_rt_thread_running_)
 			{
 				///////////////////////////////////////////////////////////////
-				time_series[1] = aris_rt_time_since_last_time();
+				//time_series[1] = aris_rt_time_since_last_time();
 				///////////////////////////////////////////////////////////////
 
 				// receive //
 				mst.recv();
 
 				///////////////////////////////////////////////////////////////
-				time_series[2] = aris_rt_time_since_last_time();
+				//time_series[2] = aris_rt_time_since_last_time();
 				///////////////////////////////////////////////////////////////
 
 
@@ -73,7 +74,7 @@ namespace aris::control
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
 
 				///////////////////////////////////////////////////////////////
-				time_series[3] = aris_rt_time_since_last_time();
+				//time_series[3] = aris_rt_time_since_last_time();
 				///////////////////////////////////////////////////////////////
 
 
@@ -81,7 +82,7 @@ namespace aris::control
 				mst.sync();
 
 				///////////////////////////////////////////////////////////////
-				time_series[4] = aris_rt_time_since_last_time();
+				//time_series[4] = aris_rt_time_since_last_time();
 				///////////////////////////////////////////////////////////////
 
 
@@ -91,7 +92,7 @@ namespace aris::control
 
 
 				///////////////////////////////////////////////////////////////
-				time_series[5] = aris_rt_time_since_last_time();
+				//time_series[5] = aris_rt_time_since_last_time();
 				///////////////////////////////////////////////////////////////
 
 
@@ -112,7 +113,7 @@ namespace aris::control
 				}
 
 				///////////////////////////////////////////////////////////////
-				time_series[6] = aris_rt_time_since_last_time();
+				//time_series[6] = aris_rt_time_since_last_time();
 				///////////////////////////////////////////////////////////////
 
 
@@ -128,7 +129,7 @@ namespace aris::control
 				}
 
 				///////////////////////////////////////////////////////////////
-				time_series[7] = aris_rt_time_since_last_time();
+				/*time_series[7] = aris_rt_time_since_last_time();
 				
 				if (time_series[7] > 500000)
 				{
@@ -143,7 +144,7 @@ namespace aris::control
 				}
 				
 				
-				
+				*/
 				///////////////////////////////////////////////////////////////
 
 
@@ -153,7 +154,7 @@ namespace aris::control
 				aris_rt_task_wait_period();
 
 				///////////////////////////////////////////////////////////////
-				time_series[0] = aris_rt_time_since_last_time();
+				//time_series[0] = aris_rt_time_since_last_time();
 				///////////////////////////////////////////////////////////////
 			}
 
