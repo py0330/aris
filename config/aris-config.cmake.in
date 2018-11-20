@@ -1,0 +1,6 @@
+@PACKAGE_INIT@ 
+
+set_and_check(aris_INCLUDE_DIRS "@aris_INCLUDE_DIRS@")
+set_and_check(aris_LIBRARY_DIRS "@aris_LIBRARY_DIRS@")
+set(aris_LIBRARIES "@aris_LIBRARIES@")
+include("${CMAKE_CURRENT_LIST_DIR}/aris-targets.cmake" )

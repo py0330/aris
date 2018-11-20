@@ -159,6 +159,7 @@ target_include_directories(aris_robot PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_robot/>
 	$<INSTALL_INTERFACE:include>)
 
+## install targets ##
 install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
 	PUBLIC_HEADER DESTINATION include
 	ARCHIVE 
@@ -172,8 +173,28 @@ install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_se
 
 install(EXPORT aris-targets
 	NAMESPACE aris::
-	FILE aris-config.cmake
+	FILE aris-targets.cmake
 	DESTINATION share/aris/cmake)
+
+## install config ##
+include(CMakePackageConfigHelpers)
+set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
+set(aris_LIBRARY_DIRS "${CMAKE_INSTALL_PREFIX}/lib")
+set(aris_LIBRARIES aris::aris_robot aris::aris_server aris::aris_sensor aris::aris_plan aris::aris_dynamic aris::aris_control aris::aris_core)
+
+# Destination of the installed config files (relative path):
+set(CMAKE_CONFIG_DEST "share/aris/cmake" )
+# We configure our template. The template is described later.
+configure_package_config_file (                         
+        "config/aris-config.cmake.in"
+        # Important to write in CMAKE_BINARY_DIR if you want the registry
+        # mechanism to work:
+        "${CMAKE_BINARY_DIR}/aris-config.cmake"
+        INSTALL_DESTINATION "${CMAKE_CONFIG_DEST}"
+        PATH_VARS aris_INCLUDE_DIRS )
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aris-config.cmake
+        DESTINATION share/aris/cmake)
 
 #export(EXPORT aris-targets FILE aris-config.cmake)
 #export(PACKAGE aris)
