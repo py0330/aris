@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(aris VERSION 1.0.0)
+project(aris VERSION 1.5.0)
 
 # set binary and library folders
 set(EXECUTABLE_OUTPUT_PATH bin)
@@ -67,35 +67,25 @@ endif(UNIX)
 
 # set install directories
 if(UNIX)
-	set(CMAKE_INSTALL_PREFIX "/usr/aris")
+	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${PROJECT_VERSION}")
 endif(UNIX)
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/aris")
+	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${PROJECT_VERSION}")
 endif(WIN32)
 
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
-
-install(DIRECTORY sh DESTINATION .)
-install(FILES src/aris.h DESTINATION include)
 
 # aris core project
 file(GLOB HEADERS src/aris_core/*.h src/aris_core/aris_core.h)
 file(GLOB SOURCES src/aris_core/*.cpp)
 add_library(aris_core STATIC ${HEADERS} ${SOURCES})
 set_target_properties(aris_core PROPERTIES PUBLIC_HEADER "${HEADERS}")
-target_include_directories(aris_core PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
-	$<INSTALL_INTERFACE:include>)
 
 # aris control project
 file(GLOB HEADERS src/aris_control/*.h src/aris_control/aris_control.h)
 file(GLOB SOURCES src/aris_control/*.cpp)
 add_library(aris_control STATIC ${HEADERS} ${SOURCES})
 set_target_properties(aris_control PROPERTIES PUBLIC_HEADER "${HEADERS}")
-target_include_directories(aris_control PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
-	$<INSTALL_INTERFACE:include>)
 install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
 
 # aris dynamic project
@@ -103,98 +93,60 @@ file(GLOB HEADERS src/aris_dynamic/*.h src/aris_dynamic/aris_dynamic.h)
 file(GLOB SOURCES src/aris_dynamic/*.cpp)
 add_library(aris_dynamic STATIC ${HEADERS} ${SOURCES})
 set_target_properties(aris_dynamic PROPERTIES PUBLIC_HEADER "${HEADERS}")
-target_include_directories(aris_dynamic PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_dynamic/>
-	$<INSTALL_INTERFACE:include>)
 
 # aris plan project
 file(GLOB HEADERS src/aris_plan/*.h src/aris_plan/aris_plan.h)
 file(GLOB SOURCES src/aris_plan/*.cpp)
 add_library(aris_plan STATIC ${HEADERS} ${SOURCES})
 set_target_properties(aris_plan PROPERTIES PUBLIC_HEADER "${HEADERS}")
-target_include_directories(aris_plan PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_dynamic/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_plan/>
-	$<INSTALL_INTERFACE:include>)
 
 # aris sensor project
 file(GLOB HEADERS src/aris_sensor/*.h src/aris_sensor/aris_sensor.h)
 file(GLOB SOURCES src/aris_sensor/*.cpp)
 add_library(aris_sensor STATIC ${HEADERS} ${SOURCES})
 set_target_properties(aris_sensor PROPERTIES PUBLIC_HEADER "${HEADERS}")
-target_include_directories(aris_sensor PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_sensor/>
-	$<INSTALL_INTERFACE:include>)
 
 # aris server project
 file(GLOB HEADERS src/aris_server/*.h src/aris_server/aris_server.h)
 file(GLOB SOURCES src/aris_server/*.cpp)
 add_library(aris_server STATIC ${HEADERS} ${SOURCES})
 set_target_properties(aris_server PROPERTIES PUBLIC_HEADER "${HEADERS}")
-target_include_directories(aris_server PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_dynamic/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_plan/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_sensor/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_server/>
-	$<INSTALL_INTERFACE:include>)
 	
 # aris robot project
 file(GLOB HEADERS src/aris_robot/*.h src/aris_robot/aris_robot.h)
 file(GLOB SOURCES src/aris_robot/*.cpp)
 add_library(aris_robot STATIC ${HEADERS} ${SOURCES})
 set_target_properties(aris_robot PROPERTIES PUBLIC_HEADER "${HEADERS}")
-target_include_directories(aris_robot PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_core/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_control/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_dynamic/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_plan/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_sensor/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_server/>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/aris_robot/>
-	$<INSTALL_INTERFACE:include>)
 
 ## install targets ##
+install(DIRECTORY sh DESTINATION .)
+install(FILES src/aris.h DESTINATION include)
+
 install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
-	PUBLIC_HEADER DESTINATION include
-	ARCHIVE 
-	CONFIGURATIONS Debug DESTINATION lib/debug)
+	PUBLIC_HEADER DESTINATION "include"
+	ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
 
 install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
 	EXPORT aris-targets
-	PUBLIC_HEADER DESTINATION include
-	ARCHIVE 
-	CONFIGURATIONS Release DESTINATION lib/release)
+	PUBLIC_HEADER DESTINATION "include"
+	ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
 
-install(EXPORT aris-targets
-	NAMESPACE aris::
-	FILE aris-targets.cmake
-	DESTINATION share/aris/cmake)
+install(EXPORT aris-targets	NAMESPACE aris:: FILE aris-targets.cmake DESTINATION "share/aris/cmake")
 
 ## install config ##
 include(CMakePackageConfigHelpers)
 set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
-set(aris_LIBRARY_DIRS "${CMAKE_INSTALL_PREFIX}/lib")
 set(aris_LIBRARIES aris::aris_robot aris::aris_server aris::aris_sensor aris::aris_plan aris::aris_dynamic aris::aris_control aris::aris_core)
 
 # Destination of the installed config files (relative path):
-set(CMAKE_CONFIG_DEST "share/aris/cmake" )
-# We configure our template. The template is described later.
-configure_package_config_file (                         
+set(CMAKE_CONFIG_DEST "share/aris/cmake")
+configure_package_config_file(
         "config/aris-config.cmake.in"
-        # Important to write in CMAKE_BINARY_DIR if you want the registry
-        # mechanism to work:
         "${CMAKE_BINARY_DIR}/aris-config.cmake"
         INSTALL_DESTINATION "${CMAKE_CONFIG_DEST}"
-        PATH_VARS aris_INCLUDE_DIRS )
+        PATH_VARS aris_INCLUDE_DIRS)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aris-config.cmake
-        DESTINATION share/aris/cmake)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/aris-config.cmake" DESTINATION "share/aris/cmake")
 
 #export(EXPORT aris-targets FILE aris-config.cmake)
 #export(PACKAGE aris)
