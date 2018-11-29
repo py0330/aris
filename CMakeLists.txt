@@ -33,7 +33,7 @@ if(UNIX)
 		
 		# copy this file to you project/config
 		set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
-		find_package(Xenomai REQUIRED)
+		find_package(Xenomai REQUIRED QUIET)
 		include_directories(${XENOMAI_INCLUDE_DIRS})
 		set(RELY_LINK_LIB ${XENOMAI_LIBRARIES} ${RELY_LINK_LIB})
 	endif(USE_XENOMAI)
@@ -136,25 +136,15 @@ install(EXPORT aris-targets	NAMESPACE aris:: FILE aris-targets.cmake DESTINATION
 ## install config ##
 include(CMakePackageConfigHelpers)
 set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
-set(aris_LIBRARIES aris::aris_robot aris::aris_server aris::aris_sensor aris::aris_plan aris::aris_dynamic aris::aris_control aris::aris_core)
+set(aris_LIBRARIES aris::aris_robot aris::aris_server aris::aris_sensor aris::aris_plan aris::aris_dynamic aris::aris_control aris::aris_core ${RELY_LINK_LIB})
 
 # Destination of the installed config files (relative path):
 set(CMAKE_CONFIG_DEST "share/aris/cmake")
-configure_package_config_file(
-        "config/aris-config.cmake.in"
-        "${CMAKE_BINARY_DIR}/aris-config.cmake"
+configure_package_config_file("config/aris-config.cmake.in" "${CMAKE_BINARY_DIR}/aris-config.cmake"
         INSTALL_DESTINATION "${CMAKE_CONFIG_DEST}"
         PATH_VARS aris_INCLUDE_DIRS)
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/aris-config.cmake" DESTINATION "share/aris/cmake")
-
-#export(EXPORT aris-targets FILE aris-config.cmake)
-#export(PACKAGE aris)
-#export(TARGETS aris_robot aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core FILE aris-config.cmake)
-#export(TARGETS aris_robot aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core FILE aris-config.cmake)
-#export(EXPORT aris-targets)
-#export(TARGETS aris_robot aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core FILE aris-config.cmake)
-#export(PACKAGE aris)
 
 ################################### build tests for aris ####################################
 enable_testing()
