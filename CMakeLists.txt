@@ -123,20 +123,17 @@ install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
 install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
-	PUBLIC_HEADER DESTINATION "include"
-	ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
-
-install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
 	EXPORT aris-targets
 	PUBLIC_HEADER DESTINATION "include"
-	ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
+	ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug" CONFIGURATIONS Release DESTINATION "lib/release")
 
-install(EXPORT aris-targets	NAMESPACE aris:: FILE aris-targets.cmake DESTINATION "share/aris/cmake")
+install(EXPORT aris-targets NAMESPACE aris:: FILE aris-targets.cmake DESTINATION "share/aris/cmake")
 
 ## install config ##
 include(CMakePackageConfigHelpers)
 set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
-set(aris_LIBRARIES aris::aris_robot aris::aris_server aris::aris_sensor aris::aris_plan aris::aris_dynamic aris::aris_control aris::aris_core ${RELY_LINK_LIB})
+set(aris_LIBRARIES aris::aris_robot	aris::aris_server aris::aris_sensor	aris::aris_plan	aris::aris_dynamic aris::aris_control aris::aris_core ${RELY_LINK_LIB})
+
 
 # Destination of the installed config files (relative path):
 set(CMAKE_CONFIG_DEST "share/aris/cmake")
