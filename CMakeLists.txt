@@ -125,7 +125,7 @@ install(FILES src/aris.h DESTINATION include)
 install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
 	EXPORT aris-targets
 	PUBLIC_HEADER DESTINATION "include"
-	ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug" CONFIGURATIONS Release DESTINATION "lib/release")
+	CONFIGURATIONS Debug ARCHIVE DESTINATION "lib/debug" CONFIGURATIONS Release ARCHIVE DESTINATION "lib/release")
 
 install(EXPORT aris-targets NAMESPACE aris:: FILE aris-targets.cmake DESTINATION "share/aris/cmake")
 
@@ -133,7 +133,6 @@ install(EXPORT aris-targets NAMESPACE aris:: FILE aris-targets.cmake DESTINATION
 include(CMakePackageConfigHelpers)
 set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
 set(aris_LIBRARIES aris::aris_robot	aris::aris_server aris::aris_sensor	aris::aris_plan	aris::aris_dynamic aris::aris_control aris::aris_core ${RELY_LINK_LIB})
-
 
 # Destination of the installed config files (relative path):
 set(CMAKE_CONFIG_DEST "share/aris/cmake")
@@ -151,21 +150,21 @@ file(GLOB SOURCES test/test_core/*)
 add_executable(test_core ${SOURCES})
 target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
 add_test(NAME test_core COMMAND test_core)
-set_tests_properties (test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+set_tests_properties(test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 # test control
 file(GLOB SOURCES test/test_control/*)
 add_executable(test_control ${SOURCES})
 target_link_libraries(test_control aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_control COMMAND test_control)
-set_tests_properties (test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+set_tests_properties(test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 # test dynamic
 file(GLOB SOURCES test/test_dynamic/*)
 add_executable(test_dynamic ${SOURCES})
 target_link_libraries(test_dynamic aris_dynamic aris_core ${RELY_LINK_LIB})
 add_test(NAME test_dynamic COMMAND test_dynamic)
-set_tests_properties (test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+set_tests_properties(test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 install(DIRECTORY test/test_dynamic/resource/ DESTINATION resource/test_dynamic)
 
 # test plan
@@ -173,21 +172,21 @@ file(GLOB SOURCES test/test_plan/*)
 add_executable(test_plan ${SOURCES})
 target_link_libraries(test_plan aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_plan COMMAND test_plan)
-set_tests_properties (test_plan PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+set_tests_properties(test_plan PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 # test server
 file(GLOB SOURCES test/test_server/*)
 add_executable(test_server ${SOURCES})
 target_link_libraries(test_server aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_server COMMAND test_server)
-set_tests_properties (test_server PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+set_tests_properties(test_server PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 # test robot
 file(GLOB SOURCES test/test_robot/*)
 add_executable(test_robot ${SOURCES})
 target_link_libraries(test_robot aris_robot aris_server aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
 add_test(NAME test_robot COMMAND test_robot)
-set_tests_properties (test_robot PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+set_tests_properties(test_robot PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 
 add_executable(rbt test/rbt/client.cpp)
 target_link_libraries(rbt ${ALL_LINK_LIB})
