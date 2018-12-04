@@ -123,16 +123,38 @@ install(DIRECTORY sh DESTINATION .)
 install(FILES src/aris.h DESTINATION include)
 
 install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
-	EXPORT aris-targets
+	EXPORT aris-targets-debug
 	PUBLIC_HEADER DESTINATION "include"
-	CONFIGURATIONS Debug ARCHIVE DESTINATION "lib/debug" CONFIGURATIONS Release ARCHIVE DESTINATION "lib/release")
+	ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
 
-install(EXPORT aris-targets NAMESPACE aris:: FILE aris-targets.cmake DESTINATION "share/aris/cmake")
+install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
+	EXPORT aris-targets-release
+	PUBLIC_HEADER DESTINATION "include"
+	ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
+
+install(EXPORT aris-targets-release NAMESPACE aris:: FILE aris-targets-release.cmake DESTINATION "share/aris/cmake")
+install(EXPORT aris-targets-debug NAMESPACE aris::debug:: FILE aris-targets-debug.cmake DESTINATION "share/aris/cmake")
 
 ## install config ##
 include(CMakePackageConfigHelpers)
 set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
-set(aris_LIBRARIES aris::aris_robot	aris::aris_server aris::aris_sensor	aris::aris_plan	aris::aris_dynamic aris::aris_control aris::aris_core ${RELY_LINK_LIB})
+#set(aris_LIBRARIES optimized aris::aris_robot aris::aris_server aris::aris_sensor aris::aris_plan aris::aris_dynamic aris::aris_control aris::aris_core
+#					debug aris::debug::aris_robot
+#					aris::debug::aris_server
+#					aris::debug::aris_sensor
+#					aris::debug::aris_plan
+#					aris::debug::aris_dynamic
+#					aris::debug::aris_control
+#					aris::debug::aris_core ${RELY_LINK_LIB})
+
+set(aris_LIBRARIES  optimized aris::aris_robot   debug aris::debug::aris_robot
+					optimized aris::aris_server  debug aris::debug::aris_server
+					optimized aris::aris_sensor  debug aris::debug::aris_sensor
+					optimized aris::aris_plan    debug aris::debug::aris_plan
+					optimized aris::aris_dynamic debug aris::debug::aris_dynamic
+					optimized aris::aris_control debug aris::debug::aris_control
+					optimized aris::aris_core    debug aris::debug::aris_core
+					${RELY_LINK_LIB})
 
 # Destination of the installed config files (relative path):
 set(CMAKE_CONFIG_DEST "share/aris/cmake")
