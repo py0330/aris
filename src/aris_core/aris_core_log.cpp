@@ -50,7 +50,7 @@ namespace aris::core
 
 			if (!log_stream_)logStream();
 
-			msg_.resize(msg_.capacity() - (epptr() - pptr()));
+			msg_.resize(msg_.capacity() - static_cast<std::int32_t>(epptr() - pptr()));
 			*log_stream_ << msg_.toString() <<std::flush;
 
 			msg_.resize(0);

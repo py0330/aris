@@ -31,7 +31,7 @@ namespace aris::dynamic
 
 		const double j1_axis[6]{ 0.0, 0.0, 1.0 };
 		const double j2_axis[6]{ 0.0, 1.0, 0.0 };
-		const double j3_axis[6]{ 0.0, -1.0, 0.0 };
+		const double j3_axis[6]{ 0.0, 1.0, 0.0 };
 		const double j4_axis[6]{ 1.0, 0.0, 0.0 };
 		const double j5_axis[6]{ 0.0, 1.0, 0.0 };
 		const double j6_axis[6]{ -1.0, 0.0, 0.0 };
@@ -52,7 +52,7 @@ namespace aris::dynamic
 		auto &m6 = model->addMotion(j6);
 
 		// add ee general motion //
-		double pq_ee_i[]{ 0.397, 0.0, 0.6295, 0.0, 0.0, 0.0, 1.0 };
+		double pq_ee_i[]{ 0.398, 0.0, 0.6295, 0.0, 0.0, 0.0, 1.0 };
 		double pm_ee_i[16];
 		double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 
@@ -81,7 +81,7 @@ namespace aris::dynamic
 		inverse_kinematic.allocateMemory();
 		forward_kinematic.allocateMemory();
 
-		inverse_kinematic.setWhichRoot(5);
+		inverse_kinematic.setWhichRoot(8);
 
 		return model;
 	}

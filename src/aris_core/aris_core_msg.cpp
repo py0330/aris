@@ -80,7 +80,7 @@ namespace aris::core
 	}
 	auto MsgStreamBuf::sync()->int
 	{
-		msg_->resize(msg_->capacity() - (epptr() - pptr()));
+		msg_->resize(msg_->capacity() - static_cast<std::int32_t>(epptr() - pptr()));
 		return 0;
 	}
 	auto MsgStreamBuf::reset()->void { setp(msg_->data(), msg_->data() + msg_->capacity()); }
