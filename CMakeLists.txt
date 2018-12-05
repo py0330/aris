@@ -2,10 +2,17 @@ cmake_minimum_required(VERSION 3.12)
 
 project(aris VERSION 1.5.0)
 
+# options #
+option(BUILD_DEMOS "build aris demos" OFF)
+option(BUILD_TESTS "build aris tests" OFF)
+if(UNIX)
+	option (USE_XENOMAI "Use Xenomai 3 RT system" OFF)
+	option (USE_ETHERLAB "Use Etherlab Ethercat drivers" OFF)
+endif(UNIX)
+
 # set binary and library folders
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
-set(CMAKE_CXX_STANDARD 17)
 
 # set definitions to disable some warning
 if(WIN32)
@@ -16,6 +23,7 @@ if(UNIX)
 endif(UNIX)
 
 # set debug and release options
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
@@ -23,7 +31,6 @@ set(CMAKE_BUILD_TYPE "Release")
 if(UNIX)
 	set(RELY_LINK_LIB pthread stdc++fs)#pthread is needed for concurrency
 
-	option (USE_XENOMAI "Use Xenomai RT system" OFF)
 	if(USE_XENOMAI)
 		message("using xenomai")
 		
@@ -37,8 +44,7 @@ if(UNIX)
 		include_directories(${XENOMAI_INCLUDE_DIRS})
 		set(RELY_LINK_LIB ${XENOMAI_LIBRARIES} ${RELY_LINK_LIB})
 	endif(USE_XENOMAI)
-
-	option (USE_ETHERLAB "Use Etherlab Ethercat drivers" OFF)
+	
 	if(USE_ETHERLAB)
 		message("using etherlab")
 		add_definitions(-DUSE_ETHERLAB)
@@ -75,186 +81,68 @@ endif(WIN32)
 
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
-# aris core project
-file(GLOB HEADERS src/aris_core/*.h src/aris_core/aris_core.h)
-file(GLOB SOURCES src/aris_core/*.cpp)
-add_library(aris_core STATIC ${HEADERS} ${SOURCES})
-set_target_properties(aris_core PROPERTIES PUBLIC_HEADER "${HEADERS}")
-
-# aris control project
-file(GLOB HEADERS src/aris_control/*.h src/aris_control/aris_control.h)
-file(GLOB SOURCES src/aris_control/*.cpp)
-add_library(aris_control STATIC ${HEADERS} ${SOURCES})
-set_target_properties(aris_control PROPERTIES PUBLIC_HEADER "${HEADERS}")
-install(DIRECTORY src/aris_control/resource/ DESTINATION resource/aris_control)
-
-# aris dynamic project
-file(GLOB HEADERS src/aris_dynamic/*.h src/aris_dynamic/aris_dynamic.h)
-file(GLOB SOURCES src/aris_dynamic/*.cpp)
-add_library(aris_dynamic STATIC ${HEADERS} ${SOURCES})
-set_target_properties(aris_dynamic PROPERTIES PUBLIC_HEADER "${HEADERS}")
-
-# aris plan project
-file(GLOB HEADERS src/aris_plan/*.h src/aris_plan/aris_plan.h)
-file(GLOB SOURCES src/aris_plan/*.cpp)
-add_library(aris_plan STATIC ${HEADERS} ${SOURCES})
-set_target_properties(aris_plan PROPERTIES PUBLIC_HEADER "${HEADERS}")
-
-# aris sensor project
-file(GLOB HEADERS src/aris_sensor/*.h src/aris_sensor/aris_sensor.h)
-file(GLOB SOURCES src/aris_sensor/*.cpp)
-add_library(aris_sensor STATIC ${HEADERS} ${SOURCES})
-set_target_properties(aris_sensor PROPERTIES PUBLIC_HEADER "${HEADERS}")
-
-# aris server project
-file(GLOB HEADERS src/aris_server/*.h src/aris_server/aris_server.h)
-file(GLOB SOURCES src/aris_server/*.cpp)
-add_library(aris_server STATIC ${HEADERS} ${SOURCES})
-set_target_properties(aris_server PROPERTIES PUBLIC_HEADER "${HEADERS}")
-	
-# aris robot project
-file(GLOB HEADERS src/aris_robot/*.h src/aris_robot/aris_robot.h)
-file(GLOB SOURCES src/aris_robot/*.cpp)
-add_library(aris_robot STATIC ${HEADERS} ${SOURCES})
-set_target_properties(aris_robot PROPERTIES PUBLIC_HEADER "${HEADERS}")
+## build targets ##
+set(ARIS_TARGETS aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server aris_robot)
+foreach(aris_target ${ARIS_TARGETS})
+	file(GLOB HEADERS src/${aris_target}/*.h src/${aris_target}/${aris_target}.h)
+	file(GLOB SOURCES src/${aris_target}/*.cpp)
+	add_library(${aris_target} STATIC ${HEADERS} ${SOURCES})
+	set_target_properties(${aris_target} PROPERTIES PUBLIC_HEADER "${HEADERS}")
+	set(aris_LIBRARIES optimized aris::${aris_target} debug aris::debug::${aris_target} ${aris_LIBRARIES})
+	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/${aris_target}/resource)
+		install(DIRECTORY src/${aris_target}/resource DESTINATION resource/${aris_target})
+	endif()
+endforeach(aris_target)
 
 ## install targets ##
-install(DIRECTORY sh DESTINATION .)
-install(FILES src/aris.h DESTINATION include)
-
-install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
-	EXPORT aris-targets-debug
-	PUBLIC_HEADER DESTINATION "include"
-	ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
-
-install(TARGETS aris_robot aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server
-	EXPORT aris-targets-release
-	PUBLIC_HEADER DESTINATION "include"
-	ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
-
+install(TARGETS ${ARIS_TARGETS} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include" ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
+install(TARGETS ${ARIS_TARGETS} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include" ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
 install(EXPORT aris-targets-release NAMESPACE aris:: FILE aris-targets-release.cmake DESTINATION "share/aris/cmake")
 install(EXPORT aris-targets-debug NAMESPACE aris::debug:: FILE aris-targets-debug.cmake DESTINATION "share/aris/cmake")
+install(FILES src/aris.h DESTINATION include)
 
 ## install config ##
 include(CMakePackageConfigHelpers)
 set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
-#set(aris_LIBRARIES optimized aris::aris_robot aris::aris_server aris::aris_sensor aris::aris_plan aris::aris_dynamic aris::aris_control aris::aris_core
-#					debug aris::debug::aris_robot
-#					aris::debug::aris_server
-#					aris::debug::aris_sensor
-#					aris::debug::aris_plan
-#					aris::debug::aris_dynamic
-#					aris::debug::aris_control
-#					aris::debug::aris_core ${RELY_LINK_LIB})
-
-set(aris_LIBRARIES  optimized aris::aris_robot   debug aris::debug::aris_robot
-					optimized aris::aris_server  debug aris::debug::aris_server
-					optimized aris::aris_sensor  debug aris::debug::aris_sensor
-					optimized aris::aris_plan    debug aris::debug::aris_plan
-					optimized aris::aris_dynamic debug aris::debug::aris_dynamic
-					optimized aris::aris_control debug aris::debug::aris_control
-					optimized aris::aris_core    debug aris::debug::aris_core
-					${RELY_LINK_LIB})
-
-# Destination of the installed config files (relative path):
-set(CMAKE_CONFIG_DEST "share/aris/cmake")
-configure_package_config_file("config/aris-config.cmake.in" "${CMAKE_BINARY_DIR}/aris-config.cmake"
-        INSTALL_DESTINATION "${CMAKE_CONFIG_DEST}"
-        PATH_VARS aris_INCLUDE_DIRS)
-
+set(aris_LIBRARIES  ${aris_LIBRARIES} ${RELY_LINK_LIB})
+configure_package_config_file("config/aris-config.cmake.in" "${CMAKE_BINARY_DIR}/aris-config.cmake" INSTALL_DESTINATION "share/aris/cmake")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/aris-config.cmake" DESTINATION "share/aris/cmake")
 
+## install tools ##
+install(DIRECTORY sh DESTINATION .)
+
 ################################### build tests for aris ####################################
-enable_testing()
-
-# test core
-file(GLOB SOURCES test/test_core/*)
-add_executable(test_core ${SOURCES})
-target_link_libraries(test_core aris_core ${RELY_LINK_LIB})
-add_test(NAME test_core COMMAND test_core)
-set_tests_properties(test_core PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-
-# test control
-file(GLOB SOURCES test/test_control/*)
-add_executable(test_control ${SOURCES})
-target_link_libraries(test_control aris_control aris_core ${RELY_LINK_LIB})
-add_test(NAME test_control COMMAND test_control)
-set_tests_properties(test_control PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-
-# test dynamic
-file(GLOB SOURCES test/test_dynamic/*)
-add_executable(test_dynamic ${SOURCES})
-target_link_libraries(test_dynamic aris_dynamic aris_core ${RELY_LINK_LIB})
-add_test(NAME test_dynamic COMMAND test_dynamic)
-set_tests_properties(test_dynamic PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-install(DIRECTORY test/test_dynamic/resource/ DESTINATION resource/test_dynamic)
-
-# test plan
-file(GLOB SOURCES test/test_plan/*)
-add_executable(test_plan ${SOURCES})
-target_link_libraries(test_plan aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
-add_test(NAME test_plan COMMAND test_plan)
-set_tests_properties(test_plan PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-
-# test server
-file(GLOB SOURCES test/test_server/*)
-add_executable(test_server ${SOURCES})
-target_link_libraries(test_server aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
-add_test(NAME test_server COMMAND test_server)
-set_tests_properties(test_server PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-
-# test robot
-file(GLOB SOURCES test/test_robot/*)
-add_executable(test_robot ${SOURCES})
-target_link_libraries(test_robot aris_robot aris_server aris_plan aris_dynamic aris_control aris_core ${RELY_LINK_LIB})
-add_test(NAME test_robot COMMAND test_robot)
-set_tests_properties(test_robot PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-
-add_executable(rbt test/rbt/client.cpp)
-target_link_libraries(rbt ${ALL_LINK_LIB})
-
+if(BUILD_TESTS)
+	enable_testing()
+	## build tests ##
+	set(ARIS_TESTS test_core test_control test_dynamic test_plan test_server test_robot)
+	foreach(aris_test ${ARIS_TESTS})
+		file(GLOB SOURCES test/${aris_test}/*)
+		add_executable(${aris_test} ${SOURCES})
+		target_link_libraries(${aris_test} ${ARIS_TARGETS} ${RELY_LINK_LIB})
+		add_test(NAME ${aris_test} COMMAND ${aris_test})
+		set_tests_properties(${aris_test} PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+		if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${aris_test}/resource)
+			install(DIRECTORY test/${aris_test}/resource DESTINATION resource/${aris_test})
+		endif()
+	endforeach(aris_test)
+endif(BUILD_TESTS)
 ################################### build demos for aris ####################################
 # Make demo projects
-set(MAKE_DEMO " ")
-if(MAKE_DEMO)
-
-add_executable(demo_object demo/demo_object/main.cpp)
-target_link_libraries(demo_object aris_core ${RELY_LINK_LIB})
-
-add_executable(demo_command_parser_xml demo/demo_command_parser_xml/main.cpp)
-target_link_libraries(demo_command_parser_xml aris_core ${RELY_LINK_LIB})
-install(DIRECTORY demo/demo_command_parser_xml/resource/ DESTINATION resource/demo_command_parser_xml)
-
-add_executable(demo_command_parser_cpp demo/demo_command_parser_cpp/main.cpp)
-target_link_libraries(demo_command_parser_cpp aris_core ${RELY_LINK_LIB})
-
-file(GLOB SOURCES demo/demo_Aris_ExpCal/demo_ExpCal/*)
-add_executable(demo_ExpCal ${SOURCES})
-target_link_libraries(demo_ExpCal aris_core ${RELY_LINK_LIB})
-
-file(GLOB SOURCES demo/demo_model_scara/*)
-add_executable(demo_model_scara ${SOURCES})
-target_link_libraries(demo_model_scara aris_dynamic aris_core ${RELY_LINK_LIB})
-install(DIRECTORY demo/demo_model_scara/resource/ DESTINATION resource/demo_model_scara)
-install(DIRECTORY demo/demo_model_scara/doc/ DESTINATION doc/html/demo_model_scara)
-
-file(GLOB SOURCES demo/demo_stewart/*)
-add_executable(demo_stewart ${SOURCES})
-target_link_libraries(demo_stewart aris_dynamic aris_core ${RELY_LINK_LIB})
-install(DIRECTORY demo/demo_stewart/resource/ DESTINATION resource/demo_stewart)
-
-file(GLOB SOURCES demo/demo_hulk/*)
-add_executable(demo_hulk ${SOURCES})
-target_link_libraries(demo_hulk ${ALL_LINK_LIB})
-install(DIRECTORY demo/demo_hulk/resource/ DESTINATION resource/demo_hulk)
-
-file(GLOB SOURCES demo/demo_ur/*)
-add_executable(demo_ur ${SOURCES})
-target_link_libraries(demo_ur ${ALL_LINK_LIB})
-install(DIRECTORY demo/demo_ur/resource/ DESTINATION resource/demo_ur)
-
-file(GLOB SOURCES demo/demo_server/*)
-add_executable(demo_server ${SOURCES})
-target_link_libraries(demo_server ${ALL_LINK_LIB})
-
-endif(MAKE_DEMO)
+if(BUILD_DEMOS)
+	set(ARIS_DEMOS 	rbt demo_object demo_command_parser_xml demo_command_parser_cpp demo_expression_calculator
+					demo_model_scara demo_stewart demo_hulk demo_ur demo_server)
+	foreach(aris_demo ${ARIS_DEMOS})
+		file(GLOB SOURCES demo/${aris_demo}/*.h demo/${aris_demo}/*.cpp)
+		add_executable(${aris_demo} ${SOURCES})
+		target_link_libraries(${aris_demo} ${ARIS_TARGETS} ${RELY_LINK_LIB})
+		add_test(NAME ${aris_demo} COMMAND ${aris_demo})
+		set_tests_properties(${aris_demo} PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
+		if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/demo/${aris_demo}/resource)
+			install(DIRECTORY demo/${aris_demo}/resource DESTINATION resource/${aris_demo})
+		endif()
+		if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/demo/${aris_demo}/doc)
+			install(DIRECTORY demo/${aris_demo}/doc/ DESTINATION doc/html/${aris_demo})
+		endif()
+	endforeach(aris_demo)
+endif(BUILD_DEMOS)
