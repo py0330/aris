@@ -50,7 +50,7 @@ namespace aris::core
 
 			if (!log_stream_)logStream();
 
-			msg_.resize(msg_.capacity() - static_cast<std::int32_t>(epptr() - pptr()));
+			msg_.resize(msg_.capacity() - static_cast<MsgSize>(epptr() - pptr()));
 			*log_stream_ << msg_.toString() <<std::flush;
 
 			msg_.resize(0);
@@ -102,7 +102,7 @@ namespace aris::core
 	}
 	auto logExeName()->std::string
 	{
-		const std::int32_t TASK_NAME_LEN = 1024;
+		const int TASK_NAME_LEN = 1024;
 
 #ifdef WIN32
 		char path[TASK_NAME_LEN] = { 0 };
@@ -124,8 +124,8 @@ namespace aris::core
 #endif
 
 #ifdef UNIX
-		std::int32_t count = 0;
-		std::int32_t nIndex = 0;
+		int count = 0;
+		int nIndex = 0;
 		char path[TASK_NAME_LEN] = { 0 };
 		char cParam[100] = { 0 };
 		char *proName = path;

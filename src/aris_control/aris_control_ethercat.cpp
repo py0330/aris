@@ -15,49 +15,13 @@
 
 namespace aris::control
 {
-	struct DO::Imp
-	{
-		std::uint16_t index_;
-		std::uint8_t subindex_;
-		aris::Size data_size_;
-
-		Imp(std::uint16_t index = 0, std::uint8_t subindex = 0, aris::Size data_size = 0) :data_size_(data_size), index_(index), subindex_(subindex) {}
-	};
-	auto DO::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Object::saveXml(xml_ele);
-
-		std::stringstream s;
-		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
-		xml_ele.SetAttribute("index", s.str().c_str());
-
-		s = std::stringstream();
-		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(subindex());
-		xml_ele.SetAttribute("subindex", s.str().c_str());
-
-		xml_ele.SetAttribute("size", static_cast<std::int32_t>(size()));
-	}
-	auto DO::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		imp_->index_ = attributeUint16(xml_ele, "index");
-		imp_->subindex_ = attributeUint8(xml_ele, "subindex");
-		imp_->data_size_ = attributeUint32(xml_ele, "size");
-
-		Object::loadXml(xml_ele);
-	}
-	auto DO::index()const->std::uint16_t { return imp_->index_; }
-	auto DO::subindex()const->std::uint8_t { return imp_->subindex_; }
-	auto DO::size()const->aris::Size { return imp_->data_size_; }
-	DO::~DO() = default;
-	DO::DO(const std::string &name, std::uint16_t index, std::uint8_t subindex, aris::Size data_size) :Object(name), imp_(new Imp(index, subindex, data_size)) {}
-	DO::DO(const DO &) = default;
-	DO::DO(DO &&) = default;
-	DO& DO::operator=(const DO &) = default;
-	DO& DO::operator=(DO &&) = default;
-
 	struct Sdo::Imp
 	{
 		unsigned option_;
+		std::uint16_t index_;
+		std::uint8_t subindex_;
+		std::uint8_t byte_size_;
+
 		union
 		{
 			char config_value_[8];
@@ -68,12 +32,18 @@ namespace aris::control
 			std::int16_t config_value_int16_;
 			std::int8_t config_value_int8_;
 		};
-
-		Imp(unsigned opt = Sdo::READ | Sdo::WRITE | Sdo::CONFIG) :option_(opt) {}
 	};
 	auto Sdo::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
-		DO::saveXml(xml_ele);
+		std::stringstream s;
+		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
+		xml_ele.SetAttribute("index", s.str().c_str());
+
+		s = std::stringstream();
+		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(subindex());
+		xml_ele.SetAttribute("subindex", s.str().c_str());
+
+		xml_ele.SetAttribute("size", static_cast<std::int32_t>(byteSize()));
 
 		xml_ele.SetAttribute("read", option() & READ ? "true" : "false");
 		xml_ele.SetAttribute("write", option() & WRITE ? "true" : "false");
@@ -86,19 +56,30 @@ namespace aris::control
 		{
 			if (!writeable())throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + std::string(xml_ele.Name()) + "\" sdo");
 			imp_->option_ |= CONFIG;
-			imp_->config_value_int32_ = attributeInt64(xml_ele, "config");
+			imp_->config_value_int32_ = attributeInt32(xml_ele, "config");
 		}
 
-		DO::loadXml(xml_ele);
+		imp_->index_ = attributeUint16(xml_ele, "index");
+		imp_->subindex_ = attributeUint8(xml_ele, "subindex");
+		imp_->byte_size_ = attributeUint8(xml_ele, "size");
 	}
+	auto Sdo::index()const->std::uint16_t { return imp_->index_; }
+	auto Sdo::subindex()const->std::uint8_t { return imp_->subindex_; }
+	auto Sdo::byteSize()const->std::uint8_t { return imp_->byte_size_; }
 	auto Sdo::readable()const->bool { return (imp_->option_ & READ) != 0; }
 	auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
 	auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0; }
 	auto Sdo::option()const->unsigned { return imp_->option_; }
 	auto Sdo::configBuffer()->char* { return imp_->config_value_; }
 	Sdo::~Sdo() = default;
-	Sdo::Sdo(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size size, unsigned opt, std::int32_t config_value) :DO(name, index, sub_index, size), imp_(new Imp(opt))
+	Sdo::Sdo(const std::string &name, std::uint16_t index, std::uint8_t sub_index, std::uint8_t byte_size, unsigned opt, std::int32_t config_value) :imp_(new Imp)
 	{
+		imp_->index_ = index;
+		imp_->subindex_ = sub_index;
+		imp_->byte_size_ = byte_size;
+		imp_->option_ = opt;
+		imp_->config_value_int32_ = config_value;
+		
 		if (opt & Sdo::CONFIG)
 		{
 			if (!(opt & Sdo::WRITE)) throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + name + "\" sdo");
@@ -257,32 +238,32 @@ namespace aris::control
 	auto EthercatSlave::dcAssignActivate()const->std::uint32_t { return imp_->dc_assign_activate_; }
 	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& { return *imp_->sm_pool_; }
 	auto EthercatSlave::sdoPool()->aris::core::ObjectPool<Sdo>& { return *imp_->sdo_pool_; }
-	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int bit_size)->void
+	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
 		if (entry->bitSize() != bit_size)throw std::runtime_error("failed to read pdo entry:\"" + entry->name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_read(entry, value, bit_size);
+		aris_ecrt_pdo_read(entry, value, static_cast<int>(bit_size));
 	}
-	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int bit_size)->void
+	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->void
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
 		if (entry->bitSize() != bit_size)throw std::runtime_error("failed to write pdo_entry:\"" + entry->name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_write(entry, value, bit_size);
+		aris_ecrt_pdo_write(entry, value, static_cast<int>(bit_size));
 	}
-	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void
+	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size byte_size)->void
 	{
 		std::size_t result_size;
 		std::uint32_t abort_code;
 		auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
 		aris_ecrt_sdo_read(ecHandle(), phyId(), index, subindex, reinterpret_cast<std::uint8_t*>(value), byte_size, &result_size, &abort_code);
 	}
-	auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void
+	auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void
 	{
 		std::uint32_t abort_code;
 		auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
 		aris_ecrt_sdo_write(dynamic_cast<EthercatMaster&>(root()).ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 	}
-	auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void{}
+	auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void{}
 	EthercatSlave::~EthercatSlave() = default;
 	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
 	{

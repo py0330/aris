@@ -1,37 +1,48 @@
-﻿#include <thread>
-#include "aris.h"
+﻿#include "aris.h"
 
 int main()
 {
-	aris::control::EthercatMaster mst;
-	
-	// 自动扫描从站 //
-	mst.scan();
+	auto m = aris::dynamic::createModelRokaeXB4();
 
-	// 设置实时任务 //
-	mst.setControlStrategy([&]()
+	std::cout << m->xmlString() << std::endl;
+
+	auto &clb = m->calibratorPool().add<aris::dynamic::Calibrator>();
+
+	try
 	{
-		// 每过一秒，切换一下IO输出 //
-		static int count{ 0 };
-		static std::uint32_t value{ 0xffffffff };
-		if (++count % 1000 == 0)
-		{
-			// 写PDO //
-			mst.ecSlavePool()[0].writePdo(0x7000, 0x01, value);
+		/*clb.clbFiles({ 
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j1_rt_log--2018-09-28--11-41-12--6.txt",
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j2_rt_log--2018-09-28--11-41-12--24.txt",
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j3_rt_log--2018-09-28--11-41-12--26.txt" ,
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j4_rt_log--2018-09-28--11-41-12--37.txt" ,
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j5_rt_log--2018-09-28--11-41-12--38.txt" ,
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j6_rt_log--2018-09-28--11-41-12--39.txt" 
+			});*/
+		clb.clbFiles({
+			"C:\\Users\\py033\\Desktop\\data_2018-12-09\\rt_log--2018-12-09--17-11-03--42.txt",
+			});
 
-			// 切换IO状态 //
-			value = ~value;
-		}
-	});
 
-	// 开启实时任务 //
-	mst.start();
+		std::cout << "verify" << std::endl;
 
-	// 这里执行100秒 //
-	std::this_thread::sleep_for(std::chrono::seconds(100));
+		clb.verifyFiles({
+			"C:\\Users\\py033\\Desktop\\data_2018-12-09\\rt_log--2018-12-09--17-11-03--48.txt",
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j1_rt_log--2018-09-28--11-41-12--6.txt",
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j2_rt_log--2018-09-28--11-41-12--24.txt",
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j3_rt_log--2018-09-28--11-41-12--26.txt" ,
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j4_rt_log--2018-09-28--11-41-12--37.txt" ,
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j5_rt_log--2018-09-28--11-41-12--38.txt" ,
+			"C:\\Users\\py033\\Desktop\\rokae_data\\j6_rt_log--2018-09-28--11-41-12--39.txt"
+			});
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+	}
 
-	// 结束实时任务 //
-	mst.stop();
+
+	char a;
+	std::cin >> a;
 
 	return 0;
 }

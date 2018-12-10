@@ -53,14 +53,14 @@ namespace aris::control
 	auto aris_ecrt_master_recv(EthercatMaster *master)->void;
 	auto aris_ecrt_master_send(EthercatMaster *master)->void;
 
-	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data, int byte_size)->void;
-	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data, int byte_size)->void;
+	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data, int bit_size)->void;
+	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data, int bit_size)->void;
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
-		std::uint8_t *to_buffer, std::size_t bit_size, std::size_t *result_size, std::uint32_t *abort_code)->int;
+		std::uint8_t *to_buffer, std::size_t byte_size, std::size_t *result_size, std::uint32_t *abort_code)->int;
 	auto aris_ecrt_sdo_write(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
-		std::uint8_t *to_buffer, std::size_t bit_size, std::uint32_t *abort_code) ->int;
+		std::uint8_t *to_buffer, std::size_t byte_size, std::uint32_t *abort_code) ->int;
 	auto aris_ecrt_sdo_config(std::any& master, std::any& slave, std::uint16_t index, std::uint8_t subindex,
-		std::uint8_t *buffer, std::size_t bit_size)->void;
+		std::uint8_t *buffer, std::size_t byte_size)->void;
 }
 
 #endif

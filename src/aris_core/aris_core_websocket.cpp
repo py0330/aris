@@ -248,7 +248,7 @@ namespace aris::core
 			{
 				server_key = header_map.at("Sec-WebSocket-Key");
 			}
-			catch(std::exception &e)
+			catch(std::exception &)
 			{
 				LOG_ERROR << "websocket shake hand failed : invalid key" << std::endl;
 #ifdef WIN32
@@ -288,7 +288,7 @@ namespace aris::core
 				"Connection: Upgrade\r\n"
 				"Sec-WebSocket-Accept: " + ret_hey + std::string("\r\n\r\n");
 
-			auto ret = send(imp->recv_socket_, shake_hand.c_str(), shake_hand.size(), 0);
+			auto ret = send(imp->recv_socket_, shake_hand.c_str(), static_cast<int>(shake_hand.size()), 0);
 			if (ret == -1) 
 			{
 				LOG_ERROR << "websocket shake hand failed : lose connection before hand shake successful" << std::endl;
@@ -448,7 +448,7 @@ namespace aris::core
 
 			// 把web sock 的东西转成 msg //
 			aris::core::Msg receivedData;
-			receivedData.resize(payload_data.size() - sizeof(aris::core::MsgHeader));
+			receivedData.resize(static_cast<aris::core::MsgSize>(payload_data.size() - sizeof(aris::core::MsgHeader)));
 			std::copy(payload_data.data(), payload_data.data() + payload_data.size(), reinterpret_cast<char*>(&receivedData.header()));
 
 			if (receivedData.size() != payload_data.size() - sizeof(aris::core::MsgHeader))
@@ -599,7 +599,7 @@ namespace aris::core
 		{
 			auto s = pack_data(data);
 			
-			if (send(imp_->recv_socket_, s.data(), s.size(), 0) == -1)
+			if (send(imp_->recv_socket_, s.data(), static_cast<int>(s.size()), 0) == -1)
 				throw std::runtime_error("WebSocket failed sending data, because network failed\n");
 			else
 				return;

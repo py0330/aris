@@ -100,9 +100,12 @@ namespace aris::dynamic
 	}
 	auto inline dlmwrite(const Size m, const Size n, const double *A, const char *filename)->void { dlmwrite(m, n, A, n, filename); }
 	auto dlmread(const char *filename, double *mtx)->void;
+	auto dlmread(const char *filename)->std::vector<double>;
 
 	template <typename T>
 	auto inline s_sgn(T val)noexcept->T { return T(T(0) < val) - (val < T(0)); }
+	template <typename T>
+	auto inline s_sgn(T val, T zero_check)noexcept->T { return std::abs(val)<zero_check ? T(0) : s_sgn(val); }
 	template <typename T>
 	auto inline s_sgn2(T val)noexcept->T { return val < T(0) ? T(-1) : T(1); }
 
@@ -676,20 +679,13 @@ namespace aris::dynamic
 				max_value = value > max_value ? value : max_value;
 			}
 
+			// 判断是否返回 //
+			max_value = std::sqrt(max_value);
+			if (max_value < zero_check) { s_fill(m - i, 1, 0.0, tau + ti, tau_t); return; }
+			
+			++rank;
 			s_swap_v(m, U + at(0, max_pos, u_t), u_t, U + at(0, i, u_t), u_t);
 			std::swap(p[max_pos], p[i]);
-
-			// 寻找该列最大的元素,并判断是否返回 //
-			double max_abs_value{ 0 };
-			for (Size k(i - 1), uki{ uii }; ++k < m; uki = next_r(uki, u_t))
-			{
-				max_abs_value = max_abs_value > std::abs(U[uki]) ? max_abs_value : std::abs(U[uki]);
-			}
-
-			if (max_abs_value < zero_check) { s_fill(m - i, 1, 0.0, tau + ti, tau_t); return; }
-
-			// set rank //
-			++rank;
 
 			// 若已经到达最后一行，那么就返回，因为最后一行不需要householder化 //
 			if (i == m - 1) return;
@@ -697,7 +693,7 @@ namespace aris::dynamic
 			// compute householder vector //
 			auto U_i1_i = U + next_r(uii, u_t);
 
-			double rho = -std::sqrt(max_value) * s_sgn2(U[uii]);
+			double rho = -max_value * s_sgn2(U[uii]);
 			tau[ti] = U[uii] / rho - 1.0;
 			s_nm(m - 1 - i, 1, 1.0 / (U[uii] - rho), U_i1_i, u_t);
 			U[uii] = rho;
@@ -720,8 +716,7 @@ namespace aris::dynamic
 	{
 		s_householder_ut_qt_dot(m, rank, rhs, U, u_t, tau, tau_t, b, b_t, x, x_t);
 		s_sov_um(rank, rhs, U, u_t, x, x_t, x, x_t, zero_check);
-
-		if (n > m)s_fill(n - m, rhs, 0.0, x + at(m, 0, x_t), x_t);
+		s_fill(n - rank, rhs, 0.0, x + at(rank, 0, x_t), x_t);
 		s_permutate_inv(n, rhs, p, x, x_t);
 	}
 	auto inline s_householder_utp_sov(Size m, Size n, Size rhs, Size rank, const double *U, const double *tau, const Size *p, const double *b, double *x, double zero_check = 1e-10)noexcept->void { s_householder_utp_sov(m, n, rhs, rank, U, n, tau, 1, p, b, rhs, x, rhs, zero_check); }

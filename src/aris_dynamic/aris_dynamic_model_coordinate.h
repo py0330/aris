@@ -134,7 +134,7 @@ namespace aris::dynamic
 		auto virtual vs() const noexcept->const double6& override;
 		auto virtual as() const noexcept->const double6& override;
 		auto prtIv() const noexcept->const double10&;
-		auto setPrtIv(const double *iv, const double *pm_relative_to_part) noexcept->void;
+		auto setPrtIv(const double *iv, const double *pm_relative_to_part = nullptr) noexcept->void;
 		auto markerPool() noexcept->aris::core::ObjectPool<Marker, Element>&;
 		auto markerPool()const noexcept->const aris::core::ObjectPool<Marker, Element>&;
 		auto geometryPool() noexcept->aris::core::ObjectPool<Geometry, Element>&;

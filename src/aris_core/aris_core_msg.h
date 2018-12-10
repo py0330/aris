@@ -13,9 +13,9 @@
 
 namespace aris::core
 {
-	using MsgSize = std::int32_t;
-	using MsgID = std::int32_t;
-	using MsgType = std::int64_t;
+	using MsgSize = std::uint32_t;
+	using MsgID = std::uint32_t;
+	using MsgType = std::uint64_t;
 
 	struct MsgHeader
 	{
@@ -81,7 +81,7 @@ namespace aris::core
 		MsgBase& operator=(MsgBase&& other) = default;
 
 	private:
-		mutable std::int32_t paste_id_{ 0 };
+		mutable MsgSize paste_id_{ 0 };
 	};
 	class Msg final :public MsgBase
 	{
@@ -89,7 +89,7 @@ namespace aris::core
 		auto virtual resize(MsgSize size)->void override;
 		auto virtual header()->MsgHeader& override;
 		auto virtual header()const->const MsgHeader& override;
-		auto virtual capacity()const->std::int32_t override { return capacity_; }
+		auto virtual capacity()const->MsgSize override { return capacity_; }
 		auto swap(Msg &other)->void;
 
 		virtual ~Msg();
@@ -102,7 +102,7 @@ namespace aris::core
 
 	private:
 		std::unique_ptr<char[]> data_;
-		std::int32_t capacity_;
+		MsgSize capacity_;
 	};
 	template<std::size_t CAPACITY>
 	class MsgFix final :public MsgBase
@@ -111,10 +111,10 @@ namespace aris::core
 		auto virtual resize(MsgSize size)->void override { header().msg_size_ = size; };
 		auto virtual header()->MsgHeader& override { return *reinterpret_cast<MsgHeader*>(data_); };
 		auto virtual header()const->const MsgHeader& override { return *reinterpret_cast<const MsgHeader*>(data_); };
-		auto virtual capacity()const->std::int32_t override { return CAPACITY; }
+		auto virtual capacity()const->MsgSize override { return CAPACITY; }
 
 		virtual ~MsgFix() = default;
-		explicit MsgFix(std::int32_t msg_id = 0, std::int32_t size = 0) :MsgBase() { resize(size); setMsgID(msg_id); }
+		explicit MsgFix(MsgID msg_id = 0, MsgSize size = 0) :MsgBase() { resize(size); setMsgID(msg_id); }
 		MsgFix(const MsgBase &other)
 		{
 			resize(other.size());

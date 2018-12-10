@@ -234,7 +234,7 @@ namespace aris::dynamic
 			}
 		}
 
-		// make A //
+		// make A finally //
 		int col1 = 0, col2 = 6;
 		for (auto &prt : ancestor<Model>()->partPool())
 		{
@@ -250,7 +250,7 @@ namespace aris::dynamic
 
 				for (std::size_t j = 0; j < imp_->m_; ++j)
 				{
-					A[at(j, col1, n())] = D[at(j, col2 + 0, imp_->dyn_m_)] * q[0] + D[at(j, col2 + 1, imp_->dyn_m_)] * q[1] + D[at(j, col2 + 2, imp_->dyn_m_)] * q[2];
+					A[at(j, col1 + 0, n())] = D[at(j, col2 + 0, imp_->dyn_m_)] * q[0] + D[at(j, col2 + 1, imp_->dyn_m_)] * q[1] + D[at(j, col2 + 2, imp_->dyn_m_)] * q[2];
 					A[at(j, col1 + 1, n())] = D[at(j, col2 + 1, imp_->dyn_m_)] * q[5] + D[at(j, col2 + 5, imp_->dyn_m_)] * q[1] - D[at(j, col2 + 2, imp_->dyn_m_)] * q[4] - D[at(j, col2 + 4, imp_->dyn_m_)] * q[2];
 					A[at(j, col1 + 2, n())] = D[at(j, col2 + 2, imp_->dyn_m_)] * q[3] + D[at(j, col2 + 3, imp_->dyn_m_)] * q[2] - D[at(j, col2 + 0, imp_->dyn_m_)] * q[5] - D[at(j, col2 + 5, imp_->dyn_m_)] * q[0];
 					A[at(j, col1 + 3, n())] = D[at(j, col2 + 0, imp_->dyn_m_)] * q[4] + D[at(j, col2 + 4, imp_->dyn_m_)] * q[0] - D[at(j, col2 + 1, imp_->dyn_m_)] * q[3] - D[at(j, col2 + 3, imp_->dyn_m_)] * q[1];
@@ -261,7 +261,7 @@ namespace aris::dynamic
 					A[at(j, col1 + 8, n())] = D[at(j, col2 + 3, imp_->dyn_m_)] * q[5] + D[at(j, col2 + 5, imp_->dyn_m_)] * q[3];
 					A[at(j, col1 + 9, n())] = D[at(j, col2 + 4, imp_->dyn_m_)] * q[5] + D[at(j, col2 + 5, imp_->dyn_m_)] * q[4];
 
-					A[at(j, col1, n())] += B[at(j, col2 + 0, imp_->dyn_m_)] * v[0] + B[at(j, col2 + 1, imp_->dyn_m_)] * v[1] + B[at(j, col2 + 2, imp_->dyn_m_)] * v[2];
+					A[at(j, col1 + 0, n())] += B[at(j, col2 + 0, imp_->dyn_m_)] * v[0] + B[at(j, col2 + 1, imp_->dyn_m_)] * v[1] + B[at(j, col2 + 2, imp_->dyn_m_)] * v[2];
 					A[at(j, col1 + 1, n())] += B[at(j, col2 + 1, imp_->dyn_m_)] * v[5] + B[at(j, col2 + 5, imp_->dyn_m_)] * v[1] - B[at(j, col2 + 2, imp_->dyn_m_)] * v[4] - B[at(j, col2 + 4, imp_->dyn_m_)] * v[2];
 					A[at(j, col1 + 2, n())] += B[at(j, col2 + 2, imp_->dyn_m_)] * v[3] + B[at(j, col2 + 3, imp_->dyn_m_)] * v[2] - B[at(j, col2 + 0, imp_->dyn_m_)] * v[5] - B[at(j, col2 + 5, imp_->dyn_m_)] * v[0];
 					A[at(j, col1 + 3, n())] += B[at(j, col2 + 0, imp_->dyn_m_)] * v[4] + B[at(j, col2 + 4, imp_->dyn_m_)] * v[0] - B[at(j, col2 + 1, imp_->dyn_m_)] * v[3] - B[at(j, col2 + 3, imp_->dyn_m_)] * v[1];
@@ -282,7 +282,7 @@ namespace aris::dynamic
 		{
 			if (dynamic_cast<Motion*>(b.c))
 			{
-				A[at(ai, g() + ai * 3, n())] = s_sgn(dynamic_cast<Motion*>(b.c)->mv());
+				A[at(ai, g() + ai * 3 + 0, n())] = s_sgn(dynamic_cast<Motion*>(b.c)->mv(), dynamic_cast<Motion*>(b.c)->frcZeroCheck());
 				A[at(ai, g() + ai * 3 + 1, n())] = dynamic_cast<Motion*>(b.c)->mv();
 				A[at(ai, g() + ai * 3 + 2, n())] = dynamic_cast<Motion*>(b.c)->ma();
 				ai++;
@@ -333,6 +333,494 @@ namespace aris::dynamic
 			if (dynamic_cast<Motion*>(blk.c))
 			{
 				s_vc(3, dynamic_cast<Motion*>(blk.c)->frcCoe(), x + g() + bi * 3);
+				bi++;
+			}
+		}
+	}
+	auto makeDataset(const Calibrator *clb, const std::vector<double> &mtx, std::vector< std::vector<std::vector<double> >*> &dataset)
+	{
+		const int filter_size = 10;
+		const int mot_num = 6;
+		const double torque_constant[6]{ 0.283 * 4808,0.283 * 4808,0.276 * 2546,0.226 * 1556,0.219 * 849,0.219 * 849 };
+
+		auto &pos = *dataset[0];
+		auto &vel = *dataset[1];
+		auto &acc = *dataset[2];
+		auto &fce = *dataset[3];
+
+		auto num = mtx.size() / 24 / 10 - 2;
+		for (int i = 0; i < mot_num; ++i)
+		{
+			pos[i].reserve(num + pos[i].size());
+			vel[i].reserve(num + vel[i].size());
+			acc[i].reserve(num + acc[i].size());
+			fce[i].reserve(num + fce[i].size());
+		}
+
+		for (int i = 1; i < num + 1; ++i)
+		{
+			for (int j = 0; j < mot_num; ++j)
+			{
+				// make actual pos //
+				pos[j].push_back(0.0);
+				for (int k = 0; k < filter_size; ++k)
+				{
+					pos[j].back() += mtx[i * 24 * filter_size + k * 24 + j * 4 + 1] / filter_size;
+				}
+
+				// make actual vel //
+				vel[j].push_back(0.0);
+				for (int k = 0; k < filter_size; ++k)
+				{
+					vel[j].back() += mtx[i * 24 * filter_size + k * 24 + j * 4 + 2] / filter_size;
+				}
+
+				// make actual acc //
+				const int avg_size = 4;
+
+				double r = mtx[i * 24 * filter_size + j * 4 + 24 * filter_size + 2] / (1 + avg_size * 2);
+				double l = mtx[i * 24 * filter_size + j * 4 + 2] / (1 + avg_size * 2);
+				for (int k = 0; k < avg_size; ++k)
+				{
+					r += mtx[i * 24 * filter_size + j * 4 + 24 * filter_size + 2 + 24 * k] / (1 + avg_size * 2);
+					r += mtx[i * 24 * filter_size + j * 4 + 24 * filter_size + 2 - 24 * k] / (1 + avg_size * 2);
+					l += mtx[i * 24 * filter_size + j * 4 + 2 + 24 * k] / (1 + avg_size * 2);
+					l += mtx[i * 24 * filter_size + j * 4 + 2 - 24 * k] / (1 + avg_size * 2);
+				}
+				acc[j].push_back((r - l) * 1000 / filter_size);
+
+				// make actual fce //
+				fce[j].push_back(0.0);
+				for (int k = 0; k < filter_size; ++k)
+				{
+					fce[j].back() += mtx[i * 24 * filter_size + k * 24 + j * 4 + 3] / filter_size * torque_constant[j] / 1e6;
+				}
+			}
+		}
+	}
+	auto Calibrator::clbFiles(const std::vector<std::string> &file_paths)->void
+	{
+		// make datasets //
+		std::cout << "making datasets" << std::endl;
+		std::vector<std::vector<double> > pos(6);
+		std::vector<std::vector<double> > vel(6);
+		std::vector<std::vector<double> > acc(6);
+		std::vector<std::vector<double> > fce(6);
+
+		for (auto &file : file_paths)
+		{
+			std::cout << "----loading file:" << file << std::endl;
+			auto mtx = aris::dynamic::dlmread(file.c_str());
+			std::cout << "----making data" << std::endl;
+			makeDataset(this, mtx, std::vector<std::vector<std::vector<double> > *>{ &pos, &vel, &acc, &fce });
+		}
+		
+		// make calibration matrix //
+		std::cout << "make calibration matrix" << std::endl;
+		this->allocateMemory();
+
+		auto num = pos[0].size();
+		std::vector<double> A(num * m() * n()), b(num * m(), 0.0), tau(num * m(), 0.0), x(num * m(), 0.0);
+		std::vector<aris::Size> p(num * m());
+
+		Size rows{ 0 }, cols{ n() };
+		for (int i = 0; i < num; ++i)
+		{
+			for (int j = 0; j < 6; ++j)
+			{
+				this->model().motionPool()[j].setMp(pos[j][i]);
+				this->model().motionPool()[j].setMv(vel[j][i]);
+				this->model().motionPool()[j].setMa(acc[j][i]);
+				this->model().motionPool()[j].setMf(fce[j][i]);
+			}
+
+			this->model().solverPool().at(1).kinPos();
+			this->model().solverPool().at(1).kinVel();
+			this->model().solverPool().at(2).dynAccAndFce();
+
+			for (int j = 0; j < 6; ++j)
+			{
+				this->model().motionPool()[j].setMf(fce[j][i]);
+			}
+			this->clb();
+
+			for (int j = 0; j < 6; ++j)
+			{
+				if (std::abs(this->model().motionPool()[j].mv()) < 0.01)continue;
+
+				std::copy_n(this->A() + j * n(), n(), A.data() + rows * n());
+				b[rows] = this->b()[j];
+				rows++;
+			}
+		}
+		auto max_value = *std::max_element(A.begin(), A.begin() + rows * n());
+		auto min_value = *std::max_element(A.begin(), A.begin() + rows * n());
+		auto real_max = std::max(std::abs(max_value), std::abs(min_value));
+		std::cout << "A size:" << rows << "x" << cols << std::endl;
+		std::cout << "max value of A:" << real_max << std::endl;
+
+		// solve calibration matrix //
+		std::cout << "solve calibration matrix" << std::endl;
+		aris::Size rank;
+		double zero_check = 1e-4;
+		s_householder_utp(rows, n(), A.data(), A.data(), tau.data(), p.data(), rank, zero_check);
+		s_householder_utp_sov(rows, n(), 1, rank, A.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
+		std::cout << "rank:" << rank << std::endl;
+
+		std::cout << "inertia result:" << std::endl;
+		dsp(6, 10, x.data());
+		std::cout << "friction result:" << std::endl;
+		dsp(6, 3, x.data() + 60);
+
+		// update inertias //
+		updateInertiaParam(x.data());
+
+		// test errors of this dataset //
+		/*
+		std::cout << "clb finished now compute dynamics of this dataset" << std::endl;
+		std::vector<std::vector<double> > f(6, std::vector<double>(num));
+		std::vector<std::vector<double> > ff(6, std::vector<double>(num));
+		std::vector<std::vector<double> > fd(6, std::vector<double>(num));
+		for (int i = 0; i < num; ++i)
+		{
+			for (int j = 0; j < 6; ++j)
+			{
+				this->model().motionPool()[j].setMp(pos[j][i]);
+				this->model().motionPool()[j].setMv(vel[j][i]);
+				this->model().motionPool()[j].setMa(acc[j][i]);
+				this->model().motionPool()[j].setMf(fce[j][i]);
+			}
+
+			this->model().solverPool().at(1).kinPos();
+			this->model().solverPool().at(1).kinVel();
+			this->model().solverPool().at(2).dynAccAndFce();
+
+			for (int j = 0; j < 6; ++j)
+			{
+				f[j][i] = this->model().motionPool()[j].mf();
+				ff[j][i] = this->model().motionPool()[j].mfFrc();
+				fd[j][i] = this->model().motionPool()[j].mfDyn();
+			}
+		}
+
+
+
+
+
+		std::cout << "dynamic finished, now output results" << std::endl;
+
+
+		//dsp(1, 3, this->model().motionPool()[0].frcCoe());
+
+
+
+
+		for (int i = 0; i<6; ++i)
+		{
+			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
+
+			sprintf(posn, "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
+			sprintf(veln, "C:\\Users\\py033\\Desktop\\data_after\\vel%d.txt", i);
+			sprintf(accn, "C:\\Users\\py033\\Desktop\\data_after\\acc%d.txt", i);
+			sprintf(fcen, "C:\\Users\\py033\\Desktop\\data_after\\fce%d.txt", i); 
+			sprintf(fn, "C:\\Users\\py033\\Desktop\\data_after\\f%d.txt", i);
+			sprintf(ffn, "C:\\Users\\py033\\Desktop\\data_after\\ff%d.txt", i);
+			sprintf(fdn, "C:\\Users\\py033\\Desktop\\data_after\\fd%d.txt", i);
+
+			dlmwrite(num, 1, pos[i].data(), posn);
+			dlmwrite(num, 1, vel[i].data(), veln);
+			dlmwrite(num, 1, acc[i].data(), accn);
+			dlmwrite(num, 1, fce[i].data(), fcen);
+			dlmwrite(num, 1, f[i].data(), fn);
+			dlmwrite(num, 1, ff[i].data(), ffn);
+			dlmwrite(num, 1, fd[i].data(), fdn);
+		}
+
+
+
+		std::cout << "end" << std::endl;
+		*/
+	}
+	auto Calibrator::verifyFiles(const std::vector<std::string> &file_paths)->void
+	{
+		// make datasets //
+		std::cout << "making datasets" << std::endl;
+		std::vector<std::vector<double> > pos(6);
+		std::vector<std::vector<double> > vel(6);
+		std::vector<std::vector<double> > acc(6);
+		std::vector<std::vector<double> > fce(6);
+
+		for (auto &file : file_paths)
+		{
+			std::cout << "----loading file:" << file << std::endl;
+			auto mtx = aris::dynamic::dlmread(file.c_str());
+			std::cout << "----making data" << std::endl;
+			makeDataset(this, mtx, std::vector<std::vector<std::vector<double> > *>{ &pos, &vel, &acc, &fce });
+		}
+
+		// now test datasets //
+		auto num = pos[0].size();
+		std::cout << "clb finished now compute dynamics of this dataset" << std::endl;
+		std::vector<std::vector<double> > f(6, std::vector<double>(num));
+		std::vector<std::vector<double> > ff(6, std::vector<double>(num));
+		std::vector<std::vector<double> > fd(6, std::vector<double>(num));
+		for (int i = 0; i < num; ++i)
+		{
+			for (int j = 0; j < 6; ++j)
+			{
+				this->model().motionPool()[j].setMp(pos[j][i]);
+				this->model().motionPool()[j].setMv(vel[j][i]);
+				this->model().motionPool()[j].setMa(acc[j][i]);
+			}
+
+			this->model().solverPool().at(1).kinPos();
+			this->model().solverPool().at(1).kinVel();
+			this->model().solverPool().at(2).dynAccAndFce();
+
+			for (int j = 0; j < 6; ++j)
+			{
+				f[j][i] = this->model().motionPool()[j].mf();
+			}
+		}
+
+
+
+
+
+		std::cout << "dynamic finished, now output results" << std::endl;
+
+		for (int i = 0; i<6; ++i)
+		{
+			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
+
+			sprintf(posn, "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
+			sprintf(veln, "C:\\Users\\py033\\Desktop\\data_after\\vel%d.txt", i);
+			sprintf(accn, "C:\\Users\\py033\\Desktop\\data_after\\acc%d.txt", i);
+			sprintf(fcen, "C:\\Users\\py033\\Desktop\\data_after\\fce%d.txt", i);
+			sprintf(fn, "C:\\Users\\py033\\Desktop\\data_after\\f%d.txt", i);
+			sprintf(ffn, "C:\\Users\\py033\\Desktop\\data_after\\ff%d.txt", i);
+			sprintf(fdn, "C:\\Users\\py033\\Desktop\\data_after\\fd%d.txt", i);
+
+			dlmwrite(num, 1, pos[i].data(), posn);
+			dlmwrite(num, 1, vel[i].data(), veln);
+			dlmwrite(num, 1, acc[i].data(), accn);
+			dlmwrite(num, 1, fce[i].data(), fcen);
+			dlmwrite(num, 1, f[i].data(), fn);
+			dlmwrite(num, 1, ff[i].data(), ffn);
+			dlmwrite(num, 1, fd[i].data(), fdn);
+		}
+
+
+
+		std::cout << "end" << std::endl;
+	}
+	auto Calibrator::clbFile(const std::string &file_paths)->void
+	{
+		auto mtx = aris::dynamic::dlmread(file_paths.c_str());
+
+		std::cout << "mtx size:" << mtx.size() << std::endl;
+
+		auto num = mtx.size() / 24 / 10 - 1;
+		double torque_constant[6]{ 0.283*4808,0.283*4808,0.276*2546,0.226*1556,0.219*849,0.219*849 };
+
+		///////////////////////////////////////////////////////////////////////////////////
+		// make data correct
+		std::cout << "extract data from files" << std::endl;
+		std::vector<std::vector<double> > pos(6, std::vector<double>(num));
+		std::vector<std::vector<double> > vel(6, std::vector<double>(num));
+		std::vector<std::vector<double> > acc(6, std::vector<double>(num));
+		std::vector<std::vector<double> > fce(6, std::vector<double>(num));
+		
+		for (int i = 0; i < num; ++i)
+		{
+			for (int j = 0; j < 6; ++j)
+			{
+				// make actual pos //
+				pos[j][i] = 0.0;
+				for (int k = 0; k < 10; ++k)
+				{
+					pos[j][i] += mtx[i * 240 + k * 24 + j * 4 + 1] / 10.0;
+				}
+
+				// make actual vel //
+				vel[j][i] = 0.0;
+				for (int k = 0; k < 10; ++k)
+				{
+					vel[j][i] += mtx[i * 240 + k * 24 + j * 4 + 2] / 10.0;
+				}
+
+				// make actual acc //
+				acc[j][i] = (mtx[i * 240 + j * 4 + 242] - mtx[i * 240 + j * 4 + 2])*100.0;
+
+				// make actual fce //
+				fce[j][i] = 0.0;
+				for (int k = 0; k < 10; ++k)
+				{
+					fce[j][i] += mtx[i * 240 + k * 24 + j * 4 + 3] / 10.0 * torque_constant[j]/1e6;
+				}
+			}
+		}
+		///////////////////////////////////////////////////////////////////////////////////
+
+		std::cout << "make calibration matrix" << std::endl;
+		this->allocateMemory();
+
+		std::vector<double> A(num * m() * n()), b(num * m(), 0.0), tau(num * m(), 0.0), x(num * m(), 0.0);
+		std::vector<aris::Size> p(num * m());
+
+		std::cout << "A size:" << num * m() << "x" << n() << std::endl;
+		for (int i = 0; i < num; ++i)
+		{
+			for (int j = 0; j < 6; ++j)
+			{
+				this->model().motionPool()[j].setMp(pos[j][i]);
+				this->model().motionPool()[j].setMv(vel[j][i]);
+				this->model().motionPool()[j].setMa(acc[j][i]);
+				this->model().motionPool()[j].setMf(fce[j][i]);
+			}
+
+			this->model().solverPool().at(1).kinPos();
+			this->model().solverPool().at(1).kinVel();
+			this->model().solverPool().at(2).dynAccAndFce();
+
+			for (int j = 0; j < 6; ++j)
+			{
+				this->model().motionPool()[j].setMf(fce[j][i]);
+			}
+			this->clb();
+			
+			std::copy_n(this->A(), m()*n(), A.data() + i * m() * n());
+			std::copy_n(this->b(), m(), b.data() + i * m());
+		}
+
+		//dlmwrite(num * m(), n(), A.data(), "C:\\Users\\py033\\Desktop\\data_after\\A.txt");
+		//dlmwrite(num * m(), 1, b.data(), "C:\\Users\\py033\\Desktop\\data_after\\b.txt");
+		
+
+
+
+		//double ratio = 1.0;
+		//for (int i = 60; i < 78; ++i)
+		//{
+		//	s_nv(m()*num, ratio, A.data() + i, n());
+		//}
+		auto max_value = *std::max_element(A.begin(), A.end());
+		auto min_value = *std::max_element(A.begin(), A.end());
+		auto real_max = std::max(std::abs(max_value), std::abs(min_value));
+		std::cout << "max value of A:" << real_max << std::endl;
+
+		/////////////////////////////////////////////////////////////////////////////////////////
+		std::cout << "solve calibration matrix" << std::endl;
+		aris::Size rank;
+		double zero_check = 1e-4;
+		s_householder_utp(m()*num, n(), A.data(), A.data(), tau.data(), p.data(), rank, zero_check);
+		//dlmwrite(num * m(), n(), A.data(), "C:\\Users\\py033\\Desktop\\data_after\\U.txt");
+		//std::vector<double> Q(num * m() * n(), 0.0);
+		//s_householder_ut2qmn(m()*num, rank, A.data(), n(), tau.data(),1, Q.data(),rank);
+		//dlmwrite(num * m(), rank, Q.data(), "C:\\Users\\py033\\Desktop\\data_after\\Q.txt");
+		//std::vector<double> R(num * m() * n(), 0.0);
+		//s_householder_ut2r(m()*num, n(), A.data(), tau.data(), R.data());
+		//dlmwrite(num * m(), n(), R.data(), "C:\\Users\\py033\\Desktop\\data_after\\R.txt");
+
+		s_householder_utp_sov(m()*num, n(), 1, rank, A.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
+		std::cout << "rank:" << rank << std::endl;
+		
+		//for (int i = 0; i < 78; ++i)std::cout << "  " << p[i];
+		//std::cout << std::endl;
+
+		//s_nv(18, ratio, x.data() + 60);
+		
+		std::cout << "inertia result:" << std::endl;
+		dsp(6, 10, x.data());
+		std::cout << "friction result:" << std::endl;
+		dsp(6, 3, x.data() + 60);
+
+		//dlmwrite(n(), 1, x.data(), "C:\\Users\\py033\\Desktop\\data_after\\x.txt");
+
+		updateInertiaParam(x.data());
+
+
+		std::cout << "clb finished now compute dynamics of this dataset" << std::endl;
+		std::vector<std::vector<double> > f(6, std::vector<double>(num));
+		std::vector<std::vector<double> > ff(6, std::vector<double>(num));
+		std::vector<std::vector<double> > fd(6, std::vector<double>(num));
+		for (int i = 0; i < num; ++i)
+		{
+			for (int j = 0; j < 6; ++j)
+			{
+				this->model().motionPool()[j].setMp(pos[j][i]);
+				this->model().motionPool()[j].setMv(vel[j][i]);
+				this->model().motionPool()[j].setMa(acc[j][i]);
+				this->model().motionPool()[j].setMf(fce[j][i]);
+			}
+
+			this->model().solverPool().at(1).kinPos();
+			this->model().solverPool().at(1).kinVel();
+			this->model().solverPool().at(2).dynAccAndFce();
+
+			for (int j = 0; j < 6; ++j)
+			{
+				f[j][i] = this->model().motionPool()[j].mf();
+				ff[j][i] = this->model().motionPool()[j].mfFrc();
+				fd[j][i] = this->model().motionPool()[j].mfDyn();
+			}
+		}
+
+
+
+
+
+		std::cout << "dynamic finished, now output results" << std::endl;
+
+
+		//dsp(1, 3, this->model().motionPool()[0].frcCoe());
+
+
+
+		
+		for (int i = 0; i<6;++i)
+		{
+			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
+
+			sprintf(posn, "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
+			sprintf(veln, "C:\\Users\\py033\\Desktop\\data_after\\vel%d.txt", i);
+			sprintf(accn, "C:\\Users\\py033\\Desktop\\data_after\\acc%d.txt", i);
+			sprintf(fcen, "C:\\Users\\py033\\Desktop\\data_after\\fce%d.txt", i);
+			sprintf(fn, "C:\\Users\\py033\\Desktop\\data_after\\f%d.txt", i);
+			sprintf(ffn, "C:\\Users\\py033\\Desktop\\data_after\\ff%d.txt", i);
+			sprintf(fdn, "C:\\Users\\py033\\Desktop\\data_after\\fd%d.txt", i);
+
+			//dlmwrite(num, 1, pos[i].data(), posn);
+			//dlmwrite(num, 1, vel[i].data(), veln);
+			//dlmwrite(num, 1, acc[i].data(), accn);
+			//dlmwrite(num, 1, fce[i].data(), fcen);
+			dlmwrite(num, 1, f[i].data(), fn);
+			dlmwrite(num, 1, ff[i].data(), ffn);
+			dlmwrite(num, 1, fd[i].data(), fdn);
+		}
+
+
+
+		std::cout << "end" << std::endl;
+	}
+	auto Calibrator::updateInertiaParam(const double *x)->void
+	{
+		Size xi = 0;
+		for (auto &prt : ancestor<Model>()->partPool())
+		{
+			if (prt.active() && &prt != &ancestor<Model>()->ground())
+			{
+				prt.setPrtIv(x + xi);
+				xi += 10;
+			}
+		}
+		// make x from frictions //
+		Size bi = 0;
+		for (auto &blk : imp_->cst_blk_vec_)
+		{
+			if (dynamic_cast<Motion*>(blk.c))
+			{
+				dynamic_cast<Motion*>(blk.c)->setFrcCoe(x + g() + bi * 3);
 				bi++;
 			}
 		}

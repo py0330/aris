@@ -30,4 +30,57 @@ namespace aris::dynamic
 			++i;
 		}
 	}
+
+	auto dlmread(const char *filename)->std::vector<double>
+	{
+		std::vector<double> mtx;
+
+		std::fstream file;
+
+		file.open(filename);
+		if (!file) throw std::logic_error("file not exist");
+
+		Size i = 0;
+		while (!file.eof())
+		{
+			double data;
+			file >> data;
+
+			if (file.fail())
+			{
+				file.clear();
+				char c;
+				file >> c;
+				continue;
+			}
+
+			++i;
+		}
+
+		mtx.resize(i);
+
+		file.close();
+		file.open(filename);
+		i = 0;
+		while (!file.eof())
+		{
+			double data;
+			file >> data;
+
+			if (file.fail())
+			{
+				file.clear();
+				char c;
+				file >> c;
+				continue;
+			}
+
+			mtx[i] = data;
+
+			++i;
+		}
+
+
+		return mtx;
+	}
 }

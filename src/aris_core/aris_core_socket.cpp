@@ -197,7 +197,7 @@ namespace aris::core
 			if (receivedData.size() > 0)
 			{
 				res = 0;
-				while (res < receivedData.size())
+				while (static_cast<MsgSize>(res) < receivedData.size())
 				{
 					int ret = recv(conn_socket, receivedData.data() + res, receivedData.size() - res, 0);
 					if (ret <= 0)

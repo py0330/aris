@@ -167,6 +167,7 @@ namespace aris::dynamic
 		auto mfFrc() const noexcept->double;
 		auto frcCoe() const noexcept ->const double3&;
 		auto setFrcCoe(const double *frc_coe) noexcept->void;
+		auto frcZeroCheck()const noexcept ->double { return 1e-3; }
 
 		virtual ~Motion();
 		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
@@ -259,6 +260,35 @@ namespace aris::dynamic
 		Force& operator=(const Force &other) = default;
 		Force& operator=(Force &&other) = default;
 	};
+
+	/*
+	class Friction :public Element
+	{
+	public:
+		auto frc()const noexcept ->double { return s_vv(frc_coe_.size(), frc_coe_.data(), frc_value_.data()); };
+		auto frcValue()const noexcept ->std::tuple<const double *, Size> 
+		{ 
+			frc_coe_
+
+
+
+			
+			
+			return std::make_tuple(frc_value_.data(), static_cast<Size>(frc_value_.size()));
+		}
+		auto frcCoe() const noexcept ->std::tuple<const double *, Size> { return std::make_tuple(frc_coe_.data(), static_cast<Size>(frc_coe_.size())); }
+		auto setFrcCoe(const double *frc_coe, Size dim) noexcept->void { frc_coe_.assign(frc_coe, frc_coe + dim); frc_value_.resize(dim, 0.0); }
+		
+
+
+		
+
+
+
+	private:
+		std::vector<double> frc_coe_{0.0, 0.0, 0.0};
+		std::vector<double> frc_value_{ 0.0, 0.0, 0.0 };
+	};*/
 
 	class RevoluteJoint final :public Joint
 	{

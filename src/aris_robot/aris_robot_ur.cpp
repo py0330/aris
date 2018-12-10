@@ -152,22 +152,28 @@ namespace aris::robot
 				" vendor_id=\"0x0000009a\" revision_num=\"0x000103F6\" dc_assign_activate=\"0x0300\""
 				" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" max_acc=\"10.0\" max_pos_following_error=\"100.0\" max_vel_following_error=\"200.0\""
 				" home_pos=\"0\" pos_factor=\"62914560\">"
-				"	<pdo_group_pool type=\"PdoPoolObject\">"
-				"		<index_1600 type=\"Pdo\" default_child_type=\"PdoEntry\" index=\"0x1600\" is_tx=\"false\">"
-				"			<control_word index=\"0x6040\" subindex=\"0x00\" size=\"2\"/>"
-				"			<mode_of_operation index=\"0x6060\" subindex=\"0x00\" size=\"1\"/>"
-				"			<target_pos index=\"0x607A\" subindex=\"0x00\" size=\"4\"/>"
-				"			<target_vel index=\"0x60FF\" subindex=\"0x00\" size=\"4\"/>"
-				"			<targer_tor index=\"0x6071\" subindex=\"0x00\" size=\"2\"/>"
-				"		</index_1600>"
-				"		<index_1a00 type=\"Pdo\" default_child_type=\"PdoEntry\" index=\"0x1A00\" is_tx=\"true\">"
-				"			<status_word index=\"0x6041\" subindex=\"0x00\" size=\"2\"/>"
-				"			<mode_of_display index=\"0x6061\" subindex=\"0x00\" size=\"1\"/>"
-				"			<pos_actual_value index=\"0x6064\" subindex=\"0x00\" size=\"4\"/>"
-				"			<vel_actual_value index=\"0x606c\" subindex=\"0x00\" size=\"4\"/>"
-				"			<cur_actual_value index=\"0x6078\" subindex=\"0x00\" size=\"2\"/>"
-				"		</index_1a00>"
-				"	</pdo_group_pool>"
+				"	<sm_pool type=\"SyncManagerPoolObject\">"
+				"		<sm type=\"SyncManager\" is_tx=\"false\"/>"
+				"		<sm type=\"SyncManager\" is_tx=\"true\"/>"
+				"		<sm type=\"SyncManager\" is_tx=\"false\">"
+				"			<index_1600 type=\"Pdo\" default_child_type=\"PdoEntry\" index=\"0x1600\" is_tx=\"false\">"
+				"				<control_word index=\"0x6040\" subindex=\"0x00\" size=\"16\"/>"
+				"				<mode_of_operation index=\"0x6060\" subindex=\"0x00\" size=\"8\"/>"
+				"				<target_pos index=\"0x607A\" subindex=\"0x00\" size=\"32\"/>"
+				"				<target_vel index=\"0x60FF\" subindex=\"0x00\" size=\"32\"/>"
+				"				<targer_tor index=\"0x6071\" subindex=\"0x00\" size=\"16\"/>"
+				"			</index_1600>"
+				"		</sm>"
+				"		<sm type=\"SyncManager\" is_tx=\"true\">"
+				"			<index_1a00 type=\"Pdo\" default_child_type=\"PdoEntry\" index=\"0x1A00\" is_tx=\"true\">"
+				"				<status_word index=\"0x6041\" subindex=\"0x00\" size=\"16\"/>"
+				"				<mode_of_display index=\"0x6061\" subindex=\"0x00\" size=\"8\"/>"
+				"				<pos_actual_value index=\"0x6064\" subindex=\"0x00\" size=\"32\"/>"
+				"				<vel_actual_value index=\"0x606c\" subindex=\"0x00\" size=\"32\"/>"
+				"				<cur_actual_value index=\"0x6078\" subindex=\"0x00\" size=\"16\"/>"
+				"			</index_1a00>"
+				"		</sm>"
+				"	</sm_pool>"
 				"	<sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
 				"		<home_mode index=\"0x6098\" subindex=\"0\" size=\"1\" config=\"35\"/>"
 				"		<home_acc index=\"0x609A\" subindex=\"0\" size=\"4\" config=\"200000\"/>"
@@ -187,10 +193,10 @@ namespace aris::robot
 		std::unique_ptr<aris::plan::PlanRoot> plan_root(new aris::plan::PlanRoot);
 
 		plan_root->planPool().add<aris::plan::EnablePlan>();
-		auto &rc = plan_root->planPool().add<aris::plan::ResetPlan>();
-		rc.command().findByName("group")->findByName("unique_pos")->findByName("pq")->loadXmlStr("<pq default=\"{0,0.63,0.316,0,0,0,1}\"/>");
-		rc.command().findByName("group")->findByName("unique_pos")->findByName("pm")->loadXmlStr("<pm default=\"{1,0,0,0,0,1,0,0.63,0,0,1,0.316,0,0,0,1}\"/>");
-		rc.command().findByName("group")->findByName("unique_pos")->findByName("group")->findByName("pe")->loadXmlStr("<pe default=\"{0,0.63,0.316,0,0,0}\"/>");
+		//auto &rc = plan_root->planPool().add<aris::plan::ResetPlan>();
+		//rc.command().findByName("group")->findByName("unique_pos")->findByName("pq")->loadXmlStr("<pq default=\"{0,0.63,0.316,0,0,0,1}\"/>");
+		//rc.command().findByName("group")->findByName("unique_pos")->findByName("pm")->loadXmlStr("<pm default=\"{1,0,0,0,0,1,0,0.63,0,0,1,0.316,0,0,0,1}\"/>");
+		//rc.command().findByName("group")->findByName("unique_pos")->findByName("group")->findByName("pe")->loadXmlStr("<pe default=\"{0,0.63,0.316,0,0,0}\"/>");
 		plan_root->planPool().add<aris::plan::MovePlan>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
 

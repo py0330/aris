@@ -2731,7 +2731,7 @@ namespace aris::dynamic
 
 			if (solution_num == 0) return false;
 
-			int real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
+			auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
 
 			for (aris::Size i = 0; i < 6; ++i)
 			{

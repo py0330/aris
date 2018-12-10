@@ -77,11 +77,24 @@ namespace aris::dynamic
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
+		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
+		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 
 		inverse_kinematic.allocateMemory();
 		forward_kinematic.allocateMemory();
+		inverse_dynamic.allocateMemory();
+		forward_dynamic.allocateMemory();
 
 		inverse_kinematic.setWhichRoot(8);
+
+		// make topology correct // 
+		for (auto &m : model->motionPool())m.activate(true);
+		for (auto &gm : model->generalMotionPool())gm.activate(false);
+		for (auto &f : model->forcePool())f.activate(false);
+
+
+
+		
 
 		return model;
 	}

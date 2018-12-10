@@ -15,28 +15,7 @@
 
 namespace aris::control
 {
-	class DO :public aris::core::Object
-	{
-	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto index()const->std::uint16_t;
-		auto subindex()const->std::uint8_t;
-		auto size()const->aris::Size;
-
-		virtual ~DO();
-		explicit DO(const std::string &name = "do", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0);
-		DO(const DO &);
-		DO(DO &&);
-		DO& operator=(const DO &);
-		DO& operator=(DO &&);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-		friend class EthercatMaster;
-	};
-	class Sdo :public DO
+	class Sdo :public aris::core::Object
 	{
 	public:
 		enum Option
@@ -49,13 +28,16 @@ namespace aris::control
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		auto index()const->std::uint16_t;
+		auto subindex()const->std::uint8_t;
+		auto byteSize()const->std::uint8_t;
 		auto readable()const->bool;
 		auto writeable()const->bool;
 		auto configurable()const->bool;
 		auto option()const->unsigned;
 		auto configBuffer()->char*;
 		virtual ~Sdo();
-		explicit Sdo(const std::string &name = "sdo", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size data_size = 0, unsigned opt = 0, std::int32_t config_value = 0);
+		explicit Sdo(const std::string &name = "sdo", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, std::uint8_t byte_size = 0, unsigned opt = 0, std::int32_t config_value = 0);
 		Sdo(const Sdo &);
 		Sdo(Sdo &&);
 		Sdo& operator=(const Sdo &);
@@ -154,19 +136,19 @@ namespace aris::control
 
 		template<typename ValueType>
 		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType) * 8); }
-		auto readPdo(std::uint16_t index, std::uint8_t subindex, void *value, int bit_size)->void;
+		auto readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void;
 		template<typename ValueType>
 		auto writePdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value)->void { writePdo(index, subindex, &value, sizeof(ValueType) * 8); }
-		auto writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, int bit_size)->void;
+		auto writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->void;
 		template<typename ValueType>
 		auto readSdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readSdo(index, subindex, &value, sizeof(ValueType)); }
-		auto readSdo(std::uint16_t index, std::uint8_t subindex, void *value, int byte_size)->void;
+		auto readSdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size byte_size)->void;
 		template<typename ValueType>
 		auto writeSdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value)->void { writeSdo(index, subindex, &value, sizeof(ValueType)); }
-		auto writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void;
+		auto writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void;
 		template<typename ValueType>
 		auto configSdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value)->void { configSdo(index, subindex, &value, sizeof(ValueType)); }
-		auto configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, int byte_size)->void;
+		auto configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void;
 
 		virtual ~EthercatSlave();
 		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);

@@ -384,7 +384,7 @@ namespace aris::server
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
 
-		static std::int64_t cmd_id{ 0 };
+		static std::uint64_t cmd_id{ 0 };
 		++cmd_id;
 
 		LOG_INFO << "server receive cmd " << std::to_string(cmd_id) << " : " << msg.toString() << std::endl;
@@ -412,7 +412,7 @@ namespace aris::server
 		std::cout << std::endl;
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		aris::plan::PlanTarget target{ &model(), &controller(), cmd_id, msg.header().reserved1_, std::any(), 0, 0, aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 } };
+		aris::plan::PlanTarget target{ &model(), &controller(), cmd_id, static_cast<std::uint64_t>(msg.header().reserved1_), std::any(), 0, 0, aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 } };
 		// prepair //
 		if (!(target.option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
 		{

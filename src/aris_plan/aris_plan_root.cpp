@@ -610,6 +610,7 @@ namespace aris::plan
 	struct ModeParam
 	{
 		std::int32_t limit_time;
+		std::int32_t mode;
 		std::vector<int> active_motor;
 	};
 	struct ModePlan::Imp { Imp() {} };
@@ -620,7 +621,13 @@ namespace aris::plan
 		for (auto cmd_param : params)
 		{
 			if (cmd_param.first == "limit_time")
+			{
 				param.limit_time = std::stoi(cmd_param.second);
+			}
+			else if (cmd_param.first == "mode")
+			{
+				param.mode = std::stoi(cmd_param.second);
+			}
 			else if (cmd_param.first == "all")
 			{
 				param.active_motor.clear();
@@ -722,6 +729,7 @@ namespace aris::plan
 			"<md default_child_type=\"Param\">"
 			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
 			"		<limit_time default=\"5000\"/>"
+			"       <mode abbreviation=\"d\" default=\"8\"/>"
 			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
 			"			<all abbreviation=\"a\"/>"
 			"			<none abbreviation=\"n\"/>"

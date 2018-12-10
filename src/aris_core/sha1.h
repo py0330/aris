@@ -36,9 +36,9 @@ public:
     static std::string from_file(const std::string &filename);
 
 public:
-    uint32_t digest[5];
+    std::uint32_t digest[5];
     std::string buffer;
-    uint64_t transforms;
+	std::uint64_t transforms;
 };
 
 

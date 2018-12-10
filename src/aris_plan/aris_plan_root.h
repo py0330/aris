@@ -22,14 +22,14 @@ namespace aris::plan
 {
 	struct PlanTarget
 	{
-		aris::dynamic::Model* model;                     // prepair/execute/collect  get&set(but be careful when prepair)
-		aris::control::Master* master;                   // prepair/execute/collect  get&set(but be careful when prepair)
-		std::int64_t command_id;                         // prepair/execute/collect  get
-		std::int64_t option;                             // prepair/execute/collect  get&set when prepair, get when execute and collect
-		std::any param;                                  // prepair/execute/collect  set when prepair, get when execute, destroy when collect
-		std::uint32_t count;                             //         execute/collect  get
-		std::int64_t begin_global_count;                 //         execute/collect  get
-		aris::control::Master::RtStasticsData rt_stastic;//                /collect  get
+		aris::dynamic::Model* model;                      // prepair/execute/collect  get&set(but be careful when prepair)
+		aris::control::Master* master;                    // prepair/execute/collect  get&set(but be careful when prepair)
+		std::uint64_t command_id;                          // prepair/execute/collect  get
+		std::uint64_t option;                             // prepair/execute/collect  get&set when prepair, get when execute and collect
+		std::any param;                                   // prepair/execute/collect  set when prepair, get when execute, destroy when collect
+		std::int32_t count;                               //         execute/collect  get
+		std::int64_t begin_global_count;                  //         execute/collect  get
+		aris::control::Master::RtStasticsData rt_stastic; //                /collect  get
 	};
 	class Plan :public aris::core::Object
 	{
