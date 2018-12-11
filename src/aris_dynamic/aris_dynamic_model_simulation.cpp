@@ -341,6 +341,18 @@ namespace aris::dynamic
 	{
 		const int filter_size = 10;
 		const int mot_num = 6;
+		const int pos_at = 1;
+		const int vel_at = 2;
+		const int cur_at = 3;
+		const int mot_data_num = 4;
+
+
+
+
+
+
+
+
 		const double torque_constant[6]{ 0.283 * 4808,0.283 * 4808,0.276 * 2546,0.226 * 1556,0.219 * 849,0.219 * 849 };
 
 		auto &pos = *dataset[0];
@@ -396,6 +408,8 @@ namespace aris::dynamic
 					fce[j].back() += mtx[i * 24 * filter_size + k * 24 + j * 4 + 3] / filter_size * torque_constant[j] / 1e6;
 				}
 			}
+
+			fce[5].back() = -fce[5].back();
 		}
 	}
 	auto Calibrator::clbFiles(const std::vector<std::string> &file_paths)->void
@@ -412,7 +426,8 @@ namespace aris::dynamic
 			std::cout << "----loading file:" << file << std::endl;
 			auto mtx = aris::dynamic::dlmread(file.c_str());
 			std::cout << "----making data" << std::endl;
-			makeDataset(this, mtx, std::vector<std::vector<std::vector<double> > *>{ &pos, &vel, &acc, &fce });
+			std::vector<std::vector<std::vector<double> > *> dataset{ &pos, &vel, &acc, &fce };
+			makeDataset(this, mtx, dataset);
 		}
 		
 		// make calibration matrix //
@@ -474,72 +489,6 @@ namespace aris::dynamic
 
 		// update inertias //
 		updateInertiaParam(x.data());
-
-		// test errors of this dataset //
-		/*
-		std::cout << "clb finished now compute dynamics of this dataset" << std::endl;
-		std::vector<std::vector<double> > f(6, std::vector<double>(num));
-		std::vector<std::vector<double> > ff(6, std::vector<double>(num));
-		std::vector<std::vector<double> > fd(6, std::vector<double>(num));
-		for (int i = 0; i < num; ++i)
-		{
-			for (int j = 0; j < 6; ++j)
-			{
-				this->model().motionPool()[j].setMp(pos[j][i]);
-				this->model().motionPool()[j].setMv(vel[j][i]);
-				this->model().motionPool()[j].setMa(acc[j][i]);
-				this->model().motionPool()[j].setMf(fce[j][i]);
-			}
-
-			this->model().solverPool().at(1).kinPos();
-			this->model().solverPool().at(1).kinVel();
-			this->model().solverPool().at(2).dynAccAndFce();
-
-			for (int j = 0; j < 6; ++j)
-			{
-				f[j][i] = this->model().motionPool()[j].mf();
-				ff[j][i] = this->model().motionPool()[j].mfFrc();
-				fd[j][i] = this->model().motionPool()[j].mfDyn();
-			}
-		}
-
-
-
-
-
-		std::cout << "dynamic finished, now output results" << std::endl;
-
-
-		//dsp(1, 3, this->model().motionPool()[0].frcCoe());
-
-
-
-
-		for (int i = 0; i<6; ++i)
-		{
-			char posn[1024], veln[1024], accn[1024], fcen[1024], fn[1024], ffn[1024], fdn[1024];
-
-			sprintf(posn, "C:\\Users\\py033\\Desktop\\data_after\\pos%d.txt", i);
-			sprintf(veln, "C:\\Users\\py033\\Desktop\\data_after\\vel%d.txt", i);
-			sprintf(accn, "C:\\Users\\py033\\Desktop\\data_after\\acc%d.txt", i);
-			sprintf(fcen, "C:\\Users\\py033\\Desktop\\data_after\\fce%d.txt", i); 
-			sprintf(fn, "C:\\Users\\py033\\Desktop\\data_after\\f%d.txt", i);
-			sprintf(ffn, "C:\\Users\\py033\\Desktop\\data_after\\ff%d.txt", i);
-			sprintf(fdn, "C:\\Users\\py033\\Desktop\\data_after\\fd%d.txt", i);
-
-			dlmwrite(num, 1, pos[i].data(), posn);
-			dlmwrite(num, 1, vel[i].data(), veln);
-			dlmwrite(num, 1, acc[i].data(), accn);
-			dlmwrite(num, 1, fce[i].data(), fcen);
-			dlmwrite(num, 1, f[i].data(), fn);
-			dlmwrite(num, 1, ff[i].data(), ffn);
-			dlmwrite(num, 1, fd[i].data(), fdn);
-		}
-
-
-
-		std::cout << "end" << std::endl;
-		*/
 	}
 	auto Calibrator::verifyFiles(const std::vector<std::string> &file_paths)->void
 	{
@@ -555,7 +504,8 @@ namespace aris::dynamic
 			std::cout << "----loading file:" << file << std::endl;
 			auto mtx = aris::dynamic::dlmread(file.c_str());
 			std::cout << "----making data" << std::endl;
-			makeDataset(this, mtx, std::vector<std::vector<std::vector<double> > *>{ &pos, &vel, &acc, &fce });
+			std::vector<std::vector<std::vector<double> > *> dataset{ &pos, &vel, &acc, &fce };
+			makeDataset(this, mtx, dataset);
 		}
 
 		// now test datasets //
@@ -1049,7 +999,6 @@ namespace aris::dynamic
 		imp_->time_result_ = findOrInsert<TimeResult>("time_result");
 		imp_->constraint_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
 		imp_->part_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
-
 	}
 	auto SimResult::timeResult()->TimeResult& { return *imp_->time_result_; }
 	auto SimResult::partResultPool()->aris::core::ObjectPool<SimResult::PartResult, Element>& { return *imp_->part_result_pool_; }
