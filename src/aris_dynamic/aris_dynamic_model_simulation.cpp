@@ -346,13 +346,6 @@ namespace aris::dynamic
 		const int cur_at = 3;
 		const int mot_data_num = 4;
 
-
-
-
-
-
-
-
 		const double torque_constant[6]{ 0.283 * 4808,0.283 * 4808,0.276 * 2546,0.226 * 1556,0.219 * 849,0.219 * 849 };
 
 		auto &pos = *dataset[0];

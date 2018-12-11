@@ -65,7 +65,7 @@ namespace aris::dynamic
 	template <typename T, typename TType>
 	auto inline dsp(Size m, Size n, const T *data, TType d_t)noexcept->void
 	{
-		std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(4);
+		std::cout << std::setiosflags(std::ios::fixed) << std::setiosflags(std::ios::right) << std::setprecision(14);
 
 		std::cout << std::endl;
 		for (Size i = 0; i < m; i++)
