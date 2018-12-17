@@ -506,9 +506,6 @@ namespace aris::server
 		if (imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to start server, because it is already started "));
 		imp_->is_running_ = true;
 
-		// 分配model的内存 //
-		for (auto &solver : imp_->model_->solverPool())solver.allocateMemory();
-
 		// 得到电机向量以及数据 //
 		imp_->last_pvc.clear();
 		imp_->last_pvc.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
