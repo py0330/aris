@@ -346,7 +346,7 @@ namespace aris::dynamic
 		const int cur_at = 3;
 		const int mot_data_num = 4;
 
-		const double torque_constant[6]{ 0.283 * 4808,0.283 * 4808,0.276 * 2546,0.226 * 1556,0.219 * 849,0.219 * 849 };
+		const double torque_constant[6]{ 0.283 * 81 * 4808, 0.283 * 81 * 4808, 0.276 * 81 * 2546, 0.226 * 72.857 * 1556, 0.219 * 81 * 849, 0.219 * 50 * 849 };
 
 		auto &pos = *dataset[0];
 		auto &vel = *dataset[1];
@@ -401,8 +401,6 @@ namespace aris::dynamic
 					fce[j].back() += mtx[i * 24 * filter_size + k * 24 + j * 4 + 3] / filter_size * torque_constant[j] / 1e6;
 				}
 			}
-
-			fce[5].back() = -fce[5].back();
 		}
 	}
 	auto Calibrator::clbFiles(const std::vector<std::string> &file_paths)->void
@@ -470,7 +468,7 @@ namespace aris::dynamic
 		// solve calibration matrix //
 		std::cout << "solve calibration matrix" << std::endl;
 		aris::Size rank;
-		double zero_check = 1e-4;
+		double zero_check = 1e-6;
 		s_householder_utp(rows, n(), A.data(), A.data(), tau.data(), p.data(), rank, zero_check);
 		s_householder_utp_sov(rows, n(), 1, rank, A.data(), tau.data(), p.data(), b.data(), x.data(), zero_check);
 		std::cout << "rank:" << rank << std::endl;
@@ -526,7 +524,7 @@ namespace aris::dynamic
 			}
 		}
 
-
+		
 
 
 
