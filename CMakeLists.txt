@@ -82,7 +82,7 @@ endif(WIN32)
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
 ## build targets ##
-set(ARIS_TARGETS aris_core aris_control aris_dynamic aris_plan aris_sensor aris_server aris_robot)
+set(ARIS_TARGETS aris_robot aris_server aris_plan aris_dynamic aris_control aris_sensor aris_core)
 foreach(aris_target ${ARIS_TARGETS})
 	file(GLOB HEADERS src/${aris_target}/*.h src/${aris_target}/${aris_target}.h)
 	file(GLOB SOURCES src/${aris_target}/*.cpp)

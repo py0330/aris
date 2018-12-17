@@ -138,7 +138,7 @@ namespace aris::control
 		for (uint16_t sla_pos = 0; sla_pos < ec_master_info.slave_count; ++sla_pos)
 		{
 			auto &info = ec_slave_info_vec[sla_pos];
-			auto &sla = master->slavePool().add<EthercatSlave>("slave_" + std::to_string(sla_pos), sla_pos, info.vendor_id, info.product_code, info.revision_number);
+			auto &sla = master->slavePool().add<EthercatSlave>(info.name, sla_pos, info.vendor_id, info.product_code, info.revision_number);
 
 			for (uint8_t sync_pos = 0; sync_pos < ec_slave_info_vec[sla_pos].sync_count; ++sync_pos)
 			{

@@ -147,49 +147,56 @@ namespace aris::dynamic
 			{ -1,0,0 },
 		};
 
-		double first_axis[3]{ 1,0,0 };
-		double second_axis[3];
-		s_vc(3, up_pos[0], second_axis);
-		s_vi(3, down_pos[0], second_axis);
-		auto &u1 = model->addUniversalJoint(p1a, model->ground(), down_pos[0], first_axis, second_axis);
-		//auto &p1 = model->addPrismaticJoint(p1b, p1a, down_pos[0], );
-		//auto &s1 = model->addSphericalJoint(p1a, model->ground(), up_pos[0], second_axis);
-		//auto &j2 = model->addRevoluteJoint(p2, p1, j2_pos, j2_axis);
-		//auto &j3 = model->addRevoluteJoint(p3, p2, j3_pos, j3_axis);
-		//auto &j4 = model->addRevoluteJoint(p4, p3, j4_pos, j4_axis);
-		//auto &j5 = model->addRevoluteJoint(p5, p4, j5_pos, j5_axis);
-		//auto &j6 = model->addRevoluteJoint(p6, p5, j6_pos, j6_axis);
-		/*
+		// 上下平台重合时移动副的方向 //
+		double prismatic_direction[6][3];
+		double first_axis[6][3];
+		double second_axis[6][3];
+		for (Size i = 0; i < 6; ++i)
+		{
+			s_vc(3, up_pos[i], prismatic_direction[i]);
+			s_vi(3, down_pos[i], prismatic_direction[i]);
+			s_nv(3, 1.0 / s_norm(3, prismatic_direction[i]), prismatic_direction[i]);
+
+			double axis[3]{ 0,1,0 };
+			s_vc(3, axis, second_axis[i]);
+
+			s_c3(prismatic_direction[i], second_axis[i], first_axis[i]);
+		}
+
+		auto &u1 = model->addUniversalJoint(p1a, model->ground(), down_pos[0], first_axis[0], second_axis[0]);
+		auto &p1 = model->addPrismaticJoint(p1b, p1a, down_pos[0], prismatic_direction[0]);
+		auto &s1 = model->addSphericalJoint(p1b, up, up_pos[0]);
+		auto &u2 = model->addUniversalJoint(p2a, model->ground(), down_pos[1], first_axis[1], second_axis[1]);
+		auto &p2 = model->addPrismaticJoint(p2b, p2a, down_pos[1], prismatic_direction[1]);
+		auto &s2 = model->addSphericalJoint(p2b, up, up_pos[1]);
+		auto &u3 = model->addUniversalJoint(p3a, model->ground(), down_pos[2], first_axis[2], second_axis[2]);
+		auto &p3 = model->addPrismaticJoint(p3b, p3a, down_pos[2], prismatic_direction[2]);
+		auto &s3 = model->addSphericalJoint(p3b, up, up_pos[2]);
+		auto &u4 = model->addUniversalJoint(p4a, model->ground(), down_pos[3], first_axis[3], second_axis[3]);
+		auto &p4 = model->addPrismaticJoint(p4b, p4a, down_pos[3], prismatic_direction[3]);
+		auto &s4 = model->addSphericalJoint(p4b, up, up_pos[3]);
+		auto &u5 = model->addUniversalJoint(p5a, model->ground(), down_pos[4], first_axis[4], second_axis[4]);
+		auto &p5 = model->addPrismaticJoint(p5b, p5a, down_pos[4], prismatic_direction[4]);
+		auto &s5 = model->addSphericalJoint(p5b, up, up_pos[4]);
+		auto &u6 = model->addUniversalJoint(p6a, model->ground(), down_pos[5], first_axis[5], second_axis[5]);
+		auto &p6 = model->addPrismaticJoint(p6b, p6a, down_pos[5], prismatic_direction[5]);
+		auto &s6 = model->addSphericalJoint(p6b, up, up_pos[5]);
+
 		// add actuation //
-		auto &m1 = model->addMotion(j1);
-		auto &m2 = model->addMotion(j2);
-		auto &m3 = model->addMotion(j3);
-		auto &m4 = model->addMotion(j4);
-		auto &m5 = model->addMotion(j5);
-		auto &m6 = model->addMotion(j6);
+		auto &m1 = model->addMotion(p1);
+		auto &m2 = model->addMotion(p2);
+		auto &m3 = model->addMotion(p3);
+		auto &m4 = model->addMotion(p4);
+		auto &m5 = model->addMotion(p5);
+		auto &m6 = model->addMotion(p6);
 
 		// add ee general motion //
-		double pq_ee_i[]{ 0.398, 0.0, 0.6295, 0.0, 0.0, 0.0, 1.0 };
-		double pm_ee_i[16];
+		double pm_ee_i[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 
-		s_pq2pm(pq_ee_i, pm_ee_i);
-
-		auto &makI = p6.markerPool().add<Marker>("ee_makI", pm_ee_i);
+		auto &makI = up.markerPool().add<Marker>("ee_makI", pm_ee_i);
 		auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
-
-		// change robot pose //
-		//if (true)
-		//{
-		//	p1.setPm(s_pm_dot_pm(robot_pm, *p1.pm()));
-		//	p2.setPm(s_pm_dot_pm(robot_pm, *p2.pm()));
-		//	p3.setPm(s_pm_dot_pm(robot_pm, *p3.pm()));
-		//	p4.setPm(s_pm_dot_pm(robot_pm, *p4.pm()));
-		//	p5.setPm(s_pm_dot_pm(robot_pm, *p5.pm()));
-		//	p6.setPm(s_pm_dot_pm(robot_pm, *p6.pm()));
-		//	j1.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ().prtPm()));
-		//}
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
@@ -202,17 +209,10 @@ namespace aris::dynamic
 		inverse_dynamic.allocateMemory();
 		forward_dynamic.allocateMemory();
 
-		inverse_kinematic.setWhichRoot(8);
-
 		// make topology correct // 
 		for (auto &m : model->motionPool())m.activate(true);
 		for (auto &gm : model->generalMotionPool())gm.activate(false);
 		for (auto &f : model->forcePool())f.activate(false);
-
-		return model;
-
-
-		*/
 
 		return model;
 	}

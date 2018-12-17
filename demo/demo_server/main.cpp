@@ -155,6 +155,8 @@ int main(int argc, char *argv[])
 		return 0;
 	});
 
+	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
+	
 	cs.start();
 	socket.startServer(std::to_string(port));
 

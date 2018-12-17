@@ -2076,7 +2076,6 @@ namespace aris::dynamic
 		return num_sols;
 	}
 
-
 	auto isUrMechanism(SubSystem &sys)->bool
 	{
 		std::vector<const Part*> part_vec(7, nullptr);
@@ -2803,4 +2802,46 @@ namespace aris::dynamic
 	}
 	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
+
+	struct StewartInverseKinematicSolver::Imp
+	{
+		UniversalJoint *u_[6];
+		PrismaticJoint *p_[6];
+		SphericalJoint *s_[6];
+	};
+	auto StewartInverseKinematicSolver::allocateMemory()->void
+	{
+		InverseKinematicSolver::allocateMemory();
+
+		int u_num{ 0 }, p_num{ 0 }, s_num{ 0 };
+		for (auto &j : model().jointPool())
+		{
+			if (auto u = dynamic_cast<UniversalJoint*>(&j))
+			{
+				imp_->u_[u_num] = u;
+				++u_num;
+			}
+			if (auto p = dynamic_cast<PrismaticJoint*>(&j))
+			{
+				imp_->p_[p_num] = p;
+				++p_num;
+			}
+			if (auto s = dynamic_cast<SphericalJoint*>(&j))
+			{
+				imp_->s_[s_num] = s;
+				++s_num;
+			}
+		}
+	}
+	auto StewartInverseKinematicSolver::kinPos()->bool
+	{
+		
+
+
+
+
+		return true;
+	}
+	StewartInverseKinematicSolver::StewartInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
+
 }

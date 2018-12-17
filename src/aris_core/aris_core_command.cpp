@@ -132,24 +132,24 @@ namespace aris::core
 		}
 		static auto reset(Object* param)->void
 		{
-			if (dynamic_cast<Param*>(param))
+			if (auto p = dynamic_cast<Param*>(param))
 			{
-				dynamic_cast<Param*>(param)->ParamBase::imp_->is_taken_ = false;
+				p->ParamBase::imp_->is_taken_ = false;
 			}
-			else if (dynamic_cast<GroupParam*>(param))
+			else if (auto g = dynamic_cast<GroupParam*>(param))
 			{
-				dynamic_cast<GroupParam*>(param)->ParamBase::imp_->is_taken_ = false;
-				for (auto &child : *dynamic_cast<GroupParam*>(param))reset(&child);
+				g->ParamBase::imp_->is_taken_ = false;
+				for (auto &child : *g)reset(&child);
 			}
-			else if (dynamic_cast<UniqueParam*>(param))
+			else if (auto u = dynamic_cast<UniqueParam*>(param))
 			{
-				dynamic_cast<UniqueParam*>(param)->ParamBase::imp_->is_taken_ = false;
-				for (auto &child : *dynamic_cast<UniqueParam*>(param))reset(&child);
+				u->ParamBase::imp_->is_taken_ = false;
+				for (auto &child : *u)reset(&child);
 			}
-			else if (dynamic_cast<Command*>(param))
+			else if (auto c = dynamic_cast<Command*>(param))
 			{
-				dynamic_cast<Command*>(param)->imp_->is_taken_ = false;
-				for (auto &child : *dynamic_cast<Command*>(param))reset(&child);
+				c->imp_->is_taken_ = false;
+				for (auto &child : *c)reset(&child);
 			}
 			else
 			{

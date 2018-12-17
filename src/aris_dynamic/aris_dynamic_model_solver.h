@@ -202,6 +202,22 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+
+	class StewartInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
+	{
+	public:
+		static const std::string& Type() { static const std::string type("StewartInverseSolver"); return type; }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual allocateMemory()->void override;
+		auto virtual kinPos()->bool override;
+
+		virtual ~StewartInverseKinematicSolver() = default;
+		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
 	///
 	/// @}
 }
