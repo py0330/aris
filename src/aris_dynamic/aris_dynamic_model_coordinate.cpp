@@ -659,6 +659,13 @@ namespace aris::dynamic
 	auto Marker::vs()const noexcept->const double6& { return fatherPart().vs(); }
 	auto Marker::as()const noexcept->const double6& { return fatherPart().as(); }
 	auto Marker::prtPm()const noexcept->const double4x4& { return imp_->prt_pm_; }
+	auto Marker::setPm(const double *pm) noexcept->void{s_pm_dot_inv_pm(pm, *prtPm(), const_cast<double*>(*fatherPart().pm()));}
+	auto Marker::setPm(const Coordinate &relative_to, const double *pm) noexcept->void
+	{
+		double global_pm[16];
+		s_pm_dot_pm(*relative_to.pm(), pm, global_pm);
+		setPm(global_pm);
+	}
 	Marker::~Marker() = default;
 	Marker::Marker(const Marker&) = default;
 	Marker::Marker(Marker&&) = default;

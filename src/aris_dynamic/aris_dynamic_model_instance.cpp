@@ -121,73 +121,108 @@ namespace aris::dynamic
 		// 添加变量 //
 		model->calculator().addVariable("PI", aris::core::Matrix(PI));
 
-		// add part //
-		auto &p1a = model->partPool().add<Part>("p1a");
-		auto &p1b = model->partPool().add<Part>("p1b");
-		auto &p2a = model->partPool().add<Part>("p2a");
-		auto &p2b = model->partPool().add<Part>("p2b");
-		auto &p3a = model->partPool().add<Part>("p3a");
-		auto &p3b = model->partPool().add<Part>("p3b");
-		auto &p4a = model->partPool().add<Part>("p4a");
-		auto &p4b = model->partPool().add<Part>("p4b");
-		auto &p5a = model->partPool().add<Part>("p5a");
-		auto &p5b = model->partPool().add<Part>("p5b");
-		auto &p6a = model->partPool().add<Part>("p6a");
-		auto &p6b = model->partPool().add<Part>("p6b");
-		auto &up = model->partPool().add<Part>("up");
-
-		// add joint //
+		// 尺寸变量 //
 		const double up_pos[6][3]
 		{
-			{ 0,0,-0.289 },
-			{ 0.25,0,0.144 },
-			{ 0.25,0,0.144 },
-			{ -0.25,0,0.144 },
-			{ -0.25,0,0.144 },
-			{ 0,0,-0.289 },
+		{ 0,0,-0.289 },
+		{ 0.25,0,0.144 },
+		{ 0.25,0,0.144 },
+		{ -0.25,0,0.144 },
+		{ -0.25,0,0.144 },
+		{ 0,0,-0.289 },
 		};
 		const double down_pos[6][3]
 		{
-			{ 1,0,0 },
-			{ 1,0,0 },
-			{ 0,0,1.732 },
-			{ 0,0,1.732 },
-			{ -1,0,0 },
-			{ -1,0,0 },
+		{ 1,0,0 },
+		{ 1,0,0 },
+		{ 0,0,1.732 },
+		{ 0,0,1.732 },
+		{ -1,0,0 },
+		{ -1,0,0 },
 		};
 
-		// 上下平台重合时移动副的方向 //
+		// 移动方向，U副第一根轴、第二根轴
 		double prismatic_direction[6][3];
 		double first_axis[6][3];
-		double second_axis[6][3];
+		const double second_axis[6][3]
+		{
+		{ 0,1,0 },
+		{ 0,1,0 },
+		{ 0,1,0 },
+		{ 0,1,0 },
+		{ 0,1,0 },
+		{ 0,1,0 },
+		};
 		for (Size i = 0; i < 6; ++i)
 		{
 			s_vc(3, up_pos[i], prismatic_direction[i]);
-			s_vi(3, down_pos[i], prismatic_direction[i]);
+			s_vs(3, down_pos[i], prismatic_direction[i]);
 			s_nv(3, 1.0 / s_norm(3, prismatic_direction[i]), prismatic_direction[i]);
-
-			double axis[3]{ 0,1,0 };
-			s_vc(3, axis, second_axis[i]);
 
 			s_c3(prismatic_direction[i], second_axis[i], first_axis[i]);
 		}
 
-		auto &u1 = model->addUniversalJoint(p1a, model->ground(), down_pos[0], first_axis[0], second_axis[0]);
+		double p1a_pm[16], p1b_pm[16], p2a_pm[16], p2b_pm[16], p3a_pm[16], p3b_pm[16], p4a_pm[16], p4b_pm[16], p5a_pm[16], p5b_pm[16], p6a_pm[16], p6b_pm[16];
+		s_sov_axes2pm(down_pos[0], first_axis[0], second_axis[0], p1a_pm, "xz");
+		s_sov_axes2pm(up_pos[0], first_axis[0], second_axis[0], p1b_pm, "xz");
+		s_sov_axes2pm(down_pos[1], first_axis[1], second_axis[1], p2a_pm, "xz");
+		s_sov_axes2pm(up_pos[1], first_axis[1], second_axis[1], p2b_pm, "xz");
+		s_sov_axes2pm(down_pos[2], first_axis[2], second_axis[2], p3a_pm, "xz");
+		s_sov_axes2pm(up_pos[2], first_axis[2], second_axis[2], p3b_pm, "xz");
+		s_sov_axes2pm(down_pos[3], first_axis[3], second_axis[3], p4a_pm, "xz");
+		s_sov_axes2pm(up_pos[3], first_axis[3], second_axis[3], p4b_pm, "xz");
+		s_sov_axes2pm(down_pos[4], first_axis[4], second_axis[4], p5a_pm, "xz");
+		s_sov_axes2pm(up_pos[4], first_axis[4], second_axis[4], p5b_pm, "xz");
+		s_sov_axes2pm(down_pos[5], first_axis[5], second_axis[5], p6a_pm, "xz");
+		s_sov_axes2pm(up_pos[5], first_axis[5], second_axis[5], p6b_pm, "xz");
+
+
+		// add part //
+		auto &p1a = model->partPool().add<Part>("p1a", nullptr, p1a_pm);
+		auto &p1b = model->partPool().add<Part>("p1b", nullptr, p1b_pm);
+		auto &p2a = model->partPool().add<Part>("p2a", nullptr, p2a_pm);
+		auto &p2b = model->partPool().add<Part>("p2b", nullptr, p2b_pm);
+		auto &p3a = model->partPool().add<Part>("p3a", nullptr, p3a_pm);
+		auto &p3b = model->partPool().add<Part>("p3b", nullptr, p3b_pm);
+		auto &p4a = model->partPool().add<Part>("p4a", nullptr, p4a_pm);
+		auto &p4b = model->partPool().add<Part>("p4b", nullptr, p4b_pm);
+		auto &p5a = model->partPool().add<Part>("p5a", nullptr, p5a_pm);
+		auto &p5b = model->partPool().add<Part>("p5b", nullptr, p5b_pm);
+		auto &p6a = model->partPool().add<Part>("p6a", nullptr, p6a_pm);
+		auto &p6b = model->partPool().add<Part>("p6b", nullptr, p6b_pm);
+		auto &up = model->partPool().add<Part>("up");
+
+		p1a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p1b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p2a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p2b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p3a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p3b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p4a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p4b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p5a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p5b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p6a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p6b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		up.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\up.xmt_txt");
+
+		// add joint //
+		auto &u1 = model->addUniversalJoint(p1a, model->ground(), down_pos[0], second_axis[0], first_axis[0]);
 		auto &p1 = model->addPrismaticJoint(p1b, p1a, down_pos[0], prismatic_direction[0]);
 		auto &s1 = model->addSphericalJoint(p1b, up, up_pos[0]);
-		auto &u2 = model->addUniversalJoint(p2a, model->ground(), down_pos[1], first_axis[1], second_axis[1]);
+		auto &u2 = model->addUniversalJoint(p2a, model->ground(), down_pos[1], second_axis[1], first_axis[1]);
 		auto &p2 = model->addPrismaticJoint(p2b, p2a, down_pos[1], prismatic_direction[1]);
 		auto &s2 = model->addSphericalJoint(p2b, up, up_pos[1]);
-		auto &u3 = model->addUniversalJoint(p3a, model->ground(), down_pos[2], first_axis[2], second_axis[2]);
+		auto &u3 = model->addUniversalJoint(p3a, model->ground(), down_pos[2], second_axis[2], first_axis[2]);
 		auto &p3 = model->addPrismaticJoint(p3b, p3a, down_pos[2], prismatic_direction[2]);
 		auto &s3 = model->addSphericalJoint(p3b, up, up_pos[2]);
-		auto &u4 = model->addUniversalJoint(p4a, model->ground(), down_pos[3], first_axis[3], second_axis[3]);
+		auto &u4 = model->addUniversalJoint(p4a, model->ground(), down_pos[3], second_axis[3], first_axis[3]);
 		auto &p4 = model->addPrismaticJoint(p4b, p4a, down_pos[3], prismatic_direction[3]);
 		auto &s4 = model->addSphericalJoint(p4b, up, up_pos[3]);
-		auto &u5 = model->addUniversalJoint(p5a, model->ground(), down_pos[4], first_axis[4], second_axis[4]);
+		auto &u5 = model->addUniversalJoint(p5a, model->ground(), down_pos[4], second_axis[4], first_axis[4]);
 		auto &p5 = model->addPrismaticJoint(p5b, p5a, down_pos[4], prismatic_direction[4]);
 		auto &s5 = model->addSphericalJoint(p5b, up, up_pos[4]);
-		auto &u6 = model->addUniversalJoint(p6a, model->ground(), down_pos[5], first_axis[5], second_axis[5]);
+		auto &u6 = model->addUniversalJoint(p6a, model->ground(), down_pos[5], second_axis[5], first_axis[5]);
 		auto &p6 = model->addPrismaticJoint(p6b, p6a, down_pos[5], prismatic_direction[5]);
 		auto &s6 = model->addSphericalJoint(p6b, up, up_pos[5]);
 
@@ -199,6 +234,11 @@ namespace aris::dynamic
 		auto &m5 = model->addMotion(p5);
 		auto &m6 = model->addMotion(p6);
 
+		for (int i = 0; i < 6; ++i)
+		{
+
+		}
+
 		// add ee general motion //
 		double pm_ee_i[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
@@ -208,8 +248,8 @@ namespace aris::dynamic
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 		// add solver
-		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
-		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
+		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::StewartInverseKinematicSolver>();
+		auto &forward_kinematic = model->solverPool().add<aris::dynamic::ForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 

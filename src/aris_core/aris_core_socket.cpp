@@ -170,7 +170,6 @@ namespace aris::core
 				res += ret;
 			}
 			
-
 			// 检查是否正在Close,如果不能锁住,则证明正在close,于是结束线程释放资源, //
 			// 若能锁住,则开始获取Imp所有权 //
 			std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);

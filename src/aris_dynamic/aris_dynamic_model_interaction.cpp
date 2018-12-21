@@ -198,6 +198,10 @@ namespace aris::dynamic
 	auto Motion::mfDyn() const noexcept->double { return Constraint::imp_->cf_[0]; }
 	auto Motion::setMfDyn(double mf_dyn) noexcept->void { Constraint::imp_->cf_[0] = mf_dyn; }
 	auto Motion::mfFrc() const noexcept->double { return s_sgn(imp_->mv_, frcZeroCheck())*frcCoe()[0] + imp_->mv_*frcCoe()[1] + imp_->ma_*frcCoe()[2]; }
+	auto Motion::mpOffset()const noexcept->double { return imp_->mp_offset_; }
+	auto Motion::setMpOffset(double mp_offset)noexcept->void { imp_->mp_offset_ = mp_offset; }
+	auto Motion::mpFactor()const noexcept->double { return imp_->mp_factor_; }
+	auto Motion::setMpFactor(double mp_factor)noexcept->void { imp_->mp_factor_ = mp_factor; }
 	Motion::~Motion() = default;
 	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : Constraint(name, makI, makJ, active)
 	{

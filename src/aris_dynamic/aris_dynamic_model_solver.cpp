@@ -2791,14 +2791,6 @@ namespace aris::dynamic
 			}
 			else return false;
 		}
-
-
-
-
-
-
-
-
 	}
 	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
@@ -2835,10 +2827,53 @@ namespace aris::dynamic
 	}
 	auto StewartInverseKinematicSolver::kinPos()->bool
 	{
+		model().generalMotionPool()[0].makI().setPm(model().generalMotionPool()[0].makJ(), *model().generalMotionPool()[0].mpm());
 		
+		for (auto i = 0; i < 6; ++i)
+		{
+			auto u_pmi = imp_->u_[i]->makI().pm();
+			auto u_pmj = imp_->u_[i]->makJ().pm();
+			auto p_pmi = imp_->p_[i]->makI().pm();
+			auto p_pmj = imp_->p_[i]->makJ().pm();
+			auto s_pmi = imp_->s_[i]->makI().pm();
+			auto s_pmj = imp_->s_[i]->makJ().pm();
+
+			const double p_dir_global[3]{ s_pmj[0][3] - u_pmj[0][3], s_pmj[1][3] - u_pmj[1][3],s_pmj[2][3] - u_pmj[2][3] };
+			const double p_dir_in_pa[3]{ imp_->p_[i]->makJ().prtPm()[0][2],imp_->p_[i]->makJ().prtPm()[1][2],imp_->p_[i]->makJ().prtPm()[2][2] };
+			const double p_dir_in_pb[3]{ imp_->p_[i]->makI().prtPm()[0][2],imp_->p_[i]->makI().prtPm()[1][2],imp_->p_[i]->makI().prtPm()[2][2] };
+
+			double second_axis_global[3];
+			s_c3(&u_pmj[0][2], 4, p_dir_global, 1, second_axis_global, 1);
+			const double second_axis_in_pa[3]{ imp_->u_[i]->makI().prtPm()[0][2], imp_->u_[i]->makI().prtPm()[1][2], imp_->u_[i]->makI().prtPm()[2][2] };
+
+			double pm1[16], pm2[16];
+			aris::dynamic::s_sov_axes2pm(&u_pmj[0][3], 4, p_dir_global, 1, second_axis_global, 1, pm1,"xy");
+			aris::dynamic::s_sov_axes2pm(&imp_->u_[i]->makI().prtPm()[0][3], 4, p_dir_in_pa, 1, second_axis_in_pa, 1, pm2, "xy");
+
+			double p1a_pm[16];
+			s_pm_dot_inv_pm(pm1, pm2, p1a_pm);
+			model().partPool()[i * 2 + 1].setPm(p1a_pm);
 
 
+			double pp[3];
+			s_vc(16, *imp_->s_[i]->makJ().pm(), pm1);
+			s_mc(3, 3, *imp_->p_[i]->makJ().pm(), 4, pm1, 4);
+			
+			s_vc(16, *imp_->s_[i]->makI().prtPm(), pm2);
+			s_mc(3, 3, *imp_->p_[i]->makI().prtPm(), 4, pm2, 4);
 
+			//aris::dynamic::s_sov_axes2pm(&s_pmj[0][3], 4, p_dir_global, 1, second_axis_global, 1, pm1, "xy");
+			//aris::dynamic::s_sov_axes2pm(&imp_->s_[i]->makI().prtPm()[0][3], 4, p_dir_in_pb, 1, second_axis_in_pb, 1, pm2, "xy");
+
+			double p1b_pm[16];
+			s_pm_dot_inv_pm(pm1, pm2, p1b_pm);
+			model().partPool()[i * 2 + 2].setPm(p1b_pm);
+		}
+
+		for (auto &mot : model().motionPool())
+		{
+			mot.updMp();
+		}
 
 		return true;
 	}

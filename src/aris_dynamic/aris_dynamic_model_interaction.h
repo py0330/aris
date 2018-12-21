@@ -168,6 +168,11 @@ namespace aris::dynamic
 		auto frcCoe() const noexcept ->const double3&;
 		auto setFrcCoe(const double *frc_coe) noexcept->void;
 		auto frcZeroCheck()const noexcept ->double { return 1e-3; }
+		auto mpOffset()const noexcept->double;
+		auto setMpOffset(double mp_offset)noexcept->void;
+		auto mpFactor()const noexcept->double;
+		auto setMpFactor(double mp_factor)noexcept->void;
+
 
 		virtual ~Motion();
 		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);

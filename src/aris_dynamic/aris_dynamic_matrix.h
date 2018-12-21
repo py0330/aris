@@ -515,7 +515,13 @@ namespace aris::dynamic
 	}
 	auto inline s_sov_um(Size m, Size rhs, const double *L, const double *b, double *x, double zero_check = 1e-10) noexcept->void { s_sov_um(m, rhs, L, m, b, rhs, x, rhs, zero_check); }
 
-	// tau must have same size with max(m,n), A can be the same as U
+	// solve decomposition of A
+	//
+	//    A :        m x n
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//
+	//    U can be the same address with A
 	template<typename AType, typename UType, typename TauType>
 	auto inline s_householder_ut(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, double zero_check = 1e-10)noexcept->void
 	{
@@ -549,7 +555,14 @@ namespace aris::dynamic
 		}
 	}
 	auto inline s_householder_ut(Size m, Size n, const double *A, double *U, double *tau, double zero_check = 1e-10)noexcept->void { s_householder_ut(m, n, A, n, U, n, tau, 1, zero_check); }
-	// Q can be the same with U, when m <= n
+	
+	//    Q = f(U,tau)  where Q * R = A 
+	//
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    Q :        m x m
+	//
+	//    Q can be the same address with U, if m < n
 	template<typename UType, typename TauType, typename QType>
 	auto inline s_householder_ut2q(Size m, Size n, const double *U, UType u_t, const double *tau, TauType tau_t, double *Q, QType q_t)noexcept->void
 	{
@@ -568,7 +581,14 @@ namespace aris::dynamic
 		}
 	}
 	auto inline s_householder_ut2q(Size m, Size n, const double *U, const double *tau, double *Q)noexcept->void { s_householder_ut2q(m, n, U, n, tau, 1, Q, m); }
-	// Q can be the same with A, now Q size is m x n
+	
+	//    Q = f(U,tau)  where Q * R = A 
+	//
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    Q :        m x n
+	//
+	//    Q can be the same address with U
 	template<typename UType, typename TauType, typename QType>
 	auto inline s_householder_ut2qmn(Size m, Size n, const double *U, UType u_t, const double *tau, TauType tau_t, double *Q, QType q_t)noexcept->void
 	{
@@ -583,7 +603,14 @@ namespace aris::dynamic
 		}
 	}
 	auto inline s_householder_ut2qmn(Size m, Size n, const double *U, const double *tau, double *Q)noexcept->void { s_householder_ut2qmn(m, n, U, n, tau, 1, Q, n); }
-	// U can be the same as R
+	
+	//    R = f(U,tau)  where Q * R = A 
+	//
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    R :        m x n
+	//
+	//    R can be the same address with U
 	template<typename UType, typename TauType, typename RType>
 	auto inline s_householder_ut2r(Size m, Size n, const double *U, UType u_t, const double *tau, TauType tau_t, double *R, RType r_t)noexcept->void
 	{
@@ -594,7 +621,15 @@ namespace aris::dynamic
 		}
 	}
 	auto inline s_householder_ut2r(Size m, Size n, const double *U, const double *tau, double *R)noexcept->void { s_householder_ut2r(m, n, U, n, tau, 1, R, n); }
-	// U can be the same as R
+	
+	// [Q,R]= f(U,tau)  where Q * R = A 
+	//
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    Q :        m x m
+	//    R :        m x n
+	//
+	//    R can be the same address with U
 	template<typename UType, typename TauType, typename QType, typename RType>
 	auto inline s_householder_ut2qr(Size m, Size n, const double *U, UType u_t, const double *tau, TauType tau_t, double *Q, QType q_t, double *R, RType r_t)noexcept->void
 	{
@@ -602,7 +637,15 @@ namespace aris::dynamic
 		s_householder_ut2r(m, n, U, u_t, tau, tau_t, R, r_t);
 	}
 	auto inline s_householder_ut2qr(Size m, Size n, const double *U, const double *tau, double *Q, double *R)noexcept->void { s_householder_ut2qr(m, n, U, n, tau, 1, Q, m, R, n); }
-	// x must have the same or bigger size with b
+	
+	//    x = Q * b 
+	//
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    b :        m x rhs
+	//    x : max(n,m) x rhs
+	//
+	//    x can be the same address with b
 	template<typename UType, typename TauType, typename BType, typename XType>
 	auto inline s_householder_ut_q_dot(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
 	{
@@ -623,7 +666,15 @@ namespace aris::dynamic
 		}
 	}
 	auto inline s_householder_ut_q_dot(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x)noexcept->void { s_householder_ut_q_dot(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
-	// x must have the same or bigger size with b
+	
+	//    x = Q^T * b
+	//
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    b :        m x rhs
+	//    x :        m x rhs
+	//
+	//    x can be the same address with b
 	template<typename UType, typename TauType, typename BType, typename XType>
 	auto inline s_householder_ut_qt_dot(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t)noexcept->void
 	{
@@ -643,7 +694,14 @@ namespace aris::dynamic
 		}
 	}
 	auto inline s_householder_ut_qt_dot(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x)noexcept->void { s_householder_ut_qt_dot(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs); }
-	// x must have the same or bigger size with b
+	
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    p : max(m,n) x 1
+	//    b :        m x rhs
+	//    x : max(n,m) x rhs
+	//
+	//    x can be the same address with b
 	template<typename UType, typename TauType, typename BType, typename XType>
 	auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, UType u_t, const double *tau, TauType tau_t, const double *b, BType b_t, double *x, XType x_t, double zero_check = 1e-10)noexcept->void
 	{
@@ -653,7 +711,14 @@ namespace aris::dynamic
 		if (n > m)s_fill(n - m, rhs, 0.0, x + at(m, 0, x_t), x_t);
 	}
 	auto inline s_householder_ut_sov(Size m, Size n, Size rhs, const double *U, const double *tau, const double *b, double *x, double zero_check = 1e-10)noexcept->void { s_householder_ut_sov(m, n, rhs, U, n, tau, 1, b, rhs, x, rhs, zero_check); }
-	// tau must have same size with max(m,n), A can be the same as U,  Q * R = A * P
+	
+	// solve decomposition of A * P
+	//    A :        m x n
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    p : max(m,n) x 1
+	//
+	//    U can be the same address with A
 	template<typename AType, typename UType, typename TauType>
 	auto inline s_householder_utp(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void
 	{
@@ -710,7 +775,14 @@ namespace aris::dynamic
 		}
 	}
 	auto inline s_householder_utp(Size m, Size n, const double *A, double *U, double *tau, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void { s_householder_utp(m, n, A, n, U, n, tau, 1, p, rank, zero_check); }
-	// x must have the same or bigger size with b
+	
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    p : max(m,n) x 1
+	//    b :        m x rhs
+	//    x : max(n,m) x rhs
+	//
+	//    x can be the same address with b
 	template<typename UType, typename TauType, typename BType, typename XType>
 	auto inline s_householder_utp_sov(Size m, Size n, Size rhs, Size rank, const double *U, UType u_t, const double *tau, TauType tau_t, const Size *p, const double *b, BType b_t, double *x, XType x_t, double zero_check = 1e-10)noexcept->void
 	{
@@ -737,7 +809,12 @@ namespace aris::dynamic
 		s_permutate_inv(n, n - rank, p, x, x_t);
 	}
 	auto inline s_householder_utp_sov_solution_space(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double zero_check = 1e-10)noexcept->void { s_householder_utp_sov_solution_space(m, n, rank, U, n, tau, 1, p, x, n - rank, zero_check); }
-	//
+	
+	//    U :        m x n
+	//  tau : max(m,n) x 1
+	//    p : max(m,n) x 1
+	//    x :        n x m
+	// tau2 : max(n,m) x 1
 	template<typename UType, typename TauType, typename XType, typename TauType2>
 	auto inline s_householder_utp2pinv(Size m, Size n, Size rank, const double *U, UType u_t, const double *tau, TauType tau_t, const Size *p, double *x, XType x_t, double *tau2, TauType2 t_t, double zero_check = 1e-10)noexcept->void
 	{
