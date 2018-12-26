@@ -42,7 +42,7 @@ namespace aris::core
 				WSACleanup();
 #endif
 #ifdef UNIX
-				close(imp_->recv_socket_);
+				close(s);
 #endif
 				result = ret;
 				break;
