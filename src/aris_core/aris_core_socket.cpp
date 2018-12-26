@@ -16,6 +16,8 @@
 #endif
 #endif
 
+#include <errno.h>
+
 #ifdef UNIX
 #include<pthread.h>
 #include<semaphore.h>
@@ -230,7 +232,11 @@ namespace aris::core
 			if (imp_->accept_thread_.joinable())imp_->accept_thread_.join();
 			break;
 		case WORKING:
-			std::cout << name() << "shutdown return:" << shutdown(imp_->recv_socket_, 2);
+			std::cout << name() << "shutdown return:" << shutdown(imp_->recv_socket_, 2) << std::endl;
+
+			std::cout <<"error:"<<errno<<std::endl;
+
+
 			//closesocket(imp_->recv_socket_);
 			if(imp_->recv_thread_.joinable())imp_->recv_thread_.join();
 			break;

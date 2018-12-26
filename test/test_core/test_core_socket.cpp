@@ -101,8 +101,8 @@ void test_socket_multi_thread()
 
 			
 
-			if (!connect_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
-			if (!lose_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			//if (!connect_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			//if (!lose_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 		}
 		catch (std::exception &e)
 		{
