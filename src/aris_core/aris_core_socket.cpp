@@ -112,8 +112,8 @@ namespace aris::core
 			WSACleanup();
 #endif
 #ifdef UNIX
-			shutdown(imp_->lisn_socket_, 2);
-			close(imp_->lisn_socket_);
+			shutdown(imp->lisn_socket_, 2);
+			close(imp->lisn_socket_);
 #endif
 			return;
 		}
