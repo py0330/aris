@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 				socket->startServer("5866");
 				break;
 			}
-			catch (aris::core::Socket::StartServerError &e)
+			catch (std::runtime_error &e)
 			{
 				std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
 				LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;

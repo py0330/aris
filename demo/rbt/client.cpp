@@ -48,18 +48,18 @@ int sendRequest(int argc, char *argv[])
 
 	}
 
-    aris::core::Msg ret = client.sendRequest(msg);
+	//aris::core::Msg ret = client.sendRequest(msg);
 
 	// 错误处理 //
-	if (ret.size() > 0)
-	{
-		std::cout << "cmd has fault, please regard to following information:" << std::endl;
-		std::cout << "    " << ret.data() << std::endl;
-	}
-	else
-	{
-		std::cout << "send command successful" << std::endl;
-	}
+	//if (ret.size() > 0)
+	//{
+	//	std::cout << "cmd has fault, please regard to following information:" << std::endl;
+	//	std::cout << "    " << ret.data() << std::endl;
+	//}
+	//else
+	//{
+	//	std::cout << "send command successful" << std::endl;
+	//}
 
 	return 0;
 }
