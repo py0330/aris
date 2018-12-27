@@ -32,30 +32,6 @@
 
 namespace aris::core
 {
-	auto safe_recv(decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
-	{
-		int result{ 0 };
-		for (; result < size; )
-		{
-			int ret = recv(s, data + result, size - result, 0);
-			if (ret <= 0)
-			{
-#ifdef WIN32
-				closesocket(s);
-				WSACleanup();
-#endif
-#ifdef UNIX
-				close(s);
-#endif
-				result = ret;
-				break;
-			}
-
-			result += ret;
-		}
-
-		return result;
-	};
 	auto close_sock(decltype(socket(AF_INET, SOCK_STREAM, 0)) s)->int
 	{
 #ifdef WIN32
@@ -67,7 +43,24 @@ namespace aris::core
 #endif
 		return ret;
 	}
+	auto safe_recv(decltype(socket(AF_INET, SOCK_STREAM, 0)) s, char *data, int size) -> int
+	{
+		int result{ 0 };
+		for (; result < size; )
+		{
+			int ret = recv(s, data + result, size - result, 0);
+			if (ret <= 0)
+			{
+				close_sock(s);
+				result = ret;
+				break;
+			}
 
+			result += ret;
+		}
+
+		return result;
+	};
 
 	struct Socket::Imp
 	{
@@ -183,9 +176,6 @@ namespace aris::core
 			case UDP:
 			{
 				int ret = recvfrom(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
-				
-				std::cout << "udp ret:" << ret << std::endl;
-				
 				if (ret <= 0)
 				{					
 					// 如果正在stop，那么不回调，直接返回 //
@@ -203,7 +193,15 @@ namespace aris::core
 			}
 			case UDP_RAW:
 			{
-				// tbd //
+				char data[1024];
+				int ret = recvfrom(imp->recv_socket_, data, 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
+				if (ret <= 0)
+				{
+					// 如果正在stop，那么不回调，直接返回 //
+					std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
+					if (!close_lck.try_lock())return;
+				}
+				else if(imp->onReceivedData)imp->onReceivedData(imp->socket_, data, ret);
 				break;
 			}
 			}
@@ -213,12 +211,38 @@ namespace aris::core
 	{
 		setRemoteIP(attributeString(xml_ele, "remote_ip", std::string()));
 		setPort(attributeString(xml_ele, "port", std::string()));
+		
+		if (auto type = attributeString(xml_ele, "connect_type", std::string("TCP")); type == "TCP")imp_->type_ = TCP;
+		else if (type == "WEB")imp_->type_ = WEB;
+		else if (type == "WEB_RAW")imp_->type_ = WEB_RAW;
+		else if (type == "UDP")imp_->type_ = UDP;
+		else if (type == "UDP_RAW")imp_->type_ = UDP_RAW;
+		else throw std::runtime_error("unknown connect type");
 
 		Object::loadXml(xml_ele);
 	}
 	auto Socket::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		Object::saveXml(xml_ele);
+
+		switch (connectType())
+		{
+		case TCP:
+			xml_ele.SetAttribute("connect_type", "TCP");
+			break;
+		case WEB:
+			xml_ele.SetAttribute("connect_type", "WEB");
+			break;
+		case WEB_RAW:
+			xml_ele.SetAttribute("connect_type", "WEB_RAW");
+			break;
+		case UDP:
+			xml_ele.SetAttribute("connect_type", "UDP");
+			break;
+		case UDP_RAW:
+			xml_ele.SetAttribute("connect_type", "UDP_RAW");
+			break;
+		}
 
 		if (!imp_->remote_ip_.empty())xml_ele.SetAttribute("remote_ip", imp_->remote_ip_.c_str());
 		if (!imp_->port_.empty())xml_ele.SetAttribute("port", imp_->port_.c_str());
@@ -247,7 +271,7 @@ namespace aris::core
 				break;
 			case UDP:
 			case UDP_RAW:
-				if (close_sock(imp_->recv_socket_) < 0)LOG_ERROR << "shutdown error:" << errno << std::endl;
+				if (close_sock(imp_->recv_socket_) < 0) LOG_ERROR << "close error:" << errno << std::endl;
 				break;
 			}
 
@@ -300,17 +324,6 @@ namespace aris::core
 		int nvalue = 1;
 		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0)throw std::runtime_error("setsockopt failed: SO_REUSEADDR \n");
 
-#ifdef WIN32
-		DWORD read_timeout = 10;
-		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)throw std::runtime_error("setsockopt failed: SO_RCVTIMEO \n");
-#endif
-#ifdef UNIX
-		struct timeval read_timeout;
-		read_timeout.tv_sec = 0;
-		read_timeout.tv_usec = 10000;
-		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)throw std::runtime_error("setsockopt failed: SO_RCVTIMEO \n");
-#endif
-
 		// 服务器端填充server_addr_结构,并且bind //
 		memset(&imp_->server_addr_, 0, sizeof(struct sockaddr_in));
 		imp_->server_addr_.sin_family = AF_INET;
@@ -338,6 +351,18 @@ namespace aris::core
 		}
 		else
 		{
+			// 因为UDP没法shutdown，所以用非阻塞模式 //
+#ifdef WIN32
+			DWORD read_timeout = 10;
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)throw std::runtime_error("setsockopt failed: SO_RCVTIMEO \n");
+#endif
+#ifdef UNIX
+			struct timeval read_timeout;
+			read_timeout.tv_sec = 0;
+			read_timeout.tv_usec = 10000;
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)throw std::runtime_error("setsockopt failed: SO_RCVTIMEO \n");
+#endif
+
 			imp_->recv_socket_ = imp_->lisn_socket_;
 			
 			std::promise<void> receive_thread_ready;
@@ -375,9 +400,12 @@ namespace aris::core
 		switch (connectType())
 		{
 		case TCP:
+		case WEB:
+		case WEB_RAW:
 			sock_type = SOCK_STREAM;
 			break;
 		case UDP:
+		case UDP_RAW:
 			sock_type = SOCK_DGRAM;
 			break;
 		}
@@ -421,16 +449,15 @@ namespace aris::core
 			switch (imp_->type_)
 			{
 			case TCP:
-			case WEB:
-			case WEB_RAW:
 				if (send(imp_->recv_socket_, reinterpret_cast<const char *>(&data.header()), data.size() + sizeof(MsgHeader), 0) == -1)
 					throw std::runtime_error("Socket failed sending data, because network failed\n");
 				else
 					return;
-
+				break;
+			case WEB:
+				// tbd //
 				break;
 			case UDP:
-			case UDP_RAW:
 			{
 				memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
 				imp_->server_addr_.sin_family = AF_INET;
@@ -444,10 +471,47 @@ namespace aris::core
 
 				break;
 			}
+			default:
+				throw std::runtime_error("Socket failed send msg, because Socket is not at right MODE\n");
 			}
 		}
 		default:
-			throw std::runtime_error("Socket failed sending data, because Socket is not at right state\n");
+			throw std::runtime_error("Socket failed sending data, because Socket is not at right STATE\n");
+		}
+	}
+	auto Socket::sendRawData(const char *data, int size)->void
+	{
+		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+
+		switch (imp_->state_)
+		{
+		case WORKING:
+		{
+			switch (imp_->type_)
+			{
+			case WEB_RAW:
+				// tbd //
+				break;
+			case UDP_RAW:
+			{
+				memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
+				imp_->server_addr_.sin_family = AF_INET;
+				imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str());
+				imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
+
+				if (sendto(imp_->recv_socket_, data, size, 0, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
+					throw std::runtime_error("Socket failed sending data, because network failed\n");
+				else
+					return;
+
+				break;
+			}
+			default:
+				throw std::runtime_error("Socket failed send raw data, because Socket is not at right MODE\n");
+			}
+		}
+		default:
+			throw std::runtime_error("Socket failed send raw data, because Socket is not at right STATE\n");
 		}
 	}
 	auto Socket::isConnected()->bool
@@ -514,9 +578,10 @@ namespace aris::core
 		std::cout << this->name()<< this->state() << std::endl;
 		stop();
 	}
-	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port) :Object(name), imp_(new Imp(this))
+	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port, TYPE type) :Object(name), imp_(new Imp(this))
 	{
 		setRemoteIP(remote_ip);
 		setPort(port);
+		setConnectType(type);
 	}
 }

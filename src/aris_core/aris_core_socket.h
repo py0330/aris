@@ -39,6 +39,7 @@ namespace aris::core
 		auto connect(const std::string &remote_ip = std::string(), const std::string &port = std::string())->void;
 		auto stop()->void;
 		auto sendMsg(const aris::core::MsgBase &data)->void;
+		auto sendRawData(const char *data, int size)->void;
 		auto port()const->const std::string &;
 		auto setPort(const std::string &port)->void;
 		auto remoteIP()const->const std::string &;
@@ -51,7 +52,7 @@ namespace aris::core
 		auto setOnLoseConnection(std::function<int(Socket*)> = nullptr)->void;
 
 		virtual ~Socket();
-		Socket(const std::string &name = "socket", const std::string& remote_ip = "", const std::string& port = "");
+		Socket(const std::string &name = "socket", const std::string& remote_ip = "", const std::string& port = "", TYPE type = TCP);
 		Socket(const Socket & other) = delete;
 		Socket(Socket && other) = default;
 		Socket &operator=(const Socket& other) = delete;

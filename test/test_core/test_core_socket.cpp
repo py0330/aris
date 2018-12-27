@@ -32,9 +32,9 @@ void test_socket_multi_thread()
 	{
 		try
 		{
-			Socket server("server", "", "5866"), client("client", "127.0.0.1", "5866");
+			Socket server("server", "", "5866", type), client("client", "127.0.0.1", "5866", type);
 
-			enum { THREAD_NUM = 1 };
+			enum { THREAD_NUM = 8 };
 			int message_round[THREAD_NUM]{ 0 };
 			int request_round[THREAD_NUM]{ 0 };
 			int request_answer[THREAD_NUM]{ 0 };
@@ -66,19 +66,36 @@ void test_socket_multi_thread()
 
 				return 0;
 			});
+			server.setOnReceivedRawData([&](Socket *, const char *data, int size)
+			{
+				std::string str(data, size);
+				std::stringstream ss(str);
+				std::string word;
+				int thread_id, num;
+
+				ss >> word;
+				if (word != "message")std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+				ss >> thread_id;
+				if (thread_id > 7 || thread_id < -1)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+				ss >> word;
+				if (word != "count")std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+				ss >> num;
+				if (num != message_round[thread_id])std::cout << __FILE__ << __LINE__ << "test_socket failed"<< std::endl;
+
+				message_round[thread_id] = num + 4;
+
+				return 0;
+			});
 			server.setOnLoseConnection([&](Socket*)
 			{
 				lose_executed = true;
 				return 0;
 			});
 
-			server.setConnectType(type);
-			client.setConnectType(type);
-
 			server.startServer();
 			client.connect();
-			
-			client.setConnectType(type);
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 			std::future<void> ft_message[THREAD_NUM];
 			for (auto i = 0; i < THREAD_NUM; ++i)
@@ -86,12 +103,35 @@ void test_socket_multi_thread()
 				ft_message[i] = std::async(std::launch::async, [&client, i]()
 				{
 					for (auto j = 0; j < 400; j += 4)
-						client.sendMsg(Msg("message " + std::to_string(i) + " count " + std::to_string(j)));
+					{
+						Msg msg("message " + std::to_string(i) + " count " + std::to_string(j));
+						
+						try 
+						{
+							client.sendMsg(msg);
+							//std::this_thread::sleep_for(std::chrono::milliseconds(110));
+						}
+						catch (std::exception &e)
+						{
+
+						}
+						
+						try
+						{
+							client.sendRawData(msg.data(), msg.size());
+							//std::this_thread::sleep_for(std::chrono::milliseconds(110));
+						}
+						catch (std::exception &e)
+						{
+
+						}
+					}
+						
 				});
 			}
-
 			for (auto i = 0; i < THREAD_NUM; ++i) ft_message[i].wait();
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			client.stop();
+			std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 			for (auto i = 0; i < THREAD_NUM; ++i)
 			{
 				if (message_round[i] != 400)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
@@ -106,12 +146,12 @@ void test_socket_multi_thread()
 		}
 	};
 
-	//test_func(aris::core::Socket::TCP);
-	
 	std::cout << "test tcp" << std::endl;
 	test_func(aris::core::Socket::TCP);
 	std::cout << "test udp" << std::endl;
 	test_func(aris::core::Socket::UDP);
+	std::cout << "test udp raw" << std::endl;
+	test_func(aris::core::Socket::UDP_RAW);
 }
 
 void test_core_socket()
