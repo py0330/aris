@@ -36,8 +36,8 @@ namespace aris::core
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto isConnected()->bool;
 		auto state()->State;
-		auto startServer(const std::string &port = std::string(), TYPE type = TCP)->void;
-		auto connect(const std::string &remote_ip = std::string(), const std::string &port = std::string(), TYPE type = TCP)->void;
+		auto startServer(const std::string &port = std::string())->void;
+		auto connect(const std::string &remote_ip = std::string(), const std::string &port = std::string())->void;
 		auto stop()->void;
 		auto sendMsg(const aris::core::MsgBase &data)->void;
 		auto port()const->const std::string &;

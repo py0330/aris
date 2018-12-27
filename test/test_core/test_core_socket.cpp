@@ -62,7 +62,7 @@ void test_socket_multi_thread()
 
 				message_round[thread_id] = num + 4;
 
-				std::cout << "rece msg:" << thread_id << "   " << word << std::endl;
+				//std::cout << "rece msg:" << thread_id << "   " << word << std::endl;
 
 				return 0;
 			});
@@ -72,8 +72,11 @@ void test_socket_multi_thread()
 				return 0;
 			});
 
-			server.startServer("", type);
-			client.connect("", "", type);
+			server.setConnectType(type);
+			client.setConnectType(type);
+
+			server.startServer();
+			client.connect();
 			
 			client.setConnectType(type);
 
@@ -91,8 +94,10 @@ void test_socket_multi_thread()
 
 			std::cout <<"server state"<< server.state()<<std::endl;
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			client.stop();
+			std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+
+			std::cout << "server state" << server.state() << std::endl;
+			//client.stop();
 
 			for (auto i = 0; i < THREAD_NUM; ++i)
 			{
@@ -101,8 +106,8 @@ void test_socket_multi_thread()
 
 			
 
-			//if (!connect_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
-			//if (!lose_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			if (!connect_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			if (!lose_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 		}
 		catch (std::exception &e)
 		{
@@ -113,8 +118,8 @@ void test_socket_multi_thread()
 	//test_func(aris::core::Socket::TCP);
 	
 	std::cout << "test udp" << std::endl;
+	test_func(aris::core::Socket::TCP);
 	test_func(aris::core::Socket::UDP);
-	
 }
 
 void test_core_socket()
