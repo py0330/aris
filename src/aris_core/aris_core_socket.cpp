@@ -75,8 +75,8 @@ namespace aris::core
 		Socket::State state_;
 		Socket::TYPE type_;
 
-		std::function<aris::core::Msg(Socket *, aris::core::Msg &)> onReceivedRequest;
-		std::function<int(Socket *, aris::core::Msg &)> onReceivedData;
+		std::function<int(Socket *, aris::core::Msg &)> onReceivedMsg;
+		std::function<int(Socket*, const char *data, int size)> onReceivedData;
 		std::function<int(Socket *, const char *, int)> onReceivedConnection;
 		std::function<int(Socket *)> onLoseConnection;
 
@@ -98,7 +98,7 @@ namespace aris::core
 #endif
 		~Imp() = default;
 		Imp(Socket* sock) :socket_(sock), lisn_socket_(0), recv_socket_(0), sin_size_(sizeof(struct sockaddr_in)), state_(Socket::IDLE)
-			, onReceivedRequest(nullptr), onReceivedData(nullptr), onReceivedConnection(nullptr), onLoseConnection(nullptr) {}
+			, onReceivedMsg(nullptr), onReceivedData(nullptr), onReceivedConnection(nullptr), onLoseConnection(nullptr) {}
 
 		static void receiveThread(Socket::Imp* imp, std::promise<void> receive_thread_ready);
 		static void acceptThread(Socket::Imp* imp, std::promise<void> accept_thread_ready);
@@ -108,7 +108,6 @@ namespace aris::core
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
 #endif
-		
 		// 改变状态 //
 		imp->state_ = WAITING_FOR_CONNECTION;
 
@@ -118,30 +117,12 @@ namespace aris::core
 		// 服务器阻塞,直到客户程序建立连接 //
 		imp->recv_socket_ = accept(imp->lisn_socket_, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 
+		std::cout << "lisn shutdown:" << shutdown(imp->lisn_socket_, 2) << std::endl;
+		std::cout << "lisn close:" << close_sock(imp->lisn_socket_) << std::endl;
+		
+		
 		// 否则,开始开启数据线程 //
-		if (imp->recv_socket_ == -1)
-		{
-#ifdef WIN32
-			shutdown(imp->lisn_socket_, 2);
-			closesocket(imp->lisn_socket_);
-			WSACleanup();
-#endif
-#ifdef UNIX
-			shutdown(imp->lisn_socket_, 2);
-			close(imp->lisn_socket_);
-#endif
-			return;
-		}
-
-#ifdef WIN32
-		shutdown(imp->lisn_socket_, 2);
-		closesocket(imp->lisn_socket_);
-#endif
-#ifdef UNIX
-		shutdown(imp->lisn_socket_, 2);
-		close(imp->lisn_socket_);
-#endif
-
+		if (imp->recv_socket_ == -1)return;
 		if (imp->onReceivedConnection)imp->onReceivedConnection(imp->socket_, inet_ntoa(imp->client_addr_.sin_addr), ntohs(imp->client_addr_.sin_port));
 
 		std::promise<void> receive_thread_ready;
@@ -156,25 +137,11 @@ namespace aris::core
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
 #endif
-		// 创建线程 //
+		// 改变状态 //
 		imp->state_ = Socket::WORKING;
 
 		// 通知accept或connect线程已经准备好,下一步开始收发数据 //
 		receive_thread_ready.set_value();
-
-		const auto &lose = [&]() 
-		{
-			// 如果正在stop，那么不回调，直接返回 //
-			std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
-			if (!close_lck.try_lock())return;
-
-			// 自己关闭自己 //
-			std::unique_lock<std::recursive_mutex> state_lck(imp->state_mutex_);
-			imp->state_ = IDLE;
-			if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
-			imp->recv_thread_.detach();
-			return;
-		};
 
 		aris::core::Msg recv_msg;
 		recv_msg.resize(1024);
@@ -185,14 +152,25 @@ namespace aris::core
 			{
 			case TCP:
 			{
-				// 接收消息头 //
-				if (safe_recv(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), sizeof(MsgHeader)) <= 0) { lose();	return; }
+				const auto &lose = [&]()
+				{
+					// 如果正在stop，那么不回调，直接返回 //
+					std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
+					if (!close_lck.try_lock())return;
 
+					// 自己关闭自己 //
+					std::unique_lock<std::recursive_mutex> state_lck(imp->state_mutex_);
+					imp->state_ = IDLE;
+					if (imp->onLoseConnection)imp->onLoseConnection(imp->socket_);
+					imp->recv_thread_.detach();
+					return;
+				};
+				
+				// 接收消息 //
+				if (safe_recv(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), sizeof(MsgHeader)) <= 0) { lose(); return; }
 				recv_msg.resize(recv_msg.size());
-
 				if (recv_msg.size() > 0 && safe_recv(imp->recv_socket_, recv_msg.data(), recv_msg.size()) <= 0) { lose(); return; }
-
-				if (imp->onReceivedData)imp->onReceivedData(imp->socket_, recv_msg);
+				if (imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 
 				break;
 			}
@@ -205,15 +183,22 @@ namespace aris::core
 			case UDP:
 			{
 				int ret = recvfrom(imp->recv_socket_, reinterpret_cast<char *>(&recv_msg.header()), 1024, 0, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
-				std::cout << "ret:" << ret << std::endl;
-
+				
+				std::cout << "udp ret:" << ret << std::endl;
+				
 				if (ret <= 0)
 				{					
 					// 如果正在stop，那么不回调，直接返回 //
 					std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
 					if (!close_lck.try_lock())return;
 				}
-				if((ret == sizeof(MsgHeader) + recv_msg.size()) && imp->onReceivedData)imp->onReceivedData(imp->socket_, recv_msg);
+				if (ret != sizeof(MsgHeader) + recv_msg.size())
+				{
+					LOG_ERROR << "UDP msg size not correct" << std::endl;
+					continue;
+				}
+
+				if(imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
 				break;
 			}
 			case UDP_RAW:
@@ -407,9 +392,6 @@ namespace aris::core
 		imp_->server_addr_.sin_addr.s_addr = inet_addr(remoteIP().c_str());
 		imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
 
-		
-		
-
 		if (connectType() == TCP || connectType() == WEB || connectType() == WEB_RAW)
 		{
 			// 连接 //
@@ -424,7 +406,6 @@ namespace aris::core
 			imp_->recv_thread_ = std::thread(Imp::receiveThread, imp_.get(), std::move(receive_thread_ready));
 			fut.wait();
 		}
-
 		
 		imp_->state_ = Socket::WORKING;
 		return;
@@ -511,7 +492,12 @@ namespace aris::core
 	auto Socket::setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> OnReceivedData)->void
 	{
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
-		imp_->onReceivedData = OnReceivedData;
+		imp_->onReceivedMsg = OnReceivedData;
+	}
+	auto Socket::setOnReceivedRawData(std::function<int(Socket*, const char *data, int size)> func)->void 
+	{ 
+		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
+		imp_->onReceivedData = func;
 	}
 	auto Socket::setOnReceivedConnection(std::function<int(Socket*, const char*, int)> OnReceivedConnection)->void
 	{

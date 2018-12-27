@@ -91,20 +91,11 @@ void test_socket_multi_thread()
 			}
 
 			for (auto i = 0; i < THREAD_NUM; ++i) ft_message[i].wait();
-
-			std::cout <<"server state"<< server.state()<<std::endl;
-
-			std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-
-			std::cout << "server state" << server.state() << std::endl;
-			//client.stop();
-
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			for (auto i = 0; i < THREAD_NUM; ++i)
 			{
 				if (message_round[i] != 400)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 			}
-
-			
 
 			if (!connect_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 			if (!lose_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
@@ -117,8 +108,9 @@ void test_socket_multi_thread()
 
 	//test_func(aris::core::Socket::TCP);
 	
-	std::cout << "test udp" << std::endl;
+	std::cout << "test tcp" << std::endl;
 	test_func(aris::core::Socket::TCP);
+	std::cout << "test udp" << std::endl;
 	test_func(aris::core::Socket::UDP);
 }
 

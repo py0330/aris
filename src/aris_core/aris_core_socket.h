@@ -19,7 +19,6 @@ namespace aris::core
 			WAITING_FOR_CONNECTION,
 			WORKING,
 		};
-
 		enum TYPE
 		{
 			TCP,
@@ -47,6 +46,7 @@ namespace aris::core
 		auto connectType()const->TYPE;
 		auto setConnectType(const TYPE type)->void;
 		auto setOnReceivedMsg(std::function<int(Socket*, aris::core::Msg &)> = nullptr)->void;
+		auto setOnReceivedRawData(std::function<int(Socket*, const char *data, int size)> = nullptr)->void;
 		auto setOnReceivedConnection(std::function<int(Socket*, const char* remote_ip, int remote_port)> = nullptr)->void;
 		auto setOnLoseConnection(std::function<int(Socket*)> = nullptr)->void;
 
