@@ -9,8 +9,8 @@ void test_socket_xml()
 {
 	const char xml_data[] =
 		"<root>"
-		"    <server type=\"Socket\" port=\"5866\"/>"
-		"    <client type=\"Socket\" remote_ip=\"127.0.0.1\" port=\"5866\"/>"
+		"    <server type=\"Socket\" connect_type=\"UDP\" port=\"5866\"/>"
+		"    <client type=\"Socket\" connect_type=\"UDP\" remote_ip=\"127.0.0.1\" port=\"5866\"/>"
 		"</root>";
 	
 	auto root = aris::core::Object();
@@ -23,8 +23,9 @@ void test_socket_xml()
 	
 	std::string xml_str;
 	server.saveXmlStr(xml_str);
-	if (server.xmlString() != "<server type=\"Socket\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
-	if (client.xmlString() != "<client type=\"Socket\" remote_ip=\"127.0.0.1\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+
+	if (server.xmlString() != "<server type=\"Socket\" connect_type=\"UDP\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+	if (client.xmlString() != "<client type=\"Socket\" connect_type=\"UDP\" remote_ip=\"127.0.0.1\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 }
 void test_socket_multi_thread()
 {
@@ -61,8 +62,6 @@ void test_socket_multi_thread()
 				if (num != message_round[thread_id])std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 
 				message_round[thread_id] = num + 4;
-
-				//std::cout << "rece msg:" << thread_id << "   " << word << std::endl;
 
 				return 0;
 			});
@@ -109,7 +108,6 @@ void test_socket_multi_thread()
 						try 
 						{
 							client.sendMsg(msg);
-							//std::this_thread::sleep_for(std::chrono::milliseconds(110));
 						}
 						catch (std::exception &e)
 						{
@@ -119,7 +117,6 @@ void test_socket_multi_thread()
 						try
 						{
 							client.sendRawData(msg.data(), msg.size());
-							//std::this_thread::sleep_for(std::chrono::milliseconds(110));
 						}
 						catch (std::exception &e)
 						{
@@ -131,14 +128,14 @@ void test_socket_multi_thread()
 			}
 			for (auto i = 0; i < THREAD_NUM; ++i) ft_message[i].wait();
 			client.stop();
-			std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			for (auto i = 0; i < THREAD_NUM; ++i)
 			{
 				if (message_round[i] != 400)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 			}
 
-			if (!connect_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
-			if (!lose_executed)std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			if (!connect_executed && (type != aris::core::Socket::UDP && type != aris::core::Socket::UDP_RAW) )std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+			if (!lose_executed && (type != aris::core::Socket::UDP && type != aris::core::Socket::UDP_RAW))std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 		}
 		catch (std::exception &e)
 		{
@@ -152,12 +149,16 @@ void test_socket_multi_thread()
 	test_func(aris::core::Socket::UDP);
 	std::cout << "test udp raw" << std::endl;
 	test_func(aris::core::Socket::UDP_RAW);
+	std::cout << "test web" << std::endl;
+	test_func(aris::core::Socket::WEB);
+	std::cout << "test web raw" << std::endl;
+	test_func(aris::core::Socket::WEB_RAW);
 }
 
 void test_core_socket()
 {
 	std::cout << std::endl << "-----------------test socket---------------------" << std::endl;
-	//test_socket_xml();
+	test_socket_xml();
 	test_socket_multi_thread();
 	std::cout << "-----------------test socket finished------------" << std::endl << std::endl;
 }

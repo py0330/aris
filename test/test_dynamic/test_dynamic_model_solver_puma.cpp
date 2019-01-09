@@ -166,7 +166,6 @@ void test_model_solver_puma()
 	test_puma_forward_solver();
 	test_puma_inverse_solver();
 
-
 	auto m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 
 	auto &inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(m->solverPool().at(0));

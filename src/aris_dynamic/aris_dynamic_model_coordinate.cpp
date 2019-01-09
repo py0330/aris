@@ -1455,7 +1455,6 @@ namespace aris::dynamic
 	FileGeometry& FileGeometry::operator=(const FileGeometry &other) = default;
 	FileGeometry& FileGeometry::operator=(FileGeometry &&other) = default;
 
-
 	struct ShellGeometry::Imp
 	{
 		Marker *relative_to_;

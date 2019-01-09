@@ -4,10 +4,43 @@
 using namespace aris::dynamic;
 using namespace aris::robot;
 
+auto inline outputCsByPq(const aris::server::ControlServer &cs, std::string file_path)->void
+{
+	aris::core::XmlDocument doc;
+	
+	cs.saveXmlDoc(doc);
+
+	auto part_pool = doc.FirstChildElement()->FirstChildElement("model")->FirstChildElement("part_pool");
+
+	for (auto prt = part_pool->FirstChildElement(); prt; prt = prt->NextSiblingElement())
+	{
+		aris::core::Calculator c;
+		auto mat = c.calculateExpression(prt->Attribute("pe"));
+		prt->DeleteAttribute("pe");
+
+		double pq[7];
+		s_pe2pq(mat.data(), pq);
+		prt->SetAttribute("pq", aris::core::Matrix(1, 7, pq).toString().c_str());
+
+		for (auto geo = prt->FirstChildElement("geometry_pool")->FirstChildElement(); geo; geo = geo->NextSiblingElement())
+		{
+			auto mat = c.calculateExpression(geo->Attribute("pe"));
+			geo->DeleteAttribute("pe");
+
+			double pq[7];
+			s_pe2pq(mat.data(), pq);
+			geo->SetAttribute("pq", aris::core::Matrix(1, 7, pq).toString().c_str());
+		}
+	}
+
+
+	doc.SaveFile(file_path.c_str());
+}
+
 int main(int argc, char *argv[])
 {
 	double robot_pm[16];
-	std::string robot_name = argc < 2 ? "rokae_xb4" : argv[1];
+	std::string robot_name = argc < 2 ? "stewart" : argv[1];
 	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
 	aris::dynamic::s_pq2pm(argc < 4 ? nullptr : aris::core::Calculator().calculateExpression(argv[3]).data(), robot_pm);
 
@@ -34,6 +67,13 @@ int main(int argc, char *argv[])
 		cs.resetPlanRoot(createPlanRootServoPress().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	}
+	else if (robot_name == "stewart")
+	{
+		cs.resetController(createControllerStewart().release());
+		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
+		cs.resetPlanRoot(createPlanRootStewart().release());
+		cs.resetSensorRoot(new aris::sensor::SensorRoot);
+	}
 	else
 	{
 		std::cout << "unknown robot:" << robot_name << std::endl;
@@ -44,8 +84,8 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-	aris::core::WebSocket socket;
-	socket.setOnReceivedMsg([&](aris::core::WebSocket *socket, aris::core::Msg &msg)->int
+	aris::core::Socket socket("server","","5866",aris::core::Socket::WEB);
+	socket.setOnReceivedMsg([&](aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
 		std::string msg_data = msg.toString();
 
@@ -123,7 +163,7 @@ int main(int argc, char *argv[])
 
 		return 0;
 	});
-	socket.setOnReceivedConnection([](aris::core::WebSocket *sock, const char *ip, int port)->int
+	socket.setOnReceivedConnection([](aris::core::Socket *sock, const char *ip, int port)->int
 	{
 		std::cout << "socket receive connection" << std::endl;
 		LOG_INFO << "socket receive connection:\n"
@@ -131,7 +171,7 @@ int main(int argc, char *argv[])
 			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
 		return 0;
 	});
-	socket.setOnLoseConnection([](aris::core::WebSocket *socket)
+	socket.setOnLoseConnection([](aris::core::Socket *socket)
 	{
 		std::cout << "socket lose connection" << std::endl;
 		LOG_INFO << "socket lose connection" << std::endl;
@@ -155,7 +195,11 @@ int main(int argc, char *argv[])
 		return 0;
 	});
 
-	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
+	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 1, 0, 0, 0, 0}.data(), "313");
+	cs.model().solverPool()[0].kinPos();
+
+	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test_pe.xml");
+	outputCsByPq(cs, "C:\\Users\\py033\\Desktop\\test.xml");
 	
 	cs.start();
 	socket.startServer(std::to_string(port));

@@ -47,6 +47,25 @@ namespace aris::plan
 	}
 
 	auto moveAbsolute(Size i, double begin_pos, double end_pos, double vel, double acc, double dec, double &current_pos, double &current_vel, double &current_acc, Size& total_count)->void;
+	
+	
+	
+	// pa : pos actual value
+	// va : vel actual value
+	// aa : acc actual value
+	// pt : pos target value
+	// vt : vel target value
+	// at : acc target value
+	// vm : vel max permitted value, always positive
+	// am : acc max permitted value, always positive
+	// dm : dec max permitted value, always positive
+	// dt : time inteval, set to 1e-3
+	// zero_check : set to 1e-10
+	// pc : next planned pos
+	// vc : next planned vel
+	// ac : next planned acc
+	// total_count : tbd, not finished yet
+	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int;
 
 }
 

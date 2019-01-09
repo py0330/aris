@@ -109,4 +109,74 @@ namespace aris::plan
 			current_acc = current_acc;
 		}
 	}
+
+
+	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int
+	{
+		// 当前速度超过速度上限 //
+		if (std::abs(va) > vm + dm * dt)
+		{
+			ac = -aris::dynamic::s_sgn2(va) * dm;
+			goto return_flag;
+		}
+		
+		// 计算完全减速所产生的位移，vdec和sdec有方向 //
+		const double vdec = va;
+		const double ndec = std::abs(std::ceil(abs(vdec) / dm / dt));
+		const double tdec = ndec * dt;
+		const double sdec = vdec * tdec / 2;
+
+		// 当前速度需要完全减速到零，之后可能还需要反转 //
+		if ((va > zero_check && (pt - pa) < sdec + zero_check) || (va < -zero_check && (pt - pa) > sdec - zero_check))
+		{
+			ac = -va / ndec / dt;
+			goto return_flag;
+		}
+		
+		//// 判断能否加速，先计算加速后所需要停止的距离 //
+		//const double a1 = pt - pa < 0 ? std::max(-am, (-vm - va) / dt) : std::min(am, (vm - va) / dt);
+		//const double v1 = va + a1 * dt;
+		//const double p1 = pa + 0.5*(va + v1)*dt;
+		//const double ndec1 = std::abs(std::ceil(abs(v1) / dm / dt - zero_check));
+		//const double tdec1 = ndec1 * dt;
+		//const double sdec1 = v1 * tdec1 / 2;
+		//// 尝试做全力加速（am） //
+		//if ((pt - pa >= 0 && (pt - p1) >= sdec1) || (pt - pa < 0 && (pt - p1) <= sdec1))
+		//{
+		//	ac = a1;
+		//	goto return_flag;
+		//}
+		//
+
+
+		// 二分法算当前可以最快的加速度 //
+		double lower_bound = pt - pa < 0.0 ? std::min(dm, -va/dt) : std::max(-dm, -va/dt);
+		double upper_bound = pt - pa < 0.0 ? std::max(-am, (-vm - va) / dt) : std::min(am, (vm - va) / dt);
+
+		while (std::abs(lower_bound - upper_bound) > zero_check * dt)
+		{
+			const double a1 = (lower_bound + upper_bound)/2;
+			const double v1 = va + a1 * dt;
+			const double p1 = pa + 0.5*(va + v1)*dt;
+			const double ndec1 = std::abs(std::ceil(abs(v1) / dm / dt));
+			const double tdec1 = ndec1 * dt;
+			const double sdec1 = v1 * tdec1 / 2;
+
+			if ((pt - pa >= 0 && (pt - p1) >= sdec1) || (pt - pa < 0 && (pt - p1) <= sdec1))
+			{
+				lower_bound = a1;
+			}
+			else
+			{
+				upper_bound = a1;
+			}
+		}
+		ac = lower_bound;
+
+	return_flag:
+		vc = va + ac * dt;
+		pc = pa + 0.5 * (va + vc) * dt;
+		total_count = 1;
+		return std::abs(pt - pc)<zero_check && std::abs(vt - vc)<zero_check ? 0 : 1;
+	}
 }

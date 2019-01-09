@@ -24,7 +24,7 @@ namespace aris::plan
 	{
 		aris::dynamic::Model* model;                      // prepair/execute/collect  get&set(but be careful when prepair)
 		aris::control::Master* master;                    // prepair/execute/collect  get&set(but be careful when prepair)
-		std::uint64_t command_id;                          // prepair/execute/collect  get
+		std::uint64_t command_id;                         // prepair/execute/collect  get
 		std::uint64_t option;                             // prepair/execute/collect  get&set when prepair, get when execute and collect
 		std::any param;                                   // prepair/execute/collect  set when prepair, get when execute, destroy when collect
 		std::int32_t count;                               //         execute/collect  get
@@ -111,7 +111,18 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-
+	
+	/// \brief 让电机使能
+	/// 
+	/// 让电机使能，可以按照以下参数指定电机：
+	/// + 使能所有电机：“en -a” 或 “en --all”
+	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“en -m=0” 或 “en --motion_id=0”
+	/// + 按照物理地址（phyID），例如物理的 2 号电机：“en -p=2” 或 “en --physical_id=2”
+	/// + 按照从站地址（slaID），例如 5 号从站：“en -s=5” 或 “en --slave_id=5”
+	/// 
+	/// 指定本指令的最长运行时间（默认为5000ms）：
+	/// + 使能0号电机，并指定其最长时间为5000ms： “en -m=0 --limit_time=5000”
+	/// 
 	class EnablePlan : public Plan
 	{
 	public:
@@ -132,6 +143,17 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	/// \brief 让电机去使能
+	/// 
+	/// 让电机去使能，可以按照以下参数指定电机：
+	/// + 使能所有电机：“ds -a” 或 “ds --all”
+	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“ds -m=0” 或 “ds --motion_id=0”
+	/// + 按照物理地址（phyID），例如物理的 2 号电机：“ds -p=2” 或 “ds --physical_id=2”
+	/// + 按照从站地址（slaID），例如 5 号从站：“ds -s=5” 或 “ds --slave_id=5”
+	/// 
+	/// 指定本指令的最长运行时间（默认为5000ms）：
+	/// + 去使能0号电机，并指定其最长时间为5000ms： “ds -m=0 --limit_time=5000”
+	/// 
 	class DisablePlan : public Plan
 	{
 	public:
@@ -152,6 +174,20 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	/// \brief 让电机切换模式
+	/// 
+	/// 让电机切换模式，可以按照以下参数指定电机：
+	/// + 切换所有电机：“md -a” 或 “md --all”
+	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“md -m=0” 或 “md --motion_id=0”
+	/// + 按照物理地址（phyID），例如物理的 2 号电机：“md -p=2” 或 “md --physical_id=2”
+	/// + 按照从站地址（slaID），例如 5 号从站：“md -s=5” 或 “md --slave_id=5”
+	/// 
+	/// 指定本指令的最长运行时间（默认为5000ms）：
+	/// + 使能0号电机，并指定其最长时间为5000ms： “md -m=0 --limit_time=5000”
+	/// 
+	/// 指定模式（请参考canopen DS402标准，默认为8，同步位置控制模式）：
+	/// + 使能0号电机，并指定模式为9： “md -m=0 --mode=9 --limit_time=5000”
+	/// 
 	class ModePlan : public Plan
 	{
 	public:
@@ -172,8 +208,9 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class HomePlan : public Plan{};
-	// rs 会让电机走到指定位置处，同时将模型中的电机位置也变成指定位置，过程中会计算正解 //
+	/// \brief 复位，机器人从轴空间按照指定速度运行到指定位置处
+	/// 
+	/// 
 	class ResetPlan : public Plan
 	{
 	public:
@@ -221,7 +258,7 @@ namespace aris::plan
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~SleepPlan();
-		explicit SleepPlan(const std::string &name = "reset_plan");
+		explicit SleepPlan(const std::string &name = "sleep_plan");
 		SleepPlan(const SleepPlan &);
 		SleepPlan(SleepPlan &&);
 		SleepPlan& operator=(const SleepPlan &);
@@ -231,8 +268,7 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-
-
+	
 	class MovePlan : public Plan
 	{
 	public:

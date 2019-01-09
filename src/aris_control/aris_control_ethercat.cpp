@@ -463,7 +463,7 @@ namespace aris::control
 		//
 		// 0x6F    0b 0000 0000 0110 1111
 		// 0x4F    0b 0000 0000 0100 1111
-		// disable change state to A/B/C/D to E
+		// disable change state to A/B/C/E to D
 
 		std::uint16_t status_word;
 		readPdo(0x6041, 0x00, status_word);
