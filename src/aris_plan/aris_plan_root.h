@@ -380,6 +380,33 @@ namespace aris::plan
 
 
 	};
+
+	class AutoMove :public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("AutoMove"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~AutoMove();
+		explicit AutoMove(const std::string &name = "am");
+		AutoMove(const AutoMove &);
+		AutoMove(AutoMove &&);
+		AutoMove& operator=(const AutoMove &);
+		AutoMove& operator=(AutoMove &&);
+
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+
+
+
+	};
+
+
 }
 
 #endif

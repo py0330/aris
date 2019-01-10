@@ -120,58 +120,47 @@ namespace aris::plan
 			goto return_flag;
 		}
 		
-		// 计算完全减速所产生的位移，vdec和sdec有方向 //
-		const double vdec = va;
-		const double ndec = std::abs(std::ceil(abs(vdec) / dm / dt));
-		const double tdec = ndec * dt;
-		const double sdec = vdec * tdec / 2;
-
-		// 当前速度需要完全减速到零，之后可能还需要反转 //
-		if ((va > zero_check && (pt - pa) < sdec + zero_check) || (va < -zero_check && (pt - pa) > sdec - zero_check))
+		// 查看当前速度是否过快 //
 		{
-			ac = -va / ndec / dt;
-			goto return_flag;
+			// 计算完全减速所产生的位移，vdec和sdec有方向 //
+			const double vdec = va;
+			const double ndec = std::abs(std::ceil(abs(vdec) / dm / dt));
+			const double tdec = ndec * dt;
+			const double sdec = vdec * tdec / 2;
+
+			// 当前速度需要完全减速到零，之后可能还需要反转 //
+			if ((va > zero_check && (pt - pa) < sdec + zero_check) || (va < -zero_check && (pt - pa) > sdec - zero_check))
+			{
+				ac = -va / ndec / dt;
+				goto return_flag;
+			}
 		}
 		
-		//// 判断能否加速，先计算加速后所需要停止的距离 //
-		//const double a1 = pt - pa < 0 ? std::max(-am, (-vm - va) / dt) : std::min(am, (vm - va) / dt);
-		//const double v1 = va + a1 * dt;
-		//const double p1 = pa + 0.5*(va + v1)*dt;
-		//const double ndec1 = std::abs(std::ceil(abs(v1) / dm / dt - zero_check));
-		//const double tdec1 = ndec1 * dt;
-		//const double sdec1 = v1 * tdec1 / 2;
-		//// 尝试做全力加速（am） //
-		//if ((pt - pa >= 0 && (pt - p1) >= sdec1) || (pt - pa < 0 && (pt - p1) <= sdec1))
-		//{
-		//	ac = a1;
-		//	goto return_flag;
-		//}
-		//
-
-
-		// 二分法算当前可以最快的加速度 //
-		double lower_bound = pt - pa < 0.0 ? std::min(dm, -va/dt) : std::max(-dm, -va/dt);
-		double upper_bound = pt - pa < 0.0 ? std::max(-am, (-vm - va) / dt) : std::min(am, (vm - va) / dt);
-
-		while (std::abs(lower_bound - upper_bound) > zero_check * dt)
+		// 二分法算当前可以最快的加速度，并沿着该加速度加速 //
 		{
-			const double a1 = (lower_bound + upper_bound)/2;
-			const double v1 = va + a1 * dt;
-			const double p1 = pa + 0.5*(va + v1)*dt;
-			const double ndec1 = std::abs(std::ceil(abs(v1) / dm / dt));
-			const double tdec1 = ndec1 * dt;
-			const double sdec1 = v1 * tdec1 / 2;
+			double lower_bound = pt - pa < 0.0 ? std::min(dm, -va / dt) : std::max(-dm, -va / dt);
+			double upper_bound = pt - pa < 0.0 ? std::max(-am, (-vm - va) / dt) : std::min(am, (vm - va) / dt);
 
-			if ((pt - pa >= 0 && (pt - p1) >= sdec1) || (pt - pa < 0 && (pt - p1) <= sdec1))
+			while (std::abs(lower_bound - upper_bound) > zero_check * dt)
 			{
-				lower_bound = a1;
+				const double a1 = (lower_bound + upper_bound) / 2;
+				const double v1 = va + a1 * dt;
+				const double p1 = pa + 0.5*(va + v1)*dt;
+				const double ndec1 = std::abs(std::ceil(abs(v1) / dm / dt));
+				const double tdec1 = ndec1 * dt;
+				const double sdec1 = v1 * tdec1 / 2;
+
+				if ((pt - pa >= 0 && (pt - p1) >= sdec1) || (pt - pa < 0 && (pt - p1) <= sdec1))
+				{
+					lower_bound = a1;
+				}
+				else
+				{
+					upper_bound = a1;
+				}
 			}
-			else
-			{
-				upper_bound = a1;
-			}
+			ac = lower_bound;
 		}
-		ac = lower_bound;
 
 	return_flag:
 		vc = va + ac * dt;

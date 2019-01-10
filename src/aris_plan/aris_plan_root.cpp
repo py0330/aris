@@ -1762,4 +1762,157 @@ namespace aris::plan
 	MvL::MvL(MvL &&) = default;
 	MvL& MvL::operator=(const MvL &) = default;
 	MvL& MvL::operator=(MvL &&) = default;
+
+	std::atomic_bool is_auto_move_running_{ false };
+	struct AutoMove::Imp
+	{
+		struct Param 
+		{
+			
+		};
+
+
+		
+
+	};
+	auto AutoMove::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		default_prepair_check_option(params, target);
+
+		MoveJ::Param param;
+		for (auto cmd_param : params)
+		{
+			if (cmd_param.first == "start")
+			{
+				is_auto_move_running_.store(true);
+				target.option |= aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED;
+			}
+			else if (cmd_param.first == "stop")
+			{
+				is_auto_move_running_.store(false);
+				target.option |= aris::plan::Plan::WAIT_FOR_COLLECTION;
+			}
+			else if (cmd_param.first == "pos")
+			{
+				aris::core::Matrix mat = target.model->calculator().calculateExpression(cmd_param.second);
+				if (mat.size() == 1)param.joint_pos_vec.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), mat.toDouble());
+				else
+				{
+					param.joint_pos_vec.resize(mat.size());
+					std::copy(mat.begin(), mat.end(), param.joint_pos_vec.begin());
+				}
+			}
+			else if (cmd_param.first == "vel")
+			{
+				param.vel = std::stod(cmd_param.second);
+			}
+			else if (cmd_param.first == "acc")
+			{
+				param.acc = std::stod(cmd_param.second);
+			}
+			else if (cmd_param.first == "dec")
+			{
+				param.dec = std::stod(cmd_param.second);
+			}
+		}
+
+		param.begin_joint_pos_vec.resize(target.model->motionPool().size());
+		target.param = param;
+	}
+	auto AutoMove::executeRT(PlanTarget &target)->int
+	{
+		auto param = std::any_cast<Imp::Param>(&target.param);
+
+		return 0;
+	}
+	auto AutoMove::collectNrt(PlanTarget &param)->void {}
+	AutoMove::~AutoMove() = default;
+	AutoMove::AutoMove(const std::string &name) : Plan(name), imp_(new Imp)
+	{
+		command().loadXmlStr(
+			"<am default_child_type=\"Param\">"
+			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
+			"			<start/>"
+			"			<stop/>"
+			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"				<pos default=\"0\"/>"
+			"				<vel default=\"0.5\"/>"
+			"				<acc default=\"1\"/>"
+			"				<dec default=\"1\"/>"
+			"			</group>"
+			"		</unique>"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_all\">"
+			"			<check_all/>"
+			"			<check_none/>"
+			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"				<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos\">"
+			"					<check_pos/>"
+			"					<not_check_pos/>"
+			"					<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_max\">"
+			"							<check_pos_max/>"
+			"							<not_check_pos_max/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_min\">"
+			"							<check_pos_min/>"
+			"							<not_check_pos_min/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous\">"
+			"							<check_pos_continuous/>"
+			"							<not_check_pos_continuous/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_at_start\">"
+			"							<check_pos_continuous_at_start/>"
+			"							<not_check_pos_continuous_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_second_order\">"
+			"							<check_pos_continuous_second_order/>"
+			"							<not_check_pos_continuous_second_order/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_continuous_second_order_at_start\">"
+			"							<check_pos_continuous_second_order_at_start/>"
+			"							<not_check_pos_continuous_second_order_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_pos_following_error\">"
+			"							<check_pos_following_error/>"
+			"							<not_check_pos_following_error />"
+			"						</unique>"
+			"					</group>"
+			"				</unique>"
+			"				<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel\">"
+			"					<check_vel/>"
+			"					<not_check_vel/>"
+			"					<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_max\">"
+			"							<check_vel_max/>"
+			"							<not_check_vel_max/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_min\">"
+			"							<check_vel_min/>"
+			"							<not_check_vel_min/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_continuous\">"
+			"							<check_vel_continuous/>"
+			"							<not_check_vel_continuous/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_continuous_at_start\">"
+			"							<check_vel_continuous_at_start/>"
+			"							<not_check_vel_continuous_at_start/>"
+			"						</unique>"
+			"						<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"check_vel_following_error\">"
+			"							<check_vel_following_error/>"
+			"							<not_check_vel_following_error />"
+			"						</unique>"
+			"					</group>"
+			"				</unique>"
+			"			</group>"
+			"		</unique>"
+			"	</group>"
+			"</am>");
+	}
+	AutoMove::AutoMove(const AutoMove &) = default;
+	AutoMove::AutoMove(AutoMove &&) = default;
+	AutoMove& AutoMove::operator=(const AutoMove &) = default;
+	AutoMove& AutoMove::operator=(AutoMove &&) = default;
 }
