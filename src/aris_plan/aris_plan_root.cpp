@@ -698,7 +698,7 @@ namespace aris::plan
 	auto HomePlan::executeRT(PlanTarget &target)->int
 	{
 		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
-		auto &param = std::any_cast<EnableParam &>(target.param);
+		auto &param = std::any_cast<HomeParam &>(target.param);
 
 		bool is_all_finished = true;
 		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
