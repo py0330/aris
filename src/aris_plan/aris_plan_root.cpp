@@ -1,4 +1,5 @@
 ﻿#include <algorithm>
+#include <future>
 
 #include"aris_plan_function.h"
 #include"aris_plan_root.h"
@@ -607,6 +608,106 @@ namespace aris::plan
 	DisablePlan& DisablePlan::operator=(const DisablePlan &) = default;
 	DisablePlan& DisablePlan::operator=(DisablePlan &&) = default;
 
+	struct HomeParam
+	{
+		std::int32_t limit_time;
+		std::vector<int> active_motor;
+		std::vector<int> is_reseted;
+	};
+	struct HomePlan::Imp { Imp() {} };
+	auto HomePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		HomeParam param;
+		param.is_reseted.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+
+		for (auto cmd_param : params)
+		{
+			if (cmd_param.first == "limit_time")
+				param.limit_time = std::stoi(cmd_param.second);
+			else if (cmd_param.first == "all")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
+			}
+			else if (cmd_param.first == "none")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+			}
+			else if (cmd_param.first == "motion_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
+			}
+			else if (cmd_param.first == "physical_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
+			}
+			else if (cmd_param.first == "slave_id")
+			{
+				param.active_motor.clear();
+				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
+			}
+			else
+				throw std::runtime_error("unknown input target when prepair HomePlan");
+		}
+
+		target.param = param;
+	}
+	auto HomePlan::executeRT(PlanTarget &target)->int
+	{
+		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+		auto &param = std::any_cast<EnableParam &>(target.param);
+
+		bool is_all_finished = true;
+		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
+		{
+			auto &cm = controller->motionPool().at(i);
+
+			if (param.active_motor[i])
+			{
+				auto ret = cm.home();
+				if (ret)
+				{
+					is_all_finished = false;
+
+					if (target.count % 1000 == 0)
+					{
+						controller->mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+					}
+				}
+			}
+		}
+
+		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
+	}
+	auto HomePlan::collectNrt(PlanTarget &param)->void {}
+	HomePlan::~HomePlan() = default;
+	HomePlan::HomePlan(const std::string &name) :Plan(name), imp_(new Imp)
+	{
+		command().loadXmlStr(
+			"<hm default_child_type=\"Param\">"
+			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"		<limit_time default=\"5000\"/>"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
+			"			<all abbreviation=\"a\"/>"
+			"			<none abbreviation=\"n\"/>"
+			"			<motion_id abbreviation=\"m\" default=\"0\"/>"
+			"			<physical_id abbreviation=\"p\" default=\"0\"/>"
+			"			<slave_id abbreviation=\"s\" default=\"0\"/>"
+			"		</unique>"
+			"	</group>"
+			"</hm>");
+	}
+	HomePlan::HomePlan(const HomePlan &) = default;
+	HomePlan::HomePlan(HomePlan &&) = default;
+	HomePlan& HomePlan::operator=(const HomePlan &) = default;
+	HomePlan& HomePlan::operator=(HomePlan &&) = default;
+
 	struct ModeParam
 	{
 		std::int32_t limit_time;
@@ -1059,28 +1160,57 @@ namespace aris::plan
 	ResetPlan& ResetPlan::operator=(const ResetPlan &) = default;
 	ResetPlan& ResetPlan::operator=(ResetPlan &&) = default;
 
+	struct RecoverParam
+	{
+		std::atomic_bool is_kinematic_ready_;
+		std::atomic_bool is_rt_waiting_ready_;
+		std::future<void> fut;
+		int kin_ret;
+	};
 	auto RecoverPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		target.option |= NOT_CHECK_POS_CONTINUOUS;
 		target.option |= NOT_CHECK_POS_CONTINUOUS_AT_START;
-		target.option |= NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 		target.option |= NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
+
+		auto p = std::make_shared<RecoverParam>();
+		
+		p->is_kinematic_ready_ = false;
+		p->is_rt_waiting_ready_ = false;
+		p->fut = std::async(std::launch::async, [](std::shared_ptr<RecoverParam> p, PlanTarget *target) 
+		{
+			// 等待正解求解的需求 //
+			while (!p->is_rt_waiting_ready_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+			// 求正解 //
+			p->kin_ret = target->model->solverPool()[1].kinPos() ? 0 : -1;
+
+			// 通知实时线程 //
+			p->is_kinematic_ready_.store(true);
+		}, p, &target);
+
+		target.param = p;
 	}
 	auto RecoverPlan::executeRT(PlanTarget &target)->int
 	{
 		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+		auto param = std::any_cast<std::shared_ptr<RecoverParam> &>(target.param);
 
-		for (Size i = 0; i < std::min(controller->motionPool().size(), target.model->motionPool().size()); ++i)
+		if (target.count == 1)
 		{
-			controller->motionPool()[i].setTargetPos(controller->motionPool().at(i).actualPos());
-			target.model->motionPool()[i].setMp(controller->motionPool().at(i).actualPos());
+			for (Size i = 0; i < std::min(controller->motionPool().size(), target.model->motionPool().size()); ++i)
+			{
+				controller->motionPool()[i].setTargetPos(controller->motionPool().at(i).actualPos());
+				target.model->motionPool()[i].setMp(controller->motionPool().at(i).actualPos());
+			}
+
+			param->is_rt_waiting_ready_.store(true);
+
+			return 0;
 		}
 
-		target.model->solverPool()[1].kinPos();
-
-		return 10 - target.count;
+		return param->is_kinematic_ready_.load() ? param->kin_ret : 1;
 	}
-	auto RecoverPlan::collectNrt(PlanTarget &target)->void {}
+	auto RecoverPlan::collectNrt(PlanTarget &target)->void { std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get(); }
 	RecoverPlan::~RecoverPlan() = default;
 	RecoverPlan::RecoverPlan(const std::string &name) :Plan(name)
 	{
@@ -1789,7 +1919,7 @@ namespace aris::plan
 				if (Imp::is_auto_move_running_.load())throw std::runtime_error("auto mode already started");
 				
 				Imp::is_auto_move_running_.store(true);
-				target.option |= aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED;
+				target.option |= aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT;
 			}
 			else if (cmd_param.first == "stop")
 			{
@@ -1826,8 +1956,8 @@ namespace aris::plan
 				std::array<double, 6> pe;
 				std::copy(param.pe, param.pe + 6, pe.begin());
 				
-				//double max_value[6]{ 0.2,0.2,0.2,0.2,0.2,0.2 };
-				//for (int i = 0;i<6;++i)pe[i] *= max_value[i];
+				double max_value[6]{ 0.5,0.5,0.5,1.0,1.0,1.0 };
+				for (int i = 0; i<6; ++i)pe[i] *= max_value[i];
 
 				auto_pe_.store(pe);
 				target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION | NOT_PRINT_CMD_INFO | NOT_LOG_CMD_INFO;
@@ -1910,17 +2040,17 @@ namespace aris::plan
 		static int i = 0;
 		if (++i % 1000 == 0)
 		{
-			target.master->mout() << "pe_now :"
-				<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
-				<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
+			//target.master->mout() << "pe_now :"
+			//	<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
+			//	<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
 			
-			target.master->mout() << "pe_target :"
-				<< pe_target[0] << "  "	<< pe_target[1] << "  "	<< pe_target[2] << "  "
-				<< pe_target[3] << "  " << pe_target[4] << "  " << pe_target[5] << std::endl;
+			//target.master->mout() << "pe_target :"
+			//	<< pe_target[0] << "  "	<< pe_target[1] << "  "	<< pe_target[2] << "  "
+			//	<< pe_target[3] << "  " << pe_target[4] << "  " << pe_target[5] << std::endl;
 
-			target.master->mout() << "pe_next:" 
-				<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  " 
-				<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
+			//target.master->mout() << "pe_next:" 
+			//	<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  " 
+			//	<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
 		}
 
 		target.model->generalMotionPool()[0].setMpe(pe_next, "123");

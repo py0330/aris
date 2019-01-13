@@ -245,34 +245,44 @@ void test_optimal()
 
 void test_moveAbsolute2()
 {
-	double p = 0;
-	double v = 0;
-	double a = 10;
+	//0.4, 0.00186295223741914, 1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.400000931476119, 0, -1.86295223741914, 1
+	double pt = 0.4;
+	double vt = 0.0;
+	double at = 0.0;
+	double pa = 0.4;
+	double va = 0.00186295223741914;
+	double aa = 1.86295223741914;
+	double vm = 0.10297442; // 295.0 / 360 * 2 * aris::PI * 0.02
+	double am = 2.09439512; // 1500.0 / 360 * 2 * aris::PI *0.01
+
 	aris::Size n = 1;
 
-	std::vector<double> p_vec, v_vec, a_vec;
-
-	p_vec.push_back(p);
-	v_vec.push_back(v);
-	a_vec.push_back(a);
+	//std::vector<double> p_vec, v_vec, a_vec;
+	//p_vec.push_back(pa);
+	//v_vec.push_back(va);
+	//a_vec.push_back(aa);
 
 	while (n)
 	{
 		aris::Size t;
-		n = aris::plan::moveAbsolute2(p, v, a, 0.4, 0, 0, 295.0 / 360 * 2 * aris::PI * 0.02, 1500.0 / 360 * 2 * aris::PI *0.01, 1500.0 / 360 * 2 * aris::PI *0.01, 1e-3, 1e-10, p, v, a, t);
+		n = aris::plan::moveAbsolute2(pa, va, aa, pt, vt, at, vm, am, am, 1e-3, 1e-10, pa, va, aa, t);
 
-		p_vec.push_back(p);
-		v_vec.push_back(v);
-		a_vec.push_back(a);
+		//p_vec.push_back(pa);
+		//v_vec.push_back(va);
+		//a_vec.push_back(aa);
 
-		std::cout << "p:" << p << "  v:" << v << "  a:" << a << std::endl;
+		std::cout << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
 	}
 
 
+	//  0.400000931476119, 0, -1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.4, -0.00186295223741914, -1.86295223741914, 1
+	//	0.4, -0.00186295223741914, -1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.399999068523881, 0, 1.86295223741914, 1
+	//	0.399999068523881, 0, 1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.4, 0.00186295223741914, 1.86295223741914, 1
+	//	0.4, 0.00186295223741914, 1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.400000931476119, 0, -1.86295223741914, 1
+	//	0.400000931476119, 0, -1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.4, -0.00186295223741914, -1.86295223741914, 1
 
 
-
-	aris::dynamic::dlmwrite(p_vec.size(), 1, p_vec.data(), "C:\\Users\\py033\\Desktop\\p_vec.txt");
+	//aris::dynamic::dlmwrite(p_vec.size(), 1, p_vec.data(), "C:\\Users\\py033\\Desktop\\p_vec.txt");
 }
 
 void test_function()

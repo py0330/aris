@@ -33,7 +33,7 @@ namespace aris::server
 		ControlServer *server_;
 
 		// 实时循环中的轨迹参数 //
-		enum { CMD_POOL_SIZE = 1000 };
+		enum { CMD_POOL_SIZE = 10 };
 		InternalData internal_data_queue_[CMD_POOL_SIZE];
 		
 		// 全局count //
@@ -93,7 +93,8 @@ namespace aris::server
 			// 命令正常运行，打印信息
 			if (ret > 0)
 			{
-				if (++count_ % 1000 == 0) server_->controller().mout() << "execute cmd in count: " << count_ <<"\n";
+				if (++count_ % 1000 == 0 && !(internal_data_queue_[cmd_now % CMD_POOL_SIZE].target.option & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
+					server_->controller().mout() << "execute cmd in count: " << count_ <<"\n";
 			}
 			// 命令正常结束，结束统计数据
 			else if (ret == 0)
@@ -483,24 +484,6 @@ namespace aris::server
 		// 初始化plan target //
 		aris::plan::PlanTarget target{ &model(), &controller(), cmd_id, static_cast<std::uint64_t>(msg.header().reserved1_), std::any(), 0, 0, aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 } };
 
-		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)
-		{
-			return a.first.length() < b.first.length();
-		})->first.length();
-		std::cout << cmd << std::endl;
-
-		auto &log = LOG_INFO << cmd << std::endl;
-		for (auto &p : params)
-		{
-			if (!(target.option & aris::plan::Plan::NOT_PRINT_CMD_INFO))
-				std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
-			if (!(target.option & aris::plan::Plan::NOT_LOG_CMD_INFO))
-				log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
-		}
-		std::cout << std::endl;
-		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		// prepair //
 		if (!(target.option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
 		{
@@ -513,6 +496,25 @@ namespace aris::server
 			LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
 			plan_iter->prepairNrt(params, target);
 		}
+
+		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)
+		{
+			return a.first.length() < b.first.length();
+		})->first.length();
+		if (!(target.option & aris::plan::Plan::NOT_PRINT_CMD_INFO))std::cout << cmd << std::endl;
+
+		auto &log = LOG_INFO << cmd << std::endl;
+		for (auto &p : params)
+		{
+			if (!(target.option & aris::plan::Plan::NOT_PRINT_CMD_INFO))
+				std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			if (!(target.option & aris::plan::Plan::NOT_LOG_CMD_INFO))
+				log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+		}
+		if (!(target.option & aris::plan::Plan::NOT_PRINT_CMD_INFO))std::cout << std::endl;
+		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 		// execute //
 		if (!(target.option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))

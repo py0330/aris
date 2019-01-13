@@ -72,7 +72,8 @@ namespace aris::plan
 			NOT_CHECK_VEL_FOLLOWING_ERROR = 0x01ULL << 35,
 
 			NOT_PRINT_CMD_INFO = 0x01ULL << 40,
-			NOT_LOG_CMD_INFO = 0x01ULL << 41,
+			NOT_PRINT_EXECUTE_COUNT = 0x01ULL << 41,
+			NOT_LOG_CMD_INFO = 0x01ULL << 45,
 
 		};
 
@@ -178,6 +179,37 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	/// \brief 让电机回零
+	/// 
+	/// 让电机使能，可以按照以下参数指定电机：
+	/// + 使能所有电机：“hm -a” 或 “en --all”
+	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“en -m=0” 或 “en --motion_id=0”
+	/// + 按照物理地址（phyID），例如物理的 2 号电机：“en -p=2” 或 “en --physical_id=2”
+	/// + 按照从站地址（slaID），例如 5 号从站：“en -s=5” 或 “en --slave_id=5”
+	/// 
+	/// 指定本指令的最长运行时间（默认为5000ms）：
+	/// + 使能0号电机，并指定其最长时间为5000ms： “en -m=0 --limit_time=5000”
+	/// 
+	class HomePlan : public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("HomePlan"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~HomePlan();
+		explicit HomePlan(const std::string &name = "home_plan");
+		HomePlan(const HomePlan &);
+		HomePlan(HomePlan &&);
+		HomePlan& operator=(const HomePlan &);
+		HomePlan& operator=(HomePlan &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
 	/// \brief 让电机切换模式
 	/// 
 	/// 让电机切换模式，可以按照以下参数指定电机：
@@ -235,7 +267,12 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	// rc 不会让电机动，只会重新排列正反解
+	/// \brief 恢复，消除错误但不运动，让机器人恢复
+	/// 
+	/// 在报错后，让模型（Model）根据控制器（Controller）读到的电机位置来更新。需要在非实时循环
+	/// 计算正解（使用1号求解器），实时循环内无计算。
+	///
+	/// 指令无参数
 	class RecoverPlan : public Plan
 	{
 	public:
@@ -405,9 +442,6 @@ namespace aris::plan
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
-
-
-
 	};
 
 

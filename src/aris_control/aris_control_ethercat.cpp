@@ -357,17 +357,11 @@ namespace aris::control
 	class EthercatMotion::Imp
 	{
 	public:
-		std::int32_t home_count_;
-
-		double target_pos_{ 0 }, target_vel_{ 0 }, target_cur_{ 0 }, offset_vel_{ 0 }, offset_cur_{ 0 };
+		std::uint16_t control_word;
 		std::uint8_t mode_of_operation;
-
-		bool is_waiting_mode{ false };
-		int waiting_count_left{ 0 };
-
-		int enable_period{ 0 };
-		int home_period{ 0 };
-		std::uint8_t running_mode{ 9 };
+		double target_pos_{ 0 }, target_vel_{ 0 }, target_cur_{ 0 }, offset_vel_{ 0 }, offset_cur_{ 0 };
+		
+		int waiting_count_left{ 0 }; // enable 在用
 	};
 	auto EthercatMotion::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
@@ -379,12 +373,18 @@ namespace aris::control
 		Motion::loadXml(xml_ele);
 		EthercatSlave::loadXml(xml_ele);
 	}
+	auto EthercatMotion::controlWord()const->std::uint16_t { return imp_->control_word; }
 	auto EthercatMotion::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
 	auto EthercatMotion::targetPos()const->double { return imp_->target_pos_; }
 	auto EthercatMotion::targetVel()const->double { return imp_->target_vel_; }
 	auto EthercatMotion::targetCur()const->double { return imp_->target_cur_; }
 	auto EthercatMotion::offsetVel()const->double { return imp_->offset_vel_; }
 	auto EthercatMotion::offsetCur()const->double { return imp_->offset_cur_; }
+	auto EthercatMotion::setControlWord(std::uint16_t control_word)->void
+	{
+		imp_->control_word = control_word;
+		writePdo(0x6040, 0x00, control_word);
+	}
 	auto EthercatMotion::setModeOfOperation(std::uint8_t mode)->void
 	{
 		imp_->mode_of_operation = mode;
@@ -414,6 +414,12 @@ namespace aris::control
 	{
 		imp_->offset_cur_ = cur;
 		writePdo(0x60B2, 0x00, static_cast<std::int16_t>(cur));
+	}
+	auto EthercatMotion::statusWord()->std::uint16_t
+	{
+		std::uint16_t status_word;
+		readPdo(0x6041, 0x00, status_word);
+		return status_word;
 	}
 	auto EthercatMotion::modeOfDisplay()->std::uint8_t
 	{
@@ -647,6 +653,24 @@ namespace aris::control
 		// 0x6F    0b 0000 0000 0110 1111
 		// 0x4F    0b 0000 0000 0100 1111
 		// enable change state to A/B/C/D to E
+
+		std::uint16_t status_word;
+		readPdo(0x6041, 0x00, status_word);
+
+		// 确定是否已经使能（status ：operation enabled） //
+		if ((status_word & 0x6F) != 0x27)
+		{
+			return 1;
+		}
+		// 更改mode //
+		else if (modeOfDisplay() != 0x06)
+		{
+			setModeOfOperation(0x06);
+			return 2;
+		}
+		// 确认是否 //
+		//else if ((status_word & 0x0400) && ())
+
 
 
 		//if (is_waiting_mode)
