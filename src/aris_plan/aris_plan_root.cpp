@@ -672,7 +672,7 @@ namespace aris::plan
 
 			cm.writeSdo(0x607C, 0x00, offset);
 			std::int32_t offset_read;
-			cm.readSdo(0x6098, 0x00, offset_read);
+			cm.readSdo(0x607C, 0x00, offset_read);
 			if (offset_read != offset)throw std::runtime_error("home sdo write failed offset");
 
 			cm.writeSdo(0x6098, 0x00, high_speed);
