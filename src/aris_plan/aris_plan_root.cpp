@@ -657,7 +657,7 @@ namespace aris::plan
 		for (aris::Size i = 0; i<param.active_motor.size(); ++i)
 		{
 			std::int8_t method = std::stoi(params.at(std::string("method")));
-			if (i < 1 || i > 35) throw std::runtime_error("invalid home method");
+			if (method < 1 || method > 35) throw std::runtime_error("invalid home method");
 			
 			std::int32_t offset = std::stoi(params.at(std::string("offset")));
 			std::uint32_t high_speed = std::stoi(params.at(std::string("high_speed")));
