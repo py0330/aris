@@ -245,8 +245,8 @@ void test_optimal()
 
 void test_moveAbsolute2()
 {
-	double p = 20;
-	double v = 5;
+	double p = 0;
+	double v = 0;
 	double a = 10;
 	aris::Size n = 1;
 
@@ -259,7 +259,7 @@ void test_moveAbsolute2()
 	while (n)
 	{
 		aris::Size t;
-		n = aris::plan::moveAbsolute2(p, v, a, 10, 0, 0,   5.438, 15.3254, 7.685, 1e-2, 1e-10, p, v, a, t);
+		n = aris::plan::moveAbsolute2(p, v, a, 0.4, 0, 0, 295.0 / 360 * 2 * aris::PI * 0.02, 1500.0 / 360 * 2 * aris::PI *0.01, 1500.0 / 360 * 2 * aris::PI *0.01, 1e-3, 1e-10, p, v, a, t);
 
 		p_vec.push_back(p);
 		v_vec.push_back(v);
@@ -267,6 +267,10 @@ void test_moveAbsolute2()
 
 		std::cout << "p:" << p << "  v:" << v << "  a:" << a << std::endl;
 	}
+
+
+
+
 
 	aris::dynamic::dlmwrite(p_vec.size(), 1, p_vec.data(), "C:\\Users\\py033\\Desktop\\p_vec.txt");
 }

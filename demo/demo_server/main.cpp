@@ -84,7 +84,19 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-	aris::core::Socket socket("server","","5866",aris::core::Socket::WEB);
+
+
+	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 1, 0, 0, 0, 0}.data(), "313");
+	cs.model().solverPool()[0].kinPos();
+
+	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test_pe.xml");
+	outputCsByPq(cs, "C:\\Users\\py033\\Desktop\\test.xml");
+	
+	cs.start();
+
+	//cs.executeCmd(aris::core::Msg("am --start"));
+
+	aris::core::Socket socket("server", "", "5866", aris::core::Socket::WEB);
 	socket.setOnReceivedMsg([&](aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
 		std::string msg_data = msg.toString();
@@ -104,7 +116,7 @@ int main(int argc, char *argv[])
 
 			try
 			{
-				try 
+				try
 				{
 					auto id = cs.executeCmd(aris::core::Msg(msg_data));
 					std::cout << "command id:" << id << std::endl;
@@ -175,7 +187,7 @@ int main(int argc, char *argv[])
 	{
 		std::cout << "socket lose connection" << std::endl;
 		LOG_INFO << "socket lose connection" << std::endl;
-		for(;;)
+		for (;;)
 		{
 			try
 			{
@@ -194,15 +206,81 @@ int main(int argc, char *argv[])
 
 		return 0;
 	});
-
-	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 1, 0, 0, 0, 0}.data(), "313");
-	cs.model().solverPool()[0].kinPos();
-
-	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test_pe.xml");
-	outputCsByPq(cs, "C:\\Users\\py033\\Desktop\\test.xml");
-	
-	cs.start();
 	socket.startServer(std::to_string(port));
+
+	aris::core::Socket udp_socket("server", "", "5867", aris::core::Socket::UDP_RAW);
+	udp_socket.setOnReceivedRawData([&](aris::core::Socket *socket, const char *data, int size)->int
+	{
+		try
+		{
+			std::string msg_data(data, size);
+
+			aris::core::Calculator c;
+
+			auto mat = c.calculateExpression(msg_data);
+
+			double value[6]{ 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647 };
+			s_vs(6, value, mat.data());
+			s_nv(6, 1.0 / 2147483647.0, mat.data());
+
+			auto cmd = "am --pe=" + mat.toString();
+			
+			static int i = 0;
+			if (++i % 100 == 0)
+			{
+				std::cout << cmd << std::endl;
+			}
+
+
+			cs.executeCmd(aris::core::Msg(cmd));
+		}
+		catch (std::runtime_error &e)
+		{
+			std::cout << e.what() << std::endl;
+		}
+
+
+		//std::cout << "recv:" << mat.toString() << std::endl;
+		
+
+
+
+
+
+		return 0;
+	});
+	udp_socket.setOnReceivedConnection([](aris::core::Socket *sock, const char *ip, int port)->int
+	{
+		std::cout << "socket receive connection" << std::endl;
+		LOG_INFO << "socket receive connection:\n"
+			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
+			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
+		return 0;
+	});
+	udp_socket.setOnLoseConnection([](aris::core::Socket *socket)
+	{
+		std::cout << "socket lose connection" << std::endl;
+		LOG_INFO << "socket lose connection" << std::endl;
+		for (;;)
+		{
+			try
+			{
+				socket->startServer("5866");
+				break;
+			}
+			catch (std::runtime_error &e)
+			{
+				std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+				LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+		}
+		std::cout << "socket restart successful" << std::endl;
+		LOG_INFO << "socket restart successful" << std::endl;
+
+		return 0;
+	});
+	udp_socket.startServer();
 
 	// 接收命令 //
 	for (std::string command_in; std::getline(std::cin, command_in);)

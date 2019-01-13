@@ -158,10 +158,10 @@ namespace aris::core
 			for (Size j = 0; j < n(); ++j)
 			{
 				stream << this->operator()(i, j);
-				if (j<n() - 1)stream << " , ";
+				if (j<n() - 1)stream << ",";
 			}
 			if (i<m() - 1)
-				stream << " ;\n";
+				stream << ";\n";
 		}
 		stream << "}";
 

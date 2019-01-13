@@ -16,7 +16,7 @@ namespace aris::robot
 #ifdef WIN32
 			double pos_offset[6]
 			{
-				0,0,0,0,0,0
+				-1.0, -1.0, -1.0, -1.0, -1.0, -1.0
 			};
 #endif
 #ifdef UNIX
@@ -27,7 +27,7 @@ namespace aris::robot
 #endif
 			double pos_factor[6]
 			{
-				1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+				1048576*1.8/0.1, 1.0, 1.0, 1.0, 1.0, 1.0
 			};
 			double max_pos[6]
 			{
@@ -39,16 +39,16 @@ namespace aris::robot
 			};
 			double max_vel[6]
 			{
-				5.0, 5.0, 5.0, 5.0, 5.0, 5.0
+				3000/60/1.8*0.1, 5.0, 5.0, 5.0, 5.0, 5.0
 			};
 			double max_acc[6]
 			{
-				5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0
+				3000 / 60 / 1.8*0.1*100, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0
 			};
 
 			std::string xml_str =
-				"<m" + std::to_string(i) + " type=\"EthercatMotion\" phy_id=\"" + std::to_string(i) + "\" product_code=\"0x0\""
-				" vendor_id=\"0x000002E1\" revision_num=\"0x29001\" dc_assign_activate=\"0x0300\""
+				"<m" + std::to_string(i) + " type=\"EthercatMotion\" phy_id=\"" + std::to_string(i) + "\" product_code=\"0x10305070\""
+				" vendor_id=\"0x000001DD\" revision_num=\"0x02040608\" dc_assign_activate=\"0x0300\""
 				" min_pos=\"" + std::to_string(min_pos[i]) + "\" max_pos=\"" + std::to_string(max_pos[i]) + "\" max_vel=\"" + std::to_string(max_vel[i]) + "\" min_vel=\"" + std::to_string(-max_vel[i]) + "\""
 				" max_acc=\"" + std::to_string(max_acc[i]) + "\" min_acc=\"" + std::to_string(-max_acc[i]) + "\" max_pos_following_error=\"0.1\" max_vel_following_error=\"0.5\""
 				" home_pos=\"0\" pos_factor=\"" + std::to_string(pos_factor[i]) + "\" pos_offset=\"" + std::to_string(pos_offset[i]) + "\">"
@@ -97,6 +97,9 @@ namespace aris::robot
 
 		plan_root->planPool().add<aris::plan::MovePlan>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
+
+
+		plan_root->planPool().add<aris::plan::AutoMove>();
 
 		return plan_root;
 	}

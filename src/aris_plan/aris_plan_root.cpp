@@ -1763,67 +1763,173 @@ namespace aris::plan
 	MvL& MvL::operator=(const MvL &) = default;
 	MvL& MvL::operator=(MvL &&) = default;
 
-	std::atomic_bool is_auto_move_running_{ false };
 	struct AutoMove::Imp
 	{
 		struct Param 
 		{
-			
+			double pe[6];
 		};
 
-
+		static std::atomic_bool is_auto_move_running_;
+		//std::atomic<>
 		
 
 	};
+	std::atomic_bool AutoMove::Imp::is_auto_move_running_ = false;
+	std::atomic<std::array<double, 6>> auto_pe_;
 	auto AutoMove::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		default_prepair_check_option(params, target);
 
-		MoveJ::Param param;
+		AutoMove::Imp::Param param;
 		for (auto cmd_param : params)
 		{
 			if (cmd_param.first == "start")
 			{
-				is_auto_move_running_.store(true);
+				if (Imp::is_auto_move_running_.load())throw std::runtime_error("auto mode already started");
+				
+				Imp::is_auto_move_running_.store(true);
 				target.option |= aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED;
 			}
 			else if (cmd_param.first == "stop")
 			{
-				is_auto_move_running_.store(false);
+				if (!Imp::is_auto_move_running_.load())throw std::runtime_error("auto mode not started, when stop");
+
+				Imp::is_auto_move_running_.store(false);
 				target.option |= aris::plan::Plan::WAIT_FOR_COLLECTION;
 			}
-			else if (cmd_param.first == "pos")
+			else if (cmd_param.first == "pe")
 			{
-				aris::core::Matrix mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (mat.size() == 1)param.joint_pos_vec.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), mat.toDouble());
-				else
+				if (!Imp::is_auto_move_running_.load())throw std::runtime_error("auto mode not started, when pe");
+				
+				aris::core::Calculator c;
+				aris::core::Matrix mat;
+
+				try 
 				{
-					param.joint_pos_vec.resize(mat.size());
-					std::copy(mat.begin(), mat.end(), param.joint_pos_vec.begin());
+					mat = c.calculateExpression(cmd_param.second);
 				}
+				catch (std::runtime_error &e)
+				{
+					std::cout << "invalid value in AutoMove" << std::endl;
+					LOG_ERROR << "invalid value in AutoMove" << std::endl;
+				}
+
+				if (mat.size() != 6)
+				{
+					std::cout << "invalid mat size in AutoMove" << std::endl;
+					LOG_ERROR << "invalid mat size in AutoMove" << std::endl;
+				}
+
+				std::copy(mat.begin(), mat.end(), param.pe);
+				
+				std::array<double, 6> pe;
+				std::copy(param.pe, param.pe + 6, pe.begin());
+				
+				//double max_value[6]{ 0.2,0.2,0.2,0.2,0.2,0.2 };
+				//for (int i = 0;i<6;++i)pe[i] *= max_value[i];
+
+				auto_pe_.store(pe);
+				target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION | NOT_PRINT_CMD_INFO | NOT_LOG_CMD_INFO;
 			}
 			else if (cmd_param.first == "vel")
 			{
-				param.vel = std::stod(cmd_param.second);
+
 			}
 			else if (cmd_param.first == "acc")
 			{
-				param.acc = std::stod(cmd_param.second);
+
 			}
 			else if (cmd_param.first == "dec")
 			{
-				param.dec = std::stod(cmd_param.second);
+
 			}
 		}
 
-		param.begin_joint_pos_vec.resize(target.model->motionPool().size());
+		target.option |= NOT_CHECK_POS_CONTINUOUS 
+			| NOT_CHECK_POS_CONTINUOUS_AT_START
+			| NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER
+			| NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START
+			| NOT_CHECK_POS_FOLLOWING_ERROR
+			| NOT_CHECK_POS_MAX
+			| NOT_CHECK_POS_MIN
+			| NOT_CHECK_VEL_CONTINUOUS
+			| NOT_CHECK_VEL_CONTINUOUS_AT_START;
 		target.param = param;
 	}
 	auto AutoMove::executeRT(PlanTarget &target)->int
 	{
 		auto param = std::any_cast<Imp::Param>(&target.param);
 
-		return 0;
+		if (target.count == 1)
+		{
+			std::array<double, 6> pe{ 0,0,0,0,0,0 };
+			auto_pe_.store(pe);
+		}
+
+		// get current pe //
+		double pe_now[6], ve_now[6], ae_now[6];
+		target.model->generalMotionPool()[0].getMpe(pe_now, "123");
+		target.model->generalMotionPool()[0].getMve(ve_now, "123");
+		target.model->generalMotionPool()[0].getMae(ae_now, "123");
+		
+		for (int i = 3; i < 6; ++i)
+		{
+			if (pe_now[i] > aris::PI)
+				pe_now[i] -= 2 * PI;
+		}
+
+		// get target pe //
+		std::array<double, 6> pe_target, ve_target, ae_target;
+		pe_target = auto_pe_.load();
+
+		// yaw 应该为0 //
+		//pe_target[5] += 0.0;
+
+		// 向上的轴加1.0，为默认位置 //
+		pe_target[2] += 1.0;
+		
+		// 改变yz轴朝向 //
+		std::swap(pe_target[4], pe_target[5]);
+		std::swap(pe_target[1], pe_target[2]);
+		
+		std::fill(ve_target.begin(), ve_target.end(), 0.0);
+		std::fill(ae_target.begin(), ae_target.end(), 0.0);
+
+		// now plan //
+		double pe_next[6], ve_next[6], ae_next[6];
+		for (int i = 0; i < 6; ++i)
+		{
+			aris::Size t;
+			aris::plan::moveAbsolute2(pe_now[i], ve_now[i], ae_now[i]
+				, pe_target[i], ve_target[i], ae_target[i]
+				, 0.1, 10, 10
+				, 1e-3, 1e-10, pe_next[i], ve_next[i], ae_next[i], t);
+		}
+
+		static int i = 0;
+		if (++i % 1000 == 0)
+		{
+			target.master->mout() << "pe_now :"
+				<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
+				<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
+			
+			target.master->mout() << "pe_target :"
+				<< pe_target[0] << "  "	<< pe_target[1] << "  "	<< pe_target[2] << "  "
+				<< pe_target[3] << "  " << pe_target[4] << "  " << pe_target[5] << std::endl;
+
+			target.master->mout() << "pe_next:" 
+				<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  " 
+				<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
+		}
+
+		target.model->generalMotionPool()[0].setMpe(pe_next, "123");
+		target.model->generalMotionPool()[0].setMve(ve_next, "123");
+		target.model->generalMotionPool()[0].setMae(ae_next, "123");
+
+		target.model->solverPool()[0].kinPos();
+		
+		return imp_->is_auto_move_running_.load() ? 1: 0;
 	}
 	auto AutoMove::collectNrt(PlanTarget &param)->void {}
 	AutoMove::~AutoMove() = default;
@@ -1832,11 +1938,11 @@ namespace aris::plan
 		command().loadXmlStr(
 			"<am default_child_type=\"Param\">"
 			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
-			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
+			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"start\">"
 			"			<start/>"
 			"			<stop/>"
 			"			<group type=\"GroupParam\" default_child_type=\"Param\">"
-			"				<pos default=\"0\"/>"
+			"				<pe default=\"{0,0,0,0,0,0}\"/>"
 			"				<vel default=\"0.5\"/>"
 			"				<acc default=\"1\"/>"
 			"				<dec default=\"1\"/>"

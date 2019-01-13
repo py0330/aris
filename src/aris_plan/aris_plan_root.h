@@ -70,6 +70,10 @@ namespace aris::plan
 			NOT_CHECK_VEL_CONTINUOUS = 0x01ULL << 33,
 			NOT_CHECK_VEL_CONTINUOUS_AT_START = 0x01ULL << 34,
 			NOT_CHECK_VEL_FOLLOWING_ERROR = 0x01ULL << 35,
+
+			NOT_PRINT_CMD_INFO = 0x01ULL << 40,
+			NOT_LOG_CMD_INFO = 0x01ULL << 41,
+
 		};
 
 		static auto Type()->const std::string & { static const std::string type("Plan"); return std::ref(type); }

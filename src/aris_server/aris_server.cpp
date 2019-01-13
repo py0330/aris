@@ -480,7 +480,10 @@ namespace aris::server
 		planRoot().planParser().parse(msg.toString(), cmd, params);
 		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 
-		// print cmd and params /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// 初始化plan target //
+		aris::plan::PlanTarget target{ &model(), &controller(), cmd_id, static_cast<std::uint64_t>(msg.header().reserved1_), std::any(), 0, 0, aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 } };
+
+		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)
 		{
 			return a.first.length() < b.first.length();
@@ -490,13 +493,14 @@ namespace aris::server
 		auto &log = LOG_INFO << cmd << std::endl;
 		for (auto &p : params)
 		{
-			std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
-			log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			if (!(target.option & aris::plan::Plan::NOT_PRINT_CMD_INFO))
+				std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			if (!(target.option & aris::plan::Plan::NOT_LOG_CMD_INFO))
+				log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
 		}
 		std::cout << std::endl;
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		aris::plan::PlanTarget target{ &model(), &controller(), cmd_id, static_cast<std::uint64_t>(msg.header().reserved1_), std::any(), 0, 0, aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 } };
 		// prepair //
 		if (!(target.option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
 		{

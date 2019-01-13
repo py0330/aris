@@ -113,6 +113,10 @@ namespace aris::plan
 
 	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int
 	{
+		vt = 0.0;
+		at = 0.0;
+		
+		
 		// 当前速度超过速度上限 //
 		if (std::abs(va) > vm + dm * dt)
 		{
@@ -124,7 +128,7 @@ namespace aris::plan
 		{
 			// 计算完全减速所产生的位移，vdec和sdec有方向 //
 			const double vdec = va;
-			const double ndec = std::abs(std::ceil(abs(vdec) / dm / dt));
+			const double ndec = std::abs(std::ceil(std::abs(vdec) / dm / dt - zero_check));
 			const double tdec = ndec * dt;
 			const double sdec = vdec * tdec / 2;
 
