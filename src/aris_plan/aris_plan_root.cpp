@@ -654,41 +654,44 @@ namespace aris::plan
 
 		for (aris::Size i = 0; i<param.active_motor.size(); ++i)
 		{
-			std::int8_t method = std::stoi(params.at(std::string("method")));
-			if (method < 1 || method > 35) throw std::runtime_error("invalid home method");
-			
-			std::int32_t offset = std::stoi(params.at(std::string("offset")));
-			std::uint32_t high_speed = std::stoi(params.at(std::string("high_speed")));
-			std::uint32_t low_speed = std::stoi(params.at(std::string("low_speed")));
-			std::uint32_t acc = std::stoi(params.at(std::string("acceleration")));
-			
-			auto controller = dynamic_cast<aris::control::EthercatController *>(target.master);
-			auto &cm = dynamic_cast<aris::control::EthercatMotion &>(controller->motionPool()[i]);
-			
-			cm.writeSdo(0x6098, 0x00, method);
-			std::int8_t method_read;
-			cm.readSdo(0x6098, 0x00, method_read);
-			if (method_read != method)throw std::runtime_error("home sdo write failed method");
+			if (param.active_motor[i])
+			{
+				std::int8_t method = std::stoi(params.at(std::string("method")));
+				if (method < 1 || method > 35) throw std::runtime_error("invalid home method");
 
-			cm.writeSdo(0x607C, 0x00, offset);
-			std::int32_t offset_read;
-			cm.readSdo(0x607C, 0x00, offset_read);
-			if (offset_read != offset)throw std::runtime_error("home sdo write failed offset");
+				std::int32_t offset = std::stoi(params.at(std::string("offset")));
+				std::uint32_t high_speed = std::stoi(params.at(std::string("high_speed")));
+				std::uint32_t low_speed = std::stoi(params.at(std::string("low_speed")));
+				std::uint32_t acc = std::stoi(params.at(std::string("acceleration")));
 
-			cm.writeSdo(0x6099, 0x00, high_speed);
-			std::int32_t high_speed_read;
-			cm.readSdo(0x6099, 0x00, high_speed_read);
-			if (high_speed_read != high_speed)throw std::runtime_error("home sdo write failed high_speed");
+				auto controller = dynamic_cast<aris::control::EthercatController *>(target.master);
+				auto &cm = dynamic_cast<aris::control::EthercatMotion &>(controller->motionPool()[i]);
 
-			cm.writeSdo(0x6099, 0x01, low_speed);
-			std::int32_t low_speed_read;
-			cm.readSdo(0x6099, 0x01, low_speed_read);
-			if (low_speed_read != low_speed)throw std::runtime_error("home sdo write failed low_speed");
+				cm.writeSdo(0x6098, 0x00, method);
+				std::int8_t method_read;
+				cm.readSdo(0x6098, 0x00, method_read);
+				if (method_read != method)throw std::runtime_error("home sdo write failed method");
 
-			cm.writeSdo(0x609A, 0x00, acc);
-			std::int32_t acc_read;
-			cm.readSdo(0x609A, 0x00, acc_read);
-			if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
+				cm.writeSdo(0x607C, 0x00, offset);
+				std::int32_t offset_read;
+				cm.readSdo(0x607C, 0x00, offset_read);
+				if (offset_read != offset)throw std::runtime_error("home sdo write failed offset");
+
+				cm.writeSdo(0x6099, 0x01, high_speed);
+				std::int32_t high_speed_read;
+				cm.readSdo(0x6099, 0x01, high_speed_read);
+				if (high_speed_read != high_speed)throw std::runtime_error("home sdo write failed high_speed");
+
+				cm.writeSdo(0x6099, 0x02, low_speed);
+				std::int32_t low_speed_read;
+				cm.readSdo(0x6099, 0x02, low_speed_read);
+				if (low_speed_read != low_speed)throw std::runtime_error("home sdo write failed low_speed");
+
+				cm.writeSdo(0x609A, 0x00, acc);
+				std::int32_t acc_read;
+				cm.readSdo(0x609A, 0x00, acc_read);
+				if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
+			}
 		}
 
 		target.param = param;
