@@ -612,13 +612,11 @@ namespace aris::plan
 	{
 		std::int32_t limit_time;
 		std::vector<int> active_motor;
-		std::vector<int> is_reseted;
 	};
 	struct HomePlan::Imp { Imp() {} };
 	auto HomePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		HomeParam param;
-		param.is_reseted.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
 
 		for (auto cmd_param : params)
 		{
