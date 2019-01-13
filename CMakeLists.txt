@@ -29,7 +29,7 @@ set(CMAKE_BUILD_TYPE "Release")
 
 # set include and lib folders
 if(UNIX)
-	set(RELY_LINK_LIB pthread stdc++fs)#pthread is needed for concurrency
+	set(RELY_LINK_LIB atomic pthread stdc++fs)#pthread is needed for concurrency
 
 	if(USE_XENOMAI)
 		message("using xenomai")
