@@ -852,6 +852,7 @@ namespace aris::plan
 			if (param.active_motor[i])
 			{
 				auto ret = cm.mode(8);
+				cm.setTargetPos(cm.actualPos());
 				if (ret)
 				{
 					is_all_finished = false;
