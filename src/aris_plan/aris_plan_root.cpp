@@ -1567,9 +1567,6 @@ namespace aris::plan
 			NOT_CHECK_VEL_CONTINUOUS |
 			NOT_CHECK_VEL_CONTINUOUS_AT_START |
 			NOT_CHECK_VEL_FOLLOWING_ERROR;
-
-		target.option |=
-			USE_TARGET_POS;
 	}
 	auto Show::executeRT(PlanTarget &target)->int
 	{
@@ -1603,15 +1600,15 @@ namespace aris::plan
 		{
 			if (cmd_param.first == "all")
 			{
-				param.joint_active_vec.resize(target.model->motionPool().size(), true);
+				param.joint_active_vec.resize(c->motionPool().size(), true);
 			}
 			else if (cmd_param.first == "none")
 			{
-				param.joint_active_vec.resize(target.model->motionPool().size(), false);
+				param.joint_active_vec.resize(c->motionPool().size(), false);
 			}
 			else if (cmd_param.first == "motion_id")
 			{
-				param.joint_active_vec.resize(target.model->motionPool().size(), false);
+				param.joint_active_vec.resize(c->motionPool().size(), false);
 				param.joint_active_vec.at(std::stoi(cmd_param.second)) = true;
 			}
 			else if (cmd_param.first == "physical_id")
@@ -1626,7 +1623,8 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "pos")
 			{
-				aris::core::Matrix mat = target.model->calculator().calculateExpression(cmd_param.second);
+				aris::core::Calculator cal;
+				auto mat = cal.calculateExpression(cmd_param.second);
 				if(mat.size()==1)param.joint_pos_vec.resize(c->motionPool().size(), mat.toDouble());
 				else 
 				{
@@ -1648,8 +1646,7 @@ namespace aris::plan
 			}
 		}
 
-		param.begin_joint_pos_vec.resize(target.model->motionPool().size());
-		target.option |= USE_TARGET_POS;
+		param.begin_joint_pos_vec.resize(c->motionPool().size());
 		target.param = param;
 	}
 	auto MoveJ::executeRT(PlanTarget &target)->int 
@@ -1663,7 +1660,7 @@ namespace aris::plan
 			{
 				if (param->joint_active_vec[i])
 				{
-					param->begin_joint_pos_vec[i] = target.model->motionPool()[i].mp();
+					param->begin_joint_pos_vec[i] = controller->motionPool()[i].targetPos();
 				}
 			}
 		}
@@ -1676,12 +1673,11 @@ namespace aris::plan
 				double p, v, a;
 				aris::Size t_count;
 				aris::plan::moveAbsolute(target.count, param->begin_joint_pos_vec[i], param->joint_pos_vec[i], param->vel / 1000, param->acc / 1000 / 1000, param->dec / 1000 / 1000, p, v, a, t_count);
-				target.model->motionPool().at(i).setMp(p);
+				controller->motionPool()[i].setTargetPos(p);
 				total_count = std::max(total_count, t_count);
 			}
 		}
 
-		target.model->solverPool().at(1).kinPos();
 		return total_count - target.count;
 	}
 	auto MoveJ::collectNrt(PlanTarget &param)->void { }
