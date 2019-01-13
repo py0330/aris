@@ -1579,7 +1579,6 @@ namespace aris::plan
 		for (auto &m : controller->motionPool())
 		{
 			controller->mout() << std::setprecision(15) << m.actualPos() << "   ";
-			m.setTargetPos(m.targetPos());
 		}
 		controller->mout() << std::endl;
 
