@@ -652,8 +652,6 @@ namespace aris::plan
 				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
 				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
 			}
-			else
-				throw std::runtime_error("unknown input target when prepair HomePlan");
 		}
 
 		for (aris::Size i = 0; i<param.active_motor.size(); ++i)
