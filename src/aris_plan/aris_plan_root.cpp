@@ -656,6 +656,45 @@ namespace aris::plan
 				throw std::runtime_error("unknown input target when prepair HomePlan");
 		}
 
+		for (aris::Size i = 0; i<param.active_motor.size(); ++i)
+		{
+			std::int8_t method = std::stoi(params.at(std::string("method")));
+			if (i < 1 || i > 35) throw std::runtime_error("invalid home method");
+			
+			std::int32_t offset = std::stoi(params.at(std::string("offset")));
+			std::uint32_t high_speed = std::stoi(params.at(std::string("high_speed")));
+			std::uint32_t low_speed = std::stoi(params.at(std::string("low_speed")));
+			std::uint32_t acc = std::stoi(params.at(std::string("acceleration")));
+			
+			auto controller = dynamic_cast<aris::control::EthercatController *>(target.master);
+			auto &cm = dynamic_cast<aris::control::EthercatMotion &>(controller->motionPool()[i]);
+			
+			cm.writeSdo(0x6098, 0x00, method);
+			std::int8_t method_read;
+			cm.readSdo(0x6098, 0x00, method_read);
+			if (method_read != method)throw std::runtime_error("home sdo write failed method");
+
+			cm.writeSdo(0x607C, 0x00, offset);
+			std::int32_t offset_read;
+			cm.readSdo(0x6098, 0x00, offset_read);
+			if (offset_read != offset)throw std::runtime_error("home sdo write failed offset");
+
+			cm.writeSdo(0x6098, 0x00, high_speed);
+			std::int32_t high_speed_read;
+			cm.readSdo(0x6098, 0x00, high_speed_read);
+			if (high_speed_read != high_speed)throw std::runtime_error("home sdo write failed high_speed");
+
+			cm.writeSdo(0x6098, 0x01, low_speed);
+			std::int32_t low_speed_read;
+			cm.readSdo(0x6098, 0x01, low_speed_read);
+			if (low_speed_read != low_speed)throw std::runtime_error("home sdo write failed low_speed");
+
+			cm.writeSdo(0x6099, 0x00, acc);
+			std::int32_t acc_read;
+			cm.readSdo(0x6099, 0x00, acc_read);
+			if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
+		}
+
 		target.param = param;
 	}
 	auto HomePlan::executeRT(PlanTarget &target)->int
@@ -670,6 +709,7 @@ namespace aris::plan
 
 			if (param.active_motor[i])
 			{
+				if (target.count == 1) cm.setControlWord(0x000F);
 				auto ret = cm.home();
 				if (ret)
 				{
@@ -692,6 +732,11 @@ namespace aris::plan
 		command().loadXmlStr(
 			"<hm default_child_type=\"Param\">"
 			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"		<method default=\"35\"/>"
+			"		<offset default=\"0\"/>"
+			"		<high_speed default=\"20000\"/>"
+			"		<low_speed default=\"10000\"/>"
+			"		<acceleration default=\"100000\"/>"
 			"		<limit_time default=\"5000\"/>"
 			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
 			"			<all abbreviation=\"a\"/>"

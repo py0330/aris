@@ -254,13 +254,13 @@ namespace aris::control
 	{
 		std::size_t result_size;
 		std::uint32_t abort_code;
-		auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
+		//auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
 		aris_ecrt_sdo_read(ecHandle(), phyId(), index, subindex, reinterpret_cast<std::uint8_t*>(value), byte_size, &result_size, &abort_code);
 	}
 	auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void
 	{
 		std::uint32_t abort_code;
-		auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
+		//auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
 		aris_ecrt_sdo_write(dynamic_cast<EthercatMaster&>(root()).ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 	}
 	auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void{}
@@ -668,77 +668,38 @@ namespace aris::control
 			setModeOfOperation(0x06);
 			return 2;
 		}
-		// 确认是否 //
-		//else if ((status_word & 0x0400) && ())
-
-
-
-		//if (is_waiting_mode)
-		//{
-		//	auto ret = this->enable(running_mode);
-		//	is_waiting_mode = (ret == 0 ? false : true);
-		//	return ret;
-		//}
-
-		//std::uint16_t statusWord;
-		//pFather->readPdo(STATUSWORD, 0x00, statusWord);
-		//std::uint8_t modeRead;
-		//pFather->readPdo(MODEOPERATIONDIS, 0x00, modeRead);
-		//int motorState = (statusWord & 0x3400);
-
-		//if (modeRead != EthercatMotion::HOME_MODE) {
-		//	pFather->writePdo(MODEOPERATION, 0x00, static_cast<std::uint8_t>(EthercatMotion::HOME_MODE));
-		//	return EthercatMotion::MODE_CHANGE;
-		//}
-		//else if (motorState == 0x0400) {
-		//	// homing procedure is interrupted or not started
-		//	if (home_period<10) {
-		//		// write 15 to controlword, make the bit4 equal to 0, 10 times
-		//		pFather->writePdo(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x1F));
-		//		home_period++;
-		//		return EthercatMotion::NOT_START;
-		//	}
-		//	else if (home_period<20)
-		//	{
-		//		pFather->writePdo(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x0F));
-		//		home_period++;
-		//		return EthercatMotion::NOT_START;
-		//	}
-		//	else
-		//	{
-		//		home_period = 0;
-		//		return EthercatMotion::NOT_START;
-		//	}
-		//}
-		//else if (motorState == 0x0000) {
-		//	//in progress
-		//	home_period = 0;
-		//	pFather->writePdo(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x1F));
-		//	pFather->writePdo(TARGETPOSITION, 0x00, home_count_);
-		//	return EthercatMotion::EXECUTING;
-		//}
-		//else if (motorState == 0x2000 || motorState == 0x2400)
-		//{
-		//	//homing error occurred, velocity is not 0 , or homing error occurred, velocity is 0, should halt
-		//	pFather->writePdo(CONTROLWORD, 0x00, static_cast<std::uint16_t>(0x0100));
-		//	home_period = 0;
-		//	return EthercatMotion::HOME_ERROR;
-		//}
-		//else if (motorState == 0x1400)
-		//{
-		//	//homing procedure is completed successfully, home method 35<->0x1400,
-		//	pFather->writePdo(TARGETPOSITION, 0x00, home_count_);
-		//	home_period = 0;
-		//	is_waiting_mode = true;
-		//	return EthercatMotion::EXECUTING;
-		//}
-		//else {
-		//	//other statusworld
-		//	home_period = 0;
-		//	return EthercatMotion::EXECUTING;
-		//}
-
-		return 0;
+		// 将home已经到达的标志位去掉 //
+		else if (!(controlWord() & 0x10) && (statusWord() & 0x0400))
+		{
+			setControlWord(0x0F);
+			return 3;
+		}
+		// 开始执行home //
+		else if (!(controlWord() & 0x10) && !(statusWord() & 0x0400))
+		{
+			setControlWord(0x1F);
+			return 4;
+		}
+		// homing... //
+		else if ((controlWord() & 0x10) && !(statusWord() & 0x0400))
+		{
+			return 5;
+		}
+		// home error //
+		else if ((controlWord() & 0x10) && (statusWord() != 0x1400))
+		{
+			return -1;
+		}
+		// home successfull //
+		else if ((controlWord() & 0x10) && (statusWord() != 0x2400))
+		{
+			return 0;
+		}
+		// unknown error //
+		else
+		{
+			return -2;
+		}
 	}
 	auto EthercatMotion::mode(std::uint8_t md)->int
 	{
