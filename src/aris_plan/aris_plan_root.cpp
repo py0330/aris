@@ -675,19 +675,19 @@ namespace aris::plan
 			cm.readSdo(0x607C, 0x00, offset_read);
 			if (offset_read != offset)throw std::runtime_error("home sdo write failed offset");
 
-			cm.writeSdo(0x6098, 0x00, high_speed);
+			cm.writeSdo(0x6099, 0x00, high_speed);
 			std::int32_t high_speed_read;
-			cm.readSdo(0x6098, 0x00, high_speed_read);
+			cm.readSdo(0x6099, 0x00, high_speed_read);
 			if (high_speed_read != high_speed)throw std::runtime_error("home sdo write failed high_speed");
 
-			cm.writeSdo(0x6098, 0x01, low_speed);
+			cm.writeSdo(0x6099, 0x01, low_speed);
 			std::int32_t low_speed_read;
-			cm.readSdo(0x6098, 0x01, low_speed_read);
+			cm.readSdo(0x6099, 0x01, low_speed_read);
 			if (low_speed_read != low_speed)throw std::runtime_error("home sdo write failed low_speed");
 
-			cm.writeSdo(0x6099, 0x00, acc);
+			cm.writeSdo(0x609A, 0x00, acc);
 			std::int32_t acc_read;
-			cm.readSdo(0x6099, 0x00, acc_read);
+			cm.readSdo(0x609A, 0x00, acc_read);
 			if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
 		}
 
