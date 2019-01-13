@@ -89,8 +89,10 @@ namespace aris::robot
 
 		plan_root->planPool().add<aris::plan::EnablePlan>();
 		plan_root->planPool().add<aris::plan::DisablePlan>();
+		plan_root->planPool().add<aris::plan::HomePlan>();
 		plan_root->planPool().add<aris::plan::ModePlan>();
 		plan_root->planPool().add<aris::plan::RecoverPlan>();
+		plan_root->planPool().add<aris::plan::Show>();
 		plan_root->planPool().add<aris::plan::SleepPlan>();
 		auto &rs = plan_root->planPool().add<aris::plan::ResetPlan>();
 		rs.command().findByName("group")->findByName("pos")->loadXmlStr("<pos default=\"{0.5,0.5,0.5,0.5,0.5,0.5}\" abbreviation=\"p\"/>");
