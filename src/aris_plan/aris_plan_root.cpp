@@ -1963,7 +1963,7 @@ namespace aris::plan
 				if (Imp::is_auto_move_running_.load())throw std::runtime_error("auto mode already started");
 				
 				Imp::is_auto_move_running_.store(true);
-				target.option |= aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT;
+				target.option |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT | USE_TARGET_POS;
 			}
 			else if (cmd_param.first == "stop")
 			{
