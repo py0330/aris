@@ -613,6 +613,7 @@ namespace aris::plan
 		std::int32_t limit_time;
 		std::vector<int> active_motor;
 		std::vector<int> active_motor_homed;
+		double offset;
 	};
 	struct HomePlan::Imp { Imp() {} };
 	auto HomePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
@@ -660,7 +661,8 @@ namespace aris::plan
 				std::int8_t method = std::stoi(params.at(std::string("method")));
 				if (method < 1 || method > 35) throw std::runtime_error("invalid home method");
 
-				std::int32_t offset = std::stoi(params.at(std::string("offset")));
+				param.offset = std::stod(params.at(std::string("offset")));
+				//std::int32_t offset = std::stoi(params.at(std::string("offset")));
 				std::uint32_t high_speed = std::stoi(params.at(std::string("high_speed")));
 				std::uint32_t low_speed = std::stoi(params.at(std::string("low_speed")));
 				std::uint32_t acc = std::stoi(params.at(std::string("acceleration")));
@@ -668,6 +670,7 @@ namespace aris::plan
 				auto controller = dynamic_cast<aris::control::EthercatController *>(target.master);
 				auto &cm = dynamic_cast<aris::control::EthercatMotion &>(controller->motionPool()[i]);
 
+				/*
 				cm.writeSdo(0x6098, 0x00, method);
 				std::int8_t method_read;
 				cm.readSdo(0x6098, 0x00, method_read);
@@ -692,6 +695,7 @@ namespace aris::plan
 				std::int32_t acc_read;
 				cm.readSdo(0x609A, 0x00, acc_read);
 				if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
+				*/
 			}
 		}
 
@@ -712,7 +716,9 @@ namespace aris::plan
 
 			if (param.active_motor[i])
 			{
-				if (target.count == 1) cm.setControlWord(0x000F);
+				
+				
+				/*if (target.count == 1) cm.setControlWord(0x000F);
 				auto ret = cm.home();
 				if (ret)
 				{
@@ -722,7 +728,7 @@ namespace aris::plan
 					{
 						controller->mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
-				}
+				}*/
 			}
 		}
 
@@ -738,7 +744,7 @@ namespace aris::plan
 			"		<method default=\"35\"/>"
 			"		<offset default=\"0\"/>"
 			"		<high_speed default=\"20000\"/>"
-			"		<low_speed default=\"10000\"/>"
+			"		<low_speed default=\"20\"/>"
 			"		<acceleration default=\"100000\"/>"
 			"		<limit_time default=\"5000\"/>"
 			"		<unique type=\"UniqueParam\" default_child_type=\"Param\" default=\"all\">"
@@ -2004,7 +2010,7 @@ namespace aris::plan
 				
 				double max_value[6]{ 1.0,1.0,1.0,1.0,1.0,1.0 };
 				double min_value[6]{ -1.0,-1.0,-1.0,-1.0,-1.0,-1.0 };
-				double ratio[6]{ 2.0,2.0,2.0,2.0,2.0,2.0 };
+				double ratio[6]{ 1.0,1.0,1.0,3.0,3.0,3.0 };
 
 
 				for (int i = 0; i < 6; ++i) 
