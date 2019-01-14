@@ -254,13 +254,11 @@ namespace aris::control
 	{
 		std::size_t result_size;
 		std::uint32_t abort_code;
-		//auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
 		aris_ecrt_sdo_read(dynamic_cast<EthercatMaster&>(root()).ecHandle(), phyId(), index, subindex, reinterpret_cast<std::uint8_t*>(value), byte_size, &result_size, &abort_code);
 	}
 	auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void
 	{
 		std::uint32_t abort_code;
-		//auto &sdo = sdoPool().at(imp_->sdo_map_.at(index).at(subindex));
 		aris_ecrt_sdo_write(dynamic_cast<EthercatMaster&>(root()).ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 	}
 	auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void{}

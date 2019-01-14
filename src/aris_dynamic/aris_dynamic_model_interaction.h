@@ -172,7 +172,8 @@ namespace aris::dynamic
 		auto setMpOffset(double mp_offset)noexcept->void;
 		auto mpFactor()const noexcept->double;
 		auto setMpFactor(double mp_factor)noexcept->void;
-
+		auto mpInternal()const noexcept->double;
+		auto setMpInternal(double mp_internal)noexcept->void;
 
 		virtual ~Motion();
 		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);

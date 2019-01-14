@@ -1175,7 +1175,7 @@ namespace aris::dynamic
 				for (Size j(-1); ++j < ancestor<Model>()->motionPool().size();)
 				{
 					ancestor<Model>()->motionPool().at(j).updMp();
-					mot_akima.at(j).at(i) = ancestor<Model>()->motionPool().at(j).mp();
+					mot_akima.at(j).at(i) = ancestor<Model>()->motionPool().at(j).mpInternal();
 				}
 				for (Size j(-1); ++j < ancestor<Model>()->generalMotionPool().size();)
 				{
@@ -1370,7 +1370,7 @@ namespace aris::dynamic
 
 			std::string akima = motion.name() + "_akima";
 			std::string akima_func = "AKISPL(time,0," + akima + ")";
-			std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << motion.mp() << " + " << motion.mv() << " * time + " << motion.ma()*0.5 << " * time * time").str();
+			std::string polynomial_func = static_cast<const std::stringstream &>(std::stringstream() << std::setprecision(16) << motion.mpInternal() << " + " << motion.mv() << " * time + " << motion.ma()*0.5 << " * time * time").str();
 
 			// 构建akima曲线 //
 			if (pos == -1)

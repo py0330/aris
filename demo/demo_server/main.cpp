@@ -84,8 +84,6 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-
-
 	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 1, 0, 0, 0, 0}.data(), "313");
 	cs.model().solverPool()[0].kinPos();
 

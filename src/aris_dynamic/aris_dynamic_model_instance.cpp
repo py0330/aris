@@ -115,31 +115,51 @@ namespace aris::dynamic
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
 
 		// 设置重力 //
-		const double gravity[6]{ 0.0,-9.8,0.0,0.0,0.0,0.0 };
+		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
 
 		// 添加变量 //
 		model->calculator().addVariable("PI", aris::core::Matrix(PI));
 
 		// 尺寸变量 //
-		const double up_pos[6][3]
-		{
-		{ 0,0,-0.289 },
-		{ 0.25,0,0.144 },
-		{ 0.25,0,0.144 },
-		{ -0.25,0,0.144 },
-		{ -0.25,0,0.144 },
-		{ 0,0,-0.289 },
-		};
+		//const double down_pos[6][3]
+		//{
+		//{  0.475, 0.0, 0.038 },
+		//{  0.475, 0.0,-0.038 },
+		//{ -0.205, 0.0,-0.430 },
+		//{ -0.270, 0.0,-0.393 },
+		//{ -0.270, 0.0, 0.393 },
+		//{ -0.205, 0.0, 0.430 },
+		//};
+		//const double up_pos[6][3]
+		//{
+		//{  0.272, 0.0, 0.377 },
+		//{  0.272, 0.0,-0.377 },
+		//{  0.203, 0.0,-0.418 },
+		//{ -0.500, 0.0,-0.040 },
+		//{ -0.500, 0.0, 0.040 },
+		//{  0.203, 0.0, 0.418 },
+		//};
+
 		const double down_pos[6][3]
 		{
-		{ 1,0,0 },
-		{ 1,0,0 },
-		{ 0,0,1.732 },
-		{ 0,0,1.732 },
-		{ -1,0,0 },
-		{ -1,0,0 },
+		{ -0.43011, 0.0,-0.20502 },
+		{ -0.03750, 0.0, 0.47500 },
+		{  0.03750, 0.0, 0.47500 },
+		{  0.43011, 0.0,-0.20502 },
+		{  0.38261, 0.0,-0.26998 },
+		{ -0.38261, 0.0,-0.26998 },
 		};
+		const double up_pos[6][3]
+		{
+		{ -0.41960, 0.0, 0.19895 },
+		{ -0.38210, 0.0, 0.26391 },
+		{  0.38210, 0.0, 0.26391 },
+		{  0.41960, 0.0, 0.19895 },
+		{  0.03750, 0.0,-0.46286 },
+		{ -0.03750, 0.0,-0.46286 },
+		};
+
 
 		// 移动方向，U副第一根轴、第二根轴
 		double prismatic_direction[6][3];
@@ -175,7 +195,6 @@ namespace aris::dynamic
 		s_sov_axes2pm(up_pos[4], first_axis[4], second_axis[4], p5b_pm, "xz");
 		s_sov_axes2pm(down_pos[5], first_axis[5], second_axis[5], p6a_pm, "xz");
 		s_sov_axes2pm(up_pos[5], first_axis[5], second_axis[5], p6b_pm, "xz");
-
 
 		// add part //
 		auto &p1a = model->partPool().add<Part>("p1a", nullptr, p1a_pm);
@@ -236,7 +255,12 @@ namespace aris::dynamic
 
 		for (int i = 0; i < 6; ++i)
 		{
+			double line[3];
+			s_vc(3, up_pos[i], line);
+			s_vs(3, down_pos[i], line);
 
+			auto v = s_norm(3, line);
+			model->motionPool()[i].setMpOffset(-v);
 		}
 
 		// add ee general motion //

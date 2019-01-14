@@ -882,7 +882,7 @@ namespace aris::dynamic
 			auto m = static_cast<const Motion*>(c.constraint);
 
 			double rm[9], pm_j_should_be[16];
-			s_rmz(m->mp(), rm);
+			s_rmz(m->mpInternal(), rm);
 
 			s_vc(16, c.pmJ, pm_j_should_be);
 			s_mm(3, 3, 3, c.pmJ, 4, rm, 3, pm_j_should_be, 4);
@@ -903,7 +903,7 @@ namespace aris::dynamic
 
 			double pm_j_should_be[16];
 			s_vc(16, c.pmJ, pm_j_should_be);
-			s_va(3, m->mp(), pm_j_should_be + m->axis(), 4, pm_j_should_be + 3, 4);
+			s_va(3, m->mpInternal(), pm_j_should_be + m->axis(), 4, pm_j_should_be + 3, 4);
 
 			double pm_j2i[16], ps_j2i[6];
 			s_inv_pm_dot_pm(c.pmI, pm_j_should_be, pm_j2i);
@@ -2290,10 +2290,10 @@ namespace aris::dynamic
 			s_pm_dot_inv_pm(pm1, *m.jointPool().at(i).makI().prtPm(), const_cast<double*>(*m.jointPool().at(i).makI().fatherPart().pm()));
 
 
-			auto last_mp = m.motionPool().at(i).mp();
+			auto last_mp = m.motionPool().at(i).mpInternal();
 			m.motionPool().at(i).updMp();
-			while (m.motionPool().at(i).mp() - last_mp > PI)m.motionPool().at(i).setMp(m.motionPool().at(i).mp() - 2 * PI);
-			while (m.motionPool().at(i).mp() - last_mp < -PI)m.motionPool().at(i).setMp(m.motionPool().at(i).mp() + 2 * PI);
+			while (m.motionPool().at(i).mpInternal() - last_mp > PI)m.motionPool().at(i).setMpInternal(m.motionPool().at(i).mpInternal() - 2 * PI);
+			while (m.motionPool().at(i).mpInternal() - last_mp < -PI)m.motionPool().at(i).setMpInternal(m.motionPool().at(i).mpInternal() + 2 * PI);
 		}
 
 
@@ -2716,7 +2716,7 @@ namespace aris::dynamic
 					diff_norm[solution_num] = 0;
 					for (int j = 0; j < 6; ++j)
 					{
-						diff_q[solution_num][j] -= imp_->motions[j]->mp();
+						diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
 
 						while (diff_q[solution_num][j] > PI) diff_q[solution_num][j] -= 2 * PI;
 						while (diff_q[solution_num][j] < -PI)diff_q[solution_num][j] += 2 * PI;
@@ -2737,7 +2737,7 @@ namespace aris::dynamic
 				if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
 				{
 					double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
-					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mp() + diff_q[real_solution][i]}.data(), pm_rot);
+					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mpInternal() + diff_q[real_solution][i]}.data(), pm_rot);
 					s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
 					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
 					imp_->parts[i + 1]->setPm(pm_prt_i);
@@ -2745,13 +2745,13 @@ namespace aris::dynamic
 				else
 				{
 					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
-					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mp() - diff_q[real_solution][i]}.data(), pm_rot);
+					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mpInternal() - diff_q[real_solution][i]}.data(), pm_rot);
 					s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
 					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
 					imp_->parts[i + 1]->setPm(pm_prt_j);
 				}
 
-				imp_->motions[i]->setMp(imp_->motions[i]->mp() + diff_q[real_solution][i]);
+				imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + diff_q[real_solution][i]);
 			}
 
 			return true;
@@ -2781,10 +2781,10 @@ namespace aris::dynamic
 						imp_->parts[i + 1]->setPm(pm_prt_j);
 					}
 
-					double last_mp = imp_->motions[i]->mp();
+					double last_mp = imp_->motions[i]->mpInternal();
 					imp_->motions[i]->updMp();
-					while (imp_->motions[i]->mp() - last_mp > PI)imp_->motions[i]->setMp(imp_->motions[i]->mp() - 2 * PI);
-					while (imp_->motions[i]->mp() - last_mp < -PI)imp_->motions[i]->setMp(imp_->motions[i]->mp() + 2 * PI);
+					while (imp_->motions[i]->mpInternal() - last_mp > PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() - 2 * PI);
+					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
 				}
 
 				return true;
@@ -2855,7 +2855,6 @@ namespace aris::dynamic
 			model().partPool()[i * 2 + 1].setPm(p1a_pm);
 
 
-			double pp[3];
 			s_vc(16, *imp_->s_[i]->makJ().pm(), pm1);
 			s_mc(3, 3, *imp_->p_[i]->makJ().pm(), 4, pm1, 4);
 			

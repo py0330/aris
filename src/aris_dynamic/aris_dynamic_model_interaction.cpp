@@ -145,7 +145,7 @@ namespace aris::dynamic
 		if (axis() > 2)//角度
 		{
 			double re[3]{ 0.0 }, rm[9], pm_j_should_be[16];
-			re[axis() - 3] = mp();
+			re[axis() - 3] = imp_->mp_;
 			s_re2rm(re, rm, "123");
 
 			s_vc(16, makJ_pm, pm_j_should_be);
@@ -161,7 +161,7 @@ namespace aris::dynamic
 		{
 			double pm_j_should_be[16];
 			s_vc(16, makJ_pm, pm_j_should_be);
-			s_va(3, mp(), pm_j_should_be + axis(), 4, pm_j_should_be + 3, 4);
+			s_va(3, imp_->mp_, pm_j_should_be + axis(), 4, pm_j_should_be + 3, 4);
 
 			double pm_j2i[16], ps_j2i[6];
 			s_inv_pm_dot_pm(makI_pm, pm_j_should_be, pm_j2i);
@@ -171,7 +171,7 @@ namespace aris::dynamic
 	}
 	auto Motion::cptCv(double *cv)const noexcept->void { Constraint::cptCv(cv); cv[0] += mv(); }
 	auto Motion::cptCa(double *ca)const noexcept->void { Constraint::cptCa(ca); ca[0] += ma(); }
-	auto Motion::updMp() noexcept->void { setMp(s_sov_axis_distance(*makJ().pm(), *makI().pm(), axis())); }
+	auto Motion::updMp() noexcept->void { imp_->mp_ = s_sov_axis_distance(*makJ().pm(), *makI().pm(), axis()); }
 	auto Motion::updMv() noexcept->void
 	{
 		double vs_i2j[6];
@@ -202,6 +202,8 @@ namespace aris::dynamic
 	auto Motion::setMpOffset(double mp_offset)noexcept->void { imp_->mp_offset_ = mp_offset; }
 	auto Motion::mpFactor()const noexcept->double { return imp_->mp_factor_; }
 	auto Motion::setMpFactor(double mp_factor)noexcept->void { imp_->mp_factor_ = mp_factor; }
+	auto Motion::mpInternal()const noexcept->double { return imp_->mp_; }
+	auto Motion::setMpInternal(double mp_internal)noexcept->void { imp_->mp_ = mp_internal; }
 	Motion::~Motion() = default;
 	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : Constraint(name, makI, makJ, active)
 	{

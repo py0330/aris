@@ -612,6 +612,7 @@ namespace aris::plan
 	{
 		std::int32_t limit_time;
 		std::vector<int> active_motor;
+		std::vector<int> active_motor_homed;
 	};
 	struct HomePlan::Imp { Imp() {} };
 	auto HomePlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
@@ -693,6 +694,9 @@ namespace aris::plan
 				if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
 			}
 		}
+
+		param.active_motor_homed.clear();
+		param.active_motor_homed.resize(param.active_motor.size(), 0.0);
 
 		target.param = param;
 	}
@@ -2016,15 +2020,7 @@ namespace aris::plan
 			}
 		}
 
-		target.option |= NOT_CHECK_POS_CONTINUOUS 
-			| NOT_CHECK_POS_CONTINUOUS_AT_START
-			| NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER
-			| NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START
-			| NOT_CHECK_POS_FOLLOWING_ERROR
-			| NOT_CHECK_POS_MAX
-			| NOT_CHECK_POS_MIN
-			| NOT_CHECK_VEL_CONTINUOUS
-			| NOT_CHECK_VEL_CONTINUOUS_AT_START;
+		target.option |= NOT_CHECK_POS_FOLLOWING_ERROR;
 		target.param = param;
 	}
 	auto AutoMove::executeRT(PlanTarget &target)->int
@@ -2057,7 +2053,8 @@ namespace aris::plan
 		//pe_target[5] += 0.0;
 
 		// 向上的轴加1.0，为默认位置 //
-		pe_target[2] += 1.0;
+		pe_target[2] += 0.515;
+		pe_target[1] += 0.012;
 		
 		// 改变yz轴朝向 //
 		std::swap(pe_target[4], pe_target[5]);

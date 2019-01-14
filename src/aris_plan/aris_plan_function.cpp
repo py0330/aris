@@ -109,8 +109,6 @@ namespace aris::plan
 			current_acc = current_acc;
 		}
 	}
-
-
 	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int
 	{
 		vt = 0.0;
