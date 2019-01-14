@@ -2029,6 +2029,8 @@ namespace aris::plan
 
 		if (target.count == 1)
 		{
+			target.model->generalMotionPool()[0].setMve(std::array<double, 6>{0, 0, 0, 0, 0, 0}.data(), "123");
+			
 			std::array<double, 6> pe{ 0,0,0,0,0,0 };
 			auto_pe_.store(pe);
 		}
@@ -2050,7 +2052,15 @@ namespace aris::plan
 		pe_target = auto_pe_.load();
 
 		// yaw 应该为0 //
-		//pe_target[5] += 0.0;
+		pe_target[5] = 0.0;
+
+		pe_target[0] *= 0.04;
+		pe_target[1] *= 0.04;
+		pe_target[2] *= 0.04;
+		pe_target[3] *= 0.085;
+		pe_target[4] *= 0.085;
+		pe_target[5] *= 0.085;
+
 
 		// 向上的轴加1.0，为默认位置 //
 		pe_target[2] += 0.515;
