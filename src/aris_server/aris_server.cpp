@@ -33,7 +33,7 @@ namespace aris::server
 		ControlServer *server_;
 
 		// 实时循环中的轨迹参数 //
-		enum { CMD_POOL_SIZE = 10 };
+		enum { CMD_POOL_SIZE = 1000 };
 		InternalData internal_data_queue_[CMD_POOL_SIZE];
 		
 		// 全局count //

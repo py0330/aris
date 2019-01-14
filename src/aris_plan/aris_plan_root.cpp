@@ -1225,17 +1225,17 @@ namespace aris::plan
 		
 		p->is_kinematic_ready_ = false;
 		p->is_rt_waiting_ready_ = false;
-		p->fut = std::async(std::launch::async, [](std::shared_ptr<RecoverParam> p, PlanTarget *target) 
+		p->fut = std::async(std::launch::async, [](std::shared_ptr<RecoverParam> p, PlanTarget target) 
 		{
 			// 等待正解求解的需求 //
 			while (!p->is_rt_waiting_ready_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 			// 求正解 //
-			p->kin_ret = target->model->solverPool()[1].kinPos() ? 0 : -1;
+			p->kin_ret = target.model->solverPool()[1].kinPos() ? 0 : -1;
 
 			// 通知实时线程 //
 			p->is_kinematic_ready_.store(true);
-		}, p, &target);
+		}, p, target);
 
 		target.param = p;
 	}
@@ -1254,7 +1254,7 @@ namespace aris::plan
 
 			param->is_rt_waiting_ready_.store(true);
 
-			return 0;
+			return 1;
 		}
 
 		return param->is_kinematic_ready_.load() ? param->kin_ret : 1;
