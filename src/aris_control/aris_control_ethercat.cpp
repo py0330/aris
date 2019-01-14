@@ -360,6 +360,7 @@ namespace aris::control
 		double target_pos_{ 0 }, target_vel_{ 0 }, target_cur_{ 0 }, offset_vel_{ 0 }, offset_cur_{ 0 };
 		
 		int waiting_count_left{ 0 }; // enable 在用
+		int home_count{ 0 };
 	};
 	auto EthercatMotion::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{

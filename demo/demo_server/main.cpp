@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 1, 0, 0, 0, 0}.data(), "313");
+	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 1, 0, 0, 0}.data(), "313");
 	cs.model().solverPool()[0].kinPos();
 
 	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test_pe.xml");
@@ -99,7 +99,9 @@ int main(int argc, char *argv[])
 	{
 		std::string msg_data = msg.toString();
 
-		std::cout << "recv:" << msg_data << std::endl;
+		static int cout_count = 0;
+		if(++cout_count%10 == 0)std::cout << "recv:" << msg_data << std::endl;
+		
 
 		if (msg.header().msg_id_ == 0)
 		{
@@ -134,7 +136,7 @@ int main(int argc, char *argv[])
 		}
 		else if (msg.header().msg_id_ == 1)
 		{
-			LOG_INFO_EVERY_N(10) << "socket receive request msg:"
+			LOG_INFO_EVERY_N(100) << "socket receive request msg:"
 				<< msg.header().msg_size_ << "&"
 				<< msg.header().msg_id_ << "&"
 				<< msg.header().msg_type_ << "&"

@@ -1955,6 +1955,8 @@ namespace aris::plan
 	{
 		default_prepair_check_option(params, target);
 
+		target.option = 0;
+
 		AutoMove::Imp::Param param;
 		for (auto cmd_param : params)
 		{
@@ -2000,8 +2002,17 @@ namespace aris::plan
 				std::array<double, 6> pe;
 				std::copy(param.pe, param.pe + 6, pe.begin());
 				
-				double max_value[6]{ 0.5,0.5,0.5,1.0,1.0,1.0 };
-				for (int i = 0; i<6; ++i)pe[i] *= max_value[i];
+				double max_value[6]{ 1.0,1.0,1.0,1.0,1.0,1.0 };
+				double min_value[6]{ -1.0,-1.0,-1.0,-1.0,-1.0,-1.0 };
+				double ratio[6]{ 2.0,2.0,2.0,2.0,2.0,2.0 };
+
+
+				for (int i = 0; i < 6; ++i) 
+				{
+					pe[i] *= ratio[i];
+					pe[i] = std::min(pe[i], max_value[i]);
+					pe[i] = std::max(pe[i], min_value[i]);
+				}
 
 				auto_pe_.store(pe);
 				target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION | NOT_PRINT_CMD_INFO | NOT_LOG_CMD_INFO;
@@ -2048,11 +2059,18 @@ namespace aris::plan
 		}
 
 		// get target pe //
-		std::array<double, 6> pe_target, ve_target, ae_target;
+		std::array<double, 6> pe_target;
 		pe_target = auto_pe_.load();
 
 		// yaw 应该为0 //
 		pe_target[5] = 0.0;
+
+		// xy 客户和simtool不一样 //
+		std::swap(pe_target[0], pe_target[1]);
+		pe_target[0] = -pe_target[0];
+
+		std::swap(pe_target[3], pe_target[4]);
+		pe_target[3] = -pe_target[3];
 
 		pe_target[0] *= 0.04;
 		pe_target[1] *= 0.04;
@@ -2061,17 +2079,9 @@ namespace aris::plan
 		pe_target[4] *= 0.085;
 		pe_target[5] *= 0.085;
 
-
 		// 向上的轴加1.0，为默认位置 //
 		pe_target[2] += 0.515;
-		pe_target[1] += 0.012;
-		
-		// 改变yz轴朝向 //
-		std::swap(pe_target[4], pe_target[5]);
-		std::swap(pe_target[1], pe_target[2]);
-		
-		std::fill(ve_target.begin(), ve_target.end(), 0.0);
-		std::fill(ae_target.begin(), ae_target.end(), 0.0);
+		pe_target[1] -= 0.012;
 
 		// now plan //
 		double pe_next[6], ve_next[6], ae_next[6];
@@ -2079,26 +2089,26 @@ namespace aris::plan
 		{
 			aris::Size t;
 			aris::plan::moveAbsolute2(pe_now[i], ve_now[i], ae_now[i]
-				, pe_target[i], ve_target[i], ae_target[i]
-				, 0.1, 10, 10
+				, pe_target[i], 0.0, 0.0
+				, 0.12, 10, 10
 				, 1e-3, 1e-10, pe_next[i], ve_next[i], ae_next[i], t);
 		}
 
-		static int i = 0;
-		if (++i % 1000 == 0)
-		{
-			//target.master->mout() << "pe_now :"
-			//	<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
-			//	<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
-			
-			//target.master->mout() << "pe_target :"
-			//	<< pe_target[0] << "  "	<< pe_target[1] << "  "	<< pe_target[2] << "  "
-			//	<< pe_target[3] << "  " << pe_target[4] << "  " << pe_target[5] << std::endl;
+		//static int i = 0;
+		//if (++i % 1000 == 0)
+		//{
+		//	target.master->mout() << "pe_now :"
+		//		<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
+		//		<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
+		//	
+		//	target.master->mout() << "pe_target :"
+		//		<< pe_target[0] << "  "	<< pe_target[1] << "  "	<< pe_target[2] << "  "
+		//		<< pe_target[3] << "  " << pe_target[4] << "  " << pe_target[5] << std::endl;
 
-			//target.master->mout() << "pe_next:" 
-			//	<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  " 
-			//	<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
-		}
+		//	target.master->mout() << "pe_next:" 
+		//		<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  " 
+		//		<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
+		//}
 
 		target.model->generalMotionPool()[0].setMpe(pe_next, "123");
 		target.model->generalMotionPool()[0].setMve(ve_next, "123");
