@@ -109,7 +109,7 @@ namespace aris::robot
 		auto &mm = plan_root->planPool().add<aris::plan::ManualMove>();
 		mm.command().findParam("ve")->setDefaultValue("{0.05,0.05,0.05,0.05,0.05,0.05}");
 		mm.command().findParam("ae")->setDefaultValue("{10,10,10,10,10,10}");
-		mm.command().findParam("de")->setDefaultValue("{10,10,10,10,10,10}");
+		mm.command().findParam("de")->setDefaultValue("{10,10,10000,10,10,10}");
 		mm.command().findParam("eul_type")->setDefaultValue("123");
 		mm.command().findParam("increase_count")->setDefaultValue("50");
 

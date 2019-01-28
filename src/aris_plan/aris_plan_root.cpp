@@ -1282,6 +1282,10 @@ namespace aris::plan
 			// 求正解 //
 			p->kin_ret = target.model->solverPool()[1].kinPos() ? 0 : -1;
 
+			double pe[6];
+			target.model->generalMotionPool()[0].getMpe(pe, "123");
+			aris::dynamic::dsp(1, 6, pe);
+
 			// 通知实时线程 //
 			p->is_kinematic_ready_.store(true);
 		}, p, target);
@@ -2409,7 +2413,7 @@ namespace aris::plan
 				if (!Imp::is_running_.load())throw std::runtime_error("manual mode not started, when stop");
 
 				Imp::is_running_.store(false);
-				target.option |= aris::plan::Plan::WAIT_FOR_COLLECTION;
+				target.option |= WAIT_FOR_COLLECTION;
 			}
 			else if (cmd_param.first == "x")
 			{
@@ -2437,12 +2441,6 @@ namespace aris::plan
 	{
 		auto param = std::any_cast<ManualMoveParam>(&target.param);
 
-		static std::array<int, 6> increase_status;
-		if (target.count == 1)std::fill_n(increase_status.data(), 6, 0);
-
-
-		target.model->generalMotionPool()[0].updMpm();
-
 		// get current pe //
 		double pe_now[6], ve_now[6], ae_now[6];
 		target.model->generalMotionPool()[0].getMpe(pe_now, imp_->eul_type.c_str());
@@ -2450,14 +2448,22 @@ namespace aris::plan
 		target.model->generalMotionPool()[0].getMae(ae_now, imp_->eul_type.c_str());
 		for (int i = 3; i < 6; ++i) if (pe_now[i] > aris::PI) pe_now[i] -= 2 * PI;
 
+		// init status //
+		static std::array<int, 6> increase_status;
+		static std::array<double, 6> target_pe{ 0,0,0,0,0,0 };
+		if (target.count == 1) 
+		{
+			std::fill_n(increase_status.data(), 6, 0);
+			std::copy_n(pe_now, 6, target_pe.data());
+			std::fill_n(ve_now, 6, 0.0);
+			std::fill_n(ae_now, 6, 0.0);
+		}
+
 		// get is_increase //
 		auto is_increase = Imp::is_increase_.exchange(std::array<int, 6>{0, 0, 0, 0, 0, 0});
 		for (int i = 0; i < 6; ++i) if (is_increase[i] != 0) increase_status[i] = is_increase[i];
 
 		// calculate target pe //
-		static std::array<double, 6> target_pe{ 0,0,0,0,0,0 };
-		if (target.count == 1)std::copy_n(pe_now, 6, target_pe.data());
-
 		std::array<double, 6> target_pe_new;
 		for (int i = 0; i < 6; ++i)
 		{
@@ -2465,7 +2471,7 @@ namespace aris::plan
 			increase_status[i] -= aris::dynamic::s_sgn(increase_status[i]);
 		}
 
-		// check target_pe is valid //
+		// check if target_pe is valid //
 		target.model->generalMotionPool()[0].setMpe(target_pe_new.data(), imp_->eul_type.c_str());
 		auto check_motion_limit = [&]()->bool
 		{
@@ -2491,20 +2497,17 @@ namespace aris::plan
 				, imp_->ve_[i], imp_->ae_[i], imp_->de_[i]
 				, 1e-3, 1e-10, pe_next[i], ve_next[i], ae_next[i], t);
 		}
+
+		// set everything //
 		target.model->generalMotionPool()[0].setMpe(pe_next, imp_->eul_type.c_str());
 		target.model->generalMotionPool()[0].setMve(ve_next, imp_->eul_type.c_str());
 		target.model->generalMotionPool()[0].setMae(ae_next, imp_->eul_type.c_str());
-
-
-
-		// dsp //
-		if(target.count % 1000 == 0)aris::dynamic::dsp(1, 6, pe_now);
-
-
+		target.model->solverPool()[0].kinPos();
+		target.model->solverPool()[0].kinVel();
 
 		return imp_->is_running_.load() ? 1 : 0;
 	}
-	auto ManualMove::collectNrt(PlanTarget &param)->void {}
+	auto ManualMove::collectNrt(PlanTarget &target)->void { if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); }
 	ManualMove::~ManualMove() = default;
 	ManualMove::ManualMove(const std::string &name) : Plan(name), imp_(new Imp)
 	{
