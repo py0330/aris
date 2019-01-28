@@ -100,7 +100,6 @@ namespace aris::dynamic
 	// 
 	auto inline s_one_minus_cosx_over_square_x(double x)->double { return 0.5*s_sinx_over_x(0.5*x)*s_sinx_over_x(0.5*x); };
 
-
 	/// \brief 计算三维向量叉乘矩阵
 	///
 	/// 用来计算：cm_out = \n

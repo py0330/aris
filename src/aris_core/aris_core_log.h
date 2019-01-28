@@ -60,6 +60,9 @@
 
 #define LOG_AND_THROW(error) LOG_ERROR << error.what() << std::endl, throw error
 
+#define THROW_FILE_AND_LINE(error) throw std::runtime_error(std::string(__FILE__) + "_" + std::to_string(__LINE__)+ ":" + error)
+
+
 
 
 namespace aris::core

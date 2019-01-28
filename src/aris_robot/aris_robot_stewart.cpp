@@ -9,7 +9,7 @@ namespace aris::robot
 	auto createModelStewart(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model> { return aris::dynamic::createModelStewart(); }
 	auto createControllerStewart()->std::unique_ptr<aris::control::Controller>
 	{
-		std::unique_ptr<aris::control::Controller> controller(new aris::control::EthercatController);
+		std::unique_ptr<aris::control::Controller> controller(new aris::control::EthercatController("controller"));
 
 		for (aris::Size i = 0; i < 6; ++i)
 		{
@@ -79,21 +79,39 @@ namespace aris::robot
 	{
 		std::unique_ptr<aris::plan::PlanRoot> plan_root(new aris::plan::PlanRoot);
 
-		plan_root->planPool().add<aris::plan::EnablePlan>();
-		plan_root->planPool().add<aris::plan::DisablePlan>();
-		plan_root->planPool().add<aris::plan::HomePlan>();
-		plan_root->planPool().add<aris::plan::ModePlan>();
-		plan_root->planPool().add<aris::plan::RecoverPlan>();
+		plan_root->planPool().add<aris::plan::Enable>();
+		plan_root->planPool().add<aris::plan::Disable>();
+		plan_root->planPool().add<aris::plan::Home>();
+		plan_root->planPool().add<aris::plan::Mode>();
 		plan_root->planPool().add<aris::plan::Show>();
-		plan_root->planPool().add<aris::plan::SleepPlan>();
-		auto &rs = plan_root->planPool().add<aris::plan::ResetPlan>();
-		rs.command().findByName("group")->findByName("pos")->loadXmlStr("<pos default=\"{0.5,0.5,0.5,0.5,0.5,0.5}\" abbreviation=\"p\"/>");
+		plan_root->planPool().add<aris::plan::Sleep>();
+		plan_root->planPool().add<aris::plan::Recover>();
+		auto &rs = plan_root->planPool().add<aris::plan::Reset>();
+		rs.command().findParam("pos")->setDefaultValue("{0.5,0.5,0.5,0.5,0.5,0.5}");
 
-		plan_root->planPool().add<aris::plan::MovePlan>();
+		plan_root->planPool().add<aris::plan::MoveAbsJ>();
+		plan_root->planPool().add<aris::plan::MoveL>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
 
 
-		plan_root->planPool().add<aris::plan::AutoMove>();
+		auto &am = plan_root->planPool().add<aris::plan::AutoMove>();
+		am.command().findParam("init_pe")->setDefaultValue("{0.0,-0.512,0.515,0.0,0.0,0.0}");
+		am.command().findParam("init_ve")->setDefaultValue("{0.12,0.12,0.12,0.12,0.12,0.12}");
+		am.command().findParam("init_ae")->setDefaultValue("{10,10,10,10,10,10}");
+		am.command().findParam("init_de")->setDefaultValue("{10,10,10,10,10,10}");
+		am.command().findParam("pe")->setDefaultValue("{0.0,-0.512,0.515,0.0,0.0,0.0}");
+		am.command().findParam("ve")->setDefaultValue("{0.12,0.12,0.12,0.12,0.12,0.12}");
+		am.command().findParam("ae")->setDefaultValue("{10,10,10,10,10,10}");
+		am.command().findParam("de")->setDefaultValue("{10,10,10,10,10,10}");
+		am.command().findParam("eul_type")->setDefaultValue("123");
+
+
+		auto &mm = plan_root->planPool().add<aris::plan::ManualMove>();
+		mm.command().findParam("ve")->setDefaultValue("{0.05,0.05,0.05,0.05,0.05,0.05}");
+		mm.command().findParam("ae")->setDefaultValue("{10,10,10,10,10,10}");
+		mm.command().findParam("de")->setDefaultValue("{10,10,10,10,10,10}");
+		mm.command().findParam("eul_type")->setDefaultValue("123");
+		mm.command().findParam("increase_count")->setDefaultValue("50");
 
 		return plan_root;
 	}

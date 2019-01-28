@@ -118,9 +118,10 @@ namespace aris::plan
 	};
 	
 	/// \brief 让电机使能
-	/// 
-	/// 让电机使能，可以按照以下参数指定电机：
-	/// + 使能所有电机：“en -a” 或 “en --all”
+	///
+	/// ### 参数定义 ###
+	/// 指定电机，默认指定所有电机：
+	/// + 指定所有电机：“en -a” 或 “en --all” 或 “en”
 	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“en -m=0” 或 “en --motion_id=0”
 	/// + 按照物理地址（phyID），例如物理的 2 号电机：“en -p=2” 或 “en --physical_id=2”
 	/// + 按照从站地址（slaID），例如 5 号从站：“en -s=5” 或 “en --slave_id=5”
@@ -128,21 +129,21 @@ namespace aris::plan
 	/// 指定本指令的最长运行时间（默认为5000ms）：
 	/// + 使能0号电机，并指定其最长时间为5000ms： “en -m=0 --limit_time=5000”
 	/// 
-	class EnablePlan : public Plan
+	class Enable : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("EnablePlan"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("Enable"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
-		virtual ~EnablePlan();
-		explicit EnablePlan(const std::string &name = "enable_plan");
-		EnablePlan(const EnablePlan &);
-		EnablePlan(EnablePlan &&);
-		EnablePlan& operator=(const EnablePlan &);
-		EnablePlan& operator=(EnablePlan &&);
+		virtual ~Enable();
+		explicit Enable(const std::string &name = "enable_plan");
+		Enable(const Enable &);
+		Enable(Enable &&);
+		Enable& operator=(const Enable &);
+		Enable& operator=(Enable &&);
 
 	private:
 		struct Imp;
@@ -150,8 +151,9 @@ namespace aris::plan
 	};
 	/// \brief 让电机去使能
 	/// 
-	/// 让电机去使能，可以按照以下参数指定电机：
-	/// + 使能所有电机：“ds -a” 或 “ds --all”
+	/// ### 参数定义 ###
+	/// 指定电机，默认指定所有电机：
+	/// + 指定所有电机：“ds -a” 或 “ds --all” 或 “ds”
 	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“ds -m=0” 或 “ds --motion_id=0”
 	/// + 按照物理地址（phyID），例如物理的 2 号电机：“ds -p=2” 或 “ds --physical_id=2”
 	/// + 按照从站地址（slaID），例如 5 号从站：“ds -s=5” 或 “ds --slave_id=5”
@@ -159,21 +161,21 @@ namespace aris::plan
 	/// 指定本指令的最长运行时间（默认为5000ms）：
 	/// + 去使能0号电机，并指定其最长时间为5000ms： “ds -m=0 --limit_time=5000”
 	/// 
-	class DisablePlan : public Plan
+	class Disable : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("EnablePlan"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("Enable"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
-		virtual ~DisablePlan();
-		explicit DisablePlan(const std::string &name = "enable_plan");
-		DisablePlan(const DisablePlan &);
-		DisablePlan(DisablePlan &&);
-		DisablePlan& operator=(const DisablePlan &);
-		DisablePlan& operator=(DisablePlan &&);
+		virtual ~Disable();
+		explicit Disable(const std::string &name = "enable_plan");
+		Disable(const Disable &);
+		Disable(Disable &&);
+		Disable& operator=(const Disable &);
+		Disable& operator=(Disable &&);
 
 	private:
 		struct Imp;
@@ -181,8 +183,9 @@ namespace aris::plan
 	};
 	/// \brief 让电机回零
 	/// 
-	/// 让电机使能，可以按照以下参数指定电机：
-	/// + 使能所有电机：“hm -a” 或 “en --all”
+	/// ### 参数定义 ###
+	/// 指定电机，默认指定所有电机：
+	/// + 指定所有电机：“hm -a” 或 “hm --all” 或 “hm”
 	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“en -m=0” 或 “en --motion_id=0”
 	/// + 按照物理地址（phyID），例如物理的 2 号电机：“en -p=2” 或 “en --physical_id=2”
 	/// + 按照从站地址（slaID），例如 5 号从站：“en -s=5” 或 “en --slave_id=5”
@@ -190,21 +193,21 @@ namespace aris::plan
 	/// 指定本指令的最长运行时间（默认为5000ms）：
 	/// + 使能0号电机，并指定其最长时间为5000ms： “en -m=0 --limit_time=5000”
 	/// 
-	class HomePlan : public Plan
+	class Home : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("HomePlan"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("Home"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
-		virtual ~HomePlan();
-		explicit HomePlan(const std::string &name = "home_plan");
-		HomePlan(const HomePlan &);
-		HomePlan(HomePlan &&);
-		HomePlan& operator=(const HomePlan &);
-		HomePlan& operator=(HomePlan &&);
+		virtual ~Home();
+		explicit Home(const std::string &name = "home_plan");
+		Home(const Home &);
+		Home(Home &&);
+		Home& operator=(const Home &);
+		Home& operator=(Home &&);
 
 	private:
 		struct Imp;
@@ -212,8 +215,9 @@ namespace aris::plan
 	};
 	/// \brief 让电机切换模式
 	/// 
-	/// 让电机切换模式，可以按照以下参数指定电机：
-	/// + 切换所有电机：“md -a” 或 “md --all”
+	/// ### 参数定义 ###
+	/// 指定电机，默认指定所有电机：
+	/// + 指定所有电机：“md -a” 或 “md --all” 或 “md”
 	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“md -m=0” 或 “md --motion_id=0”
 	/// + 按照物理地址（phyID），例如物理的 2 号电机：“md -p=2” 或 “md --physical_id=2”
 	/// + 按照从站地址（slaID），例如 5 号从站：“md -s=5” 或 “md --slave_id=5”
@@ -224,112 +228,351 @@ namespace aris::plan
 	/// 指定模式（请参考canopen DS402标准，默认为8，同步位置控制模式）：
 	/// + 使能0号电机，并指定模式为9： “md -m=0 --mode=9 --limit_time=5000”
 	/// 
-	class ModePlan : public Plan
+	class Mode : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("ModePlan"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("Mode"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
-		virtual ~ModePlan();
-		explicit ModePlan(const std::string &name = "mode_plan");
-		ModePlan(const ModePlan &);
-		ModePlan(ModePlan &&);
-		ModePlan& operator=(const ModePlan &);
-		ModePlan& operator=(ModePlan &&);
+		virtual ~Mode();
+		explicit Mode(const std::string &name = "mode_plan");
+		Mode(const Mode &);
+		Mode(Mode &&);
+		Mode& operator=(const Mode &);
+		Mode& operator=(Mode &&);
 
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	/// \brief 复位，机器人从轴空间按照指定速度运行到指定位置处
+	///
+	/// 指令不使用正反解，结束后Model和Controller位置不对应，此时需用rc指令来让两者重合
+	///
+	/// ### 参数定义 ###
+	/// 指定电机，默认指定所有电机：
+	/// + 指定所有电机：“rs -a” 或 “rs --all” 或 “rs”
+	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“rs -m=0” 或 “rs --motion_id=0”
+	/// + 按照物理地址（phyID），例如物理的 2 号电机：“rs -p=2” 或 “rs --physical_id=2”
+	/// + 按照从站地址（slaID），例如 5 号从站：“rs -s=5” 或 “rs --slave_id=5”
 	/// 
+	/// 指定复位位置，0为最小位置，1为最大位置，参数应在0到1之间，默认为0.5：
+	/// + 将1号电机走到最大位置：“rs -m=1 --pos=1”
+	/// + 将2号电机走到中间位置：“rs -m=2 --pos=0.5”
+	/// + 将所有电机走到最小位置：“rs -a --pos=0”
+	/// + 假设系统中有6个电机，分别走到0.1到0.6，注意大括号中不能有空格：“rs --pos={0.1,0.2,0.3,0.4,0.5,0.6}”
 	/// 
-	class ResetPlan : public Plan
+	/// 指定复位速度，单位是额定速度的倍数，参数应在0到1之间，默认为0.1：
+	/// + 将1号电机复位到0.5，速度为额定速度的20\%：“rs -m=1 --pos=0.5 --vel=0.2”
+	/// + 将所有电机复位到0处，速度为额定的5\%：“rs -a --pos=0 --vel=0.05”
+	/// + 假设系统中有6个电机，速度和位置都是0.1到0.6：“rs --pos={0.1,0.2,0.3,0.4,0.5,0.6} --vel={0.1,0.2,0.3,0.4,0.5,0.6}”
+	///
+	/// 指定复位加速度，单位是额定加速度的倍数，参数应在0到1之间，默认为0.1：
+	/// + 将1号电机复位到0.5，加速度为额定速度的\20%：“rs -m=1 --pos=0.5 --acc=0.2”
+	/// + 假设系统中有6个电机，加速度是0.1到0.6：“rs --acc={0.1,0.2,0.3,0.4,0.5,0.6}”
+	/// 
+	/// 指定复位减速度，单位是额定加速度的倍数，参数应在0到1之间，默认为0.1：
+	/// + 将1号电机复位到0.5，减速度为额定速度的\20%：“rs -m=1 --pos=0.5 --dec=0.2”
+	/// + 假设系统中有6个电机，减速度是0.1到0.6：“rs --dec={0.1,0.2,0.3,0.4,0.5,0.6}”
+	/// 
+	class Reset : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("ResetPlan"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("Reset"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
-		virtual ~ResetPlan();
-		explicit ResetPlan(const std::string &name = "reset_plan");
-		ResetPlan(const ResetPlan &);
-		ResetPlan(ResetPlan &&);
-		ResetPlan& operator=(const ResetPlan &);
-		ResetPlan& operator=(ResetPlan &&);
+		virtual ~Reset();
+		explicit Reset(const std::string &name = "reset_plan");
+		Reset(const Reset &);
+		Reset(Reset &&);
+		Reset& operator=(const Reset &);
+		Reset& operator=(Reset &&);
 
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	/// \brief 恢复，消除错误但不运动，让机器人恢复
+	/// \brief 恢复，消除错误但不运动
 	/// 
 	/// 在报错后，让模型（Model）根据控制器（Controller）读到的电机位置来更新。需要在非实时循环
 	/// 计算正解（使用1号求解器），实时循环内无计算。
 	///
-	/// 指令无参数
-	class RecoverPlan : public Plan
+	/// ### 参数定义 ###
+	/// 无
+	class Recover : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("RecoverPlan"); return type; }
+		static auto Type()->const std::string & { static const std::string type("Recover"); return type; }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
-		virtual ~RecoverPlan();
-		explicit RecoverPlan(const std::string &name = "recover_plan");
-		RecoverPlan(const RecoverPlan &);
-		RecoverPlan(RecoverPlan &&);
-		RecoverPlan& operator=(const RecoverPlan &);
-		RecoverPlan& operator=(RecoverPlan &&);
+		virtual ~Recover();
+		explicit Recover(const std::string &name = "recover_plan");
+		Recover(const Recover &);
+		Recover(Recover &&);
+		Recover& operator=(const Recover &);
+		Recover& operator=(Recover &&);
 	};
-	class SleepPlan : public Plan
+	/// \brief 实时循环内休息指定时间
+	/// 
+	///
+	/// ### 参数定义 ###
+	/// 指定休息时间，单位是count（1ms），默认为1000：
+	/// + 休息5000ms：“sl -c=5000” 或 “sl --count=5000”
+	class Sleep : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("SleepPlan"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("Sleep"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
-		virtual ~SleepPlan();
-		explicit SleepPlan(const std::string &name = "sleep_plan");
-		SleepPlan(const SleepPlan &);
-		SleepPlan(SleepPlan &&);
-		SleepPlan& operator=(const SleepPlan &);
-		SleepPlan& operator=(SleepPlan &&);
+		virtual ~Sleep();
+		explicit Sleep(const std::string &name = "sleep_plan");
+		Sleep(const Sleep &);
+		Sleep(Sleep &&);
+		Sleep& operator=(const Sleep &);
+		Sleep& operator=(Sleep &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	/// \brief 打印机器人当前所有轴的位置
+	/// 
+	/// 
+	class Show :public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("Show"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		explicit Show(const std::string &name = "show");
+	};
+	/// \brief 将机器人的某根或全部轴移动到指定位置。
+	/// 
+	/// 
+	/// ### 参数定义 ###
+	///
+	/// 指定电机，默认指定所有电机：
+	/// + 指定所有电机：“mvaj -a” 或 “mvaj --all” 或 “mvaj”
+	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“mvaj -m=0” 或 “mvaj --motion_id=0”
+	/// + 按照物理地址（phyID），例如物理的 2 号电机：“mvaj -p=2” 或 “mvaj --physical_id=2”
+	/// + 按照从站地址（slaID），例如 5 号从站：“mvaj -s=5” 或 “mvaj --slave_id=5”
+	/// 
+	/// 指定目标位置，单位和电机定义有关，一般是 m （直线电机）或 rad （转动电机），默认为0.0
+	/// + 指定单个电机的位置，例如指定 0 号电机走到 1.5 处：“mvaj -m=0 --pos=1.5”
+	/// + 指定所有电机的位置，例如：“mvaj -a --pos={1.5,1.2,1.5,1.3,1.2,0.6}”
+	///
+	/// 指定目标速度，单位一般是 m/s 或 rad/s ，应永远为正数，默认为1.0
+	/// + 指定单个电机的速度，例如指定 0 号电机走到 1.5 处，速度为 0.5：“mvaj -m=0 --pos=1.5 --vel=0.5”
+	/// + 指定所有电机的位置，例如：“mvaj -a --pos={1.5,1.2,1.5,1.3,1.2,0.6} --vel={1.5,1.2,1.5,1.3,1.2,0.6}”
+	///
+	/// 指定目标加速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为1.0
+	/// + 指定单个电机的加速度，例如指定 0 号电机走到 1.5 处，速度为 0.5 ，加速度为 0.3 ：“mvaj -m=0 --pos=1.5 --vel=0.5 --acc=0.3”
+	/// + 指定所有电机的加速度，例如：“mvaj -a --acc={1.5,1.2,1.5,1.3,1.2,0.6}”
+	///
+	/// 指定目标减速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为1.0
+	/// + 指定单个电机的加速度，例如指定 0 号电机走到 1.5 处，速度为 0.5 ，加速度为 0.3 ，减速度为 0.2 ：“mvaj -m=0 --pos=1.5 --vel=0.5 --acc=0.3 --dec=0.2”
+	/// + 指定所有电机的加速度，例如：“mvaj -a --dec={1.5,1.2,1.5,1.3,1.2,0.6}”
+	///
+	class MoveAbsJ :public Plan
+	{
+	public:
+		
+
+		static auto Type()->const std::string & { static const std::string type("MoveAbsJ"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~MoveAbsJ();
+		explicit MoveAbsJ(const std::string &name = "move_abs_j");
+		MoveAbsJ(const MoveAbsJ &);
+		MoveAbsJ(MoveAbsJ &&);
+		MoveAbsJ& operator=(const MoveAbsJ &);
+		MoveAbsJ& operator=(MoveAbsJ &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	/// \brief 将机器人从轴空间移动到某个位姿。
+	/// 
+	/// 
+	/// ### 参数定义 ###
+	///
+	/// 指定目标位姿，可以使用以下参数：
+	/// + 位置与四元数，例如位置 xyz 为[0 , 0.5 , 1.1]，姿态为原始姿态[0 , 0 , 0 , 1]：“mvj --pe={0,0.5,1.1,0,0,0,1}”
+	/// + 位姿矩阵，位姿仍然如上：“mvj --pm={1,0,0,0,0,1,0,0.5,0,0,1,1.1,0,0,0,1}”
+	/// + 位置与欧拉角，位置姿态仍然如上：“mvj --pm={0,0.5,1.1,0,0,0}”
+	/// 
+	/// 指定目标速度，单位一般是 m/s 或 rad/s ，应永远为正数，默认为0.1
+	/// + 指定单个电机的速度，例如指定 0 号电机走到 1.5 处，速度为 0.5：“mvaj -m=0 --pos=1.5 --vel=0.5”
+	/// + 指定所有电机的位置，例如：“mvaj -a --pos={1.5,1.2,1.5,1.3,1.2,0.6} --vel={1.5,1.2,1.5,1.3,1.2,0.6}”
+	///
+	/// 指定目标加速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
+	/// + 指定单个电机的加速度，例如指定 0 号电机走到 1.5 处，速度为 0.5 ，加速度为 0.3 ：“mvaj -m=0 --pos=1.5 --vel=0.5 --acc=0.3”
+	/// + 指定所有电机的加速度，例如：“mvaj -a --acc={1.5,1.2,1.5,1.3,1.2,0.6}”
+	///
+	/// 指定目标减速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
+	/// + 指定单个电机的加速度，例如指定 0 号电机走到 1.5 处，速度为 0.5 ，加速度为 0.3 ，减速度为 0.2 ：“mvaj -m=0 --pos=1.5 --vel=0.5 --acc=0.3 --dec=0.2”
+	/// + 指定所有电机的加速度，例如：“mvaj -a --dec={1.5,1.2,1.5,1.3,1.2,0.6}”
+	///
+	class MoveJ : public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("MoveJ"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~MoveJ();
+		explicit MoveJ(const std::string &name = "moveL");
+		MoveJ(const MoveJ &);
+		MoveJ(MoveJ &&);
+		MoveJ& operator=(const MoveJ &);
+		MoveJ& operator=(MoveJ &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	/// \brief 将机器人从笛卡尔空间线性移动到某个位姿。
+	/// 
+	/// 
+	/// ### 参数定义 ###
+	///
+	/// 指定目标位姿，可以使用以下参数：
+	/// + 位置与四元数，例如位置 xyz 为[0 , 0.5 , 1.1]，姿态为原始姿态[0 , 0 , 0 , 1]：“mvl --pq={0,0.5,1.1,0,0,0,1}”
+	/// + 位姿矩阵，位姿仍然如上：“mvl --pm={1,0,0,0,0,1,0,0.5,0,0,1,1.1,0,0,0,1}”
+	/// + 位置与欧拉角，位置姿态仍然如上：“mvl --pe={0,0.5,1.1,0,0,0}”
+	///
+	/// 此外，还可以指定位置和角度的单位，长度单位默认为 m ，角度默认为 rad ：
+	/// + 指定位置单位，例如将单位设置为 m （米）：“mvl --pq={0,0.5,1.1,0,0,0,1} --pos_unit=m”
+	/// + 指定角度单位，例如将单位设置为 rad ：“mvl --pe={0,0.5,1.1,0,0,0} --ori_unit=rad”
+	///
+	/// 还可以指定欧拉角的种类，可以是 321 313 123 212 ... 等任意类型的欧拉角，默认为 321 的欧拉角
+	/// + 指定欧拉角为 123 的，“mvl --pe={0,0.5,1.1,0,0,0} --ori_unit=rad --eul_type=321”
+	///
+	/// 指定目标速度以及角速度，单位一般是 m/s 或 rad/s ，应永远为正数，默认为0.1
+	/// + 指定末端的速度和角速度，例如指定末端速度为 0.5，角速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --vel=0.5 --angular_vel=0.3”
+	///
+	/// 指定目标加速度以及角加速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
+	/// + 指定末端的加速度和角加速度，例如指定末端加速度为 0.5，角加速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --acc=0.5 --angular_acc=0.3”
+	///
+	/// 指定目标减速度以及角减速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
+	/// + 指定末端的减速度和角减速度，例如指定末端减速度为 0.5，角减速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --dec=0.5 --angular_dec=0.3”
+	class MoveL : public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("MoveL"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~MoveL();
+		explicit MoveL(const std::string &name = "moveL");
+		MoveL(const MoveL &);
+		MoveL(MoveL &&);
+		MoveL& operator=(const MoveL &);
+		MoveL& operator=(MoveL &&);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+	/// \brief 让机器人自动运行，随时可以改变其目标位姿。
+	/// 
+	/// 
+	/// ### 参数定义 ###
+	///
+	/// 指定目标位姿，可以使用以下参数：
+	/// + 位置与四元数，例如位置 xyz 为[0 , 0.5 , 1.1]，姿态为原始姿态[0 , 0 , 0 , 1]：“mvl --pq={0,0.5,1.1,0,0,0,1}”
+	/// + 位姿矩阵，位姿仍然如上：“mvl --pm={1,0,0,0,0,1,0,0.5,0,0,1,1.1,0,0,0,1}”
+	/// + 位置与欧拉角，位置姿态仍然如上：“mvl --pe={0,0.5,1.1,0,0,0}”
+	///
+	/// 此外，还可以指定位置和角度的单位，长度单位默认为 m ，角度默认为 rad ：
+	/// + 指定位置单位，例如将单位设置为 m （米）：“mvl --pq={0,0.5,1.1,0,0,0,1} --pos_unit=m”
+	/// + 指定角度单位，例如将单位设置为 rad ：“mvl --pe={0,0.5,1.1,0,0,0} --ori_unit=rad”
+	///
+	/// 还可以指定欧拉角的种类，可以是 321 313 123 212 ... 等任意类型的欧拉角，默认为 321 的欧拉角
+	/// + 指定欧拉角为 123 的，“mvl --pe={0,0.5,1.1,0,0,0} --ori_unit=rad --eul_type=321”
+	///
+	/// 指定目标速度以及角速度，单位一般是 m/s 或 rad/s ，应永远为正数，默认为0.1
+	/// + 指定末端的速度和角速度，例如指定末端速度为 0.5，角速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --vel=0.5 --angular_vel=0.3”
+	///
+	/// 指定目标加速度以及角加速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
+	/// + 指定末端的加速度和角加速度，例如指定末端加速度为 0.5，角加速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --acc=0.5 --angular_acc=0.3”
+	///
+	/// 指定目标减速度以及角减速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
+	/// + 指定末端的减速度和角减速度，例如指定末端减速度为 0.5，角减速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --dec=0.5 --angular_dec=0.3”
+	class AutoMove :public Plan
+	{
+	public:
+		static auto Type()->const std::string & { static const std::string type("AutoMove"); return std::ref(type); }
+		auto virtual type() const->const std::string& override { return Type(); }
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->void override;
+
+		virtual ~AutoMove();
+		explicit AutoMove(const std::string &name = "am");
+		AutoMove(const AutoMove &);
+		AutoMove(AutoMove &&);
+		AutoMove& operator=(const AutoMove &);
+		AutoMove& operator=(AutoMove &&);
 
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	
-	class MovePlan : public Plan
+	
+	
+	class ManualMove :public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("MovePlan"); return std::ref(type); }
+		static auto Type()->const std::string & { static const std::string type("ManualMove"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
-		virtual ~MovePlan();
-		explicit MovePlan(const std::string &name = "move_plan");
-		MovePlan(const MovePlan &);
-		MovePlan(MovePlan &&);
-		MovePlan& operator=(const MovePlan &);
-		MovePlan& operator=(MovePlan &&);
+		virtual ~ManualMove();
+		explicit ManualMove(const std::string &name = "mm");
+		ManualMove(const ManualMove &);
+		ManualMove(ManualMove &&);
+		ManualMove& operator=(const ManualMove &);
+		ManualMove& operator=(ManualMove &&);
 
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+
+
+
+
+
+
+
+
 	class UniversalPlan :public Plan
 	{
 	public:
@@ -357,94 +600,6 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-
-	class MoveJ :public Plan
-	{
-	public:
-		struct Param
-		{
-			double vel, acc, dec;
-			std::vector<double> joint_pos_vec, begin_joint_pos_vec;
-			std::vector<bool> joint_active_vec;
-		};
-		
-		static auto Type()->const std::string & { static const std::string type("MoveJ"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
-		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
-
-		virtual ~MoveJ();
-		explicit MoveJ(const std::string &name = "move_plan");
-		MoveJ(const MoveJ &);
-		MoveJ(MoveJ &&);
-		MoveJ& operator=(const MoveJ &);
-		MoveJ& operator=(MoveJ &&);
-		
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
-	class Show :public Plan
-	{
-	public:
-		static auto Type()->const std::string & { static const std::string type("MoveJ"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
-		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
-
-		explicit Show(const std::string &name = "move_plan");
-	};
-
-	class MvL :public Plan 
-	{
-	public:
-		static auto Type()->const std::string & { static const std::string type("MvL"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
-		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
-
-		virtual ~MvL();
-		explicit MvL(const std::string &name = "mvl");
-		MvL(const MvL &);
-		MvL(MvL &&);
-		MvL& operator=(const MvL &);
-		MvL& operator=(MvL &&);
-
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-
-
-
-	};
-
-	class AutoMove :public Plan
-	{
-	public:
-		static auto Type()->const std::string & { static const std::string type("AutoMove"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
-		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
-
-		virtual ~AutoMove();
-		explicit AutoMove(const std::string &name = "am");
-		AutoMove(const AutoMove &);
-		AutoMove(AutoMove &&);
-		AutoMove& operator=(const AutoMove &);
-		AutoMove& operator=(AutoMove &&);
-
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
-
-
 }
 
 #endif

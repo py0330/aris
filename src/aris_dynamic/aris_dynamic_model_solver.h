@@ -213,6 +213,10 @@ namespace aris::dynamic
 
 		virtual ~StewartInverseKinematicSolver() = default;
 		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");
+		StewartInverseKinematicSolver(const StewartInverseKinematicSolver &other);
+		StewartInverseKinematicSolver(StewartInverseKinematicSolver &&other);
+		StewartInverseKinematicSolver& operator=(const StewartInverseKinematicSolver &other);
+		StewartInverseKinematicSolver& operator=(StewartInverseKinematicSolver &&other);
 
 	private:
 		struct Imp;

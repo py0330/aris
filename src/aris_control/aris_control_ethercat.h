@@ -175,7 +175,7 @@ namespace aris::control
 		auto scan()->void;
 
 		virtual ~EthercatMaster();
-		EthercatMaster();
+		EthercatMaster(const std::string &name = "ethercat_master");
 		EthercatMaster(const EthercatMaster &other) = delete;
 		EthercatMaster(EthercatMaster &&other) = delete;
 		EthercatMaster& operator=(const EthercatMaster &other) = delete;
@@ -262,7 +262,7 @@ namespace aris::control
 		auto virtual type() const->const std::string& override { return Type(); }
 
 		virtual ~EthercatController() = default;
-		EthercatController() = default;
+		EthercatController(const std::string &name = "ethercat_controller");
 		EthercatController(const EthercatController &other) = delete;
 		EthercatController(EthercatController &&other) = delete;
 		EthercatController& operator=(const EthercatController &other) = delete;

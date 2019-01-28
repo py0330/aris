@@ -22,7 +22,9 @@ namespace aris::server
 
 		auto tg()->void;
 		auto executeCmd(InternalData &internal_data)->int;
+		auto checkMotion(InternalData &internal_data)->int;
 		auto onRunError()->int;
+		
 
 		Imp(ControlServer *server) :server_(server) {}
 		Imp(const Imp&) = delete;
@@ -90,6 +92,10 @@ namespace aris::server
 			// 执行命令
 			auto ret = executeCmd(internal_data_queue_[cmd_now % CMD_POOL_SIZE]);
 
+
+
+
+
 			// 命令正常运行，打印信息
 			if (ret > 0)
 			{
@@ -121,7 +127,6 @@ namespace aris::server
 		{
 			get_data_func_->operator()(ControlServer::instance(), *get_data_);
 			if_get_data_ready_.store(true); // 原子操作
-			if_get_data_.store(false); // 原子操作
 		}
 	}
 	auto ControlServer::Imp::executeCmd(InternalData &internal_data)->int
@@ -334,6 +339,260 @@ namespace aris::server
 					break;
 				}
 				
+				// check vel max //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
+					&& (cm.actualVel() > cm.maxVel()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target velocity beyond MAX in count " << count_ << ":\n";
+					server_->controller().mout() << "max: " << cm.maxVel() << "\t" << "now: " << cm.targetVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check vel min //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_MIN)
+					&& (cm.actualVel() < cm.minVel()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target veolcity beyond MIN in count " << count_ << ":\n";
+					server_->controller().mout() << "min: " << cm.minVel() << "\t" << "now: " << cm.targetVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check vel continuous //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS)
+					&& count_ > 1
+					&& ((cm.actualVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.actualVel() - ld.v) < 0.001 * cm.minAcc()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
+					server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check vel continuous at start //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START)
+					&& count_ <= 1
+					&& ((cm.actualVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.actualVel() - ld.v) < 0.001 * cm.minAcc()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
+					server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+			}
+		}
+
+		// 储存电机指令 //
+		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+		{
+			last_last_pvc.at(i).p = controller_->motionPool().at(i).targetPos();
+			last_last_pvc.at(i).v = controller_->motionPool().at(i).targetVel();
+			last_last_pvc.at(i).c = controller_->motionPool().at(i).targetCur();
+		}
+		std::swap(last_pvc, last_last_pvc);
+
+		return ret;
+	}
+	auto ControlServer::Imp::checkMotion(InternalData &internal_data)->int
+	{
+		int ret;
+		
+		// 检查规划的指令是否合理（包括电机是否已经跟随上） //
+		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
+		{
+			auto &cm = controller_->motionPool().at(i);
+			auto &ld = last_pvc.at(i);
+			auto &lld = last_last_pvc.at(i);
+
+			if (cm.modeOfOperation() == 8)
+			{
+				// check pos max //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_MAX)
+					&& (cm.targetPos() > cm.maxPos()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position beyond MAX in count " << count_ << ":\n";
+					server_->controller().mout() << "max: " << cm.maxPos() << "\t" << "now: " << cm.targetPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check pos min //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_MIN)
+					&& (cm.targetPos() < cm.minPos()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position beyond MIN in count " << count_ << ":\n";
+					server_->controller().mout() << "min: " << cm.minPos() << "\t" << "now: " << cm.targetPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check pos continuous //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS)
+					&& count_ > 1
+					&& ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position NOT CONTINUOUS in count " << count_ << "\n";
+					server_->controller().mout() << "last: " << last_pvc.at(i).p << "\t" << "now: " << cm.targetPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check pos continuous at start //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START)
+					&& count_ <= 1
+					&& ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position NOT CONTINUOUS in count " << count_ << "\n";
+					server_->controller().mout() << "last: " << last_pvc.at(i).p << "\t" << "now: " << cm.targetPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check pos continuous second order //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER)
+					&& count_ > 2
+					&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position NOT SECOND CONTINUOUS in count " << count_ << "\n";
+					server_->controller().mout() << "last last: " << lld.p << "\tlast:" << ld.p << "\t" << "now: " << cm.targetPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check pos continuous second order at start //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START)
+					&& count_ <= 2
+					&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position NOT SECOND CONTINUOUS in count " << count_ << "\n";
+					server_->controller().mout() << "last last: " << lld.p << "\tlast:" << ld.p << "\t" << "now: " << cm.targetPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check pos following error //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_FOLLOWING_ERROR)
+					&& (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position has FOLLOW ERROR: " << count_ << "\n";
+					server_->controller().mout() << "target: " << cm.targetPos() << "\t" << "actual: " << cm.actualPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+			}
+			else if (cm.modeOfDisplay() == 9)
+			{
+				// check vel max //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
+					&& (cm.targetVel() > cm.maxVel()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target velocity beyond MAX in count " << count_ << ":\n";
+					server_->controller().mout() << "max: " << cm.maxVel() << "\t" << "now: " << cm.targetVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check vel min //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_MIN)
+					&& (cm.targetVel() < cm.minVel()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target veolcity beyond MIN in count " << count_ << ":\n";
+					server_->controller().mout() << "min: " << cm.minVel() << "\t" << "now: " << cm.targetVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check vel continuous //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS)
+					&& count_ > 1
+					&& ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
+					server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check vel continuous at start //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START)
+					&& count_ <= 1
+					&& ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
+					server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check vel following error //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_FOLLOWING_ERROR)
+					&& (std::abs(cm.targetVel() - cm.actualVel()) > cm.maxVelFollowingError()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target velocity has FOLLOW ERROR: " << count_ << "\n";
+					server_->controller().mout() << "target: " << cm.targetVel() << "\t" << "actual: " << cm.actualVel() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+			}
+			else if (cm.modeOfDisplay() == 10)
+			{
+				// check pos max //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_MAX)
+					&& (cm.actualPos() > cm.maxPos()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position beyond MAX in count " << count_ << ":\n";
+					server_->controller().mout() << "max: " << cm.maxPos() << "\t" << "now: " << cm.targetPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
+				// check pos min //
+				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_POS_MIN)
+					&& (cm.actualPos() < cm.minPos()))
+				{
+					server_->controller().mout() << __FILE__ << __LINE__ << "\n";
+					server_->controller().mout() << "Motor " << i << " target position beyond MIN in count " << count_ << ":\n";
+					server_->controller().mout() << "min: " << cm.minPos() << "\t" << "now: " << cm.targetPos() << "\n";
+					onRunError();
+					ret = -1;
+					break;
+				}
+
 				// check vel max //
 				if (!(internal_data.target.option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
 					&& (cm.actualVel() > cm.maxVel()))

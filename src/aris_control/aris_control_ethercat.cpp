@@ -346,7 +346,7 @@ namespace aris::control
 	auto EthercatMaster::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatMaster::ecSlavePool()->aris::core::RefPool<EthercatSlave>& { return imp_->ec_slave_pool_; }
 	EthercatMaster::~EthercatMaster() = default;
-	EthercatMaster::EthercatMaster() :imp_(new Imp)
+	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp)
 	{
 		registerType<EthercatSlave>();
 		registerType<EthercatMotion>();
@@ -713,4 +713,6 @@ namespace aris::control
 		, Slave(name, phy_id), imp_(new Imp)
 	{
 	}
+	EthercatController::EthercatController(const std::string &name) :EthercatMaster(name), Controller(name), Master(name){}
+
 }

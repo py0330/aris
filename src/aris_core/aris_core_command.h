@@ -147,7 +147,9 @@ namespace aris::core
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto abbreviation()const->char;
-		auto defaultParam()const->const std::string &;
+		auto setAbbreviation(char abbreviation)->void;
+		auto defaultValue()const->const std::string &;
+		auto setDefaultValue(const std::string & default_value)->void;
 
 		virtual ~Param();
 		explicit Param(const std::string &name = "param", const std::string &default_param = "", char abbrev = 0);
@@ -206,6 +208,8 @@ namespace aris::core
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto defaultParam()const->const std::string &;
+		auto findParam(const std::string &param_name)const->const Param* { return const_cast<std::decay_t<decltype(*this)> *>(this)->findParam(param_name); }
+		auto findParam(const std::string &param_name)->Param*;
 
 		virtual ~Command();
 		explicit Command(const std::string &name = "command", const std::string &default_param = "");

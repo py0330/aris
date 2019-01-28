@@ -346,6 +346,7 @@ namespace aris::control
 	Master::Master(const std::string &name) :imp_(new Imp), Object(name)
 	{
 		registerType<Slave>();
+		registerType<aris::core::Pipe>();
 		registerType<aris::core::ObjectPool<Slave> >();
 
 		imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave> >("slave_pool");

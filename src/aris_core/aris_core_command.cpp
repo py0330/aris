@@ -47,8 +47,10 @@ namespace aris::core
 		imp_->abbreviation_ = attributeChar(xml_ele, "abbreviation", imp_->abbreviation_);
 		imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
 	}
-	auto Param::defaultParam()const->const std::string & { return imp_->default_value_; }
 	auto Param::abbreviation()const->char { return imp_->abbreviation_; }
+	auto Param::setAbbreviation(char abbreviation)->void { imp_->abbreviation_ = abbreviation; }
+	auto Param::defaultValue()const->const std::string & { return imp_->default_value_; }
+	auto Param::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
 	Param::~Param() = default;
 	Param::Param(const std::string &name, const std::string &default_param, char abbrev) :ParamBase(name), imp_(new Imp(default_param, abbrev)) {}
 	Param::Param(const Param&) = default;
@@ -234,6 +236,29 @@ namespace aris::core
 		imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
 	}
 	auto Command::defaultParam()const->const std::string & { return imp_->default_value_; }
+	auto Command::findParam(const std::string &param_name)->Param*
+	{
+		std::function<Param*(const std::string &, ParamBase &)> find_func = [&](const std::string &param_name, ParamBase &param)->Param*
+		{
+			if (auto p = dynamic_cast<Param*>(&param))
+				return p->name() == param_name ? p : nullptr;
+			
+			for(auto &p: param)
+			{
+				if (auto result = find_func(param_name, p)) return result;
+			}
+
+			return nullptr;
+		};
+
+		for (auto &param : *this)
+		{
+			auto result = find_func(param_name, param);
+			if (result) return result;
+		}
+
+		return nullptr;
+	}
 	Command::~Command() = default;
 	Command::Command(const std::string &name, const std::string &default_param) :ObjectPool(name), imp_(new Imp(default_param))
 	{
@@ -291,7 +316,7 @@ namespace aris::core
 
 					auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
 					auto param_name = command->imp_->abbreviation_map_.at(abbrev);
-					auto param_value = word.find('=') == std::string::npos ? param->defaultParam() : word.substr(word.find('=') + 1, std::string::npos);
+					auto param_value = word.find('=') == std::string::npos ? param->defaultValue() : word.substr(word.find('=') + 1, std::string::npos);
 
 					param_map.insert(make_pair(param_name, param_value));
 					Command::Imp::take(param);
@@ -304,7 +329,7 @@ namespace aris::core
 						throw std::runtime_error(std::string("invalid param: param \"") + param_name + "\" is not a valid param");
 
 					auto param = command->imp_->param_map_.at(param_name);
-					auto param_value = word.find('=') == std::string::npos ? param->defaultParam() : word.substr(word.find('=') + 1, std::string::npos);
+					auto param_value = word.find('=') == std::string::npos ? param->defaultValue() : word.substr(word.find('=') + 1, std::string::npos);
 
 					param_map.insert(make_pair(param_name, param_value));
 					Command::Imp::take(param);
@@ -318,7 +343,7 @@ namespace aris::core
 
 						auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
 						auto param_name = command->imp_->abbreviation_map_.at(abbrev);
-						auto param_value = param->defaultParam();
+						auto param_value = param->defaultValue();
 						param_map.insert(make_pair(param_name, param_value));
 						Command::Imp::take(param);
 					}

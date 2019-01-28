@@ -87,15 +87,17 @@ namespace aris::robot
 	{
 		std::unique_ptr<aris::plan::PlanRoot> plan_root(new aris::plan::PlanRoot);
 
-		plan_root->planPool().add<aris::plan::EnablePlan>();
-		plan_root->planPool().add<aris::plan::DisablePlan>();
-		plan_root->planPool().add<aris::plan::ModePlan>();
-		plan_root->planPool().add<aris::plan::RecoverPlan>();
-		plan_root->planPool().add<aris::plan::SleepPlan>();
-		auto &rs = plan_root->planPool().add<aris::plan::ResetPlan>();
-		rs.command().findByName("group")->findByName("pos")->loadXmlStr("<pos default=\"{0.5,0.392523364485981,0.789915966386555,0.5,0.5,0.5}\" abbreviation=\"p\"/>");
+		plan_root->planPool().add<aris::plan::Enable>();
+		plan_root->planPool().add<aris::plan::Disable>();
+		plan_root->planPool().add<aris::plan::Mode>();
+		plan_root->planPool().add<aris::plan::Recover>();
+		plan_root->planPool().add<aris::plan::Sleep>();
+		auto &rs = plan_root->planPool().add<aris::plan::Reset>();
+		//rs.command().findByName("group")->findByName("pos")->loadXmlStr("<pos default=\"{0.5,0.392523364485981,0.789915966386555,0.5,0.5,0.5}\" abbreviation=\"p\"/>");
+		rs.command().findParam("pos")->setDefaultValue("{0.5,0.392523364485981,0.789915966386555,0.5,0.5,0.5}");
 
-		plan_root->planPool().add<aris::plan::MovePlan>();
+
+		plan_root->planPool().add<aris::plan::MoveL>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
 
 		plan_root->planPool().add<aris::plan::Show>();

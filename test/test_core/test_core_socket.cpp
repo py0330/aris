@@ -109,7 +109,7 @@ void test_socket_multi_thread()
 						{
 							client.sendMsg(msg);
 						}
-						catch (std::exception &e)
+						catch (std::exception &)
 						{
 
 						}
@@ -118,7 +118,7 @@ void test_socket_multi_thread()
 						{
 							client.sendRawData(msg.data(), msg.size());
 						}
-						catch (std::exception &e)
+						catch (std::exception &)
 						{
 
 						}

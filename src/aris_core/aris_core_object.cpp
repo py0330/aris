@@ -330,14 +330,8 @@ namespace aris::core
 	{
 		return xml_ele.Attribute(attribute_name.c_str()) ? attributeChar(xml_ele, attribute_name) : default_value;
 	}
-	auto Object::TypeInfo::registerTo(const std::string &type, Object &object)->void
-	{
-		object.imp_->type_map_.insert(std::make_pair(type, *this));
-	}
-	auto Object::TypeInfo::registerTo(const std::string &type)->void
-	{
-		Object::Imp::default_type_map().insert(std::make_pair(type, *this));
-	}
+	auto Object::TypeInfo::registerTo(const std::string &type, Object &object)->void { object.imp_->type_map_.insert(std::make_pair(type, *this)); }
+	auto Object::TypeInfo::registerTo(const std::string &type)->void { Object::Imp::default_type_map().insert(std::make_pair(type, *this)); }
 	auto Object::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		xml_ele.DeleteChildren();

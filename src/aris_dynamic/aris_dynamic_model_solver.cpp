@@ -2877,5 +2877,8 @@ namespace aris::dynamic
 		return true;
 	}
 	StewartInverseKinematicSolver::StewartInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
-
+	StewartInverseKinematicSolver::StewartInverseKinematicSolver(const StewartInverseKinematicSolver &other) = default;
+	StewartInverseKinematicSolver::StewartInverseKinematicSolver(StewartInverseKinematicSolver &&other) = default;
+	StewartInverseKinematicSolver& StewartInverseKinematicSolver::operator=(const StewartInverseKinematicSolver &other) = default;
+	StewartInverseKinematicSolver& StewartInverseKinematicSolver::operator=(StewartInverseKinematicSolver &&other) = default;
 }

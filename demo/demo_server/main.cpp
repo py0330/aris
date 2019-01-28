@@ -87,10 +87,19 @@ int main(int argc, char *argv[])
 	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 1, 0, 0, 0}.data(), "313");
 	cs.model().solverPool()[0].kinPos();
 
-	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test_pe.xml");
-	outputCsByPq(cs, "C:\\Users\\py033\\Desktop\\test.xml");
+	//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\plan111.xml");
+	//cs.loadXmlFile("./plan.xml");
+	//outputCsByPq(cs, "C:\\Users\\py033\\Desktop\\test.xml");
 	
+	//std::cout << cs.xmlString() << std::endl;
+
+	cs.model().calculator().calculateExpression("PI/2");
+
+
+	//cs.loadXmlFile("C:/Users/py033/Desktop/plan.xml");
 	cs.start();
+
+	//std::cout << cs.xmlString() << std::endl;
 
 	//cs.executeCmd(aris::core::Msg("am --start"));
 
@@ -100,8 +109,8 @@ int main(int argc, char *argv[])
 		std::string msg_data = msg.toString();
 
 		static int cout_count = 0;
-		if(++cout_count%10 == 0)std::cout << "recv:" << msg_data << std::endl;
-		
+		//if(++cout_count%10 == 0)
+			std::cout << "recv:" << msg_data << std::endl;
 
 		if (msg.header().msg_id_ == 0)
 		{
@@ -120,12 +129,13 @@ int main(int argc, char *argv[])
 				{
 					auto id = cs.executeCmd(aris::core::Msg(msg_data));
 					std::cout << "command id:" << id << std::endl;
+					socket->sendMsg(aris::core::Msg());
 				}
 				catch (std::exception &e)
 				{
 					std::cout << e.what() << std::endl;
 					LOG_ERROR << e.what() << std::endl;
-					socket->sendMsg(aris::core::Msg());
+					socket->sendMsg(aris::core::Msg(e.what()));
 				}
 			}
 			catch (std::exception &e)
@@ -159,12 +169,108 @@ int main(int argc, char *argv[])
 			}
 
 			//// return binary ////
-			aris::core::Msg msg;
-			msg.copy(part_pq.data(), static_cast<aris::core::MsgSize>(part_pq.size() * 8));
+			aris::core::Msg msg_ret;
+			msg_ret.copy(part_pq.data(), static_cast<aris::core::MsgSize>(part_pq.size() * 8));
+			msg_ret.header().msg_id_ = 1;
+			msg_ret.header().reserved1_ = msg.header().reserved1_;
 
 			try
 			{
-				socket->sendMsg(msg);
+				socket->sendMsg(msg_ret);
+			}
+			catch (std::exception &e)
+			{
+				std::cout << e.what() << std::endl;
+				LOG_ERROR << e.what() << std::endl;
+			}
+		}
+		else if (msg.header().msg_id_ == 2)
+		{
+			LOG_INFO_EVERY_N(100) << "socket receive request msg:"
+				<< msg.header().msg_size_ << "&"
+				<< msg.header().msg_id_ << "&"
+				<< msg.header().msg_type_ << "&"
+				<< msg.header().reserved1_ << "&"
+				<< msg.header().reserved2_ << "&"
+				<< msg.header().reserved3_ << ":"
+				<< msg_data << std::endl;
+
+			//// return binary ////
+			tinyxml2::XMLDocument xml_data;
+			tinyxml2::XMLPrinter printer;
+			xml_data.LoadFile("plan.xml");
+			xml_data.Print(&printer);
+			aris::core::Msg msg_ret = aris::core::Msg(printer.CStr());
+			
+			
+			
+			//aris::core::Msg msg_ret(cs.xmlString());
+			msg_ret.header().msg_id_ = 2;
+			msg_ret.header().reserved1_ = msg.header().reserved1_;
+
+
+
+
+
+
+			try
+			{
+				socket->sendMsg(msg_ret);
+			}
+			catch (std::exception &e)
+			{
+				std::cout << e.what() << std::endl;
+				LOG_ERROR << e.what() << std::endl;
+			}
+		}
+		else if (msg.header().msg_id_ == 5)
+		{
+			LOG_INFO_EVERY_N(100) << "socket receive request msg:"
+				<< msg.header().msg_size_ << "&"
+				<< msg.header().msg_id_ << "&"
+				<< msg.header().msg_type_ << "&"
+				<< msg.header().reserved1_ << "&"
+				<< msg.header().reserved2_ << "&"
+				<< msg.header().reserved3_ << ":"
+				<< msg_data << std::endl;
+			
+			//// return binary ////
+			aris::core::Msg msg_ret;
+			msg_ret.header().msg_id_ = 5;
+			msg_ret.header().reserved1_ = msg.header().reserved1_;
+
+			//// get rt data ////
+			if (msg.toString() == "a")
+			{
+				auto value = std::make_any<double>(0.0);
+				cs.getRtData([](aris::server::ControlServer& cs, std::any& data)
+				{
+					std::any_cast<double&>(data) = cs.controller().motionPool()[0].actualPos();
+				}, value);
+
+				msg_ret.copy(std::to_string(std::any_cast<double&>(value)));
+			}
+			else if (msg.toString() == "b")
+			{
+				auto value = std::make_any<double>(0.0);
+				cs.getRtData([](aris::server::ControlServer& cs, std::any& data)
+				{
+					std::any_cast<double&>(data) = cs.controller().motionPool()[1].targetPos();
+				}, value);
+
+				msg_ret.copy(std::to_string(std::any_cast<double&>(value)));
+			}
+			else
+			{
+				std::cout << "unrecognized cmd" << std::endl;
+			}
+
+			
+
+
+			try
+			{
+				socket->sendMsg(msg_ret);
 			}
 			catch (std::exception &e)
 			{
@@ -216,12 +322,32 @@ int main(int argc, char *argv[])
 			std::string msg_data(data, size);
 
 			aris::core::Calculator c;
-
 			auto mat = c.calculateExpression(msg_data);
 
 			double value[6]{ 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647 };
 			s_vs(6, value, mat.data());
 			s_nv(6, 1.0 / 2147483647.0, mat.data());
+
+			// yaw 应该为0 //
+			mat.data()[5] = 0.0;
+
+			// xy 客户和simtool不一样 //
+			std::swap(mat.data()[0], mat.data()[1]);
+			mat.data()[0] = -mat.data()[0];
+
+			std::swap(mat.data()[3], mat.data()[4]);
+			mat.data()[3] = -mat.data()[3];
+
+			mat.data()[0] *= 0.04;
+			mat.data()[1] *= 0.04;
+			mat.data()[2] *= 0.04;
+			mat.data()[3] *= 0.085;
+			mat.data()[4] *= 0.085;
+			mat.data()[5] *= 0.085;
+
+			// 向上的轴加1.0，为默认位置 //
+			mat.data()[2] += 0.515;
+			mat.data()[1] -= 0.012;
 
 			auto cmd = "am --pe=" + mat.toString();
 			
