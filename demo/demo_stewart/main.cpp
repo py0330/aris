@@ -102,7 +102,17 @@ int main()
 		return max_max_margin;
 	};
 
+	ee.setMpe(std::array<double, 6>{0.0, -0.012, 0.515, 0.0, 0.0, 0.0}.data(), "123");
+	bool ret = inv.kinPos();
 
+	for (auto &m : cs.model().motionPool())
+	{
+		std::cout << std::setprecision(16) << (m.mp() - 0.535) / (0.765 - 0.535) << std::endl;
+	}
+
+
+
+	
 
 
 	std::cout << "result:" << cpt_margin() << std::endl;

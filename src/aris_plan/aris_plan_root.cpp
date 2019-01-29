@@ -1282,10 +1282,6 @@ namespace aris::plan
 			// 求正解 //
 			p->kin_ret = target.model->solverPool()[1].kinPos() ? 0 : -1;
 
-			double pe[6];
-			target.model->generalMotionPool()[0].getMpe(pe, "123");
-			aris::dynamic::dsp(1, 6, pe);
-
 			// 通知实时线程 //
 			p->is_kinematic_ready_.store(true);
 		}, p, target);
@@ -2208,40 +2204,6 @@ namespace aris::plan
 		target.model->generalMotionPool()[0].setMve(ve_next, imp_->eul_type.c_str());
 		target.model->generalMotionPool()[0].setMae(ae_next, imp_->eul_type.c_str());
 
-
-		/*
-		// yaw 应该为0 //
-		pe_target[5] = 0.0;
-
-		// xy 客户和simtool不一样 //
-		std::swap(pe_target[0], pe_target[1]);
-		pe_target[0] = -pe_target[0];
-
-		std::swap(pe_target[3], pe_target[4]);
-		pe_target[3] = -pe_target[3];
-
-		pe_target[0] *= 0.04;
-		pe_target[1] *= 0.04;
-		pe_target[2] *= 0.04;
-		pe_target[3] *= 0.085;
-		pe_target[4] *= 0.085;
-		pe_target[5] *= 0.085;
-
-		// 向上的轴加1.0，为默认位置 //
-		pe_target[2] += 0.515;
-		pe_target[1] -= 0.012;
-		*/
-		// now plan //
-		//double pe_next[6], ve_next[6], ae_next[6];
-		//for (int i = 0; i < 6; ++i)
-		//{
-		//	aris::Size t;
-		//	aris::plan::moveAbsolute2(pe_now[i], ve_now[i], ae_now[i]
-		//		, pe[i], ve[i + 6], 0.0
-		//		, 0.12, 10, 10
-		//		, 1e-3, 1e-10, pe_next[i], ve_next[i], ae_next[i], t);
-		//}
-
 		static int i = 0;
 		if (++i % 1000 == 0)
 		{
@@ -2262,7 +2224,7 @@ namespace aris::plan
 		
 		return imp_->is_running_.load() ? 1: 0;
 	}
-	auto AutoMove::collectNrt(PlanTarget &param)->void {}
+	auto AutoMove::collectNrt(PlanTarget &target)->void { if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); }
 	AutoMove::~AutoMove() = default;
 	AutoMove::AutoMove(const std::string &name) : Plan(name), imp_(new Imp)
 	{

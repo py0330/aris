@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 	
 	//std::cout << cs.xmlString() << std::endl;
 
-	cs.model().calculator().calculateExpression("PI/2");
+	//cs.model().calculator().calculateExpression("PI/2");
 
 
 	//cs.loadXmlFile("C:/Users/py033/Desktop/plan.xml");
