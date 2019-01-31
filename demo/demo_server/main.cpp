@@ -73,6 +73,10 @@ int main(int argc, char *argv[])
 		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootStewart().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
+
+		// init model pos //
+		cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 0.5, 0, 0, 0}.data(), "313");
+		cs.model().solverPool()[0].kinPos();
 	}
 	else
 	{
@@ -84,24 +88,7 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 1, 0, 0, 0}.data(), "313");
-	cs.model().solverPool()[0].kinPos();
-
-	//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\plan111.xml");
-	//cs.loadXmlFile("./plan.xml");
-	//outputCsByPq(cs, "C:\\Users\\py033\\Desktop\\test.xml");
-	
-	//std::cout << cs.xmlString() << std::endl;
-
-	//cs.model().calculator().calculateExpression("PI/2");
-
-
-	//cs.loadXmlFile("C:/Users/py033/Desktop/plan.xml");
 	cs.start();
-
-	//std::cout << cs.xmlString() << std::endl;
-
-	//cs.executeCmd(aris::core::Msg("am --start"));
 
 	aris::core::Socket socket("server", "", "5866", aris::core::Socket::WEB);
 	socket.setOnReceivedMsg([&](aris::core::Socket *socket, aris::core::Msg &msg)->int
@@ -195,23 +182,16 @@ int main(int argc, char *argv[])
 				<< msg.header().reserved3_ << ":"
 				<< msg_data << std::endl;
 
-			//// return binary ////
+			//// return xml data, now we need to load from file because interface data is not inside the default xml ////
 			tinyxml2::XMLDocument xml_data;
 			tinyxml2::XMLPrinter printer;
 			xml_data.LoadFile("plan.xml");
 			xml_data.Print(&printer);
-			aris::core::Msg msg_ret = aris::core::Msg(printer.CStr());
-			
-			
-			
+			aris::core::Msg msg_ret(printer.CStr());
 			//aris::core::Msg msg_ret(cs.xmlString());
+
 			msg_ret.header().msg_id_ = 2;
 			msg_ret.header().reserved1_ = msg.header().reserved1_;
-
-
-
-
-
 
 			try
 			{

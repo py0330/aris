@@ -391,8 +391,6 @@ namespace aris::plan
 	class MoveAbsJ :public Plan
 	{
 	public:
-		
-
 		static auto Type()->const std::string & { static const std::string type("MoveAbsJ"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
@@ -418,19 +416,26 @@ namespace aris::plan
 	/// 指定目标位姿，可以使用以下参数：
 	/// + 位置与四元数，例如位置 xyz 为[0 , 0.5 , 1.1]，姿态为原始姿态[0 , 0 , 0 , 1]：“mvj --pe={0,0.5,1.1,0,0,0,1}”
 	/// + 位姿矩阵，位姿仍然如上：“mvj --pm={1,0,0,0,0,1,0,0.5,0,0,1,1.1,0,0,0,1}”
-	/// + 位置与欧拉角，位置姿态仍然如上：“mvj --pm={0,0.5,1.1,0,0,0}”
+	/// + 位置与欧拉角，位置姿态仍然如上：“mvj --pe={0,0.5,1.1,0,0,0}”
 	/// 
-	/// 指定目标速度，单位一般是 m/s 或 rad/s ，应永远为正数，默认为0.1
-	/// + 指定单个电机的速度，例如指定 0 号电机走到 1.5 处，速度为 0.5：“mvaj -m=0 --pos=1.5 --vel=0.5”
-	/// + 指定所有电机的位置，例如：“mvaj -a --pos={1.5,1.2,1.5,1.3,1.2,0.6} --vel={1.5,1.2,1.5,1.3,1.2,0.6}”
+	/// 此外，还可以指定位置和角度的单位，长度单位默认为 m ，角度默认为 rad ：
+	/// + 指定位置单位，例如将单位设置为 m （米）：“mvj --pq={0,0.5,1.1,0,0,0,1} --pos_unit=m”
+	/// + 指定角度单位，例如将单位设置为 rad ：“mvj --pe={0,0.5,1.1,0,0,0} --ori_unit=rad”
 	///
-	/// 指定目标加速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
-	/// + 指定单个电机的加速度，例如指定 0 号电机走到 1.5 处，速度为 0.5 ，加速度为 0.3 ：“mvaj -m=0 --pos=1.5 --vel=0.5 --acc=0.3”
-	/// + 指定所有电机的加速度，例如：“mvaj -a --acc={1.5,1.2,1.5,1.3,1.2,0.6}”
+	/// 还可以指定欧拉角的种类，可以是 321 313 123 212 ... 等任意类型的欧拉角，默认为 321 的欧拉角
+	/// + 指定欧拉角为 123 的，“mvj --pe={0,0.5,1.1,0,0,0} --ori_unit=rad --eul_type=321”
 	///
-	/// 指定目标减速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
-	/// + 指定单个电机的加速度，例如指定 0 号电机走到 1.5 处，速度为 0.5 ，加速度为 0.3 ，减速度为 0.2 ：“mvaj -m=0 --pos=1.5 --vel=0.5 --acc=0.3 --dec=0.2”
-	/// + 指定所有电机的加速度，例如：“mvaj -a --dec={1.5,1.2,1.5,1.3,1.2,0.6}”
+	/// 指定关节速度，单位一般是 m/s 或 rad/s ，应永远为正数，默认为0.1
+	/// + 指定所有电机的速度都为0.5：“mvj --pe={0,0.5,1.1,0,0,0} --joint_vel=0.5”
+	/// + 指定所有电机的速度：“mvj --pe={0,0.5,1.1,0,0,0} --joint_vel={0.2,0.2,0.2,0.3,0.3,0.3}”
+	///
+	/// 指定关节加速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
+	/// + 指定所有电机的加速度都为0.3：“mvj --pe={0,0.5,1.1,0,0,0} --joint_vel=0.5 --joint_acc=0.3”
+	/// + 指定所有电机的加速度：“mvj --pe={0,0.5,1.1,0,0,0} --joint_vel=0.5 --joint_acc={0.2,0.2,0.2,0.3,0.3,0.3}”
+	///
+	/// 指定关节减速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
+	/// + 指定所有电机的加速度都为0.3：“mvj --pe={0,0.5,1.1,0,0,0} --joint_vel=0.5 --joint_dec=0.3”
+	/// + 指定所有电机的加速度：“mvj --pe={0,0.5,1.1,0,0,0} --joint_vel=0.5 --joint_dec={0.2,0.2,0.2,0.3,0.3,0.3}”
 	///
 	class MoveJ : public Plan
 	{
@@ -442,7 +447,7 @@ namespace aris::plan
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MoveJ();
-		explicit MoveJ(const std::string &name = "moveL");
+		explicit MoveJ(const std::string &name = "move_j");
 		MoveJ(const MoveJ &);
 		MoveJ(MoveJ &&);
 		MoveJ& operator=(const MoveJ &);
@@ -487,7 +492,7 @@ namespace aris::plan
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MoveL();
-		explicit MoveL(const std::string &name = "moveL");
+		explicit MoveL(const std::string &name = "move_l");
 		MoveL(const MoveL &);
 		MoveL(MoveL &&);
 		MoveL& operator=(const MoveL &);
@@ -499,29 +504,33 @@ namespace aris::plan
 	};
 	/// \brief 让机器人自动运行，随时可以改变其目标位姿。
 	/// 
+	/// 典型流程为：
+	/// 1. 开启自动运行模式
+	/// 2. 不断刷入目标位姿
+	/// 3. 终止自动运行模式
 	/// 
 	/// ### 参数定义 ###
 	///
-	/// 指定目标位姿，可以使用以下参数：
-	/// + 位置与四元数，例如位置 xyz 为[0 , 0.5 , 1.1]，姿态为原始姿态[0 , 0 , 0 , 1]：“mvl --pq={0,0.5,1.1,0,0,0,1}”
-	/// + 位姿矩阵，位姿仍然如上：“mvl --pm={1,0,0,0,0,1,0,0.5,0,0,1,1.1,0,0,0,1}”
-	/// + 位置与欧拉角，位置姿态仍然如上：“mvl --pe={0,0.5,1.1,0,0,0}”
+	/// #### 开启自动运行模式 ####
+	/// 
+	/// 此时至少要包含“start”参数，例如：“am --start”
 	///
-	/// 此外，还可以指定位置和角度的单位，长度单位默认为 m ，角度默认为 rad ：
-	/// + 指定位置单位，例如将单位设置为 m （米）：“mvl --pq={0,0.5,1.1,0,0,0,1} --pos_unit=m”
-	/// + 指定角度单位，例如将单位设置为 rad ：“mvl --pe={0,0.5,1.1,0,0,0} --ori_unit=rad”
+	/// 指定起始的目标位姿，移动到目标的最大速度、加速度和减速度，其中旋转项必须用欧拉角及其导数来表达：
+	/// + 使用123的欧拉角设置起始目标位姿：“am --start --eul_type=123 --init_pe={0,0,0.5,0,PI/3,0} --init_ve={0.1,0.1,0.1,0.2,0.2,0.2} --init_ae={0.1,0.1,0.1,0.2,0.2,0.2}  --init_de={0.1,0.1,0.1,0.2,0.2,0.2}”
 	///
-	/// 还可以指定欧拉角的种类，可以是 321 313 123 212 ... 等任意类型的欧拉角，默认为 321 的欧拉角
-	/// + 指定欧拉角为 123 的，“mvl --pe={0,0.5,1.1,0,0,0} --ori_unit=rad --eul_type=321”
+	/// 此外，还可以指定最大的位姿和最小的位姿 ：
+	/// + 指定最大和最小位姿，“am --start --max_pe={1,1,1,PI/3,PI/2,pi/4} --min_pe={-1,-1,-1,0,-PI/2,-pi/4}”
 	///
-	/// 指定目标速度以及角速度，单位一般是 m/s 或 rad/s ，应永远为正数，默认为0.1
-	/// + 指定末端的速度和角速度，例如指定末端速度为 0.5，角速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --vel=0.5 --angular_vel=0.3”
+	/// #### 终止自动运行模式 ####
+	/// 
+	/// 指令：“am --stop”
 	///
-	/// 指定目标加速度以及角加速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
-	/// + 指定末端的加速度和角加速度，例如指定末端加速度为 0.5，角加速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --acc=0.5 --angular_acc=0.3”
+	/// #### 在自动运行模式中刷入目标位姿 ####
 	///
-	/// 指定目标减速度以及角减速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
-	/// + 指定末端的减速度和角减速度，例如指定末端减速度为 0.5，角减速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --dec=0.5 --angular_dec=0.3”
+	/// 指定目标位姿，移动到目标的最大速度、加速度和减速度，其中旋转项必须用欧拉角及其导数来表达：
+	/// + 使用123的欧拉角设置起始目标位姿：“am --pe={0,0,0.5,0,PI/3,0} --ve={0.1,0.1,0.1,0.2,0.2,0.2} --ae={0.1,0.1,0.1,0.2,0.2,0.2}  --de={0.1,0.1,0.1,0.2,0.2,0.2}”
+	///
+	///
 	class AutoMove :public Plan
 	{
 	public:
@@ -532,7 +541,7 @@ namespace aris::plan
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~AutoMove();
-		explicit AutoMove(const std::string &name = "am");
+		explicit AutoMove(const std::string &name = "auto_move");
 		AutoMove(const AutoMove &);
 		AutoMove(AutoMove &&);
 		AutoMove& operator=(const AutoMove &);
@@ -542,9 +551,37 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	
-	
-	
+	/// \brief 让机器人手动运行。
+	/// 
+	/// 典型流程为：
+	/// 1. 开启手动运行模式
+	/// 2. 不断刷入移动指令
+	/// 3. 终止手动运行模式
+	/// 
+	/// ### 参数定义 ###
+	///
+	/// #### 开启手动运行模式 ####
+	/// 
+	/// 此时至少要包含“start”参数，例如：“mm --start”
+	///
+	/// 笛卡尔空间下手动运行的速度、加速度和减速度，需要用欧拉角的形式来表达：
+	/// + 使用123的欧拉角设置起始目标位姿：“mm --start --eul_type=123 --ve={0.1,0.1,0.1,0.2,0.2,0.2} --ae={0.1,0.1,0.1,0.2,0.2,0.2}  --de={0.1,0.1,0.1,0.2,0.2,0.2}”
+	///
+	/// 此外，还可以指定每次刷入数据，机器人连续运行的周期数，默认为 50 ，既运行 50 ms ：
+	/// + 指定最大和最小位姿，“mm --start --increase_count=50”
+	///
+	/// #### 终止手动运行模式 ####
+	/// 
+	/// 指令：“mm --stop”
+	///
+	/// #### 在手动运行模式中刷入新的运动指令 ####
+	///
+	/// 这种指令请尽量用较高频率往下刷，建议小于开启时所设置的 increase_count 参数。
+	/// 
+	/// 指定x,y,z,a,b,c这六项，设置为1时正向动，-1时为反向动：
+	/// + 手动让机器人延 z 运动：“mm --z=1”
+	/// + 手动让机器人延 x 运动，同时绕第一根轴的负方向转：“mm --x=1 --a=-1”
+	///
 	class ManualMove :public Plan
 	{
 	public:
@@ -555,7 +592,7 @@ namespace aris::plan
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~ManualMove();
-		explicit ManualMove(const std::string &name = "mm");
+		explicit ManualMove(const std::string &name = "manual_move");
 		ManualMove(const ManualMove &);
 		ManualMove(ManualMove &&);
 		ManualMove& operator=(const ManualMove &);
