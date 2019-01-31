@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 		std::string msg_data = msg.toString();
 
 		static int cout_count = 0;
-		//if(++cout_count%10 == 0)
+		if(++cout_count%10 == 0)
 			std::cout << "recv:" << msg_data << std::endl;
 
 		if (msg.header().msg_id_ == 0)
@@ -112,23 +112,19 @@ int main(int argc, char *argv[])
 
 			try
 			{
-				try
+				std::stringstream ss(msg_data);
+				for (std::string cmd; std::getline(ss, cmd);)
 				{
-					auto id = cs.executeCmd(aris::core::Msg(msg_data));
+					auto id = cs.executeCmd(aris::core::Msg(cmd));
 					std::cout << "command id:" << id << std::endl;
-					socket->sendMsg(aris::core::Msg());
 				}
-				catch (std::exception &e)
-				{
-					std::cout << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
-					socket->sendMsg(aris::core::Msg(e.what()));
-				}
+				socket->sendMsg(aris::core::Msg());
 			}
 			catch (std::exception &e)
 			{
 				std::cout << e.what() << std::endl;
 				LOG_ERROR << e.what() << std::endl;
+				socket->sendMsg(aris::core::Msg(e.what()));
 			}
 		}
 		else if (msg.header().msg_id_ == 1)

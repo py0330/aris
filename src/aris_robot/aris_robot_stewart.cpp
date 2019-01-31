@@ -15,7 +15,7 @@ namespace aris::robot
 		{
 			double pos_offset[6]
 			{
-				-0.54, -0.54, -0.54, -0.54, -0.54, -0.54
+				-0.3, -0.54, -0.54, -0.54, -0.54, -0.54
 			};
 			double pos_factor[6]
 			{
@@ -179,7 +179,7 @@ namespace aris::robot
 		mm.command().findParam("ae")->setDefaultValue("{10,10,10,10,10,10}");
 		mm.command().findParam("de")->setDefaultValue("{10,10,10,10,10,10}");
 		mm.command().findParam("eul_type")->setDefaultValue("123");
-		mm.command().findParam("increase_count")->setDefaultValue("50");
+		mm.command().findParam("increase_count")->setDefaultValue("100");
 
 		return plan_root;
 	}
