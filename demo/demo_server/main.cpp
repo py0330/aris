@@ -113,13 +113,8 @@ int main(int argc, char *argv[])
 			try
 			{
 				std::stringstream ss(msg_data);
-
-				std::cout << "msg_data:" << msg_data << std::endl;
-
 				for (std::string cmd; std::getline(ss, cmd);)
 				{
-					std::cout << "cmd:" << cmd<<std::endl;
-					
 					auto id = cs.executeCmd(aris::core::Msg(cmd));
 					std::cout << "command id:" << id << std::endl;
 				}

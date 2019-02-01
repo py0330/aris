@@ -164,12 +164,14 @@ namespace aris::robot
 		plan_root->planPool().add<aris::plan::MoveJ>();
 
 		auto &am = plan_root->planPool().add<aris::plan::AutoMove>();
+		am.command().findParam("max_pe")->setDefaultValue("{0.04,0.04-0.012,0.04+0.515,0.085,0.085,0.085}");
+		am.command().findParam("min_pe")->setDefaultValue("{-0.04,-0.04-0.012,-0.04+0.515,-0.085,-0.085,-0.085}");
 		am.command().findParam("init_pe")->setDefaultValue("{0.0,-0.012,0.515,0.0,0.0,0.0}");
-		am.command().findParam("init_ve")->setDefaultValue("{0.12,0.12,0.12,0.12,0.12,0.12}");
+		am.command().findParam("init_ve")->setDefaultValue("{0.1,0.1,0.1,0.1,0.1,0.1}");
 		am.command().findParam("init_ae")->setDefaultValue("{10,10,10,10,10,10}");
 		am.command().findParam("init_de")->setDefaultValue("{10,10,10,10,10,10}");
 		am.command().findParam("pe")->setDefaultValue("{0.0,-0.012,0.515,0.0,0.0,0.0}");
-		am.command().findParam("ve")->setDefaultValue("{0.12,0.12,0.12,0.12,0.12,0.12}");
+		am.command().findParam("ve")->setDefaultValue("{0.1,0.1,0.1,0.1,0.1,0.1}");
 		am.command().findParam("ae")->setDefaultValue("{10,10,10,10,10,10}");
 		am.command().findParam("de")->setDefaultValue("{10,10,10,10,10,10}");
 		am.command().findParam("eul_type")->setDefaultValue("123");

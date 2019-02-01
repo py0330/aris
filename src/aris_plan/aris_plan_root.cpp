@@ -1308,7 +1308,21 @@ namespace aris::plan
 
 		return param->is_kinematic_ready_.load() ? param->kin_ret : 1;
 	}
-	auto Recover::collectNrt(PlanTarget &target)->void { std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get(); }
+	auto Recover::collectNrt(PlanTarget &target)->void
+	{
+
+		if (target.count) 
+		{
+			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get();
+		}
+		else
+		{
+			// 此时前面指令出错，系统清理了该命令，这时设置一下 //
+			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->is_rt_waiting_ready_.store(true);
+			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get();
+		}
+		
+	}
 	Recover::~Recover() = default;
 	Recover::Recover(const std::string &name) :Plan(name)
 	{

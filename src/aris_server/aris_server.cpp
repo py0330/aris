@@ -619,8 +619,6 @@ namespace aris::server
 						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "total count:" << internal_data.target.rt_stastic.total_count << std::endl
 						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "overruns:" << internal_data.target.rt_stastic.overrun_count << std::endl;
 
-
-
 					if (!(internal_data.target.option & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION)) 
 					{
 						LOG_INFO << "server collect cmd " << internal_data.target.command_id << std::endl;

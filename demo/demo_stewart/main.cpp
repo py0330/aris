@@ -22,57 +22,98 @@ int main()
 
 	double mid_pe[6]{ 0, -0.012, 0.515, 0, 0, 0 };
 
-	double x_max{ 0.04 }, y_max{ 0.04 }, z_max{ 0.04 }, a_max{ 0.085 }, b_max{ 0.0 }, c_max{0.085};
+	double x_max{ 0.035 }, y_max{ 0.035 }, z_max{ 0.035 }, a_max{ 0.08 }, b_max{ 0.08 }, c_max{ 0.08 };
 
 	std::vector < std::array<double, 6> > points;
 
+
+
+
+
+
+
+
+
+
+
+
+
 	// 0 minus //
-	points.push_back(std::array<double, 6>{x_max, y_max, z_max, a_max, c_max, 0.0 });
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, a_max, b_max, c_max });
 	
 	// 1 minus //
-	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, y_max, z_max, -a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, y_max, z_max, a_max, -c_max, 0.0 });
+	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, -a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, a_max, -b_max, -c_max });
 
 	// 2 minus //
-	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, -a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, a_max, -c_max, 0.0 });
+	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, -a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, a_max, b_max, -c_max });
 
-	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, -a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, a_max, -c_max, 0.0 });
+	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, -a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, a_max, b_max, -c_max });
 
-	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, -a_max, c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, a_max, -c_max, 0.0 });
+	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, -a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, a_max, b_max, -c_max });
 
-	points.push_back(std::array<double, 6>{x_max, y_max, z_max, -a_max, -c_max, 0.0 });
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, -a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, -a_max, b_max, -c_max });
+
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, a_max, -b_max, -c_max });
+
+	// 3 minus //
+	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, -a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, a_max, b_max, -c_max });
+
+	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, -a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, a_max, b_max, -c_max });
+
+	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, -a_max, b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, a_max, b_max, -c_max });
+
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, -a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, -a_max, b_max, -c_max });
+
+	points.push_back(std::array<double, 6>{x_max, y_max, z_max, a_max, -b_max, -c_max });
+
 
 
 	// 2 positive //
-	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, -a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, -a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, -a_max, c_max, 0.0 });
+	points.push_back(std::array<double, 6>{x_max, y_max, -z_max, -a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, z_max, -a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, -a_max, b_max, c_max });
 
-	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, -a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, -a_max, c_max, 0.0 });
+	points.push_back(std::array<double, 6>{-x_max, y_max, z_max, -a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, -a_max, b_max, c_max });
 
-	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, -a_max, c_max, 0.0 });
+	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, -a_max, b_max, c_max });
 
-	points.push_back(std::array<double, 6>{-x_max, -y_max, -z_max, a_max, c_max, 0.0 });
+	points.push_back(std::array<double, 6>{-x_max, -y_max, -z_max, a_max, b_max, c_max });
 
 	// 1 positive //
-	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, -a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, -a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, -a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, -y_max, -z_max, a_max, -c_max, 0.0 });
-	points.push_back(std::array<double, 6>{-x_max, -y_max, -z_max, -a_max, c_max, 0.0 });
+	points.push_back(std::array<double, 6>{x_max, -y_max, -z_max, -a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, y_max, -z_max, -a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, -y_max, z_max, -a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, -y_max, -z_max, a_max, -b_max, c_max });
+	points.push_back(std::array<double, 6>{-x_max, -y_max, -z_max, -a_max, b_max, c_max });
 
 
 	auto cpt_margin = [&]() ->double
