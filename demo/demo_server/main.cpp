@@ -118,13 +118,31 @@ int main(int argc, char *argv[])
 					auto id = cs.executeCmd(aris::core::Msg(cmd));
 					std::cout << "command id:" << id << std::endl;
 				}
-				socket->sendMsg(aris::core::Msg());
+
+				try
+				{
+					socket->sendMsg(aris::core::Msg());
+				}
+				catch (std::exception &e)
+				{
+					std::cout << e.what() << std::endl;
+					LOG_ERROR << e.what() << std::endl;
+				}
 			}
 			catch (std::exception &e)
 			{
 				std::cout << e.what() << std::endl;
 				LOG_ERROR << e.what() << std::endl;
-				socket->sendMsg(aris::core::Msg(e.what()));
+				
+				try
+				{
+					socket->sendMsg(aris::core::Msg());
+				}
+				catch (std::exception &e)
+				{
+					std::cout << e.what() << std::endl;
+					LOG_ERROR << e.what() << std::endl;
+				}
 			}
 		}
 		else if (msg.header().msg_id_ == 1)

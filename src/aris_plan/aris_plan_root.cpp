@@ -2457,7 +2457,7 @@ namespace aris::plan
 				auto &cm = c->motionPool().at(i);
 				auto &mm = target.model->motionPool().at(i);
 
-				if (mm.mp() < cm.minPos() || mm.mp() > cm.maxPos()) return false;
+				if (mm.mp() < cm.minPos() + 0.005 || mm.mp() > cm.maxPos() - 0.005) return false;
 			}
 			return true;
 		};
