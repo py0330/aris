@@ -89,12 +89,11 @@ void test_big_five()
 	root.add<Man>("root_man", 11, "worker");
 	root.add<Object>("root_obj");
 
-	if (root.xmlString() != "<root type=\"Object\">\n    <root_man type=\"Man\" age=\"11\" job=\"worker\"/>\n    <root_obj type=\"Object\"/>\n</root>\n") std::cout<< "aris::core::Object default ctor failed" <<std::endl;
+	if (root.xmlString() != "<Object name=\"root\">\n    <Man name=\"root_man\" age=\"11\" job=\"worker\"/>\n    <Object name=\"root_obj\"/>\n</Object>\n") std::cout<< "aris::core::Object default ctor failed" <<std::endl;
 
 	// test copy ctor //
 	auto left(root);
 	if(left.xmlString() != root.xmlString())std::cout << "aris::core::Object copy ctor failed" << std::endl;
-
 
 	// test move ctor //
 	auto &child1 = left.children().front();

@@ -275,7 +275,7 @@ namespace aris::core
 	auto CommandParser::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Object::loadXml(xml_ele);
-		imp_->command_pool_ = findOrInsert<aris::core::ObjectPool<Command>>("command_pool");
+		imp_->command_pool_ = findOrInsert<aris::core::ObjectPool<Command>>("");
 	}
 	auto CommandParser::parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_out)->void
 	{
@@ -294,6 +294,7 @@ namespace aris::core
 			// make map and abbrev map //
 			command->imp_->param_map_.clear();
 			command->imp_->abbreviation_map_.clear();
+			if ((command->imp_->default_value_ != "") && (command->findByName(command->imp_->default_value_) == command->end())) throw std::runtime_error("Command \"" + command->name() + "\" has invalid default param name");
 			for (auto &param : *command) Command::Imp::add_param_map_and_check_default(&*command, param);
 
 			Command::Imp::reset(&*command);

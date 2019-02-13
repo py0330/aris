@@ -8,10 +8,10 @@ using namespace aris::core;
 void test_socket_xml()
 {
 	const char xml_data[] =
-		"<root>"
-		"    <server type=\"Socket\" connect_type=\"UDP\" port=\"5866\"/>"
-		"    <client type=\"Socket\" connect_type=\"UDP\" remote_ip=\"127.0.0.1\" port=\"5866\"/>"
-		"</root>";
+		"<Object>"
+		"    <Socket name=\"server\" connect_type=\"UDP\" port=\"5866\"/>"
+		"    <Socket name=\"client\" connect_type=\"UDP\" remote_ip=\"127.0.0.1\" port=\"5866\"/>"
+		"</Object>";
 	
 	auto root = aris::core::Object();
 	root.registerType<Socket>();
@@ -24,8 +24,8 @@ void test_socket_xml()
 	std::string xml_str;
 	server.saveXmlStr(xml_str);
 
-	if (server.xmlString() != "<server type=\"Socket\" connect_type=\"UDP\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
-	if (client.xmlString() != "<client type=\"Socket\" connect_type=\"UDP\" remote_ip=\"127.0.0.1\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+	if (server.xmlString() != "<Socket name=\"server\" connect_type=\"UDP\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
+	if (client.xmlString() != "<Socket name=\"client\" connect_type=\"UDP\" remote_ip=\"127.0.0.1\" port=\"5866\"/>\n") std::cout << __FILE__ << __LINE__ << "test_socket failed" << std::endl;
 }
 void test_socket_multi_thread()
 {

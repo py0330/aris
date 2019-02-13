@@ -335,8 +335,8 @@ namespace aris::core
 	auto Object::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		xml_ele.DeleteChildren();
-		xml_ele.SetName(name().c_str());
-		xml_ele.SetAttribute("type", this->type().c_str());
+		xml_ele.SetName(type().c_str());
+		xml_ele.SetAttribute("name", this->name().c_str());
 		if (!imp_->default_type_.empty() && imp_->default_type_ != Object::Type())xml_ele.SetAttribute("default_child_type", imp_->default_type_.c_str());
 		for (auto &ele : children())
 		{
@@ -347,17 +347,17 @@ namespace aris::core
 	}
 	auto Object::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		if (xml_ele.Attribute("type") && type() != xml_ele.Attribute("type")) throw std::runtime_error("failed in Object::loadXml : you can't use a \"" + type() + "\" to load a \"" + xml_ele.Attribute("type") + "\" xml element");
+		if (type() != xml_ele.Name()) throw std::runtime_error("failed in Object::loadXml : you can't use a \"" + type() + "\" to load a \"" + xml_ele.Name() + "\" xml element");
 
 		// set name and default child type //
-		imp_->name_ = xml_ele.Name();
+		imp_->name_ = xml_ele.Attribute("name") ? xml_ele.Attribute("name") : "";
 		imp_->default_type_ = xml_ele.Attribute("default_child_type") ? xml_ele.Attribute("default_child_type") : Object::Type();
 
 		// insert children //
 		children().clear();
 		for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())
 		{
-			std::string type = ele->Attribute("type") ? ele->Attribute("type") : imp_->default_type_;
+			std::string type = ele->Name();
 
 			auto info = imp_->getTypeInfo(type);
 			if (info == nullptr)throw std::runtime_error("unrecognized type \"" + type + "\" in Object::loadXml");

@@ -322,9 +322,6 @@ int main(int argc, char *argv[])
 			s_vs(6, value, mat.data());
 			s_nv(6, 1.0 / 2147483647.0, mat.data());
 
-			// yaw 应该为0 //
-			mat.data()[5] = 0.0;
-
 			// xy 客户和simtool不一样 //
 			std::swap(mat.data()[0], mat.data()[1]);
 			mat.data()[0] = -mat.data()[0];
@@ -332,16 +329,16 @@ int main(int argc, char *argv[])
 			std::swap(mat.data()[3], mat.data()[4]);
 			mat.data()[3] = -mat.data()[3];
 
-			mat.data()[0] *= 0.04;
-			mat.data()[1] *= 0.04;
-			mat.data()[2] *= 0.04;
-			mat.data()[3] *= 0.085;
-			mat.data()[4] *= 0.085;
-			mat.data()[5] *= 0.085;
+			mat.data()[0] *= 0.035;
+			mat.data()[1] *= 0.035;
+			mat.data()[2] *= 0.037;
+			mat.data()[3] *= 0.08;
+			mat.data()[4] *= 0.08;
+			mat.data()[5] *= 0.04;
 
 			// 向上的轴加1.0，为默认位置 //
-			mat.data()[2] += 0.515;
-			mat.data()[1] -= 0.012;
+			mat.data()[2] += 0.513;
+			mat.data()[1] -= 0.0103;
 
 			auto cmd = "am --pe=" + mat.toString();
 			
@@ -358,14 +355,6 @@ int main(int argc, char *argv[])
 		{
 			std::cout << e.what() << std::endl;
 		}
-
-
-		//std::cout << "recv:" << mat.toString() << std::endl;
-		
-
-
-
-
 
 		return 0;
 	});

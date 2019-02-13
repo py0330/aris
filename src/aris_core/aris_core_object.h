@@ -624,9 +624,13 @@ namespace aris::core
 		auto findByName(const std::string &name)const->ImpContainer<Object>::const_iterator { return const_cast<std::decay_t<decltype(*this)> *>(this)->findByName(name); }
 		auto findByName(const std::string &name)->ImpContainer<Object>::iterator;
 		template<typename T = Object>
-		auto findType(const std::string &name)const->const T* { return const_cast<Object*>(this)->findType<T>(); };
+		auto findType()const->const T* { return const_cast<Object*>(this)->findType<T>(); };
 		template<typename T = Object>
-		auto findType(const std::string &name)->T* { auto iter = findByName(name); return iter != children().end() && dynamic_cast<T*>(&*iter) ? dynamic_cast<T*>(&*iter) : nullptr; }
+		auto findType()->T* { auto ret = std::find_if(children().begin(), children().end(), [](Object &p) {return dynamic_cast<T*>(&p); }); return ret == children().end() ? nullptr : dynamic_cast<T*>(&*ret); }
+		template<typename T = Object>
+		auto findType(const std::string &name)const->const T* { return const_cast<Object*>(this)->findType<T>(name); };
+		template<typename T = Object>
+		auto findType(const std::string &name)->T* { auto ret = std::find_if(children().begin(), children().end(), [&](Object &p) {return dynamic_cast<T*>(&p) && p.name() == name; }); return ret == children().end() ? nullptr : dynamic_cast<T*>(&*ret); }
 		template<typename T = Object, typename ...Args>
 		auto findOrInsert(const std::string &name, Args&&... args)-> T* { auto p = findType<T>(name); return p ? p : &add<T>(name, std::forward<Args>(args)...); }
 		auto add(Object *obj)->Object &;
@@ -634,7 +638,7 @@ namespace aris::core
 		auto add(Args&&... args)->std::enable_if_t<std::is_base_of<Object, T>::value, T>& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }
 
 		virtual ~Object();
-		explicit Object(const std::string &name = "object");
+		explicit Object(const std::string &name = "");
 		Object(const Object &);
 		Object(Object &&);
 		Object& operator=(const Object &);
@@ -931,6 +935,12 @@ namespace aris::core
 		std::vector<T*> container_;
 	};
 
+#define REGISTER_TYPE(type_name) \
+	static auto Type()->const std::string & { \
+		static const std::string type(type_name); \
+		return std::ref(type); \
+	} \
+	auto virtual type() const->const std::string& override { return Type(); }
 	///
 	///  @}
 	///
