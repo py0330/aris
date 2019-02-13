@@ -17,9 +17,14 @@ namespace aris::robot
 			{
 				-0.3, -0.54, -0.54, -0.54, -0.54, -0.54
 			};
+			// 台达
+			// double pos_factor[6]
+			//{
+			//	1280000*1.8/0.01, 1280000 * 1.8 / 0.01, 1280000 * 1.8 / 0.01, 1280000 * 1.8 / 0.01, 1280000 * 1.8 / 0.01, 1280000 * 1.8 / 0.01
+			//};
 			double pos_factor[6]
 			{
-				1280000*1.8/0.01, 1280000 * 1.8 / 0.01, 1280000 * 1.8 / 0.01, 1280000 * 1.8 / 0.01, 1280000 * 1.8 / 0.01, 1280000 * 1.8 / 0.01
+				8388608 *1.8/0.01, 8388608 * 1.8 / 0.01, 8388608 * 1.8 / 0.01, 8388608 * 1.8 / 0.01, 8388608 * 1.8 / 0.01, 8388608 * 1.8 / 0.01
 			};
 			double max_pos[6]
 			{
@@ -31,7 +36,7 @@ namespace aris::robot
 			};
 			double max_vel[6]
 			{
-				3000/60/1.8*0.01, 3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01
+				3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01, 3000 / 60 / 1.8*0.01
 			};
 			double max_acc[6]
 			{
@@ -77,7 +82,7 @@ namespace aris::robot
 				"<EthercatMotion phy_id=\"" + std::to_string(i) + "\" product_code=\"0x60380007\""
 				" vendor_id=\"0x0000066F\" revision_num=\"0x00010000\" dc_assign_activate=\"0x0300\""
 				" min_pos=\"" + std::to_string(min_pos[i]) + "\" max_pos=\"" + std::to_string(max_pos[i]) + "\" max_vel=\"" + std::to_string(max_vel[i]) + "\" min_vel=\"" + std::to_string(-max_vel[i]) + "\""
-				" max_acc=\"" + std::to_string(max_acc[i]) + "\" min_acc=\"" + std::to_string(-max_acc[i]) + "\" max_pos_following_error=\"0.1\" max_vel_following_error=\"0.5\""
+				" max_acc=\"" + std::to_string(max_acc[i]) + "\" min_acc=\"" + std::to_string(-max_acc[i]) + "\" max_pos_following_error=\"0.5\" max_vel_following_error=\"0.5\""
 				" home_pos=\"0\" pos_factor=\"-335544320\" pos_offset=\"" + std::to_string(pos_offset[i]) + "\">"
 				"	<SyncManagerPoolObject name=\"sm_pool\">"
 				"		<SyncManager is_tx=\"false\"/>"
@@ -105,6 +110,40 @@ namespace aris::robot
 				"	</SdoPoolObject>"
 				"</EthercatMotion>";
 
+			// REAL,这里放大了最大速度 //
+			/*
+			std::string xml_str =
+				"<EthercatMotion phy_id=\"" + std::to_string(i) + "\" product_code=\"0x60380000\""
+				" vendor_id=\"0x0000066F\" revision_num=\"0x00010000\" dc_assign_activate=\"0x0300\""
+				" min_pos=\"" + std::to_string(min_pos[i]) + "\" max_pos=\"" + std::to_string(max_pos[i]) + "\" max_vel=\"" + std::to_string(max_vel[i]*1.2) + "\" min_vel=\"" + std::to_string(-max_vel[i]*1.2) + "\""
+				" max_acc=\"" + std::to_string(max_acc[i]) + "\" min_acc=\"" + std::to_string(-max_acc[i]) + "\" max_pos_following_error=\"0.5\" max_vel_following_error=\"0.5\""
+				" home_pos=\"0\" pos_factor=\"" + std::to_string(pos_factor[i]) + "\" pos_offset=\"" + std::to_string(pos_offset[i]) + "\">"
+				"	<SyncManagerPoolObject name=\"sm_pool\">"
+				"		<SyncManager is_tx=\"false\"/>"
+				"		<SyncManager is_tx=\"true\"/>"
+				"		<SyncManager is_tx=\"false\">"
+				"			<Pdo index=\"0x1600\" is_tx=\"false\">"
+				"				<PdoEntry name=\"control_word\" index=\"0x6040\" subindex=\"0x00\" size=\"16\"/>"
+				"				<PdoEntry name=\"mode_of_operation\" index=\"0x6060\" subindex=\"0x00\" size=\"8\"/>"
+				"				<PdoEntry name=\"target_pos\" index=\"0x607A\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"target_vel\" index=\"0x60FF\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"targer_tor\" index=\"0x6071\" subindex=\"0x00\" size=\"16\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"		<SyncManager is_tx=\"true\">"
+				"			<Pdo index=\"0x1A00\" is_tx=\"true\">"
+				"				<PdoEntry name=\"status_word\" index=\"0x6041\" subindex=\"0x00\" size=\"16\"/>"
+				"				<PdoEntry name=\"mode_of_display\" index=\"0x6061\" subindex=\"0x00\" size=\"8\"/>"
+				"				<PdoEntry name=\"pos_actual_value\" index=\"0x6064\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"vel_actual_value\" index=\"0x606c\" subindex=\"0x00\" size=\"32\"/>"
+				"				<PdoEntry name=\"cur_actual_value\" index=\"0x6078\" subindex=\"0x00\" size=\"16\"/>"
+				"			</Pdo>"
+				"		</SyncManager>"
+				"	</SyncManagerPoolObject>"
+				"	<SdoPoolObject name=\"sdo_pool\" default_child_type=\"Sdo\">"
+				"	</SdoPoolObject>"
+				"</EthercatMotion>";
+				*/
 			controller->slavePool().add<aris::control::EthercatMotion>().loadXmlStr(xml_str);
 		}
 
