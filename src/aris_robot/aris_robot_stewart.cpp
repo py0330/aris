@@ -15,7 +15,7 @@ namespace aris::robot
 		{
 			double pos_offset[6]
 			{
-				-0.3, -0.54, -0.54, -0.54, -0.54, -0.54
+				-0.3 - 0.235, -0.54, -0.54, -0.54, -0.54, -0.54
 			};
 			// 台达
 			// double pos_factor[6]
@@ -78,7 +78,7 @@ namespace aris::robot
 				"</EthercatMotion>";
 				*/
 			/*这是松下的*/
-			std::string xml_str =
+			/*std::string xml_str =
 				"<EthercatMotion phy_id=\"" + std::to_string(i) + "\" product_code=\"0x60380007\""
 				" vendor_id=\"0x0000066F\" revision_num=\"0x00010000\" dc_assign_activate=\"0x0300\""
 				" min_pos=\"" + std::to_string(min_pos[i]) + "\" max_pos=\"" + std::to_string(max_pos[i]) + "\" max_vel=\"" + std::to_string(max_vel[i]) + "\" min_vel=\"" + std::to_string(-max_vel[i]) + "\""
@@ -110,9 +110,9 @@ namespace aris::robot
 				"	<SdoPoolObject name=\"sdo_pool\" default_child_type=\"Sdo\">"
 				"	</SdoPoolObject>"
 				"</EthercatMotion>";
-
+				*/
 			// REAL,这里放大了最大速度 //
-			/*
+			
 			std::string xml_str =
 				"<EthercatMotion phy_id=\"" + std::to_string(i) + "\" product_code=\"0x60380000\""
 				" vendor_id=\"0x0000066F\" revision_num=\"0x00010000\" dc_assign_activate=\"0x0300\""
@@ -142,10 +142,8 @@ namespace aris::robot
 				"			</Pdo>"
 				"		</SyncManager>"
 				"	</SyncManagerPoolObject>"
-				"	<SdoPoolObject name=\"sdo_pool\" default_child_type=\"Sdo\">"
-				"	</SdoPoolObject>"
 				"</EthercatMotion>";
-				*/
+				
 			controller->slavePool().add<aris::control::EthercatMotion>().loadXmlStr(xml_str);
 		}
 

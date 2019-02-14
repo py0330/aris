@@ -15,81 +15,6 @@
 
 namespace aris::control
 {
-	struct Sdo::Imp
-	{
-		unsigned option_;
-		std::uint16_t index_;
-		std::uint8_t subindex_;
-		std::uint8_t byte_size_;
-
-		union
-		{
-			char config_value_[8];
-			std::uint32_t config_value_uint32_;
-			std::uint16_t config_value_uint16_;
-			std::uint8_t config_value_uint8_;
-			std::int32_t config_value_int32_;
-			std::int16_t config_value_int16_;
-			std::int8_t config_value_int8_;
-		};
-	};
-	auto Sdo::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		std::stringstream s;
-		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
-		xml_ele.SetAttribute("index", s.str().c_str());
-
-		s = std::stringstream();
-		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(subindex());
-		xml_ele.SetAttribute("subindex", s.str().c_str());
-
-		xml_ele.SetAttribute("size", static_cast<std::int32_t>(byteSize()));
-
-		xml_ele.SetAttribute("read", option() & READ ? "true" : "false");
-		xml_ele.SetAttribute("write", option() & WRITE ? "true" : "false");
-	}
-	auto Sdo::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		if (attributeBool(xml_ele, "read", true))imp_->option_ |= READ; else imp_->option_ &= ~READ;
-		if (attributeBool(xml_ele, "write", true))imp_->option_ |= WRITE; else imp_->option_ &= ~WRITE;
-		if (xml_ele.Attribute("config"))
-		{
-			if (!writeable())throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + std::string(xml_ele.Name()) + "\" sdo");
-			imp_->option_ |= CONFIG;
-			imp_->config_value_int32_ = attributeInt32(xml_ele, "config");
-		}
-
-		imp_->index_ = attributeUint16(xml_ele, "index");
-		imp_->subindex_ = attributeUint8(xml_ele, "subindex");
-		imp_->byte_size_ = attributeUint8(xml_ele, "size");
-	}
-	auto Sdo::index()const->std::uint16_t { return imp_->index_; }
-	auto Sdo::subindex()const->std::uint8_t { return imp_->subindex_; }
-	auto Sdo::byteSize()const->std::uint8_t { return imp_->byte_size_; }
-	auto Sdo::readable()const->bool { return (imp_->option_ & READ) != 0; }
-	auto Sdo::writeable()const->bool { return (imp_->option_ & WRITE) != 0; }
-	auto Sdo::configurable()const->bool { return (imp_->option_ & CONFIG) != 0; }
-	auto Sdo::option()const->unsigned { return imp_->option_; }
-	auto Sdo::configBuffer()->char* { return imp_->config_value_; }
-	Sdo::~Sdo() = default;
-	Sdo::Sdo(const std::string &name, std::uint16_t index, std::uint8_t sub_index, std::uint8_t byte_size, unsigned opt, std::int32_t config_value) :imp_(new Imp)
-	{
-		imp_->index_ = index;
-		imp_->subindex_ = sub_index;
-		imp_->byte_size_ = byte_size;
-		imp_->option_ = opt;
-		imp_->config_value_int32_ = config_value;
-		
-		if (opt & Sdo::CONFIG)
-		{
-			if (!(opt & Sdo::WRITE)) throw std::runtime_error("you can't config data in unwriteable sdo, error in \"" + name + "\" sdo");
-		}
-	}
-	Sdo::Sdo(const Sdo &) = default;
-	Sdo::Sdo(Sdo &&) = default;
-	Sdo& Sdo::operator=(const Sdo &) = default;
-	Sdo& Sdo::operator=(Sdo &&) = default;
-
 	struct PdoEntry::Imp 
 	{ 
 		std::any ec_handle_; 
@@ -123,17 +48,13 @@ namespace aris::control
 	auto PdoEntry::index()const->std::uint16_t { return imp_->index_; }
 	auto PdoEntry::subindex()const->std::uint8_t { return imp_->subindex_; }
 	auto PdoEntry::bitSize()const->aris::Size { return imp_->bit_size_; }
-	PdoEntry::~PdoEntry() = default;
 	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size) :Object(name) 
 	{
 		imp_->index_ = index;
 		imp_->subindex_ = sub_index;
 		imp_->bit_size_ = bit_size;
 	}
-	PdoEntry::PdoEntry(const PdoEntry &) = default;
-	PdoEntry::PdoEntry(PdoEntry &&) = default;
-	PdoEntry& PdoEntry::operator=(const PdoEntry &) = default;
-	PdoEntry& PdoEntry::operator=(PdoEntry &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(PdoEntry)
 
 	struct Pdo::Imp
 	{
@@ -156,7 +77,6 @@ namespace aris::control
 	}
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
 	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
-	Pdo::~Pdo() = default;
 	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp)
 	{
 		registerType<PdoEntry>();
@@ -164,10 +84,7 @@ namespace aris::control
 
 		imp_->index_ = index;
 	}
-	Pdo::Pdo(const Pdo &) = default;
-	Pdo::Pdo(Pdo &&) = default;
-	Pdo& Pdo::operator=(const Pdo &) = default;
-	Pdo& Pdo::operator=(Pdo &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Pdo)
 
 	struct SyncManager::Imp { std::any handle_; bool is_tx_; };
 	auto SyncManager::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -182,12 +99,8 @@ namespace aris::control
 	}
 	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
 	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
-	SyncManager::~SyncManager() = default;
 	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) {	imp_->is_tx_ = is_tx;}
-	SyncManager::SyncManager(const SyncManager &) = default;
-	SyncManager::SyncManager(SyncManager &&) = default;
-	SyncManager& SyncManager::operator=(const SyncManager &) = default;
-	SyncManager& SyncManager::operator=(SyncManager &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(SyncManager)
 
 	struct EthercatSlave::Imp
 	{
@@ -196,7 +109,6 @@ namespace aris::control
 
 		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
 		aris::core::ObjectPool<SyncManager> *sm_pool_;
-		aris::core::ObjectPool<Sdo> *sdo_pool_;
 		std::map<std::uint16_t, std::map<std::uint8_t, PdoEntry* > > pdo_map_;
 		std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
 	};
@@ -229,7 +141,6 @@ namespace aris::control
 
 		Slave::loadXml(xml_ele);
 		imp_->sm_pool_ = findOrInsert<aris::core::ObjectPool<SyncManager> >("sm_pool");
-		imp_->sdo_pool_ = findOrInsert<aris::core::ObjectPool<Sdo> >("sdo_pool");
 	}
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
@@ -237,7 +148,6 @@ namespace aris::control
 	auto EthercatSlave::revisionNum()const->std::uint32_t { return imp_->revision_num_; }
 	auto EthercatSlave::dcAssignActivate()const->std::uint32_t { return imp_->dc_assign_activate_; }
 	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& { return *imp_->sm_pool_; }
-	auto EthercatSlave::sdoPool()->aris::core::ObjectPool<Sdo>& { return *imp_->sdo_pool_; }
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
@@ -266,15 +176,12 @@ namespace aris::control
 	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
 	{
 		imp_->sm_pool_ = &add<aris::core::ObjectPool<SyncManager> >("sm_pool");
-		imp_->sdo_pool_ = &add<aris::core::ObjectPool<Sdo> >("sdo_pool");
 		imp_->vendor_id_ = vid;
 		imp_->product_code_ = p_code;
 		imp_->revision_num_ = r_num;
 		imp_->dc_assign_activate_ = dc;
 
-		registerType<Sdo>();
 		registerType<Pdo>();
-		registerType<aris::core::ObjectPool<Sdo> >();
 		registerType<aris::core::ObjectPool<Pdo> >();
 
 		registerType<SyncManager>();
@@ -316,23 +223,6 @@ namespace aris::control
 							sla.imp_->pdo_map_.insert(std::make_pair(entry.index(), subindex_map));
 						}
 					}
-				}
-			}
-
-			// make SDO map //
-			sla.imp_->sdo_map_.clear();
-			for (int i = 0; i < static_cast<int>(sla.sdoPool().size()); ++i)
-			{
-				auto &sdo = sla.sdoPool().at(i);
-				if (sla.imp_->sdo_map_.find(sdo.index()) != sla.imp_->sdo_map_.end())
-				{
-					sla.imp_->sdo_map_.at(sdo.index()).insert(std::make_pair(sdo.subindex(), i));
-				}
-				else
-				{
-					std::map<std::uint8_t, int > subindex_map;
-					subindex_map.insert(std::make_pair(sdo.subindex(), i));
-					sla.imp_->sdo_map_.insert(std::make_pair(sdo.index(), subindex_map));
 				}
 			}
 		}
@@ -705,7 +595,6 @@ namespace aris::control
 		setModeOfOperation(md);
 		return md == modeOfDisplay() ? 0 : 1;
 	}
-	EthercatMotion::~EthercatMotion() = default;
 	EthercatMotion::EthercatMotion(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos)
 		: EthercatSlave(name, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)

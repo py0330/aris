@@ -88,7 +88,6 @@ namespace aris::control
 		aris::core::ImpPtr<Imp> imp_;
 
 		friend class Slave;
-		friend class Sdo;
 		friend class PdoEntry;
 	};
 }

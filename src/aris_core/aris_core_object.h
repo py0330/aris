@@ -941,6 +941,25 @@ namespace aris::core
 		return std::ref(type); \
 	} \
 	auto virtual type() const->const std::string& override { return Type(); }
+
+#define DECLARE_DEFAULT_BIG_FOUR(type_name) \
+	type_name(const type_name &other); \
+	type_name(type_name &&other); \
+	type_name& operator=(const type_name &other); \
+	type_name& operator=(type_name &&other);
+
+#define DEFINE_DEFAULT_BIG_FOUR(type_name) \
+	type_name(const type_name &other) = default; \
+	type_name(type_name &&other) = default; \
+	type_name& operator=(const type_name &other) = default; \
+	type_name& operator=(type_name &&other) = default;
+
+#define DEFINE_DEFAULT_BIG_FOUR_CPP(type_name) \
+	type_name::type_name(const type_name &other) = default; \
+	type_name::type_name(type_name &&other) = default; \
+	type_name& type_name::operator=(const type_name &other) = default; \
+	type_name& type_name::operator=(type_name &&other) = default;
+
 	///
 	///  @}
 	///
