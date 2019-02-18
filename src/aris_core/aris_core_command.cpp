@@ -8,9 +8,6 @@
 
 namespace aris::core
 {
-	class ParamBase;
-	class Param;
-
 	struct ParamBase::Imp { bool is_taken_{ false }; };
 	auto ParamBase::command()const->const Command & {
 		if (auto c = dynamic_cast<const Command *>(father()))
@@ -22,10 +19,7 @@ namespace aris::core
 	};
 	ParamBase::~ParamBase() = default;
 	ParamBase::ParamBase(const std::string &name) :ObjectPool(name), imp_(new Imp) {}
-	ParamBase::ParamBase(const ParamBase&) = default;
-	ParamBase::ParamBase(ParamBase&&) = default;
-	ParamBase& ParamBase::operator=(const ParamBase&) = default;
-	ParamBase& ParamBase::operator=(ParamBase&&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(ParamBase);
 
 	struct Param::Imp
 	{
@@ -53,17 +47,11 @@ namespace aris::core
 	auto Param::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
 	Param::~Param() = default;
 	Param::Param(const std::string &name, const std::string &default_param, char abbrev) :ParamBase(name), imp_(new Imp(default_param, abbrev)) {}
-	Param::Param(const Param&) = default;
-	Param::Param(Param&&) = default;
-	Param& Param::operator=(const Param&) = default;
-	Param& Param::operator=(Param&&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Param);
 
 	GroupParam::~GroupParam() = default;
 	GroupParam::GroupParam(const std::string &name) :ParamBase(name) {}
-	GroupParam::GroupParam(const GroupParam &) = default;
-	GroupParam::GroupParam(GroupParam &&) = default;
-	GroupParam& GroupParam::operator=(const GroupParam &) = default;
-	GroupParam& GroupParam::operator=(GroupParam &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(GroupParam);
 
 	struct UniqueParam::Imp
 	{
@@ -83,10 +71,7 @@ namespace aris::core
 	auto UniqueParam::defaultParam()const->const std::string & { return imp_->default_value_; }
 	UniqueParam::~UniqueParam() = default;
 	UniqueParam::UniqueParam(const std::string &name, const std::string &default_param) :ParamBase(name), imp_(new Imp(default_param)) {}
-	UniqueParam::UniqueParam(const UniqueParam &) = default;
-	UniqueParam::UniqueParam(UniqueParam &&) = default;
-	UniqueParam& UniqueParam::operator=(const UniqueParam &) = default;
-	UniqueParam& UniqueParam::operator=(UniqueParam &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(UniqueParam);
 
 	struct Command::Imp
 	{
@@ -266,10 +251,7 @@ namespace aris::core
 		registerType<aris::core::UniqueParam>();
 		registerType<aris::core::GroupParam>();
 	}
-	Command::Command(const Command &) = default;
-	Command::Command(Command &&) = default;
-	Command& Command::operator=(const Command &) = default;
-	Command& Command::operator=(Command &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Command);
 
 	struct CommandParser::Imp { ObjectPool<Command>* command_pool_; };
 	auto CommandParser::loadXml(const aris::core::XmlElement &xml_ele)->void
@@ -370,9 +352,6 @@ namespace aris::core
 
 		imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
 	}
-	CommandParser::CommandParser(const CommandParser &) = default;
-	CommandParser::CommandParser(CommandParser &&) = default;
-	CommandParser& CommandParser::operator=(const CommandParser &) = default;
-	CommandParser& CommandParser::operator=(CommandParser &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(CommandParser);
 }
 

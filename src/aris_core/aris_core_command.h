@@ -118,15 +118,12 @@ namespace aris::core
 	class ParamBase :public ObjectPool<ParamBase>
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("parambase"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto command()const->const Command &;
+
 		virtual ~ParamBase();
 		explicit ParamBase(const std::string &name = "param_base");
-		ParamBase(const ParamBase&);
-		ParamBase(ParamBase&&);
-		ParamBase& operator=(const ParamBase&);
-		ParamBase& operator=(ParamBase&&);
+		REGISTER_TYPE("ParamBase");
+		DECLARE_DEFAULT_BIG_FOUR(ParamBase);
 
 	protected:
 		struct Imp;
@@ -142,8 +139,6 @@ namespace aris::core
 	class Param final :public ParamBase
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Param"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto abbreviation()const->char;
@@ -153,10 +148,8 @@ namespace aris::core
 
 		virtual ~Param();
 		explicit Param(const std::string &name = "param", const std::string &default_param = "", char abbrev = 0);
-		Param(const Param&);
-		Param(Param&&);
-		Param& operator=(const Param&);
-		Param& operator=(Param&&);
+		REGISTER_TYPE("Param");
+		DECLARE_DEFAULT_BIG_FOUR(Param);
 
 	protected:
 		struct Imp;
@@ -168,18 +161,14 @@ namespace aris::core
 	class UniqueParam final :public ParamBase
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("UniqueParam"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto defaultParam()const->const std::string &;
 
 		virtual ~UniqueParam();
 		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "");
-		UniqueParam(const UniqueParam &);
-		UniqueParam(UniqueParam &&);
-		UniqueParam& operator=(const UniqueParam &);
-		UniqueParam& operator=(UniqueParam &&);
+		REGISTER_TYPE("UniqueParam");
+		DECLARE_DEFAULT_BIG_FOUR(UniqueParam);
 
 	protected:
 		struct Imp;
@@ -190,21 +179,14 @@ namespace aris::core
 	class GroupParam final : public ParamBase
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("GroupParam"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-
 		virtual ~GroupParam();
 		explicit GroupParam(const std::string &name = "group_param");
-		GroupParam(const GroupParam &);
-		GroupParam(GroupParam &&);
-		GroupParam& operator=(const GroupParam &);
-		GroupParam& operator=(GroupParam &&);
+		REGISTER_TYPE("GroupParam");
+		DECLARE_DEFAULT_BIG_FOUR(GroupParam);
 	};
 	class Command :public ObjectPool<ParamBase>
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Command"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto defaultParam()const->const std::string &;
@@ -213,10 +195,8 @@ namespace aris::core
 
 		virtual ~Command();
 		explicit Command(const std::string &name = "command", const std::string &default_param = "");
-		Command(const Command &);
-		Command(Command &&);
-		Command& operator=(const Command &);
-		Command& operator=(Command &&);
+		REGISTER_TYPE("Command");
+		DECLARE_DEFAULT_BIG_FOUR(Command);
 
 	private:
 		struct Imp;
@@ -228,8 +208,6 @@ namespace aris::core
 	class CommandParser :public Object
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("CommandParser"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
 		auto commandPool()->ObjectPool<Command> &;
@@ -237,10 +215,8 @@ namespace aris::core
 
 		virtual ~CommandParser();
 		explicit CommandParser(const std::string &name = "command_parser");
-		CommandParser(const CommandParser &);
-		CommandParser(CommandParser &&);
-		CommandParser& operator=(const CommandParser &);
-		CommandParser& operator=(CommandParser &&);
+		REGISTER_TYPE("CommandParser");
+		DECLARE_DEFAULT_BIG_FOUR(CommandParser);
 
 	private:
 		struct Imp;

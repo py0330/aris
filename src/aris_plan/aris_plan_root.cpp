@@ -9,7 +9,7 @@
 
 namespace aris::plan
 {
-	struct Plan::Imp{};
+	struct Plan::Imp {};
 	auto Plan::command()->aris::core::Command & { return dynamic_cast<aris::core::Command&>(children().front()); }
 	Plan::~Plan() = default;
 	Plan::Plan(const std::string &name) :Object(name), imp_(new Imp)
@@ -55,6 +55,74 @@ namespace aris::plan
 	PlanRoot::PlanRoot(PlanRoot &&) = default;
 	PlanRoot& PlanRoot::operator=(const PlanRoot &) = default;
 	PlanRoot& PlanRoot::operator=(PlanRoot &&) = default;
+
+#define CHECK_PARAM_STRING \
+		"		<UniqueParam default=\"check_none\">" \
+		"			<Param name=\"check_all\"/>" \
+		"			<Param name=\"check_none\"/>" \
+		"			<GroupParam>"\
+		"				<UniqueParam default=\"check_pos\">"\
+		"					<Param name=\"check_pos\"/>"\
+		"					<Param name=\"not_check_pos\"/>"\
+		"					<GroupParam>"\
+		"						<UniqueParam default=\"check_pos_max\">"\
+		"							<Param name=\"check_pos_max\"/>"\
+		"							<Param name=\"not_check_pos_max\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_pos_min\">"\
+		"							<Param name=\"check_pos_min\"/>"\
+		"							<Param name=\"not_check_pos_min\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_pos_continuous\">"\
+		"							<Param name=\"check_pos_continuous\"/>"\
+		"							<Param name=\"not_check_pos_continuous\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_pos_continuous_at_start\">"\
+		"							<Param name=\"check_pos_continuous_at_start\"/>"\
+		"							<Param name=\"not_check_pos_continuous_at_start\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_pos_continuous_second_order\">"\
+		"							<Param name=\"check_pos_continuous_second_order\"/>"\
+		"							<Param name=\"not_check_pos_continuous_second_order\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"\
+		"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"\
+		"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_pos_following_error\">"\
+		"							<Param name=\"check_pos_following_error\"/>"\
+		"							<Param name=\"not_check_pos_following_error\"/>"\
+		"						</UniqueParam>"\
+		"					</GroupParam>"\
+		"				</UniqueParam>"\
+		"				<UniqueParam default=\"check_vel\">"\
+		"					<Param name=\"check_vel\"/>"\
+		"					<Param name=\"not_check_vel\"/>"\
+		"					<GroupParam>"\
+		"						<UniqueParam default=\"check_vel_max\">"\
+		"							<Param name=\"check_vel_max\"/>"\
+		"							<Param name=\"not_check_vel_max\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_vel_min\">"\
+		"							<Param name=\"check_vel_min\"/>"\
+		"							<Param name=\"not_check_vel_min\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_vel_continuous\">"\
+		"							<Param name=\"check_vel_continuous\"/>"\
+		"							<Param name=\"not_check_vel_continuous\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_vel_continuous_at_start\">"\
+		"							<Param name=\"check_vel_continuous_at_start\"/>"\
+		"							<Param name=\"not_check_vel_continuous_at_start\"/>"\
+		"						</UniqueParam>"\
+		"						<UniqueParam default=\"check_vel_following_error\">"\
+		"							<Param name=\"check_vel_following_error\"/>"\
+		"							<Param name=\"not_check_vel_following_error\"/>"\
+		"						</UniqueParam>"\
+		"					</GroupParam>"\
+		"				</UniqueParam>"\
+		"			</GroupParam>"\
+		"		</UniqueParam>"
 
 	auto default_prepair_check_option(const std::map<std::string, std::string> &cmd_params, PlanTarget &param)->void
 	{
@@ -231,7 +299,7 @@ namespace aris::plan
 		}
 	}
 
-	struct EnableParam 
+	struct EnableParam
 	{
 		std::int32_t limit_time;
 		std::vector<int> active_motor;
@@ -352,79 +420,11 @@ namespace aris::plan
 			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
 			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
 			"		</UniqueParam>"
-			"		<UniqueParam default=\"check_none\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+			CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	Enable::Enable(const Enable &) = default;
-	Enable::Enable(Enable &&) = default;
-	Enable& Enable::operator=(const Enable &) = default;
-	Enable& Enable::operator=(Enable &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Enable);
 
 	struct DisableParam
 	{
@@ -547,79 +547,11 @@ namespace aris::plan
 			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
 			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
 			"		</UniqueParam>"
-			"		<UniqueParam default=\"check_none\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+			CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	Disable::Disable(const Disable &) = default;
-	Disable::Disable(Disable &&) = default;
-	Disable& Disable::operator=(const Disable &) = default;
-	Disable& Disable::operator=(Disable &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Disable);
 
 	struct HomeParam
 	{
@@ -728,17 +660,17 @@ namespace aris::plan
 			if (param.active_motor[i])
 			{
 				auto &cm = controller->motionPool().at(i);
-				
+
 				/*if (target.count == 1) cm.setControlWord(0x000F);
 				auto ret = cm.home();
 				if (ret)
 				{
-					is_all_finished = false;
+				is_all_finished = false;
 
-					if (target.count % 1000 == 0)
-					{
-						controller->mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
-					}
+				if (target.count % 1000 == 0)
+				{
+				controller->mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+				}
 				}*/
 			}
 		}
@@ -768,10 +700,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	Home::Home(const Home &) = default;
-	Home::Home(Home &&) = default;
-	Home& Home::operator=(const Home &) = default;
-	Home& Home::operator=(Home &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Home);
 
 	struct ModeParam
 	{
@@ -903,79 +832,11 @@ namespace aris::plan
 			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
 			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
 			"		</UniqueParam>"
-			"		<UniqueParam default=\"check_none\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+			CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	Mode::Mode(const Mode &) = default;
-	Mode::Mode(Mode &&) = default;
-	Mode& Mode::operator=(const Mode &) = default;
-	Mode& Mode::operator=(Mode &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Mode);
 
 	struct ResetParam
 	{
@@ -1044,7 +905,7 @@ namespace aris::plan
 
 				for (Size i = 0; i < c->motionPool().size(); ++i)
 				{
-					if(param.axis_pos_vec[i] > 1.0 || param.axis_pos_vec[i]<0.0)
+					if (param.axis_pos_vec[i] > 1.0 || param.axis_pos_vec[i]<0.0)
 						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
 
 					param.axis_pos_vec[i] = param.axis_pos_vec[i] * (c->motionPool()[i].maxPos() - c->motionPool()[i].minPos()) + c->motionPool()[i].minPos();
@@ -1131,7 +992,7 @@ namespace aris::plan
 
 		target.option |=
 			aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED |
-			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START | 
+			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START |
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 
 		target.param = param;
@@ -1184,79 +1045,11 @@ namespace aris::plan
 			"		<Param name=\"acc\" default=\"0.3\"/>"
 			"		<Param name=\"vel\" default=\"0.3\"/>"
 			"		<Param name=\"dec\" default=\"0.3\"/>"
-			"		<UniqueParam default=\"check_none\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	Reset::Reset(const Reset &) = default;
-	Reset::Reset(Reset &&) = default;
-	Reset& Reset::operator=(const Reset &) = default;
-	Reset& Reset::operator=(Reset &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Reset);
 
 	struct RecoverParam
 	{
@@ -1271,10 +1064,10 @@ namespace aris::plan
 		target.option |= NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 
 		auto p = std::make_shared<RecoverParam>();
-		
+
 		p->is_kinematic_ready_ = false;
 		p->is_rt_waiting_ready_ = false;
-		p->fut = std::async(std::launch::async, [](std::shared_ptr<RecoverParam> p, PlanTarget target) 
+		p->fut = std::async(std::launch::async, [](std::shared_ptr<RecoverParam> p, PlanTarget target)
 		{
 			// 等待正解求解的需求 //
 			while (!p->is_rt_waiting_ready_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -1311,7 +1104,7 @@ namespace aris::plan
 	auto Recover::collectNrt(PlanTarget &target)->void
 	{
 
-		if (target.count) 
+		if (target.count)
 		{
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get();
 		}
@@ -1321,7 +1114,7 @@ namespace aris::plan
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->is_rt_waiting_ready_.store(true);
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get();
 		}
-		
+
 	}
 	Recover::~Recover() = default;
 	Recover::Recover(const std::string &name) :Plan(name)
@@ -1330,10 +1123,7 @@ namespace aris::plan
 			"<Command name=\"rc\">"
 			"</Command>");
 	}
-	Recover::Recover(const Recover &) = default;
-	Recover::Recover(Recover &&) = default;
-	Recover& Recover::operator=(const Recover &) = default;
-	Recover& Recover::operator=(Recover &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Recover);
 
 	struct SleepParam { int count; };
 	struct Sleep::Imp {};
@@ -1351,10 +1141,7 @@ namespace aris::plan
 			"	<Param name=\"count\" default=\"1000\" abbreviation=\"c\"/>"
 			"</Command>");
 	}
-	Sleep::Sleep(const Sleep &) = default;
-	Sleep::Sleep(Sleep &&) = default;
-	Sleep& Sleep::operator=(const Sleep &) = default;
-	Sleep& Sleep::operator=(Sleep &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Sleep);
 
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
@@ -1390,6 +1177,7 @@ namespace aris::plan
 	{
 		command().loadXmlStr("<Command name=\"sh\"/>");
 	}
+	DEFINE_DEFAULT_BIG_FOUR_CPP(Show);
 
 	struct MoveAbsJParam
 	{
@@ -1496,9 +1284,9 @@ namespace aris::plan
 			{
 				double p, v, a;
 				aris::Size t_count;
-				aris::plan::moveAbsolute(target.count, 
-					param->begin_joint_pos_vec[i], param->joint_pos_vec[i], 
-					param->joint_vel_vec[i] / 1000, param->joint_acc_vec[i] / 1000 / 1000, param->joint_dec_vec[i] / 1000 / 1000, 
+				aris::plan::moveAbsolute(target.count,
+					param->begin_joint_pos_vec[i], param->joint_pos_vec[i],
+					param->joint_vel_vec[i] / 1000, param->joint_acc_vec[i] / 1000 / 1000, param->joint_dec_vec[i] / 1000 / 1000,
 					p, v, a, t_count);
 				controller->motionPool()[i].setTargetPos(p);
 				total_count = std::max(total_count, t_count);
@@ -1525,84 +1313,16 @@ namespace aris::plan
 			"		<Param name=\"vel\" default=\"1.0\"/>"
 			"		<Param name=\"acc\" default=\"1.0\"/>"
 			"		<Param name=\"dec\" default=\"1.0\"/>"
-			"		<UniqueParam default=\"check_all\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	MoveAbsJ::MoveAbsJ(const MoveAbsJ &) = default;
-	MoveAbsJ::MoveAbsJ(MoveAbsJ &&) = default;
-	MoveAbsJ& MoveAbsJ::operator=(const MoveAbsJ &) = default;
-	MoveAbsJ& MoveAbsJ::operator=(MoveAbsJ &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(MoveAbsJ);
 
 	auto check_eul_validity(const std::string &eul_type)->bool
 	{
 		if (eul_type.size()<3)return false;
-		
+
 		for (int i = 0; i < 3; ++i)if (eul_type[i] > '3' || eul_type[i] < '1')return false;
 
 		if (eul_type[0] == eul_type[1] || eul_type[1] == eul_type[2]) return false;
@@ -1641,15 +1361,15 @@ namespace aris::plan
 			{
 				double ori_unit;
 				auto ori_unit_found = params.find("ori_unit");
-				if(ori_unit_found == params.end()) ori_unit = 1.0;
+				if (ori_unit_found == params.end()) ori_unit = 1.0;
 				else if (ori_unit_found->second == "rad")ori_unit = 1.0;
 				else if (ori_unit_found->second == "degree")ori_unit = PI / 180.0;
 				else throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-				
+
 				std::string eul_type;
 				auto eul_type_found = params.find("eul_type");
 				if (eul_type_found == params.end()) eul_type = "321";
-				else if(check_eul_validity(eul_type_found->second.data()))	eul_type = eul_type_found->second;
+				else if (check_eul_validity(eul_type_found->second.data()))	eul_type = eul_type_found->second;
 				else throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
 
 				auto pe_mat = target.model->calculator().calculateExpression(cmd_param.second);
@@ -1664,20 +1384,20 @@ namespace aris::plan
 		return false;
 	}
 	struct MoveJParam
-	{	
+	{
 		std::vector<double> joint_vel, joint_acc, joint_dec, ee_pq, joint_pos_begin, joint_pos_end;
 		std::vector<Size> total_count;
 	};
-	struct MoveJ::Imp{};
+	struct MoveJ::Imp {};
 	auto MoveJ::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		default_prepair_check_option(params, target);
-		
+
 		MoveJParam mvj_param;
 
 		// find ee pq //
 		mvj_param.ee_pq.resize(7);
-		if(!find_pq(params, target, mvj_param.ee_pq.data()))THROW_FILE_AND_LINE("");
+		if (!find_pq(params, target, mvj_param.ee_pq.data()))THROW_FILE_AND_LINE("");
 
 		mvj_param.joint_pos_begin.resize(target.model->motionPool().size(), 0.0);
 		mvj_param.joint_pos_end.resize(target.model->motionPool().size(), 0.0);
@@ -1691,7 +1411,7 @@ namespace aris::plan
 			{
 				mvj_param.joint_acc.clear();
 				mvj_param.joint_acc.resize(target.model->motionPool().size(), 0.0);
-				
+
 				auto acc_mat = target.model->calculator().calculateExpression(cmd_param.second);
 				if (acc_mat.size() == 1)std::fill(mvj_param.joint_acc.begin(), mvj_param.joint_acc.end(), acc_mat.toDouble());
 				else if (acc_mat.size() == target.model->motionPool().size()) std::copy(acc_mat.begin(), acc_mat.end(), mvj_param.joint_acc.begin());
@@ -1767,9 +1487,9 @@ namespace aris::plan
 
 		for (Size i = 0; i < std::min(controller->motionPool().size(), target.model->motionPool().size()); ++i)
 		{
-			aris::plan::moveAbsolute(static_cast<double>(target.count) * mvj_param->total_count[i] / max_total_count, 
-				mvj_param->joint_pos_begin[i], mvj_param->joint_pos_end[i], 
-				mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000, 
+			aris::plan::moveAbsolute(static_cast<double>(target.count) * mvj_param->total_count[i] / max_total_count,
+				mvj_param->joint_pos_begin[i], mvj_param->joint_pos_end[i],
+				mvj_param->joint_vel[i] / 1000, mvj_param->joint_acc[i] / 1000 / 1000, mvj_param->joint_dec[i] / 1000 / 1000,
 				p, v, a, mvj_param->total_count[i]);
 
 			controller->motionPool()[i].setTargetPos(p);
@@ -1798,79 +1518,11 @@ namespace aris::plan
 			"		<Param name=\"joint_acc\" default=\"0.1\"/>"
 			"		<Param name=\"joint_vel\" default=\"0.1\"/>"
 			"		<Param name=\"joint_dec\" default=\"0.1\"/>"
-			"		<UniqueParam default=\"check_all\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	MoveJ::MoveJ(const MoveJ &) = default;
-	MoveJ::MoveJ(MoveJ &&) = default;
-	MoveJ& MoveJ::operator=(const MoveJ &) = default;
-	MoveJ& MoveJ::operator=(MoveJ &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(MoveJ);
 
 	struct MoveLParam
 	{
@@ -1880,7 +1532,7 @@ namespace aris::plan
 		double acc, vel, dec;
 		double angular_acc, angular_vel, angular_dec;
 	};
-	struct MoveL::Imp{};
+	struct MoveL::Imp {};
 	auto MoveL::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		default_prepair_check_option(params, target);
@@ -1971,7 +1623,7 @@ namespace aris::plan
 		////////////////////////////////////// log ///////////////////////////////////////
 		double pq[7];
 		aris::dynamic::s_pm2pq(*target.model->generalMotionPool().at(0).mpm(), pq);
-		target.master->lout() << target.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6]<<"  ";
+		target.master->lout() << target.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "  ";
 
 		for (auto &cm : controller->motionPool())
 		{
@@ -2006,79 +1658,11 @@ namespace aris::plan
 			"		<Param name=\"angular_acc\" default=\"0.1\"/>"
 			"		<Param name=\"angular_vel\" default=\"0.1\"/>"
 			"		<Param name=\"angular_dec\" default=\"0.1\"/>"
-			"		<UniqueParam default=\"check_all\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	MoveL::MoveL(const MoveL &) = default;
-	MoveL::MoveL(MoveL &&) = default;
-	MoveL& MoveL::operator=(const MoveL &) = default;
-	MoveL& MoveL::operator=(MoveL &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(MoveL);
 
 	struct AutoMoveParam {};
 	struct AutoMove::Imp
@@ -2105,7 +1689,7 @@ namespace aris::plan
 				if (Imp::is_running_.load())throw std::runtime_error("auto mode already started");
 
 				imp_->eul_type = params.at("eul_type");
-				if(!check_eul_validity(imp_->eul_type))THROW_FILE_AND_LINE("");
+				if (!check_eul_validity(imp_->eul_type))THROW_FILE_AND_LINE("");
 
 				auto mat = target.model->calculator().calculateExpression(params.at("max_pe"));
 				if (mat.size() != 6)THROW_FILE_AND_LINE("");
@@ -2114,7 +1698,7 @@ namespace aris::plan
 				mat = target.model->calculator().calculateExpression(params.at("min_pe"));
 				if (mat.size() != 6)THROW_FILE_AND_LINE("");
 				std::copy(mat.begin(), mat.end(), imp_->min_pe_);
-				
+
 				std::array<double, 24> pvade;
 				mat = target.model->calculator().calculateExpression(params.at("init_pe"));
 				if (mat.size() != 6)THROW_FILE_AND_LINE("");
@@ -2222,20 +1806,20 @@ namespace aris::plan
 			target.master->mout() << "pe_now :"
 				<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
 				<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
-			
+
 			target.master->mout() << "pe_target :"
-				<< pvade[0] << "  "	<< pvade[1] << "  "	<< pvade[2] << "  "
+				<< pvade[0] << "  " << pvade[1] << "  " << pvade[2] << "  "
 				<< pvade[3] << "  " << pvade[4] << "  " << pvade[5] << std::endl;
 
-			target.master->mout() << "pe_next:" 
-				<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  " 
+			target.master->mout() << "pe_next:"
+				<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  "
 				<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
 		}
 
 		target.model->solverPool()[0].kinPos();
 		target.model->solverPool()[0].kinVel();
-		
-		return imp_->is_running_.load() ? 1: 0;
+
+		return imp_->is_running_.load() ? 1 : 0;
 	}
 	auto AutoMove::collectNrt(PlanTarget &target)->void { if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); }
 	AutoMove::~AutoMove() = default;
@@ -2263,79 +1847,11 @@ namespace aris::plan
 			"				<Param name=\"de\" default=\"{0.1,0.1,0.1,0.1,0.1,0.1}\"/>"
 			"			</GroupParam>"
 			"		</UniqueParam>"
-			"		<UniqueParam default=\"check_all\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	AutoMove::AutoMove(const AutoMove &) = default;
-	AutoMove::AutoMove(AutoMove &&) = default;
-	AutoMove& AutoMove::operator=(const AutoMove &) = default;
-	AutoMove& AutoMove::operator=(AutoMove &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(AutoMove);
 
 	struct ManualMoveParam {};
 	struct ManualMove::Imp
@@ -2426,7 +1942,7 @@ namespace aris::plan
 		// init status //
 		static std::array<int, 6> increase_status;
 		static std::array<double, 6> target_pe{ 0,0,0,0,0,0 };
-		if (target.count == 1) 
+		if (target.count == 1)
 		{
 			std::fill_n(increase_status.data(), 6, 0);
 			std::copy_n(pe_now, 6, target_pe.data());
@@ -2508,79 +2024,11 @@ namespace aris::plan
 			"				<Param name=\"c\" default=\"0\"/>"
 			"			</GroupParam>"
 			"		</UniqueParam>"
-			"		<UniqueParam default=\"check_all\">"
-			"			<Param name=\"check_all\"/>"
-			"			<Param name=\"check_none\"/>"
-			"			<GroupParam>"
-			"				<UniqueParam default=\"check_pos\">"
-			"					<Param name=\"check_pos\"/>"
-			"					<Param name=\"not_check_pos\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_pos_max\">"
-			"							<Param name=\"check_pos_max\"/>"
-			"							<Param name=\"not_check_pos_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_min\">"
-			"							<Param name=\"check_pos_min\"/>"
-			"							<Param name=\"not_check_pos_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous\">"
-			"							<Param name=\"check_pos_continuous\"/>"
-			"							<Param name=\"not_check_pos_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_at_start\">"
-			"							<Param name=\"check_pos_continuous_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order\">"
-			"							<Param name=\"check_pos_continuous_second_order\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"
-			"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"
-			"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_pos_following_error\">"
-			"							<Param name=\"check_pos_following_error\"/>"
-			"							<Param name=\"not_check_pos_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"				<UniqueParam default=\"check_vel\">"
-			"					<Param name=\"check_vel\"/>"
-			"					<Param name=\"not_check_vel\"/>"
-			"					<GroupParam>"
-			"						<UniqueParam default=\"check_vel_max\">"
-			"							<Param name=\"check_vel_max\"/>"
-			"							<Param name=\"not_check_vel_max\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_min\">"
-			"							<Param name=\"check_vel_min\"/>"
-			"							<Param name=\"not_check_vel_min\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous\">"
-			"							<Param name=\"check_vel_continuous\"/>"
-			"							<Param name=\"not_check_vel_continuous\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_continuous_at_start\">"
-			"							<Param name=\"check_vel_continuous_at_start\"/>"
-			"							<Param name=\"not_check_vel_continuous_at_start\"/>"
-			"						</UniqueParam>"
-			"						<UniqueParam default=\"check_vel_following_error\">"
-			"							<Param name=\"check_vel_following_error\"/>"
-			"							<Param name=\"not_check_vel_following_error\"/>"
-			"						</UniqueParam>"
-			"					</GroupParam>"
-			"				</UniqueParam>"
-			"			</GroupParam>"
-			"		</UniqueParam>"
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
-	ManualMove::ManualMove(const ManualMove &) = default;
-	ManualMove::ManualMove(ManualMove &&) = default;
-	ManualMove& ManualMove::operator=(const ManualMove &) = default;
-	ManualMove& ManualMove::operator=(ManualMove &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(ManualMove);
 
 	struct UniversalPlan::Imp
 	{
@@ -2602,8 +2050,5 @@ namespace aris::plan
 		imp_->collect_nrt = collect_func;
 		command().loadXmlStr(cmd_xml_str);
 	}
-	UniversalPlan::UniversalPlan(const UniversalPlan &) = default;
-	UniversalPlan::UniversalPlan(UniversalPlan &&) = default;
-	UniversalPlan& UniversalPlan::operator=(const UniversalPlan &) = default;
-	UniversalPlan& UniversalPlan::operator=(UniversalPlan &&) = default;
+	DEFINE_DEFAULT_BIG_FOUR_CPP(UniversalPlan);
 }

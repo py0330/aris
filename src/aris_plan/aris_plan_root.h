@@ -132,18 +132,14 @@ namespace aris::plan
 	class Enable : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Enable"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Enable();
 		explicit Enable(const std::string &name = "enable_plan");
-		Enable(const Enable &);
-		Enable(Enable &&);
-		Enable& operator=(const Enable &);
-		Enable& operator=(Enable &&);
+		REGISTER_TYPE("Enable");
+		DECLARE_DEFAULT_BIG_FOUR(Enable);
 
 	private:
 		struct Imp;
@@ -164,18 +160,14 @@ namespace aris::plan
 	class Disable : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Enable"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Disable();
 		explicit Disable(const std::string &name = "enable_plan");
-		Disable(const Disable &);
-		Disable(Disable &&);
-		Disable& operator=(const Disable &);
-		Disable& operator=(Disable &&);
+		REGISTER_TYPE("Disable");
+		DECLARE_DEFAULT_BIG_FOUR(Disable);
 
 	private:
 		struct Imp;
@@ -196,18 +188,14 @@ namespace aris::plan
 	class Home : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Home"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Home();
 		explicit Home(const std::string &name = "home_plan");
-		Home(const Home &);
-		Home(Home &&);
-		Home& operator=(const Home &);
-		Home& operator=(Home &&);
+		REGISTER_TYPE("Home");
+		DECLARE_DEFAULT_BIG_FOUR(Home);
 
 	private:
 		struct Imp;
@@ -231,18 +219,14 @@ namespace aris::plan
 	class Mode : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Mode"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Mode();
 		explicit Mode(const std::string &name = "mode_plan");
-		Mode(const Mode &);
-		Mode(Mode &&);
-		Mode& operator=(const Mode &);
-		Mode& operator=(Mode &&);
+		REGISTER_TYPE("Mode");
+		DECLARE_DEFAULT_BIG_FOUR(Mode);
 
 	private:
 		struct Imp;
@@ -281,18 +265,14 @@ namespace aris::plan
 	class Reset : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Reset"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Reset();
 		explicit Reset(const std::string &name = "reset_plan");
-		Reset(const Reset &);
-		Reset(Reset &&);
-		Reset& operator=(const Reset &);
-		Reset& operator=(Reset &&);
+		REGISTER_TYPE("Reset");
+		DECLARE_DEFAULT_BIG_FOUR(Reset);
 
 	private:
 		struct Imp;
@@ -308,18 +288,14 @@ namespace aris::plan
 	class Recover : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Recover"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Recover();
 		explicit Recover(const std::string &name = "recover_plan");
-		Recover(const Recover &);
-		Recover(Recover &&);
-		Recover& operator=(const Recover &);
-		Recover& operator=(Recover &&);
+		REGISTER_TYPE("Recover");
+		DECLARE_DEFAULT_BIG_FOUR(Recover);
 	};
 	/// \brief 实时循环内休息指定时间
 	/// 
@@ -330,18 +306,14 @@ namespace aris::plan
 	class Sleep : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Sleep"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Sleep();
 		explicit Sleep(const std::string &name = "sleep_plan");
-		Sleep(const Sleep &);
-		Sleep(Sleep &&);
-		Sleep& operator=(const Sleep &);
-		Sleep& operator=(Sleep &&);
+		REGISTER_TYPE("Sleep");
+		DECLARE_DEFAULT_BIG_FOUR(Sleep);
 
 	private:
 		struct Imp;
@@ -353,13 +325,13 @@ namespace aris::plan
 	class Show :public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Show"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		explicit Show(const std::string &name = "show");
+		REGISTER_TYPE("Show");
+		DECLARE_DEFAULT_BIG_FOUR(Show);
 	};
 	/// \brief 将机器人的某根或全部轴移动到指定位置。
 	/// 
@@ -391,18 +363,14 @@ namespace aris::plan
 	class MoveAbsJ :public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("MoveAbsJ"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MoveAbsJ();
 		explicit MoveAbsJ(const std::string &name = "move_abs_j");
-		MoveAbsJ(const MoveAbsJ &);
-		MoveAbsJ(MoveAbsJ &&);
-		MoveAbsJ& operator=(const MoveAbsJ &);
-		MoveAbsJ& operator=(MoveAbsJ &&);
+		REGISTER_TYPE("MoveAbsJ");
+		DECLARE_DEFAULT_BIG_FOUR(MoveAbsJ);
 
 	private:
 		struct Imp;
@@ -440,18 +408,14 @@ namespace aris::plan
 	class MoveJ : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("MoveJ"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MoveJ();
 		explicit MoveJ(const std::string &name = "move_j");
-		MoveJ(const MoveJ &);
-		MoveJ(MoveJ &&);
-		MoveJ& operator=(const MoveJ &);
-		MoveJ& operator=(MoveJ &&);
+		REGISTER_TYPE("MoveJ");
+		DECLARE_DEFAULT_BIG_FOUR(MoveJ);
 
 	private:
 		struct Imp;
@@ -485,18 +449,14 @@ namespace aris::plan
 	class MoveL : public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("MoveL"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MoveL();
 		explicit MoveL(const std::string &name = "move_l");
-		MoveL(const MoveL &);
-		MoveL(MoveL &&);
-		MoveL& operator=(const MoveL &);
-		MoveL& operator=(MoveL &&);
+		REGISTER_TYPE("MoveL");
+		DECLARE_DEFAULT_BIG_FOUR(MoveL);
 
 	private:
 		struct Imp;
@@ -534,18 +494,14 @@ namespace aris::plan
 	class AutoMove :public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("AutoMove"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~AutoMove();
 		explicit AutoMove(const std::string &name = "auto_move");
-		AutoMove(const AutoMove &);
-		AutoMove(AutoMove &&);
-		AutoMove& operator=(const AutoMove &);
-		AutoMove& operator=(AutoMove &&);
+		REGISTER_TYPE("AutoMove");
+		DECLARE_DEFAULT_BIG_FOUR(AutoMove);
 
 	private:
 		struct Imp;
@@ -585,18 +541,14 @@ namespace aris::plan
 	class ManualMove :public Plan
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("ManualMove"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~ManualMove();
 		explicit ManualMove(const std::string &name = "manual_move");
-		ManualMove(const ManualMove &);
-		ManualMove(ManualMove &&);
-		ManualMove& operator=(const ManualMove &);
-		ManualMove& operator=(ManualMove &&);
+		REGISTER_TYPE("ManualMove");
+		DECLARE_DEFAULT_BIG_FOUR(ManualMove);
 
 	private:
 		struct Imp;
@@ -617,8 +569,6 @@ namespace aris::plan
 		using ExecuteFunc = std::function<int(const PlanTarget &param)>;
 		using CollectFunc = std::function<void(PlanTarget &param)>;
 
-		static auto Type()->const std::string & { static const std::string type("UniversalPlan"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
 		auto virtual collectNrt(PlanTarget &target)->void override;
@@ -628,10 +578,8 @@ namespace aris::plan
 
 		virtual ~UniversalPlan();
 		explicit UniversalPlan(const std::string &name = "universal_plan", PrepairFunc prepair_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
-		UniversalPlan(const UniversalPlan &);
-		UniversalPlan(UniversalPlan &&);
-		UniversalPlan& operator=(const UniversalPlan &);
-		UniversalPlan& operator=(UniversalPlan &&);
+		REGISTER_TYPE("UniversalPlan");
+		DECLARE_DEFAULT_BIG_FOUR(UniversalPlan);
 
 	private:
 		struct Imp;
