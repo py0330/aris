@@ -90,7 +90,6 @@ namespace aris::dynamic
 	auto s_im_dot_as(const double *im, const double *as, double * fs = nullptr) noexcept->double *;
 	auto s_iv_dot_as(const double *iv, const double *as, double * fs = nullptr) noexcept->double *;
 
-
 	auto inline s_sinx_over_x(double x)->double { return std::abs(x)<1e-8 ? 1.0 : std::sin(x) / x; };
 	// 1-cos(x) = 2 sin(x/2)^2
 	//    1-cos(x) / x^2

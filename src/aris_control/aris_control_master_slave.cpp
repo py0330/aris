@@ -27,10 +27,7 @@ namespace aris::control
 	auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
 	Slave::~Slave() = default;
 	Slave::Slave(const std::string &name, std::uint16_t phy_id) :Object(name), imp_(new Imp) { imp_->phy_id_ = phy_id; }
-	Slave::Slave(const Slave &other) = default;
-	Slave::Slave(Slave &&other) = default;
-	Slave& Slave::operator=(const Slave &other) = default;
-	Slave& Slave::operator=(Slave &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Slave);
 
 	struct Master::Imp
 	{

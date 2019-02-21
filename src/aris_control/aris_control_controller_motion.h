@@ -13,8 +13,6 @@ namespace aris::control
 	class Motion : public virtual Slave
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Motion"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto motId()const->aris::Size;
@@ -61,10 +59,8 @@ namespace aris::control
 		explicit Motion(const std::string &name = "motion", std::uint16_t phy_id = 0
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
 			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
-		Motion(const Motion &other) = delete;
-		Motion(Motion &&other) = delete;
-		Motion& operator=(const Motion &other) = delete;
-		Motion& operator=(Motion &&other) = delete;
+		ARIS_REGISTER_TYPE("Motion");
+		ARIS_DECLARE_BIG_FOUR(Motion);
 
 	private:
 		struct Imp;

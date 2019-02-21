@@ -4,9 +4,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <any>
 
 #include <aris_control_rt_timer.h>
-#include <any>
 
 namespace aris::control
 {

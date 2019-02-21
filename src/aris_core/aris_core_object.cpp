@@ -336,7 +336,7 @@ namespace aris::core
 	{
 		xml_ele.DeleteChildren();
 		xml_ele.SetName(type().c_str());
-		xml_ele.SetAttribute("name", this->name().c_str());
+		if(!name().empty())xml_ele.SetAttribute("name", name().c_str());
 		if (!imp_->default_type_.empty() && imp_->default_type_ != Object::Type())xml_ele.SetAttribute("default_child_type", imp_->default_type_.c_str());
 		for (auto &ele : children())
 		{

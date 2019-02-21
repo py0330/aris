@@ -138,8 +138,8 @@ namespace aris::plan
 
 		virtual ~Enable();
 		explicit Enable(const std::string &name = "enable_plan");
-		REGISTER_TYPE("Enable");
-		DECLARE_DEFAULT_BIG_FOUR(Enable);
+		ARIS_REGISTER_TYPE("Enable");
+		ARIS_DECLARE_BIG_FOUR(Enable);
 
 	private:
 		struct Imp;
@@ -166,8 +166,8 @@ namespace aris::plan
 
 		virtual ~Disable();
 		explicit Disable(const std::string &name = "enable_plan");
-		REGISTER_TYPE("Disable");
-		DECLARE_DEFAULT_BIG_FOUR(Disable);
+		ARIS_REGISTER_TYPE("Disable");
+		ARIS_DECLARE_BIG_FOUR(Disable);
 
 	private:
 		struct Imp;
@@ -194,8 +194,8 @@ namespace aris::plan
 
 		virtual ~Home();
 		explicit Home(const std::string &name = "home_plan");
-		REGISTER_TYPE("Home");
-		DECLARE_DEFAULT_BIG_FOUR(Home);
+		ARIS_REGISTER_TYPE("Home");
+		ARIS_DECLARE_BIG_FOUR(Home);
 
 	private:
 		struct Imp;
@@ -225,8 +225,8 @@ namespace aris::plan
 
 		virtual ~Mode();
 		explicit Mode(const std::string &name = "mode_plan");
-		REGISTER_TYPE("Mode");
-		DECLARE_DEFAULT_BIG_FOUR(Mode);
+		ARIS_REGISTER_TYPE("Mode");
+		ARIS_DECLARE_BIG_FOUR(Mode);
 
 	private:
 		struct Imp;
@@ -271,8 +271,8 @@ namespace aris::plan
 
 		virtual ~Reset();
 		explicit Reset(const std::string &name = "reset_plan");
-		REGISTER_TYPE("Reset");
-		DECLARE_DEFAULT_BIG_FOUR(Reset);
+		ARIS_REGISTER_TYPE("Reset");
+		ARIS_DECLARE_BIG_FOUR(Reset);
 
 	private:
 		struct Imp;
@@ -294,8 +294,8 @@ namespace aris::plan
 
 		virtual ~Recover();
 		explicit Recover(const std::string &name = "recover_plan");
-		REGISTER_TYPE("Recover");
-		DECLARE_DEFAULT_BIG_FOUR(Recover);
+		ARIS_REGISTER_TYPE("Recover");
+		ARIS_DECLARE_BIG_FOUR(Recover);
 	};
 	/// \brief 实时循环内休息指定时间
 	/// 
@@ -312,8 +312,8 @@ namespace aris::plan
 
 		virtual ~Sleep();
 		explicit Sleep(const std::string &name = "sleep_plan");
-		REGISTER_TYPE("Sleep");
-		DECLARE_DEFAULT_BIG_FOUR(Sleep);
+		ARIS_REGISTER_TYPE("Sleep");
+		ARIS_DECLARE_BIG_FOUR(Sleep);
 
 	private:
 		struct Imp;
@@ -330,8 +330,8 @@ namespace aris::plan
 		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		explicit Show(const std::string &name = "show");
-		REGISTER_TYPE("Show");
-		DECLARE_DEFAULT_BIG_FOUR(Show);
+		ARIS_REGISTER_TYPE("Show");
+		ARIS_DECLARE_BIG_FOUR(Show);
 	};
 	/// \brief 将机器人的某根或全部轴移动到指定位置。
 	/// 
@@ -369,8 +369,8 @@ namespace aris::plan
 
 		virtual ~MoveAbsJ();
 		explicit MoveAbsJ(const std::string &name = "move_abs_j");
-		REGISTER_TYPE("MoveAbsJ");
-		DECLARE_DEFAULT_BIG_FOUR(MoveAbsJ);
+		ARIS_REGISTER_TYPE("MoveAbsJ");
+		ARIS_DECLARE_BIG_FOUR(MoveAbsJ);
 
 	private:
 		struct Imp;
@@ -414,8 +414,8 @@ namespace aris::plan
 
 		virtual ~MoveJ();
 		explicit MoveJ(const std::string &name = "move_j");
-		REGISTER_TYPE("MoveJ");
-		DECLARE_DEFAULT_BIG_FOUR(MoveJ);
+		ARIS_REGISTER_TYPE("MoveJ");
+		ARIS_DECLARE_BIG_FOUR(MoveJ);
 
 	private:
 		struct Imp;
@@ -455,8 +455,8 @@ namespace aris::plan
 
 		virtual ~MoveL();
 		explicit MoveL(const std::string &name = "move_l");
-		REGISTER_TYPE("MoveL");
-		DECLARE_DEFAULT_BIG_FOUR(MoveL);
+		ARIS_REGISTER_TYPE("MoveL");
+		ARIS_DECLARE_BIG_FOUR(MoveL);
 
 	private:
 		struct Imp;
@@ -500,8 +500,8 @@ namespace aris::plan
 
 		virtual ~AutoMove();
 		explicit AutoMove(const std::string &name = "auto_move");
-		REGISTER_TYPE("AutoMove");
-		DECLARE_DEFAULT_BIG_FOUR(AutoMove);
+		ARIS_REGISTER_TYPE("AutoMove");
+		ARIS_DECLARE_BIG_FOUR(AutoMove);
 
 	private:
 		struct Imp;
@@ -547,8 +547,8 @@ namespace aris::plan
 
 		virtual ~ManualMove();
 		explicit ManualMove(const std::string &name = "manual_move");
-		REGISTER_TYPE("ManualMove");
-		DECLARE_DEFAULT_BIG_FOUR(ManualMove);
+		ARIS_REGISTER_TYPE("ManualMove");
+		ARIS_DECLARE_BIG_FOUR(ManualMove);
 
 	private:
 		struct Imp;
@@ -578,8 +578,8 @@ namespace aris::plan
 
 		virtual ~UniversalPlan();
 		explicit UniversalPlan(const std::string &name = "universal_plan", PrepairFunc prepair_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
-		REGISTER_TYPE("UniversalPlan");
-		DECLARE_DEFAULT_BIG_FOUR(UniversalPlan);
+		ARIS_REGISTER_TYPE("UniversalPlan");
+		ARIS_DECLARE_BIG_FOUR(UniversalPlan);
 
 	private:
 		struct Imp;

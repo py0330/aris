@@ -21,8 +21,6 @@ namespace aris::dynamic
 	class Interaction :public DynEle
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Interaction" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto makI() noexcept->Marker& { return *makI_; }
@@ -32,10 +30,8 @@ namespace aris::dynamic
 
 		virtual ~Interaction() = default;
 		explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true) :DynEle(name, is_active), makI_(makI), makJ_(makJ) {}
-		Interaction(const Interaction &) = default;
-		Interaction(Interaction &&) = default;
-		Interaction& operator=(const Interaction &) = default;
-		Interaction& operator=(Interaction &&) = default;
+		ARIS_REGISTER_TYPE("Interaction");
+		ARIS_DEFINE_BIG_FOUR(Interaction);
 
 	private:
 		Marker * makI_;
@@ -112,10 +108,8 @@ namespace aris::dynamic
 
 		virtual ~Constraint();
 		explicit Constraint(const std::string &name = "constraint", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true);
-		Constraint(const Constraint&);
-		Constraint(Constraint&&);
-		Constraint& operator=(const Constraint&);
-		Constraint& operator=(Constraint&&);
+		ARIS_REGISTER_TYPE("Constraint");
+		ARIS_DECLARE_BIG_FOUR(Constraint);
 
 	private:
 		struct Imp;
@@ -126,22 +120,15 @@ namespace aris::dynamic
 	class Joint :public Constraint
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Joint" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
-
 		virtual ~Joint() = default;
 		explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
-		Joint(const Joint &other);
-		Joint(Joint &&other);
-		Joint& operator=(const Joint &other);
-		Joint& operator=(Joint &&other);
+		ARIS_REGISTER_TYPE("Joint");
+		ARIS_DEFINE_BIG_FOUR(Joint);
 	};
 	class Motion final :public Constraint
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Motion" }; return type; }
 		static auto Dim()->Size { return 1; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
@@ -177,10 +164,8 @@ namespace aris::dynamic
 
 		virtual ~Motion();
 		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
-		Motion(const Motion &other);
-		Motion(Motion &&other);
-		Motion& operator=(const Motion &other);
-		Motion& operator=(Motion &&other);
+		ARIS_REGISTER_TYPE("Motion");
+		ARIS_DECLARE_BIG_FOUR(Motion);
 
 	private:
 		struct Imp;
@@ -189,10 +174,7 @@ namespace aris::dynamic
 	class GeneralMotion final :public Constraint
 	{
 	public:
-
-		static auto Type()->const std::string & { static const std::string type{ "GeneralMotion" }; return type; }
 		static auto Dim()->Size { return 6; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
@@ -243,10 +225,8 @@ namespace aris::dynamic
 
 		virtual ~GeneralMotion();
 		explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
-		GeneralMotion(const GeneralMotion &other);
-		GeneralMotion(GeneralMotion &&other);
-		GeneralMotion& operator=(const GeneralMotion &other);
-		GeneralMotion& operator=(GeneralMotion &&other);
+		ARIS_REGISTER_TYPE("GeneralMotion");
+		ARIS_DECLARE_BIG_FOUR(GeneralMotion);
 
 	private:
 		struct Imp;
@@ -255,16 +235,12 @@ namespace aris::dynamic
 	class Force :public Interaction
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Force" }; return type; }
-		auto virtual type()const->const std::string & override { return Type(); }
 		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void = 0;
 
 		virtual ~Force() = default;
 		explicit Force(const std::string &name = "force", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) :Interaction(name, makI, makJ, active) {}
-		Force(const Force &other) = default;
-		Force(Force &&other) = default;
-		Force& operator=(const Force &other) = default;
-		Force& operator=(Force &&other) = default;
+		ARIS_REGISTER_TYPE("Force");
+		ARIS_DEFINE_BIG_FOUR(Force);
 	};
 
 	/*
@@ -299,9 +275,7 @@ namespace aris::dynamic
 	class RevoluteJoint final :public Joint
 	{
 	public:
-		static const std::string& Type() { static const std::string type("RevoluteJoint"); return type; }
 		static auto Dim()->Size { return 5; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
@@ -315,17 +289,13 @@ namespace aris::dynamic
 
 		virtual ~RevoluteJoint() = default;
 		explicit RevoluteJoint(const std::string &name = "revolute_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
-		RevoluteJoint(const RevoluteJoint &other) = default;
-		RevoluteJoint(RevoluteJoint &&other) = default;
-		RevoluteJoint& operator=(const RevoluteJoint &other) = default;
-		RevoluteJoint& operator=(RevoluteJoint &&other) = default;
+		ARIS_REGISTER_TYPE("RevoluteJoint");
+		ARIS_DEFINE_BIG_FOUR(RevoluteJoint);
 	};
 	class PrismaticJoint final :public Joint
 	{
 	public:
-		static const std::string& Type() { static const std::string type("PrismaticJoint"); return type; }
 		static auto Dim()->Size { return 5; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
@@ -342,17 +312,13 @@ namespace aris::dynamic
 
 		virtual ~PrismaticJoint() = default;
 		explicit PrismaticJoint(const std::string &name = "prismatic_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
-		PrismaticJoint(const PrismaticJoint &other) = default;
-		PrismaticJoint(PrismaticJoint &&other) = default;
-		PrismaticJoint& operator=(const PrismaticJoint &other) = default;
-		PrismaticJoint& operator=(PrismaticJoint &&other) = default;
+		ARIS_REGISTER_TYPE("PrismaticJoint");
+		ARIS_DEFINE_BIG_FOUR(PrismaticJoint);
 	};
 	class UniversalJoint final :public Joint
 	{
 	public:
-		static const std::string& Type() { static const std::string type("UniversalJoint"); return type; }
 		static auto Dim()->Size { return 4; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
@@ -398,10 +364,8 @@ namespace aris::dynamic
 
 		virtual ~UniversalJoint();
 		explicit UniversalJoint(const std::string &name = "universal_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
-		UniversalJoint(const UniversalJoint &other);
-		UniversalJoint(UniversalJoint &&other);
-		UniversalJoint& operator=(const UniversalJoint &other);
-		UniversalJoint& operator=(UniversalJoint &&other);
+		ARIS_REGISTER_TYPE("UniversalJoint");
+		ARIS_DECLARE_BIG_FOUR(UniversalJoint);
 
 	private:
 		struct Imp;
@@ -410,9 +374,7 @@ namespace aris::dynamic
 	class SphericalJoint final :public Joint
 	{
 	public:
-		static const std::string& Type() { static const std::string type("SphericalJoint"); return type; }
 		static auto Dim()->Size { return 3; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
 		auto virtual locCmI() const noexcept->const double* override;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void override;
@@ -425,27 +387,21 @@ namespace aris::dynamic
 
 		virtual ~SphericalJoint() = default;
 		explicit SphericalJoint(const std::string &name = "spherical_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
-		SphericalJoint(const SphericalJoint &other) = default;
-		SphericalJoint(SphericalJoint &&other) = default;
-		SphericalJoint& operator=(const SphericalJoint &other) = default;
-		SphericalJoint& operator=(SphericalJoint &&other) = default;
+		ARIS_REGISTER_TYPE("SphericalJoint");
+		ARIS_DEFINE_BIG_FOUR(SphericalJoint);
 	};
 
 	class GeneralForce final :public Force
 	{
 	public:
-		static const std::string& Type() { static const std::string type("GeneralForce"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void override { s_vc(6, fce_value_, fsI); s_vi(6, fce_value_, fsJ); }
 		auto setFce(const double *value) noexcept->void { std::copy(value, value + 6, fce_value_); }
 		auto fce()const noexcept->const double* { return fce_value_; }
 
 		virtual ~GeneralForce() = default;
 		explicit GeneralForce(const std::string &name = "general_force", Marker *makI = nullptr, Marker *makJ = nullptr) : Force(name, makI, makJ) {};
-		GeneralForce(const GeneralForce &other) = default;
-		GeneralForce(GeneralForce &&other) = default;
-		GeneralForce& operator=(const GeneralForce &other) = default;
-		GeneralForce& operator=(GeneralForce &&other) = default;
+		ARIS_REGISTER_TYPE("GeneralForce");
+		ARIS_DEFINE_BIG_FOUR(GeneralForce);
 
 	private:
 		double fce_value_[6]{ 0 };
@@ -453,8 +409,6 @@ namespace aris::dynamic
 	class SingleComponentForce final :public Force
 	{
 	public:
-		static const std::string& Type() { static const std::string type("SingleComponentForce"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void override;
@@ -465,10 +419,8 @@ namespace aris::dynamic
 
 		virtual ~SingleComponentForce() = default;
 		explicit SingleComponentForce(const std::string &name = "single_component_force", Marker *makI = nullptr, Marker *makJ = nullptr, Size componentID = 0);
-		SingleComponentForce(const SingleComponentForce &other) = default;
-		SingleComponentForce(SingleComponentForce &&other) = default;
-		SingleComponentForce& operator=(const SingleComponentForce &other) = default;
-		SingleComponentForce& operator=(SingleComponentForce &&other) = default;
+		ARIS_REGISTER_TYPE("SingleComponentForce");
+		ARIS_DEFINE_BIG_FOUR(SingleComponentForce);
 
 	private:
 		Size component_axis_;

@@ -43,10 +43,7 @@ namespace aris::dynamic
 	auto Solver::setMaxIterCount(Size max_count)->void { imp_->max_iter_count_ = max_count; }
 	Solver::~Solver() = default;
 	Solver::Solver(const std::string &name, Size max_iter_count, double max_error) : Element(name), imp_(new Imp(max_iter_count, max_error)) {}
-	Solver::Solver(const Solver&) = default;
-	Solver::Solver(Solver&&) = default;
-	Solver& Solver::operator=(const Solver&) = default;
-	Solver& Solver::operator=(Solver&&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Solver);
 
 	struct Relation
 	{
@@ -1719,10 +1716,7 @@ namespace aris::dynamic
 	}
 	UniversalSolver::~UniversalSolver() = default;
 	UniversalSolver::UniversalSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
-	UniversalSolver::UniversalSolver(const UniversalSolver &other) = default;
-	UniversalSolver::UniversalSolver(UniversalSolver &&other) = default;
-	UniversalSolver& UniversalSolver::operator=(const UniversalSolver &other) = default;
-	UniversalSolver& UniversalSolver::operator=(UniversalSolver &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(UniversalSolver);
 
 	struct ForwardKinematicSolver::Imp { std::vector<double> J_vec_, cf_vec_; };
 	auto ForwardKinematicSolver::allocateMemory()->void
@@ -1779,10 +1773,7 @@ namespace aris::dynamic
 	auto ForwardKinematicSolver::cf()const noexcept->const double * { return imp_->cf_vec_.data(); }
 	ForwardKinematicSolver::~ForwardKinematicSolver() = default;
 	ForwardKinematicSolver::ForwardKinematicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error), imp_(new Imp) {}
-	ForwardKinematicSolver::ForwardKinematicSolver(const ForwardKinematicSolver &other) = default;
-	ForwardKinematicSolver::ForwardKinematicSolver(ForwardKinematicSolver &&other) = default;
-	ForwardKinematicSolver& ForwardKinematicSolver::operator=(const ForwardKinematicSolver &other) = default;
-	ForwardKinematicSolver& ForwardKinematicSolver::operator=(ForwardKinematicSolver &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(ForwardKinematicSolver);
 
 	struct InverseKinematicSolver::Imp{std::vector<double> J_vec_, ci_vec_;};
 	auto InverseKinematicSolver::allocateMemory()->void
@@ -1851,10 +1842,7 @@ namespace aris::dynamic
 	auto InverseKinematicSolver::ci()const noexcept->const double * { return imp_->ci_vec_.data(); }
 	InverseKinematicSolver::~InverseKinematicSolver() = default;
 	InverseKinematicSolver::InverseKinematicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error), imp_(new Imp) {}
-	InverseKinematicSolver::InverseKinematicSolver(const InverseKinematicSolver &other) = default;
-	InverseKinematicSolver::InverseKinematicSolver(InverseKinematicSolver &&other) = default;
-	InverseKinematicSolver& InverseKinematicSolver::operator=(const InverseKinematicSolver &other) = default;
-	InverseKinematicSolver& InverseKinematicSolver::operator=(InverseKinematicSolver &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(InverseKinematicSolver);
 
 	auto ForwardDynamicSolver::allocateMemory()->void
 	{
@@ -1881,10 +1869,7 @@ namespace aris::dynamic
 	}
 	ForwardDynamicSolver::~ForwardDynamicSolver() = default;
 	ForwardDynamicSolver::ForwardDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
-	ForwardDynamicSolver::ForwardDynamicSolver(const ForwardDynamicSolver &other) = default;
-	ForwardDynamicSolver::ForwardDynamicSolver(ForwardDynamicSolver &&other) = default;
-	ForwardDynamicSolver& ForwardDynamicSolver::operator=(const ForwardDynamicSolver &other) = default;
-	ForwardDynamicSolver& ForwardDynamicSolver::operator=(ForwardDynamicSolver &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(ForwardDynamicSolver);
 
 	auto InverseDynamicSolver::allocateMemory()->void
 	{
@@ -1911,10 +1896,7 @@ namespace aris::dynamic
 	}
 	InverseDynamicSolver::~InverseDynamicSolver() = default;
 	InverseDynamicSolver::InverseDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
-	InverseDynamicSolver::InverseDynamicSolver(const InverseDynamicSolver &other) = default;
-	InverseDynamicSolver::InverseDynamicSolver(InverseDynamicSolver &&other) = default;
-	InverseDynamicSolver& InverseDynamicSolver::operator=(const InverseDynamicSolver &other) = default;
-	InverseDynamicSolver& InverseDynamicSolver::operator=(InverseDynamicSolver &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(InverseDynamicSolver);
 
 	const double ZERO_THRESH = 0.00000001;
 	int SIGN(double x) {
@@ -2877,8 +2859,5 @@ namespace aris::dynamic
 		return true;
 	}
 	StewartInverseKinematicSolver::StewartInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
-	StewartInverseKinematicSolver::StewartInverseKinematicSolver(const StewartInverseKinematicSolver &other) = default;
-	StewartInverseKinematicSolver::StewartInverseKinematicSolver(StewartInverseKinematicSolver &&other) = default;
-	StewartInverseKinematicSolver& StewartInverseKinematicSolver::operator=(const StewartInverseKinematicSolver &other) = default;
-	StewartInverseKinematicSolver& StewartInverseKinematicSolver::operator=(StewartInverseKinematicSolver &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(StewartInverseKinematicSolver);
 }

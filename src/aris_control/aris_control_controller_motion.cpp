@@ -78,6 +78,7 @@ namespace aris::control
 		imp_->pos_offset_ = pos_offset;
 		imp_->home_pos_ = home_pos;
 	}
+	ARIS_DEFINE_BIG_FOUR_CPP(Motion);
 
 	struct Controller::Imp { aris::core::RefPool<Motion> motion_pool_; };
 	auto Controller::motionPool()->aris::core::RefPool<Motion>& { return imp_->motion_pool_; }

@@ -21,8 +21,6 @@ namespace aris::dynamic
 	class Solver :public Element
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Solver" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual allocateMemory()->void = 0;
@@ -40,10 +38,8 @@ namespace aris::dynamic
 
 		virtual ~Solver();
 		explicit Solver(const std::string &name = "solver", Size max_iter_count = 100, double max_error = 1e-10);
-		Solver(const Solver&);
-		Solver(Solver&&);
-		Solver& operator=(const Solver&);
-		Solver& operator=(Solver&&);
+		ARIS_REGISTER_TYPE("Solver");
+		ARIS_DECLARE_BIG_FOUR(Solver);
 
 	private:
 		struct Imp;
@@ -52,8 +48,6 @@ namespace aris::dynamic
 	class UniversalSolver : public Solver
 	{
 	public:
-		static const std::string& Type() { static const std::string type("UniversalSolver"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
@@ -71,10 +65,8 @@ namespace aris::dynamic
 
 		virtual ~UniversalSolver();
 		explicit UniversalSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		UniversalSolver(const UniversalSolver &other);
-		UniversalSolver(UniversalSolver &&other);
-		UniversalSolver& operator=(const UniversalSolver &other);
-		UniversalSolver& operator=(UniversalSolver &&other);
+		ARIS_REGISTER_TYPE("UniversalSolver");
+		ARIS_DECLARE_BIG_FOUR(UniversalSolver);
 
 	public:
 		struct Imp;
@@ -83,9 +75,6 @@ namespace aris::dynamic
 	class ForwardKinematicSolver :public UniversalSolver
 	{
 	public:
-		static const std::string& Type() { static const std::string type("ForwardKinematicSolver"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
-
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
@@ -98,10 +87,8 @@ namespace aris::dynamic
 
 		virtual ~ForwardKinematicSolver();
 		explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ForwardKinematicSolver(const ForwardKinematicSolver &other);
-		ForwardKinematicSolver(ForwardKinematicSolver &&other);
-		ForwardKinematicSolver& operator=(const ForwardKinematicSolver &other);
-		ForwardKinematicSolver& operator=(ForwardKinematicSolver &&other);
+		ARIS_REGISTER_TYPE("ForwardKinematicSolver");
+		ARIS_DECLARE_BIG_FOUR(ForwardKinematicSolver);
 
 	private:
 		struct Imp;
@@ -110,9 +97,6 @@ namespace aris::dynamic
 	class InverseKinematicSolver :public UniversalSolver
 	{
 	public:
-		static const std::string& Type() { static const std::string type("InverseKinematicSolver"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
-
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
@@ -125,10 +109,8 @@ namespace aris::dynamic
 
 		virtual ~InverseKinematicSolver();
 		explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		InverseKinematicSolver(const InverseKinematicSolver &other);
-		InverseKinematicSolver(InverseKinematicSolver &&other);
-		InverseKinematicSolver& operator=(const InverseKinematicSolver &other);
-		InverseKinematicSolver& operator=(InverseKinematicSolver &&other);
+		ARIS_REGISTER_TYPE("InverseKinematicSolver");
+		ARIS_DECLARE_BIG_FOUR(InverseKinematicSolver);
 
 	private:
 		struct Imp;
@@ -137,9 +119,6 @@ namespace aris::dynamic
 	class ForwardDynamicSolver :public UniversalSolver
 	{
 	public:
-		static const std::string& Type() { static const std::string type("ForwardDynamicSolver"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
-
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
@@ -147,17 +126,12 @@ namespace aris::dynamic
 
 		virtual ~ForwardDynamicSolver();
 		explicit ForwardDynamicSolver(const std::string &name = "forward_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ForwardDynamicSolver(const ForwardDynamicSolver &other);
-		ForwardDynamicSolver(ForwardDynamicSolver &&other);
-		ForwardDynamicSolver& operator=(const ForwardDynamicSolver &other);
-		ForwardDynamicSolver& operator=(ForwardDynamicSolver &&other);
+		ARIS_REGISTER_TYPE("ForwardDynamicSolver");
+		ARIS_DECLARE_BIG_FOUR(ForwardDynamicSolver);
 	};
 	class InverseDynamicSolver :public UniversalSolver
 	{
 	public:
-		static const std::string& Type() { static const std::string type("InverseDynamicSolver"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
-
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->bool override;
 		auto virtual kinVel()->void override;
@@ -165,22 +139,20 @@ namespace aris::dynamic
 
 		virtual ~InverseDynamicSolver();
 		explicit InverseDynamicSolver(const std::string &name = "inverse_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		InverseDynamicSolver(const InverseDynamicSolver &other);
-		InverseDynamicSolver(InverseDynamicSolver &&other);
-		InverseDynamicSolver& operator=(const InverseDynamicSolver &other);
-		InverseDynamicSolver& operator=(InverseDynamicSolver &&other);
+		ARIS_REGISTER_TYPE("InverseDynamicSolver");
+		ARIS_DECLARE_BIG_FOUR(InverseDynamicSolver);
 	};
 
 	class Ur5InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
-		static const std::string& Type() { static const std::string type("Ur5InverseSolver"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual kinPos()->bool override;
 		auto setWhichRoot(int root_of_0_to_7);
 
 		virtual ~Ur5InverseKinematicSolver() = default;
 		explicit Ur5InverseKinematicSolver(const std::string &name = "ur5_inverse_solver", aris::Size max_iter_count = 100, double max_error = 1e-10) :InverseKinematicSolver(name, max_iter_count, max_error) {}
+		ARIS_REGISTER_TYPE("Ur5InverseKinematicSolver");
+		ARIS_DEFINE_BIG_FOUR(Ur5InverseKinematicSolver);
 
 	private:
 		int which_root_{ 0 };
@@ -189,14 +161,14 @@ namespace aris::dynamic
 	class PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
-		static const std::string& Type() { static const std::string type("PumaInverseSolver"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->bool override;
 		auto setWhichRoot(int root_of_0_to_7)->void;
 
 		virtual ~PumaInverseKinematicSolver() = default;
 		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");
+		ARIS_REGISTER_TYPE("PumaInverseKinematicSolver");
+		ARIS_DEFINE_BIG_FOUR(PumaInverseKinematicSolver);
 
 	private:
 		struct Imp;
@@ -206,17 +178,13 @@ namespace aris::dynamic
 	class StewartInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
-		static const std::string& Type() { static const std::string type("StewartInverseSolver"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->bool override;
 
 		virtual ~StewartInverseKinematicSolver() = default;
 		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");
-		StewartInverseKinematicSolver(const StewartInverseKinematicSolver &other);
-		StewartInverseKinematicSolver(StewartInverseKinematicSolver &&other);
-		StewartInverseKinematicSolver& operator=(const StewartInverseKinematicSolver &other);
-		StewartInverseKinematicSolver& operator=(StewartInverseKinematicSolver &&other);
+		ARIS_REGISTER_TYPE("StewartInverseKinematicSolver");
+		ARIS_DECLARE_BIG_FOUR(StewartInverseKinematicSolver);
 
 	private:
 		struct Imp;

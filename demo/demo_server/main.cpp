@@ -88,6 +88,15 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
+	
+	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\a.xml");
+
+
+	cs.loadXmlFile("C:\\Users\\py033\\Desktop\\a.xml");
+	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\b.xml");
+	
+	
+	
 	cs.start();
 
 	aris::core::Socket socket("server", "", "5866", aris::core::Socket::WEB);

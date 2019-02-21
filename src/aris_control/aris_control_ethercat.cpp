@@ -54,7 +54,7 @@ namespace aris::control
 		imp_->subindex_ = sub_index;
 		imp_->bit_size_ = bit_size;
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(PdoEntry)
+	ARIS_DEFINE_BIG_FOUR_CPP(PdoEntry)
 
 	struct Pdo::Imp
 	{
@@ -84,7 +84,7 @@ namespace aris::control
 
 		imp_->index_ = index;
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Pdo)
+	ARIS_DEFINE_BIG_FOUR_CPP(Pdo)
 
 	struct SyncManager::Imp { std::any handle_; bool is_tx_; };
 	auto SyncManager::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -100,7 +100,7 @@ namespace aris::control
 	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
 	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
 	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) {	imp_->is_tx_ = is_tx;}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(SyncManager)
+	ARIS_DEFINE_BIG_FOUR_CPP(SyncManager)
 
 	struct EthercatSlave::Imp
 	{
@@ -187,6 +187,7 @@ namespace aris::control
 		registerType<SyncManager>();
 		registerType<aris::core::ObjectPool<SyncManager> >();
 	}
+	ARIS_DEFINE_BIG_FOUR_CPP(EthercatSlave);
 
 	class EthercatMaster::Imp
 	{
@@ -602,6 +603,8 @@ namespace aris::control
 		, Slave(name, phy_id), imp_(new Imp)
 	{
 	}
+	ARIS_DEFINE_BIG_FOUR_CPP(EthercatMotion);
+	
 	EthercatController::EthercatController(const std::string &name) :EthercatMaster(name), Controller(name), Master(name){}
 
 }

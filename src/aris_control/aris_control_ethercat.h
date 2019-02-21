@@ -12,7 +12,6 @@
 #include <aris_control_controller_motion.h>
 #include <aris_control_ethercat_kernel.h>
 
-
 namespace aris::control
 {
 	class PdoEntry :public aris::core::Object
@@ -28,8 +27,8 @@ namespace aris::control
 		auto bitSize()const->aris::Size;
 
 		explicit PdoEntry(const std::string &name = "entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size bit_size = 8);
-		REGISTER_TYPE("PdoEntry");
-		DECLARE_DEFAULT_BIG_FOUR(PdoEntry);
+		ARIS_REGISTER_TYPE("PdoEntry");
+		ARIS_DECLARE_BIG_FOUR(PdoEntry);
 
 	public:
 		struct Imp;
@@ -45,8 +44,8 @@ namespace aris::control
 		auto index()const->std::uint16_t;
 
 		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000);
-		REGISTER_TYPE("Pdo");
-		DECLARE_DEFAULT_BIG_FOUR(Pdo);
+		ARIS_REGISTER_TYPE("Pdo");
+		ARIS_DECLARE_BIG_FOUR(Pdo);
 
 	public:
 		struct Imp;
@@ -61,8 +60,8 @@ namespace aris::control
 		auto rx()const->bool;
 
 		explicit SyncManager(const std::string &name = "sm", bool is_tx = true);
-		REGISTER_TYPE("SyncManager");
-		DECLARE_DEFAULT_BIG_FOUR(SyncManager);
+		ARIS_REGISTER_TYPE("SyncManager");
+		ARIS_DECLARE_BIG_FOUR(SyncManager);
 
 	private:
 		struct Imp;
@@ -72,8 +71,6 @@ namespace aris::control
 	class EthercatSlave : virtual public Slave
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("EthercatSlave"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto vendorID()const->std::uint32_t;
@@ -103,10 +100,8 @@ namespace aris::control
 
 		virtual ~EthercatSlave();
 		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);
-		EthercatSlave(const EthercatSlave &other) = delete;
-		EthercatSlave(EthercatSlave &&other) = delete;
-		EthercatSlave& operator=(const EthercatSlave &other) = delete;
-		EthercatSlave& operator=(EthercatSlave &&other) = delete;
+		ARIS_REGISTER_TYPE("EthercatSlave");
+		ARIS_DECLARE_BIG_FOUR(EthercatSlave);
 
 	private:
 		struct Imp;
@@ -117,8 +112,6 @@ namespace aris::control
 	class EthercatMaster : virtual public Master
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("EthercatMaster"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 		auto ecSlavePool()->aris::core::RefPool<EthercatSlave>&;
@@ -131,6 +124,7 @@ namespace aris::control
 		EthercatMaster(EthercatMaster &&other) = delete;
 		EthercatMaster& operator=(const EthercatMaster &other) = delete;
 		EthercatMaster& operator=(EthercatMaster &&other) = delete;
+		ARIS_REGISTER_TYPE("EthercatMaster");
 
 	protected:
 		auto virtual init()->void override;
@@ -149,8 +143,6 @@ namespace aris::control
 	class EthercatMotion :public EthercatSlave, public Motion
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("EthercatMotion"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 
@@ -199,23 +191,24 @@ namespace aris::control
 		EthercatMotion(const std::string &name = "ethercat_motion", std::uint16_t phy_id = 0
 			, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
+		ARIS_REGISTER_TYPE("EthercatMotion");
+		ARIS_DECLARE_BIG_FOUR(EthercatMotion);
+
 
 	private:
 		class Imp;
-		std::unique_ptr<Imp> imp_;
+		aris::core::ImpPtr<Imp> imp_;
 	};
 	class EthercatController :public EthercatMaster, public Controller
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("EthercatController"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-
 		virtual ~EthercatController() = default;
 		EthercatController(const std::string &name = "ethercat_controller");
 		EthercatController(const EthercatController &other) = delete;
 		EthercatController(EthercatController &&other) = delete;
 		EthercatController& operator=(const EthercatController &other) = delete;
 		EthercatController& operator=(EthercatController &&other) = delete;
+		ARIS_REGISTER_TYPE("EthercatController");
 
 	protected:
 		auto virtual init()->void override { EthercatMaster::init(); Controller::init(); };

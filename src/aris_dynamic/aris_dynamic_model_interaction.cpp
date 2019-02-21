@@ -88,15 +88,7 @@ namespace aris::dynamic
 	}
 	Constraint::~Constraint() = default;
 	Constraint::Constraint(const std::string &name, Marker* makI, Marker* makJ, bool is_active) : Interaction(name, makI, makJ, is_active) {}
-	Constraint::Constraint(const Constraint&) = default;
-	Constraint::Constraint(Constraint&&) = default;
-	Constraint& Constraint::operator=(const Constraint&) = default;
-	Constraint& Constraint::operator=(Constraint&&) = default;
-
-	Joint::Joint(Joint &&other) = default;
-	Joint::Joint(const Joint &other) = default;
-	Joint& Joint::operator=(const Joint &other) = default;
-	Joint& Joint::operator=(Joint &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Constraint);
 
 	struct Motion::Imp
 	{
@@ -125,9 +117,9 @@ namespace aris::dynamic
 		imp_->component_axis_ = attributeInt32(xml_ele, "component");
 		imp_->mp_offset_ = attributeDouble(xml_ele, "mp_offset", 0.0);
 		imp_->mp_factor_ = attributeDouble(xml_ele, "mp_factor", 1.0);
-		imp_->mp_ = attributeDouble(xml_ele, "mp", 0.0);
-		imp_->mv_ = attributeDouble(xml_ele, "mv", 0.0);
-		imp_->ma_ = attributeDouble(xml_ele, "ma", 0.0);
+		setMp(attributeDouble(xml_ele, "mp", 0.0));
+		setMv(attributeDouble(xml_ele, "mv", 0.0));
+		setMa(attributeDouble(xml_ele, "ma", 0.0));
 
 		setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
 
@@ -217,10 +209,7 @@ namespace aris::dynamic
 		s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
 		const_cast<double*>(locCmI())[axis()] = 1.0;
 	}
-	Motion::Motion(const Motion &other) = default;
-	Motion::Motion(Motion &&other) = default;
-	Motion& Motion::operator=(const Motion &other) = default;
-	Motion& Motion::operator=(Motion &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Motion);
 
 	struct GeneralMotion::Imp
 	{
@@ -360,10 +349,7 @@ namespace aris::dynamic
 	auto GeneralMotion::setMfs(const double * mfs) noexcept->void { s_vc(6, mfs, Constraint::imp_->cf_); }
 	GeneralMotion::~GeneralMotion() = default;
 	GeneralMotion::GeneralMotion(const std::string &name, Marker* makI, Marker* makJ, bool active) :Constraint(name, makI, makJ, active) {}
-	GeneralMotion::GeneralMotion(const GeneralMotion &other) = default;
-	GeneralMotion::GeneralMotion(GeneralMotion &&other) = default;
-	GeneralMotion& GeneralMotion::operator=(const GeneralMotion &other) = default;
-	GeneralMotion& GeneralMotion::operator=(GeneralMotion &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(GeneralMotion);
 
 	auto RevoluteJoint::locCmI() const noexcept->const double*
 	{
@@ -490,10 +476,7 @@ namespace aris::dynamic
 		};
 		s_mc(6, dim(), *loc_cst, imp_->loc_cm_I);
 	}
-	UniversalJoint::UniversalJoint(const UniversalJoint &other) = default;
-	UniversalJoint::UniversalJoint(UniversalJoint &&other) = default;
-	UniversalJoint& UniversalJoint::operator=(const UniversalJoint &other) = default;
-	UniversalJoint& UniversalJoint::operator=(UniversalJoint &&other) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(UniversalJoint);
 
 	auto SphericalJoint::locCmI() const noexcept->const double*
 	{

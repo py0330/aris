@@ -32,7 +32,6 @@ namespace aris::dynamic
 		aris::core::ObjectPool<Simulator, Element> *simulator_pool_;
 		aris::core::ObjectPool<SimResult, Element> *sim_result_pool_;
 		aris::core::ObjectPool<Calibrator, Element> *calibrator_pool_;
-		aris::core::ObjectPool<Element, Element> *plan_pool_;
 	};
 	auto Model::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
@@ -51,7 +50,6 @@ namespace aris::dynamic
 		imp_->simulator_pool_ = findOrInsert<aris::core::ObjectPool<Simulator, Element>>("simulator_pool");
 		imp_->sim_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult, Element>>("sim_result_pool");
 		imp_->calibrator_pool_ = findOrInsert<aris::core::ObjectPool<Calibrator, Element>>("calibrator_pool");
-		imp_->plan_pool_ = findOrInsert<aris::core::ObjectPool<Element, Element>>("plan_pool");
 		imp_->ground_ = partPool().findOrInsert<Part>("ground");
 	}
 	auto Model::saveXml(aris::core::XmlElement &xml_ele)const->void
@@ -73,7 +71,6 @@ namespace aris::dynamic
 	auto Model::simulatorPool()->aris::core::ObjectPool<Simulator, Element>& { return *imp_->simulator_pool_; }
 	auto Model::simResultPool()->aris::core::ObjectPool<SimResult, Element>& { return *imp_->sim_result_pool_; }
 	auto Model::calibratorPool()->aris::core::ObjectPool<Calibrator, Element>& { return *imp_->calibrator_pool_; }
-	auto Model::planPool()->aris::core::ObjectPool<Element, Element>& { return *imp_->plan_pool_; }
 	auto Model::ground()->Part& { return *imp_->ground_; }
 	auto Model::addPartByPm(const double*pm, const double *prt_im)->Part& { return partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm); }
 	auto Model::addPartByPe(const double*pe, const char* eul_type, const double *prt_im)->Part&
@@ -242,12 +239,8 @@ namespace aris::dynamic
 		imp_->simulator_pool_ = &this->add<aris::core::ObjectPool<Simulator, Element>>("simulator_pool");
 		imp_->sim_result_pool_ = &this->add<aris::core::ObjectPool<SimResult, Element>>("sim_result_pool");
 		imp_->calibrator_pool_ = &this->add<aris::core::ObjectPool<Calibrator, Element>>("calibrator_pool");
-		imp_->plan_pool_ = &this->add<aris::core::ObjectPool<Element, Element>>("plan_pool");
 
 		imp_->ground_ = &imp_->part_pool_->add<Part>("ground");
 	}
-	Model::Model(const Model &) = default;
-	Model::Model(Model &&) = default;
-	Model& Model::operator=(const Model &) = default;
-	Model& Model::operator=(Model &&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Model);
 }

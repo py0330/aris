@@ -500,7 +500,7 @@ namespace aris::core
 			static auto copy_constructor_(const Object &other)->Object*
 			{
 				if (!dynamic_cast<const ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
-				return new ChildType(static_cast<const ChildType &>(other));
+				return new ChildType(dynamic_cast<const ChildType &>(other));
 			}
 			template<typename ChildType>
 			static auto copy_construct_func_(std::enable_if_t<std::is_copy_constructible<ChildType>::value> *a = nullptr)->CopyConstructor
@@ -517,7 +517,7 @@ namespace aris::core
 			static auto move_constructor_(Object &&other)->Object*
 			{
 				if (!dynamic_cast<ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
-				return new ChildType(static_cast<ChildType &&>(other));
+				return new ChildType(dynamic_cast<ChildType &&>(other));
 			}
 			template<typename ChildType>
 			static auto move_construct_func_(std::enable_if_t<std::is_move_constructible<ChildType>::value> *a = nullptr)->MoveConstructor
@@ -535,7 +535,7 @@ namespace aris::core
 			{
 				if (!dynamic_cast<const ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
 				if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
-				return static_cast<ChildType &>(to_object) = static_cast<const ChildType &>(from_object);
+				return dynamic_cast<ChildType &>(to_object) = dynamic_cast<const ChildType &>(from_object);
 			}
 			template<typename ChildType>
 			static auto copy_assign_func_(std::enable_if_t<std::is_copy_assignable<ChildType>::value> *a = nullptr)->CopyAssign
@@ -553,7 +553,7 @@ namespace aris::core
 			{
 				if (!dynamic_cast<ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
 				if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
-				return static_cast<ChildType &>(to_object) = static_cast<ChildType &&>(from_object);
+				return dynamic_cast<ChildType &>(to_object) = dynamic_cast<ChildType &&>(from_object);
 			}
 			template<typename ChildType>
 			static auto move_assign_func_(std::enable_if_t<std::is_move_assignable<ChildType>::value> *a = nullptr)->MoveAssign
@@ -935,26 +935,26 @@ namespace aris::core
 		std::vector<T*> container_;
 	};
 
-#define REGISTER_TYPE(type_name) \
+#define ARIS_REGISTER_TYPE(type_name) \
 	static auto Type()->const std::string & { \
 		static const std::string type(type_name); \
 		return std::ref(type); \
 	} \
 	auto virtual type() const->const std::string& override { return Type(); }
 
-#define DECLARE_DEFAULT_BIG_FOUR(type_name) \
+#define ARIS_DECLARE_BIG_FOUR(type_name) \
 	type_name(const type_name &other); \
 	type_name(type_name &&other); \
 	type_name& operator=(const type_name &other); \
 	type_name& operator=(type_name &&other);
 
-#define DEFINE_DEFAULT_BIG_FOUR(type_name) \
+#define ARIS_DEFINE_BIG_FOUR(type_name) \
 	type_name(const type_name &other) = default; \
 	type_name(type_name &&other) = default; \
 	type_name& operator=(const type_name &other) = default; \
 	type_name& operator=(type_name &&other) = default;
 
-#define DEFINE_DEFAULT_BIG_FOUR_CPP(type_name) \
+#define ARIS_DEFINE_BIG_FOUR_CPP(type_name) \
 	type_name::type_name(const type_name &other) = default; \
 	type_name::type_name(type_name &&other) = default; \
 	type_name& type_name::operator=(const type_name &other) = default; \

@@ -35,8 +35,6 @@ namespace aris::dynamic
 	class Element :public aris::core::Object
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Element" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto model()noexcept->Model& { return *ancestor<Model>(); }
 		auto model()const noexcept->const Model& { return const_cast<std::decay_t<decltype(*this)> *>(this)->model(); }
 		auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix;
@@ -46,16 +44,12 @@ namespace aris::dynamic
 
 		~Element() = default;
 		explicit Element(const std::string &name = "element") :Object(name) {}
-		Element(const Element&) = default;
-		Element(Element&&) = default;
-		Element& operator=(const Element&) = default;
-		Element& operator=(Element&&) = default;
+		ARIS_REGISTER_TYPE("Element");
+		ARIS_DEFINE_BIG_FOUR(Element);
 	};
 	class DynEle : public Element
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "DynEle" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto active() const noexcept->bool { return active_; }
@@ -63,10 +57,8 @@ namespace aris::dynamic
 
 		virtual ~DynEle() = default;
 		explicit DynEle(const std::string &name, bool active = true) : Element(name), active_(active) {};
-		DynEle(const DynEle &) = default;
-		DynEle(DynEle &&) = default;
-		DynEle& operator=(const DynEle &) = default;
-		DynEle& operator=(DynEle &&) = default;
+		ARIS_REGISTER_TYPE("DynEle");
+		ARIS_DEFINE_BIG_FOUR(DynEle);
 
 	private:
 		bool active_;
@@ -75,8 +67,6 @@ namespace aris::dynamic
 	class Environment final :public Element
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Environment" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto gravity()const noexcept->const double6& { return gravity_; }
@@ -84,10 +74,8 @@ namespace aris::dynamic
 
 		virtual ~Environment() = default;
 		explicit Environment(const std::string &name = "dyn_ele") :Element(name) {}
-		Environment(const Environment &) = default;
-		Environment(Environment &&) = default;
-		Environment &operator=(const Environment &) = default;
-		Environment &operator=(Environment &&) = default;
+		ARIS_REGISTER_TYPE("Environment");
+		ARIS_DEFINE_BIG_FOUR(Environment);
 
 	private:
 		double gravity_[6]{ 0, -9.8, 0, 0, 0, 0 };
@@ -96,17 +84,13 @@ namespace aris::dynamic
 	class Variable :public Element
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Variable" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual toString() const->std::string { return ""; }
 
 		virtual ~Variable() = default;
 		explicit Variable(const std::string &name = "variable") : Element(name) {}
-		Variable(const Variable&) = default;
-		Variable(Variable&&) = default;
-		Variable& operator=(const Variable&) = default;
-		Variable& operator=(Variable&&) = default;
+		ARIS_REGISTER_TYPE("Variable");
+		ARIS_DEFINE_BIG_FOUR(Variable);
 	};
 	template<typename VariableType> class VariableTemplate : public Variable
 	{
@@ -127,32 +111,24 @@ namespace aris::dynamic
 	class MatrixVariable final : public VariableTemplate<aris::core::Matrix>
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "MatrixVariable" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual toString() const->std::string override { return data().toString(); }
 
 		virtual ~MatrixVariable() = default;
 		explicit MatrixVariable(const std::string &name = "matrix_variable", const aris::core::Matrix &data = aris::core::Matrix()) : VariableTemplate(name, data) {}
-		MatrixVariable(const MatrixVariable &other) = default;
-		MatrixVariable(MatrixVariable &&other) = default;
-		MatrixVariable& operator=(const MatrixVariable &other) = default;
-		MatrixVariable& operator=(MatrixVariable &&other) = default;
+		ARIS_REGISTER_TYPE("MatrixVariable");
+		ARIS_DEFINE_BIG_FOUR(MatrixVariable);
 	};
 	class StringVariable final : public VariableTemplate<std::string>
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "StringVariable" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual toString() const->std::string override { return data(); }
 
 		virtual ~StringVariable() = default;
 		explicit StringVariable(const std::string &name = "string_variable", const std::string &data = "") : VariableTemplate(name, data) {}
-		StringVariable(const StringVariable &other) = default;
-		StringVariable(StringVariable &&other) = default;
-		StringVariable& operator=(const StringVariable &other) = default;
-		StringVariable& operator=(StringVariable &&other) = default;
+		ARIS_REGISTER_TYPE("StringVariable");
+		ARIS_DEFINE_BIG_FOUR(StringVariable);
 	};
 
 	/// @}

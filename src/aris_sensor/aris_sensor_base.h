@@ -87,7 +87,7 @@ namespace aris::sensor
 		auto stop()->void { for (auto &sensor : sensorPool())sensor.stop(); }
 
 		virtual ~SensorRoot();
-		explicit SensorRoot(const std::string &name = "SensorRoot");
+		explicit SensorRoot(const std::string &name = "sensor_root");
 		SensorRoot(const SensorRoot &);
 		SensorRoot(SensorRoot &&);
 		SensorRoot& operator=(const SensorRoot &);

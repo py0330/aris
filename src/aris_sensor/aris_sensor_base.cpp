@@ -101,7 +101,7 @@ namespace aris::sensor
 	SensorRoot::SensorRoot(const std::string &name) :Object(name)
 	{
 		registerType<aris::core::ObjectPool<Sensor> >();
-		imp_->sensor_pool_ = &add<aris::core::ObjectPool<Sensor> >("SensorPool");
+		imp_->sensor_pool_ = &add<aris::core::ObjectPool<Sensor> >("sensor_pool");
 	}
 	SensorRoot::SensorRoot(const SensorRoot &) = default;
 	SensorRoot::SensorRoot(SensorRoot &&) = default;

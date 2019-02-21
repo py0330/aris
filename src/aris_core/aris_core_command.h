@@ -122,8 +122,8 @@ namespace aris::core
 
 		virtual ~ParamBase();
 		explicit ParamBase(const std::string &name = "param_base");
-		REGISTER_TYPE("ParamBase");
-		DECLARE_DEFAULT_BIG_FOUR(ParamBase);
+		ARIS_REGISTER_TYPE("ParamBase");
+		ARIS_DECLARE_BIG_FOUR(ParamBase);
 
 	protected:
 		struct Imp;
@@ -148,8 +148,8 @@ namespace aris::core
 
 		virtual ~Param();
 		explicit Param(const std::string &name = "param", const std::string &default_param = "", char abbrev = 0);
-		REGISTER_TYPE("Param");
-		DECLARE_DEFAULT_BIG_FOUR(Param);
+		ARIS_REGISTER_TYPE("Param");
+		ARIS_DECLARE_BIG_FOUR(Param);
 
 	protected:
 		struct Imp;
@@ -167,8 +167,8 @@ namespace aris::core
 
 		virtual ~UniqueParam();
 		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "");
-		REGISTER_TYPE("UniqueParam");
-		DECLARE_DEFAULT_BIG_FOUR(UniqueParam);
+		ARIS_REGISTER_TYPE("UniqueParam");
+		ARIS_DECLARE_BIG_FOUR(UniqueParam);
 
 	protected:
 		struct Imp;
@@ -181,8 +181,8 @@ namespace aris::core
 	public:
 		virtual ~GroupParam();
 		explicit GroupParam(const std::string &name = "group_param");
-		REGISTER_TYPE("GroupParam");
-		DECLARE_DEFAULT_BIG_FOUR(GroupParam);
+		ARIS_REGISTER_TYPE("GroupParam");
+		ARIS_DECLARE_BIG_FOUR(GroupParam);
 	};
 	class Command :public ObjectPool<ParamBase>
 	{
@@ -195,8 +195,8 @@ namespace aris::core
 
 		virtual ~Command();
 		explicit Command(const std::string &name = "command", const std::string &default_param = "");
-		REGISTER_TYPE("Command");
-		DECLARE_DEFAULT_BIG_FOUR(Command);
+		ARIS_REGISTER_TYPE("Command");
+		ARIS_DECLARE_BIG_FOUR(Command);
 
 	private:
 		struct Imp;
@@ -215,8 +215,8 @@ namespace aris::core
 
 		virtual ~CommandParser();
 		explicit CommandParser(const std::string &name = "command_parser");
-		REGISTER_TYPE("CommandParser");
-		DECLARE_DEFAULT_BIG_FOUR(CommandParser);
+		ARIS_REGISTER_TYPE("CommandParser");
+		ARIS_DECLARE_BIG_FOUR(CommandParser);
 
 	private:
 		struct Imp;

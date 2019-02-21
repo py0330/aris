@@ -286,6 +286,7 @@ int main()
 		s_vc(6, aee_, aee);
 	};
 
+	/*
 	auto &planner = rbt.planPool().add<aris::dynamic::OptimalTrajectory>();
 	planner.setBeginNode({ 0,0,0,0 });
 	planner.setEndNode({ 0,1,0,0 });
@@ -294,7 +295,7 @@ int main()
 	planner.setMotionLimit(std::vector<OptimalTrajectory::MotionLimit>(6, OptimalTrajectory::MotionLimit{ 1,-1,1,-1,1,-1,1,-1 }));
 
 	planner.run();
-
+	*/
 
 	std::cout << "demo_ur finished, press any key to continue" << std::endl;
 	std::cin.get();

@@ -221,8 +221,6 @@ namespace aris::dynamic
 	class Model :public aris::core::Object
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Model"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 		auto time()const->double;
@@ -252,8 +250,6 @@ namespace aris::dynamic
 		auto simResultPool()const->const aris::core::ObjectPool<SimResult, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->simResultPool(); }
 		auto calibratorPool()->aris::core::ObjectPool<Calibrator, Element>&;
 		auto calibratorPool()const->const aris::core::ObjectPool<Calibrator, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->calibratorPool(); }
-		auto planPool()->aris::core::ObjectPool<Element, Element>&;
-		auto planPool()const->const aris::core::ObjectPool<Element, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->planPool(); }
 		auto ground()->Part&;
 		auto ground()const->const Part& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ground(); }
 		/// @}
@@ -273,10 +269,8 @@ namespace aris::dynamic
 		/// @}
 		virtual ~Model();
 		explicit Model(const std::string &name = "model");
-		Model(const Model &);
-		Model(Model &&);
-		Model &operator=(const Model &);
-		Model &operator=(Model &&);
+		ARIS_REGISTER_TYPE("Model");
+		ARIS_DECLARE_BIG_FOUR(Model);
 
 
 	private:

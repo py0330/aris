@@ -13,8 +13,6 @@ namespace aris::control
 	class Slave : public aris::core::Object
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Slave"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual send()->void {}
@@ -24,10 +22,8 @@ namespace aris::control
 
 		virtual ~Slave();
 		explicit Slave(const std::string &name = "slave", std::uint16_t phy_id = 0);
-		Slave(const Slave &other);
-		Slave(Slave &&other);
-		Slave& operator=(const Slave &other);
-		Slave& operator=(Slave &&other);
+		ARIS_REGISTER_TYPE("Slave");
+		ARIS_DECLARE_BIG_FOUR(Slave);
 
 	private:
 		struct Imp;

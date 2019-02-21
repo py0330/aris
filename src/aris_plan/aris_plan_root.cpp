@@ -424,7 +424,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Enable);
+	ARIS_DEFINE_BIG_FOUR_CPP(Enable);
 
 	struct DisableParam
 	{
@@ -551,7 +551,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Disable);
+	ARIS_DEFINE_BIG_FOUR_CPP(Disable);
 
 	struct HomeParam
 	{
@@ -700,7 +700,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Home);
+	ARIS_DEFINE_BIG_FOUR_CPP(Home);
 
 	struct ModeParam
 	{
@@ -836,7 +836,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Mode);
+	ARIS_DEFINE_BIG_FOUR_CPP(Mode);
 
 	struct ResetParam
 	{
@@ -1049,7 +1049,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Reset);
+	ARIS_DEFINE_BIG_FOUR_CPP(Reset);
 
 	struct RecoverParam
 	{
@@ -1123,7 +1123,7 @@ namespace aris::plan
 			"<Command name=\"rc\">"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Recover);
+	ARIS_DEFINE_BIG_FOUR_CPP(Recover);
 
 	struct SleepParam { int count; };
 	struct Sleep::Imp {};
@@ -1141,7 +1141,7 @@ namespace aris::plan
 			"	<Param name=\"count\" default=\"1000\" abbreviation=\"c\"/>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Sleep);
+	ARIS_DEFINE_BIG_FOUR_CPP(Sleep);
 
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
@@ -1177,7 +1177,7 @@ namespace aris::plan
 	{
 		command().loadXmlStr("<Command name=\"sh\"/>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(Show);
+	ARIS_DEFINE_BIG_FOUR_CPP(Show);
 
 	struct MoveAbsJParam
 	{
@@ -1317,7 +1317,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(MoveAbsJ);
+	ARIS_DEFINE_BIG_FOUR_CPP(MoveAbsJ);
 
 	auto check_eul_validity(const std::string &eul_type)->bool
 	{
@@ -1522,7 +1522,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(MoveJ);
+	ARIS_DEFINE_BIG_FOUR_CPP(MoveJ);
 
 	struct MoveLParam
 	{
@@ -1662,7 +1662,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(MoveL);
+	ARIS_DEFINE_BIG_FOUR_CPP(MoveL);
 
 	struct AutoMoveParam {};
 	struct AutoMove::Imp
@@ -1851,7 +1851,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(AutoMove);
+	ARIS_DEFINE_BIG_FOUR_CPP(AutoMove);
 
 	struct ManualMoveParam {};
 	struct ManualMove::Imp
@@ -2028,7 +2028,7 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(ManualMove);
+	ARIS_DEFINE_BIG_FOUR_CPP(ManualMove);
 
 	struct UniversalPlan::Imp
 	{
@@ -2050,5 +2050,5 @@ namespace aris::plan
 		imp_->collect_nrt = collect_func;
 		command().loadXmlStr(cmd_xml_str);
 	}
-	DEFINE_DEFAULT_BIG_FOUR_CPP(UniversalPlan);
+	ARIS_DEFINE_BIG_FOUR_CPP(UniversalPlan);
 }

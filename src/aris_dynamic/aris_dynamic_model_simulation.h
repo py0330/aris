@@ -36,8 +36,6 @@ namespace aris::dynamic
 		class TimeResult : public Element
 		{
 		public:
-			static auto Type()->const std::string & { static const std::string type{ "TimeResult" }; return type; }
-			auto virtual type() const->const std::string& override { return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto record()->void;
@@ -45,10 +43,8 @@ namespace aris::dynamic
 
 			virtual ~TimeResult();
 			explicit TimeResult(const std::string &name = "time_result");
-			TimeResult(const TimeResult&);
-			TimeResult(TimeResult&&);
-			TimeResult& operator=(const TimeResult&);
-			TimeResult& operator=(TimeResult&&);
+			ARIS_REGISTER_TYPE("TimeResult");
+			ARIS_DECLARE_BIG_FOUR(TimeResult);
 
 		private:
 			struct Imp;
@@ -59,8 +55,6 @@ namespace aris::dynamic
 		class PartResult : public Element
 		{
 		public:
-			static auto Type()->const std::string & { static const std::string type{ "PartResult" }; return type; }
-			auto virtual type() const->const std::string& override { return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto part()->Part&;
@@ -70,10 +64,8 @@ namespace aris::dynamic
 
 			virtual ~PartResult();
 			explicit PartResult(const std::string &name = "part_result", Part *part = nullptr);
-			PartResult(const PartResult&);
-			PartResult(PartResult&&);
-			PartResult& operator=(const PartResult&);
-			PartResult& operator=(PartResult&&);
+			ARIS_REGISTER_TYPE("PartResult");
+			ARIS_DECLARE_BIG_FOUR(PartResult);
 
 		private:
 			struct Imp;
@@ -84,8 +76,6 @@ namespace aris::dynamic
 		class ConstraintResult : public Element
 		{
 		public:
-			static auto Type()->const std::string & { static const std::string type{ "ConstraintResult" }; return type; }
-			auto virtual type() const->const std::string& override { return Type(); }
 			auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 			auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 			auto constraint()->Constraint&;
@@ -95,10 +85,8 @@ namespace aris::dynamic
 
 			virtual ~ConstraintResult();
 			explicit ConstraintResult(const std::string &name = "constraint_result", Constraint *constraint = nullptr);
-			ConstraintResult(const ConstraintResult&);
-			ConstraintResult(ConstraintResult&&);
-			ConstraintResult& operator=(const ConstraintResult&);
-			ConstraintResult& operator=(ConstraintResult&&);
+			ARIS_REGISTER_TYPE("ConstraintResult");
+			ARIS_DECLARE_BIG_FOUR(ConstraintResult);
 
 		private:
 			struct Imp;
@@ -107,8 +95,6 @@ namespace aris::dynamic
 			friend class SimResult;
 		};
 
-		static auto Type()->const std::string & { static const std::string type{ "SimResult" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto timeResult()->TimeResult&;
 		auto timeResult()const->const TimeResult& { return const_cast<SimResult*>(this)->timeResult(); }
@@ -125,10 +111,8 @@ namespace aris::dynamic
 
 		virtual ~SimResult();
 		explicit SimResult(const std::string &name = "sim_result");
-		SimResult(const SimResult&);
-		SimResult(SimResult&&);
-		SimResult& operator=(const SimResult&);
-		SimResult& operator=(SimResult&&);
+		ARIS_REGISTER_TYPE("SimResult");
+		ARIS_DECLARE_BIG_FOUR(SimResult);
 
 	private:
 		struct Imp;
@@ -137,9 +121,6 @@ namespace aris::dynamic
 	class Simulator :public Element
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Simulator" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
-
 		auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void;
 		template<typename ParamType>
 		auto simulate(const PlanFunction &plan, ParamType type, SimResult &result)->void
@@ -150,10 +131,8 @@ namespace aris::dynamic
 
 		virtual ~Simulator();
 		explicit Simulator(const std::string &name = "simulator");
-		Simulator(const Simulator&);
-		Simulator(Simulator&&);
-		Simulator& operator=(const Simulator&);
-		Simulator& operator=(Simulator&&);
+		ARIS_REGISTER_TYPE("Simulator");
+		ARIS_DECLARE_BIG_FOUR(Simulator);
 
 	private:
 		struct Imp;
@@ -162,8 +141,6 @@ namespace aris::dynamic
 	class SolverSimulator : public Simulator
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "SolverSimulator" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void override;
@@ -173,10 +150,8 @@ namespace aris::dynamic
 
 		virtual ~SolverSimulator();
 		explicit SolverSimulator(const std::string &name = "solver_simulator", Solver *solver = nullptr);
-		SolverSimulator(const SolverSimulator&);
-		SolverSimulator(SolverSimulator&&);
-		SolverSimulator& operator=(const SolverSimulator&);
-		SolverSimulator& operator=(SolverSimulator&&);
+		ARIS_REGISTER_TYPE("SolverSimulator");
+		ARIS_DECLARE_BIG_FOUR(SolverSimulator);
 
 	private:
 		struct Imp;
@@ -185,8 +160,6 @@ namespace aris::dynamic
 	class AdamsSimulator :public Simulator
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "AdamsSimulator" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto saveAdams(const std::string &filename, SimResult &result, Size pos = -1)->void;
 		auto saveAdams(std::ofstream &file, SimResult &result, Size pos = -1)->void;
 		auto saveAdams(const std::string &filename)->void;
@@ -197,10 +170,8 @@ namespace aris::dynamic
 
 		virtual ~AdamsSimulator();
 		explicit AdamsSimulator(const std::string &name = "adams_solver");
-		AdamsSimulator(const AdamsSimulator&);
-		AdamsSimulator(AdamsSimulator&&);
-		AdamsSimulator& operator=(const AdamsSimulator&);
-		AdamsSimulator& operator=(AdamsSimulator&&);
+		ARIS_REGISTER_TYPE("AdamsSimulator");
+		ARIS_DECLARE_BIG_FOUR(AdamsSimulator);
 
 	private:
 		struct Imp;
@@ -210,8 +181,6 @@ namespace aris::dynamic
 	class Calibrator :public Element
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Calibrator" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual allocateMemory()->void;
 		auto m()->Size;
 		auto n()->Size { return g() + k(); }
@@ -228,10 +197,8 @@ namespace aris::dynamic
 
 		virtual ~Calibrator();
 		explicit Calibrator(const std::string &name = "calibrator");
-		Calibrator(const Calibrator&);
-		Calibrator(Calibrator&&);
-		Calibrator& operator=(const Calibrator&);
-		Calibrator& operator=(Calibrator&&);
+		ARIS_REGISTER_TYPE("Calibrator");
+		ARIS_DECLARE_BIG_FOUR(Calibrator);
 
 	private:
 		struct Imp;

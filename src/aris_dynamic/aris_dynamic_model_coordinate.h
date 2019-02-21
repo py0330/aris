@@ -28,8 +28,6 @@ namespace aris::dynamic
 	class Coordinate :public DynEle
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Coordinate" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual pm() const noexcept->const double4x4& = 0;
 		auto virtual vs() const noexcept->const double6& = 0;
 		auto virtual as() const noexcept->const double6& = 0;
@@ -90,16 +88,12 @@ namespace aris::dynamic
 
 		virtual ~Coordinate() = default;
 		explicit Coordinate(const std::string &name = "coordinate", bool active = true);
-		Coordinate(const Coordinate &) = default;
-		Coordinate(Coordinate &&) = default;
-		Coordinate& operator=(const Coordinate &) = default;
-		Coordinate& operator=(Coordinate &&) = default;
+		ARIS_REGISTER_TYPE("Coordinate");
+		ARIS_DEFINE_BIG_FOUR(Coordinate);
 	};
 	class Marker final :public Coordinate
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Marker" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual pm() const noexcept->const double4x4& override;
@@ -116,10 +110,8 @@ namespace aris::dynamic
 
 		virtual ~Marker();
 		explicit Marker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true);
-		Marker(const Marker&);
-		Marker(Marker&&);
-		Marker& operator=(const Marker&);
-		Marker& operator=(Marker&&);
+		ARIS_REGISTER_TYPE("Marker");
+		ARIS_DECLARE_BIG_FOUR(Marker);
 
 	private:
 		struct Imp;
@@ -128,8 +120,6 @@ namespace aris::dynamic
 	class Part final :public Coordinate
 	{
 	public:
-		auto static Type()->const std::string & { static const std::string type{ "Part" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual pm() const noexcept->const double4x4& override;
@@ -233,10 +223,8 @@ namespace aris::dynamic
 
 		virtual ~Part();
 		explicit Part(const std::string &name = "part", const double *prt_iv = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
-		Part(const Part &other);
-		Part(Part &&other);
-		Part& operator=(const Part &other);
-		Part& operator=(Part &&other);
+		ARIS_REGISTER_TYPE("Part");
+		ARIS_DECLARE_BIG_FOUR(Part);
 
 	private:
 		struct Imp;
@@ -245,23 +233,17 @@ namespace aris::dynamic
 	class Geometry :public Element
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "Geometry" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto fatherPart() const->const Part&;
 		auto fatherPart()->Part&;
 
 		virtual ~Geometry() = default;
 		explicit Geometry(const std::string &name = "geometry") : Element(name) {}
-		Geometry(const Geometry&) = default;
-		Geometry(Geometry&&) = default;
-		Geometry& operator=(const Geometry&) = default;
-		Geometry& operator=(Geometry&&) = default;
+		ARIS_REGISTER_TYPE("Geometry");
+		ARIS_DEFINE_BIG_FOUR(Geometry);
 	};
 	class ParasolidGeometry final :public Geometry
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "ParasolidGeometry" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto prtPm()const->const double4x4&;
@@ -269,10 +251,8 @@ namespace aris::dynamic
 
 		virtual ~ParasolidGeometry();
 		explicit ParasolidGeometry(const std::string &name = "parasolid_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
-		ParasolidGeometry(const ParasolidGeometry &other);
-		ParasolidGeometry(ParasolidGeometry &&other);
-		ParasolidGeometry& operator=(const ParasolidGeometry &other);
-		ParasolidGeometry& operator=(ParasolidGeometry &&other);
+		ARIS_REGISTER_TYPE("ParasolidGeometry");
+		ARIS_DECLARE_BIG_FOUR(ParasolidGeometry);
 
 	private:
 		struct Imp;
@@ -281,8 +261,6 @@ namespace aris::dynamic
 	class FileGeometry final :public Geometry
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "FileGeometry" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto prtPm()const->const double4x4&;
@@ -290,10 +268,8 @@ namespace aris::dynamic
 
 		virtual ~FileGeometry();
 		explicit FileGeometry(const std::string &name = "file_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
-		FileGeometry(const FileGeometry &other);
-		FileGeometry(FileGeometry &&other);
-		FileGeometry& operator=(const FileGeometry &other);
-		FileGeometry& operator=(FileGeometry &&other);
+		ARIS_REGISTER_TYPE("FileGeometry");
+		ARIS_DECLARE_BIG_FOUR(FileGeometry);
 
 	private:
 		struct Imp;
@@ -302,8 +278,6 @@ namespace aris::dynamic
 	class ShellGeometry final :public Geometry
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type{ "ShellGeometry" }; return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto filePath()const->const std::string &;
@@ -311,10 +285,8 @@ namespace aris::dynamic
 
 		virtual ~ShellGeometry();
 		explicit ShellGeometry(const std::string &name = "shell_geometry", const std::string &graphic_file_path = "", Marker* relative_to = nullptr);
-		ShellGeometry(const ShellGeometry &other);
-		ShellGeometry(ShellGeometry &&other);
-		ShellGeometry& operator=(const ShellGeometry &other);
-		ShellGeometry& operator=(ShellGeometry &&other);
+		ARIS_REGISTER_TYPE("ShellGeometry");
+		ARIS_DECLARE_BIG_FOUR(ShellGeometry);
 
 	private:
 		struct Imp;

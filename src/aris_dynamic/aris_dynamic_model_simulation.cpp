@@ -768,10 +768,7 @@ namespace aris::dynamic
 	}
 	Calibrator::~Calibrator() = default;
 	Calibrator::Calibrator(const std::string &name) : Element(name), imp_(new Imp) {}
-	Calibrator::Calibrator(const Calibrator&) = default;
-	Calibrator::Calibrator(Calibrator&&) = default;
-	Calibrator& Calibrator::operator=(const Calibrator&) = default;
-	Calibrator& Calibrator::operator=(Calibrator&&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Calibrator);
 
 	struct SimResult::TimeResult::Imp { std::deque<double> time_; };
 	auto SimResult::TimeResult::saveXml(aris::core::XmlElement &xml_ele)const->void
@@ -1084,10 +1081,7 @@ namespace aris::dynamic
 	}
 	Simulator::~Simulator() = default;
 	Simulator::Simulator(const std::string &name) : Element(name), imp_(new Imp) {}
-	Simulator::Simulator(const Simulator&) = default;
-	Simulator::Simulator(Simulator&&) = default;
-	Simulator& Simulator::operator=(const Simulator&) = default;
-	Simulator& Simulator::operator=(Simulator&&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Simulator);
 
 	struct SolverSimulator::Imp
 	{
@@ -1137,10 +1131,7 @@ namespace aris::dynamic
 	}
 	SolverSimulator::~SolverSimulator() = default;
 	SolverSimulator::SolverSimulator(const std::string &name, Solver *solver) : Simulator(name), imp_(new Imp(solver)) {}
-	SolverSimulator::SolverSimulator(const SolverSimulator&) = default;
-	SolverSimulator::SolverSimulator(SolverSimulator&&) = default;
-	SolverSimulator& SolverSimulator::operator=(const SolverSimulator&) = default;
-	SolverSimulator& SolverSimulator::operator=(SolverSimulator&&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(SolverSimulator);
 
 	struct AdamsSimulator::Imp {};
 	auto AdamsSimulator::saveAdams(const std::string &filename, SimResult &result, Size pos)->void
@@ -1648,8 +1639,5 @@ namespace aris::dynamic
 	auto AdamsSimulator::adamsID(const Part &prt)const->Size { return (&prt == &ancestor<Model>()->ground()) ? 1 : prt.id() + (ancestor<Model>()->ground().id() < prt.id() ? 1 : 2); }
 	AdamsSimulator::~AdamsSimulator() = default;
 	AdamsSimulator::AdamsSimulator(const std::string &name) : Simulator(name) {}
-	AdamsSimulator::AdamsSimulator(const AdamsSimulator&) = default;
-	AdamsSimulator::AdamsSimulator(AdamsSimulator&&) = default;
-	AdamsSimulator& AdamsSimulator::operator=(const AdamsSimulator&) = default;
-	AdamsSimulator& AdamsSimulator::operator=(AdamsSimulator&&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(AdamsSimulator);
 }
