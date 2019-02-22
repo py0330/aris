@@ -1,8 +1,5 @@
 @PACKAGE_INIT@ 
 
-set(RELY_LINK_DIR "@RELY_LINK_DIR@")
-link_directories(${RELY_LINK_DIR})
-
 set_and_check(aris_INCLUDE_DIRS "@aris_INCLUDE_DIRS@")
 set(aris_LIBRARIES "@aris_LIBRARIES@")
 
