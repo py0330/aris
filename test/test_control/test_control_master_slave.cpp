@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <aris_control.h>
+#include <aris/control/control.hpp>
 #include "test_control_master_slave.h"
 
 using namespace aris::control;

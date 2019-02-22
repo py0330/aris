@@ -3,7 +3,7 @@
 #include <cmath>
 #include <string>
 #include <sstream>
-#include "aris_core.h"
+#include <aris/core/core.hpp>
 
 using namespace std;
 

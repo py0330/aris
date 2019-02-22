@@ -1,6 +1,6 @@
 ﻿#include "test_dynamic_matrix.h"
 #include <iostream>
-#include <aris_dynamic.h>
+#include <aris/dynamic/dynamic.hpp>
 
 using namespace aris::dynamic;
 

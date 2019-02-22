@@ -11,7 +11,7 @@
 #include "test_dynamic_model_interaction.h"
 #include "test_dynamic_plan.h"
 
-#include <aris_dynamic.h>
+#include <aris/dynamic/dynamic.hpp>
 
 
 int main(int argc, char *argv[])

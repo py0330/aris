@@ -2,7 +2,7 @@
 #include "test_robot_rokae.h"
 
 
-#include <aris_robot.h>
+#include <aris/robot/robot.hpp>
 
 
 int main(int argc, char *argv[])

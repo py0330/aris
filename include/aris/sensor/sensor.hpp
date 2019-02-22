@@ -1,0 +1,1 @@
+﻿#include<aris/sensor/sensor_base.hpp>

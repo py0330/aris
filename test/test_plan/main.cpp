@@ -1,6 +1,6 @@
 ﻿#include <iostream>
-#include <aris_core.h>
-#include <aris_plan.h>
+#include <aris/core/core.hpp>
+#include <aris/plan/plan.hpp>
 
 #include "test_plan_function.h"
 

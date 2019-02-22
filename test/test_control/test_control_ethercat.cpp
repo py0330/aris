@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <cstdint>
-#include <aris_control.h>
+#include <aris/control/control.hpp>
 #include "test_control_ethercat.h"
 
 using namespace aris::control;

@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <condition_variable>
 #include <future>
-#include <aris.h>
+#include <aris.hpp>
 
 #include "test_control_server.h"
 

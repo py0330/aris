@@ -27,27 +27,27 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
-# set include and lib folders
+# set rely libs
 if(UNIX)
 	set(RELY_LINK_LIB atomic pthread stdc++fs)#pthread is needed for concurrency
 
 	if(USE_XENOMAI)
 		message("using xenomai")
 		
-		add_definitions(-DUSE_XENOMAI)
+		add_definitions(-DARIS_USE_XENOMAI)
 		set(RELY_LINK_DIR "/usr/xenomai/lib" ${RELY_LINK_DIR})
 		set(XENOMAI_ROOT_DIR "/usr/xenomai")
 		
 		# copy this file to you project/config
 		set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
 		find_package(Xenomai REQUIRED QUIET)
-		include_directories(${XENOMAI_INCLUDE_DIRS})
+		set(RELY_INCL_DIR ${XENOMAI_INCLUDE_DIRS} ${RELY_INCL_DIR})
 		set(RELY_LINK_LIB ${XENOMAI_LIBRARIES} ${RELY_LINK_LIB})
 	endif(USE_XENOMAI)
 	
 	if(USE_ETHERLAB)
 		message("using etherlab")
-		add_definitions(-DUSE_ETHERLAB)
+		add_definitions(-DARIS_USE_ETHERLAB)
 		set(RELY_INCL_DIR "/opt/etherlab/include" ${RELY_INCL_DIR})
 		set(RELY_LINK_DIR "/opt/etherlab/lib" ${RELY_LINK_DIR})
 		set(RELY_LINK_LIB ethercat_rtdm ${RELY_LINK_LIB})
@@ -56,15 +56,6 @@ endif(UNIX)
 if(WIN32)
 	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
 endif(WIN32)
-
-set(ARIS_INCL_DIR src/ src/aris_robot src/aris_server src/aris_sensor src/aris_plan src/aris_dynamic src/aris_control src/aris_core)
-set(ARIS_LINK_LIB aris_robot aris_server aris_sensor aris_plan aris_dynamic aris_control aris_core)
-set(ALL_INCL_DIR ${ARIS_INCL_DIR} ${RELY_INCL_DIR})
-set(ALL_LINK_DIR ${ARIS_LINK_DIR} ${RELY_LINK_DIR})
-set(ALL_LINK_LIB ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
-
-include_directories(${ALL_INCL_DIR})
-link_directories(${ALL_LINK_DIR})
 
 # set uninstall command
 if(UNIX)
@@ -82,29 +73,39 @@ endif(WIN32)
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
 ## build targets ##
-set(ARIS_TARGETS aris_robot aris_server aris_plan aris_dynamic aris_control aris_sensor aris_core)
-foreach(aris_target ${ARIS_TARGETS})
-	file(GLOB HEADERS src/${aris_target}/*.h src/${aris_target}/${aris_target}.h)
-	file(GLOB SOURCES src/${aris_target}/*.cpp)
-	add_library(${aris_target} STATIC ${HEADERS} ${SOURCES})
-	set_target_properties(${aris_target} PROPERTIES PUBLIC_HEADER "${HEADERS}")
-	set(aris_LIBRARIES ${aris_LIBRARIES} optimized aris::${aris_target} debug aris::debug::${aris_target})
-	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/${aris_target}/resource)
-		install(DIRECTORY src/${aris_target}/resource/ DESTINATION resource/${aris_target})
-	endif()
-endforeach(aris_target)
+foreach(target robot server plan dynamic control sensor core)
+	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h)
+	file(GLOB SOURCES src/${target}/*.cpp ${HEADERS})
+	add_library(aris_${target} STATIC ${HEADERS} ${SOURCES})
+	target_include_directories(aris_${target}
+		PUBLIC 
+			$<INSTALL_INTERFACE:include>
+			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		PRIVATE
+			${CMAKE_CURRENT_SOURCE_DIR}/src
+			${RELY_INCL_DIR}
+	)
 
-## install targets ##
-install(TARGETS ${ARIS_TARGETS} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include" ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
-install(TARGETS ${ARIS_TARGETS} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include" ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
-install(EXPORT aris-targets-release NAMESPACE aris:: FILE aris-targets-release.cmake DESTINATION "share/aris/cmake")
+	set_target_properties(aris_${target} PROPERTIES PUBLIC_HEADER "${HEADERS}")
+	set(aris_LIBRARIES ${aris_LIBRARIES} optimized aris::aris_${target} debug aris::debug::aris_${target})
+	set(ARIS_LINK_LIB ${ARIS_LINK_LIB} aris_${target})
+	
+	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/${target}/resource)
+		install(DIRECTORY src/${target}/resource/ DESTINATION resource/${target})
+	endif()
+	install(TARGETS aris_${target} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
+	install(TARGETS aris_${target} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
+endforeach(target)
+
+## install exports ##
 install(EXPORT aris-targets-debug NAMESPACE aris::debug:: FILE aris-targets-debug.cmake DESTINATION "share/aris/cmake")
-install(FILES src/aris.h DESTINATION include)
+install(EXPORT aris-targets-release NAMESPACE aris:: FILE aris-targets-release.cmake DESTINATION "share/aris/cmake")
+install(FILES include/aris.hpp DESTINATION include)
 
 ## install config ##
 include(CMakePackageConfigHelpers)
 set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
-set(aris_LIBRARIES  ${aris_LIBRARIES} ${RELY_LINK_LIB})
+set(aris_LIBRARIES ${aris_LIBRARIES} ${RELY_LINK_LIB})
 configure_package_config_file("config/aris-config.cmake.in" "${CMAKE_BINARY_DIR}/aris-config.cmake" INSTALL_DESTINATION "share/aris/cmake")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/aris-config.cmake" DESTINATION "share/aris/cmake")
 
@@ -119,7 +120,8 @@ if(BUILD_TESTS)
 	foreach(aris_test ${ARIS_TESTS})
 		file(GLOB SOURCES test/${aris_test}/*)
 		add_executable(${aris_test} ${SOURCES})
-		target_link_libraries(${aris_test} ${ARIS_TARGETS} ${RELY_LINK_LIB})
+		#target_include_directories(${aris_test} PUBLIC include ${RELY_INCL_DIR})
+		target_link_libraries(${aris_test} ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
 		add_test(NAME ${aris_test} COMMAND ${aris_test})
 		set_tests_properties(${aris_test} PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 		if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${aris_test}/resource)
@@ -135,7 +137,7 @@ if(BUILD_DEMOS)
 	foreach(aris_demo ${ARIS_DEMOS})
 		file(GLOB SOURCES demo/${aris_demo}/*.h demo/${aris_demo}/*.cpp)
 		add_executable(${aris_demo} ${SOURCES})
-		target_link_libraries(${aris_demo} ${ARIS_TARGETS} ${RELY_LINK_LIB})
+		target_link_libraries(${aris_demo} ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
 		add_test(NAME ${aris_demo} COMMAND ${aris_demo})
 		set_tests_properties(${aris_demo} PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
 		if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/demo/${aris_demo}/resource)

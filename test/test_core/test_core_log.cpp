@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <future>
-#include <aris_core.h>
+#include <aris/core/core.hpp>
 #include <filesystem>
 #include <fstream>
 #include "test_core_msg.h"

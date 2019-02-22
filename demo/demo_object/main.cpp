@@ -2,7 +2,7 @@
 /// 本例子展示构造数据结构的过程:
 ///
 
-#include "aris.h"
+#include "aris.hpp"
 
 using namespace aris::core;
 

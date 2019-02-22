@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <aris_core.h>
+#include <aris/core/core.hpp>
 #include "test_core_object.h"
 
 

@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <aris.h>
+#include <aris.hpp>
 
 using namespace aris::dynamic;
 using namespace aris::robot;

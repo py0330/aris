@@ -1,5 +1,5 @@
 ﻿#include "test_dynamic_model.h"
-#include <aris_dynamic.h>
+#include <aris/dynamic/dynamic.hpp>
 
 void test_model()
 {

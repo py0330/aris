@@ -1,6 +1,6 @@
 ﻿#include "test_dynamic_model_solver_puma.h"
 #include <iostream>
-#include <aris_dynamic.h>
+#include <aris/dynamic/dynamic.hpp>
 
 #include<type_traits>
 

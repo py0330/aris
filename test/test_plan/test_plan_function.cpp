@@ -1,7 +1,7 @@
 ﻿#include <iostream>
-#include <aris_core.h>
-#include <aris_plan.h>
-#include <aris_dynamic.h>
+#include <aris/core/core.hpp>
+#include <aris/plan/plan.hpp>
+#include <aris/dynamic/dynamic.hpp>
 
 using namespace aris::plan;
 

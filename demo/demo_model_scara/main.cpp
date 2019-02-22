@@ -2,7 +2,7 @@
 /// 本例子展示基于Scara机器人的建模:
 ///
 
-#include "aris.h"
+#include "aris.hpp"
 
 using namespace std;
 

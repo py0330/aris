@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <future>
-#include <aris_core.h>
+#include <aris/core/core.hpp>
 #include "test_core_socket.h"
 
 using namespace aris::core;
