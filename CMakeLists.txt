@@ -30,16 +30,12 @@ set(CMAKE_BUILD_TYPE "Release")
 # set rely libs
 if(UNIX)
 	set(RELY_LINK_LIB atomic pthread stdc++fs)#pthread is needed for concurrency
+	set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
 
 	if(USE_XENOMAI)
 		message("using xenomai")
-		
 		add_definitions(-DARIS_USE_XENOMAI)
-		set(RELY_LINK_DIR "/usr/xenomai/lib" ${RELY_LINK_DIR})
 		set(XENOMAI_ROOT_DIR "/usr/xenomai")
-		
-		# copy this file to you project/config
-		set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
 		find_package(Xenomai REQUIRED QUIET)
 		set(RELY_INCL_DIR ${XENOMAI_INCLUDE_DIRS} ${RELY_INCL_DIR})
 		set(RELY_LINK_LIB ${XENOMAI_LIBRARIES} ${RELY_LINK_LIB})
@@ -49,8 +45,7 @@ if(UNIX)
 		message("using etherlab")
 		add_definitions(-DARIS_USE_ETHERLAB)
 		set(RELY_INCL_DIR "/opt/etherlab/include" ${RELY_INCL_DIR})
-		set(RELY_LINK_DIR "/opt/etherlab/lib" ${RELY_LINK_DIR})
-		set(RELY_LINK_LIB ethercat_rtdm ${RELY_LINK_LIB})
+		set(RELY_LINK_LIB /opt/etherlab/lib/ethercat_rtdm ${RELY_LINK_LIB})
 	endif(USE_ETHERLAB)
 endif(UNIX)
 if(WIN32)
@@ -90,11 +85,13 @@ foreach(target robot server plan dynamic control sensor core)
 	set(aris_LIBRARIES ${aris_LIBRARIES} optimized aris::aris_${target} debug aris::debug::aris_${target})
 	set(ARIS_LINK_LIB ${ARIS_LINK_LIB} aris_${target})
 	
+	install(TARGETS aris_${target} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
+	install(TARGETS aris_${target} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
+
 	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/${target}/resource)
 		install(DIRECTORY src/${target}/resource/ DESTINATION resource/${target})
 	endif()
-	install(TARGETS aris_${target} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
-	install(TARGETS aris_${target} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
+
 endforeach(target)
 
 ## install exports ##
