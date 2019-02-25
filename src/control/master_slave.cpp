@@ -206,9 +206,9 @@ namespace aris::control
 		imp_->is_rt_thread_running_ = true;
 
 		// make vec_phy2abs //
+		imp_->sla_vec_phy2abs_.clear();
 		for (auto &sla : slavePool())
 		{
-			imp_->sla_vec_phy2abs_.clear();
 			imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId() + 1), imp_->sla_vec_phy2abs_.size()), -1);
 			if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) throw std::runtime_error("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
 			imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();

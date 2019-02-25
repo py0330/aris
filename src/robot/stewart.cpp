@@ -114,7 +114,7 @@ namespace aris::robot
 			// REAL,这里放大了最大速度 //
 			
 			std::string xml_str =
-				"<EthercatMotion phy_id=\"" + std::to_string(i) + "\" product_code=\"0x60380000\""
+				"<EthercatMotion phy_id=\"" + std::to_string(6-i) + "\" product_code=\"0x60380000\""
 				" vendor_id=\"0x0000066F\" revision_num=\"0x00010000\" dc_assign_activate=\"0x0300\""
 				" min_pos=\"" + std::to_string(min_pos[i]) + "\" max_pos=\"" + std::to_string(max_pos[i]) + "\" max_vel=\"" + std::to_string(max_vel[i]*1.2) + "\" min_vel=\"" + std::to_string(-max_vel[i]*1.2) + "\""
 				" max_acc=\"" + std::to_string(max_acc[i]) + "\" min_acc=\"" + std::to_string(-max_acc[i]) + "\" max_pos_following_error=\"0.5\" max_vel_following_error=\"0.5\""

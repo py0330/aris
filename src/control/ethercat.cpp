@@ -187,7 +187,6 @@ namespace aris::control
 		registerType<SyncManager>();
 		registerType<aris::core::ObjectPool<SyncManager> >();
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP(EthercatSlave);
 
 	class EthercatMaster::Imp
 	{
@@ -603,7 +602,6 @@ namespace aris::control
 		, Slave(name, phy_id), imp_(new Imp)
 	{
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP(EthercatMotion);
 	
 	EthercatController::EthercatController(const std::string &name) :EthercatMaster(name), Controller(name), Master(name){}
 

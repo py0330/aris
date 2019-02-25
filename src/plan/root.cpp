@@ -17,10 +17,7 @@ namespace aris::plan
 		registerType<aris::core::Command>();
 		add<aris::core::Command>(name);
 	}
-	Plan::Plan(const Plan &) = default;
-	Plan::Plan(Plan &&) = default;
-	Plan& Plan::operator=(const Plan &) = default;
-	Plan& Plan::operator=(Plan &&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Plan);
 
 	struct PlanRoot::Imp { Imp() {} };
 	auto PlanRoot::planPool()->aris::core::ObjectPool<Plan> & { return dynamic_cast<aris::core::ObjectPool<Plan> &>(children().front()); }
@@ -51,10 +48,7 @@ namespace aris::plan
 		registerType<ManualMove>();
 		registerType<UniversalPlan>();
 	}
-	PlanRoot::PlanRoot(const PlanRoot &) = default;
-	PlanRoot::PlanRoot(PlanRoot &&) = default;
-	PlanRoot& PlanRoot::operator=(const PlanRoot &) = default;
-	PlanRoot& PlanRoot::operator=(PlanRoot &&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(PlanRoot);
 
 #define CHECK_PARAM_STRING \
 		"		<UniqueParam default=\"check_none\">" \
@@ -123,14 +117,13 @@ namespace aris::plan
 		"				</UniqueParam>"\
 		"			</GroupParam>"\
 		"		</UniqueParam>"
-
-	auto default_prepair_check_option(const std::map<std::string, std::string> &cmd_params, PlanTarget &param)->void
+	auto set_check_option(const std::map<std::string, std::string> &cmd_params, PlanTarget &target)->void
 	{
 		for (auto cmd_param : cmd_params)
 		{
 			if (cmd_param.first == "check_all")
 			{
-				param.option &= ~(
+				target.option &= ~(
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
@@ -146,7 +139,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "check_none")
 			{
-				param.option |=
+				target.option |=
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
@@ -162,7 +155,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "check_pos")
 			{
-				param.option &= ~(
+				target.option &= ~(
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
@@ -173,7 +166,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "not_check_pos")
 			{
-				param.option |=
+				target.option |=
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
@@ -184,7 +177,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "check_vel")
 			{
-				param.option &= ~(
+				target.option &= ~(
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
@@ -193,7 +186,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "not_check_vel")
 			{
-				param.option |=
+				target.option |=
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
@@ -202,180 +195,254 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "check_pos_min")
 			{
-				param.option &= ~Plan::NOT_CHECK_POS_MIN;
+				target.option &= ~Plan::NOT_CHECK_POS_MIN;
 			}
 			else if (cmd_param.first == "not_check_pos_min")
 			{
-				param.option |= Plan::NOT_CHECK_POS_MIN;
+				target.option |= Plan::NOT_CHECK_POS_MIN;
 			}
 			else if (cmd_param.first == "check_pos_max")
 			{
-				param.option &= ~Plan::NOT_CHECK_POS_MAX;
+				target.option &= ~Plan::NOT_CHECK_POS_MAX;
 			}
 			else if (cmd_param.first == "not_check_pos_max")
 			{
-				param.option |= Plan::NOT_CHECK_POS_MAX;
+				target.option |= Plan::NOT_CHECK_POS_MAX;
 			}
 			else if (cmd_param.first == "check_pos_continuous")
 			{
-				param.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS;
+				target.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS;
 			}
 			else if (cmd_param.first == "not_check_pos_continuous")
 			{
-				param.option |= Plan::NOT_CHECK_POS_CONTINUOUS;
+				target.option |= Plan::NOT_CHECK_POS_CONTINUOUS;
 			}
 			else if (cmd_param.first == "check_pos_continuous_at_start")
 			{
-				param.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
+				target.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "not_check_pos_continuous_at_start")
 			{
-				param.option |= Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
+				target.option |= Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "check_pos_continuous_second_order")
 			{
-				param.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
+				target.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 			}
 			else if (cmd_param.first == "not_check_pos_continuous_second_order")
 			{
-				param.option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
+				target.option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 			}
 			else if (cmd_param.first == "check_pos_continuous_second_order_at_start")
 			{
-				param.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
+				target.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 			}
 			else if (cmd_param.first == "not_check_pos_continuous_second_order_at_start")
 			{
-				param.option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
+				target.option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 			}
 			else if (cmd_param.first == "check_pos_following_error")
 			{
-				param.option &= ~Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
+				target.option &= ~Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "not_check_pos_following_error")
 			{
-				param.option |= Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
+				target.option |= Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "check_vel_min")
 			{
-				param.option &= ~Plan::NOT_CHECK_VEL_MIN;
+				target.option &= ~Plan::NOT_CHECK_VEL_MIN;
 			}
 			else if (cmd_param.first == "not_check_vel_min")
 			{
-				param.option |= Plan::NOT_CHECK_VEL_MIN;
+				target.option |= Plan::NOT_CHECK_VEL_MIN;
 			}
 			else if (cmd_param.first == "check_vel_max")
 			{
-				param.option &= ~Plan::NOT_CHECK_VEL_MAX;
+				target.option &= ~Plan::NOT_CHECK_VEL_MAX;
 			}
 			else if (cmd_param.first == "not_check_vel_max")
 			{
-				param.option |= Plan::NOT_CHECK_VEL_MAX;
+				target.option |= Plan::NOT_CHECK_VEL_MAX;
 			}
 			else if (cmd_param.first == "check_vel_continuous")
 			{
-				param.option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS;
+				target.option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS;
 			}
 			else if (cmd_param.first == "not_check_vel_continuous")
 			{
-				param.option |= Plan::NOT_CHECK_VEL_CONTINUOUS;
+				target.option |= Plan::NOT_CHECK_VEL_CONTINUOUS;
 			}
 			else if (cmd_param.first == "check_vel_continuous_at_start")
 			{
-				param.option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
+				target.option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "not_check_vel_continuous_at_start")
 			{
-				param.option |= Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
+				target.option |= Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "check_vel_following_error")
 			{
-				param.option &= ~Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
+				target.option &= ~Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "not_check_vel_following_error")
 			{
-				param.option |= Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
+				target.option |= Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
 		}
 	}
 
-	struct EnableParam
+	struct SetActiveMotor { std::vector<int> active_motor; };
+#define SELECT_MOTOR_STRING \
+		"		<UniqueParam default=\"all\">"\
+		"			<Param name=\"all\" abbreviation=\"a\"/>"\
+		"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"\
+		"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"\
+		"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"\
+		"		</UniqueParam>"
+	auto set_active_motor(const std::map<std::string, std::string> &cmd_params, PlanTarget &target, SetActiveMotor &param)->void
 	{
-		std::int32_t limit_time;
-		std::vector<int> active_motor;
+		param.active_motor.clear();
+		param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+		
+		for (auto cmd_param : cmd_params)
+		{
+			if (cmd_param.first == "all")
+			{
+				std::fill(param.active_motor.begin(), param.active_motor.end(), 1);
+			}
+			else if (cmd_param.first == "motion_id")
+			{
+				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
+			}
+			else if (cmd_param.first == "physical_id")
+			{
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).motId()) = 1;
+			}
+			else if (cmd_param.first == "slave_id")
+			{
+				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtSla(std::stoi(cmd_param.second)).motId()) = 1;
+			}
+		}
+	}
+
+	struct SetInputMovement 
+	{
+		std::vector<double> axis_begin_pos_vec;
+		std::vector<double> axis_pos_vec;
+		std::vector<double> axis_vel_vec;
+		std::vector<double> axis_acc_vec;
+		std::vector<double> axis_dec_vec;
 	};
+#define SET_INPUT_MOVEMENT_STRING \
+		"		<Param name=\"pos\" default=\"0.5\"/>"\
+		"		<Param name=\"acc\" default=\"0.1\"/>"\
+		"		<Param name=\"vel\" default=\"0.1\"/>"\
+		"		<Param name=\"dec\" default=\"0.1\"/>"
+	auto set_input_movement(const std::map<std::string, std::string> &cmd_params, PlanTarget &target, SetInputMovement &param)->void
+	{
+		auto c = dynamic_cast<aris::control::Controller*>(target.master);
+		param.axis_begin_pos_vec.resize(c->motionPool().size(), 0.0);
+		for (auto cmd_param : cmd_params)
+		{
+			if (cmd_param.first == "pos")
+			{
+				auto p = target.model->calculator().calculateExpression(cmd_param.second);
+				if (p.size() == 1)
+				{
+					param.axis_pos_vec.resize(c->motionPool().size(), p.toDouble());
+				}
+				else if (p.size() == c->motionPool().size())
+				{
+					param.axis_pos_vec.assign(p.begin(), p.end());
+				}
+				else
+				{
+					THROW_FILE_AND_LINE("");
+				}
+			}
+			else if (cmd_param.first == "acc")
+			{
+				auto a = target.model->calculator().calculateExpression(cmd_param.second);
+
+				if (a.size() == 1)
+				{
+					param.axis_acc_vec.resize(c->motionPool().size(), a.toDouble());
+				}
+				else if (a.size() == c->motionPool().size())
+				{
+					param.axis_acc_vec.assign(a.begin(), a.end());
+				}
+				else
+				{
+					THROW_FILE_AND_LINE("");
+				}
+
+			}
+			else if (cmd_param.first == "vel")
+			{
+				auto v = target.model->calculator().calculateExpression(cmd_param.second);
+
+				if (v.size() == 1)
+				{
+					param.axis_vel_vec.resize(c->motionPool().size(), v.toDouble());
+				}
+				else if (v.size() == c->motionPool().size())
+				{
+					param.axis_vel_vec.assign(v.begin(), v.end());
+				}
+				else
+				{
+					THROW_FILE_AND_LINE("");
+				}
+			}
+			else if (cmd_param.first == "dec")
+			{
+				auto d = target.model->calculator().calculateExpression(cmd_param.second);
+
+				if (d.size() == 1)
+				{
+					param.axis_dec_vec.resize(c->motionPool().size(), d.toDouble());
+				}
+				else if (d.size() == c->motionPool().size())
+				{
+					param.axis_dec_vec.assign(d.begin(), d.end());
+				}
+				else
+				{
+					THROW_FILE_AND_LINE("");
+				}
+			}
+		}
+	}
+	auto check_input_movement(const std::map<std::string, std::string> &cmd_params, PlanTarget &target, SetInputMovement &param)->void
+	{
+		auto c = dynamic_cast<aris::control::Controller*>(target.master);
+		for (Size i = 0; i < c->motionPool().size(); ++i)
+		{
+			if (param.axis_pos_vec[i] > c->motionPool()[i].maxPos() || param.axis_pos_vec[i] < c->motionPool()[i].minPos())
+				THROW_FILE_AND_LINE("");
+
+			if (param.axis_vel_vec[i] > c->motionPool()[i].maxVel() || param.axis_vel_vec[i] <= 0.0)
+				THROW_FILE_AND_LINE("");
+
+			if (param.axis_acc_vec[i] > c->motionPool()[i].maxAcc() || param.axis_acc_vec[i] <= 0.0)
+				THROW_FILE_AND_LINE("");
+
+			if (param.axis_dec_vec[i] > c->motionPool()[i].maxAcc() || param.axis_dec_vec[i] <= 0.0)
+				THROW_FILE_AND_LINE("");
+		}
+	}
+
+	struct EnableParam :public SetActiveMotor { std::int32_t limit_time; };
 	struct Enable::Imp { Imp() {} };
 	auto Enable::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		EnableParam param;
 
-		for (auto cmd_param : params)
-		{
-			if (cmd_param.first == "limit_time")
-				param.limit_time = std::stoi(cmd_param.second);
-			else if (cmd_param.first == "all")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
-			}
-			else if (cmd_param.first == "none")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-			}
-			else if (cmd_param.first == "motion_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
-			}
-			else if (cmd_param.first == "physical_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
-			}
-			else if (cmd_param.first == "slave_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
-			}
-			else if (cmd_param.first == "check_all")
-			{
-				target.option &= ~(
-					NOT_CHECK_POS_MIN |
-					NOT_CHECK_POS_MAX |
-					NOT_CHECK_POS_CONTINUOUS |
-					NOT_CHECK_POS_CONTINUOUS_AT_START |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
-					NOT_CHECK_POS_FOLLOWING_ERROR |
-					NOT_CHECK_VEL_MIN |
-					NOT_CHECK_VEL_MAX |
-					NOT_CHECK_VEL_CONTINUOUS |
-					NOT_CHECK_VEL_CONTINUOUS_AT_START |
-					NOT_CHECK_VEL_FOLLOWING_ERROR);
-			}
-			else if (cmd_param.first == "check_none")
-			{
-				target.option |=
-					NOT_CHECK_POS_MIN |
-					NOT_CHECK_POS_MAX |
-					NOT_CHECK_POS_CONTINUOUS |
-					NOT_CHECK_POS_CONTINUOUS_AT_START |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
-					NOT_CHECK_POS_FOLLOWING_ERROR |
-					NOT_CHECK_VEL_MIN |
-					NOT_CHECK_VEL_MAX |
-					NOT_CHECK_VEL_CONTINUOUS |
-					NOT_CHECK_VEL_CONTINUOUS_AT_START |
-					NOT_CHECK_VEL_FOLLOWING_ERROR;
-			}
-			else
-				throw std::runtime_error("unknown input target when prepair Enable");
-		}
+		set_check_option(params, target);
+		set_active_motor(params, target, param);
+		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
 	}
@@ -413,96 +480,22 @@ namespace aris::plan
 			"<Command name=\"en\">"
 			"	<GroupParam>"
 			"		<Param name=\"limit_time\" default=\"5000\"/>"
-			"		<UniqueParam default=\"all\">"
-			"			<Param name=\"all\" abbreviation=\"a\"/>"
-			"			<Param name=\"none\" abbreviation=\"n\"/>"
-			"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"
-			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
-			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
-			"		</UniqueParam>"
-			CHECK_PARAM_STRING
+					SELECT_MOTOR_STRING
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Enable);
 
-	struct DisableParam
-	{
-		std::int32_t limit_time;
-		std::vector<int> active_motor;
-	};
+	struct DisableParam :public SetActiveMotor { std::int32_t limit_time; };
 	struct Disable::Imp { Imp() {} };
 	auto Disable::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		DisableParam param;
 
-		for (auto cmd_param : params)
-		{
-			if (cmd_param.first == "limit_time")
-				param.limit_time = std::stoi(cmd_param.second);
-			else if (cmd_param.first == "all")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
-			}
-			else if (cmd_param.first == "none")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-			}
-			else if (cmd_param.first == "motion_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
-			}
-			else if (cmd_param.first == "physical_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
-			}
-			else if (cmd_param.first == "slave_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
-			}
-			else if (cmd_param.first == "check_all")
-			{
-				target.option &= ~(
-					NOT_CHECK_POS_MIN |
-					NOT_CHECK_POS_MAX |
-					NOT_CHECK_POS_CONTINUOUS |
-					NOT_CHECK_POS_CONTINUOUS_AT_START |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
-					NOT_CHECK_POS_FOLLOWING_ERROR |
-					NOT_CHECK_VEL_MIN |
-					NOT_CHECK_VEL_MAX |
-					NOT_CHECK_VEL_CONTINUOUS |
-					NOT_CHECK_VEL_CONTINUOUS_AT_START |
-					NOT_CHECK_VEL_FOLLOWING_ERROR);
-			}
-			else if (cmd_param.first == "check_none")
-			{
-				target.option |=
-					NOT_CHECK_POS_MIN |
-					NOT_CHECK_POS_MAX |
-					NOT_CHECK_POS_CONTINUOUS |
-					NOT_CHECK_POS_CONTINUOUS_AT_START |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
-					NOT_CHECK_POS_FOLLOWING_ERROR |
-					NOT_CHECK_VEL_MIN |
-					NOT_CHECK_VEL_MAX |
-					NOT_CHECK_VEL_CONTINUOUS |
-					NOT_CHECK_VEL_CONTINUOUS_AT_START |
-					NOT_CHECK_VEL_FOLLOWING_ERROR;
-			}
-			else
-				throw std::runtime_error("unknown input target when prepair Disable");
-		}
+		set_check_option(params, target);
+		set_active_motor(params, target, param);
+		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
 	}
@@ -540,14 +533,8 @@ namespace aris::plan
 			"<Command name=\"ds\">"
 			"	<GroupParam>"
 			"		<Param name=\"limit_time\" default=\"5000\"/>"
-			"		<UniqueParam default=\"all\">"
-			"			<Param name=\"all\" abbreviation=\"a\"/>"
-			"			<Param name=\"none\" abbreviation=\"n\"/>"
-			"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"
-			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
-			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
-			"		</UniqueParam>"
-			CHECK_PARAM_STRING
+					SELECT_MOTOR_STRING
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
@@ -690,102 +677,23 @@ namespace aris::plan
 			"		<Param name=\"low_speed\" default=\"20\"/>"
 			"		<Param name=\"acceleration\" default=\"100000\"/>"
 			"		<Param name=\"limit_time\" default=\"5000\"/>"
-			"		<UniqueParam default=\"all\">"
-			"			<Param name=\"all\" abbreviation=\"a\"/>"
-			"			<Param name=\"none\" abbreviation=\"n\"/>"
-			"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"
-			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
-			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
-			"		</UniqueParam>"
+					SELECT_MOTOR_STRING
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Home);
 
-	struct ModeParam
-	{
-		std::int32_t limit_time;
-		std::int32_t mode;
-		std::vector<int> active_motor;
-	};
+	struct ModeParam :public SetActiveMotor { std::int32_t limit_time, mode; };
 	struct Mode::Imp { Imp() {} };
 	auto Mode::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		ModeParam param;
 
-		for (auto cmd_param : params)
-		{
-			if (cmd_param.first == "limit_time")
-			{
-				param.limit_time = std::stoi(cmd_param.second);
-			}
-			else if (cmd_param.first == "mode")
-			{
-				param.mode = std::stoi(cmd_param.second);
-			}
-			else if (cmd_param.first == "all")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
-			}
-			else if (cmd_param.first == "none")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-			}
-			else if (cmd_param.first == "motion_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
-			}
-			else if (cmd_param.first == "physical_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
-			}
-			else if (cmd_param.first == "slave_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
-			}
-			else if (cmd_param.first == "check_all")
-			{
-				target.option &= ~(
-					NOT_CHECK_POS_MIN |
-					NOT_CHECK_POS_MAX |
-					NOT_CHECK_POS_CONTINUOUS |
-					NOT_CHECK_POS_CONTINUOUS_AT_START |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
-					NOT_CHECK_POS_FOLLOWING_ERROR |
-					NOT_CHECK_VEL_MIN |
-					NOT_CHECK_VEL_MAX |
-					NOT_CHECK_VEL_CONTINUOUS |
-					NOT_CHECK_VEL_CONTINUOUS_AT_START |
-					NOT_CHECK_VEL_FOLLOWING_ERROR);
-			}
-			else if (cmd_param.first == "check_none")
-			{
-				target.option |=
-					NOT_CHECK_POS_MIN |
-					NOT_CHECK_POS_MAX |
-					NOT_CHECK_POS_CONTINUOUS |
-					NOT_CHECK_POS_CONTINUOUS_AT_START |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
-					NOT_CHECK_POS_FOLLOWING_ERROR |
-					NOT_CHECK_VEL_MIN |
-					NOT_CHECK_VEL_MAX |
-					NOT_CHECK_VEL_CONTINUOUS |
-					NOT_CHECK_VEL_CONTINUOUS_AT_START |
-					NOT_CHECK_VEL_FOLLOWING_ERROR;
-			}
-			else
-				throw std::runtime_error("unknown input target when prepair Mode");
-		}
+		set_check_option(params, target);
+		set_active_motor(params, target, param);
+		param.limit_time = std::stoi(params.at("limit_time"));
+		param.mode = std::stoi(params.at("mode"));
 
 		target.param = param;
 	}
@@ -825,170 +733,32 @@ namespace aris::plan
 			"	<GroupParam>"
 			"		<Param name=\"limit_time\" default=\"5000\"/>"
 			"       <Param name=\"mode\" abbreviation=\"d\" default=\"8\"/>"
-			"		<UniqueParam default=\"all\">"
-			"			<Param name=\"all\" abbreviation=\"a\"/>"
-			"			<Param name=\"none\" abbreviation=\"n\"/>"
-			"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"
-			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
-			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
-			"		</UniqueParam>"
-			CHECK_PARAM_STRING
+					SELECT_MOTOR_STRING
+					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Mode);
 
-	struct ResetParam
-	{
-		std::vector<int> active_motor;
-		std::vector<Size> total_count_vec;
-		std::vector<double> axis_begin_pos_vec;
-		std::vector<double> axis_pos_vec;
-		std::vector<double> axis_vel_vec;
-		std::vector<double> axis_acc_vec;
-		std::vector<double> axis_dec_vec;
-	};
+	struct ResetParam :public SetActiveMotor, SetInputMovement { std::vector<Size> total_count_vec; };
 	struct Reset::Imp { Imp() {} };
 	auto Reset::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		default_prepair_check_option(params, target);
-
-		auto c = dynamic_cast<aris::control::Controller*>(target.master);
 		ResetParam param;
-		param.axis_begin_pos_vec.resize(c->motionPool().size(), 0.0);
-		param.total_count_vec.resize(c->motionPool().size(), 1);
-		for (auto cmd_param : params)
+		set_check_option(params, target);
+		set_active_motor(params, target, param);
+		set_input_movement(params, target, param);
+		auto c = dynamic_cast<aris::control::Controller*>(target.master);
+		for (Size i = 0; i < c->motionPool().size(); ++i)
 		{
-			if (cmd_param.first == "all")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
-			}
-			else if (cmd_param.first == "none")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-			}
-			else if (cmd_param.first == "motion_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
-			}
-			else if (cmd_param.first == "physical_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
-			}
-			else if (cmd_param.first == "slave_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
-			}
-			else if (cmd_param.first == "pos")
-			{
-				auto p = target.model->calculator().calculateExpression(cmd_param.second);
-				if (p.size() == 1)
-				{
-					param.axis_pos_vec.resize(c->motionPool().size(), p.toDouble());
-				}
-				else if (p.size() == c->motionPool().size())
-				{
-					param.axis_pos_vec.assign(p.begin(), p.end());
-				}
-				else
-				{
-					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-				}
-
-				for (Size i = 0; i < c->motionPool().size(); ++i)
-				{
-					if (param.axis_pos_vec[i] > 1.0 || param.axis_pos_vec[i]<0.0)
-						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-
-					param.axis_pos_vec[i] = param.axis_pos_vec[i] * (c->motionPool()[i].maxPos() - c->motionPool()[i].minPos()) + c->motionPool()[i].minPos();
-					param.axis_pos_vec[i] = std::min(std::max(param.axis_pos_vec[i], c->motionPool()[i].minPos()), c->motionPool()[i].maxPos());// 防止截断误差
-				}
-
-			}
-			else if (cmd_param.first == "acc")
-			{
-				auto a = target.model->calculator().calculateExpression(cmd_param.second);
-
-				if (a.size() == 1)
-				{
-					param.axis_acc_vec.resize(c->motionPool().size(), a.toDouble());
-				}
-				else if (a.size() == c->motionPool().size())
-				{
-					param.axis_acc_vec.assign(a.begin(), a.end());
-				}
-				else
-				{
-					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-				}
-
-				for (Size i = 0; i < c->motionPool().size(); ++i)
-				{
-					if (param.axis_acc_vec[i] > 1.0 || param.axis_acc_vec[i] < 0.01)
-						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-
-					param.axis_acc_vec[i] = param.axis_acc_vec[i] * c->motionPool()[i].maxAcc();
-				}
-			}
-			else if (cmd_param.first == "vel")
-			{
-				auto v = target.model->calculator().calculateExpression(cmd_param.second);
-
-				if (v.size() == 1)
-				{
-					param.axis_vel_vec.resize(c->motionPool().size(), v.toDouble());
-				}
-				else if (v.size() == c->motionPool().size())
-				{
-					param.axis_vel_vec.assign(v.begin(), v.end());
-				}
-				else
-				{
-					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-				}
-
-				for (Size i = 0; i < c->motionPool().size(); ++i)
-				{
-					if (param.axis_vel_vec[i] > 1.0 || param.axis_vel_vec[i] < 0.01)
-						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-
-					param.axis_vel_vec[i] = param.axis_vel_vec[i] * c->motionPool()[i].maxVel();
-				}
-			}
-			else if (cmd_param.first == "dec")
-			{
-				auto d = target.model->calculator().calculateExpression(cmd_param.second);
-
-				if (d.size() == 1)
-				{
-					param.axis_dec_vec.resize(c->motionPool().size(), d.toDouble());
-				}
-				else if (d.size() == c->motionPool().size())
-				{
-					param.axis_dec_vec.assign(d.begin(), d.end());
-				}
-				else
-				{
-					throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-				}
-
-				for (Size i = 0; i < c->motionPool().size(); ++i)
-				{
-					if (param.axis_dec_vec[i] > 1.0 || param.axis_dec_vec[i] < 0.01)
-						throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
-
-					param.axis_dec_vec[i] = param.axis_dec_vec[i] * c->motionPool()[i].minAcc();
-				}
-			}
+			param.axis_pos_vec[i] = param.axis_pos_vec[i] * (c->motionPool()[i].maxPos() - c->motionPool()[i].minPos()) + c->motionPool()[i].minPos();
+			param.axis_acc_vec[i] = param.axis_acc_vec[i] * c->motionPool()[i].maxAcc();
+			param.axis_vel_vec[i] = param.axis_vel_vec[i] * c->motionPool()[i].maxVel();
+			param.axis_dec_vec[i] = param.axis_dec_vec[i] * c->motionPool()[i].maxAcc();
 		}
+		check_input_movement(params, target, param);
+
+		param.total_count_vec.resize(dynamic_cast<aris::control::Controller*>(target.master)->motionPool().size(), 1);
 
 		target.option |=
 			aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED |
@@ -1035,16 +805,8 @@ namespace aris::plan
 		command().loadXmlStr(
 			"<Command name=\"rs\">"
 			"	<GroupParam>"
-			"		<UniqueParam default=\"all\">"
-			"			<Param name=\"all\" abbreviation=\"a\"/>"
-			"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"
-			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
-			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
-			"		</UniqueParam>"
-			"		<Param name=\"pos\" default=\"0.5\"/>"
-			"		<Param name=\"acc\" default=\"0.3\"/>"
-			"		<Param name=\"vel\" default=\"0.3\"/>"
-			"		<Param name=\"dec\" default=\"0.3\"/>"
+					SET_INPUT_MOVEMENT_STRING
+					SELECT_MOTOR_STRING
 					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
@@ -1103,7 +865,6 @@ namespace aris::plan
 	}
 	auto Recover::collectNrt(PlanTarget &target)->void
 	{
-
 		if (target.count)
 		{
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get();
@@ -1114,7 +875,6 @@ namespace aris::plan
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->is_rt_waiting_ready_.store(true);
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get();
 		}
-
 	}
 	Recover::~Recover() = default;
 	Recover::Recover(const std::string &name) :Plan(name)
@@ -1179,86 +939,18 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Show);
 
-	struct MoveAbsJParam
-	{
-		std::vector<double> joint_pos_vec, begin_joint_pos_vec, joint_vel_vec, joint_acc_vec, joint_dec_vec;
-		std::vector<bool> joint_active_vec;
-	};
+	struct MoveAbsJParam :public SetActiveMotor, SetInputMovement{};
 	auto MoveAbsJ::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		default_prepair_check_option(params, target);
-
 		auto c = dynamic_cast<aris::control::Controller*>(target.master);
 		MoveAbsJParam param;
 
-		for (auto cmd_param : params)
-		{
-			if (cmd_param.first == "all")
-			{
-				param.joint_active_vec.resize(c->motionPool().size(), true);
-			}
-			else if (cmd_param.first == "none")
-			{
-				param.joint_active_vec.resize(c->motionPool().size(), false);
-			}
-			else if (cmd_param.first == "motion_id")
-			{
-				param.joint_active_vec.resize(c->motionPool().size(), false);
-				param.joint_active_vec.at(std::stoi(cmd_param.second)) = true;
-			}
-			else if (cmd_param.first == "physical_id")
-			{
-				param.joint_active_vec.resize(c->motionPool().size(), false);
-				param.joint_active_vec.at(c->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = true;
-			}
-			else if (cmd_param.first == "slave_id")
-			{
-				param.joint_active_vec.resize(c->motionPool().size(), false);
-				param.joint_active_vec.at(c->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = true;
-			}
-			else if (cmd_param.first == "pos")
-			{
-				auto mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (mat.size() == 1)param.joint_pos_vec.resize(c->motionPool().size(), mat.toDouble());
-				else
-				{
-					param.joint_pos_vec.resize(mat.size());
-					std::copy(mat.begin(), mat.end(), param.joint_pos_vec.begin());
-				}
-			}
-			else if (cmd_param.first == "vel")
-			{
-				auto mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (mat.size() == 1)param.joint_vel_vec.resize(c->motionPool().size(), mat.toDouble());
-				else
-				{
-					param.joint_vel_vec.resize(mat.size());
-					std::copy(mat.begin(), mat.end(), param.joint_vel_vec.begin());
-				}
-			}
-			else if (cmd_param.first == "acc")
-			{
-				auto mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (mat.size() == 1)param.joint_acc_vec.resize(c->motionPool().size(), mat.toDouble());
-				else
-				{
-					param.joint_acc_vec.resize(mat.size());
-					std::copy(mat.begin(), mat.end(), param.joint_acc_vec.begin());
-				}
-			}
-			else if (cmd_param.first == "dec")
-			{
-				auto mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (mat.size() == 1)param.joint_dec_vec.resize(c->motionPool().size(), mat.toDouble());
-				else
-				{
-					param.joint_dec_vec.resize(mat.size());
-					std::copy(mat.begin(), mat.end(), param.joint_dec_vec.begin());
-				}
-			}
-		}
+		set_check_option(params, target);
+		set_active_motor(params, target, param);
+		set_input_movement(params, target, param);
+		check_input_movement(params, target, param);
 
-		param.begin_joint_pos_vec.resize(c->motionPool().size());
+		param.axis_begin_pos_vec.resize(c->motionPool().size());
 		target.param = param;
 	}
 	auto MoveAbsJ::executeRT(PlanTarget &target)->int
@@ -1268,25 +960,25 @@ namespace aris::plan
 
 		if (target.count == 1)
 		{
-			for (Size i = 0; i < param->joint_active_vec.size(); ++i)
+			for (Size i = 0; i < param->active_motor.size(); ++i)
 			{
-				if (param->joint_active_vec[i])
+				if (param->active_motor[i])
 				{
-					param->begin_joint_pos_vec[i] = controller->motionPool()[i].targetPos();
+					param->axis_begin_pos_vec[i] = controller->motionPool()[i].targetPos();
 				}
 			}
 		}
 
 		aris::Size total_count{ 1 };
-		for (Size i = 0; i < param->joint_active_vec.size(); ++i)
+		for (Size i = 0; i < param->active_motor.size(); ++i)
 		{
-			if (param->joint_active_vec[i])
+			if (param->active_motor[i])
 			{
 				double p, v, a;
 				aris::Size t_count;
 				aris::plan::moveAbsolute(target.count,
-					param->begin_joint_pos_vec[i], param->joint_pos_vec[i],
-					param->joint_vel_vec[i] / 1000, param->joint_acc_vec[i] / 1000 / 1000, param->joint_dec_vec[i] / 1000 / 1000,
+					param->axis_begin_pos_vec[i], param->axis_pos_vec[i],
+					param->axis_vel_vec[i] / 1000, param->axis_acc_vec[i] / 1000 / 1000, param->axis_dec_vec[i] / 1000 / 1000,
 					p, v, a, t_count);
 				controller->motionPool()[i].setTargetPos(p);
 				total_count = std::max(total_count, t_count);
@@ -1303,16 +995,11 @@ namespace aris::plan
 		command().loadXmlStr(
 			"<Command name=\"mvaj\">"
 			"	<GroupParam>"
-			"		<UniqueParam default=\"all\">"
-			"			<Param name=\"all\" abbreviation=\"a\"/>"
-			"			<Param name=\"motion_id\" abbreviation=\"m\" default=\"0\"/>"
-			"			<Param name=\"physical_id\" abbreviation=\"p\" default=\"0\"/>"
-			"			<Param name=\"slave_id\" abbreviation=\"s\" default=\"0\"/>"
-			"		</UniqueParam>"
 			"		<Param name=\"pos\" default=\"0.0\"/>"
 			"		<Param name=\"vel\" default=\"1.0\"/>"
 			"		<Param name=\"acc\" default=\"1.0\"/>"
 			"		<Param name=\"dec\" default=\"1.0\"/>"
+					SELECT_MOTOR_STRING
 					CHECK_PARAM_STRING
 			"	</GroupParam>"
 			"</Command>");
@@ -1337,14 +1024,14 @@ namespace aris::plan
 		else if (pos_unit_found->second == "m")pos_unit = 1.0;
 		else if (pos_unit_found->second == "mm")pos_unit = 0.001;
 		else if (pos_unit_found->second == "cm")pos_unit = 0.01;
-		else throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+		else THROW_FILE_AND_LINE("");
 
 		for (auto cmd_param : params)
 		{
 			if (cmd_param.first == "pq")
 			{
 				auto pq_mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pq_mat.size() != 7)throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				if (pq_mat.size() != 7)THROW_FILE_AND_LINE("");
 				aris::dynamic::s_vc(7, pq_mat.data(), pq_out);
 				aris::dynamic::s_nv(3, pos_unit, pq_out);
 				return true;
@@ -1352,7 +1039,7 @@ namespace aris::plan
 			else if (cmd_param.first == "pm")
 			{
 				auto pm_mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pm_mat.size() != 16)throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				if (pm_mat.size() != 16)THROW_FILE_AND_LINE("");
 				aris::dynamic::s_pm2pq(pm_mat.data(), pq_out);
 				aris::dynamic::s_nv(3, pos_unit, pq_out);
 				return true;
@@ -1364,16 +1051,16 @@ namespace aris::plan
 				if (ori_unit_found == params.end()) ori_unit = 1.0;
 				else if (ori_unit_found->second == "rad")ori_unit = 1.0;
 				else if (ori_unit_found->second == "degree")ori_unit = PI / 180.0;
-				else throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				else THROW_FILE_AND_LINE("");
 
 				std::string eul_type;
 				auto eul_type_found = params.find("eul_type");
 				if (eul_type_found == params.end()) eul_type = "321";
 				else if (check_eul_validity(eul_type_found->second.data()))	eul_type = eul_type_found->second;
-				else throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				else THROW_FILE_AND_LINE("");
 
 				auto pe_mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pe_mat.size() != 6)throw std::runtime_error(__FILE__ + std::to_string(__LINE__) + " failed");
+				if (pe_mat.size() != 6)THROW_FILE_AND_LINE("");
 				aris::dynamic::s_nv(3, ori_unit, pe_mat.data() + 3);
 				aris::dynamic::s_pe2pq(pe_mat.data(), pq_out, eul_type.data());
 				aris::dynamic::s_nv(3, pos_unit, pq_out);
@@ -1381,7 +1068,7 @@ namespace aris::plan
 			}
 		}
 
-		return false;
+		THROW_FILE_AND_LINE("No pose input");
 	}
 	struct MoveJParam
 	{
@@ -1391,13 +1078,13 @@ namespace aris::plan
 	struct MoveJ::Imp {};
 	auto MoveJ::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		default_prepair_check_option(params, target);
+		set_check_option(params, target);
 
 		MoveJParam mvj_param;
 
 		// find ee pq //
 		mvj_param.ee_pq.resize(7);
-		if (!find_pq(params, target, mvj_param.ee_pq.data()))THROW_FILE_AND_LINE("");
+		find_pq(params, target, mvj_param.ee_pq.data());
 
 		mvj_param.joint_pos_begin.resize(target.model->motionPool().size(), 0.0);
 		mvj_param.joint_pos_end.resize(target.model->motionPool().size(), 0.0);
@@ -1493,7 +1180,6 @@ namespace aris::plan
 				p, v, a, mvj_param->total_count[i]);
 
 			controller->motionPool()[i].setTargetPos(p);
-
 		}
 
 		return max_total_count == 0 ? 0 : max_total_count - target.count;
@@ -1535,7 +1221,7 @@ namespace aris::plan
 	struct MoveL::Imp {};
 	auto MoveL::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		default_prepair_check_option(params, target);
+		set_check_option(params, target);
 
 		MoveLParam mvl_param;
 		mvl_param.ee_pq.resize(7);
@@ -1677,7 +1363,7 @@ namespace aris::plan
 	std::atomic<std::array<double, 24>> AutoMove::Imp::pvade_ = std::array<double, 24>{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	auto AutoMove::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		default_prepair_check_option(params, target);
+		set_check_option(params, target);
 
 		target.option = 0;
 
@@ -1866,7 +1552,7 @@ namespace aris::plan
 	std::atomic<std::array<int, 6>> ManualMove::Imp::is_increase_ = std::array<int, 6>{0, 0, 0, 0, 0, 0};
 	auto ManualMove::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		default_prepair_check_option(params, target);
+		set_check_option(params, target);
 
 		target.option = 0;
 

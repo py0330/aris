@@ -74,11 +74,8 @@ namespace aris::plan
 			NOT_PRINT_CMD_INFO = 0x01ULL << 40,
 			NOT_PRINT_EXECUTE_COUNT = 0x01ULL << 41,
 			NOT_LOG_CMD_INFO = 0x01ULL << 45,
-
 		};
 
-		static auto Type()->const std::string & { static const std::string type("Plan"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void {}
 		auto virtual executeRT(PlanTarget &target)->int { return 0; }
 		auto virtual collectNrt(PlanTarget &target)->void {}
@@ -87,10 +84,8 @@ namespace aris::plan
 
 		virtual ~Plan();
 		explicit Plan(const std::string &name = "plan");
-		Plan(const Plan &);
-		Plan(Plan &&);
-		Plan& operator=(const Plan &);
-		Plan& operator=(Plan &&);
+		ARIS_REGISTER_TYPE("Plan");
+		ARIS_DECLARE_BIG_FOUR(Plan);
 
 	private:
 		struct Imp;
@@ -99,18 +94,14 @@ namespace aris::plan
 	class PlanRoot :public aris::core::Object
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("PlanRoot"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto planPool()->aris::core::ObjectPool<Plan> &;
 		auto planPool()const->const aris::core::ObjectPool<Plan> & { return const_cast<std::decay_t<decltype(*this)> *>(this)->planPool(); }
 		auto planParser()->aris::core::CommandParser;
 
 		virtual ~PlanRoot();
 		explicit PlanRoot(const std::string &name = "plan_root");
-		PlanRoot(const PlanRoot &);
-		PlanRoot(PlanRoot &&);
-		PlanRoot& operator=(const PlanRoot &);
-		PlanRoot& operator=(PlanRoot &&);
+		ARIS_REGISTER_TYPE("PlanRoot");
+		ARIS_DECLARE_BIG_FOUR(PlanRoot);
 
 	private:
 		struct Imp;
@@ -335,7 +326,6 @@ namespace aris::plan
 	};
 	/// \brief 将机器人的某根或全部轴移动到指定位置。
 	/// 
-	/// 
 	/// ### 参数定义 ###
 	///
 	/// 指定电机，默认指定所有电机：
@@ -554,12 +544,6 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-
-
-
-
-
-
 
 
 	class UniversalPlan :public Plan

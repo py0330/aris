@@ -961,6 +961,12 @@ namespace aris::core
 	type_name& type_name::operator=(const type_name &other) = default; \
 	type_name& type_name::operator=(type_name &&other) = default;
 
+#define ARIS_DELETE_BIG_FOUR(type_name) \
+	type_name::type_name(const type_name &other) = delete; \
+	type_name::type_name(type_name &&other) = delete; \
+	type_name& type_name::operator=(const type_name &other) = delete; \
+	type_name& type_name::operator=(type_name &&other) = delete;
+
 	///
 	///  @}
 	///

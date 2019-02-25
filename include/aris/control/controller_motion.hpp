@@ -60,7 +60,7 @@ namespace aris::control
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
 			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 		ARIS_REGISTER_TYPE("Motion");
-		ARIS_DECLARE_BIG_FOUR(Motion);
+		ARIS_DELETE_BIG_FOUR(Motion);
 
 	private:
 		struct Imp;
