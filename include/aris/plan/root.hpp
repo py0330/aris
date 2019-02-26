@@ -8,6 +8,7 @@
 #include <map>
 #include <any>
 #include <atomic>
+#include <future>
 
 #include <aris/core/core.hpp>
 #include <aris/control/control.hpp>
@@ -20,8 +21,10 @@
 ///
 namespace aris::plan
 {
+	class Plan;
 	struct PlanTarget
 	{
+		Plan* plan;                                       // prepair/execute/collect  get&set(but be careful when prepair)
 		aris::dynamic::Model* model;                      // prepair/execute/collect  get&set(but be careful when prepair)
 		aris::control::Master* master;                    // prepair/execute/collect  get&set(but be careful when prepair)
 		std::uint64_t command_id;                         // prepair/execute/collect  get
@@ -30,6 +33,7 @@ namespace aris::plan
 		std::int32_t count;                               //         execute/collect  get
 		std::int64_t begin_global_count;                  //         execute/collect  get
 		aris::control::Master::RtStasticsData rt_stastic; //                /collect  get
+		std::future<std::any> ret;
 	};
 	class Plan :public aris::core::Object
 	{
@@ -78,7 +82,7 @@ namespace aris::plan
 
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void {}
 		auto virtual executeRT(PlanTarget &target)->int { return 0; }
-		auto virtual collectNrt(PlanTarget &target)->void {}
+		auto virtual collectNrt(PlanTarget &target)->std::any { return std::any(); }
 		auto command()->aris::core::Command &;
 		auto command()const->const aris::core::Command & { return const_cast<std::decay_t<decltype(*this)> *>(this)->command(); }
 
@@ -125,7 +129,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Enable();
 		explicit Enable(const std::string &name = "enable_plan");
@@ -153,7 +156,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Disable();
 		explicit Disable(const std::string &name = "enable_plan");
@@ -181,7 +183,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Home();
 		explicit Home(const std::string &name = "home_plan");
@@ -212,7 +213,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Mode();
 		explicit Mode(const std::string &name = "mode_plan");
@@ -258,7 +258,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Reset();
 		explicit Reset(const std::string &name = "reset_plan");
@@ -281,7 +280,7 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
+		auto virtual collectNrt(PlanTarget &target)->std::any override;
 
 		virtual ~Recover();
 		explicit Recover(const std::string &name = "recover_plan");
@@ -299,7 +298,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~Sleep();
 		explicit Sleep(const std::string &name = "sleep_plan");
@@ -318,7 +316,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		explicit Show(const std::string &name = "show");
 		ARIS_REGISTER_TYPE("Show");
@@ -355,7 +352,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MoveAbsJ();
 		explicit MoveAbsJ(const std::string &name = "move_abs_j");
@@ -400,7 +396,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MoveJ();
 		explicit MoveJ(const std::string &name = "move_j");
@@ -441,7 +436,6 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~MoveL();
 		explicit MoveL(const std::string &name = "move_l");
@@ -486,7 +480,7 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
+		auto virtual collectNrt(PlanTarget &target)->std::any override;
 
 		virtual ~AutoMove();
 		explicit AutoMove(const std::string &name = "auto_move");
@@ -533,7 +527,7 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
+		auto virtual collectNrt(PlanTarget &target)->std::any override;
 
 		virtual ~ManualMove();
 		explicit ManualMove(const std::string &name = "manual_move");
@@ -555,7 +549,7 @@ namespace aris::plan
 
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
+		auto virtual collectNrt(PlanTarget &target)->std::any override;
 		auto virtual setPrepairFunc(PrepairFunc func)->void;
 		auto virtual setExecuteFunc(ExecuteFunc func)->void;
 		auto virtual setCollectFunc(CollectFunc func)->void;

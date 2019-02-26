@@ -27,7 +27,7 @@ void test_server_option()
 		}, [&](aris::plan::PlanTarget &)->void
 		{
 			is_plan_collected = true;
-		}, "<test_NOT_RUN_FUNCTION/>");
+		}, "<Command name=\"test_NOT_RUN_FUNCTION\"/>");
 
 		cs.start();
 
@@ -72,7 +72,7 @@ void test_server_option()
 		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}, "<test_PREPAIR_WHEN_ALL_PLAN_EXECUTED/>");
+		}, "<Command name=\"test_PREPAIR_WHEN_ALL_PLAN_EXECUTED\"/>");
 
 		cs.start();
 
@@ -104,7 +104,7 @@ void test_server_option()
 		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}, "<test_PREPAIR_WHEN_ALL_PLAN_COLLECTED/>");
+		}, "<Command name=\"test_PREPAIR_WHEN_ALL_PLAN_COLLECTED\"/>");
 
 		cs.start();
 
@@ -134,20 +134,19 @@ void test_server_option()
 		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}, "<test_EXECUTE_WHEN_ALL_PLAN_EXECUTED/>");
+		}, "<Command name=\"test_EXECUTE_WHEN_ALL_PLAN_EXECUTED\"/>");
 
 		cs.start();
 
 		aris::core::Msg cmd("test_EXECUTE_WHEN_ALL_PLAN_EXECUTED");
 		cmd.header().reserved1_ = 0;
 		cs.executeCmd(cmd);
-		auto id = cs.executeCmd(cmd);
-		if (cs.currentExecuteId() == id || cs.currentExecuteId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		auto ret = cs.executeCmd(cmd);
+		if (cs.currentExecuteId() == ret->command_id || cs.currentExecuteId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		cmd.header().reserved1_ = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED;
-		id = cs.executeCmd(cmd);
-		if (cs.currentExecuteId() != id && cs.currentExecuteId() != 0) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
-
+		ret = cs.executeCmd(cmd);
+		if (cs.currentExecuteId() != ret->command_id && cs.currentExecuteId() != 0) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -167,19 +166,19 @@ void test_server_option()
 		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}, "<test_EXECUTE_WHEN_ALL_PLAN_COLLECTED/>");
+		}, "<Command name=\"test_EXECUTE_WHEN_ALL_PLAN_COLLECTED\"/>");
 
 		cs.start();
 
 		aris::core::Msg cmd("test_EXECUTE_WHEN_ALL_PLAN_COLLECTED");
 		cmd.header().reserved1_ = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED;
 		cs.executeCmd(cmd);
-		auto id = cs.executeCmd(cmd);
-		if (cs.currentCollectId() != id - 1) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		auto ret = cs.executeCmd(cmd);
+		if (cs.currentCollectId() != ret->command_id - 1) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		cmd.header().reserved1_ = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED;
-		id = cs.executeCmd(cmd);
-		if (cs.currentCollectId() != id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		ret = cs.executeCmd(cmd);
+		if (cs.currentCollectId() != ret->command_id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -198,7 +197,7 @@ void test_server_option()
 			return 100 - param.count;
 		}, [&](aris::plan::PlanTarget &)->void
 		{
-		}, "<test_COLLECT_WHEN_ALL_PLAN_EXECUTED/>");
+		}, "<Command name=\"test_COLLECT_WHEN_ALL_PLAN_EXECUTED\"/>");
 
 		cs.start();
 
@@ -224,16 +223,17 @@ void test_server_option()
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
 		int collect_time = 100;
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &target)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
 		{
-			target.param = collect_time;
+			t.option |= aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
+			t.param = collect_time;
 		}, [&](const aris::plan::PlanTarget &param)->int
 		{
 			return 100 - param.count;
 		}, [&](aris::plan::PlanTarget &param)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(std::any_cast<int>(param.param)));
-		}, "<test_COLLECT_WHEN_ALL_PLAN_COLLECTED/>");
+		}, "<Command name=\"test_COLLECT_WHEN_ALL_PLAN_COLLECTED\"/>");
 
 		cs.start();
 
@@ -261,15 +261,16 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
 		{
+			t.option |= aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
 		}, [&](const aris::plan::PlanTarget &param)->int
 		{
 			return 100 - param.count;
 		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}, "<test_WAIT_FOR_EXECUTION/>");
+		}, "<Command name=\"test_WAIT_FOR_EXECUTION\"/>");
 
 		cs.start();
 
@@ -293,15 +294,16 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
 		{
+			t.option |= aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
 		}, [&](const aris::plan::PlanTarget &param)->int
 		{
 			return 100 - param.count;
 		}, [&](aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}, "<test_WAIT_FOR_COLLECTION/>");
+		}, "<Command name=\"test_WAIT_FOR_COLLECTION\"/>");
 
 		cs.start();
 
@@ -325,24 +327,26 @@ void test_server_option()
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
 		{
+			t.option |= aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
 		}, [&](const aris::plan::PlanTarget &param)->int
 		{
-			return 100 - param.count;
+			return 1000 - param.count;
 		}, [&](const aris::plan::PlanTarget &)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		}, "<test_WAIT_IF_CMD_POOL_IS_FULL_1/>");
+		}, "<Command name=\"test_WAIT_IF_CMD_POOL_IS_FULL_1\"/>");
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
 		{
+			t.option |= aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
 		}, [&](const aris::plan::PlanTarget &param)->int
 		{
 			return 0;
 		}, [&](const aris::plan::PlanTarget &)->void
 		{
-		}, "<test_WAIT_IF_CMD_POOL_IS_FULL_2/>");
+		}, "<Command name=\"test_WAIT_IF_CMD_POOL_IS_FULL_2\"/>");
 
 		cs.start();
 
@@ -350,7 +354,7 @@ void test_server_option()
 		cmd.header().reserved1_ = 0;
 		cs.executeCmd(cmd);
 		cmd.copy("test_WAIT_IF_CMD_POOL_IS_FULL_2");
-		for (auto i = 0; i<49; ++i)cs.executeCmd(cmd);
+		for (auto i = 0; i<999; ++i)cs.executeCmd(cmd);
 		try 
 		{
 			cs.executeCmd(cmd);

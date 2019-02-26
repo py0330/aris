@@ -472,7 +472,6 @@ namespace aris::plan
 
 		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
 	}
-	auto Enable::collectNrt(PlanTarget &param)->void {}
 	Enable::~Enable() = default;
 	Enable::Enable(const std::string &name) :Plan(name), imp_(new Imp)
 	{
@@ -525,7 +524,6 @@ namespace aris::plan
 
 		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
 	}
-	auto Disable::collectNrt(PlanTarget &param)->void {}
 	Disable::~Disable() = default;
 	Disable::Disable(const std::string &name) :Plan(name), imp_(new Imp)
 	{
@@ -664,7 +662,6 @@ namespace aris::plan
 
 		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
 	}
-	auto Home::collectNrt(PlanTarget &param)->void {}
 	Home::~Home() = default;
 	Home::Home(const std::string &name) :Plan(name), imp_(new Imp)
 	{
@@ -724,7 +721,6 @@ namespace aris::plan
 
 		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
 	}
-	auto Mode::collectNrt(PlanTarget &param)->void {}
 	Mode::~Mode() = default;
 	Mode::Mode(const std::string &name) :Plan(name), imp_(new Imp)
 	{
@@ -798,7 +794,6 @@ namespace aris::plan
 
 		return (static_cast<int>(*std::max_element(param.total_count_vec.begin(), param.total_count_vec.end())) > target.count) ? 1 : 0;
 	}
-	auto Reset::collectNrt(PlanTarget &target)->void {}
 	Reset::~Reset() = default;
 	Reset::Reset(const std::string &name) :Plan(name), imp_(new Imp)
 	{
@@ -829,7 +824,7 @@ namespace aris::plan
 
 		p->is_kinematic_ready_ = false;
 		p->is_rt_waiting_ready_ = false;
-		p->fut = std::async(std::launch::async, [](std::shared_ptr<RecoverParam> p, PlanTarget target)
+		p->fut = std::async(std::launch::async, [](std::shared_ptr<RecoverParam> p, PlanTarget &target)
 		{
 			// 等待正解求解的需求 //
 			while (!p->is_rt_waiting_ready_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -839,7 +834,7 @@ namespace aris::plan
 
 			// 通知实时线程 //
 			p->is_kinematic_ready_.store(true);
-		}, p, target);
+		}, p, std::ref(target));
 
 		target.param = p;
 	}
@@ -863,7 +858,7 @@ namespace aris::plan
 
 		return param->is_kinematic_ready_.load() ? param->kin_ret : 1;
 	}
-	auto Recover::collectNrt(PlanTarget &target)->void
+	auto Recover::collectNrt(PlanTarget &target)->std::any
 	{
 		if (target.count)
 		{
@@ -875,6 +870,8 @@ namespace aris::plan
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->is_rt_waiting_ready_.store(true);
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get();
 		}
+
+		return std::any();
 	}
 	Recover::~Recover() = default;
 	Recover::Recover(const std::string &name) :Plan(name)
@@ -892,7 +889,6 @@ namespace aris::plan
 		target.param = SleepParam{ std::stoi(params.at("count")) };
 	}
 	auto Sleep::executeRT(PlanTarget &target)->int { return std::any_cast<SleepParam&>(target.param).count - target.count; }
-	auto Sleep::collectNrt(PlanTarget &target)->void {}
 	Sleep::~Sleep() = default;
 	Sleep::Sleep(const std::string &name) :Plan(name), imp_(new Imp)
 	{
@@ -932,7 +928,6 @@ namespace aris::plan
 
 		return 0;
 	}
-	auto Show::collectNrt(PlanTarget &param)->void { }
 	Show::Show(const std::string &name) : Plan(name)
 	{
 		command().loadXmlStr("<Command name=\"sh\"/>");
@@ -987,7 +982,6 @@ namespace aris::plan
 
 		return total_count - target.count;
 	}
-	auto MoveAbsJ::collectNrt(PlanTarget &param)->void { }
 	struct MoveAbsJ::Imp {};
 	MoveAbsJ::~MoveAbsJ() = default;
 	MoveAbsJ::MoveAbsJ(const std::string &name) : Plan(name), imp_(new Imp)
@@ -1184,7 +1178,6 @@ namespace aris::plan
 
 		return max_total_count == 0 ? 0 : max_total_count - target.count;
 	}
-	auto MoveJ::collectNrt(PlanTarget &param)->void {}
 	MoveJ::~MoveJ() = default;
 	MoveJ::MoveJ(const std::string &name) :Plan(name), imp_(new Imp)
 	{
@@ -1321,7 +1314,6 @@ namespace aris::plan
 
 		return std::max(pos_total_count, ori_total_count) > target.count ? 1 : 0;
 	}
-	auto MoveL::collectNrt(PlanTarget &param)->void {}
 	MoveL::~MoveL() = default;
 	MoveL::MoveL(const std::string &name) :Plan(name), imp_(new Imp)
 	{
@@ -1507,7 +1499,11 @@ namespace aris::plan
 
 		return imp_->is_running_.load() ? 1 : 0;
 	}
-	auto AutoMove::collectNrt(PlanTarget &target)->void { if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); }
+	auto AutoMove::collectNrt(PlanTarget &target)->std::any
+	{ 
+		if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false);
+		return std::any();
+	}
 	AutoMove::~AutoMove() = default;
 	AutoMove::AutoMove(const std::string &name) : Plan(name), imp_(new Imp)
 	{
@@ -1684,7 +1680,11 @@ namespace aris::plan
 
 		return imp_->is_running_.load() ? 1 : 0;
 	}
-	auto ManualMove::collectNrt(PlanTarget &target)->void { if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); }
+	auto ManualMove::collectNrt(PlanTarget &target)-> std::any
+	{ 
+		if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); 
+		return std::any();
+	}
 	ManualMove::~ManualMove() = default;
 	ManualMove::ManualMove(const std::string &name) : Plan(name), imp_(new Imp)
 	{
@@ -1724,7 +1724,11 @@ namespace aris::plan
 	};
 	auto UniversalPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void { if (imp_->prepair_nrt)imp_->prepair_nrt(params, target); }
 	auto UniversalPlan::executeRT(PlanTarget &param)->int { return imp_->execute_rt ? imp_->execute_rt(param) : 0; }
-	auto UniversalPlan::collectNrt(PlanTarget &param)->void { if (imp_->collect_nrt)imp_->collect_nrt(param); }
+	auto UniversalPlan::collectNrt(PlanTarget &param)->std::any 
+	{ 
+		if (imp_->collect_nrt)imp_->collect_nrt(param);
+		return std::any();
+	}
 	auto UniversalPlan::setPrepairFunc(PrepairFunc func)->void { imp_->prepair_nrt = func; }
 	auto UniversalPlan::setExecuteFunc(ExecuteFunc func)->void { imp_->execute_rt = func; }
 	auto UniversalPlan::setCollectFunc(CollectFunc func)->void { imp_->collect_nrt = func; }

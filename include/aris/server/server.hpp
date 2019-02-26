@@ -58,7 +58,7 @@ namespace aris::server
 		auto planRoot()->plan::PlanRoot&;
 		auto planRoot()const->const plan::PlanRoot& { return const_cast<ControlServer *>(this)->planRoot(); }
 
-		auto executeCmd(const aris::core::Msg &cmd_string)->std::int64_t;
+		auto executeCmd(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
 		auto start()->void;
 		auto stop()->void;
 		auto globalCount()->std::int64_t;

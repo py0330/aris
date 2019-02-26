@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 				for (std::string cmd; std::getline(ss, cmd);)
 				{
 					auto id = cs.executeCmd(aris::core::Msg(cmd));
-					std::cout << "command id:" << id << std::endl;
+					//std::cout << "command id:" << id << std::endl;
 				}
 
 				try
