@@ -90,6 +90,12 @@ int main(int argc, char *argv[])
 
 	cs.start();
 
+
+
+	// interaction //
+	std::list<std::shared_ptr<aris::plan::PlanTarget>> result_list;
+	std::mutex result_mutex;
+
 	aris::core::Socket socket("server", "", "5866", aris::core::Socket::WEB);
 	socket.setOnReceivedMsg([&](aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
@@ -115,18 +121,10 @@ int main(int argc, char *argv[])
 				std::stringstream ss(msg_data);
 				for (std::string cmd; std::getline(ss, cmd);)
 				{
-					auto id = cs.executeCmd(aris::core::Msg(cmd));
-					//std::cout << "command id:" << id << std::endl;
-				}
+					auto result = cs.executeCmd(aris::core::Msg(cmd));
 
-				try
-				{
-					socket->sendMsg(aris::core::Msg());
-				}
-				catch (std::exception &e)
-				{
-					std::cout << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
+					std::unique_lock<std::mutex> l(result_mutex);
+					result_list.push_back(result);
 				}
 			}
 			catch (std::exception &e)
@@ -307,6 +305,51 @@ int main(int argc, char *argv[])
 		return 0;
 	});
 	socket.startServer(std::to_string(port));
+
+	std::thread result_thread([&]()
+	{
+		while (true)
+		{
+			std::unique_lock<std::mutex> l(result_mutex);
+			for (auto result = result_list.begin(); result != result_list.end();)
+			{
+				if ((*result)->ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+				{
+					auto ret = (*result)->ret.get();
+
+					if (auto str = std::any_cast<std::string*>(ret))
+					{
+						try
+						{
+							socket.sendMsg(aris::core::Msg(*str));
+						}
+						catch (std::exception &e)
+						{
+							std::cout << e.what() << std::endl;
+							LOG_ERROR << e.what() << std::endl;
+						}
+					}
+					else
+					{
+						try
+						{
+							socket.sendMsg(aris::core::Msg());
+						}
+						catch (std::exception &e)
+						{
+							std::cout << e.what() << std::endl;
+							LOG_ERROR << e.what() << std::endl;
+						}
+					}
+				}
+
+				result_list.erase(result++);
+			}
+			l.release();
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	});
 
 	aris::core::Socket udp_socket("server", "", "5867", aris::core::Socket::UDP_RAW);
 	udp_socket.setOnReceivedRawData([&](aris::core::Socket *socket, const char *data, int size)->int

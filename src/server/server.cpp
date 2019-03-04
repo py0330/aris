@@ -480,6 +480,7 @@ namespace aris::server
 			std::promise<std::any>()
 			});
 		auto &target = internal_data->target;
+		target->ret = internal_data->ret_promise.get_future();
 
 		// prepair //
 		if (!(target->option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))

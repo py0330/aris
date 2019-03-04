@@ -22,8 +22,9 @@
 namespace aris::plan
 {
 	class Plan;
+	
 	struct PlanTarget
-	{
+	{	
 		Plan* plan;                                       // prepair/execute/collect  get&set(but be careful when prepair)
 		aris::dynamic::Model* model;                      // prepair/execute/collect  get&set(but be careful when prepair)
 		aris::control::Master* master;                    // prepair/execute/collect  get&set(but be careful when prepair)
@@ -129,6 +130,7 @@ namespace aris::plan
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 		auto virtual executeRT(PlanTarget &target)->int override;
+		auto virtual collectNrt(PlanTarget &target)->std::any override { return std::string("enable finished"); }
 
 		virtual ~Enable();
 		explicit Enable(const std::string &name = "enable_plan");
@@ -533,6 +535,33 @@ namespace aris::plan
 		explicit ManualMove(const std::string &name = "manual_move");
 		ARIS_REGISTER_TYPE("ManualMove");
 		ARIS_DECLARE_BIG_FOUR(ManualMove);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+
+
+	class GetPartPq :public Plan
+	{
+	public:
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override
+		{
+			//auto part_pm_vec = std::make_any<std::vector<double> >(target.model->partPool().size() * 16);
+			//target.cs->getRtData([](aris::server::ControlServer& cs, std::any& data)
+			//{
+			//	for (aris::Size i(-1); ++i < cs.model().partPool().size();)
+			//		cs.model().partPool().at(i).getPm(std::any_cast<std::vector<double>& >(data).data() + i * 16);
+			//}, part_pm_vec);
+			//
+			//target.option |= NOT_RUN_EXECUTE_FUNCTION;
+		}
+		auto virtual collectNrt(PlanTarget &target)->std::any override { return std::string("enable finished"); }
+
+		virtual ~GetPartPq();
+		explicit GetPartPq(const std::string &name = "get_part_pq");
+		ARIS_REGISTER_TYPE("GetPartPq");
+		ARIS_DEFINE_BIG_FOUR(GetPartPq);
 
 	private:
 		struct Imp;
