@@ -37,7 +37,6 @@ namespace aris::core
 
 		// 可变属性 //
 		std::string name_;
-		std::string default_type_;
 		std::map<std::string, TypeInfo> type_map_;
 		ImpContainer<Object> children_;
 
@@ -337,12 +336,11 @@ namespace aris::core
 		xml_ele.DeleteChildren();
 		xml_ele.SetName(type().c_str());
 		if(!name().empty())xml_ele.SetAttribute("name", name().c_str());
-		if (!imp_->default_type_.empty() && imp_->default_type_ != Object::Type())xml_ele.SetAttribute("default_child_type", imp_->default_type_.c_str());
 		for (auto &ele : children())
 		{
 			auto new_ele = xml_ele.GetDocument()->NewElement(ele.name().c_str());
-			ele.saveXml(*new_ele);
 			xml_ele.InsertEndChild(new_ele);
+			ele.saveXml(*new_ele);
 		}
 	}
 	auto Object::loadXml(const aris::core::XmlElement &xml_ele)->void
@@ -351,7 +349,6 @@ namespace aris::core
 
 		// set name and default child type //
 		imp_->name_ = xml_ele.Attribute("name") ? xml_ele.Attribute("name") : "";
-		imp_->default_type_ = xml_ele.Attribute("default_child_type") ? xml_ele.Attribute("default_child_type") : Object::Type();
 
 		// insert children //
 		children().clear();
@@ -385,7 +382,11 @@ namespace aris::core
 
 		loadXmlDoc(xmlDoc);
 	}
-	auto Object::loadXmlDoc(const aris::core::XmlDocument &xml_doc)->void { loadXml(*xml_doc.RootElement()); }
+	auto Object::loadXmlDoc(const aris::core::XmlDocument &xml_doc)->void 
+	{ 
+		if (!xml_doc.RootElement())throw std::runtime_error("empty xml doc");
+		loadXml(*xml_doc.RootElement());
+	}
 	auto Object::saveXmlDoc(aris::core::XmlDocument &xml_doc)const->void
 	{
 		xml_doc.DeleteChildren();
@@ -428,7 +429,6 @@ namespace aris::core
 		imp_->father_ = nullptr;
 		imp_->id_ = 0;
 		imp_->name_ = name;
-		imp_->default_type_ = Object::Type();
 		imp_->type_map_.insert(std::make_pair(Object::Type(), TypeInfo::CreateTypeInfo<Object>()));
 	}
 	Object::Object(const Object &other) :imp_(new Imp)
@@ -436,7 +436,6 @@ namespace aris::core
 		imp_->father_ = nullptr;
 		imp_->id_ = 0;
 		imp_->name_ = other.imp_->name_;
-		imp_->default_type_ = other.imp_->default_type_;
 		imp_->type_map_ = other.imp_->type_map_;
 
 		for (auto&child : other.children())
@@ -459,7 +458,6 @@ namespace aris::core
 	Object& Object::operator=(const Object &other)
 	{
 		imp_->name_ = other.imp_->name_;
-		imp_->default_type_ = other.imp_->default_type_;
 		imp_->type_map_ = other.imp_->type_map_;
 
 		if (children().size() > other.children().size())
@@ -525,7 +523,6 @@ namespace aris::core
 		}
 
 		imp_->name_ = std::move(other.imp_->name_);
-		imp_->default_type_ = std::move(other.imp_->default_type_);
 		imp_->type_map_ = std::move(other.imp_->type_map_);
 		return *this;
 	}

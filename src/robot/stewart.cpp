@@ -163,7 +163,10 @@ namespace aris::robot
 		auto &rs = plan_root->planPool().add<aris::plan::Reset>();
 		rs.command().findParam("pos")->setDefaultValue("{0.5411686785981304,0.4991128510566586,0.4991128510566586,0.5411686785981304,0.4768461834488792,0.4768461834488792}");
 		
-		plan_root->planPool().add<aris::plan::MoveAbsJ>();
+		auto &mvaj = plan_root->planPool().add<aris::plan::MoveAbsJ>();
+		mvaj.command().findParam("vel")->setDefaultValue("0.1");
+
+
 		plan_root->planPool().add<aris::plan::MoveL>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
 
@@ -186,6 +189,10 @@ namespace aris::robot
 		mm.command().findParam("de")->setDefaultValue("{10,10,10,10,10,10}");
 		mm.command().findParam("eul_type")->setDefaultValue("123");
 		mm.command().findParam("increase_count")->setDefaultValue("100");
+
+		plan_root->planPool().add<aris::plan::GetPartPq>();
+		plan_root->planPool().add<aris::plan::GetXml>();
+		plan_root->planPool().add<aris::plan::SetXml>();
 
 		return plan_root;
 	}

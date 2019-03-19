@@ -17,13 +17,12 @@ namespace aris::server
 		struct InternalData
 		{
 			std::shared_ptr<aris::plan::PlanTarget> target;
-			std::promise<std::any> ret_promise;
+			std::promise<std::int32_t> ret_promise;
 		};
 		
 		auto tg()->void;
 		auto executeCmd(aris::plan::PlanTarget &target)->int;
 		auto checkMotion(std::uint64_t option)->int;
-		auto onRunError()->int;
 
 		Imp(ControlServer *server) :server_(server) {}
 		Imp(const Imp&) = delete;
@@ -57,6 +56,7 @@ namespace aris::server
 		aris::control::Controller* controller_;
 		aris::sensor::SensorRoot* sensor_root_;
 		aris::plan::PlanRoot* plan_root_;
+		InterfaceRoot *interface_root_;
 
 		// 打洞，读取数据 //
 		std::atomic_bool if_get_data_{ false }, if_get_data_ready_{ false };
@@ -94,10 +94,9 @@ namespace aris::server
 			auto ret = executeCmd(target);
 
 			// 检查错误 //
-			if (checkMotion(target.option)
-				|| ret < 0)
+			if (checkMotion(target.option) || ret < 0)
 			{
-				server_->controller().mout() << "cmd queue cleared\n";
+				server_->controller().mout() << "failed, cmd queue cleared\n";
 				count_ = 1;
 				cmd_now_.store(cmd_end);//原子操作
 
@@ -122,11 +121,7 @@ namespace aris::server
 		}
 		else if (checkMotion(aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN))
 		{
-			server_->controller().mout() << "cmd queue cleared, failed when idle\n";
-			count_ = 1;
-			cmd_now_.store(cmd_end);//原子操作
-
-			server_->controller().resetRtStasticData(nullptr, false);
+			server_->controller().mout() << "failed when idle\n";
 		}
 
 		// 给与外部想要的数据 //
@@ -163,6 +158,9 @@ namespace aris::server
 	}
 	auto ControlServer::Imp::checkMotion(std::uint64_t option)->int
 	{
+		static bool is_correcting{ false };
+		if (is_correcting)goto FAILED;
+
 		// 检查规划的指令是否合理（包括电机是否已经跟随上） //
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 		{
@@ -377,23 +375,10 @@ namespace aris::server
 		return 0;
 
 	FAILED:
-		onRunError();
+		is_correcting = false;
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 		{
-			last_last_pvc.at(i).p = controller_->motionPool().at(i).targetPos();
-			last_last_pvc.at(i).v = controller_->motionPool().at(i).targetVel();
-			last_last_pvc.at(i).c = controller_->motionPool().at(i).targetCur();
-		}
-		last_pvc = last_last_pvc;
-		return -1;
-	}
-	auto ControlServer::Imp::onRunError()->int
-	{
-		int ret = 0;
-		
-		// 恢复电机状态 //
-		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
-		{
+			// correct
 			auto &cm = controller_->motionPool().at(i);
 			switch (cm.modeOfOperation())
 			{
@@ -405,13 +390,18 @@ namespace aris::server
 				break;
 			case 10:
 				cm.setTargetCur(0.0);
-				ret = cm.disable();
+				is_correcting = cm.disable();
 				break;
 			default:
-				ret = cm.disable();
+				is_correcting = cm.disable();
 			}
+			
+			// store correct data
+			last_pvc.at(i).p = last_last_pvc.at(i).p = controller_->motionPool().at(i).targetPos();
+			last_pvc.at(i).v = last_last_pvc.at(i).v = controller_->motionPool().at(i).targetVel();
+			last_pvc.at(i).c = last_last_pvc.at(i).c = controller_->motionPool().at(i).targetCur();
 		}
-		return 0;
+		return -1;
 	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
 	auto ControlServer::resetModel(dynamic::Model *model)->void
@@ -446,6 +436,7 @@ namespace aris::server
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
+	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
 	auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Object::loadXml(xml_ele);
@@ -457,7 +448,6 @@ namespace aris::server
 	auto ControlServer::executeCmd(const aris::core::Msg &msg)->std::shared_ptr<aris::plan::PlanTarget>
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
 
 		static std::uint64_t cmd_id{ 0 };
 		++cmd_id;
@@ -472,15 +462,27 @@ namespace aris::server
 		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 
 		// 初始化plan target //
-		//aris::plan::PlanTarget target{ &*plan_iter, &model(), &controller(), cmd_id, static_cast<std::uint64_t>(msg.header().reserved1_), std::any(), 0, 0, aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 } };
 		auto internal_data = std::make_shared<Imp::InternalData>(Imp::InternalData{
 			std::make_shared<aris::plan::PlanTarget>(
-				aris::plan::PlanTarget{ &*plan_iter, &model(), &controller(), cmd_id, static_cast<std::uint64_t>(msg.header().reserved1_), std::any(), 0, 0, aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 } }
-				),
-			std::promise<std::any>()
+				aris::plan::PlanTarget
+				{ 
+					&*plan_iter, 
+					this, 
+					&model(), 
+					&controller(), 
+					cmd_id, 
+					static_cast<std::uint64_t>(msg.header().reserved1_), 
+					std::any(), 
+					0, 
+					0, 
+					aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 },
+					std::any(),
+					std::future<std::int32_t>()
+				}),
+			std::promise<std::int32_t>()
 			});
 		auto &target = internal_data->target;
-		target->ret = internal_data->ret_promise.get_future();
+		target->finished = internal_data->ret_promise.get_future();
 
 		// prepair //
 		if (!(target->option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
@@ -516,6 +518,9 @@ namespace aris::server
 		// execute //
 		if (!(target->option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
 		{
+			// 只有实时循环才需要 server 已经在运行
+			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
+			
 			// 等待所有任务完成 //
 			while ((target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 
@@ -551,8 +556,8 @@ namespace aris::server
 				while ((target->option & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 				LOG_INFO << "server collect cmd " << target->command_id << std::endl;
-				auto ret = plan_iter->collectNrt(*target);
-				internal_data->ret_promise.set_value(ret);
+				plan_iter->collectNrt(*target);
+				internal_data->ret_promise.set_value(aris::plan::PlanTarget::SUCCESS);
 			}
 			// 等待当前实时任务收集 //
 			else
@@ -564,7 +569,7 @@ namespace aris::server
 		else
 		{
 			if (target->option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
-				internal_data->ret_promise.set_value(std::any());
+				internal_data->ret_promise.set_value(aris::plan::PlanTarget::SUCCESS);
 		}
 
 		return target;
@@ -634,13 +639,12 @@ namespace aris::server
 						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "total count:" << target.rt_stastic.total_count << std::endl
 						<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::setw(20) << "overruns:" << target.rt_stastic.overrun_count << std::endl;
 
-					std::any ret;
 					if (!(target.option & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION)) 
 					{
 						LOG_INFO << "server collect cmd " << target.command_id << std::endl;
-						ret = target.plan->collectNrt(target);
+						target.plan->collectNrt(target);
 					}
-					internal_data->ret_promise.set_value(ret);
+					internal_data->ret_promise.set_value(aris::plan::PlanTarget::SUCCESS);
 					internal_data.reset();
 					imp_->cmd_collect_.store(cmd_collect + 1);
 				}
@@ -670,6 +674,16 @@ namespace aris::server
 		controller().stop();
 		sensorRoot().stop();
 	}
+	auto ControlServer::waitForAllExecution()->void 
+	{
+		auto cmd_end = imp_->cmd_end_.load();//原子操作
+		while (cmd_end != imp_->cmd_now_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+	}
+	auto ControlServer::waitForAllCollection()->void 
+	{
+		auto cmd_end = imp_->cmd_end_.load();//原子操作
+		while (cmd_end != imp_->cmd_collect_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+	}
 	auto ControlServer::getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -693,11 +707,17 @@ namespace aris::server
 		registerType<aris::sensor::SensorRoot>();
 		registerType<aris::plan::PlanRoot>();
 		registerType<aris::control::EthercatController>();
+		registerType<InterfaceRoot>();
 
 		// create instance //
 		makeModel<aris::dynamic::Model>("model");
 		makeController<aris::control::Controller>("controller");
 		makeSensorRoot<aris::sensor::SensorRoot>("sensor_root");
 		makePlanRoot<aris::plan::PlanRoot>("plan_root");
+		
+		auto ins = new InterfaceRoot;
+		children().push_back_ptr(ins);
+		imp_->interface_root_ = ins;
+		this->interfaceRoot().loadXmlStr("<InterfaceRoot/>");
 	}
 }

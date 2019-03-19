@@ -6,6 +6,7 @@
 
 #include <aris/control/control.hpp>
 #include <aris/dynamic/dynamic.hpp>
+#include <aris/server/server.hpp>
 
 namespace aris::plan
 {
@@ -47,6 +48,9 @@ namespace aris::plan
 		registerType<AutoMove>();
 		registerType<ManualMove>();
 		registerType<UniversalPlan>();
+
+		registerType<GetPartPq>();
+		registerType<GetXml>();
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PlanRoot);
 
@@ -303,7 +307,7 @@ namespace aris::plan
 	auto set_active_motor(const std::map<std::string, std::string> &cmd_params, PlanTarget &target, SetActiveMotor &param)->void
 	{
 		param.active_motor.clear();
-		param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
+		param.active_motor.resize(target.controller->motionPool().size(), 0);
 		
 		for (auto cmd_param : cmd_params)
 		{
@@ -317,11 +321,11 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "physical_id")
 			{
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).motId()) = 1;
+				param.active_motor.at(target.controller->motionAtPhy(std::stoi(cmd_param.second)).motId()) = 1;
 			}
 			else if (cmd_param.first == "slave_id")
 			{
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtSla(std::stoi(cmd_param.second)).motId()) = 1;
+				param.active_motor.at(target.controller->motionAtSla(std::stoi(cmd_param.second)).motId()) = 1;
 			}
 		}
 	}
@@ -341,8 +345,7 @@ namespace aris::plan
 		"		<Param name=\"dec\" default=\"0.1\"/>"
 	auto set_input_movement(const std::map<std::string, std::string> &cmd_params, PlanTarget &target, SetInputMovement &param)->void
 	{
-		auto c = dynamic_cast<aris::control::Controller*>(target.master);
-		param.axis_begin_pos_vec.resize(c->motionPool().size(), 0.0);
+		param.axis_begin_pos_vec.resize(target.controller->motionPool().size(), 0.0);
 		for (auto cmd_param : cmd_params)
 		{
 			if (cmd_param.first == "pos")
@@ -350,9 +353,9 @@ namespace aris::plan
 				auto p = target.model->calculator().calculateExpression(cmd_param.second);
 				if (p.size() == 1)
 				{
-					param.axis_pos_vec.resize(c->motionPool().size(), p.toDouble());
+					param.axis_pos_vec.resize(target.controller->motionPool().size(), p.toDouble());
 				}
-				else if (p.size() == c->motionPool().size())
+				else if (p.size() == target.controller->motionPool().size())
 				{
 					param.axis_pos_vec.assign(p.begin(), p.end());
 				}
@@ -367,9 +370,9 @@ namespace aris::plan
 
 				if (a.size() == 1)
 				{
-					param.axis_acc_vec.resize(c->motionPool().size(), a.toDouble());
+					param.axis_acc_vec.resize(target.controller->motionPool().size(), a.toDouble());
 				}
-				else if (a.size() == c->motionPool().size())
+				else if (a.size() == target.controller->motionPool().size())
 				{
 					param.axis_acc_vec.assign(a.begin(), a.end());
 				}
@@ -385,9 +388,9 @@ namespace aris::plan
 
 				if (v.size() == 1)
 				{
-					param.axis_vel_vec.resize(c->motionPool().size(), v.toDouble());
+					param.axis_vel_vec.resize(target.controller->motionPool().size(), v.toDouble());
 				}
-				else if (v.size() == c->motionPool().size())
+				else if (v.size() == target.controller->motionPool().size())
 				{
 					param.axis_vel_vec.assign(v.begin(), v.end());
 				}
@@ -402,9 +405,9 @@ namespace aris::plan
 
 				if (d.size() == 1)
 				{
-					param.axis_dec_vec.resize(c->motionPool().size(), d.toDouble());
+					param.axis_dec_vec.resize(target.controller->motionPool().size(), d.toDouble());
 				}
-				else if (d.size() == c->motionPool().size())
+				else if (d.size() == target.controller->motionPool().size())
 				{
 					param.axis_dec_vec.assign(d.begin(), d.end());
 				}
@@ -417,7 +420,7 @@ namespace aris::plan
 	}
 	auto check_input_movement(const std::map<std::string, std::string> &cmd_params, PlanTarget &target, SetInputMovement &param)->void
 	{
-		auto c = dynamic_cast<aris::control::Controller*>(target.master);
+		auto c = target.controller;
 		for (Size i = 0; i < c->motionPool().size(); ++i)
 		{
 			if (param.axis_pos_vec[i] > c->motionPool()[i].maxPos() || param.axis_pos_vec[i] < c->motionPool()[i].minPos())
@@ -448,15 +451,14 @@ namespace aris::plan
 	}
 	auto Enable::executeRT(PlanTarget &target)->int
 	{
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 		auto &param = std::any_cast<EnableParam &>(target.param);
 
 		bool is_all_finished = true;
-		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < target.controller->motionPool().size(); ++i)
 		{
 			if (param.active_motor[i])
 			{
-				auto &cm = controller->motionPool().at(i);
+				auto &cm = target.controller->motionPool().at(i);
 				auto ret = cm.enable();
 				if (ret)
 				{
@@ -464,7 +466,8 @@ namespace aris::plan
 
 					if (target.count % 1000 == 0)
 					{
-						controller->mout() << "Unenabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+						target.controller->mout() << "Unenabled motor, slave id: " << cm.id() 
+							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -500,15 +503,14 @@ namespace aris::plan
 	}
 	auto Disable::executeRT(PlanTarget &target)->int
 	{
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 		auto &param = std::any_cast<DisableParam &>(target.param);
 
 		bool is_all_finished = true;
-		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < target.controller->motionPool().size(); ++i)
 		{
 			if (param.active_motor[i])
 			{
-				auto &cm = controller->motionPool().at(i);
+				auto &cm = target.controller->motionPool().at(i);
 				auto ret = cm.disable();
 				if (ret)
 				{
@@ -516,7 +518,8 @@ namespace aris::plan
 
 					if (target.count % 1000 == 0)
 					{
-						controller->mout() << "Undisabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+						target.controller->mout() << "Undisabled motor, slave id: " << cm.id() 
+							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -550,84 +553,6 @@ namespace aris::plan
 	{
 		HomeParam param;
 
-		for (auto cmd_param : params)
-		{
-			if (cmd_param.first == "limit_time")
-				param.limit_time = std::stoi(cmd_param.second);
-			else if (cmd_param.first == "all")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 1);
-			}
-			else if (cmd_param.first == "none")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-			}
-			else if (cmd_param.first == "motion_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(std::stoi(cmd_param.second)) = 1;
-			}
-			else if (cmd_param.first == "physical_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).phyId()) = 1;
-			}
-			else if (cmd_param.first == "slave_id")
-			{
-				param.active_motor.clear();
-				param.active_motor.resize(dynamic_cast<aris::control::Controller *>(target.master)->motionPool().size(), 0);
-				param.active_motor.at(dynamic_cast<aris::control::Controller*>(target.master)->motionAtPhy(std::stoi(cmd_param.second)).slaId()) = 1;
-			}
-		}
-
-		for (aris::Size i = 0; i<param.active_motor.size(); ++i)
-		{
-			if (param.active_motor[i])
-			{
-				std::int8_t method = std::stoi(params.at(std::string("method")));
-				if (method < 1 || method > 35) throw std::runtime_error("invalid home method");
-
-				param.offset = std::stod(params.at(std::string("offset")));
-				//std::int32_t offset = std::stoi(params.at(std::string("offset")));
-				std::uint32_t high_speed = std::stoi(params.at(std::string("high_speed")));
-				std::uint32_t low_speed = std::stoi(params.at(std::string("low_speed")));
-				std::uint32_t acc = std::stoi(params.at(std::string("acceleration")));
-
-				auto controller = dynamic_cast<aris::control::EthercatController *>(target.master);
-				auto &cm = dynamic_cast<aris::control::EthercatMotion &>(controller->motionPool()[i]);
-
-				/*
-				cm.writeSdo(0x6098, 0x00, method);
-				std::int8_t method_read;
-				cm.readSdo(0x6098, 0x00, method_read);
-				if (method_read != method)throw std::runtime_error("home sdo write failed method");
-
-				cm.writeSdo(0x607C, 0x00, offset);
-				std::int32_t offset_read;
-				cm.readSdo(0x607C, 0x00, offset_read);
-				if (offset_read != offset)throw std::runtime_error("home sdo write failed offset");
-
-				cm.writeSdo(0x6099, 0x01, high_speed);
-				std::int32_t high_speed_read;
-				cm.readSdo(0x6099, 0x01, high_speed_read);
-				if (high_speed_read != high_speed)throw std::runtime_error("home sdo write failed high_speed");
-
-				cm.writeSdo(0x6099, 0x02, low_speed);
-				std::int32_t low_speed_read;
-				cm.readSdo(0x6099, 0x02, low_speed_read);
-				if (low_speed_read != low_speed)throw std::runtime_error("home sdo write failed low_speed");
-
-				cm.writeSdo(0x609A, 0x00, acc);
-				std::int32_t acc_read;
-				cm.readSdo(0x609A, 0x00, acc_read);
-				if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
-				*/
-			}
-		}
 
 		param.active_motor_homed.clear();
 		param.active_motor_homed.resize(param.active_motor.size(), 0);
@@ -636,7 +561,7 @@ namespace aris::plan
 	}
 	auto Home::executeRT(PlanTarget &target)->int
 	{
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+		auto controller = target.controller;
 		auto &param = std::any_cast<HomeParam &>(target.param);
 
 		bool is_all_finished = true;
@@ -696,15 +621,14 @@ namespace aris::plan
 	}
 	auto Mode::executeRT(PlanTarget &target)->int
 	{
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 		auto &param = std::any_cast<ModeParam &>(target.param);
 
 		bool is_all_finished = true;
-		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < target.controller->motionPool().size(); ++i)
 		{
 			if (param.active_motor[i])
 			{
-				auto &cm = controller->motionPool().at(i);
+				auto &cm = target.controller->motionPool().at(i);
 				auto ret = cm.mode(8);
 				cm.setTargetPos(cm.actualPos());
 				if (ret)
@@ -713,7 +637,8 @@ namespace aris::plan
 
 					if (target.count % 1000 == 0)
 					{
-						controller->mout() << "Unmoded motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+						target.controller->mout() << "Unmoded motor, slave id: " << cm.id() 
+							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -744,17 +669,18 @@ namespace aris::plan
 		set_check_option(params, target);
 		set_active_motor(params, target, param);
 		set_input_movement(params, target, param);
-		auto c = dynamic_cast<aris::control::Controller*>(target.master);
-		for (Size i = 0; i < c->motionPool().size(); ++i)
+
+		for (Size i = 0; i < target.controller->motionPool().size(); ++i)
 		{
-			param.axis_pos_vec[i] = param.axis_pos_vec[i] * (c->motionPool()[i].maxPos() - c->motionPool()[i].minPos()) + c->motionPool()[i].minPos();
-			param.axis_acc_vec[i] = param.axis_acc_vec[i] * c->motionPool()[i].maxAcc();
-			param.axis_vel_vec[i] = param.axis_vel_vec[i] * c->motionPool()[i].maxVel();
-			param.axis_dec_vec[i] = param.axis_dec_vec[i] * c->motionPool()[i].maxAcc();
+			auto &cm = target.controller->motionPool()[i];
+			param.axis_pos_vec[i] = param.axis_pos_vec[i] * (cm.maxPos() - cm.minPos()) + cm.minPos();
+			param.axis_acc_vec[i] = param.axis_acc_vec[i] * cm.maxAcc();
+			param.axis_vel_vec[i] = param.axis_vel_vec[i] * cm.maxVel();
+			param.axis_dec_vec[i] = param.axis_dec_vec[i] * cm.maxAcc();
 		}
 		check_input_movement(params, target, param);
 
-		param.total_count_vec.resize(dynamic_cast<aris::control::Controller*>(target.master)->motionPool().size(), 1);
+		param.total_count_vec.resize(target.controller->motionPool().size(), 1);
 
 		target.option |=
 			aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED |
@@ -766,29 +692,28 @@ namespace aris::plan
 	auto Reset::executeRT(PlanTarget &target)->int
 	{
 		auto &param = std::any_cast<ResetParam&>(target.param);
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 
 		// 取得起始位置 //
 		if (target.count == 1)
 		{
-			for (Size i = 0; i < controller->motionPool().size(); ++i)
+			for (Size i = 0; i < target.controller->motionPool().size(); ++i)
 			{
 				if (param.active_motor[i])
 				{
-					param.axis_begin_pos_vec[i] = controller->motionPool().at(i).actualPos();
+					param.axis_begin_pos_vec[i] = target.controller->motionPool().at(i).actualPos();
 				}
 			}
 		}
 
 		// 设置驱动器的位置 //
-		for (Size i = 0; i < controller->motionPool().size(); ++i)
+		for (Size i = 0; i < target.controller->motionPool().size(); ++i)
 		{
 			if (param.active_motor[i])
 			{
 				double p, v, a;
 				aris::plan::moveAbsolute(target.count, param.axis_begin_pos_vec[i], param.axis_pos_vec[i], param.axis_vel_vec[i] / 1000
 					, param.axis_acc_vec[i] / 1000 / 1000, param.axis_dec_vec[i] / 1000 / 1000, p, v, a, param.total_count_vec[i]);
-				controller->motionAtAbs(i).setTargetPos(p);
+				target.controller->motionAtAbs(i).setTargetPos(p);
 			}
 		}
 
@@ -840,15 +765,14 @@ namespace aris::plan
 	}
 	auto Recover::executeRT(PlanTarget &target)->int
 	{
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 		auto param = std::any_cast<std::shared_ptr<RecoverParam> &>(target.param);
 
 		if (target.count == 1)
 		{
-			for (Size i = 0; i < std::min(controller->motionPool().size(), target.model->motionPool().size()); ++i)
+			for (Size i = 0; i < std::min(target.controller->motionPool().size(), target.model->motionPool().size()); ++i)
 			{
-				controller->motionPool()[i].setTargetPos(controller->motionPool().at(i).actualPos());
-				target.model->motionPool()[i].setMp(controller->motionPool().at(i).actualPos());
+				target.controller->motionPool()[i].setTargetPos(target.controller->motionPool().at(i).actualPos());
+				target.model->motionPool()[i].setMp(target.controller->motionPool().at(i).actualPos());
 			}
 
 			param->is_rt_waiting_ready_.store(true);
@@ -858,7 +782,7 @@ namespace aris::plan
 
 		return param->is_kinematic_ready_.load() ? param->kin_ret : 1;
 	}
-	auto Recover::collectNrt(PlanTarget &target)->std::any
+	auto Recover::collectNrt(PlanTarget &target)->void
 	{
 		if (target.count)
 		{
@@ -870,8 +794,6 @@ namespace aris::plan
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->is_rt_waiting_ready_.store(true);
 			std::any_cast<std::shared_ptr<RecoverParam>&>(target.param)->fut.get();
 		}
-
-		return std::any();
 	}
 	Recover::~Recover() = default;
 	Recover::Recover(const std::string &name) :Plan(name)
@@ -917,14 +839,12 @@ namespace aris::plan
 	}
 	auto Show::executeRT(PlanTarget &target)->int
 	{
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
-
-		controller->mout() << "pos: ";
-		for (auto &m : controller->motionPool())
+		target.controller->mout() << "pos: ";
+		for (auto &m : target.controller->motionPool())
 		{
-			controller->mout() << std::setprecision(15) << m.actualPos() << "   ";
+			target.controller->mout() << std::setprecision(15) << m.actualPos() << "   ";
 		}
-		controller->mout() << std::endl;
+		target.controller->mout() << std::endl;
 
 		return 0;
 	}
@@ -937,7 +857,6 @@ namespace aris::plan
 	struct MoveAbsJParam :public SetActiveMotor, SetInputMovement{};
 	auto MoveAbsJ::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		auto c = dynamic_cast<aris::control::Controller*>(target.master);
 		MoveAbsJParam param;
 
 		set_check_option(params, target);
@@ -945,13 +864,12 @@ namespace aris::plan
 		set_input_movement(params, target, param);
 		check_input_movement(params, target, param);
 
-		param.axis_begin_pos_vec.resize(c->motionPool().size());
+		param.axis_begin_pos_vec.resize(target.controller->motionPool().size());
 		target.param = param;
 	}
 	auto MoveAbsJ::executeRT(PlanTarget &target)->int
 	{
 		auto param = std::any_cast<MoveAbsJParam>(&target.param);
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
 
 		if (target.count == 1)
 		{
@@ -959,7 +877,7 @@ namespace aris::plan
 			{
 				if (param->active_motor[i])
 				{
-					param->axis_begin_pos_vec[i] = controller->motionPool()[i].targetPos();
+					param->axis_begin_pos_vec[i] = target.controller->motionPool()[i].targetPos();
 				}
 			}
 		}
@@ -975,7 +893,7 @@ namespace aris::plan
 					param->axis_begin_pos_vec[i], param->axis_pos_vec[i],
 					param->axis_vel_vec[i] / 1000, param->axis_acc_vec[i] / 1000 / 1000, param->axis_dec_vec[i] / 1000 / 1000,
 					p, v, a, t_count);
-				controller->motionPool()[i].setTargetPos(p);
+				target.controller->motionPool()[i].setTargetPos(p);
 				total_count = std::max(total_count, t_count);
 			}
 		}
@@ -1087,7 +1005,7 @@ namespace aris::plan
 		// find joint acc/vel/dec/
 		for (auto cmd_param : params)
 		{
-			auto c = dynamic_cast<aris::control::Controller*>(target.master);
+			auto c = target.controller;
 			if (cmd_param.first == "joint_acc")
 			{
 				mvj_param.joint_acc.clear();
@@ -1140,7 +1058,7 @@ namespace aris::plan
 	auto MoveJ::executeRT(PlanTarget &target)->int
 	{
 		auto mvj_param = std::any_cast<MoveJParam>(&target.param);
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+		auto controller = target.controller;
 
 		// 取得起始位置 //
 		double p, v, a;
@@ -1254,7 +1172,7 @@ namespace aris::plan
 	auto MoveL::executeRT(PlanTarget &target)->int
 	{
 		auto mvl_param = std::any_cast<MoveLParam>(&target.param);
-		auto controller = dynamic_cast<aris::control::Controller *>(target.master);
+		auto controller = target.controller;
 
 		// 取得起始位置 //
 		static double begin_pm[16], relative_pm[16], relative_pa[6], pos_ratio, ori_ratio, norm_pos, norm_ori;
@@ -1302,13 +1220,13 @@ namespace aris::plan
 		////////////////////////////////////// log ///////////////////////////////////////
 		double pq[7];
 		aris::dynamic::s_pm2pq(*target.model->generalMotionPool().at(0).mpm(), pq);
-		target.master->lout() << target.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "  ";
+		target.controller->lout() << target.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "  ";
 
 		for (auto &cm : controller->motionPool())
 		{
-			target.master->lout() << "  " << cm.targetPos() << "  " << cm.actualPos() << "  " << cm.actualVel() << "  " << cm.actualCur() << "  ";
+			target.controller->lout() << "  " << cm.targetPos() << "  " << cm.actualPos() << "  " << cm.actualVel() << "  " << cm.actualCur() << "  ";
 		}
-		target.master->lout() << "\n";
+		target.controller->lout() << "\n";
 		//////////////////////////////////////////////////////////////////////////////////
 
 
@@ -1481,15 +1399,15 @@ namespace aris::plan
 		static int i = 0;
 		if (++i % 1000 == 0)
 		{
-			target.master->mout() << "pe_now :"
+			target.controller->mout() << "pe_now :"
 				<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
 				<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
 
-			target.master->mout() << "pe_target :"
+			target.controller->mout() << "pe_target :"
 				<< pvade[0] << "  " << pvade[1] << "  " << pvade[2] << "  "
 				<< pvade[3] << "  " << pvade[4] << "  " << pvade[5] << std::endl;
 
-			target.master->mout() << "pe_next:"
+			target.controller->mout() << "pe_next:"
 				<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  "
 				<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
 		}
@@ -1499,11 +1417,7 @@ namespace aris::plan
 
 		return imp_->is_running_.load() ? 1 : 0;
 	}
-	auto AutoMove::collectNrt(PlanTarget &target)->std::any
-	{ 
-		if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false);
-		return std::any();
-	}
+	auto AutoMove::collectNrt(PlanTarget &target)->void { if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); }
 	AutoMove::~AutoMove() = default;
 	AutoMove::AutoMove(const std::string &name) : Plan(name), imp_(new Imp)
 	{
@@ -1648,7 +1562,7 @@ namespace aris::plan
 		target.model->generalMotionPool()[0].setMpe(target_pe_new.data(), imp_->eul_type.c_str());
 		auto check_motion_limit = [&]()->bool
 		{
-			auto c = dynamic_cast<aris::control::Controller*>(target.master);
+			auto c = target.controller;
 			for (std::size_t i = 0; i < std::min(c->motionPool().size(), target.model->motionPool().size()); ++i)
 			{
 				auto &cm = c->motionPool().at(i);
@@ -1680,10 +1594,9 @@ namespace aris::plan
 
 		return imp_->is_running_.load() ? 1 : 0;
 	}
-	auto ManualMove::collectNrt(PlanTarget &target)-> std::any
+	auto ManualMove::collectNrt(PlanTarget &target)-> void
 	{ 
 		if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); 
-		return std::any();
 	}
 	ManualMove::~ManualMove() = default;
 	ManualMove::ManualMove(const std::string &name) : Plan(name), imp_(new Imp)
@@ -1716,6 +1629,67 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(ManualMove);
 
+	auto GetPartPq::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		auto pm = std::make_any<std::vector<double> >(target.model->partPool().size() * 16);
+		target.server->getRtData([](aris::server::ControlServer& cs, std::any& data)
+		{
+			for (aris::Size i(-1); ++i < cs.model().partPool().size();)
+				cs.model().partPool().at(i).getPm(std::any_cast<std::vector<double>& >(data).data() + i * 16);
+		}, pm);
+
+		auto pq = std::vector<double>(target.model->partPool().size() * 7);
+
+		for (aris::Size i(-1); ++i < target.server->model().partPool().size();)
+			aris::dynamic::s_pm2pq(std::any_cast<std::vector<double>& >(pm).data() + i * 16, pq.data() + i * 7);
+		
+		//   return text
+		// target.param = aris::core::Matrix(pq.size(), 1, pq.data()).toString();
+		//
+
+		std::string ret(reinterpret_cast<char*>(pq.data()), pq.size() * sizeof(double));
+		target.param = ret;
+
+		target.option |= NOT_RUN_EXECUTE_FUNCTION;
+	}
+	auto GetPartPq::collectNrt(PlanTarget &target)-> void { target.ret = target.param; }
+	GetPartPq::~GetPartPq() = default;
+	GetPartPq::GetPartPq(const std::string &name) : Plan(name)
+	{
+		command().loadXmlStr(
+			"<Command name=\"get_part_pq\">"
+			"</Command>");
+	}
+
+	auto GetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		target.server->waitForAllCollection();
+		target.param = target.server->xmlString();
+		target.option |= NOT_RUN_EXECUTE_FUNCTION;
+	}
+	auto GetXml::collectNrt(PlanTarget &target)-> void { target.ret = target.param; }
+	GetXml::~GetXml() = default;
+	GetXml::GetXml(const std::string &name) : Plan(name)
+	{
+		command().loadXmlStr(
+			"<Command name=\"get_xml\">"
+			"</Command>");
+	}
+
+	auto SetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{		
+		target.server->loadXmlStr(params.at("xml"));
+		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+	}
+	SetXml::~SetXml() = default;
+	SetXml::SetXml(const std::string &name) : Plan(name)
+	{
+		command().loadXmlStr(
+			"<Command name=\"set_xml\">"
+			"	<Param name=\"xml\"/>"
+			"</Command>");
+	}
+
 	struct UniversalPlan::Imp
 	{
 		PrepairFunc prepair_nrt;
@@ -1724,10 +1698,9 @@ namespace aris::plan
 	};
 	auto UniversalPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void { if (imp_->prepair_nrt)imp_->prepair_nrt(params, target); }
 	auto UniversalPlan::executeRT(PlanTarget &param)->int { return imp_->execute_rt ? imp_->execute_rt(param) : 0; }
-	auto UniversalPlan::collectNrt(PlanTarget &param)->std::any 
+	auto UniversalPlan::collectNrt(PlanTarget &param)->void
 	{ 
 		if (imp_->collect_nrt)imp_->collect_nrt(param);
-		return std::any();
 	}
 	auto UniversalPlan::setPrepairFunc(PrepairFunc func)->void { imp_->prepair_nrt = func; }
 	auto UniversalPlan::setExecuteFunc(ExecuteFunc func)->void { imp_->execute_rt = func; }

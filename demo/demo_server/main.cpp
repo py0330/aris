@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
 		cs.resetModel(aris::robot::createModelRokaeXB4(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootRokaeXB4().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
+		cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
 	}
 	else if (robot_name == "servo_press")
 	{
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootStewart().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
+		cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
 
 		// init model pos //
 		cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 0.5, 0, 0, 0}.data(), "313");
@@ -90,12 +92,10 @@ int main(int argc, char *argv[])
 
 	cs.start();
 
-
-
 	// interaction //
-	std::list<std::shared_ptr<aris::plan::PlanTarget>> result_list;
+	std::list<std::tuple<aris::core::Msg, std::shared_ptr<aris::plan::PlanTarget>>> result_list;
 	std::mutex result_mutex;
-
+	
 	aris::core::Socket socket("server", "", "5866", aris::core::Socket::WEB);
 	socket.setOnReceivedMsg([&](aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
@@ -105,164 +105,40 @@ int main(int argc, char *argv[])
 		if(++cout_count%10 == 0)
 			std::cout << "recv:" << msg_data << std::endl;
 
-		if (msg.header().msg_id_ == 0)
+		LOG_INFO << "the request is cmd:"
+			<< msg.header().msg_size_ << "&"
+			<< msg.header().msg_id_ << "&"
+			<< msg.header().msg_type_ << "&"
+			<< msg.header().reserved1_ << "&"
+			<< msg.header().reserved2_ << "&"
+			<< msg.header().reserved3_ << ":"
+			<< msg_data << std::endl;
+
+		try
 		{
-			LOG_INFO << "the request is cmd:"
-				<< msg.header().msg_size_ << "&"
-				<< msg.header().msg_id_ << "&"
-				<< msg.header().msg_type_ << "&"
-				<< msg.header().reserved1_ << "&"
-				<< msg.header().reserved2_ << "&"
-				<< msg.header().reserved3_ << ":"
-				<< msg_data << std::endl;
-
-			try
+			std::stringstream ss(msg_data);
+			for (std::string cmd; std::getline(ss, cmd);)
 			{
-				std::stringstream ss(msg_data);
-				for (std::string cmd; std::getline(ss, cmd);)
-				{
-					auto result = cs.executeCmd(aris::core::Msg(cmd));
+				auto result = cs.executeCmd(aris::core::Msg(cmd));
 
-					std::unique_lock<std::mutex> l(result_mutex);
-					result_list.push_back(result);
-				}
-			}
-			catch (std::exception &e)
-			{
-				std::cout << e.what() << std::endl;
-				LOG_ERROR << e.what() << std::endl;
-				
-				try
-				{
-					socket->sendMsg(aris::core::Msg());
-				}
-				catch (std::exception &e)
-				{
-					std::cout << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
-				}
+				std::unique_lock<std::mutex> l(result_mutex);
+				result_list.push_back(std::make_tuple(msg, result));
 			}
 		}
-		else if (msg.header().msg_id_ == 1)
+		catch (std::exception &e)
 		{
-			LOG_INFO_EVERY_N(100) << "socket receive request msg:"
-				<< msg.header().msg_size_ << "&"
-				<< msg.header().msg_id_ << "&"
-				<< msg.header().msg_type_ << "&"
-				<< msg.header().reserved1_ << "&"
-				<< msg.header().reserved2_ << "&"
-				<< msg.header().reserved3_ << ":"
-				<< msg_data << std::endl;
-
-			auto part_pm_vec = std::make_any<std::vector<double> >(cs.model().partPool().size() * 16);
-			cs.getRtData([](aris::server::ControlServer& cs, std::any& data)
-			{
-				for (aris::Size i(-1); ++i < cs.model().partPool().size();)
-					cs.model().partPool().at(i).getPm(std::any_cast<std::vector<double>& >(data).data() + i * 16);
-			}, part_pm_vec);
-
-			std::vector<double> part_pq(cs.model().partPool().size() * 7);
-			for (aris::Size i(-1); ++i < cs.model().partPool().size();)
-			{
-				aris::dynamic::s_pm2pq(std::any_cast<std::vector<double>& >(part_pm_vec).data() + i * 16, part_pq.data() + i * 7);
-			}
-
-			//// return binary ////
-			aris::core::Msg msg_ret;
-			msg_ret.copy(part_pq.data(), static_cast<aris::core::MsgSize>(part_pq.size() * 8));
-			msg_ret.header().msg_id_ = 1;
-			msg_ret.header().reserved1_ = msg.header().reserved1_;
+			std::cout << e.what() << std::endl;
+			LOG_ERROR << e.what() << std::endl;
 
 			try
 			{
-				socket->sendMsg(msg_ret);
-			}
-			catch (std::exception &e)
-			{
-				std::cout << e.what() << std::endl;
-				LOG_ERROR << e.what() << std::endl;
-			}
-		}
-		else if (msg.header().msg_id_ == 2)
-		{
-			LOG_INFO_EVERY_N(100) << "socket receive request msg:"
-				<< msg.header().msg_size_ << "&"
-				<< msg.header().msg_id_ << "&"
-				<< msg.header().msg_type_ << "&"
-				<< msg.header().reserved1_ << "&"
-				<< msg.header().reserved2_ << "&"
-				<< msg.header().reserved3_ << ":"
-				<< msg_data << std::endl;
-
-			//// return xml data, now we need to load from file because interface data is not inside the default xml ////
-			tinyxml2::XMLDocument xml_data;
-			tinyxml2::XMLPrinter printer;
-			xml_data.LoadFile("plan.xml");
-			xml_data.Print(&printer);
-			aris::core::Msg msg_ret(printer.CStr());
-			//aris::core::Msg msg_ret(cs.xmlString());
-
-			msg_ret.header().msg_id_ = 2;
-			msg_ret.header().reserved1_ = msg.header().reserved1_;
-
-			try
-			{
-				socket->sendMsg(msg_ret);
-			}
-			catch (std::exception &e)
-			{
-				std::cout << e.what() << std::endl;
-				LOG_ERROR << e.what() << std::endl;
-			}
-		}
-		else if (msg.header().msg_id_ == 5)
-		{
-			LOG_INFO_EVERY_N(100) << "socket receive request msg:"
-				<< msg.header().msg_size_ << "&"
-				<< msg.header().msg_id_ << "&"
-				<< msg.header().msg_type_ << "&"
-				<< msg.header().reserved1_ << "&"
-				<< msg.header().reserved2_ << "&"
-				<< msg.header().reserved3_ << ":"
-				<< msg_data << std::endl;
-			
-			//// return binary ////
-			aris::core::Msg msg_ret;
-			msg_ret.header().msg_id_ = 5;
-			msg_ret.header().reserved1_ = msg.header().reserved1_;
-
-			//// get rt data ////
-			if (msg.toString() == "a")
-			{
-				auto value = std::make_any<double>(0.0);
-				cs.getRtData([](aris::server::ControlServer& cs, std::any& data)
-				{
-					std::any_cast<double&>(data) = cs.controller().motionPool()[0].actualPos();
-				}, value);
-
-				msg_ret.copy(std::to_string(std::any_cast<double&>(value)));
-			}
-			else if (msg.toString() == "b")
-			{
-				auto value = std::make_any<double>(0.0);
-				cs.getRtData([](aris::server::ControlServer& cs, std::any& data)
-				{
-					std::any_cast<double&>(data) = cs.controller().motionPool()[1].targetPos();
-				}, value);
-
-				msg_ret.copy(std::to_string(std::any_cast<double&>(value)));
-			}
-			else
-			{
-				std::cout << "unrecognized cmd" << std::endl;
-			}
-
-			
-
-
-			try
-			{
-				socket->sendMsg(msg_ret);
+				aris::core::Msg m;
+				m.setMsgID(msg.header().msg_id_);
+				m.setType(msg.header().msg_type_);
+				m.header().reserved1_ = msg.header().reserved1_;
+				m.header().reserved2_ = msg.header().reserved2_;
+				m.header().reserved3_ = msg.header().reserved3_;
+				socket->sendMsg(m);
 			}
 			catch (std::exception &e)
 			{
@@ -305,23 +181,32 @@ int main(int argc, char *argv[])
 		return 0;
 	});
 	socket.startServer(std::to_string(port));
-
+	
 	std::thread result_thread([&]()
 	{
 		while (true)
 		{
-			std::unique_lock<std::mutex> l(result_mutex);
+			std::unique_lock<std::mutex> lck(result_mutex);
 			for (auto result = result_list.begin(); result != result_list.end();)
 			{
-				if ((*result)->ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+				auto cmd_ret = std::get<1>(*result);
+				if (cmd_ret->finished.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
 				{
-					auto ret = (*result)->ret.get();
+					auto ret = cmd_ret->ret;
+					auto &msg = std::get<0>(*result);
 
-					if (auto str = std::any_cast<std::string*>(ret))
+					if (auto str = std::any_cast<std::string>(&ret))
 					{
 						try
 						{
-							socket.sendMsg(aris::core::Msg(*str));
+							aris::core::Msg ret_msg(*str);
+							
+							ret_msg.setMsgID(msg.header().msg_id_);
+							ret_msg.setType(msg.header().msg_type_);
+							ret_msg.header().reserved1_ = msg.header().reserved1_;
+							ret_msg.header().reserved2_ = msg.header().reserved2_;
+							ret_msg.header().reserved3_ = msg.header().reserved3_;
+							socket.sendMsg(ret_msg);
 						}
 						catch (std::exception &e)
 						{
@@ -333,7 +218,13 @@ int main(int argc, char *argv[])
 					{
 						try
 						{
-							socket.sendMsg(aris::core::Msg());
+							aris::core::Msg ret_msg;
+							ret_msg.setMsgID(msg.header().msg_id_);
+							ret_msg.setType(msg.header().msg_type_);
+							ret_msg.header().reserved1_ = msg.header().reserved1_;
+							ret_msg.header().reserved2_ = msg.header().reserved2_;
+							ret_msg.header().reserved3_ = msg.header().reserved3_;
+							socket.sendMsg(ret_msg);
 						}
 						catch (std::exception &e)
 						{
@@ -345,12 +236,12 @@ int main(int argc, char *argv[])
 
 				result_list.erase(result++);
 			}
-			l.release();
+			lck.unlock();
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 	});
-
+	
 	aris::core::Socket udp_socket("server", "", "5867", aris::core::Socket::UDP_RAW);
 	udp_socket.setOnReceivedRawData([&](aris::core::Socket *socket, const char *data, int size)->int
 	{
@@ -433,26 +324,17 @@ int main(int argc, char *argv[])
 		return 0;
 	});
 	udp_socket.startServer();
-
+	
 	// 接收命令 //
 	for (std::string command_in; std::getline(std::cin, command_in);)
 	{
 		try
 		{
-			if (command_in == "start")
+			auto target = cs.executeCmd(aris::core::Msg(command_in));
+			target->finished.get();
+			if (auto str = std::any_cast<std::string>(&target->ret))
 			{
-				cs.start();
-				socket.startServer(std::to_string(port));
-			}
-			else if (command_in == "stop")
-			{
-				cs.stop();
-				socket.stop();
-			}
-			else
-			{
-				auto id = cs.executeCmd(aris::core::Msg(command_in));
-				//std::cout << "command id:" << id << std::endl;
+				std::cout << *str << std::endl;
 			}
 		}
 		catch (std::exception &e)
@@ -461,6 +343,6 @@ int main(int argc, char *argv[])
 			LOG_ERROR << e.what() << std::endl;
 		}
 	}
-
+	
 	return 0;
 }

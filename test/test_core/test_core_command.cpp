@@ -83,6 +83,22 @@ void test_command_xml()
 		std::map<std::string, std::string> param, param_result;
 		using ParamPair = std::pair<std::string, std::string>;
 		
+		cmd_string = "en --all={123, 0}";
+		cmd = "en";
+		param = { ParamPair("all", "") };
+		try { parser.parse(cmd_string, cmd_result, param_result); }
+		catch (std::exception &e) { std::cout << "cmd parse failed:\"" << e.what() << std::endl; };
+		if (!(cmd_result == cmd && param_result.size() == param.size() && std::equal(param.begin(), param.end(), param_result.begin())))std::cout << "cmd parse failed \"" + cmd_string + "\"" << std::endl;
+
+
+
+
+
+
+
+
+
+
 		cmd_string = "en --all";
 		cmd = "en";
 		param = { ParamPair("all", "") };

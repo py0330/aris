@@ -16,7 +16,7 @@
 namespace aris::server
 {
 #ifdef UNIX
-	 auto inline exec(const char* cmd)->std::string {
+	auto inline exec(const char* cmd)->std::string {
 		std::array<char, 128> buffer;
 		std::string result;
 		std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
@@ -29,13 +29,36 @@ namespace aris::server
 		return result;
 	}
 #endif
-	
+
+
+
+
+	class InterfaceRoot : public aris::core::Object
+	{
+	public:
+		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override
+		{
+			auto ins = doc_.RootElement()->DeepClone(xml_ele.GetDocument());
+			xml_ele.Parent()->InsertAfterChild(&xml_ele, ins);
+			xml_ele.Parent()->DeleteChild(&xml_ele);
+		}
+		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override
+		{
+			doc_.Clear();
+			auto root = xml_ele.DeepClone(&doc_);
+			doc_.InsertEndChild(root);
+		}
+
+		ARIS_REGISTER_TYPE("InterfaceRoot");
+
+	private:
+		aris::core::XmlDocument doc_;
+	};
+
 	class ControlServer : public aris::core::Object
 	{
 	public:
 		static auto instance()->ControlServer &;
-		static auto Type()->const std::string & { static const std::string type("ControlServer"); return type; }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		template<typename T = aris::dynamic::Model, typename... Args>
 		auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
@@ -57,14 +80,21 @@ namespace aris::server
 		auto sensorRoot()const->const sensor::SensorRoot& { return const_cast<ControlServer *>(this)->sensorRoot(); }
 		auto planRoot()->plan::PlanRoot&;
 		auto planRoot()const->const plan::PlanRoot& { return const_cast<ControlServer *>(this)->planRoot(); }
+		auto interfaceRoot()->InterfaceRoot&;
+		auto interfaceRoot()const->const InterfaceRoot& { return const_cast<ControlServer *>(this)->interfaceRoot(); }
 
 		auto executeCmd(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
 		auto start()->void;
 		auto stop()->void;
+		auto waitForAllExecution()->void;
+		auto waitForAllCollection()->void;
+
 		auto globalCount()->std::int64_t;
 		auto currentExecuteId()->std::int64_t;
 		auto currentCollectId()->std::int64_t;
 		auto getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void;
+
+		ARIS_REGISTER_TYPE("ControlServer");
 
 	private:
 		~ControlServer();
