@@ -68,7 +68,7 @@ endif(WIN32)
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
 ## build targets ##
-foreach(target robot server plan dynamic control sensor core)
+foreach(target server robot plan dynamic control sensor core)
 	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h)
 	file(GLOB SOURCES src/${target}/*.cpp ${HEADERS})
 	add_library(aris_${target} STATIC ${HEADERS} ${SOURCES})
