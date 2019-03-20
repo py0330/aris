@@ -74,8 +74,6 @@ namespace aris::robot
 				"			</Pdo>"
 				"		</SyncManager>"
 				"	</SyncManagerPoolObject>"
-				"	<SdoPoolObject name=\"sdo_pool\" default_child_type=\"Sdo\">"
-				"	</SdoPoolObject>"
 				"</EthercatMotion>";
 
 			// 这是松下的 //
