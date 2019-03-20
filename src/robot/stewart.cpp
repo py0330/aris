@@ -79,6 +79,7 @@ namespace aris::robot
 				"</EthercatMotion>";
 
 			// 这是松下的 //
+			/*
 			std::string xml_str =
 				"<EthercatMotion phy_id=\"" + std::to_string(6-i) + "\" product_code=\"0x60380000\""
 				" vendor_id=\"0x0000066F\" revision_num=\"0x00010000\" dc_assign_activate=\"0x0300\""
@@ -109,6 +110,7 @@ namespace aris::robot
 				"		</SyncManager>"
 				"	</SyncManagerPoolObject>"
 				"</EthercatMotion>";
+			*/
 				
 			controller->slavePool().add<aris::control::EthercatMotion>().loadXmlStr(xml_str);
 		}
