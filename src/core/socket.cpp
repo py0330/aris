@@ -459,7 +459,7 @@ namespace aris::core
 					}
 
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
-					if (payload_len > 65536 || payload_len + payload_data.size() > 0x00020000)
+					if (payload_len > 0x00080000 || payload_len + payload_data.size() > 0x00100000)
 					{
 						LOG_ERROR << "websocket receive too large object" << std::endl;
 						imp->lose_tcp();

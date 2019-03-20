@@ -47,6 +47,9 @@ namespace aris::plan
 		registerType<MoveL>();
 		registerType<AutoMove>();
 		registerType<ManualMove>();
+		registerType<GetXml>();
+		registerType<SetXml>();
+		registerType<ManualMove>();
 		registerType<UniversalPlan>();
 
 		registerType<GetPartPq>();
@@ -541,11 +544,9 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Disable);
 
-	struct HomeParam
-	{
+	struct HomeParam :public SetActiveMotor 
+	{ 
 		std::int32_t limit_time;
-		std::vector<int> active_motor;
-		std::vector<int> active_motor_homed;
 		double offset;
 	};
 	struct Home::Imp { Imp() {} };
@@ -553,39 +554,109 @@ namespace aris::plan
 	{
 		HomeParam param;
 
+		set_active_motor(params, target, param);
+		param.limit_time = std::stoi(params.at("limit_time"));
 
-		param.active_motor_homed.clear();
-		param.active_motor_homed.resize(param.active_motor.size(), 0);
+		for (aris::Size i = 0; i<param.active_motor.size(); ++i)
+		{
+			if (param.active_motor[i])
+			{
+				std::int8_t method = std::stoi(params.at(std::string("method")));
+				if (method < 1 || method > 35) throw std::runtime_error("invalid home method");
+
+				param.offset = std::stod(params.at(std::string("offset")));
+				std::int32_t offset = std::stoi(params.at(std::string("offset")));
+				std::uint32_t high_speed = std::stoi(params.at(std::string("high_speed")));
+				std::uint32_t low_speed = std::stoi(params.at(std::string("low_speed")));
+				std::uint32_t acc = std::stoi(params.at(std::string("acceleration")));
+
+				//auto controller = dynamic_cast<aris::control::EthercatController *>(target.master);
+				auto &cm = dynamic_cast<aris::control::EthercatMotion &>(target.controller->motionPool()[i]);
+
+				
+				cm.writeSdo(0x6098, 0x00, method);
+				std::int8_t method_read;
+				cm.readSdo(0x6098, 0x00, method_read);
+				if (method_read != method)throw std::runtime_error("home sdo write failed method");
+				cm.writeSdo(0x607C, 0x00, offset);
+				std::int32_t offset_read;
+				cm.readSdo(0x607C, 0x00, offset_read);
+				if (offset_read != offset)throw std::runtime_error("home sdo write failed offset");
+				cm.writeSdo(0x6099, 0x01, high_speed);
+				std::int32_t high_speed_read;
+				cm.readSdo(0x6099, 0x01, high_speed_read);
+				if (high_speed_read != high_speed)throw std::runtime_error("home sdo write failed high_speed");
+				cm.writeSdo(0x6099, 0x02, low_speed);
+				std::int32_t low_speed_read;
+				cm.readSdo(0x6099, 0x02, low_speed_read);
+				if (low_speed_read != low_speed)throw std::runtime_error("home sdo write failed low_speed");
+				cm.writeSdo(0x609A, 0x00, acc);
+				std::int32_t acc_read;
+				cm.readSdo(0x609A, 0x00, acc_read);
+				if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
+				
+			}
+		}
+
 
 		target.param = param;
 	}
 	auto Home::executeRT(PlanTarget &target)->int
 	{
-		auto controller = target.controller;
 		auto &param = std::any_cast<HomeParam &>(target.param);
-
+		
 		bool is_all_finished = true;
-		for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
+		for (std::size_t i = 0; i < target.controller->motionPool().size(); ++i)
 		{
 			if (param.active_motor[i])
 			{
-				auto &cm = controller->motionPool().at(i);
-
-				/*if (target.count == 1) cm.setControlWord(0x000F);
+				auto &cm = target.controller->motionPool().at(i);
 				auto ret = cm.home();
 				if (ret)
 				{
-				is_all_finished = false;
+					is_all_finished = false;
 
-				if (target.count % 1000 == 0)
-				{
-				controller->mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+					if (target.count % 1000 == 0)
+					{
+						target.controller->mout() << "Unhomed motor, slave id: " << cm.id()
+							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
+					}
 				}
-				}*/
 			}
 		}
 
-		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
+		return is_all_finished ? 0 : 1;
+		
+		
+		
+		
+		
+		
+		//auto controller = target.controller;
+		
+
+		//bool is_all_finished = true;
+		//for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
+		//{
+		//	if (param.active_motor[i])
+		//	{
+		//		auto &cm = controller->motionPool().at(i);
+
+		//		/*if (target.count == 1) cm.setControlWord(0x000F);
+		//		auto ret = cm.home();
+		//		if (ret)
+		//		{
+		//		is_all_finished = false;
+
+		//		if (target.count % 1000 == 0)
+		//		{
+		//		controller->mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
+		//		}
+		//		}*/
+		//	}
+		//}
+
+		//return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
 	}
 	Home::~Home() = default;
 	Home::Home(const std::string &name) :Plan(name), imp_(new Imp)
@@ -1678,7 +1749,9 @@ namespace aris::plan
 
 	auto SetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{		
-		target.server->loadXmlStr(params.at("xml"));
+		// remove "{" "}"
+		auto xml_str = params.at("xml").substr(1, params.at("xml").size() - 2);
+		target.server->loadXmlStr(xml_str);
 		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
 	}
 	SetXml::~SetXml() = default;

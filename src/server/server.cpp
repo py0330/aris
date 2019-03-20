@@ -674,6 +674,7 @@ namespace aris::server
 		controller().stop();
 		sensorRoot().stop();
 	}
+	auto ControlServer::running()->bool { return imp_->is_running_; }
 	auto ControlServer::waitForAllExecution()->void 
 	{
 		auto cmd_end = imp_->cmd_end_.load();//原子操作

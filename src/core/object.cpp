@@ -20,7 +20,8 @@ namespace aris::core
 			static std::map<std::string, TypeInfo> default_type_map_;
 			return default_type_map_;
 		}
-		auto getTypeInfo(const std::string &type)const->const TypeInfo* {
+		auto getTypeInfo(const std::string &type)const->const TypeInfo* 
+		{
 			if (type_map_.find(type) != type_map_.end())return &type_map_.at(type);
 
 			const Object *type_info_obj = father_;

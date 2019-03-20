@@ -5,6 +5,9 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
+#include <locale>
+
+#include "aris/core/log.hpp"
 
 namespace aris::core
 {
@@ -263,6 +266,45 @@ namespace aris::core
 	{
 		try
 		{
+			auto get_param_value = [&](std::string this_value, std::stringstream &stream)->std::string
+			{
+				int brace_num = 0;
+				
+				auto check_character = [&](char c)
+				{
+					switch (c)
+					{
+					case '{':
+						++brace_num;
+						break;
+					case '}':
+						--brace_num;
+						if (brace_num < 0)THROW_FILE_AND_LINE("brace not pair");
+						break;
+					default:
+						break;
+					}
+				};
+
+				for (auto c : this_value)check_character(c);
+				if (brace_num == 0)return this_value;
+
+				char c;
+				stream.get(c);
+				while (!stream.eof() && !(std::isspace(c, stream.getloc()) && brace_num == 0))
+				{
+					check_character(c);
+					this_value.push_back(c);
+					stream.get(c);
+				}
+
+
+				if(brace_num)THROW_FILE_AND_LINE("brace not pair");
+				return this_value;
+			};
+			
+			
+			
 			std::string cmd;
 			std::map<std::string, std::string> param_map;
 			std::stringstream input_stream{ command_string };
@@ -299,7 +341,8 @@ namespace aris::core
 
 					auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
 					auto param_name = command->imp_->abbreviation_map_.at(abbrev);
-					auto param_value = word.find('=') == std::string::npos ? param->defaultValue() : word.substr(word.find('=') + 1, std::string::npos);
+					auto param_value = word.find('=') == std::string::npos ? param->defaultValue() 
+						: get_param_value(word.substr(word.find('=') + 1, std::string::npos), input_stream);
 
 					param_map.insert(make_pair(param_name, param_value));
 					Command::Imp::take(param);
@@ -312,7 +355,8 @@ namespace aris::core
 						throw std::runtime_error(std::string("invalid param: param \"") + param_name + "\" is not a valid param");
 
 					auto param = command->imp_->param_map_.at(param_name);
-					auto param_value = word.find('=') == std::string::npos ? param->defaultValue() : word.substr(word.find('=') + 1, std::string::npos);
+					auto param_value = word.find('=') == std::string::npos ? param->defaultValue() 
+						: get_param_value(word.substr(word.find('=') + 1, std::string::npos), input_stream);
 
 					param_map.insert(make_pair(param_name, param_value));
 					Command::Imp::take(param);

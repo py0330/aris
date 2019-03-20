@@ -86,6 +86,7 @@ namespace aris::server
 		auto executeCmd(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
 		auto start()->void;
 		auto stop()->void;
+		auto running()->bool;
 		auto waitForAllExecution()->void;
 		auto waitForAllCollection()->void;
 
