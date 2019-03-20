@@ -543,13 +543,38 @@ namespace aris::control
 		// 0x4F    0b 0000 0000 0100 1111
 		// enable change state to A/B/C/D to E
 
-		std::uint16_t status_word;
-		readPdo(0x6041, 0x00, status_word);
+		// 判断是否需要清理 //
+		if (imp_->home_count == 0)
+		{
+			//setControlWord(0x1F);
+			
+
+
+
+			//return 100;
+		}
+
+
+		static auto status = statusWord();
+
+		if (statusWord() != status)
+		{
+			ancestor<Master>()->mout() << "status change:" << status << std::endl;
+		}
+		
+
+
 
 		// 确定是否已经使能（status ：operation enabled） //
-		if ((status_word & 0x6F) != 0x27)
+		if ((statusWord() & 0x6F) != 0x27)
 		{
 			return 1;
+		}
+		// 将home已经到达的标志位去掉 //
+		else if ((statusWord() & 0x3400) == 0x0400)
+		{
+			setControlWord(0x0F);
+			return 2222;
 		}
 		// 更改mode //
 		else if (modeOfDisplay() != 0x06)
