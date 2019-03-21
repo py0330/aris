@@ -589,12 +589,6 @@ namespace aris::control
 			setControlWord(0x1F);
 			return 4;
 		}
-		// homing ... //
-		else if (!(statusWord() & 0x0400))
-		{
-			setControlWord(0x1F);
-			return 5;
-		}
 		// successfull finished //
 		else if ((statusWord() & 0x3400) == 0x1400)
 		{
@@ -610,11 +604,10 @@ namespace aris::control
 			imp_->need_clear = true;
 			return -2;
 		}
+		// homing ... //
 		else
 		{
-			imp_->home_count = 0;
-			imp_->need_clear = true;
-			return -3;
+			return 5;
 		}
 	}
 	auto EthercatMotion::mode(std::uint8_t md)->int
