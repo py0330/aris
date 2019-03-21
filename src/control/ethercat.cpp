@@ -250,7 +250,11 @@ namespace aris::control
 		double target_pos_{ 0 }, target_vel_{ 0 }, target_cur_{ 0 }, offset_vel_{ 0 }, offset_cur_{ 0 };
 		
 		int waiting_count_left{ 0 }; // enable 在用
+		
+		// home 在用 //
 		int home_count{ 0 };
+		bool need_clear{ true };
+
 	};
 	auto EthercatMotion::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
@@ -492,10 +496,10 @@ namespace aris::control
 			// now return normal
 			else return 0;
 		}
-		// check status F, now transition 12
+		// check status F, now transition 16
 		else if ((status_word & 0x6F) == 0x07)
 		{
-			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
+			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x0F));
 			return 6;
 		}
 		// check status G, now transition 14
@@ -543,38 +547,13 @@ namespace aris::control
 		// 0x4F    0b 0000 0000 0100 1111
 		// enable change state to A/B/C/D to E
 
-		// 判断是否需要清理 //
-		if (imp_->home_count == 0)
-		{
-			//setControlWord(0x1F);
-			
-
-
-
-			//return 100;
-		}
-
-
-		static auto status = statusWord();
-
-		if (statusWord() != status)
-		{
-			ancestor<Master>()->mout() << "status change:" << status << std::endl;
-		}
 		
-
-
-
-		// 确定是否已经使能（status ：operation enabled） //
-		if ((statusWord() & 0x6F) != 0x27)
+		// 查看此前是否已经使能（status ：operation enabled） //
+		if (imp_->need_clear && ((statusWord() & 0x6F) != 0x27))
 		{
-			return 1;
-		}
-		// 将home已经到达的标志位去掉 //
-		else if ((statusWord() & 0x3400) == 0x0400)
-		{
-			setControlWord(0x0F);
-			return 2222;
+			imp_->home_count = 0;
+			imp_->need_clear = true;
+			return -1;
 		}
 		// 更改mode //
 		else if (modeOfDisplay() != 0x06)
@@ -583,36 +562,59 @@ namespace aris::control
 			return 2;
 		}
 		// 将home已经到达的标志位去掉 //
-		else if (!(controlWord() & 0x10) && (statusWord() & 0x0400))
+		else if (imp_->need_clear)
 		{
-			setControlWord(0x0F);
+			if (statusWord() & 0x3400)
+			{
+				if (++imp_->home_count % 20 < 10)
+				{
+					setControlWord(0x1F);
+				}
+				else
+				{
+					setControlWord(0x0F);
+				}
+			}
+			else
+			{
+				setControlWord(0x0F);
+				imp_->need_clear = false;
+			}
+
 			return 3;
 		}
 		// 开始执行home //
-		else if (!(controlWord() & 0x10) && !(statusWord() & 0x0400))
+		else if ((statusWord() & 0x3400) == 0x0000)
 		{
 			setControlWord(0x1F);
 			return 4;
 		}
-		// homing... //
-		else if ((controlWord() & 0x10) && !(statusWord() & 0x0400))
+		// homing ... //
+		else if (!(statusWord() & 0x0400))
 		{
+			setControlWord(0x1F);
 			return 5;
 		}
-		// home error //
-		else if ((controlWord() & 0x10) && (statusWord() != 0x1400))
+		// successfull finished //
+		else if ((statusWord() & 0x3400) == 0x1400)
 		{
-			return -1;
-		}
-		// home successfull //
-		else if ((controlWord() & 0x10) && (statusWord() != 0x2400))
-		{
+			setControlWord(0x0F);
+			imp_->home_count = 0;
+			imp_->need_clear = true;
 			return 0;
 		}
-		// unknown error //
+		// home error //
+		else if (statusWord() & 0x2000)
+		{
+			imp_->home_count = 0;
+			imp_->need_clear = true;
+			return -2;
+		}
 		else
 		{
-			return -2;
+			imp_->home_count = 0;
+			imp_->need_clear = true;
+			return -3;
 		}
 	}
 	auto EthercatMotion::mode(std::uint8_t md)->int
