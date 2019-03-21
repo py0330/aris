@@ -496,10 +496,10 @@ namespace aris::control
 			// now return normal
 			else return 0;
 		}
-		// check status F, now transition 16
+		// check status F, now transition 12
 		else if ((status_word & 0x6F) == 0x07)
 		{
-			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x0F));
+			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
 			return 6;
 		}
 		// check status G, now transition 14
@@ -584,13 +584,13 @@ namespace aris::control
 			return 3;
 		}
 		// 开始执行home //
-		else if ((statusWord() & 0x3400) == 0x0000)
+		else if ((statusWord() & 0x3000) == 0x0000)
 		{
 			setControlWord(0x1F);
 			return 4;
 		}
-		// successfull finished //
-		else if ((statusWord() & 0x3400) == 0x1400)
+		// home attained //
+		else if (statusWord() & 0x1000)
 		{
 			setControlWord(0x0F);
 			imp_->home_count = 0;
@@ -607,7 +607,7 @@ namespace aris::control
 		// homing ... //
 		else
 		{
-			return 5;
+			return -3;
 		}
 	}
 	auto EthercatMotion::mode(std::uint8_t md)->int
