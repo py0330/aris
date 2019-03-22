@@ -584,13 +584,13 @@ namespace aris::control
 			return 3;
 		}
 		// 开始执行home //
-		else if ((statusWord() & 0x3000) == 0x0000)
+		else if ((statusWord() & 0x3400) == 0x0000)
 		{
 			setControlWord(0x1F);
 			return 4;
 		}
 		// home attained //
-		else if (statusWord() & 0x1000)
+		else if ((statusWord() & 0x3400) == 0x1400)
 		{
 			setControlWord(0x0F);
 			imp_->home_count = 0;
@@ -624,5 +624,4 @@ namespace aris::control
 	}
 	
 	EthercatController::EthercatController(const std::string &name) :EthercatMaster(name), Controller(name), Master(name){}
-
 }

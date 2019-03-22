@@ -570,10 +570,8 @@ namespace aris::plan
 				std::uint32_t low_speed = std::stoi(params.at(std::string("low_speed")));
 				std::uint32_t acc = std::stoi(params.at(std::string("acceleration")));
 
-				//auto controller = dynamic_cast<aris::control::EthercatController *>(target.master);
 				auto &cm = dynamic_cast<aris::control::EthercatMotion &>(target.controller->motionPool()[i]);
-
-				
+			
 				cm.writeSdo(0x6098, 0x00, method);
 				std::int8_t method_read;
 				cm.readSdo(0x6098, 0x00, method_read);
@@ -626,37 +624,6 @@ namespace aris::plan
 		}
 
 		return is_all_finished ? 0 : 1;
-		
-		
-		
-		
-		
-		
-		//auto controller = target.controller;
-		
-
-		//bool is_all_finished = true;
-		//for (std::size_t i = 0; i < controller->motionPool().size(); ++i)
-		//{
-		//	if (param.active_motor[i])
-		//	{
-		//		auto &cm = controller->motionPool().at(i);
-
-		//		/*if (target.count == 1) cm.setControlWord(0x000F);
-		//		auto ret = cm.home();
-		//		if (ret)
-		//		{
-		//		is_all_finished = false;
-
-		//		if (target.count % 1000 == 0)
-		//		{
-		//		controller->mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
-		//		}
-		//		}*/
-		//	}
-		//}
-
-		//return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
 	}
 	Home::~Home() = default;
 	Home::Home(const std::string &name) :Plan(name), imp_(new Imp)
@@ -1718,12 +1685,12 @@ namespace aris::plan
 		// target.param = aris::core::Matrix(pq.size(), 1, pq.data()).toString();
 		//
 
+		//  return binary
 		std::string ret(reinterpret_cast<char*>(pq.data()), pq.size() * sizeof(double));
-		target.param = ret;
+		target.ret = ret;
 
 		target.option |= NOT_RUN_EXECUTE_FUNCTION;
 	}
-	auto GetPartPq::collectNrt(PlanTarget &target)-> void { target.ret = target.param; }
 	GetPartPq::~GetPartPq() = default;
 	GetPartPq::GetPartPq(const std::string &name) : Plan(name)
 	{
@@ -1735,10 +1702,9 @@ namespace aris::plan
 	auto GetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		target.server->waitForAllCollection();
-		target.param = target.server->xmlString();
-		target.option |= NOT_RUN_EXECUTE_FUNCTION;
+		target.ret = target.server->xmlString();
+		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
 	}
-	auto GetXml::collectNrt(PlanTarget &target)-> void { target.ret = target.param; }
 	GetXml::~GetXml() = default;
 	GetXml::GetXml(const std::string &name) : Plan(name)
 	{
@@ -1749,7 +1715,8 @@ namespace aris::plan
 
 	auto SetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{		
-		// remove "{" "}"
+		// remove all symbols "{" "}"
+		if (target.server->running())THROW_FILE_AND_LINE("can't save xml");
 		auto xml_str = params.at("xml").substr(1, params.at("xml").size() - 2);
 		target.server->loadXmlStr(xml_str);
 		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
@@ -1760,6 +1727,32 @@ namespace aris::plan
 		command().loadXmlStr(
 			"<Command name=\"set_xml\">"
 			"	<Param name=\"xml\"/>"
+			"</Command>");
+	}
+
+	auto Start::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		target.server->start();
+		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+	}
+	Start::~Start() = default;
+	Start::Start(const std::string &name) : Plan(name)
+	{
+		command().loadXmlStr(
+			"<Command name=\"start\">"
+			"</Command>");
+	}
+
+	auto Stop::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		target.server->stop();
+		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+	}
+	Stop::~Stop() = default;
+	Stop::Stop(const std::string &name) : Plan(name)
+	{
+		command().loadXmlStr(
+			"<Command name=\"stop\">"
 			"</Command>");
 	}
 

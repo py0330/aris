@@ -28,10 +28,11 @@ namespace aris::plan
 	
 	struct PlanTarget
 	{	
-		enum Status
+		enum
 		{
 			SUCCESS = 0,
 			ERROR = 1,
+			CANCELLED = 2
 		};
 		
 		Plan* plan;                                       // prepair/execute/collect  get&set(but be careful when prepair)
@@ -556,7 +557,6 @@ namespace aris::plan
 	{
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~GetPartPq();
 		explicit GetPartPq(const std::string &name = "get_part_pq");
@@ -567,7 +567,6 @@ namespace aris::plan
 	{
 	public:
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
-		auto virtual collectNrt(PlanTarget &target)->void override;
 
 		virtual ~GetXml();
 		explicit GetXml(const std::string &name = "get_xml");
@@ -584,7 +583,26 @@ namespace aris::plan
 		ARIS_REGISTER_TYPE("SetXml");
 		ARIS_DEFINE_BIG_FOUR(SetXml);
 	};
+	class Start :public Plan
+	{
+	public:
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 
+		virtual ~Start();
+		explicit Start(const std::string &name = "start");
+		ARIS_REGISTER_TYPE("Start");
+		ARIS_DEFINE_BIG_FOUR(Start);
+	};
+	class Stop :public Plan
+	{
+	public:
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+
+		virtual ~Stop();
+		explicit Stop(const std::string &name = "start");
+		ARIS_REGISTER_TYPE("Stop");
+		ARIS_DEFINE_BIG_FOUR(Stop);
+	};
 
 	class UniversalPlan :public Plan
 	{

@@ -18,6 +18,7 @@ namespace aris::server
 		{
 			std::shared_ptr<aris::plan::PlanTarget> target;
 			std::promise<std::int32_t> ret_promise;
+			int execute_ret_;
 		};
 		
 		auto tg()->void;
@@ -96,6 +97,8 @@ namespace aris::server
 			// 检查错误 //
 			if (checkMotion(target.option) || ret < 0)
 			{
+				internal_data_queue_[cmd_now % CMD_POOL_SIZE]->execute_ret_ = aris::plan::PlanTarget::ERROR;
+				
 				server_->controller().mout() << "failed, cmd queue cleared\n";
 				count_ = 1;
 				cmd_now_.store(cmd_end);//原子操作
@@ -105,6 +108,8 @@ namespace aris::server
 			// 命令正常结束，结束统计数据 //
 			else if (ret == 0)
 			{
+				internal_data_queue_[cmd_now % CMD_POOL_SIZE]->execute_ret_ = aris::plan::PlanTarget::SUCCESS;
+				
 				if(!(target.option & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
 					server_->controller().mout() << "cmd finished, spend " << count_ << " counts\n\n";
 				count_ = 1;
@@ -479,7 +484,8 @@ namespace aris::server
 					std::any(),
 					std::future<std::int32_t>()
 				}),
-			std::promise<std::int32_t>()
+			std::promise<std::int32_t>(),
+			aris::plan::PlanTarget::CANCELLED
 			});
 		auto &target = internal_data->target;
 		target->finished = internal_data->ret_promise.get_future();
@@ -488,10 +494,10 @@ namespace aris::server
 		if (!(target->option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
 		{
 			// 等待所有任务完成 //
-			while ((target->option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+			if (target->option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_EXECUTED)waitForAllExecution();
 
 			// 等待所有任务收集 //
-			while ((target->option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+			if (target->option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_COLLECTED)waitForAllCollection();
 
 			LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
 			plan_iter->prepairNrt(params, *target);
@@ -522,10 +528,10 @@ namespace aris::server
 			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
 			
 			// 等待所有任务完成 //
-			while ((target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+			if (target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED)waitForAllExecution();
 
 			// 等待所有任务收集 //
-			while ((target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+			if (target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED)waitForAllCollection();
 
 			// 判断是否等待命令池清空 //
 			if ((!(target->option & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
@@ -539,8 +545,7 @@ namespace aris::server
 			imp_->cmd_end_.store(++cmd_end); // 原子操作 //
 
 			// 等待当前任务完成 //
-			while ((target->option & aris::plan::Plan::WAIT_FOR_EXECUTION) && (cmd_end != imp_->cmd_now_.load()))
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+			if(target->option & aris::plan::Plan::WAIT_FOR_EXECUTION)waitForAllExecution();
 		}
 
 		// collect //
@@ -563,7 +568,7 @@ namespace aris::server
 			else
 			{
 				// 等待当前任务收集 //
-				while ((target->option & aris::plan::Plan::WAIT_FOR_COLLECTION) && (cmd_end != imp_->cmd_collect_.load())) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+				if (target->option & aris::plan::Plan::WAIT_FOR_COLLECTION)waitForAllCollection();
 			}
 		}
 		else
@@ -644,8 +649,7 @@ namespace aris::server
 						LOG_INFO << "server collect cmd " << target.command_id << std::endl;
 						target.plan->collectNrt(target);
 					}
-					internal_data->ret_promise.set_value(aris::plan::PlanTarget::SUCCESS);
-					internal_data.reset();
+					internal_data->ret_promise.set_value(internal_data->execute_ret_);
 					imp_->cmd_collect_.store(cmd_collect + 1);
 				}
 				else
