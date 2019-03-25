@@ -1718,9 +1718,36 @@ namespace aris::dynamic
 	UniversalSolver::UniversalSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(UniversalSolver);
 
+	class HelpResetRAII
+	{
+	public:
+		std::vector<bool> prt_active_, jnt_active_, mot_active_, gm_active_, fce_active_;
+		Model *model_;
+
+		HelpResetRAII(Model *model) : model_(model)
+		{
+			for (auto &prt : model_->partPool())prt_active_.push_back(prt.active());
+			for (auto &jnt : model_->jointPool())jnt_active_.push_back(jnt.active());
+			for (auto &mot : model_->motionPool())mot_active_.push_back(mot.active());
+			for (auto &gm : model_->generalMotionPool())gm_active_.push_back(gm.active());
+			for (auto &fce : model_->forcePool())fce_active_.push_back(fce.active());
+		}
+		~HelpResetRAII() 
+		{
+			for (auto &prt : model_->partPool())prt.activate(prt_active_[prt.id()]);
+			for (auto &jnt : model_->jointPool())jnt.activate(jnt_active_[jnt.id()]);
+			for (auto &mot : model_->motionPool())mot.activate(mot_active_[mot.id()]);
+			for (auto &gm : model_->generalMotionPool())gm.activate(gm_active_[gm.id()]);
+			for (auto &fce : model_->forcePool())fce.activate(fce_active_[fce.id()]);
+		}
+
+	};
+
 	struct ForwardKinematicSolver::Imp { std::vector<double> J_vec_, cf_vec_; };
 	auto ForwardKinematicSolver::allocateMemory()->void
 	{
+		HelpResetRAII(this->ancestor<Model>());
+		
 		for (auto &m : ancestor<Model>()->motionPool())m.activate(true);
 		for (auto &gm : ancestor<Model>()->generalMotionPool())gm.activate(false);
 
@@ -1778,6 +1805,8 @@ namespace aris::dynamic
 	struct InverseKinematicSolver::Imp{std::vector<double> J_vec_, ci_vec_;};
 	auto InverseKinematicSolver::allocateMemory()->void
 	{
+		HelpResetRAII(this->ancestor<Model>());
+		
 		for (auto &m : ancestor<Model>()->motionPool())m.activate(false);
 		for (auto &gm : ancestor<Model>()->generalMotionPool())gm.activate(true);
 
@@ -1846,6 +1875,8 @@ namespace aris::dynamic
 
 	auto ForwardDynamicSolver::allocateMemory()->void
 	{
+		HelpResetRAII(this->ancestor<Model>());
+		
 		for (auto &m : ancestor<Model>()->motionPool())m.activate(false);
 		for (auto &gm : ancestor<Model>()->generalMotionPool())gm.activate(false);
 		for (auto &f : ancestor<Model>()->forcePool())f.activate(true);
@@ -1873,6 +1904,8 @@ namespace aris::dynamic
 
 	auto InverseDynamicSolver::allocateMemory()->void
 	{
+		HelpResetRAII(this->ancestor<Model>());
+		
 		for (auto &m : ancestor<Model>()->motionPool())m.activate(true);
 		for (auto &gm : ancestor<Model>()->generalMotionPool())gm.activate(false);
 		for (auto &f : ancestor<Model>()->forcePool())f.activate(false);
