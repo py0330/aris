@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 	aris::dynamic::s_pq2pm(argc < 4 ? nullptr : aris::core::Calculator().calculateExpression(argv[3]).data(), robot_pm);
 
 	auto&cs = aris::server::ControlServer::instance();
-
+	cs.setName(robot_name);
 	if (robot_name == "ur5")
 	{
 		cs.resetController(createControllerUr5().release());

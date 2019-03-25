@@ -611,6 +611,7 @@ namespace aris::core
 		auto saveXmlStr(std::string &xml_str)const->void { xml_str = xmlString(); };
 		auto xmlString()const->std::string;
 		auto name()const->const std::string&;
+		auto setName(const std::string& name)->void;
 		auto id()const->std::size_t;
 		auto root()->Object&;
 		auto root()const->const Object& { return const_cast<std::decay_t<decltype(*this)> *>(this)->root(); }
@@ -939,6 +940,13 @@ namespace aris::core
 #define ARIS_REGISTER_TYPE(type_name) \
 	static auto Type()->const std::string & { \
 		static const std::string type(type_name); \
+		return std::ref(type); \
+	} \
+	auto virtual type() const->const std::string& override { return Type(); }
+
+#define ARIS_REGISTER_TYPE2(type_name) \
+	static auto Type()->const std::string & { \
+		static const std::string type(#type_name); \
 		return std::ref(type); \
 	} \
 	auto virtual type() const->const std::string& override { return Type(); }

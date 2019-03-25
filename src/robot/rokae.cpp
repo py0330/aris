@@ -88,21 +88,25 @@ namespace aris::robot
 
 		plan_root->planPool().add<aris::plan::Enable>();
 		plan_root->planPool().add<aris::plan::Disable>();
+		plan_root->planPool().add<aris::plan::Home>();
 		plan_root->planPool().add<aris::plan::Mode>();
-		plan_root->planPool().add<aris::plan::Recover>();
+		plan_root->planPool().add<aris::plan::Show>();
 		plan_root->planPool().add<aris::plan::Sleep>();
+		plan_root->planPool().add<aris::plan::Recover>();
 		auto &rs = plan_root->planPool().add<aris::plan::Reset>();
-		//rs.command().findByName("group")->findByName("pos")->loadXmlStr("<pos default=\"{0.5,0.392523364485981,0.789915966386555,0.5,0.5,0.5}\" abbreviation=\"p\"/>");
 		rs.command().findParam("pos")->setDefaultValue("{0.5,0.392523364485981,0.789915966386555,0.5,0.5,0.5}");
 
+		auto &mvaj = plan_root->planPool().add<aris::plan::MoveAbsJ>();
+		mvaj.command().findParam("vel")->setDefaultValue("0.1");
 
 		plan_root->planPool().add<aris::plan::MoveL>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
 
 		plan_root->planPool().add<aris::plan::GetPartPq>();
 		plan_root->planPool().add<aris::plan::GetXml>();
-
-		plan_root->planPool().add<aris::plan::Show>();
+		plan_root->planPool().add<aris::plan::SetXml>();
+		plan_root->planPool().add<aris::plan::Start>();
+		plan_root->planPool().add<aris::plan::Stop>();
 
 		return plan_root;
 	}

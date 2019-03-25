@@ -47,13 +47,12 @@ namespace aris::plan
 		registerType<MoveL>();
 		registerType<AutoMove>();
 		registerType<ManualMove>();
-		registerType<GetXml>();
-		registerType<SetXml>();
-		registerType<ManualMove>();
-		registerType<UniversalPlan>();
-
+		
 		registerType<GetPartPq>();
 		registerType<GetXml>();
+		registerType<SetXml>();
+		registerType<Start>();
+		registerType<Stop>();
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PlanRoot);
 
@@ -1716,7 +1715,7 @@ namespace aris::plan
 	auto SetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{		
 		// remove all symbols "{" "}"
-		if (target.server->running())THROW_FILE_AND_LINE("can't save xml");
+		if (target.server->running())THROW_FILE_AND_LINE("server is not running,can't save xml");
 		auto xml_str = params.at("xml").substr(1, params.at("xml").size() - 2);
 		target.server->loadXmlStr(xml_str);
 		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;

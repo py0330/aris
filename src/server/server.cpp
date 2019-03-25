@@ -17,8 +17,7 @@ namespace aris::server
 		struct InternalData
 		{
 			std::shared_ptr<aris::plan::PlanTarget> target;
-			std::promise<std::int32_t> ret_promise;
-			int execute_ret_;
+			std::promise<void> ret_promise;
 		};
 		
 		auto tg()->void;
@@ -97,7 +96,7 @@ namespace aris::server
 			// 检查错误 //
 			if (checkMotion(target.option) || ret < 0)
 			{
-				internal_data_queue_[cmd_now % CMD_POOL_SIZE]->execute_ret_ = aris::plan::PlanTarget::ERROR;
+				target.ret_code = aris::plan::PlanTarget::ERROR;
 				
 				server_->controller().mout() << "failed, cmd queue cleared\n";
 				count_ = 1;
@@ -108,7 +107,7 @@ namespace aris::server
 			// 命令正常结束，结束统计数据 //
 			else if (ret == 0)
 			{
-				internal_data_queue_[cmd_now % CMD_POOL_SIZE]->execute_ret_ = aris::plan::PlanTarget::SUCCESS;
+				target.ret_code = aris::plan::PlanTarget::SUCCESS;
 				
 				if(!(target.option & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
 					server_->controller().mout() << "cmd finished, spend " << count_ << " counts\n\n";
@@ -482,10 +481,10 @@ namespace aris::server
 					0, 
 					aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 },
 					std::any(),
-					std::future<std::int32_t>()
+					aris::plan::PlanTarget::CANCELLED,
+					std::future<void>()
 				}),
-			std::promise<std::int32_t>(),
-			aris::plan::PlanTarget::CANCELLED
+			std::promise<void>()
 			});
 		auto &target = internal_data->target;
 		target->finished = internal_data->ret_promise.get_future();
@@ -562,7 +561,8 @@ namespace aris::server
 
 				LOG_INFO << "server collect cmd " << target->command_id << std::endl;
 				plan_iter->collectNrt(*target);
-				internal_data->ret_promise.set_value(aris::plan::PlanTarget::SUCCESS);
+				internal_data->target->ret_code = aris::plan::PlanTarget::SUCCESS;
+				internal_data->ret_promise.set_value();
 			}
 			// 等待当前实时任务收集 //
 			else
@@ -574,7 +574,10 @@ namespace aris::server
 		else
 		{
 			if (target->option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
-				internal_data->ret_promise.set_value(aris::plan::PlanTarget::SUCCESS);
+			{
+				internal_data->target->ret_code = aris::plan::PlanTarget::SUCCESS;
+				internal_data->ret_promise.set_value();
+			}
 		}
 
 		return target;
@@ -649,7 +652,7 @@ namespace aris::server
 						LOG_INFO << "server collect cmd " << target.command_id << std::endl;
 						target.plan->collectNrt(target);
 					}
-					internal_data->ret_promise.set_value(internal_data->execute_ret_);
+					internal_data->ret_promise.set_value();
 					imp_->cmd_collect_.store(cmd_collect + 1);
 				}
 				else

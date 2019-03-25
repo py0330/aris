@@ -408,6 +408,7 @@ namespace aris::core
 		return std::string(printer.CStr());
 	}
 	auto Object::id()const->std::size_t { return imp_->id_; }
+	auto Object::setName(const std::string& name)->void { imp_->name_ = name; }
 	auto Object::name() const->const std::string& { return imp_->name_; }
 	auto Object::root()->Object& { return imp_->father_ ? imp_->father_->root() : *this; }
 	auto Object::father()->Object* { return imp_->father_; }

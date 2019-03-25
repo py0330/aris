@@ -132,7 +132,6 @@ namespace aris::robot
 		auto &mvaj = plan_root->planPool().add<aris::plan::MoveAbsJ>();
 		mvaj.command().findParam("vel")->setDefaultValue("0.1");
 
-
 		plan_root->planPool().add<aris::plan::MoveL>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
 
@@ -159,6 +158,8 @@ namespace aris::robot
 		plan_root->planPool().add<aris::plan::GetPartPq>();
 		plan_root->planPool().add<aris::plan::GetXml>();
 		plan_root->planPool().add<aris::plan::SetXml>();
+		plan_root->planPool().add<aris::plan::Start>();
+		plan_root->planPool().add<aris::plan::Stop>();
 
 		return plan_root;
 	}

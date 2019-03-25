@@ -46,7 +46,8 @@ namespace aris::plan
 		std::int64_t begin_global_count;                  //         execute/collect  get
 		aris::control::Master::RtStasticsData rt_stastic; //                /collect  get
 		std::any ret;
-		std::future<std::int32_t> finished;
+		std::int32_t ret_code;
+		std::future<void> finished;
 	};
 	class Plan :public aris::core::Object
 	{
