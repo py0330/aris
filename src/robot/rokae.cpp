@@ -149,7 +149,7 @@ namespace aris::robot
 			"            <Button text=\"Enable\" id=\"id_21\" cmd=\"mm --stop;am --stop;ds;md;en;rc\" return_attached=\"\"/>"
 			"            <Button text=\"Disable\" id=\"id_22\" cmd=\"mm --stop; am --stop; ds;\" return_attached=\"\"/>"
 			"            <Button text=\"Reset\" id=\"id_23\" cmd=\"mm --stop; am --stop; rs; rc;\" return_attached=\"\"/>"
-			"            <Button text=\"Home\" id=\"id_21\" cmd=\"mm --stop;am --stop;ds;md;en;hm -m=5 --method=17 --high_speed=200;rc\" return_attached=\"\"/>"
+			"            <Button text=\"Home\" id=\"id_21\" cmd=\"mm --stop;am --stop;ds;md;en;hm -m=5 --method=17 --high_speed=200;md;en;rc\" return_attached=\"\"/>"
 			"        </Panel>"
 			"        <Panel text=\"Manual\" id=\"id_21\">"
 			"            <Button text=\"Start\" id=\"id_18\" cmd=\"mm --stop; am --stop;mm --start\" return_attached=\"\"/>"
