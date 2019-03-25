@@ -709,8 +709,8 @@ namespace aris::dynamic
 
 		Coordinate::loadXml(xml_ele);
 
-		imp_->marker_pool_ = findOrInsert<aris::core::ObjectPool<Marker, Element> >("marker_pool");
-		imp_->geometry_pool_ = findOrInsert<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
+		imp_->marker_pool_ = findOrInsertType<aris::core::ObjectPool<Marker, Element> >();
+		imp_->geometry_pool_ = findOrInsertType<aris::core::ObjectPool<Geometry, Element> >();
 
 	}
 	auto Part::markerPool() noexcept->aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }

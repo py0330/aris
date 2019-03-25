@@ -444,10 +444,10 @@ namespace aris::server
 	auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Object::loadXml(xml_ele);
-		imp_->controller_ = findOrInsert<aris::control::Controller>("controller");
-		imp_->model_ = findOrInsert<aris::dynamic::Model>("model");
-		imp_->sensor_root_ = findOrInsert<aris::sensor::SensorRoot>("sensor_root");
-		imp_->plan_root_ = findOrInsert<aris::plan::PlanRoot>("plan_root");
+		imp_->controller_ = findOrInsertType<aris::control::Controller>();
+		imp_->model_ = findOrInsertType<aris::dynamic::Model>();
+		imp_->sensor_root_ = findOrInsertType<aris::sensor::SensorRoot>();
+		imp_->plan_root_ = findOrInsertType<aris::plan::PlanRoot>();
 	}
 	auto ControlServer::executeCmd(const aris::core::Msg &msg)->std::shared_ptr<aris::plan::PlanTarget>
 	{

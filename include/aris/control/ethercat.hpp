@@ -94,9 +94,6 @@ namespace aris::control
 		template<typename ValueType>
 		auto writeSdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value)->void { writeSdo(index, subindex, &value, sizeof(ValueType)); }
 		auto writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void;
-		template<typename ValueType>
-		auto configSdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value)->void { configSdo(index, subindex, &value, sizeof(ValueType)); }
-		auto configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void;
 
 		virtual ~EthercatSlave();
 		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);

@@ -984,9 +984,9 @@ namespace aris::dynamic
 	{
 		Element::loadXml(xml_ele);
 
-		imp_->time_result_ = findOrInsert<TimeResult>("time_result");
-		imp_->constraint_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
-		imp_->part_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+		imp_->time_result_ = findOrInsertType<TimeResult>();
+		imp_->constraint_result_pool_ = findOrInsertType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >();
+		imp_->part_result_pool_ = findOrInsertType<aris::core::ObjectPool<SimResult::PartResult, Element> >();
 	}
 	auto SimResult::timeResult()->TimeResult& { return *imp_->time_result_; }
 	auto SimResult::partResultPool()->aris::core::ObjectPool<SimResult::PartResult, Element>& { return *imp_->part_result_pool_; }

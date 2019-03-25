@@ -39,17 +39,17 @@ namespace aris::dynamic
 
 		setTime(Object::attributeDouble(xml_ele, "time", 0.0));
 
-		imp_->environment_ = findOrInsert<Environment>("environment");
-		imp_->variable_pool_ = findOrInsert<aris::core::ObjectPool<Variable, Element>>("variable_pool");
-		imp_->part_pool_ = findOrInsert<aris::core::ObjectPool<Part, Element>>("part_pool");
-		imp_->joint_pool_ = findOrInsert<aris::core::ObjectPool<Joint, Element>>("joint_pool");
-		imp_->motion_pool_ = findOrInsert<aris::core::ObjectPool<Motion, Element>>("motion_pool");
-		imp_->general_motion_pool_ = findOrInsert<aris::core::ObjectPool<GeneralMotion, Element>>("general_motion_pool");
-		imp_->force_pool_ = findOrInsert<aris::core::ObjectPool<Force, Element>>("force_pool");
-		imp_->solver_pool_ = findOrInsert<aris::core::ObjectPool<Solver, Element>>("solver_pool");
-		imp_->simulator_pool_ = findOrInsert<aris::core::ObjectPool<Simulator, Element>>("simulator_pool");
-		imp_->sim_result_pool_ = findOrInsert<aris::core::ObjectPool<SimResult, Element>>("sim_result_pool");
-		imp_->calibrator_pool_ = findOrInsert<aris::core::ObjectPool<Calibrator, Element>>("calibrator_pool");
+		imp_->environment_ = findOrInsertType<Environment>();
+		imp_->variable_pool_ = findOrInsertType<aris::core::ObjectPool<Variable, Element>>();
+		imp_->part_pool_ = findOrInsertType<aris::core::ObjectPool<Part, Element>>();
+		imp_->joint_pool_ = findOrInsertType<aris::core::ObjectPool<Joint, Element>>();
+		imp_->motion_pool_ = findOrInsertType<aris::core::ObjectPool<Motion, Element>>();
+		imp_->general_motion_pool_ = findOrInsertType<aris::core::ObjectPool<GeneralMotion, Element>>();
+		imp_->force_pool_ = findOrInsertType<aris::core::ObjectPool<Force, Element>>();
+		imp_->solver_pool_ = findOrInsertType<aris::core::ObjectPool<Solver, Element>>();
+		imp_->simulator_pool_ = findOrInsertType<aris::core::ObjectPool<Simulator, Element>>();
+		imp_->sim_result_pool_ = findOrInsertType<aris::core::ObjectPool<SimResult, Element>>();
+		imp_->calibrator_pool_ = findOrInsertType<aris::core::ObjectPool<Calibrator, Element>>();
 		imp_->ground_ = partPool().findOrInsert<Part>("ground");
 	}
 	auto Model::saveXml(aris::core::XmlElement &xml_ele)const->void

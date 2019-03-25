@@ -260,7 +260,7 @@ namespace aris::core
 	auto CommandParser::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Object::loadXml(xml_ele);
-		imp_->command_pool_ = findOrInsert<aris::core::ObjectPool<Command>>("");
+		imp_->command_pool_ = findOrInsertType<aris::core::ObjectPool<Command>>();
 	}
 	auto CommandParser::parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_out)->void
 	{

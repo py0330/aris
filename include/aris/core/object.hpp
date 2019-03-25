@@ -635,6 +635,8 @@ namespace aris::core
 		auto findType(const std::string &name)->T* { auto ret = std::find_if(children().begin(), children().end(), [&](Object &p) {return dynamic_cast<T*>(&p) && p.name() == name; }); return ret == children().end() ? nullptr : dynamic_cast<T*>(&*ret); }
 		template<typename T = Object, typename ...Args>
 		auto findOrInsert(const std::string &name, Args&&... args)-> T* { auto p = findType<T>(name); return p ? p : &add<T>(name, std::forward<Args>(args)...); }
+		template<typename T = Object, typename ...Args>
+		auto findOrInsertType(Args&&... args)-> T* { auto p = findType<T>(); return p ? p : &add<T>(std::forward<Args>(args)...); }
 		auto add(Object *obj)->Object &;
 		template<typename T, typename ...Args>
 		auto add(Args&&... args)->std::enable_if_t<std::is_base_of<Object, T>::value, T>& { return dynamic_cast<T&>(add(new T(std::forward<Args>(args)...))); }

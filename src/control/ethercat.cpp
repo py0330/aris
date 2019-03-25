@@ -140,7 +140,7 @@ namespace aris::control
 		imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
 
 		Slave::loadXml(xml_ele);
-		imp_->sm_pool_ = findOrInsert<aris::core::ObjectPool<SyncManager> >("sm_pool");
+		imp_->sm_pool_ = findOrInsertType<aris::core::ObjectPool<SyncManager> >();
 	}
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
@@ -171,7 +171,6 @@ namespace aris::control
 		std::uint32_t abort_code;
 		aris_ecrt_sdo_write(dynamic_cast<EthercatMaster&>(root()).ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 	}
-	auto EthercatSlave::configSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void{}
 	EthercatSlave::~EthercatSlave() = default;
 	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
 	{

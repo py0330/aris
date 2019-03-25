@@ -40,7 +40,7 @@ auto inline outputCsByPq(const aris::server::ControlServer &cs, std::string file
 int main(int argc, char *argv[])
 {
 	double robot_pm[16];
-	std::string robot_name = argc < 2 ? "stewart" : argv[1];
+	std::string robot_name = argc < 2 ? "rokae_xb4" : argv[1];
 	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
 	aris::dynamic::s_pq2pm(argc < 4 ? nullptr : aris::core::Calculator().calculateExpression(argv[3]).data(), robot_pm);
 
