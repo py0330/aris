@@ -1351,7 +1351,7 @@ namespace aris::plan
 
 				Imp::pvade_.store(pvade);
 				Imp::is_running_.store(true);
-				target.option |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT | USE_TARGET_POS | USE_VEL_OFFSET;
+				target.option |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT | USE_TARGET_POS;
 			}
 			else if (cmd_param.first == "stop")
 			{
