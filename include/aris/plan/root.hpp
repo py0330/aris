@@ -75,6 +75,7 @@ namespace aris::plan
 			USE_VEL_OFFSET = 0x01ULL << 19,
 			USE_CUR_OFFSET = 0x01ULL << 20,
 
+			NOT_CHECK_OPERATION_ENABLE = 0x01ULL << 23,
 			NOT_CHECK_POS_MIN = 0x01ULL << 24,
 			NOT_CHECK_POS_MAX = 0x01ULL << 25,
 			NOT_CHECK_POS_CONTINUOUS = 0x01ULL << 26,
@@ -603,6 +604,17 @@ namespace aris::plan
 		explicit Stop(const std::string &name = "start");
 		ARIS_REGISTER_TYPE("Stop");
 		ARIS_DEFINE_BIG_FOUR(Stop);
+	};
+
+	class RemoveFile : public aris::plan::Plan
+	{
+	public:
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, aris::plan::PlanTarget &target)->void;
+		
+		virtual ~RemoveFile();
+		explicit RemoveFile(const std::string &name = "rm_file");
+		ARIS_REGISTER_TYPE("RemoveFile");
+		ARIS_DEFINE_BIG_FOUR(RemoveFile);
 	};
 
 	class UniversalPlan :public Plan

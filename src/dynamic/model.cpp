@@ -51,6 +51,8 @@ namespace aris::dynamic
 		imp_->sim_result_pool_ = findOrInsertType<aris::core::ObjectPool<SimResult, Element>>();
 		imp_->calibrator_pool_ = findOrInsertType<aris::core::ObjectPool<Calibrator, Element>>();
 		imp_->ground_ = partPool().findOrInsert<Part>("ground");
+
+		for (auto &s : this->solverPool())s.allocateMemory();
 	}
 	auto Model::saveXml(aris::core::XmlElement &xml_ele)const->void
 	{

@@ -53,6 +53,7 @@ namespace aris::plan
 		registerType<SetXml>();
 		registerType<Start>();
 		registerType<Stop>();
+		registerType<RemoveFile>();
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PlanRoot);
 
@@ -667,7 +668,7 @@ namespace aris::plan
 			{
 				auto &cm = target.controller->motionPool().at(i);
 				auto ret = cm.mode(8);
-				cm.setTargetPos(cm.actualPos());
+				if (target.count == 1)cm.setTargetPos(cm.actualPos());
 				if (ret)
 				{
 					is_all_finished = false;
@@ -1717,6 +1718,7 @@ namespace aris::plan
 		// remove all symbols "{" "}"
 		if (target.server->running())THROW_FILE_AND_LINE("server is not running,can't save xml");
 		auto xml_str = params.at("xml").substr(1, params.at("xml").size() - 2);
+		// 这一句要小心，此时 this 已被销毁，后面不能再调用this了 //
 		target.server->loadXmlStr(xml_str);
 		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
 	}
@@ -1753,6 +1755,45 @@ namespace aris::plan
 		command().loadXmlStr(
 			"<Command name=\"stop\">"
 			"</Command>");
+	}
+
+	auto RemoveFile::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		auto memo = std::stoi(params.at("memo"));
+		auto file_path = params.at("filePath");
+
+		// 获得所有文件
+		std::vector<std::filesystem::path> files;
+		for (auto &p : std::filesystem::directory_iterator(file_path))
+		{
+			if (p.is_regular_file())files.push_back(p.path());
+		}
+		// 按照修改时间排序
+		std::sort(files.begin(), files.end(), [](const std::filesystem::path &p1, const std::filesystem::path &p2)->bool   //lambda函数，匿名
+		{
+			return std::filesystem::last_write_time(p1) < std::filesystem::last_write_time(p2);//返回布尔结果，true或者false;
+		});
+
+
+		std::filesystem::space_info devi = std::filesystem::space(file_path);
+		// 根据内存地址删除;
+		while (devi.available < 1048576 * memo && !files.empty())
+		{
+			std::filesystem::remove(files.front());
+			devi = std::filesystem::space(file_path);
+		}
+		target.option =	NOT_RUN_EXECUTE_FUNCTION;
+	}
+	RemoveFile::~RemoveFile() = default;
+	RemoveFile::RemoveFile(const std::string &name) :Plan(name)
+	{
+		command().loadXmlStr(
+			"<rmFi>"
+			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
+			"	    <filePath type=\"Param\" default=\"C:/Users/qianch_kaanh_cn/Desktop/build_qianch/log/\" abbreviation=\"f\" />"
+			"	    <memo type=\"Param\" default=\"40\" abbreviation=\"m\" />"
+			"	</group>"
+			"</rmFi>");
 	}
 
 	struct UniversalPlan::Imp
