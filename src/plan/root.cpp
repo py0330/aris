@@ -451,6 +451,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
+		target.option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Enable::executeRT(PlanTarget &target)->int
 	{
@@ -503,6 +504,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
+		target.option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Disable::executeRT(PlanTarget &target)->int
 	{
@@ -656,6 +658,7 @@ namespace aris::plan
 		param.mode = std::stoi(params.at("mode"));
 
 		target.param = param;
+		target.option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Mode::executeRT(PlanTarget &target)->int
 	{
@@ -780,9 +783,6 @@ namespace aris::plan
 	};
 	auto Recover::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		target.option |= NOT_CHECK_POS_CONTINUOUS_AT_START;
-		target.option |= NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
-
 		auto p = std::make_shared<RecoverParam>();
 
 		p->is_kinematic_ready_ = false;
@@ -800,6 +800,10 @@ namespace aris::plan
 		}, p, std::ref(target));
 
 		target.param = p;
+		target.option |= 
+			NOT_CHECK_POS_CONTINUOUS_AT_START | 
+			NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
+			NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Recover::executeRT(PlanTarget &target)->int
 	{
@@ -847,6 +851,7 @@ namespace aris::plan
 	auto Sleep::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		target.param = SleepParam{ std::stoi(params.at("count")) };
+		target.option |= NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Sleep::executeRT(PlanTarget &target)->int { return std::any_cast<SleepParam&>(target.param).count - target.count; }
 	Sleep::~Sleep() = default;
@@ -862,6 +867,7 @@ namespace aris::plan
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		target.option |=
+			NOT_CHECK_OPERATION_ENABLE |
 			NOT_CHECK_POS_MIN |
 			NOT_CHECK_POS_MAX |
 			NOT_CHECK_POS_CONTINUOUS |

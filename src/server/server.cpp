@@ -178,6 +178,7 @@ namespace aris::server
 			auto &lld = last_last_pvc.at(i);
 
 #ifndef WIN32
+			/*
 			if (!(option & aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE)
 				&& ((cm.statusWord() & 0x6f) != 0x27))
 			{
@@ -186,6 +187,7 @@ namespace aris::server
 				server_->controller().mout() << "max: " << cm.maxPos() << "\t" << "now: " << cm.targetPos() << "\n";
 				goto FAILED;
 			}
+			*/
 #endif
 
 			//if ((cm.statusWord() & 0x6f) == 0x27)
