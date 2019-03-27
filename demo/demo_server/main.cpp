@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 	}
 	else if (robot_name == "stewart")
 	{
+		/*
 		cs.resetController(createControllerStewart().release());
 		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootStewart().release());
@@ -79,6 +80,10 @@ int main(int argc, char *argv[])
 		// init model pos //
 		cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 0.5, 0, 0, 0}.data(), "313");
 		cs.model().solverPool()[0].kinPos();
+
+		cs.saveXmlFile("C:\\Users\\py033\\Desktop\\stewart.xml");
+		*/
+		cs.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_server/stewart.xml"));
 	}
 	else
 	{
