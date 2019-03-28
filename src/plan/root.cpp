@@ -1780,6 +1780,8 @@ namespace aris::plan
 			return std::filesystem::last_write_time(p1) < std::filesystem::last_write_time(p2);
 		});
 
+		std::cout << "log files" << files.size() << std::endl;
+
 		std::filesystem::space_info devi = std::filesystem::space(file_path);
 		// 根据内存地址删除;
 		while (devi.available < 1048576 * memo && !files.empty())
@@ -1788,6 +1790,9 @@ namespace aris::plan
 			files.pop_back();
 			devi = std::filesystem::space(file_path);
 		}
+
+		std::cout << "left space " << devi.available/1048576<<"MB" << std::endl;
+
 		target.option =	NOT_RUN_EXECUTE_FUNCTION;
 	}
 	RemoveFile::~RemoveFile() = default;

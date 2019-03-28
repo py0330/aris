@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");
 	cs.start();
-	cs.executeCmd(aris::core::Msg("rmFi --filePath=C:/Users/py033/Desktop/log --memo=20000"));
+	cs.executeCmd(aris::core::Msg("rmFi --filePath=/usr/kaanh/log --memo=20000"));
 
 	// interaction //
 	std::list<std::tuple<aris::core::Msg, std::shared_ptr<aris::plan::PlanTarget>>> result_list;
