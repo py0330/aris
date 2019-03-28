@@ -1777,15 +1777,15 @@ namespace aris::plan
 		// 按照修改时间排序
 		std::sort(files.begin(), files.end(), [](const std::filesystem::path &p1, const std::filesystem::path &p2)->bool   //lambda函数，匿名
 		{
-			return std::filesystem::last_write_time(p1) < std::filesystem::last_write_time(p2);//返回布尔结果，true或者false;
+			return std::filesystem::last_write_time(p1) < std::filesystem::last_write_time(p2);
 		});
-
 
 		std::filesystem::space_info devi = std::filesystem::space(file_path);
 		// 根据内存地址删除;
 		while (devi.available < 1048576 * memo && !files.empty())
 		{
-			std::filesystem::remove(files.front());
+			std::filesystem::remove(files.back());
+			files.pop_back();
 			devi = std::filesystem::space(file_path);
 		}
 		target.option =	NOT_RUN_EXECUTE_FUNCTION;
@@ -1794,12 +1794,12 @@ namespace aris::plan
 	RemoveFile::RemoveFile(const std::string &name) :Plan(name)
 	{
 		command().loadXmlStr(
-			"<rmFi>"
-			"	<group type=\"GroupParam\" default_child_type=\"Param\">"
-			"	    <filePath type=\"Param\" default=\"C:/Users/qianch_kaanh_cn/Desktop/build_qianch/log/\" abbreviation=\"f\" />"
-			"	    <memo type=\"Param\" default=\"40\" abbreviation=\"m\" />"
-			"	</group>"
-			"</rmFi>");
+			"<Command name=\"rmFi\">"
+			"	<GroupParam>"
+			"	    <Param name=\"filePath\" default=\"C:/Users/qianch_kaanh_cn/Desktop/build_qianch/log/\" abbreviation=\"f\" />"
+			"	    <Param name=\"memo\" default=\"40\" abbreviation=\"m\" />"
+			"	</GroupParam>"
+			"</Command>");
 	}
 
 	struct UniversalPlan::Imp

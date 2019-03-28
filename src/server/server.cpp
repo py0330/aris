@@ -436,28 +436,28 @@ namespace aris::server
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "model"; });
 		if (iter != children().end())children().erase(iter);
-		children().push_back_ptr(model);
+		add(model);
 		imp_->model_ = model;
 	}
 	auto ControlServer::resetController(control::Controller *controller)->void
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "controller"; });
 		if (iter != children().end())children().erase(iter);
-		children().push_back_ptr(controller);
+		add(controller);
 		imp_->controller_ = controller;
 	}
 	auto ControlServer::resetSensorRoot(sensor::SensorRoot *sensor_root)->void
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "sensor_root"; });
 		if (iter != children().end())children().erase(iter);
-		children().push_back_ptr(sensor_root);
+		add(sensor_root);
 		imp_->sensor_root_ = sensor_root;
 	}
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "plan_root"; });
 		if (iter != children().end())children().erase(iter);
-		children().push_back_ptr(plan_root);
+		add(plan_root);
 		imp_->plan_root_ = plan_root;
 	}
 	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
