@@ -398,10 +398,10 @@ namespace aris::core
 		int keepInterval = 2; // 探测时发包的时间间隔为5 秒
 		int keepCount = 5; // 探测尝试的次数.如果第1次探测包就收到响应了,则后2次的不再发.
 
-		setsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive));
-		setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle));
-		setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
-		setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
+		//setsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive));
+		//setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle));
+		//setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
+		//setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
 #endif
 		// 改变状态 //
 		imp->state_ = Socket::WORKING;
