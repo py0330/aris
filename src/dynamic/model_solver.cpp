@@ -2809,6 +2809,7 @@ namespace aris::dynamic
 	}
 	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
+	ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
 
 	struct StewartInverseKinematicSolver::Imp
 	{

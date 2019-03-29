@@ -622,6 +622,10 @@ namespace aris::plan
 							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
 				}
+				else
+				{
+					param.active_motor[i] = false;
+				}
 			}
 		}
 
@@ -1443,17 +1447,17 @@ namespace aris::plan
 		static int i = 0;
 		if (++i % 1000 == 0)
 		{
-			target.controller->mout() << "pe_now :"
-				<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
-				<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
+			//target.controller->mout() << "pe_now :"
+			//	<< pe_now[0] << "  " << pe_now[1] << "  " << pe_now[2] << "  "
+			//	<< pe_now[3] << "  " << pe_now[4] << "  " << pe_now[5] << std::endl;
 
-			target.controller->mout() << "pe_target :"
-				<< pvade[0] << "  " << pvade[1] << "  " << pvade[2] << "  "
-				<< pvade[3] << "  " << pvade[4] << "  " << pvade[5] << std::endl;
+			//target.controller->mout() << "pe_target :"
+			//	<< pvade[0] << "  " << pvade[1] << "  " << pvade[2] << "  "
+			//	<< pvade[3] << "  " << pvade[4] << "  " << pvade[5] << std::endl;
 
-			target.controller->mout() << "pe_next:"
-				<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  "
-				<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
+			//target.controller->mout() << "pe_next:"
+			//	<< pe_next[0] << "  " << pe_next[1] << "  " << pe_next[2] << "  "
+			//	<< pe_next[3] << "  " << pe_next[4] << "  " << pe_next[5] << std::endl;
 		}
 
 		target.model->solverPool()[0].kinPos();
@@ -1765,7 +1769,7 @@ namespace aris::plan
 
 	auto RemoveFile::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		auto memo = std::stoi(params.at("memo"));
+		std::uintmax_t  memo = std::stoull(params.at("memo"));
 		auto file_path = params.at("filePath");
 
 		// 获得所有文件
@@ -1780,18 +1784,18 @@ namespace aris::plan
 			return std::filesystem::last_write_time(p1) < std::filesystem::last_write_time(p2);
 		});
 
-		std::cout << "log files" << files.size() << std::endl;
+		std::cout << "log file num:" << files.size() << std::endl;
 
 		std::filesystem::space_info devi = std::filesystem::space(file_path);
 		// 根据内存地址删除;
-		while (devi.available < 1048576 * memo && !files.empty())
+		while (devi.available < std::uintmax_t(1048576) * memo && !files.empty())
 		{
 			std::filesystem::remove(files.back());
 			files.pop_back();
 			devi = std::filesystem::space(file_path);
 		}
 
-		std::cout << "left space " << devi.available/1048576<<"MB" << std::endl;
+		std::cout << "left space  :" << devi.available / std::uintmax_t(1048576) << "MB" << std::endl;
 
 		target.option =	NOT_RUN_EXECUTE_FUNCTION;
 	}

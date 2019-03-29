@@ -168,7 +168,7 @@ namespace aris::dynamic
 		virtual ~PumaInverseKinematicSolver() = default;
 		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");
 		ARIS_REGISTER_TYPE("PumaInverseKinematicSolver");
-		ARIS_DEFINE_BIG_FOUR(PumaInverseKinematicSolver);
+		ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
 
 	private:
 		struct Imp;

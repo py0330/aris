@@ -246,11 +246,11 @@ void test_optimal()
 void test_moveAbsolute2()
 {
 	//0.4, 0.00186295223741914, 1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.400000931476119, 0, -1.86295223741914, 1
-	double pt = 0.4;
+	double pt = 0.4000078;
 	double vt = 0.0;
 	double at = 0.0;
 	double pa = 0.4;
-	double va = 0.00186295223741914;
+	double va = 0.000231;
 	double aa = 1.86295223741914;
 	double vm = 0.10297442; // 295.0 / 360 * 2 * aris::PI * 0.02
 	double am = 2.09439512; // 1500.0 / 360 * 2 * aris::PI *0.01
@@ -261,7 +261,7 @@ void test_moveAbsolute2()
 	//p_vec.push_back(pa);
 	//v_vec.push_back(va);
 	//a_vec.push_back(aa);
-
+	std::cout << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
 	while (n)
 	{
 		aris::Size t;
@@ -274,6 +274,18 @@ void test_moveAbsolute2()
 		std::cout << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
 	}
 
+	n = 5;
+	while (--n)
+	{
+		aris::Size t;
+		aris::plan::moveAbsolute2(pa, va, aa, pt, vt, at, vm, am, am, 1e-3, 1e-10, pa, va, aa, t);
+
+		//p_vec.push_back(pa);
+		//v_vec.push_back(va);
+		//a_vec.push_back(aa);
+
+		std::cout << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
+	}
 
 	//  0.400000931476119, 0, -1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.4, -0.00186295223741914, -1.86295223741914, 1
 	//	0.4, -0.00186295223741914, -1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.399999068523881, 0, 1.86295223741914, 1

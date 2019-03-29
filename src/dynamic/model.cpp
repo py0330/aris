@@ -212,8 +212,8 @@ namespace aris::dynamic
 		registerType<InverseKinematicSolver>();
 		registerType<ForwardDynamicSolver>();
 		registerType<InverseDynamicSolver>();
-		//registerType<Ur5InverseKinematicSolver>();
-		//registerType<PumaInverseKinematicSolver>();
+		registerType<Ur5InverseKinematicSolver>();
+		registerType<PumaInverseKinematicSolver>();
 		registerType<StewartInverseKinematicSolver>();
 
 		registerType<aris::core::ObjectPool<Simulator, Element>>();
