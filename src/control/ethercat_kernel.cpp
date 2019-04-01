@@ -19,6 +19,61 @@ namespace aris::control
 {
 	const unsigned char FF = std::uint8_t(0xff);
 	
+	void read_bit2(char *data, int bit_size, const char *pd, int offset, int bit_position)
+	{
+		// data:
+		//            bit_size                                                
+		//   7 6 5 4     3      2 1 0 | 7 6 5 4 3 2 1 0 | ... | 7 6 5 4 3 2 1 0 |
+		// 
+		// pd:
+		//                   offset          bit_position  
+		//   0 1 2 3 4 5 6 7   |    0 1 2 3       4       5 6 7 | ...  
+		//   
+
+
+		// 注意 >>在某些编译器下，是补符号位，因此必须先转换成uint8
+		for (int i = 0; i < bit_size / 8; ++i)
+		{
+			data[i] = (pd[offset + i] >> bit_position) | (std::uint8_t(pd[offset + i + 1]) << (8 - bit_position));
+		}
+
+		if (bit_size % 8)
+		{
+			// 先将还没弄好的位置零 //
+			data[bit_size / 8] &= FF << bit_size % 8;
+			data[bit_size / 8] |= (pd[offset + bit_size / 8] >> bit_position) & (0xff >> (8 - bit_size % 8));
+			if (bit_size % 8 > 8 - bit_position)
+				data[bit_size / 8] |= (std::uint8_t(pd[offset + bit_size / 8 + 1]) << (8 - bit_position)) & (0xff >> (8 - bit_size % 8));
+
+		}
+	}
+	void write_bit2(const char *data, int bit_size, char *pd, int offset, int bit_position)
+	{
+		for (int i = 0; i < bit_size / 8; ++i)
+		{
+			pd[offset + i] &= FF << (8 - bit_position);
+			pd[offset + i] |= std::uint8_t(data[i]) >> bit_position;
+			pd[offset + i + 1] &= FF >> bit_position;
+			pd[offset + i + 1] |= std::uint8_t(data[i]) << (8 - bit_position);
+		}
+
+		if (bit_size % 8)
+		{
+			if (bit_size % 8 > 8 - bit_position)
+			{
+				pd[offset + bit_size / 8] &= FF << (8 - bit_position);
+				pd[offset + bit_size / 8] |= std::uint8_t(data[bit_size / 8]) >> bit_position;
+				pd[offset + bit_size / 8 + 1] &= FF >> ((bit_size % 8) - (8 - bit_position));
+				pd[offset + bit_size / 8 + 1] |= std::uint8_t(data[bit_size / 8] & (0xff << (8 - bit_size % 8))) << (8 - bit_position);
+			}
+			else
+			{
+				pd[offset + bit_size / 8] &= ~(std::uint8_t(FF >> (8 - bit_position - (bit_size % 8)) << (8 - (bit_size % 8))) >> bit_position);
+				pd[offset + bit_size / 8] |= std::uint8_t((FF << (8 - (bit_size % 8))) & data[bit_size / 8]) >> bit_position;
+			}
+		}
+	}
+
 	void read_bit(char *data, int bit_size, const char *pd, int offset, int bit_position)
 	{
 		// data:
@@ -44,7 +99,6 @@ namespace aris::control
 			data[bit_size / 8] |= (pd[offset + bit_size / 8] << bit_position) & (0xff << (8 - bit_size % 8));
 			if (bit_size % 8 > 8 - bit_position)
 				data[bit_size / 8] |= (std::uint8_t(pd[offset + bit_size / 8 + 1]) >> (8 - bit_position)) & (0xff << (8 - bit_size % 8));
-
 		}
 	}
 	void write_bit(const char *data, int bit_size, char *pd, int offset, int bit_position)
@@ -135,6 +189,8 @@ namespace aris::control
 					{
 						auto &info = ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos][entry_pos];
 						sla.smPool()[sync_pos][pdo_pos].add<PdoEntry>("entry", info.index, info.subindex, info.bit_length);
+
+						std::cout << "entry:" << std::hex << info.index << "  " << info.subindex << "  " << info.bit_length << std::dec << std::endl;
 					}
 				}
 			}
@@ -254,7 +310,7 @@ namespace aris::control
 		auto pd = std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_;
 		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
 
-		read_bit(reinterpret_cast<char*>(data), bit_size, reinterpret_cast<const char*>(pd), pe_handle.offset, pe_handle.bit_position);
+		read_bit2(reinterpret_cast<char*>(data), bit_size, reinterpret_cast<const char*>(pd), pe_handle.offset, pe_handle.bit_position);
 	}
 	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data, int bit_size)->void
 	{

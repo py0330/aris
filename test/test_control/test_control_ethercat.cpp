@@ -9,6 +9,10 @@ namespace aris::control
 {
 	void read_bit(char *data, int bit_size, const char *pd, int offset, int bit_position);
 	void write_bit(const char *data, int bit_size, char *pd, int offset, int bit_position);
+
+
+	void read_bit2(char *data, int bit_size, const char *pd, int offset, int bit_position);
+	void write_bit2(const char *data, int bit_size, char *pd, int offset, int bit_position);
 }
 void test_bit()
 {
