@@ -189,8 +189,6 @@ namespace aris::control
 					{
 						auto &info = ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos][entry_pos];
 						sla.smPool()[sync_pos][pdo_pos].add<PdoEntry>("entry", info.index, info.subindex, info.bit_length);
-
-						std::cout << "entry:" << std::hex << info.index << "  " << info.subindex << "  " << info.bit_length << std::dec << std::endl;
 					}
 				}
 			}
