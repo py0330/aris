@@ -1699,7 +1699,7 @@ namespace aris::plan
 		std::string ret(reinterpret_cast<char*>(pq.data()), pq.size() * sizeof(double));
 		target.ret = ret;
 
-		target.option |= NOT_RUN_EXECUTE_FUNCTION;
+		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_PRINT_CMD_INFO | NOT_PRINT_CMD_INFO;
 	}
 	GetPartPq::~GetPartPq() = default;
 	GetPartPq::GetPartPq(const std::string &name) : Plan(name)
