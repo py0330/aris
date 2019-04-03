@@ -2315,7 +2315,17 @@ namespace aris::dynamic
 		return true;
 	}
 
-	auto Ur5InverseKinematicSolver::setWhichRoot(int root_of_0_to_7)
+	auto Ur5InverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
+	{
+		InverseKinematicSolver::saveXml(xml_ele);
+		xml_ele.SetAttribute("which_root", which_root_);
+	}
+	auto Ur5InverseKinematicSolver::loadXml(const aris::core::XmlElement &xml_ele)->void 
+	{
+		InverseKinematicSolver::loadXml(xml_ele);
+		setWhichRoot(Object::attributeInt32(xml_ele, "which_root"));
+	}
+	auto Ur5InverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void
 	{
 		if (root_of_0_to_7 < 0 || root_of_0_to_7 > 7) throw std::runtime_error("root must be 0 to 7");
 		which_root_ = root_of_0_to_7;
@@ -2501,6 +2511,16 @@ namespace aris::dynamic
 		};
 		GeneralMotion *ee;
 	};
+	auto PumaInverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
+	{
+		InverseKinematicSolver::saveXml(xml_ele);
+		xml_ele.SetAttribute("which_root", imp_->which_root_);
+	}
+	auto PumaInverseKinematicSolver::loadXml(const aris::core::XmlElement &xml_ele)->void
+	{
+		InverseKinematicSolver::loadXml(xml_ele);
+		setWhichRoot(Object::attributeInt32(xml_ele, "which_root"));
+	}
 	auto PumaInverseKinematicSolver::allocateMemory()->void
 	{
 		InverseKinematicSolver::allocateMemory();
