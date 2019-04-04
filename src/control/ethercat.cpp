@@ -211,15 +211,18 @@ namespace aris::control
 				{
 					for (auto &entry : pdo)
 					{
-						if (sla.imp_->pdo_map_.find(entry.index()) != sla.imp_->pdo_map_.end())
+						if (entry.index())
 						{
-							sla.imp_->pdo_map_.at(entry.index()).insert(std::make_pair(entry.subindex(), &entry));
-						}
-						else
-						{
-							std::map<std::uint8_t, PdoEntry* > subindex_map;
-							subindex_map.insert(std::make_pair(entry.subindex(), &entry));
-							sla.imp_->pdo_map_.insert(std::make_pair(entry.index(), subindex_map));
+							if (sla.imp_->pdo_map_.find(entry.index()) != sla.imp_->pdo_map_.end())
+							{
+								sla.imp_->pdo_map_.at(entry.index()).insert(std::make_pair(entry.subindex(), &entry));
+							}
+							else
+							{
+								std::map<std::uint8_t, PdoEntry* > subindex_map;
+								subindex_map.insert(std::make_pair(entry.subindex(), &entry));
+								sla.imp_->pdo_map_.insert(std::make_pair(entry.index(), subindex_map));
+							}
 						}
 					}
 				}

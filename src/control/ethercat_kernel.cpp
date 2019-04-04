@@ -244,7 +244,8 @@ namespace aris::control
 						entry.ecHandle() = PdoEntryHandle();
 						auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry.ecHandle());
 
-						ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0x00, slave.phyId(), slave.vendorID(), slave.productCode(), entry.index(), entry.subindex(), &pe_handle.offset, &pe_handle.bit_position });
+						//etherlab 会根据index是否为0来判断是否结束
+						if(entry.index())ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0x00, slave.phyId(), slave.vendorID(), slave.productCode(), entry.index(), entry.subindex(), &pe_handle.offset, &pe_handle.bit_position });
 						ec_pdo_entry_info_vec_vec_vec.back().back().push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.bitSize()) });
 					}
 

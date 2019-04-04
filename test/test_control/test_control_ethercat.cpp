@@ -406,8 +406,8 @@ void test_sdo_code()
 void test_control_ethercat()
 {
 	test_bit();
-	//test_scan();
-	test_pdo();
+	test_scan();
+	//test_pdo();
 	//test_pdo_xml();
 	//test_sdo_code();
 	//test_sdo_xml();
