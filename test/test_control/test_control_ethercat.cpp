@@ -159,11 +159,14 @@ void test_scan()
 							{
 								for (auto &entry : pdo)
 								{
-									std::uint32_t data;
-									sla.readPdo(entry.index(), entry.subindex(), &data, entry.bitSize());
-									mst.mout() << "  index:0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(entry.index())
-										<< "  subindex:0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(entry.subindex())
-										<< "  value:0x" << std::setfill('0') << std::setw(sizeof(std::uint32_t) * 2) << std::hex << data << std::endl;
+									if (entry.index())
+									{
+										std::uint32_t data;
+										sla.readPdo(entry.index(), entry.subindex(), &data, entry.bitSize());
+										mst.mout() << "  index:0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(entry.index())
+											<< "  subindex:0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(entry.subindex())
+											<< "  value:0x" << std::setfill('0') << std::setw(sizeof(std::uint32_t) * 2) << std::hex << data << std::endl;
+									}
 								}
 							}
 						}
