@@ -12,7 +12,7 @@
 #include <numeric>
 
 #include "aris/dynamic/model.hpp"
-
+#include "aris/plan/root.hpp"
 
 namespace aris::dynamic
 {
@@ -1069,15 +1069,35 @@ namespace aris::dynamic
 	}
 
 	struct Simulator::Imp {};
-	auto Simulator::simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void
+	auto Simulator::simulate(aris::plan::Plan &plan, SimResult &result)->void
 	{
 		result.allocateMemory();
 		// 记录初始状态 //
 		result.record();
+
+		aris::plan::PlanTarget target
+		{
+			&plan,
+			nullptr,
+			&model(),
+			nullptr,
+			0,
+			0,
+			std::any(),
+			0,
+			0,
+			aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 },
+			std::any(),
+			aris::plan::PlanTarget::CANCELLED,
+			std::future<void>()
+		};
+
 		// 记录轨迹中的状态 //
-		for (PlanParam plan_param{ ancestor<Model>(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_)result.record();
+		for (;plan.executeRT(target) != 0;++target.count)result.record();
+			
 		// 记录结束状态 //
 		result.record();
+		result.restore(0);
 	}
 	Simulator::~Simulator() = default;
 	Simulator::Simulator(const std::string &name) : Element(name), imp_(new Imp) {}
@@ -1110,24 +1130,10 @@ namespace aris::dynamic
 		imp_->solver_ = &*s;
 	}
 	auto SolverSimulator::solver()->Solver& { return *imp_->solver_; }
-	auto SolverSimulator::simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void
+	auto SolverSimulator::simulate(aris::plan::Plan &plan, SimResult &result)->void
 	{
 		solver().allocateMemory();
-		result.allocateMemory();
-		// 记录初始位置 //
-		result.record();
-		// 记录轨迹中的位置 //
-		for (PlanParam plan_param{ ancestor<Model>(), std::uint32_t(1), param, param_size }; plan(plan_param) != 0; ++plan_param.count_)
-		{
-			solver().kinPos();
-			if (solver().iterCount() == solver().maxIterCount())throw std::runtime_error("simulate failed because kinPos() failed at " + std::to_string(plan_param.count_) + " count");
-			solver().kinVel();
-			solver().dynAccAndFce();
-			result.record();
-		}
-		// 记录结束位置 //
-		result.record();
-		result.restore(0);
+		Simulator::simulate(plan, result);
 	}
 	SolverSimulator::~SolverSimulator() = default;
 	SolverSimulator::SolverSimulator(const std::string &name, Solver *solver) : Simulator(name), imp_(new Imp(solver)) {}

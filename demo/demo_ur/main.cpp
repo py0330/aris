@@ -246,7 +246,7 @@ int main()
 	dsp(4, 4, *ee.mpm());
 
 
-
+	/*
 	sim.simulate([&](const PlanParam &param)->int
 	{
 		param.model_->setTime(param.count_*0.001);
@@ -267,7 +267,7 @@ int main()
 		inverse_kinematic.kinPos();
 
 		return t0 - param.count_;
-	}, nullptr, result);
+	}, nullptr, result);*/
 
 
 	auto &s = r->simulatorPool().add<aris::dynamic::AdamsSimulator>();

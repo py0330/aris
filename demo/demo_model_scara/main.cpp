@@ -12,6 +12,37 @@ using namespace std;
 ///
 /// @}
 
+
+class MyPlan:public aris::plan::Plan
+{
+public:
+	auto virtual executeRT(aris::plan::PlanTarget &target)->int override
+	{
+		const double PI = 3.141592653589793;
+		
+		
+		// 设置时间，如果伺服周期为1000Hz，那么每个周期时间递加0.001s //
+		target.model->setTime(target.model->time() + 0.001);
+
+		// 计算末端的位置 //
+		double pe[6]{ 0 , 0 , 0 , 0 , 0 , 0 };
+		pe[0] = 1 + 0.3*std::cos(PI * 2 * target.count / 1000);
+		pe[1] = 1 + 0.5*std::sin(PI * 2 * target.count / 1000);
+		pe[2] = -0.3 + 0.2*std::sin(PI * 2 * target.count / 1000);
+		pe[3] = 0.3 + 4 * PI*target.count / 1000;
+
+		// 设置末端位置 //
+		target.model->generalMotionPool().front().setMpe(pe, "321");
+
+		// 求反解 //
+		target.model->solverPool()[0].kinPos();
+
+		// 轨迹的长度和返回值有关，返回0时轨迹结束，这里仿真1000个周期 //
+		return 1000 - target.count;
+	}
+};
+
+
 int main()
 {
 	// 本示例展示4轴SCARA机器人的建模过程，aris可以求解任何机构（串联、并联、混联、过约束、欠约束等）的正逆运动学、正逆动力学等问题
@@ -132,11 +163,11 @@ int main()
 	//-------------------------------------------- 用Adams验证 --------------------------------------------//
 	/// [Verify_By_Adams]
 	// 使用adams验证计算结果, 为了能够在Adams里显示动画，首先给各个杆件添加 Parasolid 格式的模型，这些文件存在aris的安装目录下
-	m.ground().geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\demo_model_scara\\ground.xmt_txt");
-	link1.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\demo_model_scara\\part1.xmt_txt");
-	link2.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\demo_model_scara\\part2.xmt_txt");
-	link3.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\demo_model_scara\\part3.xmt_txt");
-	link4.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\demo_model_scara\\part4.xmt_txt");
+	m.ground().geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/ground.xmt_txt");
+	link1.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/part1.xmt_txt");
+	link2.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/part2.xmt_txt");
+	link3.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/part3.xmt_txt");
+	link4.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/part4.xmt_txt");
 	
 	// 添加一个 Adams 仿真器插件, 之后保存到aris的安装目录下，用户此时就可以在 Adams 查看结果了
 	auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
@@ -146,34 +177,14 @@ int main()
 
 	//-------------------------------------------- 仿真整段轨迹 --------------------------------------------//
 	/// [Simulate]
-	// aris中的轨迹就是一个函数，这个函数根据输入的参数，来设置机器人的状态 //
-	aris::dynamic::PlanFunction plan = [&](const aris::dynamic::PlanParam &param) ->int
-	{
-		// 设置时间，如果伺服周期为1000Hz，那么每个周期时间递加0.001s //
-		param.model_->setTime(param.model_->time() + 0.001);
-		
-		// 计算末端的位置 //
-		double pe[6]{ 0 , 0 , 0 , 0 , 0 , 0 };
-		pe[0] = 1 + 0.3*std::cos(PI * 2 * param.count_ / 1000);
-		pe[1] = 1 + 0.5*std::sin(PI * 2 * param.count_ / 1000);
-		pe[2] = -0.3 + 0.2*std::sin(PI * 2 * param.count_ / 1000);
-		pe[3] = 0.3 + 4*PI*param.count_ / 1000;
-
-		// 设置末端位置 //
-		param.model_->generalMotionPool().front().setMpe(pe, "321");
-		
-		// 求反解 //
-		inverse_kinematic_solver.kinPos();
-
-		// 轨迹的长度和返回值有关，返回0时轨迹结束，这里仿真1000个周期 //
-		return 1000 - param.count_;
-	};
+	// 添加一个轨迹 //
+	MyPlan my_plan;
 
 	// 添加一个仿真结果 //
 	auto &result = m.simResultPool().add<aris::dynamic::SimResult>();
 	
 	// 仿真，结果保存到上述变量中 //
-	adams.simulate(plan, nullptr, result);
+	adams.simulate(my_plan, result);
 
 	// 要想查看结果，可以使用restore函数，这里将model复位到第500个周期处
 	result.restore(500);

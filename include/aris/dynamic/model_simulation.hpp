@@ -14,21 +14,19 @@
 #include <aris/dynamic/model_interaction.hpp>
 #include <aris/dynamic/model_solver.hpp>
 
+
+namespace aris::plan
+{
+	struct PlanTarget;
+	class Plan;
+}
+
+
 namespace aris::dynamic
 {
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
-
-	struct PlanParam
-	{
-		Model* model_;
-		std::uint32_t count_;
-		void *param_;
-		std::uint32_t param_size_;
-	};
-	using PlanFunction = std::function<int(const PlanParam &)>;
-	using ParseFunction = std::function<void(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::MsgBase &msg_out)>;
 
 	class SimResult : public Element
 	{
@@ -121,13 +119,7 @@ namespace aris::dynamic
 	class Simulator :public Element
 	{
 	public:
-		auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void;
-		template<typename ParamType>
-		auto simulate(const PlanFunction &plan, ParamType type, SimResult &result)->void
-		{
-			static_assert(std::is_trivial<ParamType>::value, "ParamType must be trivial type");
-			simulate(plan, &type, std::int32_t(sizeof(type)), result);
-		}
+		auto virtual simulate(aris::plan::Plan &plan, SimResult &result)->void;
 
 		virtual ~Simulator();
 		explicit Simulator(const std::string &name = "simulator");
@@ -143,7 +135,7 @@ namespace aris::dynamic
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual simulate(const PlanFunction &plan, void *param, std::uint32_t param_size, SimResult &result)->void override;
+		auto virtual simulate(aris::plan::Plan &plan, SimResult &result)->void override;
 		using Simulator::simulate;
 		auto solver()->Solver&;
 		auto solver()const ->const Solver& { return const_cast<SolverSimulator*>(this)->solver(); };
