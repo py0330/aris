@@ -77,8 +77,6 @@ namespace aris::sensor
 	class SensorRoot :public aris::core::Object
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("SensorRoot"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		using Object::loadXml;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto sensorPool()->aris::core::ObjectPool<Sensor> &;
@@ -88,10 +86,8 @@ namespace aris::sensor
 
 		virtual ~SensorRoot();
 		explicit SensorRoot(const std::string &name = "sensor_root");
-		SensorRoot(const SensorRoot &);
-		SensorRoot(SensorRoot &&);
-		SensorRoot& operator=(const SensorRoot &);
-		SensorRoot& operator=(SensorRoot &&);
+		ARIS_REGISTER_TYPE(SensorRoot);
+		ARIS_DECLARE_BIG_FOUR(SensorRoot);
 
 	private:
 		struct Imp;
