@@ -20,5 +20,5 @@
 // - improve moveAbsolute2
 // - check control pdos config successfully and throw exception           half check
 // - make better registration                                             check
-// - find bugs of Qianchao
-// - make dynamic calibration as a plan
+// - find bugs of Qianchao                                                check
+// - make dynamic calibration as a plan                                   

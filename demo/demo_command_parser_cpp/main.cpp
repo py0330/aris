@@ -8,8 +8,7 @@
 int main()
 {
 	// 添加CommandParser //
-	aris::core::Object root;
-	auto &parser = root.add<aris::core::CommandParser>("parser");
+	aris::core::CommandParser parser;
 	
 	// 添加enable命令 //
 	auto &enable = parser.commandPool().add<aris::core::Command>("enable", "");

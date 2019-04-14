@@ -136,7 +136,7 @@ endif(BUILD_TESTS)
 # Make demo projects
 if(BUILD_DEMOS)
 	set(ARIS_DEMOS 	rbt demo_object demo_command_parser_xml demo_command_parser_cpp demo_expression_calculator
-					demo_model_scara demo_stewart demo_hulk demo_ur demo_server)
+					demo_model_scara demo_stewart demo_hulk demo_ur demo_server demo_rokae_server)
 	foreach(aris_demo ${ARIS_DEMOS})
 		file(GLOB SOURCES demo/${aris_demo}/*.h demo/${aris_demo}/*.cpp)
 		add_executable(${aris_demo} ${SOURCES})
