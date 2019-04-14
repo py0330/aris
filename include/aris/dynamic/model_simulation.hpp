@@ -41,7 +41,7 @@ namespace aris::dynamic
 
 			virtual ~TimeResult();
 			explicit TimeResult(const std::string &name = "time_result");
-			ARIS_REGISTER_TYPE("TimeResult");
+			ARIS_REGISTER_TYPE(TimeResult);
 			ARIS_DECLARE_BIG_FOUR(TimeResult);
 
 		private:
@@ -62,7 +62,7 @@ namespace aris::dynamic
 
 			virtual ~PartResult();
 			explicit PartResult(const std::string &name = "part_result", Part *part = nullptr);
-			ARIS_REGISTER_TYPE("PartResult");
+			ARIS_REGISTER_TYPE(PartResult);
 			ARIS_DECLARE_BIG_FOUR(PartResult);
 
 		private:
@@ -83,7 +83,7 @@ namespace aris::dynamic
 
 			virtual ~ConstraintResult();
 			explicit ConstraintResult(const std::string &name = "constraint_result", Constraint *constraint = nullptr);
-			ARIS_REGISTER_TYPE("ConstraintResult");
+			ARIS_REGISTER_TYPE(ConstraintResult);
 			ARIS_DECLARE_BIG_FOUR(ConstraintResult);
 
 		private:
@@ -109,7 +109,7 @@ namespace aris::dynamic
 
 		virtual ~SimResult();
 		explicit SimResult(const std::string &name = "sim_result");
-		ARIS_REGISTER_TYPE("SimResult");
+		ARIS_REGISTER_TYPE(SimResult);
 		ARIS_DECLARE_BIG_FOUR(SimResult);
 
 	private:
@@ -123,7 +123,7 @@ namespace aris::dynamic
 
 		virtual ~Simulator();
 		explicit Simulator(const std::string &name = "simulator");
-		ARIS_REGISTER_TYPE("Simulator");
+		ARIS_REGISTER_TYPE(Simulator);
 		ARIS_DECLARE_BIG_FOUR(Simulator);
 
 	private:
@@ -142,7 +142,7 @@ namespace aris::dynamic
 
 		virtual ~SolverSimulator();
 		explicit SolverSimulator(const std::string &name = "solver_simulator", Solver *solver = nullptr);
-		ARIS_REGISTER_TYPE("SolverSimulator");
+		ARIS_REGISTER_TYPE(SolverSimulator);
 		ARIS_DECLARE_BIG_FOUR(SolverSimulator);
 
 	private:
@@ -162,7 +162,7 @@ namespace aris::dynamic
 
 		virtual ~AdamsSimulator();
 		explicit AdamsSimulator(const std::string &name = "adams_solver");
-		ARIS_REGISTER_TYPE("AdamsSimulator");
+		ARIS_REGISTER_TYPE(AdamsSimulator);
 		ARIS_DECLARE_BIG_FOUR(AdamsSimulator);
 
 	private:
@@ -189,7 +189,7 @@ namespace aris::dynamic
 
 		virtual ~Calibrator();
 		explicit Calibrator(const std::string &name = "calibrator");
-		ARIS_REGISTER_TYPE("Calibrator");
+		ARIS_REGISTER_TYPE(Calibrator);
 		ARIS_DECLARE_BIG_FOUR(Calibrator);
 
 	private:

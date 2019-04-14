@@ -155,7 +155,7 @@ void test_socket_multi_thread()
 	test_func(aris::core::Socket::WEB_RAW);
 }
 
-void test_core_socket()
+void test_socket()
 {
 	std::cout << std::endl << "-----------------test socket---------------------" << std::endl;
 	test_socket_xml();

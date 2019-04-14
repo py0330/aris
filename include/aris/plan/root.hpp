@@ -103,7 +103,7 @@ namespace aris::plan
 
 		virtual ~Plan();
 		explicit Plan(const std::string &name = "plan");
-		ARIS_REGISTER_TYPE("Plan");
+		ARIS_REGISTER_TYPE(Plan);
 		ARIS_DECLARE_BIG_FOUR(Plan);
 
 	private:
@@ -119,7 +119,7 @@ namespace aris::plan
 
 		virtual ~PlanRoot();
 		explicit PlanRoot(const std::string &name = "plan_root");
-		ARIS_REGISTER_TYPE("PlanRoot");
+		ARIS_REGISTER_TYPE(PlanRoot);
 		ARIS_DECLARE_BIG_FOUR(PlanRoot);
 
 	private:
@@ -147,7 +147,7 @@ namespace aris::plan
 
 		virtual ~Enable();
 		explicit Enable(const std::string &name = "enable_plan");
-		ARIS_REGISTER_TYPE("Enable");
+		ARIS_REGISTER_TYPE(Enable);
 		ARIS_DECLARE_BIG_FOUR(Enable);
 
 	private:
@@ -174,7 +174,7 @@ namespace aris::plan
 
 		virtual ~Disable();
 		explicit Disable(const std::string &name = "enable_plan");
-		ARIS_REGISTER_TYPE("Disable");
+		ARIS_REGISTER_TYPE(Disable);
 		ARIS_DECLARE_BIG_FOUR(Disable);
 
 	private:
@@ -201,7 +201,7 @@ namespace aris::plan
 
 		virtual ~Home();
 		explicit Home(const std::string &name = "home_plan");
-		ARIS_REGISTER_TYPE("Home");
+		ARIS_REGISTER_TYPE(Home);
 		ARIS_DECLARE_BIG_FOUR(Home);
 
 	private:
@@ -231,7 +231,7 @@ namespace aris::plan
 
 		virtual ~Mode();
 		explicit Mode(const std::string &name = "mode_plan");
-		ARIS_REGISTER_TYPE("Mode");
+		ARIS_REGISTER_TYPE(Mode);
 		ARIS_DECLARE_BIG_FOUR(Mode);
 
 	private:
@@ -276,7 +276,7 @@ namespace aris::plan
 
 		virtual ~Reset();
 		explicit Reset(const std::string &name = "reset_plan");
-		ARIS_REGISTER_TYPE("Reset");
+		ARIS_REGISTER_TYPE(Reset);
 		ARIS_DECLARE_BIG_FOUR(Reset);
 
 	private:
@@ -299,7 +299,7 @@ namespace aris::plan
 
 		virtual ~Recover();
 		explicit Recover(const std::string &name = "recover_plan");
-		ARIS_REGISTER_TYPE("Recover");
+		ARIS_REGISTER_TYPE(Recover);
 		ARIS_DECLARE_BIG_FOUR(Recover);
 	};
 	/// \brief 实时循环内休息指定时间
@@ -316,7 +316,7 @@ namespace aris::plan
 
 		virtual ~Sleep();
 		explicit Sleep(const std::string &name = "sleep_plan");
-		ARIS_REGISTER_TYPE("Sleep");
+		ARIS_REGISTER_TYPE(Sleep);
 		ARIS_DECLARE_BIG_FOUR(Sleep);
 
 	private:
@@ -333,7 +333,7 @@ namespace aris::plan
 		auto virtual executeRT(PlanTarget &target)->int override;
 
 		explicit Show(const std::string &name = "show");
-		ARIS_REGISTER_TYPE("Show");
+		ARIS_REGISTER_TYPE(Show);
 		ARIS_DECLARE_BIG_FOUR(Show);
 	};
 	/// \brief 将机器人的某根或全部轴移动到指定位置。
@@ -370,7 +370,7 @@ namespace aris::plan
 
 		virtual ~MoveAbsJ();
 		explicit MoveAbsJ(const std::string &name = "move_abs_j");
-		ARIS_REGISTER_TYPE("MoveAbsJ");
+		ARIS_REGISTER_TYPE(MoveAbsJ);
 		ARIS_DECLARE_BIG_FOUR(MoveAbsJ);
 
 	private:
@@ -414,7 +414,7 @@ namespace aris::plan
 
 		virtual ~MoveJ();
 		explicit MoveJ(const std::string &name = "move_j");
-		ARIS_REGISTER_TYPE("MoveJ");
+		ARIS_REGISTER_TYPE(MoveJ);
 		ARIS_DECLARE_BIG_FOUR(MoveJ);
 
 	private:
@@ -454,7 +454,7 @@ namespace aris::plan
 
 		virtual ~MoveL();
 		explicit MoveL(const std::string &name = "move_l");
-		ARIS_REGISTER_TYPE("MoveL");
+		ARIS_REGISTER_TYPE(MoveL);
 		ARIS_DECLARE_BIG_FOUR(MoveL);
 
 	private:
@@ -499,7 +499,7 @@ namespace aris::plan
 
 		virtual ~AutoMove();
 		explicit AutoMove(const std::string &name = "auto_move");
-		ARIS_REGISTER_TYPE("AutoMove");
+		ARIS_REGISTER_TYPE(AutoMove);
 		ARIS_DECLARE_BIG_FOUR(AutoMove);
 
 	private:
@@ -546,7 +546,7 @@ namespace aris::plan
 
 		virtual ~ManualMove();
 		explicit ManualMove(const std::string &name = "manual_move");
-		ARIS_REGISTER_TYPE("ManualMove");
+		ARIS_REGISTER_TYPE(ManualMove);
 		ARIS_DECLARE_BIG_FOUR(ManualMove);
 
 	private:
@@ -562,7 +562,7 @@ namespace aris::plan
 
 		virtual ~GetPartPq();
 		explicit GetPartPq(const std::string &name = "get_part_pq");
-		ARIS_REGISTER_TYPE("GetPartPq");
+		ARIS_REGISTER_TYPE(GetPartPq);
 		ARIS_DEFINE_BIG_FOUR(GetPartPq);
 	};
 	class GetXml :public Plan
@@ -572,7 +572,7 @@ namespace aris::plan
 
 		virtual ~GetXml();
 		explicit GetXml(const std::string &name = "get_xml");
-		ARIS_REGISTER_TYPE("GetXml");
+		ARIS_REGISTER_TYPE(GetXml);
 		ARIS_DEFINE_BIG_FOUR(GetXml);
 	};
 	class SetXml :public Plan
@@ -582,7 +582,7 @@ namespace aris::plan
 
 		virtual ~SetXml();
 		explicit SetXml(const std::string &name = "set_xml");
-		ARIS_REGISTER_TYPE("SetXml");
+		ARIS_REGISTER_TYPE(SetXml);
 		ARIS_DEFINE_BIG_FOUR(SetXml);
 	};
 	class Start :public Plan
@@ -592,7 +592,7 @@ namespace aris::plan
 
 		virtual ~Start();
 		explicit Start(const std::string &name = "start");
-		ARIS_REGISTER_TYPE("Start");
+		ARIS_REGISTER_TYPE(Start);
 		ARIS_DEFINE_BIG_FOUR(Start);
 	};
 	class Stop :public Plan
@@ -602,7 +602,7 @@ namespace aris::plan
 
 		virtual ~Stop();
 		explicit Stop(const std::string &name = "start");
-		ARIS_REGISTER_TYPE("Stop");
+		ARIS_REGISTER_TYPE(Stop);
 		ARIS_DEFINE_BIG_FOUR(Stop);
 	};
 
@@ -613,7 +613,7 @@ namespace aris::plan
 		
 		virtual ~RemoveFile();
 		explicit RemoveFile(const std::string &name = "rm_file");
-		ARIS_REGISTER_TYPE("RemoveFile");
+		ARIS_REGISTER_TYPE(RemoveFile);
 		ARIS_DEFINE_BIG_FOUR(RemoveFile);
 	};
 
@@ -633,7 +633,7 @@ namespace aris::plan
 
 		virtual ~UniversalPlan();
 		explicit UniversalPlan(const std::string &name = "universal_plan", PrepairFunc prepair_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
-		ARIS_REGISTER_TYPE("UniversalPlan");
+		ARIS_REGISTER_TYPE(UniversalPlan);
 		ARIS_DECLARE_BIG_FOUR(UniversalPlan);
 
 	private:

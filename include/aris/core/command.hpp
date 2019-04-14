@@ -81,19 +81,19 @@ namespace aris::core
 	/// 那么“enable”命令的节点设置模式可以用以下XML文件来表示：
 	///
 	/// ~~~{.xml}
-	///	<enable type="Command" default="group">
-	///		<group type="GroupParam">
-	///			<unique1 type="UniqueParam">
+	///	<Command name="enable" default="group">
+	///		<GroupParam>
+	///			<UniqueParam>
 	///				<all type="Param" abbreviation="a"/>
 	///				<motion type="Param" abbreviation="m" default="0"/>
-	///			</unique1>
-	///			<unique2 type="UniqueParam" default="position">
+	///			</UniqueParam>
+	///			<UniqueParam default="position">
 	///				<position type="Param" abbreviation="p"/>
 	///				<velocity type="Param" abbreviation="v"/>
 	///				<current type="Param"/>
-	///			</unique2>
-	///		</group>
-	///	</enable>
+	///			</UniqueParam>
+	///		</GroupParam>
+	///	</Command>
 	/// ~~~
 	///
 	/// 以上xml节点确定了enable命令的解析规则，首先该命令包含一个名为“group”的“GroupParam”
@@ -122,7 +122,7 @@ namespace aris::core
 
 		virtual ~ParamBase();
 		explicit ParamBase(const std::string &name = "param_base");
-		ARIS_REGISTER_TYPE("ParamBase");
+		ARIS_REGISTER_TYPE(ParamBase);
 		ARIS_DECLARE_BIG_FOUR(ParamBase);
 
 	protected:
@@ -148,7 +148,7 @@ namespace aris::core
 
 		virtual ~Param();
 		explicit Param(const std::string &name = "param", const std::string &default_param = "", char abbrev = 0);
-		ARIS_REGISTER_TYPE("Param");
+		ARIS_REGISTER_TYPE(Param);
 		ARIS_DECLARE_BIG_FOUR(Param);
 
 	protected:
@@ -167,7 +167,7 @@ namespace aris::core
 
 		virtual ~UniqueParam();
 		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "");
-		ARIS_REGISTER_TYPE("UniqueParam");
+		ARIS_REGISTER_TYPE(UniqueParam);
 		ARIS_DECLARE_BIG_FOUR(UniqueParam);
 
 	protected:
@@ -181,7 +181,7 @@ namespace aris::core
 	public:
 		virtual ~GroupParam();
 		explicit GroupParam(const std::string &name = "group_param");
-		ARIS_REGISTER_TYPE("GroupParam");
+		ARIS_REGISTER_TYPE(GroupParam);
 		ARIS_DECLARE_BIG_FOUR(GroupParam);
 	};
 	class Command :public ObjectPool<ParamBase>
@@ -195,7 +195,7 @@ namespace aris::core
 
 		virtual ~Command();
 		explicit Command(const std::string &name = "command", const std::string &default_param = "");
-		ARIS_REGISTER_TYPE("Command");
+		ARIS_REGISTER_TYPE(Command);
 		ARIS_DECLARE_BIG_FOUR(Command);
 
 	private:
@@ -215,7 +215,7 @@ namespace aris::core
 
 		virtual ~CommandParser();
 		explicit CommandParser(const std::string &name = "command_parser");
-		ARIS_REGISTER_TYPE("CommandParser");
+		ARIS_REGISTER_TYPE(CommandParser);
 		ARIS_DECLARE_BIG_FOUR(CommandParser);
 
 	private:

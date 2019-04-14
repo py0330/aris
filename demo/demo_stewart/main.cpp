@@ -6,9 +6,6 @@ using namespace aris::dynamic;
 int main()
 {
 	std::cout << std::endl << "-----------------test model stewart---------------------" << std::endl;
-
-	
-
 	auto&cs = aris::server::ControlServer::instance();
 
 	try

@@ -33,7 +33,7 @@ class Man1 :public Object
 public:
 	static auto Type()->const std::string &{ static const std::string type{ "Man" }; return type; }
 	auto virtual type() const->const std::string& override{ return Type(); }
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override
+	auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override
 	{
 		Object::saveXml(xml_ele);
 		xml_ele.SetAttribute("age", age_);
@@ -56,7 +56,7 @@ class Man2 :public Object
 public:
 	static auto Type()->const std::string &{ static const std::string type{ "Man" }; return type; }
 	auto virtual type() const->const std::string& override{ return Type(); }
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override
+	auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override
 	{
 		Object::saveXml(xml_ele);
 		xml_ele.SetAttribute("age", age_);

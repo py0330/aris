@@ -22,13 +22,16 @@ namespace aris::core
 		}
 		auto getTypeInfo(const std::string &type)const->const TypeInfo* 
 		{
-			if (type_map_.find(type) != type_map_.end())return &type_map_.at(type);
+			// 从本object的map中寻找
+			if (auto found = type_map_.find(type); found != type_map_.end())return &found->second;
 
-			const Object *type_info_obj = father_;
-			while (type_info_obj && type_info_obj->imp_->type_map_.find(type) == type_info_obj->imp_->type_map_.end()) type_info_obj = type_info_obj->imp_->father_;
-			if (type_info_obj)return &type_info_obj->imp_->type_map_.at(type);
+			// 从祖先们的map中寻找
+			if (father_) return father_->imp_->getTypeInfo(type);
 
-			if (default_type_map().find(type) != default_type_map().end())return &default_type_map().at(type);
+			// 从全局map中寻找
+			if (auto found = default_type_map().find(type); found != default_type_map().end())return &found->second;
+			
+			// 没有找到
 			return nullptr;
 		}
 

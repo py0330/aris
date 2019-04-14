@@ -248,12 +248,7 @@ namespace aris::core
 		return nullptr;
 	}
 	Command::~Command() = default;
-	Command::Command(const std::string &name, const std::string &default_param) :ObjectPool(name), imp_(new Imp(default_param))
-	{
-		registerType<aris::core::Param>();
-		registerType<aris::core::UniqueParam>();
-		registerType<aris::core::GroupParam>();
-	}
+	Command::Command(const std::string &name, const std::string &default_param) :ObjectPool(name), imp_(new Imp(default_param)){}
 	ARIS_DEFINE_BIG_FOUR_CPP(Command);
 
 	struct CommandParser::Imp { ObjectPool<Command>* command_pool_; };
@@ -391,9 +386,6 @@ namespace aris::core
 	CommandParser::~CommandParser() = default;
 	CommandParser::CommandParser(const std::string &name) :Object(name)
 	{
-		registerType<aris::core::ObjectPool<Command> >();
-		registerType<Command>();
-
 		imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);

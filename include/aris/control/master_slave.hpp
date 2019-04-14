@@ -22,7 +22,7 @@ namespace aris::control
 
 		virtual ~Slave();
 		explicit Slave(const std::string &name = "slave", std::uint16_t phy_id = 0);
-		ARIS_REGISTER_TYPE("Slave");
+		ARIS_REGISTER_TYPE(Slave);
 		ARIS_DECLARE_BIG_FOUR(Slave);
 
 	private:

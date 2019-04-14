@@ -38,7 +38,7 @@ namespace aris::dynamic
 
 		virtual ~Solver();
 		explicit Solver(const std::string &name = "solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE("Solver");
+		ARIS_REGISTER_TYPE(Solver);
 		ARIS_DECLARE_BIG_FOUR(Solver);
 
 	private:
@@ -65,7 +65,7 @@ namespace aris::dynamic
 
 		virtual ~UniversalSolver();
 		explicit UniversalSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE("UniversalSolver");
+		ARIS_REGISTER_TYPE(UniversalSolver);
 		ARIS_DECLARE_BIG_FOUR(UniversalSolver);
 
 	public:
@@ -87,7 +87,7 @@ namespace aris::dynamic
 
 		virtual ~ForwardKinematicSolver();
 		explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE("ForwardKinematicSolver");
+		ARIS_REGISTER_TYPE(ForwardKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(ForwardKinematicSolver);
 
 	private:
@@ -109,7 +109,7 @@ namespace aris::dynamic
 
 		virtual ~InverseKinematicSolver();
 		explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE("InverseKinematicSolver");
+		ARIS_REGISTER_TYPE(InverseKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(InverseKinematicSolver);
 
 	private:
@@ -126,7 +126,7 @@ namespace aris::dynamic
 
 		virtual ~ForwardDynamicSolver();
 		explicit ForwardDynamicSolver(const std::string &name = "forward_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE("ForwardDynamicSolver");
+		ARIS_REGISTER_TYPE(ForwardDynamicSolver);
 		ARIS_DECLARE_BIG_FOUR(ForwardDynamicSolver);
 	};
 	class InverseDynamicSolver :public UniversalSolver
@@ -139,7 +139,7 @@ namespace aris::dynamic
 
 		virtual ~InverseDynamicSolver();
 		explicit InverseDynamicSolver(const std::string &name = "inverse_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE("InverseDynamicSolver");
+		ARIS_REGISTER_TYPE(InverseDynamicSolver);
 		ARIS_DECLARE_BIG_FOUR(InverseDynamicSolver);
 	};
 
@@ -153,7 +153,7 @@ namespace aris::dynamic
 
 		virtual ~Ur5InverseKinematicSolver() = default;
 		explicit Ur5InverseKinematicSolver(const std::string &name = "ur5_inverse_solver", aris::Size max_iter_count = 100, double max_error = 1e-10) :InverseKinematicSolver(name, max_iter_count, max_error) {}
-		ARIS_REGISTER_TYPE("Ur5InverseKinematicSolver");
+		ARIS_REGISTER_TYPE(Ur5InverseKinematicSolver);
 		ARIS_DEFINE_BIG_FOUR(Ur5InverseKinematicSolver);
 
 	private:
@@ -171,7 +171,7 @@ namespace aris::dynamic
 
 		virtual ~PumaInverseKinematicSolver() = default;
 		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");
-		ARIS_REGISTER_TYPE("PumaInverseKinematicSolver");
+		ARIS_REGISTER_TYPE(PumaInverseKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
 
 	private:
@@ -187,7 +187,7 @@ namespace aris::dynamic
 
 		virtual ~StewartInverseKinematicSolver() = default;
 		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");
-		ARIS_REGISTER_TYPE("StewartInverseKinematicSolver");
+		ARIS_REGISTER_TYPE(StewartInverseKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(StewartInverseKinematicSolver);
 
 	private:

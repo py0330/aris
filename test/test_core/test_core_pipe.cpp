@@ -63,7 +63,7 @@ void test_pipe_multi_thread()
 	fu.wait();
 }
 
-void test_core_pipe()
+void test_pipe()
 {
 	std::cout << std::endl << "-----------------test pipe---------------------" << std::endl;
 	test_pipe_multi_thread();

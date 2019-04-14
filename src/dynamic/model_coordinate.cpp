@@ -1303,14 +1303,6 @@ namespace aris::dynamic
 	Part::~Part() = default;
 	Part::Part(const std::string &name, const double *iv, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active)
 	{
-		registerType<aris::core::ObjectPool<Marker, Element>>();
-		registerType<Marker>();
-
-		registerType<aris::core::ObjectPool<Geometry, Element>>();
-		registerType<ParasolidGeometry>();
-		registerType<FileGeometry>();
-		registerType<ShellGeometry>();
-
 		imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
 		imp_->geometry_pool_ = &add<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
 

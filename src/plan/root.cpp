@@ -15,7 +15,6 @@ namespace aris::plan
 	Plan::~Plan() = default;
 	Plan::Plan(const std::string &name) :Object(name), imp_(new Imp)
 	{
-		registerType<aris::core::Command>();
 		add<aris::core::Command>(name);
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Plan);
@@ -29,32 +28,7 @@ namespace aris::plan
 		return parser;
 	}
 	PlanRoot::~PlanRoot() = default;
-	PlanRoot::PlanRoot(const std::string &name) :Object(name)
-	{
-		registerType<aris::core::ObjectPool<Plan> >();
-		add<aris::core::ObjectPool<Plan> >("plan_pool_object");
-
-		registerType<Enable>();
-		registerType<Disable>();
-		registerType<Home>();
-		registerType<Mode>();
-		registerType<Reset>();
-		registerType<Recover>();
-		registerType<Sleep>();
-		registerType<Show>();
-		registerType<MoveAbsJ>();
-		registerType<MoveJ>();
-		registerType<MoveL>();
-		registerType<AutoMove>();
-		registerType<ManualMove>();
-		
-		registerType<GetPartPq>();
-		registerType<GetXml>();
-		registerType<SetXml>();
-		registerType<Start>();
-		registerType<Stop>();
-		registerType<RemoveFile>();
-	}
+	PlanRoot::PlanRoot(const std::string &name) :Object(name){	add<aris::core::ObjectPool<Plan> >("plan_pool_object");}
 	ARIS_DEFINE_BIG_FOUR_CPP(PlanRoot);
 
 #define CHECK_PARAM_STRING \
@@ -661,6 +635,8 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 		param.mode = std::stoi(params.at("mode"));
 
+		if (param.mode > 10 && param.mode < 8)throw std::runtime_error("invalid mode, aris now only support mode 8,9,10");
+
 		target.param = param;
 		target.option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
 	}
@@ -674,8 +650,25 @@ namespace aris::plan
 			if (param.active_motor[i])
 			{
 				auto &cm = target.controller->motionPool().at(i);
-				auto ret = cm.mode(8);
-				if (target.count == 1)cm.setTargetPos(cm.actualPos());
+				auto ret = cm.mode(param.mode);
+				if (target.count == 1) 
+				{
+					switch (param.mode)
+					{
+					case 8:
+						cm.setTargetPos(cm.actualPos());
+						break;
+					case 9:
+						cm.setTargetVel(0.0);
+						break;
+					case 10:
+						cm.setTargetCur(0.0);
+						break;
+					default:
+						break;
+					}
+				}
+
 				if (ret)
 				{
 					is_all_finished = false;

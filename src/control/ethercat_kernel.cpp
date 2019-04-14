@@ -277,7 +277,7 @@ namespace aris::control
 		if (ecrt_domain_reg_pdo_entry_list(m_handle.domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
 		// activate master
-		ecrt_master_activate(m_handle.ec_master_);
+		if (ecrt_master_activate(m_handle.ec_master_)) { throw std::runtime_error("failed activate master, perhaps pdo map is wrong"); }
 		if (!(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))throw std::runtime_error("failed ecrt_domain_data");
 		
 		master->ecHandle() = m_handle;

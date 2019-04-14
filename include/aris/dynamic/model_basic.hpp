@@ -44,7 +44,7 @@ namespace aris::dynamic
 
 		~Element() = default;
 		explicit Element(const std::string &name = "element") :Object(name) {}
-		ARIS_REGISTER_TYPE("Element");
+		ARIS_REGISTER_TYPE(Element);
 		ARIS_DEFINE_BIG_FOUR(Element);
 	};
 	class DynEle : public Element
@@ -57,7 +57,7 @@ namespace aris::dynamic
 
 		virtual ~DynEle() = default;
 		explicit DynEle(const std::string &name, bool active = true) : Element(name), active_(active) {};
-		ARIS_REGISTER_TYPE("DynEle");
+		ARIS_REGISTER_TYPE(DynEle);
 		ARIS_DEFINE_BIG_FOUR(DynEle);
 
 	private:
@@ -74,7 +74,7 @@ namespace aris::dynamic
 
 		virtual ~Environment() = default;
 		explicit Environment(const std::string &name = "dyn_ele") :Element(name) {}
-		ARIS_REGISTER_TYPE("Environment");
+		ARIS_REGISTER_TYPE(Environment);
 		ARIS_DEFINE_BIG_FOUR(Environment);
 
 	private:
@@ -89,7 +89,7 @@ namespace aris::dynamic
 
 		virtual ~Variable() = default;
 		explicit Variable(const std::string &name = "variable") : Element(name) {}
-		ARIS_REGISTER_TYPE("Variable");
+		ARIS_REGISTER_TYPE(Variable);
 		ARIS_DEFINE_BIG_FOUR(Variable);
 	};
 	template<typename VariableType> class VariableTemplate : public Variable
@@ -116,7 +116,7 @@ namespace aris::dynamic
 
 		virtual ~MatrixVariable() = default;
 		explicit MatrixVariable(const std::string &name = "matrix_variable", const aris::core::Matrix &data = aris::core::Matrix()) : VariableTemplate(name, data) {}
-		ARIS_REGISTER_TYPE("MatrixVariable");
+		ARIS_REGISTER_TYPE(MatrixVariable);
 		ARIS_DEFINE_BIG_FOUR(MatrixVariable);
 	};
 	class StringVariable final : public VariableTemplate<std::string>
@@ -127,7 +127,7 @@ namespace aris::dynamic
 
 		virtual ~StringVariable() = default;
 		explicit StringVariable(const std::string &name = "string_variable", const std::string &data = "") : VariableTemplate(name, data) {}
-		ARIS_REGISTER_TYPE("StringVariable");
+		ARIS_REGISTER_TYPE(StringVariable);
 		ARIS_DEFINE_BIG_FOUR(StringVariable);
 	};
 

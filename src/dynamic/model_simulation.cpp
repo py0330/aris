@@ -1027,12 +1027,6 @@ namespace aris::dynamic
 	SimResult::~SimResult() = default;
 	SimResult::SimResult(const std::string &name) : Element(name), imp_(new Imp())
 	{
-		registerType<aris::core::ObjectPool<SimResult::PartResult, Element>>();
-		registerType<aris::core::ObjectPool<SimResult::ConstraintResult, Element>>();
-		registerType<SimResult::PartResult>();
-		registerType<SimResult::ConstraintResult>();
-		registerType<SimResult::TimeResult>();
-
 		imp_->time_result_ = &add<TimeResult>("time_result");
 		imp_->part_result_pool_ = &add<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
 		imp_->constraint_result_pool_ = &add<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");

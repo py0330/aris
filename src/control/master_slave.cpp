@@ -342,10 +342,6 @@ namespace aris::control
 	Master::~Master() = default;
 	Master::Master(const std::string &name) :imp_(new Imp), Object(name)
 	{
-		registerType<Slave>();
-		registerType<aris::core::Pipe>();
-		registerType<aris::core::ObjectPool<Slave> >();
-
 		imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave> >("slave_pool");
 		imp_->mout_pipe_ = &add<aris::core::Pipe>("mout_pipe");
 		imp_->lout_pipe_ = &add<aris::core::Pipe>("lout_pipe");

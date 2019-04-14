@@ -30,7 +30,7 @@ namespace aris::dynamic
 
 		virtual ~Interaction() = default;
 		explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true) :DynEle(name, is_active), makI_(makI), makJ_(makJ) {}
-		ARIS_REGISTER_TYPE("Interaction");
+		ARIS_REGISTER_TYPE(Interaction);
 		ARIS_DEFINE_BIG_FOUR(Interaction);
 
 	private:
@@ -108,7 +108,7 @@ namespace aris::dynamic
 
 		virtual ~Constraint();
 		explicit Constraint(const std::string &name = "constraint", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true);
-		ARIS_REGISTER_TYPE("Constraint");
+		ARIS_REGISTER_TYPE(Constraint);
 		ARIS_DECLARE_BIG_FOUR(Constraint);
 
 	private:
@@ -122,7 +122,7 @@ namespace aris::dynamic
 	public:
 		virtual ~Joint() = default;
 		explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
-		ARIS_REGISTER_TYPE("Joint");
+		ARIS_REGISTER_TYPE(Joint);
 		ARIS_DEFINE_BIG_FOUR(Joint);
 	};
 	class Motion final :public Constraint
@@ -164,7 +164,7 @@ namespace aris::dynamic
 
 		virtual ~Motion();
 		explicit Motion(const std::string &name = "motion", Marker *makI = nullptr, Marker *makJ = nullptr, Size component_axis = 2, const double *frc_coe = nullptr, double mp_offset = 0.0, double mp_factor = 1.0, bool active = true);
-		ARIS_REGISTER_TYPE("Motion");
+		ARIS_REGISTER_TYPE(Motion);
 		ARIS_DECLARE_BIG_FOUR(Motion);
 
 	private:
@@ -225,7 +225,7 @@ namespace aris::dynamic
 
 		virtual ~GeneralMotion();
 		explicit GeneralMotion(const std::string &name = "general_motion", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true);
-		ARIS_REGISTER_TYPE("GeneralMotion");
+		ARIS_REGISTER_TYPE(GeneralMotion);
 		ARIS_DECLARE_BIG_FOUR(GeneralMotion);
 
 	private:
@@ -239,7 +239,7 @@ namespace aris::dynamic
 
 		virtual ~Force() = default;
 		explicit Force(const std::string &name = "force", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) :Interaction(name, makI, makJ, active) {}
-		ARIS_REGISTER_TYPE("Force");
+		ARIS_REGISTER_TYPE(Force);
 		ARIS_DEFINE_BIG_FOUR(Force);
 	};
 
@@ -289,7 +289,7 @@ namespace aris::dynamic
 
 		virtual ~RevoluteJoint() = default;
 		explicit RevoluteJoint(const std::string &name = "revolute_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
-		ARIS_REGISTER_TYPE("RevoluteJoint");
+		ARIS_REGISTER_TYPE(RevoluteJoint);
 		ARIS_DEFINE_BIG_FOUR(RevoluteJoint);
 	};
 	class PrismaticJoint final :public Joint
@@ -312,7 +312,7 @@ namespace aris::dynamic
 
 		virtual ~PrismaticJoint() = default;
 		explicit PrismaticJoint(const std::string &name = "prismatic_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
-		ARIS_REGISTER_TYPE("PrismaticJoint");
+		ARIS_REGISTER_TYPE(PrismaticJoint);
 		ARIS_DEFINE_BIG_FOUR(PrismaticJoint);
 	};
 	class UniversalJoint final :public Joint
@@ -364,7 +364,7 @@ namespace aris::dynamic
 
 		virtual ~UniversalJoint();
 		explicit UniversalJoint(const std::string &name = "universal_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
-		ARIS_REGISTER_TYPE("UniversalJoint");
+		ARIS_REGISTER_TYPE(UniversalJoint);
 		ARIS_DECLARE_BIG_FOUR(UniversalJoint);
 
 	private:
@@ -387,7 +387,7 @@ namespace aris::dynamic
 
 		virtual ~SphericalJoint() = default;
 		explicit SphericalJoint(const std::string &name = "spherical_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
-		ARIS_REGISTER_TYPE("SphericalJoint");
+		ARIS_REGISTER_TYPE(SphericalJoint);
 		ARIS_DEFINE_BIG_FOUR(SphericalJoint);
 	};
 
@@ -400,7 +400,7 @@ namespace aris::dynamic
 
 		virtual ~GeneralForce() = default;
 		explicit GeneralForce(const std::string &name = "general_force", Marker *makI = nullptr, Marker *makJ = nullptr) : Force(name, makI, makJ) {};
-		ARIS_REGISTER_TYPE("GeneralForce");
+		ARIS_REGISTER_TYPE(GeneralForce);
 		ARIS_DEFINE_BIG_FOUR(GeneralForce);
 
 	private:
@@ -419,7 +419,7 @@ namespace aris::dynamic
 
 		virtual ~SingleComponentForce() = default;
 		explicit SingleComponentForce(const std::string &name = "single_component_force", Marker *makI = nullptr, Marker *makJ = nullptr, Size componentID = 0);
-		ARIS_REGISTER_TYPE("SingleComponentForce");
+		ARIS_REGISTER_TYPE(SingleComponentForce);
 		ARIS_DEFINE_BIG_FOUR(SingleComponentForce);
 
 	private:

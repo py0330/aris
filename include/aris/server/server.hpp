@@ -49,7 +49,7 @@ namespace aris::server
 			doc_.InsertEndChild(root);
 		}
 
-		ARIS_REGISTER_TYPE("InterfaceRoot");
+		ARIS_REGISTER_TYPE(InterfaceRoot);
 
 	private:
 		aris::core::XmlDocument doc_;
@@ -95,7 +95,7 @@ namespace aris::server
 		auto currentCollectId()->std::int64_t;
 		auto getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void;
 
-		ARIS_REGISTER_TYPE("ControlServer");
+		ARIS_REGISTER_TYPE(ControlServer);
 
 	private:
 		~ControlServer();

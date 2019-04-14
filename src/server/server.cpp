@@ -190,7 +190,7 @@ namespace aris::server
 			*/
 #endif
 
-			//if ((cm.statusWord() & 0x6f) == 0x27)
+			if ((cm.statusWord() & 0x6f) == 0x27)
 			{
 				if (cm.modeOfOperation() == 8)
 				{
@@ -734,13 +734,6 @@ namespace aris::server
 	ControlServer::~ControlServer() = default;
 	ControlServer::ControlServer() :imp_(new Imp(this))
 	{
-		registerType<aris::dynamic::Model>();
-		registerType<aris::control::Controller>();
-		registerType<aris::sensor::SensorRoot>();
-		registerType<aris::plan::PlanRoot>();
-		registerType<aris::control::EthercatController>();
-		registerType<InterfaceRoot>();
-
 		// create instance //
 		makeModel<aris::dynamic::Model>("model");
 		makeController<aris::control::Controller>("controller");

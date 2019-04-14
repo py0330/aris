@@ -182,54 +182,6 @@ namespace aris::dynamic
 	Model::~Model() = default;
 	Model::Model(const std::string &name) :Object(name)
 	{
-		registerType<Environment>();
-
-		registerType<aris::core::ObjectPool<Variable, Element>>();
-		registerType<MatrixVariable>();
-		registerType<StringVariable>();
-
-		registerType<aris::core::ObjectPool<Part, Element>>();
-		registerType<Part>();
-
-		registerType<aris::core::ObjectPool<Joint, Element>>();
-		registerType<RevoluteJoint>();
-		registerType<PrismaticJoint>();
-		registerType<UniversalJoint>();
-		registerType<SphericalJoint>();
-
-		registerType<aris::core::ObjectPool<Motion, Element>>();
-		registerType<Motion>();
-
-		registerType<aris::core::ObjectPool<GeneralMotion, Element>>();
-		registerType<GeneralMotion>();
-
-		registerType<aris::core::ObjectPool<Force, Element>>();
-		registerType<SingleComponentForce>();
-
-		registerType<aris::core::ObjectPool<Solver, Element>>();
-		registerType<UniversalSolver>();
-		registerType<ForwardKinematicSolver>();
-		registerType<InverseKinematicSolver>();
-		registerType<ForwardDynamicSolver>();
-		registerType<InverseDynamicSolver>();
-		registerType<Ur5InverseKinematicSolver>();
-		registerType<PumaInverseKinematicSolver>();
-		registerType<StewartInverseKinematicSolver>();
-
-		registerType<aris::core::ObjectPool<Simulator, Element>>();
-		registerType<Simulator>();
-		registerType<SolverSimulator>();
-		registerType<AdamsSimulator>();
-
-		registerType<aris::core::ObjectPool<SimResult, Element>>();
-		registerType<SimResult>();
-
-		registerType<aris::core::ObjectPool<Calibrator, Element>>();
-		registerType<Calibrator>();
-
-		registerType<aris::core::ObjectPool<Element, Element>>();
-		registerType<OptimalTrajectory>();
-
 		imp_->environment_ = &this->add<Environment>("environment");
 		imp_->variable_pool_ = &this->add<aris::core::ObjectPool<Variable, Element>>("variable_pool");
 		imp_->part_pool_ = &this->add<aris::core::ObjectPool<Part, Element>>("part_pool");

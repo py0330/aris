@@ -77,13 +77,7 @@ namespace aris::control
 	}
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
 	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
-	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp)
-	{
-		registerType<PdoEntry>();
-		registerType<aris::core::ObjectPool<PdoEntry> >();
-
-		imp_->index_ = index;
-	}
+	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp){	imp_->index_ = index; }
 	ARIS_DEFINE_BIG_FOUR_CPP(Pdo)
 
 	struct SyncManager::Imp { std::any handle_; bool is_tx_; };
@@ -179,12 +173,6 @@ namespace aris::control
 		imp_->product_code_ = p_code;
 		imp_->revision_num_ = r_num;
 		imp_->dc_assign_activate_ = dc;
-
-		registerType<Pdo>();
-		registerType<aris::core::ObjectPool<Pdo> >();
-
-		registerType<SyncManager>();
-		registerType<aris::core::ObjectPool<SyncManager> >();
 	}
 
 	class EthercatMaster::Imp
@@ -238,11 +226,7 @@ namespace aris::control
 	auto EthercatMaster::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatMaster::ecSlavePool()->aris::core::RefPool<EthercatSlave>& { return imp_->ec_slave_pool_; }
 	EthercatMaster::~EthercatMaster() = default;
-	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp)
-	{
-		registerType<EthercatSlave>();
-		registerType<EthercatMotion>();
-	}
+	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp){}
 
 	class EthercatMotion::Imp
 	{

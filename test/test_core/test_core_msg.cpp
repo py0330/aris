@@ -45,7 +45,7 @@ void test_msg_stream()
 }
 
 
-void test_core_msg()
+void test_msg()
 {
 	std::cout << std::endl << "-----------------test msg---------------------" << std::endl;
 

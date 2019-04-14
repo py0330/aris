@@ -27,7 +27,7 @@ namespace aris::control
 		auto bitSize()const->aris::Size;
 
 		explicit PdoEntry(const std::string &name = "entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size bit_size = 8);
-		ARIS_REGISTER_TYPE("PdoEntry");
+		ARIS_REGISTER_TYPE(PdoEntry);
 		ARIS_DECLARE_BIG_FOUR(PdoEntry);
 
 	public:
@@ -44,7 +44,7 @@ namespace aris::control
 		auto index()const->std::uint16_t;
 
 		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000);
-		ARIS_REGISTER_TYPE("Pdo");
+		ARIS_REGISTER_TYPE(Pdo);
 		ARIS_DECLARE_BIG_FOUR(Pdo);
 
 	public:
@@ -60,7 +60,7 @@ namespace aris::control
 		auto rx()const->bool;
 
 		explicit SyncManager(const std::string &name = "sm", bool is_tx = true);
-		ARIS_REGISTER_TYPE("SyncManager");
+		ARIS_REGISTER_TYPE(SyncManager);
 		ARIS_DECLARE_BIG_FOUR(SyncManager);
 
 	private:
@@ -97,7 +97,7 @@ namespace aris::control
 
 		virtual ~EthercatSlave();
 		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);
-		ARIS_REGISTER_TYPE("EthercatSlave");
+		ARIS_REGISTER_TYPE(EthercatSlave);
 		ARIS_DELETE_BIG_FOUR(EthercatSlave);
 
 	private:
@@ -121,7 +121,7 @@ namespace aris::control
 		EthercatMaster(EthercatMaster &&other) = delete;
 		EthercatMaster& operator=(const EthercatMaster &other) = delete;
 		EthercatMaster& operator=(EthercatMaster &&other) = delete;
-		ARIS_REGISTER_TYPE("EthercatMaster");
+		ARIS_REGISTER_TYPE(EthercatMaster);
 
 	protected:
 		auto virtual init()->void override;
@@ -188,7 +188,7 @@ namespace aris::control
 		EthercatMotion(const std::string &name = "ethercat_motion", std::uint16_t phy_id = 0
 			, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
-		ARIS_REGISTER_TYPE("EthercatMotion");
+		ARIS_REGISTER_TYPE(EthercatMotion);
 		ARIS_DELETE_BIG_FOUR(EthercatMotion);
 
 
@@ -205,7 +205,7 @@ namespace aris::control
 		EthercatController(EthercatController &&other) = delete;
 		EthercatController& operator=(const EthercatController &other) = delete;
 		EthercatController& operator=(EthercatController &&other) = delete;
-		ARIS_REGISTER_TYPE("EthercatController");
+		ARIS_REGISTER_TYPE(EthercatController);
 
 	protected:
 		auto virtual init()->void override { EthercatMaster::init(); Controller::init(); }

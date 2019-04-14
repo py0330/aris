@@ -10,7 +10,6 @@ void test_elmo_enable()
 	try
 	{
 		aris::control::EthercatController m;
-		m.registerType<EthercatMotion>();
 
 		auto &s1 = m.slavePool().add<EthercatMotion>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 110.0, 1.0, 0.0, 0.0);
 

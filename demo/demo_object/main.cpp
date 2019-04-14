@@ -45,10 +45,7 @@ public:
 		job_ = attributeString(xml_ele, "job");
 	}
 
-	Man(const std::string &name = "man", int age = 0, const std::string job = "teacher") :Object(name), age_(age), job_(job)
-	{
-		registerType<Child>();
-	};
+	Man(const std::string &name = "man", int age = 0, const std::string job = "teacher") :Object(name), age_(age), job_(job){};
 private:
 	int age_;
 	std::string job_;
@@ -59,10 +56,7 @@ public:
 	static auto Type()->const std::string &{ static const std::string type{ "Family" }; return type; }
 	auto virtual type() const->const std::string& override{ return Type(); }
 
-	Family(const std::string &name = "family") :Object(name) 
-	{
-		registerType<Man>();
-	};
+	Family(const std::string &name = "family") :Object(name) {};
 };
 
 class Boy :public Child
@@ -127,7 +121,6 @@ int main()
 
 	// 注册新类型 //
 	Family family5;
-	aris::core::Object::registerTypeGlobal<Boy>();
 	family5.loadXmlStr(
 		"<family5 type=\"Family\">"
 		"	<father type=\"Man\" age=\"35\" job=\"teacher\">"
@@ -140,7 +133,6 @@ int main()
 	std::cout << family5.xmlString() << std::endl;
 
 	Family family6;
-	family6.registerType<Boy>();
 	family6.loadXmlStr(
 		"<family6 type=\"Family\">"
 		"	<father type=\"Man\" age=\"35\" job=\"teacher\">"

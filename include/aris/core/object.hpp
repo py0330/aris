@@ -596,7 +596,12 @@ namespace aris::core
 		static auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->char;
 		static auto attributeChar(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, char default_value)->char;
 		template<typename ChildType>
-		static auto registerTypeGlobal()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type()); }
+		static auto registerTypeGlobal()->int 
+		{ 
+			static int count{ 0 };
+			TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type());
+			return ++count;
+		}
 		template<typename ChildType>
 		auto registerType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); }
 		static auto Type()->const std::string & { static const std::string type("Object"); return std::ref(type); }
@@ -658,7 +663,7 @@ namespace aris::core
 		static_assert(std::is_base_of<Object, Base>::value, "template param \"Base\" of \"ObjectPool\" must be derived class of \"Object\"");
 
 		using value_type = T;
-		using reference = T & ;
+		using reference = T &;
 		using const_reference = const T&;
 		using pointer = T * ;
 		using const_pointer = const T*;
@@ -800,6 +805,8 @@ namespace aris::core
 		explicit ObjectPool(const std::string &name = "object_pool") :Base(name) {}
 
 	private:
+		static inline int register_count_ = aris::core::Object::registerTypeGlobal<ObjectPool>();
+
 		friend class Object;
 		friend class Root;
 	};
@@ -939,20 +946,17 @@ namespace aris::core
 		std::vector<T*> container_;
 	};
 
-#define ARIS_REGISTER_TYPE(type_name) \
+#define ARIS_DEFINE_TYPE_NAME(type_name) \
 	static auto Type()->const std::string & { \
 		static const std::string type(type_name); \
 		return std::ref(type); \
 	} \
 	auto virtual type() const->const std::string& override { return Type(); }
 
-#define ARIS_REGISTER_TYPE2(type_name) \
-	static auto Type()->const std::string & { \
-		static const std::string type(#type_name); \
-		return std::ref(type); \
-	} \
-	auto virtual type() const->const std::string& override { return Type(); }
-
+#define ARIS_REGISTER_TYPE(type_name) \
+	ARIS_DEFINE_TYPE_NAME(#type_name) \
+	static inline int register_count_ = aris::core::Object::registerTypeGlobal<type_name>();
+	
 #define ARIS_DECLARE_BIG_FOUR(type_name) \
 	type_name(const type_name &other); \
 	type_name(type_name &&other); \

@@ -88,7 +88,7 @@ namespace aris::dynamic
 
 		virtual ~Coordinate() = default;
 		explicit Coordinate(const std::string &name = "coordinate", bool active = true);
-		ARIS_REGISTER_TYPE("Coordinate");
+		ARIS_REGISTER_TYPE(Coordinate);
 		ARIS_DEFINE_BIG_FOUR(Coordinate);
 	};
 	class Marker final :public Coordinate
@@ -110,7 +110,7 @@ namespace aris::dynamic
 
 		virtual ~Marker();
 		explicit Marker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true);
-		ARIS_REGISTER_TYPE("Marker");
+		ARIS_REGISTER_TYPE(Marker);
 		ARIS_DECLARE_BIG_FOUR(Marker);
 
 	private:
@@ -223,7 +223,7 @@ namespace aris::dynamic
 
 		virtual ~Part();
 		explicit Part(const std::string &name = "part", const double *prt_iv = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
-		ARIS_REGISTER_TYPE("Part");
+		ARIS_REGISTER_TYPE(Part);
 		ARIS_DECLARE_BIG_FOUR(Part);
 
 	private:
@@ -238,7 +238,7 @@ namespace aris::dynamic
 
 		virtual ~Geometry() = default;
 		explicit Geometry(const std::string &name = "geometry") : Element(name) {}
-		ARIS_REGISTER_TYPE("Geometry");
+		ARIS_REGISTER_TYPE(Geometry);
 		ARIS_DEFINE_BIG_FOUR(Geometry);
 	};
 	class ParasolidGeometry final :public Geometry
@@ -251,7 +251,7 @@ namespace aris::dynamic
 
 		virtual ~ParasolidGeometry();
 		explicit ParasolidGeometry(const std::string &name = "parasolid_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
-		ARIS_REGISTER_TYPE("ParasolidGeometry");
+		ARIS_REGISTER_TYPE(ParasolidGeometry);
 		ARIS_DECLARE_BIG_FOUR(ParasolidGeometry);
 
 	private:
@@ -268,7 +268,7 @@ namespace aris::dynamic
 
 		virtual ~FileGeometry();
 		explicit FileGeometry(const std::string &name = "file_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
-		ARIS_REGISTER_TYPE("FileGeometry");
+		ARIS_REGISTER_TYPE(FileGeometry);
 		ARIS_DECLARE_BIG_FOUR(FileGeometry);
 
 	private:
@@ -285,7 +285,7 @@ namespace aris::dynamic
 
 		virtual ~ShellGeometry();
 		explicit ShellGeometry(const std::string &name = "shell_geometry", const std::string &graphic_file_path = "", Marker* relative_to = nullptr);
-		ARIS_REGISTER_TYPE("ShellGeometry");
+		ARIS_REGISTER_TYPE(ShellGeometry);
 		ARIS_DECLARE_BIG_FOUR(ShellGeometry);
 
 	private:

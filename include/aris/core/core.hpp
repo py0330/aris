@@ -11,3 +11,14 @@
 #include <aris/core/command.hpp>
 
 #endif // ARIS_H_
+
+// to do list 2019-04-14:
+// - improve socket on linux
+// - improve check motions of control server
+// - improve manual_plan, remove margin of 0.005
+// - improve robot generation
+// - improve moveAbsolute2
+// - check control pdos config successfully and throw exception           half check
+// - make better registration                                             check
+// - find bugs of Qianchao
+// - make dynamic calibration as a plan

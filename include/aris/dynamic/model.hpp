@@ -269,7 +269,7 @@ namespace aris::dynamic
 		/// @}
 		virtual ~Model();
 		explicit Model(const std::string &name = "model");
-		ARIS_REGISTER_TYPE("Model");
+		ARIS_REGISTER_TYPE(Model);
 		ARIS_DECLARE_BIG_FOUR(Model);
 
 
