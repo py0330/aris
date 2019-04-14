@@ -472,6 +472,7 @@ namespace aris::server
 		imp_->model_ = findOrInsertType<aris::dynamic::Model>();
 		imp_->sensor_root_ = findOrInsertType<aris::sensor::SensorRoot>();
 		imp_->plan_root_ = findOrInsertType<aris::plan::PlanRoot>();
+		imp_->interface_root_ = findOrInsertType<aris::server::InterfaceRoot()>();
 	}
 	auto ControlServer::executeCmd(const aris::core::Msg &msg)->std::shared_ptr<aris::plan::PlanTarget>
 	{
