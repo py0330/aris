@@ -295,6 +295,39 @@ namespace aris::core
 		{
 			// 服务器阻塞,直到客户程序建立连接 //
 			imp->recv_socket_ = accept(imp->lisn_socket_, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
+			
+#ifdef UNIX
+			int optval;
+			socklen_t optlen = sizeof(optval);
+
+			/* Check the status for the keepalive option */
+			if (getsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
+				perror("getsockopt()");
+				close(imp->recv_socket_);
+				exit(EXIT_FAILURE);
+			}
+			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
+
+			/* Set the option active */
+			optval = 1;
+			optlen = sizeof(optval);
+			if (setsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0) {
+				perror("setsockopt()");
+				close(imp->recv_socket_);
+				exit(EXIT_FAILURE);
+			}
+			printf("SO_KEEPALIVE set on socket\n");
+
+			/* Check the status again */
+			if (getsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
+				perror("getsockopt()");
+				close(imp->recv_socket_);
+				exit(EXIT_FAILURE);
+			}
+			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
+#endif			
+			
+			
 			if (imp->recv_socket_ <= 0)
 			{
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);

@@ -70,8 +70,6 @@ namespace aris::control
 	class Controller : public virtual Master
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Controller"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto motionPool()->aris::core::RefPool<Motion>&;
 		auto motionPool()const->const aris::core::RefPool<Motion>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 		auto motionAtSla(aris::Size id)->Motion&;
@@ -81,6 +79,7 @@ namespace aris::control
 		auto motionAtAbs(aris::Size id)->Motion&;
 		auto motionAtAbs(aris::Size id)const->const Motion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
 
+		ARIS_REGISTER_TYPE(Controller);
 		virtual ~Controller();
 		Controller(const std::string &name = "controller");
 		Controller(const Controller &other) = delete;
