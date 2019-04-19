@@ -93,5 +93,8 @@ namespace aris::control
 	auto Controller::motionAtPhy(aris::Size id)->Motion& { return dynamic_cast<Motion&>(slaveAtPhy(id)); }
 	auto Controller::motionAtSla(aris::Size id)->Motion& { return dynamic_cast<Motion&>(slavePool().at(id)); }
 	Controller::~Controller() = default;
-	Controller::Controller(const std::string &name) :imp_(new Imp), Master(name) {}
+	Controller::Controller(const std::string &name) :imp_(new Imp), Master(name) 
+	{
+		this->registerType<aris::core::ObjectPool<Slave, aris::core::Object> >();
+	}
 }

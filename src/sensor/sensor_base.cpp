@@ -98,6 +98,10 @@ namespace aris::sensor
 	auto SensorRoot::sensorPool()->aris::core::ObjectPool<Sensor>& { return *imp_->sensor_pool_; }
 	auto SensorRoot::sensorPool()const->const aris::core::ObjectPool<Sensor> & { return *imp_->sensor_pool_; }
 	SensorRoot::~SensorRoot() {}
-	SensorRoot::SensorRoot(const std::string &name) :Object(name){	imp_->sensor_pool_ = &add<aris::core::ObjectPool<Sensor> >("sensor_pool");}
+	SensorRoot::SensorRoot(const std::string &name) :Object(name)
+	{	
+		aris::core::Object::registerTypeGlobal<aris::core::ObjectPool<Sensor> >();
+		imp_->sensor_pool_ = &add<aris::core::ObjectPool<Sensor> >("sensor_pool");
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(SensorRoot);
 }

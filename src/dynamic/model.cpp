@@ -182,6 +182,18 @@ namespace aris::dynamic
 	Model::~Model() = default;
 	Model::Model(const std::string &name) :Object(name)
 	{
+		this->registerType<aris::core::ObjectPool<Variable, Element> >();
+		this->registerType<aris::core::ObjectPool<Part, Element> >();
+		this->registerType<aris::core::ObjectPool<Joint, Element> >();
+		this->registerType<aris::core::ObjectPool<Motion, Element> >();
+		this->registerType<aris::core::ObjectPool<GeneralMotion, Element> >();
+		this->registerType<aris::core::ObjectPool<Force, Element> >();
+		this->registerType<aris::core::ObjectPool<Solver, Element> >();
+		this->registerType<aris::core::ObjectPool<Simulator, Element> >();
+		this->registerType<aris::core::ObjectPool<SimResult, Element> >();
+		this->registerType<aris::core::ObjectPool<Calibrator, Element> >();
+		
+		
 		imp_->environment_ = &this->add<Environment>("environment");
 		imp_->variable_pool_ = &this->add<aris::core::ObjectPool<Variable, Element>>("variable_pool");
 		imp_->part_pool_ = &this->add<aris::core::ObjectPool<Part, Element>>("part_pool");

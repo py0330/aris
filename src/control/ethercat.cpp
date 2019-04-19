@@ -168,6 +168,8 @@ namespace aris::control
 	EthercatSlave::~EthercatSlave() = default;
 	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
 	{
+		aris::core::Object::registerTypeGlobal<aris::core::ObjectPool<SyncManager> >();
+		
 		imp_->sm_pool_ = &add<aris::core::ObjectPool<SyncManager> >("sm_pool");
 		imp_->vendor_id_ = vid;
 		imp_->product_code_ = p_code;

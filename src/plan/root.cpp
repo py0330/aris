@@ -28,7 +28,11 @@ namespace aris::plan
 		return parser;
 	}
 	PlanRoot::~PlanRoot() = default;
-	PlanRoot::PlanRoot(const std::string &name) :Object(name){	add<aris::core::ObjectPool<Plan> >("plan_pool_object");}
+	PlanRoot::PlanRoot(const std::string &name) :Object(name)
+	{	
+		aris::core::Object::registerTypeGlobal<aris::core::ObjectPool<Plan> >();
+		add<aris::core::ObjectPool<Plan> >("plan_pool_object");
+	}
 	ARIS_DEFINE_BIG_FOUR_CPP(PlanRoot);
 
 #define CHECK_PARAM_STRING \

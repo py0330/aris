@@ -805,7 +805,7 @@ namespace aris::core
 		explicit ObjectPool(const std::string &name = "object_pool") :Base(name) {}
 
 	private:
-		static inline int register_count_ = aris::core::Object::registerTypeGlobal<ObjectPool>();
+		//static inline int register_count_ = aris::core::Object::registerTypeGlobal<ObjectPool>();
 
 		friend class Object;
 		friend class Root;
