@@ -1,20 +1,8 @@
 ﻿#ifndef ARIS_DYNAMIC_MODEL_
 #define ARIS_DYNAMIC_MODEL_
 
-#include <vector>
-#include <array>
-#include <map>
-#include <string>
-#include <memory>
-#include <functional>
-#include <algorithm>
-#include <deque>
-#include <type_traits>
+#include <aris/core/expression_calculator.hpp>
 
-#include <aris/core/core.hpp>
-#include <aris/dynamic/model_basic.hpp>
-#include <aris/dynamic/model_coordinate.hpp>
-#include <aris/dynamic/model_interaction.hpp>
 #include <aris/dynamic/model_solver.hpp>
 #include <aris/dynamic/model_simulation.hpp>
 #include <aris/dynamic/plan.hpp>

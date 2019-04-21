@@ -1,17 +1,9 @@
 ﻿#ifndef ARIS_CORE_XML_H_
 #define ARIS_CORE_XML_H_
 
-
-#include <cstring>
-#include <memory>
 #include <vector>
-#include <type_traits>
+#include <memory>
 #include <functional>
-#include <algorithm>
-#include <map>
-#include <utility>
-#include <sstream>
-#include <iostream>
 
 #include <aris/core/tinyxml2.h>
 

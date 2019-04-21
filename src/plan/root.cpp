@@ -1,5 +1,6 @@
 ﻿#include <algorithm>
 #include <future>
+#include <array>
 
 #include"aris/plan/function.hpp"
 #include"aris/plan/root.hpp"

@@ -10,6 +10,7 @@
 #include "aris/control/rt_timer.hpp"
 #include "aris/control/master_slave.hpp"
 
+#include "aris/core/core.hpp"
 
 namespace aris::control
 {

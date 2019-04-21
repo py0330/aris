@@ -1,12 +1,11 @@
 ﻿#ifndef ARIS_CONTROL_MASTER_SLAVE_H
 #define ARIS_CONTROL_MASTER_SLAVE_H
 
-#include <functional>
-#include <thread>
-#include <atomic>
+#include <any>
 
-#include <aris/core/core.hpp>
-#include <aris/control/rt_timer.hpp>
+#include <aris/core/object.hpp>
+#include <aris/core/basic_type.hpp>
+#include <aris/core/msg.hpp>
 
 namespace aris::control
 {

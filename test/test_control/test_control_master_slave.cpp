@@ -1,5 +1,7 @@
 ﻿#include <iostream>
 #include <aris/control/control.hpp>
+#include <atomic>
+#include <thread>
 #include "test_control_master_slave.h"
 
 using namespace aris::control;

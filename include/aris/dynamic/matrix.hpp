@@ -2,17 +2,12 @@
 #define ARIS_DYNAMIC_MATRIX_
 
 #include <vector>
-#include <map>
-#include <string>
-#include <memory>
-#include <functional>
-#include <algorithm>
+#include <numeric>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
-#include <list>
+#include <algorithm>
 #include <cmath>
-#include <numeric>
 
 #include <aris/core/basic_type.hpp>
 

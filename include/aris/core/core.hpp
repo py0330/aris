@@ -22,3 +22,7 @@
 // - make better registration                                             check
 // - find bugs of Qianchao                                                check
 // - make dynamic calibration as a plan                                   
+
+
+// to do list 2019-04-21:
+// - use extern template to reduce compile time

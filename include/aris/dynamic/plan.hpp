@@ -69,7 +69,6 @@ namespace aris::dynamic
 		std::vector<double> result_;
 	};
 
-
 	class FastPath
 	{
 	public:

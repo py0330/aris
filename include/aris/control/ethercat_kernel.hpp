@@ -1,12 +1,8 @@
 ﻿#ifndef ARIS_CONTROL_ETHERCAT_KERNEL_H
 #define ARIS_CONTROL_ETHERCAT_KERNEL_H
 
-
-#include <cstddef>
 #include <cstdint>
 #include <any>
-
-#include <aris/control/rt_timer.hpp>
 
 namespace aris::control
 {
@@ -34,13 +30,10 @@ namespace aris::control
 	// 7. slave send
 	// 8. master send
 
-
-
 	// pdo可以分为3级 //
 	// 1. Sm(sync manager), 每个sm可以同步多个pdo
 	// 2. pdo, 每个pdo 包含多个pdo entry
 	// 3. pdo entry 每个pdo entry 对应一个 index 和 subindex
-
 
 	class EthercatMaster;
 	class PdoEntry;

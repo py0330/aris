@@ -1,8 +1,6 @@
-﻿#include <iostream>
+﻿#include <sstream>
 #include <future>
 #include <aris/core/core.hpp>
-#include <filesystem>
-#include <fstream>
 #include "test_core_msg.h"
 
 using namespace aris::core;

@@ -1,9 +1,6 @@
 ﻿#ifndef ARIS_CORE_PIPE_H
 #define ARIS_CORE_PIPE_H
 
-#include <memory>
-#include <cstdint>
-
 #include <aris/core/object.hpp>
 #include <aris/core/msg.hpp>
 

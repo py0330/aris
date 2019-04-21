@@ -5,6 +5,8 @@
 #include <cstring>
 #include <algorithm>
 #include <regex>
+#include <list>
+#include <cmath>
 
 #include "aris/core/expression_calculator.hpp"
 
@@ -687,5 +689,24 @@ namespace aris::core
 		}
 
 		function_map_[name].AddOverloadFun(n, f);
+	}
+
+	Calculator::Calculator()
+	{
+		operator_map_["+"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 + m2; });
+		operator_map_["+"].SetUnaryLeftOpr(1, [](Matrix m) {return m; });
+		operator_map_["-"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 - m2; });
+		operator_map_["-"].SetUnaryLeftOpr(1, [](Matrix m) {return -m; });
+		operator_map_["*"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 * m2; });
+		operator_map_["/"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 / m2; });
+
+		addFunction("sqrt", [](std::vector<Matrix> v)
+		{
+			Matrix ret = v.front();
+
+			for (auto &d : ret)	d = std::sqrt(d);
+
+			return ret;
+		}, 1);
 	}
 }

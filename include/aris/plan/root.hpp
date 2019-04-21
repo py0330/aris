@@ -15,7 +15,7 @@
 #include <aris/dynamic/dynamic.hpp>
 
 
-namespace aris::server{	class ControlServer;}
+namespace aris::server { class ControlServer; }
 
 /// \brief 轨迹规划命名空间
 /// \ingroup aris

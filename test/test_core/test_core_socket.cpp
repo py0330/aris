@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <future>
+#include <sstream>
 #include <aris/core/core.hpp>
 #include "test_core_socket.h"
 

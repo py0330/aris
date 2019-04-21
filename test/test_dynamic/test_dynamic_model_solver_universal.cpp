@@ -1,5 +1,6 @@
 ﻿#include "test_dynamic_model_solver_universal.h"
 #include <iostream>
+#include <array>
 #include <aris/dynamic/dynamic.hpp>
 
 #include<type_traits>

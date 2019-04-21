@@ -1,4 +1,6 @@
-﻿#include "aris/dynamic/model_instance.hpp"
+﻿#include <array>
+
+#include "aris/dynamic/model_instance.hpp"
 
 namespace aris::dynamic
 {

@@ -1,4 +1,5 @@
 ﻿#include <algorithm>
+#include <array>
 
 #include"aris/robot/ur.hpp"
 

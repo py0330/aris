@@ -5,7 +5,6 @@
 
 #include <aris/core/object.hpp>
 
-
 namespace aris::core
 {
 	/// @defgroup command_group 命令解析模块
@@ -133,9 +132,9 @@ namespace aris::core
 
 	/// \class aris::core::Param
 	///  命令解析的参数节点
-	///
 	/// 
-	///
+	/// 
+	/// 
 	class Param final :public ParamBase
 	{
 	public:

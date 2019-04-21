@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <cmath>
 #include <aris/control/control.hpp>
 #include "test_control_ethercat.h"
 #include "test_control_motion.h"

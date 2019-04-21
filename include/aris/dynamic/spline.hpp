@@ -1,17 +1,6 @@
 ﻿#ifndef ARIS_DYNAMIC_SPLINE_
 #define ARIS_DYNAMIC_SPLINE_
 
-#include <vector>
-#include <map>
-#include <string>
-#include <memory>
-#include <functional>
-#include <algorithm>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <list>
-
 #include <aris/core/basic_type.hpp>
 
 namespace aris::dynamic

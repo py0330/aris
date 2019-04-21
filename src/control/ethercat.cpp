@@ -9,7 +9,9 @@
 #include <thread>
 #include <chrono>
 #include <future>
+#include <iomanip>
 
+#include "aris/control/rt_timer.hpp"
 #include "aris/control/ethercat_kernel.hpp"
 #include "aris/control/ethercat.hpp"
 

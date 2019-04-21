@@ -1,16 +1,7 @@
 ﻿#ifndef ARIS_CONTROL_ETHERCAT_H
 #define ARIS_CONTROL_ETHERCAT_H
 
-#include <vector>
-#include <memory>
-#include <thread>
-#include <fstream>
-#include <cstdint>
-
-#include <aris/core/core.hpp>
-#include <aris/control/master_slave.hpp>
 #include <aris/control/controller_motion.hpp>
-#include <aris/control/ethercat_kernel.hpp>
 
 namespace aris::control
 {

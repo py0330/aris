@@ -8,8 +8,8 @@
 #include <map>
 #include <any>
 
-#include <aris/core/core.hpp>
-#include <aris/control/control.hpp>
+//#include <aris/core/core.hpp>
+//#include <aris/control/control.hpp>
 #include <aris/dynamic/dynamic.hpp>
 
 /// \brief 轨迹规划命名空间

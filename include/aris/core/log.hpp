@@ -1,17 +1,12 @@
 ﻿#ifndef ARIS_CORE_LOG_H_
 #define ARIS_CORE_LOG_H_
 
-#include <cstring>
-#include <cstdint>
-#include <cstdio>
 #include <string>
 #include <chrono>
-#include <memory>
-#include <algorithm>
 #include <iostream>
 #include <iomanip>
-#include <functional>
 #include <filesystem>
+#include <exception>
 
 #include <aris/core/object.hpp>
 
@@ -61,9 +56,6 @@
 #define LOG_AND_THROW(error) LOG_ERROR << error.what() << std::endl, throw error
 
 #define THROW_FILE_AND_LINE(error) throw std::runtime_error(std::string(__FILE__) + "_" + std::to_string(__LINE__)+ ":" + error)
-
-
-
 
 namespace aris::core
 {

@@ -1,15 +1,8 @@
 ﻿#ifndef ARIS_DYNAMIC_MODEL_INTERACTION_
 #define ARIS_DYNAMIC_MODEL_INTERACTION_
 
-#include <vector>
-#include <array>
-#include <map>
-#include <string>
-#include <memory>
-#include <functional>
-#include <algorithm>
+#include <cmath>
 
-#include <aris/dynamic/model_basic.hpp>
 #include <aris/dynamic/model_coordinate.hpp>
 
 namespace aris::dynamic

@@ -25,6 +25,9 @@
 #include<signal.h>
 #endif
 
+#include <map>
+#include <sstream>
+
 #include <errno.h>
 
 #include "aris/core/socket.hpp"

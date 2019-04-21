@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <array>
 #include <aris.hpp>
 
 using namespace aris::dynamic;

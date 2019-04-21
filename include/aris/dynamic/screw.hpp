@@ -1,16 +1,7 @@
 ﻿#ifndef ARIS_DYNAMIC_SCREW_
 #define ARIS_DYNAMIC_SCREW_
 
-#include <vector>
-#include <map>
-#include <string>
-#include <memory>
-#include <functional>
-#include <algorithm>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <list>
+#include <cmath>
 
 #include "aris/dynamic/matrix.hpp"
 

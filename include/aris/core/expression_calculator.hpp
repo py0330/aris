@@ -1,19 +1,13 @@
 ﻿#ifndef ARIS_CORE_EXPRESSION_CALCULATOR_H_
 #define ARIS_CORE_EXPRESSION_CALCULATOR_H_
 
-#include<vector>
-#include<set>
-#include<map>
-#include<functional>
-#include<string>
-#include<list>
-#include<iostream>
-#include<iomanip>
-#include<initializer_list>
-#include<cmath>
-#include<algorithm>
+#include <map>
+#include <functional>
+#include <string>
+#include <iostream>
+#include <list>
 
-#include"aris/core/basic_type.hpp"
+#include "aris/core/basic_type.hpp"
 
 namespace aris::core
 {
@@ -50,14 +44,8 @@ namespace aris::core
 		auto toDouble() const->double { return data()[0]; }
 		auto dsp() const ->void { std::cout << this->toString(); }
 
-		auto operator()(Size i, Size j)->double &
-		{
-			return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
-		}
-		auto operator()(Size i, Size j) const->const double &
-		{
-			return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i];
-		}
+		auto operator()(Size i, Size j)->double & { return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i]; }
+		auto operator()(Size i, Size j) const->const double & { return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i]; }
 
 		friend auto operator + (const Matrix &m1, const Matrix &m2)->Matrix;
 		friend auto operator - (const Matrix &m1, const Matrix &m2)->Matrix;
@@ -156,25 +144,6 @@ namespace aris::core
 	class Calculator
 	{
 	public:
-		Calculator()
-		{
-			operator_map_["+"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 + m2; });
-			operator_map_["+"].SetUnaryLeftOpr(1, [](Matrix m) {return m; });
-			operator_map_["-"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 - m2; });
-			operator_map_["-"].SetUnaryLeftOpr(1, [](Matrix m) {return -m; });
-			operator_map_["*"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 * m2; });
-			operator_map_["/"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 / m2; });
-
-			addFunction("sqrt", [](std::vector<Matrix> v)
-			{
-				Matrix ret = v.front();
-
-				for (auto &d : ret)	d = std::sqrt(d);
-
-				return ret;
-			}, 1);
-		}
-
 		auto calculateExpression(const std::string &expression) const->Matrix;
 		auto evaluateExpression(const std::string &expression)const->std::string;
 		auto addVariable(const std::string &name, const Matrix &value)->void;
@@ -182,6 +151,7 @@ namespace aris::core
 		auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void;
 		auto clearVariables()->void { variable_map_.clear(); string_map_.clear(); }
 
+		Calculator();
 	private:
 		class Operator;
 		class Function;

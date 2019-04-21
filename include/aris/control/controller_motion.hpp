@@ -1,11 +1,6 @@
 ﻿#ifndef ARIS_CONTROL_CONTROLLER_MOTION_H
 #define ARIS_CONTROL_CONTROLLER_MOTION_H
 
-#include <functional>
-#include <thread>
-#include <atomic>
-
-#include <aris/core/core.hpp>
 #include <aris/control/master_slave.hpp>
 
 namespace aris::control

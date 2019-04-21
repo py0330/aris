@@ -1,21 +1,9 @@
 ﻿#ifndef ARIS_DYNAMIC_MODEL_BASIC_
 #define ARIS_DYNAMIC_MODEL_BASIC_
 
-#include <vector>
-#include <array>
-#include <map>
-#include <string>
-#include <memory>
-#include <functional>
-#include <algorithm>
-#include <deque>
-#include <type_traits>
-
-#include <aris/core/core.hpp>
-#include <aris/dynamic/matrix.hpp>
+#include <aris/core/object.hpp>
+#include <aris/core/expression_calculator.hpp>
 #include <aris/dynamic/screw.hpp>
-
-
 
 namespace aris::dynamic
 {

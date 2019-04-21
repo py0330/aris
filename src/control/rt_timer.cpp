@@ -12,7 +12,7 @@ extern "C"
 #include <memory>
 #include <vector>
 
-#include "aris/control/ethercat_kernel.hpp"
+#include "aris/control/rt_timer.hpp"
 
 namespace aris::control
 {

@@ -1,5 +1,6 @@
 ﻿#include "test_robot_rokae.h"
 #include <iostream>
+#include <array>
 #include <aris/robot/robot.hpp>
 
 #include<type_traits>

@@ -9,6 +9,7 @@
 #include <regex>
 #include <limits>
 #include <type_traits>
+#include <array>
 
 #include "aris/dynamic/model.hpp"
 

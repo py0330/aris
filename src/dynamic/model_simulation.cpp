@@ -10,6 +10,8 @@
 #include <limits>
 #include <type_traits>
 #include <numeric>
+#include <deque>
+#include <array>
 
 #include "aris/dynamic/model.hpp"
 #include "aris/plan/root.hpp"
