@@ -300,6 +300,10 @@ namespace aris::core
 			imp->recv_socket_ = accept(imp->lisn_socket_, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 			
 #ifdef UNIX
+
+
+
+
 			int optval;
 			socklen_t optlen = sizeof(optval);
 
@@ -312,13 +316,23 @@ namespace aris::core
 			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
 
 			/* Set the option active */
-			optval = 1;
-			optlen = sizeof(optval);
-			if (setsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0) {
-				perror("setsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
+			int keepAlive = 1; // 开启keepalive属性
+			int keepIdle = 10; // 如该连接在60秒内没有任何数据往来,则进行探测 
+			int keepInterval = 2; // 探测时发包的时间间隔为5 秒
+			int keepCount = 5; // 探测尝试的次数.如果第1次探测包就收到响应了,则后2次的不再发.
+
+			setsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive));
+			setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle));
+			setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
+			setsockopt(imp->recv_socket_, SOL_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
+
+			//optval = 1;
+			//optlen = sizeof(optval);
+			//if (setsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0) {
+			//	perror("setsockopt()");
+			//	close(imp->recv_socket_);
+			//	exit(EXIT_FAILURE);
+			//}
 			printf("SO_KEEPALIVE set on socket\n");
 
 			/* Check the status again */
