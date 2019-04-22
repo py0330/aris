@@ -53,47 +53,7 @@ namespace aris::core
 		int result{ 0 };
 		for (; result < size; )
 		{
-#ifdef UNIX
-			int optval;
-			socklen_t optlen = sizeof(optval);
-
-			std::cout << "receive" << std::endl;
-
-			/* Check the status again */
-			if (getsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(s);
-				exit(EXIT_FAILURE);
-			}
-			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
-			if (getsockopt(s, IPPROTO_TCP, TCP_KEEPIDLE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(s);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPIDLE is %d\n", optval);
-			if (getsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(s);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPINTVL is %d\n", optval);
-			if (getsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(s);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPCNT is %d\n", optval);
-#endif
-			
-			
-			
-			
-			LOG_INFO << "save recv start" << std::endl;
-			
 			int ret = recv(s, data + result, size - result, 0);
-
-			LOG_INFO << "save recv end: " << ret << std::endl;
 			if (ret <= 0)
 			{
 				close_sock(s);
@@ -276,7 +236,7 @@ namespace aris::core
 		bool is_server_;
 
 		std::function<int(Socket *, aris::core::Msg &)> onReceivedMsg;
-		std::function<int(Socket*, const char *data, int size)> onReceivedData;
+		std::function<int(Socket *, const char *data, int size)> onReceivedData;
 		std::function<int(Socket *, const char *, int)> onReceivedConnection;
 		std::function<int(Socket *)> onLoseConnection;
 
@@ -341,68 +301,6 @@ namespace aris::core
 			// 服务器阻塞,直到客户程序建立连接 //
 			imp->recv_socket_ = accept(imp->lisn_socket_, (struct sockaddr *)(&imp->client_addr_), &imp->sin_size_);
 			
-#ifdef UNIX
-			int optval;
-			socklen_t optlen = sizeof(optval);
-
-			std::cout << "accept" << std::endl;
-
-			/* Check the status again */
-			if (getsockopt(imp->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->lisn_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
-			if (getsockopt(imp->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->lisn_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPIDLE is %d\n", optval);
-			if (getsockopt(imp->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->lisn_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPINTVL is %d\n", optval);
-			if (getsockopt(imp->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->lisn_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPCNT is %d\n", optval);
-
-
-			/* Check the status again */
-			if (getsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
-			if (getsockopt(imp->recv_socket_, IPPROTO_TCP, TCP_KEEPIDLE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPIDLE is %d\n", optval);
-			if (getsockopt(imp->recv_socket_, IPPROTO_TCP, TCP_KEEPINTVL, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPINTVL is %d\n", optval);
-			if (getsockopt(imp->recv_socket_, IPPROTO_TCP, TCP_KEEPCNT, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPCNT is %d\n", optval);
-#endif
-
-
-
 			if (imp->recv_socket_ <= 0)
 			{
 				std::unique_lock<std::mutex> close_lck(imp->close_mutex_, std::defer_lock);
@@ -485,7 +383,6 @@ namespace aris::core
 		shutdown(imp->lisn_socket_, 2);
 		close_sock(imp->lisn_socket_);
 
-
 		// 否则,开始开启数据线程 //
 		if (imp->onReceivedConnection)imp->onReceivedConnection(imp->socket_, inet_ntoa(imp->client_addr_.sin_addr), ntohs(imp->client_addr_.sin_port));
 
@@ -500,41 +397,6 @@ namespace aris::core
 	{
 #ifdef UNIX
 		signal(SIGPIPE, SIG_IGN);
-
-
-		if (imp->type_ == WEB)
-		{
-			int optval;
-			socklen_t optlen = sizeof(optval);
-
-			std::cout << "receive" << std::endl;
-
-			/* Check the status again */
-			if (getsockopt(imp->recv_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
-			if (getsockopt(imp->recv_socket_, IPPROTO_TCP, TCP_KEEPIDLE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPIDLE is %d\n", optval);
-			if (getsockopt(imp->recv_socket_, IPPROTO_TCP, TCP_KEEPINTVL, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPINTVL is %d\n", optval);
-			if (getsockopt(imp->recv_socket_, IPPROTO_TCP, TCP_KEEPCNT, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPCNT is %d\n", optval);
-		}
 #endif
 		// 改变状态 //
 		imp->state_ = Socket::WORKING;
@@ -851,55 +713,24 @@ namespace aris::core
 #ifdef UNIX
 		if (sock_type == SOCK_STREAM)
 		{
-			int optval;
-			socklen_t optlen = sizeof(optval);
+			int tcp_timeout = 10000; //10 seconds before aborting a write()
+			if (setsockopt(imp_->lisn_socket_, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) < 0)
+				THROW_FILE_AND_LINE("socket setsockopt TCP_USER_TIMEOUT FAILED");
 
-			/* Check the status for the keepalive option */
-			if (getsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp_->recv_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
-
-			/* Set the option active */
+			// Set the option active //
 			int keepAlive = 1; // 开启keepalive属性
 			int keepIdle = 5; // 如该连接在60秒内没有任何数据往来,则进行探测 
 			int keepInterval = 1; // 探测时发包的时间间隔为5 秒
 			int keepCount = 5; // 探测尝试的次数.如果第1次探测包就收到响应了,则后2次的不再发.
 
-			setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive));
-			setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle));
-			setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
-			setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
-
-			printf("SO_KEEPALIVE set on socket\n");
-
-			/* Check the status again */
-			if (getsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp_->lisn_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("SO_KEEPALIVE is %s\n", (optval ? "ON" : "OFF"));
-			if (getsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp_->lisn_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPIDLE is %d\n", optval);
-			if (getsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp_->lisn_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPINTVL is %d\n", optval);
-			if (getsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, &optval, &optlen) < 0) {
-				perror("getsockopt()");
-				close(imp_->lisn_socket_);
-				exit(EXIT_FAILURE);
-			}
-			printf("TCP_KEEPCNT is %d\n", optval);
+			if (setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)) < 0)
+				THROW_FILE_AND_LINE("socket setsockopt SO_KEEPALIVE FAILED");
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0)
+				THROW_FILE_AND_LINE("socket setsockopt TCP_KEEPIDLE FAILED");
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)) < 0)
+				THROW_FILE_AND_LINE("socket setsockopt TCP_KEEPINTVL FAILED");
+			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) < 0)
+				THROW_FILE_AND_LINE("socket setsockopt TCP_KEEPCNT FAILED");
 		}
 #endif		
 
