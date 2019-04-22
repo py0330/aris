@@ -601,7 +601,7 @@ namespace aris::plan
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
 
 		virtual ~Stop();
-		explicit Stop(const std::string &name = "start");
+		explicit Stop(const std::string &name = "stop");
 		ARIS_REGISTER_TYPE(Stop);
 		ARIS_DEFINE_BIG_FOUR(Stop);
 	};

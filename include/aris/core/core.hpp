@@ -13,7 +13,7 @@
 #endif // ARIS_H_
 
 // to do list 2019-04-14:
-// - improve socket on linux
+// - improve socket on linux                                              check
 // - improve check motions of control server
 // - improve manual_plan, remove margin of 0.005
 // - improve robot generation
