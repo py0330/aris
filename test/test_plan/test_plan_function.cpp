@@ -271,30 +271,21 @@ void test_moveAbsolute2()
 		//v_vec.push_back(va);
 		//a_vec.push_back(aa);
 
-		std::cout << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
+		std::cout <<std::setprecision(15) << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
 	}
 
-	n = 5;
-	while (--n)
-	{
-		aris::Size t;
-		aris::plan::moveAbsolute2(pa, va, aa, pt, vt, at, vm, am, am, 1e-3, 1e-10, pa, va, aa, t);
+	//n = 5;
+	//while (--n)
+	//{
+	//	aris::Size t;
+	//	aris::plan::moveAbsolute2(pa, va, aa, pt, vt, at, vm, am, am, 1e-3, 1e-10, pa, va, aa, t);
 
-		//p_vec.push_back(pa);
-		//v_vec.push_back(va);
-		//a_vec.push_back(aa);
+	//	//p_vec.push_back(pa);
+	//	//v_vec.push_back(va);
+	//	//a_vec.push_back(aa);
 
-		std::cout << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
-	}
-
-	//  0.400000931476119, 0, -1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.4, -0.00186295223741914, -1.86295223741914, 1
-	//	0.4, -0.00186295223741914, -1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.399999068523881, 0, 1.86295223741914, 1
-	//	0.399999068523881, 0, 1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.4, 0.00186295223741914, 1.86295223741914, 1
-	//	0.4, 0.00186295223741914, 1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.400000931476119, 0, -1.86295223741914, 1
-	//	0.400000931476119, 0, -1.86295223741914, 0.4, 0.10297442, 2.09439512, 0.4, -0.00186295223741914, -1.86295223741914, 1
-
-
-	//aris::dynamic::dlmwrite(p_vec.size(), 1, p_vec.data(), "C:\\Users\\py033\\Desktop\\p_vec.txt");
+	//	std::cout << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
+	//}
 }
 
 void test_function()
