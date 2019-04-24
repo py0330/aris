@@ -112,8 +112,7 @@ namespace aris::plan
 	{
 		vt = 0.0;
 		at = 0.0;
-		
-		
+
 		// 当前速度超过速度上限 //
 		if (std::abs(va) > vm + dm * dt)
 		{
@@ -144,12 +143,12 @@ namespace aris::plan
 
 			while (std::abs(lower_bound - upper_bound) > zero_check)
 			{
-				const double a1 = (lower_bound + upper_bound) / 2;
+				const double a1 = (lower_bound + upper_bound) / 2.0;
 				const double v1 = va + a1 * dt;
 				const double p1 = pa + 0.5*(va + v1)*dt;
-				const double ndec1 = std::abs(std::ceil(abs(v1) / dm / dt));
+				const double ndec1 = std::abs(std::ceil(std::abs(v1) / dm / dt));
 				const double tdec1 = ndec1 * dt;
-				const double sdec1 = v1 * tdec1 / 2;
+				const double sdec1 = v1 * tdec1 / 2.0;
 
 				if ((pt - pa >= 0 && (pt - p1) >= sdec1) || (pt - pa < 0 && (pt - p1) <= sdec1))
 				{

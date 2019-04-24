@@ -256,12 +256,12 @@ void test_moveAbsolute2()
 	double am = 2.09439512; // 1500.0 / 360 * 2 * aris::PI *0.01
 
 	aris::Size n = 1;
-
+	//pa = 0.40000712223416;  va = 0;  aa = 1.35553167924087;
 	//std::vector<double> p_vec, v_vec, a_vec;
 	//p_vec.push_back(pa);
 	//v_vec.push_back(va);
 	//a_vec.push_back(aa);
-	std::cout << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
+	std::cout << std::setprecision(15) << "p:" << pa << "  v:" << va << "  a:" << aa << std::endl;
 	while (n)
 	{
 		aris::Size t;
