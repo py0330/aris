@@ -12,16 +12,27 @@ namespace aris::control
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto motId()const->aris::Size;
 		auto maxPos()const->double;
+		auto setMaxPos(double max_pos)->void;
 		auto minPos()const->double;
+		auto setMinPos(double min_pos)->void;
 		auto maxVel()const->double;
+		auto setMaxVel(double max_vel)->void;
 		auto minVel()const->double;
+		auto setMinVel(double min_vel)->void;
 		auto maxAcc()const->double;
+		auto setMaxAcc(double max_acc)->void;
 		auto minAcc()const->double;
+		auto setMinAcc(double min_acc)->void;
 		auto maxPosFollowingError()const->double;
+		auto setMaxPosFollowingError(double max_pos_following_error)->void;
 		auto maxVelFollowingError()const->double;
+		auto setMaxVelFollowingError(double max_vel_following_error)->void;
 		auto posOffset()const->double;
+		auto setPosOffset(double pos_offset)->void;
 		auto posFactor()const->double;
+		auto setPosFactor(double pos_factor)->void;
 		auto homePos()const->double;
+		auto setHomePos(double home_pos)->void;
 
 		auto virtual controlWord()const->std::uint16_t = 0;
 		auto virtual modeOfOperation()const->std::uint8_t = 0;

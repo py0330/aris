@@ -4,6 +4,23 @@
 
 namespace aris::dynamic
 {
+	struct PumaParam
+	{
+		double d1;
+		double a1;
+		double a2;
+		double d3;
+		double a3;
+		double d4;
+
+
+
+	};
+	
+	
+	
+	
+	
 	auto createModelRokaeXB4(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model>
 	{
 		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");

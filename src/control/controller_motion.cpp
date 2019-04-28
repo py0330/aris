@@ -50,16 +50,27 @@ namespace aris::control
 	}
 	auto Motion::motId()const->aris::Size { return imp_->mot_id_; }
 	auto Motion::maxPos()const->double { return imp_->max_pos_; }
+	auto Motion::setMaxPos(double max_pos)->void { imp_->max_pos_ = max_pos; }
 	auto Motion::minPos()const->double { return imp_->min_pos_; }
+	auto Motion::setMinPos(double min_pos)->void { imp_->min_pos_ = min_pos; }
 	auto Motion::maxVel()const->double { return imp_->max_vel_; }
+	auto Motion::setMaxVel(double max_vel)->void { imp_->max_vel_ = max_vel; }
 	auto Motion::minVel()const->double { return imp_->min_vel_; }
+	auto Motion::setMinVel(double min_vel)->void { imp_->min_vel_ = min_vel; }
 	auto Motion::maxAcc()const->double { return imp_->max_acc_; }
+	auto Motion::setMaxAcc(double max_acc)->void { imp_->max_acc_ = max_acc; }
 	auto Motion::minAcc()const->double { return imp_->min_acc_; }
+	auto Motion::setMinAcc(double min_acc)->void { imp_->min_acc_ = min_acc; }
 	auto Motion::maxPosFollowingError()const->double { return imp_->max_pos_following_error_; }
+	auto Motion::setMaxPosFollowingError(double max_pos_following_error)->void { imp_->max_pos_following_error_ = max_pos_following_error; }
 	auto Motion::maxVelFollowingError()const->double { return imp_->max_vel_following_error_; }
+	auto Motion::setMaxVelFollowingError(double max_vel_following_error)->void { imp_->max_vel_following_error_ = max_vel_following_error; }
 	auto Motion::posOffset()const->double { return imp_->pos_offset_; }
+	auto Motion::setPosOffset(double pos_offset)->void { imp_->pos_offset_ = pos_offset; }
 	auto Motion::posFactor()const->double { return imp_->pos_factor_; }
+	auto Motion::setPosFactor(double pos_factor)->void { imp_->pos_factor_ = pos_factor; }
 	auto Motion::homePos()const->double { return imp_->home_pos_; }
+	auto Motion::setHomePos(double home_pos)->void { imp_->home_pos_ = home_pos; }
 	Motion::~Motion() = default;
 	Motion::Motion(const std::string &name, std::uint16_t phy_id
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
