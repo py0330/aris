@@ -2,7 +2,7 @@
 
 int main()
 {
-	auto m = aris::dynamic::createModelRokaeXB4();
+	auto m = aris::robot::createModelRokaeXB4();
 
 	std::cout << m->xmlString() << std::endl;
 

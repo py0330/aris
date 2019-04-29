@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_CONTROL_ETHERCAT_KERNEL_H
-#define ARIS_CONTROL_ETHERCAT_KERNEL_H
+﻿#ifndef ARIS_CONTROL_ETHERCAT_KERNEL_H_
+#define ARIS_CONTROL_ETHERCAT_KERNEL_H_
 
 #include <cstdint>
 #include <any>

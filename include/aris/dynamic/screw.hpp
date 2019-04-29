@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_SCREW_
-#define ARIS_DYNAMIC_SCREW_
+﻿#ifndef ARIS_DYNAMIC_SCREW_H_
+#define ARIS_DYNAMIC_SCREW_H_
 
 #include <cmath>
 

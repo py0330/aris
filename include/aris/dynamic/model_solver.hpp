@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_MODEL_SOLVER_
-#define ARIS_DYNAMIC_MODEL_SOLVER_
+﻿#ifndef ARIS_DYNAMIC_MODEL_SOLVER_H_
+#define ARIS_DYNAMIC_MODEL_SOLVER_H_
 
 #include <aris/dynamic/model_basic.hpp>
 
@@ -131,58 +131,6 @@ namespace aris::dynamic
 		explicit InverseDynamicSolver(const std::string &name = "inverse_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_REGISTER_TYPE(InverseDynamicSolver);
 		ARIS_DECLARE_BIG_FOUR(InverseDynamicSolver);
-	};
-
-	class Ur5InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
-	{
-	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual kinPos()->bool override;
-		auto setWhichRoot(int root_of_0_to_7)->void;
-
-		virtual ~Ur5InverseKinematicSolver() = default;
-		explicit Ur5InverseKinematicSolver(const std::string &name = "ur5_inverse_solver", aris::Size max_iter_count = 100, double max_error = 1e-10) :InverseKinematicSolver(name, max_iter_count, max_error) {}
-		ARIS_REGISTER_TYPE(Ur5InverseKinematicSolver);
-		ARIS_DEFINE_BIG_FOUR(Ur5InverseKinematicSolver);
-
-	private:
-		int which_root_{ 0 };
-	};
-
-	class PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
-	{
-	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;		
-		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->bool override;
-		auto setWhichRoot(int root_of_0_to_7)->void;
-
-		virtual ~PumaInverseKinematicSolver() = default;
-		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");
-		ARIS_REGISTER_TYPE(PumaInverseKinematicSolver);
-		ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
-
-	class StewartInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
-	{
-	public:
-		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->bool override;
-
-		virtual ~StewartInverseKinematicSolver() = default;
-		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");
-		ARIS_REGISTER_TYPE(StewartInverseKinematicSolver);
-		ARIS_DECLARE_BIG_FOUR(StewartInverseKinematicSolver);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
 	};
 	///
 	/// @}

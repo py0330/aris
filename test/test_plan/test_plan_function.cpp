@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <aris/core/core.hpp>
 #include <aris/plan/plan.hpp>
-#include <aris/dynamic/dynamic.hpp>
+#include <aris/robot/rokae.hpp>
 
 using namespace aris::plan;
 
@@ -131,7 +131,7 @@ void test_move()
 }
 void test_optimal()
 {
-	auto m = aris::dynamic::createModelRokaeXB4();
+	auto m = aris::robot::createModelRokaeXB4();
 
 	aris::plan::OptimalTrajectory planner;
 

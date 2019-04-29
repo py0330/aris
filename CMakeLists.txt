@@ -82,7 +82,7 @@ foreach(target robot server plan dynamic control sensor core)
 			${CMAKE_CURRENT_SOURCE_DIR}/src
 			${RELY_INCL_DIR}
 	)
-
+	
 	set_target_properties(aris_${target} PROPERTIES PUBLIC_HEADER "${HEADERS}")
 	set(aris_LIBRARIES ${aris_LIBRARIES} optimized aris::aris_${target} debug aris::debug::aris_${target})
 	set(ARIS_LINK_LIB ${ARIS_LINK_LIB} aris_${target})

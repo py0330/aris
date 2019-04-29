@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_CONTROL_RT_TIMER_H
-#define ARIS_CONTROL_RT_TIMER_H
+﻿#ifndef ARIS_CONTROL_RT_TIMER_H_
+#define ARIS_CONTROL_RT_TIMER_H_
 
 #include <cstdint>
 #include <any>

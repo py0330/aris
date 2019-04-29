@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_MODEL_SIMULATION_
-#define ARIS_DYNAMIC_MODEL_SIMULATION_
+﻿#ifndef ARIS_DYNAMIC_MODEL_SIMULATION_H_
+#define ARIS_DYNAMIC_MODEL_SIMULATION_H_
 
 #include <aris/dynamic/model_interaction.hpp>
 #include <aris/dynamic/model_solver.hpp>

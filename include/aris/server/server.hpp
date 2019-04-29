@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_SERVER_H
-#define ARIS_SERVER_H
+﻿#ifndef ARIS_SERVER_H_
+#define ARIS_SERVER_H_
 
 #include <string>
 #include <sstream>

@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_CONTROL_ETHERCAT_H
-#define ARIS_CONTROL_ETHERCAT_H
+﻿#ifndef ARIS_CONTROL_ETHERCAT_H_
+#define ARIS_CONTROL_ETHERCAT_H_
 
 #include <aris/control/controller_motion.hpp>
 

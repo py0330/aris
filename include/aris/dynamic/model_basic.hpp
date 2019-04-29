@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_MODEL_BASIC_
-#define ARIS_DYNAMIC_MODEL_BASIC_
+﻿#ifndef ARIS_DYNAMIC_MODEL_BASIC_H_
+#define ARIS_DYNAMIC_MODEL_BASIC_H_
 
 #include <aris/core/object.hpp>
 #include <aris/core/expression_calculator.hpp>

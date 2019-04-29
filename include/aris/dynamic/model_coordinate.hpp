@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_MODEL_COORDINATE_
-#define ARIS_DYNAMIC_MODEL_COORDINATE_
+﻿#ifndef ARIS_DYNAMIC_MODEL_COORDINATE_H_
+#define ARIS_DYNAMIC_MODEL_COORDINATE_H_
 
 #include <aris/dynamic/model_basic.hpp>
 

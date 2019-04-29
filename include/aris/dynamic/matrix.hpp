@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_DYNAMIC_MATRIX_
-#define ARIS_DYNAMIC_MATRIX_
+﻿#ifndef ARIS_DYNAMIC_MATRIX_H_
+#define ARIS_DYNAMIC_MATRIX_H_
 
 #include <vector>
 #include <numeric>

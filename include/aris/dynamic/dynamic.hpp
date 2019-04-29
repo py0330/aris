@@ -7,5 +7,10 @@
 #include <aris/dynamic/model_solver.hpp>
 #include <aris/dynamic/model_simulation.hpp>
 #include <aris/dynamic/model.hpp>
-#include <aris/dynamic/model_instance.hpp>
 #include <aris/dynamic/plan.hpp>
+
+#include <aris/dynamic/model_instance.hpp>
+
+#include <aris/dynamic/stewart.hpp>
+#include <aris/dynamic/ur.hpp>
+#include <aris/dynamic/puma.hpp>

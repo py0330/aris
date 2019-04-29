@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_CORE_XML_H_
-#define ARIS_CORE_XML_H_
+﻿#ifndef ARIS_CORE_OBJECT_H_
+#define ARIS_CORE_OBJECT_H_
 
 #include <vector>
 #include <memory>

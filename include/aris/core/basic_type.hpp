@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_CORE_BASIC_TYPE_H
-#define ARIS_CORE_BASIC_TYPE_H
+﻿#ifndef ARIS_CORE_BASIC_TYPE_H_
+#define ARIS_CORE_BASIC_TYPE_H_
 
 #include <cstddef>
 

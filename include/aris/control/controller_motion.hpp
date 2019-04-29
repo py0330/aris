@@ -1,5 +1,5 @@
-﻿#ifndef ARIS_CONTROL_CONTROLLER_MOTION_H
-#define ARIS_CONTROL_CONTROLLER_MOTION_H
+﻿#ifndef ARIS_CONTROL_CONTROLLER_MOTION_H_
+#define ARIS_CONTROL_CONTROLLER_MOTION_H_
 
 #include <aris/control/master_slave.hpp>
 
