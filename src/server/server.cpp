@@ -75,6 +75,9 @@ namespace aris::server
 		auto cmd_now = cmd_now_.load();//原子操作
 		auto cmd_end = cmd_end_.load();//原子操作
 
+		// global error code, 存储上一次的错误 //
+		static int idle_error_code{ 0 };
+
 		// 执行cmd queue中的cmd //
 		if (cmd_end > cmd_now)
 		{
@@ -128,9 +131,10 @@ namespace aris::server
 					server_->controller().mout() << "execute cmd in count: " << count_ << "\n";
 			}
 		}
-		else if (checkMotion(global_option))
+		else if (auto error_code = idle_error_code; idle_error_code = checkMotion(global_option) && idle_error_code != error_code)
 		{
-			server_->controller().mout() << "failed when idle\n";
+			// 只有错误代码改变时，才会打印 //
+			server_->controller().mout() << "failed when idle " << idle_error_code << "\n";
 		}
 
 		// 给与外部想要的数据 //
