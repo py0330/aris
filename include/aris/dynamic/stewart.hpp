@@ -8,6 +8,9 @@ namespace aris::dynamic
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
+
+	auto createModelStewart()->std::unique_ptr<aris::dynamic::Model>;
+
 	class StewartInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
