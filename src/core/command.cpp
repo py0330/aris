@@ -386,6 +386,7 @@ namespace aris::core
 	CommandParser::~CommandParser() = default;
 	CommandParser::CommandParser(const std::string &name) :Object(name)
 	{
+		this->registerType<aris::core::ObjectPool<Command> >();
 		imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
