@@ -171,7 +171,7 @@ namespace aris::dynamic
 		auto x()->double*;
 		auto b()->double*;
 		auto clb()->void;
-		auto clbFile(const std::string &file_paths)->void;
+		auto clbFile(const std::string &file_path)->void;
 		auto clbFiles(const std::vector<std::string> &file_paths)->void;
 		auto verifyFiles(const std::vector<std::string> &file_paths)->void;
 		auto updateInertiaParam(const double *inetia_param)->void;

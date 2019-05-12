@@ -12,3 +12,4 @@
 #include <aris/dynamic/stewart.hpp>
 #include <aris/dynamic/ur.hpp>
 #include <aris/dynamic/puma.hpp>
+#include <aris/dynamic/seven_axis.hpp>

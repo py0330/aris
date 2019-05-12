@@ -438,28 +438,40 @@ namespace aris::server
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
 	auto ControlServer::resetModel(dynamic::Model *model)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "model"; });
+		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
+		{ 
+			return imp_->model_ == dynamic_cast<const aris::dynamic::Model*>(&obj);
+		});
 		if (iter != children().end())children().erase(iter);
 		add(model);
 		imp_->model_ = model;
 	}
 	auto ControlServer::resetController(control::Controller *controller)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "controller"; });
+		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
+		{ 
+			return imp_->controller_ == dynamic_cast<const aris::control::Controller*>(&obj);
+		});
 		if (iter != children().end())children().erase(iter);
 		add(controller);
 		imp_->controller_ = controller;
 	}
 	auto ControlServer::resetSensorRoot(sensor::SensorRoot *sensor_root)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "sensor_root"; });
+		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
+		{ 
+			return imp_->sensor_root_ == dynamic_cast<const aris::sensor::SensorRoot*>(&obj);
+		});
 		if (iter != children().end())children().erase(iter);
 		add(sensor_root);
 		imp_->sensor_root_ = sensor_root;
 	}
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [](const aris::core::Object &obj) { return obj.name() == "plan_root"; });
+		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
+		{
+			return imp_->plan_root_ == dynamic_cast<const aris::plan::PlanRoot*>(&obj);
+		});
 		if (iter != children().end())children().erase(iter);
 		add(plan_root);
 		imp_->plan_root_ = plan_root;

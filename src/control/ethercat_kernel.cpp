@@ -51,25 +51,25 @@ namespace aris::control
 	{
 		for (int i = 0; i < bit_size / 8; ++i)
 		{
-			pd[offset + i] &= FF << (8 - bit_position);
-			pd[offset + i] |= std::uint8_t(data[i]) >> bit_position;
-			pd[offset + i + 1] &= FF >> bit_position;
-			pd[offset + i + 1] |= std::uint8_t(data[i]) << (8 - bit_position);
+			pd[offset + i] &= FF >> (8 - bit_position);
+			pd[offset + i] |= std::uint8_t(data[i]) << bit_position;
+			pd[offset + i + 1] &= FF << bit_position;
+			pd[offset + i + 1] |= std::uint8_t(data[i]) >> (8 - bit_position);
 		}
 
 		if (bit_size % 8)
 		{
 			if (bit_size % 8 > 8 - bit_position)
 			{
-				pd[offset + bit_size / 8] &= FF << (8 - bit_position);
-				pd[offset + bit_size / 8] |= std::uint8_t(data[bit_size / 8]) >> bit_position;
-				pd[offset + bit_size / 8 + 1] &= FF >> ((bit_size % 8) - (8 - bit_position));
-				pd[offset + bit_size / 8 + 1] |= std::uint8_t(data[bit_size / 8] & (0xff << (8 - bit_size % 8))) << (8 - bit_position);
+				pd[offset + bit_size / 8] &= FF >> (8 - bit_position);
+				pd[offset + bit_size / 8] |= std::uint8_t(data[bit_size / 8]) << bit_position;
+				pd[offset + bit_size / 8 + 1] &= FF << ((bit_size % 8) - (8 - bit_position));
+				pd[offset + bit_size / 8 + 1] |= std::uint8_t(data[bit_size / 8] & (0xff >> (8 - bit_size % 8))) >> (8 - bit_position);
 			}
 			else
 			{
-				pd[offset + bit_size / 8] &= ~(std::uint8_t(FF >> (8 - bit_position - (bit_size % 8)) << (8 - (bit_size % 8))) >> bit_position);
-				pd[offset + bit_size / 8] |= std::uint8_t((FF << (8 - (bit_size % 8))) & data[bit_size / 8]) >> bit_position;
+				pd[offset + bit_size / 8] &= ~(std::uint8_t(FF << (8 - bit_position - (bit_size % 8)) >> (8 - (bit_size % 8))) << bit_position);
+				pd[offset + bit_size / 8] |= std::uint8_t((FF >> (8 - (bit_size % 8))) & data[bit_size / 8]) << bit_position;
 			}
 		}
 	}
@@ -316,7 +316,7 @@ namespace aris::control
 		auto pd = std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_;
 		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
 
-		write_bit(reinterpret_cast<const char*>(data), bit_size, reinterpret_cast<char*>(pd), pe_handle.offset, pe_handle.bit_position);
+		write_bit2(reinterpret_cast<const char*>(data), bit_size, reinterpret_cast<char*>(pd), pe_handle.offset, pe_handle.bit_position);
 	}
 
 	auto aris_ecrt_sdo_config(std::any& master, std::any& slave, std::uint16_t index, std::uint8_t subindex,

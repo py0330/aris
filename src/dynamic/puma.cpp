@@ -101,6 +101,7 @@ namespace aris::dynamic
 		p5.setPm(s_pm_dot_pm(robot_pm, *p5.pm()));
 		p6.setPm(s_pm_dot_pm(robot_pm, *p6.pm()));
 		j1.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ().prtPm()));
+		ee.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ().prtPm()));
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
@@ -122,8 +123,7 @@ namespace aris::dynamic
 
 		return model;
 	}
-	
-	
+
 	struct PumaParamLocal
 	{
 		// puma机器人构型：
@@ -167,11 +167,11 @@ namespace aris::dynamic
 		//
 		// 上述零位与真实机器人的零位不一样，还需调用generate函数来计算
 		// 
-		double d1 = 0.04;
-		double d2 = 0.6045 - 0.3295;
-		double d3 = 0.6295 - 0.6045;
-		double d4 = 0.1;
-		double d5 = 0.32 - 0.04;
+		double d1;
+		double d2;
+		double d3;
+		double d4;
+		double d5;
 
 		double pm_A_in_Ground[16];
 		double pm_EE_in_D[16];
@@ -590,8 +590,6 @@ namespace aris::dynamic
 			{
 				for (aris::Size i = 0; i < 6; ++i)
 				{
-					auto &imp_loc = imp_;
-
 					if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
 					{
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
