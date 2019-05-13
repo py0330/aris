@@ -11,6 +11,8 @@
 #include <future>
 #include <iomanip>
 
+#include "aris/core/core.hpp"
+
 #include "aris/control/rt_timer.hpp"
 #include "aris/control/ethercat_kernel.hpp"
 #include "aris/control/ethercat.hpp"
@@ -140,10 +142,25 @@ namespace aris::control
 	}
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
+	auto EthercatSlave::setVendorID(std::uint32_t vendor_id)->void { imp_->vendor_id_ = vendor_id; }
 	auto EthercatSlave::productCode()const->std::uint32_t { return imp_->product_code_; }
+	auto EthercatSlave::setProductCode(std::uint32_t product_code)->void { imp_->product_code_ = product_code; }
 	auto EthercatSlave::revisionNum()const->std::uint32_t { return imp_->revision_num_; }
+	auto EthercatSlave::setRevisionNum(std::uint32_t revision_num)->void { imp_->revision_num_ = revision_num; }
 	auto EthercatSlave::dcAssignActivate()const->std::uint32_t { return imp_->dc_assign_activate_; }
+	auto EthercatSlave::setDcAssignActivate(std::uint32_t dc_assign_activate)->void { imp_->dc_assign_activate_ = dc_assign_activate; }
 	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& { return *imp_->sm_pool_; }
+	auto EthercatSlave::scanInfoForCurrentSlave()->void
+	{
+		aris::control::EthercatMaster mst;
+		mst.scan();
+		if (mst.slavePool().size() < this->phyId()) THROW_FILE_AND_LINE("ec scan failed");
+
+		this->setProductCode(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).productCode());
+		this->setRevisionNum(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).revisionNum());
+		this->setVendorID(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).vendorID());
+		this->setDcAssignActivate(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).dcAssignActivate());
+	}
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
@@ -186,6 +203,16 @@ namespace aris::control
 		aris::core::RefPool<EthercatSlave> ec_slave_pool_;
 	};
 	auto EthercatMaster::scan()->void { aris_ecrt_scan(this); }
+	auto EthercatMaster::scanInfoForCurrentSlaves()->void
+	{
+		for (auto &slave : slavePool())
+		{
+			if (auto ec_slave = dynamic_cast<EthercatSlave *>(&slave))
+			{
+				ec_slave->scanInfoForCurrentSlave();
+			}
+		}
+	}
 	auto EthercatMaster::init()->void
 	{
 		// make ec_slave_pool_ //

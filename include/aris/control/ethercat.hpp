@@ -64,14 +64,20 @@ namespace aris::control
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto vendorID()const->std::uint32_t;
-		auto productCode()const->std::uint32_t;
-		auto revisionNum()const->std::uint32_t;
-		auto dcAssignActivate()const->std::uint32_t;
+		
 		auto smPool()->aris::core::ObjectPool<SyncManager>&;
 		auto smPool()const->const aris::core::ObjectPool<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+		auto vendorID()const->std::uint32_t;
+		auto setVendorID(std::uint32_t vendor_id)->void;
+		auto productCode()const->std::uint32_t;
+		auto setProductCode(std::uint32_t product_code)->void;
+		auto revisionNum()const->std::uint32_t;
+		auto setRevisionNum(std::uint32_t revision_num)->void;
+		auto dcAssignActivate()const->std::uint32_t;
+		auto setDcAssignActivate(std::uint32_t dc_assign_activate)->void;
+		auto scanInfoForCurrentSlave()->void;
 
 		template<typename ValueType>
 		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType) * 8); }
@@ -105,6 +111,7 @@ namespace aris::control
 		auto ecSlavePool()->aris::core::RefPool<EthercatSlave>&;
 		auto ecSlavePool()const->const aris::core::RefPool<EthercatSlave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecSlavePool(); }
 		auto scan()->void;
+		auto scanInfoForCurrentSlaves()->void;
 
 		virtual ~EthercatMaster();
 		EthercatMaster(const std::string &name = "ethercat_master");
@@ -181,7 +188,6 @@ namespace aris::control
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 		ARIS_REGISTER_TYPE(EthercatMotion);
 		ARIS_DELETE_BIG_FOUR(EthercatMotion);
-
 
 	private:
 		class Imp;
