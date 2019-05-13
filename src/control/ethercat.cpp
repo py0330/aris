@@ -156,10 +156,10 @@ namespace aris::control
 		mst.scan();
 		if (mst.slavePool().size() < this->phyId()) THROW_FILE_AND_LINE("ec scan failed");
 
-		this->setProductCode(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).productCode());
-		this->setRevisionNum(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).revisionNum());
-		this->setVendorID(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).vendorID());
-		this->setDcAssignActivate(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).dcAssignActivate());
+		this->setProductCode(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).productCode());
+		this->setRevisionNum(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).revisionNum());
+		this->setVendorID(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).vendorID());
+		this->setDcAssignActivate(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).dcAssignActivate());
 	}
 	auto EthercatSlave::scanPdoForCurrentSlave()->void
 	{
@@ -167,7 +167,7 @@ namespace aris::control
 		mst.scan();
 		if (mst.slavePool().size() < this->phyId()) THROW_FILE_AND_LINE("ec scan failed");
 
-		this->smPool() = dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).smPool();
+		this->smPool() = dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).smPool();
 	}
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void
 	{
