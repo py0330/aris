@@ -78,6 +78,7 @@ namespace aris::control
 		auto dcAssignActivate()const->std::uint32_t;
 		auto setDcAssignActivate(std::uint32_t dc_assign_activate)->void;
 		auto scanInfoForCurrentSlave()->void;
+		auto scanPdoForCurrentSlave()->void;
 
 		template<typename ValueType>
 		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType) * 8); }
@@ -112,6 +113,7 @@ namespace aris::control
 		auto ecSlavePool()const->const aris::core::RefPool<EthercatSlave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecSlavePool(); }
 		auto scan()->void;
 		auto scanInfoForCurrentSlaves()->void;
+		auto scanPdoForCurrentSlaves()->void;
 
 		virtual ~EthercatMaster();
 		EthercatMaster(const std::string &name = "ethercat_master");

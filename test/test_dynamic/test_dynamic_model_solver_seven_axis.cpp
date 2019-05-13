@@ -28,7 +28,6 @@ void test_seven_axis_inverse_solver()
 	dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver&>(m->solverPool()[0]).setWhichRoot(8);
 	dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver&>(m->solverPool()[0]).setAxisAngle(0.0);
 	m->solverPool()[0].kinPos();
-
 	m->solverPool()[1].kinPos();
 
 	double result[6];

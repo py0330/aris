@@ -161,6 +161,14 @@ namespace aris::control
 		this->setVendorID(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).vendorID());
 		this->setDcAssignActivate(dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).dcAssignActivate());
 	}
+	auto EthercatSlave::scanPdoForCurrentSlave()->void
+	{
+		aris::control::EthercatMaster mst;
+		mst.scan();
+		if (mst.slavePool().size() < this->phyId()) THROW_FILE_AND_LINE("ec scan failed");
+
+		this->smPool() = dynamic_cast<EthercatSlave&>(mst.slaveAtPhy(this->phyId())).smPool();
+	}
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void
 	{
 		auto entry = imp_->pdo_map_.at(index).at(subindex);
@@ -210,6 +218,16 @@ namespace aris::control
 			if (auto ec_slave = dynamic_cast<EthercatSlave *>(&slave))
 			{
 				ec_slave->scanInfoForCurrentSlave();
+			}
+		}
+	}
+	auto EthercatMaster::scanPdoForCurrentSlaves()->void
+	{
+		for (auto &slave : slavePool())
+		{
+			if (auto ec_slave = dynamic_cast<EthercatSlave *>(&slave))
+			{
+				ec_slave->scanPdoForCurrentSlave();
 			}
 		}
 	}
