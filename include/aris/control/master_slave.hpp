@@ -17,6 +17,7 @@ namespace aris::control
 		auto virtual send()->void {}
 		auto virtual recv()->void {}
 		auto phyId()const->std::uint16_t;
+		auto setPhyId(std::uint16_t phy_id)->void;
 		auto slaId()const->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 
 		virtual ~Slave();

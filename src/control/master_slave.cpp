@@ -26,6 +26,7 @@ namespace aris::control
 		imp_->phy_id_ = attributeUint16(xml_ele, "phy_id");
 	}
 	auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
+	auto Slave::setPhyId(std::uint16_t phy_id)->void { imp_->phy_id_ = phy_id; }
 	Slave::~Slave() = default;
 	Slave::Slave(const std::string &name, std::uint16_t phy_id) :Object(name), imp_(new Imp) { imp_->phy_id_ = phy_id; }
 	ARIS_DEFINE_BIG_FOUR_CPP(Slave);

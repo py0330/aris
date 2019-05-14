@@ -31,7 +31,7 @@
 // to do list 2019-05-07:
 // - svd decomposition
 // - check ethercat link
-// - scan slave info to motion
+// - scan slave info to motion                                            check
 // - generate ur from DH
 // - 7-axis inverse solver                                                check
 // - generate stewart from fix points
@@ -42,6 +42,8 @@
 
 // to do list 2019-05-14:
 // - make pdo of curent/targetpos/... can be customized
+// - fix server stastic data bug: when lose some frame, it corrupt 
+// - check motion respectively
 
 
 

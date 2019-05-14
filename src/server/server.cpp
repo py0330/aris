@@ -102,7 +102,7 @@ namespace aris::server
 			auto ret = executeCmd(target);
 
 			// 检查错误 //
-			if (checkMotion(target.option) || ret < 0)
+			if (ret < 0 || checkMotion(target.option))
 			{
 				target.ret_code = aris::plan::PlanTarget::ERROR;
 				
