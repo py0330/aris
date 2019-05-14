@@ -123,7 +123,6 @@ namespace aris::dynamic
 
 		inverse_kinematic.setWhichRoot(8);
 		inverse_kinematic.setAxisAngle(0.0);
-		inverse_kinematic.setDHParam(param);
 
 		// make topology correct // 
 		for (auto &m : model->motionPool())m.activate(true);
@@ -173,7 +172,7 @@ namespace aris::dynamic
 		// 求q4
 		double distance_D = std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7] + D_in_A[11] * D_in_A[11]);
 		double theta_part3;// part 3的z轴和两点之间连线的夹角
-		if (auto cq4 = (d3*d3 + d5 * d5 - distance_D * distance_D) / (2 * d3*d5); cq4 > 1.0)
+		if (auto cq4 = (d3*d3 + d5 * d5 - distance_D * distance_D) / (2 * d3*d5); cq4 > 1.0 || cq4 < -1.0)
 		{
 			return -1;
 		}
@@ -256,7 +255,7 @@ namespace aris::dynamic
 		union
 		{
 			struct { Part* GR, *L1, *L2, *L3, *L4, *L5, *L6, *L7; };
-			Part* parts[7];
+			Part* parts[8];
 		};
 		union
 		{
@@ -311,6 +310,33 @@ namespace aris::dynamic
 		imp_->M7 = &ancestor<Model>()->motionPool().at(6);
 
 		imp_->ee = &ancestor<Model>()->generalMotionPool().at(0);
+
+
+		auto &p = imp_->seven_axis_param;
+		
+		//  config seven axis param, tbd.....//
+		imp_->seven_axis_param.d1 = imp_->R1->makJ().prtPm()[2][3];
+
+		double diff_p[3];
+		s_vc(3, &imp_->R4->makJ().prtPm()[0][3], 4, diff_p, 1);
+		s_vs(3, &imp_->R3->makI().prtPm()[0][3], 4, diff_p, 1);
+		imp_->seven_axis_param.d3 = s_norm(3, diff_p);
+
+		s_vc(3, &imp_->R5->makJ().prtPm()[0][3], 4, diff_p, 1);
+		s_vs(3, &imp_->R4->makI().prtPm()[0][3], 4, diff_p, 1);
+		imp_->seven_axis_param.d5 = s_norm(3, diff_p);
+
+		// config tool0 //
+		const double axis_7_pe[]{ 0.0, 0.0, imp_->seven_axis_param.d1 + imp_->seven_axis_param.d3 + imp_->seven_axis_param.d5, 0.0, 0.0 ,0.0 };
+		double axis_7_pm[16];
+		double ee_i_pm[16], ee_i_wrt_axis_7_pm[16];
+		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+
+		s_vc(16, static_cast<const double*>(*imp_->ee->makI().prtPm()), ee_i_pm);
+		s_pe2pm(axis_7_pe, axis_7_pm, "321");
+		s_inv_pm2pm(axis_7_pm, ee_i_pm, ee_i_wrt_axis_7_pm);
+		imp_->seven_axis_param.tool0_pe_type = "321";
+		s_pm2pe(ee_i_wrt_axis_7_pm, imp_->seven_axis_param.tool0_pe, "321");
 	}
 	auto SevenAxisInverseKinematicSolver::kinPos()->bool
 	{
@@ -403,7 +429,6 @@ namespace aris::dynamic
 	}
 	auto SevenAxisInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	auto SevenAxisInverseKinematicSolver::setAxisAngle(double axis_angle)->void { imp_->axis_angle = axis_angle; }
-	auto SevenAxisInverseKinematicSolver::setDHParam(const SevenAxisParam &param)->void { imp_->seven_axis_param = param; }
 	SevenAxisInverseKinematicSolver::SevenAxisInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(SevenAxisInverseKinematicSolver);
 }

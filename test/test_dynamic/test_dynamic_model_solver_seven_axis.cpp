@@ -22,12 +22,14 @@ void test_seven_axis_inverse_solver()
 
 	auto m = aris::dynamic::createModelSevenAxis(param);
 
-	double pe[6]{ 0.45 , 0.12 , 0.32 , 0 , 0 , 0 };
+	m->solverPool()[0].allocateMemory();
+
+	double pe[6]{ 0.3 , 0.0 , 0.5 , 0 , 0 , 0 };
 	m->generalMotionPool()[0].setMpe(pe, "321");
 
 	dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver&>(m->solverPool()[0]).setWhichRoot(8);
 	dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver&>(m->solverPool()[0]).setAxisAngle(0.0);
-	m->solverPool()[0].kinPos();
+	std::cout << "ret:" << m->solverPool()[0].kinPos() << std::endl;;
 	m->solverPool()[1].kinPos();
 
 	double result[6];

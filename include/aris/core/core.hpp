@@ -33,11 +33,15 @@
 // - check ethercat link
 // - scan slave info to motion
 // - generate ur from DH
-// - 7-axis inverse solver
+// - 7-axis inverse solver                                                check
 // - generate stewart from fix points
 // - judge mechanism is 7-axis 6-axis ur stewart
 // - use pre-compiled header(stdafx)
 // - exclusive plan option
 // - check scan result when controller start
+
+// to do list 2019-05-14:
+// - make pdo of curent/targetpos/... can be customized
+
 
 

@@ -41,7 +41,6 @@ namespace aris::dynamic
 		auto virtual kinPos()->bool override;
 		auto setWhichRoot(int root_of_0_to_7)->void;
 		auto setAxisAngle(double axis_angle)->void;
-		auto setDHParam(const SevenAxisParam &param)->void;
 
 		virtual ~SevenAxisInverseKinematicSolver() = default;
 		explicit SevenAxisInverseKinematicSolver(const std::string &name = "seven_axis_inverse_solver");

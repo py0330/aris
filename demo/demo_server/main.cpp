@@ -95,6 +95,20 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
+	//////////////////////////////////////////////////////////////
+	aris::dynamic::SevenAxisParam param;
+
+	param.d1 = 0.3705;
+	param.d3 = 0.330;
+	param.d5 = 0.320;
+	param.tool0_pe[2] = 0.2205;
+
+	cs.resetController(createControllerRokaeXB4().release());
+	cs.resetModel(aris::dynamic::createModelSevenAxis(param).release());
+	cs.resetPlanRoot(createPlanRootRokaeXB4().release());
+	cs.resetSensorRoot(new aris::sensor::SensorRoot);
+	//////////////////////////////////////////////////////////////
+
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");
 	cs.start();
