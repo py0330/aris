@@ -254,7 +254,7 @@ namespace aris::dynamic
 			}
 		}
 	}
-	auto StewartInverseKinematicSolver::kinPos()->bool
+	auto StewartInverseKinematicSolver::kinPos()->int
 	{
 		model().generalMotionPool()[0].makI().setPm(model().generalMotionPool()[0].makJ(), *model().generalMotionPool()[0].mpm());
 		
@@ -303,7 +303,7 @@ namespace aris::dynamic
 			mot.updMp();
 		}
 
-		return true;
+		return 0;
 	}
 	StewartInverseKinematicSolver::StewartInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(StewartInverseKinematicSolver);

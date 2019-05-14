@@ -14,7 +14,7 @@ namespace aris::dynamic
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual allocateMemory()->void = 0;
-		auto virtual kinPos()->bool = 0;
+		auto virtual kinPos()->int = 0;
 		auto virtual kinVel()->void = 0;
 		auto virtual dynAccAndFce()->void = 0;
 		auto error()const->double;
@@ -39,7 +39,7 @@ namespace aris::dynamic
 	{
 	public:
 		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->bool override;
+		auto virtual kinPos()->int override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
 		auto cptGeneralJacobi() noexcept->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
@@ -66,7 +66,7 @@ namespace aris::dynamic
 	{
 	public:
 		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->bool override;
+		auto virtual kinPos()->int override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
 		auto cptJacobi()noexcept->void;
@@ -88,7 +88,7 @@ namespace aris::dynamic
 	{
 	public:
 		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->bool override;
+		auto virtual kinPos()->int override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
 		auto cptJacobi()noexcept->void;
@@ -110,7 +110,7 @@ namespace aris::dynamic
 	{
 	public:
 		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->bool override;
+		auto virtual kinPos()->int override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
 
@@ -123,7 +123,7 @@ namespace aris::dynamic
 	{
 	public:
 		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->bool override;
+		auto virtual kinPos()->int override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
 

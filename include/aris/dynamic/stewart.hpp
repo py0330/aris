@@ -15,7 +15,7 @@ namespace aris::dynamic
 	{
 	public:
 		auto virtual allocateMemory()->void override;
-		auto virtual kinPos()->bool override;
+		auto virtual kinPos()->int override;
 
 		virtual ~StewartInverseKinematicSolver() = default;
 		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");

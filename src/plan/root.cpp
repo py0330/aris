@@ -795,7 +795,7 @@ namespace aris::plan
 			while (!p->is_rt_waiting_ready_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 			// 求正解 //
-			p->kin_ret = target.model->solverPool()[1].kinPos() ? 0 : -1;
+			p->kin_ret = target.model->solverPool()[1].kinPos();
 
 			// 通知实时线程 //
 			p->is_kinematic_ready_.store(true);
@@ -1115,7 +1115,7 @@ namespace aris::plan
 			double end_pm[16];
 			aris::dynamic::s_pq2pm(mvj_param->ee_pq.data(), end_pm);
 			target.model->generalMotionPool().at(0).setMpm(end_pm);
-			if (!target.model->solverPool().at(0).kinPos())return -1;
+			if (target.model->solverPool().at(0).kinPos())return -1;
 
 			// init joint_pos //
 			for (Size i = 0; i < std::min(controller->motionPool().size(), target.model->motionPool().size()); ++i)
@@ -1261,7 +1261,7 @@ namespace aris::plan
 
 		// 反解计算电机位置 //
 		target.model->generalMotionPool().at(0).setMpm(pm2);
-		if (!target.model->solverPool().at(0).kinPos())return -1;
+		if (target.model->solverPool().at(0).kinPos())return -1;
 
 		////////////////////////////////////// log ///////////////////////////////////////
 		double pq[7];
@@ -1618,7 +1618,7 @@ namespace aris::plan
 			}
 			return true;
 		};
-		if (target.model->solverPool()[0].kinPos() && check_motion_limit()) std::swap(target_pe, target_pe_new);
+		if (target.model->solverPool()[0].kinPos() == 0 && check_motion_limit()) std::swap(target_pe, target_pe_new);
 
 		// calculate real value //
 		double pe_next[6], ve_next[6], ae_next[6];

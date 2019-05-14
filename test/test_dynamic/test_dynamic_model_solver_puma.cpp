@@ -99,7 +99,7 @@ void test_puma_forward_solver()
 
 		for (int i = 0; i < 6; ++i)m->motionPool().at(i).setMp(q[i]);
 
-		if (!fwd.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+		if (fwd.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 	}
 }
 void test_puma_inverse_solver()
@@ -128,7 +128,7 @@ void test_puma_inverse_solver()
 
 		for (int i = 0; i < 6; ++i)m->motionPool().at(i).setMp(q[i]);
 
-		if (!fwd.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
+		if (fwd.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;
 
 		double j_pos[6][3], j_axis[6][3], pe_ee_i[6], pe_ee_j[6];
 		for (int i = 0; i < 6; ++i)
@@ -147,9 +147,9 @@ void test_puma_inverse_solver()
 		{
 			new_ee.setMpm(ee_pm);
 			new_inv.setWhichRoot(i);
-			if (!new_inv.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;;
+			if (new_inv.kinPos())std::cout << __FILE__ << __LINE__ << "failed" << std::endl;;
 
-			if (!new_fwd.kinPos())std::cout << "forward failed" << std::endl;
+			if (new_fwd.kinPos())std::cout << "forward failed" << std::endl;
 			new_ee.updMpm();
 			if (!s_is_equal(16, ee_pm, *new_ee.mpm(), 1e-9))
 			{
@@ -183,7 +183,7 @@ void test_model_solver_puma()
 
 	inv.setWhichRoot(1);
 
-	if (!inv.kinPos())std::cout << "failed" << std::endl;
+	if (inv.kinPos())std::cout << "failed" << std::endl;
 	inv.kinVel();
 	inv.dynAccAndFce();
 

@@ -529,7 +529,7 @@ namespace aris::dynamic
 			imp_->puma_param.mp_factor[5] = R6_mak_on_L6 == &imp_->R6->makI() ? 1.0 : -1.0;
 		}
 	}
-	auto PumaInverseKinematicSolver::kinPos()->bool
+	auto PumaInverseKinematicSolver::kinPos()->int
 	{
 		if (imp_->which_root_ == 8)
 		{
@@ -556,7 +556,7 @@ namespace aris::dynamic
 				}
 			}
 
-			if (solution_num == 0) return false;
+			if (solution_num == 0) return -1;
 
 			auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
 
@@ -582,7 +582,7 @@ namespace aris::dynamic
 				imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + diff_q[real_solution][i]);
 			}
 
-			return true;
+			return 0;
 		}
 		else
 		{
@@ -613,9 +613,9 @@ namespace aris::dynamic
 					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
 				}
 
-				return true;
+				return 0;
 			}
-			else return false;
+			else return -2;
 		}
 	}
 	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }

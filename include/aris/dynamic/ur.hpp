@@ -13,7 +13,7 @@ namespace aris::dynamic
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual kinPos()->bool override;
+		auto virtual kinPos()->int override;
 		auto setWhichRoot(int root_of_0_to_7)->void;
 
 		virtual ~Ur5InverseKinematicSolver() = default;

@@ -414,7 +414,7 @@ namespace aris::dynamic
 
 		return true;
 	}
-	auto UrInverseKinematic(Model &m, SubSystem &sys, int which_root)->bool
+	auto UrInverseKinematic(Model &m, SubSystem &sys, int which_root)->int
 	{
 		Part* GR = &m.partPool().at(0);
 		Part* L1 = &m.partPool().at(1);
@@ -497,7 +497,7 @@ namespace aris::dynamic
 		// 开始求1轴 //
 		// 求第一根轴的位置，这里末端可能工作空间以外，此时末端离原点过近，判断方法为查看以下if //
 		// 事实上这里可以有2个解
-		if (d3 > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) return false;
+		if (d3 > std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7])) return -1;
 		if (which_root & 0x04)
 		{
 			q[0] = PI + std::atan2(D_in_A[7], D_in_A[3]) + std::asin(d3 / std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7]));
@@ -544,7 +544,7 @@ namespace aris::dynamic
 
 		double l_square = B_pos[0] * B_pos[0] + B_pos[2] * B_pos[2];
 		double l = std::sqrt(l_square);
-		if (l > (d1 + d2) || l<(std::max(std::abs(d1), std::abs(d2)) - std::min(std::abs(d1), std::abs(d2))))return false;
+		if (l > (d1 + d2) || l<(std::max(std::abs(d1), std::abs(d2)) - std::min(std::abs(d1), std::abs(d2))))return -2;
 
 
 		if (which_root & 0x01)
@@ -590,7 +590,7 @@ namespace aris::dynamic
 		}
 
 
-		return true;
+		return 0;
 	}
 
 	auto Ur5InverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -608,5 +608,5 @@ namespace aris::dynamic
 		if (root_of_0_to_7 < 0 || root_of_0_to_7 > 7) throw std::runtime_error("root must be 0 to 7");
 		which_root_ = root_of_0_to_7;
 	}
-	auto Ur5InverseKinematicSolver::kinPos()->bool { return UrInverseKinematic(*ancestor<Model>(), UniversalSolver::imp_->subsys_pool_.at(0), which_root_); };
+	auto Ur5InverseKinematicSolver::kinPos()->int { return UrInverseKinematic(*ancestor<Model>(), UniversalSolver::imp_->subsys_pool_.at(0), which_root_); };
 }

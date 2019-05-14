@@ -174,7 +174,7 @@ namespace aris::dynamic
 		double theta_part3;// part 3的z轴和两点之间连线的夹角
 		if (auto cq4 = (d3*d3 + d5 * d5 - distance_D * distance_D) / (2 * d3*d5); cq4 > 1.0 || cq4 < -1.0)
 		{
-			return -1;
+			return false;
 		}
 		else
 		{
@@ -189,8 +189,6 @@ namespace aris::dynamic
 				theta_part3 = -std::acos((d3*d3 - d5 * d5 + distance_D * distance_D) / (2 * d3*distance_D));
 			}
 		}
-		
-
 
 		// 求part 3的姿态，这里让它的y轴是地面z轴和两连接点的叉乘
 		double rm_3_1[9]{1,0,0,0,1,0,0,0,1}, rm_3[9];
@@ -234,14 +232,12 @@ namespace aris::dynamic
 			q[6] = q[6] > PI ? q[6] - PI : q[6] + PI;
 		}
 
-
 		// 添加所有的偏移 //
 		for (int i = 0; i < 7; ++i)
 		{
 			while (q[i] > PI) q[i] -= 2 * PI;
 			while (q[i] < -PI) q[i] += 2 * PI;
 		}
-
 
 		s_vc(7, q, input);
 
@@ -338,7 +334,7 @@ namespace aris::dynamic
 		imp_->seven_axis_param.tool0_pe_type = "321";
 		s_pm2pe(ee_i_wrt_axis_7_pm, imp_->seven_axis_param.tool0_pe, "321");
 	}
-	auto SevenAxisInverseKinematicSolver::kinPos()->bool
+	auto SevenAxisInverseKinematicSolver::kinPos()->int
 	{
 		if (imp_->which_root_ == 8)
 		{
@@ -365,7 +361,7 @@ namespace aris::dynamic
 				}
 			}
 
-			if (solution_num == 0) return false;
+			if (solution_num == 0) return -1;
 
 			auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
 
@@ -391,7 +387,7 @@ namespace aris::dynamic
 				imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + diff_q[real_solution][i]);
 			}
 
-			return true;
+			return 0;
 		}
 		else
 		{
@@ -422,9 +418,9 @@ namespace aris::dynamic
 					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
 				}
 
-				return true;
+				return 0;
 			}
-			else return false;
+			else return -2;
 		}
 	}
 	auto SevenAxisInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }

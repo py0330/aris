@@ -44,6 +44,7 @@
 // - make pdo of curent/targetpos/... can be customized
 // - fix server stastic data bug: when lose some frame, it corrupt 
 // - check motion respectively
+// - open server port for command
 
 
 

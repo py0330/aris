@@ -1257,7 +1257,7 @@ namespace aris::dynamic
 		imp_->M_.resize((ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6) * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
 		imp_->h_.resize((ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
 	}
-	auto UniversalSolver::kinPos()->bool
+	auto UniversalSolver::kinPos()->int
 	{
 		double pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		s_mc(4, 4, pm, const_cast<double *>(*ancestor<Model>()->ground().pm()));
@@ -1279,7 +1279,7 @@ namespace aris::dynamic
 
 		// 迭代成功，设置各杆件 //
 		if (error() < maxError())for (auto &sys : imp_->subsys_pool_)for (auto &d : sys.diag_pool_)const_cast<Part*>(d.part)->setPm(d.pm);
-		return error() < maxError();
+		return error() < maxError() ? 0 : -1;
 	}
 	auto UniversalSolver::kinVel()->void
 	{
@@ -1757,11 +1757,11 @@ namespace aris::dynamic
 
 		UniversalSolver::allocateMemory();
 	}
-	auto ForwardKinematicSolver::kinPos()->bool
+	auto ForwardKinematicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
 		if (error() < maxError())for (auto &m : ancestor<Model>()->generalMotionPool())m.updMpm();
-		return error() < maxError();
+		return error() < maxError() ? 0 : -1;
 	}
 	auto ForwardKinematicSolver::kinVel()->void
 	{
@@ -1816,11 +1816,11 @@ namespace aris::dynamic
 
 		UniversalSolver::allocateMemory();
 	}
-	auto InverseKinematicSolver::kinPos()->bool
+	auto InverseKinematicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
 		if (error() < maxError())for (auto &m : ancestor<Model>()->motionPool())m.updMp();
-		return error() < maxError();
+		return error() < maxError() ? 0 : -1;
 	}
 	auto InverseKinematicSolver::kinVel()->void
 	{
@@ -1883,11 +1883,11 @@ namespace aris::dynamic
 		for (auto &f : ancestor<Model>()->forcePool())f.activate(true);
 		UniversalSolver::allocateMemory();
 	}
-	auto ForwardDynamicSolver::kinPos()->bool
+	auto ForwardDynamicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
 		if (error() < maxError())for (auto &m : ancestor<Model>()->generalMotionPool())m.updMpm();
-		return error() < maxError();
+		return error() < maxError() ? 0 : -1;
 	}
 	auto ForwardDynamicSolver::kinVel()->void
 	{
@@ -1912,11 +1912,11 @@ namespace aris::dynamic
 		for (auto &f : ancestor<Model>()->forcePool())f.activate(false);
 		UniversalSolver::allocateMemory();
 	}
-	auto InverseDynamicSolver::kinPos()->bool
+	auto InverseDynamicSolver::kinPos()->int
 	{
 		UniversalSolver::kinPos();
 		if (error() < maxError())for (auto &m : ancestor<Model>()->motionPool())m.updMp();
-		return error() < maxError();
+		return error() < maxError() ? 0 : -1;
 	}
 	auto InverseDynamicSolver::kinVel()->void
 	{
