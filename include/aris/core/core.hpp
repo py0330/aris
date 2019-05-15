@@ -13,7 +13,7 @@
 #endif // ARIS_H_
 
 // to do list 2019-04-14:
-// - improve socket on linux                                              check
+// - use keepalive for socket                                             check
 // - check motion enable state
 // - remove margin(0.005) of manual plan
 // - generate 6-axis from DH                                              check
@@ -38,13 +38,15 @@
 // - judge mechanism is 7-axis 6-axis ur stewart
 // - use pre-compiled header(stdafx)
 // - exclusive plan option
-// - check scan result when controller start
+// - check scan result when controller start                              check
 
 // to do list 2019-05-14:
 // - make pdo of curent/targetpos/... can be customized
 // - fix server stastic data bug: when lose some frame, it corrupt 
 // - check motion respectively
 // - open server port for command
+// - make callbacks before and after plans
+// - object insert & remove child node
 
 
 

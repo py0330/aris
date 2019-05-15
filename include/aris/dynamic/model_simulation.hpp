@@ -174,7 +174,7 @@ namespace aris::dynamic
 		auto clbFile(const std::string &file_path)->void;
 		auto clbFiles(const std::vector<std::string> &file_paths)->void;
 		auto verifyFiles(const std::vector<std::string> &file_paths)->void;
-		auto updateInertiaParam(const double *inetia_param)->void;
+		auto updateInertiaParam(const double *inertia_param)->void;
 
 		virtual ~Calibrator();
 		explicit Calibrator(const std::string &name = "calibrator");

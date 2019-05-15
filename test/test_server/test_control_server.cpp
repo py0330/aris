@@ -34,12 +34,6 @@ void test_server_option()
 		aris::core::Msg cmd("test_NOT_RUN_FUNCTION");
 
 		is_plan_collected = is_plan_executed = is_plan_prepaired = false;
-		cmd.header().reserved1_ = aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION;
-		cs.executeCmd(cmd);
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		if ((is_plan_prepaired == true) || (is_plan_executed == false) || (is_plan_collected == false))	std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
-
-		is_plan_collected = is_plan_executed = is_plan_prepaired = false;
 		cmd.header().reserved1_ = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 		cs.executeCmd(cmd);
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -50,71 +44,6 @@ void test_server_option()
 		cs.executeCmd(cmd);
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		if ((is_plan_prepaired == false) || (is_plan_executed == false) || (is_plan_collected == true))	std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
-
-		cs.stop();
-	}
-
-	// test PREPAIR_WHEN_ALL_PLAN_EXECUTED //
-	{
-		cs.resetController(new aris::control::EthercatController);
-		cs.resetModel(new aris::dynamic::Model);
-		cs.resetSensorRoot(new aris::sensor::SensorRoot);
-		cs.resetPlanRoot(new aris::plan::PlanRoot);
-
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
-		{
-			if (cs.currentExecuteId())std::cout << __FILE__ << " " << __LINE__ << ":test PREPAIR_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
-			if (cs.currentCollectId() == 0)std::cout << __FILE__ << " " << __LINE__ << ":test PREPAIR_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
-		}, [&](const aris::plan::PlanTarget &param)->int
-		{
-			
-			return 100 - param.count;
-		}, [&](aris::plan::PlanTarget &)->void
-		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}, "<Command name=\"test_PREPAIR_WHEN_ALL_PLAN_EXECUTED\"/>");
-
-		cs.start();
-
-		aris::core::Msg cmd("test_PREPAIR_WHEN_ALL_PLAN_EXECUTED");
-		cmd.header().reserved1_ = aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION;
-		cs.executeCmd(cmd);
-		cs.executeCmd(cmd);
-
-		cmd.header().reserved1_ = aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_EXECUTED;
-		cs.executeCmd(cmd);
-
-		cs.stop();
-	}
-
-	// test PREPAIR_WHEN_ALL_PLAN_COLLECTED //
-	{
-		cs.resetController(new aris::control::EthercatController);
-		cs.resetModel(new aris::dynamic::Model);
-		cs.resetSensorRoot(new aris::sensor::SensorRoot);
-		cs.resetPlanRoot(new aris::plan::PlanRoot);
-
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &)->void
-		{
-			if (cs.currentExecuteId())std::cout << __FILE__ << " " << __LINE__ << ":test PREPAIR_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
-			if (cs.currentCollectId())std::cout << __FILE__ << " " << __LINE__ << ":test PREPAIR_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
-		}, [&](const aris::plan::PlanTarget &param)->int
-		{
-			return 100 - param.count;
-		}, [&](aris::plan::PlanTarget &)->void
-		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}, "<Command name=\"test_PREPAIR_WHEN_ALL_PLAN_COLLECTED\"/>");
-
-		cs.start();
-
-		aris::core::Msg cmd("test_PREPAIR_WHEN_ALL_PLAN_COLLECTED");
-		cmd.header().reserved1_ = aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION;
-		cs.executeCmd(cmd);
-		cs.executeCmd(cmd);
-
-		cmd.header().reserved1_ = aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_COLLECTED;
-		cs.executeCmd(cmd);
 
 		cs.stop();
 	}

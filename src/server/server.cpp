@@ -115,6 +115,8 @@ namespace aris::server
 			// 命令正常结束，结束统计数据 //
 			else if (ret == 0)
 			{
+				server_->controller().lout() << std::flush;
+				
 				target.ret_code = aris::plan::PlanTarget::SUCCESS;
 				
 				if(!(target.option & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
@@ -531,17 +533,8 @@ namespace aris::server
 		target->finished = internal_data->ret_promise.get_future();
 
 		// prepair //
-		if (!(target->option & aris::plan::Plan::NOT_RUN_PREPAIR_FUNCTION))
-		{
-			// 等待所有任务完成 //
-			if (target->option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_EXECUTED)waitForAllExecution();
-
-			// 等待所有任务收集 //
-			if (target->option & aris::plan::Plan::PREPAIR_WHEN_ALL_PLAN_COLLECTED)waitForAllCollection();
-
-			LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
-			plan_iter->prepairNrt(params, *target);
-		}
+		LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
+		plan_iter->prepairNrt(params, *target);
 
 		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)

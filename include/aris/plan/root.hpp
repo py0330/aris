@@ -54,10 +54,10 @@ namespace aris::plan
 	public:
 		enum Option : std::uint64_t
 		{
-			NOT_RUN_PREPAIR_FUNCTION = 0x01ULL << 0,
-			PREPAIR_WHEN_ALL_PLAN_EXECUTED = 0x01ULL << 1,
-			PREPAIR_WHEN_ALL_PLAN_COLLECTED = 0x01ULL << 2,
-
+			NOT_PRINT_CMD_INFO = 0x01ULL << 40,
+			NOT_PRINT_EXECUTE_COUNT = 0x01ULL << 41,
+			NOT_LOG_CMD_INFO = 0x01ULL << 45,
+			
 			NOT_RUN_EXECUTE_FUNCTION = 0x01ULL << 3,
 			EXECUTE_WHEN_ALL_PLAN_EXECUTED = 0x01ULL << 4,
 			EXECUTE_WHEN_ALL_PLAN_COLLECTED = 0x01ULL << 5,
@@ -89,10 +89,6 @@ namespace aris::plan
 			NOT_CHECK_VEL_CONTINUOUS = 0x01ULL << 33,
 			NOT_CHECK_VEL_CONTINUOUS_AT_START = 0x01ULL << 34,
 			NOT_CHECK_VEL_FOLLOWING_ERROR = 0x01ULL << 35,
-
-			NOT_PRINT_CMD_INFO = 0x01ULL << 40,
-			NOT_PRINT_EXECUTE_COUNT = 0x01ULL << 41,
-			NOT_LOG_CMD_INFO = 0x01ULL << 45,
 		};
 
 		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void {}
