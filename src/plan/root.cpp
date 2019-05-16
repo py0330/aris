@@ -37,7 +37,7 @@ namespace aris::plan
 	ARIS_DEFINE_BIG_FOUR_CPP(PlanRoot);
 
 #define CHECK_PARAM_STRING \
-		"		<UniqueParam default=\"check_none\">" \
+		"		<UniqueParam default=\"check_all\">" \
 		"			<Param name=\"check_all\"/>" \
 		"			<Param name=\"check_none\"/>" \
 		"			<GroupParam>"\
@@ -109,7 +109,7 @@ namespace aris::plan
 		{
 			if (cmd_param.first == "check_all")
 			{
-				target.option &= ~(
+				for (auto &option : target.mot_options)	option &= ~(
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
@@ -125,7 +125,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "check_none")
 			{
-				target.option |=
+				for (auto &option : target.mot_options)	option |=
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
@@ -141,7 +141,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "check_pos")
 			{
-				target.option &= ~(
+				for (auto &option : target.mot_options) option &= ~(
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
@@ -152,7 +152,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "not_check_pos")
 			{
-				target.option |=
+				for (auto &option : target.mot_options) option |=
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
@@ -163,7 +163,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "check_vel")
 			{
-				target.option &= ~(
+				for (auto &option : target.mot_options) option &= ~(
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
@@ -172,7 +172,7 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "not_check_vel")
 			{
-				target.option |=
+				for (auto &option : target.mot_options) option |=
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
@@ -181,99 +181,99 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "check_pos_min")
 			{
-				target.option &= ~Plan::NOT_CHECK_POS_MIN;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_MIN;
 			}
 			else if (cmd_param.first == "not_check_pos_min")
 			{
-				target.option |= Plan::NOT_CHECK_POS_MIN;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_MIN;
 			}
 			else if (cmd_param.first == "check_pos_max")
 			{
-				target.option &= ~Plan::NOT_CHECK_POS_MAX;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_MAX;
 			}
 			else if (cmd_param.first == "not_check_pos_max")
 			{
-				target.option |= Plan::NOT_CHECK_POS_MAX;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_MAX;
 			}
 			else if (cmd_param.first == "check_pos_continuous")
 			{
-				target.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS;
 			}
 			else if (cmd_param.first == "not_check_pos_continuous")
 			{
-				target.option |= Plan::NOT_CHECK_POS_CONTINUOUS;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_CONTINUOUS;
 			}
 			else if (cmd_param.first == "check_pos_continuous_at_start")
 			{
-				target.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "not_check_pos_continuous_at_start")
 			{
-				target.option |= Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "check_pos_continuous_second_order")
 			{
-				target.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 			}
 			else if (cmd_param.first == "not_check_pos_continuous_second_order")
 			{
-				target.option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 			}
 			else if (cmd_param.first == "check_pos_continuous_second_order_at_start")
 			{
-				target.option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 			}
 			else if (cmd_param.first == "not_check_pos_continuous_second_order_at_start")
 			{
-				target.option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 			}
 			else if (cmd_param.first == "check_pos_following_error")
 			{
-				target.option &= ~Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "not_check_pos_following_error")
 			{
-				target.option |= Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "check_vel_min")
 			{
-				target.option &= ~Plan::NOT_CHECK_VEL_MIN;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_VEL_MIN;
 			}
 			else if (cmd_param.first == "not_check_vel_min")
 			{
-				target.option |= Plan::NOT_CHECK_VEL_MIN;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_VEL_MIN;
 			}
 			else if (cmd_param.first == "check_vel_max")
 			{
-				target.option &= ~Plan::NOT_CHECK_VEL_MAX;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_VEL_MAX;
 			}
 			else if (cmd_param.first == "not_check_vel_max")
 			{
-				target.option |= Plan::NOT_CHECK_VEL_MAX;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_VEL_MAX;
 			}
 			else if (cmd_param.first == "check_vel_continuous")
 			{
-				target.option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS;
 			}
 			else if (cmd_param.first == "not_check_vel_continuous")
 			{
-				target.option |= Plan::NOT_CHECK_VEL_CONTINUOUS;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_VEL_CONTINUOUS;
 			}
 			else if (cmd_param.first == "check_vel_continuous_at_start")
 			{
-				target.option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "not_check_vel_continuous_at_start")
 			{
-				target.option |= Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "check_vel_following_error")
 			{
-				target.option &= ~Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
+				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "not_check_vel_following_error")
 			{
-				target.option |= Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
+				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
 		}
 	}
@@ -430,7 +430,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
-		target.option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Enable::executeRT(PlanTarget &target)->int
 	{
@@ -483,7 +483,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
-		target.option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Disable::executeRT(PlanTarget &target)->int
 	{
@@ -643,7 +643,7 @@ namespace aris::plan
 		if (param.mode > 10 && param.mode < 8)throw std::runtime_error("invalid mode, aris now only support mode 8,9,10");
 
 		target.param = param;
-		target.option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Mode::executeRT(PlanTarget &target)->int
 	{
@@ -725,7 +725,7 @@ namespace aris::plan
 
 		param.total_count_vec.resize(target.controller->motionPool().size(), 1);
 
-		target.option |=
+		for (auto &option : target.mot_options) option |=
 			aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED |
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START |
 			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
@@ -802,7 +802,7 @@ namespace aris::plan
 		}, p, std::ref(target));
 
 		target.param = p;
-		target.option |= 
+		for (auto &option : target.mot_options) option |=
 			NOT_CHECK_POS_CONTINUOUS_AT_START | 
 			NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
 			NOT_CHECK_OPERATION_ENABLE;
@@ -853,7 +853,7 @@ namespace aris::plan
 	auto Sleep::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		target.param = SleepParam{ std::stoi(params.at("count")) };
-		target.option |= NOT_CHECK_OPERATION_ENABLE;
+		for (auto &option : target.mot_options) option |= NOT_CHECK_OPERATION_ENABLE;
 	}
 	auto Sleep::executeRT(PlanTarget &target)->int { return std::any_cast<SleepParam&>(target.param).count - target.count; }
 	Sleep::~Sleep() = default;
@@ -868,7 +868,7 @@ namespace aris::plan
 
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		target.option |=
+		for (auto &option : target.mot_options) option |=
 			NOT_CHECK_OPERATION_ENABLE |
 			NOT_CHECK_POS_MIN |
 			NOT_CHECK_POS_MAX |
@@ -1212,7 +1212,7 @@ namespace aris::plan
 			}
 		}
 
-		target.option |= USE_TARGET_POS;
+		for (auto &option : target.mot_options)	option |= USE_TARGET_POS;
 		target.param = mvl_param;
 	}
 	auto MoveL::executeRT(PlanTarget &target)->int
@@ -1306,7 +1306,7 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(MoveL);
 
-	struct AutoMoveParam {};
+	struct AutoMoveParam { bool is_start_cmd; };
 	struct AutoMove::Imp
 	{
 		static std::atomic_bool is_running_;
@@ -1323,7 +1323,7 @@ namespace aris::plan
 
 		target.option = 0;
 
-		AutoMoveParam param;
+		AutoMoveParam param{ false };
 		for (auto cmd_param : params)
 		{
 			if (cmd_param.first == "start")
@@ -1360,7 +1360,9 @@ namespace aris::plan
 
 				Imp::pvade_.store(pvade);
 				Imp::is_running_.store(true);
-				target.option |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT | USE_TARGET_POS;
+				param.is_start_cmd = true;
+				target.option |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT;
+				for (auto &option : target.mot_options)	option |= USE_TARGET_POS;
 			}
 			else if (cmd_param.first == "stop")
 			{
@@ -1401,7 +1403,7 @@ namespace aris::plan
 			}
 		}
 
-		target.option |= NOT_CHECK_POS_FOLLOWING_ERROR;
+		for (auto &option : target.mot_options) option |= NOT_CHECK_POS_FOLLOWING_ERROR;
 		target.param = param;
 	}
 	auto AutoMove::executeRT(PlanTarget &target)->int
@@ -1463,7 +1465,7 @@ namespace aris::plan
 
 		return imp_->is_running_.load() ? 1 : 0;
 	}
-	auto AutoMove::collectNrt(PlanTarget &target)->void { if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); }
+	auto AutoMove::collectNrt(PlanTarget &target)->void { if (std::any_cast<AutoMoveParam>(&target.param)->is_start_cmd)Imp::is_running_.store(false); }
 	AutoMove::~AutoMove() = default;
 	AutoMove::AutoMove(const std::string &name) : Plan(name), imp_(new Imp)
 	{
@@ -1495,7 +1497,7 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(AutoMove);
 
-	struct ManualMoveParam {};
+	struct ManualMoveParam { bool is_start_cmd; };
 	struct ManualMove::Imp
 	{
 		static std::atomic_bool is_running_;
@@ -1512,7 +1514,7 @@ namespace aris::plan
 
 		target.option = 0;
 
-		ManualMoveParam param;
+		ManualMoveParam param{ false };
 		for (auto cmd_param : params)
 		{
 			if (cmd_param.first == "start")
@@ -1539,7 +1541,8 @@ namespace aris::plan
 
 				Imp::is_increase_.store(std::array<int, 6>{0, 0, 0, 0, 0, 0});
 				Imp::is_running_.store(true);
-				target.option |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT | USE_TARGET_POS;
+				target.option |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT;
+				for (auto &option : target.mot_options)	option |= USE_TARGET_POS;
 			}
 			else if (cmd_param.first == "stop")
 			{
@@ -1567,7 +1570,7 @@ namespace aris::plan
 			}
 		}
 
-		target.option |= NOT_CHECK_POS_FOLLOWING_ERROR;
+		for (auto &option : target.mot_options) option |= NOT_CHECK_POS_FOLLOWING_ERROR;
 		target.param = param;
 	}
 	auto ManualMove::executeRT(PlanTarget &target)->int
@@ -1640,10 +1643,7 @@ namespace aris::plan
 
 		return imp_->is_running_.load() ? 1 : 0;
 	}
-	auto ManualMove::collectNrt(PlanTarget &target)-> void
-	{ 
-		if (~(target.option | USE_TARGET_POS))Imp::is_running_.store(false); 
-	}
+	auto ManualMove::collectNrt(PlanTarget &target)-> void { if (std::any_cast<ManualMoveParam>(&target.param)->is_start_cmd)Imp::is_running_.store(false); }
 	ManualMove::~ManualMove() = default;
 	ManualMove::ManualMove(const std::string &name) : Plan(name), imp_(new Imp)
 	{

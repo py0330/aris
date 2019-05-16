@@ -12,11 +12,6 @@
 
 namespace aris::server
 {
-	const std::uint64_t global_option = 
-		aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE | 
-		aris::plan::Plan::NOT_CHECK_POS_MAX | 
-		aris::plan::Plan::NOT_CHECK_POS_MIN;
-	
 	struct ControlServer::Imp
 	{
 		struct InternalData
@@ -27,7 +22,7 @@ namespace aris::server
 		
 		auto tg()->void;
 		auto executeCmd(aris::plan::PlanTarget &target)->int;
-		auto checkMotion(std::uint64_t option)->int;
+		auto checkMotion(std::uint64_t *mot_options)->int;
 
 		Imp(ControlServer *server) :server_(server) {}
 		Imp(const Imp&) = delete;
@@ -55,6 +50,9 @@ namespace aris::server
 		// 储存上一次motion的数据 //
 		struct PVC { double p; double v; double c; };
 		std::vector<PVC> last_pvc, last_last_pvc;
+
+		// 全局的电机check选项
+		std::vector<std::uint64_t> global_mot_options_;
 
 		// 储存Model, Controller, SensorRoot, PlanRoot //
 		aris::dynamic::Model* model_;
@@ -102,7 +100,7 @@ namespace aris::server
 			auto ret = executeCmd(target);
 
 			// 检查错误 //
-			if (ret < 0 || checkMotion(target.option))
+			if (ret < 0 || checkMotion(target.mot_options.data()))
 			{
 				target.ret_code = aris::plan::PlanTarget::ERROR;
 				
@@ -133,7 +131,7 @@ namespace aris::server
 					server_->controller().mout() << "execute cmd in count: " << count_ << "\n";
 			}
 		}
-		else if (auto error_code = idle_error_code; idle_error_code = checkMotion(global_option) && idle_error_code != error_code)
+		else if (auto error_code = idle_error_code; idle_error_code = checkMotion(global_mot_options_.data()) && idle_error_code != error_code)
 		{
 			// 只有错误代码改变时，才会打印 //
 			server_->controller().mout() << "failed when idle " << idle_error_code << "\n";
@@ -171,7 +169,7 @@ namespace aris::server
 
 		return ret;
 	}
-	auto ControlServer::Imp::checkMotion(std::uint64_t option)->int
+	auto ControlServer::Imp::checkMotion(std::uint64_t *mot_options)->int
 	{
 		static bool is_correcting{ false };
 		if (is_correcting)goto FAILED;
@@ -182,6 +180,7 @@ namespace aris::server
 			auto &cm = controller_->motionPool().at(i);
 			auto &ld = last_pvc.at(i);
 			auto &lld = last_last_pvc.at(i);
+			auto option = mot_options[i];
 
 #ifndef WIN32
 			/*
@@ -512,13 +511,14 @@ namespace aris::server
 		auto internal_data = std::make_shared<Imp::InternalData>(Imp::InternalData{
 			std::make_shared<aris::plan::PlanTarget>(
 				aris::plan::PlanTarget
-				{ 
-					&*plan_iter, 
-					this, 
-					&model(), 
-					&controller(), 
-					cmd_id, 
-					static_cast<std::uint64_t>(msg.header().reserved1_), 
+				{
+					&*plan_iter,
+					this,
+					&model(),
+					&controller(),
+					cmd_id,
+					0,
+					std::vector<std::uint64_t>(controller().motionPool().size(), 0),
 					std::any(), 
 					0, 
 					0, 
@@ -650,6 +650,11 @@ namespace aris::server
 		imp_->last_pvc.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
 		imp_->last_last_pvc.clear();
 		imp_->last_last_pvc.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
+
+		imp_->global_mot_options_.resize(controller().slavePool().size(), 
+			aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE |
+			aris::plan::Plan::NOT_CHECK_POS_MAX |
+			aris::plan::Plan::NOT_CHECK_POS_MIN);
 
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
 

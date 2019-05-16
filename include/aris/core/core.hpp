@@ -43,7 +43,7 @@
 // to do list 2019-05-14:
 // - make pdo of curent/targetpos/... can be customized
 // - fix server stastic data bug: when lose some frame, it corrupt 
-// - check motion respectively
+// - check motion respectively                                            check
 // - open server port for command
 // - make callbacks before and after plans
 // - object insert & remove child node

@@ -216,6 +216,7 @@ namespace aris::control
 	auto aris_ecrt_master_request(EthercatMaster *master)->void
 	{
 		// check if product code and vendor id is paired
+		/*
 		aris::control::EthercatMaster local_mst;
 		if(aris_ecrt_scan(&local_mst))throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":scan slaves failed!").c_str());
 		for (auto &slave : master->slavePool())
@@ -228,7 +229,7 @@ namespace aris::control
 				if (ec_slave->productCode() != compared_slave->productCode()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong product code of slave " + std::to_string(ec_slave->id())).c_str());
 				if (ec_slave->vendorID() != compared_slave->vendorID()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong vendor id of slave " + std::to_string(ec_slave->id())).c_str());
 			}
-		}
+		}*/
 
 		
 		MasterHandle m_handle{ nullptr, nullptr, nullptr };

@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	}
 	else if (robot_name == "stewart")
 	{
-		/*
+		
 		cs.resetController(createControllerStewart().release());
 		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootStewart().release());
@@ -82,8 +82,8 @@ int main(int argc, char *argv[])
 		cs.model().solverPool()[0].kinPos();
 
 		cs.saveXmlFile("C:\\Users\\py033\\Desktop\\stewart.xml");
-		*/
-		cs.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_server/stewart.xml"));
+		
+		//cs.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_server/stewart.xml"));
 	}
 	else
 	{
@@ -94,6 +94,21 @@ int main(int argc, char *argv[])
 	std::cout << "this server port    :" << std::to_string(port) << std::endl;
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
+
+	////////////////////////////////////////////////////////////////////////////////////
+	aris::dynamic::SevenAxisParam param;
+
+	param.d1 = 0.3705;
+	param.d3 = 0.330;
+	param.d5 = 0.320;
+	param.tool0_pe[2] = 0.2205;
+
+	auto m = aris::dynamic::createModelSevenAxis(param);
+	cs.resetModel(m.release());
+	dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMinPos(-0.1);
+	dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
+
+	////////////////////////////////////////////////////////////////////////////////////
 
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");

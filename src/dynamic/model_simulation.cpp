@@ -1079,6 +1079,7 @@ namespace aris::dynamic
 			nullptr,
 			0,
 			0,
+			std::vector<std::uint64_t>(model().motionPool().size(), 0),
 			std::any(),
 			0,
 			0,

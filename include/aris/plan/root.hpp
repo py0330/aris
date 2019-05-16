@@ -41,6 +41,7 @@ namespace aris::plan
 		aris::control::Controller* controller;            // prepair/execute/collect  get&set(but be careful when prepair)
 		std::uint64_t command_id;                         // prepair/execute/collect  get
 		std::uint64_t option;                             // prepair/execute/collect  get&set when prepair, get when execute and collect
+		std::vector<std::uint64_t> mot_options;           // prepair/execute/collect  set when prepair, get when execute, destroy when collect
 		std::any param;                                   // prepair/execute/collect  set when prepair, get when execute, destroy when collect
 		std::int32_t count;                               //         execute/collect  get
 		std::int64_t begin_global_count;                  //         execute/collect  get
@@ -68,7 +69,9 @@ namespace aris::plan
 			COLLECT_WHEN_ALL_PLAN_EXECUTED = 0x01ULL << 9,
 			COLLECT_WHEN_ALL_PLAN_COLLECTED = 0x01ULL << 10,
 			WAIT_FOR_COLLECTION = 0x01ULL << 11,
-
+		};
+		enum MotionOption : std::uint64_t
+		{
 			USE_TARGET_POS = 0x01ULL << 16,
 			USE_TARGET_VEL = 0x01ULL << 17,
 			USE_TARGET_CUR = 0x01ULL << 18,
