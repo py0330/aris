@@ -223,9 +223,9 @@ namespace aris::control
 		{
 			if (auto ec_slave = dynamic_cast<aris::control::EthercatSlave*>(&slave))
 			{
-				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool()[slave.id()]);
-				
 				if(slave.phyId() > local_mst.slavePool().size()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong physical id!").c_str());
+				
+				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool()[slave.phyID()]);
 				if (ec_slave->productCode() != compared_slave->productCode()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong product code of slave " + std::to_string(ec_slave->id())).c_str());
 				if (ec_slave->vendorID() != compared_slave->vendorID()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong vendor id of slave " + std::to_string(ec_slave->id())).c_str());
 			}
