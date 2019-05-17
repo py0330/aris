@@ -55,9 +55,9 @@ namespace aris::plan
 	public:
 		enum Option : std::uint64_t
 		{
-			NOT_PRINT_CMD_INFO = 0x01ULL << 40,
-			NOT_PRINT_EXECUTE_COUNT = 0x01ULL << 41,
-			NOT_LOG_CMD_INFO = 0x01ULL << 45,
+			NOT_PRINT_CMD_INFO = 0x01ULL << 0,
+			NOT_PRINT_EXECUTE_COUNT = 0x01ULL << 1,
+			NOT_LOG_CMD_INFO = 0x01ULL << 2,
 			
 			NOT_RUN_EXECUTE_FUNCTION = 0x01ULL << 3,
 			EXECUTE_WHEN_ALL_PLAN_EXECUTED = 0x01ULL << 4,

@@ -78,10 +78,10 @@ int main(int argc, char *argv[])
 		cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
 
 		// init model pos //
-		cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 0.5, 0, 0, 0}.data(), "313");
-		cs.model().solverPool()[0].kinPos();
+		//cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 0.5, 0, 0, 0}.data(), "313");
+		//cs.model().solverPool()[0].kinPos();
 
-		cs.saveXmlFile("C:\\Users\\py033\\Desktop\\stewart.xml");
+		//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\stewart.xml");
 		
 		//cs.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_server/stewart.xml"));
 	}
@@ -107,7 +107,6 @@ int main(int argc, char *argv[])
 	cs.resetModel(m.release());
 	dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMinPos(-0.1);
 	dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
-
 	////////////////////////////////////////////////////////////////////////////////////
 
 	// make log file has enough space

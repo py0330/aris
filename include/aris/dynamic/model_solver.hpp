@@ -70,6 +70,7 @@ namespace aris::dynamic
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
 		auto cptJacobi()noexcept->void;
+		auto cptJacobiWrtEE()noexcept->void;// wrt ee.makI(), not compute cf
 		auto mJf()const noexcept->Size;// equal mot num
 		auto nJf()const noexcept->Size;// equal ee num * 6
 		auto Jf()const noexcept->const double *;// inverse jacobi   mot_vs = Ji * ee_vs

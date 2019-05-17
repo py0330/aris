@@ -376,14 +376,14 @@ namespace aris::control
 	auto EthercatMotion::disable()->int
 	{
 		// control word
-		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
-		// 0x07    0b xxxx xxxx 0xxx 0111    B: transition 3           Switch ON
-		// 0x0F    0b xxxx xxxx 0xxx 1111    C: transition 3           Switch ON
-		// 0x00    0b xxxx xxxx 0xxx 0000    D: transition 7,9,10,12   Disable Voltage
-		// 0x02    0b xxxx xxxx 0xxx 0000    E: transition 7,10,11     Quick Stop
-		// 0x07    0b xxxx xxxx 0xxx 0111    F: transition 5           Disable Operation
-		// 0x0F    0b xxxx xxxx 0xxx 1111    G: transition 4,16        Enable Operation
-		// 0x80    0b xxxx xxxx 1xxx xxxx    H: transition 15          Fault Reset
+		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8         Shutdown
+		// 0x07    0b xxxx xxxx 0xxx 0111    B: transition 3             Switch ON
+		// 0x0F    0b xxxx xxxx 0xxx 1111    C: transition 3             Switch ON
+		// 0x00    0b xxxx xxxx 0xxx 0000    D: transition 7,9,10,12     Disable Voltage
+		// 0x02    0b xxxx xxxx 0xxx 0000    E: transition 7,10,11       Quick Stop
+		// 0x07    0b xxxx xxxx 0xxx 0111    F: transition 5             Disable Operation
+		// 0x0F    0b xxxx xxxx 0xxx 1111    G: transition 4,16          Enable Operation
+		// 0x80    0b xxxx xxxx 1xxx xxxx    H: transition 15            Fault Reset
 		//
 		// status word
 		// 0x00    0b xxxx xxxx x0xx 0000    A: not ready to switch on     
@@ -402,35 +402,38 @@ namespace aris::control
 		std::uint16_t status_word;
 		readPdo(0x6041, 0x00, status_word);
 
-		// check status A
+		// check status A, now transition 1 automatically
 		if ((status_word & 0x4F) == 0x00)
 		{
+			// this just set the initial control word...
+			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
 			return 1;
 		}
-		// check status B, now transition 2
+		// check status B, now keep and return
 		else if ((status_word & 0x4F) == 0x40)
 		{
 			// transition 2 //
-			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x06));
-			return 1;
+			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
+			return 0;
 		}
-		// check status C, now transition 3
+		// check status C, now transition 7
 		else if ((status_word & 0x6F) == 0x21)
 		{
 			// transition 3 //
-			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x07));
+			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
 			return 1;
 		}
-		// check status D, now keep and return
+		// check status D, now transition 10
 		else if ((status_word & 0x6F) == 0x23)
 		{
-			return 0;
+			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
+			return 1;
 		}
-		// check status E, now transition 5
+		// check status E, now transition 9
 		else if ((status_word & 0x6F) == 0x27)
 		{
 			// transition 5 //
-			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x06));
+			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
 			return 1;
 		}
 		// check status F, now transition 12
@@ -445,7 +448,7 @@ namespace aris::control
 			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
 			return 1;
 		}
-		// check status H, now transition 13
+		// check status H, now transition 15
 		else if ((status_word & 0x4F) == 0x08)
 		{
 			// transition 4 //
@@ -543,7 +546,7 @@ namespace aris::control
 			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
 			return 7;
 		}
-		// check status H, now transition 13
+		// check status H, now transition 15
 		else if ((status_word & 0x4F) == 0x08)
 		{
 			// transition 4 //

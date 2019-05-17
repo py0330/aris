@@ -1795,6 +1795,22 @@ namespace aris::dynamic
 			}
 		}
 	}
+	auto ForwardKinematicSolver::cptJacobiWrtEE()noexcept->void
+	{
+		cptJacobi();
+
+		for (auto &gm : ancestor<Model>()->generalMotionPool())
+		{
+			for (auto &mot : ancestor<Model>()->motionPool())
+			{
+				double tem[6];
+				s_vc(6, Jg() + at(gm.makI().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+				s_vs(6, Jg() + at(gm.makJ().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+
+				s_inv_tv(*gm.makI().pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+			}
+		}
+	}
 	auto ForwardKinematicSolver::mJf()const noexcept->Size { return ancestor<Model>()->motionPool().size(); }
 	auto ForwardKinematicSolver::nJf()const noexcept->Size { return ancestor<Model>()->generalMotionPool().size() * 6; }
 	auto ForwardKinematicSolver::Jf()const noexcept->const double * { return imp_->J_vec_.data(); }

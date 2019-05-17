@@ -14,13 +14,12 @@
 
 // to do list 2019-04-14:
 // - use keepalive for socket                                             check
-// - check motion enable state
-// - remove margin(0.005) of manual plan
-// - generate 6-axis from DH                                              check
-// - fix moveAbsolute2 bug on linux                                       check
-// - check control pdos config successfully and throw exception           half check
 // - make better registration                                             check
-// - find bugs of Qianchao                                                check
+// - check motion enable state                                            check
+// - check control pdos config successfully and throw exception           half check
+// - remove margin(0.005) of manual plan
+// - fix moveAbsolute2 bug on linux                                       check
+// - generate 6-axis from DH                                              check
 // - make dynamic calibration as a plan                                   
 
 
@@ -47,6 +46,4 @@
 // - open server port for command
 // - make callbacks before and after plans
 // - object insert & remove child node
-
-
-
+// - make pdo init value to zero
