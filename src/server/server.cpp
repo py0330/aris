@@ -183,7 +183,7 @@ namespace aris::server
 			auto option = mot_options[i];
 
 #ifndef WIN32
-			if (!(option & aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE)
+			if (!(option & aris::plan::Plan::NOT_CHECK_ENABLE)
 				&& ((cm.statusWord() & 0x6f) != 0x27))
 			{
 				server_->controller().mout() << __FILE__ << __LINE__ << "\n";
@@ -649,7 +649,7 @@ namespace aris::server
 		imp_->last_last_pvc.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
 
 		imp_->global_mot_options_.resize(controller().slavePool().size(), 
-			aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE |
+			aris::plan::Plan::NOT_CHECK_ENABLE |
 			aris::plan::Plan::NOT_CHECK_POS_MAX |
 			aris::plan::Plan::NOT_CHECK_POS_MIN);
 

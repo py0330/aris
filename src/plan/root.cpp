@@ -41,6 +41,10 @@ namespace aris::plan
 		"			<Param name=\"check_all\"/>" \
 		"			<Param name=\"check_none\"/>" \
 		"			<GroupParam>"\
+		"				<UniqueParam default=\"check_enable\">"\
+		"					<Param name=\"check_enable\"/>"\
+		"					<Param name=\"not_check_enable\"/>"\
+		"				</UniqueParam>"\
 		"				<UniqueParam default=\"check_pos\">"\
 		"					<Param name=\"check_pos\"/>"\
 		"					<Param name=\"not_check_pos\"/>"\
@@ -138,6 +142,16 @@ namespace aris::plan
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
 					Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
+			}
+			else if (cmd_param.first == "check_enable")
+			{
+				for (auto &option : target.mot_options) option &= ~(
+					Plan::NOT_CHECK_ENABLE);
+			}
+			else if (cmd_param.first == "not_check_pos")
+			{
+				for (auto &option : target.mot_options) option |=
+					Plan::NOT_CHECK_ENABLE;
 			}
 			else if (cmd_param.first == "check_pos")
 			{
@@ -430,7 +444,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
-		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
 	}
 	auto Enable::executeRT(PlanTarget &target)->int
 	{
@@ -483,7 +497,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
-		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
 	}
 	auto Disable::executeRT(PlanTarget &target)->int
 	{
@@ -643,7 +657,7 @@ namespace aris::plan
 		if (param.mode > 10 && param.mode < 8)throw std::runtime_error("invalid mode, aris now only support mode 8,9,10");
 
 		target.param = param;
-		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_OPERATION_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
 	}
 	auto Mode::executeRT(PlanTarget &target)->int
 	{
@@ -805,7 +819,7 @@ namespace aris::plan
 		for (auto &option : target.mot_options) option |=
 			NOT_CHECK_POS_CONTINUOUS_AT_START | 
 			NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
-			NOT_CHECK_OPERATION_ENABLE;
+			NOT_CHECK_ENABLE;
 	}
 	auto Recover::executeRT(PlanTarget &target)->int
 	{
@@ -853,7 +867,7 @@ namespace aris::plan
 	auto Sleep::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		target.param = SleepParam{ std::stoi(params.at("count")) };
-		for (auto &option : target.mot_options) option |= NOT_CHECK_OPERATION_ENABLE;
+		for (auto &option : target.mot_options) option |= NOT_CHECK_ENABLE;
 	}
 	auto Sleep::executeRT(PlanTarget &target)->int { return std::any_cast<SleepParam&>(target.param).count - target.count; }
 	Sleep::~Sleep() = default;
@@ -869,7 +883,7 @@ namespace aris::plan
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		for (auto &option : target.mot_options) option |=
-			NOT_CHECK_OPERATION_ENABLE |
+			NOT_CHECK_ENABLE |
 			NOT_CHECK_POS_MIN |
 			NOT_CHECK_POS_MAX |
 			NOT_CHECK_POS_CONTINUOUS |

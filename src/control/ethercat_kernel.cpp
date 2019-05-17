@@ -224,7 +224,7 @@ namespace aris::control
 			{
 				if(slave.phyId() > local_mst.slavePool().size()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong physical id!").c_str());
 				
-				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool().at(slave.phyID());
+				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool().at(slave.phyId()));
 				if (ec_slave->productCode() != compared_slave->productCode()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong product code of slave " + std::to_string(ec_slave->id())).c_str());
 				if (ec_slave->vendorID() != compared_slave->vendorID()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong vendor id of slave " + std::to_string(ec_slave->id())).c_str());
 			}
@@ -297,6 +297,10 @@ namespace aris::control
 		if (ecrt_master_activate(m_handle.ec_master_)) { throw std::runtime_error("failed activate master, perhaps pdo map is wrong"); }
 		if (!(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))throw std::runtime_error("failed ecrt_domain_data");
 		
+		// set handle
+		master->ecHandle() = m_handle;
+
+
 
 		// make pdo init value to zero
 		for (auto &slave : master->ecSlavePool())
@@ -316,12 +320,6 @@ namespace aris::control
 				}
 			}
 		}
-
-
-
-
-
-		master->ecHandle() = m_handle;
 	}
 	auto aris_ecrt_master_stop(EthercatMaster *master)->void
 	{
