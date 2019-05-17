@@ -96,17 +96,17 @@ int main(int argc, char *argv[])
 	dsp(4, 4, robot_pm);
 
 	////////////////////////////////////////////////////////////////////////////////////
-	aris::dynamic::SevenAxisParam param;
+	//aris::dynamic::SevenAxisParam param;
 
-	param.d1 = 0.3705;
-	param.d3 = 0.330;
-	param.d5 = 0.320;
-	param.tool0_pe[2] = 0.2205;
+	//param.d1 = 0.3705;
+	//param.d3 = 0.330;
+	//param.d5 = 0.320;
+	//param.tool0_pe[2] = 0.2205;
 
-	auto m = aris::dynamic::createModelSevenAxis(param);
-	cs.resetModel(m.release());
-	dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMinPos(-0.1);
-	dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
+	//auto m = aris::dynamic::createModelSevenAxis(param);
+	//cs.resetModel(m.release());
+	//dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMinPos(-0.1);
+	//dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
 	////////////////////////////////////////////////////////////////////////////////////
 
 	// make log file has enough space

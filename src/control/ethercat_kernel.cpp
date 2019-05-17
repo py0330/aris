@@ -314,7 +314,7 @@ namespace aris::control
 						if (entry.index())
 						{
 							std::vector<char> value(entry.bitSize() / 8 + 1, 0);
-							aris_ecrt_pdo_write(entry, value.data(), entry.bitSize());
+							aris_ecrt_pdo_write(&entry, value.data(), entry.bitSize());
 						}
 					}
 				}

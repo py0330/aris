@@ -414,22 +414,25 @@ namespace aris::plan
 			}
 		}
 	}
-	auto check_input_movement(const std::map<std::string, std::string> &cmd_params, PlanTarget &target, SetInputMovement &param)->void
+	auto check_input_movement(const std::map<std::string, std::string> &cmd_params, PlanTarget &target, SetInputMovement &param, SetActiveMotor &active)->void
 	{
 		auto c = target.controller;
 		for (Size i = 0; i < c->motionPool().size(); ++i)
 		{
-			if (param.axis_pos_vec[i] > c->motionPool()[i].maxPos() || param.axis_pos_vec[i] < c->motionPool()[i].minPos())
-				THROW_FILE_AND_LINE("");
+			if (active.active_motor[i])
+			{
+				if (param.axis_pos_vec[i] > c->motionPool()[i].maxPos() || param.axis_pos_vec[i] < c->motionPool()[i].minPos())
+					THROW_FILE_AND_LINE("input pos beyond range");
 
-			if (param.axis_vel_vec[i] > c->motionPool()[i].maxVel() || param.axis_vel_vec[i] <= 0.0)
-				THROW_FILE_AND_LINE("");
+				if (param.axis_vel_vec[i] > c->motionPool()[i].maxVel() || param.axis_vel_vec[i] <= 0.0)
+					THROW_FILE_AND_LINE("input vel beyond range");
 
-			if (param.axis_acc_vec[i] > c->motionPool()[i].maxAcc() || param.axis_acc_vec[i] <= 0.0)
-				THROW_FILE_AND_LINE("");
+				if (param.axis_acc_vec[i] > c->motionPool()[i].maxAcc() || param.axis_acc_vec[i] <= 0.0)
+					THROW_FILE_AND_LINE("input acc beyond range");
 
-			if (param.axis_dec_vec[i] > c->motionPool()[i].maxAcc() || param.axis_dec_vec[i] <= 0.0)
-				THROW_FILE_AND_LINE("");
+				if (param.axis_dec_vec[i] > c->motionPool()[i].maxAcc() || param.axis_dec_vec[i] <= 0.0)
+					THROW_FILE_AND_LINE("input dec beyond range");
+			}
 		}
 	}
 
@@ -735,7 +738,7 @@ namespace aris::plan
 			param.axis_vel_vec[i] = param.axis_vel_vec[i] * cm.maxVel();
 			param.axis_dec_vec[i] = param.axis_dec_vec[i] * cm.maxAcc();
 		}
-		check_input_movement(params, target, param);
+		check_input_movement(params, target, param, param);
 
 		param.total_count_vec.resize(target.controller->motionPool().size(), 1);
 
@@ -922,7 +925,7 @@ namespace aris::plan
 		set_check_option(params, target);
 		set_active_motor(params, target, param);
 		set_input_movement(params, target, param);
-		check_input_movement(params, target, param);
+		check_input_movement(params, target, param, param);
 
 		param.axis_begin_pos_vec.resize(target.controller->motionPool().size());
 		target.param = param;
