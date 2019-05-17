@@ -46,4 +46,4 @@
 // - open server port for command
 // - make callbacks before and after plans
 // - object insert & remove child node
-// - make pdo init value to zero
+// - make pdo init value to zero                                          check

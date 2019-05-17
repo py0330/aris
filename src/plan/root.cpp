@@ -148,7 +148,7 @@ namespace aris::plan
 				for (auto &option : target.mot_options) option &= ~(
 					Plan::NOT_CHECK_ENABLE);
 			}
-			else if (cmd_param.first == "not_check_pos")
+			else if (cmd_param.first == "not_check_enable")
 			{
 				for (auto &option : target.mot_options) option |=
 					Plan::NOT_CHECK_ENABLE;
