@@ -661,7 +661,8 @@ namespace aris::control
 		, Slave(name, phy_id), imp_(new Imp)
 	{
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP(EthercatMotion);
+	EthercatMotion::EthercatMotion(const EthercatMotion &other) = default;
+	EthercatMotion& EthercatMotion::operator=(const EthercatMotion &other) = default;
 
 	EthercatController::EthercatController(const std::string &name) :EthercatMaster(name), Controller(name), Master(name){}
 }
