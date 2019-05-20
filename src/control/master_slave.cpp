@@ -51,49 +51,19 @@ namespace aris::control
 
 			aris_rt_task_set_periodic(mst.imp_->sample_period_ns_);
 
-			///////////////////////////////////////////////////////////////
-			//std::int64_t time_series[10];
-			///////////////////////////////////////////////////////////////
-
 			while (mst.imp_->is_rt_thread_running_)
 			{
-				///////////////////////////////////////////////////////////////
-				//time_series[1] = aris_rt_time_since_last_time();
-				///////////////////////////////////////////////////////////////
-
 				// receive //
 				mst.recv();
-
-				///////////////////////////////////////////////////////////////
-				//time_series[2] = aris_rt_time_since_last_time();
-				///////////////////////////////////////////////////////////////
-
 
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
 
-				///////////////////////////////////////////////////////////////
-				//time_series[3] = aris_rt_time_since_last_time();
-				///////////////////////////////////////////////////////////////
-
-
 				// sync
 				mst.sync();
 
-				///////////////////////////////////////////////////////////////
-				//time_series[4] = aris_rt_time_since_last_time();
-				///////////////////////////////////////////////////////////////
-
-
-
 				// send
 				mst.send();
-
-
-				///////////////////////////////////////////////////////////////
-				//time_series[5] = aris_rt_time_since_last_time();
-				///////////////////////////////////////////////////////////////
-
 
 				// flush lout
 				mst.lout() << std::flush;
@@ -111,50 +81,14 @@ namespace aris::control
 					mst.mout().reset();
 				}
 
-				///////////////////////////////////////////////////////////////
-				//time_series[6] = aris_rt_time_since_last_time();
-				///////////////////////////////////////////////////////////////
-
-
 				// record stastics //
 				auto time = aris_rt_time_since_last_time();
 				add_time_to_stastics(time, &mst.imp_->global_stastics_);
-				if(mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
-				if (mst.imp_->is_need_change_)
-				{
-					if (mst.imp_->is_this_ready_)mst.imp_->is_this_ready_->store(true);
-					mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
-					mst.imp_->is_this_ready_ = mst.imp_->is_next_ready_;
-				}
-
-				///////////////////////////////////////////////////////////////
-				/*time_series[7] = aris_rt_time_since_last_time();
-				
-				if (time_series[7] > 500000)
-				{
-					mst.mout() << "0: " << time_series[0]
-						<< "\n1: " << time_series[1]
-						<< "\n2: " << time_series[2]
-						<< "\n3: " << time_series[3]
-						<< "\n4: " << time_series[4]
-						<< "\n5: " << time_series[5]
-						<< "\n6: " << time_series[6]
-						<< "\n7: " << time_series[7] << "\n-----------------------------------------------" << std::endl;
-				}
-				
-				
-				*/
-				///////////////////////////////////////////////////////////////
-
-
-
+				if (mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
+				if (mst.imp_->is_need_change_)mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
 
 				// rt timer //
 				aris_rt_task_wait_period();
-
-				///////////////////////////////////////////////////////////////
-				//time_series[0] = aris_rt_time_since_last_time();
-				///////////////////////////////////////////////////////////////
 			}
 
 			mst.imp_->is_mout_thread_running_ = false;
@@ -183,7 +117,6 @@ namespace aris::control
 		// rt stastics //
 		Master::RtStasticsData global_stastics_{ 0,0,0,0x8fffffff,0,0,0 };
 		Master::RtStasticsData* this_stastics_{ nullptr }, *next_stastics_{ nullptr };
-		std::atomic_bool* is_this_ready_{ nullptr }, *is_next_ready_{ nullptr };
 		bool is_need_change_{ false };
 
 		std::any rt_task_handle_;

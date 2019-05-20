@@ -70,7 +70,6 @@ int main(int argc, char *argv[])
 	}
 	else if (robot_name == "stewart")
 	{
-		
 		cs.resetController(createControllerStewart().release());
 		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
 		cs.resetPlanRoot(createPlanRootStewart().release());

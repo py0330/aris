@@ -231,95 +231,114 @@ namespace aris::control
 		}
 		// check finished
 
+		
 
-		MasterHandle m_handle{ nullptr, nullptr, nullptr };
-
-		// request master //
-		if (!(m_handle.ec_master_ = ecrt_request_master(0)))throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":master request failed!").c_str());
-
-		// create domain //
-		if (!(m_handle.domain_ = ecrt_master_create_domain(m_handle.ec_master_)))throw std::runtime_error(std::string(__FILE__) + std::to_string(__LINE__) + "failed to create domain");
-
-		// make slaves //
-		std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
-		for (auto &slave : master->ecSlavePool())
+		// make subfunction
+		auto start_ethercat = [](EthercatMaster *master) 
 		{
-			std::vector<ec_sync_info_t> ec_sync_info_vec;
-			std::vector<std::vector<ec_pdo_info_t> > ec_pdo_info_vec_vec;
-			std::vector<std::vector<std::vector<ec_pdo_entry_info_t> > > ec_pdo_entry_info_vec_vec_vec;
+			MasterHandle m_handle{ nullptr, nullptr, nullptr };
 
-			for (auto &sm : slave.smPool())
+			// request master //
+			if (!(m_handle.ec_master_ = ecrt_request_master(0)))throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":master request failed!").c_str());
+
+			// create domain //
+			if (!(m_handle.domain_ = ecrt_master_create_domain(m_handle.ec_master_)))throw std::runtime_error(std::string(__FILE__) + std::to_string(__LINE__) + "failed to create domain");
+
+			// make slaves //
+			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
+			for (auto &slave : master->ecSlavePool())
 			{
-				ec_pdo_info_vec_vec.push_back(std::vector<ec_pdo_info_t>());
-				ec_pdo_entry_info_vec_vec_vec.push_back(std::vector<std::vector<ec_pdo_entry_info_t> >());
+				std::vector<ec_sync_info_t> ec_sync_info_vec;
+				std::vector<std::vector<ec_pdo_info_t> > ec_pdo_info_vec_vec;
+				std::vector<std::vector<std::vector<ec_pdo_entry_info_t> > > ec_pdo_entry_info_vec_vec_vec;
 
-				for (auto &pdo : sm)
+				for (auto &sm : slave.smPool())
 				{
-					ec_pdo_entry_info_vec_vec_vec.back().push_back(std::vector<ec_pdo_entry_info_t>());
-					for (auto &entry : pdo)
-					{
-						entry.ecHandle() = PdoEntryHandle();
-						auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry.ecHandle());
+					ec_pdo_info_vec_vec.push_back(std::vector<ec_pdo_info_t>());
+					ec_pdo_entry_info_vec_vec_vec.push_back(std::vector<std::vector<ec_pdo_entry_info_t> >());
 
-						//etherlab 会根据index是否为0来判断是否结束
-						if(entry.index())ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0x00, slave.phyId(), slave.vendorID(), slave.productCode(), entry.index(), entry.subindex(), &pe_handle.offset, &pe_handle.bit_position });
-						ec_pdo_entry_info_vec_vec_vec.back().back().push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.bitSize()) });
+					for (auto &pdo : sm)
+					{
+						ec_pdo_entry_info_vec_vec_vec.back().push_back(std::vector<ec_pdo_entry_info_t>());
+						for (auto &entry : pdo)
+						{
+							entry.ecHandle() = PdoEntryHandle();
+							auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry.ecHandle());
+
+							//etherlab 会根据index是否为0来判断是否结束
+							if (entry.index())ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{ 0x00, slave.phyId(), slave.vendorID(), slave.productCode(), entry.index(), entry.subindex(), &pe_handle.offset, &pe_handle.bit_position });
+							ec_pdo_entry_info_vec_vec_vec.back().back().push_back(ec_pdo_entry_info_t{ entry.index(), entry.subindex(), static_cast<std::uint8_t>(entry.bitSize()) });
+						}
+
+						ec_pdo_info_vec_vec.back().push_back(ec_pdo_info_t{ pdo.index(),
+							static_cast<std::uint8_t>(ec_pdo_entry_info_vec_vec_vec.back().back().size()), ec_pdo_entry_info_vec_vec_vec.back().back().data() });
 					}
 
-					ec_pdo_info_vec_vec.back().push_back(ec_pdo_info_t{ pdo.index(), 
-						static_cast<std::uint8_t>(ec_pdo_entry_info_vec_vec_vec.back().back().size()), ec_pdo_entry_info_vec_vec_vec.back().back().data() });
+					ec_sync_info_vec.push_back(ec_sync_info_t{ static_cast<std::uint8_t>(sm.id()), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT,
+						static_cast<unsigned int>(ec_pdo_info_vec_vec.back().size()), ec_pdo_info_vec_vec.back().data(), EC_WD_DEFAULT });
 				}
 
-				ec_sync_info_vec.push_back(ec_sync_info_t{ static_cast<std::uint8_t>(sm.id()), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT, 
-					static_cast<unsigned int>(ec_pdo_info_vec_vec.back().size()), ec_pdo_info_vec_vec.back().data(), EC_WD_DEFAULT });
+
+				SlaveHandle s_handle;
+
+				// Get the slave configuration 
+				if (!(s_handle.ec_slave_config_ = ecrt_master_slave_config(m_handle.ec_master_, 0x00, slave.phyId(), slave.vendorID(), slave.productCode()))) { throw std::runtime_error("failed to slave config"); }
+
+				// Configure the slave's PDOs and sync masters
+				if (ecrt_slave_config_pdos(s_handle.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))throw std::runtime_error("failed to slave config pdos");
+
+				// Configure the slave's distributed clock
+				if (slave.dcAssignActivate())ecrt_slave_config_dc(s_handle.ec_slave_config_, slave.dcAssignActivate(), 1000000, 4400000, 0, 0);
+
+				slave.ecHandle() = s_handle;
 			}
-			
 
-			SlaveHandle s_handle;
+			// configure domain
+			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{});
+			if (ecrt_domain_reg_pdo_entry_list(m_handle.domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
 
-			// Get the slave configuration 
-			if (!(s_handle.ec_slave_config_ = ecrt_master_slave_config(m_handle.ec_master_, 0x00, slave.phyId(), slave.vendorID(), slave.productCode()))) { throw std::runtime_error("failed to slave config"); }
+			// activate master
+			if (ecrt_master_activate(m_handle.ec_master_)) { throw std::runtime_error("failed activate master, perhaps pdo map is wrong"); }
+			if (!(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))throw std::runtime_error("failed ecrt_domain_data");
 
-			// Configure the slave's PDOs and sync masters
-			if (ecrt_slave_config_pdos(s_handle.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))throw std::runtime_error("failed to slave config pdos");
+			// set handle
+			master->ecHandle() = m_handle;
 
-			// Configure the slave's distributed clock
-			if (slave.dcAssignActivate())ecrt_slave_config_dc(s_handle.ec_slave_config_, slave.dcAssignActivate(), 1000000, 4400000, 0, 0);
-
-			slave.ecHandle() = s_handle;
-		}
-
-		// configure domain
-		ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{});
-		if (ecrt_domain_reg_pdo_entry_list(m_handle.domain_, ec_pdo_entry_reg_vec.data()))throw std::runtime_error("failed domain_reg_pdo_entry");
-
-		// activate master
-		if (ecrt_master_activate(m_handle.ec_master_)) { throw std::runtime_error("failed activate master, perhaps pdo map is wrong"); }
-		if (!(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))throw std::runtime_error("failed ecrt_domain_data");
-		
-		// set handle
-		master->ecHandle() = m_handle;
-
-
-
-		// make pdo init value to zero
-		for (auto &slave : master->ecSlavePool())
-		{
-			for (auto &sm : slave.smPool())
+			// make pdo init value to zero
+			for (auto &slave : master->ecSlavePool())
 			{
-				for (auto &pdo : sm)
+				for (auto &sm : slave.smPool())
 				{
-					for (auto &entry : pdo)
+					for (auto &pdo : sm)
 					{
-						if (entry.index())
+						for (auto &entry : pdo)
 						{
-							std::vector<char> value(entry.bitSize() / 8 + 1, 0);
-							aris_ecrt_pdo_write(&entry, value.data(), entry.bitSize());
+							if (entry.index())
+							{
+								std::vector<char> value(entry.bitSize() / 8 + 1, 0);
+								aris_ecrt_pdo_write(&entry, value.data(), entry.bitSize());
+							}
 						}
 					}
 				}
 			}
-		}
+		};
+		
+
+		// check pdos 
+		aris::control::EthercatMaster check_master_pdos;
+		check_master_pdos.slavePool() = master->slavePool();
+
+		start_ethercat(&check_master_pdos);
+		aris_ecrt_master_stop(&check_master_pdos);
+
+		std::cout << check_master_pdos.xmlStr() <<std::endl;
+		// check pdos finished
+
+
+
+		// finally start the master
+		start_ethercat(master);
 	}
 	auto aris_ecrt_master_stop(EthercatMaster *master)->void
 	{

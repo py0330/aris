@@ -81,7 +81,7 @@ namespace aris::control
 	}
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
 	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
-	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp){	imp_->index_ = index; }
+	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp){ imp_->index_ = index; }
 	ARIS_DEFINE_BIG_FOUR_CPP(Pdo)
 
 	struct SyncManager::Imp { std::any handle_; bool is_tx_; };
