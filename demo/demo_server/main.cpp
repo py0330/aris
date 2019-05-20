@@ -94,6 +94,11 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
+	//std::cout << m1.slavePool().ancestor<aris::control::Master>() << std::endl;
+	//std::cout << check_master_pdos.slavePool().ancestor<aris::control::Master>() << std::endl;
+
+
+
 	////////////////////////////////////////////////////////////////////////////////////
 	//aris::dynamic::SevenAxisParam param;
 

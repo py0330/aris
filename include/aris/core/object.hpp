@@ -795,6 +795,11 @@ namespace aris::core
 
 		virtual ~ObjectPool() = default;
 		explicit ObjectPool(const std::string &name = "object_pool") :Base(name) {}
+		ObjectPool(const ObjectPool &) = default;
+		ObjectPool(ObjectPool &&) = default;
+		ObjectPool& operator=(const ObjectPool &) = default;
+		ObjectPool& operator=(ObjectPool &&) = default;
+
 
 	private:
 		//static inline int register_count_ = aris::core::Object::registerTypeGlobal<ObjectPool>();

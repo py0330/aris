@@ -17,6 +17,7 @@ namespace aris::control
 		auto subindex()const->std::uint8_t;
 		auto bitSize()const->aris::Size;
 
+		virtual ~PdoEntry();
 		explicit PdoEntry(const std::string &name = "entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size bit_size = 8);
 		ARIS_REGISTER_TYPE(PdoEntry);
 		ARIS_DECLARE_BIG_FOUR(PdoEntry);
@@ -34,6 +35,7 @@ namespace aris::control
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 		auto index()const->std::uint16_t;
 
+		virtual ~Pdo();
 		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000);
 		ARIS_REGISTER_TYPE(Pdo);
 		ARIS_DECLARE_BIG_FOUR(Pdo);
@@ -50,6 +52,7 @@ namespace aris::control
 		auto tx()const->bool;
 		auto rx()const->bool;
 
+		virtual ~SyncManager();
 		explicit SyncManager(const std::string &name = "sm", bool is_tx = true);
 		ARIS_REGISTER_TYPE(SyncManager);
 		ARIS_DECLARE_BIG_FOUR(SyncManager);

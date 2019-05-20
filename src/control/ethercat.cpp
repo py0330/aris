@@ -52,6 +52,7 @@ namespace aris::control
 	auto PdoEntry::index()const->std::uint16_t { return imp_->index_; }
 	auto PdoEntry::subindex()const->std::uint8_t { return imp_->subindex_; }
 	auto PdoEntry::bitSize()const->aris::Size { return imp_->bit_size_; }
+	PdoEntry::~PdoEntry() = default;
 	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size) :Object(name) 
 	{
 		imp_->index_ = index;
@@ -81,6 +82,7 @@ namespace aris::control
 	}
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
 	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
+	Pdo::~Pdo() = default;
 	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp){ imp_->index_ = index; }
 	ARIS_DEFINE_BIG_FOUR_CPP(Pdo)
 
@@ -97,6 +99,7 @@ namespace aris::control
 	}
 	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
 	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
+	SyncManager::~SyncManager()=default;
 	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) {	imp_->is_tx_ = is_tx;}
 	ARIS_DEFINE_BIG_FOUR_CPP(SyncManager)
 

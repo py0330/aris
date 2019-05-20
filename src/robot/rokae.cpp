@@ -77,7 +77,10 @@ namespace aris::robot
 				"</EthercatMotion>";
 
 			controller->slavePool().add<aris::control::EthercatMotion>().loadXmlStr(xml_str);
+
+#ifndef WIN32
 			dynamic_cast<aris::control::EthercatMotion&>(controller->slavePool().back()).scanInfoForCurrentSlave();
+#endif
 		}
 
 		return controller;

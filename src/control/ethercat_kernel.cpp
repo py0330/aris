@@ -329,6 +329,11 @@ namespace aris::control
 		aris::control::EthercatMaster check_master_pdos;
 		check_master_pdos.slavePool() = master->slavePool();
 
+		for (auto &sla : check_master_pdos.slavePool())
+			if (dynamic_cast<EthercatSlave*>(&sla))
+				check_master_pdos.ecSlavePool().push_back_ptr(dynamic_cast<EthercatSlave*>(&sla));
+
+
 		start_ethercat(&check_master_pdos);
 		aris_ecrt_master_stop(&check_master_pdos);
 
