@@ -96,7 +96,7 @@ namespace aris::control
 		virtual ~EthercatSlave();
 		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);
 		ARIS_REGISTER_TYPE(EthercatSlave);
-		ARIS_DELETE_BIG_FOUR(EthercatSlave);
+		ARIS_DECLARE_BIG_FOUR(EthercatSlave);
 
 	private:
 		struct Imp;
@@ -189,7 +189,7 @@ namespace aris::control
 			, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 		ARIS_REGISTER_TYPE(EthercatMotion);
-		ARIS_DELETE_BIG_FOUR(EthercatMotion);
+		ARIS_DECLARE_BIG_FOUR(EthercatMotion);
 
 	private:
 		class Imp;

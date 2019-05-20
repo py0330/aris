@@ -332,7 +332,7 @@ namespace aris::control
 		start_ethercat(&check_master_pdos);
 		aris_ecrt_master_stop(&check_master_pdos);
 
-		std::cout << check_master_pdos.xmlStr() <<std::endl;
+		std::cout << check_master_pdos.xmlString() <<std::endl;
 		// check pdos finished
 
 
