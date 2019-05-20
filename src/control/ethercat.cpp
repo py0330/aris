@@ -206,7 +206,28 @@ namespace aris::control
 		imp_->revision_num_ = r_num;
 		imp_->dc_assign_activate_ = dc;
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP(EthercatSlave);
+	EthercatSlave::EthercatSlave(EthercatSlave &&other) :Slave(std::move(other)), imp_(std::move(other.imp_))
+	{
+		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >("sm_pool");
+	};
+	EthercatSlave::EthercatSlave(const EthercatSlave &other) :Slave(other), imp_(other.imp_)
+	{
+		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >("sm_pool");
+	};
+	EthercatSlave& EthercatSlave::operator=(EthercatSlave &&other)
+	{
+		Slave::operator=(other);
+		imp_ = other.imp_;
+		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >("sm_pool");
+		return *this;
+	}
+	EthercatSlave& EthercatSlave::operator=(const EthercatSlave &other)
+	{
+		Slave::operator=(other);
+		imp_ = other.imp_;
+		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >("sm_pool");
+		return *this;
+	}
 
 	class EthercatMaster::Imp
 	{
