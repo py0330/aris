@@ -208,24 +208,24 @@ namespace aris::control
 	}
 	EthercatSlave::EthercatSlave(EthercatSlave &&other) :Slave(std::move(other)), imp_(std::move(other.imp_))
 	{
-		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >("sm_pool");
+		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
 	};
 	EthercatSlave::EthercatSlave(const EthercatSlave &other) :Slave(other), imp_(other.imp_)
 	{
-		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >("sm_pool");
+		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
 	};
 	EthercatSlave& EthercatSlave::operator=(EthercatSlave &&other)
 	{
 		Slave::operator=(other);
 		imp_ = other.imp_;
-		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >("sm_pool");
+		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
 		return *this;
 	}
 	EthercatSlave& EthercatSlave::operator=(const EthercatSlave &other)
 	{
 		Slave::operator=(other);
 		imp_ = other.imp_;
-		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >("sm_pool");
+		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
 		return *this;
 	}
 
