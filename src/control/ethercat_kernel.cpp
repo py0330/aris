@@ -351,9 +351,9 @@ namespace aris::control
 				if (ec_slave->productCode() != compared_slave->productCode()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong product code of slave " + std::to_string(ec_slave->id())).c_str());
 				if (ec_slave->vendorID() != compared_slave->vendorID()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong vendor id of slave " + std::to_string(ec_slave->id())).c_str());
 
-				for (int i = 0; i<ec_slave.smPool().size(); ++i)
+				for (int i = 0; i<ec_slave->smPool().size(); ++i)
 				{
-					if (i >= compared_slave.smPool().size()) THROW_FILE_AND_LINE("map pdo failed: sm num not correct");
+					if (i >= compared_slave->smPool().size()) THROW_FILE_AND_LINE("map pdo failed: sm num not correct");
 					
 					auto &sm = ec_slave->smPool()[i];
 					auto &compared_sm = compared_slave->smPool()[i];
@@ -380,7 +380,7 @@ namespace aris::control
 
 							if ((entry.index() != compared_entry.index()) 
 								|| (entry.subindex() != compared_entry.subindex())
-								|| (entry.bitsize() != compared_entry.bitsize())
+								|| (entry.bitSize() != compared_entry.bitSize())
 								)
 							{
 								THROW_FILE_AND_LINE("map pdo failed: entry info not correct");
