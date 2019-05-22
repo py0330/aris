@@ -233,7 +233,7 @@ namespace aris::control
 
 		
 
-		// make subfunction
+		// make subfunction， which start the master
 		auto start_ethercat = [](EthercatMaster *master) 
 		{
 			MasterHandle m_handle{ nullptr, nullptr, nullptr };
@@ -338,7 +338,65 @@ namespace aris::control
 		aris_ecrt_master_stop(&check_master_pdos);
 
 		std::cout << check_master_pdos.xmlString() <<std::endl;
+
+		for (auto &slave : master->slavePool())
+		{
+			if (auto ec_slave = dynamic_cast<aris::control::EthercatSlave*>(&slave))
+			{
+				if (slave.phyId() > local_mst.slavePool().size()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong physical id!").c_str());
+
+				// check product code and vendor id
+				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool().at(slave.phyId()));
+				if (ec_slave->productCode() != compared_slave->productCode()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong product code of slave " + std::to_string(ec_slave->id())).c_str());
+				if (ec_slave->vendorID() != compared_slave->vendorID()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong vendor id of slave " + std::to_string(ec_slave->id())).c_str());
+
+				for (int i = 0; i<ec_slave.smPool().size(); ++i)
+				{
+					if (i >= compared_slave.smPool().size()) THROW_FILE_AND_LINE("map pdo failed: sm num not correct");
+					
+					auto &sm = ec_slave.smPool()[i];
+					auto &compared_sm = compared_slave.smPool()[i];
+					
+					// check if sm rx & tx valid 
+					if(sm.tx() != compared_sm.tx()) THROW_FILE_AND_LINE("map pdo failed: sm tx or rx not correct");
+
+					for (int j = 0; j<sm.size(); ++j)
+					{
+						if (j >= sm.size()) THROW_FILE_AND_LINE("map pdo failed: pdo num not correct");
+						
+						auto &pdo = sm[j];
+						auto &compared_pdo = compared_sm[j];
+						
+						// check pdo index valid 
+						if (pdo.index() != compared_pdo.index()) THROW_FILE_AND_LINE("map pdo failed: pdo index not correct");
+
+						for (int k = 0; k<pdo.size(); ++k)
+						{
+							if (k >= pdo.size()) THROW_FILE_AND_LINE("map pdo failed: entry num not correct");
+							
+							auto &entry = pdo[k];
+							auto &compared_entry = compared_pdo[k];
+
+							if ((entry.index() != compared_entry.index()) 
+								|| (entry.subindex() != compared_entry.subindex())
+								|| (entry.bit_size() != compared_entry.bit_size())
+								)
+							{
+								THROW_FILE_AND_LINE("map pdo failed: entry info not correct");
+							}
+						}
+					}
+				}
+
+
+			}
+		}
+
+
 		// check pdos finished
+		
+
+
 
 
 
