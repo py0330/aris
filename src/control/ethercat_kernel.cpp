@@ -327,6 +327,7 @@ namespace aris::control
 		
 
 		// check pdos 
+		/*
 		aris::control::EthercatMaster check_master_pdos;
 		check_master_pdos.slavePool() = master->slavePool();
 
@@ -363,7 +364,7 @@ namespace aris::control
 
 					for (int j = 0; j<sm.size(); ++j)
 					{
-						if (j >= sm.size()) THROW_FILE_AND_LINE("map pdo failed: pdo num not correct");
+						if (j >= compared_sm.size()) THROW_FILE_AND_LINE("map pdo failed: pdo num not correct");
 						
 						auto &pdo = sm[j];
 						auto &compared_pdo = compared_sm[j];
@@ -373,7 +374,7 @@ namespace aris::control
 
 						for (int k = 0; k<pdo.size(); ++k)
 						{
-							if (k >= pdo.size()) THROW_FILE_AND_LINE("map pdo failed: entry num not correct");
+							if (k >= compared_pdo.size()) THROW_FILE_AND_LINE("map pdo failed: entry num not correct");
 							
 							auto &entry = pdo[k];
 							auto &compared_entry = compared_pdo[k];
@@ -392,6 +393,7 @@ namespace aris::control
 
 			}
 		}
+		*/
 		// check pdos finished
 		
 
