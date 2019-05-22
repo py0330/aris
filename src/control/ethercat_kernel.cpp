@@ -14,6 +14,7 @@ extern "C"
 
 #include "aris/control/ethercat_kernel.hpp"
 #include "aris/control/ethercat.hpp"
+#include "aris/core/log.hpp"
 
 namespace aris::control
 {
@@ -379,7 +380,7 @@ namespace aris::control
 
 							if ((entry.index() != compared_entry.index()) 
 								|| (entry.subindex() != compared_entry.subindex())
-								|| (entry.bit_size() != compared_entry.bit_size())
+								|| (entry.bitsize() != compared_entry.bitsize())
 								)
 							{
 								THROW_FILE_AND_LINE("map pdo failed: entry info not correct");
