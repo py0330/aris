@@ -354,8 +354,8 @@ namespace aris::control
 				{
 					if (i >= compared_slave.smPool().size()) THROW_FILE_AND_LINE("map pdo failed: sm num not correct");
 					
-					auto &sm = ec_slave.smPool()[i];
-					auto &compared_sm = compared_slave.smPool()[i];
+					auto &sm = ec_slave->smPool()[i];
+					auto &compared_sm = compared_slave->smPool()[i];
 					
 					// check if sm rx & tx valid 
 					if(sm.tx() != compared_sm.tx()) THROW_FILE_AND_LINE("map pdo failed: sm tx or rx not correct");
@@ -391,8 +391,6 @@ namespace aris::control
 
 			}
 		}
-
-
 		// check pdos finished
 		
 
