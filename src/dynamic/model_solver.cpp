@@ -1797,7 +1797,7 @@ namespace aris::dynamic
 	}
 	auto ForwardKinematicSolver::cptJacobiWrtEE()noexcept->void
 	{
-		cptJacobi();
+		cptGeneralJacobi();
 
 		for (auto &gm : ancestor<Model>()->generalMotionPool())
 		{
@@ -1807,7 +1807,11 @@ namespace aris::dynamic
 				s_vc(6, Jg() + at(gm.makI().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
 				s_vs(6, Jg() + at(gm.makJ().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
 
-				s_inv_tv(*gm.makI().pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+				s_inv_tv(*gm.makJ().pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+
+				double pp[3];
+				gm.makI().getPp(gm.makJ(), pp);
+				s_c3a(imp_->J_vec_.data() + at(gm.id() * 6 + 3, mot.id(), nJf()), nJf(), pp, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
 			}
 		}
 	}
