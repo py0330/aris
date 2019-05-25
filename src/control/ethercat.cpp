@@ -446,39 +446,39 @@ namespace aris::control
 		{
 			// transition 3 //
 			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
-			return 1;
+			return 2;
 		}
 		// check status D, now transition 10
 		else if ((status_word & 0x6F) == 0x23)
 		{
 			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
-			return 1;
+			return 3;
 		}
 		// check status E, now transition 9
 		else if ((status_word & 0x6F) == 0x27)
 		{
 			// transition 5 //
 			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
-			return 1;
+			return 4;
 		}
 		// check status F, now transition 12
 		else if ((status_word & 0x6F) == 0x07)
 		{
 			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
-			return 1;
+			return 5;
 		}
 		// check status G, now transition 14
 		else if ((status_word & 0x4F) == 0x0F)
 		{
 			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x00));
-			return 1;
+			return 6;
 		}
 		// check status H, now transition 15
 		else if ((status_word & 0x4F) == 0x08)
 		{
 			// transition 4 //
 			writePdo(0x6040, 0x00, static_cast<std::uint16_t>(0x80));
-			return 1;
+			return 7;
 		}
 		// unknown status
 		else

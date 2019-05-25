@@ -639,6 +639,23 @@ namespace aris::plan
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+
+
+	class MoveSeries :public Plan
+	{
+	public:
+		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
+		auto virtual executeRT(PlanTarget &target)->int override;
+
+		virtual ~MoveSeries();
+		explicit MoveSeries(const std::string &name = "move_series");
+		ARIS_REGISTER_TYPE(MoveSeries);
+		ARIS_DEFINE_BIG_FOUR(MoveSeries);
+	};
+
+
+
+
 }
 
 #endif

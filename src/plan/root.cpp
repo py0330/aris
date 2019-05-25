@@ -447,6 +447,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
+		target.ret = std::string("finished");
 		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
 	}
 	auto Enable::executeRT(PlanTarget &target)->int
@@ -1850,4 +1851,97 @@ namespace aris::plan
 		command().loadXmlStr(cmd_xml_str);
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(UniversalPlan);
+
+
+
+	struct MoveSeriesParam 
+	{
+		std::vector<double> t, x, xp1, xp2, xp3, y, yp1, yp2, yp3;
+	};
+	auto MoveSeries::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
+	{
+		MoveSeriesParam param;
+		
+		auto x_mat = target.model->calculator().calculateExpression(params.at("x"));
+		auto y_mat = target.model->calculator().calculateExpression(params.at("y"));
+		if (x_mat.size() != y_mat.size())throw std::runtime_error("x and y size not correct");
+
+		param.t.resize(x_mat.size() + 6);
+		param.t[0] = -3;
+		param.t[1] = -2;
+		param.t[2] = -1;
+		param.t[3] = 0;
+
+		param.x.resize(x_mat.size() + 6);
+		std::copy(x_mat.begin(), x_mat.end(), param.x.begin() + 3);
+		param.x[0] = param.x[3];
+		param.x[1] = param.x[3];
+		param.x[2] = param.x[3];
+		*(param.x.end() - 1) = *(param.x.end() - 4);
+		*(param.x.end() - 2) = *(param.x.end() - 4);
+		*(param.x.end() - 3) = *(param.x.end() - 4);
+
+		param.y.resize(y_mat.size() + 6);
+		std::copy(y_mat.begin(), y_mat.end(), param.y.begin() + 3);
+		param.y[0] = param.y[3];
+		param.y[1] = param.y[3];
+		param.y[2] = param.y[3];
+		*(param.y.end() - 1) = *(param.y.end() - 4);
+		*(param.y.end() - 2) = *(param.y.end() - 4);
+		*(param.y.end() - 3) = *(param.y.end() - 4);
+
+
+		auto scale = std::stod(params.at("scale"));
+
+		for (int i = 1; i < x_mat.size(); ++i)
+		{
+			auto diff_x = x_mat.data()[i] - x_mat.data()[i - 1];
+			auto diff_y = y_mat.data()[i] - y_mat.data()[i - 1];
+			
+			param.t.data()[i + 3] = param.t.data()[i + 2] + std::max(std::sqrt(diff_x * diff_x + diff_y * diff_y), 1e-7) * scale;
+		}
+
+		*(param.t.end() - 3) = *(param.t.end() - 4) + 1;
+		*(param.t.end() - 2) = *(param.t.end() - 4) + 2;
+		*(param.t.end() - 1) = *(param.t.end() - 4) + 3;
+		
+		param.xp1.resize(x_mat.size() + 6);
+		param.xp2.resize(x_mat.size() + 6);
+		param.xp3.resize(x_mat.size() + 6);
+		param.yp1.resize(x_mat.size() + 6);
+		param.yp2.resize(x_mat.size() + 6);
+		param.yp3.resize(x_mat.size() + 6);
+
+		aris::dynamic::s_akima(param.t.size(), param.t.data(), param.x.data(), param.xp1.data(), param.xp2.data(), param.xp3.data(), 1e-7);
+		aris::dynamic::s_akima(param.t.size(), param.t.data(), param.y.data(), param.yp1.data(), param.yp2.data(), param.yp3.data(), 1e-7);
+
+		target.param = param;
+	}
+	auto MoveSeries::executeRT(PlanTarget &target)->int 
+	{
+		auto &param = std::any_cast<MoveSeriesParam&>(target.param);
+		
+
+		auto x = aris::dynamic::s_akima_at(param.t.size(), param.t.data(), param.x.data(), param.xp1.data(), param.xp2.data(), param.xp3.data(), target.count / 1000.0);
+		auto y = aris::dynamic::s_akima_at(param.t.size(), param.t.data(), param.y.data(), param.yp1.data(), param.yp2.data(), param.yp3.data(), target.count / 1000.0);
+
+		std::cout << x << "  " << y << std::endl;
+
+
+
+		return target.count / 1000.0 > *(param.t.end() - 4) ? 0 : 1;
+
+	}
+	MoveSeries::~MoveSeries() = default;
+	MoveSeries::MoveSeries(const std::string &name) :Plan(name)
+	{
+		command().loadXmlStr(
+			"<Command name=\"mvs\">"
+			"	<GroupParam>"
+			"	    <Param name=\"x\" default=\"0\" abbreviation=\"x\" />"
+			"	    <Param name=\"y\" default=\"0\" abbreviation=\"y\" />"
+			"	    <Param name=\"scale\" default=\"10\" />"
+			"	</GroupParam>"
+			"</Command>");
+	}
 }

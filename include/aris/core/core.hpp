@@ -47,3 +47,6 @@
 // - make callbacks before and after plans
 // - object insert & remove child node
 // - make pdo init value to zero                                          check
+
+// to do list 2019-05-21:
+// - make startWebSock and runCmdLine available                           check

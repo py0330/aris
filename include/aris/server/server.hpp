@@ -95,6 +95,15 @@ namespace aris::server
 		auto currentCollectId()->std::int64_t;
 		auto getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void;
 
+		auto startWebSock(const std::string &port)->void;
+		auto closeWebSock(const std::string &port)->void;
+		//auto startTcpSock(const std::string &port)->void;
+		//auto closeTcpSock(const std::string &port)->void;
+		//auto startUdpSock(const std::string &port)->void;
+		//auto closeUdpSock(const std::string &port)->void;
+		auto runCmdLine()->void;
+		//auto closeCmdLine()->void;
+
 		ARIS_REGISTER_TYPE(ControlServer);
 
 	private:
