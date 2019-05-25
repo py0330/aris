@@ -480,7 +480,7 @@ namespace aris::server
 								if (auto str = std::any_cast<std::string>(&cmd_ret->ret))
 									std::cout << ret_msg.toString() << std::endl;
 							}
-								
+
 						}
 						catch (std::exception &e)
 						{
@@ -489,6 +489,10 @@ namespace aris::server
 						}
 
 						result_list.erase(result++);
+					}
+					else
+					{
+						result++;
 					}
 				}
 				lck.unlock();
