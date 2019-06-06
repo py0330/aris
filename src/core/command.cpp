@@ -293,13 +293,10 @@ namespace aris::core
 					stream.get(c);
 				}
 
-
 				if(brace_num)THROW_FILE_AND_LINE("brace not pair");
 				return this_value;
 			};
-			
-			
-			
+
 			std::string cmd;
 			std::map<std::string, std::string> param_map;
 			std::stringstream input_stream{ command_string };

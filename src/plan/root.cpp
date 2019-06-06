@@ -1852,8 +1852,6 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(UniversalPlan);
 
-
-
 	struct MoveSeriesParam 
 	{
 		std::vector<double> t, x, xp1, xp2, xp3, y, yp1, yp2, yp3;
@@ -1898,7 +1896,7 @@ namespace aris::plan
 			auto diff_x = x_mat.data()[i] - x_mat.data()[i - 1];
 			auto diff_y = y_mat.data()[i] - y_mat.data()[i - 1];
 			
-			param.t.data()[i + 3] = param.t.data()[i + 2] + std::max(std::sqrt(diff_x * diff_x + diff_y * diff_y), 1e-7) * scale;
+			param.t.data()[i + 3] = param.t.data()[i + 2] + std::max(std::sqrt(diff_x * diff_x + diff_y * diff_y), 1e-10) * scale;
 		}
 
 		*(param.t.end() - 3) = *(param.t.end() - 4) + 1;
@@ -1912,8 +1910,8 @@ namespace aris::plan
 		param.yp2.resize(x_mat.size() + 6);
 		param.yp3.resize(x_mat.size() + 6);
 
-		aris::dynamic::s_akima(param.t.size(), param.t.data(), param.x.data(), param.xp1.data(), param.xp2.data(), param.xp3.data(), 1e-7);
-		aris::dynamic::s_akima(param.t.size(), param.t.data(), param.y.data(), param.yp1.data(), param.yp2.data(), param.yp3.data(), 1e-7);
+		aris::dynamic::s_akima(param.t.size(), param.t.data(), param.x.data(), param.xp1.data(), param.xp2.data(), param.xp3.data(), 1e-10);
+		aris::dynamic::s_akima(param.t.size(), param.t.data(), param.y.data(), param.yp1.data(), param.yp2.data(), param.yp3.data(), 1e-10);
 
 		target.param = param;
 	}

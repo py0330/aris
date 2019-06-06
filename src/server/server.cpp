@@ -841,14 +841,19 @@ namespace aris::server
 			
 			try
 			{
-				std::stringstream ss(msg_data);
-				for (std::string cmd; std::getline(ss, cmd);)
-				{
-					auto result = executeCmd(aris::core::Msg(cmd));
+				auto result = executeCmd(aris::core::Msg(msg));
 
-					std::unique_lock<std::mutex> l(imp_->result_mutex);
-					imp_->result_list.push_back(std::make_tuple(sock, msg, result));
-				}
+				std::unique_lock<std::mutex> l(imp_->result_mutex);
+				imp_->result_list.push_back(std::make_tuple(sock, msg, result));
+				
+				//std::stringstream ss(msg_data);
+				//for (std::string cmd; std::getline(ss, cmd);)
+				//{
+				//	auto result = executeCmd(aris::core::Msg(cmd));
+
+				//	std::unique_lock<std::mutex> l(imp_->result_mutex);
+				//	imp_->result_list.push_back(std::make_tuple(sock, msg, result));
+				//}
 			}
 			catch (std::exception &e)
 			{
@@ -938,7 +943,6 @@ namespace aris::server
 			}
 		}
 	}
-	
 	ControlServer::~ControlServer()
 	{
 		stop();

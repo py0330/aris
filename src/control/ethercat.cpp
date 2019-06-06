@@ -398,6 +398,12 @@ namespace aris::control
 		readPdo(0x6078, 0x00, cur_count);
 		return static_cast<double>(cur_count);
 	}
+	auto EthercatMotion::actualTor()->double
+	{
+		std::int16_t cur_count{ 0 };
+		readPdo(0x6077, 0x00, cur_count);
+		return static_cast<double>(cur_count);
+	}
 	auto EthercatMotion::disable()->int
 	{
 		// control word

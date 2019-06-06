@@ -50,3 +50,7 @@
 
 // to do list 2019-05-21:
 // - make startWebSock and runCmdLine available                           check
+
+// to do list 2019-06-03:
+// - make xml support chinese                                             
+// - check if xenomai can be started from sub-thread

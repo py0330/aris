@@ -55,6 +55,7 @@ namespace aris::control
 		auto virtual actualPos()->double = 0;
 		auto virtual actualVel()->double = 0;
 		auto virtual actualCur()->double = 0;
+		auto virtual actualTor()->double = 0;
 
 		auto virtual disable()->int = 0;
 		auto virtual enable()->int = 0;

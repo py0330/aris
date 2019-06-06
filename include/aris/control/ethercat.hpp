@@ -177,7 +177,8 @@ namespace aris::control
 		auto virtual actualVel()->double override;
 		// require pdo 0x6078 //
 		auto virtual actualCur()->double override;
-
+		// require pdo 0x6077 //
+		auto virtual actualTor()->double override;
 
 		// require pdo 0x6040 0x6041 // 
 		auto virtual disable()->int override;
