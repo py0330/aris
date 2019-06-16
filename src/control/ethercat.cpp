@@ -262,7 +262,7 @@ namespace aris::control
 		imp_->ec_slave_pool_.clear();
 		for (auto &sla : slavePool()) if (dynamic_cast<EthercatSlave*>(&sla)) imp_->ec_slave_pool_.push_back_ptr(dynamic_cast<EthercatSlave*>(&sla));
 
-		// make pdo & sdo map for each slave //
+		// make pdo map for each slave //
 		for (auto &sla : ecSlavePool())
 		{
 			// make PDO map //

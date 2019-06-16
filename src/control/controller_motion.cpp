@@ -97,8 +97,11 @@ namespace aris::control
 		motionPool().clear();
 		for (auto &s : slavePool())
 		{
-			if (dynamic_cast<Motion*>(&s))motionPool().push_back_ptr(dynamic_cast<Motion*>(&s));
-			motionPool().back().imp_->mot_id_ = motionPool().size() - 1;
+			if (auto mot = dynamic_cast<Motion*>(&s)) 
+			{
+				motionPool().push_back_ptr(dynamic_cast<Motion*>(&s));
+				mot->imp_->mot_id_ = motionPool().size() - 1;
+			}
 		}
 	}
 	auto Controller::motionAtAbs(aris::Size id)->Motion& { return imp_->motion_pool_.at(id); }

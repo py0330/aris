@@ -21,11 +21,7 @@
 // - fix moveAbsolute2 bug on linux                                       check
 // - generate 6-axis from DH                                              check
 // - make dynamic calibration as a plan                                   
-
-
-// to do list 2019-04-21:
 // - use extern template to reduce compile time
-
 
 // to do list 2019-05-07:
 // - svd decomposition
@@ -43,14 +39,14 @@
 // - make pdo of curent/targetpos/... can be customized
 // - fix server stastic data bug: when lose some frame, it corrupt 
 // - check motion respectively                                            check
-// - open server port for command
+// - make startWebSock and runCmdLine available                           check
 // - make callbacks before and after plans
 // - object insert & remove child node
 // - make pdo init value to zero                                          check
 
-// to do list 2019-05-21:
-// - make startWebSock and runCmdLine available                           check
-
 // to do list 2019-06-03:
-// - make xml support chinese                                             
+// - make xml support chinese                                             check
 // - check if xenomai can be started from sub-thread
+// - scan from esi file
+// - make virtual axis
+// - add tool coordinate easy
