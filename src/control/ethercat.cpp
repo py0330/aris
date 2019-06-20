@@ -229,41 +229,30 @@ namespace aris::control
 		return *this;
 	}
 
-	class EthercatMaster::Imp
-	{
-	public:
+	struct EthercatMaster::Imp 
+	{ 
 		std::any ec_handle_;
-		aris::core::RefPool<EthercatSlave> ec_slave_pool_;
+		aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>> slave_pool_{nullptr};
 	};
 	auto EthercatMaster::scan()->void { aris_ecrt_scan(this); }
 	auto EthercatMaster::scanInfoForCurrentSlaves()->void
 	{
 		for (auto &slave : slavePool())
 		{
-			if (auto ec_slave = dynamic_cast<EthercatSlave *>(&slave))
-			{
-				ec_slave->scanInfoForCurrentSlave();
-			}
+			slave.scanInfoForCurrentSlave();
 		}
 	}
 	auto EthercatMaster::scanPdoForCurrentSlaves()->void
 	{
 		for (auto &slave : slavePool())
 		{
-			if (auto ec_slave = dynamic_cast<EthercatSlave *>(&slave))
-			{
-				ec_slave->scanPdoForCurrentSlave();
-			}
+			slave.scanPdoForCurrentSlave();
 		}
 	}
 	auto EthercatMaster::init()->void
 	{
-		// make ec_slave_pool_ //
-		imp_->ec_slave_pool_.clear();
-		for (auto &sla : slavePool()) if (dynamic_cast<EthercatSlave*>(&sla)) imp_->ec_slave_pool_.push_back_ptr(dynamic_cast<EthercatSlave*>(&sla));
-
 		// make pdo map for each slave //
-		for (auto &sla : ecSlavePool())
+		for (auto &sla : slavePool())
 		{
 			// make PDO map //
 			sla.imp_->pdo_map_.clear();
@@ -297,8 +286,12 @@ namespace aris::control
 	auto EthercatMaster::send()->void { aris_ecrt_master_send(this); }
 	auto EthercatMaster::recv()->void { aris_ecrt_master_recv(this); }
 	auto EthercatMaster::sync()->void { aris_ecrt_master_sync(this, aris_rt_timer_read()); }
+	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&
+	{
+		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>(&Master::slavePool());
+		return imp_->slave_pool_;
+	}
 	auto EthercatMaster::ecHandle()->std::any& { return imp_->ec_handle_; }
-	auto EthercatMaster::ecSlavePool()->aris::core::RefPool<EthercatSlave>& { return imp_->ec_slave_pool_; }
 	EthercatMaster::~EthercatMaster() = default;
 	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp){}
 
@@ -694,5 +687,19 @@ namespace aris::control
 	EthercatMotion::EthercatMotion(const EthercatMotion &other) = default;
 	EthercatMotion& EthercatMotion::operator=(const EthercatMotion &other) = default;
 
-	EthercatController::EthercatController(const std::string &name) :EthercatMaster(name), Controller(name), Master(name){}
+	struct EthercatController::Imp
+	{
+		MotionPool motion_pool_{nullptr};
+	};
+	auto EthercatController::motionPool()->MotionPool& { return imp_->motion_pool_; }
+	auto EthercatController::init()->void
+	{ 
+		EthercatMaster::init(); 
+		Controller::init();
+
+		imp_->motion_pool_ = MotionPool(&slavePool());
+		motionPool().update();
+	}
+	EthercatController::~EthercatController() = default;
+	EthercatController::EthercatController(const std::string &name) :imp_(new Imp), EthercatMaster(name), Controller(name), Master(name){}
 }

@@ -90,16 +90,19 @@ namespace aris::control
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Motion);
 
-	struct Controller::Imp { aris::core::RefPool<Motion> motion_pool_; };
-	auto Controller::motionPool()->aris::core::RefPool<Motion>& { return imp_->motion_pool_; }
+	struct Controller::Imp 
+	{ 
+		aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>> motion_pool_;
+		Imp(Controller *target):motion_pool_(&target->slavePool()){};
+	};
+	auto Controller::motionPool()->aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>>& { return imp_->motion_pool_; }
 	auto Controller::init()->void
 	{
-		motionPool().clear();
+		motionPool().update();
 		for (auto &s : slavePool())
 		{
 			if (auto mot = dynamic_cast<Motion*>(&s)) 
 			{
-				motionPool().push_back_ptr(dynamic_cast<Motion*>(&s));
 				mot->imp_->mot_id_ = motionPool().size() - 1;
 			}
 		}
@@ -108,7 +111,7 @@ namespace aris::control
 	auto Controller::motionAtPhy(aris::Size id)->Motion& { return dynamic_cast<Motion&>(slaveAtPhy(id)); }
 	auto Controller::motionAtSla(aris::Size id)->Motion& { return dynamic_cast<Motion&>(slavePool().at(id)); }
 	Controller::~Controller() = default;
-	Controller::Controller(const std::string &name) :imp_(new Imp), Master(name) 
+	Controller::Controller(const std::string &name) :imp_(new Imp(this)), Master(name) 
 	{
 		this->registerType<aris::core::ObjectPool<Slave, aris::core::Object> >();
 	}

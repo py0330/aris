@@ -77,8 +77,8 @@ namespace aris::control
 	class Controller : public virtual Master
 	{
 	public:
-		auto motionPool()->aris::core::RefPool<Motion>&;
-		auto motionPool()const->const aris::core::RefPool<Motion>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
+		auto motionPool()->aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>>&;
+		auto motionPool()const->const aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 		auto motionAtSla(aris::Size id)->Motion&;
 		auto motionAtSla(aris::Size id)const->const Motion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
 		auto motionAtPhy(aris::Size id)->Motion&;

@@ -110,10 +110,10 @@ namespace aris::control
 	class EthercatMaster : virtual public Master
 	{
 	public:
+		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&;
+		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
-		auto ecSlavePool()->aris::core::RefPool<EthercatSlave>&;
-		auto ecSlavePool()const->const aris::core::RefPool<EthercatSlave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecSlavePool(); }
 		auto scan()->void;
 		auto scanInfoForCurrentSlaves()->void;
 		auto scanPdoForCurrentSlaves()->void;
@@ -134,7 +134,7 @@ namespace aris::control
 		auto virtual release()->void override;
 
 	private:
-		class Imp;
+		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 
 		friend class PdoEntry;
@@ -205,7 +205,14 @@ namespace aris::control
 	class EthercatController :public EthercatMaster, public Controller
 	{
 	public:
-		virtual ~EthercatController() = default;
+		using MotionPool = aris::core::SubRefPool<EthercatMotion, aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>>;
+
+		auto motionPool()->MotionPool&;
+		auto motionPool()const->const MotionPool& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
+		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>> { return EthercatMaster::slavePool(); }
+		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>> { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
+
+		virtual ~EthercatController();
 		EthercatController(const std::string &name = "ethercat_controller");
 		EthercatController(const EthercatController &other) = delete;
 		EthercatController(EthercatController &&other) = delete;
@@ -214,11 +221,14 @@ namespace aris::control
 		ARIS_REGISTER_TYPE(EthercatController);
 
 	protected:
-		auto virtual init()->void override { EthercatMaster::init(); Controller::init(); }
+		auto virtual init()->void override;
 		auto virtual send()->void override { EthercatMaster::send(); }
 		auto virtual recv()->void override { EthercatMaster::recv(); }
 		auto virtual sync()->void override { EthercatMaster::sync(); }
 		auto virtual release()->void override { EthercatMaster::release(); }
+
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 	};
 }
 

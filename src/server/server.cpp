@@ -506,7 +506,8 @@ namespace aris::server
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
 		{ 
-			return imp_->model_ == dynamic_cast<const aris::dynamic::Model*>(&obj);
+			auto found = dynamic_cast<const aris::dynamic::Model*>(&obj);
+			return found && imp_->model_ == found;
 		});
 		if (iter != children().end())children().erase(iter);
 		add(model);
@@ -516,7 +517,8 @@ namespace aris::server
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
 		{ 
-			return imp_->controller_ == dynamic_cast<const aris::control::Controller*>(&obj);
+			auto found = dynamic_cast<const aris::control::Controller*>(&obj);
+			return found && imp_->controller_ == found;
 		});
 		if (iter != children().end())children().erase(iter);
 		add(controller);
@@ -526,7 +528,8 @@ namespace aris::server
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
 		{ 
-			return imp_->sensor_root_ == dynamic_cast<const aris::sensor::SensorRoot*>(&obj);
+			auto found = dynamic_cast<const aris::sensor::SensorRoot*>(&obj);
+			return found && imp_->sensor_root_ == found;
 		});
 		if (iter != children().end())children().erase(iter);
 		add(sensor_root);
@@ -536,7 +539,8 @@ namespace aris::server
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
 		{
-			return imp_->plan_root_ == dynamic_cast<const aris::plan::PlanRoot*>(&obj);
+			auto found = dynamic_cast<const aris::plan::PlanRoot*>(&obj);
+			return found && imp_->plan_root_ == found;
 		});
 		if (iter != children().end())children().erase(iter);
 		add(plan_root);

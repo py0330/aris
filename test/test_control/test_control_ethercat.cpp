@@ -151,7 +151,7 @@ void test_scan()
 			{
 				mst.mout() << "count:" << std::dec << count << std::endl;
 	
-				for (auto &sla : mst.ecSlavePool())
+				for (auto &sla : mst.slavePool())
 				{
 					for (auto &sm : sla.smPool())
 					{
@@ -267,8 +267,10 @@ void test_pdo()
 			if (++count % 1000 == 0)
 			{
 				mst.mout() << "count:" << std::dec << count << std::endl;
-				for (auto &sla : mst.ecSlavePool())
+				for (auto &ec_sla : mst.slavePool())
 				{
+					auto &sla = dynamic_cast<aris::control::EthercatSlave&>(ec_sla);
+					
 					for (auto &sm : sla.smPool())
 					{
 						if (sm.tx())
