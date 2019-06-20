@@ -247,7 +247,7 @@ namespace aris::control
 
 			// make slaves //
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
-			for (auto &slave : master->ecSlavePool())
+			for (auto &slave : master->slavePool())
 			{
 				std::vector<ec_sync_info_t> ec_sync_info_vec;
 				std::vector<std::vector<ec_pdo_info_t> > ec_pdo_info_vec_vec;
@@ -306,7 +306,7 @@ namespace aris::control
 			master->ecHandle() = m_handle;
 
 			// make pdo init value to zero
-			for (auto &slave : master->ecSlavePool())
+			for (auto &slave : master->slavePool())
 			{
 				for (auto &sm : slave.smPool())
 				{
@@ -333,7 +333,7 @@ namespace aris::control
 
 		for (auto &sla : check_master_pdos.slavePool())
 			if (dynamic_cast<EthercatSlave*>(&sla))
-				check_master_pdos.ecSlavePool().push_back_ptr(dynamic_cast<EthercatSlave*>(&sla));
+				check_master_pdos.slavePool().push_back_ptr(dynamic_cast<EthercatSlave*>(&sla));
 
 
 		start_ethercat(&check_master_pdos);
