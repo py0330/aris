@@ -92,12 +92,12 @@ namespace aris::control
 
 	struct Controller::Imp 
 	{ 
-		aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>> motion_pool_;
-		Imp(Controller *target):motion_pool_(&target->slavePool()){};
+		aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>> motion_pool_{ nullptr };
 	};
 	auto Controller::motionPool()->aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>>& { return imp_->motion_pool_; }
 	auto Controller::init()->void
 	{
+		imp_->motion_pool_ = aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>>(&slavePool());
 		motionPool().update();
 		for (auto &s : slavePool())
 		{
@@ -111,7 +111,7 @@ namespace aris::control
 	auto Controller::motionAtPhy(aris::Size id)->Motion& { return dynamic_cast<Motion&>(slaveAtPhy(id)); }
 	auto Controller::motionAtSla(aris::Size id)->Motion& { return dynamic_cast<Motion&>(slavePool().at(id)); }
 	Controller::~Controller() = default;
-	Controller::Controller(const std::string &name) :imp_(new Imp(this)), Master(name) 
+	Controller::Controller(const std::string &name) :imp_(new Imp), Master(name) 
 	{
 		this->registerType<aris::core::ObjectPool<Slave, aris::core::Object> >();
 	}
