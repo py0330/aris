@@ -99,13 +99,7 @@ namespace aris::control
 	{
 		imp_->motion_pool_ = aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>>(&slavePool());
 		motionPool().update();
-		for (auto &s : slavePool())
-		{
-			if (auto mot = dynamic_cast<Motion*>(&s)) 
-			{
-				mot->imp_->mot_id_ = motionPool().size() - 1;
-			}
-		}
+		for (int i = 0; i < motionPool().size(); ++i)motionPool()[i].imp_->mot_id_ = i;
 	}
 	auto Controller::motionAtAbs(aris::Size id)->Motion& { return imp_->motion_pool_.at(id); }
 	auto Controller::motionAtPhy(aris::Size id)->Motion& { return dynamic_cast<Motion&>(slaveAtPhy(id)); }

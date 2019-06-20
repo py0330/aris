@@ -112,6 +112,11 @@ namespace aris::control
 	public:
 		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&;
 		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
+		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtAbs(id)); }
+		auto slaveAtAbs(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
+		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtPhy(id)); }
+		auto slaveAtPhy(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
+		
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 		auto scan()->void;
@@ -206,11 +211,21 @@ namespace aris::control
 	{
 	public:
 		using MotionPool = aris::core::SubRefPool<EthercatMotion, aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>>;
-
 		auto motionPool()->MotionPool&;
 		auto motionPool()const->const MotionPool& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
+		auto motionAtAbs(aris::Size id)->EthercatMotion& { return dynamic_cast<EthercatMotion&>(Controller::motionAtAbs(id)); }
+		auto motionAtAbs(aris::Size id)const->const EthercatMotion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
+		auto motionAtPhy(aris::Size id)->EthercatMotion& { return dynamic_cast<EthercatMotion&>(Controller::motionAtPhy(id)); }
+		auto motionAtPhy(aris::Size id)const->const EthercatMotion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
+		auto motionAtSla(aris::Size id)->EthercatMotion& { return dynamic_cast<EthercatMotion&>(Controller::motionAtSla(id)); }
+		auto motionAtSla(aris::Size id)const->const EthercatMotion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
+
 		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>> { return EthercatMaster::slavePool(); }
 		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>> { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
+		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return EthercatMaster::slaveAtAbs(id); }
+		auto slaveAtAbs(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
+		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return EthercatMaster::slaveAtPhy(id); }
+		auto slaveAtPhy(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
 
 		virtual ~EthercatController();
 		EthercatController(const std::string &name = "ethercat_controller");

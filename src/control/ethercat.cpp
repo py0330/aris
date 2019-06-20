@@ -307,7 +307,6 @@ namespace aris::control
 		// home 在用 //
 		int home_count{ 0 };
 		bool need_clear{ true };
-
 	};
 	auto EthercatMotion::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
