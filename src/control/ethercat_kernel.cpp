@@ -3,7 +3,6 @@ extern "C"
 {
 #include <ecrt.h>
 }
-
 #endif
 
 #include <chrono>
@@ -231,8 +230,6 @@ namespace aris::control
 			}
 		}
 		// check finished
-
-		
 
 		// make subfunction， which start the master
 		auto start_ethercat = [](EthercatMaster *master) 
