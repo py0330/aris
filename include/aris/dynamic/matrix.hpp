@@ -1026,6 +1026,125 @@ namespace aris::dynamic
 		s_permutate_inv(n, m, p, x, x_t);
 	}
 	auto inline s_householder_utp2pinv(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10)noexcept->void { s_householder_utp2pinv(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
+
+	//template<typename UType>
+	//auto s_householder_transform(Size m, Size n, double *U, UType u_t, double &tau)
+	//{
+	//}
+
+
+
+	//   
+	template<typename AType, typename UType, typename TauType, typename TauType2>
+	auto inline s_svd(Size m, Size n, const double *A, AType a_t, double *U, UType u_t, double *tau, TauType tau_t, double *tau2, TauType2 tau2_t, Size *p, Size &rank, double zero_check = 1e-10)noexcept->void
+	{
+		rank = 0;
+
+		// init u //
+		s_mc(m, n, A, a_t, U, u_t);
+
+		// init p //
+		std::iota(p, p + n, 0);
+
+		//dsp(m, n, U);
+
+		for (Size i(-1), uii{ 0 }, ti{ 0 }, t2i{ 0 }; ++i < 3; uii = next_d(uii, u_t), ti = next_r(ti, tau_t), t2i = next_r(t2i, tau2_t))
+		{
+			///////////////////////////////////////////第一次变换////////////////////////////////////////////////////
+			{
+				Size m1 = n;
+				Size n1 = m;
+				auto u_t1 = T(u_t);
+				
+				// 找到模最大的一列 //
+				double max_value{ 0 };
+				Size max_pos{ i };
+
+				for (Size j(i - 1), uij{ uii }; ++j < n1; uij = next_c(uij, u_t1))
+				{
+					double value = s_vv(m1 - i, U + uij, u_t1, U + uij, u_t1);
+					max_pos = value > max_value ? j : max_pos;
+					max_value = value > max_value ? value : max_value;
+				}
+
+				// 判断是否返回 //
+				max_value = std::sqrt(max_value);
+				if (max_value < zero_check) 
+				{ 
+					s_fill(m1 - i, 1, 0.0, tau + ti, tau_t);
+					s_fill(n - i, 1, 0.0, tau2 + t2i, tau2_t);
+					return;
+				}
+
+				++rank;
+				s_swap_v(m1, U + at(0, max_pos, u_t1), u_t1, U + at(0, i, u_t1), u_t1);
+				std::swap(p[max_pos], p[i]);
+
+				// 若已经到达最后一行，因为最后一行不需要householder化 //
+				if (i + 1 < m1)
+				{
+					// compute householder vector //
+					auto U_i1_i = U + next_r(uii, u_t1);
+
+					double rho = -max_value * s_sgn2(U[uii]);
+					tau[ti] = U[uii] / rho - 1.0;
+					s_nm(m1 - 1 - i, 1, 1.0 / (U[uii] - rho), U_i1_i, u_t1);
+					U[uii] = rho;
+
+					// update matrix //
+					for (Size j(i), uij(next_c(uii, u_t1)), tj{ next_r(ti, tau_t) }; ++j < n1; uij = next_c(uij, u_t1), tj = next_r(tj, tau_t))
+					{
+						auto U_i1_j = U + next_r(uij, u_t1);
+
+						double k = tau[ti] * (s_vv(m1 - i - 1, U_i1_i, u_t1, U_i1_j, u_t1) + U[uij]);
+						U[uij] += k;
+						s_va(m1 - i - 1, k, U_i1_i, u_t1, U_i1_j, u_t1);
+					}
+				}
+			}
+			
+			dsp(m, n, U);
+
+			///////////////////////////////////////////第二次变换////////////////////////////////////////////////////
+			{
+				if (i + 2 < m)
+				{
+					auto ui1i = next_r(uii, u_t);
+					auto max_value = std::sqrt(s_vv(m - i - 1, U + ui1i, u_t, U + ui1i, u_t));
+
+					// compute householder vector //
+					auto U_i2_i = U + next_r(ui1i, u_t);
+
+					double rho = -max_value * s_sgn2(U[ui1i]);
+					tau2[t2i] = U[ui1i] / rho - 1.0;
+					s_nm(m - 2 - i, 1, 1.0 / (U[ui1i] - rho), U_i2_i, u_t);
+					U[ui1i] = rho;
+
+					// update matrix //
+					for (Size j(i), ui1j(next_c(ui1i, u_t)), t2j{ next_r(t2i, tau2_t) }; ++j < n; ui1j = next_c(ui1j, u_t), t2j = next_r(t2j, tau2_t))
+					{
+						auto U_i2_j = U + next_r(ui1j, u_t);
+
+						double k = tau2[t2i] * (s_vv(m - i - 2, U_i2_i, u_t, U_i2_j, u_t) + U[ui1j]);
+						U[ui1j] += k;
+						s_va(m - i - 2, k, U_i2_i, u_t, U_i2_j, u_t);
+					}
+				}
+			}
+
+			dsp(m, n, U);
+		}
+
+
+
+
+	}
+	//auto inline s_svd(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10)noexcept->void { s_svd(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
+
+
+
+
+
 }
 
 #endif

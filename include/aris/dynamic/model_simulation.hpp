@@ -159,6 +159,23 @@ namespace aris::dynamic
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
+	// 辨识会得到 A 、 x 、 b 这样的矩阵和向量
+	// 理论上 A * x = b
+	// A为 m * n 维，x 为 n * 1 维，b维 m * 1维
+	// 
+	// m 为电机个数，也就是当前点的方程数，比如这里就是6
+	// n 为待辨识的参数，它为杆件数(不含地面) * 10 + 电机 * 3，因此这里是78
+	//
+	// 杆件的辨识参数如下，其中xyz为质心位置：
+	// m m*x m*y m*z Ixx Iyy Izz Ixy Ixz Iyz
+	// 电机的辨识参数如下，也就是静摩擦力、粘性摩擦系数、电机转子惯量：
+	// fs kv ki
+	// 其中电机摩擦力计算为： 
+	// f = sig(v)*fs + kv * v + ki * a
+	//
+	// x为当前的惯量值，注意它并不是辨识出来的结果，它仅仅保存了当前model中各个杆件的惯量和电机参数
+	// b为当前的电机出力
+	// A为观测矩阵
 	class Calibrator :public Element
 	{
 	public:

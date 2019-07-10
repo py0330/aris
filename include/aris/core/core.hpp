@@ -52,5 +52,10 @@
 // - add tool coordinate easy
 
 // to do list 2019-06-17:
-// - make SubRefPool
-// - make ChildRefPool
+// - make SubRefPool                                                      check
+// - make ChildRefPool                                                    check
+
+// to do list 2019-06-24:
+// - check of require ENABLE MODE8\9\10
+// - config sdo
+// - 

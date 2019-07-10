@@ -2391,7 +2391,93 @@ void test_ur5_calibration()
 	double b[6];
 	s_mm(calibrator.m(), 1, calibrator.n(), calibrator.A(), calibrator.x(), b);
 	dsp(calibrator.m(), 1, b);
+
+
 }
+
+auto test_clb()->void
+{
+	std::cout << "-------------------------------------------------" << std::endl;
+
+	// 创建机器人 //
+	aris::dynamic::PumaParam param;
+	param.d1 = 0.3295;
+	param.a1 = 0.04;
+	param.a2 = 0.275;
+	param.d3 = 0.0;
+	param.a3 = 0.025;
+	param.d4 = 0.28;
+
+	param.tool0_pe[2] = 0.078;
+	auto m = aris::dynamic::createModelPuma(param);
+
+	// 为已有机器人添加 辨识器，也可以在xml里定义
+	auto &clb = m->calibratorPool().add<aris::dynamic::Calibrator>();
+	//auto &clb = m->calibratorPool()[0];
+
+	// 以下代码为辨识器分配内存
+	for (auto &ee : m->generalMotionPool())ee.activate(false);
+	clb.allocateMemory();
+
+	// 以下为当前已知的电机参数 //
+	double q[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	double dq[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	double ddq[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	double f[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+
+	// 设置当前电机的位置、速度、加速度
+	for (int i = 0; i < m->motionPool().size(); ++i)
+	{
+		m->motionPool()[i].setMp(q[i]);
+		m->motionPool()[i].setMv(dq[i]);
+		m->motionPool()[i].setMa(ddq[i]);
+
+	}
+
+	// 求正解、速度正解、加速度解
+	m->solverPool().at(1).kinPos();
+	m->solverPool().at(1).kinVel();
+	m->solverPool().at(1).dynAccAndFce();
+
+
+	// 设置当前电机的力
+	for (int i = 0; i < m->motionPool().size(); ++i)
+	{
+		m->motionPool()[i].setMf(f[i]);
+	}
+
+	// 开始辨识 //
+	clb.clb();
+
+
+	// 辨识会得到 A 、 x 、 b 这样的矩阵和向量
+	// 理论上 A * x = b
+	// A为 m * n 维，x 为 n * 1 维，b维 m * 1维
+	// 
+	// m 为电机个数，也就是当前点的方程数，比如这里就是6
+	// n 为待辨识的参数，它为杆件数(不含地面) * 10 + 电机 * 3，因此这里是78
+	//
+	// 杆件的辨识参数如下，其中xyz为质心位置：
+	// m m*x m*y m*z Ixx Iyy Izz Ixy Ixz Iyz
+	// 电机的辨识参数如下，也就是静摩擦力、粘性摩擦系数、电机转子惯量：
+	// fs kv ki
+	// 其中电机摩擦力计算为： 
+	// f = sig(v)*fs + kv * v + ki * a
+	//
+	// x为当前的惯量值，注意它并不是辨识出来的结果，它仅仅保存了当前model中各个杆件的惯量和电机参数
+	// b为当前的电机出力
+	// A为观测矩阵
+
+
+	std::cout << "m:" << clb.m() << std::endl;
+	std::cout << "n:" << clb.n() << std::endl;
+
+	// 以下打印各个矩阵：
+	dsp(clb.m(), clb.n(), clb.A());
+	dsp(clb.m(), 1, clb.b());
+	dsp(clb.n(), 1, clb.x());
+}
+
 
 void test_model_solver()
 {
@@ -2405,12 +2491,14 @@ void test_model_solver()
 	test_ur5_on_stewart();
 	test_multi_systems();
 
-	bench_3R();
-	bench_ur5();
-	bench_stewart();
-	bench_multi_systems();
+	//bench_3R();
+	//bench_ur5();
+	//bench_stewart();
+	//bench_multi_systems();
 
-	//test_ur5_calibration();
+	test_ur5_calibration();
+
+	test_clb();
 	std::cout << "-----------------test model compute finished------------" << std::endl << std::endl;
 }
 
