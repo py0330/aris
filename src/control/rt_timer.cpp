@@ -25,6 +25,17 @@ namespace aris::control
 	{
 		std::any rt_task = RT_TASK();
 
+		// make as xenomai context
+		if (auto ret = rt_task_shadow(nullptr, nullptr, 0, 0)) 
+		{
+			std::cout << "ret:" << ret << std::endl;
+			std::cout << "EINVAL:" << EINVAL << std::endl;
+			std::cout << "ENOMEM:" << ENOMEM << std::endl;
+			std::cout << "EEXIST:" << EEXIST << std::endl;
+			std::cout << "EPERM:" << EPERM << std::endl;
+			std::cout << "EBUSY:" << EBUSY << std::endl;
+		};
+
 		// 为了使用返回值优化，这里必须判断，不能用三目运算符 //
 		if (auto ret = rt_task_create(&std::any_cast<RT_TASK&>(rt_task), "realtime core", 0, 99, T_JOINABLE)) 
 		{
@@ -35,7 +46,6 @@ namespace aris::control
 			std::cout << "ENOMEM:" << ENOMEM << std::endl;
 			std::cout << "EEXIST:" << EEXIST << std::endl;
 			std::cout << "EPERM:" << EPERM << std::endl;
-
 		}
 			
 
@@ -44,7 +54,7 @@ namespace aris::control
 	auto aris_rt_task_start(std::any& rt_task, void(*task_func)(void*), void*param)->int { return rt_task_start(&std::any_cast<RT_TASK&>(rt_task), task_func, param); }
 	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
 	auto aris_rt_task_set_periodic(int nanoseconds)->int 
-	{ 
+	{
 		last_time_ = aris_rt_timer_read();
 		return rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
 	}
