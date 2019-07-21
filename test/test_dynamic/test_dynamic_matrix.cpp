@@ -1270,49 +1270,21 @@ void test_svd()
 
 	double U_r[30], tau_r[6], tau2_r[6];
 
-	aris::Size rank;
-	s_svd(5, 6, A, 6, U_r, 6, tau_r, 1, tau2_r, 1, resultp.data(), rank);
+	s_svd(5, 6, A, 6, U_r, 6, tau_r, 1, tau2_r, 1, resultp.data());
 	
-	double Q1[36], Q2[16];
-	s_householder_ut2q(6, rank, U_r, T(6), tau_r, 1, Q1, 6);
-	s_householder_ut2q(4, rank, U_r + 6, 6, tau2_r, 1, Q2, 4);
+	double Q1[36], Q2[16], Q3[9];
+	s_householder_ut2q(6, 5, U_r, T(6), tau_r, 1, Q1, 6);
+	s_householder_ut2q(4, 6, U_r + 6, 6, tau2_r, 1, Q2, 4);
 
 	dsp(5, 6, A);
 
-	double Ap[30];
-	s_mc(5, 6, A, Ap);
-	s_permutate_inv(5, 6, resultp.data(), Ap, 6);
-	//dsp(5, 6, Ap);
-
-	s_mc(5, 6, A, Ap);
-	s_permutate(5, 6, resultp.data(), Ap, 6);
-	dsp(5, 6, Ap);
-
-	double r1[30], r2[30];
-	s_mm(5, 6, 6, Ap, Q1, r1);
+	double r1[30], r2[30], r3[30];
+	s_mm(5, 6, 6, A, Q1, r1);
 
 	s_mc(1, 6, r1, r2);
-	s_mm(4, 6, 4, Q2, r1 + 6, r2 + 6);
+	s_mm(4, 6, 4, Q2, T(4), r1 + 6, 6, r2 + 6, 6);
 
-	
-
-	dsp(5, 6, r1);
 	dsp(5, 6, r2);
-
-	dsp(5, 6, U_r);
-	dsp(6, 6, Q1);
-	dsp(4, 4, Q2);
-
-	double r3[16];
-
-	s_mm(4, 4, 4, Q2, 4, Q2, T(4), r3, 4);
-	dsp(4, 4, r3);
-
-
-
-	//dsp(5, 6, result1.data());
-	//dsp(1, 6, result2.data());
-	//dsp(1, 6, result3.data());
 }
 
 

@@ -2431,7 +2431,6 @@ auto test_clb()->void
 		m->motionPool()[i].setMp(q[i]);
 		m->motionPool()[i].setMv(dq[i]);
 		m->motionPool()[i].setMa(ddq[i]);
-
 	}
 
 	// 求正解、速度正解、加速度解
