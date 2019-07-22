@@ -803,7 +803,7 @@ namespace aris::server
 	auto ControlServer::getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error(std::string("failed") + __FILE__));
+		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error(std::string("failed") + __FILE__ + std::to_string(__LINE__)));
 
 		imp_->get_data_func_ = &get_func;
 		imp_->get_data_ = &data;
@@ -966,9 +966,17 @@ namespace aris::server
 			// 检测是否有数据从executeCmdInMain过来
 			if (cmd_msg_received_)
 			{
-				target_return_ = executeCmd(cmd_msg_for_main_);
-				cmd_finished_ = true;
-				cmd_msg_received_ = false;
+				try
+				{
+					target_return_ = executeCmd(cmd_msg_for_main_);
+					cmd_finished_ = true;
+					cmd_msg_received_ = false;
+				}
+				catch (std::exception &e)
+				{
+					std::cout << e.what() << std::endl;
+					LOG_ERROR << e.what() << std::endl;
+				}
 			}
 			// 检测是否有数据从command line过来
 			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
