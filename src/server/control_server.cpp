@@ -8,7 +8,8 @@
 #include <aris/core/core.hpp>
 #include <aris/control/control.hpp>
 
-#include "aris/server/server.hpp"
+#include "aris/server/ui.hpp"
+#include "aris/server/control_server.hpp"
 
 namespace aris::server
 {
@@ -480,7 +481,6 @@ namespace aris::server
 								if (auto str = std::any_cast<std::string>(&cmd_ret->ret))
 									std::cout << ret_msg.toString() << std::endl;
 							}
-
 						}
 						catch (std::exception &e)
 						{
@@ -567,7 +567,7 @@ namespace aris::server
 		static std::uint64_t cmd_id{ 0 };
 		++cmd_id;
 
-		LOG_INFO << "server receive cmd " << std::to_string(cmd_id) << " : " << msg.toString() << std::endl;
+		LOG_INFO << "server execute cmd " << std::to_string(cmd_id) << " : " << msg.toString() << std::endl;
 		auto cmd_end = imp_->cmd_end_.load();
 
 		// 找到命令对应的plan //
@@ -845,7 +845,7 @@ namespace aris::server
 			
 			try
 			{
-				auto result = executeCmd(aris::core::Msg(msg));
+				auto result = executeCmdInMain(aris::core::Msg(msg));
 
 				std::unique_lock<std::mutex> l(imp_->result_mutex);
 				imp_->result_list.push_back(std::make_tuple(sock, msg, result));
@@ -854,7 +854,7 @@ namespace aris::server
 				//for (std::string cmd; std::getline(ss, cmd);)
 				//{
 				//	auto result = executeCmd(aris::core::Msg(cmd));
-
+				
 				//	std::unique_lock<std::mutex> l(imp_->result_mutex);
 				//	imp_->result_list.push_back(std::make_tuple(sock, msg, result));
 				//}
@@ -927,10 +927,10 @@ namespace aris::server
 
 		if (sock != imp_->source_.end()) imp_->source_.erase(sock);
 	}
-	auto ControlServer::runCmdLine()->void
+	auto ControlServer::runCmdLine2()->void
 	{
 		if (!imp_->return_thread_.joinable())imp_->startReturnThread();
-
+		
 		for (std::string command_in; std::getline(std::cin, command_in);)
 		{
 			try
@@ -947,6 +947,66 @@ namespace aris::server
 			}
 		}
 	}
+
+	aris::core::Msg cmd_msg_for_main_;
+	std::shared_ptr<aris::plan::PlanTarget> target_return_;
+	std::atomic_bool cmd_msg_received_ = false, cmd_finished_ = false;
+
+	auto ControlServer::runCmdLine()->void
+	{
+		auto ret = std::async(std::launch::async, []()->std::string
+		{
+			std::string command_in; 
+			std::getline(std::cin, command_in);
+			return command_in;
+		});
+		
+		for (;;)
+		{
+			// 检测是否有数据从executeCmdInMain过来
+			if (cmd_msg_received_)
+			{
+				target_return_ = executeCmd(cmd_msg_for_main_);
+				cmd_finished_ = true;
+				cmd_msg_received_ = false;
+			}
+			// 检测是否有数据从command line过来
+			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+			{
+				auto msg = aris::core::Msg(ret.get());
+				auto result = this->executeCmd(msg);
+				std::unique_lock<std::mutex> l(imp_->result_mutex);
+				imp_->result_list.push_back(std::make_tuple(nullptr, msg, result));
+
+				ret = std::async(std::launch::async, []()->std::string
+				{
+					std::string command_in;
+					std::getline(std::cin, command_in);
+					return command_in;
+				});
+			}
+			// 休息
+			else
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+		}
+	}
+	auto ControlServer::executeCmdInMain(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>
+	{
+		static std::mutex mu_;
+		std::unique_lock<std::mutex> lck(mu_);
+
+		cmd_msg_for_main_ = aris::core::Msg(cmd_string);
+		cmd_msg_received_ = true;
+
+		while (!cmd_finished_)std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		cmd_finished_ = false;
+		while (cmd_msg_received_)std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+		return target_return_;
+	}
+
 	ControlServer::~ControlServer()
 	{
 		stop();

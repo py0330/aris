@@ -1095,23 +1095,20 @@ namespace aris::dynamic
 		// solve singular values //
 		//std::function<void()> dvc;
 
-		auto dvc = [](Size m, Size n, double )
+		auto dvc = [](Size m, Size n, double f)
 		{
 
 
 
 
 
-		}
+		};
 
 
 
 
 	}
 	//auto inline s_svd(Size m, Size n, Size rank, const double *U, const double *tau, const Size *p, double *x, double *tau2, double zero_check = 1e-10)noexcept->void { s_svd(m, n, rank, U, n, tau, 1, p, x, m, tau2, 1, zero_check); }
-
-
-
 
 
 }
