@@ -973,10 +973,18 @@ namespace aris::server
 			// 检测是否有数据从command line过来
 			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
 			{
-				auto msg = aris::core::Msg(ret.get());
-				auto result = this->executeCmd(msg);
-				std::unique_lock<std::mutex> l(imp_->result_mutex);
-				imp_->result_list.push_back(std::make_tuple(nullptr, msg, result));
+				try
+				{
+					auto msg = aris::core::Msg(ret.get());
+					auto result = this->executeCmd(msg);
+					std::unique_lock<std::mutex> l(imp_->result_mutex);
+					imp_->result_list.push_back(std::make_tuple(nullptr, msg, result));
+				}
+				catch (std::exception &e)
+				{
+					std::cout << e.what() << std::endl;
+					LOG_ERROR << e.what() << std::endl;
+				}
 
 				ret = std::async(std::launch::async, []()->std::string
 				{
