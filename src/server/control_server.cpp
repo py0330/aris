@@ -949,8 +949,8 @@ namespace aris::server
 	}
 
 	aris::core::Msg cmd_msg_for_main_;
-	std::shared_ptr<aris::plan::PlanTarget> target_return_;
-	std::atomic_bool cmd_msg_received_ = false, cmd_finished_ = false;
+	std::atomic_bool cmd_msg_received_ = false;
+	std::shared_ptr<std::promise<std::shared_ptr<aris::plan::PlanTarget>>> execute_promise_;
 
 	auto ControlServer::runCmdLine()->void
 	{
@@ -968,14 +968,14 @@ namespace aris::server
 			{
 				try
 				{
-					target_return_ = executeCmd(cmd_msg_for_main_);
-					cmd_finished_ = true;
+					auto target = executeCmd(cmd_msg_for_main_);
 					cmd_msg_received_ = false;
+					execute_promise_->set_value(target);
 				}
-				catch (std::exception &e)
+				catch (...)
 				{
-					std::cout << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
+					cmd_msg_received_ = false;
+					execute_promise_->set_exception(std::current_exception());
 				}
 			}
 			// 检测是否有数据从command line过来
@@ -1013,14 +1013,12 @@ namespace aris::server
 		static std::mutex mu_;
 		std::unique_lock<std::mutex> lck(mu_);
 
+		execute_promise_ = std::make_shared<std::promise<std::shared_ptr<aris::plan::PlanTarget>>>();
+		auto ret = execute_promise_->get_future();
 		cmd_msg_for_main_ = aris::core::Msg(cmd_string);
 		cmd_msg_received_ = true;
 
-		while (!cmd_finished_)std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		cmd_finished_ = false;
-		while (cmd_msg_received_)std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
-		return target_return_;
+		return ret.get();
 	}
 
 	ControlServer::~ControlServer()
