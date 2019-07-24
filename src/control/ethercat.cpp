@@ -157,7 +157,7 @@ namespace aris::control
 	{
 		aris::control::EthercatMaster mst;
 		mst.scan();
-		if (mst.slavePool().size() < this->phyId()) THROW_FILE_AND_LINE("ec scan failed");
+		if (mst.slavePool().size() <= this->phyId()) THROW_FILE_AND_LINE("ec scan failed");
 
 		this->setProductCode(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).productCode());
 		this->setRevisionNum(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).revisionNum());
@@ -168,7 +168,7 @@ namespace aris::control
 	{
 		aris::control::EthercatMaster mst;
 		mst.scan();
-		if (mst.slavePool().size() < this->phyId()) THROW_FILE_AND_LINE("ec scan failed");
+		if (mst.slavePool().size() <= this->phyId()) THROW_FILE_AND_LINE("ec scan failed");
 
 		this->smPool() = dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).smPool();
 	}

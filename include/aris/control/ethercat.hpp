@@ -5,6 +5,24 @@
 
 namespace aris::control
 {
+	class SlaveType
+	{
+	public:
+		auto setRootPath(std::string path)->void;
+		auto getVendorList()->std::list<std::pair<int, std::string>>;
+		auto getDeviceList(int vendor_id)->std::list<std::pair<int, std::string>>;
+		auto getPdoList()->void;
+
+
+
+
+
+
+
+	};
+	
+	
+	
 	class PdoEntry :public aris::core::Object
 	{
 	public:
@@ -122,6 +140,8 @@ namespace aris::control
 		auto scan()->void;
 		auto scanInfoForCurrentSlaves()->void;
 		auto scanPdoForCurrentSlaves()->void;
+
+		//auto setEsiDirs(std::vector<std::filesystem::path> esi_dirs)->void;
 
 		virtual ~EthercatMaster();
 		EthercatMaster(const std::string &name = "ethercat_master");

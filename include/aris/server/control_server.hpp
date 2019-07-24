@@ -20,6 +20,9 @@ namespace aris::server
 	class ControlServer : public aris::core::Object
 	{
 	public:
+		using PreCallback = std::add_pointer<void(ControlServer&)>::type;
+		using PostCallback = std::add_pointer<void(ControlServer&)>::type;
+
 		// members //
 		static auto instance()->ControlServer &;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
@@ -46,33 +49,27 @@ namespace aris::server
 		auto interfaceRoot()->InterfaceRoot&;
 		auto interfaceRoot()const->const InterfaceRoot& { return const_cast<ControlServer *>(this)->interfaceRoot(); }
 
-		// operation //
+		// operation in RT & NRT context //
+		auto setRtPlanPreCallback(PreCallback pre_callback)->void;
+		auto setRtPlanPostCallback(PostCallback post_callback)->void;
+		auto running()->bool;
+		auto globalCount()->std::int64_t;
+
+		// operation in RT context //
+
+		// operation in NRT context //
+		auto startWebSock(const std::string &port)->void;
+		auto closeWebSock(const std::string &port)->void;
+		auto runCmdLine()->void;
 		auto executeCmd(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
+		auto executeCmdInMain(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
 		auto start()->void;
 		auto stop()->void;
-		auto running()->bool;
 		auto waitForAllExecution()->void;
 		auto waitForAllCollection()->void;
-
-		// inquire //
-		auto globalCount()->std::int64_t;
 		auto currentExecuteId()->std::int64_t;
 		auto currentCollectId()->std::int64_t;
 		auto getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void;
-
-		// run in main, for start cmd //
-		auto runCmdLine()->void;
-		auto executeCmdInMain(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
-
-
-		auto startWebSock(const std::string &port)->void;
-		auto closeWebSock(const std::string &port)->void;
-		//auto startTcpSock(const std::string &port)->void;
-		//auto closeTcpSock(const std::string &port)->void;
-		//auto startUdpSock(const std::string &port)->void;
-		//auto closeUdpSock(const std::string &port)->void;
-		auto runCmdLine2()->void;
-		//auto closeCmdLine()->void;
 
 		ARIS_REGISTER_TYPE(ControlServer);
 

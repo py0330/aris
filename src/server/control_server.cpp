@@ -68,6 +68,10 @@ namespace aris::server
 		const std::function<void(ControlServer&, std::any&)>* get_data_func_;
 		std::any *get_data_;
 
+		// callbacks //
+		std::atomic<PreCallback> pre_callback_{ nullptr };
+		std::atomic<PostCallback> post_callback_{ nullptr };
+
 		// 返回数据 //
 		std::thread return_thread_;
 		std::mutex result_mutex;
@@ -78,8 +82,11 @@ namespace aris::server
 	};
 	auto ControlServer::Imp::tg()->void
 	{
+		// pre callback //
+		if (auto call = pre_callback_.load())call(ControlServer::instance());
+		
+		// get atomic variables
 		auto global_count = ++global_count_; // 原子操作
-
 		auto cmd_now = cmd_now_.load();//原子操作
 		auto cmd_end = cmd_end_.load();//原子操作
 
@@ -112,31 +119,34 @@ namespace aris::server
 			// 检查错误 //
 			if (ret < 0 || checkMotion(target.mot_options.data()))
 			{
-				target.ret_code = aris::plan::PlanTarget::ERROR;
-				
+				// print info //
 				server_->controller().mout() << "failed, cmd queue cleared\n";
-				count_ = 1;
+				
+				// finish //
+				target.ret_code = aris::plan::PlanTarget::ERROR;
 				cmd_now_.store(cmd_end);//原子操作
-
+				count_ = 1;
 				server_->controller().resetRtStasticData(nullptr, false);
+				server_->controller().lout() << std::flush;
 			}
 			// 命令正常结束，结束统计数据 //
 			else if (ret == 0)
 			{
-				server_->controller().lout() << std::flush;
-				
-				target.ret_code = aris::plan::PlanTarget::SUCCESS;
-				
-				if(!(target.option & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
+				// print info //
+				if (!(target.option & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
 					server_->controller().mout() << "cmd finished, spend " << count_ << " counts\n\n";
-				count_ = 1;
+				
+				// finish //
+				target.ret_code = aris::plan::PlanTarget::SUCCESS;
 				cmd_now_.store(cmd_now + 1);//原子操作
-
+				count_ = 1;
 				server_->controller().resetRtStasticData(nullptr, false);
+				server_->controller().lout() << std::flush;
 			}
 			// 命令仍在执行 //
 			else
 			{
+				// print info //
 				if (++count_ % 1000 == 0 && !(target.option & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
 					server_->controller().mout() << "execute cmd in count: " << count_ << "\n";
 			}
@@ -148,11 +158,14 @@ namespace aris::server
 		}
 
 		// 给与外部想要的数据 //
-		if (if_get_data_.exchange(false))// 原子操作
+		if (if_get_data_.exchange(false)) // 原子操作
 		{
 			get_data_func_->operator()(ControlServer::instance(), *get_data_);
 			if_get_data_ready_.store(true); // 原子操作
 		}
+
+		// post callback //
+		if (auto call = post_callback_.load())call(ControlServer::instance());
 	}
 	auto ControlServer::Imp::executeCmd(aris::plan::PlanTarget &target)->int
 	{
@@ -398,7 +411,6 @@ namespace aris::server
 					}
 				}
 			}
-			
 		}
 
 		// 储存电机指令 //
@@ -685,29 +697,6 @@ namespace aris::server
 
 		return target;
 	}
-	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
-	auto ControlServer::currentExecuteId()->std::int64_t
-	{
-		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current execute ID, because ControlServer is not running"));
-
-		// 只有execute_cmd函数才可能会改变cmd_queue中的数据
-		auto cmd_end = imp_->cmd_end_.load();
-		auto cmd_now = imp_->cmd_now_.load();
-
-		return cmd_now<cmd_end ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->target->command_id : 0;
-	}
-	auto ControlServer::currentCollectId()->std::int64_t
-	{
-		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current collect ID, because ControlServer is not running"));
-
-		// 只有execute_cmd函数才可能会改变cmd_queue中的数据
-		auto cmd_end = imp_->cmd_end_.load();
-		auto cmd_collect = imp_->cmd_collect_.load();
-
-		return cmd_collect<cmd_end ? imp_->internal_data_queue_[cmd_collect % Imp::CMD_POOL_SIZE]->target->command_id : 0;
-	}
 	auto ControlServer::start()->void
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -800,6 +789,32 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();//原子操作
 		while (cmd_end != imp_->cmd_collect_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
+	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)->void { imp_->pre_callback_.store(pre_callback); }
+	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
+	
+	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
+	auto ControlServer::currentExecuteId()->std::int64_t
+	{
+		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current execute ID, because ControlServer is not running"));
+
+		// 只有execute_cmd函数才可能会改变cmd_queue中的数据
+		auto cmd_end = imp_->cmd_end_.load();
+		auto cmd_now = imp_->cmd_now_.load();
+
+		return cmd_now<cmd_end ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->target->command_id : 0;
+	}
+	auto ControlServer::currentCollectId()->std::int64_t
+	{
+		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current collect ID, because ControlServer is not running"));
+
+		// 只有execute_cmd函数才可能会改变cmd_queue中的数据
+		auto cmd_end = imp_->cmd_end_.load();
+		auto cmd_collect = imp_->cmd_collect_.load();
+
+		return cmd_collect<cmd_end ? imp_->internal_data_queue_[cmd_collect % Imp::CMD_POOL_SIZE]->target->command_id : 0;
+	}
 	auto ControlServer::getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -815,6 +830,7 @@ namespace aris::server
 
 		imp_->if_get_data_ready_.store(false);
 	}
+	
 	auto ControlServer::startWebSock(const std::string &port)->void
 	{
 		if (!imp_->return_thread_.joinable())imp_->startReturnThread();
@@ -926,26 +942,6 @@ namespace aris::server
 		});
 
 		if (sock != imp_->source_.end()) imp_->source_.erase(sock);
-	}
-	auto ControlServer::runCmdLine2()->void
-	{
-		if (!imp_->return_thread_.joinable())imp_->startReturnThread();
-		
-		for (std::string command_in; std::getline(std::cin, command_in);)
-		{
-			try
-			{
-				auto result = this->executeCmd(aris::core::Msg(command_in));
-
-				std::unique_lock<std::mutex> l(imp_->result_mutex);
-				imp_->result_list.push_back(std::make_tuple(nullptr, aris::core::Msg(command_in), result));
-			}
-			catch (std::exception &e)
-			{
-				std::cout << e.what() << std::endl;
-				LOG_ERROR << e.what() << std::endl;
-			}
-		}
 	}
 
 	aris::core::Msg cmd_msg_for_main_;

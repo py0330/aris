@@ -46,7 +46,7 @@
 
 // to do list 2019-06-03:
 // - make xml support chinese                                             check
-// - check if xenomai can be started from sub-thread
+// - check if xenomai can be started from sub-thread                      use runCmdLine to work
 // - scan from esi file
 // - make virtual axis
 // - add tool coordinate easy
@@ -58,4 +58,8 @@
 // to do list 2019-06-24:
 // - check of require ENABLE MODE8\9\10
 // - config sdo
-// - 
+// 
+// to do list 2019-07-24
+// - make interface of server
+// - check pdo instead of corrupt
+// - make motionPool() available before start controller
