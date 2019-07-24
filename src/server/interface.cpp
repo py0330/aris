@@ -13,30 +13,22 @@
 
 namespace aris::server
 {
-	auto Interface::executeCmd(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>
-	{
-		auto result = aris::server::ControlServer::instance().executeCmd(cmd_string);
-
-		return result;
-	}
-	
 	auto WebInterface::open()->void { sock_.startServer(); }
 	auto WebInterface::close()->void { sock_.stop(); }
 	auto WebInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		sock_.setPort(attributeString(xml_ele, "port", std::string()));
-
 		Interface::loadXml(xml_ele);
 	}
 	auto WebInterface::saveXml(aris::core::XmlElement &xml_ele)const->void
 	{
 		Interface::saveXml(xml_ele);
-
 		if (!sock_.port().empty())xml_ele.SetAttribute("port", sock_.port().c_str());
 	}
 	WebInterface::WebInterface(const std::string &port):Interface()
 	{
 		sock_.setPort(port);
+		sock_.setConnectType(aris::core::Socket::WEB);
 		sock_.setOnReceivedMsg([this](aris::core::Socket *socket, aris::core::Msg &msg)->int
 		{
 			std::string msg_data = msg.toString();
@@ -52,9 +44,33 @@ namespace aris::server
 
 			try
 			{
-				auto result = aris::server::ControlServer::instance().executeCmd(aris::core::Msg(msg));
+				aris::server::ControlServer::instance().executeCmd(aris::core::Msg(msg), [this, msg](aris::plan::PlanTarget &target)->void 
+				{
+					// make return msg
+					aris::core::Msg ret_msg;
+					ret_msg.setMsgID(msg.header().msg_id_);
+					ret_msg.setType(msg.header().msg_type_);
+					ret_msg.header().reserved1_ = msg.header().reserved1_;
+					ret_msg.header().reserved2_ = msg.header().reserved2_;
+					ret_msg.header().reserved3_ = msg.header().reserved3_;
 
+					// only copy if it is a str
+					if (auto str = std::any_cast<std::string>(&target.ret))
+					{
+						ret_msg.copy(*str);
+					}
 
+					// return back to source
+					try
+					{
+						this->sock_.sendMsg(ret_msg);
+					}
+					catch (std::exception &e)
+					{
+						std::cout << e.what() << std::endl;
+						LOG_ERROR << e.what() << std::endl;
+					}
+				});
 			}
 			catch (std::exception &e)
 			{
@@ -111,6 +127,5 @@ namespace aris::server
 
 			return 0;
 		});
-		//
 	}
 }

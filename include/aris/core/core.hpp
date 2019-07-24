@@ -40,7 +40,7 @@
 // - fix server stastic data bug: when lose some frame, it corrupt 
 // - check motion respectively                                            check
 // - make startWebSock and runCmdLine available                           check
-// - make callbacks before and after plans
+// - make callbacks before and after plans                                testing
 // - object insert & remove child node
 // - make pdo init value to zero                                          check
 
@@ -60,6 +60,6 @@
 // - config sdo
 // 
 // to do list 2019-07-24
-// - make interface of server
-// - check pdo instead of corrupt
-// - make motionPool() available before start controller
+// - make interface of server                                             
+// - check pdo instead of corrupt                                         
+// - make motionPool() available before start controller                  

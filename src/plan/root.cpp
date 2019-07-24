@@ -61,17 +61,9 @@ namespace aris::plan
 		"							<Param name=\"check_pos_continuous\"/>"\
 		"							<Param name=\"not_check_pos_continuous\"/>"\
 		"						</UniqueParam>"\
-		"						<UniqueParam default=\"check_pos_continuous_at_start\">"\
-		"							<Param name=\"check_pos_continuous_at_start\"/>"\
-		"							<Param name=\"not_check_pos_continuous_at_start\"/>"\
-		"						</UniqueParam>"\
 		"						<UniqueParam default=\"check_pos_continuous_second_order\">"\
 		"							<Param name=\"check_pos_continuous_second_order\"/>"\
 		"							<Param name=\"not_check_pos_continuous_second_order\"/>"\
-		"						</UniqueParam>"\
-		"						<UniqueParam default=\"check_pos_continuous_second_order_at_start\">"\
-		"							<Param name=\"check_pos_continuous_second_order_at_start\"/>"\
-		"							<Param name=\"not_check_pos_continuous_second_order_at_start\"/>"\
 		"						</UniqueParam>"\
 		"						<UniqueParam default=\"check_pos_following_error\">"\
 		"							<Param name=\"check_pos_following_error\"/>"\
@@ -95,10 +87,6 @@ namespace aris::plan
 		"							<Param name=\"check_vel_continuous\"/>"\
 		"							<Param name=\"not_check_vel_continuous\"/>"\
 		"						</UniqueParam>"\
-		"						<UniqueParam default=\"check_vel_continuous_at_start\">"\
-		"							<Param name=\"check_vel_continuous_at_start\"/>"\
-		"							<Param name=\"not_check_vel_continuous_at_start\"/>"\
-		"						</UniqueParam>"\
 		"						<UniqueParam default=\"check_vel_following_error\">"\
 		"							<Param name=\"check_vel_following_error\"/>"\
 		"							<Param name=\"not_check_vel_following_error\"/>"\
@@ -117,14 +105,11 @@ namespace aris::plan
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
-					Plan::NOT_CHECK_POS_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
 					Plan::NOT_CHECK_POS_FOLLOWING_ERROR |
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
-					Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR);
 			}
 			else if (cmd_param.first == "check_none")
@@ -133,14 +118,11 @@ namespace aris::plan
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
-					Plan::NOT_CHECK_POS_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
 					Plan::NOT_CHECK_POS_FOLLOWING_ERROR |
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
-					Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "check_enable")
@@ -159,9 +141,7 @@ namespace aris::plan
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
-					Plan::NOT_CHECK_POS_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
 					Plan::NOT_CHECK_POS_FOLLOWING_ERROR);
 			}
 			else if (cmd_param.first == "not_check_pos")
@@ -170,9 +150,7 @@ namespace aris::plan
 					Plan::NOT_CHECK_POS_MIN |
 					Plan::NOT_CHECK_POS_MAX |
 					Plan::NOT_CHECK_POS_CONTINUOUS |
-					Plan::NOT_CHECK_POS_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-					Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
 					Plan::NOT_CHECK_POS_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "check_vel")
@@ -181,7 +159,6 @@ namespace aris::plan
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
-					Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR);
 			}
 			else if (cmd_param.first == "not_check_vel")
@@ -190,7 +167,6 @@ namespace aris::plan
 					Plan::NOT_CHECK_VEL_MIN |
 					Plan::NOT_CHECK_VEL_MAX |
 					Plan::NOT_CHECK_VEL_CONTINUOUS |
-					Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START |
 					Plan::NOT_CHECK_VEL_FOLLOWING_ERROR;
 			}
 			else if (cmd_param.first == "check_pos_min")
@@ -217,14 +193,6 @@ namespace aris::plan
 			{
 				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_CONTINUOUS;
 			}
-			else if (cmd_param.first == "check_pos_continuous_at_start")
-			{
-				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
-			}
-			else if (cmd_param.first == "not_check_pos_continuous_at_start")
-			{
-				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_CONTINUOUS_AT_START;
-			}
 			else if (cmd_param.first == "check_pos_continuous_second_order")
 			{
 				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
@@ -232,14 +200,6 @@ namespace aris::plan
 			else if (cmd_param.first == "not_check_pos_continuous_second_order")
 			{
 				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
-			}
-			else if (cmd_param.first == "check_pos_continuous_second_order_at_start")
-			{
-				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
-			}
-			else if (cmd_param.first == "not_check_pos_continuous_second_order_at_start")
-			{
-				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
 			}
 			else if (cmd_param.first == "check_pos_following_error")
 			{
@@ -272,14 +232,6 @@ namespace aris::plan
 			else if (cmd_param.first == "not_check_vel_continuous")
 			{
 				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_VEL_CONTINUOUS;
-			}
-			else if (cmd_param.first == "check_vel_continuous_at_start")
-			{
-				for (auto &option : target.mot_options) option &= ~Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
-			}
-			else if (cmd_param.first == "not_check_vel_continuous_at_start")
-			{
-				for (auto &option : target.mot_options) option |= Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START;
 			}
 			else if (cmd_param.first == "check_vel_following_error")
 			{
@@ -743,11 +695,6 @@ namespace aris::plan
 
 		param.total_count_vec.resize(target.controller->motionPool().size(), 1);
 
-		for (auto &option : target.mot_options) option |=
-			aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED |
-			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START |
-			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START;
-
 		target.param = param;
 	}
 	auto Reset::executeRT(PlanTarget &target)->int
@@ -821,8 +768,6 @@ namespace aris::plan
 
 		target.param = p;
 		for (auto &option : target.mot_options) option |=
-			NOT_CHECK_POS_CONTINUOUS_AT_START | 
-			NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
 			NOT_CHECK_ENABLE;
 	}
 	auto Recover::executeRT(PlanTarget &target)->int
@@ -886,20 +831,7 @@ namespace aris::plan
 
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		for (auto &option : target.mot_options) option |=
-			NOT_CHECK_ENABLE |
-			NOT_CHECK_POS_MIN |
-			NOT_CHECK_POS_MAX |
-			NOT_CHECK_POS_CONTINUOUS |
-			NOT_CHECK_POS_CONTINUOUS_AT_START |
-			NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER |
-			NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START |
-			NOT_CHECK_POS_FOLLOWING_ERROR |
-			NOT_CHECK_VEL_MIN |
-			NOT_CHECK_VEL_MAX |
-			NOT_CHECK_VEL_CONTINUOUS |
-			NOT_CHECK_VEL_CONTINUOUS_AT_START |
-			NOT_CHECK_VEL_FOLLOWING_ERROR;
+		for (auto &option : target.mot_options) option |= NOT_CHECK_ENABLE;
 	}
 	auto Show::executeRT(PlanTarget &target)->int
 	{

@@ -58,11 +58,12 @@ namespace aris::server
 		// operation in RT context //
 
 		// operation in NRT context //
+		auto open()->void;
 		auto startWebSock(const std::string &port)->void;
 		auto closeWebSock(const std::string &port)->void;
 		auto runCmdLine()->void;
-		auto executeCmd(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
-		auto executeCmdInMain(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
+		auto executeCmd(const aris::core::Msg &cmd_string, std::function<void(aris::plan::PlanTarget&)> post_callback = nullptr)->std::shared_ptr<aris::plan::PlanTarget>;
+		auto executeCmdInMain(const aris::core::Msg &cmd_string, std::function<void(aris::plan::PlanTarget&)> post_callback = nullptr)->std::shared_ptr<aris::plan::PlanTarget>;
 		auto start()->void;
 		auto stop()->void;
 		auto waitForAllExecution()->void;

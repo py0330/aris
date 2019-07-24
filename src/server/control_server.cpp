@@ -19,6 +19,7 @@ namespace aris::server
 		{
 			std::shared_ptr<aris::plan::PlanTarget> target;
 			std::promise<void> ret_promise;
+			std::function<void(aris::plan::PlanTarget&)> post_callback;
 		};
 		
 		auto tg()->void;
@@ -240,18 +241,6 @@ namespace aris::server
 
 					// check pos continuous //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS)
-						&& count_ > 1
-						&& ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
-					{
-						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						server_->controller().mout() << "Motor " << i << " target position NOT CONTINUOUS in count " << count_ << "\n";
-						server_->controller().mout() << "last: " << last_pvc.at(i).p << "\t" << "now: " << cm.targetPos() << "\n";
-						goto FAILED;
-					}
-
-					// check pos continuous at start //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_AT_START)
-						&& count_ <= 1
 						&& ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
 					{
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
@@ -262,18 +251,6 @@ namespace aris::server
 
 					// check pos continuous second order //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER)
-						&& count_ > 2
-						&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
-					{
-						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						server_->controller().mout() << "Motor " << i << " target position NOT SECOND CONTINUOUS in count " << count_ << "\n";
-						server_->controller().mout() << "last last: " << lld.p << "\tlast:" << ld.p << "\t" << "now: " << cm.targetPos() << "\n";
-						goto FAILED;
-					}
-
-					// check pos continuous second order at start //
-					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER_AT_START)
-						&& count_ <= 2
 						&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
 					{
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
@@ -316,18 +293,6 @@ namespace aris::server
 
 					// check vel continuous //
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS)
-						&& count_ > 1
-						&& ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
-					{
-						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
-						server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
-						goto FAILED;
-					}
-
-					// check vel continuous at start //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START)
-						&& count_ <= 1
 						&& ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
 					{
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
@@ -390,18 +355,6 @@ namespace aris::server
 
 					// check vel continuous //
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS)
-						&& count_ > 1
-						&& ((cm.actualVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.actualVel() - ld.v) < 0.001 * cm.minAcc()))
-					{
-						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
-						server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
-						goto FAILED;
-					}
-
-					// check vel continuous at start //
-					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS_AT_START)
-						&& count_ <= 1
 						&& ((cm.actualVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.actualVel() - ld.v) < 0.001 * cm.minAcc()))
 					{
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
@@ -572,7 +525,7 @@ namespace aris::server
 		imp_->plan_root_ = findOrInsertType<aris::plan::PlanRoot>();
 		imp_->interface_root_ = findOrInsertType<aris::server::InterfaceRoot>();
 	}
-	auto ControlServer::executeCmd(const aris::core::Msg &msg)->std::shared_ptr<aris::plan::PlanTarget>
+	auto ControlServer::executeCmd(const aris::core::Msg &msg, std::function<void(aris::plan::PlanTarget&)> post_callback)->std::shared_ptr<aris::plan::PlanTarget>
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 
@@ -590,9 +543,7 @@ namespace aris::server
 
 		// 初始化plan target //
 		auto internal_data = std::make_shared<Imp::InternalData>(Imp::InternalData{
-			std::make_shared<aris::plan::PlanTarget>(
-				aris::plan::PlanTarget
-				{
+			std::make_shared<aris::plan::PlanTarget>(aris::plan::PlanTarget{
 					&*plan_iter,
 					this,
 					&model(),
@@ -606,9 +557,9 @@ namespace aris::server
 					aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 },
 					std::any(),
 					aris::plan::PlanTarget::CANCELLED,
-					std::future<void>()
-				}),
-			std::promise<void>()
+					std::future<void>()}),
+			std::promise<void>(),
+			post_callback
 			});
 		auto &target = internal_data->target;
 		target->finished = internal_data->ret_promise.get_future();
@@ -677,6 +628,7 @@ namespace aris::server
 				LOG_INFO << "server collect cmd " << target->command_id << std::endl;
 				plan_iter->collectNrt(*target);
 				internal_data->target->ret_code = aris::plan::PlanTarget::SUCCESS;
+				if (internal_data->post_callback)internal_data->post_callback(*internal_data->target);
 				internal_data->ret_promise.set_value();
 			}
 			// 等待当前实时任务收集 //
@@ -691,6 +643,7 @@ namespace aris::server
 			if (target->option & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
 			{
 				internal_data->target->ret_code = aris::plan::PlanTarget::SUCCESS;
+				if (internal_data->post_callback)internal_data->post_callback(*internal_data->target);
 				internal_data->ret_promise.set_value();
 			}
 		}
@@ -749,6 +702,7 @@ namespace aris::server
 						LOG_INFO << "server collect cmd " << target.command_id << std::endl;
 						target.plan->collectNrt(target);
 					}
+					if (internal_data->post_callback)internal_data->post_callback(*internal_data->target);
 					internal_data->ret_promise.set_value();
 					imp_->cmd_collect_.store(cmd_collect + 1);
 				}
@@ -791,7 +745,6 @@ namespace aris::server
 	}
 	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)->void { imp_->pre_callback_.store(pre_callback); }
 	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
-	
 	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
 	auto ControlServer::currentExecuteId()->std::int64_t
 	{
@@ -944,6 +897,7 @@ namespace aris::server
 		if (sock != imp_->source_.end()) imp_->source_.erase(sock);
 	}
 
+	std::function<void(aris::plan::PlanTarget&)> post_callback_;
 	aris::core::Msg cmd_msg_for_main_;
 	std::atomic_bool cmd_msg_received_ = false;
 	std::shared_ptr<std::promise<std::shared_ptr<aris::plan::PlanTarget>>> execute_promise_;
@@ -964,7 +918,7 @@ namespace aris::server
 			{
 				try
 				{
-					auto target = executeCmd(cmd_msg_for_main_);
+					auto target = executeCmd(cmd_msg_for_main_, post_callback_);
 					cmd_msg_received_ = false;
 					execute_promise_->set_value(target);
 				}
@@ -1004,7 +958,7 @@ namespace aris::server
 			}
 		}
 	}
-	auto ControlServer::executeCmdInMain(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>
+	auto ControlServer::executeCmdInMain(const aris::core::Msg &cmd_string, std::function<void(aris::plan::PlanTarget&)> post_callback)->std::shared_ptr<aris::plan::PlanTarget>
 	{
 		static std::mutex mu_;
 		std::unique_lock<std::mutex> lck(mu_);
@@ -1012,6 +966,7 @@ namespace aris::server
 		execute_promise_ = std::make_shared<std::promise<std::shared_ptr<aris::plan::PlanTarget>>>();
 		auto ret = execute_promise_->get_future();
 		cmd_msg_for_main_ = aris::core::Msg(cmd_string);
+		post_callback_ = post_callback;
 		cmd_msg_received_ = true;
 
 		return ret.get();

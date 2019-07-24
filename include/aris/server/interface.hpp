@@ -20,8 +20,6 @@ namespace aris::server
 	public:
 		auto virtual open()->void = 0;
 		auto virtual close()->void = 0;
-		auto virtual onCmdFinished(std::shared_ptr<aris::plan::PlanTarget> &target)->void = 0;
-		auto executeCmd(const aris::core::Msg &cmd_string)->std::shared_ptr<aris::plan::PlanTarget>;
 
 		Interface() = default;
 		ARIS_REGISTER_TYPE(Interface);
@@ -33,7 +31,6 @@ namespace aris::server
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
-		auto virtual onCmdFinished(std::shared_ptr<aris::plan::PlanTarget> &target)->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 

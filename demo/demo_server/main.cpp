@@ -130,7 +130,9 @@ int main(int argc, char *argv[])
 
 
 	// interaction //
-	cs.startWebSock("5866");
+	aris::server::WebInterface inter("5866");
+	inter.open();
+	//cs.startWebSock("5866");
 	cs.runCmdLine();
 	
 	return 0;
