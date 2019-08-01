@@ -425,10 +425,10 @@ namespace aris::control
 
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *ms, EthercatMaster::SlaveLinkState *ss)->void 
 	{
-		ecrt_master_state(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_, reinterpret_cast<ec_master_state_t*>(ms));
-		for (int i = 0; i < mst.slavePool().size(); ++i)
+		ecrt_master_state(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, reinterpret_cast<ec_master_state_t*>(ms));
+		for (int i = 0; i < mst->slavePool().size(); ++i)
 		{
-			ecrt_slave_config_state(std::any_cast<SlaveHandle&>(mst.slavePool()[i].ecHandle()).ec_slave_config_, reinterpret_cast<ec_slave_config_state_t*>(ss + i));
+			ecrt_slave_config_state(std::any_cast<SlaveHandle&>(mst->slavePool()[i].ecHandle()).ec_slave_config_, reinterpret_cast<ec_slave_config_state_t*>(ss + i));
 		}
 	}
 

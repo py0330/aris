@@ -88,7 +88,9 @@ namespace aris::control
 		imp_->pos_offset_ = pos_offset;
 		imp_->home_pos_ = home_pos;
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP(Motion);
+	Motion::Motion(const Motion &other) = default;
+	Motion& Motion::operator=(const Motion &other) = default;
+
 
 	struct Controller::Imp 
 	{ 

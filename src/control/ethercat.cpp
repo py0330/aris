@@ -232,21 +232,10 @@ namespace aris::control
 		imp_->revision_num_ = r_num;
 		imp_->dc_assign_activate_ = dc;
 	}
-	EthercatSlave::EthercatSlave(EthercatSlave &&other) :Slave(std::move(other)), imp_(std::move(other.imp_))
-	{
-		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
-	};
 	EthercatSlave::EthercatSlave(const EthercatSlave &other) :Slave(other), imp_(other.imp_)
 	{
 		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
 	};
-	EthercatSlave& EthercatSlave::operator=(EthercatSlave &&other)
-	{
-		Slave::operator=(other);
-		imp_ = other.imp_;
-		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
-		return *this;
-	}
 	EthercatSlave& EthercatSlave::operator=(const EthercatSlave &other)
 	{
 		Slave::operator=(other);
@@ -433,7 +422,7 @@ namespace aris::control
 		auto getUInt32 = [](std::string str)->std::uint32_t
 		{
 			std::replace(str.begin(), str.end(), '#', '0');
-			return std::stoll(str, 0, 16);
+			return std::stol(str, 0, 16);
 		};
 
 		auto &slave_path = std::get<1>(std::get<1>(imp_->vendor_device_revision_map_.at(vendor_id)).at(product_code)).at(revision_no);

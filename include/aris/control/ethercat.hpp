@@ -101,7 +101,10 @@ namespace aris::control
 		virtual ~EthercatSlave();
 		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);
 		ARIS_REGISTER_TYPE(EthercatSlave);
-		ARIS_DECLARE_BIG_FOUR(EthercatSlave);
+		EthercatSlave(const EthercatSlave &other);
+		EthercatSlave(EthercatSlave &&other) = delete;
+		EthercatSlave& operator=(const EthercatSlave &other);
+		EthercatSlave& operator=(EthercatSlave &&other) = delete;
 
 	private:
 		struct Imp;
