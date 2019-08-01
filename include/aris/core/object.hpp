@@ -1070,8 +1070,8 @@ namespace aris::core
 		auto back() const->const_reference { return *(end() - 1); } //optional
 		auto at(std::size_t id) const->const_reference { return dynamic_cast<const_reference>(pool_->at(id)); }
 		auto at(std::size_t id)->reference { return dynamic_cast<reference>(pool_->at(id)); }
-		auto operator[](size_type size)->reference { return static_cast<reference>(pool_->operator[](size)); } //optional
-		auto operator[](size_type size) const->const_reference { return static_cast<const_reference>(pool_->operator[](size)); } //optional
+		auto operator[](size_type size)->reference { return dynamic_cast<reference>(pool_->operator[](size)); } //optional
+		auto operator[](size_type size) const->const_reference { return dynamic_cast<const_reference>(pool_->operator[](size)); } //optional
 		
 		auto pop_back()->void { pool_->pop_back(); } //optional
 		auto erase(iterator iter)->iterator { return pool_->erase(iter.iter_); } //optional
