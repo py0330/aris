@@ -47,7 +47,7 @@
 // to do list 2019-06-03:
 // - make xml support chinese                                             check
 // - check if xenomai can be started from sub-thread                      use runCmdLine to work
-// - scan from esi file
+// - scan from esi file                                                   check
 // - make virtual axis
 // - add tool coordinate easy
 

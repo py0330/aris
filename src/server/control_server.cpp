@@ -62,6 +62,7 @@ namespace aris::server
 		aris::control::Controller* controller_;
 		aris::sensor::SensorRoot* sensor_root_;
 		aris::plan::PlanRoot* plan_root_;
+		aris::core::ObjectPool<aris::server::Interface> *interface_pool_;
 		InterfaceRoot *interface_root_;
 
 		// 打洞，读取数据 //
@@ -73,13 +74,11 @@ namespace aris::server
 		std::atomic<PreCallback> pre_callback_{ nullptr };
 		std::atomic<PostCallback> post_callback_{ nullptr };
 
-		// 返回数据 //
-		std::thread return_thread_;
-		std::mutex result_mutex;
-		std::list<std::tuple<std::shared_ptr<aris::core::Socket>, aris::core::Msg, std::shared_ptr<aris::plan::PlanTarget>>> result_list;
-		std::list<std::shared_ptr<aris::core::Socket>> source_;
-
-		std::atomic_bool is_running_return_thread_{ false };
+		// execute in cmd line
+		std::function<void(aris::plan::PlanTarget&)> cmdline_post_callback_;
+		aris::core::Msg cmdline_msg_;
+		std::atomic_bool cmdline_msg_received_ = false;
+		std::shared_ptr<std::promise<std::shared_ptr<aris::plan::PlanTarget>>> cmdline_execute_promise_;
 	};
 	auto ControlServer::Imp::tg()->void
 	{
@@ -407,66 +406,16 @@ namespace aris::server
 		}
 		return -1;
 	}
-	auto ControlServer::Imp::startReturnThread()->void
-	{		
-		is_running_return_thread_.store(true);
-		
-		this->return_thread_ = std::thread([&]()
-		{
-			while (is_running_return_thread_)
-			{
-				std::unique_lock<std::mutex> lck(result_mutex);
-				for (auto result = result_list.begin(); result != result_list.end();)
-				{
-					auto cmd_ret = std::get<2>(*result);
-					if (cmd_ret->finished.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
-					{
-						// make return msg
-						auto &msg = std::get<1>(*result);
-
-						aris::core::Msg ret_msg;
-						ret_msg.setMsgID(msg.header().msg_id_);
-						ret_msg.setType(msg.header().msg_type_);
-						ret_msg.header().reserved1_ = msg.header().reserved1_;
-						ret_msg.header().reserved2_ = msg.header().reserved2_;
-						ret_msg.header().reserved3_ = msg.header().reserved3_;
-
-						// only copy if it is a str
-						if (auto str = std::any_cast<std::string>(&cmd_ret->ret))ret_msg.copy(*str);
-
-						// return back to source
-						try
-						{
-							if (std::get<0>(*result))
-							{
-								std::get<0>(*result)->sendMsg(ret_msg);
-							}
-							else
-							{
-								if (auto str = std::any_cast<std::string>(&cmd_ret->ret))
-									std::cout << ret_msg.toString() << std::endl;
-							}
-						}
-						catch (std::exception &e)
-						{
-							std::cout << e.what() << std::endl;
-							LOG_ERROR << e.what() << std::endl;
-						}
-
-						result_list.erase(result++);
-					}
-					else
-					{
-						result++;
-					}
-				}
-				lck.unlock();
-
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}
-		});
-	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
+	auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
+	{
+		Object::loadXml(xml_ele);
+		imp_->controller_ = findOrInsertType<aris::control::Controller>();
+		imp_->model_ = findOrInsertType<aris::dynamic::Model>();
+		imp_->sensor_root_ = findOrInsertType<aris::sensor::SensorRoot>();
+		imp_->plan_root_ = findOrInsertType<aris::plan::PlanRoot>();
+		imp_->interface_root_ = findOrInsertType<aris::server::InterfaceRoot>();
+	}
 	auto ControlServer::resetModel(dynamic::Model *model)->void
 	{
 		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
@@ -515,15 +464,72 @@ namespace aris::server
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
+	auto ControlServer::interfacePool()->aris::core::ObjectPool<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
-	auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
+	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)->void { imp_->pre_callback_.store(pre_callback); }
+	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
+	auto ControlServer::running()->bool { return imp_->is_running_; }
+	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
+	auto ControlServer::open()->void { for (auto &inter : interfacePool()) inter.open(); }
+	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
+	auto ControlServer::runCmdLine()->void
 	{
-		Object::loadXml(xml_ele);
-		imp_->controller_ = findOrInsertType<aris::control::Controller>();
-		imp_->model_ = findOrInsertType<aris::dynamic::Model>();
-		imp_->sensor_root_ = findOrInsertType<aris::sensor::SensorRoot>();
-		imp_->plan_root_ = findOrInsertType<aris::plan::PlanRoot>();
-		imp_->interface_root_ = findOrInsertType<aris::server::InterfaceRoot>();
+		auto ret = std::async(std::launch::async, []()->std::string
+		{
+			std::string command_in;
+			std::getline(std::cin, command_in);
+			return command_in;
+		});
+
+		for (;;)
+		{
+			// 检测是否有数据从executeCmdInMain过来
+			if (imp_->cmdline_msg_received_)
+			{
+				try
+				{
+					auto target = executeCmd(imp_->cmdline_msg_, imp_->cmdline_post_callback_);
+					imp_->cmdline_msg_received_ = false;
+					imp_->cmdline_execute_promise_->set_value(target);
+				}
+				catch (...)
+				{
+					imp_->cmdline_msg_received_ = false;
+					imp_->cmdline_execute_promise_->set_exception(std::current_exception());
+				}
+			}
+			// 检测是否有数据从command line过来
+			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+			{
+				try
+				{
+					executeCmd(aris::core::Msg(ret.get()), [](aris::plan::PlanTarget &target)->void
+					{
+						if (auto str = std::any_cast<std::string>(&target.ret))
+						{
+							std::cout << *str << std::endl;
+						}
+					});
+				}
+				catch (std::exception &e)
+				{
+					std::cout << e.what() << std::endl;
+					LOG_ERROR << e.what() << std::endl;
+				}
+
+				ret = std::async(std::launch::async, []()->std::string
+				{
+					std::string command_in;
+					std::getline(std::cin, command_in);
+					return command_in;
+				});
+			}
+			// 休息
+			else
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+		}
 	}
 	auto ControlServer::executeCmd(const aris::core::Msg &msg, std::function<void(aris::plan::PlanTarget&)> post_callback)->std::shared_ptr<aris::plan::PlanTarget>
 	{
@@ -650,6 +656,19 @@ namespace aris::server
 
 		return target;
 	}
+	auto ControlServer::executeCmdInCmdLine(const aris::core::Msg &cmd_string, std::function<void(aris::plan::PlanTarget&)> post_callback)->std::shared_ptr<aris::plan::PlanTarget>
+	{
+		static std::mutex mu_;
+		std::unique_lock<std::mutex> lck(mu_);
+
+		imp_->cmdline_execute_promise_ = std::make_shared<std::promise<std::shared_ptr<aris::plan::PlanTarget>>>();
+		auto ret = imp_->cmdline_execute_promise_->get_future();
+		imp_->cmdline_msg_ = aris::core::Msg(cmd_string);
+		imp_->cmdline_post_callback_ = post_callback;
+		imp_->cmdline_msg_received_ = true;
+
+		return ret.get();
+	}
 	auto ControlServer::start()->void
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -732,7 +751,6 @@ namespace aris::server
 		controller().stop();
 		sensorRoot().stop();
 	}
-	auto ControlServer::running()->bool { return imp_->is_running_; }
 	auto ControlServer::waitForAllExecution()->void 
 	{
 		auto cmd_end = imp_->cmd_end_.load();//原子操作
@@ -743,9 +761,6 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();//原子操作
 		while (cmd_end != imp_->cmd_collect_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
-	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)->void { imp_->pre_callback_.store(pre_callback); }
-	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
-	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
 	auto ControlServer::currentExecuteId()->std::int64_t
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -783,210 +798,24 @@ namespace aris::server
 
 		imp_->if_get_data_ready_.store(false);
 	}
-	
-	auto ControlServer::startWebSock(const std::string &port)->void
-	{
-		if (!imp_->return_thread_.joinable())imp_->startReturnThread();
-		
-		std::unique_lock<std::mutex> lck(imp_->result_mutex);
-
-		auto sock = std::make_shared<aris::core::Socket>("web_sock", "", port, aris::core::Socket::WEB);
-
-		imp_->source_.push_back(sock);
-
-		sock->setOnReceivedMsg([this](aris::core::Socket *socket, aris::core::Msg &msg)->int
-		{
-			auto sock = *std::find_if(imp_->source_.begin(), imp_->source_.end(), [socket](const std::shared_ptr<aris::core::Socket> &s)->bool
-			{
-				return socket == s.get();
-			});
-			
-			std::string msg_data = msg.toString();
-
-			LOG_INFO << "receive cmd:"
-				<< msg.header().msg_size_ << "&"
-				<< msg.header().msg_id_ << "&"
-				<< msg.header().msg_type_ << "&"
-				<< msg.header().reserved1_ << "&"
-				<< msg.header().reserved2_ << "&"
-				<< msg.header().reserved3_ << ":"
-				<< msg_data << std::endl;
-			
-			try
-			{
-				auto result = executeCmdInMain(aris::core::Msg(msg));
-
-				std::unique_lock<std::mutex> l(imp_->result_mutex);
-				imp_->result_list.push_back(std::make_tuple(sock, msg, result));
-				
-				//std::stringstream ss(msg_data);
-				//for (std::string cmd; std::getline(ss, cmd);)
-				//{
-				//	auto result = executeCmd(aris::core::Msg(cmd));
-				
-				//	std::unique_lock<std::mutex> l(imp_->result_mutex);
-				//	imp_->result_list.push_back(std::make_tuple(sock, msg, result));
-				//}
-			}
-			catch (std::exception &e)
-			{
-				std::cout << e.what() << std::endl;
-				LOG_ERROR << e.what() << std::endl;
-
-				try
-				{
-					aris::core::Msg m;
-					m.setMsgID(msg.header().msg_id_);
-					m.setType(msg.header().msg_type_);
-					m.header().reserved1_ = msg.header().reserved1_;
-					m.header().reserved2_ = msg.header().reserved2_;
-					m.header().reserved3_ = msg.header().reserved3_;
-					socket->sendMsg(m);
-				}
-				catch (std::exception &e)
-				{
-					std::cout << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
-				}
-			}
-			
-			return 0;
-		});
-		sock->setOnReceivedConnection([](aris::core::Socket *sock, const char *ip, int port)->int
-		{
-			std::cout << "socket receive connection" << std::endl;
-			LOG_INFO << "socket receive connection:\n"
-				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
-				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
-			return 0;
-		});
-		sock->setOnLoseConnection([](aris::core::Socket *socket)
-		{
-			std::cout << "socket lose connection" << std::endl;
-			LOG_INFO << "socket lose connection" << std::endl;
-			for (;;)
-			{
-				try
-				{
-					socket->startServer("5866");
-					break;
-				}
-				catch (std::runtime_error &e)
-				{
-					std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-					LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-					std::this_thread::sleep_for(std::chrono::seconds(1));
-				}
-			}
-			std::cout << "socket restart successful" << std::endl;
-			LOG_INFO << "socket restart successful" << std::endl;
-
-			return 0;
-		});
-		sock->startServer();
-	}
-	auto ControlServer::closeWebSock(const std::string &port)->void
-	{
-		std::unique_lock<std::mutex> lck(imp_->result_mutex);
-		
-		auto sock = std::find_if(imp_->source_.begin(), imp_->source_.end(), [&port](const std::shared_ptr<aris::core::Socket> &s)->bool
-		{
-			return port == s->port();
-		});
-
-		if (sock != imp_->source_.end()) imp_->source_.erase(sock);
-	}
-
-	std::function<void(aris::plan::PlanTarget&)> post_callback_;
-	aris::core::Msg cmd_msg_for_main_;
-	std::atomic_bool cmd_msg_received_ = false;
-	std::shared_ptr<std::promise<std::shared_ptr<aris::plan::PlanTarget>>> execute_promise_;
-
-	auto ControlServer::runCmdLine()->void
-	{
-		auto ret = std::async(std::launch::async, []()->std::string
-		{
-			std::string command_in; 
-			std::getline(std::cin, command_in);
-			return command_in;
-		});
-		
-		for (;;)
-		{
-			// 检测是否有数据从executeCmdInMain过来
-			if (cmd_msg_received_)
-			{
-				try
-				{
-					auto target = executeCmd(cmd_msg_for_main_, post_callback_);
-					cmd_msg_received_ = false;
-					execute_promise_->set_value(target);
-				}
-				catch (...)
-				{
-					cmd_msg_received_ = false;
-					execute_promise_->set_exception(std::current_exception());
-				}
-			}
-			// 检测是否有数据从command line过来
-			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
-			{
-				try
-				{
-					auto msg = aris::core::Msg(ret.get());
-					auto result = this->executeCmd(msg);
-					std::unique_lock<std::mutex> l(imp_->result_mutex);
-					imp_->result_list.push_back(std::make_tuple(nullptr, msg, result));
-				}
-				catch (std::exception &e)
-				{
-					std::cout << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
-				}
-
-				ret = std::async(std::launch::async, []()->std::string
-				{
-					std::string command_in;
-					std::getline(std::cin, command_in);
-					return command_in;
-				});
-			}
-			// 休息
-			else
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}
-		}
-	}
-	auto ControlServer::executeCmdInMain(const aris::core::Msg &cmd_string, std::function<void(aris::plan::PlanTarget&)> post_callback)->std::shared_ptr<aris::plan::PlanTarget>
-	{
-		static std::mutex mu_;
-		std::unique_lock<std::mutex> lck(mu_);
-
-		execute_promise_ = std::make_shared<std::promise<std::shared_ptr<aris::plan::PlanTarget>>>();
-		auto ret = execute_promise_->get_future();
-		cmd_msg_for_main_ = aris::core::Msg(cmd_string);
-		post_callback_ = post_callback;
-		cmd_msg_received_ = true;
-
-		return ret.get();
-	}
-
-	ControlServer::~ControlServer()
-	{
+	ControlServer::~ControlServer() 
+	{ 
+		close();
 		stop();
-
-		imp_->is_running_return_thread_.store(false);
-		if (imp_->return_thread_.joinable())imp_->return_thread_.join();
 	}
 	ControlServer::ControlServer() :imp_(new Imp(this))
 	{
-		// create instance //
+		// create members //
 		makeModel<aris::dynamic::Model>("model");
 		makeController<aris::control::Controller>("controller");
 		makeSensorRoot<aris::sensor::SensorRoot>("sensor_root");
 		makePlanRoot<aris::plan::PlanRoot>("plan_root");
 		
+		// interface pool //
+		this->registerType<aris::core::ObjectPool<Interface> >();
+		imp_->interface_pool_ = &this->add<aris::core::ObjectPool<Interface>>();
+
+		// create ui //
 		auto ins = new InterfaceRoot;
 		children().push_back_ptr(ins);
 		imp_->interface_root_ = ins;

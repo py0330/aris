@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <any>
+#include "ethercat.hpp"
 
 namespace aris::control
 {
@@ -31,9 +32,9 @@ namespace aris::control
 	// 8. master send
 
 	// pdo可以分为3级 //
-	// 1. Sm(sync manager), 每个sm可以同步多个pdo
-	// 2. pdo, 每个pdo 包含多个pdo entry
-	// 3. pdo entry 每个pdo entry 对应一个 index 和 subindex
+	// 1. Sm(sync manager)  :   每个sm可以同步多个pdo
+	// 2. pdo               :   每个pdo 有index，此外还包含多个pdo entry
+	// 3. pdo entry         :   每个pdo entry 对应一个 index 和 subindex
 
 	class EthercatMaster;
 	class PdoEntry;
@@ -45,6 +46,8 @@ namespace aris::control
 	auto aris_ecrt_master_sync(EthercatMaster *master, std::uint64_t ns)->void;
 	auto aris_ecrt_master_recv(EthercatMaster *master)->void;
 	auto aris_ecrt_master_send(EthercatMaster *master)->void;
+
+	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *master_state, EthercatMaster::SlaveLinkState *slave_state)->void;
 
 	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data, int bit_size)->void;
 	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data, int bit_size)->void;

@@ -829,9 +829,13 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Sleep);
 
+
+	std::vector<aris::control::EthercatMaster::SlaveLinkState> sla_link_vec;
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		for (auto &option : target.mot_options) option |= NOT_CHECK_ENABLE;
+
+		sla_link_vec.resize(target.controller->slavePool().size());
 	}
 	auto Show::executeRT(PlanTarget &target)->int
 	{
@@ -841,6 +845,24 @@ namespace aris::plan
 			target.controller->mout() << std::setprecision(15) << m.actualPos() << "   ";
 		}
 		target.controller->mout() << std::endl;
+
+
+		auto ec = static_cast<aris::control::EthercatController*>(target.controller);
+		
+		aris::control::EthercatController::MasterLinkState ms{};
+		ec->getLinkState(&ms, sla_link_vec.data());
+
+		
+		target.controller->mout()<<"link            :" << ms.link_up << std::endl;
+		target.controller->mout()<<"slave responding:" << ms.slaves_responding << std::endl;
+
+		
+		for (int i = 0; i < ec->slavePool().size(); ++i)
+		{
+			target.controller->mout() << "slave " << i << " online     :" << sla_link_vec[i].online << std::endl;
+			target.controller->mout() << "slave " << i << " operational:" << sla_link_vec[i].operational << std::endl;
+			target.controller->mout() << "slave " << i << " state      :" << sla_link_vec[i].al_state << std::endl;
+		}
 
 		return 0;
 	}
@@ -1767,10 +1789,7 @@ namespace aris::plan
 	};
 	auto UniversalPlan::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void { if (imp_->prepair_nrt)imp_->prepair_nrt(params, target); }
 	auto UniversalPlan::executeRT(PlanTarget &param)->int { return imp_->execute_rt ? imp_->execute_rt(param) : 0; }
-	auto UniversalPlan::collectNrt(PlanTarget &param)->void
-	{ 
-		if (imp_->collect_nrt)imp_->collect_nrt(param);
-	}
+	auto UniversalPlan::collectNrt(PlanTarget &param)->void { if (imp_->collect_nrt)imp_->collect_nrt(param); }
 	auto UniversalPlan::setPrepairFunc(PrepairFunc func)->void { imp_->prepair_nrt = func; }
 	auto UniversalPlan::setExecuteFunc(ExecuteFunc func)->void { imp_->execute_rt = func; }
 	auto UniversalPlan::setCollectFunc(CollectFunc func)->void { imp_->collect_nrt = func; }

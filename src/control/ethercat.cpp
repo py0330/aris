@@ -19,7 +19,7 @@
 
 namespace aris::control
 {
-	struct PdoEntry::Imp 
+	struct PdoEntry::Imp
 	{ 
 		std::any ec_handle_; 
 		std::uint16_t index_;
@@ -174,15 +174,41 @@ namespace aris::control
 	}
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void
 	{
-		auto entry = imp_->pdo_map_.at(index).at(subindex);
-		if (entry->bitSize() != bit_size)throw std::runtime_error("failed to read pdo entry:\"" + entry->name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_read(entry, value, static_cast<int>(bit_size));
+		if (auto found_pdo = imp_->pdo_map_.find(index); found_pdo == imp_->pdo_map_.end())
+		{
+			throw std::runtime_error("pdo not found:" + std::to_string(index));
+		}
+		else
+		{
+			if (auto found_entry = found_pdo->second.find(subindex); found_entry == found_pdo->second.end())
+			{
+				throw std::runtime_error("pdo entry not found:" + std::to_string(index) + ":" + std::to_string(subindex));
+			}
+			else
+			{
+				if (found_entry->second->bitSize() != bit_size)throw std::runtime_error("failed to read pdo entry:\"" + found_entry->second->name() + "\" because byte size is not correct");
+				aris_ecrt_pdo_read(found_entry->second, value, static_cast<int>(bit_size));
+			}
+		}
 	}
 	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->void
 	{
-		auto entry = imp_->pdo_map_.at(index).at(subindex);
-		if (entry->bitSize() != bit_size)throw std::runtime_error("failed to write pdo_entry:\"" + entry->name() + "\" because byte size is not correct");
-		aris_ecrt_pdo_write(entry, value, static_cast<int>(bit_size));
+		if (auto found_pdo = imp_->pdo_map_.find(index); found_pdo == imp_->pdo_map_.end())
+		{
+			throw std::runtime_error("pdo not found:" + std::to_string(index));
+		}
+		else
+		{
+			if (auto found_entry = found_pdo->second.find(subindex); found_entry == found_pdo->second.end())
+			{
+				throw std::runtime_error("pdo entry not found:" + std::to_string(index) + ":" + std::to_string(subindex));
+			}
+			else
+			{
+				if (found_entry->second->bitSize() != bit_size)throw std::runtime_error("failed to read pdo entry:\"" + found_entry->second->name() + "\" because byte size is not correct");
+				aris_ecrt_pdo_write(found_entry->second, value, static_cast<int>(bit_size));
+			}
+		}
 	}
 	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size byte_size)->void
 	{
@@ -233,7 +259,30 @@ namespace aris::control
 	{ 
 		std::any ec_handle_;
 		aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>> slave_pool_{nullptr};
+
+		std::vector<std::filesystem::path> esi_dirs_;
+		std::map<std::uint32_t, std::tuple<std::string, std::map<std::uint32_t, std::tuple<std::string, std::map<int, std::filesystem::path>>>>> vendor_device_revision_map_;
 	};
+	auto EthercatMaster::saveXml(aris::core::XmlElement &xml_ele) const->void
+	{
+		Master::saveXml(xml_ele);
+
+		std::stringstream s;
+		for (auto &dir : imp_->esi_dirs_)s << dir.string() << "|";
+		xml_ele.SetAttribute("esi_dirs", s.str().c_str());
+	}
+	auto EthercatMaster::loadXml(const aris::core::XmlElement &xml_ele)->void
+	{
+		Master::loadXml(xml_ele);
+
+		imp_->esi_dirs_.clear();
+		if (auto str = xml_ele.Attribute("esi_dirs")) 
+		{
+			std::string esi_str(str);
+			std::istringstream f(esi_str);
+			for (std::string s; std::getline(f, s, '|');)imp_->esi_dirs_.push_back(s);
+		}
+	}
 	auto EthercatMaster::scan()->void { aris_ecrt_scan(this); }
 	auto EthercatMaster::scanInfoForCurrentSlaves()->void
 	{
@@ -291,7 +340,166 @@ namespace aris::control
 		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>(&Master::slavePool());
 		return imp_->slave_pool_;
 	}
+	auto EthercatMaster::getLinkState(MasterLinkState *ms, SlaveLinkState *ss)->void { aris_ecrt_master_link_state(this, ms, ss); }
 	auto EthercatMaster::ecHandle()->std::any& { return imp_->ec_handle_; }
+	auto EthercatMaster::setEsiDirs(std::vector<std::filesystem::path> esi_dirs)->void{	imp_->esi_dirs_ = esi_dirs; }
+	auto EthercatMaster::updateDeviceList()->void
+	{
+		imp_->vendor_device_revision_map_.clear();
+
+		auto getUInt32 = [](std::string str)->std::uint32_t
+		{
+			std::replace(str.begin(), str.end(), '#', '0');
+			return std::stoll(str, 0, 16);
+		};
+
+		for (const auto &dir : imp_->esi_dirs_)
+		{
+			for (auto &p : std::filesystem::directory_iterator(dir))
+			{
+				// not regular file//
+				if (!p.is_regular_file())continue;
+
+				// not xml file //
+				aris::core::XmlDocument esi_doc;
+				if (esi_doc.LoadFile(p.path().string().c_str()) != 0)throw std::runtime_error((std::string("could not open file:") + p.path().string()));
+
+				// vendor info not found //
+				if ((!esi_doc.RootElement()) || (!esi_doc.RootElement()->FirstChildElement("Vendor")))continue;
+				auto vendor_name = std::string(esi_doc.RootElement()->FirstChildElement("Vendor")->FirstChildElement("Name")->GetText());
+				auto vendor_id = getUInt32(esi_doc.RootElement()->FirstChildElement("Vendor")->FirstChildElement("Id")->GetText());
+				std::get<0>(imp_->vendor_device_revision_map_[vendor_id]) = vendor_name;
+
+				// devices not found //
+				if (auto description = esi_doc.RootElement()->FirstChildElement("Descriptions"); (!description) || (!description->FirstChildElement("Devices")))continue;
+				auto esi_devices = esi_doc.RootElement()->FirstChildElement("Descriptions")->FirstChildElement("Devices");
+				for (auto device = esi_devices->FirstChildElement(); device; device = device->NextSiblingElement())
+				{
+					// invisible //
+					if (auto visible = device->Attribute("Invisible"); visible && (std::string("true") == visible || std::string("1") == visible)) continue;
+
+					// product code not found //
+					if (auto type = device->FirstChildElement("Type"); (!type) || (!type->Attribute("ProductCode")))continue;
+					auto product_code = getUInt32(device->FirstChildElement("Type")->Attribute("ProductCode"));
+					auto revision_no = device->FirstChildElement("Type")->Attribute("RevisionNo") ? getUInt32(device->FirstChildElement("Type")->Attribute("RevisionNo")) : 0x00;
+
+					// set to map //
+					std::get<0>(std::get<1>(imp_->vendor_device_revision_map_[vendor_id])[product_code]) = device->FirstChildElement("Type")->GetText();
+					std::get<1>(std::get<1>(imp_->vendor_device_revision_map_[vendor_id])[product_code])[revision_no] = p.path();
+				}
+			}
+		}
+	}
+	auto EthercatMaster::getDeviceList()->std::string
+	{
+		aris::core::XmlDocument xml_doc;
+		auto root_xml_ele = xml_doc.NewElement(name().c_str());
+		xml_doc.InsertEndChild(root_xml_ele);
+		
+		for (auto &vendor : imp_->vendor_device_revision_map_)
+		{
+			auto vendor_ele = (aris::core::XmlElement*)root_xml_ele->InsertEndChild(xml_doc.NewElement("Vendor"));
+			
+			std::stringstream s;
+			s << "0x" << std::setfill('0') << std::setw(sizeof(std::int32_t) * 2) << std::hex << static_cast<std::uint32_t>(vendor.first);
+			vendor_ele->SetAttribute("Id", s.str().c_str());
+			vendor_ele->SetAttribute("Name", std::get<0>(vendor.second).c_str());
+
+			for (auto &device : std::get<1>(vendor.second))
+			{
+				for (auto &revision : std::get<1>(device.second))
+				{
+					auto device_ele = (aris::core::XmlElement*)vendor_ele->InsertEndChild(xml_doc.NewElement("Device"));
+					
+					device_ele->SetAttribute("Name", std::get<0>(device.second).c_str());
+
+					std::stringstream s;
+					s << "0x" << std::setfill('0') << std::setw(sizeof(std::int32_t) * 2) << std::hex << static_cast<std::uint32_t>(device.first);
+					device_ele->SetAttribute("ProductCode", s.str().c_str());
+
+					s = std::stringstream();
+					s << "0x" << std::setfill('0') << std::setw(sizeof(std::int32_t) * 2) << std::hex << static_cast<std::uint32_t>(revision.first);
+					device_ele->SetAttribute("RevisionNo", s.str().c_str());
+				}
+			}
+		}
+
+		tinyxml2::XMLPrinter printer;
+		xml_doc.Print(&printer);
+		return std::string(printer.CStr());
+	}
+	auto EthercatMaster::getPdoList(int vendor_id, int product_code, int revision_no)->std::string
+	{
+		auto getUInt32 = [](std::string str)->std::uint32_t
+		{
+			std::replace(str.begin(), str.end(), '#', '0');
+			return std::stoll(str, 0, 16);
+		};
+
+		auto &slave_path = std::get<1>(std::get<1>(imp_->vendor_device_revision_map_.at(vendor_id)).at(product_code)).at(revision_no);
+
+		EthercatSlave slave;
+
+		aris::core::XmlDocument esi_doc;
+		if (esi_doc.LoadFile(slave_path.string().c_str()) != 0)throw std::runtime_error((std::string("could not open file:") + slave_path.string()));
+		auto esi_devices = esi_doc.RootElement()->FirstChildElement("Descriptions")->FirstChildElement("Devices");
+		for (auto device = esi_devices->FirstChildElement(); device; device = device->NextSiblingElement())
+		{
+			auto product_code_ = getUInt32(device->FirstChildElement("Type")->Attribute("ProductCode"));
+			auto revision_no_ = device->FirstChildElement("Type")->Attribute("RevisionNo") ? getUInt32(device->FirstChildElement("Type")->Attribute("RevisionNo")) : 0x00;
+
+			if (product_code != product_code_ || revision_no != revision_no_) continue;
+
+			slave.smPool().clear();
+			slave.setName(device->FirstChildElement("Name")->GetText());
+			slave.setVendorID(vendor_id);
+			slave.setProductCode(product_code);
+			slave.setRevisionNum(revision_no);
+
+			auto last_sm_id = 0;
+			for (auto ele = device->FirstChildElement(); ele; ele = ele->NextSiblingElement())
+			{
+				if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "Inputs")
+				{
+					slave.smPool().add<SyncManager>("", true);
+				}
+				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "MBoxIn")
+				{
+					slave.smPool().add<SyncManager>("", true);
+				}
+				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "Outputs")
+				{
+					slave.smPool().add<SyncManager>("", false);
+				}
+				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "MBoxOut")
+				{
+					slave.smPool().add<SyncManager>("", false);
+				}
+				else if (std::string(ele->Name()) == "RxPdo" || std::string(ele->Name()) == "TxPdo")
+				{
+					auto sm_id = ele->Attribute("Sm") ? Object::attributeInt32(*ele, "Sm") : last_sm_id;
+					last_sm_id = sm_id;
+
+					auto pdo_name = ele->FirstChildElement("Name") ? ele->FirstChildElement("Name")->GetText() : "";
+					auto pdo_index = ele->FirstChildElement("Index") ? getUInt32(ele->FirstChildElement("Index")->GetText()) : std::uint32_t(0);
+
+					auto &pdo = slave.smPool()[sm_id].add<Pdo>(pdo_name, pdo_index);
+					for (auto entry_ele = ele->FirstChildElement("Entry"); entry_ele; entry_ele = entry_ele->NextSiblingElement())
+					{
+						auto index = getUInt32(entry_ele->FirstChildElement("Index")->GetText());
+						auto sub_index = entry_ele->FirstChildElement("SubIndex") ? getUInt32(entry_ele->FirstChildElement("SubIndex")->GetText()) : 0;
+						auto bit_length = std::stol(entry_ele->FirstChildElement("BitLen")->GetText());
+						auto name = (entry_ele->FirstChildElement("Name") && entry_ele->FirstChildElement("Name")->GetText()) ? entry_ele->FirstChildElement("Name")->GetText() : "";
+						pdo.add<PdoEntry>(name, index, sub_index, bit_length);
+					}
+				}
+			}
+
+			return slave.xmlString();
+		}
+
+		throw std::runtime_error("device not found");
+	}
 	EthercatMaster::~EthercatMaster() = default;
 	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp){}
 

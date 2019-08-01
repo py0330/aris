@@ -21,7 +21,7 @@ namespace aris::server
 		auto virtual open()->void = 0;
 		auto virtual close()->void = 0;
 
-		Interface() = default;
+		Interface(const std::string &name = "interface");
 		ARIS_REGISTER_TYPE(Interface);
 		ARIS_DEFINE_BIG_FOUR(Interface);
 	};
@@ -34,7 +34,7 @@ namespace aris::server
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 
-		WebInterface(const std::string &port);
+		WebInterface(const std::string &name = "interface", const std::string &port = "5866");
 		ARIS_REGISTER_TYPE(WebInterface);
 		ARIS_DEFINE_BIG_FOUR(WebInterface);
 

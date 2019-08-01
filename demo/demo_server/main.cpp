@@ -94,12 +94,6 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-
-	//std::cout << m1.slavePool().ancestor<aris::control::Master>() << std::endl;
-	//std::cout << check_master_pdos.slavePool().ancestor<aris::control::Master>() << std::endl;
-
-
-
 	////////////////////////////////////////////////////////////////////////////////////
 	//aris::dynamic::SevenAxisParam param;
 
@@ -125,14 +119,30 @@ int main(int argc, char *argv[])
 	{
 		std::cout << e.what() << std::endl;
 	}
-	
 	cs.planRoot().planPool().add<aris::plan::MoveSeries>("move_series");
 
+	/*
+	auto ec_ptr = std::make_unique<aris::control::EthercatController>();
+	ec_ptr->setEsiDirs({
+		std::filesystem::path("C:\\Users\\py033\\Desktop\\esi_dirs"),
+		std::filesystem::path("C:\\Users\\py033\\Desktop\\esi_dirs\\Beckhoff AX5xxx")
+		});
+
+	auto str = ec_ptr->xmlString();
+	std::cout << str << std::endl;
+	ec_ptr->loadXmlStr(str);
+	std::cout << ec_ptr->xmlString() << std::endl;
+
+	ec_ptr->updateDeviceList();
+
+	std::cout << ec_ptr->getDeviceList() << std::endl;
+	std::cout << ec_ptr->getPdoList(0x000002E1, 0x00, 0x29001) << std::endl;
+	std::cout << ec_ptr->getPdoList(0x0000009A, 0x00030924, 0x000103f4) << std::endl;
+	*/
 
 	// interaction //
-	aris::server::WebInterface inter("5866");
-	inter.open();
-	//cs.startWebSock("5866");
+	cs.interfacePool().add<aris::server::WebInterface>("", "5866");
+	cs.open();
 	cs.runCmdLine();
 	
 	return 0;

@@ -192,8 +192,7 @@ namespace aris::dynamic
 		this->registerType<aris::core::ObjectPool<Simulator, Element> >();
 		this->registerType<aris::core::ObjectPool<SimResult, Element> >();
 		this->registerType<aris::core::ObjectPool<Calibrator, Element> >();
-		
-		
+
 		imp_->environment_ = &this->add<Environment>("environment");
 		imp_->variable_pool_ = &this->add<aris::core::ObjectPool<Variable, Element>>("variable_pool");
 		imp_->part_pool_ = &this->add<aris::core::ObjectPool<Part, Element>>("part_pool");

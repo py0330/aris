@@ -14,6 +14,7 @@
 #include <aris/plan/plan.hpp>
 
 #include "aris/server/ui.hpp"
+#include "aris/server/interface.hpp"
 
 namespace aris::server
 {
@@ -46,6 +47,8 @@ namespace aris::server
 		auto sensorRoot()const->const sensor::SensorRoot& { return const_cast<ControlServer *>(this)->sensorRoot(); }
 		auto planRoot()->plan::PlanRoot&;
 		auto planRoot()const->const plan::PlanRoot& { return const_cast<ControlServer *>(this)->planRoot(); }
+		auto interfacePool()->aris::core::ObjectPool<aris::server::Interface>&;
+		auto interfacePool()const->const aris::core::ObjectPool<aris::server::Interface>& { return const_cast<ControlServer *>(this)->interfacePool(); }
 		auto interfaceRoot()->InterfaceRoot&;
 		auto interfaceRoot()const->const InterfaceRoot& { return const_cast<ControlServer *>(this)->interfaceRoot(); }
 
@@ -59,11 +62,10 @@ namespace aris::server
 
 		// operation in NRT context //
 		auto open()->void;
-		auto startWebSock(const std::string &port)->void;
-		auto closeWebSock(const std::string &port)->void;
+		auto close()->void;
 		auto runCmdLine()->void;
 		auto executeCmd(const aris::core::Msg &cmd_string, std::function<void(aris::plan::PlanTarget&)> post_callback = nullptr)->std::shared_ptr<aris::plan::PlanTarget>;
-		auto executeCmdInMain(const aris::core::Msg &cmd_string, std::function<void(aris::plan::PlanTarget&)> post_callback = nullptr)->std::shared_ptr<aris::plan::PlanTarget>;
+		auto executeCmdInCmdLine(const aris::core::Msg &cmd_string, std::function<void(aris::plan::PlanTarget&)> post_callback = nullptr)->std::shared_ptr<aris::plan::PlanTarget>;
 		auto start()->void;
 		auto stop()->void;
 		auto waitForAllExecution()->void;

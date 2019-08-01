@@ -13,6 +13,8 @@
 
 namespace aris::server
 {
+	Interface::Interface(const std::string &name) :Object(name) {}
+	
 	auto WebInterface::open()->void { sock_.startServer(); }
 	auto WebInterface::close()->void { sock_.stop(); }
 	auto WebInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
@@ -25,7 +27,7 @@ namespace aris::server
 		Interface::saveXml(xml_ele);
 		if (!sock_.port().empty())xml_ele.SetAttribute("port", sock_.port().c_str());
 	}
-	WebInterface::WebInterface(const std::string &port):Interface()
+	WebInterface::WebInterface(const std::string &name, const std::string &port):Interface(name)
 	{
 		sock_.setPort(port);
 		sock_.setConnectType(aris::core::Socket::WEB);

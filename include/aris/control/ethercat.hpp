@@ -1,28 +1,12 @@
 ﻿#ifndef ARIS_CONTROL_ETHERCAT_H_
 #define ARIS_CONTROL_ETHERCAT_H_
 
+#include <filesystem>
+
 #include <aris/control/controller_motion.hpp>
 
 namespace aris::control
 {
-	class SlaveType
-	{
-	public:
-		auto setRootPath(std::string path)->void;
-		auto getVendorList()->std::list<std::pair<int, std::string>>;
-		auto getDeviceList(int vendor_id)->std::list<std::pair<int, std::string>>;
-		auto getPdoList()->void;
-
-
-
-
-
-
-
-	};
-	
-	
-	
 	class PdoEntry :public aris::core::Object
 	{
 	public:
@@ -128,6 +112,38 @@ namespace aris::control
 	class EthercatMaster : virtual public Master
 	{
 	public:
+		typedef struct {
+			unsigned int online : 1; /**< The slave is online. */
+			unsigned int operational : 1; /**< The slave was brought into \a OP state
+										  using the specified configuration. */
+			unsigned int al_state : 4; /**< The application-layer state of the slave.
+									   - 1: \a INIT
+									   - 2: \a PREOP
+									   - 4: \a SAFEOP
+									   - 8: \a OP
+
+									   Note that each state is coded in a different
+									   bit! */
+		} SlaveLinkState;
+		typedef struct {
+			unsigned int slaves_responding; /**< Sum of responding slaves on the given
+											link. */
+			unsigned int al_states : 4; /**< Application-layer states of the slaves on
+										the given link.  The states are coded in the
+										lower 4 bits.  If a bit is set, it means
+										that at least one slave in the bus is in the
+										corresponding state:
+										- Bit 0: \a INIT
+										- Bit 1: \a PREOP
+										- Bit 2: \a SAFEOP
+										- Bit 3: \a OP */
+			unsigned int link_up : 1; /**< \a true, if the given Ethernet link is up.
+									  */
+		} MasterLinkState;
+
+		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+
 		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&;
 		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
 		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtAbs(id)); }
@@ -135,13 +151,18 @@ namespace aris::control
 		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtPhy(id)); }
 		auto slaveAtPhy(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
 		
+		auto getLinkState(MasterLinkState *master_state, SlaveLinkState *slave_state)->void; // only for rt
+
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->ecHandle(); }
 		auto scan()->void;
 		auto scanInfoForCurrentSlaves()->void;
 		auto scanPdoForCurrentSlaves()->void;
 
-		//auto setEsiDirs(std::vector<std::filesystem::path> esi_dirs)->void;
+		auto setEsiDirs(std::vector<std::filesystem::path> esi_dirs)->void;
+		auto updateDeviceList()->void;
+		auto getDeviceList()->std::string;
+		auto getPdoList(int vendor_id, int product_code, int revision_num)->std::string;
 
 		virtual ~EthercatMaster();
 		EthercatMaster(const std::string &name = "ethercat_master");
@@ -246,6 +267,9 @@ namespace aris::control
 		auto slaveAtAbs(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
 		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return EthercatMaster::slaveAtPhy(id); }
 		auto slaveAtPhy(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
+
+		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override { EthercatMaster::saveXml(xml_ele); }
+		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override { EthercatMaster::loadXml(xml_ele); }
 
 		virtual ~EthercatController();
 		EthercatController(const std::string &name = "ethercat_controller");
