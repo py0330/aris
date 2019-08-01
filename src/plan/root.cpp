@@ -830,12 +830,12 @@ namespace aris::plan
 	ARIS_DEFINE_BIG_FOUR_CPP(Sleep);
 
 
-	std::vector<aris::control::EthercatMaster::SlaveLinkState> sla_link_vec;
+	//std::vector<aris::control::EthercatMaster::SlaveLinkState> sla_link_vec;
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		for (auto &option : target.mot_options) option |= NOT_CHECK_ENABLE;
 
-		sla_link_vec.resize(target.controller->slavePool().size());
+		//sla_link_vec.resize(target.controller->slavePool().size());
 	}
 	auto Show::executeRT(PlanTarget &target)->int
 	{
@@ -847,22 +847,22 @@ namespace aris::plan
 		target.controller->mout() << std::endl;
 
 
-		auto ec = static_cast<aris::control::EthercatController*>(target.controller);
-		
-		aris::control::EthercatController::MasterLinkState ms{};
-		ec->getLinkState(&ms, sla_link_vec.data());
+		//auto ec = static_cast<aris::control::EthercatController*>(target.controller);
+		//
+		//aris::control::EthercatController::MasterLinkState ms{};
+		//ec->getLinkState(&ms, sla_link_vec.data());
 
-		
-		target.controller->mout()<<"link            :" << ms.link_up << std::endl;
-		target.controller->mout()<<"slave responding:" << ms.slaves_responding << std::endl;
+		//
+		//target.controller->mout()<<"link            :" << ms.link_up << std::endl;
+		//target.controller->mout()<<"slave responding:" << ms.slaves_responding << std::endl;
 
-		
-		for (int i = 0; i < ec->slavePool().size(); ++i)
-		{
-			target.controller->mout() << "slave " << i << " online     :" << sla_link_vec[i].online << std::endl;
-			target.controller->mout() << "slave " << i << " operational:" << sla_link_vec[i].operational << std::endl;
-			target.controller->mout() << "slave " << i << " state      :" << sla_link_vec[i].al_state << std::endl;
-		}
+		//
+		//for (int i = 0; i < ec->slavePool().size(); ++i)
+		//{
+		//	target.controller->mout() << "slave " << i << " online     :" << sla_link_vec[i].online << std::endl;
+		//	target.controller->mout() << "slave " << i << " operational:" << sla_link_vec[i].operational << std::endl;
+		//	target.controller->mout() << "slave " << i << " state      :" << sla_link_vec[i].al_state << std::endl;
+		//}
 
 		return 0;
 	}
