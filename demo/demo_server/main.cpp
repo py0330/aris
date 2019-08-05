@@ -108,8 +108,6 @@ int main(int argc, char *argv[])
 	//dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
 	////////////////////////////////////////////////////////////////////////////////////
 
-	static_cast<aris::control::EthercatController&>(cs.controller()).scan();
-
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");
 	cs.start();

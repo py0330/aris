@@ -884,6 +884,7 @@ namespace aris::plan
 
 		param.axis_begin_pos_vec.resize(target.controller->motionPool().size());
 		target.param = param;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
 	}
 	auto MoveAbsJ::executeRT(PlanTarget &target)->int
 	{
