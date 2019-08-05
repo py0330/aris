@@ -497,7 +497,7 @@ namespace aris::control
 	public:
 		std::uint16_t control_word;
 		std::uint8_t mode_of_operation;
-		double target_pos_{ 0 }, target_vel_{ 0 }, target_cur_{ 0 }, offset_vel_{ 0 }, offset_cur_{ 0 };
+		double target_pos_{ 0 }, target_vel_{ 0 }, target_toq_{ 0 }, offset_vel_{ 0 }, offset_toq_{ 0 };
 		
 		int waiting_count_left{ 0 }; // enable 在用
 		
@@ -519,9 +519,9 @@ namespace aris::control
 	auto EthercatMotion::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
 	auto EthercatMotion::targetPos()const->double { return imp_->target_pos_; }
 	auto EthercatMotion::targetVel()const->double { return imp_->target_vel_; }
-	auto EthercatMotion::targetCur()const->double { return imp_->target_cur_; }
+	auto EthercatMotion::targetToq()const->double { return imp_->target_toq_; }
 	auto EthercatMotion::offsetVel()const->double { return imp_->offset_vel_; }
-	auto EthercatMotion::offsetCur()const->double { return imp_->offset_cur_; }
+	auto EthercatMotion::offsetCur()const->double { return imp_->offset_toq_; }
 	auto EthercatMotion::setControlWord(std::uint16_t control_word)->void
 	{
 		imp_->control_word = control_word;
@@ -542,19 +542,19 @@ namespace aris::control
 		imp_->target_vel_ = vel;
 		writePdo(0x60FF, 0x00, static_cast<std::int32_t>(vel * posFactor()));
 	}
-	auto EthercatMotion::setTargetCur(double cur)->void
+	auto EthercatMotion::setTargetToq(double toq)->void
 	{
-		imp_->target_cur_ = cur;
-		writePdo(0x6071, 0x00, static_cast<std::int16_t>(cur));
+		imp_->target_toq_ = toq;
+		writePdo(0x6071, 0x00, static_cast<std::int16_t>(toq));
 	}
 	auto EthercatMotion::setOffsetVel(double vel)->void
 	{
 		imp_->offset_vel_ = vel;
 		writePdo(0x60B1, 0x00, static_cast<std::int32_t>(vel * posFactor()));
 	}
-	auto EthercatMotion::setOffsetCur(double cur)->void
+	auto EthercatMotion::setOffsetToq(double cur)->void
 	{
-		imp_->offset_cur_ = cur;
+		imp_->offset_toq_ = cur;
 		writePdo(0x60B2, 0x00, static_cast<std::int16_t>(cur));
 	}
 	auto EthercatMotion::statusWord()->std::uint16_t
@@ -587,7 +587,7 @@ namespace aris::control
 		readPdo(0x6078, 0x00, cur_count);
 		return static_cast<double>(cur_count);
 	}
-	auto EthercatMotion::actualTor()->double
+	auto EthercatMotion::actualToq()->double
 	{
 		std::int16_t cur_count{ 0 };
 		readPdo(0x6077, 0x00, cur_count);
@@ -740,8 +740,8 @@ namespace aris::control
 			{
 			case 0x08: setTargetPos(actualPos()); break;
 			case 0x09: setTargetVel(0.0); break;
-			case 0x10: setTargetCur(0.0); break;
-			default: setTargetPos(actualPos()); setTargetVel(0.0); setTargetCur(0.0);
+			case 0x10: setTargetToq(0.0); break;
+			default: setTargetPos(actualPos()); setTargetVel(0.0); setTargetToq(0.0);
 			}
 
 			return 4;

@@ -637,7 +637,7 @@ namespace aris::plan
 						cm.setTargetVel(0.0);
 						break;
 					case 10:
-						cm.setTargetCur(0.0);
+						cm.setTargetToq(0.0);
 						break;
 					default:
 						break;

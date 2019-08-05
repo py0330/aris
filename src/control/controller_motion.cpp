@@ -91,7 +91,6 @@ namespace aris::control
 	Motion::Motion(const Motion &other) = default;
 	Motion& Motion::operator=(const Motion &other) = default;
 
-
 	struct Controller::Imp 
 	{ 
 		aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>> motion_pool_{ nullptr };

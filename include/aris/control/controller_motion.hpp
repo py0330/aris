@@ -38,7 +38,7 @@ namespace aris::control
 		auto virtual modeOfOperation()const->std::uint8_t = 0;
 		auto virtual targetPos()const->double = 0;
 		auto virtual targetVel()const->double = 0;
-		auto virtual targetCur()const->double = 0;
+		auto virtual targetToq()const->double = 0;
 		auto virtual offsetVel()const->double = 0;
 		auto virtual offsetCur()const->double = 0;
 
@@ -46,16 +46,16 @@ namespace aris::control
 		auto virtual setModeOfOperation(std::uint8_t mode)->void = 0;
 		auto virtual setTargetPos(double pos)->void = 0;
 		auto virtual setTargetVel(double vel)->void = 0;
-		auto virtual setTargetCur(double cur)->void = 0;
+		auto virtual setTargetToq(double toq)->void = 0;
 		auto virtual setOffsetVel(double vel)->void = 0;
-		auto virtual setOffsetCur(double cur)->void = 0;
+		auto virtual setOffsetToq(double toq)->void = 0;
 
 		auto virtual statusWord()->std::uint16_t = 0;
 		auto virtual modeOfDisplay()->std::uint8_t = 0;
 		auto virtual actualPos()->double = 0;
 		auto virtual actualVel()->double = 0;
+		auto virtual actualToq()->double = 0;
 		auto virtual actualCur()->double = 0;
-		auto virtual actualTor()->double = 0;
 
 		auto virtual disable()->int = 0;
 		auto virtual enable()->int = 0;

@@ -199,7 +199,7 @@ namespace aris::control
 		auto virtual modeOfOperation()const->std::uint8_t override;
 		auto virtual targetPos()const->double override;
 		auto virtual targetVel()const->double override;
-		auto virtual targetCur()const->double override;
+		auto virtual targetToq()const->double override;
 		auto virtual offsetVel()const->double override;
 		auto virtual offsetCur()const->double override;
 		// require pdo 0x6040 //
@@ -211,11 +211,11 @@ namespace aris::control
 		// require pdo 0x60FF //
 		auto virtual setTargetVel(double vel)->void override;
 		// require pdo 0x6071 //
-		auto virtual setTargetCur(double cur)->void override;
-		// require pdo 0x6071 //
+		auto virtual setTargetToq(double toq)->void override;
+		// require pdo 0x60B1 //
 		auto virtual setOffsetVel(double vel)->void override;
-		// require pdo 0x6071 //
-		auto virtual setOffsetCur(double cur)->void override;
+		// require pdo 0x60B2 //
+		auto virtual setOffsetToq(double toq)->void override;
 		// require pdo 0x6041 //
 		auto virtual statusWord()->std::uint16_t override;
 		// require pdo 0x6061 //
@@ -224,10 +224,10 @@ namespace aris::control
 		auto virtual actualPos()->double override;
 		// require pdo 0x606C //
 		auto virtual actualVel()->double override;
+		// require pdo 0x6077 //
+		auto virtual actualToq()->double override;
 		// require pdo 0x6078 //
 		auto virtual actualCur()->double override;
-		// require pdo 0x6077 //
-		auto virtual actualTor()->double override;
 
 		// require pdo 0x6040 0x6041 // 
 		auto virtual disable()->int override;

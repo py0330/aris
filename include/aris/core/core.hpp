@@ -20,12 +20,12 @@
 // - remove margin(0.005) of manual plan
 // - fix moveAbsolute2 bug on linux                                       check
 // - generate 6-axis from DH                                              check
-// - make dynamic calibration as a plan                                   
-// - use extern template to reduce compile time
+// - make dynamic calibration as a plan                                   guikai
+// - use extern template to reduce compile time                           
 
 // to do list 2019-05-07:
 // - svd decomposition
-// - check ethercat link
+// - check ethercat link                                                  check
 // - scan slave info to motion                                            check
 // - generate ur from DH
 // - 7-axis inverse solver                                                check
@@ -36,7 +36,7 @@
 // - check scan result when controller start                              check
 
 // to do list 2019-05-14:
-// - make pdo of curent/targetpos/... can be customized
+// - make pdo of curent/targetpos/... can be customized                   use toq instead of cur
 // - fix server stastic data bug: when lose some frame, it corrupt 
 // - check motion respectively                                            check
 // - make startWebSock and runCmdLine available                           check
@@ -62,4 +62,5 @@
 // to do list 2019-07-24
 // - make interface of server                                             
 // - check pdo instead of corrupt                                         
-// - make motionPool() available before start controller                  
+// - make motionPool() available before start controller
+// - make new parsing system, which parse if/else/while ...

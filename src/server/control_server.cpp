@@ -184,9 +184,9 @@ namespace aris::server
 			{
 				if ((target.mot_options[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mm.mp());
 				if ((target.mot_options[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mm.mv());
-				if ((target.mot_options[i] & aris::plan::Plan::USE_TARGET_CUR))cm.setTargetCur(mm.mf());
-				if ((target.mot_options[i] & aris::plan::Plan::USE_VEL_OFFSET))cm.setOffsetVel(mm.mv());
-				if ((target.mot_options[i] & aris::plan::Plan::USE_CUR_OFFSET))cm.setOffsetCur(mm.mf());
+				if ((target.mot_options[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mm.mf());
+				if ((target.mot_options[i] & aris::plan::Plan::USE_OFFSET_VEL))cm.setOffsetVel(mm.mv());
+				if ((target.mot_options[i] & aris::plan::Plan::USE_OFFSET_TOQ))cm.setOffsetToq(mm.mf());
 			}
 		}
 
@@ -370,7 +370,7 @@ namespace aris::server
 		{
 			last_last_pvc.at(i).p = controller_->motionPool().at(i).targetPos();
 			last_last_pvc.at(i).v = controller_->motionPool().at(i).targetVel();
-			last_last_pvc.at(i).c = controller_->motionPool().at(i).targetCur();
+			last_last_pvc.at(i).c = controller_->motionPool().at(i).targetToq();
 		}
 		std::swap(last_pvc, last_last_pvc);
 		return 0;
@@ -392,7 +392,7 @@ namespace aris::server
 				//is_correcting = cm.disable();
 				break;
 			case 10:
-				cm.setTargetCur(0.0);
+				cm.setTargetToq(0.0);
 				is_correcting = cm.disable();
 				break;
 			default:
@@ -402,7 +402,7 @@ namespace aris::server
 			// store correct data
 			last_pvc.at(i).p = last_last_pvc.at(i).p = controller_->motionPool().at(i).targetPos();
 			last_pvc.at(i).v = last_last_pvc.at(i).v = controller_->motionPool().at(i).targetVel();
-			last_pvc.at(i).c = last_last_pvc.at(i).c = controller_->motionPool().at(i).targetCur();
+			last_pvc.at(i).c = last_last_pvc.at(i).c = controller_->motionPool().at(i).targetToq();
 		}
 		return -1;
 	}

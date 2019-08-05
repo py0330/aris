@@ -41,19 +41,6 @@ namespace aris::server
 	private:
 		aris::core::Socket sock_;
 	};
-
-	class CmdLineInterface :public Interface
-	{
-	public:
-		auto virtual open()->void = 0;
-		auto virtual close()->void = 0;
-		auto virtual sendRet(const std::string &ret)->void = 0;
-
-		ARIS_REGISTER_TYPE(CmdLineInterface);
-		ARIS_DEFINE_BIG_FOUR(CmdLineInterface);
-	};
-
-
 }
 
 #endif
