@@ -177,7 +177,7 @@ void test_float_5_bar_universal()
 void test_model_solver_universal()
 {
 	std::cout << std::endl << "-----------------test model solver universal---------------------" << std::endl;
-	test_single_body_universal();
+	//test_single_body_universal();
 	test_float_5_bar_universal();
 	test_servo_press_universal();
 

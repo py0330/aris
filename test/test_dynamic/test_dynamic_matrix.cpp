@@ -1297,7 +1297,7 @@ void test_matrix()
 	test_multiply();
 	test_llt();
 	test_householder();
-	test_svd();
+	//test_svd();
 
 	std::cout << "-----------------test matrix finished-----------" << std::endl << std::endl;
 }

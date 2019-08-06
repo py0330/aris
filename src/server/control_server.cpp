@@ -415,6 +415,7 @@ namespace aris::server
 		imp_->sensor_root_ = findOrInsertType<aris::sensor::SensorRoot>();
 		imp_->plan_root_ = findOrInsertType<aris::plan::PlanRoot>();
 		imp_->interface_root_ = findOrInsertType<aris::server::InterfaceRoot>();
+		imp_->interface_pool_ = findOrInsertType<aris::core::ObjectPool<aris::server::Interface>>();
 	}
 	auto ControlServer::resetModel(dynamic::Model *model)->void
 	{

@@ -2481,23 +2481,23 @@ auto test_clb()->void
 void test_model_solver()
 {
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
-	//test_single_body();
-	//test_float_5_bar();
-	//test_servo_press();
+	test_single_body();
+	test_float_5_bar();
+	test_servo_press();
 	test_3R();
 	test_ur5();
 	test_stewart();
 	test_ur5_on_stewart();
 	test_multi_systems();
 
-	//bench_3R();
-	//bench_ur5();
-	//bench_stewart();
-	//bench_multi_systems();
+	bench_3R();
+	bench_ur5();
+	bench_stewart();
+	bench_multi_systems();
 
-	test_ur5_calibration();
+	//test_ur5_calibration();
 
-	test_clb();
+	//test_clb();
 	std::cout << "-----------------test model compute finished------------" << std::endl << std::endl;
 }
 

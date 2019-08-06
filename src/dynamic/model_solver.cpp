@@ -50,7 +50,7 @@ namespace aris::dynamic
 	{
 		struct Block 
 		{ 
-			const Constraint* constraint; 
+			const Constraint* constraint;
 			bool is_I;
 			double pmI[16], pmJ[16];
 		};
@@ -827,8 +827,12 @@ namespace aris::dynamic
 
 		std::vector<SubSystem> subsys_pool_;
 
-		std::vector<double> F_, FU_, FT_, G_, GU_, GT_, S_, QT_DOT_G_, xpf_, xcf_, bpf_, bcf_, beta_, cmI, cmJ, cmU, cmT;
-		std::vector<Size> FP_, GP_;
+		//std::vector<double> F_, FU_, FT_, G_, GU_, GT_, S_, QT_DOT_G_, xpf_, xcf_, bpf_, bcf_, beta_, cmI, cmJ, cmU, cmT;
+		//std::vector<Size> FP_, GP_;
+
+		std::vector<char> mem_pool_;
+		int F_, FU_, FT_, G_, GU_, GT_, S_, QT_DOT_G_, xpf_, xcf_, bpf_, bcf_, beta_, cmI, cmJ, cmU, cmT;
+		int FP_, GP_;
 
 		std::vector<double> Jg_, cg_;
 		std::vector<double> M_, h_;
@@ -926,7 +930,6 @@ namespace aris::dynamic
 	{
 		// make active part pool //
 		std::vector<const Part*> active_part_pool;
-		active_part_pool.clear();
 		active_part_pool.push_back(&ancestor<Model>()->ground());
 		for (auto &p : ancestor<Model>()->partPool())if (p.active() && &p != &ancestor<Model>()->ground())active_part_pool.push_back(&p);
 
@@ -1198,54 +1201,77 @@ namespace aris::dynamic
 		imp_->get_diag_from_part_id_.resize(ancestor<Model>()->partPool().size(), nullptr);
 		for (auto &sys : imp_->subsys_pool_)for (auto &diag : sys.diag_pool_)imp_->get_diag_from_part_id_.at(diag.part->id()) = &diag;
 
-		// 分配计算所需内存 //
-		imp_->F_.resize(max_F_size);
-		imp_->FU_.resize(max_F_size);
-		imp_->FT_.resize(std::max(max_fm, max_fn));
-		imp_->FP_.resize(std::max(max_fm, max_fn));
-		imp_->G_.resize(max_G_size);
-		imp_->GU_.resize(max_G_size);
-		imp_->GT_.resize(std::max(max_gm, max_gn));
-		imp_->GP_.resize(std::max(max_gm, max_gn));
-		imp_->S_.resize(max_fm*max_fm, 0.0);
-		imp_->beta_.resize(max_gn, 0.0); // beta可能会存储无地面处的未知量
-		imp_->QT_DOT_G_.resize(max_G_size, 0.0);
-		imp_->xcf_.resize(std::max(max_fn, max_fm)); //s_house_holder_ut_q_dot要求x > b
-		imp_->xpf_.resize(std::max(max_fn, max_fm));
-		imp_->bcf_.resize(max_fn);
-		imp_->bpf_.resize(max_fm);
-		imp_->cmI.resize(max_cm_size * 6);
-		imp_->cmJ.resize(max_cm_size * 6);
-		imp_->cmU.resize(max_cm_size * 6);
-		imp_->cmT.resize(std::max(Size(6), max_cm_size));
+		// 计算公共的内存及偏移
+		Size mem_pool_size = 0;
+		imp_->F_ = mem_pool_size;
+		mem_pool_size += max_F_size * sizeof(double);
+		imp_->FU_ = mem_pool_size;
+		mem_pool_size += max_F_size * sizeof(double);
+		imp_->FT_= mem_pool_size;
+		mem_pool_size += std::max(max_fm, max_fn) * sizeof(double);
+		imp_->FP_ = mem_pool_size;
+		mem_pool_size += std::max(max_fm, max_fn) * sizeof(Size);
+		imp_->G_ = mem_pool_size;
+		mem_pool_size += max_G_size * sizeof(double);
+		imp_->GU_ = mem_pool_size;
+		mem_pool_size += max_G_size * sizeof(double);
+		imp_->GT_ = mem_pool_size;
+		mem_pool_size += std::max(max_gm, max_gn) * sizeof(double);
+		imp_->GP_ = mem_pool_size;
+		mem_pool_size += std::max(max_gm, max_gn) * sizeof(Size);
+		imp_->S_ = mem_pool_size;
+		mem_pool_size += max_fm * max_fm * sizeof(double);
+		imp_->beta_ = mem_pool_size;
+		mem_pool_size += max_gn * sizeof(double);
+		imp_->QT_DOT_G_ = mem_pool_size;
+		mem_pool_size += max_G_size * sizeof(double);
+		imp_->xcf_ = mem_pool_size; 
+		mem_pool_size += std::max(max_fn, max_fm) * sizeof(double);
+		imp_->xpf_ = mem_pool_size;
+		mem_pool_size += std::max(max_fn, max_fm) * sizeof(double);
+		imp_->bcf_ = mem_pool_size;
+		mem_pool_size += max_fn * sizeof(double);
+		imp_->bpf_ = mem_pool_size;
+		mem_pool_size += max_fm * sizeof(double);
+		imp_->cmI = mem_pool_size;
+		mem_pool_size += max_cm_size * 6 * sizeof(double);
+		imp_->cmJ = mem_pool_size;
+		mem_pool_size += max_cm_size * 6 * sizeof(double);
+		imp_->cmU = mem_pool_size;
+		mem_pool_size += max_cm_size * 6 * sizeof(double);
+		imp_->cmT = mem_pool_size;
+		mem_pool_size += std::max(Size(6), max_cm_size) * sizeof(double);
+
+		// 分配内存
+		imp_->mem_pool_.resize(mem_pool_size);
 
 		// 将内存付给子系统 //
 		for (auto &sys : imp_->subsys_pool_)
 		{
 			sys.has_ground_ = sys.diag_pool_.begin()->part == &ancestor<Model>()->ground();
 
-			sys.F = imp_->F_.data();
-			sys.FU = imp_->FU_.data();
-			sys.FT = imp_->FT_.data();
-			sys.FP = imp_->FP_.data();
-			sys.G = imp_->G_.data();
-			sys.GU = imp_->GU_.data();
-			sys.GT = imp_->GT_.data();
-			sys.GP = imp_->GP_.data();
-			sys.S = imp_->S_.data();
-			sys.beta = imp_->beta_.data();
-			sys.QT_DOT_G = imp_->QT_DOT_G_.data();
-			sys.xcf = imp_->xcf_.data();
-			sys.xpf = imp_->xpf_.data();
-			sys.bcf = imp_->bcf_.data();
-			sys.bpf = imp_->bpf_.data();
+			sys.F = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->F_);
+			sys.FU = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->FU_);
+			sys.FT = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->FT_);
+			sys.FP = reinterpret_cast<Size*>(imp_->mem_pool_.data() + imp_->FP_);
+			sys.G = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->G_);
+			sys.GU = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->GU_);
+			sys.GT = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->GT_);
+			sys.GP = reinterpret_cast<Size*>(imp_->mem_pool_.data() + imp_->GP_);
+			sys.S = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->S_);
+			sys.beta = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->beta_);
+			sys.QT_DOT_G = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->QT_DOT_G_);
+			sys.xcf = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->xcf_);
+			sys.xpf = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->xpf_);
+			sys.bcf = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->bcf_);
+			sys.bpf = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->bpf_);
 
 			for (auto &diag : sys.diag_pool_)
 			{
-				diag.cmI = imp_->cmI.data();
-				diag.cmJ = imp_->cmJ.data();
-				diag.cmU = imp_->cmU.data();
-				diag.cmT = imp_->cmT.data();
+				diag.cmI = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->cmI);
+				diag.cmJ = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->cmJ);
+				diag.cmU = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->cmU);
+				diag.cmT = reinterpret_cast<double*>(imp_->mem_pool_.data() + imp_->cmT);
 			}
 		}
 
