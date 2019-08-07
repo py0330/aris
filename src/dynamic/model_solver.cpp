@@ -421,12 +421,12 @@ namespace aris::dynamic
 
 		//// 根据G求解S解空间的beta, 先把beta都弄成它的右侧未知量 ////
 		if (!hasGround())s_vc(6, d_data_[0].bp_, beta + fm);//这一项实际是把无地面的xp拷贝到beta中
-		s_householder_ut_qt_dot(fm, fn, 1, FU, ColMajor(fm), FT, 1, bpf, 1, beta, 1);
+		s_householder_ut_qt_dot(fm, fr, 1, FU, ColMajor(fm), FT, 1, bpf, 1, beta, 1);
 
 		//// 求QT_DOT_G ////
 		// G 和 QT_DOT_G位于同一片内存，因此不需要以下第一句
-		if (!hasGround())s_mc(gm - fm, gn, G + at(fm, 0, gn), QT_DOT_G + at(fm, 0, gn)); // 这一项实际是把无地面产生的G拷贝到QT_DOT_G中
-		s_householder_ut_qt_dot(fm, fn, gn, FU, ColMajor(fm), FT, 1, G, gn, QT_DOT_G, gn);
+		// if (!hasGround())s_mc(gm - fm, gn, G + at(fm, 0, gn), QT_DOT_G + at(fm, 0, gn)); // 这一项实际是把无地面产生的G拷贝到QT_DOT_G中
+		s_householder_ut_qt_dot(fm, fr, gn, FU, ColMajor(fm), FT, 1, G, gn, QT_DOT_G, gn);
 
 		// --------------------------------------------------------------------
 		// step 7:求出G后，可以进行下一步，求取 beta
@@ -452,8 +452,8 @@ namespace aris::dynamic
 		// 可以通过rank == m-r来判断质点等是否影响计算
 		///////////////////////////////
 		Size rank;
-		s_householder_utp(gn, gn, QT_DOT_G + at(fr, 0, gn), GU, GT, GP, rank, max_error_);
-		s_householder_utp_sov(gn, gn, 1, rank, GU, GT, GP, beta + fr, beta);
+		s_householder_utp(gn, gn, QT_DOT_G + at(fr, 0, gn), GU + at(fr, 0, gn), GT, GP, rank, max_error_);
+		s_householder_utp_sov(gn, gn, 1, rank, GU + at(fr, 0, gn), GT, GP, beta + fr, beta);
 
 		/////////////////////////////////// 求解xp /////////////////////////////////////////////////////////////
 		//// 重新求解 xp ，这次考虑惯量 ////
