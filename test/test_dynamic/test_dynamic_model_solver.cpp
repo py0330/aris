@@ -1081,6 +1081,8 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 		}
 
+
+
 		// compute forward dynamic //
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 		{
@@ -1088,8 +1090,11 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.forcePool().at(i).activate(true);
 			dynamic_cast<SingleComponentForce&>(m.forcePool().at(i)).setFce(ift[i]);
 		}
+		std::vector<double> before_jnt_cf, after_jnt_cf;
+		for (auto &j : m.jointPool())for (int i = 0; i < j.dim(); ++i)before_jnt_cf.push_back(j.cf()[i]);
 		s.allocateMemory();
 		s.dynAccAndFce();
+		for (auto &j : m.jointPool())for (int i = 0; i < j.dim(); ++i)after_jnt_cf.push_back(j.cf()[i]);
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)
 		{
 			m.generalMotionPool().at(i).updMas();
@@ -1101,7 +1106,10 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 				dsp(1, 6, oat + 6 * i);
 			}
 		}
-		
+		if (!s_is_equal(before_jnt_cf.size(), before_jnt_cf.data(), after_jnt_cf.data(), error[2]))
+		{
+			std::cout << s.type() << "::dynAccAndFce() forward forward failed when forward dynamic force" << std::endl;
+		}
 
 
 		/////////////////////////////////////////////////////反向，从输出到输入///////////////////////////////////////////////////

@@ -76,7 +76,6 @@ namespace aris::dynamic
 		double dm_[36], iv_[10];
 		double pm1_[16], pm2_[16], *pm_, *last_pm_;
 		double xp_[6], bp_[6], *bc_, *xc_;
-
 		double *cmI_, *cmJ_, *cmU_, *cmT_; // 仅仅在计算多个关节构成的relation时有用
 
 		Size rows_;// in F
@@ -387,10 +386,17 @@ namespace aris::dynamic
 	}
 	auto SubSystem::sovXc()noexcept->void
 	{
+		/////////////////////////////////// 求解beta /////////////////////////////////////////////////////////////
 		//// 更新每个杆件的力 pf ////
 		ARIS_LOOP_D
 		{
-			// 外力已经储存在了bp中,因此这里不需要增加外力 //
+			// 外力（不包括惯性力）已经储存在了bp中，但为了后续可能存在的修正，这里将其与惯性力之和暂存到 last_pm_ 中 //
+			
+			// v x I * v //
+			double I_dot_v[6];
+			s_iv_dot_as(d->iv_, d->part_->vs(), I_dot_v);
+			s_cfa(d->part_->vs(), I_dot_v, d->bp_);
+			s_vc(6, d->bp_, d->last_pm_); // 暂存处理
 
 			// I*(a-g) //
 			double as_minus_g[6], iv_dot_as[6];
@@ -398,19 +404,15 @@ namespace aris::dynamic
 			s_vs(6, d->part_->ancestor<Model>()->environment().gravity(), as_minus_g);
 			s_iv_dot_as(d->iv_, as_minus_g, iv_dot_as);
 			s_va(6, iv_dot_as, d->bp_);
-
-			// v x I * v //
-			double I_dot_v[6];
-			s_iv_dot_as(d->iv_, d->part_->vs(), I_dot_v);
-			s_cfa(d->part_->vs(), I_dot_v, d->bp_);
 		}
 
-		//// P*bp  对bp做行加变换 ////
-		ARIS_LOOP_DIAG_INVERSE_2_TO_END s_va(6, d->bp_, d->rd_->bp_);
-
-		//// 取出bpf ////
-		ARIS_LOOP_D_2_TO_END
+		//// P*bp  对bp做行加变换，并取出bcf ////
+		ARIS_LOOP_DIAG_INVERSE_2_TO_END
 		{
+			// 行变换
+			s_va(6, d->bp_, d->rd_->bp_);
+
+			// 取出bcf
 			double tem[6];
 			s_mm(6, 1, 6, d->dm_, 6, d->bp_, 1, tem, 1);
 			s_vc(6, tem, d->bp_);
@@ -423,23 +425,82 @@ namespace aris::dynamic
 
 		//// 求QT_DOT_G ////
 		// G 和 QT_DOT_G位于同一片内存，因此不需要以下第一句
-		// if (!hasGround())s_mc(gm - fm, gn, G + at(fm, 0, gn), QT_DOT_G + at(fm, 0, gn)); // 这一项实际是把无地面产生的G拷贝到QT_DOT_G中
+		if (!hasGround())s_mc(gm - fm, gn, G + at(fm, 0, gn), QT_DOT_G + at(fm, 0, gn)); // 这一项实际是把无地面产生的G拷贝到QT_DOT_G中
 		s_householder_ut_qt_dot(fm, fn, gn, FU, ColMajor(fm), FT, 1, G, gn, QT_DOT_G, gn);
 
+		// --------------------------------------------------------------------
+		// step 7:求出G后，可以进行下一步，求取 beta
+		//        既然已经求出过 F 的 QR 分解，那么可以先用F的Q乘以两侧: 注意，这里的G2 并非上文中无地面的G2
+		//        有地面时：
+		//                     fn    fm-fr
+		//        fr       [ R*P^-1  [Q'*G](   1:fr,:)  ] * [  xcf ] = [Q'*bpf](   1:fr)
+		//        fm-fr    [         [Q'*G](fr+1:fm,:)  ]   [ beta ]   [Q'*bpf](fr+1:fm)
+		//        无地面时：
+		//                     fn    fm-fr+6
+		//        fr       [ R*P^-1  [Q'*G1](   1:fr,:)  ] * [  xcf  ] = [ [Q'*bpf](   1:fr) ]
+		//        fm-fr    [         [Q'*G1](fr+1:fm,:)  ]   [ beta  ]   | [Q'*bpf](fr+1:fm) |
+		//        6        [                G2           ]               [       bp1         ]
+		//
+		//        求解右下角，即可得beta
+		//        最终可得xcf
+		//
+
+
+
 		///////////////////////////////
-		// 求解之前通解的解的系数
+		// 求解之前通解的解的系数 beta
 		// 可以通过rank == m-r来判断质点等是否影响计算
 		///////////////////////////////
 		Size rank;
 		s_householder_utp(gn, gn, QT_DOT_G + at(fr, 0, gn), GU, GT, GP, rank, max_error_);
 		s_householder_utp_sov(gn, gn, 1, rank, GU, GT, GP, beta + fr, beta);
 
-		// 这里就求出了beta
-		// 接着求真正的bpf, 并求解xc
-		s_mma(fm, 1, gn, G, beta, bpf);
+		/////////////////////////////////// 求解xp /////////////////////////////////////////////////////////////
+		//// 重新求解 xp ，这次考虑惯量 ////
+		// 根据特解更新 xpf 以及无地面处的特解（杆件1速度之前可以随便设）
+		s_mms(fm, 1, fm - fr, S, beta, xpf);
+		if (!hasGround())s_vi(6, beta + fm - fr, d_data_[0].xp_);
+		// 将xpf更新到xp，先乘以D' 再乘以 P'
+		ARIS_LOOP_D_2_TO_END
+		{
+			// 结合bc 并乘以D'
+			s_mm(6, 1, d->rel_.dim_, d->dm_, ColMajor{ 6 }, d->bc_, 1, d->xp_, 1);
+			s_mma(6, 1, 6 - d->rel_.dim_, d->dm_ + at(0, d->rel_.dim_, T(6)), T(6), xpf + d->rows_, 1, d->xp_, 1);
+
+			// 乘以P'
+			s_va(6, d->rd_->xp_, d->xp_);
+		}
+
+		/////////////////////////////////// 求解xc /////////////////////////////////////////////////////////////
+		// 因为上文中 xp 可能不是真实解，这里重新做循环计算
+		//// 更新每个杆件的力 pf ////
+		ARIS_LOOP_D
+		{
+			// 取出之前暂存的外力 //
+			s_vc(6, d->last_pm_, d->bp_);
+
+			// I*(a-g) //
+			double as_minus_g[6], iv_dot_as[6];
+			s_vc(6, d->xp_, as_minus_g);// xp储存加速度
+			s_vs(6, d->part_->ancestor<Model>()->environment().gravity(), as_minus_g);
+			s_iv_dot_as(d->iv_, as_minus_g, iv_dot_as);
+			s_va(6, iv_dot_as, d->bp_);
+		}
+
+		//// P*bp  对bp做行加变换 ////
+		ARIS_LOOP_DIAG_INVERSE_2_TO_END 
+		{
+			s_va(6, d->bp_, d->rd_->bp_);
+			
+			double tem[6];
+			s_mm(6, 1, 6, d->dm_, 6, d->bp_, 1, tem, 1);
+			s_vc(6, tem, d->bp_);
+			s_vc(6 - d->rel_.dim_, d->bp_ + d->rel_.dim_, bpf + d->rows_);
+		}
+		
+		// 求解xcf //
 		s_householder_utp_sov(fm, fn, 1, fr, FU, ColMajor(fm), FT, 1, FP, bpf, 1, xcf, 1, max_error_);
 
-		///////////////////////////////////根据xcf求解xc/////////////////////////////////////////////
 		// 将已经求出的x更新到remainder中，此后将已知数移到右侧
 		Size cols{ 0 };
 		ARIS_LOOP_R
@@ -461,21 +522,6 @@ namespace aris::dynamic
 			s_vc(d->rel_.dim_, d->bp_, d->xc_);
 			std::fill(d->xc_ + d->rel_.dim_, d->xc_ + d->rel_.size_, 0.0);
 			s_permutate_inv(d->rel_.size_, 1, d->p_, d->xc_);
-		}
-
-		//// 重新求解 xp ，这次考虑惯量 ////
-		// 根据特解更新 xpf 以及无地面处的特解（杆件1速度之前可以随便设）
-		s_mms(fm, 1, fm - fr, S, beta, xpf);
-		if (!hasGround())s_vi(6, beta + fm - fr, d_data_[0].xp_);
-		// 将xpf更新到xp，先乘以D' 再乘以 P'
-		ARIS_LOOP_D_2_TO_END
-		{
-			// 结合bc 并乘以D'
-			s_mm(6, 1, d->rel_.dim_, d->dm_, ColMajor{ 6 }, d->bc_, 1, d->xp_, 1);
-			s_mma(6, 1, 6 - d->rel_.dim_, d->dm_ + at(0, d->rel_.dim_, T(6)), T(6), xpf + d->rows_, 1, d->xp_, 1);
-
-			// 乘以P'
-			s_va(6, d->rd_->xp_, d->xp_);
 		}
 	}
 	auto SubSystem::kinPos()noexcept->void
@@ -807,7 +853,7 @@ namespace aris::dynamic
 		//        [ F  G1 ] * [  xcf ] = [ bpf ]
 		//        [    G2 ]   [ beta ]   [ bp1 ]
 		// --------------------------------------------------------------------
-		// step 7:求出G后，可以进行下一步，求取H
+		// step 7:求出G后，可以进行下一步，求取 beta
 		//        既然已经求出过 F 的 QR 分解，那么可以先用F的Q乘以两侧: 注意，这里的G2 并非上文中无地面的G2
 		//        有地面时：
 		//                     fn    fm-fr
@@ -1230,8 +1276,10 @@ namespace aris::dynamic
 		Imp::allocMem(mem_pool_size, imp_->FT_, std::max(max_fm, max_fn));
 		Imp::allocMem(mem_pool_size, imp_->FP_, std::max(max_fm, max_fn));
 		Imp::allocMem(mem_pool_size, imp_->G_, max_G_size);
+		//Imp::allocMem(mem_pool_size, imp_->GU_, max_G_size);
 		Imp::allocMem(mem_pool_size, imp_->GT_, std::max(max_gm, max_gn));
 		Imp::allocMem(mem_pool_size, imp_->GP_, std::max(max_gm, max_gn));
+		//Imp::allocMem(mem_pool_size, imp_->QT_DOT_G_, max_G_size);
 		Imp::allocMem(mem_pool_size, imp_->S_, max_fm * max_fm);
 		Imp::allocMem(mem_pool_size, imp_->beta_, max_gn);
 		Imp::allocMem(mem_pool_size, imp_->xcf_, std::max(max_fn, max_fm));
