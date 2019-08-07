@@ -97,13 +97,9 @@ namespace aris::dynamic
 		Block* blk_data_;
 		Size blk_size_;
 
-		std::vector<Block> cm_blk_series;
 		Relation rel_;
 	};
-	struct LocalRemainder : public Remainder
-	{
-		std::vector<Block> cm_blk_series;
-	};
+	struct LocalRemainder : public Remainder { std::vector<Block> cm_blk_series; };
 	struct SubSystem
 	{
 		Diag* d_data_;
@@ -111,7 +107,7 @@ namespace aris::dynamic
 		
 		Remainder* r_data_;
 		Size r_size_;
-		std::vector<Remainder> remainder_pool_;
+		//std::vector<Remainder> remainder_pool_;
 
 		Size fm, fn, fr, gm, gn;
 
@@ -162,13 +158,13 @@ namespace aris::dynamic
 			}
 		}
 
-		for (auto &r : remainder_pool_)
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r)
 		{
-			for (int i = 0; i < r.rel_.blk_size_; ++i)
+			for (int i = 0; i < r->rel_.blk_size_; ++i)
 			{
-				auto &c = *(r.rel_.blk_data_ + i);
-				s_pm_dot_pm(c.is_I_ ? r.i_diag_->pm_ : r.j_diag_->pm_, *c.cst_->makI().prtPm(), c.pmI_);
-				s_pm_dot_pm(c.is_I_ ? r.j_diag_->pm_ : r.i_diag_->pm_, *c.cst_->makJ().prtPm(), c.pmJ_);
+				auto &c = *(r->rel_.blk_data_ + i);
+				s_pm_dot_pm(c.is_I_ ? r->i_diag_->pm_ : r->j_diag_->pm_, *c.cst_->makI().prtPm(), c.pmI_);
+				s_pm_dot_pm(c.is_I_ ? r->j_diag_->pm_ : r->i_diag_->pm_, *c.cst_->makJ().prtPm(), c.pmJ_);
 			}
 		}
 	}
@@ -184,16 +180,16 @@ namespace aris::dynamic
 		}
 
 		// upd remainder data //
-		for (auto &r : remainder_pool_)
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r)
 		{
 			Size pos{ 0 };
-			for (int i = 0; i < r.rel_.blk_size_; ++i)
+			for (int i = 0; i < r->rel_.blk_size_; ++i)
 			{
-				auto &c = *(r.rel_.blk_data_ + i);
+				auto &c = *(r->rel_.blk_data_ + i);
 				double cmI[36], cmJ[36];
 				c.cst_->cptGlbCmFromPm(cmI, cmJ, c.pmI_, c.pmJ_);
-				s_mc(6, c.cst_->dim(), cmI, c.cst_->dim(), r.cmI_ + pos, r.rel_.size_);
-				s_mc(6, c.cst_->dim(), cmJ, c.cst_->dim(), r.cmJ_ + pos, r.rel_.size_);
+				s_mc(6, c.cst_->dim(), cmI, c.cst_->dim(), r->cmI_ + pos, r->rel_.size_);
+				s_mc(6, c.cst_->dim(), cmJ, c.cst_->dim(), r->cmJ_ + pos, r->rel_.size_);
 				pos += c.cst_->dim();
 			}
 		}
@@ -202,16 +198,16 @@ namespace aris::dynamic
 	auto SubSystem::updCpToBc()noexcept->void
 	{
 		// bc in diag //
-		for (auto d = d_data_ + 1; d<d_data_ + d_size_; ++d)d->cpt_cp_from_pm_(d);
+		for (auto d = d_data_ + 1; d < d_data_ + d_size_; ++d)d->cpt_cp_from_pm_(d);
 
 		// bc in remainder //
-		for (auto &r : remainder_pool_)
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r)
 		{
 			Size pos{ 0 };
-			for (int i = 0; i < r.rel_.blk_size_; ++i)
+			for (int i = 0; i < r->rel_.blk_size_; ++i)
 			{
-				auto &c = *(r.rel_.blk_data_ + i);
-				c.cst_->cptCpFromPm(r.bc_ + pos, c.pmI_, c.pmJ_);
+				auto &c = *(r->rel_.blk_data_ + i);
+				c.cst_->cptCpFromPm(r->bc_ + pos, c.pmI_, c.pmJ_);
 				pos += c.cst_->dim();
 			}
 		}
@@ -230,13 +226,13 @@ namespace aris::dynamic
 			}
 		}
 		// bc in remainder //
-		for (auto &r : remainder_pool_)
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r)
 		{
 			Size pos{ 0 };
-			for (int i = 0; i < r.rel_.blk_size_; ++i)
+			for (int i = 0; i < r->rel_.blk_size_; ++i)
 			{
-				auto &c = *(r.rel_.blk_data_ + i);
-				c.cst_->cptCv(r.bc_ + pos);
+				auto &c = *(r->rel_.blk_data_ + i);
+				c.cst_->cptCv(r->bc_ + pos);
 				pos += c.cst_->dim();
 			}
 		}
@@ -244,7 +240,7 @@ namespace aris::dynamic
 	auto SubSystem::updCaToBc()noexcept->void
 	{
 		// bc in diag //
-		for (auto d = d_data_ + 1; d<d_data_ + d_size_; ++d)
+		for (auto d = d_data_ + 1; d < d_data_ + d_size_; ++d)
 		{
 			Size pos{ 0 };
 			for (int i = 0; i<d->rel_.blk_size_; ++i)
@@ -255,13 +251,13 @@ namespace aris::dynamic
 			}
 		}
 		// bc in remainder //
-		for (auto &r : remainder_pool_)
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r)
 		{
 			Size pos{ 0 };
-			for (int i = 0; i < r.rel_.blk_size_; ++i)
+			for (int i = 0; i < r->rel_.blk_size_; ++i)
 			{
-				auto &c = *(r.rel_.blk_data_ + i);
-				c.cst_->cptCa(r.bc_ + pos);
+				auto &c = *(r->rel_.blk_data_ + i);
+				c.cst_->cptCa(r->bc_ + pos);
 				pos += c.cst_->dim();
 			}
 		}
@@ -270,8 +266,8 @@ namespace aris::dynamic
 	{
 		// 求解当前误差
 		error_ = 0.0;
-		for (auto d = d_data_ + 1; d<d_data_ + d_size_; ++d)for (Size i{ 0 }; i < d->rel_.size_; ++i)error_ = std::max(error_, std::abs(d->bc_[i]));
-		for (auto &r : remainder_pool_)for (Size i{ 0 }; i < r.rel_.size_; ++i)error_ = std::max(error_, std::abs(r.bc_[i]));
+		for (auto d = d_data_ + 1; d < d_data_ + d_size_; ++d) for (Size i{ 0 }; i < d->rel_.size_; ++i)error_ = std::max(error_, std::abs(d->bc_[i]));
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r) for (Size i{ 0 }; i < r->rel_.size_; ++i)error_ = std::max(error_, std::abs(r->bc_[i]));
 	}
 	auto SubSystem::updF()noexcept->void
 	{
@@ -279,13 +275,13 @@ namespace aris::dynamic
 		s_fill(fm, fn, 0.0, F);
 
 		Size cols{ 0 };
-		for (auto &r : remainder_pool_)
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r)
 		{
-			for (auto &b : r.cm_blk_series)
+			for (auto b = r->blk_data_; b< r->blk_data_ + r->blk_size_; ++b)
 			{
-				s_mm(6 - b.diag_->rel_.dim_, r.rel_.size_, 6, b.diag_->dm_ + at(b.diag_->rel_.dim_, 0, 6), 6, b.is_I_ ? r.cmI_ : r.cmJ_, r.rel_.size_, F + at(b.diag_->rows_, cols, fn), fn);
+				s_mm(6 - b->diag_->rel_.dim_, r->rel_.size_, 6, b->diag_->dm_ + at(b->diag_->rel_.dim_, 0, 6), 6, b->is_I_ ? r->cmI_ : r->cmJ_, r->rel_.size_, F + at(b->diag_->rows_, cols, fn), fn);
 			}
-			cols += r.rel_.size_;
+			cols += r->rel_.size_;
 		}
 
 		s_householder_utp(fm, fn, F, FU, FT, FP, fr, max_error_);
@@ -305,15 +301,15 @@ namespace aris::dynamic
 
 		// 构造bcf //
 		Size cols{ 0 };
-		for (auto &r : remainder_pool_)
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r)
 		{
-			s_vc(r.rel_.size_, r.bc_, bcf + cols);
-			for (auto &b : r.cm_blk_series)
+			s_vc(r->rel_.size_, r->bc_, bcf + cols);
+			for (auto b = r->blk_data_; b< r->blk_data_ + r->blk_size_; ++b)
 			{
-				auto cm = b.is_I_ ? r.cmJ_ : r.cmI_;//这里是颠倒的，因为加到右侧需要乘-1.0
-				s_mma(r.rel_.size_, 1, 6, cm, ColMajor{ r.rel_.size_ }, b.diag_->xp_, 1, bcf + cols, 1);//请参考step 4，将预更新的东西取出
+				auto cm = b->is_I_ ? r->cmJ_ : r->cmI_;//这里是颠倒的，因为加到右侧需要乘-1.0
+				s_mma(r->rel_.size_, 1, 6, cm, ColMajor{ r->rel_.size_ }, b->diag_->xp_, 1, bcf + cols, 1);//请参考step 4，将预更新的东西取出
 			}
-			cols += r.rel_.size_;
+			cols += r->rel_.size_;
 		}
 
 		// 求解 F' * xpf = bcf //
@@ -471,19 +467,20 @@ namespace aris::dynamic
 		///////////////////////////////////根据xcf求解xc/////////////////////////////////////////////
 		// 将已经求出的x更新到remainder中，此后将已知数移到右侧
 		Size cols{ 0 };
-		for (auto &r : remainder_pool_)
+		for (auto r = r_data_; r < r_data_ + r_size_; ++r)
 		{
-			s_vc(r.rel_.size_, xcf + cols, r.xc_);
+			s_vc(r->rel_.size_, xcf + cols, r->xc_);
 
 			// 更新待求
-			for (auto &b : r.cm_blk_series)
+			//for (auto &b : r->cm_blk_series)
+			for (auto b = r->blk_data_; b < r->blk_data_ + r->blk_size_; ++b)
 			{
 				double tem[6];
-				s_mm(6, 1, r.rel_.size_, b.is_I_ ? r.cmJ_ : r.cmI_, xcf + cols, tem);
-				s_mma(6, 1, 6, b.diag_->dm_, 6, tem, 1, b.diag_->bp_, 1);
+				s_mm(6, 1, r->rel_.size_, b->is_I_ ? r->cmJ_ : r->cmI_, xcf + cols, tem);
+				s_mma(6, 1, 6, b->diag_->dm_, 6, tem, 1, b->diag_->bp_, 1);
 			}
 
-			cols += r.rel_.size_;
+			cols += r->rel_.size_;
 		}
 		for (auto d = d_data_ + 1; d<d_data_ + d_size_; ++d)
 		{
@@ -538,7 +535,7 @@ namespace aris::dynamic
 			updError();
 
 			// 对于非串联臂，当迭代误差反而再增大时，会主动缩小步长
-			if (!remainder_pool_.empty())// 只有不是串联臂才会用以下迭代
+			if (r_size_)// 只有不是串联臂才会用以下迭代
 			{
 				if (error_ > last_error)// 这里如果用while可以确保每个循环误差都会减小，但是有可能出现卡死
 				{
@@ -1164,6 +1161,8 @@ namespace aris::dynamic
 			}
 
 			// 制造 r_vec (remainder_vec) //
+			*reinterpret_cast<Size*>(&sys.r_data_) = mem_pool_size;
+			mem_pool_size += sizeof(Remainder) * (rel_vec.size() - part_vec.size() + 1);
 			r_vec_vec.push_back(std::vector<LocalRemainder>());
 			auto &r_vec = r_vec_vec.back();
 			r_vec.clear();
@@ -1229,14 +1228,6 @@ namespace aris::dynamic
 				r_vec[i].blk_size_ = r.cm_blk_series.size();
 				*reinterpret_cast<Size*>(&r_vec[i].blk_data_) = mem_pool_size;
 				mem_pool_size += sizeof(Remainder::Block) * r.cm_blk_series.size();
-
-				for (int i = 0; i < r.blk_size_; ++i)
-				{
-					//r.blk_data_[i].diag_ = sys.d_data_ + (static_cast<LocalDiag*>(r.blk_data_[i].diag_) - d_vec.data());
-					//std::cout << r.cm_blk_series[i].diag_->part_->name() << std::endl;
-
-					//r.cm_blk_series.push_back(r.blk_data_[i]);
-				}
 			}
 			
 			// 更新子系统尺寸 //
@@ -1348,12 +1339,15 @@ namespace aris::dynamic
 				diag.last_pm_ = diag.pm2_;
 			}
 
-			sys.remainder_pool_.resize(r_vec.size());
-			for (int i = 0; i < r_vec.size(); ++i)sys.remainder_pool_[i] = r_vec[i];
-			for (Size i = 0; i < sys.remainder_pool_.size(); ++i)
+			sys.r_data_ = reinterpret_cast<Remainder*>(imp_->mem_pool_.data() + *reinterpret_cast<Size*>(&sys.r_data_));
+			sys.r_size_ = r_vec.size();
+			for(int i = 0; i < sys.r_size_; ++i)sys.r_data_[i] = r_vec[i];
+			//sys.remainder_pool_.resize(r_vec.size());
+			//for (int i = 0; i < sys.r_size_; ++i)sys.remainder_pool_[i] = sys.r_data_[i];
+			for (Size i = 0; i < sys.r_size_; ++i)
 			{
-				auto &r = sys.remainder_pool_.at(i);
-				auto &rel = rel_vec.at(i + sys.d_size_ - 1);
+				auto &r = sys.r_data_[i];
+				auto &rel = rel_vec[i + sys.d_size_ - 1];
 
 				// 获取 Relation::Block 内存
 				{
@@ -1371,18 +1365,15 @@ namespace aris::dynamic
 
 				// 获取 Remainder::Block 内存
 				r.blk_data_ = reinterpret_cast<Remainder::Block*>(imp_->mem_pool_.data() + *reinterpret_cast<Size*>(&r.blk_data_));
-				r.cm_blk_series.clear();
 				for (int j = 0; j < r.blk_size_; ++j)
 				{
 					r.blk_data_[j] = r_vec[i].cm_blk_series[j];
 					r.blk_data_[j].diag_ = sys.d_data_ + (static_cast<LocalDiag*>(r.blk_data_[j].diag_) - d_vec.data());
-
-					r.cm_blk_series.push_back(r.blk_data_[j]);
 				}
 
 				// 构建 r
-				r.i_diag_ = &*std::find_if(sys.d_data_, sys.d_data_ + sys.d_size_, [&rel](Diag& d) {return rel.prtI_ == d.part_; });
-				r.j_diag_ = &*std::find_if(sys.d_data_, sys.d_data_ + sys.d_size_, [&rel](Diag& d) {return rel.prtJ_ == d.part_; });
+				r.i_diag_ = std::find_if(sys.d_data_, sys.d_data_ + sys.d_size_, [&rel](Diag& d) {return rel.prtI_ == d.part_; });
+				r.j_diag_ = std::find_if(sys.d_data_, sys.d_data_ + sys.d_size_, [&rel](Diag& d) {return rel.prtJ_ == d.part_; });
 			}
 
 			sys.has_ground_ = sys.d_data_->part_ == &ancestor<Model>()->ground();
@@ -1484,14 +1475,15 @@ namespace aris::dynamic
 		// 计算成功，设置各关节和杆件
 		for (auto &sys : imp_->subsys_pool_)
 		{
-			for (auto &r : sys.remainder_pool_)
+			//for (auto &r : sys.remainder_pool_)
+			for (auto r = sys.r_data_; r < sys.r_data_ + sys.r_size_; ++r)
 			{
 				Size pos{ 0 };
 				// 将Xcf更新 //
-				for (int i = 0; i < r.rel_.blk_size_; ++i)
+				for (int i = 0; i < r->rel_.blk_size_; ++i)
 				{
-					auto &c = r.rel_.blk_data_[i];
-					const_cast<Constraint*>(c.cst_)->setCf(r.xc_ + pos);
+					auto &c = r->rel_.blk_data_[i];
+					const_cast<Constraint*>(c.cst_)->setCf(r->xc_ + pos);
 					pos += c.cst_->dim();
 				}
 			}
@@ -1529,8 +1521,8 @@ namespace aris::dynamic
 
 			// solve
 			sys.updF();
-			for (auto d = sys.d_data_; d<sys.d_data_ + sys.d_size_; ++d) std::fill(d->bc_, d->bc_ + d->rel_.size_, 0.0);
-			for (auto &r : sys.remainder_pool_) std::fill(r.bc_, r.bc_ + r.rel_.size_, 0.0);
+			for (auto d = sys.d_data_; d < sys.d_data_ + sys.d_size_; ++d) std::fill(d->bc_, d->bc_ + d->rel_.size_, 0.0);
+			for (auto r = sys.r_data_; r < sys.r_data_ + sys.r_size_; ++r) std::fill(r->bc_, r->bc_ + r->rel_.size_, 0.0);
 
 			// upd Jg //
 			auto getJacobiColumn = [&](Relation &rel, double *bc)
@@ -1567,8 +1559,8 @@ namespace aris::dynamic
 					pos += c.cst_->dim();
 				}
 			};
-			for (auto d = sys.d_data_; d<sys.d_data_ + sys.d_size_; ++d) getJacobiColumn(d->rel_, d->bc_);
-			for (auto &r : sys.remainder_pool_) getJacobiColumn(r.rel_, r.bc_);
+			for (auto d = sys.d_data_; d < sys.d_data_ + sys.d_size_; ++d) getJacobiColumn(d->rel_, d->bc_);
+			for (auto r = sys.r_data_; r < sys.r_data_ + sys.r_size_; ++r) getJacobiColumn(r->rel_, r->bc_);
 
 			// upd cg //
 			sys.updCaToBc();
@@ -1590,8 +1582,8 @@ namespace aris::dynamic
 					pos += c.cst_->dim();
 				}
 			};
-			for (auto d = sys.d_data_; d<sys.d_data_ + sys.d_size_; ++d)clearMotionMa(d->rel_, d->bc_);
-			for (auto &r : sys.remainder_pool_)clearMotionMa(r.rel_, r.bc_);
+			for (auto d = sys.d_data_; d < sys.d_data_ + sys.d_size_; ++d) clearMotionMa(d->rel_, d->bc_);
+			for (auto r = sys.r_data_; r < sys.r_data_ + sys.r_size_; ++r) clearMotionMa(r->rel_, r->bc_);
 			sys.sovXp();
 			for (auto d = sys.d_data_; d<sys.d_data_ + sys.d_size_; ++d)s_vc(6, d->xp_, cg + d->part_->id() * 6);
 		}
@@ -1660,8 +1652,8 @@ namespace aris::dynamic
 					pos += c.cst_->dim();
 				}
 			};
-			for (auto d = sys.d_data_; d<sys.d_data_ + sys.d_size_; ++d)clearMotionMa(d->rel_, d->bc_);
-			for (auto &r : sys.remainder_pool_)clearMotionMa(r.rel_, r.bc_);
+			for (auto d = sys.d_data_; d < sys.d_data_ + sys.d_size_; ++d) clearMotionMa(d->rel_, d->bc_);
+			for (auto r = sys.r_data_; r < sys.r_data_ + sys.r_size_; ++r) clearMotionMa(r->rel_, r->bc_);
 
 			// 动力学计算并取出h
 			dynamic();
@@ -1683,8 +1675,8 @@ namespace aris::dynamic
 					pos += c.cst_->dim();
 				}
 			};
-			for (auto &r : sys.remainder_pool_)getH(r.rel_, r.xc_);
-			for (auto d = sys.d_data_; d<sys.d_data_ + sys.d_size_; ++d) getH(d->rel_, d->xc_);
+			for (auto r = sys.r_data_; r < sys.r_data_ + sys.r_size_; ++r) getH(r->rel_, r->xc_);
+			for (auto d = sys.d_data_; d < sys.d_data_ + sys.d_size_; ++d) getH(d->rel_, d->xc_);
 
 			// 开始计算M //
 			auto getMColumn = [&](const Constraint *c, Size cid)
@@ -1714,8 +1706,8 @@ namespace aris::dynamic
 						pos2 += cc.cst_->dim();
 					}
 				};
-				for (auto &r : sys.remainder_pool_)getMRow(r.rel_, r.xc_);
-				for (auto d = sys.d_data_; d<sys.d_data_ + sys.d_size_; ++d)getMRow(d->rel_, d->xc_);
+				for (auto r = sys.r_data_; r < sys.r_data_ + sys.r_size_; ++r) getMRow(r->rel_, r->xc_);
+				for (auto d = sys.d_data_; d < sys.d_data_ + sys.d_size_; ++d) getMRow(d->rel_, d->xc_);
 			};
 			auto getM = [&](Relation &rel, double *bc)
 			{
@@ -1751,8 +1743,8 @@ namespace aris::dynamic
 					pos += c.cst_->dim();
 				}
 			};
-			for (auto d = sys.d_data_; d<sys.d_data_ + sys.d_size_; ++d) getM(d->rel_, d->bc_);
-			for (auto &r : sys.remainder_pool_) getM(r.rel_, r.bc_);
+			for (auto d = sys.d_data_; d < sys.d_data_ + sys.d_size_; ++d) getM(d->rel_, d->bc_);
+			for (auto r = sys.r_data_; r < sys.r_data_ + sys.r_size_; ++r) getM(r->rel_, r->bc_);
 		}
 	}
 	auto UniversalSolver::nM()const noexcept->Size { return ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6; }
