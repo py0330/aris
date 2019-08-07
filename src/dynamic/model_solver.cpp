@@ -46,7 +46,7 @@ namespace aris::dynamic
 	Solver::Solver(const std::string &name, Size max_iter_count, double max_error) : Element(name), imp_(new Imp(max_iter_count, max_error)) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(Solver);
 
-#define ARIS_LOOP_BLOCK(RELATION) for (auto b = RELATION##blk_data_; b < RELATION##blk_data_ + RELATION##blk_size_; ++b)
+#define ARIS_LOOP_BLOCK(RELATION) for (auto b = RELATION blk_data_; b < RELATION blk_data_ + RELATION blk_size_; ++b)
 #define ARIS_LOOP_D for (auto d = d_data_; d < d_data_ + d_size_; ++d)
 #define ARIS_LOOP_D_2_TO_END for (auto d = d_data_ + 1; d < d_data_ + d_size_; ++d)
 #define ARIS_LOOP_DIAG_INVERSE_2_TO_END for (auto d = d_data_ + d_size_ - 1; d > d_data_; --d)
@@ -1223,7 +1223,7 @@ namespace aris::dynamic
 		}
 		Imp::allocMem(mem_pool_size, imp_->subsys_data_, sys_vec.size());
 
-		std::cout << "mem size 0:" << mem_pool_size << std::endl;
+		//std::cout << "mem size 0:" << mem_pool_size << std::endl;
 
 		// 计算公共的内存及偏移
 		Imp::allocMem(mem_pool_size, imp_->F_, max_F_size);
@@ -1234,7 +1234,6 @@ namespace aris::dynamic
 		Imp::allocMem(mem_pool_size, imp_->GP_, std::max(max_gm, max_gn));
 		Imp::allocMem(mem_pool_size, imp_->S_, max_fm * max_fm);
 		Imp::allocMem(mem_pool_size, imp_->beta_, max_gn);
-		//Imp::allocMem(mem_pool_size, imp_->QT_DOT_G_, max_G_size);
 		Imp::allocMem(mem_pool_size, imp_->xcf_, std::max(max_fn, max_fm));
 		Imp::allocMem(mem_pool_size, imp_->xpf_, std::max(max_fn, max_fm));
 		Imp::allocMem(mem_pool_size, imp_->bcf_, max_fn);
@@ -1252,7 +1251,7 @@ namespace aris::dynamic
 		// 分配内存
 		imp_->mem_pool_.resize(mem_pool_size);
 
-		std::cout <<"mem size e:"<< mem_pool_size << std::endl;
+		//std::cout <<"mem size e:"<< mem_pool_size << std::endl;
 
 		// 获得雅可比部分的内存 //
 		imp_->Jg_ = Imp::getMem(imp_->mem_pool_.data(), imp_->Jg_);
