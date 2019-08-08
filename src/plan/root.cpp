@@ -399,8 +399,19 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
-		target.ret = std::string("finished");
+		
 		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		ret_value.push_back(std::make_pair<std::string, std::any>("return_code", 1));
+		ret_value.push_back(std::make_pair<std::string, std::any>("return_msg", std::string("none")));
+		ret_value.push_back(std::make_pair<std::string, std::any>("return_bool", true));
+		ret_value.push_back(std::make_pair<std::string, std::any>("return_double", 5.33));
+		ret_value.push_back(std::make_pair<std::string, std::any>("return_code11", 1));
+		ret_value.push_back(std::make_pair<std::string, std::any>("return_msg11", std::vector<std::string>{"none","right"}));
+		ret_value.push_back(std::make_pair<std::string, std::any>("return_bool11", std::vector<bool>{ true, false }));
+		ret_value.push_back(std::make_pair<std::string, std::any>("return_double11", std::vector<double>{ 5.33,6.22 }));
+		target.ret = ret_value;
 	}
 	auto Enable::executeRT(PlanTarget &target)->int
 	{

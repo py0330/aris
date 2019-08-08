@@ -20,31 +20,27 @@ namespace aris::server
 
 		for (auto &key_value : ret)
 		{
-			if (auto value = std::any_cast<double>(&key_value.second))
-			{
-				js[key_value.first] = *value;
-			}
-			else if (auto value = std::any_cast<int>(&key_value.second))
-			{
-				js[key_value.first] = *value;
-			}
-			else if (auto value = std::any_cast<bool>(&key_value.second))
-			{
-				js[key_value.first] = *value;
-			}
-			else if (auto value = std::any_cast<std::string>(&key_value.second))
-			{
-				js[key_value.first] = *value;
-			}
-			else
+#define ARIS_SET_TYPE(TYPE) if (auto value = std::any_cast<TYPE>(&key_value.second)) js[key_value.first] = *value; else
+
+			ARIS_SET_TYPE(bool)
+			ARIS_SET_TYPE(int)
+			ARIS_SET_TYPE(double)
+			ARIS_SET_TYPE(std::string)
+			ARIS_SET_TYPE(std::vector<bool>)
+			ARIS_SET_TYPE(std::vector<int>)
+			ARIS_SET_TYPE(std::vector<double>)
+			ARIS_SET_TYPE(std::vector<std::string>)
 			{
 				std::cout << "unrecognized return value" << std::endl;
 			}
+
+#undef ARIS_SET_TYPE
 		}
 
 		return  js.dump(2);
+
 	}
-	
+
 	Interface::Interface(const std::string &name) :Object(name) {}
 	
 	auto WebInterface::open()->void { sock_.startServer(); }
