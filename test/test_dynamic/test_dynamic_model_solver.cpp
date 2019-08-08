@@ -1529,6 +1529,33 @@ void test_single_body()
 
 	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
 }
+void test_single_body2()
+{
+	std::cout << "test single body2:" << std::endl;
+
+	// under constraint system
+	aris::dynamic::Model m;
+	auto &p = m.partPool().add<aris::dynamic::Part>();
+
+	double pm[16]{ 1,0,0,0.8 , 0,1,0,0.5 , 0,0,1,0.3 , 0,0,0,1 };
+	auto &makI = p.markerPool().add<Marker>("");
+	auto &makJ = m.ground().markerPool().add<Marker>("", pm);
+	auto &r = m.jointPool().add<aris::dynamic::RevoluteJoint>("", &makI, &makJ);
+	auto &r2 = m.jointPool().add<aris::dynamic::RevoluteJoint>("", &makI, &makJ);
+	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
+
+	s.allocateMemory();
+
+	p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
+	p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
+	p.setAs(std::array<double, 6>{0.0, -0.192390604845803, 0.136512424183815, 0.904633672502324, -1.24440604199266, 1.45568007018557}.data());
+
+	s.kinPos();
+	s.kinVel();
+	s.dynAccAndFce();
+
+	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
+}
 void test_float_5_bar()
 {
 	std::cout << "test float 5 bar:" << std::endl;
@@ -2489,7 +2516,8 @@ auto test_clb()->void
 void test_model_solver()
 {
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
-	test_single_body();
+	//test_single_body();
+	test_single_body2();
 	test_float_5_bar();
 	test_servo_press();
 	test_3R();

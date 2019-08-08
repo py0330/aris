@@ -162,9 +162,4 @@ namespace aris::server
 			return 0;
 		});
 	}
-
-
-
-
-
 }

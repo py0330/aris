@@ -19,7 +19,6 @@ namespace aris::dynamic
 	{
 		Size max_iter_count_, iter_count_;
 		double max_error_, error_;
-
 		Imp(Size max_iter_count, double max_error) :max_iter_count_(max_iter_count), max_error_(max_error) {};
 	};
 	auto Solver::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -83,7 +82,7 @@ namespace aris::dynamic
 		Relation rel_;
 
 		typedef void(*UpdFunc)(Diag*);
-		UpdFunc upd_d_, cpt_cp_from_pm_;
+		UpdFunc upd_d_, upd_d_and_cp_;
 	};
 	struct Remainder
 	{
@@ -118,12 +117,11 @@ namespace aris::dynamic
 		auto hasGround()const noexcept->bool { return has_ground_; }
 		// 从模型中跟新数据 //
 		auto updDmCm()noexcept->void;
-		auto updDmCmCp()noexcept->void;
+		auto updDmCmCpError()noexcept->void;
 		auto updDiagIv()noexcept->void;
 		auto updCv()noexcept->void;
 		auto updCa()noexcept->void;
 		// 求解 //
-		auto updError()noexcept->void;
 		auto updF()noexcept->void;
 		auto sovXp()noexcept->void;
 		auto updG()noexcept->void;
@@ -172,15 +170,18 @@ namespace aris::dynamic
 			}
 		}
 	}
-	auto SubSystem::updDmCmCp()noexcept->void
+	auto SubSystem::updDmCmCpError()noexcept->void
 	{
+		error_ = 0.0;
+		
 		// upd dm and rel dim
 		fm_ = 0;
 		ARIS_LOOP_D_2_TO_END
 		{
-			d->cpt_cp_from_pm_(d);
+			d->upd_d_and_cp_(d);
 			d->rows_ = fm_;
 			fm_ += 6 - d->rel_.dim_;
+			for (Size i{ 0 }; i < d->rel_.size_; ++i) error_ = std::max(error_, std::abs(d->bc_[i]));// error //
 		}
 
 		// upd remainder data //
@@ -201,6 +202,8 @@ namespace aris::dynamic
 				s_mc(6, b->cst_->dim(), cmJ, b->cst_->dim(), r->cmJ_ + pos, r->rel_.size_);
 				pos += b->cst_->dim();
 			}
+
+			for (Size i{ 0 }; i < r->rel_.size_; ++i)error_ = std::max(error_, std::abs(r->bc_[i])); // error //
 		}
 	}
 	auto SubSystem::updDiagIv()noexcept->void { ARIS_LOOP_D s_iv2iv(*d->part_->pm(), d->part_->prtIv(), d->iv_); }
@@ -249,13 +252,6 @@ namespace aris::dynamic
 				pos += b->cst_->dim();
 			}
 		}
-	}
-	auto SubSystem::updError()noexcept->void
-	{
-		// 求解当前误差
-		error_ = 0.0;
-		ARIS_LOOP_D_2_TO_END for (Size i{ 0 }; i < d->rel_.size_; ++i)error_ = std::max(error_, std::abs(d->bc_[i]));
-		ARIS_LOOP_R for (Size i{ 0 }; i < r->rel_.size_; ++i)error_ = std::max(error_, std::abs(r->bc_[i]));
 	}
 	auto SubSystem::updF()noexcept->void
 	{
@@ -511,8 +507,7 @@ namespace aris::dynamic
 	}
 	auto SubSystem::kinPos()noexcept->void
 	{
-		updDmCmCp();
-		updError();
+		updDmCmCpError();
 		for (iter_count_ = 0; iter_count_ < max_iter_count_; ++iter_count_)
 		{
 			if (error_ < max_error_) return;
@@ -531,8 +526,7 @@ namespace aris::dynamic
 			}
 
 			double last_error = error_;
-			updDmCmCp();
-			updError();
+			updDmCmCpError();
 
 			// 对于非串联臂，当迭代误差反而再增大时，会主动缩小步长
 			if (r_size_)// 只有不是串联臂才会用以下迭代
@@ -549,8 +543,7 @@ namespace aris::dynamic
 						s_pm2pm(tem, d->last_pm_, d->pm_);
 					}
 
-					updDmCmCp();
-					updError();
+					updDmCmCpError();
 				}
 			}
 		}
@@ -586,7 +579,7 @@ namespace aris::dynamic
 #undef ARIS_LOOP_D_2_TO_END
 #undef ARIS_LOOP_DIAG_INVERSE_2_TO_END
 #undef ARIS_LOOP_R
-#define ARIS_LOOP_SYS for (auto sys = imp_->subsys_data_; sys < imp_->subsys_data_ + imp_->subsys_size_; ++sys)
+#define ARIS_LOOP_SYS for (auto sys = imp_->pd_->subsys_data_; sys < imp_->pd_->subsys_data_ + imp_->pd_->subsys_size_; ++sys)
 #define ARIS_LOOP_SYS_D for (auto d = sys->d_data_; d < sys->d_data_ + sys->d_size_; ++d)
 #define ARIS_LOOP_SYS_R for (auto r = sys->r_data_; r < sys->r_data_ + sys->r_size_; ++r)
 	struct UniversalSolver::Imp
@@ -845,10 +838,6 @@ namespace aris::dynamic
 		//
 		
 		PublicData *pd_;
-
-		SubSystem *subsys_data_;
-		Size subsys_size_;
-
 		std::vector<char> mem_pool_;
 		
 		static auto one_constraint_upd_d(Diag *d)noexcept->void
@@ -1044,8 +1033,9 @@ namespace aris::dynamic
 				else
 				{
 					ret->cst_pool_.push_back({ c, &c->makI().fatherPart() == ret->prtI_ });
-					std::sort(ret->cst_pool_.begin(), ret->cst_pool_.end(), [](const Relation::Block& a, const Relation::Block& b) { return a.cst_->dim() >= b.cst_->dim(); });//这里把大的约束往前放
+					std::sort(ret->cst_pool_.begin(), ret->cst_pool_.end(), [](auto& a, auto& b){return a.cst_->dim() > b.cst_->dim();});//这里把大的约束往前放
 					ret->size_ += c->dim();
+					ret->dim_ = ret->cst_pool_[0].cst_->dim();// relation 的 dim 以大的为准，最大的在第一个
 				}
 			}
 
@@ -1156,8 +1146,8 @@ namespace aris::dynamic
 			d_vec[0].part_ = prt_vec[0];
 			for (Size i = 1; i < d_vec.size(); ++i)
 			{
-				auto &diag = d_vec.at(i);
-				auto &rel = rel_vec.at(i - 1);
+				auto &diag = d_vec[i];
+				auto &rel = rel_vec[i - 1];
 
 				// 根据diag更改是否为I part
 				if (rel.prtI_ != prt_vec.at(i))
@@ -1184,7 +1174,7 @@ namespace aris::dynamic
 					if (rel.cst_pool_.size() == 1)
 					{
 						diag.upd_d_ = Imp::one_constraint_upd_d;
-						diag.cpt_cp_from_pm_ = Imp::one_constraint_upd_d_and_cp;
+						diag.upd_d_and_cp_ = Imp::one_constraint_upd_d_and_cp;
 					}
 					// 针对转动副加转动电机 //
 					else if (rel.cst_pool_.size() == 2
@@ -1194,7 +1184,7 @@ namespace aris::dynamic
 						&& &rel.cst_pool_.at(0).cst_->makI() == &rel.cst_pool_.at(1).cst_->makI())
 					{
 						diag.upd_d_ = Imp::one_constraint_upd_d;
-						diag.cpt_cp_from_pm_ = Imp::revolute_upd_d_and_cp;
+						diag.upd_d_and_cp_ = Imp::revolute_upd_d_and_cp;
 						rel.dim_ = 6;
 					}
 					// 针对移动副加移动电机 //
@@ -1205,14 +1195,14 @@ namespace aris::dynamic
 						&& &rel.cst_pool_.at(0).cst_->makI() == &rel.cst_pool_.at(1).cst_->makI())
 					{
 						diag.upd_d_ = Imp::one_constraint_upd_d;
-						diag.cpt_cp_from_pm_ = Imp::prismatic_upd_d_and_cp;
+						diag.upd_d_and_cp_ = Imp::prismatic_upd_d_and_cp;
 						rel.dim_ = 6;
 					}
 					// 不优化 //
 					else
 					{
 						diag.upd_d_ = Imp::normal_upd_d;
-						diag.cpt_cp_from_pm_ = Imp::normal_upd_d_and_cp;
+						diag.upd_d_and_cp_ = Imp::normal_upd_d_and_cp;
 					}
 				}
 			}
@@ -1283,8 +1273,8 @@ namespace aris::dynamic
 			// 更新子系统尺寸 //
 			sys.fm_ = 0;
 			sys.fn_ = 0;
-			for (Size i = 1; i < d_vec.size(); ++i)sys.fm_ += rel_vec.at(i - 1).dim_;
-			for (Size i = 0; i < r_vec.size(); ++i)sys.fn_ += rel_vec.at(i + d_vec.size() - 1).dim_;
+			for (Size i = 1; i < d_vec.size(); ++i)sys.fm_ += rel_vec[i - 1].dim_;
+			for (Size i = 0; i < r_vec.size(); ++i)sys.fn_ += rel_vec[i + d_vec.size() - 1].size_;
 
 			sys.gm_ = sys.hasGround() ? sys.fm_ : sys.fm_ + 6;
 			sys.gn_ = sys.hasGround() ? sys.fm_ : sys.fm_ + 6;
@@ -1296,7 +1286,7 @@ namespace aris::dynamic
 			max_gm = std::max(max_gm, sys.gm_);
 			max_gn = std::max(max_gn, sys.gn_);
 		}
-		Imp::allocMem(mem_pool_size, imp_->subsys_data_, sys_vec.size());
+		Imp::allocMem(mem_pool_size, pub_data.subsys_data_, sys_vec.size());
 
 		//std::cout << "mem size 0:" << mem_pool_size << std::endl;
 
@@ -1455,9 +1445,9 @@ namespace aris::dynamic
 			for (auto diag = sys.d_data_; diag < sys.d_data_ + sys.d_size_; ++diag)
 				imp_->pd_->get_diag_from_part_id_[diag->part_->id()] = diag;
 
-		imp_->subsys_size_ = sys_vec.size();
-		imp_->subsys_data_ = Imp::getMem(imp_->mem_pool_.data(), imp_->subsys_data_);
-		std::copy_n(sys_vec.data(), sys_vec.size(), imp_->subsys_data_);
+		imp_->pd_->subsys_size_ = sys_vec.size();
+		imp_->pd_->subsys_data_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->subsys_data_);
+		std::copy_n(sys_vec.data(), sys_vec.size(), imp_->pd_->subsys_data_);
 	}
 	auto UniversalSolver::kinPos()->int
 	{
@@ -1789,7 +1779,7 @@ namespace aris::dynamic
 	ARIS_DEFINE_BIG_FOUR_CPP(UniversalSolver);
 #undef ARIS_LOOP_SYS
 #undef ARIS_LOOP_SYS_D
-#undef ARIS_LOOP_SYS_D
+#undef ARIS_LOOP_SYS_R
 #undef ARIS_LOOP_BLOCK
 	class HelpResetRAII
 	{

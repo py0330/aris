@@ -14,10 +14,7 @@ namespace aris::plan
 	struct Plan::Imp {};
 	auto Plan::command()->aris::core::Command & { return dynamic_cast<aris::core::Command&>(children().front()); }
 	Plan::~Plan() = default;
-	Plan::Plan(const std::string &name) :Object(name), imp_(new Imp)
-	{
-		add<aris::core::Command>(name);
-	}
+	Plan::Plan(const std::string &name) :Object(name), imp_(new Imp) { add<aris::core::Command>(name); }
 	ARIS_DEFINE_BIG_FOUR_CPP(Plan);
 
 	struct PlanRoot::Imp { Imp() {} };
