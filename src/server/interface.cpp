@@ -11,8 +11,40 @@
 #include "aris/server/interface.hpp"
 #include "aris/server/control_server.hpp"
 
+#include "json.hpp"
 namespace aris::server
 {
+	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string
+	{
+		nlohmann::json js;
+
+		for (auto &key_value : ret)
+		{
+			if (auto value = std::any_cast<double>(&key_value.second))
+			{
+				js[key_value.first] = *value;
+			}
+			else if (auto value = std::any_cast<int>(&key_value.second))
+			{
+				js[key_value.first] = *value;
+			}
+			else if (auto value = std::any_cast<bool>(&key_value.second))
+			{
+				js[key_value.first] = *value;
+			}
+			else if (auto value = std::any_cast<std::string>(&key_value.second))
+			{
+				js[key_value.first] = *value;
+			}
+			else
+			{
+				std::cout << "unrecognized return value" << std::endl;
+			}
+		}
+
+		return  js.dump(2);
+	}
+	
 	Interface::Interface(const std::string &name) :Object(name) {}
 	
 	auto WebInterface::open()->void { sock_.startServer(); }
@@ -60,6 +92,10 @@ namespace aris::server
 					if (auto str = std::any_cast<std::string>(&target.ret))
 					{
 						ret_msg.copy(*str);
+					}
+					else if(auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&target.ret))
+					{
+						ret_msg.copy(parse_ret_value(*js));
 					}
 
 					// return back to source
@@ -130,4 +166,9 @@ namespace aris::server
 			return 0;
 		});
 	}
+
+
+
+
+
 }

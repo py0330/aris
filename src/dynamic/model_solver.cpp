@@ -1298,7 +1298,7 @@ namespace aris::dynamic
 		}
 		Imp::allocMem(mem_pool_size, imp_->subsys_data_, sys_vec.size());
 
-		std::cout << "mem size 0:" << mem_pool_size << std::endl;
+		//std::cout << "mem size 0:" << mem_pool_size << std::endl;
 
 		// 计算公共的内存及偏移
 		Imp::allocMem(mem_pool_size, pub_data.F_, max_F_size);
@@ -1326,7 +1326,7 @@ namespace aris::dynamic
 		// 分配内存
 		imp_->mem_pool_.resize(mem_pool_size);
 
-		std::cout <<"mem size e:"<< mem_pool_size << std::endl;
+		//std::cout <<"mem size e:"<< mem_pool_size << std::endl;
 
 		// 更新公共变量区 //
 		{
