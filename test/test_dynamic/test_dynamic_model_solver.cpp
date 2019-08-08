@@ -1538,8 +1538,8 @@ void test_single_body2()
 	auto &p = m.partPool().add<aris::dynamic::Part>();
 
 	double pm[16]{ 1,0,0,0.8 , 0,1,0,0.5 , 0,0,1,0.3 , 0,0,0,1 };
-	auto &makI = p.markerPool().add<Marker>("");
-	auto &makJ = m.ground().markerPool().add<Marker>("", pm);
+	auto &makI = p.markerPool().add<Marker>("", pm);
+	auto &makJ = m.ground().markerPool().add<Marker>("");
 	auto &r = m.jointPool().add<aris::dynamic::RevoluteJoint>("", &makI, &makJ);
 	auto &r2 = m.jointPool().add<aris::dynamic::RevoluteJoint>("", &makI, &makJ);
 	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
@@ -1550,9 +1550,24 @@ void test_single_body2()
 	p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
 	p.setAs(std::array<double, 6>{0.0, -0.192390604845803, 0.136512424183815, 0.904633672502324, -1.24440604199266, 1.45568007018557}.data());
 
+
+
 	s.kinPos();
 	s.kinVel();
 	s.dynAccAndFce();
+
+	double pe[6];
+	p.getPe(pe, "321");
+	dsp(1, 6, pe);
+
+	double ve[6];
+	p.getVe(ve, pe, "321");
+	dsp(1, 6, pe);
+	dsp(1, 6, ve);
+
+	double ae[6];
+	p.getAe(ae, ve, pe, "321");
+	dsp(1, 6, ae);
 
 	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
 }
@@ -2516,8 +2531,8 @@ auto test_clb()->void
 void test_model_solver()
 {
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
-	//test_single_body();
-	test_single_body2();
+	test_single_body();
+	//test_single_body2();
 	test_float_5_bar();
 	test_servo_press();
 	test_3R();
