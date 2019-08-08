@@ -510,6 +510,10 @@ namespace aris::server
 						{
 							std::cout << *str << std::endl;
 						}
+						else if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&target.ret))
+						{
+							std::cout << parse_ret_value(*js) << std::endl;
+						}
 					});
 				}
 				catch (std::exception &e)

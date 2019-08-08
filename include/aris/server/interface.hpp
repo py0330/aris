@@ -15,6 +15,9 @@
 
 namespace aris::server
 {
+	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
+	
+	
 	class Interface :public aris::core::Object
 	{
 	public:
