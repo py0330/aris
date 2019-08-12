@@ -377,6 +377,12 @@ namespace aris::dynamic
 		cp[3] = -pm_j_in_i[6];
 		cp[4] = pm_j_in_i[2];
 	}
+	auto RevoluteJoint::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void
+	{
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
+	}
 	RevoluteJoint::RevoluteJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ) {}
 
 	auto PrismaticJoint::locCmI() const noexcept->const double*
@@ -402,6 +408,16 @@ namespace aris::dynamic
 		s_vc(2, ps_j2i, cp);
 		s_vc(3, ps_j2i + 3, cp + 2);
 	}
+	auto PrismaticJoint::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void
+	{
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
+
+		s_swap_m(1, 6, dm + 12, dm + 18);
+		s_swap_m(1, 6, dm + 18, dm + 24);
+		s_swap_m(1, 6, dm + 24, dm + 30);
+	}
 	PrismaticJoint::PrismaticJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ) {}
 
 	struct UniversalJoint::Imp { double loc_cm_I[24]; };
@@ -425,6 +441,43 @@ namespace aris::dynamic
 		const_cast<double*>(imp_->loc_cm_I)[19] = x2 / norm;
 
 		return imp_->loc_cm_I;
+	}
+	auto UniversalJoint::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void
+	{
+		double x2 = makI_pm[0] * makJ_pm[2] + makI_pm[4] * makJ_pm[6] + makI_pm[8] * makJ_pm[10];
+		double y2 = makI_pm[1] * makJ_pm[2] + makI_pm[5] * makJ_pm[6] + makI_pm[9] * makJ_pm[10];
+
+		double norm = std::sqrt(x2*x2 + y2 * y2);
+
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
+
+		double r[4]{ -y2 / norm, x2 / norm, -x2 / norm, -y2 / norm };
+		s_mm(2, 6, 2, r, dm + 18, pm);
+		s_mc(2, 6, pm, dm + 18);
+	}
+	auto UniversalJoint::cptGlbCmFromPm(double *cmI, double *cmJ, const double *makI_pm, const double *makJ_pm)const noexcept->void
+	{
+		static double loc_cst[6][4]{
+			1,0,0,0,
+			0,1,0,0,
+			0,0,1,0,
+			0,0,0,0,
+			0,0,0,0,
+			0,0,0,0,
+		};
+
+		double x2 = makI_pm[0] * makJ_pm[2] + makI_pm[4] * makJ_pm[6] + makI_pm[8] * makJ_pm[10];
+		double y2 = makI_pm[1] * makJ_pm[2] + makI_pm[5] * makJ_pm[6] + makI_pm[9] * makJ_pm[10];
+
+		double norm = std::sqrt(x2*x2 + y2 * y2);
+
+		loc_cst[3][3] = -y2 / norm;
+		loc_cst[4][3] = x2 / norm;
+
+		s_tf_n(dim(), makI_pm, *loc_cst, cmI);
+		s_mi(6, dim(), cmI, cmJ);
 	}
 	auto UniversalJoint::cptCa(double *ca)const noexcept->void
 	{
@@ -497,6 +550,12 @@ namespace aris::dynamic
 		double pp_j[3]{ makJ_pm[3], makJ_pm[7], makJ_pm[11], };
 		s_inv_pp2pp(makI_pm, pp_j, cp);
 		/////////////////////////以上是pa的计算方法///////////////////////////
+	}
+	auto SphericalJoint::cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void
+	{
+		double pm[16];
+		s_inv_pm(makI_pm, pm);
+		s_tmf(pm, dm);
 	}
 	SphericalJoint::SphericalJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ) {}
 

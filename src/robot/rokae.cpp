@@ -139,7 +139,6 @@ namespace aris::robot
 		plan_root->planPool().add<aris::plan::MoveL>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
 
-		plan_root->planPool().add<aris::plan::GetPartPq>();
 		plan_root->planPool().add<aris::plan::GetXml>();
 		plan_root->planPool().add<aris::plan::SetXml>();
 		plan_root->planPool().add<aris::plan::Start>();

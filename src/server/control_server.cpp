@@ -766,6 +766,21 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();//原子操作
 		while (cmd_end != imp_->cmd_collect_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
+	auto ControlServer::currentTarget()->std::shared_ptr<aris::plan::PlanTarget>
+	{
+		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to get current collect ID, because ControlServer is not running"));
+
+		std::shared_ptr<aris::plan::PlanTarget> current_target;
+		auto cmd_end = imp_->cmd_end_.load();
+		auto cmd_now = imp_->cmd_now_.load();
+
+		if (cmd_now == cmd_end) return current_target;
+		current_target = imp_->internal_data_queue_[cmd_now]->target;
+
+		if(imp_->cmd_collect_.load() >= cmd_now) current_target.reset();
+		return current_target;
+	}
 	auto ControlServer::currentExecuteId()->std::int64_t
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
@@ -775,7 +790,7 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();
 		auto cmd_now = imp_->cmd_now_.load();
 
-		return cmd_now<cmd_end ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->target->command_id : 0;
+		return cmd_now < cmd_end ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->target->command_id : 0;
 	}
 	auto ControlServer::currentCollectId()->std::int64_t
 	{
@@ -806,7 +821,7 @@ namespace aris::server
 	ControlServer::~ControlServer() 
 	{ 
 		close();
-		stop();
+		if(running())stop();
 	}
 	ControlServer::ControlServer() :imp_(new Imp(this))
 	{

@@ -70,6 +70,7 @@ namespace aris::server
 		auto stop()->void;
 		auto waitForAllExecution()->void;
 		auto waitForAllCollection()->void;
+		auto currentTarget()->std::shared_ptr<aris::plan::PlanTarget>;
 		auto currentExecuteId()->std::int64_t;
 		auto currentCollectId()->std::int64_t;
 		auto getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void;

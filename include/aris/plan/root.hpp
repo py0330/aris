@@ -43,7 +43,7 @@ namespace aris::plan
 		std::uint64_t option;                             // prepair/execute/collect  get&set when prepair, get when execute and collect
 		std::vector<std::uint64_t> mot_options;           // prepair/execute/collect  set when prepair, get when execute, destroy when collect
 		std::any param;                                   // prepair/execute/collect  set when prepair, get when execute, destroy when collect
-		std::int32_t count;                               //         execute/collect  get
+		std::int64_t count;                               //         execute/collect  get
 		std::int64_t begin_global_count;                  //         execute/collect  get
 		aris::control::Master::RtStasticsData rt_stastic; //                /collect  get
 		std::any ret;
@@ -550,17 +550,6 @@ namespace aris::plan
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-
-	class GetPartPq :public Plan
-	{
-	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void override;
-
-		virtual ~GetPartPq();
-		explicit GetPartPq(const std::string &name = "get_part_pq");
-		ARIS_REGISTER_TYPE(GetPartPq);
-		ARIS_DEFINE_BIG_FOUR(GetPartPq);
-	};
 	class GetXml :public Plan
 	{
 	public:
@@ -637,7 +626,6 @@ namespace aris::plan
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-
 	class MoveSeries :public Plan
 	{
 	public:
@@ -649,10 +637,6 @@ namespace aris::plan
 		ARIS_REGISTER_TYPE(MoveSeries);
 		ARIS_DEFINE_BIG_FOUR(MoveSeries);
 	};
-
-
-
-
 }
 
 #endif

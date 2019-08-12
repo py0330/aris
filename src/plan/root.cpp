@@ -1656,38 +1656,6 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(ManualMove);
 
-	auto GetPartPq::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
-	{
-		auto pm = std::make_any<std::vector<double> >(target.model->partPool().size() * 16);
-		target.server->getRtData([](aris::server::ControlServer& cs, std::any& data)
-		{
-			for (aris::Size i(-1); ++i < cs.model().partPool().size();)
-				cs.model().partPool().at(i).getPm(std::any_cast<std::vector<double>& >(data).data() + i * 16);
-		}, pm);
-
-		auto pq = std::vector<double>(target.model->partPool().size() * 7);
-
-		for (aris::Size i(-1); ++i < target.server->model().partPool().size();)
-			aris::dynamic::s_pm2pq(std::any_cast<std::vector<double>& >(pm).data() + i * 16, pq.data() + i * 7);
-		
-		//   return text
-		// target.param = aris::core::Matrix(pq.size(), 1, pq.data()).toString();
-		//
-
-		//  return binary
-		std::string ret(reinterpret_cast<char*>(pq.data()), pq.size() * sizeof(double));
-		target.ret = ret;
-
-		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_PRINT_CMD_INFO | NOT_PRINT_CMD_INFO;
-	}
-	GetPartPq::~GetPartPq() = default;
-	GetPartPq::GetPartPq(const std::string &name) : Plan(name)
-	{
-		command().loadXmlStr(
-			"<Command name=\"get_part_pq\">"
-			"</Command>");
-	}
-
 	auto GetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
 		target.server->waitForAllCollection();

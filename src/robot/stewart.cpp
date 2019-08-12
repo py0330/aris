@@ -161,7 +161,6 @@ namespace aris::robot
 		mm.command().findParam("eul_type")->setDefaultValue("123");
 		mm.command().findParam("increase_count")->setDefaultValue("100");
 
-		plan_root->planPool().add<aris::plan::GetPartPq>();
 		plan_root->planPool().add<aris::plan::GetXml>();
 		plan_root->planPool().add<aris::plan::SetXml>();
 		plan_root->planPool().add<aris::plan::Start>();

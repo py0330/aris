@@ -1511,65 +1511,62 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 void test_single_body()
 {
 	std::cout << "test single body:" << std::endl;
+	// 单刚体自由落体
+	{
+		
+		aris::dynamic::Model m;
+		auto &p = m.partPool().add<aris::dynamic::Part>();
+		auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
 
-	// under constraint system
-	aris::dynamic::Model m;
-	auto &p = m.partPool().add<aris::dynamic::Part>();
-	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
+		s.allocateMemory();
 
-	s.allocateMemory();
+		p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
+		p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
+		p.setAs(std::array<double, 6>{0.0, -0.192390604845803, 0.136512424183815, 0.904633672502324, -1.24440604199266, 1.45568007018557}.data());
 
-	p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
-	p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
-	p.setAs(std::array<double, 6>{0.0, -0.192390604845803, 0.136512424183815, 0.904633672502324, -1.24440604199266, 1.45568007018557}.data());
+		s.kinPos();
+		s.kinVel();
+		s.dynAccAndFce();
 
-	s.kinPos();
-	s.kinVel();
-	s.dynAccAndFce();
+		if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
 
-	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
-}
-void test_single_body2()
-{
-	std::cout << "test single body2:" << std::endl;
+	}
+	// 两个重复的R副
+	{
+		std::cout << "test single body2:" << std::endl;
 
-	// under constraint system
-	aris::dynamic::Model m;
-	auto &p = m.partPool().add<aris::dynamic::Part>();
+		// 测试两个完全一样的 R 副约束地面和杆件
+		aris::dynamic::Model m;
+		auto &p = m.partPool().add<aris::dynamic::Part>();
 
-	double pm[16]{ 1,0,0,0.8 , 0,1,0,0.5 , 0,0,1,0.3 , 0,0,0,1 };
-	auto &makI = p.markerPool().add<Marker>("", pm);
-	auto &makJ = m.ground().markerPool().add<Marker>("");
-	auto &r = m.jointPool().add<aris::dynamic::RevoluteJoint>("", &makI, &makJ);
-	auto &r2 = m.jointPool().add<aris::dynamic::RevoluteJoint>("", &makI, &makJ);
-	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
+		double pm[16]{ 1,0,0,0.8 , 0,1,0,0.5 , 0,0,1,0.3 , 0,0,0,1 };
+		auto &makI = p.markerPool().add<Marker>("mak_i", pm);
+		auto &makJ = m.ground().markerPool().add<Marker>("mak_j");
+		auto &r = m.jointPool().add<aris::dynamic::RevoluteJoint>("r", &makI, &makJ);
+		auto &r2 = m.jointPool().add<aris::dynamic::RevoluteJoint>("r2", &makI, &makJ);
+		auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
 
-	s.allocateMemory();
+		s.allocateMemory();
 
-	p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
-	p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
-	p.setAs(std::array<double, 6>{0.0, -0.192390604845803, 0.136512424183815, 0.904633672502324, -1.24440604199266, 1.45568007018557}.data());
+		p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
+		p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
+		p.setAs(std::array<double, 6>{0.0, -0.192390604845803, 0.136512424183815, 0.904633672502324, -1.24440604199266, 1.45568007018557}.data());
 
+		s.kinPos();
+		s.kinVel();
 
+		// 只有z轴能转，所以前5项应该都为0
+		double pe[6], ve[6];
+		makI.getVe(ve, pe, "123");
+		if (s_norm(5, ve) > 1e-10 || s_norm(5, pe) > 1e-10)std::cout << __FILE__ << __LINE__ << ":kinPos() failed" << std::endl;
 
-	s.kinPos();
-	s.kinVel();
-	s.dynAccAndFce();
+		p.setPe(std::array<double, 6>{0.67981395325965, -0.65410472319845, -0.29999999994657, -0.00000000000000, 0.00000000000000, 1.81686625023439}.data(), "123");
+		p.setVs(std::array<double, 6>{-0.00000000002595, -0.00000000000266, -0.00000000000000, 0.00000000000000, -0.00000000000000, -0.87431841247392}.data());
 
-	double pe[6];
-	p.getPe(pe, "321");
-	dsp(1, 6, pe);
+		s.dynAccAndFce();
+		if (!s_is_equal(6, p.as(), std::array<double, 6>{-0.0, -0.0, -0.0, 0.0, 0.0, -3.52496123913987}.data(), 1e-9))std::cout << __FILE__ << __LINE__ << ":dynAccAndFce() failed" << std::endl;
 
-	double ve[6];
-	p.getVe(ve, pe, "321");
-	dsp(1, 6, pe);
-	dsp(1, 6, ve);
-
-	double ae[6];
-	p.getAe(ae, ve, pe, "321");
-	dsp(1, 6, ae);
-
-	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
+	}
 }
 void test_float_5_bar()
 {
@@ -2532,7 +2529,6 @@ void test_model_solver()
 {
 	std::cout << std::endl << "-----------------test model compute---------------------" << std::endl;
 	test_single_body();
-	//test_single_body2();
 	test_float_5_bar();
 	test_servo_press();
 	test_3R();

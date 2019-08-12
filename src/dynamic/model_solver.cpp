@@ -535,13 +535,14 @@ namespace aris::dynamic
 		// upd Iv dm cm and ca  //
 		updDiagIv();
 		updDmCm(false);
+		updCa();
 
 		// upd F and G //
 		updF();
 		updG();
 
 		//// 求解 xp 的某个特解（不考虑惯量），求出beta 以及 xc
-		updCa();
+		
 		sovXp();
 		sovXc();
 	}
@@ -1224,6 +1225,10 @@ namespace aris::dynamic
 		//std::cout << "mem size 0:" << mem_pool_size << std::endl;
 
 		// 计算公共的内存及偏移
+		Imp::allocMem(mem_pool_size, pub_data.cmI_, max_cm_size * 6);
+		Imp::allocMem(mem_pool_size, pub_data.cmJ_, max_cm_size * 6);
+		Imp::allocMem(mem_pool_size, pub_data.cmU_, max_cm_size * 6);
+		Imp::allocMem(mem_pool_size, pub_data.cmT_, std::max(Size(6), max_cm_size));
 		Imp::allocMem(mem_pool_size, pub_data.F_, max_F_size);
 		Imp::allocMem(mem_pool_size, pub_data.FT_, std::max(max_fm, max_fn));
 		Imp::allocMem(mem_pool_size, pub_data.FP_, std::max(max_fm, max_fn));
@@ -1236,10 +1241,6 @@ namespace aris::dynamic
 		Imp::allocMem(mem_pool_size, pub_data.xpf_, std::max(max_fn, max_fm));
 		Imp::allocMem(mem_pool_size, pub_data.bcf_, max_fn);
 		Imp::allocMem(mem_pool_size, pub_data.bpf_, max_fm);
-		Imp::allocMem(mem_pool_size, pub_data.cmI_, max_cm_size * 6);
-		Imp::allocMem(mem_pool_size, pub_data.cmJ_, max_cm_size * 6);
-		Imp::allocMem(mem_pool_size, pub_data.cmU_, max_cm_size * 6);
-		Imp::allocMem(mem_pool_size, pub_data.cmT_, std::max(Size(6), max_cm_size));
 		Imp::allocMem(mem_pool_size, pub_data.Jg_, ancestor<Model>()->partPool().size() * 6 * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
 		Imp::allocMem(mem_pool_size, pub_data.cg_, ancestor<Model>()->partPool().size() * 6);
 		Imp::allocMem(mem_pool_size, pub_data.M_, (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6) * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
@@ -1255,8 +1256,6 @@ namespace aris::dynamic
 		{
 			imp_->pd_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_);
 			*imp_->pd_ = pub_data;
-
-			auto pd = imp_->pd_;
 
 			// 获得雅可比部分的内存 //
 			imp_->pd_->Jg_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->Jg_);
@@ -1298,7 +1297,6 @@ namespace aris::dynamic
 			sys.d_data_ = Imp::getMem(imp_->mem_pool_.data(), sys.d_data_);
 			sys.d_size_ = d_vec.size();
 			for (int i = 0; i < sys.d_size_; ++i)sys.d_data_[i] = d_vec[i];
-			sys.d_data_[0].part_ = prt_vec.at(0);
 			sys.d_data_[0].pm_ = sys.d_data_[0].pm1_;
 			sys.d_data_[0].last_pm_ = sys.d_data_[0].pm2_;
 			for (Size i = 1; i < sys.d_size_; ++i)
@@ -1360,8 +1358,6 @@ namespace aris::dynamic
 				r.i_diag_ = std::find_if(sys.d_data_, sys.d_data_ + sys.d_size_, [&rel](Diag& d) {return rel.prtI_ == d.part_; });
 				r.j_diag_ = std::find_if(sys.d_data_, sys.d_data_ + sys.d_size_, [&rel](Diag& d) {return rel.prtJ_ == d.part_; });
 			}
-
-			sys.has_ground_ = sys.d_data_->part_ == &ancestor<Model>()->ground();
 
 			for (auto d = sys.d_data_; d < sys.d_data_ + sys.d_size_; ++d)
 			{
@@ -1714,6 +1710,7 @@ namespace aris::dynamic
 #undef ARIS_LOOP_SYS_D
 #undef ARIS_LOOP_SYS_R
 #undef ARIS_LOOP_BLOCK
+
 	class HelpResetRAII
 	{
 	public:

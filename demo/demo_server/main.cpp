@@ -33,7 +33,6 @@ auto inline outputCsByPq(const aris::server::ControlServer &cs, std::string file
 		}
 	}
 
-
 	doc.SaveFile(file_path.c_str());
 }
 
