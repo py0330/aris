@@ -115,7 +115,6 @@ namespace aris::server
 
 			// 执行命令
 			auto ret = executeCmd(target);
-			auto check_ret = checkMotion(target.mot_options.data());
 
 			// 检查错误 //
 			if (auto check_ret = checkMotion(target.mot_options.data()); check_ret < 0)
@@ -426,10 +425,10 @@ namespace aris::server
 				break;
 			case 10:
 				cm.setTargetToq(0.0);
-				is_correcting = cm.disable();
+				is_correcting = cm.disable() || is_correcting;
 				break;
 			default:
-				is_correcting = cm.disable();
+				is_correcting = cm.disable() || is_correcting;
 			}
 			
 			// store correct data
