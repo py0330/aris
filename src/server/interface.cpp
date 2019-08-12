@@ -91,6 +91,7 @@ namespace aris::server
 					}
 					else if(auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&target.ret))
 					{
+						js->push_back(std::make_pair<std::string, std::any>("return_code", target.ret_code));
 						ret_msg.copy(parse_ret_value(*js));
 					}
 
@@ -108,8 +109,13 @@ namespace aris::server
 			}
 			catch (std::exception &e)
 			{
-				std::cout << e.what() << std::endl;
-				LOG_ERROR << e.what() << std::endl;
+				std::vector<std::pair<std::string, std::any>> ret_pair;
+				ret_pair.push_back(std::make_pair<std::string, std::any>("return_code", int(aris::plan::PlanTarget::PARSE_EXCEPTION)));
+				ret_pair.push_back(std::make_pair<std::string, std::any>("return_message", std::string(e.what())));
+				std::string ret_str = parse_ret_value(ret_pair);
+
+				std::cout << ret_str << std::endl;
+				LOG_ERROR << ret_str << std::endl;
 
 				try
 				{
@@ -119,6 +125,7 @@ namespace aris::server
 					m.header().reserved1_ = msg.header().reserved1_;
 					m.header().reserved2_ = msg.header().reserved2_;
 					m.header().reserved3_ = msg.header().reserved3_;
+					m.copy(ret_str);
 					socket->sendMsg(m);
 				}
 				catch (std::exception &e)

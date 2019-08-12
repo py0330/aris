@@ -31,8 +31,27 @@ namespace aris::plan
 		enum
 		{
 			SUCCESS = 0,
-			ERROR = 1,
-			CANCELLED = 2
+			PREPARE_EXCEPTION = -1,
+			COLLECT_EXCEPTION = -2,
+			PARSE_EXCEPTION = -3,
+			PLAN_CANCELLED = -4,
+			SLAVE_AT_INIT = -101,
+			SLAVE_AT_SAFEOP = -102,
+			SLAVE_AT_PREOP = -103,
+			SLAVE_AT_OP = -104,
+			MOTION_NOT_ENABLED = -501,
+			MOTION_POS_BEYOND_MIN = -502,
+			MOTION_POS_BEYOND_MAX = -503,
+			MOTION_POS_NOT_CONTINUOUS = -504,
+			MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER = -505,
+			MOTION_POS_FOLLOWING_ERROR = -506,
+			MOTION_VEL_BEYOND_MIN = -507,
+			MOTION_VEL_BEYOND_MAX = -508,
+			MOTION_VEL_NOT_CONTINUOUS = -509,
+			MOTION_VEL_FOLLOWING_ERROR = -510,
+
+			PLAN_OVER_TIME = -1001,
+			INVERSE_KINEMATIC_POSITION_FAILED = -1002,
 		};
 		
 		Plan* plan;                                       // prepair/execute/collect  get&set(but be careful when prepair)

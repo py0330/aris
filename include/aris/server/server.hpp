@@ -6,4 +6,3 @@
 #include <aris/server/control_server.hpp>
 
 #endif
-

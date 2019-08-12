@@ -1085,7 +1085,7 @@ namespace aris::dynamic
 			0,
 			aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 },
 			std::any(),
-			aris::plan::PlanTarget::CANCELLED,
+			aris::plan::PlanTarget::PLAN_CANCELLED,
 			std::future<void>()
 		};
 

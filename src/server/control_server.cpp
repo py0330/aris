@@ -115,16 +115,30 @@ namespace aris::server
 
 			// 执行命令
 			auto ret = executeCmd(target);
+			auto check_ret = checkMotion(target.mot_options.data());
 
 			// 检查错误 //
-			if (ret < 0 || checkMotion(target.mot_options.data()))
+			if (auto check_ret = checkMotion(target.mot_options.data()); check_ret < 0)
 			{
 				// print info //
-				server_->controller().mout() << "failed, cmd queue cleared\n";
+				server_->controller().mout() << "check failed, cmd queue cleared\n";
+
+				// finish //
+				target.ret_code = check_ret;
+				cmd_now_.store(cmd_end);// 原子操作
+				count_ = 1;
+				server_->controller().resetRtStasticData(nullptr, false);
+				server_->controller().lout() << std::flush;
+			}
+			// 非正常结束 //
+			else if (ret < 0)
+			{
+				// print info //
+				server_->controller().mout() << "user execute failed, cmd queue cleared\n";
 				
 				// finish //
-				target.ret_code = aris::plan::PlanTarget::ERROR;
-				cmd_now_.store(cmd_end);//原子操作
+				target.ret_code = ret;
+				cmd_now_.store(cmd_end);// 原子操作
 				count_ = 1;
 				server_->controller().resetRtStasticData(nullptr, false);
 				server_->controller().lout() << std::flush;
@@ -194,8 +208,11 @@ namespace aris::server
 	}
 	auto ControlServer::Imp::checkMotion(std::uint64_t *mot_options)->int
 	{
+		static int error_code = aris::plan::PlanTarget::SUCCESS;
 		static bool is_correcting{ false };
 		if (is_correcting)goto FAILED;
+
+		error_code = aris::plan::PlanTarget::SUCCESS;
 
 		// 检查规划的指令是否合理（包括电机是否已经跟随上） //
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
@@ -209,6 +226,8 @@ namespace aris::server
 			if (!(option & aris::plan::Plan::NOT_CHECK_ENABLE)
 				&& ((cm.statusWord() & 0x6f) != 0x27))
 			{
+				error_code = aris::plan::PlanTarget::MOTION_NOT_ENABLED;
+				
 				server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 				server_->controller().mout() << "Motor " << i << " not in operation enable mode in count " << count_ << ":\n";
 				goto FAILED;
@@ -222,6 +241,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
 						&& (cm.targetPos() > cm.maxPos()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MAX;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target position beyond MAX in count " << count_ << ":\n";
 						server_->controller().mout() << "max: " << cm.maxPos() << "\t" << "now: " << cm.targetPos() << "\n";
@@ -232,6 +252,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MIN)
 						&& (cm.targetPos() < cm.minPos()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MIN;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target position beyond MIN in count " << count_ << ":\n";
 						server_->controller().mout() << "min: " << cm.minPos() << "\t" << "now: " << cm.targetPos() << "\n";
@@ -242,6 +263,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS)
 						&& ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_POS_NOT_CONTINUOUS;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target position NOT CONTINUOUS in count " << count_ << "\n";
 						server_->controller().mout() << "last: " << last_pvc.at(i).p << "\t" << "now: " << cm.targetPos() << "\n";
@@ -252,6 +274,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER)
 						&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target position NOT SECOND CONTINUOUS in count " << count_ << "\n";
 						server_->controller().mout() << "last last: " << lld.p << "\tlast:" << ld.p << "\t" << "now: " << cm.targetPos() << "\n";
@@ -262,6 +285,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_FOLLOWING_ERROR)
 						&& (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_POS_FOLLOWING_ERROR;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target position has FOLLOW ERROR: " << count_ << "\n";
 						server_->controller().mout() << "target: " << cm.targetPos() << "\t" << "actual: " << cm.actualPos() << "\n";
@@ -274,6 +298,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
 						&& (cm.targetVel() > cm.maxVel()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_VEL_BEYOND_MAX;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target velocity beyond MAX in count " << count_ << ":\n";
 						server_->controller().mout() << "max: " << cm.maxVel() << "\t" << "now: " << cm.targetVel() << "\n";
@@ -284,6 +309,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MIN)
 						&& (cm.targetVel() < cm.minVel()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_VEL_BEYOND_MIN;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target veolcity beyond MIN in count " << count_ << ":\n";
 						server_->controller().mout() << "min: " << cm.minVel() << "\t" << "now: " << cm.targetVel() << "\n";
@@ -294,6 +320,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS)
 						&& ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_VEL_NOT_CONTINUOUS;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
 						server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
@@ -304,6 +331,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_FOLLOWING_ERROR)
 						&& (std::abs(cm.targetVel() - cm.actualVel()) > cm.maxVelFollowingError()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_VEL_FOLLOWING_ERROR;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target velocity has FOLLOW ERROR: " << count_ << "\n";
 						server_->controller().mout() << "target: " << cm.targetVel() << "\t" << "actual: " << cm.actualVel() << "\n";
@@ -316,6 +344,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
 						&& (cm.actualPos() > cm.maxPos()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MAX;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target position beyond MAX in count " << count_ << ":\n";
 						server_->controller().mout() << "max: " << cm.maxPos() << "\t" << "now: " << cm.targetPos() << "\n";
@@ -326,6 +355,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MIN)
 						&& (cm.actualPos() < cm.minPos()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MIN;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target position beyond MIN in count " << count_ << ":\n";
 						server_->controller().mout() << "min: " << cm.minPos() << "\t" << "now: " << cm.targetPos() << "\n";
@@ -336,6 +366,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
 						&& (cm.actualVel() > cm.maxVel()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_VEL_BEYOND_MAX;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target velocity beyond MAX in count " << count_ << ":\n";
 						server_->controller().mout() << "max: " << cm.maxVel() << "\t" << "now: " << cm.targetVel() << "\n";
@@ -346,6 +377,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MIN)
 						&& (cm.actualVel() < cm.minVel()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_VEL_BEYOND_MIN;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target veolcity beyond MIN in count " << count_ << ":\n";
 						server_->controller().mout() << "min: " << cm.minVel() << "\t" << "now: " << cm.targetVel() << "\n";
@@ -356,6 +388,7 @@ namespace aris::server
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_CONTINUOUS)
 						&& ((cm.actualVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.actualVel() - ld.v) < 0.001 * cm.minAcc()))
 					{
+						error_code = aris::plan::PlanTarget::MOTION_VEL_NOT_CONTINUOUS;
 						server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 						server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
 						server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
@@ -404,7 +437,7 @@ namespace aris::server
 			last_pvc.at(i).v = last_last_pvc.at(i).v = controller_->motionPool().at(i).targetVel();
 			last_pvc.at(i).c = last_last_pvc.at(i).c = controller_->motionPool().at(i).targetToq();
 		}
-		return -1;
+		return error_code;
 	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
 	auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
@@ -512,14 +545,20 @@ namespace aris::server
 						}
 						else if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&target.ret))
 						{
+							js->push_back(std::make_pair<std::string, std::any>("return_code", target.ret_code));
 							std::cout << parse_ret_value(*js) << std::endl;
 						}
 					});
 				}
 				catch (std::exception &e)
 				{
-					std::cout << e.what() << std::endl;
-					LOG_ERROR << e.what() << std::endl;
+					std::vector<std::pair<std::string, std::any>> ret_pair;
+					ret_pair.push_back(std::make_pair<std::string, std::any>("return_code", int(aris::plan::PlanTarget::PARSE_EXCEPTION)));
+					ret_pair.push_back(std::make_pair<std::string, std::any>("return_message", std::string(e.what())));
+					std::string ret_str = parse_ret_value(ret_pair);
+					
+					std::cout << ret_str << std::endl;
+					LOG_ERROR << ret_str << std::endl;
 				}
 
 				ret = std::async(std::launch::async, []()->std::string
@@ -567,7 +606,7 @@ namespace aris::server
 					0, 
 					aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 },
 					std::any(),
-					aris::plan::PlanTarget::CANCELLED,
+					aris::plan::PlanTarget::PLAN_CANCELLED,
 					std::future<void>()}),
 			std::promise<void>(),
 			post_callback
@@ -604,10 +643,10 @@ namespace aris::server
 			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
 			
 			// 等待所有任务完成 //
-			if (target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED)waitForAllExecution();
+			if (target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) waitForAllExecution();
 
 			// 等待所有任务收集 //
-			if (target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED)waitForAllCollection();
+			if (target->option & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED) waitForAllCollection();
 
 			// 判断是否等待命令池清空 //
 			if ((!(target->option & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)

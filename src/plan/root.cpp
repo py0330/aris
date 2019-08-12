@@ -400,14 +400,6 @@ namespace aris::plan
 		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
-		ret_value.push_back(std::make_pair<std::string, std::any>("return_code", 1));
-		ret_value.push_back(std::make_pair<std::string, std::any>("return_msg", std::string("none")));
-		ret_value.push_back(std::make_pair<std::string, std::any>("return_bool", true));
-		ret_value.push_back(std::make_pair<std::string, std::any>("return_double", 5.33));
-		ret_value.push_back(std::make_pair<std::string, std::any>("return_code11", 1));
-		ret_value.push_back(std::make_pair<std::string, std::any>("return_msg11", std::vector<std::string>{"none","right"}));
-		ret_value.push_back(std::make_pair<std::string, std::any>("return_bool11", std::vector<bool>{ true, false }));
-		ret_value.push_back(std::make_pair<std::string, std::any>("return_double11", std::vector<double>{ 5.33,6.22 }));
 		target.ret = ret_value;
 	}
 	auto Enable::executeRT(PlanTarget &target)->int
@@ -434,7 +426,7 @@ namespace aris::plan
 			}
 		}
 
-		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
+		return is_all_finished ? 0 : (target.count < param.limit_time ? 1 : aris::plan::PlanTarget::PLAN_OVER_TIME);
 	}
 	Enable::~Enable() = default;
 	Enable::Enable(const std::string &name) :Plan(name), imp_(new Imp)
@@ -462,6 +454,9 @@ namespace aris::plan
 
 		target.param = param;
 		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto Disable::executeRT(PlanTarget &target)->int
 	{
@@ -487,7 +482,7 @@ namespace aris::plan
 			}
 		}
 
-		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
+		return is_all_finished ? 0 : (target.count < param.limit_time ? 1 : aris::plan::PlanTarget::PLAN_OVER_TIME);
 	}
 	Disable::~Disable() = default;
 	Disable::Disable(const std::string &name) :Plan(name), imp_(new Imp)
@@ -555,8 +550,10 @@ namespace aris::plan
 			}
 		}
 
-
 		target.param = param;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto Home::executeRT(PlanTarget &target)->int
 	{
@@ -622,6 +619,9 @@ namespace aris::plan
 
 		target.param = param;
 		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto Mode::executeRT(PlanTarget &target)->int
 	{
@@ -665,7 +665,7 @@ namespace aris::plan
 			}
 		}
 
-		return (is_all_finished || target.count >= param.limit_time) ? 0 : 1;
+		return is_all_finished ? 0 : (target.count < param.limit_time ? 1 : aris::plan::PlanTarget::PLAN_OVER_TIME);
 	}
 	Mode::~Mode() = default;
 	Mode::Mode(const std::string &name) :Plan(name), imp_(new Imp)
@@ -704,6 +704,9 @@ namespace aris::plan
 		param.total_count_vec.resize(target.controller->motionPool().size(), 1);
 
 		target.param = param;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto Reset::executeRT(PlanTarget &target)->int
 	{
@@ -775,8 +778,10 @@ namespace aris::plan
 		}, p, std::ref(target));
 
 		target.param = p;
-		for (auto &option : target.mot_options) option |=
-			NOT_CHECK_ENABLE;
+		for (auto &option : target.mot_options) option |= NOT_CHECK_ENABLE;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto Recover::executeRT(PlanTarget &target)->int
 	{
@@ -825,6 +830,9 @@ namespace aris::plan
 	{
 		target.param = SleepParam{ std::stoi(params.at("count")) };
 		for (auto &option : target.mot_options) option |= NOT_CHECK_ENABLE;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto Sleep::executeRT(PlanTarget &target)->int { return std::any_cast<SleepParam&>(target.param).count - target.count; }
 	Sleep::~Sleep() = default;
@@ -836,7 +844,6 @@ namespace aris::plan
 			"</Command>");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Sleep);
-
 
 	//std::vector<aris::control::EthercatMaster::SlaveLinkState> sla_link_vec;
 	auto Show::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
@@ -893,6 +900,9 @@ namespace aris::plan
 		param.axis_begin_pos_vec.resize(target.controller->motionPool().size());
 		target.param = param;
 		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto MoveAbsJ::executeRT(PlanTarget &target)->int
 	{
@@ -1081,6 +1091,9 @@ namespace aris::plan
 		}
 
 		target.param = mvj_param;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto MoveJ::executeRT(PlanTarget &target)->int
 	{
@@ -1195,6 +1208,9 @@ namespace aris::plan
 
 		for (auto &option : target.mot_options)	option |= USE_TARGET_POS;
 		target.param = mvl_param;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	auto MoveL::executeRT(PlanTarget &target)->int
 	{
@@ -1661,6 +1677,9 @@ namespace aris::plan
 		target.server->waitForAllCollection();
 		target.ret = target.server->xmlString();
 		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	GetXml::~GetXml() = default;
 	GetXml::GetXml(const std::string &name) : Plan(name)
@@ -1678,6 +1697,9 @@ namespace aris::plan
 		// 这一句要小心，此时 this 已被销毁，后面不能再调用this了 //
 		target.server->loadXmlStr(xml_str);
 		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	SetXml::~SetXml() = default;
 	SetXml::SetXml(const std::string &name) : Plan(name)
@@ -1692,12 +1714,15 @@ namespace aris::plan
 	{
 		target.server->start();
 		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	Start::~Start() = default;
 	Start::Start(const std::string &name) : Plan(name)
 	{
 		command().loadXmlStr(
-			"<Command name=\"start\">"
+			"<Command name=\"cs_start\">"
 			"</Command>");
 	}
 
@@ -1705,12 +1730,15 @@ namespace aris::plan
 	{
 		target.server->stop();
 		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+
+		std::vector<std::pair<std::string, std::any>> ret_value;
+		target.ret = ret_value;
 	}
 	Stop::~Stop() = default;
 	Stop::Stop(const std::string &name) : Plan(name)
 	{
 		command().loadXmlStr(
-			"<Command name=\"stop\">"
+			"<Command name=\"cs_stop\">"
 			"</Command>");
 	}
 
