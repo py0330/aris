@@ -1261,15 +1261,15 @@ namespace aris::plan
 		if (target.model->solverPool().at(0).kinPos())return -1;
 
 		////////////////////////////////////// log ///////////////////////////////////////
-		double pq[7];
-		aris::dynamic::s_pm2pq(*target.model->generalMotionPool().at(0).mpm(), pq);
-		target.controller->lout() << target.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "  ";
+		//double pq[7];
+		//aris::dynamic::s_pm2pq(*target.model->generalMotionPool().at(0).mpm(), pq);
+		//target.controller->lout() << target.count << " " << pq[0] << " " << pq[1] << " " << pq[2] << " " << pq[3] << " " << pq[4] << " " << pq[5] << " " << pq[6] << "  ";
 
-		for (auto &cm : controller->motionPool())
-		{
-			target.controller->lout() << "  " << cm.targetPos() << "  " << cm.actualPos() << "  " << cm.actualVel() << "  " << cm.actualCur() << "  ";
-		}
-		target.controller->lout() << "\n";
+		//for (auto &cm : controller->motionPool())
+		//{
+		//	target.controller->lout() << "  " << cm.targetPos() << "  " << cm.actualPos() << "  " << cm.actualVel() << "  " << cm.actualCur() << "  ";
+		//}
+		//target.controller->lout() << "\n";
 		//////////////////////////////////////////////////////////////////////////////////
 
 
