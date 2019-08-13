@@ -1029,6 +1029,8 @@ namespace aris::plan
 				else if (acc_mat.size() == target.model->motionPool().size()) std::copy(acc_mat.begin(), acc_mat.end(), mvj_param.joint_acc.begin());
 				else THROW_FILE_AND_LINE("");
 
+				for (int i = 0; i < 6; ++i)mvj_param.joint_acc[i] *= target.controller->motionPool()[i].maxAcc();
+
 				// check value validity //
 				for (Size i = 0; i< std::min(target.model->motionPool().size(), c->motionPool().size()); ++i)
 					if (mvj_param.joint_acc[i] <= 0 || mvj_param.joint_acc[i] > c->motionPool()[i].maxAcc())
@@ -1044,9 +1046,11 @@ namespace aris::plan
 				else if (vel_mat.size() == target.model->motionPool().size()) std::copy(vel_mat.begin(), vel_mat.end(), mvj_param.joint_vel.begin());
 				else THROW_FILE_AND_LINE("");
 
+				for (int i = 0; i < 6; ++i)mvj_param.joint_vel[i] *= target.controller->motionPool()[i].maxVel();
+
 				// check value validity //
 				for (Size i = 0; i< std::min(target.model->motionPool().size(), c->motionPool().size()); ++i)
-					if (mvj_param.joint_vel[i] <= 0 || mvj_param.joint_vel[i] > c->motionPool()[i].maxAcc())
+					if (mvj_param.joint_vel[i] <= 0 || mvj_param.joint_vel[i] > c->motionPool()[i].maxVel())
 						THROW_FILE_AND_LINE("");
 			}
 			else if (cmd_param.first == "joint_dec")
@@ -1058,6 +1062,8 @@ namespace aris::plan
 				if (dec_mat.size() == 1)std::fill(mvj_param.joint_dec.begin(), mvj_param.joint_dec.end(), dec_mat.toDouble());
 				else if (dec_mat.size() == target.model->motionPool().size()) std::copy(dec_mat.begin(), dec_mat.end(), mvj_param.joint_dec.begin());
 				else THROW_FILE_AND_LINE("");
+
+				for (int i = 0; i < 6; ++i) mvj_param.joint_dec[i] *= target.controller->motionPool()[i].maxAcc();
 
 				// check value validity //
 				for (Size i = 0; i< std::min(target.model->motionPool().size(), c->motionPool().size()); ++i)
