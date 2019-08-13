@@ -68,6 +68,7 @@ namespace aris::plan
 		std::any ret;
 		std::int32_t ret_code;
 		std::future<void> finished;
+		char ret_msg[1024];
 	};
 	class Plan :public aris::core::Object
 	{

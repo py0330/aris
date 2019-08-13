@@ -78,11 +78,11 @@ void test_server_option()
 		option = 0;
 		cs.executeCmd(cmd);
 		auto ret = cs.executeCmd(cmd);
-		if (cs.currentExecuteId() == ret->command_id || cs.currentExecuteId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		if ((!cs.currentExecuteTarget()) || cs.currentExecuteTarget()->command_id == ret->command_id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		option = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED;
 		ret = cs.executeCmd(cmd);
-		if (cs.currentExecuteId() != ret->command_id && cs.currentExecuteId() != 0) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		if (cs.currentExecuteTarget() && cs.currentExecuteTarget()->command_id != ret->command_id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -113,11 +113,11 @@ void test_server_option()
 		option = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED;
 		cs.executeCmd(cmd);
 		auto ret = cs.executeCmd(cmd);
-		if (cs.currentCollectId() != ret->command_id - 1) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (cs.currentCollectTarget()->command_id != ret->command_id - 1) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		option = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED;
 		ret = cs.executeCmd(cmd);
-		if (cs.currentCollectId() != ret->command_id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (cs.currentCollectTarget()->command_id != ret->command_id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -146,12 +146,12 @@ void test_server_option()
 		cs.executeCmd(cmd);
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 		cs.executeCmd(cmd);
-		if (cs.currentExecuteId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		if (!cs.currentExecuteTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		cs.executeCmd(cmd);
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED;
 		cs.executeCmd(cmd);
-		if (cs.currentExecuteId() != 0) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		if (cs.currentExecuteTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -184,14 +184,14 @@ void test_server_option()
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 		collect_time = 0;
 		cs.executeCmd(cmd);
-		if (cs.currentCollectId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (!cs.currentCollectTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		collect_time = 100;
 		cs.executeCmd(cmd);
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED;
 		collect_time = 0;
 		cs.executeCmd(cmd);
-		if (cs.currentCollectId() != 0) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (cs.currentCollectTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -221,11 +221,11 @@ void test_server_option()
 		option = 0;
 		cs.executeCmd(cmd);
 		cs.executeCmd(cmd);
-		if (cs.currentExecuteId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_EXECUTION option failed" << std::endl;
+		if (!cs.currentExecuteTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_EXECUTION option failed" << std::endl;
 
 		option = aris::plan::Plan::WAIT_FOR_EXECUTION;
 		cs.executeCmd(cmd);
-		if (cs.currentExecuteId() != 0 || cs.currentCollectId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_EXECUTION option failed" << std::endl;
+		if (cs.currentExecuteTarget()|| (!cs.currentCollectTarget())) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_EXECUTION option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -255,11 +255,11 @@ void test_server_option()
 		option = 0;
 		cs.executeCmd(cmd);
 		cs.executeCmd(cmd);
-		if (cs.currentCollectId() == 0) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_COLLECTION option failed" << std::endl;
+		if (!cs.currentCollectTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_COLLECTION option failed" << std::endl;
 
 		option = aris::plan::Plan::WAIT_FOR_COLLECTION;
 		cs.executeCmd(cmd);
-		if (cs.currentCollectId() != 0) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_COLLECTION option failed" << std::endl;
+		if (cs.currentCollectTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_COLLECTION option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -288,9 +288,14 @@ void test_server_option()
 			t.option =option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
 		}, [&](const aris::plan::PlanTarget &param)->int
 		{
+			static int i = 0;
+			//std::cout <<"e"<< ++i << std::endl;
 			return 0;
 		}, [&](const aris::plan::PlanTarget &)->void
 		{
+			static int i = 0;
+			//std::cout << "c" << ++i << std::endl;
+
 		}, "<Command name=\"test_WAIT_IF_CMD_POOL_IS_FULL_2\"/>");
 
 		cs.start();
@@ -299,7 +304,7 @@ void test_server_option()
 		option = 0;
 		cs.executeCmd(cmd);
 		cmd.copy("test_WAIT_IF_CMD_POOL_IS_FULL_2");
-		for (auto i = 0; i<999; ++i)cs.executeCmd(cmd);
+		for (auto i = 0; i < 999; ++i)cs.executeCmd(cmd);
 		try 
 		{
 			cs.executeCmd(cmd);
@@ -317,8 +322,7 @@ void test_server_option()
 			std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_IF_CMD_POOL_IS_FULL option failed" << std::endl;
 		}
 
-		while (cs.currentCollectId() != 0)std::this_thread::yield();
-
+		cs.waitForAllCollection();
 
 		cs.stop();
 	}

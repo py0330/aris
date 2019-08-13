@@ -166,6 +166,6 @@ namespace aris::plan
 		vc = va + ac * dt;
 		pc = pa + 0.5 * (va + vc) * dt;
 		total_count = 1;
-		return std::abs(pt - pc)<zero_check && std::abs(vt - vc)<zero_check ? 0 : 1;
+		return std::abs(pt - pc) < zero_check && std::abs(vt - vc) < zero_check ? 0 : 1;
 	}
 }

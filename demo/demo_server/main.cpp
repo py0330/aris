@@ -107,9 +107,42 @@ int main(int argc, char *argv[])
 	//dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
 	////////////////////////////////////////////////////////////////////////////////////
 
+	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("tt", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
+	{
+		auto ct = cs.currentCollectTarget();
+
+		t.ret = std::vector<std::pair<std::string, std::any>>();
+
+		if (ct)
+		{
+			std::cout << "current plan:" << ct->plan->name() << std::endl;
+		}
+		else
+		{
+			std::cout << "no current plan" << std::endl;
+		}
+		
+		//t.option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
+	}, [&](const aris::plan::PlanTarget &param)->int
+	{
+		param.controller->motionAtAbs(0).setTargetPos(param.count*0.002);
+		return 100 - param.count;
+	}, [&](aris::plan::PlanTarget &)->void
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}, "<Command name=\"tt\"/>");
+	
+
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");
 	cs.start();
+
+	//for (int i = 0; i < 1000; ++i)
+	//{
+	//	cs.executeCmd(aris::core::Msg("en --limit_time=1"));
+	//}
+
+
 	try
 	{
 		cs.executeCmd(aris::core::Msg("rmFi --filePath=/home/kaanh/log --memo=20000"));

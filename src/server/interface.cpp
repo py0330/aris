@@ -92,6 +92,7 @@ namespace aris::server
 					else if(auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&target.ret))
 					{
 						js->push_back(std::make_pair<std::string, std::any>("return_code", target.ret_code));
+						js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(target.ret_msg)));
 						ret_msg.copy(parse_ret_value(*js));
 					}
 
