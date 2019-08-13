@@ -227,7 +227,7 @@ namespace aris::server
 				&& ((cm.statusWord() & 0x6f) != 0x27))
 			{
 				error_code = aris::plan::PlanTarget::MOTION_NOT_ENABLED;
-				sprintf("%s_%d:\nMotor %zd is not in OPERATION_ENABLE mode in count %zd\n", __FILE__, __LINE__, i, count_);
+				sprintf(error_msg, "%s_%d:\nMotor %zd is not in OPERATION_ENABLE mode in count %zd\n", __FILE__, __LINE__, i, count_);
 				//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
 				//server_->controller().mout() << "Motor " << i << " not in operation enable mode in " << count_ << ":\n";
 				goto FAILED;
@@ -299,7 +299,7 @@ namespace aris::server
 						goto FAILED;
 					}
 				}
-				//else if (cm.modeOfDisplay() == 9)
+				else if (cm.modeOfDisplay() == 9)
 				{
 					// check vel max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
@@ -353,7 +353,7 @@ namespace aris::server
 						goto FAILED;
 					}
 				}
-				//else if (cm.modeOfDisplay() == 10)
+				else if (cm.modeOfDisplay() == 10)
 				{
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
