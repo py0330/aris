@@ -227,26 +227,22 @@ namespace aris::server
 				&& ((cm.statusWord() & 0x6f) != 0x27))
 			{
 				error_code = aris::plan::PlanTarget::MOTION_NOT_ENABLED;
-				sprintf(error_msg, "%s_%d:\nMotor %zd is not in OPERATION_ENABLE mode in count %zd\n", __FILE__, __LINE__, i, count_);
-				//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-				//server_->controller().mout() << "Motor " << i << " not in operation enable mode in " << count_ << ":\n";
+				sprintf(error_msg, "%s_%d:\nMotion %zd is not in OPERATION_ENABLE mode in count %zd\n", __FILE__, __LINE__, i, count_);
 				goto FAILED;
 			}
 #endif
 			if ((cm.statusWord() & 0x6f) == 0x27)
 			{
-				if (cm.modeOfOperation() == 8)
+				switch (cm.modeOfOperation())
+				{
+				case 8:
 				{
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
 						&& (cm.targetPos() > cm.maxPos()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MAX;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target position beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target position beyond MAX in count " << count_ << ":\n";
-						//server_->controller().mout() << "max: " << cm.maxPos() << "\t" << "now: " << cm.targetPos() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
 						goto FAILED;
 					}
 
@@ -255,11 +251,7 @@ namespace aris::server
 						&& (cm.targetPos() < cm.minPos()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MIN;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target position beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target position beyond MIN in count " << count_ << ":\n";
-						//server_->controller().mout() << "min: " << cm.minPos() << "\t" << "now: " << cm.targetPos() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());
 						goto FAILED;
 					}
 
@@ -268,11 +260,7 @@ namespace aris::server
 						&& ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target position NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).p, cm.targetPos());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target position NOT CONTINUOUS in count " << count_ << "\n";
-						//server_->controller().mout() << "last: " << last_pvc.at(i).p << "\t" << "now: " << cm.targetPos() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).p, cm.targetPos());
 						goto FAILED;
 					}
 
@@ -281,11 +269,7 @@ namespace aris::server
 						&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %lf\tlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, lld.p, last_pvc.at(i).p, cm.targetPos());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target position NOT SECOND CONTINUOUS in count " << count_ << "\n";
-						//server_->controller().mout() << "last last: " << lld.p << "\tlast:" << ld.p << "\t" << "now: " << cm.targetPos() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %lf\tlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, lld.p, last_pvc.at(i).p, cm.targetPos());
 						goto FAILED;
 					}
 
@@ -294,23 +278,20 @@ namespace aris::server
 						&& (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_FOLLOWING_ERROR;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target position has FOLLOW ERROR in count %zu:\nactual: %lf\ttarget: %lf\n", __FILE__, __LINE__, i, count_, cm.actualPos(), cm.targetPos());
-						//server_->controller().mout() << error_msg << std::endl;
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position has FOLLOW ERROR in count %zu:\nactual: %lf\ttarget: %lf\n", __FILE__, __LINE__, i, count_, cm.actualPos(), cm.targetPos());
 						goto FAILED;
 					}
+
+					break;
 				}
-				else if (cm.modeOfDisplay() == 9)
+				case 9:
 				{
 					// check vel max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
 						&& (cm.targetVel() > cm.maxVel()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_BEYOND_MAX;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target velocity beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxVel(), cm.targetVel());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target velocity beyond MAX in count " << count_ << ":\n";
-						//server_->controller().mout() << "max: " << cm.maxVel() << "\t" << "now: " << cm.targetVel() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxVel(), cm.targetVel());
 						goto FAILED;
 					}
 
@@ -319,11 +300,7 @@ namespace aris::server
 						&& (cm.targetVel() < cm.minVel()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_BEYOND_MIN;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target velocity beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minVel(), cm.targetVel());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target veolcity beyond MIN in count " << count_ << ":\n";
-						//server_->controller().mout() << "min: " << cm.minVel() << "\t" << "now: " << cm.targetVel() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minVel(), cm.targetVel());
 						goto FAILED;
 					}
 
@@ -332,11 +309,7 @@ namespace aris::server
 						&& ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).v, cm.targetVel());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
-						//server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).v, cm.targetVel());
 						goto FAILED;
 					}
 
@@ -345,26 +318,20 @@ namespace aris::server
 						&& (std::abs(cm.targetVel() - cm.actualVel()) > cm.maxVelFollowingError()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_FOLLOWING_ERROR;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target velocity has FOLLOW ERROR in count %zu:\nactual: %lf\ttarget: %lf\n", __FILE__, __LINE__, i, count_, cm.actualVel(), cm.targetVel());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target velocity has FOLLOW ERROR: " << count_ << "\n";
-						//server_->controller().mout() << "target: " << cm.targetVel() << "\t" << "actual: " << cm.actualVel() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity has FOLLOW ERROR in count %zu:\nactual: %lf\ttarget: %lf\n", __FILE__, __LINE__, i, count_, cm.actualVel(), cm.targetVel());
 						goto FAILED;
 					}
+
+					break;
 				}
-				else if (cm.modeOfDisplay() == 10)
+				case 10:
 				{
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
 						&& (cm.actualPos() > cm.maxPos()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MAX;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target position beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target position beyond MAX in count " << count_ << ":\n";
-						//server_->controller().mout() << "max: " << cm.maxPos() << "\t" << "now: " << cm.targetPos() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
 						goto FAILED;
 					}
 
@@ -373,11 +340,7 @@ namespace aris::server
 						&& (cm.actualPos() < cm.minPos()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MIN;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target position beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target position beyond MIN in count " << count_ << ":\n";
-						//server_->controller().mout() << "min: " << cm.minPos() << "\t" << "now: " << cm.targetPos() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());
 						goto FAILED;
 					}
 
@@ -386,11 +349,7 @@ namespace aris::server
 						&& (cm.actualVel() > cm.maxVel()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_BEYOND_MAX;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target velocity beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxVel(), cm.actualVel());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target velocity beyond MAX in count " << count_ << ":\n";
-						//server_->controller().mout() << "max: " << cm.maxVel() << "\t" << "now: " << cm.targetVel() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxVel(), cm.actualVel());
 						goto FAILED;
 					}
 
@@ -399,11 +358,7 @@ namespace aris::server
 						&& (cm.actualVel() < cm.minVel()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_BEYOND_MIN;
-						sprintf(error_msg, "%s_%d:\nMotor %zu target velocity beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minVel(), cm.actualVel());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target veolcity beyond MIN in count " << count_ << ":\n";
-						//server_->controller().mout() << "min: " << cm.minVel() << "\t" << "now: " << cm.targetVel() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minVel(), cm.actualVel());
 						goto FAILED;
 					}
 
@@ -412,13 +367,18 @@ namespace aris::server
 						&& ((cm.actualVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.actualVel() - ld.v) < 0.001 * cm.minAcc()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotor %zu velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).p, cm.targetPos());
-						//server_->controller().mout() << error_msg << std::endl;
-						//server_->controller().mout() << __FILE__ << __LINE__ << ":\n";
-						//server_->controller().mout() << "Motor " << i << " target velocity NOT CONTINUOUS in count " << count_ << "\n";
-						//server_->controller().mout() << "last: " << last_pvc.at(i).v << "\t" << "now: " << controller_->motionPool().at(i).targetVel() << "\n";
+						sprintf(error_msg, "%s_%d:\nMotion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).p, cm.targetPos());
 						goto FAILED;
 					}
+					break;
+				}
+				default:
+				{
+					// invalid mode //
+					error_code = aris::plan::PlanTarget::MOTION_INVALID_MODE;
+					sprintf(error_msg, "%s_%d:\nMotion %zu MODE INVALID in count %zu:\nmode: %d\n", __FILE__, __LINE__, i, count_, cm.modeOfOperation());
+					goto FAILED;
+				}
 				}
 			}
 		}

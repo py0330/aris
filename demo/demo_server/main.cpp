@@ -4,38 +4,6 @@
 using namespace aris::dynamic;
 using namespace aris::robot;
 
-auto inline outputCsByPq(const aris::server::ControlServer &cs, std::string file_path)->void
-{
-	aris::core::XmlDocument doc;
-	
-	cs.saveXmlDoc(doc);
-
-	auto part_pool = doc.FirstChildElement()->FirstChildElement("model")->FirstChildElement("part_pool");
-
-	for (auto prt = part_pool->FirstChildElement(); prt; prt = prt->NextSiblingElement())
-	{
-		aris::core::Calculator c;
-		auto mat = c.calculateExpression(prt->Attribute("pe"));
-		prt->DeleteAttribute("pe");
-
-		double pq[7];
-		s_pe2pq(mat.data(), pq);
-		prt->SetAttribute("pq", aris::core::Matrix(1, 7, pq).toString().c_str());
-
-		for (auto geo = prt->FirstChildElement("geometry_pool")->FirstChildElement(); geo; geo = geo->NextSiblingElement())
-		{
-			auto mat = c.calculateExpression(geo->Attribute("pe"));
-			geo->DeleteAttribute("pe");
-
-			double pq[7];
-			s_pe2pq(mat.data(), pq);
-			geo->SetAttribute("pq", aris::core::Matrix(1, 7, pq).toString().c_str());
-		}
-	}
-
-	doc.SaveFile(file_path.c_str());
-}
-
 int main(int argc, char *argv[])
 {
 	double robot_pm[16];
