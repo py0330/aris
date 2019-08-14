@@ -397,7 +397,7 @@ namespace aris::plan
 
 		target.param = param;
 		
-		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		target.ret = ret_value;
@@ -453,7 +453,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 
 		target.param = param;
-		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		target.ret = ret_value;
@@ -618,7 +618,7 @@ namespace aris::plan
 		if (param.mode > 10 && param.mode < 8)throw std::runtime_error("invalid mode, aris now only support mode 8,9,10");
 
 		target.param = param;
-		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
+		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		target.ret = ret_value;

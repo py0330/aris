@@ -714,10 +714,7 @@ namespace aris::server
 		imp_->last_last_pvc.clear();
 		imp_->last_last_pvc.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
 
-		imp_->global_mot_options_.resize(controller().slavePool().size(), 
-			aris::plan::Plan::NOT_CHECK_ENABLE |
-			aris::plan::Plan::NOT_CHECK_POS_MAX |
-			aris::plan::Plan::NOT_CHECK_POS_MIN);
+		imp_->global_mot_options_.resize(controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
 
