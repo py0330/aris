@@ -20,7 +20,7 @@ namespace aris::control
 #ifdef ARIS_USE_XENOMAI
 	thread_local std::int64_t last_time_;
 
-	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) throw std::runtime_error("lock failed"); }
+	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_AND_LINE("lock failed"); }
 	auto aris_rt_task_create()->std::any
 	{
 		std::any rt_task = RT_TASK();

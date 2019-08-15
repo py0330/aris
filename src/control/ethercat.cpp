@@ -176,17 +176,17 @@ namespace aris::control
 	{
 		if (auto found_pdo = imp_->pdo_map_.find(index); found_pdo == imp_->pdo_map_.end())
 		{
-			throw std::runtime_error("pdo not found:" + std::to_string(index));
+			THROW_FILE_AND_LINE("pdo not found:" + std::to_string(index));
 		}
 		else
 		{
 			if (auto found_entry = found_pdo->second.find(subindex); found_entry == found_pdo->second.end())
 			{
-				throw std::runtime_error("pdo entry not found:" + std::to_string(index) + ":" + std::to_string(subindex));
+				THROW_FILE_AND_LINE("pdo entry not found:" + std::to_string(index) + ":" + std::to_string(subindex));
 			}
 			else
 			{
-				if (found_entry->second->bitSize() != bit_size)throw std::runtime_error("failed to read pdo entry:\"" + found_entry->second->name() + "\" because byte size is not correct");
+				if (found_entry->second->bitSize() != bit_size)THROW_FILE_AND_LINE("pdo entry size not equal:\"" + std::to_string(index) + ":" + std::to_string(subindex));
 				aris_ecrt_pdo_read(found_entry->second, value, static_cast<int>(bit_size));
 			}
 		}
@@ -195,17 +195,17 @@ namespace aris::control
 	{
 		if (auto found_pdo = imp_->pdo_map_.find(index); found_pdo == imp_->pdo_map_.end())
 		{
-			throw std::runtime_error("pdo not found:" + std::to_string(index));
+			THROW_FILE_AND_LINE("pdo not found:" + std::to_string(index));
 		}
 		else
 		{
 			if (auto found_entry = found_pdo->second.find(subindex); found_entry == found_pdo->second.end())
 			{
-				throw std::runtime_error("pdo entry not found:" + std::to_string(index) + ":" + std::to_string(subindex));
+				THROW_FILE_AND_LINE("pdo entry not found:" + std::to_string(index) + ":" + std::to_string(subindex));
 			}
 			else
 			{
-				if (found_entry->second->bitSize() != bit_size)throw std::runtime_error("failed to read pdo entry:\"" + found_entry->second->name() + "\" because byte size is not correct");
+				if (found_entry->second->bitSize() != bit_size)THROW_FILE_AND_LINE("pdo entry size not equal:\"" + std::to_string(index) + ":" + std::to_string(subindex));
 				aris_ecrt_pdo_write(found_entry->second, value, static_cast<int>(bit_size));
 			}
 		}
@@ -351,7 +351,7 @@ namespace aris::control
 
 				// not xml file //
 				aris::core::XmlDocument esi_doc;
-				if (esi_doc.LoadFile(p.path().string().c_str()) != 0)throw std::runtime_error((std::string("could not open file:") + p.path().string()));
+				if (esi_doc.LoadFile(p.path().string().c_str()) != 0)THROW_FILE_AND_LINE(std::string("could not open file:") + p.path().string());
 
 				// vendor info not found //
 				if ((!esi_doc.RootElement()) || (!esi_doc.RootElement()->FirstChildElement("Vendor")))continue;
@@ -430,7 +430,7 @@ namespace aris::control
 		EthercatSlave slave;
 
 		aris::core::XmlDocument esi_doc;
-		if (esi_doc.LoadFile(slave_path.string().c_str()) != 0)throw std::runtime_error((std::string("could not open file:") + slave_path.string()));
+		if (esi_doc.LoadFile(slave_path.string().c_str()) != 0)THROW_FILE_AND_LINE(std::string("could not open file:") + slave_path.string());
 		auto esi_devices = esi_doc.RootElement()->FirstChildElement("Descriptions")->FirstChildElement("Devices");
 		for (auto device = esi_devices->FirstChildElement(); device; device = device->NextSiblingElement())
 		{
@@ -487,7 +487,7 @@ namespace aris::control
 			return slave.xmlString();
 		}
 
-		throw std::runtime_error("device not found");
+		THROW_FILE_AND_LINE("device not found");
 	}
 	EthercatMaster::~EthercatMaster() = default;
 	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp){}
