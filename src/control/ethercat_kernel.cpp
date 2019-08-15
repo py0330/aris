@@ -425,7 +425,7 @@ namespace aris::control
 			static ec_domain_state_t domain1_state = {};
 			ec_domain_state_t ds = {};
 
-			ecrt_domain_state(domain1, &ds);
+			ecrt_domain_state(std::any_cast<MasterHandle&>(master->ecHandle()).domain_, &ds);
 
 			if (ds.working_counter != domain1_state.working_counter) {
 				sprintf(info, "Domain1: WC %u.\n", ds.working_counter);
