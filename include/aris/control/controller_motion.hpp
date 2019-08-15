@@ -50,12 +50,12 @@ namespace aris::control
 		auto virtual setOffsetVel(double vel)->void = 0;
 		auto virtual setOffsetToq(double toq)->void = 0;
 
-		auto virtual statusWord()->std::uint16_t = 0;
-		auto virtual modeOfDisplay()->std::uint8_t = 0;
-		auto virtual actualPos()->double = 0;
-		auto virtual actualVel()->double = 0;
-		auto virtual actualToq()->double = 0;
-		auto virtual actualCur()->double = 0;
+		auto virtual statusWord()const->std::uint16_t = 0;
+		auto virtual modeOfDisplay()const->std::uint8_t = 0;
+		auto virtual actualPos()const->double = 0;
+		auto virtual actualVel()const->double = 0;
+		auto virtual actualToq()const->double = 0;
+		auto virtual actualCur()const->double = 0;
 
 		auto virtual disable()->int = 0;
 		auto virtual enable()->int = 0;

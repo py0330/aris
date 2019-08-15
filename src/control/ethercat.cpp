@@ -172,7 +172,7 @@ namespace aris::control
 
 		this->smPool() = dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).smPool();
 	}
-	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void
+	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->void
 	{
 		if (auto found_pdo = imp_->pdo_map_.find(index); found_pdo == imp_->pdo_map_.end())
 		{
@@ -557,40 +557,40 @@ namespace aris::control
 		imp_->offset_toq_ = cur;
 		writePdo(0x60B2, 0x00, static_cast<std::int16_t>(cur));
 	}
-	auto EthercatMotion::statusWord()->std::uint16_t
+	auto EthercatMotion::statusWord()const->std::uint16_t
 	{
 		std::uint16_t status_word;
 		readPdo(0x6041, 0x00, status_word);
 		return status_word;
 	}
-	auto EthercatMotion::modeOfDisplay()->std::uint8_t
+	auto EthercatMotion::modeOfDisplay()const->std::uint8_t
 	{
 		std::uint8_t mode;
 		readPdo(0x6061, 0x00, mode);
 		return mode;
 	}
-	auto EthercatMotion::actualPos()->double
+	auto EthercatMotion::actualPos()const->double
 	{
 		std::int32_t pos_count{ 0 };
 		readPdo(0x6064, 0x00, pos_count);
 		return static_cast<double>(pos_count) / posFactor() - posOffset();
 	}
-	auto EthercatMotion::actualVel()->double
+	auto EthercatMotion::actualVel()const->double
 	{
 		std::int32_t vel_count{ 0 };
 		readPdo(0x606C, 0x00, vel_count);
 		return static_cast<double>(vel_count) / posFactor();
 	}
-	auto EthercatMotion::actualCur()->double
-	{
-		std::int16_t cur_count{ 0 };
-		readPdo(0x6078, 0x00, cur_count);
-		return static_cast<double>(cur_count);
-	}
-	auto EthercatMotion::actualToq()->double
+	auto EthercatMotion::actualToq()const->double
 	{
 		std::int16_t cur_count{ 0 };
 		readPdo(0x6077, 0x00, cur_count);
+		return static_cast<double>(cur_count);
+	}
+	auto EthercatMotion::actualCur()const->double
+	{
+		std::int16_t cur_count{ 0 };
+		readPdo(0x6078, 0x00, cur_count);
 		return static_cast<double>(cur_count);
 	}
 	auto EthercatMotion::disable()->int

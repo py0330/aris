@@ -86,8 +86,8 @@ namespace aris::control
 		auto scanPdoForCurrentSlave()->void;
 
 		template<typename ValueType>
-		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)->void { readPdo(index, subindex, &value, sizeof(ValueType) * 8); }
-		auto readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)->void;
+		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)const->void { readPdo(index, subindex, &value, sizeof(ValueType) * 8); }
+		auto readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->void;
 		template<typename ValueType>
 		auto writePdo(std::uint16_t index, std::uint8_t subindex, const ValueType &value)->void { writePdo(index, subindex, &value, sizeof(ValueType) * 8); }
 		auto writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->void;
@@ -217,17 +217,17 @@ namespace aris::control
 		// require pdo 0x60B2 //
 		auto virtual setOffsetToq(double toq)->void override;
 		// require pdo 0x6041 //
-		auto virtual statusWord()->std::uint16_t override;
+		auto virtual statusWord()const->std::uint16_t override;
 		// require pdo 0x6061 //
-		auto virtual modeOfDisplay()->std::uint8_t override;
+		auto virtual modeOfDisplay()const->std::uint8_t override;
 		// require pdo 0x6064 //
-		auto virtual actualPos()->double override;
+		auto virtual actualPos()const->double override;
 		// require pdo 0x606C //
-		auto virtual actualVel()->double override;
+		auto virtual actualVel()const->double override;
 		// require pdo 0x6077 //
-		auto virtual actualToq()->double override;
+		auto virtual actualToq()const->double override;
 		// require pdo 0x6078 //
-		auto virtual actualCur()->double override;
+		auto virtual actualCur()const->double override;
 
 		// require pdo 0x6040 0x6041 // 
 		auto virtual disable()->int override;
