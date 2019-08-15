@@ -67,7 +67,7 @@ namespace aris::server
 
 		// 打洞，读取数据 //
 		std::atomic_bool if_get_data_{ false }, if_get_data_ready_{ false };
-		const std::function<void(const ControlServer&, const aris::plan::PlanTarget *, std::any&)>* get_data_func_;
+		const std::function<void(ControlServer&, const aris::plan::PlanTarget *, std::any&)>* get_data_func_;
 		std::any *get_data_;
 
 		// callbacks //
@@ -815,7 +815,7 @@ namespace aris::server
 
 		return std::shared_ptr<aris::plan::PlanTarget>();
 	}
-	auto ControlServer::getRtData(const std::function<void(const ControlServer&, const aris::plan::PlanTarget *target, std::any&)>& get_func, std::any& data)->void
+	auto ControlServer::getRtData(const std::function<void(ControlServer&, const aris::plan::PlanTarget *target, std::any&)>& get_func, std::any& data)->void
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error(std::string("failed") + __FILE__ + std::to_string(__LINE__)));
