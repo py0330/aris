@@ -59,9 +59,6 @@ namespace aris::control
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
 
-				// sync
-				mst.sync();
-
 				// send
 				mst.send();
 
@@ -89,6 +86,9 @@ namespace aris::control
 
 				// rt timer //
 				aris_rt_task_wait_period();
+
+				// sync
+				mst.sync();
 			}
 
 			mst.imp_->is_mout_thread_running_ = false;

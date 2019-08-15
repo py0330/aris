@@ -408,9 +408,37 @@ namespace aris::control
 	}
 	auto aris_ecrt_master_sync(EthercatMaster *master, std::uint64_t ns)->void
 	{
-		ecrt_master_application_time(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_, ns);
-		ecrt_master_sync_reference_clock(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
-		ecrt_master_sync_slave_clocks(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
+		static bool is_connected{ true };
+		
+		if (true)
+		{
+			ecrt_master_application_time(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_, ns);
+			ecrt_master_sync_reference_clock(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
+			ecrt_master_sync_slave_clocks(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
+		}
+
+
+		static int cycle_counter{ 0 };
+		if (++cycle_counter % 1000 == 0)
+		{
+			char info[1024];
+			static ec_domain_state_t domain1_state = {};
+			ec_domain_state_t ds = {};
+
+			ecrt_domain_state(domain1, &ds);
+
+			if (ds.working_counter != domain1_state.working_counter) {
+				sprintf(info, "Domain1: WC %u.\n", ds.working_counter);
+				master->mout() << info << std::endl;
+			}
+
+			if (ds.wc_state != domain1_state.wc_state) {
+				sprintf(info, "Domain1: State %u.\n", ds.wc_state);
+				master->mout() << info << std::endl;
+			}
+
+			domain1_state = ds;
+		}
 	}
 	auto aris_ecrt_master_recv(EthercatMaster *master)->void
 	{

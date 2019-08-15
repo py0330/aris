@@ -154,6 +154,7 @@ namespace aris::control
 		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtPhy(id)); }
 		auto slaveAtPhy(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
 		
+		auto checkLink()->bool;
 		auto getLinkState(MasterLinkState *master_state, SlaveLinkState *slave_state)->void; // only for rt
 
 		auto ecHandle()->std::any&;
