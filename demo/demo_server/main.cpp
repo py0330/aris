@@ -141,7 +141,8 @@ int main(int argc, char *argv[])
 	*/
 
 	// interaction //
-	cs.interfacePool().add<aris::server::WebInterface>("", "5866");
+	cs.interfacePool().add<aris::server::WebInterface>("", "5866", aris::core::Socket::WEB);
+	cs.interfacePool().add<aris::server::WebInterface>("", "5867", aris::core::Socket::TCP);
 	cs.open();
 	cs.runCmdLine();
 	

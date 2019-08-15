@@ -72,7 +72,7 @@ namespace aris::server
 		auto waitForAllCollection()->void;
 		auto currentExecuteTarget()->std::shared_ptr<aris::plan::PlanTarget>;
 		auto currentCollectTarget()->std::shared_ptr<aris::plan::PlanTarget>;
-		auto getRtData(const std::function<void(ControlServer&, std::any&)>& get_func, std::any& data)->void;
+		auto getRtData(const std::function<void(const ControlServer&, const aris::plan::PlanTarget *target, std::any&)>& get_func, std::any& data)->void;
 
 		ARIS_REGISTER_TYPE(ControlServer);
 

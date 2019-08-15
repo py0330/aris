@@ -35,14 +35,13 @@ namespace aris::server
 		auto virtual open()->void override;
 		auto virtual close()->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 
-		WebInterface(const std::string &name = "interface", const std::string &port = "5866");
+		WebInterface(const std::string &name = "interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
 		ARIS_REGISTER_TYPE(WebInterface);
 		ARIS_DEFINE_BIG_FOUR(WebInterface);
 
 	private:
-		aris::core::Socket sock_;
+		aris::core::Socket *sock_;
 	};
 }
 

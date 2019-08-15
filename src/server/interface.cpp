@@ -43,131 +43,123 @@ namespace aris::server
 
 	Interface::Interface(const std::string &name) :Object(name) {}
 	
-	auto WebInterface::open()->void { sock_.startServer(); }
-	auto WebInterface::close()->void { sock_.stop(); }
-	auto WebInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
+	auto onReceivedMsg(aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
-		sock_.setPort(attributeString(xml_ele, "port", std::string()));
-		Interface::loadXml(xml_ele);
-	}
-	auto WebInterface::saveXml(aris::core::XmlElement &xml_ele)const->void
-	{
-		Interface::saveXml(xml_ele);
-		if (!sock_.port().empty())xml_ele.SetAttribute("port", sock_.port().c_str());
-	}
-	WebInterface::WebInterface(const std::string &name, const std::string &port):Interface(name)
-	{
-		sock_.setPort(port);
-		sock_.setConnectType(aris::core::Socket::WEB);
-		sock_.setOnReceivedMsg([this](aris::core::Socket *socket, aris::core::Msg &msg)->int
+		std::string msg_data = msg.toString();
+
+		LOG_INFO << "receive cmd:"
+			<< msg.header().msg_size_ << "&"
+			<< msg.header().msg_id_ << "&"
+			<< msg.header().msg_type_ << "&"
+			<< msg.header().reserved1_ << "&"
+			<< msg.header().reserved2_ << "&"
+			<< msg.header().reserved3_ << ":"
+			<< msg_data << std::endl;
+
+		try
 		{
-			std::string msg_data = msg.toString();
-
-			LOG_INFO << "receive cmd:"
-				<< msg.header().msg_size_ << "&"
-				<< msg.header().msg_id_ << "&"
-				<< msg.header().msg_type_ << "&"
-				<< msg.header().reserved1_ << "&"
-				<< msg.header().reserved2_ << "&"
-				<< msg.header().reserved3_ << ":"
-				<< msg_data << std::endl;
-
-			try
+			aris::server::ControlServer::instance().executeCmd(aris::core::Msg(msg), [socket, msg](aris::plan::PlanTarget &target)->void
 			{
-				aris::server::ControlServer::instance().executeCmd(aris::core::Msg(msg), [this, msg](aris::plan::PlanTarget &target)->void 
+				// make return msg
+				aris::core::Msg ret_msg(msg);
+
+				// only copy if it is a str
+				if (auto str = std::any_cast<std::string>(&target.ret))
 				{
-					// make return msg
-					aris::core::Msg ret_msg;
-					ret_msg.setMsgID(msg.header().msg_id_);
-					ret_msg.setType(msg.header().msg_type_);
-					ret_msg.header().reserved1_ = msg.header().reserved1_;
-					ret_msg.header().reserved2_ = msg.header().reserved2_;
-					ret_msg.header().reserved3_ = msg.header().reserved3_;
+					ret_msg.copy(*str);
+				}
+				else if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&target.ret))
+				{
+					js->push_back(std::make_pair<std::string, std::any>("return_code", target.ret_code));
+					js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(target.ret_msg)));
+					ret_msg.copy(parse_ret_value(*js));
+				}
 
-					// only copy if it is a str
-					if (auto str = std::any_cast<std::string>(&target.ret))
-					{
-						ret_msg.copy(*str);
-					}
-					else if(auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&target.ret))
-					{
-						js->push_back(std::make_pair<std::string, std::any>("return_code", target.ret_code));
-						js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(target.ret_msg)));
-						ret_msg.copy(parse_ret_value(*js));
-					}
-
-					// return back to source
-					try
-					{
-						this->sock_.sendMsg(ret_msg);
-					}
-					catch (std::exception &e)
-					{
-						std::cout << e.what() << std::endl;
-						LOG_ERROR << e.what() << std::endl;
-					}
-				});
-			}
-			catch (std::exception &e)
-			{
-				std::vector<std::pair<std::string, std::any>> ret_pair;
-				ret_pair.push_back(std::make_pair<std::string, std::any>("return_code", int(aris::plan::PlanTarget::PARSE_EXCEPTION)));
-				ret_pair.push_back(std::make_pair<std::string, std::any>("return_message", std::string(e.what())));
-				std::string ret_str = parse_ret_value(ret_pair);
-
-				std::cout << ret_str << std::endl;
-				LOG_ERROR << ret_str << std::endl;
-
+				// return back to source
 				try
 				{
-					aris::core::Msg m;
-					m.setMsgID(msg.header().msg_id_);
-					m.setType(msg.header().msg_type_);
-					m.header().reserved1_ = msg.header().reserved1_;
-					m.header().reserved2_ = msg.header().reserved2_;
-					m.header().reserved3_ = msg.header().reserved3_;
-					m.copy(ret_str);
-					socket->sendMsg(m);
+					socket->sendMsg(ret_msg);
 				}
 				catch (std::exception &e)
 				{
 					std::cout << e.what() << std::endl;
 					LOG_ERROR << e.what() << std::endl;
 				}
-			}
+			});
+		}
+		catch (std::exception &e)
+		{
+			std::vector<std::pair<std::string, std::any>> ret_pair;
+			ret_pair.push_back(std::make_pair<std::string, std::any>("return_code", int(aris::plan::PlanTarget::PARSE_EXCEPTION)));
+			ret_pair.push_back(std::make_pair<std::string, std::any>("return_message", std::string(e.what())));
+			std::string ret_str = parse_ret_value(ret_pair);
 
-			return 0;
-		});
-		sock_.setOnReceivedConnection([](aris::core::Socket *sock, const char *ip, int port)->int
-		{
-			std::cout << "socket receive connection" << std::endl;
-			LOG_INFO << "socket receive connection:\n"
-				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
-				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
-			return 0;
-		});
-		sock_.setOnLoseConnection([](aris::core::Socket *socket)
-		{
-			std::cout << "socket lose connection" << std::endl;
-			LOG_INFO << "socket lose connection" << std::endl;
-			for (;;)
+			std::cout << ret_str << std::endl;
+			LOG_ERROR << ret_str << std::endl;
+
+			try
 			{
-				try
-				{
-					socket->startServer("5866");
-					break;
-				}
-				catch (std::runtime_error &e)
-				{
-					std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-					LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
-					std::this_thread::sleep_for(std::chrono::seconds(1));
-				}
+				aris::core::Msg m = msg;
+				m.copy(ret_str);
+				socket->sendMsg(m);
 			}
-			std::cout << "socket restart successful" << std::endl;
-			LOG_INFO << "socket restart successful" << std::endl;
+			catch (std::exception &e)
+			{
+				std::cout << e.what() << std::endl;
+				LOG_ERROR << e.what() << std::endl;
+			}
+		}
 
-			return 0;
-		});
+		return 0;
+	}
+	auto onReceivedConnection(aris::core::Socket *sock, const char *ip, int port)->int
+	{
+		std::cout << "socket receive connection" << std::endl;
+		LOG_INFO << "socket receive connection:\n"
+			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
+			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
+		return 0;
+	}
+	auto onLoseConnection(aris::core::Socket *socket)->int
+	{
+		std::cout << "socket lose connection" << std::endl;
+		LOG_INFO << "socket lose connection" << std::endl;
+		for (;;)
+		{
+			try
+			{
+				socket->startServer(socket->port());
+				break;
+			}
+			catch (std::runtime_error &e)
+			{
+				std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+				LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+		}
+		std::cout << "socket restart successful" << std::endl;
+		LOG_INFO << "socket restart successful" << std::endl;
+
+		return 0;
+	}
+	auto WebInterface::open()->void { sock_->startServer(); }
+	auto WebInterface::close()->void { sock_->stop(); }
+	auto WebInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
+	{
+		Interface::loadXml(xml_ele);
+		this->sock_ = findOrInsertType<aris::core::Socket>("socket", "", "5866", aris::core::Socket::WEB);
+
+		sock_->setOnReceivedMsg(onReceivedMsg);
+		sock_->setOnReceivedConnection(onReceivedConnection);
+		sock_->setOnLoseConnection(onLoseConnection);
+	}
+	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type):Interface(name)
+	{
+		sock_ = &add<aris::core::Socket>("socket", "", port, type);
+		
+		sock_->setOnReceivedMsg(onReceivedMsg);
+		sock_->setOnReceivedConnection(onReceivedConnection);
+		sock_->setOnLoseConnection(onLoseConnection);
 	}
 }

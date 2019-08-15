@@ -30,14 +30,17 @@ int sendRequest(int argc, char *argv[])
 
 	// 连接并发送msg //
 	aris::core::Socket client("client");
+	client.setConnectType(aris::core::Socket::TCP);
     client.setRemoteIP("127.0.0.1");
-    client.setPort("5866");
+    client.setPort("5867");
+	
 
 	while (true)
 	{
 		try
 		{
             client.connect();
+			client.sendMsg(msg);
 			break;
 		}
 		catch (std::exception &)
