@@ -25,8 +25,6 @@ namespace aris::core
 		};
 
 	public:
-		static auto Type()->const std::string & { static const std::string type("Socket"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto isConnected()->bool;
@@ -53,6 +51,7 @@ namespace aris::core
 		Socket(Socket && other) = default;
 		Socket &operator=(const Socket& other) = delete;
 		Socket &operator=(Socket&& other) = default;
+		ARIS_REGISTER_TYPE(Socket)
 
 	private:
 		struct Imp;
