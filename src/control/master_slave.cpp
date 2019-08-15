@@ -53,6 +53,12 @@ namespace aris::control
 
 			while (mst.imp_->is_rt_thread_running_)
 			{
+				// rt timer //
+				aris_rt_task_wait_period();
+
+				// sync
+				mst.sync();
+				
 				// receive //
 				mst.recv();
 
@@ -83,12 +89,6 @@ namespace aris::control
 				add_time_to_stastics(time, &mst.imp_->global_stastics_);
 				if (mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
 				if (mst.imp_->is_need_change_)mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
-
-				// rt timer //
-				aris_rt_task_wait_period();
-
-				// sync
-				mst.sync();
 			}
 
 			mst.imp_->is_mout_thread_running_ = false;
