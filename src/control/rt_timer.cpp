@@ -40,8 +40,10 @@ namespace aris::control
 	}
 	auto aris_rt_task_wait_period()->int 
 	{ 
-		last_time_ += 1000000;
-		return rt_task_wait_period(NULL); 
+		unsigned long overruns_r;
+		auto ret = rt_task_wait_period(&overruns_r);
+		last_time_ += 1000000 * (ret == ETIMEDOUT ? overruns_r : 1);
+		return ret;
 	}
 	auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
 
