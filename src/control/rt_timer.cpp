@@ -14,6 +14,7 @@ extern "C"
 #include <iostream>
 
 #include "aris/control/rt_timer.hpp"
+#include "aris/core/log.hpp"
 
 namespace aris::control
 {
