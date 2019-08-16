@@ -87,14 +87,14 @@ namespace aris::dynamic
 
 	auto MatrixVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		data() = ancestor<Model>()->calculator().calculateExpression(xml_ele.GetText());
 		Variable::loadXml(xml_ele);
+		data() = ancestor<Model>()->calculator().calculateExpression(xml_ele.GetText());
 		ancestor<Model>()->calculator().addVariable(name(), data());
 	}
 	auto StringVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
+		Variable::loadXml(xml_ele);
 		data() = std::string(xml_ele.GetText());
 		ancestor<Model>()->calculator().addVariable(name(), data());
-		Variable::loadXml(xml_ele);
 	}
 }
