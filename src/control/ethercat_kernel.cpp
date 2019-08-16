@@ -406,43 +406,27 @@ namespace aris::control
 		ecrt_master_deactivate(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
 		ecrt_release_master(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
 	}
-	auto aris_ecrt_master_sync(EthercatMaster *master, std::uint64_t ns)->void
+	auto aris_ecrt_master_sync(EthercatMaster *mst, std::uint64_t ns)->void
 	{
-		ecrt_master_application_time(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_, ns);
-		ecrt_master_sync_reference_clock(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
-		ecrt_master_sync_slave_clocks(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
+		ecrt_master_application_time(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, ns);
+		ecrt_master_sync_reference_clock(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
+		ecrt_master_sync_slave_clocks(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
+	}
+	auto aris_ecrt_master_recv(EthercatMaster *mst)->void
+	{
+		ecrt_master_receive(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
+		ecrt_domain_process(std::any_cast<MasterHandle&>(mst->ecHandle()).domain_);
+	}
+	auto aris_ecrt_master_send(EthercatMaster *mst)->void
+	{
+		ec_master_state_t ms;
+		ecrt_master_state(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, &ms);
 
-		static int cycle_counter{ 0 };
-		if (++cycle_counter % 1000 == 0)
+		if (ms.link_up)
 		{
-			char info[1024];
-			static ec_domain_state_t domain1_state = {};
-			ec_domain_state_t ds = {};
-
-			ecrt_domain_state(std::any_cast<MasterHandle&>(master->ecHandle()).domain_, &ds);
-
-			if (ds.working_counter != domain1_state.working_counter) {
-				sprintf(info, "Domain1: WC %u.\n", ds.working_counter);
-				master->mout() << info << std::endl;
-			}
-
-			if (ds.wc_state != domain1_state.wc_state) {
-				sprintf(info, "Domain1: State %u.\n", ds.wc_state);
-				master->mout() << info << std::endl;
-			}
-
-			domain1_state = ds;
+			ecrt_domain_queue(std::any_cast<MasterHandle&>(mst->ecHandle()).domain_);
+			ecrt_master_send(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
 		}
-	}
-	auto aris_ecrt_master_recv(EthercatMaster *master)->void
-	{
-		ecrt_master_receive(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
-		ecrt_domain_process(std::any_cast<MasterHandle&>(master->ecHandle()).domain_);
-	}
-	auto aris_ecrt_master_send(EthercatMaster *master)->void
-	{
-		ecrt_domain_queue(std::any_cast<MasterHandle&>(master->ecHandle()).domain_);
-		ecrt_master_send(std::any_cast<MasterHandle&>(master->ecHandle()).ec_master_);
 	}
 
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *ms, EthercatMaster::SlaveLinkState *ss)->void 
