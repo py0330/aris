@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "aris/core/log.hpp"
 #include "aris/core/object.hpp"
 
 using namespace std;
@@ -52,10 +53,10 @@ namespace aris::core
 	};
 	auto Object::attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)->bool
 	{
-		std::string error = "failed to get bool attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
+		std::string error = "invalid bool attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\":";
 
 		if (!xml_ele.Attribute(attribute_name.c_str()))
-			throw std::runtime_error(error + "this attribute is not found in xml file");
+			THROW_FILE_LINE(error + "no such attribute");
 
 		if (xml_ele.Attribute(attribute_name.c_str(), "true"))
 		{
@@ -67,7 +68,7 @@ namespace aris::core
 		}
 		else
 		{
-			throw std::runtime_error(error + "bool attribute must be \"true\" or \"false\", but the attribute text is \"" + xml_ele.Attribute(attribute_name.c_str()) + "\"");
+			THROW_FILE_LINE(error + "invalid content:\"" + xml_ele.Attribute(attribute_name.c_str()) + "\"");
 		}
 	}
 	auto Object::attributeBool(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, bool default_value)->bool
@@ -79,7 +80,7 @@ namespace aris::core
 		std::string error = "failed to get int64 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 		if (!xml_ele.Attribute(attribute_name.c_str()))
-			throw std::runtime_error(error + "this attribute is not found in xml file");
+			THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		try
 		{
@@ -87,7 +88,7 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 	}
 	auto Object::attributeInt64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::int64_t default_value)->std::int64_t
@@ -98,7 +99,7 @@ namespace aris::core
 	{
 		std::string error = "failed to get int32 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
-		if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+		if (!xml_ele.Attribute(attribute_name.c_str()))	THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		long long value_ll;
 		try
@@ -107,11 +108,11 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 
 		if (value_ll > std::numeric_limits<std::int32_t>::max() || value_ll < std::numeric_limits<std::int32_t>::min())
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
 
 		return static_cast<std::int32_t>(value_ll);
 	}
@@ -123,7 +124,7 @@ namespace aris::core
 	{
 		std::string error = "failed to get int16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
-		if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+		if (!xml_ele.Attribute(attribute_name.c_str()))	THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		long long value_ll;
 		try
@@ -132,11 +133,11 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 
 		if (value_ll > std::numeric_limits<std::int16_t>::max() || value_ll < std::numeric_limits<std::int16_t>::min())
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
 
 		return static_cast<std::int16_t>(value_ll);
 	}
@@ -148,7 +149,7 @@ namespace aris::core
 	{
 		std::string error = "failed to get int16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
-		if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+		if (!xml_ele.Attribute(attribute_name.c_str()))	THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		long long value_ll;
 		try
@@ -157,11 +158,11 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 
 		if (value_ll > std::numeric_limits<std::int8_t>::max() || value_ll < std::numeric_limits<std::int8_t>::min())
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
 
 		return static_cast<std::int8_t>(value_ll);
 	}
@@ -174,7 +175,7 @@ namespace aris::core
 		std::string error = "failed to get uint64 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 		if (!xml_ele.Attribute(attribute_name.c_str()))
-			throw std::runtime_error(error + "this attribute is not found in xml file");
+			THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		try
 		{
@@ -182,7 +183,7 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 	}
 	auto Object::attributeUint64(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, std::uint64_t default_value)->std::uint64_t
@@ -193,7 +194,7 @@ namespace aris::core
 	{
 		std::string error = "failed to get uint32 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
-		if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+		if (!xml_ele.Attribute(attribute_name.c_str()))	THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		unsigned long long value_ull;
 		try
@@ -202,11 +203,11 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 
 		if (value_ull > std::numeric_limits<std::uint32_t>::max())
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
 
 		return static_cast<std::uint32_t>(value_ull);
 	}
@@ -218,7 +219,7 @@ namespace aris::core
 	{
 		std::string error = "failed to get uint16 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
-		if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+		if (!xml_ele.Attribute(attribute_name.c_str()))	THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		unsigned long long value_ull;
 		try
@@ -227,11 +228,11 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 
 		if (value_ull > std::numeric_limits<std::uint16_t>::max())
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
 
 		return static_cast<std::uint16_t>(value_ull);
 	}
@@ -243,7 +244,7 @@ namespace aris::core
 	{
 		std::string error = "failed to get uint8 attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
-		if (!xml_ele.Attribute(attribute_name.c_str()))	throw std::runtime_error(error + "this attribute is not found in xml file");
+		if (!xml_ele.Attribute(attribute_name.c_str()))	THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		unsigned long long value_ull;
 		try
@@ -252,11 +253,11 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 
 		if (value_ull > std::numeric_limits<std::uint8_t>::max())
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid: the value is out of range");
 
 		return static_cast<std::uint8_t>(value_ull);
 	}
@@ -269,7 +270,7 @@ namespace aris::core
 		std::string error = "failed to get double attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 		if (!xml_ele.Attribute(attribute_name.c_str()))
-			throw std::runtime_error(error + "this attribute is not found in xml file");
+			THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		try
 		{
@@ -277,7 +278,7 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 	}
 	auto Object::attributeFloat(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, float default_value)->float
@@ -289,7 +290,7 @@ namespace aris::core
 		std::string error = "failed to get double attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 		if (!xml_ele.Attribute(attribute_name.c_str()))
-			throw std::runtime_error(error + "this attribute is not found in xml file");
+			THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		try
 		{
@@ -297,7 +298,7 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
+			THROW_FILE_LINE(error + "attribute text \"" + xml_ele.Attribute(attribute_name.c_str()) + "\" is invalid:" + e.what());
 		}
 	}
 	auto Object::attributeDouble(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, double default_value)->double
@@ -309,7 +310,7 @@ namespace aris::core
 		std::string error = "failed to get string attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 		if (!xml_ele.Attribute(attribute_name.c_str()))
-			throw std::runtime_error(error + "this attribute is not found in xml file");
+			THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		return xml_ele.Attribute(attribute_name.c_str());
 	}
@@ -322,10 +323,10 @@ namespace aris::core
 		std::string error = "failed to get char attribute \"" + attribute_name + "\" in element \"" + xml_ele.Name() + "\", because ";
 
 		if (!xml_ele.Attribute(attribute_name.c_str()))
-			throw std::runtime_error(error + "this attribute is not found in xml file");
+			THROW_FILE_LINE(error + "this attribute is not found in xml file");
 
 		if (xml_ele.Attribute(attribute_name.c_str())[1] != 0)
-			throw std::runtime_error(error + "this attribute string length is not 1");
+			THROW_FILE_LINE(error + "this attribute string length is not 1");
 
 		return xml_ele.Attribute(attribute_name.c_str())[0];
 	}
@@ -349,7 +350,7 @@ namespace aris::core
 	}
 	auto Object::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		if (type() != xml_ele.Name()) throw std::runtime_error("failed in Object::loadXml : you can't use a \"" + type() + "\" to load a \"" + xml_ele.Name() + "\" xml element");
+		if (type() != xml_ele.Name()) THROW_FILE_LINE("failed in Object::loadXml : you can't use a \"" + type() + "\" to load a \"" + xml_ele.Name() + "\" xml element");
 
 		// set name and default child type //
 		imp_->name_ = xml_ele.Attribute("name") ? xml_ele.Attribute("name") : "";
@@ -361,8 +362,8 @@ namespace aris::core
 			std::string type = ele->Name();
 
 			auto info = imp_->getTypeInfo(type);
-			if (info == nullptr)throw std::runtime_error("unrecognized type \"" + type + "\" in Object::loadXml");
-			if (info->default_construct_func == nullptr) throw std::runtime_error("no default ctor in Object::loadXml");
+			if (info == nullptr)THROW_FILE_LINE("unrecognized type \"" + type + "\" in Object::loadXml");
+			if (info->default_construct_func == nullptr) THROW_FILE_LINE("no default ctor in Object::loadXml");
 
 			children().push_back_ptr(info->default_construct_func());
 			children().back().imp_->father_ = this;
@@ -382,13 +383,13 @@ namespace aris::core
 	{
 		aris::core::XmlDocument xmlDoc;
 
-		if (xmlDoc.LoadFile(filename.c_str()) != 0)throw std::runtime_error((std::string("could not open file:") + std::string(filename)));
+		if (xmlDoc.LoadFile(filename.c_str()) != 0)THROW_FILE_LINE((std::string("could not open file:") + std::string(filename)));
 
 		loadXmlDoc(xmlDoc);
 	}
 	auto Object::loadXmlDoc(const aris::core::XmlDocument &xml_doc)->void 
 	{ 
-		if (!xml_doc.RootElement())throw std::runtime_error("empty xml doc");
+		if (!xml_doc.RootElement())THROW_FILE_LINE("empty xml doc");
 		loadXml(*xml_doc.RootElement());
 	}
 	auto Object::saveXmlDoc(aris::core::XmlDocument &xml_doc)const->void
@@ -446,8 +447,8 @@ namespace aris::core
 		for (auto&child : other.children())
 		{
 			auto info = child.imp_->getTypeInfo(child.type());
-			if (info == nullptr)throw std::runtime_error("unrecognized type \"" + child.type() + "\" in Object(const Object &other)");
-			if (info->copy_construct_func == nullptr)throw std::runtime_error("type \"" + child.type() + "\" does not has copy function in Object(const Object &other)");
+			if (info == nullptr)THROW_FILE_LINE("unrecognized type \"" + child.type() + "\" in Object(const Object &other)");
+			if (info->copy_construct_func == nullptr)THROW_FILE_LINE("type \"" + child.type() + "\" does not has copy function in Object(const Object &other)");
 
 			children().push_back_ptr(info->copy_construct_func(child));
 			children().back().imp_->father_ = this;
@@ -473,21 +474,21 @@ namespace aris::core
 			auto info1 = other.children().at(i).imp_->getTypeInfo(other.children().at(i).type());
 			auto info2 = (i >= children().size() || children().at(i).type() != other.children().at(i).type()) ? imp_->getTypeInfo(other.children().at(i).type()) : children().at(i).imp_->getTypeInfo(other.children().at(i).type());
 			auto info = info1 ? info1 : info2;
-			if (info == nullptr)throw std::runtime_error("unrecognized type \"" + other.children().at(i).type() + "\" in Object::operator=(const Object &other)");
+			if (info == nullptr)THROW_FILE_LINE("unrecognized type \"" + other.children().at(i).type() + "\" in Object::operator=(const Object &other)");
 
 			if (i >= children().size())
 			{
-				if (info->copy_construct_func == nullptr)throw std::runtime_error("type \"" + other.children().at(i).type() + "\" does not has copy construct function in Object::operator=(const Object &other)");
+				if (info->copy_construct_func == nullptr)THROW_FILE_LINE("type \"" + other.children().at(i).type() + "\" does not has copy construct function in Object::operator=(const Object &other)");
 				children().push_back_ptr(info->copy_construct_func(other.children().at(i)));
 			}
 			else if (children().at(i).type() != other.children().at(i).type())
 			{
-				if (info->copy_construct_func == nullptr)throw std::runtime_error("type \"" + other.children().at(i).type() + "\" does not has copy construct function in Object::operator=(const Object &other)");
+				if (info->copy_construct_func == nullptr)THROW_FILE_LINE("type \"" + other.children().at(i).type() + "\" does not has copy construct function in Object::operator=(const Object &other)");
 				children().container_.at(i).reset(info->copy_construct_func(other.children().at(i)));
 			}
 			else
 			{
-				if (info->copy_assign_func == nullptr)throw std::runtime_error("type \"" + other.children().at(i).type() + "\" does not has copy assign function in Object::operator=(const Object &other)");
+				if (info->copy_assign_func == nullptr)THROW_FILE_LINE("type \"" + other.children().at(i).type() + "\" does not has copy assign function in Object::operator=(const Object &other)");
 				info->copy_assign_func(other.children().at(i), children().at(i));
 			}
 
@@ -505,21 +506,21 @@ namespace aris::core
 		for (std::size_t i = 0; i < other.children().size(); ++i)
 		{
 			auto info = other.children().at(i).imp_->getTypeInfo(other.children().at(i).type());
-			if (info == nullptr)throw std::runtime_error("unrecognized type \"" + other.children().at(i).type() + "\" in Object::operator=(Object &&other)");
+			if (info == nullptr)THROW_FILE_LINE("unrecognized type \"" + other.children().at(i).type() + "\" in Object::operator=(Object &&other)");
 
 			if (i >= children().size())
 			{
-				if (info->move_construct_func == nullptr)throw std::runtime_error("type \"" + other.children().at(i).type() + "\" does not has move construct function in Object::operator=(Object &&other)");
+				if (info->move_construct_func == nullptr)THROW_FILE_LINE("type \"" + other.children().at(i).type() + "\" does not has move construct function in Object::operator=(Object &&other)");
 				children().push_back_ptr(info->move_construct_func(std::move(other.children().at(i))));
 			}
 			else if (children().at(i).type() != other.children().at(i).type())
 			{
-				if (info->move_construct_func == nullptr)throw std::runtime_error("type \"" + other.children().at(i).type() + "\" does not has move construct function in Object::operator=(Object &&other)");
+				if (info->move_construct_func == nullptr)THROW_FILE_LINE("type \"" + other.children().at(i).type() + "\" does not has move construct function in Object::operator=(Object &&other)");
 				children().container_.at(i).reset(info->move_construct_func(std::move(other.children().at(i))));
 			}
 			else
 			{
-				if (info->copy_assign_func == nullptr)throw std::runtime_error("type \"" + other.children().at(i).type() + "\" does not has move assign function in Object::operator=(Object &&other)");
+				if (info->copy_assign_func == nullptr)THROW_FILE_LINE("type \"" + other.children().at(i).type() + "\" does not has move assign function in Object::operator=(Object &&other)");
 				info->move_assign_func(std::move(other.children().at(i)), children().at(i));
 			}
 

@@ -8,8 +8,6 @@
 #include <filesystem>
 #include <exception>
 
-#include <aris/core/object.hpp>
-
 #define LOG_DEBUG aris::core::log() \
 	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "DEBUG" << "|" \
 	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
@@ -55,7 +53,7 @@
 
 #define LOG_AND_THROW(error) LOG_ERROR << error.what() << std::endl, throw error
 
-#define THROW_FILE_AND_LINE(error) throw std::runtime_error(std::string(__FILE__) + "_" + std::to_string(__LINE__)+ ":" + error)
+#define THROW_FILE_LINE(error) throw std::runtime_error(std::string(__FILE__) + "_" + std::to_string(__LINE__)+ ":" + error)
 
 namespace aris::core
 {

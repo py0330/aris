@@ -610,7 +610,7 @@ namespace aris::core
 		else if (type == "WEB_RAW")imp_->type_ = WEB_RAW;
 		else if (type == "UDP")imp_->type_ = UDP;
 		else if (type == "UDP_RAW")imp_->type_ = UDP_RAW;
-		else throw std::runtime_error("unknown connect type");
+		else THROW_FILE_LINE("unknown connect type");
 
 		Object::loadXml(xml_ele);
 	}
@@ -679,14 +679,14 @@ namespace aris::core
 		std::unique_lock<std::recursive_mutex> lck(imp_->state_mutex_);
 
 		if (!port.empty())setPort(port);
-		if (this->port().empty())throw std::runtime_error("Socket can't Start as server, because it has empty port\n");
+		if (this->port().empty())THROW_FILE_LINE("Socket can't Start as server, because it has empty port\n");
 
 		switch (imp_->state_)
 		{
 		case IDLE:
 			break;
 		default:
-			throw(std::runtime_error("Socket can't Start as server, because it is not at idle state\n"));
+			THROW_FILE_LINE("Socket can't Start as server, because it is not at idle state\n");
 		}
 
 		imp_->is_server_ = true;
@@ -708,7 +708,7 @@ namespace aris::core
 		///////////////////////////////////////////////////////////////////////////////////////////////
 
 		// 服务器端开始建立socket描述符 //
-		if (static_cast<int>(imp_->lisn_socket_ = socket(AF_INET, sock_type, 0)) == -1)throw(std::runtime_error("Socket can't Start as server, because it can't socket\n"));
+		if (static_cast<int>(imp_->lisn_socket_ = socket(AF_INET, sock_type, 0)) == -1)THROW_FILE_LINE("Socket can't Start as server, because it can't socket\n");
 
 		// linux 下设置keep alive
 #ifdef UNIX
@@ -716,7 +716,7 @@ namespace aris::core
 		{
 			int tcp_timeout = 10000; //10 seconds before aborting a write()
 			if (setsockopt(imp_->lisn_socket_, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) < 0)
-				THROW_FILE_AND_LINE("socket setsockopt TCP_USER_TIMEOUT FAILED");
+				THROW_FILE_LINE("socket setsockopt TCP_USER_TIMEOUT FAILED");
 
 			// Set the option active //
 			int keepAlive = 1; // 开启keepalive属性
@@ -725,20 +725,20 @@ namespace aris::core
 			int keepCount = 5; // 探测尝试的次数.如果第1次探测包就收到响应了,则后2次的不再发.
 
 			if (setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)) < 0)
-				THROW_FILE_AND_LINE("socket setsockopt SO_KEEPALIVE FAILED");
+				THROW_FILE_LINE("socket setsockopt SO_KEEPALIVE FAILED");
 			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0)
-				THROW_FILE_AND_LINE("socket setsockopt TCP_KEEPIDLE FAILED");
+				THROW_FILE_LINE("socket setsockopt TCP_KEEPIDLE FAILED");
 			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)) < 0)
-				THROW_FILE_AND_LINE("socket setsockopt TCP_KEEPINTVL FAILED");
+				THROW_FILE_LINE("socket setsockopt TCP_KEEPINTVL FAILED");
 			if (setsockopt(imp_->lisn_socket_, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) < 0)
-				THROW_FILE_AND_LINE("socket setsockopt TCP_KEEPCNT FAILED");
+				THROW_FILE_LINE("socket setsockopt TCP_KEEPCNT FAILED");
 		}
 #endif		
 
 
 		// 设置socketopt选项,使得地址在程序结束后立即可用 //
 		int nvalue = 1;
-		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0)throw std::runtime_error("setsockopt failed: SO_REUSEADDR \n");
+		if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nvalue), sizeof(int)) < 0)THROW_FILE_LINE("setsockopt failed: SO_REUSEADDR \n");
 
 		// 服务器端填充server_addr_结构,并且bind //
 		memset(&imp_->server_addr_, 0, sizeof(struct sockaddr_in));
@@ -750,13 +750,13 @@ namespace aris::core
 #ifdef WIN32
 			int err = WSAGetLastError();
 #endif
-			throw(std::runtime_error("Socket can't Start as server, because it can't bind\n"));
+			THROW_FILE_LINE("Socket can't Start as server, because it can't bind\n");
 		}
 		
 		if (connectType() == TCP || connectType() == WEB || connectType() == WEB_RAW)
 		{
 			// 监听lisn_socket_描述符 //
-			if (listen(imp_->lisn_socket_, 5) == -1)throw(std::runtime_error("Socket can't Start as server, because it can't listen\n"));
+			if (listen(imp_->lisn_socket_, 5) == -1)THROW_FILE_LINE("Socket can't Start as server, because it can't listen\n");
 
 			// 启动等待连接的线程 //
 			std::promise<void> accept_thread_ready;
@@ -770,13 +770,13 @@ namespace aris::core
 			// 因为UDP没法shutdown，所以用非阻塞模式 //
 #ifdef WIN32
 			DWORD read_timeout = 10;
-			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)throw std::runtime_error("setsockopt failed: SO_RCVTIMEO \n");
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
 #endif
 #ifdef UNIX
 			struct timeval read_timeout;
 			read_timeout.tv_sec = 0;
 			read_timeout.tv_usec = 10000;
-			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)throw std::runtime_error("setsockopt failed: SO_RCVTIMEO \n");
+			if (::setsockopt(imp_->lisn_socket_, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&read_timeout), sizeof(read_timeout)) < 0)THROW_FILE_LINE("setsockopt failed: SO_RCVTIMEO \n");
 #endif
 
 			imp_->recv_socket_ = imp_->lisn_socket_;
@@ -795,15 +795,15 @@ namespace aris::core
 
 		if (!remote_ip.empty())setRemoteIP(remote_ip);
 		if (!port.empty())setPort(port);
-		if (remoteIP().empty())throw std::runtime_error("Socket can't connect, because it empty ip address\n");
-		if (this->port().empty())throw std::runtime_error("Socket can't connect, because it empty port\n");
+		if (remoteIP().empty())THROW_FILE_LINE("Socket can't connect, because it empty ip address\n");
+		if (this->port().empty())THROW_FILE_LINE("Socket can't connect, because it empty port\n");
 
 		switch (imp_->state_)
 		{
 		case IDLE:
 			break;
 		default:
-			throw std::runtime_error("Socket can't connect, because it is busy now, please close it\n");
+			THROW_FILE_LINE("Socket can't connect, because it is busy now, please close it\n");
 		}
 
 		imp_->is_server_ = false;
@@ -825,7 +825,7 @@ namespace aris::core
 		//////////////////////////////////////////////////////////////////////////////
 
 		// 服务器端开始建立socket描述符 //
-		if ((imp_->recv_socket_ = socket(AF_INET, sock_type, 0)) < 0)throw std::runtime_error("Socket can't connect, because can't socket\n");
+		if ((imp_->recv_socket_ = socket(AF_INET, sock_type, 0)) < 0)THROW_FILE_LINE("Socket can't connect, because can't socket\n");
 
 		// 客户端填充server_addr_结构 //
 		memset(&imp_->server_addr_, 0, sizeof(imp_->server_addr_));
@@ -839,7 +839,7 @@ namespace aris::core
 		{
 			// 连接 //
 			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
-				throw std::runtime_error("Socket can't connect, because can't connect\n");
+				THROW_FILE_LINE("Socket can't connect, because can't connect\n");
 
 			imp_->state_ = Socket::WORKING;
 
@@ -855,7 +855,7 @@ namespace aris::core
 		case WEB_RAW:
 		{
 			if (::connect(imp_->recv_socket_, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
-				throw std::runtime_error("Socket can't connect, because can't connect\n");
+				THROW_FILE_LINE("Socket can't connect, because can't connect\n");
 
 			char handshake_text[]{
 				"GET / HTTP/1.1\r\n"
@@ -867,16 +867,16 @@ namespace aris::core
 				"Sec-WebSocket-Key: w4v7O6xFTi36lq3RNcgctw==\r\n\r\n" };
 
 			if(send(imp_->recv_socket_, handshake_text, std::strlen(handshake_text), 0) == -1)
-				throw std::runtime_error("Socket can't connect, web sock error 1\n");
+				THROW_FILE_LINE("Socket can't connect, web sock error 1\n");
 
 			char recv_data[1024]{ 0 };
 			int res = recv(imp_->recv_socket_, recv_data, 1024, 0);
-			if(res <= 0)throw std::runtime_error("Socket can't connect, web sock error 2\n");
+			if(res <= 0)THROW_FILE_LINE("Socket can't connect, web sock error 2\n");
 
 			auto header_map = make_header_map(recv_data);
 
 			////////////   这里应该check更多，tbd //
-			if(header_map.find("Sec-WebSocket-Accept") == header_map.end())throw std::runtime_error("Socket can't connect, web sock error 3\n");
+			if(header_map.find("Sec-WebSocket-Accept") == header_map.end())THROW_FILE_LINE("Socket can't connect, web sock error 3\n");
 
 			imp_->state_ = Socket::WORKING;
 
@@ -910,7 +910,7 @@ namespace aris::core
 			{
 			case TCP:
 				if (send(imp_->recv_socket_, reinterpret_cast<const char *>(&data.header()), data.size() + sizeof(MsgHeader), 0) == -1)
-					throw std::runtime_error("Socket failed sending data, because network failed\n");
+					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 				break;
@@ -920,7 +920,7 @@ namespace aris::core
 					? pack_data_server(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader))
 					: pack_data_client(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader));
 				if (send(imp_->recv_socket_, packed_data.data(), packed_data.size(), 0) == -1)
-					throw std::runtime_error("Socket failed sending data, because network failed\n");
+					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 				break;
@@ -933,18 +933,18 @@ namespace aris::core
 				imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
 				
 				if (sendto(imp_->recv_socket_, reinterpret_cast<const char *>(&data.header()), data.size() + sizeof(MsgHeader), 0, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
-					throw std::runtime_error("Socket failed sending data, because network failed\n");
+					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 
 				break;
 			}
 			default:
-				throw std::runtime_error("Socket failed send msg, because Socket is not at right MODE\n");
+				THROW_FILE_LINE("Socket failed send msg, because Socket is not at right MODE\n");
 			}
 		}
 		default:
-			throw std::runtime_error("Socket failed sending data, because Socket is not at right STATE\n");
+			THROW_FILE_LINE("Socket failed sending data, because Socket is not at right STATE\n");
 		}
 	}
 	auto Socket::sendRawData(const char *data, int size)->void
@@ -965,7 +965,7 @@ namespace aris::core
 			{
 				auto packed_data = imp_->is_server_ ? pack_data_server(data, size) : pack_data_client(data, size);
 				if (send(imp_->recv_socket_, packed_data.data(), packed_data.size(), 0) == -1)
-					throw std::runtime_error("Socket failed sending data, because network failed\n");
+					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 				break;
@@ -978,18 +978,18 @@ namespace aris::core
 				imp_->server_addr_.sin_port = htons(std::stoi(this->port()));
 
 				if (sendto(imp_->recv_socket_, data, size, 0, (const struct sockaddr *)&imp_->server_addr_, sizeof(imp_->server_addr_)) == -1)
-					throw std::runtime_error("Socket failed sending data, because network failed\n");
+					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
 
 				break;
 			}
 			default:
-				throw std::runtime_error("Socket failed send raw data, because Socket is not at right MODE\n");
+				THROW_FILE_LINE("Socket failed send raw data, because Socket is not at right MODE\n");
 			}
 		}
 		default:
-			throw std::runtime_error("Socket failed send raw data, because Socket is not at right STATE\n");
+			THROW_FILE_LINE("Socket failed send raw data, because Socket is not at right STATE\n");
 		}
 	}
 	auto Socket::isConnected()->bool
@@ -1062,7 +1062,7 @@ namespace aris::core
 	{
 		// 启动服务器 //
 #ifdef WIN32 
-		if (WSAStartup(0x0101, &imp_->wsa_data_) != 0)throw(std::runtime_error("Socket can't Start as server, because it can't WSAstartup\n"));
+		if (WSAStartup(0x0101, &imp_->wsa_data_) != 0)THROW_FILE_LINE("Socket can't Start as server, because it can't WSAstartup\n");
 #endif
 		
 		setRemoteIP(remote_ip);

@@ -240,7 +240,8 @@ namespace aris::server
 				{
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
-						&& (cm.targetPos() > cm.maxPos()))
+						&& (cm.targetPos() > cm.maxPos())
+						&& (cm.targetPos() > ld.p))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MAX;
 						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
@@ -249,7 +250,8 @@ namespace aris::server
 
 					// check pos min //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MIN)
-						&& (cm.targetPos() < cm.minPos()))
+						&& (cm.targetPos() < cm.minPos())
+						&& (cm.targetPos() < ld.p))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_BEYOND_MIN;
 						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());

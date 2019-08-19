@@ -306,7 +306,7 @@ namespace aris::plan
 				}
 				else
 				{
-					THROW_FILE_AND_LINE("");
+					THROW_FILE_LINE("");
 				}
 			}
 			else if (cmd_param.first == "acc")
@@ -323,7 +323,7 @@ namespace aris::plan
 				}
 				else
 				{
-					THROW_FILE_AND_LINE("");
+					THROW_FILE_LINE("");
 				}
 
 			}
@@ -341,7 +341,7 @@ namespace aris::plan
 				}
 				else
 				{
-					THROW_FILE_AND_LINE("");
+					THROW_FILE_LINE("");
 				}
 			}
 			else if (cmd_param.first == "dec")
@@ -358,7 +358,7 @@ namespace aris::plan
 				}
 				else
 				{
-					THROW_FILE_AND_LINE("");
+					THROW_FILE_LINE("");
 				}
 			}
 		}
@@ -371,16 +371,16 @@ namespace aris::plan
 			if (active.active_motor[i])
 			{
 				if (param.axis_pos_vec[i] > c->motionPool()[i].maxPos() || param.axis_pos_vec[i] < c->motionPool()[i].minPos())
-					THROW_FILE_AND_LINE("input pos beyond range");
+					THROW_FILE_LINE("input pos beyond range");
 
 				if (param.axis_vel_vec[i] > c->motionPool()[i].maxVel() || param.axis_vel_vec[i] <= 0.0)
-					THROW_FILE_AND_LINE("input vel beyond range");
+					THROW_FILE_LINE("input vel beyond range");
 
 				if (param.axis_acc_vec[i] > c->motionPool()[i].maxAcc() || param.axis_acc_vec[i] <= 0.0)
-					THROW_FILE_AND_LINE("input acc beyond range");
+					THROW_FILE_LINE("input acc beyond range");
 
 				if (param.axis_dec_vec[i] > c->motionPool()[i].maxAcc() || param.axis_dec_vec[i] <= 0.0)
-					THROW_FILE_AND_LINE("input dec beyond range");
+					THROW_FILE_LINE("input dec beyond range");
 			}
 		}
 	}
@@ -516,7 +516,7 @@ namespace aris::plan
 			if (param.active_motor[i])
 			{
 				std::int8_t method = std::stoi(params.at(std::string("method")));
-				if (method < 1 || method > 35) throw std::runtime_error("invalid home method");
+				if (method < 1 || method > 35) THROW_FILE_LINE("invalid home method");
 
 				param.offset = std::stod(params.at(std::string("offset")));
 				std::int32_t offset = std::stoi(params.at(std::string("offset")));
@@ -529,23 +529,23 @@ namespace aris::plan
 				cm.writeSdo(0x6098, 0x00, method);
 				std::int8_t method_read;
 				cm.readSdo(0x6098, 0x00, method_read);
-				if (method_read != method)throw std::runtime_error("home sdo write failed method");
+				if (method_read != method)THROW_FILE_LINE("home sdo write failed method");
 				cm.writeSdo(0x607C, 0x00, offset);
 				std::int32_t offset_read;
 				cm.readSdo(0x607C, 0x00, offset_read);
-				if (offset_read != offset)throw std::runtime_error("home sdo write failed offset");
+				if (offset_read != offset)THROW_FILE_LINE("home sdo write failed offset");
 				cm.writeSdo(0x6099, 0x01, high_speed);
 				std::int32_t high_speed_read;
 				cm.readSdo(0x6099, 0x01, high_speed_read);
-				if (high_speed_read != high_speed)throw std::runtime_error("home sdo write failed high_speed");
+				if (high_speed_read != high_speed)THROW_FILE_LINE("home sdo write failed high_speed");
 				cm.writeSdo(0x6099, 0x02, low_speed);
 				std::int32_t low_speed_read;
 				cm.readSdo(0x6099, 0x02, low_speed_read);
-				if (low_speed_read != low_speed)throw std::runtime_error("home sdo write failed low_speed");
+				if (low_speed_read != low_speed)THROW_FILE_LINE("home sdo write failed low_speed");
 				cm.writeSdo(0x609A, 0x00, acc);
 				std::int32_t acc_read;
 				cm.readSdo(0x609A, 0x00, acc_read);
-				if (acc_read != acc)throw std::runtime_error("home sdo write failed acc");
+				if (acc_read != acc)THROW_FILE_LINE("home sdo write failed acc");
 				
 			}
 		}
@@ -615,7 +615,7 @@ namespace aris::plan
 		param.limit_time = std::stoi(params.at("limit_time"));
 		param.mode = std::stoi(params.at("mode"));
 
-		if (param.mode > 10 && param.mode < 8)throw std::runtime_error("invalid mode, aris now only support mode 8,9,10");
+		if (param.mode > 10 && param.mode < 8)THROW_FILE_LINE("invalid mode, aris now only support mode 8,9,10");
 
 		target.param = param;
 		for (auto &option : target.mot_options) option |= aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN;
@@ -949,14 +949,14 @@ namespace aris::plan
 		else if (pos_unit_found->second == "m")pos_unit = 1.0;
 		else if (pos_unit_found->second == "mm")pos_unit = 0.001;
 		else if (pos_unit_found->second == "cm")pos_unit = 0.01;
-		else THROW_FILE_AND_LINE("");
+		else THROW_FILE_LINE("");
 
 		for (auto cmd_param : params)
 		{
 			if (cmd_param.first == "pq")
 			{
 				auto pq_mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pq_mat.size() != 7)THROW_FILE_AND_LINE("");
+				if (pq_mat.size() != 7)THROW_FILE_LINE("");
 				aris::dynamic::s_vc(7, pq_mat.data(), pq_out);
 				aris::dynamic::s_nv(3, pos_unit, pq_out);
 				return true;
@@ -964,7 +964,7 @@ namespace aris::plan
 			else if (cmd_param.first == "pm")
 			{
 				auto pm_mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pm_mat.size() != 16)THROW_FILE_AND_LINE("");
+				if (pm_mat.size() != 16)THROW_FILE_LINE("");
 				aris::dynamic::s_pm2pq(pm_mat.data(), pq_out);
 				aris::dynamic::s_nv(3, pos_unit, pq_out);
 				return true;
@@ -976,16 +976,16 @@ namespace aris::plan
 				if (ori_unit_found == params.end()) ori_unit = 1.0;
 				else if (ori_unit_found->second == "rad")ori_unit = 1.0;
 				else if (ori_unit_found->second == "degree")ori_unit = PI / 180.0;
-				else THROW_FILE_AND_LINE("");
+				else THROW_FILE_LINE("");
 
 				std::string eul_type;
 				auto eul_type_found = params.find("eul_type");
 				if (eul_type_found == params.end()) eul_type = "321";
 				else if (check_eul_validity(eul_type_found->second.data()))	eul_type = eul_type_found->second;
-				else THROW_FILE_AND_LINE("");
+				else THROW_FILE_LINE("");
 
 				auto pe_mat = target.model->calculator().calculateExpression(cmd_param.second);
-				if (pe_mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (pe_mat.size() != 6)THROW_FILE_LINE("");
 				aris::dynamic::s_nv(3, ori_unit, pe_mat.data() + 3);
 				aris::dynamic::s_pe2pq(pe_mat.data(), pq_out, eul_type.data());
 				aris::dynamic::s_nv(3, pos_unit, pq_out);
@@ -993,7 +993,7 @@ namespace aris::plan
 			}
 		}
 
-		THROW_FILE_AND_LINE("No pose input");
+		THROW_FILE_LINE("No pose input");
 	}
 	struct MoveJParam
 	{
@@ -1027,14 +1027,14 @@ namespace aris::plan
 				auto acc_mat = target.model->calculator().calculateExpression(cmd_param.second);
 				if (acc_mat.size() == 1)std::fill(mvj_param.joint_acc.begin(), mvj_param.joint_acc.end(), acc_mat.toDouble());
 				else if (acc_mat.size() == target.model->motionPool().size()) std::copy(acc_mat.begin(), acc_mat.end(), mvj_param.joint_acc.begin());
-				else THROW_FILE_AND_LINE("");
+				else THROW_FILE_LINE("");
 
 				for (int i = 0; i < 6; ++i)mvj_param.joint_acc[i] *= target.controller->motionPool()[i].maxAcc();
 
 				// check value validity //
 				for (Size i = 0; i< std::min(target.model->motionPool().size(), c->motionPool().size()); ++i)
 					if (mvj_param.joint_acc[i] <= 0 || mvj_param.joint_acc[i] > c->motionPool()[i].maxAcc())
-						THROW_FILE_AND_LINE("");
+						THROW_FILE_LINE("");
 			}
 			else if (cmd_param.first == "joint_vel")
 			{
@@ -1044,14 +1044,14 @@ namespace aris::plan
 				auto vel_mat = target.model->calculator().calculateExpression(cmd_param.second);
 				if (vel_mat.size() == 1)std::fill(mvj_param.joint_vel.begin(), mvj_param.joint_vel.end(), vel_mat.toDouble());
 				else if (vel_mat.size() == target.model->motionPool().size()) std::copy(vel_mat.begin(), vel_mat.end(), mvj_param.joint_vel.begin());
-				else THROW_FILE_AND_LINE("");
+				else THROW_FILE_LINE("");
 
 				for (int i = 0; i < 6; ++i)mvj_param.joint_vel[i] *= target.controller->motionPool()[i].maxVel();
 
 				// check value validity //
 				for (Size i = 0; i< std::min(target.model->motionPool().size(), c->motionPool().size()); ++i)
 					if (mvj_param.joint_vel[i] <= 0 || mvj_param.joint_vel[i] > c->motionPool()[i].maxVel())
-						THROW_FILE_AND_LINE("");
+						THROW_FILE_LINE("");
 			}
 			else if (cmd_param.first == "joint_dec")
 			{
@@ -1061,14 +1061,14 @@ namespace aris::plan
 				auto dec_mat = target.model->calculator().calculateExpression(cmd_param.second);
 				if (dec_mat.size() == 1)std::fill(mvj_param.joint_dec.begin(), mvj_param.joint_dec.end(), dec_mat.toDouble());
 				else if (dec_mat.size() == target.model->motionPool().size()) std::copy(dec_mat.begin(), dec_mat.end(), mvj_param.joint_dec.begin());
-				else THROW_FILE_AND_LINE("");
+				else THROW_FILE_LINE("");
 
 				for (int i = 0; i < 6; ++i) mvj_param.joint_dec[i] *= target.controller->motionPool()[i].maxAcc();
 
 				// check value validity //
 				for (Size i = 0; i< std::min(target.model->motionPool().size(), c->motionPool().size()); ++i)
 					if (mvj_param.joint_dec[i] <= 0 || mvj_param.joint_dec[i] > c->motionPool()[i].maxAcc())
-						THROW_FILE_AND_LINE("");
+						THROW_FILE_LINE("");
 			}
 		}
 
@@ -1158,7 +1158,7 @@ namespace aris::plan
 
 		MoveLParam mvl_param;
 		mvl_param.ee_pq.resize(7);
-		if (!find_pq(params, target, mvl_param.ee_pq.data()))THROW_FILE_AND_LINE("");
+		if (!find_pq(params, target, mvl_param.ee_pq.data()))THROW_FILE_LINE("");
 
 		for (auto cmd_param : params)
 		{
@@ -1307,34 +1307,34 @@ namespace aris::plan
 		{
 			if (cmd_param.first == "start")
 			{
-				if (Imp::is_running_.load())throw std::runtime_error("auto mode already started");
+				if (Imp::is_running_.load())THROW_FILE_LINE("auto mode already started");
 
 				imp_->eul_type = params.at("eul_type");
-				if (!check_eul_validity(imp_->eul_type))THROW_FILE_AND_LINE("");
+				if (!check_eul_validity(imp_->eul_type))THROW_FILE_LINE("");
 
 				auto mat = target.model->calculator().calculateExpression(params.at("max_pe"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), imp_->max_pe_);
 
 				mat = target.model->calculator().calculateExpression(params.at("min_pe"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), imp_->min_pe_);
 
 				std::array<double, 24> pvade;
 				mat = target.model->calculator().calculateExpression(params.at("init_pe"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 0);
 
 				mat = target.model->calculator().calculateExpression(params.at("init_ve"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 6);
 
 				mat = target.model->calculator().calculateExpression(params.at("init_ae"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 12);
 
 				mat = target.model->calculator().calculateExpression(params.at("init_de"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 18);
 
 				Imp::pvade_.store(pvade);
@@ -1345,30 +1345,30 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "stop")
 			{
-				if (!Imp::is_running_.load())throw std::runtime_error("auto mode not started, when stop");
+				if (!Imp::is_running_.load())THROW_FILE_LINE("auto mode not started, when stop");
 
 				Imp::is_running_.store(false);
 				target.option |= aris::plan::Plan::WAIT_FOR_COLLECTION;
 			}
 			else if (cmd_param.first == "pe")
 			{
-				if (!Imp::is_running_.load())throw std::runtime_error("auto mode not started, when pe");
+				if (!Imp::is_running_.load())THROW_FILE_LINE("auto mode not started, when pe");
 
 				std::array<double, 24> pvade;
 				auto mat = target.model->calculator().calculateExpression(params.at("pe"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 0);
 
 				mat = target.model->calculator().calculateExpression(params.at("ve"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 6);
 
 				mat = target.model->calculator().calculateExpression(params.at("ae"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 12);
 
 				mat = target.model->calculator().calculateExpression(params.at("de"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 18);
 
 				for (int i = 0; i < 6; ++i)
@@ -1498,24 +1498,24 @@ namespace aris::plan
 		{
 			if (cmd_param.first == "start")
 			{
-				if (Imp::is_running_.load())throw std::runtime_error("auto mode already started");
+				if (Imp::is_running_.load())THROW_FILE_LINE("auto mode already started");
 
 				imp_->eul_type = params.at("eul_type");
-				if (!check_eul_validity(imp_->eul_type))THROW_FILE_AND_LINE("");
+				if (!check_eul_validity(imp_->eul_type))THROW_FILE_LINE("");
 
 				imp_->increase_count = std::stoi(params.at("increase_count"));
-				if (imp_->increase_count < 0 || imp_->increase_count>1e5)THROW_FILE_AND_LINE("");
+				if (imp_->increase_count < 0 || imp_->increase_count>1e5)THROW_FILE_LINE("");
 
 				auto mat = target.model->calculator().calculateExpression(params.at("ve"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), imp_->ve_);
 
 				mat = target.model->calculator().calculateExpression(params.at("ae"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), imp_->ae_);
 
 				mat = target.model->calculator().calculateExpression(params.at("de"));
-				if (mat.size() != 6)THROW_FILE_AND_LINE("");
+				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), imp_->de_);
 
 				Imp::is_increase_.store(std::array<int, 6>{0, 0, 0, 0, 0, 0});
@@ -1525,14 +1525,14 @@ namespace aris::plan
 			}
 			else if (cmd_param.first == "stop")
 			{
-				if (!Imp::is_running_.load())throw std::runtime_error("manual mode not started, when stop");
+				if (!Imp::is_running_.load())THROW_FILE_LINE("manual mode not started, when stop");
 
 				Imp::is_running_.store(false);
 				target.option |= WAIT_FOR_COLLECTION;
 			}
 			else if (cmd_param.first == "x")
 			{
-				if (!Imp::is_running_.load())throw std::runtime_error("manual mode not started, when pe");
+				if (!Imp::is_running_.load())THROW_FILE_LINE("manual mode not started, when pe");
 
 				std::array<int, 6> is_increase;
 				is_increase[0] = std::stoi(params.at("x"));
@@ -1674,7 +1674,7 @@ namespace aris::plan
 	auto SetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{		
 		// remove all symbols "{" "}"
-		if (target.server->running())THROW_FILE_AND_LINE("server is not running,can't save xml");
+		if (target.server->running())THROW_FILE_LINE("server is not running,can't save xml");
 		auto xml_str = params.at("xml").substr(1, params.at("xml").size() - 2);
 		// 这一句要小心，此时 this 已被销毁，后面不能再调用this了 //
 		target.server->loadXmlStr(xml_str);
@@ -1800,7 +1800,7 @@ namespace aris::plan
 		
 		auto x_mat = target.model->calculator().calculateExpression(params.at("x"));
 		auto y_mat = target.model->calculator().calculateExpression(params.at("y"));
-		if (x_mat.size() != y_mat.size())throw std::runtime_error("x and y size not correct");
+		if (x_mat.size() != y_mat.size())THROW_FILE_LINE("x and y size not correct");
 
 		param.t.resize(x_mat.size() + 6);
 		param.t[0] = -3;

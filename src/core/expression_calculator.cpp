@@ -137,7 +137,7 @@ namespace aris::core
 	{
 		if ((beginRow + subMat.m() > m()) || (beginCol + subMat.n() > n()))
 		{
-			throw std::logic_error("Function CopySubMatrixTo must have subMat smaller than self matrix");
+			THROW_FILE_LINE("Function CopySubMatrixTo must have subMat smaller than self matrix");
 		}
 
 		for (Size i = 0; i < subMat.m(); ++i)
@@ -206,7 +206,7 @@ namespace aris::core
 		}
 		else
 		{
-			throw std::runtime_error("Can't plus matrices, the dimensions are not equal");
+			THROW_FILE_LINE("Can't plus matrices, the dimensions are not equal");
 		}
 		return ret;
 	}
@@ -246,7 +246,7 @@ namespace aris::core
 		}
 		else
 		{
-			throw std::runtime_error("Can't minus matrices, the dimensions are not equal");
+			THROW_FILE_LINE("Can't minus matrices, the dimensions are not equal");
 		}
 
 		return ret;
@@ -304,7 +304,7 @@ namespace aris::core
 		}
 		else
 		{
-			throw std::runtime_error("Can't multiply matrices, the dimensions are not equal");
+			THROW_FILE_LINE("Can't multiply matrices, the dimensions are not equal");
 		}
 
 		return ret;
@@ -333,7 +333,7 @@ namespace aris::core
 		}
 		else
 		{
-			throw std::runtime_error("Right now, divide operator of matrices is not added");
+			THROW_FILE_LINE("Right now, divide operator of matrices is not added");
 		}
 
 		return ret;
@@ -438,7 +438,7 @@ namespace aris::core
 				}
 
 			}
-			if (token.type == Token::NO) throw std::runtime_error("unrecognized symbol \"" + token.word + "\"");
+			if (token.type == Token::NO) THROW_FILE_LINE("unrecognized symbol \"" + token.word + "\"");
 			tokens.push_back(token);
 			continue;
 		}
@@ -449,7 +449,7 @@ namespace aris::core
 	{
 		if (beginToken >= endToken)
 		{
-			throw std::runtime_error("invalid expression");
+			THROW_FILE_LINE("invalid expression");
 		}
 
 		auto i = beginToken;
@@ -487,7 +487,7 @@ namespace aris::core
 					value = CaculateValueInFunction(i, endToken);
 					break;
 				default:
-					throw std::runtime_error("expression not valid");
+					THROW_FILE_LINE("expression not valid");
 				}
 			}
 			else//如果有当前值,但没有操作符
@@ -507,12 +507,12 @@ namespace aris::core
 					}
 					else
 					{
-						throw std::runtime_error("expression not valid");
+						THROW_FILE_LINE("expression not valid");
 					}
 				}
 				else
 				{
-					throw std::runtime_error("expression not valid: lack operator");
+					THROW_FILE_LINE("expression not valid: lack operator");
 				}
 			}
 		}
@@ -539,17 +539,17 @@ namespace aris::core
 	Matrix Calculator::CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
 	{
 		auto beginPar = i + 1;
-		if (i + 1 >= maxEndToken) throw std::runtime_error("invalid expression");
-		if (beginPar->type != Token::PARENTHESIS_L)throw std::runtime_error("function must be followed by \"(\"");
+		if (i + 1 >= maxEndToken) THROW_FILE_LINE("invalid expression");
+		if (beginPar->type != Token::PARENTHESIS_L)THROW_FILE_LINE("function must be followed by \"(\"");
 
 		auto endPar = FindNextOutsideToken(beginPar + 1, maxEndToken, Token::PARENTHESIS_R);
 		auto matrices = GetMatrices(beginPar + 1, endPar);
 
-		if (matrices.size() != 1)throw std::runtime_error("function \"" + i->word + "\" + do not has invalid param type");
+		if (matrices.size() != 1)THROW_FILE_LINE("function \"" + i->word + "\" + do not has invalid param type");
 
 		auto params = matrices.front();
 		auto f = i->fun->funs.find(params.size());
-		if (f == i->fun->funs.end())throw std::runtime_error("function \"" + i->word + "\" + do not has invalid param num");
+		if (f == i->fun->funs.end())THROW_FILE_LINE("function \"" + i->word + "\" + do not has invalid param num");
 
 		i = endPar + 1;
 		return f->second(params);
@@ -664,12 +664,12 @@ namespace aris::core
 	{
 		if (function_map_.find(name) != function_map_.end())
 		{
-			throw std::runtime_error("function \"" + name + "already exists, can't add variable");
+			THROW_FILE_LINE("function \"" + name + "already exists, can't add variable");
 		}
 
 		if (variable_map_.find(name) != variable_map_.end())
 		{
-			throw std::runtime_error("variable \"" + name + "already exists, can't add variable");
+			THROW_FILE_LINE("variable \"" + name + "already exists, can't add variable");
 		}
 		variable_map_.insert(make_pair(name, value));
 	}
@@ -677,7 +677,7 @@ namespace aris::core
 	{
 		if (string_map_.find(name) != string_map_.end())
 		{
-			throw std::runtime_error("variable \"" + name + "already exists, can't add string variable");
+			THROW_FILE_LINE("variable \"" + name + "already exists, can't add string variable");
 		}
 		string_map_.insert(make_pair(name, value));
 	}
@@ -685,7 +685,7 @@ namespace aris::core
 	{
 		if (variable_map_.find(name) != variable_map_.end())
 		{
-			throw std::runtime_error("variable \"" + name + "already exists, can't add function");
+			THROW_FILE_LINE("variable \"" + name + "already exists, can't add function");
 		}
 
 		function_map_[name].AddOverloadFun(n, f);

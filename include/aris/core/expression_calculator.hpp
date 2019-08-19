@@ -8,6 +8,7 @@
 #include <list>
 
 #include "aris/core/basic_type.hpp"
+#include "aris/core/log.hpp"
 
 namespace aris::core
 {
@@ -76,7 +77,7 @@ namespace aris::core
 		for (const auto &mat : matrices)
 		{
 			if (mat.size() == 0)continue;
-			if ((ret.n() != 0) && (ret.n() != mat.n()))throw std::runtime_error("input do not have valid size");
+			if ((ret.n() != 0) && (ret.n() != mat.n()))THROW_FILE_LINE("input do not have valid size");
 
 			ret.m_ += mat.m();
 			ret.n_ = mat.n();
@@ -109,7 +110,7 @@ namespace aris::core
 		for (const auto &mat : matrices)
 		{
 			if (mat.size() == 0)continue;
-			if ((ret.m() != 0) && (ret.m() != mat.m()))throw std::runtime_error("input do not have valid size");
+			if ((ret.m() != 0) && (ret.m() != mat.m()))THROW_FILE_LINE("input do not have valid size");
 
 			ret.m_ = mat.m();
 			ret.n_ += mat.n();

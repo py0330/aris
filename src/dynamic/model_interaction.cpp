@@ -26,26 +26,26 @@ namespace aris::dynamic
 	auto Interaction::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		if (ancestor<Model>()->findByName("part_pool") == ancestor<Model>()->children().end())
-			throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
+			THROW_FILE_LINE("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
 		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*ancestor<Model>()->findByName("part_pool"));
 
-		if (!xml_ele.Attribute("prt_m"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"prt_m\"");
+		if (!xml_ele.Attribute("prt_m"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"prt_m\"");
 		auto prt_m = part_pool.findByName(xml_ele.Attribute("prt_m"));
-		if (prt_m == part_pool.end())	throw std::runtime_error(std::string("can't find part m for element \"") + this->name() + "\"");
+		if (prt_m == part_pool.end())	THROW_FILE_LINE(std::string("can't find part m for element \"") + this->name() + "\"");
 
-		if (!xml_ele.Attribute("mak_i"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"mak_i\"");
+		if (!xml_ele.Attribute("mak_i"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"mak_i\"");
 		auto mak_i = prt_m->markerPool().findByName(xml_ele.Attribute("mak_i"));
 		if (mak_i == prt_m->markerPool().end())
-			throw std::runtime_error(std::string("can't find marker i for element \"") + this->name() + "\"");
+			THROW_FILE_LINE(std::string("can't find marker i for element \"") + this->name() + "\"");
 		makI_ = &(*mak_i);
 
-		if (!xml_ele.Attribute("prt_n"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"prt_n\"");
+		if (!xml_ele.Attribute("prt_n"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"prt_n\"");
 		auto prt_n = part_pool.findByName(xml_ele.Attribute("prt_n"));
-		if (prt_n == part_pool.end())throw std::runtime_error(std::string("can't find part n for element \"") + this->name() + "\"");
+		if (prt_n == part_pool.end())THROW_FILE_LINE(std::string("can't find part n for element \"") + this->name() + "\"");
 
-		if (!xml_ele.Attribute("mak_j"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"mak_j\"");
+		if (!xml_ele.Attribute("mak_j"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"mak_j\"");
 		auto mak_j = prt_n->markerPool().findByName(xml_ele.Attribute("mak_j"));
-		if (mak_j == prt_n->markerPool().end())throw std::runtime_error(std::string("can't find marker j for element \"") + this->name() + "\"");
+		if (mak_j == prt_n->markerPool().end())THROW_FILE_LINE(std::string("can't find marker j for element \"") + this->name() + "\"");
 		makJ_ = &(*mak_j);
 
 		DynEle::loadXml(xml_ele);

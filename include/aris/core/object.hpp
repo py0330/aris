@@ -6,6 +6,7 @@
 #include <functional>
 
 #include <aris/core/tinyxml2.h>
+#include <aris/core/log.hpp>
 
 namespace aris::core
 {
@@ -492,7 +493,7 @@ namespace aris::core
 			template<typename ChildType>
 			static auto copy_constructor_(const Object &other)->Object*
 			{
-				if (!dynamic_cast<const ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
+				if (!dynamic_cast<const ChildType *>(&other))THROW_FILE_LINE("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
 				return new ChildType(dynamic_cast<const ChildType &>(other));
 			}
 			template<typename ChildType>
@@ -509,7 +510,7 @@ namespace aris::core
 			template<typename ChildType>
 			static auto move_constructor_(Object &&other)->Object*
 			{
-				if (!dynamic_cast<ChildType *>(&other))throw std::runtime_error("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
+				if (!dynamic_cast<ChildType *>(&other))THROW_FILE_LINE("can't create type \"" + ChildType::Type() + "\" because object is not the same type");
 				return new ChildType(dynamic_cast<ChildType &&>(other));
 			}
 			template<typename ChildType>
@@ -526,8 +527,8 @@ namespace aris::core
 			template<typename ChildType>
 			static auto copy_assign_(const Object &from_object, Object &to_object)->Object&
 			{
-				if (!dynamic_cast<const ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
-				if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+				if (!dynamic_cast<const ChildType *>(&from_object))THROW_FILE_LINE("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+				if (!dynamic_cast<ChildType *>(&to_object))THROW_FILE_LINE("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
 				return dynamic_cast<ChildType &>(to_object) = dynamic_cast<const ChildType &>(from_object);
 			}
 			template<typename ChildType>
@@ -544,8 +545,8 @@ namespace aris::core
 			template<typename ChildType>
 			static auto move_assign_(Object &&from_object, Object &to_object)->Object&
 			{
-				if (!dynamic_cast<ChildType *>(&from_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
-				if (!dynamic_cast<ChildType *>(&to_object))throw std::runtime_error("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+				if (!dynamic_cast<ChildType *>(&from_object))THROW_FILE_LINE("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
+				if (!dynamic_cast<ChildType *>(&to_object))THROW_FILE_LINE("can't assign type \"" + ChildType::Type() + "\" because object is not the same type");
 				return dynamic_cast<ChildType &>(to_object) = dynamic_cast<ChildType &&>(from_object);
 			}
 			template<typename ChildType>

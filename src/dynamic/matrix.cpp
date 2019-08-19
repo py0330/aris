@@ -10,6 +10,7 @@
 #include <array>
 #include <list>
 
+#include "aris/core/log.hpp"
 #include "aris/dynamic/matrix.hpp"
 
 namespace aris::dynamic
@@ -20,7 +21,7 @@ namespace aris::dynamic
 
 		file.open(FileName);
 
-		if (!file) throw std::logic_error("file not exist");
+		if (!file) THROW_FILE_LINE("file not exist");
 
 
 		Size i = 0;
@@ -38,7 +39,7 @@ namespace aris::dynamic
 		std::fstream file;
 
 		file.open(filename);
-		if (!file) throw std::logic_error("file not exist");
+		if (!file) THROW_FILE_LINE("file not exist");
 
 		Size i = 0;
 		while (!file.eof())

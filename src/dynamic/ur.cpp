@@ -605,7 +605,7 @@ namespace aris::dynamic
 	}
 	auto Ur5InverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void
 	{
-		if (root_of_0_to_7 < 0 || root_of_0_to_7 > 7) throw std::runtime_error("root must be 0 to 7");
+		if (root_of_0_to_7 < 0 || root_of_0_to_7 > 7) THROW_FILE_LINE("root must be 0 to 7");
 		which_root_ = root_of_0_to_7;
 	}
 	auto Ur5InverseKinematicSolver::kinPos()->int { return UrInverseKinematic(*ancestor<Model>(), UniversalSolver::imp_->subsys_pool_.at(0), which_root_); };

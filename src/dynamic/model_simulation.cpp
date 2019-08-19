@@ -834,13 +834,13 @@ namespace aris::dynamic
 	{
 		// 以下寻找对应的part //
 		if (ancestor<Model>()->findByName("part_pool") == ancestor<Model>()->children().end())
-			throw std::runtime_error("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
+			THROW_FILE_LINE("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
 
 		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*ancestor<Model>()->findByName("part_pool"));
 
-		if (!xml_ele.Attribute("part"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"part\"");
+		if (!xml_ele.Attribute("part"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"part\"");
 		auto p = part_pool.findByName(xml_ele.Attribute("part"));
-		if (p == part_pool.end())	throw std::runtime_error(std::string("can't find part for PartResult \"") + this->name() + "\"");
+		if (p == part_pool.end())	THROW_FILE_LINE(std::string("can't find part for PartResult \"") + this->name() + "\"");
 
 		imp_->part_ = &*p;
 
@@ -911,7 +911,7 @@ namespace aris::dynamic
 	auto SimResult::ConstraintResult::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		// 以下寻找对应的constraint //
-		if (!xml_ele.Attribute("constraint"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"constraint\"");
+		if (!xml_ele.Attribute("constraint"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"constraint\"");
 		if (!imp_->constraint_ && ancestor<Model>()->findByName("joint_pool") != ancestor<Model>()->children().end())
 		{
 			auto &pool = static_cast<aris::core::ObjectPool<Joint, Element>&>(*ancestor<Model>()->findByName("joint_pool"));
@@ -930,7 +930,7 @@ namespace aris::dynamic
 			auto c = pool.findByName(xml_ele.Attribute("constraint"));
 			if (c != pool.end())imp_->constraint_ = &*c;
 		}
-		if (!imp_->constraint_)throw std::runtime_error(std::string("can't find constraint for ConstraintResult \"") + this->name() + "\"");
+		if (!imp_->constraint_)THROW_FILE_LINE(std::string("can't find constraint for ConstraintResult \"") + this->name() + "\"");
 
 		// 以下读取数据 //
 		std::stringstream ss(std::string(xml_ele.GetText()));
@@ -1116,13 +1116,13 @@ namespace aris::dynamic
 		Simulator::loadXml(xml_ele);
 
 		if (ancestor<Model>()->findByName("solver_pool") == ancestor<Model>()->children().end())
-			throw std::runtime_error("you must insert \"solver_pool\" node before insert " + type() + " \"" + name() + "\"");
+			THROW_FILE_LINE("you must insert \"solver_pool\" node before insert " + type() + " \"" + name() + "\"");
 
 		auto &solver_pool = static_cast<aris::core::ObjectPool<Solver, Element>&>(*ancestor<Model>()->findByName("solver_pool"));
 
-		if (!xml_ele.Attribute("solver"))throw std::runtime_error(std::string("xml element \"") + name() + "\" must have Attribute \"solver\"");
+		if (!xml_ele.Attribute("solver"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"solver\"");
 		auto s = solver_pool.findByName(xml_ele.Attribute("solver"));
-		if (s == solver_pool.end())	throw std::runtime_error(std::string("can't find solver for element \"") + this->name() + "\"");
+		if (s == solver_pool.end())	THROW_FILE_LINE(std::string("can't find solver for element \"") + this->name() + "\"");
 
 		imp_->solver_ = &*s;
 	}
@@ -1160,7 +1160,7 @@ namespace aris::dynamic
 		std::vector<std::vector<std::array<double, 6>>> gm_akima(ancestor<Model>()->generalMotionPool().size(), std::vector<std::array<double, 6>>(result.size() + 1));
 		if (pos == -1)
 		{
-			if (result.size() < 4)throw std::runtime_error("failed to AdamsSimulator::saveAdams: because result size is smaller than 4\n");
+			if (result.size() < 4)THROW_FILE_LINE("failed to AdamsSimulator::saveAdams: because result size is smaller than 4\n");
 
 			for (Size i(-1); ++i < result.size() + 1;)
 			{
@@ -1348,7 +1348,7 @@ namespace aris::dynamic
 			else if (dynamic_cast<PrismaticJoint*>(&joint))type = "translational";
 			else if (dynamic_cast<UniversalJoint*>(&joint))type = "universal";
 			else if (dynamic_cast<SphericalJoint*>(&joint))type = "spherical";
-			else throw std::runtime_error("unrecognized joint type:" + joint.type());
+			else THROW_FILE_LINE("unrecognized joint type:" + joint.type());
 
 			file << "constraint create joint " << type << "  &\r\n"
 				<< "    joint_name = ." << ancestor<Model>()->name() << "." << joint.name() << "  &\r\n"
@@ -1548,7 +1548,7 @@ namespace aris::dynamic
 				}
 				else
 				{
-					throw std::runtime_error("unrecognized geometry type:" + geometry.type());
+					THROW_FILE_LINE("unrecognized geometry type:" + geometry.type());
 				}
 
 			}

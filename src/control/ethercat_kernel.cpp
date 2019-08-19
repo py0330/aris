@@ -132,10 +132,10 @@ namespace aris::control
 	auto aris_ecrt_scan(EthercatMaster *master)->int
 	{
 		ec_master_t* ec_master;
-		if (!(ec_master = ecrt_request_master(0))) THROW_FILE_AND_LINE("master request failed!");
+		if (!(ec_master = ecrt_request_master(0))) THROW_FILE_LINE("master request failed!");
 
 		ec_master_info_t ec_master_info;
-		if (ecrt_master(ec_master, &ec_master_info)) THROW_FILE_AND_LINE("master info failed!");
+		if (ecrt_master(ec_master, &ec_master_info)) THROW_FILE_LINE("master info failed!");
 
 		std::vector<ec_slave_info_t> ec_slave_info_vec(ec_master_info.slave_count);
 		std::vector<std::vector<ec_sync_info_t> > ec_sync_info_vec_vec(ec_master_info.slave_count);
@@ -143,25 +143,25 @@ namespace aris::control
 		std::vector<std::vector<std::vector<std::vector<ec_pdo_entry_info_t> > > > ec_pdo_entry_info_vec_vec_vec_vec(ec_master_info.slave_count);
 		for (uint16_t sla_pos = 0; sla_pos < ec_master_info.slave_count; ++sla_pos)
 		{
-			if (ecrt_master_get_slave(ec_master, sla_pos, ec_slave_info_vec.data() + sla_pos))THROW_FILE_AND_LINE("slave info failed!");
+			if (ecrt_master_get_slave(ec_master, sla_pos, ec_slave_info_vec.data() + sla_pos))THROW_FILE_LINE("slave info failed!");
 
 			ec_sync_info_vec_vec[sla_pos].resize(ec_slave_info_vec[sla_pos].sync_count);
 			ec_pdo_info_vec_vec_vec[sla_pos].resize(ec_slave_info_vec[sla_pos].sync_count);
 			ec_pdo_entry_info_vec_vec_vec_vec[sla_pos].resize(ec_slave_info_vec[sla_pos].sync_count);
 			for (uint8_t sync_pos = 0; sync_pos < ec_slave_info_vec[sla_pos].sync_count; ++sync_pos)
 			{
-				if (ecrt_master_get_sync_manager(ec_master, sla_pos, sync_pos, ec_sync_info_vec_vec[sla_pos].data() + sync_pos))THROW_FILE_AND_LINE("sync info failed!");
+				if (ecrt_master_get_sync_manager(ec_master, sla_pos, sync_pos, ec_sync_info_vec_vec[sla_pos].data() + sync_pos))THROW_FILE_LINE("sync info failed!");
 
 				ec_pdo_info_vec_vec_vec[sla_pos][sync_pos].resize(ec_sync_info_vec_vec[sla_pos][sync_pos].n_pdos);
 				ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos].resize(ec_sync_info_vec_vec[sla_pos][sync_pos].n_pdos);
 				for (unsigned int pdo_pos = 0; pdo_pos < ec_sync_info_vec_vec[sla_pos][sync_pos].n_pdos; ++pdo_pos)
 				{
-					if (ecrt_master_get_pdo(ec_master, sla_pos, sync_pos, pdo_pos, ec_pdo_info_vec_vec_vec[sla_pos][sync_pos].data() + pdo_pos))THROW_FILE_AND_LINE("pdo info failed!");
+					if (ecrt_master_get_pdo(ec_master, sla_pos, sync_pos, pdo_pos, ec_pdo_info_vec_vec_vec[sla_pos][sync_pos].data() + pdo_pos))THROW_FILE_LINE("pdo info failed!");
 					ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos].resize(ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos].n_entries);
 
 					for (unsigned int entry_pos = 0; entry_pos < ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos].n_entries; ++entry_pos)
 					{
-						if (ecrt_master_get_pdo_entry(ec_master, sla_pos, sync_pos, pdo_pos, entry_pos, ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos].data() + entry_pos))THROW_FILE_AND_LINE("entry info failed!");
+						if (ecrt_master_get_pdo_entry(ec_master, sla_pos, sync_pos, pdo_pos, entry_pos, ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos].data() + entry_pos))THROW_FILE_LINE("entry info failed!");
 					}
 				}
 			}
@@ -217,16 +217,16 @@ namespace aris::control
 	{
 		// check if product code and vendor id is paired
 		aris::control::EthercatMaster local_mst;
-		if (aris_ecrt_scan(&local_mst))THROW_FILE_AND_LINE("scan slaves failed!");
+		if (aris_ecrt_scan(&local_mst))THROW_FILE_LINE("scan slaves failed!");
 		for (auto &slave : master->slavePool())
 		{
 			if (auto ec_slave = dynamic_cast<aris::control::EthercatSlave*>(&slave))
 			{
-				if(slave.phyId() > local_mst.slavePool().size()) THROW_FILE_AND_LINE("wrong physical id!");
+				if(slave.phyId() > local_mst.slavePool().size()) THROW_FILE_LINE("wrong physical id!");
 				
 				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool().at(slave.phyId()));
-				if (ec_slave->productCode() != compared_slave->productCode()) THROW_FILE_AND_LINE(":wrong product code of slave " + std::to_string(ec_slave->id()));
-				if (ec_slave->vendorID() != compared_slave->vendorID()) THROW_FILE_AND_LINE(":wrong vendor id of slave " + std::to_string(ec_slave->id()));
+				if (ec_slave->productCode() != compared_slave->productCode()) THROW_FILE_LINE(":wrong product code of slave " + std::to_string(ec_slave->id()));
+				if (ec_slave->vendorID() != compared_slave->vendorID()) THROW_FILE_LINE(":wrong vendor id of slave " + std::to_string(ec_slave->id()));
 			}
 		}
 		// check finished
@@ -237,10 +237,10 @@ namespace aris::control
 			MasterHandle m_handle{ nullptr, nullptr, nullptr };
 
 			// request master //
-			if (!(m_handle.ec_master_ = ecrt_request_master(0)))THROW_FILE_AND_LINE("master request failed!");
+			if (!(m_handle.ec_master_ = ecrt_request_master(0)))THROW_FILE_LINE("master request failed!");
 
 			// create domain //
-			if (!(m_handle.domain_ = ecrt_master_create_domain(m_handle.ec_master_)))THROW_FILE_AND_LINE("failed to create domain");
+			if (!(m_handle.domain_ = ecrt_master_create_domain(m_handle.ec_master_)))THROW_FILE_LINE("failed to create domain");
 
 			// make slaves //
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
@@ -280,10 +280,10 @@ namespace aris::control
 				SlaveHandle s_handle;
 
 				// Get the slave configuration 
-				if (!(s_handle.ec_slave_config_ = ecrt_master_slave_config(m_handle.ec_master_, 0x00, slave.phyId(), slave.vendorID(), slave.productCode()))) { THROW_FILE_AND_LINE("failed to slave config"); }
+				if (!(s_handle.ec_slave_config_ = ecrt_master_slave_config(m_handle.ec_master_, 0x00, slave.phyId(), slave.vendorID(), slave.productCode()))) { THROW_FILE_LINE("failed to slave config"); }
 
 				// Configure the slave's PDOs and sync masters
-				if (ecrt_slave_config_pdos(s_handle.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))THROW_FILE_AND_LINE("failed to slave config pdos");
+				if (ecrt_slave_config_pdos(s_handle.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))THROW_FILE_LINE("failed to slave config pdos");
 
 				// Configure the slave's distributed clock
 				if (slave.dcAssignActivate())ecrt_slave_config_dc(s_handle.ec_slave_config_, slave.dcAssignActivate(), 1000000, 4400000, 0, 0);
@@ -293,11 +293,11 @@ namespace aris::control
 
 			// configure domain
 			ec_pdo_entry_reg_vec.push_back(ec_pdo_entry_reg_t{});
-			if (ecrt_domain_reg_pdo_entry_list(m_handle.domain_, ec_pdo_entry_reg_vec.data()))THROW_FILE_AND_LINE("failed domain_reg_pdo_entry");
+			if (ecrt_domain_reg_pdo_entry_list(m_handle.domain_, ec_pdo_entry_reg_vec.data()))THROW_FILE_LINE("failed domain_reg_pdo_entry");
 
 			// activate master
-			if (ecrt_master_activate(m_handle.ec_master_)) { THROW_FILE_AND_LINE("failed activate master, perhaps pdo map is wrong"); }
-			if (!(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))THROW_FILE_AND_LINE("failed ecrt_domain_data");
+			if (ecrt_master_activate(m_handle.ec_master_)) { THROW_FILE_LINE("failed activate master, perhaps pdo map is wrong"); }
+			if (!(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))THROW_FILE_LINE("failed ecrt_domain_data");
 
 			// set handle
 			master->ecHandle() = m_handle;
@@ -342,36 +342,36 @@ namespace aris::control
 		{
 			if (auto ec_slave = dynamic_cast<aris::control::EthercatSlave*>(&slave))
 			{
-				if (slave.phyId() > local_mst.slavePool().size()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong physical id!").c_str());
+				if (slave.phyId() > local_mst.slavePool().size()) THROW_FILE_LINE(":wrong physical id!");
 
 				// check product code and vendor id
 				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool().at(slave.phyId()));
-				if (ec_slave->productCode() != compared_slave->productCode()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong product code of slave " + std::to_string(ec_slave->id())).c_str());
-				if (ec_slave->vendorID() != compared_slave->vendorID()) throw std::runtime_error((std::string(__FILE__) + std::to_string(__LINE__) + ":wrong vendor id of slave " + std::to_string(ec_slave->id())).c_str());
+				if (ec_slave->productCode() != compared_slave->productCode()) THROW_FILE_LINE(":wrong product code of slave " + std::to_string(ec_slave->id());
+				if (ec_slave->vendorID() != compared_slave->vendorID()) THROW_FILE_LINE(":wrong vendor id of slave " + std::to_string(ec_slave->id());
 
 				for (int i = 0; i<ec_slave->smPool().size(); ++i)
 				{
-					if (i >= compared_slave->smPool().size()) THROW_FILE_AND_LINE("map pdo failed: sm num not correct");
+					if (i >= compared_slave->smPool().size()) THROW_FILE_LINE("map pdo failed: sm num not correct");
 					
 					auto &sm = ec_slave->smPool()[i];
 					auto &compared_sm = compared_slave->smPool()[i];
 					
 					// check if sm rx & tx valid 
-					if(sm.tx() != compared_sm.tx()) THROW_FILE_AND_LINE("map pdo failed: sm tx or rx not correct");
+					if(sm.tx() != compared_sm.tx()) THROW_FILE_LINE("map pdo failed: sm tx or rx not correct");
 
 					for (int j = 0; j<sm.size(); ++j)
 					{
-						if (j >= compared_sm.size()) THROW_FILE_AND_LINE("map pdo failed: pdo num not correct");
+						if (j >= compared_sm.size()) THROW_FILE_LINE("map pdo failed: pdo num not correct");
 						
 						auto &pdo = sm[j];
 						auto &compared_pdo = compared_sm[j];
 						
 						// check pdo index valid 
-						if (pdo.index() != compared_pdo.index()) THROW_FILE_AND_LINE("map pdo failed: pdo index not correct");
+						if (pdo.index() != compared_pdo.index()) THROW_FILE_LINE("map pdo failed: pdo index not correct");
 
 						for (int k = 0; k<pdo.size(); ++k)
 						{
-							if (k >= compared_pdo.size()) THROW_FILE_AND_LINE("map pdo failed: entry num not correct");
+							if (k >= compared_pdo.size()) THROW_FILE_LINE("map pdo failed: entry num not correct");
 							
 							auto &entry = pdo[k];
 							auto &compared_entry = compared_pdo[k];
@@ -381,7 +381,7 @@ namespace aris::control
 								|| (entry.bitSize() != compared_entry.bitSize())
 								)
 							{
-								THROW_FILE_AND_LINE("map pdo failed: entry info not correct");
+								THROW_FILE_LINE("map pdo failed: entry info not correct");
 							}
 						}
 					}

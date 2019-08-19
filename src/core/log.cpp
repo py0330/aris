@@ -110,7 +110,7 @@ namespace aris::core
 
 		char *p = strrchr(path, '\\');
 		if (p == nullptr)
-			throw std::logic_error("windows can't identify the program name");
+			THROW_FILE_LINE("windows can't identify the program name");
 
 		char proName[TASK_NAME_LEN]{ 0 };
 
@@ -136,7 +136,7 @@ namespace aris::core
 
 		if (count < 0 || count >= TASK_NAME_LEN)
 		{
-			throw std::logic_error("Current System Not Surport Proc.\n");
+			THROW_FILE_LINE("Current System Not Surport Proc.\n");
 		}
 		else
 		{

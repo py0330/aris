@@ -646,7 +646,7 @@ namespace aris::dynamic
 		if (xml_ele.Attribute("relative_to"))
 		{
 			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
-			catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
+			catch (std::exception &) { THROW_FILE_LINE(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 		}
 		else
 		{
@@ -1375,7 +1375,7 @@ namespace aris::dynamic
 		if (xml_ele.Attribute("relative_to"))
 		{
 			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
-			catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
+			catch (std::exception &) { THROW_FILE_LINE(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 		}
 		else
 		{
@@ -1423,7 +1423,7 @@ namespace aris::dynamic
 		if (xml_ele.Attribute("relative_to"))
 		{
 			try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
-			catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
+			catch (std::exception &) { THROW_FILE_LINE(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 		}
 		else
 		{
@@ -1469,11 +1469,11 @@ namespace aris::dynamic
 		if (xml_ele.Attribute("relative_to"))
 		{
 			try { imp_->relative_to_ = &*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to")); }
-			catch (std::exception &) { throw std::runtime_error(std::string("can't find relative marker for element \"") + this->name() + "\""); }
+			catch (std::exception &) { THROW_FILE_LINE(std::string("can't find relative marker for element \"") + this->name() + "\""); }
 		}
 		else
 		{
-			throw std::runtime_error("you must specify ShellGeometry relative marker");
+			THROW_FILE_LINE("you must specify ShellGeometry relative marker");
 		}
 
 		imp_->graphic_file_path = attributeString(xml_ele, "graphic_file_path", "");

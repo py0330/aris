@@ -18,7 +18,7 @@ namespace aris::core
 		else if (auto p = dynamic_cast<const ParamBase *>(father()))
 			return p->command();
 		else
-			throw std::runtime_error("failed to find father command, please check the command tree");
+			THROW_FILE_LINE("failed to find father command, please check the command tree");
 	};
 	ParamBase::~ParamBase() = default;
 	ParamBase::ParamBase(const std::string &name) :ObjectPool(name), imp_(new Imp) {}
@@ -90,7 +90,7 @@ namespace aris::core
 			if (auto p = dynamic_cast<Param*>(param))
 			{
 				if (p->ParamBase::imp_->is_taken_)
-					throw std::runtime_error("parse command error: command \"" + p->command().name() + "\"'s param \"" + p->name() + "\" has been set more than once");
+					THROW_FILE_LINE("parse command error: command \"" + p->command().name() + "\"'s param \"" + p->name() + "\" has been set more than once");
 				p->ParamBase::imp_->is_taken_ = true;
 				take(param->father());
 			}
@@ -105,19 +105,19 @@ namespace aris::core
 			else if (auto u = dynamic_cast<UniqueParam*>(param))
 			{
 				if (u->ParamBase::imp_->is_taken_)
-					throw std::runtime_error("parse command error: command \"" + u->command().name() + "\"'s UNIQUE param \"" + u->name() + "\" has been set more than once");
+					THROW_FILE_LINE("parse command error: command \"" + u->command().name() + "\"'s UNIQUE param \"" + u->name() + "\" has been set more than once");
 				u->ParamBase::imp_->is_taken_ = true;
 				take(param->father());
 			}
 			else if (auto c = dynamic_cast<Command*>(param))
 			{
 				if (c->imp_->is_taken_)
-					throw std::runtime_error("invalid param: some params of command \"" + c->name() + "\" has been set more than once");
+					THROW_FILE_LINE("invalid param: some params of command \"" + c->name() + "\" has been set more than once");
 				c->imp_->is_taken_ = true;
 			}
 			else
 			{
-				throw std::runtime_error("wrong type when cmd parse in take");
+				THROW_FILE_LINE("wrong type when cmd parse in take");
 			}
 		}
 		static auto reset(Object* param)->void
@@ -143,7 +143,7 @@ namespace aris::core
 			}
 			else
 			{
-				throw std::runtime_error("wrong type when cmd parse in reset");
+				THROW_FILE_LINE("wrong type when cmd parse in reset");
 			}
 		}
 		static auto addDefaultParam(Object* param, std::map<std::string, std::string> &param_map_out)->void
@@ -165,7 +165,7 @@ namespace aris::core
 				auto default_param = default_param_iter == u->end() ? default_param_ptr : &*default_param_iter;
 				default_param = u->size() == 1 ? &u->front() : default_param;
 
-				if (!default_param)throw std::runtime_error("failed to find default param in command \"" + u->command().name() + "\" param \"" + u->name() + "\"");
+				if (!default_param)THROW_FILE_LINE("failed to find default param in command \"" + u->command().name() + "\" param \"" + u->name() + "\"");
 
 				addDefaultParam(default_param, param_map_out);
 			}
@@ -178,13 +178,13 @@ namespace aris::core
 				auto default_param = default_param_iter == c->end() ? default_param_ptr : &*default_param_iter;
 				default_param = c->size() == 1 ? &c->front() : default_param;
 
-				if (!default_param)throw std::runtime_error("failed to find default param in command \"" + c->name() + "\"");
+				if (!default_param)THROW_FILE_LINE("failed to find default param in command \"" + c->name() + "\"");
 
 				addDefaultParam(default_param, param_map_out);
 			}
 			else
 			{
-				throw std::runtime_error("wrong type when cmd parse in addDefaultParam");
+				THROW_FILE_LINE("wrong type when cmd parse in addDefaultParam");
 			}
 		}
 		static auto add_param_map_and_check_default(Command *cmd, ParamBase &param)->void
@@ -192,9 +192,9 @@ namespace aris::core
 			if (auto p = dynamic_cast<Param*>(&param))
 			{
 				if (cmd->imp_->param_map_.find(param.name()) != cmd->imp_->param_map_.end())
-					throw std::runtime_error("failed to add param \"" + param.name() + "\" to cmd \"" + cmd->name() + "\", because this param already exists");
+					THROW_FILE_LINE("failed to add param \"" + param.name() + "\" to cmd \"" + cmd->name() + "\", because this param already exists");
 				if (cmd->imp_->abbreviation_map_.find(p->abbreviation()) != cmd->imp_->abbreviation_map_.end() && p->abbreviation() != 0)
-					throw std::runtime_error("failed to add param \"" + param.name() + "\" to cmd \"" + cmd->name() + "\", because its abbreviation already exists");
+					THROW_FILE_LINE("failed to add param \"" + param.name() + "\" to cmd \"" + cmd->name() + "\", because its abbreviation already exists");
 
 				cmd->imp_->param_map_.insert(std::make_pair(param.name(), p));
 				cmd->imp_->abbreviation_map_.insert(std::make_pair(p->abbreviation(), param.name()));
@@ -203,7 +203,7 @@ namespace aris::core
 			{
 				if ((u->imp_->default_value_ != "") && (u->findByName(u->imp_->default_value_) == u->end()))
 				{
-					throw std::runtime_error("Unique param \"" + u->name() + "\" has invalid default param name");
+					THROW_FILE_LINE("Unique param \"" + u->name() + "\" has invalid default param name");
 				}
 				for (auto &sub_param : param) add_param_map_and_check_default(cmd, sub_param);
 			}
@@ -274,7 +274,7 @@ namespace aris::core
 						break;
 					case '}':
 						--brace_num;
-						if (brace_num < 0)THROW_FILE_AND_LINE("brace not pair");
+						if (brace_num < 0)THROW_FILE_LINE("brace not pair");
 						break;
 					default:
 						break;
@@ -293,7 +293,7 @@ namespace aris::core
 					stream.get(c);
 				}
 
-				if(brace_num)THROW_FILE_AND_LINE("brace not pair");
+				if(brace_num)THROW_FILE_LINE("brace not pair");
 				return this_value;
 			};
 
@@ -302,15 +302,15 @@ namespace aris::core
 			std::stringstream input_stream{ command_string };
 			std::string word;
 
-			if (!(input_stream >> cmd))throw std::runtime_error("invalid command string: please at least contain a word");
+			if (!(input_stream >> cmd))THROW_FILE_LINE("invalid command string: please at least contain a word");
 
 			auto command = imp_->command_pool_->findByName(cmd);
-			if (command == imp_->command_pool_->end()) throw std::runtime_error("invalid command name: server does not have this command \"" + cmd + "\"");
+			if (command == imp_->command_pool_->end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + cmd + "\"");
 
 			// make map and abbrev map //
 			command->imp_->param_map_.clear();
 			command->imp_->abbreviation_map_.clear();
-			if ((command->imp_->default_value_ != "") && (command->findByName(command->imp_->default_value_) == command->end())) throw std::runtime_error("Command \"" + command->name() + "\" has invalid default param name");
+			if ((command->imp_->default_value_ != "") && (command->findByName(command->imp_->default_value_) == command->end())) THROW_FILE_LINE("Command \"" + command->name() + "\" has invalid default param name");
 			for (auto &param : *command) Command::Imp::add_param_map_and_check_default(&*command, param);
 
 			Command::Imp::reset(&*command);
@@ -320,16 +320,16 @@ namespace aris::core
 				
 				std::string param_name_origin = word.substr(0, word.find_first_of('='));
 
-				if (param_name_origin == "")throw std::runtime_error("invalid param: param should not start with '='");
-				else if (param_name_origin == "-")throw std::runtime_error("invalid param: symbol \"-\" must be followed by an abbreviation of param");
-				else if (param_name_origin == "--")throw std::runtime_error("invalid param: symbol \"--\" must be followed by a full name of param");
-				else if (param_name_origin.size() > 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-')throw std::runtime_error("invalid param: param start with single '-' must be an abbreviation");
+				if (param_name_origin == "")THROW_FILE_LINE("invalid param: param should not start with '='");
+				else if (param_name_origin == "-")THROW_FILE_LINE("invalid param: symbol \"-\" must be followed by an abbreviation of param");
+				else if (param_name_origin == "--")THROW_FILE_LINE("invalid param: symbol \"--\" must be followed by a full name of param");
+				else if (param_name_origin.size() > 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-')THROW_FILE_LINE("invalid param: param start with single '-' must be an abbreviation");
 				else if (param_name_origin.size() == 2 && param_name_origin.data()[0] == '-' && param_name_origin.data()[1] != '-')
 				{
 					char abbrev = param_name_origin.data()[1];
 
 					if (command->imp_->abbreviation_map_.find(abbrev) == command->imp_->abbreviation_map_.end())
-						throw std::runtime_error(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
+						THROW_FILE_LINE(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
 
 					auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
 					auto param_name = command->imp_->abbreviation_map_.at(abbrev);
@@ -344,7 +344,7 @@ namespace aris::core
 					auto param_name = word.substr(2, word.find('=') - 2);
 
 					if (command->imp_->param_map_.find(param_name) == command->imp_->param_map_.end())
-						throw std::runtime_error(std::string("invalid param: param \"") + param_name + "\" is not a valid param");
+						THROW_FILE_LINE(std::string("invalid param: param \"") + param_name + "\" is not a valid param");
 
 					auto param = command->imp_->param_map_.at(param_name);
 					auto param_value = word.find('=') == std::string::npos ? param->defaultValue() 
@@ -358,7 +358,7 @@ namespace aris::core
 					for (auto abbrev : param_name_origin)
 					{
 						if (command->imp_->abbreviation_map_.find(abbrev) == command->imp_->abbreviation_map_.end())
-							throw std::runtime_error(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
+							THROW_FILE_LINE(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
 
 						auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
 						auto param_name = command->imp_->abbreviation_map_.at(abbrev);
@@ -375,7 +375,7 @@ namespace aris::core
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(e.what() + std::string(", when parsing command string \"" + command_string + "\""));
+			THROW_FILE_LINE(e.what() + std::string(", when parsing command string \"" + command_string + "\""));
 		}
 	}
 	auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; }

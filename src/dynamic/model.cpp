@@ -145,7 +145,7 @@ namespace aris::dynamic
 		}
 		else
 		{
-			throw std::runtime_error("wrong joint when Model::addMotion(joint)");
+			THROW_FILE_LINE("wrong joint when Model::addMotion(joint)");
 		}
 
 		return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), &joint.makI(), &joint.makJ(), dim);

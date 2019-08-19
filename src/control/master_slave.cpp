@@ -137,7 +137,7 @@ namespace aris::control
 	auto Master::start()->void
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-		if (imp_->is_rt_thread_running_)THROW_FILE_AND_LINE("master already running, so cannot start");
+		if (imp_->is_rt_thread_running_)THROW_FILE_LINE("master already running, so cannot start");
 		imp_->is_rt_thread_running_ = true;
 
 		// make vec_phy2abs //
@@ -145,7 +145,7 @@ namespace aris::control
 		for (auto &sla : slavePool())
 		{
 			imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId() + 1), imp_->sla_vec_phy2abs_.size()), -1);
-			if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_AND_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
+			if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
 			imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();
 		}
 
@@ -208,17 +208,17 @@ namespace aris::control
 
 		// create and start rt task //
 		imp_->rt_task_handle_ = aris_rt_task_create();
-		if (!imp_->rt_task_handle_.has_value()) THROW_FILE_AND_LINE("rt_task_create failed");
-		if (aris_rt_task_start(rtHandle(), &Imp::rt_task_func, this))THROW_FILE_AND_LINE("rt_task_start failed");
+		if (!imp_->rt_task_handle_.has_value()) THROW_FILE_LINE("rt_task_create failed");
+		if (aris_rt_task_start(rtHandle(), &Imp::rt_task_func, this))THROW_FILE_LINE("rt_task_start failed");
 	}
 	auto Master::stop()->void
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-		if (!imp_->is_rt_thread_running_)THROW_FILE_AND_LINE("master is not running, so can't stop");
+		if (!imp_->is_rt_thread_running_)THROW_FILE_LINE("master is not running, so can't stop");
 		imp_->is_rt_thread_running_ = false;
 
 		// join rt task //
-		if (aris_rt_task_join(rtHandle()))THROW_FILE_AND_LINE("aris_rt_task_join failed");
+		if (aris_rt_task_join(rtHandle()))THROW_FILE_LINE("aris_rt_task_join failed");
 
 		// join mout task //
 		imp_->mout_thread_.join();
@@ -229,7 +229,7 @@ namespace aris::control
 	auto Master::setControlStrategy(std::function<void()> strategy)->void
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-		if (imp_->is_rt_thread_running_)THROW_FILE_AND_LINE("master already running, cannot set control strategy");
+		if (imp_->is_rt_thread_running_)THROW_FILE_LINE("master already running, cannot set control strategy");
 		imp_->strategy_ = strategy;
 	}
 	auto Master::rtHandle()->std::any& { return imp_->rt_task_handle_; }

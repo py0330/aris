@@ -164,7 +164,7 @@ namespace aris::plan
 				// 开始清理并迭代连接 //
 				if (l.back().ds > r.front().ds)
 				{
-					if (l.size() == 1)throw std::runtime_error(std::string("failed:") + __FILE__);
+					if (l.size() == 1)THROW_FILE_LINE("failed");
 					
 					l.erase(std::prev(l.end()));
 
@@ -181,7 +181,7 @@ namespace aris::plan
 				}
 				else
 				{
-					if (r.size() == 1)throw std::runtime_error(std::string("failed:") + __FILE__);
+					if (r.size() == 1)THROW_FILE_LINE(std::string("failed:") + __FILE__);
 
 					r.erase(r.begin());
 

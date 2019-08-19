@@ -29,7 +29,7 @@ namespace aris::dynamic
 		}
 		catch (std::exception &e)
 		{
-			throw std::runtime_error(error + "failed to evaluate matrix:" + e.what());
+			THROW_FILE_LINE(error + "failed to evaluate matrix:" + e.what());
 		}
 
 		return mat;
@@ -46,7 +46,7 @@ namespace aris::dynamic
 
 		if (mat.m() != m || mat.n() != n)
 		{
-			throw std::runtime_error(error + "matrix has wrong dimensions, it's dimentsion should be \"" + std::to_string(m) + "," + std::to_string(n)
+			THROW_FILE_LINE(error + "matrix has wrong dimensions, it's dimentsion should be \"" + std::to_string(m) + "," + std::to_string(n)
 				+ "\", while the real value is \"" + std::to_string(mat.m()) + "," + std::to_string(mat.n()) + "\"");
 		}
 
