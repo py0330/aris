@@ -4,6 +4,24 @@
 using namespace aris::dynamic;
 using namespace aris::robot;
 
+//系统传递函数H(s)=1/(ms)
+void PIDcalOne(double m, double ts, double *KP)
+{
+	double T = ts / 3.0;
+	KP[0] = m / T;
+}
+
+//系统传递函数H(s)=1/(ms+h)
+void PIDcalTeo(double m, double h, double ts, double overshoot, double *KP, double *KI)
+{
+	double temp = log(overshoot);
+	double kesi = 1 / sqrt(1 + aris::PI*aris::PI / temp / temp);
+	double omega = 4 / kesi / ts;
+
+	KI[0] = omega * omega * m;
+	KP[0] = 2 * kesi * omega * m - h;
+}
+
 int main(int argc, char *argv[])
 {
 	double robot_pm[16];
@@ -60,6 +78,131 @@ int main(int argc, char *argv[])
 	std::cout << "this server port    :" << std::to_string(port) << std::endl;
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
+
+	//double KPP[7] = { 200,200,8,-15,-15,-15,0 };
+	//double KPV[7] = { 100,100,0,4,4,4,0 };
+	//double KIV[7] = { 50,50,  0,1,1,1,0 };
+
+	auto &m = cs.model();
+	double mp[6]{ 0,0,0,0,1.57,0 };
+	double mv[6]{ 0.001,0.02,0.01,0.04,0.01,0.02 };
+	double ma[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
+	for (auto &mot : cs.model().motionPool())
+	{
+		mot.setMp(mp[mot.id()]);
+		mot.setMv(mv[mot.id()]);
+		mot.setMa(ma[mot.id()]);
+	} 
+
+	auto &s = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m.solverPool()[1]);
+	s.kinPos();
+	s.kinVel();
+	s.dynAccAndFce();
+	s.cptGeneralInverseDynamicMatrix();
+	s.cptJacobi();
+	
+	// clear frc //
+	for (int i = 0; i < 6; ++i) 
+	{
+		double frc[3]{0,0,0};
+		frc[2] = m.motionPool()[i].frcCoe()[2];
+		m.motionPool()[i].setFrcCoe(frc);
+	}
+
+	// J_inv
+	double U[36], tau[6], J_inv[36], tau2[6];
+	aris::Size p[6], rank;
+	s_householder_utp(6, 6, s.Jf(), U, tau, p, rank, 1e-7);
+	s_householder_utp2pinv(6, 6, rank, U, tau, p, J_inv, tau2, 1e-7);
+
+	// M = (M + I) * J_inv 
+	double M[36], A[36], tem[36];
+	s_mc(6, 6, s.M(), s.nM(), M, 6);
+	for (int i = 0; i < 6; ++i)M[at(i, i, 6)] += m.motionPool()[i].frcCoe()[2];
+	s_mm(6, 6, 6, M, J_inv, tem);
+	s_mm(6, 6, 6, J_inv, T(6), tem, 6, A, 6);
+
+	// cout torque 
+	double mf[6];
+	for (int i = 0; i < 6; ++i)tem[i] = m.motionPool()[i].mf();
+	s_mm(6, 1, 6, J_inv, T(6), tem, 1, mf, 1);
+	dsp(1, 6, mf);
+
+	// h = -M * c + h
+	double h[6];
+	s_vc(6, s.h(), tem);
+	s_mm(6, 1, 6, J_inv, T(6), tem, 1, h, 1);
+	s_mms(6, 1, 6, A, s.cf(), h);
+	double ee_as[6];
+	m.generalMotionPool()[0].getMas(ee_as);
+	s_mma(6, 1, 6, A, ee_as, h);
+	dsp(1, 6, h);
+
+	// 
+	double max_value[6]{ 0,0,0,0,0,0 };
+	double f2c_index[6] = { 9.07327526291993, 9.07327526291993, 17.5690184835913, 39.0310903520972, 66.3992503259041, 107.566785527965 };
+	for (int i = 0; i < 6; ++i)
+	{
+		//s_nv(6, f2c_index[i], A + i * 6);
+		
+		for (int j = 0; j < 6; ++j)
+		{
+			max_value[j] = std::max(max_value[j], std::abs(A[at(i, j, 6)]));
+		}
+	}
+
+	dsp(1, 6, max_value);
+
+	double kpp[6];
+	double kpv[6], kiv[6];
+	for (int i = 0; i < 6; ++i)
+	{
+		PIDcalOne(max_value[i], 0.2, kpp + i);
+		PIDcalTeo(max_value[i], 0, 0.4, 0.0433, kpv + i, kiv + i);
+	}
+
+	dsp(1, 6, kpp);
+	dsp(1, 6, kpv);
+	dsp(1, 6, kiv);
+
+	double ft[6]{ 0,0,0,0,15,0 };
+	double JoinTau[6];
+	s_mm(6, 1, 6, s.Jf(), T(6), ft, 1, JoinTau, 1);
+
+	dsp(1, 6, JoinTau);
+
+
+	for (int i = 0; i < 6; ++i)
+	{
+		JoinTau[i] *= f2c_index[i];
+	}
+
+	dsp(1, 6, JoinTau);
+
+
+	//for (int i = 0; i < 6; ++i)
+	//{
+	//	max_value[i] *= f2c_index[i];
+	//}
+	//
+	//dsp(1, 6, max_value);
+
+
+
+	
+
+
+
+	//dsp(sd.nM(), sd.nM(), sd.M());
+	//dsp(s.nM(), s.nM(), s.M());
+
+	s.Jf();
+	s.M();
+
+
+
+
+
 
 	////////////////////////////////////////////////////////////////////////////////////
 	//aris::dynamic::SevenAxisParam param;

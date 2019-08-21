@@ -1656,12 +1656,10 @@ namespace aris::plan
 
 	auto GetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{
-		target.server->waitForAllCollection();
-		target.ret = target.server->xmlString();
-		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
-
 		std::vector<std::pair<std::string, std::any>> ret_value;
+		ret_value.push_back(std::make_pair(std::string("configure_xml"), target.server->xmlString()));
 		target.ret = ret_value;
+		target.option |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
 	}
 	GetXml::~GetXml() = default;
 	GetXml::GetXml(const std::string &name) : Plan(name)

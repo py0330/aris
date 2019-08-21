@@ -1345,11 +1345,13 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	double result1[18];
 	auto &s = m.solverPool().at(i);
 
+	// forward, input to ee //
 	for (auto &mot : m.motionPool())mot.activate(true);
 	for (auto &fce : m.forcePool())fce.activate(false);
 	for (auto &gm : m.generalMotionPool())gm.activate(false);
 	s.allocateMemory();
 
+	// init //
 	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 	{
 		m.motionPool().at(i).setMp(ipt[i]);
@@ -1359,8 +1361,9 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	s.kinPos();
 	s.kinVel();
 	s.dynAccAndFce();;
-
 	int count{ 0 };
+	/*
+	// pos //
 	std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipt[i]);
@@ -1380,7 +1383,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		++count;
 	}) << std::endl;
 
-
+	// vel //
 	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 	{
 		m.motionPool().at(i).setMp(ipt[i]);
@@ -1410,8 +1413,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		}
 	}) << std::endl;
 
-
-
+	// dyn //
 	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 	{
 		m.motionPool().at(i).setMp(ipt[i]);
@@ -1438,29 +1440,41 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		}
 
 	}) << std::endl;
-
-
-
-
-
+	*/
+	// dyn mat //
+	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+	{
+		m.motionPool().at(i).setMp(ipt[i]);
+		m.motionPool().at(i).setMv(ivt[i]);
+		m.motionPool().at(i).setMa(iat[i]);
+	}
+	s.kinPos();
+	s.kinVel();
+	count = 0;
+	std::cout << s.type() << "::forward computational dyn mat time:" << aris::core::benchmark(bench_count, [&]()
+	{
+		for (aris::Size i = 0; i < m.motionPool().size(); ++i)
+		{
+			m.motionPool().at(i).setMp(ipt[i]);
+			m.motionPool().at(i).setMv(ivt[i]);
+			m.motionPool().at(i).setMa(iat[i]);
+		}
+		dynamic_cast<aris::dynamic::UniversalSolver&>(s).cptGeneralInverseDynamicMatrix();
+	}) << std::endl;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	for (auto &mot : m.motionPool())mot.activate(false);
 	for (auto &fce : m.forcePool())fce.activate(false);
 	for (auto &gm : m.generalMotionPool())gm.activate(true);
 	s.allocateMemory();
-
-
 	m.generalMotionPool().at(0).setMpm(opo);
 	m.generalMotionPool().at(0).setMva(ovo);
 	m.generalMotionPool().at(0).setMva(oao);
 	s.kinPos();
 	s.kinVel();
 	s.dynAccAndFce();;
-
-
-
-
+	/*
+	// pos //
 	count =  0;
 	std::cout << s.type() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
 	{
@@ -1479,8 +1493,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		++count;
 	}) << std::endl;
 
-
-
+	// vel // 
 	m.generalMotionPool().at(0).setMpm(opt);
 	s.kinPos();
 	count = 0;
@@ -1492,8 +1505,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		if (!s_is_equal(m.motionPool().size(), result1, ivt, error[5])) std::cout << s.type() << "::kinVel() inverse bench vel failed" << std::endl;
 	}) << std::endl;
 
-
-
+	// dyn //
 	m.generalMotionPool().at(0).setMpm(opt);
 	m.generalMotionPool().at(0).setMva(ovt);
 	s.kinPos();
@@ -1505,6 +1517,18 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		s.dynAccAndFce();
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMa(); result1[i] = m.motionPool().at(i).ma(); }
 		if (!s_is_equal(m.motionPool().size(), result1, iat, error[6]))	std::cout << s.type() << "::kinAcc() inverse bench acc failed" << std::endl;
+	}) << std::endl;
+	*/
+	// dyn mat //
+	m.generalMotionPool().at(0).setMpm(opt);
+	m.generalMotionPool().at(0).setMva(ovt);
+	s.kinPos();
+	s.kinVel();
+	count = 0;
+	std::cout << s.type() << "::inverse computational dyn mat time:" << aris::core::benchmark(bench_count, [&]()
+	{
+		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)m.generalMotionPool().at(i).setMaa(oat + i * 6);
+		dynamic_cast<aris::dynamic::UniversalSolver&>(s).cptGeneralInverseDynamicMatrix();
 	}) << std::endl;
 }
 

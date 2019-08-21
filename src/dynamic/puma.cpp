@@ -86,8 +86,8 @@ namespace aris::dynamic
 		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_6_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
 		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
 
-		auto &makI = p6.markerPool().add<Marker>("ee_makI", ee_i_pm);
-		auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", ee_j_pm);
+		auto &makI = p6.markerPool().add<Marker>("tool0", ee_i_pm);
+		auto &makJ = model->ground().markerPool().add<Marker>("wobj0", ee_j_pm);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 		// change robot pose wrt ground //
@@ -102,6 +102,10 @@ namespace aris::dynamic
 		p6.setPm(s_pm_dot_pm(robot_pm, *p6.pm()));
 		j1.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ().prtPm()));
 		ee.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ().prtPm()));
+
+		// add tools and wobj //
+		for (int i = 1; i < 16; ++i)p6.markerPool().add<aris::dynamic::Marker>("tool" + std::to_string(i), ee_i_pm);
+		for (int i = 1; i < 32; ++i)model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();

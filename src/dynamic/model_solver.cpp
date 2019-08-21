@@ -87,7 +87,6 @@ namespace aris::dynamic
 	struct Remainder
 	{
 		struct Block { Diag* diag_; bool is_I_; };
-
 		Diag *i_diag_, *j_diag_;
 		double *cmI_, *cmJ_, *bc_, *xc_;
 
@@ -132,6 +131,8 @@ namespace aris::dynamic
 	};
 	struct PublicData
 	{
+		double gravity_[6];
+		
 		SubSystem *subsys_data_;
 		Size subsys_size_;
 		Diag** get_diag_from_part_id_;
@@ -371,7 +372,7 @@ namespace aris::dynamic
 			// I*(a-g) //
 			double as_minus_g[6], iv_dot_as[6];
 			s_vc(6, d->xp_, as_minus_g);// xp储存加速度
-			s_vs(6, d->part_->ancestor<Model>()->environment().gravity(), as_minus_g);
+			s_vs(6, pd_->gravity_, as_minus_g);
 			s_iv_dot_as(d->iv_, as_minus_g, iv_dot_as);
 			s_va(6, iv_dot_as, d->bp_);
 		}
@@ -433,7 +434,7 @@ namespace aris::dynamic
 			// I*(a-g) //
 			double as_minus_g[6], iv_dot_as[6];
 			s_vc(6, d->xp_, as_minus_g);// xp储存加速度
-			s_vs(6, d->part_->ancestor<Model>()->environment().gravity(), as_minus_g);
+			s_vs(6, pd_->gravity_, as_minus_g);
 			s_iv_dot_as(d->iv_, as_minus_g, iv_dot_as);
 			s_va(6, iv_dot_as, d->bp_);
 		}
@@ -542,7 +543,6 @@ namespace aris::dynamic
 		updG();
 
 		//// 求解 xp 的某个特解（不考虑惯量），求出beta 以及 xc
-		
 		sovXp();
 		sovXc();
 	}
@@ -1058,6 +1058,7 @@ namespace aris::dynamic
 
 		// 构建公共变量区 //
 		PublicData pub_data;
+		s_vc(6, ancestor<Model>()->environment().gravity(), pub_data.gravity_);
 		Imp::allocMem(mem_pool_size, imp_->pd_, 1);
 
 		// 构建子系统 //
@@ -1801,9 +1802,17 @@ namespace aris::dynamic
 
 				s_inv_tv(*gm.makJ().pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
 
+				//// 以下求cf //
+				//s_vc(6, cg() + gm.makI().fatherPart().id() * 6, tem);
+				//s_vs(6, cg() + gm.makJ().fatherPart().id() * 6, tem);
+				//s_inv_as2as(*gm.makJ().pm(), gm.makJ().vs(), cg() + gm.makJ().fatherPart().id() * 6, gm.makI().vs(), cg() + gm.makI().fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
+
+				// 以上和之前做法都一样，以下转换坐标系 //
 				double pp[3];
 				gm.makI().getPp(gm.makJ(), pp);
 				s_c3a(imp_->J_vec_.data() + at(gm.id() * 6 + 3, mot.id(), nJf()), nJf(), pp, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+
+
 			}
 		}
 	}

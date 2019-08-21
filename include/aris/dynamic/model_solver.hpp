@@ -51,7 +51,6 @@ namespace aris::dynamic
 		auto nM()const noexcept->Size;// = motion_number + general_motion_number x 6
 		auto M()const noexcept->const double *;// dimension : nM x nM 
 		auto h()const noexcept->const double *;// dimension : nM x 1
-		auto plotRelation()->void;
 
 		virtual ~UniversalSolver();
 		explicit UniversalSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
@@ -73,7 +72,7 @@ namespace aris::dynamic
 		auto cptJacobiWrtEE()noexcept->void;// wrt ee.makI(), not compute cf
 		auto mJf()const noexcept->Size;// equal mot num
 		auto nJf()const noexcept->Size;// equal ee num * 6
-		auto Jf()const noexcept->const double *;// inverse jacobi   mot_vs = Ji * ee_vs
+		auto Jf()const noexcept->const double *;// inverse jacobi   ee_vs = Jf * ee_vs + mot_vs
 		auto cf()const noexcept->const double *;// dimension : mJ x 1
 
 		virtual ~ForwardKinematicSolver();
