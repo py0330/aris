@@ -1672,7 +1672,7 @@ namespace aris::plan
 	auto SetXml::prepairNrt(const std::map<std::string, std::string> &params, PlanTarget &target)->void
 	{		
 		// remove all symbols "{" "}"
-		if (target.server->running())THROW_FILE_LINE("server is not running,can't save xml");
+		if (target.server->running())THROW_FILE_LINE("server is running, can't set xml");
 		auto xml_str = params.at("xml").substr(1, params.at("xml").size() - 2);
 		// 这一句要小心，此时 this 已被销毁，后面不能再调用this了 //
 		target.server->loadXmlStr(xml_str);

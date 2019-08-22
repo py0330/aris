@@ -104,8 +104,22 @@ namespace aris::dynamic
 		ee.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ().prtPm()));
 
 		// add tools and wobj //
-		for (int i = 1; i < 16; ++i)p6.markerPool().add<aris::dynamic::Marker>("tool" + std::to_string(i), ee_i_pm);
-		for (int i = 1; i < 32; ++i)model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
+		for (int i = 1; i < 17; ++i) p6.markerPool().add<aris::dynamic::Marker>("tool" + std::to_string(i), ee_i_pm);
+		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
+
+		// add velocity variables
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v5", aris::core::Matrix({ 0.01, 0.005, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v10", aris::core::Matrix({ 0.03, 0.01, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v25", aris::core::Matrix({ 0.05, 0.025, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v30", aris::core::Matrix({ 0.05, 0.03, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v40", aris::core::Matrix({ 0.05, 0.04, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v50", aris::core::Matrix({ 0.08, 0.05, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v60", aris::core::Matrix({ 0.08, 0.06, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v80", aris::core::Matrix({ 0.08, 0.08, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v100", aris::core::Matrix({ 0.1, 0.1, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v150", aris::core::Matrix({ 0.15, 0.15, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v200", aris::core::Matrix({ 0.2, 0.2, 200 * aris::PI / 180, 0.0, 0.0 }));
+		model->variablePool().add<aris::dynamic::MatrixVariable>("v300", aris::core::Matrix({ 0.3, 0.3, 200 * aris::PI / 180, 0.0, 0.0 }));
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();

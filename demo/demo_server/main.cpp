@@ -83,6 +83,8 @@ int main(int argc, char *argv[])
 	//double KPV[7] = { 100,100,0,4,4,4,0 };
 	//double KIV[7] = { 50,50,  0,1,1,1,0 };
 
+	std::cout << cs.model().xmlString() << std::endl;
+
 	auto &m = cs.model();
 	double mp[6]{ 0,0,0,0,1.57,0 };
 	double mv[6]{ 0.001,0.02,0.01,0.04,0.01,0.02 };
@@ -99,7 +101,7 @@ int main(int argc, char *argv[])
 	s.kinVel();
 	s.dynAccAndFce();
 	s.cptGeneralInverseDynamicMatrix();
-	s.cptJacobi();
+	s.cptJacobiWrtEE();
 	
 	// clear frc //
 	for (int i = 0; i < 6; ++i) 
@@ -122,11 +124,13 @@ int main(int argc, char *argv[])
 	s_mm(6, 6, 6, M, J_inv, tem);
 	s_mm(6, 6, 6, J_inv, T(6), tem, 6, A, 6);
 
+	dsp(6, 6, A);
+
 	// cout torque 
 	double mf[6];
 	for (int i = 0; i < 6; ++i)tem[i] = m.motionPool()[i].mf();
 	s_mm(6, 1, 6, J_inv, T(6), tem, 1, mf, 1);
-	dsp(1, 6, mf);
+	//dsp(1, 6, mf);
 
 	// h = -M * c + h
 	double h[6];
@@ -136,7 +140,7 @@ int main(int argc, char *argv[])
 	double ee_as[6];
 	m.generalMotionPool()[0].getMas(ee_as);
 	s_mma(6, 1, 6, A, ee_as, h);
-	dsp(1, 6, h);
+	//dsp(1, 6, h);
 
 	// 
 	double max_value[6]{ 0,0,0,0,0,0 };
@@ -158,7 +162,7 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < 6; ++i)
 	{
 		PIDcalOne(max_value[i], 0.2, kpp + i);
-		PIDcalTeo(max_value[i], 0, 0.4, 0.0433, kpv + i, kiv + i);
+		PIDcalTeo(max_value[i], 0, 0.25, 0.0433, kpv + i, kiv + i);
 	}
 
 	dsp(1, 6, kpp);
