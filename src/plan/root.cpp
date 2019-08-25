@@ -730,7 +730,7 @@ namespace aris::plan
 			if (param.active_motor[i])
 			{
 				double p, v, a;
-				aris::plan::moveAbsolute(target.count, param.axis_begin_pos_vec[i], param.axis_pos_vec[i], param.axis_vel_vec[i] / 1000
+				aris::plan::moveAbsolute(static_cast<double>(target.count), param.axis_begin_pos_vec[i], param.axis_pos_vec[i], param.axis_vel_vec[i] / 1000
 					, param.axis_acc_vec[i] / 1000 / 1000, param.axis_dec_vec[i] / 1000 / 1000, p, v, a, param.total_count_vec[i]);
 				target.controller->motionAtAbs(i).setTargetPos(p);
 			}

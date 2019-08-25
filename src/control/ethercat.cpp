@@ -339,11 +339,13 @@ namespace aris::control
 		auto getUInt32 = [](std::string str)->std::uint32_t
 		{
 			std::replace(str.begin(), str.end(), '#', '0');
-			return std::stoll(str, 0, 16);
+			return std::stoul(str, 0, 16);
 		};
 
 		for (const auto &dir : imp_->esi_dirs_)
 		{
+			if (!std::filesystem::is_directory(dir))continue;
+			
 			for (auto &p : std::filesystem::directory_iterator(dir))
 			{
 				// not regular file//

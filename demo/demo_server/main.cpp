@@ -22,6 +22,30 @@ void PIDcalTeo(double m, double h, double ts, double overshoot, double *KP, doub
 	KP[0] = 2 * kesi * omega * m - h;
 }
 
+
+auto f(aris::dynamic::Model *m, double *A)
+{
+	auto &s = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool()[1]);
+	s.kinPos();
+	s.kinVel();
+	s.cptGeneralInverseDynamicMatrix();
+	s.cptJacobiWrtEE();
+
+	// J_inv
+	double U[36], tau[6], J_inv[36], tau2[6];
+	aris::Size p[6], rank;
+	s_householder_utp(6, 6, s.Jf(), U, tau, p, rank, 1e-7);
+	s_householder_utp2pinv(6, 6, rank, U, tau, p, J_inv, tau2, 1e-7);
+
+	// M = (M + I) * J_inv 
+	double M[36], tem[36];
+	s_mc(6, 6, s.M(), s.nM(), M, 6);
+	for (int i = 0; i < 6; ++i)M[at(i, i, 6)] += m->motionPool()[i].frcCoe()[2];
+	s_mm(6, 6, 6, M, J_inv, tem);
+	s_mm(6, 6, 6, J_inv, T(6), tem, 6, A, 6);
+}
+
+
 int main(int argc, char *argv[])
 {
 	double robot_pm[16];
@@ -83,7 +107,7 @@ int main(int argc, char *argv[])
 	//double KPV[7] = { 100,100,0,4,4,4,0 };
 	//double KIV[7] = { 50,50,  0,1,1,1,0 };
 
-	std::cout << cs.model().xmlString() << std::endl;
+	std::cout << cs.controller().xmlString() << std::endl;
 
 	auto &m = cs.model();
 	double mp[6]{ 0,0,0,0,1.57,0 };
@@ -99,18 +123,9 @@ int main(int argc, char *argv[])
 	auto &s = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m.solverPool()[1]);
 	s.kinPos();
 	s.kinVel();
-	s.dynAccAndFce();
 	s.cptGeneralInverseDynamicMatrix();
 	s.cptJacobiWrtEE();
 	
-	// clear frc //
-	for (int i = 0; i < 6; ++i) 
-	{
-		double frc[3]{0,0,0};
-		frc[2] = m.motionPool()[i].frcCoe()[2];
-		m.motionPool()[i].setFrcCoe(frc);
-	}
-
 	// J_inv
 	double U[36], tau[6], J_inv[36], tau2[6];
 	aris::Size p[6], rank;
@@ -125,6 +140,9 @@ int main(int argc, char *argv[])
 	s_mm(6, 6, 6, J_inv, T(6), tem, 6, A, 6);
 
 	dsp(6, 6, A);
+
+	f(&cs.model(), M);
+	dsp(6, 6, M);
 
 	// cout torque 
 	double mf[6];
@@ -241,7 +259,7 @@ int main(int argc, char *argv[])
 	}, [&](const aris::plan::PlanTarget &param)->int
 	{
 		param.controller->motionAtAbs(0).setTargetPos(param.count*0.002);
-		return 100 - param.count;
+		return 100LL - param.count;
 	}, [&](aris::plan::PlanTarget &)->void
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));

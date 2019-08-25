@@ -162,14 +162,14 @@ namespace aris::core
 		{
 			s.resize(size + 6);
 			s[0] = char(0x82);// binary data, 0x81 is text data
-			s[1] = char(size) | 0x80;
+			s[1] = char(size) | char(0x80);
 			std::copy_n(data, size, &s[6]);
 		}
 		else if (size < 0xFFFF)
 		{
 			s.resize(size + 8);
 			s[0] = char(0x82);
-			s[1] = char(126) | 0x80;
+			s[1] = char(126) | char(0x80);
 			s[2] = size >> 8;
 			s[3] = size & 0xFF;
 			std::copy_n(data, size, &s[8]);
@@ -178,7 +178,7 @@ namespace aris::core
 		{
 			s.resize(size + 14);
 			s[0] = char(0x82);
-			s[1] = char(127) | 0x80;
+			s[1] = char(127) | char(0x80);
 			s[2] = 0;
 			s[3] = 0;
 			s[4] = 0;
@@ -570,7 +570,7 @@ namespace aris::core
 					}
 				}
 
-				if (imp->onReceivedData)imp->onReceivedData(imp->socket_, payload_data.data(), payload_data.size());
+				if (imp->onReceivedData)imp->onReceivedData(imp->socket_, payload_data.data(), static_cast<int>(payload_data.size()));
 
 				break;
 			}
@@ -866,7 +866,7 @@ namespace aris::core
 				"Sec-WebSocket-Version: 13\r\n"
 				"Sec-WebSocket-Key: w4v7O6xFTi36lq3RNcgctw==\r\n\r\n" };
 
-			if(send(imp_->recv_socket_, handshake_text, std::strlen(handshake_text), 0) == -1)
+			if(send(imp_->recv_socket_, handshake_text, static_cast<int>(std::strlen(handshake_text)), 0) == -1)
 				THROW_FILE_LINE("Socket can't connect, web sock error 1\n");
 
 			char recv_data[1024]{ 0 };
@@ -919,7 +919,7 @@ namespace aris::core
 				auto packed_data = imp_->is_server_ 
 					? pack_data_server(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader))
 					: pack_data_client(reinterpret_cast<const char*>(&data.header()), data.size() + sizeof(aris::core::MsgHeader));
-				if (send(imp_->recv_socket_, packed_data.data(), packed_data.size(), 0) == -1)
+				if (send(imp_->recv_socket_, packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
@@ -964,7 +964,7 @@ namespace aris::core
 			case WEB_RAW:
 			{
 				auto packed_data = imp_->is_server_ ? pack_data_server(data, size) : pack_data_client(data, size);
-				if (send(imp_->recv_socket_, packed_data.data(), packed_data.size(), 0) == -1)
+				if (send(imp_->recv_socket_, packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
 					THROW_FILE_LINE("Socket failed sending data, because network failed\n");
 				else
 					return;
