@@ -344,7 +344,7 @@ namespace aris::control
 
 		for (const auto &dir : imp_->esi_dirs_)
 		{
-			if (!std::filesystem::is_directory(dir))continue;
+			if (!std::filesystem::is_directory(dir, std::error_code()))continue;
 			
 			for (auto &p : std::filesystem::directory_iterator(dir))
 			{

@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		//cs.model().solverPool()[0].kinPos();
 
 		//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\stewart.xml");
-		
+
 		//cs.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_server/stewart.xml"));
 	}
 	else
@@ -118,7 +118,11 @@ int main(int argc, char *argv[])
 		mot.setMp(mp[mot.id()]);
 		mot.setMv(mv[mot.id()]);
 		mot.setMa(ma[mot.id()]);
-	} 
+	}
+
+	double pq[7]{0.1370, 0.345, 0.279968, 0, -1, 0, 0};
+	m.generalMotionPool()[0].setMpq(pq);
+	m.solverPool()[0].kinPos();
 
 	auto &s = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m.solverPool()[1]);
 	s.kinPos();
@@ -286,10 +290,10 @@ int main(int argc, char *argv[])
 	}
 	cs.planRoot().planPool().add<aris::plan::MoveSeries>("move_series");
 
-	/*
+	
 	auto ec_ptr = std::make_unique<aris::control::EthercatController>();
 	ec_ptr->setEsiDirs({
-		std::filesystem::path("C:\\Users\\py033\\Desktop\\esi_dirs"),
+		std::filesystem::path(""),
 		std::filesystem::path("C:\\Users\\py033\\Desktop\\esi_dirs\\Beckhoff AX5xxx")
 		});
 
@@ -303,7 +307,6 @@ int main(int argc, char *argv[])
 	std::cout << ec_ptr->getDeviceList() << std::endl;
 	std::cout << ec_ptr->getPdoList(0x000002E1, 0x00, 0x29001) << std::endl;
 	std::cout << ec_ptr->getPdoList(0x0000009A, 0x00030924, 0x000103f4) << std::endl;
-	*/
 
 	// interaction //
 	cs.interfacePool().add<aris::server::WebInterface>("", "5866", aris::core::Socket::WEB);
