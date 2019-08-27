@@ -778,7 +778,7 @@ namespace aris::plan
 		}, p, std::ref(target));
 
 		target.param = p;
-		for (auto &option : target.mot_options) option |= NOT_CHECK_ENABLE;
+		for (auto &option : target.mot_options) option |= NOT_CHECK_ENABLE | NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		target.ret = ret_value;
@@ -787,7 +787,7 @@ namespace aris::plan
 	{
 		auto param = std::any_cast<std::shared_ptr<RecoverParam> &>(target.param);
 
-		if (target.count == 1)
+		if (target.count < 3)
 		{
 			for (Size i = 0; i < std::min(target.controller->motionPool().size(), target.model->motionPool().size()); ++i)
 			{
