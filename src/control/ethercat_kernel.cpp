@@ -302,7 +302,7 @@ namespace aris::control
 
 			// set handle
 			//////////////////////////////////////
-			m_handle.exchange_data_.resize(ecrt_domain_size(m_handle.domain_));
+			m_handle.exchange_data_.resize(ecrt_domain_size(m_handle.domain_) * 2, 0);
 			//////////////////////////////////////
 
 			master->ecHandle() = m_handle;
@@ -424,7 +424,7 @@ namespace aris::control
 		ecrt_master_receive(m_handle.ec_master_);
 		ecrt_domain_process(m_handle.domain_);
 
-		memcpy(m_handle.exchange_data_.data(), m_handle.domain_pd_, m_handle.exchange_data_.size());
+		memcpy(m_handle.exchange_data_.data() + m_handle.exchange_data_.size() / 2, m_handle.domain_pd_, m_handle.exchange_data_.size() / 2);// domain -> p2
 
 
 	}
@@ -437,8 +437,9 @@ namespace aris::control
 		{
 			auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
 			
-			memcpy(m_handle.domain_pd_, m_handle.exchange_data_.data(), m_handle.exchange_data_.size());
-			
+			memcpy(m_handle.domain_pd_, m_handle.exchange_data_.data(), m_handle.exchange_data_.size() / 2); // p1 -> domain
+			memcpy(m_handle.exchange_data_.data(), m_handle.exchange_data_.data() + m_handle.exchange_data_.size() / 2, m_handle.exchange_data_.size() / 2); // p2 -> p1
+
 			ecrt_domain_queue(std::any_cast<MasterHandle&>(mst->ecHandle()).domain_);
 			ecrt_master_send(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
 		}
