@@ -344,7 +344,8 @@ namespace aris::control
 
 		for (const auto &dir : imp_->esi_dirs_)
 		{
-			if (!std::filesystem::is_directory(dir, std::error_code())) THROW_FILE_LINE("Esi directory not found:" + dir.string());
+			std::error_code err_code;
+			if (!std::filesystem::is_directory(dir, err_code)) THROW_FILE_LINE("Esi directory not found:" + dir.string());
 			
 			for (auto &p : std::filesystem::directory_iterator(dir))
 			{
