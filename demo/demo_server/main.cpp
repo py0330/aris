@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
 	double pq[7]{0.1370, 0.345, 0.279968, 0, -1, 0, 0};
 	m.generalMotionPool()[0].setMpq(pq);
 	m.solverPool()[0].kinPos();
+	
+	std::cout << m.xmlString() << std::endl;
 
 	auto &s = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m.solverPool()[1]);
 	s.kinPos();

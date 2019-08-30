@@ -88,6 +88,7 @@ namespace aris::dynamic
 
 		auto &makI = p6.markerPool().add<Marker>("tool0", ee_i_pm);
 		auto &makJ = model->ground().markerPool().add<Marker>("wobj0", ee_j_pm);
+		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 		// change robot pose wrt ground //
@@ -104,8 +105,15 @@ namespace aris::dynamic
 		ee.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ().prtPm()));
 
 		// add tools and wobj //
-		for (int i = 1; i < 17; ++i) p6.markerPool().add<aris::dynamic::Marker>("tool" + std::to_string(i), ee_i_pm);
+		for (int i = 1; i < 17; ++i) 
+		{
+			p6.markerPool().add<aris::dynamic::Marker>("tool" + std::to_string(i), ee_i_pm);
+			model->variablePool().add<aris::dynamic::MatrixVariable>("tool" + std::to_string(i) + "_axis_offset", aris::core::Matrix(1, 6, 0.0));
+			model->variablePool().add<aris::dynamic::MatrixVariable>("tool" + std::to_string(i) + "_inertia", aris::core::Matrix(1, 10, 0.0));
+		}
 		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
+
+
 
 		// add velocity variables
 		model->variablePool().add<aris::dynamic::MatrixVariable>("v5", aris::core::Matrix({ 0.01, 0.005, 200 * aris::PI / 180, 0.0, 0.0 }));
