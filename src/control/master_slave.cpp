@@ -55,18 +55,18 @@ namespace aris::control
 			{
 				// rt timer //
 				aris_rt_task_wait_period();
-
-				// sync
-				mst.sync();
 				
 				// receive //
 				mst.recv();
 
-				// send
-				mst.send();
-
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
+
+				// sync
+				mst.sync();
+
+				// send
+				mst.send();
 
 				// flush lout
 				mst.lout() << std::flush;

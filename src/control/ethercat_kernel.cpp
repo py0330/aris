@@ -302,7 +302,8 @@ namespace aris::control
 
 			// set handle
 			//////////////////////////////////////
-			m_handle.exchange_data_.resize(ecrt_domain_size(m_handle.domain_) * 2, 0);
+			m_handle.exchange_data_.resize(ecrt_domain_size(m_handle.domain_), 0);
+			//m_handle.exchange_data_.resize(ecrt_domain_size(m_handle.domain_) * 2, 0);
 			//////////////////////////////////////
 
 			master->ecHandle() = m_handle;
@@ -413,9 +414,7 @@ namespace aris::control
 	}
 	auto aris_ecrt_master_sync(EthercatMaster *mst, std::uint64_t ns)->void
 	{
-		ecrt_master_application_time(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, ns);
-		ecrt_master_sync_reference_clock(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
-		ecrt_master_sync_slave_clocks(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
+		
 	}
 	auto aris_ecrt_master_recv(EthercatMaster *mst)->void
 	{
@@ -424,11 +423,12 @@ namespace aris::control
 		ecrt_master_receive(m_handle.ec_master_);
 		ecrt_domain_process(m_handle.domain_);
 
-		memcpy(m_handle.exchange_data_.data() + m_handle.exchange_data_.size() / 2, m_handle.domain_pd_, m_handle.exchange_data_.size() / 2);// domain -> p2
+		memcpy(m_handle.exchange_data_.data(), m_handle.domain_pd_, m_handle.exchange_data_.size());
+		//memcpy(m_handle.exchange_data_.data() + m_handle.exchange_data_.size() / 2, m_handle.domain_pd_, m_handle.exchange_data_.size() / 2);// domain -> p2
 
 
 	}
-	auto aris_ecrt_master_send(EthercatMaster *mst)->void
+	auto aris_ecrt_master_send(EthercatMaster *mst, std::uint64_t ns)->void
 	{
 		ec_master_state_t ms;
 		ecrt_master_state(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, &ms);
@@ -437,10 +437,16 @@ namespace aris::control
 		{
 			auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
 			
-			memcpy(m_handle.domain_pd_, m_handle.exchange_data_.data(), m_handle.exchange_data_.size() / 2); // p1 -> domain
-			memcpy(m_handle.exchange_data_.data(), m_handle.exchange_data_.data() + m_handle.exchange_data_.size() / 2, m_handle.exchange_data_.size() / 2); // p2 -> p1
+			memcpy(m_handle.domain_pd_, m_handle.exchange_data_.data(), m_handle.exchange_data_.size());
+			//memcpy(m_handle.domain_pd_, m_handle.exchange_data_.data(), m_handle.exchange_data_.size() / 2); // p1 -> domain
+			//memcpy(m_handle.exchange_data_.data(), m_handle.exchange_data_.data() + m_handle.exchange_data_.size() / 2, m_handle.exchange_data_.size() / 2); // p2 -> p1
 
 			ecrt_domain_queue(std::any_cast<MasterHandle&>(mst->ecHandle()).domain_);
+
+			ecrt_master_application_time(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, ns);
+			ecrt_master_sync_reference_clock(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
+			ecrt_master_sync_slave_clocks(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
+
 			ecrt_master_send(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_);
 		}
 	}
@@ -495,7 +501,7 @@ namespace aris::control
 	auto aris_ecrt_master_stop(EthercatMaster *master)->void {}
 	auto aris_ecrt_master_sync(EthercatMaster *master, std::uint64_t ns)->void {}
 	auto aris_ecrt_master_recv(EthercatMaster *master)->void {}
-	auto aris_ecrt_master_send(EthercatMaster *master)->void {}
+	auto aris_ecrt_master_send(EthercatMaster *master, std::uint64_t ns)->void {}
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *ms, EthercatMaster::SlaveLinkState *ss)->void {}
 
 	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data, int byte_size)->void {}
