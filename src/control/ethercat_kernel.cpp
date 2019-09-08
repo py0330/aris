@@ -210,7 +210,11 @@ namespace aris::control
 	};
 	struct PdoEntryHandle
 	{
-		std::uint32_t offset;
+		union 
+		{
+			std::uint32_t offset;
+			char *data;
+		};
 		std::uint32_t bit_position;
 	};
 
@@ -315,6 +319,7 @@ namespace aris::control
 							if (entry.index())
 							{
 								std::vector<char> value(entry.bitSize() / 8 + 1, 0);
+								entry.data_ = m_handle.domain_pd_ + entry.offset;
 								aris_ecrt_pdo_write(&entry, value.data(), entry.bitSize());
 							}
 						}
@@ -450,17 +455,17 @@ namespace aris::control
 
 	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data, int bit_size)->void
 	{
-		auto pd = std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_;
+		//auto pd = std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_;
 		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
 
-		read_bit2(reinterpret_cast<char*>(data), bit_size, reinterpret_cast<const char*>(pd), pe_handle.offset, pe_handle.bit_position);
+		read_bit2(reinterpret_cast<char*>(data), bit_size, pe_handle.data_, 0, pe_handle.bit_position);
 	}
 	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data, int bit_size)->void
 	{
-		auto pd = std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_;
+		//auto pd = std::any_cast<MasterHandle&>(entry->ancestor<EthercatMaster>()->ecHandle()).domain_pd_;
 		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
 
-		write_bit2(reinterpret_cast<const char*>(data), bit_size, reinterpret_cast<char*>(pd), pe_handle.offset, pe_handle.bit_position);
+		write_bit2(reinterpret_cast<const char*>(data), bit_size, pe_handle.data_, 0, pe_handle.bit_position);
 	}
 
 	auto aris_ecrt_sdo_config(std::any& master, std::any& slave, std::uint16_t index, std::uint8_t subindex,

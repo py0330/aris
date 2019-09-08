@@ -307,7 +307,7 @@ namespace aris::control
 							}
 							else
 							{
-								std::map<std::uint8_t, PdoEntry* > subindex_map;
+								std::map<std::uint8_t, PdoEntry*> subindex_map;
 								subindex_map.insert(std::make_pair(entry.subindex(), &entry));
 								sla.imp_->pdo_map_.insert(std::make_pair(entry.index(), subindex_map));
 							}
