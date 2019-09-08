@@ -318,8 +318,10 @@ namespace aris::control
 						{
 							if (entry.index())
 							{
+								auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry.ecHandle());
+								pe_handle.data_ = m_handle.domain_pd_ + pe_handle.offset;
+								
 								std::vector<char> value(entry.bitSize() / 8 + 1, 0);
-								entry.data_ = m_handle.domain_pd_ + entry.offset;
 								aris_ecrt_pdo_write(&entry, value.data(), entry.bitSize());
 							}
 						}
