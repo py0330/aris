@@ -418,13 +418,21 @@ namespace aris::control
 	}
 	auto aris_ecrt_master_recv(EthercatMaster *mst)->void
 	{
-		auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
-		
-		ecrt_master_receive(m_handle.ec_master_);
-		ecrt_domain_process(m_handle.domain_);
+		ec_master_state_t ms;
+		ecrt_master_state(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, &ms);
 
-		memcpy(m_handle.exchange_data_.data(), m_handle.domain_pd_, m_handle.exchange_data_.size());
-		//memcpy(m_handle.exchange_data_.data() + m_handle.exchange_data_.size() / 2, m_handle.domain_pd_, m_handle.exchange_data_.size() / 2);// domain -> p2
+		if (ms.link_up)
+		{
+			auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
+
+			ecrt_master_receive(m_handle.ec_master_);
+			ecrt_domain_process(m_handle.domain_);
+
+			memcpy(m_handle.exchange_data_.data(), m_handle.domain_pd_, m_handle.exchange_data_.size());
+			//memcpy(m_handle.exchange_data_.data() + m_handle.exchange_data_.size() / 2, m_handle.domain_pd_, m_handle.exchange_data_.size() / 2);// domain -> p2
+		}
+		
+
 
 
 	}
