@@ -320,7 +320,7 @@ namespace aris::control
 		aris_ecrt_master_request(this);
 	}
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(this); }
-	auto EthercatMaster::send()->void { aris_ecrt_master_send(this, aris_rt_timer_read()); }
+	auto EthercatMaster::send()->void { aris_ecrt_master_send(this); }
 	auto EthercatMaster::recv()->void { aris_ecrt_master_recv(this); }
 	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&
 	{
