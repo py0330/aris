@@ -43,7 +43,6 @@ namespace aris::control
 
 	auto aris_ecrt_master_request(EthercatMaster *master)->void;
 	auto aris_ecrt_master_stop(EthercatMaster *master)->void;
-	auto aris_ecrt_master_sync(EthercatMaster *master, std::uint64_t ns)->void;
 	auto aris_ecrt_master_recv(EthercatMaster *master)->void;
 	auto aris_ecrt_master_send(EthercatMaster *master, std::uint64_t ns)->void;
 

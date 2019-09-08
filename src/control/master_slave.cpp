@@ -62,9 +62,6 @@ namespace aris::control
 				// tragectory generator //
 				if (mst.imp_->strategy_)mst.imp_->strategy_();
 
-				// sync
-				mst.sync();
-
 				// send
 				mst.send();
 

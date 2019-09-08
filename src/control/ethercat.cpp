@@ -111,7 +111,6 @@ namespace aris::control
 		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
 		aris::core::ObjectPool<SyncManager> *sm_pool_;
 		std::map<std::uint16_t, std::map<std::uint8_t, PdoEntry* > > pdo_map_;
-		std::map<std::uint16_t, std::map<std::uint8_t, int>> sdo_map_;
 	};
 	auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
@@ -323,7 +322,6 @@ namespace aris::control
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(this); }
 	auto EthercatMaster::send()->void { aris_ecrt_master_send(this, aris_rt_timer_read()); }
 	auto EthercatMaster::recv()->void { aris_ecrt_master_recv(this); }
-	auto EthercatMaster::sync()->void { aris_ecrt_master_sync(this, aris_rt_timer_read()); }
 	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&
 	{
 		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>(&Master::slavePool());

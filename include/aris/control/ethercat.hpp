@@ -179,7 +179,6 @@ namespace aris::control
 		auto virtual init()->void override;
 		auto virtual send()->void override;
 		auto virtual recv()->void override;
-		auto virtual sync()->void override;
 		auto virtual release()->void override;
 
 	private:
@@ -286,7 +285,6 @@ namespace aris::control
 		auto virtual init()->void override;
 		auto virtual send()->void override { EthercatMaster::send(); }
 		auto virtual recv()->void override { EthercatMaster::recv(); }
-		auto virtual sync()->void override { EthercatMaster::sync(); }
 		auto virtual release()->void override { EthercatMaster::release(); }
 
 		struct Imp;
