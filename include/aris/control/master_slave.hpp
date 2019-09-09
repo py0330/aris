@@ -50,6 +50,8 @@ namespace aris::control
 		auto start()->void;
 		auto stop()->void;
 		auto setControlStrategy(std::function<void()> strategy)->void;
+		auto setSamplePeriodNs(int period_ns);
+		auto samplePeriodNs()const ->int;
 
 		// used in rt thread //
 		auto logFile(const char *file_name)->void;

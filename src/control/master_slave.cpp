@@ -109,7 +109,7 @@ namespace aris::control
 		std::atomic_bool is_rt_thread_running_{ false };
 		std::atomic_bool is_mout_thread_running_{ false };
 
-		const int sample_period_ns_{ 1000000 };
+		int sample_period_ns_{ 2000000 };
 
 		// rt stastics //
 		Master::RtStasticsData global_stastics_{ 0,0,0,0x8fffffff,0,0,0 };
@@ -271,6 +271,8 @@ namespace aris::control
 			imp_->is_need_change_ = !is_new_data_include_this_count;
 		}
 	}
+	auto Master::setSamplePeriodNs(int period_ns) {	imp_->sample_period_ns_ = period_ns;}
+	auto Master::samplePeriodNs()const ->int { return imp_->sample_period_ns_; }
 	Master::~Master() = default;
 	Master::Master(const std::string &name) :imp_(new Imp), Object(name)
 	{
