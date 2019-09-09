@@ -723,17 +723,13 @@ namespace aris::server
 
 		imp_->mempool_.resize(mem_size, char(0));
 
-		core::getMem(imp_->mempool_.data(), imp_->last_pvc_);
-		core::getMem(imp_->mempool_.data(), imp_->last_last_pvc_);
+		imp_->last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_pvc_);
+		imp_->last_last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_last_pvc_);
 
 		imp_->global_mot_options_.resize(controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 
 
 		// 赋予初值 //
-		std::fill_n(imp_->last_pvc_, controller().slavePool().size(), Imp::PVC{ 0,0,0 });
-		std::fill_n(imp_->last_last_pvc_, controller().slavePool().size(), Imp::PVC{ 0,0,0 });
-
-
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
 
 		imp_->cmd_now_.store(0);
