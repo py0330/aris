@@ -186,7 +186,7 @@ namespace aris::control
 			else
 			{
 				if (found_entry->second->bitSize() != bit_size)THROW_FILE_LINE("pdo entry size not equal:\"" + std::to_string(index) + ":" + std::to_string(subindex));
-				aris_ecrt_pdo_read(found_entry->second, value, static_cast<int>(bit_size));
+				aris_ecrt_pdo_read(found_entry->second, value);
 			}
 		}
 	}
@@ -205,7 +205,7 @@ namespace aris::control
 			else
 			{
 				if (found_entry->second->bitSize() != bit_size)THROW_FILE_LINE("pdo entry size not equal:\"" + std::to_string(index) + ":" + std::to_string(subindex));
-				aris_ecrt_pdo_write(found_entry->second, value, static_cast<int>(bit_size));
+				aris_ecrt_pdo_write(found_entry->second, value);
 			}
 		}
 	}
