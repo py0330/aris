@@ -347,7 +347,7 @@ namespace aris::control
 				if (ecrt_slave_config_pdos(s_handle.ec_slave_config_, ec_sync_info_vec.size(), ec_sync_info_vec.data()))THROW_FILE_LINE("failed to slave config pdos");
 
 				// Configure the slave's distributed clock
-				if (slave.dcAssignActivate())ecrt_slave_config_dc(s_handle.ec_slave_config_, slave.dcAssignActivate(), master->samplePeriodNs(), 4400000, 0, 0);
+				if (slave.dcAssignActivate())ecrt_slave_config_dc(s_handle.ec_slave_config_, slave.dcAssignActivate(), master->samplePeriodNs(), 500000, 0, 0);
 
 				slave.ecHandle() = s_handle;
 			}

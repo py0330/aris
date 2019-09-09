@@ -109,7 +109,7 @@ namespace aris::control
 		std::atomic_bool is_rt_thread_running_{ false };
 		std::atomic_bool is_mout_thread_running_{ false };
 
-		int sample_period_ns_{ 2000000 };
+		int sample_period_ns_{ 1000000 };
 
 		// rt stastics //
 		Master::RtStasticsData global_stastics_{ 0,0,0,0x8fffffff,0,0,0 };
