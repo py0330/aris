@@ -259,7 +259,6 @@ namespace aris::control
 		ec_master_t* ec_master_;
 		ec_domain_t* domain_;
 		std::uint8_t* domain_pd_;
-		std::vector<char> exchange_data_;
 	};
 	struct SlaveHandle
 	{
@@ -362,9 +361,6 @@ namespace aris::control
 			if (!(m_handle.domain_pd_ = ecrt_domain_data(m_handle.domain_)))THROW_FILE_LINE("failed ecrt_domain_data");
 
 			// set handle
-			//////////////////////////////////////
-			m_handle.exchange_data_.resize(ecrt_domain_size(m_handle.domain_));
-			//////////////////////////////////////
 			master->ecHandle() = m_handle;
 
 			// make pdo init value to zero
@@ -379,7 +375,7 @@ namespace aris::control
 							if (entry.index())
 							{
 								auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry.ecHandle());
-								pe_handle.data_ = std::any_cast<MasterHandle&>(master->ecHandle()).exchange_data_.data() + pe_handle.offset_;
+								pe_handle.data_ = (char*)std::any_cast<MasterHandle&>(master->ecHandle()).domain_pd_ + pe_handle.offset_;
 								
 								std::vector<char> value(entry.bitSize() / 8 + 1, 0);
 								aris_ecrt_pdo_write(&entry, value.data());
@@ -483,13 +479,10 @@ namespace aris::control
 		{
 			ecrt_master_receive(m_handle.ec_master_);
 			ecrt_domain_process(m_handle.domain_);
-			memcpy(m_handle.exchange_data_.data(), m_handle.domain_pd_, m_handle.exchange_data_.size());
 		}
 	}
 	auto aris_ecrt_master_send(EthercatMaster *mst)->void
 	{
-		auto ns = aris_rt_timer_read();
-		
 		auto &m_handle = std::any_cast<MasterHandle&>(mst->ecHandle());
 		
 		ec_master_state_t ms;
@@ -497,11 +490,9 @@ namespace aris::control
 
 		if (ms.link_up)
 		{
-			memcpy(m_handle.domain_pd_, m_handle.exchange_data_.data(), m_handle.exchange_data_.size());
-
 			ecrt_domain_queue(m_handle.domain_);
 
-			ecrt_master_application_time(m_handle.ec_master_, ns);
+			ecrt_master_application_time(m_handle.ec_master_, aris_rt_timer_read());
 			ecrt_master_sync_reference_clock(m_handle.ec_master_);
 			ecrt_master_sync_slave_clocks(m_handle.ec_master_);
 
