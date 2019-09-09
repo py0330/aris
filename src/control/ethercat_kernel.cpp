@@ -309,7 +309,6 @@ namespace aris::control
 			//////////////////////////////////////
 			m_handle.exchange_data_.resize(ecrt_domain_size(m_handle.domain_));
 			//////////////////////////////////////
-
 			master->ecHandle() = m_handle;
 
 			// make pdo init value to zero
