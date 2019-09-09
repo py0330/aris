@@ -59,7 +59,7 @@ namespace aris::server
 		PVC *last_pvc_, *last_last_pvc_;
 
 		// 全局的电机check选项
-		std::vector<std::uint64_t> global_mot_options_;
+		std::uint64_t *global_mot_options_;
 
 		// 储存Model, Controller, SensorRoot, PlanRoot //
 		aris::dynamic::Model* model_;
@@ -169,7 +169,7 @@ namespace aris::server
 					server_->controller().mout() << "execute cmd in count: " << count_ << "\n";
 			}
 		}
-		else if (auto error_code = idle_error_code; idle_error_code = checkMotion(global_mot_options_.data(), errmsg) && idle_error_code != error_code)
+		else if (auto error_code = idle_error_code; idle_error_code = checkMotion(global_mot_options_, errmsg) && idle_error_code != error_code)
 		{
 			// 只有错误代码改变时，才会打印 //
 			server_->controller().mout() << "failed when idle " << idle_error_code << "\n";
@@ -196,8 +196,8 @@ namespace aris::server
 		// 控制电机 //
 		for (std::size_t i = 0; i < std::min(controller_->motionPool().size(), model_->motionPool().size()); ++i)
 		{
-			auto &cm = controller_->motionPool().at(i);
-			auto &mm = model_->motionPool().at(i);
+			auto &cm = controller_->motionPool()[i];
+			auto &mm = model_->motionPool()[i];
 
 			if (mm.active())
 			{
@@ -720,14 +720,14 @@ namespace aris::server
 
 		core::allocMem(mem_size, imp_->last_pvc_, controller().slavePool().size());
 		core::allocMem(mem_size, imp_->last_last_pvc_, controller().slavePool().size());
+		core::allocMem(mem_size, imp_->global_mot_options_, controller().slavePool().size());
 
 		imp_->mempool_.resize(mem_size, char(0));
 
 		imp_->last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_pvc_);
 		imp_->last_last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_last_pvc_);
-
-		imp_->global_mot_options_.resize(controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
-
+		imp_->global_mot_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_options_);
+		std::fill_n(imp_->global_mot_options_, controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 
 		// 赋予初值 //
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
