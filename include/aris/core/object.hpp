@@ -5,6 +5,7 @@
 #include <memory>
 #include <functional>
 
+#include <aris/core/basic_type.hpp>
 #include <aris/core/tinyxml2.h>
 #include <aris/core/log.hpp>
 
@@ -1128,6 +1129,18 @@ namespace aris::core
 	type_name(type_name &&other) = delete; \
 	type_name& operator=(const type_name &other) = delete; \
 	type_name& operator=(type_name &&other) = delete;
+
+	template<typename T>
+	static auto allocMem(Size &mem_pool_size, T* &pointer, Size size)->void
+	{
+		*reinterpret_cast<Size*>(&pointer) = mem_pool_size;
+		mem_pool_size += sizeof(T) * size;
+	}
+	template<typename T>
+	static auto getMem(char *mem_pool, T* &pointer)->T*
+	{
+		return reinterpret_cast<T*>(mem_pool + *reinterpret_cast<Size*>(&pointer));
+	}
 
 	///
 	///  @}

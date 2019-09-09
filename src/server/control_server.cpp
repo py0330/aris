@@ -35,6 +35,10 @@ namespace aris::server
 
 		ControlServer *server_;
 
+		// mem pool //
+		std::vector<char> mempool_;
+
+
 		// 实时循环中的轨迹参数 //
 		enum { CMD_POOL_SIZE = 1000 };
 		std::shared_ptr<InternalData> internal_data_queue_[CMD_POOL_SIZE];
@@ -52,7 +56,7 @@ namespace aris::server
 
 		// 储存上一次motion的数据 //
 		struct PVC { double p; double v; double c; };
-		std::vector<PVC> last_pvc, last_last_pvc;
+		PVC *last_pvc_, *last_last_pvc_;
 
 		// 全局的电机check选项
 		std::vector<std::uint64_t> global_mot_options_;
@@ -218,9 +222,9 @@ namespace aris::server
 		// 检查规划的指令是否合理（包括电机是否已经跟随上） //
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 		{
-			auto &cm = controller_->motionPool().at(i);
-			auto &ld = last_pvc.at(i);
-			auto &lld = last_last_pvc.at(i);
+			auto &cm = controller_->motionPool()[i];
+			auto &ld = last_pvc_[i];
+			auto &lld = last_last_pvc_[i];
 			auto option = mot_options[i];
 
 #ifndef WIN32
@@ -263,7 +267,7 @@ namespace aris::server
 						&& ((cm.targetPos() - ld.p) > 0.001 * cm.maxVel() || (cm.targetPos() - ld.p) < 0.001 * cm.minVel()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc_[i].p, cm.targetPos());
 						goto FAILED;
 					}
 
@@ -272,7 +276,7 @@ namespace aris::server
 						&& ((cm.targetPos() + lld.p - 2 * ld.p) > 1e-6 * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < 1e-6 * cm.minAcc()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %lf\tlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, lld.p, last_pvc.at(i).p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %lf\tlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, lld.p, last_pvc_[i].p, cm.targetPos());
 						goto FAILED;
 					}
 
@@ -312,7 +316,7 @@ namespace aris::server
 						&& ((cm.targetVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.targetVel() - ld.v) < 0.001 * cm.minAcc()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).v, cm.targetVel());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc_[i].v, cm.targetVel());
 						goto FAILED;
 					}
 
@@ -370,7 +374,7 @@ namespace aris::server
 						&& ((cm.actualVel() - ld.v) > 0.001 * cm.maxAcc() || (cm.actualVel() - ld.v) < 0.001 * cm.minAcc()))
 					{
 						error_code = aris::plan::PlanTarget::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc.at(i).p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc_[i].p, cm.targetPos());
 						goto FAILED;
 					}
 					break;
@@ -389,11 +393,11 @@ namespace aris::server
 		// 储存电机指令 //
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 		{
-			last_last_pvc.at(i).p = controller_->motionPool().at(i).targetPos();
-			last_last_pvc.at(i).v = controller_->motionPool().at(i).targetVel();
-			last_last_pvc.at(i).c = controller_->motionPool().at(i).targetToq();
+			last_last_pvc_[i].p = controller_->motionPool()[i].targetPos();
+			last_last_pvc_[i].v = controller_->motionPool()[i].targetVel();
+			last_last_pvc_[i].c = controller_->motionPool()[i].targetToq();
 		}
-		std::swap(last_pvc, last_last_pvc);
+		std::swap(last_pvc_, last_last_pvc_);
 		return 0;
 
 	FAILED:
@@ -421,9 +425,9 @@ namespace aris::server
 			}
 			
 			// store correct data
-			last_pvc.at(i).p = last_last_pvc.at(i).p = controller_->motionPool().at(i).targetPos();
-			last_pvc.at(i).v = last_last_pvc.at(i).v = controller_->motionPool().at(i).targetVel();
-			last_pvc.at(i).c = last_last_pvc.at(i).c = controller_->motionPool().at(i).targetToq();
+			last_pvc_[i].p = last_last_pvc_[i].p = controller_->motionPool().at(i).targetPos();
+			last_pvc_[i].v = last_last_pvc_[i].v = controller_->motionPool().at(i).targetVel();
+			last_pvc_[i].c = last_last_pvc_[i].c = controller_->motionPool().at(i).targetToq();
 		}
 		return error_code;
 	}
@@ -711,13 +715,24 @@ namespace aris::server
 		if (imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to start server, because it is already started "));
 		imp_->is_running_ = true;
 
-		// 得到电机向量以及数据 //
-		imp_->last_pvc.clear();
-		imp_->last_pvc.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
-		imp_->last_last_pvc.clear();
-		imp_->last_last_pvc.resize(controller().slavePool().size(), Imp::PVC{ 0,0,0 });
+		// 分配所需要的内存 //
+		Size mem_size = 0;
+
+		core::allocMem(mem_size, imp_->last_pvc_, controller().slavePool().size());
+		core::allocMem(mem_size, imp_->last_last_pvc_, controller().slavePool().size());
+
+		imp_->mempool_.resize(mem_size, char(0));
+
+		core::getMem(imp_->mempool_.data(), imp_->last_pvc_);
+		core::getMem(imp_->mempool_.data(), imp_->last_last_pvc_);
 
 		imp_->global_mot_options_.resize(controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
+
+
+		// 赋予初值 //
+		std::fill_n(imp_->last_pvc_, controller().slavePool().size(), Imp::PVC{ 0,0,0 });
+		std::fill_n(imp_->last_last_pvc_, controller().slavePool().size(), Imp::PVC{ 0,0,0 });
+
 
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
 

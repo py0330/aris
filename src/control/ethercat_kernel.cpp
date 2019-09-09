@@ -20,6 +20,7 @@ namespace aris::control
 {
 	const unsigned char FF = std::uint8_t(0xff);
 	
+	// 没有 offset 的版本
 	void read_bit2(char *data, int bit_size, const char *pd, int bit_position)
 	{
 		// data:
@@ -453,8 +454,6 @@ namespace aris::control
 						}
 					}
 				}
-
-
 			}
 		}
 		*/

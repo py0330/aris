@@ -920,18 +920,6 @@ namespace aris::dynamic
 			s_inv_um(d->rel_.dim_, d->cmU_, d->rel_.size_, tem, 6);
 			s_mm(6, 6, 6, tem, 6, Q, dynamic::ColMajor{ 6 }, d->dm_, 6);
 		}
-
-		template<typename T>
-		static auto allocMem(Size &mem_pool_size, T* &pointer, Size size)->void
-		{
-			*reinterpret_cast<Size*>(&pointer) = mem_pool_size;
-			mem_pool_size += sizeof(T) * size;
-		}
-		template<typename T>
-		static auto getMem(char *mem_pool, T* &pointer)->T*
-		{
-			return reinterpret_cast<T*>(mem_pool + *reinterpret_cast<Size*>(&pointer));
-		}
 	};
 	auto UniversalSolver::allocateMemory()->void
 	{
@@ -1059,7 +1047,7 @@ namespace aris::dynamic
 		// 构建公共变量区 //
 		PublicData pub_data;
 		s_vc(6, ancestor<Model>()->environment().gravity(), pub_data.gravity_);
-		Imp::allocMem(mem_pool_size, imp_->pd_, 1);
+		core::allocMem(mem_pool_size, imp_->pd_, 1);
 
 		// 构建子系统 //
 		std::vector<SubSystem> sys_vec;
@@ -1078,7 +1066,7 @@ namespace aris::dynamic
 			sys.has_ground_ = (prt_vec.front() == &ancestor<Model>()->ground());
 
 			// 制造 d_vec (diag_vec) //
-			Imp::allocMem(mem_pool_size, sys.d_data_, prt_vec.size());
+			core::allocMem(mem_pool_size, sys.d_data_, prt_vec.size());
 			d_vec_vec.push_back(std::vector<Diag>());
 			auto &d_vec = d_vec_vec.back();
 			d_vec.resize(prt_vec.size());
@@ -1097,12 +1085,12 @@ namespace aris::dynamic
 				diag.part_ = prt_vec[i];
 
 				// 分配 Relation::Block 内存
-				Imp::allocMem(mem_pool_size, rel.blk_data_, rel.cst_pool_.size());
+				core::allocMem(mem_pool_size, rel.blk_data_, rel.cst_pool_.size());
 
 				// 分配 Diag中 p bc xc 的尺寸
-				Imp::allocMem(mem_pool_size, d_vec[i].p_, rel.size_);
-				Imp::allocMem(mem_pool_size, d_vec[i].bc_, rel.size_);
-				Imp::allocMem(mem_pool_size, d_vec[i].xc_, rel.size_);
+				core::allocMem(mem_pool_size, d_vec[i].p_, rel.size_);
+				core::allocMem(mem_pool_size, d_vec[i].bc_, rel.size_);
+				core::allocMem(mem_pool_size, d_vec[i].xc_, rel.size_);
 
 				// 计算 max_cm 的尺寸
 				max_cm_size = std::max(max_cm_size, rel.size_);
@@ -1143,7 +1131,7 @@ namespace aris::dynamic
 			}
 
 			// 制造 r_vec (remainder_vec) //
-			Imp::allocMem(mem_pool_size, sys.r_data_, rel_vec.size() - prt_vec.size() + 1);
+			core::allocMem(mem_pool_size, sys.r_data_, rel_vec.size() - prt_vec.size() + 1);
 			r_vec_vec.push_back(std::vector<LocalRemainder>());
 			auto &r_vec = r_vec_vec.back();
 			r_vec.clear();
@@ -1192,17 +1180,17 @@ namespace aris::dynamic
 				}
 
 				// 分配 Relation::Block 内存
-				Imp::allocMem(mem_pool_size, rel.blk_data_, rel.cst_pool_.size());
+				core::allocMem(mem_pool_size, rel.blk_data_, rel.cst_pool_.size());
 
 				// 分配 Remainder 中 cmI_vec, cmJ_vec, bc_vec, xc_vec 的尺寸
-				Imp::allocMem(mem_pool_size, r_vec[i].cmI_, 6 * rel.size_);
-				Imp::allocMem(mem_pool_size, r_vec[i].cmJ_, 6 * rel.size_);
-				Imp::allocMem(mem_pool_size, r_vec[i].bc_, rel.size_);
-				Imp::allocMem(mem_pool_size, r_vec[i].xc_, rel.size_);
+				core::allocMem(mem_pool_size, r_vec[i].cmI_, 6 * rel.size_);
+				core::allocMem(mem_pool_size, r_vec[i].cmJ_, 6 * rel.size_);
+				core::allocMem(mem_pool_size, r_vec[i].bc_, rel.size_);
+				core::allocMem(mem_pool_size, r_vec[i].xc_, rel.size_);
 
 				// 分配 Remainder::Block 内存
 				r_vec[i].blk_size_ = r.cm_blk_series.size();
-				Imp::allocMem(mem_pool_size, r_vec[i].blk_data_, r.cm_blk_series.size());
+				core::allocMem(mem_pool_size, r_vec[i].blk_data_, r.cm_blk_series.size());
 			}
 			
 			// 更新子系统尺寸 //
@@ -1221,32 +1209,32 @@ namespace aris::dynamic
 			max_gm = std::max(max_gm, sys.gm_);
 			max_gn = std::max(max_gn, sys.gn_);
 		}
-		Imp::allocMem(mem_pool_size, pub_data.subsys_data_, sys_vec.size());
+		core::allocMem(mem_pool_size, pub_data.subsys_data_, sys_vec.size());
 
 		//std::cout << "mem size 0:" << mem_pool_size << std::endl;
 
 		// 计算公共的内存及偏移
-		Imp::allocMem(mem_pool_size, pub_data.cmI_, max_cm_size * 6);
-		Imp::allocMem(mem_pool_size, pub_data.cmJ_, max_cm_size * 6);
-		Imp::allocMem(mem_pool_size, pub_data.cmU_, max_cm_size * 6);
-		Imp::allocMem(mem_pool_size, pub_data.cmT_, std::max(Size(6), max_cm_size));
-		Imp::allocMem(mem_pool_size, pub_data.F_, max_F_size);
-		Imp::allocMem(mem_pool_size, pub_data.FT_, std::max(max_fm, max_fn));
-		Imp::allocMem(mem_pool_size, pub_data.FP_, std::max(max_fm, max_fn));
-		Imp::allocMem(mem_pool_size, pub_data.G_, max_G_size);
-		Imp::allocMem(mem_pool_size, pub_data.GT_, std::max(max_gm, max_gn));
-		Imp::allocMem(mem_pool_size, pub_data.GP_, std::max(max_gm, max_gn));
-		Imp::allocMem(mem_pool_size, pub_data.S_, max_fm * max_fm);
-		Imp::allocMem(mem_pool_size, pub_data.beta_, max_gn);
-		Imp::allocMem(mem_pool_size, pub_data.xcf_, std::max(max_fn, max_fm));
-		Imp::allocMem(mem_pool_size, pub_data.xpf_, std::max(max_fn, max_fm));
-		Imp::allocMem(mem_pool_size, pub_data.bcf_, max_fn);
-		Imp::allocMem(mem_pool_size, pub_data.bpf_, max_fm);
-		Imp::allocMem(mem_pool_size, pub_data.Jg_, ancestor<Model>()->partPool().size() * 6 * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
-		Imp::allocMem(mem_pool_size, pub_data.cg_, ancestor<Model>()->partPool().size() * 6);
-		Imp::allocMem(mem_pool_size, pub_data.M_, (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6) * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
-		Imp::allocMem(mem_pool_size, pub_data.h_, (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
-		Imp::allocMem(mem_pool_size, pub_data.get_diag_from_part_id_, ancestor<Model>()->partPool().size());
+		core::allocMem(mem_pool_size, pub_data.cmI_, max_cm_size * 6);
+		core::allocMem(mem_pool_size, pub_data.cmJ_, max_cm_size * 6);
+		core::allocMem(mem_pool_size, pub_data.cmU_, max_cm_size * 6);
+		core::allocMem(mem_pool_size, pub_data.cmT_, std::max(Size(6), max_cm_size));
+		core::allocMem(mem_pool_size, pub_data.F_, max_F_size);
+		core::allocMem(mem_pool_size, pub_data.FT_, std::max(max_fm, max_fn));
+		core::allocMem(mem_pool_size, pub_data.FP_, std::max(max_fm, max_fn));
+		core::allocMem(mem_pool_size, pub_data.G_, max_G_size);
+		core::allocMem(mem_pool_size, pub_data.GT_, std::max(max_gm, max_gn));
+		core::allocMem(mem_pool_size, pub_data.GP_, std::max(max_gm, max_gn));
+		core::allocMem(mem_pool_size, pub_data.S_, max_fm * max_fm);
+		core::allocMem(mem_pool_size, pub_data.beta_, max_gn);
+		core::allocMem(mem_pool_size, pub_data.xcf_, std::max(max_fn, max_fm));
+		core::allocMem(mem_pool_size, pub_data.xpf_, std::max(max_fn, max_fm));
+		core::allocMem(mem_pool_size, pub_data.bcf_, max_fn);
+		core::allocMem(mem_pool_size, pub_data.bpf_, max_fm);
+		core::allocMem(mem_pool_size, pub_data.Jg_, ancestor<Model>()->partPool().size() * 6 * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
+		core::allocMem(mem_pool_size, pub_data.cg_, ancestor<Model>()->partPool().size() * 6);
+		core::allocMem(mem_pool_size, pub_data.M_, (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6) * (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
+		core::allocMem(mem_pool_size, pub_data.h_, (ancestor<Model>()->motionPool().size() + ancestor<Model>()->generalMotionPool().size() * 6));
+		core::allocMem(mem_pool_size, pub_data.get_diag_from_part_id_, ancestor<Model>()->partPool().size());
 
 		// 分配内存
 		imp_->mem_pool_.resize(mem_pool_size);
@@ -1255,34 +1243,34 @@ namespace aris::dynamic
 
 		// 更新公共变量区 //
 		{
-			imp_->pd_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_);
+			imp_->pd_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_);
 			*imp_->pd_ = pub_data;
 
 			// 获得雅可比部分的内存 //
-			imp_->pd_->Jg_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->Jg_);
-			imp_->pd_->cg_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->cg_);
-			imp_->pd_->M_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->M_);
-			imp_->pd_->h_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->h_);
+			imp_->pd_->Jg_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->Jg_);
+			imp_->pd_->cg_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->cg_);
+			imp_->pd_->M_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->M_);
+			imp_->pd_->h_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->h_);
 
-			imp_->pd_->F_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->F_);
+			imp_->pd_->F_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->F_);
 			imp_->pd_->FU_ = imp_->pd_->F_;
-			imp_->pd_->FT_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->FT_);
-			imp_->pd_->FP_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->FP_);
-			imp_->pd_->G_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->G_);
+			imp_->pd_->FT_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->FT_);
+			imp_->pd_->FP_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->FP_);
+			imp_->pd_->G_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->G_);
 			imp_->pd_->GU_ = imp_->pd_->G_;
-			imp_->pd_->GT_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->GT_);
-			imp_->pd_->GP_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->GP_);
+			imp_->pd_->GT_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->GT_);
+			imp_->pd_->GP_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->GP_);
 			imp_->pd_->QT_DOT_G_ = imp_->pd_->G_;
-			imp_->pd_->S_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->S_);
-			imp_->pd_->beta_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->beta_);
-			imp_->pd_->xcf_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->xcf_);
-			imp_->pd_->xpf_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->xpf_);
-			imp_->pd_->bcf_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->bcf_);
-			imp_->pd_->bpf_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->bpf_);
-			imp_->pd_->cmI_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->cmI_);
-			imp_->pd_->cmJ_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->cmJ_);
-			imp_->pd_->cmU_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->cmU_);
-			imp_->pd_->cmT_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->cmT_);
+			imp_->pd_->S_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->S_);
+			imp_->pd_->beta_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->beta_);
+			imp_->pd_->xcf_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->xcf_);
+			imp_->pd_->xpf_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->xpf_);
+			imp_->pd_->bcf_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->bcf_);
+			imp_->pd_->bpf_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->bpf_);
+			imp_->pd_->cmI_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->cmI_);
+			imp_->pd_->cmJ_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->cmJ_);
+			imp_->pd_->cmU_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->cmU_);
+			imp_->pd_->cmT_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->cmT_);
 		}
 
 		// 将内存付给子系统，并初始化 //
@@ -1295,7 +1283,7 @@ namespace aris::dynamic
 			auto &r_vec = r_vec_vec[i];
 
 			sys.pd_ = imp_->pd_;
-			sys.d_data_ = Imp::getMem(imp_->mem_pool_.data(), sys.d_data_);
+			sys.d_data_ = core::getMem(imp_->mem_pool_.data(), sys.d_data_);
 			sys.d_size_ = d_vec.size();
 			for (int i = 0; i < sys.d_size_; ++i)sys.d_data_[i] = d_vec[i];
 			sys.d_data_[0].pm_ = sys.d_data_[0].pm1_;
@@ -1307,16 +1295,16 @@ namespace aris::dynamic
 
 				// 获取 Block::Relation 内存 //
 				{
-					rel.blk_data_ = Imp::getMem(imp_->mem_pool_.data(), rel.blk_data_);
+					rel.blk_data_ = core::getMem(imp_->mem_pool_.data(), rel.blk_data_);
 					rel.blk_size_ = rel.cst_pool_.size();
 					std::copy(rel.cst_pool_.data(), rel.cst_pool_.data() + rel.cst_pool_.size(), rel.blk_data_);
 					diag.rel_ = rel;
 				}
 				
 				// 获取 p_vec 内存 //
-				diag.p_ = Imp::getMem(imp_->mem_pool_.data(), diag.p_);
-				diag.bc_ = Imp::getMem(imp_->mem_pool_.data(), diag.bc_);
-				diag.xc_ = Imp::getMem(imp_->mem_pool_.data(), diag.xc_);
+				diag.p_ = core::getMem(imp_->mem_pool_.data(), diag.p_);
+				diag.bc_ = core::getMem(imp_->mem_pool_.data(), diag.bc_);
+				diag.xc_ = core::getMem(imp_->mem_pool_.data(), diag.xc_);
 				std::iota(diag.p_, diag.p_ + rel.size_, 0);
 
 				// 初始化 diag //
@@ -1335,20 +1323,20 @@ namespace aris::dynamic
 
 				// 获取 Relation::Block 内存
 				{
-					rel.blk_data_ = Imp::getMem(imp_->mem_pool_.data(), rel.blk_data_);
+					rel.blk_data_ = core::getMem(imp_->mem_pool_.data(), rel.blk_data_);
 					rel.blk_size_ = rel.cst_pool_.size();
 					std::copy(rel.cst_pool_.data(), rel.cst_pool_.data() + rel.cst_pool_.size(), rel.blk_data_);
 					r.rel_ = rel;
 				}
 
 				// 分配 Remainder 中 cmI_, cmJ_, bc_, xc_ 的尺寸
-				r.cmI_ = Imp::getMem(imp_->mem_pool_.data(), r.cmI_);
-				r.cmJ_ = Imp::getMem(imp_->mem_pool_.data(), r.cmJ_);
-				r.bc_ = Imp::getMem(imp_->mem_pool_.data(), r.bc_);
-				r.xc_ = Imp::getMem(imp_->mem_pool_.data(), r.xc_);
+				r.cmI_ = core::getMem(imp_->mem_pool_.data(), r.cmI_);
+				r.cmJ_ = core::getMem(imp_->mem_pool_.data(), r.cmJ_);
+				r.bc_ = core::getMem(imp_->mem_pool_.data(), r.bc_);
+				r.xc_ = core::getMem(imp_->mem_pool_.data(), r.xc_);
 
 				// 获取 Remainder::Block 内存
-				r.blk_data_ = Imp::getMem(imp_->mem_pool_.data(), r.blk_data_);
+				r.blk_data_ = core::getMem(imp_->mem_pool_.data(), r.blk_data_);
 				for (int j = 0; j < r.blk_size_; ++j)
 				{
 					r.blk_data_[j] = r_vec[i].cm_blk_series[j];
@@ -1370,13 +1358,13 @@ namespace aris::dynamic
 		}
 
 		// 分配根据part id寻找diag的vector //
-		imp_->pd_->get_diag_from_part_id_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->get_diag_from_part_id_);
+		imp_->pd_->get_diag_from_part_id_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->get_diag_from_part_id_);
 		for (auto &sys : sys_vec)
 			for (auto diag = sys.d_data_; diag < sys.d_data_ + sys.d_size_; ++diag)
 				imp_->pd_->get_diag_from_part_id_[diag->part_->id()] = diag;
 
 		imp_->pd_->subsys_size_ = sys_vec.size();
-		imp_->pd_->subsys_data_ = Imp::getMem(imp_->mem_pool_.data(), imp_->pd_->subsys_data_);
+		imp_->pd_->subsys_data_ = core::getMem(imp_->mem_pool_.data(), imp_->pd_->subsys_data_);
 		std::copy_n(sys_vec.data(), sys_vec.size(), imp_->pd_->subsys_data_);
 	}
 	auto UniversalSolver::kinPos()->int
