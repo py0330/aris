@@ -141,7 +141,7 @@ namespace aris::control
 		imp_->product_code_ = attributeUint32(xml_ele, "product_code");
 		imp_->revision_num_ = attributeUint32(xml_ele, "revision_num");
 		imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
-		imp_->sync0_shift_ns_ = attributeInt32(xml_ele, "sync0_shift_ns");
+		imp_->sync0_shift_ns_ = attributeInt32(xml_ele, "sync0_shift_ns", 650'000);
 
 		Slave::loadXml(xml_ele);
 		imp_->sm_pool_ = findOrInsertType<aris::core::ObjectPool<SyncManager> >();

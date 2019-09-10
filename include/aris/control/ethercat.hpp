@@ -102,7 +102,7 @@ namespace aris::control
 		auto writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void;
 
 		virtual ~EthercatSlave();
-		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0, std::uint32_t product_code = 0, std::uint32_t revision_num = 0, std::uint32_t dc_assign_activate = 0, std::int32_t sync0_shift_ns = 500000);
+		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0, std::uint32_t product_code = 0, std::uint32_t revision_num = 0, std::uint32_t dc_assign_activate = 0, std::int32_t sync0_shift_ns = 650'000);
 		ARIS_REGISTER_TYPE(EthercatSlave);
 		EthercatSlave(const EthercatSlave &other);
 		EthercatSlave(EthercatSlave &&other) = delete;

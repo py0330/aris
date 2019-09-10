@@ -133,7 +133,7 @@ namespace aris::control
 		Object::loadXml(xml_ele);
 
 		// attribute //
-		imp_->sample_period_ns_ = attributeInt32(xml_ele, "sample_period_ns", 1000000);
+		imp_->sample_period_ns_ = attributeInt32(xml_ele, "sample_period_ns", 1'000'000);
 
 		// children //
 		imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Object> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Object> *>(&(*findByName("slave_pool")));
