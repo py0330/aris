@@ -109,6 +109,7 @@ namespace aris::control
 		std::any ec_handle_;
 
 		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
+		std::int32_t sync0_shift_ns_;
 		aris::core::ObjectPool<SyncManager> *sm_pool_;
 		std::map<std::uint16_t, std::map<std::uint8_t, PdoEntry* > > pdo_map_;
 	};
@@ -131,6 +132,8 @@ namespace aris::control
 		s = std::stringstream();
 		s << "0x" << std::setfill('0') << std::setw(sizeof(dcAssignActivate()) * 2) << std::hex << dcAssignActivate();
 		xml_ele.SetAttribute("dc_assign_activate", s.str().c_str());
+
+		xml_ele.SetAttribute("sync0_shift_ns", imp_->sync0_shift_ns_);
 	}
 	auto EthercatSlave::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
@@ -138,11 +141,13 @@ namespace aris::control
 		imp_->product_code_ = attributeUint32(xml_ele, "product_code");
 		imp_->revision_num_ = attributeUint32(xml_ele, "revision_num");
 		imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
+		imp_->sync0_shift_ns_ = attributeInt32(xml_ele, "sync0_shift_ns");
 
 		Slave::loadXml(xml_ele);
 		imp_->sm_pool_ = findOrInsertType<aris::core::ObjectPool<SyncManager> >();
 	}
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
+	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& { return *imp_->sm_pool_; }
 	auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
 	auto EthercatSlave::setVendorID(std::uint32_t vendor_id)->void { imp_->vendor_id_ = vendor_id; }
 	auto EthercatSlave::productCode()const->std::uint32_t { return imp_->product_code_; }
@@ -151,7 +156,8 @@ namespace aris::control
 	auto EthercatSlave::setRevisionNum(std::uint32_t revision_num)->void { imp_->revision_num_ = revision_num; }
 	auto EthercatSlave::dcAssignActivate()const->std::uint32_t { return imp_->dc_assign_activate_; }
 	auto EthercatSlave::setDcAssignActivate(std::uint32_t dc_assign_activate)->void { imp_->dc_assign_activate_ = dc_assign_activate; }
-	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& { return *imp_->sm_pool_; }
+	auto EthercatSlave::sync0ShiftNs()const->std::int32_t { return imp_->sync0_shift_ns_; }
+	auto EthercatSlave::setSync0ShiftNs(std::int32_t sync0_shift_ns)->void { imp_->sync0_shift_ns_ = sync0_shift_ns; }
 	auto EthercatSlave::scanInfoForCurrentSlave()->void
 	{
 		aris::control::EthercatMaster mst;
@@ -221,7 +227,7 @@ namespace aris::control
 		aris_ecrt_sdo_write(ancestor<EthercatMaster>()->ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 	}
 	EthercatSlave::~EthercatSlave() = default;
-	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc) :Slave(name, phy_id), imp_(new Imp)
+	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc, std::int32_t sync0_shift_ns) :Slave(name, phy_id), imp_(new Imp)
 	{
 		aris::core::Object::registerTypeGlobal<aris::core::ObjectPool<SyncManager> >();
 		
@@ -230,6 +236,7 @@ namespace aris::control
 		imp_->product_code_ = p_code;
 		imp_->revision_num_ = r_num;
 		imp_->dc_assign_activate_ = dc;
+		imp_->sync0_shift_ns_ = sync0_shift_ns;
 	}
 	EthercatSlave::EthercatSlave(const EthercatSlave &other) :Slave(other), imp_(other.imp_)
 	{

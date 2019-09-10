@@ -74,6 +74,7 @@ namespace aris::control
 		auto smPool()const->const aris::core::ObjectPool<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+		
 		auto vendorID()const->std::uint32_t;
 		auto setVendorID(std::uint32_t vendor_id)->void;
 		auto productCode()const->std::uint32_t;
@@ -82,6 +83,8 @@ namespace aris::control
 		auto setRevisionNum(std::uint32_t revision_num)->void;
 		auto dcAssignActivate()const->std::uint32_t;
 		auto setDcAssignActivate(std::uint32_t dc_assign_activate)->void;
+		auto sync0ShiftNs()const->std::int32_t;
+		auto setSync0ShiftNs(std::int32_t sync0_shift_ns)->void;
 		auto scanInfoForCurrentSlave()->void;
 		auto scanPdoForCurrentSlave()->void;
 
@@ -99,7 +102,7 @@ namespace aris::control
 		auto writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void;
 
 		virtual ~EthercatSlave();
-		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000);
+		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0, std::uint32_t product_code = 0, std::uint32_t revision_num = 0, std::uint32_t dc_assign_activate = 0, std::int32_t sync0_shift_ns = 500000);
 		ARIS_REGISTER_TYPE(EthercatSlave);
 		EthercatSlave(const EthercatSlave &other);
 		EthercatSlave(EthercatSlave &&other) = delete;

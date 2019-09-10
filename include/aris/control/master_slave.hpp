@@ -46,6 +46,8 @@ namespace aris::control
 		static auto Type()->const std::string & { static const std::string type("Master"); return std::ref(type); }
 		auto virtual type() const->const std::string& override { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+
 		// used only in non-rt thread //
 		auto start()->void;
 		auto stop()->void;

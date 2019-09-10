@@ -86,6 +86,10 @@ namespace aris::dynamic
 		auto virtual pm() const noexcept->const double4x4& override;
 		auto virtual vs() const noexcept->const double6& override;
 		auto virtual as() const noexcept->const double6& override;
+		auto setPe(const double *pe, const char *type = "313") noexcept->void;
+		auto setPe(const Coordinate &relative_to, const double *pe, const char *type = "313") noexcept->void;
+		auto setPq(const double *pq) noexcept->void;
+		auto setPq(const Coordinate &relative_to, const double *pq) noexcept->void;
 		auto setPm(const double *pm) noexcept->void;
 		auto setPm(const Coordinate &relative_to, const double *pm) noexcept->void;
 		auto prtPm()const noexcept->const double4x4&;

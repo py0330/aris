@@ -123,10 +123,19 @@ namespace aris::control
 		friend class Slave;
 		friend class Master;
 	};
+	auto Master::saveXml(aris::core::XmlElement &xml_ele) const->void
+	{
+		Object::saveXml(xml_ele);
+		xml_ele.SetAttribute("sample_period_ns", imp_->sample_period_ns_);
+	}
 	auto Master::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Object::loadXml(xml_ele);
 
+		// attribute //
+		imp_->sample_period_ns_ = attributeInt32(xml_ele, "sample_period_ns", 1000000);
+
+		// children //
 		imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Object> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Object> *>(&(*findByName("slave_pool")));
 		imp_->mout_pipe_ = findOrInsert<aris::core::Pipe>("mout_pipe");
 		imp_->lout_pipe_ = findOrInsert<aris::core::Pipe>("lout_pipe");
