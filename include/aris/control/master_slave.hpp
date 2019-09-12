@@ -57,6 +57,7 @@ namespace aris::control
 
 		// used in rt thread //
 		auto logFile(const char *file_name)->void;
+		auto logFileRawName(const char *raw_file_name)->void;
 		auto lout()->aris::core::MsgStream &;
 		auto mout()->aris::core::MsgStream &;
 		auto slaveAtAbs(aris::Size id)->Slave& { return slavePool().at(id); }

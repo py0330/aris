@@ -264,6 +264,10 @@ int main(int argc, char *argv[])
 		//t.option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 	}, [&](const aris::plan::PlanTarget &param)->int
 	{
+		if(param.count==1)param.controller->logFileRawName("test");
+		
+		param.controller->lout() << param.count << "\n";
+
 		param.controller->motionAtAbs(0).setTargetPos(param.count*0.002);
 		return 100LL - param.count;
 	}, [&](aris::plan::PlanTarget &)->void
@@ -292,10 +296,10 @@ int main(int argc, char *argv[])
 	}
 	cs.planRoot().planPool().add<aris::plan::MoveSeries>("move_series");
 
-	
+	/*
 	auto ec_ptr = std::make_unique<aris::control::EthercatController>();
 	ec_ptr->setEsiDirs({
-		std::filesystem::path(""),
+		std::filesystem::path("C:\\Users\\py033\\Desktop\\esi_dirs"),
 		std::filesystem::path("C:\\Users\\py033\\Desktop\\esi_dirs\\Beckhoff AX5xxx")
 		});
 
@@ -309,6 +313,7 @@ int main(int argc, char *argv[])
 	std::cout << ec_ptr->getDeviceList() << std::endl;
 	std::cout << ec_ptr->getPdoList(0x000002E1, 0x00, 0x29001) << std::endl;
 	std::cout << ec_ptr->getPdoList(0x0000009A, 0x00030924, 0x000103f4) << std::endl;
+	*/
 
 	// interaction //
 	cs.interfacePool().add<aris::server::WebInterface>("", "5866", aris::core::Socket::WEB);

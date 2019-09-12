@@ -34,7 +34,7 @@ namespace aris::control
 	struct Master::Imp
 	{
 	public:
-		enum { LOG_NEW_FILE = 1 };
+		enum { LOG_NEW_FILE = 1, LOG_NEW_FILE_RAW_NAME = 2 };
 		static auto rt_task_func(void *master)->void
 		{
 			auto &mst = *reinterpret_cast<Master*>(master);
@@ -181,6 +181,12 @@ namespace aris::control
 						file.close();
 						file.open(file_name.string() + msg.toString() + ".txt", std::ios::out | std::ios::trunc);
 					}
+					else if (msg.msgID() == Imp::LOG_NEW_FILE_RAW_NAME)
+					{
+						auto raw_name = aris::core::logDirPath() / (msg.toString() + ".txt");
+						file.close();
+						file.open(raw_name, std::ios::out | std::ios::trunc);
+					}
 					else if (!msg.empty())
 					{
 						file << msg.toString();
@@ -252,6 +258,26 @@ namespace aris::control
 
 		// 发送切换文件的msg //
 		imp_->lout_msg_.setMsgID(Imp::LOG_NEW_FILE);
+		imp_->lout_msg_.copy(file_name);
+		imp_->lout_pipe_->sendMsg(imp_->lout_msg_);
+
+		// 将msg变更回去
+		imp_->lout_msg_.setMsgID(0);
+		imp_->lout_msg_.resize(0);
+	}
+	auto Master::logFileRawName(const char *file_name)->void
+	{
+		// 将已有的log数据发送过去 //
+		if (!imp_->lout_msg_.empty())
+		{
+			// 补充一个0作为结尾 //
+			lout() << std::flush;
+			imp_->lout_pipe_->sendMsg(imp_->lout_msg_);
+			imp_->lout_msg_.resize(0);
+		}
+
+		// 发送切换文件的msg //
+		imp_->lout_msg_.setMsgID(Imp::LOG_NEW_FILE_RAW_NAME);
 		imp_->lout_msg_.copy(file_name);
 		imp_->lout_pipe_->sendMsg(imp_->lout_msg_);
 
