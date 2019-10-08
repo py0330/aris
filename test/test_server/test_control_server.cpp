@@ -8,7 +8,7 @@
 void test_server_option()
 {
 	auto&cs = aris::server::ControlServer::instance();
-	
+	/*
 	// test NOT_RUN_..._FUNCTION
 	{
 		cs.resetController(new aris::control::EthercatController);
@@ -326,6 +326,7 @@ void test_server_option()
 
 		cs.stop();
 	}
+	*/
 }
 
 

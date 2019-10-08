@@ -245,8 +245,8 @@ int main(int argc, char *argv[])
 	//dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMinPos(-0.1);
 	//dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
 	////////////////////////////////////////////////////////////////////////////////////
-
-	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("tt", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
+	/*
+	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("tt", [&](const std::map<std::string, std::string> &, aris::plan::Plan &t)->void
 	{
 		auto ct = cs.currentCollectTarget();
 
@@ -262,19 +262,19 @@ int main(int argc, char *argv[])
 		}
 		
 		//t.option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
-	}, [&](const aris::plan::PlanTarget &param)->int
+	}, [&](aris::plan::Plan &plan)->int
 	{
-		if(param.count==1)param.controller->logFileRawName("test");
+		if (plan.count() == 1)plan.controller()->logFileRawName("test");
 		
-		param.controller->lout() << param.count << "\n";
+		plan.controller()->lout() << plan.count() << "\n";
 
-		param.controller->motionAtAbs(0).setTargetPos(param.count*0.002);
-		return 100LL - param.count;
-	}, [&](aris::plan::PlanTarget &)->void
+		plan.controller()->motionAtAbs(0).setTargetPos(plan.count()*0.002);
+		return 100LL - plan.count();
+	}, [&](aris::plan::Plan &)->void
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}, "<Command name=\"tt\"/>");
-	
+	*/
 
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");

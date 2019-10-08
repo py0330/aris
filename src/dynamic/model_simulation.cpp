@@ -1070,7 +1070,7 @@ namespace aris::dynamic
 		result.allocateMemory();
 		// 记录初始状态 //
 		result.record();
-
+		/*
 		aris::plan::PlanTarget target
 		{
 			std::unique_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan.getTypeInfo(plan.type())->copy_construct_func(plan))),
@@ -1091,7 +1091,7 @@ namespace aris::dynamic
 
 		// 记录轨迹中的状态 //
 		for (;plan.executeRT(target) != 0;++target.count)result.record();
-			
+		*/	
 		// 记录结束状态 //
 		result.record();
 		result.restore(0);

@@ -17,7 +17,7 @@ namespace aris::server
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string
 	{
 		nlohmann::json js;
-
+		
 		for (auto &key_value : ret)
 		{
 #define ARIS_SET_TYPE(TYPE) if (auto value = std::any_cast<TYPE>(&key_value.second)) js[key_value.first] = *value; else
@@ -36,9 +36,8 @@ namespace aris::server
 
 #undef ARIS_SET_TYPE
 		}
-
+		
 		return  js.dump(2);
-
 	}
 
 	Interface::Interface(const std::string &name) :Object(name) {}
@@ -58,20 +57,20 @@ namespace aris::server
 
 		try
 		{
-			aris::server::ControlServer::instance().executeCmd(aris::core::Msg(msg), [socket, msg](aris::plan::PlanTarget &target)->void
+			aris::server::ControlServer::instance().executeCmd(aris::core::Msg(msg), [socket, msg](aris::plan::Plan &plan)->void
 			{
 				// make return msg
 				aris::core::Msg ret_msg(msg);
 
 				// only copy if it is a str
-				if (auto str = std::any_cast<std::string>(&target.ret))
+				if (auto str = std::any_cast<std::string>(&plan.ret()))
 				{
 					ret_msg.copy(*str);
 				}
-				else if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&target.ret))
+				else if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
 				{
-					js->push_back(std::make_pair<std::string, std::any>("return_code", target.ret_code));
-					js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(target.ret_msg)));
+					js->push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
+					js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
 					ret_msg.copy(parse_ret_value(*js));
 				}
 
@@ -90,7 +89,7 @@ namespace aris::server
 		catch (std::exception &e)
 		{
 			std::vector<std::pair<std::string, std::any>> ret_pair;
-			ret_pair.push_back(std::make_pair<std::string, std::any>("return_code", int(aris::plan::PlanTarget::PARSE_EXCEPTION)));
+			ret_pair.push_back(std::make_pair<std::string, std::any>("return_code", int(aris::plan::Plan::PARSE_EXCEPTION)));
 			ret_pair.push_back(std::make_pair<std::string, std::any>("return_message", std::string(e.what())));
 			std::string ret_str = parse_ret_value(ret_pair);
 

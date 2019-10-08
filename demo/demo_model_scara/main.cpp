@@ -16,29 +16,29 @@ using namespace std;
 class MyPlan:public aris::plan::Plan
 {
 public:
-	auto virtual executeRT(aris::plan::PlanTarget &target)->int override
+	auto virtual executeRT()->int override
 	{
 		const double PI = 3.141592653589793;
 		
 		
 		// 设置时间，如果伺服周期为1000Hz，那么每个周期时间递加0.001s //
-		target.model->setTime(target.model->time() + 0.001);
+		model()->setTime(model()->time() + 0.001);
 
 		// 计算末端的位置 //
 		double pe[6]{ 0 , 0 , 0 , 0 , 0 , 0 };
-		pe[0] = 1 + 0.3*std::cos(PI * 2 * target.count / 1000);
-		pe[1] = 1 + 0.5*std::sin(PI * 2 * target.count / 1000);
-		pe[2] = -0.3 + 0.2*std::sin(PI * 2 * target.count / 1000);
-		pe[3] = 0.3 + 4 * PI*target.count / 1000;
+		pe[0] = 1 + 0.3*std::cos(PI * 2 * count() / 1000);
+		pe[1] = 1 + 0.5*std::sin(PI * 2 * count() / 1000);
+		pe[2] = -0.3 + 0.2*std::sin(PI * 2 * count() / 1000);
+		pe[3] = 0.3 + 4 * PI*count() / 1000;
 
 		// 设置末端位置 //
-		target.model->generalMotionPool().front().setMpe(pe, "321");
+		model()->generalMotionPool().front().setMpe(pe, "321");
 
 		// 求反解 //
-		target.model->solverPool()[0].kinPos();
+		model()->solverPool()[0].kinPos();
 
 		// 轨迹的长度和返回值有关，返回0时轨迹结束，这里仿真1000个周期 //
-		return 1000 - target.count;
+		return 1000 - count();
 	}
 };
 
