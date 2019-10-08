@@ -336,6 +336,7 @@ namespace aris::core
 	}
 	auto Object::TypeInfo::registerTo(const std::string &type, Object &object)->void { object.imp_->type_map_.insert(std::make_pair(type, *this)); }
 	auto Object::TypeInfo::registerTo(const std::string &type)->void { Object::Imp::default_type_map().insert(std::make_pair(type, *this)); }
+	auto Object::getTypeInfo(const std::string &type_name)const->const TypeInfo* { return imp_->getTypeInfo(type_name); }
 	auto Object::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		xml_ele.DeleteChildren();

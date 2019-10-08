@@ -443,7 +443,7 @@ namespace aris::core
 
 	class Object
 	{
-	private:
+	public:
 		struct TypeInfo
 		{
 			using DefaultConstructor = std::function<Object*(void)>;
@@ -598,6 +598,7 @@ namespace aris::core
 		}
 		template<typename ChildType>
 		auto registerType()->void { TypeInfo::CreateTypeInfo<ChildType>().registerTo(ChildType::Type(), *this); }
+		auto getTypeInfo(const std::string &type_name)const->const TypeInfo*;
 		static auto Type()->const std::string & { static const std::string type("Object"); return std::ref(type); }
 		auto virtual type() const->const std::string& { return Type(); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void;

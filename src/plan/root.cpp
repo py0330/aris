@@ -857,7 +857,6 @@ namespace aris::plan
 			target.controller->mout() << std::setprecision(15) << m.actualPos() << "   ";
 		}
 		target.controller->mout() << std::endl;
-
 		return 0;
 	}
 	Show::Show(const std::string &name) : Plan(name) { command().loadXmlStr("<Command name=\"sh\"/>"); }

@@ -55,7 +55,7 @@ namespace aris::plan
 			INVERSE_KINEMATIC_POSITION_FAILED = -1002,
 		};
 		
-		Plan* plan;                                       // prepair/execute/collect  get&set(but be careful when prepair)
+		std::unique_ptr<aris::plan::Plan> plan;           // prepair/execute/collect  get&set(but be careful when prepair)
 		aris::server::ControlServer* server;              // prepair/execute/collect  get&set(but be careful when prepair)
 		aris::dynamic::Model* model;                      // prepair/execute/collect  get&set(but be careful when prepair)
 		aris::control::Controller* controller;            // prepair/execute/collect  get&set(but be careful when prepair)

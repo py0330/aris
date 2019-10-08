@@ -587,14 +587,14 @@ namespace aris::server
 		// 初始化plan target //
 		auto internal_data = std::make_shared<Imp::InternalData>(Imp::InternalData{
 			std::make_shared<aris::plan::PlanTarget>(aris::plan::PlanTarget{
-					&*plan_iter,
+					std::unique_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter))),
 					this,
 					&model(),
 					&controller(),
 					cmd_id,
 					0,
 					std::vector<std::uint64_t>(controller().motionPool().size(), 0),
-					std::any(), 
+					std::any(),
 					0, 
 					0, 
 					aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 },
@@ -617,17 +617,22 @@ namespace aris::server
 		{
 			return a.first.length() < b.first.length();
 		})->first.length();
-		if (!(target->option & aris::plan::Plan::NOT_PRINT_CMD_INFO))std::cout << cmd << std::endl;
-
-		auto &log = LOG_INFO << cmd << std::endl;
-		for (auto &p : params)
+		// print
+		if (!(target->option & aris::plan::Plan::NOT_PRINT_CMD_INFO)) 
 		{
-			if (!(target->option & aris::plan::Plan::NOT_PRINT_CMD_INFO))
-				std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
-			if (!(target->option & aris::plan::Plan::NOT_LOG_CMD_INFO))
-				log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			std::cout << cmd << std::endl;
+			for (auto &p : params)std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			std::cout << std::endl;
 		}
-		if (!(target->option & aris::plan::Plan::NOT_PRINT_CMD_INFO))std::cout << std::endl;
+		// log
+		if (!(target->option & aris::plan::Plan::NOT_LOG_CMD_INFO))
+		{
+			auto &log = LOG_INFO << cmd << std::endl;
+			for (auto &p : params)
+			{
+				log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			}
+		}
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		// execute //
@@ -649,7 +654,7 @@ namespace aris::server
 				while ((cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 			// 添加命令 //
-			LOG_INFO << "server execute cmd " << std::to_string(cmd_id) << std::endl;
+			LOG_INFO << "server execute rt cmd " << std::to_string(cmd_id) << std::endl;
 			imp_->internal_data_queue_[cmd_end % Imp::CMD_POOL_SIZE] = internal_data;
 			imp_->cmd_end_.store(++cmd_end); // 原子操作 //
 
