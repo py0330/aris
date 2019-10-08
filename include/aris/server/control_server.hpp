@@ -59,6 +59,7 @@ namespace aris::server
 		auto globalCount()->std::int64_t;
 
 		// operation in RT context //
+		auto currentExecuteTargetRt()->aris::plan::PlanTarget *;
 
 		// operation in NRT context //
 		auto open()->void;

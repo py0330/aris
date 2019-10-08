@@ -496,6 +496,12 @@ namespace aris::server
 	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
 	auto ControlServer::running()->bool { return imp_->is_running_; }
 	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
+	auto ControlServer::currentExecuteTargetRt()->aris::plan::PlanTarget *
+	{
+		auto cmd_now = imp_->cmd_now_.load();
+		auto cmd_end = imp_->cmd_end_.load();
+		return cmd_end > cmd_now ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->target.get() : nullptr;
+	}
 	auto ControlServer::open()->void { for (auto &inter : interfacePool()) inter.open(); }
 	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
 	auto ControlServer::runCmdLine()->void
