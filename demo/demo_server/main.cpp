@@ -242,8 +242,8 @@ int main(int argc, char *argv[])
 
 	//auto m = aris::dynamic::createModelSevenAxis(param);
 	//cs.resetModel(m.release());
-	//dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMinPos(-0.1);
-	//dynamic_cast<aris::control::EthercatMotion&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
+	//dynamic_cast<aris::control::EthercatMotor&>(cs.controller().slaveAtAbs(1)).setMinPos(-0.1);
+	//dynamic_cast<aris::control::EthercatMotor&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
 	////////////////////////////////////////////////////////////////////////////////////
 	/*
 	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("tt", [&](const std::map<std::string, std::string> &, aris::plan::Plan &t)->void

@@ -44,7 +44,7 @@ namespace aris::plan
 			COLLECT_WHEN_ALL_PLAN_COLLECTED = 0x01ULL << 10,
 			WAIT_FOR_COLLECTION = 0x01ULL << 11,
 		};
-		enum MotionOption : std::uint64_t
+		enum MotorOption : std::uint64_t
 		{
 			USE_TARGET_POS = 0x01ULL << 16,
 			USE_TARGET_VEL = 0x01ULL << 17,

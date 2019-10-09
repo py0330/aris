@@ -12,7 +12,7 @@ void test_elmo_enable()
 	{
 		aris::control::EthercatController m;
 
-		auto &s1 = m.slavePool().add<EthercatMotion>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 110.0, 1.0, 0.0, 0.0);
+		auto &s1 = m.slavePool().add<EthercatMotor>("s1", 0, 0x0000009a, 0x00030924, 0x000103F6, 0x0300, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 110.0, 1.0, 0.0, 0.0);
 
 		//auto &tx = s1.pdoPool().add<Pdo>("index_1A00", 0x1A00, true);
 		//tx.add<PdoEntry>("index_6064", 0x6064, 0x00, sizeof(std::int32_t));

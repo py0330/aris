@@ -569,7 +569,7 @@ namespace aris::plan
 				std::uint32_t low_speed = std::stoi(params.at(std::string("low_speed")));
 				std::uint32_t acc = std::stoi(params.at(std::string("acceleration")));
 
-				auto &cm = dynamic_cast<aris::control::EthercatMotion &>(controller()->motionPool()[i]);
+				auto &cm = dynamic_cast<aris::control::EthercatMotor &>(controller()->motionPool()[i]);
 			
 				cm.writeSdo(0x6098, 0x00, method);
 				std::int8_t method_read;

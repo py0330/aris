@@ -5,7 +5,7 @@
 
 namespace aris::control
 {
-	class Motion : public virtual Slave
+	class Motor : public virtual Slave
 	{
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
@@ -62,14 +62,14 @@ namespace aris::control
 		auto virtual home()->int = 0;
 		auto virtual mode(std::uint8_t md)->int = 0;
 
-		virtual ~Motion();
-		explicit Motion(const std::string &name = "motion", std::uint16_t phy_id = 0
+		virtual ~Motor();
+		explicit Motor(const std::string &name = "motion", std::uint16_t phy_id = 0
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
 			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
-		Motion(const Motion &other);
-		Motion(Motion &&other) = delete;
-		Motion& operator=(const Motion &other);
-		Motion& operator=(Motion &&other) = delete;
+		Motor(const Motor &other);
+		Motor(Motor &&other) = delete;
+		Motor& operator=(const Motor &other);
+		Motor& operator=(Motor &&other) = delete;
 
 	private:
 		struct Imp;
@@ -80,14 +80,14 @@ namespace aris::control
 	class Controller : public virtual Master
 	{
 	public:
-		auto motionPool()->aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>>&;
-		auto motionPool()const->const aris::core::SubRefPool<Motion, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
-		auto motionAtSla(aris::Size id)->Motion&;
-		auto motionAtSla(aris::Size id)const->const Motion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
-		auto motionAtPhy(aris::Size id)->Motion&;
-		auto motionAtPhy(aris::Size id)const->const Motion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
-		auto motionAtAbs(aris::Size id)->Motion&;
-		auto motionAtAbs(aris::Size id)const->const Motion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
+		auto motionPool()->aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>>&;
+		auto motionPool()const->const aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
+		auto motionAtSla(aris::Size id)->Motor&;
+		auto motionAtSla(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
+		auto motionAtPhy(aris::Size id)->Motor&;
+		auto motionAtPhy(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
+		auto motionAtAbs(aris::Size id)->Motor&;
+		auto motionAtAbs(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
 
 		ARIS_REGISTER_TYPE(Controller);
 		virtual ~Controller();

@@ -62,7 +62,7 @@ namespace aris::robot
 		for (aris::Size i = 0; i < 1; ++i)
 		{
 			std::string xml_str =
-				"<m" + std::to_string(i) + " type=\"EthercatMotion\" phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00030924\""
+				"<m" + std::to_string(i) + " type=\"EthercatMotor\" phy_id=\"" + std::to_string(i) + "\" product_code=\"0x00030924\""
 				" vendor_id=\"0x0000009a\" revision_num=\"0x000103F6\" dc_assign_activate=\"0x0300\""
 				" min_pos=\"-10.0\" max_pos=\"10.0\" max_vel=\"10.0\" max_acc=\"10.0\" max_pos_following_error=\"100.0\" max_vel_following_error=\"200.0\""
 				" home_pos=\"0\" pos_factor=\"62914560\">"
@@ -91,7 +91,7 @@ namespace aris::robot
 				"	</sdo_pool>"
 				"</m" + std::to_string(i) + ">";
 
-			controller->slavePool().add<aris::control::EthercatMotion>().loadXmlStr(xml_str);
+			controller->slavePool().add<aris::control::EthercatMotor>().loadXmlStr(xml_str);
 		}
 
 		return controller;

@@ -191,7 +191,7 @@ namespace aris::control
 		friend class PdoEntry;
 	};
 
-	class EthercatMotion :public EthercatSlave, public Motion
+	class EthercatMotor :public EthercatSlave, public Motor
 	{
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
@@ -240,14 +240,14 @@ namespace aris::control
 		// require pdo 0x6060 0x6061 //
 		auto virtual mode(std::uint8_t md)->int override;
 
-		EthercatMotion(const std::string &name = "ethercat_motion", std::uint16_t phy_id = 0
+		EthercatMotor(const std::string &name = "ethercat_motion", std::uint16_t phy_id = 0
 			, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
-		ARIS_REGISTER_TYPE(EthercatMotion);
-		EthercatMotion(const EthercatMotion &other);
-		EthercatMotion(EthercatMotion &&other) = delete;
-		EthercatMotion& operator=(const EthercatMotion &other);
-		EthercatMotion& operator=(EthercatMotion &&other) = delete;
+		ARIS_REGISTER_TYPE(EthercatMotor);
+		EthercatMotor(const EthercatMotor &other);
+		EthercatMotor(EthercatMotor &&other) = delete;
+		EthercatMotor& operator=(const EthercatMotor &other);
+		EthercatMotor& operator=(EthercatMotor &&other) = delete;
 
 	private:
 		class Imp;
@@ -256,15 +256,15 @@ namespace aris::control
 	class EthercatController :public EthercatMaster, public Controller
 	{
 	public:
-		using MotionPool = aris::core::SubRefPool<EthercatMotion, aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>>;
+		using MotionPool = aris::core::SubRefPool<EthercatMotor, aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>>;
 		auto motionPool()->MotionPool&;
 		auto motionPool()const->const MotionPool& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
-		auto motionAtAbs(aris::Size id)->EthercatMotion& { return dynamic_cast<EthercatMotion&>(Controller::motionAtAbs(id)); }
-		auto motionAtAbs(aris::Size id)const->const EthercatMotion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
-		auto motionAtPhy(aris::Size id)->EthercatMotion& { return dynamic_cast<EthercatMotion&>(Controller::motionAtPhy(id)); }
-		auto motionAtPhy(aris::Size id)const->const EthercatMotion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
-		auto motionAtSla(aris::Size id)->EthercatMotion& { return dynamic_cast<EthercatMotion&>(Controller::motionAtSla(id)); }
-		auto motionAtSla(aris::Size id)const->const EthercatMotion& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
+		auto motionAtAbs(aris::Size id)->EthercatMotor& { return dynamic_cast<EthercatMotor&>(Controller::motionAtAbs(id)); }
+		auto motionAtAbs(aris::Size id)const->const EthercatMotor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
+		auto motionAtPhy(aris::Size id)->EthercatMotor& { return dynamic_cast<EthercatMotor&>(Controller::motionAtPhy(id)); }
+		auto motionAtPhy(aris::Size id)const->const EthercatMotor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtPhy(id); }
+		auto motionAtSla(aris::Size id)->EthercatMotor& { return dynamic_cast<EthercatMotor&>(Controller::motionAtSla(id)); }
+		auto motionAtSla(aris::Size id)const->const EthercatMotor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
 
 		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return EthercatMaster::slavePool(); }
 		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }

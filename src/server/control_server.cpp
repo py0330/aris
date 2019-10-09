@@ -49,7 +49,9 @@ namespace aris::server
 		struct InternalData
 		{
 			std::shared_ptr<aris::plan::Plan> plan_;
-			std::function<void(aris::plan::Plan&)> post_callback;
+			std::function<void(aris::plan::Plan&)> post_callback_;
+
+			~InternalData() { if (post_callback_)post_callback_(*plan_); }
 		};
 		
 		auto tg()->void;
@@ -204,8 +206,7 @@ namespace aris::server
 		// 给与外部想要的数据 //
 		if (if_get_data_.exchange(false)) // 原子操作
 		{
-			get_data_func_->operator()(ControlServer::instance(),
-				cmd_end > cmd_now ? &*internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_ : nullptr, *get_data_);
+			get_data_func_->operator()(ControlServer::instance(), cmd_end > cmd_now ? &*internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_ : nullptr, *get_data_);
 			if_get_data_ready_.store(true); // 原子操作
 		}
 
@@ -611,48 +612,49 @@ namespace aris::server
 		planRoot().planParser().parse(msg.toString(), cmd, params);
 		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 
-		// 初始化plan target //
+		// 初始化plan //
 		auto internal_data = std::make_shared<Imp::InternalData>(Imp::InternalData{
 			std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter))),
 			post_callback
 			});
-		internal_data->plan_->imp_->count_ = 0;
-		internal_data->plan_->imp_->model_ = imp_->model_;
-		internal_data->plan_->imp_->master_ = imp_->controller_;
-		internal_data->plan_->imp_->controller_ = dynamic_cast<aris::control::Controller*>(internal_data->plan_->imp_->master_);
-		internal_data->plan_->imp_->ec_master_ = dynamic_cast<aris::control::EthercatMaster*>(internal_data->plan_->imp_->master_);
-		internal_data->plan_->imp_->ec_controller_ = dynamic_cast<aris::control::EthercatController*>(internal_data->plan_->imp_->master_);
-		internal_data->plan_->imp_->cs_ = this;
-		internal_data->plan_->imp_->option_ = 0;
-		internal_data->plan_->imp_->mot_options_.resize(internal_data->plan_->imp_->controller_->motionPool().size(), 0);
-		internal_data->plan_->imp_->cmd_msg_ = msg.toString();
-		internal_data->plan_->imp_->cmd_name_ = cmd;
-		internal_data->plan_->imp_->cmd_params_ = params;
-		internal_data->plan_->imp_->begin_global_count_ = 0;
-		internal_data->plan_->imp_->command_id_ = cmd_id;
-		internal_data->plan_->imp_->rt_stastic_ = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
+		auto plan = internal_data->plan_;
+		plan->imp_->count_ = 0;
+		plan->imp_->model_ = imp_->model_;
+		plan->imp_->master_ = imp_->controller_;
+		plan->imp_->controller_ = dynamic_cast<aris::control::Controller*>(plan->imp_->master_);
+		plan->imp_->ec_master_ = dynamic_cast<aris::control::EthercatMaster*>(plan->imp_->master_);
+		plan->imp_->ec_controller_ = dynamic_cast<aris::control::EthercatController*>(plan->imp_->master_);
+		plan->imp_->cs_ = this;
+		plan->imp_->option_ = 0;
+		plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
+		plan->imp_->cmd_msg_ = msg.toString();
+		plan->imp_->cmd_name_ = std::move(cmd);
+		plan->imp_->cmd_params_ = std::move(params);
+		plan->imp_->begin_global_count_ = 0;
+		plan->imp_->command_id_ = cmd_id;
+		plan->imp_->rt_stastic_ = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
 
 		// prepair //
 		LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
-		internal_data->plan_->prepairNrt(params);
+		plan->prepairNrt(plan->cmdParams());
 
 		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		auto print_size = params.empty() ? 2 : 2 + std::max_element(params.begin(), params.end(), [](const auto& a, const auto& b)
+		auto print_size = plan->cmdParams().empty() ? 2 : 2 + std::max_element(plan->cmdParams().begin(), plan->cmdParams().end(), [](const auto& a, const auto& b)
 		{
 			return a.first.length() < b.first.length();
 		})->first.length();
 		// print
-		if (!(internal_data->plan_->option() & aris::plan::Plan::NOT_PRINT_CMD_INFO)) 
+		if (!(plan->option() & aris::plan::Plan::NOT_PRINT_CMD_INFO))
 		{
-			std::cout << cmd << std::endl;
-			for (auto &p : params)std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			std::cout << plan->cmdName() << std::endl;
+			for (auto &p : plan->cmdParams())std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
 			std::cout << std::endl;
 		}
 		// log
-		if (!(internal_data->plan_->option() & aris::plan::Plan::NOT_LOG_CMD_INFO))
+		if (!(plan->option() & aris::plan::Plan::NOT_LOG_CMD_INFO))
 		{
-			auto &log = LOG_INFO << cmd << std::endl;
-			for (auto &p : params)
+			auto &log = LOG_INFO << plan->cmdName() << std::endl;
+			for (auto &p : plan->cmdParams())
 			{
 				log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
 			}
@@ -660,19 +662,19 @@ namespace aris::server
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		// execute //
-		if (!(internal_data->plan_->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
+		if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
 		{
 			// 只有实时循环才需要 server 已经在运行
 			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
 			
 			// 等待所有任务完成 //
-			if (internal_data->plan_->option() & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) waitForAllExecution();
+			if (plan->option() & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) waitForAllExecution();
 
 			// 等待所有任务收集 //
-			if (internal_data->plan_->option() & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED) waitForAllCollection();
+			if (plan->option() & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED) waitForAllCollection();
 
 			// 判断是否等待命令池清空 //
-			if ((!(internal_data->plan_->option() & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
+			if ((!(plan->option() & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
 				LOG_AND_THROW(std::runtime_error("failed to execute plan, because command pool is full"));
 			else
 				while ((cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -683,45 +685,41 @@ namespace aris::server
 			imp_->cmd_end_.store(++cmd_end); // 原子操作 //
 
 			// 等待当前任务完成 //
-			if(internal_data->plan_->option() & aris::plan::Plan::WAIT_FOR_EXECUTION)waitForAllExecution();
+			if(plan->option() & aris::plan::Plan::WAIT_FOR_EXECUTION)waitForAllExecution();
 		}
 
 		// collect //
-		if (!(internal_data->plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
+		if (!(plan->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
 		{
 			// 没有实时规划的轨迹，直接同步收集 //
-			if (internal_data->plan_->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
+			if (plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
 			{
 				// 等待所有任务完成，原子操作 //
-				while ((internal_data->plan_->option() & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				while ((plan->option() & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 				// 等待所有任务收集，原子操作 //
-				while ((internal_data->plan_->option() & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				while ((plan->option() & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-				LOG_INFO << "server collect cmd " << internal_data->plan_->commandId() << std::endl;
-				internal_data->plan_->collectNrt();
-				internal_data->plan_->retCode() = aris::plan::Plan::SUCCESS;
-				if (internal_data->post_callback)internal_data->post_callback(*internal_data->plan_);
-				internal_data.reset();
+				LOG_INFO << "server collect cmd " << plan->commandId() << std::endl;
+				plan->collectNrt();
+				plan->retCode() = aris::plan::Plan::SUCCESS;
 			}
 			// 等待当前实时任务收集 //
 			else
 			{
 				// 等待当前任务收集 //
-				if (internal_data->plan_->option() & aris::plan::Plan::WAIT_FOR_COLLECTION)waitForAllCollection();
+				if (plan->option() & aris::plan::Plan::WAIT_FOR_COLLECTION)waitForAllCollection();
 			}
 		}
 		else
 		{
-			if (internal_data->plan_->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
+			if (plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
 			{
-				internal_data->plan_->retCode() = aris::plan::Plan::SUCCESS;
-				if (internal_data->post_callback)internal_data->post_callback(*internal_data->plan_);
-				internal_data.reset();
+				plan->retCode() = aris::plan::Plan::SUCCESS;
 			}
 		}
 
-		return internal_data->plan_;
+		return plan;
 	}
 	auto ControlServer::executeCmdInCmdLine(const aris::core::Msg &cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
 	{
@@ -792,7 +790,6 @@ namespace aris::server
 						LOG_INFO << "server collect cmd " << plan.commandId() << std::endl;
 						plan.collectNrt();
 					}
-					if (internal_data->post_callback)internal_data->post_callback(*internal_data->plan_);
 					internal_data.reset();
 					imp_->cmd_collect_.store(cmd_collect + 1);
 				}

@@ -500,7 +500,7 @@ namespace aris::control
 	EthercatMaster::~EthercatMaster() = default;
 	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp){}
 
-	class EthercatMotion::Imp
+	class EthercatMotor::Imp
 	{
 	public:
 		std::uint16_t control_word;
@@ -513,95 +513,95 @@ namespace aris::control
 		int home_count{ 0 };
 		bool need_clear{ true };
 	};
-	auto EthercatMotion::saveXml(aris::core::XmlElement &xml_ele) const->void
+	auto EthercatMotor::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		EthercatSlave::saveXml(xml_ele);
-		Motion::saveXml(xml_ele);
+		Motor::saveXml(xml_ele);
 	}
-	auto EthercatMotion::loadXml(const aris::core::XmlElement &xml_ele)->void
+	auto EthercatMotor::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		Motion::loadXml(xml_ele);
+		Motor::loadXml(xml_ele);
 		EthercatSlave::loadXml(xml_ele);
 	}
-	auto EthercatMotion::controlWord()const->std::uint16_t { return imp_->control_word; }
-	auto EthercatMotion::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
-	auto EthercatMotion::targetPos()const->double { return imp_->target_pos_; }
-	auto EthercatMotion::targetVel()const->double { return imp_->target_vel_; }
-	auto EthercatMotion::targetToq()const->double { return imp_->target_toq_; }
-	auto EthercatMotion::offsetVel()const->double { return imp_->offset_vel_; }
-	auto EthercatMotion::offsetCur()const->double { return imp_->offset_toq_; }
-	auto EthercatMotion::setControlWord(std::uint16_t control_word)->void
+	auto EthercatMotor::controlWord()const->std::uint16_t { return imp_->control_word; }
+	auto EthercatMotor::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
+	auto EthercatMotor::targetPos()const->double { return imp_->target_pos_; }
+	auto EthercatMotor::targetVel()const->double { return imp_->target_vel_; }
+	auto EthercatMotor::targetToq()const->double { return imp_->target_toq_; }
+	auto EthercatMotor::offsetVel()const->double { return imp_->offset_vel_; }
+	auto EthercatMotor::offsetCur()const->double { return imp_->offset_toq_; }
+	auto EthercatMotor::setControlWord(std::uint16_t control_word)->void
 	{
 		imp_->control_word = control_word;
 		writePdo(0x6040, 0x00, control_word);
 	}
-	auto EthercatMotion::setModeOfOperation(std::uint8_t mode)->void
+	auto EthercatMotor::setModeOfOperation(std::uint8_t mode)->void
 	{
 		imp_->mode_of_operation = mode;
 		writePdo(0x6060, 0x00, mode);
 	}
-	auto EthercatMotion::setTargetPos(double pos)->void
+	auto EthercatMotor::setTargetPos(double pos)->void
 	{
 		imp_->target_pos_ = pos;
 		writePdo(0x607A, 0x00, static_cast<std::int32_t>((pos + posOffset()) * posFactor()));
 	}
-	auto EthercatMotion::setTargetVel(double vel)->void
+	auto EthercatMotor::setTargetVel(double vel)->void
 	{
 		imp_->target_vel_ = vel;
 		writePdo(0x60FF, 0x00, static_cast<std::int32_t>(vel * posFactor()));
 	}
-	auto EthercatMotion::setTargetToq(double toq)->void
+	auto EthercatMotor::setTargetToq(double toq)->void
 	{
 		imp_->target_toq_ = toq;
 		writePdo(0x6071, 0x00, static_cast<std::int16_t>(toq));
 	}
-	auto EthercatMotion::setOffsetVel(double vel)->void
+	auto EthercatMotor::setOffsetVel(double vel)->void
 	{
 		imp_->offset_vel_ = vel;
 		writePdo(0x60B1, 0x00, static_cast<std::int32_t>(vel * posFactor()));
 	}
-	auto EthercatMotion::setOffsetToq(double cur)->void
+	auto EthercatMotor::setOffsetToq(double cur)->void
 	{
 		imp_->offset_toq_ = cur;
 		writePdo(0x60B2, 0x00, static_cast<std::int16_t>(cur));
 	}
-	auto EthercatMotion::statusWord()const->std::uint16_t
+	auto EthercatMotor::statusWord()const->std::uint16_t
 	{
 		std::uint16_t status_word;
 		readPdo(0x6041, 0x00, status_word);
 		return status_word;
 	}
-	auto EthercatMotion::modeOfDisplay()const->std::uint8_t
+	auto EthercatMotor::modeOfDisplay()const->std::uint8_t
 	{
 		std::uint8_t mode;
 		readPdo(0x6061, 0x00, mode);
 		return mode;
 	}
-	auto EthercatMotion::actualPos()const->double
+	auto EthercatMotor::actualPos()const->double
 	{
 		std::int32_t pos_count{ 0 };
 		readPdo(0x6064, 0x00, pos_count);
 		return static_cast<double>(pos_count) / posFactor() - posOffset();
 	}
-	auto EthercatMotion::actualVel()const->double
+	auto EthercatMotor::actualVel()const->double
 	{
 		std::int32_t vel_count{ 0 };
 		readPdo(0x606C, 0x00, vel_count);
 		return static_cast<double>(vel_count) / posFactor();
 	}
-	auto EthercatMotion::actualToq()const->double
+	auto EthercatMotor::actualToq()const->double
 	{
 		std::int16_t cur_count{ 0 };
 		readPdo(0x6077, 0x00, cur_count);
 		return static_cast<double>(cur_count);
 	}
-	auto EthercatMotion::actualCur()const->double
+	auto EthercatMotor::actualCur()const->double
 	{
 		std::int16_t cur_count{ 0 };
 		readPdo(0x6078, 0x00, cur_count);
 		return static_cast<double>(cur_count);
 	}
-	auto EthercatMotion::disable()->int
+	auto EthercatMotor::disable()->int
 	{
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8         Shutdown
@@ -689,7 +689,7 @@ namespace aris::control
 			return -1;
 		}
 	}
-	auto EthercatMotion::enable()->int
+	auto EthercatMotor::enable()->int
 	{
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
@@ -787,7 +787,7 @@ namespace aris::control
 			return -1;
 		}
 	}
-	auto EthercatMotion::home()->int
+	auto EthercatMotor::home()->int
 	{
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
@@ -876,20 +876,20 @@ namespace aris::control
 			return -3;
 		}
 	}
-	auto EthercatMotion::mode(std::uint8_t md)->int
+	auto EthercatMotor::mode(std::uint8_t md)->int
 	{
 		setModeOfOperation(md);
 		return md == modeOfDisplay() ? 0 : 1;
 	}
-	EthercatMotion::EthercatMotion(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
+	EthercatMotor::EthercatMotor(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos)
 		: EthercatSlave(name, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)
-		, Motion(name, phy_id, max_pos, min_pos, max_vel, min_vel, max_acc, min_acc, max_pos_following_error, max_vel_following_error, pos_factor, pos_offset, home_pos)
+		, Motor(name, phy_id, max_pos, min_pos, max_vel, min_vel, max_acc, min_acc, max_pos_following_error, max_vel_following_error, pos_factor, pos_offset, home_pos)
 		, Slave(name, phy_id), imp_(new Imp)
 	{
 	}
-	EthercatMotion::EthercatMotion(const EthercatMotion &other) = default;
-	EthercatMotion& EthercatMotion::operator=(const EthercatMotion &other) = default;
+	EthercatMotor::EthercatMotor(const EthercatMotor &other) = default;
+	EthercatMotor& EthercatMotor::operator=(const EthercatMotor &other) = default;
 
 	struct EthercatController::Imp
 	{
