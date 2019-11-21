@@ -867,18 +867,15 @@ namespace aris::plan
 	Show::Show(const std::string &name) : Plan(name) { command().loadXmlStr("<Command name=\"sh\"/>"); }
 	ARIS_DEFINE_BIG_FOUR_CPP(Show);
 
-	struct MoveAbsJParam :public SetActiveMotor, SetInputMovement{};
+	struct MoveAbsJ::Imp :public SetActiveMotor, SetInputMovement {};
 	auto MoveAbsJ::prepairNrt()->void
 	{
-		MoveAbsJParam param;
-
 		set_check_option(cmdParams(), *this);
-		set_active_motor(cmdParams(), *this, param);
-		set_input_movement(cmdParams(), *this, param);
-		check_input_movement(cmdParams(), *this, param, param);
+		set_active_motor(cmdParams(), *this, *imp_);
+		set_input_movement(cmdParams(), *this, *imp_);
+		check_input_movement(cmdParams(), *this, *imp_, *imp_);
 
-		param.axis_begin_pos_vec.resize(controller()->motionPool().size());
-		this->param() = param;
+		imp_->axis_begin_pos_vec.resize(controller()->motionPool().size());
 		for (auto &option : motorOptions()) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
@@ -886,29 +883,27 @@ namespace aris::plan
 	}
 	auto MoveAbsJ::executeRT()->int
 	{
-		auto param = std::any_cast<MoveAbsJParam>(&this->param());
-
 		if (count() == 1)
 		{
-			for (Size i = 0; i < param->active_motor.size(); ++i)
+			for (Size i = 0; i < imp_->active_motor.size(); ++i)
 			{
-				if (param->active_motor[i])
+				if (imp_->active_motor[i])
 				{
-					param->axis_begin_pos_vec[i] = controller()->motionPool()[i].targetPos();
+					imp_->axis_begin_pos_vec[i] = controller()->motionPool()[i].targetPos();
 				}
 			}
 		}
 
 		aris::Size total_count{ 1 };
-		for (Size i = 0; i < param->active_motor.size(); ++i)
+		for (Size i = 0; i < imp_->active_motor.size(); ++i)
 		{
-			if (param->active_motor[i])
+			if (imp_->active_motor[i])
 			{
 				double p, v, a;
 				aris::Size t_count;
 				aris::plan::moveAbsolute(count(),
-					param->axis_begin_pos_vec[i], param->axis_pos_vec[i],
-					param->axis_vel_vec[i] / 1000, param->axis_acc_vec[i] / 1000 / 1000, param->axis_dec_vec[i] / 1000 / 1000,
+					imp_->axis_begin_pos_vec[i], imp_->axis_pos_vec[i],
+					imp_->axis_vel_vec[i] / 1000, imp_->axis_acc_vec[i] / 1000 / 1000, imp_->axis_dec_vec[i] / 1000 / 1000,
 					p, v, a, t_count);
 				controller()->motionPool()[i].setTargetPos(p);
 				total_count = std::max(total_count, t_count);
@@ -917,7 +912,7 @@ namespace aris::plan
 
 		return total_count - count();
 	}
-	struct MoveAbsJ::Imp {};
+	
 	MoveAbsJ::~MoveAbsJ() = default;
 	MoveAbsJ::MoveAbsJ(const std::string &name) : Plan(name), imp_(new Imp)
 	{
