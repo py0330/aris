@@ -8,7 +8,7 @@
 void test_server_option()
 {
 	auto&cs = aris::server::ControlServer::instance();
-	/*
+	
 	// test NOT_RUN_..._FUNCTION
 	{
 		cs.resetController(new aris::control::EthercatController);
@@ -19,16 +19,15 @@ void test_server_option()
 		std::int64_t option = 0;
 
 		std::atomic_bool is_plan_prepaired{ false }, is_plan_executed{ false }, is_plan_collected{ false };
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &target)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			target.option = option;
-			
+			plan->option() = option;
 			is_plan_prepaired = true;
-		}, [&](const aris::plan::PlanTarget &)->int
+		}, [&](const aris::plan::Plan* plan)->int
 		{
 			is_plan_executed = true;
 			return 0;
-		}, [&](aris::plan::PlanTarget &)->void
+		}, [&](aris::plan::Plan* plan)->void
 		{
 			is_plan_collected = true;
 		}, "<Command name=\"test_NOT_RUN_FUNCTION\"/>");
@@ -61,13 +60,13 @@ void test_server_option()
 
 		std::int64_t option = 0;
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &target)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			target.option = option;
-		}, [&](const aris::plan::PlanTarget &param)->int
+			plan->option() = option;
+		}, [&](aris::plan::Plan* plan)->int
 		{
-			return 100 - param.count;
-		}, [&](aris::plan::PlanTarget &)->void
+			return 100 - plan->count();
+		}, [&](aris::plan::Plan* plan)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<Command name=\"test_EXECUTE_WHEN_ALL_PLAN_EXECUTED\"/>");
@@ -78,11 +77,11 @@ void test_server_option()
 		option = 0;
 		cs.executeCmd(cmd);
 		auto ret = cs.executeCmd(cmd);
-		if ((!cs.currentExecuteTarget()) || cs.currentExecuteTarget()->command_id == ret->command_id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		if ((!cs.currentExecutePlan()) || cs.currentExecutePlan()->cmdId() == ret->cmdId()) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		option = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED;
 		ret = cs.executeCmd(cmd);
-		if (cs.currentExecuteTarget() && cs.currentExecuteTarget()->command_id != ret->command_id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		if (cs.currentExecutePlan() && cs.currentExecutePlan()->cmdId() != ret->cmdId()) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -96,15 +95,15 @@ void test_server_option()
 
 		std::int64_t option = 0;
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &target)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			target.option = option;
-		}, [&](const aris::plan::PlanTarget &param)->int
+			plan->option() = option;
+		}, [&](aris::plan::Plan* plan)->int
 		{
-			return 100 - param.count;
-		}, [&](aris::plan::PlanTarget &)->void
+			return 100 - plan->count();
+		}, [&](aris::plan::Plan* plan)->void
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			std::this_thread::sleep_for(std::chrono::milliseconds(200));
 		}, "<Command name=\"test_EXECUTE_WHEN_ALL_PLAN_COLLECTED\"/>");
 
 		cs.start();
@@ -113,11 +112,11 @@ void test_server_option()
 		option = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED;
 		cs.executeCmd(cmd);
 		auto ret = cs.executeCmd(cmd);
-		if (cs.currentCollectTarget()->command_id != ret->command_id - 1) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (cs.currentCollectPlan()->cmdId() != ret->cmdId() - 1) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		option = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED;
 		ret = cs.executeCmd(cmd);
-		if (cs.currentCollectTarget()->command_id != ret->command_id) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (cs.currentCollectPlan()->cmdId() != ret->cmdId()) std::cout << __FILE__ << " " << __LINE__ << ":test EXECUTE_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -130,13 +129,13 @@ void test_server_option()
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
 		std::int64_t option = 0;
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &target)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			target.option = option;
-		}, [&](const aris::plan::PlanTarget &param)->int
+			plan->option() = option;
+		}, [&](aris::plan::Plan* plan)->int
 		{
-			return 100 - param.count;
-		}, [&](aris::plan::PlanTarget &)->void
+			return 100 - plan->count();
+		}, [&](aris::plan::Plan* plan)->void
 		{
 		}, "<Command name=\"test_COLLECT_WHEN_ALL_PLAN_EXECUTED\"/>");
 
@@ -146,12 +145,12 @@ void test_server_option()
 		cs.executeCmd(cmd);
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 		cs.executeCmd(cmd);
-		if (!cs.currentExecuteTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		if (!cs.currentExecutePlan()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		cs.executeCmd(cmd);
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED;
 		cs.executeCmd(cmd);
-		if (cs.currentExecuteTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
+		if (cs.currentExecutePlan()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_EXECUTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -165,16 +164,16 @@ void test_server_option()
 
 		std::int64_t option = 0;
 		int collect_time = 100;
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			t.option = option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
-			t.param = collect_time;
-		}, [&](const aris::plan::PlanTarget &param)->int
+			plan->option() = option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
+			plan->param() = collect_time;
+		}, [&](aris::plan::Plan* plan)->int
 		{
-			return 100 - param.count;
-		}, [&](aris::plan::PlanTarget &param)->void
+			return 100 - plan->count();
+		}, [&](aris::plan::Plan* plan)->void
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(std::any_cast<int>(param.param)));
+			std::this_thread::sleep_for(std::chrono::milliseconds(std::any_cast<int>(plan->param())));
 		}, "<Command name=\"test_COLLECT_WHEN_ALL_PLAN_COLLECTED\"/>");
 
 		cs.start();
@@ -184,14 +183,14 @@ void test_server_option()
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 		collect_time = 0;
 		cs.executeCmd(cmd);
-		if (!cs.currentCollectTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (!cs.currentCollectPlan()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		collect_time = 100;
 		cs.executeCmd(cmd);
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED;
 		collect_time = 0;
 		cs.executeCmd(cmd);
-		if (cs.currentCollectTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
+		if (cs.currentCollectPlan()) std::cout << __FILE__ << " " << __LINE__ << ":test COLLECT_WHEN_ALL_PLAN_COLLECTED option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -204,13 +203,13 @@ void test_server_option()
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
 		std::int64_t option = 0;
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			t.option = option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
-		}, [&](const aris::plan::PlanTarget &param)->int
+			plan->option() = option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
+		}, [&](aris::plan::Plan* plan)->int
 		{
-			return 100 - param.count;
-		}, [&](aris::plan::PlanTarget &)->void
+			return 100 - plan->count();
+		}, [&](aris::plan::Plan* plan)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<Command name=\"test_WAIT_FOR_EXECUTION\"/>");
@@ -221,11 +220,11 @@ void test_server_option()
 		option = 0;
 		cs.executeCmd(cmd);
 		cs.executeCmd(cmd);
-		if (!cs.currentExecuteTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_EXECUTION option failed" << std::endl;
+		if (!cs.currentExecutePlan()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_EXECUTION option failed" << std::endl;
 
 		option = aris::plan::Plan::WAIT_FOR_EXECUTION;
 		cs.executeCmd(cmd);
-		if (cs.currentExecuteTarget()|| (!cs.currentCollectTarget())) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_EXECUTION option failed" << std::endl;
+		if (cs.currentExecutePlan()|| (!cs.currentCollectPlan())) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_EXECUTION option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -238,13 +237,13 @@ void test_server_option()
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 
 		std::int64_t option = 0;
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			t.option = option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
-		}, [&](const aris::plan::PlanTarget &param)->int
+			plan->option() = option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
+		}, [&](aris::plan::Plan* plan)->int
 		{
-			return 100 - param.count;
-		}, [&](aris::plan::PlanTarget &)->void
+			return 100 - plan->count();
+		}, [&](aris::plan::Plan* plan)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<Command name=\"test_WAIT_FOR_COLLECTION\"/>");
@@ -255,11 +254,11 @@ void test_server_option()
 		option = 0;
 		cs.executeCmd(cmd);
 		cs.executeCmd(cmd);
-		if (!cs.currentCollectTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_COLLECTION option failed" << std::endl;
+		if (!cs.currentCollectPlan()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_COLLECTION option failed" << std::endl;
 
 		option = aris::plan::Plan::WAIT_FOR_COLLECTION;
 		cs.executeCmd(cmd);
-		if (cs.currentCollectTarget()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_COLLECTION option failed" << std::endl;
+		if (cs.currentCollectPlan()) std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_FOR_COLLECTION option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -272,26 +271,26 @@ void test_server_option()
 		cs.resetPlanRoot(new aris::plan::PlanRoot);
 		
 		std::int64_t option = 0;
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			t.option = option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
-		}, [&](const aris::plan::PlanTarget &param)->int
+			plan->option() = option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
+		}, [&](aris::plan::Plan* plan)->int
 		{
-			return 1000 - param.count;
-		}, [&](const aris::plan::PlanTarget &)->void
+			return 1000 - plan->count();
+		}, [&](const aris::plan::Plan* plan)->void
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		}, "<Command name=\"test_WAIT_IF_CMD_POOL_IS_FULL_1\"/>");
 
-		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](const std::map<std::string, std::string> &, aris::plan::PlanTarget &t)->void
+		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
-			t.option =option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
-		}, [&](const aris::plan::PlanTarget &param)->int
+			plan->option() =option | aris::plan::Plan::NOT_PRINT_CMD_INFO | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT | aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT;
+		}, [&](aris::plan::Plan* plan)->int
 		{
 			static int i = 0;
 			//std::cout <<"e"<< ++i << std::endl;
 			return 0;
-		}, [&](const aris::plan::PlanTarget &)->void
+		}, [&](const aris::plan::Plan* plan)->void
 		{
 			static int i = 0;
 			//std::cout << "c" << ++i << std::endl;
@@ -326,7 +325,6 @@ void test_server_option()
 
 		cs.stop();
 	}
-	*/
 }
 
 

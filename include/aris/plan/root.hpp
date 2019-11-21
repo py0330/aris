@@ -63,6 +63,9 @@ namespace aris::plan
 			NOT_CHECK_VEL_MAX = 0x01ULL << 32,
 			NOT_CHECK_VEL_CONTINUOUS = 0x01ULL << 33,
 			NOT_CHECK_VEL_FOLLOWING_ERROR = 0x01ULL << 35,
+
+			CHECK_NONE = NOT_CHECK_ENABLE | NOT_CHECK_POS_MIN | NOT_CHECK_POS_MAX | NOT_CHECK_POS_CONTINUOUS | NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER | NOT_CHECK_POS_FOLLOWING_ERROR | 
+				NOT_CHECK_VEL_MIN | NOT_CHECK_VEL_MAX | NOT_CHECK_VEL_CONTINUOUS | NOT_CHECK_VEL_FOLLOWING_ERROR, 
 		};
 		enum RetStatus
 		{
@@ -91,9 +94,9 @@ namespace aris::plan
 			INVERSE_KINEMATIC_POSITION_FAILED = -1002,
 		};
 
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void {}
+		auto virtual prepairNrt()->void {}
 		auto virtual executeRT()->int { return 0; }
-		auto virtual collectNrt()->void { }
+		auto virtual collectNrt()->void {}
 		auto command()->aris::core::Command &;
 		auto command()const->const aris::core::Command & { return const_cast<std::decay_t<decltype(*this)> *>(this)->command(); }
 
@@ -105,12 +108,12 @@ namespace aris::plan
 		auto ecMaster()->aris::control::EthercatMaster*;
 		auto ecController()->aris::control::EthercatController*;
 		auto option()->std::uint64_t&;
-		auto motionOptions()->std::vector<std::uint64_t>&;
-		auto cmdMsg()->const std::string&;
+		auto motorOptions()->std::vector<std::uint64_t>&;
+		auto cmdString()->const std::string&;
 		auto cmdName()->const std::string&;
 		auto cmdParams()->const std::map<std::string, std::string> &;
+		auto cmdId()->std::int64_t;
 		auto beginGlobalCount()->std::int64_t;
-		auto commandId()->std::int64_t;
 		auto rtStastic()->aris::control::Master::RtStasticsData &;
 
 		auto param()->std::any&;
@@ -160,7 +163,7 @@ namespace aris::plan
 	class Enable : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Enable();
@@ -187,7 +190,7 @@ namespace aris::plan
 	class Disable : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Disable();
@@ -214,7 +217,7 @@ namespace aris::plan
 	class Home : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Home();
@@ -244,7 +247,7 @@ namespace aris::plan
 	class Mode : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Mode();
@@ -289,7 +292,7 @@ namespace aris::plan
 	class Reset : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Reset();
@@ -311,7 +314,7 @@ namespace aris::plan
 	class Recover : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
 
@@ -329,7 +332,7 @@ namespace aris::plan
 	class Sleep : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Sleep();
@@ -347,7 +350,7 @@ namespace aris::plan
 	class Show :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		explicit Show(const std::string &name = "show");
@@ -383,7 +386,7 @@ namespace aris::plan
 	class MoveAbsJ :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~MoveAbsJ();
@@ -427,7 +430,7 @@ namespace aris::plan
 	class MoveJ : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~MoveJ();
@@ -467,7 +470,7 @@ namespace aris::plan
 	class MoveL : public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~MoveL();
@@ -511,7 +514,7 @@ namespace aris::plan
 	class AutoMove :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
 
@@ -558,7 +561,7 @@ namespace aris::plan
 	class ManualMove :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
 
@@ -575,7 +578,7 @@ namespace aris::plan
 	class GetXml :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 
 		virtual ~GetXml();
 		explicit GetXml(const std::string &name = "get_xml");
@@ -585,7 +588,7 @@ namespace aris::plan
 	class SetXml :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 
 		virtual ~SetXml();
 		explicit SetXml(const std::string &name = "set_xml");
@@ -595,7 +598,7 @@ namespace aris::plan
 	class Start :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 
 		virtual ~Start();
 		explicit Start(const std::string &name = "start");
@@ -605,7 +608,7 @@ namespace aris::plan
 	class Stop :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 
 		virtual ~Stop();
 		explicit Stop(const std::string &name = "stop");
@@ -616,7 +619,7 @@ namespace aris::plan
 	class RemoveFile : public aris::plan::Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void;
+		auto virtual prepairNrt()->void override;
 		
 		virtual ~RemoveFile();
 		explicit RemoveFile(const std::string &name = "rm_file");
@@ -627,11 +630,11 @@ namespace aris::plan
 	class UniversalPlan :public Plan
 	{
 	public:
-		using PrepairFunc = std::function<void(const std::map<std::string, std::string> &params)>;
-		using ExecuteFunc = std::function<int()>;
-		using CollectFunc = std::function<void()>;
+		using PrepairFunc = std::function<void(Plan *plan)>;
+		using ExecuteFunc = std::function<int(Plan *plan)>;
+		using CollectFunc = std::function<void(Plan *plan)>;
 
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
 		auto virtual setPrepairFunc(PrepairFunc func)->void;
@@ -651,7 +654,7 @@ namespace aris::plan
 	class MoveSeries :public Plan
 	{
 	public:
-		auto virtual prepairNrt(const std::map<std::string, std::string> &params)->void override;
+		auto virtual prepairNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~MoveSeries();

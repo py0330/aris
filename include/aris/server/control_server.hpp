@@ -57,6 +57,7 @@ namespace aris::server
 		auto setRtPlanPostCallback(PostCallback post_callback)->void;
 		auto running()->bool;
 		auto globalCount()->std::int64_t;
+		auto currentExecutePlanRt()->aris::plan::Plan *;
 
 		// operation in NRT context //
 		auto open()->void;
@@ -66,6 +67,8 @@ namespace aris::server
 		auto executeCmdInCmdLine(const aris::core::Msg &cmd_string, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
 		auto start()->void;
 		auto stop()->void;
+		auto currentExecutePlan()->std::shared_ptr<aris::plan::Plan>;
+		auto currentCollectPlan()->std::shared_ptr<aris::plan::Plan>;
 		auto waitForAllExecution()->void;
 		auto waitForAllCollection()->void;
 		auto getRtData(const std::function<void(ControlServer&, const aris::plan::Plan *target, std::any&)>& get_func, std::any& data)->void;
