@@ -912,7 +912,6 @@ namespace aris::plan
 
 		return total_count - count();
 	}
-	
 	MoveAbsJ::~MoveAbsJ() = default;
 	MoveAbsJ::MoveAbsJ(const std::string &name) : Plan(name), imp_(new Imp)
 	{
@@ -1672,7 +1671,18 @@ namespace aris::plan
 		if (this->controlServer()->running())THROW_FILE_LINE("server is running, can't set xml");
 		auto xml_str = cmdParams().at("xml").substr(1, cmdParams().at("xml").size() - 2);
 		// 这一句要小心，此时 this 已被销毁，后面不能再调用this了 //
-		controlServer()->loadXmlStr(xml_str);
+		
+		//controlServer()->close();
+		//controlServer()->loadXmlStr(xml_str);
+		// server load 会导致interface失败 ////////////////////////////////////////
+		aris::core::XmlDocument doc;
+		if(doc.Parse(xml_str.c_str()) != tinyxml2::XML_SUCCESS) THROW_FILE_LINE("XML failed");
+
+		if (doc.RootElement()->FirstChildElement("EthercatController"))controlServer()->controller().loadXml(*doc.RootElement()->FirstChildElement("EthercatController"));
+		if (doc.RootElement()->FirstChildElement("Model"))controlServer()->model().loadXml(*doc.RootElement()->FirstChildElement("Model"));
+		// 这里后面需要改 ////////////////////////////////////////
+
+
 		option() |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
