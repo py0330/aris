@@ -244,7 +244,6 @@ namespace aris::server
 		static bool is_correcting{ false };
 
 		auto dt = 1.0 / controller_->samplePeriodNs();
-
 		if (is_correcting)goto FAILED;
 
 		error_code = aris::plan::Plan::SUCCESS;

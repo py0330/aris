@@ -437,7 +437,11 @@ namespace aris::plan
 		set_active_motor(cmdParams(), *this, *imp_);
 		imp_->limit_time = std::stoi(cmdParams().at("limit_time"));
 		
-		for (auto &option : motorOptions()) option |= aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN;
+		for (auto &option : motorOptions()) option |= 
+			aris::plan::Plan::NOT_CHECK_ENABLE | 
+			aris::plan::Plan::NOT_CHECK_POS_MAX | 
+			aris::plan::Plan::NOT_CHECK_POS_MIN |
+			aris::plan::Plan::NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;
@@ -487,7 +491,7 @@ namespace aris::plan
 		set_active_motor(cmdParams(), *this, *imp_);
 		imp_->limit_time = std::stoi(cmdParams().at("limit_time"));
 
-		for (auto &option : motorOptions()) option |= aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN;
+		for (auto &option : motorOptions()) option |= aris::plan::Plan::CHECK_NONE;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;
