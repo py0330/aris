@@ -8,7 +8,6 @@
 #include <aris/core/core.hpp>
 #include <aris/control/control.hpp>
 
-#include "aris/server/ui.hpp"
 #include "aris/server/control_server.hpp"
 
 namespace aris::plan
@@ -242,8 +241,6 @@ namespace aris::server
 	{
 		static int error_code = aris::plan::Plan::SUCCESS;
 		static bool is_correcting{ false };
-
-		auto dt = controller_->samplePeriodNs() / 1.0e9;
 		if (is_correcting)goto FAILED;
 
 		error_code = aris::plan::Plan::SUCCESS;
@@ -254,7 +251,7 @@ namespace aris::server
 			auto &ld = last_pvc_[i];
 			auto &lld = last_last_pvc_[i];
 			auto option = mot_options[i];
-
+			auto dt = controller_->samplePeriodNs() / 1.0e9;
 #ifndef WIN32
 			if (!(option & aris::plan::Plan::NOT_CHECK_ENABLE)
 				&& ((cm.statusWord() & 0x6f) != 0x27))

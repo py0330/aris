@@ -11,7 +11,7 @@ int main()
 {
 	aris::core::Calculator c;
 
-
+	/*
 	{
 		aris::core::Matrix X(0.1);
 		aris::core::Matrix Y = X;
@@ -80,6 +80,9 @@ int main()
 	{
 		cout << e.what() << endl;
 	}
+	*/
+	auto m = c.calculateExpression("3.1 <= 3");
+	m.dsp();
 
 	char aaa;
 	cin >> aaa;

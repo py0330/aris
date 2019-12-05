@@ -41,9 +41,7 @@ namespace aris::plan
 	}
 
 	auto moveAbsolute(double i, double begin_pos, double end_pos, double vel, double acc, double dec, double &current_pos, double &current_vel, double &current_acc, Size& total_count)->void;
-	
-	
-	
+
 	// pa : pos actual value
 	// va : vel actual value
 	// aa : acc actual value
@@ -60,10 +58,6 @@ namespace aris::plan
 	// ac : next planned acc
 	// total_count : tbd, not finished yet
 	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int;
-
-
-
-
 }
 
 

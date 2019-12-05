@@ -13,7 +13,6 @@
 #include <aris/dynamic/dynamic.hpp>
 #include <aris/plan/plan.hpp>
 
-#include "aris/server/ui.hpp"
 #include "aris/server/interface.hpp"
 
 namespace aris::server

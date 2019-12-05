@@ -15,6 +15,20 @@
 
 namespace aris::server
 {
+	class InterfaceRoot : public aris::core::Object
+	{
+	public:
+		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+
+		ARIS_REGISTER_TYPE(InterfaceRoot);
+
+	private:
+		aris::core::XmlDocument doc_;
+	};
+	
+	
+	
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
 	
 	

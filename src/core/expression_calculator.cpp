@@ -352,17 +352,19 @@ namespace aris::core
 
 	std::string SeperateString(const std::string &s)
 	{
-		static const std::string seperateOpr("+-*/^()[]{},;");
+		static const std::string seperateStr("()[]{},;");
+		static const std::string operatorStr("+-*/\\^|<>=");
+
 		std::string ret;
 
 		for (const char &key : s)
 		{
 			// 判断是否为科学计数法的数字 //
-			if ((&key > s.data() + 1) && (&key<s.data() + s.size() - 2))
+			if ((&key > s.data() + 1) && (&key<s.data() + s.size() - 1))
 			{
 				if ((key == '+') || (key == '-'))
 				{
-					if ((*(&key - 1) == 'e')
+					if (((*(&key - 1) == 'e') || (*(&key - 1) == 'E'))
 						&& (*(&key - 2) <= '9')
 						&& (*(&key - 2) >= '0')
 						&& (*(&key + 1) <= '9')
@@ -374,16 +376,25 @@ namespace aris::core
 				}
 			}
 
-
-			if (seperateOpr.find(key) != seperateOpr.npos)
+			// 判断是否为分隔符 //
+			if (seperateStr.find(key) != seperateStr.npos)
 			{
 				ret = ret + " " + key + " ";
+			}
+			// 判断是否为符号，或者变量数字
+			else if (auto last_key = *(&key - 1); (&key > s.data() + 1) && (last_key != ' ') && (seperateStr.find(key) != seperateStr.find(last_key)))
+			{
+				ret = ret + " " + key;
 			}
 			else
 			{
 				ret += key;
 			}
 		}
+
+		std::cout << ret << std::endl;
+
+
 		return ret;
 	}
 
@@ -699,6 +710,42 @@ namespace aris::core
 		operator_map_["-"].SetUnaryLeftOpr(1, [](Matrix m) {return -m; });
 		operator_map_["*"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 * m2; });
 		operator_map_["/"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 / m2; });
+		
+#define MATRIX_OPR(OPR) \
+		Matrix ret;\
+		if (m1.size() == 1)\
+		{					\
+			ret = Matrix(m2);\
+			for (auto &d : ret)d = m1(0, 0) OPR d;\
+		}\
+		else if (m2.size() == 1)\
+		{\
+			ret = Matrix(m1);\
+			for (auto &d : ret) d = d OPR m2(0, 0);\
+		}\
+		else if ((m1.m() == m2.m()) && (m1.n() == m2.n()))\
+		{\
+			ret = Matrix(m1);\
+								\
+			for (Size i = 0; i < ret.size(); ++i)\
+			{\
+				ret.data()[i] = m1.data()[i] OPR m2.data()[i];\
+			}\
+		}\
+		else\
+		{\
+			THROW_FILE_LINE("dimensions are not equal");\
+		}\
+		return ret;
+		
+		
+		operator_map_["<"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(<);});
+		operator_map_["<="].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(<=); });
+		operator_map_[">"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(>); });
+		operator_map_[">="].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(>=); });
+		operator_map_["=="].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(== ); });
+
+#undef ARIS_SET_TYPE
 
 		addFunction("sqrt", [](std::vector<Matrix> v)
 		{
