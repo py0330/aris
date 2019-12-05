@@ -11,7 +11,7 @@ int main()
 {
 	aris::core::Calculator c;
 
-	/*
+	
 	{
 		aris::core::Matrix X(0.1);
 		aris::core::Matrix Y = X;
@@ -63,16 +63,11 @@ int main()
 	//not compatible for clang
 	k = {};
 
-
-
-
-
-
 	try
 	{
 		m = c.calculateExpression("{multiply(-100+multiply(1,2)+1.23*addTwo(2.1-3.2*FIVE*(3-1)*(TWO*PI - 1))-1.38, 8.1),1}");
 		m.dsp();
-		//m = c.calculateExpression("multiply(multiply(1),2)");
+		//m = c.calculateExpression("multiply(multiply(1,2),2)");
 		m = c.calculateExpression("2e-2+{1,{2,3};{4;5},{5;6},{7;8}}*3");
 		m.dsp();
 	}
@@ -80,8 +75,8 @@ int main()
 	{
 		cout << e.what() << endl;
 	}
-	*/
-	auto m = c.calculateExpression("3.1 <= 3");
+	
+	m = c.calculateExpression("2e-2<=1.0");
 	m.dsp();
 
 	char aaa;

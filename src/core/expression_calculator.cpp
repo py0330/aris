@@ -357,10 +357,12 @@ namespace aris::core
 
 		std::string ret;
 
-		for (const char &key : s)
+		for (int i = 0; i < s.size(); ++i)
 		{
+			auto &key = s[i];
+
 			// 判断是否为科学计数法的数字 //
-			if ((&key > s.data() + 1) && (&key<s.data() + s.size() - 1))
+			if ((i > 1) && (i < s.size() - 1))
 			{
 				if ((key == '+') || (key == '-'))
 				{
@@ -371,6 +373,8 @@ namespace aris::core
 						&& (*(&key + 1) >= '0'))
 					{
 						ret += key;
+						ret += s[i + 1];
+						++i;
 						continue;
 					}
 				}
@@ -382,7 +386,7 @@ namespace aris::core
 				ret = ret + " " + key + " ";
 			}
 			// 判断是否为符号，或者变量数字
-			else if (auto last_key = *(&key - 1); (&key > s.data() + 1) && (last_key != ' ') && (seperateStr.find(key) != seperateStr.find(last_key)))
+			else if ((i > 0) && (s[i-1] != ' ') && ((operatorStr.find(key) == operatorStr.npos) != (operatorStr.find(s[i - 1]) == operatorStr.npos)))
 			{
 				ret = ret + " " + key;
 			}
@@ -392,7 +396,7 @@ namespace aris::core
 			}
 		}
 
-		std::cout << ret << std::endl;
+		//std::cout << ret << std::endl;
 
 
 		return ret;
