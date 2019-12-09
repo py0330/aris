@@ -72,7 +72,7 @@ add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 ## build targets ##
 foreach(target robot server plan dynamic control sensor core)
 	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h)
-	file(GLOB SOURCES src/${target}/*.cpp src/${target}/*.hpp src/${target}/*.h ${HEADERS})
+	file(GLOB SOURCES src/${target}/*.cpp src/${target}/*.c src/${target}/*.hpp src/${target}/*.h ${HEADERS})
 	add_library(aris_${target} STATIC ${HEADERS} ${SOURCES})
 	target_include_directories(aris_${target}
 		PUBLIC 

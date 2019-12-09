@@ -571,19 +571,17 @@ namespace aris::server
 						{
 							js->push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
 							js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
-							std::cout << parse_ret_value(*js) << std::endl;
+							std::cout << "return code   :" << plan.retCode() <<"\nreturn message:"<< plan.retMsg() << std::endl;
 						}
 					});
 				}
 				catch (std::exception &e)
 				{
-					std::vector<std::pair<std::string, std::any>> ret_pair;
-					ret_pair.push_back(std::make_pair<std::string, std::any>("return_code", int(aris::plan::Plan::PARSE_EXCEPTION)));
-					ret_pair.push_back(std::make_pair<std::string, std::any>("return_message", std::string(e.what())));
-					std::string ret_str = parse_ret_value(ret_pair);
+					std::stringstream s;
+					s << "return code   :" << aris::plan::Plan::PARSE_EXCEPTION << "\nreturn message:" << e.what();
 					
-					std::cout << ret_str << std::endl;
-					LOG_ERROR << ret_str << std::endl;
+					std::cout << s.str() << std::endl;
+					LOG_ERROR << s.str() << std::endl;
 				}
 
 				ret = std::async(std::launch::async, []()->std::string

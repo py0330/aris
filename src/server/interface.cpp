@@ -12,6 +12,10 @@
 #include "aris/server/control_server.hpp"
 
 #include "json.hpp"
+
+
+
+
 namespace aris::server
 {
 	auto InterfaceRoot::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -26,9 +30,9 @@ namespace aris::server
 		auto root = xml_ele.DeepClone(&doc_);
 		doc_.InsertEndChild(root);
 	}
-	
-	
-	
+
+	Interface::Interface(const std::string &name) :Object(name) {}
+
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string
 	{
 		nlohmann::json js;
@@ -55,8 +59,6 @@ namespace aris::server
 		return  js.dump(2);
 	}
 
-	Interface::Interface(const std::string &name) :Object(name) {}
-	
 	auto onReceivedMsg(aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
 		std::string msg_data = msg.toString();
@@ -72,7 +74,7 @@ namespace aris::server
 
 		try
 		{
-			aris::server::ControlServer::instance().executeCmd(aris::core::Msg(msg), [socket, msg](aris::plan::Plan &plan)->void
+			aris::server::ControlServer::instance().executeCmdInCmdLine(aris::core::Msg(msg), [socket, msg](aris::plan::Plan &plan)->void
 			{
 				// make return msg
 				aris::core::Msg ret_msg(msg);
@@ -175,5 +177,115 @@ namespace aris::server
 		sock_->setOnReceivedMsg(onReceivedMsg);
 		sock_->setOnReceivedConnection(onReceivedConnection);
 		sock_->setOnLoseConnection(onLoseConnection);
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "mongoose.h"
+
+#ifdef WIN32
+#undef min
+#endif
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+namespace aris::server
+{
+	static struct mg_serve_http_opts s_http_server_opts;
+
+	struct HttpInterface::Imp
+	{
+		std::thread http_thread_;
+		std::string port_;
+		std::string document_root_;
+		
+		struct mg_mgr mgr;
+		struct mg_connection *nc;
+		struct mg_bind_opts bind_opts;
+		const char *err_str;
+
+		std::mutex mu_running_;
+		std::atomic_bool is_running_{ false };
+	};
+	auto HttpInterface::open()->void
+	{
+		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
+		
+		if (imp_->is_running_.exchange(true) == false)
+		{
+			mg_mgr_init(&imp_->mgr, NULL);
+			s_http_server_opts.document_root = imp_->document_root_.c_str();
+
+			// Set HTTP server options //
+			memset(&imp_->bind_opts, 0, sizeof(imp_->bind_opts));
+			imp_->bind_opts.error_string = &imp_->err_str;
+
+			imp_->nc = mg_bind_opt(&imp_->mgr, imp_->port_.c_str(), [](struct mg_connection *nc, int ev, void *ev_data)
+			{
+				struct http_message *hm = (struct http_message *) ev_data;
+
+				switch (ev) {
+				case MG_EV_HTTP_REQUEST:
+				{
+					std::cout << std::string(hm->uri.p, hm->uri.len) << std::endl;
+
+					if (mg_vcmp(&hm->uri, "/api/config/interface") == 0)
+					{
+						mg_http_serve_file(nc, hm, "C:\\Users\\py033\\Desktop\\interface111.txt",
+							mg_mk_str("text/plain; charset=utf-8"), mg_mk_str(""));
+					}
+					else 
+					{
+						mg_serve_http(nc, hm, s_http_server_opts);
+					}
+					break;
+				}
+				default:
+
+					break;
+				}
+			}, imp_->bind_opts);
+			if (imp_->nc == NULL) {
+				//fprintf(stderr, "Error starting server on port %s: %s\n", s_http_port, *imp_->bind_opts.error_string);
+				exit(1);
+			}
+
+			mg_set_protocol_http_websocket(imp_->nc);
+			s_http_server_opts.enable_directory_listing = "yes";
+
+			imp_->http_thread_ = std::thread([this]()
+			{
+				for (; imp_->is_running_; ) { mg_mgr_poll(&imp_->mgr, 1000); }
+				mg_mgr_free(&imp_->mgr);
+			});
+		}
+	}
+	auto HttpInterface::close()->void 
+	{
+		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
+		
+		if (imp_->is_running_.exchange(false) == true)
+		{
+			imp_->http_thread_.join();
+		}
+	}
+	auto HttpInterface::saveXml(aris::core::XmlElement &xml_ele) const->void
+	{
+		Interface::saveXml(xml_ele);
+		xml_ele.SetAttribute("document_root", imp_->document_root_.c_str());
+		xml_ele.SetAttribute("port", imp_->port_.c_str());
+	}
+	auto HttpInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
+	{
+		Interface::loadXml(xml_ele);
+		imp_->document_root_ = Object::attributeString(xml_ele, "document_root", "./");
+		imp_->port_ = Object::attributeString(xml_ele, "port", "8000");
+	}
+	HttpInterface::~HttpInterface() = default;
+	HttpInterface::HttpInterface(HttpInterface && other) = default;
+	HttpInterface& HttpInterface::operator=(HttpInterface&& other) = default;
+	HttpInterface::HttpInterface(const std::string &name, const std::string &port, const std::string &document_root) :Interface(name), imp_(new Imp)
+	{
+		imp_->document_root_ = document_root;
+		imp_->port_ = port;
 	}
 }

@@ -48,6 +48,8 @@ auto f(aris::dynamic::Model *m, double *A)
 
 int main(int argc, char *argv[])
 {
+
+	
 	double robot_pm[16];
 	std::string robot_name = argc < 2 ? "rokae_xb4" : argv[1];
 	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
@@ -331,6 +333,7 @@ int main(int argc, char *argv[])
 	// interaction //
 	cs.interfacePool().add<aris::server::WebInterface>("", "5866", aris::core::Socket::WEB);
 	cs.interfacePool().add<aris::server::WebInterface>("", "5867", aris::core::Socket::TCP);
+	cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\www");
 	cs.open();
 	cs.runCmdLine();
 	

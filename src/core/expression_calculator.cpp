@@ -356,6 +356,7 @@ namespace aris::core
 		static const std::string operatorStr("+-*/\\^|<>=");
 
 		std::string ret;
+		ret.reserve(2 * s.size());
 
 		for (int i = 0; i < s.size(); ++i)
 		{
@@ -402,7 +403,7 @@ namespace aris::core
 		return ret;
 	}
 
-	Calculator::TokenVec Calculator::Expression2Tokens(const std::string &expression)const
+	auto Calculator::Expression2Tokens(const std::string &expression)const -> Calculator::TokenVec
 	{
 		std::stringstream stream(SeperateString(expression));
 
@@ -460,19 +461,13 @@ namespace aris::core
 
 		return tokens;
 	}
-	Matrix Calculator::CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator endToken) const
+	auto Calculator::CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator endToken) const ->Matrix
 	{
-		if (beginToken >= endToken)
-		{
-			THROW_FILE_LINE("invalid expression");
-		}
+		if (beginToken >= endToken)THROW_FILE_LINE("invalid expression");
 
 		auto i = beginToken;
-
 		Matrix value;
-
 		bool isBegin = true;
-
 		while (i < endToken)
 		{
 			// 如果没有当前值,证明刚刚开始计算 //
@@ -535,7 +530,7 @@ namespace aris::core
 		return value;
 	}
 
-	Matrix Calculator::CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
+	auto Calculator::CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
 	{
 		auto beginPar = i + 1;
 		auto endPar = FindNextOutsideToken(i + 1, maxEndToken, Token::PARENTHESIS_R);
@@ -543,7 +538,7 @@ namespace aris::core
 
 		return CaculateTokens(beginPar, endPar);
 	}
-	Matrix Calculator::CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
+	auto Calculator::CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
 	{
 		auto beginBce = i + 1;
 		auto endBce = FindNextOutsideToken(i + 1, maxEndToken, Token::BRACE_R);
@@ -551,7 +546,7 @@ namespace aris::core
 
 		return combineMatrices(GetMatrices(beginBce, endBce));
 	}
-	Matrix Calculator::CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
+	auto Calculator::CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
 	{
 		auto beginPar = i + 1;
 		if (i + 1 >= maxEndToken) THROW_FILE_LINE("invalid expression");
@@ -569,7 +564,7 @@ namespace aris::core
 		i = endPar + 1;
 		return f->second(params);
 	}
-	Matrix Calculator::CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const
+	auto Calculator::CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
 	{
 		auto opr = i;
 		i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, maxEndToken, opr->opr->priority_ul);
