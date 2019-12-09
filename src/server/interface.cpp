@@ -58,7 +58,6 @@ namespace aris::server
 		
 		return  js.dump(2);
 	}
-
 	auto onReceivedMsg(aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
 		std::string msg_data = msg.toString();

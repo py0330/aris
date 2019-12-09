@@ -37,6 +37,7 @@ namespace aris::server
 		ARIS_DEFINE_BIG_FOUR(Interface);
 	};
 
+	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
 	class WebInterface :public Interface
 	{
 	public:
