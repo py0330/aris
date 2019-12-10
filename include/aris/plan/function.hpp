@@ -1,6 +1,8 @@
 ﻿#ifndef ARIS_PLAN_FUNCTION_H_
 #define ARIS_PLAN_FUNCTION_H_
 
+#include <string>
+#include <map>
 #include <aris/core/basic_type.hpp>
 
 namespace aris::plan
@@ -58,6 +60,17 @@ namespace aris::plan
 	// ac : next planned acc
 	// total_count : tbd, not finished yet
 	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int;
+
+
+	struct CmdInfo 
+	{
+		std::string cmd;
+		int next_cmd_true_, next_cmd_false_;
+	};
+	auto parseLanguage(std::map<int, CmdInfo> &cmd_map)->void;
+
+
+
 }
 
 

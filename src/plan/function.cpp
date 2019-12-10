@@ -168,4 +168,154 @@ namespace aris::plan
 		total_count = 1;
 		return std::abs(pt - pc) < zero_check && std::abs(vt - vc) < zero_check ? 0 : 1;
 	}
+
+
+	auto parseIf(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator;
+	auto parseGeneral(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
+	{
+		for (auto i = b; i != e; ++i)
+		{
+			auto id = i->first;
+			auto &info = i->second;
+
+			if (info.cmd == "if")
+			{
+				i = parseIf(i, e);
+			}
+			else if (info.cmd == "elseif" || info.cmd == "else" || info.cmd == "endif")
+			{
+				auto err = "invalid string in line:" + std::to_string(id);
+				THROW_FILE_LINE(err);
+			}
+			else
+			{
+				if (std::next(i) == e)
+				{
+					info.next_cmd_true_ = 0;
+				}
+				else
+				{
+					info.next_cmd_true_ = std::next(i)->first;
+				}
+			}
+
+		}
+
+		return e;
+	}
+	auto parseIf(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
+	{
+		if (b != e && std::next(b) != e)b->second.next_cmd_true_ = std::next(b)->first;
+		
+		std::list<std::map<int, CmdInfo>::iterator> prev_else_line;
+		std::map<int, CmdInfo>::iterator last_if_begin = b;
+
+		int is_end = 1;
+		bool has_else = false;
+		for (auto i = std::next(b); i != e; ++i)
+		{
+			auto &info = i->second;
+			
+			if (info.cmd == "endif")
+			{
+				is_end--;
+			}
+			else if (info.cmd == "if")
+			{
+				is_end++;
+			}
+
+
+			if (is_end == 1 && info.cmd == "elseif")
+			{
+				if (has_else)
+				{
+					std::string err = "Find elseif after else in line " + std::to_string(i->first);
+					THROW_FILE_LINE(err);
+				}
+
+				parseGeneral(std::next(last_if_begin), i);
+				last_if_begin->second.next_cmd_false_ = i->first;
+				last_if_begin = i;
+				i->second.next_cmd_true_ = std::next(i)->first;
+
+				prev_else_line.push_back(std::prev(i));
+			}
+
+			if (is_end == 1 && info.cmd == "else")
+			{
+				if (has_else)
+				{
+					std::string err = "Find second else in line " + std::to_string(i->first);
+					THROW_FILE_LINE(err);
+				}
+				has_else = true;
+
+				parseGeneral(std::next(last_if_begin), i);
+				last_if_begin->second.next_cmd_false_ = i->first; 
+				last_if_begin = i;
+				i->second.next_cmd_true_ = std::next(i)->first;
+
+				prev_else_line.push_back(std::prev(i));
+			}
+
+
+
+
+
+			if (is_end == 0)
+			{
+				parseGeneral(std::next(last_if_begin), i);
+				if (std::prev(i)->second.cmd != "if") std::prev(i)->second.next_cmd_true_ = i->first;
+				i->second.next_cmd_true_ = std::next(i) == e ? 0 : std::next(i)->first;
+				if(last_if_begin->second.cmd != "else")last_if_begin->second.next_cmd_false_ = i->first;
+
+				for (auto j : prev_else_line)
+				{
+					j->second.next_cmd_true_ = i->first;
+				}
+
+				//for (auto i = b; i != e; ++i)
+				//{
+				//	auto cmd = *i;
+				//	std::cout << cmd.first << " : " << std::setw(15) << cmd.second.cmd << " | " << std::setw(5) << cmd.second.next_cmd_true_ << " | " << cmd.second.next_cmd_false_ << std::endl;
+				//}
+				//std::cout << std::endl;
+
+				
+
+				return i;
+			}
+		}
+		
+		
+
+
+		std::string err = "no endif for if in line " + std::to_string(b->first);
+		THROW_FILE_LINE(err);
+		
+		
+		return b;
+	}
+	auto parseWhile(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
+	{
+		return b;
+	}
+	//auto parseIf(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
+	//{
+
+	//}
+	//auto parseIf(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
+	//{
+	//	return b;
+	//}
+
+
+
+
+
+	auto parseLanguage(std::map<int, CmdInfo> &cmd_map)->void
+	{
+		parseGeneral(cmd_map.begin(), cmd_map.end());
+	}
 }
