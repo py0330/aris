@@ -104,6 +104,11 @@ namespace aris::control
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+
+	//class VirtualMotor :public Motor
+	//{
+
+	//};
 }
 
 #endif

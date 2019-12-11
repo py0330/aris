@@ -1890,4 +1890,272 @@ namespace aris::plan
 			"	</GroupParam>"
 			"</Command>");
 	}
+
+
+
+	struct CmdListParam
+	{
+		std::map<int, std::string> cmd_vec;
+		int current_cmd_id = 0;
+		int current_plan_id = -1;
+	}cmdparam;
+
+	struct RunParam
+	{
+		int goto_cmd_id;
+		std::thread run;
+	};
+	std::mutex mymutex;
+	std::mutex runmutex;
+	std::atomic_bool g_is_auto = false;
+	bool is_running = false;
+	auto is_auto_executing()->bool
+	{
+		std::unique_lock<std::mutex>runmutex;
+		return is_running;
+	}
+	auto set_is_auto_executing(bool param)->bool
+	{
+		std::unique_lock<std::mutex>runmutex;
+		bool now = is_running;
+		is_running = param;
+		return now;
+	}
+	auto Run::prepairNrt()->void
+	{
+		std::vector<std::pair<std::string, std::any>> run_ret;
+		auto param = std::make_shared<RunParam>();
+		static CmdListParam cmdparam;
+
+		for (auto &p : cmdParams())
+		{
+			if (p.first == "forward")
+			{
+				//有指令在执行//
+				if (is_auto_executing())
+				{
+					option() = Plan::NOT_RUN_COLLECT_FUNCTION | Plan::NOT_RUN_EXECUTE_FUNCTION;
+				}
+				//没有指令在执行//
+				else
+				{
+					const bool is_forward = true;
+					set_is_auto_executing(is_forward);
+					param->run = std::thread([&]()->void
+					{
+						try
+						{
+							auto&cs = aris::server::ControlServer::instance();
+							{
+								std::unique_lock<std::mutex> run_lock(mymutex);
+								auto iter = cmdparam.cmd_vec.find(cmdparam.current_cmd_id);
+								if (iter == cmdparam.cmd_vec.end())
+								{
+									set_is_auto_executing(false);
+									return;
+								}
+								else
+								{
+									cmdparam.current_plan_id = iter->first;
+								}
+							}
+							cs.executeCmd(aris::core::Msg(cmdparam.cmd_vec[cmdparam.current_cmd_id]), [&](aris::plan::Plan &plan)->void
+							{
+								std::unique_lock<std::mutex> run_lock(mymutex);
+								auto iter = cmdparam.cmd_vec.find(cmdparam.current_cmd_id);
+								iter++;
+								std::cout << "current_cmd_id:" << iter->second << std::endl;
+								if (iter != cmdparam.cmd_vec.end())
+								{
+									cmdparam.current_plan_id = iter->first;
+									cmdparam.current_cmd_id = iter->first;
+								}
+								else
+								{
+									cmdparam.current_plan_id = cmdparam.cmd_vec.rbegin()->first + 1;
+								}
+								set_is_auto_executing(false);
+							});
+						}
+						catch (std::exception &e)
+						{
+							std::cout << e.what() << std::endl;
+							LOG_ERROR << e.what() << std::endl;
+						}
+					});
+				}
+			}
+			else if (p.first == "goto")
+			{
+				param->goto_cmd_id = std::stoi(p.second);
+				//有指令在执行//
+				if (is_auto_executing())
+				{
+					option() = Plan::NOT_RUN_COLLECT_FUNCTION | Plan::NOT_RUN_EXECUTE_FUNCTION;
+				}
+				//没有指令在执行//
+				else
+				{
+					const bool is_goto = true;
+					set_is_auto_executing(is_goto);
+					param->run = std::thread([&]()->void
+					{
+						bool is_existed = false;
+						{
+							std::unique_lock<std::mutex> run_lock(mymutex);
+							for (auto iter = cmdparam.cmd_vec.begin(); iter != cmdparam.cmd_vec.end(); ++iter)
+							{
+								if ((iter->first == param->goto_cmd_id) && (cmdparam.current_cmd_id != iter->first))
+								{
+									auto temp_iter = iter;
+									temp_iter--;
+									cmdparam.current_cmd_id = temp_iter->first;
+									cmdparam.current_cmd_id = std::max(cmdparam.current_cmd_id, 0);
+									is_existed = true;
+									cmdparam.current_plan_id = cmdparam.cmd_vec.find(cmdparam.current_cmd_id)->first;
+								}
+							}
+						}
+						if (!is_existed)
+						{
+							set_is_auto_executing(false);
+							return;
+						}
+						else
+						{
+							try
+							{
+								aris::server::ControlServer::instance().executeCmd(aris::core::Msg(cmdparam.cmd_vec[cmdparam.current_cmd_id]), [&](aris::plan::Plan &plan)->void
+								{
+									std::unique_lock<std::mutex> run_lock(mymutex);
+									auto iter = cmdparam.cmd_vec.find(cmdparam.current_cmd_id);
+									iter++;
+									if (iter != cmdparam.cmd_vec.end())
+									{
+										cmdparam.current_plan_id = iter->first;
+										cmdparam.current_cmd_id = iter->first;
+									}
+									else
+									{
+										cmdparam.current_plan_id = cmdparam.cmd_vec.rbegin()->first + 1;
+									}
+									const bool is_not_goto = false;
+									set_is_auto_executing(is_not_goto);
+								});
+							}
+							catch (std::exception &e)
+							{
+								std::cout << e.what() << std::endl;
+								LOG_ERROR << e.what() << std::endl;
+							}
+						}
+					});
+				}
+
+			}
+			else if (p.first == "start")
+			{
+				g_is_auto.store(true);
+				//有指令在执行//
+				if (is_auto_executing())
+				{
+					option() = Plan::NOT_RUN_COLLECT_FUNCTION | Plan::NOT_RUN_EXECUTE_FUNCTION;
+				}
+				//没有指令在执行//
+				else
+				{
+					const bool is_start = true;
+					set_is_auto_executing(is_start);
+					param->run = std::thread([&]()->void
+					{
+						try
+						{
+							int begin_cmd_id = 0, end_cmd_id = 0;
+							auto&cs = aris::server::ControlServer::instance();
+							{
+								std::unique_lock<std::mutex> run_lock(mymutex);
+								auto iter = cmdparam.cmd_vec.find(cmdparam.current_cmd_id);
+								if (iter == cmdparam.cmd_vec.end())
+								{
+									set_is_auto_executing(false);
+									return;
+								}
+								else
+								{
+									cmdparam.current_plan_id = iter->first;
+								}
+							}
+							for (auto iter = cmdparam.cmd_vec.find(cmdparam.current_cmd_id); iter != cmdparam.cmd_vec.end(); ++iter)
+							{
+								cs.executeCmd(aris::core::Msg(iter->second), [iter](aris::plan::Plan &plan)->void
+								{
+									std::unique_lock<std::mutex> run_lock(mymutex);
+									auto temp_iter = iter;
+									temp_iter++;
+									if (temp_iter != cmdparam.cmd_vec.end())
+									{
+										cmdparam.current_plan_id = temp_iter->first;
+										cmdparam.current_cmd_id = temp_iter->first;
+									}
+									else
+									{
+										cmdparam.current_plan_id = cmdparam.cmd_vec.rbegin()->first + 1;
+										const bool is_not_start = false;
+										set_is_auto_executing(is_not_start);
+									}
+									g_is_auto.store(false);
+								});
+							}
+						}
+						catch (std::exception &e)
+						{
+							std::cout << e.what() << std::endl;
+							LOG_ERROR << e.what() << std::endl;
+						}
+					});
+				}
+			}
+			else if (p.first == "pause")
+			{
+				std::unique_lock<std::mutex> run_lock(mymutex);
+				const bool is_pause = false;
+				set_is_auto_executing(is_pause);
+
+				option() = Plan::NOT_RUN_COLLECT_FUNCTION | Plan::NOT_RUN_EXECUTE_FUNCTION;
+			}
+			else if (p.first == "stop")
+			{
+				std::unique_lock<std::mutex> run_lock(mymutex);
+				cmdparam.current_cmd_id = 0;
+				cmdparam.current_plan_id = -1;
+				const bool is_stop = false;
+				set_is_auto_executing(is_stop);
+
+				option() = Plan::NOT_RUN_COLLECT_FUNCTION | Plan::NOT_RUN_EXECUTE_FUNCTION;
+			}
+		}
+		ret() = run_ret;
+		this->param() = param;
+	}
+	auto Run::collectNrt()->void
+	{
+		auto param = std::any_cast<std::shared_ptr<RunParam>>(this->param());
+		param->run.join();
+	}
+	Run::Run(const std::string &name) :Plan(name)
+	{
+		command().loadXmlStr(
+			"<Command name=\"run\">"
+			"	<GroupParam>"
+			"		<UniqueParam>"
+			"			<Param name=\"forward\"/>"
+			"			<Param name=\"goto\" default=\"2\"/>"
+			"			<Param name=\"start\"/>"
+			"			<Param name=\"pause\"/>"
+			"			<Param name=\"stop\"/>"
+			"		</UniqueParam>"
+			"	</GroupParam>"
+			"</Command>");
+	}
+
 }

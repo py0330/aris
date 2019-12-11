@@ -119,7 +119,7 @@ namespace aris::plan
 			ac = -aris::dynamic::s_sgn2(va) * dm;
 			goto return_flag;
 		}
-		
+
 		// 查看当前速度是否过快 //
 		{
 			// 计算完全减速所产生的位移，vdec和sdec有方向 //
@@ -135,7 +135,7 @@ namespace aris::plan
 				goto return_flag;
 			}
 		}
-		
+
 		// 二分法算当前可以最快的加速度，并沿着该加速度加速 //
 		{
 			double lower_bound = pt - pa < 0.0 ? std::min(dm, -va / dt) : std::max(-dm, -va / dt);
@@ -169,8 +169,8 @@ namespace aris::plan
 		return std::abs(pt - pc) < zero_check && std::abs(vt - vc) < zero_check ? 0 : 1;
 	}
 
-
 	auto parseIf(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator;
+	auto parseWhile(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator;
 	auto parseGeneral(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
 	{
 		for (auto i = b; i != e; ++i)
@@ -184,7 +184,16 @@ namespace aris::plan
 			}
 			else if (info.cmd == "elseif" || info.cmd == "else" || info.cmd == "endif")
 			{
-				auto err = "invalid string in line:" + std::to_string(id);
+				auto err = "invalid " + info.cmd + " in line:" + std::to_string(id);
+				THROW_FILE_LINE(err);
+			}
+			else if (info.cmd == "while")
+			{
+				i = parseWhile(i, e);
+			}
+			else if (info.cmd == "endwhile")
+			{
+				auto err = "invalid endwhile in line:" + std::to_string(id);
 				THROW_FILE_LINE(err);
 			}
 			else
@@ -206,7 +215,7 @@ namespace aris::plan
 	auto parseIf(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
 	{
 		if (b != e && std::next(b) != e)b->second.next_cmd_true_ = std::next(b)->first;
-		
+
 		std::list<std::map<int, CmdInfo>::iterator> prev_else_line;
 		std::map<int, CmdInfo>::iterator last_if_begin = b;
 
@@ -215,18 +224,31 @@ namespace aris::plan
 		for (auto i = std::next(b); i != e; ++i)
 		{
 			auto &info = i->second;
-			
+
 			if (info.cmd == "endif")
 			{
 				is_end--;
+
+				if (is_end == 0)
+				{
+					parseGeneral(std::next(last_if_begin), i);
+					if (std::prev(i)->second.cmd != "if") std::prev(i)->second.next_cmd_true_ = i->first;
+					i->second.next_cmd_true_ = std::next(i) == e ? 0 : std::next(i)->first;
+					if (last_if_begin->second.cmd != "else")last_if_begin->second.next_cmd_false_ = i->first;
+
+					for (auto j : prev_else_line)
+					{
+						j->second.next_cmd_true_ = i->first;
+					}
+
+					return i;
+				}
 			}
 			else if (info.cmd == "if")
 			{
 				is_end++;
 			}
-
-
-			if (is_end == 1 && info.cmd == "elseif")
+			else if (is_end == 1 && info.cmd == "elseif")
 			{
 				if (has_else)
 				{
@@ -241,8 +263,7 @@ namespace aris::plan
 
 				prev_else_line.push_back(std::prev(i));
 			}
-
-			if (is_end == 1 && info.cmd == "else")
+			else if (is_end == 1 && info.cmd == "else")
 			{
 				if (has_else)
 				{
@@ -252,70 +273,70 @@ namespace aris::plan
 				has_else = true;
 
 				parseGeneral(std::next(last_if_begin), i);
-				last_if_begin->second.next_cmd_false_ = i->first; 
+				last_if_begin->second.next_cmd_false_ = i->first;
 				last_if_begin = i;
 				i->second.next_cmd_true_ = std::next(i)->first;
 
 				prev_else_line.push_back(std::prev(i));
 			}
-
-
-
-
-
-			if (is_end == 0)
-			{
-				parseGeneral(std::next(last_if_begin), i);
-				if (std::prev(i)->second.cmd != "if") std::prev(i)->second.next_cmd_true_ = i->first;
-				i->second.next_cmd_true_ = std::next(i) == e ? 0 : std::next(i)->first;
-				if(last_if_begin->second.cmd != "else")last_if_begin->second.next_cmd_false_ = i->first;
-
-				for (auto j : prev_else_line)
-				{
-					j->second.next_cmd_true_ = i->first;
-				}
-
-				//for (auto i = b; i != e; ++i)
-				//{
-				//	auto cmd = *i;
-				//	std::cout << cmd.first << " : " << std::setw(15) << cmd.second.cmd << " | " << std::setw(5) << cmd.second.next_cmd_true_ << " | " << cmd.second.next_cmd_false_ << std::endl;
-				//}
-				//std::cout << std::endl;
-
-				
-
-				return i;
-			}
 		}
-		
-		
-
 
 		std::string err = "no endif for if in line " + std::to_string(b->first);
 		THROW_FILE_LINE(err);
-		
-		
+
 		return b;
 	}
 	auto parseWhile(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
 	{
+		if (b != e && std::next(b) != e)b->second.next_cmd_true_ = std::next(b)->first;
+
+		int is_end = 1;
+		for (auto i = std::next(b); i != e; ++i)
+		{
+			auto &info = i->second;
+
+			if (info.cmd == "endwhile")
+			{
+				is_end--;
+
+				if (is_end == 0)
+				{
+					parseGeneral(std::next(b), i);
+					std::prev(i)->second.next_cmd_true_ = i->first;
+					i->second.next_cmd_true_ = b->first;
+					b->second.next_cmd_false_ = std::next(i) == e ? 0 : std::next(i)->first;
+
+					return i;
+				}
+			}
+			else if (info.cmd == "while")
+			{
+				is_end++;
+			}
+		}
+
 		return b;
 	}
-	//auto parseIf(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
-	//{
 
-	//}
-	//auto parseIf(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
-	//{
-	//	return b;
-	//}
+	struct LanguageParser::Imp
+	{
 
-
-
-
-
-	auto parseLanguage(std::map<int, CmdInfo> &cmd_map)->void
+	};
+	auto LanguageParser::parseLanguage(std::map<int, CmdInfo> &cmd_map)->int
 	{
 		parseGeneral(cmd_map.begin(), cmd_map.end());
+
+		return 0;
 	}
+	LanguageParser::~LanguageParser() = default;
+	LanguageParser::LanguageParser(const std::string &name) :Object(name), imp_(new Imp)
+	{
+		
+	}
+	ARIS_DEFINE_BIG_FOUR_CPP(LanguageParser);
+
+
+
+
+	
 }

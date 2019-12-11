@@ -44,6 +44,10 @@ int main(int argc, char *argv[])
 	cmd_map[91] = { "",0,0 };
 	cmd_map[92] = { "",0,0 };
 	cmd_map[95] = { "endif",0,0 };
+	cmd_map[130] = { "while",0,0 };
+	cmd_map[131] = { "",0,0 };
+	cmd_map[132] = { "",0,0 };
+	cmd_map[134] = { "endwhile",0,0 };
 	cmd_map[180] = { "if",0,0 };
 	cmd_map[181] = { "",0,0 };
 	cmd_map[182] = { "",0,0 };
@@ -60,7 +64,8 @@ int main(int argc, char *argv[])
 
 	try 
 	{
-		parseLanguage(cmd_map);
+		aris::plan::LanguageParser parser;
+		parser.parseLanguage(cmd_map);
 	}
 	catch (std::exception &e)
 	{

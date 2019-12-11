@@ -1,9 +1,12 @@
 ﻿#ifndef ARIS_PLAN_FUNCTION_H_
 #define ARIS_PLAN_FUNCTION_H_
 
+
+#include <aris/core/basic_type.hpp>
+
 #include <string>
 #include <map>
-#include <aris/core/basic_type.hpp>
+#include <aris/core/core.hpp>
 
 namespace aris::plan
 {
@@ -61,16 +64,25 @@ namespace aris::plan
 	// total_count : tbd, not finished yet
 	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int;
 
-
-	struct CmdInfo 
+	struct CmdInfo
 	{
 		std::string cmd;
 		int next_cmd_true_, next_cmd_false_;
 	};
-	auto parseLanguage(std::map<int, CmdInfo> &cmd_map)->void;
+	class LanguageParser : public aris::core::Object
+	{
+	public:
+		auto parseLanguage(std::map<int, CmdInfo> &cmd_map)->int;
 
+		virtual ~LanguageParser();
+		explicit LanguageParser(const std::string &name = "language_parser");
+		ARIS_REGISTER_TYPE(LanguageParser);
+		ARIS_DECLARE_BIG_FOUR(LanguageParser);
 
-
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
 }
 
 
