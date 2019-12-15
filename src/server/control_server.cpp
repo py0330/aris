@@ -154,7 +154,7 @@ namespace aris::server
 			if (auto check_ret = checkMotion(plan.motorOptions().data(), plan.imp_->ret_msg, plan.count()); check_ret < 0)
 			{
 				// print info //
-				server_->controller().mout() << "check failed, cmd queue cleared\n";
+				server_->controller().mout() << plan.imp_->ret_msg << "check failed, cmd queue cleared\n";
 
 				// finish //
 				plan.imp_->ret_code = check_ret;

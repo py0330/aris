@@ -665,14 +665,7 @@ namespace aris::plan
 
 
 
-	class Run : public aris::plan::Plan
-	{
-	public:
-		auto virtual prepairNrt()->void;
-		auto virtual collectNrt()->void;
-		explicit Run(const std::string &name = "Run_plan");
-		ARIS_REGISTER_TYPE(Run);
-	};
+
 }
 
 #endif

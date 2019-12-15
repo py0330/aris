@@ -8,64 +8,69 @@ int main(int argc, char *argv[])
 {
 	//test_function();
 
-	std::map<int, aris::plan::CmdInfo> cmd_map;
 
-	cmd_map[10] = { "main",0,0 };
-	cmd_map[11] = { "if",0,0 };
-	cmd_map[12] = { "",0,0 };
-	cmd_map[13] = { "",0,0 };
-	cmd_map[14] = { "",0,0 };
-	cmd_map[15] = { "endif",0,0 };
-	cmd_map[21] = { "if",0,0 };
-	cmd_map[22] = { "endif",0,0 };
-	cmd_map[23] = { "if",0,0 };
-	cmd_map[24] = { "else",0,0 };
-	cmd_map[25] = { "",0,0 };
-	cmd_map[26] = { "endif",0,0 };
-	cmd_map[41] = { "if",0,0 };
-	cmd_map[42] = { "",0,0 };
-	cmd_map[43] = { "",0,0 };
-	cmd_map[51] = { "",0,0 };
-	cmd_map[52] = { "if",0,0 };
-	cmd_map[53] = { "",0,0 };
-	cmd_map[54] = { "elseif",0,0 };
-	cmd_map[55] = { "",0,0 };
-	cmd_map[56] = { "elseif",0,0 };
-	cmd_map[57] = { "",0,0 };
-	cmd_map[58] = { "elseif",0,0 };
-	cmd_map[59] = { "",0,0 };
-	cmd_map[60] = { "endif",0,0 };
-	cmd_map[70] = { "elseif",0,0 };
-	cmd_map[71] = { "elseif",0,0 };
-	cmd_map[80] = { "if",0,0 };
-	cmd_map[81] = { "",0,0 };
-	cmd_map[82] = { "",0,0 };
-	cmd_map[90] = { "else",0,0 };
-	cmd_map[91] = { "",0,0 };
-	cmd_map[92] = { "",0,0 };
-	cmd_map[95] = { "endif",0,0 };
-	cmd_map[130] = { "while",0,0 };
-	cmd_map[131] = { "",0,0 };
-	cmd_map[132] = { "",0,0 };
-	cmd_map[134] = { "endwhile",0,0 };
-	cmd_map[180] = { "if",0,0 };
-	cmd_map[181] = { "",0,0 };
-	cmd_map[182] = { "",0,0 };
-	cmd_map[190] = { "else",0,0 };
-	cmd_map[191] = { "sfds",0,0 };
-	cmd_map[192] = { "",0,0 };
-	cmd_map[195] = { "endif",0,0 };
-	cmd_map[200] = { "endif",0,0 };
-	cmd_map[223] = { "if",0,0 };
-	cmd_map[224] = { "else",0,0 };
-	cmd_map[226] = { "endif",0,0 };
-	cmd_map[234] = { "",0,0 };
-	cmd_map[235] = { "",0,0 };
+	std::string program = 
+		"0 :var\r\n"
+		"1:function aaa\r\n"
+		"2:\r\n"
+		"3:if\r\n"
+		"4:bbb\r\n"
+		"5:\r\n"
+		"6:endif\r\n"
+		"7:endfunction\r\n"
+		"10:var\r\n"
+		"11:function bbb\r\n"
+		"17:endfunction\r\n"
+		"20:var\r\n"
+		"21:main\r\n"
+		"22:\r\n"
+		"23:if\r\n"
+		"24:\r\n"
+		"45:    if\r\n"
+		"46:\r\n"
+		"47:    else\r\n"
+		"48:\r\n"
+		"49:    endif\r\n"
+		"61:    if\r\n"
+		"62:\r\n"
+		"63:    elseif\r\n"
+		"64:\r\n"
+		"65:    endif\r\n"
+		"81:    if\r\n"
+		"82:    elseif\r\n"
+		"83:    elseif\r\n"
+		"84:    else\r\n"
+		"85:    endif\r\n"
+		"101:    if\r\n"
+		"102:    aaa\r\n"
+		"103:    elseif\r\n"
+		"104:    \r\n"
+		"105:    elseif\r\n"
+		"106:    \r\n"
+		"107:    else\r\n"
+		"108:    \r\n"
+		"109:    endif\r\n"
+		"200:\r\n"
+		"201:endif\r\n"
+		"202:while\r\n"
+		"203:\r\n"
+		"204:endwhile\r\n"
+		"205:aaa\r\n"
+		"300:endmain \r\n";
 
 	try 
 	{
 		aris::plan::LanguageParser parser;
-		parser.parseLanguage(cmd_map);
+		parser.setProgram(program);
+		parser.parseLanguage();
+
+		for (;!parser.isEnd();)
+		{
+			std::cout <<std::setw(5)<< parser.currentLine() <<":" << parser.currentCmd() << std::endl;
+			parser.forward(parser.currentCmd() != "while");
+		}
+		std::cout << std::setw(5) << parser.currentLine() << ":" << parser.currentCmd() << std::endl;
+
 	}
 	catch (std::exception &e)
 	{
@@ -75,11 +80,7 @@ int main(int argc, char *argv[])
 	
 
 
-	for (auto &cmd : cmd_map)
-	{
-		std::cout << std::setw(4) << cmd.first << " : " << std::setw(15) << cmd.second.cmd << " | " << std::setw(5) << cmd.second.next_cmd_true_ << " | " << cmd.second.next_cmd_false_ << std::endl;
-	}
-
+	
 
 
 	std::cout << "test_core finished, press any key to continue" << std::endl;

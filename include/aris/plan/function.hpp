@@ -64,15 +64,21 @@ namespace aris::plan
 	// total_count : tbd, not finished yet
 	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int;
 
-	struct CmdInfo
-	{
-		std::string cmd;
-		int next_cmd_true_, next_cmd_false_;
-	};
+	
 	class LanguageParser : public aris::core::Object
 	{
 	public:
-		auto parseLanguage(std::map<int, CmdInfo> &cmd_map)->int;
+		auto setProgram(const std::string& program)->void;
+		auto parseLanguage()->void;
+		auto varPool()->const std::vector<std::string>&;
+		auto gotoMain()->void;
+		auto gotoLine(int line)->void;
+		auto forward(bool is_this_cmd_successful = true)->void;
+		auto currentCmd()const->const std::string&;
+		auto currentLine()const->int;
+		auto isCurrentLineKeyWord()const->bool;
+		auto isCurrentLineFunction()const->bool;
+		auto isEnd()const->bool;
 
 		virtual ~LanguageParser();
 		explicit LanguageParser(const std::string &name = "language_parser");
