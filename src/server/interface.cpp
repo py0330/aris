@@ -190,8 +190,6 @@ namespace aris::server
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 namespace aris::server
 {
-	static struct mg_serve_http_opts s_http_server_opts;
-
 	struct HttpInterface::Imp
 	{
 		std::thread http_thread_;
@@ -201,6 +199,7 @@ namespace aris::server
 		struct mg_mgr mgr;
 		struct mg_connection *nc;
 		struct mg_bind_opts bind_opts;
+		struct mg_serve_http_opts s_http_server_opts;
 		const char *err_str;
 
 		std::mutex mu_running_;
@@ -213,7 +212,8 @@ namespace aris::server
 		if (imp_->is_running_.exchange(true) == false)
 		{
 			mg_mgr_init(&imp_->mgr, NULL);
-			s_http_server_opts.document_root = imp_->document_root_.c_str();
+			std::memset(&imp_->s_http_server_opts, 0, sizeof(mg_serve_http_opts));
+			imp_->s_http_server_opts.document_root = imp_->document_root_.c_str();
 
 			// Set HTTP server options //
 			memset(&imp_->bind_opts, 0, sizeof(imp_->bind_opts));
@@ -235,7 +235,7 @@ namespace aris::server
 					}
 					else
 					{
-						mg_serve_http(nc, hm, s_http_server_opts);
+						mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
 					}
 					break;
 				}
@@ -250,8 +250,8 @@ namespace aris::server
 			}
 
 			mg_set_protocol_http_websocket(imp_->nc);
-			s_http_server_opts.enable_directory_listing = "yes";
-
+			imp_->s_http_server_opts.enable_directory_listing = "yes";
+			imp_->nc->user_data = &imp_->s_http_server_opts;
 			imp_->http_thread_ = std::thread([this]()
 			{
 				for (; imp_->is_running_; ) { mg_mgr_poll(&imp_->mgr, 1000); }
@@ -262,11 +262,7 @@ namespace aris::server
 	auto HttpInterface::close()->void 
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-		
-		if (imp_->is_running_.exchange(false) == true)
-		{
-			imp_->http_thread_.join();
-		}
+		if (imp_->is_running_.exchange(false) == true){	imp_->http_thread_.join();	}
 	}
 	auto HttpInterface::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
@@ -306,10 +302,6 @@ namespace aris::server
 	{
 		Interface::loadXml(xml_ele);
 		this->sock_ = findOrInsertType<aris::core::Socket>("socket", "", "5866", aris::core::Socket::WEB);
-
-		sock_->setOnReceivedMsg(onReceivedMsg);
-		sock_->setOnReceivedConnection(onReceivedConnection);
-		sock_->setOnLoseConnection(onLoseConnection);
 	}
 	auto ProgramWebInterface::isAutoRunning()->bool { return imp_->auto_thread_.joinable(); }
 	auto ProgramWebInterface::isAutoMode()->bool { return imp_->is_auto_mode_; }
