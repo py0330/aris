@@ -4,6 +4,7 @@
 #include <memory>
 #include <cinttypes>
 #include <queue>
+#include <unordered_map>
 
 #include <aris/core/core.hpp>
 #include <aris/control/control.hpp>
@@ -12,9 +13,7 @@
 #include "aris/server/control_server.hpp"
 
 #include "json.hpp"
-
-
-
+#include "fifo_map.hpp"
 
 namespace aris::server
 {
@@ -190,6 +189,10 @@ namespace aris::server
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 namespace aris::server
 {
+	template<class K, class V, class dummy_compare, class A>
+	using my_workaround_fifo_map = nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
+	using my_json = nlohmann::basic_json<my_workaround_fifo_map>;
+	
 	struct HttpInterface::Imp
 	{
 		std::thread http_thread_;
@@ -209,11 +212,62 @@ namespace aris::server
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		
+		aris::core::XmlDocument doc;
+		doc.LoadFile("C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\robot\\interface.xml");
+
+		my_json js;
+		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
+		{
+			if (ele->Name() == std::string("Dashboard"))
+			{
+				my_json js1;
+				js1["name"] = std::string(ele->Attribute("name"));
+				js1["editable"] = std::string(ele->Attribute("editable")) == "true";
+				js1["i"] = std::string(ele->Attribute("id"));
+				js1["cells"] = std::vector<std::string>();
+				for (auto e1 = ele->FirstChildElement(); e1; e1 = e1->NextSiblingElement())
+				{
+					my_json j2;//{"name":"Ethercat配置","type":"EthercatConfiguration","i":"EMlxGXxpwDGgz","w":48,"h":23,"x":0,"y":0,"options":"{}"}
+					j2["name"] = e1->Attribute("name");
+					j2["type"] = e1->Attribute("type");
+					j2["i"] = e1->Attribute("id");
+					j2["w"] = e1->IntAttribute("width");
+					j2["h"] = e1->IntAttribute("height");
+					j2["x"] = e1->IntAttribute("x");
+					j2["y"] = e1->IntAttribute("y");
+					j2["options"] = e1->Attribute("options");
+					js1["cells"].push_back(j2);
+				}
+				js["dashboards"].push_back(js1);
+			}
+			else if (ele->Name() == std::string("WebSocket"))
+			{
+				js["ws"]["url"] = ele->Attribute("url");
+				js["ws"]["commandSendInterval"] = ele->IntAttribute("commandSendInterval");
+				js["ws"]["commandSendDelay"] = ele->IntAttribute("commandSendDelay");
+				js["ws"]["getInterval"] = ele->IntAttribute("getInterval");
+				js["ws"]["unityUpdateInterval"] = ele->IntAttribute("unityUpdateInterval");
+			}
+			else if (ele->Name() == std::string("LayoutConfig"))
+			{
+				js["layoutConfig"]["cols"] = ele->IntAttribute("cols");
+				js["layoutConfig"]["rowHeight"] = ele->IntAttribute("rowHeight");
+				js["layoutConfig"]["margin"] = ele->IntAttribute("margin");
+				js["layoutConfig"]["containerPadding"] = ele->IntAttribute("containerPadding");
+				js["layoutConfig"]["theme"] = ele->Attribute("theme");
+			}
+		}
+
+		auto str = js.dump(-1);
+		std::ofstream f;
+		std::filesystem::create_directories("C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\www\\api\\config\\");
+		f.open("C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\www\\api\\config\\interface");
+		f << str;
+		f.close();
+
 		if (imp_->is_running_.exchange(true) == false)
 		{
 			mg_mgr_init(&imp_->mgr, NULL);
-			std::memset(&imp_->s_http_server_opts, 0, sizeof(mg_serve_http_opts));
-			imp_->s_http_server_opts.document_root = imp_->document_root_.c_str();
 
 			// Set HTTP server options //
 			memset(&imp_->bind_opts, 0, sizeof(imp_->bind_opts));
@@ -226,18 +280,22 @@ namespace aris::server
 				switch (ev) {
 				case MG_EV_HTTP_REQUEST:
 				{
-					std::cout << std::string(hm->uri.p, hm->uri.len) << std::endl;
-
-					if (mg_vcmp(&hm->uri, "/api/config/interface") == 0)
+					std::cout << std::string(hm->method.p, hm->method.len) <<":"<< std::string(hm->uri.p, hm->uri.len) << std::endl;
+					
+					if (std::string(hm->method.p, hm->method.len) == "POST")
 					{
-						mg_http_serve_file(nc, hm, "C:\\Users\\py033\\Desktop\\interface111.txt",
-							mg_mk_str("text/plain; charset=utf-8"), mg_mk_str(""));
+
+					}
+					else if (std::string(hm->method.p, hm->method.len) == "PUT")
+					{
+					}
+					else if (std::string(hm->method.p, hm->method.len) == "DELETE")
+					{
 					}
 					else
 					{
 						mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
 					}
-					break;
 				}
 				default:
 
@@ -245,11 +303,13 @@ namespace aris::server
 				}
 			}, imp_->bind_opts);
 			if (imp_->nc == NULL) {
-				//fprintf(stderr, "Error starting server on port %s: %s\n", s_http_port, *imp_->bind_opts.error_string);
+				fprintf(stderr, "Error starting server on http\n");
 				exit(1);
 			}
 
 			mg_set_protocol_http_websocket(imp_->nc);
+			std::memset(&imp_->s_http_server_opts, 0, sizeof(mg_serve_http_opts));
+			imp_->s_http_server_opts.document_root = imp_->document_root_.c_str();
 			imp_->s_http_server_opts.enable_directory_listing = "yes";
 			imp_->nc->user_data = &imp_->s_http_server_opts;
 			imp_->http_thread_ = std::thread([this]()
@@ -294,7 +354,6 @@ namespace aris::server
 		bool is_auto_mode_{ false };
 
 		std::atomic_bool is_stop_{ false }, is_pause_{ false };
-
 	};
 	auto ProgramWebInterface::open()->void { sock_->startServer(); }
 	auto ProgramWebInterface::close()->void { sock_->stop(); }
@@ -409,7 +468,6 @@ namespace aris::server
 							auto end_pos = value.rfind("}");
 							auto cmd_str = value.substr(begin_pos + 1, end_pos - 1 - begin_pos);
 
-							/*
 							std::cout << cmd_str << std::endl;
 							cmd_str =
 								"0  :var\r\n"
@@ -440,6 +498,9 @@ namespace aris::server
 								"63 :		elseif\r\n"
 								"64 :			sl --count=1000\r\n"
 								"75 :		endif\r\n"
+								"77 :		\r\n"
+								"78 :		\r\n"
+								"79 :		\r\n"
 								"81 :		if\r\n"
 								"82 :		elseif\r\n"
 								"83 :		elseif\r\n"
@@ -460,7 +521,7 @@ namespace aris::server
 								"203:\r\n"
 								"204:endwhile\r\n"
 								"205:aaa\r\n"
-								"300:endmain \r\n";*/
+								"300:endmain \r\n";
 							try 
 							{
 								imp_->language_parser_.setProgram(cmd_str);
@@ -493,6 +554,47 @@ namespace aris::server
 							
 						}
 					}
+					else if (param == "goto")
+					{
+						if (!isAutoMode())
+						{
+							send_code_and_msg(-4, "can not goto in manual mode");
+							return 0;
+						}
+						else if (isAutoRunning())
+						{
+							send_code_and_msg(-4, "can not goto when running");
+							return 0;
+						}
+						else
+						{
+							imp_->language_parser_.gotoLine(std::stoi(value));
+							send_code_and_msg(0, "");
+							return 0;
+						}
+					}
+					else if (param == "goto_main")
+					{
+						if (!isAutoMode())
+						{
+							send_code_and_msg(-4, "can not goto in manual mode");
+							return 0;
+						}
+						else if (isAutoRunning())
+						{
+							send_code_and_msg(-4, "can not goto when running");
+							return 0;
+						}
+						else
+						{
+							imp_->language_parser_.gotoMain();
+							send_code_and_msg(0, "");
+							return 0;
+						}
+					}
+					else if (param == "forward")
+					{
+					}
 					else if (param == "start")
 					{
 						if (!isAutoMode())
@@ -502,11 +604,15 @@ namespace aris::server
 						}
 						else if (isAutoRunning())
 						{
-							send_code_and_msg(-4, "can not start program when running");
+							imp_->is_pause_.store(false);
+							send_code_and_msg(0, "");
 							return 0;
 						}
 						else
 						{
+							imp_->is_pause_.store(false);
+							imp_->is_stop_.store(false);
+							
 							imp_->auto_thread_ = std::thread([&]()->void
 							{
 								auto&cs = aris::server::ControlServer::instance();
@@ -514,7 +620,18 @@ namespace aris::server
 
 								for (; !imp_->language_parser_.isEnd();)
 								{
-									std::cout << "auto:" << std::setw(5) << imp_->language_parser_.currentLine() << ":" << imp_->language_parser_.currentCmd() << std::endl;
+									if (imp_->is_stop_.load() == true)
+									{
+										break;
+									}
+									else if (imp_->is_pause_.load() == true) 
+									{
+										std::this_thread::sleep_for(std::chrono::milliseconds(1));
+										continue;
+									}
+									
+
+
 
 									if (imp_->language_parser_.isCurrentLineKeyWord())
 									{
@@ -605,6 +722,8 @@ namespace aris::server
 								}
 
 								cs.waitForAllCollection();
+								
+								std::cout << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 
 								while (!imp_->auto_thread_.joinable());
 								imp_->auto_thread_.detach();
@@ -650,47 +769,6 @@ namespace aris::server
 							send_code_and_msg(0, "");
 							return 0;
 						}
-					}
-					else if (param == "goto")
-					{
-						if (!isAutoMode())
-						{
-							send_code_and_msg(-4, "can not goto in manual mode");
-							return 0;
-						}
-						else if (isAutoRunning())
-						{
-							send_code_and_msg(-4, "can not goto when running");
-							return 0;
-						}
-						else
-						{
-							imp_->language_parser_.gotoLine(std::stoi(value));
-							send_code_and_msg(0, "");
-							return 0;
-						}
-					}
-					else if (param == "goto_main")
-					{
-						if (!isAutoMode())
-						{
-							send_code_and_msg(-4, "can not goto in manual mode");
-							return 0;
-						}
-						else if (isAutoRunning())
-						{
-							send_code_and_msg(-4, "can not goto when running");
-							return 0;
-						}
-						else
-						{
-							imp_->language_parser_.gotoMain();
-							send_code_and_msg(0, "");
-							return 0;
-						}
-					}
-					else if (param == "forward")
-					{
 					}
 				}
 			}

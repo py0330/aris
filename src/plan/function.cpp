@@ -195,6 +195,8 @@ namespace aris::plan
 		
 		auto parseEnvironment(std::map<int, CmdInfo>::iterator b, std::map<int, CmdInfo>::iterator e)->std::map<int, CmdInfo>::iterator
 		{
+			main_id_ = 0;
+			
 			for (auto i = b; i != e; ++i)
 			{
 				auto id = i->first;
@@ -233,7 +235,14 @@ namespace aris::plan
 					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
 					i = parseFunction(std::next(i), e);
 				}
+				else 
+				{
+					auto err = "invalid " + info.cmd + " in line:" + std::to_string(id);
+					THROW_FILE_LINE(err);
+				}
 			}
+
+			if (main_id_ == 0)THROW_FILE_LINE("program must has main");
 
 			return e;
 		}
@@ -429,14 +438,14 @@ namespace aris::plan
 	{
 		imp_->parseEnvironment(imp_->cmd_map_.begin(), imp_->cmd_map_.end());
 
-		for (auto &cmd : imp_->cmd_map_)
-		{
-			std::cout << std::setw(4) << cmd.first << " : " << std::setw(15) << cmd.second.cmd << " | " << std::setw(5) << cmd.second.next_cmd_true_ << " | " << cmd.second.next_cmd_false_ << std::endl;
-		}
-		for (auto &cmd : imp_->functions_)
-		{
-			std::cout << cmd.first << std::endl;
-		}
+		//for (auto &cmd : imp_->cmd_map_)
+		//{
+		//	std::cout << std::setw(4) << cmd.first << " : " << std::setw(15) << cmd.second.cmd << " | " << std::setw(5) << cmd.second.next_cmd_true_ << " | " << cmd.second.next_cmd_false_ << std::endl;
+		//}
+		//for (auto &cmd : imp_->functions_)
+		//{
+		//	std::cout << cmd.first << std::endl;
+		//}
 	}
 	auto LanguageParser::setProgram(const std::string& program)->void
 	{
@@ -455,7 +464,7 @@ namespace aris::plan
 			std::getline(ss, cmd);
 			cmd.erase(0, cmd.find_first_not_of(" \t\n\r\f\v"));// trim l
 			cmd.erase(cmd.find_last_not_of(" \t\n\r\f\v") + 1);// trim r
-			imp_->cmd_map_[id] = Imp::CmdInfo{ cmd, 0, 0 };
+			if (cmd != "")imp_->cmd_map_[id] = Imp::CmdInfo{ cmd, 0, 0 };
 		}
 	}
 	auto LanguageParser::varPool()->const std::vector<std::string>& { return imp_->var_pool_; }
