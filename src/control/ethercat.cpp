@@ -177,43 +177,32 @@ namespace aris::control
 
 		this->smPool() = dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).smPool();
 	}
-	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->void
+	auto EthercatSlave::findPdoEntry(std::uint16_t index, std::uint8_t subindex)->PdoEntry*
 	{
 		if (auto found_pdo = imp_->pdo_map_.find(index); found_pdo == imp_->pdo_map_.end())
-		{
-			THROW_FILE_LINE("pdo not found:" + std::to_string(index));
-		}
+			return nullptr;
+		else if (auto found_entry = found_pdo->second.find(subindex); found_entry == found_pdo->second.end())
+			return nullptr;
 		else
-		{
-			if (auto found_entry = found_pdo->second.find(subindex); found_entry == found_pdo->second.end())
-			{
-				THROW_FILE_LINE("pdo entry not found:" + std::to_string(index) + ":" + std::to_string(subindex));
-			}
-			else
-			{
-				if (found_entry->second->bitSize() != bit_size)THROW_FILE_LINE("pdo entry size not equal:\"" + std::to_string(index) + ":" + std::to_string(subindex));
-				aris_ecrt_pdo_read(found_entry->second, value);
-			}
-		}
+			return found_entry->second;
 	}
-	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->void
+	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->int
 	{
-		if (auto found_pdo = imp_->pdo_map_.find(index); found_pdo == imp_->pdo_map_.end())
+		if (auto entry = findPdoEntry(index, subindex))
 		{
-			THROW_FILE_LINE("pdo not found:" + std::to_string(index));
+			aris_ecrt_pdo_read(entry, value);
+			return 0;
 		}
-		else
+		return -1;
+	}
+	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->int
+	{
+		if (auto entry = findPdoEntry(index, subindex))
 		{
-			if (auto found_entry = found_pdo->second.find(subindex); found_entry == found_pdo->second.end())
-			{
-				THROW_FILE_LINE("pdo entry not found:" + std::to_string(index) + ":" + std::to_string(subindex));
-			}
-			else
-			{
-				if (found_entry->second->bitSize() != bit_size)THROW_FILE_LINE("pdo entry size not equal:\"" + std::to_string(index) + ":" + std::to_string(subindex));
-				aris_ecrt_pdo_write(found_entry->second, value);
-			}
+			aris_ecrt_pdo_write(entry, value);
+			return 0;
 		}
+		return -1;
 	}
 	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size byte_size)->void
 	{
@@ -503,10 +492,11 @@ namespace aris::control
 	class EthercatMotor::Imp
 	{
 	public:
-		std::uint16_t control_word;
-		std::uint8_t mode_of_operation;
+		std::uint16_t control_word{ 0 }, status_word_{ 0 };
+		std::uint8_t mode_of_operation{ 0 };
 		double target_pos_{ 0 }, target_vel_{ 0 }, target_toq_{ 0 }, offset_vel_{ 0 }, offset_toq_{ 0 };
-		
+		bool is_virtual_{ false };
+
 		int waiting_count_left{ 0 }; // enable 在用
 		
 		// home 在用 //
@@ -517,11 +507,13 @@ namespace aris::control
 	{
 		EthercatSlave::saveXml(xml_ele);
 		Motor::saveXml(xml_ele);
+		xml_ele.SetAttribute("is_virtual", imp_->is_virtual_);
 	}
 	auto EthercatMotor::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Motor::loadXml(xml_ele);
 		EthercatSlave::loadXml(xml_ele);
+		imp_->is_virtual_ = Object::attributeBool(xml_ele, "is_virtual", false);
 	}
 	auto EthercatMotor::controlWord()const->std::uint16_t { return imp_->control_word; }
 	auto EthercatMotor::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
@@ -567,42 +559,38 @@ namespace aris::control
 	}
 	auto EthercatMotor::statusWord()const->std::uint16_t
 	{
-		std::uint16_t status_word;
-		readPdo(0x6041, 0x00, status_word);
-		return status_word;
+		std::uint16_t status_word{ 0 };
+		return (imp_->is_virtual_ || readPdo(0x6041, 0x00, status_word) != 0) ? imp_->status_word_ : status_word;
 	}
 	auto EthercatMotor::modeOfDisplay()const->std::uint8_t
 	{
-		std::uint8_t mode;
-		readPdo(0x6061, 0x00, mode);
-		return mode;
+		std::uint8_t mode{ 0 };
+		return (imp_->is_virtual_ || readPdo(0x6061, 0x00, mode) != 0) ? imp_->mode_of_operation : mode;
 	}
 	auto EthercatMotor::actualPos()const->double
 	{
 		std::int32_t pos_count{ 0 };
-		readPdo(0x6064, 0x00, pos_count);
-		return static_cast<double>(pos_count) / posFactor() - posOffset();
+		return (imp_->is_virtual_ || readPdo(0x6064, 0x00, pos_count) != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
 	}
 	auto EthercatMotor::actualVel()const->double
 	{
 		std::int32_t vel_count{ 0 };
-		readPdo(0x606C, 0x00, vel_count);
-		return static_cast<double>(vel_count) / posFactor();
+		return (imp_->is_virtual_ || readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor();
 	}
 	auto EthercatMotor::actualToq()const->double
 	{
-		std::int16_t cur_count{ 0 };
-		readPdo(0x6077, 0x00, cur_count);
-		return static_cast<double>(cur_count);
+		std::int16_t fce_count{ 0 };
+		return (imp_->is_virtual_ || readPdo(0x6077, 0x00, fce_count) == 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
 	}
 	auto EthercatMotor::actualCur()const->double
 	{
 		std::int16_t cur_count{ 0 };
-		readPdo(0x6078, 0x00, cur_count);
-		return static_cast<double>(cur_count);
+		return (imp_->is_virtual_ || readPdo(0x6078, 0x00, cur_count) == 0) ? imp_->target_toq_: static_cast<double>(cur_count);
 	}
 	auto EthercatMotor::disable()->int
 	{
+		if (imp_->is_virtual_) imp_->status_word_ = 0x40;
+		
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8         Shutdown
 		// 0x07    0b xxxx xxxx 0xxx 0111    B: transition 3             Switch ON
@@ -627,8 +615,7 @@ namespace aris::control
 		// 0x4F    0b 0000 0000 0100 1111
 		// disable change state to A/B/C/E to D
 
-		std::uint16_t status_word;
-		readPdo(0x6041, 0x00, status_word);
+		auto status_word = statusWord();
 
 		// check status A, now transition 1 automatically
 		if ((status_word & 0x4F) == 0x00)
@@ -691,6 +678,8 @@ namespace aris::control
 	}
 	auto EthercatMotor::enable()->int
 	{
+		if (imp_->is_virtual_) imp_->status_word_ = 0x27;
+		
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
 		// 0x07    0b xxxx xxxx 0xxx 0111    B: transition 3           Switch ON
@@ -714,8 +703,8 @@ namespace aris::control
 		// 0x6F    0b 0000 0000 0110 1111
 		// 0x4F    0b 0000 0000 0100 1111
 		// enable change state to A/B/C/D/F/G/H to E
-		std::uint16_t status_word;
-		readPdo(0x6041, 0x00, status_word);
+
+		auto status_word = statusWord();
 
 		// check status A
 		if ((status_word & 0x4F) == 0x00)
@@ -882,11 +871,13 @@ namespace aris::control
 		return md == modeOfDisplay() ? 0 : 1;
 	}
 	EthercatMotor::EthercatMotor(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
-		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos)
+		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
+		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos, bool is_virtual)
 		: EthercatSlave(name, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)
 		, Motor(name, phy_id, max_pos, min_pos, max_vel, min_vel, max_acc, min_acc, max_pos_following_error, max_vel_following_error, pos_factor, pos_offset, home_pos)
 		, Slave(name, phy_id), imp_(new Imp)
 	{
+		imp_->is_virtual_ = is_virtual;
 	}
 	EthercatMotor::EthercatMotor(const EthercatMotor &other) = default;
 	EthercatMotor& EthercatMotor::operator=(const EthercatMotor &other) = default;

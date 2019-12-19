@@ -509,7 +509,7 @@ namespace aris::control
 		}
 	}
 
-	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data)->void
+	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void
 	{
 		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
 		read_bit2(reinterpret_cast<char*>(data), entry->bitSize(), pe_handle.data_, pe_handle.bit_position);
@@ -544,7 +544,7 @@ namespace aris::control
 	auto aris_ecrt_master_send(EthercatMaster *master)->void {}
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *ms, EthercatMaster::SlaveLinkState *ss)->void {}
 
-	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data)->void {}
+	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void {}
 	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data)->void {}
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t buffer_size, std::size_t *result_size, std::uint32_t *abort_code) ->int {

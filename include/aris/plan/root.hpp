@@ -52,6 +52,7 @@ namespace aris::plan
 			USE_OFFSET_VEL = 0x01ULL << 19,
 			USE_OFFSET_TOQ = 0x01ULL << 20,
 
+			NOT_CHECK_MODE = 0x01ULL << 22,
 			NOT_CHECK_ENABLE = 0x01ULL << 23,
 			NOT_CHECK_POS_MIN = 0x01ULL << 24,
 			NOT_CHECK_POS_MAX = 0x01ULL << 25,
@@ -64,7 +65,7 @@ namespace aris::plan
 			NOT_CHECK_VEL_CONTINUOUS = 0x01ULL << 33,
 			NOT_CHECK_VEL_FOLLOWING_ERROR = 0x01ULL << 35,
 
-			CHECK_NONE = NOT_CHECK_ENABLE | NOT_CHECK_POS_MIN | NOT_CHECK_POS_MAX | NOT_CHECK_POS_CONTINUOUS | NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER | NOT_CHECK_POS_FOLLOWING_ERROR | 
+			CHECK_NONE = NOT_CHECK_MODE | NOT_CHECK_ENABLE | NOT_CHECK_POS_MIN | NOT_CHECK_POS_MAX | NOT_CHECK_POS_CONTINUOUS | NOT_CHECK_POS_CONTINUOUS_SECOND_ORDER | NOT_CHECK_POS_FOLLOWING_ERROR |
 				NOT_CHECK_VEL_MIN | NOT_CHECK_VEL_MAX | NOT_CHECK_VEL_CONTINUOUS | NOT_CHECK_VEL_FOLLOWING_ERROR, 
 		};
 		enum RetStatus
@@ -115,6 +116,8 @@ namespace aris::plan
 		auto cmdId()->std::int64_t;
 		auto beginGlobalCount()->std::int64_t;
 		auto rtStastic()->aris::control::Master::RtStasticsData &;
+		auto lout()->aris::core::MsgStream & { return master()->lout(); }
+		auto mout()->aris::core::MsgStream & { return master()->mout(); }
 
 		auto param()->std::any&;
 		auto ret()->std::any&;

@@ -48,7 +48,7 @@ namespace aris::control
 
 	auto aris_ecrt_master_link_state(EthercatMaster* mst, EthercatMaster::MasterLinkState *master_state, EthercatMaster::SlaveLinkState *slave_state)->void;
 
-	auto aris_ecrt_pdo_read(PdoEntry *entry, void *data)->void;
+	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void;
 	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data)->void;
 	auto aris_ecrt_sdo_read(std::any& master, std::uint16_t slave_position, std::uint16_t index, std::uint8_t subindex,
 		std::uint8_t *to_buffer, std::size_t byte_size, std::size_t *result_size, std::uint32_t *abort_code)->int;

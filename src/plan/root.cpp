@@ -774,6 +774,9 @@ namespace aris::plan
 	};
 	auto Recover::prepairNrt()->void
 	{
+		aris::server::ControlServer::instance().waitForAllCollection();
+		aris::server::ControlServer::instance().clearError();
+		
 		auto p = std::make_shared<RecoverParam>();
 
 		p->is_kinematic_ready_ = false;
@@ -880,7 +883,7 @@ namespace aris::plan
 		check_input_movement(cmdParams(), *this, *imp_, *imp_);
 
 		imp_->axis_begin_pos_vec.resize(controller()->motionPool().size());
-		for (auto &option : motorOptions()) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
+		//for (auto &option : motorOptions()) option |= aris::plan::Plan::NOT_CHECK_ENABLE;
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;

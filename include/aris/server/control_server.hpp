@@ -71,6 +71,9 @@ namespace aris::server
 		auto waitForAllExecution()->void;
 		auto waitForAllCollection()->void;
 		auto getRtData(const std::function<void(ControlServer&, const aris::plan::Plan *target, std::any&)>& get_func, std::any& data)->void;
+		auto errorCode()const->int;
+		auto errorMsg()const->const char *;
+		auto clearError()->void;
 
 		ARIS_REGISTER_TYPE(ControlServer);
 

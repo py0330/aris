@@ -56,6 +56,7 @@ namespace aris::server
 		auto tg()->void;
 		auto executeCmd(aris::plan::Plan &plan)->int;
 		auto checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int;
+		auto fixError(bool is_in_check)->int;
 		auto startReturnThread()->void;
 
 		Imp(ControlServer *server) :server_(server) {}
@@ -87,8 +88,11 @@ namespace aris::server
 		struct PVC { double p; double v; double c; };
 		PVC *last_pvc_, *last_last_pvc_;
 
-		// 全局的电机check选项
+		// Error 相关
 		std::uint64_t *global_mot_options_;
+		std::atomic_int err_code_{ 0 };
+		char err_msg_[1024]{ 0 };
+		bool err_fixed_{ true };
 
 		// 储存Model, Controller, SensorRoot, PlanRoot //
 		aris::dynamic::Model* model_;
@@ -118,17 +122,20 @@ namespace aris::server
 		// pre callback //
 		if (auto call = pre_callback_.load())call(ControlServer::instance());
 		
-		// get atomic variables
-		auto global_count = ++global_count_; // 原子操作
-		auto cmd_now = cmd_now_.load();//原子操作
-		auto cmd_end = cmd_end_.load();//原子操作
+		// 原子操作
+		auto global_count = ++global_count_; 
+		auto cmd_now = cmd_now_.load();
+		auto cmd_end = cmd_end_.load();
+		auto err_code = err_code_.load();
 
-		// global error code, 存储上一次的错误 //
-		static int idle_error_code{ 0 };
-
-		char errmsg[1024];
-		// 执行cmd queue中的cmd //
-		if (cmd_end > cmd_now)
+		// 如果处于错误状态,或者错误还未清理完 //
+		if (err_code || err_fixed_ == false)
+		{
+			err_fixed_ = fixError(false);
+			cmd_now_.store(cmd_end);
+		}
+		// 否则执行cmd queue中的cmd //
+		else if (cmd_end > cmd_now)
 		{
 			auto &plan = *internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_;
 
@@ -151,13 +158,13 @@ namespace aris::server
 			auto ret = executeCmd(plan);
 
 			// 检查错误 //
-			if (auto check_ret = checkMotion(plan.motorOptions().data(), plan.imp_->ret_msg, plan.count()); check_ret < 0)
+			if (auto check_ret = checkMotion(plan.motorOptions().data(), err_msg_, plan.count()); check_ret < 0)
 			{
-				// print info //
-				server_->controller().mout() << plan.imp_->ret_msg << "check failed, cmd queue cleared\n";
-
+				err_code_.store(check_ret);
+				
 				// finish //
 				plan.imp_->ret_code = check_ret;
+				std::copy_n(err_msg_, 1024, plan.imp_->ret_msg);
 				cmd_now_.store(cmd_end);// 原子操作
 				server_->controller().resetRtStasticData(nullptr, false);
 				server_->controller().lout() << std::flush;
@@ -165,8 +172,7 @@ namespace aris::server
 			// 非正常结束 //
 			else if (ret < 0)
 			{
-				// print info //
-				server_->controller().mout() << "user execute failed, cmd queue cleared\n";
+				err_code_.store(ret);
 				
 				// finish //
 				plan.imp_->ret_code = ret;
@@ -195,10 +201,11 @@ namespace aris::server
 					server_->controller().mout() << "execute cmd in count: " << plan.imp_->count_ << "\n";
 			}
 		}
-		else if (auto error_code = idle_error_code; idle_error_code = checkMotion(global_mot_options_, errmsg, 0) && idle_error_code != error_code)
+		// 否则检查idle状态
+		else if (auto check_ret = checkMotion(global_mot_options_, err_msg_, 0))
 		{
-			// 只有错误代码改变时，才会打印 //
-			server_->controller().mout() << "failed when idle " << idle_error_code << ":\n" << errmsg << "\n";
+			err_code_.store(check_ret);
+			server_->controller().mout() << "failed when idle " << check_ret << ":\n" << err_msg_ << "\n";
 		}
 
 		// 给与外部想要的数据 //
@@ -213,9 +220,6 @@ namespace aris::server
 	}
 	auto ControlServer::Imp::executeCmd(aris::plan::Plan &plan)->int
 	{
-		//target.count = count_;
-		aris::plan::Plan target;
-
 		// 执行plan函数 //
 		int ret = plan.executeRT();
 
@@ -239,11 +243,8 @@ namespace aris::server
 	}
 	auto ControlServer::Imp::checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int
 	{
-		static int error_code = aris::plan::Plan::SUCCESS;
-		static bool is_correcting{ false };
-		if (is_correcting)goto FAILED;
+		int error_code = aris::plan::Plan::SUCCESS;
 
-		error_code = aris::plan::Plan::SUCCESS;
 		// 检查规划的指令是否合理（包括电机是否已经跟随上） //
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 		{
@@ -252,7 +253,8 @@ namespace aris::server
 			auto &lld = last_last_pvc_[i];
 			auto option = mot_options[i];
 			auto dt = controller_->samplePeriodNs() / 1.0e9;
-#ifndef WIN32
+
+			// 检查使能 //
 			if (!(option & aris::plan::Plan::NOT_CHECK_ENABLE)
 				&& ((cm.statusWord() & 0x6f) != 0x27))
 			{
@@ -260,7 +262,7 @@ namespace aris::server
 				sprintf(error_msg, "%s_%d:\nMotion %zd is not in OPERATION_ENABLE mode in count %zd\n", __FILE__, __LINE__, i, count_);
 				goto FAILED;
 			}
-#endif
+
 			// 使能时才检查 //
 			if ((cm.statusWord() & 0x6f) == 0x27)
 			{
@@ -408,9 +410,12 @@ namespace aris::server
 				default:
 				{
 					// invalid mode //
-					error_code = aris::plan::Plan::MOTION_INVALID_MODE;
-					sprintf(error_msg, "%s_%d:\nMotion %zu MODE INVALID in count %zu:\nmode: %d\n", __FILE__, __LINE__, i, count_, cm.modeOfOperation());
-					goto FAILED;
+					if (!(option & aris::plan::Plan::NOT_CHECK_MODE))
+					{
+						error_code = aris::plan::Plan::MOTION_INVALID_MODE;
+						sprintf(error_msg, "%s_%d:\nMotion %zu MODE INVALID in count %zu:\nmode: %d\n", __FILE__, __LINE__, i, count_, cm.modeOfOperation());
+						goto FAILED;
+					}
 				}
 				}
 			}
@@ -427,7 +432,12 @@ namespace aris::server
 		return 0;
 
 	FAILED:
-		is_correcting = false;
+		fixError(true);
+		return error_code;
+	}
+	auto ControlServer::Imp::fixError(bool is_in_check)->int
+	{
+		int fix_finished{ 0 };
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 		{
 			// correct
@@ -435,27 +445,25 @@ namespace aris::server
 			switch (cm.modeOfOperation())
 			{
 			case 8:
-				cm.setTargetPos(cm.actualPos());
-				//is_correcting = cm.disable();
+				if (is_in_check) cm.setTargetPos(cm.actualPos());
 				break;
 			case 9:
 				cm.setTargetVel(0.0);
-				//is_correcting = cm.disable();
 				break;
 			case 10:
 				cm.setTargetToq(0.0);
-				is_correcting = cm.disable() || is_correcting;
+				fix_finished = cm.disable() || fix_finished;
 				break;
 			default:
-				is_correcting = cm.disable() || is_correcting;
+				fix_finished = cm.disable() || fix_finished;
 			}
-			
+
 			// store correct data
 			last_pvc_[i].p = last_last_pvc_[i].p = controller_->motionPool().at(i).targetPos();
 			last_pvc_[i].v = last_last_pvc_[i].v = controller_->motionPool().at(i).targetVel();
 			last_pvc_[i].c = last_last_pvc_[i].c = controller_->motionPool().at(i).targetToq();
 		}
-		return error_code;
+		return fix_finished == 0;
 	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
 	auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
@@ -518,6 +526,8 @@ namespace aris::server
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::ObjectPool<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
+	auto ControlServer::errorCode()const->int { return imp_->err_code_.load(); }
+	auto ControlServer::errorMsg()const->const char * { return imp_->err_msg_; }
 	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)->void { imp_->pre_callback_.store(pre_callback); }
 	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
 	auto ControlServer::running()->bool { return imp_->is_running_; }
@@ -662,6 +672,8 @@ namespace aris::server
 			}
 		}
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		if (this->errorCode()) LOG_AND_THROW(std::runtime_error("system in error, please use rc to recover"));
 
 		// 既不execute也不collect，直接返回 //
 		if ((plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION) && (plan->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
@@ -867,6 +879,7 @@ namespace aris::server
 
 		imp_->if_get_data_ready_.store(false);
 	}
+	auto ControlServer::clearError()->void { imp_->err_code_.store(0); }
 	ControlServer::~ControlServer() 
 	{ 
 		close();

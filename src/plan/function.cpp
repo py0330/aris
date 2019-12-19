@@ -115,6 +115,10 @@ namespace aris::plan
 		vt = 0.0;
 		at = 0.0;
 
+		vm = std::abs(vm);
+		am = std::abs(am);
+		dm = std::abs(dm);
+
 		// 当前速度超过速度上限 //
 		if (std::abs(va) > vm + dm * dt)
 		{
