@@ -489,9 +489,8 @@ namespace aris::control
 	EthercatMaster::~EthercatMaster() = default;
 	EthercatMaster::EthercatMaster(const std::string &name) :Master(name), imp_(new Imp){}
 
-	class EthercatMotor::Imp
+	struct EthercatMotor::Imp
 	{
-	public:
 		std::uint16_t control_word{ 0 }, status_word_{ 0 };
 		std::uint8_t mode_of_operation{ 0 };
 		double target_pos_{ 0 }, target_vel_{ 0 }, target_toq_{ 0 }, offset_vel_{ 0 }, offset_toq_{ 0 };
@@ -503,6 +502,8 @@ namespace aris::control
 		int home_count{ 0 };
 		bool need_clear{ true };
 	};
+	auto EthercatMotor::isVirtual()->bool { return imp_->is_virtual_; }
+	auto EthercatMotor::setVirtual(bool is_virtual)->void { imp_->is_virtual_ = is_virtual; }
 	auto EthercatMotor::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		EthercatSlave::saveXml(xml_ele);

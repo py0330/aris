@@ -196,6 +196,9 @@ namespace aris::control
 	class EthercatMotor :public EthercatSlave, public Motor
 	{
 	public:
+		auto isVirtual()->bool;
+		auto setVirtual(bool is_virtual = true)->void;
+
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 
@@ -253,7 +256,7 @@ namespace aris::control
 		EthercatMotor& operator=(EthercatMotor &&other) = delete;
 
 	private:
-		class Imp;
+		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	class EthercatController :public EthercatMaster, public Controller
