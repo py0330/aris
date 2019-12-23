@@ -226,7 +226,7 @@ namespace aris::server
 
 		imp_->onReceiveMsg_ = [this](aris::core::Socket *socket, aris::core::Msg &msg)->int
 		{
-			auto send_ret = [&](aris::core::Msg &ret_msg)->void
+			auto send_ret = [socket](aris::core::Msg &ret_msg)->void
 			{
 				try
 				{
@@ -238,7 +238,7 @@ namespace aris::server
 					LOG_ERROR << e.what() << std::endl;
 				}
 			};
-			auto send_code_and_msg = [&](int code, const std::string& ret_msg_str)
+			auto send_code_and_msg = [send_ret, msg](int code, const std::string& ret_msg_str)
 			{
 				nlohmann::json js;
 				js["return_code"] = code;///////////////////////////////////////////////////////////

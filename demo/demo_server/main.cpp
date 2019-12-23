@@ -333,6 +333,7 @@ int main(int argc, char *argv[])
 	cs.interfacePool().add<aris::server::WebInterface>("", "5867", aris::core::Socket::TCP);
 	cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\www");
 
+
 	//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
 	cs.loadXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
 

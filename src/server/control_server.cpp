@@ -626,18 +626,27 @@ namespace aris::server
 		LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << msg.toString() << std::endl;
 		auto cmd_end = imp_->cmd_end_.load();
 
+		static std::shared_ptr<aris::plan::Plan> default_return_plan(new aris::plan::Plan);
+		auto plan = default_return_plan;
+
 		// parse //
 		std::string cmd;
 		std::map<std::string, std::string> params;
-		planRoot().planParser().parse(msg.toString(), cmd, params);
+		try	{ planRoot().planParser().parse(msg.toString(), cmd, params); }
+		catch (std::exception &e)
+		{
+			plan->retCode() = aris::plan::Plan::PARSE_EXCEPTION;
+			std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
+			return plan;
+		}
 		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 
 		// init plan //
-		auto internal_data = std::make_shared<Imp::InternalData>(Imp::InternalData{
+		auto internal_data = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{
 			std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter))),
 			post_callback
 			});
-		auto plan = internal_data->plan_;
+		plan = internal_data->plan_;
 		plan->imp_->count_ = 0;
 		plan->imp_->model_ = imp_->model_;
 		plan->imp_->master_ = imp_->controller_;
@@ -656,7 +665,17 @@ namespace aris::server
 
 		// prepair //
 		LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
-		plan->prepairNrt();
+		try
+		{
+			plan->prepairNrt();
+		}
+		catch (std::exception &e)
+		{
+			plan->retCode() = aris::plan::Plan::PREPARE_EXCEPTION;
+			std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
+			return plan;
+		}
+		
 
 		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		auto print_size = plan->cmdParams().empty() ? 2 : 2 + std::max_element(plan->cmdParams().begin(), plan->cmdParams().end(), [](const auto& a, const auto& b)
