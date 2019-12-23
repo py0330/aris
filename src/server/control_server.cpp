@@ -56,7 +56,7 @@ namespace aris::server
 		auto tg()->void;
 		auto executeCmd(aris::plan::Plan &plan)->int;
 		auto checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int;
-		auto fixError(bool is_in_check)->int;
+		auto fixError(bool is_in_check)->std::int32_t;
 		auto startReturnThread()->void;
 
 		Imp(ControlServer *server) :server_(server) {}
@@ -90,9 +90,8 @@ namespace aris::server
 
 		// Error 相关
 		std::uint64_t *global_mot_options_;
-		std::atomic_int err_code_{ 0 };
+		std::atomic<std::int64_t> err_code_and_fixed_{ 0 };
 		char err_msg_[1024]{ 0 };
-		bool err_fixed_{ true };
 
 		// 储存Model, Controller, SensorRoot, PlanRoot //
 		aris::dynamic::Model* model_;
@@ -126,12 +125,14 @@ namespace aris::server
 		auto global_count = ++global_count_; 
 		auto cmd_now = cmd_now_.load();
 		auto cmd_end = cmd_end_.load();
-		auto err_code = err_code_.load();
+		union{	std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix;	} err;};
+		err_code_and_fixed = err_code_and_fixed_.load();
 
 		// 如果处于错误状态,或者错误还未清理完 //
-		if (err_code || err_fixed_ == false)
+		if (err_code_and_fixed)
 		{
-			err_fixed_ = fixError(false);
+			err.fix = fixError(false);
+			err_code_and_fixed_.store(err_code_and_fixed);
 			cmd_now_.store(cmd_end);
 		}
 		// 否则执行cmd queue中的cmd //
@@ -158,12 +159,12 @@ namespace aris::server
 			auto ret = executeCmd(plan);
 
 			// 检查错误 //
-			if (auto check_ret = checkMotion(plan.motorOptions().data(), err_msg_, plan.count()); check_ret < 0)
+			if (err.code = checkMotion(plan.motorOptions().data(), err_msg_, plan.count()); err.code < 0)
 			{
-				err_code_.store(check_ret);
+				err_code_and_fixed_.store(err_code_and_fixed);
 				
 				// finish //
-				plan.imp_->ret_code = check_ret;
+				plan.imp_->ret_code = err.code;
 				std::copy_n(err_msg_, 1024, plan.imp_->ret_msg);
 				cmd_now_.store(cmd_end);// 原子操作
 				server_->controller().resetRtStasticData(nullptr, false);
@@ -172,7 +173,8 @@ namespace aris::server
 			// 非正常结束 //
 			else if (ret < 0)
 			{
-				err_code_.store(ret);
+				err.code = ret;
+				err_code_and_fixed_.store(err_code_and_fixed);
 				
 				// finish //
 				plan.imp_->ret_code = ret;
@@ -202,10 +204,10 @@ namespace aris::server
 			}
 		}
 		// 否则检查idle状态
-		else if (auto check_ret = checkMotion(global_mot_options_, err_msg_, 0))
+		else if (err.code = checkMotion(global_mot_options_, err_msg_, 0); err.code < 0)
 		{
-			err_code_.store(check_ret);
-			server_->controller().mout() << "failed when idle " << check_ret << ":\n" << err_msg_ << "\n";
+			err_code_and_fixed_.store(err_code_and_fixed);
+			server_->controller().mout() << "failed when idle " << err.code << ":\n" << err_msg_ << "\n";
 		}
 
 		// 给与外部想要的数据 //
@@ -435,9 +437,9 @@ namespace aris::server
 		fixError(true);
 		return error_code;
 	}
-	auto ControlServer::Imp::fixError(bool is_in_check)->int
+	auto ControlServer::Imp::fixError(bool is_in_check)->std::int32_t
 	{
-		int fix_finished{ 0 };
+		std::int32_t fix_finished{ 0 };
 		for (std::size_t i = 0; i < controller_->motionPool().size(); ++i)
 		{
 			// correct
@@ -463,7 +465,8 @@ namespace aris::server
 			last_pvc_[i].v = last_last_pvc_[i].v = controller_->motionPool().at(i).targetVel();
 			last_pvc_[i].c = last_last_pvc_[i].c = controller_->motionPool().at(i).targetToq();
 		}
-		return fix_finished == 0;
+
+		return fix_finished;
 	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
 	auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
@@ -526,7 +529,12 @@ namespace aris::server
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::ObjectPool<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
-	auto ControlServer::errorCode()const->int { return imp_->err_code_.load(); }
+	auto ControlServer::errorCode()const->int 
+	{ 
+		union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
+		err_code_and_fixed = imp_->err_code_and_fixed_.load();
+		return err.err_code;
+	}
 	auto ControlServer::errorMsg()const->const char * { return imp_->err_msg_; }
 	auto ControlServer::setRtPlanPreCallback(PreCallback pre_callback)->void { imp_->pre_callback_.store(pre_callback); }
 	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
@@ -879,7 +887,17 @@ namespace aris::server
 
 		imp_->if_get_data_ready_.store(false);
 	}
-	auto ControlServer::clearError()->void { imp_->err_code_.store(0); }
+	auto ControlServer::clearError()->void 
+	{ 
+		while (imp_->err_code_and_fixed_.load())
+		{
+			union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
+			err.err_code = 0;
+			err.is_fixed = 0xFFFF'FFFF;
+			imp_->err_code_and_fixed_ &= err_code_and_fixed;
+			std::this_thread::sleep_for(std::chrono::nanoseconds(controller().samplePeriodNs()));
+		}
+	}
 	ControlServer::~ControlServer() 
 	{ 
 		close();

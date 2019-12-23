@@ -813,8 +813,7 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = ../src \
-                         ../demo \
+INPUT                  = ../demo \
                          ../include
 
 # This tag can be used to specify the character encoding of the source files
@@ -896,26 +895,7 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = ../src/aris_control/aris_control_ethercat_kernel.cpp \
-                         ../src/aris_control/aris_control_ethercat_kernel.h \
-                         ../src/aris_core/tinyxml2.cpp \
-                         ../src/aris_core/tinyxml2.h \
-                         ../src/aris_control/aris_control_rt_timer.cpp \
-                         ../src/aris_control/aris_control_rt_timer.h \
-                         ../src/aris_dynamic/aris_dynamic_screw.cpp \
-                         ../src/aris_dynamic/aris_dynamic_screw.h \
-                         ../src/aris_dynamic/aris_dynamic_matrix.h \
-                         ../src/aris_dynamic/aris_dynamic_matrix.cpp \
-                         ../src/aris_dynamic/aris_dynamic_cell.h \
-                         ../src/aris_dynamic/aris_dynamic_cell.cpp \
-                         ../src/aris_dynamic/aris_dynamic_block_matrix.h \
-                         ../src/aris_dynamic/aris_dynamic_block_matrix.cpp \
-                         ../src/aris_dynamic/aris_dynamic_plan.h \
-                         ../src/aris_dynamic/aris_dynamic_plan.cpp \
-                         ../src/aris_dynamic/aris_dynamic_spline.h \
-                         ../src/aris_dynamic/aris_dynamic_spline.cpp \
-                         ../src/aris_dynamic/aris_dynamic_simple_model.h \
-                         ../src/aris_dynamic/aris_dynamic_simple_model.cpp
+EXCLUDE                =
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded

@@ -117,15 +117,14 @@ void test_move()
 	double result_p[size], result_v[size], result_a[size];
 	aris::Size count;
 
-
 	for (aris::Size i = 0; i < size; ++i)
 	{
-		aris::plan::moveAbsolute(i, begin_p, end_p1, vel / frequence, acc / frequence / frequence, dec / frequence / frequence, result_p[i], result_v[i], result_a[i], count);
+		aris::plan::moveAbsolute(static_cast<double>(i), begin_p, end_p1, vel / frequence, acc / frequence / frequence, dec / frequence / frequence, result_p[i], result_v[i], result_a[i], count);
 	}
 	if (!(aris::dynamic::s_is_equal(size, result_p, p1, error) && aris::dynamic::s_is_equal(size, result_v, v1, error) && aris::dynamic::s_is_equal(size, result_a, a1, error) && count == 111))std::cout << "\"moveAbsolute\" failed" << std::endl;
 	for (aris::Size i = 0; i < size; ++i)
 	{
-		aris::plan::moveAbsolute(i, begin_p, end_p2, vel / frequence, acc / frequence / frequence, dec / frequence / frequence, result_p[i], result_v[i], result_a[i], count);
+		aris::plan::moveAbsolute(static_cast<double>(i), begin_p, end_p2, vel / frequence, acc / frequence / frequence, dec / frequence / frequence, result_p[i], result_v[i], result_a[i], count);
 	}
 	if (!(aris::dynamic::s_is_equal(size, result_p, p2, error) && aris::dynamic::s_is_equal(size, result_v, v2, error) && aris::dynamic::s_is_equal(size, result_a, a2, error) && count == 14))std::cout << "\"moveAbsolute\" failed" << std::endl;
 }

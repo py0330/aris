@@ -9,21 +9,13 @@
 
 #include "aris/core/basic_type.hpp"
 #include "aris/core/log.hpp"
+#include "aris/core/object.hpp"
 
 namespace aris::core
 {
 	class Matrix
 	{
 	public:
-		~Matrix() {}
-		Matrix() :m_(0), n_(0), is_row_major_(true) {}
-		Matrix(const Matrix &other) = default;
-		Matrix(Matrix &&other) { this->swap(other); }
-		Matrix &operator=(Matrix other) { this->swap(other); return *this; }
-		Matrix(double value);
-		Matrix(Size m, Size n, double value = 0);
-		Matrix(Size m, Size n, const double *data);
-		Matrix(const std::initializer_list<Matrix> &data);
 		auto swap(Matrix &other)->Matrix&;
 		auto empty() const->bool { return data_vec_.empty(); }
 		auto size() const->Size { return m()*n(); }
@@ -61,6 +53,16 @@ namespace aris::core
 		friend auto combineRowMatrices(const MATRIX_LIST &matrices)->Matrix;
 		template <typename MATRIX_LISTLIST>
 		friend auto combineMatrices(const MATRIX_LISTLIST &matrices)->Matrix;
+
+		~Matrix() {}
+		Matrix(double value);
+		Matrix(Size m, Size n, double value = 0);
+		Matrix(Size m, Size n, const double *data);
+		Matrix(const std::initializer_list<Matrix> &data);
+		Matrix() :m_(0), n_(0), is_row_major_(true) {}
+		Matrix(const Matrix &other) = default;
+		Matrix(Matrix &&other) { this->swap(other); }
+		Matrix &operator=(Matrix other) { this->swap(other); return *this; }
 
 	private:
 		Size m_, n_;
@@ -150,91 +152,17 @@ namespace aris::core
 		auto addVariable(const std::string &name, const Matrix &value)->void;
 		auto addVariable(const std::string &name, const std::string &value)->void;
 		auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void;
-		auto clearVariables()->void { variable_map_.clear(); string_map_.clear(); }
+		auto clearVariables()->void;
 
-		Calculator();
+		virtual ~Calculator();
+		explicit Calculator(const std::string &name = "");
+		Calculator(const Calculator &);
+		Calculator(Calculator &&);
+		Calculator& operator=(const Calculator &);
+		Calculator& operator=(Calculator &&);
 	private:
-		class Operator;
-		class Function;
-
-		class Token
-		{
-		public:
-			enum Type
-			{
-				NO,     //not determined
-				COMMA,    //comma,which is ','
-				SEMICOLON,    //SEMICOLONerator,which is ';'
-				PARENTHESIS_L,  //pranthese begin(left parenthesis)
-				PARENTHESIS_R,  //pranthese end(right parenthesis)
-				BRACKET_L,  //bracket begin(left)
-				BRACKET_R,  //bracket end(right)
-				BRACE_L,
-				BRACE_R,
-				OPERATOR,    //operator
-				NUMBER,    //const matrix
-				VARIABLE,    //variable
-				Function     //function
-			};
-
-			Type type;
-			std::string word;
-
-			double num;
-			const Matrix *var;
-			const Calculator::Function *fun;
-			const Calculator::Operator *opr;
-		};
-		class Operator
-		{
-		public:
-			std::string name;
-
-			Size priority_ul;//unary left
-			Size priority_ur;//unary right
-			Size priority_b;//binary
-
-			typedef std::function<Matrix(Matrix)> U_FUN;
-			typedef std::function<Matrix(Matrix, Matrix)> B_FUN;
-
-			U_FUN fun_ul;
-			U_FUN fun_ur;
-			B_FUN fun_b;
-
-			Operator() :priority_ul(0), priority_ur(0), priority_b(0) {}
-
-			void SetUnaryLeftOpr(Size priority, U_FUN fun) { priority_ul = priority; this->fun_ul = fun; }
-			void SetUnaryRightOpr(Size priority, U_FUN fun) { priority_ur = priority; this->fun_ur = fun; }
-			void SetBinaryOpr(Size priority, B_FUN fun) { priority_b = priority; this->fun_b = fun; }
-		};
-		class Function
-		{
-			typedef std::function<Matrix(std::vector<Matrix>)> FUN;
-		public:
-			std::string name;
-			std::map<Size, FUN> funs;
-
-			void AddOverloadFun(Size n, FUN fun) { funs.insert(make_pair(n, fun)); }
-		};
-
-		typedef std::vector<Token> TokenVec;
-		TokenVec Expression2Tokens(const std::string &expression)const;
-		Matrix CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator maxEndToken) const;
-
-		Matrix CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-
-		TokenVec::iterator FindNextOutsideToken(TokenVec::iterator leftPar, TokenVec::iterator endToken, Token::Type type) const;
-		TokenVec::iterator FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, Size precedence)const;
-		std::vector<std::vector<Matrix> > GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const;
-
-	private:
-		std::map<std::string, Operator> operator_map_;
-		std::map<std::string, Function> function_map_;
-		std::map<std::string, Matrix> variable_map_;
-		std::map<std::string, std::string> string_map_;//string variable
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 	};
 }
 

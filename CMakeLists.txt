@@ -2,33 +2,25 @@ cmake_minimum_required(VERSION 3.12)
 
 project(aris VERSION 1.5.0)
 
-# options #
-option(BUILD_DEMOS "build aris demos" OFF)
-option(BUILD_TESTS "build aris tests" OFF)
-if(UNIX)
-	option (USE_XENOMAI "Use Xenomai 3 RT system" OFF)
-	option (USE_ETHERLAB "Use Etherlab Ethercat drivers" OFF)
-endif(UNIX)
-
-# set binary and library folders
+## set cpp configurations ##
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
-
-# set definitions to disable some warning
-if(WIN32)
-	add_definitions(-DWIN32 -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-endif(WIN32)
-if(UNIX)
-	add_definitions(-DUNIX)
-endif(UNIX)
-
-# set debug and release options
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CONFIGURATION_TYPES Debug Release)
-
-# set rely libs
 if(UNIX)
+	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${PROJECT_VERSION}")
+	add_custom_target(uninstall rm -r /usr/aris)
+endif(UNIX)
+if(WIN32)
+	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${PROJECT_VERSION}")
+endif(WIN32)
+
+## set rely libs ##
+if(UNIX)
+	option (USE_XENOMAI "Use Xenomai 3 RT system" OFF)
+	option (USE_ETHERLAB "Use Etherlab Ethercat drivers" OFF)
+
 	set(RELY_LINK_LIB atomic pthread stdc++fs)#pthread is needed for concurrency
 	set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
 
@@ -59,19 +51,13 @@ if(WIN32)
 	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
 endif(WIN32)
 
-# set uninstall command
-if(UNIX)
-	add_custom_target(uninstall rm -r /usr/aris)
-endif(UNIX)
-
-# set install directories
-if(UNIX)
-	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${PROJECT_VERSION}")
-endif(UNIX)
+## set definitions to disable some warning ##
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${PROJECT_VERSION}")
+	add_definitions(-DWIN32 -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 endif(WIN32)
-
+if(UNIX)
+	add_definitions(-DUNIX)
+endif(UNIX)
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
 ## build targets ##
@@ -120,6 +106,7 @@ install(DIRECTORY sh DESTINATION .)
 
 link_directories(${RELY_LINK_DIR})
 ################################### build tests for aris ####################################
+option(BUILD_TESTS "build aris tests" OFF)
 if(BUILD_TESTS)
 	enable_testing()
 	## build tests ##
@@ -138,7 +125,7 @@ if(BUILD_TESTS)
 	endforeach(aris_test)
 endif(BUILD_TESTS)
 ################################### build demos for aris ####################################
-# Make demo projects
+option(BUILD_DEMOS "build aris demos" OFF)
 if(BUILD_DEMOS)
 	set(ARIS_DEMOS 	rbt demo_object demo_command_parser_xml demo_command_parser_cpp demo_expression_calculator
 					demo_model_scara demo_stewart demo_hulk demo_ur demo_server demo_rokae_server)
@@ -156,3 +143,28 @@ if(BUILD_DEMOS)
 		endif()
 	endforeach(aris_demo)
 endif(BUILD_DEMOS)
+################################### build docs for aris ####################################
+option(BUILD_DOCS "build aris docs" OFF)
+if(BUILD_DOCS)
+	find_package(Doxygen
+		REQUIRED dot
+		OPTIONAL_COMPONENTS mscgen dia)
+	if (DOXYGEN_FOUND)
+		message("doxygen found")
+		# set input and output files
+		#set(DOXYGEN_IN ${CMAKE_CURRENT_LIST_DIR}/docs/Doxyfile.in)
+		#set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+		# request to configure the file
+		#configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+
+		# note the option ALL which allows to build the docs together with the application
+		#add_custom_target( docs ALL
+		#	COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+		#	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		#	COMMENT "Generating API documentation with Doxygen"
+		#	VERBATIM )
+	else (DOXYGEN_FOUND)
+		message("Doxygen need to be installed to generate the doxygen documentation")
+	endif (DOXYGEN_FOUND)
+endif(BUILD_DOCS)
