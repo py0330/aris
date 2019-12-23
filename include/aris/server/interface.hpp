@@ -48,8 +48,8 @@ namespace aris::server
 		auto currentLine()->int;
 
 		ProgramWebInterface(const std::string &name = "pro_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
-		ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other);
-		ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other);
+		ProgramWebInterface(ProgramWebInterface && other);
+		ProgramWebInterface& operator=(ProgramWebInterface&& other);
 		ARIS_REGISTER_TYPE(ProgramWebInterface);
 
 	private:
