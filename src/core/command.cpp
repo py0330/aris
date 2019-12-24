@@ -259,13 +259,27 @@ namespace aris::core
 	}
 	auto CommandParser::parse(std::string_view cmd_str, std::string &cmd_out, std::map<std::string, std::string> &param_out)->void
 	{
-		auto get_param_value = [](std::string this_value, std::stringstream &stream)->std::string
+		auto cut_str = [](std::string_view &input, const char *c)->std::string_view
 		{
+			auto point = input.find_first_of(" =");
+			auto ret = input.substr(0, point);
+			input = point == std::string::npos ? std::string_view() : input.substr(point);
+			return ret;
+		};
+		auto trim_left = [](std::string_view &input)->std::string_view 
+		{
+			auto point = input.find_first_not_of(' ');
+			return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
+		};
+		auto get_param_value = [&](aris::core::Param *param, std::string_view &cmd_str)->std::string
+		{
+			if (cmd_str.empty() || cmd_str[0] != '=')return param->defaultValue();
+			
 			int brace_num = 0;
-
-			auto check_character = [&](char c)
+			int i = 1;
+			for (i = 1; i < cmd_str.size() && !(std::isspace(cmd_str[i]) && brace_num == 0); ++i)
 			{
-				switch (c)
+				switch (cmd_str[i])
 				{
 				case '{':
 					++brace_num;
@@ -277,31 +291,20 @@ namespace aris::core
 				default:
 					break;
 				}
-			};
-
-			for (auto c : this_value)check_character(c);
-			if (brace_num == 0)return this_value;
-
-			char c;
-			stream.get(c);
-			while (!stream.eof() && !(std::isspace(c, stream.getloc()) && brace_num == 0))
-			{
-				check_character(c);
-				this_value.push_back(c);
-				stream.get(c);
 			}
 
 			if (brace_num)THROW_FILE_LINE("brace not pair");
-			return this_value;
+
+			auto ret = cmd_str.substr(1, i);
+			cmd_str = trim_left(cmd_str.substr(i));
+			return std::string(ret);
 		};
 
 		std::string_view cmd;
 		std::map<std::string, std::string> param_map;
-		std::stringstream input_stream{ std::string(cmd_str) };
-		std::string word;
 
-		int point = cmd_str.find_first_of(' ');
-		if (cmd = cmd_str.substr(0, point), cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
+		if (cmd = cut_str(cmd_str, " "); cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
+		cmd_str = trim_left(cmd_str);
 
 		auto command = imp_->command_pool_->findByName(std::string(cmd));
 		if (command == imp_->command_pool_->end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + std::string(cmd) + "\"");
@@ -312,17 +315,11 @@ namespace aris::core
 		if ((command->imp_->default_value_ != "") && (command->findByName(command->imp_->default_value_) == command->end())) THROW_FILE_LINE("Command \"" + command->name() + "\" has invalid default param name");
 		for (auto &param : *command) Command::Imp::add_param_map_and_check_default(&*command, param);
 
-
-		std::string cmddddddd;
-		input_stream >> cmddddddd;
-
-
 		Command::Imp::reset(&*command);
-		while (input_stream >> word)
+		for (; !cmd_str.empty();)
 		{
-			if (word == "\0") break; // 这意味着结束
-
-			std::string param_name_origin = word.substr(0, word.find_first_of('='));
+			auto param_name_origin = cut_str(cmd_str, " =");
+			cmd_str = trim_left(cmd_str);
 
 			if (param_name_origin == "")THROW_FILE_LINE("invalid param: param should not start with '='");
 			else if (param_name_origin == "-")THROW_FILE_LINE("invalid param: symbol \"-\" must be followed by an abbreviation of param");
@@ -337,22 +334,20 @@ namespace aris::core
 
 				auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
 				auto param_name = command->imp_->abbreviation_map_.at(abbrev);
-				auto param_value = word.find('=') == std::string::npos ? param->defaultValue()
-					: get_param_value(word.substr(word.find('=') + 1, std::string::npos), input_stream);
+				auto param_value = get_param_value(param, cmd_str);
 
 				param_map.insert(make_pair(param_name, param_value));
 				Command::Imp::take(param);
 			}
 			else if (param_name_origin.data()[0] == '-' && param_name_origin.data()[1] == '-')
 			{
-				auto param_name = word.substr(2, word.find('=') - 2);
+				auto param_name = std::string(param_name_origin.substr(2));
 
 				if (command->imp_->param_map_.find(param_name) == command->imp_->param_map_.end())
 					THROW_FILE_LINE(std::string("invalid param: param \"") + param_name + "\" is not a valid param");
 
 				auto param = command->imp_->param_map_.at(param_name);
-				auto param_value = word.find('=') == std::string::npos ? param->defaultValue()
-					: get_param_value(word.substr(word.find('=') + 1, std::string::npos), input_stream);
+				auto param_value = get_param_value(param, cmd_str);
 
 				param_map.insert(make_pair(param_name, param_value));
 				Command::Imp::take(param);
