@@ -208,7 +208,7 @@ namespace aris::core
 	{
 	public:
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
+		auto parse(std::string_view command_string, std::string &cmd_out, std::map<std::string, std::string> &param_map_out)->void;
 		auto commandPool()->ObjectPool<Command> &;
 		auto commandPool()const->const ObjectPool<Command> &;
 

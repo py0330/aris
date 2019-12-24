@@ -59,7 +59,9 @@ namespace aris::server
 	}
 	auto onReceivedMsg(aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
-		std::string msg_data = msg.toString();
+		std::cout << "received " << std::endl;
+		
+		auto msg_data = std::string_view(msg.data(), msg.size());
 
 		LOG_INFO << "receive cmd:"
 			<< msg.header().msg_size_ << "&"
@@ -72,7 +74,7 @@ namespace aris::server
 
 		try
 		{
-			aris::server::ControlServer::instance().executeCmdInCmdLine(aris::core::Msg(msg), [socket, msg](aris::plan::Plan &plan)->void
+			aris::server::ControlServer::instance().executeCmdInCmdLine(std::string_view(msg.data(), msg.size()), [socket, msg](aris::plan::Plan &plan)->void
 			{
 				// make return msg
 				aris::core::Msg ret_msg(msg);
@@ -252,7 +254,7 @@ namespace aris::server
 				send_ret(ret_msg);
 			};
 
-			std::string msg_data = msg.toString();
+			auto msg_data = std::string_view(msg.data(), msg.size());
 
 			LOG_INFO << "receive cmd:"
 				<< msg.header().msg_size_ << "&"
@@ -282,7 +284,7 @@ namespace aris::server
 					{
 						if (isAutoRunning())
 						{
-							send_code_and_msg(-4, "can not set manual when auto running");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not set manual when auto running");
 							return 0;
 						}
 						else
@@ -296,7 +298,7 @@ namespace aris::server
 					{
 						if (isAutoRunning())
 						{
-							send_code_and_msg(-4, "can not set content when auto running");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not set content when auto running");
 							return 0;
 						}
 						else
@@ -312,7 +314,7 @@ namespace aris::server
 
 								for (auto &str : imp_->language_parser_.varPool())
 								{
-									aris::server::ControlServer::instance().executeCmd(aris::core::Msg(str));
+									aris::server::ControlServer::instance().executeCmd(str);
 								}
 								send_code_and_msg(0, std::string());
 								return 0;
@@ -320,7 +322,7 @@ namespace aris::server
 							catch (std::exception &e)
 							{
 								std::cout << e.what() << std::endl;
-								send_code_and_msg(-4, e.what());
+								send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, e.what());
 								return 0;
 							}
 						}
@@ -329,12 +331,12 @@ namespace aris::server
 					{
 						if (!isAutoMode())
 						{
-							send_code_and_msg(-4, "can not goto in manual mode");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not goto in manual mode");
 							return 0;
 						}
 						else if (isAutoRunning())
 						{
-							send_code_and_msg(-4, "can not goto when running");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not goto when running");
 							return 0;
 						}
 						else
@@ -348,12 +350,12 @@ namespace aris::server
 					{
 						if (!isAutoMode())
 						{
-							send_code_and_msg(-4, "can not goto in manual mode");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not goto in manual mode");
 							return 0;
 						}
 						else if (isAutoRunning())
 						{
-							send_code_and_msg(-4, "can not goto when running");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not goto when running");
 							return 0;
 						}
 						else
@@ -370,7 +372,7 @@ namespace aris::server
 					{
 						if (!isAutoMode())
 						{
-							send_code_and_msg(-4, "can not start program in manual mode");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not start program in manual mode");
 							return 0;
 						}
 						else if (isAutoRunning())
@@ -415,27 +417,19 @@ namespace aris::server
 											std::future<aris::core::Matrix> future_value = promise_value.get_future();
 
 											// 这里把evaluate这个指令写好 //
-											try
+											aris::server::ControlServer::instance().executeCmd("evaluate --value={" + cmd_value + "}", [&](aris::plan::Plan& plan)->void
 											{
-												aris::server::ControlServer::instance().executeCmd(aris::core::Msg("evaluate --value={" + cmd_value + "}"), [&](aris::plan::Plan& plan)->void
+												if (plan.retCode() == 0)
 												{
-													if (plan.retCode() == 0)
-													{
-														auto ret = std::any_cast<std::vector<std::pair<std::string, std::any>>&>(plan.ret());
-														promise_value.set_value(std::any_cast<aris::core::Matrix&>(ret[0].second));
-													}
-													else
-													{
-														aris::core::Matrix m(1.0);
-														promise_value.set_value(m);
-													}
-													
-												});
-											}
-											catch (std::exception &e)
-											{
-												
-											}
+													auto ret = std::any_cast<std::vector<std::pair<std::string, std::any>>&>(plan.ret());
+													promise_value.set_value(std::any_cast<aris::core::Matrix&>(ret[0].second));
+												}
+												else
+												{
+													aris::core::Matrix m(1.0);
+													promise_value.set_value(m);
+												}
+											});
 											// 计算完毕 //
 
 											auto value = future_value.get();
@@ -459,7 +453,7 @@ namespace aris::server
 										try
 										{
 											auto current_line = imp_->language_parser_.currentLine();
-											cs.executeCmd(aris::core::Msg(cmd), [&, current_line](aris::plan::Plan &plan)->void
+											cs.executeCmd(cmd, [&, current_line](aris::plan::Plan &plan)->void
 											{
 												imp_->current_line_.store(current_line);
 											});
@@ -486,7 +480,7 @@ namespace aris::server
 					{
 						if (!isAutoMode())
 						{
-							send_code_and_msg(-4, "can not stop program in manual mode");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not stop program in manual mode");
 							return 0;
 						}
 						else
@@ -500,12 +494,12 @@ namespace aris::server
 					{
 						if (!isAutoMode())
 						{
-							send_code_and_msg(-4, "can not stop program in manual mode");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not stop program in manual mode");
 							return 0;
 						}
 						else if (!isAutoRunning())
 						{
-							send_code_and_msg(-4, "can not stop program when not running");
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not stop program when not running");
 							return 0;
 						}
 						else
@@ -519,43 +513,28 @@ namespace aris::server
 			}
 			else
 			{
-				try
+				aris::server::ControlServer::instance().executeCmdInCmdLine(std::string_view(msg.data(), msg.size()), [socket, msg, send_ret](aris::plan::Plan &plan)->void
 				{
-					aris::server::ControlServer::instance().executeCmdInCmdLine(aris::core::Msg(msg), [socket, msg, send_ret](aris::plan::Plan &plan)->void
+					// make return msg
+					aris::core::Msg ret_msg(msg);
+					// only copy if it is a str
+					if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
 					{
-						// make return msg
-						aris::core::Msg ret_msg(msg);
-						// only copy if it is a str
-						if (auto str = std::any_cast<std::string>(&plan.ret()))
-						{
-							ret_msg.copy(*str);
-						}
-						else if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
-						{
-							js->push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
-							js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
-							ret_msg.copy(aris::server::parse_ret_value(*js));
-						}
+						js->push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
+						js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
+						ret_msg.copy(aris::server::parse_ret_value(*js));
+					}
+					else
+					{
+						std::vector<std::pair<std::string, std::any>> ret_js;
+						ret_js.push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
+						ret_js.push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
+						ret_msg.copy(aris::server::parse_ret_value(ret_js));
+					}
 
-						// return back to source
-						send_ret(ret_msg);
-					});
-				}
-				catch (std::exception &e)
-				{
-					std::vector<std::pair<std::string, std::any>> ret_pair;
-					ret_pair.push_back(std::make_pair<std::string, std::any>("return_code", int(aris::plan::Plan::PARSE_EXCEPTION)));
-					ret_pair.push_back(std::make_pair<std::string, std::any>("return_message", std::string(e.what())));
-					std::string ret_str = aris::server::parse_ret_value(ret_pair);
-
-					//std::cout << ret_str << std::endl;
-					LOG_ERROR << ret_str << std::endl;
-
-					aris::core::Msg m = msg;
-					m.copy(ret_str);
-
-					send_ret(m);
-				}
+					// return back to source
+					send_ret(ret_msg);
+				});
 			}
 
 			return 0;

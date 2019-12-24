@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		cs.executeCmd(aris::core::Msg("rmFi --filePath=/home/kaanh/log --memo=20000"));
+		cs.executeCmd("rmFi --filePath=/home/kaanh/log --memo=20000");
 	}
 	catch (std::exception &e)
 	{

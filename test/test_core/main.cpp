@@ -10,11 +10,11 @@
 
 int main(int argc, char *argv[])
 {
-	test_object();
-	test_msg();
-	test_socket();
-	test_pipe();
-	test_log();
+	//test_object();
+	//test_msg();
+	//test_socket();
+	//test_pipe();
+	//test_log();
 	test_command();
 
 	std::cout << "test_core finished, press any key to continue" << std::endl;

@@ -62,8 +62,8 @@ namespace aris::server
 		auto open()->void;
 		auto close()->void;
 		auto runCmdLine()->void;
-		auto executeCmd(const aris::core::Msg &cmd_string, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
-		auto executeCmdInCmdLine(const aris::core::Msg &cmd_string, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
+		auto executeCmd(std::string_view cmd_str, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
+		auto executeCmdInCmdLine(std::string_view cmd_string, std::function<void(aris::plan::Plan&)> post_callback = nullptr)->std::shared_ptr<aris::plan::Plan>;
 		auto start()->void;
 		auto stop()->void;
 		auto currentExecutePlan()->std::shared_ptr<aris::plan::Plan>;

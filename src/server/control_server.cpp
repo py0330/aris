@@ -112,7 +112,7 @@ namespace aris::server
 
 		// execute in cmd line
 		std::function<void(aris::plan::Plan&)> cmdline_post_callback_;
-		aris::core::Msg cmdline_msg_;
+		std::string_view cmdline_msg_;
 		std::atomic_bool cmdline_msg_received_ = false;
 		std::shared_ptr<std::promise<std::shared_ptr<aris::plan::Plan>>> cmdline_execute_promise_;
 	};
@@ -564,7 +564,7 @@ namespace aris::server
 			{
 				try
 				{
-					auto target = executeCmd(imp_->cmdline_msg_, imp_->cmdline_post_callback_);
+					auto target = executeCmd(std::string_view(imp_->cmdline_msg_.data(), imp_->cmdline_msg_.size()), imp_->cmdline_post_callback_);
 					imp_->cmdline_msg_received_ = false;
 					imp_->cmdline_execute_promise_->set_value(target);
 				}
@@ -577,7 +577,7 @@ namespace aris::server
 			// 检测是否有数据从command line过来
 			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
 			{
-				executeCmd(aris::core::Msg(ret.get()), [](aris::plan::Plan &plan)->void
+				executeCmd(ret.get(), [](aris::plan::Plan &plan)->void
 				{
 					std::cout << "return code   :" << plan.retCode() << "\nreturn message:" << plan.retMsg() << std::endl;
 					LOG_INFO << "return code   :" << plan.retCode() << "\nreturn message:" << plan.retMsg() << std::endl;
@@ -597,7 +597,7 @@ namespace aris::server
 			}
 		}
 	}
-	auto ControlServer::executeCmd(const aris::core::Msg &msg, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
+	auto ControlServer::executeCmd(std::string_view cmd_str, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 
@@ -608,36 +608,37 @@ namespace aris::server
 
 		// parse //
 		static std::uint64_t cmd_id{ 0 };
-		++cmd_id;
-		LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << msg.toString() << std::endl;
-		std::string cmd;
-		std::map<std::string, std::string> params;
-		try	{ planRoot().planParser().parse(msg.toString(), cmd, params); }
+		try	
+		{ 
+			++cmd_id;
+			LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << cmd_str << std::endl;
+			std::string cmd;
+			std::map<std::string, std::string> params;
+			planRoot().planParser().parse(std::string(cmd_str), cmd, params);
+			auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
+			plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter)));
+			plan->imp_->count_ = 0;
+			plan->imp_->model_ = imp_->model_;
+			plan->imp_->master_ = imp_->controller_;
+			plan->imp_->controller_ = dynamic_cast<aris::control::Controller*>(plan->imp_->master_);
+			plan->imp_->ec_master_ = dynamic_cast<aris::control::EthercatMaster*>(plan->imp_->master_);
+			plan->imp_->ec_controller_ = dynamic_cast<aris::control::EthercatController*>(plan->imp_->master_);
+			plan->imp_->cs_ = this;
+			plan->imp_->option_ = 0;
+			plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
+			plan->imp_->cmd_msg_ = cmd_str;
+			plan->imp_->cmd_name_ = std::move(cmd);
+			plan->imp_->cmd_params_ = std::move(params);
+			plan->imp_->begin_global_count_ = 0;
+			plan->imp_->command_id_ = cmd_id;
+			plan->imp_->rt_stastic_ = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
+		}
 		catch (std::exception &e)
 		{
 			plan->retCode() = aris::plan::Plan::PARSE_EXCEPTION;
 			std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
 			return plan;
 		}
-
-		// parse successful, make plan as real //
-		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
-		plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter)));
-		plan->imp_->count_ = 0;
-		plan->imp_->model_ = imp_->model_;
-		plan->imp_->master_ = imp_->controller_;
-		plan->imp_->controller_ = dynamic_cast<aris::control::Controller*>(plan->imp_->master_);
-		plan->imp_->ec_master_ = dynamic_cast<aris::control::EthercatMaster*>(plan->imp_->master_);
-		plan->imp_->ec_controller_ = dynamic_cast<aris::control::EthercatController*>(plan->imp_->master_);
-		plan->imp_->cs_ = this;
-		plan->imp_->option_ = 0;
-		plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
-		plan->imp_->cmd_msg_ = msg.toString();
-		plan->imp_->cmd_name_ = std::move(cmd);
-		plan->imp_->cmd_params_ = std::move(params);
-		plan->imp_->begin_global_count_ = 0;
-		plan->imp_->command_id_ = cmd_id;
-		plan->imp_->rt_stastic_ = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
 
 		// prepair //
 		try
@@ -756,14 +757,14 @@ namespace aris::server
 
 		return plan;
 	}
-	auto ControlServer::executeCmdInCmdLine(const aris::core::Msg &cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
+	auto ControlServer::executeCmdInCmdLine(std::string_view cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
 	{
 		static std::mutex mu_;
 		std::unique_lock<std::mutex> lck(mu_);
 
 		imp_->cmdline_execute_promise_ = std::make_shared<std::promise<std::shared_ptr<aris::plan::Plan>>>();
 		auto ret = imp_->cmdline_execute_promise_->get_future();
-		imp_->cmdline_msg_ = aris::core::Msg(cmd_string);
+		imp_->cmdline_msg_ = cmd_string;
 		imp_->cmdline_post_callback_ = post_callback;
 		imp_->cmdline_msg_received_ = true;
 

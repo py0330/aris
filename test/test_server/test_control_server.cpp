@@ -34,7 +34,7 @@ void test_server_option()
 
 		cs.start();
 
-		aris::core::Msg cmd("test_NOT_RUN_FUNCTION");
+		std::string cmd("test_NOT_RUN_FUNCTION");
 
 		is_plan_collected = is_plan_executed = is_plan_prepaired = false;
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
@@ -73,7 +73,7 @@ void test_server_option()
 
 		cs.start();
 
-		aris::core::Msg cmd("test_EXECUTE_WHEN_ALL_PLAN_EXECUTED");
+		std::string cmd("test_EXECUTE_WHEN_ALL_PLAN_EXECUTED");
 		option = 0;
 		cs.executeCmd(cmd);
 		auto ret = cs.executeCmd(cmd);
@@ -108,7 +108,7 @@ void test_server_option()
 
 		cs.start();
 
-		aris::core::Msg cmd("test_EXECUTE_WHEN_ALL_PLAN_COLLECTED");
+		std::string cmd("test_EXECUTE_WHEN_ALL_PLAN_COLLECTED");
 		option = aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED;
 		cs.executeCmd(cmd);
 		auto ret = cs.executeCmd(cmd);
@@ -141,7 +141,7 @@ void test_server_option()
 
 		cs.start();
 
-		aris::core::Msg cmd("test_COLLECT_WHEN_ALL_PLAN_EXECUTED");
+		std::string cmd("test_COLLECT_WHEN_ALL_PLAN_EXECUTED");
 		cs.executeCmd(cmd);
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 		cs.executeCmd(cmd);
@@ -178,7 +178,7 @@ void test_server_option()
 
 		cs.start();
 
-		aris::core::Msg cmd("test_COLLECT_WHEN_ALL_PLAN_COLLECTED");
+		std::string cmd("test_COLLECT_WHEN_ALL_PLAN_COLLECTED");
 		cs.executeCmd(cmd);
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 		collect_time = 0;
@@ -216,7 +216,7 @@ void test_server_option()
 
 		cs.start();
 
-		aris::core::Msg cmd("test_WAIT_FOR_EXECUTION");
+		std::string cmd("test_WAIT_FOR_EXECUTION");
 		option = 0;
 		cs.executeCmd(cmd);
 		cs.executeCmd(cmd);
@@ -250,7 +250,7 @@ void test_server_option()
 
 		cs.start();
 
-		aris::core::Msg cmd("test_WAIT_FOR_COLLECTION");
+		std::string cmd("test_WAIT_FOR_COLLECTION");
 		option = 0;
 		cs.executeCmd(cmd);
 		cs.executeCmd(cmd);
@@ -299,10 +299,10 @@ void test_server_option()
 
 		cs.start();
 
-		aris::core::Msg cmd("test_WAIT_IF_CMD_POOL_IS_FULL_1");
+		std::string cmd("test_WAIT_IF_CMD_POOL_IS_FULL_1");
 		option = 0;
 		cs.executeCmd(cmd);
-		cmd.copy("test_WAIT_IF_CMD_POOL_IS_FULL_2");
+		cmd = "test_WAIT_IF_CMD_POOL_IS_FULL_2";
 		for (auto i = 0; i < 999; ++i)cs.executeCmd(cmd);
 		try 
 		{

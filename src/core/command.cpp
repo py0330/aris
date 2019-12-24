@@ -257,9 +257,9 @@ namespace aris::core
 		Object::loadXml(xml_ele);
 		imp_->command_pool_ = findOrInsertType<aris::core::ObjectPool<Command>>();
 	}
-	auto CommandParser::parse(const std::string &command_string, std::string &cmd_out, std::map<std::string, std::string> &param_out)->void
+	auto CommandParser::parse(std::string_view cmd_str, std::string &cmd_out, std::map<std::string, std::string> &param_out)->void
 	{
-		auto get_param_value = [&](std::string this_value, std::stringstream &stream)->std::string
+		auto get_param_value = [](std::string this_value, std::stringstream &stream)->std::string
 		{
 			int brace_num = 0;
 
@@ -295,15 +295,16 @@ namespace aris::core
 			return this_value;
 		};
 
-		std::string cmd;
+		std::string_view cmd;
 		std::map<std::string, std::string> param_map;
-		std::stringstream input_stream{ command_string };
+		std::stringstream input_stream{ std::string(cmd_str) };
 		std::string word;
 
-		if (!(input_stream >> cmd))THROW_FILE_LINE("invalid command string: please at least contain a word");
+		int point = cmd_str.find_first_of(' ');
+		if (cmd = cmd_str.substr(0, point), cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
 
-		auto command = imp_->command_pool_->findByName(cmd);
-		if (command == imp_->command_pool_->end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + cmd + "\"");
+		auto command = imp_->command_pool_->findByName(std::string(cmd));
+		if (command == imp_->command_pool_->end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + std::string(cmd) + "\"");
 
 		// make map and abbrev map //
 		command->imp_->param_map_.clear();
@@ -311,10 +312,15 @@ namespace aris::core
 		if ((command->imp_->default_value_ != "") && (command->findByName(command->imp_->default_value_) == command->end())) THROW_FILE_LINE("Command \"" + command->name() + "\" has invalid default param name");
 		for (auto &param : *command) Command::Imp::add_param_map_and_check_default(&*command, param);
 
+
+		std::string cmddddddd;
+		input_stream >> cmddddddd;
+
+
 		Command::Imp::reset(&*command);
 		while (input_stream >> word)
 		{
-			if (word == std::string(1, '\0')) break; // 这意味着结束
+			if (word == "\0") break; // 这意味着结束
 
 			std::string param_name_origin = word.substr(0, word.find_first_of('='));
 
