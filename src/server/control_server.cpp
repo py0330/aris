@@ -577,30 +577,11 @@ namespace aris::server
 			// 检测是否有数据从command line过来
 			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
 			{
-				try
+				executeCmd(aris::core::Msg(ret.get()), [](aris::plan::Plan &plan)->void
 				{
-					executeCmd(aris::core::Msg(ret.get()), [](aris::plan::Plan &plan)->void
-					{
-						if (auto str = std::any_cast<std::string>(&plan.ret()))
-						{
-							std::cout << *str << std::endl;
-						}
-						else if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
-						{
-							js->push_back(std::make_pair<std::string, std::any>("return_code", plan.retCode()));
-							js->push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
-							std::cout << "return code   :" << plan.retCode() <<"\nreturn message:"<< plan.retMsg() << std::endl;
-						}
-					});
-				}
-				catch (std::exception &e)
-				{
-					std::stringstream s;
-					s << "return code   :" << aris::plan::Plan::PARSE_EXCEPTION << "\nreturn message:" << e.what();
-					
-					std::cout << s.str() << std::endl;
-					LOG_ERROR << s.str() << std::endl;
-				}
+					std::cout << "return code   :" << plan.retCode() << "\nreturn message:" << plan.retMsg() << std::endl;
+					LOG_INFO << "return code   :" << plan.retCode() << "\nreturn message:" << plan.retMsg() << std::endl;
+				});
 
 				ret = std::async(std::launch::async, []()->std::string
 				{
@@ -620,16 +601,15 @@ namespace aris::server
 	{
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 
-		static std::uint64_t cmd_id{ 0 };
-		++cmd_id;
-
-		LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << msg.toString() << std::endl;
-		auto cmd_end = imp_->cmd_end_.load();
-
+		// init internal data with an empty plan //
 		static std::shared_ptr<aris::plan::Plan> default_return_plan(new aris::plan::Plan);
-		auto plan = default_return_plan;
+		auto internal_data = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ default_return_plan, post_callback});
+		auto &plan = internal_data->plan_;
 
 		// parse //
+		static std::uint64_t cmd_id{ 0 };
+		++cmd_id;
+		LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << msg.toString() << std::endl;
 		std::string cmd;
 		std::map<std::string, std::string> params;
 		try	{ planRoot().planParser().parse(msg.toString(), cmd, params); }
@@ -639,14 +619,10 @@ namespace aris::server
 			std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
 			return plan;
 		}
-		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 
-		// init plan //
-		auto internal_data = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{
-			std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter))),
-			post_callback
-			});
-		plan = internal_data->plan_;
+		// parse successful, make plan as real //
+		auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
+		plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter)));
 		plan->imp_->count_ = 0;
 		plan->imp_->model_ = imp_->model_;
 		plan->imp_->master_ = imp_->controller_;
@@ -664,9 +640,9 @@ namespace aris::server
 		plan->imp_->rt_stastic_ = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
 
 		// prepair //
-		LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
 		try
 		{
+			LOG_INFO << "server prepair cmd " << std::to_string(cmd_id) << std::endl;
 			plan->prepairNrt();
 		}
 		catch (std::exception &e)
@@ -676,7 +652,6 @@ namespace aris::server
 			return plan;
 		}
 		
-
 		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		auto print_size = plan->cmdParams().empty() ? 2 : 2 + std::max_element(plan->cmdParams().begin(), plan->cmdParams().end(), [](const auto& a, const auto& b)
 		{
@@ -700,8 +675,6 @@ namespace aris::server
 		}
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		if (this->errorCode()) LOG_AND_THROW(std::runtime_error("system in error, please use rc to recover"));
-
 		// 既不execute也不collect，直接返回 //
 		if ((plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION) && (plan->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
 		{
@@ -709,54 +682,76 @@ namespace aris::server
 		}
 
 		// execute //
-		if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
+		auto cmd_end = imp_->cmd_end_.load();
+		try
 		{
-			// 只有实时循环才需要 server 已经在运行
-			if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to execute command, because ControlServer is not running"));
-			
-			// 等待所有任务完成 //
-			if (plan->option() & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) waitForAllExecution();
+			if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
+			{
+				// 查看是否处于错误状态 //
+				if (this->errorCode()) LOG_AND_THROW(std::runtime_error("system in error, use rc to recover"));
+				
+				// 只有实时循环才需要 server 已经在运行
+				if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error("server not running, use cs_start to start"));
 
-			// 等待所有任务收集 //
-			if (plan->option() & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED) waitForAllCollection();
+				// 等待所有任务完成 //
+				if (plan->option() & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_EXECUTED) waitForAllExecution();
 
-			// 判断是否等待命令池清空 //
-			if ((!(plan->option() & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
-				LOG_AND_THROW(std::runtime_error("failed to execute plan, because command pool is full"));
-			else
-				while ((cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				// 等待所有任务收集 //
+				if (plan->option() & aris::plan::Plan::EXECUTE_WHEN_ALL_PLAN_COLLECTED) waitForAllCollection();
 
-			// 添加命令 //
-			LOG_INFO << "server execute cmd " << std::to_string(cmd_id) << std::endl;
-			imp_->internal_data_queue_[cmd_end % Imp::CMD_POOL_SIZE] = internal_data;
-			imp_->cmd_end_.store(++cmd_end); // 原子操作 //
+				// 判断是否等待命令池清空 //
+				if ((!(plan->option() & aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL)) && (cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
+					LOG_AND_THROW(std::runtime_error("command pool is full"));
+				else
+					while ((cmd_end - imp_->cmd_collect_.load()) >= Imp::CMD_POOL_SIZE)std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-			// 等待当前任务完成 //
-			if(plan->option() & aris::plan::Plan::WAIT_FOR_EXECUTION)waitForAllExecution();
+				// 添加命令 //
+				LOG_INFO << "server execute cmd " << std::to_string(cmd_id) << std::endl;
+				imp_->internal_data_queue_[cmd_end % Imp::CMD_POOL_SIZE] = internal_data;
+				imp_->cmd_end_.store(++cmd_end); // 原子操作 //
+
+				 // 等待当前任务完成 //
+				if (plan->option() & aris::plan::Plan::WAIT_FOR_EXECUTION)waitForAllExecution();
+			}
+		}
+		catch (std::exception &e)
+		{
+			plan->retCode() = aris::plan::Plan::EXECUTE_EXCEPTION;
+			std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
+			return plan;
 		}
 
 		// collect //
-		if (!(plan->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
+		try
 		{
-			// 没有实时规划的轨迹，直接同步收集 //
-			if (plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
+			if (!(plan->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
 			{
-				// 等待所有任务完成，原子操作 //
-				while ((plan->option() & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				// 没有实时规划的轨迹，直接同步收集 //
+				if (plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)
+				{
+					// 等待所有任务完成，原子操作 //
+					while ((plan->option() & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_EXECUTED) && (cmd_end != imp_->cmd_now_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-				// 等待所有任务收集，原子操作 //
-				while ((plan->option() & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
+					// 等待所有任务收集，原子操作 //
+					while ((plan->option() & aris::plan::Plan::COLLECT_WHEN_ALL_PLAN_COLLECTED) && (cmd_end != imp_->cmd_collect_.load()))std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-				LOG_INFO << "server collect cmd " << plan->cmdId() << std::endl;
-				plan->collectNrt();
-				plan->retCode() = aris::plan::Plan::SUCCESS;
+					LOG_INFO << "server collect cmd " << plan->cmdId() << std::endl;
+					plan->collectNrt();
+					plan->retCode() = aris::plan::Plan::SUCCESS;
+				}
+				// 等待当前实时任务收集 //
+				else
+				{
+					// 等待当前任务收集 //
+					if (plan->option() & aris::plan::Plan::WAIT_FOR_COLLECTION)waitForAllCollection();
+				}
 			}
-			// 等待当前实时任务收集 //
-			else
-			{
-				// 等待当前任务收集 //
-				if (plan->option() & aris::plan::Plan::WAIT_FOR_COLLECTION)waitForAllCollection();
-			}
+		}
+		catch (std::exception &e)
+		{
+			plan->retCode() = aris::plan::Plan::COLLECT_EXCEPTION;
+			std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
+			return plan;
 		}
 
 		return plan;

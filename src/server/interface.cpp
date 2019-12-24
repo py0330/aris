@@ -409,7 +409,7 @@ namespace aris::server
 										auto cmd_value = imp_->language_parser_.currentCmd().find_first_of(" \t\n\r\f\v(") == std::string::npos ? "" :
 											imp_->language_parser_.currentCmd().substr(imp_->language_parser_.currentCmd().find_first_of(" \t\n\r\f\v("), std::string::npos);
 
-										if (imp_->language_parser_.currentCmd() == "if" || imp_->language_parser_.currentCmd() == "while")
+										if (cmd_name == "if" || cmd_name == "while")
 										{
 											std::promise<aris::core::Matrix> promise_value;
 											std::future<aris::core::Matrix> future_value = promise_value.get_future();
@@ -419,14 +419,22 @@ namespace aris::server
 											{
 												aris::server::ControlServer::instance().executeCmd(aris::core::Msg("evaluate --value={" + cmd_value + "}"), [&](aris::plan::Plan& plan)->void
 												{
-													aris::core::Matrix m(1.0);
-													promise_value.set_value(m);
+													if (plan.retCode() == 0)
+													{
+														auto ret = std::any_cast<std::vector<std::pair<std::string, std::any>>&>(plan.ret());
+														promise_value.set_value(std::any_cast<aris::core::Matrix&>(ret[0].second));
+													}
+													else
+													{
+														aris::core::Matrix m(1.0);
+														promise_value.set_value(m);
+													}
+													
 												});
 											}
 											catch (std::exception &e)
 											{
-												aris::core::Matrix m(1.0);
-												promise_value.set_value(m);
+												
 											}
 											// 计算完毕 //
 

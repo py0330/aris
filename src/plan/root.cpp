@@ -461,8 +461,7 @@ namespace aris::plan
 
 					if (count() % 1000 == 0)
 					{
-						controller()->mout() << "Unenabled motor, slave id: " << cm.id() 
-							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
+						mout() << "Unenabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -511,8 +510,7 @@ namespace aris::plan
 
 					if (count() % 1000 == 0)
 					{
-						controller()->mout() << "Undisabled motor, slave id: " << cm.id() 
-							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
+						mout() << "Undisabled motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -597,8 +595,7 @@ namespace aris::plan
 
 					if (count() % 1000 == 0)
 					{
-						controller()->mout() << "Unhomed motor, slave id: " << cm.id()
-							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
+						mout() << "Unhomed motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
 				}
 				else
@@ -677,8 +674,7 @@ namespace aris::plan
 
 					if (count() % 1000 == 0)
 					{
-						controller()->mout() << "Unmoded motor, slave id: " << cm.id() 
-							<< ", absolute id: " << i << ", ret: " << ret << std::endl;
+						mout() << "Unmoded motor, slave id: " << cm.id() << ", absolute id: " << i << ", ret: " << ret << std::endl;
 					}
 				}
 			}
@@ -700,6 +696,19 @@ namespace aris::plan
 			"</Command>");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Mode);
+
+	auto Clear::prepairNrt()->void
+	{
+		aris::server::ControlServer::instance().waitForAllCollection();
+		aris::server::ControlServer::instance().clearError();
+		option() = NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
+	}
+	Clear::Clear(const std::string &name) :Plan(name)
+	{
+		command().loadXmlStr(
+			"<Command name=\"cl\">"
+			"</Command>");
+	}
 
 	struct Reset::Imp :public SetActiveMotor, SetInputMovement { std::vector<Size> total_count_vec; };
 	auto Reset::prepairNrt()->void
@@ -774,9 +783,6 @@ namespace aris::plan
 	};
 	auto Recover::prepairNrt()->void
 	{
-		aris::server::ControlServer::instance().waitForAllCollection();
-		aris::server::ControlServer::instance().clearError();
-		
 		auto p = std::make_shared<RecoverParam>();
 
 		p->is_kinematic_ready_ = false;

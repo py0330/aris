@@ -75,6 +75,7 @@ namespace aris::plan
 			COLLECT_EXCEPTION = -2,
 			PARSE_EXCEPTION = -3,
 			PLAN_CANCELLED = -4,
+			EXECUTE_EXCEPTION = -5,
 			SLAVE_AT_INIT = -101,
 			SLAVE_AT_SAFEOP = -102,
 			SLAVE_AT_PREOP = -103,
@@ -197,7 +198,7 @@ namespace aris::plan
 		auto virtual executeRT()->int override;
 
 		virtual ~Disable();
-		explicit Disable(const std::string &name = "enable_plan");
+		explicit Disable(const std::string &name = "disable_plan");
 		ARIS_REGISTER_TYPE(Disable);
 		ARIS_DECLARE_BIG_FOUR(Disable);
 
@@ -261,6 +262,46 @@ namespace aris::plan
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
+	};
+	/// \brief 复位，机器人从轴空间按照指定速度运行到指定位置处
+	///
+	/// 指令不使用正反解，结束后Model和Controller位置不对应，此时需用rc指令来让两者重合
+	///
+	/// ### 参数定义 ###
+	/// 指定电机，默认指定所有电机：
+	/// + 指定所有电机：“rs -a” 或 “rs --all” 或 “rs”
+	/// + 按照绝对地址（absID），例如绝对的 0 号电机：“rs -m=0” 或 “rs --motion_id=0”
+	/// + 按照物理地址（phyID），例如物理的 2 号电机：“rs -p=2” 或 “rs --physical_id=2”
+	/// + 按照从站地址（slaID），例如 5 号从站：“rs -s=5” 或 “rs --slave_id=5”
+	/// 
+	/// 指定复位位置，0为最小位置，1为最大位置，参数应在0到1之间，默认为0.5：
+	/// + 将1号电机走到最大位置：“rs -m=1 --pos=1”
+	/// + 将2号电机走到中间位置：“rs -m=2 --pos=0.5”
+	/// + 将所有电机走到最小位置：“rs -a --pos=0”
+	/// + 假设系统中有6个电机，分别走到0.1到0.6，注意大括号中不能有空格：“rs --pos={0.1,0.2,0.3,0.4,0.5,0.6}”
+	/// 
+	/// 指定复位速度，单位是额定速度的倍数，参数应在0到1之间，默认为0.1：
+	/// + 将1号电机复位到0.5，速度为额定速度的20\%：“rs -m=1 --pos=0.5 --vel=0.2”
+	/// + 将所有电机复位到0处，速度为额定的5\%：“rs -a --pos=0 --vel=0.05”
+	/// + 假设系统中有6个电机，速度和位置都是0.1到0.6：“rs --pos={0.1,0.2,0.3,0.4,0.5,0.6} --vel={0.1,0.2,0.3,0.4,0.5,0.6}”
+	///
+	/// 指定复位加速度，单位是额定加速度的倍数，参数应在0到1之间，默认为0.1：
+	/// + 将1号电机复位到0.5，加速度为额定速度的\20%：“rs -m=1 --pos=0.5 --acc=0.2”
+	/// + 假设系统中有6个电机，加速度是0.1到0.6：“rs --acc={0.1,0.2,0.3,0.4,0.5,0.6}”
+	/// 
+	/// 指定复位减速度，单位是额定加速度的倍数，参数应在0到1之间，默认为0.1：
+	/// + 将1号电机复位到0.5，减速度为额定速度的\20%：“rs -m=1 --pos=0.5 --dec=0.2”
+	/// + 假设系统中有6个电机，减速度是0.1到0.6：“rs --dec={0.1,0.2,0.3,0.4,0.5,0.6}”
+	/// 
+	class Clear : public Plan
+	{
+	public:
+		auto virtual prepairNrt()->void override;
+
+		virtual ~Clear() = default;
+		explicit Clear(const std::string &name = "clear_plan");
+		ARIS_REGISTER_TYPE(Clear);
+		ARIS_DEFINE_BIG_FOUR(Clear);
 	};
 	/// \brief 复位，机器人从轴空间按照指定速度运行到指定位置处
 	///
