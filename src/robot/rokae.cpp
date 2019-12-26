@@ -129,6 +129,7 @@ namespace aris::robot
 		plan_root->planPool().add<aris::plan::Mode>();
 		plan_root->planPool().add<aris::plan::Show>();
 		plan_root->planPool().add<aris::plan::Sleep>();
+		plan_root->planPool().add<aris::plan::Clear>();
 		plan_root->planPool().add<aris::plan::Recover>();
 		auto &rs = plan_root->planPool().add<aris::plan::Reset>();
 		rs.command().findParam("pos")->setDefaultValue("{0.5,0.392523364485981,0.789915966386555,0.5,0.5,0.5}");

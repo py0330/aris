@@ -26,13 +26,13 @@ int main()
 		if (cmd_string == "exit")break;
 
 		// 以下变量用来保存分析的结果，包括命令与参数集 //
-		std::string cmd;
-		std::map<std::string, std::string> params;
+		std::string_view cmd;
+		std::map<std::string_view, std::string_view> params;
 
 		// parse //
 		try
 		{
-			parser.parse(cmd_string, cmd, params);
+			std::tie(cmd, params) = parser.parse(cmd_string);
 
 			// 打印命令和参数 //
 			std::cout << "------------------------------------------" << std::endl;

@@ -112,14 +112,23 @@ namespace aris::plan
 		auto ecController()->aris::control::EthercatController*;
 		auto option()->std::uint64_t&;
 		auto motorOptions()->std::vector<std::uint64_t>&;
-		auto cmdString()->const std::string&;
-		auto cmdName()->const std::string&;
-		auto cmdParams()->const std::map<std::string, std::string> &;
+		auto cmdString()->std::string_view;
+		auto cmdName()->std::string_view;
+		auto cmdParams()->const std::map<std::string_view, std::string_view> &;
 		auto cmdId()->std::int64_t;
 		auto beginGlobalCount()->std::int64_t;
 		auto rtStastic()->aris::control::Master::RtStasticsData &;
 		auto lout()->aris::core::MsgStream & { return master()->lout(); }
 		auto mout()->aris::core::MsgStream & { return master()->mout(); }
+
+		auto doubleParam(std::string_view param_name)->double;
+		auto floatParam(std::string_view param_name)->float;
+		auto int32Param(std::string_view param_name)->std::int32_t;
+		auto int64Param(std::string_view param_name)->std::int64_t;
+		auto uint32Param(std::string_view param_name)->std::uint32_t;
+		auto uint64Param(std::string_view param_name)->std::uint64_t;
+		auto matrixParam(std::string_view param_name)->aris::core::Matrix;
+		auto matrixParam(std::string_view param_name, int m, int n)->aris::core::Matrix;
 
 		auto param()->std::any&;
 		auto ret()->std::any&;
@@ -141,7 +150,8 @@ namespace aris::plan
 	public:
 		auto planPool()->aris::core::ObjectPool<Plan> &;
 		auto planPool()const->const aris::core::ObjectPool<Plan> & { return const_cast<std::decay_t<decltype(*this)> *>(this)->planPool(); }
-		auto planParser()->aris::core::CommandParser;
+		auto planParser()->aris::core::CommandParser &;
+		auto init()->void;
 
 		virtual ~PlanRoot();
 		explicit PlanRoot(const std::string &name = "plan_root");

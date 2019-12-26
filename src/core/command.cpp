@@ -146,11 +146,11 @@ namespace aris::core
 				THROW_FILE_LINE("wrong type when cmd parse in reset");
 			}
 		}
-		static auto addDefaultParam(Object* param, std::map<std::string, std::string> &param_map_out)->void
+		static auto addDefaultParam(Object* param, std::map<std::string_view, std::string_view> &param_map_out)->void
 		{
 			if (auto p = dynamic_cast<Param*>(param))
 			{
-				if (!p->ParamBase::imp_->is_taken_)param_map_out.insert(std::make_pair(p->name(), p->imp_->default_value_));
+				if (!p->ParamBase::imp_->is_taken_) { param_map_out.insert(std::make_pair(std::string_view(p->name()), std::string_view(p->imp_->default_value_))); }
 			}
 			else if (auto g = dynamic_cast<GroupParam*>(param))
 			{
@@ -257,7 +257,20 @@ namespace aris::core
 		Object::loadXml(xml_ele);
 		imp_->command_pool_ = findOrInsertType<aris::core::ObjectPool<Command>>();
 	}
-	auto CommandParser::parse(std::string_view cmd_str, std::string &cmd_out, std::map<std::string, std::string> &param_out)->void
+	auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; }
+	auto CommandParser::commandPool()const->const ObjectPool<Command> & { return *imp_->command_pool_; }
+	auto CommandParser::init()->void
+	{
+		// make map and abbrev map //
+		for (auto &c : commandPool())
+		{
+			c.imp_->param_map_.clear();
+			c.imp_->abbreviation_map_.clear();
+			if ((c.imp_->default_value_ != "") && (c.findByName(c.imp_->default_value_) == c.end())) THROW_FILE_LINE("Command \"" + c.name() + "\" has invalid default param name");
+			for (auto &param : c) Command::Imp::add_param_map_and_check_default(&c, param);
+		}
+	}
+	auto CommandParser::parse(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>
 	{
 		auto cut_str = [](std::string_view &input, const char *c)->std::string_view
 		{
@@ -271,7 +284,7 @@ namespace aris::core
 			auto point = input.find_first_not_of(' ');
 			return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
 		};
-		auto get_param_value = [&](aris::core::Param *param, std::string_view &cmd_str)->std::string
+		auto get_param_value = [&](aris::core::Param *param, std::string_view &cmd_str)->std::string_view
 		{
 			if (cmd_str.empty() || cmd_str[0] != '=')return param->defaultValue();
 			
@@ -297,23 +310,17 @@ namespace aris::core
 
 			auto ret = cmd_str.substr(1, i);
 			cmd_str = trim_left(cmd_str.substr(i));
-			return std::string(ret);
+			return ret;
 		};
 
 		std::string_view cmd;
-		std::map<std::string, std::string> param_map;
+		std::map<std::string_view, std::string_view> param_map;
 
 		if (cmd = cut_str(cmd_str, " "); cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
 		cmd_str = trim_left(cmd_str);
 
 		auto command = imp_->command_pool_->findByName(std::string(cmd));
 		if (command == imp_->command_pool_->end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + std::string(cmd) + "\"");
-
-		// make map and abbrev map //
-		command->imp_->param_map_.clear();
-		command->imp_->abbreviation_map_.clear();
-		if ((command->imp_->default_value_ != "") && (command->findByName(command->imp_->default_value_) == command->end())) THROW_FILE_LINE("Command \"" + command->name() + "\" has invalid default param name");
-		for (auto &param : *command) Command::Imp::add_param_map_and_check_default(&*command, param);
 
 		Command::Imp::reset(&*command);
 		for (; !cmd_str.empty();)
@@ -333,23 +340,23 @@ namespace aris::core
 					THROW_FILE_LINE(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
 
 				auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
-				auto param_name = command->imp_->abbreviation_map_.at(abbrev);
+				auto &param_name = command->imp_->abbreviation_map_.at(abbrev);
 				auto param_value = get_param_value(param, cmd_str);
 
-				param_map.insert(make_pair(param_name, param_value));
+				param_map.insert(make_pair(std::string_view(param_name), std::string_view(param_value)));
 				Command::Imp::take(param);
 			}
 			else if (param_name_origin.data()[0] == '-' && param_name_origin.data()[1] == '-')
 			{
-				auto param_name = std::string(param_name_origin.substr(2));
+				auto param_name = param_name_origin.substr(2);
 
-				if (command->imp_->param_map_.find(param_name) == command->imp_->param_map_.end())
-					THROW_FILE_LINE(std::string("invalid param: param \"") + param_name + "\" is not a valid param");
+				if (command->imp_->param_map_.find(std::string(param_name)) == command->imp_->param_map_.end())
+					THROW_FILE_LINE(std::string("invalid param: param \"") + std::string(param_name) + "\" is not a valid param");
 
-				auto param = command->imp_->param_map_.at(param_name);
+				auto param = command->imp_->param_map_.at(std::string(param_name));
 				auto param_value = get_param_value(param, cmd_str);
 
-				param_map.insert(make_pair(param_name, param_value));
+				param_map.insert(make_pair(std::string_view(param_name), std::string_view(param_value)));
 				Command::Imp::take(param);
 			}
 			else
@@ -369,11 +376,8 @@ namespace aris::core
 		}
 		Command::Imp::addDefaultParam(&*command, param_map);
 
-		cmd_out = cmd;
-		param_out = param_map;
+		return std::make_tuple(cmd, param_map);
 	}
-	auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; }
-	auto CommandParser::commandPool()const->const ObjectPool<Command> & { return *imp_->command_pool_; }
 	CommandParser::~CommandParser() = default;
 	CommandParser::CommandParser(const std::string &name) :Object(name)
 	{
@@ -382,4 +386,3 @@ namespace aris::core
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
 }
-

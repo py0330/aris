@@ -26,9 +26,9 @@ namespace aris::plan
 		std::uint64_t option_;
 		std::vector<std::uint64_t> mot_options_;
 
-		std::string cmd_msg_;
-		std::string cmd_name_;
-		std::map<std::string, std::string> cmd_params_;
+		std::string_view cmd_msg_;
+		std::string_view cmd_name_;
+		std::map<std::string_view, std::string_view> cmd_params_;
 
 		std::int64_t begin_global_count_;
 		std::uint64_t command_id_;
@@ -546,7 +546,11 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();
 		return cmd_end > cmd_now ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->plan_.get() : nullptr;
 	}
-	auto ControlServer::open()->void { for (auto &inter : interfacePool()) inter.open(); }
+	auto ControlServer::open()->void 
+	{
+		planRoot().init();
+		for (auto &inter : interfacePool()) inter.open();
+	}
 	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
 	auto ControlServer::runCmdLine()->void
 	{
@@ -612,9 +616,7 @@ namespace aris::server
 		{ 
 			++cmd_id;
 			LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << cmd_str << std::endl;
-			std::string cmd;
-			std::map<std::string, std::string> params;
-			planRoot().planParser().parse(std::string(cmd_str), cmd, params);
+			auto [cmd, params] = planRoot().planParser().parse(cmd_str);
 			auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 			plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter)));
 			plan->imp_->count_ = 0;
@@ -636,6 +638,7 @@ namespace aris::server
 		catch (std::exception &e)
 		{
 			plan->retCode() = aris::plan::Plan::PARSE_EXCEPTION;
+			std::fill_n(plan->retMsg(), 1024, '\0');
 			std::copy_n(e.what(), std::strlen(e.what()), plan->retMsg());
 			return plan;
 		}

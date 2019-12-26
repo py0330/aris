@@ -437,6 +437,7 @@ namespace aris::plan
 		std::map<std::string, int> functions_;
 		std::vector<std::string> var_pool_;
 		std::list<int> function_ret_stack_;
+		std::string program_;
 	};
 	auto LanguageParser::parseLanguage()->void
 	{
@@ -451,14 +452,16 @@ namespace aris::plan
 		//	std::cout << cmd.first << std::endl;
 		//}
 	}
-	auto LanguageParser::setProgram(const std::string& program)->void
+	auto LanguageParser::setProgram(std::string_view program)->void
 	{
 		imp_->cmd_map_.clear();
 		imp_->functions_.clear();
 		imp_->function_ret_stack_.clear();
 		imp_->var_pool_.clear();
+		
+		imp_->program_ = program;
 
-		std::stringstream ss(program);
+		std::stringstream ss(imp_->program_);
 		int id;
 		while (ss >> id)
 		{

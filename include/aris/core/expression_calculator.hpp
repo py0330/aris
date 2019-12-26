@@ -147,7 +147,7 @@ namespace aris::core
 	class Calculator
 	{
 	public:
-		auto calculateExpression(const std::string &expression) const->Matrix;
+		auto calculateExpression(std::string_view expression) const->Matrix;
 		auto evaluateExpression(const std::string &expression)const->std::string;
 		auto addVariable(const std::string &name, const Matrix &value)->void;
 		auto addVariable(const std::string &name, const std::string &value)->void;
@@ -164,6 +164,33 @@ namespace aris::core
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+
+	//class VariablePool
+	//{
+	//
+	//};
+
+	class Compiler
+	{
+	public:
+		auto calculateExpression(std::string_view expression) const->Matrix;
+		auto evaluateExpression(const std::string &expression)const->std::string;
+		auto addVariable(const std::string &name, const Matrix &value)->void;
+		auto addVariable(const std::string &name, const std::string &value)->void;
+		auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void;
+		auto clearVariables()->void;
+
+		virtual ~Compiler();
+		explicit Compiler(const std::string &name = "");
+		Compiler(const Compiler &);
+		Compiler(Compiler &&);
+		Compiler& operator=(const Compiler &);
+		Compiler& operator=(Compiler &&);
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
+
 }
 
 

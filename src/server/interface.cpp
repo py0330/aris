@@ -265,9 +265,9 @@ namespace aris::server
 				<< msg.header().reserved3_ << ":"
 				<< msg_data << std::endl;
 
-			std::string cmd;
-			std::map<std::string, std::string> params;
-			try { imp_->command_parser_.parse(msg_data, cmd, params); }
+			std::string_view cmd;
+			std::map<std::string_view, std::string_view> params;
+			try { std::tie(cmd, params) = imp_->command_parser_.parse(msg_data); }
 			catch (std::exception &) {};
 
 			if (cmd == "program")
@@ -341,7 +341,7 @@ namespace aris::server
 						}
 						else
 						{
-							imp_->language_parser_.gotoLine(std::stoi(value));
+							imp_->language_parser_.gotoLine(std::stoi(std::string(value)));
 							send_code_and_msg(0, "");
 							return 0;
 						}

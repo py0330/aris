@@ -10,7 +10,6 @@ void PIDcalOne(double m, double ts, double *KP)
 	double T = ts / 3.0;
 	KP[0] = m / T;
 }
-
 //系统传递函数H(s)=1/(ms+h)
 void PIDcalTeo(double m, double h, double ts, double overshoot, double *KP, double *KI)
 {
@@ -21,8 +20,6 @@ void PIDcalTeo(double m, double h, double ts, double overshoot, double *KP, doub
 	KI[0] = omega * omega * m;
 	KP[0] = 2 * kesi * omega * m - h;
 }
-
-
 auto f(aris::dynamic::Model *m, double *A)
 {
 	auto &s = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool()[1]);
@@ -84,14 +81,6 @@ int main(int argc, char *argv[])
 		cs.resetPlanRoot(createPlanRootStewart().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
-
-		// init model pos //
-		//cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0, 0, 0.5, 0, 0, 0}.data(), "313");
-		//cs.model().solverPool()[0].kinPos();
-
-		//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\stewart.xml");
-
-		//cs.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_server/stewart.xml"));
 	}
 	else
 	{
@@ -334,8 +323,10 @@ int main(int argc, char *argv[])
 	cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\www");
 
 
+	for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);
+
 	//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
-	cs.loadXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
+	//cs.loadXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
 
 	cs.open();
 	cs.runCmdLine();

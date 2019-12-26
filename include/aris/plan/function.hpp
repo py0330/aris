@@ -68,7 +68,7 @@ namespace aris::plan
 	class LanguageParser : public aris::core::Object
 	{
 	public:
-		auto setProgram(const std::string& program)->void;
+		auto setProgram(std::string_view program)->void;
 		auto parseLanguage()->void;
 		auto varPool()->const std::vector<std::string>&;
 		auto gotoMain()->void;
