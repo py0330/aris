@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <list>
+#include <any>
 
 #include "aris/core/basic_type.hpp"
 #include "aris/core/log.hpp"
@@ -173,11 +174,21 @@ namespace aris::core
 	class Compiler
 	{
 	public:
-		auto calculateExpression(std::string_view expression) const->Matrix;
-		auto evaluateExpression(const std::string &expression)const->std::string;
-		auto addVariable(const std::string &name, const Matrix &value)->void;
-		auto addVariable(const std::string &name, const std::string &value)->void;
-		auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void;
+		
+
+		using BuiltInFunction = std::function<std::any(std::vector<std::any>&)>;
+		using BinaryOperatorFunction = std::function<std::any(std::any&, std::any&)>;
+		using UnaryOperatorFunction = std::function<std::any(std::any&)>;
+
+		auto calculateExpression(std::string_view expression) const->std::pair<std::string, std::any>;
+		auto addType(std::string_view type_name);
+		auto addUnaryLeftOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
+		auto addUnaryRightOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
+		auto addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void;
+		
+		auto addOperator(std::string_view opr, int ul_priority, int ur_priority, int b_priority)->void;
+		auto addVariable(std::string_view var, std::string_view type, const std::any &value)->void;
+		auto addFunction(std::string_view fun, const std::vector<std::string> &param_type, std::string_view ret_type, BuiltInFunction f)->void;
 		auto clearVariables()->void;
 
 		virtual ~Compiler();
@@ -190,7 +201,6 @@ namespace aris::core
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-
 }
 
 

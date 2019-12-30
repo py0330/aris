@@ -351,91 +351,69 @@ namespace aris::core
 		return m1;
 	}
 
-	std::string SeperateString(std::string_view s)
-	{
-		static const std::string seperateStr("()[]{},;");
-		static const std::string operatorStr("+-*/\\^|<>=");
-
-		std::string ret;
-		ret.reserve(2 * s.size());
-
-		for (int i = 0; i < s.size(); ++i)
-		{
-			auto &key = s[i];
-
-			// 判断是否为科学计数法的数字 //
-			if ((i > 1) && (i < s.size() - 1))
-			{
-				if ((key == '+') || (key == '-'))
-				{
-					if (((*(&key - 1) == 'e') || (*(&key - 1) == 'E'))
-						&& (*(&key - 2) <= '9')
-						&& (*(&key - 2) >= '0')
-						&& (*(&key + 1) <= '9')
-						&& (*(&key + 1) >= '0'))
-					{
-						ret += key;
-						ret += s[i + 1];
-						++i;
-						continue;
-					}
-				}
-			}
-
-			// 判断是否为分隔符 //
-			if (seperateStr.find(key) != seperateStr.npos)
-			{
-				ret = ret + " " + key + " ";
-			}
-			// 判断是否为符号，或者变量数字
-			else if ((i > 0) && (s[i-1] != ' ') && ((operatorStr.find(key) == operatorStr.npos) != (operatorStr.find(s[i - 1]) == operatorStr.npos)))
-			{
-				ret = ret + " " + key;
-			}
-			else
-			{
-				ret += key;
-			}
-		}
-
-		return ret;
-	}
-	
 	auto getWord(std::string_view &input)->std::string_view
 	{
 		static const std::string seperateStr("()[]{},;");
 		static const std::string operatorStr("*+-/\\^|<>=");
 		static const std::string spaceStr(" \t\n\r\f\v");
+		static const std::string numStr("0123456789.");
+		static const std::string varStr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789");
 
 		// triml and check if empty //
 		auto next_pos = input.find_first_not_of(spaceStr);
 		input = next_pos == std::string::npos ? std::string_view() : std::string_view(input.data() + next_pos, input.size() - next_pos);
 		if (next_pos == std::string_view::npos)return std::string_view();
 
-
-		// get //
+		// get number //
 		if (input[0] <= '9' && input[0] >= '0')
 		{
-			for (int i = 1; i < input.size(); ++i)
+			bool has_scientific = false;
+			int i;
+			for (i = 1; i < input.size(); ++i)
 			{
+				// 可能是科学计数法 //
+				if (i < input.size() - 1
+					&& (input[i] == 'e' || input[i] == 'E')
+					&& ((input[i + 1] <= '9' && input[i + 1] >= '0') || input[i + 1] == '+' || input[i + 1] == '-'))
+				{
+					++i;
+					continue;
+				}
 
+				if (numStr.find(input[i]) == std::string_view::npos) break;
 			}
 
+			auto ret = input.substr(0, i);
+			input = i == input.size() ? std::string_view() : input.substr(i);
+			return ret;
 		}
+		// get seperator //
 		else if (seperateStr.find(input[0]) != seperateStr.npos)
 		{
-
+			auto ret = input.substr(0, 1);
+			input = 1 == input.size() ? std::string_view() : input.substr(1);
+			return ret;
 		}
-		else if (operatorStr.find(input[0]) == operatorStr.npos)
+		// get operator //
+		else if (operatorStr.find(input[0]) != operatorStr.npos)
 		{
+			int i;
+			for (i = 1; i < input.size() && operatorStr.find(input[i]) != std::string_view::npos; ++i);
 
+			auto ret = input.substr(0, i);
+			input = i == input.size() ? std::string_view() : input.substr(i);
+			return ret;
 		}
+		// get string //
 		else
 		{
+			int i;
+			for (i = 1; i < input.size() && varStr.find(input[i]) != std::string_view::npos; ++i);
 
+			auto ret = input.substr(0, i);
+			input = i == input.size() ? std::string_view() : input.substr(i);
+			return ret;
 		}
-
-		return ret;
 	}
 	
 	struct Calculator::Imp
@@ -464,7 +442,7 @@ namespace aris::core
 			};
 
 			Type type;
-			std::string word;
+			std::string_view word;
 
 			double num;
 			const Matrix *var;
@@ -505,34 +483,32 @@ namespace aris::core
 
 		typedef std::vector<Token> TokenVec;
 		TokenVec Expression2Tokens(std::string_view expression)const;
-		Matrix CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator maxEndToken) const;
+		Matrix CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator max_end_token) const;
 
-		Matrix CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
+		Matrix CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator max_end_token) const;
+		Matrix CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator max_end_token) const;
+		Matrix CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator max_end_token) const;
+		Matrix CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator max_end_token) const;
 
 		TokenVec::iterator FindNextOutsideToken(TokenVec::iterator leftPar, TokenVec::iterator endToken, Token::Type type) const;
 		TokenVec::iterator FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, Size precedence)const;
 		std::vector<std::vector<Matrix> > GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const;
 
-		std::map<std::string, Operator> operator_map_;
-		std::map<std::string, Function> function_map_;
-		std::map<std::string, Matrix> variable_map_;
-		std::map<std::string, std::string> string_map_;//string variable
+		std::map<std::string, Operator, std::less<>> operator_map_;
+		std::map<std::string, Function, std::less<>> function_map_;
+		std::map<std::string, Matrix, std::less<>> variable_map_;
+		std::map<std::string, std::string, std::less<>> string_map_;//string variable
 	};
 	auto Calculator::Imp::Expression2Tokens(std::string_view expression)const -> TokenVec
 	{
-		std::stringstream stream(SeperateString(expression));
-
 		TokenVec tokens;
 		Token token;
 
-		while (stream >> token.word)
+		for (token.word = getWord(expression); !token.word.empty(); token.word = getWord(expression))
 		{
 			token.type = Token::NO;
 
-			switch (*token.word.c_str())
+			switch (*token.word.data())
 			{
 			case ',':token.type = Token::COMMA; break;
 			case ';':token.type = Token::SEMICOLON; break;
@@ -544,7 +520,7 @@ namespace aris::core
 			case '}':token.type = Token::BRACE_R; break;
 			default:
 				// 数字
-				if (std::stringstream(token.word) >> token.num)
+				if (std::stringstream(std::string(token.word)) >> token.num)
 				{
 					token.type = Token::NUMBER;
 					break;
@@ -572,7 +548,7 @@ namespace aris::core
 				}
 
 			}
-			if (token.type == Token::NO) THROW_FILE_LINE("unrecognized symbol \"" + token.word + "\"");
+			if (token.type == Token::NO) THROW_FILE_LINE("unrecognized symbol \"" + std::string(token.word) + "\"");
 			tokens.push_back(token);
 			continue;
 		}
@@ -647,44 +623,44 @@ namespace aris::core
 
 		return value;
 	}
-	auto Calculator::Imp::CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
+	auto Calculator::Imp::CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator max_end_token)const->Matrix
 	{
 		auto beginPar = i + 1;
-		auto endPar = FindNextOutsideToken(i + 1, maxEndToken, Token::PARENTHESIS_R);
+		auto endPar = FindNextOutsideToken(i + 1, max_end_token, Token::PARENTHESIS_R);
 		i = endPar + 1;
 
 		return CaculateTokens(beginPar, endPar);
 	}
-	auto Calculator::Imp::CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
+	auto Calculator::Imp::CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator max_end_token)const->Matrix
 	{
 		auto beginBce = i + 1;
-		auto endBce = FindNextOutsideToken(i + 1, maxEndToken, Token::BRACE_R);
+		auto endBce = FindNextOutsideToken(i + 1, max_end_token, Token::BRACE_R);
 		i = endBce + 1;
 
 		return combineMatrices(GetMatrices(beginBce, endBce));
 	}
-	auto Calculator::Imp::CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
+	auto Calculator::Imp::CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator max_end_token)const->Matrix
 	{
 		auto beginPar = i + 1;
-		if (i + 1 >= maxEndToken) THROW_FILE_LINE("invalid expression");
+		if (i + 1 >= max_end_token) THROW_FILE_LINE("invalid expression");
 		if (beginPar->type != Token::PARENTHESIS_L)THROW_FILE_LINE("function must be followed by \"(\"");
 
-		auto endPar = FindNextOutsideToken(beginPar + 1, maxEndToken, Token::PARENTHESIS_R);
+		auto endPar = FindNextOutsideToken(beginPar + 1, max_end_token, Token::PARENTHESIS_R);
 		auto matrices = GetMatrices(beginPar + 1, endPar);
 
-		if (matrices.size() != 1)THROW_FILE_LINE("function \"" + i->word + "\" + do not has invalid param type");
+		if (matrices.size() != 1)THROW_FILE_LINE("function \"" + std::string(i->word) + "\" + do not has invalid param type");
 
 		auto params = matrices.front();
 		auto f = i->fun->funs.find(params.size());
-		if (f == i->fun->funs.end())THROW_FILE_LINE("function \"" + i->word + "\" + do not has invalid param num");
+		if (f == i->fun->funs.end())THROW_FILE_LINE("function \"" + std::string(i->word) + "\" + do not has invalid param num");
 
 		i = endPar + 1;
 		return f->second(params);
 	}
-	auto Calculator::Imp::CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
+	auto Calculator::Imp::CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator max_end_token)const->Matrix
 	{
 		auto opr = i;
-		i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, maxEndToken, opr->opr->priority_ul);
+		i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, max_end_token, opr->opr->priority_ul);
 		return opr->opr->fun_ul(CaculateTokens(opr + 1, i));
 	}
 	auto Calculator::Imp::FindNextOutsideToken(TokenVec::iterator beginToken, TokenVec::iterator endToken, Token::Type type)const->TokenVec::iterator
@@ -878,46 +854,49 @@ namespace aris::core
 
 	struct Compiler::Imp
 	{
-		class Variable
+		struct Type {};
+		struct Value
+		{
+			std::string type_;
+			std::any value_;
+
+			auto val()->std::any& 
+			{ 
+				if (std::any_cast<void*>(&value_))
+				{
+					auto p = reinterpret_cast<std::any*>(std::any_cast<void*>(value_));
+					return *p;
+				}
+				else
+				{
+					return value_;
+				}
+				
+				
+				return std::any_cast<std::any>(&value_) ? value_ : **std::any_cast<std::any*>(&value_);
+			}
+		};
+		struct Variable
 		{
 			std::string type_, name_;
 			std::any value_;
 		};
-		class Function
+		struct Operator
 		{
-			typedef std::function<Matrix(std::vector<Matrix>)> FUN;
-		public:
-			std::string name;
-			std::map<Size, FUN> funs;
-
-			void AddOverloadFun(Size n, FUN fun) { funs.insert(make_pair(n, fun)); }
-		};
-		class Operator
-		{
-		public:
 			std::string name;
 
-			Size priority_ul;    //unary left
-			Size priority_ur;    //unary right
-			Size priority_b;     //binary
+			Size priority_ul{ 0 };    //unary left
+			Size priority_ur{ 0 };    //unary right
+			Size priority_b{ 0 };     //binary
 
-			typedef std::function<Matrix(Matrix)> U_FUN;
-			typedef std::function<Matrix(Matrix, Matrix)> B_FUN;
-
-			U_FUN fun_ul;
-			U_FUN fun_ur;
-			B_FUN fun_b;
-
-			Operator() :priority_ul(0), priority_ur(0), priority_b(0) {}
-
-			void SetUnaryLeftOpr(Size priority, U_FUN fun) { priority_ul = priority; this->fun_ul = fun; }
-			void SetUnaryRightOpr(Size priority, U_FUN fun) { priority_ur = priority; this->fun_ur = fun; }
-			void SetBinaryOpr(Size priority, B_FUN fun) { priority_b = priority; this->fun_b = fun; }
+			std::map<std::string, std::map<std::string, std::pair<std::string, BinaryOperatorFunction>, std::less<>>, std::less<>> b_funs_;
+			std::map<std::string, std::pair<std::string, UnaryOperatorFunction>, std::less<>> ul_funs_;
+			std::map<std::string, std::pair<std::string, UnaryOperatorFunction>, std::less<>> ur_funs_;
 		};
-		class Value
+		struct Function
 		{
-			std::string type_;
-			std::any value_;
+			std::string name;
+			std::vector<std::tuple<std::vector<std::string>, std::string, Compiler::BuiltInFunction>> funs_;
 		};
 		class Token
 		{
@@ -936,49 +915,44 @@ namespace aris::core
 				OPERATOR,         // operator
 				NUMBER,           // number
 				VARIABLE,         // variable
-				Function          // function
+				FUNCTION          // function
 			};
 
 			Type type;
-			std::string word;
+			std::string_view word;
 
 			double num;
-			const Matrix *var;
-			const Imp::Function *fun;
-			const Imp::Operator *opr;
+			const Variable *var;
+			const Function *fun;
+			const Operator *opr;
 		};
 
-
 		typedef std::vector<Token> TokenVec;
-		TokenVec Expression2Tokens(std::string_view expression)const;
-		Matrix CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator maxEndToken) const;
+		auto Expression2Tokens(std::string_view expression)const->TokenVec;
+		auto CaculateTokens(TokenVec::iterator begin_token, TokenVec::iterator max_end_token) const->Value;
 
-		Matrix CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
-		Matrix CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken) const;
+		auto CaculateValueInParentheses(TokenVec::iterator &begin_token, TokenVec::iterator max_end_token) const->Value;
+		auto CaculateValueInBraces(TokenVec::iterator &begin_token, TokenVec::iterator max_end_token) const->Value;
+		auto CaculateValueInFunction(TokenVec::iterator &begin_token, TokenVec::iterator max_end_token) const->Value;
+		auto CaculateValueInOperator(TokenVec::iterator &begin_token, TokenVec::iterator max_end_token) const->Value;
 
-		TokenVec::iterator FindNextOutsideToken(TokenVec::iterator leftPar, TokenVec::iterator endToken, Token::Type type) const;
-		TokenVec::iterator FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, Size precedence)const;
-		std::vector<std::vector<Matrix> > GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const;
+		TokenVec::iterator FindNextOutsideToken(TokenVec::iterator left_par, TokenVec::iterator end_token, Token::Type type) const;
+		TokenVec::iterator FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator begin_token, TokenVec::iterator end_token, Size precedence)const;
+		auto GetValues(TokenVec::iterator begin_token, TokenVec::iterator end_token)const->std::vector<std::vector<Value> >;
 
-		std::map<std::string, Operator> operator_map_;
-		std::map<std::string, Function> function_map_;
-		std::map<std::string, Matrix> variable_map_;
-		std::map<std::string, std::string> string_map_;//string variable
+		std::map<std::string, Type, std::less<>> type_map_;
+		std::map<std::string, Operator, std::less<>> operator_map_;
+		std::map<std::string, Function, std::less<>> function_map_;
+		std::map<std::string, Variable, std::less<>> variable_map_;
 	};
 	auto Compiler::Imp::Expression2Tokens(std::string_view expression)const -> TokenVec
 	{
-		std::stringstream stream(SeperateString(expression));
-
 		TokenVec tokens;
 		Token token;
 
-		while (stream >> token.word)
+		for (token.word = getWord(expression); !token.word.empty(); token.word = getWord(expression))
 		{
-			token.type = Token::NO;
-
-			switch (*token.word.c_str())
+			switch (*token.word.data())
 			{
 			case ',':token.type = Token::COMMA; break;
 			case ';':token.type = Token::SEMICOLON; break;
@@ -990,7 +964,7 @@ namespace aris::core
 			case '}':token.type = Token::BRACE_R; break;
 			default:
 				// 数字
-				if (std::stringstream(token.word) >> token.num)
+				if (std::stringstream(std::string(token.word)) >> token.num)
 				{
 					token.type = Token::NUMBER;
 					break;
@@ -1012,53 +986,49 @@ namespace aris::core
 				// 函数
 				if (function_map_.find(token.word) != function_map_.end())
 				{
-					token.type = Token::Function;
+					token.type = Token::FUNCTION;
 					token.fun = &function_map_.find(token.word)->second;
 					break;
 				}
 
+				THROW_FILE_LINE("unrecognized symbol \"" + std::string(token.word) + "\"");
 			}
-			if (token.type == Token::NO) THROW_FILE_LINE("unrecognized symbol \"" + token.word + "\"");
 			tokens.push_back(token);
-			continue;
 		}
 
 		return tokens;
 	}
-	auto Compiler::Imp::CaculateTokens(TokenVec::iterator beginToken, TokenVec::iterator endToken) const ->Matrix
+	auto Compiler::Imp::CaculateTokens(TokenVec::iterator b_tok, TokenVec::iterator e_tok) const ->Value
 	{
-		if (beginToken >= endToken)THROW_FILE_LINE("invalid expression");
+		if (b_tok >= e_tok)THROW_FILE_LINE("invalid expression");
 
-		auto i = beginToken;
-		Matrix value;
-		bool isBegin = true;
-		while (i < endToken)
+		Value value;
+		for (auto i = b_tok; i < e_tok; )
 		{
-			// 如果没有当前值,证明刚刚开始计算 //
-			if (isBegin)
+			// 是否刚开始 //
+			if (i == b_tok)
 			{
-				isBegin = false;
 				switch (i->type)
 				{
 				case Token::PARENTHESIS_L:
-					value = CaculateValueInParentheses(i, endToken);
+					value = CaculateValueInParentheses(i, e_tok);
 					break;
 				case Token::BRACE_L:
-					value = CaculateValueInBraces(i, endToken);
+					value = CaculateValueInBraces(i, e_tok);
 					break;
 				case Token::NUMBER:
-					value = i->num;
+					value = Value{ "Number", i->num };
 					i++;
 					break;
 				case Token::OPERATOR:
-					value = CaculateValueInOperator(i, endToken);
+					value = CaculateValueInOperator(i, e_tok);
 					break;
 				case Token::VARIABLE:
-					value = *i->var;
+					value = Value{ i->var->type_, (void*)&i->var->value_ };
 					i++;
 					break;
-				case Token::Function:
-					value = CaculateValueInFunction(i, endToken);
+				case Token::FUNCTION:
+					value = CaculateValueInFunction(i, e_tok);
 					break;
 				default:
 					THROW_FILE_LINE("expression not valid");
@@ -1070,13 +1040,16 @@ namespace aris::core
 				{
 					if (i->opr->priority_ur)
 					{
-						value = i->opr->fun_ur(value);
+						auto func = i->opr->ur_funs_.at(value.type_);
+						value = Value{ func.first, func.second(value.val()) };
 						i++;
 					}
 					else if (i->opr->priority_b > 0)
 					{
-						auto e = FindNextEqualLessPrecedenceBinaryOpr(i + 1, endToken, i->opr->priority_b);
-						value = i->opr->fun_b(value, CaculateTokens(i + 1, e));
+						auto e = FindNextEqualLessPrecedenceBinaryOpr(i + 1, e_tok, i->opr->priority_b);
+						auto right_value = CaculateTokens(i + 1, e);
+						auto func = i->opr->b_funs_.at(value.type_).at(right_value.type_);
+						value = Value{ func.first, func.second(value.val(), right_value.val()) };
 						i = e;
 					}
 					else
@@ -1093,237 +1066,269 @@ namespace aris::core
 
 		return value;
 	}
-	auto Compiler::Imp::CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
+	auto Compiler::Imp::CaculateValueInParentheses(TokenVec::iterator &i, TokenVec::iterator max_end_token)const->Value
 	{
-		auto beginPar = i + 1;
-		auto endPar = FindNextOutsideToken(i + 1, maxEndToken, Token::PARENTHESIS_R);
-		i = endPar + 1;
+		auto b_par = i + 1;
+		auto e_par = FindNextOutsideToken(i + 1, max_end_token, Token::PARENTHESIS_R);
+		i = e_par + 1;
 
-		return CaculateTokens(beginPar, endPar);
+		return CaculateTokens(b_par, e_par);
 	}
-	auto Compiler::Imp::CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
+	auto Compiler::Imp::CaculateValueInBraces(TokenVec::iterator &i, TokenVec::iterator max_end_token)const->Value
 	{
-		auto beginBce = i + 1;
-		auto endBce = FindNextOutsideToken(i + 1, maxEndToken, Token::BRACE_R);
-		i = endBce + 1;
+		auto b_bra = i + 1;
+		auto e_bra = FindNextOutsideToken(i + 1, max_end_token, Token::BRACE_R);
+		i = e_bra + 1;
 
-		return combineMatrices(GetMatrices(beginBce, endBce));
+		auto values = GetValues(b_bra, e_bra);
+		std::vector<std::vector<Matrix>> mtx;
+		mtx.reserve(values.size());
+
+		for (auto &r_vec : values)
+		{
+			mtx.push_back(std::vector<Matrix>(r_vec.size()));
+			for (auto &value : r_vec)
+			{
+				if (value.type_ == "Number")
+				{
+					mtx.back().push_back(Matrix(std::any_cast<double>(value.value_)));
+				}
+				else if (value.type_ == "Matrix")
+				{
+					mtx.back().push_back(std::any_cast<Matrix&>(value.value_));
+				}
+				else
+				{
+					THROW_FILE_LINE("invalid type when build Matrix");
+				}
+			}
+		}
+		auto m = combineMatrices(mtx);
+		return Value{ std::string("Matrix"), m };
 	}
-	auto Compiler::Imp::CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
+	auto Compiler::Imp::CaculateValueInFunction(TokenVec::iterator &i, TokenVec::iterator max_end_token)const->Value
 	{
-		auto beginPar = i + 1;
-		if (i + 1 >= maxEndToken) THROW_FILE_LINE("invalid expression");
-		if (beginPar->type != Token::PARENTHESIS_L)THROW_FILE_LINE("function must be followed by \"(\"");
+		auto b_par = i + 1;
+		if (i + 1 >= max_end_token) THROW_FILE_LINE("invalid expression");
+		if (b_par->type != Token::PARENTHESIS_L)THROW_FILE_LINE("function must be followed by \"(\"");
 
-		auto endPar = FindNextOutsideToken(beginPar + 1, maxEndToken, Token::PARENTHESIS_R);
-		auto matrices = GetMatrices(beginPar + 1, endPar);
+		auto e_par = FindNextOutsideToken(b_par + 1, max_end_token, Token::PARENTHESIS_R);
 
-		if (matrices.size() != 1)THROW_FILE_LINE("function \"" + i->word + "\" + do not has invalid param type");
+		// get values, but values dimensions must be 1 x n //
+		auto value_mat = GetValues(b_par + 1, e_par);
+		if (value_mat.size() != 1)THROW_FILE_LINE("function \"" + std::string(i->word) + "\" + do not has invalid param type");
 
-		auto params = matrices.front();
-		auto f = i->fun->funs.find(params.size());
-		if (f == i->fun->funs.end())THROW_FILE_LINE("function \"" + i->word + "\" + do not has invalid param num");
+		// transfer values to param types and param values //
+		auto params = value_mat.front();
+		std::vector<std::string> p_types(params.size());
+		std::vector<std::any> p_values(params.size());
+		for (int i = 0; i < params.size(); ++i)
+		{
+			p_types[i] = params[i].type_;
+			p_values[i] = params[i].val();
+		}
 
-		i = endPar + 1;
-		return f->second(params);
+		// search functions //
+		auto &funs = function_map_.find(std::string(i->word))->second.funs_;
+		if (auto f = std::find_if(funs.begin(), funs.end(), [&](const auto &v)->bool {return std::equal(p_types.begin(), p_types.end(), std::get<0>(v).begin()); }); f == funs.end())
+		{
+			THROW_FILE_LINE("function \"" + std::string(i->word) + "\" not found");
+		}
+		else
+		{
+			i = e_par + 1;
+			return Value{ std::get<1>(*f), std::get<2>(*f)(p_values) };
+		}
 	}
-	auto Compiler::Imp::CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator maxEndToken)const->Matrix
+	auto Compiler::Imp::CaculateValueInOperator(TokenVec::iterator &i, TokenVec::iterator max_end_token)const->Value
 	{
 		auto opr = i;
-		i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, maxEndToken, opr->opr->priority_ul);
-		return opr->opr->fun_ul(CaculateTokens(opr + 1, i));
+		i = FindNextEqualLessPrecedenceBinaryOpr(opr + 1, max_end_token, opr->opr->priority_ul);
+		auto value = CaculateTokens(opr + 1, i);
+		auto func = opr->opr->ul_funs_.at(value.type_);
+		return Value{func.first, func.second(value.val())};
 	}
-	auto Compiler::Imp::FindNextOutsideToken(TokenVec::iterator beginToken, TokenVec::iterator endToken, Token::Type type)const->TokenVec::iterator
+	auto Compiler::Imp::FindNextOutsideToken(TokenVec::iterator begin_token, TokenVec::iterator end_token, Token::Type type)const->TokenVec::iterator
 	{
-		Size parNum = 0, braNum = 0, bceNum = 0;
-		auto nextPlace = beginToken;
+		Size par_num = 0, bra_num = 0, bce_num = 0;
+		auto next_token = begin_token;
 
-		while (nextPlace < endToken)
+		for (;next_token < end_token; ++next_token)
 		{
-			if ((parNum == 0) && (braNum == 0) && (bceNum == 0) && (nextPlace->type == type))return nextPlace;
-			switch (nextPlace->type)
+			if ((par_num == 0) && (bra_num == 0) && (bce_num == 0) && (next_token->type == type))return next_token;
+			switch (next_token->type)
 			{
-			case Token::PARENTHESIS_L:parNum++; break;
-			case Token::PARENTHESIS_R:parNum--; break;
-			case Token::BRACKET_L:braNum++; break;
-			case Token::BRACKET_R:braNum--; break;
-			case Token::BRACE_L:bceNum++; break;
-			case Token::BRACE_R:bceNum--; break;
+			case Token::PARENTHESIS_L:par_num++; break;
+			case Token::PARENTHESIS_R:par_num--; break;
+			case Token::BRACKET_L:bra_num++; break;
+			case Token::BRACKET_R:bra_num--; break;
+			case Token::BRACE_L:bce_num++; break;
+			case Token::BRACE_R:bce_num--; break;
 			default:break;
 			}
-
-			++nextPlace;
 		}
 
-		return nextPlace;
+		return end_token;
 	}
-	auto Compiler::Imp::FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator beginToken, TokenVec::iterator endToken, Size precedence)const->TokenVec::iterator
+	auto Compiler::Imp::FindNextEqualLessPrecedenceBinaryOpr(TokenVec::iterator begin_token, TokenVec::iterator end_token, Size precedence)const->TokenVec::iterator
 	{
-		auto nextOpr = beginToken;
-
-		while (nextOpr < endToken)
+		auto next_opr = begin_token;
+		for (; next_opr < end_token; ++next_opr)
 		{
-			nextOpr = FindNextOutsideToken(nextOpr, endToken, Token::OPERATOR);
-
-			if ((nextOpr == endToken) || (nextOpr->opr->priority_b <= precedence))
-			{
-				break;
-			}
-			else
-			{
-				++nextOpr;
-			}
+			next_opr = FindNextOutsideToken(next_opr, end_token, Token::OPERATOR);
+			if ((next_opr == end_token) || (next_opr->opr->priority_b <= precedence))break;
 		}
 
-		return nextOpr;
+		return next_opr;
 	}
-	auto Compiler::Imp::GetMatrices(TokenVec::iterator beginToken, TokenVec::iterator endToken)const->std::vector<std::vector<Matrix> >
+	auto Compiler::Imp::GetValues(TokenVec::iterator b_tok, TokenVec::iterator e_tok)const->std::vector<std::vector<Value> >
 	{
-		std::vector<std::vector<Matrix> > ret;
+		std::vector<std::vector<Value> > ret;
 
-		auto rowBegin = beginToken;
-		while (rowBegin < endToken)
+		auto b_row = b_tok;
+		while (b_row < e_tok)
 		{
-			auto rowEnd = FindNextOutsideToken(rowBegin, endToken, Token::SEMICOLON);
-			auto colBegin = rowBegin;
+			auto e_row = FindNextOutsideToken(b_row, e_tok, Token::SEMICOLON);
+			auto b_col = b_row;
 
-			ret.push_back(std::vector<Matrix>());
+			ret.push_back(std::vector<Value>());
 
-			while (colBegin < rowEnd)
+			while (b_col < e_row)
 			{
-				auto colEnd = FindNextOutsideToken(colBegin, rowEnd, Token::COMMA);
-
-				ret.back().push_back(CaculateTokens(colBegin, colEnd));
-
-				if (colEnd == endToken)
-					colBegin = colEnd;
-				else
-					colBegin = colEnd + 1;
+				auto e_col = FindNextOutsideToken(b_col, e_row, Token::COMMA);
+				ret.back().push_back(CaculateTokens(b_col, e_col));
+				b_col = e_col == e_tok ? e_col : e_col + 1;
 			}
 
-
-			if (rowEnd == endToken)
-				rowBegin = rowEnd;
-			else
-				rowBegin = rowEnd + 1;
+			b_row = e_row == e_tok ? e_row : e_row + 1;
 		}
-
 
 		return ret;
 	}
-	auto Compiler::calculateExpression(std::string_view expression) const->Matrix
+	auto Compiler::calculateExpression(std::string_view expression) const->std::pair<std::string, std::any>
 	{
-		auto tokens = imp_->Expression2Tokens(std::string(expression));
-		return imp_->CaculateTokens(tokens.begin(), tokens.end());
+		auto tokens = imp_->Expression2Tokens(expression);
+		auto ret_val = imp_->CaculateTokens(tokens.begin(), tokens.end());
+		return std::make_pair(std::move(ret_val.type_), std::move(ret_val.val()));
 	}
-	auto Compiler::evaluateExpression(const std::string &expression)const->std::string
+	auto Compiler::addVariable(std::string_view var, std::string_view type, const std::any &value)->void
 	{
-		auto ret = expression;
-
-		for (auto &var : imp_->string_map_)
+		if (imp_->variable_map_.find(var) != imp_->variable_map_.end() ||
+			imp_->function_map_.find(var) != imp_->function_map_.end())
 		{
-			std::string exp{ "\\$\\{" + var.first + "\\}" };
-
-			std::regex var_rex{ exp };
-			ret = std::regex_replace(ret, var_rex, var.second);
+			THROW_FILE_LINE("\"" + std::string(var) + "already exists, can't add this variable");
 		}
 
-
-		return ret;
+		imp_->variable_map_.insert(make_pair(var, Imp::Variable{std::string(type), std::string(var), value}));
 	}
-	auto Compiler::addVariable(const std::string &name, const Matrix &value)->void
+	auto Compiler::addFunction(std::string_view fun, const std::vector<std::string> &params, std::string_view ret_type, BuiltInFunction f)->void
 	{
-		if (imp_->function_map_.find(name) != imp_->function_map_.end())
+		if (imp_->variable_map_.find(fun) != imp_->variable_map_.end())
 		{
-			THROW_FILE_LINE("function \"" + name + "already exists, can't add variable");
+			THROW_FILE_LINE("\"" + std::string(fun) + "already exists, can't add this function");
 		}
+		
+		auto &funs = imp_->function_map_[std::string(fun)].funs_;
+		if (std::find_if(funs.begin(), funs.end(), [&](const auto &val)->bool {	return std::equal(params.begin(), params.end(), std::get<0>(val).begin()); }) != funs.end())
+			THROW_FILE_LINE("function \"" + std::string(fun) + "already exists, can't add function");
 
-		if (imp_->variable_map_.find(name) != imp_->variable_map_.end())
-		{
-			THROW_FILE_LINE("variable \"" + name + "already exists, can't add variable");
-		}
-		imp_->variable_map_.insert(make_pair(name, value));
+		funs.push_back(std::make_tuple(params, std::string(ret_type), f));
 	}
-	auto Compiler::addVariable(const std::string &name, const std::string &value)->void
+	auto Compiler::addOperator(std::string_view opr, int ul_priority, int ur_priority, int b_priority)->void
 	{
-		if (imp_->string_map_.find(name) != imp_->string_map_.end())
-		{
-			THROW_FILE_LINE("variable \"" + name + "already exists, can't add string variable");
-		}
-		imp_->string_map_.insert(make_pair(name, value));
-	}
-	auto Compiler::addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void
-	{
-		if (imp_->variable_map_.find(name) != imp_->variable_map_.end())
-		{
-			THROW_FILE_LINE("variable \"" + name + "already exists, can't add function");
-		}
+		if (imp_->operator_map_.find(opr) != imp_->operator_map_.end())THROW_FILE_LINE("Already has operator:" + std::string(opr));
 
-		imp_->function_map_[name].AddOverloadFun(n, f);
+		imp_->operator_map_[std::string(opr)].priority_ul = ul_priority;
+		imp_->operator_map_[std::string(opr)].priority_ur = ur_priority;
+		imp_->operator_map_[std::string(opr)].priority_b = b_priority;
 	}
-	auto Compiler::clearVariables()->void { imp_->variable_map_.clear(); imp_->string_map_.clear(); }
+	auto Compiler::addUnaryLeftOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void
+	{
+		if (auto found_opr = imp_->operator_map_.find(opr);found_opr == imp_->operator_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else if(auto found_type = imp_->type_map_.find(p_type); found_type == imp_->type_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(p_type));
+		else if (auto found_func = found_opr->second.ul_funs_.find(p_type); found_func != found_opr->second.ul_funs_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else
+		{
+			found_opr->second.ul_funs_.insert(std::make_pair(std::string(p_type), std::make_pair(std::string(ret_type), f)));
+		}
+	}
+	auto Compiler::addUnaryRightOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void
+	{
+		if (auto found_opr = imp_->operator_map_.find(opr); found_opr == imp_->operator_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else if (auto found_type = imp_->type_map_.find(p_type); found_type == imp_->type_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(p_type));
+		else if (auto found_func = found_opr->second.ur_funs_.find(p_type); found_func != found_opr->second.ur_funs_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else
+		{
+			found_opr->second.ur_funs_.insert(std::make_pair(std::string(p_type), std::make_pair(std::string(ret_type), f)));
+		}
+	}
+	auto Compiler::addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void
+	{
+		if (auto found_opr = imp_->operator_map_.find(opr); found_opr == imp_->operator_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else if (auto found_type1 = imp_->type_map_.find(p1_type); found_type1 == imp_->type_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(p1_type));
+		else if (auto found_type2 = imp_->type_map_.find(p2_type); found_type2 == imp_->type_map_.end())THROW_FILE_LINE("failed add operator func:" + std::string(p2_type));
+		else if (auto found = found_opr->second.b_funs_.find(p1_type); found != found_opr->second.b_funs_.end() && found->second.find(p2_type) != found->second.end())
+			THROW_FILE_LINE("failed add operator func:" + std::string(opr));
+		else
+		{
+			if (found == found_opr->second.b_funs_.end())
+				found_opr->second.b_funs_.insert(std::make_pair(std::string(p1_type), std::map<std::string, std::pair<std::string, BinaryOperatorFunction>, std::less<>>()));
+
+			found_opr->second.b_funs_[std::string(p1_type)][std::string(p2_type)] = std::make_pair(std::string(ret_type), f);
+		}
+	}
+	auto Compiler::clearVariables()->void { imp_->variable_map_.clear(); }
 	Compiler::~Compiler() = default;
 	Compiler::Compiler(const std::string &name)
 	{
-		imp_->operator_map_["+"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 + m2; });
-		imp_->operator_map_["+"].SetUnaryLeftOpr(1, [](Matrix m) {return m; });
-		imp_->operator_map_["-"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 - m2; });
-		imp_->operator_map_["-"].SetUnaryLeftOpr(1, [](Matrix m) {return -m; });
-		imp_->operator_map_["*"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 * m2; });
-		imp_->operator_map_["/"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 / m2; });
+		//imp_->operator_map_["+"].SetBinaryOpr(1, [](Value v1, Value v2) ->Value
+		//{
+		//	return Value{ "result", 1 };
+		//});
+		//imp_->operator_map_["+"].SetUnaryLeftOpr(1, [](Matrix m) {return m; });
+		//imp_->operator_map_["-"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) {return m1 - m2; });
+		//imp_->operator_map_["-"].SetUnaryLeftOpr(1, [](Matrix m) {return -m; });
+		//imp_->operator_map_["*"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 * m2; });
+		//imp_->operator_map_["/"].SetBinaryOpr(2, [](Matrix m1, Matrix m2) {return m1 / m2; });
 
-#define MATRIX_OPR(OPR) \
-		Matrix ret;\
-		if (m1.size() == 1)\
-		{					\
-			ret = Matrix(m2);\
-			for (auto &d : ret)d = m1(0, 0) OPR d;\
-		}\
-		else if (m2.size() == 1)\
-		{\
-			ret = Matrix(m1);\
-			for (auto &d : ret) d = d OPR m2(0, 0);\
-		}\
-		else if ((m1.m() == m2.m()) && (m1.n() == m2.n()))\
-		{\
-			ret = Matrix(m1);\
-								\
-			for (Size i = 0; i < ret.size(); ++i)\
-			{\
-				ret.data()[i] = m1.data()[i] OPR m2.data()[i];\
-			}\
-		}\
-		else\
-		{\
-			THROW_FILE_LINE("dimensions are not equal");\
-		}\
-		return ret;
+		imp_->type_map_["Number"];
+		imp_->type_map_["Matrix"];
 
-
-		imp_->operator_map_["<"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(<); });
-		imp_->operator_map_["<="].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(<= ); });
-		imp_->operator_map_[">"].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(>); });
-		imp_->operator_map_[">="].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(>= ); });
-		imp_->operator_map_["=="].SetBinaryOpr(1, [](Matrix m1, Matrix m2) { MATRIX_OPR(== ); });
-
-#undef ARIS_SET_TYPE
-
-		addFunction("sqrt", [](std::vector<Matrix> v)
+		addOperator("+", 1, 0, 1);
+		addUnaryLeftOperatorFunction("+", "Number", "Number", [](std::any& p1)->std::any{return std::any_cast<double>(p1);});
+		addBinaryOperatorFunction("+", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any 
 		{
-			Matrix ret = v.front();
+			return std::any_cast<double>(p1) + std::any_cast<double>(p2);
+		});
 
-			for (auto &d : ret)	d = std::sqrt(d);
+		addOperator("-", 1, 0, 1);
+		addUnaryLeftOperatorFunction("-", "Number", "Number", [](std::any& p1)->std::any {return -std::any_cast<double>(p1); });
+		addBinaryOperatorFunction("-", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any
+		{
+			return std::any_cast<double>(p1) - std::any_cast<double>(p2);
+		});
 
-			return ret;
-		}, 1);
+		addOperator("*", 0, 0, 2);
+		addBinaryOperatorFunction("*", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any
+		{
+			return std::any_cast<double>(p1) * std::any_cast<double>(p2);
+		});
+
+		addOperator("/", 0, 0, 2);
+		addBinaryOperatorFunction("/", "Number", "Number", "Number", [](std::any& p1, std::any&p2)->std::any
+		{
+			return std::any_cast<double>(p1) / std::any_cast<double>(p2);
+		});
+
+		addVariable("pi", "Number", double(3.141592653));
+
+		addFunction("sin", std::vector<std::string>{"Number"}, "Number", [](std::vector<std::any> params)->std::any 
+		{
+			return std::sin(std::any_cast<double>(params[0]));
+		});
 	}
 	Compiler::Compiler(const Compiler &) = default;
 	Compiler::Compiler(Compiler &&) = default;
 	Compiler& Compiler::operator=(const Compiler &) = default;
 	Compiler& Compiler::operator=(Compiler &&) = default;
-
-
-
-
-
 }

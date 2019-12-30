@@ -65,7 +65,7 @@ int main()
 
 	try
 	{
-		m = c.calculateExpression("{multiply(-100+multiply(1,2)+1.23*addTwo(2.1-3.2*FIVE*(3-1)*(TWO*PI - 1))-1.38, 8.1),1}");
+		m = c.calculateExpression("{multiply(-100+multiply(1,2)+1.23*addTwo(2.1-3.2*FIVE*(3-1)*(TWO*PI - 1))-1.38, 8.1),1}");//{-2448.4937065177,1}
 		m.dsp();
 		//m = c.calculateExpression("multiply(multiply(1,2),2)");
 		m = c.calculateExpression("2e-2+{1,{2,3};{4;5},{5;6},{7;8}}*3");
@@ -88,7 +88,17 @@ int main()
 
 
 
+	aris::core::Compiler cmp;
 
+	auto v = cmp.calculateExpression("pi+1.25");
+	//auto v = cmp.calculateExpression("{{2.0,1};pi+sin(pi*2/3)+(1+(+2) - 100*5)/6 + sin(1.5*2.5+sin(0.1)),1}");
+	
+
+	std::cout << v.first << std::endl;
+	//std::any_cast<aris::core::Matrix&>(v.second).dsp();
+
+
+	std::cout << std::any_cast<double>(v.second) << std::endl;
 
 
 	char aaa;

@@ -531,7 +531,6 @@ namespace aris::server
 						ret_js.push_back(std::make_pair<std::string, std::any>("return_message", std::string(plan.retMsg())));
 						ret_msg.copy(aris::server::parse_ret_value(ret_js));
 					}
-
 					// return back to source
 					send_ret(ret_msg);
 				});
@@ -614,7 +613,9 @@ namespace aris::server
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		
 		aris::core::XmlDocument doc;
-		doc.LoadFile("C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\robot\\interface.xml");
+		std::filesystem::path interface_path(imp_->document_root_);
+		interface_path  = interface_path / "../robot/interface.xml";
+		doc.LoadFile(interface_path.string().c_str());
 
 		my_json js;
 		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
@@ -681,7 +682,7 @@ namespace aris::server
 				switch (ev) {
 				case MG_EV_HTTP_REQUEST:
 				{
-					std::cout << std::string(hm->method.p, hm->method.len) <<":"<< std::string(hm->uri.p, hm->uri.len) << std::endl;
+					/*std::cout << std::string(hm->method.p, hm->method.len) <<":"<< std::string(hm->uri.p, hm->uri.len) << std::endl;
 					
 					if (std::string(hm->method.p, hm->method.len) == "POST")
 					{
@@ -695,8 +696,9 @@ namespace aris::server
 					}
 					else
 					{
-						mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
-					}
+						
+					}*/
+					mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
 				}
 				default:
 
@@ -745,6 +747,4 @@ namespace aris::server
 		imp_->document_root_ = document_root;
 		imp_->port_ = port;
 	}
-
-
 }
