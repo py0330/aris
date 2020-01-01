@@ -634,6 +634,8 @@ namespace aris::server
 			plan->imp_->begin_global_count_ = 0;
 			plan->imp_->command_id_ = cmd_id;
 			plan->imp_->rt_stastic_ = aris::control::Master::RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
+			plan->retCode() = 0;
+			std::fill_n(plan->retMsg(), 1024, '\0');
 		}
 		catch (std::exception &e)
 		{

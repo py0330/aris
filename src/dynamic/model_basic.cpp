@@ -25,7 +25,11 @@ namespace aris::dynamic
 		aris::core::Matrix mat;
 		try
 		{
-			mat = this->ancestor<Model>()->calculator().calculateExpression(xml_ele.Attribute(attribute_name.c_str()));
+			auto ret = ancestor<Model>()->calculator().calculateExpression(xml_ele.Attribute(attribute_name.c_str()));
+			
+			mat = std::any_cast<aris::core::Matrix&>(
+				ret.second
+				);
 		}
 		catch (std::exception &e)
 		{
@@ -88,13 +92,13 @@ namespace aris::dynamic
 	auto MatrixVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Variable::loadXml(xml_ele);
-		data() = ancestor<Model>()->calculator().calculateExpression(xml_ele.GetText());
-		ancestor<Model>()->calculator().addVariable(name(), data());
+		data() = std::any_cast<const aris::core::Matrix&>(ancestor<Model>()->calculator().calculateExpression(xml_ele.GetText()).second);
+		ancestor<Model>()->calculator().addVariable(name(), "Matrix", data());
 	}
 	auto StringVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Variable::loadXml(xml_ele);
 		data() = std::string(xml_ele.GetText());
-		ancestor<Model>()->calculator().addVariable(name(), data());
+		ancestor<Model>()->calculator().addVariable(name(), "String", data());
 	}
 }

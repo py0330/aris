@@ -145,14 +145,47 @@ namespace aris::core
 		return combineColMatrices(mat_col_list);
 	}
 
+	//class Calculator
+	//{
+	//public:
+	//	auto calculateExpression(std::string_view expression) const->Matrix;
+	//	auto evaluateExpression(const std::string &expression)const->std::string;
+	//	auto addVariable(const std::string &name, const Matrix &value)->void;
+	//	auto addVariable(const std::string &name, const std::string &value)->void;
+	//	auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void;
+	//	auto clearVariables()->void;
+
+	//	virtual ~Calculator();
+	//	explicit Calculator(const std::string &name = "");
+	//	Calculator(const Calculator &);
+	//	Calculator(Calculator &&);
+	//	Calculator& operator=(const Calculator &);
+	//	Calculator& operator=(Calculator &&);
+	//private:
+	//	struct Imp;
+	//	aris::core::ImpPtr<Imp> imp_;
+	//};
+
+	
+
+
 	class Calculator
 	{
 	public:
-		auto calculateExpression(std::string_view expression) const->Matrix;
-		auto evaluateExpression(const std::string &expression)const->std::string;
-		auto addVariable(const std::string &name, const Matrix &value)->void;
-		auto addVariable(const std::string &name, const std::string &value)->void;
-		auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void;
+		using BuiltInFunction = std::function<std::any(std::vector<std::any>&)>;
+		using BinaryOperatorFunction = std::function<std::any(std::any&, std::any&)>;
+		using UnaryOperatorFunction = std::function<std::any(std::any&)>;
+
+		auto calculateExpression(std::string_view expression) const->std::pair<std::string, std::any>;
+		
+		auto addTypename(std::string_view tpn)->void;
+		auto addOperator(std::string_view opr, int ul_priority, int ur_priority, int b_priority)->void;
+		auto addVariable(std::string_view var, std::string_view type, const std::any &value)->void;
+		auto addFunction(std::string_view fun, const std::vector<std::string> &param_type, std::string_view ret_type, BuiltInFunction f)->void;
+		
+		auto addUnaryLeftOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
+		auto addUnaryRightOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
+		auto addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void;
 		auto clearVariables()->void;
 
 		virtual ~Calculator();
@@ -165,41 +198,41 @@ namespace aris::core
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
+	class LanguageParser : public aris::core::Object
+	{
+	public:
+		auto setProgram(std::string_view program)->void;
+		auto parseLanguage()->void;
+		auto varPool()->const std::vector<std::string>&;
+		auto gotoMain()->void;
+		auto gotoLine(int line)->void;
+		auto forward(bool is_this_cmd_successful = true)->void;
+		auto currentCmd()const->const std::string&;
+		auto currentLine()const->int;
+		auto isCurrentLineKeyWord()const->bool;
+		auto isCurrentLineFunction()const->bool;
+		auto isEnd()const->bool;
 
-	//class VariablePool
-	//{
-	//
-	//};
+		virtual ~LanguageParser();
+		explicit LanguageParser(const std::string &name = "language_parser");
+		ARIS_REGISTER_TYPE(LanguageParser);
+		ARIS_DECLARE_BIG_FOUR(LanguageParser);
+
+	private:
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
+	};
 
 	class Compiler
 	{
 	public:
-		
 
-		using BuiltInFunction = std::function<std::any(std::vector<std::any>&)>;
-		using BinaryOperatorFunction = std::function<std::any(std::any&, std::any&)>;
-		using UnaryOperatorFunction = std::function<std::any(std::any&)>;
 
-		auto calculateExpression(std::string_view expression) const->std::pair<std::string, std::any>;
-		auto addType(std::string_view type_name);
-		auto addUnaryLeftOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
-		auto addUnaryRightOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
-		auto addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void;
-		
-		auto addOperator(std::string_view opr, int ul_priority, int ur_priority, int b_priority)->void;
-		auto addVariable(std::string_view var, std::string_view type, const std::any &value)->void;
-		auto addFunction(std::string_view fun, const std::vector<std::string> &param_type, std::string_view ret_type, BuiltInFunction f)->void;
-		auto clearVariables()->void;
 
-		virtual ~Compiler();
-		explicit Compiler(const std::string &name = "");
-		Compiler(const Compiler &);
-		Compiler(Compiler &&);
-		Compiler& operator=(const Compiler &);
-		Compiler& operator=(Compiler &&);
+
+
 	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
+		Calculator c_;
 	};
 }
 

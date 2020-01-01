@@ -1695,7 +1695,7 @@ void test_servo_press()
 	model->environment().setGravity(gravity);
 
 	// 添加变量 //
-	model->calculator().addVariable("PI", aris::core::Matrix(aris::PI));
+	model->calculator().addVariable("PI", "Number", aris::core::Matrix(aris::PI));
 
 	// add part //
 	auto &p1 = model->partPool().add<Part>("L1");

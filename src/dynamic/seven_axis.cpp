@@ -26,7 +26,7 @@ namespace aris::dynamic
 		model->environment().setGravity(gravity);
 
 		// 添加变量 //
-		model->calculator().addVariable("PI", aris::core::Matrix(PI));
+		model->calculator().addVariable("PI", "Matrix", aris::core::Matrix(PI));
 
 		// add part //
 		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };

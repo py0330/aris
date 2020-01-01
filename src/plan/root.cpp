@@ -75,7 +75,7 @@ namespace aris::plan
 	{
 		auto &value = cmdParams().at(param_name);
 		auto mat = model()->calculator().calculateExpression(std::string(value));
-		return mat;
+		return std::any_cast<double>(&mat.second) ? aris::core::Matrix(std::any_cast<double>(mat.second)): std::any_cast<aris::core::Matrix&>(mat.second);
 	}
 	auto Plan::matrixParam(std::string_view param_name, int m, int n)->aris::core::Matrix
 	{
@@ -1065,7 +1065,7 @@ namespace aris::plan
 				mvj_param.joint_acc.clear();
 				mvj_param.joint_acc.resize(model()->motionPool().size(), 0.0);
 
-				auto acc_mat = model()->calculator().calculateExpression(std::string(cmd_param.second));
+				auto acc_mat = matrixParam(cmd_param.first);
 				if (acc_mat.size() == 1)std::fill(mvj_param.joint_acc.begin(), mvj_param.joint_acc.end(), acc_mat.toDouble());
 				else if (acc_mat.size() == model()->motionPool().size()) std::copy(acc_mat.begin(), acc_mat.end(), mvj_param.joint_acc.begin());
 				else THROW_FILE_LINE("");
@@ -1082,7 +1082,7 @@ namespace aris::plan
 				mvj_param.joint_vel.clear();
 				mvj_param.joint_vel.resize(model()->motionPool().size(), 0.0);
 
-				auto vel_mat = model()->calculator().calculateExpression(std::string(cmd_param.second));
+				auto vel_mat = matrixParam(cmd_param.first);
 				if (vel_mat.size() == 1)std::fill(mvj_param.joint_vel.begin(), mvj_param.joint_vel.end(), vel_mat.toDouble());
 				else if (vel_mat.size() == model()->motionPool().size()) std::copy(vel_mat.begin(), vel_mat.end(), mvj_param.joint_vel.begin());
 				else THROW_FILE_LINE("");
@@ -1351,28 +1351,28 @@ namespace aris::plan
 				imp_->eul_type = cmdParams().at("eul_type");
 				if (!check_eul_validity(imp_->eul_type))THROW_FILE_LINE("");
 
-				auto mat = model()->calculator().calculateExpression(std::string(cmdParams().at("max_pe")));
+				auto mat = matrixParam("max_pe");
 				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), imp_->max_pe_);
 
-				mat = model()->calculator().calculateExpression(std::string(cmdParams().at("min_pe")));
+				mat = matrixParam("min_pe");
 				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), imp_->min_pe_);
 
 				std::array<double, 24> pvade;
-				mat = model()->calculator().calculateExpression(std::string(cmdParams().at("init_pe")));
+				mat = matrixParam("init_pe");
 				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 0);
 
-				mat = model()->calculator().calculateExpression(std::string(cmdParams().at("init_ve")));
+				mat = matrixParam("init_ve");
 				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 6);
 
-				mat = model()->calculator().calculateExpression(std::string(cmdParams().at("init_ae")));
+				mat = matrixParam("init_ae");
 				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 12);
 
-				mat = model()->calculator().calculateExpression(std::string(cmdParams().at("init_de")));
+				mat = matrixParam("init_de");
 				if (mat.size() != 6)THROW_FILE_LINE("");
 				std::copy(mat.begin(), mat.end(), pvade.begin() + 18);
 
@@ -1847,8 +1847,8 @@ namespace aris::plan
 	{
 		MoveSeriesParam param;
 		
-		auto x_mat = model()->calculator().calculateExpression(std::string(cmdParams().at("x")));
-		auto y_mat = model()->calculator().calculateExpression(std::string(cmdParams().at("y")));
+		auto x_mat = matrixParam("x");
+		auto y_mat = matrixParam("y");
 		if (x_mat.size() != y_mat.size())THROW_FILE_LINE("x and y size not correct");
 
 		param.t.resize(x_mat.size() + 6);

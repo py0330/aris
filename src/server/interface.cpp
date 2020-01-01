@@ -182,7 +182,8 @@ namespace aris::server
 	struct ProgramWebInterface::Imp
 	{
 		aris::core::CommandParser command_parser_;
-		aris::plan::LanguageParser language_parser_;
+		aris::core::LanguageParser language_parser_;
+		aris::core::Calculator calculator_;
 		std::thread auto_thread_;
 		std::atomic<int> current_line_;
 		bool is_auto_mode_{ false };
@@ -223,6 +224,7 @@ namespace aris::server
 			"	<Param name=\"forward\"/>"
 			"</Command>");
 		imp_->command_parser_.commandPool().add<aris::core::Command>(program);
+		imp_->command_parser_.init();
 
 		sock_ = &add<aris::core::Socket>("socket", "", port, type);
 
@@ -267,7 +269,7 @@ namespace aris::server
 
 			std::string_view cmd;
 			std::map<std::string_view, std::string_view> params;
-			try { std::tie(cmd, params) = imp_->command_parser_.parse(msg_data); }
+			try { std::tie(cmd, params) = imp_->command_parser_.parse(msg_data);}
 			catch (std::exception &) {};
 
 			if (cmd == "program")
@@ -309,13 +311,34 @@ namespace aris::server
 
 							try
 							{
+								imp_->calculator_ = aris::server::ControlServer::instance().model().calculator();
+
+								auto &c = imp_->calculator_;
+								
+								c.addTypename("Load");
+								c.addFunction("Load", std::vector<std::string>{"Matrix"}, "Load", [](std::vector<std::any> params)->std::any{return params[0];});
+
 								imp_->language_parser_.setProgram(cmd_str);
 								imp_->language_parser_.parseLanguage();
 
 								for (auto &str : imp_->language_parser_.varPool())
 								{
-									aris::server::ControlServer::instance().executeCmd(str);
+									std::stringstream ss(str);
+									std::string var;
+									ss >> var;
+									std::string type;
+									ss >> type;
+									std::string var_name;
+									ss >> var_name;
+									std::string equal;
+									ss >> equal;
+
+
+									std::string value;
+									std::getline(ss, value);
+									c.addVariable(var_name, type, c.calculateExpression(value).second);
 								}
+
 								send_code_and_msg(0, std::string());
 								return 0;
 							}
@@ -391,6 +414,9 @@ namespace aris::server
 								auto&cs = aris::server::ControlServer::instance();
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
 
+								int err_code_ = 0;
+								std::string err_msg_;
+
 								for (; !imp_->language_parser_.isEnd();)
 								{
 									if (imp_->is_stop_.load() == true)
@@ -413,27 +439,22 @@ namespace aris::server
 
 										if (cmd_name == "if" || cmd_name == "while")
 										{
-											std::promise<aris::core::Matrix> promise_value;
-											std::future<aris::core::Matrix> future_value = promise_value.get_future();
+											auto ret = this->imp_->calculator_.calculateExpression(cmd_value);
 
-											// 这里把evaluate这个指令写好 //
-											aris::server::ControlServer::instance().executeCmd("evaluate --value={" + cmd_value + "}", [&](aris::plan::Plan& plan)->void
+											if (auto ret_double = std::any_cast<double>(&ret.second))
 											{
-												if (plan.retCode() == 0)
-												{
-													auto ret = std::any_cast<std::vector<std::pair<std::string, std::any>>&>(plan.ret());
-													promise_value.set_value(std::any_cast<aris::core::Matrix&>(ret[0].second));
-												}
-												else
-												{
-													aris::core::Matrix m(1.0);
-													promise_value.set_value(m);
-												}
-											});
-											// 计算完毕 //
-
-											auto value = future_value.get();
-											imp_->language_parser_.forward(value.toDouble() != 0.0);
+												imp_->language_parser_.forward(*ret_double != 0.0);
+											}
+											else if(auto ret_mat = std::any_cast<aris::core::Matrix>(&ret.second))
+											{
+												imp_->language_parser_.forward(ret_mat->toDouble() != 0.0);
+											}
+											else
+											{
+												err_code_ = -10;
+												err_msg_ = "invalid expresion";
+												break;
+											}
 										}
 										else
 										{
@@ -450,17 +471,17 @@ namespace aris::server
 										auto cmd = imp_->language_parser_.currentCmd();
 										imp_->language_parser_.forward();
 
-										try
+										auto current_line = imp_->language_parser_.currentLine();
+										auto ret = cs.executeCmd(cmd, [&, current_line](aris::plan::Plan &plan)->void
 										{
-											auto current_line = imp_->language_parser_.currentLine();
-											cs.executeCmd(cmd, [&, current_line](aris::plan::Plan &plan)->void
-											{
-												imp_->current_line_.store(current_line);
-											});
-										}
-										catch (std::exception &e)
+											imp_->current_line_.store(current_line);
+										});
+
+										if (ret->retCode())
 										{
-											std::cout << e.what() << std::endl;
+											err_code_ = ret->retCode();
+											err_msg_ = ret->retMsg();
+											break;
 										}
 									}
 								}
@@ -469,7 +490,7 @@ namespace aris::server
 
 								std::cout << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 
-								while (!imp_->auto_thread_.joinable());
+								while (!imp_->auto_thread_.joinable());// for windows bug:if thread init too fast, it may fail
 								imp_->auto_thread_.detach();
 							});
 							send_code_and_msg(0, "");

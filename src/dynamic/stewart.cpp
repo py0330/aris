@@ -25,7 +25,7 @@ namespace aris::dynamic
 		model->environment().setGravity(gravity);
 
 		// 添加变量 //
-		model->calculator().addVariable("PI", aris::core::Matrix(PI));
+		model->calculator().addVariable("PI", "Matrix", aris::core::Matrix(PI));
 
 		// 尺寸变量 //
 		//const double down_pos[6][3]
