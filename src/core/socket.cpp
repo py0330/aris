@@ -423,9 +423,7 @@ namespace aris::core
 			}
 			case WEB:
 			{
-				std::int64_t real_length{ 0 };
 				std::string payload_data;
-
 				for (bool fin{ false }; !fin;)
 				{
 					// 接受头 //

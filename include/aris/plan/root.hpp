@@ -110,6 +110,7 @@ namespace aris::plan
 		auto controller()->aris::control::Controller*;
 		auto ecMaster()->aris::control::EthercatMaster*;
 		auto ecController()->aris::control::EthercatController*;
+		auto sharedPtrForThis()->std::shared_ptr<Plan>;
 		auto option()->std::uint64_t&;
 		auto motorOptions()->std::vector<std::uint64_t>&;
 		auto cmdString()->std::string_view;

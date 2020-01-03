@@ -23,6 +23,8 @@ namespace aris::plan
 		aris::control::EthercatController *ec_controller_;
 		aris::server::ControlServer *cs_;
 
+		std::weak_ptr<Plan> shared_for_this_;
+
 		std::uint64_t option_;
 		std::vector<std::uint64_t> mot_options_;
 
@@ -57,6 +59,7 @@ namespace aris::plan
 	auto Plan::controller()->aris::control::Controller* { return imp_->controller_; }
 	auto Plan::ecMaster()->aris::control::EthercatMaster* { return imp_->ec_master_; }
 	auto Plan::ecController()->aris::control::EthercatController* { return imp_->ec_controller_; }
+	auto Plan::sharedPtrForThis()->std::shared_ptr<Plan> { return imp_->shared_for_this_.lock(); }
 	auto Plan::option()->std::uint64_t& { return imp_->option_; }
 	auto Plan::motorOptions()->std::vector<std::uint64_t>& { return imp_->mot_options_; }
 	auto Plan::cmdString()->std::string_view { return imp_->cmd_msg_; }

@@ -23,6 +23,8 @@ namespace aris::plan
 		aris::control::EthercatController *ec_controller_;
 		aris::server::ControlServer *cs_;
 
+		std::weak_ptr<Plan> shared_for_this_;
+
 		std::uint64_t option_;
 		std::vector<std::uint64_t> mot_options_;
 
@@ -626,6 +628,7 @@ namespace aris::server
 			plan->imp_->ec_master_ = dynamic_cast<aris::control::EthercatMaster*>(plan->imp_->master_);
 			plan->imp_->ec_controller_ = dynamic_cast<aris::control::EthercatController*>(plan->imp_->master_);
 			plan->imp_->cs_ = this;
+			plan->imp_->shared_for_this_ = plan;
 			plan->imp_->option_ = 0;
 			plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
 			plan->imp_->cmd_msg_ = cmd_str;
