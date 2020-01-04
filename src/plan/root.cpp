@@ -88,8 +88,9 @@ namespace aris::plan
 	}
 	auto Plan::param()->std::any& { return imp_->param; }
 	auto Plan::ret()->std::any& { return imp_->ret; }
-	auto Plan::retCode()->std::int32_t& { return imp_->ret_code; }
-	auto Plan::retMsg()->char * { return imp_->ret_msg; }
+	auto Plan::setErrMsgRT(const char *msg)->void { std::copy_n(msg, std::max(std::strlen(msg), static_cast<std::size_t>(1024)), const_cast<char*>(controlServer()->errorMsg())); }
+	auto Plan::retCode()->std::int32_t { return imp_->ret_code; }
+	auto Plan::retMsg()->const char * { return imp_->ret_msg; }
 	Plan::~Plan() = default;
 	Plan::Plan(const std::string &name) :Object(name), imp_(new Imp) { add<aris::core::Command>(name); }
 	ARIS_DEFINE_BIG_FOUR_CPP(Plan);
@@ -464,7 +465,7 @@ namespace aris::plan
 	}
 
 	struct Enable::Imp :public SetActiveMotor { std::int32_t limit_time; };
-	auto Enable::prepairNrt()->void
+	auto Enable::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
@@ -517,7 +518,7 @@ namespace aris::plan
 	ARIS_DEFINE_BIG_FOUR_CPP(Enable);
 
 	struct Disable::Imp :public SetActiveMotor { std::int32_t limit_time; };
-	auto Disable::prepairNrt()->void
+	auto Disable::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
@@ -566,7 +567,7 @@ namespace aris::plan
 	ARIS_DEFINE_BIG_FOUR_CPP(Disable);
 
 	struct Home::Imp :public SetActiveMotor { std::int32_t limit_time; double offset;};
-	auto Home::prepairNrt()->void
+	auto Home::prepareNrt()->void
 	{
 		set_active_motor(cmdParams(), *this, *imp_);
 		imp_->limit_time = std::stoi(std::string(cmdParams().at("limit_time")));
@@ -660,7 +661,7 @@ namespace aris::plan
 	ARIS_DEFINE_BIG_FOUR_CPP(Home);
 
 	struct Mode::Imp :public SetActiveMotor { std::int32_t limit_time, mode; };
-	auto Mode::prepairNrt()->void
+	auto Mode::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
@@ -730,7 +731,7 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Mode);
 
-	auto Clear::prepairNrt()->void
+	auto Clear::prepareNrt()->void
 	{
 		aris::server::ControlServer::instance().waitForAllCollection();
 		aris::server::ControlServer::instance().clearError();
@@ -744,7 +745,7 @@ namespace aris::plan
 	}
 
 	struct Reset::Imp :public SetActiveMotor, SetInputMovement { std::vector<Size> total_count_vec; };
-	auto Reset::prepairNrt()->void
+	auto Reset::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
@@ -814,7 +815,7 @@ namespace aris::plan
 		std::future<void> fut;
 		int kin_ret;
 	};
-	auto Recover::prepairNrt()->void
+	auto Recover::prepareNrt()->void
 	{
 		auto p = std::make_shared<RecoverParam>();
 
@@ -880,7 +881,7 @@ namespace aris::plan
 	ARIS_DEFINE_BIG_FOUR_CPP(Recover);
 
 	struct Sleep::Imp { int count; };
-	auto Sleep::prepairNrt()->void
+	auto Sleep::prepareNrt()->void
 	{
 		imp_->count = std::stoi(std::string(cmdParams().at("count")));
 		for (auto &option : motorOptions()) option |= NOT_CHECK_ENABLE;
@@ -899,7 +900,7 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Sleep);
 
-	auto Show::prepairNrt()->void{	for (auto &option : motorOptions()) option |= NOT_CHECK_ENABLE; }
+	auto Show::prepareNrt()->void{	for (auto &option : motorOptions()) option |= NOT_CHECK_ENABLE; }
 	auto Show::executeRT()->int
 	{
 		controller()->mout() << "pos: ";
@@ -914,7 +915,7 @@ namespace aris::plan
 	ARIS_DEFINE_BIG_FOUR_CPP(Show);
 
 	struct MoveAbsJ::Imp :public SetActiveMotor, SetInputMovement {};
-	auto MoveAbsJ::prepairNrt()->void
+	auto MoveAbsJ::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
@@ -1045,7 +1046,7 @@ namespace aris::plan
 		std::vector<Size> total_count;
 	};
 	struct MoveJ::Imp {};
-	auto MoveJ::prepairNrt()->void
+	auto MoveJ::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 
@@ -1195,7 +1196,7 @@ namespace aris::plan
 		double angular_acc, angular_vel, angular_dec;
 	};
 	struct MoveL::Imp {};
-	auto MoveL::prepairNrt()->void
+	auto MoveL::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 
@@ -1338,7 +1339,7 @@ namespace aris::plan
 	};
 	std::atomic_bool AutoMove::Imp::is_running_ = false;
 	std::atomic<std::array<double, 24>> AutoMove::Imp::pvade_ = std::array<double, 24>{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	auto AutoMove::prepairNrt()->void
+	auto AutoMove::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 
@@ -1529,7 +1530,7 @@ namespace aris::plan
 	};
 	std::atomic_bool ManualMove::Imp::is_running_ = false;
 	std::atomic<std::array<int, 6>> ManualMove::Imp::is_increase_ = std::array<int, 6>{0, 0, 0, 0, 0, 0};
-	auto ManualMove::prepairNrt()->void
+	auto ManualMove::prepareNrt()->void
 	{
 		set_check_option(cmdParams(), *this);
 
@@ -1696,7 +1697,7 @@ namespace aris::plan
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(ManualMove);
 
-	auto GetXml::prepairNrt()->void
+	auto GetXml::prepareNrt()->void
 	{
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret_value.push_back(std::make_pair(std::string("configure_xml"), controlServer()->xmlString()));
@@ -1711,7 +1712,7 @@ namespace aris::plan
 			"</Command>");
 	}
 
-	auto SetXml::prepairNrt()->void
+	auto SetXml::prepareNrt()->void
 	{		
 		// remove all symbols "{" "}"
 		if (this->controlServer()->running())THROW_FILE_LINE("server is running, can't set xml");
@@ -1743,7 +1744,7 @@ namespace aris::plan
 			"</Command>");
 	}
 
-	auto Start::prepairNrt()->void
+	auto Start::prepareNrt()->void
 	{
 		controlServer()->start();
 		option() |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
@@ -1759,7 +1760,7 @@ namespace aris::plan
 			"</Command>");
 	}
 
-	auto Stop::prepairNrt()->void
+	auto Stop::prepareNrt()->void
 	{
 		controlServer()->stop();
 		option() |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
@@ -1779,7 +1780,7 @@ namespace aris::plan
 
 
 
-	auto RemoveFile::prepairNrt()->void
+	auto RemoveFile::prepareNrt()->void
 	{
 		std::uintmax_t  memo = std::stoull(std::string(cmdParams().at("memo")));
 		auto file_path = cmdParams().at("filePath");
@@ -1826,20 +1827,20 @@ namespace aris::plan
 
 	struct UniversalPlan::Imp
 	{
-		PrepairFunc prepair_nrt;
+		prepareFunc prepare_nrt;
 		ExecuteFunc execute_rt;
 		CollectFunc collect_nrt;
 	};
-	auto UniversalPlan::prepairNrt()->void { if (imp_->prepair_nrt)imp_->prepair_nrt(this); }
+	auto UniversalPlan::prepareNrt()->void { if (imp_->prepare_nrt)imp_->prepare_nrt(this); }
 	auto UniversalPlan::executeRT()->int { return imp_->execute_rt ? imp_->execute_rt(this) : 0; }
 	auto UniversalPlan::collectNrt()->void { if (imp_->collect_nrt)imp_->collect_nrt(this); }
-	auto UniversalPlan::setPrepairFunc(PrepairFunc func)->void { imp_->prepair_nrt = func; }
+	auto UniversalPlan::setprepareFunc(prepareFunc func)->void { imp_->prepare_nrt = func; }
 	auto UniversalPlan::setExecuteFunc(ExecuteFunc func)->void { imp_->execute_rt = func; }
 	auto UniversalPlan::setCollectFunc(CollectFunc func)->void { imp_->collect_nrt = func; }
 	UniversalPlan::~UniversalPlan() = default;
-	UniversalPlan::UniversalPlan(const std::string &name, PrepairFunc prepair_func, ExecuteFunc execute_func, CollectFunc collect_func, const std::string & cmd_xml_str) :Plan(name), imp_(new Imp)
+	UniversalPlan::UniversalPlan(const std::string &name, prepareFunc prepare_func, ExecuteFunc execute_func, CollectFunc collect_func, const std::string & cmd_xml_str) :Plan(name), imp_(new Imp)
 	{
-		imp_->prepair_nrt = prepair_func;
+		imp_->prepare_nrt = prepare_func;
 		imp_->execute_rt = execute_func;
 		imp_->collect_nrt = collect_func;
 		command().loadXmlStr(cmd_xml_str);
@@ -1850,7 +1851,7 @@ namespace aris::plan
 	{
 		std::vector<double> t, x, xp1, xp2, xp3, y, yp1, yp2, yp3;
 	};
-	auto MoveSeries::prepairNrt()->void
+	auto MoveSeries::prepareNrt()->void
 	{
 		MoveSeriesParam param;
 		

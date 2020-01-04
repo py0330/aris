@@ -18,11 +18,11 @@ void test_server_option()
 
 		std::int64_t option = 0;
 
-		std::atomic_bool is_plan_prepaired{ false }, is_plan_executed{ false }, is_plan_collected{ false };
+		std::atomic_bool is_plan_prepareed{ false }, is_plan_executed{ false }, is_plan_collected{ false };
 		cs.planRoot().planPool().add<aris::plan::UniversalPlan>("test", [&](aris::plan::Plan* plan)->void
 		{
 			plan->option() = option;
-			is_plan_prepaired = true;
+			is_plan_prepareed = true;
 		}, [&](const aris::plan::Plan* plan)->int
 		{
 			is_plan_executed = true;
@@ -31,22 +31,22 @@ void test_server_option()
 		{
 			is_plan_collected = true;
 		}, "<Command name=\"test_NOT_RUN_FUNCTION\"/>");
-
+		cs.open();
 		cs.start();
 
 		std::string cmd("test_NOT_RUN_FUNCTION");
 
-		is_plan_collected = is_plan_executed = is_plan_prepaired = false;
+		is_plan_collected = is_plan_executed = is_plan_prepareed = false;
 		option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
 		cs.executeCmd(cmd);
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		if ((is_plan_prepaired == false) || (is_plan_executed == true) || (is_plan_collected == false))	std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
+		if ((is_plan_prepareed == false) || (is_plan_executed == true) || (is_plan_collected == false))	std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
 
-		is_plan_collected = is_plan_executed = is_plan_prepaired = false;
+		is_plan_collected = is_plan_executed = is_plan_prepareed = false;
 		option = aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION;
 		cs.executeCmd(cmd);
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		if ((is_plan_prepaired == false) || (is_plan_executed == false) || (is_plan_collected == true))	std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
+		if ((is_plan_prepareed == false) || (is_plan_executed == false) || (is_plan_collected == true))	std::cout << __FILE__ << " " << __LINE__ << ":test NOT_RUN_..._FUNCTION option failed" << std::endl;
 
 		cs.stop();
 	}
@@ -70,7 +70,7 @@ void test_server_option()
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<Command name=\"test_EXECUTE_WHEN_ALL_PLAN_EXECUTED\"/>");
-
+		cs.open();
 		cs.start();
 
 		std::string cmd("test_EXECUTE_WHEN_ALL_PLAN_EXECUTED");
@@ -105,7 +105,7 @@ void test_server_option()
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(200));
 		}, "<Command name=\"test_EXECUTE_WHEN_ALL_PLAN_COLLECTED\"/>");
-
+		cs.open();
 		cs.start();
 
 		std::string cmd("test_EXECUTE_WHEN_ALL_PLAN_COLLECTED");
@@ -138,7 +138,7 @@ void test_server_option()
 		}, [&](aris::plan::Plan* plan)->void
 		{
 		}, "<Command name=\"test_COLLECT_WHEN_ALL_PLAN_EXECUTED\"/>");
-
+		cs.open();
 		cs.start();
 
 		std::string cmd("test_COLLECT_WHEN_ALL_PLAN_EXECUTED");
@@ -175,7 +175,7 @@ void test_server_option()
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(std::any_cast<int>(plan->param())));
 		}, "<Command name=\"test_COLLECT_WHEN_ALL_PLAN_COLLECTED\"/>");
-
+		cs.open();
 		cs.start();
 
 		std::string cmd("test_COLLECT_WHEN_ALL_PLAN_COLLECTED");
@@ -213,7 +213,7 @@ void test_server_option()
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<Command name=\"test_WAIT_FOR_EXECUTION\"/>");
-
+		cs.open();
 		cs.start();
 
 		std::string cmd("test_WAIT_FOR_EXECUTION");
@@ -247,7 +247,7 @@ void test_server_option()
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}, "<Command name=\"test_WAIT_FOR_COLLECTION\"/>");
-
+		cs.open();
 		cs.start();
 
 		std::string cmd("test_WAIT_FOR_COLLECTION");
@@ -296,7 +296,7 @@ void test_server_option()
 			//std::cout << "c" << ++i << std::endl;
 
 		}, "<Command name=\"test_WAIT_IF_CMD_POOL_IS_FULL_2\"/>");
-
+		cs.open();
 		cs.start();
 
 		std::string cmd("test_WAIT_IF_CMD_POOL_IS_FULL_1");
@@ -304,22 +304,14 @@ void test_server_option()
 		cs.executeCmd(cmd);
 		cmd = "test_WAIT_IF_CMD_POOL_IS_FULL_2";
 		for (auto i = 0; i < 999; ++i)cs.executeCmd(cmd);
-		try 
-		{
-			cs.executeCmd(cmd);
+		auto p = cs.executeCmd(cmd);
+		if (p->retCode() == 0)
 			std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_IF_CMD_POOL_IS_FULL option failed" << std::endl;
-		}
-		catch (std::exception &) {}
 
-		try 
-		{
-			option = aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL;
-			cs.executeCmd(cmd);
-		}
-		catch (std::exception &) 
-		{
-			std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_IF_CMD_POOL_IS_FULL option failed" << std::endl;
-		}
+
+		option = aris::plan::Plan::WAIT_IF_CMD_POOL_IS_FULL;
+		p = cs.executeCmd(cmd);
+		if (p->retCode() != 0)std::cout << __FILE__ << " " << __LINE__ << ":test WAIT_IF_CMD_POOL_IS_FULL option failed" << std::endl;
 
 		cs.waitForAllCollection();
 

@@ -17,6 +17,9 @@
 
 namespace aris::server { class ControlServer; }
 
+#define ARIS_COUT_PLAN(p) ARIS_COUT << "    " << p->cmdId() << "---"
+#define ARIS_MOUT_PLAN(p) p->controller()->mout() << "RT  " << p->cmdId() << "---"
+
 /// \brief 轨迹规划命名空间
 /// \ingroup aris
 /// 
@@ -24,6 +27,20 @@ namespace aris::server { class ControlServer; }
 ///
 namespace aris::plan
 {
+	// plan 依次执行3个函数：
+	// ## prepare
+	// ## executeRT
+	// ## collect
+	//
+	// 所有的plan都必须执行 prepare，但在prepare中可以通过选项来决定是否执行 executeRT 或 collect
+	//
+	// 其中 prepare 可以抛异常，在此情况下后面两个函数一定不执行；executeRT 和 collect 一定不能抛异常
+	//
+	// 若要报错，请在不同阶段按如下方式来做：
+	// prepare   :直接 throw std::exception 的继承类，在此之前可以决定是否要 collect
+	// executeRT :返回小于0的数，并且可以通过 setErrMsgRT 来设置当前错误信息
+	// collect   :不要报错，这个相当于析构函数，只要 prepare 不抛异常而且未设置NOT_RUN_COLLECT_FUNCTION，就一定会执行
+	// 
 	class Plan :public aris::core::Object
 	{
 	public:
@@ -71,11 +88,13 @@ namespace aris::plan
 		enum RetStatus
 		{
 			SUCCESS = 0,
-			PREPARE_EXCEPTION = -1,
-			COLLECT_EXCEPTION = -2,
-			PARSE_EXCEPTION = -3,
-			PLAN_CANCELLED = -4,
-			EXECUTE_EXCEPTION = -5,
+			PARSE_EXCEPTION = -1,
+			PREPARE_EXCEPTION = -2,
+			SERVER_IN_ERROR = -10,
+			SERVER_NOT_STARTED = -11,
+			COMMAND_POOL_IS_FULL = -12,
+			PREPARE_CANCELLED = -40,
+			EXECUTE_CANCELLED = -41,
 			PROGRAM_EXCEPTION = -50,
 			SLAVE_AT_INIT = -101,
 			SLAVE_AT_SAFEOP = -102,
@@ -97,7 +116,7 @@ namespace aris::plan
 			INVERSE_KINEMATIC_POSITION_FAILED = -1002,
 		};
 
-		auto virtual prepairNrt()->void {}
+		auto virtual prepareNrt()->void {}
 		auto virtual executeRT()->int { return 0; }
 		auto virtual collectNrt()->void {}
 		auto command()->aris::core::Command &;
@@ -133,8 +152,9 @@ namespace aris::plan
 
 		auto param()->std::any&;
 		auto ret()->std::any&;
-		auto retCode()->std::int32_t&;
-		auto retMsg()->char *;
+		auto setErrMsgRT(const char *msg)->void;
+		auto retCode()->std::int32_t;
+		auto retMsg()->const char *;
 
 		virtual ~Plan();
 		explicit Plan(const std::string &name = "plan");
@@ -179,7 +199,7 @@ namespace aris::plan
 	class Enable : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Enable();
@@ -206,7 +226,7 @@ namespace aris::plan
 	class Disable : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Disable();
@@ -233,7 +253,7 @@ namespace aris::plan
 	class Home : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Home();
@@ -263,7 +283,7 @@ namespace aris::plan
 	class Mode : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Mode();
@@ -281,7 +301,7 @@ namespace aris::plan
 	class Clear : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 
 		virtual ~Clear() = default;
 		explicit Clear(const std::string &name = "clear_plan");
@@ -321,7 +341,7 @@ namespace aris::plan
 	class Reset : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Reset();
@@ -343,7 +363,7 @@ namespace aris::plan
 	class Recover : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
 
@@ -361,7 +381,7 @@ namespace aris::plan
 	class Sleep : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~Sleep();
@@ -379,7 +399,7 @@ namespace aris::plan
 	class Show :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		explicit Show(const std::string &name = "show");
@@ -415,7 +435,7 @@ namespace aris::plan
 	class MoveAbsJ :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~MoveAbsJ();
@@ -459,7 +479,7 @@ namespace aris::plan
 	class MoveJ : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~MoveJ();
@@ -499,7 +519,7 @@ namespace aris::plan
 	class MoveL : public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~MoveL();
@@ -543,7 +563,7 @@ namespace aris::plan
 	class AutoMove :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
 
@@ -590,7 +610,7 @@ namespace aris::plan
 	class ManualMove :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
 
@@ -607,7 +627,7 @@ namespace aris::plan
 	class GetXml :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 
 		virtual ~GetXml();
 		explicit GetXml(const std::string &name = "get_xml");
@@ -617,7 +637,7 @@ namespace aris::plan
 	class SetXml :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 
 		virtual ~SetXml();
 		explicit SetXml(const std::string &name = "set_xml");
@@ -627,7 +647,7 @@ namespace aris::plan
 	class Start :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 
 		virtual ~Start();
 		explicit Start(const std::string &name = "start");
@@ -637,7 +657,7 @@ namespace aris::plan
 	class Stop :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 
 		virtual ~Stop();
 		explicit Stop(const std::string &name = "stop");
@@ -648,7 +668,7 @@ namespace aris::plan
 	class RemoveFile : public aris::plan::Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		
 		virtual ~RemoveFile();
 		explicit RemoveFile(const std::string &name = "rm_file");
@@ -659,19 +679,19 @@ namespace aris::plan
 	class UniversalPlan :public Plan
 	{
 	public:
-		using PrepairFunc = std::function<void(Plan *plan)>;
+		using prepareFunc = std::function<void(Plan *plan)>;
 		using ExecuteFunc = std::function<int(Plan *plan)>;
 		using CollectFunc = std::function<void(Plan *plan)>;
 
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
-		auto virtual setPrepairFunc(PrepairFunc func)->void;
+		auto virtual setprepareFunc(prepareFunc func)->void;
 		auto virtual setExecuteFunc(ExecuteFunc func)->void;
 		auto virtual setCollectFunc(CollectFunc func)->void;
 
 		virtual ~UniversalPlan();
-		explicit UniversalPlan(const std::string &name = "universal_plan", PrepairFunc prepair_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
+		explicit UniversalPlan(const std::string &name = "universal_plan", prepareFunc prepare_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
 		ARIS_REGISTER_TYPE(UniversalPlan);
 		ARIS_DECLARE_BIG_FOUR(UniversalPlan);
 
@@ -683,7 +703,7 @@ namespace aris::plan
 	class MoveSeries :public Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
+		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		virtual ~MoveSeries();

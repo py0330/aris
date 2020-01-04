@@ -97,14 +97,8 @@ namespace aris::server
 	class GetInfo :public aris::plan::Plan
 	{
 	public:
-		auto virtual prepairNrt()->void override;
-
-
-		GetInfo() 
-		{
-			this->command().setName("get_i");
-		}
-
+		auto virtual prepareNrt()->void override;
+		GetInfo() {	this->command().setName("get_i");}
 		ARIS_REGISTER_TYPE(GetInfo);
 	};
 }

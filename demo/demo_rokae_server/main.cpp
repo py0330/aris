@@ -5,7 +5,7 @@
 class MyPlan :public aris::plan::Plan
 {
 public:
-	auto virtual prepairNrt()->void override
+	auto virtual prepareNrt()->void override
 	{
 	}
 	auto virtual executeRT()->int override

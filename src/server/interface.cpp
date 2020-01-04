@@ -599,7 +599,7 @@ namespace aris::server
 	ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other) = default;
 	ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other) = default;
 
-	auto GetInfo::prepairNrt()->void
+	auto GetInfo::prepareNrt()->void
 	{
 		auto &cs = *controlServer();
 		
@@ -615,7 +615,7 @@ namespace aris::server
 		ret.push_back(std::make_pair(std::string("line"), std::make_any<int>(line)));
 
 		auto ret_str = parse_ret_value(ret);
-		std::copy(ret_str.begin(), ret_str.end(), this->retMsg());
+		std::copy(ret_str.begin(), ret_str.end(), const_cast<char*>(this->retMsg()));
 
 
 		this->option() = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION;

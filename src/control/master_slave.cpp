@@ -165,7 +165,7 @@ namespace aris::control
 		imp_->is_mout_thread_running_ = true;
 		imp_->mout_thread_ = std::thread([this]()
 		{
-			// prepair lout //
+			// prepare lout //
 			auto file_name = aris::core::logDirPath() / ("rt_log--" + aris::core::logFileTimeFormat(std::chrono::system_clock::now()) + "--");
 			std::fstream file;
 			file.open(file_name.string() + "0.txt", std::ios::out | std::ios::trunc);
