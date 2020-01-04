@@ -497,7 +497,6 @@ namespace aris::core
 
 		auto CaculateValueInParentheses(Iterator &begin_token, Iterator max_end_token) const->Value;
 		auto CaculateValueInBraces(Iterator &begin_token, Iterator max_end_token) const->Value;
-		auto CaculateValueInTypename(Iterator &begin_token, Iterator max_end_token) const->Value;
 		auto CaculateValueInFunction(Iterator &begin_token, Iterator max_end_token) const->Value;
 		auto CaculateValueInOperator(Iterator &begin_token, Iterator max_end_token) const->Value;
 
@@ -682,31 +681,6 @@ namespace aris::core
 		}
 		auto m = combineMatrices(mtx);
 		return Value{ std::string("Matrix"), m };
-	}
-	auto Calculator::Imp::CaculateValueInTypename(Iterator &i, Iterator max_end_token)const->Value
-	{
-		auto b_par = i + 1;
-		if (i + 1 >= max_end_token) THROW_FILE_LINE("invalid expression");
-		if (b_par->type != Token::PARENTHESIS_L)THROW_FILE_LINE("function must be followed by \"(\"");
-
-		auto e_par = FindNextOutsideToken(b_par + 1, max_end_token, Token::PARENTHESIS_R);
-
-		// get values, but values dimensions must be 1 x n //
-		auto value_mat = GetValues(b_par + 1, e_par);
-		if (value_mat.size() != 1)THROW_FILE_LINE("function \"" + std::string(i->word) + "\" + do not has invalid param type");
-
-		// transfer values to param types and param values //
-		auto params = value_mat.front();
-		std::vector<std::string> p_types(params.size());
-		std::vector<std::any> p_values(params.size());
-		for (int i = 0; i < params.size(); ++i)
-		{
-			p_types[i] = params[i].type_;
-			p_values[i] = params[i].val();
-		}
-
-		// search functions //
-		
 	}
 	auto Calculator::Imp::CaculateValueInFunction(Iterator &i, Iterator max_end_token)const->Value
 	{

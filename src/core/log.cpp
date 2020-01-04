@@ -27,13 +27,7 @@
 
 namespace aris::core
 {
-	static std::filesystem::path log_dir_path_;
-	static std::filesystem::path log_file_path_;
-	static std::ofstream log_fstream_;
-	static std::ostream *log_stream_{ nullptr };
-	static std::recursive_mutex log_file_mutex;
-
-	class LogStreamBuf :public std::streambuf
+	class ThreadSafeStreamBuf :public std::streambuf
 	{
 	public:
 		virtual auto overflow(int_type c)->int_type override
@@ -46,39 +40,85 @@ namespace aris::core
 		}
 		virtual auto sync()->int override
 		{
-			std::unique_lock<std::recursive_mutex> lck(log_file_mutex);
-
-			if (!log_stream_)logStream();
+			std::unique_lock<std::recursive_mutex> lck(*real_mutex_);
 
 			msg_.resize(msg_.capacity() - static_cast<MsgSize>(epptr() - pptr()));
-			*log_stream_ << msg_.toString() <<std::flush;
+			**real_stream_ << msg_.toString() << std::flush;
 
 			msg_.resize(0);
 			setp(msg_.data(), msg_.data() + msg_.capacity());
 
 			return 0;
 		}
+		explicit ThreadSafeStreamBuf(std::ostream** real_stream, std::recursive_mutex *real_mutex): real_stream_(real_stream), real_mutex_(real_mutex) { }
 
 	private:
 		aris::core::Msg msg_;
+		std::ostream** real_stream_;
+		std::recursive_mutex* real_mutex_;
 	};
-	class LogStream :public std::ostream { public: LogStream() :std::ostream(&buf_) {}; LogStreamBuf buf_; };
+	template<int>
+	class ThreadSafeStream :public std::ostream 
+	{ 
+	public: 
+		static auto setStream(std::ostream& stream) ->void
+		{ 
+			std::unique_lock<std::recursive_mutex> lck(real_mutex_);
+			real_stream_ = &stream; 
+		}
+		// 这个构造函数只有在 static 成员没有时，才会设置默认的ostream
+		ThreadSafeStream(std::ostream &default_stream) :std::ostream(&buf_) 
+		{
+			std::unique_lock<std::recursive_mutex> lck(real_mutex_);
+			real_stream_ = real_stream_ ? real_stream_ : &default_stream;
+		}; 
+
+		static std::recursive_mutex real_mutex_;
+	private:
+		ThreadSafeStreamBuf buf_{ &real_stream_, &real_mutex_ };
+		static std::ostream* real_stream_;
+	};
+	template <int a>
+	std::recursive_mutex ThreadSafeStream<a>::real_mutex_;
+	template <int a>
+	std::ostream* ThreadSafeStream<a>::real_stream_;
+
+	auto cout()->std::ostream&
+	{
+		// 这个构造函数只有在 static 成员没有时，才会设置默认的ostream
+		static thread_local ThreadSafeStream<0> local_stream_(std::cout);
+		return local_stream_;
+	}
+	auto setCoutStream(std::ostream& cout_stream) { ThreadSafeStream<0>::setStream(cout_stream); }
+
+	static std::filesystem::path log_dir_path_;
+	static std::filesystem::path log_file_path_;
+	static std::ofstream log_fstream_;
+	static std::ostream *log_stream_{ nullptr };
+	static std::recursive_mutex log_file_mutex;
+
 	auto log()->std::ostream&
 	{
-		static thread_local LogStream log_stream_;
-		log_stream_.flush();
-		return log_stream_;
+		static thread_local ThreadSafeStream<1> local_stream_(log_fstream_);
+		if (!log_stream_)logStream();
+		return local_stream_;
+	}
+	auto logStream(std::ostream *s)->void 
+	{ 
+		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
+		if (s == nullptr && !log_fstream_.is_open())logFile();
+		ThreadSafeStream<1>::setStream(s ? *s : log_fstream_);
 	}
 	auto logDirectory(const std::filesystem::path &log_dir)->void
 	{
-		std::unique_lock<std::recursive_mutex> lck(log_file_mutex);
+		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
 		log_dir_path_ = log_dir.empty() ? std::filesystem::absolute("log") : std::filesystem::absolute(log_dir);
 		std::filesystem::create_directories(log_dir_path_);
 	}
 	auto logFile(const std::filesystem::path &log_file_path)->void
 	{
-		std::unique_lock<std::recursive_mutex> lck(log_file_mutex);
+		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
 
 		log_file_path_ = log_file_path.empty() ? std::filesystem::path(logExeName() + "--" + logFileTimeFormat(std::chrono::system_clock::now()) + "--log.txt") : log_file_path;
 		log_file_path_ = log_file_path_.has_root_path() ? log_file_path_ : logDirPath() / log_file_path_;
@@ -86,13 +126,6 @@ namespace aris::core
 
 		log_fstream_.close();
 		log_fstream_.open(log_file_path_, std::ios::out | std::ios::trunc);
-	}
-	auto logStream(std::ostream *s)->void 
-	{ 
-		std::unique_lock<std::recursive_mutex> lck(log_file_mutex);
-
-		if (s == nullptr && !log_fstream_.is_open())logFile();
-		log_stream_ = s ? s : &log_fstream_;
 	}
 
 	auto logDirPath()->std::filesystem::path 

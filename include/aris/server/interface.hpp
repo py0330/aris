@@ -58,7 +58,6 @@ namespace aris::server
 		aris::core::Socket *sock_;
 	};
 
-
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
 	class WebInterface :public Interface
 	{
@@ -93,6 +92,20 @@ namespace aris::server
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
+	};
+
+	class GetInfo :public aris::plan::Plan
+	{
+	public:
+		auto virtual prepairNrt()->void override;
+
+
+		GetInfo() 
+		{
+			this->command().setName("get_i");
+		}
+
+		ARIS_REGISTER_TYPE(GetInfo);
 	};
 }
 

@@ -55,6 +55,8 @@
 
 #define THROW_FILE_LINE(error) throw std::runtime_error(std::string(__FILE__) + "_" + std::to_string(__LINE__)+ ":" + error)
 
+#define ARIS_COUT aris::core::cout()
+
 namespace aris::core
 {
 	enum
@@ -74,6 +76,8 @@ namespace aris::core
 	auto logDirPath()->std::filesystem::path;
 	auto logExeName()->std::string;
 	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
+
+	auto cout()->std::ostream&;
 }
 
 #endif

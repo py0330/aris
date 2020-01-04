@@ -28,12 +28,12 @@ namespace aris::plan
 		std::uint64_t option_;
 		std::vector<std::uint64_t> mot_options_;
 
-		std::string_view cmd_msg_;
+		std::string cmd_str_;
 		std::string_view cmd_name_;
 		std::map<std::string_view, std::string_view> cmd_params_;
 
 		std::int64_t begin_global_count_;
-		std::uint64_t command_id_;
+		std::uint64_t command_id_{0};
 		aris::control::Master::RtStasticsData rt_stastic_;
 
 		std::any param;
@@ -189,7 +189,7 @@ namespace aris::server
 			{
 				// print info //
 				if (!(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
-					server_->controller().mout() << "cmd finished, spend " << plan.imp_->count_ << " counts\n\n";
+					server_->controller().mout() << "RT  " << plan.cmdId() << "---cmd finished, spend " << plan.imp_->count_ << " counts\n";
 				
 				// finish //
 				plan.imp_->ret_code = aris::plan::Plan::SUCCESS;
@@ -202,14 +202,14 @@ namespace aris::server
 			{
 				// print info //
 				if (plan.imp_->count_ % 1000 == 0 && !(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
-					server_->controller().mout() << "execute cmd in count: " << plan.imp_->count_ << "\n";
+					server_->controller().mout() << "RT  " << plan.cmdId() << "---execute cmd in count: " << plan.imp_->count_ << "\n";
 			}
 		}
 		// 否则检查idle状态
 		else if (err.code = checkMotion(global_mot_options_, err_msg_, 0); err.code < 0)
 		{
 			err_code_and_fixed_.store(err_code_and_fixed);
-			server_->controller().mout() << "failed when idle " << err.code << ":\n" << err_msg_ << "\n";
+			server_->controller().mout() << "RT  ---failed when idle " << err.code << ":\nRT  ---" << err_msg_ << "\n";
 		}
 
 		// 给与外部想要的数据 //
@@ -585,8 +585,9 @@ namespace aris::server
 			{
 				executeCmd(ret.get(), [](aris::plan::Plan &plan)->void
 				{
-					std::cout << "return code   :" << plan.retCode() << "\nreturn message:" << plan.retMsg() << std::endl;
-					LOG_INFO << "return code   :" << plan.retCode() << "\nreturn message:" << plan.retMsg() << std::endl;
+					ARIS_COUT << "    " << plan.cmdId() << "---return code :" << plan.retCode() << "\n";
+					ARIS_COUT << "    " << plan.cmdId() << "---return msg  :" << plan.retMsg() << std::endl;
+					LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n"<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
 				});
 
 				ret = std::async(std::launch::async, []()->std::string
@@ -631,7 +632,7 @@ namespace aris::server
 			plan->imp_->shared_for_this_ = plan;
 			plan->imp_->option_ = 0;
 			plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
-			plan->imp_->cmd_msg_ = cmd_str;
+			plan->imp_->cmd_str_ = cmd_str;
 			plan->imp_->cmd_name_ = std::move(cmd);
 			plan->imp_->cmd_params_ = std::move(params);
 			plan->imp_->begin_global_count_ = 0;
@@ -648,6 +649,30 @@ namespace aris::server
 			return plan;
 		}
 
+		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		auto print_size = plan->cmdParams().empty() ? 2 : 2 + std::max_element(plan->cmdParams().begin(), plan->cmdParams().end(), [](const auto& a, const auto& b)
+		{
+			return a.first.length() < b.first.length();
+		})->first.length();
+		// print
+		if (!(plan->option() & aris::plan::Plan::NOT_PRINT_CMD_INFO))
+		{
+			ARIS_COUT << "cmd " << plan->cmdId() << "---" << plan->cmdString() << "\n";
+			ARIS_COUT << "    " << plan->cmdId() << "---" << plan->cmdName() << "\n";
+			for (auto &p : plan->cmdParams())ARIS_COUT << "    " << plan->cmdId() << "---" << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << "\n";
+			ARIS_COUT << std::endl;
+		}
+		// log
+		if (!(plan->option() & aris::plan::Plan::NOT_LOG_CMD_INFO))
+		{
+			auto &log = LOG_INFO << plan->cmdName() << "\n";
+			for (auto &p : plan->cmdParams())
+			{
+				log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
+			}
+		}
+		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 		// prepair //
 		try
 		{
@@ -661,29 +686,6 @@ namespace aris::server
 			return plan;
 		}
 		
-		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		auto print_size = plan->cmdParams().empty() ? 2 : 2 + std::max_element(plan->cmdParams().begin(), plan->cmdParams().end(), [](const auto& a, const auto& b)
-		{
-			return a.first.length() < b.first.length();
-		})->first.length();
-		// print
-		if (!(plan->option() & aris::plan::Plan::NOT_PRINT_CMD_INFO))
-		{
-			std::cout << plan->cmdName() << std::endl;
-			for (auto &p : plan->cmdParams())std::cout << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
-			std::cout << std::endl;
-		}
-		// log
-		if (!(plan->option() & aris::plan::Plan::NOT_LOG_CMD_INFO))
-		{
-			auto &log = LOG_INFO << plan->cmdName() << std::endl;
-			for (auto &p : plan->cmdParams())
-			{
-				log << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << std::string(print_size - p.first.length(), ' ') << p.first << " : " << p.second << std::endl;
-			}
-		}
-		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		// 既不execute也不collect，直接返回 //
 		if ((plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION) && (plan->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION))
 		{
@@ -865,15 +867,11 @@ namespace aris::server
 	}
 	auto ControlServer::waitForAllExecution()->void 
 	{
-		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		auto cmd_end = imp_->cmd_end_.load();//原子操作
-		while (cmd_end != imp_->cmd_now_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+		while (imp_->cmd_end_.load() != imp_->cmd_now_.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
 	auto ControlServer::waitForAllCollection()->void 
 	{
-		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		auto cmd_end = imp_->cmd_end_.load();//原子操作
-		while (cmd_end != imp_->cmd_collect_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
+		while (imp_->cmd_end_.load() != imp_->cmd_collect_.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));//原子操作
 	}
 	auto ControlServer::currentExecutePlan()->std::shared_ptr<aris::plan::Plan>
 	{

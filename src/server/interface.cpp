@@ -49,7 +49,7 @@ namespace aris::server
 			ARIS_SET_TYPE(std::vector<double>)
 			ARIS_SET_TYPE(std::vector<std::string>)
 			{
-				std::cout << "unrecognized return value" << std::endl;
+				ARIS_COUT << "unrecognized return value" << std::endl;
 			}
 
 #undef ARIS_SET_TYPE
@@ -59,7 +59,7 @@ namespace aris::server
 	}
 	auto onReceivedMsg(aris::core::Socket *socket, aris::core::Msg &msg)->int
 	{
-		std::cout << "received " << std::endl;
+		ARIS_COUT << "received " << std::endl;
 		
 		auto msg_data = std::string_view(msg.data(), msg.size());
 
@@ -98,7 +98,7 @@ namespace aris::server
 				}
 				catch (std::exception &e)
 				{
-					std::cout << e.what() << std::endl;
+					ARIS_COUT << e.what() << std::endl;
 					LOG_ERROR << e.what() << std::endl;
 				}
 			});
@@ -110,7 +110,7 @@ namespace aris::server
 			ret_pair.push_back(std::make_pair<std::string, std::any>("return_message", std::string(e.what())));
 			std::string ret_str = parse_ret_value(ret_pair);
 
-			std::cout << ret_str << std::endl;
+			ARIS_COUT << ret_str << std::endl;
 			LOG_ERROR << ret_str << std::endl;
 
 			try
@@ -121,7 +121,7 @@ namespace aris::server
 			}
 			catch (std::exception &e)
 			{
-				std::cout << e.what() << std::endl;
+				ARIS_COUT << e.what() << std::endl;
 				LOG_ERROR << e.what() << std::endl;
 			}
 		}
@@ -130,7 +130,7 @@ namespace aris::server
 	}
 	auto onReceivedConnection(aris::core::Socket *sock, const char *ip, int port)->int
 	{
-		std::cout << "socket receive connection" << std::endl;
+		ARIS_COUT << "socket receive connection" << std::endl;
 		LOG_INFO << "socket receive connection:\n"
 			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
 			<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
@@ -138,7 +138,7 @@ namespace aris::server
 	}
 	auto onLoseConnection(aris::core::Socket *socket)->int
 	{
-		std::cout << "socket lose connection" << std::endl;
+		ARIS_COUT << "socket lose connection" << std::endl;
 		LOG_INFO << "socket lose connection" << std::endl;
 		for (;;)
 		{
@@ -149,12 +149,12 @@ namespace aris::server
 			}
 			catch (std::runtime_error &e)
 			{
-				std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+				ARIS_COUT << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
 				LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 			}
 		}
-		std::cout << "socket restart successful" << std::endl;
+		ARIS_COUT << "socket restart successful" << std::endl;
 		LOG_INFO << "socket restart successful" << std::endl;
 
 		return 0;
@@ -238,7 +238,7 @@ namespace aris::server
 				}
 				catch (std::exception &e)
 				{
-					std::cout << e.what() << std::endl;
+					ARIS_COUT << e.what() << std::endl;
 					LOG_ERROR << e.what() << std::endl;
 				}
 			};
@@ -251,7 +251,7 @@ namespace aris::server
 				aris::core::Msg ret_msg = msg;
 				ret_msg.copy(js.dump(2));
 
-				std::cout << ret_msg.toString() << std::endl;
+				ARIS_COUT << ret_msg.toString() << std::endl;
 
 				send_ret(ret_msg);
 			};
@@ -344,7 +344,7 @@ namespace aris::server
 							}
 							catch (std::exception &e)
 							{
-								std::cout << e.what() << std::endl;
+								ARIS_COUT << e.what() << std::endl;
 								send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, e.what());
 								return 0;
 							}
@@ -487,8 +487,9 @@ namespace aris::server
 								}
 
 								cs.waitForAllCollection();
+								imp_->current_line_.store(imp_->language_parser_.currentLine());
 
-								std::cout << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
+								ARIS_COUT << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 
 								while (!imp_->auto_thread_.joinable());// for windows bug:if thread init too fast, it may fail
 								imp_->auto_thread_.detach();
@@ -561,7 +562,7 @@ namespace aris::server
 		};
 		imp_->onReceiveConnection_ = [](aris::core::Socket *sock, const char *ip, int port)->int
 		{
-			std::cout << "socket receive connection" << std::endl;
+			ARIS_COUT << "socket receive connection" << std::endl;
 			LOG_INFO << "socket receive connection:\n"
 				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "  ip:" << ip << "\n"
 				<< std::setw(aris::core::LOG_SPACE_WIDTH) << "|" << "port:" << port << std::endl;
@@ -569,7 +570,7 @@ namespace aris::server
 		};
 		imp_->onLoseConnection_ = [](aris::core::Socket *socket)->int
 		{
-			std::cout << "socket lose connection" << std::endl;
+			ARIS_COUT << "socket lose connection" << std::endl;
 			LOG_INFO << "socket lose connection" << std::endl;
 			for (;;)
 			{
@@ -580,12 +581,12 @@ namespace aris::server
 				}
 				catch (std::runtime_error &e)
 				{
-					std::cout << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
+					ARIS_COUT << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
 					LOG_ERROR << e.what() << std::endl << "will try to restart server socket in 1s" << std::endl;
 					std::this_thread::sleep_for(std::chrono::seconds(1));
 				}
 			}
-			std::cout << "socket restart successful" << std::endl;
+			ARIS_COUT << "socket restart successful" << std::endl;
 			LOG_INFO << "socket restart successful" << std::endl;
 
 			return 0;
@@ -597,6 +598,29 @@ namespace aris::server
 	}
 	ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other) = default;
 	ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other) = default;
+
+	auto GetInfo::prepairNrt()->void
+	{
+		auto &cs = *controlServer();
+		
+		auto auto_mode = dynamic_cast<aris::server::ProgramWebInterface&>(cs.interfacePool().at(0)).isAutoMode();
+		auto auto_run = dynamic_cast<aris::server::ProgramWebInterface&>(cs.interfacePool().at(0)).isAutoRunning();
+		auto line = dynamic_cast<aris::server::ProgramWebInterface&>(cs.interfacePool().at(0)).currentLine();
+
+		std::vector<std::pair<std::string, std::any>> ret;
+		ret.push_back(std::make_pair(std::string("err_code"), std::make_any<int>(cs.errorCode())));
+		ret.push_back(std::make_pair(std::string("err_msg"), std::make_any<std::string>(cs.errorMsg())));
+		ret.push_back(std::make_pair(std::string("auto_mode"), std::make_any<int>(auto_mode)));
+		ret.push_back(std::make_pair(std::string("auto_run"), std::make_any<int>(auto_run)));
+		ret.push_back(std::make_pair(std::string("line"), std::make_any<int>(line)));
+
+		auto ret_str = parse_ret_value(ret);
+		std::copy(ret_str.begin(), ret_str.end(), this->retMsg());
+
+
+		this->option() = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION;
+	}
+
 }
 
 
