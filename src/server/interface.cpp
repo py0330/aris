@@ -178,15 +178,18 @@ namespace aris::server
 		sock_->setOnReceivedConnection(onReceivedConnection);
 		sock_->setOnLoseConnection(onLoseConnection);
 	}
-
+#define ARIS_PRO_COUT ARIS_COUT << "pro "
 	struct ProgramWebInterface::Imp
 	{
 		aris::core::CommandParser command_parser_;
 		aris::core::LanguageParser language_parser_;
 		aris::core::Calculator calculator_;
 		std::thread auto_thread_;
-		std::atomic<int> current_line_;
+		std::atomic<int> current_line_{0};
 		bool is_auto_mode_{ false };
+
+		std::string last_error_;
+		int last_error_code_{ 0 }, last_error_line_{0};
 
 		std::atomic_bool is_stop_{ false }, is_pause_{ false };
 
@@ -205,6 +208,9 @@ namespace aris::server
 		sock_->setOnReceivedConnection(imp_->onReceiveConnection_);
 		sock_->setOnLoseConnection(imp_->onLoseConnection_);
 	}
+	auto ProgramWebInterface::lastError()->std::string { return imp_->last_error_; }
+	auto ProgramWebInterface::lastErrorCode()->int { return imp_->last_error_code_; }
+	auto ProgramWebInterface::lastErrorLine()->int { return imp_->last_error_line_; }
 	auto ProgramWebInterface::isAutoRunning()->bool { return imp_->auto_thread_.joinable(); }
 	auto ProgramWebInterface::isAutoMode()->bool { return imp_->is_auto_mode_; }
 	auto ProgramWebInterface::currentLine()->int { return imp_->current_line_.load(); }
@@ -221,6 +227,7 @@ namespace aris::server
 			"	<Param name=\"start\"/>"
 			"	<Param name=\"pause\"/>"
 			"	<Param name=\"stop\"/>"
+			"	<Param name=\"clear_error\"/>"
 			"	<Param name=\"forward\"/>"
 			"</Command>");
 		imp_->command_parser_.commandPool().add<aris::core::Command>(program);
@@ -249,9 +256,9 @@ namespace aris::server
 				js["return_message"] = ret_msg_str;
 
 				aris::core::Msg ret_msg = msg;
-				ret_msg.copy(js.dump(2));
+				ret_msg.copy(js.dump(-1));
 
-				ARIS_COUT << ret_msg.toString() << std::endl;
+				ARIS_PRO_COUT << "---" << ret_msg.toString() << std::endl;
 
 				send_ret(ret_msg);
 			};
@@ -274,6 +281,8 @@ namespace aris::server
 
 			if (cmd == "program")
 			{
+				ARIS_PRO_COUT <<"---"<< msg_data << std::endl;
+				
 				for (auto &[param, value] : params)
 				{
 					if (param == "set_auto")
@@ -384,6 +393,7 @@ namespace aris::server
 						else
 						{
 							imp_->language_parser_.gotoMain();
+							imp_->current_line_.store(imp_->language_parser_.currentLine());
 							send_code_and_msg(0, "");
 							return 0;
 						}
@@ -404,6 +414,10 @@ namespace aris::server
 							send_code_and_msg(0, "");
 							return 0;
 						}
+						else if (lastErrorCode())
+						{
+							send_code_and_msg(lastErrorCode(), lastError());
+						}
 						else
 						{
 							imp_->is_pause_.store(false);
@@ -413,9 +427,6 @@ namespace aris::server
 							{
 								auto&cs = aris::server::ControlServer::instance();
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
-
-								int err_code_ = 0;
-								std::string err_msg_;
 
 								for (; !imp_->language_parser_.isEnd();)
 								{
@@ -429,8 +440,12 @@ namespace aris::server
 										continue;
 									}
 
+									ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+
 									if (imp_->language_parser_.isCurrentLineKeyWord())
 									{
+										
+										
 										cs.waitForAllCollection();
 
 										auto cmd_name = imp_->language_parser_.currentCmd().substr(0, imp_->language_parser_.currentCmd().find_first_of(" \t\n\r\f\v("));
@@ -439,22 +454,38 @@ namespace aris::server
 
 										if (cmd_name == "if" || cmd_name == "while")
 										{
-											auto ret = this->imp_->calculator_.calculateExpression(cmd_value);
+											try 
+											{
+												auto ret = this->imp_->calculator_.calculateExpression(cmd_value);
 
-											if (auto ret_double = std::any_cast<double>(&ret.second))
-											{
-												imp_->language_parser_.forward(*ret_double != 0.0);
+												if (auto ret_double = std::any_cast<double>(&ret.second))
+												{
+													imp_->language_parser_.forward(*ret_double != 0.0);
+												}
+												else if (auto ret_mat = std::any_cast<aris::core::Matrix>(&ret.second))
+												{
+													imp_->language_parser_.forward(ret_mat->toDouble() != 0.0);
+												}
+												else
+												{
+													
+													imp_->last_error_code_ = aris::plan::Plan::PROGRAM_EXCEPTION;
+													imp_->last_error_ = "invalid expresion";
+													imp_->last_error_line_ = imp_->language_parser_.currentLine();
+													ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+													break;
+												}
 											}
-											else if(auto ret_mat = std::any_cast<aris::core::Matrix>(&ret.second))
+											catch (std::exception &e)
 											{
-												imp_->language_parser_.forward(ret_mat->toDouble() != 0.0);
-											}
-											else
-											{
-												err_code_ = -10;
-												err_msg_ = "invalid expresion";
+												imp_->last_error_code_ = -10;
+												imp_->last_error_ = e.what();
+												imp_->last_error_line_ = imp_->language_parser_.currentLine();
+												ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 												break;
 											}
+
+											
 										}
 										else
 										{
@@ -469,18 +500,21 @@ namespace aris::server
 									else
 									{
 										auto cmd = imp_->language_parser_.currentCmd();
+										auto current_line = imp_->language_parser_.currentLine();
 										imp_->language_parser_.forward();
 
-										auto current_line = imp_->language_parser_.currentLine();
-										auto ret = cs.executeCmd(cmd, [&, current_line](aris::plan::Plan &plan)->void
+										auto next_line = imp_->language_parser_.currentLine();
+										auto ret = cs.executeCmd(cmd, [&, next_line](aris::plan::Plan &plan)->void
 										{
-											imp_->current_line_.store(current_line);
+											imp_->current_line_.store(next_line);
 										});
 
 										if (ret->retCode())
 										{
-											err_code_ = ret->retCode();
-											err_msg_ = ret->retMsg();
+											imp_->last_error_code_ = ret->retCode();
+											imp_->last_error_ = ret->retMsg();
+											imp_->last_error_line_ = current_line;
+											ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 											break;
 										}
 									}
@@ -489,7 +523,7 @@ namespace aris::server
 								cs.waitForAllCollection();
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
 
-								ARIS_COUT << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
+								ARIS_PRO_COUT <<"---"<< (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 
 								while (!imp_->auto_thread_.joinable());// for windows bug:if thread init too fast, it may fail
 								imp_->auto_thread_.detach();
@@ -530,6 +564,27 @@ namespace aris::server
 							send_code_and_msg(0, "");
 							return 0;
 						}
+					}
+					else if (param == "clear_error")
+					{
+						if (isAutoRunning())
+						{
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not clear error when running");
+							return 0;
+						}
+						else
+						{
+							imp_->last_error_.clear();
+							imp_->last_error_code_ = 0;
+							imp_->last_error_line_ = 0;
+							send_code_and_msg(0, "");
+							return 0;
+						}
+					}
+					else
+					{
+						send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "invalid program option");
+						return 0;
 					}
 				}
 			}
@@ -602,25 +657,23 @@ namespace aris::server
 	auto GetInfo::prepareNrt()->void
 	{
 		auto &cs = *controlServer();
-		
-		auto auto_mode = dynamic_cast<aris::server::ProgramWebInterface&>(cs.interfacePool().at(0)).isAutoMode();
-		auto auto_run = dynamic_cast<aris::server::ProgramWebInterface&>(cs.interfacePool().at(0)).isAutoRunning();
-		auto line = dynamic_cast<aris::server::ProgramWebInterface&>(cs.interfacePool().at(0)).currentLine();
+		auto &inter = dynamic_cast<aris::server::ProgramWebInterface&>(cs.interfacePool().at(0));
 
 		std::vector<std::pair<std::string, std::any>> ret;
-		ret.push_back(std::make_pair(std::string("err_code"), std::make_any<int>(cs.errorCode())));
-		ret.push_back(std::make_pair(std::string("err_msg"), std::make_any<std::string>(cs.errorMsg())));
-		ret.push_back(std::make_pair(std::string("auto_mode"), std::make_any<int>(auto_mode)));
-		ret.push_back(std::make_pair(std::string("auto_run"), std::make_any<int>(auto_run)));
-		ret.push_back(std::make_pair(std::string("line"), std::make_any<int>(line)));
+		ret.push_back(std::make_pair(std::string("cs_err_code"), std::make_any<int>(cs.errorCode())));
+		ret.push_back(std::make_pair(std::string("cs_err_msg"), std::make_any<std::string>(cs.errorMsg())));
+		ret.push_back(std::make_pair(std::string("pro_err_code"), std::make_any<int>(inter.lastErrorCode())));
+		ret.push_back(std::make_pair(std::string("pro_err_msg"), std::make_any<std::string>(inter.lastError())));
+		ret.push_back(std::make_pair(std::string("pro_err_line"), std::make_any<int>(inter.lastErrorLine())));
+		ret.push_back(std::make_pair(std::string("auto_mode"), std::make_any<int>(inter.isAutoMode())));
+		ret.push_back(std::make_pair(std::string("auto_run"), std::make_any<int>(inter.isAutoRunning())));
+		ret.push_back(std::make_pair(std::string("line"), std::make_any<int>(inter.currentLine())));
 
 		auto ret_str = parse_ret_value(ret);
 		std::copy(ret_str.begin(), ret_str.end(), const_cast<char*>(this->retMsg()));
 
-
 		this->option() = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION;
 	}
-
 }
 
 

@@ -1383,7 +1383,7 @@ namespace aris::plan
 				Imp::pvade_.store(pvade);
 				Imp::is_running_.store(true);
 				param.is_start_cmd = true;
-				option() |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT;
+				option() |= NOT_PRINT_EXECUTE_COUNT;
 				for (auto &option : motorOptions())	option |= USE_TARGET_POS;
 			}
 			else if (cmd_param.first == "stop")
@@ -1563,7 +1563,7 @@ namespace aris::plan
 
 				Imp::is_increase_.store(std::array<int, 6>{0, 0, 0, 0, 0, 0});
 				Imp::is_running_.store(true);
-				option() |= EXECUTE_WHEN_ALL_PLAN_COLLECTED | NOT_PRINT_EXECUTE_COUNT;
+				option() |= NOT_PRINT_EXECUTE_COUNT;
 				for (auto &option : motorOptions())	option |= USE_TARGET_POS;
 			}
 			else if (cmd_param.first == "stop")

@@ -46,6 +46,9 @@ namespace aris::server
 		auto isAutoRunning()->bool;
 		auto isAutoMode()->bool;
 		auto currentLine()->int;
+		auto lastError()->std::string;
+		auto lastErrorCode()->int;
+		auto lastErrorLine()->int;
 
 		ProgramWebInterface(const std::string &name = "pro_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
 		ProgramWebInterface(ProgramWebInterface && other);
