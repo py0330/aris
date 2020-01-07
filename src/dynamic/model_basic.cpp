@@ -26,10 +26,7 @@ namespace aris::dynamic
 		try
 		{
 			auto ret = ancestor<Model>()->calculator().calculateExpression(xml_ele.Attribute(attribute_name.c_str()));
-			
-			mat = std::any_cast<aris::core::Matrix&>(
-				ret.second
-				);
+			mat = std::any_cast<aris::core::Matrix&>(ret.second	);
 		}
 		catch (std::exception &e)
 		{

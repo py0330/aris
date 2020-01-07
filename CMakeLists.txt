@@ -9,11 +9,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CONFIGURATION_TYPES Debug Release)
 if(UNIX)
-	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${PROJECT_VERSION}")
+	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${CMAKE_PROJECT_VERSION}")
 	add_custom_target(uninstall rm -r /usr/aris)
 endif(UNIX)
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${PROJECT_VERSION}")
+	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${CMAKE_PROJECT_VERSION}")
 endif(WIN32)
 
 ## set rely libs ##
@@ -152,18 +152,23 @@ if(BUILD_DOCS)
 	if (DOXYGEN_FOUND)
 		message("doxygen found")
 		# set input and output files
-		#set(DOXYGEN_IN ${CMAKE_CURRENT_LIST_DIR}/docs/Doxyfile.in)
-		#set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-
+		set(DOXYGEN_IN "${CMAKE_CURRENT_LIST_DIR}/doc/Doxyfile.in")
+		set(DOXYGEN_OUT "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile")
+		set(DOXYGEN_LATEX_MAKEINDEX_CMD "makeindex")
+		set(DOXYGEN_EXTRACT_ALL "YES")
 		# request to configure the file
-		#configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+		# configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 
 		# note the option ALL which allows to build the docs together with the application
-		#add_custom_target( docs ALL
+		# add_custom_target( docs ALL
 		#	COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
 		#	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		#	COMMENT "Generating API documentation with Doxygen"
 		#	VERBATIM )
+		#doxygen_add_docs(
+		#	doxygen
+		#    ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/demo
+		#	COMMENT "Generate man pages")
 	else (DOXYGEN_FOUND)
 		message("Doxygen need to be installed to generate the doxygen documentation")
 	endif (DOXYGEN_FOUND)

@@ -667,11 +667,11 @@ namespace aris::core
 			{
 				if (value.type_ == "Number")
 				{
-					mtx.back().push_back(Matrix(std::any_cast<double>(value.value_)));
+					mtx.back().push_back(Matrix(std::any_cast<double>(value.val())));
 				}
 				else if (value.type_ == "Matrix")
 				{
-					mtx.back().push_back(std::any_cast<Matrix&>(value.value_));
+					mtx.back().push_back(std::any_cast<Matrix&>(value.val()));
 				}
 				else
 				{
