@@ -329,11 +329,6 @@ int main(int argc, char *argv[])
 	//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
 	//cs.loadXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
 
-	std::string tt("as::bbb::sxa");
-	tt = std::regex_replace(tt, std::regex("\\::"), ":");
-
-	tt = std::regex_replace(tt, std::regex("\\:"), "::");
-
 	cs.open();
 	cs.runCmdLine();
 	

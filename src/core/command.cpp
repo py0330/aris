@@ -274,7 +274,8 @@ namespace aris::core
 	{
 		auto cut_str = [](std::string_view &input, const char *c)->std::string_view
 		{
-			auto point = input.find_first_of(" =");
+			// 此时c中字符是或的关系 //
+			auto point = input.find_first_of(c);
 			auto ret = input.substr(0, point);
 			input = point == std::string::npos ? std::string_view() : input.substr(point);
 			return ret;
@@ -308,7 +309,7 @@ namespace aris::core
 
 			if (brace_num)THROW_FILE_LINE("brace not pair");
 
-			auto ret = cmd_str.substr(1, i);
+			auto ret = cmd_str.substr(1, i - 1);// here is length
 			cmd_str = trim_left(cmd_str.substr(i));
 			return ret;
 		};
