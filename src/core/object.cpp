@@ -343,7 +343,7 @@ namespace aris::core
 		xml_ele.DeleteChildren();
 
 		// xml namespace only contain one :, so change :: to :
-		auto xml_type = std::regex_replace(type(), std::regex("\\::"), ":");
+		auto xml_type = std::regex_replace(type(), std::regex("\\::"), ".");
 		xml_ele.SetName(xml_type.c_str());
 		if(!name().empty())xml_ele.SetAttribute("name", name().c_str());
 		for (auto &ele : children())
@@ -355,7 +355,7 @@ namespace aris::core
 	}
 	auto Object::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		auto c_type = std::regex_replace(xml_ele.Name(), std::regex("\\:"), "::");
+		auto c_type = std::regex_replace(xml_ele.Name(), std::regex("\\."), "::");
 		
 		if (type() != c_type) THROW_FILE_LINE("failed in Object::loadXml : you can't use a \"" + type() + "\" to load a \"" + xml_ele.Name() + "\" xml element");
 
