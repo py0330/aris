@@ -28,9 +28,9 @@ namespace aris::server { class ControlServer; }
 namespace aris::plan
 {
 	// plan 依次执行3个函数：
-	// ## prepare
+	// ## prepareNrt
 	// ## executeRT
-	// ## collect
+	// ## collectNrt
 	//
 	// 所有的plan都必须执行 prepare，但在prepare中可以通过选项来决定是否执行 executeRT 或 collect
 	//
@@ -649,7 +649,7 @@ namespace aris::plan
 
 		virtual ~Start();
 		explicit Start(const std::string &name = "start");
-		ARIS_REGISTER_TYPE(Start);
+		ARIS_REGISTER_TYPE(plan::Start);
 		ARIS_DEFINE_BIG_FOUR(Start);
 	};
 	class Stop :public Plan
@@ -677,19 +677,19 @@ namespace aris::plan
 	class UniversalPlan :public Plan
 	{
 	public:
-		using prepareFunc = std::function<void(Plan *plan)>;
+		using PrepareFunc = std::function<void(Plan *plan)>;
 		using ExecuteFunc = std::function<int(Plan *plan)>;
 		using CollectFunc = std::function<void(Plan *plan)>;
 
 		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 		auto virtual collectNrt()->void override;
-		auto virtual setprepareFunc(prepareFunc func)->void;
+		auto virtual setprepareFunc(PrepareFunc func)->void;
 		auto virtual setExecuteFunc(ExecuteFunc func)->void;
 		auto virtual setCollectFunc(CollectFunc func)->void;
 
 		virtual ~UniversalPlan();
-		explicit UniversalPlan(const std::string &name = "universal_plan", prepareFunc prepare_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
+		explicit UniversalPlan(const std::string &name = "universal_plan", PrepareFunc prepare_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
 		ARIS_REGISTER_TYPE(UniversalPlan);
 		ARIS_DECLARE_BIG_FOUR(UniversalPlan);
 

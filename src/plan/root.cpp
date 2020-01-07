@@ -1827,18 +1827,18 @@ namespace aris::plan
 
 	struct UniversalPlan::Imp
 	{
-		prepareFunc prepare_nrt;
+		PrepareFunc prepare_nrt;
 		ExecuteFunc execute_rt;
 		CollectFunc collect_nrt;
 	};
 	auto UniversalPlan::prepareNrt()->void { if (imp_->prepare_nrt)imp_->prepare_nrt(this); }
 	auto UniversalPlan::executeRT()->int { return imp_->execute_rt ? imp_->execute_rt(this) : 0; }
 	auto UniversalPlan::collectNrt()->void { if (imp_->collect_nrt)imp_->collect_nrt(this); }
-	auto UniversalPlan::setprepareFunc(prepareFunc func)->void { imp_->prepare_nrt = func; }
+	auto UniversalPlan::setprepareFunc(PrepareFunc func)->void { imp_->prepare_nrt = func; }
 	auto UniversalPlan::setExecuteFunc(ExecuteFunc func)->void { imp_->execute_rt = func; }
 	auto UniversalPlan::setCollectFunc(CollectFunc func)->void { imp_->collect_nrt = func; }
 	UniversalPlan::~UniversalPlan() = default;
-	UniversalPlan::UniversalPlan(const std::string &name, prepareFunc prepare_func, ExecuteFunc execute_func, CollectFunc collect_func, const std::string & cmd_xml_str) :Plan(name), imp_(new Imp)
+	UniversalPlan::UniversalPlan(const std::string &name, PrepareFunc prepare_func, ExecuteFunc execute_func, CollectFunc collect_func, const std::string & cmd_xml_str) :Plan(name), imp_(new Imp)
 	{
 		imp_->prepare_nrt = prepare_func;
 		imp_->execute_rt = execute_func;

@@ -22,7 +22,7 @@ if(UNIX)
 	option (USE_ETHERLAB "Use Etherlab Ethercat drivers" OFF)
 
 	set(RELY_LINK_LIB atomic pthread stdc++fs)#pthread is needed for concurrency
-	set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
+	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/config)
 
 	if(USE_XENOMAI)
 		message("using xenomai")
@@ -68,9 +68,9 @@ foreach(target robot server plan dynamic control sensor core)
 	target_include_directories(aris_${target}
 		PUBLIC 
 			$<INSTALL_INTERFACE:include>
-			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+			$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 		PRIVATE
-			${CMAKE_CURRENT_SOURCE_DIR}/src
+			${PROJECT_SOURCE_DIR}/src
 			${RELY_INCL_DIR}
 	)
 	
@@ -81,7 +81,7 @@ foreach(target robot server plan dynamic control sensor core)
 	install(TARGETS aris_${target} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
 	install(TARGETS aris_${target} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
 
-	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/${target}/resource)
+	if(EXISTS ${PROJECT_SOURCE_DIR}/src/${target}/resource)
 		install(DIRECTORY src/${target}/resource/ DESTINATION resource/${target})
 	endif()
 endforeach(target)
@@ -96,10 +96,10 @@ install(FILES include/aris.hpp DESTINATION include)
 
 ## install config ##
 include(CMakePackageConfigHelpers)
-set(aris_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
+set(aris_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include)
 set(aris_LIBRARIES ${aris_LIBRARIES} ${RELY_LINK_LIB})
-configure_package_config_file("config/aris-config.cmake.in" "${CMAKE_BINARY_DIR}/aris-config.cmake" INSTALL_DESTINATION "share/aris/cmake")
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/aris-config.cmake" DESTINATION "share/aris/cmake")
+configure_package_config_file(config/aris-config.cmake.in ${PROJECT_BINARY_DIR}/aris-config.cmake INSTALL_DESTINATION "share/aris/cmake")
+install(FILES ${PROJECT_BINARY_DIR}/aris-config.cmake DESTINATION "share/aris/cmake")
 
 ## install tools ##
 install(DIRECTORY sh DESTINATION .)
@@ -119,7 +119,7 @@ if(BUILD_TESTS)
 		target_link_libraries(${aris_test} ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
 		add_test(NAME ${aris_test} COMMAND ${aris_test})
 		set_tests_properties(${aris_test} PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-		if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${aris_test}/resource)
+		if(EXISTS ${PROJECT_SOURCE_DIR}/test/${aris_test}/resource)
 			install(DIRECTORY test/${aris_test}/resource/ DESTINATION resource/${aris_test})
 		endif()
 	endforeach(aris_test)
@@ -135,10 +135,10 @@ if(BUILD_DEMOS)
 		target_link_libraries(${aris_demo} ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
 		add_test(NAME ${aris_demo} COMMAND ${aris_demo})
 		set_tests_properties(${aris_demo} PROPERTIES FAIL_REGULAR_EXPRESSION "failed")
-		if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/demo/${aris_demo}/resource)
+		if(EXISTS ${PROJECT_SOURCE_DIR}/demo/${aris_demo}/resource)
 			install(DIRECTORY demo/${aris_demo}/resource/ DESTINATION resource/${aris_demo})
 		endif()
-		if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/demo/${aris_demo}/doc)
+		if(EXISTS ${PROJECT_SOURCE_DIR}/demo/${aris_demo}/doc)
 			install(DIRECTORY demo/${aris_demo}/doc/ DESTINATION doc/html/${aris_demo})
 		endif()
 	endforeach(aris_demo)
@@ -152,10 +152,9 @@ if(BUILD_DOCS)
 	if (DOXYGEN_FOUND)
 		message("doxygen found")
 		# set input and output files
-		set(DOXYGEN_IN "${CMAKE_CURRENT_LIST_DIR}/doc/Doxyfile.in")
-		set(DOXYGEN_OUT "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile")
-		set(DOXYGEN_LATEX_MAKEINDEX_CMD "makeindex")
-		set(DOXYGEN_EXTRACT_ALL "YES")
+		# set(DOXYGEN_IN "${CMAKE_CURRENT_LIST_DIR}/doc/Doxyfile.in")
+		# set(DOXYGEN_OUT "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile")
+
 		# request to configure the file
 		# configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 
@@ -165,10 +164,23 @@ if(BUILD_DOCS)
 		#	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		#	COMMENT "Generating API documentation with Doxygen"
 		#	VERBATIM )
-		#doxygen_add_docs(
-		#	doxygen
-		#    ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/demo
-		#	COMMENT "Generate man pages")
+
+		set(DOXYGEN_EXTRACT_ALL "YES")
+		set(DOXYGEN_MARKDOWN_SUPPORT "YES")
+		set(DOXYGEN_EXTRACT_PACKAGE "YES")
+		set(DOXYGEN_EXTRACT_STATIC "YES")
+		set(DOXYGEN_EXTRACT_LOCAL_CLASSES "NO")
+		set(DOXYGEN_SHOW_GROUPED_MEMB_INC "YES")
+		set(DOXYGEN_EXAMPLE_PATH ${PROJECT_SOURCE_DIR}/demo)
+		set(DOXYGEN_INPUT_ENCODING "UTF-8")
+		set(DOXYGEN_DOXYFILE_ENCODING "UTF-8")
+
+		doxygen_add_docs(
+			doxygen
+		    ${PROJECT_SOURCE_DIR}/demo ${PROJECT_SOURCE_DIR}/include
+			COMMENT "Generate man pages")
+
+		install(DIRECTORY ${PROJECT_BINARY_DIR}/html/ DESTINATION doc/html/)
 	else (DOXYGEN_FOUND)
 		message("Doxygen need to be installed to generate the doxygen documentation")
 	endif (DOXYGEN_FOUND)

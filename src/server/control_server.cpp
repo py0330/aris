@@ -94,7 +94,6 @@ namespace aris::server
 		auto executeCmd(aris::plan::Plan &plan)->int;
 		auto checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int;
 		auto fixError(bool is_in_check)->std::int32_t;
-		auto startReturnThread()->void;
 
 		Imp(ControlServer *server) :server_(server) {}
 		Imp(const Imp&) = delete;

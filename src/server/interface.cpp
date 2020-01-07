@@ -29,7 +29,6 @@ namespace aris::server
 		auto root = xml_ele.DeepClone(&doc_);
 		doc_.InsertEndChild(root);
 	}
-
 	Interface::Interface(const std::string &name) :Object(name) {}
 
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string
@@ -672,7 +671,7 @@ namespace aris::server
 		auto ret_str = parse_ret_value(ret);
 		std::copy(ret_str.begin(), ret_str.end(), const_cast<char*>(this->retMsg()));
 
-		this->option() = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION;
+		this->option() = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION | aris::plan::Plan::NOT_PRINT_CMD_INFO;
 	}
 }
 
