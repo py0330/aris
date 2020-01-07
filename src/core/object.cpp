@@ -366,7 +366,7 @@ namespace aris::core
 		children().clear();
 		for (auto ele = xml_ele.FirstChildElement(); ele; ele = ele->NextSiblingElement())
 		{
-			auto type = std::regex_replace(xml_ele.Name(), std::regex("\\:"), "::");
+			auto type = std::regex_replace(ele->Name(), std::regex("\\:"), "::");
 
 			auto info = imp_->getTypeInfo(type);
 			if (info == nullptr)THROW_FILE_LINE("unrecognized type \"" + type + "\" in Object::loadXml");
