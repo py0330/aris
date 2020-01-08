@@ -280,7 +280,7 @@ namespace aris::core
 			input = point == std::string::npos ? std::string_view() : input.substr(point);
 			return ret;
 		};
-		auto trim_left = [](std::string_view &input)->std::string_view 
+		auto trim_left = [](std::string_view input)->std::string_view 
 		{
 			auto point = input.find_first_not_of(' ');
 			return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
