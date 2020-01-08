@@ -4,7 +4,6 @@
 #include <stdexcept>
 #include <cstring>
 #include <algorithm>
-#include <regex>
 #include <list>
 #include <cmath>
 #include <any>
