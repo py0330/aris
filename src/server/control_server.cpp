@@ -28,7 +28,7 @@ namespace aris::plan
 		std::uint64_t option_;
 		std::vector<std::uint64_t> mot_options_;
 
-		std::string cmd_str_;
+		std::vector<char> cmd_str_;
 		std::string_view cmd_name_;
 		std::map<std::string_view, std::string_view> cmd_params_;
 
@@ -639,6 +639,10 @@ namespace aris::server
 			auto &plan = internal_data.back()->plan_;
 			try
 			{
+				std::vector<char> cmd_str_local(str.size());
+				std::copy(str.begin(), str.end(), cmd_str_local.begin());
+				str = std::string_view(cmd_str_local.data(), cmd_str_local.size());
+				
 				++cmd_id;
 				LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << str << std::endl;
 				auto[cmd, params] = planRoot().planParser().parse(str);
@@ -654,7 +658,7 @@ namespace aris::server
 				plan->imp_->shared_for_this_ = plan;
 				plan->imp_->option_ = 0;
 				plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
-				plan->imp_->cmd_str_ = str;
+				plan->imp_->cmd_str_ = cmd_str_local;
 				plan->imp_->cmd_name_ = std::move(cmd);
 				plan->imp_->cmd_params_ = std::move(params);
 				plan->imp_->begin_global_count_ = 0;
@@ -777,7 +781,7 @@ namespace aris::server
 		}
 		imp_->cmd_end_.store(cmd_end);
 
-		// step 5a. USE RAII //
+		// step 4a&5a. USE RAII //
 		return ret_plan;
 	}
 	auto ControlServer::executeCmd(std::string_view cmd_str, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
@@ -816,6 +820,10 @@ namespace aris::server
 		static std::uint64_t cmd_id{ 0 };
 		try	
 		{ 
+			std::vector<char> cmd_str_local(cmd_str.size());
+			std::copy(cmd_str.begin(), cmd_str.end(), cmd_str_local.begin());
+			cmd_str = std::string_view(cmd_str_local.data(), cmd_str_local.size());
+
 			++cmd_id;
 			LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << cmd_str << std::endl;
 			auto [cmd, params] = planRoot().planParser().parse(cmd_str);
@@ -831,7 +839,7 @@ namespace aris::server
 			plan->imp_->shared_for_this_ = plan;
 			plan->imp_->option_ = 0;
 			plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
-			plan->imp_->cmd_str_ = cmd_str;
+			plan->imp_->cmd_str_ = std::move(cmd_str_local);
 			plan->imp_->cmd_name_ = std::move(cmd);
 			plan->imp_->cmd_params_ = std::move(params);
 			plan->imp_->begin_global_count_ = 0;

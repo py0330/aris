@@ -28,7 +28,7 @@ namespace aris::plan
 		std::uint64_t option_;
 		std::vector<std::uint64_t> mot_options_;
 
-		std::string cmd_str_;
+		std::vector<char> cmd_str_;
 		std::string_view cmd_name_;
 		std::map<std::string_view, std::string_view> cmd_params_;
 		
@@ -62,7 +62,7 @@ namespace aris::plan
 	auto Plan::sharedPtrForThis()->std::shared_ptr<Plan> { return imp_->shared_for_this_.lock(); }
 	auto Plan::option()->std::uint64_t& { return imp_->option_; }
 	auto Plan::motorOptions()->std::vector<std::uint64_t>& { return imp_->mot_options_; }
-	auto Plan::cmdString()->std::string_view { return imp_->cmd_str_; }
+	auto Plan::cmdString()->std::string_view { return std::string_view(imp_->cmd_str_.data(), imp_->cmd_str_.size()); }
 	auto Plan::cmdName()->std::string_view { return imp_->cmd_name_; }
 	auto Plan::cmdParams()->const std::map<std::string_view, std::string_view>& { return imp_->cmd_params_; }
 	auto Plan::cmdId()->std::int64_t { return imp_->command_id_; }
