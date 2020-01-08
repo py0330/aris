@@ -145,30 +145,6 @@ namespace aris::core
 		return combineColMatrices(mat_col_list);
 	}
 
-	//class Calculator
-	//{
-	//public:
-	//	auto calculateExpression(std::string_view expression) const->Matrix;
-	//	auto evaluateExpression(const std::string &expression)const->std::string;
-	//	auto addVariable(const std::string &name, const Matrix &value)->void;
-	//	auto addVariable(const std::string &name, const std::string &value)->void;
-	//	auto addFunction(const std::string &name, std::function<Matrix(std::vector<Matrix>)> f, Size n)->void;
-	//	auto clearVariables()->void;
-
-	//	virtual ~Calculator();
-	//	explicit Calculator(const std::string &name = "");
-	//	Calculator(const Calculator &);
-	//	Calculator(Calculator &&);
-	//	Calculator& operator=(const Calculator &);
-	//	Calculator& operator=(Calculator &&);
-	//private:
-	//	struct Imp;
-	//	aris::core::ImpPtr<Imp> imp_;
-	//};
-
-	
-
-
 	class Calculator
 	{
 	public:

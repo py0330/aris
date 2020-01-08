@@ -406,8 +406,6 @@ namespace aris::core
 			Type type;
 			std::string_view word;
 
-			
-
 			double num;
 			const Typename *tpn_;
 			const Variable *var;
@@ -427,7 +425,7 @@ namespace aris::core
 
 			// triml and check if empty //
 			auto next_pos = input.find_first_not_of(spaceStr);
-			input = next_pos == std::string::npos ? std::string_view() : std::string_view(input.data() + next_pos, input.size() - next_pos);
+			input = next_pos == std::string_view::npos ? std::string_view() : std::string_view(input.data() + next_pos, input.size() - next_pos);
 			if (next_pos == std::string_view::npos)return std::string_view();
 
 			// get number //
@@ -704,7 +702,7 @@ namespace aris::core
 		}
 
 		// search functions //
-		auto &funs = function_map_.find(std::string(i->word))->second.funs_;
+		auto &funs = function_map_.find(i->word)->second.funs_;
 		if (auto f = std::find_if(funs.begin(), funs.end(), [&](const auto &v)->bool {return p_types.size() == std::get<0>(v).size() && std::equal(p_types.begin(), p_types.end(), std::get<0>(v).begin()); }); f == funs.end())
 		{
 			THROW_FILE_LINE("function \"" + std::string(i->word) + "\" not found");
@@ -797,10 +795,8 @@ namespace aris::core
 
 		imp_->typename_map_.insert(std::pair(std::string(tpn), Imp::Typename()));
 
-		auto &funs = imp_->function_map_[std::string(tpn)].funs_;
-		auto p_types = std::vector<std::string>{ std::string(tpn) };
-		auto ret_type = std::string(tpn);
-		funs.push_back(std::make_tuple(p_types, std::string(tpn), [](std::vector<std::any>& v)->std::any {return v[0]; }));
+		addFunction(tpn, std::vector<std::string>{ std::string(tpn) }, tpn, [](std::vector<std::any>& v)->std::any {return v[0]; });
+		addBinaryOperatorFunction("=", tpn, tpn, tpn, [](std::any& p1, std::any&p2)->std::any {	return p1 = p2;	});
 	}
 	auto Calculator::addVariable(std::string_view var, std::string_view type, const std::any &value)->void
 	{
@@ -873,6 +869,8 @@ namespace aris::core
 	Calculator::~Calculator() = default;
 	Calculator::Calculator(const std::string &name)
 	{
+		addOperator("=", 0, 0, 1);
+		
 		addTypename("String");
 		addTypename("Number");
 		addTypename("Matrix");
@@ -1329,15 +1327,6 @@ namespace aris::core
 	auto LanguageParser::parseLanguage()->void
 	{
 		imp_->parseEnvironment(imp_->cmd_map_.begin(), imp_->cmd_map_.end());
-
-		//for (auto &cmd : imp_->cmd_map_)
-		//{
-		//	std::cout << std::setw(4) << cmd.first << " : " << std::setw(15) << cmd.second.cmd << " | " << std::setw(5) << cmd.second.next_cmd_true_ << " | " << cmd.second.next_cmd_false_ << std::endl;
-		//}
-		//for (auto &cmd : imp_->functions_)
-		//{
-		//	std::cout << cmd.first << std::endl;
-		//}
 	}
 	auto LanguageParser::setProgram(std::string_view program)->void
 	{

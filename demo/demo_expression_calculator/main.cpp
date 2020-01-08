@@ -130,7 +130,9 @@ int main()
 	//std::cout << v.first << std::endl;
 	//std::any_cast<aris::core::Matrix&>(v.second).dsp();
 
-	
+	;
+	auto v3 = cmp.calculateExpression("i = 1.523654");
+	std::cout << std::any_cast<double>(v3.second) << std::endl;
 
 
 	char aaa;

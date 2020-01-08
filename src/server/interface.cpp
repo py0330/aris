@@ -453,6 +453,32 @@ namespace aris::server
 
 									ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 
+									////////////  to check if is set ////////////////////
+									auto cut_str = [](std::string_view &input, const char *c)->std::string_view
+									{
+										// 此时c中字符是或的关系 //
+										auto point = input.find_first_of(c);
+										auto ret = input.substr(0, point);
+										input = point == std::string::npos ? std::string_view() : input.substr(point);
+										return ret;
+									};
+									auto trim_left = [](std::string_view &input, const char *c)->std::string_view
+									{
+										auto point = input.find_first_not_of(c);
+										return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
+									};
+									std::string_view whole_cmd = imp_->language_parser_.currentCmd();
+									auto cmd = cut_str(whole_cmd, " ");
+									if (cmd == "set")
+									{
+										c.calculateExpression(whole_cmd);
+										imp_->language_parser_.forward();
+										continue;
+									}
+										
+									///////////////////////////////// check finished ///////////////////////////////
+
+
 									if (imp_->language_parser_.isCurrentLineKeyWord())
 									{
 										cs.waitForAllCollection();
@@ -530,9 +556,8 @@ namespace aris::server
 								cs.waitForAllCollection();
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
 
-								ARIS_PRO_COUT <<"---"<< (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
-
 								std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+								ARIS_PRO_COUT << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 
 								while (!imp_->auto_thread_.joinable());// for windows bug:if thread init too fast, it may fail
 								imp_->auto_thread_.detach();
