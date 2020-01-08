@@ -795,7 +795,7 @@ namespace aris::core
 			THROW_FILE_LINE("\"" + std::string(tpn) + "already exists, can't add this type");
 		}
 
-		imp_->typename_map_.insert(make_pair(tpn, Imp::Typename()));
+		imp_->typename_map_.insert(std::pair(std::string(tpn), Imp::Typename()));
 
 		auto &funs = imp_->function_map_[std::string(tpn)].funs_;
 		auto p_types = std::vector<std::string>{ std::string(tpn) };
@@ -811,7 +811,7 @@ namespace aris::core
 			THROW_FILE_LINE("\"" + std::string(var) + "already exists, can't add this variable");
 		}
 
-		imp_->variable_map_.insert(make_pair(var, Imp::Variable{std::string(type), std::string(var), value}));
+		imp_->variable_map_.insert(std::pair(std::string(var), Imp::Variable{std::string(type), std::string(var), value}));
 	}
 	auto Calculator::addFunction(std::string_view fun, const std::vector<std::string> &params, std::string_view ret_type, BuiltInFunction f)->void
 	{
