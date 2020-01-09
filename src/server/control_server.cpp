@@ -588,17 +588,9 @@ namespace aris::server
 			// 检测是否有数据从executeCmdInMain过来
 			if (imp_->cmdline_msg_received_)
 			{
-				try
-				{
-					auto target = executeCmd(std::string_view(imp_->cmdline_msg_.data(), imp_->cmdline_msg_.size()), imp_->cmdline_post_callback_);
-					imp_->cmdline_msg_received_ = false;
-					imp_->cmdline_execute_promise_->set_value(target);
-				}
-				catch (...)
-				{
-					imp_->cmdline_msg_received_ = false;
-					imp_->cmdline_execute_promise_->set_exception(std::current_exception());
-				}
+				auto ret_plan = executeCmd(std::string_view(imp_->cmdline_msg_.data(), imp_->cmdline_msg_.size()), imp_->cmdline_post_callback_);
+				imp_->cmdline_msg_received_ = false;
+				imp_->cmdline_execute_promise_->set_value(ret_plan);
 			}
 			// 检测是否有数据从command line过来
 			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)

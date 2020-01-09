@@ -439,7 +439,7 @@ namespace aris::server
 								std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
 								auto &c = aris::server::ControlServer::instance().model().calculator();
 
-								auto&cs = aris::server::ControlServer::instance();
+								auto &cs = aris::server::ControlServer::instance();
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
 
 								for (std::atomic_bool is_error{ false }; (!is_error.load()) && (!imp_->language_parser_.isEnd());)
@@ -471,11 +471,23 @@ namespace aris::server
 									auto cmd = cut_str(whole_cmd, " ");
 									if (cmd == "set")
 									{
-										c.calculateExpression(whole_cmd);
-										imp_->language_parser_.forward();
+										try
+										{
+											cs.waitForAllCollection();
+											c.calculateExpression(whole_cmd);
+											imp_->language_parser_.forward();
+										}
+										catch (std::exception &)
+										{
+											imp_->last_error_code_ = aris::plan::Plan::PROGRAM_EXCEPTION;
+											imp_->last_error_ = "invalid set";
+											imp_->last_error_line_ = imp_->language_parser_.currentLine();
+											ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+											is_error.store(true);
+										}
+
 										continue;
 									}
-										
 									///////////////////////////////// check finished ///////////////////////////////
 
 
@@ -536,7 +548,7 @@ namespace aris::server
 										auto current_line = imp_->language_parser_.currentLine();
 										imp_->language_parser_.forward();
 										auto next_line = imp_->language_parser_.currentLine();
-										auto ret = cs.executeCmd(cmd, [&, current_line, next_line](aris::plan::Plan &plan)->void
+										auto ret = cs.executeCmdInCmdLine(cmd, [&, current_line, next_line](aris::plan::Plan &plan)->void
 										{
 											imp_->current_line_.store(next_line);
 
