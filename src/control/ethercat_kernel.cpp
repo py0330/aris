@@ -511,7 +511,7 @@ namespace aris::control
 
 	auto aris_ecrt_pdo_read(const PdoEntry *entry, void *data)->void
 	{
-		auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry->ecHandle());
+		auto &pe_handle = std::any_cast<const PdoEntryHandle&>(entry->ecHandle());
 		read_bit2(reinterpret_cast<char*>(data), entry->bitSize(), pe_handle.data_, pe_handle.bit_position);
 	}
 	auto aris_ecrt_pdo_write(PdoEntry *entry, const void *data)->void

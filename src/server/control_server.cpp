@@ -79,7 +79,7 @@ namespace aris::server
 			~InternalData() 
 			{ 
 				// step 4a. 同步收集4a //
-				if (!has_run_ && has_prepared_ && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION)))
+				if (has_prepared_ && (!has_run_) && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION)))
 				{
 					LOG_INFO << "server collect cmd " << plan_->cmdId() << std::endl;
 					plan_->collectNrt();
