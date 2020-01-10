@@ -70,10 +70,10 @@ namespace aris::plan
 	auto Plan::rtStastic()->aris::control::Master::RtStasticsData & { return imp_->rt_stastic_; }
 	auto Plan::doubleParam(std::string_view param_name)->double { return std::stod(std::string(cmdParams().at(param_name))); }
 	auto Plan::floatParam(std::string_view param_name)->float { return std::stod(std::string(cmdParams().at(param_name))); }
-	auto Plan::int32Param(std::string_view param_name)->std::int32_t { return imp_->getType<std::int32_t>(param_name); }
-	auto Plan::int64Param(std::string_view param_name)->std::int64_t { return imp_->getType<std::int64_t>(param_name); }
-	auto Plan::uint32Param(std::string_view param_name)->std::uint32_t { return imp_->getType<std::uint32_t>(param_name); }
-	auto Plan::uint64Param(std::string_view param_name)->std::uint64_t { return imp_->getType<std::uint64_t>(param_name); }
+	auto Plan::int32Param(std::string_view param_name)->std::int32_t { return std::stol(std::string(cmdParams().at(param_name)), nullptr, 0); }
+	auto Plan::int64Param(std::string_view param_name)->std::int64_t { return std::stoll(std::string(cmdParams().at(param_name)), nullptr, 0); }
+	auto Plan::uint32Param(std::string_view param_name)->std::uint32_t { return std::stoul(std::string(cmdParams().at(param_name)), nullptr, 0); }
+	auto Plan::uint64Param(std::string_view param_name)->std::uint64_t { return std::stoull(std::string(cmdParams().at(param_name)), nullptr, 0); }
 	auto Plan::matrixParam(std::string_view param_name)->aris::core::Matrix
 	{
 		auto &value = cmdParams().at(param_name);

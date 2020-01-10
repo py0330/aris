@@ -677,7 +677,7 @@ namespace aris::core
 			}
 		}
 		auto m = combineMatrices(mtx);
-		return Value{ std::string("Matrix"), m };
+		return Value{ "Matrix", m };
 	}
 	auto Calculator::Imp::CaculateValueInFunction(Iterator &i, Iterator max_end_token)const->Value
 	{

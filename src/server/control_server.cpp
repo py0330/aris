@@ -853,6 +853,7 @@ namespace aris::server
 		{
 			LOG_INFO << "server prepare cmd " << std::to_string(cmd_id) << std::endl;
 			plan->prepareNrt();
+			LOG_INFO << "server prepare finished" << std::endl;
 			internal_data->has_prepared_ = true;
 		}
 		catch (std::exception &e)
@@ -899,7 +900,7 @@ namespace aris::server
 					LOG_AND_THROW(std::runtime_error("server in error, use cl to clear"));
 				}
 				
-				// 只有实时循环才需要 server 已经在运行
+				// 只有实时循环才需要 server 已经在运行 //
 				if (!imp_->is_running_) 
 				{
 					plan->imp_->ret_code = aris::plan::Plan::SERVER_NOT_STARTED;

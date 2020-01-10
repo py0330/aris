@@ -281,6 +281,7 @@ namespace aris::server
 			if (cmd == "program")
 			{
 				ARIS_PRO_COUT <<"---"<< msg_data << std::endl;
+				LOG_INFO << "pro ---" << msg_data << std::endl;
 				
 				for (auto &[param, value] : params)
 				{
@@ -365,6 +366,7 @@ namespace aris::server
 							catch (std::exception &e)
 							{
 								ARIS_COUT << e.what() << std::endl;
+								LOG_ERROR << "pro ---" << msg_data << std::endl;
 								send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, e.what());
 								return 0;
 							}
@@ -452,6 +454,7 @@ namespace aris::server
 									}
 
 									ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+									LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 
 									////////////  to check if is set ////////////////////
 									auto cut_str = [](std::string_view &input, const char *c)->std::string_view
@@ -483,13 +486,13 @@ namespace aris::server
 											imp_->last_error_ = "invalid set";
 											imp_->last_error_line_ = imp_->language_parser_.currentLine();
 											ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+											LOG_ERROR << "pro " << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 											is_error.store(true);
 										}
 
 										continue;
 									}
 									///////////////////////////////// check finished ///////////////////////////////
-
 
 									if (imp_->language_parser_.isCurrentLineKeyWord())
 									{
@@ -558,10 +561,12 @@ namespace aris::server
 												imp_->last_error_ = plan.retMsg();
 												imp_->last_error_line_ = current_line;
 												ARIS_PRO_COUT << imp_->last_error_line_ << "---" << plan.cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+												LOG_ERROR << "pro " << imp_->last_error_line_ << "---" << plan.cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 												is_error.store(true);
 											}
 										});
 										ARIS_PRO_COUT << current_line << "---" << ret->cmdId() << "---" << ret->cmdString() << std::endl;
+										LOG_INFO << "pro " << current_line << "---" << ret->cmdId() << "---" << ret->cmdString() << std::endl;
 									}
 								}
 
@@ -570,6 +575,7 @@ namespace aris::server
 
 								std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
 								ARIS_PRO_COUT << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
+								LOG_INFO << "pro " << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 
 								while (!imp_->auto_thread_.joinable());// for windows bug:if thread init too fast, it may fail
 								imp_->auto_thread_.detach();
