@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
 	std::cout << cs.controller().xmlString() << std::endl;
 
 	auto &m = cs.model();
+	m.init();
 	double mp[6]{ 0,0,0,0,1.57,0 };
 	double mv[6]{ 0.001,0.02,0.01,0.04,0.01,0.02 };
 	double ma[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
@@ -236,36 +237,6 @@ int main(int argc, char *argv[])
 	//dynamic_cast<aris::control::EthercatMotor&>(cs.controller().slaveAtAbs(1)).setMinPos(-0.1);
 	//dynamic_cast<aris::control::EthercatMotor&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
 	////////////////////////////////////////////////////////////////////////////////////
-	/*
-	cs.planRoot().planPool().add<aris::plan::UniversalPlan>("tt", [&](const std::map<std::string, std::string> &, aris::plan::Plan &t)->void
-	{
-		auto ct = cs.currentCollectTarget();
-
-		t.ret = std::vector<std::pair<std::string, std::any>>();
-
-		if (ct)
-		{
-			std::cout << "current plan:" << ct->plan->name() << std::endl;
-		}
-		else
-		{
-			std::cout << "no current plan" << std::endl;
-		}
-		
-		//t.option = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION;
-	}, [&](aris::plan::Plan &plan)->int
-	{
-		if (plan.count() == 1)plan.controller()->logFileRawName("test");
-		
-		plan.controller()->lout() << plan.count() << "\n";
-
-		plan.controller()->motionAtAbs(0).setTargetPos(plan.count()*0.002);
-		return 100LL - plan.count();
-	}, [&](aris::plan::Plan &)->void
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	}, "<Command name=\"tt\"/>");
-	*/
 
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");
@@ -290,14 +261,14 @@ int main(int argc, char *argv[])
 	//}
 
 
-	try
-	{
-		cs.executeCmd("rmFi --filePath=/home/kaanh/log --memo=20000");
-	}
-	catch (std::exception &e)
-	{
-		std::cout << e.what() << std::endl;
-	}
+	//try
+	//{
+	//	cs.executeCmd("rmFi --filePath=/home/kaanh/log --memo=20000");
+	//}
+	//catch (std::exception &e)
+	//{
+	//	std::cout << e.what() << std::endl;
+	//}
 	cs.planRoot().planPool().add<aris::plan::MoveSeries>("move_series");
 	cs.planRoot().planPool().add<aris::server::GetInfo>();
 
@@ -331,6 +302,7 @@ int main(int argc, char *argv[])
 	//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
 	//cs.loadXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
 
+	cs.init();
 	cs.open();
 	cs.runCmdLine();
 	

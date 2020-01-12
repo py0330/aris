@@ -49,8 +49,9 @@ namespace aris::control
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 
 		// used only in non-rt thread //
-		auto start()->void;
-		auto stop()->void;
+		auto virtual init()->void;
+		auto virtual start()->void;
+		auto virtual stop()->void;
 		auto setControlStrategy(std::function<void()> strategy)->void;
 		auto setSamplePeriodNs(int period_ns);
 		auto samplePeriodNs()const ->int;
@@ -78,7 +79,6 @@ namespace aris::control
 		Master& operator=(Master &&other) = delete;
 
 	protected:
-		auto virtual init()->void {}
 		auto virtual send()->void { for (auto &s : slavePool())s.send(); }
 		auto virtual recv()->void { for (auto &s : slavePool())s.recv(); }
 		auto virtual release()->void {}

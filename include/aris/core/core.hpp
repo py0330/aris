@@ -48,7 +48,7 @@
 // - make xml support chinese                                             check
 // - check if xenomai can be started from sub-thread                      use runCmdLine to work
 // - scan from esi file                                                   check
-// - make virtual axis
+// - make virtual axis                                                    check
 // - add tool coordinate easy
 
 // to do list 2019-06-17:
@@ -56,7 +56,7 @@
 // - make ChildRefPool                                                    check
 
 // to do list 2019-06-24:
-// - check of require ENABLE MODE8\9\10
+// - check of require ENABLE MODE8\9\10                                   check
 // - config sdo
 // 
 // to do list 2019-07-24

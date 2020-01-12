@@ -91,13 +91,11 @@ namespace aris::control
 	Motor::Motor(const Motor &other) = default;
 	Motor& Motor::operator=(const Motor &other) = default;
 
-	struct Controller::Imp 
-	{ 
-		aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>> motion_pool_{ nullptr };
-	};
+	struct Controller::Imp { aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>> motion_pool_{ nullptr }; };
 	auto Controller::motionPool()->aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>>& { return imp_->motion_pool_; }
 	auto Controller::init()->void
 	{
+		Master::init();
 		imp_->motion_pool_ = aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>>(&slavePool());
 		motionPool().update();
 		for (int i = 0; i < motionPool().size(); ++i)motionPool()[i].imp_->mot_id_ = i;

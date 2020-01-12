@@ -211,6 +211,8 @@ namespace aris::dynamic
 	public:
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
+		auto virtual init()->void;
+
 		auto time()const->double;
 		auto setTime(double time)->void;
 		/// @{

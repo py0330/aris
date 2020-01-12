@@ -80,6 +80,7 @@ namespace aris::control
 	class Controller : public virtual Master
 	{
 	public:
+		auto virtual init()->void override;
 		auto motionPool()->aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>>&;
 		auto motionPool()const->const aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 		auto motionAtSla(aris::Size id)->Motor&;
@@ -97,8 +98,7 @@ namespace aris::control
 		Controller& operator=(const Controller &other) = delete;
 		Controller& operator=(Controller &&other) = delete;
 
-	protected:
-		auto virtual init()->void override;
+		
 
 	private:
 		struct Imp;

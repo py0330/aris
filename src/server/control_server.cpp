@@ -76,20 +76,20 @@ namespace aris::server
 			std::function<void(aris::plan::Plan&)> post_callback_;
 			bool has_prepared_{ false }, has_run_{ false };
 
-			~InternalData() 
-			{ 
+			~InternalData()
+			{
 				// step 4a. 同步收集4a //
 				if (has_prepared_ && (!has_run_) && (!(plan_->option() & aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION)))
 				{
 					LOG_INFO << "server collect cmd " << plan_->cmdId() << std::endl;
 					plan_->collectNrt();
 				}
-				
+
 				// step 5a & 5b //
 				if (post_callback_)post_callback_(*plan_);
 			}
 		};
-		
+
 		auto tg()->void;
 		auto executeCmd(aris::plan::Plan &plan)->int;
 		auto checkMotion(const std::uint64_t *mot_options, char *error_msg, std::int64_t count_)->int;
@@ -109,7 +109,7 @@ namespace aris::server
 		// 实时循环中的轨迹参数 //
 		enum { CMD_POOL_SIZE = 1000 };
 		std::shared_ptr<InternalData> internal_data_queue_[CMD_POOL_SIZE];
-		
+
 		// 全局count //
 		std::atomic<std::int64_t> global_count_{ 0 };
 
@@ -156,12 +156,12 @@ namespace aris::server
 	{
 		// pre callback //
 		if (auto call = pre_callback_.load())call(ControlServer::instance());
-		
+
 		// 原子操作
-		auto global_count = ++global_count_; 
+		auto global_count = ++global_count_;
 		auto cmd_now = cmd_now_.load();
 		auto cmd_end = cmd_end_.load();
-		union{	std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix;	} err;};
+		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
 		err_code_and_fixed = err_code_and_fixed_.load();
 
 		// 如果处于错误状态,或者错误还未清理完 //
@@ -199,7 +199,7 @@ namespace aris::server
 			{
 				err.fix = fixError(true);
 				err_code_and_fixed_.store(err_code_and_fixed);
-				
+
 				// finish //
 				std::copy_n(err_msg_, 1024, plan.imp_->ret_msg);
 				plan.imp_->ret_code = err.code;
@@ -503,8 +503,8 @@ namespace aris::server
 	}
 	auto ControlServer::resetModel(dynamic::Model *model)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
-		{ 
+		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj)
+		{
 			auto found = dynamic_cast<const aris::dynamic::Model*>(&obj);
 			return found && imp_->model_ == found;
 		});
@@ -514,8 +514,8 @@ namespace aris::server
 	}
 	auto ControlServer::resetController(control::Controller *controller)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
-		{ 
+		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj)
+		{
 			auto found = dynamic_cast<const aris::control::Controller*>(&obj);
 			return found && imp_->controller_ == found;
 		});
@@ -525,8 +525,8 @@ namespace aris::server
 	}
 	auto ControlServer::resetSensorRoot(sensor::SensorRoot *sensor_root)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
-		{ 
+		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj)
+		{
 			auto found = dynamic_cast<const aris::sensor::SensorRoot*>(&obj);
 			return found && imp_->sensor_root_ == found;
 		});
@@ -536,7 +536,7 @@ namespace aris::server
 	}
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj) 
+		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj)
 		{
 			auto found = dynamic_cast<const aris::plan::PlanRoot*>(&obj);
 			return found && imp_->plan_root_ == found;
@@ -551,8 +551,8 @@ namespace aris::server
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::ObjectPool<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
-	auto ControlServer::errorCode()const->int 
-	{ 
+	auto ControlServer::errorCode()const->int
+	{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
 		err_code_and_fixed = imp_->err_code_and_fixed_.load();
 		return err.err_code;
@@ -568,11 +568,7 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();
 		return cmd_end > cmd_now ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->plan_.get() : nullptr;
 	}
-	auto ControlServer::open()->void 
-	{
-		planRoot().init();
-		for (auto &inter : interfacePool()) inter.open();
-	}
+	auto ControlServer::open()->void{ for (auto &inter : interfacePool()) inter.open();	}
 	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
 	auto ControlServer::runCmdLine()->void
 	{
@@ -599,7 +595,7 @@ namespace aris::server
 				{
 					ARIS_COUT_PLAN((&plan)) << "return code :" << plan.retCode() << "\n";
 					ARIS_COUT_PLAN((&plan)) << "return msg  :" << plan.retMsg() << std::endl;
-					LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n"<< std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
+					LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n" << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
 				});
 
 				ret = std::async(std::launch::async, []()->std::string
@@ -634,7 +630,7 @@ namespace aris::server
 				std::vector<char> cmd_str_local(str.size());
 				std::copy(str.begin(), str.end(), cmd_str_local.begin());
 				str = std::string_view(cmd_str_local.data(), cmd_str_local.size());
-				
+
 				++cmd_id;
 				LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << str << std::endl;
 				auto[cmd, params] = planRoot().planParser().parse(str);
@@ -680,7 +676,7 @@ namespace aris::server
 				LOG_INFO << "server prepare cmd " << std::to_string(cmd_id) << std::endl;
 				plan->prepareNrt();
 				(*p)->has_prepared_ = true;
-				
+
 			}
 			catch (std::exception &e)
 			{
@@ -693,7 +689,7 @@ namespace aris::server
 				return ret_plan;
 			}
 		}
-		
+
 		// print and log cmd info /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		for (auto &plan : ret_plan)
 		{
@@ -720,7 +716,7 @@ namespace aris::server
 			}
 		}
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
+
 		// step 3.  execute //
 		auto cmd_end = imp_->cmd_end_.load();
 		std::vector<std::shared_ptr<Imp::InternalData>> need_run_internal;
@@ -766,7 +762,7 @@ namespace aris::server
 		}
 		// 添加命令 //
 		LOG_INFO << "server execute cmd " << std::to_string(cmd_id) << std::endl;
-		for (auto &inter : need_run_internal) 
+		for (auto &inter : need_run_internal)
 		{
 			imp_->internal_data_queue_[cmd_end++ % Imp::CMD_POOL_SIZE] = inter;
 			inter->has_run_ = true;
@@ -805,20 +801,20 @@ namespace aris::server
 
 		// init internal data with an empty plan //
 		static std::shared_ptr<aris::plan::Plan> default_return_plan(new aris::plan::Plan);
-		auto internal_data = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ default_return_plan, post_callback});
+		auto internal_data = std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ default_return_plan, post_callback });
 		auto &plan = internal_data->plan_;
 
 		// step 1.  parse //
 		static std::uint64_t cmd_id{ 0 };
-		try	
-		{ 
+		try
+		{
 			std::vector<char> cmd_str_local(cmd_str.size());
 			std::copy(cmd_str.begin(), cmd_str.end(), cmd_str_local.begin());
 			cmd_str = std::string_view(cmd_str_local.data(), cmd_str_local.size());
 
 			++cmd_id;
 			LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << cmd_str << std::endl;
-			auto [cmd, params] = planRoot().planParser().parse(cmd_str);
+			auto[cmd, params] = planRoot().planParser().parse(cmd_str);
 			auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 			plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter)));
 			plan->imp_->count_ = 0;
@@ -894,14 +890,14 @@ namespace aris::server
 			if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
 			{
 				// 查看是否处于错误状态 //
-				if (this->errorCode()) 
+				if (this->errorCode())
 				{
 					plan->imp_->ret_code = aris::plan::Plan::SERVER_IN_ERROR;
 					LOG_AND_THROW(std::runtime_error("server in error, use cl to clear"));
 				}
-				
+
 				// 只有实时循环才需要 server 已经在运行 //
-				if (!imp_->is_running_) 
+				if (!imp_->is_running_)
 				{
 					plan->imp_->ret_code = aris::plan::Plan::SERVER_NOT_STARTED;
 					LOG_AND_THROW(std::runtime_error("server not started, use cs_start to start"));
@@ -922,7 +918,7 @@ namespace aris::server
 				imp_->cmd_end_.store(++cmd_end); // 原子操作 //
 				internal_data->has_run_ = true;
 
-				 // 等待当前任务完成 //
+				// 等待当前任务完成 //
 				if (plan->option() & aris::plan::Plan::WAIT_FOR_EXECUTION)waitForAllExecution();
 
 				// 等待当前任务收集 //
@@ -950,6 +946,12 @@ namespace aris::server
 		imp_->cmdline_msg_received_ = true;
 
 		return ret.get();
+	}
+	auto ControlServer::init()->void
+	{
+		model().init();
+		controller().init();
+		planRoot().init();
 	}
 	auto ControlServer::start()->void
 	{

@@ -113,8 +113,6 @@ namespace aris::dynamic
 		}
 		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
 
-
-
 		// add velocity variables
 		model->variablePool().add<aris::dynamic::MatrixVariable>("v5", aris::core::Matrix({ 0.01, 0.005, 200 * aris::PI / 180, 0.0, 0.0 }));
 		model->variablePool().add<aris::dynamic::MatrixVariable>("v10", aris::core::Matrix({ 0.03, 0.01, 200 * aris::PI / 180, 0.0, 0.0 }));
@@ -134,12 +132,6 @@ namespace aris::dynamic
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
-
-		inverse_kinematic.allocateMemory();
-		forward_kinematic.allocateMemory();
-		inverse_dynamic.allocateMemory();
-		forward_dynamic.allocateMemory();
-
 		inverse_kinematic.setWhichRoot(8);
 
 		// make topology correct // 

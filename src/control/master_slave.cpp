@@ -87,8 +87,6 @@ namespace aris::control
 				if (mst.imp_->this_stastics_)add_time_to_stastics(time, mst.imp_->this_stastics_);
 				if (mst.imp_->is_need_change_)mst.imp_->this_stastics_ = mst.imp_->next_stastics_;
 			}
-
-			mst.imp_->is_mout_thread_running_ = false;
 		}
 
 		// slave //
@@ -105,7 +103,6 @@ namespace aris::control
 		std::function<void()> strategy_{ nullptr };
 
 		// running flag //
-		std::mutex mu_running_;
 		std::atomic_bool is_rt_thread_running_{ false };
 		std::atomic_bool is_mout_thread_running_{ false };
 
@@ -140,12 +137,8 @@ namespace aris::control
 		imp_->mout_pipe_ = findOrInsert<aris::core::Pipe>("mout_pipe");
 		imp_->lout_pipe_ = findOrInsert<aris::core::Pipe>("lout_pipe");
 	}
-	auto Master::start()->void
+	auto Master::init()->void
 	{
-		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-		if (imp_->is_rt_thread_running_)THROW_FILE_LINE("master already running, so cannot start");
-		imp_->is_rt_thread_running_ = true;
-
 		// make vec_phy2abs //
 		imp_->sla_vec_phy2abs_.clear();
 		for (auto &sla : slavePool())
@@ -154,9 +147,11 @@ namespace aris::control
 			if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
 			imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();
 		}
-
-		// init child master //
-		init();
+	}
+	auto Master::start()->void
+	{
+		if (imp_->is_rt_thread_running_)THROW_FILE_LINE("master already running, so cannot start");
+		imp_->is_rt_thread_running_ = true;
 
 		// lock memory // 
 		aris_mlockall();
@@ -225,14 +220,14 @@ namespace aris::control
 	}
 	auto Master::stop()->void
 	{
-		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		if (!imp_->is_rt_thread_running_)THROW_FILE_LINE("master is not running, so can't stop");
-		imp_->is_rt_thread_running_ = false;
-
+		
 		// join rt task //
+		imp_->is_rt_thread_running_ = false;
 		if (aris_rt_task_join(rtHandle()))THROW_FILE_LINE("aris_rt_task_join failed");
 
 		// join mout task //
+		imp_->is_mout_thread_running_ = false;
 		imp_->mout_thread_.join();
 
 		// release child resources //
@@ -240,7 +235,6 @@ namespace aris::control
 	}
 	auto Master::setControlStrategy(std::function<void()> strategy)->void
 	{
-		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		if (imp_->is_rt_thread_running_)THROW_FILE_LINE("master already running, cannot set control strategy");
 		imp_->strategy_ = strategy;
 	}

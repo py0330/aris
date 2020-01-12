@@ -1762,6 +1762,7 @@ namespace aris::plan
 
 	auto Stop::prepareNrt()->void
 	{
+		controlServer()->waitForAllCollection();
 		controlServer()->stop();
 		option() |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
 

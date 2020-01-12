@@ -151,7 +151,7 @@ namespace aris::control
 
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-
+		auto virtual init()->void override;
 		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&;
 		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
 		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtAbs(id)); }
@@ -181,7 +181,6 @@ namespace aris::control
 		ARIS_REGISTER_TYPE(EthercatMaster);
 
 	protected:
-		auto virtual init()->void override;
 		auto virtual send()->void override;
 		auto virtual recv()->void override;
 		auto virtual release()->void override;

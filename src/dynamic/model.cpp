@@ -51,14 +51,13 @@ namespace aris::dynamic
 		imp_->sim_result_pool_ = findOrInsertType<aris::core::ObjectPool<SimResult, Element>>();
 		imp_->calibrator_pool_ = findOrInsertType<aris::core::ObjectPool<Calibrator, Element>>();
 		imp_->ground_ = partPool().findOrInsert<Part>("ground");
-
-		for (auto &s : this->solverPool())s.allocateMemory();
 	}
 	auto Model::saveXml(aris::core::XmlElement &xml_ele)const->void
 	{
 		Object::saveXml(xml_ele);
 		xml_ele.SetAttribute("time", time());
 	}
+	auto Model::init()->void { for (auto &s : this->solverPool())s.allocateMemory(); }
 	auto Model::time()const->double { return imp_->time_; }
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }
