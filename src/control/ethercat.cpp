@@ -313,9 +313,8 @@ namespace aris::control
 				}
 			}
 		}
-
-		aris_ecrt_master_request(this);
 	}
+	auto EthercatMaster::start()->void { aris_ecrt_master_request(this); Master::start(); }
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(this); }
 	auto EthercatMaster::send()->void { aris_ecrt_master_send(this); }
 	auto EthercatMaster::recv()->void { aris_ecrt_master_recv(this); }

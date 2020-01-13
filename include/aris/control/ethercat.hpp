@@ -149,9 +149,7 @@ namespace aris::control
 									  */
 		} MasterLinkState;
 
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual init()->void override;
+		
 		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&;
 		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
 		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtAbs(id)); }
@@ -172,6 +170,11 @@ namespace aris::control
 		auto getDeviceList()->std::string;
 		auto getPdoList(int vendor_id, int product_code, int revision_num)->std::string;
 
+		auto virtual init()->void override;
+		auto virtual start()->void override;
+		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
+		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		
 		virtual ~EthercatMaster();
 		EthercatMaster(const std::string &name = "ethercat_master");
 		EthercatMaster(const EthercatMaster &other) = delete;
@@ -278,6 +281,7 @@ namespace aris::control
 		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return EthercatMaster::slaveAtPhy(id); }
 		auto slaveAtPhy(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
 
+		auto virtual start()->void override { EthercatMaster::start(); }
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override { EthercatMaster::saveXml(xml_ele); }
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override { EthercatMaster::loadXml(xml_ele); }
 
