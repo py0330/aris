@@ -57,7 +57,18 @@ namespace aris::dynamic
 		Object::saveXml(xml_ele);
 		xml_ele.SetAttribute("time", time());
 	}
-	auto Model::init()->void { for (auto &s : this->solverPool())s.allocateMemory(); }
+	auto Model::init()->void 
+	{
+		for (auto &var : variablePool())
+		{
+			auto[type, value] = calculator().calculateExpression(var.toString());
+			//ancestor<Model>()->calculator().addVariable(name(), tyh);
+		}
+		
+		
+		for (auto &s : this->solverPool())s.allocateMemory();
+
+	}
 	auto Model::time()const->double { return imp_->time_; }
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }

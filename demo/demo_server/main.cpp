@@ -102,6 +102,9 @@ int main(int argc, char *argv[])
 
 	auto &m = cs.model();
 	m.init();
+
+	auto &c = m.calculator();
+
 	double mp[6]{ 0,0,0,0,1.57,0 };
 	double mv[6]{ 0.001,0.02,0.01,0.04,0.01,0.02 };
 	double ma[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
@@ -299,8 +302,10 @@ int main(int argc, char *argv[])
 
 	for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);
 
-	//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
-	//cs.loadXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
+	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
+	cs.loadXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
+
+	auto &cal = cs.model().calculator();
 
 	cs.init();
 	cs.open();
