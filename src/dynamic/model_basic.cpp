@@ -90,12 +90,12 @@ namespace aris::dynamic
 	{
 		Variable::loadXml(xml_ele);
 		data() = std::any_cast<const aris::core::Matrix&>(ancestor<Model>()->calculator().calculateExpression(xml_ele.GetText()).second);
-		ancestor<Model>()->calculator().addVariable(name(), "Matrix", data());
+		//ancestor<Model>()->calculator().addVariable(name(), "Matrix", data());
 	}
 	auto StringVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Variable::loadXml(xml_ele);
 		data() = std::string(xml_ele.GetText());
-		ancestor<Model>()->calculator().addVariable(name(), "String", data());
+		//ancestor<Model>()->calculator().addVariable(name(), "String", data());
 	}
 }
