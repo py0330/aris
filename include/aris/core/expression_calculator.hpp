@@ -145,7 +145,7 @@ namespace aris::core
 		return combineColMatrices(mat_col_list);
 	}
 
-	class Calculator: public aris::core::Object
+	class Calculator
 	{
 	public:
 		using BuiltInFunction = std::function<std::any(std::vector<std::any>&)>;
@@ -164,10 +164,12 @@ namespace aris::core
 		auto addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void;
 		auto clearVariables()->void;
 
+		//auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		//auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 		virtual ~Calculator();
 		explicit Calculator(const std::string &name = "calculator");
 		ARIS_DECLARE_BIG_FOUR(Calculator);
-		ARIS_REGISTER_TYPE(Calculator)
+		//ARIS_REGISTER_TYPE(Calculator)
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
