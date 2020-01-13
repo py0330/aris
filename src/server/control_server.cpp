@@ -952,14 +952,8 @@ namespace aris::server
 		model().init();
 		controller().init();
 		planRoot().init();
-	}
-	auto ControlServer::start()->void
-	{
-		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		if (imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to start server, because it is already started "));
-		imp_->is_running_ = true;
 
-		// 分配所需要的内存 //
+		// 分配自身所需要的内存 //
 		Size mem_size = 0;
 
 		core::allocMem(mem_size, imp_->last_pvc_, controller().slavePool().size());
@@ -979,6 +973,30 @@ namespace aris::server
 		imp_->cmd_now_.store(0);
 		imp_->cmd_end_.store(0);
 		imp_->cmd_collect_.store(0);
+	}
+	auto ControlServer::start()->void
+	{
+		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
+		if (imp_->is_running_)LOG_AND_THROW(std::runtime_error("failed to start server, because it is already started "));
+		
+		struct RaiiCollector
+		{
+			ControlServer *cs_;
+			auto reset()->void { cs_ = nullptr; }
+			RaiiCollector(ControlServer *cs) :cs_(cs) {}
+			~RaiiCollector() 
+			{
+				if (cs_)
+				{
+					cs_->imp_->is_running_ = false;
+					cs_->imp_->is_collect_running_ = false;
+					if (cs_->imp_->collect_thread_.joinable())cs_->imp_->collect_thread_.join();
+				}
+			}
+		};
+		RaiiCollector raii_collector(this);
+
+		imp_->is_running_ = true;
 
 		// start collect thread //
 		imp_->is_collect_running_ = true;
@@ -989,7 +1007,7 @@ namespace aris::server
 				auto cmd_collect = imp_->cmd_collect_.load();//原子操作
 				auto cmd_now = imp_->cmd_now_.load();//原子操作
 
-				// step 4b. //
+													 // step 4b. //
 				if (cmd_collect < cmd_now)
 				{
 					auto &internal_data = imp_->internal_data_queue_[cmd_collect % Imp::CMD_POOL_SIZE];
@@ -1026,6 +1044,8 @@ namespace aris::server
 
 		sensorRoot().start();
 		controller().start();
+
+		raii_collector.reset();
 	}
 	auto ControlServer::stop()->void
 	{

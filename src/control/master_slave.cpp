@@ -153,6 +153,24 @@ namespace aris::control
 		if (imp_->is_rt_thread_running_)THROW_FILE_LINE("master already running, so cannot start");
 		imp_->is_rt_thread_running_ = true;
 
+		struct RaiiCollector
+		{
+			Master *self_;
+			auto reset()->void { self_ = nullptr; }
+			RaiiCollector(Master *self) :self_(self) {}
+			~RaiiCollector()
+			{
+				if (self_)
+				{
+					self_->imp_->is_rt_thread_running_ = false;
+					aris_rt_task_join(self_->rtHandle());
+					self_->imp_->is_mout_thread_running_ = false;
+					if (self_->imp_->mout_thread_.joinable())self_->imp_->mout_thread_.join();
+				}
+			}
+		};
+		RaiiCollector raii_collector(this);
+
 		// lock memory // 
 		aris_mlockall();
 
@@ -217,6 +235,8 @@ namespace aris::control
 		imp_->rt_task_handle_ = aris_rt_task_create();
 		if (!imp_->rt_task_handle_.has_value()) THROW_FILE_LINE("rt_task_create failed");
 		if (aris_rt_task_start(rtHandle(), &Imp::rt_task_func, this))THROW_FILE_LINE("rt_task_start failed");
+
+		raii_collector.reset();
 	}
 	auto Master::stop()->void
 	{

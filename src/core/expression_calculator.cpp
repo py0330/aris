@@ -867,7 +867,7 @@ namespace aris::core
 	}
 	auto Calculator::clearVariables()->void { imp_->variable_map_.clear(); }
 	Calculator::~Calculator() = default;
-	Calculator::Calculator(const std::string &name)
+	Calculator::Calculator(const std::string &name):Object(name)
 	{
 		addOperator("=", 0, 0, 1);
 		
@@ -1055,10 +1055,7 @@ namespace aris::core
 			return std::sin(std::any_cast<double>(params[0]));
 		});
 	}
-	Calculator::Calculator(const Calculator &) = default;
-	Calculator::Calculator(Calculator &&) = default;
-	Calculator& Calculator::operator=(const Calculator &) = default;
-	Calculator& Calculator::operator=(Calculator &&) = default;
+	ARIS_DEFINE_BIG_FOUR_CPP(Calculator);
 
 	struct LanguageParser::Imp
 	{
@@ -1324,10 +1321,7 @@ namespace aris::core
 		std::list<int> function_ret_stack_;
 		std::string program_;
 	};
-	auto LanguageParser::parseLanguage()->void
-	{
-		imp_->parseEnvironment(imp_->cmd_map_.begin(), imp_->cmd_map_.end());
-	}
+	auto LanguageParser::parseLanguage()->void{	imp_->parseEnvironment(imp_->cmd_map_.begin(), imp_->cmd_map_.end());}
 	auto LanguageParser::setProgram(std::string_view program)->void
 	{
 		imp_->cmd_map_.clear();
