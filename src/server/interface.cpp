@@ -479,11 +479,12 @@ namespace aris::server
 											cs.waitForAllCollection();
 											c.calculateExpression(whole_cmd);
 											imp_->language_parser_.forward();
+											imp_->current_line_.store(imp_->language_parser_.currentLine());
 										}
-										catch (std::exception &)
+										catch (std::exception &e)
 										{
 											imp_->last_error_code_ = aris::plan::Plan::PROGRAM_EXCEPTION;
-											imp_->last_error_ = "invalid set";
+											imp_->last_error_ = e.what();
 											imp_->last_error_line_ = imp_->language_parser_.currentLine();
 											ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 											LOG_ERROR << "pro " << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
@@ -511,10 +512,12 @@ namespace aris::server
 												if (auto ret_double = std::any_cast<double>(&ret.second))
 												{
 													imp_->language_parser_.forward(*ret_double != 0.0);
+													imp_->current_line_.store(imp_->language_parser_.currentLine());
 												}
 												else if (auto ret_mat = std::any_cast<aris::core::Matrix>(&ret.second))
 												{
 													imp_->language_parser_.forward(ret_mat->toDouble() != 0.0);
+													imp_->current_line_.store(imp_->language_parser_.currentLine());
 												}
 												else
 												{
@@ -538,12 +541,14 @@ namespace aris::server
 										else
 										{
 											imp_->language_parser_.forward();
+											imp_->current_line_.store(imp_->language_parser_.currentLine());
 										}
 									}
 									else if (imp_->language_parser_.isCurrentLineFunction())
 									{
 										cs.waitForAllCollection();
 										imp_->language_parser_.forward();
+										imp_->current_line_.store(imp_->language_parser_.currentLine());
 									}
 									else
 									{
