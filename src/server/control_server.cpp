@@ -1007,7 +1007,7 @@ namespace aris::server
 				auto cmd_collect = imp_->cmd_collect_.load();//原子操作
 				auto cmd_now = imp_->cmd_now_.load();//原子操作
 
-													 // step 4b. //
+				// step 4b. //
 				if (cmd_collect < cmd_now)
 				{
 					auto &internal_data = imp_->internal_data_queue_[cmd_collect % Imp::CMD_POOL_SIZE];

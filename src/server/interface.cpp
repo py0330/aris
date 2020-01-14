@@ -357,7 +357,7 @@ namespace aris::server
 									input = trim_left(input, " =");
 
 									auto value = input;
-									c.addVariable(name, type, c.calculateExpression(value).second);
+									c.addVariable(name, type, c.calculateExpression(std::string(type) + "(" + std::string(value) + ")").second);
 								}
 
 								send_code_and_msg(0, std::string());
