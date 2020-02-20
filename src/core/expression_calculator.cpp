@@ -871,9 +871,6 @@ namespace aris::core
 	//	Object::loadXml(xml_ele);
 	//	imp_->variable_map_.clear();
 	//	
-
-
-
 	//}
 	//auto Calculator::saveXml(aris::core::XmlElement &xml_ele)const->void {}
 	Calculator::~Calculator() = default;
@@ -1382,6 +1379,16 @@ namespace aris::core
 	}
 	auto LanguageParser::currentLine()const->int { return imp_->current_id_; }
 	auto LanguageParser::currentCmd()const->const std::string& { return imp_->cmd_map_.at(imp_->current_id_).cmd; }
+	auto LanguageParser::currentWord()const->std::string_view
+	{
+		std::string_view v = currentCmd();
+		return v.substr(0, v.find_first_of(" \t\n\r\f\v([{}])"));
+	}
+	auto LanguageParser::currentParamStr()const->std::string_view
+	{
+		std::string_view v = currentCmd();
+		return v.substr(v.find_first_of(" \t\n\r\f\v([{}])"));
+	}
 	auto LanguageParser::isCurrentLineKeyWord()const->bool
 	{
 		auto cmd_name = currentCmd().substr(0, currentCmd().find_first_of(" \t\n\r\f\v("));

@@ -147,10 +147,9 @@ namespace aris::server
 		std::atomic<PostCallback> post_callback_{ nullptr };
 
 		// execute in cmd line
-		std::function<void(aris::plan::Plan&)> cmdline_post_callback_;
-		std::string_view cmdline_msg_;
+		std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)> > > cmdline_cmd_vec_;
 		std::atomic_bool cmdline_msg_received_ = false;
-		std::shared_ptr<std::promise<std::shared_ptr<aris::plan::Plan>>> cmdline_execute_promise_;
+		std::shared_ptr<std::promise<std::vector<std::shared_ptr<aris::plan::Plan>> > > cmdline_execute_promise_;
 	};
 	auto ControlServer::Imp::tg()->void
 	{
@@ -323,7 +322,7 @@ namespace aris::server
 						&& ((cm.targetPos() - ld.p) > dt * cm.maxVel() || (cm.targetPos() - ld.p) < dt * cm.minVel()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc_[i].p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, ld.p, cm.targetPos());
 						return error_code;
 					}
 
@@ -332,7 +331,7 @@ namespace aris::server
 						&& ((cm.targetPos() + lld.p - 2 * ld.p) > dt * dt * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < dt * dt * cm.minAcc()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %lf\tlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, lld.p, last_pvc_[i].p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %lf\tlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, lld.p, ld.p, cm.targetPos());
 						return error_code;
 					}
 
@@ -372,7 +371,7 @@ namespace aris::server
 						&& ((cm.targetVel() - ld.v) > dt * cm.maxAcc() || (cm.targetVel() - ld.v) < dt * cm.minAcc()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc_[i].v, cm.targetVel());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, ld.v, cm.targetVel());
 						return error_code;
 					}
 
@@ -430,7 +429,7 @@ namespace aris::server
 						&& ((cm.actualVel() - ld.v) > dt * cm.maxAcc() || (cm.actualVel() - ld.v) < dt * cm.minAcc()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, last_pvc_[i].p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, ld.p, cm.targetPos());
 						return error_code;
 					}
 					break;
@@ -584,7 +583,7 @@ namespace aris::server
 			// 检测是否有数据从executeCmdInMain过来
 			if (imp_->cmdline_msg_received_)
 			{
-				auto ret_plan = executeCmd(std::string_view(imp_->cmdline_msg_.data(), imp_->cmdline_msg_.size()), imp_->cmdline_post_callback_);
+				auto ret_plan = executeCmd(imp_->cmdline_cmd_vec_);
 				imp_->cmdline_msg_received_ = false;
 				imp_->cmdline_execute_promise_->set_value(ret_plan);
 			}
@@ -612,18 +611,45 @@ namespace aris::server
 			}
 		}
 	}
-	auto ControlServer::executeCmd(std::vector<std::string_view> cmd_str, std::function<void(aris::plan::Plan&)> post_callback)->std::vector<std::shared_ptr<aris::plan::Plan>>
+	//
+	// 1.每个输入的str,一定会有返回的plan，即使parse失败
+	// 2.任何一个str parse失败，全部指令都不执行
+	// 3.任何一个prepare失败，全部指令都不执行
+	// 4.任何一个prepare失败，之前prepare成功的会collect，其他的不会（只有prepare且成功的，才会collect）
+	auto ControlServer::executeCmd(std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)> > > cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
 	{
+		// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
+		// 1.   parse str
+		//   ---       success : goto 2   ---err_code : SUCCESS                                             ---plan : new plan
+		//   ---       throw   : goto 5a  ---err_code : PARSE_EXCEPTION      ---err_msg : exception.what()  ---plan : default empty plan
+		// 2.   prepare plan
+		//   ---       success : goto 3                                                                    
+		//   ---       throw   : goto 5a  ---err_code : PREPARE_EXCEPTION    ---err_msg : exception.what()
+		// 3.   execute plan Async
+		//   ---   not execute : goto 4a
+		//   ---       success : goto 4b
+		//   ---     sys error : goto 4a  ---err_code : SERVER_IN_ERROR      ---err_msg : same
+		//   --- sys not start : goto 4a  ---err_code : SERVER_NOT_STARTED   ---err_msg : same
+		//   --- cmd pool full : goto 4a  ---err_code : COMMAND_POOL_FULL    ---err_msg : same
+		//   ---     RT failed : goto 4b  ---err_code : CHECK or USER ERROR  ---err_msg : check or user
+		// 4a.  collect plan Sync
+		//   ---   not collect : goto 5a
+		//   ---       success : goto 5a
+		// 4b.  collect plan Async
+		//   ---   not collect : goto 5b
+		//   ---       success : goto 5b
+		// 5a.  callback Sync  : goto end
+		// 5b.  callback Async : goto end
+		// end
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 
 		// step 1.  parse //
-		static std::shared_ptr<aris::plan::Plan> default_return_plan(new aris::plan::Plan);
 		std::vector<std::shared_ptr<Imp::InternalData>> internal_data;
 		std::vector<std::shared_ptr<aris::plan::Plan>> ret_plan;
 		static std::uint64_t cmd_id{ 0 };
-		for (auto str : cmd_str)
+		for (auto &[str, post_callback] : cmd_vec)
 		{
-			internal_data.push_back(std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ default_return_plan, post_callback }));
+			internal_data.push_back(std::shared_ptr<Imp::InternalData>(new Imp::InternalData{ std::shared_ptr<aris::plan::Plan>(nullptr), post_callback }));
 			auto &plan = internal_data.back()->plan_;
 			try
 			{
@@ -646,7 +672,7 @@ namespace aris::server
 				plan->imp_->shared_for_this_ = plan;
 				plan->imp_->option_ = 0;
 				plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
-				plan->imp_->cmd_str_ = cmd_str_local;
+				plan->imp_->cmd_str_ = std::move(cmd_str_local);
 				plan->imp_->cmd_name_ = std::move(cmd);
 				plan->imp_->cmd_params_ = std::move(params);
 				plan->imp_->begin_global_count_ = 0;
@@ -659,10 +685,19 @@ namespace aris::server
 			catch (std::exception &e)
 			{
 				for (auto &p : ret_plan)p->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
+				plan = std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan);
 				plan->imp_->ret_code = aris::plan::Plan::PARSE_EXCEPTION;
 				std::fill_n(plan->imp_->ret_msg, 1024, '\0');
 				std::copy_n(e.what(), std::strlen(e.what()), plan->imp_->ret_msg);
 				ret_plan.push_back(plan);
+
+				// 确保每个输入str都有输出plan //
+				for (auto i = ret_plan.size(); i < cmd_vec.size(); ++i)
+				{
+					ret_plan.push_back(std::shared_ptr<aris::plan::Plan>(new aris::plan::Plan));
+					ret_plan.back()->imp_->ret_code = aris::plan::Plan::PREPARE_CANCELLED;
+				}
+
 				return ret_plan;
 			}
 		}
@@ -741,7 +776,7 @@ namespace aris::server
 						LOG_AND_THROW(std::runtime_error("server not started, use cs_start to start"));
 					}
 
-					if ((cmd_end - imp_->cmd_collect_.load() - need_run_internal.size() + 1) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
+					if ((cmd_end - imp_->cmd_collect_.load() + need_run_internal.size()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
 					{
 						plan->imp_->ret_code = aris::plan::Plan::COMMAND_POOL_IS_FULL;
 						LOG_AND_THROW(std::runtime_error("command pool is full"));
@@ -797,6 +832,8 @@ namespace aris::server
 		// 5a.  callback Sync  : goto end
 		// 5b.  callback Async : goto end
 		// end
+		
+		/*
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
 
 		// init internal data with an empty plan //
@@ -932,20 +969,29 @@ namespace aris::server
 		}
 
 		// step 4a&5a. RAII//
-		return plan;
+		return plan;*/
+
+		std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_str, post_callback) };
+		auto ret = executeCmd(cmd_vec);
+		return ret.front();
 	}
-	auto ControlServer::executeCmdInCmdLine(std::string_view cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
+	auto ControlServer::executeCmdInCmdLine(std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)>>> cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
 	{
 		static std::mutex mu_;
 		std::unique_lock<std::mutex> lck(mu_);
 
-		imp_->cmdline_execute_promise_ = std::make_shared<std::promise<std::shared_ptr<aris::plan::Plan>>>();
+		imp_->cmdline_execute_promise_ = std::make_shared<std::promise<std::vector<std::shared_ptr<aris::plan::Plan>>>>();
 		auto ret = imp_->cmdline_execute_promise_->get_future();
-		imp_->cmdline_msg_ = cmd_string;
-		imp_->cmdline_post_callback_ = post_callback;
+		imp_->cmdline_cmd_vec_ = cmd_vec;
 		imp_->cmdline_msg_received_ = true;
 
 		return ret.get();
+	}
+	auto ControlServer::executeCmdInCmdLine(std::string_view cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
+	{
+		std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_string, post_callback) };
+		auto ret = executeCmd(cmd_vec);
+		return ret.front();
 	}
 	auto ControlServer::init()->void
 	{
