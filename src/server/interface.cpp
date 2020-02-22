@@ -525,8 +525,6 @@ namespace aris::server
 										server_execute();
 										try
 										{
-											auto ret = cs.executeCmdInCmdLine(cmd_vec);
-											cs.waitForAllCollection();
 											c.calculateExpression(imp_->language_parser_.currentParamStr());
 											imp_->language_parser_.forward();
 											imp_->current_line_.store(imp_->language_parser_.currentLine());
