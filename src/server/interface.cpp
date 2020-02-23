@@ -438,13 +438,14 @@ namespace aris::server
 
 							imp_->auto_thread_ = std::thread([&]()->void
 							{
+								// 交换calculator，保证每个程序开始时的变量都是之前的 //
 								std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
 								auto &c = aris::server::ControlServer::instance().model().calculator();
 								auto &cs = aris::server::ControlServer::instance();
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
 								std::vector < std::pair<std::string_view, std::function<void(aris::plan::Plan&)>> > cmd_vec;
 								std::vector <int> lines;
-								for (std::atomic_bool is_error{ false }; (!is_error.load()) && (!imp_->language_parser_.isEnd());)
+								for (int has_error{ 0 }; has_error == 0 && (!imp_->language_parser_.isEnd());)
 								{
 									if (imp_->is_stop_.load() == true)break;
 									if (imp_->is_pause_.load() == true)
@@ -454,25 +455,44 @@ namespace aris::server
 									}
 
 									// 碰到断点时才真正执行 //
-									auto server_execute = [&]() 
+									auto server_execute = [&]() ->int
 									{
-										auto ret = cs.executeCmdInCmdLine(cmd_vec);
-										for (int i = 0; i<ret.size(); ++i)
+										auto plans = cs.executeCmdInCmdLine(cmd_vec);
+										for (int i = 0; i < plans.size(); ++i)
 										{
-											ARIS_PRO_COUT << lines[i] << "---" << ret[i]->cmdId() << "---" << ret[i]->cmdString() << std::endl;
-											LOG_INFO << "pro " << lines[i] << "---" << ret[i]->cmdId() << "---" << ret[i]->cmdString() << std::endl;
+											ARIS_PRO_COUT << lines[i] << "---" << plans[i]->cmdId() << "---" << plans[i]->cmdString() << std::endl;
+											LOG_INFO << "pro " << lines[i] << "---" << plans[i]->cmdId() << "---" << plans[i]->cmdString() << std::endl;
+										}
+										cs.waitForAllCollection();
+										for (int i = 0; i < plans.size(); ++i)
+										{
+											// 如果因为其他轨迹出错而取消 //
+											if (plans[i]->retCode() == aris::plan::Plan::PREPARE_CANCELLED || plans[i]->retCode() == aris::plan::Plan::EXECUTE_CANCELLED)
+											{
+												ARIS_PRO_COUT << lines[i] << "---" << plans[i]->cmdId() << "---canceled" << std::endl;
+												LOG_ERROR << "pro " << lines[i] << "---" << plans[i]->cmdId() << "---canceled" << std::endl;
+											}
+											else if (plans[i]->retCode() < 0)
+											{
+												imp_->last_error_code_ = plans[i]->retCode();
+												imp_->last_error_ = plans[i]->retMsg();
+												imp_->last_error_line_ = lines[i];
+												ARIS_PRO_COUT << imp_->last_error_line_ << "---" << plans[i]->cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+												LOG_ERROR << "pro " << imp_->last_error_line_ << "---" << plans[i]->cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+												has_error = -1;
+											}
 										}
 										cmd_vec.clear();
 										lines.clear();
-										cs.waitForAllCollection();
 
-										ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
-										LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+										return has_error;
 									};
 
 									if (imp_->language_parser_.isCurrentLineKeyWord())
 									{
-										server_execute();
+										if (server_execute())continue;
+										ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+										LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 										if (imp_->language_parser_.currentWord() == "if" || imp_->language_parser_.currentWord() == "while")
 										{
 											try 
@@ -491,7 +511,6 @@ namespace aris::server
 												}
 												else
 												{
-													
 													imp_->last_error_code_ = aris::plan::Plan::PROGRAM_EXCEPTION;
 													imp_->last_error_ = "invalid expresion";
 													imp_->last_error_line_ = imp_->language_parser_.currentLine();
@@ -516,13 +535,17 @@ namespace aris::server
 									}
 									else if (imp_->language_parser_.isCurrentLineFunction())
 									{
-										server_execute();
+										if (server_execute())continue;
+										ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+										LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 										imp_->language_parser_.forward();
 										imp_->current_line_.store(imp_->language_parser_.currentLine());
 									}
 									else if (imp_->language_parser_.currentWord() == "set")
 									{
-										server_execute();
+										if (server_execute())continue;
+										ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+										LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 										try
 										{
 											c.calculateExpression(imp_->language_parser_.currentParamStr());
@@ -536,7 +559,7 @@ namespace aris::server
 											imp_->last_error_line_ = imp_->language_parser_.currentLine();
 											ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 											LOG_ERROR << "pro " << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
-											is_error.store(true);
+											has_error = -1;
 										}
 									}
 									else
@@ -549,16 +572,6 @@ namespace aris::server
 										cmd_vec.push_back(std::pair<std::string_view, std::function<void(aris::plan::Plan&)>>(std::string_view(cmd), [&, current_line, next_line](aris::plan::Plan &plan)->void
 										{
 											imp_->current_line_.store(next_line);
-
-											if (plan.retCode())
-											{
-												imp_->last_error_code_ = plan.retCode();
-												imp_->last_error_ = plan.retMsg();
-												imp_->last_error_line_ = current_line;
-												ARIS_PRO_COUT << imp_->last_error_line_ << "---" << plan.cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
-												LOG_ERROR << "pro " << imp_->last_error_line_ << "---" << plan.cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
-												is_error.store(true);
-											}
 										}));
 										lines.push_back(current_line);
 									}
@@ -571,9 +584,8 @@ namespace aris::server
 								ARIS_PRO_COUT << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 								LOG_INFO << "pro " << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
 								
-								while (!imp_->auto_thread_.joinable());// for windows bug:if thread init too fast, it may fail
+								while (!imp_->auto_thread_.joinable());
 								imp_->auto_thread_.detach();
-								
 							});
 							send_code_and_msg(0, "");
 							return 0;
