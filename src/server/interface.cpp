@@ -447,10 +447,6 @@ namespace aris::server
 								std::vector <int> lines;
 								for (int has_error{ 0 }; has_error == 0 && (!imp_->language_parser_.isEnd());)
 								{
-									ARIS_COUT << "a current line:" << imp_->language_parser_.currentLine() << std::endl;
-									ARIS_COUT << "a is_End:" << imp_->language_parser_.isEnd() << std::endl;
-									ARIS_COUT << "a has_error:" << has_error << std::endl;
-									
 									if (imp_->is_stop_.load() == true)break;
 									if (imp_->is_pause_.load() == true)
 									{
@@ -553,30 +549,22 @@ namespace aris::server
 										try
 										{
 											c.calculateExpression(imp_->language_parser_.currentParamStr());
-											ARIS_COUT << "set before line:" << imp_->language_parser_.currentLine() << std::endl;
 											imp_->language_parser_.forward();
-											ARIS_COUT << "set current line:" << imp_->language_parser_.currentLine() << std::endl;
-											ARIS_COUT << "is_End:" << imp_->language_parser_.isEnd() << std::endl;
 											imp_->current_line_.store(imp_->language_parser_.currentLine());
 										}
 										catch (std::exception &e)
 										{
-											ARIS_COUT << "set exception" << std::endl;
 											imp_->last_error_code_ = aris::plan::Plan::PROGRAM_EXCEPTION;
 											imp_->last_error_ = e.what();
 											imp_->last_error_line_ = imp_->language_parser_.currentLine();
-											ARIS_COUT << "set exception2" << std::endl;
 											ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 											LOG_ERROR << "pro " << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
-											ARIS_COUT << "set exception2" << std::endl;
 											has_error = -1;
 										}
-										catch (...)
-										{
-											ARIS_COUT << "set other exception" << std::endl;
-										}
-
-
+									}
+									else if (imp_->language_parser_.isEnd())
+									{
+										server_execute();
 									}
 									else
 									{
@@ -591,10 +579,6 @@ namespace aris::server
 										}));
 										lines.push_back(current_line);
 									}
-
-									ARIS_COUT << "b current line:" << imp_->language_parser_.currentLine() << std::endl;
-									ARIS_COUT << "b is_End:" << imp_->language_parser_.isEnd() << std::endl;
-									ARIS_COUT << "b has_error:" << has_error << std::endl;
 								}
 								
 								cs.waitForAllCollection();
