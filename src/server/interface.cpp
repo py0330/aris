@@ -447,6 +447,10 @@ namespace aris::server
 								std::vector <int> lines;
 								for (int has_error{ 0 }; has_error == 0 && (!imp_->language_parser_.isEnd());)
 								{
+									ARIS_COUT << "a current line:" << imp_->language_parser_.currentLine() << std::endl;
+									ARIS_COUT << "a is_End:" << imp_->language_parser_.isEnd() << std::endl;
+									ARIS_COUT << "a has_error:" << has_error << std::endl;
+									
 									if (imp_->is_stop_.load() == true)break;
 									if (imp_->is_pause_.load() == true)
 									{
@@ -548,12 +552,10 @@ namespace aris::server
 										LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 										try
 										{
-											ARIS_COUT << "set0" << std::endl;
 											c.calculateExpression(imp_->language_parser_.currentParamStr());
-											ARIS_COUT << "set1" << std::endl;
-											ARIS_COUT << "before line:" << imp_->language_parser_.currentLine() << std::endl;
+											ARIS_COUT << "set before line:" << imp_->language_parser_.currentLine() << std::endl;
 											imp_->language_parser_.forward();
-											ARIS_COUT << "current line:" << imp_->language_parser_.currentLine() << std::endl;
+											ARIS_COUT << "set current line:" << imp_->language_parser_.currentLine() << std::endl;
 											ARIS_COUT << "is_End:" << imp_->language_parser_.isEnd() << std::endl;
 											imp_->current_line_.store(imp_->language_parser_.currentLine());
 										}
@@ -573,6 +575,8 @@ namespace aris::server
 										{
 											ARIS_COUT << "set other exception" << std::endl;
 										}
+
+
 									}
 									else
 									{
@@ -587,6 +591,10 @@ namespace aris::server
 										}));
 										lines.push_back(current_line);
 									}
+
+									ARIS_COUT << "b current line:" << imp_->language_parser_.currentLine() << std::endl;
+									ARIS_COUT << "b is_End:" << imp_->language_parser_.isEnd() << std::endl;
+									ARIS_COUT << "b has_error:" << has_error << std::endl;
 								}
 								
 								cs.waitForAllCollection();
