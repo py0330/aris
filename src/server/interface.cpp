@@ -551,7 +551,10 @@ namespace aris::server
 											ARIS_COUT << "set0" << std::endl;
 											c.calculateExpression(imp_->language_parser_.currentParamStr());
 											ARIS_COUT << "set1" << std::endl;
+											ARIS_COUT << "before line:" << imp_->language_parser_.currentLine() << std::endl;
 											imp_->language_parser_.forward();
+											ARIS_COUT << "current line:" << imp_->language_parser_.currentLine() << std::endl;
+											ARIS_COUT << "is_End:" << imp_->language_parser_.isEnd() << std::endl;
 											imp_->current_line_.store(imp_->language_parser_.currentLine());
 										}
 										catch (std::exception &e)
