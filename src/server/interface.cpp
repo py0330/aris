@@ -562,10 +562,6 @@ namespace aris::server
 											has_error = -1;
 										}
 									}
-									else if (imp_->language_parser_.isEnd())
-									{
-										server_execute();
-									}
 									else
 									{
 										auto &cmd = imp_->language_parser_.currentCmd();
@@ -579,6 +575,8 @@ namespace aris::server
 										}));
 										lines.push_back(current_line);
 									}
+
+									if (imp_->language_parser_.isEnd())server_execute();
 								}
 								
 								cs.waitForAllCollection();
