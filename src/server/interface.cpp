@@ -548,18 +548,27 @@ namespace aris::server
 										LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 										try
 										{
+											ARIS_COUT << "set0" << std::endl;
 											c.calculateExpression(imp_->language_parser_.currentParamStr());
+											ARIS_COUT << "set1" << std::endl;
 											imp_->language_parser_.forward();
 											imp_->current_line_.store(imp_->language_parser_.currentLine());
 										}
 										catch (std::exception &e)
 										{
+											ARIS_COUT << "set exception" << std::endl;
 											imp_->last_error_code_ = aris::plan::Plan::PROGRAM_EXCEPTION;
 											imp_->last_error_ = e.what();
 											imp_->last_error_line_ = imp_->language_parser_.currentLine();
+											ARIS_COUT << "set exception2" << std::endl;
 											ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
 											LOG_ERROR << "pro " << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+											ARIS_COUT << "set exception2" << std::endl;
 											has_error = -1;
+										}
+										catch (...)
+										{
+											ARIS_COUT << "set other exception" << std::endl;
 										}
 									}
 									else
