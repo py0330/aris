@@ -43,8 +43,9 @@ namespace aris::server
 		auto virtual open()->void override;
 		auto virtual close()->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto isAutoRunning()->bool;
 		auto isAutoMode()->bool;
+		auto isAutoRunning()->bool;
+		auto isAutoPaused()->bool;
 		auto currentLine()->int;
 		auto lastError()->std::string;
 		auto lastErrorCode()->int;
