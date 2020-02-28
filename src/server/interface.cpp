@@ -213,6 +213,7 @@ namespace aris::server
 	auto ProgramWebInterface::isAutoMode()->bool { return imp_->is_auto_mode_; }
 	auto ProgramWebInterface::isAutoRunning()->bool { return imp_->auto_thread_.joinable(); }
 	auto ProgramWebInterface::isAutoPaused()->bool { return imp_->is_pause_.load(); }
+	auto ProgramWebInterface::isAutoStopped()->bool { return imp_->is_stop_.load(); }
 	auto ProgramWebInterface::currentLine()->int { return imp_->current_line_.load(); }
 	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type) :Interface(name), imp_(new Imp)
 	{

@@ -46,6 +46,7 @@ namespace aris::server
 		auto isAutoMode()->bool;
 		auto isAutoRunning()->bool;
 		auto isAutoPaused()->bool;
+		auto isAutoStopped()->bool;
 		auto currentLine()->int;
 		auto lastError()->std::string;
 		auto lastErrorCode()->int;
