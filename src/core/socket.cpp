@@ -486,13 +486,21 @@ namespace aris::core
 					}
 				}
 
+				//////////////////////////////////保护，最短长度不能小于MsgHeader的数据长度///////////////////////////////
+				if (payload_data.size() < sizeof(aris::core::MsgHeader))
+				{
+					LOG_ERROR << "websocket espect msg, but receive raw data" << std::endl;
+					imp->lose_tcp();
+					return;
+				}
+
 				// 把web sock 的东西转成 msg //
 				recv_msg.resize(static_cast<aris::core::MsgSize>(payload_data.size() - sizeof(aris::core::MsgHeader)));
 				std::copy(payload_data.data(), payload_data.data() + payload_data.size(), reinterpret_cast<char*>(&recv_msg.header()));
 
 				if (recv_msg.size() != payload_data.size() - sizeof(aris::core::MsgHeader))
 				{
-					LOG_ERROR << "websocket receive wrong msg size" << std::endl;
+					LOG_ERROR << "websocket receive wrong msg size, msg size:" << recv_msg.size() << "payload size:" << payload_data.size() << std::endl;
 					imp->lose_tcp();
 					return;
 				}
