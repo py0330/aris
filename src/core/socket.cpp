@@ -490,8 +490,7 @@ namespace aris::core
 				if (payload_data.size() < sizeof(aris::core::MsgHeader))
 				{
 					LOG_ERROR << "websocket espect msg, but receive raw data" << std::endl;
-					imp->lose_tcp();
-					return;
+					break;
 				}
 
 				// 把web sock 的东西转成 msg //
@@ -501,12 +500,10 @@ namespace aris::core
 				if (recv_msg.size() != payload_data.size() - sizeof(aris::core::MsgHeader))
 				{
 					LOG_ERROR << "websocket receive wrong msg size, msg size:" << recv_msg.size() << "payload size:" << payload_data.size() << std::endl;
-					imp->lose_tcp();
-					return;
+					break;
 				}
 
 				if (imp->onReceivedMsg)imp->onReceivedMsg(imp->socket_, recv_msg);
-
 				break;
 			}
 			case WEB_RAW:
