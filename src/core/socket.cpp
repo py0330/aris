@@ -463,9 +463,9 @@ namespace aris::core
 					}
 
 					//////////////////////////////////保护，数据不能太大///////////////////////////////
-					if (payload_len > 0x00080000 || payload_len + payload_data.size() > 0x00100000)
+					if (payload_len < 0 || payload_len > 0x00080000 || payload_len + payload_data.size() > 0x00100000)
 					{
-						LOG_ERROR << "websocket receive too large object" << std::endl;
+						LOG_ERROR << "websocket receive too large or negative object, size:" << payload_len << std::endl;
 						imp->lose_tcp();
 						return;
 					}
@@ -988,6 +988,11 @@ namespace aris::core
 				break;
 			}
 			default:
+				//auto packed_data = imp_->is_server_ ? pack_data_server(data, size) : pack_data_client(data, size);
+				//if (send(imp_->recv_socket_, packed_data.data(), static_cast<int>(packed_data.size()), 0) == -1)
+				//	THROW_FILE_LINE("Socket failed sending data, because network failed\n");
+				//else
+				//	return;
 				THROW_FILE_LINE("Socket failed send raw data, because Socket is not at right MODE\n");
 			}
 		}

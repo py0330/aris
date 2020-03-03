@@ -40,14 +40,31 @@ int sendRequest(int argc, char *argv[])
 		try
 		{
 			client.connect();
-			client.sendRawData("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0aaaaaaaaaaaaaaaaaaaa",41);
-			break;
 		}
 		catch (std::exception &)
 		{
 			std::cout << "failed to connect server, will retry in 1 second" << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
+			continue;
 		}
+
+		try
+		{
+			//client.sendMsg(aris::core::Msg("aaa"));
+			client.sendRawData("aaaa", 5);
+			//client.sendRawData("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0aaaaaaaaaaaaaaaaaaaa", 41);
+			std::cout << "send success" << std::endl;
+
+			break;
+		}
+		catch (std::exception &e)
+		{
+			std::cout << e.what() << std::endl;
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+			break;
+		}
+
+		
 
 	}
 
