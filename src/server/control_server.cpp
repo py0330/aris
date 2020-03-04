@@ -575,6 +575,7 @@ namespace aris::server
 		{
 			std::string command_in;
 			std::getline(std::cin, command_in);
+			if (command_in.empty())std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			return command_in;
 		});
 
@@ -590,17 +591,22 @@ namespace aris::server
 			// 检测是否有数据从command line过来
 			else if (ret.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
 			{
-				executeCmd(ret.get(), [](aris::plan::Plan &plan)->void
+				// 在linux后台可能getline失败，得到空字符串 //
+				if (auto cmd_str = ret.get(); !cmd_str.empty())
 				{
-					ARIS_COUT_PLAN((&plan)) << "return code :" << plan.retCode() << "\n";
-					ARIS_COUT_PLAN((&plan)) << "return msg  :" << plan.retMsg() << std::endl;
-					LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n" << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
-				});
+					executeCmd(cmd_str, [](aris::plan::Plan &plan)->void
+					{
+						ARIS_COUT_PLAN((&plan)) << "return code :" << plan.retCode() << "\n";
+						ARIS_COUT_PLAN((&plan)) << "return msg  :" << plan.retMsg() << std::endl;
+						LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n" << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
+					});
+				}
 
 				ret = std::async(std::launch::async, []()->std::string
 				{
 					std::string command_in;
 					std::getline(std::cin, command_in);
+					if (command_in.empty())std::this_thread::sleep_for(std::chrono::milliseconds(1));
 					return command_in;
 				});
 			}
