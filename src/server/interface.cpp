@@ -418,6 +418,8 @@ namespace aris::server
 					}
 					else if (param == "start")
 					{
+						LOG_INFO << "pro now start" << std::endl;
+						
 						if (!isAutoMode())
 						{
 							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not start program in manual mode");
@@ -432,6 +434,7 @@ namespace aris::server
 						else if (lastErrorCode())
 						{
 							send_code_and_msg(lastErrorCode(), lastError());
+							return 0;
 						}
 						else
 						{
@@ -440,6 +443,8 @@ namespace aris::server
 
 							imp_->auto_thread_ = std::thread([&]()->void
 							{
+								LOG_INFO << "pro prepare to start" << std::endl;
+								
 								// 交换calculator，保证每个程序开始时的变量都是之前的 //
 								std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
 								auto &c = aris::server::ControlServer::instance().model().calculator();
@@ -447,6 +452,8 @@ namespace aris::server
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
 								std::vector < std::pair<std::string_view, std::function<void(aris::plan::Plan&)>> > cmd_vec;
 								std::vector <int> lines;
+
+								LOG_INFO << "pro started" << std::endl;
 								for (int has_error{ 0 }; has_error == 0 && (!imp_->language_parser_.isEnd());)
 								{
 									if (imp_->is_stop_.load() == true)break;

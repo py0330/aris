@@ -708,7 +708,7 @@ namespace aris::server
 			auto &plan = (*p)->plan_;
 			try
 			{
-				LOG_INFO << "server prepare cmd " << std::to_string(cmd_id) << std::endl;
+				LOG_INFO << "server prepare cmd " << std::to_string(plan->cmdId()) << std::endl;
 				plan->prepareNrt();
 				(*p)->has_prepared_ = true;
 
@@ -796,11 +796,11 @@ namespace aris::server
 			}
 		}
 		// 添加命令 //
-		LOG_INFO << "server execute cmd " << std::to_string(cmd_id) << std::endl;
 		for (auto &inter : need_run_internal)
 		{
 			imp_->internal_data_queue_[cmd_end++ % Imp::CMD_POOL_SIZE] = inter;
 			inter->has_run_ = true;
+			LOG_INFO << "server execute cmd " << std::to_string(inter->plan_->cmdId()) << std::endl;
 		}
 		imp_->cmd_end_.store(cmd_end);
 
