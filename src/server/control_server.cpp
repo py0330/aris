@@ -1090,7 +1090,7 @@ namespace aris::server
 					aris::server::ControlServer::instance().imp_->cmd_collect_++;
 					std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_collect_);
 					internal_data.reset();
-					LOG_INFO << "server remove cmd " << plan.cmdId() << std::endl;
+					LOG_INFO << "server remove cmd " << std::endl;
 				}
 				else
 				{
