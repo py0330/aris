@@ -83,10 +83,13 @@ namespace aris::server
 				{
 					LOG_INFO << "server collect cmd " << plan_->cmdId() << std::endl;
 					plan_->collectNrt();
+					LOG_INFO << "server collect cmd " << plan_->cmdId() << "finished" << std::endl;
 				}
 
 				// step 5a & 5b //
+				LOG_INFO << "server postcall cmd " << plan_->cmdId() << std::endl;
 				if (post_callback_)post_callback_(*plan_);
+				LOG_INFO << "server postcall cmd " << plan_->cmdId() << "finished" << std::endl;
 			}
 		};
 
@@ -1082,10 +1085,12 @@ namespace aris::server
 					{
 						LOG_INFO << "server collect cmd " << plan.cmdId() << std::endl;
 						plan.collectNrt();
+						LOG_INFO << "server collect cmd " << plan.cmdId() << "finished" << std::endl;
 					}
 					aris::server::ControlServer::instance().imp_->cmd_collect_++;
 					std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_collect_);
 					internal_data.reset();
+					LOG_INFO << "server remove cmd " << plan.cmdId() << std::endl;
 				}
 				else
 				{

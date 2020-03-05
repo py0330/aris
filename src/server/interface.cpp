@@ -447,6 +447,7 @@ namespace aris::server
 								
 								// 交换calculator，保证每个程序开始时的变量都是之前的 //
 								std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+								LOG_INFO << "create calculator finished" << std::endl;
 								auto &c = aris::server::ControlServer::instance().model().calculator();
 								auto &cs = aris::server::ControlServer::instance();
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
@@ -473,6 +474,7 @@ namespace aris::server
 											LOG_INFO << "pro " << lines[i] << "---" << plans[i]->cmdId() << "---" << plans[i]->cmdString() << std::endl;
 										}
 										cs.waitForAllCollection();
+										LOG_DEBUG << "interface debug" << std::endl;
 										for (int i = 0; i < plans.size(); ++i)
 										{
 											// 如果因为其他轨迹出错而取消 //
@@ -493,7 +495,7 @@ namespace aris::server
 										}
 										cmd_vec.clear();
 										lines.clear();
-
+										LOG_DEBUG << "interface debug" << std::endl;
 										return has_error;
 									};
 
@@ -586,6 +588,7 @@ namespace aris::server
 									}
 
 									if (imp_->language_parser_.isEnd())server_execute();
+									LOG_DEBUG << "interface debug" << std::endl;
 								}
 								
 								cs.waitForAllCollection();

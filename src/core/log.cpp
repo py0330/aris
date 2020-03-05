@@ -4,6 +4,7 @@
 #include <mutex>
 #include <algorithm>
 #include <iostream>
+#include <atomic>
 
 
 #ifdef UNIX
@@ -94,20 +95,33 @@ namespace aris::core
 	static std::filesystem::path log_dir_path_;
 	static std::filesystem::path log_file_path_;
 	static std::ofstream log_fstream_;
-	static std::ostream *log_stream_{ nullptr };
 	static std::recursive_mutex log_file_mutex;
+	static std::atomic_int max_info_num = 100000, current_info_num = 0;
+	static int log_file_num = 0;
 
 	auto log()->std::ostream&
 	{
+		// 这个参数仅仅用于设置默认值 //
 		static thread_local ThreadSafeStream<1> local_stream_(log_fstream_);
-		if (!log_stream_)logStream();
-		return local_stream_;
-	}
-	auto logStream(std::ostream *s)->void 
-	{ 
 		std::unique_lock<std::recursive_mutex> lck(ThreadSafeStream<1>::real_mutex_);
-		if (s == nullptr && !log_fstream_.is_open())logFile();
-		ThreadSafeStream<1>::setStream(s ? *s : log_fstream_);
+
+		// 如果记录满了，关闭文件，因为上面有锁，所以不可能出现内存stream在sync，而这里在关闭的情况 //
+		if (++current_info_num > max_info_num) 
+		{
+			log_fstream_.close();
+			current_info_num = 0;
+			log_file_num++;
+		}
+		
+		// 如果第一次或之前满了，打开文件 //
+		if (!log_fstream_.is_open())
+		{
+			logFile();
+			ThreadSafeStream<1>::setStream(log_fstream_);
+		}
+
+		// 返回memory stream //
+		return local_stream_;
 	}
 	auto logDirectory(const std::filesystem::path &log_dir)->void
 	{
@@ -122,11 +136,13 @@ namespace aris::core
 
 		log_file_path_ = log_file_path.empty() ? std::filesystem::path(logExeName() + "--" + logFileTimeFormat(std::chrono::system_clock::now()) + "--log.txt") : log_file_path;
 		log_file_path_ = log_file_path_.has_root_path() ? log_file_path_ : logDirPath() / log_file_path_;
+		log_file_path_.replace_filename(log_file_path_.filename().replace_extension().string() + std::string("_") + std::to_string(log_file_num) + log_file_path_.extension().string());
 		std::filesystem::create_directories(log_file_path_.parent_path());
 
 		log_fstream_.close();
 		log_fstream_.open(log_file_path_, std::ios::out | std::ios::trunc);
 	}
+	auto logMaxInfoNum(int max_info_num_) { max_info_num.store(max_info_num_); }
 
 	auto logDirPath()->std::filesystem::path 
 	{ 
