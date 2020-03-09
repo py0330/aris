@@ -67,7 +67,7 @@ namespace aris::control
 		pthread_attr_t thattr;
 	};
 	// should not have global variables
-	thread_local int nanoseconds{ 1000 };
+	thread_local int nanoseconds{ 1000000 };
 	thread_local struct timespec last_time_, begin_time_;
 	//
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_LINE("lock failed"); }
@@ -81,7 +81,7 @@ namespace aris::control
 	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int
 	{
 		auto &task = std::any_cast<std::shared_ptr<RT_TASK>&>(handle);
-		auto ret = pthread_create(&task->cyclic_thread, &task->thattr, &task_func, NULL);
+		auto ret = pthread_create(&task->cyclic_thread, &task->thattr, task_func, NULL);
 		if (ret) {
 			THROW_FILE_LINE("create rt_thread failed");
 			return -1;
@@ -103,7 +103,7 @@ namespace aris::control
 	};
 	auto aris_rt_task_wait_period()->int
 	{
-		last_time_.tv_nsec += cycle_us * 1000;
+		last_time_.tv_nsec += nanoseconds;
 		while (last_time_.tv_nsec >= NSEC_PER_SEC) {
 			last_time_.tv_nsec -= NSEC_PER_SEC;
 			last_time_.tv_sec++;
@@ -136,7 +136,7 @@ namespace aris::control
 namespace aris::control
 {
 	// should not have global variables
-	thread_local int nanoseconds{ 1000 };
+	thread_local int nanoseconds{ 1000000 };
 	thread_local std::chrono::time_point<std::chrono::high_resolution_clock> last_time_, begin_time_;
 	//
 
