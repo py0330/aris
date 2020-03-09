@@ -7,48 +7,12 @@ set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE "Release")
-#set(CMAKE_CONFIGURATION_TYPES Debug Release)
 if(UNIX)
 	set(CMAKE_INSTALL_PREFIX "/usr/aris/aris-${CMAKE_PROJECT_VERSION}")
 	add_custom_target(uninstall rm -r /usr/aris)
 endif(UNIX)
 if(WIN32)
 	set(CMAKE_INSTALL_PREFIX "C:/aris/aris-${CMAKE_PROJECT_VERSION}")
-endif(WIN32)
-
-## set rely libs ##
-if(UNIX)
-	option (USE_XENOMAI "Use Xenomai 3 RT system" OFF)
-	option (USE_ETHERLAB "Use Etherlab Ethercat drivers" OFF)
-
-	set(RELY_LINK_LIB atomic pthread stdc++fs)#pthread is needed for concurrency
-	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/config)
-
-	if(USE_XENOMAI)
-		message("using xenomai")
-		add_definitions(-DARIS_USE_XENOMAI)
-		set(XENOMAI_ROOT_DIR "/usr/xenomai")
-		find_package(Xenomai REQUIRED QUIET)
-		set(RELY_INCL_DIR ${XENOMAI_INCLUDE_DIRS} ${RELY_INCL_DIR})
-		set(RELY_LINK_DIR "/usr/xenomai/lib" ${RELY_LINK_DIR})
-		set(RELY_LINK_LIB ${XENOMAI_LIBRARIES} ${RELY_LINK_LIB})
-	endif(USE_XENOMAI)
-	
-	if(USE_ETHERLAB)
-		message("using etherlab")
-		add_definitions(-DARIS_USE_ETHERLAB)
-		set(RELY_INCL_DIR "/opt/etherlab/include" ${RELY_INCL_DIR})
-		set(RELY_LINK_DIR "/opt/etherlab/lib" ${RELY_LINK_DIR})
-		if(USE_XENOMAI)
-			set(RELY_LINK_LIB ethercat_rtdm ${RELY_LINK_LIB})
-		else(USE_XENOMAI)
-			set(RELY_LINK_LIB ethercat ${RELY_LINK_LIB})
-		endif(USE_XENOMAI)
-		
-	endif(USE_ETHERLAB)
-endif(UNIX)
-if(WIN32)
-	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
 endif(WIN32)
 
 ## set definitions to disable some warning ##
@@ -60,6 +24,66 @@ if(UNIX)
 endif(UNIX)
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
+## set rely libs ##
+# std & socker rely #
+if(UNIX)
+	set(RELY_LINK_LIB atomic pthread stdc++fs)#pthread is needed for concurrency
+	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/config)
+elseif(WIN32)
+	set(RELY_LINK_LIB "ws2_32")#ws2_32 is needed for socket
+endif()
+
+# rt timer #
+set(RT_TIMER "NON" CACHE STRING "")
+if(UNIX)
+	set_property(CACHE RT_TIMER PROPERTY STRINGS "NON" "RT_PREEMT" "XENOMAI3")
+	
+	if ("${RT_TIMER}" STREQUAL "NON")
+		add_definitions(-DARIS_USE_RT_NON)
+	elseif ("${RT_TIMER}" STREQUAL "RT_PREEMT")
+		add_definitions(-DARIS_USE_RT_PREEMT)
+
+	elseif("${RT_TIMER}" STREQUAL "XENOMAI3")
+		add_definitions(-DARIS_USE_XENOMAI3)
+		set(XENOMAI_ROOT_DIR "/usr/xenomai")
+		find_package(Xenomai REQUIRED QUIET)
+		set(RELY_INCL_DIR ${XENOMAI_INCLUDE_DIRS} ${RELY_INCL_DIR})
+		set(RELY_LINK_DIR "/usr/xenomai/lib" ${RELY_LINK_DIR})
+		set(RELY_LINK_LIB ${XENOMAI_LIBRARIES} ${RELY_LINK_LIB})
+	endif()
+elseif(WIN32)
+	set_property(CACHE RT_TIMER PROPERTY STRINGS "NON")
+	if ("${RT_TIMER}" STREQUAL "NON")
+		add_definitions(-DARIS_USE_RT_NON)
+	endif()
+endif()
+message("RT_TIMER : ${RT_TIMER}")
+
+# ethercat #
+set(ETHERCAT "SIMULATION" CACHE STRING "")
+if(UNIX)
+	set_property(CACHE ETHERCAT PROPERTY STRINGS "SIMULATION" "ETHERLAB")
+	
+	if ("${ETHERCAT}" STREQUAL "SIMULATION")
+		add_definitions(-DARIS_USE_ETHERCAT_SIMULATION)
+	elseif ("${ETHERCAT}" STREQUAL "ETHERLAB")
+		add_definitions(-DARIS_USE_ETHERLAB)
+		set(RELY_INCL_DIR "/opt/etherlab/include" ${RELY_INCL_DIR})
+		set(RELY_LINK_DIR "/opt/etherlab/lib" ${RELY_LINK_DIR})
+		if(USE_XENOMAI)
+			set(RELY_LINK_LIB ethercat_rtdm ${RELY_LINK_LIB})
+		else(USE_XENOMAI)
+			set(RELY_LINK_LIB ethercat ${RELY_LINK_LIB})
+		endif(USE_XENOMAI)
+	endif()
+elseif(WIN32)
+	set_property(CACHE ETHERCAT PROPERTY STRINGS "SIMULATION")
+	if ("${ETHERCAT}" STREQUAL "SIMULATION")
+		add_definitions(-DARIS_USE_ETHERCAT_SIMULATION)
+	endif()
+endif()
+message("ETHERCAT : ${ETHERCAT}")
+	
 ## build targets ##
 foreach(target robot server plan dynamic control sensor core)
 	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h)

@@ -1,24 +1,15 @@
-﻿#ifdef ARIS_USE_XENOMAI
+﻿#include "aris/control/rt_timer.hpp"
+#include "aris/core/log.hpp"
+
+#ifdef defined(ARIS_USE_XENOMAI3)
 extern "C"
 {
 #include <alchemy/task.h>
 #include <alchemy/timer.h>
 #include <sys/mman.h>
 }
-#endif
-
-#include <chrono>
-#include <thread>
-#include <memory>
-#include <vector>
-#include <iostream>
-
-#include "aris/control/rt_timer.hpp"
-#include "aris/core/log.hpp"
-
 namespace aris::control
 {
-#ifdef ARIS_USE_XENOMAI
 	thread_local std::int64_t last_time_;
 
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_LINE("lock failed"); }
@@ -33,13 +24,13 @@ namespace aris::control
 	}
 	auto aris_rt_task_start(std::any& rt_task, void(*task_func)(void*), void*param)->int { return rt_task_start(&std::any_cast<RT_TASK&>(rt_task), task_func, param); }
 	auto aris_rt_task_join(std::any& rt_task)->int { return rt_task_join(&std::any_cast<RT_TASK&>(rt_task)); }
-	auto aris_rt_task_set_periodic(int nanoseconds)->int 
+	auto aris_rt_task_set_periodic(int nanoseconds)->int
 	{
 		last_time_ = aris_rt_timer_read();
 		return rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
 	}
-	auto aris_rt_task_wait_period()->int 
-	{ 
+	auto aris_rt_task_wait_period()->int
+	{
 		unsigned long overruns_r;
 		auto ret = rt_task_wait_period(&overruns_r);
 		last_time_ += 1000000 * (ret == ETIMEDOUT ? overruns_r : 1);
@@ -48,7 +39,100 @@ namespace aris::control
 	auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
 
 	auto aris_rt_time_since_last_time()->std::int64_t { return aris_rt_timer_read() - last_time_; }
+}
+
+#elif defined(ARIS_USE_RT_PREEMT)
+
+extern "C"
+{
+#include <errno.h>
+#include <mqueue.h>
+#include <signal.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <limits.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <time.h>
+}
+namespace aris::control
+{
+	class RT_TASK
+	{
+		pthread_t cyclic_thread;
+		pthread_attr_t thattr;
+	}
+	// should not have global variables
+	thread_local int nanoseconds{ 1000 };
+	thread_local struct timespec last_time_, begin_time_;
+	//
+	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_LINE("lock failed"); }
+	auto aris_rt_task_create()->std::any
+	{
+		auto task = std::make_shared<RT_TASK>();
+		pthread_attr_init(&task->thattr);
+		pthread_attr_setdetachstate(&task->thattr, PTHREAD_CREATE_JOINABLE);
+	}
+	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int
+	{
+		auto &task = *std::any_cast<std::shared_ptr<std::thread>&>(handle);
+		ret = pthread_create(&task->cyclic_thread, &task->thattr, &task_func, NULL);
+		if (ret) {
+			THROW_FILE_LINE("create rt_thread failed");
+			return -1;
+		}
+		return 0;
+	}
+	auto aris_rt_task_join(std::any& handle)->int
+	{
+		auto &task = *std::any_cast<std::shared_ptr<std::thread>&>(handle);
+		pthread_join(task->cyclic_thread, NULL);
+		return 0;
+	}
+	auto aris_rt_task_set_periodic(int nanoseconds)->int
+	{
+		control::nanoseconds = nanoseconds;
+		clock_gettime(CLOCK_MONOTONIC, &begin_time_);
+		last_time_ = begin_time_;
+		return 0;
+	};
+	auto aris_rt_task_wait_period()->int
+	{
+		last_time_.tv_nsec += cycle_us * 1000;
+		while (last_time_.tv_nsec >= NSEC_PER_SEC) {
+			last_time_.tv_nsec -= NSEC_PER_SEC;
+			last_time_.tv_sec++;
+		}
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time_, NULL);
+		return 0;
+	};
+	auto aris_rt_timer_read()->std::int64_t
+	{
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		return (now.tv_sec - begin_time_.tv_sec)*NSEC_PER_SEC + now.tv_nsec - begin_time_.tv_nsec;
+	}
+
+	// in nano seconds
+	auto aris_rt_time_since_last_time()->std::int64_t
+	{
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		return (now.tv_sec - last_time_.tv_sec)*NSEC_PER_SEC + now.tv_nsec - last_time_.tv_nsec;
+	}
+}
 #else
+#include <chrono>
+#include <thread>
+#include <memory>
+#include <vector>
+#include <iostream>
+
+namespace aris::control
+{
 	// should not have global variables
 	thread_local int nanoseconds{ 1000 };
 	thread_local std::chrono::time_point<std::chrono::high_resolution_clock> last_time_, begin_time_;
@@ -89,5 +173,5 @@ namespace aris::control
 	{
 		return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_).count();
 	}
-#endif
 }
+#endif
