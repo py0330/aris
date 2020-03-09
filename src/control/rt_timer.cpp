@@ -80,8 +80,8 @@ namespace aris::control
 	}
 	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int
 	{
-		auto &task = *std::any_cast<std::shared_ptr<RT_TASK>&>(handle);
-		ret = pthread_create(&task->cyclic_thread, &task->thattr, &task_func, NULL);
+		auto &task = std::any_cast<std::shared_ptr<RT_TASK>&>(handle);
+		auto ret = pthread_create(&task->cyclic_thread, &task->thattr, &task_func, NULL);
 		if (ret) {
 			THROW_FILE_LINE("create rt_thread failed");
 			return -1;
@@ -90,7 +90,7 @@ namespace aris::control
 	}
 	auto aris_rt_task_join(std::any& handle)->int
 	{
-		auto &task = *std::any_cast<std::shared_ptr<std::thread>&>(handle);
+		auto &task = std::any_cast<std::shared_ptr<RT_TASK>&>(handle);
 		pthread_join(task->cyclic_thread, NULL);
 		return 0;
 	}
