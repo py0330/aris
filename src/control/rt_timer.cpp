@@ -58,6 +58,8 @@ extern "C"
 #include <sys/mman.h>
 #include <time.h>
 }
+#include <atomic>
+
 #define NSEC_PER_SEC 1000000000
 namespace aris::control
 {
