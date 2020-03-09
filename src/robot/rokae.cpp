@@ -12,13 +12,12 @@ namespace aris::robot
 
 		for (aris::Size i = 0; i < 6; ++i)
 		{
-#ifdef WIN32
+#ifdef ARIS_USE_ETHERCAT_SIMULATION
 			double pos_offset[6]
 			{
 				0,0,0,0,0,0
 			};
-#endif
-#ifdef UNIX
+#else
 			double pos_offset[6]
 			{
 				0.0833285350678632,   0.406351037260097,   -0.0643040958674858,   0.655755890051854,   -1.49540282814852,   -3.24773261925571
@@ -78,7 +77,7 @@ namespace aris::robot
 
 			controller->slavePool().add<aris::control::EthercatMotor>().loadXmlStr(xml_str);
 
-#ifndef WIN32
+#ifndef ARIS_USE_ETHERCAT_SIMULATION
 			dynamic_cast<aris::control::EthercatMotor&>(controller->slavePool().back()).scanInfoForCurrentSlave();
 #endif
 		}
