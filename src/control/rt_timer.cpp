@@ -1,7 +1,7 @@
 ﻿#include "aris/control/rt_timer.hpp"
 #include "aris/core/log.hpp"
 
-#ifdef defined(ARIS_USE_XENOMAI3)
+#if defined(ARIS_USE_XENOMAI3)
 extern "C"
 {
 #include <alchemy/task.h>
