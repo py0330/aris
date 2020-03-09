@@ -81,7 +81,7 @@ namespace aris::control
 	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int
 	{
 		// map from void(void*) to void*(void*)
-		void* package[2]{ task_func, param };
+		void* package[2]{ reinterpret_cast<void*>(task_func), param };
 		auto linux_task_func = [](void* package)->void*
 		{
 			auto real = reinterpret_cast<void**>(package);
