@@ -58,6 +58,7 @@ extern "C"
 #include <sys/mman.h>
 #include <time.h>
 }
+#define NSEC_PER_SEC 1000000000
 namespace aris::control
 {
 	struct RT_TASK
@@ -75,10 +76,11 @@ namespace aris::control
 		auto task = std::make_shared<RT_TASK>();
 		pthread_attr_init(&task->thattr);
 		pthread_attr_setdetachstate(&task->thattr, PTHREAD_CREATE_JOINABLE);
+		return task;
 	}
 	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int
 	{
-		auto &task = *std::any_cast<std::shared_ptr<std::thread>&>(handle);
+		auto &task = *std::any_cast<std::shared_ptr<RT_TASK>&>(handle);
 		ret = pthread_create(&task->cyclic_thread, &task->thattr, &task_func, NULL);
 		if (ret) {
 			THROW_FILE_LINE("create rt_thread failed");
