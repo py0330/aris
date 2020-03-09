@@ -60,7 +60,7 @@ extern "C"
 }
 namespace aris::control
 {
-	class RT_TASK
+	struct RT_TASK
 	{
 		pthread_t cyclic_thread;
 		pthread_attr_t thattr;
