@@ -81,25 +81,26 @@ namespace aris::control
 	auto aris_rt_task_start(std::any& handle, void(*task_func)(void*), void*param)->int
 	{
 		// map from void(void*) to void*(void*)
-		void* package[2]{ reinterpret_cast<void*>(task_func), param };
+		void* package[3]{ reinterpret_cast<void*>(task_func), param, &is };
 		auto linux_task_func = [](void* package)->void*
 		{
 			auto real = reinterpret_cast<void**>(package);
 			auto func = reinterpret_cast<void(*)(void*)>(real[0]);
 			auto param = reinterpret_cast<void*>(real[1]);
+			auto is = reinterpret_cast<std::atomic_bool*>(real[2]);
 
+			is->store(true);
 			func(param);
-
 			return nullptr;
 		};
-		
-		
+
 		auto &task = std::any_cast<std::shared_ptr<RT_TASK>&>(handle);
-		auto ret = pthread_create(&task->cyclic_thread, &task->thattr, linux_task_func, param);
+		auto ret = pthread_create(&task->cyclic_thread, &task->thattr, linux_task_func, package);
 		if (ret) {
 			THROW_FILE_LINE("create rt_thread failed");
 			return -1;
 		}
+		while (!is); // protect memory "package"
 		return 0;
 	}
 	auto aris_rt_task_join(std::any& handle)->int
