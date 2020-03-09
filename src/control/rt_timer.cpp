@@ -64,7 +64,7 @@ namespace aris::control
 	{
 		pthread_t cyclic_thread;
 		pthread_attr_t thattr;
-	}
+	};
 	// should not have global variables
 	thread_local int nanoseconds{ 1000 };
 	thread_local struct timespec last_time_, begin_time_;
