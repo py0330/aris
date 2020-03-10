@@ -717,7 +717,6 @@ namespace aris::server
 				LOG_INFO << "server prepare cmd " << std::to_string(plan->cmdId()) << std::endl;
 				plan->prepareNrt();
 				(*p)->has_prepared_ = true;
-
 			}
 			catch (std::exception &e)
 			{
