@@ -93,6 +93,10 @@ namespace aris::control
 			auto is = reinterpret_cast<std::atomic_bool*>(real[2]);
 
 			is->store(true);
+
+			struct sched_param  s_param = { .sched_priority = 99 };
+			pthread_setschedparam(pthread_self(), SCHED_FIFO, &s_param);
+
 			func(param);
 			return nullptr;
 		};

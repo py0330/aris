@@ -11,8 +11,6 @@
 #include "aris/core/log.hpp"
 #include "aris/core/object.hpp"
 
-using namespace std;
-
 namespace aris::core
 {
 	struct Object::Imp
