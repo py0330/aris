@@ -32,9 +32,6 @@ static void aris_reflection_register_function_()
 namespace aris::core
 {
 	class Type;
-	auto reflect_types()->std::map<std::size_t, Type>&;
-	auto reflect_names()->std::map<std::string_view, std::size_t>&;
-
 
 	// variant 负责所存储对象的生命周期，而Instance不用
 	class Variant
@@ -132,6 +129,9 @@ namespace aris::core
 		friend class Instance;
 	};
 	
+	auto reflect_types()->std::map<std::size_t, Type>&;
+	auto reflect_names()->std::map<std::string_view, std::size_t>&;
+
 	auto inline getType(std::string_view name)->Type& 
 	{
 		return reflect_types().at(reflect_names().at(name));

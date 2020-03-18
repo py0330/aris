@@ -58,10 +58,10 @@ namespace aris::core
 	ARIS_REGISTRATION
 	{
 		aris::core::class_<int>("int")
-			.basic([](void *v) 
+			.basic([](void *v)->std::string
 			{
 				return std::to_string(*reinterpret_cast<int*>(v)); 
-			},[](void *v,std::string_view str) 
+			},[](void *v,std::string_view str)->void
 			{
 				*reinterpret_cast<int*>(v) = std::stoi(std::string(str.data())); 
 			});
