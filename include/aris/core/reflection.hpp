@@ -184,7 +184,7 @@ namespace aris::core
 		template<typename Value>
 		auto property(std::string_view name, Value v)->class_<Class_Type>&
 		{
-			using T = std::remove_reference_t<decltype(reinterpret_cast<Class_Type*>(nullptr)->*v)>;
+			using T = std::remove_reference_t<decltype((new Class_Type)->*v)>;
 			
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
 			auto prop = Property(name, &type, &typeid(T));
@@ -200,7 +200,7 @@ namespace aris::core
 		template<typename SetFunc, typename GetFunc>
 		auto property(std::string_view name, SetFunc s, GetFunc g)->class_<Class_Type>&
 		{
-			using T = std::remove_reference_t<decltype((reinterpret_cast<Class_Type*>(nullptr)->*g)())>;
+			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
 			
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
 			auto prop = Property(name, &type, &typeid(T));
