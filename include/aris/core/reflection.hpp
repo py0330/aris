@@ -94,6 +94,10 @@ namespace aris::core
 		std::any value_;
 		friend class Property;
 	};
+	
+	auto reflect_types()->std::map<std::size_t, Type>&;
+	auto reflect_names()->std::map<std::string_view, std::size_t>&;
+	
 	class Instance
 	{
 	public:
@@ -133,8 +137,7 @@ namespace aris::core
 	
 	
 	
-	auto reflect_types()->std::map<std::size_t, Type>&;
-	auto reflect_names()->std::map<std::string_view, std::size_t>&;
+	
 
 	auto inline getType(std::string_view name)->Type& 
 	{
