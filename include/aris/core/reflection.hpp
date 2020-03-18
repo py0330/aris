@@ -32,7 +32,49 @@ static void aris_reflection_register_function_()
 namespace aris::core
 {
 	class Type;
+	class Instance;
+	class Variant;
 
+	class Property
+	{
+	public:
+		auto name()->std::string { return name_; };
+		auto set(Instance *, std::any arg)->void;
+		auto get(Instance *)->Variant;
+		auto set(Variant *, std::any arg)->void;
+		auto get(Variant *)->Variant;
+		Property(std::string_view name, Type *type_belong_to, const std::type_info*self_type)
+			:name_(name), type_belong_to_(type_belong_to), type_(self_type) {}
+
+	private:
+		std::string name_;
+		std::function<std::any(void*)> get_;
+		std::function<void(void*, const std::any &)> set_;
+		Type *type_belong_to_;// which property belong to
+		const std::type_info* type_;// cpp type of this property
+		template<typename T> friend class class_;
+		friend class Variant;
+		friend class Instance;
+	};
+	class Type
+	{
+	public:
+		auto name()->std::string_view { return name_; };
+		auto properties()const->const std::map<std::string, Property, std::less<>>& { return properties_; };
+		Type(std::string_view name, std::function<void*(std::any*)> any_to_void) :name_(name), any_to_void_(any_to_void) {}
+
+	private:
+		std::string name_;
+		std::map<std::string, Property, std::less<>> properties_;
+		bool is_basic_;
+		std::function<std::string(void*)> to_string_;
+		std::function<void(void*, std::string_view)> from_string_;
+		std::function<void*(std::any*)> any_to_void_; // for variant cast to void*
+
+		template<typename T> friend class class_;
+		friend class Variant;
+		friend class Instance;
+	};
 	// variant 负责所存储对象的生命周期，而Instance不用
 	class Variant
 	{
@@ -88,46 +130,8 @@ namespace aris::core
 		const std::type_info* type_;
 		friend class Property;
 	};
-	class Property
-	{
-	public:
-		auto name()->std::string { return name_; };
-		auto set(Instance *, std::any arg)->void;
-		auto get(Instance *)->Variant;
-		auto set(Variant *, std::any arg)->void;
-		auto get(Variant *)->Variant;
-		Property(std::string_view name, Type *type_belong_to, const std::type_info*self_type) 
-			:name_(name), type_belong_to_(type_belong_to), type_(self_type){}
-
-	private:
-		std::string name_;
-		std::function<std::any(void*)> get_;
-		std::function<void(void*, const std::any &)> set_;
-		Type *type_belong_to_;// which property belong to
-		const std::type_info* type_;// cpp type of this property
-		template<typename T> friend class class_;
-		friend class Variant;
-		friend class Instance;
-	};
-	class Type
-	{
-	public:
-		auto name()->std::string_view { return name_; };
-		auto properties()const->const std::map<std::string, Property, std::less<>>& { return properties_; };
-		Type(std::string_view name, std::function<void*(std::any*)> any_to_void) :name_(name), any_to_void_(any_to_void){}
-
-	private:
-		std::string name_;
-		std::map<std::string, Property, std::less<>> properties_;
-		bool is_basic_;
-		std::function<std::string(void*)> to_string_;
-		std::function<void(void*, std::string_view)> from_string_;
-		std::function<void*(std::any*)> any_to_void_; // for variant cast to void*
-		
-		template<typename T> friend class class_;
-		friend class Variant;
-		friend class Instance;
-	};
+	
+	
 	
 	auto reflect_types()->std::map<std::size_t, Type>&;
 	auto reflect_names()->std::map<std::string_view, std::size_t>&;
