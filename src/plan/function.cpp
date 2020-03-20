@@ -175,7 +175,6 @@ namespace aris::plan
 		return std::abs(pt - pc) < zero_check && std::abs(vt - vc) < zero_check ? 0 : 1;
 	}
 
-
 	struct LanguageParser::Imp
 	{
 		struct CmdInfo

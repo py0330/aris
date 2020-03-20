@@ -13,6 +13,9 @@ struct A:public Base
 
 	int getI() { return -1000; };
 	void setI(int a) { std::cout << "set value:" << a << std::endl; };
+
+	int& getJ() { return a; };
+	void setJ(int a) { std::cout << "set value:" << a << std::endl; };
 };
 
 ARIS_REGISTRATION
@@ -26,7 +29,8 @@ ARIS_REGISTRATION
 		.property("base", &A::base)
 		.property("a", &A::a)
 		.property("b", &A::b)
-		.property("c", &A::setI, &A::getI);
+		.property("c", &A::setI, &A::getI)
+		.property("d", &A::setJ, &A::getJ);
 
 	
 }
@@ -50,6 +54,47 @@ auto to_xml(aris::core::Instance i)
 
 int main()
 {
+	aris::dynamic::Serial3Param param;
+	param.a1 = 0.7;
+	param.a2 = 0.5;
+	param.a3 = 0.6;
+	auto m = aris::dynamic::createModelSerial3Axis(param);
+
+	m->motionPool()[0].setMp(0.2);
+	m->motionPool()[1].setMp(0.3);
+	m->motionPool()[2].setMp(0.5);
+
+	m->solverPool()[1].kinPos();
+	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
+
+
+
+	auto &solver = dynamic_cast<aris::dynamic::Serial3InverseKinematicSolver&>(m->solverPool()[0]);
+	solver.setWhichRoot(0);
+	m->solverPool()[0].kinPos();
+	m->solverPool()[1].kinPos();
+	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
+	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
+	std::cout << std::endl;
+
+
+	solver.setWhichRoot(1);
+	m->solverPool()[0].kinPos();
+	m->solverPool()[1].kinPos();
+	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
+	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
+	std::cout << std::endl;
+
+	solver.setWhichRoot(4);
+	m->solverPool()[0].kinPos();
+	m->solverPool()[1].kinPos();
+	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
+	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
+	std::cout << std::endl;
+
+
+	/*
+	
 	int a = 50;
 
 	auto t = aris::core::getType("aaa");
@@ -94,7 +139,7 @@ int main()
 
 
 
-
+	*/
 
 	std::cout << "demo_reflection finished, press any key to continue" << std::endl;
 	std::cin.get();

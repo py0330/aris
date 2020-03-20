@@ -303,7 +303,7 @@ namespace aris::server
 						&& (cm.targetPos() > ld.p))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MAX in count %zu:\nmax: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -313,7 +313,7 @@ namespace aris::server
 						&& (cm.targetPos() < ld.p))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MIN in count %zu:\nmin: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -322,7 +322,7 @@ namespace aris::server
 						&& ((cm.targetPos() - ld.p) > dt * cm.maxVel() || (cm.targetPos() - ld.p) < dt * cm.minVel()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, ld.p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, ld.p, cm.targetPos());
 						return error_code;
 					}
 
@@ -331,7 +331,7 @@ namespace aris::server
 						&& ((cm.targetPos() + lld.p - 2 * ld.p) > dt * dt * cm.maxAcc() || (cm.targetPos() + lld.p - 2 * ld.p) < dt * dt * cm.minAcc()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_NOT_CONTINUOUS_SECOND_ORDER;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %lf\tlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, lld.p, ld.p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position NOT SECOND CONTINUOUS in count %zu:\nlast last: %f\tlast: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, lld.p, ld.p, cm.targetPos());
 						return error_code;
 					}
 
@@ -340,7 +340,7 @@ namespace aris::server
 						&& (std::abs(cm.targetPos() - cm.actualPos()) > cm.maxPosFollowingError()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_FOLLOWING_ERROR;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position has FOLLOW ERROR in count %zu:\nactual: %lf\ttarget: %lf\n", __FILE__, __LINE__, i, count_, cm.actualPos(), cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position has FOLLOW ERROR in count %zu:\nactual: %f\ttarget: %f\n", __FILE__, __LINE__, i, count_, cm.actualPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -353,7 +353,7 @@ namespace aris::server
 						&& (cm.targetVel() > cm.maxVel()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MAX;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxVel(), cm.targetVel());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MAX in count %zu:\nmax: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, cm.maxVel(), cm.targetVel());
 						return error_code;
 					}
 
@@ -362,7 +362,7 @@ namespace aris::server
 						&& (cm.targetVel() < cm.minVel()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MIN;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minVel(), cm.targetVel());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MIN in count %zu:\nmin: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, cm.minVel(), cm.targetVel());
 						return error_code;
 					}
 
@@ -371,7 +371,7 @@ namespace aris::server
 						&& ((cm.targetVel() - ld.v) > dt * cm.maxAcc() || (cm.targetVel() - ld.v) < dt * cm.minAcc()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, ld.v, cm.targetVel());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, ld.v, cm.targetVel());
 						return error_code;
 					}
 
@@ -380,7 +380,7 @@ namespace aris::server
 						&& (std::abs(cm.targetVel() - cm.actualVel()) > cm.maxVelFollowingError()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_FOLLOWING_ERROR;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity has FOLLOW ERROR in count %zu:\nactual: %lf\ttarget: %lf\n", __FILE__, __LINE__, i, count_, cm.actualVel(), cm.targetVel());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity has FOLLOW ERROR in count %zu:\nactual: %f\ttarget: %f\n", __FILE__, __LINE__, i, count_, cm.actualVel(), cm.targetVel());
 						return error_code;
 					}
 
@@ -393,7 +393,7 @@ namespace aris::server
 						&& (cm.actualPos() > cm.maxPos()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MAX;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MAX in count %zu:\nmax: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, cm.maxPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -402,7 +402,7 @@ namespace aris::server
 						&& (cm.actualPos() < cm.minPos()))
 					{
 						error_code = aris::plan::Plan::MOTION_POS_BEYOND_MIN;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position beyond MIN in count %zu:\nmin: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, cm.minPos(), cm.targetPos());
 						return error_code;
 					}
 
@@ -411,7 +411,7 @@ namespace aris::server
 						&& (cm.actualVel() > cm.maxVel()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MAX;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MAX in count %zu:\nmax: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.maxVel(), cm.actualVel());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MAX in count %zu:\nmax: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, cm.maxVel(), cm.actualVel());
 						return error_code;
 					}
 
@@ -420,7 +420,7 @@ namespace aris::server
 						&& (cm.actualVel() < cm.minVel()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_BEYOND_MIN;
-						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MIN in count %zu:\nmin: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, cm.minVel(), cm.actualVel());
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity beyond MIN in count %zu:\nmin: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, cm.minVel(), cm.actualVel());
 						return error_code;
 					}
 
@@ -429,7 +429,7 @@ namespace aris::server
 						&& ((cm.actualVel() - ld.v) > dt * cm.maxAcc() || (cm.actualVel() - ld.v) < dt * cm.minAcc()))
 					{
 						error_code = aris::plan::Plan::MOTION_VEL_NOT_CONTINUOUS;
-						sprintf(error_msg, "%s_%d:\nMotion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %lf\tnow: %lf\n", __FILE__, __LINE__, i, count_, ld.p, cm.targetPos());
+						sprintf(error_msg, "%s_%d:\nMotion %zu velocity NOT CONTINUOUS in count %zu:\nlast: %f\tnow: %f\n", __FILE__, __LINE__, i, count_, ld.p, cm.targetPos());
 						return error_code;
 					}
 					break;
@@ -994,18 +994,24 @@ namespace aris::server
 	auto ControlServer::clearError()->void 
 	{ 
 		std::unique_lock<std::recursive_mutex> running_lck(imp_->mu_running_);
-		if (!imp_->is_running_)LOG_AND_THROW(std::runtime_error(std::string("failed") + __FILE__ + std::to_string(__LINE__)));
-		
-		while (imp_->err_code_and_fixed_.load())
+		if (!imp_->is_running_)
 		{
-			union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
-			err.err_code = 0;
-			err.is_fixed = 0xFFFF'FFFF;
-			imp_->err_code_and_fixed_ &= err_code_and_fixed;
-			std::this_thread::sleep_for(std::chrono::nanoseconds(controller().samplePeriodNs()));
+			imp_->err_code_and_fixed_.store(0);
+			std::fill_n(imp_->err_msg_, 1024, '\0');
 		}
+		else
+		{
+			while (imp_->err_code_and_fixed_.load())
+			{
+				union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
+				err.err_code = 0;
+				err.is_fixed = 0xFFFF'FFFF;
+				imp_->err_code_and_fixed_ &= err_code_and_fixed;
+				std::this_thread::sleep_for(std::chrono::nanoseconds(controller().samplePeriodNs()));
+			}
 
-		std::fill_n(imp_->err_msg_, 1024, '\0');
+			std::fill_n(imp_->err_msg_, 1024, '\0');
+		}
 	}
 	ControlServer::~ControlServer() 
 	{ 

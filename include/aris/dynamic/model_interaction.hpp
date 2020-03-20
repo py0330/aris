@@ -182,7 +182,6 @@ namespace aris::dynamic
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
 
-
 		auto mpm()const noexcept->const double4x4&;
 		auto updMpm() noexcept->void;
 		auto setMpe(const double* pe, const char *type = "313") noexcept->void;

@@ -40,7 +40,7 @@ namespace aris::core
 	public:
 		auto name()->std::string { return name_; };
 		auto set(Instance *, std::any arg)->void;
-		auto get(Instance *)->Variant;
+		auto get(Instance *)->Instance;
 		auto set(Variant *, std::any arg)->void;
 		auto get(Variant *)->Variant;
 		Property(std::string_view name, Type *type_belong_to, const std::type_info*self_type)
@@ -101,8 +101,11 @@ namespace aris::core
 	class Instance
 	{
 	public:
+		template<typename T>
+		auto to()->T& { return std::any_cast<T&>(value_); }
 		auto set(std::string_view prop_name, std::any arg)->void;
-		auto get(std::string_view prop_name)->Variant;
+		auto get(std::string_view prop_name)->Instance;
+		auto isReference()->bool;
 		auto type()->const Type*;
 		auto basic()->bool;
 		auto toString()->std::string;
@@ -130,15 +133,12 @@ namespace aris::core
 		Instance(Instance&&) = default;
 
 	private:
-		void* value_;
+		auto toVoid()->void*;
+		std::any value_;
 		const std::type_info* type_;
 		friend class Property;
 	};
 	
-	
-	
-	
-
 	auto inline getType(std::string_view name)->Type& 
 	{
 		return reflect_types().at(reflect_names().at(name));
@@ -180,28 +180,67 @@ namespace aris::core
 			return *this;
 		}
 
-		// espect: Class_Type::v where v is a value 
+		// espect: Class_Type::v where v is a value
 		template<typename Value>
-		auto property(std::string_view name, Value v)->class_<Class_Type>&
+		auto property(std::string_view name, Value v
+			, std::enable_if_t<std::is_lvalue_reference_v<decltype((new Class_Type)->*v)>> *is_value = nullptr)
+			->class_<Class_Type>&
 		{
 			using T = std::remove_reference_t<decltype((new Class_Type)->*v)>;
 			
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
 			auto prop = Property(name, &type, &typeid(T));
-			prop.get_ = [v](void* ins)->std::any{	return reinterpret_cast<Class_Type*>(ins)->*v;};
+			prop.get_ = [v](void* ins)->std::any{ return reinterpret_cast<Class_Type*>(ins)->*v; };
 			prop.set_ = [v](void* ins, const std::any &value){reinterpret_cast<Class_Type*>(ins)->*v = std::any_cast<const T&>(value);};
 			auto [iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
 			
 			return *this;
 		}
 
+		// espect: Class_Type::v() where v is a reference function
+		template<typename Value>
+		auto property(std::string_view name, Value v
+			, std::enable_if_t<std::is_function_v<Value> && std::is_lvalue_reference_v<decltype((new Class_Type)->*v)()>> *is_lf_returned_function = nullptr)
+			->class_<Class_Type>&
+		{
+			//using T = std::remove_reference_t<decltype((new Class_Type)->*v)>;
+
+			//auto &type = reflect_types().at(typeid(Class_Type).hash_code());
+			//auto prop = Property(name, &type, &typeid(T));
+			//prop.get_ = [v](void* ins)->std::any { return reinterpret_cast<Class_Type*>(ins)->*v; };
+			//prop.set_ = [v](void* ins, const std::any &value) {reinterpret_cast<Class_Type*>(ins)->*v = std::any_cast<const T&>(value); };
+			//auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
+
+			return *this;
+		}
+
 		// espect: Class_Type::setProp(T v)->void
-		//         Class_Type::getProp()->T
+		//         Class_Type::getProp()->T&
 		template<typename SetFunc, typename GetFunc>
-		auto property(std::string_view name, SetFunc s, GetFunc g)->class_<Class_Type>&
+		auto property(std::string_view name, SetFunc s, GetFunc g
+			, std::enable_if_t<std::is_lvalue_reference_v<decltype(((new Class_Type)->*g)())>> *is_lf_returned_get = nullptr)
+			->class_<Class_Type>&
 		{
 			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
 			
+			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
+			auto prop = Property(name, &type, &typeid(T));
+			prop.get_ = [g](void* ins)->std::any {	return (reinterpret_cast<Class_Type*>(ins)->*g)(); };
+			prop.set_ = [s](void* ins, const std::any &value) {(reinterpret_cast<Class_Type*>(ins)->*s)(std::any_cast<const T&>(value)); };
+			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
+
+			return *this;
+		}
+
+		// espect: Class_Type::setProp(T v)->void
+		//         Class_Type::getProp()->T
+		template<typename SetFunc, typename GetFunc>
+		auto property(std::string_view name, SetFunc s, GetFunc g
+			, std::enable_if_t<!std::is_lvalue_reference_v<decltype(((new Class_Type)->*g)())>> *is_lf_returned_get = nullptr)
+			->class_<Class_Type>&
+		{
+			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
+
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
 			auto prop = Property(name, &type, &typeid(T));
 			prop.get_ = [g](void* ins)->std::any {	return (reinterpret_cast<Class_Type*>(ins)->*g)(); };
@@ -210,9 +249,6 @@ namespace aris::core
 
 			return *this;
 		}
-
-
-
 	};
 
 }

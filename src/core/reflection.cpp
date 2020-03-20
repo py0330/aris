@@ -31,18 +31,27 @@ namespace aris::core
 	auto Variant::toString()->std::string { return type()->to_string_(type()->any_to_void_(&value_)); }
 	auto Variant::fromString(std::string_view str)->void { return type()->from_string_(type()->any_to_void_(&value_), str); }
 
-	auto Instance::set(std::string_view prop_name, std::any arg)->void{	type()->properties().at(std::string(prop_name)).set_(value_, arg);}
-	auto Instance::get(std::string_view prop_name)->Variant{ return type()->properties().at(std::string(prop_name)).get_(value_);}
+
+	auto Instance::toVoid()->void* {return isReference() ? std::any_cast<void*>(value_) : type()->any_to_void_(&value_);}
+	auto Instance::set(std::string_view prop_name, std::any arg)->void
+	{
+		type()->properties().at(std::string(prop_name)).set_(toVoid(), arg);
+	}
+	auto Instance::get(std::string_view prop_name)->Instance
+	{
+		return type()->properties().at(std::string(prop_name)).get_(toVoid());
+	}
+	auto Instance::isReference()->bool { return std::any_cast<void**>(&value_) != nullptr; }
 	auto Instance::type()->const Type* { return reflect_types().find(type_->hash_code()) == reflect_types().end() ? nullptr : &reflect_types().at(type_->hash_code()); }
 	auto Instance::basic()->bool { return type()->is_basic_; }
-	auto Instance::toString()->std::string { return type()->to_string_(value_); }
-	auto Instance::fromString(std::string_view str)->void { type()->from_string_(value_, str); }
+	auto Instance::toString()->std::string { return type()->to_string_(toVoid()); }
+	auto Instance::fromString(std::string_view str)->void { type()->from_string_(toVoid(), str); }
 
 	auto Property::set(Instance *ins, std::any arg)->void 
 	{
 		ins->set(name(), arg);
 	}
-	auto Property::get(Instance *ins)->Variant 
+	auto Property::get(Instance *ins)->Instance
 	{
 		return ins->get(name());
 	}
@@ -66,8 +75,4 @@ namespace aris::core
 				*reinterpret_cast<int*>(v) = std::stoi(std::string(str.data())); 
 			});
 	}
-
-
-
-
 }

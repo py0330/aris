@@ -28,10 +28,6 @@ int main()
 	auto &fwd = m.solverPool()[1];
 	auto &ee = m.generalMotionPool()[0];
 
-	// old without yaw//
-	//double mid_pe[6]{ 0, -0.012, 0.515, 0, 0, 0 };
-	//double x_max{ 0.04 }, y_max{ 0.04 }, z_max{ 0.04 }, a_max{ 0.085 }, b_max{ 0.085 }, c_max{ 0.0 };
-
 	// new with yaw //
 	double mid_pe[6]{ 0, -0.0103, 0.513, 0, 0, 0 };
 	double x_max{ 0.035 }, y_max{ 0.035 }, z_max{ 0.0373 }, a_max{ 0.08 }, b_max{ 0.08 }, c_max{ 0.04 };
@@ -53,7 +49,7 @@ int main()
 		}
 		
 		
-		double max_max_margin(1);
+		double max_max_margin= 1.0;
 		
 		for (auto pnt : points)
 		{
@@ -118,7 +114,7 @@ int main()
 			ee.setMpe(pnt.data(), "123");
 
 			bool ret = inv.kinPos();
-			if (ret == false) throw std::runtime_error("failed");
+			if (ret) throw std::runtime_error("failed");
 			double max_margin{ 1 };
 			for (auto &mot : m.motionPool())
 			{
@@ -142,9 +138,6 @@ int main()
 				}
 				max_max_v_margin = std::min(max_max_v_margin, max_v_margin);
 			}
-			
-			//if (max_max_margin < 0) return max_max_margin;
-
 
 			if (double(aaa) / points.size() > k + 0.01)
 			{
@@ -177,39 +170,6 @@ int main()
 	{
 		std::cout << std::setprecision(16) << (m.mp() - 0.535) / (0.765 - 0.535) << std::endl;
 	}
-
-
-
-	
-
-
-	
-	
-	
-
-	
-
-	//std::cout << "input:";
-
-	
-	//std::cout <<"margin: "<<max_margin<< std::endl;
-	//ret = fwd.kinPos();
-
-	//
-
-	//ee.updMpm();
-	//dsp(4, 4, *ee.mpm());
-
-
-
-
-	
-
-
-
-
-
-
 
 	std::cout << "demo_stewart finished, press any key to continue" << std::endl;
 	std::cin.get();
