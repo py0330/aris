@@ -36,7 +36,8 @@ namespace aris::dynamic
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
-		auto setWhichRoot(int root_of_0_to_7)->void;
+		auto setWhichRoot(int root_of_0_to_4)->void;
+		auto setPosEE(const double *ee_pos)->void;
 
 		virtual ~Serial3InverseKinematicSolver();
 		explicit Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name = "puma_inverse_solver");

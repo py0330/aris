@@ -8,13 +8,8 @@
 
 namespace aris::core
 {
-	
-	
-	
-	template<typename T>
-	auto toXmlString(T && obj)->std::string;
-	template<typename T>
-	auto toXmlFile(T && obj, std::filesystem::path file)->void;
+	auto toXmlString(aris::core::Instance ins)->std::string;
+	auto fromXmlString(aris::core::Instance &ins, std::string_view xml_str)->void;
 }
 
 #endif

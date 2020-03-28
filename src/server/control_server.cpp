@@ -468,7 +468,7 @@ namespace aris::server
 			switch (cm.modeOfOperation())
 			{
 			case 8:
-				if (is_in_check) cm.setTargetPos(cm.actualPos());
+				if (is_in_check) cm.setTargetPos(((last_pvc_[i].p - cm.actualPos()) > cm.maxVel() || (last_pvc_[i].p - cm.actualPos()) < cm.minVel()) ? cm.actualPos() : last_pvc_[i].p);
 				break;
 			case 9:
 				cm.setTargetVel(0.0);

@@ -10,6 +10,7 @@
 
 #include "aris/core/log.hpp"
 #include "aris/core/object.hpp"
+#include "aris/core/reflection.hpp"
 
 namespace aris::core
 {
@@ -536,5 +537,11 @@ namespace aris::core
 		imp_->name_ = std::move(other.imp_->name_);
 		imp_->type_map_ = std::move(other.imp_->type_map_);
 		return *this;
+	}
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Object>("Object")
+			.property("name", &Object::setName, &Object::name);
 	}
 }

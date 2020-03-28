@@ -920,7 +920,7 @@ namespace aris::plan
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
 		set_input_movement(cmdParams(), *this, *imp_);
-		check_input_movement(cmdParams(), *this, *imp_, *imp_);
+		//check_input_movement(cmdParams(), *this, *imp_, *imp_);
 
 		imp_->axis_begin_pos_vec.resize(controller()->motionPool().size());
 
@@ -1775,10 +1775,6 @@ namespace aris::plan
 			"<Command name=\"cs_stop\">"
 			"</Command>");
 	}
-
-	
-
-
 
 	auto RemoveFile::prepareNrt()->void
 	{

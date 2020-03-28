@@ -30,9 +30,9 @@ namespace aris::dynamic
 
 		// add part //
 		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
-		auto &p1 = model->partPool().add<Part>("L1", param.iv_vec.size() == 6 ? param.iv_vec[0].data() : default_iv);
-		auto &p2 = model->partPool().add<Part>("L2", param.iv_vec.size() == 6 ? param.iv_vec[1].data() : default_iv);
-		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 6 ? param.iv_vec[2].data() : default_iv);
+		auto &p1 = model->partPool().add<Part>("L1", param.iv_vec.size() == 3 ? param.iv_vec[0].data() : default_iv);
+		auto &p2 = model->partPool().add<Part>("L2", param.iv_vec.size() == 3 ? param.iv_vec[1].data() : default_iv);
+		auto &p3 = model->partPool().add<Part>("L3", param.iv_vec.size() == 3 ? param.iv_vec[2].data() : default_iv);
 
 		// add joint //
 		const double j1_pos[3]{ param.a1, 0.0, 0.0 };
@@ -411,6 +411,10 @@ namespace aris::dynamic
 	auto Serial3InverseKinematicSolver::setWhichRoot(int root_of_0_to_4)->void 
 	{ 
 		imp_->which_root_ = root_of_0_to_4;
+	}
+	auto Serial3InverseKinematicSolver::setPosEE(const double *ee_pos)->void
+	{
+		imp_->ee->setMpe(std::array<double, 6>{ee_pos[0], ee_pos[1], ee_pos[2], 0, 0, 0}.data());
 	}
 	Serial3InverseKinematicSolver::~Serial3InverseKinematicSolver() = default;
 	Serial3InverseKinematicSolver::Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) 

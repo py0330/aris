@@ -23,6 +23,11 @@ int main()
 	auto &velocity = unique2.add<aris::core::Param>("velocity", "", 'v');
 	auto &current = unique2.add<aris::core::Param>("current", "", 0);
 
+
+
+
+
+
 	// 和用户进行交互 //
 	for (;;)
 	{
