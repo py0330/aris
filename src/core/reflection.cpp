@@ -74,7 +74,7 @@ namespace aris::core
 	auto inline get_chars(std::string_view param)->Type
 	{
 		Type ret;
-		auto result = std::from_chars(value.data(), value.data() + value.size(), ret);
+		auto result = std::from_chars(param.data(), param.data() + param.size(), ret);
 		if (result.ec == std::errc::invalid_argument) { THROW_FILE_LINE("invalid argument for param:" + std::string(param)); }
 		
 		return ret;
