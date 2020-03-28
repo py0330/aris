@@ -245,7 +245,9 @@ namespace aris::core
 			};
 			type.push_back_func_ = [](void* array_instance, const Instance& value)->void
 			{
-				return reinterpret_cast<ArrayType*>(array_instance)->push_back(*reinterpret_cast<const ArrayType::value_type*>(value.toVoidPtr()));
+				return reinterpret_cast<ArrayType*>(array_instance)->push_back(
+					*reinterpret_cast<const typename ArrayType::value_type*>(value.toVoidPtr())
+				);
 			};
 
 			return *this;
