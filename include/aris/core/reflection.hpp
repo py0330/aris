@@ -309,7 +309,8 @@ namespace aris::core
 			return *this;
 		}
 		
-
+		//template<typename T>
+		//using Member = void (T::*)(int, int);
 		//std::is_same_v<void (Class_Type::*)(int*,int), SetFunc>
 		//using Member = void (Class_Type::*)(int, int);
 		//static_assert(!std::is_same_v<Member, SetFunc>, "failed");
@@ -318,7 +319,9 @@ namespace aris::core
 		//         Class_Type::getProp()->T
 		template<typename SetFunc, typename GetFunc>
 		auto property(std::string_view name, SetFunc s, GetFunc g) -> 
-			std::enable_if_t<false, class_<Class_Type>& >
+			std::enable_if_t< std::is_class_v<Class_Type>
+				&& std::is_same_v<SetFunc, void (*)(int, int) >
+			, class_<Class_Type>& >
 		{
 			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
 
