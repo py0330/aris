@@ -37,7 +37,8 @@ namespace aris::core
 			{
 				auto insert_ele = ele->GetDocument()->NewElement(ins.type()->name().data());
 				ele->InsertEndChild(insert_ele);
-				to_xml_ele(ins.at(i), ele);
+				auto child_ins = ins.at(i);
+				to_xml_ele(child_ins, ele);
 			}
 		}
 		else
