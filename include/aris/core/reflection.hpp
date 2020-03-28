@@ -319,9 +319,12 @@ namespace aris::core
 		//         Class_Type::getProp()->T
 		template<typename SetFunc, typename GetFunc>
 		auto property(std::string_view name, SetFunc s, GetFunc g) -> 
-			std::enable_if_t< std::is_class_v<Class_Type>
-				&& std::is_same_v<SetFunc, void (*)(int, int) >
-			, class_<Class_Type>& >
+			std::enable_if_t< std::is_same_v<SetFunc, 
+				std::enable_if_t<std::is_class_v<Class_Type>, int >
+
+							                >
+			, class_<Class_Type>& 
+			                >
 		{
 			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
 
