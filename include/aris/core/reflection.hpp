@@ -66,8 +66,7 @@ namespace aris::core
 	
 	template<typename T>
 	struct is_container : std::integral_constant<bool, has_const_iterator<T>::value && has_begin_end<T>::beg_value && has_begin_end<T>::end_value>{ };
-	
-	
+
 	class Type;
 	class Instance;
 
@@ -77,24 +76,23 @@ namespace aris::core
 		auto name()const->std::string { return name_; };
 		auto set(Instance *, const Instance&)const->void;
 		auto get(Instance *)const->Instance;
-		Property(std::string_view name, Type *type_belong_to, const std::type_info*self_type)
-			:name_(name), type_belong_to_(type_belong_to), type_(self_type) {}
+		auto acceptPtr()const->bool;
+		Property(std::string_view name, Type *type_belong_to)
+			:name_(name), type_belong_to_(type_belong_to) {}
 
 	private:
 		std::string name_;
 		std::function<Instance(void*)> get_;
 		std::function<void(void*, const Instance &)> set_;
+		bool accept_ptr_{ false };
 		Type *type_belong_to_;// which property belong to
-		const std::type_info* type_;// cpp type of this property
 		template<typename T> friend class class_;
-		friend class Variant;
 		friend class Instance;
 	};
 	class Type
 	{
 	public:
-		template<typename T>
-		auto create()const->T* { return reinterpret_cast<T*>(default_ctor_()); }
+		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
 		auto name()const->std::string_view { return type_name_; };
 		auto properties()const->const std::map<std::string, Property, std::less<>>& { return properties_; };
 		Type(std::string_view name, std::function<void*(std::any*)> any_to_void) :type_name_(name), any_to_void_(any_to_void) {}
@@ -107,7 +105,7 @@ namespace aris::core
 		std::function<void*(std::any*)> any_to_void_; // for any cast to void*
 
 		// ctor //
-		std::function<void*()> default_ctor_;
+		std::function<std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>()> default_ctor_;
 
 		// for basic //
 		std::function<std::string(void*)> to_string_;
@@ -197,9 +195,10 @@ namespace aris::core
 		template<typename Class_Type> friend class class_;
 	};
 	
-	auto inline getType(std::string_view name)->Type& 
+	auto inline getType(std::string_view name)->Type* 
 	{
-		return reflect_types().at(reflect_names().at(std::string(name)));
+		auto found = reflect_names().find(std::string(name));
+		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
 	}
 	template<typename Class_Type>
 	class class_
@@ -217,7 +216,13 @@ namespace aris::core
 			if (!ok2) THROW_FILE_LINE("class name already exist");
 
 			ins->second.is_basic_ = false;
-			ins->second.default_ctor_ = []()->void* { return new Class_Type; };
+			ins->second.default_ctor_ = []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
+			{
+				auto f = [](void const * data){	delete static_cast<Class_Type const*>(data); };
+				auto ptr = std::unique_ptr<void, void(*)(void const*)>(new Class_Type, f);
+				Instance ins(*reinterpret_cast<Class_Type*>(ptr.get()));
+				return std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>(std::move(ptr), ins);
+			};
 		}
 
 		auto asBasic(std::function<std::string(void*)> to_string, std::function<void(void*, std::string_view)> from_string)->class_<Class_Type>&
@@ -267,7 +272,7 @@ namespace aris::core
 			using T = std::remove_reference_t<decltype((new Class_Type)->*v)>;
 			
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto prop = Property(name, &type, &typeid(T));
+			auto prop = Property(name, &type);
 			prop.get_ = [v](void* ins)->Instance { return reinterpret_cast<Class_Type*>(ins)->*v; };
 			prop.set_ = [v](void* ins, const Instance &value) { reinterpret_cast<Class_Type*>(ins)->*v = *reinterpret_cast<const T*>(value.toVoidPtr()); };
 			auto [iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
@@ -283,7 +288,7 @@ namespace aris::core
 			using T = std::remove_reference_t<decltype(((new Class_Type)->*v)())>;
 
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto prop = Property(name, &type, &typeid(T));
+			auto prop = Property(name, &type);
 			prop.get_ = [v](void* ins)->Instance { return (reinterpret_cast<Class_Type*>(ins)->*v)(); };
 			prop.set_ = [v](void* ins, const Instance &value) {	(reinterpret_cast<Class_Type*>(ins)->*v)() = *reinterpret_cast<const T*>(value.toVoidPtr()); };
 			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
@@ -293,15 +298,16 @@ namespace aris::core
 
 		// espect: Class_Type::setProp(T v)->void  
 		//         Class_Type::getProp()->T
-		template<typename SetFunc, typename GetFunc>
-		auto property(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t<
-			true
-			, class_<Class_Type>&>
+		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
+		auto property(std::string_view name, SetFunc s, GetFunc g) -> 				
+			std::enable_if_t< !(std::is_class_v<C> &&
+				std::is_same_v<SetFunc, void (C::*)(std::remove_reference_t<decltype(((new Class_Type)->*g)())>*) >)
+			, class_<Class_Type>& >
 		{
 			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
 
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto prop = Property(name, &type, &typeid(T));
+			auto prop = Property(name, &type);
 			prop.get_ = [g](void* ins)->Instance {	return (reinterpret_cast<Class_Type*>(ins)->*g)(); };
 			prop.set_ = [s](void* ins, const Instance &value){ (reinterpret_cast<Class_Type*>(ins)->*s)(*reinterpret_cast<const T*>(value.toVoidPtr())); };
 			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
@@ -309,28 +315,23 @@ namespace aris::core
 			return *this;
 		}
 		
-		//template<typename T>
-		//using Member = void (T::*)(int, int);
-		//std::is_same_v<void (Class_Type::*)(int*,int), SetFunc>
-		//using Member = void (Class_Type::*)(int, int);
-		//static_assert(!std::is_same_v<Member, SetFunc>, "failed");
-
-		// espect: Class_Type::setProp(T v)->void  
+		// espect: Class_Type::setProp(T *v)->void  
 		//         Class_Type::getProp()->T
-		template<typename SetFunc, typename GetFunc>
+		//
+		// note  : set function will accept life management of v
+		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
 		auto property(std::string_view name, SetFunc s, GetFunc g) -> 
-			std::enable_if_t< std::is_same_v<SetFunc, int
-
-							                >
-			, class_<Class_Type>& 
-			                >
+				std::enable_if_t< std::is_class_v<C> && 
+					std::is_same_v<SetFunc, void (C::*)(std::remove_reference_t<decltype(((new Class_Type)->*g)())>*) >
+			, class_<Class_Type>& >
 		{
 			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
 
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto prop = Property(name, &type, &typeid(T));
+			auto prop = Property(name, &type);
 			prop.get_ = [g](void* ins)->Instance {	return (reinterpret_cast<Class_Type*>(ins)->*g)(); };
-			prop.set_ = [s](void* ins, const Instance &value) { (reinterpret_cast<Class_Type*>(ins)->*s)(*reinterpret_cast<const T*>(value.toVoidPtr())); };
+			prop.set_ = [s](void* ins, const Instance &value) {	(reinterpret_cast<Class_Type*>(ins)->*s)(const_cast<T*>(reinterpret_cast<const T*>(value.toVoidPtr()))); };
+			prop.accept_ptr_ = true;
 			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
 
 			return *this;

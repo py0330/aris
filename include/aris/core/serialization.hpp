@@ -9,7 +9,7 @@
 namespace aris::core
 {
 	auto toXmlString(aris::core::Instance ins)->std::string;
-	auto fromXmlString(aris::core::Instance &ins, std::string_view xml_str)->void;
+	auto fromXmlString(aris::core::Instance ins, std::string_view xml_str)->void;
 }
 
 #endif

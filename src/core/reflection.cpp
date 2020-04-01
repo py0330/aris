@@ -24,6 +24,11 @@ namespace aris::core
 		return reflection_names_;
 	}
 
+	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
+	{ 
+		return default_ctor_();
+	}
+
 	auto Instance::toVoidPtr()->void* {return isReference() ? std::any_cast<InstanceRef>(&value_)->data_ : type()->any_to_void_(&value_);}
 	auto Instance::set(std::string_view prop_name, const Instance &arg)->void
 	{
@@ -67,8 +72,9 @@ namespace aris::core
 		type()->push_back_func_(toVoidPtr(), element);
 	}
 
-	auto Property::set(Instance *this_ins, const Instance& ins)const->void{ this_ins->set(name(), ins);}
-	auto Property::get(Instance *ins)const->Instance{ return ins->get(name());}
+	auto Property::set(Instance *ins, const Instance& arg)const->void{ set_(ins->toVoidPtr(), arg); }
+	auto Property::get(Instance *ins)const->Instance { return get_(ins->toVoidPtr()); }
+	auto Property::acceptPtr()const->bool { return accept_ptr_; }
 
 	template<typename Type>
 	auto inline get_chars(std::string_view param)->Type
