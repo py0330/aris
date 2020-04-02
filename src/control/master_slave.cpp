@@ -320,7 +320,7 @@ namespace aris::control
 			imp_->is_need_change_ = !is_new_data_include_this_count;
 		}
 	}
-	auto Master::setSamplePeriodNs(int period_ns) {	imp_->sample_period_ns_ = period_ns;}
+	auto Master::setSamplePeriodNs(int period_ns)->void {	imp_->sample_period_ns_ = period_ns;}
 	auto Master::samplePeriodNs()const ->int { return imp_->sample_period_ns_; }
 	Master::~Master() = default;
 	Master::Master(const std::string &name) :imp_(new Imp), Object(name)
