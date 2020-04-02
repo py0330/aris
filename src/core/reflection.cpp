@@ -28,7 +28,10 @@ namespace aris::core
 	{ 
 		return default_ctor_();
 	}
-
+	auto Type::inheritType()->Type*
+	{
+		return &reflect_types().at(this->inherit_->hash_code());
+	}
 	auto Instance::toVoidPtr()->void* {return isReference() ? std::any_cast<InstanceRef>(&value_)->data_ : type()->any_to_void_(&value_);}
 	auto Instance::set(std::string_view prop_name, const Instance &arg)->void
 	{

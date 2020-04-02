@@ -31,6 +31,7 @@ static void aris_reflection_register_function_()
 
 namespace aris::core
 {
+	/*
 	template<typename T>
 	struct has_const_iterator
 	{
@@ -66,7 +67,7 @@ namespace aris::core
 	
 	template<typename T>
 	struct is_container : std::integral_constant<bool, has_const_iterator<T>::value && has_begin_end<T>::beg_value && has_begin_end<T>::end_value>{ };
-
+	*/
 	class Type;
 	class Instance;
 
@@ -95,6 +96,7 @@ namespace aris::core
 		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
 		auto name()const->std::string_view { return type_name_; };
 		auto properties()const->const std::map<std::string, Property, std::less<>>& { return properties_; };
+		auto inheritType()->Type*;
 		Type(std::string_view name, std::function<void*(std::any*)> any_to_void) :type_name_(name), any_to_void_(any_to_void) {}
 
 	private:
@@ -103,6 +105,7 @@ namespace aris::core
 		bool is_basic_{ false };
 		bool is_array_{ false };
 		std::function<void*(std::any*)> any_to_void_; // for any cast to void*
+		const std::type_info *inherit_;
 
 		// ctor //
 		std::function<std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>()> default_ctor_;
@@ -225,6 +228,14 @@ namespace aris::core
 			};
 		}
 
+		template<typename FatherType>
+		auto inherit()->class_<Class_Type>&
+		{
+			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
+			type.inherit_ = &typeid(FatherType);
+			return *this;
+		};
+
 		auto asBasic(std::function<std::string(void*)> to_string, std::function<void(void*, std::string_view)> from_string)->class_<Class_Type>&
 		{
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
@@ -235,23 +246,53 @@ namespace aris::core
 			return *this;
 		}
 
-		template<class ArrayType = Class_Type>
-		auto asArray()->std::enable_if_t<is_container<ArrayType>::value, class_<Class_Type>&>
+		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
+		//         Class_Type::push_back(T*)->void
+		//         Class_Type::size()->size_t
+		template<typename AtFunc, typename PushBackFunc, typename SizeFunc, class A = Class_Type>
+		auto asArray(AtFunc at, PushBackFunc push_back, SizeFunc size)
+			->std::enable_if_t<
+				std::is_same_v<PushBackFunc, void (A::*)(std::remove_reference_t<decltype(((new A)->*at)())>*) >
+			, class_<Class_Type>&>
 		{
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
 			type.is_array_ = true;
 			type.size_func_ = [](void* array_instance)->std::size_t
 			{
-				return reinterpret_cast<ArrayType*>(array_instance)->size();
+				return (reinterpret_cast<A*>(array_instance)->*size)();
 			};
-			type.at_func_ = [](void* array_instance, std::size_t id)->Instance 
+			type.at_func_ = [](void* array_instance, std::size_t id)->Instance
 			{
-				return reinterpret_cast<ArrayType*>(array_instance)->at(id);
+				return (reinterpret_cast<A*>(array_instance)->*at)();
 			};
 			type.push_back_func_ = [](void* array_instance, const Instance& value)->void
 			{
-				return reinterpret_cast<ArrayType*>(array_instance)->push_back(
-					*reinterpret_cast<const typename ArrayType::value_type*>(value.toVoidPtr())
+				(reinterpret_cast<A*>(array_instance)->*push_back)();
+			};
+
+			return *this;
+		}
+
+		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
+		//         Class_Type::push_back(T)->void
+		//         Class_Type::size()->size_t    
+		template<class A = Class_Type>
+		auto asArray()->class_<Class_Type>&
+		{
+			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
+			type.is_array_ = true;
+			type.size_func_ = [](void* array_instance)->std::size_t
+			{
+				return reinterpret_cast<A*>(array_instance)->size();
+			};
+			type.at_func_ = [](void* array_instance, std::size_t id)->Instance 
+			{
+				return reinterpret_cast<A*>(array_instance)->at(id);
+			};
+			type.push_back_func_ = [](void* array_instance, const Instance& value)->void
+			{
+				return reinterpret_cast<A*>(array_instance)->push_back(
+					*reinterpret_cast<const typename A::value_type*>(value.toVoidPtr())
 				);
 			};
 
@@ -318,7 +359,7 @@ namespace aris::core
 		// espect: Class_Type::setProp(T *v)->void  
 		//         Class_Type::getProp()->T
 		//
-		// note  : set function will accept life management of v
+		// note  : set function will responsible for life-time management of v
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
 		auto property(std::string_view name, SetFunc s, GetFunc g) -> 
 				std::enable_if_t< std::is_class_v<C> && 

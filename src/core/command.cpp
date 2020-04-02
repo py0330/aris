@@ -8,6 +8,7 @@
 #include <locale>
 
 #include "aris/core/log.hpp"
+#include "aris/core/reflection.hpp"
 
 namespace aris::core
 {
@@ -386,4 +387,15 @@ namespace aris::core
 		imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
+
+
+	ARIS_REGISTRATION
+	{
+		class_<Param>("Param")
+			.inherit<Object>();
+	}
+
+
+
+
 }

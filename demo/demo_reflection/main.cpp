@@ -60,8 +60,7 @@ void Interptask(void *arg)
 
 int main()
 {
-
-
+	/*
 		std::cout << "start testing IO board" << std::endl;
 
 		//创建EtherCAT主站对象
@@ -125,10 +124,9 @@ int main()
 
 		return 0;
 	
-
+	*/
 	
-	
-	
+	/*
 	auto hhhhhh = aris::control::aris_rt_task_create();
 	
 	aris::control::aris_rt_task_start(hhhhhh, [](void*)->void
@@ -146,6 +144,9 @@ int main()
 	
 	aris::control::aris_rt_task_join(hhhhhh);
 	
+	*/
+
+	/*
 	// 创建模型 //
 	aris::dynamic::Serial3Param param;
 	param.a1 = 0.7;
@@ -209,11 +210,8 @@ int main()
 	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
 	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
 	std::cout << std::endl;
-
+	*/
 	
-	std::cout << aris::core::is_container<std::vector<int>>::value << std::endl;
-	std::cout << aris::core::is_container<int>::value << std::endl;
-
 	int a = 50;
 
 	std::cout << "before" << std::endl;
@@ -321,6 +319,14 @@ int main()
 		std::cout << e.what() << std::endl;
 	}
 	
+	aris::core::Object obj("aaaa");
+	std::cout << aris::core::toXmlString(obj) << std::endl;
+
+	aris::core::Object obj2;
+	aris::core::fromXmlString(obj2, aris::core::toXmlString(obj));
+	std::cout << aris::core::toXmlString(obj2) << std::endl;
+
+
 
 
 	std::cout << "demo_reflection finished, press any key to continue" << std::endl;
