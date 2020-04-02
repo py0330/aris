@@ -255,20 +255,20 @@ namespace aris::core
 				std::is_same_v<PushBackFunc, void (A::*)(std::remove_reference_t<decltype(((new A)->*at)())>*) >
 			, class_<Class_Type>&>
 		{
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			type.is_array_ = true;
-			type.size_func_ = [](void* array_instance)->std::size_t
-			{
-				return (reinterpret_cast<A*>(array_instance)->*size)();
-			};
-			type.at_func_ = [](void* array_instance, std::size_t id)->Instance
-			{
-				return (reinterpret_cast<A*>(array_instance)->*at)();
-			};
-			type.push_back_func_ = [](void* array_instance, const Instance& value)->void
-			{
-				(reinterpret_cast<A*>(array_instance)->*push_back)();
-			};
+			//auto &type = reflect_types().at(typeid(Class_Type).hash_code());
+			//type.is_array_ = true;
+			//type.size_func_ = [](void* array_instance)->std::size_t
+			//{
+			//	return (reinterpret_cast<A*>(array_instance)->*size)();
+			//};
+			//type.at_func_ = [](void* array_instance, std::size_t id)->Instance
+			//{
+			//	return (reinterpret_cast<A*>(array_instance)->*at)();
+			//};
+			//type.push_back_func_ = [](void* array_instance, const Instance& value)->void
+			//{
+			//	(reinterpret_cast<A*>(array_instance)->*push_back)();
+			//};
 
 			return *this;
 		}
