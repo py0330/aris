@@ -123,7 +123,17 @@ namespace aris::core
 				auto[ptr, attr_ins] = type->create();
 				from_xml_ele(attr_ins, child_ele);
 
-				ins.push_back(attr_ins);
+				
+
+				if (ins.type()->isRefArray())
+				{
+					ins.push_back(attr_ins);
+					ptr.release();
+				}
+
+				else
+					ins.push_back(attr_ins);
+
 			}
 		}
 	}

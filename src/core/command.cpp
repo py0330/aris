@@ -72,7 +72,8 @@ namespace aris::core
 		ParamBase::loadXml(xml_ele);
 		imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
 	}
-	auto UniqueParam::defaultParam()const->const std::string & { return imp_->default_value_; }
+	auto UniqueParam::defaultValue()const->const std::string & { return imp_->default_value_; }
+	auto UniqueParam::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
 	UniqueParam::~UniqueParam() = default;
 	UniqueParam::UniqueParam(const std::string &name, const std::string &default_param) :ParamBase(name), imp_(new Imp(default_param)) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(UniqueParam);
@@ -224,7 +225,8 @@ namespace aris::core
 		ObjectPool<ParamBase>::loadXml(xml_ele);
 		imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
 	}
-	auto Command::defaultParam()const->const std::string & { return imp_->default_value_; }
+	auto Command::defaultValue()const->const std::string & { return imp_->default_value_; }
+	auto Command::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
 	auto Command::findParam(const std::string &param_name)->Param*
 	{
 		std::function<Param*(const std::string &, ParamBase &)> find_func = [&](const std::string &param_name, ParamBase &param)->Param*
@@ -392,7 +394,32 @@ namespace aris::core
 	ARIS_REGISTRATION
 	{
 		class_<Param>("Param")
-			.inherit<Object>();
+			.inherit<Object>()
+			.property("abbreviation", &Param::setAbbreviation, &Param::abbreviation)
+			.property("default", &Param::setDefaultValue, &Param::defaultValue);
+
+		class_<UniqueParam>("UniqueParam")
+			.inherit<Object>()
+			.asRefArray()
+			.property("default", &UniqueParam::setDefaultValue, &UniqueParam::defaultValue);
+
+		class_<GroupParam>("GroupParam")
+			.inherit<Object>()
+			.asRefArray();
+
+		class_<Command>("Command")
+			.inherit<Object>()
+			.asRefArray();
+
+		class_<ObjectPool<Command>>("CommandPool")
+			.inherit<Object>()
+			.asRefArray();
+
+		typedef ObjectPool<Command>&(CommandParser::*CommandPoolFunc)();
+		//CommandPoolFunc func = &CommandParser::commandPool;
+		class_<CommandParser>("CommandParser")
+			.inherit<Object>()
+			.property<CommandPoolFunc>("command_pool", &CommandParser::commandPool);
 	}
 
 

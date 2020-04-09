@@ -162,7 +162,8 @@ namespace aris::core
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto defaultParam()const->const std::string &;
+		auto defaultValue()const->const std::string &;
+		auto setDefaultValue(const std::string & default_value)->void;
 
 		virtual ~UniqueParam();
 		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "");
@@ -188,7 +189,8 @@ namespace aris::core
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto defaultParam()const->const std::string &;
+		auto defaultValue()const->const std::string &;
+		auto setDefaultValue(const std::string & default_value)->void;
 		auto findParam(const std::string &param_name)const->const Param* { return const_cast<std::decay_t<decltype(*this)> *>(this)->findParam(param_name); }
 		auto findParam(const std::string &param_name)->Param*;
 

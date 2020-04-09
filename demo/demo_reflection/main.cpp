@@ -146,9 +146,12 @@ int main()
 	
 	*/
 
-	/*
+	
 	// 创建模型 //
 	aris::dynamic::Serial3Param param;
+	param.external_axes.push_back({ aris::dynamic::ExternalAxis::RotationalAxis });
+	param.external_axes.push_back({ aris::dynamic::ExternalAxis::RotationalAxis });
+
 	param.a1 = 0.7;
 	param.a2 = 0.5;
 	param.a3 = 0.6;
@@ -157,13 +160,14 @@ int main()
 	// 获得求解器 //
 	auto &solver = dynamic_cast<aris::dynamic::Serial3InverseKinematicSolver&>(m->solverPool()[0]);
 	
-	// 设置末端位置 //
-	double ee[3]{ 1.68070023071933, 0.35446729674924, -0.22165182186613};
-	solver.setPosEE(ee);
-	
-	// 设置解，一共4个，设为4时会选最优解 //
-	solver.setWhichRoot(4);
-	
+	// 设置末端位置 和 外部轴位置 //
+	double ee[]{ 1,0,0,1.68070023071933,0,1,0, 0.35446729674924,0,0,1, -0.22165182186613,0,0,0,1};
+	double ext[]{ 0.1,0.2 };
+	//solver.setPmEE(ee, ext);
+
+	double eula[3]{ 0.1,0.2,0.3 };
+	solver.setEulaAngle(eula, "321");
+
 	// 求解 //
 	solver.kinPos();
 	
@@ -179,38 +183,37 @@ int main()
 	m->solverPool()[1].kinPos();
 	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
 
-	aris::core::Object obj("123"), obj2("45678");
-	std::cout << aris::core::toXmlString(obj) << std::endl;
+	//solver.setWhichRoot(0);
+	m->solverPool()[0].kinPos();
+	m->solverPool()[1].kinPos();
+	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
+	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
+	std::cout << std::endl;
 
-	aris::core::fromXmlString(obj, aris::core::toXmlString(obj2));
-	std::cout << aris::core::toXmlString(obj) << std::endl;
-	std::cout << obj.xmlString() << std::endl;
+	//solver.setWhichRoot(1);
+	m->solverPool()[0].kinPos();
+	m->solverPool()[1].kinPos();
+	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
+	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
+	std::cout << std::endl;
+
+	//solver.setWhichRoot(4);
+	m->solverPool()[0].kinPos();
+	m->solverPool()[1].kinPos();
+	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
+	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
+	std::cout << std::endl;
 	
-	auto &types = aris::core::reflect_types();
-	auto &names = aris::core::reflect_names();
-
-	solver.setWhichRoot(0);
-	m->solverPool()[0].kinPos();
-	m->solverPool()[1].kinPos();
+	auto &solver2 = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(m->solverPool()[1]);
+	m->motionPool()[0].setMp(0.5);
+	solver2.kinPos();
 	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
-	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
-	std::cout << std::endl;
-
-
-	solver.setWhichRoot(1);
-	m->solverPool()[0].kinPos();
-	m->solverPool()[1].kinPos();
+	
+	m->motionPool()[0].setMp(0.8);
+	solver2.kinPos();
 	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
-	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
-	std::cout << std::endl;
 
-	solver.setWhichRoot(4);
-	m->solverPool()[0].kinPos();
-	m->solverPool()[1].kinPos();
-	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
-	for (auto &m : m->motionPool())std::cout << m.mp() << "  ";
-	std::cout << std::endl;
-	*/
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	int a = 50;
 
@@ -261,8 +264,6 @@ int main()
 
 	aris::core::Instance i1 = 5.9546;
 	std::cout << i1.to<double>() << std::endl;
-
-
 
 	try
 	{
@@ -326,7 +327,49 @@ int main()
 	aris::core::fromXmlString(obj2, aris::core::toXmlString(obj));
 	std::cout << aris::core::toXmlString(obj2) << std::endl;
 
+	aris::core::Param p1;
+	std::cout << aris::core::toXmlString(p1) << std::endl;
 
+	aris::core::Param p2;
+	aris::core::fromXmlString(p2, aris::core::toXmlString(p1));
+	std::cout << aris::core::toXmlString(p2) << std::endl;
+
+	aris::core::Command cmd;
+	cmd.push_back(new aris::core::Param("aaa"));
+	std::cout << aris::core::toXmlString(cmd) << std::endl;
+
+
+	// 添加CommandParser //
+	aris::core::CommandParser parser;
+
+	// 添加enable命令 //
+	auto &enable = parser.commandPool().add<aris::core::Command>("enable", "");
+
+	// 添加命令各参数节点 //
+	auto &group = enable.add<aris::core::GroupParam>("group");
+	auto &unique1 = group.add<aris::core::UniqueParam>("unique1", "");
+	auto &unique2 = group.add<aris::core::UniqueParam>("unique2", "position");
+	auto &all = unique1.add<aris::core::Param>("all", "", 'a');
+	auto &motion = unique1.add<aris::core::Param>("motion", "0", 'm');
+	auto &position = unique2.add<aris::core::Param>("position", "", 'p');
+	auto &velocity = unique2.add<aris::core::Param>("velocity", "", 'v');
+	auto &current = unique2.add<aris::core::Param>("current", "", 0);
+
+
+	std::cout << parser.xmlString() << std::endl;
+
+
+	std::cout << aris::core::toXmlString(parser) << std::endl;
+
+
+	//for (;;)
+	//{
+	//	aris::core::Command cmd2;
+	//	aris::core::fromXmlString(cmd2, aris::core::toXmlString(cmd));
+	//	std::cout << aris::core::toXmlString(cmd2) << std::endl;
+
+	//	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	//}
 
 
 	std::cout << "demo_reflection finished, press any key to continue" << std::endl;

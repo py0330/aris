@@ -91,6 +91,7 @@ namespace aris::dynamic
 		auto virtual kinPos()->int override;
 		auto virtual kinVel()->void override;
 		auto virtual dynAccAndFce()->void override;
+		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void {}
 		auto cptJacobi()noexcept->void;
 		auto mJi()const noexcept->Size;// equal mot num
 		auto nJi()const noexcept->Size;// equal ee num * 6

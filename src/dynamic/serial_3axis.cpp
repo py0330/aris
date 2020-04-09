@@ -88,14 +88,19 @@ namespace aris::dynamic
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
-		inverse_kinematic.setWhichRoot(8);
+		inverse_kinematic.setWhichRoot(4);
 
 		inverse_kinematic.allocateMemory();
 		forward_kinematic.allocateMemory();
 		inverse_dynamic.allocateMemory();
 		forward_dynamic.allocateMemory();
 
-		
+		// external axes
+		for (auto &ext : param.external_axes)
+		{
+			model->motionPool().add<aris::dynamic::Motion>("ext");
+		}
+
 
 		// make topology correct // 
 		for (auto &m : model->motionPool())m.activate(true);
@@ -104,6 +109,8 @@ namespace aris::dynamic
 
 		return model;
 	}
+
+	
 
 	struct Serial3AxisParamLocal
 	{
@@ -190,6 +197,8 @@ namespace aris::dynamic
 			Motion* motions[3];
 		};
 		GeneralMotion *ee;
+
+		bool use_angle_ = false;
 	};
 	auto Serial3InverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
@@ -222,6 +231,84 @@ namespace aris::dynamic
 	}
 	auto Serial3InverseKinematicSolver::kinPos()->int
 	{
+		// for 华尔康
+		if (imp_->use_angle_)
+		{
+			//if (imp_->which_root_ == 4)
+			
+				int solution_num = 0;
+				double diff_q[2][3];
+				double diff_norm[2];
+				for (int i = 0; i < 2; ++i)
+				{
+					// inverse
+					s_rm2re(*imp_->ee->mpm(), diff_q[i], "123", 4);
+					diff_q[i][1] = -diff_q[i][1];
+					
+					// solution 2
+					if (i == 0)
+					{
+						diff_q[i][0] = diff_q[i][0] + aris::PI;
+						diff_q[i][1] = aris::PI - diff_q[i][1];
+						diff_q[i][2] = diff_q[i][2] + aris::PI;
+
+						
+
+					}
+
+					{
+						diff_norm[solution_num] = 0;
+						for (int j = 0; j < 3; ++j)
+						{
+							diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
+
+							while (diff_q[solution_num][j] >  PI) diff_q[solution_num][j] -= 2 * PI;
+							while (diff_q[solution_num][j] < -PI) diff_q[solution_num][j] += 2 * PI;
+
+							diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
+						}
+
+						++solution_num;
+					}
+				}
+
+				auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
+
+				// 更新所有杆件 //
+				for (aris::Size i = 0; i < 3; ++i)
+				{
+					if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
+					{
+						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
+						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mpInternal() + diff_q[real_solution][i]}.data(), pm_rot);
+						s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
+						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
+						imp_->parts[i + 1]->setPm(pm_prt_i);
+					}
+					else
+					{
+						double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
+						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mpInternal() - diff_q[real_solution][i]}.data(), pm_rot);
+						s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
+						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
+						imp_->parts[i + 1]->setPm(pm_prt_j);
+					}
+
+					imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + diff_q[real_solution][i]);
+				}
+
+				// 更新位姿 //
+				imp_->ee->updMpm();
+
+				return 0;
+			
+
+
+
+			return 0;
+		}
+		
+		// normal
 		double ee[3]{ imp_->ee->mpm()[0][3],imp_->ee->mpm()[1][3],imp_->ee->mpm()[2][3] };
 
 		if (imp_->which_root_ == 4)
@@ -317,104 +404,35 @@ namespace aris::dynamic
 			}
 			else return -2;
 		}
-
-
-
-		/*
-		if (imp_->which_root_ == 8)
-		{
-			int solution_num = 0;
-			double diff_q[8][6];
-			double diff_norm[8];
-
-			for (int i = 0; i < 8; ++i)
-			{
-				if (serial_3axis_inverse(imp_->puma_param, *imp_->ee->mpm(), i, diff_q[solution_num]))
-				{
-					diff_norm[solution_num] = 0;
-					for (int j = 0; j < 6; ++j)
-					{
-						diff_q[solution_num][j] -= imp_->motions[j]->mpInternal();
-
-						while (diff_q[solution_num][j] >  PI) diff_q[solution_num][j] -= 2 * PI;
-						while (diff_q[solution_num][j] < -PI) diff_q[solution_num][j] += 2 * PI;
-
-						diff_norm[solution_num] += std::abs(diff_q[solution_num][j]);
-					}
-
-					++solution_num;
-				}
-			}
-
-			if (solution_num == 0) return -1;
-
-			auto real_solution = std::min_element(diff_norm, diff_norm + solution_num) - diff_norm;
-
-			for (aris::Size i = 0; i < 6; ++i)
-			{
-				if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
-				{
-					double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
-					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mpInternal() + diff_q[real_solution][i]}.data(), pm_rot);
-					s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
-					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
-					imp_->parts[i + 1]->setPm(pm_prt_i);
-				}
-				else
-				{
-					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
-					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mpInternal() - diff_q[real_solution][i]}.data(), pm_rot);
-					s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
-					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
-					imp_->parts[i + 1]->setPm(pm_prt_j);
-				}
-
-				imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + diff_q[real_solution][i]);
-			}
-
-			return 0;
-		}
-		else
-		{
-			if (double q[6]; serial_3axis_inverse(imp_->puma_param, *imp_->ee->mpm(), imp_->which_root_, q))
-			{
-				for (aris::Size i = 0; i < 6; ++i)
-				{
-					if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
-					{
-						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
-						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, q[i]}.data(), pm_rot);
-						s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
-						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
-						imp_->parts[i + 1]->setPm(pm_prt_i);
-					}
-					else
-					{
-						double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
-						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
-						s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
-						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
-						imp_->parts[i + 1]->setPm(pm_prt_j);
-					}
-
-					double last_mp = imp_->motions[i]->mpInternal();
-					imp_->motions[i]->updMp();
-					while (imp_->motions[i]->mpInternal() - last_mp > PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() - 2 * PI);
-					while (imp_->motions[i]->mpInternal() - last_mp < -PI)imp_->motions[i]->setMpInternal(imp_->motions[i]->mpInternal() + 2 * PI);
-				}
-
-				return 0;
-			}
-			else return -2;
-		}*/
 	}
 	auto Serial3InverseKinematicSolver::setWhichRoot(int root_of_0_to_4)->void 
 	{ 
 		imp_->which_root_ = root_of_0_to_4;
 	}
-	auto Serial3InverseKinematicSolver::setPosEE(const double *ee_pos)->void
+	auto Serial3InverseKinematicSolver::setPmEE(const double *ee_pm, const double *extnal_axes)->void
 	{
-		imp_->ee->setMpe(std::array<double, 6>{ee_pos[0], ee_pos[1], ee_pos[2], 0, 0, 0}.data());
+		imp_->ee->setMpe(std::array<double, 6>{ee_pm[3], ee_pm[7], ee_pm[11], 0, 0, 0}.data());
+		
+		if (extnal_axes)
+		{
+			for (int i = 3; i < model().motionPool().size(); ++i)
+			{
+				model().motionPool()[i].setMp(extnal_axes[i - 3]);
+			}
+		}
+
+		imp_->use_angle_ = false;
+
+	}
+	auto Serial3InverseKinematicSolver::setEulaAngle(const double *eul, const char *type)->void
+	{
+		
+
+		imp_->ee->setMpe(std::array<double, 6>{0, 0, 0, eul[0], eul[1], eul[2]}.data(), type);
+		
+
+		imp_->use_angle_ = true;
+
 	}
 	Serial3InverseKinematicSolver::~Serial3InverseKinematicSolver() = default;
 	Serial3InverseKinematicSolver::Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) 

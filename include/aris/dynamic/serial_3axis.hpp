@@ -6,6 +6,17 @@
 
 namespace aris::dynamic
 {
+	struct ExternalAxis
+	{
+		enum AxisType
+		{
+			RotationalAxis,
+			TranslationalAxis
+		};
+
+		AxisType type_;
+	};
+	
 	struct Serial3Param
 	{
 		// DH PARAM //
@@ -26,6 +37,9 @@ namespace aris::dynamic
 
 		// mot friction vector, size must be 6
 		std::vector<std::array<double, 3> > mot_frc_vec;
+
+		// external axes
+		std::vector<ExternalAxis> external_axes;
 	};
 	auto createModelSerial3Axis(const Serial3Param &param)->std::unique_ptr<aris::dynamic::Model>;
 
@@ -37,7 +51,9 @@ namespace aris::dynamic
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
 		auto setWhichRoot(int root_of_0_to_4)->void;
-		auto setPosEE(const double *ee_pos)->void;
+		auto setPmEE(const double *ee_pos, const double *extnal_axes)->void;
+		auto setEulaAngle(const double *eul, const char *type = "321")->void;
+
 
 		virtual ~Serial3InverseKinematicSolver();
 		explicit Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name = "puma_inverse_solver");

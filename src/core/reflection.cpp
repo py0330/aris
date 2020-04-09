@@ -28,12 +28,41 @@ namespace aris::core
 	{ 
 		return default_ctor_();
 	}
-	auto Type::inheritType()->Type*
+	auto Type::inheritTypes()const->std::vector<const Type*>
 	{
-		return &reflect_types().at(this->inherit_->hash_code());
+		if (inherit_types_.empty())
+		{
+			for (auto &t : inherit_type_infos_)
+			{
+				const_cast<std::vector<const Type *>&>(inherit_types_).push_back(&reflect_types().at(t->hash_code()));
+			}
+		}
+		return inherit_types_;
 	}
+	auto Type::properties()const->const std::map<std::string, Property, std::less<>>&
+	{
+		// 第一次调用构造所有的property //
+		if (this_properties_.empty())
+		{
+			for (auto t : inheritTypes())
+			{
+				for (auto &ist : t->properties())
+				{
+					const_cast<std::map<std::string, Property, std::less<>>&>(this_properties_).insert_or_assign(ist.first, ist.second);
+				}
+			}
+
+			for (auto &ist : properties_)
+			{
+				const_cast<std::map<std::string, Property, std::less<>>&>(this_properties_).insert_or_assign(ist.first, ist.second);
+			}
+		}
+
+		return this_properties_;
+	};
+
 	auto Instance::toVoidPtr()->void* {return isReference() ? std::any_cast<InstanceRef>(&value_)->data_ : type()->any_to_void_(&value_);}
-	auto Instance::set(std::string_view prop_name, const Instance &arg)->void
+	auto Instance::set(std::string_view prop_name, Instance arg)->void
 	{
 		type()->properties().at(std::string(prop_name)).set_(toVoidPtr(), arg);
 	}
@@ -42,7 +71,7 @@ namespace aris::core
 		return type()->properties().at(std::string(prop_name)).get_(toVoidPtr());
 	}
 	auto Instance::isReference()->bool { return std::any_cast<InstanceRef>(&value_); }
-	auto Instance::type()const->const Type* 
+	auto Instance::type()->const Type* 
 	{ 
 		auto type_info_ = std::any_cast<InstanceRef>(&value_) ? std::any_cast<InstanceRef>(&value_)->type_ : &value_.type();
 		return reflect_types().find(type_info_->hash_code()) == reflect_types().end() ? nullptr : &reflect_types().at(type_info_->hash_code());
@@ -69,11 +98,13 @@ namespace aris::core
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		return type()->at_func_(toVoidPtr(), id);
 	}
-	auto Instance::push_back(const Instance &element)->void
+	auto Instance::push_back(Instance element)->void
 	{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		type()->push_back_func_(toVoidPtr(), element);
 	}
+	
+
 
 	auto Property::set(Instance *ins, const Instance& arg)const->void{ set_(ins->toVoidPtr(), arg); }
 	auto Property::get(Instance *ins)const->Instance { return get_(ins->toVoidPtr()); }
@@ -103,13 +134,23 @@ namespace aris::core
 
 	ARIS_REGISTRATION
 	{
-		ARIS_REGISTRATION_BASIC(std::int8_t, "int8");
 		ARIS_REGISTRATION_BASIC(std::int16_t, "int16");
 		ARIS_REGISTRATION_BASIC(std::int64_t, "int64");
 		ARIS_REGISTRATION_BASIC(std::uint8_t, "uint8");
 		ARIS_REGISTRATION_BASIC(std::uint16_t, "uint16");
 		ARIS_REGISTRATION_BASIC(std::uint32_t, "uint32");
 		ARIS_REGISTRATION_BASIC(std::uint64_t, "uint64");
+
+		aris::core::class_<char>("char")
+			.asBasic([](void *v)->std::string
+			{
+				return std::to_string(*reinterpret_cast<char*>(v));
+			}, [](void *v, std::string_view str)->void
+			{
+				auto result = std::from_chars(str.data(), str.data() + str.size(), *reinterpret_cast<char*>(v));
+				if (result.ec == std::errc::invalid_argument) THROW_FILE_LINE("invalid string");
+			})
+			.alias("int8");
 
 		aris::core::class_<std::int32_t>("int32")
 			.asBasic([](void *v)->std::string

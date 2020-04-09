@@ -16,6 +16,17 @@ namespace aris::dynamic
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
+		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void
+		{
+			model().generalMotionPool()[0].setMpm(ee_pm);
+			if (ext_axes)
+			{
+				for (int i = 6; i < model().motionPool().size(); ++i)
+				{
+					model().motionPool()[i].setMp(ext_axes[i - 6]);
+				}
+			}
+		}
 
 		virtual ~StewartInverseKinematicSolver() = default;
 		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");

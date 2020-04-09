@@ -647,6 +647,7 @@ namespace aris::dynamic
 		// 其另外一个解为：a+PI, 2*PI-b, c+PI
 		// 对于abc形式的欧拉角，其取值范围为：
 		// [0,2PI),[-PI/2,PI/2],[0,2PI)
+		// 其另外一个解为：a+PI, PI-b, c+PI
 
 		// 正式开始计算 //
 		const Size a = eu_type_in[0] - '1';

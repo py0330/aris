@@ -69,6 +69,7 @@ namespace aris::core
 	struct is_container : std::integral_constant<bool, has_const_iterator<T>::value && has_begin_end<T>::beg_value && has_begin_end<T>::end_value>{ };
 	*/
 	class Type;
+	class Property;
 	class Instance;
 
 	class Property
@@ -95,17 +96,21 @@ namespace aris::core
 	public:
 		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
 		auto name()const->std::string_view { return type_name_; };
-		auto properties()const->const std::map<std::string, Property, std::less<>>& { return properties_; };
-		auto inheritType()->Type*;
+		auto properties()const->const std::map<std::string, Property, std::less<>>&;
+		auto inheritTypes()const->std::vector<const Type*>;
+		auto isRefArray()const->bool { return is_ref_array_; }
 		Type(std::string_view name, std::function<void*(std::any*)> any_to_void) :type_name_(name), any_to_void_(any_to_void) {}
 
 	private:
 		std::string type_name_;
+		std::map<std::string, Property, std::less<>> this_properties_;// 因为在注册过程中，无法确保所继承的类已经注册完毕，所以需要后续生成该向量
 		std::map<std::string, Property, std::less<>> properties_;
 		bool is_basic_{ false };
 		bool is_array_{ false };
+		bool is_ref_array_{ false };
 		std::function<void*(std::any*)> any_to_void_; // for any cast to void*
-		const std::type_info *inherit_;
+		std::vector<const std::type_info *> inherit_type_infos_;// 因为在注册过程中，无法确保所继承的类已经注册完毕，所以需要后续生成该向量
+		std::vector<const Type *> inherit_types_;
 
 		// ctor //
 		std::function<std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>()> default_ctor_;
@@ -123,15 +128,6 @@ namespace aris::core
 		friend class Variant;
 		friend class Instance;
 	};
-	
-	auto reflect_types()->std::map<std::size_t, Type>&;
-	auto reflect_names()->std::map<std::string, std::size_t>&;
-	
-	struct InstanceRef
-	{
-		void* data_;
-		const std::type_info *type_;
-	};
 	class Instance
 	{
 	public:
@@ -139,7 +135,7 @@ namespace aris::core
 		auto isReference()->bool;
 		auto isBasic()->bool;
 		auto isArray()->bool;
-		auto type()const->const Type*;
+		auto type()->const Type*;
 
 		template<typename T>
 		auto to()->T&
@@ -157,7 +153,7 @@ namespace aris::core
 		}
 		
 		// only work for non-basic and non-array //
-		auto set(std::string_view prop_name, const Instance &arg)->void;
+		auto set(std::string_view prop_name, Instance arg)->void;
 		auto get(std::string_view prop_name)->Instance;
 		
 		// only work for basic //
@@ -167,12 +163,14 @@ namespace aris::core
 		// only work for array //
 		auto size()->std::size_t;
 		auto at(std::size_t id)->Instance;
-		auto push_back(const Instance &element)->void;
+		auto push_back(Instance element)->void;
 
 		// 左值引用 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<!std::is_same_v<std::decay_t<T>, Instance>> *s = nullptr)
 		{
+			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
+
 			using RealType = std::decay_t<T>;
 			auto &real_value = const_cast<RealType&>(t);
 			
@@ -196,13 +194,14 @@ namespace aris::core
 		std::any value_;
 		friend class Property;
 		template<typename Class_Type> friend class class_;
+
+		struct InstanceRef
+		{
+			void* data_;
+			const std::type_info *type_;
+		};
 	};
-	
-	auto inline getType(std::string_view name)->Type* 
-	{
-		auto found = reflect_names().find(std::string(name));
-		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
-	}
+
 	template<typename Class_Type>
 	class class_
 	{
@@ -232,7 +231,7 @@ namespace aris::core
 		auto inherit()->class_<Class_Type>&
 		{
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			type.inherit_ = &typeid(FatherType);
+			type.inherit_type_infos_.push_back(&typeid(FatherType));
 			return *this;
 		};
 
@@ -249,26 +248,28 @@ namespace aris::core
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T*)->void
 		//         Class_Type::size()->size_t
-		template<typename AtFunc, typename PushBackFunc, typename SizeFunc, class A = Class_Type>
-		auto asArray(AtFunc at, PushBackFunc push_back, SizeFunc size)
-			->std::enable_if_t<
-				std::is_same_v<PushBackFunc, void (A::*)(std::remove_reference_t<decltype(((new A)->*at)())>*) >
+		template<class A = Class_Type>
+		auto asRefArray()
+			->std::enable_if_t< true
 			, class_<Class_Type>&>
 		{
-			//auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			//type.is_array_ = true;
-			//type.size_func_ = [](void* array_instance)->std::size_t
-			//{
-			//	return (reinterpret_cast<A*>(array_instance)->*size)();
-			//};
-			//type.at_func_ = [](void* array_instance, std::size_t id)->Instance
-			//{
-			//	return (reinterpret_cast<A*>(array_instance)->*at)();
-			//};
-			//type.push_back_func_ = [](void* array_instance, const Instance& value)->void
-			//{
-			//	(reinterpret_cast<A*>(array_instance)->*push_back)();
-			//};
+			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
+			type.is_array_ = true;
+			type.is_ref_array_ = true;
+			type.size_func_ = [](void* array_instance)->std::size_t
+			{
+				return reinterpret_cast<A*>(array_instance)->size();
+			};
+			type.at_func_ = [](void* array_instance, std::size_t id)->Instance
+			{
+				return reinterpret_cast<A*>(array_instance)->at(id);
+			};
+			type.push_back_func_ = [](void* array_instance, const Instance& value)->void
+			{
+				reinterpret_cast<A*>(array_instance)->push_back(
+					reinterpret_cast<typename A::value_type*>(const_cast<void*>(value.toVoidPtr()))
+				);
+			};
 
 			return *this;
 		}
@@ -324,7 +325,9 @@ namespace aris::core
 		// espect: Class_Type::v()->T& where v is a reference function
 		template<typename Value>
 		auto property(std::string_view name, Value v)
-			->std::enable_if_t<std::is_lvalue_reference_v<decltype(((new Class_Type)->*v)())>, class_<Class_Type>&>
+			->std::enable_if_t<std::is_lvalue_reference_v<decltype(((new Class_Type)->*v)())>
+			&& !std::is_const_v<decltype(((new Class_Type)->*v)())>
+			, class_<Class_Type>&>
 		{
 			using T = std::remove_reference_t<decltype(((new Class_Type)->*v)())>;
 
@@ -377,8 +380,16 @@ namespace aris::core
 
 			return *this;
 		}
-
 	};
+
+
+	auto reflect_types()->std::map<std::size_t, Type>&;
+	auto reflect_names()->std::map<std::string, std::size_t>&;
+	auto inline getType(std::string_view name)->Type*
+	{
+		auto found = reflect_names().find(std::string(name));
+		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
+	}
 }
 
 #endif

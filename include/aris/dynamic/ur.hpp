@@ -14,6 +14,17 @@ namespace aris::dynamic
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual kinPos()->int override;
+		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void
+		{
+			model().generalMotionPool()[0].setMpm(ee_pm);
+			if (ext_axes)
+			{
+				for (int i = 6; i < model().motionPool().size(); ++i)
+				{
+					model().motionPool()[i].setMp(ext_axes[i - 6]);
+				}
+			}
+		}
 		auto setWhichRoot(int root_of_0_to_7)->void;
 
 		virtual ~Ur5InverseKinematicSolver() = default;
