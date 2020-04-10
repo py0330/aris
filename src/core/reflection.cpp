@@ -25,7 +25,12 @@ namespace aris::core
 	}
 
 	auto Property::set(Instance *ins, const Instance& arg)const->void { set_(ins->toVoidPtr(), arg); }
-	auto Property::get(Instance *ins)const->Instance { return get_(ins->toVoidPtr()); }
+	auto Property::get(Instance *ins)const->Instance 
+	{ 
+		auto ret = get_(ins->toVoidPtr());
+		ret.belong_to_ = this;
+		return ret;
+	}
 	auto Property::acceptPtr()const->bool { return accept_ptr_; }
 
 	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
@@ -72,7 +77,7 @@ namespace aris::core
 	}
 	auto Instance::get(std::string_view prop_name)->Instance
 	{
-		return type()->properties().at(std::string(prop_name)).get_(toVoidPtr());
+		return type()->properties().at(std::string(prop_name)).get(this);
 	}
 	auto Instance::isReference()->bool { return std::any_cast<InstanceRef>(&value_); }
 	auto Instance::type()->const Type* 
@@ -84,15 +89,14 @@ namespace aris::core
 	auto Instance::isArray()->bool { return type()->is_array_; }
 	auto Instance::toString()->std::string 
 	{ 
-		
-		
-		
 		if (!isBasic())THROW_FILE_LINE("instance is NOT basic type");
-		return type()->to_string_(toVoidPtr()); 
+		if (belong_to_ && belong_to_->to_str_func_)return belong_to_->to_str_func_(toVoidPtr());
+		return type()->to_string_(toVoidPtr());
 	}
 	auto Instance::fromString(std::string_view str)->void 
 	{ 
 		if (!isBasic())THROW_FILE_LINE("instance is NOT basic type");
+		if (belong_to_ && belong_to_->from_str_func_)return belong_to_->from_str_func_(toVoidPtr(), str);
 		type()->from_string_(toVoidPtr(), str); 
 	}
 	auto Instance::size()->std::size_t

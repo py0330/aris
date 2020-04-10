@@ -396,6 +396,8 @@ namespace aris::core
 		class_<Param>("Param")
 			.inherit<Object>()
 			.property("abbreviation", &Param::setAbbreviation, &Param::abbreviation)
+			.propertyToStrMethod("abbreviation", charToStr)
+			.propertyFromStrMethod("abbreviation", strToChar)
 			.property("default", &Param::setDefaultValue, &Param::defaultValue);
 
 		class_<UniqueParam>("UniqueParam")

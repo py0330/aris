@@ -84,10 +84,7 @@ namespace aris::core
 			// 此时为basic type //
 			if (ele->Attribute(prop_name.data()))
 			{
-				auto pre_v = prop.get(&ins);
-				auto [ptr, attr_ins] = pre_v.type()->create();
-				attr_ins.fromString(ele->Attribute(prop_name.data()));
-				prop.set(&ins, attr_ins);
+				prop.get(&ins).fromString(ele->Attribute(prop_name.data()));
 				continue;
 			}
 

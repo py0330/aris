@@ -83,6 +83,13 @@ namespace aris::dynamic
 		j1.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ().prtPm()));
 		ee.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ().prtPm()));
 
+		// add tools and wobj //
+		for (int i = 1; i < 17; ++i)
+		{
+			p3.markerPool().add<aris::dynamic::Marker>("tool" + std::to_string(i), ee_i_pm);
+		}
+		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
+
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::Serial3InverseKinematicSolver>(param);
 		auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();

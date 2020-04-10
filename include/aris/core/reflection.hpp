@@ -88,6 +88,10 @@ namespace aris::core
 		std::function<void(void*, const Instance &)> set_;
 		bool accept_ptr_{ false };// which means property is a ptr, to support polymorphim
 		Type *type_belong_to_;// which property belong to
+		std::function<std::string(void* value)> to_str_func_;
+		std::function<void(void* value, std::string_view str)> from_str_func_;
+
+
 		template<typename T> friend class class_;
 		friend class Instance;
 	};
@@ -192,6 +196,7 @@ namespace aris::core
 		auto toVoidPtr()->void*;
 		auto toVoidPtr()const->const void* { return const_cast<Instance*>(this)->toVoidPtr(); }
 		std::any value_;
+		const Property *belong_to_{nullptr};
 		friend class Property;
 		template<typename Class_Type> friend class class_;
 
@@ -373,7 +378,10 @@ namespace aris::core
 
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
 			auto prop = Property(name, &type);
-			prop.get_ = [g](void* ins)->Instance {	return (reinterpret_cast<Class_Type*>(ins)->*g)(); };
+			prop.get_ = [g](void* ins)->Instance 
+			{	
+				return (reinterpret_cast<Class_Type*>(ins)->*g)();
+			};
 			prop.set_ = [s](void* ins, const Instance &value) {	(reinterpret_cast<Class_Type*>(ins)->*s)(const_cast<T*>(reinterpret_cast<const T*>(value.toVoidPtr()))); };
 			prop.accept_ptr_ = true;
 			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
@@ -381,18 +389,35 @@ namespace aris::core
 			return *this;
 		}
 
-		auto propertyToStrMethod(std::function<std::string(void* value)> func)
+		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func)
 		{
-			
-			
-			
+			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
+			auto &prop = type.properties_.at(std::string(prop_name));
+			prop.to_str_func_ = func;
+
 			return *this;
 		}
-		auto propertyFromStrMethod(std::function<void(void* value, std::string_view str)> func)
+		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func)
 		{
+			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
+			auto &prop = type.properties_.at(std::string(prop_name));
+			prop.from_str_func_ = func;
+
 			return *this;
 		}
 	};
+
+	auto inline charToStr(void* value)->std::string
+	{
+		std::string ret;
+		ret.push_back(*reinterpret_cast<char*>(value));
+		return ret;
+	}
+	auto inline strToChar(void* value, std::string_view str)->void
+	{
+		if (str.empty())*reinterpret_cast<char*>(value) = 0;
+		else *reinterpret_cast<char*>(value) = str[0];
+	}
 
 
 	auto reflect_types()->std::map<std::size_t, Type>&;
