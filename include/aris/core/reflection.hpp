@@ -86,7 +86,7 @@ namespace aris::core
 		std::string name_;
 		std::function<Instance(void*)> get_;
 		std::function<void(void*, const Instance &)> set_;
-		bool accept_ptr_{ false };
+		bool accept_ptr_{ false };// which means property is a ptr, to support polymorphim
 		Type *type_belong_to_;// which property belong to
 		template<typename T> friend class class_;
 		friend class Instance;
@@ -378,6 +378,18 @@ namespace aris::core
 			prop.accept_ptr_ = true;
 			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
 
+			return *this;
+		}
+
+		auto propertyToStrMethod(std::function<std::string(void* value)> func)
+		{
+			
+			
+			
+			return *this;
+		}
+		auto propertyFromStrMethod(std::function<void(void* value, std::string_view str)> func)
+		{
 			return *this;
 		}
 	};

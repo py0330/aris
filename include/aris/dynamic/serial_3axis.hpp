@@ -53,7 +53,9 @@ namespace aris::dynamic
 		auto setWhichRoot(int root_of_0_to_4)->void;
 		auto setPmEE(const double *ee_pos, const double *extnal_axes)->void;
 		auto setEulaAngle(const double *eul, const char *type = "321")->void;
-
+		auto setQuaternionAngle(const double *q)->void;
+		auto setPqEEAngle(const double *pq)->void;
+		auto setPeEEAngle(const double *pe, const char *type = "321")->void;
 
 		virtual ~Serial3InverseKinematicSolver();
 		explicit Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name = "puma_inverse_solver");

@@ -24,6 +24,10 @@ namespace aris::core
 		return reflection_names_;
 	}
 
+	auto Property::set(Instance *ins, const Instance& arg)const->void { set_(ins->toVoidPtr(), arg); }
+	auto Property::get(Instance *ins)const->Instance { return get_(ins->toVoidPtr()); }
+	auto Property::acceptPtr()const->bool { return accept_ptr_; }
+
 	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
 	{ 
 		return default_ctor_();
@@ -80,6 +84,9 @@ namespace aris::core
 	auto Instance::isArray()->bool { return type()->is_array_; }
 	auto Instance::toString()->std::string 
 	{ 
+		
+		
+		
 		if (!isBasic())THROW_FILE_LINE("instance is NOT basic type");
 		return type()->to_string_(toVoidPtr()); 
 	}
@@ -103,12 +110,6 @@ namespace aris::core
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		type()->push_back_func_(toVoidPtr(), element);
 	}
-	
-
-
-	auto Property::set(Instance *ins, const Instance& arg)const->void{ set_(ins->toVoidPtr(), arg); }
-	auto Property::get(Instance *ins)const->Instance { return get_(ins->toVoidPtr()); }
-	auto Property::acceptPtr()const->bool { return accept_ptr_; }
 
 	template<typename Type>
 	auto inline get_chars(std::string_view param)->Type

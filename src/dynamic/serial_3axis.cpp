@@ -426,13 +426,23 @@ namespace aris::dynamic
 	}
 	auto Serial3InverseKinematicSolver::setEulaAngle(const double *eul, const char *type)->void
 	{
-		
-
 		imp_->ee->setMpe(std::array<double, 6>{0, 0, 0, eul[0], eul[1], eul[2]}.data(), type);
-		
-
 		imp_->use_angle_ = true;
-
+	}
+	auto Serial3InverseKinematicSolver::setQuaternionAngle(const double *q)->void
+	{
+		imp_->ee->setMpq(std::array<double, 7>{0, 0, 0, q[0], q[1], q[2], q[3]}.data());
+		imp_->use_angle_ = true;
+	}
+	auto Serial3InverseKinematicSolver::setPqEEAngle(const double *pq)->void
+	{
+		imp_->ee->setMpq(pq);
+		imp_->use_angle_ = true;
+	}
+	auto Serial3InverseKinematicSolver::setPeEEAngle(const double *pe, const char *type)->void
+	{
+		imp_->ee->setMpe(pe, type);
+		imp_->use_angle_ = true;
 	}
 	Serial3InverseKinematicSolver::~Serial3InverseKinematicSolver() = default;
 	Serial3InverseKinematicSolver::Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) 

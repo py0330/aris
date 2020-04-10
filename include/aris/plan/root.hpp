@@ -117,28 +117,13 @@ namespace aris::plan
 		auto virtual prepareNrt()->void {}
 		auto virtual executeRT()->int { return 0; }
 		auto virtual collectNrt()->void {}
+		// 指令分析相关 //
 		auto command()->aris::core::Command &;
 		auto command()const->const aris::core::Command & { return const_cast<std::decay_t<decltype(*this)> *>(this)->command(); }
-
-		auto count()->std::int64_t;
-		auto controlServer()->aris::server::ControlServer*;
-		auto model()->aris::dynamic::Model*;
-		auto master()->aris::control::Master*;
-		auto controller()->aris::control::Controller*;
-		auto ecMaster()->aris::control::EthercatMaster*;
-		auto ecController()->aris::control::EthercatController*;
-		auto sharedPtrForThis()->std::shared_ptr<Plan>;
-		auto option()->std::uint64_t&;
-		auto motorOptions()->std::vector<std::uint64_t>&;
 		auto cmdString()->std::string_view;
 		auto cmdName()->std::string_view;
 		auto cmdParams()->const std::map<std::string_view, std::string_view> &;
 		auto cmdId()->std::int64_t;
-		auto beginGlobalCount()->std::int64_t;
-		auto rtStastic()->aris::control::Master::RtStasticsData &;
-		auto lout()->aris::core::MsgStream & { return master()->lout(); }
-		auto mout()->aris::core::MsgStream & { return master()->mout(); }
-
 		auto doubleParam(std::string_view param_name)->double;
 		auto floatParam(std::string_view param_name)->float;
 		auto int32Param(std::string_view param_name)->std::int32_t;
@@ -148,8 +133,33 @@ namespace aris::plan
 		auto matrixParam(std::string_view param_name)->aris::core::Matrix;
 		auto matrixParam(std::string_view param_name, int m, int n)->aris::core::Matrix;
 
+		// shared ptr for this //
+		auto sharedPtrForThis()->std::shared_ptr<Plan>;
+
+		// 索引子模块 //
+		auto controlServer()->aris::server::ControlServer*;
+		auto model()->aris::dynamic::Model*;
+		auto master()->aris::control::Master*;
+		auto controller()->aris::control::Controller*;
+		auto ecMaster()->aris::control::EthercatMaster*;
+		auto ecController()->aris::control::EthercatController*;
+		
+		// 日志与打印 //
+		auto lout()->aris::core::MsgStream & { return master()->lout(); }
+		auto mout()->aris::core::MsgStream & { return master()->mout(); }
+
+		// 规划与统计相关 //
+		auto count()->std::int64_t;
+		auto option()->std::uint64_t&;
+		auto motorOptions()->std::vector<std::uint64_t>&;
+		auto beginGlobalCount()->std::int64_t;
+		auto rtStastic()->aris::control::Master::RtStasticsData &;
+
+		// 输入参数与返回值 //
 		auto param()->std::any&;
 		auto ret()->std::any&;
+
+		// 错误处理 //
 		auto setErrMsgRT(const char *msg)->void;
 		auto retCode()->std::int32_t;
 		auto retMsg()->const char *;
