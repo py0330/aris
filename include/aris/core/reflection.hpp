@@ -207,6 +207,14 @@ namespace aris::core
 		};
 	};
 
+	auto reflect_types()->std::map<std::size_t, Type>&;
+	auto reflect_names()->std::map<std::string, std::size_t>&;
+	auto inline getType(std::string_view name)->Type*
+	{
+		auto found = reflect_names().find(std::string(name));
+		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
+	}
+
 	template<typename Class_Type>
 	class class_
 	{
@@ -420,13 +428,7 @@ namespace aris::core
 	}
 
 
-	auto reflect_types()->std::map<std::size_t, Type>&;
-	auto reflect_names()->std::map<std::string, std::size_t>&;
-	auto inline getType(std::string_view name)->Type*
-	{
-		auto found = reflect_names().find(std::string(name));
-		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
-	}
+
 }
 
 #endif
