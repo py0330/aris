@@ -413,7 +413,7 @@ namespace aris::core
 			.inherit<Object>()
 			.asRefArray();
 
-		class_<ObjectPool<Command>>("CommandPool")
+		class_<ObjectPool<Command>>("CommandPoolObject")
 			.inherit<Object>()
 			.asRefArray();
 

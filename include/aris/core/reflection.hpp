@@ -31,43 +31,6 @@ static void aris_reflection_register_function_()
 
 namespace aris::core
 {
-	/*
-	template<typename T>
-	struct has_const_iterator
-	{
-	private:
-		typedef char                      yes;
-		typedef struct { char array[2]; } no;
-
-		template<typename C> static yes test(typename C::const_iterator*);
-		template<typename C> static no  test(...);
-	public:
-		static const bool value = sizeof(test<T>(0)) == sizeof(yes);
-		typedef T type;
-	};
-
-	template <typename T>
-	struct has_begin_end
-	{
-		template<typename C> static char(&f(typename std::enable_if<
-			std::is_same<decltype(static_cast<typename C::const_iterator(C::*)() const>(&C::begin)),
-			typename C::const_iterator(C::*)() const>::value, void>::type*))[1];
-
-		template<typename C> static char(&f(...))[2];
-
-		template<typename C> static char(&g(typename std::enable_if<
-			std::is_same<decltype(static_cast<typename C::const_iterator(C::*)() const>(&C::end)),
-			typename C::const_iterator(C::*)() const>::value, void>::type*))[1];
-
-		template<typename C> static char(&g(...))[2];
-
-		static bool const beg_value = sizeof(f<T>(0)) == 1;
-		static bool const end_value = sizeof(g<T>(0)) == 1;
-	};
-	
-	template<typename T>
-	struct is_container : std::integral_constant<bool, has_const_iterator<T>::value && has_begin_end<T>::beg_value && has_begin_end<T>::end_value>{ };
-	*/
 	class Type;
 	class Property;
 	class Instance;
@@ -100,18 +63,23 @@ namespace aris::core
 	public:
 		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
 		auto name()const->std::string_view { return type_name_; };
-		auto properties()const->const std::map<std::string, Property, std::less<>>&;
+		auto properties()const->const std::vector<Property*>&;
+		auto propertyAt(std::string_view name)const->Property*;
 		auto inheritTypes()const->std::vector<const Type*>;
 		auto isRefArray()const->bool { return is_ref_array_; }
 		Type(std::string_view name, std::function<void*(std::any*)> any_to_void) :type_name_(name), any_to_void_(any_to_void) {}
 
 	private:
 		std::string type_name_;
-		std::map<std::string, Property, std::less<>> this_properties_;// 因为在注册过程中，无法确保所继承的类已经注册完毕，所以需要后续生成该向量
-		std::map<std::string, Property, std::less<>> properties_;
+		//std::map<std::string, Property, std::less<>> properties_;// 不包含父类properties
+		std::vector<Property> this_properties_;// 不包含父类properties
+		std::vector<Property*> properties_ptr_;// 包含父类的properties，为了保持插入顺序，所以不得不用vector替代map
+
+
 		bool is_basic_{ false };
 		bool is_array_{ false };
 		bool is_ref_array_{ false };
+		bool inited{ false };
 		std::function<void*(std::any*)> any_to_void_; // for any cast to void*
 		std::vector<const std::type_info *> inherit_type_infos_;// 因为在注册过程中，无法确保所继承的类已经注册完毕，所以需要后续生成该向量
 		std::vector<const Type *> inherit_types_;
@@ -330,7 +298,7 @@ namespace aris::core
 			auto prop = Property(name, &type);
 			prop.get_ = [v](void* ins)->Instance { return reinterpret_cast<Class_Type*>(ins)->*v; };
 			prop.set_ = [v](void* ins, const Instance &value) { reinterpret_cast<Class_Type*>(ins)->*v = *reinterpret_cast<const T*>(value.toVoidPtr()); };
-			auto [iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
+			type.this_properties_.emplace_back(prop);
 			
 			return *this;
 		}
@@ -348,7 +316,7 @@ namespace aris::core
 			auto prop = Property(name, &type);
 			prop.get_ = [v](void* ins)->Instance { return (reinterpret_cast<Class_Type*>(ins)->*v)(); };
 			prop.set_ = [v](void* ins, const Instance &value) {	(reinterpret_cast<Class_Type*>(ins)->*v)() = *reinterpret_cast<const T*>(value.toVoidPtr()); };
-			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
+			type.this_properties_.emplace_back(prop);
 
 			return *this;
 		}
@@ -367,7 +335,7 @@ namespace aris::core
 			auto prop = Property(name, &type);
 			prop.get_ = [g](void* ins)->Instance {	return (reinterpret_cast<Class_Type*>(ins)->*g)(); };
 			prop.set_ = [s](void* ins, const Instance &value){ (reinterpret_cast<Class_Type*>(ins)->*s)(*reinterpret_cast<const T*>(value.toVoidPtr())); };
-			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
+			type.this_properties_.emplace_back(prop);
 
 			return *this;
 		}
@@ -392,7 +360,7 @@ namespace aris::core
 			};
 			prop.set_ = [s](void* ins, const Instance &value) {	(reinterpret_cast<Class_Type*>(ins)->*s)(const_cast<T*>(reinterpret_cast<const T*>(value.toVoidPtr()))); };
 			prop.accept_ptr_ = true;
-			auto[iter, ok] = type.properties_.emplace(std::make_pair(prop.name(), prop));
+			type.this_properties_.emplace_back(prop);
 
 			return *this;
 		}
@@ -400,7 +368,8 @@ namespace aris::core
 		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func)
 		{
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto &prop = type.properties_.at(std::string(prop_name));
+			auto found = std::find_if(type.this_properties_.begin(), type.this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
+			auto &prop = *found;
 			prop.to_str_func_ = func;
 
 			return *this;
@@ -408,7 +377,8 @@ namespace aris::core
 		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func)
 		{
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto &prop = type.properties_.at(std::string(prop_name));
+			auto found = std::find_if(type.this_properties_.begin(), type.this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
+			auto &prop = *found;
 			prop.from_str_func_ = func;
 
 			return *this;
@@ -418,7 +388,7 @@ namespace aris::core
 	auto inline charToStr(void* value)->std::string
 	{
 		std::string ret;
-		ret.push_back(*reinterpret_cast<char*>(value));
+		if(*reinterpret_cast<char*>(value) != '\0')ret.push_back(*reinterpret_cast<char*>(value));
 		return ret;
 	}
 	auto inline strToChar(void* value, std::string_view str)->void
@@ -426,9 +396,6 @@ namespace aris::core
 		if (str.empty())*reinterpret_cast<char*>(value) = 0;
 		else *reinterpret_cast<char*>(value) = str[0];
 	}
-
-
-
 }
 
 #endif

@@ -48,36 +48,62 @@ namespace aris::core
 		}
 		return inherit_types_;
 	}
-	auto Type::properties()const->const std::map<std::string, Property, std::less<>>&
+	auto Type::properties()const->const std::vector<Property*>&
 	{
 		// 第一次调用构造所有的property //
-		if (this_properties_.empty())
+		if (!inited)
 		{
+			auto &vec = const_cast<std::vector<Property*>&>(properties_ptr_);
+			
+			// 防止重名的数据
+			auto insert_prop = [&vec](Property* ist) 
+			{
+				auto found = std::find_if(vec.begin(), vec.end(), [ist](Property* prop) ->bool
+				{
+					return prop->name() == ist->name();
+				});
+
+				if (found == vec.end())
+					vec.push_back(ist);
+				else
+					*found = ist;
+			};
+
 			for (auto t : inheritTypes())
 			{
-				for (auto &ist : t->properties())
+				for (auto ist : t->properties())
 				{
-					const_cast<std::map<std::string, Property, std::less<>>&>(this_properties_).insert_or_assign(ist.first, ist.second);
+					insert_prop(ist);
 				}
 			}
 
-			for (auto &ist : properties_)
+			for (auto &ist : this_properties_)
 			{
-				const_cast<std::map<std::string, Property, std::less<>>&>(this_properties_).insert_or_assign(ist.first, ist.second);
+				insert_prop(const_cast<Property*>(&ist));
 			}
+
+			const_cast<Type*>(this)->inited = true;
 		}
 
-		return this_properties_;
+		return properties_ptr_;
 	};
+	auto Type::propertyAt(std::string_view name)const->Property*
+	{
+		auto found = std::find_if(properties().begin(), properties().end(), [name](Property* prop) ->bool
+		{
+			return prop->name() == name;
+		});
 
+		return found == properties().end() ? nullptr : *found;
+	}
 	auto Instance::toVoidPtr()->void* {return isReference() ? std::any_cast<InstanceRef>(&value_)->data_ : type()->any_to_void_(&value_);}
 	auto Instance::set(std::string_view prop_name, Instance arg)->void
 	{
-		type()->properties().at(std::string(prop_name)).set_(toVoidPtr(), arg);
+		type()->propertyAt(prop_name)->set(this, arg);
 	}
 	auto Instance::get(std::string_view prop_name)->Instance
 	{
-		return type()->properties().at(std::string(prop_name)).get(this);
+		return type()->propertyAt(prop_name)->get(this);
 	}
 	auto Instance::isReference()->bool { return std::any_cast<InstanceRef>(&value_); }
 	auto Instance::type()->const Type* 
@@ -205,7 +231,6 @@ namespace aris::core
 				*reinterpret_cast<bool*>(v) = result;
 			});
 
-			
 		aris::core::class_<std::string>("string")
 			.asBasic([](void *v)->std::string
 			{
@@ -214,5 +239,6 @@ namespace aris::core
 			{
 				*reinterpret_cast<std::string*>(v) = str;
 			});
+	
 	}
 }

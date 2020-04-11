@@ -24,15 +24,14 @@ namespace aris::core
 		}
 		else if (ins.isArray())
 		{
-			for (auto &prop : ins.type()->properties())
+			for (auto prop : ins.type()->properties())
 			{
-				auto v = prop.second.get(&ins);
-				auto t = v.type();
+				auto v = prop->get(&ins);
 
 				if (!v.isBasic())
 					THROW_FILE_LINE("failed to serilize");
 
-				ele->SetAttribute(prop.second.name().data(), v.toString().c_str());
+				if (v.toString() != "")ele->SetAttribute(prop->name().data(), v.toString().c_str());
 			}
 			for (auto i = 0; i < ins.size(); ++i)
 			{
@@ -46,17 +45,18 @@ namespace aris::core
 		{
 			for (auto &prop : ins.type()->properties())
 			{
-				auto v = prop.second.get(&ins);
+				auto v = prop->get(&ins);
 
 				if (v.isBasic())
 				{
-					ele->SetAttribute(prop.second.name().data(), v.toString().c_str());
+					if(!v.toString().empty())
+						ele->SetAttribute(prop->name().data(), v.toString().c_str());
 				}					
 				else
 				{
 					auto insert_ele = ele->GetDocument()->NewElement(v.type()->name().data());
 					ele->InsertEndChild(insert_ele);
-					insert_ele->SetAttribute("name", prop.first.data());
+					insert_ele->SetAttribute("name", prop->name().data());
 					to_xml_ele(v, insert_ele);
 				}
 			}
@@ -79,19 +79,28 @@ namespace aris::core
 
 	auto from_xml_ele(aris::core::Instance &ins, aris::core::XmlElement *ele)->void
 	{
-		for (auto &[prop_name, prop] : ins.type()->properties())
+		for (auto prop : ins.type()->properties())
 		{
 			// 此时为basic type //
-			if (ele->Attribute(prop_name.data()))
+			if (ele->Attribute(prop->name().data()))
 			{
-				prop.get(&ins).fromString(ele->Attribute(prop_name.data()));
+				auto prop_ins = prop->get(&ins);
+				if (prop_ins.isReference())
+				{
+					prop_ins.fromString(ele->Attribute(prop->name().data()));
+				}
+				else
+				{
+					prop_ins.fromString(ele->Attribute(prop->name().data()));
+					prop->set(&ins, prop_ins);
+				}
 				continue;
 			}
 
 			// 此时不是basic type, 可能发生重载 //
 			for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
 			{
-				if (child_ele->Attribute("name") && prop_name == child_ele->Attribute("name"))
+				if (child_ele->Attribute("name") && prop->name() == child_ele->Attribute("name"))
 				{
 					auto type = getType(child_ele->Name());
 					if (!type) THROW_FILE_LINE("unrecognized type in xml");
@@ -99,10 +108,10 @@ namespace aris::core
 					auto[ptr, attr_ins] = type->create();
 					from_xml_ele(attr_ins, child_ele);
 
-					prop.set(&ins, attr_ins);
+					prop->set(&ins, attr_ins);
 
 					// 对于set函数注册为指针的，不负责生命周期管理 //
-					if (prop.acceptPtr()) 
+					if (prop->acceptPtr()) 
 						ptr.release();
 
 					break;
