@@ -1,6 +1,7 @@
 ﻿#include "mongoose.h"
 #include <string>
 #include <cstring>
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
@@ -10,6 +11,8 @@ int main(int argc, char *argv[])
 #if(UNIX)
 	auto default_address = "/usr/aris/aris-1.5.0/doc/html";
 #endif
+
+	std::cout << "address:" << default_address << std::endl;
 
 	std::string document_root = argc < 2 ? default_address : argv[1];
 	std::string port          = argc < 3 ? "5870" : argv[2];
@@ -29,6 +32,8 @@ int main(int argc, char *argv[])
 	nc = mg_bind_opt(&mgr, port.c_str(), [](struct mg_connection *nc, int ev, void *ev_data)
 	{
 		struct http_message *hm = (struct http_message *) ev_data;
+
+		std::cout << "received" << std::endl;
 
 		switch (ev) {
 		case MG_EV_HTTP_REQUEST:
