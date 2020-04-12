@@ -23,8 +23,8 @@ namespace aris::dynamic
 	class Element :public aris::core::Object
 	{
 	public:
-		auto model()noexcept->Model& { return *ancestor<Model>(); }
-		auto model()const noexcept->const Model& { return const_cast<std::decay_t<decltype(*this)> *>(this)->model(); }
+		auto model()noexcept->Model* { return model_; }
+		auto model()const noexcept->const Model* { return const_cast<std::decay_t<decltype(*this)>*>(this)->model(); }
 		auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name)const->aris::core::Matrix;
 		auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, const aris::core::Matrix& default_value)const->aris::core::Matrix;
 		auto attributeMatrix(const aris::core::XmlElement &xml_ele, const std::string &attribute_name, Size m, Size n)const->aris::core::Matrix;
@@ -34,6 +34,10 @@ namespace aris::dynamic
 		explicit Element(const std::string &name = "element") :Object(name) {}
 		ARIS_REGISTER_TYPE(Element);
 		ARIS_DEFINE_BIG_FOUR(Element);
+
+	private:
+		Model * model_;
+		friend class Model;
 	};
 	class DynEle : public Element
 	{

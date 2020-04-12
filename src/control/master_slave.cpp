@@ -14,7 +14,7 @@
 
 namespace aris::control
 {
-	struct Slave::Imp { std::uint16_t phy_id_, sla_id_; };
+	struct Slave::Imp { std::uint16_t phy_id_, sla_id_; Master *mst_; };
 	auto Slave::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
 		Object::saveXml(xml_ele);
@@ -25,6 +25,7 @@ namespace aris::control
 		Object::loadXml(xml_ele);
 		imp_->phy_id_ = attributeUint16(xml_ele, "phy_id");
 	}
+	auto Slave::master()->Master* { return imp_->mst_; }
 	auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
 	auto Slave::setPhyId(std::uint16_t phy_id)->void { imp_->phy_id_ = phy_id; }
 	Slave::~Slave() = default;
@@ -146,7 +147,11 @@ namespace aris::control
 			imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId() + 1), imp_->sla_vec_phy2abs_.size()), -1);
 			if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
 			imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();
+
+			sla.imp_->mst_ = this;
 		}
+
+
 	}
 	auto Master::start()->void
 	{

@@ -21,6 +21,8 @@ void test_part()
 	auto &p = model.partPool().add<Part>("test_part", prt_iv);
 	auto &r = model.partPool().add<Part>("relative_part", prt_iv);
 
+	model.init();
+
 	const double pp[3] = { 0.1, 0.2, 0.3 };
 	const double re313[3] = { 0.000423769269879415,   1.38980987554835,   1.79253453841257 };
 	const double re321[3] = { 2.46823966120654, -1.28551725555848,  5.40636866254317 };

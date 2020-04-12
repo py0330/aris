@@ -14,7 +14,7 @@ void test_single_body_universal()
 	aris::dynamic::Model m;
 	auto &p = m.partPool().add<aris::dynamic::Part>();
 	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
-	s.allocateMemory();
+	m.init();
 
 	p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
 	p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
@@ -65,10 +65,10 @@ void test_servo_press_universal()
 	auto &universal_solver = model->solverPool().add<UniversalSolver>();
 
 	m1.activate(false);
-	universal_solver.allocateMemory();
+	
 
 	auto &m = *model;
-
+	m.init();
 
 	//p1.setPe(std::array<double, 6>{0.4, 0.5, 0.6, 0.7, 0.8, 0.9}.data(), "321");
 	//ee.setMpq(std::array<double, 7>{0.1, 0.2, 0.3, 0, 0, 0, 1}.data());
@@ -139,7 +139,7 @@ void test_float_5_bar_universal()
 	
 	auto &adams = m.simulatorPool().add<AdamsSimulator>();
 
-	s.allocateMemory();
+	m.init();
 
 	m1.setMp(0.0);
 	m1.setMv(0.1);
@@ -170,7 +170,8 @@ void test_float_5_bar_universal()
 	p3.markerPool().add<Marker>("origin");
 	p4.markerPool().add<Marker>("origin");
 	p5.markerPool().add<Marker>("origin");
-	adams.saveAdams("C:\\Users\\py033\\Desktop\\test.cmd");
+	m.init();
+	//adams.saveAdams("C:\\Users\\py033\\Desktop\\test.cmd");
 }
 
 

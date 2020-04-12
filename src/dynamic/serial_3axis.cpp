@@ -222,19 +222,19 @@ namespace aris::dynamic
 		InverseKinematicSolver::allocateMemory();
 
 		this->imp_->GR;
-		imp_->GR = &ancestor<Model>()->partPool().at(0);
-		imp_->L1 = &ancestor<Model>()->partPool().at(1);
-		imp_->L2 = &ancestor<Model>()->partPool().at(2);
-		imp_->L3 = &ancestor<Model>()->partPool().at(3);
+		imp_->GR = &model()->partPool().at(0);
+		imp_->L1 = &model()->partPool().at(1);
+		imp_->L2 = &model()->partPool().at(2);
+		imp_->L3 = &model()->partPool().at(3);
 
-		imp_->R1 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(0));
-		imp_->R2 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(1));
-		imp_->R3 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(2));
+		imp_->R1 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(0));
+		imp_->R2 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(1));
+		imp_->R3 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(2));
 
-		imp_->M1 = &ancestor<Model>()->motionPool().at(0);
-		imp_->M2 = &ancestor<Model>()->motionPool().at(1);
-		imp_->M3 = &ancestor<Model>()->motionPool().at(2);
-		imp_->ee = &ancestor<Model>()->generalMotionPool().at(0);
+		imp_->M1 = &model()->motionPool().at(0);
+		imp_->M2 = &model()->motionPool().at(1);
+		imp_->M3 = &model()->motionPool().at(2);
+		imp_->ee = &model()->generalMotionPool().at(0);
 	}
 	auto Serial3InverseKinematicSolver::kinPos()->int
 	{
@@ -422,9 +422,9 @@ namespace aris::dynamic
 		
 		if (extnal_axes)
 		{
-			for (int i = 3; i < model().motionPool().size(); ++i)
+			for (int i = 3; i < model()->motionPool().size(); ++i)
 			{
-				model().motionPool()[i].setMp(extnal_axes[i - 3]);
+				model()->motionPool()[i].setMp(extnal_axes[i - 3]);
 			}
 		}
 

@@ -12,15 +12,14 @@
 
 namespace aris::core
 {
-	struct ParamBase::Imp { bool is_taken_{ false }; };
-	auto ParamBase::command()const->const Command & {
-		if (auto c = dynamic_cast<const Command *>(father()))
-			return *c;
-		else if (auto p = dynamic_cast<const ParamBase *>(father()))
-			return p->command();
-		else
-			THROW_FILE_LINE("failed to find father command, please check the command tree");
+	struct ParamBase::Imp 
+	{ 
+		bool is_taken_{ false };
+		Command *command_{ nullptr };
+		Object *father_{ nullptr };
 	};
+	auto ParamBase::command()const->const Command & { return *imp_->command_; };
+	auto ParamBase::father()->Object* { return imp_->father_; }
 	ParamBase::~ParamBase() = default;
 	ParamBase::ParamBase(const std::string &name) :ObjectPool(name), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(ParamBase);
@@ -94,14 +93,14 @@ namespace aris::core
 				if (p->ParamBase::imp_->is_taken_)
 					THROW_FILE_LINE("parse command error: command \"" + p->command().name() + "\"'s param \"" + p->name() + "\" has been set more than once");
 				p->ParamBase::imp_->is_taken_ = true;
-				take(param->father());
+				take(p->father());
 			}
 			else if (auto g = dynamic_cast<GroupParam*>(param))
 			{
 				if (!g->ParamBase::imp_->is_taken_)
 				{
 					g->ParamBase::imp_->is_taken_ = true;
-					take(param->father());
+					take(g->father());
 				}
 			}
 			else if (auto u = dynamic_cast<UniqueParam*>(param))
@@ -109,7 +108,7 @@ namespace aris::core
 				if (u->ParamBase::imp_->is_taken_)
 					THROW_FILE_LINE("parse command error: command \"" + u->command().name() + "\"'s UNIQUE param \"" + u->name() + "\" has been set more than once");
 				u->ParamBase::imp_->is_taken_ = true;
-				take(param->father());
+				take(u->father());
 			}
 			else if (auto c = dynamic_cast<Command*>(param))
 			{
@@ -264,6 +263,27 @@ namespace aris::core
 	auto CommandParser::commandPool()const->const ObjectPool<Command> & { return *imp_->command_pool_; }
 	auto CommandParser::init()->void
 	{
+		// make command point to correct place //
+		for (auto &c : commandPool())
+		{
+			std::function<void(ParamBase*)> add = [&c, &add](ParamBase* param)->void
+			{
+				param->imp_->command_ = &c;
+				for (auto &p : *param)
+				{
+					p.imp_->father_ = param;
+					add(&p);
+				}
+			};
+
+			for (auto &param : c) 
+			{
+				param.imp_->father_ = &c;
+				add(&param);
+			}
+		}
+		
+		
 		// make map and abbrev map //
 		for (auto &c : commandPool())
 		{
@@ -272,6 +292,8 @@ namespace aris::core
 			if ((c.imp_->default_value_ != "") && (c.findByName(c.imp_->default_value_) == c.end())) THROW_FILE_LINE("Command \"" + c.name() + "\" has invalid default param name");
 			for (auto &param : c) Command::Imp::add_param_map_and_check_default(&c, param);
 		}
+
+
 	}
 	auto CommandParser::parse(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>
 	{
@@ -371,8 +393,8 @@ namespace aris::core
 						THROW_FILE_LINE(std::string("invalid param: param \"") + abbrev + "\" is not a abbreviation of any valid param");
 
 					auto param = command->imp_->param_map_.at(command->imp_->abbreviation_map_.at(abbrev));
-					auto param_name = command->imp_->abbreviation_map_.at(abbrev);
-					auto param_value = param->defaultValue();
+					std::string_view param_name = command->imp_->abbreviation_map_.at(abbrev);
+					std::string_view param_value = param->defaultValue();
 					param_map.insert(make_pair(param_name, param_value));
 					Command::Imp::take(param);
 				}
@@ -389,7 +411,6 @@ namespace aris::core
 		imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
-
 
 	ARIS_REGISTRATION
 	{

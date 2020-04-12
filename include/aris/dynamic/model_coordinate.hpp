@@ -96,8 +96,8 @@ namespace aris::dynamic
 		auto setPrtPm(const double *prt_pm) noexcept->void { std::copy_n(prt_pm, 16, const_cast<double *>(*this->prtPm())); }
 		auto setPrtPe(const double *prt_pe, const char *type = "313") noexcept->void { s_pe2pm(prt_pe, const_cast<double *>(*prtPm()), type); }
 		auto setPrtPq(const double *prt_pq) noexcept->void { s_pq2pm(prt_pq, const_cast<double *>(*prtPm())); }
-		auto fatherPart() const noexcept->const Part&;
 		auto fatherPart() noexcept->Part&;
+		auto fatherPart() const noexcept->const Part& { return const_cast<std::decay_t<decltype(*this)>*>(this)->fatherPart(); }
 
 		virtual ~Marker();
 		explicit Marker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true);
@@ -107,6 +107,7 @@ namespace aris::dynamic
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
+		friend class Model;
 	};
 	class Part final :public Coordinate
 	{
@@ -224,8 +225,8 @@ namespace aris::dynamic
 	class Geometry :public Element
 	{
 	public:
-		auto fatherPart() const->const Part&;
-		auto fatherPart()->Part&;
+		//auto fatherPart() const->const Part&;
+		//auto fatherPart()->Part&;
 
 		virtual ~Geometry() = default;
 		explicit Geometry(const std::string &name = "geometry") : Element(name) {}

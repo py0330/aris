@@ -212,9 +212,28 @@ namespace aris::dynamic
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 		auto virtual init()->void;
-
-		auto time()const->double;
-		auto setTime(double time)->void;
+		/// @{
+		auto virtual inverseKinematics()->int;
+		auto virtual forwardKinematics()->int;
+		auto virtual inverseKinematicsVel()->void;
+		auto virtual forwardKinematicsVel()->void;
+		auto virtual inverseDynamics()->void;
+		auto virtual forwardDynamics()->void;
+		auto virtual setMotionPos(const double *mp)->void;
+		auto virtual setMotionPos(double mp, Size which_motion)->void;
+		auto virtual getMotionPos(double *mp)->void;
+		auto virtual getMotionPos(Size which_motion)->double;
+		auto virtual setMotionVel(const double *mv)->void;
+		auto virtual setMotionVel(double mv, Size which_motion)->void;
+		auto virtual getMotionVel(double *mv)->void;
+		auto virtual getMotionVel(Size which_motion)->double;
+		auto virtual setMotionFce(const double *mf)->void;
+		auto virtual setMotionFce(double mf, Size which_motion)->void;
+		auto virtual getMotionFce(double *mp)->void;
+		auto virtual getMotionFce(Size which_motion)->double;
+		auto virtual setEndEffectorPm(const double *pm, Size which_ee = 0)->void;
+		auto virtual getEndEffectorPm(double *pm, Size which_ee = 0)->void;
+		/// @}
 		/// @{
 		auto calculator()->aris::core::Calculator&;
 		auto calculator()const ->const aris::core::Calculator& { return const_cast<std::decay_t<decltype(*this)> *>(this)->calculator(); }
@@ -257,6 +276,8 @@ namespace aris::dynamic
 		auto addGeneralMotionByPe(Part &end_effector, Coordinate &reference, const double* pe, const char* eul_type)->GeneralMotion&;
 		auto addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion&;
 		/// @}
+		auto time()const->double;
+		auto setTime(double time)->void;
 		virtual ~Model();
 		explicit Model(const std::string &name = "model");
 		ARIS_REGISTER_TYPE(Model);

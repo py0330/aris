@@ -27,6 +27,14 @@ void test_constraint()
 	auto &mak_i = prt_m.markerPool().add<Marker>("mak_i", prt_pm_i);
 	auto &mak_j = prt_n.markerPool().add<Marker>("mak_j", prt_pm_j);
 
+	auto &r1 = model.add<RevoluteJoint>("r1", &mak_i, &mak_j);
+	auto &p1 = model.add<PrismaticJoint>("p1", &mak_i, &mak_j);
+	auto &s1 = model.add<SphericalJoint>("s1", &mak_i, &mak_j);
+	auto &u1 = model.add<UniversalJoint>("u1", &mak_i, &mak_j);
+	auto &m1 = model.add<Motion>("m1", &mak_i, &mak_j);
+	auto &g1 = model.add<GeneralMotion>("g1", &mak_i, &mak_j);
+	model.init();
+
 	prt_n.setPe(glb_pe_n);
 	prt_n.setVs(glb_vs_n);
 
@@ -46,8 +54,6 @@ void test_constraint()
 
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
-
-		auto &jnt = model.add<RevoluteJoint>("r1", &mak_i, &mak_j);
 
 		const double glb_cmI[30]{ 0.772732834750084, -0.55499915414649,0.307993352194134,0,0,
 			-0.0834135974649058,   0.392232918710641,   0.916076148165476, 0, 0,
@@ -78,17 +84,17 @@ void test_constraint()
 
 		double result1[42], result2[48];
 
-		jnt.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, jnt.dim(), result1, 5, glb_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, glb_cmJ, jnt.dim(), error))std::cout << "\"RevoluteJoint:cptGlbCm\" failed" << std::endl;
+		r1.cptGlbCm(result1, 5, result2, 7);
+		if (!s_is_equal(6, r1.dim(), result1, 5, glb_cmI, r1.dim(), error) || !s_is_equal(6, r1.dim(), result2, 7, glb_cmJ, r1.dim(), error))std::cout << "\"RevoluteJoint:cptGlbCm\" failed" << std::endl;
 
-		jnt.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, jnt.dim(), result1, 6, prt_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, prt_cmJ, jnt.dim(), error))std::cout << "\"RevoluteJoint:cptPrtCm\" failed" << std::endl;
+		r1.cptPrtCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, r1.dim(), result1, 6, prt_cmI, r1.dim(), error) || !s_is_equal(6, r1.dim(), result2, 7, prt_cmJ, r1.dim(), error))std::cout << "\"RevoluteJoint:cptPrtCm\" failed" << std::endl;
 
-		jnt.cptCa(result1);
-		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"RevoluteJoint:cptCa\" failed" << std::endl;
+		r1.cptCa(result1);
+		if (!s_is_equal(r1.dim(), result1, ca, error))std::cout << "\"RevoluteJoint:cptCa\" failed" << std::endl;
 
-		jnt.cptCp(result1);
-		if (!s_is_equal(jnt.dim(), result1, cp, error))std::cout << "\"RevoluteJoint:cptCp\" failed" << std::endl;
+		r1.cptCp(result1);
+		if (!s_is_equal(r1.dim(), result1, cp, error))std::cout << "\"RevoluteJoint:cptCp\" failed" << std::endl;
 	}
 
 	// test prismatic joints //
@@ -107,8 +113,6 @@ void test_constraint()
 
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
-
-		auto &jnt = model.add<PrismaticJoint>("p1", &mak_i, &mak_j);
 
 		const double glb_cmI[30]{ 0.905206704276648, -0.292815500847941,0,0,0,
 			-0.199091608400864,0.348090537398911, -0, -0, -0,
@@ -137,21 +141,19 @@ void test_constraint()
 		const double cp[6]{ 0,0,0,0,0,0 };
 		const double ca[6]{ -0.299471893489825,   0.841602471649138, -0, -0, -0 };
 
-
 		double result1[42], result2[48];
 
+		p1.cptGlbCm(result1, 5, result2, 7);
+		if (!s_is_equal(6, p1.dim(), result1, 5, glb_cmI, p1.dim(), error) || !s_is_equal(6, p1.dim(), result2, 7, glb_cmJ, p1.dim(), error))std::cout << "\"PrismaticJoint:cptGlbCm\" failed" << std::endl;
 
-		jnt.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, jnt.dim(), result1, 5, glb_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, glb_cmJ, jnt.dim(), error))std::cout << "\"PrismaticJoint:cptGlbCm\" failed" << std::endl;
+		p1.cptPrtCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, p1.dim(), result1, 6, prt_cmI, p1.dim(), error) || !s_is_equal(6, p1.dim(), result2, 7, prt_cmJ, p1.dim(), error))std::cout << "\"PrismaticJoint:cptPrtCm\" failed" << std::endl;
 
-		jnt.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, jnt.dim(), result1, 6, prt_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, prt_cmJ, jnt.dim(), error))std::cout << "\"PrismaticJoint:cptPrtCm\" failed" << std::endl;
+		p1.cptCa(result1);
+		if (!s_is_equal(p1.dim(), result1, ca, error))std::cout << "\"PrismaticJoint:cptCa\" failed" << std::endl;
 
-		jnt.cptCa(result1);
-		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"PrismaticJoint:cptCa\" failed" << std::endl;
-
-		jnt.cptCp(result1);
-		if (!s_is_equal(jnt.dim(), result1, cp, error))std::cout << "\"PrismaticJoint:cptCp\" failed" << std::endl;
+		p1.cptCp(result1);
+		if (!s_is_equal(p1.dim(), result1, cp, error))std::cout << "\"PrismaticJoint:cptCp\" failed" << std::endl;
 	}
 
 	// test spherical joints //
@@ -170,8 +172,6 @@ void test_constraint()
 
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
-
-		auto &jnt = model.add<SphericalJoint>("s1", &mak_i, &mak_j);
 
 		const double glb_cmI[]{ 0.462635502589964, -0.389341212341349,   0.796480892498936,
 			-0.650918208225164,   0.460769198258918,   0.603321831311263,
@@ -202,17 +202,17 @@ void test_constraint()
 
 		double result1[42], result2[48];
 
-		jnt.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, jnt.dim(), result1, 5, glb_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, glb_cmJ, jnt.dim(), error))std::cout << "\"SphericalJoint:cptGlbCm\" failed" << std::endl;
+		s1.cptGlbCm(result1, 5, result2, 7);
+		if (!s_is_equal(6, s1.dim(), result1, 5, glb_cmI, s1.dim(), error) || !s_is_equal(6, s1.dim(), result2, 7, glb_cmJ, s1.dim(), error))std::cout << "\"SphericalJoint:cptGlbCm\" failed" << std::endl;
 
-		jnt.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, jnt.dim(), result1, 6, prt_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, prt_cmJ, jnt.dim(), error))std::cout << "\"SphericalJoint:cptPrtCm\" failed" << std::endl;
+		s1.cptPrtCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, s1.dim(), result1, 6, prt_cmI, s1.dim(), error) || !s_is_equal(6, s1.dim(), result2, 7, prt_cmJ, s1.dim(), error))std::cout << "\"SphericalJoint:cptPrtCm\" failed" << std::endl;
 
-		jnt.cptCa(result1);
-		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"SphericalJoint:cptCa\" failed" << std::endl;
+		s1.cptCa(result1);
+		if (!s_is_equal(s1.dim(), result1, ca, error))std::cout << "\"SphericalJoint:cptCa\" failed" << std::endl;
 
-		jnt.cptCp(result1);
-		if (!s_is_equal(jnt.dim(), result1, cp, error))std::cout << "\"SphericalJoint:cptCp\" failed" << std::endl;
+		s1.cptCp(result1);
+		if (!s_is_equal(s1.dim(), result1, cp, error))std::cout << "\"SphericalJoint:cptCp\" failed" << std::endl;
 	}
 
 	// test universal joints //
@@ -231,8 +231,6 @@ void test_constraint()
 
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVe(mak_j, relative_ve, nullptr, "313");
-
-		auto &jnt = model.add<UniversalJoint>("u1", &mak_i, &mak_j);
 
 		const double glb_cmI[]{ 0.464190255001298, -0.133832675696459,   0.875566229406867,   0,
 			0.831313762500364,   0.40698899884696, -0.378519990350626,   0,
@@ -261,21 +259,19 @@ void test_constraint()
 		const double cp[6]{ 0,0,0,0,0,0 };
 		const double ca[]{ 0.297342839758157,3.33820400487961,3.34479764841342,5.30996702214242 };
 
-
 		double result1[42], result2[48];
 
+		u1.cptGlbCm(result1, 5, result2, 7);
+		if (!s_is_equal(6, u1.dim(), result1, 5, glb_cmI, u1.dim(), error) || !s_is_equal(6, u1.dim(), result2, 7, glb_cmJ, u1.dim(), error))std::cout << "\"UniversalJoint:cptGlbCm\" failed" << std::endl;
 
-		jnt.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, jnt.dim(), result1, 5, glb_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, glb_cmJ, jnt.dim(), error))std::cout << "\"UniversalJoint:cptGlbCm\" failed" << std::endl;
+		u1.cptPrtCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, u1.dim(), result1, 6, prt_cmI, u1.dim(), error) || !s_is_equal(6, u1.dim(), result2, 7, prt_cmJ, u1.dim(), error))std::cout << "\"UniversalJoint:cptPrtCm\" failed" << std::endl;
 
-		jnt.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, jnt.dim(), result1, 6, prt_cmI, jnt.dim(), error) || !s_is_equal(6, jnt.dim(), result2, 7, prt_cmJ, jnt.dim(), error))std::cout << "\"UniversalJoint:cptPrtCm\" failed" << std::endl;
+		u1.cptCa(result1);
+		if (!s_is_equal(u1.dim(), result1, ca, error))std::cout << "\"UniversalJoint:cptCa\" failed" << std::endl;
 
-		jnt.cptCa(result1);
-		if (!s_is_equal(jnt.dim(), result1, ca, error))std::cout << "\"UniversalJoint:cptCa\" failed" << std::endl;
-
-		jnt.cptCp(result1);
-		if (!s_is_equal(jnt.dim(), result1, cp, error))std::cout << "\"UniversalJoint:cptCp\" failed" << std::endl;
+		u1.cptCp(result1);
+		if (!s_is_equal(u1.dim(), result1, cp, error))std::cout << "\"UniversalJoint:cptCp\" failed" << std::endl;
 	}
 
 	// test motion //
@@ -296,8 +292,6 @@ void test_constraint()
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
 		prt_m.setAs(mak_j, relative_as);
-
-		auto &mot = model.add<Motion>("m1", &mak_i, &mak_j);
 
 		const double glb_cmI[]{ 0.307993352194134,
 			0.916076148165476,
@@ -330,26 +324,26 @@ void test_constraint()
 		double result1[42], result2[48];
 
 
-		mot.cptGlbCm(result1, 5, result2, 7);
-		if (!s_is_equal(6, mot.dim(), result1, 5, glb_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, glb_cmJ, mot.dim(), error))std::cout << "\"Motion:cptGlbCm\" failed" << std::endl;
+		m1.cptGlbCm(result1, 5, result2, 7);
+		if (!s_is_equal(6, m1.dim(), result1, 5, glb_cmI, m1.dim(), error) || !s_is_equal(6, m1.dim(), result2, 7, glb_cmJ, m1.dim(), error))std::cout << "\"Motion:cptGlbCm\" failed" << std::endl;
 
-		mot.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, mot.dim(), result1, 6, prt_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, prt_cmJ, mot.dim(), error))std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;
+		m1.cptPrtCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, m1.dim(), result1, 6, prt_cmI, m1.dim(), error) || !s_is_equal(6, m1.dim(), result2, 7, prt_cmJ, m1.dim(), error))std::cout << "\"Motion:cptPrtCm\" failed" << std::endl;
 
-		mot.cptCa(result1);
-		if (!s_is_equal(mot.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
+		m1.cptCa(result1);
+		if (!s_is_equal(m1.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;
 
-		mot.cptCp(result1);
-		if (!s_is_equal(mot.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
+		m1.cptCp(result1);
+		if (!s_is_equal(m1.dim(), result1, cp, error))std::cout << "\"Motion:cptCp\" failed" << std::endl;
 
-		mot.updMp();
-		if (!s_is_equal(mot.mp(), 0.521, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
+		m1.updMp();
+		if (!s_is_equal(m1.mp(), 0.521, error))std::cout << "\"Motion:updMp\" failed" << std::endl;
 
-		mot.updMv();
-		if (!s_is_equal(mot.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
+		m1.updMv();
+		if (!s_is_equal(m1.mv(), 0.689, error))std::cout << "\"Motion:updMv\" failed" << std::endl;
 
-		mot.updMa();
-		if (!s_is_equal(mot.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
+		m1.updMa();
+		if (!s_is_equal(m1.ma(), 0.123, error))std::cout << "\"Motion:updMa\" failed" << std::endl;
 	}
 
 	// test general motion //
@@ -368,8 +362,6 @@ void test_constraint()
 
 		prt_m.setPm(glb_pm_m);
 		prt_m.setVs(mak_j, relative_vs);
-
-		auto &mot = model.add<GeneralMotion>("m1", &mak_i, &mak_j);
 
 		const double mpm_default[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		const double mpe313[6] = { 0.1, 0.2, 0.3,0.000423769269879415,   1.38980987554835,   1.79253453841257 };
@@ -404,150 +396,150 @@ void test_constraint()
 
 		double result[36];
 
-		mot.setMpm(mpm_default);
-		if (!s_is_equal(16, *mot.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		g1.setMpm(mpm_default);
+		if (!s_is_equal(16, *g1.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
-		mot.setMpe(mpe313, "313");
-		if (!s_is_equal(16, *mot.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpe 313\" failed" << std::endl;
+		g1.setMpe(mpe313, "313");
+		if (!s_is_equal(16, *g1.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpe 313\" failed" << std::endl;
 
-		mot.setMpm(mpm_default);
-		if (!s_is_equal(16, *mot.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		g1.setMpm(mpm_default);
+		if (!s_is_equal(16, *g1.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
-		mot.setMpe(mpe321, "321");
-		if (!s_is_equal(16, *mot.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpe 321\" failed" << std::endl;
+		g1.setMpe(mpe321, "321");
+		if (!s_is_equal(16, *g1.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpe 321\" failed" << std::endl;
 
-		mot.setMpm(mpm_default);
-		if (!s_is_equal(16, *mot.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		g1.setMpm(mpm_default);
+		if (!s_is_equal(16, *g1.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
-		mot.setMpq(mpq);
-		if (!s_is_equal(16, *mot.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpq\" failed" << std::endl;
+		g1.setMpq(mpq);
+		if (!s_is_equal(16, *g1.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpq\" failed" << std::endl;
 
-		mot.setMpm(mpm_default);
-		if (!s_is_equal(16, *mot.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		g1.setMpm(mpm_default);
+		if (!s_is_equal(16, *g1.mpm(), mpm_default, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
-		mot.setMpm(mpm);
-		if (!s_is_equal(16, *mot.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
+		g1.setMpm(mpm);
+		if (!s_is_equal(16, *g1.mpm(), mpm, error))std::cout << "\"GeneralMotion:setMpm\" failed" << std::endl;
 
-		mot.getMpe(result, "313");
+		g1.getMpe(result, "313");
 		if (!s_is_equal(6, result, mpe313, error))std::cout << "\"GeneralMotion:getMpe\" failed" << std::endl;
 
-		mot.getMpe(result, "321");
+		g1.getMpe(result, "321");
 		if (!s_is_equal(6, result, mpe321, error))std::cout << "\"GeneralMotion:getMpe\" failed" << std::endl;
 
-		mot.getMpq(result);
+		g1.getMpq(result);
 		if (!s_is_equal(7, result, mpq, error))std::cout << "\"GeneralMotion:getMpq\" failed" << std::endl;
 
-		mot.getMpm(result);
+		g1.getMpm(result);
 		if (!s_is_equal(16, result, mpm, error))std::cout << "\"GeneralMotion:getMpm\" failed" << std::endl;
 
 
-		mot.setMvs(mvs_default);
-		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		g1.setMvs(mvs_default);
+		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
-		mot.setMve(mve313, "313");
-		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMve 313\" failed" << std::endl;
+		g1.setMve(mve313, "313");
+		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMve 313\" failed" << std::endl;
 
-		mot.setMvs(mvs_default);
-		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		g1.setMvs(mvs_default);
+		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
-		mot.setMve(mve321, "321");
-		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMve 321\" failed" << std::endl;
+		g1.setMve(mve321, "321");
+		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMve 321\" failed" << std::endl;
 
-		mot.setMvs(mvs_default);
-		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		g1.setMvs(mvs_default);
+		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
-		mot.setMvq(mvq);
-		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvq\" failed" << std::endl;
+		g1.setMvq(mvq);
+		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvq\" failed" << std::endl;
 
-		mot.setMvs(mvs_default);
-		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		g1.setMvs(mvs_default);
+		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
-		mot.setMvm(mvm);
-		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvm\" failed" << std::endl;
+		g1.setMvm(mvm);
+		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvm\" failed" << std::endl;
 
-		mot.setMvs(mvs_default);
-		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		g1.setMvs(mvs_default);
+		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
-		mot.setMva(mva);
-		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMva\" failed" << std::endl;
+		g1.setMva(mva);
+		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMva\" failed" << std::endl;
 
-		mot.setMvs(mvs_default);
-		if (!s_is_equal(6, mot.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		g1.setMvs(mvs_default);
+		if (!s_is_equal(6, g1.mvs(), mvs_default, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
-		mot.setMvs(mvs);
-		if (!s_is_equal(6, mot.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
+		g1.setMvs(mvs);
+		if (!s_is_equal(6, g1.mvs(), mvs, error))std::cout << "\"GeneralMotion:setMvs\" failed" << std::endl;
 
-		mot.getMve(result, "313");
+		g1.getMve(result, "313");
 		if (!s_is_equal(6, result, mve313, error))std::cout << "\"GeneralMotion:getMve\" failed" << std::endl;
 
-		mot.getMve(result, "321");
+		g1.getMve(result, "321");
 		if (!s_is_equal(6, result, mve321, error))std::cout << "\"GeneralMotion:getMve\" failed" << std::endl;
 
-		mot.getMvq(result);
+		g1.getMvq(result);
 		if (!s_is_equal(7, result, mvq, error))std::cout << "\"GeneralMotion:getMvq\" failed" << std::endl;
 
-		mot.getMvm(result);
+		g1.getMvm(result);
 		if (!s_is_equal(16, result, mvm, error))std::cout << "\"GeneralMotion:getMvm\" failed" << std::endl;
 
-		mot.getMva(result);
+		g1.getMva(result);
 		if (!s_is_equal(6, result, mva, error))std::cout << "\"GeneralMotion:getMva\" failed" << std::endl;
 
-		mot.getMvs(result);
+		g1.getMvs(result);
 		if (!s_is_equal(6, result, mvs, error))std::cout << "\"GeneralMotion:getMvs\" failed" << std::endl;
 
 
-		mot.setMas(mas_default);
-		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		g1.setMas(mas_default);
+		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
-		mot.setMae(mae313, "313");
-		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMae 313\" failed" << std::endl;
+		g1.setMae(mae313, "313");
+		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMae 313\" failed" << std::endl;
 
-		mot.setMas(mas_default);
-		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		g1.setMas(mas_default);
+		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
-		mot.setMae(mae321, "321");
-		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMae 321\" failed" << std::endl;
+		g1.setMae(mae321, "321");
+		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMae 321\" failed" << std::endl;
 
-		mot.setMas(mas_default);
-		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		g1.setMas(mas_default);
+		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
-		mot.setMaq(maq);
-		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMaq\" failed" << std::endl;
+		g1.setMaq(maq);
+		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMaq\" failed" << std::endl;
 
-		mot.setMas(mas_default);
-		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		g1.setMas(mas_default);
+		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
-		mot.setMam(mam);
-		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMam\" failed" << std::endl;
+		g1.setMam(mam);
+		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMam\" failed" << std::endl;
 
-		mot.setMas(mas_default);
-		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		g1.setMas(mas_default);
+		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
-		mot.setMaa(maa);
-		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMaa\" failed" << std::endl;
+		g1.setMaa(maa);
+		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMaa\" failed" << std::endl;
 
-		mot.setMas(mas_default);
-		if (!s_is_equal(6, mot.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		g1.setMas(mas_default);
+		if (!s_is_equal(6, g1.mas(), mas_default, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
-		mot.setMas(mas);
-		if (!s_is_equal(6, mot.mas(), mas, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
+		g1.setMas(mas);
+		if (!s_is_equal(6, g1.mas(), mas, error))std::cout << "\"GeneralMotion:setMas\" failed" << std::endl;
 
-		mot.getMae(result, "313");
+		g1.getMae(result, "313");
 		if (!s_is_equal(6, result, mae313, error))std::cout << "\"GeneralMotion:getMae\" failed" << std::endl;
 
-		mot.getMae(result, "321");
+		g1.getMae(result, "321");
 		if (!s_is_equal(6, result, mae321, error))std::cout << "\"GeneralMotion:getMae\" failed" << std::endl;
 
-		mot.getMaq(result);
+		g1.getMaq(result);
 		if (!s_is_equal(7, result, maq, error))std::cout << "\"GeneralMotion:getMaq\" failed" << std::endl;
 
-		mot.getMam(result);
+		g1.getMam(result);
 		if (!s_is_equal(16, result, mam, error))std::cout << "\"GeneralMotion:getMam\" failed" << std::endl;
 
-		mot.getMaa(result);
+		g1.getMaa(result);
 		if (!s_is_equal(6, result, maa, error))std::cout << "\"GeneralMotion:getMaa\" failed" << std::endl;
 
-		mot.getMas(result);
+		g1.getMas(result);
 		if (!s_is_equal(6, result, mas, error))std::cout << "\"GeneralMotion:getMas\" failed" << std::endl;
 
 		const double glb_cmI[]{ 0.413710949602281, -0.464491586871515,   0.783001159580726,   0,   0,   0,
@@ -580,17 +572,17 @@ void test_constraint()
 
 		double result1[42], result2[48];
 
-		mot.setMpe(relative_pe, "123");
+		g1.setMpe(relative_pe, "123");
 
 
-		mot.cptGlbCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, mot.dim(), result1, 6, glb_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, glb_cmJ, mot.dim(), error))std::cout << "\"GeneralMotion:cptGlbCm\" failed" << std::endl;
+		g1.cptGlbCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, g1.dim(), result1, 6, glb_cmI, g1.dim(), error) || !s_is_equal(6, g1.dim(), result2, 7, glb_cmJ, g1.dim(), error))std::cout << "\"GeneralMotion:cptGlbCm\" failed" << std::endl;
 
-		mot.cptPrtCm(result1, 6, result2, 7);
-		if (!s_is_equal(6, mot.dim(), result1, 6, prt_cmI, mot.dim(), error) || !s_is_equal(6, mot.dim(), result2, 7, prt_cmJ, mot.dim(), error))std::cout << "\"GeneralMotion:cptPrtCm\" failed" << std::endl;
+		g1.cptPrtCm(result1, 6, result2, 7);
+		if (!s_is_equal(6, g1.dim(), result1, 6, prt_cmI, g1.dim(), error) || !s_is_equal(6, g1.dim(), result2, 7, prt_cmJ, g1.dim(), error))std::cout << "\"GeneralMotion:cptPrtCm\" failed" << std::endl;
 
-		mot.cptCp(result1);
-		if (!s_is_equal(mot.dim(), result1, ce, error))std::cout << "\"GeneralMotion:cptCp\" failed" << std::endl;
+		g1.cptCp(result1);
+		if (!s_is_equal(g1.dim(), result1, ce, error))std::cout << "\"GeneralMotion:cptCp\" failed" << std::endl;
 
 		//mot.cptCa(result1);
 		//if (!s_is_equal(mot.dim(), result1, ca, error))std::cout << "\"Motion:cptCa\" failed" << std::endl;

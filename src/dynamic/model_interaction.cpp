@@ -25,9 +25,18 @@ namespace aris::dynamic
 	}
 	auto Interaction::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		if (ancestor<Model>()->findByName("part_pool") == ancestor<Model>()->children().end())
+		prtI_name = xml_ele.Attribute("prt_m");
+		prtJ_name = xml_ele.Attribute("prt_n");
+		makI_name = xml_ele.Attribute("mak_i");
+		makJ_name = xml_ele.Attribute("mak_j");
+		
+		
+		
+		
+		/*
+		if (model()->findByName("part_pool") == model()->children().end())
 			THROW_FILE_LINE("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
-		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*ancestor<Model>()->findByName("part_pool"));
+		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model()->findByName("part_pool"));
 
 		if (!xml_ele.Attribute("prt_m"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"prt_m\"");
 		auto prt_m = part_pool.findByName(xml_ele.Attribute("prt_m"));
@@ -47,7 +56,7 @@ namespace aris::dynamic
 		auto mak_j = prt_n->markerPool().findByName(xml_ele.Attribute("mak_j"));
 		if (mak_j == prt_n->markerPool().end())THROW_FILE_LINE(std::string("can't find marker j for element \"") + this->name() + "\"");
 		makJ_ = &(*mak_j);
-
+		*/
 		DynEle::loadXml(xml_ele);
 	}
 

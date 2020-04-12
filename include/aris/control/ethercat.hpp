@@ -64,17 +64,21 @@ namespace aris::control
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
+	class EthercatMaster;
 	class EthercatSlave : virtual public Slave
 	{
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		
+		auto ecMaster()->EthercatMaster*;
+		auto ecMaster()const->const EthercatMaster* { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecMaster(); }
+
 		auto smPool()->aris::core::ObjectPool<SyncManager>&;
 		auto smPool()const->const aris::core::ObjectPool<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 		
+
 		auto vendorID()const->std::uint32_t;
 		auto setVendorID(std::uint32_t vendor_id)->void;
 		auto productCode()const->std::uint32_t;
@@ -149,7 +153,6 @@ namespace aris::control
 									  */
 		} MasterLinkState;
 
-		
 		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&;
 		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
 		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtAbs(id)); }

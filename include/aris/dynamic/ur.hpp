@@ -16,12 +16,12 @@ namespace aris::dynamic
 		auto virtual kinPos()->int override;
 		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void
 		{
-			model().generalMotionPool()[0].setMpm(ee_pm);
+			model()->generalMotionPool()[0].setMpm(ee_pm);
 			if (ext_axes)
 			{
-				for (int i = 6; i < model().motionPool().size(); ++i)
+				for (int i = 6; i < model()->motionPool().size(); ++i)
 				{
-					model().motionPool()[i].setMp(ext_axes[i - 6]);
+					model()->motionPool()[i].setMp(ext_axes[i - 6]);
 				}
 			}
 		}

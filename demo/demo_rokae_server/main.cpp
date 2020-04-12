@@ -1,33 +1,35 @@
-﻿#include <iostream>
-#include <aris.hpp>
+﻿#include <aris.hpp>
 
-// 示例轨迹规划 //
-class MyPlan :public aris::plan::Plan
+class MoveCos1 :public aris::plan::Plan
 {
 public:
-	auto virtual prepareNrt()->void override
-	{
-	}
 	auto virtual executeRT()->int override
 	{
+		
+		
+		
+		
 		return 0;
 	}
-	auto virtual collectNrt()->void override 
-	{
-	}
 
-	explicit MyPlan(const std::string &name = "my_plan")
+	explicit MoveCos1()
 	{
 		command().loadXmlStr(
-			"<Command name=\"my_plan\">"
+			"<Command name=\"mv_cos1\">"
 			"</Command>"
 		);
 	}
-	ARIS_REGISTER_TYPE(MyPlan);
+	ARIS_REGISTER_TYPE(MoveCos1);
 };
 
 int main(int argc, char *argv[])
 {
+	auto &cs = aris::server::ControlServer::instance();
+
+	cs.resetController(aris::robot::createControllerRokaeXB4().release());
+	cs.resetModel(aris::robot::createModelRokaeXB4().release());
+	cs.resetPlanRoot(aris::robot::createPlanRootRokaeXB4().release());
+	cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
 
 	return 0;
 }

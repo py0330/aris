@@ -27,8 +27,9 @@ namespace aris::dynamic
 		ARIS_DEFINE_BIG_FOUR(Interaction);
 
 	private:
-		Marker * makI_;
-		Marker *makJ_;
+		Marker *makI_, *makJ_;
+		std::string prtI_name, prtJ_name, makI_name, makJ_name;
+		friend class Model;
 	};
 	class Constraint :public Interaction
 	{

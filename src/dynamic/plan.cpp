@@ -142,7 +142,7 @@ namespace aris::dynamic
 
 	auto OptimalTrajectory::cptInverseJacobi()->void
 	{
-		auto model = ancestor<Model>();
+		auto model = this->model();
 		
 		std::vector<double> Jf_data(model->generalMotionPool().size() * 6 * model->motionPool().size());
 		std::vector<double> Ji_data(model->generalMotionPool().size() * 6 * model->motionPool().size());

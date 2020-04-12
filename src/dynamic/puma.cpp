@@ -123,6 +123,8 @@ namespace aris::dynamic
 		for (auto &gm : model->generalMotionPool())gm.activate(false);
 		for (auto &f : model->forcePool())f.activate(false);
 
+		model->init();
+
 		return model;
 	}
 
@@ -320,29 +322,29 @@ namespace aris::dynamic
 		InverseKinematicSolver::allocateMemory();
 
 		this->imp_->GR;
-		imp_->GR = &ancestor<Model>()->partPool().at(0);
-		imp_->L1 = &ancestor<Model>()->partPool().at(1);
-		imp_->L2 = &ancestor<Model>()->partPool().at(2);
-		imp_->L3 = &ancestor<Model>()->partPool().at(3);
-		imp_->L4 = &ancestor<Model>()->partPool().at(4);
-		imp_->L5 = &ancestor<Model>()->partPool().at(5);
-		imp_->L6 = &ancestor<Model>()->partPool().at(6);
+		imp_->GR = &model()->partPool().at(0);
+		imp_->L1 = &model()->partPool().at(1);
+		imp_->L2 = &model()->partPool().at(2);
+		imp_->L3 = &model()->partPool().at(3);
+		imp_->L4 = &model()->partPool().at(4);
+		imp_->L5 = &model()->partPool().at(5);
+		imp_->L6 = &model()->partPool().at(6);
 
-		imp_->R1 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(0));
-		imp_->R2 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(1));
-		imp_->R3 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(2));
-		imp_->R4 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(3));
-		imp_->R5 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(4));
-		imp_->R6 = dynamic_cast<RevoluteJoint*>(&ancestor<Model>()->jointPool().at(5));
+		imp_->R1 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(0));
+		imp_->R2 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(1));
+		imp_->R3 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(2));
+		imp_->R4 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(3));
+		imp_->R5 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(4));
+		imp_->R6 = dynamic_cast<RevoluteJoint*>(&model()->jointPool().at(5));
 
-		imp_->M1 = &ancestor<Model>()->motionPool().at(0);
-		imp_->M2 = &ancestor<Model>()->motionPool().at(1);
-		imp_->M3 = &ancestor<Model>()->motionPool().at(2);
-		imp_->M4 = &ancestor<Model>()->motionPool().at(3);
-		imp_->M5 = &ancestor<Model>()->motionPool().at(4);
-		imp_->M6 = &ancestor<Model>()->motionPool().at(5);
+		imp_->M1 = &model()->motionPool().at(0);
+		imp_->M2 = &model()->motionPool().at(1);
+		imp_->M3 = &model()->motionPool().at(2);
+		imp_->M4 = &model()->motionPool().at(3);
+		imp_->M5 = &model()->motionPool().at(4);
+		imp_->M6 = &model()->motionPool().at(5);
 
-		imp_->ee = &ancestor<Model>()->generalMotionPool().at(0);
+		imp_->ee = &model()->generalMotionPool().at(0);
 
 		auto R1_mak_on_GR = &imp_->R1->makI().fatherPart() == imp_->GR ? &imp_->R1->makI() : &imp_->R1->makJ();
 		auto R1_mak_on_L1 = &imp_->R1->makI().fatherPart() == imp_->L1 ? &imp_->R1->makI() : &imp_->R1->makJ();

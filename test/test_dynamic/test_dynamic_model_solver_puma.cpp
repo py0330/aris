@@ -74,8 +74,7 @@ auto createPumaModel(const double (*j_pos)[3], const double (*j_axis)[3], const 
 	auto &inverse_kinematic = model->solverPool().add<aris::dynamic::PumaInverseKinematicSolver>();
 	auto &forward_kinematic = model->solverPool().add<ForwardKinematicSolver>();
 
-	inverse_kinematic.allocateMemory();
-	forward_kinematic.allocateMemory();
+	model->init();
 
 	return model;
 }
@@ -200,8 +199,6 @@ void test_model_solver_puma()
 	s_mma(6, 1, 6, inv.Ji(), ee.mas(), tem);
 	dsp(1, 6, tem);
 
-
-
 	double mv[6]{ 0.1,0.2,0.3,0.4,0.5,0.6 };
 	for (int i = 0; i < 6; ++i)m->motionPool()[i].setMv(mv[i]);
 	fwd.kinVel();
@@ -222,8 +219,6 @@ void test_model_solver_puma()
 	//
 
 	//dsp(1, 6, tem2);
-
-
 
 	////////////////////////////////////////////////测试建模/////////////////////////////////////////////////
 	aris::dynamic::PumaParam param;

@@ -19,11 +19,11 @@ void test_seven_axis_inverse_solver()
 	param.d3 = 0.330;
 	param.d5 = 0.320;
 	param.tool0_pe[2] = 0.2205;
-
+	std::cout << "finished***" << std::endl;
 	auto m = aris::dynamic::createModelSevenAxis(param);
-
-	m->solverPool()[0].allocateMemory();
-
+	std::cout << "finished***" << std::endl;
+	m->init();
+	std::cout << "finished***" << std::endl;
 	double pe[6]{ 0.1 , 0.0 , 1.2 , 0 , 0 , 0 };
 	m->generalMotionPool()[0].setMpe(pe, "321");
 

@@ -16,6 +16,12 @@
 
 namespace aris::dynamic
 {
+	struct Marker::Imp
+	{
+		double prt_pm_[4][4]{ { 0 } };
+		double pm_[4][4]{ { 0 } };
+		Part *part_;
+	};
 	struct Model::Imp
 	{
 		double time_{ 0.0 };
@@ -57,7 +63,103 @@ namespace aris::dynamic
 		Object::saveXml(xml_ele);
 		xml_ele.SetAttribute("time", time());
 	}
-	auto Model::init()->void { for (auto &s : this->solverPool())s.allocateMemory(); }
+	auto Model::init()->void 
+	{ 
+		auto init_interaction = [](Interaction &interaction, Model*m)->void
+		{
+			if (interaction.prtI_name.empty() && interaction.prtJ_name.empty() && interaction.makI_name.empty() && interaction.makJ_name.empty())return;
+			
+			auto prt_m = m->partPool().findByName(interaction.prtI_name);
+			auto mak_i = prt_m->markerPool().findByName(interaction.makI_name);
+			auto prt_n = m->partPool().findByName(interaction.prtJ_name);
+			auto mak_j = prt_n->markerPool().findByName(interaction.makJ_name);
+
+			interaction.makI_ = &*mak_i;
+			interaction.makJ_ = &*mak_j;
+
+			
+			//if (prt_m == part_pool.end())	THROW_FILE_LINE(std::string("can't find part m for element \"") + this->name() + "\"");
+
+			//if (!xml_ele.Attribute("mak_i"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"mak_i\"");
+			//auto mak_i = prt_m->markerPool().findByName(xml_ele.Attribute("mak_i"));
+			//if (mak_i == prt_m->markerPool().end())
+			//	THROW_FILE_LINE(std::string("can't find marker i for element \"") + this->name() + "\"");
+			//makI_ = &(*mak_i);
+
+			//if (!xml_ele.Attribute("prt_n"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"prt_n\"");
+			//auto prt_n = part_pool.findByName(xml_ele.Attribute("prt_n"));
+			//if (prt_n == part_pool.end())THROW_FILE_LINE(std::string("can't find part n for element \"") + this->name() + "\"");
+
+			//if (!xml_ele.Attribute("mak_j"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"mak_j\"");
+			//auto mak_j = prt_n->markerPool().findByName(xml_ele.Attribute("mak_j"));
+			//if (mak_j == prt_n->markerPool().end())THROW_FILE_LINE(std::string("can't find marker j for element \"") + this->name() + "\"");
+			//makJ_ = &(*mak_j);
+		};
+		
+		
+		environment().model_ = this;
+		variablePool().model_ = this;
+		for (auto &ele : variablePool())ele.model_ = this;
+		partPool().model_ = this;
+		for (auto &ele : partPool()) 
+		{
+			ele.model_ = this;
+			for (auto &mak : ele.markerPool())mak.imp_->part_ = &ele;
+		}
+		jointPool().model_ = this;
+		for (auto &ele : jointPool()) 
+		{
+			ele.model_ = this;
+			init_interaction(ele, this);
+		}
+		
+		motionPool().model_ = this;
+		for (auto &ele : motionPool()) {
+			ele.model_ = this;
+			init_interaction(ele, this);
+		}
+		generalMotionPool().model_ = this;
+		for (auto &ele : generalMotionPool()) {
+			ele.model_ = this;
+			init_interaction(ele, this);
+		}
+		forcePool().model_ = this;
+		for (auto &ele : forcePool()) {
+			ele.model_ = this;
+			init_interaction(ele, this);
+		}
+		solverPool().model_ = this;
+		for (auto &ele : solverPool())ele.model_ = this;
+		simulatorPool().model_ = this;
+		for (auto &ele : simulatorPool())ele.model_ = this;
+		simResultPool().model_ = this;
+		for (auto &ele : simResultPool())ele.model_ = this;
+		calibratorPool().model_ = this;
+		for (auto &ele : calibratorPool())ele.model_ = this;
+
+		// alloc mem for solvers //
+		for (auto &s : this->solverPool())s.allocateMemory();
+	}
+	auto Model::inverseKinematics()->int { return solverPool()[0].kinPos(); }
+	auto Model::forwardKinematics()->int { return solverPool()[1].kinPos(); }
+	auto Model::inverseKinematicsVel()->void { solverPool()[0].kinVel(); }
+	auto Model::forwardKinematicsVel()->void { solverPool()[1].kinVel(); }
+	auto Model::inverseDynamics()->void { solverPool()[2].dynAccAndFce(); }
+	auto Model::forwardDynamics()->void { solverPool()[3].dynAccAndFce(); }
+	auto Model::setMotionPos(const double *mp)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMp(mp[i]); }
+	auto Model::setMotionPos(double mp, Size which_motion)->void { motionPool()[which_motion].setMp(mp); }
+	auto Model::getMotionPos(double *mp)->void { for (Size i = 0; i < motionPool().size(); ++i) mp[i] = motionPool()[i].mp(); }
+	auto Model::getMotionPos(Size which_motion)->double { return motionPool()[which_motion].mp(); }
+	auto Model::setMotionVel(const double *mv)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMv(mv[i]); }
+	auto Model::setMotionVel(double mv, Size which_motion)->void { motionPool()[which_motion].setMv(mv); }
+	auto Model::getMotionVel(double *mv)->void { for (Size i = 0; i < motionPool().size(); ++i) mv[i] = motionPool()[i].mv(); }
+	auto Model::getMotionVel(Size which_motion)->double { return motionPool()[which_motion].mv(); }
+	auto Model::setMotionFce(const double *mf)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMf(mf[i]); }
+	auto Model::setMotionFce(double mf, Size which_motion)->void { motionPool()[which_motion].setMf(mf); }
+	auto Model::getMotionFce(double *mf)->void { for (Size i = 0; i < motionPool().size(); ++i) mf[i] = motionPool()[i].mf(); }
+	auto Model::getMotionFce(Size which_motion)->double { return motionPool()[which_motion].mf(); }
+	auto Model::setEndEffectorPm(const double *pm, Size which_ee)->void { generalMotionPool()[which_ee].setMpm(pm); }
+	auto Model::getEndEffectorPm(double *pm, Size which_ee)->void { generalMotionPool()[which_ee].getMpm(pm); }
 	auto Model::time()const->double { return imp_->time_; }
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }

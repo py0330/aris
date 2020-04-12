@@ -25,11 +25,32 @@ namespace aris::dynamic
 		aris::core::Matrix mat;
 		try
 		{
-			auto ret = ancestor<Model>()->calculator().calculateExpression(xml_ele.Attribute(attribute_name.c_str()));
-			mat = std::any_cast<aris::core::Matrix&>(ret.second	);
+			static aris::core::Calculator c;
+			static int i = 0;
+			if (i == 0)
+			{
+				c.addVariable("PI", "Number", double(aris::PI));
+				i = 1;
+			}
+			//auto mat = c.calculateExpression(xml_ele.GetText() + "})").second;
+			auto ret = c.calculateExpression(std::string("Matrix(") + xml_ele.Attribute(attribute_name.c_str()) + ")");
+			mat = std::any_cast<aris::core::Matrix&>(ret.second);
 		}
 		catch (std::exception &e)
 		{
+			std::cout << xml_ele.Attribute(attribute_name.c_str()) << std::endl;
+			
+			
+			static aris::core::Calculator c;
+			static int i = 0;
+			if (i == 0)
+			{
+				c.addVariable("PI", "Number", double(aris::PI));
+				i = 1;
+			}
+			auto ret = c.calculateExpression(std::string("Matrix(") + xml_ele.Attribute(attribute_name.c_str()) + ")");
+			
+			
 			THROW_FILE_LINE(error + "failed to evaluate matrix:" + e.what());
 		}
 
@@ -89,13 +110,25 @@ namespace aris::dynamic
 	auto MatrixVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Variable::loadXml(xml_ele);
-		data() = std::any_cast<const aris::core::Matrix&>(ancestor<Model>()->calculator().calculateExpression(xml_ele.GetText()).second);
-		//ancestor<Model>()->calculator().addVariable(name(), "Matrix", data());
+		static aris::core::Calculator c;
+		static int i = 0;
+		if (i == 0)
+		{
+			c.addVariable("PI", "Number", double(3.141592653));
+			i = 1;
+		}
+
+		auto mat = c.calculateExpression(std::string("Matrix({") + xml_ele.GetText() + "})").second;
+		data() = std::any_cast<const aris::core::Matrix&>(mat);
+
+
+
+		//model()->calculator().addVariable(name(), "Matrix", data());
 	}
 	auto StringVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Variable::loadXml(xml_ele);
 		data() = std::string(xml_ele.GetText());
-		//ancestor<Model>()->calculator().addVariable(name(), "String", data());
+		//model()->calculator().addVariable(name(), "String", data());
 	}
 }

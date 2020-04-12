@@ -118,6 +118,8 @@ namespace aris::core
 	{
 	public:
 		auto command()const->const Command &;
+		auto father()->Object*;
+		auto father()const->const Object* { return const_cast<std::decay_t<decltype(*this)> *>(this)->father(); }
 
 		virtual ~ParamBase();
 		explicit ParamBase(const std::string &name = "param_base");
@@ -128,6 +130,7 @@ namespace aris::core
 		struct Imp;
 		ImpPtr<Imp> imp_;
 		friend class Command;
+		friend class CommandParser;
 	};
 
 	/// \class aris::core::Param

@@ -115,8 +115,6 @@ const char xml_file_stewart[] =
 "<Model>"
 "    <Environment name=\"environment\" gravity=\"{0,-9.8,0,0,0,0}\"/>"
 "    <VariablePoolElement name=\"variable_pool\">"
-"        <MatrixVariable name=\"PI\">3.14159265358979</MatrixVariable>"
-"        <MatrixVariable name=\"Mot_friction\">{0, 0, 0}</MatrixVariable>"
 "    </VariablePoolElement>"
 "    <PartPoolElement name=\"part_pool\">"
 "        <Part name=\"p1a\" active=\"true\" inertia=\"{1 , -0.62 , 0.13 , -0.58 , 105.0 , 116.25 , 100.28 , 20.11015 , 12.2000345614 , 0.58539}\" pe=\"{0.999999999999974 , 1.22522177619812e-16 , -9.28869564848867e-18 , 6.38378239159465e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -280,12 +278,12 @@ const char xml_file_stewart[] =
 "        <SphericalJoint name=\"s6\" active=\"true\" prt_m=\"up\" prt_n=\"p6b\" mak_i=\"s6i\" mak_j=\"s6j\"/>"
 "    </JointPoolElement>"
 "    <MotionPoolElement name=\"motion_pool\">"
-"        <Motion name=\"m1\" active=\"true\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m2\" active=\"true\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m3\" active=\"true\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m4\" active=\"true\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m5\" active=\"true\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <Motion name=\"m1\" active=\"true\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"{0, 0, 0}\" component=\"2\"/>"
+"        <Motion name=\"m2\" active=\"true\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"{0, 0, 0}\" component=\"2\"/>"
+"        <Motion name=\"m3\" active=\"true\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"{0, 0, 0}\" component=\"2\"/>"
+"        <Motion name=\"m4\" active=\"true\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"{0, 0, 0}\" component=\"2\"/>"
+"        <Motion name=\"m5\" active=\"true\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"{0, 0, 0}\" component=\"2\"/>"
+"        <Motion name=\"m6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"{0, 0, 0}\" component=\"2\"/>"
 "    </MotionPoolElement>"
 "	<ForcePoolElement name=\"force_pool\">"
 "		<SingleComponentForce name=\"f1\" active=\"true\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" component=\"2\"/>"
@@ -540,12 +538,12 @@ const char xml_file_ur5_on_stewart[] =
 "        <Motion name=\"motion_3\" active=\"true\" prt_m=\"L4\" prt_n=\"L3\" mak_i=\"joint_3_i\" mak_j=\"joint_3_j\" cf=\"{0}\" frc_coe=\"{0 , 0 , 0}\" component=\"5\" mp=\"0\" mv=\"0\" ma=\"0\"/>"
 "        <Motion name=\"motion_4\" active=\"true\" prt_m=\"L5\" prt_n=\"L4\" mak_i=\"joint_4_i\" mak_j=\"joint_4_j\" cf=\"{0}\" frc_coe=\"{0 , 0 , 0}\" component=\"5\" mp=\"0\" mv=\"0\" ma=\"0\"/>"
 "        <Motion name=\"motion_5\" active=\"true\" prt_m=\"L6\" prt_n=\"L5\" mak_i=\"joint_5_i\" mak_j=\"joint_5_j\" cf=\"{0}\" frc_coe=\"{0 , 0 , 0}\" component=\"5\" mp=\"0\" mv=\"0\" ma=\"0\"/>"
-"        <Motion name=\"m1\" active=\"true\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m2\" active=\"true\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m3\" active=\"true\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m4\" active=\"true\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m5\" active=\"true\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <Motion name=\"m1\" active=\"true\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m2\" active=\"true\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m3\" active=\"true\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m4\" active=\"true\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m5\" active=\"true\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
 "    </MotionPoolElement>"
 "	 <ForcePoolElement name=\"force_pool\">"
 "		 <SingleComponentForce name=\"FF1\" active=\"true\" prt_m=\"L1\" prt_n=\"up\" mak_i=\"joint_0_i\" mak_j=\"joint_0_j\" component=\"5\"/>"
@@ -820,12 +818,12 @@ const char xml_file_multi[] =
 "		<Motion name=\"M3\" active=\"true\" prt_m=\"part3\" prt_n=\"part2\" mak_i=\"R3i\" mak_j=\"R3j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
 "		<Motion name=\"M4\" active=\"true\" prt_m=\"part4\" prt_n=\"part3\" mak_i=\"R4i\" mak_j=\"R4j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
 "		<Motion name=\"M5\" active=\"true\" prt_m=\"part5\" prt_n=\"part4\" mak_i=\"R5i\" mak_j=\"R5j\" frc_coe=\"{0 , 0 , 0}\" component=\"5\"/>"
-"        <Motion name=\"m1\" active=\"true\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m2\" active=\"true\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m3\" active=\"true\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m4\" active=\"true\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m5\" active=\"true\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
-"        <Motion name=\"m6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"Mot_friction\" component=\"2\"/>"
+"        <Motion name=\"m1\" active=\"true\" prt_m=\"p1b\" prt_n=\"p1a\" mak_i=\"p1i\" mak_j=\"p1j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m2\" active=\"true\" prt_m=\"p2b\" prt_n=\"p2a\" mak_i=\"p2i\" mak_j=\"p2j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m3\" active=\"true\" prt_m=\"p3b\" prt_n=\"p3a\" mak_i=\"p3i\" mak_j=\"p3j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m4\" active=\"true\" prt_m=\"p4b\" prt_n=\"p4a\" mak_i=\"p4i\" mak_j=\"p4j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m5\" active=\"true\" prt_m=\"p5b\" prt_n=\"p5a\" mak_i=\"p5i\" mak_j=\"p5j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
+"        <Motion name=\"m6\" active=\"true\" prt_m=\"p6b\" prt_n=\"p6a\" mak_i=\"p6i\" mak_j=\"p6j\" frc_coe=\"{0 , 0 , 0}\" component=\"2\"/>"
 "    </MotionPoolElement>"
 "	<ForcePoolElement name=\"force_pool\">"
 "        <SingleComponentForce name=\"F3R1\" active=\"true\" prt_m=\"part_1\" prt_n=\"ground\" mak_i=\"joint_0_i\" mak_j=\"joint_0_j\" component=\"5\"/>"
@@ -886,11 +884,11 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.motionPool().at(i).setMa(iao[i]);
 		}
 		// compute origin //
-		s.allocateMemory();
+		m.init();
 		s.kinPos();
-		s.allocateMemory();
+		m.init();
 		s.kinVel();
-		s.allocateMemory();
+		m.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  forward origin" << std::endl;
 
@@ -941,15 +939,15 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.motionPool().at(i).setMa(iat[i]);
 		}
 		// compute //
-		s.allocateMemory();
+		m.init();
 		s.kinPos();
-		s.allocateMemory();
+		m.init();
 		s.kinVel();
-		s.allocateMemory();
+		m.init();
 		s.dynAccAndFce();
-		s.allocateMemory();
+		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
-		s.allocateMemory();
+		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  forward" << std::endl;
 
@@ -993,30 +991,30 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		{
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
-			aris::Size m = u->model().partPool().size() * 6;
-			aris::Size n = u->model().motionPool().size() + u->model().generalMotionPool().size() * 6;
+			aris::Size m = u->model()->partPool().size() * 6;
+			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
 
 			std::vector<double> part_vs(m, 0.0), part_as(m, 0.0);
 			std::vector<double> mot_input(n, 0.0);
-			for (aris::Size i = 0; i < u->model().motionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
 			{
-				mot_input.data()[i] = u->model().motionPool().at(i).mv();
+				mot_input.data()[i] = u->model()->motionPool().at(i).mv();
 			}
-			for (aris::Size i = 0; i < u->model().generalMotionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i)
 			{
-				s_vc(6, u->model().generalMotionPool().at(i).mvs(), mot_input.data() + u->model().motionPool().size() + 6 * i);
+				s_vc(6, u->model()->generalMotionPool().at(i).mvs(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_vs.data());
 
-			for (aris::Size i = 0; i < u->model().partPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i)
 			{
-				if (!s_is_equal(6, u->model().partPool().at(i).vs(), part_vs.data() + 6 * i, error[2]))
+				if (!s_is_equal(6, u->model()->partPool().at(i).vs(), part_vs.data() + 6 * i, error[2]))
 				{
 					std::cout << s.type() << "::cptGeneralJacobi() forward failed" << std::endl;
 
-					std::cout << "part " << u->model().partPool().at(i).name() << ": " << i << " id:" << u->model().partPool().at(i).id() << std::endl;
-					dsp(1, 6, u->model().partPool().at(i).vs());
+					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
+					dsp(1, 6, u->model()->partPool().at(i).vs());
 					dsp(1, 6, part_vs.data() + 6 * i);
 
 					break;
@@ -1024,26 +1022,26 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 
 			// check cg //
-			for (aris::Size i = 0; i < u->model().motionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
 			{
-				mot_input.data()[i] = u->model().motionPool().at(i).ma();
+				mot_input.data()[i] = u->model()->motionPool().at(i).ma();
 			}
-			for (aris::Size i = 0; i < u->model().generalMotionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i)
 			{
-				s_vc(6, u->model().generalMotionPool().at(i).mas(), mot_input.data() + u->model().motionPool().size() + 6 * i);
+				s_vc(6, u->model()->generalMotionPool().at(i).mas(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_as.data());
 			s_va(m, u->cg(), part_as.data());
 
-			for (aris::Size i = 0; i < u->model().partPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i)
 			{
-				if (!s_is_equal(6, u->model().partPool().at(i).as(), part_as.data() + 6 * i, error[2]))
+				if (!s_is_equal(6, u->model()->partPool().at(i).as(), part_as.data() + 6 * i, error[2]))
 				{
 					std::cout << s.type() << "::cptGeneralJacobi() forward failed, because cg is not correct" << std::endl;
 
-					std::cout << "part " << u->model().partPool().at(i).name() << ": " << i << " id:" << u->model().partPool().at(i).id() << std::endl;
-					dsp(1, 6, u->model().partPool().at(i).as());
+					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
+					dsp(1, 6, u->model()->partPool().at(i).as());
 					dsp(1, 6, part_as.data() + 6 * i);
 
 					break;
@@ -1054,20 +1052,20 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		{
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
-			aris::Size m = u->model().partPool().size() * 6;
-			aris::Size n = u->model().motionPool().size() + u->model().generalMotionPool().size() * 6;
+			aris::Size m = u->model()->partPool().size() * 6;
+			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
 
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
 
-			for (aris::Size i = 0; i < u->model().motionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
 			{
-				ma.data()[i] = u->model().motionPool().at(i).ma();
-				mf_compare.data()[i] = u->model().motionPool().at(i).mf();
+				ma.data()[i] = u->model()->motionPool().at(i).ma();
+				mf_compare.data()[i] = u->model()->motionPool().at(i).mf();
 			}
-			for (aris::Size i = 0; i < u->model().generalMotionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i)
 			{
-				s_vc(6, u->model().generalMotionPool().at(i).mas(), ma.data() + u->model().motionPool().size() + 6 * i);
-				std::fill(mf_compare.data() + u->model().motionPool().size() + 6 * i, mf_compare.data() + u->model().motionPool().size() + 6 * i + 6, 0.0);
+				s_vc(6, u->model()->generalMotionPool().at(i).mas(), ma.data() + u->model()->motionPool().size() + 6 * i);
+				std::fill(mf_compare.data() + u->model()->motionPool().size() + 6 * i, mf_compare.data() + u->model()->motionPool().size() + 6 * i + 6, 0.0);
 			}
 
 			s_mm(n, 1, n, u->M(), ma.data(), mf.data());
@@ -1092,7 +1090,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		std::vector<double> before_jnt_cf, after_jnt_cf;
 		for (auto &j : m.jointPool())for (int i = 0; i < j.dim(); ++i)before_jnt_cf.push_back(j.cf()[i]);
-		s.allocateMemory();
+		m.init();
 		s.dynAccAndFce();
 		for (auto &j : m.jointPool())for (int i = 0; i < j.dim(); ++i)after_jnt_cf.push_back(j.cf()[i]);
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)
@@ -1125,11 +1123,11 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 
 		// compute origin //
-		s.allocateMemory();
+		m.init();
 		s.kinPos();
-		s.allocateMemory();
+		m.init();
 		s.kinVel();
-		s.allocateMemory();
+		m.init();
 		s.dynAccAndFce();
 		std::cout << "iter count:" << s.iterCount() << "  inverse origin" << std::endl;
 
@@ -1185,15 +1183,15 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).setMaa(oat + i * 6);
 		}
 		// compute //
-		s.allocateMemory();
+		m.init();
 		s.kinPos();
-		s.allocateMemory();
+		m.init();
 		s.kinVel();
-		s.allocateMemory();
+		m.init();
 		s.dynAccAndFce();
-		s.allocateMemory();
+		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralJacobi();
-		s.allocateMemory();
+		m.init();
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))dynamic_cast<aris::dynamic::UniversalSolver *>(&s)->cptGeneralInverseDynamicMatrix();
 		std::cout << "iter count:" << s.iterCount() << "  inverse" << std::endl;
 
@@ -1246,30 +1244,30 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			// check Jg //
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
-			aris::Size m = u->model().partPool().size() * 6;
-			aris::Size n = u->model().motionPool().size() + u->model().generalMotionPool().size() * 6;
+			aris::Size m = u->model()->partPool().size() * 6;
+			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
 
 			std::vector<double> part_vs(m, 0.0), part_as(m, 0.0);
 			std::vector<double> mot_input(n, 0.0);
-			for (aris::Size i = 0; i < u->model().motionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
 			{
-				mot_input.data()[i] = u->model().motionPool().at(i).mv();
+				mot_input.data()[i] = u->model()->motionPool().at(i).mv();
 			}
-			for (aris::Size i = 0; i < u->model().generalMotionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i)
 			{
-				s_vc(6, u->model().generalMotionPool().at(i).mvs(), mot_input.data() + u->model().motionPool().size() + 6 * i);
+				s_vc(6, u->model()->generalMotionPool().at(i).mvs(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_vs.data());
 
-			for (aris::Size i = 0; i < u->model().partPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i)
 			{
-				if (!s_is_equal(6, u->model().partPool().at(i).vs(), part_vs.data() + 6 * i, error[2]))
+				if (!s_is_equal(6, u->model()->partPool().at(i).vs(), part_vs.data() + 6 * i, error[2]))
 				{
 					std::cout << s.type() << "::cptGeneralJacobi() inverse failed" << std::endl;
 
-					std::cout << "part " << u->model().partPool().at(i).name() << ": " << i << " id:" << u->model().partPool().at(i).id() << std::endl;
-					dsp(1, 6, u->model().partPool().at(i).vs());
+					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
+					dsp(1, 6, u->model()->partPool().at(i).vs());
 					dsp(1, 6, part_vs.data() + 6 * i);
 
 					break;
@@ -1277,26 +1275,26 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			}
 
 			// check cg //
-			for (aris::Size i = 0; i < u->model().motionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
 			{
-				mot_input.data()[i] = u->model().motionPool().at(i).ma();
+				mot_input.data()[i] = u->model()->motionPool().at(i).ma();
 			}
-			for (aris::Size i = 0; i < u->model().generalMotionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i)
 			{
-				s_vc(6, u->model().generalMotionPool().at(i).mas(), mot_input.data() + u->model().motionPool().size() + 6 * i);
+				s_vc(6, u->model()->generalMotionPool().at(i).mas(), mot_input.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
 			s_mm(m, 1, n, u->Jg(), mot_input.data(), part_as.data());
 			s_va(m, u->cg(), part_as.data());
 
-			for (aris::Size i = 0; i < u->model().partPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->partPool().size(); ++i)
 			{
-				if (!s_is_equal(6, u->model().partPool().at(i).as(), part_as.data() + 6 * i, error[2]))
+				if (!s_is_equal(6, u->model()->partPool().at(i).as(), part_as.data() + 6 * i, error[2]))
 				{
 					std::cout << s.type() << "::cptGeneralJacobi() inverse failed, because cg is not correct" << std::endl;
 
-					std::cout << "part " << u->model().partPool().at(i).name() << ": " << i << " id:" << u->model().partPool().at(i).id() << std::endl;
-					dsp(1, 6, u->model().partPool().at(i).as());
+					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
+					dsp(1, 6, u->model()->partPool().at(i).as());
 					dsp(1, 6, part_as.data() + 6 * i);
 
 					break;
@@ -1307,20 +1305,20 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		{
 			auto u = dynamic_cast<aris::dynamic::UniversalSolver *>(&s);
 
-			aris::Size m = u->model().partPool().size() * 6;
-			aris::Size n = u->model().motionPool().size() + u->model().generalMotionPool().size() * 6;
+			aris::Size m = u->model()->partPool().size() * 6;
+			aris::Size n = u->model()->motionPool().size() + u->model()->generalMotionPool().size() * 6;
 
 			std::vector<double> mf(n, 0.0), ma(n, 0.0), mf_compare(n, 0.0);
 
-			for (aris::Size i = 0; i < u->model().motionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->motionPool().size(); ++i)
 			{
-				ma.data()[i] = u->model().motionPool().at(i).ma();
+				ma.data()[i] = u->model()->motionPool().at(i).ma();
 				mf_compare.data()[i] = 0.0;
 			}
-			for (aris::Size i = 0; i < u->model().generalMotionPool().size(); ++i)
+			for (aris::Size i = 0; i < u->model()->generalMotionPool().size(); ++i)
 			{
-				s_vc(6, u->model().generalMotionPool().at(i).mas(), ma.data() + u->model().motionPool().size() + 6 * i);
-				s_vc(6, u->model().generalMotionPool().at(i).mfs(), mf_compare.data() + u->model().motionPool().size() + 6 * i);
+				s_vc(6, u->model()->generalMotionPool().at(i).mas(), ma.data() + u->model()->motionPool().size() + 6 * i);
+				s_vc(6, u->model()->generalMotionPool().at(i).mfs(), mf_compare.data() + u->model()->motionPool().size() + 6 * i);
 			}
 
 			s_mm(n, 1, n, u->M(), ma.data(), mf.data());
@@ -1349,7 +1347,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	for (auto &mot : m.motionPool())mot.activate(true);
 	for (auto &fce : m.forcePool())fce.activate(false);
 	for (auto &gm : m.generalMotionPool())gm.activate(false);
-	s.allocateMemory();
+	m.init();
 
 	// init //
 	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
@@ -1466,7 +1464,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	for (auto &mot : m.motionPool())mot.activate(false);
 	for (auto &fce : m.forcePool())fce.activate(false);
 	for (auto &gm : m.generalMotionPool())gm.activate(true);
-	s.allocateMemory();
+	m.init();
 	m.generalMotionPool().at(0).setMpm(opo);
 	m.generalMotionPool().at(0).setMva(ovo);
 	m.generalMotionPool().at(0).setMva(oao);
@@ -1542,7 +1540,7 @@ void test_single_body()
 		auto &p = m.partPool().add<aris::dynamic::Part>();
 		auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
 
-		s.allocateMemory();
+		m.init();
 
 		p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
 		p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
@@ -1570,7 +1568,7 @@ void test_single_body()
 		auto &r2 = m.jointPool().add<aris::dynamic::RevoluteJoint>("r2", &makI, &makJ);
 		auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
 
-		s.allocateMemory();
+		m.init();
 
 		p.setPe(std::array<double, 6>{0.1, 0.2, 0.3, 0.000423769269879415, 1.38980987554835, 1.79253453841257}.data(), "313");
 		p.setVs(std::array<double, 6>{-0.244517963270725, 1.25737650310373, -0.874318412470487, -0.244517963270725, 1.25737650310373, -0.874318412470487}.data());
@@ -1623,7 +1621,7 @@ void test_float_5_bar()
 	
 	auto &adams = m.simulatorPool().add<AdamsSimulator>();
 
-	s.allocateMemory();
+	m.init();
 
 	m1.setMp(0.0);
 	m1.setMv(0.1);
@@ -1678,13 +1676,6 @@ void test_float_5_bar()
 	if (!s_is_equal(6, p3.as(), std::array<double, 6>{-0.05136868452535, - 9.74505492286892, - 0.00018296503713,   0.00166526381296,   0.00049171676773, - 0.04458158899181}.data(), 1e-10))std::cout << __FILE__ << __LINE__ << ":failed" << std::endl;
 	if (!s_is_equal(6, p4.as(), std::array<double, 6>{0.03368654217674, - 9.82845708834653, - 0.00018296503713,   0.00166526381296,   0.00049171676773,   0.03148902526426}.data(), 1e-10))std::cout << __FILE__ << __LINE__ << ":failed" << std::endl;
 	if (!s_is_equal(6, p5.as(), std::array<double, 6>{0.05329075431848, - 9.84070972093511, - 0.00018296503713,   0.00166526381296,   0.00049171676773,   0.04782586871571}.data(), 1e-10))std::cout << __FILE__ << __LINE__ << ":failed" << std::endl;
-
-	p1.markerPool().add<Marker>("origin");
-	p2.markerPool().add<Marker>("origin");
-	p3.markerPool().add<Marker>("origin");
-	p4.markerPool().add<Marker>("origin");
-	p5.markerPool().add<Marker>("origin");
-	adams.saveAdams("C:\\Users\\py033\\Desktop\\test.cmd");
 }
 void test_servo_press()
 {
@@ -1721,9 +1712,9 @@ void test_servo_press()
 
 	// add solver
 	auto &universal_solver = model->solverPool().add<UniversalSolver>();
-	
 	m1.activate(false);
-	universal_solver.allocateMemory();
+	
+	model->init();
 
 	auto &m = *model;
 
@@ -1859,6 +1850,7 @@ void test_ur5()
 
 		Model m;
 		m.loadXmlStr(xml_file_ur5);
+		m.init();
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
@@ -1904,6 +1896,7 @@ void test_stewart()
 
 		Model m;
 		m.loadXmlStr(xml_file_stewart);
+		m.init();
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,

@@ -78,6 +78,7 @@ void test_command_xml()
 
 		aris::core::CommandParser parser;
 		parser.loadXmlStr(xml_data);
+		parser.init();
 
 		std::string cmd_string;
 		std::string_view cmd, cmd_result;
@@ -230,10 +231,12 @@ void test_command_code()
 		auto &gp2 = gg1.add<aris::core::Param>("gp2", "1");
 		auto &hp2 = gg1.add<aris::core::Param>("hp2", "2");
 
+		parser.init();
+
 		std::string cmd_string;
 		std::string_view cmd, cmd_result;
 		std::map<std::string_view, std::string_view> param, param_result;
-		using ParamPair = std::pair<std::string, std::string>;
+		using ParamPair = std::pair<std::string_view, std::string_view>;
 
 		// following are correct cmd string examples //
 		cmd_string = "tt ";

@@ -9,6 +9,8 @@
 
 namespace aris::control
 {
+	class Master;
+	
 	class Slave : public aris::core::Object
 	{
 	public:
@@ -16,6 +18,8 @@ namespace aris::control
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual send()->void {}
 		auto virtual recv()->void {}
+		auto virtual master()->Master*;
+		auto virtual master()const->const Master* { return const_cast<std::decay_t<decltype(*this)>*>(this)->master(); }
 		auto phyId()const->std::uint16_t;
 		auto setPhyId(std::uint16_t phy_id)->void;
 		auto slaId()const->std::uint16_t { return static_cast<std::uint16_t>(id()); }
@@ -28,6 +32,7 @@ namespace aris::control
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
+		friend class Master;
 	};
 	class Master : public aris::core::Object
 	{

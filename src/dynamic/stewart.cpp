@@ -211,10 +211,7 @@ namespace aris::dynamic
 		auto &inverse_dynamic = model->solverPool().add<aris::dynamic::InverseDynamicSolver>();
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 
-		inverse_kinematic.allocateMemory();
-		forward_kinematic.allocateMemory();
-		inverse_dynamic.allocateMemory();
-		forward_dynamic.allocateMemory();
+		model->init();
 
 		// make topology correct // 
 		for (auto &m : model->motionPool())m.activate(true);
@@ -235,7 +232,7 @@ namespace aris::dynamic
 		InverseKinematicSolver::allocateMemory();
 
 		int u_num{ 0 }, p_num{ 0 }, s_num{ 0 };
-		for (auto &j : model().jointPool())
+		for (auto &j : model()->jointPool())
 		{
 			if (auto u = dynamic_cast<UniversalJoint*>(&j))
 			{
@@ -256,7 +253,7 @@ namespace aris::dynamic
 	}
 	auto StewartInverseKinematicSolver::kinPos()->int
 	{
-		model().generalMotionPool()[0].makI().setPm(model().generalMotionPool()[0].makJ(), *model().generalMotionPool()[0].mpm());
+		model()->generalMotionPool()[0].makI().setPm(model()->generalMotionPool()[0].makJ(), *model()->generalMotionPool()[0].mpm());
 		
 		for (auto i = 0; i < 6; ++i)
 		{
@@ -281,7 +278,7 @@ namespace aris::dynamic
 
 			double p1a_pm[16];
 			s_pm_dot_inv_pm(pm1, pm2, p1a_pm);
-			model().partPool()[i * 2 + 1].setPm(p1a_pm);
+			model()->partPool()[i * 2 + 1].setPm(p1a_pm);
 
 
 			s_vc(16, *imp_->s_[i]->makJ().pm(), pm1);
@@ -295,10 +292,10 @@ namespace aris::dynamic
 
 			double p1b_pm[16];
 			s_pm_dot_inv_pm(pm1, pm2, p1b_pm);
-			model().partPool()[i * 2 + 2].setPm(p1b_pm);
+			model()->partPool()[i * 2 + 2].setPm(p1b_pm);
 		}
 
-		for (auto &mot : model().motionPool())
+		for (auto &mot : model()->motionPool())
 		{
 			mot.updMp();
 		}
