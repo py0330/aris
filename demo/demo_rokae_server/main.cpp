@@ -31,5 +31,17 @@ int main(int argc, char *argv[])
 	cs.resetPlanRoot(aris::robot::createPlanRootRokaeXB4().release());
 	cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
 
+
+
+
+
+
+
+
+
+
+	cs.init();
+	cs.open();
+	cs.runCmdLine();
 	return 0;
 }

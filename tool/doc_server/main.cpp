@@ -1,5 +1,6 @@
 ﻿#include "mongoose.h"
 #include <string>
+#include <cstring>
 
 int main(int argc, char *argv[])
 {
