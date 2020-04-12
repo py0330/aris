@@ -12,10 +12,13 @@ int main(int argc, char *argv[])
 	auto default_address = "/usr/aris/aris-1.5.0/doc/html";
 #endif
 
-	std::cout << "address:" << default_address << std::endl;
+	
 
 	std::string document_root = argc < 2 ? default_address : argv[1];
 	std::string port          = argc < 3 ? "5870" : argv[2];
+
+	std::cout << "root : " << document_root << std::endl;
+	std::cout << "port : " << document_root << std::endl;
 
 	struct mg_mgr mgr;
 	struct mg_connection *nc;
