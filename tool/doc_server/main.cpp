@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	std::string port          = argc < 3 ? "5870" : argv[2];
 
 	std::cout << "root : " << document_root << std::endl;
-	std::cout << "port : " << document_root << std::endl;
+	std::cout << "port : " << port << std::endl;
 
 	struct mg_mgr mgr;
 	struct mg_connection *nc;
