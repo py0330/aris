@@ -97,27 +97,21 @@ namespace aris::dynamic
 		auto &forward_dynamic = model->solverPool().add<aris::dynamic::ForwardDynamicSolver>();
 		inverse_kinematic.setWhichRoot(4);
 
-		inverse_kinematic.allocateMemory();
-		forward_kinematic.allocateMemory();
-		inverse_dynamic.allocateMemory();
-		forward_dynamic.allocateMemory();
-
 		// external axes
 		for (auto &ext : param.external_axes)
 		{
 			model->motionPool().add<aris::dynamic::Motion>("ext");
 		}
 
-
 		// make topology correct // 
 		for (auto &m : model->motionPool())m.activate(true);
 		for (auto &gm : model->generalMotionPool())gm.activate(false);
 		for (auto &f : model->forcePool())f.activate(false);
 
+		model->init();
+
 		return model;
 	}
-
-	
 
 	struct Serial3AxisParamLocal
 	{

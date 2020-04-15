@@ -52,6 +52,14 @@ int main(int argc, char *argv[])
 	auto port = argc < 3 ? 5866 : std::stoi(argv[2]);
 	aris::dynamic::s_pq2pm(argc < 4 ? nullptr : std::any_cast<const aris::core::Matrix&>(aris::core::Calculator().calculateExpression(argv[3]).second).data(), robot_pm);
 
+	aris::dynamic::Serial3Param param;
+	param.a1 = 0.5;
+	param.a2 = 0.6;
+	param.a3 = 0.7;
+
+	auto mmmmm = aris::dynamic::createModelSerial3Axis(param);
+
+
 	auto&cs = aris::server::ControlServer::instance();
 	cs.setName(robot_name);
 	if (robot_name == "ur5")
