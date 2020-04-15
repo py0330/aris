@@ -95,8 +95,7 @@ namespace aris::dynamic
 			//if (mak_j == prt_n->markerPool().end())THROW_FILE_LINE(std::string("can't find marker j for element \"") + this->name() + "\"");
 			//makJ_ = &(*mak_j);
 		};
-		
-		
+
 		environment().model_ = this;
 		variablePool().model_ = this;
 		for (auto &ele : variablePool())ele.model_ = this;

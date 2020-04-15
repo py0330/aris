@@ -11,6 +11,7 @@ extern "C"
 namespace aris::control
 {
 	thread_local std::int64_t last_time_;
+	thread_local std::int64_t nanoseconds_;
 
 	auto aris_mlockall()->void { if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) THROW_FILE_LINE("lock failed"); }
 	auto aris_rt_task_create()->std::any
@@ -27,13 +28,14 @@ namespace aris::control
 	auto aris_rt_task_set_periodic(int nanoseconds)->int
 	{
 		last_time_ = aris_rt_timer_read();
+		nanoseconds_ = nanoseconds;
 		return rt_task_set_periodic(NULL, TM_NOW, nanoseconds);
 	}
 	auto aris_rt_task_wait_period()->int
 	{
 		unsigned long overruns_r = 0;
 		auto ret = rt_task_wait_period(&overruns_r);// -ETIMEDOUT is error
-		last_time_ += 1000000 * (overruns_r + 1);
+		last_time_ += nanoseconds_ * (overruns_r + 1);
 		return ret;
 	}
 	auto aris_rt_timer_read()->std::int64_t { return rt_timer_read(); }
