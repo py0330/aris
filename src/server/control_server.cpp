@@ -295,6 +295,7 @@ namespace aris::server
 			{
 				switch (cm.modeOfOperation())
 				{
+				case 1: // profile pos mode
 				case 8:
 				{
 					// check pos max //
@@ -467,6 +468,7 @@ namespace aris::server
 			auto &cm = controller_->motionPool().at(i);
 			switch (cm.modeOfOperation())
 			{
+			case 1:
 			case 8:
 				if (is_in_check) cm.setTargetPos(((last_pvc_[i].p - cm.actualPos()) > cm.maxVel() || (last_pvc_[i].p - cm.actualPos()) < cm.minVel()) ? cm.actualPos() : last_pvc_[i].p);
 				break;
