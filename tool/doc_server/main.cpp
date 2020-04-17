@@ -5,17 +5,10 @@
 
 int main(int argc, char *argv[])
 {
-#if(WIN32)
-	auto default_address = "C:/aris/aris-1.5.0/doc/html";
-#endif
-#if(UNIX)
-	auto default_address = "/usr/aris/aris-1.5.0/doc/html";
-#endif
-
-	
+	auto default_address = ARIS_INSTALL_PATH + std::string("/doc/html");
 
 	std::string document_root = argc < 2 ? default_address : argv[1];
-	std::string port          = argc < 3 ? "5870" : argv[2];
+	std::string port          = argc < 3 ? "8002" : argv[2];
 
 	std::cout << "root : " << document_root << std::endl;
 	std::cout << "port : " << port << std::endl;
@@ -36,11 +29,10 @@ int main(int argc, char *argv[])
 	{
 		struct http_message *hm = (struct http_message *) ev_data;
 
-		std::cout << "received" << std::endl;
-
 		switch (ev) {
 		case MG_EV_HTTP_REQUEST:
 		{
+			std::cout << "received data" << std::endl;
 			mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
 		}
 		default:
@@ -61,7 +53,6 @@ int main(int argc, char *argv[])
 
 	for (;;) { mg_mgr_poll(&mgr, 1000); }
 	mg_mgr_free(&mgr);
-
 
 	return 0;
 }

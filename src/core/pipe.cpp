@@ -5,7 +5,7 @@
 #include <atomic>
 
 #include "aris/core/pipe.hpp"
-
+#include "aris/core/reflection.hpp"
 
 namespace aris::core
 {
@@ -63,4 +63,15 @@ namespace aris::core
 	}
 	Pipe::Pipe(Pipe&&) = default;
 	Pipe& Pipe::operator=(Pipe&&) = default;
+
+
+	ARIS_REGISTRATION
+	{
+		//class_<Pipe>("Pipe")
+		//.property
+
+
+
+
+	}
 }
