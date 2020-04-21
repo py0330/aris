@@ -132,11 +132,11 @@ void test_puma_inverse_solver()
 		double j_pos[6][3], j_axis[6][3], pe_ee_i[6], pe_ee_j[6];
 		for (int i = 0; i < 6; ++i)
 		{
-			s_vc(3, *m->motionPool().at(i).makI().pm() + 3, 4, j_pos[i], 1);
-			s_vc(3, *m->motionPool().at(i).makI().pm() + 2, 4, j_axis[i], 1);
+			s_vc(3, *m->motionPool().at(i).makI()->pm() + 3, 4, j_pos[i], 1);
+			s_vc(3, *m->motionPool().at(i).makI()->pm() + 2, 4, j_axis[i], 1);
 		}
-		ee.makI().getPe(pe_ee_i);
-		ee.makJ().getPe(pe_ee_j);
+		ee.makI()->getPe(pe_ee_i);
+		ee.makJ()->getPe(pe_ee_j);
 		auto new_m = createPumaModel(j_pos, j_axis, pe_ee_i, pe_ee_j);
 		auto &new_inv = dynamic_cast<aris::dynamic::PumaInverseKinematicSolver&>(new_m->solverPool().at(0));
 		auto &new_fwd = dynamic_cast<aris::dynamic::ForwardKinematicSolver&>(new_m->solverPool().at(1));

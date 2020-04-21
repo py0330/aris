@@ -137,7 +137,8 @@ namespace aris::dynamic
 		for (auto &ele : calibratorPool())ele.model_ = this;
 
 		// alloc mem for solvers //
-		for (auto &s : this->solverPool())s.allocateMemory();
+		for (auto &s : this->solverPool())
+			s.allocateMemory();
 	}
 	auto Model::inverseKinematics()->int { return solverPool()[0].kinPos(); }
 	auto Model::forwardKinematics()->int { return solverPool()[1].kinPos(); }
@@ -248,7 +249,7 @@ namespace aris::dynamic
 			THROW_FILE_LINE("wrong joint when Model::addMotion(joint)");
 		}
 
-		return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), &joint.makI(), &joint.makJ(), dim);
+		return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), joint.makI(), joint.makJ(), dim);
 	}
 	auto Model::addMotion()->Motion&
 	{

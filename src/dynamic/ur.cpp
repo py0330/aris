@@ -579,8 +579,8 @@ namespace aris::dynamic
 			double pe3[6]{ 0.0,0.0,0.0,0.0,0.0,0.0 }, pm[16], pm1[16];
 
 			pe3[5] = q[i];
-			s_pm_dot_pm(*m.jointPool().at(i).makJ().pm(), s_pe2pm(pe3, pm, "123"), pm1);
-			s_pm_dot_inv_pm(pm1, *m.jointPool().at(i).makI().prtPm(), const_cast<double*>(*m.jointPool().at(i).makI().fatherPart().pm()));
+			s_pm_dot_pm(*m.jointPool().at(i).makJ()->pm(), s_pe2pm(pe3, pm, "123"), pm1);
+			s_pm_dot_inv_pm(pm1, *m.jointPool().at(i).makI()->prtPm(), const_cast<double*>(*m.jointPool().at(i).makI()->fatherPart().pm()));
 
 
 			auto last_mp = m.motionPool().at(i).mpInternal();

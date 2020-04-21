@@ -282,8 +282,7 @@ namespace aris::core
 				add(&param);
 			}
 		}
-		
-		
+
 		// make map and abbrev map //
 		for (auto &c : commandPool())
 		{
@@ -439,7 +438,6 @@ namespace aris::core
 			.asRefArray();
 
 		typedef ObjectPool<Command>&(CommandParser::*CommandPoolFunc)();
-		//CommandPoolFunc func = &CommandParser::commandPool;
 		class_<CommandParser>("CommandParser")
 			.inherit<Object>()
 			.property<CommandPoolFunc>("command_pool", &CommandParser::commandPool);

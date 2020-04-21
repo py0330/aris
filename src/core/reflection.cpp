@@ -32,7 +32,6 @@ namespace aris::core
 		return ret;
 	}
 	auto Property::acceptPtr()const->bool { return accept_ptr_; }
-
 	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
 	{ 
 		return default_ctor_();
@@ -108,7 +107,11 @@ namespace aris::core
 	auto Instance::isReference()->bool { return std::any_cast<InstanceRef>(&value_); }
 	auto Instance::type()->const Type* 
 	{ 
-		auto type_info_ = std::any_cast<InstanceRef>(&value_) ? std::any_cast<InstanceRef>(&value_)->type_ : &value_.type();
+		if (isEmpty()) return nullptr;
+		
+		auto type_info_ = 
+			(std::any_cast<InstanceRef>(&value_) ? std::any_cast<InstanceRef>(&value_)->type_ : std::any_cast<InstancePtr>(&value_)->type_);
+
 		return reflect_types().find(type_info_->hash_code()) == reflect_types().end() ? nullptr : &reflect_types().at(type_info_->hash_code());
 	}
 	auto Instance::isBasic()->bool { return type()->is_basic_; }

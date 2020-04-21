@@ -107,8 +107,8 @@ namespace aris::dynamic
 		p5.setPm(s_pm_dot_pm(robot_pm, *p5.pm()));
 		p6.setPm(s_pm_dot_pm(robot_pm, *p6.pm()));
 		p7.setPm(s_pm_dot_pm(robot_pm, *p7.pm()));
-		j1.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ().prtPm()));
-		ee.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ().prtPm()));
+		j1.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ()->prtPm()));
+		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
 
 		// add solver
 		auto &inverse_kinematic = model->solverPool().add<aris::dynamic::SevenAxisInverseKinematicSolver>();
@@ -307,15 +307,15 @@ namespace aris::dynamic
 		auto &p = imp_->seven_axis_param;
 		
 		//  config seven axis param, tbd.....//
-		imp_->seven_axis_param.d1 = imp_->R1->makJ().prtPm()[2][3];
+		imp_->seven_axis_param.d1 = imp_->R1->makJ()->prtPm()[2][3];
 
 		double diff_p[3];
-		s_vc(3, &imp_->R4->makJ().prtPm()[0][3], 4, diff_p, 1);
-		s_vs(3, &imp_->R3->makI().prtPm()[0][3], 4, diff_p, 1);
+		s_vc(3, &imp_->R4->makJ()->prtPm()[0][3], 4, diff_p, 1);
+		s_vs(3, &imp_->R3->makI()->prtPm()[0][3], 4, diff_p, 1);
 		imp_->seven_axis_param.d3 = s_norm(3, diff_p);
 
-		s_vc(3, &imp_->R5->makJ().prtPm()[0][3], 4, diff_p, 1);
-		s_vs(3, &imp_->R4->makI().prtPm()[0][3], 4, diff_p, 1);
+		s_vc(3, &imp_->R5->makJ()->prtPm()[0][3], 4, diff_p, 1);
+		s_vs(3, &imp_->R4->makI()->prtPm()[0][3], 4, diff_p, 1);
 		imp_->seven_axis_param.d5 = s_norm(3, diff_p);
 
 		// config tool0 //
@@ -324,7 +324,7 @@ namespace aris::dynamic
 		double ee_i_pm[16], ee_i_wrt_axis_7_pm[16];
 		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 
-		s_vc(16, static_cast<const double*>(*imp_->ee->makI().prtPm()), ee_i_pm);
+		s_vc(16, static_cast<const double*>(*imp_->ee->makI()->prtPm()), ee_i_pm);
 		s_pe2pm(axis_7_pe, axis_7_pm, "321");
 		s_inv_pm2pm(axis_7_pm, ee_i_pm, ee_i_wrt_axis_7_pm);
 		imp_->seven_axis_param.tool0_pe_type = "321";
@@ -363,20 +363,20 @@ namespace aris::dynamic
 
 			for (aris::Size i = 0; i < 7; ++i)
 			{
-				if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
+				if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1])
 				{
 					double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
 					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mpInternal() + diff_q[real_solution][i]}.data(), pm_rot);
-					s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
-					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
+					s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
+					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
 					imp_->parts[i + 1]->setPm(pm_prt_i);
 				}
 				else
 				{
 					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
 					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mpInternal() - diff_q[real_solution][i]}.data(), pm_rot);
-					s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
-					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
+					s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
+					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
 					imp_->parts[i + 1]->setPm(pm_prt_j);
 				}
 
@@ -391,20 +391,20 @@ namespace aris::dynamic
 			{
 				for (aris::Size i = 0; i < 7; ++i)
 				{
-					if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
+					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1])
 					{
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
 						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, q[i]}.data(), pm_rot);
-						s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
-						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
+						s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
+						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
 						imp_->parts[i + 1]->setPm(pm_prt_i);
 					}
 					else
 					{
 						double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
 						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
-						s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
-						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
+						s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
+						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
 						imp_->parts[i + 1]->setPm(pm_prt_j);
 					}
 

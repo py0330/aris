@@ -98,8 +98,6 @@ namespace aris::control
 		Controller& operator=(const Controller &other) = delete;
 		Controller& operator=(Controller &&other) = delete;
 
-		
-
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;

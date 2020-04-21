@@ -9,6 +9,8 @@
 #include <new>
 #include <future>
 
+#include "aris/core/reflection.hpp"
+
 #ifdef WIN32
 #include <ws2tcpip.h>
 #ifdef max
@@ -1061,10 +1063,13 @@ namespace aris::core
 	}
 	Socket::~Socket() 
 	{ 
-		stop();
+		if (imp_)
+		{
+			stop();
 #ifdef WIN32 
-		WSACleanup();
+			WSACleanup();
 #endif
+		}
 	}
 	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port, TYPE type) :Object(name), imp_(new Imp(this))
 	{
@@ -1076,5 +1081,46 @@ namespace aris::core
 		setRemoteIP(remote_ip);
 		setPort(port);
 		setConnectType(type);
+	}
+	Socket::Socket(Socket&&s) : Object(std::move(s)) 
+	{
+		imp_ = std::move(s.imp_);
+		imp_->socket_ = this;
+	};
+	Socket& Socket::operator=(Socket&&s) 
+	{
+		this->Object::operator=(std::move(s));
+		imp_ = std::move(s.imp_);
+		imp_->socket_ = this;
+		return *this;
+	}
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Socket::TYPE>("Socket::connect_type")
+			.asBasic([](void *v)->std::string
+			{
+				auto type = *reinterpret_cast<Socket::TYPE*>(v);
+				if (type == Socket::TCP)return "TCP";
+				else if (type == Socket::WEB)return "WEB";
+				else if (type == Socket::WEB_RAW)return "WEB_RAW";
+				else if (type == Socket::UDP)return "UDP";
+				else if (type == Socket::UDP_RAW)return "UDP_RAW";
+				else THROW_FILE_LINE("unknown connect type");
+			},[](void *v,std::string_view str)->void
+			{
+				if (str == "TCP")*reinterpret_cast<Socket::TYPE*>(v) = Socket::TCP;
+				else if (str == "WEB")*reinterpret_cast<Socket::TYPE*>(v) = Socket::WEB;
+				else if (str == "WEB_RAW")*reinterpret_cast<Socket::TYPE*>(v) = Socket::WEB_RAW;
+				else if (str == "UDP")*reinterpret_cast<Socket::TYPE*>(v) = Socket::UDP;
+				else if (str == "UDP_RAW")*reinterpret_cast<Socket::TYPE*>(v) = Socket::UDP_RAW;
+				else THROW_FILE_LINE("unknown connect type");
+			});
+
+		class_<Socket>("Socket")
+			.inherit<aris::core::Object>()
+			.property("connect_type", &Socket::setConnectType, &Socket::connectType)
+			.property("remote_ip", &Socket::setRemoteIP, &Socket::remoteIP)
+			.property("port", &Socket::setPort, &Socket::port);
 	}
 }

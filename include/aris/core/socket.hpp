@@ -48,14 +48,14 @@ namespace aris::core
 		virtual ~Socket();
 		Socket(const std::string &name = "socket", const std::string& remote_ip = "", const std::string& port = "", TYPE type = TCP);
 		Socket(const Socket & other) = delete;
-		Socket(Socket && other) = default;
+		Socket(Socket && other);
 		Socket &operator=(const Socket& other) = delete;
-		Socket &operator=(Socket&& other) = default;
+		Socket &operator=(Socket&& other);
 		ARIS_REGISTER_TYPE(Socket)
 
 	private:
 		struct Imp;
-		const std::unique_ptr<Imp> imp_;
+		std::unique_ptr<Imp> imp_;
 	};
 }
 

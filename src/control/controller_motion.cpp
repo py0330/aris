@@ -7,6 +7,8 @@
 #include <thread>
 #include <future>
 
+#include "aris/core/reflection.hpp"
+
 #include "aris/control/controller_motion.hpp"
 
 namespace aris::control
@@ -107,5 +109,40 @@ namespace aris::control
 	Controller::Controller(const std::string &name) :imp_(new Imp), Master(name) 
 	{
 		this->registerType<aris::core::ObjectPool<Slave, aris::core::Object> >();
+	}
+
+	//xml_ele.SetAttribute("max_pos", maxPos());
+	//xml_ele.SetAttribute("min_pos", minPos());
+	//xml_ele.SetAttribute("max_vel", maxVel());
+	//xml_ele.SetAttribute("min_vel", minVel());
+	//xml_ele.SetAttribute("max_acc", maxAcc());
+	//xml_ele.SetAttribute("min_acc", minAcc());
+	//xml_ele.SetAttribute("max_pos_following_error", maxPosFollowingError());
+	//xml_ele.SetAttribute("max_vel_following_error", maxVelFollowingError());
+	//xml_ele.SetAttribute("pos_factor", posFactor());
+	//xml_ele.SetAttribute("pos_offset", posOffset());
+	//xml_ele.SetAttribute("home_pos", homePos());
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Motor>("Motor")
+			.inherit<aris::core::Object>()
+			.property("max_pos", &Motor::setMaxPos, &Motor::maxPos)
+			.property("min_pos", &Motor::setMinPos, &Motor::minPos)
+			.property("max_vel", &Motor::setMaxVel, &Motor::maxVel)
+			.property("min_vel", &Motor::setMinVel, &Motor::minVel)
+			.property("max_acc", &Motor::setMaxAcc, &Motor::maxAcc)
+			.property("min_acc", &Motor::setMinAcc, &Motor::minAcc)
+			.property("max_pos_following_error", &Motor::setMaxPosFollowingError, &Motor::maxPosFollowingError)
+			.property("max_vel_following_error", &Motor::setMaxVelFollowingError, &Motor::maxVelFollowingError)
+			.property("pos_factor", &Motor::setPosFactor, &Motor::posFactor)
+			.property("pos_offset", &Motor::setPosOffset, &Motor::posOffset)
+			.property("home_pos", &Motor::setHomePos, &Motor::homePos)
+			;
+
+		aris::core::class_<Controller>("Controller")
+			.inherit<Master>()
+			;
+			//.property("port", &Socket::setPort, &Socket::port);
 	}
 }

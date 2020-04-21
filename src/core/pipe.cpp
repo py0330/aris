@@ -55,6 +55,12 @@ namespace aris::core
 		imp_->recv_pos_.store((recv_pos + msg.size() + sizeof(MsgHeader)) % imp_->pool_size_);// 原子操作
 		return true;
 	}
+	auto Pipe::resize(Size mem_pool_size)
+	{
+		imp_->pool_size_ = mem_pool_size;
+		imp_->pool_.reset(new char[imp_->pool_size_]());
+	}
+	auto Pipe::size()->Size { return imp_->pool_size_; }
 	Pipe::~Pipe() = default;
 	Pipe::Pipe(const std::string &name, std::size_t pool_size) :Object(name), imp_(new Imp)
 	{
@@ -64,14 +70,9 @@ namespace aris::core
 	Pipe::Pipe(Pipe&&) = default;
 	Pipe& Pipe::operator=(Pipe&&) = default;
 
-
 	ARIS_REGISTRATION
 	{
-		//class_<Pipe>("Pipe")
-		//.property
-
-
-
-
+		class_<Pipe>("Pipe")
+			.property("pool_size", &Pipe::resize, &Pipe::size);
 	}
 }

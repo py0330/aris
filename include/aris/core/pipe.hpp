@@ -12,6 +12,8 @@ namespace aris::core
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto sendMsg(const aris::core::MsgBase &)->bool;
 		auto recvMsg(aris::core::MsgBase &)->bool;
+		auto resize(Size mem_pool_size);
+		auto size()->Size;
 
 		virtual ~Pipe();
 		Pipe(const std::string &name = "pipe", std::size_t pool_size = 16384);

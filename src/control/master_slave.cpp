@@ -150,8 +150,6 @@ namespace aris::control
 
 			sla.imp_->mst_ = this;
 		}
-
-
 	}
 	auto Master::start()->void
 	{
@@ -335,5 +333,28 @@ namespace aris::control
 		imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave> >("slave_pool");
 		imp_->mout_pipe_ = &add<aris::core::Pipe>("mout_pipe");
 		imp_->lout_pipe_ = &add<aris::core::Pipe>("lout_pipe");
+	}
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Slave>("Slave")
+			.inherit<aris::core::Object>()
+			.property("phy_id", &Slave::setPhyId, &Slave::phyId);
+
+		aris::core::class_<aris::core::ObjectPool<Slave>>("SlavePoolObject")
+			.inherit<aris::core::Object>()
+			.asRefArray();
+
+		typedef aris::core::ObjectPool<Slave>&(Master::*SlavePoolFunc)();
+		aris::core::class_<Master>("Master")
+			.inherit<aris::core::Object>()
+			.property<SlavePoolFunc>("slave_pool", &Master::slavePool)
+			.property("sample_period_ns", &Master::setSamplePeriodNs, &Master::samplePeriodNs)
+			//.property("mout_pipe", &Master::setSamplePeriodNs, &Master::samplePeriodNs)
+			//.property("lout_pipe", &Master::setSamplePeriodNs, &Master::samplePeriodNs)
+			;
+
+
+
 	}
 }

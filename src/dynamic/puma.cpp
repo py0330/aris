@@ -101,8 +101,8 @@ namespace aris::dynamic
 		p4.setPm(s_pm_dot_pm(robot_pm, *p4.pm()));
 		p5.setPm(s_pm_dot_pm(robot_pm, *p5.pm()));
 		p6.setPm(s_pm_dot_pm(robot_pm, *p6.pm()));
-		j1.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ().prtPm()));
-		ee.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ().prtPm()));
+		j1.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ()->prtPm()));
+		ee.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *ee.makJ()->prtPm()));
 
 		// add tools and wobj //
 		for (int i = 1; i < 17; ++i) 
@@ -346,20 +346,20 @@ namespace aris::dynamic
 
 		imp_->ee = &model()->generalMotionPool().at(0);
 
-		auto R1_mak_on_GR = &imp_->R1->makI().fatherPart() == imp_->GR ? &imp_->R1->makI() : &imp_->R1->makJ();
-		auto R1_mak_on_L1 = &imp_->R1->makI().fatherPart() == imp_->L1 ? &imp_->R1->makI() : &imp_->R1->makJ();
-		auto R2_mak_on_L1 = &imp_->R2->makI().fatherPart() == imp_->L1 ? &imp_->R2->makI() : &imp_->R2->makJ();
-		auto R2_mak_on_L2 = &imp_->R2->makI().fatherPart() == imp_->L2 ? &imp_->R2->makI() : &imp_->R2->makJ();
-		auto R3_mak_on_L2 = &imp_->R3->makI().fatherPart() == imp_->L2 ? &imp_->R3->makI() : &imp_->R3->makJ();
-		auto R3_mak_on_L3 = &imp_->R3->makI().fatherPart() == imp_->L3 ? &imp_->R3->makI() : &imp_->R3->makJ();
-		auto R4_mak_on_L3 = &imp_->R4->makI().fatherPart() == imp_->L3 ? &imp_->R4->makI() : &imp_->R4->makJ();
-		auto R4_mak_on_L4 = &imp_->R4->makI().fatherPart() == imp_->L4 ? &imp_->R4->makI() : &imp_->R4->makJ();
-		auto R5_mak_on_L4 = &imp_->R5->makI().fatherPart() == imp_->L4 ? &imp_->R5->makI() : &imp_->R5->makJ();
-		auto R5_mak_on_L5 = &imp_->R5->makI().fatherPart() == imp_->L5 ? &imp_->R5->makI() : &imp_->R5->makJ();
-		auto R6_mak_on_L5 = &imp_->R6->makI().fatherPart() == imp_->L5 ? &imp_->R6->makI() : &imp_->R6->makJ();
-		auto R6_mak_on_L6 = &imp_->R6->makI().fatherPart() == imp_->L6 ? &imp_->R6->makI() : &imp_->R6->makJ();
-		auto ee_mak_on_GR = &imp_->ee->makI().fatherPart() == imp_->GR ? &imp_->ee->makI() : &imp_->ee->makJ();
-		auto ee_mak_on_L6 = &imp_->ee->makI().fatherPart() == imp_->L6 ? &imp_->ee->makI() : &imp_->ee->makJ();
+		auto R1_mak_on_GR = &imp_->R1->makI()->fatherPart() == imp_->GR ? imp_->R1->makI() : imp_->R1->makJ();
+		auto R1_mak_on_L1 = &imp_->R1->makI()->fatherPart() == imp_->L1 ? imp_->R1->makI() : imp_->R1->makJ();
+		auto R2_mak_on_L1 = &imp_->R2->makI()->fatherPart() == imp_->L1 ? imp_->R2->makI() : imp_->R2->makJ();
+		auto R2_mak_on_L2 = &imp_->R2->makI()->fatherPart() == imp_->L2 ? imp_->R2->makI() : imp_->R2->makJ();
+		auto R3_mak_on_L2 = &imp_->R3->makI()->fatherPart() == imp_->L2 ? imp_->R3->makI() : imp_->R3->makJ();
+		auto R3_mak_on_L3 = &imp_->R3->makI()->fatherPart() == imp_->L3 ? imp_->R3->makI() : imp_->R3->makJ();
+		auto R4_mak_on_L3 = &imp_->R4->makI()->fatherPart() == imp_->L3 ? imp_->R4->makI() : imp_->R4->makJ();
+		auto R4_mak_on_L4 = &imp_->R4->makI()->fatherPart() == imp_->L4 ? imp_->R4->makI() : imp_->R4->makJ();
+		auto R5_mak_on_L4 = &imp_->R5->makI()->fatherPart() == imp_->L4 ? imp_->R5->makI() : imp_->R5->makJ();
+		auto R5_mak_on_L5 = &imp_->R5->makI()->fatherPart() == imp_->L5 ? imp_->R5->makI() : imp_->R5->makJ();
+		auto R6_mak_on_L5 = &imp_->R6->makI()->fatherPart() == imp_->L5 ? imp_->R6->makI() : imp_->R6->makJ();
+		auto R6_mak_on_L6 = &imp_->R6->makI()->fatherPart() == imp_->L6 ? imp_->R6->makI() : imp_->R6->makJ();
+		auto ee_mak_on_GR = &imp_->ee->makI()->fatherPart() == imp_->GR ? imp_->ee->makI() : imp_->ee->makJ();
+		auto ee_mak_on_L6 = &imp_->ee->makI()->fatherPart() == imp_->L6 ? imp_->ee->makI() : imp_->ee->makJ();
 
 		// get A pm //
 		{
@@ -458,7 +458,7 @@ namespace aris::dynamic
 		{
 			// mp_offset[0] 始终为0，因为A是在关节角度为0时定义出来的
 			imp_->puma_param.mp_offset[0] = 0.0;
-			imp_->puma_param.mp_factor[0] = R1_mak_on_L1 == &imp_->R1->makI() ? 1.0 : -1.0;
+			imp_->puma_param.mp_factor[0] = R1_mak_on_L1 == imp_->R1->makI() ? 1.0 : -1.0;
 
 			// mp_offset[1] 应该能把R2转到延x轴正向的位置
 			// 先把A坐标系的x轴转到R2坐标系下
@@ -477,7 +477,7 @@ namespace aris::dynamic
 			double c = Ax_axis_in_R2[0] * pm[3] + Ax_axis_in_R2[1] * pm[7];
 
 			imp_->puma_param.mp_offset[1] = atan2(s, c);
-			imp_->puma_param.mp_factor[1] = R2_mak_on_L2 == &imp_->R2->makI() ? 1.0 : -1.0;
+			imp_->puma_param.mp_factor[1] = R2_mak_on_L2 == imp_->R2->makI() ? 1.0 : -1.0;
 
 			// mp_offset[2] 应该能让R3把R4轴线转到R2R3连线方向（x轴）
 			double R4_axis_in_R3[3], R4_axis_in_R2[3];
@@ -494,7 +494,7 @@ namespace aris::dynamic
 			c = pm[3] * R4_axis_in_R2[0] + pm[7] * R4_axis_in_R2[1];
 
 			imp_->puma_param.mp_offset[2] = atan2(s, c);
-			imp_->puma_param.mp_factor[2] = R3_mak_on_L3 == &imp_->R3->makI() ? 1.0 : -1.0;
+			imp_->puma_param.mp_factor[2] = R3_mak_on_L3 == imp_->R3->makI() ? 1.0 : -1.0;
 
 			// 看看2轴和3轴是否反向 //
 			bool is_23axes_the_same;
@@ -514,7 +514,7 @@ namespace aris::dynamic
 			c = R2_z_axis_in_R4[0] * pm[2] + R2_z_axis_in_R4[1] * pm[6];
 
 			imp_->puma_param.mp_offset[3] = atan2(s, c);
-			imp_->puma_param.mp_factor[3] = R4_mak_on_L4 == &imp_->R4->makI() ? 1.0 : -1.0;
+			imp_->puma_param.mp_factor[3] = R4_mak_on_L4 == imp_->R4->makI() ? 1.0 : -1.0;
 
 			// mp_offset[4] 应该能让R5把R6轴线转到和R4轴一致
 			double R6_z_axis_in_R5[3], R4_z_axis_in_R5[3];
@@ -526,11 +526,11 @@ namespace aris::dynamic
 			c = R4_z_axis_in_R5[0] * R6_z_axis_in_R5[0] + R4_z_axis_in_R5[1] * R6_z_axis_in_R5[1];
 
 			imp_->puma_param.mp_offset[4] = atan2(s, c);
-			imp_->puma_param.mp_factor[4] = R5_mak_on_L5 == &imp_->R5->makI() ? 1.0 : -1.0;
+			imp_->puma_param.mp_factor[4] = R5_mak_on_L5 == imp_->R5->makI() ? 1.0 : -1.0;
 
 			// mp_offset[5] 可以随便设
 			imp_->puma_param.mp_offset[5] = 0.0;
-			imp_->puma_param.mp_factor[5] = R6_mak_on_L6 == &imp_->R6->makI() ? 1.0 : -1.0;
+			imp_->puma_param.mp_factor[5] = R6_mak_on_L6 == imp_->R6->makI() ? 1.0 : -1.0;
 		}
 	}
 	auto PumaInverseKinematicSolver::kinPos()->int
@@ -566,20 +566,20 @@ namespace aris::dynamic
 
 			for (aris::Size i = 0; i < 6; ++i)
 			{
-				if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
+				if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1])
 				{
 					double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
 					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, imp_->motions[i]->mpInternal() + diff_q[real_solution][i]}.data(), pm_rot);
-					s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
-					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
+					s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
+					s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
 					imp_->parts[i + 1]->setPm(pm_prt_i);
 				}
 				else
 				{
 					double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
 					s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -imp_->motions[i]->mpInternal() - diff_q[real_solution][i]}.data(), pm_rot);
-					s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
-					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
+					s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
+					s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
 					imp_->parts[i + 1]->setPm(pm_prt_j);
 				}
 
@@ -594,20 +594,20 @@ namespace aris::dynamic
 			{
 				for (aris::Size i = 0; i < 6; ++i)
 				{
-					if (&imp_->joints[i]->makI().fatherPart() == imp_->parts[i + 1])
+					if (&imp_->joints[i]->makI()->fatherPart() == imp_->parts[i + 1])
 					{
 						double pm_prt_i[16], pm_mak_i[16], pm_rot[16];
 						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, q[i]}.data(), pm_rot);
-						s_pm_dot_pm(*imp_->joints[i]->makJ().pm(), pm_rot, pm_mak_i);
-						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI().prtPm(), pm_prt_i);
+						s_pm_dot_pm(*imp_->joints[i]->makJ()->pm(), pm_rot, pm_mak_i);
+						s_pm_dot_inv_pm(pm_mak_i, *imp_->joints[i]->makI()->prtPm(), pm_prt_i);
 						imp_->parts[i + 1]->setPm(pm_prt_i);
 					}
 					else
 					{
 						double pm_prt_j[16], pm_mak_j[16], pm_rot[16];
 						s_pe2pm(std::array<double, 6>{0, 0, 0, 0, 0, -q[i]}.data(), pm_rot);
-						s_pm_dot_pm(*imp_->joints[i]->makI().pm(), pm_rot, pm_mak_j);
-						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ().prtPm(), pm_prt_j);
+						s_pm_dot_pm(*imp_->joints[i]->makI()->pm(), pm_rot, pm_mak_j);
+						s_pm_dot_inv_pm(pm_mak_j, *imp_->joints[i]->makJ()->prtPm(), pm_prt_j);
 						imp_->parts[i + 1]->setPm(pm_prt_j);
 					}
 

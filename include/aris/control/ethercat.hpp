@@ -15,8 +15,11 @@ namespace aris::control
 		
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+		auto setIndex(std::uint16_t index)->void;
 		auto index()const->std::uint16_t;
+		auto setSubindex(std::uint8_t subindex)->void;
 		auto subindex()const->std::uint8_t;
+		auto setBitSize(Size subindex)->void;
 		auto bitSize()const->aris::Size;
 
 		virtual ~PdoEntry();
@@ -35,6 +38,7 @@ namespace aris::control
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
+		auto setIndex(std::uint16_t index)->void;
 		auto index()const->std::uint16_t;
 
 		virtual ~Pdo();
@@ -53,6 +57,7 @@ namespace aris::control
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto tx()const->bool;
 		auto rx()const->bool;
+		auto setTx(bool is_tx)->void;
 
 		virtual ~SyncManager();
 		explicit SyncManager(const std::string &name = "sm", bool is_tx = true);

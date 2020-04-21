@@ -145,7 +145,8 @@ int main()
 	aris::control::aris_rt_task_join(hhhhhh);
 	
 	*/
-
+	aris::core::Socket sssssss;
+	aris::core::Instance aaaaaaaaaaaa = std::move(sssssss);
 	
 	// 创建模型 //
 	aris::dynamic::Serial3Param param;

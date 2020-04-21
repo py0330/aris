@@ -1771,9 +1771,9 @@ void test_3R()
 	////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 
-	auto &force1 = m.forcePool().add<SingleComponentForce>("f1", &motion1.makI(), &motion1.makJ(), 5);
-	auto &force2 = m.forcePool().add<SingleComponentForce>("f2", &motion2.makI(), &motion2.makJ(), 5);
-	auto &force3 = m.forcePool().add<SingleComponentForce>("f3", &motion3.makI(), &motion3.makJ(), 5);
+	auto &force1 = m.forcePool().add<SingleComponentForce>("f1", motion1.makI(), motion1.makJ(), 5);
+	auto &force2 = m.forcePool().add<SingleComponentForce>("f2", motion2.makI(), motion2.makJ(), 5);
+	auto &force3 = m.forcePool().add<SingleComponentForce>("f3", motion3.makI(), motion3.makJ(), 5);
 
 	link1.geometryPool().add<ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t");
 	link2.geometryPool().add<ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t");
@@ -2102,9 +2102,9 @@ void bench_3R()
 		////////////////////////////////////////////////// 建模完毕 ///////////////////////////////////////////////
 
 
-		auto &force1 = m.forcePool().add<SingleComponentForce>("f1", &motion1.makI(), &motion1.makJ(), 5);
-		auto &force2 = m.forcePool().add<SingleComponentForce>("f2", &motion2.makI(), &motion2.makJ(), 5);
-		auto &force3 = m.forcePool().add<SingleComponentForce>("f3", &motion3.makI(), &motion3.makJ(), 5);
+		auto &force1 = m.forcePool().add<SingleComponentForce>("f1", motion1.makI(), motion1.makJ(), 5);
+		auto &force2 = m.forcePool().add<SingleComponentForce>("f2", motion2.makI(), motion2.makJ(), 5);
+		auto &force3 = m.forcePool().add<SingleComponentForce>("f3", motion3.makI(), motion3.makJ(), 5);
 
 		auto &solver = m.solverPool().add<UniversalSolver>();
 		solver.setMaxError(1e-15);
@@ -2407,10 +2407,10 @@ void test_ur5_calibration()
 	auto &ee = rbt.addGeneralMotionByPe(p6, rbt.ground(), ee_pe, "321");
 
 
-	auto &fee = rbt.forcePool().add<aris::dynamic::GeneralForce>("fce", &ee.makI(), &ee.makJ());
+	auto &fee = rbt.forcePool().add<aris::dynamic::GeneralForce>("fce", ee.makI(), ee.makJ());
 	fee.setFce(std::array<double, 6>{0.1, 0.2, 0.3, 0.1, 0.2, 0.3, }.data());
 
-	auto &f3 = rbt.forcePool().add<aris::dynamic::GeneralForce>("fce", &j3.makI(), &j3.makJ());
+	auto &f3 = rbt.forcePool().add<aris::dynamic::GeneralForce>("fce", j3.makI(), j3.makJ());
 	f3.setFce(std::array<double, 6>{0.1, 0.2, 0.3, 0.1, 0.2, 0.3, }.data());
 
 	// add solvers //

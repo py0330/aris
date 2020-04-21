@@ -43,7 +43,7 @@ namespace aris::robot
 		if (robot_pm)
 		{
 			p1.setPm(s_pm_dot_pm(robot_pm, *p1.pm()));
-			j1.makJ().setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ().prtPm()));
+			j1.makJ()->setPrtPm(s_pm_dot_pm(robot_pm, *j1.makJ()->prtPm()));
 		}
 
 		// add solver

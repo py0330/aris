@@ -97,8 +97,8 @@ namespace aris::dynamic
 				imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
 					{
 						&jnt,
-						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &jnt.makI().fatherPart()) - active_parts.begin()) * 6),
-						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &jnt.makJ().fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &jnt.makI()->fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &jnt.makJ()->fatherPart()) - active_parts.begin()) * 6),
 						imp_->dyn_n_
 					});
 				imp_->dyn_n_ += jnt.dim();
@@ -111,8 +111,8 @@ namespace aris::dynamic
 				imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
 					{
 						&mot,
-						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &mot.makI().fatherPart()) - active_parts.begin()) * 6),
-						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &mot.makJ().fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &mot.makI()->fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &mot.makJ()->fatherPart()) - active_parts.begin()) * 6),
 						imp_->dyn_n_
 					});
 				imp_->dyn_n_ += mot.dim();
@@ -125,8 +125,8 @@ namespace aris::dynamic
 				imp_->cst_blk_vec_.push_back(Imp::ConstraintBlock
 					{
 						&gmt,
-						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &gmt.makI().fatherPart()) - active_parts.begin()) * 6),
-						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &gmt.makJ().fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &gmt.makI()->fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &gmt.makJ()->fatherPart()) - active_parts.begin()) * 6),
 						imp_->dyn_n_
 					});
 				imp_->dyn_n_ += 6;
@@ -141,8 +141,8 @@ namespace aris::dynamic
 				imp_->fce_blk_vec_.push_back(Imp::ForceBlock
 					{
 						&fce,
-						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &fce.makI().fatherPart()) - active_parts.begin()) * 6),
-						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &fce.makJ().fatherPart()) - active_parts.begin()) * 6)
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &fce.makI()->fatherPart()) - active_parts.begin()) * 6),
+						static_cast<Size>((std::find(active_parts.begin(), active_parts.end(), &fce.makJ()->fatherPart()) - active_parts.begin()) * 6)
 					});
 			}
 		}
@@ -309,8 +309,8 @@ namespace aris::dynamic
 			fce.f->cptGlbFs(glb_fsI, glb_fsJ);
 
 			double prt_fsI[6], prt_fsJ[6];
-			s_inv_tf(*fce.f->makI().fatherPart().pm(), glb_fsI, prt_fsI);
-			s_inv_tf(*fce.f->makJ().fatherPart().pm(), glb_fsJ, prt_fsJ);
+			s_inv_tf(*fce.f->makI()->fatherPart().pm(), glb_fsI, prt_fsI);
+			s_inv_tf(*fce.f->makJ()->fatherPart().pm(), glb_fsJ, prt_fsJ);
 
 			s_va(6, prt_fsI, f + fce.ri);
 			s_va(6, prt_fsJ, f + fce.rj);
@@ -1349,8 +1349,8 @@ namespace aris::dynamic
 			file << "constraint create joint " << type << "  &\r\n"
 				<< "    joint_name = ." << model()->name() << "." << joint.name() << "  &\r\n"
 				<< "    adams_id = " << adamsID(joint) << "  &\r\n"
-				<< "    i_marker_name = ." << model()->name() << "." << joint.makI().fatherPart().name() << "." << joint.makI().name() << "  &\r\n"
-				<< "    j_marker_name = ." << model()->name() << "." << joint.makJ().fatherPart().name() << "." << joint.makJ().name() << "  \r\n"
+				<< "    i_marker_name = ." << model()->name() << "." << joint.makI()->fatherPart().name() << "." << joint.makI()->name() << "  &\r\n"
+				<< "    j_marker_name = ." << model()->name() << "." << joint.makJ()->fatherPart().name() << "." << joint.makJ()->name() << "  \r\n"
 				<< "!\r\n";
 		}
 		for (auto &motion : model()->motionPool())
@@ -1385,8 +1385,8 @@ namespace aris::dynamic
 			file << "constraint create motion_generator &\r\n"
 				<< "    motion_name = ." << model()->name() << "." << motion.name() << "  &\r\n"
 				<< "    adams_id = " << adamsID(motion) << "  &\r\n"
-				<< "    i_marker_name = ." << model()->name() << "." << motion.makI().fatherPart().name() << "." << motion.makI().name() << "  &\r\n"
-				<< "    j_marker_name = ." << model()->name() << "." << motion.makJ().fatherPart().name() << "." << motion.makJ().name() << "  &\r\n"
+				<< "    i_marker_name = ." << model()->name() << "." << motion.makI()->fatherPart().name() << "." << motion.makI()->name() << "  &\r\n"
+				<< "    j_marker_name = ." << model()->name() << "." << motion.makJ()->fatherPart().name() << "." << motion.makJ()->name() << "  &\r\n"
 				<< "    axis = " << axis_name << "  &\r\n"
 				<< "    function = \"" << (pos == -1 ? akima_func : polynomial_func) << "\"  \r\n"
 				<< "!\r\n";
@@ -1402,12 +1402,12 @@ namespace aris::dynamic
 
 			file << "variable modify  &\r\n"
 				<< "	variable_name = ." << model()->name() << "." << gm.name() << ".i_marker  &\r\n"
-				<< "	object_value = ." << model()->name() << "." << gm.makI().fatherPart().name() << "." << gm.makI().name() << " \r\n"
+				<< "	object_value = ." << model()->name() << "." << gm.makI()->fatherPart().name() << "." << gm.makI()->name() << " \r\n"
 				<< "!\r\n";
 
 			file << "variable modify  &\r\n"
 				<< "	variable_name = ." << model()->name() << "." << gm.name() << ".j_marker  &\r\n"
-				<< "	object_value = ." << model()->name() << "." << gm.makJ().fatherPart().name() << "." << gm.makJ().name() << " \r\n"
+				<< "	object_value = ." << model()->name() << "." << gm.makJ()->fatherPart().name() << "." << gm.makJ()->name() << " \r\n"
 				<< "!\r\n";
 
 			std::string axis_names[6]{ "t1", "t2", "t3", "r1", "r2", "r3" };
@@ -1472,19 +1472,19 @@ namespace aris::dynamic
 		{
 			double fsI[6], fsJ[6], fsI_loc[6];
 			force.cptGlbFs(fsI, fsJ);
-			s_inv_fs2fs(*force.makI().pm(), fsI, fsI_loc);
+			s_inv_fs2fs(*force.makI()->pm(), fsI, fsI_loc);
 
 			file << "floating_marker create  &\r\n"
-				<< "    floating_marker_name = ." << model()->name() << "." << force.makJ().fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
+				<< "    floating_marker_name = ." << model()->name() << "." << force.makJ()->fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
 				<< "    adams_id = " << adamsID(force) + model()->partPool().size() + std::accumulate(model()->partPool().begin(), model()->partPool().end(), Size(0), [](Size a, Part &b) {return a + b.markerPool().size(); }) << "\r\n"
 				<< "!\r\n";
 
 			file << "force create direct general_force  &\r\n"
 				<< "    general_force_name = ." << model()->name() << "." << force.name() << "  &\r\n"
 				<< "    adams_id = " << adamsID(force) << "  &\r\n"
-				<< "    i_marker_name = ." << model()->name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
-				<< "    j_floating_marker_name = ." << model()->name() << "." << force.makJ().fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
-				<< "    ref_marker_name = ." << model()->name() << "." << force.makI().fatherPart().name() << "." << force.makI().name() << "  &\r\n"
+				<< "    i_marker_name = ." << model()->name() << "." << force.makI()->fatherPart().name() << "." << force.makI()->name() << "  &\r\n"
+				<< "    j_floating_marker_name = ." << model()->name() << "." << force.makJ()->fatherPart().name() << "." << force.name() << "_FMAK  &\r\n"
+				<< "    ref_marker_name = ." << model()->name() << "." << force.makI()->fatherPart().name() << "." << force.makI()->name() << "  &\r\n"
 				<< "    x_force_function = \"" << fsI_loc[0] << "\"  &\r\n"
 				<< "    y_force_function = \"" << fsI_loc[1] << "\"  &\r\n"
 				<< "    z_force_function = \"" << fsI_loc[2] << "\"  &\r\n"

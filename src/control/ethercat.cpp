@@ -19,6 +19,21 @@
 
 namespace aris::control
 {
+	auto Uint16ToHexStr(void* data)->std::string
+	{
+		auto num = *reinterpret_cast<std::uint16_t*>(data);
+		std::stringstream s;
+		s << "0x" << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << static_cast<std::uint32_t>(num);
+		return s.str();
+	}
+	auto Uint8ToHexStr(void* data)->std::string
+	{
+		auto num = *reinterpret_cast<std::uint8_t*>(data);
+		std::stringstream s;
+		s << "0x" << std::setfill('0') << std::setw(sizeof(std::uint8_t) * 2) << std::hex << static_cast<std::uint32_t>(num);
+		return s.str();
+	}
+
 	struct PdoEntry::Imp
 	{ 
 		std::any ec_handle_; 
@@ -49,8 +64,11 @@ namespace aris::control
 		Object::loadXml(xml_ele);
 	}
 	auto PdoEntry::ecHandle()->std::any& { return imp_->ec_handle_; }
+	auto PdoEntry::setIndex(std::uint16_t index)->void { imp_->index_ = index; }
 	auto PdoEntry::index()const->std::uint16_t { return imp_->index_; }
+	auto PdoEntry::setSubindex(std::uint8_t subindex)->void { imp_->subindex_ = subindex; }
 	auto PdoEntry::subindex()const->std::uint8_t { return imp_->subindex_; }
+	auto PdoEntry::setBitSize(Size size)->void { imp_->bit_size_ = size; }
 	auto PdoEntry::bitSize()const->aris::Size { return imp_->bit_size_; }
 	PdoEntry::~PdoEntry() = default;
 	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size) :Object(name) 
@@ -82,6 +100,7 @@ namespace aris::control
 	}
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
 	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
+	auto Pdo::setIndex(std::uint16_t index)->void { imp_->index_ = index; }
 	Pdo::~Pdo() = default;
 	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp){ imp_->index_ = index; }
 	ARIS_DEFINE_BIG_FOUR_CPP(Pdo)
@@ -99,6 +118,7 @@ namespace aris::control
 	}
 	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
 	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
+	auto SyncManager::setTx(bool is_tx)->void { imp_->is_tx_ = is_tx; }
 	SyncManager::~SyncManager()=default;
 	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) {	imp_->is_tx_ = is_tx;}
 	ARIS_DEFINE_BIG_FOUR_CPP(SyncManager)
@@ -895,4 +915,52 @@ namespace aris::control
 	}
 	EthercatController::~EthercatController() = default;
 	EthercatController::EthercatController(const std::string &name) :imp_(new Imp), EthercatMaster(name), Controller(name), Master(name){}
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<PdoEntry>("PdoEntry")
+			.inherit<aris::core::Object>()
+			.property("index", &PdoEntry::setIndex, &PdoEntry::index)
+			.propertyToStrMethod("index", Uint16ToHexStr)
+			.property("subindex", &PdoEntry::setSubindex, &PdoEntry::subindex)
+			.propertyToStrMethod("subindex", Uint8ToHexStr)
+			.property("size", &PdoEntry::setBitSize, &PdoEntry::bitSize)
+			;
+
+		aris::core::class_<Pdo>("Pdo")
+			.inherit<aris::core::Object>()
+			.property("index", &Pdo::setIndex, &Pdo::index)
+			.propertyToStrMethod("index", Uint16ToHexStr)
+			;
+
+		aris::core::class_<aris::core::ObjectPool<Pdo>>("PdoPoolObject")
+			.inherit<aris::core::Object>()
+			.asRefArray();
+
+		aris::core::class_<SyncManager>("SyncManager")
+			.inherit<aris::core::ObjectPool<Pdo>>()
+			.property("is_tx", &SyncManager::setTx, &SyncManager::tx)
+			;
+
+		//imp_->vendor_id_ = attributeUint32(xml_ele, "vendor_id");
+		//imp_->product_code_ = attributeUint32(xml_ele, "product_code");
+		//imp_->revision_num_ = attributeUint32(xml_ele, "revision_num");
+		//imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
+		//imp_->sync0_shift_ns_ = attributeInt32(xml_ele, "sync0_shift_ns", 650'000);
+
+		aris::core::class_<EthercatSlave>("EthercatSlave")
+			.inherit<Slave>()
+			.property("vendor_id", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
+			.property("product_code", &EthercatSlave::setVendorID, &EthercatSlave::productCode)
+			.property("revision_num", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
+			.property("dc_assign_activate", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
+			.property("sync0_shift_ns", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
+			;
+
+		//aris::core::class_<Controller>("Controller")
+		//	.inherit<Master>()
+		//	;
+			//.property("port", &Socket::setPort, &Socket::port);
+	}
+
 }

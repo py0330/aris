@@ -157,8 +157,8 @@ namespace aris::dynamic
 
 		for (aris::Size k = 0; k < model->generalMotionPool().size(); ++k)
 		{
-			auto i = model->generalMotionPool().at(k).makI().fatherPart().id();
-			auto j = model->generalMotionPool().at(k).makJ().fatherPart().id();
+			auto i = model->generalMotionPool().at(k).makI()->fatherPart().id();
+			auto j = model->generalMotionPool().at(k).makJ()->fatherPart().id();
 
 			s_mc(6, model->motionPool().size(), solver->Jg() + at(i, 0, solver->nJg()), solver->nJg(), Jf, model->motionPool().size());
 			s_mi(6, model->motionPool().size(), solver->Jg() + at(i, 0, solver->nJg()), solver->nJg(), Jf, model->motionPool().size());

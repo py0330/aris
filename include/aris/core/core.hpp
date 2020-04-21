@@ -9,6 +9,8 @@
 #include <aris/core/socket.hpp>
 #include <aris/core/pipe.hpp>
 #include <aris/core/command.hpp>
+#include <aris/core/reflection.hpp>
+#include <aris/core/serialization.hpp>
 
 #endif // ARIS_H_
 

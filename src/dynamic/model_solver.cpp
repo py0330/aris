@@ -162,8 +162,8 @@ namespace aris::dynamic
 			ARIS_LOOP_BLOCK(r->rel_.)
 			{
 				double pmI[16], pmJ[16];
-				s_pm_dot_pm(b->is_I_ ? r->i_diag_->pm_ : r->j_diag_->pm_, *b->cst_->makI().prtPm(), pmI);
-				s_pm_dot_pm(b->is_I_ ? r->j_diag_->pm_ : r->i_diag_->pm_, *b->cst_->makJ().prtPm(), pmJ);
+				s_pm_dot_pm(b->is_I_ ? r->i_diag_->pm_ : r->j_diag_->pm_, *b->cst_->makI()->prtPm(), pmI);
+				s_pm_dot_pm(b->is_I_ ? r->j_diag_->pm_ : r->i_diag_->pm_, *b->cst_->makJ()->prtPm(), pmJ);
 
 				if (cpt_cp)b->cst_->cptCpFromPm(r->bc_ + pos, pmI, pmJ);// cp //
 
@@ -816,8 +816,8 @@ namespace aris::dynamic
 			// 更新 pm //
 			double pmI[16], pmJ[16];
 			auto b = &d->rel_.blk_data_[0];
-			s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI().prtPm(), pmI);
-			s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ().prtPm(), pmJ);
+			s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI()->prtPm(), pmI);
+			s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ()->prtPm(), pmJ);
 			
 			// 计算 dm //
 			d->rel_.blk_data_[0].cst_->cptGlbDmFromPm(d->dm_, pmI, pmJ);
@@ -831,8 +831,8 @@ namespace aris::dynamic
 			// 更新 pm //
 			double pmI[16], pmJ[16];
 			auto b = &d->rel_.blk_data_[0];
-			s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI().prtPm(), pmI);
-			s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ().prtPm(), pmJ);
+			s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI()->prtPm(), pmI);
+			s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ()->prtPm(), pmJ);
 			
 			// 计算 dm //
 			d->rel_.blk_data_[0].cst_->cptGlbDmFromPm(d->dm_, pmI, pmJ);
@@ -864,8 +864,8 @@ namespace aris::dynamic
 			// 更新 pm //
 			double pmI[16], pmJ[16];
 			auto b = &d->rel_.blk_data_[0];
-			s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI().prtPm(), pmI);
-			s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ().prtPm(), pmJ);
+			s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI()->prtPm(), pmI);
+			s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ()->prtPm(), pmJ);
 
 			// 计算 dm //
 			d->rel_.blk_data_[0].cst_->cptGlbDmFromPm(d->dm_, pmI, pmJ);
@@ -897,8 +897,8 @@ namespace aris::dynamic
 			{
 				// 更新 pm //
 				double pmI[16], pmJ[16];
-				s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI().prtPm(), pmI);
-				s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ().prtPm(), pmJ);
+				s_pm_dot_pm(b->is_I_ ? d->pm_ : d->rd_->pm_, *b->cst_->makI()->prtPm(), pmI);
+				s_pm_dot_pm(b->is_I_ ? d->rd_->pm_ : d->pm_, *b->cst_->makJ()->prtPm(), pmJ);
 
 				// 计算 cp //
 				if (cpt_cp)b->cst_->cptCpFromPm(d->bc_ + pos, pmI, pmJ);
@@ -945,20 +945,22 @@ namespace aris::dynamic
 			std::vector<LocalRelation> relation_pool;
 			for (auto c : cp)
 			{
+				if (c->makI() == nullptr || c->makJ() == nullptr) continue;
+				
 				auto ret = std::find_if(relation_pool.begin(), relation_pool.end(), [&c](auto &relation)
 				{
-					auto ri{ relation.prtI_ }, rj{ relation.prtJ_ }, ci{ &c->makI().fatherPart() }, cj{ &c->makJ().fatherPart() };
+					auto ri{ relation.prtI_ }, rj{ relation.prtJ_ }, ci{ &c->makI()->fatherPart() }, cj{ &c->makJ()->fatherPart() };
 					return ((ri == ci) && (rj == cj)) || ((ri == cj) && (rj == ci));
 				});
 
 				if (ret == relation_pool.end())
 				{
-					relation_pool.push_back(LocalRelation{ &c->makI().fatherPart(), &c->makJ().fatherPart(), c->dim(), c->dim() });
+					relation_pool.push_back(LocalRelation{ &c->makI()->fatherPart(), &c->makJ()->fatherPart(), c->dim(), c->dim() });
 					relation_pool.back().cst_pool_.push_back({ c, true });
 				}
 				else
 				{
-					ret->cst_pool_.push_back({ c, &c->makI().fatherPart() == ret->prtI_ });
+					ret->cst_pool_.push_back({ c, &c->makI()->fatherPart() == ret->prtI_ });
 					std::sort(ret->cst_pool_.begin(), ret->cst_pool_.end(), [](auto& a, auto& b){return a.cst_->dim() > b.cst_->dim();});//这里把大的约束往前放
 					ret->size_ += c->dim();
 					ret->dim_ = ret->cst_pool_[0].cst_->dim();// relation 的 dim 以大的为准，最大的在第一个
@@ -1107,7 +1109,7 @@ namespace aris::dynamic
 						&& dynamic_cast<const RevoluteJoint*>(rel.cst_pool_.at(0).cst_)
 						&& dynamic_cast<const Motion*>(rel.cst_pool_.at(1).cst_)
 						&& dynamic_cast<const Motion*>(rel.cst_pool_.at(1).cst_)->axis() == 5
-						&& &rel.cst_pool_.at(0).cst_->makI() == &rel.cst_pool_.at(1).cst_->makI())
+						&& rel.cst_pool_.at(0).cst_->makI() == rel.cst_pool_.at(1).cst_->makI())
 					{
 						diag.upd_d_and_cp_ = Imp::revolute_upd_d_and_cp;
 						rel.dim_ = 6;
@@ -1117,7 +1119,7 @@ namespace aris::dynamic
 						&& dynamic_cast<const PrismaticJoint*>(rel.cst_pool_.at(0).cst_)
 						&& dynamic_cast<const Motion*>(rel.cst_pool_.at(1).cst_)
 						&& dynamic_cast<const Motion*>(rel.cst_pool_.at(1).cst_)->axis() == 2
-						&& &rel.cst_pool_.at(0).cst_->makI() == &rel.cst_pool_.at(1).cst_->makI())
+						&& rel.cst_pool_.at(0).cst_->makI() == rel.cst_pool_.at(1).cst_->makI())
 					{
 						diag.upd_d_and_cp_ = Imp::prismatic_upd_d_and_cp;
 						rel.dim_ = 6;
@@ -1419,8 +1421,8 @@ namespace aris::dynamic
 				double fsI[6], fsJ[6];
 				fce.cptGlbFs(fsI, fsJ);
 
-				s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI().fatherPart().id()]->bp_);
-				s_vs(6, fsJ, imp_->pd_->get_diag_from_part_id_[fce.makJ().fatherPart().id()]->bp_);
+				s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI()->fatherPart().id()]->bp_);
+				s_vs(6, fsJ, imp_->pd_->get_diag_from_part_id_[fce.makJ()->fatherPart().id()]->bp_);
 			}
 		}
 
@@ -1569,8 +1571,8 @@ namespace aris::dynamic
 					{
 						double fsI[6], fsJ[6];
 						fce.cptGlbFs(fsI, fsJ);
-						s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI().fatherPart().id()]->bp_);
-						s_vs(6, fsJ, imp_->pd_->get_diag_from_part_id_[fce.makJ().fatherPart().id()]->bp_);
+						s_vs(6, fsI, imp_->pd_->get_diag_from_part_id_[fce.makI()->fatherPart().id()]->bp_);
+						s_vs(6, fsJ, imp_->pd_->get_diag_from_part_id_[fce.makJ()->fatherPart().id()]->bp_);
 					}
 				}
 				
@@ -1764,15 +1766,15 @@ namespace aris::dynamic
 			for (auto &mot : model()->motionPool())
 			{
 				double tem[6];
-				s_vc(6, Jg() + at(gm.makI().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
-				s_vs(6, Jg() + at(gm.makJ().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+				s_vc(6, Jg() + at(gm.makI()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+				s_vs(6, Jg() + at(gm.makJ()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
 
-				s_inv_tv(*gm.makJ().pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+				s_inv_tv(*gm.makJ()->pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
 
 				// 以下求cf //
-				s_vc(6, cg() + gm.makI().fatherPart().id() * 6, tem);
-				s_vs(6, cg() + gm.makJ().fatherPart().id() * 6, tem);
-				s_inv_as2as(*gm.makJ().pm(), gm.makJ().vs(), cg() + gm.makJ().fatherPart().id() * 6, gm.makI().vs(), cg() + gm.makI().fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
+				s_vc(6, cg() + gm.makI()->fatherPart().id() * 6, tem);
+				s_vs(6, cg() + gm.makJ()->fatherPart().id() * 6, tem);
+				s_inv_as2as(*gm.makJ()->pm(), gm.makJ()->vs(), cg() + gm.makJ()->fatherPart().id() * 6, gm.makI()->vs(), cg() + gm.makI()->fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
 			}
 		}
 	}
@@ -1785,19 +1787,19 @@ namespace aris::dynamic
 			for (auto &mot : model()->motionPool())
 			{
 				double tem[6];
-				s_vc(6, Jg() + at(gm.makI().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
-				s_vs(6, Jg() + at(gm.makJ().fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+				s_vc(6, Jg() + at(gm.makI()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
+				s_vs(6, Jg() + at(gm.makJ()->fatherPart().id() * 6, mot.id(), nJg()), nJg(), tem, 1);
 
-				s_inv_tv(*gm.makJ().pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
+				s_inv_tv(*gm.makJ()->pm(), tem, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
 
 				//// 以下求cf //
-				//s_vc(6, cg() + gm.makI().fatherPart().id() * 6, tem);
-				//s_vs(6, cg() + gm.makJ().fatherPart().id() * 6, tem);
-				//s_inv_as2as(*gm.makJ().pm(), gm.makJ().vs(), cg() + gm.makJ().fatherPart().id() * 6, gm.makI().vs(), cg() + gm.makI().fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
+				//s_vc(6, cg() + gm.makI()->fatherPart().id() * 6, tem);
+				//s_vs(6, cg() + gm.makJ()->fatherPart().id() * 6, tem);
+				//s_inv_as2as(*gm.makJ()->pm(), gm.makJ()->vs(), cg() + gm.makJ()->fatherPart().id() * 6, gm.makI()->vs(), cg() + gm.makI()->fatherPart().id() * 6, imp_->cf_vec_.data() + gm.id() * 6);
 
 				// 以上和之前做法都一样，以下转换坐标系 //
 				double pp[3];
-				gm.makI().getPp(gm.makJ(), pp);
+				gm.makI()->getPp(*gm.makJ(), pp);
 				s_c3a(imp_->J_vec_.data() + at(gm.id() * 6 + 3, mot.id(), nJf()), nJf(), pp, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
 
 
@@ -1853,23 +1855,23 @@ namespace aris::dynamic
 				for (Size i = 0; i < 6; ++i)
 				{
 					double tem[6], tem2[6];
-					s_vc(6, Jg() + at(mot.makI().fatherPart().id() * 6, mJi() + gm.id() * 6 + i, nJg()), nJg(), tem, 1);
-					s_vs(6, Jg() + at(mot.makJ().fatherPart().id() * 6, mJi() + gm.id() * 6 + i, nJg()), nJg(), tem, 1);
+					s_vc(6, Jg() + at(mot.makI()->fatherPart().id() * 6, mJi() + gm.id() * 6 + i, nJg()), nJg(), tem, 1);
+					s_vs(6, Jg() + at(mot.makJ()->fatherPart().id() * 6, mJi() + gm.id() * 6 + i, nJg()), nJg(), tem, 1);
 
-					s_inv_tv(*mot.makI().pm(), tem, tem2);
+					s_inv_tv(*mot.makI()->pm(), tem, tem2);
 					imp_->J_vec_[at(mot.id(), gm.id() * 6 + i, nJi())] = tem2[mot.axis()];
 
 					// 以下求ci //
 					// 这一段相当于updMv //
-					mot.makI().getVs(mot.makJ(), tem);
+					mot.makI()->getVs(*mot.makJ(), tem);
 					double dq = tem[mot.axis()];
-					s_cv(mot.makJ().vs(), mot.makI().vs(), tem2);
+					s_cv(mot.makJ()->vs(), mot.makI()->vs(), tem2);
 
 					// ai - aj - vi x (vi - vj) * dq = ai - aj - v1 x v2 * dq
-					s_vc(6, cg() + mot.makI().fatherPart().id() * 6, tem);
-					s_vs(6, cg() + mot.makJ().fatherPart().id() * 6, tem);
+					s_vc(6, cg() + mot.makI()->fatherPart().id() * 6, tem);
+					s_vs(6, cg() + mot.makJ()->fatherPart().id() * 6, tem);
 					s_va(6, -dq, tem2, tem);
-					s_inv_tv(*mot.makI().pm(), tem, tem2);
+					s_inv_tv(*mot.makI()->pm(), tem, tem2);
 					imp_->ci_vec_[mot.id()] = tem2[mot.axis()];
 				}
 			}

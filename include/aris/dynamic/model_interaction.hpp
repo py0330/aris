@@ -16,10 +16,10 @@ namespace aris::dynamic
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto makI() noexcept->Marker& { return *makI_; }
-		auto makI() const noexcept->const Marker& { return *makI_; }
-		auto makJ() noexcept->Marker& { return *makJ_; }
-		auto makJ() const noexcept->const Marker& { return *makJ_; }
+		auto makI() noexcept->Marker* { return makI_; }
+		auto makI() const noexcept->const Marker* { return makI_; }
+		auto makJ() noexcept->Marker* { return makJ_; }
+		auto makJ() const noexcept->const Marker* { return makJ_; }
 
 		virtual ~Interaction() = default;
 		explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true) :DynEle(name, is_active), makI_(makI), makJ_(makJ) {}
@@ -39,7 +39,7 @@ namespace aris::dynamic
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void;
-		auto virtual cptCp(double *cp)const noexcept->void { cptCpFromPm(cp, *makI().pm(), *makJ().pm()); }
+		auto virtual cptCp(double *cp)const noexcept->void { cptCpFromPm(cp, *makI()->pm(), *makJ()->pm()); }
 		auto virtual cptCv(double *cv)const noexcept->void;
 		auto virtual cptCa(double *ca)const noexcept->void;
 		auto virtual cptGlbDmFromPm(double *dm, const double *makI_pm, const double *makJ_pm)const noexcept->void
@@ -70,17 +70,17 @@ namespace aris::dynamic
 		auto cptCm(const Coordinate &relative_to_I, double *cmI, CMI_TYPE cmi_type, const Coordinate &relative_to_J, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
 		{
 			double pm[16];
-			makI().getPm(relative_to_I, pm);
+			makI()->getPm(relative_to_I, pm);
 			s_tf_n(dim(), pm, locCmI(), dim(), cmI, cmi_type);
 
-			makI().getPm(relative_to_J, pm);
+			makI()->getPm(relative_to_J, pm);
 			s_tf_n(dim(), -1.0, pm, locCmI(), dim(), cmJ, cmj_type);
 		}
 		template<typename CMI_TYPE, typename CMJ_TYPE>
 		auto cptCm(const Coordinate &relative_to, double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
 		{
 			double pm[16];
-			makI().getPm(relative_to, pm);
+			makI()->getPm(relative_to, pm);
 			s_tf_n(dim(), pm, locCmI(), dim(), cmI, cmi_type);
 
 			s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
@@ -88,13 +88,13 @@ namespace aris::dynamic
 		template<typename CMI_TYPE, typename CMJ_TYPE>
 		auto cptPrtCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
 		{
-			cptCm(makI().fatherPart(), cmI, cmi_type, makJ().fatherPart(), cmJ, cmj_type);
+			cptCm(makI()->fatherPart(), cmI, cmi_type, makJ()->fatherPart(), cmJ, cmj_type);
 		}
 		auto cptPrtCm(double *cmI, double *cmJ)->void { cptPrtCm(cmI, dim(), cmJ, dim()); }
 		template<typename CMI_TYPE, typename CMJ_TYPE>
 		auto cptGlbCm(double *cmI, CMI_TYPE cmi_type, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
 		{
-			s_tf_n(dim(), *makI().pm(), locCmI(), dim(), cmI, cmi_type);
+			s_tf_n(dim(), *makI()->pm(), locCmI(), dim(), cmI, cmi_type);
 			s_mi(6, dim(), cmI, cmi_type, cmJ, cmj_type);
 		}
 		auto cptGlbCm(double *cmI, double *cmJ)const noexcept->void{ cptGlbCm(cmI, dim(), cmJ, dim()); }

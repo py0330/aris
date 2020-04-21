@@ -71,10 +71,8 @@ namespace aris::core
 
 	private:
 		std::string type_name_;
-		//std::map<std::string, Property, std::less<>> properties_;// 不包含父类properties
 		std::vector<Property> this_properties_;// 不包含父类properties
 		std::vector<Property*> properties_ptr_;// 包含父类的properties，为了保持插入顺序，所以不得不用vector替代map
-
 
 		bool is_basic_{ false };
 		bool is_array_{ false };
@@ -97,13 +95,12 @@ namespace aris::core
 		std::function<void(void*, const Instance&)> push_back_func_;
 
 		template<typename T> friend class class_;
-		friend class Variant;
 		friend class Instance;
 	};
 	class Instance
 	{
 	public:
-		auto isEmpty()->bool { return value_.has_value(); }
+		auto isEmpty()->bool { return !value_.has_value(); }
 		auto isReference()->bool;
 		auto isBasic()->bool;
 		auto isArray()->bool;
@@ -120,7 +117,9 @@ namespace aris::core
 			}
 			else
 			{
-				return std::any_cast<T&>(value_);
+				auto ptr = std::any_cast<InstancePtr>(&value_);
+				if (typeid(T).hash_code() != ptr->type_->hash_code()) THROW_FILE_LINE("invalid transfer");
+				return *reinterpret_cast<T*>(ptr->data_.get());
 			}
 		}
 		
@@ -137,26 +136,24 @@ namespace aris::core
 		auto at(std::size_t id)->Instance;
 		auto push_back(Instance element)->void;
 
-		// 左值引用 //
+		// 绑定到左值引用 //
 		template<typename T>
-		Instance(T && t, std::enable_if_t<!std::is_same_v<std::decay_t<T>, Instance>> *s = nullptr)
+		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&>> *s = nullptr)
 		{
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
-
-			using RealType = std::decay_t<T>;
-			auto &real_value = const_cast<RealType&>(t);
-			
-			// 左值 //
-			if (std::is_lvalue_reference_v<decltype(t)>)
-			{
-				value_ = InstanceRef{ &real_value , &typeid(real_value) };
-			}
-			// 右值 //
-			else
-			{
-				value_ = t;
-			}
+			auto &r = const_cast<std::decay_t<T> &>(t);
+			value_ = InstanceRef{ &r , &typeid(r) };
 		}
+		
+		// 根据右值来构造 //
+		template<typename T>
+		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_rvalue_reference_v<T &&>> *s = nullptr)
+		{
+			static_assert(std::is_copy_constructible_v<T> || std::is_move_constructible_v<T>, "Failed to construct : NO ctors");
+			auto &r = const_cast<std::decay_t<T> &>(t);
+			value_ = InstancePtr{ std::make_shared<std::decay_t<T>>(std::move(r)), &typeid(r) };
+		}
+
 		Instance(const Instance&) = default;
 		Instance(Instance&&) = default;
 
@@ -173,6 +170,11 @@ namespace aris::core
 			void* data_;
 			const std::type_info *type_;
 		};
+		struct InstancePtr
+		{
+			std::shared_ptr<void> data_;
+			const std::type_info *type_;
+		};
 	};
 
 	auto reflect_types()->std::map<std::size_t, Type>&;
@@ -187,12 +189,14 @@ namespace aris::core
 	class class_
 	{
 	public:
-		class_(std::string_view name)
+		// 对于纯虚基类 //
+		template <typename T = Class_Type>
+		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T>> *test = nullptr)
 		{
 			auto hash_code = typeid(Class_Type).hash_code();
 			auto[ins, ok] = reflect_types().emplace(std::make_pair(hash_code, Type(name, [](std::any* input)->void* 
 			{
-				return reinterpret_cast<void*>(std::any_cast<Class_Type>(input));
+				return std::any_cast<Instance::InstancePtr>(input)->data_.get();
 			})));
 			if (!ok) THROW_FILE_LINE("class already exist");
 			auto[ins2, ok2] = reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
@@ -201,11 +205,27 @@ namespace aris::core
 			ins->second.is_basic_ = false;
 			ins->second.default_ctor_ = []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
 			{
-				auto f = [](void const * data){	delete static_cast<Class_Type const*>(data); };
+				auto f = [](void const * data)->void{	delete static_cast<Class_Type const*>(data); };
 				auto ptr = std::unique_ptr<void, void(*)(void const*)>(new Class_Type, f);
 				Instance ins(*reinterpret_cast<Class_Type*>(ptr.get()));
 				return std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>(std::move(ptr), ins);
 			};
+		}
+
+		// 对于普通类型 //
+		template <typename T = Class_Type>
+		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T>> *test = nullptr)
+		{
+			auto hash_code = typeid(Class_Type).hash_code();
+			auto[ins, ok] = reflect_types().emplace(std::make_pair(hash_code, Type(name, [](std::any* input)->void*
+			{
+				return std::any_cast<Instance::InstancePtr>(input)->data_.get();
+			})));
+			if (!ok) THROW_FILE_LINE("class already exist");
+			auto[ins2, ok2] = reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
+			if (!ok2) THROW_FILE_LINE("class name already exist");
+
+			ins->second.is_basic_ = false;
 		}
 
 		template<typename FatherType>
@@ -370,10 +390,12 @@ namespace aris::core
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
 			auto found = std::find_if(type.this_properties_.begin(), type.this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			auto &prop = *found;
+
 			prop.to_str_func_ = func;
 
 			return *this;
 		}
+
 		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func)
 		{
 			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
