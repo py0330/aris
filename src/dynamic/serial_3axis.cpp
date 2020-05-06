@@ -40,8 +40,8 @@ namespace aris::dynamic
 		const double j3_pos[3]{ param.a1 + param.a2, 0.0, 0.0 };
 
 		const double j1_axis[6]{ 1.0, 0.0, 0.0 };
-		const double j2_axis[6]{ 0.0, 0.0, 1.0 };
-		const double j3_axis[6]{ 0.0, 1.0, 0.0 };
+		const double j2_axis[6]{ 0.0, -1.0, 0.0 };
+		const double j3_axis[6]{ 0.0, 0.0, 1.0 };
 
 		auto &j1 = model->addRevoluteJoint(p1, model->ground(), j1_pos, j1_axis);
 		auto &j2 = model->addRevoluteJoint(p2, p1, j2_pos, j2_axis);
