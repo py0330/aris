@@ -20,15 +20,23 @@ namespace aris::dynamic
 		auto makI() const noexcept->const Marker* { return makI_; }
 		auto makJ() noexcept->Marker* { return makJ_; }
 		auto makJ() const noexcept->const Marker* { return makJ_; }
+		auto prtNameM()const->std::string;
+		auto setPrtNameM(std::string_view name)->void;
+		auto prtNameN()const->std::string;
+		auto setPrtNameN(std::string_view name)->void;
+		auto makNameI()const->std::string;
+		auto setMakNameI(std::string_view name)->void;
+		auto makNameJ()const->std::string;
+		auto setMakNameJ(std::string_view name)->void;
 
 		virtual ~Interaction() = default;
-		explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true) :DynEle(name, is_active), makI_(makI), makJ_(makJ) {}
+		explicit Interaction(const std::string &name = "interaction", Marker *makI = nullptr, Marker *makJ = nullptr, bool is_active = true);
 		ARIS_REGISTER_TYPE(Interaction);
 		ARIS_DEFINE_BIG_FOUR(Interaction);
 
 	private:
-		Marker *makI_, *makJ_;
-		std::string prtI_name, prtJ_name, makI_name, makJ_name;
+		Marker *makI_{ nullptr }, *makJ_{nullptr};
+		std::string prt_name_M_, prt_name_N_, mak_name_I_, mak_name_J_;
 		friend class Model;
 	};
 	class Constraint :public Interaction
@@ -64,8 +72,6 @@ namespace aris::dynamic
 			s_tf_n(dim(), makI_pm, locCmI(), cmI);
 			s_mi(6, dim(), cmI, cmJ);
 		}
-		//template<typename CMI_TYPE, typename CMJ_TYPE>
-		//auto virtual cptGlbCmFromPm(double *cmI, double *cmJ, const double *makI_pm, const double *makJ_pm)const noexcept->void
 		template<typename CMI_TYPE, typename CMJ_TYPE>
 		auto cptCm(const Coordinate &relative_to_I, double *cmI, CMI_TYPE cmi_type, const Coordinate &relative_to_J, double *cmJ, CMJ_TYPE cmj_type)const noexcept->void
 		{
@@ -133,6 +139,7 @@ namespace aris::dynamic
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
 
+		auto setAxis(Size axis)->void;
 		auto axis()const noexcept->Size;
 		auto mp() const noexcept->double;
 		auto updMp() noexcept->void;
@@ -351,7 +358,8 @@ namespace aris::dynamic
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void override;
-		auto setComponentID(Size id) noexcept->void { component_axis_ = id; }
+		auto setComponentAxis(Size id) noexcept->void { component_axis_ = id; }
+		auto componentAxis()const noexcept->Size { return component_axis_; }
 		auto setFce(double value) noexcept->void { std::fill_n(fce_value_, 6, 0); fce_value_[component_axis_] = value; }
 		auto setFce(double value, Size componentID) noexcept->void { this->component_axis_ = componentID; setFce(value); }
 		auto fce()const noexcept->double { return fce_value_[component_axis_]; }

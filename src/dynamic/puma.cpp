@@ -11,6 +11,8 @@
 #include <type_traits>
 #include <array>
 
+#include "aris/core/reflection.hpp"
+
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
 #include "aris/dynamic/puma.hpp"
@@ -86,8 +88,8 @@ namespace aris::dynamic
 		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_6_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
 		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
 
-		auto &makI = p6.markerPool().add<Marker>("tool0", ee_i_pm);
-		auto &makJ = model->ground().markerPool().add<Marker>("wobj0", ee_j_pm);
+		auto &makI = p6.addMarker("tool0", ee_i_pm);
+		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
@@ -107,7 +109,7 @@ namespace aris::dynamic
 		// add tools and wobj //
 		for (int i = 1; i < 17; ++i) 
 		{
-			p6.markerPool().add<aris::dynamic::Marker>("tool" + std::to_string(i), ee_i_pm);
+			p6.addMarker("tool" + std::to_string(i), ee_i_pm);
 		}
 		for (int i = 1; i < 33; ++i) model->ground().markerPool().add<aris::dynamic::Marker>("wobj" + std::to_string(i), ee_j_pm);
 
@@ -623,6 +625,15 @@ namespace aris::dynamic
 		}
 	}
 	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
+	auto PumaInverseKinematicSolver::whichRoot()const->int { return imp_->which_root_; }
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<PumaInverseKinematicSolver>("PumaInverseKinematicSolver")
+			.inherit<InverseKinematicSolver>()
+			.property("which_root", &PumaInverseKinematicSolver::setWhichRoot, &PumaInverseKinematicSolver::whichRoot)
+			;
+	}
 }

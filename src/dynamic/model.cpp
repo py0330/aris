@@ -67,34 +67,18 @@ namespace aris::dynamic
 	{ 
 		auto init_interaction = [](Interaction &interaction, Model*m)->void
 		{
-			if (interaction.prtI_name.empty() && interaction.prtJ_name.empty() && interaction.makI_name.empty() && interaction.makJ_name.empty())return;
+			if (interaction.prtNameM().empty() && interaction.prtNameN().empty() && interaction.makNameI().empty() && interaction.makNameJ().empty())return;
 			
-			auto prt_m = m->partPool().findByName(interaction.prtI_name);
-			auto mak_i = prt_m->markerPool().findByName(interaction.makI_name);
-			auto prt_n = m->partPool().findByName(interaction.prtJ_name);
-			auto mak_j = prt_n->markerPool().findByName(interaction.makJ_name);
+			auto prt_m = m->partPool().findByName(interaction.prtNameM());
+			auto mak_i = prt_m->markerPool().findByName(interaction.makNameI());
+			auto prt_n = m->partPool().findByName(interaction.prtNameN());
+			auto mak_j = prt_n->markerPool().findByName(interaction.makNameJ());
 
 			interaction.makI_ = &*mak_i;
 			interaction.makJ_ = &*mak_j;
-
-			
-			//if (prt_m == part_pool.end())	THROW_FILE_LINE(std::string("can't find part m for element \"") + this->name() + "\"");
-
-			//if (!xml_ele.Attribute("mak_i"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"mak_i\"");
-			//auto mak_i = prt_m->markerPool().findByName(xml_ele.Attribute("mak_i"));
-			//if (mak_i == prt_m->markerPool().end())
-			//	THROW_FILE_LINE(std::string("can't find marker i for element \"") + this->name() + "\"");
-			//makI_ = &(*mak_i);
-
-			//if (!xml_ele.Attribute("prt_n"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"prt_n\"");
-			//auto prt_n = part_pool.findByName(xml_ele.Attribute("prt_n"));
-			//if (prt_n == part_pool.end())THROW_FILE_LINE(std::string("can't find part n for element \"") + this->name() + "\"");
-
-			//if (!xml_ele.Attribute("mak_j"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"mak_j\"");
-			//auto mak_j = prt_n->markerPool().findByName(xml_ele.Attribute("mak_j"));
-			//if (mak_j == prt_n->markerPool().end())THROW_FILE_LINE(std::string("can't find marker j for element \"") + this->name() + "\"");
-			//makJ_ = &(*mak_j);
 		};
+
+		imp_->ground_ = partPool().findOrInsert<Part>("ground");
 
 		environment().model_ = this;
 		variablePool().model_ = this;
@@ -111,7 +95,6 @@ namespace aris::dynamic
 			ele.model_ = this;
 			init_interaction(ele, this);
 		}
-		
 		motionPool().model_ = this;
 		for (auto &ele : motionPool()) {
 			ele.model_ = this;
@@ -175,18 +158,27 @@ namespace aris::dynamic
 	auto Model::simResultPool()->aris::core::ObjectPool<SimResult, Element>& { return *imp_->sim_result_pool_; }
 	auto Model::calibratorPool()->aris::core::ObjectPool<Calibrator, Element>& { return *imp_->calibrator_pool_; }
 	auto Model::ground()->Part& { return *imp_->ground_; }
-	auto Model::addPartByPm(const double*pm, const double *prt_im)->Part& { return partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm); }
+	auto Model::addPartByPm(const double*pm, const double *prt_im)->Part& 
+	{ 
+		auto &ret = partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm);
+		ret.Element::model_ = this;
+		return ret;
+	}
 	auto Model::addPartByPe(const double*pe, const char* eul_type, const double *prt_im)->Part&
 	{
 		double pm[16];
 		s_pe2pm(pe, pm, eul_type);
-		return partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm);
+		auto &ret = partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addPartByPq(const double*pq, const double *prt_im)->Part&
 	{
 		double pm[16];
 		s_pq2pm(pq, pm);
-		return partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm);
+		auto &ret = partPool().add<Part>("part_" + std::to_string(partPool().size()), prt_im, pm);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addRevoluteJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->RevoluteJoint&
 	{
@@ -194,10 +186,13 @@ namespace aris::dynamic
 		s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
 		auto name = "joint_" + std::to_string(jointPool().size());
 		s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
-		auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
+		auto &mak_i = first_part.addMarker(name + "_i", loc_pm);
 		s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
-		auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
-		return jointPool().add<RevoluteJoint>(name, &mak_i, &mak_j);
+		auto &mak_j = second_part.addMarker(name + "_j", loc_pm);
+
+		auto &ret = jointPool().add<RevoluteJoint>(name, &mak_i, &mak_j);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addPrismaticJoint(Part &first_part, Part &second_part, const double *position, const double *axis)->PrismaticJoint&
 	{
@@ -205,10 +200,13 @@ namespace aris::dynamic
 		s_sov_axes2pm(position, axis, axis, glb_pm, "zx");
 		auto name = "joint_" + std::to_string(jointPool().size());
 		s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
-		auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
+		auto &mak_i = first_part.addMarker(name + "_i", loc_pm);
 		s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
-		auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
-		return jointPool().add<PrismaticJoint>(name, &mak_i, &mak_j);
+		auto &mak_j = second_part.addMarker(name + "_j", loc_pm);
+
+		auto &ret = jointPool().add<PrismaticJoint>(name, &mak_i, &mak_j);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addUniversalJoint(Part &first_part, Part &second_part, const double *position, const double *first_axis, const double *second_axis)->UniversalJoint&
 	{
@@ -216,21 +214,26 @@ namespace aris::dynamic
 		s_sov_axes2pm(position, first_axis, second_axis, glb_pm, "zx");
 		auto name = "joint_" + std::to_string(jointPool().size());
 		s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
-		auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
+		auto &mak_i = first_part.addMarker(name + "_i", loc_pm);
 		s_sov_axes2pm(position, second_axis, first_axis, glb_pm, "zx");
 		s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
-		auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
-		return jointPool().add<UniversalJoint>(name, &mak_i, &mak_j);
+		auto &mak_j = second_part.addMarker(name + "_j", loc_pm);
+
+		auto &ret = jointPool().add<UniversalJoint>(name, &mak_i, &mak_j);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addSphericalJoint(Part &first_part, Part &second_part, const double *position)->SphericalJoint&
 	{
 		double glb_pm[16]{ 1,0,0,position[0],0,1,0,position[1],0,0,1,position[2],0,0,0,1 }, loc_pm[16];
 		auto name = "joint_" + std::to_string(jointPool().size());
 		s_inv_pm_dot_pm(*first_part.pm(), glb_pm, loc_pm);
-		auto &mak_i = first_part.markerPool().add<Marker>(name + "_i", loc_pm);
+		auto &mak_i = first_part.addMarker(name + "_i", loc_pm);
 		s_inv_pm_dot_pm(*second_part.pm(), glb_pm, loc_pm);
-		auto &mak_j = second_part.markerPool().add<Marker>(name + "_j", loc_pm);
-		return jointPool().add<SphericalJoint>(name, &mak_i, &mak_j);
+		auto &mak_j = second_part.addMarker(name + "_j", loc_pm);
+		auto &ret = jointPool().add<SphericalJoint>(name, &mak_i, &mak_j);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addMotion(Joint &joint)->Motion&
 	{
@@ -249,18 +252,23 @@ namespace aris::dynamic
 			THROW_FILE_LINE("wrong joint when Model::addMotion(joint)");
 		}
 
-		return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), joint.makI(), joint.makJ(), dim);
+		auto &ret = motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), joint.makI(), joint.makJ(), dim);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addMotion()->Motion&
 	{
 		if (ground().markerPool().findByName("origin") == ground().markerPool().end())
 		{
 			double pm[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			this->ground().markerPool().add<Marker>("origin", pm);
+			this->ground().addMarker("origin", pm);
 		}
 
 		auto mak = ground().markerPool().findByName("origin");
-		return motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), &*mak, &*mak, 0);
+
+		auto &ret = motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), &*mak, &*mak, 0);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addGeneralMotionByPm(Part &end_effector, Coordinate &reference, const double* pm)->GeneralMotion&
 	{
@@ -269,16 +277,24 @@ namespace aris::dynamic
 		s_inv_pm_dot_pm(*end_effector.pm(), pm_target_in_ground, pm_prt);
 
 		auto name = "general_motion_" + std::to_string(generalMotionPool().size());
-		auto &mak_i = end_effector.markerPool().add<Marker>(name + "_i", pm_prt);
-		auto &mak_j = dynamic_cast<Part*>(&reference) ? dynamic_cast<Part&>(reference).markerPool().add<Marker>(name + "_j") : dynamic_cast<Marker&>(reference);
-		return generalMotionPool().add<GeneralMotion>(name, &mak_i, &mak_j);
+		auto &mak_i = end_effector.addMarker(name + "_i", pm_prt);
+		auto &mak_j = dynamic_cast<Part*>(&reference) ? dynamic_cast<Part&>(reference).addMarker(name + "_j") : dynamic_cast<Marker&>(reference);
+		
+		auto &ret = generalMotionPool().add<GeneralMotion>(name, &mak_i, &mak_j);
+		ret.Element::model_ = this;
+		return ret;
 	}
 	auto Model::addGeneralMotionByPe(Part &end_effector, Coordinate &reference, const double* pe, const char* eul_type)->GeneralMotion&
 	{
-		return addGeneralMotionByPm(end_effector, reference, s_pe2pm(pe, nullptr, eul_type));
+		auto &ret = addGeneralMotionByPm(end_effector, reference, s_pe2pm(pe, nullptr, eul_type));
+		ret.Element::model_ = this;
+		return ret;
 	}
-	auto Model::addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion& {
-		return addGeneralMotionByPm(end_effector, reference, s_pq2pm(pq));
+	auto Model::addGeneralMotionByPq(Part &end_effector, Coordinate &reference, const double* pq)->GeneralMotion&
+	{
+		auto &ret = addGeneralMotionByPm(end_effector, reference, s_pq2pm(pq));
+		ret.Element::model_ = this;
+		return ret;
 	}
 	Model::~Model() = default;
 	Model::Model(const std::string &name) :Object(name)
@@ -309,4 +325,67 @@ namespace aris::dynamic
 		imp_->ground_ = &imp_->part_pool_->add<Part>("ground");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Model);
+
+	ARIS_REGISTRATION
+	{
+		typedef Environment&(Model::*EnvironmentFunc)();
+		typedef aris::core::ObjectPool<Variable, Element> &(Model::*VarablePoolFunc)();
+		typedef aris::core::ObjectPool<Part, Element> &(Model::*PartPoolFunc)();
+		typedef aris::core::ObjectPool<Joint, Element> &(Model::*JointPoolFunc)();
+		typedef aris::core::ObjectPool<Motion, Element> &(Model::*MotionPoolFunc)();
+		typedef aris::core::ObjectPool<GeneralMotion, Element> &(Model::*GeneralMotionPoolFunc)();
+		typedef aris::core::ObjectPool<Force, Element> &(Model::*ForcePoolFunc)();
+		typedef aris::core::ObjectPool<Solver, Element> &(Model::*SolverPoolFunc)();
+		typedef aris::core::ObjectPool<Simulator, Element> &(Model::*SimulatorPoolFunc)();
+		typedef aris::core::ObjectPool<SimResult, Element> &(Model::*SimResultPoolFunc)();
+		typedef aris::core::ObjectPool<Calibrator, Element> &(Model::*CalibratorPoolFunc)();
+
+		aris::core::class_<aris::core::ObjectPool<Variable, Element>>("VariablePoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<Part, Element>>("PartPoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<Joint, Element>>("JointPoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<Motion, Element>>("MotionPoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<GeneralMotion, Element>>("GeneralMotionPoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<Force, Element>>("ForcePoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<Solver, Element>>("SolverPoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<Simulator, Element>>("SimulatorPoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<SimResult, Element>>("SimResultPoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<Calibrator, Element>>("CalibratorPoolElement")
+			.asRefArray()
+			;
+
+		aris::core::class_<Model>("Model")
+			.inherit<aris::core::Object>()
+			.property("time", &Model::setTime, &Model::time)
+			.property<EnvironmentFunc>("environment", &Model::environment)
+			.property<VarablePoolFunc>("variable_pool", &Model::variablePool)
+			.property<PartPoolFunc>("part_pool", &Model::partPool)
+			.property<MotionPoolFunc>("motion_pool", &Model::motionPool)
+			.property<JointPoolFunc>("joint_pool", &Model::jointPool)
+			.property<GeneralMotionPoolFunc>("general_motion_pool", &Model::generalMotionPool)
+			.property<ForcePoolFunc>("force_pool", &Model::forcePool)
+			.property<SolverPoolFunc>("solver_pool", &Model::solverPool)
+			//.property<SimulatorPoolFunc>("simulator_pool", &Model::simulatorPool)
+			//.property<SimResultPoolFunc>("sim_result_pool", &Model::simResultPool)
+			//.property<CalibratorPoolFunc>("calibrator_pool", &Model::calibratorPool)
+			;
+	}
+
 }

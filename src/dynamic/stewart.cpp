@@ -201,8 +201,8 @@ namespace aris::dynamic
 		double pm_ee_i[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 
-		auto &makI = up.markerPool().add<Marker>("ee_makI", pm_ee_i);
-		auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
+		auto &makI = up.addMarker("ee_makI", pm_ee_i);
+		auto &makJ = model->ground().addMarker("ee_makJ", pm_ee_j);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 		// add solver

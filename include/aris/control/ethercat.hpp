@@ -78,8 +78,11 @@ namespace aris::control
 		auto ecMaster()->EthercatMaster*;
 		auto ecMaster()const->const EthercatMaster* { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecMaster(); }
 
+		auto setSmPool(aris::core::ObjectPool<SyncManager> *sm_pool)->void;
 		auto smPool()->aris::core::ObjectPool<SyncManager>&;
 		auto smPool()const->const aris::core::ObjectPool<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
+		
+		auto smPool2()->aris::core::ObjectPool<SyncManager>&;
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 		
@@ -157,6 +160,9 @@ namespace aris::control
 			unsigned int link_up : 1; /**< \a true, if the given Ethernet link is up.
 									  */
 		} MasterLinkState;
+
+		auto esiDirStr()->std::string;
+		auto setEsiDirStr(const std::string &str)->void;
 
 		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&;
 		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
@@ -255,6 +261,7 @@ namespace aris::control
 		// require pdo 0x6060 0x6061 //
 		auto virtual mode(std::uint8_t md)->int override;
 
+		virtual ~EthercatMotor();
 		EthercatMotor(const std::string &name = "ethercat_motion", std::uint16_t phy_id = 0
 			, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0

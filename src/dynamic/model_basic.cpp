@@ -107,6 +107,9 @@ namespace aris::dynamic
 		xml_ele.SetText(this->toString().c_str());
 	}
 
+
+
+
 	auto MatrixVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Variable::loadXml(xml_ele);
@@ -120,15 +123,67 @@ namespace aris::dynamic
 
 		auto mat = c.calculateExpression(std::string("Matrix({") + xml_ele.GetText() + "})").second;
 		data() = std::any_cast<const aris::core::Matrix&>(mat);
-
-
-
-		//model()->calculator().addVariable(name(), "Matrix", data());
 	}
+	
+	auto MatrixVariable::fromString(std::string_view str)->void 
+	{
+		static aris::core::Calculator c;
+		static int i = 0;
+		if (i == 0)
+		{
+			c.addVariable("PI", "Number", double(3.141592653));
+			i = 1;
+		}
+
+		auto mat = c.calculateExpression(std::string("Matrix({") + std::string(str) + "})").second;
+		data() = std::any_cast<const aris::core::Matrix&>(mat);
+	}
+	
 	auto StringVariable::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
 		Variable::loadXml(xml_ele);
 		data() = std::string(xml_ele.GetText());
 		//model()->calculator().addVariable(name(), "String", data());
+	}
+
+
+
+
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<DynEle>("DynEle")
+			.property("active", &DynEle::activate, &DynEle::active)
+			;
+
+		auto getGravity =[](Environment *env)->aris::core::Matrix
+		{
+			return aris::core::Matrix(1, 6, env->gravity());
+		};
+		auto setGravity = [](Environment *env, aris::core::Matrix gra)->void
+		{
+			env->setGravity(gra.data());
+		};
+
+		aris::core::class_<Environment>("Environment")
+			.property("gravity", &setGravity, &getGravity)
+			;
+
+		auto variableToText = [](Variable *b)->std::string 
+		{
+			return b->toString();
+		};
+		auto variableFromText = [](Variable *b, std::string_view str)->void
+		{
+			b->fromString(str);
+		};
+		aris::core::class_<Variable>("Variable")
+			.inherit<aris::core::Object>()
+			.textMethod(variableToText, variableFromText)
+			;
+
+		aris::core::class_<MatrixVariable>("MatrixVariable")
+			.inherit<Variable>()
+			;
 	}
 }

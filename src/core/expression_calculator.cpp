@@ -9,6 +9,7 @@
 #include <any>
 
 #include "aris/core/expression_calculator.hpp"
+#include "aris/core/reflection.hpp"
 
 namespace aris::core
 {
@@ -342,7 +343,6 @@ namespace aris::core
 	{
 		Matrix m(m1.m(), m1.n());
 		for (Size i = 0; i < m1.size(); ++i)m.data()[i] = -m1.data()[i];
-
 		return m;
 	}
 	Matrix operator + (const Matrix &m1)
@@ -1408,4 +1408,30 @@ namespace aris::core
 	LanguageParser::~LanguageParser() = default;
 	LanguageParser::LanguageParser(const std::string &name) :Object(name), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(LanguageParser);
+
+
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<aris::core::Matrix>("Matrix")
+			.textMethod([](Matrix *v)->std::string
+		{
+			return v->toString();
+		}, [](Matrix *v, std::string_view str)->void
+		{
+			static aris::core::Calculator c;
+			static int i = 0;
+			if (i == 0)
+			{
+				c.addVariable("PI", "Number", double(aris::PI));
+				i = 1;
+			}
+			
+			auto mat = c.calculateExpression(std::string("Matrix({") + std::string(str) + "})").second;
+			*v = std::any_cast<const Matrix&>(mat);
+		});
+	}
+
+
+
 }

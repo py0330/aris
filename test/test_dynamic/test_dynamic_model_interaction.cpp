@@ -24,8 +24,8 @@ void test_constraint()
 	aris::dynamic::Model model;
 	auto &prt_m = model.partPool().add<Part>("prt_m");
 	auto &prt_n = model.partPool().add<Part>("prt_n");
-	auto &mak_i = prt_m.markerPool().add<Marker>("mak_i", prt_pm_i);
-	auto &mak_j = prt_n.markerPool().add<Marker>("mak_j", prt_pm_j);
+	auto &mak_i = prt_m.addMarker("mak_i", prt_pm_i);
+	auto &mak_j = prt_n.addMarker("mak_j", prt_pm_j);
 
 	auto &r1 = model.add<RevoluteJoint>("r1", &mak_i, &mak_j);
 	auto &p1 = model.add<PrismaticJoint>("p1", &mak_i, &mak_j);

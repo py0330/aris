@@ -413,20 +413,24 @@ namespace aris::core
 
 	ARIS_REGISTRATION
 	{
-		class_<Param>("Param")
+		class_<ParamBase>("ParamBase")
 			.inherit<Object>()
+			;
+		
+		class_<Param>("Param")
+			.inherit<ParamBase>()
 			.property("abbreviation", &Param::setAbbreviation, &Param::abbreviation)
 			.propertyToStrMethod("abbreviation", charToStr)
 			.propertyFromStrMethod("abbreviation", strToChar)
 			.property("default", &Param::setDefaultValue, &Param::defaultValue);
 
 		class_<UniqueParam>("UniqueParam")
-			.inherit<Object>()
+			.inherit<ParamBase>()
 			.asRefArray()
 			.property("default", &UniqueParam::setDefaultValue, &UniqueParam::defaultValue);
 
 		class_<GroupParam>("GroupParam")
-			.inherit<Object>()
+			.inherit<ParamBase>()
 			.asRefArray();
 
 		class_<Command>("Command")
@@ -442,8 +446,4 @@ namespace aris::core
 			.inherit<Object>()
 			.property<CommandPoolFunc>("command_pool", &CommandParser::commandPool);
 	}
-
-
-
-
 }

@@ -120,8 +120,8 @@ namespace aris::robot
 		auto &m6 = model->addMotion(j6);
 
 		// add ee general motion //
-		auto &makI = p6.markerPool().add<Marker>("ee_makI", pm_ee);
-		auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ");
+		auto &makI = p6.addMarker("ee_makI", pm_ee);
+		auto &makJ = model->ground().addMarker("ee_makJ");
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 		// change robot pose //

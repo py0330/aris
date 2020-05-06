@@ -822,7 +822,7 @@ namespace aris::dynamic
 
 		for (auto pe = imp_->pe_.begin(), vs = imp_->vs_.begin(), as = imp_->as_.begin(); pe < imp_->pe_.end(); ++pe, ++vs, ++as)
 		{
-			for (auto e : *pe) ss << e << " ";
+			for (auto e : *pe)ss << e << " ";
 			for (auto e : *vs)ss << e << " ";
 			for (auto e : *as)ss << e << " ";
 			ss << std::endl;
@@ -1103,7 +1103,6 @@ namespace aris::dynamic
 	struct SolverSimulator::Imp
 	{
 		Solver *solver_;
-
 		Imp(Solver *solver) :solver_(solver) { };
 	};
 	auto SolverSimulator::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -1643,4 +1642,12 @@ namespace aris::dynamic
 	AdamsSimulator::~AdamsSimulator() = default;
 	AdamsSimulator::AdamsSimulator(const std::string &name) : Simulator(name) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(AdamsSimulator);
+
+
+	ARIS_REGISTRATION
+	{
+		//aris::core::class_<SimResult::TimeResult>("TimeResult")
+		//	.property()
+		//	;
+	}
 }

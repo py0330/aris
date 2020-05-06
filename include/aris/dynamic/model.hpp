@@ -237,26 +237,37 @@ namespace aris::dynamic
 		/// @{
 		auto calculator()->aris::core::Calculator&;
 		auto calculator()const ->const aris::core::Calculator& { return const_cast<std::decay_t<decltype(*this)> *>(this)->calculator(); }
+		
 		auto environment()->aris::dynamic::Environment&;
 		auto environment()const ->const aris::dynamic::Environment& { return const_cast<std::decay_t<decltype(*this)> *>(this)->environment(); }
+		
 		auto variablePool()->aris::core::ObjectPool<Variable, Element>&;
 		auto variablePool()const->const aris::core::ObjectPool<Variable, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->variablePool(); }
+		
 		auto partPool()->aris::core::ObjectPool<Part, Element>&;
 		auto partPool()const->const aris::core::ObjectPool<Part, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->partPool(); }
+		
 		auto jointPool()->aris::core::ObjectPool<Joint, Element>&;
 		auto jointPool()const->const aris::core::ObjectPool<Joint, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->jointPool(); }
+		
 		auto motionPool()->aris::core::ObjectPool<Motion, Element>&;
 		auto motionPool()const->const aris::core::ObjectPool<Motion, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
+		
 		auto generalMotionPool()->aris::core::ObjectPool<GeneralMotion, Element>&;
 		auto generalMotionPool()const->const aris::core::ObjectPool<GeneralMotion, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->generalMotionPool(); }
+		
 		auto forcePool()->aris::core::ObjectPool<Force, Element>&;
 		auto forcePool()const->const aris::core::ObjectPool<Force, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->forcePool(); }
+		
 		auto solverPool()->aris::core::ObjectPool<Solver, Element>&;
 		auto solverPool()const->const aris::core::ObjectPool<Solver, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->solverPool(); }
+		
 		auto simulatorPool()->aris::core::ObjectPool<Simulator, Element>&;
 		auto simulatorPool()const->const aris::core::ObjectPool<Simulator, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->simulatorPool(); }
+		
 		auto simResultPool()->aris::core::ObjectPool<SimResult, Element>&;
 		auto simResultPool()const->const aris::core::ObjectPool<SimResult, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->simResultPool(); }
+
 		auto calibratorPool()->aris::core::ObjectPool<Calibrator, Element>&;
 		auto calibratorPool()const->const aris::core::ObjectPool<Calibrator, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->calibratorPool(); }
 		auto ground()->Part&;

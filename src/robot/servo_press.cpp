@@ -35,8 +35,8 @@ namespace aris::robot
 		double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		s_pq2pm(pq_ee_i, pm_ee_i);
 
-		auto &makI = p1.markerPool().add<Marker>("ee_makI", pm_ee_i);
-		auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
+		auto &makI = p1.addMarker("ee_makI", pm_ee_i);
+		auto &makJ = model->ground().addMarker("ee_makJ", pm_ee_j);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 		// change robot pose //

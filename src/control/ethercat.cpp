@@ -19,6 +19,13 @@
 
 namespace aris::control
 {
+	auto Uint32ToHexStr(void* data)->std::string
+	{
+		auto num = *reinterpret_cast<std::uint32_t*>(data);
+		std::stringstream s;
+		s << "0x" << std::setfill('0') << std::setw(sizeof(std::uint32_t) * 2) << std::hex << static_cast<std::uint32_t>(num);
+		return s.str();
+	}
 	auto Uint16ToHexStr(void* data)->std::string
 	{
 		auto num = *reinterpret_cast<std::uint16_t*>(data);
@@ -131,6 +138,7 @@ namespace aris::control
 		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
 		std::int32_t sync0_shift_ns_;
 		aris::core::ObjectPool<SyncManager> *sm_pool_;
+		std::shared_ptr<aris::core::ObjectPool<SyncManager> > sm_pool_ptr_;
 		std::map<std::uint16_t, std::map<std::uint8_t, PdoEntry* > > pdo_map_;
 	};
 	auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -168,7 +176,18 @@ namespace aris::control
 	}
 	auto EthercatSlave::ecMaster()->EthercatMaster* { return dynamic_cast<EthercatMaster*>(Slave::master()); }
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
-	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& { return *imp_->sm_pool_; }
+	auto EthercatSlave::setSmPool(aris::core::ObjectPool<SyncManager> *sm_pool)->void
+	{
+		imp_->sm_pool_ptr_.reset(sm_pool);
+	}
+	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& 
+	{ 
+		return *imp_->sm_pool_;
+	}
+	auto EthercatSlave::smPool2()->aris::core::ObjectPool<SyncManager>&
+	{
+		return *imp_->sm_pool_ptr_;
+	}
 	auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
 	auto EthercatSlave::setVendorID(std::uint32_t vendor_id)->void { imp_->vendor_id_ = vendor_id; }
 	auto EthercatSlave::productCode()const->std::uint32_t { return imp_->product_code_; }
@@ -247,6 +266,8 @@ namespace aris::control
 		imp_->revision_num_ = r_num;
 		imp_->dc_assign_activate_ = dc;
 		imp_->sync0_shift_ns_ = sync0_shift_ns;
+
+		imp_->sm_pool_ptr_.reset(new aris::core::ObjectPool<SyncManager>);
 	}
 	EthercatSlave::EthercatSlave(const EthercatSlave &other) :Slave(other), imp_(other.imp_)
 	{
@@ -287,6 +308,18 @@ namespace aris::control
 			std::istringstream f(esi_str);
 			for (std::string s; std::getline(f, s, '|');)imp_->esi_dirs_.push_back(s);
 		}
+	}
+	auto EthercatMaster::esiDirStr()->std::string 
+	{
+		std::stringstream s;
+		for (auto &dir : imp_->esi_dirs_)s << dir.string() << "|";
+		return s.str();
+	}
+	auto EthercatMaster::setEsiDirStr(const std::string &str)->void
+	{
+		auto esi_str = str;
+		std::istringstream f(esi_str);
+		for (std::string s; std::getline(f, s, '|');)imp_->esi_dirs_.push_back(s);
 	}
 	auto EthercatMaster::scan()->void { aris_ecrt_scan(this); }
 	auto EthercatMaster::scanInfoForCurrentSlaves()->void
@@ -892,6 +925,7 @@ namespace aris::control
 		setModeOfOperation(md);
 		return md == modeOfDisplay() ? 0 : 1;
 	}
+	EthercatMotor::~EthercatMotor() = default;
 	EthercatMotor::EthercatMotor(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
 		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos, bool is_virtual)
@@ -927,8 +961,12 @@ namespace aris::control
 			.property("size", &PdoEntry::setBitSize, &PdoEntry::bitSize)
 			;
 
-		aris::core::class_<Pdo>("Pdo")
+		aris::core::class_<aris::core::ObjectPool<PdoEntry>>("PdoEntryPoolObject")
 			.inherit<aris::core::Object>()
+			.asRefArray();
+
+		aris::core::class_<Pdo>("Pdo")
+			.inherit<aris::core::ObjectPool<PdoEntry>>()
 			.property("index", &Pdo::setIndex, &Pdo::index)
 			.propertyToStrMethod("index", Uint16ToHexStr)
 			;
@@ -939,28 +977,43 @@ namespace aris::control
 
 		aris::core::class_<SyncManager>("SyncManager")
 			.inherit<aris::core::ObjectPool<Pdo>>()
+			.asRefArray()
 			.property("is_tx", &SyncManager::setTx, &SyncManager::tx)
 			;
 
-		//imp_->vendor_id_ = attributeUint32(xml_ele, "vendor_id");
-		//imp_->product_code_ = attributeUint32(xml_ele, "product_code");
-		//imp_->revision_num_ = attributeUint32(xml_ele, "revision_num");
-		//imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
-		//imp_->sync0_shift_ns_ = attributeInt32(xml_ele, "sync0_shift_ns", 650'000);
+		aris::core::class_<aris::core::ObjectPool<SyncManager>>("SyncManagerPoolObject")
+			.inherit<aris::core::Object>()
+			.asRefArray();
 
+		typedef aris::core::ObjectPool<SyncManager>&(EthercatSlave::*SmPoolFunc)();
 		aris::core::class_<EthercatSlave>("EthercatSlave")
 			.inherit<Slave>()
+			.property("sm_pool", &EthercatSlave::setSmPool, SmPoolFunc(&EthercatSlave::smPool2))
 			.property("vendor_id", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
-			.property("product_code", &EthercatSlave::setVendorID, &EthercatSlave::productCode)
-			.property("revision_num", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
-			.property("dc_assign_activate", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
-			.property("sync0_shift_ns", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
+			.propertyToStrMethod("vendor_id", Uint32ToHexStr)
+			.property("product_code", &EthercatSlave::setProductCode, &EthercatSlave::productCode)
+			.propertyToStrMethod("product_code", Uint32ToHexStr)
+			.property("revision_num", &EthercatSlave::setRevisionNum, &EthercatSlave::revisionNum)
+			.propertyToStrMethod("revision_num", Uint32ToHexStr)
+			.property("dc_assign_activate", &EthercatSlave::setDcAssignActivate, &EthercatSlave::dcAssignActivate)
+			.propertyToStrMethod("dc_assign_activate", Uint32ToHexStr)
+			.property("sync0_shift_ns", &EthercatSlave::setSync0ShiftNs, &EthercatSlave::sync0ShiftNs)
 			;
 
-		//aris::core::class_<Controller>("Controller")
-		//	.inherit<Master>()
-		//	;
-			//.property("port", &Socket::setPort, &Socket::port);
+		aris::core::class_<EthercatMaster>("EthercatMaster")
+			.inherit<Master>()
+			.property("esi_dirs", &EthercatMaster::setEsiDirStr, &EthercatMaster::esiDirStr)
+			;
+		aris::core::class_<EthercatMotor>("EthercatMotor")
+			.inherit<Motor>()
+			.inherit<EthercatSlave>()
+			.property("is_virtual", &EthercatMotor::setVirtual, &EthercatMotor::isVirtual)
+			;
+
+		aris::core::class_<EthercatController>("EthercatController")
+			.inherit<Controller>()
+			.inherit<EthercatMaster>()
+			;
 	}
 
 }

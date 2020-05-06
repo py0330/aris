@@ -54,6 +54,7 @@ namespace aris::dynamic
 			}
 		}
 		auto setWhichRoot(int root_of_0_to_7)->void;
+		auto whichRoot()const->int;
 
 		virtual ~PumaInverseKinematicSolver() = default;
 		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");

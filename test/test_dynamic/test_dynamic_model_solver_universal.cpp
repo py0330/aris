@@ -57,8 +57,8 @@ void test_servo_press_universal()
 	double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 	s_pq2pm(pq_ee_i, pm_ee_i);
 
-	auto &makI = p1.markerPool().add<Marker>("ee_makI", pm_ee_i);
-	auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
+	auto &makI = p1.addMarker("ee_makI", pm_ee_i);
+	auto &makJ = model->ground().addMarker("ee_makJ", pm_ee_j);
 	auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ);
 
 	// add solver
@@ -165,11 +165,11 @@ void test_float_5_bar_universal()
 	if (!s_is_equal(6, p4.as(), std::array<double, 6>{0.03368654217674, - 9.82845708834653, - 0.00018296503713,   0.00166526381296,   0.00049171676773,   0.03148902526426}.data(), 1e-10))std::cout << __FILE__ << __LINE__ << ":failed" << std::endl;
 	if (!s_is_equal(6, p5.as(), std::array<double, 6>{0.05329075431848, - 9.84070972093511, - 0.00018296503713,   0.00166526381296,   0.00049171676773,   0.04782586871571}.data(), 1e-10))std::cout << __FILE__ << __LINE__ << ":failed" << std::endl;
 
-	p1.markerPool().add<Marker>("origin");
-	p2.markerPool().add<Marker>("origin");
-	p3.markerPool().add<Marker>("origin");
-	p4.markerPool().add<Marker>("origin");
-	p5.markerPool().add<Marker>("origin");
+	p1.addMarker("origin");
+	p2.addMarker("origin");
+	p3.addMarker("origin");
+	p4.addMarker("origin");
+	p5.addMarker("origin");
 	m.init();
 	//adams.saveAdams("C:\\Users\\py033\\Desktop\\test.cmd");
 }

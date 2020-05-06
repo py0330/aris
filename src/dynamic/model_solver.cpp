@@ -12,6 +12,7 @@
 #include <array>
 
 #include "aris/dynamic/model.hpp"
+#include "aris/core/reflection.hpp"
 
 namespace aris::dynamic
 {
@@ -1942,4 +1943,32 @@ namespace aris::dynamic
 	InverseDynamicSolver::~InverseDynamicSolver() = default;
 	InverseDynamicSolver::InverseDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(InverseDynamicSolver);
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Solver>("Solver")
+			.property("max_iter_count", &Solver::setMaxIterCount, &Solver::maxIterCount)
+			.property("max_error", &Solver::setMaxError, &Solver::maxError)
+			;
+
+		aris::core::class_<UniversalSolver>("UniversalSolver")
+			.inherit<Solver>()
+			;
+
+		aris::core::class_<ForwardKinematicSolver>("ForwardKinematicSolver")
+			.inherit<UniversalSolver>()
+			;
+
+		aris::core::class_<InverseKinematicSolver>("InverseKinematicSolver")
+			.inherit<UniversalSolver>()
+			;
+
+		aris::core::class_<ForwardDynamicSolver>("ForwardDynamicSolver")
+			.inherit<UniversalSolver>()
+			;
+
+		aris::core::class_<InverseDynamicSolver>("InverseDynamicSolver")
+			.inherit<UniversalSolver>()
+			;
+	}
 }

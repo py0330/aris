@@ -108,6 +108,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 		friend class Model;
+		friend class Part;
 	};
 	class Part final :public Coordinate
 	{
@@ -123,6 +124,7 @@ namespace aris::dynamic
 		auto markerPool()const noexcept->const aris::core::ObjectPool<Marker, Element>&;
 		auto geometryPool() noexcept->aris::core::ObjectPool<Geometry, Element>&;
 		auto geometryPool()const noexcept->const aris::core::ObjectPool<Geometry, Element>&;
+		auto addMarker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true)->Marker&;
 		auto setPp(const double *pp) noexcept->void;
 		auto setPp(const Coordinate &relative_to, const double *pp) noexcept->void;
 		auto setRe(const double *re, const char *type = "313") noexcept->void;
@@ -225,9 +227,6 @@ namespace aris::dynamic
 	class Geometry :public Element
 	{
 	public:
-		//auto fatherPart() const->const Part&;
-		//auto fatherPart()->Part&;
-
 		virtual ~Geometry() = default;
 		explicit Geometry(const std::string &name = "geometry") : Element(name) {}
 		ARIS_REGISTER_TYPE(Geometry);

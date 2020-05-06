@@ -1562,8 +1562,8 @@ void test_single_body()
 		auto &p = m.partPool().add<aris::dynamic::Part>();
 
 		double pm[16]{ 1,0,0,0.8 , 0,1,0,0.5 , 0,0,1,0.3 , 0,0,0,1 };
-		auto &makI = p.markerPool().add<Marker>("mak_i", pm);
-		auto &makJ = m.ground().markerPool().add<Marker>("mak_j");
+		auto &makI = p.addMarker("mak_i", pm);
+		auto &makJ = m.ground().addMarker("mak_j");
 		auto &r = m.jointPool().add<aris::dynamic::RevoluteJoint>("r", &makI, &makJ);
 		auto &r2 = m.jointPool().add<aris::dynamic::RevoluteJoint>("r2", &makI, &makJ);
 		auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
@@ -1706,8 +1706,8 @@ void test_servo_press()
 	double pm_ee_j[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 	s_pq2pm(pq_ee_i, pm_ee_i);
 
-	auto &makI = p1.markerPool().add<Marker>("ee_makI", pm_ee_i);
-	auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
+	auto &makI = p1.addMarker("ee_makI", pm_ee_i);
+	auto &makJ = model->ground().addMarker("ee_makJ", pm_ee_j);
 	auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ);
 
 	// add solver

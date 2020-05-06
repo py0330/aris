@@ -1098,7 +1098,7 @@ namespace aris::core
 	ARIS_REGISTRATION
 	{
 		aris::core::class_<Socket::TYPE>("Socket::connect_type")
-			.asBasic([](void *v)->std::string
+			.textMethod([](Socket::TYPE *v)->std::string
 			{
 				auto type = *reinterpret_cast<Socket::TYPE*>(v);
 				if (type == Socket::TCP)return "TCP";
@@ -1107,7 +1107,7 @@ namespace aris::core
 				else if (type == Socket::UDP)return "UDP";
 				else if (type == Socket::UDP_RAW)return "UDP_RAW";
 				else THROW_FILE_LINE("unknown connect type");
-			},[](void *v,std::string_view str)->void
+			},[](Socket::TYPE *v,std::string_view str)->void
 			{
 				if (str == "TCP")*reinterpret_cast<Socket::TYPE*>(v) = Socket::TCP;
 				else if (str == "WEB")*reinterpret_cast<Socket::TYPE*>(v) = Socket::WEB;

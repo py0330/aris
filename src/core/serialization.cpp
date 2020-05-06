@@ -11,18 +11,18 @@
 #include "aris/core/tinyxml2.h"
 #include "aris/core/object.hpp"
 #include "aris/core/serialization.hpp"
+#include "aris/core/expression_calculator.hpp"
 
 
 namespace aris::core
 {
 	auto to_xml_ele(aris::core::Instance &ins, aris::core::XmlElement *ele)->void
 	{
-		if (ins.isBasic())
-		{
-			// 只能把结构序列化成xml //
-			THROW_FILE_LINE("failed to serilize");
-		}
-		else if (ins.isArray())
+		// set text //
+		if (!ins.toString().empty()) ele->SetText(ins.toString().data());
+		
+		// set children or props //
+		if (ins.isArray())
 		{
 			for (auto prop : ins.type()->properties())
 			{
@@ -37,8 +37,7 @@ namespace aris::core
 			{
 				auto insert_ele = ele->GetDocument()->NewElement(ins.at(i).type()->name().data());
 				ele->InsertEndChild(insert_ele);
-				auto child_ins = ins.at(i);
-				to_xml_ele(child_ins, insert_ele);
+				to_xml_ele(ins.at(i), insert_ele);
 			}
 		}
 		else
@@ -51,7 +50,7 @@ namespace aris::core
 				{
 					if(!v.toString().empty())
 						ele->SetAttribute(prop->name().data(), v.toString().c_str());
-				}					
+				}
 				else
 				{
 					auto insert_ele = ele->GetDocument()->NewElement(v.type()->name().data());
@@ -79,43 +78,86 @@ namespace aris::core
 
 	auto from_xml_ele(aris::core::Instance &ins, aris::core::XmlElement *ele)->void
 	{
-		for (auto prop : ins.type()->properties())
+		// from text //
+		if (ele->GetText())	ins.fromString(ele->GetText());
+
+		// 获取全部ele //
+		std::vector<aris::core::XmlElement *> child_eles;
+		std::vector<const aris::core::XmlAttribute *> attrs;
+		for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
 		{
-			// 此时为basic type //
-			if (ele->Attribute(prop->name().data()))
+			child_eles.push_back(child_ele);
+		}
+		for (auto attr = ele->FirstAttribute(); attr; attr = attr->Next())
+		{
+			attrs.push_back(attr);
+		}
+		
+		// 读写 //
+		for (auto &prop : ins.type()->properties())
+		{
+			// basic type //
+			if (prop->type()->isBasic())
 			{
-				auto prop_ins = prop->get(&ins);
-				if (prop_ins.isReference())
+				auto found = std::find_if(attrs.begin(), attrs.end(), [&prop](const auto attr)->bool 
 				{
-					prop_ins.fromString(ele->Attribute(prop->name().data()));
-				}
-				else
+					return attr->Name() == prop->name(); 
+				});
+
+				if (found == attrs.end()) 
 				{
-					prop_ins.fromString(ele->Attribute(prop->name().data()));
-					prop->set(&ins, prop_ins);
+					std::cout << "WARNING:basic property not found : " << prop->name() << std::endl;
+					continue;
 				}
+
+				auto [ptr, prop_ins] = prop->type()->create();
+				prop_ins.fromString((*found)->Value());
+				prop->set(&ins, prop_ins);
+				attrs.erase(found);
 				continue;
 			}
 
-			// 此时不是basic type, 可能发生重载 //
-			for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
+			// non basic type, non ptr property //
+			if (!prop->acceptPtr())
 			{
-				if (child_ele->Attribute("name") && prop->name() == child_ele->Attribute("name"))
+				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool 
 				{
-					auto type = getType(child_ele->Name());
-					if (!type) THROW_FILE_LINE("unrecognized type in xml");
+					return ele->Name() == prop->type()->name();
+				});
 
-					auto[ptr, attr_ins] = type->create();
-					from_xml_ele(attr_ins, child_ele);
-
-					prop->set(&ins, attr_ins);
-
-					// 对于set函数注册为指针的，不负责生命周期管理 //
-					if (prop->acceptPtr()) 
-						ptr.release();
-
-					break;
+				if (found == child_eles.end())
+				{
+					std::cout << "WARNING:element property not found : " << prop->name() << std::endl;
+					continue;
 				}
+
+				auto[ptr, prop_ins] = prop->type()->create();
+				from_xml_ele(prop_ins, *found);
+				prop->set(&ins, prop_ins);
+				child_eles.erase(found);
+				continue;
+			}
+
+			// non basic type, accept ptr //
+			if (prop->acceptPtr())
+			{
+				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool 
+				{
+					return Type::isBaseOf(prop->type(), getType(ele->Name()));
+				});
+
+				if (found == child_eles.end())
+				{
+					std::cout << "WARNING:element property not found : " << prop->name() << std::endl;
+					continue;
+				}
+
+				auto[ptr, prop_ins] = getType((*found)->Name())->create();
+				from_xml_ele(prop_ins, *found);
+				prop->set(&ins, prop_ins);
+				ptr.release();
+				child_eles.erase(found);
+				continue;
 			}
 		}
 
@@ -128,18 +170,8 @@ namespace aris::core
 
 				auto[ptr, attr_ins] = type->create();
 				from_xml_ele(attr_ins, child_ele);
-
-				
-
-				if (ins.type()->isRefArray())
-				{
-					ins.push_back(attr_ins);
-					ptr.release();
-				}
-
-				else
-					ins.push_back(attr_ins);
-
+				ins.push_back(attr_ins);
+				if (ins.type()->isRefArray())ptr.release();
 			}
 		}
 	}

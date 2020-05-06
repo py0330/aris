@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
 	auto &m = cs.model();
 	m.init();
-
+	
 	auto &c = m.calculator();
 
 	double mp[6]{ 0,0,0,0,1.57,0 };

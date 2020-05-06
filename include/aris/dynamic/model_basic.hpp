@@ -48,7 +48,7 @@ namespace aris::dynamic
 		auto activate(bool active = true)noexcept->void { active_ = active; }
 
 		virtual ~DynEle() = default;
-		explicit DynEle(const std::string &name, bool active = true) : Element(name), active_(active) {};
+		explicit DynEle(const std::string &name = "dyn_ele", bool active = true) : Element(name), active_(active) {};
 		ARIS_REGISTER_TYPE(DynEle);
 		ARIS_DEFINE_BIG_FOUR(DynEle);
 
@@ -65,7 +65,7 @@ namespace aris::dynamic
 		auto setGravity(const double *gravity)noexcept->void { s_vc(6, gravity, gravity_); }
 
 		virtual ~Environment() = default;
-		explicit Environment(const std::string &name = "dyn_ele") :Element(name) {}
+		explicit Environment(const std::string &name = "environment") :Element(name) {}
 		ARIS_REGISTER_TYPE(Environment);
 		ARIS_DEFINE_BIG_FOUR(Environment);
 
@@ -78,6 +78,7 @@ namespace aris::dynamic
 	public:
 		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto virtual toString() const->std::string { return ""; }
+		auto virtual fromString(std::string_view str)->void {}
 
 		virtual ~Variable() = default;
 		explicit Variable(const std::string &name = "variable") : Element(name) {}
@@ -105,6 +106,7 @@ namespace aris::dynamic
 	public:
 		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual toString() const->std::string override { return data().toString(); }
+		auto virtual fromString(std::string_view str)->void override;
 
 		virtual ~MatrixVariable() = default;
 		explicit MatrixVariable(const std::string &name = "matrix_variable", const aris::core::Matrix &data = aris::core::Matrix()) : VariableTemplate(name, data) {}

@@ -753,6 +753,12 @@ namespace aris::dynamic
 	auto Part::markerPool()const noexcept->const aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
 	auto Part::geometryPool() noexcept->aris::core::ObjectPool<Geometry, Element>& { return *imp_->geometry_pool_; }
 	auto Part::geometryPool()const noexcept->const aris::core::ObjectPool<Geometry, Element>& { return *imp_->geometry_pool_; }
+	auto Part::addMarker(const std::string &name, const double *prt_pm, bool active)->Marker&
+	{
+		auto &ret = markerPool().add<Marker>(name, prt_pm, active);
+		ret.imp_->part_ = this;
+		return ret;
+	}
 	auto Part::pm()const noexcept->const double4x4& { return imp_->glb_pm_; }
 	auto Part::vs()const noexcept->const double6& { return imp_->glb_vs_; }
 	auto Part::as()const noexcept->const double6& { return imp_->glb_as_; }
@@ -1367,28 +1373,25 @@ namespace aris::dynamic
 	};
 	Part::Part(const Part &other) :Coordinate(other), imp_(other.imp_)
 	{
-		imp_->marker_pool_ = findType<aris::core::ObjectPool<Marker, Element> >("marker_pool");
-		imp_->geometry_pool_ = findType<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
+		imp_->marker_pool_ = findOrInsertType<aris::core::ObjectPool<Marker, Element>>();
+		imp_->geometry_pool_ = findOrInsertType<aris::core::ObjectPool<Geometry, Element>>();
 	};
 	Part& Part::operator=(Part &&other)
 	{
 		Coordinate::operator=(other);
 		imp_ = other.imp_;
-		imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("marker_pool"));
-		imp_->geometry_pool_ = &static_cast<aris::core::ObjectPool<Geometry, Element> &>(*findByName("geometry_pool"));
+		imp_->marker_pool_ = findOrInsertType<aris::core::ObjectPool<Marker, Element>>();
+		imp_->geometry_pool_ = findOrInsertType<aris::core::ObjectPool<Geometry, Element>>();
 		return *this;
 	}
 	Part& Part::operator=(const Part &other)
 	{
 		Coordinate::operator=(other);
 		imp_ = other.imp_;
-		imp_->marker_pool_ = &static_cast<aris::core::ObjectPool<Marker, Element> &>(*findByName("marker_pool"));
-		imp_->geometry_pool_ = &static_cast<aris::core::ObjectPool<Geometry, Element> &>(*findByName("geometry_pool"));
+		imp_->marker_pool_ = findOrInsertType<aris::core::ObjectPool<Marker, Element>>();
+		imp_->geometry_pool_ = findOrInsertType<aris::core::ObjectPool<Geometry, Element>>();
 		return *this;
 	}
-
-	//auto Geometry::fatherPart() const->const Part& { return static_cast<const Part &>(*this->father()->father()); }
-	//auto Geometry::fatherPart()->Part& { return static_cast<Part &>(*this->father()->father()); }
 
 	struct ParasolidGeometry::Imp
 	{
@@ -1508,4 +1511,51 @@ namespace aris::dynamic
 	ShellGeometry::ShellGeometry(ShellGeometry &&other) = default;
 	ShellGeometry& ShellGeometry::operator=(const ShellGeometry &other) = default;
 	ShellGeometry& ShellGeometry::operator=(ShellGeometry &&other) = default;
+
+	ARIS_REGISTRATION
+	{
+		auto setPe = [](Marker *mak, aris::core::Matrix pe)->void { mak->setPrtPe(pe.data()); };
+		auto getPe = [](Marker *mak)->aris::core::Matrix
+		{
+			double pe[6];
+			s_pm2pe(*mak->prtPm(), pe);
+			return aris::core::Matrix(1, 6, pe);
+		};
+		
+		aris::core::class_<Marker>("Marker")
+			.inherit<aris::dynamic::DynEle>()
+			.property("pe", &setPe, &getPe)
+			;
+
+		auto getPrtPe = [](Part *prt)->aris::core::Matrix
+		{
+			double pe[6];
+			s_pm2pe(*prt->pm(), pe);
+			return aris::core::Matrix(1, 6, pe);
+		};
+		auto setPrtPe = [](Part *prt, aris::core::Matrix pe)->void { prt->setPe(pe.data());	};
+		auto getPrtVs = [](Part *prt)->aris::core::Matrix {	return aris::core::Matrix(1, 6, prt->vs());	};
+		auto setPrtVs = [](Part *prt, aris::core::Matrix vs)->void { prt->setVs(vs.data());	};
+		auto getPrtAs = [](Part *prt)->aris::core::Matrix {	return aris::core::Matrix(1, 6, prt->as());	};
+		auto setPrtAs = [](Part *prt, aris::core::Matrix as)->void { prt->setAs(as.data()); };
+		auto getPrtIv = [](Part *prt)->aris::core::Matrix { return aris::core::Matrix(1, 10, prt->prtIv()); };
+		auto setPrtIv = [](Part *prt, aris::core::Matrix iv)->void { prt->setPrtIv(iv.data()); };
+
+		aris::core::class_<aris::core::ObjectPool<Marker, Element>>("MarkerPoolElement")
+			.asRefArray()
+			;
+		aris::core::class_<aris::core::ObjectPool<Geometry, Element>>("GeometryPoolElement")
+			.asRefArray()
+			;
+		typedef aris::core::ObjectPool<Marker, Element> &(Part::*MarkerPoolFunc)();
+		typedef aris::core::ObjectPool<Geometry, Element> &(Part::*GeometryPoolFunc)();
+		aris::core::class_<Part>("Part")
+			.property("pe", &setPrtPe, &getPrtPe)
+			.property("vel", &setPrtVs, &getPrtVs)
+			.property("acc", &setPrtAs, &getPrtAs)
+			.property("inertia", &setPrtIv, &getPrtIv)
+			.property<MarkerPoolFunc>("marker_pool", &Part::markerPool)
+			.property<GeometryPoolFunc>("geometry_pool", &Part::geometryPool)
+			;
+	}
 }

@@ -7,6 +7,8 @@
 #include <memory>
 #include <functional>
 #include <string_view>
+#include <variant>
+
 
 #include <aris/core/basic_type.hpp>
 #include <aris/core/tinyxml2.h>
@@ -39,21 +41,24 @@ namespace aris::core
 	{
 	public:
 		auto name()const->std::string { return name_; };
-		auto set(Instance *, const Instance&)const->void;
-		auto get(Instance *)const->Instance;
+		auto set(Instance *obj, Instance value)const->void;
+		auto get(Instance *obj)const->Instance;
+		auto type()->const Type*;
 		auto acceptPtr()const->bool;
-		Property(std::string_view name, Type *type_belong_to)
-			:name_(name), type_belong_to_(type_belong_to) {}
+		Property(std::string_view name, Type *type_belong_to):name_(name), type_belong_to_(type_belong_to) {}
 
 	private:
 		std::string name_;
-		std::function<Instance(void*)> get_;
-		std::function<void(void*, const Instance &)> set_;
+		std::function<Instance(Instance *obj)> get_;
+		std::function<void(Instance *obj, Instance prop)> set_;
 		bool accept_ptr_{ false };// which means property is a ptr, to support polymorphim
-		Type *type_belong_to_;// which property belong to
+		Type *type_belong_to_;// obj type, which property belong to
+		Type *type_;// type of this property
+		const std::type_info *type_info_;// type info of this property
+
+		// only for basic type //
 		std::function<std::string(void* value)> to_str_func_;
 		std::function<void(void* value, std::string_view str)> from_str_func_;
-
 
 		template<typename T> friend class class_;
 		friend class Instance;
@@ -61,66 +66,73 @@ namespace aris::core
 	class Type
 	{
 	public:
+		static auto isBaseOf(const Type* base, const Type* derived)->bool;
+
 		auto create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>;
 		auto name()const->std::string_view { return type_name_; };
 		auto properties()const->const std::vector<Property*>&;
 		auto propertyAt(std::string_view name)const->Property*;
 		auto inheritTypes()const->std::vector<const Type*>;
-		auto isRefArray()const->bool { return is_ref_array_; }
-		Type(std::string_view name, std::function<void*(std::any*)> any_to_void) :type_name_(name), any_to_void_(any_to_void) {}
+		auto isRefArray()const->bool { return array_data_.get() && array_data_->is_ref_array_; }
+		auto isArray()const->bool { return array_data_.get(); }
+		auto isBasic()const->bool { return (!is_polymophic_) && (!isArray()) && properties_ptr_.empty(); }
+		Type(std::string_view name) :type_name_(name) {}
 
 	private:
+		auto init()const->void;
+		bool inited{ false };  // init properties, for inheritance
+
+		// properties //
 		std::string type_name_;
 		std::vector<Property> this_properties_;// 不包含父类properties
 		std::vector<Property*> properties_ptr_;// 包含父类的properties，为了保持插入顺序，所以不得不用vector替代map
 
-		bool is_basic_{ false };
-		bool is_array_{ false };
-		bool is_ref_array_{ false };
-		bool inited{ false };
-		std::function<void*(std::any*)> any_to_void_; // for any cast to void*
+		// inherit types //
 		std::vector<const std::type_info *> inherit_type_infos_;// 因为在注册过程中，无法确保所继承的类已经注册完毕，所以需要后续生成该向量
 		std::vector<const Type *> inherit_types_;
+		std::vector<std::function<void*(void*)>> inherit_cast_vec_; // 将自己cast成基类的函数
 
 		// ctor //
-		std::function<std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>()> default_ctor_;
+		using DefaultCtor = std::function<std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>()>;
+		DefaultCtor default_ctor_;
 
-		// for basic //
-		std::function<std::string(void*)> to_string_;
-		std::function<void(void*, std::string_view)> from_string_;
-		
-		// for array //
-		std::function<std::size_t(void*)> size_func_;
-		std::function<Instance(void*, std::size_t id)> at_func_;
-		std::function<void(void*, const Instance&)> push_back_func_;
+		// to text // 
+		std::function<std::string(Instance*)> to_string_;
+		std::function<void(Instance*, std::string_view)> from_string_;
 
+		// array //
+		struct ArrayData
+		{
+			// for basic //
+			bool is_ref_array_;
+			const Type* array_type_{ nullptr };
+			std::function<std::size_t(Instance*)> size_func_;
+			std::function<Instance(Instance*, std::size_t id)> at_func_;
+			std::function<void(Instance*, const Instance&)> push_back_func_;
+		};
+
+		std::unique_ptr<ArrayData> array_data_;
+		bool is_polymophic_{ false };
+
+		friend auto initAllTypes()->void;
+		friend auto registerType(std::size_t hash_code, std::string_view name, DefaultCtor ctor)->Type*;
 		template<typename T> friend class class_;
 		friend class Instance;
 	};
 	class Instance
 	{
 	public:
-		auto isEmpty()->bool { return !value_.has_value(); }
-		auto isReference()->bool;
-		auto isBasic()->bool;
-		auto isArray()->bool;
-		auto type()->const Type*;
+		auto isEmpty()const->bool { return data_.index() == 0; }
+		auto isReference()const->bool;
+		auto isBasic()const->bool;
+		auto isArray()const->bool;
+		auto type()const->const Type*;
 
 		template<typename T>
-		auto to()->T&
+		auto castTo()const->T*
 		{
-			if (isReference())
-			{
-				auto ref = std::any_cast<InstanceRef>(&value_);
-				if (typeid(T).hash_code() != ref->type_->hash_code()) THROW_FILE_LINE("invalid transfer");
-				return *reinterpret_cast<T*>(ref->data_);
-			}
-			else
-			{
-				auto ptr = std::any_cast<InstancePtr>(&value_);
-				if (typeid(T).hash_code() != ptr->type_->hash_code()) THROW_FILE_LINE("invalid transfer");
-				return *reinterpret_cast<T*>(ptr->data_.get());
-			}
+			auto type = &reflect_types().at(typeid(T).hash_code());
+			return reinterpret_cast<T*>(castToType(type));
 		}
 		
 		// only work for non-basic and non-array //
@@ -136,13 +148,28 @@ namespace aris::core
 		auto at(std::size_t id)->Instance;
 		auto push_back(Instance element)->void;
 
-		// 绑定到左值引用 //
+		// 绑定到左值引用, 多态类型 //
 		template<typename T>
-		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&>> *s = nullptr)
+		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
 		{
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
 			auto &r = const_cast<std::decay_t<T> &>(t);
-			value_ = InstanceRef{ &r , &typeid(r) };
+			data_ = InstanceRef{ dynamic_cast<void*>(&r) };// dynamic_cast to most derived class
+			type_info_ = &typeid(r);
+
+			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + type_info_->name());
+		}
+
+		// 绑定到左值引用，非多态类型 //
+		template<typename T>
+		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && !std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
+		{
+			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
+			auto &r = const_cast<std::decay_t<T> &>(t);
+			data_ = InstanceRef{ &r };
+			type_info_ = &typeid(r);
+
+			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + type_info_->name());
 		}
 		
 		// 根据右值来构造 //
@@ -151,30 +178,26 @@ namespace aris::core
 		{
 			static_assert(std::is_copy_constructible_v<T> || std::is_move_constructible_v<T>, "Failed to construct : NO ctors");
 			auto &r = const_cast<std::decay_t<T> &>(t);
-			value_ = InstancePtr{ std::make_shared<std::decay_t<T>>(std::move(r)), &typeid(r) };
-		}
+			data_ = InstancePtr{ std::make_shared<std::decay_t<T>>(std::move(r)) };
+			type_info_ = &typeid(r);
 
+			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + type_info_->name());
+		}
 		Instance(const Instance&) = default;
 		Instance(Instance&&) = default;
 
 	private:
-		auto toVoidPtr()->void*;
-		auto toVoidPtr()const->const void* { return const_cast<Instance*>(this)->toVoidPtr(); }
-		std::any value_;
-		const Property *belong_to_{nullptr};
+		auto castToType(const Type* t)const->void*;
+		auto toVoidPtr()const->void*;
+		const Property *belong_to_{ nullptr };
+		const std::type_info *type_info_;
+
+		struct InstanceRef{	void* data_; };
+		struct InstancePtr{	std::shared_ptr<void> data_; };
+		std::variant<std::monostate, InstanceRef, InstancePtr> data_;
+
 		friend class Property;
 		template<typename Class_Type> friend class class_;
-
-		struct InstanceRef
-		{
-			void* data_;
-			const std::type_info *type_;
-		};
-		struct InstancePtr
-		{
-			std::shared_ptr<void> data_;
-			const std::type_info *type_;
-		};
 	};
 
 	auto reflect_types()->std::map<std::size_t, Type>&;
@@ -185,158 +208,146 @@ namespace aris::core
 		return found == reflect_names().end() ? nullptr : &reflect_types().at(found->second);
 	}
 
+	auto registerType(std::size_t hash_code, std::string_view name, Type::DefaultCtor ctor)->Type*;
+	auto alias_impl(Type*, std::string_view alias_name)->void;
+
 	template<typename Class_Type>
 	class class_
 	{
 	public:
-		// 对于纯虚基类 //
+		// 对于普通类型 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T>> *test = nullptr)
 		{
-			auto hash_code = typeid(Class_Type).hash_code();
-			auto[ins, ok] = reflect_types().emplace(std::make_pair(hash_code, Type(name, [](std::any* input)->void* 
-			{
-				return std::any_cast<Instance::InstancePtr>(input)->data_.get();
-			})));
-			if (!ok) THROW_FILE_LINE("class already exist");
-			auto[ins2, ok2] = reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
-			if (!ok2) THROW_FILE_LINE("class name already exist");
-
-			ins->second.is_basic_ = false;
-			ins->second.default_ctor_ = []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
+			type_ = registerType(typeid(Class_Type).hash_code(), name, []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
 			{
 				auto f = [](void const * data)->void{	delete static_cast<Class_Type const*>(data); };
 				auto ptr = std::unique_ptr<void, void(*)(void const*)>(new Class_Type, f);
 				Instance ins(*reinterpret_cast<Class_Type*>(ptr.get()));
 				return std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>(std::move(ptr), ins);
-			};
+			});
+			type_->is_polymophic_ = std::is_polymorphic_v<Class_Type>;
 		}
 
-		// 对于普通类型 //
+		// 对于纯虚类型 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T>> *test = nullptr)
 		{
-			auto hash_code = typeid(Class_Type).hash_code();
-			auto[ins, ok] = reflect_types().emplace(std::make_pair(hash_code, Type(name, [](std::any* input)->void*
-			{
-				return std::any_cast<Instance::InstancePtr>(input)->data_.get();
-			})));
-			if (!ok) THROW_FILE_LINE("class already exist");
-			auto[ins2, ok2] = reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
-			if (!ok2) THROW_FILE_LINE("class name already exist");
+			type_ = registerType(typeid(Class_Type).hash_code(), name, nullptr);
+			type_->is_polymophic_ = std::is_polymorphic_v<Class_Type>;
+		}
 
-			ins->second.is_basic_ = false;
+		// 别名 //
+		auto alias(std::string_view name)
+		{
+			alias_impl(type_, name);
 		}
 
 		template<typename FatherType>
 		auto inherit()->class_<Class_Type>&
 		{
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			type.inherit_type_infos_.push_back(&typeid(FatherType));
+			static_assert(std::is_base_of_v<FatherType, Class_Type>, "failed to inherit");
+
+			type_->inherit_type_infos_.push_back(&typeid(FatherType));
+			type_->inherit_cast_vec_.push_back([](void* input)->void*
+			{
+				return dynamic_cast<FatherType*>(reinterpret_cast<Class_Type*>(input));
+			});// 多继承可能改变指针所指向的位置，坑爹！！//
+
 			return *this;
 		};
 
-		auto asBasic(std::function<std::string(void*)> to_string, std::function<void(void*, std::string_view)> from_string)->class_<Class_Type>&
+		auto textMethod(std::function<std::string(Class_Type*)> to_string, std::function<void(Class_Type*, std::string_view)> from_string)
 		{
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			type.is_basic_ = true;
-			type.to_string_ = to_string;
-			type.from_string_ = from_string;
-
+			type_->to_string_ = [=](Instance* ins)->std::string
+			{
+				return to_string(ins->castTo<Class_Type>());
+			};
+			type_->from_string_ = [=](Instance* ins, std::string_view str)
+			{
+				from_string(ins->castTo<Class_Type>(), str);
+			};
 			return *this;
 		}
 
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T*)->void
 		//         Class_Type::size()->size_t
-		template<class A = Class_Type>
-		auto asRefArray()
-			->std::enable_if_t< true
-			, class_<Class_Type>&>
+		auto asRefArray()->class_<Class_Type>&
 		{
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			type.is_array_ = true;
-			type.is_ref_array_ = true;
-			type.size_func_ = [](void* array_instance)->std::size_t
+			auto size_func = [](Instance* ins)->std::size_t
 			{
-				return reinterpret_cast<A*>(array_instance)->size();
+				return ins->castTo<Class_Type>()->size();
 			};
-			type.at_func_ = [](void* array_instance, std::size_t id)->Instance
+			auto at_func = [](Instance* ins, std::size_t id)->Instance
 			{
-				return reinterpret_cast<A*>(array_instance)->at(id);
+				return ins->castTo<Class_Type>()->at(id);
 			};
-			type.push_back_func_ = [](void* array_instance, const Instance& value)->void
+			auto push_back_func = [](Instance* ins, const Instance& value)->void
 			{
-				reinterpret_cast<A*>(array_instance)->push_back(
-					reinterpret_cast<typename A::value_type*>(const_cast<void*>(value.toVoidPtr()))
-				);
+				ins->castTo<Class_Type>()->push_back(value.castTo<Class_Type::value_type>());
 			};
 
+			type_->array_data_ = std::unique_ptr<Type::ArrayData>(new Type::ArrayData{ true, type_, size_func, at_func,push_back_func });
 			return *this;
 		}
 
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T)->void
 		//         Class_Type::size()->size_t    
-		template<class A = Class_Type>
 		auto asArray()->class_<Class_Type>&
 		{
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			type.is_array_ = true;
-			type.size_func_ = [](void* array_instance)->std::size_t
+			auto size_func = [](Instance* ins)->std::size_t
 			{
-				return reinterpret_cast<A*>(array_instance)->size();
+				return ins->castTo<Class_Type>()->size();
 			};
-			type.at_func_ = [](void* array_instance, std::size_t id)->Instance 
+			auto at_func = [](Instance* ins, std::size_t id)->Instance
 			{
-				return reinterpret_cast<A*>(array_instance)->at(id);
+				return ins->castTo<Class_Type>()->at(id);
 			};
-			type.push_back_func_ = [](void* array_instance, const Instance& value)->void
+			auto push_back_func = [](Instance* ins, const Instance& value)->void
 			{
-				return reinterpret_cast<A*>(array_instance)->push_back(
-					*reinterpret_cast<const typename A::value_type*>(value.toVoidPtr())
-				);
+				ins->castTo<Class_Type>()->push_back(*value.castTo<Class_Type::value_type>());
 			};
 
+			type_->array_data_ = std::unique_ptr<Type::ArrayData>(new Type::ArrayData{ false, type_, size_func, at_func,push_back_func });
 			return *this;
-		}
-
-		auto alias(std::string_view name)
-		{
-			auto[ins2, ok2] = reflect_names().emplace(std::make_pair(std::string(name), typeid(Class_Type).hash_code()));
-			if (!ok2) THROW_FILE_LINE("class name already exist");
 		}
 
 		// espect: Class_Type::v where v is a value
 		template<typename Value>
-		auto property(std::string_view name, Value v)
-			->std::enable_if_t<std::is_lvalue_reference_v<decltype((new Class_Type)->*v)>, class_<Class_Type>&>
+		auto property(std::string_view name, Value v)->std::enable_if_t<
+				std::is_member_object_pointer_v<Value>
+				&& std::is_lvalue_reference_v<decltype((reinterpret_cast<Class_Type*>(nullptr))->*v)>
+			, class_<Class_Type>&>
 		{
-			using T = std::remove_reference_t<decltype((new Class_Type)->*v)>;
-			
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto prop = Property(name, &type);
-			prop.get_ = [v](void* ins)->Instance { return reinterpret_cast<Class_Type*>(ins)->*v; };
-			prop.set_ = [v](void* ins, const Instance &value) { reinterpret_cast<Class_Type*>(ins)->*v = *reinterpret_cast<const T*>(value.toVoidPtr()); };
-			type.this_properties_.emplace_back(prop);
-			
+			using T = std::decay_t<decltype((reinterpret_cast<Class_Type*>(nullptr))->*v)>;
+
+			auto &prop = type_->this_properties_.emplace_back(name, type_);
+			prop.get_ = [v](Instance *obj)->Instance { return obj->castTo<Class_Type>()->*v; };
+			prop.set_ = [v](Instance *obj, Instance value)
+			{
+				obj->castTo<Class_Type>()->*v = *value.castTo<T>();
+			};
+			prop.type_info_ = &typeid(T);
+
 			return *this;
 		}
 
 		// espect: Class_Type::v()->T& where v is a reference function
 		template<typename Value>
-		auto property(std::string_view name, Value v)
-			->std::enable_if_t<std::is_lvalue_reference_v<decltype(((new Class_Type)->*v)())>
-			&& !std::is_const_v<decltype(((new Class_Type)->*v)())>
+		auto property(std::string_view name, Value v)->std::enable_if_t<
+				std::is_member_function_pointer_v<Value>
+				&& std::is_lvalue_reference_v<decltype(((reinterpret_cast<Class_Type*>(nullptr))->*v)())>
+				&& !std::is_const_v<decltype(((reinterpret_cast<Class_Type*>(nullptr))->*v)())>
 			, class_<Class_Type>&>
 		{
-			using T = std::remove_reference_t<decltype(((new Class_Type)->*v)())>;
+			using T = std::decay_t<decltype(((reinterpret_cast<Class_Type*>(nullptr))->*v)())>;
 
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto prop = Property(name, &type);
-			prop.get_ = [v](void* ins)->Instance { return (reinterpret_cast<Class_Type*>(ins)->*v)(); };
-			prop.set_ = [v](void* ins, const Instance &value) {	(reinterpret_cast<Class_Type*>(ins)->*v)() = *reinterpret_cast<const T*>(value.toVoidPtr()); };
-			type.this_properties_.emplace_back(prop);
+			auto &prop = type_->this_properties_.emplace_back(name, type_);
+			prop.get_ = [v](Instance *obj)->Instance { return (obj->castTo<Class_Type>()->*v)(); };
+			prop.set_ = [v](Instance *obj, Instance value) { (obj->castTo<Class_Type>()->*v)() = *value.castTo<T>(); };
+			prop.type_info_ = &typeid(T);
 
 			return *this;
 		}
@@ -344,18 +355,19 @@ namespace aris::core
 		// espect: Class_Type::setProp(T v)->void  
 		//         Class_Type::getProp()->T
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
-		auto property(std::string_view name, SetFunc s, GetFunc g) -> 				
-			std::enable_if_t< !(std::is_class_v<C> &&
-				std::is_same_v<SetFunc, void (C::*)(std::remove_reference_t<decltype(((new Class_Type)->*g)())>*) >)
+		auto property(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t< 
+				std::is_class_v<C> 
+				&& std::is_member_function_pointer_v<SetFunc>
+				&& std::is_member_function_pointer_v<GetFunc>
+				&& (!std::is_same_v<SetFunc, void (C::*)(std::decay_t<decltype(((reinterpret_cast<C*>(nullptr))->*g)())>*) >)
 			, class_<Class_Type>& >
 		{
-			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
+			using T = std::decay_t<decltype(((reinterpret_cast<C*>(nullptr))->*g)())>;
 
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto prop = Property(name, &type);
-			prop.get_ = [g](void* ins)->Instance {	return (reinterpret_cast<Class_Type*>(ins)->*g)(); };
-			prop.set_ = [s](void* ins, const Instance &value){ (reinterpret_cast<Class_Type*>(ins)->*s)(*reinterpret_cast<const T*>(value.toVoidPtr())); };
-			type.this_properties_.emplace_back(prop);
+			auto &prop = type_->this_properties_.emplace_back(name, type_);
+			prop.get_ = [g](Instance *obj)->Instance{	return (obj->castTo<Class_Type>()->*g)(); };
+			prop.set_ = [s](Instance *obj, Instance value){ (obj->castTo<Class_Type>()->*s)(*value.castTo<T>()); };
+			prop.type_info_ = &typeid(T);
 
 			return *this;
 		}
@@ -365,30 +377,49 @@ namespace aris::core
 		//
 		// note  : set function will responsible for life-time management of v
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
-		auto property(std::string_view name, SetFunc s, GetFunc g) -> 
-				std::enable_if_t< std::is_class_v<C> && 
-					std::is_same_v<SetFunc, void (C::*)(std::remove_reference_t<decltype(((new Class_Type)->*g)())>*) >
+		auto property(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t< 
+				std::is_class_v<C> 
+				&& std::is_member_function_pointer_v<SetFunc>
+				&& std::is_member_function_pointer_v<GetFunc>
+				&& std::is_same_v<SetFunc, void (C::*)(std::decay_t<decltype(((reinterpret_cast<C*>(nullptr))->*g)())>*) >
 			, class_<Class_Type>& >
 		{
-			using T = std::remove_reference_t<decltype(((new Class_Type)->*g)())>;
+			using T = std::decay_t<decltype(((reinterpret_cast<C*>(nullptr))->*g)())>;
 
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto prop = Property(name, &type);
-			prop.get_ = [g](void* ins)->Instance 
-			{	
-				return (reinterpret_cast<Class_Type*>(ins)->*g)();
-			};
-			prop.set_ = [s](void* ins, const Instance &value) {	(reinterpret_cast<Class_Type*>(ins)->*s)(const_cast<T*>(reinterpret_cast<const T*>(value.toVoidPtr()))); };
+			auto &prop = type_->this_properties_.emplace_back(name, type_);
+			prop.get_ = [g](Instance *obj)->Instance {	return (obj->castTo<Class_Type>()->*g)();	};
+			prop.set_ = [s](Instance *obj, Instance value) {(obj->castTo<Class_Type>()->*s)(value.castTo<T>()); };
+			prop.type_info_ = &typeid(T);
 			prop.accept_ptr_ = true;
-			type.this_properties_.emplace_back(prop);
+
+			return *this;
+		}
+
+		// espect: setProp(C *obj, T v)->void  
+		//         getProp(C *obj)->T
+		//
+		// note  : set function will responsible for life-time management of v
+		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
+		auto property(std::string_view name, SetFunc s, GetFunc g)->std::enable_if_t<
+				std::is_class_v<C>
+				&& !std::is_member_function_pointer_v<SetFunc>
+				&& !std::is_member_function_pointer_v<GetFunc>
+				&& !std::is_same_v<SetFunc, void(*)(C*, std::decay_t<decltype((*g)(reinterpret_cast<C*>(nullptr)))>*) >
+			, class_<Class_Type>& >
+		{
+			using T = std::decay_t<decltype((*g)(reinterpret_cast<C*>(nullptr)))>;
+
+			auto &prop = type_->this_properties_.emplace_back(name, type_);
+			prop.get_ = [g](Instance *obj)->Instance {	return (*g)(obj->castTo<C>());	};
+			prop.set_ = [s](Instance *obj, Instance value) {(*s)(obj->castTo<C>(), *value.castTo<T>()); };
+			prop.type_info_ = &typeid(T);
 
 			return *this;
 		}
 
 		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func)
 		{
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto found = std::find_if(type.this_properties_.begin(), type.this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
+			auto found = std::find_if(type_->this_properties_.begin(), type_->this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			auto &prop = *found;
 
 			prop.to_str_func_ = func;
@@ -398,13 +429,15 @@ namespace aris::core
 
 		auto propertyFromStrMethod(std::string_view prop_name, std::function<void(void* value, std::string_view str)> func)
 		{
-			auto &type = reflect_types().at(typeid(Class_Type).hash_code());
-			auto found = std::find_if(type.this_properties_.begin(), type.this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
+			auto found = std::find_if(type_->this_properties_.begin(), type_->this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			auto &prop = *found;
 			prop.from_str_func_ = func;
 
 			return *this;
 		}
+
+	private:
+		Type * type_;
 	};
 
 	auto inline charToStr(void* value)->std::string

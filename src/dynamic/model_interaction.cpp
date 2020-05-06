@@ -10,6 +10,8 @@
 #include <limits>
 #include <type_traits>
 
+#include "aris/core/reflection.hpp"
+
 #include "aris/dynamic/model.hpp"
 
 namespace aris::dynamic
@@ -25,10 +27,10 @@ namespace aris::dynamic
 	}
 	auto Interaction::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
-		prtI_name = xml_ele.Attribute("prt_m");
-		prtJ_name = xml_ele.Attribute("prt_n");
-		makI_name = xml_ele.Attribute("mak_i");
-		makJ_name = xml_ele.Attribute("mak_j");
+		prt_name_M_ = xml_ele.Attribute("prt_m");
+		prt_name_N_ = xml_ele.Attribute("prt_n");
+		mak_name_I_ = xml_ele.Attribute("mak_i");
+		mak_name_J_ = xml_ele.Attribute("mak_j");
 		
 		
 		
@@ -58,6 +60,22 @@ namespace aris::dynamic
 		makJ_ = &(*mak_j);
 		*/
 		DynEle::loadXml(xml_ele);
+	}
+	auto Interaction::prtNameM()const->std::string { return prt_name_M_; }
+	auto Interaction::setPrtNameM(std::string_view name)->void { prt_name_M_ = name; }
+	auto Interaction::prtNameN()const->std::string { return prt_name_N_; }
+	auto Interaction::setPrtNameN(std::string_view name)->void { prt_name_N_ = name; }
+	auto Interaction::makNameI()const->std::string { return mak_name_I_; }
+	auto Interaction::setMakNameI(std::string_view name)->void { mak_name_I_ = name; }
+	auto Interaction::makNameJ()const->std::string { return mak_name_J_; }
+	auto Interaction::setMakNameJ(std::string_view name)->void { mak_name_J_ = name; }
+	Interaction::Interaction(const std::string &name, Marker *makI, Marker *makJ, bool is_active)
+		: DynEle(name, is_active), makI_(makI), makJ_(makJ) 
+		, prt_name_M_(makI ? makI->fatherPart().name() : std::string())
+		, prt_name_N_(makJ ? makJ->fatherPart().name() : std::string())
+		, mak_name_I_(makI ? makI->name() : std::string())
+		, mak_name_J_(makJ ? makJ->name() : std::string())
+	{
 	}
 
 	struct Constraint::Imp { Size col_id_, blk_col_id_; double cf_[6]{ 0 }; };
@@ -106,7 +124,6 @@ namespace aris::dynamic
 		double frc_coe_[3]{ 0,0,0 };
 		double mp_offset_{ 0 }, mp_factor_{ 1.0 };
 		double mp_{ 0 }, mv_{ 0 }, ma_{ 0 };
-
 		double loc_cm_I[6];
 	};
 	auto Motion::saveXml(aris::core::XmlElement &xml_ele) const->void
@@ -185,6 +202,12 @@ namespace aris::dynamic
 		makI()->getAs(*makJ(), as_i2j);
 		setMa(as_i2j[axis()]);
 	}
+	auto Motion::setAxis(Size axis)->void 
+	{
+		imp_->component_axis_ = axis;
+		s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
+		const_cast<double*>(locCmI())[axis] = 1.0;
+	}
 	auto Motion::axis()const noexcept->Size { return imp_->component_axis_; }
 	auto Motion::frcCoe()const noexcept->const double3& { return imp_->frc_coe_; }
 	auto Motion::setFrcCoe(const double *frc_coe) noexcept->void { std::copy_n(frc_coe, 3, imp_->frc_coe_); }
@@ -208,15 +231,12 @@ namespace aris::dynamic
 	Motion::~Motion() = default;
 	Motion::Motion(const std::string &name, Marker* makI, Marker* makJ, Size component_axis, const double *frc_coe, double mp_offset, double mp_factor, bool active) : Constraint(name, makI, makJ, active)
 	{
-		imp_->component_axis_ = component_axis;
 		imp_->mp_offset_ = mp_offset;
 		imp_->mp_factor_ = mp_factor;
 
 		static const double default_frc_coe[3]{ 0,0,0 };
 		setFrcCoe(frc_coe ? frc_coe : default_frc_coe);
-
-		s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
-		const_cast<double*>(locCmI())[axis()] = 1.0;
+		setAxis(component_axis);
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Motion);
 
@@ -586,4 +606,73 @@ namespace aris::dynamic
 		s_vi(6, fsI, fsJ);
 	}
 	SingleComponentForce::SingleComponentForce(const std::string &name, Marker* makI, Marker* makJ, Size componentID) : Force(name, makI, makJ), component_axis_(componentID) {}
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Interaction>("Interaction")
+			.inherit<aris::dynamic::DynEle>()
+			.property("prt_m", &Interaction::setPrtNameM, &Interaction::prtNameM)
+			.property("prt_n", &Interaction::setPrtNameN, &Interaction::prtNameN)
+			.property("mak_i", &Interaction::setMakNameI, &Interaction::makNameI)
+			.property("mak_j", &Interaction::setMakNameJ, &Interaction::makNameJ)
+			;
+
+		auto setCf = [](Constraint* c, aris::core::Matrix cf_mat)->void {c->setCf(cf_mat.data()); };
+		auto getCf = [](Constraint* c)->aris::core::Matrix {	return aris::core::Matrix(1, c->dim(), c->cf()); };
+		aris::core::class_<Constraint>("Constraint")
+			.inherit<aris::dynamic::Interaction>()
+			.property("cf", &setCf, &getCf)
+			;
+
+		auto setMotionFrc = [](Motion* c, aris::core::Matrix mat)->void {c->setFrcCoe(mat.data()); };
+		auto getMotionFrc = [](Motion* c)->aris::core::Matrix {	return aris::core::Matrix(1, 3, c->frcCoe()); };
+		aris::core::class_<Motion>("Motion")
+			.inherit<aris::dynamic::Constraint>()
+			.property("component", &Motion::setAxis, &Motion::axis)
+			.property("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
+			.property("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)
+			.property("mp", &Motion::setMp, &Motion::mp)
+			.property("mv", &Motion::setMv, &Motion::mv)
+			.property("ma", &Motion::setMa, &Motion::ma)
+			.property("frc_coe", &setMotionFrc, &getMotionFrc)
+			;
+
+		aris::core::class_<GeneralMotion>("GeneralMotion")
+			.inherit<aris::dynamic::Constraint>()
+			;
+
+		aris::core::class_<Joint>("Joint")
+			.inherit<aris::dynamic::Constraint>()
+			;
+
+		aris::core::class_<RevoluteJoint>("RevoluteJoint")
+			.inherit<aris::dynamic::Joint>()
+			;
+
+		aris::core::class_<PrismaticJoint>("PrismaticJoint")
+			.inherit<aris::dynamic::Joint>()
+			;
+
+		aris::core::class_<UniversalJoint>("UniversalJoint")
+			.inherit<aris::dynamic::Joint>()
+			;
+
+		aris::core::class_<SphericalJoint>("SphericalJoint")
+			.inherit<aris::dynamic::Joint>()
+			;
+
+		aris::core::class_<Force>("Force")
+			.inherit<aris::dynamic::Interaction>()
+			;
+
+		aris::core::class_<GeneralForce>("GeneralForce")
+			.inherit<aris::dynamic::Force>()
+			;
+
+		aris::core::class_<SingleComponentForce>("SingleComponentForce")
+			.inherit<aris::dynamic::Force>()
+			.property("component", &SingleComponentForce::setComponentAxis, &SingleComponentForce::componentAxis)
+			;
+
+	}
 }

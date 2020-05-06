@@ -145,9 +145,70 @@ int main()
 	aris::control::aris_rt_task_join(hhhhhh);
 	
 	*/
-	aris::core::Socket sssssss;
-	aris::core::Instance aaaaaaaaaaaa = std::move(sssssss);
+
+	std::cout << typeid(unsigned char).hash_code() << std::endl;
+	std::cout << typeid(signed char).hash_code() << std::endl;
+	std::cout << typeid(char).hash_code() << std::endl;
+	std::cout << typeid(std::int8_t).hash_code() << std::endl;
+	std::cout << typeid(std::uint8_t).hash_code() << std::endl;
+
+	auto controller = aris::robot::createControllerRokaeXB4();
+
+	auto &s = controller->slavePool()[0];
+	auto &ec_s = dynamic_cast<aris::control::EthercatMotor&>(s);
+
+	auto &slave_pool = controller->slavePool();
+
+	auto &objjjj = ec_s.smPool();
+	auto &ec_controller = dynamic_cast<aris::control::EthercatController&>(*controller);
+
+	//std::cout << controller->xmlString() << std::endl;
+
+	//std::cout << aris::core::toXmlString(*controller) << std::endl;
+	//auto strsssssss = controller->xmlString();
+
+	//aris::control::EthercatController ec;
+	//aris::core::fromXmlString(ec, strsssssss);
+	//std::cout << aris::core::toXmlString(ec) << std::endl;
+
+
+	//aris::control::EthercatMotor slave2;
+	//dynamic_cast<aris::control::EthercatMotor&>(s).smPool2() = dynamic_cast<aris::control::EthercatMotor&>(s).smPool();
+	//
+	//std::cout << aris::core::toXmlString(s) << std::endl;
+
+	////std::cout << s.xmlString() << std::endl;
+	////std::cout << aris::core::toXmlString(s) << std::endl;
+	//aris::core::fromXmlString(slave2, aris::core::toXmlString(s));
+	////std::cout << slave2.xmlString() << std::endl;
+	//std::cout << aris::core::toXmlString(slave2) << std::endl;
+
+	/*
+	auto model = aris::robot::createModelRokaeXB4();
+	std::cout << aris::core::toXmlString(*model) << std::endl;
+
+	auto xml_str = aris::core::toXmlString(*model);
+
+	aris::dynamic::Model model3 = *model;
+
+
+
+	aris::dynamic::Model model2;
+	aris::core::fromXmlString(model2, xml_str);
+
+
+
+	std::cout << "---------------------------------------------------" << std::endl;
+
+	//std::cout << model->xmlString() << std::endl;
+
+	std::cout << aris::core::toXmlString(model2) << std::endl;
+
+	char tessssssssssssssss;
+	std::cin >> tessssssssssssssss;
+	*/
 	
+	/*
 	// 创建模型 //
 	aris::dynamic::Serial3Param param;
 	param.external_axes.push_back({ aris::dynamic::ExternalAxis::RotationalAxis });
@@ -166,7 +227,7 @@ int main()
 	double ext[]{ 0.1,0.2 };
 	//solver.setPmEE(ee, ext);
 
-	double eula[3]{ 0.1,0.2,0.3 };
+	double eula[3]{ 0.0, 1.57, 3.14 };
 	solver.setEulaAngle(eula, "321");
 
 	// 求解 //
@@ -213,7 +274,7 @@ int main()
 	m->motionPool()[0].setMp(0.8);
 	solver2.kinPos();
 	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
-
+	//*/
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	int a = 50;
@@ -245,12 +306,12 @@ int main()
 	std::cout << aris::core::toXmlString(vec_A_ele2) << std::endl;
 
 	aris::core::Instance vec_ins = std::vector<int>{ 1,2,3 };
-	auto &value_ele = vec_ins.at(0).to<int>();
+	auto &value_ele = *vec_ins.at(0).castTo<int>();
 	
 
 	
 	value_ele = 1000;
-	std::cout << vec_ins.at(0).to<int>() << std::endl;
+	std::cout << *vec_ins.at(0).castTo<int>() << std::endl;
 	
 
 	vec_ins.push_back(150);
@@ -264,28 +325,28 @@ int main()
 	//std::cout << typeid(b).name() << std::endl;
 
 	aris::core::Instance i1 = 5.9546;
-	std::cout << i1.to<double>() << std::endl;
+	std::cout << *i1.castTo<double>() << std::endl;
 
 	try
 	{
 		aris::core::Instance k = b;
 		k.set("a", 1000);
-		std::cout << "get : " << k.get("a").to<int>() << std::endl;
+		std::cout << "get : " << *k.get("a").castTo<int>() << std::endl;
 
 		k.set("a", bbb);
-		std::cout << "get : " << k.get("a").to<int>() << std::endl;
+		std::cout << "get : " << *k.get("a").castTo<int>() << std::endl;
 
 		k.set("ds", 1350);
-		std::cout << "get : " << k.get("ds").to<int>() << std::endl;
+		std::cout << "get : " << *k.get("ds").castTo<int>() << std::endl;
 
 		k.set("ds", 1500);
-		std::cout << "get : " << k.get("ds").to<int>() << std::endl;
+		std::cout << "get : " << *k.get("ds").castTo<int>() << std::endl;
 
 		k.set("d", 1258);
-		std::cout << "get : " << k.get("d").to<int>() << std::endl;
+		std::cout << "get : " << *k.get("d").castTo<int>() << std::endl;
 
 		k.set("c", 1366);
-		std::cout << "get : " << k.get("c").to<int>() << std::endl;
+		std::cout << "get : " << *k.get("c").castTo<int>() << std::endl;
 
 		std::cout << "reference::" << k.get("d").isReference() << std::endl;
 		std::cout << "reference::" << k.get("c").isReference() << std::endl;
@@ -301,7 +362,7 @@ int main()
 		auto b = k.get("base");
 
 		b.set("ddd", 1532);
-		auto i = b.get("ddd").to<int>();
+		auto i = *b.get("ddd").castTo<int>();
 		std::cout << i << std::endl;
 
 
@@ -362,6 +423,11 @@ int main()
 
 	std::cout << aris::core::toXmlString(parser) << std::endl;
 
+
+	aris::core::CommandParser parser2;
+	aris::core::fromXmlString(parser2, parser.xmlString());
+
+	std::cout << parser2.xmlString() << std::endl;
 
 	//for (;;)
 	//{

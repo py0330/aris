@@ -13,10 +13,27 @@
 
 namespace aris::core
 {
-	auto reflect_types()->std::map<std::size_t, Type>&
+	auto reflect_types_raw()->std::map<std::size_t, Type>&
 	{
 		static std::map<std::size_t, Type> reflection_types_;
 		return reflection_types_;
+	}
+	auto initAllTypes()->void
+	{
+		static bool init_all_ = false;
+
+		if (init_all_)return;
+		init_all_ = true;
+
+		for (auto &t : reflect_types_raw())
+		{
+			t.second.init();
+		}
+	}
+	auto reflect_types()->std::map<std::size_t, Type>&
+	{
+		initAllTypes();
+		return reflect_types_raw();
 	}
 	auto reflect_names()->std::map<std::string, std::size_t>&
 	{
@@ -24,50 +41,71 @@ namespace aris::core
 		return reflection_names_;
 	}
 
-	auto Property::set(Instance *ins, const Instance& arg)const->void { set_(ins->toVoidPtr(), arg); }
+	auto registerType(std::size_t hash_code, std::string_view name, Type::DefaultCtor ctor)->Type*
+	{
+		auto[ins, ok] = reflect_types_raw().emplace(std::make_pair(hash_code, Type(name)));
+		if (!ok) THROW_FILE_LINE("class already exist");
+		auto[ins2, ok2] = reflect_names().emplace(std::make_pair(ins->second.name(), hash_code));
+		if (!ok2) THROW_FILE_LINE("class name already exist");
+
+		ins->second.default_ctor_ = ctor;
+
+		return &ins->second;
+	}
+	auto alias_impl(Type*type, std::string_view alias_name)->void
+	{
+		auto code = reflect_names().at(std::string(type->name()));
+		auto[ins2, ok2] = reflect_names().emplace(std::make_pair(std::string(alias_name), code));
+		if (!ok2) THROW_FILE_LINE("class name already exist");
+	}
+
+	auto Property::set(Instance *ins, Instance arg)const->void { set_(ins, arg); }
 	auto Property::get(Instance *ins)const->Instance 
 	{ 
-		auto ret = get_(ins->toVoidPtr());
+		auto ret = get_(ins);
 		ret.belong_to_ = this;
 		return ret;
 	}
 	auto Property::acceptPtr()const->bool { return accept_ptr_; }
-	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
-	{ 
-		return default_ctor_();
-	}
-	auto Type::inheritTypes()const->std::vector<const Type*>
+	auto Property::type()->const Type* { return &reflect_types().at(type_info_->hash_code()); }
+	auto Type::create()const->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>{ return default_ctor_();}
+	auto Type::inheritTypes()const->std::vector<const Type*>{ return inherit_types_; }
+	auto Type::properties()const->const std::vector<Property*>&{return properties_ptr_;};
+	auto Type::propertyAt(std::string_view name)const->Property*
 	{
-		if (inherit_types_.empty())
+		auto found = std::find_if(properties().begin(), properties().end(), [name](Property* prop) ->bool
 		{
-			for (auto &t : inherit_type_infos_)
-			{
-				const_cast<std::vector<const Type *>&>(inherit_types_).push_back(&reflect_types().at(t->hash_code()));
-			}
-		}
-		return inherit_types_;
+			return prop->name() == name;
+		});
+		return found == properties().end() ? nullptr : *found;
 	}
-	auto Type::properties()const->const std::vector<Property*>&
+	auto Type::init()const->void
 	{
-		// 第一次调用构造所有的property //
 		if (!inited)
 		{
-			auto &vec = const_cast<std::vector<Property*>&>(properties_ptr_);
+			auto this_type = const_cast<Type*>(this);
+			this_type->inited = true;
 			
-			// 防止重名的数据
-			auto insert_prop = [&vec](Property* ist) 
+			// init inherit types //
+			for (auto &t : inherit_type_infos_)
 			{
+				this_type->inherit_types_.push_back(&reflect_types().at(t->hash_code()));
+				inherit_types_.back()->init();
+			}
+			
+			// init inherit properties //
+			auto insert_prop = [this_type](Property* ist)
+			{
+				// 防止重名的数据
+				auto &vec = this_type->properties_ptr_;
 				auto found = std::find_if(vec.begin(), vec.end(), [ist](Property* prop) ->bool
 				{
 					return prop->name() == ist->name();
 				});
 
-				if (found == vec.end())
-					vec.push_back(ist);
-				else
-					*found = ist;
+				if (found == vec.end())	vec.push_back(ist);
+				else *found = ist;
 			};
-
 			for (auto t : inheritTypes())
 			{
 				for (auto ist : t->properties())
@@ -75,27 +113,60 @@ namespace aris::core
 					insert_prop(ist);
 				}
 			}
+			for (auto &ist : this_properties_)insert_prop(const_cast<Property*>(&ist));
 
-			for (auto &ist : this_properties_)
+			// copy inherited, text methods & array_infos //
+			for (auto &t : inherit_types_)
 			{
-				insert_prop(const_cast<Property*>(&ist));
-			}
+				// copy array_infos //
+				if (!isArray() && t->isArray())
+				{
+					this_type->array_data_.reset(new Type::ArrayData(*t->array_data_));
+				}
 
-			const_cast<Type*>(this)->inited = true;
+				// copy text methods //
+				if (!to_string_)this_type->to_string_ = t->to_string_;
+				if (!from_string_)this_type->from_string_ = t->from_string_;
+			}
+		}
+	}
+	auto Type::isBaseOf(const Type* base, const Type* derived)->bool
+	{
+		if (base == derived || std::find(derived->inherit_types_.begin(), derived->inherit_types_.end(), base) != derived->inherit_types_.end())
+		{
+			return true;
 		}
 
-		return properties_ptr_;
-	};
-	auto Type::propertyAt(std::string_view name)const->Property*
-	{
-		auto found = std::find_if(properties().begin(), properties().end(), [name](Property* prop) ->bool
+		for (auto t : derived->inherit_types_)
 		{
-			return prop->name() == name;
-		});
+			if (isBaseOf(base, t)) return true;
+		}
 
-		return found == properties().end() ? nullptr : *found;
+		return false;
 	}
-	auto Instance::toVoidPtr()->void* {return isReference() ? std::any_cast<InstanceRef>(&value_)->data_ : type()->any_to_void_(&value_);}
+	auto Instance::castToType(const Type*t)const->void* 
+	{
+		if (type() == t) return toVoidPtr();
+
+		std::function<void*(const Type*, void*)> iterative_cast = [&](const Type*type, void* data)->void*
+		{
+			auto inherit_types = type->inheritTypes();
+
+			for (Size i = 0; i < inherit_types.size(); ++i)
+			{
+				if (inherit_types[i] == t)
+					return type->inherit_cast_vec_[i](data);
+				
+				if (auto success = iterative_cast(inherit_types[i], type->inherit_cast_vec_[i](data)))
+					return success;
+			}
+
+			return nullptr;
+		};
+
+		return iterative_cast(type(), toVoidPtr());
+	}
+	auto Instance::toVoidPtr()const->void* {return isReference() ? std::get<InstanceRef>(data_).data_ : std::get<InstancePtr>(data_).data_.get();}
 	auto Instance::set(std::string_view prop_name, Instance arg)->void
 	{
 		type()->propertyAt(prop_name)->set(this, arg);
@@ -104,113 +175,114 @@ namespace aris::core
 	{
 		return type()->propertyAt(prop_name)->get(this);
 	}
-	auto Instance::isReference()->bool { return std::any_cast<InstanceRef>(&value_); }
-	auto Instance::type()->const Type* 
+	auto Instance::isReference()const->bool { return data_.index() == 1; }
+	auto Instance::type()const->const Type* 
 	{ 
 		if (isEmpty()) return nullptr;
 		
-		auto type_info_ = 
-			(std::any_cast<InstanceRef>(&value_) ? std::any_cast<InstanceRef>(&value_)->type_ : std::any_cast<InstancePtr>(&value_)->type_);
-
 		return reflect_types().find(type_info_->hash_code()) == reflect_types().end() ? nullptr : &reflect_types().at(type_info_->hash_code());
 	}
-	auto Instance::isBasic()->bool { return type()->is_basic_; }
-	auto Instance::isArray()->bool { return type()->is_array_; }
+	auto Instance::isBasic()const->bool { return type()->isBasic(); }
+	auto Instance::isArray()const->bool { return type()->isArray(); }
 	auto Instance::toString()->std::string 
 	{ 
-		if (!isBasic())THROW_FILE_LINE("instance is NOT basic type");
 		if (belong_to_ && belong_to_->to_str_func_)return belong_to_->to_str_func_(toVoidPtr());
-		return type()->to_string_(toVoidPtr());
+		if (type()->to_string_)return type()->to_string_(this);
+		return "";
 	}
 	auto Instance::fromString(std::string_view str)->void 
 	{ 
-		if (!isBasic())THROW_FILE_LINE("instance is NOT basic type");
 		if (belong_to_ && belong_to_->from_str_func_)return belong_to_->from_str_func_(toVoidPtr(), str);
-		type()->from_string_(toVoidPtr(), str); 
+		if (type()->from_string_)type()->from_string_(this, str);
 	}
 	auto Instance::size()->std::size_t
 	{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
-		return type()->size_func_(toVoidPtr());
+		return type()->array_data_->size_func_(this);
 	}
 	auto Instance::at(std::size_t id)->Instance
 	{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
-		return type()->at_func_(toVoidPtr(), id);
+		return type()->array_data_->at_func_(this, id);
 	}
 	auto Instance::push_back(Instance element)->void
 	{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
-		type()->push_back_func_(toVoidPtr(), element);
+		type()->array_data_->push_back_func_(this, element);
 	}
 
-	template<typename Type>
-	auto inline get_chars(std::string_view param)->Type
-	{
-		Type ret;
-		auto result = std::from_chars(param.data(), param.data() + param.size(), ret);
-		if (result.ec == std::errc::invalid_argument) { THROW_FILE_LINE("invalid argument for param:" + std::string(param)); }
-		
-		return ret;
-	}
-
-#define ARIS_REGISTRATION_BASIC(T, NAME) \
-	aris::core::class_<T>(NAME) \
-		.asBasic([](void *v)->std::string \
-		{ \
-			return std::to_string(*reinterpret_cast<T*>(v)); \
-		}, [](void *v, std::string_view str)->void \
-		{ \
-			auto result = std::from_chars(str.data(), str.data() + str.size(), *reinterpret_cast<T*>(v)); \
-			if (result.ec == std::errc::invalid_argument) THROW_FILE_LINE("invalid string"); \
-		});
-
+	auto uint64_to_str(std::uint64_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint64_t*>(value)); }
+	auto uint64_from_str(std::uint64_t *v, std::string_view str)->void { *reinterpret_cast<std::uint64_t*>(v) = std::strtoull(str.data(), nullptr, 0); }
+	auto uint32_to_str(std::uint32_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint32_t*>(value)); }
+	auto uint32_from_str(std::uint32_t *v, std::string_view str)->void { *reinterpret_cast<std::uint32_t*>(v) = (std::uint32_t)std::strtoull(str.data(), nullptr, 0); }
+	auto uint16_to_str(std::uint16_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint16_t*>(value)); }
+	auto uint16_from_str(std::uint16_t *v, std::string_view str)->void { *reinterpret_cast<std::uint16_t*>(v) = (std::uint16_t)std::strtoull(str.data(), nullptr, 0); }
+	auto uint8_to_str(std::uint8_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint8_t*>(value)); }
+	auto uint8_from_str(std::uint8_t *v, std::string_view str)->void { *reinterpret_cast<std::uint8_t*>(v) = (std::uint8_t)std::strtoull(str.data(), nullptr, 0); }
+	auto int64_to_str(std::int64_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int64_t*>(value)); }
+	auto int64_from_str(std::int64_t *v, std::string_view str)->void { *reinterpret_cast<std::int64_t*>(v) = std::strtoll(str.data(), nullptr, 0); }
+	auto int32_to_str(std::int32_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int32_t*>(value)); }
+	auto int32_from_str(std::int32_t *v, std::string_view str)->void { *reinterpret_cast<std::int32_t*>(v) = (std::int32_t)std::strtoll(str.data(), nullptr, 0); }
+	auto int16_to_str(std::int16_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int16_t*>(value)); }
+	auto int16_from_str(std::int16_t *v, std::string_view str)->void { *reinterpret_cast<std::int16_t*>(v) = (std::int16_t)std::strtoll(str.data(), nullptr, 0); }
+	auto int8_to_str(std::int8_t* value)->std::string { return std::to_string(*reinterpret_cast<std::int8_t*>(value)); }
+	auto int8_from_str(std::int8_t *v, std::string_view str)->void { *reinterpret_cast<std::int8_t*>(v) = (std::int8_t)std::strtoll(str.data(), nullptr, 0); }
 
 	ARIS_REGISTRATION
 	{
-		ARIS_REGISTRATION_BASIC(std::int16_t, "int16");
-		ARIS_REGISTRATION_BASIC(std::int64_t, "int64");
-		ARIS_REGISTRATION_BASIC(std::uint8_t, "uint8");
-		ARIS_REGISTRATION_BASIC(std::uint16_t, "uint16");
-		ARIS_REGISTRATION_BASIC(std::uint32_t, "uint32");
-		ARIS_REGISTRATION_BASIC(std::uint64_t, "uint64");
-
 		aris::core::class_<char>("char")
-			.asBasic([](void *v)->std::string
+			.textMethod([](char *v)->std::string
 			{
-				return std::to_string(*reinterpret_cast<char*>(v));
-			}, [](void *v, std::string_view str)->void
+				return std::string(1, *v);
+			}, [](char *v, std::string_view str)->void
 			{
-				auto result = std::from_chars(str.data(), str.data() + str.size(), *reinterpret_cast<char*>(v));
-				if (result.ec == std::errc::invalid_argument) THROW_FILE_LINE("invalid string");
+				*v = str[0];
 			})
-			.alias("int8");
+			;
+		
+		aris::core::class_<std::int8_t>("int8")
+			.textMethod(int8_to_str, int8_from_str)
+			;
+
+		aris::core::class_<std::int16_t>("int16")
+			.textMethod(int16_to_str, int16_from_str);
 
 		aris::core::class_<std::int32_t>("int32")
-			.asBasic([](void *v)->std::string
-			{
-				return std::to_string(*reinterpret_cast<std::int32_t*>(v));
-			},[](void *v,std::string_view str)->void
-			{
-				auto result = std::from_chars(str.data(), str.data() + str.size(), *reinterpret_cast<std::int32_t*>(v));
-				if (result.ec == std::errc::invalid_argument) THROW_FILE_LINE("invalid string");
-			})
+			.textMethod(int32_to_str, int32_from_str)
 			.alias("int");
 
+		aris::core::class_<std::int64_t>("int64")
+			.textMethod(int64_to_str, int64_from_str);
+
+		aris::core::class_<std::uint8_t>("uint8")
+			.textMethod(uint8_to_str, uint8_from_str);
+
+		aris::core::class_<std::uint16_t>("uint16")
+			.textMethod(uint16_to_str, uint16_from_str);
+
+		aris::core::class_<std::uint32_t>("uint32")
+			.textMethod(uint32_to_str, uint32_from_str)
+			.alias("uint");
+
+		aris::core::class_<std::uint64_t>("uint64")
+			.textMethod(uint64_to_str, uint64_from_str);
+
 		aris::core::class_<float>("float")
-			.asBasic([](void *v)->std::string
+			.textMethod([](float *v)->std::string
 			{
 				return std::to_string(*reinterpret_cast<float*>(v));
-			}, [](void *v, std::string_view str)->void
+			}, [](float *v, std::string_view str)->void
 			{
 				float result = std::stod(std::string(str));
 				*reinterpret_cast<float*>(v) = result;
 			});
 
 		aris::core::class_<double>("double")
-			.asBasic([](void *v)->std::string
+			.textMethod([](void *v)->std::string
 			{
-				return std::to_string(*reinterpret_cast<double*>(v));
+				char buf[100]{0};
+				std::sprintf(buf, "%.17g", *reinterpret_cast<double*>(v));
+				return buf;
 			}, [](void *v, std::string_view str)->void
 			{
 				double result = std::stod(std::string(str));
@@ -218,7 +290,7 @@ namespace aris::core
 			});
 
 		aris::core::class_<bool>("bool")
-			.asBasic([](void *v)->std::string
+			.textMethod([](void *v)->std::string
 			{
 				return *reinterpret_cast<bool*>(v) ? "true" : "false";
 			}, [](void *v, std::string_view str)->void
@@ -235,13 +307,12 @@ namespace aris::core
 			});
 
 		aris::core::class_<std::string>("string")
-			.asBasic([](void *v)->std::string
+			.textMethod([](void *v)->std::string
 			{
 				return *reinterpret_cast<std::string*>(v);
 			}, [](void *v, std::string_view str)->void
 			{
 				*reinterpret_cast<std::string*>(v) = str;
 			});
-	
 	}
 }

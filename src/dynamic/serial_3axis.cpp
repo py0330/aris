@@ -68,8 +68,8 @@ namespace aris::dynamic
 		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_6_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
 		s_pm2pm(axis_6_pm, ee_i_wrt_axis_6_pm, ee_i_pm);
 
-		auto &makI = p3.markerPool().add<Marker>("tool0", ee_i_pm);
-		auto &makJ = model->ground().markerPool().add<Marker>("wobj0", ee_j_pm);
+		auto &makI = p3.addMarker("tool0", ee_i_pm);
+		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		model->variablePool().add<aris::dynamic::MatrixVariable>("tool0_axis_home", aris::core::Matrix(1, 6, 0.0));
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 

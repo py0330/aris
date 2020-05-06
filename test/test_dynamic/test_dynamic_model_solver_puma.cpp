@@ -66,8 +66,8 @@ auto createPumaModel(const double (*j_pos)[3], const double (*j_axis)[3], const 
 	s_pe2pm(pe_ee_i, pm_ee_i);
 	s_pe2pm(pe_ee_j, pm_ee_j);
 	
-	auto &makI = p6.markerPool().add<Marker>("ee_makI", pm_ee_i);
-	auto &makJ = model->ground().markerPool().add<Marker>("ee_makJ", pm_ee_j);
+	auto &makI = p6.addMarker("ee_makI", pm_ee_i);
+	auto &makJ = model->ground().addMarker("ee_makJ", pm_ee_j);
 	auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 	// add solver
