@@ -47,7 +47,6 @@ void test_construct()
 	}
 
 	m.stop();
-	std::cout << m.xmlString() << std::endl;
 }
 
 void test_control_master_slave()

@@ -16,6 +16,15 @@
 
 namespace aris::core
 {
+	auto typename_xml2c(const aris::core::XmlElement *ele)->std::string
+	{
+		return std::regex_replace(ele->Name(), std::regex("\\."), "::");
+	}
+	auto typename_c2xml(const aris::core::Type *c_type)->std::string
+	{
+		return std::regex_replace(c_type->name().data(), std::regex("\\::"), ".");
+	}
+	
 	auto to_xml_ele(aris::core::Instance &ins, aris::core::XmlElement *ele)->void
 	{
 		// set text //
@@ -35,7 +44,7 @@ namespace aris::core
 			}
 			for (auto i = 0; i < ins.size(); ++i)
 			{
-				auto insert_ele = ele->GetDocument()->NewElement(ins.at(i).type()->name().data());
+				auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(ins.at(i).type()).data());
 				ele->InsertEndChild(insert_ele);
 				to_xml_ele(ins.at(i), insert_ele);
 			}
@@ -53,7 +62,7 @@ namespace aris::core
 				}
 				else
 				{
-					auto insert_ele = ele->GetDocument()->NewElement(v.type()->name().data());
+					auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(v.type()).data());
 					ele->InsertEndChild(insert_ele);
 					insert_ele->SetAttribute("name", prop->name().data());
 					to_xml_ele(v, insert_ele);
@@ -65,7 +74,7 @@ namespace aris::core
 	{
 		aris::core::XmlDocument doc;
 
-		auto root_xml_ele = doc.NewElement(ins.type()->name().data());
+		auto root_xml_ele = doc.NewElement(typename_c2xml(ins.type()).data());
 		doc.InsertEndChild(root_xml_ele);
 
 		to_xml_ele(ins, root_xml_ele);
@@ -101,12 +110,12 @@ namespace aris::core
 			{
 				auto found = std::find_if(attrs.begin(), attrs.end(), [&prop](const auto attr)->bool 
 				{
-					return attr->Name() == prop->name(); 
+					return std::regex_replace(attr->Name(), std::regex("\\."), "::") == prop->name();
 				});
 
 				if (found == attrs.end()) 
 				{
-					std::cout << "WARNING:basic property not found : " << prop->name() << std::endl;
+					//std::cout << "WARNING:basic prop not found : " << prop->name() << std::endl;
 					continue;
 				}
 
@@ -117,17 +126,17 @@ namespace aris::core
 				continue;
 			}
 
-			// non basic type, non ptr property //
+			// non basic type, non ptr prop //
 			if (!prop->acceptPtr())
 			{
 				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool 
 				{
-					return ele->Name() == prop->type()->name();
+					return typename_xml2c(ele) == prop->type()->name();
 				});
 
 				if (found == child_eles.end())
 				{
-					std::cout << "WARNING:element property not found : " << prop->name() << std::endl;
+					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
 					continue;
 				}
 
@@ -143,16 +152,17 @@ namespace aris::core
 			{
 				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool 
 				{
-					return Type::isBaseOf(prop->type(), getType(ele->Name()));
+					return Type::isBaseOf(prop->type(), getType(typename_xml2c(ele)));
 				});
 
 				if (found == child_eles.end())
 				{
-					std::cout << "WARNING:element property not found : " << prop->name() << std::endl;
+					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
 					continue;
 				}
 
-				auto[ptr, prop_ins] = getType((*found)->Name())->create();
+				auto c_type = std::regex_replace(typename_xml2c(*found), std::regex("\\."), "::");
+				auto[ptr, prop_ins] = getType(c_type)->create();
 				from_xml_ele(prop_ins, *found);
 				prop->set(&ins, prop_ins);
 				ptr.release();
@@ -165,8 +175,8 @@ namespace aris::core
 		{
 			for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
 			{
-				auto type = getType(child_ele->Name());
-				if (!type) THROW_FILE_LINE("unrecognized type in xml");
+				auto type = getType(typename_xml2c(child_ele));
+				if (!type) THROW_FILE_LINE("unrecognized type in xml : " + std::string(child_ele->Name()));
 
 				auto[ptr, attr_ins] = type->create();
 				from_xml_ele(attr_ins, child_ele);
@@ -185,7 +195,7 @@ namespace aris::core
 
 		auto root_ele = doc.RootElement();
 
-		if(root_ele->Name() != ins.type()->name())
+		if(typename_xml2c(root_ele) != ins.type()->name())
 			THROW_FILE_LINE("load xml failed : type not match" );
 
 		from_xml_ele(ins, root_ele);

@@ -11,11 +11,9 @@ namespace aris::control
 {
 	class Master;
 	
-	class Slave : public aris::core::Object
+	class Slave:public aris::core::NamedObject
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual send()->void {}
 		auto virtual recv()->void {}
 		auto virtual master()->Master*;
@@ -23,10 +21,10 @@ namespace aris::control
 		auto phyId()const->std::uint16_t;
 		auto setPhyId(std::uint16_t phy_id)->void;
 		auto slaId()const->std::uint16_t { return static_cast<std::uint16_t>(id()); }
+		auto id()const->std::uint16_t;
 
 		virtual ~Slave();
 		explicit Slave(const std::string &name = "slave", std::uint16_t phy_id = 0);
-		ARIS_REGISTER_TYPE(Slave);
 		ARIS_DECLARE_BIG_FOUR(Slave);
 
 	private:
@@ -34,7 +32,7 @@ namespace aris::control
 		aris::core::ImpPtr<Imp> imp_;
 		friend class Master;
 	};
-	class Master : public aris::core::Object
+	class Master :public aris::core::NamedObject
 	{
 	public:
 		struct RtStasticsData
@@ -48,10 +46,6 @@ namespace aris::control
 			std::int64_t overrun_count;
 		};
 		enum { MAX_MSG_SIZE = 8192 };
-		static auto Type()->const std::string & { static const std::string type("Master"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 
 		// used only in non-rt thread //
 		auto virtual init()->void;
@@ -70,8 +64,9 @@ namespace aris::control
 		auto slaveAtAbs(aris::Size id)const->const Slave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
 		auto slaveAtPhy(aris::Size id)->Slave&;
 		auto slaveAtPhy(aris::Size id)const->const Slave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
-		auto slavePool()->aris::core::ObjectPool<Slave>&;
-		auto slavePool()const->const aris::core::ObjectPool<Slave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
+		auto resetSlavePool(aris::core::PointerArray<Slave> *pool);
+		auto slavePool()->aris::core::PointerArray<Slave>&;
+		auto slavePool()const->const aris::core::PointerArray<Slave>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slavePool(); }
 		auto rtHandle()->std::any&;
 		auto rtHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)> *>(this)->rtHandle(); }
 		auto resetRtStasticData(RtStasticsData *stastics, bool is_new_data_include_this_count = false)->void;

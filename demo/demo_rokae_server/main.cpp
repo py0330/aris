@@ -14,12 +14,11 @@ public:
 
 	explicit MoveCos1()
 	{
-		command().loadXmlStr(
-			"<Command name=\"mv_cos1\">"
-			"</Command>"
-		);
+		//command().loadXmlStr(
+		//	"<Command name=\"mv_cos1\">"
+		//	"</Command>"
+		//);
 	}
-	ARIS_REGISTER_TYPE(MoveCos1);
 };
 
 int main(int argc, char *argv[])
@@ -29,7 +28,7 @@ int main(int argc, char *argv[])
 	cs.resetController(aris::robot::createControllerRokaeXB4().release());
 	cs.resetModel(aris::robot::createModelRokaeXB4().release());
 	cs.resetPlanRoot(aris::robot::createPlanRootRokaeXB4().release());
-	cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
+	//cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
 
 
 

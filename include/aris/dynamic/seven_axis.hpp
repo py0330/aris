@@ -35,8 +35,6 @@ namespace aris::dynamic
 	class SevenAxisInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;		
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
 		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void
@@ -51,11 +49,11 @@ namespace aris::dynamic
 			}
 		}
 		auto setWhichRoot(int root_of_0_to_7)->void;
+		auto whichRoot()->int;
 		auto setAxisAngle(double axis_angle)->void;
 
 		virtual ~SevenAxisInverseKinematicSolver() = default;
 		explicit SevenAxisInverseKinematicSolver(const std::string &name = "seven_axis_inverse_solver");
-		ARIS_REGISTER_TYPE(SevenAxisInverseKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(SevenAxisInverseKinematicSolver);
 
 	private:

@@ -87,7 +87,7 @@ message("ETHERCAT : ${ETHERCAT}")
 foreach(target robot server plan dynamic control sensor core)
 	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h)
 	file(GLOB SOURCES src/${target}/*.cpp src/${target}/*.c src/${target}/*.hpp src/${target}/*.h ${HEADERS})
-	add_library(aris_${target} STATIC ${HEADERS} ${SOURCES})
+	add_library(aris_${target} OBJECT ${HEADERS} ${SOURCES})
 	target_include_directories(aris_${target}
 		PUBLIC 
 			$<INSTALL_INTERFACE:include>
@@ -100,17 +100,32 @@ foreach(target robot server plan dynamic control sensor core)
 	set_target_properties(aris_${target} PROPERTIES PUBLIC_HEADER "${HEADERS}")
 	set(aris_LIBRARIES ${aris_LIBRARIES} optimized aris::aris_${target} debug aris::debug::aris_${target})
 	set(ARIS_LINK_LIB ${ARIS_LINK_LIB} aris_${target})
+	set(ARIS_OBJECTS ${ARIS_OBJECTS} $<TARGET_OBJECTS:aris_${target}>)
+	set(ARIS_HEADERS ${ARIS_HEADERS} include/aris/${target})
 	
-	install(TARGETS aris_${target} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
-	install(TARGETS aris_${target} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include/aris/${target}" ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
+	install(TARGETS aris_${target} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include/aris/${target}")
+	install(TARGETS aris_${target} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include/aris/${target}")
 
 	if(EXISTS ${PROJECT_SOURCE_DIR}/src/${target}/resource)
 		install(DIRECTORY src/${target}/resource/ DESTINATION resource/${target})
 	endif()
 endforeach(target)
-if(UNIX)
-	set(ARIS_LINK_LIB -Wl,--start-group ${ARIS_LINK_LIB} -Wl,--end-group)
-endif(UNIX)
+add_library(aris_lib SHARED ${ARIS_OBJECTS})
+target_link_libraries(aris_lib PUBLIC ${RELY_LINK_LIB})
+set(aris_LIBRARIES optimized aris::aris_lib debug aris::debug::aris_lib)
+set_property(TARGET aris_lib PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories(aris_lib
+	PUBLIC 
+		$<INSTALL_INTERFACE:include>
+		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+	PRIVATE
+		${PROJECT_SOURCE_DIR}/src
+		${RELY_INCL_DIR}
+)
+
+install(TARGETS aris_lib EXPORT aris-targets-debug ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
+install(TARGETS aris_lib EXPORT aris-targets-release ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
+set(ARIS_LINK_LIB aris_lib)
 
 ## install exports ##
 install(EXPORT aris-targets-debug NAMESPACE aris::debug:: FILE aris-targets-debug.cmake DESTINATION "share/aris/cmake")
@@ -153,7 +168,7 @@ if(BUILD_DEMOS)
 	foreach(aris_demo ${ARIS_DEMOS})
 		file(GLOB SOURCES demo/${aris_demo}/*.h demo/${aris_demo}/*.cpp)
 		add_executable(${aris_demo} ${SOURCES})
-		target_link_libraries(${aris_demo} ${ARIS_LINK_LIB} ${RELY_LINK_LIB})
+		target_link_libraries(${aris_demo} aris_lib ${RELY_LINK_LIB})
 		if(EXISTS ${PROJECT_SOURCE_DIR}/demo/${aris_demo}/resource)
 			install(DIRECTORY demo/${aris_demo}/resource/ DESTINATION resource/${aris_demo})
 		endif()

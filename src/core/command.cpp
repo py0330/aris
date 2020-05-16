@@ -9,6 +9,7 @@
 
 #include "aris/core/log.hpp"
 #include "aris/core/reflection.hpp"
+#include "aris/core/serialization.hpp"
 
 namespace aris::core
 {
@@ -16,13 +17,40 @@ namespace aris::core
 	{ 
 		bool is_taken_{ false };
 		Command *command_{ nullptr };
-		Object *father_{ nullptr };
+		ParamBase *father_{ nullptr };
+		std::string name_;
 	};
 	auto ParamBase::command()const->const Command & { return *imp_->command_; };
-	auto ParamBase::father()->Object* { return imp_->father_; }
+	auto ParamBase::father()->ParamBase* { return imp_->father_; }
+	auto ParamBase::name()const->std::string { return imp_->name_; }
+	auto ParamBase::setName(std::string_view name)->void { imp_->name_ = name; }
 	ParamBase::~ParamBase() = default;
-	ParamBase::ParamBase(const std::string &name) :ObjectPool(name), imp_(new Imp) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(ParamBase);
+	ParamBase::ParamBase(const std::string &name) :imp_(new Imp) { imp_->name_ = name; }
+	ParamBase::ParamBase(const ParamBase&other):imp_(other.imp_)
+	{
+		for (auto &base : other)
+		{
+			if (auto p = dynamic_cast<const Param*>(&base))	push_back(new Param(*p));
+			else if (auto u = dynamic_cast<const UniqueParam*>(&base))	push_back(new UniqueParam(*u));
+			else if (auto g = dynamic_cast<const GroupParam*>(&base))	push_back(new GroupParam(*g));
+			else THROW_FILE_LINE("INVALID CHILDREN");
+		}
+	}
+	ParamBase::ParamBase(ParamBase&&) = default;
+	ParamBase& ParamBase::operator=(const ParamBase&other)
+	{
+		imp_ = other.imp_;
+		clear();
+		for (auto &base : other)
+		{
+			if (auto p = dynamic_cast<const Param*>(&base))	push_back(new Param(*p));
+			else if (auto u = dynamic_cast<const UniqueParam*>(&base))	push_back(new UniqueParam(*u));
+			else if (auto g = dynamic_cast<const GroupParam*>(&base))	push_back(new GroupParam(*g));
+			else THROW_FILE_LINE("INVALID CHILDREN");
+		}
+		return *this;
+	}
+	ParamBase& ParamBase::operator=(ParamBase&&) = default;
 
 	struct Param::Imp
 	{
@@ -31,19 +59,6 @@ namespace aris::core
 
 		Imp(const std::string &default_param = std::string(""), char abbrev = 0) :default_value_(default_param), abbreviation_(abbrev) {}
 	};
-	auto Param::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		ParamBase::saveXml(xml_ele);
-		char abbrev[2]{ imp_->abbreviation_,0 };
-		if (imp_->abbreviation_)xml_ele.SetAttribute("abbreviation", abbrev);
-		if (!imp_->default_value_.empty())xml_ele.SetAttribute("default", imp_->default_value_.c_str());
-	}
-	auto Param::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		ParamBase::loadXml(xml_ele);
-		imp_->abbreviation_ = attributeChar(xml_ele, "abbreviation", imp_->abbreviation_);
-		imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
-	}
 	auto Param::abbreviation()const->char { return imp_->abbreviation_; }
 	auto Param::setAbbreviation(char abbreviation)->void { imp_->abbreviation_ = abbreviation; }
 	auto Param::defaultValue()const->const std::string & { return imp_->default_value_; }
@@ -61,16 +76,6 @@ namespace aris::core
 		std::string default_value_{ "" };
 		Imp(const std::string &default_param = std::string("")) :default_value_(default_param) {}
 	};
-	auto UniqueParam::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		ParamBase::saveXml(xml_ele);
-		if (!imp_->default_value_.empty())xml_ele.SetAttribute("default", imp_->default_value_.c_str());
-	}
-	auto UniqueParam::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		ParamBase::loadXml(xml_ele);
-		imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
-	}
 	auto UniqueParam::defaultValue()const->const std::string & { return imp_->default_value_; }
 	auto UniqueParam::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
 	UniqueParam::~UniqueParam() = default;
@@ -86,7 +91,7 @@ namespace aris::core
 
 		Imp(const std::string &default_param = std::string("")) :default_value_(default_param) {}
 
-		static auto take(Object* param)->void
+		static auto take(ParamBase* param)->void
 		{
 			if (auto p = dynamic_cast<Param*>(param))
 			{
@@ -121,7 +126,7 @@ namespace aris::core
 				THROW_FILE_LINE("wrong type when cmd parse in take");
 			}
 		}
-		static auto reset(Object* param)->void
+		static auto reset(ParamBase* param)->void
 		{
 			if (auto p = dynamic_cast<Param*>(param))
 			{
@@ -147,11 +152,11 @@ namespace aris::core
 				THROW_FILE_LINE("wrong type when cmd parse in reset");
 			}
 		}
-		static auto addDefaultParam(Object* param, std::map<std::string_view, std::string_view> &param_map_out)->void
+		static auto addDefaultParam(ParamBase* param, std::map<std::string_view, std::string_view> &param_map_out)->void
 		{
 			if (auto p = dynamic_cast<Param*>(param))
 			{
-				if (!p->ParamBase::imp_->is_taken_) { param_map_out.insert(std::make_pair(std::string_view(p->name()), std::string_view(p->imp_->default_value_))); }
+				if (!p->ParamBase::imp_->is_taken_) { param_map_out.insert(std::make_pair(std::string_view(p->ParamBase::imp_->name_), std::string_view(p->imp_->default_value_))); }
 			}
 			else if (auto g = dynamic_cast<GroupParam*>(param))
 			{
@@ -161,8 +166,9 @@ namespace aris::core
 			{
 				if (u->size() == 0)return;
 
+				auto found_default = std::find_if(u->begin(), u->end(), [u](const auto&value) {return u->imp_->default_value_ == value.name(); });
 				auto default_param_iter = std::find_if(u->begin(), u->end(), [](ParamBase &param)->bool { return param.imp_->is_taken_; });
-				auto default_param_ptr = u->imp_->default_value_ == "" ? nullptr : &*u->findByName(u->imp_->default_value_);
+				auto default_param_ptr = u->imp_->default_value_ == "" ? nullptr : &*found_default;
 				auto default_param = default_param_iter == u->end() ? default_param_ptr : &*default_param_iter;
 				default_param = u->size() == 1 ? &u->front() : default_param;
 
@@ -174,8 +180,9 @@ namespace aris::core
 			{
 				if (c->size() == 0)return;
 
+				auto found_default = std::find_if(c->begin(), c->end(), [c](const auto&value) {return c->imp_->default_value_ == value.name(); });
 				auto default_param_iter = std::find_if(c->begin(), c->end(), [](ParamBase &param)->bool { return param.imp_->is_taken_; });
-				auto default_param_ptr = c->imp_->default_value_ == "" ? nullptr : &*c->findByName(c->imp_->default_value_);
+				auto default_param_ptr = c->imp_->default_value_ == "" ? nullptr : &*found_default;
 				auto default_param = default_param_iter == c->end() ? default_param_ptr : &*default_param_iter;
 				default_param = c->size() == 1 ? &c->front() : default_param;
 
@@ -202,7 +209,8 @@ namespace aris::core
 			}
 			else if (auto u = dynamic_cast<UniqueParam*>(&param))
 			{
-				if ((u->imp_->default_value_ != "") && (u->findByName(u->imp_->default_value_) == u->end()))
+				auto found_default = std::find_if(u->begin(), u->end(), [u](const auto&value) {return u->imp_->default_value_ == value.name(); });
+				if ((u->imp_->default_value_ != "") && (found_default == u->end()))
 				{
 					THROW_FILE_LINE("Unique param \"" + u->name() + "\" has invalid default param name");
 				}
@@ -214,16 +222,6 @@ namespace aris::core
 			}
 		}
 	};
-	auto Command::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		ObjectPool<ParamBase>::saveXml(xml_ele);
-		if (!imp_->default_value_.empty())xml_ele.SetAttribute("default", imp_->default_value_.c_str());
-	}
-	auto Command::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		ObjectPool<ParamBase>::loadXml(xml_ele);
-		imp_->default_value_ = attributeString(xml_ele, "default", imp_->default_value_);
-	}
 	auto Command::defaultValue()const->const std::string & { return imp_->default_value_; }
 	auto Command::setDefaultValue(const std::string & default_value)->void { imp_->default_value_ = default_value; }
 	auto Command::findParam(const std::string &param_name)->Param*
@@ -250,17 +248,12 @@ namespace aris::core
 		return nullptr;
 	}
 	Command::~Command() = default;
-	Command::Command(const std::string &name, const std::string &default_param) :ObjectPool(name), imp_(new Imp(default_param)){}
+	Command::Command(const std::string &name, const std::string &default_param) :ParamBase(name), imp_(new Imp(default_param)){}
 	ARIS_DEFINE_BIG_FOUR_CPP(Command);
 
-	struct CommandParser::Imp { ObjectPool<Command>* command_pool_; };
-	auto CommandParser::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Object::loadXml(xml_ele);
-		imp_->command_pool_ = findOrInsertType<aris::core::ObjectPool<Command>>();
-	}
-	auto CommandParser::commandPool()->ObjectPool<Command> & { return *imp_->command_pool_; }
-	auto CommandParser::commandPool()const->const ObjectPool<Command> & { return *imp_->command_pool_; }
+	struct CommandParser::Imp { std::vector<Command> command_pool_; };
+	auto CommandParser::commandPool()->std::vector<Command> & { return imp_->command_pool_; }
+	auto CommandParser::commandPool()const->const std::vector<Command> & { return imp_->command_pool_; }
 	auto CommandParser::init()->void
 	{
 		// make command point to correct place //
@@ -288,7 +281,9 @@ namespace aris::core
 		{
 			c.imp_->param_map_.clear();
 			c.imp_->abbreviation_map_.clear();
-			if ((c.imp_->default_value_ != "") && (c.findByName(c.imp_->default_value_) == c.end())) THROW_FILE_LINE("Command \"" + c.name() + "\" has invalid default param name");
+
+			auto found_default = std::find_if(c.begin(), c.end(), [&c](const auto&value) {return c.imp_->default_value_ == value.name(); });
+			if ((c.imp_->default_value_ != "") && (found_default == c.end())) THROW_FILE_LINE("Command \"" + c.name() + "\" has invalid default param name");
 			for (auto &param : c) Command::Imp::add_param_map_and_check_default(&c, param);
 		}
 
@@ -344,8 +339,8 @@ namespace aris::core
 		if (cmd = cut_str(cmd_str, " "); cmd.empty())THROW_FILE_LINE("invalid command string: please at least contain a word");
 		cmd_str = trim_left(cmd_str);
 
-		auto command = imp_->command_pool_->findByName(std::string(cmd));
-		if (command == imp_->command_pool_->end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + std::string(cmd) + "\"");
+		auto command = std::find_if(commandPool().begin(), commandPool().end(), [&cmd](const auto&obj) {return obj.name() == std::string(cmd); });
+		if (command == commandPool().end()) THROW_FILE_LINE("invalid command name: server does not have this command \"" + std::string(cmd) + "\"");
 
 		Command::Imp::reset(&*command);
 		for (; !cmd_str.empty();)
@@ -404,46 +399,39 @@ namespace aris::core
 		return std::make_tuple(cmd, param_map);
 	}
 	CommandParser::~CommandParser() = default;
-	CommandParser::CommandParser(const std::string &name) :Object(name)
-	{
-		this->registerType<aris::core::ObjectPool<Command> >();
-		imp_->command_pool_ = &add<aris::core::ObjectPool<Command> >("command_pool");
-	}
-	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
+	CommandParser::CommandParser(const std::string &name){}
 
 	ARIS_REGISTRATION
 	{
 		class_<ParamBase>("ParamBase")
-			.inherit<Object>()
+			.prop("name", &ParamBase::setName, &ParamBase::name)
 			;
 		
 		class_<Param>("Param")
 			.inherit<ParamBase>()
-			.property("abbreviation", &Param::setAbbreviation, &Param::abbreviation)
+			.prop("abbreviation", &Param::setAbbreviation, &Param::abbreviation)
 			.propertyToStrMethod("abbreviation", charToStr)
 			.propertyFromStrMethod("abbreviation", strToChar)
-			.property("default", &Param::setDefaultValue, &Param::defaultValue);
+			.prop("default", &Param::setDefaultValue, &Param::defaultValue);
 
 		class_<UniqueParam>("UniqueParam")
 			.inherit<ParamBase>()
 			.asRefArray()
-			.property("default", &UniqueParam::setDefaultValue, &UniqueParam::defaultValue);
+			.prop("default", &UniqueParam::setDefaultValue, &UniqueParam::defaultValue);
 
 		class_<GroupParam>("GroupParam")
 			.inherit<ParamBase>()
 			.asRefArray();
 
 		class_<Command>("Command")
-			.inherit<Object>()
+			.inherit<ParamBase>()
 			.asRefArray();
 
-		class_<ObjectPool<Command>>("CommandPoolObject")
-			.inherit<Object>()
+		class_<PointerArray<Command>>("CommandPoolObject")
 			.asRefArray();
 
-		typedef ObjectPool<Command>&(CommandParser::*CommandPoolFunc)();
+		typedef std::vector<Command>&(CommandParser::*CommandPoolFunc)();
 		class_<CommandParser>("CommandParser")
-			.inherit<Object>()
-			.property<CommandPoolFunc>("command_pool", &CommandParser::commandPool);
+			.prop("command_pool", /*&CommandParser::resetCommandPool ,*/ CommandPoolFunc(&CommandParser::commandPool));
 	}
 }

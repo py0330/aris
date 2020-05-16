@@ -48,28 +48,6 @@ namespace aris::control
 		std::uint8_t subindex_;
 		aris::Size bit_size_;
 	};
-	auto PdoEntry::saveXml(aris::core::XmlElement &xml_ele) const->void 
-	{ 
-		Object::saveXml(xml_ele);
-
-		std::stringstream s;
-		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
-		xml_ele.SetAttribute("index", s.str().c_str());
-
-		s = std::stringstream();
-		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int8_t) * 2) << std::hex << static_cast<std::uint32_t>(subindex());
-		xml_ele.SetAttribute("subindex", s.str().c_str());
-
-		xml_ele.SetAttribute("size", static_cast<std::int32_t>(bitSize()));
-	}
-	auto PdoEntry::loadXml(const aris::core::XmlElement &xml_ele)->void 
-	{ 
-		imp_->index_ = attributeUint16(xml_ele, "index");
-		imp_->subindex_ = attributeUint8(xml_ele, "subindex");
-		imp_->bit_size_ = attributeUint32(xml_ele, "size");
-		
-		Object::loadXml(xml_ele);
-	}
 	auto PdoEntry::ecHandle()->std::any& { return imp_->ec_handle_; }
 	auto PdoEntry::setIndex(std::uint16_t index)->void { imp_->index_ = index; }
 	auto PdoEntry::index()const->std::uint16_t { return imp_->index_; }
@@ -78,7 +56,7 @@ namespace aris::control
 	auto PdoEntry::setBitSize(Size size)->void { imp_->bit_size_ = size; }
 	auto PdoEntry::bitSize()const->aris::Size { return imp_->bit_size_; }
 	PdoEntry::~PdoEntry() = default;
-	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size) :Object(name) 
+	PdoEntry::PdoEntry(const std::string &name, std::uint16_t index, std::uint8_t sub_index, aris::Size bit_size)
 	{
 		imp_->index_ = index;
 		imp_->subindex_ = sub_index;
@@ -91,43 +69,19 @@ namespace aris::control
 		std::any handle_;
 		std::uint16_t index_;
 	};
-	auto Pdo::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		aris::core::Object::saveXml(xml_ele);
-
-		std::stringstream s;
-		s << "0x" << std::setfill('0') << std::setw(sizeof(std::int16_t) * 2) << std::hex << static_cast<std::uint32_t>(index());
-		xml_ele.SetAttribute("index", s.str().c_str());
-	}
-	auto Pdo::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		imp_->index_ = attributeUint16(xml_ele, "index");
-
-		aris::core::Object::loadXml(xml_ele);
-	}
 	auto Pdo::ecHandle()->std::any& { return imp_->handle_; }
 	auto Pdo::index()const->std::uint16_t { return imp_->index_; }
 	auto Pdo::setIndex(std::uint16_t index)->void { imp_->index_ = index; }
 	Pdo::~Pdo() = default;
-	Pdo::Pdo(const std::string &name, std::uint16_t index) :aris::core::ObjectPool<PdoEntry>(name), imp_(new Imp){ imp_->index_ = index; }
+	Pdo::Pdo(const std::string &name, std::uint16_t index) :imp_(new Imp){ imp_->index_ = index; }
 	ARIS_DEFINE_BIG_FOUR_CPP(Pdo)
 
 	struct SyncManager::Imp { std::any handle_; bool is_tx_; };
-	auto SyncManager::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		aris::core::ObjectPool<Pdo>::saveXml(xml_ele);
-		xml_ele.SetAttribute("is_tx", tx());
-	}
-	auto SyncManager::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		imp_->is_tx_ = attributeBool(xml_ele, "is_tx");
-		aris::core::ObjectPool<Pdo>::loadXml(xml_ele);
-	}
 	auto SyncManager::tx()const->bool { return imp_->is_tx_; }
 	auto SyncManager::rx()const->bool { return !imp_->is_tx_; }
 	auto SyncManager::setTx(bool is_tx)->void { imp_->is_tx_ = is_tx; }
 	SyncManager::~SyncManager()=default;
-	SyncManager::SyncManager(const std::string &name, bool is_tx):ObjectPool(name), imp_(new Imp) {	imp_->is_tx_ = is_tx;}
+	SyncManager::SyncManager(const std::string &name, bool is_tx):imp_(new Imp) {	imp_->is_tx_ = is_tx;}
 	ARIS_DEFINE_BIG_FOUR_CPP(SyncManager)
 
 	struct EthercatSlave::Imp
@@ -137,55 +91,17 @@ namespace aris::control
 
 		std::uint32_t vendor_id_, product_code_, revision_num_, dc_assign_activate_;
 		std::int32_t sync0_shift_ns_;
-		aris::core::ObjectPool<SyncManager> *sm_pool_;
-		std::shared_ptr<aris::core::ObjectPool<SyncManager> > sm_pool_ptr_;
+		std::unique_ptr<std::vector<SyncManager> > sm_pool_ptr_;
 		std::map<std::uint16_t, std::map<std::uint8_t, PdoEntry* > > pdo_map_;
 	};
-	auto EthercatSlave::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Slave::saveXml(xml_ele);
-
-		std::stringstream s;
-		s << "0x" << std::setfill('0') << std::setw(sizeof(vendorID()) * 2) << std::hex << vendorID();
-		xml_ele.SetAttribute("vendor_id", s.str().c_str());
-
-		s = std::stringstream();
-		s << "0x" << std::setfill('0') << std::setw(sizeof(productCode()) * 2) << std::hex << productCode();
-		xml_ele.SetAttribute("product_code", s.str().c_str());
-
-		s = std::stringstream();
-		s << "0x" << std::setfill('0') << std::setw(sizeof(revisionNum()) * 2) << std::hex << revisionNum();
-		xml_ele.SetAttribute("revision_num", s.str().c_str());
-
-		s = std::stringstream();
-		s << "0x" << std::setfill('0') << std::setw(sizeof(dcAssignActivate()) * 2) << std::hex << dcAssignActivate();
-		xml_ele.SetAttribute("dc_assign_activate", s.str().c_str());
-
-		xml_ele.SetAttribute("sync0_shift_ns", imp_->sync0_shift_ns_);
-	}
-	auto EthercatSlave::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		imp_->vendor_id_ = attributeUint32(xml_ele, "vendor_id");
-		imp_->product_code_ = attributeUint32(xml_ele, "product_code");
-		imp_->revision_num_ = attributeUint32(xml_ele, "revision_num");
-		imp_->dc_assign_activate_ = attributeUint32(xml_ele, "dc_assign_activate");
-		imp_->sync0_shift_ns_ = attributeInt32(xml_ele, "sync0_shift_ns", 650'000);
-
-		Slave::loadXml(xml_ele);
-		imp_->sm_pool_ = findOrInsertType<aris::core::ObjectPool<SyncManager> >();
-	}
 	auto EthercatSlave::ecMaster()->EthercatMaster* { return dynamic_cast<EthercatMaster*>(Slave::master()); }
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
-	auto EthercatSlave::setSmPool(aris::core::ObjectPool<SyncManager> *sm_pool)->void
+	auto EthercatSlave::setSmPool(std::vector<SyncManager> *sm_pool)->void
 	{
 		imp_->sm_pool_ptr_.reset(sm_pool);
 	}
-	auto EthercatSlave::smPool()->aris::core::ObjectPool<SyncManager>& 
+	auto EthercatSlave::smPool()->std::vector<SyncManager>& 
 	{ 
-		return *imp_->sm_pool_;
-	}
-	auto EthercatSlave::smPool2()->aris::core::ObjectPool<SyncManager>&
-	{
 		return *imp_->sm_pool_ptr_;
 	}
 	auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
@@ -258,57 +174,32 @@ namespace aris::control
 	EthercatSlave::~EthercatSlave() = default;
 	EthercatSlave::EthercatSlave(const std::string &name, std::uint16_t phy_id, std::uint32_t vid, std::uint32_t p_code, std::uint32_t r_num, std::uint32_t dc, std::int32_t sync0_shift_ns) :Slave(name, phy_id), imp_(new Imp)
 	{
-		aris::core::Object::registerTypeGlobal<aris::core::ObjectPool<SyncManager> >();
-		
-		imp_->sm_pool_ = &add<aris::core::ObjectPool<SyncManager> >("sm_pool");
 		imp_->vendor_id_ = vid;
 		imp_->product_code_ = p_code;
 		imp_->revision_num_ = r_num;
 		imp_->dc_assign_activate_ = dc;
 		imp_->sync0_shift_ns_ = sync0_shift_ns;
 
-		imp_->sm_pool_ptr_.reset(new aris::core::ObjectPool<SyncManager>);
+		imp_->sm_pool_ptr_.reset(new std::vector<SyncManager>);
 	}
-	EthercatSlave::EthercatSlave(const EthercatSlave &other) :Slave(other), imp_(other.imp_)
-	{
-		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
-	};
-	EthercatSlave& EthercatSlave::operator=(const EthercatSlave &other)
-	{
-		Slave::operator=(other);
-		imp_ = other.imp_;
-		imp_->sm_pool_ = findType<aris::core::ObjectPool<SyncManager> >();
-		return *this;
-	}
+	//EthercatSlave::EthercatSlave(const EthercatSlave &other) :Slave(other), imp_(other.imp_)
+	//{
+	//};
+	//EthercatSlave& EthercatSlave::operator=(const EthercatSlave &other)
+	//{
+	//	Slave::operator=(other);
+	//	imp_ = other.imp_;
+	//	return *this;
+	//}
 
 	struct EthercatMaster::Imp 
 	{ 
 		std::any ec_handle_;
-		aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>> slave_pool_{nullptr};
+		aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>> slave_pool_{nullptr};
 
 		std::vector<std::filesystem::path> esi_dirs_;
 		std::map<std::uint32_t, std::tuple<std::string, std::map<std::uint32_t, std::tuple<std::string, std::map<int, std::filesystem::path>>>>> vendor_device_revision_map_;
 	};
-	auto EthercatMaster::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Master::saveXml(xml_ele);
-
-		std::stringstream s;
-		for (auto &dir : imp_->esi_dirs_)s << dir.string() << "|";
-		xml_ele.SetAttribute("esi_dirs", s.str().c_str());
-	}
-	auto EthercatMaster::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Master::loadXml(xml_ele);
-
-		imp_->esi_dirs_.clear();
-		if (auto str = xml_ele.Attribute("esi_dirs")) 
-		{
-			std::string esi_str(str);
-			std::istringstream f(esi_str);
-			for (std::string s; std::getline(f, s, '|');)imp_->esi_dirs_.push_back(s);
-		}
-	}
 	auto EthercatMaster::esiDirStr()->std::string 
 	{
 		std::stringstream s;
@@ -372,9 +263,9 @@ namespace aris::control
 	auto EthercatMaster::release()->void { aris_ecrt_master_stop(this); }
 	auto EthercatMaster::send()->void { aris_ecrt_master_send(this); }
 	auto EthercatMaster::recv()->void { aris_ecrt_master_recv(this); }
-	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&
+	auto EthercatMaster::slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>&
 	{
-		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>(&Master::slavePool());
+		imp_->slave_pool_ = aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>(&Master::slavePool());
 		return imp_->slave_pool_;
 	}
 	auto EthercatMaster::getLinkState(MasterLinkState *ms, SlaveLinkState *ss)->void { aris_ecrt_master_link_state(this, ms, ss); }
@@ -433,7 +324,7 @@ namespace aris::control
 	auto EthercatMaster::getDeviceList()->std::string
 	{
 		aris::core::XmlDocument xml_doc;
-		auto root_xml_ele = xml_doc.NewElement(name().c_str());
+		auto root_xml_ele = xml_doc.NewElement("DeviceList");
 		xml_doc.InsertEndChild(root_xml_ele);
 		
 		for (auto &vendor : imp_->vendor_device_revision_map_)
@@ -501,41 +392,42 @@ namespace aris::control
 			{
 				if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "Inputs")
 				{
-					slave.smPool().add<SyncManager>("", true);
+					slave.smPool().push_back(SyncManager("", true));
 				}
 				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "MBoxIn")
 				{
-					slave.smPool().add<SyncManager>("", true);
+					slave.smPool().push_back(SyncManager("", true));
 				}
 				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "Outputs")
 				{
-					slave.smPool().add<SyncManager>("", false);
+					slave.smPool().push_back(SyncManager("", false));
 				}
 				else if (std::string(ele->Name()) == "Sm" && std::string(ele->GetText()) == "MBoxOut")
 				{
-					slave.smPool().add<SyncManager>("", false);
+					slave.smPool().push_back(SyncManager("", false));
 				}
 				else if (std::string(ele->Name()) == "RxPdo" || std::string(ele->Name()) == "TxPdo")
 				{
-					auto sm_id = ele->Attribute("Sm") ? Object::attributeInt32(*ele, "Sm") : last_sm_id;
+					auto sm_id = ele->Attribute("Sm") ? std::stoll(ele->Attribute("Sm"), nullptr, 0) : last_sm_id;
 					last_sm_id = sm_id;
 
 					auto pdo_name = ele->FirstChildElement("Name") ? ele->FirstChildElement("Name")->GetText() : "";
 					auto pdo_index = ele->FirstChildElement("Index") ? getUInt32(ele->FirstChildElement("Index")->GetText()) : std::uint32_t(0);
 
-					auto &pdo = slave.smPool()[sm_id].add<Pdo>(pdo_name, pdo_index);
+					slave.smPool()[sm_id].push_back(Pdo(pdo_name, pdo_index));
+					auto &pdo = slave.smPool()[sm_id].back();
 					for (auto entry_ele = ele->FirstChildElement("Entry"); entry_ele; entry_ele = entry_ele->NextSiblingElement())
 					{
 						auto index = getUInt32(entry_ele->FirstChildElement("Index")->GetText());
 						auto sub_index = entry_ele->FirstChildElement("SubIndex") ? getUInt32(entry_ele->FirstChildElement("SubIndex")->GetText()) : 0;
 						auto bit_length = std::stol(entry_ele->FirstChildElement("BitLen")->GetText());
 						auto name = (entry_ele->FirstChildElement("Name") && entry_ele->FirstChildElement("Name")->GetText()) ? entry_ele->FirstChildElement("Name")->GetText() : "";
-						pdo.add<PdoEntry>(name, index, sub_index, bit_length);
+						pdo.push_back(PdoEntry(name, index, sub_index, bit_length));
 					}
 				}
 			}
 
-			return slave.xmlString();
+			return aris::core::toXmlString(slave);
 		}
 
 		THROW_FILE_LINE("device not found");
@@ -558,18 +450,6 @@ namespace aris::control
 	};
 	auto EthercatMotor::isVirtual()->bool { return imp_->is_virtual_; }
 	auto EthercatMotor::setVirtual(bool is_virtual)->void { imp_->is_virtual_ = is_virtual; }
-	auto EthercatMotor::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		EthercatSlave::saveXml(xml_ele);
-		Motor::saveXml(xml_ele);
-		xml_ele.SetAttribute("is_virtual", imp_->is_virtual_);
-	}
-	auto EthercatMotor::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Motor::loadXml(xml_ele);
-		EthercatSlave::loadXml(xml_ele);
-		imp_->is_virtual_ = Object::attributeBool(xml_ele, "is_virtual", false);
-	}
 	auto EthercatMotor::controlWord()const->std::uint16_t { return imp_->control_word; }
 	auto EthercatMotor::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
 	auto EthercatMotor::targetPos()const->double { return imp_->target_pos_; }
@@ -935,8 +815,8 @@ namespace aris::control
 	{
 		imp_->is_virtual_ = is_virtual;
 	}
-	EthercatMotor::EthercatMotor(const EthercatMotor &other) = default;
-	EthercatMotor& EthercatMotor::operator=(const EthercatMotor &other) = default;
+	//EthercatMotor::EthercatMotor(const EthercatMotor &other) = default;
+	//EthercatMotor& EthercatMotor::operator=(const EthercatMotor &other) = default;
 
 	struct EthercatController::Imp { MotionPool motion_pool_{ nullptr }; };
 	auto EthercatController::motionPool()->MotionPool& { return imp_->motion_pool_; }
@@ -953,61 +833,51 @@ namespace aris::control
 	ARIS_REGISTRATION
 	{
 		aris::core::class_<PdoEntry>("PdoEntry")
-			.inherit<aris::core::Object>()
-			.property("index", &PdoEntry::setIndex, &PdoEntry::index)
+			.inherit<aris::core::NamedObject>()
+			.prop("index", &PdoEntry::setIndex, &PdoEntry::index)
 			.propertyToStrMethod("index", Uint16ToHexStr)
-			.property("subindex", &PdoEntry::setSubindex, &PdoEntry::subindex)
+			.prop("subindex", &PdoEntry::setSubindex, &PdoEntry::subindex)
 			.propertyToStrMethod("subindex", Uint8ToHexStr)
-			.property("size", &PdoEntry::setBitSize, &PdoEntry::bitSize)
+			.prop("size", &PdoEntry::setBitSize, &PdoEntry::bitSize)
 			;
-
-		aris::core::class_<aris::core::ObjectPool<PdoEntry>>("PdoEntryPoolObject")
-			.inherit<aris::core::Object>()
-			.asRefArray();
 
 		aris::core::class_<Pdo>("Pdo")
-			.inherit<aris::core::ObjectPool<PdoEntry>>()
-			.property("index", &Pdo::setIndex, &Pdo::index)
+			.asArray()
+			.prop("index", &Pdo::setIndex, &Pdo::index)
 			.propertyToStrMethod("index", Uint16ToHexStr)
 			;
 
-		aris::core::class_<aris::core::ObjectPool<Pdo>>("PdoPoolObject")
-			.inherit<aris::core::Object>()
-			.asRefArray();
-
 		aris::core::class_<SyncManager>("SyncManager")
-			.inherit<aris::core::ObjectPool<Pdo>>()
-			.asRefArray()
-			.property("is_tx", &SyncManager::setTx, &SyncManager::tx)
+			.asArray()
+			.prop("is_tx", &SyncManager::setTx, &SyncManager::tx)
 			;
 
-		aris::core::class_<aris::core::ObjectPool<SyncManager>>("SyncManagerPoolObject")
-			.inherit<aris::core::Object>()
-			.asRefArray();
+		aris::core::class_<std::vector<SyncManager>>("SyncManagerPoolObject")
+			.asArray();
 
-		typedef aris::core::ObjectPool<SyncManager>&(EthercatSlave::*SmPoolFunc)();
+		typedef std::vector<SyncManager>&(EthercatSlave::*SmPoolFunc)();
 		aris::core::class_<EthercatSlave>("EthercatSlave")
 			.inherit<Slave>()
-			.property("sm_pool", &EthercatSlave::setSmPool, SmPoolFunc(&EthercatSlave::smPool2))
-			.property("vendor_id", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
+			.prop("sm_pool", &EthercatSlave::setSmPool, SmPoolFunc(&EthercatSlave::smPool))
+			.prop("vendor_id", &EthercatSlave::setVendorID, &EthercatSlave::vendorID)
 			.propertyToStrMethod("vendor_id", Uint32ToHexStr)
-			.property("product_code", &EthercatSlave::setProductCode, &EthercatSlave::productCode)
+			.prop("product_code", &EthercatSlave::setProductCode, &EthercatSlave::productCode)
 			.propertyToStrMethod("product_code", Uint32ToHexStr)
-			.property("revision_num", &EthercatSlave::setRevisionNum, &EthercatSlave::revisionNum)
+			.prop("revision_num", &EthercatSlave::setRevisionNum, &EthercatSlave::revisionNum)
 			.propertyToStrMethod("revision_num", Uint32ToHexStr)
-			.property("dc_assign_activate", &EthercatSlave::setDcAssignActivate, &EthercatSlave::dcAssignActivate)
+			.prop("dc_assign_activate", &EthercatSlave::setDcAssignActivate, &EthercatSlave::dcAssignActivate)
 			.propertyToStrMethod("dc_assign_activate", Uint32ToHexStr)
-			.property("sync0_shift_ns", &EthercatSlave::setSync0ShiftNs, &EthercatSlave::sync0ShiftNs)
+			.prop("sync0_shift_ns", &EthercatSlave::setSync0ShiftNs, &EthercatSlave::sync0ShiftNs)
 			;
 
 		aris::core::class_<EthercatMaster>("EthercatMaster")
 			.inherit<Master>()
-			.property("esi_dirs", &EthercatMaster::setEsiDirStr, &EthercatMaster::esiDirStr)
+			.prop("esi_dirs", &EthercatMaster::setEsiDirStr, &EthercatMaster::esiDirStr)
 			;
 		aris::core::class_<EthercatMotor>("EthercatMotor")
-			.inherit<Motor>()
 			.inherit<EthercatSlave>()
-			.property("is_virtual", &EthercatMotor::setVirtual, &EthercatMotor::isVirtual)
+			.inherit<Motor>()
+			.prop("is_virtual", &EthercatMotor::setVirtual, &EthercatMotor::isVirtual)
 			;
 
 		aris::core::class_<EthercatController>("EthercatController")

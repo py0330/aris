@@ -12,6 +12,8 @@
 
 namespace aris::plan
 {
+	
+	// 请务必修改server中的另一份定义
 	struct Plan::Imp 
 	{
 		std::int64_t count_;
@@ -28,6 +30,7 @@ namespace aris::plan
 		std::uint64_t option_;
 		std::vector<std::uint64_t> mot_options_;
 
+		aris::core::Command cmd_struct_;
 		std::vector<char> cmd_str_;
 		std::string_view cmd_name_;
 		std::map<std::string_view, std::string_view> cmd_params_;
@@ -51,7 +54,7 @@ namespace aris::plan
 			return ret;
 		}
 	};
-	auto Plan::command()->aris::core::Command & { return dynamic_cast<aris::core::Command&>(children().front()); }
+	auto Plan::command()->aris::core::Command & { return imp_->cmd_struct_; }
 	auto Plan::count()->std::int64_t { return imp_->count_; }
 	auto Plan::controlServer()->aris::server::ControlServer * { return imp_->cs_; }
 	auto Plan::model()->aris::dynamic::Model* { return imp_->model_; }
@@ -92,25 +95,27 @@ namespace aris::plan
 	auto Plan::retCode()->std::int32_t { return imp_->ret_code; }
 	auto Plan::retMsg()->const char * { return imp_->ret_msg; }
 	Plan::~Plan() = default;
-	Plan::Plan(const std::string &name) :Object(name), imp_(new Imp) { add<aris::core::Command>(name); }
+	Plan::Plan(const std::string &name) :imp_(new Imp) { }
 	ARIS_DEFINE_BIG_FOUR_CPP(Plan);
 
-	struct PlanRoot::Imp { aris::core::CommandParser parser_; };
-	auto PlanRoot::planPool()->aris::core::ObjectPool<Plan> & { return dynamic_cast<aris::core::ObjectPool<Plan> &>(children().front()); }
+	struct PlanRoot::Imp 
+	{
+		aris::core::CommandParser parser_;
+		std::unique_ptr<aris::core::PointerArray<Plan>> plan_pool_{new aris::core::PointerArray<Plan> };
+	};
+	auto PlanRoot::resetPlanPool(aris::core::PointerArray<Plan> *pool)->void { imp_->plan_pool_.reset(pool); }
+	auto PlanRoot::planPool()->aris::core::PointerArray<Plan> & { return *imp_->plan_pool_; }
 	auto PlanRoot::planParser()->aris::core::CommandParser&{ return imp_->parser_; }
 	auto PlanRoot::init()->void
 	{
 		imp_->parser_.commandPool().clear();
-		for (auto &plan : planPool()) imp_->parser_.commandPool().add<aris::core::Command>(plan.command());
+		for (auto &plan : planPool()) imp_->parser_.commandPool().push_back(plan.command());
 		imp_->parser_.init();
 	}
 	PlanRoot::~PlanRoot() = default;
-	PlanRoot::PlanRoot(const std::string &name) :Object(name), imp_(new Imp)
-	{	
-		aris::core::Object::registerTypeGlobal<aris::core::ObjectPool<Plan> >();
-		add<aris::core::ObjectPool<Plan> >("plan_pool_object");
-	}
-	ARIS_DEFINE_BIG_FOUR_CPP(PlanRoot);
+	PlanRoot::PlanRoot(const std::string &name) :imp_(new Imp){}
+	PlanRoot::PlanRoot(PlanRoot&&) = default;
+	PlanRoot& PlanRoot::operator=(PlanRoot&&) = default;
 
 #define CHECK_PARAM_STRING \
 		"		<UniqueParam default=\"check_all\">" \
@@ -504,9 +509,9 @@ namespace aris::plan
 		return is_all_finished ? 0 : (count() < imp_->limit_time ? 1 : aris::plan::Plan::PLAN_OVER_TIME);
 	}
 	Enable::~Enable() = default;
-	Enable::Enable(const std::string &name) :Plan(name), imp_(new Imp)
+	Enable::Enable(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"en\">"
 			"	<GroupParam>"
 			"		<Param name=\"limit_time\" default=\"5000\"/>"
@@ -553,9 +558,9 @@ namespace aris::plan
 		return is_all_finished ? 0 : (count() < imp_->limit_time ? 1 : aris::plan::Plan::PLAN_OVER_TIME);
 	}
 	Disable::~Disable() = default;
-	Disable::Disable(const std::string &name) :Plan(name), imp_(new Imp)
+	Disable::Disable(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"ds\">"
 			"	<GroupParam>"
 			"		<Param name=\"limit_time\" default=\"5000\"/>"
@@ -642,9 +647,9 @@ namespace aris::plan
 		return is_all_finished ? 0 : 1;
 	}
 	Home::~Home() = default;
-	Home::Home(const std::string &name) :Plan(name), imp_(new Imp)
+	Home::Home(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"hm\">"
 			"	<GroupParam>"
 			"		<Param name=\"method\" default=\"35\"/>"
@@ -717,9 +722,9 @@ namespace aris::plan
 		return is_all_finished ? 0 : (count() < imp_->limit_time ? 1 : aris::plan::Plan::PLAN_OVER_TIME);
 	}
 	Mode::~Mode() = default;
-	Mode::Mode(const std::string &name) :Plan(name), imp_(new Imp)
+	Mode::Mode(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"md\">"
 			"	<GroupParam>"
 			"		<Param name=\"limit_time\" default=\"5000\"/>"
@@ -737,9 +742,9 @@ namespace aris::plan
 		aris::server::ControlServer::instance().clearError();
 		option() = NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
 	}
-	Clear::Clear(const std::string &name) :Plan(name)
+	Clear::Clear(const std::string &name)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"cl\">"
 			"</Command>");
 	}
@@ -795,9 +800,9 @@ namespace aris::plan
 		return (static_cast<int>(*std::max_element(imp_->total_count_vec.begin(), imp_->total_count_vec.end())) > count()) ? 1 : 0;
 	}
 	Reset::~Reset() = default;
-	Reset::Reset(const std::string &name) :Plan(name), imp_(new Imp)
+	Reset::Reset(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"rs\">"
 			"	<GroupParam>"
 					SET_INPUT_MOVEMENT_STRING
@@ -872,9 +877,9 @@ namespace aris::plan
 		}
 	}
 	Recover::~Recover() = default;
-	Recover::Recover(const std::string &name) :Plan(name)
+	Recover::Recover(const std::string &name)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"rc\">"
 			"</Command>");
 	}
@@ -891,9 +896,9 @@ namespace aris::plan
 	}
 	auto Sleep::executeRT()->int { return imp_->count - count(); }
 	Sleep::~Sleep() = default;
-	Sleep::Sleep(const std::string &name) :Plan(name), imp_(new Imp)
+	Sleep::Sleep(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"sl\">"
 			"	<Param name=\"count\" default=\"1000\" abbreviation=\"c\"/>"
 			"</Command>");
@@ -911,7 +916,7 @@ namespace aris::plan
 		controller()->mout() << std::endl;
 		return 0;
 	}
-	Show::Show(const std::string &name) : Plan(name) { command().loadXmlStr("<Command name=\"sh\"/>"); }
+	Show::Show(const std::string &name){ aris::core::fromXmlString(command(), "<Command name=\"sh\"/>"); }
 	ARIS_DEFINE_BIG_FOUR_CPP(Show);
 
 	struct MoveAbsJ::Imp :public SetActiveMotor, SetInputMovement {};
@@ -959,9 +964,9 @@ namespace aris::plan
 		return total_count - count();
 	}
 	MoveAbsJ::~MoveAbsJ() = default;
-	MoveAbsJ::MoveAbsJ(const std::string &name) : Plan(name), imp_(new Imp)
+	MoveAbsJ::MoveAbsJ(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"mvaj\">"
 			"	<GroupParam>"
 			"		<Param name=\"pos\" default=\"0.0\"/>"
@@ -1162,9 +1167,9 @@ namespace aris::plan
 		return max_total_count == 0 ? 0 : max_total_count - count();
 	}
 	MoveJ::~MoveJ() = default;
-	MoveJ::MoveJ(const std::string &name) :Plan(name), imp_(new Imp)
+	MoveJ::MoveJ(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"mvj\">"
 			"	<GroupParam>"
 			"		<Param name=\"pos_unit\" default=\"m\"/>"
@@ -1300,9 +1305,9 @@ namespace aris::plan
 		return std::max(pos_total_count, ori_total_count) > count() ? 1 : 0;
 	}
 	MoveL::~MoveL() = default;
-	MoveL::MoveL(const std::string &name) :Plan(name), imp_(new Imp)
+	MoveL::MoveL(const std::string &name) :imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"mvl\">"
 			"	<GroupParam>"
 			"		<Param name=\"pos_unit\" default=\"m\"/>"
@@ -1488,9 +1493,9 @@ namespace aris::plan
 	}
 	auto AutoMove::collectNrt()->void { if (std::any_cast<AutoMoveParam>(&this->param())->is_start_cmd)Imp::is_running_.store(false); }
 	AutoMove::~AutoMove() = default;
-	AutoMove::AutoMove(const std::string &name) : Plan(name), imp_(new Imp)
+	AutoMove::AutoMove(const std::string &name) : imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"am\">"
 			"	<GroupParam>"
 			"		<UniqueParam default=\"start_group\">"
@@ -1666,9 +1671,9 @@ namespace aris::plan
 	}
 	auto ManualMove::collectNrt()-> void { if (std::any_cast<ManualMoveParam>(&this->param())->is_start_cmd)Imp::is_running_.store(false); }
 	ManualMove::~ManualMove() = default;
-	ManualMove::ManualMove(const std::string &name) : Plan(name), imp_(new Imp)
+	ManualMove::ManualMove(const std::string &name) : imp_(new Imp)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"mm\">"
 			"	<GroupParam>"
 			"		<UniqueParam default=\"start_group\">"
@@ -1699,20 +1704,21 @@ namespace aris::plan
 	auto GetXml::prepareNrt()->void
 	{
 		std::vector<std::pair<std::string, std::any>> ret_value;
-		ret_value.push_back(std::make_pair(std::string("configure_xml"), controlServer()->xmlString()));
+		//ret_value.push_back(std::make_pair(std::string("configure_xml"), controlServer()->xmlString()));
 		ret() = ret_value;
 		option() |= NOT_RUN_EXECUTE_FUNCTION | NOT_RUN_COLLECT_FUNCTION;
 	}
 	GetXml::~GetXml() = default;
-	GetXml::GetXml(const std::string &name) : Plan(name)
+	GetXml::GetXml(const std::string &name)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"get_xml\">"
 			"</Command>");
 	}
 
 	auto SetXml::prepareNrt()->void
 	{		
+		/*
 		// remove all symbols "{" "}"
 		if (this->controlServer()->running())THROW_FILE_LINE("server is running, can't set xml");
 		auto xml_str = cmdParams().at("xml").substr(1, cmdParams().at("xml").size() - 2);
@@ -1733,11 +1739,12 @@ namespace aris::plan
 
 		std::vector<std::pair<std::string, std::any>> ret_value;
 		ret() = ret_value;
+		*/
 	}
 	SetXml::~SetXml() = default;
-	SetXml::SetXml(const std::string &name) : Plan(name)
+	SetXml::SetXml(const std::string &name)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"set_xml\">"
 			"	<Param name=\"xml\"/>"
 			"</Command>");
@@ -1752,9 +1759,9 @@ namespace aris::plan
 		ret() = ret_value;
 	}
 	Start::~Start() = default;
-	Start::Start(const std::string &name) : Plan(name)
+	Start::Start(const std::string &name)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"cs_start\">"
 			"</Command>");
 	}
@@ -1769,9 +1776,9 @@ namespace aris::plan
 		ret() = ret_value;
 	}
 	Stop::~Stop() = default;
-	Stop::Stop(const std::string &name) : Plan(name)
+	Stop::Stop(const std::string &name)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"cs_stop\">"
 			"</Command>");
 	}
@@ -1810,9 +1817,9 @@ namespace aris::plan
 		option() =	NOT_RUN_EXECUTE_FUNCTION;
 	}
 	RemoveFile::~RemoveFile() = default;
-	RemoveFile::RemoveFile(const std::string &name) :Plan(name)
+	RemoveFile::RemoveFile(const std::string &name)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"rmFi\">"
 			"	<GroupParam>"
 			"	    <Param name=\"filePath\" default=\"C:/Users/qianch_kaanh_cn/Desktop/build_qianch/log/\" abbreviation=\"f\" />"
@@ -1834,12 +1841,12 @@ namespace aris::plan
 	auto UniversalPlan::setExecuteFunc(ExecuteFunc func)->void { imp_->execute_rt = func; }
 	auto UniversalPlan::setCollectFunc(CollectFunc func)->void { imp_->collect_nrt = func; }
 	UniversalPlan::~UniversalPlan() = default;
-	UniversalPlan::UniversalPlan(const std::string &name, PrepareFunc prepare_func, ExecuteFunc execute_func, CollectFunc collect_func, const std::string & cmd_xml_str) :Plan(name), imp_(new Imp)
+	UniversalPlan::UniversalPlan(const std::string &name, PrepareFunc prepare_func, ExecuteFunc execute_func, CollectFunc collect_func, const std::string & cmd_xml_str) :imp_(new Imp)
 	{
 		imp_->prepare_nrt = prepare_func;
 		imp_->execute_rt = execute_func;
 		imp_->collect_nrt = collect_func;
-		command().loadXmlStr(cmd_xml_str);
+		aris::core::fromXmlString(command(), cmd_xml_str);
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(UniversalPlan);
 
@@ -1922,9 +1929,9 @@ namespace aris::plan
 
 	}
 	MoveSeries::~MoveSeries() = default;
-	MoveSeries::MoveSeries(const std::string &name) :Plan(name)
+	MoveSeries::MoveSeries(const std::string &name)
 	{
-		command().loadXmlStr(
+		aris::core::fromXmlString(command(),
 			"<Command name=\"mvs\">"
 			"	<GroupParam>"
 			"	    <Param name=\"x\" default=\"0\" abbreviation=\"x\" />"
@@ -1935,7 +1942,107 @@ namespace aris::plan
 	}
 
 
+	ARIS_REGISTRATION
+	{
+		typedef aris::core::Command&(Plan::*CommandFunc)();
+		
+		aris::core::class_<Plan>("Plan")
+			.prop("command", CommandFunc(&Plan::command))
+			;
 
+		aris::core::class_<aris::core::PointerArray<Plan>>("PlanPoolObject")
+			.asRefArray()
+			;
+
+		typedef aris::core::PointerArray<Plan>&(PlanRoot::*PlanPoolFunc)();
+		aris::core::class_<PlanRoot>("PlanRoot")
+			.prop("plan_pool_object", &PlanRoot::resetPlanPool, PlanPoolFunc(&PlanRoot::planPool))
+			;
+
+		aris::core::class_<Enable>("Enable")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Disable>("Disable")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Home>("Home")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Mode>("Mode")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Clear>("Clear")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Reset>("Reset")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Recover>("Recover")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Sleep>("Sleep")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Show>("Show")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<MoveAbsJ>("MoveAbsJ")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<MoveJ>("MoveJ")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<MoveL>("MoveL")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<AutoMove>("AutoMove")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<ManualMove>("ManualMove")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<GetXml>("GetXml")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<SetXml>("SetXml")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Start>("plan::Start")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<Stop>("Stop")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<RemoveFile>("RemoveFile")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<UniversalPlan>("UniversalPlan")
+			.inherit<Plan>()
+			;
+
+		aris::core::class_<MoveSeries>("MoveSeries")
+			.inherit<Plan>()
+			;
+	}
 
 
 }

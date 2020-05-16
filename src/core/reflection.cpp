@@ -11,6 +11,8 @@
 
 #include "aris/core/reflection.hpp"
 
+int aaaaa_bbbbb_ccccc = 0;
+
 namespace aris::core
 {
 	auto reflect_types_raw()->std::map<std::size_t, Type>&
@@ -89,6 +91,8 @@ namespace aris::core
 			// init inherit types //
 			for (auto &t : inherit_type_infos_)
 			{
+				if (reflect_types().find(t->hash_code()) == reflect_types().end()) std::cout << "Unregistered inherited type:" << t->name() << std::endl;
+				if (reflect_types().find(t->hash_code()) == reflect_types().end())	THROW_FILE_LINE("Unregistered inherited type:" + t->name());
 				this_type->inherit_types_.push_back(&reflect_types().at(t->hash_code()));
 				inherit_types_.back()->init();
 			}
@@ -132,6 +136,10 @@ namespace aris::core
 	}
 	auto Type::isBaseOf(const Type* base, const Type* derived)->bool
 	{
+		if (base == nullptr) return true;
+		if (derived == nullptr) return false;
+		
+		
 		if (base == derived || std::find(derived->inherit_types_.begin(), derived->inherit_types_.end(), base) != derived->inherit_types_.end())
 		{
 			return true;
@@ -209,6 +217,11 @@ namespace aris::core
 	{
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		type()->array_data_->push_back_func_(this, element);
+	}
+	auto Instance::clear()->void 
+	{
+		if (!isArray())THROW_FILE_LINE("instance is NOT array");
+		type()->array_data_->clear_func_(this);
 	}
 
 	auto uint64_to_str(std::uint64_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint64_t*>(value)); }

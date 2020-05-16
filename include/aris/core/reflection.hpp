@@ -31,6 +31,8 @@ namespace                                                                       
 static const aris_reflection_help_class__ ARIS_REFLECT_CAT(auto_register__, __LINE__);    \
 static void aris_reflection_register_function_()
 
+extern int aaaaa_bbbbb_ccccc;
+
 namespace aris::core
 {
 	class Type;
@@ -51,10 +53,10 @@ namespace aris::core
 		std::string name_;
 		std::function<Instance(Instance *obj)> get_;
 		std::function<void(Instance *obj, Instance prop)> set_;
-		bool accept_ptr_{ false };// which means property is a ptr, to support polymorphim
-		Type *type_belong_to_;// obj type, which property belong to
-		Type *type_;// type of this property
-		const std::type_info *type_info_;// type info of this property
+		bool accept_ptr_{ false };// which means prop is a ptr, to support polymorphim
+		Type *type_belong_to_;// obj type, which prop belong to
+		Type *type_;// type of this prop
+		const std::type_info *type_info_;// type info of this prop
 
 		// only for basic type //
 		std::function<std::string(void* value)> to_str_func_;
@@ -109,6 +111,7 @@ namespace aris::core
 			std::function<std::size_t(Instance*)> size_func_;
 			std::function<Instance(Instance*, std::size_t id)> at_func_;
 			std::function<void(Instance*, const Instance&)> push_back_func_;
+			std::function<void(Instance*)> clear_func_;
 		};
 
 		std::unique_ptr<ArrayData> array_data_;
@@ -147,6 +150,7 @@ namespace aris::core
 		auto size()->std::size_t;
 		auto at(std::size_t id)->Instance;
 		auto push_back(Instance element)->void;
+		auto clear()->void;
 
 		// 绑定到左值引用, 多态类型 //
 		template<typename T>
@@ -217,8 +221,9 @@ namespace aris::core
 	public:
 		// 对于普通类型 //
 		template <typename T = Class_Type>
-		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T>> *test = nullptr)
+		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T> && std::is_default_constructible_v<T> && std::is_destructible_v<T>> *test = nullptr)
 		{
+			aaaaa_bbbbb_ccccc++;
 			type_ = registerType(typeid(Class_Type).hash_code(), name, []()->std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>
 			{
 				auto f = [](void const * data)->void{	delete static_cast<Class_Type const*>(data); };
@@ -231,8 +236,9 @@ namespace aris::core
 
 		// 对于纯虚类型 //
 		template <typename T = Class_Type>
-		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T>> *test = nullptr)
+		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T> || !std::is_default_constructible_v<T> || !std::is_destructible_v<T>> *test = nullptr)
 		{
+			aaaaa_bbbbb_ccccc++;
 			type_ = registerType(typeid(Class_Type).hash_code(), name, nullptr);
 			type_->is_polymophic_ = std::is_polymorphic_v<Class_Type>;
 		}
@@ -246,7 +252,9 @@ namespace aris::core
 		template<typename FatherType>
 		auto inherit()->class_<Class_Type>&
 		{
-			static_assert(std::is_base_of_v<FatherType, Class_Type>, "failed to inherit");
+			if (!std::is_base_of_v<FatherType, Class_Type>)std::cout << (std::string("failed to inherit \"") + typeid(FatherType).name() + "\" for \"" + typeid(Class_Type).name() + "\"") << std::endl;
+			if (!std::is_base_of_v<FatherType, Class_Type>)THROW_FILE_LINE(std::string("failed to inherit \"") + typeid(FatherType).name() + "\" for \"" + typeid(Class_Type).name() + "\"");
+			
 
 			type_->inherit_type_infos_.push_back(&typeid(FatherType));
 			type_->inherit_cast_vec_.push_back([](void* input)->void*
@@ -287,8 +295,12 @@ namespace aris::core
 			{
 				ins->castTo<Class_Type>()->push_back(value.castTo<Class_Type::value_type>());
 			};
+			auto clear_func = [](Instance* ins)->void
+			{
+				ins->castTo<Class_Type>()->clear();
+			};
 
-			type_->array_data_ = std::unique_ptr<Type::ArrayData>(new Type::ArrayData{ true, type_, size_func, at_func,push_back_func });
+			type_->array_data_ = std::unique_ptr<Type::ArrayData>(new Type::ArrayData{ true, type_, size_func, at_func,push_back_func, clear_func });
 			return *this;
 		}
 
@@ -309,14 +321,18 @@ namespace aris::core
 			{
 				ins->castTo<Class_Type>()->push_back(*value.castTo<Class_Type::value_type>());
 			};
+			auto clear_func = [](Instance* ins)->void
+			{
+				ins->castTo<Class_Type>()->clear();
+			};
 
-			type_->array_data_ = std::unique_ptr<Type::ArrayData>(new Type::ArrayData{ false, type_, size_func, at_func,push_back_func });
+			type_->array_data_ = std::unique_ptr<Type::ArrayData>(new Type::ArrayData{ false, type_, size_func, at_func,push_back_func, clear_func });
 			return *this;
 		}
 
 		// espect: Class_Type::v where v is a value
 		template<typename Value>
-		auto property(std::string_view name, Value v)->std::enable_if_t<
+		auto prop(std::string_view name, Value v)->std::enable_if_t<
 				std::is_member_object_pointer_v<Value>
 				&& std::is_lvalue_reference_v<decltype((reinterpret_cast<Class_Type*>(nullptr))->*v)>
 			, class_<Class_Type>&>
@@ -325,10 +341,7 @@ namespace aris::core
 
 			auto &prop = type_->this_properties_.emplace_back(name, type_);
 			prop.get_ = [v](Instance *obj)->Instance { return obj->castTo<Class_Type>()->*v; };
-			prop.set_ = [v](Instance *obj, Instance value)
-			{
-				obj->castTo<Class_Type>()->*v = *value.castTo<T>();
-			};
+			prop.set_ = [v](Instance *obj, Instance value) { obj->castTo<Class_Type>()->*v = *value.castTo<T>(); };
 			prop.type_info_ = &typeid(T);
 
 			return *this;
@@ -336,7 +349,7 @@ namespace aris::core
 
 		// espect: Class_Type::v()->T& where v is a reference function
 		template<typename Value>
-		auto property(std::string_view name, Value v)->std::enable_if_t<
+		auto prop(std::string_view name, Value v)->std::enable_if_t<
 				std::is_member_function_pointer_v<Value>
 				&& std::is_lvalue_reference_v<decltype(((reinterpret_cast<Class_Type*>(nullptr))->*v)())>
 				&& !std::is_const_v<decltype(((reinterpret_cast<Class_Type*>(nullptr))->*v)())>
@@ -355,7 +368,7 @@ namespace aris::core
 		// espect: Class_Type::setProp(T v)->void  
 		//         Class_Type::getProp()->T
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
-		auto property(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t< 
+		auto prop(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t< 
 				std::is_class_v<C> 
 				&& std::is_member_function_pointer_v<SetFunc>
 				&& std::is_member_function_pointer_v<GetFunc>
@@ -377,7 +390,7 @@ namespace aris::core
 		//
 		// note  : set function will responsible for life-time management of v
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
-		auto property(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t< 
+		auto prop(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t< 
 				std::is_class_v<C> 
 				&& std::is_member_function_pointer_v<SetFunc>
 				&& std::is_member_function_pointer_v<GetFunc>
@@ -400,7 +413,7 @@ namespace aris::core
 		//
 		// note  : set function will responsible for life-time management of v
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
-		auto property(std::string_view name, SetFunc s, GetFunc g)->std::enable_if_t<
+		auto prop(std::string_view name, SetFunc s, GetFunc g)->std::enable_if_t<
 				std::is_class_v<C>
 				&& !std::is_member_function_pointer_v<SetFunc>
 				&& !std::is_member_function_pointer_v<GetFunc>
@@ -421,9 +434,7 @@ namespace aris::core
 		{
 			auto found = std::find_if(type_->this_properties_.begin(), type_->this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			auto &prop = *found;
-
 			prop.to_str_func_ = func;
-
 			return *this;
 		}
 
@@ -432,7 +443,6 @@ namespace aris::core
 			auto found = std::find_if(type_->this_properties_.begin(), type_->this_properties_.end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
 			auto &prop = *found;
 			prop.from_str_func_ = func;
-
 			return *this;
 		}
 

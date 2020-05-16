@@ -26,102 +26,120 @@ namespace aris::dynamic
 	{
 		double time_{ 0.0 };
 		aris::core::Calculator calculator_;
-		Environment *environment_;
+		Environment environment_;
+		std::unique_ptr<aris::core::PointerArray<Variable, Element>> variable_pool_;
+		std::unique_ptr<aris::core::PointerArray<Part, Element>> part_pool_;
+		std::unique_ptr<aris::core::PointerArray<Joint, Element>> joint_pool_;
+		std::unique_ptr<aris::core::PointerArray<Motion, Element>> motion_pool_;
+		std::unique_ptr<aris::core::PointerArray<GeneralMotion, Element>> general_motion_pool_;
+		std::unique_ptr<aris::core::PointerArray<Force, Element>> force_pool_;
+		std::unique_ptr<aris::core::PointerArray<Solver, Element>> solver_pool_;
+		aris::core::PointerArray<Simulator, Element> *simulator_pool_;
+		aris::core::PointerArray<SimResult, Element> *sim_result_pool_;
+		aris::core::PointerArray<Calibrator, Element> *calibrator_pool_;
+
 		Part* ground_;
-		aris::core::ObjectPool<Variable, Element> *variable_pool_;
-		aris::core::ObjectPool<Part, Element> *part_pool_;
-		aris::core::ObjectPool<Joint, Element> *joint_pool_;
-		aris::core::ObjectPool<Motion, Element> *motion_pool_;
-		aris::core::ObjectPool<GeneralMotion, Element> *general_motion_pool_;
-		aris::core::ObjectPool<Force, Element> *force_pool_;
-		aris::core::ObjectPool<Solver, Element> *solver_pool_;
-		aris::core::ObjectPool<Simulator, Element> *simulator_pool_;
-		aris::core::ObjectPool<SimResult, Element> *sim_result_pool_;
-		aris::core::ObjectPool<Calibrator, Element> *calibrator_pool_;
 	};
-	auto Model::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Object::loadXml(xml_ele);
-
-		setTime(Object::attributeDouble(xml_ele, "time", 0.0));
-
-		imp_->environment_ = findOrInsertType<Environment>();
-		imp_->variable_pool_ = findOrInsertType<aris::core::ObjectPool<Variable, Element>>();
-		imp_->part_pool_ = findOrInsertType<aris::core::ObjectPool<Part, Element>>();
-		imp_->joint_pool_ = findOrInsertType<aris::core::ObjectPool<Joint, Element>>();
-		imp_->motion_pool_ = findOrInsertType<aris::core::ObjectPool<Motion, Element>>();
-		imp_->general_motion_pool_ = findOrInsertType<aris::core::ObjectPool<GeneralMotion, Element>>();
-		imp_->force_pool_ = findOrInsertType<aris::core::ObjectPool<Force, Element>>();
-		imp_->solver_pool_ = findOrInsertType<aris::core::ObjectPool<Solver, Element>>();
-		imp_->simulator_pool_ = findOrInsertType<aris::core::ObjectPool<Simulator, Element>>();
-		imp_->sim_result_pool_ = findOrInsertType<aris::core::ObjectPool<SimResult, Element>>();
-		imp_->calibrator_pool_ = findOrInsertType<aris::core::ObjectPool<Calibrator, Element>>();
-		imp_->ground_ = partPool().findOrInsert<Part>("ground");
-	}
-	auto Model::saveXml(aris::core::XmlElement &xml_ele)const->void
-	{
-		Object::saveXml(xml_ele);
-		xml_ele.SetAttribute("time", time());
-	}
 	auto Model::init()->void 
 	{ 
 		auto init_interaction = [](Interaction &interaction, Model*m)->void
 		{
 			if (interaction.prtNameM().empty() && interaction.prtNameN().empty() && interaction.makNameI().empty() && interaction.makNameJ().empty())return;
-			
-			auto prt_m = m->partPool().findByName(interaction.prtNameM());
-			auto mak_i = prt_m->markerPool().findByName(interaction.makNameI());
-			auto prt_n = m->partPool().findByName(interaction.prtNameN());
-			auto mak_j = prt_n->markerPool().findByName(interaction.makNameJ());
+
+			auto find_part = [m](std::string_view name)->Part*
+			{
+				auto found = std::find_if(m->partPool().begin(), m->partPool().end(), [name](const auto &part)->bool 
+				{
+					return part.name() == name;
+				});
+				return found == m->partPool().end() ? nullptr : &*found;
+			};
+
+			auto find_marker = [](Part *part, std::string_view name)->Marker*
+			{
+				auto found = std::find_if(part->markerPool().begin(), part->markerPool().end(), [name](const auto &marker)->bool
+				{
+					return marker.name() == name;
+				});
+				return found == part->markerPool().end() ? nullptr : &*found;
+			};
+
+
+			auto prt_m = find_part(interaction.prtNameM());
+			auto mak_i = find_marker(prt_m, interaction.makNameI());
+			auto prt_n = find_part(interaction.prtNameN());
+			auto mak_j = find_marker(prt_n, interaction.makNameJ());
 
 			interaction.makI_ = &*mak_i;
 			interaction.makJ_ = &*mak_j;
 		};
 
-		imp_->ground_ = partPool().findOrInsert<Part>("ground");
+		auto ground = std::find_if(partPool().begin(), partPool().end(), [](const auto &part)->bool
+		{
+			return part.name() == "ground";
+		});
+		imp_->ground_ = ground == partPool().end() ? &partPool().add<Part>("ground") : &*ground;
 
 		environment().model_ = this;
 		variablePool().model_ = this;
 		for (auto &ele : variablePool())ele.model_ = this;
 		partPool().model_ = this;
-		for (auto &ele : partPool()) 
+		for (Size i = 0; i< partPool().size(); ++i)
 		{
-			ele.model_ = this;
-			for (auto &mak : ele.markerPool())mak.imp_->part_ = &ele;
+			partPool()[i].model_ = this;
+			partPool()[i].id_ = i;
+			for (Size j = 0; j < partPool()[i].markerPool().size(); ++j)
+			{
+				partPool()[i].markerPool()[j].model_ = this;
+				partPool()[i].markerPool()[j].id_ = j;
+				partPool()[i].markerPool()[j].imp_->part_ = &partPool()[i];
+			}
 		}
 		jointPool().model_ = this;
-		for (auto &ele : jointPool()) 
+		for (Size i = 0; i< jointPool().size(); ++i)
 		{
-			ele.model_ = this;
-			init_interaction(ele, this);
+			jointPool()[i].model_ = this;
+			jointPool()[i].id_ = i;
+			init_interaction(jointPool()[i], this);
 		}
 		motionPool().model_ = this;
-		for (auto &ele : motionPool()) {
-			ele.model_ = this;
-			init_interaction(ele, this);
+		for (Size i = 0; i< motionPool().size(); ++i) {
+			motionPool()[i].model_ = this;
+			motionPool()[i].id_ = i;
+			init_interaction(motionPool()[i], this);
 		}
 		generalMotionPool().model_ = this;
-		for (auto &ele : generalMotionPool()) {
-			ele.model_ = this;
-			init_interaction(ele, this);
+		for (Size i = 0; i< generalMotionPool().size(); ++i) {
+			generalMotionPool()[i].model_ = this;
+			generalMotionPool()[i].id_ = i;
+			init_interaction(generalMotionPool()[i], this);
 		}
 		forcePool().model_ = this;
-		for (auto &ele : forcePool()) {
-			ele.model_ = this;
-			init_interaction(ele, this);
+		for (Size i = 0; i< forcePool().size(); ++i) {
+			forcePool()[i].model_ = this;
+			forcePool()[i].id_ = i;
+			init_interaction(forcePool()[i], this);
 		}
 		solverPool().model_ = this;
-		for (auto &ele : solverPool())ele.model_ = this;
+		for (Size i = 0; i< solverPool().size(); ++i)
+		{
+			solverPool()[i].model_ = this;
+			solverPool()[i].id_ = i;
+		}
+		/*
 		simulatorPool().model_ = this;
 		for (auto &ele : simulatorPool())ele.model_ = this;
 		simResultPool().model_ = this;
 		for (auto &ele : simResultPool())ele.model_ = this;
 		calibratorPool().model_ = this;
 		for (auto &ele : calibratorPool())ele.model_ = this;
-
+		*/
 		// alloc mem for solvers //
 		for (auto &s : this->solverPool())
+		{
 			s.allocateMemory();
+		}
+			
 	}
 	auto Model::inverseKinematics()->int { return solverPool()[0].kinPos(); }
 	auto Model::forwardKinematics()->int { return solverPool()[1].kinPos(); }
@@ -146,17 +164,24 @@ namespace aris::dynamic
 	auto Model::time()const->double { return imp_->time_; }
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }
-	auto Model::environment()->aris::dynamic::Environment& { return *imp_->environment_; }
-	auto Model::variablePool()->aris::core::ObjectPool<Variable, Element>& { return *imp_->variable_pool_; }
-	auto Model::partPool()->aris::core::ObjectPool<Part, Element>& { return *imp_->part_pool_; }
-	auto Model::jointPool()->aris::core::ObjectPool<Joint, Element>& { return *imp_->joint_pool_; }
-	auto Model::motionPool()->aris::core::ObjectPool<Motion, Element>& { return *imp_->motion_pool_; }
-	auto Model::generalMotionPool()->aris::core::ObjectPool<GeneralMotion, Element>& { return *imp_->general_motion_pool_; }
-	auto Model::forcePool()->aris::core::ObjectPool<Force, Element>& { return *imp_->force_pool_; }
-	auto Model::solverPool()->aris::core::ObjectPool<Solver, Element>& { return *imp_->solver_pool_; }
-	auto Model::simulatorPool()->aris::core::ObjectPool<Simulator, Element>& { return *imp_->simulator_pool_; }
-	auto Model::simResultPool()->aris::core::ObjectPool<SimResult, Element>& { return *imp_->sim_result_pool_; }
-	auto Model::calibratorPool()->aris::core::ObjectPool<Calibrator, Element>& { return *imp_->calibrator_pool_; }
+	auto Model::environment()->aris::dynamic::Environment& { return imp_->environment_; }
+	auto Model::resetVariablePool(aris::core::PointerArray<Variable, Element> *pool)->void { imp_->variable_pool_.reset(pool); }
+	auto Model::variablePool()->aris::core::PointerArray<Variable, Element>& { return *imp_->variable_pool_; }
+	auto Model::resetPartPool(aris::core::PointerArray<Part, Element> *pool)->void { imp_->part_pool_.reset(pool); }
+	auto Model::partPool()->aris::core::PointerArray<Part, Element>& { return *imp_->part_pool_; }
+	auto Model::resetJointPool(aris::core::PointerArray<Joint, Element> *pool)->void { imp_->joint_pool_.reset(pool); }
+	auto Model::jointPool()->aris::core::PointerArray<Joint, Element>& { return *imp_->joint_pool_; }
+	auto Model::resetMotionPool(aris::core::PointerArray<Motion, Element> *pool)->void { imp_->motion_pool_.reset(pool); }
+	auto Model::motionPool()->aris::core::PointerArray<Motion, Element>& { return *imp_->motion_pool_; }
+	auto Model::resetGeneralMotionPool(aris::core::PointerArray<GeneralMotion, Element> *pool)->void { imp_->general_motion_pool_.reset(pool); }
+	auto Model::generalMotionPool()->aris::core::PointerArray<GeneralMotion, Element>& { return *imp_->general_motion_pool_; }
+	auto Model::resetForcePool(aris::core::PointerArray<Force, Element> *pool)->void { imp_->force_pool_.reset(pool); }
+	auto Model::forcePool()->aris::core::PointerArray<Force, Element>& { return *imp_->force_pool_; }
+	auto Model::resetSolverPool(aris::core::PointerArray<Solver, Element> *pool)->void { imp_->solver_pool_.reset(pool); }
+	auto Model::solverPool()->aris::core::PointerArray<Solver, Element>& { return *imp_->solver_pool_; }
+	auto Model::simulatorPool()->aris::core::PointerArray<Simulator, Element>& { return *imp_->simulator_pool_; }
+	auto Model::simResultPool()->aris::core::PointerArray<SimResult, Element>& { return *imp_->sim_result_pool_; }
+	auto Model::calibratorPool()->aris::core::PointerArray<Calibrator, Element>& { return *imp_->calibrator_pool_; }
 	auto Model::ground()->Part& { return *imp_->ground_; }
 	auto Model::addPartByPm(const double*pm, const double *prt_im)->Part& 
 	{ 
@@ -258,15 +283,7 @@ namespace aris::dynamic
 	}
 	auto Model::addMotion()->Motion&
 	{
-		if (ground().markerPool().findByName("origin") == ground().markerPool().end())
-		{
-			double pm[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
-			this->ground().addMarker("origin", pm);
-		}
-
-		auto mak = ground().markerPool().findByName("origin");
-
-		auto &ret = motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), &*mak, &*mak, 0);
+		auto &ret = motionPool().add<Motion>("motion_" + std::to_string(motionPool().size()), nullptr, nullptr, 0);
 		ret.Element::model_ = this;
 		return ret;
 	}
@@ -297,94 +314,80 @@ namespace aris::dynamic
 		return ret;
 	}
 	Model::~Model() = default;
-	Model::Model(const std::string &name) :Object(name)
+	Model::Model(const std::string &name)
 	{
-		this->registerType<aris::core::ObjectPool<Variable, Element> >();
-		this->registerType<aris::core::ObjectPool<Part, Element> >();
-		this->registerType<aris::core::ObjectPool<Joint, Element> >();
-		this->registerType<aris::core::ObjectPool<Motion, Element> >();
-		this->registerType<aris::core::ObjectPool<GeneralMotion, Element> >();
-		this->registerType<aris::core::ObjectPool<Force, Element> >();
-		this->registerType<aris::core::ObjectPool<Solver, Element> >();
-		this->registerType<aris::core::ObjectPool<Simulator, Element> >();
-		this->registerType<aris::core::ObjectPool<SimResult, Element> >();
-		this->registerType<aris::core::ObjectPool<Calibrator, Element> >();
+		
+		imp_->variable_pool_.reset(new aris::core::PointerArray<Variable, Element>);
+		imp_->part_pool_.reset(new aris::core::PointerArray<Part, Element>);
+		imp_->joint_pool_.reset(new aris::core::PointerArray<Joint, Element>);
+		imp_->motion_pool_.reset(new aris::core::PointerArray<Motion, Element>);
+		imp_->general_motion_pool_.reset(new aris::core::PointerArray<GeneralMotion, Element>);
+		imp_->force_pool_.reset(new aris::core::PointerArray<Force, Element>);
+		imp_->solver_pool_.reset(new aris::core::PointerArray<Solver, Element>);
 
-		imp_->environment_ = &this->add<Environment>("environment");
-		imp_->variable_pool_ = &this->add<aris::core::ObjectPool<Variable, Element>>("variable_pool");
-		imp_->part_pool_ = &this->add<aris::core::ObjectPool<Part, Element>>("part_pool");
-		imp_->joint_pool_ = &this->add<aris::core::ObjectPool<Joint, Element>>("joint_pool");
-		imp_->motion_pool_ = &this->add<aris::core::ObjectPool<Motion, Element>>("motion_pool");
-		imp_->general_motion_pool_ = &this->add<aris::core::ObjectPool<GeneralMotion, Element>>("general_motion_pool");
-		imp_->force_pool_ = &this->add<aris::core::ObjectPool<Force, Element>>("force_pool");
-		imp_->solver_pool_ = &this->add<aris::core::ObjectPool<Solver, Element>>("solver_pool");
-		imp_->simulator_pool_ = &this->add<aris::core::ObjectPool<Simulator, Element>>("simulator_pool");
-		imp_->sim_result_pool_ = &this->add<aris::core::ObjectPool<SimResult, Element>>("sim_result_pool");
-		imp_->calibrator_pool_ = &this->add<aris::core::ObjectPool<Calibrator, Element>>("calibrator_pool");
-
-		imp_->ground_ = &imp_->part_pool_->add<Part>("ground");
+		imp_->ground_ = &partPool().add<Part>("ground");
 	}
-	ARIS_DEFINE_BIG_FOUR_CPP(Model);
+	Model::Model(Model&&) = default;
+	Model& Model::operator=(Model&&) = default;
 
 	ARIS_REGISTRATION
 	{
 		typedef Environment&(Model::*EnvironmentFunc)();
-		typedef aris::core::ObjectPool<Variable, Element> &(Model::*VarablePoolFunc)();
-		typedef aris::core::ObjectPool<Part, Element> &(Model::*PartPoolFunc)();
-		typedef aris::core::ObjectPool<Joint, Element> &(Model::*JointPoolFunc)();
-		typedef aris::core::ObjectPool<Motion, Element> &(Model::*MotionPoolFunc)();
-		typedef aris::core::ObjectPool<GeneralMotion, Element> &(Model::*GeneralMotionPoolFunc)();
-		typedef aris::core::ObjectPool<Force, Element> &(Model::*ForcePoolFunc)();
-		typedef aris::core::ObjectPool<Solver, Element> &(Model::*SolverPoolFunc)();
-		typedef aris::core::ObjectPool<Simulator, Element> &(Model::*SimulatorPoolFunc)();
-		typedef aris::core::ObjectPool<SimResult, Element> &(Model::*SimResultPoolFunc)();
-		typedef aris::core::ObjectPool<Calibrator, Element> &(Model::*CalibratorPoolFunc)();
+		typedef aris::core::PointerArray<Variable, Element> &(Model::*VarablePoolFunc)();
+		typedef aris::core::PointerArray<Part, Element> &(Model::*PartPoolFunc)();
+		typedef aris::core::PointerArray<Joint, Element> &(Model::*JointPoolFunc)();
+		typedef aris::core::PointerArray<Motion, Element> &(Model::*MotionPoolFunc)();
+		typedef aris::core::PointerArray<GeneralMotion, Element> &(Model::*GeneralMotionPoolFunc)();
+		typedef aris::core::PointerArray<Force, Element> &(Model::*ForcePoolFunc)();
+		typedef aris::core::PointerArray<Solver, Element> &(Model::*SolverPoolFunc)();
+		typedef aris::core::PointerArray<Simulator, Element> &(Model::*SimulatorPoolFunc)();
+		typedef aris::core::PointerArray<SimResult, Element> &(Model::*SimResultPoolFunc)();
+		typedef aris::core::PointerArray<Calibrator, Element> &(Model::*CalibratorPoolFunc)();
 
-		aris::core::class_<aris::core::ObjectPool<Variable, Element>>("VariablePoolElement")
+		aris::core::class_<aris::core::PointerArray<Variable, Element>>("VariablePoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<Part, Element>>("PartPoolElement")
+		aris::core::class_<aris::core::PointerArray<Part, Element>>("PartPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<Joint, Element>>("JointPoolElement")
+		aris::core::class_<aris::core::PointerArray<Joint, Element>>("JointPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<Motion, Element>>("MotionPoolElement")
+		aris::core::class_<aris::core::PointerArray<Motion, Element>>("MotionPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<GeneralMotion, Element>>("GeneralMotionPoolElement")
+		aris::core::class_<aris::core::PointerArray<GeneralMotion, Element>>("GeneralMotionPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<Force, Element>>("ForcePoolElement")
+		aris::core::class_<aris::core::PointerArray<Force, Element>>("ForcePoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<Solver, Element>>("SolverPoolElement")
+		aris::core::class_<aris::core::PointerArray<Solver, Element>>("SolverPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<Simulator, Element>>("SimulatorPoolElement")
+		aris::core::class_<aris::core::PointerArray<Simulator, Element>>("SimulatorPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<SimResult, Element>>("SimResultPoolElement")
+		aris::core::class_<aris::core::PointerArray<SimResult, Element>>("SimResultPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<Calibrator, Element>>("CalibratorPoolElement")
+		aris::core::class_<aris::core::PointerArray<Calibrator, Element>>("CalibratorPoolElement")
 			.asRefArray()
 			;
 
 		aris::core::class_<Model>("Model")
-			.inherit<aris::core::Object>()
-			.property("time", &Model::setTime, &Model::time)
-			.property<EnvironmentFunc>("environment", &Model::environment)
-			.property<VarablePoolFunc>("variable_pool", &Model::variablePool)
-			.property<PartPoolFunc>("part_pool", &Model::partPool)
-			.property<MotionPoolFunc>("motion_pool", &Model::motionPool)
-			.property<JointPoolFunc>("joint_pool", &Model::jointPool)
-			.property<GeneralMotionPoolFunc>("general_motion_pool", &Model::generalMotionPool)
-			.property<ForcePoolFunc>("force_pool", &Model::forcePool)
-			.property<SolverPoolFunc>("solver_pool", &Model::solverPool)
-			//.property<SimulatorPoolFunc>("simulator_pool", &Model::simulatorPool)
-			//.property<SimResultPoolFunc>("sim_result_pool", &Model::simResultPool)
-			//.property<CalibratorPoolFunc>("calibrator_pool", &Model::calibratorPool)
+			.prop("time", &Model::setTime, &Model::time)
+			.prop("environment", EnvironmentFunc(&Model::environment))
+			.prop("variable_pool", &Model::resetVariablePool, VarablePoolFunc(&Model::variablePool))
+			.prop("part_pool", &Model::resetPartPool,  PartPoolFunc(&Model::partPool))
+			.prop("motion_pool", &Model::resetMotionPool, MotionPoolFunc(&Model::motionPool))
+			.prop("joint_pool", &Model::resetJointPool, JointPoolFunc(&Model::jointPool))
+			.prop("general_motion_pool", &Model::resetGeneralMotionPool, GeneralMotionPoolFunc(&Model::generalMotionPool))
+			.prop("force_pool", &Model::resetForcePool, ForcePoolFunc(&Model::forcePool))
+			.prop("solver_pool", &Model::resetSolverPool, SolverPoolFunc(&Model::solverPool))
+			//.prop<SimulatorPoolFunc>("simulator_pool", &Model::simulatorPool)
+			//.prop<SimResultPoolFunc>("sim_result_pool", &Model::simResultPool)
+			//.prop<CalibratorPoolFunc>("calibrator_pool", &Model::calibratorPool)
 			;
 	}
 

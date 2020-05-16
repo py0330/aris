@@ -111,20 +111,22 @@ namespace aris::core
 	/// @{
 	///
 
-
 	class Command;
-
-	class ParamBase :public ObjectPool<ParamBase>
+	class ParamBase :public PointerArray<ParamBase>
 	{
 	public:
 		auto command()const->const Command &;
-		auto father()->Object*;
-		auto father()const->const Object* { return const_cast<std::decay_t<decltype(*this)> *>(this)->father(); }
+		auto father()->ParamBase*;
+		auto father()const->const ParamBase* { return const_cast<std::decay_t<decltype(*this)> *>(this)->father(); }
+		auto setName(std::string_view name)->void;
+		auto name()const->std::string;
 
 		virtual ~ParamBase();
 		explicit ParamBase(const std::string &name = "param_base");
-		ARIS_REGISTER_TYPE(ParamBase);
-		ARIS_DECLARE_BIG_FOUR(ParamBase);
+		ParamBase(const ParamBase&);
+		ParamBase(ParamBase&&);
+		ParamBase& operator=(const ParamBase&);
+		ParamBase& operator=(ParamBase&&);
 
 	protected:
 		struct Imp;
@@ -141,8 +143,6 @@ namespace aris::core
 	class Param final :public ParamBase
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto abbreviation()const->char;
 		auto setAbbreviation(char abbreviation)->void;
 		auto defaultValue()const->const std::string &;
@@ -150,7 +150,6 @@ namespace aris::core
 
 		virtual ~Param();
 		explicit Param(const std::string &name = "param", const std::string &default_param = "", char abbrev = 0);
-		ARIS_REGISTER_TYPE(Param);
 		ARIS_DECLARE_BIG_FOUR(Param);
 
 	protected:
@@ -163,14 +162,11 @@ namespace aris::core
 	class UniqueParam final :public ParamBase
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto defaultValue()const->const std::string &;
 		auto setDefaultValue(const std::string & default_value)->void;
 
 		virtual ~UniqueParam();
 		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "");
-		ARIS_REGISTER_TYPE(UniqueParam);
 		ARIS_DECLARE_BIG_FOUR(UniqueParam);
 
 	protected:
@@ -184,14 +180,11 @@ namespace aris::core
 	public:
 		virtual ~GroupParam();
 		explicit GroupParam(const std::string &name = "group_param");
-		ARIS_REGISTER_TYPE(GroupParam);
 		ARIS_DECLARE_BIG_FOUR(GroupParam);
 	};
-	class Command :public ObjectPool<ParamBase>
+	class Command :public ParamBase
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto defaultValue()const->const std::string &;
 		auto setDefaultValue(const std::string & default_value)->void;
 		auto findParam(const std::string &param_name)const->const Param* { return const_cast<std::decay_t<decltype(*this)> *>(this)->findParam(param_name); }
@@ -199,7 +192,6 @@ namespace aris::core
 
 		virtual ~Command();
 		explicit Command(const std::string &name = "command", const std::string &default_param = "");
-		ARIS_REGISTER_TYPE(Command);
 		ARIS_DECLARE_BIG_FOUR(Command);
 
 	private:
@@ -209,19 +201,16 @@ namespace aris::core
 		friend class CommandParser;
 		friend class ParamBase;
 	};
-	class CommandParser :public Object
+	class CommandParser
 	{
 	public:
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto commandPool()->ObjectPool<Command> &;
-		auto commandPool()const->const ObjectPool<Command> &;
+		auto commandPool()->std::vector<Command> &;
+		auto commandPool()const->const std::vector<Command> &;
 		auto init()->void;
 		auto parse(std::string_view command_string)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>;
 
 		virtual ~CommandParser();
 		explicit CommandParser(const std::string &name = "command_parser");
-		ARIS_REGISTER_TYPE(CommandParser);
-		ARIS_DECLARE_BIG_FOUR(CommandParser);
 
 	private:
 		struct Imp;

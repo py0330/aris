@@ -27,12 +27,12 @@ void test_constraint()
 	auto &mak_i = prt_m.addMarker("mak_i", prt_pm_i);
 	auto &mak_j = prt_n.addMarker("mak_j", prt_pm_j);
 
-	auto &r1 = model.add<RevoluteJoint>("r1", &mak_i, &mak_j);
-	auto &p1 = model.add<PrismaticJoint>("p1", &mak_i, &mak_j);
-	auto &s1 = model.add<SphericalJoint>("s1", &mak_i, &mak_j);
-	auto &u1 = model.add<UniversalJoint>("u1", &mak_i, &mak_j);
-	auto &m1 = model.add<Motion>("m1", &mak_i, &mak_j);
-	auto &g1 = model.add<GeneralMotion>("g1", &mak_i, &mak_j);
+	auto &r1 = model.jointPool().add<RevoluteJoint>("r1", &mak_i, &mak_j);
+	auto &p1 = model.jointPool().add<PrismaticJoint>("p1", &mak_i, &mak_j);
+	auto &s1 = model.jointPool().add<SphericalJoint>("s1", &mak_i, &mak_j);
+	auto &u1 = model.jointPool().add<UniversalJoint>("u1", &mak_i, &mak_j);
+	auto &m1 = model.motionPool().add<Motion>("m1", &mak_i, &mak_j);
+	auto &g1 = model.generalMotionPool().add<GeneralMotion>("g1", &mak_i, &mak_j);
 	model.init();
 
 	prt_n.setPe(glb_pe_n);

@@ -4,8 +4,6 @@ int main()
 {
 	auto m = aris::robot::createModelRokaeXB4();
 
-	std::cout << m->xmlString() << std::endl;
-
 	auto &clb = m->calibratorPool().add<aris::dynamic::Calibrator>();
 
 	try

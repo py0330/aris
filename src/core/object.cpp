@@ -341,7 +341,7 @@ namespace aris::core
 	{
 		xml_ele.DeleteChildren();
 
-		// xml namespace only contain one :, so change :: to :
+		// xml namespace only contain one ., so change :: to .
 		auto xml_type = std::regex_replace(type(), std::regex("\\::"), ".");
 		xml_ele.SetName(xml_type.c_str());
 		if(!name().empty())xml_ele.SetAttribute("name", name().c_str());
@@ -541,6 +541,9 @@ namespace aris::core
 	ARIS_REGISTRATION
 	{
 		aris::core::class_<Object>("Object")
-			.property("name", &Object::setName, &Object::name);
+			.prop("name", &Object::setName, &Object::name);
+
+		aris::core::class_<NamedObject>("NamedObject")
+			.prop("name", &NamedObject::setName, &NamedObject::name);
 	}
 }

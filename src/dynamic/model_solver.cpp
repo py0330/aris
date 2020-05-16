@@ -22,18 +22,6 @@ namespace aris::dynamic
 		double max_error_, error_;
 		Imp(Size max_iter_count, double max_error) :max_iter_count_(max_iter_count), max_error_(max_error) {};
 	};
-	auto Solver::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Element::saveXml(xml_ele);
-		xml_ele.SetAttribute("max_iter_count", static_cast<std::int64_t>(imp_->max_iter_count_));
-		xml_ele.SetAttribute("max_error", imp_->max_error_);
-	}
-	auto Solver::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		imp_->max_iter_count_ = attributeInt32(xml_ele, "max_iter_count", 100);
-		imp_->max_error_ = attributeDouble(xml_ele, "max_error", 1e-10);
-		Element::loadXml(xml_ele);
-	}
 	auto Solver::error()const->double { return imp_->error_; }
 	auto Solver::setError(double error)->void { imp_->error_ = error; }
 	auto Solver::maxError()const->double { return imp_->max_error_; }
@@ -1947,8 +1935,8 @@ namespace aris::dynamic
 	ARIS_REGISTRATION
 	{
 		aris::core::class_<Solver>("Solver")
-			.property("max_iter_count", &Solver::setMaxIterCount, &Solver::maxIterCount)
-			.property("max_error", &Solver::setMaxError, &Solver::maxError)
+			.prop("max_iter_count", &Solver::setMaxIterCount, &Solver::maxIterCount)
+			.prop("max_error", &Solver::setMaxError, &Solver::maxError)
 			;
 
 		aris::core::class_<UniversalSolver>("UniversalSolver")

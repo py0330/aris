@@ -24,7 +24,7 @@ void test_single_body_universal()
 	s.kinVel();
 	s.dynAccAndFce();
 
-	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
+	if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.id() << "::dynAccAndFce() failed in single body" << std::endl;
 }
 void test_servo_press_universal()
 {
@@ -137,7 +137,7 @@ void test_float_5_bar_universal()
 	auto &m1 = m.addMotion(j1);
 	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
 	
-	auto &adams = m.simulatorPool().add<AdamsSimulator>();
+	//auto &adams = m.simulatorPool().add<AdamsSimulator>();
 
 	m.init();
 

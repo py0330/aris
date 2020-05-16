@@ -75,14 +75,11 @@ namespace aris::dynamic
 
 		virtual ~Coordinate() = default;
 		explicit Coordinate(const std::string &name = "coordinate", bool active = true);
-		ARIS_REGISTER_TYPE(Coordinate);
 		ARIS_DEFINE_BIG_FOUR(Coordinate);
 	};
 	class Marker final :public Coordinate
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual pm() const noexcept->const double4x4& override;
 		auto virtual vs() const noexcept->const double6& override;
 		auto virtual as() const noexcept->const double6& override;
@@ -101,7 +98,6 @@ namespace aris::dynamic
 
 		virtual ~Marker();
 		explicit Marker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true);
-		ARIS_REGISTER_TYPE(Marker);
 		ARIS_DECLARE_BIG_FOUR(Marker);
 
 	private:
@@ -113,17 +109,17 @@ namespace aris::dynamic
 	class Part final :public Coordinate
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual pm() const noexcept->const double4x4& override;
 		auto virtual vs() const noexcept->const double6& override;
 		auto virtual as() const noexcept->const double6& override;
 		auto prtIv() const noexcept->const double10&;
 		auto setPrtIv(const double *iv, const double *pm_relative_to_part = nullptr) noexcept->void;
-		auto markerPool() noexcept->aris::core::ObjectPool<Marker, Element>&;
-		auto markerPool()const noexcept->const aris::core::ObjectPool<Marker, Element>&;
-		auto geometryPool() noexcept->aris::core::ObjectPool<Geometry, Element>&;
-		auto geometryPool()const noexcept->const aris::core::ObjectPool<Geometry, Element>&;
+		auto resetMarkerPool(aris::core::PointerArray<Marker, Element> *pool)->void;
+		auto markerPool()->aris::core::PointerArray<Marker, Element>&;
+		auto markerPool()const->const aris::core::PointerArray<Marker, Element>&;
+		auto resetGeometryPool(aris::core::PointerArray<Geometry, Element> *pool)->void;
+		auto geometryPool() ->aris::core::PointerArray<Geometry, Element>&;
+		auto geometryPool()const->const aris::core::PointerArray<Geometry, Element>&;
 		auto addMarker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true)->Marker&;
 		auto setPp(const double *pp) noexcept->void;
 		auto setPp(const Coordinate &relative_to, const double *pp) noexcept->void;
@@ -217,8 +213,8 @@ namespace aris::dynamic
 
 		virtual ~Part();
 		explicit Part(const std::string &name = "part", const double *prt_iv = nullptr, const double *pm = nullptr, const double *vs = nullptr, const double *as = nullptr, bool active = true);
-		ARIS_REGISTER_TYPE(Part);
-		ARIS_DECLARE_BIG_FOUR(Part);
+		Part(Part&&);
+		Part& operator=(Part&&);
 
 	private:
 		struct Imp;
@@ -229,20 +225,16 @@ namespace aris::dynamic
 	public:
 		virtual ~Geometry() = default;
 		explicit Geometry(const std::string &name = "geometry") : Element(name) {}
-		ARIS_REGISTER_TYPE(Geometry);
 		ARIS_DEFINE_BIG_FOUR(Geometry);
 	};
 	class ParasolidGeometry final :public Geometry
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto prtPm()const->const double4x4&;
 		auto filePath()const->const std::string &;
 
 		virtual ~ParasolidGeometry();
 		explicit ParasolidGeometry(const std::string &name = "parasolid_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
-		ARIS_REGISTER_TYPE(ParasolidGeometry);
 		ARIS_DECLARE_BIG_FOUR(ParasolidGeometry);
 
 	private:
@@ -252,14 +244,11 @@ namespace aris::dynamic
 	class FileGeometry final :public Geometry
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto prtPm()const->const double4x4&;
 		auto filePath()const->const std::string &;
 
 		virtual ~FileGeometry();
 		explicit FileGeometry(const std::string &name = "file_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
-		ARIS_REGISTER_TYPE(FileGeometry);
 		ARIS_DECLARE_BIG_FOUR(FileGeometry);
 
 	private:
@@ -269,14 +258,11 @@ namespace aris::dynamic
 	class ShellGeometry final :public Geometry
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto filePath()const->const std::string &;
 		auto relativeToMarker()const->const Marker&;
 
 		virtual ~ShellGeometry();
 		explicit ShellGeometry(const std::string &name = "shell_geometry", const std::string &graphic_file_path = "", Marker* relative_to = nullptr);
-		ARIS_REGISTER_TYPE(ShellGeometry);
 		ARIS_DECLARE_BIG_FOUR(ShellGeometry);
 
 	private:

@@ -11,8 +11,6 @@ namespace aris::dynamic
 	class Solver :public Element
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual allocateMemory()->void = 0;
 		auto virtual kinPos()->int = 0;
 		auto virtual kinVel()->void = 0;
@@ -28,7 +26,6 @@ namespace aris::dynamic
 
 		virtual ~Solver();
 		explicit Solver(const std::string &name = "solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE(Solver);
 		ARIS_DECLARE_BIG_FOUR(Solver);
 
 	private:
@@ -54,7 +51,6 @@ namespace aris::dynamic
 
 		virtual ~UniversalSolver();
 		explicit UniversalSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE(UniversalSolver);
 		ARIS_DECLARE_BIG_FOUR(UniversalSolver);
 
 	public:
@@ -77,7 +73,6 @@ namespace aris::dynamic
 
 		virtual ~ForwardKinematicSolver();
 		explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE(ForwardKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(ForwardKinematicSolver);
 
 	private:
@@ -100,7 +95,6 @@ namespace aris::dynamic
 
 		virtual ~InverseKinematicSolver();
 		explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE(InverseKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(InverseKinematicSolver);
 
 	private:
@@ -117,7 +111,6 @@ namespace aris::dynamic
 
 		virtual ~ForwardDynamicSolver();
 		explicit ForwardDynamicSolver(const std::string &name = "forward_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE(ForwardDynamicSolver);
 		ARIS_DECLARE_BIG_FOUR(ForwardDynamicSolver);
 	};
 	class InverseDynamicSolver :public UniversalSolver
@@ -130,7 +123,6 @@ namespace aris::dynamic
 
 		virtual ~InverseDynamicSolver();
 		explicit InverseDynamicSolver(const std::string &name = "inverse_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
-		ARIS_REGISTER_TYPE(InverseDynamicSolver);
 		ARIS_DECLARE_BIG_FOUR(InverseDynamicSolver);
 	};
 	///

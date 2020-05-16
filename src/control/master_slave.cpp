@@ -15,21 +15,12 @@
 namespace aris::control
 {
 	struct Slave::Imp { std::uint16_t phy_id_, sla_id_; Master *mst_; };
-	auto Slave::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Object::saveXml(xml_ele);
-		xml_ele.SetAttribute("phy_id", std::to_string(phyId()).c_str());
-	}
-	auto Slave::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Object::loadXml(xml_ele);
-		imp_->phy_id_ = attributeUint16(xml_ele, "phy_id");
-	}
 	auto Slave::master()->Master* { return imp_->mst_; }
 	auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
 	auto Slave::setPhyId(std::uint16_t phy_id)->void { imp_->phy_id_ = phy_id; }
+	auto Slave::id()const->std::uint16_t { return imp_->sla_id_; }
 	Slave::~Slave() = default;
-	Slave::Slave(const std::string &name, std::uint16_t phy_id) :Object(name), imp_(new Imp) { imp_->phy_id_ = phy_id; }
+	Slave::Slave(const std::string &name, std::uint16_t phy_id) :imp_(new Imp) { imp_->phy_id_ = phy_id; }
 	ARIS_DEFINE_BIG_FOUR_CPP(Slave);
 
 	struct Master::Imp
@@ -70,7 +61,7 @@ namespace aris::control
 				mst.lout() << std::flush;
 				if (!mst.imp_->lout_msg_.empty())
 				{
-					mst.imp_->lout_pipe_->sendMsg(mst.imp_->lout_msg_);
+					mst.imp_->lout_pipe_.sendMsg(mst.imp_->lout_msg_);
 					mst.lout().reset();
 				}
 
@@ -78,7 +69,7 @@ namespace aris::control
 				mst.mout() << std::flush;
 				if (!mst.imp_->mout_msg_.empty())
 				{
-					mst.imp_->mout_pipe_->sendMsg(mst.imp_->mout_msg_);
+					mst.imp_->mout_pipe_.sendMsg(mst.imp_->mout_msg_);
 					mst.mout().reset();
 				}
 
@@ -91,11 +82,11 @@ namespace aris::control
 		}
 
 		// slave //
-		aris::core::ObjectPool<Slave> *slave_pool_;
+		std::unique_ptr<aris::core::PointerArray<Slave>> slave_pool_{new aris::core::PointerArray<Slave> };
 		std::vector<Size> sla_vec_phy2abs_;
 
 		// for mout and lout //
-		aris::core::Pipe *mout_pipe_, *lout_pipe_;
+		aris::core::Pipe mout_pipe_, lout_pipe_;
 		aris::core::MsgFix<MAX_MSG_SIZE> mout_msg_, lout_msg_;
 		std::unique_ptr<aris::core::MsgStream> mout_msg_stream_, lout_msg_stream_;
 		std::thread mout_thread_;
@@ -121,33 +112,18 @@ namespace aris::control
 		friend class Slave;
 		friend class Master;
 	};
-	auto Master::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Object::saveXml(xml_ele);
-		xml_ele.SetAttribute("sample_period_ns", imp_->sample_period_ns_);
-	}
-	auto Master::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Object::loadXml(xml_ele);
-
-		// attribute //
-		imp_->sample_period_ns_ = attributeInt32(xml_ele, "sample_period_ns", 1'000'000);
-
-		// children //
-		imp_->slave_pool_ = findByName("slave_pool") == children().end() ? &add<aris::core::ObjectPool<Slave, Object> >("slave_pool") : static_cast<aris::core::ObjectPool<Slave, Object> *>(&(*findByName("slave_pool")));
-		imp_->mout_pipe_ = findOrInsert<aris::core::Pipe>("mout_pipe");
-		imp_->lout_pipe_ = findOrInsert<aris::core::Pipe>("lout_pipe");
-	}
 	auto Master::init()->void
 	{
 		// make vec_phy2abs //
 		imp_->sla_vec_phy2abs_.clear();
-		for (auto &sla : slavePool())
+		for (std::uint16_t i = 0; i< slavePool().size(); ++i)
 		{
+			auto &sla = slavePool()[i];
+
+			sla.imp_->sla_id_ = i;			
 			imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId() + 1), imp_->sla_vec_phy2abs_.size()), -1);
 			if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
 			imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();
-
 			sla.imp_->mst_ = this;
 		}
 	}
@@ -190,7 +166,7 @@ namespace aris::control
 			aris::core::Msg msg;
 			while (imp_->is_mout_thread_running_)
 			{
-				if (imp_->lout_pipe_->recvMsg(msg))
+				if (imp_->lout_pipe_.recvMsg(msg))
 				{
 					if (msg.msgID() == Imp::LOG_NEW_FILE)
 					{
@@ -208,7 +184,7 @@ namespace aris::control
 						file << msg.toString();
 					}
 				}
-				else if (imp_->mout_pipe_->recvMsg(msg))
+				else if (imp_->mout_pipe_.recvMsg(msg))
 				{
 					if (!msg.empty())aris::core::cout() << msg.toString() << std::flush;
 				}
@@ -219,8 +195,8 @@ namespace aris::control
 			}
 
 			// 结束前最后一次接收，此时实时线程已经结束 //
-			while (imp_->mout_pipe_->recvMsg(msg)) if (!msg.empty())std::cout << msg.toString() << std::endl;
-			while (imp_->lout_pipe_->recvMsg(msg))
+			while (imp_->mout_pipe_.recvMsg(msg)) if (!msg.empty())std::cout << msg.toString() << std::endl;
+			while (imp_->lout_pipe_.recvMsg(msg))
 			{
 				if (msg.msgID() == Imp::LOG_NEW_FILE)
 				{
@@ -269,14 +245,14 @@ namespace aris::control
 		{
 			// 补充一个0作为结尾 //
 			lout() << std::flush;
-			imp_->lout_pipe_->sendMsg(imp_->lout_msg_);
+			imp_->lout_pipe_.sendMsg(imp_->lout_msg_);
 			imp_->lout_msg_.resize(0);
 		}
 
 		// 发送切换文件的msg //
 		imp_->lout_msg_.setMsgID(Imp::LOG_NEW_FILE);
 		imp_->lout_msg_.copy(file_name);
-		imp_->lout_pipe_->sendMsg(imp_->lout_msg_);
+		imp_->lout_pipe_.sendMsg(imp_->lout_msg_);
 
 		// 将msg变更回去
 		imp_->lout_msg_.setMsgID(0);
@@ -289,14 +265,14 @@ namespace aris::control
 		{
 			// 补充一个0作为结尾 //
 			lout() << std::flush;
-			imp_->lout_pipe_->sendMsg(imp_->lout_msg_);
+			imp_->lout_pipe_.sendMsg(imp_->lout_msg_);
 			imp_->lout_msg_.resize(0);
 		}
 
 		// 发送切换文件的msg //
 		imp_->lout_msg_.setMsgID(Imp::LOG_NEW_FILE_RAW_NAME);
 		imp_->lout_msg_.copy(file_name);
-		imp_->lout_pipe_->sendMsg(imp_->lout_msg_);
+		imp_->lout_pipe_.sendMsg(imp_->lout_msg_);
 
 		// 将msg变更回去
 		imp_->lout_msg_.setMsgID(0);
@@ -305,7 +281,8 @@ namespace aris::control
 	auto Master::lout()->aris::core::MsgStream & { return *imp_->lout_msg_stream_; }
 	auto Master::mout()->aris::core::MsgStream & { return *imp_->mout_msg_stream_; }
 	auto Master::slaveAtPhy(aris::Size id)->Slave& { return slavePool().at(imp_->sla_vec_phy2abs_.at(id)); }
-	auto Master::slavePool()->aris::core::ObjectPool<Slave, aris::core::Object>& { return *imp_->slave_pool_; }
+	auto Master::resetSlavePool(aris::core::PointerArray<Slave> *pool) { imp_->slave_pool_.reset(pool); }
+	auto Master::slavePool()->aris::core::PointerArray<Slave>& { return *imp_->slave_pool_; }
 	auto Master::resetRtStasticData(RtStasticsData *stastics, bool is_new_data_include_this_count)->void
 	{
 		if (stastics)*stastics = RtStasticsData{ 0,0,0,0x8fffffff,0,0,0 };
@@ -326,35 +303,22 @@ namespace aris::control
 	auto Master::setSamplePeriodNs(int period_ns)->void {	imp_->sample_period_ns_ = period_ns;}
 	auto Master::samplePeriodNs()const ->int { return imp_->sample_period_ns_; }
 	Master::~Master() = default;
-	Master::Master(const std::string &name) :imp_(new Imp), Object(name)
-	{
-		this->registerType<aris::core::ObjectPool<Slave, aris::core::Object> >();
-		
-		imp_->slave_pool_ = &add<aris::core::ObjectPool<Slave> >("slave_pool");
-		imp_->mout_pipe_ = &add<aris::core::Pipe>("mout_pipe");
-		imp_->lout_pipe_ = &add<aris::core::Pipe>("lout_pipe");
-	}
+	Master::Master(const std::string &name) :imp_(new Imp){}
 
 	ARIS_REGISTRATION
 	{
 		aris::core::class_<Slave>("Slave")
-			.inherit<aris::core::Object>()
-			.property("phy_id", &Slave::setPhyId, &Slave::phyId);
+			.inherit<aris::core::NamedObject>()
+			.prop("phy_id", &Slave::setPhyId, &Slave::phyId);
 
-		aris::core::class_<aris::core::ObjectPool<Slave>>("SlavePoolObject")
-			.inherit<aris::core::Object>()
+		aris::core::class_<aris::core::PointerArray<Slave>>("SlavePoolObject")
 			.asRefArray();
 
-		typedef aris::core::ObjectPool<Slave>&(Master::*SlavePoolFunc)();
+		typedef aris::core::PointerArray<Slave>&(Master::*SlavePoolFunc)();
 		aris::core::class_<Master>("Master")
-			.inherit<aris::core::Object>()
-			.property<SlavePoolFunc>("slave_pool", &Master::slavePool)
-			.property("sample_period_ns", &Master::setSamplePeriodNs, &Master::samplePeriodNs)
-			//.property("mout_pipe", &Master::setSamplePeriodNs, &Master::samplePeriodNs)
-			//.property("lout_pipe", &Master::setSamplePeriodNs, &Master::samplePeriodNs)
+			.inherit<aris::core::NamedObject>()
+			.prop("slave_pool", &Master::resetSlavePool, SlavePoolFunc(&Master::slavePool))
+			.prop("sample_period_ns", &Master::setSamplePeriodNs, &Master::samplePeriodNs)
 			;
-
-
-
 	}
 }

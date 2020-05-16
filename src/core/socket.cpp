@@ -605,46 +605,6 @@ namespace aris::core
 			}
 		}
 	}
-	auto Socket::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		setRemoteIP(attributeString(xml_ele, "remote_ip", std::string()));
-		setPort(attributeString(xml_ele, "port", std::string()));
-		
-		if (auto type = attributeString(xml_ele, "connect_type", std::string("TCP")); type == "TCP")imp_->type_ = TCP;
-		else if (type == "WEB")imp_->type_ = WEB;
-		else if (type == "WEB_RAW")imp_->type_ = WEB_RAW;
-		else if (type == "UDP")imp_->type_ = UDP;
-		else if (type == "UDP_RAW")imp_->type_ = UDP_RAW;
-		else THROW_FILE_LINE("unknown connect type");
-
-		Object::loadXml(xml_ele);
-	}
-	auto Socket::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Object::saveXml(xml_ele);
-
-		switch (connectType())
-		{
-		case TCP:
-			xml_ele.SetAttribute("connect_type", "TCP");
-			break;
-		case WEB:
-			xml_ele.SetAttribute("connect_type", "WEB");
-			break;
-		case WEB_RAW:
-			xml_ele.SetAttribute("connect_type", "WEB_RAW");
-			break;
-		case UDP:
-			xml_ele.SetAttribute("connect_type", "UDP");
-			break;
-		case UDP_RAW:
-			xml_ele.SetAttribute("connect_type", "UDP_RAW");
-			break;
-		}
-
-		if (!imp_->remote_ip_.empty())xml_ele.SetAttribute("remote_ip", imp_->remote_ip_.c_str());
-		if (!imp_->port_.empty())xml_ele.SetAttribute("port", imp_->port_.c_str());
-	}
 	auto Socket::stop()->void
 	{
 		std::lock(imp_->state_mutex_, imp_->close_mutex_);
@@ -1071,7 +1031,7 @@ namespace aris::core
 #endif
 		}
 	}
-	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port, TYPE type) :Object(name), imp_(new Imp(this))
+	Socket::Socket(const std::string &name, const std::string& remote_ip, const std::string& port, TYPE type) :imp_(new Imp(this))
 	{
 		// 启动服务器 //
 #ifdef WIN32 
@@ -1082,14 +1042,13 @@ namespace aris::core
 		setPort(port);
 		setConnectType(type);
 	}
-	Socket::Socket(Socket&&s) : Object(std::move(s)) 
+	Socket::Socket(Socket&&s)
 	{
 		imp_ = std::move(s.imp_);
 		imp_->socket_ = this;
 	};
 	Socket& Socket::operator=(Socket&&s) 
 	{
-		this->Object::operator=(std::move(s));
 		imp_ = std::move(s.imp_);
 		imp_->socket_ = this;
 		return *this;
@@ -1118,9 +1077,8 @@ namespace aris::core
 			});
 
 		class_<Socket>("Socket")
-			.inherit<aris::core::Object>()
-			.property("connect_type", &Socket::setConnectType, &Socket::connectType)
-			.property("remote_ip", &Socket::setRemoteIP, &Socket::remoteIP)
-			.property("port", &Socket::setPort, &Socket::port);
+			.prop("connect_type", &Socket::setConnectType, &Socket::connectType)
+			.prop("remote_ip", &Socket::setRemoteIP, &Socket::remoteIP)
+			.prop("port", &Socket::setPort, &Socket::port);
 	}
 }

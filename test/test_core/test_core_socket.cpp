@@ -15,7 +15,6 @@ void test_socket_xml()
 		"</Object>";
 	
 	auto root = aris::core::Object();
-	root.registerType<Socket>();
 
 	root.loadXmlStr(xml_data);
 	auto str1 = root.xmlString();

@@ -41,7 +41,7 @@ namespace aris::plan
 	// executeRT :返回小于0的数，并且可以通过 setErrMsgRT 来设置当前错误信息
 	// collect   :不要报错，这个相当于析构函数，只要 prepare 不抛异常而且未设置NOT_RUN_COLLECT_FUNCTION，就一定会执行
 	// 
-	class Plan :public aris::core::Object
+	class Plan : public aris::core::CloneBase<Plan>
 	{
 	public:
 		enum Option : std::uint64_t
@@ -166,7 +166,6 @@ namespace aris::plan
 
 		virtual ~Plan();
 		explicit Plan(const std::string &name = "plan");
-		ARIS_REGISTER_TYPE(Plan);
 		ARIS_DECLARE_BIG_FOUR(Plan);
 
 	private:
@@ -174,18 +173,21 @@ namespace aris::plan
 		aris::core::ImpPtr<Imp> imp_;
 		friend class aris::server::ControlServer;
 	};
-	class PlanRoot :public aris::core::Object
+	class PlanRoot
 	{
 	public:
-		auto planPool()->aris::core::ObjectPool<Plan> &;
-		auto planPool()const->const aris::core::ObjectPool<Plan> & { return const_cast<std::decay_t<decltype(*this)> *>(this)->planPool(); }
+		auto resetPlanPool(aris::core::PointerArray<Plan> *pool)->void;
+		auto planPool()->aris::core::PointerArray<Plan> &;
+		auto planPool()const->const aris::core::PointerArray<Plan> & { return const_cast<std::decay_t<decltype(*this)> *>(this)->planPool(); }
 		auto planParser()->aris::core::CommandParser &;
 		auto init()->void;
 
 		virtual ~PlanRoot();
 		explicit PlanRoot(const std::string &name = "plan_root");
-		ARIS_REGISTER_TYPE(PlanRoot);
-		ARIS_DECLARE_BIG_FOUR(PlanRoot);
+		PlanRoot(const PlanRoot&)=delete;
+		PlanRoot(PlanRoot&&);
+		PlanRoot& operator=(const PlanRoot&) = delete;
+		PlanRoot&operator=(PlanRoot&&);
 
 	private:
 		struct Imp;
@@ -204,7 +206,7 @@ namespace aris::plan
 	/// 指定本指令的最长运行时间（默认为5000ms）：
 	/// + 使能0号电机，并指定其最长时间为5000ms： “en -m=0 --limit_time=5000”
 	/// 
-	class Enable : public Plan
+	class Enable :public aris::core::CloneObject<Enable, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -212,7 +214,6 @@ namespace aris::plan
 
 		virtual ~Enable();
 		explicit Enable(const std::string &name = "enable_plan");
-		ARIS_REGISTER_TYPE(Enable);
 		ARIS_DECLARE_BIG_FOUR(Enable);
 
 	private:
@@ -231,7 +232,7 @@ namespace aris::plan
 	/// 指定本指令的最长运行时间（默认为5000ms）：
 	/// + 去使能0号电机，并指定其最长时间为5000ms： “ds -m=0 --limit_time=5000”
 	/// 
-	class Disable : public Plan
+	class Disable : public aris::core::CloneObject<Disable, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -239,7 +240,6 @@ namespace aris::plan
 
 		virtual ~Disable();
 		explicit Disable(const std::string &name = "disable_plan");
-		ARIS_REGISTER_TYPE(Disable);
 		ARIS_DECLARE_BIG_FOUR(Disable);
 
 	private:
@@ -258,7 +258,7 @@ namespace aris::plan
 	/// 指定本指令的最长运行时间（默认为5000ms）：
 	/// + 使能0号电机，并指定其最长时间为5000ms： “en -m=0 --limit_time=5000”
 	/// 
-	class Home : public Plan
+	class Home : public aris::core::CloneObject<Home, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -266,7 +266,6 @@ namespace aris::plan
 
 		virtual ~Home();
 		explicit Home(const std::string &name = "home_plan");
-		ARIS_REGISTER_TYPE(Home);
 		ARIS_DECLARE_BIG_FOUR(Home);
 
 	private:
@@ -288,7 +287,7 @@ namespace aris::plan
 	/// 指定模式（请参考canopen DS402标准，默认为8，同步位置控制模式）：
 	/// + 使能0号电机，并指定模式为9： “md -m=0 --mode=9 --limit_time=5000”
 	/// 
-	class Mode : public Plan
+	class Mode : public aris::core::CloneObject<Mode, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -296,7 +295,6 @@ namespace aris::plan
 
 		virtual ~Mode();
 		explicit Mode(const std::string &name = "mode_plan");
-		ARIS_REGISTER_TYPE(Mode);
 		ARIS_DECLARE_BIG_FOUR(Mode);
 
 	private:
@@ -306,14 +304,13 @@ namespace aris::plan
 	/// \brief 清理错误
 	///
 	/// 
-	class Clear : public Plan
+	class Clear : public aris::core::CloneObject<Clear, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
 
 		virtual ~Clear() = default;
 		explicit Clear(const std::string &name = "clear_plan");
-		ARIS_REGISTER_TYPE(Clear);
 		ARIS_DEFINE_BIG_FOUR(Clear);
 	};
 	/// \brief 复位，机器人从轴空间按照指定速度运行到指定位置处
@@ -346,7 +343,7 @@ namespace aris::plan
 	/// + 将1号电机复位到0.5，减速度为额定速度的\20%：“rs -m=1 --pos=0.5 --dec=0.2”
 	/// + 假设系统中有6个电机，减速度是0.1到0.6：“rs --dec={0.1,0.2,0.3,0.4,0.5,0.6}”
 	/// 
-	class Reset : public Plan
+	class Reset : public aris::core::CloneObject<Reset, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -354,7 +351,6 @@ namespace aris::plan
 
 		virtual ~Reset();
 		explicit Reset(const std::string &name = "reset_plan");
-		ARIS_REGISTER_TYPE(Reset);
 		ARIS_DECLARE_BIG_FOUR(Reset);
 
 	private:
@@ -368,7 +364,7 @@ namespace aris::plan
 	///
 	/// ### 参数定义 ###
 	/// 无
-	class Recover : public Plan
+	class Recover : public aris::core::CloneObject<Recover, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -377,7 +373,6 @@ namespace aris::plan
 
 		virtual ~Recover();
 		explicit Recover(const std::string &name = "recover_plan");
-		ARIS_REGISTER_TYPE(Recover);
 		ARIS_DECLARE_BIG_FOUR(Recover);
 	};
 	/// \brief 实时循环内休息指定时间
@@ -386,7 +381,7 @@ namespace aris::plan
 	/// ### 参数定义 ###
 	/// 指定休息时间，单位是count（1ms），默认为1000：
 	/// + 休息5000ms：“sl -c=5000” 或 “sl --count=5000”
-	class Sleep : public Plan
+	class Sleep : public aris::core::CloneObject<Sleep, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -394,7 +389,6 @@ namespace aris::plan
 
 		virtual ~Sleep();
 		explicit Sleep(const std::string &name = "sleep_plan");
-		ARIS_REGISTER_TYPE(Sleep);
 		ARIS_DECLARE_BIG_FOUR(Sleep);
 
 	private:
@@ -404,14 +398,13 @@ namespace aris::plan
 	/// \brief 打印机器人当前所有轴的位置
 	/// 
 	/// 
-	class Show :public Plan
+	class Show : public aris::core::CloneObject<Show, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
 		auto virtual executeRT()->int override;
 
 		explicit Show(const std::string &name = "show");
-		ARIS_REGISTER_TYPE(Show);
 		ARIS_DECLARE_BIG_FOUR(Show);
 	};
 	/// \brief 将机器人的某根或全部轴移动到指定位置。
@@ -440,7 +433,7 @@ namespace aris::plan
 	/// + 指定单个电机的加速度，例如指定 0 号电机走到 1.5 处，速度为 0.5 ，加速度为 0.3 ，减速度为 0.2 ：“mvaj -m=0 --pos=1.5 --vel=0.5 --acc=0.3 --dec=0.2”
 	/// + 指定所有电机的加速度，例如：“mvaj -a --dec={1.5,1.2,1.5,1.3,1.2,0.6}”
 	///
-	class MoveAbsJ :public Plan
+	class MoveAbsJ : public aris::core::CloneObject<MoveAbsJ, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -448,7 +441,6 @@ namespace aris::plan
 
 		virtual ~MoveAbsJ();
 		explicit MoveAbsJ(const std::string &name = "move_abs_j");
-		ARIS_REGISTER_TYPE(MoveAbsJ);
 		ARIS_DECLARE_BIG_FOUR(MoveAbsJ);
 
 	private:
@@ -484,7 +476,7 @@ namespace aris::plan
 	/// + 指定所有电机的加速度都为0.3：“mvj --pe={0,0.5,1.1,0,0,0} --joint_vel=0.5 --joint_dec=0.3”
 	/// + 指定所有电机的加速度：“mvj --pe={0,0.5,1.1,0,0,0} --joint_vel=0.5 --joint_dec={0.2,0.2,0.2,0.3,0.3,0.3}”
 	///
-	class MoveJ : public Plan
+	class MoveJ : public aris::core::CloneObject<MoveJ, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -492,7 +484,6 @@ namespace aris::plan
 
 		virtual ~MoveJ();
 		explicit MoveJ(const std::string &name = "move_j");
-		ARIS_REGISTER_TYPE(MoveJ);
 		ARIS_DECLARE_BIG_FOUR(MoveJ);
 
 	private:
@@ -524,7 +515,7 @@ namespace aris::plan
 	///
 	/// 指定目标减速度以及角减速度，单位一般是 m/s^2 或 rad/s^2 ，应永远为正数，默认为0.1
 	/// + 指定末端的减速度和角减速度，例如指定末端减速度为 0.5，角减速度为 0.3：“mvl --pe={0.1,1.2,0,0,0,0} --dec=0.5 --angular_dec=0.3”
-	class MoveL : public Plan
+	class MoveL : public aris::core::CloneObject<MoveL, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -532,7 +523,6 @@ namespace aris::plan
 
 		virtual ~MoveL();
 		explicit MoveL(const std::string &name = "move_l");
-		ARIS_REGISTER_TYPE(MoveL);
 		ARIS_DECLARE_BIG_FOUR(MoveL);
 
 	private:
@@ -568,7 +558,7 @@ namespace aris::plan
 	/// + 使用123的欧拉角设置起始目标位姿：“am --pe={0,0,0.5,0,PI/3,0} --ve={0.1,0.1,0.1,0.2,0.2,0.2} --ae={0.1,0.1,0.1,0.2,0.2,0.2}  --de={0.1,0.1,0.1,0.2,0.2,0.2}”
 	///
 	///
-	class AutoMove :public Plan
+	class AutoMove : public aris::core::CloneObject<AutoMove, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -577,7 +567,6 @@ namespace aris::plan
 
 		virtual ~AutoMove();
 		explicit AutoMove(const std::string &name = "auto_move");
-		ARIS_REGISTER_TYPE(AutoMove);
 		ARIS_DECLARE_BIG_FOUR(AutoMove);
 
 	private:
@@ -615,7 +604,7 @@ namespace aris::plan
 	/// + 手动让机器人延 z 运动：“mm --z=1”
 	/// + 手动让机器人延 x 运动，同时绕第一根轴的负方向转：“mm --x=1 --a=-1”
 	///
-	class ManualMove :public Plan
+	class ManualMove : public aris::core::CloneObject<ManualMove, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -624,7 +613,6 @@ namespace aris::plan
 
 		virtual ~ManualMove();
 		explicit ManualMove(const std::string &name = "manual_move");
-		ARIS_REGISTER_TYPE(ManualMove);
 		ARIS_DECLARE_BIG_FOUR(ManualMove);
 
 	private:
@@ -632,59 +620,54 @@ namespace aris::plan
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-	class GetXml :public Plan
+	class GetXml : public aris::core::CloneObject<GetXml, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
 
 		virtual ~GetXml();
 		explicit GetXml(const std::string &name = "get_xml");
-		ARIS_REGISTER_TYPE(GetXml);
 		ARIS_DEFINE_BIG_FOUR(GetXml);
 	};
-	class SetXml :public Plan
+	class SetXml : public aris::core::CloneObject<SetXml, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
 
 		virtual ~SetXml();
 		explicit SetXml(const std::string &name = "set_xml");
-		ARIS_REGISTER_TYPE(SetXml);
 		ARIS_DEFINE_BIG_FOUR(SetXml);
 	};
-	class Start :public Plan
+	class Start : public aris::core::CloneObject<Start, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
 
 		virtual ~Start();
 		explicit Start(const std::string &name = "start");
-		ARIS_REGISTER_TYPE(plan::Start);
 		ARIS_DEFINE_BIG_FOUR(Start);
 	};
-	class Stop :public Plan
+	class Stop : public aris::core::CloneObject<Stop, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
 
 		virtual ~Stop();
 		explicit Stop(const std::string &name = "stop");
-		ARIS_REGISTER_TYPE(Stop);
 		ARIS_DEFINE_BIG_FOUR(Stop);
 	};
 
-	class RemoveFile : public aris::plan::Plan
+	class RemoveFile : public aris::core::CloneObject<RemoveFile, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
 		
 		virtual ~RemoveFile();
 		explicit RemoveFile(const std::string &name = "rm_file");
-		ARIS_REGISTER_TYPE(RemoveFile);
 		ARIS_DEFINE_BIG_FOUR(RemoveFile);
 	};
 
-	class UniversalPlan :public Plan
+	class UniversalPlan : public aris::core::CloneObject<UniversalPlan, Plan>
 	{
 	public:
 		using PrepareFunc = std::function<void(Plan *plan)>;
@@ -700,7 +683,6 @@ namespace aris::plan
 
 		virtual ~UniversalPlan();
 		explicit UniversalPlan(const std::string &name = "universal_plan", PrepareFunc prepare_func = nullptr, ExecuteFunc execute_func = nullptr, CollectFunc collect_func = nullptr, const std::string & cmd_xml_str = "<universal_plan/>");
-		ARIS_REGISTER_TYPE(UniversalPlan);
 		ARIS_DECLARE_BIG_FOUR(UniversalPlan);
 
 	private:
@@ -708,7 +690,7 @@ namespace aris::plan
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-	class MoveSeries :public Plan
+	class MoveSeries : public aris::core::CloneObject<MoveSeries, Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
@@ -716,7 +698,6 @@ namespace aris::plan
 
 		virtual ~MoveSeries();
 		explicit MoveSeries(const std::string &name = "move_series");
-		ARIS_REGISTER_TYPE(MoveSeries);
 		ARIS_DEFINE_BIG_FOUR(MoveSeries);
 	};
 

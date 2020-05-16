@@ -8,8 +8,6 @@ namespace aris::control
 	class Motor : public virtual Slave
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto motId()const->aris::Size;
 		auto maxPos()const->double;
 		auto setMaxPos(double max_pos)->void;
@@ -81,8 +79,8 @@ namespace aris::control
 	{
 	public:
 		auto virtual init()->void override;
-		auto motionPool()->aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>>&;
-		auto motionPool()const->const aris::core::SubRefPool<Motor, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
+		auto motionPool()->aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>>&;
+		auto motionPool()const->const aris::core::SubRefPool<Motor, aris::core::PointerArray<Slave>>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 		auto motionAtSla(aris::Size id)->Motor&;
 		auto motionAtSla(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
 		auto motionAtPhy(aris::Size id)->Motor&;
@@ -90,7 +88,6 @@ namespace aris::control
 		auto motionAtAbs(aris::Size id)->Motor&;
 		auto motionAtAbs(aris::Size id)const->const Motor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtAbs(id); }
 
-		ARIS_REGISTER_TYPE(Controller);
 		virtual ~Controller();
 		Controller(const std::string &name = "controller");
 		Controller(const Controller &other) = delete;

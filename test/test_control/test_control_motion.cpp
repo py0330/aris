@@ -33,7 +33,7 @@ void test_elmo_enable()
 		//rx.add<PdoEntry>("index_6040", 0x6040, 0x00, sizeof(std::uint16_t));
 		//rx.add<PdoEntry>("index_6060", 0x6060, 0x00, sizeof(std::uint8_t));
 
-		std::cout << m.xmlString() << std::endl;
+		//std::cout << m.xmlString() << std::endl;
 
 		m.setControlStrategy([&]()
 		{

@@ -74,9 +74,6 @@ namespace aris::dynamic
 		imp_->b_.clear();
 		imp_->b_.resize(m(), 0.0);
 
-
-
-
 		imp_->dyn_m_ = 0;
 		imp_->dyn_n_ = 6;
 		std::vector<Part*> active_parts;
@@ -773,6 +770,7 @@ namespace aris::dynamic
 	ARIS_DEFINE_BIG_FOUR_CPP(Calibrator);
 
 	struct SimResult::TimeResult::Imp { std::deque<double> time_; };
+	/*
 	auto SimResult::TimeResult::saveXml(aris::core::XmlElement &xml_ele)const->void
 	{
 		Element::saveXml(xml_ele);
@@ -793,6 +791,7 @@ namespace aris::dynamic
 
 		Element::loadXml(xml_ele);
 	}
+	*/
 	auto SimResult::TimeResult::record()->void { imp_->time_.push_back(model()->time()); }
 	auto SimResult::TimeResult::restore(Size pos)->void { model()->setTime(imp_->time_.at(pos)); }
 	SimResult::TimeResult::~TimeResult() = default;
@@ -811,6 +810,7 @@ namespace aris::dynamic
 
 		Imp(Part* part) :part_(part) {};
 	};
+	/*
 	auto SimResult::PartResult::saveXml(aris::core::XmlElement &xml_ele)const->void
 	{
 		Element::saveXml(xml_ele);
@@ -832,11 +832,12 @@ namespace aris::dynamic
 	}
 	auto SimResult::PartResult::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
+		
 		// 以下寻找对应的part //
 		if (model()->findByName("part_pool") == model()->children().end())
 			THROW_FILE_LINE("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
 
-		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model()->findByName("part_pool"));
+		auto &part_pool = static_cast<aris::core::PointerArray<Part, Element>&>(*model()->findByName("part_pool"));
 
 		if (!xml_ele.Attribute("part"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"part\"");
 		auto p = part_pool.findByName(xml_ele.Attribute("part"));
@@ -859,7 +860,9 @@ namespace aris::dynamic
 		}
 
 		Element::loadXml(xml_ele);
+		
 	}
+	*/
 	auto SimResult::PartResult::part()->Part& { return *imp_->part_; }
 	auto SimResult::PartResult::record()->void
 	{
@@ -891,6 +894,7 @@ namespace aris::dynamic
 
 		Imp(Constraint* constraint) :constraint_(constraint) {};
 	};
+	/*
 	auto SimResult::ConstraintResult::saveXml(aris::core::XmlElement &xml_ele)const->void
 	{
 		Element::saveXml(xml_ele);
@@ -910,23 +914,24 @@ namespace aris::dynamic
 	}
 	auto SimResult::ConstraintResult::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
+		
 		// 以下寻找对应的constraint //
 		if (!xml_ele.Attribute("constraint"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"constraint\"");
 		if (!imp_->constraint_ && model()->findByName("joint_pool") != model()->children().end())
 		{
-			auto &pool = static_cast<aris::core::ObjectPool<Joint, Element>&>(*model()->findByName("joint_pool"));
+			auto &pool = static_cast<aris::core::PointerArray<Joint, Element>&>(*model()->findByName("joint_pool"));
 			auto c = pool.findByName(xml_ele.Attribute("constraint"));
 			if (c != pool.end())imp_->constraint_ = &*c;
 		}
 		if (!imp_->constraint_ && model()->findByName("motion_pool") != model()->children().end())
 		{
-			auto &pool = static_cast<aris::core::ObjectPool<Motion, Element>&>(*model()->findByName("motion_pool"));
+			auto &pool = static_cast<aris::core::PointerArray<Motion, Element>&>(*model()->findByName("motion_pool"));
 			auto c = pool.findByName(xml_ele.Attribute("constraint"));
 			if (c != pool.end())imp_->constraint_ = &*c;
 		}
 		if (!imp_->constraint_ && model()->findByName("general_motion_pool") != model()->children().end())
 		{
-			auto &pool = static_cast<aris::core::ObjectPool<GeneralMotion, Element>&>(*model()->findByName("general_motion_pool"));
+			auto &pool = static_cast<aris::core::PointerArray<GeneralMotion, Element>&>(*model()->findByName("general_motion_pool"));
 			auto c = pool.findByName(xml_ele.Attribute("constraint"));
 			if (c != pool.end())imp_->constraint_ = &*c;
 		}
@@ -945,7 +950,9 @@ namespace aris::dynamic
 		}
 
 		Element::loadXml(xml_ele);
+		
 	}
+	*/
 	auto SimResult::ConstraintResult::constraint()->Constraint& { return *imp_->constraint_; }
 	auto SimResult::ConstraintResult::record()->void
 	{
@@ -979,20 +986,24 @@ namespace aris::dynamic
 	struct SimResult::Imp
 	{
 		TimeResult *time_result_;
-		aris::core::ObjectPool<PartResult, Element> *part_result_pool_;
-		aris::core::ObjectPool<ConstraintResult, Element> *constraint_result_pool_;
+		aris::core::PointerArray<PartResult, Element> *part_result_pool_;
+		aris::core::PointerArray<ConstraintResult, Element> *constraint_result_pool_;
 	};
+	/*
 	auto SimResult::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
+		
 		Element::loadXml(xml_ele);
 
 		imp_->time_result_ = findOrInsertType<TimeResult>();
-		imp_->constraint_result_pool_ = findOrInsertType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >();
-		imp_->part_result_pool_ = findOrInsertType<aris::core::ObjectPool<SimResult::PartResult, Element> >();
+		imp_->constraint_result_pool_ = findOrInsertType<aris::core::PointerArray<SimResult::ConstraintResult, Element> >();
+		imp_->part_result_pool_ = findOrInsertType<aris::core::PointerArray<SimResult::PartResult, Element> >();
+		
 	}
+	*/
 	auto SimResult::timeResult()->TimeResult& { return *imp_->time_result_; }
-	auto SimResult::partResultPool()->aris::core::ObjectPool<SimResult::PartResult, Element>& { return *imp_->part_result_pool_; }
-	auto SimResult::constraintResultPool()->aris::core::ObjectPool<SimResult::ConstraintResult, Element>& { return *imp_->constraint_result_pool_; }
+	auto SimResult::partResultPool()->aris::core::PointerArray<SimResult::PartResult, Element>& { return *imp_->part_result_pool_; }
+	auto SimResult::constraintResultPool()->aris::core::PointerArray<SimResult::ConstraintResult, Element>& { return *imp_->constraint_result_pool_; }
 	auto SimResult::allocateMemory()->void
 	{
 		partResultPool().clear();
@@ -1029,38 +1040,48 @@ namespace aris::dynamic
 	SimResult::~SimResult() = default;
 	SimResult::SimResult(const std::string &name) : Element(name), imp_(new Imp())
 	{
+		/*
 		imp_->time_result_ = &add<TimeResult>("time_result");
-		imp_->part_result_pool_ = &add<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
-		imp_->constraint_result_pool_ = &add<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+		imp_->part_result_pool_ = &add<aris::core::PointerArray<SimResult::PartResult, Element> >("part_result_pool");
+		imp_->constraint_result_pool_ = &add<aris::core::PointerArray<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+		*/
 	}
 	SimResult::SimResult(const SimResult&other) : Element(other), imp_(other.imp_)
 	{
+		/*
 		imp_->time_result_ = findType<TimeResult >("time_result");
-		imp_->constraint_result_pool_ = findType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
-		imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+		imp_->constraint_result_pool_ = findType<aris::core::PointerArray<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+		imp_->part_result_pool_ = findType<aris::core::PointerArray<SimResult::PartResult, Element> >("part_result_pool");
+		*/
 	}
 	SimResult::SimResult(SimResult&&other) : Element(std::move(other)), imp_(std::move(other.imp_))
 	{
+		/*
 		imp_->time_result_ = findType<TimeResult >("time_result");
-		imp_->constraint_result_pool_ = findType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
-		imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+		imp_->constraint_result_pool_ = findType<aris::core::PointerArray<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+		imp_->part_result_pool_ = findType<aris::core::PointerArray<SimResult::PartResult, Element> >("part_result_pool");
+		*/
 	}
 	SimResult& SimResult::operator=(const SimResult&other)
 	{
+		/*
 		Element::operator=(other);
 		imp_ = other.imp_;
 		imp_->time_result_ = findType<TimeResult >("time_result");
-		imp_->constraint_result_pool_ = findType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
-		imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+		imp_->constraint_result_pool_ = findType<aris::core::PointerArray<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+		imp_->part_result_pool_ = findType<aris::core::PointerArray<SimResult::PartResult, Element> >("part_result_pool");
+		*/
 		return *this;
 	}
 	SimResult& SimResult::operator=(SimResult&&other)
 	{
+		/*
 		Element::operator=(std::move(other));
 		imp_ = other.imp_;
 		imp_->time_result_ = findType<TimeResult >("time_result");
-		imp_->constraint_result_pool_ = findType<aris::core::ObjectPool<SimResult::ConstraintResult, Element> >("constraint_result_pool");
-		imp_->part_result_pool_ = findType<aris::core::ObjectPool<SimResult::PartResult, Element> >("part_result_pool");
+		imp_->constraint_result_pool_ = findType<aris::core::PointerArray<SimResult::ConstraintResult, Element> >("constraint_result_pool");
+		imp_->part_result_pool_ = findType<aris::core::PointerArray<SimResult::PartResult, Element> >("part_result_pool");
+		*/
 		return *this;
 	}
 
@@ -1105,26 +1126,32 @@ namespace aris::dynamic
 		Solver *solver_;
 		Imp(Solver *solver) :solver_(solver) { };
 	};
+	/*
 	auto SolverSimulator::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
+
 		Simulator::saveXml(xml_ele);
 		xml_ele.SetAttribute("solver", solver().name().c_str());
+
 	}
 	auto SolverSimulator::loadXml(const aris::core::XmlElement &xml_ele)->void
 	{
+
 		Simulator::loadXml(xml_ele);
 
 		if (model()->findByName("solver_pool") == model()->children().end())
 			THROW_FILE_LINE("you must insert \"solver_pool\" node before insert " + type() + " \"" + name() + "\"");
 
-		auto &solver_pool = static_cast<aris::core::ObjectPool<Solver, Element>&>(*model()->findByName("solver_pool"));
+		auto &solver_pool = static_cast<aris::core::PointerArray<Solver, Element>&>(*model()->findByName("solver_pool"));
 
 		if (!xml_ele.Attribute("solver"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"solver\"");
 		auto s = solver_pool.findByName(xml_ele.Attribute("solver"));
 		if (s == solver_pool.end())	THROW_FILE_LINE(std::string("can't find solver for element \"") + this->name() + "\"");
 
 		imp_->solver_ = &*s;
+		
 	}
+	*/
 	auto SolverSimulator::solver()->Solver& { return *imp_->solver_; }
 	auto SolverSimulator::simulate(aris::plan::Plan &plan, SimResult &result)->void{ Simulator::simulate(plan, result); }
 	SolverSimulator::~SolverSimulator() = default;
@@ -1149,6 +1176,8 @@ namespace aris::dynamic
 	}
 	auto AdamsSimulator::saveAdams(std::ofstream &file, SimResult &result, Size pos)->void
 	{
+		/*
+		
 		// 生成akima曲线 //
 		std::vector<double> time(result.size() + 1);
 		std::vector<std::vector<double>> mot_akima(model()->motionPool().size(), std::vector<double>(result.size() + 1));
@@ -1595,6 +1624,7 @@ namespace aris::dynamic
 					<< "    active = off \r\n!\r\n";
 			}
 		}
+		*/
 	}
 	auto AdamsSimulator::saveAdams(const std::string &filename)->void
 	{
@@ -1613,7 +1643,8 @@ namespace aris::dynamic
 	}
 	auto AdamsSimulator::saveAdams(std::ofstream &file)->void
 	{
-		auto &s = model()->simResultPool().add<SimResult>();
+		model()->simResultPool().push_back(new SimResult);
+		auto &s = model()->simResultPool().back();
 
 		
 		
@@ -1647,7 +1678,7 @@ namespace aris::dynamic
 	ARIS_REGISTRATION
 	{
 		//aris::core::class_<SimResult::TimeResult>("TimeResult")
-		//	.property()
+		//	.prop()
 		//	;
 	}
 }

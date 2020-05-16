@@ -309,16 +309,7 @@ namespace aris::dynamic
 		};
 		GeneralMotion *ee;
 	};
-	auto PumaInverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		InverseKinematicSolver::saveXml(xml_ele);
-		xml_ele.SetAttribute("which_root", imp_->which_root_);
-	}
-	auto PumaInverseKinematicSolver::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		InverseKinematicSolver::loadXml(xml_ele);
-		setWhichRoot(Object::attributeInt32(xml_ele, "which_root"));
-	}
+	
 	auto PumaInverseKinematicSolver::allocateMemory()->void
 	{
 		InverseKinematicSolver::allocateMemory();
@@ -626,14 +617,15 @@ namespace aris::dynamic
 	}
 	auto PumaInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	auto PumaInverseKinematicSolver::whichRoot()const->int { return imp_->which_root_; }
+	PumaInverseKinematicSolver::~PumaInverseKinematicSolver() = default;
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
-	ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
+	//ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
 
 	ARIS_REGISTRATION
 	{
 		aris::core::class_<PumaInverseKinematicSolver>("PumaInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
-			.property("which_root", &PumaInverseKinematicSolver::setWhichRoot, &PumaInverseKinematicSolver::whichRoot)
+			.prop("which_root", &PumaInverseKinematicSolver::setWhichRoot, &PumaInverseKinematicSolver::whichRoot)
 			;
 	}
 }

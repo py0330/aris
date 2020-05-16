@@ -14,6 +14,7 @@
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
 #include "aris/dynamic/seven_axis.hpp"
+#include "aris/core/reflection.hpp"
 
 namespace aris::dynamic
 {
@@ -261,16 +262,6 @@ namespace aris::dynamic
 		};
 		GeneralMotion *ee;
 	};
-	auto SevenAxisInverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		InverseKinematicSolver::saveXml(xml_ele);
-		xml_ele.SetAttribute("which_root", imp_->which_root_);
-	}
-	auto SevenAxisInverseKinematicSolver::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		InverseKinematicSolver::loadXml(xml_ele);
-		setWhichRoot(Object::attributeInt32(xml_ele, "which_root"));
-	}
 	auto SevenAxisInverseKinematicSolver::allocateMemory()->void
 	{
 		InverseKinematicSolver::allocateMemory();
@@ -420,7 +411,16 @@ namespace aris::dynamic
 		}
 	}
 	auto SevenAxisInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
+	auto SevenAxisInverseKinematicSolver::whichRoot()->int { return imp_->which_root_; }
 	auto SevenAxisInverseKinematicSolver::setAxisAngle(double axis_angle)->void { imp_->axis_angle = axis_angle; }
 	SevenAxisInverseKinematicSolver::SevenAxisInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(SevenAxisInverseKinematicSolver);
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<SevenAxisInverseKinematicSolver>("SevenAxisInverseKinematicSolver")
+			.inherit<InverseKinematicSolver>()
+			.prop("which_root", &SevenAxisInverseKinematicSolver::setWhichRoot, &SevenAxisInverseKinematicSolver::whichRoot)
+			;
+	}
 }

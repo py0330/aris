@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <thread>
+#include <aris/core/serialization.hpp>
 #include <aris/control/control.hpp>
 #include "test_control_ethercat.h"
 
@@ -258,8 +259,8 @@ void test_pdo()
 			"	</sdo_pool>"
 			"</io>";
 
-		mst.slavePool().add<aris::control::EthercatSlave>().loadXmlStr(xml_str);
-
+		mst.slavePool().add<aris::control::EthercatSlave>();
+		aris::core::fromXmlString(mst.slavePool().back(), xml_str);
 
 		mst.setControlStrategy([&]()
 		{
@@ -358,7 +359,7 @@ void test_sdo_xml()
 		aris::control::EthercatMaster m;
 
 		auto &s1 = m.slavePool().add<EthercatSlave>();
-		s1.loadXmlStr(
+		aris::core::fromXmlString(s1, 
 			"<sla type=\"EthercatSlave\" phy_id=\"0\" product_code=\"0x00030924\" vendor_id=\"0x0000009a\" revision_num=\"0x000103F6\" dc_assign_activate=\"0x0300\" min_pos=\"0.676\" max_pos=\"1.091\" max_vel=\"0.2362\" home_pos=\"0.676\" input2count=\"22937600\">"
 			"	<sdo_pool type=\"SdoPoolObject\" default_child_type=\"Sdo\">"
 			"		<home_mode index=\"0x6098\" subindex=\"0\" size=\"1\" config=\"17\" read=\"true\" write=\"true\"/>"

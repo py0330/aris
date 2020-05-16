@@ -13,6 +13,7 @@
 
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/ur.hpp"
+#include "aris/core/reflection.hpp"
 
 namespace aris::dynamic
 {
@@ -593,20 +594,21 @@ namespace aris::dynamic
 		return 0;
 	}
 
-	auto Ur5InverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		InverseKinematicSolver::saveXml(xml_ele);
-		xml_ele.SetAttribute("which_root", which_root_);
-	}
-	auto Ur5InverseKinematicSolver::loadXml(const aris::core::XmlElement &xml_ele)->void 
-	{
-		InverseKinematicSolver::loadXml(xml_ele);
-		setWhichRoot(Object::attributeInt32(xml_ele, "which_root"));
-	}
 	auto Ur5InverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void
 	{
 		if (root_of_0_to_7 < 0 || root_of_0_to_7 > 7) THROW_FILE_LINE("root must be 0 to 7");
 		which_root_ = root_of_0_to_7;
 	}
+	auto Ur5InverseKinematicSolver::whichRoot()->int { return which_root_; }
 	auto Ur5InverseKinematicSolver::kinPos()->int { return UrInverseKinematic(*model(), UniversalSolver::imp_->subsys_pool_.at(0), which_root_); };
+
+
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Ur5InverseKinematicSolver>("Ur5InverseKinematicSolver")
+			.inherit<InverseKinematicSolver>()
+			.prop("which_root", &Ur5InverseKinematicSolver::setWhichRoot, &Ur5InverseKinematicSolver::whichRoot)
+			;
+	}
 }

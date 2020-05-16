@@ -15,34 +15,27 @@
 
 namespace aris::server
 {
-	class InterfaceRoot : public aris::core::Object
+	class InterfaceRoot
 	{
-	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-
-		ARIS_REGISTER_TYPE(InterfaceRoot);
-
 	private:
 		aris::core::XmlDocument doc_;
 	};
-	class Interface :public aris::core::Object
+	class Interface
 	{
 	public:
 		auto virtual open()->void = 0;
 		auto virtual close()->void = 0;
 
 		Interface(const std::string &name = "interface");
-		ARIS_REGISTER_TYPE(Interface);
 		ARIS_DEFINE_BIG_FOUR(Interface);
 	};
-
 	class ProgramWebInterface :public Interface
 	{
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		auto resetSocket(aris::core::Socket *sock)->void;
+		auto socket()->aris::core::Socket&;
 		auto isAutoMode()->bool;
 		auto isAutoRunning()->bool;
 		auto isAutoPaused()->bool;
@@ -51,40 +44,35 @@ namespace aris::server
 		auto lastError()->std::string;
 		auto lastErrorCode()->int;
 		auto lastErrorLine()->int;
-
+		
 		ProgramWebInterface(const std::string &name = "pro_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
 		ProgramWebInterface(ProgramWebInterface && other);
 		ProgramWebInterface& operator=(ProgramWebInterface&& other);
-		ARIS_REGISTER_TYPE(ProgramWebInterface);
 
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
-		aris::core::Socket *sock_;
 	};
-
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
 	class WebInterface :public Interface
 	{
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
+		auto resetSocket(aris::core::Socket *sock)->void;
+		auto socket()->aris::core::Socket&;
 
 		WebInterface(const std::string &name = "websock_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
-		ARIS_REGISTER_TYPE(WebInterface);
-		ARIS_DEFINE_BIG_FOUR(WebInterface);
 
 	private:
-		aris::core::Socket *sock_;
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 	};
 	class HttpInterface :public Interface
 	{
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 
 		virtual ~HttpInterface();
 		HttpInterface(const std::string &name = "http_interface", const std::string &port = "8000", const std::string &document_root = "./");
@@ -92,21 +80,18 @@ namespace aris::server
 		HttpInterface(HttpInterface && other);
 		HttpInterface &operator=(const HttpInterface& other) = delete;
 		HttpInterface &operator=(HttpInterface&& other);
-		ARIS_REGISTER_TYPE(HttpInterface);
 
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-	class GetInfo :public aris::plan::Plan
+	class GetInfo :public aris::core::CloneObject<GetInfo, aris::plan::Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;
-		GetInfo() {	this->command().setName("get_i");}
-		ARIS_REGISTER_TYPE(GetInfo);
+		GetInfo() { this->command().setName("get_i"); }
 	};
 }
 
 #endif
-

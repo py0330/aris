@@ -25,15 +25,15 @@ struct A:public Base
 ARIS_REGISTRATION
 {
 	aris::core::class_<Base>("Base")
-		.property("ddd", &Base::c);
+		.prop("ddd", &Base::c);
 	
 	aris::core::class_<A>("aaa")
-		.property("base", &A::base)
-		.property("a", &A::a)
-		.property("c", &A::setI, &A::getI)
-		.property("ds", &A::getJ)
-		.property("d", &A::setJ, &A::getJ)
-		.property("e", &A::setE, &A::getE);
+		.prop("base", &A::base)
+		.prop("a", &A::a)
+		.prop("c", &A::setI, &A::getI)
+		.prop("ds", &A::getJ)
+		.prop("d", &A::setJ, &A::getJ)
+		.prop("e", &A::setE, &A::getE);
 
 	aris::core::class_<std::vector<int>>("vector")
 		.asArray();
@@ -276,7 +276,7 @@ int main()
 	aris::dynamic::dsp(4, 4, *m->partPool()[3].markerPool().findByName("tool0")->pm());
 	//*/
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
+
 	int a = 50;
 
 	std::cout << "before" << std::endl;
@@ -401,33 +401,33 @@ int main()
 	std::cout << aris::core::toXmlString(cmd) << std::endl;
 
 
-	// 添加CommandParser //
-	aris::core::CommandParser parser;
+	//// 添加CommandParser //
+	//aris::core::CommandParser parser;
 
-	// 添加enable命令 //
-	auto &enable = parser.commandPool().add<aris::core::Command>("enable", "");
+	//// 添加enable命令 //
+	//auto &enable = parser.commandPool().add<aris::core::Command>("enable", "");
 
-	// 添加命令各参数节点 //
-	auto &group = enable.add<aris::core::GroupParam>("group");
-	auto &unique1 = group.add<aris::core::UniqueParam>("unique1", "");
-	auto &unique2 = group.add<aris::core::UniqueParam>("unique2", "position");
-	auto &all = unique1.add<aris::core::Param>("all", "", 'a');
-	auto &motion = unique1.add<aris::core::Param>("motion", "0", 'm');
-	auto &position = unique2.add<aris::core::Param>("position", "", 'p');
-	auto &velocity = unique2.add<aris::core::Param>("velocity", "", 'v');
-	auto &current = unique2.add<aris::core::Param>("current", "", 0);
-
-
-	std::cout << parser.xmlString() << std::endl;
+	//// 添加命令各参数节点 //
+	//auto &group = enable.add<aris::core::GroupParam>("group");
+	//auto &unique1 = group.add<aris::core::UniqueParam>("unique1", "");
+	//auto &unique2 = group.add<aris::core::UniqueParam>("unique2", "position");
+	//auto &all = unique1.add<aris::core::Param>("all", "", 'a');
+	//auto &motion = unique1.add<aris::core::Param>("motion", "0", 'm');
+	//auto &position = unique2.add<aris::core::Param>("position", "", 'p');
+	//auto &velocity = unique2.add<aris::core::Param>("velocity", "", 'v');
+	//auto &current = unique2.add<aris::core::Param>("current", "", 0);
 
 
-	std::cout << aris::core::toXmlString(parser) << std::endl;
+	//std::cout << parser.xmlString() << std::endl;
 
 
-	aris::core::CommandParser parser2;
-	aris::core::fromXmlString(parser2, parser.xmlString());
+	//std::cout << aris::core::toXmlString(parser) << std::endl;
 
-	std::cout << parser2.xmlString() << std::endl;
+
+	//aris::core::CommandParser parser2;
+	//aris::core::fromXmlString(parser2, parser.xmlString());
+
+	//std::cout << parser2.xmlString() << std::endl;
 
 	//for (;;)
 	//{

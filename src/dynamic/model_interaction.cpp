@@ -16,51 +16,6 @@
 
 namespace aris::dynamic
 {
-	auto Interaction::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		DynEle::saveXml(xml_ele);
-
-		xml_ele.SetAttribute("prt_m", this->makI()->fatherPart().name().c_str());
-		xml_ele.SetAttribute("prt_n", this->makJ()->fatherPart().name().c_str());
-		xml_ele.SetAttribute("mak_i", this->makI()->name().c_str());
-		xml_ele.SetAttribute("mak_j", this->makJ()->name().c_str());
-	}
-	auto Interaction::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		prt_name_M_ = xml_ele.Attribute("prt_m");
-		prt_name_N_ = xml_ele.Attribute("prt_n");
-		mak_name_I_ = xml_ele.Attribute("mak_i");
-		mak_name_J_ = xml_ele.Attribute("mak_j");
-		
-		
-		
-		
-		/*
-		if (model()->findByName("part_pool") == model()->children().end())
-			THROW_FILE_LINE("you must insert \"part_pool\" node before insert " + type() + " \"" + name() + "\"");
-		auto &part_pool = static_cast<aris::core::ObjectPool<Part, Element>&>(*model()->findByName("part_pool"));
-
-		if (!xml_ele.Attribute("prt_m"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"prt_m\"");
-		auto prt_m = part_pool.findByName(xml_ele.Attribute("prt_m"));
-		if (prt_m == part_pool.end())	THROW_FILE_LINE(std::string("can't find part m for element \"") + this->name() + "\"");
-
-		if (!xml_ele.Attribute("mak_i"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"mak_i\"");
-		auto mak_i = prt_m->markerPool().findByName(xml_ele.Attribute("mak_i"));
-		if (mak_i == prt_m->markerPool().end())
-			THROW_FILE_LINE(std::string("can't find marker i for element \"") + this->name() + "\"");
-		makI_ = &(*mak_i);
-
-		if (!xml_ele.Attribute("prt_n"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"prt_n\"");
-		auto prt_n = part_pool.findByName(xml_ele.Attribute("prt_n"));
-		if (prt_n == part_pool.end())THROW_FILE_LINE(std::string("can't find part n for element \"") + this->name() + "\"");
-
-		if (!xml_ele.Attribute("mak_j"))THROW_FILE_LINE(std::string("xml element \"") + name() + "\" must have Attribute \"mak_j\"");
-		auto mak_j = prt_n->markerPool().findByName(xml_ele.Attribute("mak_j"));
-		if (mak_j == prt_n->markerPool().end())THROW_FILE_LINE(std::string("can't find marker j for element \"") + this->name() + "\"");
-		makJ_ = &(*mak_j);
-		*/
-		DynEle::loadXml(xml_ele);
-	}
 	auto Interaction::prtNameM()const->std::string { return prt_name_M_; }
 	auto Interaction::setPrtNameM(std::string_view name)->void { prt_name_M_ = name; }
 	auto Interaction::prtNameN()const->std::string { return prt_name_N_; }
@@ -79,16 +34,6 @@ namespace aris::dynamic
 	}
 
 	struct Constraint::Imp { Size col_id_, blk_col_id_; double cf_[6]{ 0 }; };
-	auto Constraint::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Interaction::saveXml(xml_ele);
-		xml_ele.SetAttribute("cf", core::Matrix(1, dim(), cf()).toString().c_str());
-	}
-	auto Constraint::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Interaction::loadXml(xml_ele);
-		setCf(attributeMatrix(xml_ele, "cf", 1, dim(), core::Matrix(1, dim(), 0.0)).data());
-	}
 	auto Constraint::cf() const noexcept->const double* { return imp_->cf_; }
 	auto Constraint::setCf(const double *cf) noexcept->void { return s_vc(dim(), cf, imp_->cf_); }
 	auto Constraint::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
@@ -126,33 +71,6 @@ namespace aris::dynamic
 		double mp_{ 0 }, mv_{ 0 }, ma_{ 0 };
 		double loc_cm_I[6];
 	};
-	auto Motion::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Constraint::saveXml(xml_ele);
-
-		xml_ele.SetAttribute("frc_coe", core::Matrix(1, 3, this->frcCoe()).toString().c_str());
-		xml_ele.SetAttribute("component", static_cast<int>(axis()));
-		xml_ele.SetAttribute("mp", mp());
-		xml_ele.SetAttribute("mv", mv());
-		xml_ele.SetAttribute("ma", ma());
-		if (imp_->mp_offset_ != 0)xml_ele.SetAttribute("mp_offset", imp_->mp_offset_);
-		if (imp_->mp_factor_ != 1.0)xml_ele.SetAttribute("mp_factor", imp_->mp_factor_);
-	}
-	auto Motion::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		imp_->component_axis_ = attributeInt32(xml_ele, "component");
-		imp_->mp_offset_ = attributeDouble(xml_ele, "mp_offset", 0.0);
-		imp_->mp_factor_ = attributeDouble(xml_ele, "mp_factor", 1.0);
-		setMp(attributeDouble(xml_ele, "mp", 0.0));
-		setMv(attributeDouble(xml_ele, "mv", 0.0));
-		setMa(attributeDouble(xml_ele, "ma", 0.0));
-
-		setFrcCoe(attributeMatrix(xml_ele, "frc_coe", 1, 3).data());
-
-		Constraint::loadXml(xml_ele);
-		s_fill(1, 6, 0.0, const_cast<double*>(locCmI()));
-		const_cast<double*>(locCmI())[axis()] = 1.0;
-	}
 	auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I; }
 	auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void
 	{
@@ -588,17 +506,6 @@ namespace aris::dynamic
 	}
 	SphericalJoint::SphericalJoint(const std::string &name, Marker* makI, Marker* makJ) : Joint(name, makI, makJ) {}
 
-	auto SingleComponentForce::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Force::saveXml(xml_ele);
-		xml_ele.SetAttribute("component", static_cast<int>(this->component_axis_));
-	}
-	auto SingleComponentForce::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		component_axis_ = attributeInt32(xml_ele, "component", 0);
-
-		Force::loadXml(xml_ele);
-	}
 	auto SingleComponentForce::cptGlbFs(double *fsI, double *fsJ)const noexcept->void
 	{
 		s_tf(*makI()->prtPm(), fce_value_, fsJ);
@@ -611,30 +518,30 @@ namespace aris::dynamic
 	{
 		aris::core::class_<Interaction>("Interaction")
 			.inherit<aris::dynamic::DynEle>()
-			.property("prt_m", &Interaction::setPrtNameM, &Interaction::prtNameM)
-			.property("prt_n", &Interaction::setPrtNameN, &Interaction::prtNameN)
-			.property("mak_i", &Interaction::setMakNameI, &Interaction::makNameI)
-			.property("mak_j", &Interaction::setMakNameJ, &Interaction::makNameJ)
+			.prop("prt_m", &Interaction::setPrtNameM, &Interaction::prtNameM)
+			.prop("prt_n", &Interaction::setPrtNameN, &Interaction::prtNameN)
+			.prop("mak_i", &Interaction::setMakNameI, &Interaction::makNameI)
+			.prop("mak_j", &Interaction::setMakNameJ, &Interaction::makNameJ)
 			;
 
 		auto setCf = [](Constraint* c, aris::core::Matrix cf_mat)->void {c->setCf(cf_mat.data()); };
 		auto getCf = [](Constraint* c)->aris::core::Matrix {	return aris::core::Matrix(1, c->dim(), c->cf()); };
 		aris::core::class_<Constraint>("Constraint")
 			.inherit<aris::dynamic::Interaction>()
-			.property("cf", &setCf, &getCf)
+			.prop("cf", &setCf, &getCf)
 			;
 
 		auto setMotionFrc = [](Motion* c, aris::core::Matrix mat)->void {c->setFrcCoe(mat.data()); };
 		auto getMotionFrc = [](Motion* c)->aris::core::Matrix {	return aris::core::Matrix(1, 3, c->frcCoe()); };
 		aris::core::class_<Motion>("Motion")
 			.inherit<aris::dynamic::Constraint>()
-			.property("component", &Motion::setAxis, &Motion::axis)
-			.property("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
-			.property("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)
-			.property("mp", &Motion::setMp, &Motion::mp)
-			.property("mv", &Motion::setMv, &Motion::mv)
-			.property("ma", &Motion::setMa, &Motion::ma)
-			.property("frc_coe", &setMotionFrc, &getMotionFrc)
+			.prop("component", &Motion::setAxis, &Motion::axis)
+			.prop("mp_offset", &Motion::setMpOffset, &Motion::mpOffset)
+			.prop("mp_factor", &Motion::setMpFactor, &Motion::mpFactor)
+			.prop("mp", &Motion::setMp, &Motion::mp)
+			.prop("mv", &Motion::setMv, &Motion::mv)
+			.prop("ma", &Motion::setMa, &Motion::ma)
+			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
 			;
 
 		aris::core::class_<GeneralMotion>("GeneralMotion")
@@ -671,7 +578,7 @@ namespace aris::dynamic
 
 		aris::core::class_<SingleComponentForce>("SingleComponentForce")
 			.inherit<aris::dynamic::Force>()
-			.property("component", &SingleComponentForce::setComponentAxis, &SingleComponentForce::componentAxis)
+			.prop("component", &SingleComponentForce::setComponentAxis, &SingleComponentForce::componentAxis)
 			;
 
 	}

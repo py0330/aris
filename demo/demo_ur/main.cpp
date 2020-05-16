@@ -189,8 +189,6 @@ int main()
 	
 	auto r = aris::robot::createModelUr5();
 
-	r->saveXmlFile("C:\\Users\\py033\\Desktop\\ur5.xml");
-
 	for (auto &p : r->partPool())
 	{
 		dsp(4, 4, *dynamic_cast<FileGeometry&>(p.geometryPool().front()).prtPm());

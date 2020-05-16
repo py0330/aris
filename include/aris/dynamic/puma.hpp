@@ -38,8 +38,6 @@ namespace aris::dynamic
 	class PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;		
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
 		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void
@@ -56,10 +54,9 @@ namespace aris::dynamic
 		auto setWhichRoot(int root_of_0_to_7)->void;
 		auto whichRoot()const->int;
 
-		virtual ~PumaInverseKinematicSolver() = default;
+		virtual ~PumaInverseKinematicSolver();
 		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");
-		ARIS_REGISTER_TYPE(PumaInverseKinematicSolver);
-		ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
+		//ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
 
 	private:
 		struct Imp;

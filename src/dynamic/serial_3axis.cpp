@@ -14,6 +14,7 @@
 #include "aris/dynamic/model.hpp"
 #include "aris/dynamic/model_solver.hpp"
 #include "aris/dynamic/serial_3axis.hpp"
+#include "aris/core/reflection.hpp"
 
 namespace aris::dynamic
 {
@@ -201,16 +202,6 @@ namespace aris::dynamic
 
 		bool use_angle_ = false;
 	};
-	auto Serial3InverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		InverseKinematicSolver::saveXml(xml_ele);
-		xml_ele.SetAttribute("which_root", imp_->which_root_);
-	}
-	auto Serial3InverseKinematicSolver::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		InverseKinematicSolver::loadXml(xml_ele);
-		setWhichRoot(Object::attributeInt32(xml_ele, "which_root"));
-	}
 	auto Serial3InverseKinematicSolver::allocateMemory()->void
 	{
 		InverseKinematicSolver::allocateMemory();
@@ -410,6 +401,7 @@ namespace aris::dynamic
 	{ 
 		imp_->which_root_ = root_of_0_to_4;
 	}
+	auto Serial3InverseKinematicSolver::whichRoot()->int { return imp_->which_root_; }
 	auto Serial3InverseKinematicSolver::setPmEE(const double *ee_pm, const double *extnal_axes)->void
 	{
 		imp_->ee->setMpe(std::array<double, 6>{ee_pm[3], ee_pm[7], ee_pm[11], 0, 0, 0}.data());
@@ -453,4 +445,12 @@ namespace aris::dynamic
 		imp_->mechnism_param_.a3 = param.a3;
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Serial3InverseKinematicSolver);
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Serial3InverseKinematicSolver>("Serial3InverseKinematicSolver")
+			.inherit<InverseKinematicSolver>()
+			.prop("which_root", &Serial3InverseKinematicSolver::setWhichRoot, &Serial3InverseKinematicSolver::whichRoot)
+			;
+	}
 }

@@ -7,12 +7,9 @@
 
 namespace aris::control
 {
-	class PdoEntry :public aris::core::Object
+	class PdoEntry:public aris::core::NamedObject
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 		auto setIndex(std::uint16_t index)->void;
@@ -24,18 +21,15 @@ namespace aris::control
 
 		virtual ~PdoEntry();
 		explicit PdoEntry(const std::string &name = "entry", std::uint16_t index = 0x0000, std::uint8_t subindex = 0x00, aris::Size bit_size = 8);
-		ARIS_REGISTER_TYPE(PdoEntry);
 		ARIS_DECLARE_BIG_FOUR(PdoEntry);
 
 	public:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class Pdo :public aris::core::ObjectPool<PdoEntry>
+	class Pdo :public std::vector<PdoEntry>, public aris::core::NamedObject
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 		auto setIndex(std::uint16_t index)->void;
@@ -43,25 +37,21 @@ namespace aris::control
 
 		virtual ~Pdo();
 		explicit Pdo(const std::string &name = "pdo", std::uint16_t index = 0x0000);
-		ARIS_REGISTER_TYPE(Pdo);
 		ARIS_DECLARE_BIG_FOUR(Pdo);
 
 	public:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class SyncManager :public aris::core::ObjectPool<Pdo>
+	class SyncManager :public std::vector<Pdo>, public aris::core::NamedObject
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto tx()const->bool;
 		auto rx()const->bool;
 		auto setTx(bool is_tx)->void;
 
 		virtual ~SyncManager();
 		explicit SyncManager(const std::string &name = "sm", bool is_tx = true);
-		ARIS_REGISTER_TYPE(SyncManager);
 		ARIS_DECLARE_BIG_FOUR(SyncManager);
 
 	private:
@@ -73,19 +63,15 @@ namespace aris::control
 	class EthercatSlave : virtual public Slave
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto ecMaster()->EthercatMaster*;
 		auto ecMaster()const->const EthercatMaster* { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecMaster(); }
 
-		auto setSmPool(aris::core::ObjectPool<SyncManager> *sm_pool)->void;
-		auto smPool()->aris::core::ObjectPool<SyncManager>&;
-		auto smPool()const->const aris::core::ObjectPool<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
+		auto setSmPool(std::vector<SyncManager> *sm_pool)->void;
+		auto smPool()->std::vector<SyncManager>&;
+		auto smPool()const->const std::vector<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
 		
-		auto smPool2()->aris::core::ObjectPool<SyncManager>&;
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
-		
 
 		auto vendorID()const->std::uint32_t;
 		auto setVendorID(std::uint32_t vendor_id)->void;
@@ -117,10 +103,9 @@ namespace aris::control
 
 		virtual ~EthercatSlave();
 		explicit EthercatSlave(const std::string &name = "ethercat_slave", std::uint16_t phy_id = 0, std::uint32_t vendor_id = 0, std::uint32_t product_code = 0, std::uint32_t revision_num = 0, std::uint32_t dc_assign_activate = 0, std::int32_t sync0_shift_ns = 650'000);
-		ARIS_REGISTER_TYPE(EthercatSlave);
-		EthercatSlave(const EthercatSlave &other);
+		EthercatSlave(const EthercatSlave &other) = delete;
 		EthercatSlave(EthercatSlave &&other) = delete;
-		EthercatSlave& operator=(const EthercatSlave &other);
+		EthercatSlave& operator=(const EthercatSlave &other) = delete;
 		EthercatSlave& operator=(EthercatSlave &&other) = delete;
 
 	private:
@@ -164,8 +149,8 @@ namespace aris::control
 		auto esiDirStr()->std::string;
 		auto setEsiDirStr(const std::string &str)->void;
 
-		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>&;
-		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
+		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>&;
+		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
 		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtAbs(id)); }
 		auto slaveAtAbs(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
 		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return dynamic_cast<EthercatSlave&>(Master::slaveAtPhy(id)); }
@@ -186,8 +171,6 @@ namespace aris::control
 
 		auto virtual init()->void override;
 		auto virtual start()->void override;
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		
 		virtual ~EthercatMaster();
 		EthercatMaster(const std::string &name = "ethercat_master");
@@ -195,7 +178,6 @@ namespace aris::control
 		EthercatMaster(EthercatMaster &&other) = delete;
 		EthercatMaster& operator=(const EthercatMaster &other) = delete;
 		EthercatMaster& operator=(EthercatMaster &&other) = delete;
-		ARIS_REGISTER_TYPE(EthercatMaster);
 
 	protected:
 		auto virtual send()->void override;
@@ -214,9 +196,6 @@ namespace aris::control
 	public:
 		auto isVirtual()->bool;
 		auto setVirtual(bool is_virtual = true)->void;
-
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 
 		auto virtual controlWord()const->std::uint16_t override;
 		auto virtual modeOfOperation()const->std::uint8_t override;
@@ -266,10 +245,9 @@ namespace aris::control
 			, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
 			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0, bool is_virtual = false);
-		ARIS_REGISTER_TYPE(EthercatMotor);
-		EthercatMotor(const EthercatMotor &other);
+		EthercatMotor(const EthercatMotor &other) = delete;
 		EthercatMotor(EthercatMotor &&other) = delete;
-		EthercatMotor& operator=(const EthercatMotor &other);
+		EthercatMotor& operator=(const EthercatMotor &other) = delete;
 		EthercatMotor& operator=(EthercatMotor &&other) = delete;
 
 	private:
@@ -279,7 +257,7 @@ namespace aris::control
 	class EthercatController :public EthercatMaster, public Controller
 	{
 	public:
-		using MotionPool = aris::core::SubRefPool<EthercatMotor, aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>>;
+		using MotionPool = aris::core::SubRefPool<EthercatMotor, aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>>;
 		auto motionPool()->MotionPool&;
 		auto motionPool()const->const MotionPool& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionPool(); }
 		auto motionAtAbs(aris::Size id)->EthercatMotor& { return dynamic_cast<EthercatMotor&>(Controller::motionAtAbs(id)); }
@@ -289,24 +267,20 @@ namespace aris::control
 		auto motionAtSla(aris::Size id)->EthercatMotor& { return dynamic_cast<EthercatMotor&>(Controller::motionAtSla(id)); }
 		auto motionAtSla(aris::Size id)const->const EthercatMotor& { return const_cast<std::decay_t<decltype(*this)> *>(this)->motionAtSla(id); }
 
-		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return EthercatMaster::slavePool(); }
-		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::ObjectPool<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
+		auto slavePool()->aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>& { return EthercatMaster::slavePool(); }
+		auto slavePool()const->const aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->slavePool(); }
 		auto slaveAtAbs(aris::Size id)->EthercatSlave& { return EthercatMaster::slaveAtAbs(id); }
 		auto slaveAtAbs(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtAbs(id); }
 		auto slaveAtPhy(aris::Size id)->EthercatSlave& { return EthercatMaster::slaveAtPhy(id); }
 		auto slaveAtPhy(aris::Size id)const->const EthercatSlave& { return const_cast<std::decay_t<decltype(*this)> *>(this)->slaveAtPhy(id); }
 
 		auto virtual start()->void override { EthercatMaster::start(); }
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override { EthercatMaster::saveXml(xml_ele); }
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override { EthercatMaster::loadXml(xml_ele); }
-
 		virtual ~EthercatController();
 		EthercatController(const std::string &name = "ethercat_controller");
 		EthercatController(const EthercatController &other) = delete;
 		EthercatController(EthercatController &&other) = delete;
 		EthercatController& operator=(const EthercatController &other) = delete;
 		EthercatController& operator=(EthercatController &&other) = delete;
-		ARIS_REGISTER_TYPE(EthercatController);
 
 	protected:
 		auto virtual init()->void override;

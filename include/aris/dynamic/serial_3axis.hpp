@@ -46,11 +46,10 @@ namespace aris::dynamic
 	class Serial3InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
 		auto setWhichRoot(int root_of_0_to_4)->void;
+		auto whichRoot()->int;
 		auto setPmEE(const double *ee_pos, const double *extnal_axes)->void;
 		auto setEulaAngle(const double *eul, const char *type = "321")->void;
 		auto setQuaternionAngle(const double *q)->void;
@@ -59,7 +58,6 @@ namespace aris::dynamic
 
 		virtual ~Serial3InverseKinematicSolver();
 		explicit Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name = "puma_inverse_solver");
-		ARIS_REGISTER_TYPE(Serial3InverseKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(Serial3InverseKinematicSolver);
 
 	private:

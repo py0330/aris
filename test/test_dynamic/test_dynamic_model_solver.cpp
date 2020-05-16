@@ -3,6 +3,7 @@
 #include <array>
 #include <aris/dynamic/dynamic.hpp>
 #include <aris/core/msg.hpp>
+#include <aris/core/serialization.hpp>
 
 #include<type_traits>
 
@@ -18,7 +19,6 @@ const char xml_file_ur5[] =
 "                <Marker name=\"ee_makJ\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0 , 0 , 0.003 , 5.49778714108979 , 1.5707963267949 , 3.14159265358979}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/ground.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L1\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{3.7 , 0 , 0 , 0.3298883 , 0.0396800068327 , 0.0396800068327 , 0.00666 , 0 , 0 , 0}\">"
@@ -27,7 +27,6 @@ const char xml_file_ur5[] =
 "                <Marker name=\"joint_1_j\" active=\"true\" pe=\"{0 , 0.13585 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0 , 0 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 3.14159265358979}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L1.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L2\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{8.393 , 2.35004 , 1.14018905 , 0.748311487 , 0.236720786311933 , 0.951620579779433 , 1.0397965583525 , -0.319252934 , -0.20952721636 , -0.10165811550895}\">"
@@ -36,7 +35,6 @@ const char xml_file_ur5[] =
 "                <Marker name=\"joint_2_j\" active=\"true\" pe=\"{0.425 , 0.01615 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0 , 0.13585 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L2.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L3\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{2.275 , 1.535625 , 0.03674125 , 0.202836725 , 0.022773090751775 , 1.10407490812027 , 1.0865835597435 , -0.02480034375 , -0.136914789375 , -0.00327581310875}\">"
@@ -45,7 +43,6 @@ const char xml_file_ur5[] =
 "                <Marker name=\"joint_3_j\" active=\"true\" pe=\"{0.81725 , 0.01615 , 0.0891590000000001 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0.425 , 0.01615 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L3.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L4\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1.219 , 0.99622775 , 0.01968685 , 0.108684821 , 0.121180928114039 , 0.935030114174039 , 1.033905071315 , -0.0160890781625 , -0.0888226699622501 , -0.00175525985915}\">"
@@ -54,7 +51,6 @@ const char xml_file_ur5[] =
 "                <Marker name=\"joint_4_j\" active=\"true\" pe=\"{0.81725 , 0.10915 , 0.0891590000000001 , 5.49778714378214 , 3.14159265358979 , 0.785398163397448}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0.81725 , 0.10915 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 1.5707963267949}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L4.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L5\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1.219 , 0.99622775 , 0.13305385 , 0.108684821 , 0.135385813214039 , 0.935030114174039 , 1.048109956415 , -0.1087382589125 , -0.0888226699622501 , -0.01186294821215}\">"
@@ -63,7 +59,6 @@ const char xml_file_ur5[] =
 "                <Marker name=\"joint_5_j\" active=\"true\" pe=\"{0.81725 , 0.10915 , -0.00549099999999994 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0.81725 , 0.10915 , -0.005491 , 3.14159265358979 , 1.5707963267949 , 6.28318530717959}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L5.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L6\" active=\"true\" pe=\"{0 , 0 , 0 , -0 , 0 , -0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{0.1879 , 0.153561275 , 0.020509285 , -0.00103175889999999 , 0.0193807269912699 , 0.14264009052727 , 0.1615585404515 , -0.01676121316625 , 0.000843204961024989 , 0.000112616483934999}\">"
@@ -72,7 +67,6 @@ const char xml_file_ur5[] =
 "                <Marker name=\"ee_makI\" active=\"true\" pe=\"{0.81725 , 0.19145 , -0.00549099999999994 , 3.14159265358979 , 1.5707963267949 , 6.28318530717959}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0.81725 , 0.10915 , -0.005491 , 3.14159265358979 , 1.5707963267949 , 3.14159265358979}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L6.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "    </PartPoolElement>"
@@ -123,7 +117,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"p1j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p1b\" active=\"true\" inertia=\"{1 , -0.12 , 0.53 , -0.58 , 15.0 , 16.25 , 100.28 , 10.11015 , 12.2000345614 , 0.58539}\" pe=\"{0.0711481425892889 , 1.49999999999963 , 0.912443796234424 , 8.04911692853238e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -132,7 +125,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"s1j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p2a\" active=\"true\" inertia=\"{1 , -0.622 , 0.113 , -0.538 , 105.2 , 116.75 , 100.88 , 21.11015 , 11.2000345614 , 1.58539}\" pe=\"{0.999999999999995 , 1.22524189323061e-16 , -9.2876368573046e-18 , 5.55111512312578e-17 , 0.721024145526766 , 0.308719565228027}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -141,7 +133,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"p2j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p2b\" active=\"true\" inertia=\"{1 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{0.363127053316677 , 1.49999999999988 , 1.31832224563822 , 6.28318530717959 , 0.721024145526766 , 0.308719565228028}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -150,7 +141,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"s2j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p3a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{1.24902578429613e-16 , 3.6066466064807e-14 , 1.73199999999999 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -159,7 +149,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"p3j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p3b\" active=\"true\" inertia=\"{0.82156 , -0.6221 , 0.1312 , -0.5812 , 105.12 , 116.2512 , 100.2812 , 20.1101512 , 12.3 , 0.5853912}\" pe=\"{0.363127053316337 , 1.49999999999935 , 1.31832224563851 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -168,7 +157,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"s3j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p4a\" active=\"true\" inertia=\"{1.52156 , -0.521 , 0.231 , -0.481 , 115.1 , 106.251 , 110.281 , 21.110151 , 13.20003 , 0.555391}\" pe=\"{1.24898250620648e-16 , 1.52855080404276e-14 , 1.732 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -177,7 +165,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"p4j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p4b\" active=\"true\" inertia=\"{1.82756 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.134375029322252 , 1.49999999999964 , 1.36823895396183 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -186,7 +173,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"s4j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p5a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 112.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.999999999999993 , -1.0082029353865e-16 , 4.19175032725778e-17 , 6.28318530717959 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -195,7 +181,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"p5j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p5b\" active=\"true\" inertia=\"{1.82156 , -0.521 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.134375029322406 , 1.49999999999987 , 1.36823895396163 , 2.77555756156289e-17 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -204,7 +189,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"s5j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p6a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 125.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.999999999999969 , -1.00821934664985e-16 , 4.19165900651815e-17 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -213,7 +197,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"p6j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p6b\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 126.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{0.0711481425888235 , 1.49999999999959 , 0.912443796234401 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -222,7 +205,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"s6j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"up\" active=\"true\" inertia=\"{1.82156 , -0.651 , 0.1313 , -0.5814 , 105.1 , 116.271 , 100.221 , 20.120151 , 12.22003 , 0.583391}\" pe=\"{0.1 , 1.5 , 1.2 , 1.5707963267949 , 0.1 , 4.71238898038469}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -236,7 +218,6 @@ const char xml_file_stewart[] =
 "                <Marker name=\"s6i\" pe=\"{ 0,0,-0.289,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\up.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"ground\" active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -315,7 +296,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"joint_1_j\" active=\"true\" pe=\"{0 , 0.13585 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0 , 0 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 3.14159265358979}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L1.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L2\" active=\"true\" pe=\"{0.1 , 1.5 , 1.2 , 0.1 , PI/2 , 0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{8.393 , 2.35004 , 1.14018905 , 0.748311487 , 0.236720786311933 , 0.951620579779433 , 1.0397965583525 , -0.319252934 , -0.20952721636 , -0.10165811550895}\">"
@@ -324,7 +304,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"joint_2_j\" active=\"true\" pe=\"{0.425 , 0.01615 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0 , 0.13585 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L2.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L3\" active=\"true\" pe=\"{0.1 , 1.5 , 1.2 , 0.1 , PI/2 , 0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{2.275 , 1.535625 , 0.03674125 , 0.202836725 , 0.022773090751775 , 1.10407490812027 , 1.0865835597435 , -0.02480034375 , -0.136914789375 , -0.00327581310875}\">"
@@ -333,7 +312,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"joint_3_j\" active=\"true\" pe=\"{0.81725 , 0.01615 , 0.0891590000000001 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0.425 , 0.01615 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L3.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L4\" active=\"true\" pe=\"{0.1 , 1.5 , 1.2 , 0.1 , PI/2 , 0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1.219 , 0.99622775 , 0.01968685 , 0.108684821 , 0.121180928114039 , 0.935030114174039 , 1.033905071315 , -0.0160890781625 , -0.0888226699622501 , -0.00175525985915}\">"
@@ -342,7 +320,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"joint_4_j\" active=\"true\" pe=\"{0.81725 , 0.10915 , 0.0891590000000001 , 5.49778714378214 , 3.14159265358979 , 0.785398163397448}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0.81725 , 0.10915 , 0.089159 , 3.14159265358979 , 1.5707963267949 , 1.5707963267949}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L4.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L5\" active=\"true\" pe=\"{0.1 , 1.5 , 1.2 , 0.1 , PI/2 , 0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{1.219 , 0.99622775 , 0.13305385 , 0.108684821 , 0.135385813214039 , 0.935030114174039 , 1.048109956415 , -0.1087382589125 , -0.0888226699622501 , -0.01186294821215}\">"
@@ -351,7 +328,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"joint_5_j\" active=\"true\" pe=\"{0.81725 , 0.10915 , -0.00549099999999994 , 3.14159265358979 , 1.5707963267949 , 4.71238898038469}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0.81725 , 0.10915 , -0.005491 , 3.14159265358979 , 1.5707963267949 , 6.28318530717959}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L5.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"L6\" active=\"true\" pe=\"{0.1 , 1.5 , 1.2 , 0.1 , PI/2 , 0}\" vel=\"{0 , 0 , 0 , 0 , 0 , 0}\" acc=\"{0 , 0 , 0 , 0 , 0 , 0}\" inertia=\"{0.1879 , 0.153561275 , 0.020509285 , -0.00103175889999999 , 0.0193807269912699 , 0.14264009052727 , 0.1615585404515 , -0.01676121316625 , 0.000843204961024989 , 0.000112616483934999}\">"
@@ -360,7 +336,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"ee_makI\" active=\"true\" pe=\"{0.81725 , 0.19145 , -0.00549099999999994 , 3.14159265358979 , 1.5707963267949 , 6.28318530717959}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <FileGeometry name=\"file_geometry\" pe=\"{0.81725 , 0.10915 , -0.005491 , 3.14159265358979 , 1.5707963267949 , 3.14159265358979}\" graphic_file_path=\"C:/aris/resource/aris_robot/ur5/L6.DWG\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p1a\" active=\"true\" inertia=\"{1 , -0.62 , 0.13 , -0.58 , 105.0 , 116.25 , 100.28 , 20.11015 , 12.2000345614 , 0.58539}\" pe=\"{0.999999999999974 , 1.22522177619812e-16 , -9.28869564848867e-18 , 6.38378239159465e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -369,7 +344,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"p1j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p1b\" active=\"true\" inertia=\"{1 , -0.12 , 0.53 , -0.58 , 15.0 , 16.25 , 100.28 , 10.11015 , 12.2000345614 , 0.58539}\" pe=\"{0.0711481425892889 , 1.49999999999963 , 0.912443796234424 , 8.04911692853238e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -378,7 +352,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"s1j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p2a\" active=\"true\" inertia=\"{1 , -0.622 , 0.113 , -0.538 , 105.2 , 116.75 , 100.88 , 21.11015 , 11.2000345614 , 1.58539}\" pe=\"{0.999999999999995 , 1.22524189323061e-16 , -9.2876368573046e-18 , 5.55111512312578e-17 , 0.721024145526766 , 0.308719565228027}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -387,7 +360,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"p2j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p2b\" active=\"true\" inertia=\"{1 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{0.363127053316677 , 1.49999999999988 , 1.31832224563822 , 6.28318530717959 , 0.721024145526766 , 0.308719565228028}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -396,7 +368,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"s2j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p3a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{1.24902578429613e-16 , 3.6066466064807e-14 , 1.73199999999999 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -405,7 +376,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"p3j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p3b\" active=\"true\" inertia=\"{0.82156 , -0.6221 , 0.1312 , -0.5812 , 105.12 , 116.2512 , 100.2812 , 20.1101512 , 12.3 , 0.5853912}\" pe=\"{0.363127053316337 , 1.49999999999935 , 1.31832224563851 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -414,7 +384,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"s3j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p4a\" active=\"true\" inertia=\"{1.52156 , -0.521 , 0.231 , -0.481 , 115.1 , 106.251 , 110.281 , 21.110151 , 13.20003 , 0.555391}\" pe=\"{1.24898250620648e-16 , 1.52855080404276e-14 , 1.732 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -423,7 +392,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"p4j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p4b\" active=\"true\" inertia=\"{1.82756 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.134375029322252 , 1.49999999999964 , 1.36823895396183 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -432,7 +400,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"s4j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p5a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 112.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.999999999999993 , -1.0082029353865e-16 , 4.19175032725778e-17 , 6.28318530717959 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -441,7 +408,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"p5j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p5b\" active=\"true\" inertia=\"{1.82156 , -0.521 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.134375029322406 , 1.49999999999987 , 1.36823895396163 , 2.77555756156289e-17 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -450,7 +416,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"s5j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p6a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 125.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.999999999999969 , -1.00821934664985e-16 , 4.19165900651815e-17 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -459,7 +424,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"p6j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p6b\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 126.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{0.0711481425888235 , 1.49999999999959 , 0.912443796234401 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -468,7 +432,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"s6j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"up\" active=\"true\" inertia=\"{1.82156 , -0.651 , 0.1313 , -0.5814 , 105.1 , 116.271 , 100.221 , 20.120151 , 12.22003 , 0.583391}\" pe=\"{0.1 , 1.5 , 1.2 , 1.5707963267949 , 0.1 , 4.71238898038469}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -484,7 +447,6 @@ const char xml_file_ur5_on_stewart[] =
 "                <Marker name=\"ee_makJ\" active=\"true\" pe=\"{0 , 0+0.025 , 0 , 0.0, -PI/2, 0.0}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\up.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"ground\" active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -640,7 +602,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"p1j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p1b\" active=\"true\" inertia=\"{1 , -0.12 , 0.53 , -0.58 , 15.0 , 16.25 , 100.28 , 10.11015 , 12.2000345614 , 0.58539}\" pe=\"{0.0711481425892889 , 1.49999999999963 , 0.912443796234424 , 8.04911692853238e-16 , 0.546497081697639 , 0.486611302448734}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -649,7 +610,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"s1j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p2a\" active=\"true\" inertia=\"{1 , -0.622 , 0.113 , -0.538 , 105.2 , 116.75 , 100.88 , 21.11015 , 11.2000345614 , 1.58539}\" pe=\"{0.999999999999995 , 1.22524189323061e-16 , -9.2876368573046e-18 , 5.55111512312578e-17 , 0.721024145526766 , 0.308719565228027}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -658,7 +618,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"p2j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p2b\" active=\"true\" inertia=\"{1 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{0.363127053316677 , 1.49999999999988 , 1.31832224563822 , 6.28318530717959 , 0.721024145526766 , 0.308719565228028}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -667,7 +626,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"s2j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p3a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{1.24902578429613e-16 , 3.6066466064807e-14 , 1.73199999999999 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -676,7 +634,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"p3j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p3b\" active=\"true\" inertia=\"{0.82156 , -0.6221 , 0.1312 , -0.5812 , 105.12 , 116.2512 , 100.2812 , 20.1101512 , 12.3 , 0.5853912}\" pe=\"{0.363127053316337 , 1.49999999999935 , 1.31832224563851 , 3.14159265358979 , 0.269096030174962 , 2.91232360862124}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -685,7 +642,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"s3j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p4a\" active=\"true\" inertia=\"{1.52156 , -0.521 , 0.231 , -0.481 , 115.1 , 106.251 , 110.281 , 21.110151 , 13.20003 , 0.555391}\" pe=\"{1.24898250620648e-16 , 1.52855080404276e-14 , 1.732 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -694,7 +650,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"p4j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p4b\" active=\"true\" inertia=\"{1.82756 , -0.621 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.134375029322252 , 1.49999999999964 , 1.36823895396183 , 3.14159265358979 , 0.23791443370276 , 3.22843362729246}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -703,7 +658,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"s4j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p5a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 112.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.999999999999993 , -1.0082029353865e-16 , 4.19175032725778e-17 , 6.28318530717959 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -712,7 +666,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"p5j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p5b\" active=\"true\" inertia=\"{1.82156 , -0.521 , 0.131 , -0.581 , 105.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.134375029322406 , 1.49999999999987 , 1.36823895396163 , 2.77555756156289e-17 , 0.739492476881246 , 5.88016725548812}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -721,7 +674,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"s5j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p6a\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 125.1 , 116.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{-0.999999999999969 , -1.00821934664985e-16 , 4.19165900651815e-17 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -730,7 +682,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"p6j\" pe=\"{ 0,0,0,0,-PI/2,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pa.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"p6b\" active=\"true\" inertia=\"{1.82156 , -0.621 , 0.131 , -0.581 , 105.1 , 126.251 , 100.281 , 20.110151 , 12.20003 , 0.585391}\" pe=\"{0.0711481425888235 , 1.49999999999959 , 0.912443796234401 , 4.44089209850063e-16 , 0.546497081697639 , 5.73537938754121}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -739,7 +690,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"s6j\" pe=\"{ 0,0,0,0,0,0 }\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\pb.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"up\" active=\"true\" inertia=\"{1.82156 , -0.651 , 0.1313 , -0.5814 , 105.1 , 116.271 , 100.221 , 20.120151 , 12.22003 , 0.583391}\" pe=\"{0.1 , 1.5 , 1.2 , 1.5707963267949 , 0.1 , 4.71238898038469}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -755,7 +705,6 @@ const char xml_file_multi[] =
 "                <Marker name=\"ee_makJ\" active=\"true\" pe=\"{0 , 0+0.025 , 0 , 0.0, -PI/2, 0.0}\"/>"
 "            </MarkerPoolElement>"
 "            <GeometryPoolElement name=\"geometry_pool\">"
-"                <ParasolidGeometry name=\"solid\" graphic_file_path=\"C:\\aris\\resource\\test_dynamic\\stewart\\up.xmt_txt\"/>"
 "            </GeometryPoolElement>"
 "        </Part>"
 "        <Part name=\"ground\" active=\"true\" inertia=\"{1,0,0,0,1,1,1,0,0,0}\" pe=\"{0,0,0,0,0,0}\" vel=\"{0,0,0,0,0,0}\" acc=\"{0,0,0,0,0,0}\">"
@@ -900,7 +849,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).getMpm(result);
 			if (!s_is_equal(16, result, opo + i * 16, error[0])) 
 			{
-				std::cout << s.type() << "::kinPos() forward origin failed at " << i << std::endl;
+				std::cout << s.id() << "::kinPos() forward origin failed at " << i << std::endl;
 				dsp(4, 4, result);
 				dsp(4, 4, opo + i * 16);
 			}
@@ -909,7 +858,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).getMva(result);
 			if (!s_is_equal(6, result, ovo + i * 6, error[1]))
 			{
-				std::cout << s.type() << "::kinVel() forward origin failed at " << i << std::endl;
+				std::cout << s.id() << "::kinVel() forward origin failed at " << i << std::endl;
 				dsp(1, 6, result);
 				dsp(1, 6, ovo + i * 6);
 			}
@@ -918,7 +867,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).getMaa(result);
 			if (!s_is_equal(6, result, oao + i * 6, error[2]))
 			{
-				std::cout << s.type() << "::dynAccAndFce() forward forward origin failed at " << i << ": acc not correct" << std::endl;
+				std::cout << s.id() << "::dynAccAndFce() forward forward origin failed at " << i << ": acc not correct" << std::endl;
 				dsp(1, 6, result);
 				dsp(1, 6, oao + i * 6);
 			}
@@ -926,7 +875,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
 		if (!s_is_equal(m.motionPool().size(), result, ifo, error[3]))
 		{
-			std::cout << s.type() << "::dynAccAndFce() forward forward origin failed: fce not correct" << std::endl;
+			std::cout << s.id() << "::dynAccAndFce() forward forward origin failed: fce not correct" << std::endl;
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), ifo);
 		}
@@ -958,7 +907,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).getMpm(result);
 			if (!s_is_equal(16, result, opt + 16 * i, error[0]))
 			{
-				std::cout << s.type() << "::kinPos() forward failed at " << i << std::endl;
+				std::cout << s.id() << "::kinPos() forward failed at " << i << std::endl;
 				dsp(4, 4, result);
 				dsp(4, 4, opt + 16 * i);
 			}
@@ -966,7 +915,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).getMva(result);
 			if (!s_is_equal(6, result, ovt + 6 * i, error[1]))
 			{
-				std::cout << s.type() << "::kinVel() forward failed at " << i << std::endl;
+				std::cout << s.id() << "::kinVel() forward failed at " << i << std::endl;
 				dsp(1, 6, result);
 				dsp(1, 6, opt + 6 * i);
 			}
@@ -974,7 +923,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).getMaa(result);
 			if (!s_is_equal(6, result, oat + 6 * i, error[2]))
 			{
-				std::cout << s.type() << "::dynAccAndFce() forward forward failed at " << i << ": acc not correct" << std::endl;
+				std::cout << s.id() << "::dynAccAndFce() forward forward failed at " << i << ": acc not correct" << std::endl;
 				dsp(1, 6, result);
 				dsp(1, 6, opt + 6 * i);
 			}
@@ -983,7 +932,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)result[i] = m.motionPool().at(i).mf();
 		if (!s_is_equal(m.motionPool().size(), result, ift, error[3]))
 		{
-			std::cout << s.type() << "::dynAccAndFce() forward forward failed: fce not correct" << std::endl;
+			std::cout << s.id() << "::dynAccAndFce() forward forward failed: fce not correct" << std::endl;
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), ift);
 		}
@@ -1011,7 +960,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			{
 				if (!s_is_equal(6, u->model()->partPool().at(i).vs(), part_vs.data() + 6 * i, error[2]))
 				{
-					std::cout << s.type() << "::cptGeneralJacobi() forward failed" << std::endl;
+					std::cout << s.id() << "::cptGeneralJacobi() forward failed" << std::endl;
 
 					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
 					dsp(1, 6, u->model()->partPool().at(i).vs());
@@ -1038,7 +987,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			{
 				if (!s_is_equal(6, u->model()->partPool().at(i).as(), part_as.data() + 6 * i, error[2]))
 				{
-					std::cout << s.type() << "::cptGeneralJacobi() forward failed, because cg is not correct" << std::endl;
+					std::cout << s.id() << "::cptGeneralJacobi() forward failed, because cg is not correct" << std::endl;
 
 					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
 					dsp(1, 6, u->model()->partPool().at(i).as());
@@ -1073,7 +1022,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 
 			if (!s_is_equal(n, mf.data(), mf_compare.data(), error[2])) 
 			{
-				std::cout << s.type() << "::cptGeneralInverseDynamicMatrix() forward failed" << std::endl;
+				std::cout << s.id() << "::cptGeneralInverseDynamicMatrix() forward failed" << std::endl;
 				dsp(1, n, mf_compare.data());
 				dsp(1, n, mf.data());
 			}
@@ -1099,14 +1048,14 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			m.generalMotionPool().at(i).getMaa(result);
 			if (!s_is_equal(6, result, oat + 6 * i, error[2])) 
 			{
-				std::cout << s.type() << "::dynAccAndFce() forward forward failed at " << i << ": with force" << std::endl;
+				std::cout << s.id() << "::dynAccAndFce() forward forward failed at " << i << ": with force" << std::endl;
 				dsp(1, 6, result);
 				dsp(1, 6, oat + 6 * i);
 			}
 		}
 		if (!s_is_equal(before_jnt_cf.size(), before_jnt_cf.data(), after_jnt_cf.data(), error[2]))
 		{
-			std::cout << s.type() << "::dynAccAndFce() forward forward failed when forward dynamic force" << std::endl;
+			std::cout << s.id() << "::dynAccAndFce() forward forward failed when forward dynamic force" << std::endl;
 		}
 
 
@@ -1139,7 +1088,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		if (!s_is_equal(m.motionPool().size(), result, ipo, error[4])) 
 		{
-			std::cout << s.type() << "::kinPos() inverse origin failed" << std::endl;
+			std::cout << s.id() << "::kinPos() inverse origin failed" << std::endl;
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), ipo);
 		}
@@ -1150,7 +1099,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		if (!s_is_equal(m.motionPool().size(), result, ivo, error[5])) 
 		{
-			std::cout << s.type() << "::kinVel() inverse origin failed" << std::endl;
+			std::cout << s.id() << "::kinVel() inverse origin failed" << std::endl;
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), ivo);
 		}
@@ -1161,7 +1110,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		if (!s_is_equal(m.motionPool().size(), result, iao, error[6]))
 		{
-			std::cout << s.type() << "::kinAcc() inverse origin failed" << std::endl;
+			std::cout << s.id() << "::kinAcc() inverse origin failed" << std::endl;
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), iao);
 		}
@@ -1169,7 +1118,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		{
 			if (!s_is_equal(6, m.generalMotionPool().at(i).mfs(), ofo + 6 * i, error[7])) 
 			{
-				std::cout << s.type() << "::dynFce() inverse origin failed at " << i << std::endl;
+				std::cout << s.id() << "::dynFce() inverse origin failed at " << i << std::endl;
 				dsp(1, 6, m.generalMotionPool().at(i).mfs());
 				dsp(1, 6, ofo + 6 * i);
 			}
@@ -1203,7 +1152,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		if (!s_is_equal(m.motionPool().size(), result, ipt, error[4]))
 		{
-			std::cout << s.type() << "::kinPos() inverse failed" << std::endl;
+			std::cout << s.id() << "::kinPos() inverse failed" << std::endl;
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), ipt);
 		}
@@ -1214,7 +1163,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		if (!s_is_equal(m.motionPool().size(), result, ivt, error[5]))
 		{
-			std::cout << s.type() << "::kinVel() inverse failed" << std::endl;
+			std::cout << s.id() << "::kinVel() inverse failed" << std::endl;
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), ivt);
 		}
@@ -1225,7 +1174,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		}
 		if (!s_is_equal(m.motionPool().size(), result, iat, error[6]))
 		{
-			std::cout << s.type() << "::kinAcc() inverse failed" << std::endl;
+			std::cout << s.id() << "::kinAcc() inverse failed" << std::endl;
 			dsp(1, m.motionPool().size(), result);
 			dsp(1, m.motionPool().size(), iat);
 		}
@@ -1233,12 +1182,12 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 		{
 			if (!s_is_equal(6, m.generalMotionPool().at(i).mfs(), oft + 6 * i, error[7]))
 			{
-				std::cout << s.type() << "::dynFce() inverse failed at " << i << std::endl;
+				std::cout << s.id() << "::dynFce() inverse failed at " << i << std::endl;
 				dsp(1, 6, m.generalMotionPool().at(i).mfs());
 				dsp(1, 6, oft + 6 * i);
 			}
 		}
-		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)if (!s_is_equal(6, m.generalMotionPool().at(i).mfs(), oft + 6 * i, error[7]))std::cout << s.type() << "::dynFce() inverse failed" << std::endl;
+		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)if (!s_is_equal(6, m.generalMotionPool().at(i).mfs(), oft + 6 * i, error[7]))std::cout << s.id() << "::dynFce() inverse failed" << std::endl;
 		if (dynamic_cast<aris::dynamic::UniversalSolver *>(&s))
 		{
 			// check Jg //
@@ -1264,7 +1213,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			{
 				if (!s_is_equal(6, u->model()->partPool().at(i).vs(), part_vs.data() + 6 * i, error[2]))
 				{
-					std::cout << s.type() << "::cptGeneralJacobi() inverse failed" << std::endl;
+					std::cout << s.id() << "::cptGeneralJacobi() inverse failed" << std::endl;
 
 					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
 					dsp(1, 6, u->model()->partPool().at(i).vs());
@@ -1291,7 +1240,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 			{
 				if (!s_is_equal(6, u->model()->partPool().at(i).as(), part_as.data() + 6 * i, error[2]))
 				{
-					std::cout << s.type() << "::cptGeneralJacobi() inverse failed, because cg is not correct" << std::endl;
+					std::cout << s.id() << "::cptGeneralJacobi() inverse failed, because cg is not correct" << std::endl;
 
 					std::cout << "part " << u->model()->partPool().at(i).name() << ": " << i << " id:" << u->model()->partPool().at(i).id() << std::endl;
 					dsp(1, 6, u->model()->partPool().at(i).as());
@@ -1326,7 +1275,7 @@ void test_solver(Model &m, const double *ipo, const double *ivo, const double *i
 
 			if (!s_is_equal(n, mf.data(), mf_compare.data(), error[2]))
 			{
-				std::cout << s.type() << "::cptGeneralInverseDynamicMatrix() forward failed" << std::endl;
+				std::cout << s.id() << "::cptGeneralInverseDynamicMatrix() forward failed" << std::endl;
 				dsp(1, n, mf_compare.data());
 				dsp(1, n, mf.data());
 			}
@@ -1360,9 +1309,9 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	s.kinVel();
 	s.dynAccAndFce();;
 	int count{ 0 };
-	/*
+	
 	// pos //
-	std::cout << s.type() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
+	std::cout << s.id() << "::forward computational pos time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		if (count % 2)for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipt[i]);
 		else for (aris::Size i{ 0 }; i < m.motionPool().size(); ++i) m.motionPool().at(i).setMp(ipo[i]);
@@ -1374,9 +1323,9 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 			m.generalMotionPool().at(i).getMpm(result1);
 
 			if (count < 2 && count % 2 && !s_is_equal(16, result1, opt + i * 16, error[0]))
-				throw std::runtime_error(s.type() + "::kinPos() forward bench failed");
+				throw std::runtime_error(s.id() + "::kinPos() forward bench failed");
 			if (count < 2 && (count + 1) % 2 && !s_is_equal(16, result1, opo + i*16, error[0]))
-				throw std::runtime_error(s.type() + "::kinPos() forward bench origin pos failed");
+				throw std::runtime_error(s.id() + "::kinPos() forward bench origin pos failed");
 		}
 		++count;
 	}) << std::endl;
@@ -1390,7 +1339,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	}
 	s.kinPos();
 	count = 0;
-	std::cout << s.type() << "::forward computational vel time:" << aris::core::benchmark(bench_count, [&]()
+	std::cout << s.id() << "::forward computational vel time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 		{
@@ -1401,13 +1350,13 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		s.kinVel();
 		m.generalMotionPool().at(0).updMvs();
 		m.generalMotionPool().at(0).getMva(result1);
-		if (!s_is_equal(6, result1, ovt, error[1]))std::cout << s.type() << "::kinVel() forward bench vel failed" << std::endl;
+		if (!s_is_equal(6, result1, ovt, error[1]))std::cout << s.id() << "::kinVel() forward bench vel failed" << std::endl;
 			
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)
 		{
 			m.generalMotionPool().at(i).updMvs();
 			m.generalMotionPool().at(i).getMva(result1);
-			if (!s_is_equal(6, result1, ovt + i*6, error[1]))std::cout << s.type() << "::kinVel() forward bench vel failed" << std::endl;
+			if (!s_is_equal(6, result1, ovt + i*6, error[1]))std::cout << s.id() << "::kinVel() forward bench vel failed" << std::endl;
 		}
 	}) << std::endl;
 
@@ -1421,7 +1370,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	s.kinPos();
 	s.kinVel();
 	count = 0;
-	std::cout << s.type() << "::forward computational acc time:" << aris::core::benchmark(bench_count, [&]()
+	std::cout << s.id() << "::forward computational acc time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 		{
@@ -1434,11 +1383,11 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		{
 			m.generalMotionPool().at(i).updMas();
 			m.generalMotionPool().at(i).getMaa(result1);
-			if (!s_is_equal(6, result1, oat + i*6, error[2]))	std::cout << s.type() << "::kinAcc() forward bench acc failed" << std::endl;
+			if (!s_is_equal(6, result1, oat + i*6, error[2]))	std::cout << s.id() << "::kinAcc() forward bench acc failed" << std::endl;
 		}
 
 	}) << std::endl;
-	*/
+	
 	// dyn mat //
 	for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 	{
@@ -1449,7 +1398,7 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	s.kinPos();
 	s.kinVel();
 	count = 0;
-	std::cout << s.type() << "::forward computational dyn mat time:" << aris::core::benchmark(bench_count, [&]()
+	std::cout << s.id() << "::forward computational dyn mat time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i)
 		{
@@ -1471,10 +1420,10 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	s.kinPos();
 	s.kinVel();
 	s.dynAccAndFce();;
-	/*
+	
 	// pos //
 	count =  0;
-	std::cout << s.type() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
+	std::cout << s.id() << "::inverse computational pos time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		if (count % 2)for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)m.generalMotionPool().at(i).setMpm(opt + 16 * i);
 		else for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)m.generalMotionPool().at(i).setMpm(opo + 16 * i);
@@ -1484,9 +1433,9 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMp(); result1[i] = m.motionPool().at(i).mp(); }
 
 		if (count < 2 && count % 2 && !s_is_equal(m.motionPool().size(), result1, ipt, error[4]))
-			std::cout << s.type() << "::kinPos() forward bench failed" << std::endl;
+			std::cout << s.id() << "::kinPos() forward bench failed" << std::endl;
 		if (count < 2 && (count + 1) % 2 && !s_is_equal(m.motionPool().size(), result1, ipo, error[4]))
-			std::cout << s.type() << "::kinPos() forward bench origin failed" << std::endl;
+			std::cout << s.id() << "::kinPos() forward bench origin failed" << std::endl;
 
 		++count;
 	}) << std::endl;
@@ -1495,12 +1444,12 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	m.generalMotionPool().at(0).setMpm(opt);
 	s.kinPos();
 	count = 0;
-	std::cout << s.type() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&]()
+	std::cout << s.id() << "::inverse computational vel time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)m.generalMotionPool().at(i).setMva(ovt + i * 6);
 		s.kinVel();
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMv(); result1[i] = m.motionPool().at(i).mv(); }
-		if (!s_is_equal(m.motionPool().size(), result1, ivt, error[5])) std::cout << s.type() << "::kinVel() inverse bench vel failed" << std::endl;
+		if (!s_is_equal(m.motionPool().size(), result1, ivt, error[5])) std::cout << s.id() << "::kinVel() inverse bench vel failed" << std::endl;
 	}) << std::endl;
 
 	// dyn //
@@ -1509,21 +1458,21 @@ void bench_solver(Model &m, aris::Size i, aris::Size bench_count, const double *
 	s.kinPos();
 	s.kinVel();
 	count = 0;
-	std::cout << s.type() << "::inverse computational acc time:" << aris::core::benchmark(bench_count, [&]()
+	std::cout << s.id() << "::inverse computational acc time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)m.generalMotionPool().at(i).setMaa(oat + i * 6);
 		s.dynAccAndFce();
 		for (aris::Size i = 0; i < m.motionPool().size(); ++i) { m.motionPool().at(i).updMa(); result1[i] = m.motionPool().at(i).ma(); }
-		if (!s_is_equal(m.motionPool().size(), result1, iat, error[6]))	std::cout << s.type() << "::kinAcc() inverse bench acc failed" << std::endl;
+		if (!s_is_equal(m.motionPool().size(), result1, iat, error[6]))	std::cout << s.id() << "::kinAcc() inverse bench acc failed" << std::endl;
 	}) << std::endl;
-	*/
+	
 	// dyn mat //
 	m.generalMotionPool().at(0).setMpm(opt);
 	m.generalMotionPool().at(0).setMva(ovt);
 	s.kinPos();
 	s.kinVel();
 	count = 0;
-	std::cout << s.type() << "::inverse computational dyn mat time:" << aris::core::benchmark(bench_count, [&]()
+	std::cout << s.id() << "::inverse computational dyn mat time:" << aris::core::benchmark(bench_count, [&]()
 	{
 		for (aris::Size i = 0; i < m.generalMotionPool().size(); ++i)m.generalMotionPool().at(i).setMaa(oat + i * 6);
 		dynamic_cast<aris::dynamic::UniversalSolver&>(s).cptGeneralInverseDynamicMatrix();
@@ -1550,7 +1499,7 @@ void test_single_body()
 		s.kinVel();
 		s.dynAccAndFce();
 
-		if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.type() << "::dynAccAndFce() failed in single body" << std::endl;
+		if (!s_is_equal(6, p.as(), std::array<double, 6>{0.2318970967746941, -9.2746063132688601, 0.6907262413433608, 0.0, 0.0, 0.0}.data(), 1e-10))std::cout << s.id() << "::dynAccAndFce() failed in single body" << std::endl;
 
 	}
 	// 两个重复的R副
@@ -1587,7 +1536,6 @@ void test_single_body()
 
 		s.dynAccAndFce();
 		if (!s_is_equal(6, p.as(), std::array<double, 6>{-0.0, -0.0, -0.0, 0.0, 0.0, -3.52496123913987}.data(), 1e-9))std::cout << __FILE__ << __LINE__ << ":dynAccAndFce() failed" << std::endl;
-
 	}
 }
 void test_float_5_bar()
@@ -1619,7 +1567,7 @@ void test_float_5_bar()
 	auto &m1 = m.addMotion(j1);
 	auto &s = m.solverPool().add<aris::dynamic::UniversalSolver>();
 	
-	auto &adams = m.simulatorPool().add<AdamsSimulator>();
+	//auto &adams = m.simulatorPool().add<AdamsSimulator>();
 
 	m.init();
 
@@ -1633,37 +1581,7 @@ void test_float_5_bar()
 	p4.setVs(std::array<double, 6>{0.06428571428571, -0.03857142857143, 0.00000000000000, 0.00000000000000, 0.00000000000000, 0.06428571428571}.data());
 	p5.setVs(std::array<double, 6>{0.06428571428571, -0.03857142857143, 0.00000000000000, 0.00000000000000, 0.00000000000000, 0.06428571428571}.data());
 
-	//s.kinPos();
-	//s.kinVel();
 	s.dynAccAndFce();
-
-	//s.kinPos();
-	//s.dynAccAndFce();
-	//dsp(4, 4, *p1.pm());
-	//dsp(4, 4, *p2.pm());
-	//dsp(4, 4, *p3.pm());
-	//dsp(4, 4, *p4.pm());
-	//dsp(4, 4, *p5.pm());
-
-
-	//dsp(1, 6, p1.vs());
-	//dsp(1, 6, p2.vs());
-	//dsp(1, 6, p3.vs());
-	//dsp(1, 6, p4.vs());
-	//dsp(1, 6, p5.vs());
-
-	//double data[6];
-	//p1.getAa(data);
-	//dsp(1, 6, data);
-	//p2.getAa(data);
-	//dsp(1, 6, data);
-	//p3.getAa(data);
-	//dsp(1, 6, data);
-	//p4.getAa(data);
-	//dsp(1, 6, data);
-	//p5.getAa(data);
-	//dsp(1, 6, data);
-
 
 	if (!s_is_equal(6, p1.vs(), std::array<double, 6>{0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000}.data(), 1e-10))std::cout << __FILE__ << __LINE__ << ":failed" << std::endl;
 	if (!s_is_equal(6, p2.vs(), std::array<double, 6>{0.08000000000000,   -0.07000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.10000000000000}.data(), 1e-10))std::cout << __FILE__ << __LINE__ << ":failed" << std::endl;
@@ -1849,7 +1767,7 @@ void test_ur5()
 		std::cout << "test ur5 robot:" << std::endl;
 
 		Model m;
-		m.loadXmlStr(xml_file_ur5);
+		aris::core::fromXmlString(m, xml_file_ur5);
 		m.init();
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
@@ -1895,7 +1813,7 @@ void test_stewart()
 		std::cout << "test stewart robot:" << std::endl;
 
 		Model m;
-		m.loadXmlStr(xml_file_stewart);
+		aris::core::fromXmlString(m, xml_file_stewart);
 		m.init();
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
@@ -1960,7 +1878,7 @@ void test_ur5_on_stewart()
 		std::cout << "test ur on stewart:" << std::endl;
 
 		Model m;
-		m.loadXmlStr(xml_file_ur5_on_stewart);
+		aris::core::fromXmlString(m, xml_file_ur5_on_stewart);
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
@@ -2040,7 +1958,7 @@ void test_multi_systems()
 		std::cout << "test multi systems:" << std::endl;
 
 		Model m;
-		m.loadXmlStr(xml_file_multi);
+		aris::core::fromXmlString(m, xml_file_multi);
 
 		test_solver(m, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
@@ -2180,7 +2098,7 @@ void bench_ur5()
 		std::cout << "bench 6R robot:" << std::endl;
 
 		Model m;
-		m.loadXmlStr(xml_file_ur5);
+		aris::core::fromXmlString(m, xml_file_ur5);
 
 		bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
@@ -2227,7 +2145,7 @@ void bench_stewart()
 		std::cout << "bench stewart robot:" << std::endl;
 
 		Model m;
-		m.loadXmlStr(xml_file_stewart);
+		aris::core::fromXmlString(m, xml_file_stewart);
 
 		bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,
@@ -2307,7 +2225,7 @@ void bench_multi_systems()
 		std::cout << "bench multi systems:" << std::endl;
 
 		Model m;
-		m.loadXmlStr(xml_file_multi);
+		aris::core::fromXmlString(m, xml_file_multi);
 
 		bench_solver(m, 0, 10000, input_origin_p, input_origin_v, input_origin_a, input_origin_mf,
 			output_origin_pm, output_origin_va, output_origin_aa, output_origin_mfs,

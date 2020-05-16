@@ -17,7 +17,7 @@
 
 namespace aris::server
 {
-	class ControlServer : public aris::core::Object
+	class ControlServer
 	{
 	public:
 		using PreCallback = std::add_pointer<void(ControlServer&)>::type;
@@ -25,7 +25,6 @@ namespace aris::server
 
 		// members //
 		static auto instance()->ControlServer &;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		template<typename T = aris::dynamic::Model, typename... Args>
 		auto makeModel(Args&&... args)->void { this->resetModel(new T(std::forward<Args>(args)...)); }
 		template<typename T = aris::control::Controller, typename... Args>
@@ -38,6 +37,7 @@ namespace aris::server
 		auto resetController(control::Controller *controller)->void;
 		auto resetSensorRoot(sensor::SensorRoot *sensor_root)->void;
 		auto resetPlanRoot(plan::PlanRoot *sensor_root)->void;
+		auto resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void;
 		auto model()->dynamic::Model&;
 		auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
 		auto controller()->control::Controller&;
@@ -46,8 +46,8 @@ namespace aris::server
 		auto sensorRoot()const->const sensor::SensorRoot& { return const_cast<ControlServer *>(this)->sensorRoot(); }
 		auto planRoot()->plan::PlanRoot&;
 		auto planRoot()const->const plan::PlanRoot& { return const_cast<ControlServer *>(this)->planRoot(); }
-		auto interfacePool()->aris::core::ObjectPool<aris::server::Interface>&;
-		auto interfacePool()const->const aris::core::ObjectPool<aris::server::Interface>& { return const_cast<ControlServer *>(this)->interfacePool(); }
+		auto interfacePool()->aris::core::PointerArray<aris::server::Interface>&;
+		auto interfacePool()const->const aris::core::PointerArray<aris::server::Interface>& { return const_cast<ControlServer *>(this)->interfacePool(); }
 		auto interfaceRoot()->InterfaceRoot&;
 		auto interfaceRoot()const->const InterfaceRoot& { return const_cast<ControlServer *>(this)->interfaceRoot(); }
 
@@ -77,8 +77,6 @@ namespace aris::server
 		auto errorCode()const->int;
 		auto errorMsg()const->const char *;
 		auto clearError()->void;
-
-		ARIS_REGISTER_TYPE(ControlServer);
 
 	private:
 		~ControlServer();

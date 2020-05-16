@@ -77,7 +77,7 @@ void test_command_xml()
 			"</CommandParser>";
 
 		aris::core::CommandParser parser;
-		parser.loadXmlStr(xml_data);
+		aris::core::fromXmlString(parser, xml_data);
 		parser.init();
 
 		std::string cmd_string;
@@ -210,26 +210,26 @@ void test_command_code()
 	try
 	{
 		aris::core::CommandParser parser("parser");
-		auto &tt = parser.commandPool().add<aris::core::Command>("tt", "ap0");
-		auto &ap0 = tt.add<aris::core::Param>("ap0", "", 'a');
-		auto &bu0 = tt.add<aris::core::UniqueParam>("bu0", "ap1");
-		auto &ap1 = bu0.add<aris::core::Param>("ap1", "0");
-		auto &bg1 = bu0.add<aris::core::GroupParam>("bg1");
-		auto &ap2 = bg1.add<aris::core::Param>("ap2", "1");
-		auto &bp2 = bg1.add<aris::core::Param>("bp2", "2", 'b');
-		auto &cg0 = tt.add<aris::core::GroupParam>("cg0");
-		auto &cp1 = cg0.add<aris::core::Param>("cp1", "0");
-		auto &dg1 = cg0.add<aris::core::GroupParam>("dg1");
-		auto &cp2 = dg1.add<aris::core::Param>("cp2", "3", 'c');
-		auto &dp2 = dg1.add<aris::core::Param>("dp2", "4", 'd');
-		auto &eu1 = cg0.add<aris::core::UniqueParam>("eu1", "");
-		auto &ep2 = eu1.add<aris::core::Param>("ep2", "5", 'e');
-		auto &fp2 = eu1.add<aris::core::Param>("fp2", "6");
-		auto &du0 = tt.add<aris::core::UniqueParam>("du0", "fp1");
-		auto &fp1 = du0.add<aris::core::Param>("fp1", "0", 'f');
-		auto &gg1 = du0.add<aris::core::GroupParam>("gg1");
-		auto &gp2 = gg1.add<aris::core::Param>("gp2", "1");
-		auto &hp2 = gg1.add<aris::core::Param>("hp2", "2");
+		//auto &tt = parser.commandPool().add<aris::core::Command>("tt", "ap0");
+		//auto &ap0 = tt.add<aris::core::Param>("ap0", "", 'a');
+		//auto &bu0 = tt.add<aris::core::UniqueParam>("bu0", "ap1");
+		//auto &ap1 = bu0.add<aris::core::Param>("ap1", "0");
+		//auto &bg1 = bu0.add<aris::core::GroupParam>("bg1");
+		//auto &ap2 = bg1.add<aris::core::Param>("ap2", "1");
+		//auto &bp2 = bg1.add<aris::core::Param>("bp2", "2", 'b');
+		//auto &cg0 = tt.add<aris::core::GroupParam>("cg0");
+		//auto &cp1 = cg0.add<aris::core::Param>("cp1", "0");
+		//auto &dg1 = cg0.add<aris::core::GroupParam>("dg1");
+		//auto &cp2 = dg1.add<aris::core::Param>("cp2", "3", 'c');
+		//auto &dp2 = dg1.add<aris::core::Param>("dp2", "4", 'd');
+		//auto &eu1 = cg0.add<aris::core::UniqueParam>("eu1", "");
+		//auto &ep2 = eu1.add<aris::core::Param>("ep2", "5", 'e');
+		//auto &fp2 = eu1.add<aris::core::Param>("fp2", "6");
+		//auto &du0 = tt.add<aris::core::UniqueParam>("du0", "fp1");
+		//auto &fp1 = du0.add<aris::core::Param>("fp1", "0", 'f');
+		//auto &gg1 = du0.add<aris::core::GroupParam>("gg1");
+		//auto &gp2 = gg1.add<aris::core::Param>("gp2", "1");
+		//auto &hp2 = gg1.add<aris::core::Param>("hp2", "2");
 
 		parser.init();
 

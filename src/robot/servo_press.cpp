@@ -91,7 +91,8 @@ namespace aris::robot
 				"	</sdo_pool>"
 				"</m" + std::to_string(i) + ">";
 
-			controller->slavePool().add<aris::control::EthercatMotor>().loadXmlStr(xml_str);
+			controller->slavePool().push_back(new aris::control::EthercatMotor());
+			aris::core::fromXmlString(controller->slavePool().back(), xml_str);
 		}
 
 		return controller;
@@ -102,9 +103,9 @@ namespace aris::robot
 
 		plan_root->planPool().add<aris::plan::Enable>();
 		auto &rc = plan_root->planPool().add<aris::plan::Reset>();
-		rc.command().findByName("group")->findByName("unique_pos")->findByName("pq")->loadXmlStr("<pq default=\"{0.28,0.875,-0.25,0,0,0,1}\"/>");
-		rc.command().findByName("group")->findByName("unique_pos")->findByName("pm")->loadXmlStr("<pm default=\"{1,0,0,0.28,0,1,0,0.875,0,0,1,-0.25,0,0,0,1}\"/>");
-		rc.command().findByName("group")->findByName("unique_pos")->findByName("group")->findByName("pe")->loadXmlStr("<pe default=\"{0.28,0.875,-0.25,0,0,0}\"/>");
+		aris::core::fromXmlString(rc.command().findParam("pq"), "<pq default=\"{0.28,0.875,-0.25,0,0,0,1}\"/>");
+		aris::core::fromXmlString(rc.command().findParam("pm"), "<pm default=\"{1,0,0,0.28,0,1,0,0.875,0,0,1,-0.25,0,0,0,1}\"/>");
+		aris::core::fromXmlString(rc.command().findParam("pe"), "<pe default=\"{0.28,0.875,-0.25,0,0,0}\"/>");
 		plan_root->planPool().add<aris::plan::MoveL>();
 		plan_root->planPool().add<aris::plan::MoveJ>();
 

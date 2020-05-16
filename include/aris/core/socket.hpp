@@ -6,7 +6,7 @@
 
 namespace aris::core
 {
-	class Socket : public Object
+	class Socket
 	{
 	public:
 		enum State
@@ -25,8 +25,6 @@ namespace aris::core
 		};
 
 	public:
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
 		auto isConnected()->bool;
 		auto state()->State;
 		auto startServer(const std::string &port = std::string())->void;
@@ -51,7 +49,6 @@ namespace aris::core
 		Socket(Socket && other);
 		Socket &operator=(const Socket& other) = delete;
 		Socket &operator=(Socket&& other);
-		ARIS_REGISTER_TYPE(Socket)
 
 	private:
 		struct Imp;

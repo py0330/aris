@@ -11,7 +11,7 @@ int main()
 {
 	// 读取xml文档 //
 	aris::core::CommandParser parser;
-	parser.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_command_parser_xml/command.xml"));
+	//parser.loadXmlFile(ARIS_INSTALL_PATH + std::string("/resource/demo_command_parser_xml/command.xml"));
 
 	// 和用户进行交互 //
 	for (;;)

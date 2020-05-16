@@ -15,13 +15,6 @@ namespace aris::core
 		std::unique_ptr<char[]> pool_;
 		std::atomic_size_t send_pos_{ 0 }, recv_pos_{ 0 };
 	};
-	auto Pipe::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		imp_->pool_size_ = attributeInt32(xml_ele, "pool_size", 16384);
-		imp_->pool_.reset(new char[imp_->pool_size_]());
-
-		Object::loadXml(xml_ele);
-	}
 	auto Pipe::sendMsg(const aris::core::MsgBase &msg)->bool
 	{
 		auto send_pos = imp_->send_pos_.load();// 原子操作
@@ -62,7 +55,7 @@ namespace aris::core
 	}
 	auto Pipe::size()->Size { return imp_->pool_size_; }
 	Pipe::~Pipe() = default;
-	Pipe::Pipe(const std::string &name, std::size_t pool_size) :Object(name), imp_(new Imp)
+	Pipe::Pipe(const std::string &name, std::size_t pool_size) :imp_(new Imp)
 	{
 		imp_->pool_size_ = pool_size;
 		imp_->pool_.reset(new char[imp_->pool_size_]());
@@ -73,6 +66,6 @@ namespace aris::core
 	ARIS_REGISTRATION
 	{
 		class_<Pipe>("Pipe")
-			.property("pool_size", &Pipe::resize, &Pipe::size);
+			.prop("pool_size", &Pipe::resize, &Pipe::size);
 	}
 }

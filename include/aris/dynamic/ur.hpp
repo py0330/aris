@@ -11,8 +11,6 @@ namespace aris::dynamic
 	class Ur5InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
-		auto virtual saveXml(aris::core::XmlElement &xml_ele) const->void override;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto virtual kinPos()->int override;
 		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void
 		{
@@ -26,10 +24,10 @@ namespace aris::dynamic
 			}
 		}
 		auto setWhichRoot(int root_of_0_to_7)->void;
+		auto whichRoot()->int;
 
 		virtual ~Ur5InverseKinematicSolver() = default;
 		explicit Ur5InverseKinematicSolver(const std::string &name = "ur5_inverse_solver", aris::Size max_iter_count = 100, double max_error = 1e-10) :InverseKinematicSolver(name, max_iter_count, max_error) {}
-		ARIS_REGISTER_TYPE(Ur5InverseKinematicSolver);
 		ARIS_DEFINE_BIG_FOUR(Ur5InverseKinematicSolver);
 
 	private:

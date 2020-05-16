@@ -6,10 +6,9 @@
 
 namespace aris::core
 {
-	class Pipe :public aris::core::Object
+	class Pipe
 	{
 	public:
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
 		auto sendMsg(const aris::core::MsgBase &)->bool;
 		auto recvMsg(aris::core::MsgBase &)->bool;
 		auto resize(Size mem_pool_size);
@@ -21,7 +20,6 @@ namespace aris::core
 		Pipe(Pipe&&);
 		Pipe& operator=(const Pipe&) = delete;
 		Pipe& operator=(Pipe&&);
-		ARIS_REGISTER_TYPE(Pipe);
 
 	private:
 		struct Imp;

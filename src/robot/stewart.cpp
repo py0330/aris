@@ -116,7 +116,8 @@ namespace aris::robot
 				"</EthercatMotor>";
 			*/
 				
-			controller->slavePool().add<aris::control::EthercatMotor>().loadXmlStr(xml_str);
+			controller->slavePool().push_back(new aris::control::EthercatMotor());
+			aris::core::fromXmlString(controller->slavePool().back(), xml_str);
 		}
 
 		return controller;

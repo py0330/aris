@@ -30,7 +30,6 @@ namespace aris::dynamic
 
 		virtual ~StewartInverseKinematicSolver() = default;
 		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");
-		ARIS_REGISTER_TYPE(StewartInverseKinematicSolver);
 		ARIS_DECLARE_BIG_FOUR(StewartInverseKinematicSolver);
 
 	private:

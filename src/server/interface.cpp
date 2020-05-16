@@ -17,19 +17,19 @@
 
 namespace aris::server
 {
-	auto InterfaceRoot::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		auto ins = doc_.RootElement()->DeepClone(xml_ele.GetDocument());
-		xml_ele.Parent()->InsertAfterChild(&xml_ele, ins);
-		xml_ele.Parent()->DeleteChild(&xml_ele);
-	}
-	auto InterfaceRoot::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		doc_.Clear();
-		auto root = xml_ele.DeepClone(&doc_);
-		doc_.InsertEndChild(root);
-	}
-	Interface::Interface(const std::string &name) :Object(name) {}
+	//auto InterfaceRoot::saveXml(aris::core::XmlElement &xml_ele) const->void
+	//{
+	//	auto ins = doc_.RootElement()->DeepClone(xml_ele.GetDocument());
+	//	xml_ele.Parent()->InsertAfterChild(&xml_ele, ins);
+	//	xml_ele.Parent()->DeleteChild(&xml_ele);
+	//}
+	//auto InterfaceRoot::loadXml(const aris::core::XmlElement &xml_ele)->void
+	//{
+	//	doc_.Clear();
+	//	auto root = xml_ele.DeepClone(&doc_);
+	//	doc_.InsertEndChild(root);
+	//}
+	Interface::Interface(const std::string &name){}
 
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string
 	{
@@ -158,28 +158,33 @@ namespace aris::server
 
 		return 0;
 	}
-	auto WebInterface::open()->void { sock_->startServer(); }
-	auto WebInterface::close()->void { sock_->stop(); }
-	auto WebInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
+	
+	struct WebInterface::Imp
 	{
-		Interface::loadXml(xml_ele);
-		this->sock_ = findOrInsertType<aris::core::Socket>("socket", "", "5866", aris::core::Socket::WEB);
-
-		sock_->setOnReceivedMsg(onReceivedMsg);
-		sock_->setOnReceivedConnection(onReceivedConnection);
-		sock_->setOnLoseConnection(onLoseConnection);
+		std::unique_ptr<aris::core::Socket> sock_{ new aris::core::Socket };
+	};
+	auto WebInterface::resetSocket(aris::core::Socket *sock)->void
+	{
+		imp_->sock_.reset(sock);
+		socket().setOnReceivedMsg(onReceivedMsg);
+		socket().setOnReceivedConnection(onReceivedConnection);
+		socket().setOnLoseConnection(onLoseConnection);
 	}
+	auto WebInterface::socket()->aris::core::Socket& { return *imp_->sock_; }
+	auto WebInterface::open()->void { socket().startServer(); }
+	auto WebInterface::close()->void { socket().stop(); }
 	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type):Interface(name)
 	{
-		sock_ = &add<aris::core::Socket>("socket", "", port, type);
-		
-		sock_->setOnReceivedMsg(onReceivedMsg);
-		sock_->setOnReceivedConnection(onReceivedConnection);
-		sock_->setOnLoseConnection(onLoseConnection);
+		resetSocket(new aris::core::Socket("socket", "", port, type));
+		socket().setOnReceivedMsg(onReceivedMsg);
+		socket().setOnReceivedConnection(onReceivedConnection);
+		socket().setOnLoseConnection(onLoseConnection);
 	}
 #define ARIS_PRO_COUT ARIS_COUT << "pro "
 	struct ProgramWebInterface::Imp
 	{
+		std::unique_ptr<aris::core::Socket> sock_{new aris::core::Socket};
+		
 		aris::core::CommandParser command_parser_;
 		aris::core::LanguageParser language_parser_;
 		aris::core::Calculator calculator_;
@@ -196,17 +201,16 @@ namespace aris::server
 		std::function<int(aris::core::Socket*, const char *data, int size)> onReceiveConnection_;
 		std::function<int(aris::core::Socket*)> onLoseConnection_;
 	};
-	auto ProgramWebInterface::open()->void { sock_->startServer(); }
-	auto ProgramWebInterface::close()->void { sock_->stop(); }
-	auto ProgramWebInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Interface::loadXml(xml_ele);
-		this->sock_ = findOrInsertType<aris::core::Socket>("socket", "", "5866", aris::core::Socket::WEB);
-
-		sock_->setOnReceivedMsg(imp_->onReceiveMsg_);
-		sock_->setOnReceivedConnection(imp_->onReceiveConnection_);
-		sock_->setOnLoseConnection(imp_->onLoseConnection_);
+	auto ProgramWebInterface::resetSocket(aris::core::Socket *sock)->void 
+	{ 
+		imp_->sock_.reset(sock);
+		socket().setOnReceivedMsg(imp_->onReceiveMsg_);
+		socket().setOnReceivedConnection(imp_->onReceiveConnection_);
+		socket().setOnLoseConnection(imp_->onLoseConnection_);
 	}
+	auto ProgramWebInterface::socket()->aris::core::Socket& { return *imp_->sock_; }
+	auto ProgramWebInterface::open()->void { socket().startServer(); }
+	auto ProgramWebInterface::close()->void { socket().stop(); }
 	auto ProgramWebInterface::lastError()->std::string { return imp_->last_error_; }
 	auto ProgramWebInterface::lastErrorCode()->int { return imp_->last_error_code_; }
 	auto ProgramWebInterface::lastErrorLine()->int { return imp_->last_error_line_; }
@@ -218,7 +222,7 @@ namespace aris::server
 	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type) :Interface(name), imp_(new Imp)
 	{
 		aris::core::Command program;
-		program.loadXmlStr(
+		aris::core::fromXmlString(program,
 			"<Command name=\"program\">"
 			"	<Param name=\"set_auto\"/>"
 			"	<Param name=\"set_manual\"/>"
@@ -231,10 +235,8 @@ namespace aris::server
 			"	<Param name=\"clear_error\"/>"
 			"	<Param name=\"forward\"/>"
 			"</Command>");
-		imp_->command_parser_.commandPool().add<aris::core::Command>(program);
+		imp_->command_parser_.commandPool().push_back(program);
 		imp_->command_parser_.init();
-
-		sock_ = &add<aris::core::Socket>("socket", "", port, type);
 
 		imp_->onReceiveMsg_ = [this](aris::core::Socket *socket, aris::core::Msg &msg)->int
 		{
@@ -714,9 +716,10 @@ namespace aris::server
 			return 0;
 		};
 
-		sock_->setOnReceivedMsg(imp_->onReceiveMsg_);
-		sock_->setOnReceivedConnection(imp_->onReceiveConnection_);
-		sock_->setOnLoseConnection(imp_->onLoseConnection_);
+		resetSocket(new aris::core::Socket("socket", "", port, type));
+		imp_->sock_->setOnReceivedMsg(imp_->onReceiveMsg_);
+		imp_->sock_->setOnReceivedConnection(imp_->onReceiveConnection_);
+		imp_->sock_->setOnLoseConnection(imp_->onLoseConnection_);
 	}
 	ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other) = default;
 	ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other) = default;
@@ -888,7 +891,6 @@ namespace aris::server
 							mg_send(nc, programs, std::strlen(programs));
 							return;
 						}
-
 					}
 					else if (http_method == "PUT")
 					{
@@ -903,7 +905,6 @@ namespace aris::server
 					mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
 				}
 				default:
-
 					break;
 				}
 			}, imp_->bind_opts);
@@ -929,18 +930,18 @@ namespace aris::server
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		if (imp_->is_running_.exchange(false) == true){	imp_->http_thread_.join();	}
 	}
-	auto HttpInterface::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Interface::saveXml(xml_ele);
-		xml_ele.SetAttribute("document_root", imp_->document_root_.c_str());
-		xml_ele.SetAttribute("port", imp_->port_.c_str());
-	}
-	auto HttpInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Interface::loadXml(xml_ele);
-		imp_->document_root_ = Object::attributeString(xml_ele, "document_root", "./");
-		imp_->port_ = Object::attributeString(xml_ele, "port", "8000");
-	}
+	//auto HttpInterface::saveXml(aris::core::XmlElement &xml_ele) const->void
+	//{
+	//	Interface::saveXml(xml_ele);
+	//	xml_ele.SetAttribute("document_root", imp_->document_root_.c_str());
+	//	xml_ele.SetAttribute("port", imp_->port_.c_str());
+	//}
+	//auto HttpInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
+	//{
+	//	Interface::loadXml(xml_ele);
+	//	imp_->document_root_ = Object::attributeString(xml_ele, "document_root", "./");
+	//	imp_->port_ = Object::attributeString(xml_ele, "port", "8000");
+	//}
 	HttpInterface::~HttpInterface() = default;
 	HttpInterface::HttpInterface(HttpInterface && other) = default;
 	HttpInterface& HttpInterface::operator=(HttpInterface&& other) = default;
@@ -948,5 +949,20 @@ namespace aris::server
 	{
 		imp_->document_root_ = document_root;
 		imp_->port_ = port;
+	}
+
+
+	ARIS_REGISTRATION
+	{
+		aris::core::class_<Interface>("Interface")
+			;
+		
+		aris::core::class_<WebInterface>("WebInterface")
+			.prop("socket", &WebInterface::resetSocket, &WebInterface::socket)
+			;
+		
+		aris::core::class_<ProgramWebInterface>("ProgramWebInterface")
+			.prop("socket", &ProgramWebInterface::resetSocket, &ProgramWebInterface::socket)
+			;
 	}
 }

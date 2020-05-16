@@ -28,18 +28,19 @@ namespace aris::plan
 		std::uint64_t option_;
 		std::vector<std::uint64_t> mot_options_;
 
+		aris::core::Command cmd_struct_;
 		std::vector<char> cmd_str_;
 		std::string_view cmd_name_;
 		std::map<std::string_view, std::string_view> cmd_params_;
 
 		std::int64_t begin_global_count_;
-		std::uint64_t command_id_{0};
+		std::uint64_t command_id_{ 0 };
 		aris::control::Master::RtStasticsData rt_stastic_;
 
 		std::any param;
 		std::any ret;
 		std::int32_t ret_code;
-		char ret_msg[1024];
+		char ret_msg[1024]{};
 	};
 }
 
@@ -130,11 +131,12 @@ namespace aris::server
 		char err_msg_[1024]{ 0 };
 
 		// 储存Model, Controller, SensorRoot, PlanRoot //
-		aris::dynamic::Model* model_;
-		aris::control::Controller* controller_;
+		std::unique_ptr<aris::dynamic::Model> model_;
+		std::unique_ptr<aris::control::Controller> controller_;
+		std::unique_ptr<aris::plan::PlanRoot> plan_root_;
+		std::unique_ptr<aris::core::PointerArray<aris::server::Interface>> interface_pool_{new aris::core::PointerArray<aris::server::Interface> };
 		aris::sensor::SensorRoot* sensor_root_;
-		aris::plan::PlanRoot* plan_root_;
-		aris::core::ObjectPool<aris::server::Interface> *interface_pool_;
+
 		InterfaceRoot *interface_root_;
 
 		// 打洞，读取数据 //
@@ -492,65 +494,18 @@ namespace aris::server
 		return fix_finished;
 	}
 	auto ControlServer::instance()->ControlServer & { static ControlServer instance; return instance; }
-	auto ControlServer::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Object::loadXml(xml_ele);
-		imp_->controller_ = findOrInsertType<aris::control::Controller>();
-		imp_->model_ = findOrInsertType<aris::dynamic::Model>();
-		imp_->sensor_root_ = findOrInsertType<aris::sensor::SensorRoot>();
-		imp_->plan_root_ = findOrInsertType<aris::plan::PlanRoot>();
-		imp_->interface_root_ = findOrInsertType<aris::server::InterfaceRoot>();
-		imp_->interface_pool_ = findOrInsertType<aris::core::ObjectPool<aris::server::Interface>>();
-	}
-	auto ControlServer::resetModel(dynamic::Model *model)->void
-	{
-		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj)
-		{
-			auto found = dynamic_cast<const aris::dynamic::Model*>(&obj);
-			return found && imp_->model_ == found;
-		});
-		if (iter != children().end())children().erase(iter);
-		add(model);
-		imp_->model_ = model;
-	}
-	auto ControlServer::resetController(control::Controller *controller)->void
-	{
-		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj)
-		{
-			auto found = dynamic_cast<const aris::control::Controller*>(&obj);
-			return found && imp_->controller_ == found;
-		});
-		if (iter != children().end())children().erase(iter);
-		add(controller);
-		imp_->controller_ = controller;
-	}
+	auto ControlServer::resetModel(dynamic::Model *model)->void { imp_->model_.reset(model); }
+	auto ControlServer::resetController(control::Controller *controller)->void{	imp_->controller_.reset(controller);}
 	auto ControlServer::resetSensorRoot(sensor::SensorRoot *sensor_root)->void
 	{
-		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj)
-		{
-			auto found = dynamic_cast<const aris::sensor::SensorRoot*>(&obj);
-			return found && imp_->sensor_root_ == found;
-		});
-		if (iter != children().end())children().erase(iter);
-		add(sensor_root);
 		imp_->sensor_root_ = sensor_root;
 	}
-	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void
-	{
-		auto iter = std::find_if(children().begin(), children().end(), [&](const aris::core::Object &obj)
-		{
-			auto found = dynamic_cast<const aris::plan::PlanRoot*>(&obj);
-			return found && imp_->plan_root_ == found;
-		});
-		if (iter != children().end())children().erase(iter);
-		add(plan_root);
-		imp_->plan_root_ = plan_root;
-	}
+	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void{	imp_->plan_root_.reset(plan_root);}
 	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
-	auto ControlServer::interfacePool()->aris::core::ObjectPool<aris::server::Interface>& { return *imp_->interface_pool_; }
+	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
 	auto ControlServer::errorCode()const->int
 	{
@@ -669,10 +624,10 @@ namespace aris::server
 				LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << str << std::endl;
 				auto[cmd, params] = planRoot().planParser().parse(str);
 				auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
-				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->getTypeInfo(plan_iter->type())->copy_construct_func(*plan_iter)));
+				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->clone()));
 				plan->imp_->count_ = 0;
-				plan->imp_->model_ = imp_->model_;
-				plan->imp_->master_ = imp_->controller_;
+				plan->imp_->model_ = imp_->model_.get();
+				plan->imp_->master_ = imp_->controller_.get();
 				plan->imp_->controller_ = dynamic_cast<aris::control::Controller*>(plan->imp_->master_);
 				plan->imp_->ec_master_ = dynamic_cast<aris::control::EthercatMaster*>(plan->imp_->master_);
 				plan->imp_->ec_controller_ = dynamic_cast<aris::control::EthercatController*>(plan->imp_->master_);
@@ -1028,14 +983,23 @@ namespace aris::server
 		makeSensorRoot<aris::sensor::SensorRoot>("sensor_root");
 		makePlanRoot<aris::plan::PlanRoot>("plan_root");
 		
-		// interface pool //
-		this->registerType<aris::core::ObjectPool<Interface> >();
-		imp_->interface_pool_ = &this->add<aris::core::ObjectPool<Interface>>();
-
 		// create ui //
-		auto ins = new InterfaceRoot;
-		children().push_back_ptr(ins);
-		imp_->interface_root_ = ins;
-		this->interfaceRoot().loadXmlStr("<InterfaceRoot/>");
+		//auto ins = new InterfaceRoot;
+		//children().push_back_ptr(ins);
+		//imp_->interface_root_ = ins;
+		//this->interfaceRoot().loadXmlStr("<InterfaceRoot/>");
+	}
+
+	ARIS_REGISTRATION
+	{
+		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
+		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
+		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
+
+		aris::core::class_<ControlServer>("ControlServer")
+			.prop("controller", &ControlServer::resetController, ControllerFunc(&ControlServer::controller))
+			.prop("model", &ControlServer::resetModel, ModelFunc(&ControlServer::model))
+			.prop("plan_root", &ControlServer::resetPlanRoot, PlanRootFunc(&ControlServer::planRoot))
+			;
 	}
 }

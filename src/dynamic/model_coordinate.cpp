@@ -629,31 +629,6 @@ namespace aris::dynamic
 		double pm_[4][4]{ { 0 } };
 		Part *part_;
 	};
-	auto Marker::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		DynEle::saveXml(xml_ele);
-		double pe[6];
-		s_pm2pe(*prtPm(), pe);
-		xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
-	}
-	auto Marker::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Coordinate::loadXml(xml_ele);
-
-		double pm[16];
-
-		s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), pm);
-
-		//if (xml_ele.Attribute("relative_to"))
-		//{
-		//	try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
-		//	catch (std::exception &) { THROW_FILE_LINE(std::string("can't find relative marker for element \"") + this->name() + "\""); }
-		//}
-		//else
-		//{
-			s_vc(16, pm, *imp_->prt_pm_);
-		//}
-	}
 	auto Marker::fatherPart() noexcept->Part& { return *imp_->part_; }
 	auto Marker::pm()const noexcept->const double4x4& { s_pm_dot_pm(*fatherPart().pm(), *prtPm(), const_cast<double*>(*imp_->pm_)); return imp_->pm_; }
 	auto Marker::vs()const noexcept->const double6& { return fatherPart().vs(); }
@@ -707,7 +682,7 @@ namespace aris::dynamic
 	Marker::Marker(Marker&&) = default;
 	Marker& Marker::operator=(const Marker&) = default;
 	Marker& Marker::operator=(Marker&&) = default;
-	Marker::Marker(const std::string &name, const double *prt_pm, bool active) : Coordinate(name, active)
+	Marker::Marker(const std::string &name, const double *prt_pm, bool active) : Coordinate(name, active), imp_(new Imp)
 	{
 		static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		prt_pm = prt_pm ? prt_pm : default_pm_in;
@@ -716,43 +691,20 @@ namespace aris::dynamic
 
 	struct Part::Imp
 	{
-		aris::core::ObjectPool<Marker, Element> *marker_pool_;
-		aris::core::ObjectPool<Geometry, Element> *geometry_pool_;
+		std::unique_ptr<aris::core::PointerArray<Marker, Element>> marker_pool_;
+		std::unique_ptr<aris::core::PointerArray<Geometry, Element>> geometry_pool_;
 
 		double prt_iv_[10]{ 0 };
 		double glb_pm_[4][4]{ { 0 } };
 		double glb_vs_[6]{ 0 };
 		double glb_as_[6]{ 0 };
 	};
-	auto Part::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		DynEle::saveXml(xml_ele);
-
-		double pe[6];
-		s_pm2pe(*pm(), pe);
-		xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
-		xml_ele.SetAttribute("vel", core::Matrix(1, 6, vs()).toString().c_str());
-		xml_ele.SetAttribute("acc", core::Matrix(1, 6, as()).toString().c_str());
-
-		xml_ele.SetAttribute("inertia", core::Matrix(1, 10, prtIv()).toString().c_str());
-	}
-	auto Part::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6).data(), *imp_->glb_pm_);
-		std::copy_n(attributeMatrix(xml_ele, "vel", 1, 6).data(), 6, imp_->glb_vs_);
-		std::copy_n(attributeMatrix(xml_ele, "acc", 1, 6).data(), 6, imp_->glb_as_);
-		std::copy_n(attributeMatrix(xml_ele, "inertia", 1, 10).data(), 10, imp_->prt_iv_);
-
-		Coordinate::loadXml(xml_ele);
-
-		imp_->marker_pool_ = findOrInsertType<aris::core::ObjectPool<Marker, Element> >();
-		imp_->geometry_pool_ = findOrInsertType<aris::core::ObjectPool<Geometry, Element> >();
-
-	}
-	auto Part::markerPool() noexcept->aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
-	auto Part::markerPool()const noexcept->const aris::core::ObjectPool<Marker, Element>& { return *imp_->marker_pool_; }
-	auto Part::geometryPool() noexcept->aris::core::ObjectPool<Geometry, Element>& { return *imp_->geometry_pool_; }
-	auto Part::geometryPool()const noexcept->const aris::core::ObjectPool<Geometry, Element>& { return *imp_->geometry_pool_; }
+	auto Part::resetMarkerPool(aris::core::PointerArray<Marker, Element> *pool)->void { imp_->marker_pool_.reset(pool); }
+	auto Part::markerPool() ->aris::core::PointerArray<Marker, Element>& { return *imp_->marker_pool_; }
+	auto Part::markerPool()const ->const aris::core::PointerArray<Marker, Element>& { return *imp_->marker_pool_; }
+	auto Part::resetGeometryPool(aris::core::PointerArray<Geometry, Element> *pool)->void { imp_->geometry_pool_.reset(pool); }
+	auto Part::geometryPool() ->aris::core::PointerArray<Geometry, Element>& { return *imp_->geometry_pool_; }
+	auto Part::geometryPool()const ->const aris::core::PointerArray<Geometry, Element>& { return *imp_->geometry_pool_; }
 	auto Part::addMarker(const std::string &name, const double *prt_pm, bool active)->Marker&
 	{
 		auto &ret = markerPool().add<Marker>(name, prt_pm, active);
@@ -1345,12 +1297,9 @@ namespace aris::dynamic
 	Part::~Part() = default;
 	Part::Part(const std::string &name, const double *iv, const double *pm, const double *vs, const double *as, bool active) : Coordinate(name, active)
 	{
-		this->registerType<aris::core::ObjectPool<Marker, Element> >();
-		this->registerType<aris::core::ObjectPool<Geometry, Element> >();
+		imp_->marker_pool_.reset(new aris::core::PointerArray<Marker, Element>);
+		imp_->geometry_pool_.reset(new aris::core::PointerArray<Geometry, Element>);
 		
-		imp_->marker_pool_ = &add<aris::core::ObjectPool<Marker, Element> >("marker_pool");
-		imp_->geometry_pool_ = &add<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
-
 		static const double default_iv[10]{ 1,0,0,0,1,1,1,0,0,0 };
 		static const double default_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		static const double default_vs[6]{ 0,0,0,0,0,0 };
@@ -1366,65 +1315,15 @@ namespace aris::dynamic
 		setVs(vs);
 		setAs(as);
 	}
-	Part::Part(Part &&other) :Coordinate(std::move(other)), imp_(std::move(other.imp_))
-	{
-		imp_->marker_pool_ = findType<aris::core::ObjectPool<Marker, Element> >("marker_pool");
-		imp_->geometry_pool_ = findType<aris::core::ObjectPool<Geometry, Element> >("geometry_pool");
-	};
-	Part::Part(const Part &other) :Coordinate(other), imp_(other.imp_)
-	{
-		imp_->marker_pool_ = findOrInsertType<aris::core::ObjectPool<Marker, Element>>();
-		imp_->geometry_pool_ = findOrInsertType<aris::core::ObjectPool<Geometry, Element>>();
-	};
-	Part& Part::operator=(Part &&other)
-	{
-		Coordinate::operator=(other);
-		imp_ = other.imp_;
-		imp_->marker_pool_ = findOrInsertType<aris::core::ObjectPool<Marker, Element>>();
-		imp_->geometry_pool_ = findOrInsertType<aris::core::ObjectPool<Geometry, Element>>();
-		return *this;
-	}
-	Part& Part::operator=(const Part &other)
-	{
-		Coordinate::operator=(other);
-		imp_ = other.imp_;
-		imp_->marker_pool_ = findOrInsertType<aris::core::ObjectPool<Marker, Element>>();
-		imp_->geometry_pool_ = findOrInsertType<aris::core::ObjectPool<Geometry, Element>>();
-		return *this;
-	}
+	Part::Part(Part &&other) = default;
+	Part& Part::operator=(Part &&other) = default;
+
 
 	struct ParasolidGeometry::Imp
 	{
 		double prt_pm_[4][4]{ { 0 } };
 		std::string graphic_file_path;
 	};
-	auto ParasolidGeometry::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Element::saveXml(xml_ele);
-		double pe[6];
-		s_pm2pe(*imp_->prt_pm_, pe);
-		xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
-		xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path.c_str());
-	}
-	auto ParasolidGeometry::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		double pm[16];
-		s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6, core::Matrix(1, 6, 0.0)).data(), pm);
-
-		if (xml_ele.Attribute("relative_to"))
-		{
-			//try { s_pm_dot_pm(*static_cast<aris::core::ObjectPool<Marker, Element>*>(this->father())->findByName(xml_ele.Attribute("relative_to"))->prtPm(), pm, *imp_->prt_pm_); }
-			//catch (std::exception &) { THROW_FILE_LINE(std::string("can't find relative marker for element \"") + this->name() + "\""); }
-		}
-		else
-		{
-			s_vc(16, pm, *imp_->prt_pm_);
-		}
-
-		imp_->graphic_file_path = attributeString(xml_ele, "graphic_file_path", "");
-
-		Geometry::loadXml(xml_ele);
-	}
 	auto ParasolidGeometry::prtPm()const->const double4x4& { return imp_->prt_pm_; }
 	auto ParasolidGeometry::filePath()const->const std::string & { return imp_->graphic_file_path; }
 	ParasolidGeometry::~ParasolidGeometry() = default;
@@ -1446,23 +1345,6 @@ namespace aris::dynamic
 		double prt_pm_[4][4]{ { 0 } };
 		std::string graphic_file_path;
 	};
-	auto FileGeometry::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Element::saveXml(xml_ele);
-		double pe[6];
-		s_pm2pe(*imp_->prt_pm_, pe);
-		xml_ele.SetAttribute("pe", core::Matrix(1, 6, pe).toString().c_str());
-		xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path.c_str());
-	}
-	auto FileGeometry::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		double pm[16];
-		s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6, core::Matrix(1, 6, 0.0)).data(), pm);
-
-		imp_->graphic_file_path = attributeString(xml_ele, "graphic_file_path", "");
-
-		Geometry::loadXml(xml_ele);
-	}
 	auto FileGeometry::prtPm()const->const double4x4& { return imp_->prt_pm_; }
 	auto FileGeometry::filePath()const->const std::string & { return imp_->graphic_file_path; }
 	FileGeometry::~FileGeometry() = default;
@@ -1484,21 +1366,6 @@ namespace aris::dynamic
 		Marker *relative_to_;
 		std::string graphic_file_path;
 	};
-	auto ShellGeometry::saveXml(aris::core::XmlElement &xml_ele) const->void
-	{
-		Element::saveXml(xml_ele);
-		xml_ele.SetAttribute("relative_to", imp_->relative_to_->name().c_str());
-		xml_ele.SetAttribute("graphic_file_path", imp_->graphic_file_path.c_str());
-	}
-	auto ShellGeometry::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		double pm[16];
-		s_pe2pm(attributeMatrix(xml_ele, "pe", 1, 6, core::Matrix(1, 6, 0.0)).data(), pm);
-
-		imp_->graphic_file_path = attributeString(xml_ele, "graphic_file_path", "");
-
-		Geometry::loadXml(xml_ele);
-	}
 	auto ShellGeometry::filePath()const->const std::string & { return imp_->graphic_file_path; }
 	auto ShellGeometry::relativeToMarker()const->const Marker& { return *imp_->relative_to_; }
 	ShellGeometry::~ShellGeometry() = default;
@@ -1524,7 +1391,7 @@ namespace aris::dynamic
 		
 		aris::core::class_<Marker>("Marker")
 			.inherit<aris::dynamic::DynEle>()
-			.property("pe", &setPe, &getPe)
+			.prop("pe", &setPe, &getPe)
 			;
 
 		auto getPrtPe = [](Part *prt)->aris::core::Matrix
@@ -1541,21 +1408,23 @@ namespace aris::dynamic
 		auto getPrtIv = [](Part *prt)->aris::core::Matrix { return aris::core::Matrix(1, 10, prt->prtIv()); };
 		auto setPrtIv = [](Part *prt, aris::core::Matrix iv)->void { prt->setPrtIv(iv.data()); };
 
-		aris::core::class_<aris::core::ObjectPool<Marker, Element>>("MarkerPoolElement")
+		aris::core::class_<aris::core::PointerArray<Marker, Element>>("MarkerPoolElement")
 			.asRefArray()
 			;
-		aris::core::class_<aris::core::ObjectPool<Geometry, Element>>("GeometryPoolElement")
+		aris::core::class_<aris::core::PointerArray<Geometry, Element>>("GeometryPoolElement")
 			.asRefArray()
 			;
-		typedef aris::core::ObjectPool<Marker, Element> &(Part::*MarkerPoolFunc)();
-		typedef aris::core::ObjectPool<Geometry, Element> &(Part::*GeometryPoolFunc)();
+		typedef aris::core::PointerArray<Marker, Element> &(Part::*MarkerPoolFunc)();
+		typedef aris::core::PointerArray<Geometry, Element> &(Part::*GeometryPoolFunc)();
+
 		aris::core::class_<Part>("Part")
-			.property("pe", &setPrtPe, &getPrtPe)
-			.property("vel", &setPrtVs, &getPrtVs)
-			.property("acc", &setPrtAs, &getPrtAs)
-			.property("inertia", &setPrtIv, &getPrtIv)
-			.property<MarkerPoolFunc>("marker_pool", &Part::markerPool)
-			.property<GeometryPoolFunc>("geometry_pool", &Part::geometryPool)
+			.inherit<aris::dynamic::DynEle>()
+			.prop("pe", &setPrtPe, &getPrtPe)
+			.prop("vel", &setPrtVs, &getPrtVs)
+			.prop("acc", &setPrtAs, &getPrtAs)
+			.prop("inertia", &setPrtIv, &getPrtIv)
+			.prop("marker_pool", &Part::resetMarkerPool, MarkerPoolFunc(&Part::markerPool))
+			.prop("geometry_pool", &Part::resetGeometryPool, GeometryPoolFunc(&Part::geometryPool))
 			;
 	}
 }

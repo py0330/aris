@@ -75,7 +75,8 @@ namespace aris::robot
 				"	</SyncManagerPoolObject>"
 				"</EthercatMotor>";
 
-			controller->slavePool().add<aris::control::EthercatMotor>().loadXmlStr(xml_str);
+			controller->slavePool().push_back(new aris::control::EthercatMotor());
+			aris::core::fromXmlString(controller->slavePool().back(), xml_str);
 
 #ifndef ARIS_USE_ETHERCAT_SIMULATION
 			dynamic_cast<aris::control::EthercatMotor&>(controller->slavePool().back()).scanInfoForCurrentSlave();
