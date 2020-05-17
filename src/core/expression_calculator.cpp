@@ -1108,6 +1108,7 @@ namespace aris::core
 				}
 				else if (cmd_name == MAIN)
 				{
+					if (main_id_)THROW_FILE_LINE("program has more than 1 main function");
 					main_id_ = i->first;
 					current_id_ = i->first;
 					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
@@ -1151,6 +1152,7 @@ namespace aris::core
 				{
 					auto ret = parseCode(b, i);
 					std::prev(i)->second.next_cmd_true_ = i->first;
+					end_id_ = id;
 					return ret;
 				}
 			}
@@ -1321,7 +1323,7 @@ namespace aris::core
 			return b;
 		}
 
-		int main_id_{ 0 }, current_id_{ 0 };
+		int main_id_{ 0 }, current_id_{ 0 }, end_id_{ 0 };
 		std::map<int, CmdInfo> cmd_map_;
 		std::map<std::string, int> functions_;
 		std::vector<std::string> var_pool_;
@@ -1352,11 +1354,16 @@ namespace aris::core
 		}
 	}
 	auto LanguageParser::varPool()->const std::vector<std::string>& { return imp_->var_pool_; }
-	auto LanguageParser::gotoMain()->void { imp_->current_id_ = imp_->main_id_; }
+	auto LanguageParser::gotoMain()->void 
+	{ 
+		imp_->current_id_ = imp_->main_id_;
+		imp_->function_ret_stack_.clear();
+	}
 	auto LanguageParser::gotoLine(int line)->void
 	{
 		if (imp_->cmd_map_.find(line) == imp_->cmd_map_.end())THROW_FILE_LINE("This line does not exist");
 		imp_->current_id_ = line;
+		imp_->function_ret_stack_.clear();
 	}
 	auto LanguageParser::forward(bool is_this_cmd_successful)->void
 	{
@@ -1369,8 +1376,12 @@ namespace aris::core
 		}
 		else if (cmd_str == "endfunction")
 		{
-			imp_->current_id_ = imp_->function_ret_stack_.back();
-			imp_->function_ret_stack_.pop_back();
+			if(imp_->function_ret_stack_.empty()) imp_->current_id_ = imp_->end_id_;
+			else 
+			{
+				imp_->current_id_ = imp_->function_ret_stack_.back();
+				imp_->function_ret_stack_.pop_back();
+			}
 		}
 		else
 		{
