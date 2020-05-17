@@ -571,7 +571,7 @@ namespace aris::control
 		{
 			// transition 3 //
 			writePdo(0x6040, 0x00, std::uint16_t(0x00));
-			return 2;
+			return 0;
 		}
 		// check status D, now transition 10
 		else if ((status_word & 0x6F) == 0x23)

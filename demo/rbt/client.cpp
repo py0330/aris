@@ -30,56 +30,55 @@ int sendRequest(int argc, char *argv[])
 
 	// 连接并发送msg //
 	aris::core::Socket client("client");
-	client.setConnectType(aris::core::Socket::WEB);
+	client.setConnectType(aris::core::Socket::TCP);
     client.setRemoteIP("127.0.0.1");
-    client.setPort("5866");
-	
+    client.setPort("5868");
 
-	while (true)
+	std::atomic_bool is_finished = false;
+	client.setOnLoseConnection([&](aris::core::Socket *s)->int 
+	{
+		std::cout << "connection brocken" << std::endl;
+		is_finished = true;
+		return 0;
+	});
+	client.setOnReceivedMsg([&](aris::core::Socket *s, aris::core::Msg &msg)->int
+	{
+		std::cout <<"ret value:"<< msg.toString() << std::endl;
+		is_finished = true;
+		return 0;
+	});
+	
+	// connect //
+	for(bool c=false;!c;)
 	{
 		try
 		{
 			client.connect();
-		}
-		catch (std::exception &)
-		{
-			std::cout << "failed to connect server, will retry in 1 second" << std::endl;
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-			continue;
-		}
-
-		try
-		{
-			//client.sendMsg(aris::core::Msg("aaa"));
-			client.sendRawData("aaaa", 5);
-			//client.sendRawData("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0aaaaaaaaaaaaaaaaaaaa", 41);
-			std::cout << "send success" << std::endl;
-
-			break;
+			c = true;
 		}
 		catch (std::exception &e)
 		{
+			std::cout << "failed to connect server, will retry in 1 second" << std::endl;
 			std::cout << e.what() << std::endl;
 			std::this_thread::sleep_for(std::chrono::seconds(1));
-			break;
+			continue;
 		}
-
-		
-
 	}
 
-	//aris::core::Msg ret = client.sendRequest(msg);
+	// send //
+	try
+	{
+		client.sendMsg(msg);
+		std::cout << "send cmd:" << msg.toString() << std::endl;
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+		return 0;
+	}
 
-	// 错误处理 //
-	//if (ret.size() > 0)
-	//{
-	//	std::cout << "cmd has fault, please regard to following information:" << std::endl;
-	//	std::cout << "    " << ret.data() << std::endl;
-	//}
-	//else
-	//{
-	//	std::cout << "send command successful" << std::endl;
-	//}
+	// wait //
+	while (!is_finished) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 	return 0;
 }

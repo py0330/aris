@@ -417,6 +417,139 @@ namespace aris::server
 					}
 					else if (param == "forward")
 					{
+						if (!isAutoMode())
+						{
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not foward in manual mode");
+							return 0;
+						}
+						else if (isAutoRunning())
+						{
+							send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "can not foward when running");
+							return 0;
+						}
+						else if (lastErrorCode())
+						{
+							send_code_and_msg(lastErrorCode(), lastError());
+							return 0;
+						}
+						else
+						{
+							std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+							auto &c = aris::server::ControlServer::instance().model().calculator();
+							auto &cs = aris::server::ControlServer::instance();
+							
+							if (imp_->language_parser_.isEnd())
+							{
+
+							}
+							else if (imp_->language_parser_.isCurrentLineKeyWord())
+							{
+								ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+								LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+								if (imp_->language_parser_.currentWord() == "if" || imp_->language_parser_.currentWord() == "while")
+								{
+									try
+									{
+										auto ret = c.calculateExpression(imp_->language_parser_.currentParamStr());
+
+										if (auto ret_double = std::any_cast<double>(&ret.second))
+										{
+											imp_->language_parser_.forward(*ret_double != 0.0);
+											imp_->current_line_.store(imp_->language_parser_.currentLine());
+										}
+										else if (auto ret_mat = std::any_cast<aris::core::Matrix>(&ret.second))
+										{
+											imp_->language_parser_.forward(ret_mat->toDouble() != 0.0);
+											imp_->current_line_.store(imp_->language_parser_.currentLine());
+										}
+										else
+										{
+											imp_->last_error_code_ = aris::plan::Plan::PROGRAM_EXCEPTION;
+											imp_->last_error_ = "invalid expresion";
+											imp_->last_error_line_ = imp_->language_parser_.currentLine();
+											ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+											break;
+										}
+									}
+									catch (std::exception &e)
+									{
+										imp_->last_error_code_ = -10;
+										imp_->last_error_ = e.what();
+										imp_->last_error_line_ = imp_->language_parser_.currentLine();
+										ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+										break;
+									}
+								}
+								else
+								{
+									imp_->language_parser_.forward();
+									imp_->current_line_.store(imp_->language_parser_.currentLine());
+								}
+							}
+							else if (imp_->language_parser_.isCurrentLineFunction())
+							{
+								ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+								LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+								imp_->language_parser_.forward();
+								imp_->current_line_.store(imp_->language_parser_.currentLine());
+							}
+							else if (imp_->language_parser_.currentWord() == "set")
+							{
+								ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+								LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
+								try
+								{
+									c.calculateExpression(imp_->language_parser_.currentParamStr());
+									imp_->language_parser_.forward();
+									imp_->current_line_.store(imp_->language_parser_.currentLine());
+								}
+								catch (std::exception &e)
+								{
+									imp_->last_error_code_ = aris::plan::Plan::PROGRAM_EXCEPTION;
+									imp_->last_error_ = e.what();
+									imp_->last_error_line_ = imp_->language_parser_.currentLine();
+									ARIS_PRO_COUT << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+									LOG_ERROR << "pro " << imp_->last_error_line_ << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+								}
+							}
+							else
+							{
+								auto &cmd = imp_->language_parser_.currentCmd();
+								auto current_line = imp_->language_parser_.currentLine();
+								imp_->language_parser_.forward();
+								auto next_line = imp_->language_parser_.currentLine();
+
+								auto ret = cs.executeCmdInCmdLine(cmd, [&, current_line, next_line](aris::plan::Plan &plan)->void
+								{
+									imp_->current_line_.store(next_line);
+								});
+
+								ARIS_PRO_COUT << current_line << "---" << ret->cmdId() << "---" << ret->cmdString() << std::endl;
+								LOG_INFO << "pro " << current_line << "---" << ret->cmdId() << "---" << ret->cmdString() << std::endl;
+
+								cs.waitForAllCollection();
+
+								// 如果因为其他轨迹出错而取消 //
+								if (ret->retCode() == aris::plan::Plan::PREPARE_CANCELLED || ret->retCode() == aris::plan::Plan::EXECUTE_CANCELLED)
+								{
+									ARIS_PRO_COUT << current_line << "---" << ret->cmdId() << "---canceled" << std::endl;
+									LOG_ERROR << "pro " << current_line << "---" << ret->cmdId() << "---canceled" << std::endl;
+								}
+								else if (ret->retCode() < 0)
+								{
+									imp_->last_error_code_ = ret->retCode();
+									imp_->last_error_ = ret->retMsg();
+									imp_->last_error_line_ = current_line;
+									ARIS_PRO_COUT << imp_->last_error_line_ << "---" << ret->cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+									LOG_ERROR << "pro " << imp_->last_error_line_ << "---" << ret->cmdId() << "---err_code:" << imp_->last_error_code_ << "  err_msg:" << imp_->last_error_ << std::endl;
+								}
+
+							}
+
+							std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
+							send_code_and_msg(imp_->last_error_code_, imp_->last_error_);
+							return 0;
+						}
 					}
 					else if (param == "start")
 					{
