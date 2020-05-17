@@ -152,7 +152,7 @@ namespace aris::core
 			{
 				auto found = std::find_if(child_eles.begin(), child_eles.end(), [&prop](const auto ele)->bool 
 				{
-					return Type::isBaseOf(prop->type(), getType(typename_xml2c(ele)));
+					return Type::isBaseOf(prop->type(), Type::getType(typename_xml2c(ele)));
 				});
 
 				if (found == child_eles.end())
@@ -162,7 +162,7 @@ namespace aris::core
 				}
 
 				auto c_type = std::regex_replace(typename_xml2c(*found), std::regex("\\."), "::");
-				auto[ptr, prop_ins] = getType(c_type)->create();
+				auto[ptr, prop_ins] = Type::getType(c_type)->create();
 				from_xml_ele(prop_ins, *found);
 				prop->set(&ins, prop_ins);
 				ptr.release();
@@ -175,7 +175,7 @@ namespace aris::core
 		{
 			for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
 			{
-				auto type = getType(typename_xml2c(child_ele));
+				auto type = Type::getType(typename_xml2c(child_ele));
 				if (!type) THROW_FILE_LINE("unrecognized type in xml : " + std::string(child_ele->Name()));
 
 				auto[ptr, attr_ins] = type->create();

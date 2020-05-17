@@ -4,12 +4,13 @@
 #include <string>
 #include <filesystem>
 
+#include <aris_lib_export.h>
 #include <aris/core/reflection.hpp>
 
 namespace aris::core
 {
-	auto toXmlString(aris::core::Instance ins)->std::string;
-	auto fromXmlString(aris::core::Instance ins, std::string_view xml_str)->void;
+	auto ARIS_API toXmlString(aris::core::Instance ins)->std::string;
+	auto ARIS_API fromXmlString(aris::core::Instance ins, std::string_view xml_str)->void;
 }
 
 #endif

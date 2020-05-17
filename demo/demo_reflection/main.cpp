@@ -2,7 +2,6 @@
 #include <array>
 #include <aris/core/reflection.hpp>
 #include <aris/core/serialization.hpp>
-#include <aris.hpp>
 
 struct Base { int c; virtual ~Base() = default; };
 struct A:public Base 
@@ -43,18 +42,18 @@ ARIS_REGISTRATION
 }
 
 
-void Interptask(void *arg)
-{
-	aris::control::aris_rt_task_set_periodic(1000000);
-	static int i = 0;
-	for (;;)// while(1)//(int i=0;i<100;i++)
-	{
-		// i++;
-		i++;
-		aris::control::aris_rt_task_wait_period();
-		std::cout << "count11233:=" << i << std::endl;
-	}
-}
+//void Interptask(void *arg)
+//{
+//	aris::control::aris_rt_task_set_periodic(1000000);
+//	static int i = 0;
+//	for (;;)// while(1)//(int i=0;i<100;i++)
+//	{
+//		// i++;
+//		i++;
+//		aris::control::aris_rt_task_wait_period();
+//		std::cout << "count11233:=" << i << std::endl;
+//	}
+//}
 
 
 
@@ -152,15 +151,15 @@ int main()
 	std::cout << typeid(std::int8_t).hash_code() << std::endl;
 	std::cout << typeid(std::uint8_t).hash_code() << std::endl;
 
-	auto controller = aris::robot::createControllerRokaeXB4();
+	//auto controller = aris::robot::createControllerRokaeXB4();
 
-	auto &s = controller->slavePool()[0];
-	auto &ec_s = dynamic_cast<aris::control::EthercatMotor&>(s);
+	//auto &s = controller->slavePool()[0];
+	//auto &ec_s = dynamic_cast<aris::control::EthercatMotor&>(s);
 
-	auto &slave_pool = controller->slavePool();
+	//auto &slave_pool = controller->slavePool();
 
-	auto &objjjj = ec_s.smPool();
-	auto &ec_controller = dynamic_cast<aris::control::EthercatController&>(*controller);
+	//auto &objjjj = ec_s.smPool();
+	//auto &ec_controller = dynamic_cast<aris::control::EthercatController&>(*controller);
 
 	//std::cout << controller->xmlString() << std::endl;
 
@@ -280,7 +279,7 @@ int main()
 	int a = 50;
 
 	std::cout << "before" << std::endl;
-	auto t = aris::core::getType(std::string("aaa"));
+	auto t = aris::core::Type::getType(std::string("aaa"));
 	std::cout << "end" << std::endl;
 
 	std::vector<A> vec_A_ele;
@@ -382,23 +381,23 @@ int main()
 		std::cout << e.what() << std::endl;
 	}
 	
-	aris::core::Object obj("aaaa");
-	std::cout << aris::core::toXmlString(obj) << std::endl;
+	//aris::core::Object obj("aaaa");
+	//std::cout << aris::core::toXmlString(obj) << std::endl;
 
-	aris::core::Object obj2;
-	aris::core::fromXmlString(obj2, aris::core::toXmlString(obj));
-	std::cout << aris::core::toXmlString(obj2) << std::endl;
+	//aris::core::Object obj2;
+	//aris::core::fromXmlString(obj2, aris::core::toXmlString(obj));
+	//std::cout << aris::core::toXmlString(obj2) << std::endl;
 
-	aris::core::Param p1;
-	std::cout << aris::core::toXmlString(p1) << std::endl;
+	//aris::core::Param p1;
+	//std::cout << aris::core::toXmlString(p1) << std::endl;
 
-	aris::core::Param p2;
-	aris::core::fromXmlString(p2, aris::core::toXmlString(p1));
-	std::cout << aris::core::toXmlString(p2) << std::endl;
+	//aris::core::Param p2;
+	//aris::core::fromXmlString(p2, aris::core::toXmlString(p1));
+	//std::cout << aris::core::toXmlString(p2) << std::endl;
 
-	aris::core::Command cmd;
-	cmd.push_back(new aris::core::Param("aaa"));
-	std::cout << aris::core::toXmlString(cmd) << std::endl;
+	//aris::core::Command cmd;
+	//cmd.push_back(new aris::core::Param("aaa"));
+	//std::cout << aris::core::toXmlString(cmd) << std::endl;
 
 
 	//// 添加CommandParser //

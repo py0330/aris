@@ -4,7 +4,7 @@ project(aris VERSION 1.5.0)
 
 ## set cpp configurations ##
 set(EXECUTABLE_OUTPUT_PATH bin)
-set(LIBRARY_OUTPUT_PATH lib)
+set(LIBRARY_OUTPUT_PATH bin)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE "Release")
 if(UNIX)
@@ -84,16 +84,19 @@ endif()
 message("ETHERCAT : ${ETHERCAT}")
 	
 ## build targets ##
+include (GenerateExportHeader) 
 foreach(target robot server plan dynamic control sensor core)
 	file(GLOB HEADERS include/aris/${target}/*.hpp include/aris/${target}/*.h)
 	file(GLOB SOURCES src/${target}/*.cpp src/${target}/*.c src/${target}/*.hpp src/${target}/*.h ${HEADERS})
 	add_library(aris_${target} OBJECT ${HEADERS} ${SOURCES})
+	target_compile_definitions(aris_${target} PRIVATE aris_lib_EXPORTS)
 	target_include_directories(aris_${target}
 		PUBLIC 
 			$<INSTALL_INTERFACE:include>
 			$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 		PRIVATE
 			${PROJECT_SOURCE_DIR}/src
+			${PROJECT_BINARY_DIR}
 			${RELY_INCL_DIR}
 	)
 	
@@ -111,6 +114,8 @@ foreach(target robot server plan dynamic control sensor core)
 	endif()
 endforeach(target)
 add_library(aris_lib SHARED ${ARIS_OBJECTS})
+generate_export_header(aris_lib EXPORT_MACRO_NAME ARIS_API)
+
 target_link_libraries(aris_lib PUBLIC ${RELY_LINK_LIB})
 set(aris_LIBRARIES optimized aris::aris_lib debug aris::debug::aris_lib)
 set_property(TARGET aris_lib PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -118,6 +123,7 @@ target_include_directories(aris_lib
 	PUBLIC 
 		$<INSTALL_INTERFACE:include>
 		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+		${PROJECT_BINARY_DIR}
 	PRIVATE
 		${PROJECT_SOURCE_DIR}/src
 		${RELY_INCL_DIR}
