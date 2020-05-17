@@ -32,7 +32,7 @@ int sendRequest(int argc, char *argv[])
 	aris::core::Socket client("client");
 	client.setConnectType(aris::core::Socket::TCP);
     client.setRemoteIP("127.0.0.1");
-    client.setPort("5867");
+    client.setPort("5868");
 
 	std::atomic_bool is_finished = false;
 	client.setOnLoseConnection([&](aris::core::Socket *s)->int 
