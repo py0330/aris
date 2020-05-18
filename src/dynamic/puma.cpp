@@ -619,10 +619,9 @@ namespace aris::dynamic
 	auto PumaInverseKinematicSolver::whichRoot()const->int { return imp_->which_root_; }
 	PumaInverseKinematicSolver::~PumaInverseKinematicSolver() = default;
 	PumaInverseKinematicSolver::PumaInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
-	//ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
+	ARIS_DEFINE_BIG_FOUR_CPP(PumaInverseKinematicSolver);
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<PumaInverseKinematicSolver>("PumaInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
 			.prop("which_root", &PumaInverseKinematicSolver::setWhichRoot, &PumaInverseKinematicSolver::whichRoot)

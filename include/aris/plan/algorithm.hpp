@@ -20,7 +20,7 @@
 namespace aris::plan
 {
 	using PathPlanFunction = std::function<void(double s, double ds, std::vector<double> &x, std::vector<double> &dx_ds, std::vector<double> &ddx_ds2)>;
-	class OptimalTrajectory
+	class ARIS_API OptimalTrajectory
 	{
 	public:
 		struct MotionLimit { double max_vel, min_vel, max_acc, min_acc, max_tor, min_tor, max_jerk, min_jerk; };

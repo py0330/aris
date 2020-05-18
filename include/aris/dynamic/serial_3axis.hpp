@@ -6,7 +6,7 @@
 
 namespace aris::dynamic
 {
-	struct ExternalAxis
+	struct ARIS_API ExternalAxis
 	{
 		enum AxisType
 		{
@@ -17,7 +17,7 @@ namespace aris::dynamic
 		AxisType type_;
 	};
 	
-	struct Serial3Param
+	struct ARIS_API Serial3Param
 	{
 		// DH PARAM //
 		double a1{ 0.5 };
@@ -41,9 +41,9 @@ namespace aris::dynamic
 		// external axes
 		std::vector<ExternalAxis> external_axes;
 	};
-	auto createModelSerial3Axis(const Serial3Param &param)->std::unique_ptr<aris::dynamic::Model>;
+	auto ARIS_API createModelSerial3Axis(const Serial3Param &param)->std::unique_ptr<aris::dynamic::Model>;
 
-	class Serial3InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
+	class ARIS_API Serial3InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
 		auto virtual allocateMemory()->void override;

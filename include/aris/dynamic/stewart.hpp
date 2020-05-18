@@ -9,9 +9,9 @@ namespace aris::dynamic
 	/// @{
 	///
 
-	auto createModelStewart()->std::unique_ptr<aris::dynamic::Model>;
+	auto ARIS_API createModelStewart()->std::unique_ptr<aris::dynamic::Model>;
 
-	class StewartInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
+	class ARIS_API StewartInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
 		auto virtual allocateMemory()->void override;
@@ -28,7 +28,7 @@ namespace aris::dynamic
 			}
 		}
 
-		virtual ~StewartInverseKinematicSolver() = default;
+		virtual ~StewartInverseKinematicSolver();
 		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");
 		ARIS_DECLARE_BIG_FOUR(StewartInverseKinematicSolver);
 

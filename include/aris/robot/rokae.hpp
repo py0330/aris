@@ -14,10 +14,10 @@
 ///
 namespace aris::robot
 {
-	auto createModelRokaeXB4(const double *robot_pm = nullptr)->std::unique_ptr<aris::dynamic::Model>;
-	auto createControllerRokaeXB4()->std::unique_ptr<aris::control::Controller>;
-	auto createPlanRootRokaeXB4()->std::unique_ptr<aris::plan::PlanRoot>;
-	auto createRokaeXB4Interface()->std::string;
+	auto ARIS_API createModelRokaeXB4(const double *robot_pm = nullptr)->std::unique_ptr<aris::dynamic::Model>;
+	auto ARIS_API createControllerRokaeXB4()->std::unique_ptr<aris::control::Controller>;
+	auto ARIS_API createPlanRootRokaeXB4()->std::unique_ptr<aris::plan::PlanRoot>;
+	auto ARIS_API createRokaeXB4Interface()->std::string;
 }
 
 

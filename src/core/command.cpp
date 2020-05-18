@@ -400,6 +400,7 @@ namespace aris::core
 	}
 	CommandParser::~CommandParser() = default;
 	CommandParser::CommandParser(const std::string &name){}
+	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
 
 	ARIS_REGISTRATION
 	{

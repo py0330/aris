@@ -17,8 +17,16 @@
 #include "aris/control/ethercat_kernel.hpp"
 #include "aris/control/ethercat.hpp"
 
+#include "aris/core/tinyxml2.h"
+
 namespace aris::control
 {
+	using XmlDocument = tinyxml2::XMLDocument;
+	using XmlDeclaration = tinyxml2::XMLDeclaration;
+	using XmlNode = tinyxml2::XMLNode;
+	using XmlElement = tinyxml2::XMLElement;
+	using XmlAttribute = tinyxml2::XMLAttribute;
+	
 	auto Uint32ToHexStr(void* data)->std::string
 	{
 		auto num = *reinterpret_cast<std::uint32_t*>(data);
@@ -96,14 +104,8 @@ namespace aris::control
 	};
 	auto EthercatSlave::ecMaster()->EthercatMaster* { return dynamic_cast<EthercatMaster*>(Slave::master()); }
 	auto EthercatSlave::ecHandle()->std::any& { return imp_->ec_handle_; }
-	auto EthercatSlave::setSmPool(std::vector<SyncManager> *sm_pool)->void
-	{
-		imp_->sm_pool_ptr_.reset(sm_pool);
-	}
-	auto EthercatSlave::smPool()->std::vector<SyncManager>& 
-	{ 
-		return *imp_->sm_pool_ptr_;
-	}
+	auto EthercatSlave::setSmPool(std::vector<SyncManager> *sm_pool)->void{	imp_->sm_pool_ptr_.reset(sm_pool);}
+	auto EthercatSlave::smPool()->std::vector<SyncManager>& {return *imp_->sm_pool_ptr_;}
 	auto EthercatSlave::vendorID()const->std::uint32_t { return imp_->vendor_id_; }
 	auto EthercatSlave::setVendorID(std::uint32_t vendor_id)->void { imp_->vendor_id_ = vendor_id; }
 	auto EthercatSlave::productCode()const->std::uint32_t { return imp_->product_code_; }
@@ -182,15 +184,6 @@ namespace aris::control
 
 		imp_->sm_pool_ptr_.reset(new std::vector<SyncManager>);
 	}
-	//EthercatSlave::EthercatSlave(const EthercatSlave &other) :Slave(other), imp_(other.imp_)
-	//{
-	//};
-	//EthercatSlave& EthercatSlave::operator=(const EthercatSlave &other)
-	//{
-	//	Slave::operator=(other);
-	//	imp_ = other.imp_;
-	//	return *this;
-	//}
 
 	struct EthercatMaster::Imp 
 	{ 
@@ -292,7 +285,7 @@ namespace aris::control
 				if (!p.is_regular_file())continue;
 
 				// not xml file //
-				aris::core::XmlDocument esi_doc;
+				XmlDocument esi_doc;
 				if (esi_doc.LoadFile(p.path().string().c_str()) != 0)THROW_FILE_LINE(std::string("could not open file:") + p.path().string());
 
 				// vendor info not found //
@@ -323,13 +316,13 @@ namespace aris::control
 	}
 	auto EthercatMaster::getDeviceList()->std::string
 	{
-		aris::core::XmlDocument xml_doc;
+		XmlDocument xml_doc;
 		auto root_xml_ele = xml_doc.NewElement("DeviceList");
 		xml_doc.InsertEndChild(root_xml_ele);
 		
 		for (auto &vendor : imp_->vendor_device_revision_map_)
 		{
-			auto vendor_ele = (aris::core::XmlElement*)root_xml_ele->InsertEndChild(xml_doc.NewElement("Vendor"));
+			auto vendor_ele = (XmlElement*)root_xml_ele->InsertEndChild(xml_doc.NewElement("Vendor"));
 			
 			std::stringstream s;
 			s << "0x" << std::setfill('0') << std::setw(sizeof(std::int32_t) * 2) << std::hex << static_cast<std::uint32_t>(vendor.first);
@@ -340,7 +333,7 @@ namespace aris::control
 			{
 				for (auto &revision : std::get<1>(device.second))
 				{
-					auto device_ele = (aris::core::XmlElement*)vendor_ele->InsertEndChild(xml_doc.NewElement("Device"));
+					auto device_ele = (XmlElement*)vendor_ele->InsertEndChild(xml_doc.NewElement("Device"));
 					
 					device_ele->SetAttribute("Name", std::get<0>(device.second).c_str());
 
@@ -371,7 +364,7 @@ namespace aris::control
 
 		EthercatSlave slave;
 
-		aris::core::XmlDocument esi_doc;
+		XmlDocument esi_doc;
 		if (esi_doc.LoadFile(slave_path.string().c_str()) != 0)THROW_FILE_LINE(std::string("could not open file:") + slave_path.string());
 		auto esi_devices = esi_doc.RootElement()->FirstChildElement("Descriptions")->FirstChildElement("Devices");
 		for (auto device = esi_devices->FirstChildElement(); device; device = device->NextSiblingElement())

@@ -1,12 +1,13 @@
 ﻿#ifndef ARIS_CORE_SOCKET_H_
 #define ARIS_CORE_SOCKET_H_
 
+#include <aris_lib_export.h>
 #include <aris/core/object.hpp>
 #include <aris/core/msg.hpp>
 
 namespace aris::core
 {
-	class Socket
+	class ARIS_API Socket
 	{
 	public:
 		enum State

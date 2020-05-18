@@ -14,9 +14,9 @@
 ///
 namespace aris::robot
 {
-	auto createModelStewart(const double *robot_pm = nullptr)->std::unique_ptr<aris::dynamic::Model>;
-	auto createControllerStewart()->std::unique_ptr<aris::control::Controller>;
-	auto createPlanRootStewart()->std::unique_ptr<aris::plan::PlanRoot>;
+	auto ARIS_API createModelStewart(const double *robot_pm = nullptr)->std::unique_ptr<aris::dynamic::Model>;
+	auto ARIS_API createControllerStewart()->std::unique_ptr<aris::control::Controller>;
+	auto ARIS_API createPlanRootStewart()->std::unique_ptr<aris::plan::PlanRoot>;
 }
 
 

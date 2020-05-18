@@ -16,7 +16,7 @@
 
 namespace aris::core
 {
-	auto typename_xml2c(const aris::core::XmlElement *ele)->std::string
+	auto typename_xml2c(const tinyxml2::XMLElement *ele)->std::string
 	{
 		return std::regex_replace(ele->Name(), std::regex("\\."), "::");
 	}
@@ -25,7 +25,7 @@ namespace aris::core
 		return std::regex_replace(c_type->name().data(), std::regex("\\::"), ".");
 	}
 	
-	auto to_xml_ele(aris::core::Instance &ins, aris::core::XmlElement *ele)->void
+	auto to_xml_ele(aris::core::Instance &ins, tinyxml2::XMLElement *ele)->void
 	{
 		// set text //
 		if (!ins.toString().empty()) ele->SetText(ins.toString().data());
@@ -72,7 +72,7 @@ namespace aris::core
 	}
 	auto toXmlString(aris::core::Instance ins)->std::string
 	{
-		aris::core::XmlDocument doc;
+		tinyxml2::XMLDocument doc;
 
 		auto root_xml_ele = doc.NewElement(typename_c2xml(ins.type()).data());
 		doc.InsertEndChild(root_xml_ele);
@@ -85,14 +85,14 @@ namespace aris::core
 		return std::string(printer.CStr());
 	}
 
-	auto from_xml_ele(aris::core::Instance &ins, aris::core::XmlElement *ele)->void
+	auto from_xml_ele(aris::core::Instance &ins, tinyxml2::XMLElement *ele)->void
 	{
 		// from text //
 		if (ele->GetText())	ins.fromString(ele->GetText());
 
 		// 获取全部ele //
-		std::vector<aris::core::XmlElement *> child_eles;
-		std::vector<const aris::core::XmlAttribute *> attrs;
+		std::vector<tinyxml2::XMLElement *> child_eles;
+		std::vector<const tinyxml2::XMLAttribute *> attrs;
 		for (auto child_ele = ele->FirstChildElement(); child_ele; child_ele = child_ele->NextSiblingElement())
 		{
 			child_eles.push_back(child_ele);
@@ -187,7 +187,7 @@ namespace aris::core
 	}
 	auto fromXmlString(aris::core::Instance ins, std::string_view xml_str)->void
 	{
-		aris::core::XmlDocument doc;
+		tinyxml2::XMLDocument doc;
 		auto ret = doc.Parse(xml_str.data(), xml_str.size());
 
 		if (ret != tinyxml2::XML_SUCCESS)

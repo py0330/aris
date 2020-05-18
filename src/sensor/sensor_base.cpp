@@ -63,7 +63,7 @@ namespace aris::sensor
 		return std::move(SensorDataProtector(this));
 	}
 	Sensor::~Sensor() {}
-	Sensor::Sensor(const std::string &name, std::function<SensorData*()> new_func) :Object(name), imp_(new Imp)
+	Sensor::Sensor(const std::string &name, std::function<SensorData*()> new_func) : imp_(new Imp)
 	{
 		for (auto i = 0; i < 3; ++i)imp_->data_[i].reset(new_func());
 	};
@@ -88,20 +88,13 @@ namespace aris::sensor
 
 	struct SensorRoot::Imp
 	{
-		aris::core::ObjectPool<Sensor>* sensor_pool_;
+		//aris::core::ObjectPool<Sensor>* sensor_pool_;
 	};
-	auto SensorRoot::loadXml(const aris::core::XmlElement &xml_ele)->void
-	{
-		Object::loadXml(xml_ele);
-		imp_->sensor_pool_ = findByName("sensor_pool") == children().end() ? &add<aris::core::ObjectPool<Sensor> >("sensor_pool") : static_cast<aris::core::ObjectPool<Sensor> *>(&(*findByName("sensor_pool")));
-	}
-	auto SensorRoot::sensorPool()->aris::core::ObjectPool<Sensor>& { return *imp_->sensor_pool_; }
-	auto SensorRoot::sensorPool()const->const aris::core::ObjectPool<Sensor> & { return *imp_->sensor_pool_; }
+	//auto SensorRoot::sensorPool()->aris::core::ObjectPool<Sensor>& { return *imp_->sensor_pool_; }
+	//auto SensorRoot::sensorPool()const->const aris::core::ObjectPool<Sensor> & { return *imp_->sensor_pool_; }
 	SensorRoot::~SensorRoot() {}
-	SensorRoot::SensorRoot(const std::string &name) :Object(name)
+	SensorRoot::SensorRoot(const std::string &name)
 	{	
-		aris::core::Object::registerTypeGlobal<aris::core::ObjectPool<Sensor> >();
-		imp_->sensor_pool_ = &add<aris::core::ObjectPool<Sensor> >("sensor_pool");
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(SensorRoot);
 }

@@ -1,11 +1,12 @@
 ﻿#ifndef ARIS_CONTROL_CONTROLLER_MOTION_H_
 #define ARIS_CONTROL_CONTROLLER_MOTION_H_
 
+#include <aris_lib_export.h>
 #include <aris/control/master_slave.hpp>
 
 namespace aris::control
 {
-	class Motor : public virtual Slave
+	class ARIS_API Motor : public virtual Slave
 	{
 	public:
 		auto motId()const->aris::Size;
@@ -75,7 +76,7 @@ namespace aris::control
 
 		friend class Controller;
 	};
-	class Controller : public virtual Master
+	class ARIS_API Controller : public virtual Master
 	{
 	public:
 		auto virtual init()->void override;

@@ -15,12 +15,12 @@
 
 namespace aris::server
 {
-	class InterfaceRoot
+	class ARIS_API InterfaceRoot
 	{
 	private:
-		aris::core::XmlDocument doc_;
+		//aris::core::XmlDocument doc_;
 	};
-	class Interface
+	class ARIS_API Interface
 	{
 	public:
 		auto virtual open()->void = 0;
@@ -29,7 +29,7 @@ namespace aris::server
 		Interface(const std::string &name = "interface");
 		ARIS_DEFINE_BIG_FOUR(Interface);
 	};
-	class ProgramWebInterface :public Interface
+	class ARIS_API ProgramWebInterface :public Interface
 	{
 	public:
 		auto virtual open()->void override;
@@ -45,16 +45,17 @@ namespace aris::server
 		auto lastErrorCode()->int;
 		auto lastErrorLine()->int;
 		
+		~ProgramWebInterface();
 		ProgramWebInterface(const std::string &name = "pro_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
 		ProgramWebInterface(ProgramWebInterface && other);
 		ProgramWebInterface& operator=(ProgramWebInterface&& other);
 
 	private:
 		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
+		std::unique_ptr<Imp> imp_;
 	};
-	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
-	class WebInterface :public Interface
+	auto ARIS_API parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string;
+	class ARIS_API WebInterface :public Interface
 	{
 	public:
 		auto virtual open()->void override;
@@ -62,13 +63,15 @@ namespace aris::server
 		auto resetSocket(aris::core::Socket *sock)->void;
 		auto socket()->aris::core::Socket&;
 
+		~WebInterface();
 		WebInterface(const std::string &name = "websock_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
+		ARIS_DECLARE_BIG_FOUR(WebInterface);
 
 	private:
 		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
+		std::unique_ptr<Imp> imp_;
 	};
-	class HttpInterface :public Interface
+	class ARIS_API HttpInterface :public Interface
 	{
 	public:
 		auto virtual open()->void override;
@@ -86,7 +89,7 @@ namespace aris::server
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-	class GetInfo :public aris::core::CloneObject<GetInfo, aris::plan::Plan>
+	class ARIS_API GetInfo :public aris::core::CloneObject<GetInfo, aris::plan::Plan>
 	{
 	public:
 		auto virtual prepareNrt()->void override;

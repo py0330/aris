@@ -12,8 +12,7 @@ namespace aris::dynamic
 	class Part;
 	class Geometry;
 
-	class Coordinate :public DynEle
-	{
+	class ARIS_API Coordinate :public DynEle{
 	public:
 		auto virtual pm() const noexcept->const double4x4& = 0;
 		auto virtual vs() const noexcept->const double6& = 0;
@@ -77,8 +76,7 @@ namespace aris::dynamic
 		explicit Coordinate(const std::string &name = "coordinate", bool active = true);
 		ARIS_DEFINE_BIG_FOUR(Coordinate);
 	};
-	class Marker final :public Coordinate
-	{
+	class ARIS_API Marker final :public Coordinate{
 	public:
 		auto virtual pm() const noexcept->const double4x4& override;
 		auto virtual vs() const noexcept->const double6& override;
@@ -106,8 +104,7 @@ namespace aris::dynamic
 		friend class Model;
 		friend class Part;
 	};
-	class Part final :public Coordinate
-	{
+	class ARIS_API Part final :public Coordinate{
 	public:
 		auto virtual pm() const noexcept->const double4x4& override;
 		auto virtual vs() const noexcept->const double6& override;
@@ -220,15 +217,13 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class Geometry :public Element
-	{
+	class ARIS_API Geometry :public Element{
 	public:
 		virtual ~Geometry() = default;
 		explicit Geometry(const std::string &name = "geometry") : Element(name) {}
 		ARIS_DEFINE_BIG_FOUR(Geometry);
 	};
-	class ParasolidGeometry final :public Geometry
-	{
+	class ARIS_API ParasolidGeometry final :public Geometry{
 	public:
 		auto prtPm()const->const double4x4&;
 		auto filePath()const->const std::string &;
@@ -241,8 +236,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class FileGeometry final :public Geometry
-	{
+	class ARIS_API FileGeometry final :public Geometry{
 	public:
 		auto prtPm()const->const double4x4&;
 		auto filePath()const->const std::string &;
@@ -255,8 +249,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class ShellGeometry final :public Geometry
-	{
+	class ARIS_API ShellGeometry final :public Geometry{
 	public:
 		auto filePath()const->const std::string &;
 		auto relativeToMarker()const->const Marker&;

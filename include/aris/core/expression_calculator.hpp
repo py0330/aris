@@ -8,45 +8,46 @@
 #include <list>
 #include <any>
 
+#include <aris_lib_export.h>
 #include "aris/core/basic_type.hpp"
 #include "aris/core/log.hpp"
 #include "aris/core/object.hpp"
 
 namespace aris::core
 {
-	class Matrix
+	class ARIS_API Matrix
 	{
 	public:
 		auto swap(Matrix &other)->Matrix&;
-		auto empty() const->bool { return data_vec_.empty(); }
-		auto size() const->Size { return m()*n(); }
-		auto data()->double * { return data_vec_.data(); }
-		auto data() const->const double * { return data_vec_.data(); }
-		auto begin() ->double * { return data(); }
-		auto begin() const ->const double * { return data(); }
-		auto end() ->double * { return data() + size(); }
-		auto end()  const ->const double * { return data() + size(); }
-		auto m() const->Size { return m_; }
-		auto n() const->Size { return n_; }
+		auto empty() const->bool;
+		auto size() const->Size;
+		auto data()->double *;
+		auto data() const->const double *;
+		auto begin() ->double *;
+		auto begin() const ->const double *;
+		auto end() ->double *;
+		auto end()  const ->const double *;
+		auto m() const->Size;
+		auto n() const->Size;
 		auto resize(Size m, Size n)->Matrix &;
 		auto transpose()->Matrix &;
 
 		auto copySubMatrixTo(const Matrix &subMat, Size beginRow, Size beginCol, Size rowNum, Size colNum)->void;
-		auto copySubMatrixTo(const Matrix &subMat, Size beginRow, Size beginCol)->void { copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); }
+		auto copySubMatrixTo(const Matrix &subMat, Size beginRow, Size beginCol)->void;
 
 		auto toString() const->std::string;
-		auto toDouble() const->double { return data()[0]; }
-		auto dsp() const ->void { std::cout << this->toString(); }
+		auto toDouble() const->double;
+		auto dsp() const ->void;
 
-		auto operator()(Size i, Size j)->double & { return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i]; }
-		auto operator()(Size i, Size j) const->const double & { return is_row_major_ ? data()[i*n() + j] : data()[j*m() + i]; }
+		auto operator()(Size i, Size j)->double &;
+		auto operator()(Size i, Size j) const->const double &;
 
-		friend auto operator + (const Matrix &m1, const Matrix &m2)->Matrix;
-		friend auto operator - (const Matrix &m1, const Matrix &m2)->Matrix;
-		friend auto operator * (const Matrix &m1, const Matrix &m2)->Matrix;
-		friend auto operator / (const Matrix &m1, const Matrix &m2)->Matrix;
-		friend auto operator - (const Matrix &m1)->Matrix;
-		friend auto operator + (const Matrix &m1)->Matrix;
+		friend auto ARIS_API operator + (const Matrix &m1, const Matrix &m2)->Matrix;
+		friend auto ARIS_API operator - (const Matrix &m1, const Matrix &m2)->Matrix;
+		friend auto ARIS_API operator * (const Matrix &m1, const Matrix &m2)->Matrix;
+		friend auto ARIS_API operator / (const Matrix &m1, const Matrix &m2)->Matrix;
+		friend auto ARIS_API operator - (const Matrix &m1)->Matrix;
+		friend auto ARIS_API operator + (const Matrix &m1)->Matrix;
 
 		template <typename MATRIX_LIST>
 		friend auto combineColMatrices(const MATRIX_LIST &matrices)->Matrix;
@@ -55,38 +56,34 @@ namespace aris::core
 		template <typename MATRIX_LISTLIST>
 		friend auto combineMatrices(const MATRIX_LISTLIST &matrices)->Matrix;
 
-		~Matrix() {}
+		~Matrix();
 		Matrix(double value);
 		Matrix(Size m, Size n, double value = 0);
 		Matrix(Size m, Size n, const double *data);
 		Matrix(const std::initializer_list<Matrix> &data);
-		Matrix() :m_(0), n_(0), is_row_major_(true) {}
-		Matrix(const Matrix &other) = default;
-		Matrix(Matrix &&other) { this->swap(other); }
-		Matrix &operator=(Matrix other) { this->swap(other); return *this; }
+		Matrix();
+		Matrix(const Matrix &other);
+		Matrix(Matrix &&other);
+		Matrix &operator=(Matrix other);
 
 	private:
-		Size m_, n_;
-		bool is_row_major_;
-		std::vector<double> data_vec_;
+		struct Imp;
+		ImpPtr<Imp> imp_;
 	};
 
 	template <typename MATRIX_LIST>
 	Matrix combineColMatrices(const MATRIX_LIST &matrices)
 	{
-		Matrix ret;
-
 		// 获取全部矩阵的行数和列数 //
+		Size m = 0, n = 0;
 		for (const auto &mat : matrices)
 		{
 			if (mat.size() == 0)continue;
-			if ((ret.n() != 0) && (ret.n() != mat.n()))THROW_FILE_LINE("input do not have valid size");
-
-			ret.m_ += mat.m();
-			ret.n_ = mat.n();
+			if ((n != 0) && (n != mat.n()))THROW_FILE_LINE("input do not have valid size");
+			m += mat.m();
+			n = mat.n();
 		}
-
-		ret.resize(ret.m(), ret.n());
+		Matrix ret(m, n);
 
 		// 赋值 //
 		Size beginRow = 0;
@@ -107,19 +104,16 @@ namespace aris::core
 	template <typename MATRIX_LIST>
 	Matrix combineRowMatrices(const MATRIX_LIST &matrices)
 	{
-		Matrix ret;
-
 		// 获取全部矩阵的行数和列数 //
+		Size m = 0, n = 0;
 		for (const auto &mat : matrices)
 		{
 			if (mat.size() == 0)continue;
-			if ((ret.m() != 0) && (ret.m() != mat.m()))THROW_FILE_LINE("input do not have valid size");
-
-			ret.m_ = mat.m();
-			ret.n_ += mat.n();
+			if ((m != 0) && (m != mat.m()))THROW_FILE_LINE("input do not have valid size");
+			m = mat.m();
+			n += mat.n();
 		}
-
-		ret.resize(ret.m(), ret.n());
+		Matrix ret(m,n);
 
 		// 赋值 //
 		Size beginCol = 0;
@@ -145,7 +139,7 @@ namespace aris::core
 		return combineColMatrices(mat_col_list);
 	}
 
-	class Calculator
+	class ARIS_API Calculator
 	{
 	public:
 		using BuiltInFunction = std::function<std::any(std::vector<std::any>&)>;
@@ -164,17 +158,15 @@ namespace aris::core
 		auto addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void;
 		auto clearVariables()->void;
 
-		//auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		//auto virtual saveXml(aris::core::XmlElement &xml_ele)const->void override;
 		virtual ~Calculator();
 		explicit Calculator(const std::string &name = "calculator");
 		ARIS_DECLARE_BIG_FOUR(Calculator);
-		//ARIS_REGISTER_TYPE(Calculator)
+
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class LanguageParser : public aris::core::Object
+	class ARIS_API LanguageParser
 	{
 	public:
 		auto setProgram(std::string_view program)->void;
@@ -197,7 +189,6 @@ namespace aris::core
 
 		virtual ~LanguageParser();
 		explicit LanguageParser(const std::string &name = "language_parser");
-		ARIS_REGISTER_TYPE(LanguageParser);
 		ARIS_DECLARE_BIG_FOUR(LanguageParser);
 
 	private:

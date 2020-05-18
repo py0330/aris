@@ -11,7 +11,7 @@
 namespace aris::dynamic
 {
 	using PathPlan = std::function<void(double s, double *pm, double *vs_over_s, double *as_over_s)>;
-	class OptimalTrajectory :public Element
+	class ARIS_API OptimalTrajectory :public Element
 	{
 	public:
 		struct MotionLimit
@@ -69,7 +69,7 @@ namespace aris::dynamic
 		std::vector<double> result_;
 	};
 
-	class FastPath
+	class ARIS_API FastPath
 	{
 	public:
 		struct MotionLimit

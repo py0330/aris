@@ -9,13 +9,14 @@
 #include <algorithm>
 #include <cmath>
 
+#include <aris_lib_export.h>
 #include <aris/core/basic_type.hpp>
 
 namespace aris::dynamic
 {
-	struct RowMajor { Size r_ld; constexpr RowMajor(Size r_ld_)noexcept :r_ld(r_ld_) {}; };
-	struct ColMajor { Size c_ld; constexpr ColMajor(Size c_ld_)noexcept :c_ld(c_ld_) {}; };
-	struct Stride { Size r_ld, c_ld; Stride()noexcept = default; constexpr Stride(Size r_ld_, Size c_ld_)noexcept :r_ld(r_ld_), c_ld(c_ld_) {}; };
+	struct ARIS_API RowMajor { Size r_ld; constexpr RowMajor(Size r_ld_)noexcept :r_ld(r_ld_) {}; };
+	struct ARIS_API ColMajor { Size c_ld; constexpr ColMajor(Size c_ld_)noexcept :c_ld(c_ld_) {}; };
+	struct ARIS_API Stride { Size r_ld, c_ld; Stride()noexcept = default; constexpr Stride(Size r_ld_, Size c_ld_)noexcept :r_ld(r_ld_), c_ld(c_ld_) {}; };
 
 	auto inline constexpr T(Size ld)noexcept->ColMajor { return ColMajor(ld); }
 	auto inline constexpr at(Size i, Size ld)noexcept->Size { return i * ld; }
@@ -94,8 +95,8 @@ namespace aris::dynamic
 		}
 	}
 	auto inline dlmwrite(const Size m, const Size n, const double *A, const char *filename)->void { dlmwrite(m, n, A, n, filename); }
-	auto dlmread(const char *filename, double *mtx)->void;
-	auto dlmread(const char *filename)->std::vector<double>;
+	auto ARIS_API dlmread(const char *filename, double *mtx)->void;
+	auto ARIS_API dlmread(const char *filename)->std::vector<double>;
 
 	template <typename T>
 	auto inline s_sgn(T val)noexcept->T { return T(T(0) < val) - (val < T(0)); }

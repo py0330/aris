@@ -131,7 +131,7 @@ namespace aris::control
 		}
 	}
 
-	void read_bit(char *data, int bit_size, const char *pd, int offset, int bit_position)
+	void ARIS_API read_bit(char *data, int bit_size, const char *pd, int offset, int bit_position)
 	{
 		// data:
 		//                                                   bit_size
@@ -158,7 +158,7 @@ namespace aris::control
 				data[bit_size / 8] |= (std::uint8_t(pd[offset + bit_size / 8 + 1]) >> (8 - bit_position)) & (0xff << (8 - bit_size % 8));
 		}
 	}
-	void write_bit(const char *data, int bit_size, char *pd, int offset, int bit_position)
+	void ARIS_API write_bit(const char *data, int bit_size, char *pd, int offset, int bit_position)
 	{
 		for (int i = 0; i < bit_size / 8; ++i)
 		{

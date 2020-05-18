@@ -44,8 +44,8 @@ namespace aris::dynamic
 	/// i3  :  3x3 惯量矩阵
 	/// im  :  6x6 空间惯量矩阵
 	/// iv  :  10x1 惯量矩阵向量[m, cx, cy, cz, Ixx, Iyy, Izz, Ixy, Ixz, Iyz]
-	auto s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
-	auto s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_pm(const double *pm_in, double *pm_out) noexcept->void;
+	auto ARIS_API s_pm_dot_pm(const double *pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
 	template <typename ...Args>
 	auto s_pm_dot_pm(const double *pm1, const double *pm2, Args ...args) noexcept->double *
 	{
@@ -53,9 +53,9 @@ namespace aris::dynamic
 		s_pm_dot_pm(pm1, pm2, pm);
 		return s_pm_dot_pm(pm, args...);
 	}
-	auto s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
-	auto s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out = nullptr) noexcept->double *;
-	auto s_pm_dot_v3(const double *pm, const double *v3_in, double *v3_out = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_pm_dot_pm(const double *inv_pm1_in, const double *pm2_in, double *pm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pm_dot_inv_pm(const double *pm1_in, const double *inv_pm2_in, double *pm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pm_dot_v3(const double *pm, const double *v3_in, double *v3_out = nullptr) noexcept->double *;
 	template <typename V3Type1, typename V3Type2>
 	auto s_pm_dot_v3(const double *pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void
 	{
@@ -66,7 +66,7 @@ namespace aris::dynamic
 		v3_out[b1] = pm[4] * v3_in[a0] + pm[5] * v3_in[a1] + pm[6] * v3_in[a2];
 		v3_out[b2] = pm[8] * v3_in[a0] + pm[9] * v3_in[a1] + pm[10] * v3_in[a2];
 	}
-	auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_pm_dot_v3(const double *inv_pm, const double *v3, double *v3_out = nullptr) noexcept->double *;
 	template <typename V3Type1, typename V3Type2>
 	auto s_inv_pm_dot_v3(const double *inv_pm, const double *v3_in, V3Type1 v31_t, double *v3_out, V3Type2 v32_t) noexcept->void
 	{
@@ -78,8 +78,8 @@ namespace aris::dynamic
 		v3_out[b2] = inv_pm[2] * v3_in[a0] + inv_pm[6] * v3_in[a1] + inv_pm[10] * v3_in[a2];
 	}
 
-	auto s_im_dot_as(const double *im, const double *as, double * fs = nullptr) noexcept->double *;
-	auto s_iv_dot_as(const double *iv, const double *as, double * fs = nullptr) noexcept->double *;
+	auto ARIS_API s_im_dot_as(const double *im, const double *as, double * fs = nullptr) noexcept->double *;
+	auto ARIS_API s_iv_dot_as(const double *iv, const double *as, double * fs = nullptr) noexcept->double *;
 
 	auto inline s_sinx_over_x(double x)->double { return std::abs(x)<1e-8 ? 1.0 : std::sin(x) / x; };
 	// 1-cos(x) = 2 sin(x/2)^2
@@ -98,13 +98,13 @@ namespace aris::dynamic
 	///  -y   x   0 ]
 	/// 
 	///
-	auto s_cm3(const double *a, double *cm_out) noexcept->void;
+	auto ARIS_API s_cm3(const double *a, double *cm_out) noexcept->void;
 	/// \brief 计算三维向量叉乘
 	///
 	/// 用来计算：c = a x b
 	///
 	///
-	auto s_c3(const double *a, const double *b, double *c_out) noexcept->void;
+	auto ARIS_API s_c3(const double *a, const double *b, double *c_out) noexcept->void;
 	/// \brief 计算三维向量叉乘
 	///
 	/// 用来计算：c = a x b
@@ -126,7 +126,7 @@ namespace aris::dynamic
 	/// 用来计算：c = alpha * a x b
 	///
 	///
-	auto s_c3(double alpha, const double *a, const double *b, double *c_out) noexcept->void;
+	auto ARIS_API s_c3(double alpha, const double *a, const double *b, double *c_out) noexcept->void;
 	/// \brief 计算三维向量叉乘
 	///
 	/// 用来计算：c = alpha * a x b
@@ -148,7 +148,7 @@ namespace aris::dynamic
 	/// 用来计算：c = -a x b
 	///
 	///
-	auto s_c3i(const double *a, const double *b, double *c_out) noexcept->void;
+	auto ARIS_API s_c3i(const double *a, const double *b, double *c_out) noexcept->void;
 	/// \brief 计算三维向量叉乘
 	///
 	/// 用来计算：c = a x b
@@ -170,7 +170,7 @@ namespace aris::dynamic
 	/// 用来计算：c = a x b + c
 	///
 	///
-	auto s_c3a(const double *a, const double *b, double *c_out) noexcept->void;
+	auto ARIS_API s_c3a(const double *a, const double *b, double *c_out) noexcept->void;
 	/// \brief 计算三维向量叉乘
 	///
 	/// 用来计算：c = a x b + c
@@ -192,7 +192,7 @@ namespace aris::dynamic
 	/// 用来计算：c = alpha * a x b + beta * c
 	///
 	///
-	auto s_c3a(double alpha, const double *a, const double *b, double *c_out) noexcept->void;
+	auto ARIS_API s_c3a(double alpha, const double *a, const double *b, double *c_out) noexcept->void;
 	/// \brief 计算三维向量叉乘
 	///
 	/// 用来计算：c = alpha * a x b + beta * c
@@ -214,7 +214,7 @@ namespace aris::dynamic
 	/// 用来计算：c = a x b + c
 	///
 	///
-	auto s_c3s(const double *a, const double *b, double *c_out) noexcept->void;
+	auto ARIS_API s_c3s(const double *a, const double *b, double *c_out) noexcept->void;
 	/// \brief 计算三维向量叉乘
 	///
 	/// 用来计算：c = a x b + c
@@ -236,13 +236,13 @@ namespace aris::dynamic
 	///  其中,cmf = [w x,  O; v x, w x]
 	///
 	///
-	auto s_cmf(const double *vs, double *cmf_out) noexcept->void;
+	auto ARIS_API s_cmf(const double *vs, double *cmf_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vfs = vs xf fs
 	///
 	///
-	auto s_cf(const double *vs, const double *fs, double* vfs_out) noexcept->void;
+	auto ARIS_API s_cf(const double *vs, const double *fs, double* vfs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vfs = vs xf fs
@@ -262,7 +262,7 @@ namespace aris::dynamic
 	/// 用来计算：vfs = alpha * vs xf fs
 	///
 	///
-	auto s_cf(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void;
+	auto ARIS_API s_cf(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vfs = alpha * vs xf fs
@@ -279,7 +279,7 @@ namespace aris::dynamic
 	/// 用来计算：vfs = vs xf fs
 	///
 	///
-	auto s_cfi(const double *vs, const double *fs, double* vfs_out) noexcept->void;
+	auto ARIS_API s_cfi(const double *vs, const double *fs, double* vfs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vfs = vs xf fs
@@ -299,7 +299,7 @@ namespace aris::dynamic
 	/// 用来计算：vfs = vs xf fs
 	///
 	///
-	auto s_cfa(const double *vs, const double *fs, double* vfs_out) noexcept->void;
+	auto ARIS_API s_cfa(const double *vs, const double *fs, double* vfs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vfs = vs xf fs
@@ -319,7 +319,7 @@ namespace aris::dynamic
 	/// 用来计算：vfs = alpha * vs xf fs + beta * vfs
 	///
 	///
-	auto s_cfa(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void;
+	auto ARIS_API s_cfa(double alpha, const double *vs, const double *fs, double* vfs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vfs = alpha * vs xf fs + beta * vfs
@@ -339,7 +339,7 @@ namespace aris::dynamic
 	/// 用来计算：vfs = vs xf fs
 	///
 	///
-	auto s_cfs(const double *vs, const double *fs, double* vfs_out) noexcept->void;
+	auto ARIS_API s_cfs(const double *vs, const double *fs, double* vfs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vfs = vs xf fs
@@ -361,13 +361,13 @@ namespace aris::dynamic
 	///   O  ,  w x] \n
 	///
 	///
-	auto s_cmv(const double *vs, double *cmv_out) noexcept->void;
+	auto ARIS_API s_cmv(const double *vs, double *cmv_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vvs = vs xv vs2
 	///
 	///
-	auto s_cv(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+	auto ARIS_API s_cv(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vvs = vs xv vs2
@@ -387,7 +387,7 @@ namespace aris::dynamic
 	/// 用来计算：vvs = alpha * vs xv vs2
 	///
 	///
-	auto s_cv(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+	auto ARIS_API s_cv(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vvs = alpha * vs xv vs2
@@ -404,7 +404,7 @@ namespace aris::dynamic
 	/// 用来计算：vvs = vs xv vs2
 	///
 	///
-	auto s_cvi(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+	auto ARIS_API s_cvi(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vvs = vs xv vs2
@@ -424,7 +424,7 @@ namespace aris::dynamic
 	/// 用来计算：vvs = vs xv vs2 + vvs
 	///
 	///
-	auto s_cva(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+	auto ARIS_API s_cva(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vvs = vs xv vs2 + vvs
@@ -444,7 +444,7 @@ namespace aris::dynamic
 	/// 用来计算：vvs = alpha * vs xv vs2 + beta * vvs
 	///
 	///
-	auto s_cva(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+	auto ARIS_API s_cva(double alpha, const double *vs, const double *vs2, double* vvs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vvs = alpha * vs xv vs2 + beta * vvs
@@ -464,7 +464,7 @@ namespace aris::dynamic
 	/// 用来计算：vvs = vs xv vs2 + vvs
 	///
 	///
-	auto s_cvs(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
+	auto ARIS_API s_cvs(const double *vs, const double *vs2, double* vvs_out) noexcept->void;
 	/// \brief 计算六维向量叉乘
 	///
 	/// 用来计算：vvs = vs xv vs2 + vvs
@@ -790,13 +790,13 @@ namespace aris::dynamic
 	///  其中,tmf = [rm (3x3),  pp x rm (3x3); O (3x3), rm (3x3)]
 	///
 	///
-	auto s_tmf(const double *pm, double *tmf_out) noexcept->void;
+	auto ARIS_API s_tmf(const double *pm, double *tmf_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = tmf(pm) * fs
 	///
 	///
-	auto s_tf(const double *pm, const double *fs, double *fs_out) noexcept->void;
+	auto ARIS_API s_tf(const double *pm, const double *fs, double *fs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = tmf(pm) * fs
@@ -816,7 +816,7 @@ namespace aris::dynamic
 	/// 等同于： fs_out = alpha * tmf(pm) * fs
 	///
 	///
-	auto s_tf(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void;
+	auto ARIS_API s_tf(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = alpha * tmf(pm) * fs
@@ -833,7 +833,7 @@ namespace aris::dynamic
 	/// 等同于： fs_out = tmf(pm) * fs + fs_out
 	///
 	///
-	auto s_tfa(const double *pm, const double *fs, double *fs_out) noexcept->void;
+	auto ARIS_API s_tfa(const double *pm, const double *fs, double *fs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = tmf(pm) * fs + fs_out
@@ -851,7 +851,7 @@ namespace aris::dynamic
 	/// 等同于： fs_out = alpha * tmf(pm) * fs + beta * fs_out
 	///
 	///
-	auto s_tfa(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void;
+	auto ARIS_API s_tfa(double alpha, const double *pm, const double *fs, double *fs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = alpha * tmf(pm) * fs + beta * fs_out
@@ -869,7 +869,7 @@ namespace aris::dynamic
 	/// 等同于： fs_out = tmv(pm^-1) * fs
 	///
 	///
-	auto s_inv_tf(const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
+	auto ARIS_API s_inv_tf(const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
 	/// \brief 根据位姿矩阵的逆矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = tmv(pm^-1) * fs
@@ -889,7 +889,7 @@ namespace aris::dynamic
 	/// 等同于： fs_out = alpha * tmv(pm^-1) * fs
 	///
 	///
-	auto s_inv_tf(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
+	auto ARIS_API s_inv_tf(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
 	/// \brief 根据位姿矩阵的逆矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = alpha * tmv(pm^-1) * fs
@@ -906,7 +906,7 @@ namespace aris::dynamic
 	/// 等同于： fs_out = tmf(pm^-1) * fs + fs_out
 	///
 	///
-	auto s_inv_tfa(const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
+	auto ARIS_API s_inv_tfa(const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = tmf(pm^-1) * fs + fs_out
@@ -924,7 +924,7 @@ namespace aris::dynamic
 	/// 等同于： fs_out = alpha * tmf(pm^-1) * fs + beta * fs_out
 	///
 	///
-	auto s_inv_tfa(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
+	auto ARIS_API s_inv_tfa(double alpha, const double *inv_pm, const double *fs, double *fs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维力向量
 	///
 	/// 等同于： fs_out = alpha * tmf(pm^-1) * fs + beta * fs_out
@@ -942,13 +942,13 @@ namespace aris::dynamic
 	///  其中,tmv = [rm (3x3),  O (3x3); pp x rm (3x3), rm (3x3)]
 	///
 	///
-	auto s_tmv(const double *pm, double *tmv_out) noexcept->void;
+	auto ARIS_API s_tmv(const double *pm, double *tmv_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维速度向量
 	///
 	/// 等同于： vec_out = tmv(pm_in) * vs_in
 	///
 	///
-	auto s_tv(const double *pm, const double *vs, double *vs_out) noexcept->void;
+	auto ARIS_API s_tv(const double *pm, const double *vs, double *vs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维速度向量
 	///
 	/// 等同于： vs_out = tmv(pm) * vs
@@ -966,7 +966,7 @@ namespace aris::dynamic
 	/// 等同于： vs_out = alpha * tmv(pm) * vs
 	///
 	///
-	auto s_tv(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void;
+	auto ARIS_API s_tv(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维速度向量
 	///
 	/// 等同于： vs_out = alpha * tmv(pm) * vs
@@ -983,7 +983,7 @@ namespace aris::dynamic
 	/// 等同于： vs_out = tmv(pm) * vs + vs_out
 	///
 	///
-	auto s_tva(const double *pm, const double *vs, double *vs_out) noexcept->void;
+	auto ARIS_API s_tva(const double *pm, const double *vs, double *vs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维速度向量
 	///
 	/// 等同于： vs_out = tmv(pm) * vs + vs_out
@@ -1001,7 +1001,7 @@ namespace aris::dynamic
 	/// 等同于： vs_out = alpha * tmv(pm) * vs + beta * vs_out
 	///
 	///
-	auto s_tva(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void;
+	auto ARIS_API s_tva(double alpha, const double *pm, const double *vs, double *vs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维速度向量
 	///
 	/// 等同于： vs_out = alpha * tmv(pm) * vs + beta * vs_out
@@ -1019,7 +1019,7 @@ namespace aris::dynamic
 	/// 等同于： vs_out = tmv(pm^-1) * vs
 	///
 	///
-	auto s_inv_tv(const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
+	auto ARIS_API s_inv_tv(const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
 	/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
 	///
 	/// 等同于： vs_out = tmv(pm^-1) * vs
@@ -1042,7 +1042,7 @@ namespace aris::dynamic
 	/// 等同于： vs_out = alpha * tmv(pm^-1) * vs
 	///
 	///
-	auto s_inv_tv(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
+	auto ARIS_API s_inv_tv(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
 	/// \brief 根据位姿矩阵的逆矩阵转换六维速度向量
 	///
 	/// 等同于： vs_out = alpha * tmv(pm^-1) * vs
@@ -1059,7 +1059,7 @@ namespace aris::dynamic
 	/// 等同于： vs_out = tmv(pm^-1) * vs + vs_out
 	///
 	///
-	auto s_inv_tva(const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
+	auto ARIS_API s_inv_tva(const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维速度向量
 	///
 	/// 等同于： vs_out = tmv(pm^-1) * vs + vs_out
@@ -1077,7 +1077,7 @@ namespace aris::dynamic
 	/// 等同于： vs_out = alpha * tmv(pm^-1) * vs + beta * vs_out
 	///
 	///
-	auto s_inv_tva(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
+	auto ARIS_API s_inv_tva(double alpha, const double *inv_pm, const double *vs, double *vs_out) noexcept->void;
 	/// \brief 根据位姿矩阵转换六维速度向量
 	///
 	/// 等同于： vs_out = alpha * tmv(pm^-1) * vs + beta * vs_out
@@ -1364,178 +1364,178 @@ namespace aris::dynamic
 	}
 
 	// 以下函数为物理量之间的转换函数 //
-	auto s_ra2rm(const double *ra_in, double *rm_out = nullptr, Size rm_ld = 3) noexcept->double *;
-	auto s_rm2ra(const double *rm_in, double *ra_out = nullptr, Size rm_ld = 3) noexcept->double *;
-	auto s_re2rm(const double *re_in, double *rm_out = nullptr, const char *eu_type_in = "313", Size rm_ld = 3) noexcept->double *;
-	auto s_rm2re(const double *rm_in, double *re_out = nullptr, const char *eu_type_in = "313", Size rm_ld = 3) noexcept->double *;
-	auto s_rq2rm(const double *rq_in, double *rm_out = nullptr, Size rm_ld = 3) noexcept->double *;
-	auto s_rm2rq(const double *rm_in, double *rq_out = nullptr, Size rm_ld = 3) noexcept->double *;
-	auto s_pp2pm(const double *pp_in, double *pm_out = nullptr) noexcept->double *;
-	auto s_pm2pp(const double *pm_in, double *pp_out = nullptr) noexcept->double *;
-	auto s_ra2pm(const double *ra_in, double *rm_out = nullptr) noexcept->double *;
-	auto s_pm2ra(const double *rm_in, double *ra_out = nullptr) noexcept->double *;
-	auto s_re2pm(const double *re_in, double *pm_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_pm2re(const double *pm_in, double *re_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_pa2pm(const double *pa_in, double *pm_out = nullptr) noexcept->double *;
-	auto s_pm2pa(const double *pm_in, double *pa_out = nullptr) noexcept->double *;
-	auto s_rq2pm(const double *rq_in, double *pm_out = nullptr) noexcept->double *;
-	auto s_pm2rq(const double *pm_in, double *rq_out = nullptr) noexcept->double *;
-	auto s_rm2pm(const double *rm_in, double *pm_out = nullptr, Size rm_ld = 3) noexcept->double *;
-	auto s_pm2rm(const double *pm_in, double *rm_out = nullptr, Size rm_ld = 3) noexcept->double *;
-	auto s_pe2pm(const double *pe_in, double *pm_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_pm2pe(const double *pm_in, double *pe_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_pq2pm(const double *pq_in, double *pm_out = nullptr) noexcept->double *;
-	auto s_pm2pq(const double *pm_in, double *pq_out = nullptr) noexcept->double *;
-	auto s_ps2pm(const double *ps_in, double *pm_out = nullptr) noexcept->double *;
-	auto s_pm2ps(const double *pm_in, double *ps_out = nullptr) noexcept->double *;
+	auto ARIS_API s_ra2rm(const double *ra_in, double *rm_out = nullptr, Size rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_rm2ra(const double *rm_in, double *ra_out = nullptr, Size rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_re2rm(const double *re_in, double *rm_out = nullptr, const char *eu_type_in = "313", Size rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_rm2re(const double *rm_in, double *re_out = nullptr, const char *eu_type_in = "313", Size rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_rq2rm(const double *rq_in, double *rm_out = nullptr, Size rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_rm2rq(const double *rm_in, double *rq_out = nullptr, Size rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_pp2pm(const double *pp_in, double *pm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pm2pp(const double *pm_in, double *pp_out = nullptr) noexcept->double *;
+	auto ARIS_API s_ra2pm(const double *ra_in, double *rm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pm2ra(const double *rm_in, double *ra_out = nullptr) noexcept->double *;
+	auto ARIS_API s_re2pm(const double *re_in, double *pm_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_pm2re(const double *pm_in, double *re_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_pa2pm(const double *pa_in, double *pm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pm2pa(const double *pm_in, double *pa_out = nullptr) noexcept->double *;
+	auto ARIS_API s_rq2pm(const double *rq_in, double *pm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pm2rq(const double *pm_in, double *rq_out = nullptr) noexcept->double *;
+	auto ARIS_API s_rm2pm(const double *rm_in, double *pm_out = nullptr, Size rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_pm2rm(const double *pm_in, double *rm_out = nullptr, Size rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_pe2pm(const double *pe_in, double *pm_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_pm2pe(const double *pm_in, double *pe_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_pq2pm(const double *pq_in, double *pm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pm2pq(const double *pm_in, double *pq_out = nullptr) noexcept->double *;
+	auto ARIS_API s_ps2pm(const double *ps_in, double *pm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pm2ps(const double *pm_in, double *ps_out = nullptr) noexcept->double *;
 
-	auto s_we2wa(const double *re_in, const double *we_in, double *wa_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_wa2we(const double *wa_in, const double *re_in, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_wq2wa(const double *rq_in, const double *wq_in, double *wa_out = nullptr) noexcept->double *;
-	auto s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out = nullptr) noexcept->double *;
-	auto s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out = nullptr, Size rm_ld = 3, Size wm_ld = 3) noexcept->double *;
-	auto s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out = nullptr, Size rm_ld = 3, Size wm_ld = 3) noexcept->double *;
-	auto s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out = nullptr) noexcept->double *;
-	auto s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out = nullptr) noexcept->double *;
-	auto s_we2vs(const double *re_in, const double *we_in, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_vs2we(const double *vs_in, const double *re_in, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out = nullptr) noexcept->double *;
-	auto s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out = nullptr) noexcept->double *;
-	auto s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out = nullptr, Size rm_ld = 3, Size wm_ld = 3) noexcept->double *;
-	auto s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out = nullptr, Size rm_ld = 3, Size wm_ld = 3) noexcept->double *;
-	auto s_wa2vs(const double *wa_in, double *vs_out = nullptr) noexcept->double *;
-	auto s_vs2wa(const double *vs_in, double *wa_out = nullptr) noexcept->double *;
-	auto s_ve2vs(const double *pe_in, const double *ve_in, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_vs2ve(const double *vs_in, const double *pe_in, double *ve_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_vq2vs(const double *pq_in, const double *vq_in, double *vs_out = nullptr) noexcept->double *;
-	auto s_vs2vq(const double *vs_in, const double *pq_in, double *vq_out = nullptr) noexcept->double *;
-	auto s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out = nullptr) noexcept->double *;
-	auto s_vs2vm(const double *vs_in, const double *pm_in, double *vm_out = nullptr) noexcept->double *;
-	auto s_va2vs(const double *pp_in, const double *va_in, double *vs_out = nullptr) noexcept->double *;
-	auto s_vs2va(const double *vs_in, const double *pp_in, double *va_out = nullptr) noexcept->double *;
+	auto ARIS_API s_we2wa(const double *re_in, const double *we_in, double *wa_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_wa2we(const double *wa_in, const double *re_in, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_wq2wa(const double *rq_in, const double *wq_in, double *wa_out = nullptr) noexcept->double *;
+	auto ARIS_API s_wa2wq(const double *wa_in, const double *rq_in, double *wq_out = nullptr) noexcept->double *;
+	auto ARIS_API s_wm2wa(const double *rm_in, const double *wm_in, double *wa_out = nullptr, Size rm_ld = 3, Size wm_ld = 3) noexcept->double *;
+	auto ARIS_API s_wa2wm(const double *wa_in, const double *rm_in, double *wm_out = nullptr, Size rm_ld = 3, Size wm_ld = 3) noexcept->double *;
+	auto ARIS_API s_vp2vs(const double *pp_in, const double *vp_in, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_vs2vp(const double *vs_in, const double *pp_in, double *vp_out = nullptr) noexcept->double *;
+	auto ARIS_API s_we2vs(const double *re_in, const double *we_in, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_vs2we(const double *vs_in, const double *re_in, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_wq2vs(const double *rq_in, const double *wq_in, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_vs2wq(const double *vs_in, const double *rq_in, double *wq_out = nullptr) noexcept->double *;
+	auto ARIS_API s_wm2vs(const double *rm_in, const double *wm_in, double *vs_out = nullptr, Size rm_ld = 3, Size wm_ld = 3) noexcept->double *;
+	auto ARIS_API s_vs2wm(const double *vs_in, const double *rm_in, double *wm_out = nullptr, Size rm_ld = 3, Size wm_ld = 3) noexcept->double *;
+	auto ARIS_API s_wa2vs(const double *wa_in, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_vs2wa(const double *vs_in, double *wa_out = nullptr) noexcept->double *;
+	auto ARIS_API s_ve2vs(const double *pe_in, const double *ve_in, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_vs2ve(const double *vs_in, const double *pe_in, double *ve_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_vq2vs(const double *pq_in, const double *vq_in, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_vs2vq(const double *vs_in, const double *pq_in, double *vq_out = nullptr) noexcept->double *;
+	auto ARIS_API s_vm2vs(const double *pm_in, const double *vm_in, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_vs2vm(const double *vs_in, const double *pm_in, double *vm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_va2vs(const double *pp_in, const double *va_in, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_vs2va(const double *vs_in, const double *pp_in, double *va_out = nullptr) noexcept->double *;
 
-	auto s_xe2xa(const double *re_in, const double *we_in, const double *xe_in, double *xa_out = nullptr, double *wa_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_xa2xe(const double *wa_in, const double *xa_in, const double *re_in, double *xe_out = nullptr, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_xq2xa(const double *rq_in, const double *wq_in, const double *xq_in, double *xa_out = nullptr, double *wa_out = nullptr) noexcept->double *;
-	auto s_xa2xq(const double *wa_in, const double *xa_in, const double *rq_in, double *xq_out = nullptr, double *wq_out = nullptr) noexcept->double *;
-	auto s_xm2xa(const double *rm_in, const double *wm_in, const double *xm_in, double *xa_out = nullptr, double *wa_out = nullptr, Size rm_ld = 3, Size wm_ld = 3, Size xm_ld = 3) noexcept->double *;
-	auto s_xa2xm(const double *wa_in, const double *xa_in, const double *rm_in, double *xm_out = nullptr, double *wm_out = nullptr, Size rm_ld = 3, Size wm_ld = 3, Size xm_ld = 3) noexcept->double *;
-	auto s_ap2as(const double *pp_in, const double *vp_in, const double *ap_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
-	auto s_as2ap(const double *vs_in, const double *as_in, const double *pp_in, double *ap_out = nullptr, double *vp_out = nullptr) noexcept->double *;
-	auto s_xe2as(const double *re_in, const double *we_in, const double *xe_in, double *as_out = nullptr, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_as2xe(const double *vs_in, const double *as_in, const double *re_in, double *xe_out = nullptr, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_xq2as(const double *rq_in, const double *wq_in, const double *xq_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
-	auto s_as2xq(const double *vs_in, const double *as_in, const double *rq_in, double *xq_out = nullptr, double *wq_out = nullptr) noexcept->double *;
-	auto s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out = nullptr, double *vs_out = nullptr, Size rm_ld = 3, Size wm_ld = 3, Size xm_ld = 3) noexcept->double *;
-	auto s_as2xm(const double *vs_in, const double *as_in, const double *rm_in, double *xm_out = nullptr, double *wm_out = nullptr, Size rm_ld = 3, Size wm_ld = 3, Size xm_ld = 3) noexcept->double *;
-	auto s_xa2as(const double *xa_in, double *as_out = nullptr) noexcept->double *;
-	auto s_as2xa(const double *as_in, double *xa_out = nullptr) noexcept->double *;
-	auto s_ae2as(const double *pe_in, const double *ve_in, const double *ae_in, double *as_out = nullptr, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_as2ae(const double *vs_in, const double *as_in, const double *pe_in, double *ae_out = nullptr, double *ve_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_aq2as(const double *pq_in, const double *vq_in, const double *aq_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
-	auto s_as2aq(const double *vs_in, const double *as_in, const double *pq_in, double *aq_out = nullptr, double *vq_out = nullptr) noexcept->double *;
-	auto s_am2as(const double *pm_in, const double *vm_in, const double *am_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
-	auto s_as2am(const double *vs_in, const double *as_in, const double *pm_in, double *am_out = nullptr, double *vm_out = nullptr) noexcept->double *;
-	auto s_aa2as(const double *pp_in, const double *va_in, const double *aa_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
-	auto s_as2aa(const double *vs_in, const double *as_in, const double *pp_in, double *aa_out = nullptr, double *va_out = nullptr) noexcept->double *;
+	auto ARIS_API s_xe2xa(const double *re_in, const double *we_in, const double *xe_in, double *xa_out = nullptr, double *wa_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_xa2xe(const double *wa_in, const double *xa_in, const double *re_in, double *xe_out = nullptr, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_xq2xa(const double *rq_in, const double *wq_in, const double *xq_in, double *xa_out = nullptr, double *wa_out = nullptr) noexcept->double *;
+	auto ARIS_API s_xa2xq(const double *wa_in, const double *xa_in, const double *rq_in, double *xq_out = nullptr, double *wq_out = nullptr) noexcept->double *;
+	auto ARIS_API s_xm2xa(const double *rm_in, const double *wm_in, const double *xm_in, double *xa_out = nullptr, double *wa_out = nullptr, Size rm_ld = 3, Size wm_ld = 3, Size xm_ld = 3) noexcept->double *;
+	auto ARIS_API s_xa2xm(const double *wa_in, const double *xa_in, const double *rm_in, double *xm_out = nullptr, double *wm_out = nullptr, Size rm_ld = 3, Size wm_ld = 3, Size xm_ld = 3) noexcept->double *;
+	auto ARIS_API s_ap2as(const double *pp_in, const double *vp_in, const double *ap_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_as2ap(const double *vs_in, const double *as_in, const double *pp_in, double *ap_out = nullptr, double *vp_out = nullptr) noexcept->double *;
+	auto ARIS_API s_xe2as(const double *re_in, const double *we_in, const double *xe_in, double *as_out = nullptr, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_as2xe(const double *vs_in, const double *as_in, const double *re_in, double *xe_out = nullptr, double *we_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_xq2as(const double *rq_in, const double *wq_in, const double *xq_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_as2xq(const double *vs_in, const double *as_in, const double *rq_in, double *xq_out = nullptr, double *wq_out = nullptr) noexcept->double *;
+	auto ARIS_API s_xm2as(const double *rm_in, const double *wm_in, const double *xm_in, double *as_out = nullptr, double *vs_out = nullptr, Size rm_ld = 3, Size wm_ld = 3, Size xm_ld = 3) noexcept->double *;
+	auto ARIS_API s_as2xm(const double *vs_in, const double *as_in, const double *rm_in, double *xm_out = nullptr, double *wm_out = nullptr, Size rm_ld = 3, Size wm_ld = 3, Size xm_ld = 3) noexcept->double *;
+	auto ARIS_API s_xa2as(const double *xa_in, double *as_out = nullptr) noexcept->double *;
+	auto ARIS_API s_as2xa(const double *as_in, double *xa_out = nullptr) noexcept->double *;
+	auto ARIS_API s_ae2as(const double *pe_in, const double *ve_in, const double *ae_in, double *as_out = nullptr, double *vs_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_as2ae(const double *vs_in, const double *as_in, const double *pe_in, double *ae_out = nullptr, double *ve_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_aq2as(const double *pq_in, const double *vq_in, const double *aq_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_as2aq(const double *vs_in, const double *as_in, const double *pq_in, double *aq_out = nullptr, double *vq_out = nullptr) noexcept->double *;
+	auto ARIS_API s_am2as(const double *pm_in, const double *vm_in, const double *am_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_as2am(const double *vs_in, const double *as_in, const double *pm_in, double *am_out = nullptr, double *vm_out = nullptr) noexcept->double *;
+	auto ARIS_API s_aa2as(const double *pp_in, const double *va_in, const double *aa_in, double *as_out = nullptr, double *vs_out = nullptr) noexcept->double *;
+	auto ARIS_API s_as2aa(const double *vs_in, const double *as_in, const double *pp_in, double *aa_out = nullptr, double *va_out = nullptr) noexcept->double *;
 
-	auto s_pq2pe(const double *pq_in, double *pe_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_pe2pq(const double *pe_in, double *pq_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
-	auto s_iv2im(const double *iv_in, double *im_out = nullptr) noexcept->double *;
-	auto s_im2iv(const double *im_in, double *iv_out = nullptr) noexcept->double *;
-	auto s_i32im(const double mass_in, const double * in_in, const double *pm_in, double *is_out = nullptr) noexcept->double *;
+	auto ARIS_API s_pq2pe(const double *pq_in, double *pe_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_pe2pq(const double *pe_in, double *pq_out = nullptr, const char *eu_type_in = "313") noexcept->double *;
+	auto ARIS_API s_iv2im(const double *iv_in, double *im_out = nullptr) noexcept->double *;
+	auto ARIS_API s_im2iv(const double *im_in, double *iv_out = nullptr) noexcept->double *;
+	auto ARIS_API s_i32im(const double mass_in, const double * in_in, const double *pm_in, double *is_out = nullptr) noexcept->double *;
 
 	// 以下函数为同一物理量在不同坐标系之间的转换函数 //
-	auto s_pp2pp(const double *relative_pm, const double *from_pp, double *to_pp) noexcept->double *;
-	auto s_inv_pp2pp(const double *inv_relative_pm, const double *from_pp, double *to_pp) noexcept->double *;
-	auto s_re2re(const double *relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_inv_re2re(const double *inv_relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_rq2rq(const double *relative_pm, const double *from_rq, double *to_rq) noexcept->double *;
-	auto s_inv_rq2rq(const double *inv_relative_pm, const double *from_rq, double *to_rq) noexcept->double *;
-	auto s_rm2rm(const double *relative_pm, const double *from_rm, double *to_rm, Size from_rm_ld = 3, Size to_rm_ld = 3) noexcept->double *;
-	auto s_inv_rm2rm(const double *inv_relative_pm, const double *from_rm, double *to_rm, Size from_rm_ld = 3, Size to_rm_ld = 3) noexcept->double *;
-	auto s_pe2pe(const double *relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->double *;
-	auto s_inv_pe2pe(const double *inv_relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->double *;
-	auto s_pq2pq(const double *relative_pm, const double *from_pq, double *to_pq) noexcept->double *;
-	auto s_inv_pq2pq(const double *inv_relative_pm, const double *from_pq, double *to_pq) noexcept->double *;
-	auto s_pm2pm(const double *relative_pm, const double *from_pm, double *to_pm) noexcept->double *;
-	auto s_inv_pm2pm(const double *inv_relative_pm, const double *from_pm, double *to_pm) noexcept->double *;
+	auto ARIS_API s_pp2pp(const double *relative_pm, const double *from_pp, double *to_pp) noexcept->double *;
+	auto ARIS_API s_inv_pp2pp(const double *inv_relative_pm, const double *from_pp, double *to_pp) noexcept->double *;
+	auto ARIS_API s_re2re(const double *relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+	auto ARIS_API s_inv_re2re(const double *inv_relative_pm, const double *from_re, double *to_re, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+	auto ARIS_API s_rq2rq(const double *relative_pm, const double *from_rq, double *to_rq) noexcept->double *;
+	auto ARIS_API s_inv_rq2rq(const double *inv_relative_pm, const double *from_rq, double *to_rq) noexcept->double *;
+	auto ARIS_API s_rm2rm(const double *relative_pm, const double *from_rm, double *to_rm, Size from_rm_ld = 3, Size to_rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_inv_rm2rm(const double *inv_relative_pm, const double *from_rm, double *to_rm, Size from_rm_ld = 3, Size to_rm_ld = 3) noexcept->double *;
+	auto ARIS_API s_pe2pe(const double *relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->double *;
+	auto ARIS_API s_inv_pe2pe(const double *inv_relative_pm, const double *from_pe, double *to_pe, const char *from_pe_type = "313", const char *to_pe_type = "313") noexcept->double *;
+	auto ARIS_API s_pq2pq(const double *relative_pm, const double *from_pq, double *to_pq) noexcept->double *;
+	auto ARIS_API s_inv_pq2pq(const double *inv_relative_pm, const double *from_pq, double *to_pq) noexcept->double *;
+	auto ARIS_API s_pm2pm(const double *relative_pm, const double *from_pm, double *to_pm) noexcept->double *;
+	auto ARIS_API s_inv_pm2pm(const double *inv_relative_pm, const double *from_pm, double *to_pm) noexcept->double *;
 
-	auto s_vp2vp(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->double *;
-	auto s_inv_vp2vp(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->double *;
-	auto s_we2we(const double *relative_pm, const double *relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_inv_we2we(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_wq2wq(const double *relative_pm, const double *relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->double *;
-	auto s_inv_wq2wq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->double *;
-	auto s_wm2wm(const double *relative_pm, const double *relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->double *;
-	auto s_inv_wm2wm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->double *;
-	auto s_wa2wa(const double *relative_pm, const double *relative_vs, const double *from_wa, double *to_wa) noexcept->double *;
-	auto s_inv_wa2wa(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_wa, double *to_wa) noexcept->double *;
-	auto s_ve2ve(const double *relative_pm, const double *relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_inv_ve2ve(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_vq2vq(const double *relative_pm, const double *relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->double *;
-	auto s_inv_vq2vq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->double *;
-	auto s_vm2vm(const double *relative_pm, const double *relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->double *;
-	auto s_inv_vm2vm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->double *;
-	auto s_va2va(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->double *;
-	auto s_inv_va2va(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->double *;
-	auto s_vs2vs(const double *relative_pm, const double *relative_vs, const double *from_vs, double *to_vs) noexcept->double *;
-	auto s_inv_vs2vs(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_vs, double *to_vs) noexcept->double *;
+	auto ARIS_API s_vp2vp(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_vp2vp(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_vp, double *to_vp, double *to_pp = nullptr) noexcept->double *;
+	auto ARIS_API s_we2we(const double *relative_pm, const double *relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+	auto ARIS_API s_inv_we2we(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_re, const double *from_we, double *to_we, double *to_re = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+	auto ARIS_API s_wq2wq(const double *relative_pm, const double *relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_wq2wq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rq, const double *from_wq, double *to_wq, double *to_rq = nullptr) noexcept->double *;
+	auto ARIS_API s_wm2wm(const double *relative_pm, const double *relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_wm2wm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_rm, const double *from_wm, double *to_wm, double *to_rm = nullptr) noexcept->double *;
+	auto ARIS_API s_wa2wa(const double *relative_pm, const double *relative_vs, const double *from_wa, double *to_wa) noexcept->double *;
+	auto ARIS_API s_inv_wa2wa(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_wa, double *to_wa) noexcept->double *;
+	auto ARIS_API s_ve2ve(const double *relative_pm, const double *relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+	auto ARIS_API s_inv_ve2ve(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pe, const double *from_ve, double *to_ve, double *to_pe = nullptr, const char *from_eu_type = "313", const char *to_eu_type = "313") noexcept->double *;
+	auto ARIS_API s_vq2vq(const double *relative_pm, const double *relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_vq2vq(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pq, const double *from_vq, double *to_vq, double *to_pq = nullptr) noexcept->double *;
+	auto ARIS_API s_vm2vm(const double *relative_pm, const double *relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_vm2vm(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pm, const double *from_vm, double *to_vm, double *to_pm = nullptr) noexcept->double *;
+	auto ARIS_API s_va2va(const double *relative_pm, const double *relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->double *;
+	auto ARIS_API s_inv_va2va(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_pp, const double *from_va, double *to_va, double *to_pp = nullptr) noexcept->double *;
+	auto ARIS_API s_vs2vs(const double *relative_pm, const double *relative_vs, const double *from_vs, double *to_vs) noexcept->double *;
+	auto ARIS_API s_inv_vs2vs(const double *inv_relative_pm, const double *inv_relative_vs, const double *from_vs, double *to_vs) noexcept->double *;
 
-	auto s_ap2ap(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_ap2ap(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->double *;
-	auto s_inv_ap2ap(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_ap2ap(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_pp, const double *from_vp, const double *from_ap, double *to_ap, double *to_vp = nullptr, double *to_pp = nullptr) noexcept->double *;
-	auto s_xe2xe(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_xe2xe(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_inv_xe2xe(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_xe2xe(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_re, const double *from_we, const double *from_xe, double *to_xe, double *to_we = nullptr, double *to_re = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_xq2xq(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_xq2xq(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->double *;
-	auto s_inv_xq2xq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_xq2xq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_rq, const double *from_wq, const double *from_xq, double *to_xq, double *to_wq = nullptr, double *to_rq = nullptr) noexcept->double *;
-	auto s_xm2xm(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_xm2xm(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->double *;
-	auto s_inv_xm2xm(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_xm2xm(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_rm, const double *from_wm, const double *from_xm, double *to_xm, double *to_wm = nullptr, double *to_rm = nullptr) noexcept->double *;
-	auto s_xa2xa(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_xa2xa(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_wa, const double *from_xa, double *to_xa, double *to_wa = nullptr) noexcept->double *;
-	auto s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_xa2xa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_wa, const double *from_xa, double *to_xa, double *to_wa = nullptr) noexcept->double *;
-	auto s_ae2ae(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_ae2ae(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_inv_ae2ae(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_ae2ae(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_pe, const double *from_ve, const double *from_ae, double *to_ae, double *to_ve = nullptr, double *to_pe = nullptr, const char *from_re_type = "313", const char *to_eu_type = "313") noexcept->double *;
-	auto s_aq2aq(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_aq2aq(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq = nullptr, double *to_pq = nullptr) noexcept->double *;
-	auto s_inv_aq2aq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_aq2aq(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_pq, const double *from_vq, const double *from_aq, double *to_aq, double *to_vq = nullptr, double *to_pq = nullptr) noexcept->double *;
-	auto s_am2am(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_am2am(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_pm, const double *from_vm, const double *from_am, double *to_am, double *to_vm = nullptr, double *to_pm = nullptr) noexcept->double *;
-	auto s_inv_am2am(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_am2am(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_pm, const double *from_vm, const double *from_am, double *to_am, double *to_vm = nullptr, double *to_pm = nullptr) noexcept->double *;
-	auto s_aa2aa(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_aa2aa(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_pp, const double *from_va, const double *from_aa, double *to_aa, double *to_va = nullptr, double *to_pp = nullptr) noexcept->double *;
-	auto s_inv_aa2aa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_aa2aa(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_pp, const double *from_va, const double *from_aa, double *to_aa, double *to_va = nullptr, double *to_pp = nullptr) noexcept->double *;
-	auto s_as2as(const double *relative_pm, const double *relative_vs, const double *relative_as,
+	auto ARIS_API s_as2as(const double *relative_pm, const double *relative_vs, const double *relative_as,
 		const double *from_vs, const double *from_as, double *to_as, double *to_vs = nullptr) noexcept->double *;
-	auto s_inv_as2as(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
+	auto ARIS_API s_inv_as2as(const double *inv_relative_pm, const double *inv_relative_vs, const double *inv_relative_as,
 		const double *from_vs, const double *from_as, double *to_as, double *to_vs = nullptr) noexcept->double *;
 
-	auto s_fs2fs(const double *relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
-	auto s_inv_fs2fs(const double *inv_relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
-	auto s_im2im(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *;
-	auto s_inv_im2im(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *;
-	auto s_iv2iv(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *;
-	auto s_inv_iv2iv(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *;
+	auto ARIS_API s_fs2fs(const double *relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
+	auto ARIS_API s_inv_fs2fs(const double *inv_relative_pm, const double *from_fs, double *to_fs) noexcept->double *;
+	auto ARIS_API s_im2im(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *;
+	auto ARIS_API s_inv_im2im(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *;
+	auto ARIS_API s_iv2iv(const double *relative_pm, const double *from_im, double *to_im) noexcept->double *;
+	auto ARIS_API s_inv_iv2iv(const double *inv_relative_pm, const double *from_im, double *to_im) noexcept->double *;
 
 	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 	///
 	/// 这里原点origin为位姿矩阵pm_out的点,first_pnt位于第一根坐标轴,second_pnt位于第一根坐标轴和第二根坐标轴所构成的平面内
 	///
 	///
-	auto s_sov_pnts2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
+	auto ARIS_API s_sov_pnts2pm(const double *origin, Size origin_ld, const double *first_pnt, Size first_ld, const double *second_pnt, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
 	auto inline s_sov_pnts2pm(const double *origin, const double *first_pnt, const double *second_pnt, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_pnts2pm(origin, 1, first_pnt, 1, second_pnt, 1, pm_out, axis_order); };
 	
 	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
@@ -1543,7 +1543,7 @@ namespace aris::dynamic
 	/// 这里原点origin为位姿矩阵pm_out的点,first_axis为第一根坐标轴的方向,second_pnt位于第一根坐标轴和第二根坐标轴所构成的平面内
 	///
 	///
-	auto s_sov_axes2pm(const double *origin, Size origin_ld, const double *first_axis, Size first_ld, const double *second_axis, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
+	auto ARIS_API s_sov_axes2pm(const double *origin, Size origin_ld, const double *first_axis, Size first_ld, const double *second_axis, Size second_ld, double *pm_out, const char *axis_order = "xy") noexcept->void;
 	/// \brief 根据原点和两个坐标轴上的点来求位姿矩阵
 	///
 	/// 这里原点origin为位姿矩阵pm_out的点,firstAxisPnt位于第一根坐标轴,secondAxisPnt位于第一根坐标轴和第二根坐标轴所构成的平面内
@@ -1554,24 +1554,24 @@ namespace aris::dynamic
 	/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程,该方程有2个根
 	///
 	///
-	auto s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void;
+	auto ARIS_API s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void;
 	
 	/// \brief 求解alpha 和 beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
 	///
 	///
-	auto s_sov_ab(const double*pp, double *ab, const char*order = "321")noexcept->void;
+	auto ARIS_API s_sov_ab(const double*pp, double *ab, const char*order = "321")noexcept->void;
 	/// \brief 求解v_alpha 和 v_beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
 	///
 	///
-	auto s_sov_vab(const double*pp, const double*vp, double *vab, double *ab, const char*order = "321")noexcept->void;
+	auto ARIS_API s_sov_vab(const double*pp, const double*vp, double *vab, double *ab, const char*order = "321")noexcept->void;
 	/// \brief 求解a_alpha 和 a_beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
 	///
 	///
-	auto s_sov_aab(const double*pp, const double*vp, const double*ap, double *aab, double *vab, double *ab, const char*order = "321")noexcept->void;
+	auto ARIS_API s_sov_aab(const double*pp, const double*vp, const double*ap, double *aab, double *vab, double *ab, const char*order = "321")noexcept->void;
 	/// \brief 求解某根轴下的相对位移，axis为0，1，2时对应x、y、z轴的位移，为4、5、6时对应延x、y、z轴的转角
 	///
 	///
-	auto s_sov_axis_distance(const double*from_pm, const double*to_pm, Size axis)noexcept->double;
+	auto ARIS_API s_sov_axis_distance(const double*from_pm, const double*to_pm, Size axis)noexcept->double;
 }
 
 #endif

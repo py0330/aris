@@ -3,11 +3,12 @@
 
 #include <filesystem>
 
+#include <aris_lib_export.h>
 #include <aris/control/controller_motion.hpp>
 
 namespace aris::control
 {
-	class PdoEntry:public aris::core::NamedObject
+	class ARIS_API PdoEntry:public aris::core::NamedObject
 	{
 	public:
 		auto ecHandle()->std::any&;
@@ -27,7 +28,7 @@ namespace aris::control
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class Pdo :public std::vector<PdoEntry>, public aris::core::NamedObject
+	class ARIS_API Pdo :public std::vector<PdoEntry>, public aris::core::NamedObject
 	{
 	public:
 		auto ecHandle()->std::any&;
@@ -43,7 +44,7 @@ namespace aris::control
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class SyncManager :public std::vector<Pdo>, public aris::core::NamedObject
+	class ARIS_API SyncManager :public std::vector<Pdo>, public aris::core::NamedObject
 	{
 	public:
 		auto tx()const->bool;
@@ -59,8 +60,8 @@ namespace aris::control
 		aris::core::ImpPtr<Imp> imp_;
 	};
 
-	class EthercatMaster;
-	class EthercatSlave : virtual public Slave
+	class ARIS_API EthercatMaster;
+	class ARIS_API EthercatSlave : virtual public Slave
 	{
 	public:
 		auto ecMaster()->EthercatMaster*;
@@ -114,7 +115,7 @@ namespace aris::control
 
 		friend class EthercatMaster;
 	};
-	class EthercatMaster : virtual public Master
+	class ARIS_API EthercatMaster : virtual public Master
 	{
 	public:
 		typedef struct {
@@ -191,7 +192,7 @@ namespace aris::control
 		friend class PdoEntry;
 	};
 
-	class EthercatMotor :public EthercatSlave, public Motor
+	class ARIS_API EthercatMotor :public EthercatSlave, public Motor
 	{
 	public:
 		auto isVirtual()->bool;
@@ -254,7 +255,7 @@ namespace aris::control
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class EthercatController :public EthercatMaster, public Controller
+	class ARIS_API EthercatController :public EthercatMaster, public Controller
 	{
 	public:
 		using MotionPool = aris::core::SubRefPool<EthercatMotor, aris::core::ChildRefPool<EthercatSlave, aris::core::PointerArray<Slave>>>;

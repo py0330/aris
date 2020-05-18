@@ -3,6 +3,7 @@
 
 #include <any>
 
+#include <aris_lib_export.h>
 #include <aris/core/object.hpp>
 #include <aris/core/basic_type.hpp>
 #include <aris/core/msg.hpp>
@@ -11,7 +12,7 @@ namespace aris::control
 {
 	class Master;
 	
-	class Slave:public aris::core::NamedObject
+	class ARIS_API Slave:public aris::core::NamedObject
 	{
 	public:
 		auto virtual send()->void {}
@@ -32,7 +33,7 @@ namespace aris::control
 		aris::core::ImpPtr<Imp> imp_;
 		friend class Master;
 	};
-	class Master :public aris::core::NamedObject
+	class ARIS_API Master :public aris::core::NamedObject
 	{
 	public:
 		struct RtStasticsData

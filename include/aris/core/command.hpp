@@ -3,6 +3,7 @@
 
 #include <map>
 
+#include <aris_lib_export.h>
 #include <aris/core/object.hpp>
 
 namespace aris::core
@@ -112,8 +113,8 @@ namespace aris::core
 	///
 
 	class Command;
-	class ParamBase :public PointerArray<ParamBase>
-	{
+
+	class ARIS_API ParamBase :public PointerArray<ParamBase>{
 	public:
 		auto command()const->const Command &;
 		auto father()->ParamBase*;
@@ -140,8 +141,7 @@ namespace aris::core
 	/// 
 	/// 
 	/// 
-	class Param final :public ParamBase
-	{
+	class ARIS_API Param final :public ParamBase{
 	public:
 		auto abbreviation()const->char;
 		auto setAbbreviation(char abbreviation)->void;
@@ -152,15 +152,13 @@ namespace aris::core
 		explicit Param(const std::string &name = "param", const std::string &default_param = "", char abbrev = 0);
 		ARIS_DECLARE_BIG_FOUR(Param);
 
-	protected:
+	private:
 		struct Imp;
 		ImpPtr<Imp> imp_;
-
 		friend class Command;
 		friend class CommandParser;
 	};
-	class UniqueParam final :public ParamBase
-	{
+	class ARIS_API UniqueParam final :public ParamBase {
 	public:
 		auto defaultValue()const->const std::string &;
 		auto setDefaultValue(const std::string & default_value)->void;
@@ -169,21 +167,18 @@ namespace aris::core
 		explicit UniqueParam(const std::string &name = "unique_param", const std::string &default_param = "");
 		ARIS_DECLARE_BIG_FOUR(UniqueParam);
 
-	protected:
+	private:
 		struct Imp;
 		ImpPtr<Imp> imp_;
-
 		friend class Command;
 	};
-	class GroupParam final : public ParamBase
-	{
+	class ARIS_API GroupParam final : public ParamBase{
 	public:
 		virtual ~GroupParam();
 		explicit GroupParam(const std::string &name = "group_param");
 		ARIS_DECLARE_BIG_FOUR(GroupParam);
 	};
-	class Command :public ParamBase
-	{
+	class ARIS_API Command :public ParamBase{
 	public:
 		auto defaultValue()const->const std::string &;
 		auto setDefaultValue(const std::string & default_value)->void;
@@ -201,8 +196,7 @@ namespace aris::core
 		friend class CommandParser;
 		friend class ParamBase;
 	};
-	class CommandParser
-	{
+	class ARIS_API CommandParser{
 	public:
 		auto commandPool()->std::vector<Command> &;
 		auto commandPool()const->const std::vector<Command> &;
@@ -211,6 +205,7 @@ namespace aris::core
 
 		virtual ~CommandParser();
 		explicit CommandParser(const std::string &name = "command_parser");
+		ARIS_DECLARE_BIG_FOUR(CommandParser);
 
 	private:
 		struct Imp;

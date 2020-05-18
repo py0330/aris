@@ -413,11 +413,11 @@ namespace aris::dynamic
 	auto SevenAxisInverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	auto SevenAxisInverseKinematicSolver::whichRoot()->int { return imp_->which_root_; }
 	auto SevenAxisInverseKinematicSolver::setAxisAngle(double axis_angle)->void { imp_->axis_angle = axis_angle; }
+	SevenAxisInverseKinematicSolver::~SevenAxisInverseKinematicSolver() = default;
 	SevenAxisInverseKinematicSolver::SevenAxisInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(SevenAxisInverseKinematicSolver);
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<SevenAxisInverseKinematicSolver>("SevenAxisInverseKinematicSolver")
 			.inherit<InverseKinematicSolver>()
 			.prop("which_root", &SevenAxisInverseKinematicSolver::setWhichRoot, &SevenAxisInverseKinematicSolver::whichRoot)

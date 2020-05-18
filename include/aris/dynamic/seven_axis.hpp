@@ -9,8 +9,7 @@ namespace aris::dynamic
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
-	struct SevenAxisParam
-	{
+	struct ARIS_API SevenAxisParam{
 		// DH PARAM //
 		double d1{ 0.0 };
 		double d3{ 0.0 };
@@ -30,9 +29,9 @@ namespace aris::dynamic
 		// mot friction vector, size must be 7
 		std::vector<std::array<double, 3> > mot_frc_vec;
 	};
-	auto createModelSevenAxis(const SevenAxisParam &param)->std::unique_ptr<aris::dynamic::Model>;
+	auto ARIS_API createModelSevenAxis(const SevenAxisParam &param)->std::unique_ptr<aris::dynamic::Model>;
 
-	class SevenAxisInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
+	class ARIS_API SevenAxisInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
 		auto virtual allocateMemory()->void override;
@@ -52,7 +51,7 @@ namespace aris::dynamic
 		auto whichRoot()->int;
 		auto setAxisAngle(double axis_angle)->void;
 
-		virtual ~SevenAxisInverseKinematicSolver() = default;
+		virtual ~SevenAxisInverseKinematicSolver();
 		explicit SevenAxisInverseKinematicSolver(const std::string &name = "seven_axis_inverse_solver");
 		ARIS_DECLARE_BIG_FOUR(SevenAxisInverseKinematicSolver);
 

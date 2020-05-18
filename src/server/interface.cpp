@@ -17,18 +17,6 @@
 
 namespace aris::server
 {
-	//auto InterfaceRoot::saveXml(aris::core::XmlElement &xml_ele) const->void
-	//{
-	//	auto ins = doc_.RootElement()->DeepClone(xml_ele.GetDocument());
-	//	xml_ele.Parent()->InsertAfterChild(&xml_ele, ins);
-	//	xml_ele.Parent()->DeleteChild(&xml_ele);
-	//}
-	//auto InterfaceRoot::loadXml(const aris::core::XmlElement &xml_ele)->void
-	//{
-	//	doc_.Clear();
-	//	auto root = xml_ele.DeepClone(&doc_);
-	//	doc_.InsertEndChild(root);
-	//}
 	Interface::Interface(const std::string &name){}
 
 	auto parse_ret_value(std::vector<std::pair<std::string, std::any>> &ret)->std::string
@@ -173,13 +161,16 @@ namespace aris::server
 	auto WebInterface::socket()->aris::core::Socket& { return *imp_->sock_; }
 	auto WebInterface::open()->void { socket().startServer(); }
 	auto WebInterface::close()->void { socket().stop(); }
-	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type):Interface(name)
+	WebInterface::~WebInterface() = default;
+	WebInterface::WebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type):Interface(name), imp_(new Imp)
 	{
 		resetSocket(new aris::core::Socket("socket", "", port, type));
 		socket().setOnReceivedMsg(onReceivedMsg);
 		socket().setOnReceivedConnection(onReceivedConnection);
 		socket().setOnLoseConnection(onLoseConnection);
 	}
+
+
 #define ARIS_PRO_COUT ARIS_COUT << "pro "
 	struct ProgramWebInterface::Imp
 	{
@@ -856,6 +847,8 @@ namespace aris::server
 	}
 	ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other) = default;
 	ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other) = default;
+	ProgramWebInterface::~ProgramWebInterface() = default;
+
 
 	auto GetInfo::prepareNrt()->void
 	{
@@ -919,7 +912,7 @@ namespace aris::server
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		
-		aris::core::XmlDocument doc;
+		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(imp_->document_root_);
 		interface_path  = interface_path / "../robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
@@ -1085,8 +1078,7 @@ namespace aris::server
 	}
 
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<Interface>("Interface")
 			;
 		

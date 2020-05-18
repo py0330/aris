@@ -17,7 +17,7 @@
 
 namespace aris::server
 {
-	class ControlServer
+	class ARIS_API ControlServer
 	{
 	public:
 		using PreCallback = std::add_pointer<void(ControlServer&)>::type;

@@ -1932,8 +1932,7 @@ namespace aris::dynamic
 	InverseDynamicSolver::InverseDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(InverseDynamicSolver);
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<Solver>("Solver")
 			.prop("max_iter_count", &Solver::setMaxIterCount, &Solver::maxIterCount)
 			.prop("max_error", &Solver::setMaxError, &Solver::maxError)

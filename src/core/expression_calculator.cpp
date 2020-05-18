@@ -83,55 +83,49 @@ namespace aris::core
 		}
 	}
 
-	Matrix::Matrix(Size m, Size n, double value) : m_(m), n_(n), is_row_major_(true), data_vec_(m*n, value) { }
-	Matrix::Matrix(Size m, Size n, const double *data) : Matrix(m, n) { std::copy(data, data + m * n, this->data()); }
-	Matrix::Matrix(double value) : m_(1), n_(1), is_row_major_(true), data_vec_(1, value) {}
-	Matrix::Matrix(const std::initializer_list<Matrix> &data) : Matrix()
+
+	struct Matrix::Imp
 	{
-		std::list<std::list<Matrix> > mat_list_list;
-
-		bool need_new_row = true;
-		for (auto &i : data)
-		{
-			if (i.empty())
-			{
-				need_new_row = true;
-			}
-			else
-			{
-				if (need_new_row)
-				{
-					mat_list_list.push_back(std::list<Matrix>());
-					need_new_row = false;
-				}
-
-				mat_list_list.back().push_back(i);
-			}
-		}
-
-
-		(*this) = aris::core::combineMatrices(mat_list_list);
-	}
+		Size m_, n_;
+		bool is_row_major_;
+		std::vector<double> data_vec_;
+	};
+	
+	auto Matrix::empty() const->bool { return imp_->data_vec_.empty(); }
+	auto Matrix::size() const->Size { return m()*n(); }
+	auto Matrix::data()->double * { return imp_->data_vec_.data(); }
+	auto Matrix::data() const->const double * { return imp_->data_vec_.data(); }
+	auto Matrix::begin() ->double * { return data(); }
+	auto Matrix::begin() const ->const double * { return data(); }
+	auto Matrix::end() ->double * { return data() + size(); }
+	auto Matrix::end()  const ->const double * { return data() + size(); }
+	auto Matrix::m() const->Size { return imp_->m_; }
+	auto Matrix::n() const->Size { return imp_->n_; }
+	auto Matrix::copySubMatrixTo(const Matrix &subMat, Size beginRow, Size beginCol)->void { copySubMatrixTo(subMat, beginRow, beginCol, subMat.m(), subMat.n()); }
+	auto Matrix::toDouble() const->double { return data()[0]; }
+	auto Matrix::dsp() const ->void { std::cout << this->toString(); }
+	auto Matrix::operator()(Size i, Size j)->double & { return imp_->is_row_major_ ? data()[i*n() + j] : data()[j*m() + i]; }
+	auto Matrix::operator()(Size i, Size j) const->const double & { return imp_->is_row_major_ ? data()[i*n() + j] : data()[j*m() + i]; }
 	auto Matrix::swap(Matrix &other)->Matrix&
 	{
-		std::swap(this->m_, other.m_);
-		std::swap(this->n_, other.n_);
-		std::swap(this->is_row_major_, other.is_row_major_);
-		std::swap(this->data_vec_, other.data_vec_);
+		std::swap(this->imp_->m_, other.imp_->m_);
+		std::swap(this->imp_->n_, other.imp_->n_);
+		std::swap(this->imp_->is_row_major_, other.imp_->is_row_major_);
+		std::swap(this->imp_->data_vec_, other.imp_->data_vec_);
 
 		return *this;
 	}
 	auto Matrix::resize(Size m, Size n)->Matrix &
 	{
-		m_ = m;
-		n_ = n;
-		data_vec_.resize(m*n);
+		imp_->m_ = m;
+		imp_->n_ = n;
+		imp_->data_vec_.resize(m*n);
 		return *this;
 	}
 	auto Matrix::transpose()->Matrix &
 	{
-		is_row_major_ = !is_row_major_;
-		std::swap(m_, n_);
+		imp_->is_row_major_ = !imp_->is_row_major_;
+		std::swap(imp_->m_, imp_->n_);
 		return *this;
 	}
 	auto Matrix::copySubMatrixTo(const Matrix &subMat, Size beginRow, Size beginCol, Size rowNum, Size colNum)->void
@@ -170,6 +164,46 @@ namespace aris::core
 
 		return stream.str();
 	}
+	Matrix::~Matrix() = default;
+	Matrix::Matrix(Size m, Size n, double value)
+	{
+		imp_->m_ = m;
+		imp_->n_ = n;
+		imp_->is_row_major_ = true;
+		imp_->data_vec_ = std::vector<double>(m*n, value);
+	}
+	Matrix::Matrix(Size m, Size n, const double *data) : Matrix(m, n) { std::copy(data, data + m * n, this->data()); }
+	Matrix::Matrix(double value) : Matrix(1, 1, value) {}
+	Matrix::Matrix(const std::initializer_list<Matrix> &data) : Matrix()
+	{
+		std::list<std::list<Matrix> > mat_list_list;
+
+		bool need_new_row = true;
+		for (auto &i : data)
+		{
+			if (i.empty())
+			{
+				need_new_row = true;
+			}
+			else
+			{
+				if (need_new_row)
+				{
+					mat_list_list.push_back(std::list<Matrix>());
+					need_new_row = false;
+				}
+
+				mat_list_list.back().push_back(i);
+			}
+		}
+
+
+		(*this) = aris::core::combineMatrices(mat_list_list);
+	}
+	Matrix::Matrix() :Matrix(0, 0) {};
+	Matrix::Matrix(const Matrix &other) = default;
+	Matrix::Matrix(Matrix &&other) { this->swap(other); }
+	Matrix& Matrix::operator=(Matrix other) { this->swap(other); return *this; }
 
 	Matrix operator + (const Matrix &m1, const Matrix &m2)
 	{
@@ -278,9 +312,9 @@ namespace aris::core
 		{
 			ret.resize(m1.m(), m2.n());
 
-			if (m1.is_row_major_)
+			if (m1.imp_->is_row_major_)
 			{
-				if (m2.is_row_major_)
+				if (m2.imp_->is_row_major_)
 				{
 					aris::core::s_mm(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 				}
@@ -291,7 +325,7 @@ namespace aris::core
 			}
 			else
 			{
-				if (m2.is_row_major_)
+				if (m2.imp_->is_row_major_)
 				{
 					aris::core::s_mmTN(m1.m(), m2.n(), m1.n(), m1.data(), 1, m2.data(), 1, ret.data(), 1);
 				}
@@ -1417,7 +1451,7 @@ namespace aris::core
 		return (found == imp_->cmd_map_.end()) || (found->second.cmd == "endmain") ? true : false;
 	}
 	LanguageParser::~LanguageParser() = default;
-	LanguageParser::LanguageParser(const std::string &name) :Object(name), imp_(new Imp) {}
+	LanguageParser::LanguageParser(const std::string &name) :imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(LanguageParser);
 
 

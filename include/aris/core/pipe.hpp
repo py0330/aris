@@ -1,12 +1,13 @@
 ﻿#ifndef ARIS_CORE_PIPE_H
 #define ARIS_CORE_PIPE_H
 
+#include <aris_lib_export.h>
 #include <aris/core/object.hpp>
 #include <aris/core/msg.hpp>
 
 namespace aris::core
 {
-	class Pipe
+	class ARIS_API Pipe
 	{
 	public:
 		auto sendMsg(const aris::core::MsgBase &)->bool;

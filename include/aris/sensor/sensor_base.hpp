@@ -7,14 +7,15 @@
 #include <iostream>
 #include <memory>
 
+#include <aris_lib_export.h>
 #include <aris/core/core.hpp>
 
 namespace aris::sensor
 {
 	class Sensor;
 
-	struct SensorData {};
-	class SensorDataProtector
+	struct ARIS_API SensorData {};
+	class ARIS_API SensorDataProtector
 	{
 	public:
 		auto get() const->const SensorData * { return data_; }
@@ -38,11 +39,9 @@ namespace aris::sensor
 
 		friend class Sensor;
 	};
-	class Sensor :public aris::core::Object
+	class ARIS_API Sensor
 	{
 	public:
-		static auto Type()->const std::string & { static const std::string type("Sensor"); return std::ref(type); }
-		auto virtual type() const->const std::string& override { return Type(); }
 		auto start()->void;
 		auto stop()->void;
 		auto dataProtector()->SensorDataProtector;
@@ -56,13 +55,11 @@ namespace aris::sensor
 		auto virtual updateData(SensorData & data)->void {}
 
 	private:
-		auto operator=(const Sensor &)->Sensor& = default;
-		auto operator=(Sensor &&)->Sensor& = default;
-		Sensor(const Sensor &) = default;
-		Sensor(Sensor &&) = default;
+		//auto operator=(Sensor &&)->Sensor& = default;
+		//Sensor(Sensor &&) = default;
 
 		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
+		std::unique_ptr<Imp> imp_;
 
 		friend class SensorDataProtector;
 		template<class DataType> friend class SensorTemplate;
@@ -71,22 +68,18 @@ namespace aris::sensor
 	{
 	public:
 		SensorTemplate(const std::string &name) :Sensor(name, []()->SensorData* {return new DataType; }) {}
-		SensorTemplate(Object &father, const aris::core::XmlElement &xml_ele) :Sensor(father, xml_ele, []()->SensorData* {return new DataType; }) {}
 	};
 
-	class SensorRoot :public aris::core::Object
+	class ARIS_API SensorRoot
 	{
 	public:
-		using Object::loadXml;
-		auto virtual loadXml(const aris::core::XmlElement &xml_ele)->void override;
-		auto sensorPool()->aris::core::ObjectPool<Sensor> &;
-		auto sensorPool()const->const aris::core::ObjectPool<Sensor> &;
-		auto start()->void { for (auto &sensor : sensorPool())sensor.start(); }
-		auto stop()->void { for (auto &sensor : sensorPool())sensor.stop(); }
+		//auto sensorPool()->aris::core::ObjectPool<Sensor> &;
+		//auto sensorPool()const->const aris::core::ObjectPool<Sensor> &;
+		//auto start()->void { for (auto &sensor : sensorPool())sensor.start(); }
+		//auto stop()->void { for (auto &sensor : sensorPool())sensor.stop(); }
 
 		virtual ~SensorRoot();
 		explicit SensorRoot(const std::string &name = "sensor_root");
-		ARIS_REGISTER_TYPE(SensorRoot);
 		ARIS_DECLARE_BIG_FOUR(SensorRoot);
 
 	private:

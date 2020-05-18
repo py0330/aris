@@ -302,6 +302,7 @@ namespace aris::dynamic
 
 		return 0;
 	}
+	StewartInverseKinematicSolver::~StewartInverseKinematicSolver() = default;
 	StewartInverseKinematicSolver::StewartInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(StewartInverseKinematicSolver);
 }

@@ -297,7 +297,6 @@ namespace aris::server
 			{
 				switch (cm.modeOfOperation())
 				{
-				case 1: // profile pos mode
 				case 8:
 				{
 					// check pos max //
@@ -888,7 +887,6 @@ namespace aris::server
 			}
 		});
 
-		sensorRoot().start();
 		controller().start();
 
 		raii_collector.reset();
@@ -907,7 +905,6 @@ namespace aris::server
 
 		// 停止控制器 //
 		controller().stop();
-		sensorRoot().stop();
 	}
 	auto ControlServer::waitForAllExecution()->void 
 	{

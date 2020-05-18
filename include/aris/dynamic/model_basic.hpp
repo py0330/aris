@@ -20,7 +20,7 @@ namespace aris::dynamic
 
 	class Model;
 
-	class Element
+	class ARIS_API Element
 	{
 	public:
 		auto model()noexcept->Model* { return model_; }
@@ -36,7 +36,7 @@ namespace aris::dynamic
 		Size id_{ 0 };
 		friend class Model;
 	};
-	class DynEle : public Element
+	class ARIS_API DynEle : public Element
 	{
 	public:
 		auto active() const noexcept->bool { return active_; }
@@ -53,7 +53,7 @@ namespace aris::dynamic
 		bool active_;
 	};
 
-	class Environment final :public Element
+	class ARIS_API Environment final :public Element
 	{
 	public:
 		auto gravity()const noexcept->const double6& { return gravity_; }
@@ -67,7 +67,7 @@ namespace aris::dynamic
 		double gravity_[6]{ 0, -9.8, 0, 0, 0, 0 };
 	};
 
-	class Variable :public Element
+	class ARIS_API Variable :public Element
 	{
 	public:
 		auto virtual toString() const->std::string { return ""; }
@@ -93,7 +93,7 @@ namespace aris::dynamic
 	private:
 		VariableType data_;
 	};
-	class MatrixVariable final : public VariableTemplate<aris::core::Matrix>
+	class ARIS_API MatrixVariable final : public VariableTemplate<aris::core::Matrix>
 	{
 	public:
 		auto virtual toString() const->std::string override { return data().toString(); }
@@ -103,7 +103,7 @@ namespace aris::dynamic
 		explicit MatrixVariable(const std::string &name = "matrix_variable", const aris::core::Matrix &data = aris::core::Matrix()) : VariableTemplate(name, data) {}
 		ARIS_DEFINE_BIG_FOUR(MatrixVariable);
 	};
-	class StringVariable final : public VariableTemplate<std::string>
+	class ARIS_API StringVariable final : public VariableTemplate<std::string>
 	{
 	public:
 		auto virtual toString() const->std::string override { return data(); }

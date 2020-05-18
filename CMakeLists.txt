@@ -18,6 +18,7 @@ endif(WIN32)
 ## set definitions to disable some warning ##
 if(WIN32)
 	add_definitions(-DWIN32 -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
 endif(WIN32)
 if(UNIX)
 	add_definitions(-DUNIX)
@@ -118,12 +119,11 @@ generate_export_header(aris_lib EXPORT_MACRO_NAME ARIS_API)
 
 target_link_libraries(aris_lib PUBLIC ${RELY_LINK_LIB})
 set(aris_LIBRARIES optimized aris::aris_lib debug aris::debug::aris_lib)
-set_property(TARGET aris_lib PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(aris_lib
 	PUBLIC 
 		$<INSTALL_INTERFACE:include>
 		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-		${PROJECT_BINARY_DIR}
+		$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
 	PRIVATE
 		${PROJECT_SOURCE_DIR}/src
 		${RELY_INCL_DIR}
@@ -226,8 +226,9 @@ if(BUILD_DOCS)
 		set(DOXYGEN_DOXYFILE_ENCODING "UTF-8")
 
 		doxygen_add_docs(
-			doxygen
+			doxygen 
 		    ${PROJECT_SOURCE_DIR}/demo ${PROJECT_SOURCE_DIR}/include
+			ALL
 			COMMENT "Generate man pages")
 
 		install(DIRECTORY ${PROJECT_BINARY_DIR}/html/ DESTINATION doc/html/)

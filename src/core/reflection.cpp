@@ -37,46 +37,31 @@ namespace aris::core
 		std::function<std::string(void* value)> to_str_func_;
 		std::function<void(void* value, std::string_view str)> from_str_func_;
 	};
-	auto Property::name()const->std::string { return imp_->name_; };
-	auto Property::set(Instance *ins, Instance arg)const->void { imp_->set_(ins, arg); }
-	auto Property::get(Instance *ins)const->Instance 
-	{ 
-		auto ret = imp_->get_(ins);
-		ret.belong_to_ = this;
-		return ret;
-	}
-	auto Property::acceptPtr()const->bool { return imp_->accept_ptr_; }
-	auto Property::type()->const Type* { return &Type::reflect_types().at(imp_->type_info_->hash_code()); }
-	auto Property::setToText(std::function<std::string(void*)> to_text)->void { imp_->to_str_func_ = to_text; }
-	auto Property::setFromText(std::function<void(void*, std::string_view)> from_text)->void { imp_->from_str_func_ = from_text; }
-	
-	Property::~Property() = default;
-	Property::Property(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)> set, std::function<Instance(Instance *)> get) :imp_(new Imp)
+	struct Instance::Imp
 	{
-		imp_->name_ = name;
-		imp_->type_belong_to_ = type_belong_to;
-		imp_->type_info_ = type_self;
-		imp_->accept_ptr_ = accept_ptr;
-		imp_->set_ = set;
-		imp_->get_ = get;
-	}
+		const Property *belong_to_{ nullptr };
+		const std::type_info *type_info_;
 
+		struct InstanceRef { void* data_; };
+		struct InstancePtr { std::shared_ptr<void> data_; };
+		std::variant<std::monostate, InstanceRef, InstancePtr> data_;
+	};
 	struct Type::Imp
 	{
 		// init properties, for inheritance //
-		bool inited{ false };  
-		
+		bool inited{ false };
+
 		// properties //
 		std::string type_name_;
 		std::vector<Property> this_properties_;// 不包含父类properties
 		std::vector<Property*> properties_ptr_;// 包含父类的properties，为了保持插入顺序，所以不得不用vector替代map
 
-		// inherit types //
+											   // inherit types //
 		std::vector<const std::type_info *> inherit_type_infos_;// 因为在注册过程中，无法确保所继承的类已经注册完毕，所以需要后续生成该向量
 		std::vector<const Type *> inherit_types_;
 		std::vector<std::function<void*(void*)>> inherit_cast_vec_; // 将自己cast成基类的函数
 
-		// inherit types //
+																	// inherit types //
 		DefaultCtor default_ctor_;
 
 		// to text // 
@@ -99,6 +84,30 @@ namespace aris::core
 
 		bool is_polymophic_{ false };
 	};
+
+	auto Property::name()const->std::string { return imp_->name_; };
+	auto Property::set(Instance *ins, Instance arg)const->void { imp_->set_(ins, arg); }
+	auto Property::get(Instance *ins)const->Instance 
+	{ 
+		auto ret = imp_->get_(ins);
+		ret.imp_->belong_to_ = this;
+		return ret;
+	}
+	auto Property::acceptPtr()const->bool { return imp_->accept_ptr_; }
+	auto Property::type()->const Type* { return &Type::reflect_types().at(imp_->type_info_->hash_code()); }
+	auto Property::setToText(std::function<std::string(void*)> to_text)->void { imp_->to_str_func_ = to_text; }
+	auto Property::setFromText(std::function<void(void*, std::string_view)> from_text)->void { imp_->from_str_func_ = from_text; }
+	Property::~Property() = default;
+	Property::Property(std::string_view name, Type *type_belong_to, const std::type_info *type_self, bool accept_ptr, std::function<void(Instance *, Instance)> set, std::function<Instance(Instance *)> get) :imp_(new Imp)
+	{
+		imp_->name_ = name;
+		imp_->type_belong_to_ = type_belong_to;
+		imp_->type_info_ = type_self;
+		imp_->accept_ptr_ = accept_ptr;
+		imp_->set_ = set;
+		imp_->get_ = get;
+	}
+
 	auto Type::reflect_types()->std::map<std::size_t, Type>&
 	{
 		initAllTypes();
@@ -246,6 +255,7 @@ namespace aris::core
 	}
 	Type::~Type() = default;
 	Type::Type(std::string_view name) :imp_(new Imp) { imp_->type_name_ = name; }
+
 	auto Instance::castToType(const Type*t)const->void* 
 	{
 		if (type() == t) return toVoidPtr();
@@ -268,7 +278,7 @@ namespace aris::core
 
 		return iterative_cast(type(), toVoidPtr());
 	}
-	auto Instance::toVoidPtr()const->void* {return isReference() ? std::get<InstanceRef>(data_).data_ : std::get<InstancePtr>(data_).data_.get();}
+	auto Instance::toVoidPtr()const->void* {return isReference() ? std::get<Imp::InstanceRef>(imp_->data_).data_ : std::get<Imp::InstancePtr>(imp_->data_).data_.get();}
 	auto Instance::set(std::string_view prop_name, Instance arg)->void
 	{
 		type()->propertyAt(prop_name)->set(this, arg);
@@ -277,24 +287,24 @@ namespace aris::core
 	{
 		return type()->propertyAt(prop_name)->get(this);
 	}
-	auto Instance::isReference()const->bool { return data_.index() == 1; }
+	auto Instance::isEmpty()const->bool { return imp_->data_.index() == 0; }
+	auto Instance::isReference()const->bool { return imp_->data_.index() == 1; }
 	auto Instance::type()const->const Type* 
 	{ 
 		if (isEmpty()) return nullptr;
-		
-		return Type::reflect_types().find(type_info_->hash_code()) == Type::reflect_types().end() ? nullptr : &Type::reflect_types().at(type_info_->hash_code());
+		return Type::reflect_types().find(imp_->type_info_->hash_code()) == Type::reflect_types().end() ? nullptr : &Type::reflect_types().at(imp_->type_info_->hash_code());
 	}
 	auto Instance::isBasic()const->bool { return type()->isBasic(); }
 	auto Instance::isArray()const->bool { return type()->isArray(); }
 	auto Instance::toString()->std::string 
 	{ 
-		if (belong_to_ && belong_to_->imp_->to_str_func_)return belong_to_->imp_->to_str_func_(toVoidPtr());
+		if (imp_->belong_to_ && imp_->belong_to_->imp_->to_str_func_)return imp_->belong_to_->imp_->to_str_func_(toVoidPtr());
 		if (type()->imp_->to_string_)return type()->imp_->to_string_(this);
 		return "";
 	}
 	auto Instance::fromString(std::string_view str)->void 
 	{ 
-		if (belong_to_ && belong_to_->imp_->from_str_func_)return belong_to_->imp_->from_str_func_(toVoidPtr(), str);
+		if (imp_->belong_to_ && imp_->belong_to_->imp_->from_str_func_)return imp_->belong_to_->imp_->from_str_func_(toVoidPtr(), str);
 		if (type()->imp_->from_string_)type()->imp_->from_string_(this, str);
 	}
 	auto Instance::size()->std::size_t
@@ -317,6 +327,21 @@ namespace aris::core
 		if (!isArray())THROW_FILE_LINE("instance is NOT array");
 		type()->imp_->array_data_->clear_func_(this);
 	}
+	Instance::Instance(const std::type_info *info, void* data):imp_(new Imp)
+	{
+		imp_->type_info_ = info;
+		imp_->data_ = Imp::InstanceRef{ data };
+	}
+	Instance::Instance(const std::type_info *info, std::shared_ptr<void> data) : imp_(new Imp)
+	{
+		imp_->type_info_ = info;
+		imp_->data_ = Imp::InstancePtr{ data };
+	}
+	Instance::~Instance() = default;
+	Instance::Instance() :imp_(new Imp) {}
+	Instance::Instance(const Instance&) = default;
+	Instance::Instance(Instance&&) = default;
+
 
 	auto uint64_to_str(std::uint64_t* value)->std::string { return std::to_string(*reinterpret_cast<std::uint64_t*>(value)); }
 	auto uint64_from_str(std::uint64_t *v, std::string_view str)->void { *reinterpret_cast<std::uint64_t*>(v) = std::strtoull(str.data(), nullptr, 0); }

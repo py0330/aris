@@ -45,7 +45,7 @@ namespace aris::plan
 		return a * s*s*s + b * s*s + c * s + d;
 	}
 
-	auto moveAbsolute(double i, double begin_pos, double end_pos, double vel, double acc, double dec, double &current_pos, double &current_vel, double &current_acc, Size& total_count)->void;
+	auto ARIS_API moveAbsolute(double i, double begin_pos, double end_pos, double vel, double acc, double dec, double &current_pos, double &current_vel, double &current_acc, Size& total_count)->void;
 
 	// pa : pos actual value
 	// va : vel actual value
@@ -62,33 +62,7 @@ namespace aris::plan
 	// vc : next planned vel
 	// ac : next planned acc
 	// total_count : tbd, not finished yet
-	auto moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int;
-
-	
-	class LanguageParser : public aris::core::Object
-	{
-	public:
-		auto setProgram(std::string_view program)->void;
-		auto parseLanguage()->void;
-		auto varPool()->const std::vector<std::string>&;
-		auto gotoMain()->void;
-		auto gotoLine(int line)->void;
-		auto forward(bool is_this_cmd_successful = true)->void;
-		auto currentCmd()const->const std::string&;
-		auto currentLine()const->int;
-		auto isCurrentLineKeyWord()const->bool;
-		auto isCurrentLineFunction()const->bool;
-		auto isEnd()const->bool;
-
-		virtual ~LanguageParser();
-		explicit LanguageParser(const std::string &name = "language_parser");
-		ARIS_REGISTER_TYPE(LanguageParser);
-		ARIS_DECLARE_BIG_FOUR(LanguageParser);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
+	auto ARIS_API moveAbsolute2(double pa, double va, double aa, double pt, double vt, double at, double vm, double am, double dm, double dt, double zero_check, double &pc, double &vc, double &ac, Size& total_count)->int;
 }
 
 

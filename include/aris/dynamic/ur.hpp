@@ -8,7 +8,7 @@ namespace aris::dynamic
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
-	class Ur5InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
+	class ARIS_API Ur5InverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
 		auto virtual kinPos()->int override;

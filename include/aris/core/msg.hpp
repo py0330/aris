@@ -8,14 +8,15 @@
 #include <iostream>
 #include <functional>
 
+#include <aris_lib_export.h>
+
 namespace aris::core
 {
 	using MsgSize = std::uint32_t;
 	using MsgID = std::uint32_t;
 	using MsgType = std::uint64_t;
 
-	struct MsgHeader
-	{
+	struct ARIS_API MsgHeader{
 		MsgSize msg_size_;
 		MsgID msg_id_;
 		MsgType msg_type_;
@@ -23,8 +24,7 @@ namespace aris::core
 		std::int64_t reserved2_;
 		std::int64_t reserved3_;
 	};
-	class MsgBase
-	{
+	class ARIS_API MsgBase{
 	public:
 		auto virtual resize(MsgSize size)->void = 0;
 		auto virtual header()->MsgHeader& = 0;
@@ -80,8 +80,7 @@ namespace aris::core
 	private:
 		mutable MsgSize paste_id_{ 0 };
 	};
-	class Msg final :public MsgBase
-	{
+	class ARIS_API Msg final :public MsgBase{
 	public:
 		auto virtual resize(MsgSize size)->void override;
 		auto virtual header()->MsgHeader& override;
@@ -125,8 +124,7 @@ namespace aris::core
 	private:
 		char data_[CAPACITY + sizeof(MsgHeader)];
 	};
-	class MsgStreamBuf :public std::streambuf
-	{
+	class ARIS_API MsgStreamBuf :public std::streambuf{
 	public:
 		explicit MsgStreamBuf(MsgBase& msg);
 		auto reset()->void;
@@ -137,8 +135,7 @@ namespace aris::core
 	private:
 		MsgBase * msg_;
 	};
-	class MsgStream : public std::iostream
-	{
+	class ARIS_API MsgStream : public std::iostream{
 	public:
 		auto reset()->void { buf.reset(); }
 		explicit MsgStream(MsgBase& msg) : buf(msg), std::iostream(&buf) { }

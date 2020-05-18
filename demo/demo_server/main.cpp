@@ -80,9 +80,9 @@ int main(int argc, char *argv[])
 	}
 	else if (robot_name == "stewart")
 	{
-		cs.resetController(createControllerStewart().release());
+		cs.resetController(aris::robot::createControllerStewart().release());
 		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
-		cs.resetPlanRoot(createPlanRootStewart().release());
+		cs.resetPlanRoot(aris::robot::createPlanRootStewart().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 		//cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
 	}
@@ -96,23 +96,10 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-	//double KPP[7] = { 200,200,8,-15,-15,-15,0 };
-	//double KPV[7] = { 100,100,0,4,4,4,0 };
-	//double KIV[7] = { 50,50,  0,1,1,1,0 };
-
-	//std::cout << cs.controller().xmlString() << std::endl;
-
-	//cs.saveXmlFile("C:\\Users\\py033\\Desktop\\seri1.xml");
-
-	aaaaa_bbbbb_ccccc;
-
-
 	std::ifstream file1;
 	file1.open("C:\\Users\\py033\\Desktop\\seri0.xml");
 	std::string file1_xml_str((std::istreambuf_iterator<char>(file1)), (std::istreambuf_iterator<char>()));
 
-	//std::cout << file1_xml_str << std::endl;
-	//std::cout << aris::core::toXmlString(cs) << std::endl;
 	aris::core::fromXmlString(cs, file1_xml_str);
 	file1.close();
 
@@ -125,6 +112,7 @@ int main(int argc, char *argv[])
 	file3.open("C:\\Users\\py033\\Desktop\\seri2.xml");
 	std::string file3_xml_str((std::istreambuf_iterator<char>(file3)), (std::istreambuf_iterator<char>()));
 	aris::core::fromXmlString(cs, file3_xml_str);
+	file3.close();
 
 	std::fstream file4;
 	file4.open("C:\\Users\\py033\\Desktop\\seri4.xml", std::ios::out | std::ios::trunc);

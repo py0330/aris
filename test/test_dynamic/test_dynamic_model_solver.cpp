@@ -2334,6 +2334,7 @@ void test_ur5_calibration()
 	// add solvers //
 	auto &forward_kinematic = rbt.solverPool().add<ForwardKinematicSolver>();
 
+	/*
 	// add calibrator //
 	auto &calibrator = rbt.calibratorPool().add<Calibrator>();
 
@@ -2373,12 +2374,13 @@ void test_ur5_calibration()
 	double b[6];
 	s_mm(calibrator.m(), 1, calibrator.n(), calibrator.A(), calibrator.x(), b);
 	dsp(calibrator.m(), 1, b);
-
+	*/
 
 }
 
 auto test_clb()->void
 {
+	/*
 	std::cout << "-------------------------------------------------" << std::endl;
 
 	// 创建机器人 //
@@ -2457,6 +2459,7 @@ auto test_clb()->void
 	dsp(clb.m(), clb.n(), clb.A());
 	dsp(clb.m(), 1, clb.b());
 	dsp(clb.n(), 1, clb.x());
+	*/
 }
 
 

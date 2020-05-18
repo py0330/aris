@@ -9,7 +9,7 @@ namespace aris::dynamic
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// @{
 	///
-	struct PumaParam
+	struct ARIS_API PumaParam
 	{
 		// DH PARAM //
 		double d1{ 0.0 };
@@ -33,9 +33,9 @@ namespace aris::dynamic
 		// mot friction vector, size must be 6
 		std::vector<std::array<double, 3> > mot_frc_vec;
 	};
-	auto createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>;
+	auto ARIS_API createModelPuma(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>;
 
-	class PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
+	class ARIS_API PumaInverseKinematicSolver :public aris::dynamic::InverseKinematicSolver
 	{
 	public:
 		auto virtual allocateMemory()->void override;
@@ -56,7 +56,7 @@ namespace aris::dynamic
 
 		virtual ~PumaInverseKinematicSolver();
 		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");
-		//ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
+		ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
 
 	private:
 		struct Imp;

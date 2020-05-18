@@ -1,6 +1,6 @@
 ﻿#include <algorithm>
 
-#include"aris/robot/ur.hpp"
+#include"aris/robot/stewart.hpp"
 
 using namespace aris::dynamic;
 

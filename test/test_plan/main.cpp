@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
 	try 
 	{
-		aris::plan::LanguageParser parser;
+		aris::core::LanguageParser parser;
 		parser.setProgram(program);
 		parser.parseLanguage();
 

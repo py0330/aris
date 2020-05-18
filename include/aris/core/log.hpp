@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <exception>
 
+#include <aris_lib_export.h>
+
 #define LOG_DEBUG aris::core::log() \
 	<< std::setw(aris::core::LOG_TYPE_WIDTH) << "DEBUG" << "|" \
 	<< std::setw(aris::core::LOG_TIME_WIDTH) << aris::core::logFileTimeFormat(std::chrono::system_clock::now()) <<"|" \
@@ -69,19 +71,19 @@ namespace aris::core
 	};
 
 	// 设置log文件夹，参数为空时将二进制文件路径设为log路径 //
-	auto logDirectory(const std::filesystem::path &log_dir_path = std::filesystem::path())->void; 
+	auto ARIS_API logDirectory(const std::filesystem::path &log_dir_path = std::filesystem::path())->void;
 	// 设置log文件名，可以是相对或绝对路径，为空时采用默认值 //
-	auto logFile(const std::filesystem::path &log_file_path = std::filesystem::path())->void;
+	auto ARIS_API logFile(const std::filesystem::path &log_file_path = std::filesystem::path())->void;
 	// 设置单个log文件最大的条数，小于0时无上限 //
-	auto logMaxInfoNum(int max_info_num= 100000);
+	auto ARIS_API logMaxInfoNum(int max_info_num= 100000);
 	// 返回log stream //
-	auto log()->std::ostream&;
+	auto ARIS_API log()->std::ostream&;
 
-	auto logDirPath()->std::filesystem::path;
-	auto logExeName()->std::string;
-	auto logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
+	auto ARIS_API logDirPath()->std::filesystem::path;
+	auto ARIS_API logExeName()->std::string;
+	auto ARIS_API logFileTimeFormat(const std::chrono::system_clock::time_point &time)->std::string;
 
-	auto cout()->std::ostream&;
+	auto ARIS_API cout()->std::ostream&;
 }
 
 #endif

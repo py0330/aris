@@ -206,7 +206,7 @@ namespace aris::dynamic
 	/// 
 	/// @{
 	///
-	class Model
+	class ARIS_API Model
 	{
 	public:
 		auto virtual init()->void;

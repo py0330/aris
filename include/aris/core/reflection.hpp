@@ -7,6 +7,12 @@
 	#define ARIS_EXTERN extern
 #endif
 
+//#ifdef ARIS_CORE_REFLECTION_CPP_
+//	#define ARIS_EXTERN
+//#else
+//	#define ARIS_EXTERN extern
+//#endif
+
 #include <any>
 #include <map>
 #include <vector>
@@ -17,7 +23,6 @@
 
 
 #include <aris_lib_export.h>
-
 #include <aris/core/object.hpp>
 #include <aris/core/basic_type.hpp>
 #include <aris/core/tinyxml2.h>
@@ -45,8 +50,6 @@ namespace aris::core
 	class Type;
 	class Property;
 	class Instance;
-
-	//ARIS_EXTERN template class ARIS_API std::function<Instance(Instance *obj)>;
 
 	class ARIS_API Property
 	{
@@ -115,7 +118,7 @@ namespace aris::core
 	class ARIS_API Instance
 	{
 	public:
-		auto isEmpty()const->bool { return data_.index() == 0; }
+		auto isEmpty()const->bool;
 		auto isReference()const->bool;
 		auto isBasic()const->bool;
 		auto isArray()const->bool;
@@ -145,50 +148,45 @@ namespace aris::core
 		// 绑定到左值引用, 多态类型 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
+			:Instance(&typeid(t), dynamic_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
 		{
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
-			auto &r = const_cast<std::decay_t<T> &>(t);
-			data_ = InstanceRef{ dynamic_cast<void*>(&r) };// dynamic_cast to most derived class
-			type_info_ = &typeid(r);
-
-			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + type_info_->name());
+			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
 		}
 
 		// 绑定到左值引用，非多态类型 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_lvalue_reference_v<T &&> && !std::is_polymorphic_v<std::decay_t<T>>> *s = nullptr)
+			:Instance(&typeid(t), reinterpret_cast<void*>(&const_cast<std::decay_t<T> &>(t)))
 		{
 			static_assert(!std::is_const_v<T>, "instance must bind to a non-const value");
-			auto &r = const_cast<std::decay_t<T> &>(t);
-			data_ = InstanceRef{ &r };
-			type_info_ = &typeid(r);
-
-			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + type_info_->name());
+			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
 		}
 		
 		// 根据右值来构造 //
 		template<typename T>
 		Instance(T && t, std::enable_if_t<(!std::is_same_v<std::decay_t<T>, Instance>) && std::is_rvalue_reference_v<T &&>> *s = nullptr)
+			:Instance(&typeid(t), std::make_shared<std::decay_t<T>>(std::move(t)))
 		{
 			static_assert(std::is_copy_constructible_v<T> || std::is_move_constructible_v<T>, "Failed to construct : NO ctors");
-			auto &r = const_cast<std::decay_t<T> &>(t);
-			data_ = InstancePtr{ std::make_shared<std::decay_t<T>>(std::move(r)) };
-			type_info_ = &typeid(r);
-
-			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + type_info_->name());
+			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
 		}
-		Instance(const Instance&) = default;
-		Instance(Instance&&) = default;
+
+		
+		~Instance();
+		Instance();
+		Instance(const Instance&);
+		Instance(Instance&&);
 
 	private:
 		auto castToType(const Type* t)const->void*;
 		auto toVoidPtr()const->void*;
-		const Property *belong_to_{ nullptr };
-		const std::type_info *type_info_;
 
-		struct InstanceRef{	void* data_; };
-		struct InstancePtr{	std::shared_ptr<void> data_; };
-		std::variant<std::monostate, InstanceRef, InstancePtr> data_;
+		Instance(const std::type_info *info, std::shared_ptr<void> data);
+		Instance(const std::type_info *info, void* data);
+
+		struct Imp;
+		aris::core::ImpPtr<Imp> imp_;
 
 		friend class Property;
 		template<typename Class_Type> friend class class_;

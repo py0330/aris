@@ -11,7 +11,7 @@ namespace aris::dynamic
 	/// @{
 	///
 
-	class Interaction :public DynEle
+	class ARIS_API Interaction :public DynEle
 	{
 	public:
 		auto makI() noexcept->Marker* { return makI_; }
@@ -36,7 +36,7 @@ namespace aris::dynamic
 		std::string prt_name_M_, prt_name_N_, mak_name_I_, mak_name_J_;
 		friend class Model;
 	};
-	class Constraint :public Interaction
+	class ARIS_API Constraint :public Interaction
 	{
 	public:
 		auto virtual dim() const->Size = 0;
@@ -113,15 +113,14 @@ namespace aris::dynamic
 		friend class Motion;
 		friend class GeneralMotion;
 	};
-	class Joint :public Constraint
+	class ARIS_API Joint :public Constraint
 	{
 	public:
 		virtual ~Joint() = default;
 		explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}
 		ARIS_DEFINE_BIG_FOUR(Joint);
 	};
-	class Motion final :public Constraint
-	{
+	class ARIS_API Motion final :public Constraint{
 	public:
 		static auto Dim()->Size { return 1; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
@@ -164,8 +163,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class GeneralMotion final :public Constraint
-	{
+	class ARIS_API GeneralMotion final :public Constraint{
 	public:
 		static auto Dim()->Size { return 6; }
 		auto virtual dim() const noexcept ->Size override { return Dim(); }
@@ -223,8 +221,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class Force :public Interaction
-	{
+	class ARIS_API Force :public Interaction{
 	public:
 		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void = 0;
 
@@ -233,37 +230,7 @@ namespace aris::dynamic
 		ARIS_DEFINE_BIG_FOUR(Force);
 	};
 
-	/*
-	class Friction :public Element
-	{
-	public:
-		auto frc()const noexcept ->double { return s_vv(frc_coe_.size(), frc_coe_.data(), frc_value_.data()); };
-		auto frcValue()const noexcept ->std::tuple<const double *, Size> 
-		{ 
-			frc_coe_
-
-
-
-			
-			
-			return std::make_tuple(frc_value_.data(), static_cast<Size>(frc_value_.size()));
-		}
-		auto frcCoe() const noexcept ->std::tuple<const double *, Size> { return std::make_tuple(frc_coe_.data(), static_cast<Size>(frc_coe_.size())); }
-		auto setFrcCoe(const double *frc_coe, Size dim) noexcept->void { frc_coe_.assign(frc_coe, frc_coe + dim); frc_value_.resize(dim, 0.0); }
-		
-
-
-		
-
-
-
-	private:
-		std::vector<double> frc_coe_{0.0, 0.0, 0.0};
-		std::vector<double> frc_value_{ 0.0, 0.0, 0.0 };
-	};*/
-
-	class RevoluteJoint final :public Joint
-	{
+	class ARIS_API RevoluteJoint final :public Joint{
 	public:
 		static auto Dim()->Size { return 5; }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
@@ -275,8 +242,7 @@ namespace aris::dynamic
 		explicit RevoluteJoint(const std::string &name = "revolute_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 		ARIS_DEFINE_BIG_FOUR(RevoluteJoint);
 	};
-	class PrismaticJoint final :public Joint
-	{
+	class ARIS_API PrismaticJoint final :public Joint{
 	public:
 		static auto Dim()->Size { return 5; }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
@@ -288,8 +254,7 @@ namespace aris::dynamic
 		explicit PrismaticJoint(const std::string &name = "prismatic_joint", Marker *makI = nullptr, Marker *makJ = nullptr);
 		ARIS_DEFINE_BIG_FOUR(PrismaticJoint);
 	};
-	class UniversalJoint final :public Joint
-	{
+	class ARIS_API UniversalJoint final :public Joint{
 	public:
 		static auto Dim()->Size { return 4; }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
@@ -307,8 +272,7 @@ namespace aris::dynamic
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
 	};
-	class SphericalJoint final :public Joint
-	{
+	class ARIS_API SphericalJoint final :public Joint{
 	public:
 		static auto Dim()->Size { return 3; }
 		auto virtual dim() const noexcept->Size override { return Dim(); }
@@ -321,8 +285,7 @@ namespace aris::dynamic
 		ARIS_DEFINE_BIG_FOUR(SphericalJoint);
 	};
 
-	class GeneralForce final :public Force
-	{
+	class ARIS_API GeneralForce final :public Force{
 	public:
 		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void override { s_vc(6, fce_value_, fsI); s_vi(6, fce_value_, fsJ); }
 		auto setFce(const double *value) noexcept->void { std::copy(value, value + 6, fce_value_); }
@@ -335,8 +298,7 @@ namespace aris::dynamic
 	private:
 		double fce_value_[6]{ 0 };
 	};
-	class SingleComponentForce final :public Force
-	{
+	class ARIS_API SingleComponentForce final :public Force{
 	public:
 		auto virtual cptGlbFs(double *fsI, double *fsJ)const noexcept->void override;
 		auto setComponentAxis(Size id) noexcept->void { component_axis_ = id; }
