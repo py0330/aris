@@ -1677,8 +1677,16 @@ namespace aris::dynamic
 
 	ARIS_REGISTRATION
 	{
-		//aris::core::class_<SimResult::TimeResult>("TimeResult")
-		//	.prop()
-		//	;
+		auto timeresult_to_text = [](SimResult::TimeResult *result)->std::string
+		{
+			//std::stringstream ss;
+			//ss << std::setprecision(15);
+			//ss.str().reserve((25 * 1 + 1)*result->imp_->time_.size());
+
+			//for (auto &t : imp_->time_)ss << t << std::endl;
+		};
+		
+		aris::core::class_<SimResult::TimeResult>("TimeResult")
+			;
 	}
 }

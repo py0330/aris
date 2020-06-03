@@ -34,151 +34,6 @@ namespace aris::core
 	private:
 		std::unique_ptr<T> data_unique_ptr_;
 	};
-	template <class T, class A = std::allocator<T> >class ImpContainer
-	{
-	public:
-		using allocator_type = A;
-		using value_type = typename std::allocator_traits<A>::value_type;
-		using reference = T&;
-		using const_reference = const T&;
-		using pointer = typename std::allocator_traits<A>::pointer;
-		using const_pointer = typename std::allocator_traits<A>::const_pointer;
-		using difference_type = typename std::allocator_traits<A>::difference_type;
-		using size_type = typename std::allocator_traits<A>::size_type;
-		class iterator;
-		class const_iterator;
-
-		class iterator
-		{
-		public:
-			using difference_type = typename ImpContainer::difference_type;
-			using value_type = typename ImpContainer::value_type;
-			using reference = typename ImpContainer::reference;
-			using pointer = typename ImpContainer::pointer;
-			using iterator_category = std::random_access_iterator_tag; //or another tag
-
-			auto operator=(const iterator&other)->iterator& = default;
-			auto operator==(const iterator&other) const->bool { return iter_ == other.iter_; }
-			auto operator!=(const iterator&other) const->bool { return iter_ != other.iter_; }
-			auto operator<(const iterator&other) const->bool { return iter_ < other.iter_; } //optional
-			auto operator>(const iterator&other) const->bool { return iter_ > other.iter_; } //optional
-			auto operator<=(const iterator&other) const->bool { return iter_ <= other.iter_; } //optional
-			auto operator>=(const iterator&other) const->bool { return iter_ >= other.iter_; } //optional
-
-			auto operator++()->iterator& { ++iter_; return *this; }
-			auto operator++(int)->iterator { iterator ret(*this); operator++(); return ret; } //optional
-			auto operator--()->iterator& { --iter_; return *this; } //optional
-			auto operator--(int)->iterator { iterator ret(*this); operator--(); return ret; } //optional
-			auto operator+=(size_type size)->iterator& { iter_ += size; return *this; } //optional
-			auto operator+(size_type size) const->iterator { return iter_ + size; } //optional
-			friend auto operator+(size_type size, const iterator&iter)->iterator { return size + iter.iter_; } //optional
-			auto operator-=(size_type size)->iterator& { iter_ -= size; return *this; } //optional
-			auto operator-(size_type size) const->iterator { return iter_ - size; } //optional
-			auto operator-(iterator iter) const->difference_type { return iter_ - iter.iter_; } //optional
-
-			auto operator*() const->reference { return iter_->operator*(); }
-			auto operator->() const->pointer { return iter_->operator->(); }
-			auto operator[](size_type size) const->reference { return *iter_->operator[](size); } //optional
-
-			~iterator() = default;
-			iterator() = default;
-			iterator(const iterator& other) = default;
-			iterator(const typename std::vector<ImpPtr<T>>::iterator iter) :iter_(iter) {} //
-
-		private:
-			friend class ImpContainer<T, A>::const_iterator;
-			friend class ImpContainer<T, A>;
-			typename std::vector<ImpPtr<T>>::iterator iter_;
-		};
-		class const_iterator
-		{
-		public:
-			using difference_type = typename ImpContainer::difference_type;
-			using value_type = typename ImpContainer::value_type;
-			using const_reference = typename ImpContainer::const_reference;
-			using const_pointer = typename ImpContainer::const_pointer;
-			using iterator_category = std::random_access_iterator_tag; //or another tag
-
-			auto operator=(const const_iterator&)->const_iterator& = default;
-			auto operator==(const const_iterator& other) const->bool { return iter_ == other.iter_; }
-			auto operator!=(const const_iterator& other) const->bool { return iter_ != other.iter_; }
-			auto operator<(const const_iterator& other) const->bool { return iter_ < other.iter_; } //optional
-			auto operator>(const const_iterator& other) const->bool { return iter_ > other.iter_; } //optional
-			auto operator<=(const const_iterator& other) const->bool { return iter_ <= other.iter_; } //optional
-			auto operator>=(const const_iterator& other) const->bool { return iter_ >= other.iter_; } //optional
-
-			auto operator++()->const_iterator& { ++iter_; return *this; }
-			auto operator++(int)->const_iterator { const_iterator ret(*this); operator++(); return ret; }  //optional
-			auto operator--()->const_iterator& { --iter_; return *this; } //optional
-			auto operator--(int)->const_iterator { const_iterator ret(*this); operator--(); return ret; } //optional
-			auto operator+=(size_type size)->const_iterator& { iter_ += size; return *this; } //optional
-			auto operator+(size_type size) const->const_iterator { return iter_ + size; } //optional
-			friend auto operator+(size_type size, const const_iterator& iter)->const_iterator { return size + iter.iter_; } //optional
-			auto operator-=(size_type size)->const_iterator& { iter_ -= size; return *this; } //optional
-			auto operator-(size_type size) const->const_iterator { return iter_ - size; } //optional
-			auto operator-(const_iterator iter) const->difference_type { return iter_ - iter.iter_; } //optional
-
-			auto operator*() const->const_reference { return iter_->operator*(); }
-			auto operator->() const->const_pointer { return iter_->operator->(); }
-			auto operator[](size_type size) const->const_reference { return *iter_->operator[](size); } //optional
-
-			~const_iterator() = default;
-			const_iterator() = default;
-			const_iterator(const const_iterator&) = default;
-			const_iterator(const iterator& other) :iter_(other.iter_) {}
-			const_iterator(const typename std::vector<ImpPtr<T>>::const_iterator iter) :iter_(iter) {} //
-
-		private:
-			typename std::vector<ImpPtr<T>>::const_iterator iter_;
-		};
-		using reverse_iterator = std::reverse_iterator<iterator>; //optional
-		using const_reverse_iterator = std::reverse_iterator<const_iterator>; //optional
-
-		auto size()const->size_type { return container_.size(); }
-		auto max_size()->size_type { return container_.max_size(); }
-		auto empty()->bool { return container_.empty(); }
-
-		auto begin()->iterator { return container_.begin(); }
-		auto begin() const->const_iterator { return container_.begin(); }
-		auto cbegin() const->const_iterator { return container_.cbegin(); }
-		auto end()->iterator { return container_.end(); }
-		auto end() const->const_iterator { return container_.end(); }
-		auto cend() const->const_iterator { return container_.cend(); }
-		auto rbegin()->reverse_iterator { return container_.rbegin(); } //optional
-		auto rbegin() const->const_reverse_iterator { return container_.rbegin(); } //optional
-		auto crbegin() const->const_reverse_iterator { return container_.crbegin(); } //optional
-		auto rend()->reverse_iterator { return container_.rend(); } //optional
-		auto rend() const->const_reverse_iterator { return container_.rend(); } //optional
-		auto crend() const->const_reverse_iterator { return container_.crend(); } //optional
-
-		auto front()->reference { return *begin(); } //optional
-		auto front() const->const_reference { return *begin(); } //optional
-		auto back()->reference { return *(end() - 1); } //optional
-		auto back() const->const_reference { return *(end() - 1); } //optional
-		auto at(size_type size)->reference { return *container_.at(size); } //optional
-		auto at(size_type size) const->const_reference { return *container_.at(size); } //optional
-		auto operator[](size_type size)->reference { return *container_.operator[](size); } //optional
-		auto operator[](size_type size) const->const_reference { return *container_.operator[](size); } //optional
-
-		auto pop_back()->void { container_.pop_back(); } //optional
-		auto erase(iterator iter)->iterator { return container_.erase(iter.iter_); } //optional
-		auto erase(iterator begin_iter, iterator end_iter)->iterator { return container_.erase(begin_iter.iter_, end_iter.iter_); } //optional
-		auto clear()->void { container_.clear(); } //optional
-
-		auto push_back_ptr(T*ptr)->void { container_.push_back(ImpPtr<T>(ptr)); }
-		auto swap(ImpContainer& other)->void { return container_.swap(other.container_); }
-
-		~ImpContainer() = default;
-		ImpContainer() = default;
-		ImpContainer(const ImpContainer&) = default;
-		ImpContainer(ImpContainer&&other) = default;
-		ImpContainer& operator=(const ImpContainer& other) = default;
-		ImpContainer& operator=(ImpContainer&& other) = default;
-
-	private:
-		typename std::vector<ImpPtr<T>> container_;
-		friend class Object;
-	};
 
 	template <class T, class Pool> class SubRefPool
 	{
@@ -468,21 +323,13 @@ namespace aris::core
 
 	template <class Base>
 	class CloneBase 
-	{
+	{ 
 	public:
-		virtual Base * clone() const {
-			return new Base(static_cast<Base const&>(*this));
-		}
+		auto virtual clone() const->Base* { return new Base(static_cast<const Base&>(*this)); } 
 	};
 
 	template <class Derived, class Base>
-	class CloneObject : public Base 
-	{
-	public:
-		virtual Base * clone() const {
-			return new Derived(static_cast<Derived const&>(*this));
-		}
-	};
+	class CloneObject : public Base { public:virtual Base * clone() const { return new Derived(static_cast<Derived const&>(*this)); } };
 
 	class ARIS_API NamedObject
 	{
@@ -652,17 +499,6 @@ namespace aris::core
 		typename std::vector<pointer_type> container_;
 	};
 
-#define ARIS_DEFINE_TYPE_NAME(type_name) \
-	static auto Type()->const std::string & { \
-		static const std::string type(type_name); \
-		return std::ref(type); \
-	} \
-	auto virtual type() const->const std::string& override { return Type(); }
-
-#define ARIS_REGISTER_TYPE(type_name) \
-	ARIS_DEFINE_TYPE_NAME(#type_name) \
-	static inline int register_count_ = aris::core::Object::registerTypeGlobal<type_name>();
-	
 #define ARIS_DECLARE_BIG_FOUR(type_name) \
 	type_name(const type_name &other); \
 	type_name(type_name &&other); \

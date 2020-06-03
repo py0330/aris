@@ -14,5 +14,9 @@
 
 namespace aris::core
 {
-
+	ARIS_REGISTRATION
+	{
+		class_<NamedObject>("NamedObject")
+			.prop("name", &NamedObject::setName, &NamedObject::name);
+	}
 }

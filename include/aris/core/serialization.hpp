@@ -11,6 +11,9 @@ namespace aris::core
 {
 	auto ARIS_API toXmlString(aris::core::Instance ins)->std::string;
 	auto ARIS_API fromXmlString(aris::core::Instance ins, std::string_view xml_str)->void;
+
+	auto ARIS_API toJsonString(aris::core::Instance ins)->std::string;
+	auto ARIS_API fromJsonString(aris::core::Instance ins, std::string_view xml_str)->void;
 }
 
 #endif

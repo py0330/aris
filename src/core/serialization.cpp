@@ -13,6 +13,8 @@
 #include "aris/core/serialization.hpp"
 #include "aris/core/expression_calculator.hpp"
 
+#include "../src/server/json.hpp"
+#include "../src/server/fifo_map.hpp"
 
 namespace aris::core
 {
@@ -64,7 +66,7 @@ namespace aris::core
 				{
 					auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(v.type()).data());
 					ele->InsertEndChild(insert_ele);
-					insert_ele->SetAttribute("name", prop->name().data());
+					insert_ele->SetAttribute(":name", prop->name().data());
 					to_xml_ele(v, insert_ele);
 				}
 			}
@@ -161,7 +163,7 @@ namespace aris::core
 					continue;
 				}
 
-				auto c_type = std::regex_replace(typename_xml2c(*found), std::regex("\\."), "::");
+				auto c_type = typename_xml2c(*found);
 				auto[ptr, prop_ins] = Type::getType(c_type)->create();
 				from_xml_ele(prop_ins, *found);
 				prop->set(&ins, prop_ins);
@@ -200,4 +202,147 @@ namespace aris::core
 
 		from_xml_ele(ins, root_ele);
 	}
+
+	template<class K, class V, class dummy_compare, class A>
+	using my_workaround_fifo_map = nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
+	using my_json = nlohmann::basic_json<my_workaround_fifo_map>;
+	
+	auto typename_json2c(const std::string &key)->std::string{	return std::regex_replace(key, std::regex("\\."), "::");}
+	auto typename_c2json(const aris::core::Type *c_type)->std::string{	return std::regex_replace(c_type->name().data(), std::regex("\\::"), ".");}
+
+	auto to_json(aris::core::Instance &ins)->my_json
+	{
+		my_json js;
+
+		// set text //
+		if (!ins.toString().empty()) js["#text"] = ins.toString();
+
+		if (ins.isArray())
+		{
+			for (auto prop : ins.type()->properties())
+			{
+				auto v = prop->get(&ins);
+				if (!v.isBasic())THROW_FILE_LINE("failed to serilize");
+				if (v.toString() != "")js["@" + prop->name()] = v.toString();
+			}
+			for (auto i = 0; i < ins.size(); ++i)
+			{
+				my_json insert;
+				insert[typename_c2json(ins.at(i).type())] = to_json(ins.at(i));
+				js["#array"].push_back(insert);
+			}
+		}
+		else
+		{
+			my_json::iterator basic_insert_pos = js.end();
+			
+			for (auto &prop : ins.type()->properties())
+			{
+				auto v = prop->get(&ins);
+
+				if (v.isBasic())
+				{
+					if (!v.toString().empty())	js["@" + prop->name()] = v.toString();
+					//js.insert(
+				}
+				else
+				{
+					auto ist = to_json(v);
+					ist["#name"] = prop->name().data();
+					js[typename_c2json(v.type()).data()] = ist;
+				}
+			}
+		}
+
+		return js;
+	}
+	auto toJsonString(aris::core::Instance ins)->std::string
+	{
+		my_json js;
+		js[ins.type()->name().data()] = to_json(ins);
+		return js.dump(2);
+	}
+
+	auto from_json(aris::core::Instance &ins, my_json &js)->void
+	{
+		// from text //
+		if (js.find("#text") != js.end()) ins.fromString(js["#text"]);
+
+		// 读写 //
+		for (auto &prop : ins.type()->properties())	{
+			// basic type //
+			if (prop->type()->isBasic() && js.find("@" + prop->name()) != js.end())	{
+				auto[ptr, prop_ins] = prop->type()->create();
+				prop_ins.fromString(js["@" + prop->name()]);
+				prop->set(&ins, prop_ins);
+				js.erase(prop->name());
+				//continue;
+			}
+
+			// non basic type, non ptr prop //
+			else if (!prop->acceptPtr() && js.find("@" + prop->name()) != js.end())	{
+				auto[ptr, prop_ins] = prop->type()->create();
+				from_json(prop_ins, js["@" + prop->name()]);
+				prop->set(&ins, prop_ins);
+				js.erase(prop->name());
+				//continue;
+			}
+
+			// non basic type, accept ptr //
+			else if (prop->acceptPtr())	{
+				my_json::iterator found = js.end();
+				for (auto it = js.begin(); it != js.end(); ++it)
+				{
+					if (it.value().is_object() && Type::isBaseOf(prop->type(), Type::getType(typename_json2c(it.key()))))
+					{
+						found = it;
+						break;
+					};
+				}
+				
+				if (found == js.end())
+				{
+					//std::cout << "WARNING:element prop not found : " << prop->name() << std::endl;
+					continue;
+				}
+
+				auto[ptr, prop_ins] = Type::getType(found.key())->create();
+				from_json(prop_ins, *found);
+				prop->set(&ins, prop_ins);
+				ptr.release();
+				js.erase(found);
+				//continue;
+			}
+		}
+
+		if (ins.isArray() && js.find("#array") != js.end())	{
+			auto &js_array = js["#array"];
+			for (auto it = js_array.begin(); it != js_array.end(); ++it) {
+
+				auto ele = it->begin();
+				
+				if (ele.key()[0] == '#' || ele.key()[0] == '@') continue;
+				
+				auto type = Type::getType(typename_json2c(ele.key()));
+				if (!type) THROW_FILE_LINE("unrecognized type in json : " + ele.key());
+
+				auto[ptr, attr_ins] = type->create();
+				from_json(attr_ins, *ele);
+				ins.push_back(attr_ins);
+				if (ins.type()->isRefArray())ptr.release();
+			}
+		}
+	}
+	auto fromJsonString(aris::core::Instance ins, std::string_view xml_str)->void
+	{
+		my_json js = nlohmann::json::parse(xml_str);
+
+		if (typename_json2c(js.begin().key()) != ins.type()->name())
+			THROW_FILE_LINE("load xml failed : type not match");
+
+		from_json(ins, js.front());
+	}
+
+
+
 }

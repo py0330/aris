@@ -89,7 +89,6 @@ namespace aris::core
 		auto isArray()const->bool;
 		auto isBasic()const->bool;
 		~Type();
-		
 
 	private:
 		using DefaultCtor = std::function<std::tuple<std::unique_ptr<void, void(*)(void const*)>, Instance>()>;
@@ -172,7 +171,6 @@ namespace aris::core
 			if (type() == nullptr) THROW_FILE_LINE("Unrecognized type : " + typeid(t).name());
 		}
 
-		
 		~Instance();
 		Instance();
 		Instance(const Instance&);
@@ -196,7 +194,7 @@ namespace aris::core
 	class class_
 	{
 	public:
-		// 对于普通类型 //
+		// 普通类型 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<!std::is_abstract_v<T> && std::is_default_constructible_v<T> && std::is_destructible_v<T>> *test = nullptr)
 		{
@@ -209,7 +207,7 @@ namespace aris::core
 			});
 		}
 
-		// 对于纯虚类型 //
+		// 纯虚类型 //
 		template <typename T = Class_Type>
 		class_(std::string_view name, std::enable_if_t<std::is_abstract_v<T> || !std::is_default_constructible_v<T> || !std::is_destructible_v<T>> *test = nullptr)
 		{

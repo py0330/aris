@@ -900,13 +900,6 @@ namespace aris::core
 		}
 	}
 	auto Calculator::clearVariables()->void { imp_->variable_map_.clear(); }
-	//auto Calculator::loadXml(const aris::core::XmlElement &xml_ele)->void 
-	//{
-	//	Object::loadXml(xml_ele);
-	//	imp_->variable_map_.clear();
-	//	
-	//}
-	//auto Calculator::saveXml(aris::core::XmlElement &xml_ele)const->void {}
 	Calculator::~Calculator() = default;
 	Calculator::Calculator(const std::string &name)
 	{

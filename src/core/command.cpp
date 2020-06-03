@@ -402,7 +402,7 @@ namespace aris::core
 	CommandParser::CommandParser(const std::string &name){}
 	ARIS_DEFINE_BIG_FOUR_CPP(CommandParser);
 
-	ARIS_REGISTRATION
+	ARIS_REGISTRATION 
 	{
 		class_<ParamBase>("ParamBase")
 			.prop("name", &ParamBase::setName, &ParamBase::name)
@@ -413,26 +413,33 @@ namespace aris::core
 			.prop("abbreviation", &Param::setAbbreviation, &Param::abbreviation)
 			.propertyToStrMethod("abbreviation", charToStr)
 			.propertyFromStrMethod("abbreviation", strToChar)
-			.prop("default", &Param::setDefaultValue, &Param::defaultValue);
+			.prop("default", &Param::setDefaultValue, &Param::defaultValue)
+			;
 
 		class_<UniqueParam>("UniqueParam")
 			.inherit<ParamBase>()
 			.asRefArray()
-			.prop("default", &UniqueParam::setDefaultValue, &UniqueParam::defaultValue);
+			.prop("default", &UniqueParam::setDefaultValue, &UniqueParam::defaultValue)
+			;
 
 		class_<GroupParam>("GroupParam")
 			.inherit<ParamBase>()
-			.asRefArray();
+			.asRefArray()
+			;
 
 		class_<Command>("Command")
 			.inherit<ParamBase>()
-			.asRefArray();
+			.asRefArray()
+			.prop("default", &Command::setDefaultValue, &Command::defaultValue)
+			;
 
-		class_<PointerArray<Command>>("CommandPoolObject")
-			.asRefArray();
+		class_<std::vector<Command>>("CommandPoolObject")
+			.asArray()
+			;
 
 		typedef std::vector<Command>&(CommandParser::*CommandPoolFunc)();
 		class_<CommandParser>("CommandParser")
-			.prop("command_pool", /*&CommandParser::resetCommandPool ,*/ CommandPoolFunc(&CommandParser::commandPool));
+			.prop("command_pool", CommandPoolFunc(&CommandParser::commandPool))
+			;
 	}
 }

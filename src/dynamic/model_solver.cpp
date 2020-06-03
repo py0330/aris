@@ -1603,7 +1603,7 @@ namespace aris::dynamic
 					{
 						h[mot->id()] = xc[pos];
 					}
-					if (dynamic_cast<const GeneralMotion*>(b->cst_))
+					else if (dynamic_cast<const GeneralMotion*>(b->cst_))
 					{
 						s_vc(6, xc + pos, h + this->model()->motionPool().size() + b->cst_->id() * 6);
 					}
@@ -1627,7 +1627,7 @@ namespace aris::dynamic
 							Size ccid = b->cst_->id();
 							M[at(ccid, cid, Mn)] = xc[pos2] - h[ccid];
 						}
-						if (dynamic_cast<const GeneralMotion*>(b->cst_))
+						else if (dynamic_cast<const GeneralMotion*>(b->cst_))
 						{
 							Size ccid = b->cst_->id() * 6 + this->model()->motionPool().size();
 							for (Size i = 0; i < 6; ++i)
@@ -1635,7 +1635,6 @@ namespace aris::dynamic
 								s_vc(6, xc, 1, M + at(ccid, cid, Mn), Mn);
 								s_vs(6, h + ccid, 1, M + at(ccid, cid, Mn), Mn);
 							}
-
 						}
 						pos2 += b->cst_->dim();
 					}

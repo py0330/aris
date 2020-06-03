@@ -54,16 +54,15 @@ static uint32_t blk(const uint32_t block[BLOCK_INTS], const size_t i)
 }
 
 
-/*
- * (R0+R1), R2, R3, R4 are the different operations used in SHA1
- */
+//
+// (R0+R1), R2, R3, R4 are the different operations used in SHA1
+//
 
 static void R0(const uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
     z += ((w&(x^y))^y) + block[i] + 0x5a827999 + rol(v, 5);
     w = rol(w, 30);
 }
-
 
 static void R1(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
@@ -72,7 +71,6 @@ static void R1(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const 
     w = rol(w, 30);
 }
 
-
 static void R2(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
     block[i] = blk(block, i);
@@ -80,14 +78,12 @@ static void R2(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const 
     w = rol(w, 30);
 }
 
-
 static void R3(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
     block[i] = blk(block, i);
     z += (((w|x)&y)|(w&x)) + block[i] + 0x8f1bbcdc + rol(v, 5);
     w = rol(w, 30);
 }
-
 
 static void R4(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
@@ -216,19 +212,13 @@ static void buffer_to_block(const std::string &buffer, uint32_t block[BLOCK_INTS
     }
 }
 
-
-SHA1::SHA1()
-{
-    reset(digest, buffer, transforms);
-}
-
+SHA1::SHA1() { reset(digest, buffer, transforms); }
 
 void SHA1::update(const std::string &s)
 {
     std::istringstream is(s);
     update(is);
 }
-
 
 void SHA1::update(std::istream &is)
 {
@@ -247,7 +237,6 @@ void SHA1::update(std::istream &is)
         buffer.clear();
     }
 }
-
 
 /*
  * Add padding and return the message digest.

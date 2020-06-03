@@ -96,10 +96,9 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-	std::ifstream file1;
+	std::fstream file1;
 	file1.open("C:\\Users\\py033\\Desktop\\seri0.xml");
 	std::string file1_xml_str((std::istreambuf_iterator<char>(file1)), (std::istreambuf_iterator<char>()));
-
 	aris::core::fromXmlString(cs, file1_xml_str);
 	file1.close();
 
@@ -108,7 +107,7 @@ int main(int argc, char *argv[])
 	file2 << aris::core::toXmlString(cs);
 	file2.close();
 
-	std::ifstream file3;
+	std::fstream file3;
 	file3.open("C:\\Users\\py033\\Desktop\\seri2.xml");
 	std::string file3_xml_str((std::istreambuf_iterator<char>(file3)), (std::istreambuf_iterator<char>()));
 	aris::core::fromXmlString(cs, file3_xml_str);
@@ -118,6 +117,17 @@ int main(int argc, char *argv[])
 	file4.open("C:\\Users\\py033\\Desktop\\seri4.xml", std::ios::out | std::ios::trunc);
 	file4 << aris::core::toXmlString(cs);
 	file4.close();
+
+	//std::cout << aris::core::toJsonString(cs) << std::endl;
+
+	auto str = aris::core::toJsonString(cs);
+	//std::cout << aris::core::toJsonString(cs) << std::endl;
+	cs.resetController(nullptr);
+	cs.resetModel(nullptr);
+
+	aris::core::fromJsonString(cs, str);
+
+	std::cout << aris::core::toJsonString(cs) << std::endl;
 
 	//auto &m = cs.model();
 	//m.init();
