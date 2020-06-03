@@ -563,6 +563,7 @@ namespace aris::server
 	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
 	auto ControlServer::running()->bool { return imp_->is_running_; }
 	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
+	auto ControlServer::globalCheckOption()->std::uint64_t* { return imp_->global_mot_options_; }
 	auto ControlServer::currentExecutePlanRt()->aris::plan::Plan *
 	{
 		auto cmd_now = imp_->cmd_now_.load();
