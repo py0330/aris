@@ -518,7 +518,7 @@ namespace aris::control
 	auto EthercatMotor::disable()->int
 	{
 		if (imp_->is_virtual_) imp_->status_word_ = 0x40;
-		
+
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8         Shutdown
 		// 0x07    0b xxxx xxxx 0xxx 0111    B: transition 3             Switch ON
@@ -569,14 +569,16 @@ namespace aris::control
 		// check status D, now transition 10
 		else if ((status_word & 0x6F) == 0x23)
 		{
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			writePdo(0x6040, 0x00, std::uint16_t(0x06));//change to 0x06 for cooldrive
 			return 3;
 		}
 		// check status E, now transition 9
 		else if ((status_word & 0x6F) == 0x27)
 		{
 			// transition 5 //
-			writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			//writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			writePdo(0x6040, 0x00, std::uint16_t(0x07));//change to 0x07 for cooldrive
 			return 4;
 		}
 		// check status F, now transition 12
@@ -607,7 +609,7 @@ namespace aris::control
 	auto EthercatMotor::enable()->int
 	{
 		if (imp_->is_virtual_) imp_->status_word_ = 0x27;
-		
+
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
 		// 0x07    0b xxxx xxxx 0xxx 0111    B: transition 3           Switch ON
@@ -658,9 +660,10 @@ namespace aris::control
 		{
 			// transition 4 //
 			writePdo(0x6040, 0x00, std::uint16_t(0x0F));
-			imp_->waiting_count_left = 20;
+			//imp_->waiting_count_left = 20;
+			imp_->waiting_count_left = 1000;//change for cooldriver
 
-			// check mode to set correct pos, vel or cur //
+											// check mode to set correct pos, vel or cur //
 			switch (modeOfDisplay())
 			{
 			case 0x08: setTargetPos(actualPos()); break;
