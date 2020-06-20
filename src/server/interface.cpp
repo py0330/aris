@@ -5,6 +5,7 @@
 #include <cinttypes>
 #include <queue>
 #include <unordered_map>
+#include <cstdio>
 
 #include <aris/core/core.hpp>
 #include <aris/control/control.hpp>
@@ -12,6 +13,7 @@
 #include "aris/server/interface.hpp"
 #include "aris/server/control_server.hpp"
 
+#include "md5.h"
 #include "json.hpp"
 #include "fifo_map.hpp"
 
@@ -169,7 +171,6 @@ namespace aris::server
 		socket().setOnReceivedConnection(onReceivedConnection);
 		socket().setOnLoseConnection(onLoseConnection);
 	}
-
 
 #define ARIS_PRO_COUT ARIS_COUT << "pro "
 	struct ProgramWebInterface::Imp
@@ -882,23 +883,22 @@ namespace aris::server
 #endif
 
 
-const char send_back_data[] = "{ \"name\":\"model\",\"VariablePool\" : {\"name\":\"variable_pool\",\"matrixVariables\" : [{\"name\":\"v5\",\"innerValue\" : \"{0.01,0.005,3.49065850398866,0,0}\"},{ \"name\":\"v10\",\"innerValue\" : \"{0.03,0.01,3.49065850398866,0,0}\" },{ \"name\":\"v25\",\"innerValue\" : \"{0.05,0.025,3.49065850398866,0,0}\" },{ \"name\":\"v30\",\"innerValue\" : \"{0.05,0.03,3.49065850398866,0,0}\" },{ \"name\":\"v40\",\"innerValue\" : \"{0.05,0.04,3.49065850398866,0,0}\" },{ \"name\":\"v50\",\"innerValue\" : \"{0.08,0.05,3.49065850398866,0,0}\" },{ \"name\":\"v60\",\"innerValue\" : \"{0.08,0.06,3.49065850398866,0,0}\" },{ \"name\":\"v80\",\"innerValue\" : \"{0.08,0.08,3.49065850398866,0,0}\" },{ \"name\":\"v100\",\"innerValue\" : \"{0.1,0.1,3.49065850398866,0,0}\" },{ \"name\":\"v150\",\"innerValue\" : \"{0.15,0.15,3.49065850398866,0,0}\" },{ \"name\":\"v200\",\"innerValue\" : \"{0.2,0.2,3.49065850398866,0,0}\" },{ \"name\":\"v300\",\"innerValue\" : \"{0.3,0.3,3.49065850398866,0,0}\" }]},\"partPool\" : {\"name\":\"part_pool\",\"parts\" : [{\"name\":\"ground\",\"markerPool\" : [{\"name\":\"marker_pool\",\"marker\" : [{\"name\":\"joint_0_j\",\"pe\" : \"{0,0,0.3295,0.785398163397448,0,0.785398163397448}\"},{ \"name\":\"wobj0\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj1\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj2\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj3\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj4\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj5\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj6\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj7\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj8\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj9\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj10\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj11\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj12\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj13\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj14\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj15\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj16\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj17\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj18\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj19\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj20\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj21\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj22\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj23\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj24\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj25\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj26\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj27\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj28\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj29\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj30\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj31\",\"pe\" : \"{0,0,0,-0,0,-0}\" },{ \"name\":\"wobj32\",\"pe\" : \"{0,0,0,-0,0,-0}\" }]}]},{ \"name\":\"L1\",\"markerPool\" : [{\"name\":\"marker_pool\",\"marker\" : [{\"name\":\"joint_0_i\",\"pe\" : \"{0,0,0.3295,0.785398163397448,0,0.785398163397448}\"},{ \"name\":\"joint_1_j\",\"pe\" : \"{0.04,0,0.3295,3.14159265358979,1.5707963267949,4.71238898038469}\" }]}] },{ \"name\":\"L2\",\"markerPool\" : [{\"name\":\"marker_pool\",\"marker\" : [{\"name\":\"joint_1_i\",\"pe\" : \"{0.04,0,0.3295,3.14159265358979,1.5707963267949,4.71238898038469}\"},{ \"name\":\"joint_2_j\",\"pe\" : \"{0.04,0,0.6045,3.14159265358979,1.5707963267949,4.71238898038469}\" }]}] },{ \"name\":\"L3\",\"markerPool\" : [{\"name\":\"marker_pool\",\"marker\" : [{\"name\":\"joint_2_i\",\"pe\" : \"{0.04,0,0.6045,3.14159265358979,1.5707963267949,4.71238898038469}\"},{ \"name\":\"joint_3_j\",\"pe\" : \"{0.32,0,0.6295,1.5707963267949,1.5707963267949,1.5707963267949}\" }]}] },{ \"name\":\"L4\",\"markerPool\" : [{\"name\":\"marker_pool\",\"marker\" : [{\"name\":\"joint_3_i\",\"pe\" : \"{0.32,0,0.6295,1.5707963267949,1.5707963267949,1.5707963267949}\"},{ \"name\":\"joint_4_j\",\"pe\" : \"{0.32,0,0.6295,3.14159265358979,1.5707963267949,4.71238898038469}\" }]}] },{ \"name\":\"L5\",\"markerPool\" : [{\"name\":\"marker_pool\",\"marker\" : [{\"name\":\"joint_4_i\",\"pe\" : \"{0.32,0,0.6295,3.14159265358979,1.5707963267949,4.71238898038469}\"},{ \"name\":\"joint_5_j\",\"pe\" : \"{0.32,0,0.6295,1.5707963267949,1.5707963267949,1.5707963267949}\" }]}] },{ \"name\":\"L6\",\"markerPool\" : [{\"name\":\"marker_pool\",\"marker\" : [{\"name\":\"joint_5_i\",\"pe\" : \"{0.32,0,0.6295,1.5707963267949,1.5707963267949,1.5707963267949}\"},{ \"name\":\"tool0\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool1\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool2\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool3\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool4\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool5\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool6\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool7\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool8\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool9\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool10\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool11\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool12\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool13\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool14\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool15\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" },{ \"name\":\"tool16\",\"pe\" : \"{0.398,0,0.6295,1.5707963267949,1.5707963267949,4.71238898038469}\" }]}] }]},\"jointPool\" : {\"name\":\"joint_pool\",\"joints\" : null},\"calibratorPool\" : {\"name\":\"calibrator_pool\",\"calibrators\" : null},\"simResultPool\" : {\"name\":\"sim_result_pool\",\"simResults\" : null},\"simulatorPool\" : {\"name\":\"simulator_pool\",\"simulators\" : null},\"solverPool\" : {\"name\":\"solver_pool\",\"solvers\" : null},\"forcePool\" : {\"name\":\"force_pool\",\"forces\" : null},\"generalMotionPool\" : {\"name\":\"general_motion_pool\",\"generalMotions\" : [{\"name\":\"ee\"}]},\"motionPool\" : {\"name\":\"motion_pool\",\"motions\" : [{\"name\":\"motion_0\"},{ \"name\":\"motion_1\" },{ \"name\":\"motion_2\" },{ \"name\":\"motion_3\" },{ \"name\":\"motion_4\" },{ \"name\":\"motion_5\" }]} }";
-const char esi_path[] = "{\"path\":\"C:\\Users\\py033\\Desktop\\UI_DarkColor_English-0103_panbo\\UI_DarkColor_English-0103_panbo\\robot\\esi\"}";
-const char robots[] = "{ \"A\":{\"A\":{\"brand\":\"A\",\"model\" : \"A\",\"path\" : \"RobotGallery/A/A\",\"parts\" : {\"GROUND\":\"\",\"L1\" : \"\",\"L2\" : \"\",\"L3\" : \"\",\"L4\" : \"\",\"L5\" : \"\",\"L6\" : \"\"}}},\"APE\" : {\"450\":{\"brand\":\"APE\",\"model\" : \"450\",\"path\" : \"RobotGallery/APE/450\",\"parts\" : {\"GROUND\":\"\",\"L1\" : \"l1.data\",\"L2\" : \"l2.data\",\"L3\" : \"l3.data\",\"L4\" : \"l4.data\",\"L5\" : \"l5.data\",\"L6\" : \"l6.data\"}}},\"AnyRobot\" : {\"WebPlayer\":{\"brand\":\"AnyRobot\",\"model\" : \"WebPlayer\",\"path\" : \"RobotGallery/AnyRobot/WebPlayer\",\"parts\" : {\"GROUND\":\"ground.data\",\"L1\" : \"l1.data\",\"L2\" : \"\",\"L3\" : \"\",\"L4\" : \"\",\"L5\" : \"\",\"L6\" : \"\"}}},\"Daye\" : {\"MJ08\":{\"brand\":\"Daye\",\"model\" : \"MJ08\",\"path\" : \"RobotGallery/Daye/MJ08\",\"parts\" : {\"GROUND\":\"\",\"L1\" : \"l1.data\",\"L2\" : \"l2.data\",\"L3\" : \"l3.data\",\"L4\" : \"l4.data\",\"L5\" : \"l5.data\",\"L6\" : \"l6.data\"}}},\"Qifan\" : {\"MR16\":{\"brand\":\"Qifan\",\"model\" : \"MR16\",\"path\" : \"RobotGallery/Qifan/MR16\",\"parts\" : {\"GROUND\":\"\",\"L1\" : \"l1.data\",\"L2\" : \"l2.data\",\"L3\" : \"l3.data\",\"L4\" : \"l4.data\",\"L5\" : \"l5.data\",\"L6\" : \"l6.data\"}}},\"Rokae\" : {\"XB4\":{\"brand\":\"Rokae\",\"model\" : \"XB4\",\"path\" : \"RobotGallery/Rokae/XB4\",\"parts\" : {\"GROUND\":\"\",\"L1\" : \"l1.data\",\"L2\" : \"l2.data\",\"L3\" : \"l3.data\",\"L4\" : \"l4.data\",\"L5\" : \"l5.data\",\"L6\" : \"l6.data\"}}},\"SJTU\" : {\"BBL\":{\"brand\":\"SJTU\",\"model\" : \"BBL\",\"path\" : \"RobotGallery/SJTU/BBL\",\"parts\" : {\"GROUND\":\"ground.data\",\"L1\" : \"l1.data\",\"L2\" : \"l2.data\",\"L3\" : \"l3.data\",\"L4\" : \"l4.data\",\"L5\" : \"l5.data\",\"L6\" : \"l6.data\"}}},\"Sanxiang\" : {\"S1\":{\"brand\":\"Sanxiang\",\"model\" : \"S1\",\"path\" : \"RobotGallery/Sanxiang/S1\",\"parts\" : {\"GROUND\":\"\",\"L1\" : \"l1.data\",\"L2\" : \"l2.data\",\"L3\" : \"l3.data\",\"L4\" : \"l4.data\",\"L5\" : \"l5.data\",\"L6\" : \"l6.data\"}}},\"XX\" : {\"XXMODEL\":{\"brand\":\"XX\",\"model\" : \"XXMODEL\",\"path\" : \"RobotGallery/XX/XXMODEL\",\"parts\" : {\"GROUND\":\"\",\"L1\" : \"\",\"L2\" : \"\",\"L3\" : \"\",\"L4\" : \"\",\"L5\" : \"\",\"L6\" : \"\"}}} }";
-const char programs[] = "{\"111\":{\"name\":\"111\",\"path\":\"/program/111\",\"mode\":2147484159,\"modTime\":\"2020-01-05T21:42:48+08:00\",\"isDir\":true,\"files\":[{\"name\":\"111.dat\",\"path\":\"/program/111/111.dat\",\"size\":1930,\"mode\":438,\"modTime\":\"2020-01-05T21:42:48+08:00\",\"content\":\"\\u003cxml xmlns=\\\"https://developers.google.com/blockly/xml\\\"\\u003e\\u003cblock type=\\\"jointtarget_variate\\\" id=\\\"SS/~|B}sk[]Y:dJ?yes8\\\" x=\\\"130\\\" y=\\\"90\\\"\\u003e\\u003cfield name=\\\"FIELD_NAME\\\"\\u003ehome\\u003c/field\\u003e\\u003cfield name=\\\"motionPos0\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"motionPos1\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"motionPos2\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"motionPos3\\\"\\u003e28.647890\\u003c/field\\u003e\\u003cfield name=\\\"motionPos4\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"motionPos5\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"jointtarget_variate\\\" id=\\\"_Y,KM$KqVcBaK~AJ6zTd\\\"\\u003e\\u003cfield name=\\\"FIELD_NAME\\\"\\u003ehome\\u003c/field\\u003e\\u003cfield name=\\\"motionPos0\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"motionPos1\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"motionPos2\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"motionPos3\\\"\\u003e28.647890\\u003c/field\\u003e\\u003cfield name=\\\"motionPos4\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"motionPos5\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"robtarget_variate\\\" id=\\\"7mtA#Y8`/Ep9MKX6!K$U\\\"\\u003e\\u003cfield name=\\\"FIELD_NAME\\\"\\u003epB1\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ0\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ1\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ2\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ3\\\"\\u003e0.500000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ4\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ5\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ6\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"pose_variate\\\" id=\\\":aUhP8]pG=ac?Oif4KGE\\\"\\u003e\\u003cfield name=\\\"FIELD_NAME\\\"\\u003epose1\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ0\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ1\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ2\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ3\\\"\\u003e0.500000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ4\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ5\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ6\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"pose_variate\\\" id=\\\".%-Bm5(UwV87k_4G}P#S\\\"\\u003e\\u003cfield name=\\\"FIELD_NAME\\\"\\u003epose1\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ0\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ1\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ2\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ3\\\"\\u003e0.500000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ4\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ5\\\"\\u003e0.000000\\u003c/field\\u003e\\u003cfield name=\\\"END_PQ6\\\"\\u003e0.000000\\u003c/field\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/xml\\u003e\"},{\"name\":\"111.pro\",\"path\":\"/program/111/111.pro\",\"size\":56,\"mode\":438,\"modTime\":\"2020-01-05T21:42:48+08:00\",\"content\":\"\\u003cxml xmlns=\\\"https://developers.google.com/blockly/xml\\\"/\\u003e\"}]},\"Scale\":{\"name\":\"Scale\",\"path\":\"/program/Scale\",\"mode\":2147484159,\"modTime\":\"2020-01-05T21:42:48+08:00\",\"isDir\":true,\"files\":[{\"name\":\"Scale.dat\",\"path\":\"/program/Scale/Scale.dat\",\"size\":11,\"mode\":438,\"modTime\":\"2020-01-05T21:42:48+08:00\",\"content\":\"\\u003cxml\\u003e\\u003c/xml\\u003e\"},{\"name\":\"Scale.pro\",\"path\":\"/program/Scale/Scale.pro\",\"size\":1031,\"mode\":438,\"modTime\":\"2020-01-05T21:42:48+08:00\",\"content\":\"\\u003cxml xmlns=\\\"https://developers.google.com/blockly/xml\\\"\\u003e\\u003cblock type=\\\"robotcontrol_movej\\\" id=\\\"~~b2VUYx`@Rm;G[rcQGH\\\" x=\\\"10\\\" y=\\\"50\\\"\\u003e\\u003cmutation xmlns=\\\"http://www.w3.org/1999/xhtml\\\" topoint=\\\"select\\\" speed=\\\"select\\\" zone=\\\"select\\\" tool=\\\"select\\\" wobj=\\\"select\\\"\\u003e\\u003c/mutation\\u003e\\u003cfield name=\\\"DROPDOWN1\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN2\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN3\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN4\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN5\\\"\\u003eselect\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"robotcontrol_movej\\\" id=\\\".=YH,s0OBV`{!rLv#ps5\\\"\\u003e\\u003cmutation xmlns=\\\"http://www.w3.org/1999/xhtml\\\" topoint=\\\"select\\\" speed=\\\"select\\\" zone=\\\"select\\\" tool=\\\"select\\\" wobj=\\\"select\\\"\\u003e\\u003c/mutation\\u003e\\u003cfield name=\\\"DROPDOWN1\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN2\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN3\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN4\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN5\\\"\\u003eselect\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"fcpressl\\\" id=\\\"fZE;DLRPV.gWP!+l.T@f\\\"\\u003e\\u003cfield name=\\\"FORCE\\\"\\u003eForce\\u003c/field\\u003e\\u003cfield name=\\\"TOOL\\\"\\u003eTool\\u003c/field\\u003e\\u003cfield name=\\\"WOBJ\\\"\\u003eWobj\\u003c/field\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/xml\\u003e\"}]},\"Wheel\":{\"name\":\"Wheel\",\"path\":\"/program/Wheel\",\"mode\":2147484159,\"modTime\":\"2020-01-05T21:42:48+08:00\",\"isDir\":true,\"files\":[{\"name\":\"Wheel.dat\",\"path\":\"/program/Wheel/Wheel.dat\",\"size\":11,\"mode\":438,\"modTime\":\"2020-02-20T17:56:15+08:00\",\"content\":\"\\u003cxml\\u003e\\u003c/xml\\u003e\"},{\"name\":\"Wheel.pro\",\"path\":\"/program/Wheel/Wheel.pro\",\"size\":2818,\"mode\":438,\"modTime\":\"2020-02-20T17:56:15+08:00\",\"content\":\"\\u003cxml xmlns=\\\"https://developers.google.com/blockly/xml\\\"\\u003e\\u003cblock type=\\\"robotcontrol_movej\\\" id=\\\"AlIl~vttKXoDmEpS_ikv\\\" x=\\\"10\\\" y=\\\"110\\\"\\u003e\\u003cmutation xmlns=\\\"http://www.w3.org/1999/xhtml\\\" topoint=\\\"select\\\" speed=\\\"select\\\" zone=\\\"select\\\" tool=\\\"select\\\" wobj=\\\"select\\\"\\u003e\\u003c/mutation\\u003e\\u003cfield name=\\\"DROPDOWN1\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN2\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN3\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN4\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN5\\\"\\u003eselect\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"robotcontrol_movej\\\" id=\\\"g~=p7xsQq*A-7M^(Rs[z\\\"\\u003e\\u003cmutation xmlns=\\\"http://www.w3.org/1999/xhtml\\\" topoint=\\\"select\\\" speed=\\\"select\\\" zone=\\\"select\\\" tool=\\\"select\\\" wobj=\\\"select\\\"\\u003e\\u003c/mutation\\u003e\\u003cfield name=\\\"DROPDOWN1\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN2\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN3\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN4\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN5\\\"\\u003eselect\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"robotcontrol_movej\\\" id=\\\"f|GShByvvUAeEGZv*R8{\\\"\\u003e\\u003cmutation xmlns=\\\"http://www.w3.org/1999/xhtml\\\" topoint=\\\"select\\\" speed=\\\"select\\\" zone=\\\"select\\\" tool=\\\"select\\\" wobj=\\\"select\\\"\\u003e\\u003c/mutation\\u003e\\u003cfield name=\\\"DROPDOWN1\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN2\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN3\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN4\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN5\\\"\\u003eselect\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"fcpressp\\\" id=\\\"(~Vo=!Nv!pKymj49x:lg\\\"\\u003e\\u003cfield name=\\\"P1\\\"\\u003ep1\\u003c/field\\u003e\\u003cfield name=\\\"P2\\\"\\u003ep2\\u003c/field\\u003e\\u003cfield name=\\\"P3\\\"\\u003ep3\\u003c/field\\u003e\\u003cfield name=\\\"P4\\\"\\u003ep4\\u003c/field\\u003e\\u003cfield name=\\\"P5\\\"\\u003ep5\\u003c/field\\u003e\\u003cfield name=\\\"FORCE\\\"\\u003eForce\\u003c/field\\u003e\\u003cfield name=\\\"TOOL\\\"\\u003eTool\\u003c/field\\u003e\\u003cfield name=\\\"WOBJ\\\"\\u003eWobj\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"robotcontrol_movej\\\" id=\\\"x},iBu:=#1xe_g~-zcz?\\\"\\u003e\\u003cmutation xmlns=\\\"http://www.w3.org/1999/xhtml\\\" topoint=\\\"select\\\" speed=\\\"select\\\" zone=\\\"select\\\" tool=\\\"select\\\" wobj=\\\"select\\\"\\u003e\\u003c/mutation\\u003e\\u003cfield name=\\\"DROPDOWN1\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN2\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN3\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN4\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN5\\\"\\u003eselect\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"robotcontrol_movej\\\" id=\\\"W``C?uixyW$y@u;6{~-:\\\"\\u003e\\u003cmutation xmlns=\\\"http://www.w3.org/1999/xhtml\\\" topoint=\\\"select\\\" speed=\\\"select\\\" zone=\\\"select\\\" tool=\\\"select\\\" wobj=\\\"select\\\"\\u003e\\u003c/mutation\\u003e\\u003cfield name=\\\"DROPDOWN1\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN2\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN3\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN4\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN5\\\"\\u003eselect\\u003c/field\\u003e\\u003cnext\\u003e\\u003cblock type=\\\"movec\\\" id=\\\"!jF8g|ECav2#;g/%EmV`\\\"\\u003e\\u003cmutation xmlns=\\\"http://www.w3.org/1999/xhtml\\\" auxpoint=\\\"select\\\" topoint=\\\"select\\\" speed=\\\"select\\\" zone=\\\"select\\\" tool=\\\"select\\\" wobj=\\\"select\\\"\\u003e\\u003c/mutation\\u003e\\u003cfield name=\\\"DROPDOWN1\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN2\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN3\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN4\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN5\\\"\\u003eselect\\u003c/field\\u003e\\u003cfield name=\\\"DROPDOWN6\\\"\\u003eselect\\u003c/field\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/next\\u003e\\u003c/block\\u003e\\u003c/xml\\u003e\"}]}}";
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 namespace aris::server
 {
 	template<class K, class V, class dummy_compare, class A>
 	using my_workaround_fifo_map = nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
 	using my_json = nlohmann::basic_json<my_workaround_fifo_map>;
-	
+
 	struct HttpInterface::Imp
 	{
 		std::thread http_thread_;
 		std::string port_;
 		std::string document_root_;
-		
+		std::string dav_root_;
+
+		std::map<std::string, std::function<std::string(void)>> gets_, posts_, deletes_, puts_;
+
 		struct mg_mgr mgr;
 		struct mg_connection *nc;
 		struct mg_bind_opts bind_opts;
@@ -911,61 +911,6 @@ namespace aris::server
 	auto HttpInterface::open()->void
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-		
-		tinyxml2::XMLDocument doc;
-		std::filesystem::path interface_path(imp_->document_root_);
-		interface_path  = interface_path / "../robot/interface.xml";
-		doc.LoadFile(interface_path.string().c_str());
-
-		my_json js;
-		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
-		{
-			if (ele->Name() == std::string("Dashboard"))
-			{
-				my_json js1;
-				js1["name"] = std::string(ele->Attribute("name"));
-				js1["editable"] = std::string(ele->Attribute("editable")) == "true";
-				js1["i"] = std::string(ele->Attribute("id"));
-				js1["cells"] = std::vector<std::string>();
-				for (auto e1 = ele->FirstChildElement(); e1; e1 = e1->NextSiblingElement())
-				{
-					my_json j2;//{"name":"Ethercat配置","type":"EthercatConfiguration","i":"EMlxGXxpwDGgz","w":48,"h":23,"x":0,"y":0,"options":"{}"}
-					j2["name"] = e1->Attribute("name");
-					j2["type"] = e1->Attribute("type");
-					j2["i"] = e1->Attribute("id");
-					j2["w"] = e1->IntAttribute("width");
-					j2["h"] = e1->IntAttribute("height");
-					j2["x"] = e1->IntAttribute("x");
-					j2["y"] = e1->IntAttribute("y");
-					j2["options"] = e1->Attribute("options");
-					js1["cells"].push_back(j2);
-				}
-				js["dashboards"].push_back(js1);
-			}
-			else if (ele->Name() == std::string("WebSocket"))
-			{
-				js["ws"]["url"] = ele->Attribute("url");
-				js["ws"]["commandSendInterval"] = ele->IntAttribute("commandSendInterval");
-				js["ws"]["commandSendDelay"] = ele->IntAttribute("commandSendDelay");
-				js["ws"]["getInterval"] = ele->IntAttribute("getInterval");
-				js["ws"]["unityUpdateInterval"] = ele->IntAttribute("unityUpdateInterval");
-			}
-			else if (ele->Name() == std::string("LayoutConfig"))
-			{
-				js["layoutConfig"]["cols"] = ele->IntAttribute("cols");
-				js["layoutConfig"]["rowHeight"] = ele->IntAttribute("rowHeight");
-				js["layoutConfig"]["margin"] = ele->IntAttribute("margin");
-				js["layoutConfig"]["containerPadding"] = ele->IntAttribute("containerPadding");
-				js["layoutConfig"]["theme"] = ele->Attribute("theme");
-			}
-		}
-
-		auto str = js.dump(-1);
-		std::ofstream f;
-		std::filesystem::create_directories("C:\\Users\\py033\\Desktop\\UI_DarkColor_English-0103_panbo\\UI_DarkColor_English-0103_panbo\\www\\api\\config\\");
-		f.open("C:\\Users\\py033\\Desktop\\UI_DarkColor_English-0103_panbo\\UI_DarkColor_English-0103_panbo\\www\\api\\config\\interface");
-		f << str;
-		f.close();
 
 		if (imp_->is_running_.exchange(true) == false)
 		{
@@ -982,53 +927,124 @@ namespace aris::server
 				switch (ev) {
 				case MG_EV_HTTP_REQUEST:
 				{
+					
+					std::cout << std::string(hm->message.p, hm->message.len) << std::endl;
+					
 					auto http_method = std::string(hm->method.p, hm->method.len);
 					auto http_uri = std::string(hm->uri.p, hm->uri.len);
+					auto http_body = std::string(hm->body.p, hm->body.len);
 
-					std::cout << http_method << ":" << http_uri << std::endl;
+					auto imp = reinterpret_cast<Imp*>(nc->user_data);
+					struct mg_serve_http_opts opts;
+					std::memset(&opts, 0, sizeof(mg_serve_http_opts));
+					opts.document_root = imp->document_root_.c_str();
+					opts.dav_document_root = imp->dav_root_.c_str();
+					opts.enable_directory_listing = "yes";
+					opts.dav_auth_file = ".htpasswd";
+					opts.global_auth_file = "D:\\Private\\aris-ui\\build\\.htpasswd";
 
-					if (http_method == "POST")
+					auto get_realm = [](std::string_view username, std::string_view file_name)->std::string
 					{
+						std::fstream auth_file(file_name);
+						while (!auth_file.eof())
+						{
+							std::string line;
+							std::getline(auth_file, line);
+							if (username == line.substr(0, line.find_first_of(':')))
+								return line.substr(line.find_first_of(':') + 1, line.find_last_of(':') - line.find_first_of(':') - 1);
+						}
+						return "";
+					};
+					auto get_http_header2 = [](http_message*hm, std::string_view header_name, std::string_view second_name)->std::string
+					{
+						struct mg_str *hdr = mg_get_http_header(hm, header_name.data());
+						if (!hdr) return std::string();
 
+						char buf[1024];
+						char *data = buf;
+
+						auto size = mg_http_parse_header2(hdr, second_name.data(), &data, 1024);
+						
+						std::string ret(data, size);
+						if (data != buf)free(buf);
+						return ret;
+					};
+
+					if (http_method == "POST" && http_uri == "/api/login/fetch")
+					{
+						auto js = my_json::parse(http_body, nullptr, false);
+						std::string username = "";
+						std::string realm = js.is_discarded() || !js.contains("username") ? "" : get_realm(js["username"].get_to(username), opts.global_auth_file);
+
+						mg_printf(nc,
+							"HTTP/1.1 200 Unauthorized\r\n"
+							"WWW-Authenticate: Digest qop=\"auth\", "
+							"realm=\"%s\", nonce=\"%lx\"\r\n"
+							"Content-Length: 0\r\n\r\n",
+							realm.c_str(), (unsigned long)mg_time());
+
+						break;
+					}
+					else if (http_method == "POST" && http_uri == "/api/login")
+					{
+						auto realm = get_http_header2(hm, "Authorization", "realm");
+						if (mg_http_is_authorized(hm, mg_mk_str(""), realm.data(), opts.global_auth_file, MG_AUTH_FLAG_IS_GLOBAL_PASS_FILE))
+						{
+							mg_printf(nc,
+								"HTTP/1.1 202 Accepted\r\n"
+								"Content-Length: 0\r\n\r\n");
+							break;
+						}
+						else
+						{
+							mg_printf(nc,
+								"HTTP/1.1 200 Unauthorized\r\n"
+								"Content-Length: 0\r\n\r\n");
+							break;
+						}
 					}
 					else if (http_method == "GET")
 					{
-						if (http_uri == "/api/config/robot/model")
-						{
-							mg_send_head(nc, 200, 6243, "Content-Type: application/json");
-							mg_send(nc, send_back_data, 6243);
-							return;
-						}
-						else if (http_uri == "/api/esi/path")
-						{
-							mg_send_head(nc, 200, std::strlen(esi_path), "Content-Type: application/json");
-							mg_send(nc, esi_path, std::strlen(esi_path));
-							return;
-						}
-						else if (http_uri == "/api/robots")
-						{
-							mg_send_head(nc, 200, std::strlen(robots), "Content-Type: application/json");
-							mg_send(nc, robots, std::strlen(robots));
-							return;
-						}
-						else if (http_uri == "/api/programs")
-						{
-							mg_send_head(nc, 200, std::strlen(programs), "Content-Type: application/json");
-							mg_send(nc, programs, std::strlen(programs));
-							return;
-						}
+						mg_serve_http(nc, hm, opts);
 					}
-					else if (http_method == "PUT")
+					else if (http_method == "POST")
 					{
-					}
-					else if (http_method == "DELETE")
-					{
+						auto fp = mg_fopen(opts.global_auth_file, "r");
+
+						auto username = get_http_header2(hm, "Cookie", "username");
+						auto cnonce = get_http_header2(hm, "Cookie", "cnonce");
+						auto response = get_http_header2(hm, "Cookie", "response");
+						auto qop = get_http_header2(hm, "Cookie", "qop");
+						auto uri = get_http_header2(hm, "Cookie", "uri");
+						auto ncount = get_http_header2(hm, "Cookie", "nc");
+						auto nonce = get_http_header2(hm, "Cookie", "nonce");
+						auto realm = get_http_header2(hm, "Cookie", "realm");
+
+						auto ret = mg_check_digest_auth(
+							mg_mk_str("POST"),	mg_mk_str(uri.data()),
+							mg_mk_str(username.data()), mg_mk_str(cnonce.data()), mg_mk_str(response.data()),
+							mg_mk_str(qop.data()), mg_mk_str(ncount.data()), mg_mk_str(nonce.data()), mg_mk_str(realm.data()),
+							fp);
+
+						fclose(fp);
+
+						// 检查失败 //
+						if (ret == 0)
+						{
+							mg_printf(nc,
+								"HTTP/1.1 200 Unauthorized\r\n"
+								"Content-Length: 0\r\n\r\n");
+						}
+
+						opts.auth_domain = realm.data();
+						mg_serve_http(nc, hm, opts);
 					}
 					else
 					{
-						
+						std::cout << "unknown cmd" << std::endl;
 					}
-					mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
+
+					
 				}
 				default:
 					break;
@@ -1040,10 +1056,8 @@ namespace aris::server
 			}
 
 			mg_set_protocol_http_websocket(imp_->nc);
-			std::memset(&imp_->s_http_server_opts, 0, sizeof(mg_serve_http_opts));
-			imp_->s_http_server_opts.document_root = imp_->document_root_.c_str();
-			imp_->s_http_server_opts.enable_directory_listing = "yes";
-			imp_->nc->user_data = &imp_->s_http_server_opts;
+			
+			imp_->nc->user_data = imp_.get();
 			imp_->http_thread_ = std::thread([this]()
 			{
 				for (; imp_->is_running_; ) { mg_mgr_poll(&imp_->mgr, 1000); }
@@ -1051,32 +1065,24 @@ namespace aris::server
 			});
 		}
 	}
-	auto HttpInterface::close()->void 
+	auto HttpInterface::close()->void
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
-		if (imp_->is_running_.exchange(false) == true){	imp_->http_thread_.join();	}
+		if (imp_->is_running_.exchange(false) == true) { imp_->http_thread_.join(); }
 	}
-	//auto HttpInterface::saveXml(aris::core::XmlElement &xml_ele) const->void
-	//{
-	//	Interface::saveXml(xml_ele);
-	//	xml_ele.SetAttribute("document_root", imp_->document_root_.c_str());
-	//	xml_ele.SetAttribute("port", imp_->port_.c_str());
-	//}
-	//auto HttpInterface::loadXml(const aris::core::XmlElement &xml_ele)->void
-	//{
-	//	Interface::loadXml(xml_ele);
-	//	imp_->document_root_ = Object::attributeString(xml_ele, "document_root", "./");
-	//	imp_->port_ = Object::attributeString(xml_ele, "port", "8000");
-	//}
+	auto HttpInterface::setApiGet(std::string_view uri, std::function<std::string(void)> func)->void
+	{
+		imp_->gets_[std::string(uri)] = func;
+	}
 	HttpInterface::~HttpInterface() = default;
 	HttpInterface::HttpInterface(HttpInterface && other) = default;
 	HttpInterface& HttpInterface::operator=(HttpInterface&& other) = default;
 	HttpInterface::HttpInterface(const std::string &name, const std::string &port, const std::string &document_root) :Interface(name), imp_(new Imp)
 	{
 		imp_->document_root_ = document_root;
+		imp_->dav_root_ = "D:\\Private\\aris-ui\\build";
 		imp_->port_ = port;
 	}
-
 
 	ARIS_REGISTRATION{
 		aris::core::class_<Interface>("Interface")

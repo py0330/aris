@@ -65,11 +65,10 @@ int main(int argc, char *argv[])
 	}
 	else if (robot_name == "rokae_xb4")
 	{
-		//cs.resetController(createControllerRokaeXB4().release());
-		//cs.resetModel(aris::robot::createModelRokaeXB4(robot_pm).release());
-		//cs.resetPlanRoot(createPlanRootRokaeXB4().release());
-		//cs.resetSensorRoot(new aris::sensor::SensorRoot);
-		//cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
+		cs.resetController(createControllerRokaeXB4().release());
+		cs.resetModel(aris::robot::createModelRokaeXB4(robot_pm).release());
+		cs.resetPlanRoot(createPlanRootRokaeXB4().release());
+		cs.resetSensorRoot(new aris::sensor::SensorRoot);
 	}
 	else if (robot_name == "servo_press")
 	{
@@ -84,7 +83,6 @@ int main(int argc, char *argv[])
 		cs.resetModel(aris::robot::createModelStewart(robot_pm).release());
 		cs.resetPlanRoot(aris::robot::createPlanRootStewart().release());
 		cs.resetSensorRoot(new aris::sensor::SensorRoot);
-		//cs.interfaceRoot().loadXmlStr(aris::robot::createRokaeXB4Interface());
 	}
 	else
 	{
@@ -96,38 +94,38 @@ int main(int argc, char *argv[])
 	std::cout << "this server position:" << std::endl;
 	dsp(4, 4, robot_pm);
 
-	std::fstream file1;
-	file1.open("C:\\Users\\py033\\Desktop\\seri0.xml");
-	std::string file1_xml_str((std::istreambuf_iterator<char>(file1)), (std::istreambuf_iterator<char>()));
-	aris::core::fromXmlString(cs, file1_xml_str);
-	file1.close();
+	//std::fstream file1;
+	//file1.open("C:\\Users\\py033\\Desktop\\seri0.xml");
+	//std::string file1_xml_str((std::istreambuf_iterator<char>(file1)), (std::istreambuf_iterator<char>()));
+	//aris::core::fromXmlString(cs, file1_xml_str);
+	//file1.close();
 
-	std::fstream file2;
-	file2.open("C:\\Users\\py033\\Desktop\\seri2.xml", std::ios::out | std::ios::trunc);
-	file2 << aris::core::toXmlString(cs);
-	file2.close();
+	//std::fstream file2;
+	//file2.open("C:\\Users\\py033\\Desktop\\seri2.xml", std::ios::out | std::ios::trunc);
+	//file2 << aris::core::toXmlString(cs);
+	//file2.close();
 
-	std::fstream file3;
-	file3.open("C:\\Users\\py033\\Desktop\\seri2.xml");
-	std::string file3_xml_str((std::istreambuf_iterator<char>(file3)), (std::istreambuf_iterator<char>()));
-	aris::core::fromXmlString(cs, file3_xml_str);
-	file3.close();
+	//std::fstream file3;
+	//file3.open("C:\\Users\\py033\\Desktop\\seri2.xml");
+	//std::string file3_xml_str((std::istreambuf_iterator<char>(file3)), (std::istreambuf_iterator<char>()));
+	//aris::core::fromXmlString(cs, file3_xml_str);
+	//file3.close();
 
-	std::fstream file4;
-	file4.open("C:\\Users\\py033\\Desktop\\seri4.xml", std::ios::out | std::ios::trunc);
-	file4 << aris::core::toXmlString(cs);
-	file4.close();
+	//std::fstream file4;
+	//file4.open("C:\\Users\\py033\\Desktop\\seri4.xml", std::ios::out | std::ios::trunc);
+	//file4 << aris::core::toXmlString(cs);
+	//file4.close();
 
 	//std::cout << aris::core::toJsonString(cs) << std::endl;
 
-	auto str = aris::core::toJsonString(cs);
+	//auto str = aris::core::toJsonString(cs);
 	//std::cout << aris::core::toJsonString(cs) << std::endl;
-	cs.resetController(nullptr);
-	cs.resetModel(nullptr);
+	//cs.resetController(nullptr);
+	//cs.resetModel(nullptr);
 
-	aris::core::fromJsonString(cs, str);
+	//aris::core::fromJsonString(cs, str);
 
-	std::cout << aris::core::toJsonString(cs) << std::endl;
+	//std::cout << aris::core::toJsonString(cs) << std::endl;
 
 	//auto &m = cs.model();
 	//m.init();
@@ -262,7 +260,7 @@ int main(int argc, char *argv[])
 	// interaction //
 	cs.interfacePool().add<aris::server::ProgramWebInterface>("", "5866", aris::core::Socket::WEB);
 	cs.interfacePool().add<aris::server::WebInterface>("", "5867", aris::core::Socket::TCP);
-	cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "C:/Users/py033/Desktop/UI_DarkColor_English-0103_panbo/UI_DarkColor_English-0103_panbo/www");
+	cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "D:/Private/aris-ui/build");
 
 	for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);
 	

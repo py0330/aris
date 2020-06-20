@@ -17,8 +17,6 @@ namespace aris::server
 {
 	class ARIS_API InterfaceRoot
 	{
-	private:
-		//aris::core::XmlDocument doc_;
 	};
 	class ARIS_API Interface
 	{
@@ -76,6 +74,10 @@ namespace aris::server
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
+		auto setApiGet(std::string_view uri, std::function<std::string(void)>)->void;
+		auto setApiPost(std::string_view uri, std::function<std::string(void)>)->void;
+		auto setApiPut(std::string_view uri, std::function<std::string(void)>)->void;
+		auto setApiDelete(std::string_view uri, std::function<std::string(void)>)->void;
 
 		virtual ~HttpInterface();
 		HttpInterface(const std::string &name = "http_interface", const std::string &port = "8000", const std::string &document_root = "./");
