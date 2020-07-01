@@ -74,6 +74,8 @@ namespace aris::server
 	public:
 		auto virtual open()->void override;
 		auto virtual close()->void override;
+		auto documentRoot()->std::string;
+		auto setDocumentRoot(const std::string &root)->void;
 		auto setApiGet(std::string_view uri, std::function<std::string(void)>)->void;
 		auto setApiPost(std::string_view uri, std::function<std::string(void)>)->void;
 		auto setApiPut(std::string_view uri, std::function<std::string(void)>)->void;
