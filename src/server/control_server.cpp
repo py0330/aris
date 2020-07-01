@@ -552,6 +552,13 @@ namespace aris::server
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::ObjectPool<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
+	auto ControlServer::setErrorCode(std::int32_t err_code)->void 
+	{
+		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
+		err.code = err_code;
+		imp_->err_code_and_fixed_.store(err_code_and_fixed);
+
+	}
 	auto ControlServer::errorCode()const->int
 	{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t err_code; std::int32_t is_fixed; } err; };
