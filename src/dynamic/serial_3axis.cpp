@@ -205,7 +205,7 @@ namespace aris::dynamic
 		};
 		GeneralMotion *ee;
 
-		bool use_angle_ = false;
+		bool use_angle_ = true;
 	};
 	auto Serial3InverseKinematicSolver::saveXml(aris::core::XmlElement &xml_ele) const->void
 	{
