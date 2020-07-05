@@ -200,7 +200,7 @@ namespace aris::dynamic
 		};
 		GeneralMotion *ee;
 
-		bool use_angle_ = false;
+		bool use_angle_ = true;
 	};
 	auto Serial3InverseKinematicSolver::allocateMemory()->void
 	{

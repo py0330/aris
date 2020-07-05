@@ -75,6 +75,7 @@ namespace aris::server
 		auto waitForAllExecution()->void;
 		auto waitForAllCollection()->void;
 		auto getRtData(const std::function<void(ControlServer&, const aris::plan::Plan *target, std::any&)>& get_func, std::any& data)->void;
+		auto setErrorCode(std::int32_t err_code)->void;
 		auto errorCode()const->int;
 		auto errorMsg()const->const char *;
 		auto clearError()->void;
