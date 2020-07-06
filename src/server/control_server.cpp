@@ -299,6 +299,14 @@ namespace aris::server
 				{
 				case 8:
 				{
+					// check pos infinite //
+					if (!std::isfinite(cm.targetPos()))
+					{
+						error_code = aris::plan::Plan::MOTION_POS_INFINITE;
+						sprintf(error_msg, "%s_%d:\nMotion %zu target position is INFINITE in count %zu:\nvalue: %f\n", __FILE__, __LINE__, i, count_, cm.targetPos());
+						return error_code;
+					}
+					
 					// check pos max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_POS_MAX)
 						&& (cm.targetPos() > cm.maxPos())
@@ -350,6 +358,14 @@ namespace aris::server
 				}
 				case 9:
 				{
+					// check vel infinite //
+					if (!std::isfinite(cm.targetVel()))
+					{
+						error_code = aris::plan::Plan::MOTION_VEL_INFINITE;
+						sprintf(error_msg, "%s_%d:\nMotion %zu target velocity is INFINITE in count %zu:\nvalue: %f\n", __FILE__, __LINE__, i, count_, cm.targetVel());
+						return error_code;
+					}
+					
 					// check vel max //
 					if (!(option & aris::plan::Plan::NOT_CHECK_VEL_MAX)
 						&& (cm.targetVel() > cm.maxVel()))
@@ -562,6 +578,13 @@ namespace aris::server
 					{
 						ARIS_COUT_PLAN((&plan)) << "return code :" << plan.retCode() << "\n";
 						ARIS_COUT_PLAN((&plan)) << "return msg  :" << plan.retMsg() << std::endl;
+
+
+						if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
+						{
+							std::cout << aris::server::parse_ret_value(*js) << std::endl;
+						}
+
 						LOG_INFO << "cmd " << plan.cmdId() << " return code   :" << plan.retCode() << "\n" << std::setw(aris::core::LOG_SPACE_WIDTH) << '|' << "return message:" << plan.retMsg() << std::endl;
 					});
 				}
