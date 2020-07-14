@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
 	cs.interfacePool().add<aris::server::ProgramWebInterface>("", "5866", aris::core::Socket::WEB);
 	cs.interfacePool().add<aris::server::WebInterface>("", "5867", aris::core::Socket::TCP);
 	cs.interfacePool().add<aris::server::ProgramWebInterface>("", "5868", aris::core::Socket::TCP);
-	//cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "C:/Users/py033/Desktop/distUI_darkColor_1208/www");
+	cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "D:/UI_DarkColor_English-0103_panbo/UI_DarkColor_English-0103_panbo/www");
 
 
 	for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);

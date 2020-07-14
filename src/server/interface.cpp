@@ -12,6 +12,7 @@
 #include "aris/server/interface.hpp"
 #include "aris/server/control_server.hpp"
 
+#include "api.hpp"
 #include "json.hpp"
 #include "fifo_map.hpp"
 
@@ -910,60 +911,7 @@ namespace aris::server
 	{
 		std::unique_lock<std::mutex> running_lck(imp_->mu_running_);
 		
-		aris::core::XmlDocument doc;
-		std::filesystem::path interface_path(imp_->document_root_);
-		interface_path  = interface_path / "../robot/interface.xml";
-		doc.LoadFile(interface_path.string().c_str());
-
-		my_json js;
-		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
-		{
-			if (ele->Name() == std::string("Dashboard"))
-			{
-				my_json js1;
-				js1["name"] = std::string(ele->Attribute("name"));
-				js1["editable"] = std::string(ele->Attribute("editable")) == "true";
-				js1["i"] = std::string(ele->Attribute("id"));
-				js1["cells"] = std::vector<std::string>();
-				for (auto e1 = ele->FirstChildElement(); e1; e1 = e1->NextSiblingElement())
-				{
-					my_json j2;//{"name":"Ethercat配置","type":"EthercatConfiguration","i":"EMlxGXxpwDGgz","w":48,"h":23,"x":0,"y":0,"options":"{}"}
-					j2["name"] = e1->Attribute("name");
-					j2["type"] = e1->Attribute("type");
-					j2["i"] = e1->Attribute("id");
-					j2["w"] = e1->IntAttribute("width");
-					j2["h"] = e1->IntAttribute("height");
-					j2["x"] = e1->IntAttribute("x");
-					j2["y"] = e1->IntAttribute("y");
-					j2["options"] = e1->Attribute("options");
-					js1["cells"].push_back(j2);
-				}
-				js["dashboards"].push_back(js1);
-			}
-			else if (ele->Name() == std::string("WebSocket"))
-			{
-				js["ws"]["url"] = ele->Attribute("url");
-				js["ws"]["commandSendInterval"] = ele->IntAttribute("commandSendInterval");
-				js["ws"]["commandSendDelay"] = ele->IntAttribute("commandSendDelay");
-				js["ws"]["getInterval"] = ele->IntAttribute("getInterval");
-				js["ws"]["unityUpdateInterval"] = ele->IntAttribute("unityUpdateInterval");
-			}
-			else if (ele->Name() == std::string("LayoutConfig"))
-			{
-				js["layoutConfig"]["cols"] = ele->IntAttribute("cols");
-				js["layoutConfig"]["rowHeight"] = ele->IntAttribute("rowHeight");
-				js["layoutConfig"]["margin"] = ele->IntAttribute("margin");
-				js["layoutConfig"]["containerPadding"] = ele->IntAttribute("containerPadding");
-				js["layoutConfig"]["theme"] = ele->Attribute("theme");
-			}
-		}
-
-		auto str = js.dump(-1);
-		std::ofstream f;
-		std::filesystem::create_directories("C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\www\\api\\config\\");
-		f.open("C:\\Users\\py033\\Desktop\\distUI_darkColor_1208\\www\\api\\config\\interface");
-		f << str;
-		f.close();
+		setRootPath(imp_->document_root_);
 
 		if (imp_->is_running_.exchange(true) == false)
 		{
@@ -980,6 +928,93 @@ namespace aris::server
 				switch (ev) {
 				case MG_EV_HTTP_REQUEST:
 				{
+					auto method = std::string(hm->method.p, hm->method.len);
+					auto uri = std::string(hm->uri.p, hm->uri.len);
+					
+					if (method == "GET" && uri == "/api/config/interface")
+					{
+						auto ret = fetchInterfaceConfig();
+						
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: application/json; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_printf(nc, fetchInterfaceConfig().c_str());
+						break;
+					}
+					else if (method == "PUT" && uri.size() == 25 && uri.substr(0, 15) == "/api/dashboards")
+					{
+						auto ret = updateDashboard(uri.substr(16), std::string(hm->body.p, hm->body.len));
+						
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: application/json; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_printf(nc, ret.c_str());
+						break;
+					}
+					else if (method == "POST" && uri.size() == 31 && uri.substr(0, 15) == "/api/dashboards" && uri.substr(26) == "cells")
+					{
+						auto ret = createCell(uri.substr(16, 9), std::string(hm->body.p, hm->body.len));
+
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: application/json; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_printf(nc, ret.c_str());
+						break;
+					}
+					else if (method == "DELETE" && uri.size() == 42 && uri.substr(0, 15) == "/api/dashboards" && uri.substr(26,5) == "cells")
+					{
+						auto ret = deleteCell(uri.substr(16, 9), uri.substr(32));
+
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: application/json; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_printf(nc, ret.c_str());
+						break;
+					}
+					else if (method == "GET" && uri == "/api/programs")
+					{
+						auto ret = fetchPrograms();
+
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: application/json; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_printf(nc, ret.c_str());
+						break;
+					}
+					else if (method == "PUT" && uri.size() > 13 && uri.substr(0, 13) == "/api/programs")
+					{
+						auto ret = updateProgram(uri.substr(14), std::string(hm->body.p, hm->body.len));
+
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: application/json; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_printf(nc, ret.c_str());
+						break;
+					}
 					/*std::cout << std::string(hm->method.p, hm->method.len) <<":"<< std::string(hm->uri.p, hm->uri.len) << std::endl;
 					
 					if (std::string(hm->method.p, hm->method.len) == "POST")
