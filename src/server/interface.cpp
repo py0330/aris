@@ -942,7 +942,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_printf(nc, fetchInterfaceConfig().c_str());
+						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
 					else if (method == "PUT" && uri.size() == 25 && uri.substr(0, 15) == "/api/dashboards")
@@ -956,7 +956,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_printf(nc, ret.c_str());
+						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
 					else if (method == "POST" && uri.size() == 31 && uri.substr(0, 15) == "/api/dashboards" && uri.substr(26) == "cells")
@@ -970,7 +970,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_printf(nc, ret.c_str());
+						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
 					else if (method == "DELETE" && uri.size() == 42 && uri.substr(0, 15) == "/api/dashboards" && uri.substr(26,5) == "cells")
@@ -984,7 +984,7 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_printf(nc, ret.c_str());
+						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
 					else if (method == "GET" && uri == "/api/programs")
@@ -993,12 +993,26 @@ namespace aris::server
 
 						mg_printf(nc,
 							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: text/plain; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_send(nc, ret.c_str(), ret.size());
+						break;
+					}
+					else if (method == "POST" && uri == "/api/programs")
+					{
+						auto ret = createProgram(std::string(hm->body.p, hm->body.len));
+
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
 							"Content-Type: application/json; charset=utf-8\r\n"
 							"Content-Length: %ld\r\n\r\n",
 							ret.size()
 						);
 
-						mg_printf(nc, ret.c_str());
+						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
 					else if (method == "PUT" && uri.size() > 13 && uri.substr(0, 13) == "/api/programs")
@@ -1012,7 +1026,65 @@ namespace aris::server
 							ret.size()
 						);
 
-						mg_printf(nc, ret.c_str());
+						mg_send(nc, ret.c_str(), ret.size());
+						break;
+					}
+					else if (method == "DELETE" && uri.size() > 13 && uri.substr(0, 13) == "/api/programs")
+					{
+						auto ret = deleteProgram(uri.substr(14));
+
+						if (ret.empty())
+						{
+							mg_printf(nc,
+								"HTTP/1.1 500 failed create\r\n"
+								"Content-Type: application/json; charset=utf-8\r\n"
+								"Content-Length: %ld\r\n\r\n",
+								ret.size()
+							);
+
+							mg_send(nc, ret.c_str(), ret.size());
+						}
+						else
+						{
+							mg_printf(nc,
+								"HTTP/1.1 200 OK\r\n"
+								"Content-Type: application/json; charset=utf-8\r\n"
+								"Content-Length: %ld\r\n\r\n",
+								ret.size()
+							);
+
+							mg_send(nc, ret.c_str(), ret.size());
+						}
+						
+						break;
+					}
+					else if (method == "PATCH" && uri.size() > 13 && uri.substr(0, 13) == "/api/programs")
+					{
+						auto ret = renameProgram(uri.substr(14), std::string(hm->body.p, hm->body.len));
+
+						if (ret.empty())
+						{
+							mg_printf(nc,
+								"HTTP/1.1 500 failed create\r\n"
+								"Content-Type: application/json; charset=utf-8\r\n"
+								"Content-Length: %ld\r\n\r\n",
+								ret.size()
+							);
+
+							mg_send(nc, ret.c_str(), ret.size());
+						}
+						else
+						{
+							mg_printf(nc,
+								"HTTP/1.1 200 OK\r\n"
+								"Content-Type: application/json; charset=utf-8\r\n"
+								"Content-Length: %ld\r\n\r\n",
+								ret.size()
+							);
+
+							mg_send(nc, ret.c_str(), ret.size());
+						}
+
 						break;
 					}
 					/*std::cout << std::string(hm->method.p, hm->method.len) <<":"<< std::string(hm->uri.p, hm->uri.len) << std::endl;

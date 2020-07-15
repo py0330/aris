@@ -281,10 +281,6 @@ namespace aris::server
 				pro_file_js["path"] = "/program/" + dir.path().filename().string() + "/" + pro.filename().string();
 				std::ifstream f(pro);
 				std::string str((std::istreambuf_iterator<char>(f)),std::istreambuf_iterator<char>());
-				
-				std::cout << str << std::endl;
-				std::cout << str.size() << std::endl;
-
 				pro_file_js["content"] = str;
 				pro_dir_js["files"].push_back(pro_file_js);
 
@@ -303,7 +299,7 @@ namespace aris::server
 		}
 
 
-		auto ret = js.dump();
+		auto ret = js.dump(-1);
 		int index = 0;
 		while (true) {
 			index = ret.find("<", index);
@@ -322,31 +318,155 @@ namespace aris::server
 		return ret;
 
 	}
-	
-	auto createProgram()->std::string;
+	auto createProgram(std::string pro_js_str)->std::string 
+	{
+		auto js = my_json::parse(pro_js_str);
+		auto pro_name = js["name"].get<std::string>();
+		auto program_path = rootPath() / "../robot/program" / pro_name;
+
+		if (std::filesystem::exists(program_path))return "";
+
+		std::filesystem::create_directories(program_path);
+
+		std::filesystem::path dat = program_path / (pro_name + ".dat"), pro = program_path / (pro_name + ".pro");
+
+
+		std::fstream f(pro, std::ios::out | std::ios::trunc);
+		f << "<xml xmlns=\"https://developers.google.com/blockly/xml\"></xml>";
+		f.close();
+
+		f.open(dat, std::ios::out | std::ios::trunc);
+		f << "<xml xmlns=\"https://developers.google.com/blockly/xml\"></xml>";
+		f.close();
+
+		auto dir = std::filesystem::directory_entry(program_path);
+
+
+		my_json pro_dir_js;
+		pro_dir_js["name"] = dir.path().filename().string();
+		pro_dir_js["path"] = "/program/" + dir.path().filename().string();
+
+		auto ftime = dir.last_write_time();
+		std::time_t tt = to_time_t(ftime);
+		std::tm *gmt = std::gmtime(&tt);
+		std::stringstream buffer;
+		buffer << std::put_time(gmt, "%A, %d %B %Y %H:%M");
+		buffer.str();
+
+		pro_dir_js["modTime"] = buffer.str();
+		pro_dir_js["isDir"] = true;
+
+		my_json pro_file_js;
+		pro_file_js["name"] = pro.filename().string();
+		pro_file_js["path"] = "/program/" + dir.path().filename().string() + "/" + pro.filename().string();
+		pro_file_js["content"] = "<xml xmlns=\"https://developers.google.com/blockly/xml\"></xml>";
+		pro_dir_js["files"].push_back(pro_file_js);
+
+		my_json dat_file_js;
+		dat_file_js["name"] = dat.filename().string();
+		dat_file_js["path"] = "/program/" + dir.path().filename().string() + "/" + dat.filename().string();
+		dat_file_js["content"] = "<xml xmlns=\"https://developers.google.com/blockly/xml\"></xml>";
+		pro_dir_js["files"].push_back(dat_file_js);
+
+		auto ret = pro_dir_js.dump(-1);
+		int index = 0;
+		while (true) {
+			index = ret.find("<", index);
+			if (index == std::string::npos) break;
+			ret.replace(index, 1, "\\u003c");
+			index += 5;
+		}
+		index = 0;
+		while (true) {
+			index = ret.find(">", index);
+			if (index == std::string::npos) break;
+			ret.replace(index, 1, "\\u003e");
+			index += 5;
+		}
+
+		return ret;
+
+	}
 	auto updateProgram(std::string pro_name, std::string data)->std::string
 	{
-		std::filesystem::path program_path(rootPath());
-		program_path = program_path / "../robot/program";
-
-		std::fstream pro(program_path / (pro_name + ".pro"));
-
+		auto program_path = rootPath() / "../robot/program";
 		auto js = my_json::parse(data);
 
-		std::cout << js["files"][0]["content"].get<std::string>() << std::endl;
+		std::fstream f(program_path /pro_name/ (pro_name + ".pro"), std::ios::out | std::ios::trunc);
+		f << js["files"][0]["content"].get<std::string>();
+		f.close();
 
-		pro << js["files"][0]["content"].get<std::string>();
-
-		
+		f.open(program_path / pro_name / (pro_name + ".dat"), std::ios::out | std::ios::trunc);
+		f << js["files"][1]["content"].get<std::string>();
+		f.close();
 
 		return data;
 	}
-	auto deleteProgram()->std::string;
-	auto renameProgram()->std::string;
+	auto deleteProgram(std::string pro_name)->std::string
+	{
+		auto program_path = rootPath() / "../robot/program" / pro_name;
+		if (!std::filesystem::exists(program_path))return "";
+		
+		std::filesystem::remove_all(program_path);
+		
+		my_json js;
+
+		js["name"] = pro_name;
+		return js.dump(-1);
+	}
+	auto renameProgram(std::string old_name, std::string new_name_js)->std::string 
+	{
+		if (!std::filesystem::exists(rootPath() / "../robot/program" / old_name))return "";
+
+		auto js = my_json::parse(new_name_js);
+
+		auto new_name = js["name"].get<std::string>();
+
+		std::filesystem::rename(rootPath() / "../robot/program" / old_name, rootPath() / "../robot/program" / new_name);
+		std::filesystem::rename(rootPath() / "../robot/program" / new_name / (old_name + ".pro"), rootPath() / "../robot/program" / new_name / (new_name + ".pro"));
+		std::filesystem::rename(rootPath() / "../robot/program" / new_name / (old_name + ".dat"), rootPath() / "../robot/program" / new_name / (new_name + ".dat"));
+
+		///////////////////////“‘œ¬∑µªÿ///////////////////////////////////
+		auto dir = std::filesystem::directory_entry(rootPath() / "../robot/program" / new_name);
+
+		std::filesystem::path dat = rootPath() / "../robot/program" / new_name / (new_name + ".dat")
+			, pro = rootPath() / "../robot/program" / new_name / (new_name + ".pro");
+
+		my_json pro_dir_js;
+		pro_dir_js["name"] = dir.path().filename().string();
+		pro_dir_js["path"] = "/program/" + dir.path().filename().string();
+
+		auto ftime = dir.last_write_time();
+		std::time_t tt = to_time_t(ftime);
+		std::tm *gmt = std::gmtime(&tt);
+		std::stringstream buffer;
+		buffer << std::put_time(gmt, "%A, %d %B %Y %H:%M");
+		buffer.str();
+
+		pro_dir_js["modTime"] = buffer.str();
+		pro_dir_js["isDir"] = true;
+
+		my_json pro_file_js;
+		pro_file_js["name"] = pro.filename().string();
+		pro_file_js["path"] = "/program/" + dir.path().filename().string() + "/" + pro.filename().string();
+		std::ifstream f(pro);
+		std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+		pro_file_js["content"] = str;
+		pro_dir_js["files"].push_back(pro_file_js);
+
+		my_json dat_file_js;
+		dat_file_js["name"] = dat.filename().string();
+		dat_file_js["path"] = "/program/" + dir.path().filename().string() + "/" + dat.filename().string();
+		f.close();
+		f.open(dat);
+		str = std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+		dat_file_js["content"] = str;
+		pro_dir_js["files"].push_back(dat_file_js);
+
+		return pro_dir_js.dump(-1);
+	}
 
 	auto fetchESIPath()->std::string;
-
-	
 
 	auto fetchConfigXml()->std::string;
 	auto loadConfigModel()->std::string;

@@ -13,7 +13,10 @@ namespace aris::server
 	auto deleteCell(std::string dash_id, std::string cell_id)->std::string;
 
 	auto fetchPrograms()->std::string;
-	auto updateProgram(std::string pro_name, std::string data)->std::string;
+	auto createProgram(std::string pro_name)->std::string;
+	auto updateProgram(std::string js_str, std::string data)->std::string;
+	auto deleteProgram(std::string pro_name)->std::string;
+	auto renameProgram(std::string old_name, std::string new_name_js)->std::string;
 }
 
 #endif
