@@ -3,6 +3,8 @@
 #include <regex>
 #include <charconv>
 
+#include "D:\\Private\\aris\\src\\server\\api.hpp"
+
 using namespace aris::dynamic;
 using namespace aris::robot;
 
@@ -241,6 +243,11 @@ int main(int argc, char *argv[])
 
 	cs.saveXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
 	cs.loadXmlFile("C:\\Users\\py033\\Desktop\\test.xml");
+
+
+	aris::server::MakeBlockly mk;
+	mk.make("C:\\Users\\py033\\Desktop\\program02.txt", "C:\\Users\\py033\\Desktop\\");
+
 
 	cs.init();
 	cs.open();

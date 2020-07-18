@@ -931,6 +931,8 @@ namespace aris::server
 					auto method = std::string(hm->method.p, hm->method.len);
 					auto uri = std::string(hm->uri.p, hm->uri.len);
 					
+					std::cout << method << "    " << uri << std::endl;
+
 					if (method == "GET" && uri == "/api/config/interface")
 					{
 						auto ret = fetchInterfaceConfig();
@@ -945,7 +947,7 @@ namespace aris::server
 						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
-					else if (method == "PUT" && uri.size() == 25 && uri.substr(0, 15) == "/api/dashboards")
+					else if (method == "PUT" && uri.find("/api/dashboards") != std::string::npos)
 					{
 						auto ret = updateDashboard(uri.substr(16), std::string(hm->body.p, hm->body.len));
 						
@@ -959,9 +961,10 @@ namespace aris::server
 						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
-					else if (method == "POST" && uri.size() == 31 && uri.substr(0, 15) == "/api/dashboards" && uri.substr(26) == "cells")
+					else if (method == "POST" && uri.find("/api/dashboards") != std::string::npos && uri.find("cells") != std::string::npos)
 					{
-						auto ret = createCell(uri.substr(16, 9), std::string(hm->body.p, hm->body.len));
+						auto dashid = uri.substr(16, uri.substr(16).find_first_of('/'));
+						auto ret = createCell(dashid, std::string(hm->body.p, hm->body.len));
 
 						mg_printf(nc,
 							"HTTP/1.1 200 OK\r\n"
@@ -973,9 +976,9 @@ namespace aris::server
 						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
-					else if (method == "DELETE" && uri.size() == 42 && uri.substr(0, 15) == "/api/dashboards" && uri.substr(26,5) == "cells")
+					else if (method == "DELETE" && uri.find("/api/dashboards") != std::string::npos	&& uri.find("cells") != std::string::npos)
 					{
-						auto ret = deleteCell(uri.substr(16, 9), uri.substr(32));
+						auto ret = deleteCell(uri.substr(16, uri.substr(16).find("/cells")), uri.substr(uri.find("cells/") + 6));
 
 						mg_printf(nc,
 							"HTTP/1.1 200 OK\r\n"
@@ -1103,7 +1106,10 @@ namespace aris::server
 					{
 						
 					}*/
-					mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
+					else
+					{
+						mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
+					}
 				}
 				default:
 
