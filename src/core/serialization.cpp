@@ -27,7 +27,7 @@ namespace aris::core
 		return std::regex_replace(c_type->name().data(), std::regex("\\::"), ".");
 	}
 	
-	auto to_xml_ele(aris::core::Instance &ins, tinyxml2::XMLElement *ele)->void
+	auto to_xml_ele(aris::core::Instance ins, tinyxml2::XMLElement *ele)->void
 	{
 		// set text //
 		if (!ins.toString().empty()) ele->SetText(ins.toString().data());

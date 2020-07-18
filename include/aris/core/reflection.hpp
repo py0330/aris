@@ -238,13 +238,13 @@ namespace aris::core
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T*)->void
 		//         Class_Type::size()->size_t
-		template<typename T = Class_Type>
-		auto asRefArray()->std::enable_if_t<std::is_object_v<T>, class_<Class_Type>&>
+		template<typename C = Class_Type>
+		auto asRefArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>
 		{
-			auto size_func = [](Instance* ins)->std::size_t	{return ins->castTo<Class_Type>()->size();	};
-			auto at_func = [](Instance* ins, std::size_t id)->Instance{	return ins->castTo<Class_Type>()->at(id);};
-			auto push_back_func = [](Instance* ins, const Instance& value)->void{ins->castTo<Class_Type>()->push_back(value.castTo<Class_Type::value_type>());	};
-			auto clear_func = [](Instance* ins)->void{	ins->castTo<Class_Type>()->clear();	};
+			auto size_func = [](Instance* ins)->std::size_t	{return ins->castTo<C>()->size();	};
+			auto at_func = [](Instance* ins, std::size_t id)->Instance{	return ins->castTo<C>()->at(id);};
+			auto push_back_func = [](Instance* ins, const Instance& value)->void{ins->castTo<C>()->push_back(value.castTo<typename C::value_type>());	};
+			auto clear_func = [](Instance* ins)->void{	ins->castTo<C>()->clear();	};
 			type_->as_array(true, size_func, at_func, push_back_func, clear_func);
 			return *this;
 		}
@@ -252,13 +252,13 @@ namespace aris::core
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T)->void
 		//         Class_Type::size()->size_t    
-		template<typename T = Class_Type>
-		auto asArray()->std::enable_if_t<std::is_object_v<T>, class_<Class_Type>&>
+		template<typename C = Class_Type>
+		auto asArray()->std::enable_if_t<std::is_object_v<typename C::value_type>, class_<Class_Type>&>
 		{
-			auto size_func = [](Instance* ins)->std::size_t	{	return ins->castTo<Class_Type>()->size();};
-			auto at_func = [](Instance* ins, std::size_t id)->Instance	{	return ins->castTo<Class_Type>()->at(id);};
-			auto push_back_func = [](Instance* ins, const Instance& value)->void{ins->castTo<Class_Type>()->push_back(*value.castTo<Class_Type::value_type>());	};
-			auto clear_func = [](Instance* ins)->void{	ins->castTo<Class_Type>()->clear();	};
+			auto size_func = [](Instance* ins)->std::size_t	{	return ins->castTo<C>()->size();};
+			auto at_func = [](Instance* ins, std::size_t id)->Instance	{	return ins->castTo<C>()->at(id);};
+			auto push_back_func = [](Instance* ins, const Instance& value)->void{ins->castTo<C>()->push_back(*value.castTo<typename C::value_type>());	};
+			auto clear_func = [](Instance* ins)->void{	ins->castTo<C>()->clear();	};
 			type_->as_array(false, size_func, at_func, push_back_func, clear_func);
 			return *this;
 		}
