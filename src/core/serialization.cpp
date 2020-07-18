@@ -87,7 +87,7 @@ namespace aris::core
 		return std::string(printer.CStr());
 	}
 
-	auto from_xml_ele(aris::core::Instance &ins, tinyxml2::XMLElement *ele)->void
+	auto from_xml_ele(aris::core::Instance ins, tinyxml2::XMLElement *ele)->void
 	{
 		// from text //
 		if (ele->GetText())	ins.fromString(ele->GetText());
@@ -210,7 +210,7 @@ namespace aris::core
 	auto typename_json2c(const std::string &key)->std::string{	return std::regex_replace(key, std::regex("\\."), "::");}
 	auto typename_c2json(const aris::core::Type *c_type)->std::string{	return std::regex_replace(c_type->name().data(), std::regex("\\::"), ".");}
 
-	auto to_json(aris::core::Instance &ins)->my_json
+	auto to_json(aris::core::Instance ins)->my_json
 	{
 		my_json js;
 
@@ -263,7 +263,7 @@ namespace aris::core
 		return js.dump(2);
 	}
 
-	auto from_json(aris::core::Instance &ins, my_json &js)->void
+	auto from_json(aris::core::Instance ins, my_json &js)->void
 	{
 		// from text //
 		if (js.find("#text") != js.end()) ins.fromString(js["#text"]);
