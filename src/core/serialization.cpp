@@ -273,7 +273,7 @@ namespace aris::core
 			// basic type //
 			if (prop->type()->isBasic() && js.find("@" + prop->name()) != js.end())	{
 				auto[ptr, prop_ins] = prop->type()->create();
-				prop_ins.fromString(js["@" + prop->name()]);
+				prop_ins.fromString(js["@" + prop->name()].get<std::string>());
 				prop->set(&ins, prop_ins);
 				js.erase(prop->name());
 				//continue;
