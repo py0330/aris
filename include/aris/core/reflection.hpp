@@ -239,7 +239,7 @@ namespace aris::core
 		//         Class_Type::push_back(T*)->void
 		//         Class_Type::size()->size_t
 		template<typename T = Class_Type>
-		auto asRefArray()->std::enable_if_t<std::is_class_v<T>, class_<Class_Type>&>
+		auto asRefArray()->std::enable_if_t<std::is_class_v<T::value_type>, class_<Class_Type>&>
 		{
 			auto size_func = [](Instance* ins)->std::size_t	{return ins->castTo<Class_Type>()->size();	};
 			auto at_func = [](Instance* ins, std::size_t id)->Instance{	return ins->castTo<Class_Type>()->at(id);};

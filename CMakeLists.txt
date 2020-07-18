@@ -129,8 +129,8 @@ target_include_directories(aris_lib
 		${RELY_INCL_DIR}
 )
 
-install(TARGETS aris_lib EXPORT aris-targets-debug ARCHIVE CONFIGURATIONS Debug DESTINATION "lib/debug")
-install(TARGETS aris_lib EXPORT aris-targets-release ARCHIVE CONFIGURATIONS Release DESTINATION "lib/release")
+install(TARGETS aris_lib EXPORT aris-targets-debug CONFIGURATIONS Debug DESTINATION "lib/debug")
+install(TARGETS aris_lib EXPORT aris-targets-release CONFIGURATIONS Release DESTINATION "lib/release")
 set(ARIS_LINK_LIB aris_lib)
 
 ## install exports ##
