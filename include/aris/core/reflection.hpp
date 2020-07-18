@@ -264,13 +264,13 @@ namespace aris::core
 		}
 
 		// espect: Class_Type::v where v is a value
-		template<typename Value, typename C = Class_Type>
+		template<typename Value>
 		auto prop(std::string_view name, Value v)->std::enable_if_t<
 			std::is_member_object_pointer_v<Value>
-			&& std::is_lvalue_reference_v<decltype((C*)(nullptr))->*v)>
+			&& std::is_lvalue_reference_v<decltype(((Class_Type*)(nullptr))->*v)>
 			, class_<Class_Type>&>
 		{
-			using T = std::decay_t<decltype((C*)(nullptr))->*v)>;
+			using T = std::decay_t<decltype(((Class_Type*)(nullptr))->*v)>;
 
 			auto get = [v](Instance *obj)->Instance { return obj->castTo<Class_Type>()->*v; };
 			auto set = [v](Instance *obj, Instance value) { obj->castTo<Class_Type>()->*v = *value.castTo<T>(); };
@@ -280,14 +280,14 @@ namespace aris::core
 		}
 
 		// espect: Class_Type::v()->T& where v is a reference function
-		template<typename Value, typename C = Class_Type>
+		template<typename Value>
 		auto prop(std::string_view name, Value v)->std::enable_if_t<
 			std::is_member_function_pointer_v<Value>
-			&& std::is_lvalue_reference_v<decltype(((C*)(nullptr))->*v)())>
-			&& !std::is_const_v<decltype((((C*)(nullptr))->*v)())>
+			&& std::is_lvalue_reference_v<decltype((((Class_Type*)(nullptr))->*v)())>
+			&& !std::is_const_v<decltype((((Class_Type*)(nullptr))->*v)())>
 			, class_<Class_Type>&>
 		{
-			using T = std::decay_t<decltype((((C*)(nullptr))->*v)())>;
+			using T = std::decay_t<decltype((((Class_Type*)(nullptr))->*v)())>;
 
 			auto get = [v](Instance *obj)->Instance { return (obj->castTo<Class_Type>()->*v)(); };
 			auto set = [v](Instance *obj, Instance value) { (obj->castTo<Class_Type>()->*v)() = *value.castTo<T>(); };
