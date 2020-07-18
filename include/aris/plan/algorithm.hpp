@@ -49,7 +49,7 @@ namespace aris::plan
 			double failed_s;
 			Size test_distance;
 			// 二分法求得肯定能成功的节点 //
-			l_sure_ = std::prev(std::upper_bound(l_sure_, l.end(), nullptr, [&](const nullptr_t &a, const Node &b)
+			l_sure_ = std::prev(std::upper_bound(l_sure_, l.end(), nullptr, [&](const std::nullptr_t &a, const Node &b)
 			{
 				std::list<Node> test_list;
 				test_list.push_back(b);
@@ -100,7 +100,7 @@ namespace aris::plan
 			double failed_s;
 			Size test_distance;
 			// 二分法求得肯定能成功的节点 //
-			r_sure_ = std::lower_bound(r.begin(), r_sure_, nullptr, [&](const Node &b, const nullptr_t &a)
+			r_sure_ = std::lower_bound(r.begin(), r_sure_, nullptr, [&](const Node &b, const std::nullptr_t &a)
 			{
 				std::list<Node> test_list;
 				test_list.push_back(b);

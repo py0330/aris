@@ -937,7 +937,7 @@ namespace aris::server
 
 				auto get_realm = [](std::string_view username, std::string_view file_name)->std::string
 				{
-					std::fstream auth_file(file_name);
+					std::fstream auth_file{ std::string(file_name) };
 					while (!auth_file.eof())
 					{
 						std::string line;
