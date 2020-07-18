@@ -87,7 +87,7 @@ namespace aris::core
 		return std::string(printer.CStr());
 	}
 
-	auto from_xml_ele(aris::core::Instance ins, tinyxml2::XMLElement *ele)->void
+	auto from_xml_ele(aris::core::Instance &ins, tinyxml2::XMLElement *ele)->void
 	{
 		// from text //
 		if (ele->GetText())	ins.fromString(ele->GetText());
@@ -263,7 +263,7 @@ namespace aris::core
 		return js.dump(2);
 	}
 
-	auto from_json(aris::core::Instance ins, my_json &js)->void
+	auto from_json(aris::core::Instance &ins, my_json &js)->void
 	{
 		// from text //
 		if (js.find("#text") != js.end()) ins.fromString(js["#text"]);
