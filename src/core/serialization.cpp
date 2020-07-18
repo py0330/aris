@@ -266,7 +266,7 @@ namespace aris::core
 	auto from_json(aris::core::Instance &ins, my_json &js)->void
 	{
 		// from text //
-		if (js.find("#text") != js.end()) ins.fromString(js["#text"]);
+		if (js.find("#text") != js.end()) ins.fromString(js["#text"].get<std::string>());
 
 		// 读写 //
 		for (auto &prop : ins.type()->properties())	{
