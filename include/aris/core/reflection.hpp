@@ -215,10 +215,7 @@ namespace aris::core
 		}
 
 		// 别名 //
-		auto alias(std::string_view name)
-		{
-			Type::alias_impl(type_, name);
-		}
+		auto alias(std::string_view name) { Type::alias_impl(type_, name); }
 
 		template<typename FatherType>
 		auto inherit()->class_<Class_Type>&
@@ -241,7 +238,8 @@ namespace aris::core
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T*)->void
 		//         Class_Type::size()->size_t
-		auto asRefArray()->class_<Class_Type>&
+		template<typename T = Class_Type>
+		auto asRefArray()->std::enable_if_t<std::is_class_v<T>, class_<Class_Type>&>
 		{
 			auto size_func = [](Instance* ins)->std::size_t	{return ins->castTo<Class_Type>()->size();	};
 			auto at_func = [](Instance* ins, std::size_t id)->Instance{	return ins->castTo<Class_Type>()->at(id);};
@@ -254,7 +252,8 @@ namespace aris::core
 		// espect: Class_Type::at(size_t id)->T or Class_Type::at(size_t id)->T&  
 		//         Class_Type::push_back(T)->void
 		//         Class_Type::size()->size_t    
-		auto asArray()->class_<Class_Type>&
+		template<typename T = Class_Type>
+		auto asArray()->std::enable_if_t<std::is_class_v<T>, class_<Class_Type>&>
 		{
 			auto size_func = [](Instance* ins)->std::size_t	{	return ins->castTo<Class_Type>()->size();};
 			auto at_func = [](Instance* ins, std::size_t id)->Instance	{	return ins->castTo<Class_Type>()->at(id);};
@@ -267,11 +266,11 @@ namespace aris::core
 		// espect: Class_Type::v where v is a value
 		template<typename Value>
 		auto prop(std::string_view name, Value v)->std::enable_if_t<
-				std::is_member_object_pointer_v<Value>
-				&& std::is_lvalue_reference_v<decltype((reinterpret_cast<Class_Type*>(nullptr))->*v)>
+			std::is_member_object_pointer_v<Value>
+			&& std::is_lvalue_reference_v<decltype((new Class_Type)->*v)>
 			, class_<Class_Type>&>
 		{
-			using T = std::decay_t<decltype((reinterpret_cast<Class_Type*>(nullptr))->*v)>;
+			using T = std::decay_t<decltype((new Class_Type)->*v)>;
 
 			auto get = [v](Instance *obj)->Instance { return obj->castTo<Class_Type>()->*v; };
 			auto set = [v](Instance *obj, Instance value) { obj->castTo<Class_Type>()->*v = *value.castTo<T>(); };
@@ -283,12 +282,12 @@ namespace aris::core
 		// espect: Class_Type::v()->T& where v is a reference function
 		template<typename Value>
 		auto prop(std::string_view name, Value v)->std::enable_if_t<
-				std::is_member_function_pointer_v<Value>
-				&& std::is_lvalue_reference_v<decltype(((reinterpret_cast<Class_Type*>(nullptr))->*v)())>
-				&& !std::is_const_v<decltype(((reinterpret_cast<Class_Type*>(nullptr))->*v)())>
+			std::is_member_function_pointer_v<Value>
+			&& std::is_lvalue_reference_v<decltype(((new Class_Type)->*v)())>
+			&& !std::is_const_v<decltype(((new Class_Type)->*v)())>
 			, class_<Class_Type>&>
 		{
-			using T = std::decay_t<decltype(((reinterpret_cast<Class_Type*>(nullptr))->*v)())>;
+			using T = std::decay_t<decltype(((new Class_Type)->*v)())>;
 
 			auto get = [v](Instance *obj)->Instance { return (obj->castTo<Class_Type>()->*v)(); };
 			auto set = [v](Instance *obj, Instance value) { (obj->castTo<Class_Type>()->*v)() = *value.castTo<T>(); };
@@ -300,35 +299,35 @@ namespace aris::core
 		// espect: Class_Type::setProp(T v)->void  
 		//         Class_Type::getProp()->T
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
-		auto prop(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t< 
-				std::is_class_v<C> 
-				&& std::is_member_function_pointer_v<SetFunc>
-				&& std::is_member_function_pointer_v<GetFunc>
-				&& (!std::is_same_v<SetFunc, void (C::*)(std::decay_t<decltype(((reinterpret_cast<C*>(nullptr))->*g)())>*) >)
+		auto prop(std::string_view name, SetFunc s, GetFunc g)->std::enable_if_t<
+			std::is_class_v<C>
+			&& std::is_member_function_pointer_v<SetFunc>
+			&& std::is_member_function_pointer_v<GetFunc>
+			&& (!std::is_same_v<SetFunc, void (C::*)(std::decay_t<decltype((((C*)(nullptr))->*g)())>*) >)
 			, class_<Class_Type>& >
 		{
-			using T = std::decay_t<decltype(((reinterpret_cast<C*>(nullptr))->*g)())>;
+			using T = std::decay_t<decltype(((C*)(nullptr)->*g)())>;
 
-			auto get = [g](Instance *obj)->Instance{	return (obj->castTo<Class_Type>()->*g)(); };
-			auto set = [s](Instance *obj, Instance value){ (obj->castTo<Class_Type>()->*s)(*value.castTo<T>()); };
+			auto get = [g](Instance *obj)->Instance {	return (obj->castTo<Class_Type>()->*g)(); };
+			auto set = [s](Instance *obj, Instance value) { (obj->castTo<Class_Type>()->*s)(*value.castTo<T>()); };
 			auto &prop = type_->this_properties().emplace_back(name, type_, &typeid(T), false, set, get);
 
 			return *this;
 		}
-		
+
 		// espect: Class_Type::setProp(T *v)->void  
 		//         Class_Type::getProp()->T
 		//
 		// note  : set function will responsible for life-time management of v
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
-		auto prop(std::string_view name, SetFunc s, GetFunc g) -> std::enable_if_t< 
-				std::is_class_v<C> 
-				&& std::is_member_function_pointer_v<SetFunc>
-				&& std::is_member_function_pointer_v<GetFunc>
-				&& std::is_same_v<SetFunc, void (C::*)(std::decay_t<decltype(((reinterpret_cast<C*>(nullptr))->*g)())>*) >
+		auto prop(std::string_view name, SetFunc s, GetFunc g)->std::enable_if_t<
+			std::is_class_v<C>
+			&& std::is_member_function_pointer_v<SetFunc>
+			&& std::is_member_function_pointer_v<GetFunc>
+			&& std::is_same_v<SetFunc, void (C::*)(std::decay_t<decltype((((C*)(nullptr))->*g)())>*) >
 			, class_<Class_Type>& >
 		{
-			using T = std::decay_t<decltype(((reinterpret_cast<C*>(nullptr))->*g)())>;
+			using T = std::decay_t<decltype((((C*)(nullptr))->*g)())>;
 
 			auto get = [g](Instance *obj)->Instance {	return (obj->castTo<Class_Type>()->*g)();	};
 			auto set = [s](Instance *obj, Instance value) {(obj->castTo<Class_Type>()->*s)(value.castTo<T>()); };
@@ -341,13 +340,13 @@ namespace aris::core
 		//         getProp(C *obj)->T
 		template<typename SetFunc, typename GetFunc, typename C = Class_Type>
 		auto prop(std::string_view name, SetFunc s, GetFunc g)->std::enable_if_t<
-				std::is_class_v<C>
-				&& !std::is_member_function_pointer_v<SetFunc>
-				&& !std::is_member_function_pointer_v<GetFunc>
-				&& !std::is_same_v<SetFunc, void(*)(C*, std::decay_t<decltype((*g)(reinterpret_cast<C*>(nullptr)))>*) >
+			std::is_class_v<C>
+			&& !std::is_member_function_pointer_v<SetFunc>
+			&& !std::is_member_function_pointer_v<GetFunc>
+			&& !std::is_same_v<SetFunc, void(*)(C*, std::decay_t<decltype((*g)((C*)(nullptr)))>*) >
 			, class_<Class_Type>& >
 		{
-			using T = std::decay_t<decltype((*g)(reinterpret_cast<C*>(nullptr)))>;
+			using T = std::decay_t<decltype((*g)((C*)(nullptr)))>;
 
 			auto get = [g](Instance *obj)->Instance {	return (*g)(obj->castTo<C>());	};
 			auto set = [s](Instance *obj, Instance value) {(*s)(obj->castTo<C>(), *value.castTo<T>()); };
@@ -355,7 +354,6 @@ namespace aris::core
 
 			return *this;
 		}
-
 		auto propertyToStrMethod(std::string_view prop_name, std::function<std::string(void* value)> func)
 		{
 			auto found = std::find_if(type_->this_properties().begin(), type_->this_properties().end(), [prop_name](Property&prop) {return prop.name() == prop_name; });
