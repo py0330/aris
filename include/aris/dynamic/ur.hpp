@@ -12,7 +12,7 @@ namespace aris::dynamic
 	{
 	public:
 		auto virtual kinPos()->int override;
-		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void
+		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void override
 		{
 			model()->generalMotionPool()[0].setMpm(ee_pm);
 			if (ext_axes)

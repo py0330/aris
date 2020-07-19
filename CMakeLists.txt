@@ -22,6 +22,7 @@ if(WIN32)
 endif(WIN32)
 if(UNIX)
 	add_definitions(-DUNIX)
+	add_definitions(-fPIC)
 endif(UNIX)
 add_definitions(-DARIS_INSTALL_PATH="${CMAKE_INSTALL_PREFIX}")
 
@@ -107,8 +108,9 @@ foreach(target robot server plan dynamic control sensor core)
 	set(ARIS_OBJECTS ${ARIS_OBJECTS} $<TARGET_OBJECTS:aris_${target}>)
 	set(ARIS_HEADERS ${ARIS_HEADERS} include/aris/${target})
 	
-	install(TARGETS aris_${target} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include/aris/${target}")
-	install(TARGETS aris_${target} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include/aris/${target}")
+	install(FILES ${HEADERS} DESTINATION include/aris/${target})
+	#install(TARGETS aris_${target} EXPORT aris-targets-debug PUBLIC_HEADER DESTINATION "include/aris/${target}")
+	#install(TARGETS aris_${target} EXPORT aris-targets-release PUBLIC_HEADER DESTINATION "include/aris/${target}")
 
 	if(EXISTS ${PROJECT_SOURCE_DIR}/src/${target}/resource)
 		install(DIRECTORY src/${target}/resource/ DESTINATION resource/${target})
@@ -136,7 +138,7 @@ set(ARIS_LINK_LIB aris_lib)
 ## install exports ##
 install(EXPORT aris-targets-debug NAMESPACE aris::debug:: FILE aris-targets-debug.cmake DESTINATION "share/aris/cmake")
 install(EXPORT aris-targets-release NAMESPACE aris:: FILE aris-targets-release.cmake DESTINATION "share/aris/cmake")
-install(FILES include/aris.hpp DESTINATION include)
+install(FILES include/aris.hpp ${PROJECT_BINARY_DIR}/aris_export.h DESTINATION include)
 
 ## install config ##
 include(CMakePackageConfigHelpers)
