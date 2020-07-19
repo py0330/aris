@@ -211,6 +211,12 @@ namespace aris::dynamic
 	public:
 		auto virtual init()->void;
 		/// @{
+		auto findVariable(std::string_view name)->Variable*;
+		auto findPart(std::string_view name)->Part*;
+		/// @}
+
+
+		/// @{
 		auto virtual inverseKinematics()->int;
 		auto virtual forwardKinematics()->int;
 		auto virtual inverseKinematicsVel()->void;

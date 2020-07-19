@@ -63,6 +63,7 @@ namespace aris::dynamic
 		};
 		aris::core::class_<Variable>("Variable")
 			.textMethod(variableToText, variableFromText)
+			.prop("name", &Variable::setName, &Variable::name)
 			;
 
 		aris::core::class_<MatrixVariable>("MatrixVariable")

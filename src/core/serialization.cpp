@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <limits>
 #include <regex>
+#include <fstream>
 
 #include "aris/core/tinyxml2.h"
 #include "aris/core/object.hpp"
@@ -203,6 +204,26 @@ namespace aris::core
 		from_xml_ele(ins, root_ele);
 	}
 
+	auto toXmlFile(aris::core::Instance ins, const std::filesystem::path &file)->void
+	{
+		std::ofstream fs(file, std::ios::trunc);
+
+		fs << toXmlString(ins);
+
+		fs.close();
+	}
+	auto fromXmlFile(aris::core::Instance ins, const std::filesystem::path &file)->void
+	{
+		std::ifstream fs(file);
+
+		std::string str((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
+
+		fromXmlString(ins, str);
+
+		fs.close();
+	}
+
+
 	template<class K, class V, class dummy_compare, class A>
 	using my_workaround_fifo_map = nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
 	using my_json = nlohmann::basic_json<my_workaround_fifo_map>;
@@ -343,6 +364,23 @@ namespace aris::core
 		from_json(ins, js.front());
 	}
 
+	auto toJsonFile(aris::core::Instance ins, const std::filesystem::path &file)->void
+	{
+		std::ofstream fs(file, std::ios::trunc);
 
+		fs << toJsonString(ins);
+
+		fs.close();
+	}
+	auto fromJsonFile(aris::core::Instance ins, const std::filesystem::path &file)->void
+	{
+		std::ifstream fs(file);
+
+		std::string str((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
+
+		fromJsonString(ins, str);
+
+		fs.close();
+	}
 
 }

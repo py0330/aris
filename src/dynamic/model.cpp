@@ -141,6 +141,24 @@ namespace aris::dynamic
 		}
 			
 	}
+	auto Model::findVariable(std::string_view name)->Variable*
+	{
+		auto found = std::find_if(variablePool().begin(), variablePool().end(), [name](const auto &variable)->auto
+		{
+			return variable.name() == name;
+		});
+		return found == variablePool().end() ? nullptr: &*found;
+
+
+	}
+	auto Model::findPart(std::string_view name)->Part*
+	{
+		auto found = std::find_if(partPool().begin(), partPool().end(), [name](const auto &variable)->auto
+		{
+			return variable.name() == name;
+		});
+		return found == partPool().end() ? nullptr : &*found;
+	}
 	auto Model::inverseKinematics()->int { return solverPool()[0].kinPos(); }
 	auto Model::forwardKinematics()->int { return solverPool()[1].kinPos(); }
 	auto Model::inverseKinematicsVel()->void { solverPool()[0].kinVel(); }

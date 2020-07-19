@@ -16,6 +16,8 @@ namespace aris::plan
 	// 请务必修改server中的另一份定义
 	struct Plan::Imp 
 	{
+		std::string name_;
+		
 		std::int64_t count_;
 		
 		aris::dynamic::Model *model_;
@@ -54,6 +56,8 @@ namespace aris::plan
 			return ret;
 		}
 	};
+	auto Plan::name() const->const std::string& { return imp_->name_; }
+	auto Plan::setName(const std::string& name) ->void { imp_->name_ = name; }
 	auto Plan::command()->aris::core::Command & { return imp_->cmd_struct_; }
 	auto Plan::count()->std::int64_t { return imp_->count_; }
 	auto Plan::controlServer()->aris::server::ControlServer * { return imp_->cs_; }
@@ -95,7 +99,7 @@ namespace aris::plan
 	auto Plan::retCode()->std::int32_t { return imp_->ret_code; }
 	auto Plan::retMsg()->const char * { return imp_->ret_msg; }
 	Plan::~Plan() = default;
-	Plan::Plan(const std::string &name) :imp_(new Imp) { }
+	Plan::Plan(const std::string &name) :imp_(new Imp) { setName(name); }
 	ARIS_DEFINE_BIG_FOUR_CPP(Plan);
 
 	struct PlanRoot::Imp 
@@ -1947,6 +1951,7 @@ namespace aris::plan
 		typedef aris::core::Command&(Plan::*CommandFunc)();
 		
 		aris::core::class_<Plan>("Plan")
+			.prop("name", &Plan::setName, &Plan::name)
 			.prop("command", CommandFunc(&Plan::command))
 			;
 

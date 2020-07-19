@@ -116,6 +116,9 @@ namespace aris::plan
 			PROGRAM_EXCEPTION = -2000,
 		};
 
+		auto name() const->const std::string&;
+		auto setName(const std::string& name) ->void;
+
 		auto virtual prepareNrt()->void {}
 		auto virtual executeRT()->int { return 0; }
 		auto virtual collectNrt()->void {}

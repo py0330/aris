@@ -118,6 +118,7 @@ namespace aris::dynamic
 		auto geometryPool() ->aris::core::PointerArray<Geometry, Element>&;
 		auto geometryPool()const->const aris::core::PointerArray<Geometry, Element>&;
 		auto addMarker(const std::string &name = "marker", const double *prt_pm = nullptr, bool active = true)->Marker&;
+		auto findMarker(std::string_view name)->Marker*;
 		auto setPp(const double *pp) noexcept->void;
 		auto setPp(const Coordinate &relative_to, const double *pp) noexcept->void;
 		auto setRe(const double *re, const char *type = "313") noexcept->void;
@@ -240,6 +241,7 @@ namespace aris::dynamic
 	public:
 		auto prtPm()const->const double4x4&;
 		auto filePath()const->const std::string &;
+		auto setFilePath(std::string_view path)->void;
 
 		virtual ~FileGeometry();
 		explicit FileGeometry(const std::string &name = "file_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);

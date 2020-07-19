@@ -699,6 +699,14 @@ namespace aris::dynamic
 		double glb_vs_[6]{ 0 };
 		double glb_as_[6]{ 0 };
 	};
+	auto Part::findMarker(std::string_view name)->Marker*
+	{
+		auto found = std::find_if(markerPool().begin(), markerPool().end(), [name](const auto &variable)->auto
+		{
+			return variable.name() == name;
+		});
+		return found == markerPool().end() ? nullptr : &*found;
+	}
 	auto Part::resetMarkerPool(aris::core::PointerArray<Marker, Element> *pool)->void { imp_->marker_pool_.reset(pool); }
 	auto Part::markerPool() ->aris::core::PointerArray<Marker, Element>& { return *imp_->marker_pool_; }
 	auto Part::markerPool()const ->const aris::core::PointerArray<Marker, Element>& { return *imp_->marker_pool_; }
@@ -1347,6 +1355,7 @@ namespace aris::dynamic
 	};
 	auto FileGeometry::prtPm()const->const double4x4& { return imp_->prt_pm_; }
 	auto FileGeometry::filePath()const->const std::string & { return imp_->graphic_file_path; }
+	auto FileGeometry::setFilePath(std::string_view path)->void { imp_->graphic_file_path=path; }
 	FileGeometry::~FileGeometry() = default;
 	FileGeometry::FileGeometry(const std::string &name, const std::string &graphic_file_path, const double* prt_pm) : Geometry(name), imp_(new Imp)
 	{
@@ -1426,5 +1435,14 @@ namespace aris::dynamic
 			.prop("marker_pool", &Part::resetMarkerPool, MarkerPoolFunc(&Part::markerPool))
 			.prop("geometry_pool", &Part::resetGeometryPool, GeometryPoolFunc(&Part::geometryPool))
 			;
+
+		aris::core::class_<Geometry>("Geometry")
+			;
+
+		aris::core::class_<FileGeometry>("FileGeometry")
+			.inherit<Geometry>()
+			.prop("graphic_file_path", &FileGeometry::setFilePath, &FileGeometry::filePath)
+			;
+
 	}
 }

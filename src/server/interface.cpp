@@ -1207,14 +1207,25 @@ namespace aris::server
 	}
 
 	ARIS_REGISTRATION{
+
+		aris::core::class_<GetInfo>("GetInfo")
+			.inherit<aris::plan::Plan>()
+			;
+		
+		aris::core::class_<aris::core::PointerArray<aris::server::Interface>>("InterfacePoolObject")
+			.asRefArray()
+			;
+
 		aris::core::class_<Interface>("Interface")
 			;
 		
 		aris::core::class_<WebInterface>("WebInterface")
+			.inherit<Interface>()
 			.prop("socket", &WebInterface::resetSocket, &WebInterface::socket)
 			;
 		
 		aris::core::class_<ProgramWebInterface>("ProgramWebInterface")
+			.inherit<Interface>()
 			.prop("socket", &ProgramWebInterface::resetSocket, &ProgramWebInterface::socket)
 			;
 	}

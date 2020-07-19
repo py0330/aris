@@ -72,10 +72,14 @@ namespace aris::dynamic
 	public:
 		auto virtual toString() const->std::string { return ""; }
 		auto virtual fromString(std::string_view str)->void {}
+		auto name()const->std::string { return name_; }
+		auto setName(const std::string &name)->void { name_ = name; }
 
 		virtual ~Variable() = default;
 		explicit Variable(const std::string &name = "variable") : Element(name) {}
 		ARIS_DEFINE_BIG_FOUR(Variable);
+	private:
+		std::string name_;
 	};
 	template<typename VariableType> class VariableTemplate : public Variable
 	{

@@ -14,6 +14,8 @@ namespace aris::plan
 {
 	struct Plan::Imp
 	{
+		std::string name_;
+
 		std::int64_t count_;
 
 		aris::dynamic::Model *model_;
@@ -516,6 +518,10 @@ namespace aris::server
 		imp_->sensor_root_ = sensor_root;
 	}
 	auto ControlServer::resetPlanRoot(plan::PlanRoot *plan_root)->void{	imp_->plan_root_.reset(plan_root);}
+	auto ControlServer::resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void 
+	{
+		imp_->interface_pool_.reset(pool);
+	}
 	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
@@ -1023,11 +1029,13 @@ namespace aris::server
 		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
 		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
+		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
 
 		aris::core::class_<ControlServer>("ControlServer")
 			.prop("controller", &ControlServer::resetController, ControllerFunc(&ControlServer::controller))
 			.prop("model", &ControlServer::resetModel, ModelFunc(&ControlServer::model))
 			.prop("plan_root", &ControlServer::resetPlanRoot, PlanRootFunc(&ControlServer::planRoot))
+			.prop("interface", &ControlServer::resetInterfacePool, InterfacePoolFunc(&ControlServer::interfacePool))
 			;
 	}
 }
