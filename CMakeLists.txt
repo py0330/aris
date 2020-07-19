@@ -138,7 +138,7 @@ set(ARIS_LINK_LIB aris_lib)
 ## install exports ##
 install(EXPORT aris-targets-debug NAMESPACE aris::debug:: FILE aris-targets-debug.cmake DESTINATION "share/aris/cmake")
 install(EXPORT aris-targets-release NAMESPACE aris:: FILE aris-targets-release.cmake DESTINATION "share/aris/cmake")
-install(FILES include/aris.hpp ${PROJECT_BINARY_DIR}/aris_export.h DESTINATION include)
+install(FILES include/aris.hpp ${PROJECT_BINARY_DIR}/aris_lib_export.h DESTINATION include)
 
 ## install config ##
 include(CMakePackageConfigHelpers)
