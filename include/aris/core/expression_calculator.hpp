@@ -152,11 +152,14 @@ namespace aris::core
 		auto addOperator(std::string_view opr, int ul_priority, int ur_priority, int b_priority)->void;
 		auto addVariable(std::string_view var, std::string_view type, const std::any &value)->void;
 		auto addFunction(std::string_view fun, const std::vector<std::string> &param_type, std::string_view ret_type, BuiltInFunction f)->void;
-		
+		auto setNumberType(std::string_view tpn, std::function<std::any(double)> construct)->void;
+		auto setStringType(std::string_view tpn, std::function<std::any(std::string)> construct)->void;
+
 		auto addUnaryLeftOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
 		auto addUnaryRightOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
 		auto addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void;
 		auto clearVariables()->void;
+		auto clearAllRules()->void;
 
 		virtual ~Calculator();
 		explicit Calculator(const std::string &name = "calculator");

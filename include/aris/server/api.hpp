@@ -11,34 +11,6 @@
 
 namespace aris::server
 {
-	class ARIS_API Calculator
-	{
-	public:
-		using BuiltInFunction = std::function<std::any(std::vector<std::any>&)>;
-		using BinaryOperatorFunction = std::function<std::any(std::any&, std::any&)>;
-		using UnaryOperatorFunction = std::function<std::any(std::any&)>;
-
-		auto calculateExpression(std::string_view expression) const->std::pair<std::string, std::any>;
-
-		auto addTypename(std::string_view tpn)->void;
-		auto addOperator(std::string_view opr, int ul_priority, int ur_priority, int b_priority)->void;
-		auto addVariable(std::string_view var, std::string_view type, const std::any &value)->void;
-		auto addFunction(std::string_view fun, const std::vector<std::string> &param_type, std::string_view ret_type, BuiltInFunction f)->void;
-
-		auto addUnaryLeftOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
-		auto addUnaryRightOperatorFunction(std::string_view opr, std::string_view p_type, std::string_view ret_type, UnaryOperatorFunction f)->void;
-		auto addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void;
-		auto clearVariables()->void;
-
-		virtual ~Calculator();
-		explicit Calculator(const std::string &name = "calculator");
-		ARIS_DECLARE_BIG_FOUR(Calculator);
-
-	private:
-		struct Imp;
-		aris::core::ImpPtr<Imp> imp_;
-	};
-	
 	class ARIS_API MakeBlockly
 	{
 	public:
@@ -280,26 +252,29 @@ namespace aris::server
 
 		MakeBlockly() 
 		{
-			auto make_num_block = [&](tinyxml2::XMLDocument* doc, double number)->tinyxml2::XMLElement* 
+			cal.clearAllRules();
+			cal.addOperator("=", 0, 0, 1);
+
+			cal.addTypename("Block");
+			cal.setNumberType("Block", [&](double num)->std::any 
 			{
+				auto doc = this->current_doc_;
+				
 				auto block = doc->NewElement("block");
 				block->SetAttribute("type", "number");
 
 				auto field = doc->NewElement("field");
 				field->SetAttribute("name", "number");
-				field->SetText(number);
+				field->SetText(num);
 				block->InsertEndChild(field);
 
 				return block;
-			};
-			
-			cal.addOperator("=", 0, 0, 1);
+			});
 
-			cal.addTypename("Number");
-			cal.addTypename("Block");
+			
 
 			cal.addOperator("+", 10, 0, 10);
-			cal.addBinaryOperatorFunction("+", "Number", "Number", "Block", [&](std::any& p1, std::any&p2)->std::any
+			cal.addBinaryOperatorFunction("+", "Block", "Block", "Block", [&](std::any& p1, std::any&p2)->std::any
 			{
 				auto doc = this->current_doc_;
 
@@ -313,30 +288,18 @@ namespace aris::server
 
 				auto left = doc->NewElement("value");
 				left->SetAttribute("name", "left");
-				left->InsertEndChild(make_num_block(doc, std::any_cast<double>(p1)));
+				left->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p1));
 				block->InsertEndChild(left);
 
 
 				auto right = doc->NewElement("value");
 				right->SetAttribute("name", "right");
-				right->InsertEndChild(make_num_block(doc, std::any_cast<double>(p2)));
+				right->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p2));
 				block->InsertEndChild(right);
 
 				return block;
 			});
-			cal.addBinaryOperatorFunction("+", "Number", "Block", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<double>(p1) + std::any_cast<aris::core::Matrix&>(p2);
-			});
-			cal.addBinaryOperatorFunction("+", "Block", "Number", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<aris::core::Matrix&>(p1) + std::any_cast<double>(p2);
-			});
-			cal.addBinaryOperatorFunction("+", "Block", "Block", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<aris::core::Matrix&>(p1) + std::any_cast<aris::core::Matrix>(p2);
-			});
-
+			/*
 			cal.addOperator("-", 10, 0, 10);
 			cal.addUnaryLeftOperatorFunction("-", "Number", "Number", [](std::any& p1)->std::any {return -std::any_cast<double>(p1); });
 			cal.addBinaryOperatorFunction("-", "Number", "Number", "Block", [](std::any& p1, std::any&p2)->std::any
@@ -378,19 +341,16 @@ namespace aris::server
 			cal.addBinaryOperatorFunction("/", "Number", "Number", "Block", [](std::any& p1, std::any&p2)->std::any
 			{
 				return std::any_cast<double>(p1) / std::any_cast<double>(p2);
-			});
+			});*/
 		}
 
 		MakeBlockly::MakeBlockly(const MakeBlockly&) = delete;
 		MakeBlockly &operator =(const MakeBlockly&) = delete;
 
-		Calculator cal;
+		aris::core::Calculator cal;
 		tinyxml2::XMLDocument *current_doc_;
 	};
-	
-	
-	
-	
+
 	auto ARIS_API setRootPath(std::filesystem::path path)->void;
 
 	auto ARIS_API fetchInterfaceConfig()->std::string;

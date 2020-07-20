@@ -539,6 +539,12 @@ namespace aris::core
 		std::map<std::string, Operator, std::less<>> operator_map_;
 		std::map<std::string, Function, std::less<>> function_map_;
 		std::map<std::string, Variable, std::less<>> variable_map_;
+
+		std::string num_tpn_{ "Number" };
+		std::string str_tpn_{ "String" };
+
+		std::function<std::any(double)> num_construct_{ [](double num)->std::any {return num; } };
+		std::function<std::any(std::string)> str_construct_{ [](std::string str)->std::any {return str; } };
 	};
 	auto Calculator::Imp::Expression2Tokens(std::string_view expression)const -> TokenVec
 	{
@@ -620,11 +626,11 @@ namespace aris::core
 					value = CaculateValueInBraces(i, e_tok);
 					break;
 				case Token::NUMBER:
-					value = Value{ "Number", i->num };
+					value = Value{ num_tpn_, num_construct_(i->num) };
 					i++;
 					break;
 				case Token::STRING:
-					value = Value{ "String", std::string(i->word.substr(1, i->word.size() - 2)) };
+					value = Value{ str_tpn_, str_construct_(std::string(i->word.substr(1, i->word.size() - 2))) };
 					i++;
 					break;
 				case Token::OPERATOR:
@@ -818,6 +824,20 @@ namespace aris::core
 		auto ret_val = imp_->CaculateTokens(tokens.begin(), tokens.end());
 		return std::make_pair(std::move(ret_val.type_), std::move(ret_val.val()));
 	}
+	auto Calculator::setNumberType(std::string_view tpn, std::function<std::any(double)> construct)->void
+	{
+		if (imp_->typename_map_.find(tpn) == imp_->typename_map_.end()) THROW_FILE_LINE("\"" + std::string(tpn) + "not exists, can't set number with this type");
+		
+		imp_->num_tpn_ = tpn;
+		imp_->num_construct_ = construct;
+	}
+	auto Calculator::setStringType(std::string_view tpn, std::function<std::any(std::string)> construct)->void
+	{
+		if (imp_->typename_map_.find(tpn) == imp_->typename_map_.end()) THROW_FILE_LINE("\"" + std::string(tpn) + "not exists, can't set string with this type");
+
+		imp_->str_tpn_ = tpn;
+		imp_->str_construct_ = construct;
+	}
 	auto Calculator::addTypename(std::string_view tpn)->void
 	{
 		if (imp_->typename_map_.find(tpn) != imp_->typename_map_.end() ||
@@ -900,6 +920,13 @@ namespace aris::core
 		}
 	}
 	auto Calculator::clearVariables()->void { imp_->variable_map_.clear(); }
+	auto Calculator::clearAllRules()->void 
+	{
+		imp_->function_map_.clear();
+		imp_->operator_map_.clear();
+		imp_->typename_map_.clear();
+		imp_->variable_map_.clear();
+	}
 	Calculator::~Calculator() = default;
 	Calculator::Calculator(const std::string &name)
 	{
@@ -1469,7 +1496,4 @@ namespace aris::core
 			*v = std::any_cast<const Matrix&>(mat);
 		});
 	}
-
-
-
 }

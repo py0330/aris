@@ -235,17 +235,17 @@ namespace aris::control
 			for (uint8_t sync_pos = 0; sync_pos < ec_slave_info_vec[sla_pos].sync_count; ++sync_pos)
 			{
 				auto &info = ec_sync_info_vec_vec[sla_pos][sync_pos];
-				sla.smPool().add<SyncManager>("sm", info.dir == EC_DIR_INPUT);
+				sla.smPool().push_back(SyncManager("sm", info.dir == EC_DIR_INPUT));
 				
 				for (unsigned int pdo_pos = 0; pdo_pos < ec_sync_info_vec_vec[sla_pos][sync_pos].n_pdos; ++pdo_pos)
 				{
 					auto &pdo_info = ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos];
-					sla.smPool()[sync_pos].add<Pdo>("pdo", pdo_info.index);
+					sla.smPool()[sync_pos].push_back(Pdo("pdo", pdo_info.index));
 					
 					for (unsigned int entry_pos = 0; entry_pos < ec_pdo_info_vec_vec_vec[sla_pos][sync_pos][pdo_pos].n_entries; ++entry_pos)
 					{
 						auto &info = ec_pdo_entry_info_vec_vec_vec_vec[sla_pos][sync_pos][pdo_pos][entry_pos];
-						sla.smPool()[sync_pos][pdo_pos].add<PdoEntry>("entry", info.index, info.subindex, info.bit_length);
+						sla.smPool()[sync_pos][pdo_pos].push_back(PdoEntry("entry", info.index, info.subindex, info.bit_length));
 					}
 				}
 			}

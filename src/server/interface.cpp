@@ -1221,5 +1221,10 @@ namespace aris::server
 			.inherit<Interface>()
 			.prop("socket", &ProgramWebInterface::resetSocket, &ProgramWebInterface::socket)
 			;
+
+		aris::core::class_<HttpInterface>("HttpInterfaceInterface")
+			.inherit<Interface>()
+			.prop("document_root", &HttpInterface::setDocumentRoot, &HttpInterface::documentRoot)
+			;
 	}
 }

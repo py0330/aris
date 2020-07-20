@@ -264,8 +264,23 @@ int main(int argc, char *argv[])
 
 	for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);
 
-	aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
-	aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
+	try
+	{
+		aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
+		aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+	}
+	
+	aris::control::EthercatController ec;
+
+	auto &sla = ec.slavePool().add<aris::control::EthercatSlave>("aaa", 0, 0, 0, 0);
+	sla.smPool().push_back(aris::control::SyncManager("sm", true));
+	sla.smPool()[0].push_back(aris::control::Pdo("pdo", 0));
+	sla.smPool()[0][0].push_back(aris::control::PdoEntry("aaa", 0, 0, 32));
+
 
 	aris::server::MakeBlockly mk;
 	mk.make("C:\\Users\\py033\\Desktop\\program02.txt", "C:\\Users\\py033\\Desktop\\");
