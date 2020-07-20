@@ -271,8 +271,6 @@ namespace aris::server
 				return block;
 			});
 
-			
-
 			cal.addOperator("+", 10, 0, 10);
 			cal.addBinaryOperatorFunction("+", "Block", "Block", "Block", [&](std::any& p1, std::any&p2)->std::any
 			{
@@ -299,49 +297,87 @@ namespace aris::server
 
 				return block;
 			});
-			/*
+			
 			cal.addOperator("-", 10, 0, 10);
-			cal.addUnaryLeftOperatorFunction("-", "Number", "Number", [](std::any& p1)->std::any {return -std::any_cast<double>(p1); });
-			cal.addBinaryOperatorFunction("-", "Number", "Number", "Block", [](std::any& p1, std::any&p2)->std::any
+			cal.addBinaryOperatorFunction("-", "Block", "Block", "Block", [&](std::any& p1, std::any&p2)->std::any
 			{
-				return std::any_cast<double>(p1) - std::any_cast<double>(p2);
-			});
-			cal.addBinaryOperatorFunction("-", "Number", "Block", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<double>(p1) - std::any_cast<aris::core::Matrix&>(p2);
-			});
-			cal.addBinaryOperatorFunction("-", "Block", "Number", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<aris::core::Matrix&>(p1) - std::any_cast<double>(p2);
-			});
-			cal.addBinaryOperatorFunction("-", "Block", "Block", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<aris::core::Matrix&>(p1) - std::any_cast<aris::core::Matrix>(p2);
+				auto doc = this->current_doc_;
+
+				auto block = doc->NewElement("block");
+				block->SetAttribute("type", "math_opr");
+
+				auto field = doc->NewElement("field");
+				field->SetAttribute("name", "opr");
+				field->SetText("-");
+				block->InsertEndChild(field);
+
+				auto left = doc->NewElement("value");
+				left->SetAttribute("name", "left");
+				left->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p1));
+				block->InsertEndChild(left);
+
+
+				auto right = doc->NewElement("value");
+				right->SetAttribute("name", "right");
+				right->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p2));
+				block->InsertEndChild(right);
+
+				return block;
 			});
 
 			cal.addOperator("*", 0, 0, 20);
-			cal.addBinaryOperatorFunction("*", "Number", "Number", "Block", [](std::any& p1, std::any&p2)->std::any
+			cal.addBinaryOperatorFunction("*", "Block", "Block", "Block", [&](std::any& p1, std::any&p2)->std::any
 			{
-				return std::any_cast<double>(p1) * std::any_cast<double>(p2);
-			});
-			cal.addBinaryOperatorFunction("*", "Number", "Block", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<double>(p1) * std::any_cast<aris::core::Matrix&>(p2);
-			});
-			cal.addBinaryOperatorFunction("*", "Block", "Number", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<aris::core::Matrix&>(p1) * std::any_cast<double>(p2);
-			});
-			cal.addBinaryOperatorFunction("*", "Block", "Block", "Block", [](std::any& p1, std::any&p2)->std::any
-			{
-				return std::any_cast<aris::core::Matrix&>(p1) * std::any_cast<aris::core::Matrix>(p2);
+				auto doc = this->current_doc_;
+
+				auto block = doc->NewElement("block");
+				block->SetAttribute("type", "math_opr");
+
+				auto field = doc->NewElement("field");
+				field->SetAttribute("name", "opr");
+				field->SetText("*");
+				block->InsertEndChild(field);
+
+				auto left = doc->NewElement("value");
+				left->SetAttribute("name", "left");
+				left->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p1));
+				block->InsertEndChild(left);
+
+
+				auto right = doc->NewElement("value");
+				right->SetAttribute("name", "right");
+				right->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p2));
+				block->InsertEndChild(right);
+
+				return block;
 			});
 
 			cal.addOperator("/", 0, 0, 20);
-			cal.addBinaryOperatorFunction("/", "Number", "Number", "Block", [](std::any& p1, std::any&p2)->std::any
+			cal.addBinaryOperatorFunction("/", "Block", "Block", "Block", [&](std::any& p1, std::any&p2)->std::any
 			{
-				return std::any_cast<double>(p1) / std::any_cast<double>(p2);
-			});*/
+				auto doc = this->current_doc_;
+
+				auto block = doc->NewElement("block");
+				block->SetAttribute("type", "math_opr");
+
+				auto field = doc->NewElement("field");
+				field->SetAttribute("name", "opr");
+				field->SetText("/");
+				block->InsertEndChild(field);
+
+				auto left = doc->NewElement("value");
+				left->SetAttribute("name", "left");
+				left->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p1));
+				block->InsertEndChild(left);
+
+
+				auto right = doc->NewElement("value");
+				right->SetAttribute("name", "right");
+				right->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p2));
+				block->InsertEndChild(right);
+
+				return block;
+			});
 		}
 
 		MakeBlockly(const MakeBlockly&) = delete;
