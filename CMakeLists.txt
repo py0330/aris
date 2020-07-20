@@ -84,7 +84,6 @@ elseif(WIN32)
 	endif()
 endif()
 message("ETHERCAT : ${ETHERCAT}")
-	
 
 ## build targets ##
 include (GenerateExportHeader) 
@@ -120,6 +119,7 @@ endforeach(target)
 add_library(aris_lib SHARED ${ARIS_OBJECTS})
 generate_export_header(aris_lib EXPORT_MACRO_NAME ARIS_API)
 
+link_directories(${RELY_LINK_DIR})
 target_link_libraries(aris_lib PUBLIC ${RELY_LINK_LIB})
 set(aris_LIBRARIES optimized aris::aris_lib debug aris::debug::aris_lib)
 target_include_directories(aris_lib
@@ -151,7 +151,7 @@ install(FILES ${PROJECT_BINARY_DIR}/aris-config.cmake DESTINATION "share/aris/cm
 ## install tools ##
 install(DIRECTORY sh DESTINATION .)
 
-link_directories(${RELY_LINK_DIR})
+
 ################################### build tests for aris ####################################
 option(BUILD_TESTS "build aris tests" OFF)
 if(BUILD_TESTS)

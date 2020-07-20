@@ -1096,7 +1096,7 @@ namespace aris::server
 				}*/
 				else
 				{
-					mg_serve_http(nc, hm, *reinterpret_cast<mg_serve_http_opts*>(nc->user_data));
+					mg_serve_http(nc, hm, reinterpret_cast<Imp*>(nc->user_data)->s_http_server_opts);
 				}
 			}
 			default:
@@ -1169,7 +1169,9 @@ namespace aris::server
 			}
 
 			mg_set_protocol_http_websocket(imp_->nc);
-			
+			std::memset(&imp_->s_http_server_opts, 0, sizeof(mg_serve_http_opts));
+			imp_->s_http_server_opts.document_root = imp_->document_root_.c_str();
+			imp_->s_http_server_opts.enable_directory_listing = "yes";
 			imp_->nc->user_data = imp_.get();
 			imp_->http_thread_ = std::thread([this]()
 			{
