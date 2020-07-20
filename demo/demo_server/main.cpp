@@ -266,8 +266,8 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
-		aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
+		//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
+		//aris::core::fromXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
 	}
 	catch (std::exception &e)
 	{

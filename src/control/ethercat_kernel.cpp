@@ -279,15 +279,17 @@ namespace aris::control
 		// check if product code and vendor id is paired
 		aris::control::EthercatMaster local_mst;
 		if (aris_ecrt_scan(&local_mst))THROW_FILE_LINE("scan slaves failed!");
-		for (auto &slave : master->slavePool())
+		for (int i = 0; i< master->slavePool().size();++i)
 		{
+			auto &slave = master->slavePool()[i];
+			
 			if (auto ec_slave = dynamic_cast<aris::control::EthercatSlave*>(&slave))
 			{
 				if(slave.phyId() > local_mst.slavePool().size()) THROW_FILE_LINE("wrong physical id!");
 				
 				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool().at(slave.phyId()));
-				if (ec_slave->productCode() != compared_slave->productCode()) THROW_FILE_LINE(":wrong product code of slave " + std::to_string(ec_slave->id()));
-				if (ec_slave->vendorID() != compared_slave->vendorID()) THROW_FILE_LINE(":wrong vendor id of slave " + std::to_string(ec_slave->id()));
+				if (ec_slave->productCode() != compared_slave->productCode()) THROW_FILE_LINE(":wrong product code of slave " + std::to_string(i));
+				if (ec_slave->vendorID() != compared_slave->vendorID()) THROW_FILE_LINE(":wrong vendor id of slave " + std::to_string(i));
 			}
 		}
 		// check finished
@@ -311,8 +313,10 @@ namespace aris::control
 				std::vector<std::vector<ec_pdo_info_t> > ec_pdo_info_vec_vec;
 				std::vector<std::vector<std::vector<ec_pdo_entry_info_t> > > ec_pdo_entry_info_vec_vec_vec;
 
-				for (auto &sm : slave.smPool())
+				for (int i = 0; i< slave.smPool().size();++i)
 				{
+					auto &sm = slave.smPool()[i];
+					
 					ec_pdo_info_vec_vec.push_back(std::vector<ec_pdo_info_t>());
 					ec_pdo_entry_info_vec_vec_vec.push_back(std::vector<std::vector<ec_pdo_entry_info_t> >());
 
@@ -333,7 +337,7 @@ namespace aris::control
 							static_cast<std::uint8_t>(ec_pdo_entry_info_vec_vec_vec.back().back().size()), ec_pdo_entry_info_vec_vec_vec.back().back().data() });
 					}
 
-					ec_sync_info_vec.push_back(ec_sync_info_t{ static_cast<std::uint8_t>(sm.id()), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT,
+					ec_sync_info_vec.push_back(ec_sync_info_t{ static_cast<std::uint8_t>(i), sm.tx() ? EC_DIR_INPUT : EC_DIR_OUTPUT,
 						static_cast<unsigned int>(ec_pdo_info_vec_vec.back().size()), ec_pdo_info_vec_vec.back().data(), EC_WD_DEFAULT });
 				}
 

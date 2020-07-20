@@ -1,7 +1,4 @@
-#define MG_ENABLE_HTTP_WEBDAV 1
-
 #include "mongoose.h"
-
 #ifdef MG_MODULE_LINES
 #line 1 "mongoose/src/mg_internal.h"
 #endif
