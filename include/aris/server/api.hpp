@@ -344,7 +344,7 @@ namespace aris::server
 			});*/
 		}
 
-		MakeBlockly::MakeBlockly(const MakeBlockly&) = delete;
+		MakeBlockly(const MakeBlockly&) = delete;
 		MakeBlockly &operator =(const MakeBlockly&) = delete;
 
 		aris::core::Calculator cal;
