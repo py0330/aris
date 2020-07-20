@@ -5,7 +5,7 @@
 
 #include "aris.hpp"
 
-#include "api.hpp"
+#include "aris/server/api.hpp"
 #include "json.hpp"
 #include "fifo_map.hpp"
 
@@ -530,13 +530,13 @@ namespace aris::server
 		}
 	}
 	auto Calculator::clearVariables()->void { imp_->variable_map_.clear(); }
-	//auto Calculator::loadXml(const aris::core::XmlElement &xml_ele)->void 
+	//auto Calculator::loadXml(const tinyxml2::XMLElement &xml_ele)->void 
 	//{
 	//	Object::loadXml(xml_ele);
 	//	imp_->variable_map_.clear();
 	//	
 	//}
-	//auto Calculator::saveXml(aris::core::XmlElement &xml_ele)const->void {}
+	//auto Calculator::saveXml(tinyxml2::XMLElement &xml_ele)const->void {}
 	Calculator::~Calculator() = default;
 	Calculator::Calculator(const std::string &name)
 	{
@@ -615,7 +615,7 @@ namespace aris::server
 
 	auto fetchInterfaceConfig()->std::string
 	{
-		aris::core::XmlDocument doc;
+		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(rootPath());
 		interface_path = interface_path / "../robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
@@ -667,12 +667,12 @@ namespace aris::server
 	}
 	auto updateDashboard(std::string dash_id, std::string js_str)->std::string 
 	{
-		aris::core::XmlDocument doc;
+		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(rootPath());
 		interface_path = interface_path / "../robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
 		
-		aris::core::XmlElement *dash_ele = nullptr;
+		tinyxml2::XMLElement *dash_ele = nullptr;
 
 		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
 		{
@@ -715,12 +715,12 @@ namespace aris::server
 	}
 	auto createCell(std::string dash_id, std::string cell)->std::string
 	{
-		aris::core::XmlDocument doc;
+		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(rootPath());
 		interface_path = interface_path / "../robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
 
-		aris::core::XmlElement *dash_ele = nullptr;
+		tinyxml2::XMLElement *dash_ele = nullptr;
 
 		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
 		{
@@ -758,12 +758,12 @@ namespace aris::server
 	}
 	auto deleteCell(std::string dash_id, std::string cell_id)->std::string
 	{
-		aris::core::XmlDocument doc;
+		tinyxml2::XMLDocument doc;
 		std::filesystem::path interface_path(rootPath());
 		interface_path = interface_path / "../robot/interface.xml";
 		doc.LoadFile(interface_path.string().c_str());
 
-		aris::core::XmlElement *dash_ele = nullptr;
+		tinyxml2::XMLElement *dash_ele = nullptr;
 
 		for (auto ele = doc.RootElement()->FirstChildElement(); ele; ele = ele->NextSiblingElement())
 		{
@@ -775,7 +775,7 @@ namespace aris::server
 		}
 		if (dash_ele == nullptr)return "";
 
-		aris::core::XmlElement *cell_ele = nullptr;
+		tinyxml2::XMLElement *cell_ele = nullptr;
 		for (auto ele = dash_ele->FirstChildElement(); ele; ele = ele->NextSiblingElement())
 		{
 			std::cout << ele->Name() << " " << ele->Attribute("id") << "  " << cell_id << std::endl;

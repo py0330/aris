@@ -3,5 +3,6 @@
 
 #include <aris/server/interface.hpp>
 #include <aris/server/control_server.hpp>
+#include <aris/server/api.hpp>
 
 #endif

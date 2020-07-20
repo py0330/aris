@@ -11,7 +11,7 @@
 
 namespace aris::server
 {
-	class Calculator
+	class ARIS_API Calculator
 	{
 	public:
 		using BuiltInFunction = std::function<std::any(std::vector<std::any>&)>;
@@ -39,7 +39,7 @@ namespace aris::server
 		aris::core::ImpPtr<Imp> imp_;
 	};
 	
-	class MakeBlockly
+	class ARIS_API MakeBlockly
 	{
 	public:
 		auto parse_raw(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>
@@ -113,7 +113,7 @@ namespace aris::server
 			//////////////////////////make var/////////////////////////////////
 			{
 				std::fstream pf(program);
-				aris::core::XmlDocument var_doc;
+				tinyxml2::XMLDocument var_doc;
 				var_doc.InsertEndChild(var_doc.NewElement("xml"));
 				auto lbv = var_doc.RootElement();
 
@@ -148,12 +148,12 @@ namespace aris::server
 			//////////////////////////make pro/////////////////////////////////
 			{
 				std::fstream pf(program);
-				aris::core::XmlDocument pro_doc;
+				tinyxml2::XMLDocument pro_doc;
 				pro_doc.InsertEndChild(pro_doc.NewElement("xml"));
 				auto lbp = pro_doc.RootElement();
 
 				std::string line;
-				std::vector<aris::core::XmlElement*> stack;
+				std::vector<tinyxml2::XMLElement*> stack;
 
 				bool is_first = true;
 				while (std::getline(pf, line, '\n'))
@@ -215,8 +215,8 @@ namespace aris::server
 							condition->SetAttribute("name", "condition");
 
 							auto[name, value] = this->cal.calculateExpression(data.substr(word.size()));
-							auto v = std::any_cast<aris::core::XmlElement*>(value);
-							condition->InsertFirstChild(std::any_cast<aris::core::XmlElement*>(value));
+							auto v = std::any_cast<tinyxml2::XMLElement*>(value);
+							condition->InsertFirstChild(std::any_cast<tinyxml2::XMLElement*>(value));
 						
 
 							nbp->InsertFirstChild(condition);
@@ -280,7 +280,7 @@ namespace aris::server
 
 		MakeBlockly() 
 		{
-			auto make_num_block = [&](aris::core::XmlDocument* doc, double number)->aris::core::XmlElement* 
+			auto make_num_block = [&](tinyxml2::XMLDocument* doc, double number)->tinyxml2::XMLElement* 
 			{
 				auto block = doc->NewElement("block");
 				block->SetAttribute("type", "number");
@@ -385,24 +385,24 @@ namespace aris::server
 		MakeBlockly &operator =(const MakeBlockly&) = delete;
 
 		Calculator cal;
-		aris::core::XmlDocument *current_doc_;
+		tinyxml2::XMLDocument *current_doc_;
 	};
 	
 	
 	
 	
-	auto setRootPath(std::filesystem::path path)->void;
+	auto ARIS_API setRootPath(std::filesystem::path path)->void;
 
-	auto fetchInterfaceConfig()->std::string;
-	auto updateDashboard(std::string dash_id, std::string js_str)->std::string;
-	auto createCell(std::string dash_id, std::string cell)->std::string;
-	auto deleteCell(std::string dash_id, std::string cell_id)->std::string;
+	auto ARIS_API fetchInterfaceConfig()->std::string;
+	auto ARIS_API updateDashboard(std::string dash_id, std::string js_str)->std::string;
+	auto ARIS_API createCell(std::string dash_id, std::string cell)->std::string;
+	auto ARIS_API deleteCell(std::string dash_id, std::string cell_id)->std::string;
 
-	auto fetchPrograms()->std::string;
-	auto createProgram(std::string pro_name)->std::string;
-	auto updateProgram(std::string js_str, std::string data)->std::string;
-	auto deleteProgram(std::string pro_name)->std::string;
-	auto renameProgram(std::string old_name, std::string new_name_js)->std::string;
+	auto ARIS_API fetchPrograms()->std::string;
+	auto ARIS_API createProgram(std::string pro_name)->std::string;
+	auto ARIS_API updateProgram(std::string js_str, std::string data)->std::string;
+	auto ARIS_API deleteProgram(std::string pro_name)->std::string;
+	auto ARIS_API renameProgram(std::string old_name, std::string new_name_js)->std::string;
 }
 
 #endif

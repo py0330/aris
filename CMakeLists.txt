@@ -85,6 +85,7 @@ elseif(WIN32)
 endif()
 message("ETHERCAT : ${ETHERCAT}")
 	
+
 ## build targets ##
 include (GenerateExportHeader) 
 foreach(target robot server plan dynamic control sensor core)
@@ -238,7 +239,4 @@ if(BUILD_DOCS)
 		message("Doxygen need to be installed to generate the doxygen documentation")
 	endif (DOXYGEN_FOUND)
 endif(BUILD_DOCS)
-
-
-
 
