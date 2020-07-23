@@ -74,7 +74,7 @@ if(UNIX)
 		if("${RT_TIMER}" STREQUAL "XENOMAI3")
 			set(RELY_LINK_LIB ethercat_rtdm ${RELY_LINK_LIB})
 		else()
-			set(RELY_LINK_LIB /opt/etherlab/lib/ethercat ${RELY_LINK_LIB})
+			set(RELY_LINK_LIB ethercat ${RELY_LINK_LIB})
 		endif()
 	endif()
 elseif(WIN32)
@@ -85,6 +85,7 @@ elseif(WIN32)
 endif()
 message("ETHERCAT : ${ETHERCAT}")
 
+link_directories(${RELY_LINK_DIR})
 ## build targets ##
 include (GenerateExportHeader) 
 foreach(target robot server plan dynamic control sensor core)
@@ -118,10 +119,7 @@ foreach(target robot server plan dynamic control sensor core)
 endforeach(target)
 add_library(aris_lib SHARED ${ARIS_OBJECTS})
 generate_export_header(aris_lib EXPORT_MACRO_NAME ARIS_API)
-
-link_directories(${RELY_LINK_DIR})
 target_link_libraries(aris_lib PUBLIC ${RELY_LINK_LIB})
-set(aris_LIBRARIES optimized aris::aris_lib debug aris::debug::aris_lib)
 target_include_directories(aris_lib
 	PUBLIC 
 		$<INSTALL_INTERFACE:include>
@@ -131,6 +129,8 @@ target_include_directories(aris_lib
 		${PROJECT_SOURCE_DIR}/src
 		${RELY_INCL_DIR}
 )
+
+set(aris_LIBRARIES optimized aris::aris_lib debug aris::debug::aris_lib)
 
 install(TARGETS aris_lib EXPORT aris-targets-debug CONFIGURATIONS Debug DESTINATION "lib/debug")
 install(TARGETS aris_lib EXPORT aris-targets-release CONFIGURATIONS Release DESTINATION "lib/release")

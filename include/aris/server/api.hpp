@@ -289,7 +289,6 @@ namespace aris::server
 				left->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p1));
 				block->InsertEndChild(left);
 
-
 				auto right = doc->NewElement("value");
 				right->SetAttribute("name", "right");
 				right->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p2));
@@ -315,7 +314,6 @@ namespace aris::server
 				left->SetAttribute("name", "left");
 				left->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p1));
 				block->InsertEndChild(left);
-
 
 				auto right = doc->NewElement("value");
 				right->SetAttribute("name", "right");
@@ -343,7 +341,6 @@ namespace aris::server
 				left->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p1));
 				block->InsertEndChild(left);
 
-
 				auto right = doc->NewElement("value");
 				right->SetAttribute("name", "right");
 				right->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p2));
@@ -369,7 +366,6 @@ namespace aris::server
 				left->SetAttribute("name", "left");
 				left->InsertEndChild(std::any_cast<tinyxml2::XMLElement*>(p1));
 				block->InsertEndChild(left);
-
 
 				auto right = doc->NewElement("value");
 				right->SetAttribute("name", "right");

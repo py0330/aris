@@ -476,6 +476,11 @@ namespace aris::plan
 	struct Enable::Imp :public SetActiveMotor { std::int32_t limit_time; };
 	auto Enable::prepareNrt()->void
 	{
+		aris::plan::Plan *p = this;
+		
+		std::cout << (typeid(*p) == typeid(Enable)) << std::endl;
+		std::cout << (typeid(*this) == typeid(Disable)) << std::endl;
+		
 		set_check_option(cmdParams(), *this);
 		set_active_motor(cmdParams(), *this, *imp_);
 		imp_->limit_time = int32Param("limit_time");
