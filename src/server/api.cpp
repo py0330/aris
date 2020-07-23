@@ -247,6 +247,8 @@ namespace aris::server
 				pro_dir_js["name"] = dir.path().filename().string();
 				pro_dir_js["path"] = "/program/" + dir.path().filename().string();
 				
+				std::cout << pro_dir_js << std::endl;
+
 				auto ftime = dir.last_write_time();
 				std::time_t tt = to_time_t(ftime);
 				std::tm *gmt = std::gmtime(&tt);
@@ -309,7 +311,7 @@ namespace aris::server
 						{
 							my_json file_js;
 							file_js["name"] = file.path().filename().string();
-							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().string();
+							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().filename().string();
 							std::ifstream f(file);
 							std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 							file_js["content"] = str;
@@ -337,7 +339,7 @@ namespace aris::server
 						{
 							my_json file_js;
 							file_js["name"] = file.path().filename().string();
-							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().string();
+							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().filename().string();
 							std::ifstream f(file);
 							std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 							file_js["content"] = str;
@@ -379,9 +381,7 @@ namespace aris::server
 		if (std::filesystem::exists(program_path))return "";
 
 		std::filesystem::create_directories(program_path);
-
 		std::filesystem::path dat = program_path / (pro_name + ".dat"), pro = program_path / (pro_name + ".pro");
-
 
 		std::fstream f(pro, std::ios::out | std::ios::trunc);
 		f << "<xml xmlns=\"https://developers.google.com/blockly/xml\"></xml>";
@@ -396,7 +396,6 @@ namespace aris::server
 		f.close();
 
 		auto dir = std::filesystem::directory_entry(program_path);
-
 
 		my_json pro_dir_js;
 		pro_dir_js["name"] = dir.path().filename().string();
@@ -463,7 +462,11 @@ namespace aris::server
 			f << file["content"].get<std::string>();
 			f.close();
 
-			if (auto ext = std::filesystem::path(file["name"].get<std::string>()).extension(); ext != "dat" && ext != "pro")continue;
+			if (auto ext = std::filesystem::path(file["name"].get<std::string>()).extension(); ext != ".dat" && ext != ".pro") 
+			{
+				std::cout << ext << std::endl;
+				continue;
+			}
 
 
 			if (file.contains("jointtargets"))file.erase("jointtargets");
@@ -583,6 +586,3 @@ namespace aris::server
 	auto fetchLogName()->std::string;
 	auto fetchLogContent()->std::string;
 }
-
-
-

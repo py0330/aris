@@ -455,7 +455,7 @@ namespace aris::core
 			static const std::string operatorStr("*+-/\\^|<>=");
 			static const std::string spaceStr(" \t\n\r\f\v");
 			static const std::string numStr("0123456789.");
-			static const std::string varStr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789");
+			static const std::string varStr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789.");
 
 			// triml and check if empty //
 			auto next_pos = input.find_first_not_of(spaceStr);
@@ -1117,7 +1117,7 @@ namespace aris::core
 		});
 	}
 	ARIS_DEFINE_BIG_FOUR_CPP(Calculator);
-
+	/*
 	struct LanguageParser::Imp
 	{
 		struct CmdInfo
@@ -1473,8 +1473,394 @@ namespace aris::core
 	LanguageParser::~LanguageParser() = default;
 	LanguageParser::LanguageParser(const std::string &name) :imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(LanguageParser);
+	*/
+	struct LanguageParser::Imp
+	{
+		struct CmdInfo
+		{
+			std::string cmd;
+			int next_cmd_true_, next_cmd_false_;
+		};
 
+		// 关键词 //
+		static inline const char *MAIN         = "main";
+		static inline const char *ENDMAIN      = "endmain";
+		static inline const char *FUNCTION     = "function";
+		static inline const char *ENDFUNCTION  = "endfunction";
+		static inline const char *VAR          = "var";
+		static inline const char *IF           = "if";
+		static inline const char *ELSE         = "else";
+		static inline const char *ELSEIF       = "elseif";
+		static inline const char *ENDIF        = "endif";
+		static inline const char *WHILE        = "while";
+		static inline const char *ENDWHILE     = "endwhile";
 
+		using Iterator = std::map<int, CmdInfo>::iterator;
+		auto parseEnvironment(std::string file_name, Iterator b, Iterator e)->Iterator
+		{
+			for (auto i = b; i != e; ++i)
+			{
+				auto id = i->first;
+				auto &info = i->second;
+				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
+
+				if (auto l = { ENDMAIN, ENDWHILE, IF, ELSEIF, ELSE, ENDIF, WHILE, ENDWHILE };
+				std::any_of(l.begin(), l.end(), [&cmd_name](const char *c) {return c == cmd_name; }))
+				{
+					auto err = "invalid " + info.cmd + " in line:" + std::to_string(id);
+					THROW_FILE_LINE(err);
+				}
+				else if (cmd_name == VAR)
+				{
+					variables_.push_back(info.cmd);
+				}
+				else if (cmd_name == MAIN)
+				{
+					if (main_line_)THROW_FILE_LINE("program has more than 1 main function");
+					main_line_ = i->first;
+					main_file_ = file_name;
+					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
+					i = parseMain(std::next(i), e);
+				}
+				else if (cmd_name == FUNCTION)
+				{
+					if (info.cmd.find_first_of(" \t\n\r\f\v(") == std::string::npos)	THROW_FILE_LINE("function does not have name in line: " + std::to_string(i->first));
+					auto func = info.cmd.substr(info.cmd.find_first_of(" \t\n\r\f\v("), std::string::npos);
+					func.erase(0, func.find_first_not_of(" \t\n\r\f\v"));
+					auto funcname = func.substr(0, func.find_first_of(" \t\n\r\f\v("));
+					if (functions_.find(funcname) != functions_.end())
+					{
+						THROW_FILE_LINE("function already exist in line " + std::to_string(i->first));
+					}
+					functions_.insert(std::make_pair(funcname, std::make_pair(file_name, i->first)));
+
+					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
+					i = parseFunction(std::next(i), e);
+				}
+				else
+				{
+					auto err = "invalid " + info.cmd + " in line:" + std::to_string(id);
+					THROW_FILE_LINE(err);
+				}
+			}
+
+			
+
+			return e;
+		}
+		auto parseMain(Iterator b, Iterator e)->Iterator
+		{
+			for (auto i = b; i != e; ++i)
+			{
+				auto id = i->first;
+				auto &info = i->second;
+				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
+
+				if (cmd_name == ENDMAIN)
+				{
+					auto ret = parseCode(b, i);
+					std::prev(i)->second.next_cmd_true_ = i->first;
+					end_main_line_ = id;
+					return ret;
+				}
+			}
+
+			std::string err = "no endfuncion for function in line " + std::to_string(b->first);
+			THROW_FILE_LINE(err);
+
+			return e;
+		}
+		auto parseFunction(Iterator b, Iterator e)->Iterator
+		{
+			for (auto i = b; i != e; ++i)
+			{
+				auto id = i->first;
+				auto &info = i->second;
+				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
+
+				if (cmd_name == ENDFUNCTION)
+				{
+					auto ret = parseCode(b, i);
+					std::prev(i)->second.next_cmd_true_ = i->first;
+					return ret;
+				}
+			}
+
+			std::string err = "no endfuncion for function in line " + std::to_string(b->first);
+			THROW_FILE_LINE(err);
+
+			return e;
+		}
+		auto parseCode(Iterator b, Iterator e)->Iterator
+		{
+			for (auto i = b; i != e; ++i)
+			{
+				auto id = i->first;
+				auto &info = i->second;
+				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
+
+				if (auto l = { MAIN, ENDMAIN, FUNCTION, ENDFUNCTION, VAR, ELSEIF, ELSE, ENDIF, ENDWHILE };
+				std::any_of(l.begin(), l.end(), [&cmd_name](const char *c) {return c == cmd_name; }))
+				{
+					auto err = "invalid " + info.cmd + " in line:" + std::to_string(id);
+					THROW_FILE_LINE(err);
+				}
+				else if (cmd_name == IF)
+				{
+					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
+					i = parseIf(i, e);
+				}
+				else if (cmd_name == WHILE)
+				{
+					if (std::next(i) != e)i->second.next_cmd_true_ = std::next(i)->first;
+					i = parseWhile(i, e);
+				}
+				else
+				{
+					info.next_cmd_true_ = std::next(i) == e ? 0 : std::next(i)->first;
+				}
+			}
+
+			return e;
+		}
+		auto parseIf(Iterator b, Iterator e)->Iterator
+		{
+			std::list<Iterator> prev_else_line;
+			Iterator last_if_begin = b;
+
+			int is_end = 1;
+			bool has_else = false;
+			for (auto i = std::next(b); i != e; ++i)
+			{
+				auto id = i->first;
+				auto &info = i->second;
+				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
+
+				if (cmd_name == IF)
+				{
+					is_end++;
+				}
+				else if (cmd_name == ELSEIF && is_end == 1)
+				{
+					if (has_else)
+					{
+						std::string err = "Find elseif after else in line " + std::to_string(i->first);
+						THROW_FILE_LINE(err);
+					}
+
+					parseCode(std::next(last_if_begin), i);
+					last_if_begin->second.next_cmd_false_ = i->first;
+					last_if_begin = i;
+					i->second.next_cmd_true_ = std::next(i)->first;
+
+					prev_else_line.push_back(std::prev(i));
+				}
+				else if (cmd_name == ELSE && is_end == 1)
+				{
+					if (has_else)
+					{
+						std::string err = "Find second else in line " + std::to_string(i->first);
+						THROW_FILE_LINE(err);
+					}
+					has_else = true;
+
+					parseCode(std::next(last_if_begin), i);
+					last_if_begin->second.next_cmd_false_ = i->first;
+					last_if_begin = i;
+					i->second.next_cmd_true_ = std::next(i)->first;
+
+					prev_else_line.push_back(std::prev(i));
+				}
+				else if (cmd_name == ENDIF)
+				{
+					is_end--;
+
+					if (is_end == 0)
+					{
+						parseCode(std::next(last_if_begin), i);
+						auto prev_cmd_name = std::prev(i)->second.cmd.substr(0, std::prev(i)->second.cmd.find_first_of(" \t\n\r\f\v("));
+						if (prev_cmd_name != "if") std::prev(i)->second.next_cmd_true_ = i->first;
+						i->second.next_cmd_true_ = std::next(i) == e ? 0 : std::next(i)->first;
+						auto last_if_begin_cmd_name = last_if_begin->second.cmd.substr(0, last_if_begin->second.cmd.find_first_of(" \t\n\r\f\v("));
+						if (last_if_begin_cmd_name != "else")last_if_begin->second.next_cmd_false_ = i->first;
+
+						for (auto j : prev_else_line)
+						{
+							j->second.next_cmd_true_ = i->first;
+						}
+
+						return i;
+					}
+				}
+			}
+
+			std::string err = "no endif for if in line " + std::to_string(b->first);
+			THROW_FILE_LINE(err);
+
+			return b;
+		}
+		auto parseWhile(Iterator b, Iterator e)->Iterator
+		{
+			int is_end = 1;
+			for (auto i = std::next(b); i != e; ++i)
+			{
+				auto id = i->first;
+				auto &info = i->second;
+				auto cmd_name = info.cmd.substr(0, info.cmd.find_first_of(" \t\n\r\f\v("));
+
+				if (cmd_name == WHILE)
+				{
+					is_end++;
+				}
+				else if (cmd_name == ENDWHILE)
+				{
+					is_end--;
+
+					if (is_end == 0)
+					{
+						parseCode(std::next(b), i);
+						std::prev(i)->second.next_cmd_true_ = b->first;
+						i->second.next_cmd_true_ = std::next(i) == e ? 0 : std::next(i)->first;
+						b->second.next_cmd_false_ = i->first;
+
+						return i;
+					}
+				}
+			}
+
+			return b;
+		}
+
+		// 原始文件 //
+		std::map<std::string, std::string> files_;
+
+		// 编译结果 //
+		std::map<std::string, std::map<int, CmdInfo>>  cmds_;
+		std::map<std::string, std::pair<std::string, int>> functions_;   //  名字    所在文件  行号
+		std::vector<std::string> variables_;                   //  所在文件  变量定义(定义的时候才取名)
+		std::string main_file_;
+		int main_line_, end_main_line_;
+
+		// 运行时 //
+		std::list<std::pair<std::string, int>> func_ret_stack_;
+		
+		std::string current_file_;
+		int current_line_;
+	};
+	auto LanguageParser::parseLanguage()->void 
+	{ 
+		for (auto &file : imp_->files_)
+		{
+			imp_->parseEnvironment(file.first, imp_->cmds_[file.first].begin(), imp_->cmds_[file.first].end());
+		}
+
+		if (imp_->main_line_ == 0)THROW_FILE_LINE("program must has main");
+	}
+	auto LanguageParser::setProgram(std::map<std::string, std::string> program)->void
+	{
+		// 设置文件 //
+		imp_->files_ = program;
+		
+		// 清理编译期变量 //
+		imp_->cmds_.clear();
+		imp_->functions_.clear();
+		imp_->variables_.clear();
+		imp_->main_file_ = "";
+		imp_->main_line_ = 0;
+		
+		for (auto &file : imp_->files_)
+		{
+			std::stringstream ss(file.second);
+			imp_->cmds_[file.first];
+
+			int id;
+			while (ss >> id)
+			{
+				char c;
+				while (ss >> c, c != ':');
+				std::string cmd;
+				std::getline(ss, cmd);
+				cmd.erase(0, cmd.find_first_not_of(" \t\n\r\f\v"));// trim l
+				cmd.erase(cmd.find_last_not_of(" \t\n\r\f\v") + 1);// trim r
+				if (cmd != "")imp_->cmds_[file.first][id] = Imp::CmdInfo{ cmd, 0, 0 };
+			}
+		}
+	}
+	auto LanguageParser::varPool()->const std::vector<std::string>& { return imp_->variables_; }
+	auto LanguageParser::gotoMain()->void
+	{
+		imp_->current_file_ = imp_->main_file_;
+		imp_->current_line_ = imp_->main_line_;
+		imp_->func_ret_stack_.clear();
+	}
+	auto LanguageParser::gotoFileLine(std::string file, int line)->void
+	{
+		if (imp_->cmds_.find(file) == imp_->cmds_.end())THROW_FILE_LINE("This file does not exist");
+		auto file_cmds = imp_->cmds_[file];
+		if (file_cmds.find(line) == file_cmds.end())THROW_FILE_LINE("This line does not exist");
+
+		imp_->current_file_ = file;
+		imp_->current_line_ = line;
+		imp_->func_ret_stack_.clear();
+	}
+	auto LanguageParser::forward(bool is_this_cmd_successful)->void
+	{
+		auto cmd_str = currentCmd().substr(0, currentCmd().find_first_of(" \t\n\r\f\v("));
+
+		if (auto found = imp_->functions_.find(cmd_str); found != imp_->functions_.end())
+		{
+			imp_->func_ret_stack_.push_back(std::make_pair(imp_->current_file_, imp_->cmds_[imp_->current_file_][imp_->current_line_].next_cmd_true_));
+			imp_->current_file_ = found->second.first;
+			imp_->current_line_ = found->second.second;
+		}
+		else if (cmd_str == "endfunction")
+		{
+			if (imp_->func_ret_stack_.empty()) 
+			{
+				// 什么都不做
+			}
+			else
+			{
+				imp_->current_file_ = imp_->func_ret_stack_.back().first;
+				imp_->current_line_ = imp_->func_ret_stack_.back().second;
+				imp_->func_ret_stack_.pop_back();
+			}
+		}
+		else
+		{
+			imp_->current_line_ = is_this_cmd_successful ? imp_->cmds_[imp_->current_file_][imp_->current_line_].next_cmd_true_ : imp_->cmds_[imp_->current_file_][imp_->current_line_].next_cmd_false_;
+		}
+	}
+	auto LanguageParser::currentLine()const->int { return imp_->current_line_; }
+	auto LanguageParser::currentCmd()const->const std::string& { return imp_->cmds_.at(imp_->current_file_).at(imp_->current_line_).cmd; }
+	auto LanguageParser::currentWord()const->std::string_view
+	{
+		std::string_view v = currentCmd();
+		return v.substr(0, v.find_first_of(" \t\n\r\f\v([{}])"));
+	}
+	auto LanguageParser::currentParamStr()const->std::string_view
+	{
+		std::string_view v = currentCmd();
+		return v.substr(v.find_first_of(" \t\n\r\f\v([{}])"));
+	}
+	auto LanguageParser::isCurrentLineKeyWord()const->bool
+	{
+		auto cmd_name = currentCmd().substr(0, currentCmd().find_first_of(" \t\n\r\f\v("));
+		auto l = { Imp::MAIN, Imp::ENDMAIN, Imp::FUNCTION, Imp::ENDFUNCTION	, Imp::VAR, Imp::IF, Imp::ELSE, Imp::ELSEIF, Imp::ENDIF, Imp::WHILE, Imp::ENDWHILE, };
+		return std::any_of(l.begin(), l.end(), [&cmd_name](const char *c) {return c == cmd_name; });
+	}
+	auto LanguageParser::isCurrentLineFunction()const->bool
+	{
+		auto cmd_name = currentCmd().substr(0, currentCmd().find_first_of(" \t\n\r\f\v("));
+		return imp_->functions_.find(cmd_name) != imp_->functions_.end();
+	}
+	auto LanguageParser::isEnd()const->bool
+	{
+		return (currentCmd() == Imp::ENDFUNCTION && imp_->func_ret_stack_.empty()) || currentCmd() == Imp::ENDMAIN;
+	}
+	LanguageParser::~LanguageParser() = default;
+	LanguageParser::LanguageParser(const std::string &name) :imp_(new Imp) {}
+	ARIS_DEFINE_BIG_FOUR_CPP(LanguageParser);
 
 	ARIS_REGISTRATION
 	{

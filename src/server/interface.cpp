@@ -324,7 +324,16 @@ namespace aris::server
 								imp_->calculator_ = aris::server::ControlServer::instance().model().calculator();
 								auto &c = imp_->calculator_;
 								
-								imp_->language_parser_.setProgram(cmd_str);
+								auto js = nlohmann::json::parse(cmd_str);
+
+								std::map<std::string, std::string> files;
+								for (auto &node : js)
+								{
+									files[node["name"].get<std::string>()] = node["content"].get<std::string>();
+									std::cout << node["content"].get<std::string>() << std::endl;
+								}
+
+								imp_->language_parser_.setProgram(files);
 								imp_->language_parser_.parseLanguage();
 
 								for (auto &str : imp_->language_parser_.varPool())
@@ -383,7 +392,7 @@ namespace aris::server
 						}
 						else
 						{
-							imp_->language_parser_.gotoLine(std::stoi(std::string(value)));
+							imp_->language_parser_.gotoFileLine("modify later",std::stoi(std::string(value)));
 							send_code_and_msg(0, "");
 							return 0;
 						}

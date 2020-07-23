@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
 	cs.planRoot().planPool().add<aris::server::GetInfo>();
 
 	// interaction //
-	//cs.interfacePool().add<aris::server::ProgramWebInterface>("", "5866", aris::core::Socket::WEB);
+	cs.interfacePool().add<aris::server::ProgramWebInterface>("", "5866", aris::core::Socket::WEB);
 	cs.interfacePool().add<aris::server::WebInterface>("", "5867", aris::core::Socket::TCP);
 	cs.interfacePool().add<aris::server::ProgramWebInterface>("", "5868", aris::core::Socket::TCP);
 	cs.interfacePool().add<aris::server::HttpInterface>("", "8001", "D:/UI_DarkColor_English-0103_panbo/UI_DarkColor_English-0103_panbo/www");
@@ -280,11 +280,6 @@ int main(int argc, char *argv[])
 	sla.smPool().push_back(aris::control::SyncManager("sm", true));
 	sla.smPool()[0].push_back(aris::control::Pdo("pdo", 0));
 	sla.smPool()[0][0].push_back(aris::control::PdoEntry("aaa", 0, 0, 32));
-
-
-	aris::server::MakeBlockly mk;
-	mk.make("C:\\Users\\py033\\Desktop\\program02.txt", "C:\\Users\\py033\\Desktop\\");
-
 
 	cs.init();
 	cs.open();

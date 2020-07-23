@@ -702,6 +702,7 @@ namespace aris::server
 		}
 
 		// step 2.  prepare //
+		bool prepare_error = false;
 		for (auto p = internal_data.begin(); p < internal_data.end(); ++p)
 		{
 			auto &plan = (*p)->plan_;
@@ -719,7 +720,7 @@ namespace aris::server
 				}
 				plan->imp_->ret_code = aris::plan::Plan::PREPARE_EXCEPTION;
 				std::copy_n(e.what(), std::strlen(e.what()), plan->imp_->ret_msg);
-				return ret_plan;
+				prepare_error = true;
 			}
 		}
 
@@ -749,6 +750,7 @@ namespace aris::server
 			}
 		}
 		// print over ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		if(prepare_error)return ret_plan;
 
 		// step 3.  execute //
 		auto cmd_end = imp_->cmd_end_.load();

@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	try 
 	{
 		aris::core::LanguageParser parser;
-		parser.setProgram(program);
+		//parser.setProgram(program);
 		parser.parseLanguage();
 
 		for (;!parser.isEnd();)
