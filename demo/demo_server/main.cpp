@@ -4,6 +4,8 @@
 
 #include <aris.hpp>
 
+#include <aris/dynamic/puma_5axis.hpp>
+
 using namespace aris::dynamic;
 using namespace aris::robot;
 
@@ -43,6 +45,41 @@ auto f(aris::dynamic::Model *m, double *A)
 	for (int i = 0; i < 6; ++i)M[at(i, i, 6)] += m->motionPool()[i].frcCoe()[2];
 	s_mm(6, 6, 6, M, J_inv, tem);
 	s_mm(6, 6, 6, J_inv, T(6), tem, 6, A, 6);
+}
+
+auto createModelRokaeXB4_5(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model>
+{
+	aris::dynamic::PumaParam param;
+	param.d1 = 0.3295;
+	param.a1 = 0.04;
+	param.a2 = 0.275;
+	param.d3 = 0.0;
+	param.a3 = 0.025;
+	param.d4 = 0.28;
+
+	param.tool0_pe[2] = 0.078;
+
+	param.iv_vec =
+	{
+		{ 0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.00000000000000,   0.59026333537827,   0.00000000000000,   0.00000000000000,   0.00000000000000 },
+	{ 0.00000000000000, -0.02551872200978,   0.00000000000000,   3.05660683326413,   2.85905166943306,   0.00000000000000,   0.00000000000000, -0.00855352993039, -0.09946674483372, -0.00712210734359 },
+	{ 0.00000000000000,   0.00000000000000,   0.00000000000000,   0.02733022277747,   0.00000000000000,   0.37382629693302,   0.00000000000000,   0.00312006493276, -0.00578410451516,   0.00570606128540 },
+	{ 0.00000000000000,   1.06223330086669,   0.00000000000000,   0.00311748242960,   0.00000000000000,   0.24420385558544,   0.24970286555981,   0.00305759215246, -0.66644096559686,   0.00228253380852 },
+	{ 0.00000000000000,   0.05362286897910,   0.00528925153464, -0.00842588023014,   0.00128498153337, -0.00389810210572,   0.00000000000000, -0.00223677867576, -0.03365036368035, -0.00415647085627 },
+	{ 0.00000000000000,   0.00000000000000,   0.00066049870832,   0.00012563800445, -0.00085124094833,   0.04209529937135,   0.04102481443654, -0.00067596644891,   0.00017482449876, -0.00041025776053 },
+	};
+
+	param.mot_frc_vec =
+	{
+		{ 9.34994758321915, 7.80825641041495, 0.00000000000000 },
+	{ 11.64080253106441, 13.26518528472506, 3.55567932576820 },
+	{ 4.77014054273075, 7.85644357492508, 0.34445460269183 },
+	{ 3.63141668516122, 3.35461524886318, 0.14824771620542 },
+	{ 2.58310846982020, 1.41963212641879, 0.04855267273770 },
+	{ 1.78373986219597, 0.31920640440152, 0.03381545544099 },
+	};
+
+	return aris::dynamic::createModelPuma5(param);
 }
 
 
@@ -250,6 +287,9 @@ int main(int argc, char *argv[])
 	//dynamic_cast<aris::control::EthercatMotor&>(cs.controller().slaveAtAbs(1)).setMaxPos(0.1);
 	////////////////////////////////////////////////////////////////////////////////////
 
+	cs.model().init();
+
+
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");
 	cs.planRoot().planPool().add<aris::plan::MoveSeries>("move_series");
@@ -264,6 +304,37 @@ int main(int argc, char *argv[])
 
 	for (auto &m : cs.controller().slavePool()) dynamic_cast<aris::control::EthercatMotor&>(m).setVirtual(true);
 
+	auto model5 = createModelRokaeXB4_5(robot_pm);
+
+	model5->init();
+	cs.model().init();
+
+	model5->motionPool()[5].setMp(0.5);
+
+	model5->generalMotionPool()[0].setMpe(std::array<double, 6>{0.3, 0.4, 0.6, 0.1, 0.2, 0.0}.data(), "123");
+	model5->solverPool()[0].kinPos();
+	for (int i = 0; i < 6; ++i)
+	{
+		std::cout << model5->motionPool()[i].mp() << std::endl;
+	}
+	std::cout  << std::endl;
+	model5->solverPool()[1].kinPos();
+	model5->generalMotionPool()[0].updMpm();
+	aris::dynamic::dsp(4, 4, *model5->generalMotionPool()[0].mpm());
+
+
+
+
+	cs.model().generalMotionPool()[0].setMpe(std::array<double, 6>{0.3, 0.4, 0.6, 0.1, 0.2, 0.0}.data(), "123");
+	cs.model().solverPool()[0].kinPos();
+	for (int i = 0; i < 6; ++i)
+	{
+		std::cout << cs.model().motionPool()[i].mp() << std::endl;
+	}
+	cs.model().solverPool()[1].kinPos();
+	cs.model().generalMotionPool()[0].updMpm();
+	aris::dynamic::dsp(4, 4, *cs.model().generalMotionPool()[0].mpm());
+
 	try
 	{
 		//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");
@@ -274,13 +345,6 @@ int main(int argc, char *argv[])
 		std::cout << e.what() << std::endl;
 	}
 	
-	aris::control::EthercatController ec;
-
-	auto &sla = ec.slavePool().add<aris::control::EthercatSlave>("aaa", 0, 0, 0, 0);
-	sla.smPool().push_back(aris::control::SyncManager("sm", true));
-	sla.smPool()[0].push_back(aris::control::Pdo("pdo", 0));
-	sla.smPool()[0][0].push_back(aris::control::PdoEntry("aaa", 0, 0, 32));
-
 	cs.init();
 	cs.open();
 	cs.runCmdLine();

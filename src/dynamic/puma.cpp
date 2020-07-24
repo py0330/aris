@@ -182,9 +182,6 @@ namespace aris::dynamic
 		double pm_A_in_Ground[16];
 		double pm_EE_in_D[16];
 
-		// 杆件1-6在上文中零位处的位姿矩阵 //
-		double pm_at_init[6][16];
-
 		// 驱动在零位处的偏移，以及系数
 		double mp_offset[6];// mp_real = (mp_theoretical - mp_offset) * mp_factor
 		double mp_factor[6];
