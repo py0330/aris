@@ -1195,6 +1195,8 @@ namespace aris::server
 		if (imp_->is_running_.exchange(false) == true) { imp_->http_thread_.join(); }
 	}
 	auto HttpInterface::documentRoot()->std::string { return imp_->document_root_; }
+	auto HttpInterface::port()->std::string { return imp_->port_; }
+	auto HttpInterface::setPort(const std::string &port)->void { imp_->port_ = port; }
 	auto HttpInterface::setDocumentRoot(const std::string &root)->void { imp_->document_root_ = root; }
 	auto HttpInterface::setApiGet(std::string_view uri, std::function<std::string(void)> func)->void
 	{
@@ -1236,6 +1238,7 @@ namespace aris::server
 		aris::core::class_<HttpInterface>("HttpInterfaceInterface")
 			.inherit<Interface>()
 			.prop("document_root", &HttpInterface::setDocumentRoot, &HttpInterface::documentRoot)
+			.prop("port", &HttpInterface::setPort, &HttpInterface::port)
 			;
 	}
 }
