@@ -20,8 +20,7 @@ namespace aris::dynamic
 
 	class Model;
 
-	class ARIS_API Element
-	{
+	class ARIS_API Element{
 	public:
 		auto model()noexcept->Model* { return model_; }
 		auto model()const noexcept->const Model* { return const_cast<std::decay_t<decltype(*this)>*>(this)->model(); }
@@ -36,8 +35,7 @@ namespace aris::dynamic
 		Size id_{ 0 };
 		friend class Model;
 	};
-	class ARIS_API DynEle : public Element
-	{
+	class ARIS_API DynEle : public Element{
 	public:
 		auto active() const noexcept->bool { return active_; }
 		auto activate(bool active = true)noexcept->void;
@@ -53,8 +51,7 @@ namespace aris::dynamic
 		bool active_;
 	};
 
-	class ARIS_API Environment final :public Element
-	{
+	class ARIS_API Environment final :public Element{
 	public:
 		auto gravity()const noexcept->const double6& { return gravity_; }
 		auto setGravity(const double *gravity)noexcept->void { s_vc(6, gravity, gravity_); }
@@ -67,8 +64,7 @@ namespace aris::dynamic
 		double gravity_[6]{ 0, -9.8, 0, 0, 0, 0 };
 	};
 
-	class ARIS_API Variable :public Element
-	{
+	class ARIS_API Variable :public Element{
 	public:
 		auto virtual toString() const->std::string { return ""; }
 		auto virtual fromString(std::string_view str)->void {}
@@ -76,7 +72,7 @@ namespace aris::dynamic
 		auto setName(const std::string &name)->void { name_ = name; }
 
 		virtual ~Variable() = default;
-		explicit Variable(const std::string &name = "variable") : Element(name) {}
+		explicit Variable(const std::string &name = "variable") : Element(name) { setName(name); }
 		ARIS_DEFINE_BIG_FOUR(Variable);
 	private:
 		std::string name_;
