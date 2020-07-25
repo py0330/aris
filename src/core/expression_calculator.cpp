@@ -1832,6 +1832,7 @@ namespace aris::core
 		}
 	}
 	auto LanguageParser::currentLine()const->int { return imp_->current_line_; }
+	auto LanguageParser::currentFile()const->std::string { return imp_->current_file_; }
 	auto LanguageParser::currentCmd()const->const std::string& { return imp_->cmds_.at(imp_->current_file_).at(imp_->current_line_).cmd; }
 	auto LanguageParser::currentWord()const->std::string_view
 	{

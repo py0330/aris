@@ -183,6 +183,7 @@ namespace aris::server
 		aris::core::Calculator calculator_;
 		std::thread auto_thread_;
 		std::atomic<int> current_line_{0};
+		std::string current_file_;
 		bool is_auto_mode_{ false };
 
 		std::string last_error_;
@@ -211,7 +212,12 @@ namespace aris::server
 	auto ProgramWebInterface::isAutoRunning()->bool { return imp_->auto_thread_.joinable(); }
 	auto ProgramWebInterface::isAutoPaused()->bool { return imp_->is_pause_.load(); }
 	auto ProgramWebInterface::isAutoStopped()->bool { return imp_->is_stop_.load(); }
-	auto ProgramWebInterface::currentLine()->int { return imp_->current_line_.load(); }
+	//auto ProgramWebInterface::currentLine()->int { return imp_->current_line_.load(); }
+	auto ProgramWebInterface::currentFileLine()->std::tuple<std::string, int> 
+	{
+		return std::make_tuple(imp_->current_file_, imp_->current_line_.load());
+	}
+
 	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type) :Interface(name), imp_(new Imp)
 	{
 		aris::core::Command program;
@@ -413,6 +419,7 @@ namespace aris::server
 						{
 							imp_->language_parser_.gotoMain();
 							imp_->current_line_.store(imp_->language_parser_.currentLine());
+							imp_->current_file_ = imp_->language_parser_.currentFile();
 							send_code_and_msg(0, "");
 							return 0;
 						}
@@ -494,6 +501,7 @@ namespace aris::server
 								LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 								imp_->language_parser_.forward();
 								imp_->current_line_.store(imp_->language_parser_.currentLine());
+								imp_->current_file_ = imp_->language_parser_.currentFile();
 							}
 							else if (imp_->language_parser_.currentWord() == "set")
 							{
@@ -859,28 +867,6 @@ namespace aris::server
 	ProgramWebInterface::ProgramWebInterface(ProgramWebInterface && other) = default;
 	ProgramWebInterface& ProgramWebInterface::operator=(ProgramWebInterface&& other) = default;
 	ProgramWebInterface::~ProgramWebInterface() = default;
-
-
-	auto GetInfo::prepareNrt()->void
-	{
-		auto &cs = *controlServer();
-		auto &inter = dynamic_cast<aris::server::ProgramWebInterface&>(cs.interfacePool().at(0));
-
-		std::vector<std::pair<std::string, std::any>> ret;
-		ret.push_back(std::make_pair(std::string("cs_err_code"), std::make_any<int>(cs.errorCode())));
-		ret.push_back(std::make_pair(std::string("cs_err_msg"), std::make_any<std::string>(cs.errorMsg())));
-		ret.push_back(std::make_pair(std::string("pro_err_code"), std::make_any<int>(inter.lastErrorCode())));
-		ret.push_back(std::make_pair(std::string("pro_err_msg"), std::make_any<std::string>(inter.lastError())));
-		ret.push_back(std::make_pair(std::string("pro_err_line"), std::make_any<int>(inter.lastErrorLine())));
-		ret.push_back(std::make_pair(std::string("auto_mode"), std::make_any<int>(inter.isAutoMode())));
-		ret.push_back(std::make_pair(std::string("auto_run"), std::make_any<int>(inter.isAutoRunning())));
-		ret.push_back(std::make_pair(std::string("line"), std::make_any<int>(inter.currentLine())));
-
-		auto ret_str = parse_ret_value(ret);
-		std::copy(ret_str.begin(), ret_str.end(), const_cast<char*>(this->retMsg()));
-
-		this->option() = aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION | aris::plan::Plan::NOT_RUN_COLLECT_FUNCTION | aris::plan::Plan::NOT_PRINT_CMD_INFO;
-	}
 }
 
 
@@ -907,7 +893,7 @@ namespace aris::server
 		std::string document_root_;
 		std::string dav_root_;
 
-		std::map<std::string, std::function<std::string(void)>> gets_, posts_, deletes_, puts_;
+		//std::map<std::string, std::function<std::string(void)>> gets_, posts_, deletes_, puts_;
 
 		struct mg_mgr mgr;
 		struct mg_connection *nc;
@@ -1198,10 +1184,6 @@ namespace aris::server
 	auto HttpInterface::port()->std::string { return imp_->port_; }
 	auto HttpInterface::setPort(const std::string &port)->void { imp_->port_ = port; }
 	auto HttpInterface::setDocumentRoot(const std::string &root)->void { imp_->document_root_ = root; }
-	auto HttpInterface::setApiGet(std::string_view uri, std::function<std::string(void)> func)->void
-	{
-		imp_->gets_[std::string(uri)] = func;
-	}
 	HttpInterface::~HttpInterface() = default;
 	HttpInterface::HttpInterface(HttpInterface && other) = default;
 	HttpInterface& HttpInterface::operator=(HttpInterface&& other) = default;
@@ -1214,10 +1196,6 @@ namespace aris::server
 
 	ARIS_REGISTRATION{
 
-		aris::core::class_<GetInfo>("GetInfo")
-			.inherit<aris::plan::Plan>()
-			;
-		
 		aris::core::class_<aris::core::PointerArray<aris::server::Interface>>("InterfacePoolObject")
 			.asRefArray()
 			;

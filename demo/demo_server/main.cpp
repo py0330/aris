@@ -293,7 +293,6 @@ int main(int argc, char *argv[])
 	// make log file has enough space
 	cs.planRoot().planPool().add<aris::plan::RemoveFile>("remove_file");
 	cs.planRoot().planPool().add<aris::plan::MoveSeries>("move_series");
-	cs.planRoot().planPool().add<aris::server::GetInfo>();
 
 	// interaction //
 	cs.interfacePool().add<aris::server::ProgramWebInterface>("", "5866", aris::core::Socket::WEB);

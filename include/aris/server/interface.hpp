@@ -38,10 +38,10 @@ namespace aris::server
 		auto isAutoRunning()->bool;
 		auto isAutoPaused()->bool;
 		auto isAutoStopped()->bool;
-		auto currentLine()->int;
 		auto lastError()->std::string;
 		auto lastErrorCode()->int;
 		auto lastErrorLine()->int;
+		auto currentFileLine()->std::tuple<std::string, int>;
 		
 		~ProgramWebInterface();
 		ProgramWebInterface(const std::string &name = "pro_interface", const std::string &port = "5866", aris::core::Socket::TYPE type = aris::core::Socket::WEB);
@@ -78,10 +78,6 @@ namespace aris::server
 		auto setDocumentRoot(const std::string &root)->void;
 		auto port()->std::string;
 		auto setPort(const std::string &root)->void;
-		auto setApiGet(std::string_view uri, std::function<std::string(void)>)->void;
-		auto setApiPost(std::string_view uri, std::function<std::string(void)>)->void;
-		auto setApiPut(std::string_view uri, std::function<std::string(void)>)->void;
-		auto setApiDelete(std::string_view uri, std::function<std::string(void)>)->void;
 
 		virtual ~HttpInterface();
 		HttpInterface(const std::string &name = "http_interface", const std::string &port = "8000", const std::string &document_root = "./");
@@ -93,13 +89,6 @@ namespace aris::server
 	private:
 		struct Imp;
 		aris::core::ImpPtr<Imp> imp_;
-	};
-
-	class ARIS_API GetInfo :public aris::core::CloneObject<GetInfo, aris::plan::Plan>
-	{
-	public:
-		auto virtual prepareNrt()->void override;
-		GetInfo() { this->command().setName("get_i"); }
 	};
 }
 

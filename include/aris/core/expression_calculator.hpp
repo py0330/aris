@@ -211,6 +211,8 @@ namespace aris::core
 		auto currentCmd()const->const std::string&;
 		// 返回当前的行号 //
 		auto currentLine()const->int;
+		// 返回当前的文件 //
+		auto currentFile()const->std::string;
 		// 返回当前行的 word //
 		auto currentWord()const->std::string_view;
 		// 返回当前行出去 word 后的部分 //
