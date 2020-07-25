@@ -749,7 +749,7 @@ namespace aris::server
 										cmd_vec.push_back(std::pair<std::string_view, std::function<void(aris::plan::Plan&)>>(std::string_view(cmd), [&, current_line, next_line](aris::plan::Plan &plan)->void
 										{
 											std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
-											imp_->current_line_ = imp_->language_parser_.currentLine();
+											imp_->current_line_ = next_line;
 										}));
 										lines.push_back(current_line);
 									}
