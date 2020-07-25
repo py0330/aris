@@ -182,7 +182,9 @@ namespace aris::server
 		aris::core::LanguageParser language_parser_;
 		aris::core::Calculator calculator_;
 		std::thread auto_thread_;
-		std::atomic<int> current_line_{0};
+		std::mutex auto_mu_;
+
+		int current_line_{0};
 		std::string current_file_;
 		bool is_auto_mode_{ false };
 
@@ -215,7 +217,8 @@ namespace aris::server
 	//auto ProgramWebInterface::currentLine()->int { return imp_->current_line_.load(); }
 	auto ProgramWebInterface::currentFileLine()->std::tuple<std::string, int> 
 	{
-		return std::make_tuple(imp_->current_file_, imp_->current_line_.load());
+		std::unique_lock<std::mutex> lck(imp_->auto_mu_);
+		return std::make_tuple(imp_->current_file_, imp_->current_line_);
 	}
 
 	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type) :Interface(name), imp_(new Imp)
@@ -398,7 +401,13 @@ namespace aris::server
 						}
 						else
 						{
-							imp_->language_parser_.gotoFileLine("modify later",std::stoi(std::string(value)));
+							auto file = value.substr(0, value.find_first_of("."));
+							auto line = std::stoi(std::string(value.substr(value.find_first_of(".") + 1)));
+							
+							imp_->language_parser_.gotoFileLine(std::string(file) + ".aris", line);
+							std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+							imp_->current_line_ = imp_->language_parser_.currentLine();
+							imp_->current_file_ = imp_->language_parser_.currentFile();
 							send_code_and_msg(0, "");
 							return 0;
 						}
@@ -418,7 +427,8 @@ namespace aris::server
 						else
 						{
 							imp_->language_parser_.gotoMain();
-							imp_->current_line_.store(imp_->language_parser_.currentLine());
+							std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+							imp_->current_line_ = imp_->language_parser_.currentLine();
 							imp_->current_file_ = imp_->language_parser_.currentFile();
 							send_code_and_msg(0, "");
 							return 0;
@@ -464,12 +474,14 @@ namespace aris::server
 										if (auto ret_double = std::any_cast<double>(&ret.second))
 										{
 											imp_->language_parser_.forward(*ret_double != 0.0);
-											imp_->current_line_.store(imp_->language_parser_.currentLine());
+											std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+											imp_->current_line_ = imp_->language_parser_.currentLine();
 										}
 										else if (auto ret_mat = std::any_cast<aris::core::Matrix>(&ret.second))
 										{
 											imp_->language_parser_.forward(ret_mat->toDouble() != 0.0);
-											imp_->current_line_.store(imp_->language_parser_.currentLine());
+											std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+											imp_->current_line_ = imp_->language_parser_.currentLine();
 										}
 										else
 										{
@@ -492,7 +504,8 @@ namespace aris::server
 								else
 								{
 									imp_->language_parser_.forward();
-									imp_->current_line_.store(imp_->language_parser_.currentLine());
+									std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+									imp_->current_line_ = imp_->language_parser_.currentLine();
 								}
 							}
 							else if (imp_->language_parser_.isCurrentLineFunction())
@@ -500,7 +513,8 @@ namespace aris::server
 								ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 								LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 								imp_->language_parser_.forward();
-								imp_->current_line_.store(imp_->language_parser_.currentLine());
+								std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+								imp_->current_line_ = imp_->language_parser_.currentLine();
 								imp_->current_file_ = imp_->language_parser_.currentFile();
 							}
 							else if (imp_->language_parser_.currentWord() == "set")
@@ -511,7 +525,8 @@ namespace aris::server
 								{
 									c.calculateExpression(imp_->language_parser_.currentParamStr());
 									imp_->language_parser_.forward();
-									imp_->current_line_.store(imp_->language_parser_.currentLine());
+									std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+									imp_->current_line_ = imp_->language_parser_.currentLine();
 								}
 								catch (std::exception &e)
 								{
@@ -531,7 +546,8 @@ namespace aris::server
 
 								auto ret = cs.executeCmdInCmdLine(cmd, [&, current_line, next_line](aris::plan::Plan &plan)->void
 								{
-									imp_->current_line_.store(next_line);
+									std::unique_lock<std::mutex> lck(imp_->auto_mu_);
+									imp_->current_line_ = next_line;
 								});
 
 								ARIS_PRO_COUT << current_line << "---" << ret->cmdId() << "---" << ret->cmdString() << std::endl;
@@ -592,7 +608,10 @@ namespace aris::server
 								std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
 								auto &c = aris::server::ControlServer::instance().model().calculator();
 								auto &cs = aris::server::ControlServer::instance();
-								imp_->current_line_.store(imp_->language_parser_.currentLine());
+								std::unique_lock<std::mutex> lck(imp_->auto_mu_);
+								imp_->current_line_ = imp_->language_parser_.currentLine();
+								imp_->current_file_ = imp_->language_parser_.currentFile();
+								lck.unlock();
 								std::vector < std::pair<std::string_view, std::function<void(aris::plan::Plan&)>> > cmd_vec;
 								std::vector <int> lines;
 
@@ -653,12 +672,14 @@ namespace aris::server
 												if (auto ret_double = std::any_cast<double>(&ret.second))
 												{
 													imp_->language_parser_.forward(*ret_double != 0.0);
-													imp_->current_line_.store(imp_->language_parser_.currentLine());
+													std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+													imp_->current_line_ = imp_->language_parser_.currentLine();
 												}
 												else if (auto ret_mat = std::any_cast<aris::core::Matrix>(&ret.second))
 												{
 													imp_->language_parser_.forward(ret_mat->toDouble() != 0.0);
-													imp_->current_line_.store(imp_->language_parser_.currentLine());
+													std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+													imp_->current_line_ = imp_->language_parser_.currentLine();
 												}
 												else
 												{
@@ -681,7 +702,9 @@ namespace aris::server
 										else
 										{
 											imp_->language_parser_.forward();
-											imp_->current_line_.store(imp_->language_parser_.currentLine());
+											std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+											imp_->current_line_ = imp_->language_parser_.currentLine();
+											imp_->current_file_ = imp_->language_parser_.currentFile();
 										}
 									}
 									else if (imp_->language_parser_.isCurrentLineFunction())
@@ -690,7 +713,9 @@ namespace aris::server
 										ARIS_PRO_COUT << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 										LOG_INFO << "pro " << imp_->language_parser_.currentLine() << "---" << imp_->language_parser_.currentCmd() << std::endl;
 										imp_->language_parser_.forward();
-										imp_->current_line_.store(imp_->language_parser_.currentLine());
+										std::unique_lock<std::mutex> lck(imp_->auto_mu_);
+										imp_->current_line_ = imp_->language_parser_.currentLine();
+										imp_->current_file_ = imp_->language_parser_.currentFile();
 									}
 									else if (imp_->language_parser_.currentWord() == "set")
 									{
@@ -701,7 +726,8 @@ namespace aris::server
 										{
 											c.calculateExpression(imp_->language_parser_.currentParamStr());
 											imp_->language_parser_.forward();
-											imp_->current_line_.store(imp_->language_parser_.currentLine());
+											std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+											imp_->current_line_ = imp_->language_parser_.currentLine();
 										}
 										catch (std::exception &e)
 										{
@@ -722,7 +748,8 @@ namespace aris::server
 
 										cmd_vec.push_back(std::pair<std::string_view, std::function<void(aris::plan::Plan&)>>(std::string_view(cmd), [&, current_line, next_line](aris::plan::Plan &plan)->void
 										{
-											imp_->current_line_.store(next_line);
+											std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+											imp_->current_line_ = imp_->language_parser_.currentLine();
 										}));
 										lines.push_back(current_line);
 									}
@@ -731,7 +758,9 @@ namespace aris::server
 								}
 								
 								cs.waitForAllCollection();
-								imp_->current_line_.store(imp_->language_parser_.currentLine());
+								lck.lock();
+								imp_->current_line_ = imp_->language_parser_.currentLine();
+								lck.unlock();
 
 								std::swap(imp_->calculator_, aris::server::ControlServer::instance().model().calculator());
 								ARIS_PRO_COUT << "---" << (imp_->is_stop_.load() ? "program stopped" : "program finished") << std::endl;
