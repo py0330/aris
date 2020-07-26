@@ -14,6 +14,13 @@ namespace aris::server
 	class ARIS_API MakeBlockly
 	{
 	public:
+		auto trim_left(std::string_view input)->std::string_view
+		{
+			auto point = input.find_first_not_of(' ');
+			return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
+		};
+
+
 		auto parse_raw(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>
 		{
 			auto cut_str = [](std::string_view &input, const char *c)->std::string_view
@@ -23,11 +30,6 @@ namespace aris::server
 				auto ret = input.substr(0, point);
 				input = point == std::string::npos ? std::string_view() : input.substr(point);
 				return ret;
-			};
-			auto trim_left = [](std::string_view input)->std::string_view
-			{
-				auto point = input.find_first_not_of(' ');
-				return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
 			};
 			auto get_param_value = [&](std::string_view &cmd_str)->std::string_view
 			{
@@ -75,12 +77,8 @@ namespace aris::server
 			return std::make_tuple(cmd, param_map);
 		}
 		
-		auto make(std::filesystem::path program, std::filesystem::path blockly_dir)
+		auto make(std::filesystem::path program)
 		{
-			if (!std::filesystem::exists(blockly_dir))
-			{
-				std::filesystem::create_directories(blockly_dir);
-			}
 			cal.clearVariables();
 			//////////////////////////make var/////////////////////////////////
 			{
@@ -93,31 +91,122 @@ namespace aris::server
 				bool is_first = true;
 				while (std::getline(pf, line, '\n'))
 				{
-					std::cout << line << std::endl;
-
 					if (line.find_first_of(":") == std::string::npos) continue;
 
-
 					int id = std::stoi(line.substr(0, line.find_first_of(":")));
-					auto data = line.substr(line.find_first_of(":") + 1);
-					std::stringstream ss(data);
-					std::string word;
-					ss >> word;
+					std::string data = std::string(trim_left(line.substr(line.find_first_of(":") + 1)));
+					std::string word = data.substr(0, data.find_first_of(" ("));
 
 					if (word == "var")
 					{
-						std::string type;
-						std::string name;
-						ss >> type;
-						ss >> name;
+						std::string str = std::string(trim_left(data.substr(word.size())));
+						std::string type = str.substr(0, str.find_first_of(" ="));
+						str = str.substr(type.size() + 1);
+						std::string name = str.substr(0, str.find_first_of(" ="));
+						str = str.substr(name.size());
+						std::string equal = str.substr(0, str.find_first_of("="));
+						str = str.substr(equal.size() + 1);
+						std::string value = str;
 
-						cal.addVariable(name, type, name);
+						// 去掉前缀 //
+						name = name.substr(name.find_first_of(".") + 1);
+						cal.addVariable(name, type, value);
+
+						auto nbv = var_doc.NewElement("block");
+						nbv->SetAttribute("id", id);
+						auto name_field = var_doc.NewElement("field");
+						name_field->SetAttribute("name", "name");
+						name_field->SetText(name.c_str());
+						nbv->InsertEndChild(name_field);
+
+						static aris::core::Calculator calculator;
+						if (type == "robtarget")
+						{
+							nbv->SetAttribute("type", "robtarget_variable");
+							auto mat = std::any_cast<aris::core::Matrix>(calculator.calculateExpression(value).second);
+
+							auto names = { "x", "y", "z", "a", "b", "c" };
+							double coe[] = { 1000.0, 1000.0, 1000.0, 180 / aris::PI ,180 / aris::PI ,180 / aris::PI , };
+
+							for (int i = 0; i < 6; ++i)
+							{
+								auto field = var_doc.NewElement("field");
+								field->SetAttribute("name", *(names.begin() + i));
+								field->SetText(mat.data()[i]* coe[i]);
+								nbv->InsertEndChild(field);
+							}
+						}
+						else if(type == "jointtarget")
+						{
+							nbv->SetAttribute("type", "jointtarget_variable");
+							auto mat = std::any_cast<aris::core::Matrix>(calculator.calculateExpression(value).second);
+
+							auto names = { "j1", "j2", "j3", "j4", "j5", "j6" };
+							double coe[] = { 180 / aris::PI ,180 / aris::PI ,180 / aris::PI , 180 / aris::PI ,180 / aris::PI ,180 / aris::PI , };
+
+							for (int i = 0; i < 6; ++i)
+							{
+								auto field = var_doc.NewElement("field");
+								field->SetAttribute("name", *(names.begin() + i));
+								field->SetText(mat.data()[i]*coe[i]);
+								nbv->InsertEndChild(field);
+							}
+						}
+						else if (type == "speed")
+						{
+							nbv->SetAttribute("type", "speed_variable");
+							auto mat = std::any_cast<aris::core::Matrix>(calculator.calculateExpression(value).second);
+
+							auto names = { "percent", "linear", "angular", "exj_angular", "exj_linear" };
+							double coe[] = { 100 ,1 ,180 / aris::PI , 180 / aris::PI ,1 };
+
+
+							for (int i = 0; i < 5; ++i)
+							{
+								auto field = var_doc.NewElement("field");
+								field->SetAttribute("name", *(names.begin() + i));
+								field->SetText(mat.data()[i]*coe[i]);
+								nbv->InsertEndChild(field);
+							}
+						}
+						else if (type == "zone")
+						{
+							nbv->SetAttribute("type", "zone_variable");
+							auto mat = std::any_cast<aris::core::Matrix>(calculator.calculateExpression(value).second);
+
+							auto names = { "dis", "per" };
+							double coe[] = { 100 ,100 };
+
+							for (int i = 0; i < 2; ++i)
+							{
+								auto field = var_doc.NewElement("field");
+								field->SetAttribute("name", *(names.begin() + i));
+								field->SetText(mat.data()[i] * coe[i]);
+								nbv->InsertEndChild(field);
+							}
+						}
+	
+						if (is_first)
+						{
+							nbv->SetAttribute("x", 30);
+							nbv->SetAttribute("y", 30);
+							is_first = false;
+							lbv->InsertEndChild(nbv);
+						}
+						else
+						{
+							auto next = var_doc.NewElement("next");
+							lbv->InsertEndChild(next);
+							next->InsertEndChild(nbv);
+						}
+
+						lbv = nbv;
 					}
 					
 				}
-
-				auto v = (blockly_dir / ("test.dat"));
-				var_doc.SaveFile(v.string().c_str(), false);
+				
+				auto v = (program.parent_path() / (program.stem().string() + ".dat"));
+				var_doc.SaveFile(v.string().c_str(), true);
 			}
 
 			//////////////////////////make pro/////////////////////////////////
@@ -133,16 +222,11 @@ namespace aris::server
 				bool is_first = true;
 				while (std::getline(pf, line, '\n'))
 				{
-					std::cout << line << std::endl;
-					
 					if (line.find_first_of(":") == std::string::npos) continue;
 					
 					int id = std::stoi(line.substr(0, line.find_first_of(":")));
-					auto data = line.substr(line.find_first_of(":") + 1);
-					std::stringstream ss(data);
-					std::string word;
-					ss >> word;
-					std::cout << word << std::endl;
+					std::string data = std::string(trim_left(line.substr(line.find_first_of(":") + 1)));
+					std::string word = data.substr(0, data.find_first_of(" ("));
 
 					if (word == "main" || word == "function" || word == "if" || word == "while")
 					{
@@ -150,6 +234,34 @@ namespace aris::server
 						nbp->SetAttribute("type", word.c_str());
 						nbp->SetAttribute("id", id);
 						stack.push_back(nbp);
+
+						if (word == "function")
+						{
+							std::string func_name = std::string(trim_left(data.substr(word.size())));
+							func_name = func_name.substr(0, func_name.find_first_of(" ("));
+							func_name = func_name.substr(func_name.find_first_of("."));
+							func_name = func_name.substr(1);
+
+							auto field = pro_doc.NewElement("field");
+							field->SetAttribute("name", "name");
+							field->SetText(func_name.c_str());
+							nbp->InsertEndChild(field);
+						}
+						else if (word == "if")
+						{
+							this->current_doc_ = &pro_doc;
+
+							auto condition = pro_doc.NewElement("value");
+							condition->SetAttribute("name", "condition");
+
+							auto[name, value] = this->cal.calculateExpression(data.substr(word.size()));
+							auto v = std::any_cast<tinyxml2::XMLElement*>(value);
+							condition->InsertFirstChild(std::any_cast<tinyxml2::XMLElement*>(value));
+
+							nbp->InsertFirstChild(condition);
+						}
+
+
 						if (is_first)
 						{
 							nbp->SetAttribute("x", 30);
@@ -176,30 +288,6 @@ namespace aris::server
 						nbp->InsertEndChild(state);
 
 						lbp = state;
-
-						if (word == "function")
-						{
-							std::string func_name;
-							ss >> func_name;
-							auto field = pro_doc.NewElement("field");
-							field->SetAttribute("name", "func_name");
-							field->SetText(func_name.c_str());
-							nbp->InsertEndChild(field);
-						}
-
-						if (word == "if")
-						{
-							this->current_doc_ = &pro_doc;
-
-							auto condition = pro_doc.NewElement("value");
-							condition->SetAttribute("name", "condition");
-
-							auto[name, value] = this->cal.calculateExpression(data.substr(word.size()));
-							auto v = std::any_cast<tinyxml2::XMLElement*>(value);
-							condition->InsertFirstChild(std::any_cast<tinyxml2::XMLElement*>(value));
-
-							nbp->InsertFirstChild(condition);
-						}
 					}
 					else if (word == "endmain" || word == "endfunction" || word == "endif" || word == "endwhile")
 					{
@@ -209,20 +297,23 @@ namespace aris::server
 					else if (word == "var" || word == "set")
 					{
 					}
-					else
+					else if (data.size()>=word.size() && data[word.size()] == '(') 
 					{
-						auto[cmd, params] = parse_raw(data);
-
+						// function //
 						auto nbp = pro_doc.NewElement("block");
-						nbp->SetAttribute("type", std::string(cmd).c_str());
+						nbp->SetAttribute("type", "call");
 						nbp->SetAttribute("id", id);
-						for (auto &param : params)
-						{
-							auto field = pro_doc.NewElement("field");
-							field->SetAttribute("name", std::string(param.first).c_str());
-							field->SetText(std::string(param.second).c_str());
-							nbp->InsertEndChild(field);
-						}
+
+						auto field = pro_doc.NewElement("field");
+						field->SetAttribute("name", "func_name");
+
+						// 以下替代掉前缀 //
+						//auto program_prefix = program.filename().stem().string() + ".";
+						//auto index = word.find(program_prefix, 0);
+						//if (index != std::string::npos) word.replace(index, program_prefix.size(), "");
+						
+						field->SetText(word.c_str());
+						nbp->InsertEndChild(field);
 
 						if (is_first)
 						{
@@ -247,10 +338,68 @@ namespace aris::server
 
 						lbp = nbp;
 					}
+					else
+					{
+						try 
+						{
+							auto[cmd, params] = parse_raw(data);
+							auto nbp = pro_doc.NewElement("block");
+							nbp->SetAttribute("type", std::string(cmd).c_str());
+							nbp->SetAttribute("id", id);
+							for (auto &param : params)
+							{
+								auto field = pro_doc.NewElement("field");
+								field->SetAttribute("name", std::string(param.first).c_str());
+								std::string value = std::string(param.second);
+
+								// 以下替代掉前缀 //
+								//auto program_prefix = program.filename().stem().string() + ".";
+								//auto index = value.find(program_prefix, 0);
+								//if (index != std::string::npos) value.replace(index, program_prefix.size(), "");
+								
+								field->SetText(value.c_str());
+
+
+								nbp->InsertEndChild(field);
+							}
+
+							if (is_first)
+							{
+								nbp->SetAttribute("x", 30);
+								nbp->SetAttribute("y", 30);
+								is_first = false;
+								lbp->InsertEndChild(nbp);
+							}
+							else
+							{
+								if (lbp->Name() == std::string("statement"))
+								{
+									lbp->InsertEndChild(nbp);
+								}
+								else
+								{
+									auto next = pro_doc.NewElement("next");
+									lbp->InsertEndChild(next);
+									next->InsertEndChild(nbp);
+								}
+							}
+
+							lbp = nbp;
+						}
+						catch (std::exception &e)
+						{
+							std::cout << e.what() << std::endl;
+						}
+						
+
+
+
+
+					}
 				}
 
-				auto p = (blockly_dir / ("test.pro"));
-				pro_doc.SaveFile(p.string().c_str(), false);
+				auto p = (program.parent_path() / (program.stem().string() + ".pro"));
+				pro_doc.SaveFile(p.string().c_str(), true);
 				
 			}
 		}
