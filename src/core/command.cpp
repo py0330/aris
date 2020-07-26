@@ -310,7 +310,7 @@ namespace aris::core
 			
 			int brace_num = 0;
 			int i = 1;
-			for (i = 1; i < cmd_str.size() && !(std::isspace(cmd_str[i]) && brace_num == 0); ++i)
+			for (i = 1; i < cmd_str.size() && !(std::isspace(static_cast<unsigned char>(cmd_str[i])) && brace_num == 0); ++i)
 			{
 				switch (cmd_str[i])
 				{

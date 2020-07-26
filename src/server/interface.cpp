@@ -254,7 +254,7 @@ namespace aris::server
 					LOG_ERROR << e.what() << std::endl;
 				}
 			};
-			auto send_code_and_msg = [send_ret, msg](int code, const std::string& ret_msg_str)
+			auto send_code_and_msg = [send_ret, &msg](int code, const std::string& ret_msg_str)
 			{
 				nlohmann::json js;
 				js["return_code"] = code;///////////////////////////////////////////////////////////
@@ -278,6 +278,11 @@ namespace aris::server
 				<< msg.header().reserved2_ << "&"
 				<< msg.header().reserved3_ << ":"
 				<< msg_data << std::endl;
+
+			if (msg_data.size() > 100)
+			{
+				std::cout << msg_data << std::endl;
+			}
 
 			std::string_view cmd;
 			std::map<std::string_view, std::string_view> params;

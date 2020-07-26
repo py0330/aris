@@ -33,7 +33,7 @@ namespace aris::server
 			{
 				int brace_num = 0;
 				int i = 1;
-				for (i = 1; i < cmd_str.size() && !(std::isspace(cmd_str[i]) && brace_num == 0); ++i)
+				for (i = 1; i < cmd_str.size() && !(std::isspace(static_cast<unsigned char>(cmd_str[i])) && brace_num == 0); ++i)
 				{
 					switch (cmd_str[i])
 					{
@@ -95,6 +95,9 @@ namespace aris::server
 				{
 					std::cout << line << std::endl;
 
+					if (line.find_first_of(":") == std::string::npos) continue;
+
+
 					int id = std::stoi(line.substr(0, line.find_first_of(":")));
 					auto data = line.substr(line.find_first_of(":") + 1);
 					std::stringstream ss(data);
@@ -130,11 +133,16 @@ namespace aris::server
 				bool is_first = true;
 				while (std::getline(pf, line, '\n'))
 				{
+					std::cout << line << std::endl;
+					
+					if (line.find_first_of(":") == std::string::npos) continue;
+					
 					int id = std::stoi(line.substr(0, line.find_first_of(":")));
 					auto data = line.substr(line.find_first_of(":") + 1);
 					std::stringstream ss(data);
 					std::string word;
 					ss >> word;
+					std::cout << word << std::endl;
 
 					if (word == "main" || word == "function" || word == "if" || word == "while")
 					{
@@ -189,11 +197,8 @@ namespace aris::server
 							auto[name, value] = this->cal.calculateExpression(data.substr(word.size()));
 							auto v = std::any_cast<tinyxml2::XMLElement*>(value);
 							condition->InsertFirstChild(std::any_cast<tinyxml2::XMLElement*>(value));
-						
 
 							nbp->InsertFirstChild(condition);
-
-
 						}
 					}
 					else if (word == "endmain" || word == "endfunction" || word == "endif" || word == "endwhile")

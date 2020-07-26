@@ -334,6 +334,18 @@ int main(int argc, char *argv[])
 	cs.model().generalMotionPool()[0].updMpm();
 	aris::dynamic::dsp(4, 4, *cs.model().generalMotionPool()[0].mpm());
 
+	aris::server::MakeBlockly make_block;
+	make_block.make("D:\\UI_DarkColor_English-0103_panbo\\UI_DarkColor_English-0103_panbo\\robot\\program\\aaa\\aaa.aris", "C:\\Users\\py033\\Desktop");
+
+
+
+
+
+
+
+
+
+
 	try
 	{
 		//aris::core::toXmlFile(cs, "C:\\Users\\py033\\Desktop\\test.xml");

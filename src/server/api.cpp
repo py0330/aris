@@ -268,7 +268,7 @@ namespace aris::server
 							my_json file_js;
 							file_js["name"] = file.path().filename().string();
 							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().string();
-							std::ifstream f(file);
+							std::ifstream f(file.path());
 							std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 							file_js["content"] = str;
 							
@@ -340,7 +340,7 @@ namespace aris::server
 							my_json file_js;
 							file_js["name"] = file.path().filename().string();
 							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().filename().string();
-							std::ifstream f(file);
+							std::ifstream f(file.path());
 							std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 							file_js["content"] = str;
 							pro_dir_js["files"].push_back(file_js);
