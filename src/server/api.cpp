@@ -15,11 +15,11 @@ namespace aris::server
 
 	auto generate_random_id(int length)->std::string 
 	{
-		const char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:;.,?!-_+=-*";
+		const char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 		std::string ret;
 		ret.reserve(length);
-		for (int i = 0; i < length; ++i)ret.push_back(letters[std::rand() % 64]);
+		for (int i = 0; i < length; ++i)ret.push_back(letters[std::rand() % 62]);
 		return ret;
 	};
 
@@ -258,7 +258,7 @@ namespace aris::server
 				pro_dir_js["modTime"] = buffer.str();
 				pro_dir_js["isDir"] = true;
 				
-				std::filesystem::path dat, pro;
+				pro_dir_js["files"] = my_json::array();
 				for (auto&file : std::filesystem::directory_iterator(dir))
 				{
 					if (file.is_regular_file())
@@ -462,12 +462,7 @@ namespace aris::server
 			f << file["content"].get<std::string>();
 			f.close();
 
-			if (auto ext = std::filesystem::path(file["name"].get<std::string>()).extension(); ext != ".dat" && ext != ".pro") 
-			{
-				std::cout << ext << std::endl;
-				continue;
-			}
-
+			if (auto ext = std::filesystem::path(file["name"].get<std::string>()).extension(); ext != ".dat" && ext != ".pro") continue;
 
 			if (file.contains("jointtargets"))file.erase("jointtargets");
 			if (file.contains("robtargets"))file.erase("robtargets");

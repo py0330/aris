@@ -111,7 +111,7 @@ static const int TIXML2_PATCH_VERSION = 1;
 // system, and the capacity of the stack. On the other hand, it's a trivial
 // attack that can result from ill, malicious, or even correctly formed XML,
 // so there needs to be a limit in place.
-static const int TINYXML2_MAX_ELEMENT_DEPTH = 100;
+static const int TINYXML2_MAX_ELEMENT_DEPTH = 2000;
 
 namespace tinyxml2
 {
