@@ -56,8 +56,8 @@ namespace aris::server
 		auto setRtPlanPostCallback(PostCallback post_callback)->void;
 		auto running()->bool;
 		auto globalCount()->std::int64_t;
-		auto globalCheckOption()->std::uint64_t*;
 		auto currentExecutePlanRt()->aris::plan::Plan *;
+		auto globalMotionCheckOption()->std::int64_t*;
 
 		// operation in NRT context //
 		auto open()->void;

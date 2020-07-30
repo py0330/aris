@@ -128,7 +128,7 @@ namespace aris::server
 		PVC *last_pvc_, *last_last_pvc_;
 
 		// Error 相关
-		std::uint64_t *global_mot_options_;
+		std::uint64_t *idle_mot_check_options_, *global_mot_check_options_;
 		std::atomic<std::int64_t> err_code_and_fixed_{ 0 };
 		char err_msg_[1024]{ 0 };
 
@@ -186,9 +186,9 @@ namespace aris::server
 				plan.imp_->begin_global_count_ = global_count;
 
 				// 创建rt_log文件 //
-				char name[1000];
-				std::sprintf(name, "%" PRId64 "", plan.cmdId());
-				server_->controller().logFile(name);
+				// char name[1000];
+				// std::sprintf(name, "%" PRId64 "", plan.cmdId());
+				// server_->controller().logFile(name);
 
 				// 初始化统计数据 //
 				server_->controller().resetRtStasticData(&plan.rtStastic(), true);
@@ -232,7 +232,7 @@ namespace aris::server
 			}
 		}
 		// 否则检查idle状态
-		else if (err.code = checkMotion(global_mot_options_, err_msg_, 0); err.code < 0)
+		else if (err.code = checkMotion(idle_mot_check_options_, err_msg_, 0); err.code < 0)
 		{
 			err.fix = fixError(true);
 			err_code_and_fixed_.store(err_code_and_fixed);
@@ -546,7 +546,6 @@ namespace aris::server
 	auto ControlServer::setRtPlanPostCallback(PostCallback post_callback)->void { imp_->post_callback_.store(post_callback); }
 	auto ControlServer::running()->bool { return imp_->is_running_; }
 	auto ControlServer::globalCount()->std::int64_t { return imp_->global_count_.load(); }
-	auto ControlServer::globalCheckOption()->std::uint64_t* { return imp_->global_mot_options_; }
 	auto ControlServer::currentExecutePlanRt()->aris::plan::Plan *
 	{
 		auto cmd_now = imp_->cmd_now_.load();
@@ -671,6 +670,7 @@ namespace aris::server
 				plan->imp_->shared_for_this_ = plan;
 				plan->imp_->option_ = 0;
 				plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
+				std::copy_n(imp_->global_mot_check_options_, plan->imp_->controller_->motionPool().size(), plan->imp_->mot_options_.data());
 				plan->imp_->cmd_str_ = std::move(cmd_str_local);
 				plan->imp_->cmd_name_ = std::move(cmd);
 				plan->imp_->cmd_params_ = std::move(params);
@@ -842,14 +842,17 @@ namespace aris::server
 
 		core::allocMem(mem_size, imp_->last_pvc_, controller().slavePool().size());
 		core::allocMem(mem_size, imp_->last_last_pvc_, controller().slavePool().size());
-		core::allocMem(mem_size, imp_->global_mot_options_, controller().slavePool().size());
+		core::allocMem(mem_size, imp_->idle_mot_check_options_, controller().slavePool().size());
+		core::allocMem(mem_size, imp_->global_mot_check_options_, controller().slavePool().size());
 
 		imp_->mempool_.resize(mem_size, char(0));
 
 		imp_->last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_pvc_);
 		imp_->last_last_pvc_ = core::getMem(imp_->mempool_.data(), imp_->last_last_pvc_);
-		imp_->global_mot_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_options_);
-		std::fill_n(imp_->global_mot_options_, controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
+		imp_->idle_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->idle_mot_check_options_);
+		std::fill_n(imp_->idle_mot_check_options_, controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
+		imp_->global_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_check_options_);
+		std::fill_n(imp_->global_mot_check_options_, controller().slavePool().size(), std::int64_t(0));
 
 		// 赋予初值 //
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//

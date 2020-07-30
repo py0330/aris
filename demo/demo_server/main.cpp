@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
 	aris::dynamic::dsp(4, 4, *cs.model().generalMotionPool()[0].mpm());
 
 	aris::server::MakeBlockly make_block;
-	make_block.make("D:\\UI_DarkColor_English-0103_panbo\\UI_DarkColor_English-0103_panbo\\robot\\program\\aaa\\aaa.aris");
+	make_block.make("D:\\UI_DarkColor_English-0103_panbo\\UI_DarkColor_English-0103_panbo\\robot\\program\\daiyi\\gongxu1.aris");
 
 
 
