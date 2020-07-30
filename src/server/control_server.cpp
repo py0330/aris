@@ -132,6 +132,9 @@ namespace aris::server
 		std::atomic<std::int64_t> err_code_and_fixed_{ 0 };
 		char err_msg_[1024]{ 0 };
 
+		// log 相关
+		std::atomic<bool> is_rt_log_started_{ true };
+
 		// 储存Model, Controller, SensorRoot, PlanRoot //
 		std::unique_ptr<aris::dynamic::Model> model_;
 		std::unique_ptr<aris::control::Controller> controller_;
@@ -186,9 +189,12 @@ namespace aris::server
 				plan.imp_->begin_global_count_ = global_count;
 
 				// 创建rt_log文件 //
-				// char name[1000];
-				// std::sprintf(name, "%" PRId64 "", plan.cmdId());
-				// server_->controller().logFile(name);
+				if (is_rt_log_started_)
+				{
+					char name[1000];
+					std::sprintf(name, "%" PRId64 "", plan.cmdId());
+					server_->controller().logFile(name);
+				}
 
 				// 初始化统计数据 //
 				server_->controller().resetRtStasticData(&plan.rtStastic(), true);
@@ -552,6 +558,9 @@ namespace aris::server
 		auto cmd_end = imp_->cmd_end_.load();
 		return cmd_end > cmd_now ? imp_->internal_data_queue_[cmd_now % Imp::CMD_POOL_SIZE]->plan_.get() : nullptr;
 	}
+	auto ControlServer::globalMotionCheckOption()->std::uint64_t* { return imp_->global_mot_check_options_; }
+	auto ControlServer::setAutoLogActive(bool auto_log)->void { imp_->is_rt_log_started_.store(auto_log); }
+	auto ControlServer::autoLogActive()->bool { return imp_->is_rt_log_started_.load(); }
 	auto ControlServer::open()->void{ for (auto &inter : interfacePool()) inter.open();	}
 	auto ControlServer::close()->void { for (auto &inter : interfacePool()) inter.close(); }
 	auto ControlServer::runCmdLine()->void

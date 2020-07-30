@@ -57,7 +57,9 @@ namespace aris::server
 		auto running()->bool;
 		auto globalCount()->std::int64_t;
 		auto currentExecutePlanRt()->aris::plan::Plan *;
-		auto globalMotionCheckOption()->std::int64_t*;
+		auto globalMotionCheckOption()->std::uint64_t*;
+		auto setAutoLogActive(bool auto_log)->void;
+		auto autoLogActive()->bool;
 
 		// operation in NRT context //
 		auto open()->void;
