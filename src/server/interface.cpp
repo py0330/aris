@@ -604,6 +604,11 @@ namespace aris::server
 							send_code_and_msg(lastErrorCode(), lastError());
 							return 0;
 						}
+						else if (!imp_->language_parser_.hasCursor())
+						{
+							send_code_and_msg(-1, "please goto main or lines");
+							return 0;
+						}
 						else
 						{
 							imp_->is_pause_.store(false);

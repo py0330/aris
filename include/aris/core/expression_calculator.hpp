@@ -203,6 +203,7 @@ namespace aris::core
 	public:
 		auto setProgram(std::map<std::string, std::string> program)->void;
 		auto parseLanguage()->void;
+		auto hasCursor()->bool;// 是否有program，并且当前存在可执行行 //
 		auto varPool()->const std::vector<std::string>&;
 		auto gotoMain()->void;
 		auto gotoFileLine(std::string file, int line)->void;

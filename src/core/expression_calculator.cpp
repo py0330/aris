@@ -1749,12 +1749,12 @@ namespace aris::core
 	};
 	auto LanguageParser::parseLanguage()->void 
 	{ 
-		for (auto &file : imp_->files_)
-		{
+		for (auto &file : imp_->files_){
 			imp_->parseEnvironment(file.first, imp_->cmds_[file.first].begin(), imp_->cmds_[file.first].end());
 		}
 
 		if (imp_->main_line_ == 0)THROW_FILE_LINE("program must has main");
+		this->gotoMain();
 	}
 	auto LanguageParser::setProgram(std::map<std::string, std::string> program)->void
 	{
@@ -1785,6 +1785,10 @@ namespace aris::core
 				if (cmd != "")imp_->cmds_[file.first][id] = Imp::CmdInfo{ cmd, 0, 0 };
 			}
 		}
+	}
+	auto LanguageParser::hasCursor()->bool {
+		return imp_->cmds_.find(imp_->current_file_) != imp_->cmds_.end()
+			&& imp_->cmds_[imp_->current_file_].find(imp_->current_line_) != imp_->cmds_[imp_->current_file_].end();
 	}
 	auto LanguageParser::varPool()->const std::vector<std::string>& { return imp_->variables_; }
 	auto LanguageParser::gotoMain()->void
