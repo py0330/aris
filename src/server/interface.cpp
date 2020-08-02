@@ -64,7 +64,7 @@ namespace aris::server
 
 		try
 		{
-			aris::server::ControlServer::instance().executeCmdInCmdLine(std::string_view(msg.data(), msg.size()), [socket, msg](aris::plan::Plan &plan)->void
+			aris::server::ControlServer::instance().executeCmdInCmdLine(std::string(msg.data(), msg.size()), [socket, msg](aris::plan::Plan &plan)->void
 			{
 				// make return msg
 				aris::core::Msg ret_msg(msg);
@@ -619,7 +619,7 @@ namespace aris::server
 								imp_->current_line_ = imp_->language_parser_.currentLine();
 								imp_->current_file_ = imp_->language_parser_.currentFile();
 								lck.unlock();
-								std::vector < std::pair<std::string_view, std::function<void(aris::plan::Plan&)>> > cmd_vec;
+								std::vector < std::pair<std::string, std::function<void(aris::plan::Plan&)>> > cmd_vec;
 								std::vector <int> lines;
 
 								for (int has_error{ 0 }; has_error == 0 && (!imp_->language_parser_.isEnd());)
@@ -753,7 +753,7 @@ namespace aris::server
 										imp_->language_parser_.forward();
 										auto next_line = imp_->language_parser_.currentLine();
 
-										cmd_vec.push_back(std::pair<std::string_view, std::function<void(aris::plan::Plan&)>>(std::string_view(cmd), [&, current_line, next_line](aris::plan::Plan &plan)->void
+										cmd_vec.push_back(std::pair<std::string, std::function<void(aris::plan::Plan&)>>(cmd, [&, current_line, next_line](aris::plan::Plan &plan)->void
 										{
 											std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
 											imp_->current_line_ = next_line;
@@ -838,7 +838,7 @@ namespace aris::server
 			}
 			else
 			{
-				aris::server::ControlServer::instance().executeCmdInCmdLine(std::string_view(msg.data(), msg.size()), [socket, msg, send_ret](aris::plan::Plan &plan)->void
+				aris::server::ControlServer::instance().executeCmdInCmdLine(std::string(msg.data(), msg.size()), [socket, msg, send_ret](aris::plan::Plan &plan)->void
 				{
 					// make return msg
 					aris::core::Msg ret_msg(msg);

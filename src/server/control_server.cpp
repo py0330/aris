@@ -154,7 +154,7 @@ namespace aris::server
 		std::atomic<PostCallback> post_callback_{ nullptr };
 
 		// execute in cmd line
-		std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)> > > cmdline_cmd_vec_;
+		std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmdline_cmd_vec_;
 		std::atomic_bool cmdline_msg_received_ = false;
 		std::shared_ptr<std::promise<std::vector<std::shared_ptr<aris::plan::Plan>> > > cmdline_execute_promise_;
 	};
@@ -623,7 +623,7 @@ namespace aris::server
 	// 2.任何一个str parse失败，全部指令都不执行
 	// 3.任何一个prepare失败，全部指令都不执行
 	// 4.任何一个prepare失败，之前prepare成功的会collect，其他的不会（只有prepare且成功的，才会collect）
-	auto ControlServer::executeCmd(std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)> > > cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
+	auto ControlServer::executeCmd(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
 	{
 		// 当 executeCmd(str, callback) 时，系统内的执行流程如下：
 		// 1.   parse str
@@ -660,13 +660,13 @@ namespace aris::server
 			auto &plan = internal_data.back()->plan_;
 			try
 			{
-				std::vector<char> cmd_str_local(str.size());
-				std::copy(str.begin(), str.end(), cmd_str_local.begin());
-				str = std::string_view(cmd_str_local.data(), cmd_str_local.size());
+				plan->imp_->cmd_str_.resize(str.size());
+				std::copy(str.begin(), str.end(), plan->imp_->cmd_str_.begin());
 
 				++cmd_id;
 				LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << str << std::endl;
-				auto[cmd, params] = planRoot().planParser().parse(str);
+				auto[cmd, params] = planRoot().planParser().parse(std::string_view(plan->imp_->cmd_str_.data(), plan->imp_->cmd_str_.size()));
+
 				auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->clone()));
 				plan->imp_->count_ = 0;
@@ -680,7 +680,6 @@ namespace aris::server
 				plan->imp_->option_ = 0;
 				plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
 				std::copy_n(imp_->global_mot_check_options_, plan->imp_->controller_->motionPool().size(), plan->imp_->mot_options_.data());
-				plan->imp_->cmd_str_ = std::move(cmd_str_local);
 				plan->imp_->cmd_name_ = std::move(cmd);
 				plan->imp_->cmd_params_ = std::move(params);
 				plan->imp_->begin_global_count_ = 0;
@@ -816,13 +815,13 @@ namespace aris::server
 		// step 4a&5a. USE RAII //
 		return ret_plan;
 	}
-	auto ControlServer::executeCmd(std::string_view cmd_str, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
+	auto ControlServer::executeCmd(std::string cmd_str, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
 	{
-		std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_str, post_callback) };
+		std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_str, post_callback) };
 		auto ret = executeCmd(cmd_vec);
 		return ret.front();
 	}
-	auto ControlServer::executeCmdInCmdLine(std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)>>> cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
+	auto ControlServer::executeCmdInCmdLine(std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)>>> cmd_vec)->std::vector<std::shared_ptr<aris::plan::Plan>>
 	{
 		static std::mutex mu_;
 		std::unique_lock<std::mutex> lck(mu_);
@@ -834,9 +833,9 @@ namespace aris::server
 
 		return ret.get();
 	}
-	auto ControlServer::executeCmdInCmdLine(std::string_view cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
+	auto ControlServer::executeCmdInCmdLine(std::string cmd_string, std::function<void(aris::plan::Plan&)> post_callback)->std::shared_ptr<aris::plan::Plan>
 	{
-		std::vector<std::pair<std::string_view, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_string, post_callback) };
+		std::vector<std::pair<std::string, std::function<void(aris::plan::Plan&)> > > cmd_vec{ std::make_pair(cmd_string, post_callback) };
 		auto ret = executeCmdInCmdLine(cmd_vec);
 		return ret.front();
 	}
