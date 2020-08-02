@@ -267,7 +267,7 @@ namespace aris::server
 						{
 							my_json file_js;
 							file_js["name"] = file.path().filename().string();
-							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().string();
+							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().filename().string();
 							std::ifstream f(file.path());
 							std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 							file_js["content"] = str;
@@ -568,9 +568,18 @@ namespace aris::server
 		return pro_dir_js.dump(-1);
 	}
 
-	auto fetchESIPath()->std::string;
+	auto fetchConfigXml()->std::string
+	{
+		return aris::core::toXmlString(aris::server::ControlServer::instance());
+	}
 
-	auto fetchConfigXml()->std::string;
+	auto fetchESIPath()->std::string
+	{
+		auto p = std::filesystem::absolute(rootPath() / "../robot/esi");
+		my_json js;
+		js["path"] = p.string();
+		return js.dump(-1);
+	}
 	auto loadConfigModel()->std::string;
 
 	auto fetchRobotModels()->std::string;

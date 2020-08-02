@@ -549,6 +549,9 @@ namespace aris::server
 	auto ARIS_API updateProgram(std::string js_str, std::string data)->std::string;
 	auto ARIS_API deleteProgram(std::string pro_name)->std::string;
 	auto ARIS_API renameProgram(std::string old_name, std::string new_name_js)->std::string;
+
+	auto ARIS_API fetchConfigXml()->std::string;
+	auto ARIS_API fetchESIPath()->std::string;
 }
 
 #endif

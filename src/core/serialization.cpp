@@ -67,7 +67,7 @@ namespace aris::core
 				{
 					auto insert_ele = ele->GetDocument()->NewElement(typename_c2xml(v.type()).data());
 					ele->InsertEndChild(insert_ele);
-					insert_ele->SetAttribute(":name", prop->name().data());
+					//insert_ele->SetAttribute(":name", prop->name().data());
 					to_xml_ele(v, insert_ele);
 				}
 			}
