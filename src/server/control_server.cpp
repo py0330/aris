@@ -593,7 +593,6 @@ namespace aris::server
 						ARIS_COUT_PLAN((&plan)) << "return code :" << plan.retCode() << "\n";
 						ARIS_COUT_PLAN((&plan)) << "return msg  :" << plan.retMsg() << std::endl;
 
-
 						if (auto js = std::any_cast<std::vector<std::pair<std::string, std::any>>>(&plan.ret()))
 						{
 							std::cout << aris::server::parse_ret_value(*js) << std::endl;
@@ -660,13 +659,12 @@ namespace aris::server
 			auto &plan = internal_data.back()->plan_;
 			try
 			{
-				plan->imp_->cmd_str_.resize(str.size());
-				std::copy(str.begin(), str.end(), plan->imp_->cmd_str_.begin());
+				std::vector<char> cmd_str_local(str.size());
+				std::copy(str.begin(), str.end(), cmd_str_local.begin());
 
 				++cmd_id;
 				LOG_INFO << "server parse cmd " << std::to_string(cmd_id) << " : " << str << std::endl;
-				auto[cmd, params] = planRoot().planParser().parse(std::string_view(plan->imp_->cmd_str_.data(), plan->imp_->cmd_str_.size()));
-
+				auto[cmd, params] = planRoot().planParser().parse(std::string_view(cmd_str_local.data(), cmd_str_local.size()));
 				auto plan_iter = std::find_if(planRoot().planPool().begin(), planRoot().planPool().end(), [&](const plan::Plan &p) {return p.command().name() == cmd; });
 				plan = std::shared_ptr<aris::plan::Plan>(dynamic_cast<aris::plan::Plan*>(plan_iter->clone()));
 				plan->imp_->count_ = 0;
@@ -680,6 +678,7 @@ namespace aris::server
 				plan->imp_->option_ = 0;
 				plan->imp_->mot_options_.resize(plan->imp_->controller_->motionPool().size(), 0);
 				std::copy_n(imp_->global_mot_check_options_, plan->imp_->controller_->motionPool().size(), plan->imp_->mot_options_.data());
+				plan->imp_->cmd_str_ = std::move(cmd_str_local);
 				plan->imp_->cmd_name_ = std::move(cmd);
 				plan->imp_->cmd_params_ = std::move(params);
 				plan->imp_->begin_global_count_ = 0;
