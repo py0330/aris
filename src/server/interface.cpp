@@ -38,6 +38,7 @@ namespace aris::server
 			ARIS_SET_TYPE(std::vector<int>)
 			ARIS_SET_TYPE(std::vector<double>)
 			ARIS_SET_TYPE(std::vector<std::string>)
+			ARIS_SET_TYPE(nlohmann::json)
 			{
 				ARIS_COUT << "unrecognized return value" << std::endl;
 			}
@@ -1134,6 +1135,37 @@ namespace aris::server
 					else if (method == "GET" && uri == "/api/esi/path")
 					{
 						auto ret = fetchESIPath();
+
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: application/json; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_send(nc, ret.c_str(), ret.size());
+						break;
+					}
+					else if (method == "GET" && uri == "/api/obj_picture_list")
+					{
+						auto ret = fetchObjPictureList();
+
+						mg_printf(nc,
+							"HTTP/1.1 200 OK\r\n"
+							"Content-Type: application/json; charset=utf-8\r\n"
+							"Content-Length: %ld\r\n\r\n",
+							ret.size()
+						);
+
+						mg_send(nc, ret.c_str(), ret.size());
+						break;
+					}
+					else if (method == "POST" && uri == "/api/obj_picture")
+					{
+						//std::cout << std::string(hm->body.p, hm->body.len) << std::endl;
+						
+						
+						auto ret = postObjPicture(std::string(hm->body.p, hm->body.len));
 
 						mg_printf(nc,
 							"HTTP/1.1 200 OK\r\n"

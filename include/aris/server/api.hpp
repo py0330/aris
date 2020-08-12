@@ -552,6 +552,10 @@ namespace aris::server
 
 	auto ARIS_API fetchConfigXml()->std::string;
 	auto ARIS_API fetchESIPath()->std::string;
+
+
+	auto ARIS_API fetchObjPictureList()->std::string;
+	auto ARIS_API postObjPicture(std::string str)->std::string;
 }
 
 #endif

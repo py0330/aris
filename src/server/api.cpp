@@ -2,6 +2,8 @@
 #include <random>
 #include <chrono>
 #include <algorithm>
+#include <codecvt>
+
 
 #include "aris.hpp"
 
@@ -231,6 +233,25 @@ namespace aris::server
 			+ system_clock::now());
 		return system_clock::to_time_t(sctp);
 	}
+
+
+	std::wstring s2ws(const std::string& str)
+	{
+		using convert_typeX = std::codecvt_utf8<wchar_t>;
+		std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+		return converterX.from_bytes(str);
+	}
+
+	std::string ws2s(const std::wstring& wstr)
+	{
+		using convert_typeX = std::codecvt_utf8<wchar_t>;
+		std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+		return converterX.to_bytes(wstr);
+	}
+
+
 
 	auto fetchPrograms()->std::string
 	{
@@ -589,4 +610,61 @@ namespace aris::server
 
 	auto fetchLogName()->std::string;
 	auto fetchLogContent()->std::string;
+
+	auto fetchObjPictureList()->std::string
+	{
+		auto detech_path = std::filesystem::absolute(rootPath() / "detech/");
+
+		my_json file_list;
+		file_list["fileList"] = my_json::array();
+
+		int uid = 0;
+		for (auto&file : std::filesystem::directory_iterator(detech_path))
+		{
+			my_json file_js;
+			if (file.is_regular_file())
+			{
+				uid--;
+				file_js["uid"] = uid;
+				file_js["name"] = ws2s(file.path().filename().wstring());
+				file_js["status"] = "done";
+				file_js["url"] = ws2s(("detech" / file.path().filename()).wstring());
+			}
+
+			file_list["fileList"].push_back(file_js);
+		}
+
+		return file_list.dump(-1);
+	}
+	auto postObjPicture(std::string str)->std::string
+	{
+		//std::cout << str << std::endl;
+		std::stringstream ss(str);
+
+		int head_size = 0;
+
+		std::string line;
+		std::getline(ss, line);
+		head_size += line.size();
+		std::getline(ss, line);
+		head_size += line.size();
+		auto filename_raw = line.substr(line.find("filename=\"") + 10);
+		filename_raw = filename_raw.substr(0, filename_raw.size() - 2);
+
+		std::wstring filename=s2ws(filename_raw.data());
+
+
+		std::getline(ss, line);
+		head_size += line.size();
+		std::getline(ss, line);
+		head_size += line.size();
+		
+		auto data = str.substr(head_size + 4, str.rfind("\r\n", str.size() - 5) - head_size - 4);
+
+		std::fstream file;
+		file.open(rootPath() / "detech" / (filename), std::ios::out | std::ios::trunc | std::ios::binary);
+		file.write(data.data(), data.size());
+		
+		return "";
+	}
 }
