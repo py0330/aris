@@ -92,6 +92,38 @@ namespace aris::server
 		struct Imp;
 		std::unique_ptr<Imp> imp_;
 	};
+
+	class ARIS_API ProgramMiddleware
+	{
+	public:
+		static auto instance()->ProgramMiddleware&;
+
+		auto isAutoMode()->bool;
+		auto isAutoRunning()->bool;
+		auto isAutoPaused()->bool;
+		auto isAutoStopped()->bool;
+		auto lastError()->std::string;
+		auto lastErrorCode()->int;
+		auto lastErrorLine()->int;
+		auto currentFileLine()->std::tuple<std::string, int>;
+		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int;
+		~ProgramMiddleware();
+
+	private:
+
+		ProgramMiddleware();
+		ProgramMiddleware(ProgramMiddleware && other);
+		ProgramMiddleware& operator=(ProgramMiddleware&& other);
+
+	private:
+		struct Imp;
+		std::unique_ptr<Imp> imp_;
+	
+	
+	};
+
+
+
 }
 
 #endif
