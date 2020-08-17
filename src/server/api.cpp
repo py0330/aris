@@ -286,17 +286,19 @@ namespace aris::server
 					{
 						if (file.path().extension() == ".dat")
 						{
+							// 校验是否为xml //
+							tinyxml2::XMLDocument doc;
+							if (doc.LoadFile(file.path().string().c_str()))continue;
+							
+							// push names... //
 							my_json file_js;
 							file_js["name"] = file.path().filename().string();
 							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().filename().string();
 							std::ifstream f(file.path());
 							std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 							file_js["content"] = str;
-							
 
 							// add variables //
-							tinyxml2::XMLDocument doc;
-							doc.LoadFile(file.path().string().c_str());
 							std::function<void(tinyxml2::XMLElement*)> addVariable;
 							addVariable = [&](tinyxml2::XMLElement*blk) ->void
 							{
@@ -330,6 +332,10 @@ namespace aris::server
 						}
 						else if (file.path().extension() == ".pro")
 						{
+							// 校验是否为xml //
+							tinyxml2::XMLDocument doc;
+							if (doc.LoadFile(file.path().string().c_str()))continue;
+							
 							my_json file_js;
 							file_js["name"] = file.path().filename().string();
 							file_js["path"] = "/program/" + dir.path().filename().string() + "/" + file.path().filename().string();
@@ -338,8 +344,6 @@ namespace aris::server
 							file_js["content"] = str;
 
 							// add functions //
-							tinyxml2::XMLDocument doc;
-							doc.LoadFile(file.path().string().c_str());
 							std::function<void(tinyxml2::XMLElement*)> addFunction;
 							addFunction = [&](tinyxml2::XMLElement*blk) ->void
 							{
@@ -391,7 +395,6 @@ namespace aris::server
 		}
 		
 		return ret;
-
 	}
 	auto createProgram(std::string pro_js_str)->std::string 
 	{
@@ -474,24 +477,29 @@ namespace aris::server
 		auto program_path = rootPath() / "../robot/program";
 		auto js = my_json::parse(data);
 		
-		std::filesystem::remove_all(program_path / pro_name);
-		std::filesystem::create_directories(program_path / pro_name);
+		// 先将所有文件存到 temp 路径下 //
+		std::filesystem::remove_all(program_path / pro_name / "temp");
+		std::filesystem::create_directories(program_path / pro_name / "temp");
 
+		// 保存，并确认是否出错 //
+		bool has_error{ false };
 		for (auto &file : js["files"])
 		{
-			std::fstream f(program_path / pro_name / file["name"].get<std::string>(), std::ios::out | std::ios::trunc);
+			std::fstream f(program_path / pro_name / "temp" / file["name"].get<std::string>(), std::ios::out | std::ios::trunc);
 			f << file["content"].get<std::string>();
 			f.close();
 
 			if (auto ext = std::filesystem::path(file["name"].get<std::string>()).extension(); ext != ".dat" && ext != ".pro") continue;
+
+			tinyxml2::XMLDocument doc;
+			if (doc.Parse(file["content"].get<std::string>().c_str())) { has_error = true; break; }
 
 			if (file.contains("jointtargets"))file.erase("jointtargets");
 			if (file.contains("robtargets"))file.erase("robtargets");
 			if (file.contains("speeds"))file.erase("speeds");
 			if (file.contains("zones"))file.erase("zones");
 			if (file.contains("functions"))file.erase("functions");
-			tinyxml2::XMLDocument doc;
-			doc.Parse(file["content"].get<std::string>().c_str());
+			
 			std::function<void(tinyxml2::XMLElement*)> addFunction;
 			addFunction = [&](tinyxml2::XMLElement*blk) ->void
 			{
@@ -520,6 +528,26 @@ namespace aris::server
 			for (auto blk = doc.RootElement()->FirstChildElement(); blk; blk = blk->NextSiblingElement())
 			{
 				addFunction(blk);
+			}
+		}
+
+		// 如果无错，则覆盖当前文件 //
+		if (has_error == false)
+		{
+			for (auto&file : std::filesystem::directory_iterator(program_path / pro_name))
+			{
+				if (std::filesystem::is_regular_file(file))
+				{
+					std::filesystem::remove(file.path());
+				}
+			}
+
+			for (auto&file : std::filesystem::directory_iterator(program_path / pro_name / "temp"))
+			{
+				if (std::filesystem::is_regular_file(file))
+				{
+					std::filesystem::copy_file(file.path(), program_path / pro_name / file.path().filename());
+				}
 			}
 		}
 
