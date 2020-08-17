@@ -326,9 +326,7 @@ namespace aris::server
 								addVariable(blk);
 							}
 
-
 							pro_dir_js["files"].push_back(file_js);
-
 						}
 						else if (file.path().extension() == ".pro")
 						{
@@ -376,7 +374,6 @@ namespace aris::server
 				js[dir.path().filename().string()] = pro_dir_js;
 			}
 		}
-
 
 		auto ret = js.dump(-1);
 		int index = 0;

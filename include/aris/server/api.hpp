@@ -20,7 +20,6 @@ namespace aris::server
 			return point == std::string::npos ? std::string_view() : input.substr(point, std::string::npos);
 		};
 
-
 		auto parse_raw(std::string_view cmd_str)->std::tuple<std::string_view, std::map<std::string_view, std::string_view>>
 		{
 			auto cut_str = [](std::string_view &input, const char *c)->std::string_view
