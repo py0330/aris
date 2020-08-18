@@ -685,7 +685,7 @@ namespace aris::core
 
 			// Set the option active //
 			int keepAlive = 1; // 开启keepalive属性
-			int keepIdle = 5; // 如该连接在60秒内没有任何数据往来,则进行探测 
+			int keepIdle = 5; // 如该连接在5秒内没有任何数据往来,则进行探测 
 			int keepInterval = 1; // 探测时发包的时间间隔为5 秒
 			int keepCount = 5; // 探测尝试的次数.如果第1次探测包就收到响应了,则后2次的不再发.
 

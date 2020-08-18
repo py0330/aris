@@ -4006,6 +4006,16 @@ static sock_t mg_open_listening_socket(union socket_address *sa, int type,
   int on = 1;
 #endif
 
+/////////////////////////////////// ARIS 以下为mongoose添加keepalive ARIS ///////////////////////////////////
+  int tcp_timeout = 10000; //10 seconds before aborting a write()
+  int keepAlive = 1; // 开启keepalive属性
+  int keepIdle = 5; // 如该连接在5秒内没有任何数据往来,则进行探测 
+  int keepInterval = 1; // 探测时发包的时间间隔为5 秒
+  int keepCount = 5; // 探测尝试的次数.如果第1次探测包就收到响应了,则后2次的不再发.					
+/////////////////////////////////// ARIS 以上为mongoose添加keepalive ARIS ///////////////////////////////////
+
+
+
   if ((sock = socket(sa->sa.sa_family, type, proto)) != INVALID_SOCKET &&
 #if !MG_LWIP /* LWIP doesn't support either */
 #if defined(_WIN32) && defined(SO_EXCLUSIVEADDRUSE) && !defined(WINCE)
@@ -4025,6 +4035,13 @@ static sock_t mg_open_listening_socket(union socket_address *sa, int type,
        * SO_EXCLUSIVEADDRUSE is supported and set on a socket.
        */
       !setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof(on)) &&
+/////////////////////////////////// ARIS 以下为mongoose添加keepalive ARIS ///////////////////////////////////
+      !setsockopt(sock, SOL_TCP, TCP_USER_TIMEOUT, &tcp_timeout, sizeof(int)) &&
+	  !setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)) &&
+	  !setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) &&
+	  !setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)) &&
+	  !setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) &&
+/////////////////////////////////// ARIS 以上为mongoose添加keepalive ARIS ///////////////////////////////////
 #endif
 #endif /* !MG_LWIP */
 
