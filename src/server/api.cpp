@@ -482,6 +482,9 @@ namespace aris::server
 		bool has_error{ false };
 		for (auto &file : js["files"])
 		{
+			std::cout << "update file:" << file["name"].get<std::string>() << std::endl;
+			LOG_INFO << "HTTP UPDATE PROGRAM FILE:" << file["name"].get<std::string>() << std::endl;
+			
 			std::fstream f(program_path / pro_name / "temp" / file["name"].get<std::string>(), std::ios::out | std::ios::trunc);
 			f << file["content"].get<std::string>();
 			f.close();
@@ -529,23 +532,22 @@ namespace aris::server
 		}
 
 		// 如果无错，则覆盖当前文件 //
-		if (has_error == false)
-		{
-			for (auto&file : std::filesystem::directory_iterator(program_path / pro_name))
-			{
-				if (std::filesystem::is_regular_file(file))
-				{
+		if (has_error == false)	{
+			for (auto&file : std::filesystem::directory_iterator(program_path / pro_name)){
+				if (std::filesystem::is_regular_file(file))	{
 					std::filesystem::remove(file.path());
 				}
 			}
 
-			for (auto&file : std::filesystem::directory_iterator(program_path / pro_name / "temp"))
-			{
-				if (std::filesystem::is_regular_file(file))
-				{
+			for (auto&file : std::filesystem::directory_iterator(program_path / pro_name / "temp"))	{
+				if (std::filesystem::is_regular_file(file))	{
 					std::filesystem::copy_file(file.path(), program_path / pro_name / file.path().filename());
 				}
 			}
+		} else {
+			std::cout << "update file failed" << std::endl;
+			LOG_INFO << "HTTP UPDATE PROGRAM FAILED" << std::endl;
+
 		}
 
 		return js.dump(-1);

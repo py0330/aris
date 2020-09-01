@@ -496,8 +496,10 @@ namespace aris::server
 			switch (cm.modeOfOperation())
 			{
 			case 1:
+				
 			case 8:
 				if (is_in_check) cm.setTargetPos(((last_pvc_[i].p - cm.actualPos()) > cm.maxVel() || (last_pvc_[i].p - cm.actualPos()) < cm.minVel()) ? cm.actualPos() : last_pvc_[i].p);
+				else cm.setTargetPos(std::abs(last_pvc_[i].p - cm.actualPos()) > cm.maxPosFollowingError() ? cm.actualPos() : last_pvc_[i].p);
 				break;
 			case 9:
 				cm.setTargetVel(0.0);
@@ -1665,8 +1667,7 @@ namespace aris::server
 
 
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION {
 		typedef aris::control::Controller &(ControlServer::*ControllerFunc)();
 		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
