@@ -191,10 +191,7 @@ namespace aris::server
 		socket().setOnLoseConnection(imp_->onLoseConnection_);
 	}
 	auto ProgramWebInterface::socket()->aris::core::Socket& { return *imp_->sock_; }
-	auto ProgramWebInterface::open()->void 
-	{ 
-		socket().startServer(); 
-	}
+	auto ProgramWebInterface::open()->void { socket().startServer(); }
 	auto ProgramWebInterface::close()->void { socket().stop(); }
 	auto ProgramWebInterface::lastError()->std::string { return ProgramMiddleware::instance().lastError(); }
 	auto ProgramWebInterface::lastErrorCode()->int { return ProgramMiddleware::instance().lastErrorCode(); }
@@ -207,8 +204,7 @@ namespace aris::server
 	ProgramWebInterface::ProgramWebInterface(const std::string &name, const std::string &port, aris::core::Socket::TYPE type) :Interface(name), imp_(new Imp)
 	{
 		imp_->onReceiveMsg_ = [this](aris::core::Socket *socket, aris::core::Msg &msg)->int{
-			auto send_ret = [socket, msg](std::string str)->void
-			{
+			auto send_ret = [socket, msg](std::string str)->void {
 				try
 				{
 					aris::core::Msg ret_msg(msg);
