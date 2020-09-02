@@ -1207,14 +1207,21 @@ namespace aris::server
 					}
 					else
 					{
-						auto file = value.substr(0, value.find_first_of("."));
-						auto line = std::stoi(std::string(value.substr(value.find_first_of(".") + 1)));
+						try
+						{
+							auto file = value.substr(0, value.find_first_of("."));
+							auto line = std::stoi(std::string(value.substr(value.find_first_of(".") + 1)));
 
-						imp_->language_parser_.gotoFileLine(std::string(file) + ".aris", line);
-						std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
-						imp_->current_line_ = imp_->language_parser_.currentLine();
-						imp_->current_file_ = imp_->language_parser_.currentFile();
-						return send_code_and_msg(0, "");
+							imp_->language_parser_.gotoFileLine(std::string(file) + ".aris", line);
+							std::unique_lock<std::mutex> lck(this->imp_->auto_mu_);
+							imp_->current_line_ = imp_->language_parser_.currentLine();
+							imp_->current_file_ = imp_->language_parser_.currentFile();
+							return send_code_and_msg(0, "");
+						}
+						catch (std::exception &e)
+						{
+							return send_code_and_msg(-1, e.what());
+						}
 					}
 				}
 				else if (param == "goto_main")
