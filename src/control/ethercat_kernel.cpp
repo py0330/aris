@@ -368,16 +368,11 @@ namespace aris::control
 			master->ecHandle() = m_handle;
 
 			// make pdo init value to zero
-			for (auto &slave : master->slavePool())
-			{
-				for (auto &sm : slave.smPool())
-				{
-					for (auto &pdo : sm)
-					{
-						for (auto &entry : pdo)
-						{
-							if (entry.index())
-							{
+			for (auto &slave : master->slavePool()){
+				for (auto &sm : slave.smPool()){
+					for (auto &pdo : sm){
+						for (auto &entry : pdo){
+							if (entry.index()){
 								auto &pe_handle = std::any_cast<PdoEntryHandle&>(entry.ecHandle());
 								pe_handle.data_ = (char*)std::any_cast<MasterHandle&>(master->ecHandle()).domain_pd_ + pe_handle.offset_;
 								

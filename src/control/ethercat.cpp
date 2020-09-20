@@ -663,7 +663,7 @@ namespace aris::control
 			//imp_->waiting_count_left = 20;
 			imp_->waiting_count_left = 1000;//change for cooldriver
 
-											// check mode to set correct pos, vel or cur //
+			// check mode to set correct pos, vel or cur //
 			switch (modeOfDisplay())
 			{
 			case 0x08: setTargetPos(actualPos()); break;
@@ -811,8 +811,6 @@ namespace aris::control
 	{
 		imp_->is_virtual_ = is_virtual;
 	}
-	//EthercatMotor::EthercatMotor(const EthercatMotor &other) = default;
-	//EthercatMotor& EthercatMotor::operator=(const EthercatMotor &other) = default;
 
 	struct EthercatController::Imp { MotionPool motion_pool_{ nullptr }; };
 	auto EthercatController::motionPool()->MotionPool& { return imp_->motion_pool_; }

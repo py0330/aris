@@ -169,19 +169,15 @@ namespace aris::dynamic
 		// 求q4
 		double distance_D = std::sqrt(D_in_A[3] * D_in_A[3] + D_in_A[7] * D_in_A[7] + D_in_A[11] * D_in_A[11]);
 		double theta_part3;// part 3的z轴和两点之间连线的夹角
-		if (auto cq4 = (d3*d3 + d5 * d5 - distance_D * distance_D) / (2 * d3*d5); cq4 > 1.0 || cq4 < -1.0)
-		{
+		if (auto cq4 = (d3*d3 + d5 * d5 - distance_D * distance_D) / (2 * d3*d5); cq4 > 1.0 || cq4 < -1.0){
 			return false;
 		}
-		else
-		{
-			if (which_root & 0x01)
-			{
+		else{
+			if (which_root & 0x01){
 				q[3] = -aris::PI + std::acos(cq4);
 				theta_part3 = std::acos((d3*d3 - d5 * d5 + distance_D * distance_D) / (2 * d3*distance_D));
 			}
-			else
-			{
+			else{
 				q[3] = aris::PI - std::acos(cq4);
 				theta_part3 = -std::acos((d3*d3 - d5 * d5 + distance_D * distance_D) / (2 * d3*distance_D));
 			}
@@ -211,8 +207,7 @@ namespace aris::dynamic
 
 		// 求123轴的位置
 		s_rm2re(rm_3, q, "323");
-		if (which_root & 0x02)
-		{
+		if (which_root & 0x02){
 			q[0] = q[0] > PI ? q[0] - PI : q[0] + PI;
 			q[1] = 2 * PI - q[1];
 			q[2] = q[2] > PI ? q[2] - PI : q[2] + PI;
@@ -222,8 +217,7 @@ namespace aris::dynamic
 		double rm_E_wrt_4[9];
 		s_mm(3, 3, 3, rm_4, ColMajor(3), D_in_A, 4, rm_E_wrt_4, 3);
 		s_rm2re(rm_E_wrt_4, q + 4, "323");
-		if (which_root & 0x04)
-		{
+		if (which_root & 0x04){
 			q[4] = q[4] > PI ? q[4] - PI : q[4] + PI;
 			q[5] = 2 * PI - q[5];
 			q[6] = q[6] > PI ? q[6] - PI : q[6] + PI;
@@ -323,6 +317,26 @@ namespace aris::dynamic
 	}
 	auto SevenAxisInverseKinematicSolver::kinPos()->int
 	{
+		// 求解轴角 //
+		{
+			double D[3];
+			s_vc(3, (*this->model()->jointPool().back().makI()->pm()) + 3, 4, D, 1);
+
+			double z_Axis[3]{ 0,0,1 };
+			double r2[3];
+			s_c3(z_Axis, D, r2);
+
+			s_nv(3, 1.0 / s_norm(3, r2), r2);
+
+			double dir[3];
+			s_c3(r2, 1, *model()->partPool().at(3).pm() + 1, 4, dir, 1);
+			double axis_angle = s_sgn(s_vv(3, dir, D)) * std::acos(std::max(-1.0, std::min(1.0, s_vv(3, r2, 1, *model()->partPool().at(3).pm() + 1, 4))));
+			this->setAxisAngle(axis_angle);
+		}
+
+		
+		
+		// 求解 //
 		if (imp_->which_root_ == 8)
 		{
 			int solution_num = 0;

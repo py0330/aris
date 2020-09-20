@@ -93,8 +93,7 @@ namespace aris::dynamic
 	private:
 		VariableType data_;
 	};
-	class ARIS_API MatrixVariable final : public VariableTemplate<aris::core::Matrix>
-	{
+	class ARIS_API MatrixVariable final : public VariableTemplate<aris::core::Matrix> {
 	public:
 		auto virtual toString() const->std::string override { return data().toString(); }
 		auto virtual fromString(std::string_view str)->void override;
@@ -103,8 +102,7 @@ namespace aris::dynamic
 		explicit MatrixVariable(const std::string &name = "matrix_variable", const aris::core::Matrix &data = aris::core::Matrix()) : VariableTemplate(name, data) {}
 		ARIS_DEFINE_BIG_FOUR(MatrixVariable);
 	};
-	class ARIS_API StringVariable final : public VariableTemplate<std::string>
-	{
+	class ARIS_API StringVariable final : public VariableTemplate<std::string> {
 	public:
 		auto virtual toString() const->std::string override { return data(); }
 

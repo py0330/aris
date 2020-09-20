@@ -629,8 +629,8 @@ namespace aris::dynamic
 
 	ARIS_REGISTRATION{
 		aris::core::class_<Puma5InverseKinematicSolver>("Puma5InverseKinematicSolver")
-		.inherit<InverseKinematicSolver>()
-		.prop("which_root", &Puma5InverseKinematicSolver::setWhichRoot, &Puma5InverseKinematicSolver::whichRoot)
-		;
+			.inherit<InverseKinematicSolver>()
+			.prop("which_root", &Puma5InverseKinematicSolver::setWhichRoot, &Puma5InverseKinematicSolver::whichRoot)
+			;
 	}
 }

@@ -129,6 +129,8 @@ namespace aris::dynamic
 		auto virtual cptCv(double *cv)const noexcept->void override;
 		auto virtual cptCa(double *ca)const noexcept->void override;
 
+		auto motorId()const->int;
+		auto setMotorId(int id)->void;
 		auto setAxis(Size axis)->void;
 		auto axis()const noexcept->Size;
 		auto mp() const noexcept->double;

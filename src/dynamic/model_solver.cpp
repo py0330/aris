@@ -16,8 +16,7 @@
 
 namespace aris::dynamic
 {
-	struct Solver::Imp
-	{
+	struct Solver::Imp{
 		Size max_iter_count_, iter_count_;
 		double max_error_, error_;
 		Imp(Size max_iter_count, double max_error) :max_iter_count_(max_iter_count), max_error_(max_error) {};
@@ -39,10 +38,8 @@ namespace aris::dynamic
 #define ARIS_LOOP_D_2_TO_END for (auto d = d_data_ + 1; d < d_data_ + d_size_; ++d)
 #define ARIS_LOOP_DIAG_INVERSE_2_TO_END for (auto d = d_data_ + d_size_ - 1; d > d_data_; --d)
 #define ARIS_LOOP_R for (auto r = r_data_; r < r_data_ + r_size_; ++r)
-	struct Relation
-	{
-		struct Block 
-		{ 
+	struct Relation{
+		struct Block { 
 			const Constraint* cst_;
 			bool is_I_;
 		};
@@ -54,8 +51,7 @@ namespace aris::dynamic
 		Size blk_size_;
 	};
 	struct LocalRelation :public Relation { std::vector<Block> cst_pool_; }; //仅仅为了实现
-	struct Diag
-	{
+	struct Diag{
 		// D * C * P =[I  C]
 		//            [0  0]
 		// 对于存在多个约束的relation来说，P有意义
@@ -73,8 +69,7 @@ namespace aris::dynamic
 		typedef void(*UpdFunc2)(Diag*, bool cpt_cp);
 		UpdFunc2 upd_d_and_cp_;
 	};
-	struct Remainder
-	{
+	struct Remainder{
 		struct Block { Diag* diag_; bool is_I_; };
 		Diag *i_diag_, *j_diag_;
 		double *cmI_, *cmJ_, *bc_, *xc_;
@@ -86,8 +81,7 @@ namespace aris::dynamic
 	};
 	struct LocalRemainder : public Remainder { std::vector<Block> cm_blk_series; };
 	struct PublicData;
-	struct SubSystem
-	{
+	struct SubSystem{
 		PublicData *pd_;
 		
 		Diag* d_data_;

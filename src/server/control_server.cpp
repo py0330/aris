@@ -263,10 +263,11 @@ namespace aris::server
 		int ret = plan.executeRT();
 
 		// 控制电机 //
-		for (std::size_t i = 0; i < std::min(controller_->motionPool().size(), model_->motionPool().size()); ++i)
+		for (std::size_t i = 0; i < model_->motionPool().size(); ++i)
 		{
-			auto &cm = controller_->motionPool()[i];
 			auto &mm = model_->motionPool()[i];
+			if (mm.motorId() < 0)continue;
+			auto &cm = controller_->motionPool()[mm.motorId()];
 
 			if (mm.active())
 			{
@@ -848,6 +849,18 @@ namespace aris::server
 		model().init();
 		controller().init();
 		planRoot().init();
+
+		// 检查model中motion是否有唯一的motor id //
+		std::vector<int> ids;
+		for (auto &m : model().motionPool()){
+
+			if (m.motorId() == -1)m.setMotorId(m.id());
+
+			if (m.motorId() >= controller().motionPool().size() || std::find(ids.begin(), ids.end(), m.motorId()) != ids.end())
+				THROW_FILE_LINE("motor id invalid");
+
+			ids.push_back(m.motorId());
+		}
 
 		// 分配自身所需要的内存 //
 		Size mem_size = 0;

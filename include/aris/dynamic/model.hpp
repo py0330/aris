@@ -215,7 +215,6 @@ namespace aris::dynamic
 		auto findPart(std::string_view name)->Part*;
 		/// @}
 
-
 		/// @{
 		auto virtual inverseKinematics()->int;
 		auto virtual forwardKinematics()->int;
