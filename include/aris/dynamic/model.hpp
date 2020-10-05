@@ -7,8 +7,7 @@
 #include <aris/dynamic/model_simulation.hpp>
 #include <aris/dynamic/plan.hpp>
 
-namespace aris::dynamic
-{
+namespace aris::dynamic{
 	///
 	/// \page dynamic_model_page 机器人建模
 	/// 本文以scara机器人为例，介绍aris的建模以及运动学和动力学计算方法。
@@ -198,16 +197,13 @@ namespace aris::dynamic
 	/// \snippet demo_model_scara/main.cpp Simulate
 	/// 
 
-
-
 	/// @defgroup dynamic_model_group 动力学建模模块
 	/// 本模块可以对任意机构的机器人做运动学与动力学计算。
 	/// 
 	/// 
 	/// @{
 	///
-	class ARIS_API Model
-	{
+	class ARIS_API Model{
 	public:
 		auto virtual init()->void;
 		/// @{

@@ -27,22 +27,19 @@ namespace aris::control
 	using XmlElement = tinyxml2::XMLElement;
 	using XmlAttribute = tinyxml2::XMLAttribute;
 	
-	auto Uint32ToHexStr(void* data)->std::string
-	{
+	auto Uint32ToHexStr(void* data)->std::string{
 		auto num = *reinterpret_cast<std::uint32_t*>(data);
 		std::stringstream s;
 		s << "0x" << std::setfill('0') << std::setw(sizeof(std::uint32_t) * 2) << std::hex << static_cast<std::uint32_t>(num);
 		return s.str();
 	}
-	auto Uint16ToHexStr(void* data)->std::string
-	{
+	auto Uint16ToHexStr(void* data)->std::string{
 		auto num = *reinterpret_cast<std::uint16_t*>(data);
 		std::stringstream s;
 		s << "0x" << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << static_cast<std::uint32_t>(num);
 		return s.str();
 	}
-	auto Uint8ToHexStr(void* data)->std::string
-	{
+	auto Uint8ToHexStr(void* data)->std::string{
 		auto num = *reinterpret_cast<std::uint8_t*>(data);
 		std::stringstream s;
 		s << "0x" << std::setfill('0') << std::setw(sizeof(std::uint8_t) * 2) << std::hex << static_cast<std::uint32_t>(num);

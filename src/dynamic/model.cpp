@@ -16,14 +16,12 @@
 
 namespace aris::dynamic
 {
-	struct Marker::Imp
-	{
+	struct Marker::Imp{
 		double prt_pm_[4][4]{ { 0 } };
 		double pm_[4][4]{ { 0 } };
 		Part *part_;
 	};
-	struct Model::Imp
-	{
+	struct Model::Imp{
 		double time_{ 0.0 };
 		aris::core::Calculator calculator_;
 		Environment environment_;
@@ -40,8 +38,7 @@ namespace aris::dynamic
 
 		Part* ground_;
 	};
-	auto Model::init()->void 
-	{ 
+	auto Model::init()->void { 
 		auto init_interaction = [](Interaction &interaction, Model*m)->void
 		{
 			if (interaction.prtNameM().empty() && interaction.prtNameN().empty() && interaction.makNameI().empty() && interaction.makNameJ().empty())return;
@@ -141,20 +138,14 @@ namespace aris::dynamic
 		}
 			
 	}
-	auto Model::findVariable(std::string_view name)->Variable*
-	{
-		auto found = std::find_if(variablePool().begin(), variablePool().end(), [name](const auto &variable)->auto
-		{
+	auto Model::findVariable(std::string_view name)->Variable*{
+		auto found = std::find_if(variablePool().begin(), variablePool().end(), [name](const auto &variable)->auto{
 			return variable.name() == name;
 		});
 		return found == variablePool().end() ? nullptr: &*found;
-
-
 	}
-	auto Model::findPart(std::string_view name)->Part*
-	{
-		auto found = std::find_if(partPool().begin(), partPool().end(), [name](const auto &variable)->auto
-		{
+	auto Model::findPart(std::string_view name)->Part*{
+		auto found = std::find_if(partPool().begin(), partPool().end(), [name](const auto &variable)->auto{
 			return variable.name() == name;
 		});
 		return found == partPool().end() ? nullptr : &*found;
