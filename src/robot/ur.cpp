@@ -10,7 +10,7 @@ namespace aris::robot
 	// 具体参数参考MR里面147-158页 //
 	auto createModelUr5(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model>
 	{
-		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
@@ -74,19 +74,19 @@ namespace aris::robot
 		auto &p6 = model->partPool().add<Part>("L6", iv);
 
 		// add solid //
-		model->ground().geometryPool().add<aris::dynamic::FileGeometry>("file_geometry", ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/ground.DWG")
+		model->ground().geometryPool().add<aris::dynamic::FileGeometry>(ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/ground.DWG")
 			, s_pe2pm(std::array<double, 6>{0, 0, 0.003, 2.3561944875, -PI / 2, 0.0 }.data(), nullptr, "313"));
-		p1.geometryPool().add<aris::dynamic::FileGeometry>("file_geometry", ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L1.DWG")
+		p1.geometryPool().add<aris::dynamic::FileGeometry>(ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L1.DWG")
 			, s_pe2pm(std::array<double, 6>{0.0, 0.0, 0.089159, 0, -PI / 2, 0}.data(), nullptr, "313"));
-		p2.geometryPool().add<aris::dynamic::FileGeometry>("file_geometry", ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L2.DWG")
+		p2.geometryPool().add<aris::dynamic::FileGeometry>(ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L2.DWG")
 			, s_pe2pm(std::array<double, 6>{ 0.0, 0.13585, 0.089159, 0, -PI / 2, PI / 2}.data(), nullptr, "313"));
-		p3.geometryPool().add<aris::dynamic::FileGeometry>("file_geometry", ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L3.DWG")
+		p3.geometryPool().add<aris::dynamic::FileGeometry>(ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L3.DWG")
 			, s_pe2pm(std::array<double, 6>{0.425, 0.13585 - 0.1197, 0.089159, 0, -PI / 2, PI / 2}.data(), nullptr, "313"));
-		p4.geometryPool().add<aris::dynamic::FileGeometry>("file_geometry", ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L4.DWG")
+		p4.geometryPool().add<aris::dynamic::FileGeometry>(ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L4.DWG")
 			, s_pe2pm(std::array<double, 6>{0.425 + 0.39225, 0.13585 - 0.1197 + 0.093, 0.089159, 0, -PI / 2, -PI / 2}.data(), nullptr, "321"));
-		p5.geometryPool().add<aris::dynamic::FileGeometry>("file_geometry", ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L5.DWG")
+		p5.geometryPool().add<aris::dynamic::FileGeometry>(ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L5.DWG")
 			, s_pe2pm(std::array<double, 6>{0.425 + 0.39225, 0.13585 - 0.1197 + 0.093, 0.089159 - 0.09465, 0, -PI / 2, PI}.data(), nullptr, "313"));
-		p6.geometryPool().add<aris::dynamic::FileGeometry>("file_geometry", ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L6.DWG")
+		p6.geometryPool().add<aris::dynamic::FileGeometry>(ARIS_INSTALL_PATH + std::string("/resource/aris_robot/ur5/L6.DWG")
 			, s_pe2pm(std::array<double, 6>{0.425 + 0.39225, 0.13585 - 0.1197 + 0.093, 0.089159 - 0.09465, 0, -PI / 2, 0}.data(), nullptr, "313"));
 
 		const double L1 = 0.425;

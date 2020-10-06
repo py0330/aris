@@ -28,7 +28,7 @@ void test_single_body_universal()
 }
 void test_servo_press_universal()
 {
-	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 	// 设置重力 //
 	const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };

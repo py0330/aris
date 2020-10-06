@@ -40,7 +40,7 @@ namespace aris::dynamic
 		auto run()->void;
 
 		virtual ~OptimalTrajectory() = default;
-		explicit OptimalTrajectory(const std::string &name = "optimal_trajectory") : Element(name) {}
+		explicit OptimalTrajectory() {}
 		OptimalTrajectory(const OptimalTrajectory&) = default;
 		OptimalTrajectory(OptimalTrajectory&&) = default;
 		OptimalTrajectory& operator=(const OptimalTrajectory&) = default;

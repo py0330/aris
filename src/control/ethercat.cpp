@@ -115,22 +115,26 @@ namespace aris::control
 	auto EthercatSlave::setSync0ShiftNs(std::int32_t sync0_shift_ns)->void { imp_->sync0_shift_ns_ = sync0_shift_ns; }
 	auto EthercatSlave::scanInfoForCurrentSlave()->void
 	{
-		aris::control::EthercatMaster mst;
-		mst.scan();
-		if (mst.slavePool().size() <= this->phyId()) THROW_FILE_LINE("ec scan failed");
+		if (!isVirtual()) {
+			aris::control::EthercatMaster mst;
+			mst.scan();
+			if (mst.slavePool().size() <= this->phyId()) THROW_FILE_LINE("ec scan failed");
 
-		this->setProductCode(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).productCode());
-		this->setRevisionNum(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).revisionNum());
-		this->setVendorID(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).vendorID());
-		this->setDcAssignActivate(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).dcAssignActivate());
+			this->setProductCode(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).productCode());
+			this->setRevisionNum(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).revisionNum());
+			this->setVendorID(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).vendorID());
+			this->setDcAssignActivate(dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).dcAssignActivate());
+		}
 	}
 	auto EthercatSlave::scanPdoForCurrentSlave()->void
 	{
-		aris::control::EthercatMaster mst;
-		mst.scan();
-		if (mst.slavePool().size() <= this->phyId()) THROW_FILE_LINE("ec scan failed");
+		if (!isVirtual()) {
+			aris::control::EthercatMaster mst;
+			mst.scan();
+			if (mst.slavePool().size() <= this->phyId()) THROW_FILE_LINE("ec scan failed");
 
-		this->smPool() = dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).smPool();
+			this->smPool() = dynamic_cast<EthercatSlave&>(mst.slavePool().at(this->phyId())).smPool();
+		}
 	}
 	auto EthercatSlave::findPdoEntry(std::uint16_t index, std::uint8_t subindex)->PdoEntry*
 	{
@@ -143,8 +147,9 @@ namespace aris::control
 	}
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->int
 	{
-		if (auto entry = findPdoEntry(index, subindex))
-		{
+		if (!isVirtual())return 0;
+		
+		if (auto entry = findPdoEntry(index, subindex)){
 			aris_ecrt_pdo_read(entry, value);
 			return 0;
 		}
@@ -152,8 +157,9 @@ namespace aris::control
 	}
 	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->int
 	{
-		if (auto entry = findPdoEntry(index, subindex))
-		{
+		if (!isVirtual())return 0;
+		
+		if (auto entry = findPdoEntry(index, subindex))	{
 			aris_ecrt_pdo_write(entry, value);
 			return 0;
 		}
@@ -161,12 +167,16 @@ namespace aris::control
 	}
 	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size byte_size)->void
 	{
+		if (!isVirtual())return;
+		
 		std::size_t result_size;
 		std::uint32_t abort_code;
 		aris_ecrt_sdo_read(ecMaster()->ecHandle(), phyId(), index, subindex, reinterpret_cast<std::uint8_t*>(value), byte_size, &result_size, &abort_code);
 	}
 	auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void
 	{
+		if (!isVirtual())return;
+		
 		std::uint32_t abort_code;
 		aris_ecrt_sdo_write(ecMaster()->ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
 	}
@@ -225,20 +235,14 @@ namespace aris::control
 		{
 			// make PDO map //
 			sla.imp_->pdo_map_.clear();
-			for (auto &sm : sla.smPool())
-			{
-				for (auto &pdo : sm)
-				{
-					for (auto &entry : pdo)
-					{
-						if (entry.index())
-						{
-							if (sla.imp_->pdo_map_.find(entry.index()) != sla.imp_->pdo_map_.end())
-							{
+			for (auto &sm : sla.smPool()) {
+				for (auto &pdo : sm) {
+					for (auto &entry : pdo)	{
+						if (entry.index()) {
+							if (sla.imp_->pdo_map_.find(entry.index()) != sla.imp_->pdo_map_.end())	{
 								sla.imp_->pdo_map_.at(entry.index()).insert(std::make_pair(entry.subindex(), &entry));
 							}
-							else
-							{
+							else {
 								std::map<std::uint8_t, PdoEntry*> subindex_map;
 								subindex_map.insert(std::make_pair(entry.subindex(), &entry));
 								sla.imp_->pdo_map_.insert(std::make_pair(entry.index(), subindex_map));
@@ -430,7 +434,6 @@ namespace aris::control
 		std::uint16_t control_word{ 0 }, status_word_{ 0 };
 		std::uint8_t mode_of_operation{ 0 };
 		double target_pos_{ 0 }, target_vel_{ 0 }, target_toq_{ 0 }, offset_vel_{ 0 }, offset_toq_{ 0 };
-		bool is_virtual_{ false };
 
 		int waiting_count_left{ 0 }; // enable 在用
 		
@@ -438,8 +441,6 @@ namespace aris::control
 		int home_count{ 0 };
 		bool need_clear{ true };
 	};
-	auto EthercatMotor::isVirtual()->bool { return imp_->is_virtual_; }
-	auto EthercatMotor::setVirtual(bool is_virtual)->void { imp_->is_virtual_ = is_virtual; }
 	auto EthercatMotor::controlWord()const->std::uint16_t { return imp_->control_word; }
 	auto EthercatMotor::modeOfOperation()const->std::uint8_t { return imp_->mode_of_operation; }
 	auto EthercatMotor::targetPos()const->double { return imp_->target_pos_; }
@@ -485,36 +486,36 @@ namespace aris::control
 	auto EthercatMotor::statusWord()const->std::uint16_t
 	{
 		std::uint16_t status_word{ 0 };
-		return (imp_->is_virtual_ || readPdo(0x6041, 0x00, status_word) != 0) ? imp_->status_word_ : status_word;
+		return (isVirtual() || readPdo(0x6041, 0x00, status_word) != 0) ? imp_->status_word_ : status_word;
 	}
 	auto EthercatMotor::modeOfDisplay()const->std::uint8_t
 	{
 		std::uint8_t mode{ 0 };
-		return (imp_->is_virtual_ || readPdo(0x6061, 0x00, mode) != 0) ? imp_->mode_of_operation : mode;
+		return (isVirtual() || readPdo(0x6061, 0x00, mode) != 0) ? imp_->mode_of_operation : mode;
 	}
 	auto EthercatMotor::actualPos()const->double
 	{
 		std::int32_t pos_count{ 0 };
-		return (imp_->is_virtual_ || readPdo(0x6064, 0x00, pos_count) != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
+		return (isVirtual() || readPdo(0x6064, 0x00, pos_count) != 0) ? imp_->target_pos_ : static_cast<double>(pos_count) / posFactor() - posOffset();
 	}
 	auto EthercatMotor::actualVel()const->double
 	{
 		std::int32_t vel_count{ 0 };
-		return (imp_->is_virtual_ || readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor();
+		return (isVirtual() || readPdo(0x606C, 0x00, vel_count) != 0) ? imp_->target_vel_ : static_cast<double>(vel_count) / posFactor();
 	}
 	auto EthercatMotor::actualToq()const->double
 	{
 		std::int16_t fce_count{ 0 };
-		return (imp_->is_virtual_ || readPdo(0x6077, 0x00, fce_count) == 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
+		return (isVirtual() || readPdo(0x6077, 0x00, fce_count) == 0) ? imp_->target_toq_ : static_cast<double>(fce_count);
 	}
 	auto EthercatMotor::actualCur()const->double
 	{
 		std::int16_t cur_count{ 0 };
-		return (imp_->is_virtual_ || readPdo(0x6078, 0x00, cur_count) == 0) ? imp_->target_toq_: static_cast<double>(cur_count);
+		return (isVirtual() || readPdo(0x6078, 0x00, cur_count) == 0) ? imp_->target_toq_: static_cast<double>(cur_count);
 	}
 	auto EthercatMotor::disable()->int
 	{
-		if (imp_->is_virtual_) imp_->status_word_ = 0x40;
+		if (isVirtual()) imp_->status_word_ = 0x40;
 
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8         Shutdown
@@ -605,7 +606,7 @@ namespace aris::control
 	}
 	auto EthercatMotor::enable()->int
 	{
-		if (imp_->is_virtual_) imp_->status_word_ = 0x27;
+		if (isVirtual()) imp_->status_word_ = 0x27;
 
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
@@ -801,12 +802,11 @@ namespace aris::control
 	EthercatMotor::~EthercatMotor() = default;
 	EthercatMotor::EthercatMotor(const std::string &name, std::uint16_t phy_id, std::uint32_t vendor_id, std::uint32_t product_code, std::uint32_t revision_num, std::uint32_t dc_assign_activate
 		, double max_pos, double min_pos, double max_vel, double min_vel, double max_acc, double min_acc
-		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos, bool is_virtual)
+		, double max_pos_following_error, double max_vel_following_error, double pos_factor, double pos_offset, double home_pos)
 		: EthercatSlave(name, phy_id, vendor_id, product_code, revision_num, dc_assign_activate)
 		, Motor(name, phy_id, max_pos, min_pos, max_vel, min_vel, max_acc, min_acc, max_pos_following_error, max_vel_following_error, pos_factor, pos_offset, home_pos)
 		, Slave(name, phy_id), imp_(new Imp)
 	{
-		imp_->is_virtual_ = is_virtual;
 	}
 
 	struct EthercatController::Imp { MotionPool motion_pool_{ nullptr }; };

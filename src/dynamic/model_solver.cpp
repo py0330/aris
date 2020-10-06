@@ -30,7 +30,7 @@ namespace aris::dynamic
 	auto Solver::maxIterCount()const->Size { return imp_->max_iter_count_; }
 	auto Solver::setMaxIterCount(Size max_count)->void { imp_->max_iter_count_ = max_count; }
 	Solver::~Solver() = default;
-	Solver::Solver(const std::string &name, Size max_iter_count, double max_error) : Element(name), imp_(new Imp(max_iter_count, max_error)) {}
+	Solver::Solver(Size max_iter_count, double max_error) : imp_(new Imp(max_iter_count, max_error)) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(Solver);
 
 #define ARIS_LOOP_BLOCK(RELATION) for (auto b = RELATION blk_data_; b < RELATION blk_data_ + RELATION blk_size_; ++b)
@@ -342,8 +342,7 @@ namespace aris::dynamic
 	{
 		/////////////////////////////////// 求解beta /////////////////////////////////////////////////////////////
 		//// 更新每个杆件的力 pf ////
-		ARIS_LOOP_D
-		{
+		ARIS_LOOP_D	{
 			// 外力（不包括惯性力）已经储存在了bp中，但为了后续可能存在的修正，这里将其与惯性力之和暂存到 last_pm_ 中 //
 			
 			// v x I * v //
@@ -361,8 +360,7 @@ namespace aris::dynamic
 		}
 
 		//// P*bp  对bp做行加变换，并取出bcf ////
-		ARIS_LOOP_DIAG_INVERSE_2_TO_END
-		{
+		ARIS_LOOP_DIAG_INVERSE_2_TO_END {
 			// 行变换
 			s_va(6, d->bp_, d->rd_->bp_);
 
@@ -396,8 +394,7 @@ namespace aris::dynamic
 		s_mms(fm_, 1, fm_ - fr_, pd_->S_, pd_->beta_, pd_->xpf_);
 		if (!hasGround())s_vi(6, pd_->beta_ + fm_ - fr_, d_data_[0].xp_);
 		// 将xpf更新到xp，先乘以D' 再乘以 P'
-		ARIS_LOOP_D_2_TO_END
-		{
+		ARIS_LOOP_D_2_TO_END {
 			// 结合bc 并乘以D'
 			s_mm(6, 1, d->rel_.dim_, d->dm_, ColMajor{ 6 }, d->bc_, 1, d->xp_, 1);
 			s_mma(6, 1, 6 - d->rel_.dim_, d->dm_ + at(0, d->rel_.dim_, T(6)), T(6), pd_->xpf_ + d->rows_, 1, d->xp_, 1);
@@ -409,8 +406,7 @@ namespace aris::dynamic
 		/////////////////////////////////// 求解xc /////////////////////////////////////////////////////////////
 		// 因为上文中 xp 可能不是真实解，这里重新做循环计算
 		//// 更新每个杆件的力 pf ////
-		ARIS_LOOP_D
-		{
+		ARIS_LOOP_D {
 			// 取出之前暂存的外力 //
 			s_vc(6, d->last_pm_, d->bp_);
 
@@ -423,8 +419,7 @@ namespace aris::dynamic
 		}
 
 		//// P*bp  对bp做行加变换 ////
-		ARIS_LOOP_DIAG_INVERSE_2_TO_END 
-		{
+		ARIS_LOOP_DIAG_INVERSE_2_TO_END {
 			s_va(6, d->bp_, d->rd_->bp_);
 			
 			double tem[6];
@@ -438,13 +433,11 @@ namespace aris::dynamic
 
 		// 将已经求出的x更新到remainder中，此后将已知数移到右侧
 		Size cols{ 0 };
-		ARIS_LOOP_R
-		{
+		ARIS_LOOP_R {
 			s_vc(r->rel_.size_, pd_->xcf_ + cols, r->xc_);
 
 			// 更新待求
-			ARIS_LOOP_BLOCK(r->)
-			{
+			ARIS_LOOP_BLOCK(r->){
 				double tem[6];
 				s_mm(6, 1, r->rel_.size_, b->is_I_ ? r->cmJ_ : r->cmI_, pd_->xcf_ + cols, tem);
 				s_mma(6, 1, 6, b->diag_->dm_, 6, tem, 1, b->diag_->bp_, 1);
@@ -452,8 +445,7 @@ namespace aris::dynamic
 
 			cols += r->rel_.size_;
 		}
-		ARIS_LOOP_D_2_TO_END
-		{
+		ARIS_LOOP_D_2_TO_END {
 			s_vc(d->rel_.dim_, d->bp_, d->xc_);
 			std::fill(d->xc_ + d->rel_.dim_, d->xc_ + d->rel_.size_, 0.0);
 			s_permutate_inv(d->rel_.size_, 1, d->p_, d->xc_);
@@ -471,8 +463,7 @@ namespace aris::dynamic
 			sovXp();
 
 			// 将xp更新成pm
-			ARIS_LOOP_D
-			{
+			ARIS_LOOP_D {
 				std::swap(d->pm_, d->last_pm_);
 				double tem[16];
 				s_ps2pm(d->xp_, tem);
@@ -483,14 +474,14 @@ namespace aris::dynamic
 			updDmCm(true);
 
 			// 对于非串联臂，当迭代误差反而再增大时，会主动缩小步长
-			if (r_size_)// 只有不是串联臂才会用以下迭代
-			{
-				if (error_ > last_error)// 这里如果用while可以确保每个循环误差都会减小，但是有可能出现卡死
-				{
+			// 只有不是串联臂才会用以下迭代
+			if (r_size_){
+				// 这里如果用while可以确保每个循环误差都会减小，但是有可能出现卡死
+				if (error_ > last_error) {
+				
 					double coe = last_error / (error_ + last_error);
 
-					ARIS_LOOP_D
-					{
+					ARIS_LOOP_D	{
 						s_nv(6, coe, d->xp_);
 						double tem[16];
 						s_ps2pm(d->xp_, tem);
@@ -525,7 +516,7 @@ namespace aris::dynamic
 		updF();
 		updG();
 
-		//// 求解 xp 的某个特解（不考虑惯量），求出beta 以及 xc
+		// 求解 xp 的某个特解（不考虑惯量），求出beta 以及 xc //
 		sovXp();
 		sovXc();
 	}
@@ -1377,7 +1368,7 @@ namespace aris::dynamic
 		if (error() < maxError())ARIS_LOOP_SYS ARIS_LOOP_SYS_D const_cast<Part*>(d->part_)->setPm(d->pm_);
 		return error() < maxError() ? 0 : -1;
 	}
-	auto UniversalSolver::kinVel()->void
+	auto UniversalSolver::kinVel()->int
 	{
 		ARIS_LOOP_SYS ARIS_LOOP_SYS_D d->part_->getPm(d->pm_);
 
@@ -1386,12 +1377,13 @@ namespace aris::dynamic
 
 		// 计算成功，设置各杆件 //
 		ARIS_LOOP_SYS ARIS_LOOP_SYS_D s_va(6, d->xp_, const_cast<double*>(d->part_->vs()));
+
+		return 0;
 	}
-	auto UniversalSolver::dynAccAndFce()->void
+	auto UniversalSolver::dynAccAndFce()->int
 	{
 		// 更新杆件位姿，每个杆件外力 //
-		ARIS_LOOP_SYS ARIS_LOOP_SYS_D
-		{
+		ARIS_LOOP_SYS ARIS_LOOP_SYS_D {
 			d->part_->getPm(d->pm_);
 			std::fill(d->bp_, d->bp_ + 6, 0.0);
 		}
@@ -1414,22 +1406,17 @@ namespace aris::dynamic
 		ARIS_LOOP_SYS sys->dynAccAndFce();
 
 		// 计算成功，设置各关节和杆件
-		ARIS_LOOP_SYS
-		{
-			ARIS_LOOP_SYS_R
-			{
+		ARIS_LOOP_SYS {
+			ARIS_LOOP_SYS_R	{
 				Size pos{ 0 };
-				ARIS_LOOP_BLOCK(r->rel_.)
-				{
+				ARIS_LOOP_BLOCK(r->rel_.) {
 					const_cast<Constraint*>(b->cst_)->setCf(r->xc_ + pos);
 					pos += b->cst_->dim();
 				}
 			}
-			for (auto d = sys->d_data_ + 1; d<sys->d_data_ + sys->d_size_; ++d)
-			{
+			for (auto d = sys->d_data_ + 1; d<sys->d_data_ + sys->d_size_; ++d) {
 				Size pos{ 0 };
-				ARIS_LOOP_BLOCK(d->rel_.)
-				{
+				ARIS_LOOP_BLOCK(d->rel_.) {
 					const_cast<Constraint*>(b->cst_)->setCf(d->xc_ + pos);
 					pos += b->cst_->dim();
 				}
@@ -1437,6 +1424,8 @@ namespace aris::dynamic
 
 			ARIS_LOOP_SYS_D s_vc(6, d->xp_, const_cast<double*>(d->part_->as()));
 		}
+
+		return 0;
 	}
 	auto UniversalSolver::cptGeneralJacobi()noexcept->void
 	{
@@ -1446,8 +1435,7 @@ namespace aris::dynamic
 		std::fill(Jg, Jg + mJg() * nJg(), 0.0);
 		std::fill(cg, cg + mJg(), 0.0);
 
-		ARIS_LOOP_SYS
-		{
+		ARIS_LOOP_SYS {
 			ARIS_LOOP_SYS_D d->part_->getPm(d->pm_);
 
 			// make A
@@ -1459,26 +1447,21 @@ namespace aris::dynamic
 			ARIS_LOOP_SYS_R std::fill(r->bc_, r->bc_ + r->rel_.size_, 0.0);
 
 			// upd Jg //
-			auto getJacobiColumn = [&](Relation &rel, double *bc)
-			{
+			auto getJacobiColumn = [&](Relation &rel, double *bc){
 				Size pos = 0;
-				ARIS_LOOP_BLOCK(rel.)
-				{
-					if (auto mot = dynamic_cast<const Motion*>(b->cst_))
-					{
+				ARIS_LOOP_BLOCK(rel.){
+					if (auto mot = dynamic_cast<const Motion*>(b->cst_)) {
 						// 更新bc，将当前电机的未知量更新为当前c的1.0 //
 						bc[pos] = 1.0;
 						sys->sovXp();
 						ARIS_LOOP_SYS_D s_vc(6, d->xp_, 1, Jg + at(d->part_->id() * 6, mot->id(), nJg()), nJg());
 						bc[pos] = 0.0;
 					}
-					else if (auto gmt = dynamic_cast<const GeneralMotion*>(b->cst_))
-					{
+					else if (auto gmt = dynamic_cast<const GeneralMotion*>(b->cst_)) {
 						double tmf[6][6];
 						s_tmf(*gmt->mpm(), *tmf);
 
-						for (Size k(-1); ++k < 6;)
-						{
+						for (Size k(-1); ++k < 6;) {
 							// 更新bc，将当前电机的未知量更新为当前c的1.0 //
 							// Tmf^(T) * v //
 							s_vc(6, tmf[k], bc);
@@ -1497,17 +1480,13 @@ namespace aris::dynamic
 
 			// upd cg //
 			sys->updCa();
-			auto clearMotionMa = [&](Relation &rel, double *bc)
-			{
+			auto clearMotionMa = [&](Relation &rel, double *bc){
 				Size pos = 0;
-				ARIS_LOOP_BLOCK(rel.)
-				{
-					if (auto mot = dynamic_cast<const Motion*>(b->cst_))
-					{
+				ARIS_LOOP_BLOCK(rel.){
+					if (auto mot = dynamic_cast<const Motion*>(b->cst_)){
 						bc[pos] -= mot->ma();
 					}
-					else if (auto gm = dynamic_cast<const GeneralMotion*>(b->cst_))
-					{
+					else if (auto gm = dynamic_cast<const GeneralMotion*>(b->cst_))	{
 						s_inv_tva(-1.0, *gm->mpm(), gm->mas(), bc);
 					}
 
@@ -1677,7 +1656,7 @@ namespace aris::dynamic
 	auto UniversalSolver::M()const noexcept->const double * { return imp_->pd_->M_; }
 	auto UniversalSolver::h()const noexcept->const double * { return imp_->pd_->h_; }
 	UniversalSolver::~UniversalSolver() = default;
-	UniversalSolver::UniversalSolver(const std::string &name, Size max_iter_count, double max_error) :Solver(name, max_iter_count, max_error) {}
+	UniversalSolver::UniversalSolver(Size max_iter_count, double max_error) :Solver(max_iter_count, max_error) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(UniversalSolver);
 #undef ARIS_LOOP_SYS
 #undef ARIS_LOOP_SYS_D
@@ -1728,15 +1707,17 @@ namespace aris::dynamic
 		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updMpm();
 		return error() < maxError() ? 0 : -1;
 	}
-	auto ForwardKinematicSolver::kinVel()->void
+	auto ForwardKinematicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
 		for (auto &m : model()->generalMotionPool())m.updMvs();
+		return 0;
 	}
-	auto ForwardKinematicSolver::dynAccAndFce()->void
+	auto ForwardKinematicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
 		for (auto &m : model()->generalMotionPool())m.updMas();
+		return 0;
 	}
 	auto ForwardKinematicSolver::cptJacobi() noexcept->void
 	{
@@ -1793,7 +1774,7 @@ namespace aris::dynamic
 	auto ForwardKinematicSolver::Jf()const noexcept->const double * { return imp_->J_vec_.data(); }
 	auto ForwardKinematicSolver::cf()const noexcept->const double * { return imp_->cf_vec_.data(); }
 	ForwardKinematicSolver::~ForwardKinematicSolver() = default;
-	ForwardKinematicSolver::ForwardKinematicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error), imp_(new Imp) {}
+	ForwardKinematicSolver::ForwardKinematicSolver(Size max_iter_count, double max_error) :UniversalSolver(max_iter_count, max_error), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(ForwardKinematicSolver);
 
 	struct InverseKinematicSolver::Imp{std::vector<double> J_vec_, ci_vec_;};
@@ -1815,15 +1796,17 @@ namespace aris::dynamic
 		if (error() < maxError())for (auto &m : model()->motionPool())m.updMp();
 		return error() < maxError() ? 0 : -1;
 	}
-	auto InverseKinematicSolver::kinVel()->void
+	auto InverseKinematicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
 		for (auto &m : model()->motionPool())m.updMv();
+		return 0;
 	}
-	auto InverseKinematicSolver::dynAccAndFce()->void
+	auto InverseKinematicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
 		for (auto &m : model()->motionPool())m.updMa();
+		return 0;
 	}
 	auto InverseKinematicSolver::cptJacobi()noexcept->void
 	{
@@ -1864,7 +1847,7 @@ namespace aris::dynamic
 	auto InverseKinematicSolver::Ji()const noexcept->const double * { return imp_->J_vec_.data(); }
 	auto InverseKinematicSolver::ci()const noexcept->const double * { return imp_->ci_vec_.data(); }
 	InverseKinematicSolver::~InverseKinematicSolver() = default;
-	InverseKinematicSolver::InverseKinematicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error), imp_(new Imp) {}
+	InverseKinematicSolver::InverseKinematicSolver(Size max_iter_count, double max_error) :UniversalSolver(max_iter_count, max_error), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(InverseKinematicSolver);
 
 	auto ForwardDynamicSolver::allocateMemory()->void
@@ -1882,18 +1865,20 @@ namespace aris::dynamic
 		if (error() < maxError())for (auto &m : model()->generalMotionPool())m.updMpm();
 		return error() < maxError() ? 0 : -1;
 	}
-	auto ForwardDynamicSolver::kinVel()->void
+	auto ForwardDynamicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
 		for (auto &m : model()->generalMotionPool())m.updMvs();
+		return 0;
 	}
-	auto ForwardDynamicSolver::dynAccAndFce()->void
+	auto ForwardDynamicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
 		for (auto &m : model()->generalMotionPool())m.updMas();
+		return 0;
 	}
 	ForwardDynamicSolver::~ForwardDynamicSolver() = default;
-	ForwardDynamicSolver::ForwardDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
+	ForwardDynamicSolver::ForwardDynamicSolver(Size max_iter_count, double max_error) :UniversalSolver(max_iter_count, max_error) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(ForwardDynamicSolver);
 
 	auto InverseDynamicSolver::allocateMemory()->void
@@ -1911,18 +1896,20 @@ namespace aris::dynamic
 		if (error() < maxError())for (auto &m : model()->motionPool())m.updMp();
 		return error() < maxError() ? 0 : -1;
 	}
-	auto InverseDynamicSolver::kinVel()->void
+	auto InverseDynamicSolver::kinVel()->int
 	{
 		UniversalSolver::kinVel();
 		for (auto &m : model()->motionPool())m.updMv();
+		return 0;
 	}
-	auto InverseDynamicSolver::dynAccAndFce()->void
+	auto InverseDynamicSolver::dynAccAndFce()->int
 	{
 		UniversalSolver::dynAccAndFce();
 		for (auto &m : model()->generalMotionPool())m.updMas();
+		return 0;
 	}
 	InverseDynamicSolver::~InverseDynamicSolver() = default;
-	InverseDynamicSolver::InverseDynamicSolver(const std::string &name, Size max_iter_count, double max_error) :UniversalSolver(name, max_iter_count, max_error) {}
+	InverseDynamicSolver::InverseDynamicSolver(Size max_iter_count, double max_error) :UniversalSolver(max_iter_count, max_error) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(InverseDynamicSolver);
 
 	ARIS_REGISTRATION{

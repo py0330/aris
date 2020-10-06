@@ -52,7 +52,7 @@ namespace aris::dynamic
 		auto setAxisAngle(double axis_angle)->void;
 
 		virtual ~SevenAxisInverseKinematicSolver();
-		explicit SevenAxisInverseKinematicSolver(const std::string &name = "seven_axis_inverse_solver");
+		explicit SevenAxisInverseKinematicSolver();
 		ARIS_DECLARE_BIG_FOUR(SevenAxisInverseKinematicSolver);
 
 	private:

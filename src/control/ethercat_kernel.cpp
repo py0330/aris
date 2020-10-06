@@ -285,6 +285,8 @@ namespace aris::control
 			
 			if (auto ec_slave = dynamic_cast<aris::control::EthercatSlave*>(&slave))
 			{
+				if (slave.isVirtual())continue;
+				
 				if(slave.phyId() > local_mst.slavePool().size()) THROW_FILE_LINE("wrong physical id!");
 				
 				auto compared_slave = dynamic_cast<aris::control::EthercatSlave*>(&local_mst.slavePool().at(slave.phyId()));
@@ -309,6 +311,8 @@ namespace aris::control
 			std::vector<ec_pdo_entry_reg_t> ec_pdo_entry_reg_vec;
 			for (auto &slave : master->slavePool())
 			{
+				if (slave.isVirtual())continue;
+				
 				std::vector<ec_sync_info_t> ec_sync_info_vec;
 				std::vector<std::vector<ec_pdo_info_t> > ec_pdo_info_vec_vec;
 				std::vector<std::vector<std::vector<ec_pdo_entry_info_t> > > ec_pdo_entry_info_vec_vec_vec;

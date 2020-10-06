@@ -27,7 +27,7 @@ namespace aris::dynamic
 		auto id()const->Size { return id_; }
 
 		~Element() = default;
-		explicit Element(const std::string &name = "element"){}
+		Element() = default;
 		ARIS_DEFINE_BIG_FOUR(Element);
 
 	private:
@@ -43,7 +43,7 @@ namespace aris::dynamic
 		auto setName(const std::string &name)->void { name_ = name; }
 
 		virtual ~DynEle() = default;
-		explicit DynEle(const std::string &name = "dyn_ele", bool active = true) : Element(name), active_(active), name_(name) { };
+		explicit DynEle(const std::string &name = "dyn_ele", bool active = true) : active_(active), name_(name) { };
 		ARIS_DEFINE_BIG_FOUR(DynEle);
 
 	private:
@@ -57,7 +57,7 @@ namespace aris::dynamic
 		auto setGravity(const double *gravity)noexcept->void { s_vc(6, gravity, gravity_); }
 
 		virtual ~Environment() = default;
-		explicit Environment(const std::string &name = "environment") :Element(name) {}
+		explicit Environment(){}
 		ARIS_DEFINE_BIG_FOUR(Environment);
 
 	private:
@@ -72,7 +72,7 @@ namespace aris::dynamic
 		auto setName(const std::string &name)->void { name_ = name; }
 
 		virtual ~Variable() = default;
-		explicit Variable(const std::string &name = "variable") : Element(name) { setName(name); }
+		explicit Variable(const std::string &name = "variable"){ setName(name); }
 		ARIS_DEFINE_BIG_FOUR(Variable);
 	private:
 		std::string name_;

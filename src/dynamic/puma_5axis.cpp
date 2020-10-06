@@ -21,14 +21,11 @@ namespace aris::dynamic
 {
 	auto createModelPuma5(const PumaParam &param)->std::unique_ptr<aris::dynamic::Model>
 	{
-		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
-
-		// 添加变量 //
-		model->calculator().addVariable("PI", "Matrix", aris::core::Matrix(PI));
 
 		// add part //
 		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
@@ -624,7 +621,7 @@ namespace aris::dynamic
 	auto Puma5InverseKinematicSolver::setWhichRoot(int root_of_0_to_7)->void { imp_->which_root_ = root_of_0_to_7; }
 	auto Puma5InverseKinematicSolver::whichRoot()const->int { return imp_->which_root_; }
 	Puma5InverseKinematicSolver::~Puma5InverseKinematicSolver() = default;
-	Puma5InverseKinematicSolver::Puma5InverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
+	Puma5InverseKinematicSolver::Puma5InverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(Puma5InverseKinematicSolver);
 
 	ARIS_REGISTRATION{

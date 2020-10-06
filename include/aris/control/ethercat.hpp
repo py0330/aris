@@ -67,13 +67,13 @@ namespace aris::control
 		auto ecMaster()->EthercatMaster*;
 		auto ecMaster()const->const EthercatMaster* { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecMaster(); }
 
-		auto setSmPool(std::vector<SyncManager> *sm_pool)->void;
-		auto smPool()->std::vector<SyncManager>&;
-		auto smPool()const->const std::vector<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
-		
 		auto ecHandle()->std::any&;
 		auto ecHandle()const->const std::any& { return const_cast<std::decay_t<decltype(*this)>*>(this)->ecHandle(); }
 
+		// attribute //
+		auto smPool()->std::vector<SyncManager>&;
+		auto smPool()const->const std::vector<SyncManager>& { return const_cast<std::decay_t<decltype(*this)>*>(this)->smPool(); }
+		auto setSmPool(std::vector<SyncManager> *sm_pool)->void;
 		auto vendorID()const->std::uint32_t;
 		auto setVendorID(std::uint32_t vendor_id)->void;
 		auto productCode()const->std::uint32_t;
@@ -84,11 +84,14 @@ namespace aris::control
 		auto setDcAssignActivate(std::uint32_t dc_assign_activate)->void;
 		auto sync0ShiftNs()const->std::int32_t;
 		auto setSync0ShiftNs(std::int32_t sync0_shift_ns)->void;
-		auto scanInfoForCurrentSlave()->void;
-		auto scanPdoForCurrentSlave()->void;
 		auto findPdoEntry(std::uint16_t index, std::uint8_t subindex)const->const PdoEntry* { return const_cast<std::decay_t<decltype(*this)> *>(this)->findPdoEntry(index, subindex); }
 		auto findPdoEntry(std::uint16_t index, std::uint8_t subindex)->PdoEntry*;
 
+		// scan //
+		auto scanInfoForCurrentSlave()->void;
+		auto scanPdoForCurrentSlave()->void;
+		
+		// pdo manipulation //
 		template<typename ValueType>
 		auto readPdo(std::uint16_t index, std::uint8_t subindex, ValueType &value)const->int { return readPdo(index, subindex, &value, sizeof(ValueType) * 8); }
 		auto readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->int;
@@ -195,9 +198,6 @@ namespace aris::control
 	class ARIS_API EthercatMotor :public EthercatSlave, public Motor
 	{
 	public:
-		auto isVirtual()->bool;
-		auto setVirtual(bool is_virtual = true)->void;
-
 		auto virtual controlWord()const->std::uint16_t override;
 		auto virtual modeOfOperation()const->std::uint8_t override;
 		auto virtual targetPos()const->double override;
@@ -245,7 +245,7 @@ namespace aris::control
 		EthercatMotor(const std::string &name = "ethercat_motion", std::uint16_t phy_id = 0
 			, std::uint32_t vendor_id = 0x00000000, std::uint32_t product_code = 0x00000000, std::uint32_t revision_num = 0x00000000, std::uint32_t dc_assign_activate = 0x00000000
 			, double max_pos = 1.0, double min_pos = -1.0, double max_vel = 1.0, double min_vel = -1.0, double max_acc = 1.0, double min_acc = -1.0
-			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0, bool is_virtual = false);
+			, double max_pos_following_error = 1.0, double max_vel_following_error = 1.0, double pos_factor = 1.0, double pos_offset = 0.0, double home_pos = 0.0);
 		EthercatMotor(const EthercatMotor &other) = delete;
 		EthercatMotor(EthercatMotor &&other) = delete;
 		EthercatMotor& operator=(const EthercatMotor &other) = delete;

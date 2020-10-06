@@ -8,7 +8,7 @@ namespace aris::robot
 {
 	auto createModelServoPress(const double *robot_pm)->std::unique_ptr<aris::dynamic::Model>
 	{
-		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };

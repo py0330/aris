@@ -70,8 +70,6 @@ namespace aris::dynamic
 		double loc_cm_I[6];
 		int motor_id_{ -1 };
 	};
-	auto Motion::motorId()const->int { return imp_->motor_id_; }
-	auto Motion::setMotorId(int id)->void { imp_->motor_id_ = id; }
 	auto Motion::locCmI() const noexcept->const double* { return imp_->loc_cm_I; }
 	auto Motion::cptCpFromPm(double *cp, const double *makI_pm, const double *makJ_pm)const noexcept->void {
 		// // old method
@@ -510,7 +508,6 @@ namespace aris::dynamic
 			.prop("mv", &Motion::setMv, &Motion::mv)
 			.prop("ma", &Motion::setMa, &Motion::ma)
 			.prop("frc_coe", &setMotionFrc, &getMotionFrc)
-			.prop("motor_id", &Motion::setMotorId, &Motion::motorId)
 			;
 
 		aris::core::class_<GeneralMotion>("GeneralMotion")

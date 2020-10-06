@@ -18,6 +18,8 @@ namespace aris::control
 	auto Slave::master()->Master* { return imp_->mst_; }
 	auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
 	auto Slave::setPhyId(std::uint16_t phy_id)->void { imp_->phy_id_ = phy_id; }
+	auto Slave::isVirtual()const->bool { return phyId() == std::numeric_limits<decltype(phyId())>::max(); }
+	auto Slave::setVirtual(bool is_virtual)->void { setPhyId(std::numeric_limits<decltype(phyId())>::max()); }
 	auto Slave::id()const->std::uint16_t { return imp_->sla_id_; }
 	Slave::~Slave() = default;
 	Slave::Slave(const std::string &name, std::uint16_t phy_id) :imp_(new Imp) { imp_->phy_id_ = phy_id; }
@@ -119,12 +121,15 @@ namespace aris::control
 		for (std::uint16_t i = 0; i< slavePool().size(); ++i)
 		{
 			auto &sla = slavePool()[i];
-
-			sla.imp_->sla_id_ = i;			
-			imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId() + 1), imp_->sla_vec_phy2abs_.size()), -1);
-			if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
-			imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();
+			sla.imp_->sla_id_ = i;
 			sla.imp_->mst_ = this;
+
+			if (!sla.isVirtual())
+			{
+				imp_->sla_vec_phy2abs_.resize(std::max(static_cast<aris::Size>(sla.phyId() + 1), imp_->sla_vec_phy2abs_.size()), -1);
+				if (imp_->sla_vec_phy2abs_.at(sla.phyId()) != -1) THROW_FILE_LINE("invalid Master::Slave phy id:\"" + std::to_string(sla.phyId()) + "\" of slave \"" + sla.name() + "\" already exists");
+				imp_->sla_vec_phy2abs_.at(sla.phyId()) = sla.id();
+			}
 		}
 	}
 	auto Master::start()->void
@@ -305,8 +310,7 @@ namespace aris::control
 	Master::~Master() = default;
 	Master::Master(const std::string &name) :imp_(new Imp){}
 
-	ARIS_REGISTRATION
-	{
+	ARIS_REGISTRATION{
 		aris::core::class_<Slave>("Slave")
 			.inherit<aris::core::NamedObject>()
 			.prop("phy_id", &Slave::setPhyId, &Slave::phyId);

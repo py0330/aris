@@ -12,15 +12,16 @@ namespace aris::control
 {
 	class Master;
 	
-	class ARIS_API Slave:public aris::core::NamedObject
-	{
+	class ARIS_API Slave:public aris::core::NamedObject{
 	public:
 		auto virtual send()->void {}
 		auto virtual recv()->void {}
 		auto virtual master()->Master*;
 		auto virtual master()const->const Master* { return const_cast<std::decay_t<decltype(*this)>*>(this)->master(); }
-		auto phyId()const->std::uint16_t;
+		auto phyId()const->std::uint16_t; // 为 -1 时，说明是虚拟轴
 		auto setPhyId(std::uint16_t phy_id)->void;
+		auto isVirtual()const->bool;
+		auto setVirtual(bool is_virtual = true)->void;
 		auto slaId()const->std::uint16_t { return static_cast<std::uint16_t>(id()); }
 		auto id()const->std::uint16_t;
 
@@ -33,11 +34,9 @@ namespace aris::control
 		aris::core::ImpPtr<Imp> imp_;
 		friend class Master;
 	};
-	class ARIS_API Master :public aris::core::NamedObject
-	{
+	class ARIS_API Master :public aris::core::NamedObject{
 	public:
-		struct RtStasticsData
-		{
+		struct RtStasticsData{
 			double avg_time_consumed;
 			std::int64_t max_time_consumed;
 			std::int64_t max_time_occur_count;

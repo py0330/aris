@@ -18,14 +18,11 @@ namespace aris::dynamic
 {
 	auto createModelStewart()->std::unique_ptr<aris::dynamic::Model>
 	{
-		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
-
-		// 添加变量 //
-		model->calculator().addVariable("PI", "Matrix", aris::core::Matrix(PI));
 
 		// 尺寸变量 //
 		//const double down_pos[6][3]
@@ -145,19 +142,19 @@ namespace aris::dynamic
 		auto &p6b = model->partPool().add<Part>("p6b", nullptr, p6b_pm);
 		auto &up = model->partPool().add<Part>("up");
 
-		p1a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
-		p1b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
-		p2a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
-		p2b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
-		p3a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
-		p3b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
-		p4a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
-		p4b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
-		p5a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
-		p5b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
-		p6a.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
-		p6b.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
-		up.geometryPool().add<aris::dynamic::ParasolidGeometry>("test", "C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\up.xmt_txt");
+		p1a.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p1b.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p2a.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p2b.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p3a.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p3b.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p4a.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p4b.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p5a.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p5b.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		p6a.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pa.xmt_txt");
+		p6b.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\pb.xmt_txt");
+		up.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:\\aris\\aris-1.5.0\\resource\\test_dynamic\\stewart\\up.xmt_txt");
 
 		// add joint //
 		auto &u1 = model->addUniversalJoint(p1a, model->ground(), down_pos[0], second_axis[0], first_axis[0]);
@@ -303,6 +300,6 @@ namespace aris::dynamic
 		return 0;
 	}
 	StewartInverseKinematicSolver::~StewartInverseKinematicSolver() = default;
-	StewartInverseKinematicSolver::StewartInverseKinematicSolver(const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) {}
+	StewartInverseKinematicSolver::StewartInverseKinematicSolver() :InverseKinematicSolver(1, 0.0), imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(StewartInverseKinematicSolver);
 }

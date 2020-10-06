@@ -129,6 +129,9 @@ namespace aris::server
 		struct PVC { double p; double v; double c; };
 		PVC *last_pvc_, *last_last_pvc_;
 
+		// 交换controller与model所需的缓存 //
+		double *mem_transfer_pvaf_;
+
 		// Error 相关
 		std::uint64_t *idle_mot_check_options_, *global_mot_check_options_;
 		std::atomic<std::int64_t> err_code_and_fixed_{ 0 };
@@ -263,20 +266,20 @@ namespace aris::server
 		int ret = plan.executeRT();
 
 		// 控制电机 //
-		for (std::size_t i = 0; i < model_->motionPool().size(); ++i)
-		{
-			auto &mm = model_->motionPool()[i];
-			if (mm.motorId() < 0)continue;
-			auto &cm = controller_->motionPool()[mm.motorId()];
+		model_->getMotionPos(mem_transfer_pvaf_);
+		model_->getMotionVel(mem_transfer_pvaf_ + 1 * model_->motionDim());
+		model_->getMotionAcc(mem_transfer_pvaf_ + 2 * model_->motionDim());
+		model_->getMotionFce(mem_transfer_pvaf_ + 3 * model_->motionDim());
 
-			if (mm.active())
-			{
-				if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mm.mp());
-				if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mm.mv());
-				if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mm.mf());
-				if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_VEL))cm.setOffsetVel(mm.mv());
-				if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_TOQ))cm.setOffsetToq(mm.mf());
-			}
+		for (std::size_t i = 0; i < std::min(model_->motionDim(), controller_->motionPool().size()); ++i)
+		{
+			auto &cm = controller_->motionPool()[i];
+
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_POS))cm.setTargetPos(mem_transfer_pvaf_[i + 0 * model_->motionDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_VEL))cm.setTargetVel(mem_transfer_pvaf_[i + 1 * model_->motionDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_TARGET_TOQ))cm.setTargetToq(mem_transfer_pvaf_[i + 3 * model_->motionDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_VEL))cm.setOffsetVel(mem_transfer_pvaf_[i + 1 * model_->motionDim()]);
+			if ((plan.motorOptions()[i] & aris::plan::Plan::USE_OFFSET_TOQ))cm.setOffsetToq(mem_transfer_pvaf_[i + 3 * model_->motionDim()]);
 		}
 
 		return ret;
@@ -850,18 +853,6 @@ namespace aris::server
 		controller().init();
 		planRoot().init();
 
-		// 检查model中motion是否有唯一的motor id //
-		std::vector<int> ids;
-		for (auto &m : model().motionPool()){
-
-			if (m.motorId() == -1)m.setMotorId(m.id());
-
-			if (m.motorId() >= controller().motionPool().size() || std::find(ids.begin(), ids.end(), m.motorId()) != ids.end())
-				THROW_FILE_LINE("motor id invalid");
-
-			ids.push_back(m.motorId());
-		}
-
 		// 分配自身所需要的内存 //
 		Size mem_size = 0;
 
@@ -869,6 +860,7 @@ namespace aris::server
 		core::allocMem(mem_size, imp_->last_last_pvc_, controller().slavePool().size());
 		core::allocMem(mem_size, imp_->idle_mot_check_options_, controller().slavePool().size());
 		core::allocMem(mem_size, imp_->global_mot_check_options_, controller().slavePool().size());
+		core::allocMem(mem_size, imp_->mem_transfer_pvaf_, imp_->model_->motionDim() * 4);
 
 		imp_->mempool_.resize(mem_size, char(0));
 
@@ -878,6 +870,8 @@ namespace aris::server
 		std::fill_n(imp_->idle_mot_check_options_, controller().slavePool().size(), aris::plan::Plan::NOT_CHECK_ENABLE | aris::plan::Plan::NOT_CHECK_POS_MAX | aris::plan::Plan::NOT_CHECK_POS_MIN);
 		imp_->global_mot_check_options_ = core::getMem(imp_->mempool_.data(), imp_->global_mot_check_options_);
 		std::fill_n(imp_->global_mot_check_options_, controller().slavePool().size(), std::int64_t(0));
+		imp_->mem_transfer_pvaf_ = core::getMem(imp_->mempool_.data(), imp_->mem_transfer_pvaf_);
+		std::fill_n(imp_->mem_transfer_pvaf_, model().motionDim() * 4, std::int64_t(0));
 
 		// 赋予初值 //
 		controller().setControlStrategy([this]() {this->imp_->tg(); }); // controller可能被reset，因此这里必须重新设置//
@@ -1042,7 +1036,7 @@ namespace aris::server
 	ControlServer::ControlServer() :imp_(new Imp(this))
 	{
 		// create members //
-		makeModel<aris::dynamic::Model>("model");
+		makeModel<aris::dynamic::Model>();
 		makeController<aris::control::Controller>("controller");
 		makeSensorRoot<aris::sensor::SensorRoot>("sensor_root");
 		makePlanRoot<aris::plan::PlanRoot>("plan_root");

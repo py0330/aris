@@ -152,24 +152,30 @@ namespace aris::dynamic
 	}
 	auto Model::inverseKinematics()->int { return solverPool()[0].kinPos(); }
 	auto Model::forwardKinematics()->int { return solverPool()[1].kinPos(); }
-	auto Model::inverseKinematicsVel()->void { solverPool()[0].kinVel(); }
-	auto Model::forwardKinematicsVel()->void { solverPool()[1].kinVel(); }
-	auto Model::inverseDynamics()->void { solverPool()[2].dynAccAndFce(); }
-	auto Model::forwardDynamics()->void { solverPool()[3].dynAccAndFce(); }
+	auto Model::inverseKinematicsVel()->int { return solverPool()[0].kinVel(); }
+	auto Model::forwardKinematicsVel()->int { return solverPool()[1].kinVel(); }
+	auto Model::inverseDynamics()->int { return solverPool()[2].dynAccAndFce(); }
+	auto Model::forwardDynamics()->int { return solverPool()[3].dynAccAndFce(); }
+	auto Model::motionDim()->Size { return motionPool().size(); }
 	auto Model::setMotionPos(const double *mp)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMp(mp[i]); }
-	auto Model::setMotionPos(double mp, Size which_motion)->void { motionPool()[which_motion].setMp(mp); }
-	auto Model::getMotionPos(double *mp)->void { for (Size i = 0; i < motionPool().size(); ++i) mp[i] = motionPool()[i].mp(); }
-	auto Model::getMotionPos(Size which_motion)->double { return motionPool()[which_motion].mp(); }
+	//auto Model::setMotionPos(double mp, Size which_motion)->void { motionPool()[which_motion].setMp(mp); }
+	auto Model::getMotionPos(double *mp)const ->void { for (Size i = 0; i < motionPool().size(); ++i) mp[i] = motionPool()[i].mp(); }
+	//auto Model::getMotionPos(Size which_motion)->double { return motionPool()[which_motion].mp(); }
 	auto Model::setMotionVel(const double *mv)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMv(mv[i]); }
-	auto Model::setMotionVel(double mv, Size which_motion)->void { motionPool()[which_motion].setMv(mv); }
-	auto Model::getMotionVel(double *mv)->void { for (Size i = 0; i < motionPool().size(); ++i) mv[i] = motionPool()[i].mv(); }
-	auto Model::getMotionVel(Size which_motion)->double { return motionPool()[which_motion].mv(); }
+	//auto Model::setMotionVel(double mv, Size which_motion)->void { motionPool()[which_motion].setMv(mv); }
+	auto Model::getMotionVel(double *mv)const ->void { for (Size i = 0; i < motionPool().size(); ++i) mv[i] = motionPool()[i].mv(); }
+	//auto Model::getMotionVel(Size which_motion)->double { return motionPool()[which_motion].mv(); }
+	auto Model::setMotionAcc(const double *ma)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMv(ma[i]); }
+	auto Model::getMotionAcc(double *ma)const ->void { for (Size i = 0; i < motionPool().size(); ++i) ma[i] = motionPool()[i].ma(); }
 	auto Model::setMotionFce(const double *mf)->void { for (Size i = 0; i < motionPool().size(); ++i) motionPool()[i].setMf(mf[i]); }
-	auto Model::setMotionFce(double mf, Size which_motion)->void { motionPool()[which_motion].setMf(mf); }
-	auto Model::getMotionFce(double *mf)->void { for (Size i = 0; i < motionPool().size(); ++i) mf[i] = motionPool()[i].mf(); }
-	auto Model::getMotionFce(Size which_motion)->double { return motionPool()[which_motion].mf(); }
-	auto Model::setEndEffectorPm(const double *pm, Size which_ee)->void { generalMotionPool()[which_ee].setMpm(pm); }
-	auto Model::getEndEffectorPm(double *pm, Size which_ee)->void { generalMotionPool()[which_ee].getMpm(pm); }
+	//auto Model::setMotionFce(double mf, Size which_motion)->void { motionPool()[which_motion].setMf(mf); }
+	auto Model::getMotionFce(double *mf)const->void { for (Size i = 0; i < motionPool().size(); ++i) mf[i] = motionPool()[i].mf(); }
+	//auto Model::getMotionFce(Size which_motion)->double { return motionPool()[which_motion].mf(); }
+	//auto Model::setEndEffectorPm(const double *pm, Size which_ee)->void { generalMotionPool()[which_ee].setMpm(pm); }
+	//auto Model::getEndEffectorPm(double *pm, Size which_ee)->void { generalMotionPool()[which_ee].getMpm(pm); }
+	auto Model::endEffectorSize()->Size { return 0; }
+	auto Model::endEffector(Size i)->EndEffector* { return nullptr; }
+	
 	auto Model::time()const->double { return imp_->time_; }
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }
@@ -323,9 +329,8 @@ namespace aris::dynamic
 		return ret;
 	}
 	Model::~Model() = default;
-	Model::Model(const std::string &name)
+	Model::Model()
 	{
-		
 		imp_->variable_pool_.reset(new aris::core::PointerArray<Variable, Element>);
 		imp_->part_pool_.reset(new aris::core::PointerArray<Part, Element>);
 		imp_->joint_pool_.reset(new aris::core::PointerArray<Joint, Element>);

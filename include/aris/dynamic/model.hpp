@@ -3,6 +3,7 @@
 
 #include <aris/core/expression_calculator.hpp>
 
+#include <aris/dynamic/model_base.hpp>
 #include <aris/dynamic/model_solver.hpp>
 #include <aris/dynamic/model_simulation.hpp>
 #include <aris/dynamic/plan.hpp>
@@ -203,7 +204,7 @@ namespace aris::dynamic{
 	/// 
 	/// @{
 	///
-	class ARIS_API Model{
+	class ARIS_API Model:public ModelBase{
 	public:
 		auto virtual init()->void;
 		/// @{
@@ -212,26 +213,28 @@ namespace aris::dynamic{
 		/// @}
 
 		/// @{
-		auto virtual inverseKinematics()->int;
-		auto virtual forwardKinematics()->int;
-		auto virtual inverseKinematicsVel()->void;
-		auto virtual forwardKinematicsVel()->void;
-		auto virtual inverseDynamics()->void;
-		auto virtual forwardDynamics()->void;
-		auto virtual setMotionPos(const double *mp)->void;
-		auto virtual setMotionPos(double mp, Size which_motion)->void;
-		auto virtual getMotionPos(double *mp)->void;
-		auto virtual getMotionPos(Size which_motion)->double;
-		auto virtual setMotionVel(const double *mv)->void;
-		auto virtual setMotionVel(double mv, Size which_motion)->void;
-		auto virtual getMotionVel(double *mv)->void;
-		auto virtual getMotionVel(Size which_motion)->double;
-		auto virtual setMotionFce(const double *mf)->void;
-		auto virtual setMotionFce(double mf, Size which_motion)->void;
-		auto virtual getMotionFce(double *mp)->void;
-		auto virtual getMotionFce(Size which_motion)->double;
-		auto virtual setEndEffectorPm(const double *pm, Size which_ee = 0)->void;
-		auto virtual getEndEffectorPm(double *pm, Size which_ee = 0)->void;
+		auto virtual inverseKinematics()->int override;
+		auto virtual forwardKinematics()->int override;
+		auto virtual inverseKinematicsVel()->int override;
+		auto virtual forwardKinematicsVel()->int override;
+		auto virtual inverseDynamics()->int override;
+		auto virtual forwardDynamics()->int override;
+
+		auto virtual motionDim()->Size override;
+		auto virtual getMotionPos(double *mp)const ->void override;
+		auto virtual setMotionPos(const double *mp)->void override;
+		auto virtual getMotionVel(double *mv)const ->void override;
+		auto virtual setMotionVel(const double *mv)->void override;
+		auto virtual getMotionAcc(double *ma)const ->void override;
+		auto virtual setMotionAcc(const double *ma)->void override;
+		auto virtual getMotionFce(double *mf)const ->void override;
+		auto virtual setMotionFce(const double *mf)->void override;
+
+		auto virtual endEffectorSize()->Size override;
+		auto virtual endEffector(Size i = 0)->EndEffector* override;
+		
+		//auto virtual setEndEffectorPm(const double *pm, Size which_ee = 0)->void;
+		//auto virtual getEndEffectorPm(double *pm, Size which_ee = 0)->void;
 		/// @}
 
 		/// @{
@@ -302,7 +305,7 @@ namespace aris::dynamic{
 		auto time()const->double;
 		auto setTime(double time)->void;
 		virtual ~Model();
-		explicit Model(const std::string &name = "model");
+		explicit Model();
 		Model(Model&&);
 		Model& operator=(Model&&);
 

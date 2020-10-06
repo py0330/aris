@@ -29,7 +29,7 @@ namespace aris::dynamic
 		}
 
 		virtual ~StewartInverseKinematicSolver();
-		explicit StewartInverseKinematicSolver(const std::string &name = "stewart_inverse_solver");
+		explicit StewartInverseKinematicSolver();
 		ARIS_DECLARE_BIG_FOUR(StewartInverseKinematicSolver);
 
 	private:

@@ -766,7 +766,7 @@ namespace aris::dynamic
 		}
 	}
 	Calibrator::~Calibrator() = default;
-	Calibrator::Calibrator(const std::string &name) : Element(name), imp_(new Imp) {}
+	Calibrator::Calibrator(const std::string &name) : imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(Calibrator);
 
 	struct SimResult::TimeResult::Imp { std::deque<double> time_; };
@@ -795,7 +795,7 @@ namespace aris::dynamic
 	auto SimResult::TimeResult::record()->void { imp_->time_.push_back(model()->time()); }
 	auto SimResult::TimeResult::restore(Size pos)->void { model()->setTime(imp_->time_.at(pos)); }
 	SimResult::TimeResult::~TimeResult() = default;
-	SimResult::TimeResult::TimeResult(const std::string &name) : Element(name), imp_(new Imp) {}
+	SimResult::TimeResult::TimeResult(const std::string &name) :imp_(new Imp) {}
 	SimResult::TimeResult::TimeResult(const SimResult::TimeResult&) = default;
 	SimResult::TimeResult::TimeResult(SimResult::TimeResult&&) = default;
 	SimResult::TimeResult& SimResult::TimeResult::operator=(const TimeResult&) = default;
@@ -881,7 +881,7 @@ namespace aris::dynamic
 		part().setAs(imp_->as_.at(pos).data());
 	}
 	SimResult::PartResult::~PartResult() = default;
-	SimResult::PartResult::PartResult(const std::string &name, Part *part) : Element(name), imp_(new Imp(part)) {}
+	SimResult::PartResult::PartResult(const std::string &name, Part *part) : imp_(new Imp(part)) {}
 	SimResult::PartResult::PartResult(const SimResult::PartResult&) = default;
 	SimResult::PartResult::PartResult(SimResult::PartResult&&) = default;
 	SimResult::PartResult& SimResult::PartResult::operator=(const PartResult&) = default;
@@ -977,7 +977,7 @@ namespace aris::dynamic
 		}
 	}
 	SimResult::ConstraintResult::~ConstraintResult() = default;
-	SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint *constraint) : Element(name), imp_(new Imp(constraint)) {}
+	SimResult::ConstraintResult::ConstraintResult(const std::string &name, Constraint *constraint) : imp_(new Imp(constraint)) {}
 	SimResult::ConstraintResult::ConstraintResult(const SimResult::ConstraintResult&) = default;
 	SimResult::ConstraintResult::ConstraintResult(SimResult::ConstraintResult&&) = default;
 	SimResult::ConstraintResult& SimResult::ConstraintResult::operator=(const ConstraintResult&) = default;
@@ -1038,7 +1038,7 @@ namespace aris::dynamic
 		for (auto &r : constraintResultPool())r.imp_->cf_.clear();
 	}
 	SimResult::~SimResult() = default;
-	SimResult::SimResult(const std::string &name) : Element(name), imp_(new Imp())
+	SimResult::SimResult(const std::string &name) : imp_(new Imp())
 	{
 		/*
 		imp_->time_result_ = &add<TimeResult>("time_result");
@@ -1118,7 +1118,7 @@ namespace aris::dynamic
 		result.restore(0);
 	}
 	Simulator::~Simulator() = default;
-	Simulator::Simulator(const std::string &name) : Element(name), imp_(new Imp) {}
+	Simulator::Simulator(const std::string &name) :imp_(new Imp) {}
 	ARIS_DEFINE_BIG_FOUR_CPP(Simulator);
 
 	struct SolverSimulator::Imp

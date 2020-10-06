@@ -1335,7 +1335,7 @@ namespace aris::dynamic
 	auto ParasolidGeometry::prtPm()const->const double4x4& { return imp_->prt_pm_; }
 	auto ParasolidGeometry::filePath()const->const std::string & { return imp_->graphic_file_path; }
 	ParasolidGeometry::~ParasolidGeometry() = default;
-	ParasolidGeometry::ParasolidGeometry(const std::string &name, const std::string &graphic_file_path, const double* prt_pm) : Geometry(name), imp_(new Imp)
+	ParasolidGeometry::ParasolidGeometry(const std::string &graphic_file_path, const double* prt_pm) : imp_(new Imp)
 	{
 		static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		prt_pm = prt_pm ? prt_pm : default_pm_in;
@@ -1357,7 +1357,7 @@ namespace aris::dynamic
 	auto FileGeometry::filePath()const->const std::string & { return imp_->graphic_file_path; }
 	auto FileGeometry::setFilePath(std::string_view path)->void { imp_->graphic_file_path=path; }
 	FileGeometry::~FileGeometry() = default;
-	FileGeometry::FileGeometry(const std::string &name, const std::string &graphic_file_path, const double* prt_pm) : Geometry(name), imp_(new Imp)
+	FileGeometry::FileGeometry(const std::string &graphic_file_path, const double* prt_pm) :imp_(new Imp)
 	{
 		static const double default_pm_in[16] = { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
 		prt_pm = prt_pm ? prt_pm : default_pm_in;
@@ -1378,7 +1378,7 @@ namespace aris::dynamic
 	auto ShellGeometry::filePath()const->const std::string & { return imp_->graphic_file_path; }
 	auto ShellGeometry::relativeToMarker()const->const Marker& { return *imp_->relative_to_; }
 	ShellGeometry::~ShellGeometry() = default;
-	ShellGeometry::ShellGeometry(const std::string &name, const std::string &graphic_file_path, Marker* relative_to) : Geometry(name), imp_(new Imp)
+	ShellGeometry::ShellGeometry(const std::string &graphic_file_path, Marker* relative_to) : imp_(new Imp)
 	{
 		imp_->graphic_file_path = graphic_file_path;
 		imp_->relative_to_ = relative_to;

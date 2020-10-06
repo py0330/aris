@@ -31,7 +31,7 @@ const double pe_ee_j[6]{ 0.013, -0.15, 0.1, 0.01, 0.02, 0.2 };
 
 auto createPumaModel(const double (*j_pos)[3], const double (*j_axis)[3], const double *pe_ee_i, const double *pe_ee_j)->std::unique_ptr<aris::dynamic::Model>
 {
-	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 	// 设置重力 //
 	const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };

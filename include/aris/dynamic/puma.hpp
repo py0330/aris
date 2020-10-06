@@ -55,7 +55,7 @@ namespace aris::dynamic
 		auto whichRoot()const->int;
 
 		virtual ~PumaInverseKinematicSolver();
-		explicit PumaInverseKinematicSolver(const std::string &name = "puma_inverse_solver");
+		explicit PumaInverseKinematicSolver();
 		ARIS_DECLARE_BIG_FOUR(PumaInverseKinematicSolver);
 
 	private:

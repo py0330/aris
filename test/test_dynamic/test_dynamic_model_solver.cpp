@@ -1597,7 +1597,7 @@ void test_float_5_bar()
 }
 void test_servo_press()
 {
-	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+	std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 	// 设置重力 //
 	const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
@@ -1693,9 +1693,9 @@ void test_3R()
 	auto &force2 = m.forcePool().add<SingleComponentForce>("f2", motion2.makI(), motion2.makJ(), 5);
 	auto &force3 = m.forcePool().add<SingleComponentForce>("f3", motion3.makI(), motion3.makJ(), 5);
 
-	link1.geometryPool().add<ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t");
-	link2.geometryPool().add<ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t");
-	link3.geometryPool().add<ParasolidGeometry>("parasolid_geometry", "C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t");
+	link1.geometryPool().add<ParasolidGeometry>("C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t");
+	link2.geometryPool().add<ParasolidGeometry>("C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t");
+	link3.geometryPool().add<ParasolidGeometry>("C:\\aris\\resource\\test_dynamic\\3R\\part1.x_t");
 
 	auto &solver = m.solverPool().add<UniversalSolver>();
 	solver.setMaxError(1e-15);

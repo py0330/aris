@@ -13,8 +13,8 @@ namespace aris::dynamic
 	public:
 		auto virtual allocateMemory()->void = 0;
 		auto virtual kinPos()->int = 0;
-		auto virtual kinVel()->void = 0;
-		auto virtual dynAccAndFce()->void = 0;
+		auto virtual kinVel()->int = 0;
+		auto virtual dynAccAndFce()->int = 0;
 		auto error()const->double;
 		auto setError(double error)->void;
 		auto maxError()const->double;
@@ -25,7 +25,7 @@ namespace aris::dynamic
 		auto setMaxIterCount(Size max_count)->void;
 
 		virtual ~Solver();
-		explicit Solver(const std::string &name = "solver", Size max_iter_count = 100, double max_error = 1e-10);
+		explicit Solver(Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_DECLARE_BIG_FOUR(Solver);
 
 	private:
@@ -37,8 +37,8 @@ namespace aris::dynamic
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
-		auto virtual kinVel()->void override;
-		auto virtual dynAccAndFce()->void override;
+		auto virtual kinVel()->int override;
+		auto virtual dynAccAndFce()->int override;
 		auto cptGeneralJacobi() noexcept->void;// all_part_vs = Jg * theta_dot, all_part_as = Jg * theta_dot_dot + cg
 		auto mJg()const noexcept->Size;// = part_number x 6
 		auto nJg()const noexcept->Size;// = motion_number + general_motion_number x 6
@@ -50,7 +50,7 @@ namespace aris::dynamic
 		auto h()const noexcept->const double *;// dimension : nM x 1
 
 		virtual ~UniversalSolver();
-		explicit UniversalSolver(const std::string &name = "diag_solver", Size max_iter_count = 100, double max_error = 1e-10);
+		explicit UniversalSolver(Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_DECLARE_BIG_FOUR(UniversalSolver);
 
 	public:
@@ -62,8 +62,8 @@ namespace aris::dynamic
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
-		auto virtual kinVel()->void override;
-		auto virtual dynAccAndFce()->void override;
+		auto virtual kinVel()->int override;
+		auto virtual dynAccAndFce()->int override;
 		auto cptJacobi()noexcept->void;
 		auto cptJacobiWrtEE()noexcept->void;// wrt ee.makI(), not compute cf
 		auto mJf()const noexcept->Size;// equal mot num
@@ -72,7 +72,7 @@ namespace aris::dynamic
 		auto cf()const noexcept->const double *;// dimension : mJ x 1
 
 		virtual ~ForwardKinematicSolver();
-		explicit ForwardKinematicSolver(const std::string &name = "forward_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+		explicit ForwardKinematicSolver(Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_DECLARE_BIG_FOUR(ForwardKinematicSolver);
 
 	private:
@@ -84,8 +84,8 @@ namespace aris::dynamic
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
-		auto virtual kinVel()->void override;
-		auto virtual dynAccAndFce()->void override;
+		auto virtual kinVel()->int override;
+		auto virtual dynAccAndFce()->int override;
 		auto virtual setPmEE(const double *ee_pm, const double *ext_axes)->void {}
 		auto cptJacobi()noexcept->void;
 		auto mJi()const noexcept->Size;// equal mot num
@@ -94,7 +94,7 @@ namespace aris::dynamic
 		auto ci()const noexcept->const double *;// dimension : mJ x 1
 
 		virtual ~InverseKinematicSolver();
-		explicit InverseKinematicSolver(const std::string &name = "inverse_kinematic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+		explicit InverseKinematicSolver(Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_DECLARE_BIG_FOUR(InverseKinematicSolver);
 
 	private:
@@ -106,11 +106,11 @@ namespace aris::dynamic
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
-		auto virtual kinVel()->void override;
-		auto virtual dynAccAndFce()->void override;
+		auto virtual kinVel()->int override;
+		auto virtual dynAccAndFce()->int override;
 
 		virtual ~ForwardDynamicSolver();
-		explicit ForwardDynamicSolver(const std::string &name = "forward_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+		explicit ForwardDynamicSolver(Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_DECLARE_BIG_FOUR(ForwardDynamicSolver);
 	};
 	class ARIS_API InverseDynamicSolver :public UniversalSolver
@@ -118,11 +118,11 @@ namespace aris::dynamic
 	public:
 		auto virtual allocateMemory()->void override;
 		auto virtual kinPos()->int override;
-		auto virtual kinVel()->void override;
-		auto virtual dynAccAndFce()->void override;
+		auto virtual kinVel()->int override;
+		auto virtual dynAccAndFce()->int override;
 
 		virtual ~InverseDynamicSolver();
-		explicit InverseDynamicSolver(const std::string &name = "inverse_dynamic_solver", Size max_iter_count = 100, double max_error = 1e-10);
+		explicit InverseDynamicSolver(Size max_iter_count = 100, double max_error = 1e-10);
 		ARIS_DECLARE_BIG_FOUR(InverseDynamicSolver);
 	};
 	///

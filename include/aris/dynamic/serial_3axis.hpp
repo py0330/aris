@@ -57,7 +57,7 @@ namespace aris::dynamic
 		auto setPeEEAngle(const double *pe, const char *type = "321")->void;
 
 		virtual ~Serial3InverseKinematicSolver();
-		explicit Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name = "puma_inverse_solver");
+		explicit Serial3InverseKinematicSolver(const Serial3Param &param);
 		ARIS_DECLARE_BIG_FOUR(Serial3InverseKinematicSolver);
 
 	private:

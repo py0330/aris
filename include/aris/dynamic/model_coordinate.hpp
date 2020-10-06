@@ -221,7 +221,7 @@ namespace aris::dynamic
 	class ARIS_API Geometry :public Element{
 	public:
 		virtual ~Geometry() = default;
-		explicit Geometry(const std::string &name = "geometry") : Element(name) {}
+		explicit Geometry(){}
 		ARIS_DEFINE_BIG_FOUR(Geometry);
 	};
 	class ARIS_API ParasolidGeometry final :public Geometry{
@@ -230,7 +230,7 @@ namespace aris::dynamic
 		auto filePath()const->const std::string &;
 
 		virtual ~ParasolidGeometry();
-		explicit ParasolidGeometry(const std::string &name = "parasolid_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
+		explicit ParasolidGeometry(const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
 		ARIS_DECLARE_BIG_FOUR(ParasolidGeometry);
 
 	private:
@@ -244,7 +244,7 @@ namespace aris::dynamic
 		auto setFilePath(std::string_view path)->void;
 
 		virtual ~FileGeometry();
-		explicit FileGeometry(const std::string &name = "file_geometry", const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
+		explicit FileGeometry(const std::string &graphic_file_path = "", const double* prt_pm = nullptr);
 		ARIS_DECLARE_BIG_FOUR(FileGeometry);
 
 	private:
@@ -257,7 +257,7 @@ namespace aris::dynamic
 		auto relativeToMarker()const->const Marker&;
 
 		virtual ~ShellGeometry();
-		explicit ShellGeometry(const std::string &name = "shell_geometry", const std::string &graphic_file_path = "", Marker* relative_to = nullptr);
+		explicit ShellGeometry(const std::string &graphic_file_path = "", Marker* relative_to = nullptr);
 		ARIS_DECLARE_BIG_FOUR(ShellGeometry);
 
 	private:

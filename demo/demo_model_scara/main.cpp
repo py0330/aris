@@ -163,11 +163,11 @@ int main()
 	//-------------------------------------------- 用Adams验证 --------------------------------------------//
 	/// [Verify_By_Adams]
 	// 使用adams验证计算结果, 为了能够在Adams里显示动画，首先给各个杆件添加 Parasolid 格式的模型，这些文件存在aris的安装目录下
-	m.ground().geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/ground.xmt_txt");
-	link1.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/part1.xmt_txt");
-	link2.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/part2.xmt_txt");
-	link3.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/part3.xmt_txt");
-	link4.geometryPool().add<aris::dynamic::ParasolidGeometry>("parasolid_geometry", "C:/aris/aris-1.5.0/resource/demo_model_scara/part4.xmt_txt");
+	m.ground().geometryPool().add<aris::dynamic::ParasolidGeometry>("C:/aris/aris-1.5.0/resource/demo_model_scara/ground.xmt_txt");
+	link1.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:/aris/aris-1.5.0/resource/demo_model_scara/part1.xmt_txt");
+	link2.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:/aris/aris-1.5.0/resource/demo_model_scara/part2.xmt_txt");
+	link3.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:/aris/aris-1.5.0/resource/demo_model_scara/part3.xmt_txt");
+	link4.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:/aris/aris-1.5.0/resource/demo_model_scara/part4.xmt_txt");
 	
 	// 添加一个 Adams 仿真器插件, 之后保存到aris的安装目录下，用户此时就可以在 Adams 查看结果了
 	auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();

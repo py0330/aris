@@ -20,14 +20,11 @@ namespace aris::dynamic
 {
 	auto createModelSerial3Axis(const Serial3Param &param)->std::unique_ptr<aris::dynamic::Model>
 	{
-		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>("model");
+		std::unique_ptr<aris::dynamic::Model> model = std::make_unique<aris::dynamic::Model>();
 
 		// 设置重力 //
 		const double gravity[6]{ 0.0,0.0,-9.8,0.0,0.0,0.0 };
 		model->environment().setGravity(gravity);
-
-		// 添加变量 //
-		model->calculator().addVariable("PI", "Matrix", aris::core::Matrix(PI));
 
 		// add part //
 		const double default_iv[10]{ 1,0,0,0,0,0,0,0,0,0 };
@@ -438,7 +435,7 @@ namespace aris::dynamic
 		imp_->use_angle_ = true;
 	}
 	Serial3InverseKinematicSolver::~Serial3InverseKinematicSolver() = default;
-	Serial3InverseKinematicSolver::Serial3InverseKinematicSolver(const Serial3Param &param, const std::string &name) :InverseKinematicSolver(name, 1, 0.0), imp_(new Imp) 
+	Serial3InverseKinematicSolver::Serial3InverseKinematicSolver(const Serial3Param &param) :InverseKinematicSolver(1, 0.0), imp_(new Imp) 
 	{
 		imp_->mechnism_param_.a1 = param.a1;
 		imp_->mechnism_param_.a2 = param.a2;

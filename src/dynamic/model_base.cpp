@@ -16,19 +16,6 @@
 
 namespace aris::dynamic
 {
-	//struct ModelBase::Imp{
-	//	std::unique_ptr<aris::core::PointerArray<EndEffector>> ee_pool_;
-	//	std::vector<double> motion_pva_;
-	//};
-	//auto ModelBase::endEffectorPool()->aris::core::PointerArray<EndEffector>& {
-	//	return *imp_->ee_pool_;
-	//}
-
-	//ModelBase::~ModelBase() = default;
-	//ModelBase::ModelBase():imp_(new Imp){}
-	//ModelBase::ModelBase(ModelBase&&) = default;
-	//ModelBase& ModelBase::operator=(ModelBase&&) = default;
-	
 	ARIS_REGISTRATION
 	{
 		//typedef Environment&(Model::*EnvironmentFunc)();

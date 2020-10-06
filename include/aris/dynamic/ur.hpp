@@ -27,7 +27,7 @@ namespace aris::dynamic
 		auto whichRoot()->int;
 
 		virtual ~Ur5InverseKinematicSolver() = default;
-		explicit Ur5InverseKinematicSolver(const std::string &name = "ur5_inverse_solver", aris::Size max_iter_count = 100, double max_error = 1e-10) :InverseKinematicSolver(name, max_iter_count, max_error) {}
+		explicit Ur5InverseKinematicSolver(aris::Size max_iter_count = 100, double max_error = 1e-10) :InverseKinematicSolver(max_iter_count, max_error) {}
 		ARIS_DEFINE_BIG_FOUR(Ur5InverseKinematicSolver);
 
 	private:
