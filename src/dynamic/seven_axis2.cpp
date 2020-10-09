@@ -90,8 +90,8 @@ namespace aris::dynamic
 		s_pe2pm(param.tool0_pe, ee_i_wrt_axis_7_pm, param.tool0_pe_type.empty() ? "321" : param.tool0_pe_type.c_str());
 		s_pm2pm(axis_7_pm, ee_i_wrt_axis_7_pm, ee_i_pm);
 
-		auto &makI = p7.addMarker("ee_makI", ee_i_pm);
-		auto &makJ = model->ground().addMarker("ee_makJ", ee_j_pm);
+		auto &makI = p7.addMarker("tool0", ee_i_pm);
+		auto &makJ = model->ground().addMarker("wobj0", ee_j_pm);
 		auto &ee = model->generalMotionPool().add<aris::dynamic::GeneralMotion>("ee", &makI, &makJ, false);
 
 		// change robot pose wrt ground //
