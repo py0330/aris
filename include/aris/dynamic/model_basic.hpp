@@ -51,7 +51,7 @@ namespace aris::dynamic
 		bool active_;
 	};
 
-	class ARIS_API Environment final :public Element{
+	class ARIS_API Environment final{
 	public:
 		auto gravity()const noexcept->const double6& { return gravity_; }
 		auto setGravity(const double *gravity)noexcept->void { s_vc(6, gravity, gravity_); }

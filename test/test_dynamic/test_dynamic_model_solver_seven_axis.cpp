@@ -2,6 +2,7 @@
 #include <iostream>
 #include <array>
 #include <aris/dynamic/dynamic.hpp>
+#include <aris/dynamic/seven_axis2.hpp>
 
 #include<type_traits>
 
@@ -76,12 +77,67 @@ void test_seven_axis_inverse_solver()
 	}
 	
 }
+void test_seven_axis_inverse_solver2()
+{
+	aris::dynamic::SevenAxisParam2 param;
 
+	param.d1 = 0;
+	param.a2 = 0.1;
+	param.d3 = 0.330;
+	param.d5 = 0.320;
+	param.tool0_pe[2] = 0;
+
+	auto m = aris::dynamic::createModelSevenAxis2(param);
+	m->init();
+
+	
+
+
+	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
+
+	double input[7]{ 0.1, 0.2, 0.3, -0.8, 0.5, 0.6, 0.7 };
+	m->setMotionPos(input);
+	m->forwardKinematics();
+	m->generalMotionPool()[0].updMpm();
+	m->generalMotionPool()[0].getMpe(pe);
+
+	aris::dynamic::dsp(4, 4, *m->generalMotionPool()[0].mpm());
+	
+	//m->generalMotionPool()[0].setMpe(pe, "321");
+
+
+
+
+
+	for (int i = 0; i < 9; ++i)
+	{
+		dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver2&>(m->solverPool()[0]).setWhichRoot(i);
+		dynamic_cast<aris::dynamic::SevenAxisInverseKinematicSolver2&>(m->solverPool()[0]).setAxisAngle(0.3);
+		std::cout << "ret:" << m->solverPool()[0].kinPos() << std::endl;
+		//m->solverPool()[1].kinPos();
+
+		double result[6];
+		m->generalMotionPool()[0].updMpm();
+		m->generalMotionPool()[0].getMpe(result, "321");
+		dsp(1, 6, result);
+
+
+
+
+		for (int j = 0; j < 7; ++j)
+		{
+			std::cout << m->motionPool()[j].mp() << "  ";
+		}
+
+		std::cout << std::endl << "---------------------" << std::endl;
+	}
+
+}
 void test_model_solver_seven_axis()
 {
 	std::cout << std::endl << "-----------------test model solver seven_axis---------------------" << std::endl;
 
-	test_seven_axis_inverse_solver();
+	test_seven_axis_inverse_solver2();
 
 	std::cout << "-----------------test model solver seven_axis finished------------" << std::endl << std::endl;
 }

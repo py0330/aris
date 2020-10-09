@@ -77,7 +77,6 @@ namespace aris::dynamic
 		});
 		imp_->ground_ = ground == partPool().end() ? &partPool().add<Part>("ground") : &*ground;
 
-		environment().model_ = this;
 		variablePool().model_ = this;
 		for (auto &ele : variablePool())ele.model_ = this;
 		partPool().model_ = this;

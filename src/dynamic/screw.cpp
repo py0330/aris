@@ -3512,10 +3512,10 @@ namespace aris::dynamic
 			theta_out[1] = -alpha_plus_theta - alpha;
 		}
 
-		if (theta_out[0] > 2 * PI)theta_out[0] -= 2 * PI;
-		if (theta_out[1] > 2 * PI)theta_out[1] -= 2 * PI;
-		if (theta_out[0] < -2 * PI)theta_out[0] += 2 * PI;
-		if (theta_out[1] < -2 * PI)theta_out[1] += 2 * PI;
+		if (theta_out[0] > PI)theta_out[0] -= 2 * PI;
+		if (theta_out[1] > PI)theta_out[1] -= 2 * PI;
+		if (theta_out[0] < -PI)theta_out[0] += 2 * PI;
+		if (theta_out[1] < -PI)theta_out[1] += 2 * PI;
 	};
 	auto s_sov_ab(const double*pp, double *ab, const char*order)noexcept->void
 	{
