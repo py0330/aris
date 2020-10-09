@@ -373,6 +373,7 @@ namespace aris::control
 
 			// make pdo init value to zero
 			for (auto &slave : master->slavePool()){
+				if (slave.isVirtual())continue;
 				for (auto &sm : slave.smPool()){
 					for (auto &pdo : sm){
 						for (auto &entry : pdo){
@@ -508,6 +509,7 @@ namespace aris::control
 		ecrt_master_state(std::any_cast<MasterHandle&>(mst->ecHandle()).ec_master_, reinterpret_cast<ec_master_state_t*>(ms));
 		for (int i = 0; i < mst->slavePool().size(); ++i)
 		{
+			if (mst->slavePool()[i].isVirtual())continue;
 			ecrt_slave_config_state(std::any_cast<SlaveHandle&>(mst->slavePool()[i].ecHandle()).ec_slave_config_, reinterpret_cast<ec_slave_config_state_t*>(ss + i));
 		}
 	}

@@ -147,7 +147,7 @@ namespace aris::control
 	}
 	auto EthercatSlave::readPdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size bit_size)const->int
 	{
-		if (!isVirtual())return 0;
+		if (isVirtual())return 0;
 		
 		if (auto entry = findPdoEntry(index, subindex)){
 			aris_ecrt_pdo_read(entry, value);
@@ -157,7 +157,7 @@ namespace aris::control
 	}
 	auto EthercatSlave::writePdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size bit_size)->int
 	{
-		if (!isVirtual())return 0;
+		if (isVirtual())return 0;
 		
 		if (auto entry = findPdoEntry(index, subindex))	{
 			aris_ecrt_pdo_write(entry, value);
@@ -167,7 +167,7 @@ namespace aris::control
 	}
 	auto EthercatSlave::readSdo(std::uint16_t index, std::uint8_t subindex, void *value, aris::Size byte_size)->void
 	{
-		if (!isVirtual())return;
+		if (isVirtual())return;
 		
 		std::size_t result_size;
 		std::uint32_t abort_code;
@@ -175,7 +175,7 @@ namespace aris::control
 	}
 	auto EthercatSlave::writeSdo(std::uint16_t index, std::uint8_t subindex, const void *value, aris::Size byte_size)->void
 	{
-		if (!isVirtual())return;
+		if (isVirtual())return;
 		
 		std::uint32_t abort_code;
 		aris_ecrt_sdo_write(ecMaster()->ecHandle(), phyId(), index, subindex, const_cast<std::uint8_t*>(reinterpret_cast<const std::uint8_t*>(value)), byte_size, &abort_code);
