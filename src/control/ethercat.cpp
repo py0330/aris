@@ -868,7 +868,6 @@ namespace aris::control
 		aris::core::class_<EthercatMotor>("EthercatMotor")
 			.inherit<EthercatSlave>()
 			.inherit<Motor>()
-			.prop("is_virtual", &EthercatMotor::setVirtual, &EthercatMotor::isVirtual)
 			;
 
 		aris::core::class_<EthercatController>("EthercatController")

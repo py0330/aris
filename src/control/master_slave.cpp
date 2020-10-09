@@ -14,12 +14,12 @@
 
 namespace aris::control
 {
-	struct Slave::Imp { std::uint16_t phy_id_, sla_id_; Master *mst_; };
+	struct Slave::Imp { std::uint16_t phy_id_, sla_id_; Master *mst_; bool is_virtual{ false }; };
 	auto Slave::master()->Master* { return imp_->mst_; }
 	auto Slave::phyId()const->std::uint16_t { return imp_->phy_id_; }
 	auto Slave::setPhyId(std::uint16_t phy_id)->void { imp_->phy_id_ = phy_id; }
-	auto Slave::isVirtual()const->bool { return phyId() == std::numeric_limits<decltype(phyId())>::max(); }
-	auto Slave::setVirtual(bool is_virtual)->void { setPhyId(std::numeric_limits<decltype(phyId())>::max()); }
+	auto Slave::isVirtual()const->bool { return imp_->is_virtual; }
+	auto Slave::setVirtual(bool is_virtual)->void { imp_->is_virtual = is_virtual; }
 	auto Slave::id()const->std::uint16_t { return imp_->sla_id_; }
 	Slave::~Slave() = default;
 	Slave::Slave(const std::string &name, std::uint16_t phy_id) :imp_(new Imp) { imp_->phy_id_ = phy_id; }
@@ -313,7 +313,8 @@ namespace aris::control
 	ARIS_REGISTRATION{
 		aris::core::class_<Slave>("Slave")
 			.inherit<aris::core::NamedObject>()
-			.prop("phy_id", &Slave::setPhyId, &Slave::phyId);
+			.prop("phy_id", &Slave::setPhyId, &Slave::phyId)
+			.prop("is_virtual", &Slave::setVirtual, &Slave::isVirtual);
 
 		aris::core::class_<aris::core::PointerArray<Slave>>("SlavePoolObject")
 			.asRefArray();
