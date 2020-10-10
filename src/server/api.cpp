@@ -21,6 +21,7 @@ namespace aris::server
 
 		std::string ret;
 		ret.reserve(length);
+		std::srand(std::time(nullptr));
 		for (int i = 0; i < length; ++i)ret.push_back(letters[std::rand() % 62]);
 		return ret;
 	};
@@ -427,7 +428,6 @@ namespace aris::server
 		std::tm *gmt = std::gmtime(&tt);
 		std::stringstream buffer;
 		buffer << std::put_time(gmt, "%A, %d %B %Y %H:%M");
-		buffer.str();
 
 		pro_dir_js["modTime"] = buffer.str();
 		pro_dir_js["isDir"] = true;
