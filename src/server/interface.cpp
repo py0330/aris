@@ -539,22 +539,6 @@ namespace aris::server
 						mg_send(nc, ret.c_str(), ret.size());
 						break;
 					}
-					/*std::cout << std::string(hm->method.p, hm->method.len) <<":"<< std::string(hm->uri.p, hm->uri.len) << std::endl;
-
-					if (std::string(hm->method.p, hm->method.len) == "POST")
-					{
-
-					}
-					else if (std::string(hm->method.p, hm->method.len) == "PUT")
-					{
-					}
-					else if (std::string(hm->method.p, hm->method.len) == "DELETE")
-					{
-					}
-					else
-					{
-
-					}*/
 					else
 					{
 						mg_serve_http(nc, hm, reinterpret_cast<Imp*>(nc->user_data)->s_http_server_opts);

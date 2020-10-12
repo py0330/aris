@@ -84,7 +84,7 @@ namespace aris::server
 			}
 		}
 		
-		return js.dump(-1);
+		return js.dump(-1,' ',true);
 	}
 	auto updateDashboard(std::string dash_id, std::string js_str)->std::string 
 	{
@@ -175,7 +175,7 @@ namespace aris::server
 
 		doc.SaveFile((rootPath() / "../robot/interface.xml").string().c_str());
 
-		return cell_js.dump(-1);
+		return cell_js.dump(-1,' ',true);
 	}
 	auto deleteCell(std::string dash_id, std::string cell_id)->std::string
 	{
@@ -223,7 +223,7 @@ namespace aris::server
 		if (cell_ele)dash_ele->DeleteChild(cell_ele);
 		doc.SaveFile((rootPath() / "../robot/interface.xml").string().c_str());
 
-		return j2.dump(-1);
+		return j2.dump(-1,' ',true);
 	}
 
 	template <typename TP>
@@ -376,22 +376,7 @@ namespace aris::server
 			}
 		}
 
-		auto ret = js.dump(-1);
-		int index = 0;
-		while (true) {
-			index = ret.find("<", index);
-			if (index == std::string::npos) break;
-			ret.replace(index, 1, "\\u003c");
-			index += 5;
-		}
-		index = 0;
-		while (true) {
-			index = ret.find(">", index);
-			if (index == std::string::npos) break;
-			ret.replace(index, 1, "\\u003e");
-			index += 5;
-		}
-		
+		auto ret = js.dump(-1,' ',true);
 		return ret;
 	}
 	auto createProgram(std::string pro_js_str)->std::string 
@@ -450,24 +435,8 @@ namespace aris::server
 		aris_file_js["content"] = "";
 		pro_dir_js["files"].push_back(aris_file_js);
 
-		auto ret = pro_dir_js.dump(-1);
-		int index = 0;
-		while (true) {
-			index = ret.find("<", index);
-			if (index == std::string::npos) break;
-			ret.replace(index, 1, "\\u003c");
-			index += 5;
-		}
-		index = 0;
-		while (true) {
-			index = ret.find(">", index);
-			if (index == std::string::npos) break;
-			ret.replace(index, 1, "\\u003e");
-			index += 5;
-		}
-
+		auto ret = pro_dir_js.dump(-1, ' ', true);
 		return ret;
-
 	}
 	auto updateProgram(std::string pro_name, std::string data)->std::string
 	{
@@ -550,7 +519,7 @@ namespace aris::server
 
 		}
 
-		return js.dump(-1);
+		return js.dump(-1,' ',true);
 	}
 	auto deleteProgram(std::string pro_name)->std::string
 	{
@@ -562,7 +531,7 @@ namespace aris::server
 		my_json js;
 
 		js["name"] = pro_name;
-		return js.dump(-1);
+		return js.dump(-1,' ',true);
 	}
 	auto renameProgram(std::string old_name, std::string new_name_js)->std::string 
 	{
@@ -591,7 +560,6 @@ namespace aris::server
 		std::tm *gmt = std::gmtime(&tt);
 		std::stringstream buffer;
 		buffer << std::put_time(gmt, "%A, %d %B %Y %H:%M");
-		buffer.str();
 
 		pro_dir_js["modTime"] = buffer.str();
 		pro_dir_js["isDir"] = true;
@@ -613,7 +581,7 @@ namespace aris::server
 		dat_file_js["content"] = str;
 		pro_dir_js["files"].push_back(dat_file_js);
 
-		return pro_dir_js.dump(-1);
+		return pro_dir_js.dump(-1,' ',true);
 	}
 
 	auto fetchConfigXml()->std::string
@@ -626,7 +594,7 @@ namespace aris::server
 		auto p = std::filesystem::absolute(rootPath() / "../robot/esi");
 		my_json js;
 		js["path"] = p.string();
-		return js.dump(-1);
+		return js.dump(-1,' ',true);
 	}
 	auto loadConfigModel()->std::string;
 
@@ -661,7 +629,7 @@ namespace aris::server
 			file_list["fileList"].push_back(file_js);
 		}
 
-		return file_list.dump(-1);
+		return file_list.dump(-1,' ',true);
 	}
 	auto postObjPicture(std::string str)->std::string
 	{

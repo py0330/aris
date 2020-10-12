@@ -176,26 +176,22 @@ namespace aris::server
 		err_code_and_fixed = err_code_and_fixed_.load();
 
 		// 如果处于错误状态,或者错误还未清理完 //
-		if (err_code_and_fixed)
-		{
+		if (err_code_and_fixed){
 			err.fix = fixError(false);
 			err_code_and_fixed_.store(err_code_and_fixed);
 			cmd_now_.store(cmd_end);
 		}
 		// 否则执行cmd queue中的cmd //
-		else if (cmd_end > cmd_now)
-		{
+		else if (cmd_end > cmd_now){
 			auto &plan = *internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_;
 
 			// 在第一回合初始化，包括log，初始化target等 //
-			if (++plan.imp_->count_ == 1)
-			{
+			if (++plan.imp_->count_ == 1){
 				// 初始化target
 				plan.imp_->begin_global_count_ = global_count;
 
 				// 创建rt_log文件 //
-				if (is_rt_log_started_)
-				{
+				if (is_rt_log_started_)	{
 					char name[1000];
 					std::sprintf(name, "%" PRId64 "", plan.cmdId());
 					server_->controller().logFile(name);
@@ -209,8 +205,7 @@ namespace aris::server
 			auto ret = executeCmd(plan);
 
 			// 错误，包含系统检查出的错误以及用户返回错误 //
-			if (((err.code = checkMotion(plan.motorOptions().data(), err_msg_, plan.count())) < 0) || ((err.code = ret) < 0))
-			{
+			if (((err.code = checkMotion(plan.motorOptions().data(), err_msg_, plan.count())) < 0) || ((err.code = ret) < 0)){
 				err.fix = fixError(true);
 				err_code_and_fixed_.store(err_code_and_fixed);
 
@@ -222,8 +217,7 @@ namespace aris::server
 				server_->controller().lout() << std::flush;
 			}
 			// 命令正常结束，结束统计数据 //
-			else if (ret == 0)
-			{
+			else if (ret == 0){
 				// print info //
 				if (!(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
 					ARIS_MOUT_PLAN((&plan)) << "cmd finished, spend " << plan.imp_->count_ << " counts\n";
@@ -235,24 +229,21 @@ namespace aris::server
 				server_->controller().lout() << std::flush;
 			}
 			// 命令仍在执行 //
-			else
-			{
+			else{
 				// print info //
 				if (plan.imp_->count_ % 1000 == 0 && !(plan.option() & aris::plan::Plan::NOT_PRINT_EXECUTE_COUNT))
 					ARIS_MOUT_PLAN((&plan)) << "execute cmd in count: " << plan.imp_->count_ << "\n";
 			}
 		}
 		// 否则检查idle状态
-		else if (err.code = checkMotion(idle_mot_check_options_, err_msg_, 0); err.code < 0)
-		{
+		else if (err.code = checkMotion(idle_mot_check_options_, err_msg_, 0); err.code < 0){
 			err.fix = fixError(true);
 			err_code_and_fixed_.store(err_code_and_fixed);
 			server_->controller().mout() << "RT  ---failed when idle " << err.code << ":\nRT  ---" << err_msg_ << "\n";
 		}
 
 		// 给与外部想要的数据 //
-		if (if_get_data_.exchange(false)) // 原子操作
-		{
+		if (if_get_data_.exchange(false)){ // 原子操作
 			get_data_func_->operator()(ControlServer::instance(), cmd_end > cmd_now ? &*internal_data_queue_[cmd_now % CMD_POOL_SIZE]->plan_ : nullptr, *get_data_);
 			if_get_data_ready_.store(true); // 原子操作
 		}
@@ -542,12 +533,12 @@ namespace aris::server
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
-	auto ControlServer::setErrorCode(std::int32_t err_code)->void 
+	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void
 	{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
 		err.code = err_code;
 		imp_->err_code_and_fixed_.store(err_code_and_fixed);
-
+		if (err_msg)std::strcpy(imp_->err_msg_, err_msg);
 	}
 	auto ControlServer::errorCode()const->int
 	{
@@ -625,7 +616,6 @@ namespace aris::server
 			}
 		}
 	}
-	//
 	// 1.每个输入的str,一定会有返回的plan，即使parse失败
 	// 2.任何一个str parse失败，全部指令都不执行
 	// 3.任何一个prepare失败，全部指令都不执行
@@ -776,24 +766,20 @@ namespace aris::server
 			auto &plan = (*p)->plan_;
 			try
 			{
-				if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
-				{
+				if (!(plan->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION)){
 					// 查看是否处于错误状态 //
-					if (this->errorCode())
-					{
+					if (this->errorCode()){
 						plan->imp_->ret_code = aris::plan::Plan::SERVER_IN_ERROR;
 						LOG_AND_THROW(std::runtime_error("server in error, use cl to clear"));
 					}
 
 					// 只有实时循环才需要 server 已经在运行
-					if (!imp_->is_running_)
-					{
+					if (!imp_->is_running_)	{
 						plan->imp_->ret_code = aris::plan::Plan::SERVER_NOT_STARTED;
 						LOG_AND_THROW(std::runtime_error("server not started, use cs_start to start"));
 					}
 
-					if ((cmd_end - imp_->cmd_collect_.load() + need_run_internal.size()) >= Imp::CMD_POOL_SIZE)//原子操作(cmd_now)
-					{
+					if ((cmd_end - imp_->cmd_collect_.load() + need_run_internal.size()) >= Imp::CMD_POOL_SIZE){//原子操作(cmd_now)
 						plan->imp_->ret_code = aris::plan::Plan::COMMAND_POOL_IS_FULL;
 						LOG_AND_THROW(std::runtime_error("command pool is full"));
 					}
@@ -801,8 +787,7 @@ namespace aris::server
 					need_run_internal.push_back(*p);
 				}
 			}
-			catch (std::exception &e)
-			{
+			catch (std::exception &e){
 				for (auto pp = std::next(p); pp < internal_data.end(); ++pp)
 					if (!((*pp)->plan_->option() & aris::plan::Plan::NOT_RUN_EXECUTE_FUNCTION))
 						(*pp)->plan_->imp_->ret_code = aris::plan::Plan::EXECUTE_CANCELLED;
@@ -812,8 +797,7 @@ namespace aris::server
 			}
 		}
 		// 添加命令 //
-		for (auto &inter : need_run_internal)
-		{
+		for (auto &inter : need_run_internal){
 			imp_->internal_data_queue_[cmd_end++ % Imp::CMD_POOL_SIZE] = inter;
 			inter->has_run_ = true;
 			LOG_INFO << "server execute cmd " << std::to_string(inter->plan_->cmdId()) << std::endl;
@@ -1090,7 +1074,7 @@ namespace aris::server
 			js["return_code"] = code;///////////////////////////////////////////////////////////
 			js["return_message"] = ret_msg_str;
 
-			auto ret_str = js.dump(-1);
+			auto ret_str = js.dump(-1,' ',true);
 
 			ARIS_PRO_COUT << "---" << ret_str << std::endl;
 

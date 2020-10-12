@@ -12,7 +12,6 @@
 
 namespace aris::plan
 {
-	
 	// 请务必修改server中的另一份定义
 	struct Plan::Imp 
 	{
