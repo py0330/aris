@@ -1764,13 +1764,11 @@ namespace aris::dynamic
 				double pp[3];
 				gm.makI()->getPp(*gm.makJ(), pp);
 				s_c3a(imp_->J_vec_.data() + at(gm.id() * 6 + 3, mot.id(), nJf()), nJf(), pp, 1, imp_->J_vec_.data() + at(gm.id() * 6, mot.id(), nJf()), nJf());
-
-
 			}
 		}
 	}
-	auto ForwardKinematicSolver::mJf()const noexcept->Size { return model()->motionPool().size(); }
-	auto ForwardKinematicSolver::nJf()const noexcept->Size { return model()->generalMotionPool().size() * 6; }
+	auto ForwardKinematicSolver::mJf()const noexcept->Size { return model()->generalMotionPool().size() * 6;  }
+	auto ForwardKinematicSolver::nJf()const noexcept->Size { return model()->motionPool().size(); }
 	auto ForwardKinematicSolver::Jf()const noexcept->const double * { return imp_->J_vec_.data(); }
 	auto ForwardKinematicSolver::cf()const noexcept->const double * { return imp_->cf_vec_.data(); }
 	ForwardKinematicSolver::~ForwardKinematicSolver() = default;
@@ -1842,8 +1840,8 @@ namespace aris::dynamic
 			}
 		}
 	}
-	auto InverseKinematicSolver::mJi()const noexcept->Size { return model()->generalMotionPool().size() * 6; }
-	auto InverseKinematicSolver::nJi()const noexcept->Size { return model()->motionPool().size(); }
+	auto InverseKinematicSolver::mJi()const noexcept->Size { return model()->motionPool().size();  }
+	auto InverseKinematicSolver::nJi()const noexcept->Size { return model()->generalMotionPool().size() * 6; }
 	auto InverseKinematicSolver::Ji()const noexcept->const double * { return imp_->J_vec_.data(); }
 	auto InverseKinematicSolver::ci()const noexcept->const double * { return imp_->ci_vec_.data(); }
 	InverseKinematicSolver::~InverseKinematicSolver() = default;

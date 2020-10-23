@@ -87,10 +87,19 @@ void test_seven_axis_inverse_solver2()
 	param.d5 = 0.320;
 	param.tool0_pe[2] = 0;
 
+
+	//param.d1 = 0.203;
+	//param.a2 = -0.138;
+	//param.d3 = 0.450;
+	//param.d5 = 0.300;
+	//param.tool0_pe[2] = 0.1048;
+
 	auto m = aris::dynamic::createModelSevenAxis2(param);
 	m->init();
 
-	
+	//double pe1[]{ 0.4707, 0.206, 0.6817, 3.49, 0.8636, 3.3637 };
+	//double pe2[]{ 0.027, 0.0217, 0, 0.7546, -0.92, -0.623 };
+	//double pe3[]{ 0.501, 0.0252, 0.8176, 1.0, 0.0468, 0.845 };
 
 
 	double pe[6]{ 0.2 , 0.2 , -0.1 , 0.1 , 0.2 , 2.8 };
