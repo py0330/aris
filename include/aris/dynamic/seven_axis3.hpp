@@ -12,12 +12,12 @@ namespace aris::dynamic
 	struct ARIS_API SevenAxisParam3 {
 		// DH PARAM //
 		double d1{ 0.0 };
-		double d2{ 0.05 };
-		double d3{ 0.05 };
-		double d5{ 0.1 };
+		double d2{ 0.0 };
+		double d3{ 0.0 };
+		double d5{ 0.0 };
 
 		// TOOL 0, by default is 321 type
-		double tool0_pe[6]{ 0.0, 0.0, 0.04, 0.0, 0.0, 0.0 };
+		double tool0_pe[6]{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 		std::string tool0_pe_type;
 
 		// BASE wrt REF, by default is 321 type 

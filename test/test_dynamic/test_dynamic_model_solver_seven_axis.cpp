@@ -147,7 +147,7 @@ void test_seven_axis_inverse_solver3()
 {
 	aris::dynamic::SevenAxisParam3 param;
 
-	param.d1 = 0.0;
+	param.d1 = 0.7;
 	param.d2 = 0.05;
 	param.d3 = 0.05;
 	param.d5 = 0.1;

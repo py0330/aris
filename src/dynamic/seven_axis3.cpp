@@ -239,8 +239,7 @@ namespace aris::dynamic
 		
 		return true;
 	}
-	struct SevenAxisInverseKinematicSolver3::Imp
-	{
+	struct SevenAxisInverseKinematicSolver3::Imp{
 		int which_root_{ 0 };
 		double axis_angle{ 0.0 };
 		SevenAxisParam3 seven_axis_param;
@@ -261,8 +260,7 @@ namespace aris::dynamic
 		};
 		GeneralMotion *ee;
 	};
-	auto SevenAxisInverseKinematicSolver3::allocateMemory()->void
-	{
+	auto SevenAxisInverseKinematicSolver3::allocateMemory()->void{
 		InverseKinematicSolver::allocateMemory();
 
 		this->imp_->GR;
@@ -292,6 +290,36 @@ namespace aris::dynamic
 		imp_->M7 = &model()->motionPool().at(6);
 
 		imp_->ee = &model()->generalMotionPool().at(0);
+
+		auto &p = imp_->seven_axis_param;
+
+		//  config seven axis param, tbd.....//
+		imp_->seven_axis_param.d1 = imp_->R1->makJ()->prtPm()[2][3];
+
+		double diff_p[3];
+		s_vc(3, &imp_->R3->makJ()->prtPm()[0][3], 4, diff_p, 1);
+		s_vs(3, &imp_->R2->makI()->prtPm()[0][3], 4, diff_p, 1);
+		imp_->seven_axis_param.d2 = diff_p[2];
+
+		s_vc(3, &imp_->R4->makJ()->prtPm()[0][3], 4, diff_p, 1);
+		s_vs(3, &imp_->R3->makI()->prtPm()[0][3], 4, diff_p, 1);
+		imp_->seven_axis_param.d3 = s_norm(3, diff_p);
+
+		s_vc(3, &imp_->R6->makJ()->prtPm()[0][3], 4, diff_p, 1);
+		s_vs(3, &imp_->R4->makI()->prtPm()[0][3], 4, diff_p, 1);
+		imp_->seven_axis_param.d5 = s_norm(3, diff_p);
+
+		// config tool0 //
+		const double axis_7_pe[]{ 0.0, 0.0, imp_->seven_axis_param.d1 + imp_->seven_axis_param.d2 + imp_->seven_axis_param.d3 + imp_->seven_axis_param.d5, 0.0, 0.0 ,0.0 };
+		double axis_7_pm[16];
+		double ee_i_pm[16], ee_i_wrt_axis_7_pm[16];
+		double ee_j_pm[16]{ 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+
+		s_vc(16, static_cast<const double*>(*imp_->ee->makI()->prtPm()), ee_i_pm);
+		s_pe2pm(axis_7_pe, axis_7_pm, "321");
+		s_inv_pm2pm(axis_7_pm, ee_i_pm, ee_i_wrt_axis_7_pm);
+		imp_->seven_axis_param.tool0_pe_type = "321";
+		s_pm2pe(ee_i_wrt_axis_7_pm, imp_->seven_axis_param.tool0_pe, "321");
 	}
 	auto SevenAxisInverseKinematicSolver3::kinPos()->int
 	{
