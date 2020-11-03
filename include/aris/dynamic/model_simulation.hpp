@@ -75,10 +75,10 @@ namespace aris::dynamic
 
 		auto timeResult()->TimeResult&;
 		auto timeResult()const->const TimeResult& { return const_cast<SimResult*>(this)->timeResult(); }
-		auto partResultPool()->aris::core::PointerArray<PartResult, Element>&;
-		auto partResultPool()const->const aris::core::PointerArray<PartResult, Element>& { return const_cast<SimResult*>(this)->partResultPool(); };
-		auto constraintResultPool()->aris::core::PointerArray<ConstraintResult, Element>&;
-		auto constraintResultPool()const->const aris::core::PointerArray<ConstraintResult, Element>& { return const_cast<SimResult*>(this)->constraintResultPool(); };
+		auto partResultPool()->std::vector<PartResult>&;
+		auto partResultPool()const->const std::vector<PartResult>& { return const_cast<SimResult*>(this)->partResultPool(); };
+		auto constraintResultPool()->std::vector<ConstraintResult>&;
+		auto constraintResultPool()const->const std::vector<ConstraintResult>& { return const_cast<SimResult*>(this)->constraintResultPool(); };
 
 		auto allocateMemory()->void;
 		auto record()->void;

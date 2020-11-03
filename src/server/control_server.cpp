@@ -11,6 +11,7 @@
 #include "json.hpp"
 #include "fifo_map.hpp"
 #include "aris/server/control_server.hpp"
+#include "aris/server/api.hpp"
 
 namespace aris::plan
 {
@@ -1617,6 +1618,34 @@ namespace aris::server
 				}
 			}
 		}
+		else if (cmd == "program_file") {
+			for (auto &[param, value] : params)	{
+				if (param == "get")	{
+					auto ret = fetchPrograms();
+					return send_code_and_msg(0, ret);
+				}
+				else if (param == "post") {
+					auto ret = createProgram(std::string(params.at("data")));
+					return send_code_and_msg(0, ret);
+				}
+				else if (param == "put") {
+
+					return send_code_and_msg(0, "");
+				}
+				else if (param == "delete") {
+
+					return send_code_and_msg(0, "");
+				}
+				else if (param == "patch") {
+
+					return send_code_and_msg(0, "");
+				}
+				else
+				{
+					return send_code_and_msg(aris::plan::Plan::PROGRAM_EXCEPTION, "invalid program option");
+				}
+			}
+		}
 		else
 		{
 			aris::server::ControlServer::instance().executeCmdInCmdLine(std::string(str), [send_ret](aris::plan::Plan &plan)->void
@@ -1642,8 +1671,8 @@ namespace aris::server
 	}
 	ProgramMiddleware::ProgramMiddleware() :imp_(new Imp)
 	{
-		aris::core::Command program;
-		aris::core::fromXmlString(program,
+		aris::core::Command cmd;
+		aris::core::fromXmlString(cmd,
 			"<Command name=\"program\">"
 			"	<Param name=\"set_auto\"/>"
 			"	<Param name=\"set_manual\"/>"
@@ -1656,7 +1685,17 @@ namespace aris::server
 			"	<Param name=\"clear_error\"/>"
 			"	<Param name=\"forward\"/>"
 			"</Command>");
-		imp_->command_parser_.commandPool().push_back(program);
+		imp_->command_parser_.commandPool().push_back(cmd);
+
+		aris::core::fromXmlString(cmd,
+			"<Command name=\"program_file\">"
+			"	<Param name=\"get\"/>"
+			"	<Param name=\"post\"/>"
+			"	<Param name=\"put\"/>"
+			"	<Param name=\"delete\"/>"
+			"	<Param name=\"patch\"/>"
+			"</Command>");
+
 		imp_->command_parser_.init();
 	}
 	ProgramMiddleware::ProgramMiddleware(ProgramMiddleware && other) = default;

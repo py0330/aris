@@ -32,9 +32,9 @@ namespace aris::dynamic
 		std::unique_ptr<aris::core::PointerArray<GeneralMotion, Element>> general_motion_pool_;
 		std::unique_ptr<aris::core::PointerArray<Force, Element>> force_pool_;
 		std::unique_ptr<aris::core::PointerArray<Solver, Element>> solver_pool_;
-		aris::core::PointerArray<Simulator, Element> *simulator_pool_;
-		aris::core::PointerArray<SimResult, Element> *sim_result_pool_;
-		aris::core::PointerArray<Calibrator, Element> *calibrator_pool_;
+		std::unique_ptr<aris::core::PointerArray<Simulator, Element>> simulator_pool_;
+		std::unique_ptr<aris::core::PointerArray<SimResult, Element>> sim_result_pool_;
+		std::unique_ptr<aris::core::PointerArray<Calibrator, Element>> calibrator_pool_;
 
 		Part* ground_;
 	};
@@ -117,24 +117,28 @@ namespace aris::dynamic
 			init_interaction(forcePool()[i], this);
 		}
 		solverPool().model_ = this;
-		for (Size i = 0; i< solverPool().size(); ++i)
-		{
+		for (Size i = 0; i< solverPool().size(); ++i){
 			solverPool()[i].model_ = this;
 			solverPool()[i].id_ = i;
 		}
-		/*
 		simulatorPool().model_ = this;
-		for (auto &ele : simulatorPool())ele.model_ = this;
-		simResultPool().model_ = this;
-		for (auto &ele : simResultPool())ele.model_ = this;
-		calibratorPool().model_ = this;
-		for (auto &ele : calibratorPool())ele.model_ = this;
-		*/
-		// alloc mem for solvers //
-		for (auto &s : this->solverPool())
-		{
-			s.allocateMemory();
+		for (Size i = 0; i< simulatorPool().size(); ++i) {
+			simulatorPool()[i].model_ = this;
+			simulatorPool()[i].id_ = i;
 		}
+		simResultPool().model_ = this;
+		for (Size i = 0; i< simResultPool().size(); ++i) {
+			simResultPool()[i].model_ = this;
+			simResultPool()[i].id_ = i;
+		}
+		calibratorPool().model_ = this;
+		for (Size i = 0; i< calibratorPool().size(); ++i) {
+			calibratorPool()[i].model_ = this;
+			calibratorPool()[i].id_ = i;
+		}
+		
+		// alloc mem for solvers //
+		for (auto &s : this->solverPool()) s.allocateMemory();
 			
 	}
 	auto Model::findVariable(std::string_view name)->Variable*{
@@ -175,7 +179,10 @@ namespace aris::dynamic
 	auto Model::endEffectorSize()->Size { return 0; }
 	auto Model::endEffector(Size i)->EndEffector* { return nullptr; }
 	
-	auto Model::time()const->double { return imp_->time_; }
+	auto Model::time()const->double 
+	{ 
+		return imp_->time_; 
+	}
 	auto Model::setTime(double time)->void { imp_->time_ = time; }
 	auto Model::calculator()->aris::core::Calculator& { return imp_->calculator_; }
 	auto Model::environment()->aris::dynamic::Environment& { return imp_->environment_; }
@@ -337,6 +344,9 @@ namespace aris::dynamic
 		imp_->general_motion_pool_.reset(new aris::core::PointerArray<GeneralMotion, Element>);
 		imp_->force_pool_.reset(new aris::core::PointerArray<Force, Element>);
 		imp_->solver_pool_.reset(new aris::core::PointerArray<Solver, Element>);
+		imp_->simulator_pool_.reset(new aris::core::PointerArray<Simulator, Element>);
+		imp_->calibrator_pool_.reset(new aris::core::PointerArray<Calibrator, Element>);
+		imp_->sim_result_pool_.reset(new aris::core::PointerArray<SimResult, Element>);
 
 		imp_->ground_ = &partPool().add<Part>("ground");
 	}

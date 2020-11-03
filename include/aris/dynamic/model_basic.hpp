@@ -25,6 +25,9 @@ namespace aris::dynamic
 		auto model()noexcept->Model* { return model_; }
 		auto model()const noexcept->const Model* { return const_cast<std::decay_t<decltype(*this)>*>(this)->model(); }
 		auto id()const->Size { return id_; }
+		auto resetModel(Model* m) { model_ = m; }
+
+
 
 		~Element() = default;
 		Element() = default;

@@ -13,7 +13,7 @@ using namespace std;
 /// @}
 
 
-class MyPlan:public aris::plan::Plan
+class MyPlan:public aris::core::CloneObject<MyPlan, aris::plan::Plan>
 {
 public:
 	auto virtual executeRT()->int override
@@ -109,8 +109,9 @@ int main()
 	// 添加两个求解器，并为求解器分配内存。注意，求解器一但分配内存后，请不要再添加或删除杆件、关节、驱动、末端等所有元素
 	auto &inverse_kinematic_solver = m.solverPool().add<aris::dynamic::InverseKinematicSolver>();
 	auto &inverse_dynamic_solver = m.solverPool().add<aris::dynamic::InverseDynamicSolver>();
-	inverse_kinematic_solver.allocateMemory();
-	inverse_dynamic_solver.allocateMemory();
+	
+	auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
+	m.init();
 	/// [Solver]
 
 	//-------------------------------------------- 位置反解 --------------------------------------------//
@@ -120,7 +121,7 @@ int main()
 	end_effector.setMpe(end_effector_pos_and_eul, "321");
 	
 	// 求解，位置求解需要迭代，有可能会失败,因此这里做一个判断
-	if (!inverse_kinematic_solver.kinPos()) throw std::runtime_error("kinematic position failed");
+	if (inverse_kinematic_solver.kinPos()) throw std::runtime_error("kinematic position failed");
 	
 	// 结果储存在电机的mp()函数里，将结果打印出来
 	std::cout << "input position : " << motion1.mp() << "  " << motion2.mp() << "  " << motion3.mp() << "  " << motion4.mp() << std::endl;
@@ -170,7 +171,7 @@ int main()
 	link4.geometryPool().add<aris::dynamic::ParasolidGeometry>("C:/aris/aris-1.5.0/resource/demo_model_scara/part4.xmt_txt");
 	
 	// 添加一个 Adams 仿真器插件, 之后保存到aris的安装目录下，用户此时就可以在 Adams 查看结果了
-	auto &adams = m.simulatorPool().add<aris::dynamic::AdamsSimulator>();
+	
 	adams.saveAdams("C:\\aris\\aris_scara.cmd");
 	/// [Verify_By_Adams]
 
@@ -182,9 +183,13 @@ int main()
 
 	// 添加一个仿真结果 //
 	auto &result = m.simResultPool().add<aris::dynamic::SimResult>();
-	
+	result.resetModel(&m);
+	result.allocateMemory();
+
 	// 仿真，结果保存到上述变量中 //
 	adams.simulate(my_plan, result);
+
+	std::cout << result.partResultPool().size() << std::endl;
 
 	// 要想查看结果，可以使用restore函数，这里将model复位到第500个周期处
 	result.restore(500);

@@ -1551,10 +1551,10 @@ namespace aris::dynamic
 	///
 	auto inline s_sov_axes2pm(const double *origin, const double *first_axis, const double *second_axis, double *pm_out, const char *axis_order = "xy") noexcept->void { s_sov_axes2pm(origin, 1, first_axis, 1, second_axis, 1, pm_out, axis_order); };
 	
-	/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程,该方程有2个根
+	/// \brief 求解形如 k1 * sin(theta) + k2 * cos(theta) = b 的方程,该方程有2个根(可能相等)，成功返回0，失败返回-1
 	///
 	///
-	auto ARIS_API s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->void;
+	auto ARIS_API s_sov_theta(double k1, double k2, double b, double *theta_out)noexcept->int;
 	
 	/// \brief 求解alpha 和 beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为alpha和beta转轴的叉乘方向
 	///
@@ -1568,6 +1568,13 @@ namespace aris::dynamic
 	///
 	///
 	auto ARIS_API s_sov_aab(const double*pp, const double*vp, const double*ap, double *aab, double *vab, double *ab, const char*order = "321")noexcept->void;
+
+	/// \brief 求解alpha 和 beta, 使得轴pp0转到pp的位置，alpha和beta的转轴由order定义，pp0为任意位置，包含两个解
+	///
+	///
+	auto ARIS_API s_sov_ab_arbitrary(const double*pp0, const double *pp, double *alpha, double *beta, const char*order = "321")noexcept->int;
+
+
 	/// \brief 求解某根轴下的相对位移，axis为0，1，2时对应x、y、z轴的位移，为4、5、6时对应延x、y、z轴的转角
 	///
 	///
