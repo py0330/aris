@@ -196,7 +196,7 @@ void test_seven_axis_inverse_solver3()
 		double result[6];
 		m->generalMotionPool()[0].updMpm();
 		m->generalMotionPool()[0].getMpe(result, "321");
-		//dsp(1, 6, result);
+		dsp(1, 6, result);
 
 
 
