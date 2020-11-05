@@ -2,8 +2,6 @@
 #include <iostream>
 #include <array>
 #include <aris/dynamic/dynamic.hpp>
-#include <aris/dynamic/seven_axis2.hpp>
-#include <aris/dynamic/seven_axis3.hpp>
 
 #include<type_traits>
 

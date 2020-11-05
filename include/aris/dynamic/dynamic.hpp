@@ -14,5 +14,6 @@
 #include <aris/dynamic/puma.hpp>
 #include <aris/dynamic/seven_axis.hpp>
 #include <aris/dynamic/seven_axis2.hpp>
+#include <aris/dynamic/seven_axis3.hpp>
 #include <aris/dynamic/serial_3axis.hpp>
 #include <aris/dynamic/puma_5axis.hpp>
