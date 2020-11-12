@@ -18,7 +18,7 @@ namespace aris::server
 	class ARIS_API InterfaceRoot
 	{
 	};
-	class ARIS_API Interface
+	class ARIS_API Interface : public aris::core::NamedObject
 	{
 	public:
 		auto virtual open()->void = 0;

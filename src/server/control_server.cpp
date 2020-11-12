@@ -149,6 +149,8 @@ namespace aris::server
 
 		InterfaceRoot *interface_root_;
 
+		std::unique_ptr<MiddleWare> middle_ware_{new MiddleWare};
+
 		// 打洞，读取数据 //
 		std::atomic_bool if_get_data_{ false }, if_get_data_ready_{ false };
 		const std::function<void(ControlServer&, const aris::plan::Plan *, std::any&)>* get_data_func_;
@@ -527,12 +529,14 @@ namespace aris::server
 	{
 		imp_->interface_pool_.reset(pool);
 	}
+	auto ControlServer::resetMiddleWare(aris::server::MiddleWare *middle_ware)->void { imp_->middle_ware_.reset(middle_ware); }
 	auto ControlServer::model()->dynamic::Model& { return *imp_->model_; }
 	auto ControlServer::controller()->control::Controller& { return *imp_->controller_; }
 	auto ControlServer::sensorRoot()->sensor::SensorRoot& { return *imp_->sensor_root_; }
 	auto ControlServer::planRoot()->plan::PlanRoot& { return *imp_->plan_root_; }
 	auto ControlServer::interfacePool()->aris::core::PointerArray<aris::server::Interface>& { return *imp_->interface_pool_; }
 	auto ControlServer::interfaceRoot()->InterfaceRoot& { return *imp_->interface_root_; }
+	auto ControlServer::middleWare()->MiddleWare& { return *imp_->middle_ware_; }
 	auto ControlServer::setErrorCode(std::int32_t err_code, const char *err_msg)->void
 	{
 		union { std::int64_t err_code_and_fixed; struct { std::int32_t code; std::int32_t fix; } err; };
@@ -1053,7 +1057,6 @@ namespace aris::server
 		std::atomic_bool is_stop_{ false }, is_pause_{ false };
 
 	};
-	auto ProgramMiddleware::instance()->ProgramMiddleware& { static ProgramMiddleware mid; return mid; }
 	auto ProgramMiddleware::lastError()->std::string { return imp_->last_error_; }
 	auto ProgramMiddleware::lastErrorCode()->int { return imp_->last_error_code_; }
 	auto ProgramMiddleware::lastErrorLine()->int { return imp_->last_error_line_; }
@@ -1670,12 +1673,18 @@ namespace aris::server
 		typedef aris::dynamic::Model &(ControlServer::*ModelFunc)();
 		typedef aris::plan::PlanRoot &(ControlServer::*PlanRootFunc)();
 		typedef aris::core::PointerArray<aris::server::Interface>&(ControlServer::*InterfacePoolFunc)();
+		typedef aris::server::MiddleWare &(ControlServer::*MiddleWareFunc)();
 
 		aris::core::class_<ControlServer>("ControlServer")
 			.prop("controller", &ControlServer::resetController, ControllerFunc(&ControlServer::controller))
 			.prop("model", &ControlServer::resetModel, ModelFunc(&ControlServer::model))
 			.prop("plan_root", &ControlServer::resetPlanRoot, PlanRootFunc(&ControlServer::planRoot))
 			.prop("interface", &ControlServer::resetInterfacePool, InterfacePoolFunc(&ControlServer::interfacePool))
+			.prop("middle_ware", &ControlServer::resetMiddleWare, MiddleWareFunc(&ControlServer::middleWare))
+			;
+		
+		aris::core::class_<ProgramMiddleware>("ProgramMiddleware")
+			.inherit<MiddleWare>()
 			;
 	}
 }
