@@ -4,6 +4,7 @@
 #include <aris/core/object.hpp>
 #include <aris/core/expression_calculator.hpp>
 #include <aris/dynamic/screw.hpp>
+#include <aris/dynamic/model_base.hpp>
 
 namespace aris::dynamic
 {
