@@ -160,6 +160,7 @@ namespace aris::core
 		auto addBinaryOperatorFunction(std::string_view opr, std::string_view p1_type, std::string_view p2_type, std::string_view ret_type, BinaryOperatorFunction f)->void;
 		auto clearVariables()->void;
 		auto clearAllRules()->void;
+		auto resetVariablesToInitValue()->void;
 
 		virtual ~Calculator();
 		explicit Calculator(const std::string &name = "calculator");

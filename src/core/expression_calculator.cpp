@@ -397,7 +397,7 @@ namespace aris::core
 		struct Variable
 		{
 			std::string type_, name_;
-			std::any value_;
+			std::any value_, init_value_;
 		};
 		struct Operator
 		{
@@ -861,7 +861,7 @@ namespace aris::core
 			THROW_FILE_LINE("\"" + std::string(var) + "already exists, can't add this variable");
 		}
 
-		imp_->variable_map_.insert(std::pair(std::string(var), Imp::Variable{std::string(type), std::string(var), value}));
+		imp_->variable_map_.insert(std::pair(std::string(var), Imp::Variable{std::string(type), std::string(var), value, value}));
 	}
 	auto Calculator::addFunction(std::string_view fun, const std::vector<std::string> &params, std::string_view ret_type, BuiltInFunction f)->void
 	{
@@ -926,6 +926,9 @@ namespace aris::core
 		imp_->operator_map_.clear();
 		imp_->typename_map_.clear();
 		imp_->variable_map_.clear();
+	}
+	auto Calculator::resetVariablesToInitValue()->void {
+		for (auto &v : imp_->variable_map_)v.second.value_ = v.second.init_value_;
 	}
 	Calculator::~Calculator() = default;
 	Calculator::Calculator(const std::string &name)

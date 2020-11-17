@@ -268,6 +268,8 @@ namespace aris::dynamic{
 		auto forcePool()->aris::core::PointerArray<Force, Element>&;
 		auto forcePool()const->const aris::core::PointerArray<Force, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->forcePool(); }
 		
+		
+
 		auto resetSolverPool(aris::core::PointerArray<Solver, Element> *pool)->void;
 		auto solverPool()->aris::core::PointerArray<Solver, Element>&;
 		auto solverPool()const->const aris::core::PointerArray<Solver, Element>& { return const_cast<std::decay_t<decltype(*this)> *>(this)->solverPool(); }

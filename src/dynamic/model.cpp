@@ -179,8 +179,7 @@ namespace aris::dynamic
 	auto Model::endEffectorSize()->Size { return 0; }
 	auto Model::endEffector(Size i)->EndEffector* { return nullptr; }
 	
-	auto Model::time()const->double 
-	{ 
+	auto Model::time()const->double { 
 		return imp_->time_; 
 	}
 	auto Model::setTime(double time)->void { imp_->time_ = time; }

@@ -11,8 +11,7 @@ namespace aris::dynamic
 	/// @{
 	///
 
-	class ARIS_API Interaction :public DynEle
-	{
+	class ARIS_API Interaction :public DynEle{
 	public:
 		auto makI() noexcept->Marker* { return makI_; }
 		auto makI() const noexcept->const Marker* { return makI_; }
@@ -36,8 +35,7 @@ namespace aris::dynamic
 		std::string prt_name_M_, prt_name_N_, mak_name_I_, mak_name_J_;
 		friend class Model;
 	};
-	class ARIS_API Constraint :public Interaction
-	{
+	class ARIS_API Constraint :public Interaction{
 	public:
 		auto virtual dim() const->Size = 0;
 		auto virtual locCmI() const->const double* = 0;
@@ -113,8 +111,7 @@ namespace aris::dynamic
 		friend class Motion;
 		friend class GeneralMotion;
 	};
-	class ARIS_API Joint :public Constraint
-	{
+	class ARIS_API Joint :public Constraint{
 	public:
 		virtual ~Joint() = default;
 		explicit Joint(const std::string &name = "joint", Marker *makI = nullptr, Marker *makJ = nullptr, bool active = true) : Constraint(name, makI, makJ, active) {}

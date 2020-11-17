@@ -3,18 +3,15 @@
 
 namespace aris::dynamic
 {
-	
 	class ARIS_API EndEffector{
 	public:
-		/*
-		auto virtual dim()->Size;
-		auto virtual pos()->double*;
-		auto virtual setPos(double *pos)->void;
-		auto virtual vel()->double*;
-		auto virtual setVel(double *vel)->void;
-		auto virtual acc()->double*;
-		auto virtual setAcc(double *acc)->void;
-		*/
+		auto virtual dim()->Size = 0;
+		auto virtual pos()->double* = 0;
+		auto virtual setPos(double *pos)->void = 0;
+		auto virtual vel()->double* = 0;
+		auto virtual setVel(double *vel)->void = 0;
+		auto virtual acc()->double* = 0;
+		auto virtual setAcc(double *acc)->void = 0;
 	};
 
 	class ARIS_API ModelBase{

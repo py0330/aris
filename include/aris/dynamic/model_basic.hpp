@@ -67,6 +67,15 @@ namespace aris::dynamic
 		double gravity_[6]{ 0, -9.8, 0, 0, 0, 0 };
 	};
 
+	class ARIS_API GeneralEndEffector:public EndEffector {
+	public:
+
+
+
+
+	};
+
+
 	class ARIS_API Variable :public Element{
 	public:
 		auto virtual toString() const->std::string { return ""; }
