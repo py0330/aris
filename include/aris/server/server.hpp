@@ -4,5 +4,6 @@
 #include <aris/server/interface.hpp>
 #include <aris/server/control_server.hpp>
 #include <aris/server/api.hpp>
+#include <aris/server/middle_ware.hpp>
 
 #endif
