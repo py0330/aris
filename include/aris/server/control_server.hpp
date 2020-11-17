@@ -14,6 +14,7 @@
 #include <aris/plan/plan.hpp>
 
 #include "aris/server/interface.hpp"
+#include "aris/server/middle_ware.hpp"
 
 namespace aris::server
 {
@@ -38,6 +39,7 @@ namespace aris::server
 		auto resetSensorRoot(sensor::SensorRoot *sensor_root)->void;
 		auto resetPlanRoot(plan::PlanRoot *sensor_root)->void;
 		auto resetInterfacePool(aris::core::PointerArray<aris::server::Interface> *pool)->void;
+		auto resetMiddleWare(server::MiddleWare *middle_ware)->void;
 		auto model()->dynamic::Model&;
 		auto model()const->const dynamic::Model& { return const_cast<ControlServer *>(this)->model(); }
 		auto controller()->control::Controller&;
@@ -50,6 +52,8 @@ namespace aris::server
 		auto interfacePool()const->const aris::core::PointerArray<aris::server::Interface>& { return const_cast<ControlServer *>(this)->interfacePool(); }
 		auto interfaceRoot()->InterfaceRoot&;
 		auto interfaceRoot()const->const InterfaceRoot& { return const_cast<ControlServer *>(this)->interfaceRoot(); }
+		auto middleWare()->MiddleWare&;
+		auto middleWare()const->const MiddleWare& { return const_cast<ControlServer *>(this)->middleWare(); }
 
 		// operation in RT & NRT context //
 		auto setRtPlanPreCallback(PreCallback pre_callback)->void;
@@ -93,10 +97,9 @@ namespace aris::server
 		std::unique_ptr<Imp> imp_;
 	};
 
-	class ARIS_API ProgramMiddleware
+	class ARIS_API ProgramMiddleware : public MiddleWare
 	{
 	public:
-		static auto instance()->ProgramMiddleware&;
 
 		auto isAutoMode()->bool;
 		auto isAutoRunning()->bool;
@@ -106,10 +109,8 @@ namespace aris::server
 		auto lastErrorCode()->int;
 		auto lastErrorLine()->int;
 		auto currentFileLine()->std::tuple<std::string, int>;
-		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int;
+		auto executeCmd(std::string_view str, std::function<void(std::string)> send_ret)->int override;
 		~ProgramMiddleware();
-
-	private:
 
 		ProgramMiddleware();
 		ProgramMiddleware(ProgramMiddleware && other);
